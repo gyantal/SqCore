@@ -13,11 +13,13 @@ using System.Diagnostics;
 
 namespace SqCoreWeb
 {
+    enum ActivePage { Unknown, MarketHealth, CatalystSniffer, QuickfolioNews, TooltipSandpit, Docs }
     class DashboardClients {
         public string ConnectionId { get; set; } = String.Empty;
         public string SignalRUser { get; set; } = String.Empty; // a user could be connected on their desktop as well as their phone; uses the ClaimTypes.NameIdentifier from the ClaimsPrincipal
         public string UserEmail { get; set; } = String.Empty;
         public bool IsOnline = false;
+        public ActivePage ActivePage = ActivePage.MarketHealth; // knowing which Tool is active can be useful. We might not send data to tools which never becomes active
     }
 
     // these members has to be C# properties, not simple data member tags. Otherwise SignalR will not serialize it to client.
@@ -80,6 +82,8 @@ namespace SqCoreWeb
 
         // UI responsiveness: webpage HTML,JS loads in 300-400msec. Then JS starts SignalR negotiation, 30ms on server + latency = 100ms. Then we send messages. Between the first SingalR connected message and RT/historical price: 250ms.
         // so Menu bar UI comes in 400ms, but the MarketHealth table appears another 400ms later. Fine.
+        // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
+        // If we send here 30 (stockNews) messages over 30seconds in this, then Client cannot send any UI change messages until we return from here.
         public override Task OnConnectedAsync()
         {
             var userEmailClaim = this.Context?.User?.Claims?.FirstOrDefault(p => p.Type == @"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
@@ -90,7 +94,7 @@ namespace SqCoreWeb
 
             Groups.AddToGroupAsync(this.Context?.ConnectionId, "EverybodyGroup");   // when we have a new price data, it is sent to all group members
 
-            var client = new DashboardClients() { ConnectionId = connId, SignalRUser = signalRuser, UserEmail = email, IsOnline = true };
+            var client = new DashboardClients() { ConnectionId = connId, SignalRUser = signalRuser, UserEmail = email, IsOnline = true, ActivePage = ActivePage.MarketHealth };
             
             lock (g_clients)
                 g_clients.Add(client);

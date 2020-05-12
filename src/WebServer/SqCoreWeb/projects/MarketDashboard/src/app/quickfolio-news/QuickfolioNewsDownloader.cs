@@ -102,7 +102,7 @@ namespace SqCoreWeb
             return new List<string> { "All assets" }.Union(m_stockTickers).ToList();
         }
 
-        internal void GetStockNews(IClientProxy? p_clients)
+        internal void GetStockNews(IClientProxy? p_clients) // with 13 tickers, it can take 13 * 2 = 26seconds
         {
             foreach (string ticker in m_stockTickers)
             {

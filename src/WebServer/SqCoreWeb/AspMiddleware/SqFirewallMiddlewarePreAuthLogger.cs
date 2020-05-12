@@ -45,6 +45,12 @@ namespace SqCoreWeb
         {
             if (httpContext == null)
                 throw new ArgumentNullException(nameof(httpContext));
+
+            // first entry point of ASP middleware
+            if ((httpContext.Request.Path.Value == "/hub/dashboardpush") && httpContext.Request.QueryString.ToString().StartsWith("?id"))  // SignalR websocket connection connects once, and it never release the connection, id = connectionID number.
+            {
+                Utils.Logger.Info("SignalR client with clientID is connecting {httpContext.Request.Path.Value} {httpContext.Request.QueryString}");
+            }
            
             // 1. Don't push it to the next Middleware if the path or IP is on the blacklist. In the future, implement a whitelist too, and only allow  requests explicitely on the whitelist.
             if (IsHttpRequestOnBlacklist(httpContext))

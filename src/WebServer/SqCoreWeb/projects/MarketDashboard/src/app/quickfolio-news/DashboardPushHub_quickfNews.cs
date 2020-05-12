@@ -14,7 +14,7 @@ namespace SqCoreWeb
     
     public partial class DashboardPushHub : Hub
     {
-        const int m_newsReloadInterval = 5 * 60 * 1000; // 5 minutes in milliseconds 
+        const int m_newsReloadInterval = 10 * 60 * 1000; // 10 minutes in milliseconds 
         Timer m_newsReloadTimer;
         QuickfolioNewsDownloader m_newsDownloader = new QuickfolioNewsDownloader();
 
@@ -25,16 +25,23 @@ namespace SqCoreWeb
         public void OnConnectedAsync_QuickfNews()
         {
             // don't do a long process here. Start big things in a separate thread. One way is in 'DashboardPushHub_mktHealth.cs'
-            // DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All.SendAsync("quickfNewsOnConnected", "This message is to Laci, :) from the Webserver backend.");
-            DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All.SendAsync("stockTickerList", m_newsDownloader.GetStockTickers());
-            TriggerQuickfolioNewsDownloader();
+            string connId = this.Context?.ConnectionId ?? String.Empty;
+            new Thread(() =>
+            {
+                Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
+                DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(connId).SendAsync("stockTickerList", m_newsDownloader.GetStockTickers());
+                TriggerQuickfolioNewsDownloader(connId);
+            }).Start();
         }
 
-        private void TriggerQuickfolioNewsDownloader()
+        private void TriggerQuickfolioNewsDownloader(string p_connId)
         {
+            // we can only send all news to the newly connected p_connId, and not All clients.
+            // but that complicates things, because then what if we start to send all news to this fresh client, and 2 seconds later NewsReloadTimerElapsed triggers.
+            // so, at the moment, whenever a new client connects, we resend all news to all old clients. If NewsReloadTimerElapsed() triggers during that, we send it twice.
             List<NewsItem> commonNews = m_newsDownloader.GetCommonNews();
             DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All.SendAsync("quickfNewsCommonNewsUpdated", commonNews);
-            m_newsDownloader.GetStockNews(DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All);
+            m_newsDownloader.GetStockNews(DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All);   // with 13 tickers, it can take 13 * 2 = 26seconds
         }
 
         public void OnDisconnectedAsync_QuickfNews(Exception exception)
@@ -44,7 +51,7 @@ namespace SqCoreWeb
         {
             if (DashboardPushHub.g_clients.Count > 0) 
             {
-                TriggerQuickfolioNewsDownloader();
+                TriggerQuickfolioNewsDownloader(String.Empty);
             }
         }
 

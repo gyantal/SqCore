@@ -100,40 +100,46 @@ namespace SqCoreWeb
             }
         }
 
+        // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
         public void OnConnectedAsync_MktHealth()
         {
-            // for both the first and the second client, we get RT prices from MemDb immediately and send it back to this Client only.
-
-            // 1. Send the Historical data first. SendAsync() is non-blocking. GetLastRtPrice() can be blocking
-            IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat("YTD");
-            Utils.Logger.Info("Clients.Caller.SendAsync: RtMktSumNonRtStat");
-            Clients.Caller.SendAsync("RtMktSumNonRtStat", periodStatToClient);
-
-            // 2. Send RT price later, because GetLastRtPrice() might block the thread, if it is the first client.
-            var lastPrices = MemDb.gMemDb.GetLastRtPrice(g_mktSummaryStocks.Select(r => r.SecID).ToArray());
-            IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = lastPrices.Select(r =>
+            string connId = this.Context?.ConnectionId ?? String.Empty;
+            new Thread(() =>
             {
-                var rtStock = new RtMktSumRtStat()
-                {
-                    SecID = r.SecdID,
-                    Last = r.LastPrice,
-                };
-                return rtStock;
-            });
-            Utils.Logger.Info("Clients.Caller.SendAsync: RtMktSumRtStat");
-            Clients.Caller.SendAsync("RtMktSumRtStat", rtMktSummaryToClient);
+                Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
 
-            
+                // for both the first and the second client, we get RT prices from MemDb immediately and send it back to this Client only.
 
-            lock (m_rtMktSummaryTimerLock)
-            {
-                if (!m_rtMktSummaryTimerRunning)
+                // 1. Send the Historical data first. SendAsync() is non-blocking. GetLastRtPrice() can be blocking
+                IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat("YTD");
+                Utils.Logger.Info("Clients.Caller.SendAsync: RtMktSumNonRtStat");
+                // Clients.Caller.SendAsync("RtMktSumNonRtStat", periodStatToClient);      // Cannot access a disposed object.
+                DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(connId).SendAsync("RtMktSumNonRtStat", periodStatToClient);
+
+                // 2. Send RT price later, because GetLastRtPrice() might block the thread, if it is the first client.
+                var lastPrices = MemDb.gMemDb.GetLastRtPrice(g_mktSummaryStocks.Select(r => r.SecID).ToArray());
+                IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = lastPrices.Select(r =>
                 {
-                    Utils.Logger.Info("OnConnectedAsync_MktHealth(). Starting m_rtMktSummaryTimer.");
-                    m_rtMktSummaryTimerRunning = true;
-                    m_rtMktSummaryTimer.Change(TimeSpan.FromMilliseconds(m_rtMktSummaryTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
+                    var rtStock = new RtMktSumRtStat()
+                    {
+                        SecID = r.SecdID,
+                        Last = r.LastPrice,
+                    };
+                    return rtStock;
+                });
+                Utils.Logger.Info("Clients.Caller.SendAsync: RtMktSumRtStat");
+                DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(connId).SendAsync("RtMktSumRtStat", rtMktSummaryToClient);   // Cannot access a disposed object.
+
+                lock (m_rtMktSummaryTimerLock)
+                {
+                    if (!m_rtMktSummaryTimerRunning)
+                    {
+                        Utils.Logger.Info("OnConnectedAsync_MktHealth(). Starting m_rtMktSummaryTimer.");
+                        m_rtMktSummaryTimerRunning = true;
+                        m_rtMktSummaryTimer.Change(TimeSpan.FromMilliseconds(m_rtMktSummaryTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
+                    }
                 }
-            }
+            }).Start();
         }
 
         private static IEnumerable<RtMktSumNonRtStat> GetLookbackStat(string p_lookbackStr)

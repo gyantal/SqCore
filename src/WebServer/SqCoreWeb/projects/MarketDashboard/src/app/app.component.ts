@@ -35,9 +35,7 @@ export class AppComponent implements OnInit {
     this._hubConnection
       .start()
       .then(() => {
-        console.log('ws: Connection started!');
-        this._hubConnection.send('startStreaming', 'message body')  // Error: Cannot send data if the connection is not in the 'Connected' State.
-          .then(() => console.log('ws: Connection sent message!'));
+        console.log('ws: Connection started! _hubConnection.send() can be used now.');
       })
       .catch(err => console.log('Error while establishing connection :('));
 
