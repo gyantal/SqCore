@@ -8,12 +8,10 @@
 <body>
   <div class="overlap-div-outer">
     <div class="overlap-div-inner1">
-
-      <div class="video-container">
-        <div class="video-foreground">
-          <div id="yt-player"></div>
-        </div>
-      </div>
+      <video id="video-1" autoplay loop muted>
+        <source type=video/webm>
+        Your browser does not support HTML5 video tag or WebM video.
+      </video>
     </div>
     <div id="MainDivOverVidBkg" class="overlap-div-inner2">
 
@@ -135,7 +133,19 @@
 
 
       .overlap-div-inner1 {
-        position: absolute;
+        /* position: absolute; positioned relative to the page (0,0) */
+        position: fixed;
+        /* positioned relative to the viewport. This is needed if height is small and page is scrolled down */
+        top: 0;
+        left: 0;
+      }
+
+      .overlap-div-inner1 video {
+        /* width: 100%;  100% would mean the 100% of the video resolution = 1280px; but that would be irrespective of the window size  */
+        height: 100vh;
+        width: 100vw;
+        object-fit: cover;
+        /*  scale the video to fill the video container element, keeping ratio intact. It smartly scales sometimes to the width, sometimes to height. */
       }
 
       .overlap-div-inner2 {
@@ -160,33 +170,6 @@
         /* Combo box inner text should be the same as its surrounding */
         font-size: inherit;
       }
-
-      /* see discussion https://stackoverflow.com/questions/52886853/youtube-embed-showinfo-has-been-deprecated */
-      /* https://jsfiddle.net/xcr298fu/   */
-      .video-container {
-        width: 100vw;
-        height: 100vh;
-        overflow: hidden;
-        position: relative;
-      }
-
-      .video-container iframe {
-        pointer-events: none;
-      }
-
-      .video-container iframe {
-        position: absolute;
-        top: -60px;
-        /* elongate by 60px up. Background video control is better to be done in pixels. */
-        left: 0;
-        width: 100%;
-        /* elongate by 60px down. So, vplayer is 120 px bigger than 100%. This still indroduces black borders */
-        height: calc(100% + 120px);
-      }
-
-      .video-foreground {
-        pointer-events: none;
-      }
     </style>
 
     <script>
@@ -201,72 +184,28 @@
 
       document.addEventListener('DOMContentLoaded', (event) => {
         console.log('DOMContentLoaded(). All JS were downloaded. DOM fully loaded and parsed.');
+
+        changeUiThemeAndVideoSrc();
       });
 
-      window.onload = function onLoadWindow() {
+
+      window.addEventListener('load', function (event) {  // window.onload(), but it is better this way.
         console.log('window.onload(). All CSS, and images were downloaded.'); // images are loaded at this time, so their sizes are known
-        // var x = document.getElementById("player").contentWindow.document.body.getElementsByClassName("html5-video-player");  // Blocked a frame with origin "https://127.0.0.1:5001" from accessing a cross-origin frame.
-        // x.style.backgroundColor = "#f00"
+
         document.getElementById('video-selector-1').selectedIndex = iVidBkg - 1; // changing the combobox selection only works in window.onload(), not yet in DOMContentLoaded()
+      })
+
+      function changeUiThemeAndVideoSrc() {
         if (iVidBkg === 5 || iVidBkg === 7) {
           document.getElementById('MainDivOverVidBkg').style.color = '#000080';
         } else {
           document.getElementById('MainDivOverVidBkg').style.color = '#ffffff';
         }
-      };
 
-
-      // 2. This code loads the YouTube IFrame Player API code asynchronously.
-      let tag = document.createElement('script');
-      tag.src = 'https://www.youtube.com/iframe_api';
-      let firstScriptTag = document.getElementsByTagName('script')[0];
-      if (firstScriptTag != null && firstScriptTag.parentNode != null) {
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-      }
-
-      // 3. This function creates an <iframe> (and YouTube player) after the API code script downloads from www.youtube.com
-      let player;
-      function onYouTubeIframeAPIReady() {
-        player = new YT.Player('yt-player', {
-          height: '280',
-          width: '640',
-          videoId: gVidIds[Object.keys(gVidIds)[iVidBkg - 1]],
-          playerVars: {
-            autoplay: 1,        // Auto-play the video on load
-            disablekb: 1,
-            controls: 0,        // Hide pause/play buttons in player
-            showinfo: 0,        // Hide the video title, deprecated as of 25/09/2018
-            modestbranding: 1,  // Hide the Youtube Logo, Note that a small YouTube text label will still display in the upper-right corner of a paused video when the user's mouse pointer hovers over the player.
-            loop: 1,            // Run the video in a loop
-            fs: 0,              // Hide the full screen button
-            autohide: 0,        // obsolete, Hide video controls when playing
-            rel: 0,
-            // mute: 1,     Not defined in TS playerVars
-            enablejsapi: 1
-          },
-          events: {
-            onReady: onPlayerReady,
-            onStateChange: onPlayerStateChange
-          }
-        });
-      }
-
-      // 4. The YT API will call this function when the video player is ready.
-      function onPlayerReady(event) {
-        event.target.mute();
-        event.target.playVideo();
-      }
-
-      // 5. The YT API calls this function when the player's state changes.
-      function onPlayerStateChange(event) {
-        if (event.data === YT.PlayerState.ENDED) {
-          player.seekTo(0);
-          player.playVideo();
-        }
-      }
-
-      function stopVideo() {
-        player.stopVideo();
+        const videoElement = document.getElementById('video-1');
+        videoElement.firstElementChild.src = "/videos/" + gVidIds[Object.keys(gVidIds)[iVidBkg - 1]] + "_720.webm";
+        videoElement.load();  // without load(), videoElement doesn't notice the change of URL
+        videoElement.play();
       }
 
       document.getElementById('video-selector-1').onchange = function video_selector_onchange() {
@@ -275,16 +214,10 @@
         console.log('video-selector-onchange(). You selected: ' + selectedOption);
         const vidId = gVidIds[selectedOption];
         console.log('video-selector-onchange(). loadVideoById(): ' + vidId);
-        player.loadVideoById(vidId);
 
         iVidBkg = vdBkgSelector.selectedIndex + 1;
-        if (iVidBkg === 5 || iVidBkg === 7) {
-          document.getElementById('MainDivOverVidBkg').style.color = '#000080';
-        } else {
-          document.getElementById('MainDivOverVidBkg').style.color = '#ffffff';
-        }
+        changeUiThemeAndVideoSrc();
       }
-
     </script>
 </body>
 

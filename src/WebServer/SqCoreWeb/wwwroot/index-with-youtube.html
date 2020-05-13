@@ -1,0 +1,291 @@
+<HTML>
+
+<head>
+  <meta charset="utf-8" />
+  <title>SqCore</title>
+</head>
+
+<body>
+  <div class="overlap-div-outer">
+    <div class="overlap-div-inner1">
+
+      <div class="video-container">
+        <div class="video-foreground">
+          <div id="yt-player"></div>
+        </div>
+      </div>
+    </div>
+    <div id="MainDivOverVidBkg" class="overlap-div-inner2">
+
+      <H2>SqCore.net v. 0.1.15</H2><br /><br />
+
+      <div class="largerText">
+        <img src="/images/favicon/favicon_Home64x64Resonly.ico" /> <a href="https://dashboard.sqcore.net">Dashboard</a><br />
+        <img src="/images/favicon/favicon_Home64x64Resonly.ico" /> <a href="https://google.com">Tools</a><br />
+
+        <img class='widerImg' src="/webpages/SQStudiesList/B_Folder.png" /> <a href="/webpages/SQStudiesList/">SQ Studies</a><br />
+        <img src="/images/favicon/investing_subscriptions.png" /> <a href="https://docs.google.com/document/d/111HEQT_jT5Y9S-IKedS9HKhRZGO9pi3z6OsevWQchTM">Subscription links, passw</a><br />
+
+        <!-- keep HealthMonitor as last item. For admins. -->
+        <img src="/images/favicon/favicon_healthmonitor1.ico" /> <a href="https://healthmonitor.sqcore.net">HealthMonitor</a><br />
+
+        <br />
+        <hr>
+        <img src="/images/favicon/favicon_Home64x64Resonly.ico" /><a href="https://www.snifferquant.net/"> SqLab</a><br />
+        <img src="/images/favicon/favicon_Home64x64Resonly.ico" /><a href="https://www.snifferquant.com/dac/">DAC</a><br />
+        </span>
+
+        <div class="miniSizeText">
+          <span class="loginUserDiv">
+            <a href="/UserAccount/login">Login</a>
+          </span>
+          <br />
+          <hr>
+          <br />
+          <span class="sqDeveloperInfo"><a href="/index_dev.html">Developer Dashboard</a></span><br />
+          Change background video: &nbsp; &nbsp;
+          <select name="video-selector" id="video-selector-1">
+            <option value="iss">ISS Timelapse - The English Channel</option>
+            <option value="minority">Minority report UI</option>
+            <option value="stocks3d">3D stock market</option>
+            <option value="matrix">Matrix</option>
+            <option value="london">London</option>
+            <option value="sea">Sea</option>
+            <option value="clouds">Clouds</option>
+          </select>
+          &nbsp; &nbsp; &nbsp;Tested in 1920x1080 (Scale:100%). Chrome zoom: 125%.
+        </div>
+      </div>
+    </div>
+
+
+
+
+    <style>
+      html {
+        font-size: 62.5%;
+      }
+
+      /* set 1.0rem = 10px. revert to root font size of 10px. it allows to set font-size in rem, that corresponds to px */
+
+      body {
+        margin: 0;
+        /* originally, there is a 8px margin  */
+        overflow-y: scroll;
+        /* enable y scrollbar */
+        overflow-x: hidden;
+        /* disable x scrollbar */
+        font-size: 1.6rem;
+        /* = 16px. Wiki uses 14px. Ft.com uses size 18px fonts. CNBC is using 18 and 14. Bloomberg uses Georgia 18px (for text). But 18px is too big for condensing a lot of info to the page. 16px should be our default too for text and header of tables. For numbers in cells in table we should targer 14px. 20px for section headers. 24px for webpage main title. */
+      }
+
+      h2 {
+        margin-top: 0.4rem;
+        margin-bottom: 0.7rem;
+        font-size: 2.4rem;
+        /* = 24px */
+      }
+
+      .largeSizeText {
+        font-size: 2.0rem;
+        /* = 20px */
+      }
+
+      .normalSizeText {
+        font-size: 1.6rem;
+        /* = 16px */
+      }
+
+      .dataSizeText {
+        font-size: 1.4rem;
+        /* = 14px */
+      }
+
+      .miniSizeText {
+        font-size: 1.0rem;
+        /* = 10px. For insignificant debug info. */
+      }
+
+      img {
+        /* icons are next to a text on the same line. If text font changes, this should change. Define this icons as 2x the size of the font (2x14px=28px). Use EM, so it scales with the containing element fontsize. So, if that fontsize change, we don't have to resize img here. */
+        width: 4rem;
+        height: 4rem;
+        vertical-align: text-bottom;
+      }
+
+      .widerImg {
+        width: 6rem;
+      }
+
+      a {
+        color: inherit;
+        /* inherit from parent, if is set dynamically as dark/light mode */
+        display: inline-block;
+        padding: 0.8rem 0.2rem;
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        text-shadow: 0px 1px 0px #528ecc;
+        /* shadow is the only exception when fixed pixel units should be used. */
+      }
+
+      a:hover {
+        color: blue;
+        /* blue Href hover is good for both dark and light mode  */
+      }
+
+
+      .overlap-div-inner1 {
+        position: absolute;
+      }
+
+      .overlap-div-inner2 {
+        position: absolute;
+        width: 100%;
+        margin-left: 2.0rem;
+        text-align: center;
+        font-family: "Georgia";
+        color: white;
+      }
+
+      .worktopArea {
+        width: 90%;
+        height: 60vh;
+        margin-left: 2.0rem;
+        color: inherit;
+        /* inherit from parent, if is set dynamically as dark/light mode */
+        background: linear-gradient(135deg, rgba(251, 63, 63, 0.95) 0%, rgba(162, 164, 77, 0.95) 50%, rgba(70, 93, 252, 0.95) 100%);
+      }
+
+      select {
+        /* Combo box inner text should be the same as its surrounding */
+        font-size: inherit;
+      }
+
+      /* see discussion https://stackoverflow.com/questions/52886853/youtube-embed-showinfo-has-been-deprecated */
+      /* https://jsfiddle.net/xcr298fu/   */
+      .video-container {
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .video-container iframe {
+        pointer-events: none;
+      }
+
+      .video-container iframe {
+        position: absolute;
+        top: -60px;
+        /* elongate by 60px up. Background video control is better to be done in pixels. */
+        left: 0;
+        width: 100%;
+        /* elongate by 60px down. So, vplayer is 120 px bigger than 100%. This still indroduces black borders */
+        height: calc(100% + 120px);
+      }
+
+      .video-foreground {
+        pointer-events: none;
+      }
+    </style>
+
+    <script>
+      // 1. Declare some global variables and hook on DOMContentLoaded() and window.onload()
+      let gVidIds = {
+        iss: 'W0LHTWG-UmQ', minority: 'q0LRHkWyNEA', stocks3d: '86MKzstijzI', matrix: '8ZdpA3p9ZMY',
+        london: 'a11-Rudtkps', sea: 'TtGW5XIz7R4', clouds: 'Wimkqo8gDZ0'
+      };
+
+      let iVidBkg = Math.floor(Math.random() * 7) + 1; // [1..7] inclusive
+
+
+      document.addEventListener('DOMContentLoaded', (event) => {
+        console.log('DOMContentLoaded(). All JS were downloaded. DOM fully loaded and parsed.');
+      });
+
+      window.onload = function onLoadWindow() {
+        console.log('window.onload(). All CSS, and images were downloaded.'); // images are loaded at this time, so their sizes are known
+        // var x = document.getElementById("player").contentWindow.document.body.getElementsByClassName("html5-video-player");  // Blocked a frame with origin "https://127.0.0.1:5001" from accessing a cross-origin frame.
+        // x.style.backgroundColor = "#f00"
+        document.getElementById('video-selector-1').selectedIndex = iVidBkg - 1; // changing the combobox selection only works in window.onload(), not yet in DOMContentLoaded()
+        if (iVidBkg === 5 || iVidBkg === 7) {
+          document.getElementById('MainDivOverVidBkg').style.color = '#000080';
+        } else {
+          document.getElementById('MainDivOverVidBkg').style.color = '#ffffff';
+        }
+      };
+
+
+      // 2. This code loads the YouTube IFrame Player API code asynchronously.
+      let tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      let firstScriptTag = document.getElementsByTagName('script')[0];
+      if (firstScriptTag != null && firstScriptTag.parentNode != null) {
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      }
+
+      // 3. This function creates an <iframe> (and YouTube player) after the API code script downloads from www.youtube.com
+      let player;
+      function onYouTubeIframeAPIReady() {
+        player = new YT.Player('yt-player', {
+          height: '280',
+          width: '640',
+          videoId: gVidIds[Object.keys(gVidIds)[iVidBkg - 1]],
+          playerVars: {
+            autoplay: 1,        // Auto-play the video on load
+            disablekb: 1,
+            controls: 0,        // Hide pause/play buttons in player
+            showinfo: 0,        // Hide the video title, deprecated as of 25/09/2018
+            modestbranding: 1,  // Hide the Youtube Logo, Note that a small YouTube text label will still display in the upper-right corner of a paused video when the user's mouse pointer hovers over the player.
+            loop: 1,            // Run the video in a loop
+            fs: 0,              // Hide the full screen button
+            autohide: 0,        // obsolete, Hide video controls when playing
+            rel: 0,
+            // mute: 1,     Not defined in TS playerVars
+            enablejsapi: 1
+          },
+          events: {
+            onReady: onPlayerReady,
+            onStateChange: onPlayerStateChange
+          }
+        });
+      }
+
+      // 4. The YT API will call this function when the video player is ready.
+      function onPlayerReady(event) {
+        event.target.mute();
+        event.target.playVideo();
+      }
+
+      // 5. The YT API calls this function when the player's state changes.
+      function onPlayerStateChange(event) {
+        if (event.data === YT.PlayerState.ENDED) {
+          player.seekTo(0);
+          player.playVideo();
+        }
+      }
+
+      function stopVideo() {
+        player.stopVideo();
+      }
+
+      document.getElementById('video-selector-1').onchange = function video_selector_onchange() {
+        const vdBkgSelector = document.getElementById('video-selector-1');
+        const selectedOption = vdBkgSelector.value;
+        console.log('video-selector-onchange(). You selected: ' + selectedOption);
+        const vidId = gVidIds[selectedOption];
+        console.log('video-selector-onchange(). loadVideoById(): ' + vidId);
+        player.loadVideoById(vidId);
+
+        iVidBkg = vdBkgSelector.selectedIndex + 1;
+        if (iVidBkg === 5 || iVidBkg === 7) {
+          document.getElementById('MainDivOverVidBkg').style.color = '#000080';
+        } else {
+          document.getElementById('MainDivOverVidBkg').style.color = '#ffffff';
+        }
+      }
+
+    </script>
+</body>
+
+</HTML>
