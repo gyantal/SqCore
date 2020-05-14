@@ -106,11 +106,11 @@ export class AppComponent implements OnInit {
   }
 
   openSettings() {
-    this.settingsDialogComponent.open();
+    this.settingsDialogComponent.isVisible = true;
   }
 
   closeSettings() {
-    this.settingsDialogComponent.close();
+    this.settingsDialogComponent.isVisible = false;
   }
 
 }

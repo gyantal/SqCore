@@ -11,14 +11,6 @@ export class SettingsDialogComponent {
 
   constructor() { }
 
-  open() {
-    this.isVisible = true;
-  }
-
-  close() {
-    this.isVisible = false;
-  }
-
   onSetThemeSelector(theme: string) {
     console.log(theme);
     this.parentChangeThemeEvent.emit(theme);
