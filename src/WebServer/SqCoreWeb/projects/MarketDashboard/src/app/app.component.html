@@ -74,7 +74,7 @@
   <hr style="margin: 0" size="0.2rem" width="100%">
 </div>
 
-<settings-dialog #settingsD id="dialog1" (parentChangeTheme)="onSetTheme($event)"></settings-dialog>
+<settings-dialog (parentChangeThemeEvent)="onSetTheme($event)"></settings-dialog>
 
 
 <router-outlet></router-outlet>

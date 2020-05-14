@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild} from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 import { SettingsDialogComponent } from './settings-dialog/settings-dialog.component';
 
@@ -28,7 +28,7 @@ export class AppComponent implements OnInit {
   // http://localhost:4202/hub/exsvpush/negotiate?negotiateVersion=1 404 (Not Found), if it is not served on port 4202 on ng serve (proxy)
   public _hubConnection: HubConnection = new HubConnectionBuilder().withUrl('/hub/dashboardpush').build();
 
-  @ViewChild('settingsD', {static: false}) setDial!: SettingsDialogComponent;
+  @ViewChild(SettingsDialogComponent) private settingsDialogComponent!: SettingsDialogComponent;
 
   // called after Angular has initialized all data-bound properties before any of the view or content children have been checked. Handle any additional initialization tasks.
   ngOnInit() {
@@ -83,7 +83,6 @@ export class AppComponent implements OnInit {
   onClickUserSelection() {
     this.isUserSelectionVisible = !this.isUserSelectionVisible;
     this.isToolSelectionVisible = false;
-    // this.closeSettings();
   }
 
   onClickUserSelected() {
@@ -107,12 +106,11 @@ export class AppComponent implements OnInit {
   }
 
   openSettings() {
-    console.log(this.setDial);
-    this.setDial.open();
+    this.settingsDialogComponent.open();
   }
 
   closeSettings() {
-    this.setDial.close();
+    this.settingsDialogComponent.close();
   }
 
 }

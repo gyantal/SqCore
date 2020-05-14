@@ -215,7 +215,7 @@ namespace SqCoreWeb
         {
             p_sb.Append("<H2>Program.exe</H2>");
             var timeSinceAppStart = DateTime.UtcNow - g_webAppGlobals.WebAppStartTime;
-            p_sb.Append($"WebAppStartTimeUtc: {g_webAppGlobals.WebAppStartTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}({timeSinceAppStart:dd\\.hh\\:mm\\:ss} days ago)<br>");
+            p_sb.Append($"WebAppStartTimeUtc: {g_webAppGlobals.WebAppStartTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}({timeSinceAppStart:dd} days {timeSinceAppStart:hh\\:mm} hours ago)<br>");
         }
 
     }

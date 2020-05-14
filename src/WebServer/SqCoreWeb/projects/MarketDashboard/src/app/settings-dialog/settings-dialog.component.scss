@@ -2,7 +2,7 @@
   display: none;
   position: fixed;
   z-index: 10000000;
-  padding-top: 100px;
+  padding-top: 10rem;
   left: 0;
   top: 0;
   width: 100%; 
@@ -14,8 +14,8 @@
 .content {
   background-color: #fefefe;
   margin: auto;
-  padding: 20px;
-  border: 1px solid #888;
+  padding: 2rem;
+  border: 0.1rem solid #888;
   width: 80%;
   color: blue;
 }

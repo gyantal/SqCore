@@ -1,52 +1,27 @@
-import { Component, ViewChild, ElementRef, Output, EventEmitter } from '@angular/core';
-
+import { Component, Output, EventEmitter } from '@angular/core';
 
 @Component({
   selector: 'settings-dialog',
   templateUrl: './settings-dialog.component.html',
-  // template: `
-  //   <div #myModal class="container">
-  //   <div class="content">
-  //     <p>Some content here...</p>
-  //     <button>Close</button>
-  //   </div>
-  //   </div>
-  // `,
   styleUrls: ['./settings-dialog.component.scss']
 })
 export class SettingsDialogComponent {
-  // tslint:disable-next-line: ban-types
- // @Input() _parentChangeThemeCallBack?: Function; // = undefined; // this property will be input from above parent container
-
-  @Output() parentChangeTheme = new EventEmitter<string>();
-
-  @ViewChild('settingsDialog', {static: false}) setDial!: ElementRef;
+  isVisible = false;  // see https://stackoverflow.com/questions/59013913/how-to-manipulate-a-div-style-in-angular-8
+  @Output() parentChangeThemeEvent = new EventEmitter<string>();
 
   constructor() { }
 
   open() {
-    this.setDial.nativeElement.style.display = 'block';
+    this.isVisible = true;
   }
 
   close() {
-    this.setDial.nativeElement.style.display = 'none';
+    this.isVisible = false;
   }
 
   onSetThemeSelector(theme: string) {
-    // console.log(theme);
-    this.parentChangeTheme.emit(theme);
-    // console.log(this.parentChangeTheme.emit(theme));
-    // onSetTheme(theme);
+    console.log(theme);
+    this.parentChangeThemeEvent.emit(theme);
   }
-
 }
-
-// export class SettingsDialogComponent implements OnInit {
-
-//   constructor() { }
-
-//   ngOnInit() {
-//   }
-
-// }
 
