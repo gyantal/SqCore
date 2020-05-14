@@ -1,11 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild} from '@angular/core';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
+import { SettingsDialogComponent } from './settings-dialog/settings-dialog.component';
 
 class HandshakeMessage {
   public email = '';
   public param2  = '';
 }
-
 
 @Component({
   selector: 'app-root',
@@ -23,9 +23,12 @@ export class AppComponent implements OnInit {
   isUserSelectionVisible = false;
   toolSelectionMsg = 'Click red arrow in toolbar! isToolSelectionVisible is set to ' + this.isToolSelectionVisible;
   activeTool = 'MarketHealth';
+  theme = '';
 
   // http://localhost:4202/hub/exsvpush/negotiate?negotiateVersion=1 404 (Not Found), if it is not served on port 4202 on ng serve (proxy)
   public _hubConnection: HubConnection = new HubConnectionBuilder().withUrl('/hub/dashboardpush').build();
+
+  @ViewChild('settingsD', {static: false}) setDial!: SettingsDialogComponent;
 
   // called after Angular has initialized all data-bound properties before any of the view or content children have been checked. Handle any additional initialization tasks.
   ngOnInit() {
@@ -45,21 +48,23 @@ export class AppComponent implements OnInit {
     });
   }
 
-  onSetTheme(theme: string) {
+  public onSetTheme($event: string) {
+    this.theme = $event;
+    console.log(this.theme);
     let bgColor = '';
     let textColor = '';
-    switch (theme) {
+    switch (this.theme) {
       case 'light':
         bgColor = '#ffffff';
         textColor = '#000000';
         break;
       case 'dark':
         bgColor = '#0000ff';
-        textColor = '#aaaaaa';
+        textColor = '#ffffff';
         break;
     }
-    document.body.style.setProperty('--bgColor', bgColor);
-    document.body.style.setProperty('--textColor', textColor);
+    document.body.style.setProperty('background-color', bgColor);
+    document.body.style.setProperty('color', textColor);
     console.log('Sq: set theme.');
   }
 
@@ -67,6 +72,7 @@ export class AppComponent implements OnInit {
     this.isToolSelectionVisible = !this.isToolSelectionVisible;
     this.toolSelectionMsg = 'Click red arrow in toolbar! isToolSelectionVisible is set to ' + this.isToolSelectionVisible;
     this.isUserSelectionVisible = false;
+    this.closeSettings();
   }
 
   onClickToolSelected() {
@@ -77,6 +83,7 @@ export class AppComponent implements OnInit {
   onClickUserSelection() {
     this.isUserSelectionVisible = !this.isUserSelectionVisible;
     this.isToolSelectionVisible = false;
+    // this.closeSettings();
   }
 
   onClickUserSelected() {
@@ -97,6 +104,15 @@ export class AppComponent implements OnInit {
     } else if (menuItem === 'User') {
       this.isUserSelectionVisible = false;
     }
+  }
+
+  openSettings() {
+    console.log(this.setDial);
+    this.setDial.open();
+  }
+
+  closeSettings() {
+    this.setDial.close();
   }
 
 }

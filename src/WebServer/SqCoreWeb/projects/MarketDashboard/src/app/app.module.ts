@@ -1,5 +1,6 @@
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -9,6 +10,7 @@ import { QuickfolioNewsComponent } from './quickfolio-news/quickfolio-news.compo
 import { TooltipSandpitComponent } from './tooltip-sandpit/tooltip-sandpit.component';
 import { DocsWhatIsNewComponent, DocsGetStartedComponent, DocsTutorialComponent } from './docs/docs.component';
 import { ClickOutsideDirective } from './../../../sq-ng-common/src/lib/sq-ng-common.directive.click-outside';
+import { SettingsDialogComponent } from './settings-dialog/settings-dialog.component';
 
 @NgModule({
   declarations: [
@@ -20,11 +22,13 @@ import { ClickOutsideDirective } from './../../../sq-ng-common/src/lib/sq-ng-com
     DocsWhatIsNewComponent,
     DocsGetStartedComponent,
     DocsTutorialComponent,
-    ClickOutsideDirective
+    ClickOutsideDirective,
+    SettingsDialogComponent
   ],
   imports: [
     BrowserModule,
-    AppRoutingModule
+    AppRoutingModule,
+    FormsModule
   ],
   providers: [],
   bootstrap: [AppComponent]
