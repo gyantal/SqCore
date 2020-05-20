@@ -162,23 +162,29 @@ namespace SqCoreWeb
                     lookbackStart = todayET.AddDays(-7 * nWeeks);
             }
 
+            TsDateData<DateOnly, uint, float, uint> histData = MemDb.gMemDb.DailyHist.GetDataDirect();
+            DateOnly[] dates = histData.Dates;
+            // At 16:00, or even intraday: YF gives even the today last-realtime price with a today-date. We have to find any date backwards, which is NOT today. That is the PreviousClose.
+            int iEndDay = (dates[0] >= new DateOnly(Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow))) ? 1 : 0;
+            Debug.WriteLine($"EndDate: {dates[iEndDay]}");
+
+            int iStartDay = histData.IndexOfKeyOrAfter(new DateOnly(lookbackStart));      // the valid price at the weekend is the one on the previous Friday. After.
+            if (iStartDay == -1) // If not found then fix the startDate as the first available date of history.
+            {
+                iStartDay = dates.Length - 1; 
+            }
+            Debug.WriteLine($"StartDate: {dates[iStartDay]}");
+
+
             IEnumerable<RtMktSumNonRtStat> lookbackStatToClient = g_mktSummaryStocks.Select(r =>
             {
-                Security sec = MemDb.gMemDb.GetFirstMatchingSecurity(r.Ticker);
-                DateOnly[] dates = sec.DailyHistory.GetKeyArrayDirect();
-                float[] sdaCloses = sec.DailyHistory.GetValue1ArrayDirect(TickType.SplitDivAdjClose);
+                float[] sdaCloses = histData.Data[r.SecID].Item1[TickType.SplitDivAdjClose];
+                // if startDate is not found, because e.g. we want to go back 3 years, while stock has only 2 years history
+                int iiStartDay = (iStartDay < sdaCloses.Length) ? iStartDay : sdaCloses.Length - 1;
 
-                // At 16:00, or even intraday: YF gives even the today last-realtime price with a today-date. We have to find any date backwards, which is NOT today. That is the PreviousClose.
-                int iPrevDay = (dates[dates.Length - 1] >= new DateOnly(Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow))) ? dates.Length - 2 : dates.Length - 1;
-                Debug.WriteLine($"Found: {r.Ticker}, {dates[iPrevDay]}:{sdaCloses[iPrevDay]}");
-
-                int iLookbackStartOrBefore = sec.DailyHistory.IndexOfKeyOrBeforeKey(new DateOnly(lookbackStart));      // the valid price at the weekend is the one on the previous Friday.
-                if (iLookbackStartOrBefore == -1) // if startDate is not found, because e.g. we want to go back 3 years, while stock has only 2 years history
-                {
-                    iLookbackStartOrBefore = 0; // then fix the startDate as the first available date of history.
-                }
+                // reverse marching from yesterday into past is not good, because we have to calculate running maxDD, maxDU.
                 float max = float.MinValue, min = float.MaxValue, maxDD = float.MaxValue, maxDU = float.MinValue;
-                for (int i = iLookbackStartOrBefore; i <= iPrevDay; i++)
+                for (int i = iiStartDay; i >= iEndDay; i--)   // reverse marching from yesterday iEndDay to deeper into the past. Until startdate iStartDay or until history beginning reached
                 {
                     if (sdaCloses[i] > max)
                         max = sdaCloses[i];
@@ -196,9 +202,9 @@ namespace SqCoreWeb
                 {
                     SecID = r.SecID,
                     Ticker = r.Ticker,
-                    PreviousClose = sdaCloses[iPrevDay],
-                    PeriodStart = dates[iLookbackStartOrBefore],    // it may be not the 'asked' start date if we have less price history
-                    PeriodOpen = sdaCloses[iLookbackStartOrBefore],
+                    PreviousClose = sdaCloses[iEndDay],
+                    PeriodStart = dates[iiStartDay],    // it may be not the 'asked' start date if we have less price history
+                    PeriodOpen = sdaCloses[iiStartDay],
                     PeriodHigh = max,
                     PeriodLow = min,
                     PeriodMaxDD = maxDD,
@@ -206,6 +212,7 @@ namespace SqCoreWeb
                 };
                 return rtStock;
             });
+
             return lookbackStatToClient;
         }
 

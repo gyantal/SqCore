@@ -18,8 +18,6 @@ namespace FinTechCommon
         public String Ticker { get; set; } = String.Empty;
 
         public String ExpectedHistorySpan { get; set; } = String.Empty;
-        public FinTimeSeries<DateOnly, float, uint> DailyHistory { get; set; } = new FinTimeSeries<DateOnly, float, uint>();
-
         public float LastPriceIex { get; set; } = -100.0f;     // real-time last price
         public float LastPriceYF { get; set; } = -100.0f;     // real-time last price
     }
@@ -32,12 +30,14 @@ namespace FinTechCommon
         // RAM requirement: 1Year = 260*(2+4) = 1560B = 1.5KB,  5y data is: 5*260*(2+4) = 7.8K
         // Max RAM requirement if need only AdjClose: 20years for 5K stocks: 5000*20*260*(2+4) = 160MB (only one data per day: DivSplitAdjClose.)
         // Max RAM requirement if need O/H/L/C/AdjClose/Volume: 6x of previous = 960MB = 1GB
-        // current SumMem: 2+10+10+4*5 = 42 years. 42*260*(2+4)= 66KB.
+        // 2020-01 FinTimeSeries SumMem: 2+10+10+4*5 = 42 years. 42*260*(2+4)= 66KB.                                With 5000 stocks, 30years: 5000*260*30*(2+4)= 235MB
+        // 2020-05 CompactFinTimeSeries SumMem: 2+10+10+4*5 = 42 years. Date + data: 2*260*10+42*260*(4)= 48KB.     With 5000 stocks, 30years: 2*260*30+5000*260*30*(4)= 156MB (a saving of 90MB)
+        // CompactFinTimeSeries also gives better cache usage, because the shared Date field page is always in the cache, because it is used frequently
 
         public List<Security> Securities { get; } = new List<Security>() { // to minimize mem footprint, only load the necessary dates (not all history).
             new Security() { SecID = 1, Ticker = "GLD", ExpectedHistorySpan="5y"},                  // history starts on 2004-11-18
-            new Security() { SecID = 2, Ticker = "QQQ", ExpectedHistorySpan="Date: 2010-01-01"},    // history starts on 1999-03-10. Full history would be: 32KB. 
-            new Security() { SecID = 3, Ticker = "SPY", ExpectedHistorySpan="Date: 2010-01-01"},    // history starts on 1993-01-29. Full history would be: 44KB, 
+            new Security() { SecID = 2, Ticker = "QQQ", ExpectedHistorySpan="Date: 2009-12-31"},    // history starts on 1999-03-10. Full history would be: 32KB.       // 2010-01-01 Friday is NewYear holiday, first trading day is 2010-01-04
+            new Security() { SecID = 3, Ticker = "SPY", ExpectedHistorySpan="Date: 2009-12-31"},    // history starts on 1993-01-29. Full history would be: 44KB, 
             new Security() { SecID = 4, Ticker = "TLT", ExpectedHistorySpan="5y"},                  // history starts on 2002-07-30
             new Security() { SecID = 6, Ticker = "UNG", ExpectedHistorySpan="5y"},                  // history starts on 2007-04-18
             new Security() { SecID = 7, Ticker = "USO", ExpectedHistorySpan="5y"},                  // history starts on 2006-04-10
@@ -49,6 +49,8 @@ namespace FinTechCommon
         // The top bits of SecID is the SecType, so there can be gaps in the SecID ordered list. But at least, we can aim to order this array by SecID. (as in Redis)
         // TODO: if we want to have fast BinarySearch access by ticker, we need a Table of Indexes based on Ticker's alphabetical order. An Index table. And the GetFirstMatchingSecurity(string p_ticker) should use it. 
         int[] m_idxByTicker = new int[7];    // TODO: implement and use Index Table based on Ticker for faster BinarySearch
+
+        public CompactFinTimeSeries<DateOnly, uint, float, uint> DailyHist = new CompactFinTimeSeries<DateOnly, uint, float, uint>();
 
         public bool IsInitialized { get; set; } = false;
 
@@ -85,8 +87,9 @@ namespace FinTechCommon
 
         public void ServerDiagnostic(StringBuilder p_sb)
         {
+            int memUsedKb = DailyHist.GetDataDirect().MemUsed() / 1024;
             p_sb.Append("<H2>MemDb</H2>");
-            p_sb.Append($"Historical: #Securities: {Securities.Count}<br>");
+            p_sb.Append($"Historical: #Securities: {Securities.Count}. Used RAM: {memUsedKb:N0}KB<br>");
             ServerDiagnosticRealtime(p_sb);
         }
 
@@ -132,6 +135,8 @@ namespace FinTechCommon
             try
             {
                 // The startTime & endTime here defaults to EST timezone
+                var secDates = new Dictionary<uint, DateOnly[]>();
+                var secAdjustedClose = new Dictionary<uint, float[]>();
 
                 // YF sends this weird Texts, which are converted to Decimals, so we don't lose TEXT conversion info.
                 // AAPL:    DateTime: 2016-01-04 00:00:00, Open: 102.610001, High: 105.370003, Low: 102.000000, Close: 105.349998, Volume: 67649400, AdjustedClose: 98.213585  (original)
@@ -151,25 +156,84 @@ namespace FinTechCommon
                         startDateET = DateTime.UtcNow.FromUtcToEt().AddYears(-1*nYears);
                     }
 
-                    var history = Yahoo.GetHistoricalAsync(sec.Ticker, startDateET, DateTime.Now, Period.Daily).Result;
-
+                    var history = Yahoo.GetHistoricalAsync(sec.Ticker, startDateET, DateTime.Now, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
                     // for penny stocks, IB and YF considers them for max. 4 digits. UWT price (both in IB ask-bid, YF history) 2020-03-19: 0.3160, 2020-03-23: 2302
                     // sec.AdjCloseHistory = history.Select(r => (double)Math.Round(r.AdjustedClose, 4)).ToList();
-
                     var dates = history.Select(r => new DateOnly(r!.DateTime)).ToArray();
-                    var kvpar1 = new KeyValuePair<TickType, float[]>(TickType.SplitDivAdjClose, history.Select(r => 
-                        RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)
-                    ).ToArray());
-                    sec.DailyHistory = new FinTimeSeries<DateOnly, float, uint>(
-                        dates,
-                        new KeyValuePair<TickType, float[]>[] { kvpar1 },
-                        new KeyValuePair<TickType, uint[]>[] { }
-                    );
+                    secDates[sec.SecID] = dates;
+                    var adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
+                    secAdjustedClose[sec.SecID] = adjCloses;
 
-                    var tsDates = sec.DailyHistory.Keys;
-                    var tsValues = sec.DailyHistory.Values1(TickType.SplitDivAdjClose);
-                    Debug.WriteLine($"{sec.Ticker}, first: DateTime: {tsDates.First()}, Close: {tsValues.First()}, last: DateTime: {tsDates.Last()}, Close: {tsValues.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
+                    Debug.WriteLine($"{sec.Ticker}, first: DateTime: {dates.First()}, Close: {adjCloses.First()}, last: DateTime: {dates.Last()}, Close: {adjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
                 }
+
+                // Merge all dates into a big date array
+                // We don't know which days are holidays, so we have to walk all the dates simultaneously, and put into merged date array all the existing dates.
+                // walk backward, because the first item will be the latest, the yesterday.
+                var idx = new Dictionary<uint, int>();
+                DateOnly minDate = DateOnly.MaxValue, maxDate = DateOnly.MinValue;
+                foreach (var dates in secDates)  // assume first date is the oldest, last day is yesterday
+                {
+                    if (minDate > dates.Value.First())
+                        minDate = dates.Value.First();
+                    if (maxDate < dates.Value.Last())
+                        maxDate = dates.Value.Last();
+                    idx.Add(dates.Key, dates.Value.Length - 1);
+                }
+
+                List<DateOnly> mergedDates = new List<DateOnly>();
+                DateOnly currDate = maxDate;
+                while (true) 
+                {
+                    mergedDates.Add(currDate);
+
+                    DateOnly nextDate = DateOnly.MaxValue;
+                    foreach (var dates in secDates)
+                    {
+                        if (idx[dates.Key] >= 0 && dates.Value[idx[dates.Key]] == currDate)
+                        {
+                            idx[dates.Key] = idx[dates.Key] - 1;    // decrease index
+                        }
+
+                        if (idx[dates.Key] >= 0 && dates.Value[idx[dates.Key]] < nextDate)
+                            nextDate = dates.Value[idx[dates.Key]];
+                    }
+                    if (nextDate == DateOnly.MaxValue)  // it was not updated, so all idx reached 0
+                        break;
+                    currDate = nextDate;
+                }
+                Debug.WriteLine($"first: DateTime: {mergedDates.First()}, last: DateTime: {mergedDates.Last()}");
+
+                var mergedDatesArr = mergedDates.ToArray();
+
+                var values = new Dictionary<uint, Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>>();
+                foreach (var closes in secAdjustedClose)
+                {
+                    var secID = closes.Key;
+                    var secDatesArr = secDates[secID];
+                    var iSecDates = secDatesArr.Length - 1; // set index to last item
+
+                    var closesArr = new List<float>(mergedDates.Count); // allocate more, even though it is not necessarily filled
+                    for (int i = 0; i < mergedDates.Count; i++)
+                    {
+                        if (secDatesArr[iSecDates] == mergedDatesArr[i])
+                        {
+                            closesArr.Add(closes.Value[iSecDates]);
+                            if (iSecDates <= 0) // if first (oldest) item is already used, thatis the last item. 
+                                break;
+                            iSecDates--;
+                        }
+                        else
+                        { 
+                            closesArr[i] = float.NaN;   // in a very rare cases prices might be missing from the front, or from the middle (if stock didn't trade on that day)
+                        }
+                    }   // for mergedDates
+
+                    var dict1 = new Dictionary<TickType, float[]>() { { TickType.SplitDivAdjClose, closesArr.ToArray() } };
+                    var dict2 = new Dictionary<TickType, uint[]>(); // we don't store volume now, but maybe in the future
+                    values.Add(secID, new Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>(dict1, dict2));
+                }
+                DailyHist.ChangeData(mergedDatesArr, values);
             }
             catch (Exception e)
             {

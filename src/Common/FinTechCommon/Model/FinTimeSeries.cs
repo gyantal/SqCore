@@ -619,7 +619,7 @@ namespace FinTechCommon
             }
         }
 
-        public int IndexOfKey(TKey key)     // if it exact match. If date is not found (because it was weekend), it returns -1.
+        public int IndexOfKey(TKey key)     // if there is an exact match. If date is not found (because it was weekend), it returns -1.
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
