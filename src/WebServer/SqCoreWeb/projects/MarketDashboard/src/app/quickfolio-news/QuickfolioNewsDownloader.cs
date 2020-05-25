@@ -38,7 +38,7 @@ namespace SqCoreWeb
 
     public class QuickfolioNewsDownloader
     {
-        Dictionary<int, List<NewsItem>> m_newsMemory = new Dictionary<int, List<NewsItem>>();
+        Dictionary<string, List<NewsItem>> m_newsMemory = new Dictionary<string, List<NewsItem>>();
         Random m_random = new Random(DateTime.Now.Millisecond);
         KeyValuePair<int, int> m_sleepBetweenDnsMs = new KeyValuePair<int, int>(2000, 1000);     // <fix, random>
         string[] m_stockTickers = { "AAPL", "ADBE", "AMZN", "BABA", "CRM", "FB", "GOOGL", "MA", "MSFT", "NVDA", "PYPL", "QCOM", "V" };
@@ -174,7 +174,9 @@ namespace SqCoreWeb
                     newsItem.DownloadTime = DateTime.Now;
                     newsItem.Source = NewsSource.TipRanks.ToString();
 
-                    p_foundNewsItems.Add(newsItem);
+                    if (AddNewsToMemory(p_ticker, newsItem))
+                        p_foundNewsItems.Add(newsItem); 
+
                     jsonNewsItem = jsonNewsItem.Next;
                 }
             }
@@ -289,8 +291,9 @@ namespace SqCoreWeb
                     newsItem.PublishDate = GetNewsDate(matchNews.Groups["DATE"].Value);
                     newsItem.DownloadTime = DateTime.Now;
                     newsItem.Source = NewsSource.Benzinga.ToString();
-
-                    p_foundNewsItems.Add(newsItem);
+                    
+                    if (AddNewsToMemory(p_ticker, newsItem))
+                        p_foundNewsItems.Add(newsItem);
                 }
             }
         }
@@ -339,18 +342,18 @@ namespace SqCoreWeb
 
         private void AddFoundNews(int p_stockID, List<NewsItem> p_foundNewsItems)
         {
-            List<NewsItem> notYetKnownNews = new List<NewsItem>();
-            if (!m_newsMemory.ContainsKey(p_stockID))
-                m_newsMemory.Add(p_stockID, new List<NewsItem>());
-            foreach (NewsItem newsItem in p_foundNewsItems)
-                if (m_newsMemory[p_stockID].Where(x => x.LinkUrl.Equals(newsItem.LinkUrl)).Count() == 0)    // not yet known
-                {
-                    m_newsMemory[p_stockID].Add(newsItem);
-                    notYetKnownNews.Add(newsItem);
-                }
+            // List<NewsItem> notYetKnownNews = new List<NewsItem>();
+            // if (!m_newsMemory.ContainsKey(p_stockID))
+            //     m_newsMemory.Add(p_stockID, new List<NewsItem>());
+            // foreach (NewsItem newsItem in p_foundNewsItems)
+            //     if (m_newsMemory[p_stockID].Where(x => x.LinkUrl.Equals(newsItem.LinkUrl)).Count() == 0)    // not yet known
+            //     {
+            //         m_newsMemory[p_stockID].Add(newsItem);
+            //         notYetKnownNews.Add(newsItem);
+            //     }
         }
 
-        private static List<NewsItem> ReadRSS(string p_url, NewsSource p_newsSource, string p_ticker)
+        private List<NewsItem> ReadRSS(string p_url, NewsSource p_newsSource, string p_ticker)
         {
             try
             {
@@ -379,7 +382,8 @@ namespace SqCoreWeb
                     newsItem.DisplayText = string.Empty;
                     //newsItem.setFiltered();
 
-                    foundNews.Add(newsItem);
+                    if (AddNewsToMemory(p_ticker, newsItem))
+                        foundNews.Add(newsItem);
                 }
                 return foundNews;
             }
@@ -388,6 +392,26 @@ namespace SqCoreWeb
                 Console.WriteLine(exception.Message);
                 return new List<NewsItem>();
             }
+        }
+
+        private bool AddNewsToMemory(string p_ticker, NewsItem p_newsItem)
+        {
+            if (!m_newsMemory.ContainsKey(p_ticker))
+                m_newsMemory.Add(p_ticker, new List<NewsItem>());
+            if (m_newsMemory[p_ticker].Where(x => x.LinkUrl.Equals(p_newsItem.LinkUrl)).Count() > 0)    // already known
+                return false;
+            if (SkipNewsItem(p_newsItem.Title))
+                return false;
+            m_newsMemory[p_ticker].Add(p_newsItem);
+            return true;
+        }
+
+        private bool SkipNewsItem(string p_title)
+        {
+            // skip news item if title is like NVIDIA rises 3.1%
+            Regex regexRisesFalls = new Regex(@"(rises|falls)([0-9]|.|\s)*%$"
+               , RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+            return regexRisesFalls.IsMatch(p_title);
         }
     }
 }
