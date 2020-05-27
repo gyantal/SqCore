@@ -175,7 +175,7 @@ namespace SqCoreWeb
                     newsItem.Source = NewsSource.TipRanks.ToString();
 
                     if (AddNewsToMemory(p_ticker, newsItem))
-                        p_foundNewsItems.Add(newsItem); 
+                        p_foundNewsItems.Add(newsItem);
 
                     jsonNewsItem = jsonNewsItem.Next;
                 }
@@ -276,11 +276,11 @@ namespace SqCoreWeb
             MatchCollection matches = regexBenzingaLists.Matches(p_webpageData);
             if (matches == null)
                 return;
-            for (int index = 0; index < matches.Count;index++)
+            for (int index = 0; index < matches.Count; index++)
             {
                 Match match = matches[index];
                 MatchCollection matchesNews = regexBenzingaNews.Matches(match.Groups["CONTENT"].Value);
-                for (int indexNews= 0; indexNews < matchesNews.Count; indexNews++)
+                for (int indexNews = 0; indexNews < matchesNews.Count; indexNews++)
                 {
                     Match matchNews = matchesNews[indexNews];
                     NewsItem newsItem = new NewsItem();
@@ -291,7 +291,7 @@ namespace SqCoreWeb
                     newsItem.PublishDate = GetNewsDate(matchNews.Groups["DATE"].Value);
                     newsItem.DownloadTime = DateTime.Now;
                     newsItem.Source = NewsSource.Benzinga.ToString();
-                    
+
                     if (AddNewsToMemory(p_ticker, newsItem))
                         p_foundNewsItems.Add(newsItem);
                 }
@@ -409,9 +409,28 @@ namespace SqCoreWeb
         private bool SkipNewsItem(string p_title)
         {
             // skip news item if title is like NVIDIA rises 3.1%
-            Regex regexRisesFalls = new Regex(@"(rises|falls)([0-9]|.|\s)*%$"
-               , RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
-            return regexRisesFalls.IsMatch(p_title);
+            string upperCaseTitle = p_title.ToUpper();
+            int indexInTitle = upperCaseTitle.LastIndexOf("RISES");
+            if (indexInTitle == -1)
+                indexInTitle = upperCaseTitle.LastIndexOf("FALLS");
+            if (indexInTitle == -1)
+                return false;
+
+            indexInTitle += 5; // the length of "rises" or "falls". They have equal length, no need to separate the cases
+            while (indexInTitle < p_title.Length)
+            {
+                char currentChar = p_title[indexInTitle];
+                if ((currentChar >= '0' && currentChar <= '9') || (currentChar == '.') || (currentChar == ' '))
+                    indexInTitle++;
+                else if ((currentChar == '%') && (indexInTitle == p_title.Length - 1))
+                    return true;
+                else
+                    return false;
+            }
+            return false;
+            // Regex regexRisesFalls = new Regex(@"(rises|falls)([0-9]|.|\s)*%$"
+            //    , RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+            // return regexRisesFalls.IsMatch(p_title);
         }
     }
 }
