@@ -5,17 +5,323 @@
   padding-top: 10rem;
   left: 0;
   top: 0;
-  width: 100%; 
+  width: 100%;
   height: 100%;
   overflow: auto;
-  background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+  background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
 }
 
-.content {
-  background-color: #fefefe;
-  margin: auto;
-  padding: 2rem;
-  border: 0.1rem solid #888;
-  width: 80%;
-  color: blue;
+$base-duration: 500ms;
+
+// Colors
+$color-1: #2c3e50;
+$color-2: #3498db;
+$color-3: #2ecc71;
+$color-4: #e74c3c;
+
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+  outline: none;
+}
+
+.modal-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.6;
+  z-index: 10;
+  background-color: white;
+  opacity: 0.5;
+  transition: background-color $base-duration linear;
+}
+
+.modal-content {
+  position: absolute;
+  font-size: 1.6rem;
+  top: 50%;
+  left: 50%;
+  width: 50%;
+  color: $color-1;
+  height: auto;
+  margin-top: -18%;
+  margin-left: -25%;
+  padding: 3rem;
+  background: #f8f8f8;
+  border-radius: 1rem;
+  box-shadow: 0 0 5rem rgba(black, 0.5);
+  transform: scale(0);
+  transition: transform $base-duration ease;
+  z-index: 20;
+
+  .close {
+    position: relative;
+    float: right;
+    font-size: 1.4rem;
+    transition: transform $base-duration ease;
+    z-index: 11;
+    cursor: pointer;
+
+    &::before {
+      content: "\274C";
+    }
+
+    &:hover {
+      color: $color-2;
+      transform: rotate(540deg);
+      transform-origin: center center;
+    }
+  }
+
+  header {
+    position: relative;
+    display: block;
+    border-bottom: 0.1rem solid #eee;
+
+    h2 {
+      margin: 0 0 1rem;
+      padding: 0;
+      font-size: 2.8rem;
+    }
+  }
+
+  footer {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: 100%;
+    margin: 0;
+    padding: 1rem 0 0;
+
+    .button {
+      position: relative;
+      padding: 1rem 3rem;
+      border-radius: 0.3rem;
+      font-size: 1.4rem;
+      font-weight: 400;
+      color: white;
+      text-transform: uppercase;
+      overflow: hidden;
+      cursor: pointer;
+
+      &:before {
+        position: absolute;
+        content: "";
+        top: 0;
+        left: 0;
+        width: 0;
+        height: 100%;
+        background-color: rgba(white, 0.2);
+        transition: width 250ms ease;
+        z-index: 0;
+      }
+
+      &:hover {
+        &:before {
+          width: 100%;
+        }
+      }
+
+      &.success {
+        margin-right: 0.5rem;
+        background-color: $color-3;
+      }
+
+      &.danger {
+        background-color: $color-4;
+      }
+    }
+  }
+}
+
+.saveIcon::before {
+  content: "\2713";
+}
+.discIcon::before {
+  content: "\2715";
+}
+.selectedIcon {
+  visibility: hidden;
+  &::before {
+    position: absolute;
+	right: 5%;
+	top: 5%;
+	content: "\2713";
+	font-weight: bold;
+  }
+}
+
+.mood-container {
+  height: 6rem;
+  display: flex;
+  justify-content: left;
+  flex-direction: row;
+  width: 100%;
+  align-items: center;
+}
+input[type="range"] {
+  width: 20rem;
+  height: 0.4rem;
+  -webkit-appearance: none;
+  background-color: rgb(61, 198, 207);
+  border-radius: 1rem;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 1.5rem;
+  width: 1.5rem;
+  background-color: rgb(61, 198, 207);
+  border-radius: 50%;
+  box-shadow: 1rem 1.5rem 1rem rgba(0, 0, 0, 0.2);
+}
+.material-icons {
+  font-size: 4rem;
+  color: #3fcad8;
+}
+
+$color-highlight-sqClass: rgba(255, 255, 255, 1);
+$color-primary-sqClass: rgba(48, 138, 255, 1);
+$color-secondary-sqClass: rgb(39, 70, 173);
+$color-hoverborder-sqClass: rgba(0, 0, 255, 1);
+$color-text-sqClass: rgba(0, 0, 0, 1);
+
+$color-highlight-sqGrad: rgba(255, 255, 255, 1);
+$color-primary-sqGrad: rgb(14, 13, 13);
+$color-secondary-sqGrad: rgb(145, 138, 138);
+$color-hoverborder-sqGrad: rgba(0, 0, 0, 1);
+$color-text-sqGrad: rgba(0, 0, 255, 1);
+
+$color-highlight-ibClass: rgba(218, 218, 255, 1);
+$color-primary-ibClass: rgba(255, 138, 48, 1);
+$color-secondary-ibClass: rgba(240, 96, 29, 1);
+$color-hoverborder-ibClass: rgba(255, 0, 0, 1);
+$color-text-ibClass: rgba(0, 0, 0, 1);
+
+.theme-container {
+  display: flex;
+  justify-content: left;
+  flex-direction: row;
+  width: 100%;
+  align-items: center;
+}
+.buttonTheme {
+  border: 0.1rem solid green;
+  backdrop-filter: blur(1rem);
+  transform: skewX(-10deg);
+  height: 3.5rem;
+  width: 14rem;
+  border-radius: 2rem 0.5rem 2rem 0rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font: 1.4rem;
+  font-weight: 300;
+  text-shadow: 0 0 2rem #fff;
+  text-transform: uppercase;
+  animation: breath2 2s 0.5s infinite alternate;
+  cursor: pointer;
+
+  &:before {
+    content: "";
+    display: block;
+    width: calc(100% - 2.2rem);
+    height: calc(5rem - 0.8rem);
+    animation: breath 2s infinite alternate;
+    left: 1rem;
+    top: 0.3rem;
+    position: absolute;
+    background-color: transparent;
+    border-radius: 1.5rem 0.3rem 1.5rem 0.3rem;
+  }
+
+  &.sqClassic {
+    border-color: $color-primary-sqClass;
+    background-color: $color-highlight-sqClass;
+    box-shadow: 0 0 7rem transparentize($color-primary-sqClass, 0.4),
+      0 0.5rem 2rem transparentize($color-primary-sqClass, 0.4),
+      inset 0 0.1rem $color-highlight-sqClass,
+      inset 0 -0.1rem $color-highlight-sqClass;
+    color: $color-text-sqClass;
+  }
+
+  &.sqGrad {
+    border-color: $color-highlight-sqGrad;
+    background-image: linear-gradient(
+      to right,
+      #3080c7 5%,
+      #5b9dd7 10%,
+      #d5f5f6 30%,
+      #d5f5f6 70%,
+      #ace16b 90%,
+      #91d73a 95%
+    );
+    box-shadow: 0 0 7rem transparentize($color-primary-sqGrad, 0.5),
+      0 0.5rem 2rem transparentize($color-primary-sqGrad, 0.5),
+      inset 0 0.1rem $color-highlight-sqClass,
+      inset 0 -0.1rem $color-highlight-sqClass;
+    color: $color-text-sqGrad;
+  }
+
+  &.ibClassic {
+    border-color: $color-primary-ibClass;
+    background-color: $color-highlight-ibClass;
+    box-shadow: 0 0 7rem transparentize($color-primary-ibClass, 0.4),
+      0 0.5rem 2rem transparentize($color-primary-ibClass, 0.4),
+      inset 0 0.1rem $color-highlight-ibClass,
+      inset 0 -0.1rem $color-highlight-ibClass;
+    color: $color-text-ibClass;
+  }
+
+  &:hover {
+    &.sqClassic {
+      box-shadow: 0 0 7rem transparentize($color-primary-sqClass, 0.2),
+        0 0.5rem 2rem transparentize($color-primary-sqClass, 0.2),
+        inset 0 0.1rem $color-hoverborder-sqClass,
+        inset 0 -0.1rem $color-hoverborder-sqClass;
+    }
+
+    &.sqGrad {
+      box-shadow: 0 0 7rem transparentize($color-primary-sqGrad, 0.2),
+        0 0.5rem 2rem transparentize($color-primary-sqGrad, 0.2),
+        inset 0 0.1rem $color-hoverborder-sqGrad,
+        inset 0 -0.1rem $color-hoverborder-sqGrad;
+    }
+
+    &.ibClassic {
+      box-shadow: 0 0 7rem transparentize($color-primary-ibClass, 0.2),
+        0 0.5rem 2rem transparentize($color-primary-ibClass, 0.2),
+        inset 0 0.1rem $color-hoverborder-ibClass,
+        inset 0 -0.1rem $color-hoverborder-ibClass;
+    }
+  }
+
+  &:active {
+    opacity: 0.5;
+	}
+}
+
+@keyframes breath {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0.95);
+  }
+}
+
+@keyframes breath2 {
+  from {
+    transform: skewX(-10deg) scaleX(1);
+  }
+  to {
+    transform: skewX(-10deg) scaleX(0.95);
+  }
 }

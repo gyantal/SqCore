@@ -33,7 +33,7 @@ export class AppComponent implements OnInit {
   // called after Angular has initialized all data-bound properties before any of the view or content children have been checked. Handle any additional initialization tasks.
   ngOnInit() {
     console.log('Sq: ngOnInit()');
-    this.onSetTheme('light');
+    this.onSetTheme('sqClassic');
 
     this._hubConnection
       .start()
@@ -52,19 +52,28 @@ export class AppComponent implements OnInit {
     this.theme = $event;
     console.log(this.theme);
     let bgColor = '';
+    let bgImage = '';
     let textColor = '';
     switch (this.theme) {
-      case 'light':
-        bgColor = '#ffffff';
-        textColor = '#000000';
+      case 'sqClassic':
+        bgColor = 'rgb(255,255,255)';
+        bgImage = 'none';
+        textColor = 'rgb(0,0,0)';
         break;
-      case 'dark':
-        bgColor = '#0000ff';
-        textColor = '#ffffff';
+      case 'sqGrad':
+        bgColor = 'rgb(172, 225, 107)';
+        bgImage = 'linear-gradient(to right, #3080c7 5%, #5b9dd7 10%, #d5f5f6 30%, #d5f5f6 70%, #ace16b 90%, #91d73a 95%)';
+        textColor = 'rgb(0,0,255)';
+        break;
+      case 'ibClassic':
+        bgColor = 'rgb(218, 218, 255)';
+        bgImage = 'none';
+        textColor = 'rgb(0,0,0)';
         break;
     }
-    document.body.style.setProperty('background-color', bgColor);
-    document.body.style.setProperty('color', textColor);
+    document.body.style.setProperty('--bgColor', bgColor);
+    document.body.style.setProperty('--bgImage', bgImage);
+    document.body.style.setProperty('--textColor', textColor);
     console.log('Sq: set theme.');
   }
 

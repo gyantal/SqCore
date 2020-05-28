@@ -1,10 +1,29 @@
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
 <div class="container" [ngStyle]="{'display': isVisible ? 'block' : 'none'}">
-  <div class="content">
-    <h2>Settings</h2>
-    <p>Select Theme</p>
-    <div>
-      <button (click)="onSetThemeSelector('light')">Light</button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-      <button (click)="onSetThemeSelector('dark')">Dark</button><br>
-      <button (click)="isVisible=false">Close</button>
+  <div class="modal-bg" [ngStyle]="{'background-color': isVisible ? 'black' : 'white'}"></div>
+  <div class="modal-content" [ngStyle]="{'transform': isVisible ? 'scale(1.0)' : 'scale(0)'}">
+    <div class="close" (click)="isVisible=false"></div>
+    <header>
+      <h2>Settings</h2>
+    </header>
+    <br>
+    <div class="theme-container">
+      Select Theme: &nbsp;&nbsp;
+      <button class="buttonTheme sqClassic" (click)="onSetThemeSelector('sqClassic')">SQ Classic<i class="selectedIcon" [ngStyle]="{'visibility': (_appSettings.uiTheme === 'sqClassic') ? 'visible' : 'hidden'}"></i></button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+      <button class="buttonTheme sqGrad" (click)="onSetThemeSelector('sqGrad')">SQ Gradient<i class="selectedIcon" [ngStyle]="{'visibility': (_appSettings.uiTheme === 'sqGrad') ? 'visible' : 'hidden'}"></i></button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+      <button class="buttonTheme ibClassic" (click)="onSetThemeSelector('ibClassic')">IB Classic<i class="selectedIcon" [ngStyle]="{'visibility': (_appSettings.uiTheme === 'ibClassic') ? 'visible' : 'hidden'}"></i></button><br>
     </div>
+    <div class="mood-container">
+      Set Your Current Mood: &nbsp;&nbsp;
+      <i class="material-icons" id="emoji">
+        sentiment_satisfied
+      </i>
+      <input type="range" min="0" max="4" value="2" id="slider" (change)=moodSelector()>
+    </div>
+    <footer>
+      <button class="button success" (click)="isVisible=false"><i class="saveIcon">&nbsp;&nbsp;</i>Save</button>
+      <button class="button danger" (click)="isVisible=false"><i class="discIcon">&nbsp;&nbsp;</i>Discard changes</button>
+    </footer>
   </div>
+</div>

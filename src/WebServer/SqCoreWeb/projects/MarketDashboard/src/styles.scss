@@ -10,4 +10,7 @@ body {
     margin: 0rem; /* originally, there is a 8px margin  */
     overflow-y: scroll; /* enable y scrollbar */
     overflow-x: hidden; /* disable x scrollbar */
+    color: var(--textColor);
+    background-color: var(--bgColor);
+    background-image: var(--bgImage);
   }

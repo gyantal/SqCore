@@ -10,7 +10,8 @@ $scss-variable-color: #fbbcf4; // SCSS variable
 ::ng-deep :root {
   // this works with document.body.style.setProperty(), because that sets the ":root", not the ":host", so keep ":root" until it is deprecated. Then find a way that style.setProperty() sets the ":host"
   --textColor: #000000;
-  --bgColor: #aaaaaa;
+  --bgColor: #ffffff;
+  --bgImage: none;
     // --textColor: #{$scss-variable-color};  // this is how to put scss-variable to css-variable
 }
 
@@ -26,11 +27,6 @@ $scss-variable-color: #fbbcf4; // SCSS variable
 
 
 // [hidden] { display: none !important;}
-
-h1 {
-  color: var(--textColor);
-  background-color: var(--bgColor);
-}
 
 p {
   margin: 0;
@@ -338,5 +334,4 @@ svg.material-icons2 path {
   max-width: 128rem;
   flex-direction: column;
   align-items: center;
-  color: var(--textColor);
 }
