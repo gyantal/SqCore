@@ -3,7 +3,7 @@
 <div class="container" [ngStyle]="{'display': isVisible ? 'block' : 'none'}">
   <div class="modal-bg" [ngStyle]="{'background-color': isVisible ? 'black' : 'white'}"></div>
   <div class="modal-content" [ngStyle]="{'transform': isVisible ? 'scale(1.0)' : 'scale(0)'}">
-    <div class="close" (click)="isVisible=false"></div>
+    <div class="close" (click)="discardSettingsClick()"></div>
     <header>
       <h2>Settings</h2>
     </header>
@@ -22,8 +22,8 @@
       <input type="range" min="0" max="4" value="2" id="slider" (change)=moodSelector()>
     </div>
     <footer>
-      <button class="button success" (click)="isVisible=false"><i class="saveIcon">&nbsp;&nbsp;</i>Save</button>
-      <button class="button danger" (click)="isVisible=false"><i class="discIcon">&nbsp;&nbsp;</i>Discard changes</button>
+      <button class="button success" (click)="saveSettingsClick()"><i class="saveIcon">&nbsp;&nbsp;</i>Save</button>
+      <button class="button danger" (click)="discardSettingsClick()"><i class="discIcon">&nbsp;&nbsp;</i>Discard changes</button>
     </footer>
   </div>
 </div>

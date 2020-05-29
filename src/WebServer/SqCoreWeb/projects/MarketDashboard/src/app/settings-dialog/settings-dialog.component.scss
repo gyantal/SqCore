@@ -313,7 +313,7 @@ $color-text-ibClass: rgba(0, 0, 0, 1);
     transform: scaleX(1);
   }
   to {
-    transform: scaleX(0.95);
+    transform: scaleX(0.90);
   }
 }
 
@@ -322,6 +322,6 @@ $color-text-ibClass: rgba(0, 0, 0, 1);
     transform: skewX(-10deg) scaleX(1);
   }
   to {
-    transform: skewX(-10deg) scaleX(0.95);
+    transform: skewX(-10deg) scaleX(0.90);
   }
 }
