@@ -18,19 +18,19 @@ namespace SqCoreWeb
 {
     class RtMktSummaryStock
     {
-        public uint SecID { get; set; } = 0; // invalid value is best to be 0. If it is Uint32.MaxValue is the invalid, then problems if extending to Uint64
+        public uint AssetId { get; set; } = 0; // invalid value is best to be 0. If it is Uint32.MaxValue is the invalid, then problems if extending to Uint64
         public String Ticker { get; set; } = String.Empty;
     }
 
     class RtMktSumRtStat   // struct sent to browser clients every 2-4 seconds
     {
-        public uint SecID { get; set; } = 0;
+        public uint AssetId { get; set; } = 0;
         public double Last { get; set; } = -100.0;     // real-time last price
     }
 
     public class RtMktSumNonRtStat   // this is sent to clients usually just once per day, OR when the PeriodStartDate changes at the client
     {
-        public uint SecID { get; set; } = 0;        // set the Client know what is the SecID, because RtStat will not send it.
+        public uint AssetId { get; set; } = 0;        // set the Client know what is the assetId, because RtStat will not send it.
         public String Ticker { get; set; } = String.Empty;
 
         // when previousClose gradually changes (if user left browser open for a week), PeriodHigh, PeriodLow should be sent again (maybe we are at market high or low)
@@ -80,11 +80,11 @@ namespace SqCoreWeb
 
         static void EvMemDbInitialized_mktHealth()
         {
-            // fill up SecID based on Tickers. For faster access later.
+            // fill up AssetId based on Tickers. For faster access later.
             foreach (var stock in g_mktSummaryStocks)
             {
-                Security sec = MemDb.gMemDb.GetFirstMatchingSecurity(stock.Ticker);
-                stock.SecID = sec.SecID;
+                Asset sec = MemDb.gMemDb.GetFirstMatchingAssetByLastTicker(stock.Ticker);
+                stock.AssetId = sec.AssetId;
             }
         }
 
@@ -117,12 +117,12 @@ namespace SqCoreWeb
                 DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(connId).SendAsync("RtMktSumNonRtStat", periodStatToClient);
 
                 // 2. Send RT price later, because GetLastRtPrice() might block the thread, if it is the first client.
-                var lastPrices = MemDb.gMemDb.GetLastRtPrice(g_mktSummaryStocks.Select(r => r.SecID).ToArray());
+                var lastPrices = MemDb.gMemDb.GetLastRtPrice(g_mktSummaryStocks.Select(r => r.AssetId).ToArray());
                 IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = lastPrices.Select(r =>
                 {
                     var rtStock = new RtMktSumRtStat()
                     {
-                        SecID = r.SecdID,
+                        AssetId = r.SecdID,
                         Last = r.LastPrice,
                     };
                     return rtStock;
@@ -178,7 +178,7 @@ namespace SqCoreWeb
 
             IEnumerable<RtMktSumNonRtStat> lookbackStatToClient = g_mktSummaryStocks.Select(r =>
             {
-                float[] sdaCloses = histData.Data[r.SecID].Item1[TickType.SplitDivAdjClose];
+                float[] sdaCloses = histData.Data[r.AssetId].Item1[TickType.SplitDivAdjClose];
                 // if startDate is not found, because e.g. we want to go back 3 years, while stock has only 2 years history
                 int iiStartDay = (iStartDay < sdaCloses.Length) ? iStartDay : sdaCloses.Length - 1;
 
@@ -200,7 +200,7 @@ namespace SqCoreWeb
 
                 var rtStock = new RtMktSumNonRtStat()
                 {
-                    SecID = r.SecID,
+                    AssetId = r.AssetId,
                     Ticker = r.Ticker,
                     PreviousClose = sdaCloses[iEndDay],
                     PeriodStart = dates[iiStartDay],    // it may be not the 'asked' start date if we have less price history
@@ -239,12 +239,12 @@ namespace SqCoreWeb
                 if (!m_rtMktSummaryTimerRunning)
                     return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
 
-                var lastPrices = MemDb.gMemDb.GetLastRtPrice(g_mktSummaryStocks.Select(r => r.SecID).ToArray());
+                var lastPrices = MemDb.gMemDb.GetLastRtPrice(g_mktSummaryStocks.Select(r => r.AssetId).ToArray());
                 IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = lastPrices.Select(r =>
                 {
                     var rtStock = new RtMktSumRtStat()
                     {
-                        SecID = r.SecdID,
+                        AssetId = r.SecdID,
                         Last = r.LastPrice,
                     };
                     return rtStock;

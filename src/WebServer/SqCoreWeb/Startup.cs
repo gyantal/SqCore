@@ -93,7 +93,20 @@ namespace SqCoreWeb
             {
                 options.Level = CompressionLevel.Fastest;
             });
-            
+
+            // 2020-05-30: WARN|Microsoft.AspNetCore.Authentication.Google.GoogleHandler: '.AspNetCore.Correlation.Google.bzb7A4oxoS_pz_xQk0N4WngqgL0nyLUiT0k5QSPsD_M' cookie not found.
+            // "Exception: Correlation failed.".
+            // Maybe because SameSite cookies policy changed.
+            // I suspect Bunny used an old Chrome or FFox or Edge.
+            // "AspNetCore as a rule does not implement browser sniffing for you because User-Agents values are highly unstable"
+            // However, if updating browser of the user to the latest Chrome doesn't solve it, we may implement these changes:
+            // https://github.com/dotnet/aspnetcore/issues/14996
+            // https://docs.microsoft.com/en-us/aspnet/core/security/samesite?view=aspnetcore-3.1
+            // "Cookies without SameSite header are treated as SameSite=Lax by default.
+            // SameSite=None must be used to allow cross-site cookie use.
+            // Cookies that assert SameSite=None must also be marked as Secure. (requires HTTPS)"
+            // 'Correlation failed.' is a Browser Cache problem. 2020-06-03: JMC could log in. Error email 'correlation failed' arrived. When I used F12 in Chrome, disabled cache; then login went OK.
+
             string googleClientId = Utils.Configuration["Google:ClientId"];
             string googleClientSecret = Utils.Configuration["Google:ClientSecret"];
             
@@ -170,6 +183,11 @@ namespace SqCoreWeb
                             context.Properties.IsPersistent = true;
                             context.Properties.ExpiresUtc = DateTimeOffset.UtcNow.AddDays(25);
 
+                            return Task.FromResult(0);
+                        },
+                        OnRemoteFailure = context =>
+                        {
+                            Utils.Logger.Info("GoogleAuth.OnRemoteFailure()");
                             return Task.FromResult(0);
                         }
                     };

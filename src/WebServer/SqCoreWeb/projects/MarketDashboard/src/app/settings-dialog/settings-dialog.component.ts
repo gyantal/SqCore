@@ -15,8 +15,8 @@ export class AppSettings {  // collect the settings variables here. This will be
 export class SettingsDialogComponent {
   isVisible = false;  // see https://stackoverflow.com/questions/59013913/how-to-manipulate-a-div-style-in-angular-8
   @Output() parentChangeThemeEvent = new EventEmitter<string>();
-
   _appSettings = new AppSettings();
+
   constructor() { }
 
   onSetThemeSelector(theme: string) {

@@ -69,7 +69,7 @@ namespace FinTechCommon
         static int m_rtTimerFrequencyRegularMs = 3000;    // as a demo go with 3sec, later change it to 5sec, do decrease server load.
         static int m_rtTimerFrequencyPrePostMs = 60000; 
 
-        uint[] m_rtSecIDs = new uint[0];
+        uint[] m_rtAssetIds = new uint[0];
 
         DateTime m_lastDownloadLastPrice = DateTime.MinValue;
         uint m_nIexDownload = 0;
@@ -93,11 +93,11 @@ namespace FinTechCommon
 
                 if (tradingHoursNow == TradingHours.RegularTrading)
                 {
-                    DownloadLastPriceIex(m_rtSecIDs);
+                    DownloadLastPriceIex(m_rtAssetIds);
                 }
                 else
                 {
-                    DownloadLastPriceYF(m_rtSecIDs, tradingHoursNow);
+                    DownloadLastPriceYF(m_rtAssetIds, tradingHoursNow);
                 }
 
                 m_rtMres.Set();
@@ -125,7 +125,7 @@ namespace FinTechCommon
 
         
         DateTime m_lastGetLastRtCall = DateTime.MinValue;
-        public IEnumerable<(uint SecdID, float LastPrice)> GetLastRtPrice(uint[] p_secIDs)     // C# 7.0 adds tuple types and named tuple literals. uint[] is faster to create and more RAM efficient than linked-list<uint>
+        public IEnumerable<(AssetId32Bits SecdID, float LastPrice)> GetLastRtPrice(uint[] p_assetIds)     // C# 7.0 adds tuple types and named tuple literals. uint[] is faster to create and more RAM efficient than linked-list<uint>
         {
             m_lastGetLastRtCall = DateTime.UtcNow;
             lock (m_rtTimerLock)
@@ -133,7 +133,7 @@ namespace FinTechCommon
                 if (!m_rtTimerRunning)      // if it is not running, start it immediately
                 {
                     Utils.Logger.Info("GetLastRtPrice(). Starting m_rtTimer.");
-                    m_rtSecIDs = p_secIDs;      // at the moment, it only bring RT price for the list of securities which was used when GetLastRtPrice() was called first. Later, it will be better.
+                    m_rtAssetIds = p_assetIds;      // at the moment, it only bring RT price for the list of securities which was used when GetLastRtPrice() was called first. Later, it will be better.
                     if (m_rtTimer == null)
                         m_rtTimer = new System.Threading.Timer(new TimerCallback(RtTimer_Elapsed), this, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
                     m_rtTimerRunning = true;
@@ -149,15 +149,15 @@ namespace FinTechCommon
                  bool isSignalledNoTimeout = m_rtMres.Wait(TimeSpan.FromSeconds(90));
             }
             
-            return p_secIDs.Select(r =>
+            return p_assetIds.Select(r =>
                 {
-                    var sec = GetSecurity(r);
-                    return (sec.SecID, (tradingHoursNow == TradingHours.RegularTrading) ? sec.LastPriceIex : sec.LastPriceYF);
+                    var sec = GetAsset(r);
+                    return (sec.AssetId, (tradingHoursNow == TradingHours.RegularTrading) ? sec.LastPriceIex : sec.LastPriceYF);
                 });
         }
 
 
-        void DownloadLastPriceYF(uint[] p_secIDs, TradingHours p_tradingHoursNow)  // takes ? ms from WinPC
+        void DownloadLastPriceYF(uint[] p_assetIDs, TradingHours p_tradingHoursNow)  // takes ? ms from WinPC
         {
             Utils.Logger.Info("DownloadLastPriceYF() START");
             m_nYfDownload++;
@@ -166,15 +166,15 @@ namespace FinTechCommon
                 // https://query1.finance.yahoo.com/v7/finance/quote?symbols=AAPL,AMZN  returns all the fields.
                 // https://query1.finance.yahoo.com/v7/finance/quote?symbols=QQQ%2CSPY%2CGLD%2CTLT%2CVXX%2CUNG%2CUSO&fields=symbol%2CregularMarketPreviousClose%2CregularMarketPrice%2CmarketState%2CpostMarketPrice%2CpreMarketPrice  // returns just the specified fields.
                 // "marketState":"PRE" or "marketState":"POST", In PreMarket both "preMarketPrice" and "postMarketPrice" are returned.
-                var symbols = p_secIDs.Select(r => GetSecurity(r).Ticker).ToArray();
+                var symbols = p_assetIDs.Select(r => GetAsset(r).LastTicker).ToArray();
                 var quotes = Yahoo.Symbols(symbols).Fields(new Field[] { Field.Symbol, Field.RegularMarketPreviousClose, Field.RegularMarketPrice, Field.MarketState, Field.PostMarketPrice, Field.PreMarketPrice }).QueryAsync().Result;
                 foreach (var quote in quotes)
                 {
-                    Security? sec = null;
-                    foreach (var secdID in p_secIDs)
+                    Asset? sec = null;
+                    foreach (var secdID in p_assetIDs)
                     {
-                        var s = GetSecurity(secdID);
-                        if (s.Ticker == quote.Key)
+                        var s = GetAsset(secdID);
+                        if (s.LastTicker == quote.Key)
                         {
                             sec = s;
                             break;
@@ -199,20 +199,20 @@ namespace FinTechCommon
             }
         }
 
-        void DownloadLastPriceIex(uint[] p_secIDs)  // takes 450-540ms from WinPC
+        void DownloadLastPriceIex(uint[] p_assetIds)  // takes 450-540ms from WinPC
         {
             Utils.Logger.Info("DownloadLastPriceIex() START");
             m_nIexDownload++;
             try
             {
-                if (!Request_api_iextrading_com(string.Format("https://api.iextrading.com/1.0/tops?symbols={0}", String.Join(", ", p_secIDs.Select(r => GetSecurity(r).Ticker))), out HttpWebResponse? response) || (response == null))
+                if (!Request_api_iextrading_com(string.Format("https://api.iextrading.com/1.0/tops?symbols={0}", String.Join(", ", p_assetIds.Select(r => GetAsset(r).LastTicker))), out HttpWebResponse? response) || (response == null))
                     return;
 
                 using (var reader = new System.IO.StreamReader(response.GetResponseStream(), ASCIIEncoding.ASCII))
                 {
                     string responseText = reader.ReadToEnd();
                     Utils.Logger.Info("DownloadLastPriceIex() str = '{0}'", responseText);
-                    ExtractAttributeIex(responseText, "lastSalePrice", p_secIDs);
+                    ExtractAttributeIex(responseText, "lastSalePrice", p_assetIds);
                 }
                 response.Close();
 
@@ -223,7 +223,7 @@ namespace FinTechCommon
             }
         }
 
-        private void ExtractAttributeIex(string responseText, string p_attribute, uint[] p_secIDs)
+        private void ExtractAttributeIex(string responseText, string p_attribute, uint[] p_assetIds)
         {
             int iStr = 0;   // this is the fastest. With IndexOf(). Not using RegEx, which is slow.
             while (iStr < responseText.Length)
@@ -244,19 +244,19 @@ namespace FinTechCommon
                 if (eAttribute == -1)
                     break;
                 string attributeStr = responseText.Substring(bAttribute, eAttribute - bAttribute);
-                // only search ticker among the stocks p_secIDs. Because duplicate tickers are possible in the MemDb.Securities, but not expected in p_secIDs
-                Security? sec = null;
-                foreach (var secdID in p_secIDs)
+                // only search ticker among the stocks p_assetIds. Because duplicate tickers are possible in the MemDb.Securities, but not expected in p_assetIds
+                Asset? asset = null;
+                foreach (var secdID in p_assetIds)
                 {
-                    var s = GetSecurity(secdID);
-                    if (s.Ticker == ticker)
+                    var s = GetAsset(secdID);
+                    if (s.LastTicker == ticker)
                     {
-                        sec = s;
+                        asset = s;
                         break;
                     }
                 }
 
-                if (sec != null)
+                if (asset != null)
                 {
                     float.TryParse(attributeStr, out float attribute);
                     switch (p_attribute)
@@ -265,7 +265,7 @@ namespace FinTechCommon
                             // sec.PreviousCloseIex = attribute;
                             break;
                         case "lastSalePrice":
-                            sec.LastPriceIex = attribute;
+                            asset.LastPriceIex = attribute;
                             break;
                     }
 

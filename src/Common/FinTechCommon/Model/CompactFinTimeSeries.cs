@@ -9,8 +9,24 @@
 // We create separate TimeSeries for 5minutes, daily, weekly, monthly time frequency.
 
 // If Date is stored with ClosePrice, and then Date is stored with OpenPrice, High-LowPrice, Volume it is better to factor out the Date field. 
-// Generalize it further. All the stocks contains more or less the same Date[]. It should be factored out, and stored only once.
+// Generalize it further. All the stocks contains more or less the same Date[]. It should be factored out, and stored only once into a shared Date field.
 // Some dates could be missing in the middle for some specific stocks. No problem. Store NaN there.
+// FinTimeSeries SumMem:  With 5000 stocks, 30years: 5000*260*30*(2+4)= 235MB
+// CompactFinTimeSeries SumMem: With 5000 stocks, 30years: 2*260*30+5000*260*30*(4)= 156MB (a saving of 90MB)
+// So, in general the saving is 100MB, calculated as 5000 * 30 * 260 * 2 = 80MB, but in the future it will be more.
+// This 100MB saving does not increase when we add more daily data such as Open/High/Low/Volume.
+// But CompactFinTimeSeries gives better cache usage, because the shared Date field page is always in the cache, because it is used frequently.
+
+// The huge adventage of the shared Date[] is that clients don't have to bother about synchronyzing the different stock.dates.
+// It happens frequently that there are missing dates in the data. Some ETFs have holes in them.
+// In the QuickTester it was a problem that when we queried the last 2 years data, some ETF had 520 data days, other had only 519. 
+// The client had to screen this and synch those dates and correct it. Which is cumbersome. Now, it is done in a global level. Clients are happier and their execution is faster.
+
+// To summarize. The adventage of the single shared date[]:
+// 1. A fix 100MB RAM saving for 5000 stocks
+// 2. Cache coherence: shared date[] is always in cache page. 10-20% faster execution
+// 3. Clients are worry free about holes in the data. Missing dates for some stocks. They don't have to synch start dates, end dates.
+// However, this shared date[] can only be implemented if the latest date is the first (index 0) item. Its reverse order is a bit cumbersome to use, but client can get used to it.
 
 // **************** MemDb to QuickTester: What is the fastest access of prices for QuickTester. That wants to get the only ClosePrice data between StartDate and EndDate
 // >Time series usage example: 'g_MemDb["MSFT"].Dates'. Dates is naturally increasing. So, it should be an OrderedList, so finding an item is O(LogN), not O(N). Same for indEndDate.
@@ -48,12 +64,12 @@
 // Data is not strictly encapsulated. There are no guards against clients changing internal data. But it was our design choice for giving the fastest access posible.
 // public struct TsQuery<TKey>
 // {
-//     public uint SecID;
+//     public uint AssetId;
 //     public uint TickType;
 //     public TKey StartDateInc;
 //     public TKey EndDateInc;
 // }
-// var tsQuery = new TsQuery<DateOnly>(r.SecID, TickType.SplitDivAdjClose, new DateOnly(), new DateOnly());
+// var tsQuery = new TsQuery<DateOnly>(r.AssetId, TickType.SplitDivAdjClose, new DateOnly(), new DateOnly());
 // var histData = MemDb.gMemDb.DailyHist.GetData(tsQuery);
 
 using System;
@@ -74,16 +90,16 @@ namespace FinTechCommon
             return Comparer<TKey>.Default.Compare(y, x);    // (x,y ) is reversed to (y,x)
         }
     }
-    public class TsDateData<TKey, TSecID, TValue1, TValue2>  where TKey : notnull
+    public class TsDateData<TKey, TAssetId, TValue1, TValue2>  where TKey : notnull
     {
         private int _size;
         public TKey[] Dates;    // dates are in reverse order. Dates[0] is today or yesterday
 
-        public Dictionary<TSecID, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>> Data; // for every secID there is a list of float[] and uint[]
+        public Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>> Data; // for every assetId there is a list of float[] and uint[]
 
         private readonly IComparer<TKey> comparer;
 
-        public TsDateData(TKey[] p_dates, Dictionary<TSecID, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>> p_data)
+        public TsDateData(TKey[] p_dates, Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>> p_data)
         {
             Dates= p_dates;
             Data = p_data;
@@ -124,7 +140,7 @@ namespace FinTechCommon
             int tickTypeSize = Marshal.SizeOf(Enum.GetUnderlyingType(typeof(TickType)));    // Enum is implemented as int, so its size is 4
             foreach (var data in Data)
             {
-                memUsedData += Marshal.SizeOf(typeof(TSecID));
+                memUsedData += Marshal.SizeOf(typeof(TAssetId));
                 foreach (var ts in data.Value.Item1)
                 {
                     memUsedData += tickTypeSize + ts.Value.Length * Marshal.SizeOf(typeof(TValue1));
@@ -141,18 +157,18 @@ namespace FinTechCommon
     // see SortedList<TKey,TValue> as template https://github.com/dotnet/corefx/blob/master/src/System.Collections/src/System/Collections/Generic/SortedList.cs
     [DebuggerDisplay("Count = {m_data.Count}")]
     [Serializable]
-    public class CompactFinTimeSeries<TKey, TSecID, TValue1, TValue2> where TKey : notnull   // Tkey = DateTime (8 byte), DateTimeAsInt (4 byte), DateOnly (2 byte), or any int, byte (1 byte), or even string (that can be ordered)
+    public class CompactFinTimeSeries<TKey, TAssetId, TValue1, TValue2> where TKey : notnull   // Tkey = DateTime (8 byte), DateTimeAsInt (4 byte), DateOnly (2 byte), or any int, byte (1 byte), or even string (that can be ordered)
     {
-        TsDateData<TKey, TSecID, TValue1, TValue2> m_data;      // this m_data pointer can be swapped in an atomic instruction after update
+        TsDateData<TKey, TAssetId, TValue1, TValue2> m_data;      // this m_data pointer can be swapped in an atomic instruction after update
 
         static void HowToUseThisClassExamples()
         {
             DateOnly[] dates = new DateOnly[2] { new DateOnly(2020, 05, 05), new DateOnly(2020, 05, 06)};
             var dict1 = new Dictionary<TickType, float[]>() { { TickType.SplitDivAdjClose, new float[2] { 10.1f, 12.1f } } };
             var dict2 = new Dictionary<TickType, uint[]>();
-            uint secId = 1;
+            uint assetId = 1;
             var data = new Dictionary<uint, Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>>()
-                    { { secId, new Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>(dict1, dict2)}};
+                    { { assetId, new Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>(dict1, dict2)}};
 
             var ts1 = new CompactFinTimeSeries<DateOnly, uint, float, uint>();
             ts1.ChangeData(dates, data);
@@ -162,21 +178,21 @@ namespace FinTechCommon
 
         public CompactFinTimeSeries()
         {
-            var values = new Dictionary<TSecID, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>>();
-            TsDateData<TKey, TSecID, TValue1, TValue2> data = new TsDateData<TKey, TSecID, TValue1, TValue2>(new TKey[0], values);
+            var values = new Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>>();
+            TsDateData<TKey, TAssetId, TValue1, TValue2> data = new TsDateData<TKey, TAssetId, TValue1, TValue2>(new TKey[0], values);
             m_data = data;  // 64 bit values are atomic on x64
         }
 
         // ChangeData() will replace a pointer in an atomic way
-        public void ChangeData(TKey[] p_dates, Dictionary<TSecID, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>> p_data)
+        public void ChangeData(TKey[] p_dates, Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>> p_data)
         {
-            TsDateData<TKey, TSecID, TValue1, TValue2> data = new TsDateData<TKey, TSecID, TValue1, TValue2>(p_dates, p_data);
+            TsDateData<TKey, TAssetId, TValue1, TValue2> data = new TsDateData<TKey, TAssetId, TValue1, TValue2>(p_dates, p_data);
             m_data = data;  // 64 bit values are atomic on x64
         }
 
         // Faster and more memory efficient if clients can get direct access to data pointer, instead of duplicating data.
         // Daily ChangeData() can update pointer to new data, but that is not a problem. Clients got the old pointer, but that data is consistent.
-        public TsDateData<TKey, TSecID, TValue1, TValue2> GetDataDirect()
+        public TsDateData<TKey, TAssetId, TValue1, TValue2> GetDataDirect()
         {
             return m_data;
         }

@@ -11,17 +11,6 @@ using YahooFinanceApi;
 namespace FinTechCommon
 {
 
-    [DebuggerDisplay("Ticker = {Ticker}, SecID({SecID})")]
-    public class Security
-    {
-        public uint SecID { get; set; } = 0; // invalid value is best to be 0. If it is Uint32.MaxValue is the invalid, then problems if extending to Uint64
-        public String Ticker { get; set; } = String.Empty;
-
-        public String ExpectedHistorySpan { get; set; } = String.Empty;
-        public float LastPriceIex { get; set; } = -100.0f;     // real-time last price
-        public float LastPriceYF { get; set; } = -100.0f;     // real-time last price
-    }
-
     public partial class MemDb
     {
 
@@ -32,24 +21,26 @@ namespace FinTechCommon
         // Max RAM requirement if need O/H/L/C/AdjClose/Volume: 6x of previous = 960MB = 1GB
         // 2020-01 FinTimeSeries SumMem: 2+10+10+4*5 = 42 years. 42*260*(2+4)= 66KB.                                With 5000 stocks, 30years: 5000*260*30*(2+4)= 235MB
         // 2020-05 CompactFinTimeSeries SumMem: 2+10+10+4*5 = 42 years. Date + data: 2*260*10+42*260*(4)= 48KB.     With 5000 stocks, 30years: 2*260*30+5000*260*30*(4)= 156MB (a saving of 90MB)
-        // CompactFinTimeSeries also gives better cache usage, because the shared Date field page is always in the cache, because it is used frequently
-
-        public List<Security> Securities { get; } = new List<Security>() { // to minimize mem footprint, only load the necessary dates (not all history).
-            new Security() { SecID = 1, Ticker = "GLD", ExpectedHistorySpan="5y"},                  // history starts on 2004-11-18
-            new Security() { SecID = 2, Ticker = "QQQ", ExpectedHistorySpan="Date: 2009-12-31"},    // history starts on 1999-03-10. Full history would be: 32KB.       // 2010-01-01 Friday is NewYear holiday, first trading day is 2010-01-04
-            new Security() { SecID = 3, Ticker = "SPY", ExpectedHistorySpan="Date: 2009-12-31"},    // history starts on 1993-01-29. Full history would be: 44KB, 
-            new Security() { SecID = 4, Ticker = "TLT", ExpectedHistorySpan="5y"},                  // history starts on 2002-07-30
-            new Security() { SecID = 6, Ticker = "UNG", ExpectedHistorySpan="5y"},                  // history starts on 2007-04-18
-            new Security() { SecID = 7, Ticker = "USO", ExpectedHistorySpan="5y"},                  // history starts on 2006-04-10
-             new Security() { SecID = 5, Ticker = "VXX", ExpectedHistorySpan="Date: 2018-01-25"}};  // history starts on 2018-01-25 on YF, because VXX was restarted. The previously existed VXX.B shares are not on YF.
-
-        // alphabetical order for faster search is not realistic without Index tables. MemDb should mirror persistent data in RedisDb. For Trades in Portfolios. The SecID in MemDb should be the same SecID as in Redis.
-        // There are ticker renames every other day, and we will not reorganize the whole Securities table in Redis just because there were ticker renames in real life.
-        // In Redis, SecID will be permanent. Starting from 1...increasing by 1. Redis 'tables' will be ordered by SecID, because of faster JOIN operations. And SecID will be permanent, so no reorganizing is needed.
-        // The top bits of SecID is the SecType, so there can be gaps in the SecID ordered list. But at least, we can aim to order this array by SecID. (as in Redis)
-        // TODO: if we want to have fast BinarySearch access by ticker, we need a Table of Indexes based on Ticker's alphabetical order. An Index table. And the GetFirstMatchingSecurity(string p_ticker) should use it. 
-        int[] m_idxByTicker = new int[7];    // TODO: implement and use Index Table based on Ticker for faster BinarySearch
-
+        public List<Asset> Assets { get; } = new List<Asset>() { // to minimize mem footprint, only load the necessary dates (not all history).
+            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 1), PrimaryExchange = ExchangeId.NYSE, LastTicker = "SPY", ExpectedHistorySpan="Date: 2009-12-31"},    // history starts on 1993-01-29. Full history would be: 44KB, 
+            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 2), PrimaryExchange = ExchangeId.NYSE, LastTicker = "QQQ", ExpectedHistorySpan="Date: 2009-12-31"},    // history starts on 1999-03-10. Full history would be: 32KB.       // 2010-01-01 Friday is NewYear holiday, first trading day is 2010-01-04
+            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 3), PrimaryExchange = ExchangeId.NYSE, LastTicker = "TLT", ExpectedHistorySpan="5y"},                  // history starts on 2002-07-30
+            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 4), PrimaryExchange = ExchangeId.NYSE, LastTicker = "VXX", ExpectedHistorySpan="Date: 2018-01-25"},    // history starts on 2018-01-25 on YF, because VXX was restarted. The previously existed VXX.B shares are not on YF.
+            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 5), PrimaryExchange = ExchangeId.NYSE, LastTicker = "UNG", ExpectedHistorySpan="5y"},                  // history starts on 2007-04-18
+            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 6), PrimaryExchange = ExchangeId.NYSE, LastTicker = "USO", ExpectedHistorySpan="5y"},                  // history starts on 2006-04-10
+            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 7), PrimaryExchange = ExchangeId.NYSE, LastTicker = "GLD", ExpectedHistorySpan="5y"}};                  // history starts on 2004-11-18
+        // MemDb should mirror persistent data in RedisDb. For Trades in Portfolios. The AssetId in MemDb should be the same AssetId as in Redis.
+        // Alphabetical order of tickers for faster search is not realistic without Index tables or Hashtable/Dictionary.
+        // There are ticker renames every other day, and we will not reorganize the whole Assets table in Redis just because there were ticker renames in real life.
+        // In Redis, AssetId will be permanent. Starting from 1...increasing by 1. Redis 'tables' will be ordered by AssetId, because of faster JOIN operations.
+        // The top bits of AssetId is the Type=Stock, Options, so there can be gaps in the AssetId ordered list. But at least, we can aim to order this array by AssetId. (as in Redis)
+        
+        // O(1) search for Dictionaries. Tradeoff between CPU-usage and RAM-usage. Use excess memory in order to search as fast as possible.
+        // Another alternative is to implement a virtual ordering in an index table: int[] m_idxByTicker (used by Sql DBs), but that also uses RAM and the access would be only O(logN). Hashtable uses more memory, but it is faster.
+        // BinarySearch is a good idea for 10,000 Dates in time series, but not for this, when we have a small number of discrete values of AssetID or Tickers
+        Dictionary<AssetId32Bits, Asset> AssetsByAssetID = new Dictionary<AssetId32Bits, Asset>();  // Assets are ordered by AssetId, so BinarySearch could be used, but Hashtable is faster.
+        Dictionary<string, Asset> AssetsByLastTicker = new Dictionary<string, Asset>(); 
+        
         public CompactFinTimeSeries<DateOnly, uint, float, uint> DailyHist = new CompactFinTimeSeries<DateOnly, uint, float, uint>();
 
         public bool IsInitialized { get; set; } = false;
@@ -65,7 +56,7 @@ namespace FinTechCommon
 
         
 
-        public MemDb()
+        public MemDb()  // constructor runs in main thread
         {
             m_historicalDataReloadTimer = new System.Threading.Timer(new TimerCallback(ReloadHistoricalDataTimer_Elapsed), this, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
         }
@@ -79,6 +70,10 @@ namespace FinTechCommon
         {
             Thread.CurrentThread.Name = "MemDb.Init_WT Thread";
 
+            // Better to do long consuming data preprocess in working thread than in the constructor in the main thread
+            AssetsByLastTicker = Assets.ToDictionary(r => r.LastTicker);
+            AssetsByAssetID = Assets.ToDictionary(r => r.AssetId);
+
             HistoricalDataReloadAndSetTimer();
 
             IsInitialized = true;
@@ -89,38 +84,32 @@ namespace FinTechCommon
         {
             int memUsedKb = DailyHist.GetDataDirect().MemUsed() / 1024;
             p_sb.Append("<H2>MemDb</H2>");
-            p_sb.Append($"Historical: #Securities: {Securities.Count}. Used RAM: {memUsedKb:N0}KB<br>");
+            p_sb.Append($"Historical: #Securities: {Assets.Count}. Used RAM: {memUsedKb:N0}KB<br>");
             ServerDiagnosticRealtime(p_sb);
         }
 
-        public Security GetSecurity(uint p_secID)
+        public Asset GetAsset(uint p_assetID)
         {
-            // TODO: <after dates are compacted> MemDb. If fast access is important order Securities by SecID as well, and then use BinarySearch
-            foreach (var sec in Securities)
-            {
-                if (sec.SecID == p_secID)
-                    return sec;
-            }
-            throw new Exception($"SecID '{p_secID}' is missing from MemDb.Securities.");
+            if (AssetsByAssetID.TryGetValue(p_assetID, out Asset value))
+                return value;
+            throw new Exception($"AssetID '{p_assetID}' is missing from MemDb.Securities.");
         }
 
-        public Security GetFirstMatchingSecurity(string p_ticker)
-        {
-            // although Tickers are not unique (only SecID), most of the time clients access data by Ticker.
 
-            // TODO: <after dates are compacted> MemDb. implement and use Index Table based on Ticker for faster BinarySearch. int[] m_idxByTicker. 
-            // Both GetFirstMatchingSecurity(string p_ticker) and GetSecurity(uint p_secID) should use BinarySearch.
-            foreach (var sec in Securities)
-            {
-                if (sec.Ticker == p_ticker)
-                    return sec;
-            }
-            throw new Exception($"Ticker '{p_ticker}' is missing from MemDb.Securities.");
+        // Although Tickers are not unique (only AssetId), most of the time clients access data by LastTicker. 
+        // If clients are absolutely sure there is only one of this LastTicker in MemDb, then this access can be very fast.
+        // It is not good for historical backtests, but it is enough 95% of the time for clients.
+        public Asset GetFirstMatchingAssetByLastTicker(string p_lasTicker)
+        {
+            if (AssetsByLastTicker.TryGetValue(p_lasTicker, out Asset value))
+                return value;
+            throw new Exception($"Ticker '{p_lasTicker}' is missing from MemDb.Securities.");
         }
 
-        public Security[] GetAllMatchingSecurities(string p_ticker)
+        // This can find both "VOD" (Vodafone) ticker in LSE (in GBP), NYSE (in USD). Also can be historical using Assets.TickerChanges
+        public Asset[] GetAllMatchingAssets(string p_ticker, ExchangeId p_primExchangeID =  ExchangeId.Unknown, DateTime? p_timeUtc = null)
         {
-            throw new NotImplementedException();
+            return Assets.GetAllMatchingAssets(p_ticker, p_primExchangeID, p_timeUtc).ToArray();
         }
 
         public static void ReloadHistoricalDataTimer_Elapsed(object state)    // Timer is coming on a ThreadPool thread
@@ -144,27 +133,27 @@ namespace FinTechCommon
                 // we have to round values of 102.610001 to 2 decimals (in normal stocks), but some stocks price is 0.00452, then that should be left without conversion.
                 // AdjustedClose 98.213585 is exactly how YF sends it, which is correct. Just in YF HTML UI, it is converted to 98.21. However, for calculations, we may need better precision.
                 // In general, round these price data Decimals to 4 decimal precision.
-                foreach (var sec in Securities)
+                foreach (var asset in Assets)
                 {
                     DateTime startDateET = new DateTime(2018, 02, 01, 0, 0, 0);
-                    if (sec.ExpectedHistorySpan.StartsWith("Date: ")) {
-                        if (!DateTime.TryParseExact(sec.ExpectedHistorySpan.Substring("Date: ".Length), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDateET))
-                            throw new Exception($"ReloadHistoricalDataAndSetTimer(): wrong ExpectedHistorySpan for ticker {sec.Ticker}");
-                    } else if (sec.ExpectedHistorySpan.EndsWith("y")) {
-                        if (!Int32.TryParse(sec.ExpectedHistorySpan.Substring(0, sec.ExpectedHistorySpan.Length - 1), out int nYears))
-                            throw new Exception($"ReloadHistoricalDataAndSetTimer(): wrong ExpectedHistorySpan for ticker {sec.Ticker}");
+                    if (asset.ExpectedHistorySpan.StartsWith("Date: ")) {
+                        if (!DateTime.TryParseExact(asset.ExpectedHistorySpan.Substring("Date: ".Length), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDateET))
+                            throw new Exception($"ReloadHistoricalDataAndSetTimer(): wrong ExpectedHistorySpan for ticker {asset.LastTicker}");
+                    } else if (asset.ExpectedHistorySpan.EndsWith("y")) {
+                        if (!Int32.TryParse(asset.ExpectedHistorySpan.Substring(0, asset.ExpectedHistorySpan.Length - 1), out int nYears))
+                            throw new Exception($"ReloadHistoricalDataAndSetTimer(): wrong ExpectedHistorySpan for ticker {asset.LastTicker}");
                         startDateET = DateTime.UtcNow.FromUtcToEt().AddYears(-1*nYears);
                     }
 
-                    var history = Yahoo.GetHistoricalAsync(sec.Ticker, startDateET, DateTime.Now, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
+                    var history = Yahoo.GetHistoricalAsync(asset.LastTicker, startDateET, DateTime.Now, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
                     // for penny stocks, IB and YF considers them for max. 4 digits. UWT price (both in IB ask-bid, YF history) 2020-03-19: 0.3160, 2020-03-23: 2302
                     // sec.AdjCloseHistory = history.Select(r => (double)Math.Round(r.AdjustedClose, 4)).ToList();
                     var dates = history.Select(r => new DateOnly(r!.DateTime)).ToArray();
-                    secDates[sec.SecID] = dates;
+                    secDates[asset.AssetId] = dates;
                     var adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
-                    secAdjustedClose[sec.SecID] = adjCloses;
+                    secAdjustedClose[asset.AssetId] = adjCloses;
 
-                    Debug.WriteLine($"{sec.Ticker}, first: DateTime: {dates.First()}, Close: {adjCloses.First()}, last: DateTime: {dates.Last()}, Close: {adjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
+                    Debug.WriteLine($"{asset.LastTicker}, first: DateTime: {dates.First()}, Close: {adjCloses.First()}, last: DateTime: {dates.Last()}, Close: {adjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
                 }
 
                 // Merge all dates into a big date array
@@ -209,8 +198,8 @@ namespace FinTechCommon
                 var values = new Dictionary<uint, Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>>();
                 foreach (var closes in secAdjustedClose)
                 {
-                    var secID = closes.Key;
-                    var secDatesArr = secDates[secID];
+                    var assetId = closes.Key;
+                    var secDatesArr = secDates[assetId];
                     var iSecDates = secDatesArr.Length - 1; // set index to last item
 
                     var closesArr = new List<float>(mergedDates.Count); // allocate more, even though it is not necessarily filled
@@ -231,7 +220,7 @@ namespace FinTechCommon
 
                     var dict1 = new Dictionary<TickType, float[]>() { { TickType.SplitDivAdjClose, closesArr.ToArray() } };
                     var dict2 = new Dictionary<TickType, uint[]>(); // we don't store volume now, but maybe in the future
-                    values.Add(secID, new Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>(dict1, dict2));
+                    values.Add(assetId, new Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>(dict1, dict2));
                 }
                 DailyHist.ChangeData(mergedDatesArr, values);
             }
