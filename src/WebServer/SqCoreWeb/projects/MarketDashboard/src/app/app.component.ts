@@ -81,7 +81,6 @@ export class AppComponent implements OnInit {
     this.isToolSelectionVisible = !this.isToolSelectionVisible;
     this.toolSelectionMsg = 'Click red arrow in toolbar! isToolSelectionVisible is set to ' + this.isToolSelectionVisible;
     this.isUserSelectionVisible = false;
-    this.closeSettings();
   }
 
   onClickToolSelected() {
@@ -115,11 +114,7 @@ export class AppComponent implements OnInit {
   }
 
   openSettings() {
-    this.settingsDialogComponent.isVisible = true;
-  }
-
-  closeSettings() {
-    this.settingsDialogComponent.isVisible = false;
+    this.settingsDialogComponent.openSettingsDialog();
   }
 
 }
