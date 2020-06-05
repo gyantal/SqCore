@@ -94,16 +94,16 @@ namespace YahooFinanceApi
             if (error != null)
                 throw new InvalidDataException($"QueryAsync error: {error}");
 
-            var securities = new Dictionary<string, Security>();
+            var assets = new Dictionary<string, Security>();
 
             foreach (IDictionary<string, dynamic> dictionary in quoteExpando.result)
             {
                 // Change the Yahoo field names to start with upper case.
                 var pascalDictionary = dictionary.ToDictionary(x => x.Key.ToPascal(), x => x.Value);
-                securities.Add(pascalDictionary["Symbol"], new Security(pascalDictionary));
+                assets.Add(pascalDictionary["Symbol"], new Security(pascalDictionary));
             }
 
-            return securities;
+            return assets;
         }
 
     }

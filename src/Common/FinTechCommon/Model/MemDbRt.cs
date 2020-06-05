@@ -133,7 +133,7 @@ namespace FinTechCommon
                 if (!m_rtTimerRunning)      // if it is not running, start it immediately
                 {
                     Utils.Logger.Info("GetLastRtPrice(). Starting m_rtTimer.");
-                    m_rtAssetIds = p_assetIds;      // at the moment, it only bring RT price for the list of securities which was used when GetLastRtPrice() was called first. Later, it will be better.
+                    m_rtAssetIds = p_assetIds;      // at the moment, it only bring RT price for the list of assets which was used when GetLastRtPrice() was called first. Later, it will be better.
                     if (m_rtTimer == null)
                         m_rtTimer = new System.Threading.Timer(new TimerCallback(RtTimer_Elapsed), this, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
                     m_rtTimerRunning = true;
@@ -244,7 +244,7 @@ namespace FinTechCommon
                 if (eAttribute == -1)
                     break;
                 string attributeStr = responseText.Substring(bAttribute, eAttribute - bAttribute);
-                // only search ticker among the stocks p_assetIds. Because duplicate tickers are possible in the MemDb.Securities, but not expected in p_assetIds
+                // only search ticker among the stocks p_assetIds. Because duplicate tickers are possible in the MemDb.Assets, but not expected in p_assetIds
                 Asset? asset = null;
                 foreach (var secdID in p_assetIds)
                 {

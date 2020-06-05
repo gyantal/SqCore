@@ -24,10 +24,7 @@ export class SettingsDialogComponent {
   isVisible = false;  // see https://stackoverflow.com/questions/59013913/how-to-manipulate-a-div-style-in-angular-8
   @Output() parentChangeThemeEvent = new EventEmitter<string>();
   _appSettings = new AppSettings();
-<<<<<<< HEAD
-=======
   savedAppSettings = new AppSettings();
->>>>>>> 2c3ea30d69f71ce9f104b16b1bc731efec718c59
 
   constructor() { }
 
