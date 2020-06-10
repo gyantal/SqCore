@@ -53,7 +53,8 @@ namespace YahooFinanceApi
         {
             var tick = new SplitTick { DateTime = row[0].ToDateTime() };
 
-            var split = row[1].Split('/');
+            // var split = row[1].Split('/');   // original source code fails
+            var split = row[1].Split(':');  // 2020-06-09 fix. It looks like "1:8" instead of "1/8"
             if (split.Length == 2)
             {
                 tick.AfterSplit  = split[0].ToDecimal();

@@ -16,7 +16,7 @@ namespace DbCommon
     // Proper Lazy initialization: https://gigi.nullneuron.net/gigilabs/setting-up-a-connection-with-stackexchange-redis/
 
 
-    public static partial class RedisTools
+    public static partial class RedisManager
     {
         private static readonly NLog.Logger gLogger = NLog.LogManager.GetCurrentClassLogger();   // the name of the logger will be the "Namespace.Class"
 
@@ -72,8 +72,5 @@ namespace DbCommon
             ConnectionMultiplexer conn = GetConnection(p_connStr);
             return conn.GetDatabase(p_dbNum);
         }
-
-
-
     }
 }

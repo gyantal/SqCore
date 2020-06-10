@@ -117,7 +117,7 @@ namespace BenchmarkDB
             var redisConnString = Program.gConfiguration.GetConnectionString("RedisDefault");   // read from file
      
             Stopwatch watch0 = Stopwatch.StartNew();
-            IDatabase db = RedisTools.GetDb(redisConnString, 0);
+            IDatabase db = RedisManager.GetDb(redisConnString, 0);
             watch0.Stop();
             Console.WriteLine($"Connection (GetDb()) takes {watch0.Elapsed.TotalMilliseconds :0.00}ms");     // first connection: 292(first)/72/70/64/83ms, so connections are not cached, but we can cache the connection manually
 
@@ -230,7 +230,7 @@ namespace BenchmarkDB
             // Part 3: Redis
             {
                 Stopwatch watch0 = Stopwatch.StartNew();
-                IDatabase db = RedisTools.GetDb(p_redisConnStr, 0);
+                IDatabase db = RedisManager.GetDb(p_redisConnStr, 0);
                 watch0.Stop();
                 Console.WriteLine($"{Environment.NewLine}Redis:  ({p_redisConnStr.TruncateLongString(50)}){Environment.NewLine}Connection takes {watch0.ElapsedMilliseconds :0.00}ms");     // first connection: 292(first)/72/70/64/83ms, so connections are not cached, but we can cache the connection manually
 

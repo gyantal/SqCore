@@ -6,7 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using SqCommon;
+using StackExchange.Redis;
 using YahooFinanceApi;
+using System.Text.Json;
 
 namespace FinTechCommon
 {
@@ -15,6 +17,7 @@ namespace FinTechCommon
     {
 
         public static MemDb gMemDb = new MemDb();
+        IDatabase m_redisDb;
 
         // RAM requirement: 1Year = 260*(2+4) = 1560B = 1.5KB,  5y data is: 5*260*(2+4) = 7.8K
         // Max RAM requirement if need only AdjClose: 20years for 5K stocks: 5000*20*260*(2+4) = 160MB (only one data per day: DivSplitAdjClose.)
@@ -28,7 +31,8 @@ namespace FinTechCommon
             new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 4), PrimaryExchange = ExchangeId.NYSE, LastTicker = "VXX", ExpectedHistorySpan="Date: 2018-01-25"},    // history starts on 2018-01-25 on YF, because VXX was restarted. The previously existed VXX.B shares are not on YF.
             new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 5), PrimaryExchange = ExchangeId.NYSE, LastTicker = "UNG", ExpectedHistorySpan="5y"},                  // history starts on 2007-04-18
             new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 6), PrimaryExchange = ExchangeId.NYSE, LastTicker = "USO", ExpectedHistorySpan="5y"},                  // history starts on 2006-04-10
-            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 7), PrimaryExchange = ExchangeId.NYSE, LastTicker = "GLD", ExpectedHistorySpan="5y"}};                  // history starts on 2004-11-18
+            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 7), PrimaryExchange = ExchangeId.NYSE, LastTicker = "GLD", ExpectedHistorySpan="5y"}
+            };                  // history starts on 2004-11-18
         // MemDb should mirror persistent data in RedisDb. For Trades in Portfolios. The AssetId in MemDb should be the same AssetId as in Redis.
         // Alphabetical order of tickers for faster search is not realistic without Index tables or Hashtable/Dictionary.
         // There are ticker renames every other day, and we will not reorganize the whole Assets table in Redis just because there were ticker renames in real life.
@@ -59,15 +63,17 @@ namespace FinTechCommon
         DateTime m_lastHistoricalDataReload = DateTime.MinValue; // UTC
         public event MemDbEventHandler? EvHistoricalDataReloaded = null;
 
-        
 
+#pragma warning disable CS8618 // Non-nullable field 'm_redisDb' is uninitialized.
         public MemDb()  // constructor runs in main thread
         {
             m_historicalDataReloadTimer = new System.Threading.Timer(new TimerCallback(ReloadHistoricalDataTimer_Elapsed), this, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
         }
+#pragma warning restore CS8618
 
-        public void Init()
+        public void Init(IDatabase p_redisDb)
         {
+            m_redisDb = p_redisDb;
             ThreadPool.QueueUserWorkItem(Init_WT);
         }
 
@@ -135,10 +141,14 @@ namespace FinTechCommon
             Utils.Logger.Info("ReloadHistoricalDataAndSetTimer() START");
             try
             {
-                // The startTime & endTime here defaults to EST timezone
-                var secDates = new Dictionary<uint, DateOnly[]>();
-                var secAdjustedClose = new Dictionary<uint, float[]>();
+                // TODO: this can be in a separate thread as RedisReload(out assetsMissingYfSplits) function
+                string missingYfSplitsJson = m_redisDb.HashGet("memDb", "missingYfSplits");
+                var assetsMissingYfSplits = JsonSerializer.Deserialize<Dictionary<string, Split[]>>(missingYfSplitsJson);   // JsonSerializer: Dictionary key <int>,<uint> is not supported
 
+              
+                // The startTime & endTime here defaults to EST timezone
+                var assetsDates = new Dictionary<uint, DateOnly[]>();
+                var assetsAdjustedCloses = new Dictionary<uint, float[]>();
                 // YF sends this weird Texts, which are converted to Decimals, so we don't lose TEXT conversion info.
                 // AAPL:    DateTime: 2016-01-04 00:00:00, Open: 102.610001, High: 105.370003, Low: 102.000000, Close: 105.349998, Volume: 67649400, AdjustedClose: 98.213585  (original)
                 //          DateTime: 2016-01-04 00:00:00, Open: 102.61, High: 105.37, Low: 102, Close: 105.35, Volume: 67649400, AdjustedClose: 98.2136
@@ -157,15 +167,48 @@ namespace FinTechCommon
                         startDateET = DateTime.UtcNow.FromUtcToEt().AddYears(-1*nYears);
                     }
 
+                    // YF: all the Open/High/Low/Close are always adjusted for Splits;  In addition: AdjClose also adjusted for Divididends.
+                    // YF gives back both the onlySplit(butNotDividend)-adjusted row.Close, and SplitAndDividendAdjusted row.AdjustedClose (checked with MO dividend and USO split).
+                    // checked the YF returned data by stream.ReadToEnd(): it is a CSV structure, with columns. The line "Apr 29, 2020	1:8 Stock Split" is Not in the data. 
+                    // https://finance.yahoo.com/quote/USO/history?p=USO The YF website queries the splits separately when it inserts in-between the raws.
+                    // Therefore, we have to query the splits separately from YF.
                     var history = Yahoo.GetHistoricalAsync(asset.LastTicker, startDateET, DateTime.Now, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
+                    var dates = history.Select(r => new DateOnly(r!.DateTime)).ToArray();
+                    assetsDates[asset.AssetId] = dates;
                     // for penny stocks, IB and YF considers them for max. 4 digits. UWT price (both in IB ask-bid, YF history) 2020-03-19: 0.3160, 2020-03-23: 2302
                     // sec.AdjCloseHistory = history.Select(r => (double)Math.Round(r.AdjustedClose, 4)).ToList();
-                    var dates = history.Select(r => new DateOnly(r!.DateTime)).ToArray();
-                    secDates[asset.AssetId] = dates;
-                    var adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
-                    secAdjustedClose[asset.AssetId] = adjCloses;
+                    var splitDivAdjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
+                    
+                    // 2020-04-29: USO split: Split-adjustment was not done in YF. For these exceptional cases, so we need an additional data-source for double check
+                    // First just add the manual data source from Redis/Sql database, and let’s see how unreliable YF is in the future. 
+                    // If it fails frequently, then we can implement query-ing another website, like https://www.nasdaq.com/market-activity/stock-splits
+                    var splitHistoryYF = Yahoo.GetSplitsAsync(asset.LastTicker, startDateET, DateTime.Now).Result;
 
-                    Debug.WriteLine($"{asset.LastTicker}, first: DateTime: {dates.First()}, Close: {adjCloses.First()}, last: DateTime: {dates.Last()}, Close: {adjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
+                    // var missingYfSplitDb = new SplitTick[1] { new SplitTick() { DateTime = new DateTime(2020, 06, 08), BeforeSplit = 8, AfterSplit = 1 }};
+                    assetsMissingYfSplits.TryGetValue(((byte)asset.AssetId.AssetTypeID).ToString() + ":" + asset.AssetId.SubTableID.ToString(), out var missingYfSplitDb);
+
+                    // if any missingYfSplitDb record is not found in splitHistoryYF, we assume YF is wrong (and our DB is right (probably custom made)), so we do this extra split-adjustment assuming it is not in the YF quote history
+                    for (int i = 0; missingYfSplitDb != null && i < missingYfSplitDb.Length; i++)
+                    {
+                        var missingSplitDb = missingYfSplitDb[i];
+                        if (splitHistoryYF.FirstOrDefault(r => r!.DateTime == missingSplitDb.Date) != null)    // if that date exists in YF already, do nothing; assume YF uses it
+                            continue;
+                        
+                        double multiplier = (double)missingSplitDb.Before / (double)missingSplitDb.After;
+                        // USO split date from YF: "Apr 29, 2020" Time: 00:00. Means that very early morning, 9:30 hours before market open. That is the inflection point.
+                        // Split adjust (multiply) everything before that time, but do NOT split adjust that exact date.
+                        DateOnly missingSplitDbDate = new DateOnly(missingSplitDb.Date);
+                        for (int j = 0; j < dates.Length; j++)
+                        {
+                            if (dates[j] < missingSplitDbDate)
+                                splitDivAdjCloses[j] = (float)((double)splitDivAdjCloses[j] * multiplier);
+                            else
+                                break;  // dates are in increasing order. So, once we passed the critical date, we can safely exit
+                        }
+                    }
+                    
+                    assetsAdjustedCloses[asset.AssetId] = splitDivAdjCloses;
+                    Debug.WriteLine($"{asset.LastTicker}, first: DateTime: {dates.First()}, Close: {splitDivAdjCloses.First()}, last: DateTime: {dates.Last()}, Close: {splitDivAdjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
                 }
 
                 // Merge all dates into a big date array
@@ -173,7 +216,7 @@ namespace FinTechCommon
                 // walk backward, because the first item will be the latest, the yesterday.
                 var idx = new Dictionary<uint, int>();
                 DateOnly minDate = DateOnly.MaxValue, maxDate = DateOnly.MinValue;
-                foreach (var dates in secDates)  // assume first date is the oldest, last day is yesterday
+                foreach (var dates in assetsDates)  // assume first date is the oldest, last day is yesterday
                 {
                     if (minDate > dates.Value.First())
                         minDate = dates.Value.First();
@@ -189,7 +232,7 @@ namespace FinTechCommon
                     mergedDates.Add(currDate);
 
                     DateOnly nextDate = DateOnly.MaxValue;
-                    foreach (var dates in secDates)
+                    foreach (var dates in assetsDates)
                     {
                         if (idx[dates.Key] >= 0 && dates.Value[idx[dates.Key]] == currDate)
                         {
@@ -208,10 +251,10 @@ namespace FinTechCommon
                 var mergedDatesArr = mergedDates.ToArray();
 
                 var values = new Dictionary<uint, Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>>();
-                foreach (var closes in secAdjustedClose)
+                foreach (var closes in assetsAdjustedCloses)
                 {
                     var assetId = closes.Key;
-                    var secDatesArr = secDates[assetId];
+                    var secDatesArr = assetsDates[assetId];
                     var iSecDates = secDatesArr.Length - 1; // set index to last item
 
                     var closesArr = new List<float>(mergedDates.Count); // allocate more, even though it is not necessarily filled

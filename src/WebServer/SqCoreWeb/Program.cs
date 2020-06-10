@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
+using System.Globalization;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,9 +16,9 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NLog.Web;
 using SqCommon;
+using DbCommon;
 using FinTechCommon;
-using System.Text;
-using System.Globalization;
+using StackExchange.Redis;
 
 namespace SqCoreWeb
 {
@@ -69,14 +71,18 @@ namespace SqCoreWeb
             Utils.MainThreadIsExiting = new ManualResetEventSlim(false);
             HealthMonitorMessage.InitGlobals(ServerIp.HealthMonitorPublicIp, HealthMonitorMessage.DefaultHealthMonitorServerPort);       // until HealthMonitor runs on the same Server, "localhost" is OK
             Email.SenderName = Utils.Configuration["Emails:HQServer"];
-            Email.SenderPwd =Utils.Configuration["Emails:HQServerPwd"];
+            Email.SenderPwd = Utils.Configuration["Emails:HQServerPwd"];
             StrongAssert.g_strongAssertEvent += StrongAssertMessageSendingEventHandler;
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException; // Occurs when a faulted task's unobserved exception is about to trigger exception which, by default, would terminate the process.
 
             try
             {
                 DashboardPushHub.EarlyInit();    // services add handlers to the MemDb.EvMemDbInitialized event.
-                MemDb.gMemDb.Init();
+
+                var redisConnString = (Utils.RunningPlatform() == Platform.Windows) ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
+                IDatabase redisDb = RedisManager.GetDb(redisConnString, 0);
+
+                MemDb.gMemDb.Init(redisDb);
                 Caretaker.gCaretaker.Init(Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
                 CreateHostBuilder(args).Build().Run();
             }
