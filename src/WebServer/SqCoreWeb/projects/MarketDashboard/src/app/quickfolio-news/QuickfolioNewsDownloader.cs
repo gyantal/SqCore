@@ -1,18 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.ServiceModel.Syndication;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows;
 using System.Xml.Linq;
 using SqCommon;
-using Newtonsoft.Json;
 using Microsoft.AspNetCore.SignalR;
+using System.Text.Json;
 
 namespace SqCoreWeb
 {
@@ -132,52 +128,31 @@ namespace SqCoreWeb
         {
             try
             {
-                Newtonsoft.Json.Linq.JObject json = Newtonsoft.Json.Linq.JObject.Parse(webpageData);
+                // var jsonOptions = new System.Text.Json.JsonSerializerOptions
+                // {
+                //     AllowTrailingCommas = true
+                // };
+                // NewsItem jsonObject =  System.Text.Json.JsonSerializer.Deserialize<NewsItem>(webpageData, jsonOptions);
 
-                if (json == null)
-                    return;
-                if (!json.HasValues)
-                    return;
-                var jsonNews = json.First;
-                if (jsonNews == null)
-                    return;
-                var jsonNewsList = jsonNews.First;
-                if (jsonNewsList == null)
-                    return;
-                var jsonNewsItem = jsonNewsList.First;
-                while (jsonNewsItem != null)
+                System.Text.Json.JsonDocument document = System.Text.Json.JsonDocument.Parse(webpageData);
+                JsonElement root = document.RootElement;
+                JsonElement newssElement = root.GetProperty("news");
+                foreach (JsonElement news in newssElement.EnumerateArray())
                 {
-                    if (jsonNewsItem == null)
-                        return;
                     NewsItem newsItem = new NewsItem();
                     newsItem.Ticker = p_ticker;
-                    Newtonsoft.Json.Linq.JToken? token = jsonNewsItem.SelectToken("url");
-                    if (token == null)
-                        continue;
-                    newsItem.LinkUrl = jsonNewsItem.Value<string>("url");
-                    token = jsonNewsItem.SelectToken("title");
-                    if (token == null)
-                        continue;
-                    newsItem.Title = WebUtility.HtmlDecode(jsonNewsItem.Value<string>("title"));
+                    newsItem.LinkUrl = news.GetProperty("url").GetRawText().Trim('"');
+                    newsItem.Title = news.GetProperty("title").GetRawText().Trim('"'); 
                     newsItem.Summary = "  ";
-                    token = jsonNewsItem.SelectToken("sentiment");
-                    if (token != null)
-                    {
-                        newsItem.Sentiment = jsonNewsItem.Value<string>("sentiment");
-                    }
+                    newsItem.Sentiment = news.GetProperty("sentiment").GetRawText().Trim('"'); 
                     DateTime date;
-                    token = jsonNewsItem.SelectToken("articleTimestamp");
-                    if (token == null)
-                        continue;
-                    if (DateTime.TryParse(jsonNewsItem.Value<string>("articleTimestamp"), out date))
+                    if (DateTime.TryParse(news.GetProperty("articleTimestamp").GetRawText().Trim('"'), out date))
                         newsItem.PublishDate = date;
                     newsItem.DownloadTime = DateTime.Now;
                     newsItem.Source = NewsSource.TipRanks.ToString();
 
                     if (AddNewsToMemory(p_ticker, newsItem))
                         p_foundNewsItems.Add(newsItem);
-
-                    jsonNewsItem = jsonNewsItem.Next;
                 }
             }
             catch (Exception)

@@ -11,6 +11,7 @@ class NewsItem {
   public source = '';
   public displayText = '';
   public sentiment = '';
+  public isDuplicate = 'false';
 }
 
 @Component({
@@ -29,6 +30,7 @@ export class QuickfolioNewsComponent implements OnInit {
   selectedSource = '';
   totalnewsCount = 0;
   filteredNewsCount = 0;
+  filterDuplicateNewsItems = true;
   previewedCommonNews: NewsItem = new NewsItem();
   previewCommonInterval: NodeJS.Timeout = setInterval(
     () => {
@@ -136,6 +138,13 @@ export class QuickfolioNewsComponent implements OnInit {
     }
   }
 
+  public filterDuplicateChanged(): void {
+    this.filterDuplicateNewsItems = !this.filterDuplicateNewsItems;
+    console.log('filter duplicates value is ' + this.filterDuplicateNewsItems);
+    this.UpdateNewsVisibility();
+    console.log('update complete');
+  }
+
   public reloadClick(event): void {
     // console.log('reload clicked');
     if (this._parentHubConnection != null) {
@@ -205,7 +214,12 @@ export class QuickfolioNewsComponent implements OnInit {
       // console.log('news ticker count = ' + tickerSpan.innerHTML);
       const isVisibleDueTicker = this.TickerIsPresent(tickerSpan.innerHTML, this.selectedTicker);
       const isVisibleDueSource = this.SourceIsSelected(sourceSpan.innerHTML, sentimentSpan.innerHTML, this.selectedSource);
-      if (isVisibleDueTicker && isVisibleDueSource) {
+      // news duplicate filtering: check if there is other news item with the same title and older (show only the newest one)
+      const newsIsDuplicateSpan = newsElement.getElementsByClassName('newsIsDuplicate')[0];
+      const newsIsDuplicate = newsIsDuplicateSpan.innerHTML;
+      const isVisibleDueDuplicate = newsIsDuplicate === 'false';
+      // console.log('newsIsDuplicate = ' + newsIsDuplicate + ', bool = ' + isVisibleDueDuplicate);
+      if (isVisibleDueTicker && isVisibleDueSource && (isVisibleDueDuplicate || !this.filterDuplicateNewsItems)) {
         newsElement.className = newsElement.className.replace(' inVisible', '');
         visibleCount++;
       } else {
@@ -330,6 +344,7 @@ export class QuickfolioNewsComponent implements OnInit {
   extractNewsList(message: NewsItem[], newsList: NewsItem[]): void {
     // console.log('new common message list ' + message.length);
     for (const newNews of message) {
+      newNews.isDuplicate = 'false';
       // console.log('new message ' + newNews.linkUrl);
       this.insertMessage(newsList, newNews);
     }
@@ -344,12 +359,32 @@ export class QuickfolioNewsComponent implements OnInit {
         return;
       }
       foundOlder = newItem.publishDate > messages[index].publishDate;
+      if (messages[index].title.toUpperCase() === newItem.title.toUpperCase()) {
+        if (!foundOlder) {
+          newItem.isDuplicate = 'true1';
+          // console.log('1 FOUND duplicate quickfolio news ' + newItem.ticker + ': ' + newItem.title + '; ' + newItem.linkUrl );
+          // console.log('1 FOUND the other news ' + messages[index].ticker + ': ' + messages[index].title + '; ' + messages[index].linkUrl);
+        } else {
+          messages[index].isDuplicate = 'true2';
+          // console.log('2 FOUND duplicate quickfolio news ' + messages[index].ticker + ': ' + messages[index].title + '; ' + messages[index].linkUrl);
+          // console.log('2 FOUND the other news ' + newItem.ticker + ': ' + newItem.title + '; ' + newItem.linkUrl);
+        }
+      }
       if (!foundOlder) {
         index++;
       }
     }
     this.updateNewsDownloadText(newItem);
     messages.splice(index, 0, newItem);
+    index += 2;
+    while (index < messages.length) {
+      if (messages[index].title.toUpperCase() === newItem.title.toUpperCase()) {
+        messages[index].isDuplicate = 'true3';
+        // console.log('3 FOUND duplicate quickfolio news ' + messages[index].ticker + ': ' + messages[index].title + '; ' + messages[index].linkUrl);
+        // console.log('3 FOUND the other news ' + newItem.ticker + ': ' + newItem.title + '; ' + newItem.linkUrl);
+      }
+      index++;
+    }
   }
 
   updateNewsDownloadTextValues() {
