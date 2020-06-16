@@ -50,6 +50,11 @@ namespace SqCommon
             DateTime etNow = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
             DateTime targetDateEt = etNow.Date.AddDays(1).Add(m_dailyMaintenanceFromMidnightET);  // e.g. run maintenance 2:00 ET, which is 7:00 GMT usually. Preopen market starts at 5:00ET.
             p_timer.Change(targetDateEt - etNow, TimeSpan.FromMilliseconds(-1.0));     // runs only once.
+
+
+            // temporary change for testing purposes: set timer to 5 seconds to test maintenance
+            // should be deleted after testing
+            // p_timer.Change(TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(-1.0));     // runs only once.
         }
 
         public void Timer_Elapsed(object? state)    // Timer is coming on a ThreadPool thread
@@ -60,6 +65,13 @@ namespace SqCommon
 
         public void DailyMaintenance()
         {
+
+
+            // temporary change for testing purposes: commenting out test on sunday
+            // should be commented back after testing
+
+
+
             DateTime etNow = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
             if (etNow.DayOfWeek == DayOfWeek.Sunday)
             {
@@ -71,14 +83,26 @@ namespace SqCommon
         public bool CheckFreeDiskSpace(StringBuilder? p_noteToClient)
         {
             // TODO: CheckFreeDiskSpace: Both Windows and Linux: Check free disk space. If it is less than 2GB, inform archidata.servicesupervisors@gmail.com by email.
-            if (p_noteToClient != null)
-                p_noteToClient.AppendLine($"Free disk space: [BlaBla]");
-
-            // bool lowFreeDiskSpace = true;
-            // if (lowFreeDiskSpace)
-            //     new Email().Send();             // see SqCore.WebServer.SqCoreWeb.NoGitHub.json
-
-            return true;
+            string foundIssues = string.Empty;
+            foreach (DriveInfo drive in DriveInfo.GetDrives())
+            {
+                Utils.Logger.Info("CheckFreeDiskSpace: drive " + drive.Name + " has free bytes " + drive.TotalFreeSpace);
+                if (drive.TotalFreeSpace < 2e9)   // the free space is less than 2 GB
+                    foundIssues += string.Format("drive {0} has less than 2GB free bytes, free disk space is {1}\r\n", drive.Name, drive.TotalFreeSpace);
+            }
+            if (string.IsNullOrEmpty(foundIssues) && (p_noteToClient != null))
+            {
+                p_noteToClient.AppendLine(foundIssues);
+                new Email()
+                {
+                    Body = p_noteToClient.ToString(),
+                    IsBodyHtml = false,
+                    Subject = "CheckFreeDiskSpace found issues",
+                    ToAddresses = m_serviceSupervisorsEmail
+                }.Send();             // see SqCore.WebServer.SqCoreWeb.NoGitHub.json
+                return true;
+            }
+            return false;
         }
 
         // NLog names the log files as "logs/SqCoreWeb.${date:format=yyyy-MM-dd}.sqlog". 
@@ -98,7 +122,7 @@ namespace SqCommon
             // the 'logs' folder is relative to the EXE folder, but its relativity can be different in Windows, Linux
             // Windows: See Nlog.config "fileName="${basedir}/../../../../../../logs/SqCoreWeb.${date:format=yyyy-MM-dd}.sqlog""
             // Linux: preparation in BuildAllProd.py: "line.replace("{basedir}/../../../../../../logs", "{basedir}/../logs")"
-            
+
             // TODO: Tidy old log files. If the log file is more than 10 days old, then convert TXT file to 7zip 
             // (keeping the filename: SqCoreWeb.2020-01-24.sqlog becomes SqCoreWeb.2020-01-24.sqlog.7zip) Delete TXT file. 
             // If the 7zip file is more than 6 month old, then delete it. It is too old, it will not be needed.
