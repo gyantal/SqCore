@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using SqCommon;
@@ -82,27 +83,50 @@ namespace SqCommon
 
         public bool CheckFreeDiskSpace(StringBuilder? p_noteToClient)
         {
-            // TODO: CheckFreeDiskSpace: Both Windows and Linux: Check free disk space. If it is less than 2GB, inform archidata.servicesupervisors@gmail.com by email.
+            string currentWorkingDir = Directory.GetCurrentDirectory();
             string foundIssues = string.Empty;
-            foreach (DriveInfo drive in DriveInfo.GetDrives())
+            int requiredFreeSpaceGb = 2;
+            if (p_noteToClient != null)
+                    p_noteToClient.AppendLine($"Checking required safe free disk space of {requiredFreeSpaceGb}GB on drive containing the working dir {currentWorkingDir}");
+            foreach (DriveInfo drive in DriveInfo.GetDrives().OrderBy(r => r.DriveType))
             {
-                Utils.Logger.Info("CheckFreeDiskSpace: drive " + drive.Name + " has free bytes " + drive.TotalFreeSpace);
-                if (drive.TotalFreeSpace < 2e9)   // the free space is less than 2 GB
-                    foundIssues += string.Format("drive {0} has less than 2GB free bytes, free disk space is {1}\r\n", drive.Name, drive.TotalFreeSpace);
+                // Type: Fixed (C:\ on Windows, '/', '/sys/fs/pstore' (persistent storage of Kernel errors) on Linux)
+                // Type: Ram, Unknown, Network (many different virtual drives on Linux)
+                string noteToClient = $"Drive Name:'{drive.Name}', Type:{drive.DriveType}, RoodDirName:{drive.RootDirectory.Name}";    // name such as 'C:\'
+                Utils.Logger.Info(noteToClient);
+                if (p_noteToClient != null)
+                    p_noteToClient.AppendLine(noteToClient);
+
+                // We have to be selective and check only the drive from which the app runs, because drive.TotalFreeSpace raises exceptions for specific drives.
+                // On Windows: DVD drives has no free space. Exception:'The device is not ready. 
+                // On Linux: System.IO.IOException: Permission denied if ask for the system drives, like '/sys', '/proc', '/dev', '/dev/pts'
+                if (!currentWorkingDir.StartsWith(drive.Name))
+                    continue;
+
+                // In theory AvailableFreeSpace should be used, because that gives the proper space for this user, considering user-quota limits set by the admin.
+                long freeDiskSpaceMB = drive.TotalFreeSpace/1024/1024;
+                long availableUserQuotaSpaceMB = drive.AvailableFreeSpace/1024/1024;
+
+                noteToClient = $"    Drive '{drive.Name}'. Free disk space:{freeDiskSpaceMB}MB, Available user quota:{availableUserQuotaSpaceMB}MB";
+                Utils.Logger.Info(noteToClient);
+                if (p_noteToClient != null)
+                    p_noteToClient.AppendLine(noteToClient);
+                if (availableUserQuotaSpaceMB < requiredFreeSpaceGb * 1024)   // the free space is less than 2 GB
+                    foundIssues += $"! Low free space (<{requiredFreeSpaceGb}GB): " + noteToClient + Environment.NewLine;
             }
-            if (string.IsNullOrEmpty(foundIssues) && (p_noteToClient != null))
+            if (!string.IsNullOrEmpty(foundIssues) && (p_noteToClient != null))
             {
-                p_noteToClient.AppendLine(foundIssues);
+                p_noteToClient.Append("Warning:" + Environment.NewLine + foundIssues);
                 new Email()
                 {
                     Body = p_noteToClient.ToString(),
                     IsBodyHtml = false,
-                    Subject = "CheckFreeDiskSpace found issues",
+                    Subject = "Warning! CheckFreeDiskSpace found low free space",    // 'error' or 'warning' should be in the subject line to trigger attention of users
                     ToAddresses = m_serviceSupervisorsEmail
                 }.Send();             // see SqCore.WebServer.SqCoreWeb.NoGitHub.json
-                return true;
+                return false;
             }
-            return false;
+            return true;
         }
 
         // NLog names the log files as "logs/SqCoreWeb.${date:format=yyyy-MM-dd}.sqlog". 

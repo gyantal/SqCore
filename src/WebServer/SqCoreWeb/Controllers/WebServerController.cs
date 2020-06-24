@@ -174,7 +174,7 @@ namespace SqCoreWeb.Controllers
             bool success = Caretaker.gCaretaker.CheckFreeDiskSpace(noteToClient);
 
             Utils.Logger.Info("TestCaretakerCheckFreeDiskSpace() END");
-            return Content($"<HTML><body>TestCaretakerCheckFreeDiskSpace() finished with { (success ? "OK" : "Error") }. <br> Note To Client '{noteToClient.ToString()}'</body></HTML>", "text/html");
+            return Content($"<HTML><body>TestCaretakerCheckFreeDiskSpace() finished with { (success ? "OK" : "Error") }. <br> Note To Client '<br>{noteToClient.Replace(Environment.NewLine, "<br>").Replace("    ", "&nbsp;&nbsp;&nbsp;&nbsp;").ToString()}'</body></HTML>", "text/html");
         }
 
         [HttpGet]
