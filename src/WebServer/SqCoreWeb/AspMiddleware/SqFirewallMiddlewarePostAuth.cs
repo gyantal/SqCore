@@ -86,24 +86,34 @@ namespace SqCoreWeb
                 else 
                     isAllowedRequest = true;    // 3. allow jpeg files and other resources, like favicon.ico
 
-                if (!isAllowedRequest)
+                if (isAllowedRequest)
+                {
+                    // allow the requests. Let it through to the other handlers in the pipeline.
+                    string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow.ToString("HH':'mm':'ss.f")}#Uknown or not allowed user request: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {WsUtils.GetRequestIP(httpContext)}. Falling through to further Kestrel middleware without redirecting to '/UserAccount/login'.");
+                    Console.WriteLine(msg);
+                    gLogger.Info(msg);
+                }
+                else
                 {
                     string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow.ToString("HH':'mm':'ss.f")}#Uknown or not allowed user request: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {WsUtils.GetRequestIP(httpContext)}. Redirecting to '/UserAccount/login'.");
                     Console.WriteLine(msg);
                     gLogger.Info(msg);
 
-                    httpContext.Response.Redirect("/UserAccount/login", true);  // forced login. Even for main /index.html
+                    // https://stackoverflow.com/questions/9130422/how-long-do-browsers-cache-http-301s
+                    // 302 Found; Redirection; temporarily located on a different URL. Web clients must keep using the original URL.
+                    // 301 Moved Permanently: Browsers will cache a 301 redirect with no expiry date. 
+                    // "The browsers still honor the Cache-Control and Expires headers like with any other response, if they are specified. You could even add Cache-Control: no-cache so it won't be cached permanently."
+                    // 301 resulted that https://healthmonitor.sqcore.net/ was permanently redirected to https://healthmonitor.sqcore.net/UserAccount/login 
+                    // This redirection was fine Before Google authentication, but after that Browser never asked the index.html main page, but always redirected to /UserAccount/login
+                    // That resulted a recursion in GoogleAuth, and after 3 recursions, Google realized it and redirected to https://healthmonitor.sqcore.net/signin-google without any ".AspNetCore.Correlation.Google." cookie 
+                    // And that resulted 'System.Exception: Correlation failed.'
+
+                    // httpContext.Response.Redirect("/UserAccount/login", true);  // forced login. Even for main /index.html
+                    httpContext.Response.Redirect("/UserAccount/login", false); //  Temporary redirect response (HTTP 302). Otherwise, browser will cache it forever.
                     // raw Return in Kestrel chain would give client a response header: status: 200 (OK), Data size: 0. Browser will present a blank page. Which is fine now.
                     // httpContext.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
                     // await httpContext.Response.WriteAsync("Unauthorized request! Login on the main page with an authorized user."); // text response is quick and doesn't consume too much resource
-
                     return;
-                }
-                else 
-                {
-                    string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow.ToString("HH':'mm':'ss.f")}#Uknown or not allowed user request: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {WsUtils.GetRequestIP(httpContext)}. Falling through to further Kestrel middleware without redirecting to '/UserAccount/login'.");
-                    Console.WriteLine(msg);
-                    gLogger.Info(msg);
                 }
             }
             else

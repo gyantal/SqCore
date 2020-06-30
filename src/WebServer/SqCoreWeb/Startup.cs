@@ -157,7 +157,7 @@ namespace SqCoreWeb
                         {
                             Utils.Logger.Info("GoogleAuth.OnRedirectToAuthorizationEndpoint()");
                             //context.Response.Redirect(context.RedirectUri + "&hd=" + System.Net.WebUtility.UrlEncode("jerriepelser.com"));
-                            context.Response.Redirect(context.RedirectUri);
+                            context.Response.Redirect(context.RedirectUri, false); //  Temporary redirect response (HTTP 302)
                             return Task.CompletedTask;
                         },
                         OnCreatingTicket = context =>

@@ -49,7 +49,7 @@ namespace SqCoreWeb
                     var newUrl = new StringBuilder().Append(req.IsHttps ? "https://" : "http://").Append(newHost).Append(req.PathBase).Append(p_pathPrefixReplacement).Append(req.Path).Append(req.QueryString);
 
                     Utils.Logger.Info("SubdomainRewriteOptionsRule(): Doing Redirection. NewUrl: " + newUrl);
-                    context.HttpContext.Response.Redirect(newUrl.ToString(), true);
+                    context.HttpContext.Response.Redirect(newUrl.ToString(), false);     // Redirect is temporary (HTTP 302); Other option is redirect is permanent (HTTP 301), which means browser will cache it forever.
                     context.Result = RuleResult.EndResponse;
                 }
                 else
