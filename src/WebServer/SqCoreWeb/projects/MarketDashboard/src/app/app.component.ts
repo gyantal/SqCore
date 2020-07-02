@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 import { SettingsDialogComponent } from './settings-dialog/settings-dialog.component';
+import { gDiag } from './../sq-globals';
 
 class HandshakeMessage {
   public email = '';
@@ -24,25 +25,39 @@ export class AppComponent implements OnInit {
   toolSelectionMsg = 'Click red arrow in toolbar! isToolSelectionVisible is set to ' + this.isToolSelectionVisible;
   activeTool = 'MarketHealth';
   theme = '';
+  sqDiagnosticsMsg = 'Benchmarking time, connection speed';
 
   // http://localhost:4202/hub/exsvpush/negotiate?negotiateVersion=1 404 (Not Found), if it is not served on port 4202 on ng serve (proxy)
   public _hubConnection: HubConnection = new HubConnectionBuilder().withUrl('/hub/dashboardpush').build();
 
   @ViewChild(SettingsDialogComponent) private settingsDialogComponent!: SettingsDialogComponent;
 
-  // called after Angular has initialized all data-bound properties before any of the view or content children have been checked. Handle any additional initialization tasks.
+  constructor() { // Called first time before the ngOnInit()
+    gDiag.mainAngComponentConstructorTime = new Date();
+    console.log('sq.d: ' + gDiag.mainAngComponentConstructorTime.toISOString() + ': mainAngComponentConstructor()'); // called 17ms after main.ts
+  }
+
+  // called after Angular has initialized all data-bound properties before any of the view or content children have been checked. Called after the constructor and called  after the first ngOnChanges()
   ngOnInit() {
-    console.log('Sq: ngOnInit()');
+    gDiag.mainAngComponentOnInitTime = new Date();
+    console.log('sq.d: ' + gDiag.mainAngComponentOnInitTime.toISOString() + ': mainAngComponentOnInitTime()');  // called 21ms after constructor
+
     this.onSetTheme('sqClassic');
 
+    gDiag.wsConnectionStartTime = new Date();
+    console.log('sq.d: ' + gDiag.wsConnectionStartTime.toISOString() + ': wsConnectionStartTime()');
     this._hubConnection
       .start()
       .then(() => {
+        gDiag.wsConnectionReadyTime = new Date();
+        console.log('sq.d: ' + gDiag.wsConnectionReadyTime.toISOString() + ': wsConnectionReadyTime()');
         console.log('ws: Connection started! _hubConnection.send() can be used now.');
       })
       .catch(err => console.log('Error while establishing connection :('));
 
     this._hubConnection.on('OnConnected', (message: HandshakeMessage) => {
+      gDiag.wsOnConnectedMsgArrivedTime = new Date();
+      console.log('sq.d: ' + gDiag.wsOnConnectedMsgArrivedTime.toISOString() + ': wsOnConnectedMsgArrivedTime()');  // called 500ms after windowOnLoad()
       console.log('ws: OnConnected Message arrived:' + message.email);
       this.user.email = message.email;
     });
@@ -116,5 +131,21 @@ export class AppComponent implements OnInit {
   openSettings() {
     this.settingsDialogComponent.openSettingsDialog();
   }
+
+  mouseEnter(div: string) {
+    console.log('mouse enter : ' + div);
+    if (div === 'sqDiagnostics') {
+      const diag =
+      'App constructor: ' + (gDiag.mainAngComponentConstructorTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' +
+      'Websocket connection start in OnInit: ' + (gDiag.wsConnectionStartTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' +
+      'Websocket connection ready: ' + (gDiag.wsConnectionReadyTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' +
+      'Websocket userdata(email) arrived: ' + (gDiag.wsOnConnectedMsgArrivedTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' +
+      'Websocket First NonRtStat: ' + (gDiag.wsOnFirstRtMktSumNonRtStatTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' +
+      'Websocket First RtStat: ' + (gDiag.wsOnFirstRtMktSumRtStatTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' + // if wsOnFirstRtMktSumRtStatTime == minTime, it can be negative
+      'Websocket #RtStat: ' + gDiag.wsNumRtMktSumRtStat + '\n' +
+      'Websocket Last RtStat: ' + (new Date().getTime() - gDiag.wsOnLastRtMktSumRtStatTime.getTime() ) + 'ms ago\n';
+      this.sqDiagnosticsMsg = diag;
+    }
+ }
 
 }

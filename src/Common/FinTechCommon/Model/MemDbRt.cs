@@ -61,58 +61,58 @@ namespace FinTechCommon
 
 
         Timer? m_rtTimer;
-        bool m_rtTimerRunning = false;
+        bool m_rtTimerBusyMode = false;    // busy mode is active if there was a GetLastRtPrice() in the last 5 minutes
         object m_rtTimerLock = new Object();
 
-        ManualResetEventSlim m_rtMres = new ManualResetEventSlim(false);     // 50ns (vs. 1000ns of ManualResetEvent). 50x faster. Because no reliance of operation system. http://www.albahari.com/threading/part2.aspx
+        // ManualResetEventSlim m_rtMres = new ManualResetEventSlim(false);     // 50ns (vs. 1000ns of ManualResetEvent). 50x faster. Because no reliance of operation system. http://www.albahari.com/threading/part2.aspx
 
-        static int m_rtTimerFrequencyRegularMs = 3000;    // as a demo go with 3sec, later change it to 5sec, do decrease server load.
-        static int m_rtTimerFrequencyPrePostMs = 60000; 
+        static int m_rtTimerFrequencyRegularMs = 3 * 1000;    // as a demo go with 3sec, later change it to 5sec, do decrease server load.
+        static int m_rtTimerFrequencyPrePostMs = 60 * 1000;     // 60 sec = 1 min
+        static int m_rtTimerFrequencyInNonBusyModeMs = 60 * 60 * 1000;  // 60 min
 
-        uint[] m_rtAssetIds = new uint[0];
+        uint[] m_busyModeAssetIds = new uint[0];  // a union of assets that were called in the last 5 minutes in GetLastRtPrice() 
 
-        DateTime m_lastDownloadLastPrice = DateTime.MinValue;
+        DateTime m_lastDownloadTimeET = DateTime.MinValue;
         uint m_nIexDownload = 0;
         uint m_nYfDownload = 0;
+
+        void InitRt_WT(object? p_state)    // WT : WorkThread
+        {
+            // Main logic:
+            // schedule RtTimer_Elapsed() at Init() and also once per hour (even if nobody asked it) for All assets in MemDb. So we always have more or less fresh data
+            // schedule RtTimer_Elapsed() in 3sec (RTH) or in 60sec (non-RTH) for m_assetIds only if there was a function call in the last 5 minutes (busyMode)
+            // GetLastRtPrice() always return data without blocking. Data might be 1 hour old, but it is OK. If we are in a Non-busy mode, then switch to busy and schedule it immediately.
+            m_rtTimerBusyMode = false;
+            m_rtTimer = new System.Threading.Timer(new TimerCallback(RtTimer_Elapsed), this, TimeSpan.FromMilliseconds(0), TimeSpan.FromMilliseconds(-1.0));    // start immediately
+        }
         public void ServerDiagnosticRealtime(StringBuilder p_sb)
         {
-            p_sb.Append($"Realtime: m_rtTimerRunning: {m_rtTimerRunning}, m_nYfDownload: {m_nYfDownload}, m_nIexDownload:{m_nIexDownload} <br>");
+            p_sb.Append($"Realtime: m_rtTimerBusyMode: {m_rtTimerBusyMode}, m_nYfDownload: {m_nYfDownload}, m_nIexDownload:{m_nIexDownload} <br>");
         }
         public void RtTimer_Elapsed(object? state)    // Timer is coming on a ThreadPool thread
         {
-            // Download the RT price immediately, don't sleep, but set up Timer that it is called either 3 sec or 60 sec later. Until there is a 5 minute when nobody accessed RT prices.
+            // Download the RT price immediately. Besides, set up Timer that it is called either 3 sec or 60 sec or 1h later. Until there is a 5 minute when nobody accessed RT prices.
             try
             {
-                Utils.Logger.Info("RtTimer_Elapsed(). BEGIN");
-                 if (!m_rtTimerRunning)
-                     return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
-
-                var tradingHoursNow = Utils.UsaTradingHoursNow();
-
-                m_lastDownloadLastPrice = DateTime.UtcNow;
-
+                Utils.Logger.Info($"RtTimer_Elapsed(). BEGIN. m_rtTimerBusyMode: {m_rtTimerBusyMode}");
+                uint[] assetIds = (m_rtTimerBusyMode) ? m_busyModeAssetIds : Assets.Select(r => (uint)r.AssetId).ToArray();
+                m_lastDownloadTimeET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
+                var tradingHoursNow = Utils.UsaTradingHours(m_lastDownloadTimeET);
                 if (tradingHoursNow == TradingHours.RegularTrading)
                 {
-                    DownloadLastPriceIex(m_rtAssetIds);
+                    DownloadLastPriceIex(assetIds);
                 }
                 else
                 {
-                    DownloadLastPriceYF(m_rtAssetIds, tradingHoursNow);
+                    DownloadLastPriceYF(assetIds, tradingHoursNow);
                 }
-
-                m_rtMres.Set();
-                // m_rtMres.Reset();   // This doesn't work here. If we reset it too quickly, clients doesn't get the signal.
 
                 lock (m_rtTimerLock)
                 {
-                    if (m_rtTimerRunning)
-                    {
-                        TimeSpan tsSinceLastRtCall = DateTime.UtcNow - m_lastGetLastRtCall;
-                        if (tsSinceLastRtCall <= TimeSpan.FromSeconds(5 * 60))  // only repeat it, if there was a function call in the last 5 minutes 
-                            m_rtTimer!.Change(TimeSpan.FromMilliseconds((tradingHoursNow == TradingHours.RegularTrading) ? m_rtTimerFrequencyRegularMs : m_rtTimerFrequencyPrePostMs), TimeSpan.FromMilliseconds(-1.0));
-                        else
-                            m_rtTimerRunning = false;
-                    }
+                    TimeSpan tsSinceLastRtCall = DateTime.UtcNow - m_lastGetLastRtCall;
+                    m_rtTimerBusyMode = tsSinceLastRtCall <= TimeSpan.FromSeconds(5 * 60);  //  if there was a function call in the last 5 minutes 
+                    int frequencyMs = (!m_rtTimerBusyMode) ? m_rtTimerFrequencyInNonBusyModeMs : ((tradingHoursNow == TradingHours.RegularTrading) ? m_rtTimerFrequencyRegularMs : m_rtTimerFrequencyPrePostMs);
+                    m_rtTimer!.Change(TimeSpan.FromMilliseconds(frequencyMs), TimeSpan.FromMilliseconds(-1.0));
                 }
                 Utils.Logger.Info("RtTimer_Elapsed(). END");
             }
@@ -130,29 +130,21 @@ namespace FinTechCommon
             m_lastGetLastRtCall = DateTime.UtcNow;
             lock (m_rtTimerLock)
             {
-                if (!m_rtTimerRunning)      // if it is not running, start it immediately
+                if (!m_rtTimerBusyMode)      // if it is not busy, start busy mode immediately
                 {
-                    Utils.Logger.Info("GetLastRtPrice(). Starting m_rtTimer.");
-                    m_rtAssetIds = p_assetIds;      // at the moment, it only bring RT price for the list of assets which was used when GetLastRtPrice() was called first. Later, it will be better.
-                    if (m_rtTimer == null)
-                        m_rtTimer = new System.Threading.Timer(new TimerCallback(RtTimer_Elapsed), this, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
-                    m_rtTimerRunning = true;
-                    m_rtTimer.Change(TimeSpan.FromMilliseconds(0), TimeSpan.FromMilliseconds(-1.0));     // runs immediately, but only once. To avoid that it runs parallel, if first one doesn't finish
+                    Utils.Logger.Info("GetLastRtPrice(). Starting m_rtTimerBusyMode.");
+                    m_busyModeAssetIds = p_assetIds;      // at the moment, it overwrites the asset list. Later, it will be better and aggregate
+
+                    m_rtTimerBusyMode = true;
+                    m_rtTimer!.Change(TimeSpan.FromMilliseconds(0), TimeSpan.FromMilliseconds(-1.0));     // runs immediately, but only once. To avoid that it runs parallel, if first one doesn't finish
                 }
             }
 
-            var tradingHoursNow = Utils.UsaTradingHoursNow();
-            TimeSpan tsSinceLastRtDownload = DateTime.UtcNow - m_lastDownloadLastPrice;
-            if (tsSinceLastRtDownload > TimeSpan.FromSeconds(80))  // if price is too old, wait for RT background thread to signal successful price.
-            {
-                m_rtMres.Reset();
-                 bool isSignalledNoTimeout = m_rtMres.Wait(TimeSpan.FromSeconds(90));
-            }
-            
+            var lastDowloadTradingHours = Utils.UsaTradingHours(m_lastDownloadTimeET);
             return p_assetIds.Select(r =>
                 {
                     var sec = GetAsset(r);
-                    return (sec.AssetId, (tradingHoursNow == TradingHours.RegularTrading) ? sec.LastPriceIex : sec.LastPriceYF);
+                    return (sec.AssetId, (lastDowloadTradingHours == TradingHours.RegularTrading) ? sec.LastPriceIex : sec.LastPriceYF);
                 });
         }
 

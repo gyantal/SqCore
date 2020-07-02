@@ -12,12 +12,17 @@ namespace SqCommon
             throw new NotImplementedException();
         }
 
-        // PreMarket: 4:00ET, Regular: 9:30ET, Post:16:00, Post-ends: 20:00
         public static TradingHours UsaTradingHoursNow()
         {
-            // we should use Holiday day data from Nasdaq website later. See code in SqLab.
             DateTime etNow = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
-            int nowTimeOnlySec = etNow.Hour * 60 * 60 + etNow.Minute * 60 + etNow.Second;
+            return UsaTradingHours(etNow);
+        }
+
+        // PreMarket: 4:00ET, Regular: 9:30ET, Post:16:00, Post-ends: 20:00
+        public static TradingHours UsaTradingHours(DateTime p_timeET)
+        {
+            // we should use Holiday day data from Nasdaq website later. See code in SqLab.
+            int nowTimeOnlySec = p_timeET.Hour * 60 * 60 + p_timeET.Minute * 60 + p_timeET.Second;
             if (nowTimeOnlySec < 4 * 60 * 60)
                 return TradingHours.Closed;
             else if (nowTimeOnlySec < 9 * 60 * 60 + 30 * 60)

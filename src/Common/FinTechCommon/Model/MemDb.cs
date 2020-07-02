@@ -86,6 +86,7 @@ namespace FinTechCommon
             AssetsByAssetID = Assets.ToDictionary(r => r.AssetId);
 
             HistoricalDataReloadAndSetTimer();
+            InitRt_WT(p_state); // call this after HistoricalDataReload downloads the Assets from DB
 
             IsInitialized = true;
             EvInitialized?.Invoke();

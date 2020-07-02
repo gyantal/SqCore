@@ -1,7 +1,7 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { HubConnection } from '@microsoft/signalr';
 import { SqNgCommonUtilsTime } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
-
+import { gDiag, minDate } from './../../sq-globals';
 
 class RtMktSumRtStat {
   public assetId = NaN;
@@ -128,7 +128,8 @@ class TradingHoursTimer {
 export class MarketHealthComponent implements OnInit {
 
   @Input() _parentHubConnection?: HubConnection = undefined;    // this property will be input from above parent container
-
+  nRtStatArrived = 0;
+  nNonRtStatArrived = 0;
   rtMktSumPrevCloseStr = 'A';
   rtMktSumRtQuoteStr = 'B';
   rtMktSumPeriodStatStr = 'C';
@@ -192,6 +193,14 @@ export class MarketHealthComponent implements OnInit {
 
     if (this._parentHubConnection != null) {
       this._parentHubConnection.on('RtMktSumRtStat', (message: RtMktSumRtStat[]) => {
+        if (gDiag.wsOnFirstRtMktSumRtStatTime === minDate) {
+          gDiag.wsOnFirstRtMktSumRtStatTime = new Date();
+          console.log('sq.d: ' + gDiag.wsOnFirstRtMktSumRtStatTime.toISOString() + ': wsOnFirstRtMktSumRtStatTime()'); // called 17ms after main.ts
+        }
+        gDiag.wsOnLastRtMktSumRtStatTime = new Date();
+        gDiag.wsNumRtMktSumRtStat++;
+        this.nRtStatArrived++;
+
         const msgStr = message.map(s => s.assetId + ' ? =>' + s.last.toFixed(2).toString()).join(', ');  // %Chg: Bloomberg, MarketWatch, TradingView doesn't put "+" sign if it is positive, IB, CNBC, YahooFinance does. Go as IB.
         console.log('ws: RtMktSumRtStat arrived: ' + msgStr);
         this.rtMktSumRtQuoteStr = msgStr;
@@ -200,6 +209,12 @@ export class MarketHealthComponent implements OnInit {
       });
 
       this._parentHubConnection.on('RtMktSumNonRtStat', (message: RtMktSumNonRtStat[]) => {
+        if (gDiag.wsOnFirstRtMktSumNonRtStatTime === minDate) {
+          gDiag.wsOnFirstRtMktSumNonRtStatTime = new Date();
+          console.log('sq.d: ' + gDiag.wsOnFirstRtMktSumNonRtStatTime.toISOString() + ': wsOnFirstRtMktSumNonRtStatTime()'); // called 17ms after main.ts
+        }
+        this.nNonRtStatArrived++;
+
         // If SignalR receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
         message.forEach(element => {
           if (element.previousClose.toString() === 'NaN') {
@@ -265,7 +280,7 @@ export class MarketHealthComponent implements OnInit {
       const existingFullStatItems = marketFullStat.filter(fullStatItem => fullStatItem.assetId === singleStockInfo.assetId);
       if (existingFullStatItems.length === 0) {
         marketFullStat.push({assetId: singleStockInfo.assetId, ticker: '', last: singleStockInfo.last, previousClose: NaN, periodStart: new Date(), periodOpen: NaN, periodHigh: NaN,
-      periodLow: NaN, dailyReturn: NaN, periodReturn: NaN, drawDownPct: NaN, drawUpPct: NaN, maxDrawDownPct: NaN, maxDrawUpPct: NaN});
+                          periodLow: NaN, dailyReturn: NaN, periodReturn: NaN, drawDownPct: NaN, drawUpPct: NaN, maxDrawDownPct: NaN, maxDrawUpPct: NaN});
       } else {
         existingFullStatItems[0].last = singleStockInfo.last;
         this.updateReturns(existingFullStatItems[0]);
@@ -273,11 +288,7 @@ export class MarketHealthComponent implements OnInit {
     }
 
     this.updateTableRows(marketFullStat);
-    const x = document.getElementById('perfTable');
-    if (typeof(x) !== 'undefined' && x !== null) {
-      x.style.visibility = 'visible';
-    }
-
+    this.makeUiTableVisible();
   }
 
   updateMktSumNonRt(message: RtMktSumNonRtStat[], marketFullStat: RtMktSumFullStat[]): void {
@@ -304,6 +315,7 @@ export class MarketHealthComponent implements OnInit {
     }
 
     this.updateTableRows(marketFullStat);
+    this.makeUiTableVisible();
   }
 
   updateReturns(item: RtMktSumFullStat) {
@@ -351,7 +363,7 @@ export class MarketHealthComponent implements OnInit {
       // }
     }
 
-    console.log('Start: ' + this.lookbackStart + ' VXX start: ' + perfIndicators[4].periodStart + ' class: ' + this.perfIndPeriodFull[4].lookbackErrorClass + ' errorStr: ' + this.perfIndPeriodFull[4].lookbackErrorString);
+    console.log('Start: "' + this.lookbackStart + '", VXX start: "' + perfIndicators[4].periodStart + '", class: ' + this.perfIndPeriodFull[4].lookbackErrorClass + ', errorStr: ' + this.perfIndPeriodFull[4].lookbackErrorString);
 
     for (const items of this.perfIndPeriodFull) {
       items.periodPerfTooltipStr1 = items.ticker;
@@ -359,4 +371,16 @@ export class MarketHealthComponent implements OnInit {
     }
     this.perfIndicatorSelector();
   }
+
+  makeUiTableVisible() {
+    // sometimes Rt, sometimes nonRt data arrives 300ms earlier than the other. Show table only when BOTH have arrived to avoid that cells blink in red for 300ms
+    if (this.nRtStatArrived === 0 || this.nNonRtStatArrived === 0) {
+      return;
+    }
+    const perfTableElement = document.getElementById('perfTable');
+    if (typeof(perfTableElement) !== 'undefined' && perfTableElement !== null) {
+      perfTableElement.style.visibility = 'visible';
+    }
+  }
+
 }

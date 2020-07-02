@@ -95,16 +95,17 @@ namespace SqCoreWeb
             Groups.AddToGroupAsync(this.Context?.ConnectionId, "EverybodyGroup");   // when we have a new price data, it is sent to all group members
 
             var client = new DashboardClients() { ConnectionId = connId, SignalRUser = signalRuser, UserEmail = email, IsOnline = true, ActivePage = ActivePage.MarketHealth };
-            
+
             lock (g_clients)
                 g_clients.Add(client);
-
-            OnConnectedAsync_MktHealth();
-            OnConnectedAsync_QuickfNews();
 
             var handshakeMsg = new HandshakeMessage() { Email = client.UserEmail };
             //Clients.Caller.SendCoreAsync("OnConnected", handshakeMsg);    // this sends an array of objects
             Clients.Caller.SendAsync("OnConnected", handshakeMsg);
+
+            OnConnectedAsync_MktHealth();
+            OnConnectedAsync_QuickfNews();
+
             return base.OnConnectedAsync();
         }
         public override Task OnDisconnectedAsync(Exception exception)
