@@ -127,6 +127,11 @@ namespace SqCoreWeb
             // Exactly the same problem as this guy complains in 2019: "average connection time hovers around 900msec to 1200 msec."
             // https://stackoverflow.com/questions/59328941/asp-net-core-signalr-websocket-connection-time-more-then-1-second
 
+            // "waitForPageLoad: false" is not there in the latest code any more, but my testing shows that is the problem.
+            // https://github.com/dotnet/aspnetcore/blob/master/src/SignalR/clients/ts/signalr/src/IHttpConnectionOptions.ts
+            // If WindowLoaded is very fast (80ms), then SignalR connection arrives in 95ms, however if WindowLoaded is 350ms, SignalR.start() returns only after 370ms
+
+
             // However, it is in namespace Microsoft.AspNetCore.SignalR, so it is the official AspNetCore solution.
             // Probably the best to wait until they optimize it. Maybe in the next version of NetCore.
             return base.OnConnectedAsync();
