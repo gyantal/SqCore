@@ -50,9 +50,10 @@ namespace SqCoreWeb
                 options.HttpsPort = 5001;
             });
 
+            services.AddSignalR();  //  enables bi-directional communication between the browser and server. Based on WebSocket.
+
             // https://docs.microsoft.com/en-us/aspnet/core/performance/caching/response?view=aspnetcore-3.0
             services.AddResponseCaching(); // DI: these services could be used in MVC control/Razor pages (either as [Attributes], or in code)
-            services.AddSignalR();  //  enables bi-directional communication between the browser and server. Based on WebSocket.
             services.AddMvc(options =>     // AddMvc() equals AddControllersWithViews() + AddRazorPages()
             { // this CashProfile is given once here, and if it changes, we only have to change here, not in all Controllers.
                 options.CacheProfiles.Add("NoCache",

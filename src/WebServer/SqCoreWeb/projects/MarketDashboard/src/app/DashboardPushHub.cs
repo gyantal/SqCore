@@ -106,6 +106,29 @@ namespace SqCoreWeb
             OnConnectedAsync_MktHealth();
             OnConnectedAsync_QuickfNews();
 
+            // Production (Linux server) shows it takes 350ms for SignalR connection (start()) to be established, and another 350ms when server sends back data to client
+            // Benchmarks on the browser client side:
+            // Websocket connection start in OnInit: 15ms
+            // Websocket connection ready: 366ms    // after _hubConnection.start() returns
+            // Websocket Email arrived: 782ms       // sending back user data an the "OnConnected" message.
+            // It would be useful if we can send back user data in the start() connection establishment. That would save 350ms round-trip. 
+            // The latency is 30ms, so a roundtrip should be maximum 70ms for the Connection established.
+            // 2020-07: SignalR is not capable of sending data back in Connection. Maybe later they implement it. Or we might choose a better (faster) WebSocket TypeScript API later.
+            // the problem is that even vanilla JavaScript WebSocket is not designed for that https://javascript.info/websocket
+            // So, the problem is that somehow the SignalR websocket implementation is slow. 
+            // If it is slow on the JS side, than I can replace SignalR with Vanilla JS. SignalR can do too many things (LongPolling) that we don't need.
+            // If it is slow on the C# side, I have to use something other than SignalR in Kestrel server.
+
+            // even with "skipNegotiation: true", there are 2 messages in F12/Network with the WebSocket connection.
+            // One is a "{"protocol":"json","version":1}", another is an empty message. And these 2 messages are ABOVE the initial JS WebSocket() handshake.
+            // So, that is 3 round-trips. 1: JS.WebSocket connection (ws.open())  2: SignalR start() that communicates protocol. 3: SignalR start() again that returns "".
+            // If I do Vanilla WebSocket, it can be reduced to 1 roundtrip only, about 100ms, not 3 round-trips, with 300ms.
+
+            // Exactly the same problem as this guy complains in 2019: "average connection time hovers around 900msec to 1200 msec."
+            // https://stackoverflow.com/questions/59328941/asp-net-core-signalr-websocket-connection-time-more-then-1-second
+
+            // However, it is in namespace Microsoft.AspNetCore.SignalR, so it is the official AspNetCore solution.
+            // Probably the best to wait until they optimize it. Maybe in the next version of NetCore.
             return base.OnConnectedAsync();
         }
         public override Task OnDisconnectedAsync(Exception exception)

@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
+import { HubConnection, HubConnectionBuilder, HttpTransportType } from '@microsoft/signalr';
 import { SettingsDialogComponent } from './settings-dialog/settings-dialog.component';
 import { gDiag } from './../sq-globals';
 
@@ -28,7 +28,7 @@ export class AppComponent implements OnInit {
   sqDiagnosticsMsg = 'Benchmarking time, connection speed';
 
   // http://localhost:4202/hub/exsvpush/negotiate?negotiateVersion=1 404 (Not Found), if it is not served on port 4202 on ng serve (proxy)
-  public _hubConnection: HubConnection = new HubConnectionBuilder().withUrl('/hub/dashboardpush').build();
+  public _hubConnection: HubConnection = new HubConnectionBuilder().withUrl('/hub/dashboardpush', { skipNegotiation: true, transport: HttpTransportType.WebSockets }).build();
 
   @ViewChild(SettingsDialogComponent) private settingsDialogComponent!: SettingsDialogComponent;
 
@@ -136,6 +136,8 @@ export class AppComponent implements OnInit {
     console.log('mouse enter : ' + div);
     if (div === 'sqDiagnostics') {
       const diag =
+      'DOM loaded: ' + (gDiag.dOMContentLoadedTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' +
+      'Window loaded: ' + (gDiag.windowOnLoadTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' +
       'App constructor: ' + (gDiag.mainAngComponentConstructorTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' +
       'Websocket connection start in OnInit: ' + (gDiag.wsConnectionStartTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' +
       'Websocket connection ready: ' + (gDiag.wsConnectionReadyTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' +
