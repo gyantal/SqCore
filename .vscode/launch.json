@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "WebServer/SqCoreWeb (DEBUG)",
+            "name": "WbSrv/SqCoreWeb (DEBUG)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "SqCoreWeb-PreDebugBuildWatchDev",

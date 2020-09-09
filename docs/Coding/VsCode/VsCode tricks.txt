@@ -17,10 +17,13 @@ Code editing:
 - Ctrl+T (Go to Symbol, in workspace) (jumping to a symbol across files)
 
 Vscode services:
+- Ctrl+Shift+P: Command Palette (">" appears, which can be removed by Del): start searching filenames to load in or start typing commands. Then Enter if there is only one possible command or Tab + Down to select command (without mouse)
+- Ctrl+P (Quick Open 'file') + and start to type any filename: "*.ts", or "Program.cs". It is easier to find files than browsing. You can now continue to navigate to the symbols of a file result simply by typing '@'.
+
 - (Ctrl + ,): Search Settings
+- Ctrl + F4: close tab page window
 - (Ctrl + ') toggles the Terminal window parts
 - (Ctrl+Shift+B) start build
-- Ctrl+P (Quick Open 'file') + and start to type any filename: "*.ts", or "Program.cs". It is easier to find files than browsing. You can now continue to navigate to the symbols of a file result simply by typing '@'.
 
 
 

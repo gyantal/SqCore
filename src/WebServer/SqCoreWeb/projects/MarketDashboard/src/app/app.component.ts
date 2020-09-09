@@ -5,7 +5,7 @@ import { gDiag } from './../sq-globals';
 
 class HandshakeMessage {
   public email = '';
-  public param2  = '';
+  public param2 = '';
 }
 
 @Component({
@@ -28,7 +28,8 @@ export class AppComponent implements OnInit {
   sqDiagnosticsMsg = 'Benchmarking time, connection speed';
 
   // http://localhost:4202/hub/exsvpush/negotiate?negotiateVersion=1 404 (Not Found), if it is not served on port 4202 on ng serve (proxy)
-  public _hubConnection: HubConnection = new HubConnectionBuilder().withUrl('/hub/dashboardpush', { skipNegotiation: true, transport: HttpTransportType.WebSockets }).build();
+  public _hubConnection: HubConnection = new HubConnectionBuilder().withUrl('/hub/dashboardpush', { skipNegotiation: true, transport: HttpTransportType.WebSockets }).build(); // "ws://localhost:4202/hub/dashboardpush" , Angular proxy will redirect that to wss over HTTPS
+  public _socket: WebSocket = new WebSocket('wss://' + document.location.hostname + '/ws/dashboard');   // "wss://localhost/ws/dashboard" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection
 
   @ViewChild(SettingsDialogComponent) private settingsDialogComponent!: SettingsDialogComponent;
 
@@ -44,23 +45,43 @@ export class AppComponent implements OnInit {
 
     this.onSetTheme('sqClassic');
 
+    // WebSocket connection
     gDiag.wsConnectionStartTime = new Date();
     console.log('sq.d: ' + gDiag.wsConnectionStartTime.toISOString() + ': wsConnectionStartTime()');
+
+    this._socket.onopen = (event) => {
+      gDiag.wsConnectionReadyTime = new Date();
+      console.log('sq.d: ' + gDiag.srConnectionReadyTime.toISOString() + ': wsConnectionReadyTime()');
+      console.log('ws: Connection started! _hubConnection.send() can be used now.');
+    };
+
+    this._socket.onmessage = (event) => {
+      gDiag.wsOnConnectedMsgArrivedTime = new Date();
+      console.log('sq.d: ' + gDiag.srOnConnectedMsgArrivedTime.toISOString() + ': wsOnConnectedMsgArrivedTime()');  // called 500ms after windowOnLoad()
+      console.log('ws: OnConnected Message arrived:' + event.data.ToString());
+      // this.user.email = message.email;
+    };
+
+    // SignalR connection
+    gDiag.srConnectionStartTime = new Date();
+    console.log('sq.d: ' + gDiag.srConnectionStartTime.toISOString() + ': wsConnectionStartTime()');
+
     this._hubConnection
       .start()
       .then(() => {
-        gDiag.wsConnectionReadyTime = new Date();
-        console.log('sq.d: ' + gDiag.wsConnectionReadyTime.toISOString() + ': wsConnectionReadyTime()');
+        gDiag.srConnectionReadyTime = new Date();
+        console.log('sq.d: ' + gDiag.srConnectionReadyTime.toISOString() + ': wsConnectionReadyTime()');
         console.log('ws: Connection started! _hubConnection.send() can be used now.');
       })
       .catch(err => console.log('Error while establishing connection :('));
 
     this._hubConnection.on('OnConnected', (message: HandshakeMessage) => {
-      gDiag.wsOnConnectedMsgArrivedTime = new Date();
-      console.log('sq.d: ' + gDiag.wsOnConnectedMsgArrivedTime.toISOString() + ': wsOnConnectedMsgArrivedTime()');  // called 500ms after windowOnLoad()
+      gDiag.srOnConnectedMsgArrivedTime = new Date();
+      console.log('sq.d: ' + gDiag.srOnConnectedMsgArrivedTime.toISOString() + ': wsOnConnectedMsgArrivedTime()');  // called 500ms after windowOnLoad()
       console.log('ws: OnConnected Message arrived:' + message.email);
       this.user.email = message.email;
     });
+
   }
 
   public onSetTheme($event: string) {
@@ -136,18 +157,23 @@ export class AppComponent implements OnInit {
     console.log('mouse enter : ' + div);
     if (div === 'sqDiagnostics') {
       const diag =
-      'DOM loaded: ' + (gDiag.dOMContentLoadedTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' +
-      'Window loaded: ' + (gDiag.windowOnLoadTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' +
-      'App constructor: ' + (gDiag.mainAngComponentConstructorTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' +
-      'Websocket connection start in OnInit: ' + (gDiag.wsConnectionStartTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' +
-      'Websocket connection ready: ' + (gDiag.wsConnectionReadyTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' +
-      'Websocket userdata(email) arrived: ' + (gDiag.wsOnConnectedMsgArrivedTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' +
-      'Websocket First NonRtStat: ' + (gDiag.wsOnFirstRtMktSumNonRtStatTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' +
-      'Websocket First RtStat: ' + (gDiag.wsOnFirstRtMktSumRtStatTime.getTime() - gDiag.mainTsTime.getTime() ) + 'ms\n' + // if wsOnFirstRtMktSumRtStatTime == minTime, it can be negative
-      'Websocket #RtStat: ' + gDiag.wsNumRtMktSumRtStat + '\n' +
-      'Websocket Last RtStat: ' + (new Date().getTime() - gDiag.wsOnLastRtMktSumRtStatTime.getTime() ) + 'ms ago\n';
+        'App constructor: ' + (gDiag.mainAngComponentConstructorTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
+        'DOM loaded: ' + (gDiag.dOMContentLoadedTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
+        'Window loaded: ' + (gDiag.windowOnLoadTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
+        '-----\n' +
+        'SignalR connection start in OnInit: ' + (gDiag.srConnectionStartTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
+        'SignalR connection ready: ' + (gDiag.srConnectionReadyTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
+        'SignalR userdata(email) arrived: ' + (gDiag.srOnConnectedMsgArrivedTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
+        'SignalR First NonRtStat: ' + (gDiag.srOnFirstRtMktSumNonRtStatTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
+        'SignalR First RtStat: ' + (gDiag.srOnFirstRtMktSumRtStatTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' + // if wsOnFirstRtMktSumRtStatTime == minTime, it can be negative
+        'SignalR #RtStat: ' + gDiag.srNumRtMktSumRtStat + '\n' +
+        'SignalR Last RtStat: ' + (new Date().getTime() - gDiag.srOnLastRtMktSumRtStatTime.getTime()) + 'ms ago\n' +
+        '-----\n' +
+        'WebSocket connection start in OnInit: ' + (gDiag.wsConnectionStartTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
+        'WebSocket connection ready: ' + (gDiag.wsConnectionReadyTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
+        'WebSocket userdata(email) arrived: ' + (gDiag.wsOnConnectedMsgArrivedTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n';
       this.sqDiagnosticsMsg = diag;
     }
- }
+  }
 
 }

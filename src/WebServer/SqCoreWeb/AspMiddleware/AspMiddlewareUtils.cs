@@ -48,10 +48,11 @@ namespace SqCoreWeb
             return app.UseStaticFiles(fileOptions);
         }
 
-        public static string GetExactFullName(this FileSystemInfo @this)
+        public static string GetExactFullName(this FileSystemInfo p_fsi)
         {
-            var path = @this.FullName;
-            if (!File.Exists(path) && !Directory.Exists(path)) return path;
+            var path = p_fsi.FullName;
+            if (!File.Exists(path) && !Directory.Exists(path))
+                return path;
 
             var asDirectory = new DirectoryInfo(path);
             var parent = asDirectory.Parent;

@@ -193,25 +193,25 @@ export class MarketHealthComponent implements OnInit {
 
     if (this._parentHubConnection != null) {
       this._parentHubConnection.on('RtMktSumRtStat', (message: RtMktSumRtStat[]) => {
-        if (gDiag.wsOnFirstRtMktSumRtStatTime === minDate) {
-          gDiag.wsOnFirstRtMktSumRtStatTime = new Date();
-          console.log('sq.d: ' + gDiag.wsOnFirstRtMktSumRtStatTime.toISOString() + ': wsOnFirstRtMktSumRtStatTime()'); // called 17ms after main.ts
+        if (gDiag.srOnFirstRtMktSumRtStatTime === minDate) {
+          gDiag.srOnFirstRtMktSumRtStatTime = new Date();
+          console.log('sq.d: ' + gDiag.srOnFirstRtMktSumRtStatTime.toISOString() + ': srOnFirstRtMktSumRtStatTime()'); // called 17ms after main.ts
         }
-        gDiag.wsOnLastRtMktSumRtStatTime = new Date();
-        gDiag.wsNumRtMktSumRtStat++;
+        gDiag.srOnLastRtMktSumRtStatTime = new Date();
+        gDiag.srNumRtMktSumRtStat++;
         this.nRtStatArrived++;
 
         const msgStr = message.map(s => s.assetId + ' ? =>' + s.last.toFixed(2).toString()).join(', ');  // %Chg: Bloomberg, MarketWatch, TradingView doesn't put "+" sign if it is positive, IB, CNBC, YahooFinance does. Go as IB.
-        console.log('ws: RtMktSumRtStat arrived: ' + msgStr);
+        console.log('sr: RtMktSumRtStat arrived: ' + msgStr);
         this.rtMktSumRtQuoteStr = msgStr;
 
         this.updateMktSumRt(message, this.marketFullStat);
       });
 
       this._parentHubConnection.on('RtMktSumNonRtStat', (message: RtMktSumNonRtStat[]) => {
-        if (gDiag.wsOnFirstRtMktSumNonRtStatTime === minDate) {
-          gDiag.wsOnFirstRtMktSumNonRtStatTime = new Date();
-          console.log('sq.d: ' + gDiag.wsOnFirstRtMktSumNonRtStatTime.toISOString() + ': wsOnFirstRtMktSumNonRtStatTime()'); // called 17ms after main.ts
+        if (gDiag.srOnFirstRtMktSumNonRtStatTime === minDate) {
+          gDiag.srOnFirstRtMktSumNonRtStatTime = new Date();
+          console.log('sq.d: ' + gDiag.srOnFirstRtMktSumNonRtStatTime.toISOString() + ': srOnFirstRtMktSumNonRtStatTime()'); // called 17ms after main.ts
         }
         this.nNonRtStatArrived++;
 

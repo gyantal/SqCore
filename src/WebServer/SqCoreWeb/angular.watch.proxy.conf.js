@@ -4,8 +4,8 @@ const PROXY_CONFIG = [
             "/hub/",
             "/UserAccount/"
         ],
-        target: "http://localhost:5000",
-        secure: false,
+        target: "https://localhost:5001",
+        secure: false, // A backend server running on HTTPS with an invalid certificate will not be accepted by default. If you want to, you need to set secure: false.
         "ws": true,
         changeOrigin: true,
         logLevel: "debug"

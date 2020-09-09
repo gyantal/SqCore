@@ -38,6 +38,7 @@ namespace SqCoreWeb
                     req.Path.ToString().EndsWith("UserAccount/logout", StringComparison.OrdinalIgnoreCase) ||
                     req.Path.ToString().EndsWith("signin-google", StringComparison.OrdinalIgnoreCase) || // Google calls back on https://healthmonitor.sqcore.net/signin-google
                     req.Path.ToString().StartsWith("/hub/", StringComparison.OrdinalIgnoreCase) || // SignalR WebSocket listeners listen on "/hub/" from root
+                    req.Path.ToString().StartsWith("/ws/", StringComparison.OrdinalIgnoreCase) || // WebSocket listeners listen on "/ws/" from root
                     req.Path.ToString().StartsWith("/api/", StringComparison.OrdinalIgnoreCase)) // some controllers listen on /api
                     return;
 

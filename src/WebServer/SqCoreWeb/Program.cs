@@ -93,7 +93,7 @@ namespace SqCoreWeb
                 {
                     gLogger.Error("Linux. See 'Allow non-root process to bind to port under 1024.txt'. If Dotnet.exe was updated, it lost privilaged port. Try 'whereis dotnet','sudo setcap 'cap_net_bind_service=+ep' /usr/share/dotnet/dotnet'.");
                 }
-                HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MainThread. Exception: '{ e.ToStringWithShortenedStackTrace(1200)}'", HealthMonitorMessageID.SqCoreWebCsError).GetAwaiter().GetResult();
+                HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MainThread. Exception: '{ e.ToStringWithShortenedStackTrace(1200)}'", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
             }
             Caretaker.gCaretaker.Exit();
             MemDb.gMemDb.Exit();
@@ -108,19 +108,36 @@ namespace SqCoreWeb
                 {
                     webBuilder.ConfigureKestrel(serverOptions =>
                     {
+                        Console.WriteLine($"ConfigureKestrel()");
+                        // Because of Google Auth cookie usage and Chrome SameSite policy, use only the HTTPS protocol (no HTTP), even in local development. See explanation at Google Auth code.
                         // Safe to leave ports 5000, 5001 on IPAddress.Loopback (localhost), because localhost can be accessed only from local machine. From the public web, the ports 5000, 5001 is not accessable.
-                        serverOptions.Listen(IPAddress.Loopback, 5000); // In IPv4, 127.0.0.1 is the most commonly used loopback address, in IP6, it is [::1],  "localhost" means either 127.0.0.1 or  [::1] 
+                        // See cookies: Facebook and Google logins only work in HTTPS (even locally), and because we want in Local development the same experience (user email info) as is production, we eliminate HTTP in local development
+                        // serverOptions.Listen(IPAddress.Loopback, 5000); // 2020-10: HTTP still works for basic things // In IPv4, 127.0.0.1 is the most commonly used loopback address, in IP6, it is [::1],  "localhost" means either 127.0.0.1 or  [::1] 
+
+                        string sensitiveConfigFullPath = Utils.SensitiveConfigFolderPath() + $"sqcore.net.merged_pubCert_privKey.pfx";
+                        Console.WriteLine($"Pfx file: " + sensitiveConfigFullPath);
                         serverOptions.Listen(IPAddress.Loopback, 5001, listenOptions =>  // On Linux server: only 'localhost:5001' is opened, but '<PublicIP>:5001>' is not. We would need PublicAny for that. But for security, it is fine.
                         {
-                            //listenOptions.UseHttps("testCert.pfx", "testPassword");
-                            listenOptions.UseHttps();   // Configure Kestrel to use HTTPS with the default certificate. Throws an exception if no default certificate is configured.
+                            // On Linux, "default developer certificate could not be found or is out of date. ". Uncommenting this solved the problem temporarily.
+                            // Exception: 'System.InvalidOperationException: Unable to configure HTTPS endpoint. No server certificate was specified, and the default developer certificate could not be found or is out of date.
+                            // To generate a developer certificate run 'dotnet dev-certs https'. To trust the certificate (Windows and macOS only) run 'dotnet dev-certs https --trust'.
+                            // For more information on configuring HTTPS see https://go.microsoft.com/fwlink/?linkid=848054.
+                            //    at Microsoft.AspNetCore.Hosting.ListenOptionsHttpsExtensions.UseHttps(ListenOptions listenOptions, Action`1 configureOptions)
+
+                            // https://go.microsoft.com/fwlink/?linkid=848054
+                            // https://stackoverflow.com/questions/53300480/unable-to-configure-https-endpoint-no-server-certificate-was-specified-and-the
+                            // The .NET Core SDK includes an HTTPS development certificate. The certificate is installed as part of the first-run experience. 
+                            // But that cert expires after about 6 month. Its expiration can be followed in certmgr.msc/Trusted Root Certification Authorities/Certificates/localhost/Expiration Date.
+                            // Cleaning (dotnet dev-certs https --clean) and recreating (dotnet dev-certs https -t) it both on Win/Linux would work, but it has to be done every 6 months.
+                            // Better once and for all solution to use the live certificate of SqCore.net even in localhost in Development.
+
+                            // listenOptions.UseHttps();   // Configure Kestrel to use HTTPS with the default certificate for the domain (certmgr.msc/Trusted Root Certification Authorities/Certificates). This is usually the .NET Core SDK includes an HTTPS development certificate, which expires in every 6 months. Throws an exception if no default certificate is configured.
+                            listenOptions.UseHttps(sensitiveConfigFullPath, @"haha");
                         });
 
                         // from the public web only port 443 is accessable. However, on that port, both HTTP and HTTPS traffic is allowed. Although we redirect HTTP to HTTPS later.
                         serverOptions.ListenAnyIP(443, listenOptions =>    // Both 'localhost:443' and '<PublicIP>:443>' is listened on Linux server.
                         {
-                            string sensitiveConfigFullPath = Utils.SensitiveConfigFolderPath() + $"sqcore.net.merged_pubCert_privKey.pfx";
-                            Console.WriteLine($"Pfx file: " + sensitiveConfigFullPath);
                             listenOptions.UseHttps(sensitiveConfigFullPath, @"haha");
 
                             // I don't actually need all of these. Because the wildcart cert is both root and subdomain 'checked by 'certbot certificates''. So, don't need branching here based on context.
@@ -211,7 +228,7 @@ namespace SqCoreWeb
             }
 
             if (isSendable)
-                HealthMonitorMessage.SendAsync(msg, HealthMonitorMessageID.SqCoreWebCsError).GetAwaiter().GetResult();
+                HealthMonitorMessage.SendAsync(msg, HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
             else 
                 gLogger.Warn(msg);
             e.SetObserved();        //  preventing it from triggering exception escalation policy which, by default, terminates the process.

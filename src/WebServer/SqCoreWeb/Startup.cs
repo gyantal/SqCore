@@ -95,19 +95,7 @@ namespace SqCoreWeb
                 options.Level = CompressionLevel.Fastest;
             });
 
-            // 2020-05-30: WARN|Microsoft.AspNetCore.Authentication.Google.GoogleHandler: '.AspNetCore.Correlation.Google.bzb7A4oxoS_pz_xQk0N4WngqgL0nyLUiT0k5QSPsD_M' cookie not found.
-            // "Exception: Correlation failed.".
-            // Maybe because SameSite cookies policy changed.
-            // I suspect Bunny used an old Chrome or FFox or Edge.
-            // "AspNetCore as a rule does not implement browser sniffing for you because User-Agents values are highly unstable"
-            // However, if updating browser of the user to the latest Chrome doesn't solve it, we may implement these changes:
-            // https://github.com/dotnet/aspnetcore/issues/14996
-            // https://docs.microsoft.com/en-us/aspnet/core/security/samesite?view=aspnetcore-3.1
-            // "Cookies without SameSite header are treated as SameSite=Lax by default.
-            // SameSite=None must be used to allow cross-site cookie use.
-            // Cookies that assert SameSite=None must also be marked as Secure. (requires HTTPS)"
-            // 'Correlation failed.' is a Browser Cache problem. 2020-06-03: JMC could log in. Error email 'correlation failed' arrived. When I used F12 in Chrome, disabled cache; then login went OK.
-
+            
             string googleClientId = Utils.Configuration["Google:ClientId"];
             string googleClientSecret = Utils.Configuration["Google:ClientSecret"];
             
@@ -128,7 +116,42 @@ namespace SqCoreWeb
                 .AddCookie(o => {  // CookieAuth will be the default from the two, GoogleAuth is used only for Challenge
                     o.LoginPath = "/UserAccount/login";
                     o.LogoutPath = "/UserAccount/logout";
-                    //o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;   // this is the default BTW, so no need to set.
+
+                    // 2020-05-30: WARN|Microsoft.AspNetCore.Authentication.Google.GoogleHandler: '.AspNetCore.Correlation.Google.bzb7A4oxoS_pz_xQk0N4WngqgL0nyLUiT0k5QSPsD_M' cookie not found.
+                    // "Exception: Correlation failed.".
+                    // Maybe because SameSite cookies policy changed.
+                    // I suspect Bunny used an old Chrome or FFox or Edge.
+                    // "AspNetCore as a rule does not implement browser sniffing for you because User-Agents values are highly unstable"
+                    // However, if updating browser of the user to the latest Chrome doesn't solve it, we may implement these changes:
+                    // https://github.com/dotnet/aspnetcore/issues/14996
+                    // https://docs.microsoft.com/en-us/aspnet/core/security/samesite?view=aspnetcore-3.1
+                    // "Cookies without SameSite header are treated as SameSite=Lax by default.
+                    // SameSite=None must be used to allow cross-site cookie use.
+                    // Cookies that assert SameSite=None must also be marked as Secure. (requires HTTPS)"
+                    // 2020-01: 'Correlation failed.' is a Browser Cache problem. 2020-06-03: JMC could log in. Error email 'correlation failed' arrived. When I used F12 in Chrome, disabled cache; then login went OK.
+
+                    // 2020-08: Chrome implements this default behavior as of version 84. (2020-08). Edge doesn't restrict that yet.
+                    // without any intervention, http://localhost/login returns this to the browser: ""Set-Cookie: .AspNetCore.Correlation.Google._AcFoUd0-sbBMoGfefWKA2WlqpVJwD2bGYTYs6axoBU=N; expires=Fri, 14 Aug 2020 14:45:30 GMT; path=/signin-google; samesite=none; httponly"
+                    // and Chrome throws an Error to JsConsole: "A cookie associated with a resource at http://localhost/ was set with `SameSite=None` but without `Secure`. It has been blocked"
+                    // disable this feature by going to "chrome://flags" and disabling "Cookies without SameSite must be secure", but it is good for development only
+                    // So, from now on, because we want to use Chrome84+, if we want login, we have to develop in HTTPS mode, not HTTP. We can completely forget HTTP. Just use HTTPS, even in DEV. 
+
+                    // >GoogleAuth Login system uses cookie (.AspNetCore.Correlation.Google). From 2020-08, Chrome blocks a SameSite=None, which is not Secure. 
+                    // But Secure means it is running on HTTPS. So, local development will also need to be done with HTTPS urls.
+                    // >Specify SameSite=None and Secure if the cookie should be sent in cross-site requests. This enables third-party use.
+                    // Specify SameSite=Strict or SameSite=Lax if the cookie should not be sent in cross-site requests. 
+                    // But even in this case, if we use Both HTTP, HTTPS at development, Login problems arise on HTTP.
+                    // >Chrome debug: cookie HTTP://".AspNetCore.Cookies": "This set-cookie was blocked because it was not sent over a secure connection and would have overwritten a cookie with a secure attribute.", 
+                    // but then that Secure HTTPS cookie with the same name is not sent to the non-secure HTTP request. (It is only sent to the HTTPS request).
+                    // Therefore, we should use only the HTTPS protocol, even in local development.  (except if AWS CloudFront cannot handle HTTPS to HTTPS conversions)
+                    // See cookies: Facebook and Google logins only work in HTTPS (even locally), and because we want in Local development the same experience as is production, we eliminate HTTP in local development
+
+                    // Cookies are shared between ports. So, https://localhost:5001/ and https://localhost:443 share the same cookie (login info), but http://localhost:5000/ cannot overwrite that cookie in Chrome
+
+                    // https://docs.microsoft.com/en-us/aspnet/core/security/samesite?view=aspnetcore-3.1
+                    o.Cookie.SameSite = SameSiteMode.Lax;    // sets the cookie ".AspNetCore.Cookies"
+                    o.Cookie.SecurePolicy = CookieSecurePolicy.Always;      // Note this will also require you to be running on HTTPS. Local development will also need to be done with HTTPS urls.
+                    // o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;   // this is the default BTW, so no need to set.
                     // problem: if Cookie storage works in https://localhost:5001/UserAccount/login  but not in HTTP: http://localhost:5000/UserAccount/login
                     // "Note that the http page cannot set an insecure cookie of the same name as the secure cookie."
                     // Solution: Manually delete the cookie from Chrome. see here.  https://bugs.chromium.org/p/chromium/issues/detail?id=843371
@@ -143,6 +166,8 @@ namespace SqCoreWeb
                 {
                     options.ClientId = googleClientId;
                     options.ClientSecret = googleClientSecret;
+                    options.CorrelationCookie.SameSite = SameSiteMode.Lax; // sets the cookie ".AspNetCore.Correlation.Google.*"
+                    options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
                     // Note: Once logged in to Google Ecosystem (and once allowed Sqcore website), the Google login prompt (offering different users) does not even display.
                     // Do we want it displayed? Probably NOT. Because this is good and fast:
                     // "the Google login prompt does not even display. From the app I get redirected to Google, 
@@ -243,7 +268,7 @@ namespace SqCoreWeb
             app.UseMiddleware<SqFirewallMiddlewarePreAuthLogger>();
 
             // place UseAuthentication() AFTER UseRouting(),  https://docs.microsoft.com/en-us/aspnet/core/migration/22-to-30?view=aspnetcore-2.2&tabs=visual-studio
-            app.UseAuthentication();    // needed for filling httpContext?.User?.Claims. StaticFiles are served Before the user is authenticed. This is fast, but httpContext?.User?.Claims is null in this case.
+            app.UseAuthentication();    // // If execution reaches here and user is not logged in, this will redirect to Google-login. It is needed for filling httpContext?.User?.Claims. StaticFiles are served Before the user is login is assured. This is fast, but httpContext?.User?.Claims is null in this case.
 
             app.UseMiddleware<SqFirewallMiddlewarePostAuth>();  // For this to catch Exceptions, it should come after UseExceptionHadlers(), because those will swallow exceptions and generates nice ErrPage.
 
@@ -259,6 +284,14 @@ namespace SqCoreWeb
                 Utils.Logger.Info($"Serving '{context.Request.Path.Value}'");
                 await next();
             });
+
+            // WebSocket should come After authentication, After SubdomainRewrite, but Caching is not necessary.
+            var webSocketOptions = new WebSocketOptions() 
+            {
+                KeepAliveInterval = TimeSpan.FromSeconds(120),  // default is 2 minutes
+                ReceiveBufferSize = 4 * 1024                    // default is 4KB.
+            };
+            app.UseWebSockets(webSocketOptions);
 
             // Edge browser bug. Aug 30, 2019: "EdgeHTML not respecting nomodule attribute on script tag". It downloads both ES5 and ES6(2015) versions. https://developer.microsoft.com/en-us/microsoft-edge/platform/issues/23357397/
             // can be fixed to only emit ES2015: https://stackoverflow.com/questions/56495683/angular-cli-8-is-it-possible-to-build-only-on-es2015
@@ -292,7 +325,7 @@ namespace SqCoreWeb
                     // if we try to add After StaticFiles(), we got exception: "System.InvalidOperationException: Headers are read-only, response has already started."
                     TimeSpan maxBrowserCacheAge = TimeSpan.Zero;
                     if (context.Request.Path.Value.Equals("/index.html", StringComparison.OrdinalIgnoreCase)   // main index.html has Login/username on it. After Login, the page should be refreshed. So, ignore CacheControl for that
-                        || context.Request.Path.Value.StartsWith("/hub/")   // WebSockets should not be cached
+                        || context.Request.Path.Value.StartsWith("/hub/") || context.Request.Path.Value.StartsWith("/ws/")   // WebSockets should not be cached
                     )  
                     {
                         maxBrowserCacheAge = TimeSpan.Zero;
@@ -443,8 +476,9 @@ namespace SqCoreWeb
 
             app.UseRouting();
 
-            app.UseAuthorization();     // needed for [Authorize] attributes protection, "If the app uses authentication/authorization features such as AuthorizePage or [Authorize], place the call to UseAuthentication and UseAuthorization after UseRouting"
+            app.UseAuthorization();     // If execution reaches here and user is not logged in, this will redirect to Google-login. It is needed for [Authorize] attributes protection, "If the app uses authentication/authorization features such as AuthorizePage or [Authorize], place the call to UseAuthentication and UseAuthorization after UseRouting"
 
+            app.UseMiddleware<SqWebsocketMiddleware>();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapHub<ExSvPushHub>("/hub/exsvpush");
@@ -457,7 +491,6 @@ namespace SqCoreWeb
             app.Use(async (context, next) =>
             {
                 Console.WriteLine($"Problem. End of the serving line. Request.Path: '{context.Request.Path.Value}'");
-
                 await next();
             });
 

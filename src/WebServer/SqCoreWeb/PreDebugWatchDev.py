@@ -59,8 +59,8 @@ startShellCallingThread("npx webpack --config webapps/ExampleCsServerPushInRealt
 # 2.3 Angular webapps in the project folder should be served on different ports. If an Angular app is not developed any more, comment it out to save resources
 # ng serve doesn't create anything into --output-path=wwwroot/webapps/ (it keeps its files temp, maybe in RAM)
 # to create files into wwwroot/weapps, at publish run 'ng build HealthMonitor --prod --output-path=wwwroot/webapps/HealthMonitor --base-href ./'
-startShellCallingThread("ng serve --proxy-config angular.watch.proxy.conf.js HealthMonitor --port 4201")
-startShellCallingThread("ng serve --proxy-config angular.watch.proxy.conf.js MarketDashboard --port 4202")
+startShellCallingThread("ng serve --ssl --ssl-key DevTools/AngularLocalServeCert/localhost.key  --ssl-cert DevTools/AngularLocalServeCert/localhost.crt --proxy-config angular.watch.proxy.conf.js HealthMonitor --port 4201")
+startShellCallingThread("ng serve --ssl --ssl-key DevTools/AngularLocalServeCert/localhost.key  --ssl-cert DevTools/AngularLocalServeCert/localhost.crt --proxy-config angular.watch.proxy.conf.js MarketDashboard --port 4202")
 
 # 3. Wait for Python message to terminate all threads.
 print("SqBuild: User can break (Control-C, or closing CMD) here manually. Or Wait for socket (TCP port) communication from another Python thread to end this thread.")

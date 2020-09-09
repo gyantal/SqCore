@@ -78,12 +78,18 @@ export class SqDiagnostics {
   public mainAngComponentOnInitTime: Date = minDate;
   public dOMContentLoadedTime: Date = minDate;
   public windowOnLoadTime: Date = minDate;
+
+  public srConnectionStartTime: Date = minDate;
+  public srConnectionReadyTime: Date = minDate;
+  public srOnConnectedMsgArrivedTime: Date = minDate;
+
+  public srOnFirstRtMktSumNonRtStatTime: Date = minDate;
+  public srOnFirstRtMktSumRtStatTime: Date = minDate;
+  public srOnLastRtMktSumRtStatTime: Date = minDate;
+  public srNumRtMktSumRtStat = 0;
+
   public wsConnectionStartTime: Date = minDate;
   public wsConnectionReadyTime: Date = minDate;
   public wsOnConnectedMsgArrivedTime: Date = minDate;
-  public wsOnFirstRtMktSumRtStatTime: Date = minDate;
-  public wsOnLastRtMktSumRtStatTime: Date = minDate;
-  public wsOnFirstRtMktSumNonRtStatTime: Date = minDate;
-  public wsNumRtMktSumRtStat = 0;
 }
 export const gDiag: SqDiagnostics = new SqDiagnostics();
