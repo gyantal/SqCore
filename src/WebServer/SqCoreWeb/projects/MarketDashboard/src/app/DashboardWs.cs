@@ -26,7 +26,8 @@ namespace SqCoreWeb
             string msgSendAtConnection = $"[{{\"email\":\"{email}\",\"anyParam\":55}}]"; // see HandshakeMessage serialization in DashboardPushHub
             var encoded = Encoding.UTF8.GetBytes(msgSendAtConnection);
             var bufferFirst = new ArraySegment<Byte>(encoded, 0, encoded.Length);
-            await webSocket.SendAsync(bufferFirst, WebSocketMessageType.Text, true, CancellationToken.None);
+            if (webSocket.State == WebSocketState.Open)
+                await webSocket.SendAsync(bufferFirst, WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
     }   // class

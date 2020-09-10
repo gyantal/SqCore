@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 
-
 // There is a WebSocket without SignalR in AspDotNetCore. Great. We can easily implement that.
 // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/websockets?view=aspnetcore-3.1
 
@@ -71,7 +70,6 @@ namespace SqCoreWeb
             // https://github.com/dotnet/aspnetcore/issues/2713  search "/ws" instead of  the intended "/ws/", otherwise it will be not found
             if (httpContext.Request.Path.StartsWithSegments("/ws", StringComparison.OrdinalIgnoreCase, out PathString remainingPathStr))
             {
-                Console.WriteLine($"SqWebSocket. RemainingPathStr: '{remainingPathStr}'");
                 if (httpContext.WebSockets.IsWebSocketRequest)
                 {
                     await WebSocketLoopKeptAlive(httpContext, remainingPathStr);
@@ -105,17 +103,36 @@ namespace SqCoreWeb
             }
 
             var buffer = new byte[1024 * 4];
-            WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);   // waiting for any received message
+            WebSocketReceiveResult? result = null;
             // loop until the client closes the connection. The server receives a disconnect message only if the client sends it, which can't be done if the internet connection is lost.
             // If the client isn't always sending messages and you don't want to timeout just because the connection goes idle, have the client use a timer to send a ping message every X seconds. 
             // On the server, if a message hasn't arrived within 2*X seconds after the previous one, terminate the connection and report that the client disconnected.
-            while (!result.CloseStatus.HasValue)
+            while (webSocket.State == WebSocketState.Open && (result?.CloseStatus == null || !result.CloseStatus.HasValue))
             {
-                await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
+                try
+                {
+                    result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None); // waiting for any received message or a Close message
+                    // If Client never sent any proper data, and closes browser tabpage, ReceiveAsync() returns without Exception and result.CloseStatus = EndpointUnavailable
+                    // If Client sent any proper data, and closes browser tabpage, ReceiveAsync() returns with Exception WebSocketError.ConnectionClosedPrematurely
+                }
+                catch (System.Net.WebSockets.WebSocketException e)
+                {
+                    if (e.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) // 'The remote party closed the WebSocket connection without completing the close handshake.'
+                    {
+                        gLogger.Trace($"Expected exception: {e.Message}");
+                    }
+                    else
+                        throw;
+                }
 
-                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                bool isGoodNonClientClosedConnection = webSocket.State == WebSocketState.Open && result != null && (result.CloseStatus == null || !result.CloseStatus.HasValue);
+                
+                if (isGoodNonClientClosedConnection && result != null) { // if it is not a Close-message from client, send it back temporarily
+                    await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
+                }
             }
-            await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+            if (result?.CloseStatus != null)    // if client sends Close request then result.CloseStatus = NormalClosure and websocket.State == CloseReceived. In that case, we just answer back that we are closing.
+                await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
         }
     }   // class
 }
