@@ -91,13 +91,13 @@ namespace SqCoreWeb
                 if (isAllowedRequest)
                 {
                     // allow the requests. Let it through to the other handlers in the pipeline.
-                    string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow.ToString("HH':'mm':'ss.f")}#Uknown or not allowed user request: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {WsUtils.GetRequestIP(httpContext)}. Falling through to further Kestrel middleware without redirecting to '/UserAccount/login'.");
+                    string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow.ToString("HH':'mm':'ss.f")}#Uknown or not allowed user request: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {WsUtils.GetRequestIPv6(httpContext)}. Falling through to further Kestrel middleware without redirecting to '/UserAccount/login'.");
                     Console.WriteLine(msg);
                     gLogger.Info(msg);
                 }
                 else
                 {
-                    string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow.ToString("HH':'mm':'ss.f")}#Uknown or not allowed user request: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {WsUtils.GetRequestIP(httpContext)}. Redirecting to '/UserAccount/login'.");
+                    string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow.ToString("HH':'mm':'ss.f")}#Uknown or not allowed user request: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {WsUtils.GetRequestIPv6(httpContext)}. Redirecting to '/UserAccount/login'.");
                     Console.WriteLine(msg);
                     gLogger.Info(msg);
 

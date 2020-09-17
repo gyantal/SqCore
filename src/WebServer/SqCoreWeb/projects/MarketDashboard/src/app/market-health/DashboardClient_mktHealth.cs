@@ -13,6 +13,7 @@ using FinTechCommon;
 using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Net.WebSockets;
 
 namespace SqCoreWeb
 {
@@ -58,7 +59,7 @@ namespace SqCoreWeb
     // The knowledge 'WHEN to send what' should be programmed on the server. When server senses that there is an update, then it broadcast to clients. 
     // Do not implement the 'intelligence' of WHEN to change data on the client. It can be too complicated, like knowing if there was a holiday, a half-trading day, etc. 
     // Clients should be slim programmed. They should only care, that IF they receive a new data, then Refresh.
-    public partial class DashboardPushHub : Hub
+    public partial class DashboardClient
     {
         static Timer m_rtMktSummaryTimer = new System.Threading.Timer(new TimerCallback(RtMktSummaryTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
         static bool m_rtMktSummaryTimerRunning = false;
@@ -93,17 +94,85 @@ namespace SqCoreWeb
         {
             Utils.Logger.Info("EvMemDbHistoricalDataReloaded_mktHealth() START");
 
-            if (g_clients.Count > 0)    // Notify all the connected users. 
+            if (DashboardClient.g_clients.Count > 0)    // Notify all the connected users. 
             {
                 IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat("YTD");     // reset lookback to to YTD.
                 DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All.SendAsync("RtMktSumNonRtStat", periodStatToClient);
+
+                byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumNonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
+                DashboardClient.g_clients.ForEach(client =>
+                {
+                    if (client.WsWebSocket!.State == WebSocketState.Open)
+                        client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+                });
             }
         }
 
         // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
-        public void OnConnectedAsync_MktHealth()
+        public void OnConnectedWsAsync_MktHealth()
         {
-            string connId = this.Context?.ConnectionId ?? String.Empty;
+            new Thread(() =>
+            {
+                Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
+
+                // for both the first and the second client, we get RT prices from MemDb immediately and send it back to this Client only.
+
+                // 1. Send the Historical data first. SendAsync() is non-blocking. GetLastRtPrice() can be blocking
+                IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat("YTD");
+                Utils.Logger.Info("OnConnectedWsAsync_MktHealth(): RtMktSumNonRtStat");
+                byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumNonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
+                if (WsWebSocket!.State == WebSocketState.Open)
+                    WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+
+                // 2. Send RT price later, because GetLastRtPrice() might block the thread, if it is the first client.
+                var lastPrices = MemDb.gMemDb.GetLastRtPrice(g_mktSummaryStocks.Select(r => r.AssetId).ToArray());
+                IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = lastPrices.Select(r =>
+                {
+                    var rtStock = new RtMktSumRtStat()
+                    {
+                        AssetId = r.SecdID,
+                        Last = r.LastPrice,
+                    };
+                    return rtStock;
+                });
+                Utils.Logger.Info("OnConnectedWsAsync_MktHealth(): RtMktSumRtStat");
+                encodedMsg = Encoding.UTF8.GetBytes("RtMktSumRtStat:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
+                if (WsWebSocket!.State == WebSocketState.Open)
+                    WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+
+                lock (m_rtMktSummaryTimerLock)
+                {
+                    if (!m_rtMktSummaryTimerRunning)
+                    {
+                        Utils.Logger.Info("OnConnectedAsync_MktHealth(). Starting m_rtMktSummaryTimer.");
+                        m_rtMktSummaryTimerRunning = true;
+                        m_rtMktSummaryTimer.Change(TimeSpan.FromMilliseconds(m_rtMktSummaryTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
+                    }
+                }
+            }).Start();
+        }
+
+        public async Task OnReceiveWsAsync_MktHealth(WebSocketReceiveResult? wsResult, string msgCode, string msgObjStr)
+        {
+            switch (msgCode)
+            {
+                case "changeLookback":
+                    IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat(msgObjStr);
+                    Utils.Logger.Info("OnConnectedWsAsync_MktHealth(): RtMktSumNonRtStat");
+                    byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumNonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
+                    if (WsWebSocket!.State == WebSocketState.Open)
+                        await WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+                    break;
+                default:
+                    // throw new Exception($"Unexpected websocket received msgCode '{msgCode}'");
+                    Utils.Logger.Error($"Unexpected websocket received msgCode '{msgCode}'");
+                    break;
+            }
+        }
+
+        // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
+        public void OnConnectedSignalRAsync_MktHealth()
+        {
             new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
@@ -114,7 +183,7 @@ namespace SqCoreWeb
                 IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat("YTD");
                 Utils.Logger.Info("Clients.Caller.SendAsync: RtMktSumNonRtStat");
                 // Clients.Caller.SendAsync("RtMktSumNonRtStat", periodStatToClient);      // Cannot access a disposed object.
-                DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(connId).SendAsync("RtMktSumNonRtStat", periodStatToClient);
+                DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(SignalRConnectionId).SendAsync("RtMktSumNonRtStat", periodStatToClient);
 
                 // 2. Send RT price later, because GetLastRtPrice() might block the thread, if it is the first client.
                 var lastPrices = MemDb.gMemDb.GetLastRtPrice(g_mktSummaryStocks.Select(r => r.AssetId).ToArray());
@@ -128,17 +197,17 @@ namespace SqCoreWeb
                     return rtStock;
                 });
                 Utils.Logger.Info("Clients.Caller.SendAsync: RtMktSumRtStat");
-                DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(connId).SendAsync("RtMktSumRtStat", rtMktSummaryToClient);   // Cannot access a disposed object.
+                DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(SignalRConnectionId).SendAsync("RtMktSumRtStat", rtMktSummaryToClient);   // Cannot access a disposed object.
 
-                lock (m_rtMktSummaryTimerLock)
-                {
-                    if (!m_rtMktSummaryTimerRunning)
-                    {
-                        Utils.Logger.Info("OnConnectedAsync_MktHealth(). Starting m_rtMktSummaryTimer.");
-                        m_rtMktSummaryTimerRunning = true;
-                        m_rtMktSummaryTimer.Change(TimeSpan.FromMilliseconds(m_rtMktSummaryTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
-                    }
-                }
+                // lock (m_rtMktSummaryTimerLock)
+                // {
+                //     if (!m_rtMktSummaryTimerRunning)
+                //     {
+                //         Utils.Logger.Info("OnConnectedAsync_MktHealth(). Starting m_rtMktSummaryTimer.");
+                //         m_rtMktSummaryTimerRunning = true;
+                //         m_rtMktSummaryTimer.Change(TimeSpan.FromMilliseconds(m_rtMktSummaryTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
+                //     }
+                // }
             }).Start();
         }
 
@@ -216,9 +285,9 @@ namespace SqCoreWeb
             return lookbackStatToClient;
         }
 
-        public void OnDisconnectedAsync_MktHealth(Exception exception)
+        public void OnDisconnectedSignalRAsync_MktHealth(Exception exception)
         {
-            if (g_clients.Count == 0)
+            if (DashboardClient.g_clients.Count == 0)
             {
                 lock (m_rtMktSummaryTimerLock)
                 {
@@ -250,8 +319,15 @@ namespace SqCoreWeb
                     return rtStock;
                 });
 
-                Utils.Logger.Info("Clients.All.SendAsync: RtMktSumRtStat");
+                // Utils.Logger.Info("Clients.All.SendAsync: RtMktSumRtStat");
                 DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All.SendAsync("RtMktSumRtStat", rtMktSummaryToClient);
+
+                byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumRtStat:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
+                DashboardClient.g_clients.ForEach(client =>
+                {
+                    if (client.WsWebSocket != null && (client.WsWebSocket.State == WebSocketState.Open))
+                        client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+                });
 
                 lock (m_rtMktSummaryTimerLock)
                 {
@@ -260,18 +336,13 @@ namespace SqCoreWeb
                         m_rtMktSummaryTimer.Change(TimeSpan.FromMilliseconds(m_rtMktSummaryTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
                     }
                 }
-                Utils.Logger.Info("RtMktSummaryTimer_Elapsed(). END");
+                // Utils.Logger.Info("RtMktSummaryTimer_Elapsed(). END");
             }
             catch (Exception e)
             {
                 Utils.Logger.Error(e, "RtMktSummaryTimer_Elapsed() exception.");
                 throw;
             }
-        }
-
-        public IEnumerable<RtMktSumNonRtStat> ChangeLookback(string p_lookbackStr)
-        {
-            return GetLookbackStat(p_lookbackStr);
         }
    }
 }

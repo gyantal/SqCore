@@ -125,6 +125,7 @@ namespace FinTechCommon
 
         
         DateTime m_lastGetLastRtCall = DateTime.MinValue;
+        // GetLastRtPrice() always return data without blocking. Data might be 1 hour old or 3sec (RTH) or in 60sec (non-RTH) for m_assetIds only if there was a function call in the last 5 minutes (busyMode), but it is OK.
         public IEnumerable<(AssetId32Bits SecdID, float LastPrice)> GetLastRtPrice(uint[] p_assetIds)     // C# 7.0 adds tuple types and named tuple literals. uint[] is faster to create and more RAM efficient than linked-list<uint>
         {
             m_lastGetLastRtCall = DateTime.UtcNow;

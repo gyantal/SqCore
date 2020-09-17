@@ -47,7 +47,7 @@ namespace SqCoreWeb.Controllers
             }
 
             // 1. just log the event to our file log
-            var clientIP = WsUtils.GetRequestIP(this.HttpContext);
+            var clientIP = WsUtils.GetRequestIPv6(this.HttpContext);
             var clientUserEmail = WsUtils.GetRequestUser(this.HttpContext);
             if (clientUserEmail == null)
                 clientUserEmail = "UnknownUser@gmail.com";

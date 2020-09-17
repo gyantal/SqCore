@@ -128,6 +128,7 @@ class TradingHoursTimer {
 export class MarketHealthComponent implements OnInit {
 
   @Input() _parentHubConnection?: HubConnection = undefined;    // this property will be input from above parent container
+  @Input() _parentWsConnection?: WebSocket = undefined;    // this property will be input from above parent container
   nRtStatArrived = 0;
   nNonRtStatArrived = 0;
   rtMktSumPrevCloseStr = 'A';
@@ -199,13 +200,13 @@ export class MarketHealthComponent implements OnInit {
         }
         gDiag.srOnLastRtMktSumRtStatTime = new Date();
         gDiag.srNumRtMktSumRtStat++;
-        this.nRtStatArrived++;
 
-        const msgStr = message.map(s => s.assetId + ' ? =>' + s.last.toFixed(2).toString()).join(', ');  // %Chg: Bloomberg, MarketWatch, TradingView doesn't put "+" sign if it is positive, IB, CNBC, YahooFinance does. Go as IB.
-        console.log('sr: RtMktSumRtStat arrived: ' + msgStr);
-        this.rtMktSumRtQuoteStr = msgStr;
-
-        this.updateMktSumRt(message, this.marketFullStat);
+        // native Websocket handles this now, not SignalR
+        // this.nRtStatArrived++;
+        // const msgStr = message.map(s => s.assetId + ' ? =>' + s.last.toFixed(2).toString()).join(', ');  // %Chg: Bloomberg, MarketWatch, TradingView doesn't put "+" sign if it is positive, IB, CNBC, YahooFinance does. Go as IB.
+        // console.log('sr: RtMktSumRtStat arrived: ' + msgStr);
+        // this.rtMktSumRtQuoteStr = msgStr;
+        // this.updateMktSumRt(message, this.marketFullStat);
       });
 
       this._parentHubConnection.on('RtMktSumNonRtStat', (message: RtMktSumNonRtStat[]) => {
@@ -213,21 +214,21 @@ export class MarketHealthComponent implements OnInit {
           gDiag.srOnFirstRtMktSumNonRtStatTime = new Date();
           console.log('sq.d: ' + gDiag.srOnFirstRtMktSumNonRtStatTime.toISOString() + ': srOnFirstRtMktSumNonRtStatTime()'); // called 17ms after main.ts
         }
-        this.nNonRtStatArrived++;
 
-        // If SignalR receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
-        message.forEach(element => {
-          if (element.previousClose.toString() === 'NaN') {
-            element.previousClose = NaN;
-          } else {
-            element.previousClose = Number(element.previousClose);
-          }
-        });
-        const msgStr = message.map(s => s.assetId + '-' + s.ticker + ':prevClose-' + s.previousClose.toFixed(2).toString() + ' : periodStart-' + s.periodStart.toString() + ':open-' + s.periodOpen.toFixed(2).toString() + '/high-' + s.periodHigh.toFixed(2).toString() + '/low-' + s.periodLow.toFixed(2).toString() + '/mdd' + s.periodMaxDD.toFixed(2).toString() + '/mdu' + s.periodMaxDU.toFixed(2).toString()).join(', ');
-        console.log('ws: RtMktSumNonRtStat arrived: ' + msgStr);
-        this.rtMktSumPeriodStatStr = msgStr;
-
-        this.updateMktSumNonRt(message, this.marketFullStat);
+        // native Websocket handles this now, not SignalR
+        // this.nNonRtStatArrived++;
+        // // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
+        // message.forEach(element => {
+        //   if (element.previousClose.toString() === 'NaN') {
+        //     element.previousClose = NaN;
+        //   } else {
+        //     element.previousClose = Number(element.previousClose);
+        //   }
+        // });
+        // const msgStr = message.map(s => s.assetId + '-' + s.ticker + ':prevClose-' + s.previousClose.toFixed(2).toString() + ' : periodStart-' + s.periodStart.toString() + ':open-' + s.periodOpen.toFixed(2).toString() + '/high-' + s.periodHigh.toFixed(2).toString() + '/low-' + s.periodLow.toFixed(2).toString() + '/mdd' + s.periodMaxDD.toFixed(2).toString() + '/mdu' + s.periodMaxDU.toFixed(2).toString()).join(', ');
+        // console.log('ws: RtMktSumNonRtStat arrived: ' + msgStr);
+        // this.rtMktSumPeriodStatStr = msgStr;
+        // this.updateMktSumNonRt(message, this.marketFullStat);
       });
 
      // tslint:disable-next-line: no-unused-expression
@@ -235,6 +236,51 @@ export class MarketHealthComponent implements OnInit {
 
     }
   } // ngOnInit()
+
+  public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
+    switch (msgCode) {
+      case 'RtMktSumRtStat':  // this is the most frequent case. Should come first.
+        if (gDiag.wsOnFirstRtMktSumRtStatTime === minDate) {
+          gDiag.wsOnFirstRtMktSumRtStatTime = new Date();
+          // console.log('sq.d: ' + gDiag.wsOnFirstRtMktSumRtStatTime.toISOString() + ': wsOnFirstRtMktSumRtStatTime()'); // called 17ms after main.ts
+        }
+        gDiag.wsOnLastRtMktSumRtStatTime = new Date();
+        gDiag.wsNumRtMktSumRtStat++;
+
+        this.nRtStatArrived++;
+        const jsonArrayObjRt = JSON.parse(msgObjStr);
+        const msgStrRt = jsonArrayObjRt.map(s => s.assetId + ' ? =>' + s.last.toFixed(2).toString()).join(', ');  // %Chg: Bloomberg, MarketWatch, TradingView doesn't put "+" sign if it is positive, IB, CNBC, YahooFinance does. Go as IB.
+        console.log('ws: RtMktSumRtStat arrived: ' + msgStrRt);
+        this.rtMktSumRtQuoteStr = msgStrRt;
+
+        this.updateMktSumRt(jsonArrayObjRt, this.marketFullStat);
+
+        return true;
+      case 'RtMktSumNonRtStat':
+        if (gDiag.wsOnFirstRtMktSumNonRtStatTime === minDate) {
+          gDiag.wsOnFirstRtMktSumNonRtStatTime = new Date();
+          // console.log('sq.d: ' + gDiag.wsOnFirstRtMktSumNonRtStatTime.toISOString() + ': wsOnFirstRtMktSumNonRtStatTime()'); // called 17ms after main.ts
+        }
+        this.nNonRtStatArrived++;
+        const jsonArrayObjNonRt = JSON.parse(msgObjStr);
+        // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
+        jsonArrayObjNonRt.forEach(element => {
+          if (element.previousClose.toString() === 'NaN') {
+            element.previousClose = NaN;
+          } else {
+            element.previousClose = Number(element.previousClose);
+          }
+        });
+        const msgStrNonRt = jsonArrayObjNonRt.map(s => s.assetId + '-' + s.ticker + ':prevClose-' + s.previousClose.toFixed(2).toString() + ' : periodStart-' + s.periodStart.toString() + ':open-' + s.periodOpen.toFixed(2).toString() + '/high-' + s.periodHigh.toFixed(2).toString() + '/low-' + s.periodLow.toFixed(2).toString() + '/mdd' + s.periodMaxDD.toFixed(2).toString() + '/mdu' + s.periodMaxDU.toFixed(2).toString()).join(', ');
+        console.log('ws: RtMktSumNonRtStat arrived: ' + msgStrNonRt);
+        this.rtMktSumPeriodStatStr = msgStrNonRt;
+
+        this.updateMktSumNonRt(jsonArrayObjNonRt, this.marketFullStat);
+        return true;
+      default:
+        return false;
+    }
+  }
 
   onClickChangeLookback() {
     const lookbackStr = (document.getElementById('lookBackPeriod') as HTMLSelectElement).value;
@@ -256,23 +302,27 @@ export class MarketHealthComponent implements OnInit {
 
     console.log('StartDate: ' + this.lookbackStart);
 
-    if (this._parentHubConnection != null) {
-      this._parentHubConnection.invoke('changeLookback', lookbackStr)
-        .then((message: RtMktSumNonRtStat[]) => {
-          // If SignalR receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
-          message.forEach(element => {
-            if (element.previousClose.toString() === 'NaN') {
-              element.previousClose = NaN;
-            } else {
-              element.previousClose = Number(element.previousClose);
-            }
-          });
-          this.updateMktSumNonRt(message, this.marketFullStat);
-          const msgStr = message.map(s => s.assetId + '-' + s.ticker + ':prevClose-' + s.previousClose.toFixed(2).toString() + ' : periodStart-' + s.periodStart.toString() + ':open-' + s.periodOpen.toFixed(2).toString() + '/high-' + s.periodHigh.toFixed(2).toString() + '/low-' + s.periodLow.toFixed(2).toString() + '/mdd' + s.periodMaxDD.toFixed(2).toString() + '/mdu' + s.periodMaxDU.toFixed(2).toString()).join(', ');
-          console.log('ws: onClickChangeLookback() got back message ' + msgStr);
-          this.rtMktSumPeriodStatStr = msgStr;
-        });
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
+      this._parentWsConnection.send('changeLookback:' + lookbackStr);
     }
+    // native Websocket handles this now, not SignalR
+    // if (this._parentHubConnection != null) {
+    //   this._parentHubConnection.invoke('changeLookback', lookbackStr)
+    //     .then((message: RtMktSumNonRtStat[]) => {
+    //       // If SignalR receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
+    //       message.forEach(element => {
+    //         if (element.previousClose.toString() === 'NaN') {
+    //           element.previousClose = NaN;
+    //         } else {
+    //           element.previousClose = Number(element.previousClose);
+    //         }
+    //       });
+    //       this.updateMktSumNonRt(message, this.marketFullStat);
+    //       const msgStr = message.map(s => s.assetId + '-' + s.ticker + ':prevClose-' + s.previousClose.toFixed(2).toString() + ' : periodStart-' + s.periodStart.toString() + ':open-' + s.periodOpen.toFixed(2).toString() + '/high-' + s.periodHigh.toFixed(2).toString() + '/low-' + s.periodLow.toFixed(2).toString() + '/mdd' + s.periodMaxDD.toFixed(2).toString() + '/mdu' + s.periodMaxDU.toFixed(2).toString()).join(', ');
+    //       console.log('ws: onClickChangeLookback() got back message ' + msgStr);
+    //       this.rtMktSumPeriodStatStr = msgStr;
+    //     });
+    // }
   }
 
   updateMktSumRt(message: RtMktSumRtStat[], marketFullStat: RtMktSumFullStat[]): void {

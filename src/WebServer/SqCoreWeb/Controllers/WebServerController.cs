@@ -69,7 +69,8 @@ namespace SqCoreWeb.Controllers
             StringBuilder sb = new StringBuilder(@"<HTML><body><h1>ServerDiagnostics</h1>");
             Program.ServerDiagnostic(sb);
             MemDb.gMemDb.ServerDiagnostic(sb);
-            DashboardPushHub.ServerDiagnostic(sb);
+            SqWebsocketMiddleware.ServerDiagnostic(sb);
+            DashboardClient.ServerDiagnostic(sb);
 
             return Content(sb.Append("</body></HTML>").ToString(), "text/html");
         }

@@ -64,7 +64,7 @@
 </div>
 
 <div class="content">
-  <app-market-health [hidden]="!(activeTool=='MarketHealth')" [_parentHubConnection]="_hubConnection"></app-market-health>
+  <app-market-health [hidden]="!(activeTool=='MarketHealth')" [_parentHubConnection]="_hubConnection" [_parentWsConnection]="_socket"></app-market-health>
   <app-catalyst-sniffer [hidden]="!(activeTool=='CatalystSniffer')" ></app-catalyst-sniffer>
   <app-quickfolio-news [hidden]="!(activeTool=='QuickfolioNews')" [_parentHubConnection]="_hubConnection"></app-quickfolio-news>
   <app-tooltip-sandpit [hidden]="!(activeTool=='TooltipSandpit')" ></app-tooltip-sandpit>

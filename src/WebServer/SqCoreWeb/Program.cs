@@ -77,7 +77,7 @@ namespace SqCoreWeb
 
             try
             {
-                DashboardPushHub.EarlyInit();    // services add handlers to the MemDb.EvMemDbInitialized event.
+                DashboardClient.EarlyInit();    // services add handlers to the MemDb.EvMemDbInitialized event.
 
                 var redisConnString = (Utils.RunningPlatform() == Platform.Windows) ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
                 IDatabase redisDb = RedisManager.GetDb(redisConnString, 0);
@@ -116,7 +116,7 @@ namespace SqCoreWeb
 
                         string sensitiveConfigFullPath = Utils.SensitiveConfigFolderPath() + $"sqcore.net.merged_pubCert_privKey.pfx";
                         Console.WriteLine($"Pfx file: " + sensitiveConfigFullPath);
-                        serverOptions.Listen(IPAddress.Loopback, 5001, listenOptions =>  // On Linux server: only 'localhost:5001' is opened, but '<PublicIP>:5001>' is not. We would need PublicAny for that. But for security, it is fine.
+                        serverOptions.Listen(IPAddress.Loopback /* '127.0.0.1' (it is not 'localhost') */, 5001, listenOptions =>  // On Linux server: only 'localhost:5001' is opened, but '<PublicIP>:5001>' is not. We would need PublicAny for that. But for security, it is fine.
                         {
                             // On Linux, "default developer certificate could not be found or is out of date. ". Uncommenting this solved the problem temporarily.
                             // Exception: 'System.InvalidOperationException: Unable to configure HTTPS endpoint. No server certificate was specified, and the default developer certificate could not be found or is out of date.

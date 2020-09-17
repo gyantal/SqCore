@@ -12,6 +12,7 @@ using FinTechCommon;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using System.Net.WebSockets;
+using System.Text.Json;
 
 namespace SqCoreWeb
 {
@@ -23,12 +24,47 @@ namespace SqCoreWeb
             var email = userEmailClaim?.Value ?? "unknown@gmail.com";
 
             // https://stackoverflow.com/questions/24450109/how-to-send-receive-messages-through-a-web-socket-on-windows-phone-8-using-the-c
-            string msgSendAtConnection = $"[{{\"email\":\"{email}\",\"anyParam\":55}}]"; // see HandshakeMessage serialization in DashboardPushHub
-            var encoded = Encoding.UTF8.GetBytes(msgSendAtConnection);
-            var bufferFirst = new ArraySegment<Byte>(encoded, 0, encoded.Length);
+            var msgObj = new HandshakeMessage() { Email = email };
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("OnConnected:" + Utils.CamelCaseSerialize(msgObj));
             if (webSocket.State == WebSocketState.Open)
-                await webSocket.SendAsync(bufferFirst, WebSocketMessageType.Text, true, CancellationToken.None);
+                await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+
+            // create a connectionID based on client IP + connectionTime; the userID is the email as each user must be authenticated by an email.
+            var clientIP = WsUtils.GetRequestIPv6(context!);    // takes 0.346ms
+            Utils.Logger.Info($"DashboardWs.OnConnectedAsync(), Connection from IP: {clientIP} with email '{email}'");  // takes 1.433ms
+            var thisConnectionTime = DateTime.UtcNow;
+            DashboardClient? client = null;
+            lock (DashboardClient.g_clients)    // find client from the same IP, assuming connection in the last 1000ms
+            {
+                client = DashboardClient.g_clients.Find(r => r.ClientIP == clientIP && (thisConnectionTime - r.SignalRConnectionTime).TotalMilliseconds < 1000);
+                if (client == null)
+                {
+                    client = new DashboardClient() { ClientIP = clientIP, UserEmail = email, IsOnline = true, ActivePage = ActivePage.MarketHealth };
+                    DashboardClient.g_clients.Add(client);  // takes 0.004ms
+                }
+            }
+            client.WsWebSocket = webSocket;
+            client.WsHttpContext = context;
+            client.WsConnectionTime = thisConnectionTime;
+
+            client!.OnConnectedWsAsync_MktHealth();
         }
 
+        public static async Task OnReceiveAsync(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? wsResult, string bufferStr)
+        {
+            DashboardClient? client = null;
+            lock (DashboardClient.g_clients)    // find client from the same IP, assuming connection in the last 1000ms
+            {
+                client = DashboardClient.g_clients.Find(r => r.WsWebSocket == webSocket);
+            }
+            if (client != null)
+            {
+                var semicolonInd = bufferStr.IndexOf(':');
+                string msgCode = bufferStr.Substring(0, semicolonInd);
+                string msgObjStr = bufferStr.Substring(semicolonInd + 1);
+
+                await client.OnReceiveWsAsync_MktHealth(wsResult, msgCode, msgObjStr);
+            }
+        }
     }   // class
 }

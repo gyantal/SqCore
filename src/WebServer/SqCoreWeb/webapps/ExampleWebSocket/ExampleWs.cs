@@ -22,9 +22,16 @@ namespace SqCoreWeb
             // https://stackoverflow.com/questions/24450109/how-to-send-receive-messages-through-a-web-socket-on-windows-phone-8-using-the-c
             string msgSendAtConnection = $"Example string sent from Server immediately at WebSocket connection acceptance.";
             var encoded = Encoding.UTF8.GetBytes(msgSendAtConnection);
-            var bufferFirst = new ArraySegment<Byte>(encoded, 0, encoded.Length);
-            await webSocket.SendAsync(bufferFirst, WebSocketMessageType.Text, true, CancellationToken.None);
+            var buffer = new ArraySegment<Byte>(encoded, 0, encoded.Length);
+            await webSocket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
+        internal static async Task OnReceiveAsync(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? lastResult, string bufferStr)
+        {
+            // if it is not a Close-message from client, send it back temporarily
+            var encoded = Encoding.UTF8.GetBytes(bufferStr);
+            var buffer = new ArraySegment<Byte>(encoded, 0, encoded.Length);
+            await webSocket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+        }
     }   // class
 }

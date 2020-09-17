@@ -91,5 +91,10 @@ export class SqDiagnostics {
   public wsConnectionStartTime: Date = minDate;
   public wsConnectionReadyTime: Date = minDate;
   public wsOnConnectedMsgArrivedTime: Date = minDate;
+
+  public wsOnFirstRtMktSumNonRtStatTime: Date = minDate;
+  public wsOnFirstRtMktSumRtStatTime: Date = minDate;
+  public wsOnLastRtMktSumRtStatTime: Date = minDate;
+  public wsNumRtMktSumRtStat = 0;
 }
 export const gDiag: SqDiagnostics = new SqDiagnostics();

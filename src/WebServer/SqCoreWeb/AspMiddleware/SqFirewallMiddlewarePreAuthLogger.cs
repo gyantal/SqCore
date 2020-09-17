@@ -56,7 +56,7 @@ namespace SqCoreWeb
             if (IsHttpRequestOnBlacklist(httpContext))
             {
                 // silently log it and stop processing
-                string msg = String.Format($"{DateTime.UtcNow.ToString("HH':'mm':'ss.f")}#Blacklisted request is terminated: {httpContext.Request.Method} '{httpContext.Request.Path}' from {WsUtils.GetRequestIP(httpContext)}");
+                string msg = String.Format($"{DateTime.UtcNow.ToString("HH':'mm':'ss.f")}#Blacklisted request is terminated: {httpContext.Request.Method} '{httpContext.Request.Path}' from {WsUtils.GetRequestIPv6(httpContext)}");
                 Console.WriteLine(msg);
                 gLogger.Info(msg);
                 return;
@@ -89,7 +89,7 @@ namespace SqCoreWeb
 
                 var statusCode = httpContext.Response?.StatusCode;      // it may be null if there was an Exception
                 var level = statusCode > 499 ? Microsoft.Extensions.Logging.LogLevel.Error : Microsoft.Extensions.Logging.LogLevel.Information;
-                var clientIP = WsUtils.GetRequestIP(httpContext);
+                var clientIP = WsUtils.GetRequestIPv6(httpContext);
                 var clientUserEmail = WsUtils.GetRequestUser(httpContext);
 
                 var requestLog = new HttpRequestLog() { 

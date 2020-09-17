@@ -19,8 +19,13 @@ namespace SqCoreWeb
 
         // Some fallback logic can be added to handle the presence of a Load Balancer.  or CloudFront. Checked: CloudFront uses X-Forwarded-For : "82.44.159.196"
         // http://stackoverflow.com/questions/28664686/how-do-i-get-client-ip-address-in-asp-net-core
-        public static string GetRequestIP(HttpContext p_httpContext, bool p_tryUseXForwardHeader = true)
+        // Use IPv6 as it is more future proof. IPv4 can be packed into IPv6.
+        public static string GetRequestIPv6(HttpContext p_httpContext, bool p_tryUseXForwardHeader = true)
         {
+            // SignalR "wss://" protocol: Connection.RemoteIpAddress is "127.0.0.1"
+            // WebSocket "wss://" protocol: Connection.RemoteIpAddress is "::ffff:127.0.0.1"   // ::ffff: is a subnet prefix for IPv4 (32 bit) addresses that are placed inside an IPv6 (128 bit) space.
+            // https://stackoverflow.com/questions/57572020/authenticationhandler-context-connection-remoteipaddress-returns-ffff192
+
             string? remoteIP = String.Empty;
             if (p_tryUseXForwardHeader)
             {
@@ -39,7 +44,7 @@ namespace SqCoreWeb
 
             // another way to get it
             if (String.IsNullOrWhiteSpace(remoteIP) && p_httpContext?.Connection?.RemoteIpAddress != null)
-                remoteIP = p_httpContext?.Connection?.RemoteIpAddress?.ToString() ?? String.Empty;
+                remoteIP = p_httpContext?.Connection?.RemoteIpAddress?.MapToIPv6().ToString() ?? String.Empty;
 
             return String.IsNullOrWhiteSpace(remoteIP) ? "<Unknown IP>" : remoteIP;
         }

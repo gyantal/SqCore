@@ -41,7 +41,6 @@ namespace SqCoreWeb
 
         public QuickfolioNewsDownloader()
         {
-            UpdateStockTickers();
         }
 
         public void UpdateStockTickers()

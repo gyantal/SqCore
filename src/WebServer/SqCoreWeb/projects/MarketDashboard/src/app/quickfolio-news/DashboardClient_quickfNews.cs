@@ -12,25 +12,25 @@ using System.Net;
 namespace SqCoreWeb
 {
     
-    public partial class DashboardPushHub : Hub
+    public partial class DashboardClient
     {
         const int m_newsReloadInterval = 10 * 60 * 1000; // 10 minutes in milliseconds 
         Timer m_newsReloadTimer;
         QuickfolioNewsDownloader m_newsDownloader = new QuickfolioNewsDownloader();
 
-        public DashboardPushHub()
+        public DashboardClient()
         {
             m_newsReloadTimer = new Timer(NewsReloadTimerElapsed, null, m_newsReloadInterval, m_newsReloadInterval);
         }
-        public void OnConnectedAsync_QuickfNews()
+        public void OnConnectedSignalRAsync_QuickfNews()
         {
             // don't do a long process here. Start big things in a separate thread. One way is in 'DashboardPushHub_mktHealth.cs'
-            string connId = this.Context?.ConnectionId ?? String.Empty;
             new Thread(() =>
             {
                 Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
-                DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(connId).SendAsync("stockTickerList", m_newsDownloader.GetStockTickers());
-                TriggerQuickfolioNewsDownloader(connId);
+                m_newsDownloader.UpdateStockTickers();
+                DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(SignalRConnectionId).SendAsync("stockTickerList", m_newsDownloader.GetStockTickers());
+                TriggerQuickfolioNewsDownloader(SignalRConnectionId);
             }).Start();
         }
 
@@ -44,22 +44,23 @@ namespace SqCoreWeb
             m_newsDownloader.GetStockNews(DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All);   // with 13 tickers, it can take 13 * 2 = 26seconds
         }
 
-        public void OnDisconnectedAsync_QuickfNews(Exception exception)
+        public void OnDisconnectedSignalRAsync_QuickfNews(Exception exception)
         {
         }
+
         private void NewsReloadTimerElapsed(object? state)
         {
-            if (DashboardPushHub.g_clients.Count > 0) 
+            if (DashboardClient.g_clients.Count > 0) 
             {
                 TriggerQuickfolioNewsDownloader(String.Empty);
             }
         }
 
-        public void ReloadQuickfolio() {
-            m_newsDownloader.UpdateStockTickers();
-            DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All.SendAsync("stockTickerList", m_newsDownloader.GetStockTickers());
-            m_newsDownloader.GetStockNews(DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All);
-        }
+        // public void ReloadQuickfolio() {
+        //     m_newsDownloader.UpdateStockTickers();
+        //     DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All.SendAsync("stockTickerList", m_newsDownloader.GetStockTickers());
+        //     m_newsDownloader.GetStockNews(DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All);
+        // }
 
     }
 }
