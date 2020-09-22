@@ -9,7 +9,7 @@ module.exports = {
     output: {
         path: path.resolve(__dirname, "./../../wwwroot/webapps/ContangoVisualizer"),
         filename: "[name].[chunkhash].js",
-        publicPath: "/webapps/ContangoVisualizer"
+        publicPath: "/webapps/ContangoVisualizer/"
     },
     resolve: {
         extensions: [".js", ".ts"]
@@ -23,6 +23,13 @@ module.exports = {
             {
                 test: /\.css$/,
                 use: [MiniCssExtractPlugin.loader, "css-loader"]
+            },
+            {
+                test: /\.(png|webp|jpe?g|gif)$/i,
+                loader: 'file-loader',
+                options: {
+                    outputPath: 'images',
+                }
             }
         ]
     },

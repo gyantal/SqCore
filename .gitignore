@@ -38,12 +38,12 @@ dist/
 #Typescript compiled JS files. Webapps' Legit JS files should be commited. So put TS files into the 'ts' folder. So, we don't have to gitIgnore every JS files one by one
 **/webapps/*/ts/*.js
 
-#Webpack based webapps: Webpack generated files
+#Webpack based webapps: Webpack generated files; Itentional. Don't remove. The source code of these webapps are in SqCoreWeb/webapps folder. From there Webpack generates production code into SqCoreWeb/wwwroot/webapps folder.
 **/wwwroot/webapps/*/index.html
 **/wwwroot/webapps/*/main*.js
 **/wwwroot/webapps/*/css/main*.css
 
-#Angular based webapps: Angular generated files
+#Angular based webapps: Angular generated files. Itentional. Don't remove. The source code of these webapps are in SqCoreWeb/projects folder.
 **/wwwroot/webapps/HealthMonitor
 **/wwwroot/webapps/MarketDashboard
 

@@ -9,7 +9,7 @@ module.exports = {
     output: {
         path: path.resolve(__dirname, "./../../wwwroot/webapps/ExampleCsServerPushInRealtime"),
         filename: "[name].[chunkhash].js",
-        publicPath: "/webapps/ExampleCsServerPushInRealtime"
+        publicPath: "/webapps/ExampleCsServerPushInRealtime/"
     },
     resolve: {
         extensions: [".js", ".ts"]
@@ -23,6 +23,13 @@ module.exports = {
             {
                 test: /\.css$/,
                 use: [MiniCssExtractPlugin.loader, "css-loader"]
+            },
+            {
+                test: /\.(png|jpe?g|gif)$/i,
+                loader: 'file-loader',
+                options: {
+                    outputPath: 'images',
+                }
             }
         ]
     },

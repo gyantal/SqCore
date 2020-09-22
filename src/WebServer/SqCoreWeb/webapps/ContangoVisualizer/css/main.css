@@ -188,8 +188,8 @@ table.resData{
     font-size: 1.6rem;
 }
 
-.buttonHelp {
-    background: url("../images/help.png");
+/* .buttonHelp {
+    background: url("../assets/images/help.png");
     background-size: contain;
     border: none;
     color: white;
@@ -198,6 +198,21 @@ table.resData{
     text-decoration: none;
     display: inline-block;
     font-size: 1.6rem;
+} */
+
+#VIXimage {
+  background: url("../assets/images/vix.webp");
+  background-size: cover;
+}
+
+#OILimage {
+  background: url("../assets/images/crude_oil.webp");
+  background-size: cover; 
+}
+
+#GASimage {
+  background: url("../assets/images/natural_gas.webp");
+  background-size: cover;
 }
 
 /* Tooltip container */
