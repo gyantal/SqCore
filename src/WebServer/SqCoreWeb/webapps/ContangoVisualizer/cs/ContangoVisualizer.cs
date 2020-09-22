@@ -43,9 +43,9 @@ namespace SqCoreWeb.Controllers
     //--[Route("[controller]")]
     public class ContangoVisualizerDataController : Controller
     {
-#if !DEBUG
-        [Authorize]
-#endif
+// #if !DEBUG
+//         [Authorize]
+// #endif
         public ActionResult Index(int commo)
         {
             switch (commo)

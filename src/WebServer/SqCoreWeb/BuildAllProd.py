@@ -32,6 +32,7 @@ os.system("tsc")    # works like normal, loads ./tsconfig.json, which contains "
 # Webpack: 'Multiple output files' are not possible and out of scope of webpack. You can use a build system.
 print("\nSqBuild: Executing 'npx webpack --mode=production'")
 os.system("npx webpack --config webapps/ExampleCsServerPushInRealtime/webpack.config.js --mode=production")
+os.system("npx webpack --config webapps/ContangoVisualizer/webpack.config.js --mode=production")
 
 # 2.3. Angular webapps in  ./Angular should be built
 print("\nSqBuild: Executing Angular 'ng build...'")
