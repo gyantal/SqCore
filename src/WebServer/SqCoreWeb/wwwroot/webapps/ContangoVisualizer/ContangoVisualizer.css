@@ -1,0 +1,265 @@
+html { font-size: 62.5%; }  /* set 1.0rem = 10px. revert to root font size of 10px. it allows to set font-size in rem, that corresponds to px */
+
+@font-face {
+  font-family: PublicoText-Roman-Web;
+  src: url('https://assets.bwbx.io/s3/fontservice/fonts/PublicoText-Italic-Web-b04a2274cf.woff2');
+  font-style: italic, oblique;
+}
+@font-face {
+  font-family: PublicoText-Roman-Web;
+  src: url('https://assets.bwbx.io/s3/fontservice/fonts/PublicoText-Bold-Web-3c5266a48e.woff2');
+  font-weight: bold;
+}
+@font-face {
+  font-family: PublicoText-Roman-Web;
+  src: url('https://assets.bwbx.io/s3/fontservice/fonts/PublicoText-Roman-Web-bfa063ee27.woff2');
+}
+
+@font-face {
+  font-family: PublicoHeadline-Bold-Web;
+  src: url('https://assets.bwbx.io/s3/fontservice/fonts/PublicoHeadline-Bold-Web-e816328678.woff2');
+}
+
+body {
+    margin: 0;  /* originally, there is a 8px margin  */
+    overflow-y: scroll; /* enable y scrollbar */
+    overflow-x: hidden;  /* disable x scrollbar */
+    font-size: 1.6rem;  /* = 16px. Wiki uses 14px. Ft.com uses size 18px fonts. CNBC is using 18 and 14. Bloomberg uses Georgia 18px (for text). But 18px is too big for condensing a lot of info to the page. 16px should be our default too for text and header of tables. For numbers in cells in table we should targer 14px. 20px for section headers. 24px for webpage main title. */
+    font-family: PublicoText-Roman-Web,Georgia,Cambria,"Times New Roman",Times,serif;
+    text-align: center;
+  }
+
+  .gradientBckgrnd {
+    background: linear-gradient(to right, #3080c7 5%, #5b9dd7 10%, #d5f5f6 30%, #d5f5f6 70%, #ace16b 90%, #91d73a 95%);     /* new light */
+  }
+
+  h2 {
+    margin-top: 0.4rem;
+    margin-bottom: 0.7rem;
+    font-size: 2.4rem;  /* = 24px */
+  }
+
+  .largeSizeText {
+    font-size: 2.0rem;  /* = 20px */
+  }
+
+  .normalSizeText {
+    font-size: 1.6rem;  /* = 16px */
+  }
+
+  .dataSizeText {
+    font-size: 1.4rem;  /* = 14px */
+  }
+
+  .miniSizeText {
+    font-size: 1.0rem;  /* = 10px. For insignificant debug info. */
+  }
+
+  img {
+    /* icons are next to a text on the same line. If text font changes, this should change. Define this icons as 2x the size of the font (2x14px=28px). Use EM, so it scales with the containing element fontsize. So, if that fontsize change, we don't have to resize img here. */
+    width: 4rem;
+    height: 4rem;
+    vertical-align: text-bottom;
+  }
+
+  .widerImg {
+    width: 6rem;
+  }
+
+  a {
+    color: inherit;  /* inherit from parent, if is set dynamically as dark/light mode */
+    display: inline-block;
+    padding: 0.8rem 0.2rem;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    color: blue;
+    text-shadow: 0px 0px 0px #528ecc; /* shadow is the only exception when fixed pixel units should be used. */
+  }
+
+  a:hover {
+    color: rgb(174, 0, 255);  /* blue Href hover is good for both dark and light mode  */
+  }
+
+h1   {
+    font-family: "Comic Sans MS", cursive, sans-serif;
+    text-align: center;
+    color: blue;
+    font-size: 150%;
+}
+h2   {
+    font-family: "Comic Sans MS", cursive, sans-serif;
+    color: gainsboro;
+    font-size: 125%;
+}
+.h3 {
+    font-family: "Comic Sans MS", cursive, sans-serif;
+    color: mediumblue;
+    font-size: 110%;
+    text-align: center;
+}
+ .wshelp li {
+            margin: 10px 0;
+        }
+
+.center {
+    text-align: center;
+    border:0;
+    font-size: 13px;
+}
+p.center {
+margin-top:0;
+}
+span.center {
+margin:0;
+}
+.button {
+    display: inline-block;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    height: 80px;
+    width: 160px;
+    background-size: cover; 
+    background-repeat: no-repeat;
+    max-width: 100%;
+    max-height: 100%;
+}
+.button:hover {
+    box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
+}
+
+.button:active {
+    transform: translateY(4px);
+}
+
+table.currData {
+    width: 80%;
+    margin-left: 10%;
+    margin-right: 10%;
+    margin-bottom: 0;
+    font-size: 13px;
+    border-collapse: collapse;
+    border: 1px solid black;
+}
+
+.currData td {
+    width: 5%;
+    /*text-align: left;*/
+    border: 1px solid black;
+}
+
+.currData td:first-child {
+    min-width: 180px;
+    max-width: 180px;
+    overflow: hidden;
+}
+
+.histData{
+    width: 95%;
+    margin: 0 auto;
+    border-collapse:collapse;
+    border: none;
+    }
+/*.histData td {
+    width: 50%;
+    }*/
+
+table.resData{
+    width: 95%;
+    margin: 0 auto;
+    border-collapse:collapse;
+    border: 1px solid black;
+    }
+.resData td {
+    width: 10%;
+    /*text-align: left;*/
+    border: 1px solid black;
+}
+
+.buttonSim {
+    background-color: dodgerblue; /* Green */
+    /*border: none;*/
+    color: white;
+    font-family: "Comic Sans MS", cursive, sans-serif;
+    padding: 8px 15px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+}
+
+.buttonHelp {
+    background: url("../images/help.png");
+    background-size: contain;
+    border: none;
+    color: white;
+    padding: 25px 25px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+}
+
+/* Tooltip container */
+.tooltip {
+    position: relative;
+    display: inline-block;
+  
+}
+
+/* Tooltip text */
+.tooltip .tooltiptext {
+    visibility: hidden;
+    min-width: 200px;
+    max-width: 2000px;
+    font-size: 12px;
+    background-color: dodgerblue;
+    color: gainsboro;
+    text-align: center;
+    padding: 5px 0;
+    border-radius: 6px;
+ 
+    position: absolute;
+    z-index: 1;
+    top: -5px;
+    left: 105%;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+}
+
+.demo-container {
+    box-sizing: border-box;
+    width: 600px;
+    height: 300px;
+    padding: 20px 15px 15px 15px;
+    margin: 5px auto 10px auto;
+    border: 1px solid #ddd;
+    /*background: #0094ff;*/
+    font-size: 10px;
+    background: #F4F6F6; /* For browsers that do not support gradients */
+    background: linear-gradient(90deg, #D6EAF8, #D1F2EB); /* Standard syntax */
+    /*background: linear-gradient(#f6f6f6 0, #fff 50px);
+    background: -o-linear-gradient(#f6f6f6 0, #fff 50px);
+    background: -ms-linear-gradient(#f6f6f6 0, #fff 50px);
+    background: -moz-linear-gradient(#f6f6f6 0, #fff 50px);
+    background: -webkit-linear-gradient(#f6f6f6 0, #fff 50px);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    -o-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    -ms-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    -moz-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    -webkit-box-shadow: 0 3px 10px rgba(0,0,0,0.1);*/
+}
+
+.demo-placeholder {
+	width: 100%;
+	height: 100%;
+	font-size: 12px;
+	line-height: 1.2em;
+}
+
+.legend table {
+	border-spacing: 5px;
+}
