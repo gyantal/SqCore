@@ -148,7 +148,19 @@ export class MarketHealthComponent implements OnInit {
   currDateN: Date = new Date();
   lookbackStart: Date = new Date(this.currDateN.getUTCFullYear() - 1, 11, 31);
 
-  constructor() { }
+  constructor() {
+    this.FillDataWithEmptyValuesToAvoidUiBlinkingWhenDataArrives();
+  }
+
+  // without this, table is not visualized initially and page blinks when it becomes visible 500ms after window loads.
+  FillDataWithEmptyValuesToAvoidUiBlinkingWhenDataArrives(): void {
+
+
+    // makeUiTableVisible() consider using this, or better write new logic.
+    // table should be visualized initially.
+    // then when first data arrives, do nothing. Just store it in a virtual place. Not in the final place.
+    // ONLY when BOTH data arrives do swap data members
+  }
 
   public perfIndicatorSelector(): void {
     const value = (document.getElementById('marketIndicator') as HTMLSelectElement).value;

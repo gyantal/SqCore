@@ -1,7 +1,7 @@
 <style>
 </style>
 <div class="toolbar" role="banner">
-  <img id="toolBarImg1" height="36" alt="SQ Logo" src="../assets/images/favicon_Home64x64Resonly.ico" />
+  <img id="toolBarImg1" alt="SQ Logo" src="../assets/images/favicon_Home64x64Resonly.ico" />
   Dashboard: {{ activeTool }} &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
   <div class="toolbarMenu" (click)="onClickToolSelection()" (clickOutside)="closeDropdownMenu('Tools')">
     <div [className]="isToolSelectionVisible ? 'leftItemselected selectedClick' : 'leftItem'">
@@ -43,7 +43,7 @@
   </div>
   <div class="toolbarMenu menu_right" (click)="onClickUserSelection()" (clickOutside)="closeDropdownMenu('User')">
     <div [className]="isUserSelectionVisible ? 'rightItemselected selectedClick' : 'rightItem'">
-      {{ user.email }}
+      <span id="userEmailSpan">{{ user.email }}</span>
       <svg class="material-icons2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 -8 24 24">
         <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
       </svg>
@@ -59,6 +59,7 @@
     </div>
   </div>
   <div class="sqDiagnostics" (mouseenter) ="mouseEnter('sqDiagnostics')">
+    <!-- Wifi image *.WebP (but ICO is not) blinks in DEV, when data from server (email) arrives. Ignore it. In deployed PROD there is no blinking, the DOM tree is not rebuilt. -->
     <img id="wifiImage" width="30" alt="Wifi" title="{{sqDiagnosticsMsg}}" src="../assets/images/wifi.webp"/>
   </div>
 </div>

@@ -54,7 +54,9 @@ p {
 }
 
 #toolBarImg1 {
-  padding: 0rem 0.5rem 0rem 0.5rem
+  padding: 0rem 0.5rem 0rem 0.5rem;
+  height: 3.6rem;
+  width: 3.6rem; // with the horizontal 5px padding left and right, the img is 36x36, but with is 46pm
 }
 
 .toolbar .toolbarMenu {
@@ -313,6 +315,11 @@ p {
 
 .toolbar .sqDiagnostics {
  margin-right: 10rem;
+}
+
+#userEmailSpan {
+  display: inline-block;
+  width: 16rem;
 }
 
 svg.material-icons2 path {
