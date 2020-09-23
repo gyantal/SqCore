@@ -3,6 +3,13 @@ import { HubConnection } from '@microsoft/signalr';
 import { SqNgCommonUtilsTime } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
 import { gDiag, minDate } from './../../sq-globals';
 
+// The MarketHealth table frame is shown immediately (without numbers) even at DOMContentLoaded time. And later, it is filled with data as it arrives. 
+// This avoid UI blinking at load and later shifting HTML elements under the table downwards.
+// The main reason is that is how a sound UI logic should be assuming slow data channel. In the long term many data source will give data much-much later, 2-3 second later.
+// We have to show the UI with empty cells. Window.loaded: 70ms, WebSocket data: 140ms, so it is worth doing it, as the data arrives 70ms later than window is ready.
+
+type Nullable<T> = T | null;
+
 class RtMktSumRtStat {
   public assetId = NaN;
   public last  = NaN;
@@ -20,39 +27,41 @@ class RtMktSumNonRtStat {
   public periodMaxDU = NaN;
 }
 
-class RtMktSumFullStat {
+class UiTableColumn {
   public assetId = NaN;  // JavaScript Numbers are Always 64-bit Floating Point
   public ticker = '';
-  public last  = NaN;
+
+  // NonRt stats directly from server
   public previousClose = NaN;
   public periodStart = new Date();
   public periodOpen = NaN;
   public periodHigh = NaN;
   public periodLow = NaN;
+  public periodMaxDD = NaN;
+  public periodMaxDU = NaN;
+
+  // Rt stats directly from server
+  public last  = NaN;
+
+  // calculated fields as numbers
   public dailyReturn = NaN;
   public periodReturn = NaN;
   public drawDownPct = NaN;
   public drawUpPct = NaN;
   public maxDrawDownPct = NaN;
   public maxDrawUpPct = NaN;
-}
 
-class TableHeaderRefs {
-  public ticker = '';
-  public reference = '';
-}
+  // Ui required fields as strings
+  public referenceUrl = '';
 
-class DailyPerf {
-  public ticker = '';
+  // fields for the first row
   public dailyReturnStr = '';
   public dailyReturnSign = 1;
   public dailyReturnClass = '';
   public dailyTooltipStr1 = '';
   public dailyTooltipStr2 = '';
-}
 
-class PeriodPerf {
-  public ticker = '';
+  // fields for the second row
   public periodReturnStr = '';
   public drawDownPctStr = '';
   public drawUpPctStr = '';
@@ -66,6 +75,11 @@ class PeriodPerf {
   public periodPerfTooltipStr3 = '';
   public lookbackErrorString = '';
   public lookbackErrorClass = '';
+
+  constructor(tckr: string) {
+    this.ticker = tckr;
+    this.referenceUrl = 'https://uk.tradingview.com/chart/?symbol=' + tckr;
+  }
 }
 
 class TradingHoursTimer {
@@ -85,7 +99,7 @@ class TradingHoursTimer {
     let minutesSt = minutes.toString();
     const dayOfWeek = time2.getDay();
     const timeOfDay = hours * 60 + minutes;
-    // ET idoben:
+    // in ET time:
     // Pre-market starts: 4:00 - 240 min
     // Regular trading starts: 09:30 - 570 min
     // Regular trading ends: 16:00 - 960 min
@@ -118,8 +132,6 @@ class TradingHoursTimer {
 }
 
 
-
-
 @Component({
   selector: 'app-market-health',
   templateUrl: './market-health.component.html',
@@ -127,26 +139,132 @@ class TradingHoursTimer {
 })
 export class MarketHealthComponent implements OnInit {
 
-  @Input() _parentHubConnection?: HubConnection = undefined;    // this property will be input from above parent container
+  @Input() _parentHubConnection?: HubConnection = undefined;    // although SignalR is not used, leave it for Diagnostics purposes. To compare speed to WebSocket. This property will be input from above parent container
   @Input() _parentWsConnection?: WebSocket = undefined;    // this property will be input from above parent container
   nRtStatArrived = 0;
   nNonRtStatArrived = 0;
-  rtMktSumPrevCloseStr = 'A';
-  rtMktSumRtQuoteStr = 'B';
-  rtMktSumPeriodStatStr = 'C';
-  rtMktSumToDashboard = 'Dashboard';
-  marketFullStat: RtMktSumFullStat[] = [];
-  tableHeaderLinks: TableHeaderRefs[] = [];
-  perfIndDaily: DailyPerf[] = [];
-  perfIndPeriodFull: PeriodPerf[] = [];
-  perfIndPeriod: string[] = [];
-  perfIndCDD: string[] = [];
-  perfIndCDU: string[] = [];
-  perfIndMDD: string[] = [];
-  perfIndMDU: string[] = [];
-  perfIndSelected: string[] = [];
-  currDateN: Date = new Date();
-  lookbackStart: Date = new Date(this.currDateN.getUTCFullYear() - 1, 11, 31);
+  lastRtMsgStr = 'Rt data from server';
+  lastNonRtMsgStr = 'NonRt data from server';
+  lastRtMsg: Nullable<RtMktSumRtStat[]> = null;
+  lastNonRtMsg: Nullable<RtMktSumNonRtStat[]> = null;
+
+  uiTableColumns: UiTableColumn[] = []; // this is connected to Angular UI with *ngFor. If pointer is replaced or if size changes, Angular should rebuild the DOM tree. UI can blink. To avoid that only modify its inner field strings.
+
+  currDateTime: Date = new Date(); // current date and time
+  lookbackStart: Date = new Date(this.currDateTime.getUTCFullYear() - 1, 11, 31);  // set YTD as default
+
+  static updateUi(lastRt: Nullable<RtMktSumRtStat[]>, lastNonRt: Nullable<RtMktSumNonRtStat[]>, lookbackStartDate: Date, uiColumns: UiTableColumn[]) {
+    // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
+    if (!(Array.isArray(lastRt) && lastRt.length > 0 && Array.isArray(lastNonRt) && lastNonRt.length > 0)) {
+      return;
+    }
+
+    // we have to prepare if the server sends another ticker that is not expected. In that rare case, the append it to the end of the array. That will cause UI blink. And Warn about it, so this can be fixed.
+    // start with the NonRt, because that gives the AssetID to ticker definitions.
+    for (const stockNonRt of lastNonRt) {
+      let uiCol: UiTableColumn;
+      const existingUiCols = uiColumns.filter(col => col.ticker === stockNonRt.ticker);
+      if (existingUiCols.length === 0) {
+        console.warn(`Received ticker '${stockNonRt.ticker}' is not expected. UiArray should be increased. This will cause UI redraw and blink. Add this ticker to defaultTickerExpected!`, 'background: #222; color: red');
+        uiCol = new UiTableColumn(stockNonRt.ticker);
+        uiColumns.push(uiCol);
+      } else if (existingUiCols.length === 1) {
+        uiCol = existingUiCols[0];
+      } else {
+        console.warn(`Received ticker '${stockNonRt.ticker}' has duplicates in UiArray. This might be legit if both VOD.L and VOD wants to be used. ToDo: Differentiation based on assetId is needed.`, 'background: #222; color: red');
+        uiCol = existingUiCols[0];
+      }
+
+      uiCol.assetId = stockNonRt.assetId;
+      uiCol.previousClose = stockNonRt.previousClose;
+      uiCol.periodStart = stockNonRt.periodStart;
+      uiCol.periodOpen = stockNonRt.periodOpen;
+      uiCol.periodHigh = stockNonRt.periodHigh;
+      uiCol.periodLow = stockNonRt.periodLow;
+      uiCol.periodMaxDD = stockNonRt.periodMaxDD;
+      uiCol.periodMaxDU = stockNonRt.periodMaxDU;
+    }
+
+    for (const stockRt of lastRt) {
+      const existingUiCols = uiColumns.filter(col => col.assetId === stockRt.assetId);
+      if (existingUiCols.length === 0) {
+        console.warn(`Received assetId '${stockRt.assetId}' is not found in UiArray.`, 'background: #222; color: red');
+        break;
+      }
+      const uiCol = existingUiCols[0];
+      uiCol.last = stockRt.last;
+    }
+
+    const indicatorSelected = (document.getElementById('marketIndicator') as HTMLSelectElement).value;
+
+    for (const uiCol of uiColumns) {
+      // preparing values
+      uiCol.dailyReturn = uiCol.last > 0 ? uiCol.last / uiCol.previousClose - 1 : 0;
+      uiCol.periodReturn = uiCol.last > 0 ? uiCol.last / uiCol.periodOpen - 1 : uiCol.previousClose / uiCol.periodOpen - 1;
+      uiCol.drawDownPct = uiCol.last > 0 ? uiCol.last / Math.max(uiCol.periodHigh, uiCol.last) - 1 : uiCol.previousClose / uiCol.periodHigh - 1;
+      uiCol.drawUpPct = uiCol.last > 0 ? uiCol.last / Math.min(uiCol.periodLow, uiCol.last) - 1 : uiCol.previousClose / uiCol.periodLow - 1;
+      uiCol.maxDrawDownPct = Math.min(uiCol.periodMaxDD, uiCol.drawDownPct);
+      uiCol.maxDrawUpPct = Math.max(uiCol.periodMaxDU, uiCol.drawUpPct);
+
+      // filling first row in table
+      uiCol.dailyReturnStr = (uiCol.dailyReturn >= 0 ? '+' : '') + (uiCol.dailyReturn * 100).toFixed(2).toString() + '%';
+      uiCol.dailyReturnSign = Math.sign(uiCol.dailyReturn);
+      uiCol.dailyReturnClass = (uiCol.dailyReturn >= 0 ? 'positivePerf' : 'negativePerf');
+      uiCol.dailyTooltipStr1 = uiCol.ticker;
+      uiCol.dailyTooltipStr2 = 'Daily return: ' + (uiCol.dailyReturn >= 0 ? '+' : '') + (uiCol.dailyReturn * 100).toFixed(2).toString() + '%' + '\n' + 'Last price: ' + uiCol.last.toFixed(2).toString() + '\n' + 'Previous close price: ' + uiCol.previousClose.toFixed(2).toString();
+
+      // filling second row in table. Tooltip contains all indicators (return, DD, DU, maxDD, maxDU), so we have to compute them
+      const dataStartDate: Date = new Date(uiCol.periodStart);
+      uiCol.periodReturnStr = (uiCol.periodReturn >= 0 ? '+' : '') + (uiCol.periodReturn * 100).toFixed(2).toString() + '%';
+      uiCol.drawDownPctStr = (uiCol.drawDownPct >= 0 ? '+' : '') + (uiCol.drawDownPct * 100).toFixed(2).toString() + '%';
+      uiCol.drawUpPctStr = (uiCol.drawUpPct >= 0 ? '+' : '') + (uiCol.drawUpPct * 100).toFixed(2).toString() + '%';
+      uiCol.maxDrawDownPctStr = (uiCol.maxDrawDownPct >= 0 ? '+' : '') + (uiCol.maxDrawDownPct * 100).toFixed(2).toString() + '%';
+      uiCol.maxDrawUpPctStr = (uiCol.maxDrawUpPct >= 0 ? '+' : '') + (uiCol.maxDrawUpPct * 100).toFixed(2).toString() + '%';
+
+      uiCol.periodPerfTooltipStr1 = uiCol.ticker;
+      uiCol.periodPerfTooltipStr2 = 'Period return: ' + uiCol.periodReturnStr + '\r\n' + 'Current drawdown: ' + uiCol.drawDownPctStr + '\r\n' + 'Current drawup: ' + uiCol.drawUpPctStr + '\r\n' + 'Maximum drawdown: ' + uiCol.maxDrawDownPctStr + '\r\n' + 'Maximum drawup: ' + uiCol.maxDrawUpPctStr;
+      uiCol.periodPerfTooltipStr3 = '\r\n' + 'Period start: ' + dataStartDate.toISOString().slice(0, 10) + '\r\n' + 'Previous close: ' + uiCol.previousClose.toFixed(2).toString() + '\r\n' + 'Period open: ' + uiCol.periodOpen.toFixed(2).toString() + '\r\n' + 'Period high: ' + uiCol.periodHigh.toFixed(2).toString() + '\r\n' + 'Period low: ' + uiCol.periodLow.toFixed(2).toString();
+      uiCol.lookbackErrorString = (dataStartDate > lookbackStartDate) ? ('! Period data starts on ' + dataStartDate.toISOString().slice(0, 10) + '\r\n' + ' instead of the expected ' + lookbackStartDate.toISOString().slice(0, 10)) + '. \r\n\r\n' : '';
+      uiCol.lookbackErrorClass = (dataStartDate > lookbackStartDate) ? 'lookbackError' : '';
+
+      MarketHealthComponent.updateUiColumnBasedOnSelectedIndicator(uiCol, indicatorSelected);
+     } // for
+  }
+
+  static updateUiColumnBasedOnSelectedIndicator(uiCol: UiTableColumn, indicatorSelected: string) {
+    switch (indicatorSelected) {
+      case 'PerRet':
+        uiCol.selectedPerfIndSign = Math.sign(uiCol.periodReturn);
+        uiCol.selectedPerfIndClass = (uiCol.selectedPerfIndSign === 1) ? 'positivePerf' : 'negativePerf';
+        uiCol.selectedPerfIndStr = uiCol.periodReturnStr;
+        break;
+      case 'CDD':
+        uiCol.selectedPerfIndSign = -1;
+        uiCol.selectedPerfIndClass = 'negativePerf';
+        uiCol.selectedPerfIndStr = uiCol.drawDownPctStr;
+        break;
+      case 'CDU':
+        uiCol.selectedPerfIndSign = 1;
+        uiCol.selectedPerfIndClass = 'positivePerf';
+        uiCol.selectedPerfIndStr = uiCol.drawUpPctStr;
+        break;
+      case 'MDD':
+        uiCol.selectedPerfIndSign = -1;
+        uiCol.selectedPerfIndClass = 'negativePerf';
+        uiCol.selectedPerfIndStr = uiCol.maxDrawDownPctStr;
+        break;
+      case 'MDU':
+        uiCol.selectedPerfIndSign = 1;
+        uiCol.selectedPerfIndClass = 'positivePerf';
+        uiCol.selectedPerfIndStr = uiCol.maxDrawUpPctStr;
+        break;
+      default:
+        uiCol.selectedPerfIndSign = Math.sign(uiCol.periodReturn);
+        uiCol.selectedPerfIndClass = '';
+        uiCol.selectedPerfIndStr = '';
+        break;
+    } // switch
+  }
 
   constructor() {
     this.FillDataWithEmptyValuesToAvoidUiBlinkingWhenDataArrives();
@@ -154,56 +272,13 @@ export class MarketHealthComponent implements OnInit {
 
   // without this, table is not visualized initially and page blinks when it becomes visible 500ms after window loads.
   FillDataWithEmptyValuesToAvoidUiBlinkingWhenDataArrives(): void {
-
-
-    // makeUiTableVisible() consider using this, or better write new logic.
-    // table should be visualized initially.
-    // then when first data arrives, do nothing. Just store it in a virtual place. Not in the final place.
-    // ONLY when BOTH data arrives do swap data members
-  }
-
-  public perfIndicatorSelector(): void {
-    const value = (document.getElementById('marketIndicator') as HTMLSelectElement).value;
-    switch (value) {
-      case 'PerRet':
-        for (const items of this.perfIndPeriodFull) {
-          items.selectedPerfIndStr = items.periodReturnStr;
-          items.selectedPerfIndClass = (items.selectedPerfIndSign === 1) ? 'positivePerf' : 'negativePerf';
-        }
-        break;
-      case 'CDD':
-        for (const items of this.perfIndPeriodFull) {
-          items.selectedPerfIndSign = -1;
-          items.selectedPerfIndClass = 'negativePerf';
-          items.selectedPerfIndStr = items.drawDownPctStr;
-        }
-        break;
-      case 'CDU':
-        for (const items of this.perfIndPeriodFull) {
-          items.selectedPerfIndSign = 1;
-          items.selectedPerfIndClass = 'positivePerf';
-          items.selectedPerfIndStr = items.drawUpPctStr;
-        }
-        break;
-      case 'MDD':
-        for (const items of this.perfIndPeriodFull) {
-          items.selectedPerfIndSign = -1;
-          items.selectedPerfIndClass = 'negativePerf';
-          items.selectedPerfIndStr = items.maxDrawDownPctStr;
-        }
-        break;
-      case 'MDU':
-        for (const items of this.perfIndPeriodFull) {
-          items.selectedPerfIndSign = 1;
-          items.selectedPerfIndClass = 'positivePerf';
-          items.selectedPerfIndStr = items.maxDrawUpPctStr;
-        }
-        break;
+    const defaultTickerExpected = ['QQQ', 'SPY', 'GLD', 'TLT', 'VXX', 'UNG', 'USO']; // to avoid UI blinking while building the UI early, we better know the number of columns, but then the name of tickers as well. If server sends something different, we will readjust with blinking UI.
+    for (const tkr of defaultTickerExpected) {
+      this.uiTableColumns.push(new UiTableColumn(tkr));
     }
   }
 
   ngOnInit(): void {
-
     if (this._parentHubConnection != null) {
       this._parentHubConnection.on('RtMktSumRtStat', (message: RtMktSumRtStat[]) => {
         if (gDiag.srOnFirstRtMktSumRtStatTime === minDate) {
@@ -217,7 +292,7 @@ export class MarketHealthComponent implements OnInit {
         // this.nRtStatArrived++;
         // const msgStr = message.map(s => s.assetId + ' ? =>' + s.last.toFixed(2).toString()).join(', ');  // %Chg: Bloomberg, MarketWatch, TradingView doesn't put "+" sign if it is positive, IB, CNBC, YahooFinance does. Go as IB.
         // console.log('sr: RtMktSumRtStat arrived: ' + msgStr);
-        // this.rtMktSumRtQuoteStr = msgStr;
+        // this.lastRtStatStr = msgStr;
         // this.updateMktSumRt(message, this.marketFullStat);
       });
 
@@ -239,7 +314,7 @@ export class MarketHealthComponent implements OnInit {
         // });
         // const msgStr = message.map(s => s.assetId + '-' + s.ticker + ':prevClose-' + s.previousClose.toFixed(2).toString() + ' : periodStart-' + s.periodStart.toString() + ':open-' + s.periodOpen.toFixed(2).toString() + '/high-' + s.periodHigh.toFixed(2).toString() + '/low-' + s.periodLow.toFixed(2).toString() + '/mdd' + s.periodMaxDD.toFixed(2).toString() + '/mdu' + s.periodMaxDU.toFixed(2).toString()).join(', ');
         // console.log('ws: RtMktSumNonRtStat arrived: ' + msgStr);
-        // this.rtMktSumPeriodStatStr = msgStr;
+        // this.lastNonRtStatStr = msgStr;
         // this.updateMktSumNonRt(message, this.marketFullStat);
       });
 
@@ -254,24 +329,21 @@ export class MarketHealthComponent implements OnInit {
       case 'RtMktSumRtStat':  // this is the most frequent case. Should come first.
         if (gDiag.wsOnFirstRtMktSumRtStatTime === minDate) {
           gDiag.wsOnFirstRtMktSumRtStatTime = new Date();
-          // console.log('sq.d: ' + gDiag.wsOnFirstRtMktSumRtStatTime.toISOString() + ': wsOnFirstRtMktSumRtStatTime()'); // called 17ms after main.ts
         }
         gDiag.wsOnLastRtMktSumRtStatTime = new Date();
         gDiag.wsNumRtMktSumRtStat++;
 
         this.nRtStatArrived++;
         const jsonArrayObjRt = JSON.parse(msgObjStr);
-        const msgStrRt = jsonArrayObjRt.map(s => s.assetId + ' ? =>' + s.last.toFixed(2).toString()).join(', ');  // %Chg: Bloomberg, MarketWatch, TradingView doesn't put "+" sign if it is positive, IB, CNBC, YahooFinance does. Go as IB.
+        const msgStrRt = jsonArrayObjRt.map(s => s.assetId + '=>' + s.last.toFixed(2).toString()).join(', ');  // %Chg: Bloomberg, MarketWatch, TradingView doesn't put "+" sign if it is positive, IB, CNBC, YahooFinance does. Go as IB.
         console.log('ws: RtMktSumRtStat arrived: ' + msgStrRt);
-        this.rtMktSumRtQuoteStr = msgStrRt;
-
-        this.updateMktSumRt(jsonArrayObjRt, this.marketFullStat);
-
+        this.lastRtMsgStr = msgStrRt;
+        this.lastRtMsg = jsonArrayObjRt;
+        MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStart, this.uiTableColumns);
         return true;
       case 'RtMktSumNonRtStat':
         if (gDiag.wsOnFirstRtMktSumNonRtStatTime === minDate) {
           gDiag.wsOnFirstRtMktSumNonRtStatTime = new Date();
-          // console.log('sq.d: ' + gDiag.wsOnFirstRtMktSumNonRtStatTime.toISOString() + ': wsOnFirstRtMktSumNonRtStatTime()'); // called 17ms after main.ts
         }
         this.nNonRtStatArrived++;
         const jsonArrayObjNonRt = JSON.parse(msgObjStr);
@@ -283,11 +355,11 @@ export class MarketHealthComponent implements OnInit {
             element.previousClose = Number(element.previousClose);
           }
         });
-        const msgStrNonRt = jsonArrayObjNonRt.map(s => s.assetId + '-' + s.ticker + ':prevClose-' + s.previousClose.toFixed(2).toString() + ' : periodStart-' + s.periodStart.toString() + ':open-' + s.periodOpen.toFixed(2).toString() + '/high-' + s.periodHigh.toFixed(2).toString() + '/low-' + s.periodLow.toFixed(2).toString() + '/mdd' + s.periodMaxDD.toFixed(2).toString() + '/mdu' + s.periodMaxDU.toFixed(2).toString()).join(', ');
+        const msgStrNonRt = jsonArrayObjNonRt.map(s => s.assetId + '|' + s.ticker + '|prevClose:' + s.previousClose.toFixed(2).toString() + '|periodStart:' + s.periodStart.toString() + '|open:' + s.periodOpen.toFixed(2).toString() + '|high:' + s.periodHigh.toFixed(2).toString() + '|low:' + s.periodLow.toFixed(2).toString() + '|mdd:' + s.periodMaxDD.toFixed(2).toString() + '|mdu:' + s.periodMaxDU.toFixed(2).toString()).join(', ');
         console.log('ws: RtMktSumNonRtStat arrived: ' + msgStrNonRt);
-        this.rtMktSumPeriodStatStr = msgStrNonRt;
-
-        this.updateMktSumNonRt(jsonArrayObjNonRt, this.marketFullStat);
+        this.lastNonRtMsgStr = msgStrNonRt;
+        this.lastNonRtMsg = jsonArrayObjNonRt;
+        MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStart, this.uiTableColumns);
         return true;
       default:
         return false;
@@ -312,7 +384,7 @@ export class MarketHealthComponent implements OnInit {
       this.lookbackStart = new Date(currDate.setUTCDate(currDate.getUTCDate() - lbWeeks * 7));
     }
 
-    console.log('StartDate: ' + this.lookbackStart);
+    console.log('New lookback startDate: ' + this.lookbackStart);
 
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
       this._parentWsConnection.send('changeLookback:' + lookbackStr);
@@ -332,116 +404,15 @@ export class MarketHealthComponent implements OnInit {
     //       this.updateMktSumNonRt(message, this.marketFullStat);
     //       const msgStr = message.map(s => s.assetId + '-' + s.ticker + ':prevClose-' + s.previousClose.toFixed(2).toString() + ' : periodStart-' + s.periodStart.toString() + ':open-' + s.periodOpen.toFixed(2).toString() + '/high-' + s.periodHigh.toFixed(2).toString() + '/low-' + s.periodLow.toFixed(2).toString() + '/mdd' + s.periodMaxDD.toFixed(2).toString() + '/mdu' + s.periodMaxDU.toFixed(2).toString()).join(', ');
     //       console.log('ws: onClickChangeLookback() got back message ' + msgStr);
-    //       this.rtMktSumPeriodStatStr = msgStr;
+    //       this.lastNonRtStatStr = msgStr;
     //     });
     // }
   }
 
-  updateMktSumRt(message: RtMktSumRtStat[], marketFullStat: RtMktSumFullStat[]): void {
-    for (const singleStockInfo of message) {
-      const existingFullStatItems = marketFullStat.filter(fullStatItem => fullStatItem.assetId === singleStockInfo.assetId);
-      if (existingFullStatItems.length === 0) {
-        marketFullStat.push({assetId: singleStockInfo.assetId, ticker: '', last: singleStockInfo.last, previousClose: NaN, periodStart: new Date(), periodOpen: NaN, periodHigh: NaN,
-                          periodLow: NaN, dailyReturn: NaN, periodReturn: NaN, drawDownPct: NaN, drawUpPct: NaN, maxDrawDownPct: NaN, maxDrawUpPct: NaN});
-      } else {
-        existingFullStatItems[0].last = singleStockInfo.last;
-        this.updateReturns(existingFullStatItems[0]);
-      }
-    }
-
-    this.updateTableRows(marketFullStat);
-    this.makeUiTableVisible();
-  }
-
-  updateMktSumNonRt(message: RtMktSumNonRtStat[], marketFullStat: RtMktSumFullStat[]): void {
-    for (const singleStockInfo of message) {
-      const existingFullStatItems = marketFullStat.filter(fullStatItem => fullStatItem.assetId === singleStockInfo.assetId);
-      if (existingFullStatItems.length === 0) {
-        marketFullStat.push({
-          assetId: singleStockInfo.assetId, ticker: singleStockInfo.ticker, last: NaN, previousClose: singleStockInfo.previousClose, periodStart: singleStockInfo.periodStart, periodOpen: singleStockInfo.periodOpen, periodHigh: singleStockInfo.periodHigh,
-          periodLow: singleStockInfo.periodLow, dailyReturn: NaN, periodReturn: NaN, drawDownPct: NaN, drawUpPct: NaN, maxDrawDownPct: singleStockInfo.periodMaxDD, maxDrawUpPct: singleStockInfo.periodMaxDU
-        });
-        this.tableHeaderLinks.push({ ticker: singleStockInfo.ticker, reference: 'https://uk.tradingview.com/chart/?symbol=' + singleStockInfo.ticker });
-      } else {
-        existingFullStatItems[0].ticker = singleStockInfo.ticker;
-        existingFullStatItems[0].previousClose = singleStockInfo.previousClose;
-        existingFullStatItems[0].periodStart = singleStockInfo.periodStart;
-        existingFullStatItems[0].periodOpen = singleStockInfo.periodOpen;
-        existingFullStatItems[0].periodHigh = singleStockInfo.periodHigh;
-        existingFullStatItems[0].periodLow = singleStockInfo.periodLow;
-        existingFullStatItems[0].maxDrawDownPct = singleStockInfo.periodMaxDD;
-        existingFullStatItems[0].maxDrawUpPct = singleStockInfo.periodMaxDU;
-
-        this.updateReturns(existingFullStatItems[0]);
-      }
-    }
-
-    this.updateTableRows(marketFullStat);
-    this.makeUiTableVisible();
-  }
-
-  updateReturns(item: RtMktSumFullStat) {
-    item.dailyReturn = item.last > 0 ? item.last / item.previousClose - 1 : 0;
-    item.periodReturn = item.last > 0 ? item.last / item.periodOpen - 1 : item.previousClose / item.periodOpen - 1;
-    item.drawDownPct = item.last > 0 ? item.last / Math.max(item.periodHigh, item.last) - 1 : item.previousClose / item.periodHigh - 1;
-    item.drawUpPct = item.last > 0 ? item.last / Math.min(item.periodLow, item.last) - 1 : item.previousClose / item.periodLow - 1;
-    item.maxDrawDownPct = Math.min(item.maxDrawDownPct, item.drawDownPct);
-    item.maxDrawUpPct = Math.max(item.maxDrawUpPct, item.drawUpPct);
-  }
-
-  updateTableRows(perfIndicators: RtMktSumFullStat[]) {
-    this.perfIndDaily = [];
-    this.perfIndPeriod = [];
-    this.perfIndCDD = [];
-    this.perfIndCDU = [];
-    this.perfIndMDD = [];
-    this.perfIndMDU = [];
-    this.perfIndPeriodFull = [];
-    console.log('StartD: ' + this.lookbackStart);
-
-    for (const items of perfIndicators) {
-      // NaN can be valid that means 'No Data' on server. UI can handle with a nicer "NoData" message than "NaN", but don't ignore that.
-      // if (Number.isNaN(items.dailyReturn) === false) {
-      this.perfIndDaily.push({ticker: items.ticker, dailyReturnStr: (items.dailyReturn >= 0 ? '+' : '') + (items.dailyReturn * 100).toFixed(2).toString() + '%', dailyReturnSign: Math.sign(items.dailyReturn), dailyReturnClass: (items.dailyReturn >= 0 ? 'positivePerf' : 'negativePerf'),
-      dailyTooltipStr1: items.ticker,
-      dailyTooltipStr2: 'Daily return: ' + (items.dailyReturn >= 0 ? '+' : '') + (items.dailyReturn * 100).toFixed(2).toString() + '%' + '\n' + 'Last price: ' + items.last.toFixed(2).toString() + '\n' + 'Previous close price: ' + items.previousClose.toFixed(2).toString()} );
-      const dataStartDate: Date = new Date(items.periodStart);
-      console.log(items.ticker + ' ' + dataStartDate);
-      this.perfIndPeriodFull.push({ticker: items.ticker,
-        periodReturnStr: (items.periodReturn >= 0 ? '+' : '') + (items.periodReturn * 100).toFixed(2).toString() + '%',
-        drawDownPctStr: (items.drawDownPct >= 0 ? '+' : '') + (items.drawDownPct * 100).toFixed(2).toString() + '%',
-        drawUpPctStr: (items.drawUpPct >= 0 ? '+' : '') + (items.drawUpPct * 100).toFixed(2).toString() + '%',
-        maxDrawDownPctStr: (items.maxDrawDownPct >= 0 ? '+' : '') + (items.maxDrawDownPct * 100).toFixed(2).toString() + '%',
-        maxDrawUpPctStr: (items.maxDrawUpPct >= 0 ? '+' : '') + (items.maxDrawUpPct * 100).toFixed(2).toString() + '%',
-        selectedPerfIndSign: Math.sign(items.periodReturn),
-        selectedPerfIndClass: '',
-        selectedPerfIndStr: '',
-        periodPerfTooltipStr1: '',
-        periodPerfTooltipStr2: '',
-        periodPerfTooltipStr3: '\r\n' + 'Period start: ' + dataStartDate.toISOString().slice(0, 10) + '\r\n' + 'Previous close: ' + items.previousClose.toFixed(2).toString() + '\r\n' + 'Period open: ' + items.periodOpen.toFixed(2).toString() + '\r\n' + 'Period high: ' + items.periodHigh.toFixed(2).toString() + '\r\n' + 'Period low: ' + items.periodLow.toFixed(2).toString(),
-        lookbackErrorString: (dataStartDate > this.lookbackStart) ? ('! Period data starts on ' + dataStartDate.toISOString().slice(0, 10) + '\r\n' + ' instead of the expected ' + this.lookbackStart.toISOString().slice(0, 10)) + '. \r\n\r\n' : '',
-        lookbackErrorClass: (dataStartDate > this.lookbackStart) ? 'lookbackError' : ''
-      });
-      // }
-    }
-
-    console.log('Start: "' + this.lookbackStart + '", VXX start: "' + perfIndicators[4].periodStart + '", class: ' + this.perfIndPeriodFull[4].lookbackErrorClass + ', errorStr: ' + this.perfIndPeriodFull[4].lookbackErrorString);
-
-    for (const items of this.perfIndPeriodFull) {
-      items.periodPerfTooltipStr1 = items.ticker;
-      items.periodPerfTooltipStr2 = 'Period return: ' + items.periodReturnStr + '\r\n' + 'Current drawdown: ' + items.drawDownPctStr + '\r\n' + 'Current drawup: ' + items.drawUpPctStr + '\r\n' + 'Maximum drawdown: ' + items.maxDrawDownPctStr + '\r\n' + 'Maximum drawup: ' + items.maxDrawUpPctStr;
-    }
-    this.perfIndicatorSelector();
-  }
-
-  makeUiTableVisible() {
-    // sometimes Rt, sometimes nonRt data arrives 300ms earlier than the other. Show table only when BOTH have arrived to avoid that cells blink in red for 300ms
-    if (this.nRtStatArrived === 0 || this.nNonRtStatArrived === 0) {
-      return;
-    }
-    const perfTableElement = document.getElementById('perfTable');
-    if (typeof(perfTableElement) !== 'undefined' && perfTableElement !== null) {
-      perfTableElement.style.visibility = 'visible';
+  public perfIndicatorSelector(): void {
+    const indicatorSelected = (document.getElementById('marketIndicator') as HTMLSelectElement).value;
+    for (const uiCol of this.uiTableColumns) {
+      MarketHealthComponent.updateUiColumnBasedOnSelectedIndicator(uiCol, indicatorSelected);
     }
   }
 

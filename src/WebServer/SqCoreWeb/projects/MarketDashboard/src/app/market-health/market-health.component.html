@@ -3,15 +3,14 @@
         <table>
             <tr class="tableHeader">
                 <th></th>
-                <th *ngFor="let tickers of tableHeaderLinks"><a href="{{tickers.reference}}" target="_blank">{{tickers.ticker}}</a></th>
+                <th *ngFor="let item of uiTableColumns"><a href="{{item.referenceUrl}}" target="_blank">{{item.ticker}}</a></th>
             </tr>
             <tr class="realtimeRow">
                 <td align="left">Daily return</td>
-                <!-- <td *ngFor="let items of perfIndDaily" title="{{items.dailyTooltipStr}}">{{items.dailyReturnStr}}</td> -->
-                <td *ngFor="let items of perfIndDaily" class="tooltipCell {{items.dailyReturnClass}}">{{items.dailyReturnStr}}
+                <td *ngFor="let item of uiTableColumns" class="tooltipCell {{item.dailyReturnClass}}">{{item.dailyReturnStr}}
                     <div class="tooltipText">
-                        <div class="bold">{{items.dailyTooltipStr1}}</div>
-                        <div>{{items.dailyTooltipStr2}}</div>
+                        <div class="bold">{{item.dailyTooltipStr1}}</div>
+                        <div>{{item.dailyTooltipStr2}}</div>
                     </div>
                 </td>
             </tr>
@@ -39,13 +38,12 @@
                         </select>
                     </div>
                 </td>
-                <!-- <td *ngFor="let items of perfIndPeriodFull" title="{{items.periodPerfTooltipStr}}">{{items.selectedPerfIndStr}}</td> -->
-                <td *ngFor="let items of perfIndPeriodFull" class="tooltipCell {{items.selectedPerfIndClass}} {{items.lookbackErrorClass}}">{{items.selectedPerfIndStr}}
+                <td *ngFor="let item of uiTableColumns" class="tooltipCell {{item.selectedPerfIndClass}} {{item.lookbackErrorClass}}">{{item.selectedPerfIndStr}}
                     <div class="tooltipText">
-                        <div>{{items.lookbackErrorString}}</div>
-                        <div class="bold">{{items.periodPerfTooltipStr1}}</div>
-                        <div>{{items.periodPerfTooltipStr2}}</div>
-                        <div class="smallTT">{{items.periodPerfTooltipStr3}}</div>
+                        <div>{{item.lookbackErrorString}}</div>
+                        <div class="bold">{{item.periodPerfTooltipStr1}}</div>
+                        <div>{{item.periodPerfTooltipStr2}}</div>
+                        <div class="smallTT">{{item.periodPerfTooltipStr3}}</div>
                     </div>
                 </td>
             </tr>

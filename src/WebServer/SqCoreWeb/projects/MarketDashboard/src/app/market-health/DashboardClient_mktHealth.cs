@@ -26,6 +26,7 @@ namespace SqCoreWeb
     class RtMktSumRtStat   // struct sent to browser clients every 2-4 seconds
     {
         public uint AssetId { get; set; } = 0;
+        [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
         public double Last { get; set; } = -100.0;     // real-time last price
     }
 
@@ -36,23 +37,37 @@ namespace SqCoreWeb
 
         // when previousClose gradually changes (if user left browser open for a week), PeriodHigh, PeriodLow should be sent again (maybe we are at market high or low)
         // sometimes, the user changed Period from YTD to 2y. It is a choice, we will resend him the PreviousClose data again. Although it is not necessary. That way we only one class, not 2.
-        [JsonConverter(typeof(DoubleJsonConverter))]
+        [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
         public double PreviousClose { get; set; } = -100.0;
         public DateTime PeriodStart { get; set; } = DateTime.MinValue;
+        [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
         public double PeriodOpen { get; set; } = -100.0;
+        [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
         public double PeriodHigh { get; set; } = -100.0;
+        [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
         public double PeriodLow { get; set; } = -100.0;
+        [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
         public double PeriodMaxDD { get; set; } = -100.0;
+        [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
         public double PeriodMaxDU { get; set; } = -100.0;
     }
 
-    public class DoubleJsonConverter : JsonConverter<double>
+    public class DoubleJsonConverterToStr : JsonConverter<double>   // the number is written as a string, with quotes: "previousClose":"272.48"
     {
         public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
                 Double.Parse(reader.GetString());
 
         public override void Write(Utf8JsonWriter writer, double doubleValue, JsonSerializerOptions options) =>
-                writer.WriteStringValue(doubleValue.ToString());
+                writer.WriteStringValue(doubleValue.ToString("0.####")); // use 4 decimals instead of 2, because of penny stocks and MaxDD of "-0.2855" means -28.55%. ToString(): 24.00155 is rounded up to 24.0016
+    }
+
+    public class DoubleJsonConverterToNumber4D : JsonConverter<double>   // the number is written as a number, without quotes: ("previousClose":"272.4800109863281") should be ("previousClose":272.48) 
+    {
+        public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+                Double.Parse(reader.GetString());
+
+        public override void Write(Utf8JsonWriter writer, double doubleValue, JsonSerializerOptions options) =>
+                writer.WriteNumberValue(Convert.ToDecimal(Math.Round(doubleValue, 4))); // use 4 decimals instead of 2, because of penny stocks and MaxDD of "-0.2855" means -28.55%. ToString(): 24.00155 is rounded up to 24.0016
     }
 
 
