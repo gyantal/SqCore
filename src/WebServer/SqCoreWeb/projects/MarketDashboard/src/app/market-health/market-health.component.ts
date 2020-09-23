@@ -3,7 +3,7 @@ import { HubConnection } from '@microsoft/signalr';
 import { SqNgCommonUtilsTime } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
 import { gDiag, minDate } from './../../sq-globals';
 
-// The MarketHealth table frame is shown immediately (without numbers) even at DOMContentLoaded time. And later, it is filled with data as it arrives. 
+// The MarketHealth table frame is shown immediately (without numbers) even at DOMContentLoaded time. And later, it is filled with data as it arrives.
 // This avoid UI blinking at load and later shifting HTML elements under the table downwards.
 // The main reason is that is how a sound UI logic should be assuming slow data channel. In the long term many data source will give data much-much later, 2-3 second later.
 // We have to show the UI with empty cells. Window.loaded: 70ms, WebSocket data: 140ms, so it is worth doing it, as the data arrives 70ms later than window is ready.
