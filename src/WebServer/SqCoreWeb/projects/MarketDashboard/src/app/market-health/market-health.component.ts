@@ -19,7 +19,7 @@ class RtMktSumNonRtStat {
   public assetId = NaN;  // JavaScript Numbers are Always 64-bit Floating Point
   public ticker = '';
   public previousClose = NaN;   // If SignalR receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
-  public periodStart = new Date();
+  public periodStart = ''; // preferred to be a new Date(), but when it arrives from server it is a string '2010-09-29T00:00:00' which is ET time zone and better to keep that way than converting to local time-zone Date object
   public periodOpen = NaN;
   public periodHigh = NaN;
   public periodLow = NaN;
@@ -33,7 +33,7 @@ class UiTableColumn {
 
   // NonRt stats directly from server
   public previousClose = NaN;
-  public periodStart = new Date();
+  public periodStart = ''; // preferred to be a new Date(), but when it arrives from server it is a string '2010-09-29T00:00:00' which is ET time zone and better to keep that way than converting to local time-zone Date object
   public periodOpen = NaN;
   public periodHigh = NaN;
   public periodLow = NaN;
@@ -151,9 +151,9 @@ export class MarketHealthComponent implements OnInit {
   uiTableColumns: UiTableColumn[] = []; // this is connected to Angular UI with *ngFor. If pointer is replaced or if size changes, Angular should rebuild the DOM tree. UI can blink. To avoid that only modify its inner field strings.
 
   currDateTime: Date = new Date(); // current date and time
-  lookbackStart: Date = new Date(this.currDateTime.getUTCFullYear() - 1, 11, 31);  // set YTD as default
+  lookbackStartET: Date = new Date(this.currDateTime.getUTCFullYear() - 1, 11, 31);  // set YTD as default
 
-  static updateUi(lastRt: Nullable<RtMktSumRtStat[]>, lastNonRt: Nullable<RtMktSumNonRtStat[]>, lookbackStartDate: Date, uiColumns: UiTableColumn[]) {
+  static updateUi(lastRt: Nullable<RtMktSumRtStat[]>, lastNonRt: Nullable<RtMktSumNonRtStat[]>, lookbackStartDateET: Date, uiColumns: UiTableColumn[]) {
     // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
     if (!(Array.isArray(lastRt) && lastRt.length > 0 && Array.isArray(lastNonRt) && lastNonRt.length > 0)) {
       return;
@@ -214,7 +214,13 @@ export class MarketHealthComponent implements OnInit {
       uiCol.dailyTooltipStr2 = 'Daily return: ' + (uiCol.dailyReturn >= 0 ? '+' : '') + (uiCol.dailyReturn * 100).toFixed(2).toString() + '%' + '\n' + 'Last price: ' + uiCol.last.toFixed(2).toString() + '\n' + 'Previous close price: ' + uiCol.previousClose.toFixed(2).toString();
 
       // filling second row in table. Tooltip contains all indicators (return, DD, DU, maxDD, maxDU), so we have to compute them
-      const dataStartDate: Date = new Date(uiCol.periodStart);
+      // const dataStartDate: Date = new Date(uiCol.periodStart);
+      // https://stackoverflow.com/questions/17545708/parse-date-without-timezone-javascript
+      // Javascript Date object are timestamps - they merely contain a number of milliseconds since the epoch. There is no timezone info in a Date object
+      // uiCol.periodStart = '2010-09-29T00:00:00' comes as a string
+      const dataStartDateET = new Date(uiCol.periodStart);  // '2010-09-29T00:00:00' which was UTC is converted to DateObj interpreted in Local time zone {Tue Sept 29 2010 00:00:00 GMT+0000 (Greenwich Mean Time)}
+      // dataStartDate.toISOString() would convert { Tue Dec 31 2019 00:00:00 GMT+0000 (GMT) } to "2015-09-28T23:00:00.000Z", so we better use the received string from server.
+      const dataStartDateETStr = uiCol.periodStart.slice(0, 10); // use what is coming from server '2010-09-29T00:00:00'
       uiCol.periodReturnStr = (uiCol.periodReturn >= 0 ? '+' : '') + (uiCol.periodReturn * 100).toFixed(2).toString() + '%';
       uiCol.drawDownPctStr = (uiCol.drawDownPct >= 0 ? '+' : '') + (uiCol.drawDownPct * 100).toFixed(2).toString() + '%';
       uiCol.drawUpPctStr = (uiCol.drawUpPct >= 0 ? '+' : '') + (uiCol.drawUpPct * 100).toFixed(2).toString() + '%';
@@ -223,9 +229,9 @@ export class MarketHealthComponent implements OnInit {
 
       uiCol.periodPerfTooltipStr1 = uiCol.ticker;
       uiCol.periodPerfTooltipStr2 = 'Period return: ' + uiCol.periodReturnStr + '\r\n' + 'Current drawdown: ' + uiCol.drawDownPctStr + '\r\n' + 'Current drawup: ' + uiCol.drawUpPctStr + '\r\n' + 'Maximum drawdown: ' + uiCol.maxDrawDownPctStr + '\r\n' + 'Maximum drawup: ' + uiCol.maxDrawUpPctStr;
-      uiCol.periodPerfTooltipStr3 = '\r\n' + 'Period start: ' + dataStartDate.toISOString().slice(0, 10) + '\r\n' + 'Previous close: ' + uiCol.previousClose.toFixed(2).toString() + '\r\n' + 'Period open: ' + uiCol.periodOpen.toFixed(2).toString() + '\r\n' + 'Period high: ' + uiCol.periodHigh.toFixed(2).toString() + '\r\n' + 'Period low: ' + uiCol.periodLow.toFixed(2).toString();
-      uiCol.lookbackErrorString = (dataStartDate > lookbackStartDate) ? ('! Period data starts on ' + dataStartDate.toISOString().slice(0, 10) + '\r\n' + ' instead of the expected ' + lookbackStartDate.toISOString().slice(0, 10)) + '. \r\n\r\n' : '';
-      uiCol.lookbackErrorClass = (dataStartDate > lookbackStartDate) ? 'lookbackError' : '';
+      uiCol.periodPerfTooltipStr3 = '\r\n' + 'Period start: ' + dataStartDateETStr + '\r\n' + 'Previous close: ' + uiCol.previousClose.toFixed(2).toString() + '\r\n' + 'Period open: ' + uiCol.periodOpen.toFixed(2).toString() + '\r\n' + 'Period high: ' + uiCol.periodHigh.toFixed(2).toString() + '\r\n' + 'Period low: ' + uiCol.periodLow.toFixed(2).toString();
+      uiCol.lookbackErrorString = (dataStartDateET > lookbackStartDateET) ? ('! Period data starts on ' + dataStartDateETStr + '\r\n' + ' instead of the expected ' + lookbackStartDateET.toISOString().slice(0, 10)) + '. \r\n\r\n' : '';
+      uiCol.lookbackErrorClass = (dataStartDateET > lookbackStartDateET) ? 'lookbackError' : '';
 
       MarketHealthComponent.updateUiColumnBasedOnSelectedIndicator(uiCol, indicatorSelected);
      } // for
@@ -339,7 +345,7 @@ export class MarketHealthComponent implements OnInit {
         console.log('ws: RtMktSumRtStat arrived: ' + msgStrRt);
         this.lastRtMsgStr = msgStrRt;
         this.lastRtMsg = jsonArrayObjRt;
-        MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStart, this.uiTableColumns);
+        MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
         return true;
       case 'RtMktSumNonRtStat':
         if (gDiag.wsOnFirstRtMktSumNonRtStatTime === minDate) {
@@ -359,7 +365,7 @@ export class MarketHealthComponent implements OnInit {
         console.log('ws: RtMktSumNonRtStat arrived: ' + msgStrNonRt);
         this.lastNonRtMsgStr = msgStrNonRt;
         this.lastNonRtMsg = jsonArrayObjNonRt;
-        MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStart, this.uiTableColumns);
+        MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
         return true;
       default:
         return false;
@@ -369,22 +375,33 @@ export class MarketHealthComponent implements OnInit {
   onClickChangeLookback() {
     const lookbackStr = (document.getElementById('lookBackPeriod') as HTMLSelectElement).value;
     console.log('Sq.onClickChangeLookback(): ' + lookbackStr);
-    const currDate: Date = new Date();
+    // Javascript doesn't support timezones, so either use moment.js or hack it here.
+    // https://stackoverflow.com/questions/36206260/how-to-set-date-always-to-eastern-time-regardless-of-users-time-zone/36206597
+    const currDateLocal: Date = new Date();
+    const currDateUtc: Date = new Date(currDateLocal.getTime() + currDateLocal.getTimezoneOffset() * 60 * 1000);
+    // https://en.wikipedia.org/wiki/Eastern_Time_Zone
+    // on the second Sunday in March, at 2:00 a.m. EST, clocks are advanced to 3:00 a.m. EDT leaving a one-hour "gap". On the first Sunday in November, at 2:00 a.m. EDT,
+    // clocks are moved back to 1:00 a.m. EST, thus "duplicating" one hour. Southern parts of the zone (Panama and the Caribbean) do not observe daylight saving time.""
+    const offsetSummerET = -4 * 60;
+    const offsetWinterET = -5 * 60;
+    // approximation is OK now. From March to October inclusive, there is summer.
+    const offsetETNow = (currDateLocal.getMonth() >= 2 || currDateLocal.getMonth() <= 9) ? offsetSummerET : offsetWinterET;
+    const currDateET: Date = new Date(currDateUtc.getTime() + offsetETNow * 60 * 1000); // var offset = -300; //Timezone offset for EST in minutes.
 
     if (lookbackStr === 'YTD') {
-      this.lookbackStart = new Date(currDate.getUTCFullYear() - 1, 11, 31);
+      this.lookbackStartET = new Date(currDateET.getUTCFullYear() - 1, 11, 31);
     } else if (lookbackStr.endsWith('y')) {
       const lbYears = parseInt(lookbackStr.substr(0, lookbackStr.length - 1), 10);
-      this.lookbackStart = new Date(currDate.setUTCFullYear(currDate.getUTCFullYear() - lbYears));
+      this.lookbackStartET = new Date(currDateET.setUTCFullYear(currDateET.getUTCFullYear() - lbYears));
     } else if (lookbackStr.endsWith('m')) {
       const lbMonths = parseInt(lookbackStr.substr(0, lookbackStr.length - 1), 10);
-      this.lookbackStart = new Date(currDate.setUTCMonth(currDate.getUTCMonth() - lbMonths));
+      this.lookbackStartET = new Date(currDateET.setUTCMonth(currDateET.getUTCMonth() - lbMonths));
     } else if (lookbackStr.endsWith('w')) {
       const lbWeeks = parseInt(lookbackStr.substr(0, lookbackStr.length - 1), 10);
-      this.lookbackStart = new Date(currDate.setUTCDate(currDate.getUTCDate() - lbWeeks * 7));
+      this.lookbackStartET = new Date(currDateET.setUTCDate(currDateET.getUTCDate() - lbWeeks * 7));
     }
 
-    console.log('New lookback startDate: ' + this.lookbackStart);
+    console.log('New lookback startDateET: ' + this.lookbackStartET);
 
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
       this._parentWsConnection.send('changeLookback:' + lookbackStr);

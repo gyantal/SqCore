@@ -27,11 +27,11 @@ namespace FinTechCommon
         public List<Asset> Assets { get; } = new List<Asset>() { // to minimize mem footprint, only load the necessary dates (not all history).
             new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 1), PrimaryExchange = ExchangeId.NYSE, LastTicker = "SPY", ExpectedHistorySpan="Date: 2009-12-31"},    // history starts on 1993-01-29. Full history would be: 44KB, 
             new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 2), PrimaryExchange = ExchangeId.NYSE, LastTicker = "QQQ", ExpectedHistorySpan="Date: 2009-12-31"},    // history starts on 1999-03-10. Full history would be: 32KB.       // 2010-01-01 Friday is NewYear holiday, first trading day is 2010-01-04
-            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 3), PrimaryExchange = ExchangeId.NYSE, LastTicker = "TLT", ExpectedHistorySpan="5y"},                  // history starts on 2002-07-30
+            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 3), PrimaryExchange = ExchangeId.NYSE, LastTicker = "TLT", ExpectedHistorySpan="10y"},                 // history starts on 2002-07-30
             new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 4), PrimaryExchange = ExchangeId.NYSE, LastTicker = "VXX", ExpectedHistorySpan="Date: 2018-01-25"},    // history starts on 2018-01-25 on YF, because VXX was restarted. The previously existed VXX.B shares are not on YF.
-            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 5), PrimaryExchange = ExchangeId.NYSE, LastTicker = "UNG", ExpectedHistorySpan="5y"},                  // history starts on 2007-04-18
-            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 6), PrimaryExchange = ExchangeId.NYSE, LastTicker = "USO", ExpectedHistorySpan="5y"},                  // history starts on 2006-04-10
-            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 7), PrimaryExchange = ExchangeId.NYSE, LastTicker = "GLD", ExpectedHistorySpan="5y"}
+            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 5), PrimaryExchange = ExchangeId.NYSE, LastTicker = "UNG", ExpectedHistorySpan="10y"},                 // history starts on 2007-04-18
+            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 6), PrimaryExchange = ExchangeId.NYSE, LastTicker = "USO", ExpectedHistorySpan="10y"},                 // history starts on 2006-04-10
+            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 7), PrimaryExchange = ExchangeId.NYSE, LastTicker = "GLD", ExpectedHistorySpan="10y"}
             };                  // history starts on 2004-11-18
         // MemDb should mirror persistent data in RedisDb. For Trades in Portfolios. The AssetId in MemDb should be the same AssetId as in Redis.
         // Alphabetical order of tickers for faster search is not realistic without Index tables or Hashtable/Dictionary.
@@ -165,7 +165,7 @@ namespace FinTechCommon
                     } else if (asset.ExpectedHistorySpan.EndsWith("y")) {
                         if (!Int32.TryParse(asset.ExpectedHistorySpan.Substring(0, asset.ExpectedHistorySpan.Length - 1), out int nYears))
                             throw new Exception($"ReloadHistoricalDataAndSetTimer(): wrong ExpectedHistorySpan for ticker {asset.LastTicker}");
-                        startDateET = DateTime.UtcNow.FromUtcToEt().AddYears(-1*nYears);
+                        startDateET = DateTime.UtcNow.FromUtcToEt().AddYears(-1*nYears).Date;
                     }
 
                     // YF: all the Open/High/Low/Close are always adjusted for Splits;  In addition: AdjClose also adjusted for Divididends.
