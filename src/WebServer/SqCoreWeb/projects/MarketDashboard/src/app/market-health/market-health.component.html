@@ -26,12 +26,14 @@
                             <option value="3y">3Y</option>
                             <option value="5y">5Y</option>
                             <option value="10y">10Y</option>
+                            <option value="15y">15Y</option>
                         </select>
                     </div>
                     &nbsp;
                     <div class="select">
                         <select id="marketIndicator" (change)=perfIndicatorSelector()>
                             <option value="PerRet" selected>Return</option>
+                            <option value="PerCagr" selected>CAGR</option>
                             <option value="CDD">CurrDrawDown</option>
                             <option value="CDU">CurrDrawUp</option>
                             <option value="MDD">MaxDrawDown</option>

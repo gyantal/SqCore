@@ -36,6 +36,13 @@ export class SqNgCommonUtilsTime implements OnInit {
     return this.ConvertDateUtcToEt(dateUtc);
   }
 
+  // https://stackoverflow.com/questions/542938/how-do-i-get-the-number-of-days-between-two-dates-in-javascript
+  public static DateDiffNdays(startDate: Date, endDate: Date) {
+    // Take the difference between the dates and divide by milliseconds per day.
+    // Round to nearest whole number to deal with DST.
+    return Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+  }
+
   constructor() { }
 
   ngOnInit(): void {

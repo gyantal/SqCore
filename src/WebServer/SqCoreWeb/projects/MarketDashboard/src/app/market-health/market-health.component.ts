@@ -46,6 +46,7 @@ class UiTableColumn {
   // calculated fields as numbers
   public dailyReturn = NaN;
   public periodReturn = NaN;
+  public periodCagr = NaN;
   public drawDownPct = NaN;
   public drawUpPct = NaN;
   public maxDrawDownPct = NaN;
@@ -63,10 +64,12 @@ class UiTableColumn {
 
   // fields for the second row
   public periodReturnStr = '';
+  public periodCagrStr = '';
   public drawDownPctStr = '';
   public drawUpPctStr = '';
   public maxDrawDownPctStr = '';
   public maxDrawUpPctStr = '';
+
   public selectedPerfIndSign = 1;
   public selectedPerfIndClass = '';
   public selectedPerfIndStr = '';
@@ -91,13 +94,12 @@ class TradingHoursTimer {
   }
 
   run() {
-    const time: Date = new Date();
-    const time2 = SqNgCommonUtilsTime.ConvertDateLocToEt(time);
-    const hours = time2.getHours();
-    const minutes = time2.getMinutes();
+    const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
+    const hours = todayET.getHours();
+    const minutes = todayET.getMinutes();
     let hoursSt = hours.toString();
     let minutesSt = minutes.toString();
-    const dayOfWeek = time2.getDay();
+    const dayOfWeek = todayET.getDay();
     const timeOfDay = hours * 60 + minutes;
     // in ET time:
     // Pre-market starts: 4:00 - 240 min
@@ -196,11 +198,17 @@ export class MarketHealthComponent implements OnInit {
     }
 
     const indicatorSelected = (document.getElementById('marketIndicator') as HTMLSelectElement).value;
+    const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
+    todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
 
     for (const uiCol of uiColumns) {
       // preparing values
       uiCol.dailyReturn = uiCol.last > 0 ? uiCol.last / uiCol.previousClose - 1 : 0;
       uiCol.periodReturn = uiCol.last > 0 ? uiCol.last / uiCol.periodOpen - 1 : uiCol.previousClose / uiCol.periodOpen - 1;
+      const dataStartDateET = new Date(uiCol.periodStart);  // '2010-09-29T00:00:00' which was UTC is converted to DateObj interpreted in Local time zone {Tue Sept 29 2010 00:00:00 GMT+0000 (Greenwich Mean Time)}
+      const nDays = SqNgCommonUtilsTime.DateDiffNdays(dataStartDateET, todayET); // 2 weeks = 14 days, 2020 year: 366 days, because it is a leap year.
+      const nYears = nDays / 365.25; // exact number of days in a year in average 365.25 days, because it is 3 times 365 and 1 time 366
+      uiCol.periodCagr = Math.pow(1 + uiCol.periodReturn, 1.0 / nYears) - 1;
       uiCol.drawDownPct = uiCol.last > 0 ? uiCol.last / Math.max(uiCol.periodHigh, uiCol.last) - 1 : uiCol.previousClose / uiCol.periodHigh - 1;
       uiCol.drawUpPct = uiCol.last > 0 ? uiCol.last / Math.min(uiCol.periodLow, uiCol.last) - 1 : uiCol.previousClose / uiCol.periodLow - 1;
       uiCol.maxDrawDownPct = Math.min(uiCol.periodMaxDD, uiCol.drawDownPct);
@@ -218,17 +226,17 @@ export class MarketHealthComponent implements OnInit {
       // https://stackoverflow.com/questions/17545708/parse-date-without-timezone-javascript
       // Javascript Date object are timestamps - they merely contain a number of milliseconds since the epoch. There is no timezone info in a Date object
       // uiCol.periodStart = '2010-09-29T00:00:00' comes as a string
-      const dataStartDateET = new Date(uiCol.periodStart);  // '2010-09-29T00:00:00' which was UTC is converted to DateObj interpreted in Local time zone {Tue Sept 29 2010 00:00:00 GMT+0000 (Greenwich Mean Time)}
       // dataStartDate.toISOString() would convert { Tue Dec 31 2019 00:00:00 GMT+0000 (GMT) } to "2015-09-28T23:00:00.000Z", so we better use the received string from server.
       const dataStartDateETStr = uiCol.periodStart.slice(0, 10); // use what is coming from server '2010-09-29T00:00:00'
       uiCol.periodReturnStr = (uiCol.periodReturn >= 0 ? '+' : '') + (uiCol.periodReturn * 100).toFixed(2).toString() + '%';
+      uiCol.periodCagrStr = (uiCol.periodCagr >= 0 ? '+' : '') + (uiCol.periodCagr * 100).toFixed(2).toString() + '%';
       uiCol.drawDownPctStr = (uiCol.drawDownPct >= 0 ? '+' : '') + (uiCol.drawDownPct * 100).toFixed(2).toString() + '%';
       uiCol.drawUpPctStr = (uiCol.drawUpPct >= 0 ? '+' : '') + (uiCol.drawUpPct * 100).toFixed(2).toString() + '%';
       uiCol.maxDrawDownPctStr = (uiCol.maxDrawDownPct >= 0 ? '+' : '') + (uiCol.maxDrawDownPct * 100).toFixed(2).toString() + '%';
       uiCol.maxDrawUpPctStr = (uiCol.maxDrawUpPct >= 0 ? '+' : '') + (uiCol.maxDrawUpPct * 100).toFixed(2).toString() + '%';
 
       uiCol.periodPerfTooltipStr1 = uiCol.ticker;
-      uiCol.periodPerfTooltipStr2 = 'Period return: ' + uiCol.periodReturnStr + '\r\n' + 'Current drawdown: ' + uiCol.drawDownPctStr + '\r\n' + 'Current drawup: ' + uiCol.drawUpPctStr + '\r\n' + 'Maximum drawdown: ' + uiCol.maxDrawDownPctStr + '\r\n' + 'Maximum drawup: ' + uiCol.maxDrawUpPctStr;
+      uiCol.periodPerfTooltipStr2 = 'Period return: ' + uiCol.periodReturnStr + '\r\n' + 'Period CAGR: ' + uiCol.periodCagrStr + '\r\n' + 'Current drawdown: ' + uiCol.drawDownPctStr + '\r\n' + 'Current drawup: ' + uiCol.drawUpPctStr + '\r\n' + 'Maximum drawdown: ' + uiCol.maxDrawDownPctStr + '\r\n' + 'Maximum drawup: ' + uiCol.maxDrawUpPctStr;
       uiCol.periodPerfTooltipStr3 = '\r\n' + 'Period start: ' + dataStartDateETStr + '\r\n' + 'Previous close: ' + uiCol.previousClose.toFixed(2).toString() + '\r\n' + 'Period open: ' + uiCol.periodOpen.toFixed(2).toString() + '\r\n' + 'Period high: ' + uiCol.periodHigh.toFixed(2).toString() + '\r\n' + 'Period low: ' + uiCol.periodLow.toFixed(2).toString();
       uiCol.lookbackErrorString = (dataStartDateET > lookbackStartDateET) ? ('! Period data starts on ' + dataStartDateETStr + '\r\n' + ' instead of the expected ' + lookbackStartDateET.toISOString().slice(0, 10)) + '. \r\n\r\n' : '';
       uiCol.lookbackErrorClass = (dataStartDateET > lookbackStartDateET) ? 'lookbackError' : '';
@@ -243,6 +251,11 @@ export class MarketHealthComponent implements OnInit {
         uiCol.selectedPerfIndSign = Math.sign(uiCol.periodReturn);
         uiCol.selectedPerfIndClass = (uiCol.selectedPerfIndSign === 1) ? 'positivePerf' : 'negativePerf';
         uiCol.selectedPerfIndStr = uiCol.periodReturnStr;
+        break;
+      case 'PerCagr':
+        uiCol.selectedPerfIndSign = Math.sign(uiCol.periodCagr);
+        uiCol.selectedPerfIndClass = (uiCol.selectedPerfIndSign === 1) ? 'positivePerf' : 'negativePerf';
+        uiCol.selectedPerfIndStr = uiCol.periodCagrStr;
         break;
       case 'CDD':
         uiCol.selectedPerfIndSign = -1;
