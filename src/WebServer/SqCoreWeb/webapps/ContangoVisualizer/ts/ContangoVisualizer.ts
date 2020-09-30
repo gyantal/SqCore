@@ -1,4 +1,5 @@
 import './../css/main.css';
+import * as d3 from 'd3';
 // import { NGXLogger } from '../../../ts/sq-ngx-logger/logger.service.js';
 // import { NgxLoggerLevel } from '../../../ts/sq-ngx-logger/types/logger-level.enum.js';
 
@@ -53,144 +54,370 @@ function onImageClick(index: number) {
   AsyncStartDownloadAndExecuteCbLater(
     '/ContangoVisualizerData?commo=' + index,
     (json: any) => {
-      // const jsonToStr = JSON.stringify(json).substr(0, 60) + '...';
       onDataReceived(json);
     }
   );
 }
 
 function onDataReceived(json: any) {
-    console.log(json.dataSource);
 
-    // Creating first row (dates) of webpage.
-    const divTitleCont = document.getElementById('idTitleCont') as HTMLElement;
-    const divTimeNow = document.getElementById('idTimeNow') as HTMLElement;
-    const divLiveDataDate = document.getElementById('idLiveDataDate') as HTMLElement;
-    const divLiveDataTime = document.getElementById('idLiveDataTime') as HTMLElement;
-    const divMyLink = document.getElementById('myLink') as HTMLElement;
-    // const divFirstDataDate = document.getElementById('idFirstDataDate') as HTMLTableElement;
-    // const divLastDataDate = document.getElementById('idLastDataDate') as HTMLTableElement;
+  // Creating first row (dates) of webpage.
+  const divTitleCont = document.getElementById('idTitleCont') as HTMLElement;
+  const divTimeNow = document.getElementById('idTimeNow') as HTMLElement;
+  const divLiveDataDate = document.getElementById(
+    'idLiveDataDate'
+  ) as HTMLElement;
+  const divLiveDataTime = document.getElementById(
+    'idLiveDataTime'
+  ) as HTMLElement;
+  const divMyLink = document.getElementById('myLink') as HTMLElement;
+  const divChart = document.getElementById('inviCharts') as HTMLElement;
 
+  divTitleCont.innerText = json.titleCont;
+  divTimeNow.innerText = 'Current time: ' + json.timeNow;
+  divLiveDataDate.innerText = 'Last data time: ' + json.liveDataDate;
+  divLiveDataTime.innerText = json.liveDataTime;
+  divMyLink.innerHTML =
+    '<a href="' + json.dataSource + '" target="_blank">Data Source</a>';
 
-    divTitleCont.innerText = json.titleCont;
-    divTimeNow.innerText = 'Current time: ' + json.timeNow;
-    divLiveDataDate.innerText = 'Last data time: ' + json.liveDataDate;
-    divLiveDataTime.innerText = json.liveDataTime;
-    divMyLink.innerHTML = '<a href="' + json.dataSource + '" target="_blank">Data Source</a>';
+  creatingTables(json);
 
-
-    creatingTables(json);
-
-    // // Setting charts visible after getting data.
-    // document.getElementById('inviCharts').style.visibility = 'visible';
+  // Setting charts visible after getting data.
+  divChart.style.visibility = 'visible';
 }
 
 function creatingTables(json) {
-
-  // const monthList = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
   // Creating JavaScript data arrays by splitting.
-  const currDataArray = json.currDataVec.split(',');
-  const currDataDaysArray = json.currDataDaysVec.split(',');
-  const prevDataArray = json.prevDataVec.split(',');
+  const currDataArray = json.currDataVec.split(',').map(Number);
+  const currDataDaysArray = json.currDataDaysVec.split(',').map(Number);
+  const prevDataArray = json.prevDataVec.split(',').map(Number);
   const currDataDiffArray = json.currDataDiffVec.split(',');
   const currDataPercChArray = json.currDataPercChVec.split(',');
-  const spotVixArray = json.spotVixVec.split(',');
-
+  const spotVixArray = json.spotVixVec.split(',').map(Number);
 
   // Creating the HTML code of current table.
-  let currTableMtx = '<table class="currData"><tr align="center"><td>Future Prices</td><td>F1</td><td>F2</td><td>F3</td><td>F4</td><td>F5</td><td>F6</td><td>F7</td><td>F8</td></tr><tr align="center"><td align="left">Current</td>';
+  let currTableMtx =
+    '<table class="currData"><tr align="center"><td>Future Prices</td><td>F1</td><td>F2</td><td>F3</td><td>F4</td><td>F5</td><td>F6</td><td>F7</td><td>F8</td></tr><tr align="center"><td align="left">Current</td>';
   for (let i = 0; i < 8; i++) {
-      if (currDataArray[i] === 0) {
-          currTableMtx += '<td>' + '---' + '</td>';
-      } else {
-          currTableMtx += '<td>' + currDataArray[i] + '</td>';
-      }
+    if (currDataArray[i] === 0) {
+      currTableMtx += '<td>' + '---' + '</td>';
+    } else {
+      currTableMtx += '<td>' + currDataArray[i] + '</td>';
+    }
   }
 
-  currTableMtx += '</tr><tr align="center"><td align="left">Previous Close</td>';
+  currTableMtx +=
+    '</tr><tr align="center"><td align="left">Previous Close</td>';
   for (let i = 0; i < 8; i++) {
-      if (currDataArray[i] === 0) {
-          currTableMtx += '<td>' + '---' + '</td>';
-      } else {
-          currTableMtx += '<td>' + prevDataArray[i] + '</td>';
-      }
+    if (currDataArray[i] === 0) {
+      currTableMtx += '<td>' + '---' + '</td>';
+    } else {
+      currTableMtx += '<td>' + prevDataArray[i] + '</td>';
+    }
   }
-  currTableMtx += '</tr><tr align="center"><td align="left">Daily Abs. Change</td>';
+  currTableMtx +=
+    '</tr><tr align="center"><td align="left">Daily Abs. Change</td>';
   for (let i = 0; i < 8; i++) {
-      if (currDataArray[i] === 0) {
-          currTableMtx += '<td>' + '---' + '</td>';
-      } else {
-          currTableMtx += '<td>' + currDataDiffArray[i] + '</td>';
-      }
+    if (currDataArray[i] === 0) {
+      currTableMtx += '<td>' + '---' + '</td>';
+    } else {
+      currTableMtx += '<td>' + currDataDiffArray[i] + '</td>';
+    }
   }
-  currTableMtx += '</tr><tr align="center"><td align="left">Daily % Change</td>';
+  currTableMtx +=
+    '</tr><tr align="center"><td align="left">Daily % Change</td>';
   for (let i = 0; i < 8; i++) {
-      if (currDataArray[i] === 0) {
-          currTableMtx += '<td>' + '---' + '</td>';
-      } else {
-          currTableMtx += '<td>' + (currDataPercChArray[i] * 100).toFixed(2) + '%</td>';
-      }
+    if (currDataArray[i] === 0) {
+      currTableMtx += '<td>' + '---' + '</td>';
+    } else {
+      currTableMtx +=
+        '<td>' + (currDataPercChArray[i] * 100).toFixed(2) + '%</td>';
+    }
   }
-  currTableMtx += '</tr><tr align="center"><td align="left">Cal. Days to Expiration</td>';
+  currTableMtx +=
+    '</tr><tr align="center"><td align="left">Cal. Days to Expiration</td>';
   for (let i = 0; i < 8; i++) {
-      if (currDataArray[i] === 0) {
-          currTableMtx += '<td>' + '---' + '</td>';
-      } else {
-          currTableMtx += '<td>' + currDataDaysArray[i] + '</td>';
-      }
+    if (currDataArray[i] === 0) {
+      currTableMtx += '<td>' + '---' + '</td>';
+    } else {
+      currTableMtx += '<td>' + currDataDaysArray[i] + '</td>';
+    }
   }
   currTableMtx += '</tr></table>';
 
-  let currTableMtx3 = '<table class="currData"><tr align="center"><td>Contango</td><td>F2-F1</td><td>F3-F2</td><td>F4-F3</td><td>F5-F4</td><td>F6-F5</td><td>F7-F6</td><td>F8-F7</td><td>F7-F4</td><td>(F7-F4)/3</td></tr><tr align="center"><td align="left">Monthly Contango %</td><td><strong>' + (currDataArray[8] * 100).toFixed(2) + '%</strong></td>';
+  let currTableMtx3 =
+    '<table class="currData"><tr align="center"><td>Contango</td><td>F2-F1</td><td>F3-F2</td><td>F4-F3</td><td>F5-F4</td><td>F6-F5</td><td>F7-F6</td><td>F8-F7</td><td>F7-F4</td><td>(F7-F4)/3</td></tr><tr align="center"><td align="left">Monthly Contango %</td><td><strong>' +
+    (currDataArray[8] * 100).toFixed(2) +
+    '%</strong></td>';
   for (let i = 20; i < 27; i++) {
-      if (currDataArray[i] === 0) {
-          currTableMtx3 += '<td>' + '---' + '</td>';
-      } else {
-          currTableMtx3 += '<td>' + (currDataArray[i] * 100).toFixed(2) + '%</td>';
-      }
+    if (currDataArray[i] === 0) {
+      currTableMtx3 += '<td>' + '---' + '</td>';
+    } else {
+      currTableMtx3 += '<td>' + (currDataArray[i] * 100).toFixed(2) + '%</td>';
+    }
   }
-  currTableMtx3 += '<td><strong>' + (currDataArray[27] * 100).toFixed(2) + '%</strong></td>';
+  currTableMtx3 +=
+    '<td><strong>' + (currDataArray[27] * 100).toFixed(2) + '%</strong></td>';
   currTableMtx3 += '</tr><tr align="center"><td align="left">Difference</td>';
   for (let i = 10; i < 19; i++) {
-      if (currDataArray[i] === 0) {
-          currTableMtx3 += '<td>' + '---' + '</td>';
-      } else {
-          currTableMtx3 += '<td>' + (currDataArray[i] * 100 / 100).toFixed(2) + '</td>';
-      }
+    if (currDataArray[i] === 0) {
+      currTableMtx3 += '<td>' + '---' + '</td>';
+    } else {
+      currTableMtx3 +=
+        '<td>' + ((currDataArray[i] * 100) / 100).toFixed(2) + '</td>';
+    }
   }
   currTableMtx3 += '</tr></table>';
 
   // "Sending" data to HTML file.
-  const currTableMtx2 = document.getElementById('idCurrTableMtx') as HTMLTableElement;
-  // const currTableMtx2 = document.getElementById('idCurrTableMtx');
+  const currTableMtx2 = document.getElementById(
+    'idCurrTableMtx'
+  ) as HTMLTableElement;
   currTableMtx2.innerHTML = currTableMtx;
-  const currTableMtx4 = document.getElementById('idCurrTableMtx3') as HTMLTableElement;
+  const currTableMtx4 = document.getElementById(
+    'idCurrTableMtx3'
+  ) as HTMLTableElement;
   currTableMtx4.innerHTML = currTableMtx3;
 
+  interface PriceData {
+    days: number;
+    price: number;
+  }
   const nCurrData = 7;
-  const currDataPrices = new Array(nCurrData);
+  const currDataPrices: PriceData[] = [];
   for (let i = 0; i < nCurrData; i++) {
-      const currDataPricesRows = new Array(2);
-      currDataPricesRows[0] = currDataDaysArray[i];
-      currDataPricesRows[1] = currDataArray[i];
-      currDataPrices[i] = currDataPricesRows;
+    const currDataPricesRows: PriceData = {
+      days: currDataDaysArray[i],
+      price: currDataArray[i],
+    };
+    currDataPrices.push(currDataPricesRows);
   }
 
-  const prevDataPrices = new Array(nCurrData);
+  const prevDataPrices: PriceData[] = [];
   for (let i = 0; i < nCurrData; i++) {
-      const prevDataPricesRows = new Array(2);
-      prevDataPricesRows[0] = currDataDaysArray[i];
-      prevDataPricesRows[1] = prevDataArray[i];
-      prevDataPrices[i] = prevDataPricesRows;
+    const prevDataPricesRows: PriceData = {
+      days: currDataDaysArray[i],
+      price: prevDataArray[i],
+    };
+    prevDataPrices.push(prevDataPricesRows);
   }
 
-  const spotVixValues = new Array(nCurrData);
+  const spotVixValues: PriceData[] = [];
   for (let i = 0; i < nCurrData; i++) {
-      const spotVixValuesRows = new Array(2);
-      spotVixValuesRows[0] = currDataDaysArray[i];
-      spotVixValuesRows[1] = spotVixArray[i];
-      spotVixValues[i] = spotVixValuesRows;
+    const spotVixValuesRows: PriceData = {
+      days: currDataDaysArray[i],
+      price: spotVixArray[i],
+    };
+    spotVixValues.push(spotVixValuesRows);
+  }
+
+  // Declaring data sets to charts.
+
+  interface DataSet {
+    name: string;
+    history: PriceData[];
+    show: boolean;
+    color: string;
+  }
+
+  const current: DataSet = {
+    name: 'Current',
+    history: currDataPrices,
+    show: true,
+    color: 'blue',
+  };
+
+  const previous: DataSet = {
+    name: 'Last Close',
+    history: prevDataPrices,
+    show: true,
+    color: 'green',
+  };
+
+  const dataset1: DataSet[] = [];
+  dataset1.push(current);
+  dataset1.push(previous);
+
+  if (spotVixArray[0] > 0) {
+    const spot: DataSet = {
+      name: 'Spot VIX',
+      history: spotVixValues,
+      show: true,
+      color: 'red',
+    };
+    dataset1.push(spot);
+  }
+
+  let minPrice = 100000;
+  let maxPrice = 0;
+  dataset1.forEach((series) => {
+    const minPriceI = d3.min(series.history, (d) => d.price);
+    const maxPriceI = d3.max(series.history, (d) => d.price);
+    if (minPriceI < minPrice) {
+      minPrice = minPriceI;
+    }
+    if (maxPriceI > maxPrice) {
+      maxPrice = maxPriceI;
+    }
+  });
+  const maxDays = currDataDaysArray[nCurrData - 1];
+
+  creatingChart(dataset1, json.titleCont, minPrice, maxPrice, maxDays);
+}
+
+function creatingChart(data, titleCont, minPrice, maxPrice, maxDays) {
+  const svg = d3.select('#chart1');
+
+  // Define margins, dimensions, and some line colors
+  const margin = { top: 40, right: 50, bottom: 35, left: 100 };
+  const width = 800 - margin.left - margin.right;
+  const height = 400 - margin.top - margin.bottom;
+
+  // Define the scales and tell D3 how to draw the line
+  const x = d3
+    .scaleLinear()
+    .domain([0, maxDays + 10])
+    .range([0, width]);
+  const y = d3
+    .scaleLinear()
+    .domain([minPrice * 0.87, maxPrice * 1.13])
+    .range([height, 0]);
+  const line = d3
+    .line()
+    .x((d) => x(d.days))
+    .y((d) => y(d.price));
+  svg.selectAll('*').remove();
+  const chart = d3
+    .select('svg')
+    .append('g')
+    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+  const tooltip = d3.select('#tooltip');
+  const tooltipLine = chart.append('line');
+
+  // Add the axes and a title
+  const xAxis = d3.axisBottom(x).tickFormat(d3.format('.4'));
+  const yAxis = d3.axisLeft(y).tickFormat(d3.format('$.4'));
+  chart.append('g').call(yAxis);
+  chart
+    .append('g')
+    .attr('transform', 'translate(0,' + height + ')')
+    .call(xAxis);
+  chart.append('text').html(titleCont).attr('x', 200);
+
+  // text label for the x axis
+  chart
+    .append('text')
+    .attr('transform', 'translate(' + width / 2 + ' ,' + (height + 30) + ')')
+    .style('text-anchor', 'middle')
+    .style('font-size', '1.2rem')
+    .text('Days until expiration');
+
+  // Load the data and draw a chart
+  let numSeries = 0;
+  let series;
+  data.forEach((d) => {
+    series = d;
+
+    chart
+      .append('path')
+      .attr('fill', 'none')
+      .attr('stroke', d.color)
+      .attr('stroke-width', 2)
+      .datum(d.history)
+      .attr('d', line);
+
+    chart
+      .append('text')
+      .html(d.name)
+      .style('font-size', '1.4rem')
+      .attr('fill', d.color)
+      .attr('alignment-baseline', 'middle')
+      .attr('x', width - 100)
+      .attr('dx', '.5em')
+      .attr('y', 30 + 20 * numSeries);
+
+    chart
+      .selectAll('myCircles')
+      .data(d.history)
+      .enter()
+      .append('circle')
+      .attr('fill', d.color)
+      .attr('stroke', 'none')
+      .attr('cx', (e: { days: number }) => x(e.days))
+      .attr('cy', (e: { price: number }) => y(e.price))
+      .attr('r', 4);
+
+    numSeries = numSeries + 1;
+  });
+
+  chart
+    .append('rect')
+    .attr('width', width)
+    .attr('height', height)
+    .attr('opacity', 0)
+    .on('mousemove', drawTooltip)
+    .on('mouseout', removeTooltip);
+
+  function removeTooltip() {
+    if (tooltip) {
+      tooltip.style('display', 'none');
+    }
+    if (tooltipLine) {
+      tooltipLine.attr('stroke', 'none');
+    }
+  }
+
+  function drawTooltip(event: any) {
+    const daysArray = new Array();
+    series.history.forEach((element) => {
+      daysArray.push(element.days);
+    });
+    const mousePos = d3.pointer(event);
+    const xCCL = event.clientX;
+    const yCCL = event.clientY;
+    const xCoord = x.invert(mousePos[0]);
+    const yCoord = mousePos[1];
+
+    const closestXCoord = daysArray.sort(
+      (a, b) => Math.abs(xCoord - a) - Math.abs(xCoord - b)
+    )[0];
+    const closestYCoord = data[0].history.find((h) => h.days === closestXCoord)
+      .price;
+    const closestInvX = (closestXCoord / (maxDays + 10)) * width;
+    const ttX = xCCL - mousePos[0] + closestInvX;
+    const ttY = yCCL - yCoord + y(closestYCoord);
+
+    const ttTextArray = new Array();
+    ttTextArray.push(
+      '<i>Number of days till expiration: ' + closestXCoord + '</i><br>'
+    );
+    data.forEach((d) => {
+      const seriesText =
+        d.name +
+        ': $' +
+        d.history.find((h) => h.days === closestXCoord).price +
+        '<br>';
+      ttTextArray.push(seriesText);
+    });
+
+    tooltipLine
+      .attr('stroke', 'black')
+      .attr('x1', x(closestXCoord))
+      .attr('x2', x(closestXCoord))
+      .attr('y1', 0 + 10)
+      .attr('y2', height);
+
+    tooltip
+      .html(ttTextArray.join(''))
+      .style('display', 'block')
+      .style('left', ttX + 10)
+      .style('top', ttY + 25)
+      .selectAll()
+      .data(series)
+      .enter()
+      .append('div')
+      .style('color', (d) => d.color);
   }
 }
 

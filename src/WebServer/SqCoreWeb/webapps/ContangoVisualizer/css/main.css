@@ -1,204 +1,121 @@
-html { font-size: 62.5%; }  /* set 1.0rem = 10px. revert to root font size of 10px. it allows to set font-size in rem, that corresponds to px */
+html {
+  font-size: 62.5%;
+} /* set 1.0rem = 10px. revert to root font size of 10px. it allows to set font-size in rem, that corresponds to px */
 
 @font-face {
   font-family: PublicoText-Roman-Web;
-  src: url('https://assets.bwbx.io/s3/fontservice/fonts/PublicoText-Italic-Web-b04a2274cf.woff2');
+  src: url("https://assets.bwbx.io/s3/fontservice/fonts/PublicoText-Italic-Web-b04a2274cf.woff2");
   font-style: italic, oblique;
 }
 @font-face {
   font-family: PublicoText-Roman-Web;
-  src: url('https://assets.bwbx.io/s3/fontservice/fonts/PublicoText-Bold-Web-3c5266a48e.woff2');
+  src: url("https://assets.bwbx.io/s3/fontservice/fonts/PublicoText-Bold-Web-3c5266a48e.woff2");
   font-weight: bold;
 }
 @font-face {
   font-family: PublicoText-Roman-Web;
-  src: url('https://assets.bwbx.io/s3/fontservice/fonts/PublicoText-Roman-Web-bfa063ee27.woff2');
+  src: url("https://assets.bwbx.io/s3/fontservice/fonts/PublicoText-Roman-Web-bfa063ee27.woff2");
 }
 
 @font-face {
   font-family: PublicoHeadline-Bold-Web;
-  src: url('https://assets.bwbx.io/s3/fontservice/fonts/PublicoHeadline-Bold-Web-e816328678.woff2');
+  src: url("https://assets.bwbx.io/s3/fontservice/fonts/PublicoHeadline-Bold-Web-e816328678.woff2");
 }
 
 body {
-    margin: 0;  /* originally, there is a 8px margin  */
-    overflow-y: scroll; /* enable y scrollbar */
-    overflow-x: hidden;  /* disable x scrollbar */
-    font-size: 1.6rem;  /* = 16px. Wiki uses 14px. Ft.com uses size 18px fonts. CNBC is using 18 and 14. Bloomberg uses Georgia 18px (for text). But 18px is too big for condensing a lot of info to the page. 16px should be our default too for text and header of tables. For numbers in cells in table we should targer 14px. 20px for section headers. 24px for webpage main title. */
-    font-family: PublicoText-Roman-Web,Georgia,Cambria,"Times New Roman",Times,serif;
-    text-align: center;
-  }
-
-  .gradientBckgrnd {
-    background: linear-gradient(to right, #3080c7 5%, #5b9dd7 10%, #d5f5f6 30%, #d5f5f6 70%, #ace16b 90%, #91d73a 95%);     /* new light */
-  }
-
-  h2 {
-    margin-top: 0.4rem;
-    margin-bottom: 0.7rem;
-    font-size: 2.4rem;  /* = 24px */
-  }
-
-  .largeSizeText {
-    font-size: 2.0rem;  /* = 20px */
-  }
-
-  .normalSizeText {
-    font-size: 1.6rem;  /* = 16px */
-  }
-
-  .dataSizeText {
-    font-size: 1.4rem;  /* = 14px */
-  }
-
-  .miniSizeText {
-    font-size: 1.0rem;  /* = 10px. For insignificant debug info. */
-  }
-
-  img {
-    /* icons are next to a text on the same line. If text font changes, this should change. Define this icons as 2x the size of the font (2x14px=28px). Use EM, so it scales with the containing element fontsize. So, if that fontsize change, we don't have to resize img here. */
-    width: 4rem;
-    height: 4rem;
-    vertical-align: text-bottom;
-  }
-
-  .widerImg {
-    width: 6rem;
-  }
-
-  a {
-    color: inherit;  /* inherit from parent, if is set dynamically as dark/light mode */
-    display: inline-block;
-    padding: 0.8rem 0.2rem;
-    text-decoration: underline;
-    text-decoration-style: dotted;
-    color: blue;
-    text-shadow: 0rem 0rem 0rem #528ecc; /* shadow is the only exception when fixed pixel units should be used. */
-  }
-
-  a:hover {
-    color: rgb(174, 0, 255);  /* blue Href hover is good for both dark and light mode  */
-  }
-
-h1   {
-    font-family: "Comic Sans MS", cursive, sans-serif;
-    text-align: center;
-    color: blue;
-    font-size: 150%;
+  margin: 0; /* originally, there is a 8px margin  */
+  overflow-y: scroll; /* enable y scrollbar */
+  overflow-x: hidden; /* disable x scrollbar */
+  font-size: 1.6rem; /* = 16px. Wiki uses 14px. Ft.com uses size 18px fonts. CNBC is using 18 and 14. Bloomberg uses Georgia 18px (for text). But 18px is too big for condensing a lot of info to the page. 16px should be our default too for text and header of tables. For numbers in cells in table we should targer 14px. 20px for section headers. 24px for webpage main title. */
+  font-family: PublicoText-Roman-Web, Georgia, Cambria, "Times New Roman", Times,
+    serif;
+  text-align: center;
 }
-h2   {
-    font-family: "Comic Sans MS", cursive, sans-serif;
-    color: gainsboro;
-    font-size: 125%;
+
+.gradientBckgrnd {
+  background: linear-gradient(
+    to right,
+    #3080c7 5%,
+    #5b9dd7 10%,
+    #d5f5f6 30%,
+    #d5f5f6 70%,
+    #ace16b 90%,
+    #91d73a 95%
+  ); /* new light */
+}
+
+h1 {
+  font-family: "Comic Sans MS", cursive, sans-serif;
+  text-align: center;
+  color: blue;
+  font-size: 150%;
+}
+h2 {
+  font-family: "Comic Sans MS", cursive, sans-serif;
+  color: gainsboro;
+  font-size: 125%;
 }
 .h3 {
-    font-family: "Comic Sans MS", cursive, sans-serif;
-    color: mediumblue;
-    font-size: 110%;
-    text-align: center;
+  font-family: "Comic Sans MS", cursive, sans-serif;
+  color: mediumblue;
+  font-size: 110%;
+  text-align: center;
 }
- .wshelp li {
-            margin: 1rem 0;
-        }
 
 .center {
-    text-align: center;
-    border:0;
-    font-size: 1.3rem;
+  text-align: center;
+  border: 0;
+  font-size: 1.4rem;
 }
 p.center {
-margin-top:0;
+  margin-top: 0;
 }
 span.center {
-margin:0;
+  margin: 0;
 }
+
 .button {
-    display: inline-block;
-    border: none;
-    border-radius: 1.2rem;
-    cursor: pointer;
-    height: 8rem;
-    width: 16rem;
-    background-size: cover; 
-    background-repeat: no-repeat;
-    max-width: 100%;
-    max-height: 100%;
+  display: inline-block;
+  border: none;
+  border-radius: 1.2rem;
+  cursor: pointer;
+  height: 8rem;
+  width: 16rem;
+  background-size: cover;
+  background-repeat: no-repeat;
+  max-width: 100%;
+  max-height: 100%;
+  outline: none;
 }
 .button:hover {
-    box-shadow: 0 1.2rem 1.6rem 0 rgba(0,0,0,0.24), 0 1.7rem 5rem 0 rgba(0,0,0,0.19);
+  box-shadow: 0 1.2rem 1.6rem 0 rgba(0, 0, 0, 0.24),
+    0 1.7rem 5rem 0 rgba(0, 0, 0, 0.19);
 }
 
 .button:active {
-    transform: translateY(0.4rem);
+  transform: translateY(0.4rem);
 }
 
 table.currData {
-    width: 80%;
-    margin-left: 10%;
-    margin-right: 10%;
-    margin-bottom: 0;
-    font-size: 1.3rem;
-    border-collapse: collapse;
-    border: 0.1rem solid black;
+  width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 0;
+  font-size: 1.3rem;
+  border-collapse: collapse;
+  border: 0.1rem solid black;
 }
 
 .currData td {
-    width: 5%;
-    /*text-align: left;*/
-    border: 0.1rem solid black;
+  width: 5%;
+  border: 0.1rem solid black;
 }
 
 .currData td:first-child {
-    min-width: 18rem;
-    max-width: 18rem;
-    overflow: hidden;
+  min-width: 12rem;
+  max-width: 12rem;
+  overflow: hidden;
 }
-
-.histData{
-    width: 95%;
-    margin: 0 auto;
-    border-collapse:collapse;
-    border: none;
-    }
-/*.histData td {
-    width: 50%;
-    }*/
-
-table.resData{
-    width: 95%;
-    margin: 0 auto;
-    border-collapse:collapse;
-    border: 0.1rem solid black;
-    }
-.resData td {
-    width: 10%;
-    /*text-align: left;*/
-    border: 0.1rem solid black;
-}
-
-.buttonSim {
-    background-color: dodgerblue; /* Green */
-    /*border: none;*/
-    color: white;
-    font-family: "Comic Sans MS", cursive, sans-serif;
-    padding: 0.8rem 1.5rem;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 1.6rem;
-}
-
-/* .buttonHelp {
-    background: url("../assets/images/help.png");
-    background-size: contain;
-    border: none;
-    color: white;
-    padding: 2.5rem 2.5rem;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 1.6rem;
-} */
 
 #VIXimage {
   background: url("../assets/images/vix.webp");
@@ -207,7 +124,7 @@ table.resData{
 
 #OILimage {
   background: url("../assets/images/crude_oil.webp");
-  background-size: cover; 
+  background-size: cover;
 }
 
 #GASimage {
@@ -215,66 +132,22 @@ table.resData{
   background-size: cover;
 }
 
-/* Tooltip container */
-.tooltip {
-    position: relative;
-    display: inline-block;
-  
+#chart1 {
+  width: 80rem;
+  height: 40rem;
 }
 
-/* Tooltip text */
-.tooltip .tooltiptext {
-    visibility: hidden;
-    min-width: 20rem;
-    max-width: 200rem;
-    font-size: 1.2rem;
-    background-color: dodgerblue;
-    color: gainsboro;
-    text-align: center;
-    padding: 0.5rem 0;
-    border-radius: 0.6rem;
- 
-    position: absolute;
-    z-index: 1;
-    top: -0.5rem;
-    left: 105%;
-}
-
-/* Show the tooltip text when you mouse over the tooltip container */
-.tooltip:hover .tooltiptext {
-    visibility: visible;
-}
-
-.demo-container {
-    box-sizing: border-box;
-    width: 60rem;
-    height: 30rem;
-    padding: 2rem 1.5rem 1.5rem 1.5rem;
-    margin: 0.5rem auto 1rem auto;
-    border: 0.1rem solid #ddd;
-    /*background: #0094ff;*/
-    font-size: 1rem;
-    background: #F4F6F6; /* For browsers that do not support gradients */
-    background: linear-gradient(90deg, #D6EAF8, #D1F2EB); /* Standard syntax */
-    /*background: linear-gradient(#f6f6f6 0, #fff 50px);
-    background: -o-linear-gradient(#f6f6f6 0, #fff 50px);
-    background: -ms-linear-gradient(#f6f6f6 0, #fff 50px);
-    background: -moz-linear-gradient(#f6f6f6 0, #fff 50px);
-    background: -webkit-linear-gradient(#f6f6f6 0, #fff 50px);
-    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
-    -o-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-    -ms-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-    -moz-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-    -webkit-box-shadow: 0 3px 10px rgba(0,0,0,0.1);*/
-}
-
-.demo-placeholder {
-	width: 100%;
-	height: 100%;
-	font-size: 1.2rem;
-	line-height: 1.2rem;
-}
-
-.legend table {
-	border-spacing: 0.5rem;
+#tooltip {
+  display: none;
+  position: absolute;
+  background-color: lightgray;
+  min-width: 20rem;
+  max-width: 200rem;
+  font-size: 1.2rem;
+  background-color: dodgerblue;
+  color: gainsboro;
+  text-align: center;
+  opacity: 0.92;
+  padding: 0.5rem 0;
+  border-radius: 0.6rem;
 }
