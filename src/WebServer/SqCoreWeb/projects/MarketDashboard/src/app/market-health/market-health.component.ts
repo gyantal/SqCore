@@ -375,19 +375,7 @@ export class MarketHealthComponent implements OnInit {
   onClickChangeLookback() {
     const lookbackStr = (document.getElementById('lookBackPeriod') as HTMLSelectElement).value;
     console.log('Sq.onClickChangeLookback(): ' + lookbackStr);
-    // Javascript doesn't support timezones, so either use moment.js or hack it here.
-    // https://stackoverflow.com/questions/36206260/how-to-set-date-always-to-eastern-time-regardless-of-users-time-zone/36206597
-    const currDateLocal: Date = new Date();
-    const currDateUtc: Date = new Date(currDateLocal.getTime() + currDateLocal.getTimezoneOffset() * 60 * 1000);
-    // https://en.wikipedia.org/wiki/Eastern_Time_Zone
-    // on the second Sunday in March, at 2:00 a.m. EST, clocks are advanced to 3:00 a.m. EDT leaving a one-hour "gap". On the first Sunday in November, at 2:00 a.m. EDT,
-    // clocks are moved back to 1:00 a.m. EST, thus "duplicating" one hour. Southern parts of the zone (Panama and the Caribbean) do not observe daylight saving time.""
-    const offsetSummerET = -4 * 60;
-    const offsetWinterET = -5 * 60;
-    // approximation is OK now. From March to October inclusive, there is summer.
-    const offsetETNow = (currDateLocal.getMonth() >= 2 || currDateLocal.getMonth() <= 9) ? offsetSummerET : offsetWinterET;
-    const currDateET: Date = new Date(currDateUtc.getTime() + offsetETNow * 60 * 1000); // var offset = -300; //Timezone offset for EST in minutes.
-
+    const currDateET: Date = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     if (lookbackStr === 'YTD') {
       this.lookbackStartET = new Date(currDateET.getUTCFullYear() - 1, 11, 31);
     } else if (lookbackStr.endsWith('y')) {
