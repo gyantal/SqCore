@@ -183,8 +183,9 @@ if use7zip:
     print(Fore.CYAN + Style.BRIGHT + "Sending packed file ...")
     ret = sftp.put(zipFileName, zipFileRemoteName, None, True)  # Check FileSize after Put() = True
 
+    # unpack files and restart webserver in screen
     print(Fore.CYAN + Style.BRIGHT  + "Unpacking file on the server ...")
-    command = "cd " + rootRemoteDir + " && 7z x " + zipFileRemoteName
+    command = "cd " + rootRemoteDir + " && 7z x " + zipFileRemoteName + " && /home/sq-vnc-client/SQ/admin/restart-sqcoreweb-in-screen.sh"
     (stdin, stdout, stderr) = sshClient.exec_command(command)
     for line in stdout.readlines():
         print(line, end='') # tell print not to add any 'new line', because the input already contains that
