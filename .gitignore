@@ -3,6 +3,7 @@
 
 # SqCore files
 *.sqlog
+*.sqlog.csv
 *.map
 *.br
 *.7z

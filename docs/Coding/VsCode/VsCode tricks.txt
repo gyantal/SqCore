@@ -7,6 +7,7 @@ Debugger:
 - Ctrl-F5: Run without attaching debugger
 
 Code editing:
+- Ctrl+Space has been the predominant keybinding to trigger IntelliSense (Code completion). But it is triggering auto, when '.' is pressed. https://code.visualstudio.com/docs/editor/intellisense
 - F12: Go to definition
 - Go to definition via mouse: hold down Control, Move mouse over a method, simple click (not double click). After that Ctrl-Back will go back.
 - Alt-LeftArrow, Alt-RightArrow: Navigate back and forward. (after Go To Definition, or after changing opened files.). Navigate Forward only makes sense After a Navigate Back, otherwise nothing happens.
