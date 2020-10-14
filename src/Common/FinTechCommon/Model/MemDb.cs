@@ -9,6 +9,7 @@ using SqCommon;
 using StackExchange.Redis;
 using YahooFinanceApi;
 using System.Text.Json;
+using System.IO.Compression;
 
 namespace FinTechCommon
 {
@@ -24,15 +25,16 @@ namespace FinTechCommon
         // Max RAM requirement if need O/H/L/C/AdjClose/Volume: 6x of previous = 960MB = 1GB
         // 2020-01 FinTimeSeries SumMem: 2+10+10+4*5 = 42 years. 42*260*(2+4)= 66KB.                                With 5000 stocks, 30years: 5000*260*30*(2+4)= 235MB
         // 2020-05 CompactFinTimeSeries SumMem: 2+10+10+4*5 = 42 years. Date + data: 2*260*10+42*260*(4)= 48KB.     With 5000 stocks, 30years: 2*260*30+5000*260*30*(4)= 156MB (a saving of 90MB)
-        public List<Asset> Assets { get; } = new List<Asset>() { // to minimize mem footprint, only load the necessary dates (not all history). Because we would like to have 2008-09 market crash in history, start from 2005-01
-            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 1), PrimaryExchange = ExchangeId.NYSE, LastTicker = "SPY", ExpectedHistorySpan="Date: 2004-12-31"},    // history starts on 1993-01-29. Full history would be: 44KB, 
-            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 2), PrimaryExchange = ExchangeId.NYSE, LastTicker = "QQQ", ExpectedHistorySpan="Date: 2004-12-31"},    // history starts on 1999-03-10. Full history would be: 32KB.       // 2010-01-01 Friday is NewYear holiday, first trading day is 2010-01-04
-            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 3), PrimaryExchange = ExchangeId.NYSE, LastTicker = "TLT", ExpectedHistorySpan="15y"},                 // history starts on 2002-07-30
-            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 4), PrimaryExchange = ExchangeId.NYSE, LastTicker = "VXX", ExpectedHistorySpan="Date: 2018-01-25"},    // history starts on 2018-01-25 on YF, because VXX was restarted. The previously existed VXX.B shares are not on YF.
-            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 5), PrimaryExchange = ExchangeId.NYSE, LastTicker = "UNG", ExpectedHistorySpan="15y"},                 // history starts on 2007-04-18
-            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 6), PrimaryExchange = ExchangeId.NYSE, LastTicker = "USO", ExpectedHistorySpan="15y"},                 // history starts on 2006-04-10
-            new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 7), PrimaryExchange = ExchangeId.NYSE, LastTicker = "GLD", ExpectedHistorySpan="15y"}                  // history starts on 2004-11-18
-            };                  // history starts on 2004-11-18
+        public List<Asset> Assets { get; set; } = new List<Asset>();    // it is loaded from Redis DB. from 'memDb.SqCoreWebAssets'
+        // { // to minimize mem footprint, only load the necessary dates (not all history). Because we would like to have 2008-09 market crash in history, start from 2005-01
+        //     new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 1), PrimaryExchange = ExchangeId.NYSE, LastTicker = "SPY", ExpectedHistorySpan="Date: 2004-12-31"},    // history starts on 1993-01-29. Full history would be: 44KB, 
+        //     new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 2), PrimaryExchange = ExchangeId.NYSE, LastTicker = "QQQ", ExpectedHistorySpan="Date: 2004-12-31"},    // history starts on 1999-03-10. Full history would be: 32KB.       // 2010-01-01 Friday is NewYear holiday, first trading day is 2010-01-04
+        //     new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 3), PrimaryExchange = ExchangeId.NYSE, LastTicker = "TLT", ExpectedHistorySpan="15y"},                 // history starts on 2002-07-30
+        //     new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 4), PrimaryExchange = ExchangeId.NYSE, LastTicker = "VXX", ExpectedHistorySpan="Date: 2018-01-25"},    // history starts on 2018-01-25 on YF, because VXX was restarted. The previously existed VXX.B shares are not on YF.
+        //     new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 5), PrimaryExchange = ExchangeId.NYSE, LastTicker = "UNG", ExpectedHistorySpan="15y"},                 // history starts on 2007-04-18
+        //     new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 6), PrimaryExchange = ExchangeId.NYSE, LastTicker = "USO", ExpectedHistorySpan="15y"},                 // history starts on 2006-04-10
+        //     new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 7), PrimaryExchange = ExchangeId.NYSE, LastTicker = "GLD", ExpectedHistorySpan="15y"}                  // history starts on 2004-11-18
+        //     };
         // MemDb should mirror persistent data in RedisDb. For Trades in Portfolios. The AssetId in MemDb should be the same AssetId as in Redis.
         // Alphabetical order of tickers for faster search is not realistic without Index tables or Hashtable/Dictionary.
         // There are ticker renames every other day, and we will not reorganize the whole Assets table in Redis just because there were ticker renames in real life.
@@ -79,17 +81,18 @@ namespace FinTechCommon
 
         void Init_WT(object? p_state)    // WT : WorkThread
         {
-            Thread.CurrentThread.Name = "MemDb.Init_WT Thread";
-
             // Better to do long consuming data preprocess in working thread than in the constructor in the main thread
-            AssetsByLastTicker = Assets.ToLookup(r => r.LastTicker); // if it contains duplicates, ToLookup() allows for multiple values per key.
-            AssetsByAssetID = Assets.ToDictionary(r => r.AssetId);
+            Thread.CurrentThread.Name = "MemDb.Init_WT Thread";
 
             HistoricalDataReloadAndSetTimer();
             InitRt_WT(p_state); // call this after HistoricalDataReload downloads the Assets from DB
 
             IsInitialized = true;
-            EvInitialized?.Invoke();
+            EvInitialized?.Invoke();    // inform observers that MemDb changed
+
+            // User updates only the JSON text version of the Redis records. But we use the Brotli version for faster DB access. A health check is made a bit later after start.
+            Thread.Sleep(TimeSpan.FromSeconds(15));     // can start it in a separate thread, but it is fine to use this background thread as well for CheckingRedis Brotli consistency
+            CheckRedisBrotliRecordsConsistentWithJson();
         }
 
         public void ServerDiagnostic(StringBuilder p_sb)
@@ -122,7 +125,7 @@ namespace FinTechCommon
                 if (p_primExchangeID == ExchangeId.Unknown || p_primExchangeID == asset.PrimaryExchange)
                     return asset;
             }
-            throw new Exception($"Ticker '{p_lasTicker}' is in MemDb.Assets, but Exchange '{p_primExchangeID}' is not found.");
+            throw new Exception($"MemDb.GetFirstMatchingAssetByLastTicker(): Ticker '{p_lasTicker}' with Exchange '{p_primExchangeID}' is not found.");
         }
 
         // Also can be historical using Assets.TickerChanges
@@ -143,10 +146,40 @@ namespace FinTechCommon
             try
             {
                 // TODO: this can be in a separate thread as RedisReload(out assetsMissingYfSplits) function
+
+                // start using Redis:'allAssets.Brotli' (520bytes instead of 1.52KB) immediately. See CheckRedisBrotliRecordsConsistentWithJson();
+                byte[] allAssetsBin = m_redisDb.HashGet("memDb", "allAssets.Brotli");
+                var allAssetsBinToStr = Utils.BrotliBin2Str(allAssetsBin);
+                var allAssets = JsonSerializer.Deserialize<Dictionary<string, AssetInDb[]>>(allAssetsBinToStr);
+
+                string sqCoreWebAssetsJson = m_redisDb.HashGet("memDb", "SqCoreWebAssets");
+                var sqCoreWebAssets = JsonSerializer.Deserialize<Dictionary<string, SqCoreWebAssetInDb>>(sqCoreWebAssetsJson);
+
+                // select only a subset of the allAssets in DB that SqCore webapp needs
+                List<Asset> sqAssets = sqCoreWebAssets.Select(r => {
+                    var assetId = new AssetId32Bits(r.Key);
+                    var assetTypeArr = allAssets[((byte)assetId.AssetTypeID).ToString()];
+                    // Linq is slow. List<T>.Find() is faster than Linq.FirstOrDefault() https://stackoverflow.com/questions/14032709/performance-of-find-vs-firstordefault
+                    var assetFromDb = Array.Find(assetTypeArr, k => k.ID == assetId.SubTableID);
+
+                    return new Asset() {
+                        AssetId = assetId,
+                        PrimaryExchange = ExchangeId.NYSE, // NYSE is is larger than Nasdaq. If it is not specified assume NYSE. Saving DB space. https://www.statista.com/statistics/270126/largest-stock-exchange-operators-by-market-capitalization-of-listed-companies/
+                        LastTicker = assetFromDb.Ticker,
+                        LastName = assetFromDb.Name,
+                        ExpectedHistorySpan = r.Value.LoadPrHist
+                    };
+                }).ToList();
+  
+                Assets = sqAssets;
+                AssetsByLastTicker = Assets.ToLookup(r => r.LastTicker); // if it contains duplicates, ToLookup() allows for multiple values per key.
+                AssetsByAssetID = Assets.ToDictionary(r => r.AssetId);
+
+
+
                 string missingYfSplitsJson = m_redisDb.HashGet("memDb", "missingYfSplits");
                 var assetsMissingYfSplits = JsonSerializer.Deserialize<Dictionary<string, Split[]>>(missingYfSplitsJson);   // JsonSerializer: Dictionary key <int>,<uint> is not supported
 
-              
                 // The startTime & endTime here defaults to EST timezone
                 var assetsDates = new Dictionary<uint, DateOnly[]>();
                 var assetsAdjustedCloses = new Dictionary<uint, float[]>();
@@ -290,7 +323,7 @@ namespace FinTechCommon
 
             // reload times should be relative to ET (Eastern Time), because that is how USA stock exchanges work.
             // Reload History approx in UTC: at 9:00 (when IB resets its own timers and pre-market starts)(in the 3 weeks when summer-winter DST difference, it is 8:00), at 14:00 (30min before market open, last time to get correct data, because sometimes YF fixes data late), 21:30 (30min after close)
-            // In ET time zone, these are:  4:00ET, 9:00ET, 16:30ET. IB starts premarket trading at 4:00. YF starts to have premarket data from 4:00ET.
+            // In ET time zone, these are: 4:00ET, 9:00ET, 16:30ET. IB starts premarket trading at 4:00. YF starts to have premarket data from 4:00ET.
             DateTime etNow = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
             int nowTimeOnlySec = etNow.Hour * 60 * 60 + etNow.Minute * 60 + etNow.Second;
             int targetTimeOnlySec;
@@ -306,6 +339,33 @@ namespace FinTechCommon
             DateTime targetDateEt = etNow.Date.AddSeconds(targetTimeOnlySec);
             Utils.Logger.Info($"m_reloadHistoricalDataTimer set next targetdate: {targetDateEt.ToSqDateTimeStr()} ET");
             m_historicalDataReloadTimer.Change(targetDateEt - etNow, TimeSpan.FromMilliseconds(-1.0));     // runs only once.
+        }
+
+        private void CheckRedisBrotliRecordsConsistentWithJson()
+        {
+            // start using Redis:'allAssets.Brotli' (520bytes instead of 1.52KB) immediately. User only modifyes the JSON version Redis:'allAssets'.
+            // 15 seconds later check the Redis consistency. In a very rare case when that finds discrepancy between 'allAssets.Brotli' vs. 'allAssets' then 
+            // it updates Redis:'allAssets.Brotli' and re-call HistoricalDataReloadAndSetTimer()
+
+            string allAssetsJson = m_redisDb.HashGet("memDb", "allAssets");
+            
+            byte[] allAssetsBin = m_redisDb.HashGet("memDb", "allAssets.Brotli");
+            var allAssetsBinToStr = Utils.BrotliBin2Str(allAssetsBin);
+
+            bool wasBrotliUpdated = false;
+            if (allAssetsJson != allAssetsBinToStr)
+            {
+                // Write brotli to DB
+                var allAssetsBrotli = Utils.Str2BrotliBin(allAssetsJson);
+                m_redisDb.HashSet("memDb", "allAssets.Brotli", RedisValue.CreateFrom(new System.IO.MemoryStream(allAssetsBrotli)));
+                wasBrotliUpdated = true;
+            }
+
+            if (!wasBrotliUpdated)
+                return;
+
+            HistoricalDataReloadAndSetTimer();
+            EvInitialized?.Invoke();    // inform observers that MemDb changed (new tickers might be added, ticker renames happened)
         }
 
         public void Exit()

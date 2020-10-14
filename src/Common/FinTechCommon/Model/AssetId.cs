@@ -3,17 +3,19 @@ using System;
 namespace FinTechCommon
 {
     public enum AssetType : byte    // According to dbo.AssetType
-	{
-		HardCash = 1,
-		Stock,          // 2
-		Futures,        // 3
+    {
+        Unknown = 0,     // 0
+
+        CurrencyCash = 1,
+        Stock,          // 2
+        Futures,        // 3
 		Bond,
 		Option,         // 5
 		Commodity,
 		RealEstate,
 		BenchmarkIndex, // 8
         BrokerNAV,      // 9
-		Unknown = 0     // 0
+        GeneralTimeSeries      // 10
 	}
 
     // AssetType: uses the top 5 bits; 32 different values: 0..31
@@ -41,6 +43,15 @@ namespace FinTechCommon
         public AssetId32Bits(AssetType p_type, uint p_subTableId)
         {
             m_value = IntValue(p_type, p_subTableId);
+        }
+
+        public AssetId32Bits(string p_typeSubTableStr)  // "2:6" is Type: 2 (stock), StockID: 6 (USO)
+        {
+            int iColon = p_typeSubTableStr.IndexOf(':');
+            if (iColon == -1)
+                throw new Exception($"AssetId32Bits cannot find : in '{p_typeSubTableStr}'");
+
+            m_value = IntValue((AssetType)byte.Parse(p_typeSubTableStr.Substring(0, iColon)), uint.Parse(p_typeSubTableStr.Substring(iColon + 1, p_typeSubTableStr.Length - iColon - 1)));
         }
         public AssetType AssetTypeID        { get { return (AssetType)(m_value >> 27); } }
         public uint SubTableID               { get { return (m_value << 5) >> 5; } }
