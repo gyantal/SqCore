@@ -12,7 +12,8 @@ namespace SqCommon
         public static byte[] Str2BrotliBin(string p_str)
         {
             // For JSON string: One third (1/3rd) size reduction from UTF8 string to brotli bytes
-            // E.g. allAssets in JSON: UTF8 text file: 1585 bytes, in-memory string allAssetsJson.Length: 1557 System.Text.Encoding.UTF8.GetBytes(): 1557, Brotli outbytes: 520 (1/third size)
+            // E.g. allAssets in JSON: UTF8 text file: 1585 bytes, in-memory string allAssetsJson.Length: 1557 System.Text.Encoding.UTF8.GetBytes(): 1557, 
+            // Zip file: 696 bytes, 7z file: 695 bytes, Brotli in-memory bytes: 520 (1/3rd of the raw data size), -26% better than Zip file.
             using (System.IO.MemoryStream msOutput = new System.IO.MemoryStream())
             using (var bs = new BrotliStream(msOutput, CompressionLevel.Optimal))
             {

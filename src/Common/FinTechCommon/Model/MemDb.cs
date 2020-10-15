@@ -192,14 +192,20 @@ namespace FinTechCommon
                 foreach (var asset in Assets)
                 {
                     DateTime startDateET = new DateTime(2018, 02, 01, 0, 0, 0);
-                    if (asset.ExpectedHistorySpan.StartsWith("Date: ")) {
-                        if (!DateTime.TryParseExact(asset.ExpectedHistorySpan.Substring("Date: ".Length), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDateET))
+                    if (asset.ExpectedHistorySpan.StartsWith("Date:")) {
+                        if (!DateTime.TryParseExact(asset.ExpectedHistorySpan.Substring("Date:".Length), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDateET))
                             throw new Exception($"ReloadHistoricalDataAndSetTimer(): wrong ExpectedHistorySpan for ticker {asset.LastTicker}");
                     } else if (asset.ExpectedHistorySpan.EndsWith("y")) {
                         if (!Int32.TryParse(asset.ExpectedHistorySpan.Substring(0, asset.ExpectedHistorySpan.Length - 1), out int nYears))
                             throw new Exception($"ReloadHistoricalDataAndSetTimer(): wrong ExpectedHistorySpan for ticker {asset.LastTicker}");
                         startDateET = DateTime.UtcNow.FromUtcToEt().AddYears(-1*nYears).Date;
                     }
+                    // if startDateET is weekend, we have to go back to previous Friday
+                    if (startDateET.DayOfWeek == DayOfWeek.Sunday)
+                        startDateET = startDateET.AddDays(-2);
+                    if (startDateET.DayOfWeek == DayOfWeek.Saturday)
+                        startDateET = startDateET.AddDays(-1);
+                    startDateET = startDateET.AddDays(-1);  // go back another extra day, in case that Friday was a stock market holiday
 
                     // YF: all the Open/High/Low/Close are always adjusted for Splits;  In addition: AdjClose also adjusted for Divididends.
                     // YF gives back both the onlySplit(butNotDividend)-adjusted row.Close, and SplitAndDividendAdjusted row.AdjustedClose (checked with MO dividend and USO split).
