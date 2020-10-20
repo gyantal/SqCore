@@ -94,12 +94,12 @@ namespace SqCoreWeb
             new RtMktSummaryStock() { Ticker = "USO"}};
         static DateTime g_rtMktSummaryPreviousClosePrChecked = DateTime.MinValue; // UTC
 
-        static void EvMemDbInitialized_mktHealth()
+        static void EvMemDbAssetDataReloaded_mktHealth()
         {
             // fill up AssetId based on Tickers. For faster access later.
             foreach (var stock in g_mktSummaryStocks)
             {
-                Asset sec = MemDb.gMemDb.GetFirstMatchingAssetByLastTicker(stock.Ticker);
+                Asset sec = MemDb.gMemDb.AssetsCache.GetFirstMatchingAssetByLastTicker(stock.Ticker);
                 stock.AssetId = sec.AssetId;
             }
         }

@@ -76,26 +76,22 @@ namespace FinTechCommon
         uint m_nIexDownload = 0;
         uint m_nYfDownload = 0;
 
-        void InitRt_WT(object? p_state)    // WT : WorkThread
+        void InitRt_WT()    // WT : WorkThread
         {
             // Main logic:
             // schedule RtTimer_Elapsed() at Init() and also once per hour (even if nobody asked it) for All assets in MemDb. So we always have more or less fresh data
             // schedule RtTimer_Elapsed() in 3sec (RTH) or in 60sec (non-RTH) for m_assetIds only if there was a function call in the last 5 minutes (busyMode)
             // GetLastRtPrice() always return data without blocking. Data might be 1 hour old, but it is OK. If we are in a Non-busy mode, then switch to busy and schedule it immediately.
-            m_rtTimerBusyMode = false;
-            m_rtTimer = new System.Threading.Timer(new TimerCallback(RtTimer_Elapsed), this, TimeSpan.FromMilliseconds(0), TimeSpan.FromMilliseconds(-1.0));    // start immediately
+            m_rtTimer = new System.Threading.Timer(new TimerCallback(RtTimer_Elapsed), this, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));    // start immediately
         }
-        public void ServerDiagnosticRealtime(StringBuilder p_sb)
-        {
-            p_sb.Append($"Realtime: m_rtTimerBusyMode: {m_rtTimerBusyMode}, m_nYfDownload: {m_nYfDownload}, m_nIexDownload:{m_nIexDownload} <br>");
-        }
-        public void RtTimer_Elapsed(object? state)    // Timer is coming on a ThreadPool thread
+
+        void ReloadRealtimeDataAndSetTimer()
         {
             // Download the RT price immediately. Besides, set up Timer that it is called either 3 sec or 60 sec or 1h later. Until there is a 5 minute when nobody accessed RT prices.
             try
             {
                 Utils.Logger.Info($"RtTimer_Elapsed(). BEGIN. m_rtTimerBusyMode: {m_rtTimerBusyMode}");
-                uint[] assetIds = (m_rtTimerBusyMode) ? m_busyModeAssetIds : Assets.Select(r => (uint)r.AssetId).ToArray();
+                uint[] assetIds = (m_rtTimerBusyMode) ? m_busyModeAssetIds : AssetsCache.Assets.Select(r => (uint)r.AssetId).ToArray();
                 m_lastDownloadTimeET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
                 var tradingHoursNow = Utils.UsaTradingHours(m_lastDownloadTimeET);
                 if (tradingHoursNow == TradingHours.RegularTrading)
@@ -123,6 +119,15 @@ namespace FinTechCommon
             }
         }
 
+        public void ServerDiagnosticRealtime(StringBuilder p_sb)
+        {
+            p_sb.Append($"Realtime: m_rtTimerBusyMode: {m_rtTimerBusyMode}, m_nYfDownload: {m_nYfDownload}, m_nIexDownload:{m_nIexDownload} <br>");
+        }
+        public void RtTimer_Elapsed(object state)    // Timer is coming on a ThreadPool thread
+        {
+            ((MemDb)state).ReloadRealtimeDataAndSetTimer();
+        }
+
         
         DateTime m_lastGetLastRtCall = DateTime.MinValue;
         // GetLastRtPrice() always return data without blocking. Data might be 1 hour old or 3sec (RTH) or in 60sec (non-RTH) for m_assetIds only if there was a function call in the last 5 minutes (busyMode), but it is OK.
@@ -144,7 +149,7 @@ namespace FinTechCommon
             var lastDowloadTradingHours = Utils.UsaTradingHours(m_lastDownloadTimeET);
             return p_assetIds.Select(r =>
                 {
-                    var sec = GetAsset(r);
+                    var sec = AssetsCache.GetAsset(r);
                     return (sec.AssetId, (lastDowloadTradingHours == TradingHours.RegularTrading) ? sec.LastPriceIex : sec.LastPriceYF);
                 });
         }
@@ -159,14 +164,14 @@ namespace FinTechCommon
                 // https://query1.finance.yahoo.com/v7/finance/quote?symbols=AAPL,AMZN  returns all the fields.
                 // https://query1.finance.yahoo.com/v7/finance/quote?symbols=QQQ%2CSPY%2CGLD%2CTLT%2CVXX%2CUNG%2CUSO&fields=symbol%2CregularMarketPreviousClose%2CregularMarketPrice%2CmarketState%2CpostMarketPrice%2CpreMarketPrice  // returns just the specified fields.
                 // "marketState":"PRE" or "marketState":"POST", In PreMarket both "preMarketPrice" and "postMarketPrice" are returned.
-                var symbols = p_assetIDs.Select(r => GetAsset(r).LastTicker).ToArray();
+                var symbols = p_assetIDs.Select(r => AssetsCache.GetAsset(r).LastTicker).ToArray();
                 var quotes = Yahoo.Symbols(symbols).Fields(new Field[] { Field.Symbol, Field.RegularMarketPreviousClose, Field.RegularMarketPrice, Field.MarketState, Field.PostMarketPrice, Field.PreMarketPrice }).QueryAsync().Result;
                 foreach (var quote in quotes)
                 {
                     Asset? sec = null;
                     foreach (var secdID in p_assetIDs)
                     {
-                        var s = GetAsset(secdID);
+                        var s = AssetsCache.GetAsset(secdID);
                         if (s.LastTicker == quote.Key)
                         {
                             sec = s;
@@ -198,7 +203,7 @@ namespace FinTechCommon
             m_nIexDownload++;
             try
             {
-                if (!Request_api_iextrading_com(string.Format("https://api.iextrading.com/1.0/tops?symbols={0}", String.Join(", ", p_assetIds.Select(r => GetAsset(r).LastTicker))), out HttpWebResponse? response) || (response == null))
+                if (!Request_api_iextrading_com(string.Format("https://api.iextrading.com/1.0/tops?symbols={0}", String.Join(", ", p_assetIds.Select(r => AssetsCache.GetAsset(r).LastTicker))), out HttpWebResponse? response) || (response == null))
                     return;
 
                 using (var reader = new System.IO.StreamReader(response.GetResponseStream(), ASCIIEncoding.ASCII))
@@ -241,7 +246,7 @@ namespace FinTechCommon
                 Asset? asset = null;
                 foreach (var secdID in p_assetIds)
                 {
-                    var s = GetAsset(secdID);
+                    var s = AssetsCache.GetAsset(secdID);
                     if (s.LastTicker == ticker)
                     {
                         asset = s;

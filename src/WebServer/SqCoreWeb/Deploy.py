@@ -17,7 +17,6 @@ import colorama  # for colourful print
 import subprocess
 from stat import S_ISDIR
 from colorama import Fore, Back, Style
-import platform
 import time
 
 use7zip = True
@@ -27,11 +26,11 @@ start_time = time.time()
 runningEnvironmentComputerName = platform.node()    # 'gyantal-PC' or Balazs
 if runningEnvironmentComputerName == 'gyantal-PC':
     rootLocalDir = "g:/work/Archi-data/GitHubRepos/SqCore/src/WebServer/SqCoreWeb/bin/Release/netcoreapp3.1/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
-    serverRsaKeyFile = 'g:/work/Archi-data/GitHubRepos/HedgeQuant/src/Server/AmazonAWS/AwsMTrader/AwsMTrader,sq-vnc-client.pem'  # server
+    serverRsaKeyFile = "g:/work/Archi-data/GitHubRepos/HedgeQuant/src/Server/AmazonAWS/AwsMTrader/AwsMTrader,sq-vnc-client.pem"  # server
 else:   # TODO: Laci, Balazs, you have to add your IF here (based on the 'name' of your PC)
     rootLocalDir = "d:/GitHub/SqCore/src/WebServer/SqCoreWeb/bin/Release/netcoreapp3.1/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
-    serverRsaKeyFile = 'd:/SVN/HedgeQuant/src/Server/AmazonAWS/AwsMTrader/AwsMTrader,sq-vnc-client.pem'  # server
-zipExeWithPath = 'c:/Program Files/7-Zip/7z.exe'
+    serverRsaKeyFile = "d:/SVN/HedgeQuant/src/Server/AmazonAWS/AwsMTrader/AwsMTrader,sq-vnc-client.pem"  # server
+zipExeWithPath = "c:/Program Files/7-Zip/7z.exe"
 
 serverHost = "ec2-34-251-1-119.eu-west-1.compute.amazonaws.com"         # MTrader server
 serverPort = 122    # on MTraderServer, port 22 bandwidth throttled, because of VNC viewer usage, a secondary SSH port 122 has no bandwith limit
@@ -122,7 +121,8 @@ sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 sshClient.connect(serverHost, serverPort, username = serverUser, pkey = paramiko.RSAKey.from_private_key_file(serverRsaKeyFile))
 (stdin, stdout, stderr) = sshClient.exec_command(command)
 for line in stdout.readlines():
-    print(line)
+    if line != "\n":
+        print(line, end='') # tell print not to add any 'new line', because the input already contains that
 
 print("SFTPClient is connecting...")
 transport = paramiko.Transport((serverHost, serverPort))
@@ -188,7 +188,8 @@ if use7zip:
     command = "cd " + rootRemoteDir + " && 7z x " + zipFileRemoteName + " && /home/sq-vnc-client/SQ/admin/restart-sqcoreweb-in-screen.sh"
     (stdin, stdout, stderr) = sshClient.exec_command(command)
     for line in stdout.readlines():
-        print(line, end='') # tell print not to add any 'new line', because the input already contains that
+        if line != "\n":
+            print(line, end='') # tell print not to add any 'new line', because the input already contains that
 
 sshClient.close()
 

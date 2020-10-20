@@ -23,7 +23,8 @@ namespace FinTechCommon
 		public CurrencyId Currency { get; set; } = CurrencyId.USD;	// if stocks with different currencies are in the portfolio they have to be converted to USD, if they are not. IB has a BaseCurrency of the account. We use USD as the base currency of the program. Every calculations are based in the USD form.
    		public String ISIN { get; set; } = String.Empty;    // International Securities Identification Number would be a unique identifier. Not used for now.
         public ExchangeId PrimaryExchange { get; set; } = ExchangeId.Unknown; // different assed with the same "VOD" ticker can exist in LSE, NYSE; YF uses "VOD" and "VOD.L"
-        public string ExpectedHistorySpan { get; set; } = String.Empty;
+        public string ExpectedHistorySpan { get; set; } = String.Empty;		// comes from RedisDb
+		public DateTime ExpectedHistoryStartDateET { get; set; } = DateTime.MaxValue;	// process ExpectedHistorySpan after Assets Reload, so we don't have to do it 3x per day at historical price reload
 		public float LastPriceIex { get; set; } = -100.0f;     // real-time last price
         public float LastPriceYF { get; set; } = -100.0f;     // real-time last price
 

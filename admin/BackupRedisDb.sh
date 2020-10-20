@@ -1,4 +1,5 @@
 #!/bin/bash
+# RedisDb is backed up at 8:05 on every Sunday on Linux, and at 10:00 on every Thursday on Win
 DATE=$(date +'%F %H:%M:%S')
 echo "Starting RedisBackup...time: $DATE" >>/home/ubuntu/_admin/BackupRedisDb.log
 
@@ -12,3 +13,8 @@ rm /home/ubuntu/redis-backup/dump-7045.${today}.rdb -f
 
 DATE=$(date +'%F %H:%M:%S')
 echo "End of RedisBackup...time: $DATE" >>/home/ubuntu/_admin/BackupRedisDb.log
+
+# Then either call this SH script from the command line on demand (or from Windows backup script)
+# Or add this to 'sudo crontab -e'
+# Backup Redis DB 8:05 on every Sunday. Once per week is fine to avoid 360 backups per year
+# 5 8 * * Sun /home/ubuntu/_admin/BackupRedisDb.sh

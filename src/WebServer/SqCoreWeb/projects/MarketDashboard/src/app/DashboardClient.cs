@@ -42,13 +42,13 @@ namespace SqCoreWeb
         }
         public static void EarlyInit()
         {
-            MemDb.gMemDb.EvInitialized += new MemDb.MemDbEventHandler(EvMemDbInitialized);
+            MemDb.gMemDb.EvAssetDataReloaded += new MemDb.MemDbEventHandler(EvMemDbAssetDataReloaded);
             MemDb.gMemDb.EvHistoricalDataReloaded += new MemDb.MemDbEventHandler(EvMemDbHistoricalDataReloaded);
         }
 
-        static void EvMemDbInitialized()
+        static void EvMemDbAssetDataReloaded()
         {
-            EvMemDbInitialized_mktHealth();
+            EvMemDbAssetDataReloaded_mktHealth();
         }
 
         static void EvMemDbHistoricalDataReloaded()
