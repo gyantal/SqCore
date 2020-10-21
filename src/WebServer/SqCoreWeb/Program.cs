@@ -36,6 +36,9 @@ namespace SqCoreWeb
         DateTime m_webAppStartTime = DateTime.UtcNow;
         DateTime IWebAppGlobals.WebAppStartTime { get => m_webAppStartTime; set => m_webAppStartTime = value; }
 
+
+        // KestrelEnv.ContentRootPath: "...\SqCore\src\WebServer\SqCoreWeb"
+        // KestrelEnv.WebRootPath: 	 "...\SqCore\src\WebServer\SqCoreWeb\wwwroot"
         IWebHostEnvironment? m_kestrelEnv = null;
         IWebHostEnvironment? IWebAppGlobals.KestrelEnv { get => m_kestrelEnv; set => m_kestrelEnv = value; }
         

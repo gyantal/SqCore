@@ -4,6 +4,7 @@ import platform
 import sys
 from pathlib import Path
 import fileinput
+import shutil
 
 print("SqBuild: Python ver: " + platform.python_version() + " (" + platform.architecture()[0] + "), CWD:'" + os. getcwd() + "'")
 if (os.getcwd().endswith("SqCore")) : # VsCode's context menu 'Run Python file in Terminal' runs it from the workspace folder. VsCode F5 runs it from the project folder. We change it to the project folder
@@ -61,6 +62,8 @@ for dir in os.walk("wwwroot"):
 
 # 4. DotNet (C#) build RELEASE and Publish
 print("\nSqBuild: Executing 'dotnet publish...'")
+if os.path.exists("bin/Release/netcoreapp3.1/publish"):
+    shutil.rmtree("bin/Release/netcoreapp3.1/publish")    # platform independent way of deleting a folder recursively
 os.system("dotnet publish --configuration Release SqCoreWeb.csproj /property:GenerateFullPaths=true")
 
 # 5. Postprocess the published folder. (before deploying to Linux)
