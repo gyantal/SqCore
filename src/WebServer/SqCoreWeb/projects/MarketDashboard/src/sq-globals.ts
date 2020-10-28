@@ -93,8 +93,10 @@ export class SqDiagnostics {
   public wsOnConnectedMsgArrivedTime: Date = minDate;
 
   public wsOnFirstRtMktSumNonRtStatTime: Date = minDate;
+  public wsOnLastRtMktSumNonRtStatTime: Date = minDate;
   public wsOnFirstRtMktSumRtStatTime: Date = minDate;
   public wsOnLastRtMktSumRtStatTime: Date = minDate;
   public wsNumRtMktSumRtStat = 0;
+  public wsOnLastRtMktSumLookbackChgStart: Date = minDate;
 }
 export const gDiag: SqDiagnostics = new SqDiagnostics();

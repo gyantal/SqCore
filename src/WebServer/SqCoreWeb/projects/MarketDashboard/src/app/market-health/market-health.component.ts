@@ -367,6 +367,7 @@ export class MarketHealthComponent implements OnInit {
         if (gDiag.wsOnFirstRtMktSumNonRtStatTime === minDate) {
           gDiag.wsOnFirstRtMktSumNonRtStatTime = new Date();
         }
+        gDiag.wsOnLastRtMktSumNonRtStatTime = new Date();
         this.nNonRtStatArrived++;
         const jsonArrayObjNonRt = JSON.parse(msgObjStr);
         // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
@@ -424,30 +425,30 @@ export class MarketHealthComponent implements OnInit {
     const currDateET: Date = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     if (lookbackStr === 'YTD') {
       this.lookbackStartET = new Date(currDateET.getUTCFullYear() - 1, 11, 31);
-      this.lookbackStartETstr = this.Date2PaddedIsoStr(this.lookbackStartET);
     } else if (lookbackStr.endsWith('y')) {
       const lbYears = parseInt(lookbackStr.substr(0, lookbackStr.length - 1), 10);
       this.lookbackStartET = new Date(currDateET.setUTCFullYear(currDateET.getUTCFullYear() - lbYears));
-      this.lookbackStartETstr = this.Date2PaddedIsoStr(this.lookbackStartET);
     } else if (lookbackStr.endsWith('m')) {
       const lbMonths = parseInt(lookbackStr.substr(0, lookbackStr.length - 1), 10);
       this.lookbackStartET = new Date(currDateET.setUTCMonth(currDateET.getUTCMonth() - lbMonths));
-      this.lookbackStartETstr = this.Date2PaddedIsoStr(this.lookbackStartET);
     } else if (lookbackStr.endsWith('w')) {
       const lbWeeks = parseInt(lookbackStr.substr(0, lookbackStr.length - 1), 10);
       this.lookbackStartET = new Date(currDateET.setUTCDate(currDateET.getUTCDate() - lbWeeks * 7));
-      this.lookbackStartETstr = this.Date2PaddedIsoStr(this.lookbackStartET);
     } else if (lookbackStr === 'Date') {
       this.lookbackStartET = this.PaddedIsoStr3Date(this.lookbackStartETstr);
+    } else if (lookbackStr === 'D\'99') {
+      this.lookbackStartET = new Date(1999, 3 - 1, 10); // start date of QQQ
     }
+    this.lookbackStartETstr = this.Date2PaddedIsoStr(this.lookbackStartET);
 
     this.onLookbackChange();
   }
 
   onLookbackChange() {
     console.log('Calling server with new lookback. StartDateETstr: ' + this.lookbackStartETstr + ', lookbackStartET: ' + this.lookbackStartET);
+    gDiag.wsOnLastRtMktSumLookbackChgStart = new Date();
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
-      this._parentWsConnection.send('changeLookback:Date:' + this.lookbackStartETstr); // we always send the Date format to server
+      this._parentWsConnection.send('changeLookback:Date:' + this.lookbackStartETstr); // we always send the Date format to server, not the strings of 'YTD/10y'
     }
     // native Websocket handles this now, not SignalR
     // if (this._parentHubConnection != null) {
