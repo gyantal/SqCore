@@ -90,6 +90,11 @@ namespace FinTechCommon
         {
             return m_value == other.m_value;
         }
+
+        public override string ToString()
+        {
+            return $"{((int)AssetTypeID)}:{SubTableID}";
+        }
     }
 
 

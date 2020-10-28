@@ -70,9 +70,12 @@ namespace RedisManager
                     case "7":
                         Controller.g_controller.ConvertTableDataToRedis(new string[] { "sq_user", "sq_user", "sq_user" });
                         break;
+                    case "8":
+                        Controller.g_controller.InsertNavAssetFromCsvFile("9:1", @"g:\agy\money\Investment\IB\Reports\PortfolioAnalyst\2020-10-22\NAV+Deposits_Daily_Inception\Gyorgy_Antal_Inception_October_20_2020 (1).csv");
+                        break;
                 }
 
-            } while (userInput != "8" && userInput != "ConsoleIsForcedToShutDown");
+            } while (userInput != "9" && userInput != "ConsoleIsForcedToShutDown");
 
             gLogger.Info("****** Main() END");
             Controller.g_controller.Exit();
@@ -98,7 +101,8 @@ namespace RedisManager
             Console.WriteLine("5. Convert [sq_user] table from PostgreSql to Redis data");
             Console.WriteLine("6. Convert [some important] tables from PostgreSql to Redis data (Quick)");
             Console.WriteLine("7. Convert [all] tables from PostgreSql to Redis data (Full)");
-            Console.WriteLine("8. Exit gracefully (Avoid Ctrl-^C).");
+            Console.WriteLine("8. Convert NAV asset CSV file to RedisDb");
+            Console.WriteLine("9. Exit gracefully (Avoid Ctrl-^C).");
             string result = String.Empty;
             try
             {

@@ -6,6 +6,9 @@ using Npgsql;
 using StackExchange.Redis;
 using SqCommon;
 using DbCommon;
+using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace RedisManager
 {
@@ -172,6 +175,113 @@ namespace RedisManager
             }
         }
 
+
+        class DailyNavData {
+            public string DateStr = String.Empty;
+            public string ValueStr = String.Empty;
+        }
+
+        struct DailyNavDataBin {
+            public DateOnly dateOnly;
+            public float floatValue;
+        }
+        public void InsertNavAssetFromCsvFile(string p_redisKeyPrefix, string p_csvFullpath)
+        {
+            List<DailyNavData> dailyNavData = new List<DailyNavData>();
+            List<DailyNavData> dailyDepositData = new List<DailyNavData>();
+
+            using (StreamReader sr = new StreamReader(p_csvFullpath))
+            {
+                int iRow = 0;
+                string? currentLine;
+                while ((currentLine = sr.ReadLine()) != null)  // currentLine will be null when the StreamReader reaches the end of file
+                {
+                    iRow++;
+                    if (iRow == 1 && currentLine != @"Introduction,Header,Name,Account,Alias,BaseCurrency,AccountType,AnalysisPeriod,PerformanceMeasure")
+                        throw new Exception();
+                    if (iRow == 5 && currentLine != @"Allocation by Financial Instrument,Header,Date,ETFs,Options,Stocks,Cash,NAV")
+                        throw new Exception();
+                    if (currentLine.StartsWith(@"Allocation by Financial Instrument,Data,"))
+                    {
+                        var currentLineParts = currentLine.Split(',', StringSplitOptions.RemoveEmptyEntries);   // date is in this format: "20090102"  YYYYMMDD
+                        dailyNavData.Add(new DailyNavData() {DateStr = currentLineParts[2], ValueStr = currentLineParts[7]});
+                    }
+                    if (currentLine.StartsWith(@"Deposits And Withdrawals,Data,"))
+                    {
+                        var currentLineParts = currentLine.Split(',', StringSplitOptions.RemoveEmptyEntries);   // date is in this format: "03/10/09" MM/DD/YY
+                        if (currentLineParts[3] == "Deposit")
+                        {
+                            var monthStr = currentLineParts[2].Substring(0, 2);
+                            var dayStr = currentLineParts[2].Substring(3, 2);
+                            var yearStr = currentLineParts[2].Substring(6, 2); // 09 means 2009, 99 means 1999
+                            var year = Int32.Parse(yearStr);
+                            if (year > 50)
+                                yearStr = (year + 1900).ToString();
+                            else
+                                yearStr = (year + 2000).ToString();
+                            dailyDepositData.Add(new DailyNavData() { DateStr = yearStr + monthStr + dayStr, ValueStr = currentLineParts[5] });
+                        }
+                    }
+                }
+            }
+
+            // for 3069 days.
+            // 1. Text data: with fractional NAV values: 70K, with integer NAV values: 47.5K (brotlied: 9.578K), with integer NAV + DateStr-1900years: 44.4K  (brotlied: 9.557K, difference is 0.2%, not even 1%. Just forget the -1900). (Wow. 4x compression)
+            string outputCsv = "D/C," + String.Join(",", dailyNavData.Select(r => {
+                int year = Int32.Parse(r.DateStr.Substring(0, 4)); // - 1900; // subtracting -1900years only helps about 1/1000. It is not worth it.
+                // casting Double to Int will just remove the fractionals, but not round it to the nearest integer.
+                int nearestIntValue = (int)Math.Round(Double.Parse(r.ValueStr), MidpointRounding.AwayFromZero); // 0.5 is rounded to 1, -0.5 is rounded to -1. Good.
+                return year.ToString("D3") + r.DateStr.Substring(4) + "/" + nearestIntValue.ToString();
+            }));
+            var outputCsvBrotli = Utils.Str2BrotliBin(outputCsv);
+
+            // 2.1 Bin data: 3069*6=18.4K. Brotlied: 15.268K (less compression if date + float are mixed)
+            var dailyStructsBin = dailyNavData.Select(r => {
+                DateOnly dateOnly = new DateOnly(Int32.Parse(r.DateStr.Substring(0, 4)), Int32.Parse(r.DateStr.Substring(4, 2)), Int32.Parse(r.DateStr.Substring(6, 2)));
+                float navValue = (float)Double.Parse(r.ValueStr);
+                return new DailyNavDataBin() { dateOnly = dateOnly, floatValue = navValue  };
+            }).ToArray();
+            var outputBin1 = dailyStructsBin.SelectMany(r => {
+                byte[] dateBytes = BitConverter.GetBytes(r.dateOnly.ToBinary());
+                byte[] navBytes = BitConverter.GetBytes(r.floatValue);
+                IEnumerable<byte> dailyBytes = dateBytes.Concat(navBytes);
+                return dailyBytes;
+             }).ToArray();
+             var outputBin1Brotli = Utils.Bin2BrotliBin(outputBin1);
+
+            // 2.2 Bin data: 3069*6=18.4K. Brotlied: 13.359K (more compression if date array is separate and float array is separate)
+            var outputBin2 = new byte[dailyNavData.Count * 6];
+            var dateOnlyArr = dailyNavData.Select(r =>
+            {
+                DateOnly dateOnly = new DateOnly(Int32.Parse(r.DateStr.Substring(0, 4)), Int32.Parse(r.DateStr.Substring(4, 2)), Int32.Parse(r.DateStr.Substring(6, 2)));
+                return dateOnly.ToBinary();
+            }).ToArray();
+            Buffer.BlockCopy(dateOnlyArr, 0, outputBin2, 0, dateOnlyArr.Length * 2);     // 'Object must be an array of primitives.'
+            var navOnlyArr = dailyNavData.Select(r =>
+            {
+                float navValue = (float)Double.Parse(r.ValueStr);
+                return navValue;
+            }).ToArray();
+            Buffer.BlockCopy(navOnlyArr, 0 , outputBin2, dailyNavData.Count * 2, navOnlyArr.Length * 4);     // 'Object must be an array of primitives.'
+            var outputBin2Brotli = Utils.Bin2BrotliBin(outputBin2);
+
+
+            string depositCsv = String.Join(",", dailyDepositData.Select(r =>
+            {
+                int nearestIntValue = (int)Math.Round(Double.Parse(r.ValueStr), MidpointRounding.AwayFromZero); // 0.5 is rounded to 1, -0.5 is rounded to -1. Good.
+                return r.DateStr + "/" + nearestIntValue.ToString();
+            }));
+            var depositCsvBrotli = Utils.Str2BrotliBin(depositCsv); // 479 bytes compressed to 179 bytes. For very long term, we can save 1KB per user if compressing. Do it.
+
+
+            var redisConnString = Program.gConfiguration.GetConnectionString("RedisDefault");
+            IDatabase db = DbCommon.RedisManager.GetDb(redisConnString, 0);
+            string redisKey = p_redisKeyPrefix + ".brotli";
+            db.HashSet("assetQuoteRaw", redisKey,  RedisValue.CreateFrom(new System.IO.MemoryStream(outputCsvBrotli)));
+            db.HashSet("assetBrokerNavDeposit", redisKey,  RedisValue.CreateFrom(new System.IO.MemoryStream(depositCsvBrotli)));
+
+            Console.WriteLine("InsertNavAssetFromCsvFile() Ended. Conclusion: For 11 years of daily Date/float data. Without compression binary (18.4K) is smaller then CSV text (47.5K). But with Brotli binary (13.4K) is 41% bigger then CSV text (9.5K). Because there is not much repeatable pattern in Float data, while a lot of repeatable comma and digits in text data. And Brotli is attacking the limits of theoretical compression possibilites. Conclusion: USE CSV text data with Brotli. Tested: Brotlied CSV is 30% smaller than brotlied binary.");
+        }
     }
 
 }

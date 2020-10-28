@@ -39,6 +39,31 @@ namespace SqCommon
             }
         }
 
+        public static byte[] Bin2BrotliBin(byte[] p_bytes)
+        {
+            using (System.IO.MemoryStream msOutput = new System.IO.MemoryStream())
+            using (var bs = new BrotliStream(msOutput, CompressionLevel.Optimal))
+            {
+                bs.Write(p_bytes);
+                bs.Close();
+                return msOutput.ToArray();
+            }
+        }
+
+        public static byte[] BrotliBin2Bin(byte[] p_bin)
+        {
+            using (System.IO.MemoryStream msOutput = new System.IO.MemoryStream(p_bin))
+            using (var bs = new BrotliStream(msOutput, CompressionMode.Decompress))
+            {
+                int maxNbytesRead = p_bin.Length * 10;    // assume compression is max 10x, so we need 10x more byte array for uncompressed bytes
+                byte[] decompressed = new byte[maxNbytesRead];
+                var nReadBytes = bs.Read(decompressed);
+                if (nReadBytes == maxNbytesRead)
+                    throw new Exception("maxNbytesRead is reached. Increase multiplier for temp buffer or develop a loop.");
+                bs.Close();
+                return decompressed;
+            }
+        }
 
     }
 

@@ -217,8 +217,26 @@ namespace FinTechCommon
                 // In general, round these price data Decimals to 4 decimal precision.
                 foreach (var asset in AssetsCache.Assets)
                 {
-                    if (asset.AssetId.AssetTypeID != AssetType.Stock)    // *.NAV assets doesn't have YF history
+                    if (asset.AssetId.AssetTypeID == AssetType.BrokerNAV)    // *.NAV assets doesn't have YF history
+                    {
+                        string redisKey = asset.AssetId.ToString() + ".brotli"; // // key: "9:1.brotli"
+                        byte[] dailyNavBrotli = m_redisDb.HashGet("assetQuoteRaw", redisKey);
+                        var dailyNavStr = Utils.BrotliBin2Str(dailyNavBrotli);  // 47K text data from 9.5K brotli data, starts with FormatString: "D/C,20090102/16460,20090105/16826,..."
+                        int iFirstComma = dailyNavStr.IndexOf(',');
+                        string formatString = dailyNavStr.Substring(0, iFirstComma);  // "D/C" for Date/Closes
+                        if (formatString != "D/C")
+                            continue;
+                            
+                        var dailyNavStrSplit = dailyNavStr.Substring(iFirstComma + 1, dailyNavStr.Length - (iFirstComma + 1)).Split(',', StringSplitOptions.RemoveEmptyEntries);
+                        var datesNav = dailyNavStrSplit.Select(r => new DateOnly(Int32.Parse(r.Substring(0, 4)), Int32.Parse(r.Substring(4, 2)), Int32.Parse(r.Substring(6, 2))));
+                        var unadjustedClosesNav = dailyNavStrSplit.Select(r => (float)Double.Parse(r.Substring(9)));
+
+                        byte[] dailyDepositBrotli = m_redisDb.HashGet("assetBrokerNavDeposit", redisKey);
+                        var dailyDepositStr = Utils.BrotliBin2Str(dailyDepositBrotli);  // 479 byte text data from 179 byte brotli data, starts with FormatString: "20090310/1903,20100305/2043,..."
+                        var dailyDepositStrSplit = dailyDepositStr.Split(',', StringSplitOptions.RemoveEmptyEntries);
+
                         continue;
+                    }
                     // YF: all the Open/High/Low/Close are always adjusted for Splits;  In addition: AdjClose also adjusted for Divididends.
                     // YF gives back both the onlySplit(butNotDividend)-adjusted row.Close, and SplitAndDividendAdjusted row.AdjustedClose (checked with MO dividend and USO split).
                     // checked the YF returned data by stream.ReadToEnd(): it is a CSV structure, with columns. The line "Apr 29, 2020	1:8 Stock Split" is Not in the data. 
