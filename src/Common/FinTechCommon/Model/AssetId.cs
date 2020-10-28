@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 
 namespace FinTechCommon
 {
@@ -21,6 +22,7 @@ namespace FinTechCommon
     // AssetType: uses the top 5 bits; 32 different values: 0..31
     // ID (SubTableId): uses the bottom 27 bits. 134M different values.
     // If smaller memory footprint is needed, we can use 16bit uint: 3bits for AssetType=8, 13 bits ID would give 8K values, which would be enough for the 5K USA stocks.
+    [DebuggerDisplay("AssetTypeID = {AssetTypeID}, SubTableID = {SubTableID} [{((int)AssetTypeID)}:{SubTableID}]")]
     public struct AssetId32Bits  : IEquatable<AssetId32Bits>
     {
         // signed int would use negative values, and it is represented as binary complement. It complicates things. Less error prone to use unsigned.

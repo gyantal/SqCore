@@ -19,6 +19,7 @@ namespace FinTechCommon
         public static MemDb gMemDb = new MemDb();
         IDatabase m_redisDb;
 
+        public User[] Users = new User[0];
         string m_lastAllAssetsStr = String.Empty;
         string m_lastSqCoreWebAssetsStr = String.Empty;
         public AssetsCache AssetsCache = new AssetsCache();
@@ -103,6 +104,23 @@ namespace FinTechCommon
             Utils.Logger.Info("ReloadAssetsDataIfChangedAndSetTimer() START");
             try
             {
+                // GA.IB.MN.NAV assets have user_id data, so User data has to be reloaded first.
+                string sqUserDataStr = m_redisDb.StringGet("sq_user");
+                var usersInDb = JsonSerializer.Deserialize<List<UserInDb>>(sqUserDataStr);
+                Users = usersInDb.Select(r =>
+                    {
+                        return new User()
+                        {
+                            Id = r.id,
+                            Username = r.username,
+                            Password = r.password,
+                            Title = r.title,
+                            Firstname = r.firstname,
+                            Lastname = r.lastname,
+                            Email = r.email
+                        };
+                    }).ToArray();
+
                 // start using Redis:'allAssets.Brotli' (520bytes instead of 1.52KB) immediately. See UpdateRedisBrotlisService();
                 byte[] allAssetsBin = m_redisDb.HashGet("memDb", "allAssets.Brotli");
                 var allAssetsBinToStr = Utils.BrotliBin2Str(allAssetsBin);
@@ -132,6 +150,12 @@ namespace FinTechCommon
                         var assetTypeArr = allAssets[((byte)assetId.AssetTypeID).ToString()];
                         // Linq is slow. List<T>.Find() is faster than Linq.FirstOrDefault() https://stackoverflow.com/questions/14032709/performance-of-find-vs-firstordefault
                         var assetFromDb = Array.Find(assetTypeArr, k => k.ID == assetId.SubTableID);
+
+                        User? user = null;
+                        if (assetId.AssetTypeID == AssetType.BrokerNAV)
+                        {
+                            user = Users.FirstOrDefault(k => k.Id == Int32.Parse(assetFromDb.user_id));
+                        }
                         return new Asset()
                         {
                             AssetId = assetId,
@@ -139,7 +163,8 @@ namespace FinTechCommon
                             LastTicker = assetFromDb.Ticker,
                             LastName = assetFromDb.Name,
                             ExpectedHistorySpan = r.Value.LoadPrHist,
-                            ExpectedHistoryStartDateET = GetExpectedHistoryStartDate(r.Value.LoadPrHist, assetFromDb.Ticker)
+                            ExpectedHistoryStartDateET = GetExpectedHistoryStartDate(r.Value.LoadPrHist, assetFromDb.Ticker),
+                            User = user
                         };
                     }).ToList();
 
@@ -192,6 +217,8 @@ namespace FinTechCommon
                 // In general, round these price data Decimals to 4 decimal precision.
                 foreach (var asset in AssetsCache.Assets)
                 {
+                    if (asset.AssetId.AssetTypeID != AssetType.Stock)    // *.NAV assets doesn't have YF history
+                        continue;
                     // YF: all the Open/High/Low/Close are always adjusted for Splits;  In addition: AdjClose also adjusted for Divididends.
                     // YF gives back both the onlySplit(butNotDividend)-adjusted row.Close, and SplitAndDividendAdjusted row.AdjustedClose (checked with MO dividend and USO split).
                     // checked the YF returned data by stream.ReadToEnd(): it is a CSV structure, with columns. The line "Apr 29, 2020	1:8 Stock Split" is Not in the data. 

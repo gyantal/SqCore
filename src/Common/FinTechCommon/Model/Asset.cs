@@ -28,7 +28,7 @@ namespace FinTechCommon
 		public float LastPriceIex { get; set; } = -100.0f;     // real-time last price
         public float LastPriceYF { get; set; } = -100.0f;     // real-time last price
 
-		
+		public User? User { get; set; } = null;		// *.NAV assets have user_id data
     }
 
 	public class AssetInDb	// for quick JSON deserialization. In DB the fields has short names, and not all Asset fields are in the DB anyway
@@ -40,6 +40,7 @@ namespace FinTechCommon
 		public string Name { get; set; } = String.Empty;
 		public string NameHist { get; set; } = String.Empty;
 		public string PrimExchg { get; set; } = String.Empty;
+		public string user_id { get; set; } = String.Empty;		// *.NAV assets have user_id data
     }
 
 	public class SqCoreWebAssetInDb	// for quick JSON deserialization. In DB the fields has short names, and not all Asset fields are in the DB anyway
