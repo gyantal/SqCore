@@ -353,13 +353,17 @@ namespace FinTechCommon
                 startDateET = DateTime.UtcNow.FromUtcToEt().AddMonths(-1 * nMonths).Date;
             }
 
-            // Keep this method in MemDb, cos we might use MemDb.Holiday data in the future.
-            // if startDateET is weekend, we have to go back to previous Friday
-            if (startDateET.DayOfWeek == DayOfWeek.Sunday)
-                startDateET = startDateET.AddDays(-2);
-            if (startDateET.DayOfWeek == DayOfWeek.Saturday)
-                startDateET = startDateET.AddDays(-1);
-            startDateET = startDateET.AddDays(-1);  // go back another extra day, in case that Friday was a stock market holiday
+            if (!p_expectedHistorySpan.StartsWith("Date:")) // if "Date:" was given, we assume admin was specific for a reason. Then don't go back 1 day earlier. Otherwise (months, years), go back 1 day earlier for safety.
+            {
+                // Keep this method in MemDb, cos we might use MemDb.Holiday data in the future.
+                // if startDateET is weekend, we have to go back to previous Friday
+                if (startDateET.DayOfWeek == DayOfWeek.Sunday)
+                    startDateET = startDateET.AddDays(-2);
+                if (startDateET.DayOfWeek == DayOfWeek.Saturday)
+                    startDateET = startDateET.AddDays(-1);
+                startDateET = startDateET.AddDays(-1);  // go back another extra day, in case that Friday was a stock market holiday
+            }
+
             return startDateET;
         }
 

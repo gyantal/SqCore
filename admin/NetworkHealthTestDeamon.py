@@ -16,6 +16,16 @@ from datetime import datetime
 # "Programmatic ICMP ping is complicated due to the elevated privileges required to send raw ICMP packets, and calling ping binary is ugly. For server monitoring, you can achieve the same result using a technique called TCP ping:"
 # "Internally, this simply establishes a TCP connection to the target server and drops it immediately, measuring time elapsed. "
 
+def testSpeedtest():
+    spTstNum = 0
+    try:
+        st = speedtest.Speedtest()  # https://www.speedtest.net/ in browser gives 540Mbit/s, because excellent Chrome C++ implementation, but Python implementation is much slower, equivalent to 250Mbit/s
+        spTstNum = st.download() / 1024 / 1024  # in bit per second, convert it to Mbit/s by dividing 1024*1024  "225.8859956876999 Mbit/s." format to 2 decimals
+        spTstResult = format(spTstNum, '.2f')
+        print('Yes! Speedtest is OK: ' + spTstResult + ' Mbit/s.')
+    except Exception as e:
+        print('No! Speedtest Failed: ' + e)
+    return spTstNum
 
 nCycles = 0
 # https://stackoverflow.com/questions/23704615/is-there-anything-wrong-with-a-python-infinite-loop-and-time-sleep
@@ -23,7 +33,7 @@ while True: # daemon function runs forever with sleep(), with a keyboard interru
     print('Testing (' + str(nCycles) + ')...' )
     with open("NetworkHealthTest.sqlog.csv", "a") as logfile:  # When you are writing to a file in text mode (the default), it does newline translation as it writes; that is, each "\n" in the output will be translated to "\r\n" in the resulting file.
         # 1. TESTING PING
-        print('Testing Ping')
+        print('Testing TcPing')
         pingResult = 'FAIL'
         sys.stdout = mystdout = StringIO()
         try:
@@ -50,19 +60,22 @@ while True: # daemon function runs forever with sleep(), with a keyboard interru
         # 2. SPEEDTEST
         if nCycles % 10 == 0:   # runs every 10 cycles, which is usually 10 minutes
             print('Testing Speedtest')
-            spTstResult = 'FAIL'
-            spTstNum = 0
-            try:
-                st = speedtest.Speedtest() # https://www.speedtest.net/ in browser gives 540Mbit/s, because excellent Chrome C++ implementation, but Python implementation is much slower, equivalent to 250Mbit/s
-                spTstNum = st.download() / 1024 / 1024
-                spTstResult = format(spTstNum, '.2f')  # in bit per second, convert it to Mbit/s by dividing 1024*1024  "225.8859956876999 Mbit/s." format to 2 decimals
-                print('Yes! Speedtest is OK: ' + spTstResult + ' Mbit/s.')
-            except Exception as e:
-                print(e)
-                print('No! Speedtest Failed.')
+            spTstNum = testSpeedtest()
+            if spTstNum <= 0:
+                spTstResult = 'FAIL'
+            else:
+                spTstResult = format(spTstNum, '.2f')
             logfile.write(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') + ',Speedtest,' + spTstResult + '\n')  # '2013-09-18 11:16:32'
-            if spTstNum < 100:
-                win32api.MessageBox(0, 'Speedtest download speed is only ' + spTstResult + ' Mbit/s.' , 'SqCore:NetworkHealthTestDeamon', 0x00001000) # https://stackoverflow.com/questions/177287/alert-boxes-in-python
+            if spTstNum < 100: # To avoid false positives, when there is a Speedtest < 100Mbit, then test it again in 1 minutes. If both failed, then release it as error.
+                time.sleep(60)  # wait for 60? seconds = every 1 minute
+                spTstNum2 = testSpeedtest()
+                if spTstNum2 <= 0:
+                    spTstResult2 = 'FAIL'
+                else:
+                    spTstResult2 = format(spTstNum2, '.2f')
+                logfile.write(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') + ',Speedtest,' + spTstResult2 + '\n')  # '2013-09-18 11:16:32'
+                if spTstNum2 < 100:
+                    win32api.MessageBox(0, 'Checking second time. Speedtest download speed is only ' + spTstResult2 + ' Mbit/s.' , 'SqCore:NetworkHealthTestDeamon', 0x00001000) # https://stackoverflow.com/questions/177287/alert-boxes-in-python
 
     nCycles += 1
     time.sleep(60)  # wait for 60? seconds = every 1 minute

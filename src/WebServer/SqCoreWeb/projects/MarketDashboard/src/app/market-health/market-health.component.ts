@@ -153,7 +153,8 @@ export class MarketHealthComponent implements OnInit {
   uiTableColumns: UiTableColumn[] = []; // this is connected to Angular UI with *ngFor. If pointer is replaced or if size changes, Angular should rebuild the DOM tree. UI can blink. To avoid that only modify its inner field strings.
 
   currDateTime: Date = new Date(); // current date and time
-  lookbackStartET: Date = new Date(this.currDateTime.getUTCFullYear() - 1, 11, 31);  // set YTD as default
+  lookbackStartET: Date; // set in ctor. We need this in JS client to check that the received data is long enough or not (Expected Date)
+  lookbackStartETstr: string ; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a 	A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
 
   static updateUi(lastRt: Nullable<RtMktSumRtStat[]>, lastNonRt: Nullable<RtMktSumNonRtStat[]>, lookbackStartDateET: Date, uiColumns: UiTableColumn[]) {
     // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
@@ -286,6 +287,8 @@ export class MarketHealthComponent implements OnInit {
   }
 
   constructor() {
+    this.lookbackStartET = new Date(this.currDateTime.getUTCFullYear() - 1, 11, 31);  // set YTD as default
+    this.lookbackStartETstr = this.Date2PaddedIsoStr(this.lookbackStartET);
     this.FillDataWithEmptyValuesToAvoidUiBlinkingWhenDataArrives();
   }
 
@@ -355,7 +358,7 @@ export class MarketHealthComponent implements OnInit {
         this.nRtStatArrived++;
         const jsonArrayObjRt = JSON.parse(msgObjStr);
         const msgStrRt = jsonArrayObjRt.map(s => s.assetId + '=>' + s.last.toFixed(2).toString()).join(', ');  // %Chg: Bloomberg, MarketWatch, TradingView doesn't put "+" sign if it is positive, IB, CNBC, YahooFinance does. Go as IB.
-        console.log('ws: RtMktSumRtStat arrived: ' + msgStrRt);
+        // console.log('ws: RtMktSumRtStat arrived: ' + msgStrRt);
         this.lastRtMsgStr = msgStrRt;
         this.lastRtMsg = jsonArrayObjRt;
         MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
@@ -375,7 +378,7 @@ export class MarketHealthComponent implements OnInit {
           }
         });
         const msgStrNonRt = jsonArrayObjNonRt.map(s => s.assetId + '|' + s.ticker + '|prevClose:' + s.previousClose.toFixed(2).toString() + '|periodStart:' + s.periodStart.toString() + '|open:' + s.periodOpen.toFixed(2).toString() + '|high:' + s.periodHigh.toFixed(2).toString() + '|low:' + s.periodLow.toFixed(2).toString() + '|mdd:' + s.periodMaxDD.toFixed(2).toString() + '|mdu:' + s.periodMaxDU.toFixed(2).toString()).join(', ');
-        console.log('ws: RtMktSumNonRtStat arrived: ' + msgStrNonRt);
+        // console.log('ws: RtMktSumNonRtStat arrived: ' + msgStrNonRt);
         this.lastNonRtMsgStr = msgStrNonRt;
         this.lastNonRtMsg = jsonArrayObjNonRt;
         MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
@@ -385,27 +388,66 @@ export class MarketHealthComponent implements OnInit {
     }
   }
 
-  onClickChangeLookback() {
+  onLookbackDateChange(pEvent: string) {  // "A DOMString representing a date in YYYY-MM-DD format, or empty" https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
+    console.log('Sq.onLookbackDateChange(): from current ' + this.lookbackStartETstr + ' to "' + pEvent + '"');
+    // when user is typing "2020" it starts to arrive at every keystroke. After the first keystroke: "0002-10-27". So, check if it is a valid Date in the last 40 years. If it is, then ask update immediately.
+    // 1. First check if it is a valid date or not.
+    let isGoodDate = !(pEvent === '');  // https://stackoverflow.com/questions/154059/how-can-i-check-for-an-empty-undefined-null-string-in-javascript
+    const parts = pEvent.split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const day = parseInt(parts[2], 10);
+    if (year < 1980 || year > 2040) {
+      isGoodDate = false;
+    }
+    if (month < 1 || month > 12) {
+      isGoodDate = false;
+    }
+    if (day < 1 || day > 31) {
+      isGoodDate = false;
+    }
+    if (!isGoodDate) {
+      return;
+    }
+
+    (document.getElementById('lookBackPeriod') as HTMLSelectElement).value = 'Date';
+
+    this.lookbackStartETstr = pEvent;
+    this.lookbackStartET = this.PaddedIsoStr3Date(this.lookbackStartETstr);
+
+    this.onLookbackChange();
+  }
+
+  onLookbackSelectChange() {
     const lookbackStr = (document.getElementById('lookBackPeriod') as HTMLSelectElement).value;
     console.log('Sq.onClickChangeLookback(): ' + lookbackStr);
     const currDateET: Date = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     if (lookbackStr === 'YTD') {
       this.lookbackStartET = new Date(currDateET.getUTCFullYear() - 1, 11, 31);
+      this.lookbackStartETstr = this.Date2PaddedIsoStr(this.lookbackStartET);
     } else if (lookbackStr.endsWith('y')) {
       const lbYears = parseInt(lookbackStr.substr(0, lookbackStr.length - 1), 10);
       this.lookbackStartET = new Date(currDateET.setUTCFullYear(currDateET.getUTCFullYear() - lbYears));
+      this.lookbackStartETstr = this.Date2PaddedIsoStr(this.lookbackStartET);
     } else if (lookbackStr.endsWith('m')) {
       const lbMonths = parseInt(lookbackStr.substr(0, lookbackStr.length - 1), 10);
       this.lookbackStartET = new Date(currDateET.setUTCMonth(currDateET.getUTCMonth() - lbMonths));
+      this.lookbackStartETstr = this.Date2PaddedIsoStr(this.lookbackStartET);
     } else if (lookbackStr.endsWith('w')) {
       const lbWeeks = parseInt(lookbackStr.substr(0, lookbackStr.length - 1), 10);
       this.lookbackStartET = new Date(currDateET.setUTCDate(currDateET.getUTCDate() - lbWeeks * 7));
+      this.lookbackStartETstr = this.Date2PaddedIsoStr(this.lookbackStartET);
+    } else if (lookbackStr === 'Date') {
+      this.lookbackStartET = this.PaddedIsoStr3Date(this.lookbackStartETstr);
     }
 
-    console.log('New lookback startDateET: ' + this.lookbackStartET);
+    this.onLookbackChange();
+  }
 
+  onLookbackChange() {
+    console.log('Calling server with new lookback. StartDateETstr: ' + this.lookbackStartETstr + ', lookbackStartET: ' + this.lookbackStartET);
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
-      this._parentWsConnection.send('changeLookback:' + lookbackStr);
+      this._parentWsConnection.send('changeLookback:Date:' + this.lookbackStartETstr); // we always send the Date format to server
     }
     // native Websocket handles this now, not SignalR
     // if (this._parentHubConnection != null) {
@@ -434,4 +476,17 @@ export class MarketHealthComponent implements OnInit {
     }
   }
 
+  zeroPad = (num, places) => String(num).padStart(places, '0');  // https://stackoverflow.com/questions/2998784/how-to-output-numbers-with-leading-zeros-in-javascript
+
+  public Date2PaddedIsoStr(date: Date): string {  // 2020-9-1 is not acceptable. Should be converted to 2020-09-01
+    return this.zeroPad(date.getUTCFullYear(), 4) + '-' + this.zeroPad(date.getUTCMonth() + 1, 2) + '-' + this.zeroPad(date.getUTCDate(), 2);
+  }
+
+  public PaddedIsoStr3Date(dateStr: string ): Date {
+    const parts = dateStr.split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const day = parseInt(parts[2], 10);
+    return new Date(year, month - 1, day);
+  }
 }

@@ -48,8 +48,8 @@
   background-color: #f0f2f7;
 }
 
-.dashboardTopCont .pastPerfRow .lookbAndMarketIndSel{
-  width: 20rem;
+.dashboardTopCont .pastPerfRow .lookbAndMarketIndSel { // to override ".dashboardTopCont table td"'s width:7rem, we have to be that specific
+  width: 29.4rem;
 }
 
 .tooltipCell {
@@ -103,7 +103,28 @@
   background-color: salmon;
 }
 
-select {
+.lookbDateWrapperCl {
+  position: relative;
+  display: inline-block;  // this converts <div> to <span> style, so <div>s go next to each other
+  overflow: hidden;
+  background: #a5cde4;
+  border-radius: .5rem;
+}
+
+.lookbDateCl {
+  border: 0 !important;
+  // border-radius: .5rem;
+  background: #a5cde4;
+  color: blue;
+  height: 1.5rem;
+  font-size: 1.3rem;  // make a bit smaller
+  width: 10.5rem;
+  vertical-align: top;
+  margin-top: 0.25rem;
+}
+
+/* Custom Select */
+.lookbSelectCl {
   -webkit-appearance: none;
   -moz-appearance: none;
   -ms-appearance: none;
@@ -113,15 +134,17 @@ select {
   border: 0 !important;
   background: #2c3e50;
   background-image: none;
+
+  flex: 1;
+  padding: 0rem 1.5rem 0rem 0.5rem;
+  background: #a5cde4;
+  cursor: pointer;
+  color: blue;
+  font-weight: bold;
 }
-/* Remove IE arrow */
-select::-ms-expand {
-  display: none;
-}
-/* Custom Select */
-.select {
-  position: relative;
-  display: inline-block;
+.lookbSelectWrapperCl {
+  position: relative;  // this is a must for "::after" to work.  https://stackoverflow.com/questions/3532649/problem-with-select-and-after-with-css-in-webkit
+  display: inline-block;  // https://stackoverflow.com/questions/5803023/how-to-place-two-divs-next-to-each-other
   margin-top: 0.25rem;
   // width: 20em;
   // height: 3em;
@@ -130,17 +153,9 @@ select::-ms-expand {
   overflow: hidden;
   border-radius: .5rem;
 }
-select {
-  flex: 1;
-  padding: 0rem 1.5rem 0rem 0.5rem;
-  background: #a5cde4;
-  // color: #fff;
-  cursor: pointer;
-  color: blue;
-  font-weight: bold;
-}
+
 /* Arrow */
-.select::after {
+.lookbSelectWrapperCl::after {
   content: '\25BC';
   color: blue;
   position: absolute;
@@ -155,7 +170,7 @@ select {
   transition: .25s all ease;
 }
 /* Transition */
-.select:hover::after {
+.lookbSelectWrapperCl:hover::after {
   color: #f39c12;
 }
 

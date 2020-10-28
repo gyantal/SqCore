@@ -99,7 +99,7 @@ export class QuickfolioNewsComponent implements OnInit {
 
   UpdatePreviewHighlightCommon() {
     const newsElements = document.querySelectorAll('.newsItemCommon');
-    console.log('newsItems count = ' + newsElements.length);
+    // console.log('newsItems count = ' + newsElements.length);
     for (const newsElement of newsElements) {
       // console.log('news ' + newsElement);
       const hyperLink = newsElement.getElementsByClassName('newsHyperlink')[0];
@@ -299,7 +299,7 @@ export class QuickfolioNewsComponent implements OnInit {
       this._parentHubConnection.on(
         'quickfNewsStockNewsUpdated',
         (message: NewsItem[]) => {
-          console.log('Quickfolio News: stock news update arrived');
+          // console.log('Quickfolio News: stock news update arrived');
           this.extractNewsList(message, this.stockNews);
           this.UpdateNewsVisibility();
           this.totalnewsCount = this.stockNews.length;

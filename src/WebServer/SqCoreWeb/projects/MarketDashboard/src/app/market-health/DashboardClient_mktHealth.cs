@@ -230,7 +230,15 @@ namespace SqCoreWeb
         {
             DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD.
             DateTime lookbackStart = new DateTime(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
-            if (p_lookbackStr.EndsWith("y"))
+            if (p_lookbackStr.Equals("YTD"))    // by default server sends this to client at Open
+            {
+                lookbackStart = new DateTime(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
+            }
+            else if (p_lookbackStr.StartsWith("Date:"))
+            {
+                DateTime.TryParse(p_lookbackStr.Substring("Date:".Length, p_lookbackStr.Length - "Date:".Length), out lookbackStart);
+            }
+            else if (p_lookbackStr.EndsWith("y"))
             {
                 if (Int32.TryParse(p_lookbackStr.Substring(0, p_lookbackStr.Length - 1), out int nYears))
                     lookbackStart = todayET.AddYears(-1 * nYears);
@@ -253,9 +261,9 @@ namespace SqCoreWeb
             Debug.WriteLine($"EndDate: {dates[iEndDay]}");
 
             int iStartDay = histData.IndexOfKeyOrAfter(new DateOnly(lookbackStart));      // the valid price at the weekend is the one on the previous Friday. After.
-            if (iStartDay == -1) // If not found then fix the startDate as the first available date of history.
+            if (iStartDay == -1 || iStartDay >= dates.Length) // If not found then fix the startDate as the first available date of history.
             {
-                iStartDay = dates.Length - 1; 
+                iStartDay = dates.Length - 1;
             }
             Debug.WriteLine($"StartDate: {dates[iStartDay]}");
 
