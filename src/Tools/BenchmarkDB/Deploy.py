@@ -22,9 +22,8 @@ acceptedSubTreeRoots = ["Tools\\BenchmarkDB", "Common\\SqCommon", "Common\\DbCom
 serverHost = "ec2-34-251-1-119.eu-west-1.compute.amazonaws.com"  # ManualTradingServer
 serverPort = 122    # on MTraderServer, port 22 bandwidth throttled, because of VNC viewer usage, a secondary SSH port 122 has no bandwith limit
 serverUser = "sq-vnc-client"
-serverRsaKeyFile = 'g:/work/Archi-data/HedgeQuant/src/Server/AmazonAWS/AwsMTrader/AwsMTrader,sq-vnc-client.pem'
-# serverRsaKeyFile = 'd:/ArchiData/HedgeQuant/src/Server/AmazonAWS/AwsMTrader/AwsMTrader,sq-vnc-client.pem'
-zipExeWithPath = 'c:/Program Files/7-Zip/7z.exe'
+serverRsaKeyFile = "g:/work/Archi-data/GitHubRepos/HedgeQuant/src/Server/AmazonAWS/AwsMTrader/AwsMTrader,sq-vnc-client.pem"
+zipExeWithPath = "c:/Program Files/7-Zip/7z.exe"
 rootRemoteDir = "/home/sq-vnc-client/SQ/Tools/BenchmarkDB/src"
 
 zipFileNameWithoutPath = "deploy.7z"

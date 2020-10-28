@@ -12,10 +12,10 @@ rootRemoteDir = "/home/ubuntu/redis-backup/"
 # Parameters to change:
 runningEnvironmentComputerName = platform.node()    # 'gyantal-PC' or Balazs
 if runningEnvironmentComputerName == "gyantal-PC":
-    serverRsaKeyFile = "g:/work/Archi-data/GitHubRepos/HedgeQuant/src/Server/AmazonAWS/AwsMTrader/AwsMTrader.pem"  # server
+    serverRsaKeyFile = "g:/work/Archi-data/GitHubRepos/HedgeQuant/src/Server/AmazonAWS/AwsMTrader/AwsMTrader.pem"
     backupLocalDir = "g:/work/Archi-data/_backup/2020/SqCoreWeb_RedisDb/"
 else:   # TODO: Laci, Balazs, you have to add your IF here (based on the 'name' of your PC)
-    serverRsaKeyFile = "d:/SVN/HedgeQuant/src/Server/AmazonAWS/AwsMTrader/AwsMTrader,sq-vnc-client.pem"  # server
+    serverRsaKeyFile = "d:/SVN/HedgeQuant/src/Server/AmazonAWS/AwsMTrader/AwsMTrader,sq-vnc-client.pem"
     backupLocalDir = ":<Fill this up later>"
 
 # 1. Run Linux shell script to create 'dump-7045.2020-10-20.rdb.7z' into /home/ubuntu/redis-backup/
