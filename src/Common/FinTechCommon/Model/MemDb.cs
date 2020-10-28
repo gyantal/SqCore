@@ -221,6 +221,8 @@ namespace FinTechCommon
                     {
                         string redisKey = asset.AssetId.ToString() + ".brotli"; // // key: "9:1.brotli"
                         byte[] dailyNavBrotli = m_redisDb.HashGet("assetQuoteRaw", redisKey);
+                        if (dailyNavBrotli == null)
+                            continue; // temproraly: only [9:1] is in RedisDb.
                         var dailyNavStr = Utils.BrotliBin2Str(dailyNavBrotli);  // 47K text data from 9.5K brotli data, starts with FormatString: "D/C,20090102/16460,20090105/16826,..."
                         int iFirstComma = dailyNavStr.IndexOf(',');
                         string formatString = dailyNavStr.Substring(0, iFirstComma);  // "D/C" for Date/Closes
