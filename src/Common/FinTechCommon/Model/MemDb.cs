@@ -104,7 +104,7 @@ namespace FinTechCommon
             Utils.Logger.Info("ReloadAssetsDataIfChangedAndSetTimer() START");
             try
             {
-                // GA.IB.MN.NAV assets have user_id data, so User data has to be reloaded first.
+                // GA.IM.NAV assets have user_id data, so User data has to be reloaded first.
                 string sqUserDataStr = m_redisDb.StringGet("sq_user");
                 var usersInDb = JsonSerializer.Deserialize<List<UserInDb>>(sqUserDataStr);
                 Users = usersInDb.Select(r =>
@@ -179,7 +179,7 @@ namespace FinTechCommon
                     ReloadRealtimeDataAndSetTimer(); // downloads realtime prices from YF
 
                     EvAssetDataReloaded?.Invoke();
-                }
+                } // isReloadNeeded
             }
             catch (Exception e)
             {
@@ -197,7 +197,6 @@ namespace FinTechCommon
             ((MemDb)state).ReloadHistoricalDataAndSetTimer();
         }
 
-        // https://github.com/lppkarl/YahooFinanceApi
         void ReloadHistoricalDataAndSetTimer()
         {
             Utils.Logger.Info("ReloadHistoricalDataAndSetTimer() START");
@@ -217,6 +216,9 @@ namespace FinTechCommon
                 // In general, round these price data Decimals to 4 decimal precision.
                 foreach (var asset in AssetsCache.Assets)
                 {
+                    DateOnly[] dates = new DateOnly[0];  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards
+                    float[] adjCloses = new float[0];
+
                     if (asset.AssetId.AssetTypeID == AssetType.BrokerNAV)    // *.NAV assets doesn't have YF history
                     {
                         string redisKey = asset.AssetId.ToString() + ".brotli"; // // key: "9:1.brotli"
@@ -230,63 +232,72 @@ namespace FinTechCommon
                             continue;
                             
                         var dailyNavStrSplit = dailyNavStr.Substring(iFirstComma + 1, dailyNavStr.Length - (iFirstComma + 1)).Split(',', StringSplitOptions.RemoveEmptyEntries);
-                        var datesNav = dailyNavStrSplit.Select(r => new DateOnly(Int32.Parse(r.Substring(0, 4)), Int32.Parse(r.Substring(4, 2)), Int32.Parse(r.Substring(6, 2))));
-                        var unadjustedClosesNav = dailyNavStrSplit.Select(r => (float)Double.Parse(r.Substring(9)));
+                        dates = dailyNavStrSplit.Select(r => new DateOnly(Int32.Parse(r.Substring(0, 4)), Int32.Parse(r.Substring(4, 2)), Int32.Parse(r.Substring(6, 2)))).ToArray();
+                        var unadjustedClosesNav = dailyNavStrSplit.Select(r => (float)Double.Parse(r.Substring(9))).ToArray();
+                        adjCloses = unadjustedClosesNav;
 
                         byte[] dailyDepositBrotli = m_redisDb.HashGet("assetBrokerNavDeposit", redisKey);
                         var dailyDepositStr = Utils.BrotliBin2Str(dailyDepositBrotli);  // 479 byte text data from 179 byte brotli data, starts with FormatString: "20090310/1903,20100305/2043,..."
                         var dailyDepositStrSplit = dailyDepositStr.Split(',', StringSplitOptions.RemoveEmptyEntries);
 
-                        continue;
+                        // TODO: do deposit adjustment later to NAV
                     }
-                    // YF: all the Open/High/Low/Close are always adjusted for Splits;  In addition: AdjClose also adjusted for Divididends.
-                    // YF gives back both the onlySplit(butNotDividend)-adjusted row.Close, and SplitAndDividendAdjusted row.AdjustedClose (checked with MO dividend and USO split).
-                    // checked the YF returned data by stream.ReadToEnd(): it is a CSV structure, with columns. The line "Apr 29, 2020	1:8 Stock Split" is Not in the data. 
-                    // https://finance.yahoo.com/quote/USO/history?p=USO The YF website queries the splits separately when it inserts in-between the raws.
-                    // Therefore, we have to query the splits separately from YF.
-                    var history = Yahoo.GetHistoricalAsync(asset.LastTicker, asset.ExpectedHistoryStartDateET, DateTime.Now, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
-                    var dates = history.Select(r => new DateOnly(r!.DateTime)).ToArray();
-                    assetsDates[asset.AssetId] = dates;
-                    // for penny stocks, IB and YF considers them for max. 4 digits. UWT price (both in IB ask-bid, YF history) 2020-03-19: 0.3160, 2020-03-23: 2302
-                    // sec.AdjCloseHistory = history.Select(r => (double)Math.Round(r.AdjustedClose, 4)).ToList();
-                    var splitDivAdjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
-                    
-                    // 2020-04-29: USO split: Split-adjustment was not done in YF. For these exceptional cases, so we need an additional data-source for double check
-                    // First just add the manual data source from Redis/Sql database, and let’s see how unreliable YF is in the future. 
-                    // If it fails frequently, then we can implement query-ing another website, like https://www.nasdaq.com/market-activity/stock-splits
-                    var splitHistoryYF = Yahoo.GetSplitsAsync(asset.LastTicker, asset.ExpectedHistoryStartDateET, DateTime.Now).Result;
-
-                    // var missingYfSplitDb = new SplitTick[1] { new SplitTick() { DateTime = new DateTime(2020, 06, 08), BeforeSplit = 8, AfterSplit = 1 }};
-                    assetsMissingYfSplits.TryGetValue(((byte)asset.AssetId.AssetTypeID).ToString() + ":" + asset.AssetId.SubTableID.ToString(), out var missingYfSplitDb);
-
-                    // if any missingYfSplitDb record is not found in splitHistoryYF, we assume YF is wrong (and our DB is right (probably custom made)), so we do this extra split-adjustment assuming it is not in the YF quote history
-                    for (int i = 0; missingYfSplitDb != null && i < missingYfSplitDb.Length; i++)
+                    else if (asset.AssetId.AssetTypeID == AssetType.Stock)
                     {
-                        var missingSplitDb = missingYfSplitDb[i];
-                        if (splitHistoryYF.FirstOrDefault(r => r!.DateTime == missingSplitDb.Date) != null)    // if that date exists in YF already, do nothing; assume YF uses it
-                            continue;
-                        
-                        double multiplier = (double)missingSplitDb.Before / (double)missingSplitDb.After;
-                        // USO split date from YF: "Apr 29, 2020" Time: 00:00. Means that very early morning, 9:30 hours before market open. That is the inflection point.
-                        // Split adjust (multiply) everything before that time, but do NOT split adjust that exact date.
-                        DateOnly missingSplitDbDate = new DateOnly(missingSplitDb.Date);
-                        for (int j = 0; j < dates.Length; j++)
+                        // https://github.com/lppkarl/YahooFinanceApi
+                        // YF: all the Open/High/Low/Close are always adjusted for Splits;  In addition: AdjClose also adjusted for Divididends.
+                        // YF gives back both the onlySplit(butNotDividend)-adjusted row.Close, and SplitAndDividendAdjusted row.AdjustedClose (checked with MO dividend and USO split).
+                        // checked the YF returned data by stream.ReadToEnd(): it is a CSV structure, with columns. The line "Apr 29, 2020	1:8 Stock Split" is Not in the data. 
+                        // https://finance.yahoo.com/quote/USO/history?p=USO The YF website queries the splits separately when it inserts in-between the rows.
+                        // Therefore, we have to query the splits separately from YF.
+                        var history = Yahoo.GetHistoricalAsync(asset.LastTicker, asset.ExpectedHistoryStartDateET, DateTime.Now, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
+                        dates = history.Select(r => new DateOnly(r!.DateTime)).ToArray();
+                        // for penny stocks, IB and YF considers them for max. 4 digits. UWT price (both in IB ask-bid, YF history) 2020-03-19: 0.3160, 2020-03-23: 2302
+                        // sec.AdjCloseHistory = history.Select(r => (double)Math.Round(r.AdjustedClose, 4)).ToList();
+                        adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
+
+                        // 2020-04-29: USO split: Split-adjustment was not done in YF. For these exceptional cases, so we need an additional data-source for double check
+                        // First just add the manual data source from Redis/Sql database, and let’s see how unreliable YF is in the future. 
+                        // If it fails frequently, then we can implement query-ing another website, like https://www.nasdaq.com/market-activity/stock-splits
+                        var splitHistoryYF = Yahoo.GetSplitsAsync(asset.LastTicker, asset.ExpectedHistoryStartDateET, DateTime.Now).Result;
+
+                        // var missingYfSplitDb = new SplitTick[1] { new SplitTick() { DateTime = new DateTime(2020, 06, 08), BeforeSplit = 8, AfterSplit = 1 }};
+                        assetsMissingYfSplits.TryGetValue(((byte)asset.AssetId.AssetTypeID).ToString() + ":" + asset.AssetId.SubTableID.ToString(), out var missingYfSplitDb);
+
+                        // if any missingYfSplitDb record is not found in splitHistoryYF, we assume YF is wrong (and our DB is right (probably custom made)), so we do this extra split-adjustment assuming it is not in the YF quote history
+                        for (int i = 0; missingYfSplitDb != null && i < missingYfSplitDb.Length; i++)
                         {
-                            if (dates[j] < missingSplitDbDate)
-                                splitDivAdjCloses[j] = (float)((double)splitDivAdjCloses[j] * multiplier);
-                            else
-                                break;  // dates are in increasing order. So, once we passed the critical date, we can safely exit
+                            var missingSplitDb = missingYfSplitDb[i];
+                            if (splitHistoryYF.FirstOrDefault(r => r!.DateTime == missingSplitDb.Date) != null)    // if that date exists in YF already, do nothing; assume YF uses it
+                                continue;
+
+                            double multiplier = (double)missingSplitDb.Before / (double)missingSplitDb.After;
+                            // USO split date from YF: "Apr 29, 2020" Time: 00:00. Means that very early morning, 9:30 hours before market open. That is the inflection point.
+                            // Split adjust (multiply) everything before that time, but do NOT split adjust that exact date.
+                            DateOnly missingSplitDbDate = new DateOnly(missingSplitDb.Date);
+                            for (int j = 0; j < dates.Length; j++)
+                            {
+                                if (dates[j] < missingSplitDbDate)
+                                    adjCloses[j] = (float)((double)adjCloses[j] * multiplier);
+                                else
+                                    break;  // dates are in increasing order. So, once we passed the critical date, we can safely exit
+                            }
                         }
                     }
-                    
-                    assetsAdjustedCloses[asset.AssetId] = splitDivAdjCloses;
-                    Debug.WriteLine($"{asset.LastTicker}, first: DateTime: {dates.First()}, Close: {splitDivAdjCloses.First()}, last: DateTime: {dates.Last()}, Close: {splitDivAdjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
+                    else
+                    {
+                        throw new NotImplementedException($"Unexpected AssetTypeID: {asset.AssetId.AssetTypeID}.");
+                    }
+
+                    assetsDates[asset.AssetId] = dates;
+                    assetsAdjustedCloses[asset.AssetId] = adjCloses;
+                    Debug.WriteLine($"{asset.LastTicker}, first: DateTime: {dates.First()}, Close: {adjCloses.First()}, last: DateTime: {dates.Last()}, Close: {adjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
                 }
 
                 // Merge all dates into a big date array
                 // We don't know which days are holidays, so we have to walk all the dates simultaneously, and put into merged date array all the existing dates.
                 // walk backward, because the first item will be the latest, the yesterday.
-                var idx = new Dictionary<uint, int>();
+                var idx = new Dictionary<uint, int>();  // AssetId => to index of the walking where we are
                 DateOnly minDate = DateOnly.MaxValue, maxDate = DateOnly.MinValue;
                 foreach (var dates in assetsDates)  // assume first date is the oldest, last day is yesterday
                 {
@@ -298,25 +309,25 @@ namespace FinTechCommon
                 }
 
                 List<DateOnly> mergedDates = new List<DateOnly>();
-                DateOnly currDate = maxDate;
+                DateOnly currDate = maxDate; // this maxDate is today, or yesterday. We walk backwards.
                 while (true) 
                 {
                     mergedDates.Add(currDate);
 
-                    DateOnly nextDate = DateOnly.MaxValue;
+                    DateOnly largestPrevDate = DateOnly.MinValue;
                     foreach (var dates in assetsDates)
                     {
                         if (idx[dates.Key] >= 0 && dates.Value[idx[dates.Key]] == currDate)
                         {
-                            idx[dates.Key] = idx[dates.Key] - 1;    // decrease index
+                            idx[dates.Key]--;    // decrease index
                         }
 
-                        if (idx[dates.Key] >= 0 && dates.Value[idx[dates.Key]] < nextDate)
-                            nextDate = dates.Value[idx[dates.Key]];
+                        if (idx[dates.Key] >= 0 && dates.Value[idx[dates.Key]] > largestPrevDate)
+                            largestPrevDate = dates.Value[idx[dates.Key]];
                     }
-                    if (nextDate == DateOnly.MaxValue)  // it was not updated, so all idx reached 0
+                    if (largestPrevDate == DateOnly.MinValue)  // it was not updated, so all idx reached 0
                         break;
-                    currDate = nextDate;
+                    currDate = largestPrevDate;
                 }
                 Debug.WriteLine($"first: DateTime: {mergedDates.First()}, last: DateTime: {mergedDates.Last()}");
 
@@ -340,8 +351,13 @@ namespace FinTechCommon
                             iSecDates--;
                         }
                         else
-                        { 
-                            closesArr[i] = float.NaN;   // in a very rare cases prices might be missing from the front, or from the middle (if stock didn't trade on that day)
+                        {
+                            // There is no USA stock price data on specific USA stock market holidays (e.g. 2020-09-07: Labour day). 
+                            // However, brokerNAV values, Forex, commodity futures, London-based stocks can have data on that day. 
+                            // We most certainly have to contain that date in the global MemDb.Data. 
+                            // We have a choice, however: leave the USA-stock value Float.NaN or flow the last-day price into this non-existent date. 
+                            // We choose the Float.NaN, because otherwise users of MemDb would have no chance to know that this was a day with a non-existent price.
+                            closesArr.Add(float.NaN);   // in a very rare cases prices might be missing from the front, or from the middle (if stock didn't trade on that day)
                         }
                     }   // for mergedDates
 

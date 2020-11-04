@@ -185,6 +185,11 @@ namespace RedisManager
             public DateOnly dateOnly;
             public float floatValue;
         }
+
+        // How to create the CVS containing NAV data + deposit?
+        // IB: PortfolioAnalyst/Reports/CreateCustomReport (SinceInception, Daily, Detailed + AccountOverview/Allocation by Financial Instrument/Deposits). Create in PDF + CSV.
+        // If it timeouts, run a Custom date for the last 2-5 years. It can be merged together manually as a last resort.
+        // >DC-IB-MAIN, it seems: 2011-02-02 is the inception date. 2011-02-02, 2011-03-01: didn't work. Timeout. But 2014-12-31 worked. Try at another time.
         public void InsertNavAssetFromCsvFile(string p_redisKeyPrefix, string p_csvFullpath)
         {
             List<DailyNavData> dailyNavData = new List<DailyNavData>();
@@ -192,6 +197,7 @@ namespace RedisManager
 
             using (StreamReader sr = new StreamReader(p_csvFullpath))
             {
+                int iNavColumn = -1;
                 int iRow = 0;
                 string? currentLine;
                 while ((currentLine = sr.ReadLine()) != null)  // currentLine will be null when the StreamReader reaches the end of file
@@ -199,17 +205,27 @@ namespace RedisManager
                     iRow++;
                     if (iRow == 1 && currentLine != @"Introduction,Header,Name,Account,Alias,BaseCurrency,AccountType,AnalysisPeriod,PerformanceMeasure")
                         throw new Exception();
-                    if (iRow == 5 && currentLine != @"Allocation by Financial Instrument,Header,Date,ETFs,Options,Stocks,Cash,NAV")
-                        throw new Exception();
+
+                    // "Allocation by Financial Instrument,Header,Date,ETFs,Options,Stocks,Cash,NAV" or "Allocation by Financial Instrument,Header,Date,ETFs,Options,Stocks,Warrants,Cash,NAV"
+                    if (iRow == 5)
+                    {
+                        if (!currentLine.StartsWith(@"Allocation by Financial Instrument,Header,Date,ETFs,Options,Stocks"))
+                            throw new Exception();
+                        
+                        var navHeaderParts = currentLine.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                        iNavColumn = Array.FindIndex(navHeaderParts, r => r == "NAV");
+                    }
+
+                    
                     if (currentLine.StartsWith(@"Allocation by Financial Instrument,Data,"))
                     {
                         var currentLineParts = currentLine.Split(',', StringSplitOptions.RemoveEmptyEntries);   // date is in this format: "20090102"  YYYYMMDD
-                        dailyNavData.Add(new DailyNavData() {DateStr = currentLineParts[2], ValueStr = currentLineParts[7]});
+                        dailyNavData.Add(new DailyNavData() {DateStr = currentLineParts[2], ValueStr = currentLineParts[iNavColumn]});
                     }
                     if (currentLine.StartsWith(@"Deposits And Withdrawals,Data,"))
                     {
                         var currentLineParts = currentLine.Split(',', StringSplitOptions.RemoveEmptyEntries);   // date is in this format: "03/10/09" MM/DD/YY
-                        if (currentLineParts[3] == "Deposit")
+                        if (currentLineParts[3] == "Deposit" || currentLineParts[3] == "Incoming Account Transfer" || currentLineParts[3] == "Withdrawal")
                         {
                             var monthStr = currentLineParts[2].Substring(0, 2);
                             var dayStr = currentLineParts[2].Substring(3, 2);
@@ -219,7 +235,7 @@ namespace RedisManager
                                 yearStr = (year + 1900).ToString();
                             else
                                 yearStr = (year + 2000).ToString();
-                            dailyDepositData.Add(new DailyNavData() { DateStr = yearStr + monthStr + dayStr, ValueStr = currentLineParts[5] });
+                            dailyDepositData.Add(new DailyNavData() { DateStr = yearStr + monthStr + dayStr, ValueStr = currentLineParts[5] }); // Withdrawals are negative in CSV. Good.
                         }
                     }
                 }

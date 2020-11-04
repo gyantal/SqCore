@@ -71,7 +71,9 @@ namespace RedisManager
                         Controller.g_controller.ConvertTableDataToRedis(new string[] { "sq_user", "sq_user", "sq_user" });
                         break;
                     case "8":
-                        Controller.g_controller.InsertNavAssetFromCsvFile("9:1", @"g:\agy\money\Investment\IB\Reports\PortfolioAnalyst\2020-10-22\NAV+Deposits_Daily_Inception\Gyorgy_Antal_Inception_October_20_2020 (1).csv");
+                        Controller.g_controller.InsertNavAssetFromCsvFile("9:1", @"g:\agy\money\Investment\IB\Reports\PortfolioAnalyst\2020-11-04\Gyorgy_Antal_Inception_November_03_2020.csv");
+                        Controller.g_controller.InsertNavAssetFromCsvFile("9:2", @"g:\work\Archi-data\Projects\IB-PortfolioAnalyst\Didier_Charmat_and_Jean-Marc_Charmat_December_31_2014_November_03_2020.csv");
+                        // Controller.g_controller.InsertNavAssetFromCsvFile("9:3", @"");
                         break;
                 }
 

@@ -34,18 +34,18 @@ namespace SqCoreWeb
             Utils.Logger.Info($"DashboardWs.OnConnectedAsync(), Connection from IP: {clientIP} with email '{email}'");  // takes 1.433ms
             var thisConnectionTime = DateTime.UtcNow;
             DashboardClient? client = null;
-            lock (DashboardClient.g_clients)    // find client from the same IP, assuming connection in the last 1000ms
+            lock (DashboardClient.g_clients)    // find client from the same IP, assuming connection in the last 2000ms
             {
-                client = DashboardClient.g_clients.Find(r => r.ClientIP == clientIP && (thisConnectionTime - r.SignalRConnectionTime).TotalMilliseconds < 1000);
+                client = DashboardClient.g_clients.Find(r => r.ClientIP == clientIP && (thisConnectionTime - r.SignalRConnectionTime).TotalMilliseconds < 2000);
                 if (client == null)
                 {
-                    client = new DashboardClient() { ClientIP = clientIP, UserEmail = email, IsOnline = true, ActivePage = ActivePage.MarketHealth };
+                    client = new DashboardClient(clientIP, email);
                     DashboardClient.g_clients.Add(client);  // takes 0.004ms
                 }
+                client.WsConnectionTime = thisConnectionTime; // used by the other (SignalR, WewbSocket) connection to decide whether to create a new g_clients item.
+                client.WsWebSocket = webSocket;
+                client.WsHttpContext = context;
             }
-            client.WsWebSocket = webSocket;
-            client.WsHttpContext = context;
-            client.WsConnectionTime = thisConnectionTime;
 
             client!.OnConnectedWsAsync_MktHealth();
         }

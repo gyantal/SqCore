@@ -28,7 +28,7 @@ namespace SqCoreWeb
         public DateTime SignalRConnectionTime { get; set; } = DateTime.MinValue;
 
 
-        public bool IsOnline = false;
+        public bool IsOnline = true;
         public ActivePage ActivePage = ActivePage.MarketHealth; // knowing which Tool is active can be useful. We might not send data to tools which never becomes active
 
 
@@ -48,12 +48,19 @@ namespace SqCoreWeb
 
         static void EvMemDbAssetDataReloaded()
         {
-            EvMemDbAssetDataReloaded_mktHealth();
+            DashboardClient.g_clients.ForEach(client =>   // Notify all the connected clients.
+            {
+                client.EvMemDbAssetDataReloaded_mktHealth();
+            });
+            
         }
 
         static void EvMemDbHistoricalDataReloaded()
         {
-            EvMemDbHistoricalDataReloaded_mktHealth();
+            DashboardClient.g_clients.ForEach(client =>   // Notify all the connected clients.
+            {
+                client.EvMemDbHistoricalDataReloaded_mktHealth();
+            });
         }
 
         public static void ServerDiagnostic(StringBuilder p_sb)
@@ -67,6 +74,15 @@ namespace SqCoreWeb
                 p_sb.Append($"#Clients (using both WebSocket for MarketHealth + SignalR for QuickfolioNews): {DashboardClient.g_clients.Count}: {String.Join(",", DashboardClient.g_clients.Select(r => "'" + r.UserEmail + "'"))}<br>");
             }
             p_sb.Append($"mktSummaryTimerRunning: {m_rtMktSummaryTimerRunning}<br>");
+        }
+
+        public DashboardClient(string p_clientIP, string p_userEmail)
+        {
+            ClientIP = p_clientIP;
+            UserEmail = p_userEmail;
+
+            Ctor_mktHealth();
+            Ctor_QuickfNews();
         }
     }
 

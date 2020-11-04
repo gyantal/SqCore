@@ -15,13 +15,14 @@ namespace SqCoreWeb
     public partial class DashboardClient
     {
         const int m_newsReloadInterval = 10 * 60 * 1000; // 10 minutes in milliseconds 
-        Timer m_newsReloadTimer;
+        Timer? m_newsReloadTimer = null;    // separate Timer is needed for each client
         QuickfolioNewsDownloader m_newsDownloader = new QuickfolioNewsDownloader();
 
-        public DashboardClient()
+        void Ctor_QuickfNews()
         {
             m_newsReloadTimer = new Timer(NewsReloadTimerElapsed, null, m_newsReloadInterval, m_newsReloadInterval);
         }
+
         public void OnConnectedSignalRAsync_QuickfNews()
         {
             // don't do a long process here. Start big things in a separate thread. One way is in 'DashboardPushHub_mktHealth.cs'

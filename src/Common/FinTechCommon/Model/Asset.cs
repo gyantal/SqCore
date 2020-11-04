@@ -25,8 +25,8 @@ namespace FinTechCommon
         public ExchangeId PrimaryExchange { get; set; } = ExchangeId.Unknown; // different assed with the same "VOD" ticker can exist in LSE, NYSE; YF uses "VOD" and "VOD.L"
         public string ExpectedHistorySpan { get; set; } = String.Empty;		// comes from RedisDb
 		public DateTime ExpectedHistoryStartDateET { get; set; } = DateTime.MaxValue;	// process ExpectedHistorySpan after Assets Reload, so we don't have to do it 3x per day at historical price reload
-		public float LastPriceIex { get; set; } = -100.0f;     // real-time last price
-        public float LastPriceYF { get; set; } = -100.0f;     // real-time last price
+		public float LastPriceIex { get; set; } = float.NaN;     // real-time last price
+        public float LastPriceYF { get; set; } = float.NaN;     // real-time last price
 
 		public User? User { get; set; } = null;		// *.NAV assets have user_id data
     }

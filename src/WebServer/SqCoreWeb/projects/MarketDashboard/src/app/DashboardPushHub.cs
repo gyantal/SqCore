@@ -58,19 +58,19 @@ namespace SqCoreWeb
             var thisConnectionTime = DateTime.UtcNow;
             var clientIP = WsUtils.GetRequestIPv6(this.Context?.GetHttpContext()!);
             DashboardClient? client = null;
-            lock (DashboardClient.g_clients)    // find client from the same IP, assuming connection in the last 1000ms
+            lock (DashboardClient.g_clients)    // find client from the same IP, assuming connection in the last 2000ms
             {
-                client = DashboardClient.g_clients.Find(r => r.ClientIP == clientIP && (thisConnectionTime - r.WsConnectionTime).TotalMilliseconds < 1000);
+                client = DashboardClient.g_clients.Find(r => r.ClientIP == clientIP && (thisConnectionTime - r.WsConnectionTime).TotalMilliseconds < 2000);
                 if (client == null)
                 {
-                    client = new DashboardClient() { ClientIP = clientIP, UserEmail = email, IsOnline = true, ActivePage = ActivePage.MarketHealth };
+                    client = new DashboardClient(clientIP, email);
                     DashboardClient.g_clients.Add(client);
                 }
+                client.SignalRConnectionTime = thisConnectionTime;  // used by the other (SignalR, WewbSocket) connection to decide whether to create a new g_clients item.
+                client.SignalRConnectionId = connId;
+                client.SignalRUser = signalRuser;
             }
-            client.SignalRConnectionId = connId;
-            client.SignalRUser = signalRuser;
-            client.SignalRConnectionTime = thisConnectionTime;
-
+ 
             Groups.AddToGroupAsync(this.Context?.ConnectionId, "EverybodyGroup");   // when we have a new price data, it is sent to all group members
 
             var handshakeMsg = new HandshakeMessage() { Email = client.UserEmail };

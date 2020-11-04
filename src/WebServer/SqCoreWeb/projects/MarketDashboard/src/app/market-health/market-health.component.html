@@ -6,11 +6,11 @@
                 <th *ngFor="let item of uiTableColumns"><a href="{{item.referenceUrl}}" target="_blank">{{item.ticker}}</a></th>
             </tr>
             <tr class="realtimeRow">
-                <td>Daily return</td>
-                <td *ngFor="let item of uiTableColumns" class="tooltipCell {{item.dailyReturnClass}}">{{item.dailyReturnStr}}
+                <td>Real-time return</td>
+                <td *ngFor="let item of uiTableColumns" class="tooltipCell {{item.rtReturnClass}}">{{item.rtReturnStr}}
                     <div class="tooltipText">
-                        <div class="bold">{{item.dailyTooltipStr1}}</div>
-                        <div>{{item.dailyTooltipStr2}}</div>
+                        <div class="bold">{{item.rtTooltipStr1}}</div>
+                        <div>{{item.rtTooltipStr2}}</div>
                     </div>
                 </td>
             </tr>
@@ -49,10 +49,10 @@
                 </td>
                 <td *ngFor="let item of uiTableColumns" class="tooltipCell {{item.selectedPerfIndClass}} {{item.lookbackErrorClass}}">{{item.selectedPerfIndStr}}
                     <div class="tooltipText">
-                        <div>{{item.lookbackErrorString}}</div>
-                        <div class="bold">{{item.periodPerfTooltipStr1}}</div>
-                        <div>{{item.periodPerfTooltipStr2}}</div>
-                        <div class="smallTT">{{item.periodPerfTooltipStr3}}</div>
+                        <div>{{item.lookbackErrorStr}}</div>
+                        <div class="bold">{{item.mainTooltipStr1}}</div>
+                        <div>{{item.mainTooltipStr2}}</div>
+                        <div class="smallTT">{{item.mainTooltipStr3}}</div>
                     </div>
                 </td>
             </tr>

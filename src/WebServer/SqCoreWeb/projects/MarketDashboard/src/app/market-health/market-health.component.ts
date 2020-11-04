@@ -18,9 +18,10 @@ class RtMktSumRtStat {
 class RtMktSumNonRtStat {
   public assetId = NaN;  // JavaScript Numbers are Always 64-bit Floating Point
   public ticker = '';
-  public previousClose = NaN;   // If SignalR receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
-  public periodStart = ''; // preferred to be a new Date(), but when it arrives from server it is a string '2010-09-29T00:00:00' which is ET time zone and better to keep that way than converting to local time-zone Date object
-  public periodOpen = NaN;
+  public periodStartDate = ''; // preferred to be a new Date(), but when it arrives from server it is a string '2010-09-29T00:00:00' which is ET time zone and better to keep that way than converting to local time-zone Date object
+  public periodEndDate = '';
+  public periodStart = NaN;
+  public periodEnd = NaN;   // If SignalR receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
   public periodHigh = NaN;
   public periodLow = NaN;
   public periodMaxDD = NaN;
@@ -32,21 +33,23 @@ class UiTableColumn {
   public ticker = '';
 
   // NonRt stats directly from server
-  public previousClose = NaN;
-  public periodStart = ''; // preferred to be a new Date(), but when it arrives from server it is a string '2010-09-29T00:00:00' which is ET time zone and better to keep that way than converting to local time-zone Date object
-  public periodOpen = NaN;
+  public periodStartDate = ''; // preferred to be a new Date(), but when it arrives from server it is a string '2010-09-29T00:00:00' which is ET time zone and better to keep that way than converting to local time-zone Date object
+  public periodEndDate = '';
+  public periodStart = NaN;
+  public periodEnd = NaN;
   public periodHigh = NaN;
   public periodLow = NaN;
   public periodMaxDD = NaN;
   public periodMaxDU = NaN;
 
   // Rt stats directly from server
-  public last  = NaN;
+  public last  = NaN; // last means real-time usually. If there is no real-time price, then the last known.
 
   // calculated fields as numbers
-  public dailyReturn = NaN;
-  public periodReturn = NaN;
-  public periodCagr = NaN;
+  public periodReturn = NaN; // for period: from startDate to endDate
+  public rtReturn = NaN;  // comparing last (rt) price to periodEnd price.
+  public return = NaN;  // Total return (from startDate to endDate to last realtime): adding period-return and realtime-return together. Every other performance number (cagr, maxDD) is also Total.
+  public cagr = NaN;
   public drawDownPct = NaN;
   public drawUpPct = NaN;
   public maxDrawDownPct = NaN;
@@ -56,27 +59,28 @@ class UiTableColumn {
   public referenceUrl = '';
 
   // fields for the first row
-  public dailyReturnStr = '';
-  public dailyReturnSign = 1;
-  public dailyReturnClass = '';
-  public dailyTooltipStr1 = '';
-  public dailyTooltipStr2 = '';
+  public rtReturnStr = '';
+  public rtReturnSign = 1;
+  public rtReturnClass = '';
+  public rtTooltipStr1 = '';
+  public rtTooltipStr2 = '';
 
   // fields for the second row
   public periodReturnStr = '';
-  public periodCagrStr = '';
+  public returnStr = '';
+  public cagrStr = '';
   public drawDownPctStr = '';
   public drawUpPctStr = '';
   public maxDrawDownPctStr = '';
   public maxDrawUpPctStr = '';
 
-  public selectedPerfIndSign = 1;
-  public selectedPerfIndClass = '';
-  public selectedPerfIndStr = '';
-  public periodPerfTooltipStr1 = '';
-  public periodPerfTooltipStr2 = '';
-  public periodPerfTooltipStr3 = '';
-  public lookbackErrorString = '';
+  public selectedPerfIndSign = 1; // return or cagr or maxDD
+  public selectedPerfIndClass = ''; // positive or negative
+  public selectedPerfIndStr = ''; // the value of the cell in the table
+  public mainTooltipStr1 = '';
+  public mainTooltipStr2 = '';
+  public mainTooltipStr3 = '';
+  public lookbackErrorStr = '';
   public lookbackErrorClass = '';
 
   constructor(tckr: string) {
@@ -109,13 +113,13 @@ class TradingHoursTimer {
     let isOpenStr = '';
     if (dayOfWeek === 0 || dayOfWeek === 6) {
       isOpenStr = 'Today is weekend. U.S. market is closed.';
-    } else if (timeOfDay < 240) {
+    } else if (timeOfDay < 4 * 60) {
       isOpenStr = 'Market is closed. Pre-market starts in ' + Math.floor((240 - timeOfDay) / 60) + 'h' + (240 - timeOfDay) % 60 + 'min.';
-    } else if (timeOfDay < 570) {
+    } else if (timeOfDay < 9 * 60 + 30) {
       isOpenStr = 'Pre-market is open. Regular trading starts in ' + Math.floor((570 - timeOfDay) / 60) + 'h' + (570 - timeOfDay) % 60 + 'min.';
-    } else if (timeOfDay < 960) {
+    } else if (timeOfDay < 16 * 60) {
       isOpenStr = 'Market is open. Market closes in ' + Math.floor((960 - timeOfDay) / 60) + 'h' + (960 - timeOfDay) % 60 + 'min.';
-    } else if (timeOfDay < 1200) {
+    } else if (timeOfDay < 20 * 60) {
       isOpenStr = 'Regular trading is closed. Post-market ends in ' + Math.floor((1200 - timeOfDay) / 60) + 'h' + (1200 - timeOfDay) % 60 + 'min.';
     } else {
       isOpenStr = 'U.S. market is closed.';
@@ -179,9 +183,10 @@ export class MarketHealthComponent implements OnInit {
       }
 
       uiCol.assetId = stockNonRt.assetId;
-      uiCol.previousClose = stockNonRt.previousClose;
+      uiCol.periodStartDate = stockNonRt.periodStartDate;
+      uiCol.periodEndDate = stockNonRt.periodEndDate;
       uiCol.periodStart = stockNonRt.periodStart;
-      uiCol.periodOpen = stockNonRt.periodOpen;
+      uiCol.periodEnd = stockNonRt.periodEnd;
       uiCol.periodHigh = stockNonRt.periodHigh;
       uiCol.periodLow = stockNonRt.periodLow;
       uiCol.periodMaxDD = stockNonRt.periodMaxDD;
@@ -201,26 +206,28 @@ export class MarketHealthComponent implements OnInit {
     const indicatorSelected = (document.getElementById('marketIndicator') as HTMLSelectElement).value;
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
+    const nf = new Intl.NumberFormat();  // for thousands commas(,) https://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript
 
     for (const uiCol of uiColumns) {
       // preparing values
-      uiCol.dailyReturn = uiCol.last > 0 ? uiCol.last / uiCol.previousClose - 1 : 0;
-      uiCol.periodReturn = uiCol.last > 0 ? uiCol.last / uiCol.periodOpen - 1 : uiCol.previousClose / uiCol.periodOpen - 1;
-      const dataStartDateET = new Date(uiCol.periodStart);  // '2010-09-29T00:00:00' which was UTC is converted to DateObj interpreted in Local time zone {Tue Sept 29 2010 00:00:00 GMT+0000 (Greenwich Mean Time)}
+      uiCol.periodReturn = uiCol.periodEnd / uiCol.periodStart - 1;
+      uiCol.rtReturn = uiCol.last > 0 ? uiCol.last / uiCol.periodEnd - 1 : 0;
+      uiCol.return = uiCol.last > 0 ? uiCol.last / uiCol.periodStart - 1 : uiCol.periodEnd / uiCol.periodStart - 1;
+      const dataStartDateET = new Date(uiCol.periodStartDate);  // '2010-09-29T00:00:00' which was UTC is converted to DateObj interpreted in Local time zone {Tue Sept 29 2010 00:00:00 GMT+0000 (Greenwich Mean Time)}
       const nDays = SqNgCommonUtilsTime.DateDiffNdays(dataStartDateET, todayET); // 2 weeks = 14 days, 2020 year: 366 days, because it is a leap year.
       const nYears = nDays / 365.25; // exact number of days in a year in average 365.25 days, because it is 3 times 365 and 1 time 366
-      uiCol.periodCagr = Math.pow(1 + uiCol.periodReturn, 1.0 / nYears) - 1;
-      uiCol.drawDownPct = uiCol.last > 0 ? uiCol.last / Math.max(uiCol.periodHigh, uiCol.last) - 1 : uiCol.previousClose / uiCol.periodHigh - 1;
-      uiCol.drawUpPct = uiCol.last > 0 ? uiCol.last / Math.min(uiCol.periodLow, uiCol.last) - 1 : uiCol.previousClose / uiCol.periodLow - 1;
+      uiCol.cagr = Math.pow(1 + uiCol.return, 1.0 / nYears) - 1;
+      uiCol.drawDownPct = uiCol.last > 0 ? uiCol.last / Math.max(uiCol.periodHigh, uiCol.last) - 1 : uiCol.periodEnd / uiCol.periodHigh - 1;
+      uiCol.drawUpPct = uiCol.last > 0 ? uiCol.last / Math.min(uiCol.periodLow, uiCol.last) - 1 : uiCol.periodEnd / uiCol.periodLow - 1;
       uiCol.maxDrawDownPct = Math.min(uiCol.periodMaxDD, uiCol.drawDownPct);
       uiCol.maxDrawUpPct = Math.max(uiCol.periodMaxDU, uiCol.drawUpPct);
 
       // filling first row in table
-      uiCol.dailyReturnStr = (uiCol.dailyReturn >= 0 ? '+' : '') + (uiCol.dailyReturn * 100).toFixed(2).toString() + '%';
-      uiCol.dailyReturnSign = Math.sign(uiCol.dailyReturn);
-      uiCol.dailyReturnClass = (uiCol.dailyReturn >= 0 ? 'positivePerf' : 'negativePerf');
-      uiCol.dailyTooltipStr1 = uiCol.ticker;
-      uiCol.dailyTooltipStr2 = 'Daily return: ' + (uiCol.dailyReturn >= 0 ? '+' : '') + (uiCol.dailyReturn * 100).toFixed(2).toString() + '%' + '\n' + 'Last price: ' + uiCol.last.toFixed(2).toString() + '\n' + 'Previous close price: ' + uiCol.previousClose.toFixed(2).toString();
+      uiCol.rtReturnStr = (uiCol.rtReturn >= 0 ? '+' : '') + (uiCol.rtReturn * 100).toFixed(2).toString() + '%';
+      uiCol.rtReturnSign = Math.sign(uiCol.rtReturn);
+      uiCol.rtReturnClass = (uiCol.rtReturn >= 0 ? 'positivePerf' : 'negativePerf');
+      uiCol.rtTooltipStr1 = uiCol.ticker;
+      uiCol.rtTooltipStr2 = 'Period end price: ' + nf.format(uiCol.periodEnd) + '\n'  + 'Last price: ' + uiCol.last.toFixed(2).toString() + '\n' + 'Rt return: ' + (uiCol.rtReturn >= 0 ? '+' : '') + (uiCol.rtReturn * 100).toFixed(2).toString() + '%';
 
       // filling second row in table. Tooltip contains all indicators (return, DD, DU, maxDD, maxDU), so we have to compute them
       // const dataStartDate: Date = new Date(uiCol.periodStart);
@@ -228,18 +235,20 @@ export class MarketHealthComponent implements OnInit {
       // Javascript Date object are timestamps - they merely contain a number of milliseconds since the epoch. There is no timezone info in a Date object
       // uiCol.periodStart = '2010-09-29T00:00:00' comes as a string
       // dataStartDate.toISOString() would convert { Tue Dec 31 2019 00:00:00 GMT+0000 (GMT) } to "2015-09-28T23:00:00.000Z", so we better use the received string from server.
-      const dataStartDateETStr = uiCol.periodStart.slice(0, 10); // use what is coming from server '2010-09-29T00:00:00'
+      const dataStartDateETStr = uiCol.periodStartDate.slice(0, 10); // use what is coming from server '2010-09-29T00:00:00'
+      const dataEndDateETStr = uiCol.periodEndDate.slice(0, 10); // use what is coming from server '2010-09-29T00:00:00'
       uiCol.periodReturnStr = (uiCol.periodReturn >= 0 ? '+' : '') + (uiCol.periodReturn * 100).toFixed(2).toString() + '%';
-      uiCol.periodCagrStr = (uiCol.periodCagr >= 0 ? '+' : '') + (uiCol.periodCagr * 100).toFixed(2).toString() + '%';
+      uiCol.returnStr = (uiCol.return >= 0 ? '+' : '') + (uiCol.return * 100).toFixed(2).toString() + '%';
+      uiCol.cagrStr = (uiCol.cagr >= 0 ? '+' : '') + (uiCol.cagr * 100).toFixed(2).toString() + '%';
       uiCol.drawDownPctStr = (uiCol.drawDownPct >= 0 ? '+' : '') + (uiCol.drawDownPct * 100).toFixed(2).toString() + '%';
       uiCol.drawUpPctStr = (uiCol.drawUpPct >= 0 ? '+' : '') + (uiCol.drawUpPct * 100).toFixed(2).toString() + '%';
       uiCol.maxDrawDownPctStr = (uiCol.maxDrawDownPct >= 0 ? '+' : '') + (uiCol.maxDrawDownPct * 100).toFixed(2).toString() + '%';
       uiCol.maxDrawUpPctStr = (uiCol.maxDrawUpPct >= 0 ? '+' : '') + (uiCol.maxDrawUpPct * 100).toFixed(2).toString() + '%';
 
-      uiCol.periodPerfTooltipStr1 = uiCol.ticker;
-      uiCol.periodPerfTooltipStr2 = 'Period return: ' + uiCol.periodReturnStr + '\r\n' + 'Period CAGR: ' + uiCol.periodCagrStr + '\r\n' + 'Current drawdown: ' + uiCol.drawDownPctStr + '\r\n' + 'Current drawup: ' + uiCol.drawUpPctStr + '\r\n' + 'Maximum drawdown: ' + uiCol.maxDrawDownPctStr + '\r\n' + 'Maximum drawup: ' + uiCol.maxDrawUpPctStr;
-      uiCol.periodPerfTooltipStr3 = '\r\n' + 'Period start: ' + dataStartDateETStr + '\r\n' + 'Previous close: ' + uiCol.previousClose.toFixed(2).toString() + '\r\n' + 'Period open: ' + uiCol.periodOpen.toFixed(2).toString() + '\r\n' + 'Period high: ' + uiCol.periodHigh.toFixed(2).toString() + '\r\n' + 'Period low: ' + uiCol.periodLow.toFixed(2).toString();
-      uiCol.lookbackErrorString = (dataStartDateET > lookbackStartDateET) ? ('! Period data starts on ' + dataStartDateETStr + '\r\n' + ' instead of the expected ' + lookbackStartDateET.toISOString().slice(0, 10)) + '. \r\n\r\n' : '';
+      uiCol.mainTooltipStr1 = uiCol.ticker;
+      uiCol.mainTooltipStr2 = `Period only return: ${uiCol.periodReturnStr}\nPeriod+Rt return: ${uiCol.returnStr}\nTotal CAGR: ${uiCol.cagrStr}\nCurrent drawdown: ${uiCol.drawDownPctStr}\nCurrent drawup: ${uiCol.drawUpPctStr}\nMaximum drawdown: ${uiCol.maxDrawDownPctStr}\nMaximum drawup: ${uiCol.maxDrawUpPctStr}`;
+      uiCol.mainTooltipStr3 = `\nPeriod [${dataStartDateETStr}...${dataEndDateETStr}]:\nStart: ${nf.format(uiCol.periodStart)}\nEnd: ${nf.format(uiCol.periodEnd)}\nHigh: ${nf.format(uiCol.periodHigh)}\nLow: ${nf.format(uiCol.periodLow)}`;
+      uiCol.lookbackErrorStr = (dataStartDateET > lookbackStartDateET) ? `! Period data starts on ${dataStartDateETStr}\n instead of the expected ${lookbackStartDateET.toISOString().slice(0, 10)}.\n\n` : '';
       uiCol.lookbackErrorClass = (dataStartDateET > lookbackStartDateET) ? 'lookbackError' : '';
 
       MarketHealthComponent.updateUiColumnBasedOnSelectedIndicator(uiCol, indicatorSelected);
@@ -249,14 +258,14 @@ export class MarketHealthComponent implements OnInit {
   static updateUiColumnBasedOnSelectedIndicator(uiCol: UiTableColumn, indicatorSelected: string) {
     switch (indicatorSelected) {
       case 'PerRet':
-        uiCol.selectedPerfIndSign = Math.sign(uiCol.periodReturn);
+        uiCol.selectedPerfIndSign = Math.sign(uiCol.return);
         uiCol.selectedPerfIndClass = (uiCol.selectedPerfIndSign === 1) ? 'positivePerf' : 'negativePerf';
-        uiCol.selectedPerfIndStr = uiCol.periodReturnStr;
+        uiCol.selectedPerfIndStr = uiCol.returnStr;
         break;
       case 'PerCagr':
-        uiCol.selectedPerfIndSign = Math.sign(uiCol.periodCagr);
+        uiCol.selectedPerfIndSign = Math.sign(uiCol.cagr);
         uiCol.selectedPerfIndClass = (uiCol.selectedPerfIndSign === 1) ? 'positivePerf' : 'negativePerf';
-        uiCol.selectedPerfIndStr = uiCol.periodCagrStr;
+        uiCol.selectedPerfIndStr = uiCol.cagrStr;
         break;
       case 'CDD':
         uiCol.selectedPerfIndSign = -1;
@@ -279,7 +288,7 @@ export class MarketHealthComponent implements OnInit {
         uiCol.selectedPerfIndStr = uiCol.maxDrawUpPctStr;
         break;
       default:
-        uiCol.selectedPerfIndSign = Math.sign(uiCol.periodReturn);
+        uiCol.selectedPerfIndSign = Math.sign(uiCol.return);
         uiCol.selectedPerfIndClass = '';
         uiCol.selectedPerfIndStr = '';
         break;
@@ -294,7 +303,8 @@ export class MarketHealthComponent implements OnInit {
 
   // without this, table is not visualized initially and page blinks when it becomes visible 500ms after window loads.
   FillDataWithEmptyValuesToAvoidUiBlinkingWhenDataArrives(): void {
-    const defaultTickerExpected = ['QQQ', 'SPY', 'GLD', 'TLT', 'VXX', 'UNG', 'USO']; // to avoid UI blinking while building the UI early, we better know the number of columns, but then the name of tickers as well. If server sends something different, we will readjust with blinking UI.
+    // the header cells better to be fixed strings determined at window.load(), so UI doesn't blink when data arrives 100-500ms later. Therefore a general "BrNav" virtual ticker is fine.
+    const defaultTickerExpected = ['BrNAV', 'QQQ', 'SPY', 'GLD', 'TLT', 'VXX', 'UNG', 'USO']; // to avoid UI blinking while building the UI early, we better know the number of columns, but then the name of tickers as well. If server sends something different, we will readjust with blinking UI.
     for (const tkr of defaultTickerExpected) {
       this.uiTableColumns.push(new UiTableColumn(tkr));
     }
@@ -328,13 +338,13 @@ export class MarketHealthComponent implements OnInit {
         // this.nNonRtStatArrived++;
         // // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
         // message.forEach(element => {
-        //   if (element.previousClose.toString() === 'NaN') {
-        //     element.previousClose = NaN;
+        //   if (element.periodEnd.toString() === 'NaN') {
+        //     element.periodEnd = NaN;
         //   } else {
-        //     element.previousClose = Number(element.previousClose);
+        //     element.periodEnd = Number(element.periodEnd);
         //   }
         // });
-        // const msgStr = message.map(s => s.assetId + '-' + s.ticker + ':prevClose-' + s.previousClose.toFixed(2).toString() + ' : periodStart-' + s.periodStart.toString() + ':open-' + s.periodOpen.toFixed(2).toString() + '/high-' + s.periodHigh.toFixed(2).toString() + '/low-' + s.periodLow.toFixed(2).toString() + '/mdd' + s.periodMaxDD.toFixed(2).toString() + '/mdu' + s.periodMaxDU.toFixed(2).toString()).join(', ');
+        // const msgStr = message.map(s => s.assetId + '-' + s.ticker + ':periodEnd-' + s.periodEnd.toFixed(2).toString() + ' : periodStart-' + s.periodStart.toString() + ':open-' + s.periodStart.toFixed(2).toString() + '/high-' + s.periodHigh.toFixed(2).toString() + '/low-' + s.periodLow.toFixed(2).toString() + '/mdd' + s.periodMaxDD.toFixed(2).toString() + '/mdu' + s.periodMaxDU.toFixed(2).toString()).join(', ');
         // console.log('ws: RtMktSumNonRtStat arrived: ' + msgStr);
         // this.lastNonRtStatStr = msgStr;
         // this.updateMktSumNonRt(message, this.marketFullStat);
@@ -372,13 +382,13 @@ export class MarketHealthComponent implements OnInit {
         const jsonArrayObjNonRt = JSON.parse(msgObjStr);
         // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
         jsonArrayObjNonRt.forEach(element => {
-          if (element.previousClose.toString() === 'NaN') {
-            element.previousClose = NaN;
+          if (element.periodEnd.toString() === 'NaN') {
+            element.periodEnd = NaN;
           } else {
-            element.previousClose = Number(element.previousClose);
+            element.periodEnd = Number(element.periodEnd);
           }
         });
-        const msgStrNonRt = jsonArrayObjNonRt.map(s => s.assetId + '|' + s.ticker + '|prevClose:' + s.previousClose.toFixed(2).toString() + '|periodStart:' + s.periodStart.toString() + '|open:' + s.periodOpen.toFixed(2).toString() + '|high:' + s.periodHigh.toFixed(2).toString() + '|low:' + s.periodLow.toFixed(2).toString() + '|mdd:' + s.periodMaxDD.toFixed(2).toString() + '|mdu:' + s.periodMaxDU.toFixed(2).toString()).join(', ');
+        const msgStrNonRt = jsonArrayObjNonRt.map(s => s.assetId + '|' + s.ticker + '|periodEnd:' + s.periodEnd.toFixed(2).toString() + '|periodStart:' + s.periodStart.toString() + '|open:' + s.periodStart.toFixed(2).toString() + '|high:' + s.periodHigh.toFixed(2).toString() + '|low:' + s.periodLow.toFixed(2).toString() + '|mdd:' + s.periodMaxDD.toFixed(2).toString() + '|mdu:' + s.periodMaxDU.toFixed(2).toString()).join(', ');
         // console.log('ws: RtMktSumNonRtStat arrived: ' + msgStrNonRt);
         this.lastNonRtMsgStr = msgStrNonRt;
         this.lastNonRtMsg = jsonArrayObjNonRt;
@@ -456,14 +466,14 @@ export class MarketHealthComponent implements OnInit {
     //     .then((message: RtMktSumNonRtStat[]) => {
     //       // If SignalR receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
     //       message.forEach(element => {
-    //         if (element.previousClose.toString() === 'NaN') {
-    //           element.previousClose = NaN;
+    //         if (element.periodEnd.toString() === 'NaN') {
+    //           element.periodEnd = NaN;
     //         } else {
-    //           element.previousClose = Number(element.previousClose);
+    //           element.periodEnd = Number(element.periodEnd);
     //         }
     //       });
     //       this.updateMktSumNonRt(message, this.marketFullStat);
-    //       const msgStr = message.map(s => s.assetId + '-' + s.ticker + ':prevClose-' + s.previousClose.toFixed(2).toString() + ' : periodStart-' + s.periodStart.toString() + ':open-' + s.periodOpen.toFixed(2).toString() + '/high-' + s.periodHigh.toFixed(2).toString() + '/low-' + s.periodLow.toFixed(2).toString() + '/mdd' + s.periodMaxDD.toFixed(2).toString() + '/mdu' + s.periodMaxDU.toFixed(2).toString()).join(', ');
+    //       const msgStr = message.map(s => s.assetId + '-' + s.ticker + ':periodEnd-' + s.periodEnd.toFixed(2).toString() + ' : periodStart-' + s.periodStart.toString() + ':open-' + s.periodStart.toFixed(2).toString() + '/high-' + s.periodHigh.toFixed(2).toString() + '/low-' + s.periodLow.toFixed(2).toString() + '/mdd' + s.periodMaxDD.toFixed(2).toString() + '/mdu' + s.periodMaxDU.toFixed(2).toString()).join(', ');
     //       console.log('ws: onClickChangeLookback() got back message ' + msgStr);
     //       this.lastNonRtStatStr = msgStr;
     //     });

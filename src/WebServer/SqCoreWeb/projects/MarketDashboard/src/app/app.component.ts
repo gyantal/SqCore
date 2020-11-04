@@ -208,7 +208,7 @@ export class AppComponent implements OnInit {
         'WebSocket First RtStat: ' + (gDiag.wsOnFirstRtMktSumRtStatTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' + // if wsOnFirstRtMktSumRtStatTime == minTime, it can be negative
         'WebSocket #RtStat: ' + gDiag.wsNumRtMktSumRtStat + '\n' +
         'WebSocket Last RtStat: ' + (new Date().getTime() - gDiag.wsOnLastRtMktSumRtStatTime.getTime()) + 'ms ago\n' +
-        'WebSocket Last Lookback Chg latency: ' + ((gDiag.wsOnLastRtMktSumLookbackChgStart === minDate) ? 'NaN\n' : (gDiag.wsOnLastRtMktSumNonRtStatTime.getTime() - gDiag.wsOnLastRtMktSumLookbackChgStart.getTime()) + 'ms\n');  // 14-20ms LocalDev, 27-33ms London to Dublin, thanks to the open WS connection. If a new connection has to be opened, it would be 80-130ms
+        'WebSocket Last Lookback Chg latency: ' + ((gDiag.wsOnLastRtMktSumLookbackChgStart === minDate) ? 'NaN\n' : (gDiag.wsOnLastRtMktSumNonRtStatTime.getTime() - gDiag.wsOnLastRtMktSumLookbackChgStart.getTime()) + 'ms\n');  // 14-20ms LocalDev, 27-33ms London to Dublin, thanks to the open WS connection. If a new connection has to be opened, it would be 80-130ms; 120ms Bahamas to Dublin (with a new connection it would be 500ms)
       this.sqDiagnosticsMsg = diag;
     }
   }

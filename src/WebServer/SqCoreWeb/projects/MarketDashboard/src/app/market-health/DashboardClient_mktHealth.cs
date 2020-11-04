@@ -5,13 +5,9 @@ using System.Threading.Tasks;
 using SqCommon;
 using System.Linq;
 using System.Collections.Generic;
-using Microsoft.Extensions.Hosting;
 using System.Text;
-using System.Net;
 using System.Diagnostics;
 using FinTechCommon;
-using System.Runtime.Serialization;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Net.WebSockets;
 
@@ -30,18 +26,21 @@ namespace SqCoreWeb
         public double Last { get; set; } = -100.0;     // real-time last price
     }
 
-    public class RtMktSumNonRtStat   // this is sent to clients usually just once per day, OR when the PeriodStartDate changes at the client
+    // When the user changes Period from YTD to 2y. It is a choice, but we will resend him the PeriodEnd data (and all data) again. Although it is not necessary. That way we only have one class, not 2.
+    // When PeriodEnd (Date and Price) gradually changes (if user left browser open for a week), PeriodHigh, PeriodLow should be sent again (maybe we are at market high or low)
+    public class RtMktSumNonRtStat   // this is sent to clients usually just once per day, OR when historical data changes, OR when the PeriodStartDate changes at the client
     {
         public uint AssetId { get; set; } = 0;        // set the Client know what is the assetId, because RtStat will not send it.
         public String Ticker { get; set; } = String.Empty;
 
-        // when previousClose gradually changes (if user left browser open for a week), PeriodHigh, PeriodLow should be sent again (maybe we are at market high or low)
-        // sometimes, the user changed Period from YTD to 2y. It is a choice, we will resend him the PreviousClose data again. Although it is not necessary. That way we only one class, not 2.
+        public DateTime PeriodStartDate { get; set; } = DateTime.MinValue;
+        public DateTime PeriodEndDate { get; set; } = DateTime.MinValue;
+
         [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
-        public double PreviousClose { get; set; } = -100.0;
-        public DateTime PeriodStart { get; set; } = DateTime.MinValue;
+        public double PeriodStart { get; set; } = -100.0;
         [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
-        public double PeriodOpen { get; set; } = -100.0;
+        public double PeriodEnd { get; set; } = -100.0;
+
         [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
         public double PeriodHigh { get; set; } = -100.0;
         [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
@@ -52,30 +51,12 @@ namespace SqCoreWeb
         public double PeriodMaxDU { get; set; } = -100.0;
     }
 
-    public class DoubleJsonConverterToStr : JsonConverter<double>   // the number is written as a string, with quotes: "previousClose":"272.48"
-    {
-        public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
-                Double.Parse(reader.GetString());
-
-        public override void Write(Utf8JsonWriter writer, double doubleValue, JsonSerializerOptions options) =>
-                writer.WriteStringValue(doubleValue.ToString("0.####")); // use 4 decimals instead of 2, because of penny stocks and MaxDD of "-0.2855" means -28.55%. ToString(): 24.00155 is rounded up to 24.0016
-    }
-
-    public class DoubleJsonConverterToNumber4D : JsonConverter<double>   // the number is written as a number, without quotes: ("previousClose":"272.4800109863281") should be ("previousClose":272.48) 
-    {
-        public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
-                Double.Parse(reader.GetString());
-
-        public override void Write(Utf8JsonWriter writer, double doubleValue, JsonSerializerOptions options) =>
-                writer.WriteNumberValue(Convert.ToDecimal(Math.Round(doubleValue, 4))); // use 4 decimals instead of 2, because of penny stocks and MaxDD of "-0.2855" means -28.55%. ToString(): 24.00155 is rounded up to 24.0016
-    }
-
-
     // The knowledge 'WHEN to send what' should be programmed on the server. When server senses that there is an update, then it broadcast to clients. 
     // Do not implement the 'intelligence' of WHEN to change data on the client. It can be too complicated, like knowing if there was a holiday, a half-trading day, etc. 
     // Clients should be slim programmed. They should only care, that IF they receive a new data, then Refresh.
     public partial class DashboardClient
     {
+        // one global static real-time price Timer serves all clients. For efficiency.
         static Timer m_rtMktSummaryTimer = new System.Threading.Timer(new TimerCallback(RtMktSummaryTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
         static bool m_rtMktSummaryTimerRunning = false;
         static object m_rtMktSummaryTimerLock = new Object();
@@ -84,7 +65,11 @@ namespace SqCoreWeb
 
         // alphabetical order is not required here, because it is searched in MemDb one by one, and that search is fast, because that is ordered alphabetically.
         // this is the order of appearance on the UI.
-        static List<RtMktSummaryStock> g_mktSummaryStocks = new List<RtMktSummaryStock>() {
+        static List<RtMktSummaryStock> m_mktSummaryStocks = new List<RtMktSummaryStock>() { // this list can be market specific
+            // IB.NAV is the aggregate of IB.MN.NAV + IB.DB.NAV. "BrNAV" can be All BrokerNav. It is good if there is a lowercase character in it, to show that it is different.
+            // DC.NAV, GA.NAV, DC.IM.NAV, DC.ID.NAV, DC.TM.NAV. Add the username prefix, so the successive queries
+            //new RtMktSummaryStock() { Ticker = "GA.IM.NAV"},
+            new RtMktSummaryStock() { Ticker = "BrNAV"},    // BrNAV or any other ticker can be user specific. It can be different for every user. Don't even add it to global.
             new RtMktSummaryStock() { Ticker = "QQQ"},
             new RtMktSummaryStock() { Ticker = "SPY"},
             new RtMktSummaryStock() { Ticker = "GLD"},
@@ -94,33 +79,61 @@ namespace SqCoreWeb
             new RtMktSummaryStock() { Ticker = "USO"}};
         static DateTime g_rtMktSummaryPreviousClosePrChecked = DateTime.MinValue; // UTC
 
-        static void EvMemDbAssetDataReloaded_mktHealth()
+        void Ctor_mktHealth()
+        {
+            InitAssetData();
+        }
+        void InitAssetData()
         {
             // fill up AssetId based on Tickers. For faster access later.
-            foreach (var stock in g_mktSummaryStocks)
+            foreach (var stock in m_mktSummaryStocks)
             {
-                Asset sec = MemDb.gMemDb.AssetsCache.GetFirstMatchingAssetByLastTicker(stock.Ticker);
+                string ticker = stock.Ticker;
+                Asset? sec;
+                if (stock.Ticker != "BrNAV")
+                    sec = MemDb.gMemDb.AssetsCache.GetFirstMatchingAssetByLastTicker(ticker);
+                else
+                {   // Broker NAV
+                    
+                    // Temporarily, force DC BrokerNAV, until the feature is implemented that can select between NAVs.
+
+                    // var user = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == UserEmail);
+                    // var userNavAssets = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.User == user && r.AssetId.AssetTypeID == AssetType.BrokerNAV).ToArray();
+                    // if (userNavAssets.Length == 1)  // if only 1 NAV asset is found for the user, then use that
+                    //     sec = userNavAssets[0];
+                    // else if (userNavAssets.Length >= 2)
+                    // { // if there is more than one NAV, then use the (I) IntBroker (M)Main NAV
+                    //     sec = userNavAssets.FirstOrDefault(r => r.LastTicker.EndsWith(".IM.NAV"));
+                    //     if (sec == null) // if still not found, use the first user NAV
+                    //         sec = userNavAssets[0];
+                    // }
+                    // else    // in case the user has no NAV in MemDb
+                        sec = MemDb.gMemDb.AssetsCache.GetFirstMatchingAssetByLastTicker("DC.IM.NAV");  // by default for all users
+                }
+
                 stock.AssetId = sec.AssetId;
             }
         }
 
+        void EvMemDbAssetDataReloaded_mktHealth()
+        {
+            InitAssetData();
+        }
 
-        static void EvMemDbHistoricalDataReloaded_mktHealth()
+
+        void EvMemDbHistoricalDataReloaded_mktHealth()
         {
             Utils.Logger.Info("EvMemDbHistoricalDataReloaded_mktHealth() START");
 
-            if (DashboardClient.g_clients.Count > 0)    // Notify all the connected users. 
-            {
-                IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat("YTD");     // reset lookback to to YTD.
-                DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All.SendAsync("RtMktSumNonRtStat", periodStatToClient);
-
-                byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumNonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
-                DashboardClient.g_clients.ForEach(client =>
-                {
-                    if (client.WsWebSocket!.State == WebSocketState.Open)
-                        client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
-                });
-            }
+            IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat("YTD");     // reset lookback to to YTD. Because of BrokerNAV, lookback period stat is user specific.
+            if (!String.IsNullOrEmpty(SignalRConnectionId))
+                DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(SignalRConnectionId).SendAsync("RtMktSumNonRtStat", periodStatToClient);
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumNonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
+            Utils.Logger.Info("EvMemDbHistoricalDataReloaded_mktHealth(). Processing client:" + UserEmail);
+            if (WsWebSocket == null)
+                Utils.Logger.Info("Warning (TODO)!: Mystery how client.WsWebSocket can be null? One answer happened: if for the same connection both the SignalR and WebSocket handlers create 2 items in g_clients. But that is a mistake. 2020-11-03: modified code that it hopefully will not happen again. (If client is disconnected client is removed from DashboardClient.g_clients, but the client.WS pointer should not become null. Investigate!) ");
+            if (WsWebSocket!.State == WebSocketState.Open)
+                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
         }
 
         // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
@@ -140,17 +153,7 @@ namespace SqCoreWeb
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
 
                 // 2. Send RT price later, because GetLastRtPrice() might block the thread, if it is the first client.
-                var lastPrices = MemDb.gMemDb.GetLastRtPrice(g_mktSummaryStocks.Select(r => r.AssetId).ToArray());
-                IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = lastPrices.Select(r =>
-                {
-                    var rtStock = new RtMktSumRtStat()
-                    {
-                        AssetId = r.SecdID,
-                        Last = r.LastPrice,
-                    };
-                    return rtStock;
-                });
-                Utils.Logger.Info("OnConnectedWsAsync_MktHealth(): RtMktSumRtStat");
+                IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = GetRtStat();
                 encodedMsg = Encoding.UTF8.GetBytes("RtMktSumRtStat:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
@@ -201,17 +204,7 @@ namespace SqCoreWeb
                 DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(SignalRConnectionId).SendAsync("RtMktSumNonRtStat", periodStatToClient);
 
                 // 2. Send RT price later, because GetLastRtPrice() might block the thread, if it is the first client.
-                var lastPrices = MemDb.gMemDb.GetLastRtPrice(g_mktSummaryStocks.Select(r => r.AssetId).ToArray());
-                IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = lastPrices.Select(r =>
-                {
-                    var rtStock = new RtMktSumRtStat()
-                    {
-                        AssetId = r.SecdID,
-                        Last = r.LastPrice,
-                    };
-                    return rtStock;
-                });
-                Utils.Logger.Info("Clients.Caller.SendAsync: RtMktSumRtStat");
+                IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = GetRtStat();
                 DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(SignalRConnectionId).SendAsync("RtMktSumRtStat", rtMktSummaryToClient);   // Cannot access a disposed object.
 
                 // lock (m_rtMktSummaryTimerLock)
@@ -226,7 +219,7 @@ namespace SqCoreWeb
             }).Start();
         }
 
-        private static IEnumerable<RtMktSumNonRtStat> GetLookbackStat(string p_lookbackStr)
+        private IEnumerable<RtMktSumNonRtStat> GetLookbackStat(string p_lookbackStr)
         {
             DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD.
             DateTime lookbackStart = new DateTime(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
@@ -268,7 +261,7 @@ namespace SqCoreWeb
             Debug.WriteLine($"StartDate: {dates[iStartDay]}");
 
 
-            IEnumerable<RtMktSumNonRtStat> lookbackStatToClient = g_mktSummaryStocks.Select(r =>
+            IEnumerable<RtMktSumNonRtStat> lookbackStatToClient = m_mktSummaryStocks.Select(r =>
             {
                 float[] sdaCloses = histData.Data[r.AssetId].Item1[TickType.SplitDivAdjClose];
                 // if startDate is not found, because e.g. we want to go back 3 years, while stock has only 2 years history
@@ -276,8 +269,14 @@ namespace SqCoreWeb
 
                 // reverse marching from yesterday into past is not good, because we have to calculate running maxDD, maxDU.
                 float max = float.MinValue, min = float.MaxValue, maxDD = float.MaxValue, maxDU = float.MinValue;
-                for (int i = iiStartDay; i >= iEndDay; i--)   // reverse marching from yesterday iEndDay to deeper into the past. Until startdate iStartDay or until history beginning reached
+                int iStockEndDay = Int32.MinValue, iStockFirstDay = Int32.MinValue;
+                for (int i = iiStartDay; i >= iEndDay; i--)   // iEndDay is index 0 or 1. Reverse marching from yesterday iEndDay to deeper into the past. Until startdate iStartDay or until history beginning reached
                 {
+                    if (Single.IsNaN(sdaCloses[i]))
+                        continue;   // if that date in the global MemDb was an USA stock market holiday, price is NaN
+                    if (iStockFirstDay == Int32.MinValue)
+                        iStockFirstDay = i;
+                    iStockEndDay = i;
                     if (sdaCloses[i] > max)
                         max = sdaCloses[i];
                     if (sdaCloses[i] < min)
@@ -294,9 +293,10 @@ namespace SqCoreWeb
                 {
                     AssetId = r.AssetId,
                     Ticker = r.Ticker,
-                    PreviousClose = sdaCloses[iEndDay],
-                    PeriodStart = dates[iiStartDay],    // it may be not the 'asked' start date if we have less price history
-                    PeriodOpen = sdaCloses[iiStartDay],
+                    PeriodStartDate = dates[iStockFirstDay],    // it may be not the 'asked' start date if asset has less price history
+                    PeriodEndDate = dates[iStockEndDay],        // by default it is the date of yesterday, but the user can change it
+                    PeriodStart = sdaCloses[iStockFirstDay],
+                    PeriodEnd = sdaCloses[iStockEndDay],
                     PeriodHigh = max,
                     PeriodLow = min,
                     PeriodMaxDD = maxDD,
@@ -306,6 +306,20 @@ namespace SqCoreWeb
             });
 
             return lookbackStatToClient;
+        }
+
+        private static IEnumerable<RtMktSumRtStat> GetRtStat()
+        {
+            var lastPrices = MemDb.gMemDb.GetLastRtPrice(m_mktSummaryStocks.Select(r => r.AssetId).ToArray());
+            return lastPrices.Where(r => float.IsFinite(r.LastPrice)).Select(r =>
+            {
+                var rtStock = new RtMktSumRtStat()
+                {
+                    AssetId = r.SecdID,
+                    Last = r.LastPrice,
+                };
+                return rtStock;
+            });
         }
 
         public void OnDisconnectedSignalRAsync_MktHealth(Exception exception)
@@ -331,23 +345,14 @@ namespace SqCoreWeb
                 if (!m_rtMktSummaryTimerRunning)
                     return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
 
-                var lastPrices = MemDb.gMemDb.GetLastRtPrice(g_mktSummaryStocks.Select(r => r.AssetId).ToArray());
-                IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = lastPrices.Select(r =>
-                {
-                    var rtStock = new RtMktSumRtStat()
-                    {
-                        AssetId = r.SecdID,
-                        Last = r.LastPrice,
-                    };
-                    return rtStock;
-                });
-
-                // Utils.Logger.Info("Clients.All.SendAsync: RtMktSumRtStat");
+                IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = GetRtStat();
                 DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All.SendAsync("RtMktSumRtStat", rtMktSummaryToClient);
 
                 byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumRtStat:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
                 DashboardClient.g_clients.ForEach(client =>
                 {
+                    if (client.WsWebSocket == null)
+                        Utils.Logger.Info("Warning (TODO)!: Mystery how client.WsWebSocket can be null? One answer happened: if for the same connection both the SignalR and WebSocket handlers create 2 items in g_clients. But that is a mistake. 2020-11-03: modified code that it hopefully will not happen again. (If client is disconnected client is removed from DashboardClient.g_clients, but the client.WS pointer should not become null. Investigate!) ");
                     if (client.WsWebSocket != null && (client.WsWebSocket.State == WebSocketState.Open))
                         client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
                 });
@@ -367,5 +372,5 @@ namespace SqCoreWeb
                 throw;
             }
         }
-   }
+    }
 }
