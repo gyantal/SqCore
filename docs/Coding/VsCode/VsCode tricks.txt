@@ -16,6 +16,7 @@ Code editing:
 
 - Ctrl+Shift+O (Go to Symbol, in editor window). type : for lines, @ for symbols. (no local symbols, only class symbols in C#, in TS it works for local symbols too) Can save a lot of navigation time.
 - Ctrl+T (Go to Symbol, in workspace) (jumping to a symbol across files)
+- Whole block-selection easily with keyboard: Put cursor in a block somewhere. Expand and shrink selection  Expand: Shift+Alt+RightArrow, Shrink: Shift+Alt+LeftArrow
 
 Vscode services:
 - Ctrl+Shift+P: Command Palette (">" appears, which can be removed by Del): start searching filenames to load in or start typing commands. Then Enter if there is only one possible command or Tab + Down to select command (without mouse)

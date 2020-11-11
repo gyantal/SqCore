@@ -36,13 +36,13 @@ namespace FinTechCommon
         public static void UpdateAllRedisBrotlisFromSourceAndSetTimer(UpdateBrotliParam p_state)
         {
             // 1. Check if BrotliRecords in RedisDb is Consistent With source (Json in either in RedisDb, but more likely in PostgreSql)
-            // start using Redis:'allAssets.Brotli' (520bytes instead of 1.52KB) immediately. User only modifyes the JSON version Redis:'allAssets'.
-            // 15 seconds later check the Redis consistency. In a very rare case when that finds discrepancy between 'allAssets.Brotli' vs. 'allAssets' then 
-            // it updates Redis:'allAssets.Brotli' and re-call HistoricalDataReloadAndSetTimer()
+            // start using Redis:'allAssets.brotli' (520bytes instead of 1.52KB) immediately. User only modifyes the JSON version Redis:'allAssets'.
+            // 15 seconds later check the Redis consistency. In a very rare case when that finds discrepancy between 'allAssets.brotli' vs. 'allAssets' then 
+            // it updates Redis:'allAssets.brotli' and re-call HistoricalDataReloadAndSetTimer()
 
             string allAssetsJson = p_state.RedisDb!.HashGet("memDb", "allAssets");
             
-            byte[] allAssetsBin = p_state.RedisDb!.HashGet("memDb", "allAssets.Brotli");
+            byte[] allAssetsBin = p_state.RedisDb!.HashGet("memDb", "allAssets.brotli");
             var allAssetsBinToStr = Utils.BrotliBin2Str(allAssetsBin);
 
             bool wasAnyBrotliUpdated = false;
@@ -50,7 +50,7 @@ namespace FinTechCommon
             {
                 // Write brotli to DB
                 var allAssetsBrotli = Utils.Str2BrotliBin(allAssetsJson);
-                p_state.RedisDb!.HashSet("memDb", "allAssets.Brotli", RedisValue.CreateFrom(new System.IO.MemoryStream(allAssetsBrotli)));
+                p_state.RedisDb!.HashSet("memDb", "allAssets.brotli", RedisValue.CreateFrom(new System.IO.MemoryStream(allAssetsBrotli)));
                 wasAnyBrotliUpdated = true;
             }
              if (wasAnyBrotliUpdated)

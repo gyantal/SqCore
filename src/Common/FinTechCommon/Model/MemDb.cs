@@ -10,6 +10,7 @@ using StackExchange.Redis;
 using YahooFinanceApi;
 using System.Text.Json;
 using System.IO.Compression;
+using Microsoft.Extensions.Primitives;
 
 namespace FinTechCommon
 {
@@ -121,8 +122,8 @@ namespace FinTechCommon
                         };
                     }).ToArray();
 
-                // start using Redis:'allAssets.Brotli' (520bytes instead of 1.52KB) immediately. See UpdateRedisBrotlisService();
-                byte[] allAssetsBin = m_redisDb.HashGet("memDb", "allAssets.Brotli");
+                // start using Redis:'allAssets.brotli' (520bytes instead of 1.52KB) immediately. See UpdateRedisBrotlisService();
+                byte[] allAssetsBin = m_redisDb.HashGet("memDb", "allAssets.brotli");
                 var allAssetsBinToStr = Utils.BrotliBin2Str(allAssetsBin);
                 bool isAllAssetsChangedInDb = m_lastAllAssetsStr != allAssetsBinToStr;
                 if (isAllAssetsChangedInDb)
@@ -230,17 +231,80 @@ namespace FinTechCommon
                         string formatString = dailyNavStr.Substring(0, iFirstComma);  // "D/C" for Date/Closes
                         if (formatString != "D/C")
                             continue;
-                            
+
                         var dailyNavStrSplit = dailyNavStr.Substring(iFirstComma + 1, dailyNavStr.Length - (iFirstComma + 1)).Split(',', StringSplitOptions.RemoveEmptyEntries);
                         dates = dailyNavStrSplit.Select(r => new DateOnly(Int32.Parse(r.Substring(0, 4)), Int32.Parse(r.Substring(4, 2)), Int32.Parse(r.Substring(6, 2)))).ToArray();
-                        var unadjustedClosesNav = dailyNavStrSplit.Select(r => (float)Double.Parse(r.Substring(9))).ToArray();
-                        adjCloses = unadjustedClosesNav;
+                        var unadjustedClosesNav = dailyNavStrSplit.Select(r => Double.Parse(r.Substring(9))).ToArray();
+                        // adjCloses = unadjustedClosesNav;
 
                         byte[] dailyDepositBrotli = m_redisDb.HashGet("assetBrokerNavDeposit", redisKey);
                         var dailyDepositStr = Utils.BrotliBin2Str(dailyDepositBrotli);  // 479 byte text data from 179 byte brotli data, starts with FormatString: "20090310/1903,20100305/2043,..."
-                        var dailyDepositStrSplit = dailyDepositStr.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                        var deposits = dailyDepositStr.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(r => {
+                            // format: "20200323/-1000000"
+                            var depositsDays = r.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                            DateTime date = Utils.FastParseYYYYMMDD(new StringSegment(r, 0, 8));
+                            double deposit = Double.Parse(new StringSegment(r, 9, r.Length - 9));
+                            return new KeyValuePair<DateOnly, double>(new DateOnly(date), deposit);
+                        }).ToArray();
 
-                        // TODO: do deposit adjustment later to NAV
+
+                        // ************************ Stock dividend ajustment and NAV deposit adjustment
+                        // https://www.investopedia.com/ask/answers/06/adjustedclosingprice.asp
+                        // "The adjusted closing price is often used when examining historical returns "
+                        // For example, let's assume that the closing price for one share of XYZ Corp. is $20 on Thursday. After the close on Thursday, XYZ Corp. announces a dividend distribution of $1.50 per share. The adjusted closing price for the stock would then be $18.50 ($20-$1.50). So, we take away the dividend from the All Previous prices.
+                        // > this is correct, but this will not work iteratively, the subtraction should be converted to an equivalent multiplication.
+                        // So, multiplier = (originalPrice-dividend)/originalPrice, which is (20-1.50)/20
+                        // we use this multiplier on original price 20, that gives 20 * multiplier = 20-1.5=18.5 fine.
+                        // And this multiplier can be used iteratively.
+
+                        // >Another example: imagine there was a 50% increase in the previous day, then a 10% dividend.
+                        // 100, 100, 200, 200, 180+20, 180, 180
+                        // We calculate daily%returns: 0%, 0%, 100%, 0%, 0%
+                        // If we just simply take away -20 from all prevous prices, 80, 80 (?), 180, 180, 180, so daily return: 0% 0%, 125% (which is incorrect), 0%, 0%
+                        // To do it correctly, we have to reformulate that daily %return stays the same as before. The ? is not 80, it is something different.
+                        // So, multiplier = (originalPrice-dividend)/originalPrice = 200-20/200=90%.
+                        // Then we don't subtract -20 from each previous day's values, but we multiply each previous day's values by 90%, to obtain:
+                        // 90, 90, 180, 180, 180  which gives the daily returns of 0%, 100%, 0%. Correct.
+
+                        // >For adjusting NAV values by deposit/withdrawal, the same can be done.
+                        // If there was a withdrawal (negative value), we consider it as dividend.
+                        // So, when original NAV in $M was 9, 9, 10, 9+1 withdrawal, 9, 11 then the %return is not lastNAV/firstNAV = 11/9, which is 22%
+                        // But multiplier = (10-1)/10 = 90%, and using that
+                        // AdjustedNAV is 8.1, 8.1, 9, 9, 11, therefore %return = 11/8.1= 35.8%
+                        // That gives that every daily %return is the same as before.
+                        // Same can be said for positive Deposits. If we add deposit, NAV is increased, but we don't want to see that as a performance measure %return.
+
+                        // >It is like doing a Time-Weighted-Return per day. Basically, we calculate the synthetic daily%returns that every day gives back the daily %return. Then we aggregate these in a way that the final price is the current NAV.
+
+                        double multiplier = 1.0;    // cummulative multiplier
+                        adjCloses = new float[dates.Length];
+                        int iDeposits = deposits.Length - 1;
+                        for (int i = dates.Length - 1 ; i >= 0; i--)    // go from yesterday backwards, because adjustment is a multiplier.
+                        {
+                            DateOnly date = dates[i];
+                            adjCloses[i] = (float)(unadjustedClosesNav![i] * multiplier);
+                            if (iDeposits >= 0 && date == deposits[iDeposits].Key) {
+                                // >Deposit: Date/Value
+                                // 20200323/-1000000  // assume it was taken in the middle of the day. The end of the day NAV doesn't contain that.
+                                // >NAV: Date/Value
+                                // 20200319/10270249
+                                // 20200320/10522203
+                                // 20200323/9630437	// decreased, don't change that day. But add the withdrawal to it, as if that would have been the correct price.
+                                // 20200324/9590033
+                                // >Then OriginalNAV_on_20200323 = (9630437 + 1000000)
+                                // multiplier = (OriginalNAV-dividend)/OriginalNAV = 9630437 / (9630437 + 1000000) =  0.90593048997 = 90.5%.
+                                // Warning. Don't multiply the 20200323 date NAV with this (because that is already the 9.6M reduced value, not the 10.5M big value), but multiply all prevous days.
+                                // At the end multiplier becomes: 1.16; because Deposits are more.
+                                // >The result of this deposit-adjustment:
+                                // Unadjusted: from 9.8M to 11.7M, a 18% return in 2020. -15% maxDD
+                                // Adjusted: from 8.9M to 11.7M, a 31% return in 2020. -9.8% maxDD
+                                double unadjustedActualNav = unadjustedClosesNav![i] - deposits[iDeposits].Value; // if it is a negative withdrawal, it will add it
+                                double mult = (unadjustedActualNav + deposits[iDeposits].Value) / unadjustedActualNav;
+                                multiplier *= mult;
+                                iDeposits--;
+                            }
+                        }
+
                     }
                     else if (asset.AssetId.AssetTypeID == AssetType.Stock)
                     {

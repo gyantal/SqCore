@@ -110,19 +110,21 @@ namespace SqCommon
             return new DateTime(y, m, d);
         }
 
-        /// <summary> Fast parsing of strings in YYYY-MM-DD or YYYY?MM?DD* format.
+        /// <summary> Fast parsing of strings in YYYY-MM-DD or YYYY?MM?DD* or the compressed YYYYMMDD format.
         /// Throws FormatException or ArgumentOutOfRangeException if the string is not a proper date.
         /// Leading white space is error. </summary>
         public static DateTime FastParseYYYYMMDD(StringSegment p_string)
         {
-            if (p_string.Length < 10 || Utils.IsDigit(p_string[4]))
+            if (p_string.Length < 8 || (p_string.Length >=10 && Utils.IsDigit(p_string[4])))
                 throw new FormatException("invalid date string: " + p_string);
             int y = (p_string[0] - '0') * 1000
                   + (p_string[1] - '0') * 100
                   + (p_string[2] - '0') * 10
                   + (p_string[3] - '0');
-            int m = (p_string[5] - '0') * 10 + (p_string[6] - '0');
-            int d = (p_string[8] - '0') * 10 + (p_string[9] - '0');
+            int iMonth = (p_string.Length == 8) ? 4 : 5;    // if Length = 8, assume YYYYMMDD format, without hyphens 
+            int iDay = (p_string.Length == 8) ? 6 : 8;
+            int m = (p_string[iMonth] - '0') * 10 + (p_string[iMonth + 1] - '0');
+            int d = (p_string[iDay] - '0') * 10 + (p_string[iDay + 1] - '0');
             return new DateTime(y, m, d);   // throws ArgumentOutOfRangeException if 'm' or 'd' has invalid value
         }
 

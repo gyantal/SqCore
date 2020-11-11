@@ -111,6 +111,10 @@
   border-radius: .5rem;
 }
 
+// 2020-11: "It is impossible to change the format of the input type=“date”. " See https://stackoverflow.com/questions/7372038/is-there-any-way-to-change-input-type-date-format
+// All those suggestions are awkward. And we don't want to introduce any other 3rd party library for the date-picker, like Jquery (50+125K with jQueryUi) or MomentumJs.
+// At the moment, user (only Balazs with Hungarian local) should change Date format in Windows: Setting/Change data formats/"Short Date". After changing that, user has to restart Chrome.
+// In the future, "maybe" this HTML date-picker element can style its format. Until that, it is OK for our main users.
 .lookbDateCl {
   border: 0 !important;
   // border-radius: .5rem;
