@@ -10,6 +10,7 @@ using System.Diagnostics;
 using FinTechCommon;
 using System.Text.Json.Serialization;
 using System.Net.WebSockets;
+using Microsoft.Extensions.Primitives;
 
 namespace SqCoreWeb
 {
@@ -221,36 +222,43 @@ namespace SqCoreWeb
 
         private IEnumerable<RtMktSumNonRtStat> GetLookbackStat(string p_lookbackStr)
         {
-            DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD.
-            DateTime lookbackStart = new DateTime(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
-            if (p_lookbackStr.Equals("YTD"))    // by default server sends this to client at Open
+            DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
+            DateOnly lookbackStart = new DateOnly(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
+            DateOnly lookbackEnd = todayET.AddDays(-1);
+            if (p_lookbackStr.StartsWith("Date:"))  // Browser client never send anything, but "Date:" inputs. Format: "Date:2019-11-11...2020-11-10"
             {
-                lookbackStart = new DateTime(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
+                lookbackStart = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length, 10));
+                lookbackEnd = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length + 13, 10));
             }
-            else if (p_lookbackStr.StartsWith("Date:"))
-            {
-                DateTime.TryParse(p_lookbackStr.Substring("Date:".Length, p_lookbackStr.Length - "Date:".Length), out lookbackStart);
-            }
-            else if (p_lookbackStr.EndsWith("y"))
-            {
-                if (Int32.TryParse(p_lookbackStr.Substring(0, p_lookbackStr.Length - 1), out int nYears))
-                    lookbackStart = todayET.AddYears(-1 * nYears);
-            }
-            else if (p_lookbackStr.EndsWith("m"))
-            {
-                if (Int32.TryParse(p_lookbackStr.Substring(0, p_lookbackStr.Length - 1), out int nMonths))
-                    lookbackStart = todayET.AddMonths(-1 * nMonths);
-            }
-            else if (p_lookbackStr.EndsWith("w"))
-            {
-                if (Int32.TryParse(p_lookbackStr.Substring(0, p_lookbackStr.Length - 1), out int nWeeks))
-                    lookbackStart = todayET.AddDays(-7 * nWeeks);
-            }
+            // else if (p_lookbackStr.EndsWith("y"))
+            // {
+            //     if (Int32.TryParse(p_lookbackStr.Substring(0, p_lookbackStr.Length - 1), out int nYears))
+            //         lookbackStart = todayET.AddYears(-1 * nYears);
+            // }
+            // else if (p_lookbackStr.EndsWith("m"))
+            // {
+            //     if (Int32.TryParse(p_lookbackStr.Substring(0, p_lookbackStr.Length - 1), out int nMonths))
+            //         lookbackStart = todayET.AddMonths(-1 * nMonths);
+            // }
+            // else if (p_lookbackStr.EndsWith("w"))
+            // {
+            //     if (Int32.TryParse(p_lookbackStr.Substring(0, p_lookbackStr.Length - 1), out int nWeeks))
+            //         lookbackStart = todayET.AddDays(-7 * nWeeks);
+            // }
 
             TsDateData<DateOnly, uint, float, uint> histData = MemDb.gMemDb.DailyHist.GetDataDirect();
             DateOnly[] dates = histData.Dates;
             // At 16:00, or even intraday: YF gives even the today last-realtime price with a today-date. We have to find any date backwards, which is NOT today. That is the PreviousClose.
-            int iEndDay = (dates[0] >= new DateOnly(Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow))) ? 1 : 0;
+            int iEndDay = 0;
+            for (int i = 0; i < dates.Length; i++)
+            {
+                if (dates[i] <= lookbackEnd)
+                {
+                    iEndDay = i;
+                    break;
+                }
+            }
+            // int iEndDay = (dates[0] >= new DateOnly(Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow))) ? 1 : 0;
             Debug.WriteLine($"EndDate: {dates[iEndDay]}");
 
             int iStartDay = histData.IndexOfKeyOrAfter(new DateOnly(lookbackStart));      // the valid price at the weekend is the one on the previous Friday. After.
@@ -289,18 +297,19 @@ namespace SqCoreWeb
                         maxDU = dailyDU;                        // maxDU = maximum profit, happiness felt over the period
                 }
 
+                // it is possible that both iStockFirstDay, iStockEndDay are left as Int32.MinValue, because there is no valid value at all in that range. Fine.
                 var rtStock = new RtMktSumNonRtStat()
                 {
                     AssetId = r.AssetId,
-                    Ticker = r.Ticker,
-                    PeriodStartDate = dates[iStockFirstDay],    // it may be not the 'asked' start date if asset has less price history
-                    PeriodEndDate = dates[iStockEndDay],        // by default it is the date of yesterday, but the user can change it
-                    PeriodStart = sdaCloses[iStockFirstDay],
-                    PeriodEnd = sdaCloses[iStockEndDay],
-                    PeriodHigh = max,
-                    PeriodLow = min,
-                    PeriodMaxDD = maxDD,
-                    PeriodMaxDU = maxDU
+                    Ticker = r.Ticker, // DateTime.MaxValue: {9999-12-31 23:59:59}
+                    PeriodStartDate = (iStockFirstDay >= 0) ? (DateTime)dates[iStockFirstDay] : DateTime.MaxValue,    // it may be not the 'asked' start date if asset has less price history
+                    PeriodEndDate = (iStockEndDay >= 0) ? (DateTime)dates[iStockEndDay] : DateTime.MaxValue,        // by default it is the date of yesterday, but the user can change it
+                    PeriodStart = (iStockFirstDay >= 0) ? sdaCloses[iStockFirstDay] : Double.NaN,
+                    PeriodEnd = (iStockEndDay >= 0) ? sdaCloses[iStockEndDay] : Double.NaN,
+                    PeriodHigh = (max == float.MinValue) ? float.NaN : max,
+                    PeriodLow = (min == float.MaxValue) ? float.NaN : min,
+                    PeriodMaxDD = (maxDD == float.MaxValue) ? float.NaN : maxDD,
+                    PeriodMaxDU = (maxDU == float.MinValue) ? float.NaN : maxDU
                 };
                 return rtStock;
             });

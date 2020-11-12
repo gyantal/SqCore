@@ -403,7 +403,7 @@ namespace SqCommon
 	}
 
 
-    // stores DateOnly in 2 bytes. Number of days since epoc, 1900-01-01. The max nDays is 65535, which is 178 years from 1900, being valid until 2078.
+    // stores DateOnly in 2 bytes. Number of days since epoch, 1900-01-01. The max nDays is 65535, which is 178 years from 1900, being valid until 2078.
     // This implementation is better than an experimental CoreFxLab Date(only).cs, which stores it in 4-byte int. However, there might be good implementation ideas in that source code
     // https://github.com/dotnet/corefxlab/blob/master/src/System.Time/System/Date.cs
     public struct DateOnly : IComparable<DateOnly>, IEquatable<DateOnly>, IEquatable<DateTime>

@@ -6,7 +6,7 @@
                 <th *ngFor="let item of uiTableColumns"><a href="{{item.referenceUrl}}" target="_blank">{{item.ticker}}</a></th>
             </tr>
             <tr class="realtimeRow">
-                <td>Real-time return</td>
+                <td>Real-time return (from period-end)</td>
                 <td *ngFor="let item of uiTableColumns" class="tooltipCell {{item.rtReturnClass}}">{{item.rtReturnStr}}
                     <div class="tooltipText">
                         <div class="bold">{{item.rtTooltipStr1}}</div>
@@ -18,7 +18,7 @@
                 <td class="lookbAndMarketIndSel">
                     <!-- a Select wrapper DIV is needed, because even in 2020, the <select>::after doesn't work. https://stackoverflow.com/questions/3532649/problem-with-select-and-after-with-css-in-webkit -->
                     <div class="lookbSelectWrapperCl">
-                    <select class="lookbSelectCl" id="lookBackPeriod" (change)=onLookbackSelectChange()>
+                        <select class="lookbSelectCl" id="lookBackPeriod" (change)=onLookbackSelectChange()>
                             <option value="YTD" selected>YTD</option>
                             <option value="2w">2W</option>
                             <option value="1m">1M</option>
@@ -32,18 +32,23 @@
                             <option value="D'99">D'99</option>
                             <option value="Date">Date</option>
                         </select>
-                    </div>&nbsp;
+                    </div>
                     <div class="lookbDateWrapperCl">
-                        <input class="lookbDateCl" type="date" id="startDate" name="startDate" min="1975-01-02" [ngModel]="lookbackStartETstr" (ngModelChange)="onLookbackDateChange($event)">
-                    </div>&nbsp;
+                        <input class="lookbDateCl" type="date" id="startDate" name="startDate" min="1975-01-02" [ngModel]="lookbackStartETstr" (change)="onLookbackDateChange($event)">
+                    </div>
+                    <div class="lookbDateWrapperCl">
+                        <input class="lookbDateCl" type="date" id="endDate" name="startDate" min="1975-01-02" [ngModel]="lookbackEndETstr" (change)="onLookbackDateChange($event)">
+                    </div>
                     <div class="lookbSelectWrapperCl">
                         <select class="lookbSelectCl" id="marketIndicator" (change)=perfIndicatorSelector()>
-                            <option value="PerRet" selected>Return</option>
-                            <option value="PerCagr">CAGR</option>
+                            <option value="TotRet" selected>Return</option>
+                            <option value="TotCagr">CAGR</option>
                             <option value="CDD">CurrDrawDown</option>
                             <option value="CDU">CurrDrawUp</option>
                             <option value="MDD">MaxDrawDown</option>
                             <option value="MDU">MaxDrawUp</option>
+                            <option value="PerRet">Pe.Return</option>
+                            <option value="PerMDD">Pe.MaxDD</option>
                         </select>
                     </div>
                 </td>

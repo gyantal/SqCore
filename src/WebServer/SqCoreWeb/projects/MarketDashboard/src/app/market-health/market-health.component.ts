@@ -47,13 +47,14 @@ class UiTableColumn {
 
   // calculated fields as numbers
   public periodReturn = NaN; // for period: from startDate to endDate
+  public periodMaxDrawDown = NaN; // for period: from startDate to endDate
   public rtReturn = NaN;  // comparing last (rt) price to periodEnd price.
   public return = NaN;  // Total return (from startDate to endDate to last realtime): adding period-return and realtime-return together. Every other performance number (cagr, maxDD) is also Total.
   public cagr = NaN;
-  public drawDownPct = NaN;
-  public drawUpPct = NaN;
-  public maxDrawDownPct = NaN;
-  public maxDrawUpPct = NaN;
+  public drawDown = NaN;
+  public drawUp = NaN;
+  public maxDrawDown = NaN;
+  public maxDrawUp = NaN;
 
   // Ui required fields as strings
   public referenceUrl = '';
@@ -67,12 +68,13 @@ class UiTableColumn {
 
   // fields for the second row
   public periodReturnStr = '';
+  public periodMaxDrawDownStr = '';
   public returnStr = '';
   public cagrStr = '';
-  public drawDownPctStr = '';
-  public drawUpPctStr = '';
-  public maxDrawDownPctStr = '';
-  public maxDrawUpPctStr = '';
+  public drawDownStr = '';
+  public drawUpStr = '';
+  public maxDrawDownStr = '';
+  public maxDrawUpStr = '';
 
   public selectedPerfIndSign = 1; // return or cagr or maxDD
   public selectedPerfIndClass = ''; // positive or negative
@@ -156,9 +158,10 @@ export class MarketHealthComponent implements OnInit {
 
   uiTableColumns: UiTableColumn[] = []; // this is connected to Angular UI with *ngFor. If pointer is replaced or if size changes, Angular should rebuild the DOM tree. UI can blink. To avoid that only modify its inner field strings.
 
-  currDateTime: Date = new Date(); // current date and time
   lookbackStartET: Date; // set in ctor. We need this in JS client to check that the received data is long enough or not (Expected Date)
-  lookbackStartETstr: string ; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a 	A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
+  lookbackStartETstr: string; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a 	A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
+  lookbackEndET: Date;
+  lookbackEndETstr: string;
 
   static updateUi(lastRt: Nullable<RtMktSumRtStat[]>, lastNonRt: Nullable<RtMktSumNonRtStat[]>, lookbackStartDateET: Date, uiColumns: UiTableColumn[]) {
     // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
@@ -211,16 +214,17 @@ export class MarketHealthComponent implements OnInit {
     for (const uiCol of uiColumns) {
       // preparing values
       uiCol.periodReturn = uiCol.periodEnd / uiCol.periodStart - 1;
+      uiCol.periodMaxDrawDown = uiCol.periodMaxDD;
       uiCol.rtReturn = uiCol.last > 0 ? uiCol.last / uiCol.periodEnd - 1 : 0;
       uiCol.return = uiCol.last > 0 ? uiCol.last / uiCol.periodStart - 1 : uiCol.periodEnd / uiCol.periodStart - 1;
       const dataStartDateET = new Date(uiCol.periodStartDate);  // '2010-09-29T00:00:00' which was UTC is converted to DateObj interpreted in Local time zone {Tue Sept 29 2010 00:00:00 GMT+0000 (Greenwich Mean Time)}
       const nDays = SqNgCommonUtilsTime.DateDiffNdays(dataStartDateET, todayET); // 2 weeks = 14 days, 2020 year: 366 days, because it is a leap year.
       const nYears = nDays / 365.25; // exact number of days in a year in average 365.25 days, because it is 3 times 365 and 1 time 366
       uiCol.cagr = Math.pow(1 + uiCol.return, 1.0 / nYears) - 1;
-      uiCol.drawDownPct = uiCol.last > 0 ? uiCol.last / Math.max(uiCol.periodHigh, uiCol.last) - 1 : uiCol.periodEnd / uiCol.periodHigh - 1;
-      uiCol.drawUpPct = uiCol.last > 0 ? uiCol.last / Math.min(uiCol.periodLow, uiCol.last) - 1 : uiCol.periodEnd / uiCol.periodLow - 1;
-      uiCol.maxDrawDownPct = Math.min(uiCol.periodMaxDD, uiCol.drawDownPct);
-      uiCol.maxDrawUpPct = Math.max(uiCol.periodMaxDU, uiCol.drawUpPct);
+      uiCol.drawDown = uiCol.last > 0 ? uiCol.last / Math.max(uiCol.periodHigh, uiCol.last) - 1 : uiCol.periodEnd / uiCol.periodHigh - 1;
+      uiCol.drawUp = uiCol.last > 0 ? uiCol.last / Math.min(uiCol.periodLow, uiCol.last) - 1 : uiCol.periodEnd / uiCol.periodLow - 1;
+      uiCol.maxDrawDown = Math.min(uiCol.periodMaxDD, uiCol.drawDown);
+      uiCol.maxDrawUp = Math.max(uiCol.periodMaxDU, uiCol.drawUp);
 
       // filling first row in table
       uiCol.rtReturnStr = (uiCol.rtReturn >= 0 ? '+' : '') + (uiCol.rtReturn * 100).toFixed(2).toString() + '%';
@@ -238,16 +242,17 @@ export class MarketHealthComponent implements OnInit {
       const dataStartDateETStr = uiCol.periodStartDate.slice(0, 10); // use what is coming from server '2010-09-29T00:00:00'
       const dataEndDateETStr = uiCol.periodEndDate.slice(0, 10); // use what is coming from server '2010-09-29T00:00:00'
       uiCol.periodReturnStr = (uiCol.periodReturn >= 0 ? '+' : '') + (uiCol.periodReturn * 100).toFixed(2).toString() + '%';
+      uiCol.periodMaxDrawDownStr = (uiCol.periodMaxDrawDown >= 0 ? '+' : '') + (uiCol.periodMaxDrawDown * 100).toFixed(2).toString() + '%';
       uiCol.returnStr = (uiCol.return >= 0 ? '+' : '') + (uiCol.return * 100).toFixed(2).toString() + '%';
       uiCol.cagrStr = (uiCol.cagr >= 0 ? '+' : '') + (uiCol.cagr * 100).toFixed(2).toString() + '%';
-      uiCol.drawDownPctStr = (uiCol.drawDownPct >= 0 ? '+' : '') + (uiCol.drawDownPct * 100).toFixed(2).toString() + '%';
-      uiCol.drawUpPctStr = (uiCol.drawUpPct >= 0 ? '+' : '') + (uiCol.drawUpPct * 100).toFixed(2).toString() + '%';
-      uiCol.maxDrawDownPctStr = (uiCol.maxDrawDownPct >= 0 ? '+' : '') + (uiCol.maxDrawDownPct * 100).toFixed(2).toString() + '%';
-      uiCol.maxDrawUpPctStr = (uiCol.maxDrawUpPct >= 0 ? '+' : '') + (uiCol.maxDrawUpPct * 100).toFixed(2).toString() + '%';
+      uiCol.drawDownStr = (uiCol.drawDown >= 0 ? '+' : '') + (uiCol.drawDown * 100).toFixed(2).toString() + '%';
+      uiCol.drawUpStr = (uiCol.drawUp >= 0 ? '+' : '') + (uiCol.drawUp * 100).toFixed(2).toString() + '%';
+      uiCol.maxDrawDownStr = (uiCol.maxDrawDown >= 0 ? '+' : '') + (uiCol.maxDrawDown * 100).toFixed(2).toString() + '%';
+      uiCol.maxDrawUpStr = (uiCol.maxDrawUp >= 0 ? '+' : '') + (uiCol.maxDrawUp * 100).toFixed(2).toString() + '%';
 
       uiCol.mainTooltipStr1 = uiCol.ticker;
-      uiCol.mainTooltipStr2 = `Period only return: ${uiCol.periodReturnStr}\nPeriod+Rt return: ${uiCol.returnStr}\nTotal CAGR: ${uiCol.cagrStr}\nCurrent drawdown: ${uiCol.drawDownPctStr}\nCurrent drawup: ${uiCol.drawUpPctStr}\nMaximum drawdown: ${uiCol.maxDrawDownPctStr}\nMaximum drawup: ${uiCol.maxDrawUpPctStr}`;
-      uiCol.mainTooltipStr3 = `\nPeriod [${dataStartDateETStr}...${dataEndDateETStr}]:\nStart: ${nf.format(uiCol.periodStart)}\nEnd: ${nf.format(uiCol.periodEnd)}\nHigh: ${nf.format(uiCol.periodHigh)}\nLow: ${nf.format(uiCol.periodLow)}`;
+      uiCol.mainTooltipStr2 = `Period only return: ${uiCol.periodReturnStr}\nPeriod only maxDD: ${uiCol.periodMaxDrawDownStr}\n\nPeriod+Rt return: ${uiCol.returnStr}\nTotal CAGR: ${uiCol.cagrStr}\nCurrent drawdown: ${uiCol.drawDownStr}\nCurrent drawup: ${uiCol.drawUpStr}\nMaximum drawdown: ${uiCol.maxDrawDownStr}\nMaximum drawup: ${uiCol.maxDrawUpStr}`;
+      uiCol.mainTooltipStr3 = `\nPeriod [${dataStartDateETStr}...${dataEndDateETStr}]:\nStart: ${nf.format(uiCol.periodStart)}\nEnd: ${nf.format(uiCol.periodEnd)}\nHigh: ${nf.format(uiCol.periodHigh)}\nLow: ${nf.format(uiCol.periodLow)}\n*All returns are TWR, coz of adjustments.`;
       uiCol.lookbackErrorStr = (dataStartDateET > lookbackStartDateET) ? `! Period data starts on ${dataStartDateETStr}\n instead of the expected ${lookbackStartDateET.toISOString().slice(0, 10)}.\n\n` : '';
       uiCol.lookbackErrorClass = (dataStartDateET > lookbackStartDateET) ? 'lookbackError' : '';
 
@@ -257,12 +262,12 @@ export class MarketHealthComponent implements OnInit {
 
   static updateUiColumnBasedOnSelectedIndicator(uiCol: UiTableColumn, indicatorSelected: string) {
     switch (indicatorSelected) {
-      case 'PerRet':
+      case 'TotRet':
         uiCol.selectedPerfIndSign = Math.sign(uiCol.return);
         uiCol.selectedPerfIndClass = (uiCol.selectedPerfIndSign === 1) ? 'positivePerf' : 'negativePerf';
         uiCol.selectedPerfIndStr = uiCol.returnStr;
         break;
-      case 'PerCagr':
+      case 'TotCagr':
         uiCol.selectedPerfIndSign = Math.sign(uiCol.cagr);
         uiCol.selectedPerfIndClass = (uiCol.selectedPerfIndSign === 1) ? 'positivePerf' : 'negativePerf';
         uiCol.selectedPerfIndStr = uiCol.cagrStr;
@@ -270,22 +275,32 @@ export class MarketHealthComponent implements OnInit {
       case 'CDD':
         uiCol.selectedPerfIndSign = -1;
         uiCol.selectedPerfIndClass = 'negativePerf';
-        uiCol.selectedPerfIndStr = uiCol.drawDownPctStr;
+        uiCol.selectedPerfIndStr = uiCol.drawDownStr;
         break;
       case 'CDU':
         uiCol.selectedPerfIndSign = 1;
         uiCol.selectedPerfIndClass = 'positivePerf';
-        uiCol.selectedPerfIndStr = uiCol.drawUpPctStr;
+        uiCol.selectedPerfIndStr = uiCol.drawUpStr;
         break;
       case 'MDD':
         uiCol.selectedPerfIndSign = -1;
         uiCol.selectedPerfIndClass = 'negativePerf';
-        uiCol.selectedPerfIndStr = uiCol.maxDrawDownPctStr;
+        uiCol.selectedPerfIndStr = uiCol.maxDrawDownStr;
         break;
       case 'MDU':
         uiCol.selectedPerfIndSign = 1;
         uiCol.selectedPerfIndClass = 'positivePerf';
-        uiCol.selectedPerfIndStr = uiCol.maxDrawUpPctStr;
+        uiCol.selectedPerfIndStr = uiCol.maxDrawUpStr;
+        break;
+      case 'PerRet':
+        uiCol.selectedPerfIndSign = Math.sign(uiCol.periodReturn);
+        uiCol.selectedPerfIndClass = (uiCol.selectedPerfIndSign === 1) ? 'positivePerf' : 'negativePerf';
+        uiCol.selectedPerfIndStr = uiCol.periodReturnStr;
+        break;
+      case 'PerMDD':
+        uiCol.selectedPerfIndSign = Math.sign(uiCol.periodMaxDrawDown);
+        uiCol.selectedPerfIndClass = 'negativePerf';
+        uiCol.selectedPerfIndStr = uiCol.periodMaxDrawDownStr;
         break;
       default:
         uiCol.selectedPerfIndSign = Math.sign(uiCol.return);
@@ -296,8 +311,17 @@ export class MarketHealthComponent implements OnInit {
   }
 
   constructor() {
-    this.lookbackStartET = new Date(this.currDateTime.getUTCFullYear() - 1, 11, 31);  // set YTD as default
+    const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
+    todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
+
+    this.lookbackStartET = new Date(todayET.getUTCFullYear() - 1, 11, 31);  // set YTD as default
     this.lookbackStartETstr = this.Date2PaddedIsoStr(this.lookbackStartET);
+
+    // https://stackoverflow.com/questions/563406/add-days-to-javascript-date
+    const yesterDayET = new Date(todayET);
+    yesterDayET.setDate(yesterDayET.getDate() - 1);
+    this.lookbackEndET = new Date(yesterDayET.getUTCFullYear(), yesterDayET.getMonth(), yesterDayET.getDate());  // set yesterdayET as default
+    this.lookbackEndETstr = this.Date2PaddedIsoStr(this.lookbackEndET);
     this.FillDataWithEmptyValuesToAvoidUiBlinkingWhenDataArrives();
   }
 
@@ -382,11 +406,12 @@ export class MarketHealthComponent implements OnInit {
         const jsonArrayObjNonRt = JSON.parse(msgObjStr);
         // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
         jsonArrayObjNonRt.forEach(element => {
-          if (element.periodEnd.toString() === 'NaN') {
-            element.periodEnd = NaN;
-          } else {
-            element.periodEnd = Number(element.periodEnd);
-          }
+          element.periodStart = this.ChangeNaNstringToNaNnumber(element.periodStart);
+          element.periodEnd = this.ChangeNaNstringToNaNnumber(element.periodEnd);
+          element.periodHigh = this.ChangeNaNstringToNaNnumber(element.periodHigh);
+          element.periodLow = this.ChangeNaNstringToNaNnumber(element.periodLow);
+          element.periodMaxDD = this.ChangeNaNstringToNaNnumber(element.periodMaxDD);
+          element.periodMaxDU = this.ChangeNaNstringToNaNnumber(element.periodMaxDU);
         });
         const msgStrNonRt = jsonArrayObjNonRt.map(s => s.assetId + '|' + s.ticker + '|periodEnd:' + s.periodEnd.toFixed(2).toString() + '|periodStart:' + s.periodStart.toString() + '|open:' + s.periodStart.toFixed(2).toString() + '|high:' + s.periodHigh.toFixed(2).toString() + '|low:' + s.periodLow.toFixed(2).toString() + '|mdd:' + s.periodMaxDD.toFixed(2).toString() + '|mdu:' + s.periodMaxDU.toFixed(2).toString()).join(', ');
         // console.log('ws: RtMktSumNonRtStat arrived: ' + msgStrNonRt);
@@ -399,12 +424,22 @@ export class MarketHealthComponent implements OnInit {
     }
   }
 
-  onLookbackDateChange(pEvent: string) {  // "A DOMString representing a date in YYYY-MM-DD format, or empty" https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
-    console.log('Sq.onLookbackDateChange(): from current ' + this.lookbackStartETstr + ' to "' + pEvent + '"');
+  private ChangeNaNstringToNaNnumber(elementField: any): number {
+    if (elementField.toString() === 'NaN') {
+      return NaN;
+    } else {
+      return Number(elementField);
+    }
+  }
+
+  // https://stackoverflow.com/questions/44840735/change-vs-ngmodelchange-in-angular
+  // "In angular 10 both change and ngModelChange appear to fire before the value is updated in the UI HTML element."
+  onLookbackDateChange(pEvent: any) {  // "A DOMString representing a date in YYYY-MM-DD format, or empty" https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
+    console.log(`Sq.onLookbackDateChange('${pEvent.target.id}'): from current '${this.lookbackStartETstr}'/'${this.lookbackEndETstr}' to '${pEvent.target.value}'`);
     // when user is typing "2020" it starts to arrive at every keystroke. After the first keystroke: "0002-10-27". So, check if it is a valid Date in the last 40 years. If it is, then ask update immediately.
     // 1. First check if it is a valid date or not.
-    let isGoodDate = !(pEvent === '');  // https://stackoverflow.com/questions/154059/how-can-i-check-for-an-empty-undefined-null-string-in-javascript
-    const parts = pEvent.split('-');
+    let isGoodDate = !(pEvent.target.value === '');  // https://stackoverflow.com/questions/154059/how-can-i-check-for-an-empty-undefined-null-string-in-javascript
+    const parts = pEvent.target.value.split('-');
     const year = parseInt(parts[0], 10);
     const month = parseInt(parts[1], 10);
     const day = parseInt(parts[2], 10);
@@ -423,9 +458,13 @@ export class MarketHealthComponent implements OnInit {
 
     (document.getElementById('lookBackPeriod') as HTMLSelectElement).value = 'Date';
 
-    this.lookbackStartETstr = pEvent;
-    this.lookbackStartET = this.PaddedIsoStr3Date(this.lookbackStartETstr);
-
+    if (pEvent.target.id === 'startDate') {
+      this.lookbackStartETstr = pEvent.target.value;
+      this.lookbackStartET = this.PaddedIsoStr3Date(this.lookbackStartETstr);
+    } else if (pEvent.target.id === 'endDate') {
+      this.lookbackEndETstr = pEvent.target.value;
+      this.lookbackEndET = this.PaddedIsoStr3Date(this.lookbackEndETstr);
+    }
     this.onLookbackChange();
   }
 
@@ -444,13 +483,21 @@ export class MarketHealthComponent implements OnInit {
     } else if (lookbackStr.endsWith('w')) {
       const lbWeeks = parseInt(lookbackStr.substr(0, lookbackStr.length - 1), 10);
       this.lookbackStartET = new Date(currDateET.setUTCDate(currDateET.getUTCDate() - lbWeeks * 7));
-    } else if (lookbackStr === 'Date') {
-      this.lookbackStartET = this.PaddedIsoStr3Date(this.lookbackStartETstr);
     } else if (lookbackStr === 'D\'99') {
       this.lookbackStartET = new Date(1999, 3 - 1, 10); // start date of QQQ
+    } else if (lookbackStr === 'Date') {
+      this.lookbackStartET = this.PaddedIsoStr3Date(this.lookbackStartETstr);
     }
     this.lookbackStartETstr = this.Date2PaddedIsoStr(this.lookbackStartET);
 
+    if (!(lookbackStr === 'Date')) {  // change back the end date to yesterday, except if it is in CustomDate mode
+      const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
+      todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
+      const yesterDayET = new Date(todayET);
+      yesterDayET.setDate(yesterDayET.getDate() - 1);
+      this.lookbackEndET = new Date(yesterDayET.getUTCFullYear(), yesterDayET.getMonth(), yesterDayET.getDate());  // set yesterdayET as default
+      this.lookbackEndETstr = this.Date2PaddedIsoStr(this.lookbackEndET);
+    }
     this.onLookbackChange();
   }
 
@@ -458,7 +505,7 @@ export class MarketHealthComponent implements OnInit {
     console.log('Calling server with new lookback. StartDateETstr: ' + this.lookbackStartETstr + ', lookbackStartET: ' + this.lookbackStartET);
     gDiag.wsOnLastRtMktSumLookbackChgStart = new Date();
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
-      this._parentWsConnection.send('changeLookback:Date:' + this.lookbackStartETstr); // we always send the Date format to server, not the strings of 'YTD/10y'
+      this._parentWsConnection.send('changeLookback:Date:' + this.lookbackStartETstr + '...' + this.lookbackEndETstr); // we always send the Date format to server, not the strings of 'YTD/10y'
     }
     // native Websocket handles this now, not SignalR
     // if (this._parentHubConnection != null) {
@@ -487,13 +534,13 @@ export class MarketHealthComponent implements OnInit {
     }
   }
 
-  zeroPad = (num, places) => String(num).padStart(places, '0');  // https://stackoverflow.com/questions/2998784/how-to-output-numbers-with-leading-zeros-in-javascript
+  zeroPad = (num, places: number) => String(num).padStart(places, '0');  // https://stackoverflow.com/questions/2998784/how-to-output-numbers-with-leading-zeros-in-javascript
 
   public Date2PaddedIsoStr(date: Date): string {  // 2020-9-1 is not acceptable. Should be converted to 2020-09-01
     return this.zeroPad(date.getUTCFullYear(), 4) + '-' + this.zeroPad(date.getUTCMonth() + 1, 2) + '-' + this.zeroPad(date.getUTCDate(), 2);
   }
 
-  public PaddedIsoStr3Date(dateStr: string ): Date {
+  public PaddedIsoStr3Date(dateStr: string): Date {
     const parts = dateStr.split('-');
     const year = parseInt(parts[0], 10);
     const month = parseInt(parts[1], 10);

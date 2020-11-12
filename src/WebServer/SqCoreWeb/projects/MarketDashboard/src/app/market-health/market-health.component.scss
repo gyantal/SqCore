@@ -49,7 +49,7 @@
 }
 
 .dashboardTopCont .pastPerfRow .lookbAndMarketIndSel { // to override ".dashboardTopCont table td"'s width:7rem, we have to be that specific
-  width: 29.4rem;
+  width: 43.5rem;
 }
 
 .tooltipCell {
@@ -109,6 +109,7 @@
   overflow: hidden;
   background: #a5cde4;
   border-radius: .5rem;
+  margin-left: 0.25rem;
 }
 
 // 2020-11: "It is impossible to change the format of the input type=“date”. " See https://stackoverflow.com/questions/7372038/is-there-any-way-to-change-input-type-date-format
@@ -156,6 +157,7 @@
   background: #a5cde4;
   overflow: hidden;
   border-radius: .5rem;
+  margin-left: 0.25rem;
 }
 
 /* Arrow */
