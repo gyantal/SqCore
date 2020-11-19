@@ -225,7 +225,7 @@ namespace RedisManager
                     if (currentLine.StartsWith(@"Deposits And Withdrawals,Data,"))
                     {
                         var currentLineParts = currentLine.Split(',', StringSplitOptions.RemoveEmptyEntries);   // date is in this format: "03/10/09" MM/DD/YY
-                        if (currentLineParts[3] == "Deposit" || currentLineParts[3] == "Incoming Account Transfer" || currentLineParts[3] == "Withdrawal")
+                        if (currentLineParts[3] == "Deposit" || currentLineParts[3] == "Incoming Account Transfer" || currentLineParts[3] == "Withdrawal" || currentLineParts[3] == "Outgoing Account Transfer")
                         {
                             var monthStr = currentLineParts[2].Substring(0, 2);
                             var dayStr = currentLineParts[2].Substring(3, 2);
@@ -296,7 +296,7 @@ namespace RedisManager
             db.HashSet("assetQuoteRaw", redisKey,  RedisValue.CreateFrom(new System.IO.MemoryStream(outputCsvBrotli)));
             db.HashSet("assetBrokerNavDeposit", redisKey,  RedisValue.CreateFrom(new System.IO.MemoryStream(depositCsvBrotli)));
 
-            Console.WriteLine("InsertNavAssetFromCsvFile() Ended. Conclusion: For 11 years of daily Date/float data. Without compression binary (18.4K) is smaller then CSV text (47.5K). But with Brotli binary (13.4K) is 41% bigger then CSV text (9.5K). Because there is not much repeatable pattern in Float data, while a lot of repeatable comma and digits in text data. And Brotli is attacking the limits of theoretical compression possibilites. Conclusion: USE CSV text data with Brotli. Tested: Brotlied CSV is 30% smaller than brotlied binary.");
+            Console.WriteLine("InsertNavAssetFromCsvFile() Ended. Conclusion: For 11 years of daily Date/float data. Without compression binary (18.4K) is smaller then CSV text (47.5K). But with Brotli binary (13.4K) is 41% bigger then brotli CSV text (9.5K). Because there is not much repeatable pattern in Float data, while a lot of repeatable comma and digits in text data. And Brotli is attacking the limits of theoretical compression possibilites. Conclusion: USE CSV text data with Brotli. Tested: Brotlied CSV is 30% smaller than brotlied binary.");
         }
     }
 

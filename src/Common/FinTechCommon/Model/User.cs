@@ -14,8 +14,8 @@ namespace FinTechCommon
         public string Lastname { get; set; } = String.Empty;
         public string Email { get; set; } = String.Empty;
 
-        public string Fullname { get { return $"{Title} {Firstname} {Lastname}"; } } 
-
+        public string Fullname { get { return $"{Title} {Firstname} {Lastname}"; } }
+        public string Initials { get { return $"{Firstname[0]}{Lastname[0]}"; } } 
     }
 
     public class UserInDb	// for quick JSON deserialization. In DB the fields has short names, and not all Asset fields are in the DB anyway

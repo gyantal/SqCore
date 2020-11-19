@@ -24,6 +24,22 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
         // https://stackoverflow.com/questions/13362490/difference-between-lookup-and-dictionaryof-list
         public ILookup<string, Asset> AssetsByLastTicker = Enumerable.Empty<Asset>().ToLookup(x => default(string)!); // LSE:"VOD", NYSE:"VOD" both can be in database  // Lookup doesn't have default constructor.
 
+        public static AssetsCache CreateAssetCache(List<Asset> p_assets)
+        {
+            return new AssetsCache()
+            {
+                Assets = p_assets,    // replace AssetsCache in one atomic operation by changing the pointer, so no inconsistency
+                AssetsByLastTicker = p_assets.ToLookup(r => r.LastTicker), // if it contains duplicates, ToLookup() allows for multiple values per key.
+                AssetsByAssetID = p_assets.ToDictionary(r => r.AssetId)
+            };
+        }
+
+        public void AddAsset(Asset p_asset)
+        {
+            Assets.Add(p_asset);
+            AssetsByLastTicker = Assets.ToLookup(r => r.LastTicker); // if it contains duplicates, ToLookup() allows for multiple values per key.
+            AssetsByAssetID = Assets.ToDictionary(r => r.AssetId);
+        }
 
         public Asset GetAsset(uint p_assetID)
         {

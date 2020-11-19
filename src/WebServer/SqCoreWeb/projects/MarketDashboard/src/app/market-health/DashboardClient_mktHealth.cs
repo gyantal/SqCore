@@ -109,7 +109,7 @@ namespace SqCoreWeb
                     //         sec = userNavAssets[0];
                     // }
                     // else    // in case the user has no NAV in MemDb
-                        sec = MemDb.gMemDb.AssetsCache.GetFirstMatchingAssetByLastTicker("DC.IM.NAV");  // by default for all users
+                        sec = MemDb.gMemDb.AssetsCache.GetFirstMatchingAssetByLastTicker("DC.NAV");  // by default for all users
                 }
 
                 stock.AssetId = sec.AssetId;
