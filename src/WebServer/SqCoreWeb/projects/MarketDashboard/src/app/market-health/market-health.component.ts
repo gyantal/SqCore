@@ -419,6 +419,10 @@ export class MarketHealthComponent implements OnInit {
         this.lastNonRtMsg = jsonArrayObjNonRt;
         MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
         return true;
+      case 'HandshakeMktHlth':  // this is the least frequent case. Should come last.
+        const jsonObjHandshakeMktHlth = JSON.parse(msgObjStr);
+        console.log(`Selectable NAVs: '${jsonObjHandshakeMktHlth.selectableNavs}'`);
+        return true;
       default:
         return false;
     }

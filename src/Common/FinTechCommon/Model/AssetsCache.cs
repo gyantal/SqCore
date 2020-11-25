@@ -57,7 +57,7 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
         // Although Tickers are not unique (only AssetId), most of the time clients access data by LastTicker.
         // It is not good for historical backtests, because it uses only the last ticker, not historical tickers, but it is enough 95% of the time for clients.
         // This can find both "VOD" (Vodafone) ticker in LSE (in GBP), or in NYSE (in USD).
-        public Asset GetFirstMatchingAssetByLastTicker(string p_lasTicker, ExchangeId p_primExchangeID = ExchangeId.Unknown)
+        public Asset? GetFirstMatchingAssetByLastTicker(string p_lasTicker, ExchangeId p_primExchangeID = ExchangeId.Unknown, bool p_raiseExceptionNotFound = true)
         {
             IEnumerable<Asset> assets = AssetsByLastTicker[p_lasTicker];
             if (assets == null)
@@ -68,7 +68,10 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
                 if (p_primExchangeID == ExchangeId.Unknown || p_primExchangeID == asset.PrimaryExchange)
                     return asset;
             }
-            throw new Exception($"MemDb.GetFirstMatchingAssetByLastTicker(): Ticker '{p_lasTicker}' with Exchange '{p_primExchangeID}' is not found.");
+            if (p_raiseExceptionNotFound)
+                throw new Exception($"MemDb.GetFirstMatchingAssetByLastTicker(): Ticker '{p_lasTicker}' with Exchange '{p_primExchangeID}' is not found.");
+            
+            return null;
         }
     }
 

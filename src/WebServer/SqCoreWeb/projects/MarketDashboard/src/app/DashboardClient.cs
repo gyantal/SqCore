@@ -87,7 +87,7 @@ namespace SqCoreWeb
     }
 
     // these members has to be C# properties, not simple data member tags. Otherwise SignalR will not serialize it to client.
-    class HandshakeMessage {
+    class HandshakeMessage {    // General params for the aggregate Dashboard. These params should be not specific to smaller tools, like HealthMonitor, CatalystSniffer, QuickfolioNews
         public String Email { get; set; } = String.Empty;
         public int AnyParam { get; set; } = 55;
     }

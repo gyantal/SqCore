@@ -310,19 +310,23 @@ namespace FinTechCommon
                     }   // All NAVs of the user
                     if (navsDates.Count >= 2)   // if more than 2 NAVs for the user, a virtual synthetic aggregatedNAV and a virtual AssetID should be generated.
                     {
-                        var aggAssetId = new AssetId32Bits(AssetType.BrokerNAV, (uint)(10000 + nVirtualAggNavAssets++));
                         string  aggAssetTicker = user.Initials + ".NAV"; // e.g. "DC.NAV";
-                        var aggNavAsset = new Asset()
+                        var aggNavAsset = AssetsCache.GetFirstMatchingAssetByLastTicker(aggAssetTicker, ExchangeId.Unknown, false); // at sucessive ReloadHistoricalData(), the AssetsCache already contains the aggregated virtual asset
+                        if (aggNavAsset == null)
                         {
-                            AssetId = aggAssetId,
-                            PrimaryExchange = ExchangeId.NYSE,
-                            LastTicker = aggAssetTicker,
-                            LastName = "Aggregated NAV, " + user.Initials,
-                            ExpectedHistorySpan = "1y",
-                            ExpectedHistoryStartDateET = GetExpectedHistoryStartDate("1y", aggAssetTicker),
-                            User = user
-                        };
-                        AssetsCache.AddAsset(aggNavAsset);
+                            var aggAssetId = new AssetId32Bits(AssetType.BrokerNAV, (uint)(10000 + nVirtualAggNavAssets++));
+                            aggNavAsset = new Asset()
+                            {
+                                AssetId = aggAssetId,
+                                PrimaryExchange = ExchangeId.NYSE,
+                                LastTicker = aggAssetTicker,
+                                LastName = "Aggregated NAV, " + user.Initials,
+                                ExpectedHistorySpan = "1y",
+                                ExpectedHistoryStartDateET = GetExpectedHistoryStartDate("1y", aggAssetTicker),
+                                User = user
+                            };
+                            AssetsCache.AddAsset(aggNavAsset);
+                        }
 
                         // merging Lists. Union and LINQ has very bad performance. Use Dict. https://stackoverflow.com/questions/4031262/how-to-merge-2-listt-and-removing-duplicate-values-from-it-in-c-sharp
                         var aggDatesDict = new Dictionary<DateOnly, double>();
@@ -431,7 +435,8 @@ namespace FinTechCommon
             }
             catch (Exception e)
             {
-                Utils.Logger.Error(e, "ReloadHistoricalDataAndSetTimer()");
+                Utils.Logger.Error(e, "Exception in ReloadHistoricalDataAndSetTimer()");
+                HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MemDb. Exception: '{ e.ToStringWithShortenedStackTrace(1200)}'", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
             }
 
             m_lastHistoricalDataReload = DateTime.UtcNow;

@@ -14,6 +14,9 @@ using Microsoft.Extensions.Primitives;
 
 namespace SqCoreWeb
 {
+    class HandshakeMktHealth {    //Initial params specific for the MarketHealth tool
+        public String SelectableNavs { get; set; } = String.Empty;
+    }
     class RtMktSummaryStock
     {
         public uint AssetId { get; set; } = 0; // invalid value is best to be 0. If it is Uint32.MaxValue is the invalid, then problems if extending to Uint64
@@ -112,7 +115,7 @@ namespace SqCoreWeb
                         sec = MemDb.gMemDb.AssetsCache.GetFirstMatchingAssetByLastTicker("DC.NAV");  // by default for all users
                 }
 
-                stock.AssetId = sec.AssetId;
+                stock.AssetId = sec!.AssetId;
             }
         }
 
@@ -144,12 +147,17 @@ namespace SqCoreWeb
             {
                 Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
 
+                HandshakeMktHealth handshakeMktHlth = GetHandshakeMktHlth();
+                byte[] encodedMsg = Encoding.UTF8.GetBytes("HandshakeMktHlth:" + Utils.CamelCaseSerialize(handshakeMktHlth));
+                if (WsWebSocket!.State == WebSocketState.Open)
+                    WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+
                 // for both the first and the second client, we get RT prices from MemDb immediately and send it back to this Client only.
 
                 // 1. Send the Historical data first. SendAsync() is non-blocking. GetLastRtPrice() can be blocking
                 IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat("YTD");
                 Utils.Logger.Info("OnConnectedWsAsync_MktHealth(): RtMktSumNonRtStat");
-                byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumNonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
+                encodedMsg = Encoding.UTF8.GetBytes("RtMktSumNonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
 
@@ -177,7 +185,7 @@ namespace SqCoreWeb
             {
                 case "changeLookback":
                     IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat(msgObjStr);
-                    Utils.Logger.Info("OnConnectedWsAsync_MktHealth(): RtMktSumNonRtStat");
+                    Utils.Logger.Info("OnReceiveWsAsync_MktHealth(): changeLookback");
                     byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumNonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
                     if (WsWebSocket!.State == WebSocketState.Open)
                         await WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
@@ -329,6 +337,44 @@ namespace SqCoreWeb
                 };
                 return rtStock;
             });
+        }
+
+        private HandshakeMktHealth GetHandshakeMktHlth()
+        {
+            // m_mktSummaryStocks should not be static, because it is user specific. User might later change the UNG ticker to sg. else.
+            // Set that ticker and AssetID to user specific.
+
+            // SelectableNavs is an ordered list of tickers. The first item is user specific. User should be able to select between the NAVs. DB, Main, Aggregate.
+            // bool isAdmin = UserEmail == Utils.Configuration["Emails:Gyant"].ToLower();
+            // if (isAdmin) // Now, it is not used. Now, every Google email user with an email can see DC NAVs. Another option is that only Admin users (GA,BL,LN) can see the DC user NAVs.
+            var user = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == UserEmail);
+            var dcUser = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == Utils.Configuration["Emails:Charm0"].ToLower());
+
+            var userNavAssets = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.User == user && r.AssetId.AssetTypeID == AssetType.BrokerNAV).ToArray();
+            var dcUserNavAssets = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.User == dcUser && r.AssetId.AssetTypeID == AssetType.BrokerNAV).ToArray();
+
+            List<Asset> selectableNavs = new List<Asset>();
+            Asset aggNavAsset = userNavAssets.FirstOrDefault(r => r.LastTicker == r.User!.Initials + ".NAV");
+            if (aggNavAsset != null)
+                selectableNavs.Add(aggNavAsset);
+            foreach (var nav in userNavAssets)
+            {
+                if (nav != aggNavAsset)
+                    selectableNavs.Add(nav);
+            }
+            Asset aggNavAssetDC = dcUserNavAssets.FirstOrDefault(r => r.LastTicker == r.User!.Initials + ".NAV");
+            if (aggNavAssetDC != null)
+                selectableNavs.Add(aggNavAssetDC);
+            foreach (var nav in dcUserNavAssets)
+            {
+                if (nav != aggNavAssetDC)
+                    selectableNavs.Add(nav);
+            }
+
+
+            //string selectableNavs = "GA.IM.NAV, DC.NAV, DC.IM.NAV, DC.IB.NAV";
+            string selectableNavsCSV = String.Join(',', selectableNavs.Select(r => r.LastTicker));
+            return new HandshakeMktHealth() { SelectableNavs = selectableNavsCSV };
         }
 
         public void OnDisconnectedSignalRAsync_MktHealth(Exception exception)
