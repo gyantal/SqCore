@@ -31,6 +31,7 @@ class RtMktSumNonRtStat {
 class UiTableColumn {
   public assetId = NaN;  // JavaScript Numbers are Always 64-bit Floating Point
   public ticker = '';
+  public isNavColumn = false;
 
   // NonRt stats directly from server
   public periodStartDate = ''; // preferred to be a new Date(), but when it arrives from server it is a string '2010-09-29T00:00:00' which is ET time zone and better to keep that way than converting to local time-zone Date object
@@ -85,9 +86,12 @@ class UiTableColumn {
   public lookbackErrorStr = '';
   public lookbackErrorClass = '';
 
-  constructor(tckr: string) {
+  constructor(tckr: string, isNavCol: boolean) {
     this.ticker = tckr;
-    this.referenceUrl = 'https://uk.tradingview.com/chart/?symbol=' + tckr;
+    this.isNavColumn = isNavCol;
+    if (!isNavCol) {
+      this.referenceUrl = 'https://uk.tradingview.com/chart/?symbol=' + tckr;
+    }
   }
 }
 
@@ -176,7 +180,7 @@ export class MarketHealthComponent implements OnInit {
       const existingUiCols = uiColumns.filter(col => col.ticker === stockNonRt.ticker);
       if (existingUiCols.length === 0) {
         console.warn(`Received ticker '${stockNonRt.ticker}' is not expected. UiArray should be increased. This will cause UI redraw and blink. Add this ticker to defaultTickerExpected!`, 'background: #222; color: red');
-        uiCol = new UiTableColumn(stockNonRt.ticker);
+        uiCol = new UiTableColumn(stockNonRt.ticker, false);
         uiColumns.push(uiCol);
       } else if (existingUiCols.length === 1) {
         uiCol = existingUiCols[0];
@@ -206,7 +210,7 @@ export class MarketHealthComponent implements OnInit {
       uiCol.last = stockRt.last;
     }
 
-    const indicatorSelected = (document.getElementById('marketIndicator') as HTMLSelectElement).value;
+    const indicatorSelected = (document.getElementById('perfIndicator') as HTMLSelectElement).value;
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
     const nf = new Intl.NumberFormat();  // for thousands commas(,) https://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript
@@ -330,7 +334,7 @@ export class MarketHealthComponent implements OnInit {
     // the header cells better to be fixed strings determined at window.load(), so UI doesn't blink when data arrives 100-500ms later. Therefore a general "BrNav" virtual ticker is fine.
     const defaultTickerExpected = ['BrNAV', 'QQQ', 'SPY', 'GLD', 'TLT', 'VXX', 'UNG', 'USO']; // to avoid UI blinking while building the UI early, we better know the number of columns, but then the name of tickers as well. If server sends something different, we will readjust with blinking UI.
     for (const tkr of defaultTickerExpected) {
-      this.uiTableColumns.push(new UiTableColumn(tkr));
+      this.uiTableColumns.push(new UiTableColumn(tkr, tkr === 'BrNAV'));
     }
   }
 
@@ -422,6 +426,7 @@ export class MarketHealthComponent implements OnInit {
       case 'HandshakeMktHlth':  // this is the least frequent case. Should come last.
         const jsonObjHandshakeMktHlth = JSON.parse(msgObjStr);
         console.log(`Selectable NAVs: '${jsonObjHandshakeMktHlth.selectableNavs}'`);
+        this.updateUiSelectableNavs(jsonObjHandshakeMktHlth.selectableNavs);
         return true;
       default:
         return false;
@@ -532,9 +537,42 @@ export class MarketHealthComponent implements OnInit {
   }
 
   public perfIndicatorSelector(): void {
-    const indicatorSelected = (document.getElementById('marketIndicator') as HTMLSelectElement).value;
+    const indicatorSelected = (document.getElementById('perfIndicator') as HTMLSelectElement).value;
     for (const uiCol of this.uiTableColumns) {
       MarketHealthComponent.updateUiColumnBasedOnSelectedIndicator(uiCol, indicatorSelected);
+    }
+  }
+
+  updateUiSelectableNavs(pSelectableNavs: string) {
+    const navSelectElement = document.getElementById('navSelect') as HTMLSelectElement;
+    for (const nav of pSelectableNavs.split(',')) {
+      navSelectElement.options[navSelectElement.options.length] = new Option(nav, nav);
+    }
+    navSelectElement.selectedIndex = 0; // select the first item
+  }
+
+  onNavHeaderClicked(pEvent: any) {
+    // https://www.w3schools.com/howto/howto_js_popup.asp
+    // When the user clicks on header, open the popup
+    // https://stackoverflow.com/questions/10554446/no-onclick-when-child-is-clicked
+    // part of the event object is the target member. This will tell you which element triggered the event to begin with.
+    console.log('onNavHeaderClicked()');
+    const popupSpan = document.getElementById('navHeaderPopupId') as HTMLSpanElement;
+    if (!(pEvent.target === popupSpan)) { // if not child popup, but the header
+      popupSpan.classList.toggle('show');
+    }
+  }
+
+  onNavHeaderPopupClicked(pEvent: any) {
+    console.log('onNavHeaderPopupClicked()');
+    pEvent.stopPropagation();
+  }
+
+  onNavSelectChange(pEvent: any) {
+    const navSelectTicker = (document.getElementById('navSelect') as HTMLSelectElement).value;
+    console.log(navSelectTicker);
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
+      this._parentWsConnection.send('changeNav:' + navSelectTicker);
     }
   }
 

@@ -14,9 +14,9 @@
   align-items: stretch;
   justify-content: space-between;
 }
-.dashboardTopCont .leftDiv {
-  float:left;
-}
+// .dashboardTopCont .leftDiv {
+//   // float:none;
+// }
 
 .dashboardTopCont table{
   border-collapse: collapse;
@@ -33,11 +33,65 @@
 .dashboardTopCont .tableHeader {
   background: #95bbf3;
 }
-
 .dashboardTopCont .rightDiv {
-  float:right;
+  // float:none;
   text-align: center;
+  width: 11%;
 }
+.navHeaderCl {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+
+  color: #9900ff;
+}
+.navHeaderCl:hover {
+  color: #f39c12;
+}
+.navHeaderPopupCl {
+  visibility: hidden;
+  width: 160px;
+  background-color: rgba(85, 85, 85, 0.50);
+  // color: #fff;
+  color: #d9adf6;
+  text-align: center;
+  border-radius: 6px;
+  padding: 8px 0;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -80px;
+}
+.navHeaderCl .navHeaderPopupCl::after { // Popup arrow
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgba(85, 85, 85, 0.50) transparent transparent transparent;
+}
+.navHeaderCl .show {  // Toggle this class - hide and show the popup. Note, this is not the popup. Strange, but works.
+  visibility: visible;
+  -webkit-animation: fadeIn 1s;
+  animation: fadeIn 1s;
+}
+@keyframes fadeIn { // Add animation (fade in the popup)
+  from {opacity: 0;}
+  to {opacity:1 ;}
+}
+@-webkit-keyframes fadeIn {
+  from {opacity: 0;} 
+  to {opacity: 1;}
+}
+
+
 .dashboardTopCont .realtimeRow{
   font-size: 1.6rem;
   font-weight: 500;
@@ -49,7 +103,7 @@
 }
 
 .dashboardTopCont .pastPerfRow .lookbAndMarketIndSel { // to override ".dashboardTopCont table td"'s width:7rem, we have to be that specific
-  width: 43.5rem;
+  width: 39.5rem;
 }
 
 .tooltipCell {
@@ -147,6 +201,11 @@
   color: blue;
   font-weight: bold;
 }
+#perfIndicator.lookbSelectCl {
+  width: 11.0rem;
+}
+
+
 .lookbSelectWrapperCl {
   position: relative;  // this is a must for "::after" to work.  https://stackoverflow.com/questions/3532649/problem-with-select-and-after-with-css-in-webkit
   display: inline-block;  // https://stackoverflow.com/questions/5803023/how-to-place-two-divs-next-to-each-other

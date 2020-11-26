@@ -157,10 +157,10 @@ namespace SqCoreWeb
                         switch (p_requestRemainigPath)
                         {
                             case "/dashboard":
-                                await DashboardWs.OnReceiveAsync(context, webSocket, result, bufferStr);
+                                DashboardWs.OnReceiveAsync(context, webSocket, result, bufferStr);  // no await. There is no need to Wait until all of its async inner methods are completed
                                 break;
                             case "/example-ws1":
-                                await ExampleWs.OnReceiveAsync(context, webSocket, result, bufferStr);
+                                ExampleWs.OnReceiveAsync(context, webSocket, result, bufferStr);
                                 break;
                             default:
                                 throw new Exception($"Unexpected websocket connection '{p_requestRemainigPath}' in WebSocketLoopKeptAlive()");

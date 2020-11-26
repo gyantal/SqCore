@@ -26,12 +26,12 @@ namespace SqCoreWeb
             await webSocket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
-        internal static async Task OnReceiveAsync(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? lastResult, string bufferStr)
+        internal static void OnReceiveAsync(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? lastResult, string bufferStr)
         {
             // if it is not a Close-message from client, send it back temporarily
             var encoded = Encoding.UTF8.GetBytes(bufferStr);
             var buffer = new ArraySegment<Byte>(encoded, 0, encoded.Length);
-            await webSocket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+            webSocket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
         }
     }   // class
 }

@@ -50,7 +50,7 @@ namespace SqCoreWeb
             client!.OnConnectedWsAsync_MktHealth();
         }
 
-        public static async Task OnReceiveAsync(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? wsResult, string bufferStr)
+        public static void OnReceiveAsync(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? wsResult, string bufferStr)
         {
             DashboardClient? client = null;
             lock (DashboardClient.g_clients)    // find client from the same IP, assuming connection in the last 1000ms
@@ -63,7 +63,7 @@ namespace SqCoreWeb
                 string msgCode = bufferStr.Substring(0, semicolonInd);
                 string msgObjStr = bufferStr.Substring(semicolonInd + 1);
 
-                await client.OnReceiveWsAsync_MktHealth(wsResult, msgCode, msgObjStr);
+                client.OnReceiveWsAsync_MktHealth(wsResult, msgCode, msgObjStr);
             }
         }
     }   // class

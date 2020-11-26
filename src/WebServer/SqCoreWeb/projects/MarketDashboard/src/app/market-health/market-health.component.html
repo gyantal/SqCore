@@ -3,7 +3,19 @@
         <table>
             <tr class="tableHeader">
                 <th></th>
-                <th *ngFor="let item of uiTableColumns"><a href="{{item.referenceUrl}}" target="_blank">{{item.ticker}}</a></th>
+                <th *ngFor="let item of uiTableColumns">
+                    <span *ngIf="!item.isNavColumn"><a href="{{item.referenceUrl}}" target="_blank">{{item.ticker}} </a></span>
+                    <span *ngIf="item.isNavColumn" >
+                        <span class="navHeaderCl" (click)=onNavHeaderClicked($event)>{{item.ticker}}&#x25bc;
+                            <span class="navHeaderPopupCl" id="navHeaderPopupId" (click)=onNavHeaderPopupClicked($event)>
+                                NAVs:
+                                <select  id="navSelect" (change)="onNavSelectChange($event)">
+                                </select>
+                                </span>
+                        </span>
+                        
+                    </span>
+                </th>
             </tr>
             <tr class="realtimeRow">
                 <td>Real-time return (from period-end)</td>
@@ -40,7 +52,7 @@
                         <input class="lookbDateCl" type="date" id="endDate" name="startDate" min="1975-01-02" [ngModel]="lookbackEndETstr" (change)="onLookbackDateChange($event)">
                     </div>
                     <div class="lookbSelectWrapperCl">
-                        <select class="lookbSelectCl" id="marketIndicator" (change)=perfIndicatorSelector()>
+                        <select class="lookbSelectCl" id="perfIndicator" (change)=perfIndicatorSelector()>
                             <option value="TotRet" selected>Return</option>
                             <option value="TotCagr">CAGR</option>
                             <option value="CDD">CurrDrawDown</option>

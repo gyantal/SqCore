@@ -67,13 +67,14 @@ namespace SqCoreWeb
 
         static int m_rtMktSummaryTimerFrequencyMs = 3000;    // as a demo go with 3sec, later change it to 5sec, do decrease server load.
 
-        // alphabetical order is not required here, because it is searched in MemDb one by one, and that search is fast, because that is ordered alphabetically.
-        // this is the order of appearance on the UI.
-        static List<RtMktSummaryStock> m_mktSummaryStocks = new List<RtMktSummaryStock>() { // this list can be market specific
-            // IB.NAV is the aggregate of IB.MN.NAV + IB.DB.NAV. "BrNAV" can be All BrokerNav. It is good if there is a lowercase character in it, to show that it is different.
-            // DC.NAV, GA.NAV, DC.IM.NAV, DC.ID.NAV, DC.TM.NAV. Add the username prefix, so the successive queries
+        // Alphabetical order is not required here, because it is searched in MemDb one by one, and that search is fast, because that is ordered alphabetically.
+        // This is the order of appearance on the UI.
+        // This should not be static, because it us user specific. BrNAV AssetID is user specific. Other assets might be later: User might later change the UNG ticker to sg. else.
+        const string g_brNavVirtualTicker = "BrNAV";    // const is compile time determined. Faster that 'static readonly string'.
+        List<RtMktSummaryStock> m_mktSummaryStocks = new List<RtMktSummaryStock>() { // this list can be market specific
+            // DC.NAV is the aggregate of DC.IM.NAV + DC.ID.NAV. "BrNAV": It is good if there is a lowercase character in it, to show that it is different.
             //new RtMktSummaryStock() { Ticker = "GA.IM.NAV"},
-            new RtMktSummaryStock() { Ticker = "BrNAV"},    // BrNAV or any other ticker can be user specific. It can be different for every user. Don't even add it to global.
+            new RtMktSummaryStock() { Ticker = g_brNavVirtualTicker},    // BrNAV or any other ticker can be user specific. It can be different for every user. Don't even add it to global.
             new RtMktSummaryStock() { Ticker = "QQQ"},
             new RtMktSummaryStock() { Ticker = "SPY"},
             new RtMktSummaryStock() { Ticker = "GLD"},
@@ -81,7 +82,8 @@ namespace SqCoreWeb
             new RtMktSummaryStock() { Ticker = "VXX"},
             new RtMktSummaryStock() { Ticker = "UNG"},
             new RtMktSummaryStock() { Ticker = "USO"}};
-        static DateTime g_rtMktSummaryPreviousClosePrChecked = DateTime.MinValue; // UTC
+
+        string m_lastLookbackPeriodStr = "YTD";
 
         void Ctor_mktHealth()
         {
@@ -94,27 +96,10 @@ namespace SqCoreWeb
             {
                 string ticker = stock.Ticker;
                 Asset? sec;
-                if (stock.Ticker != "BrNAV")
+                if (stock.Ticker != g_brNavVirtualTicker)
                     sec = MemDb.gMemDb.AssetsCache.GetFirstMatchingAssetByLastTicker(ticker);
-                else
-                {   // Broker NAV
-                    
-                    // Temporarily, force DC BrokerNAV, until the feature is implemented that can select between NAVs.
-
-                    // var user = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == UserEmail);
-                    // var userNavAssets = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.User == user && r.AssetId.AssetTypeID == AssetType.BrokerNAV).ToArray();
-                    // if (userNavAssets.Length == 1)  // if only 1 NAV asset is found for the user, then use that
-                    //     sec = userNavAssets[0];
-                    // else if (userNavAssets.Length >= 2)
-                    // { // if there is more than one NAV, then use the (I) IntBroker (M)Main NAV
-                    //     sec = userNavAssets.FirstOrDefault(r => r.LastTicker.EndsWith(".IM.NAV"));
-                    //     if (sec == null) // if still not found, use the first user NAV
-                    //         sec = userNavAssets[0];
-                    // }
-                    // else    // in case the user has no NAV in MemDb
-                        sec = MemDb.gMemDb.AssetsCache.GetFirstMatchingAssetByLastTicker("DC.NAV");  // by default for all users
-                }
-
+                else // Broker NAV
+                    sec = GetSelectableNavsOrdered()[0];
                 stock.AssetId = sec!.AssetId;
             }
         }
@@ -129,7 +114,7 @@ namespace SqCoreWeb
         {
             Utils.Logger.Info("EvMemDbHistoricalDataReloaded_mktHealth() START");
 
-            IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat("YTD");     // reset lookback to to YTD. Because of BrokerNAV, lookback period stat is user specific.
+            IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat(m_lastLookbackPeriodStr);     // reset lookback to to YTD. Because of BrokerNAV, lookback period stat is user specific.
             if (!String.IsNullOrEmpty(SignalRConnectionId))
                 DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(SignalRConnectionId).SendAsync("RtMktSumNonRtStat", periodStatToClient);
             byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumNonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
@@ -155,17 +140,9 @@ namespace SqCoreWeb
                 // for both the first and the second client, we get RT prices from MemDb immediately and send it back to this Client only.
 
                 // 1. Send the Historical data first. SendAsync() is non-blocking. GetLastRtPrice() can be blocking
-                IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat("YTD");
-                Utils.Logger.Info("OnConnectedWsAsync_MktHealth(): RtMktSumNonRtStat");
-                encodedMsg = Encoding.UTF8.GetBytes("RtMktSumNonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
-                if (WsWebSocket!.State == WebSocketState.Open)
-                    WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
-
+                SendHistoricalWs();
                 // 2. Send RT price later, because GetLastRtPrice() might block the thread, if it is the first client.
-                IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = GetRtStat();
-                encodedMsg = Encoding.UTF8.GetBytes("RtMktSumRtStat:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
-                if (WsWebSocket!.State == WebSocketState.Open)
-                    WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+                SendRealtimeWs();
 
                 lock (m_rtMktSummaryTimerLock)
                 {
@@ -179,16 +156,39 @@ namespace SqCoreWeb
             }).Start();
         }
 
-        public async Task OnReceiveWsAsync_MktHealth(WebSocketReceiveResult? wsResult, string msgCode, string msgObjStr)
+        private void SendHistoricalWs()
+        {
+            IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat(m_lastLookbackPeriodStr);
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumNonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
+            if (WsWebSocket!.State == WebSocketState.Open)
+                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+        }
+
+        private void SendRealtimeWs()
+        {
+            IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = GetRtStat();
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumRtStat:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
+            if (WsWebSocket!.State == WebSocketState.Open)
+                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+        }
+
+        public void OnReceiveWsAsync_MktHealth(WebSocketReceiveResult? wsResult, string msgCode, string msgObjStr)
         {
             switch (msgCode)
             {
                 case "changeLookback":
-                    IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat(msgObjStr);
                     Utils.Logger.Info("OnReceiveWsAsync_MktHealth(): changeLookback");
-                    byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumNonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
-                    if (WsWebSocket!.State == WebSocketState.Open)
-                        await WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+                    m_lastLookbackPeriodStr = msgObjStr;
+                    SendHistoricalWs();
+                    break;
+                case "changeNav":
+                    Utils.Logger.Info($"OnReceiveWsAsync_MktHealth(): changeNav to '{msgObjStr}'");
+                    var navAsset = MemDb.gMemDb.AssetsCache.GetFirstMatchingAssetByLastTicker(msgObjStr);
+                    RtMktSummaryStock navStock = m_mktSummaryStocks.FirstOrDefault(r => r.Ticker == g_brNavVirtualTicker);
+                    navStock.AssetId = navAsset!.AssetId;
+
+                    SendHistoricalWs();
+                    SendRealtimeWs();
                     break;
                 default:
                     // throw new Exception($"Unexpected websocket received msgCode '{msgCode}'");
@@ -207,7 +207,7 @@ namespace SqCoreWeb
                 // for both the first and the second client, we get RT prices from MemDb immediately and send it back to this Client only.
 
                 // 1. Send the Historical data first. SendAsync() is non-blocking. GetLastRtPrice() can be blocking
-                IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat("YTD");
+                IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat(m_lastLookbackPeriodStr);
                 Utils.Logger.Info("Clients.Caller.SendAsync: RtMktSumNonRtStat");
                 // Clients.Caller.SendAsync("RtMktSumNonRtStat", periodStatToClient);      // Cannot access a disposed object.
                 DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(SignalRConnectionId).SendAsync("RtMktSumNonRtStat", periodStatToClient);
@@ -325,7 +325,7 @@ namespace SqCoreWeb
             return lookbackStatToClient;
         }
 
-        private static IEnumerable<RtMktSumRtStat> GetRtStat()
+        private IEnumerable<RtMktSumRtStat> GetRtStat()
         {
             var lastPrices = MemDb.gMemDb.GetLastRtPrice(m_mktSummaryStocks.Select(r => r.AssetId).ToArray());
             return lastPrices.Where(r => float.IsFinite(r.LastPrice)).Select(r =>
@@ -341,19 +341,21 @@ namespace SqCoreWeb
 
         private HandshakeMktHealth GetHandshakeMktHlth()
         {
-            // m_mktSummaryStocks should not be static, because it is user specific. User might later change the UNG ticker to sg. else.
-            // Set that ticker and AssetID to user specific.
+            //string selectableNavs = "GA.IM.NAV, DC.NAV, DC.IM.NAV, DC.IB.NAV";
+            List<Asset> selectableNavs = GetSelectableNavsOrdered();
+            string selectableNavsCSV = String.Join(',', selectableNavs.Select(r => r.LastTicker));
+            return new HandshakeMktHealth() { SelectableNavs = selectableNavsCSV };
+        }
 
+        List<Asset> GetSelectableNavsOrdered()
+        {
             // SelectableNavs is an ordered list of tickers. The first item is user specific. User should be able to select between the NAVs. DB, Main, Aggregate.
             // bool isAdmin = UserEmail == Utils.Configuration["Emails:Gyant"].ToLower();
             // if (isAdmin) // Now, it is not used. Now, every Google email user with an email can see DC NAVs. Another option is that only Admin users (GA,BL,LN) can see the DC user NAVs.
             var user = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == UserEmail);
-            var dcUser = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == Utils.Configuration["Emails:Charm0"].ToLower());
+            List<Asset> selectableNavs = new List<Asset>();
 
             var userNavAssets = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.User == user && r.AssetId.AssetTypeID == AssetType.BrokerNAV).ToArray();
-            var dcUserNavAssets = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.User == dcUser && r.AssetId.AssetTypeID == AssetType.BrokerNAV).ToArray();
-
-            List<Asset> selectableNavs = new List<Asset>();
             Asset aggNavAsset = userNavAssets.FirstOrDefault(r => r.LastTicker == r.User!.Initials + ".NAV");
             if (aggNavAsset != null)
                 selectableNavs.Add(aggNavAsset);
@@ -362,19 +364,21 @@ namespace SqCoreWeb
                 if (nav != aggNavAsset)
                     selectableNavs.Add(nav);
             }
-            Asset aggNavAssetDC = dcUserNavAssets.FirstOrDefault(r => r.LastTicker == r.User!.Initials + ".NAV");
-            if (aggNavAssetDC != null)
-                selectableNavs.Add(aggNavAssetDC);
-            foreach (var nav in dcUserNavAssets)
+
+            var dcUser = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == Utils.Configuration["Emails:Charm0"].ToLower());
+            if (user != dcUser) // if user is dcUser, then don't add NAVs twice
             {
-                if (nav != aggNavAssetDC)
-                    selectableNavs.Add(nav);
+                var dcUserNavAssets = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.User == dcUser && r.AssetId.AssetTypeID == AssetType.BrokerNAV).ToArray();
+                Asset aggNavAssetDC = dcUserNavAssets.FirstOrDefault(r => r.LastTicker == r.User!.Initials + ".NAV");
+                if (aggNavAssetDC != null)
+                    selectableNavs.Add(aggNavAssetDC);
+                foreach (var nav in dcUserNavAssets)
+                {
+                    if (nav != aggNavAssetDC)
+                        selectableNavs.Add(nav);
+                }
             }
-
-
-            //string selectableNavs = "GA.IM.NAV, DC.NAV, DC.IM.NAV, DC.IB.NAV";
-            string selectableNavsCSV = String.Join(',', selectableNavs.Select(r => r.LastTicker));
-            return new HandshakeMktHealth() { SelectableNavs = selectableNavsCSV };
+            return selectableNavs;
         }
 
         public void OnDisconnectedSignalRAsync_MktHealth(Exception exception)
@@ -400,16 +404,16 @@ namespace SqCoreWeb
                 if (!m_rtMktSummaryTimerRunning)
                     return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
 
-                IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = GetRtStat();
-                DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All.SendAsync("RtMktSumRtStat", rtMktSummaryToClient);
-
-                byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumRtStat:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
                 DashboardClient.g_clients.ForEach(client =>
                 {
+                    IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = client.GetRtStat();
+                    byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumRtStat:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
                     if (client.WsWebSocket == null)
                         Utils.Logger.Info("Warning (TODO)!: Mystery how client.WsWebSocket can be null? One answer happened: if for the same connection both the SignalR and WebSocket handlers create 2 items in g_clients. But that is a mistake. 2020-11-03: modified code that it hopefully will not happen again. (If client is disconnected client is removed from DashboardClient.g_clients, but the client.WS pointer should not become null. Investigate!) ");
                     if (client.WsWebSocket != null && (client.WsWebSocket.State == WebSocketState.Open))
                         client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+                
+                    DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(client.SignalRConnectionId).SendAsync("RtMktSumRtStat", rtMktSummaryToClient);
                 });
 
                 lock (m_rtMktSummaryTimerLock)
