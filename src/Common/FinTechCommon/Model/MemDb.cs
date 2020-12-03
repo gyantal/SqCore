@@ -21,6 +21,8 @@ namespace FinTechCommon
         IDatabase m_redisDb;
 
         public User[] Users = new User[0];
+
+        string m_lastUsersStr = String.Empty;
         string m_lastAllAssetsStr = String.Empty;
         string m_lastSqCoreWebAssetsStr = String.Empty;
         public AssetsCache AssetsCache = new AssetsCache();
@@ -84,14 +86,15 @@ namespace FinTechCommon
 
             // User updates only the JSON text version of data (assets, OptionPrices in either Redis or in SqlDb). But we use the Redis's Brotli version for faster DB access.
             Thread.Sleep(TimeSpan.FromSeconds(20));     // can start it in a separate thread, but it is fine to use this background thread
-            UpdateRedisBrotlisService.UpdateAllRedisBrotlisFromSourceAndSetTimer(new UpdateBrotliParam() { RedisDb = m_redisDb});
+            UpdateRedisBrotlisService.SetTimer(new UpdateBrotliParam() { RedisDb = m_redisDb});
+            UpdateNavsService.SetTimer(new UpdateNavsParam() { RedisDb = m_redisDb});
         }
 
         public void ServerDiagnostic(StringBuilder p_sb)
         {
             int memUsedKb = DailyHist.GetDataDirect().MemUsed() / 1024;
             p_sb.Append("<H2>MemDb</H2>");
-            p_sb.Append($"Historical: #Assets: {AssetsCache.Assets.Count}. Used RAM: {memUsedKb:N0}KB<br>");
+            p_sb.Append($"Historical: #SqCoreWebAssets+virtualNavs: {AssetsCache.Assets.Count}. ({String.Join(',', AssetsCache.Assets.Select(r => r.LastTicker))}). Used RAM: {memUsedKb:N0}KB<br>");
             ServerDiagnosticRealtime(p_sb);
         }
 
@@ -105,22 +108,13 @@ namespace FinTechCommon
             Utils.Logger.Info("ReloadAssetsDataIfChangedAndSetTimer() START");
             try
             {
-                // GA.IM.NAV assets have user_id data, so User data has to be reloaded first.
+                // GA.IM.NAV assets have user_id data, so User data has to be reloaded too.
                 string sqUserDataStr = m_redisDb.StringGet("sq_user");
-                var usersInDb = JsonSerializer.Deserialize<List<UserInDb>>(sqUserDataStr);
-                Users = usersInDb.Select(r =>
-                    {
-                        return new User()
-                        {
-                            Id = r.id,
-                            Username = r.username,
-                            Password = r.password,
-                            Title = r.title,
-                            Firstname = r.firstname,
-                            Lastname = r.lastname,
-                            Email = r.email
-                        };
-                    }).ToArray();
+                bool isUsersChangedInDb = m_lastUsersStr != sqUserDataStr;
+                if (isUsersChangedInDb)
+                {
+                    m_lastUsersStr = sqUserDataStr;
+                }
 
                 // start using Redis:'allAssets.brotli' (520bytes instead of 1.52KB) immediately. See UpdateRedisBrotlisService();
                 byte[] allAssetsBin = m_redisDb.HashGet("memDb", "allAssets.brotli");
@@ -130,7 +124,7 @@ namespace FinTechCommon
                 {
                     m_lastAllAssetsStr = allAssetsBinToStr;
                 }
-                
+
                 string sqCoreWebAssetsStr = m_redisDb.HashGet("memDb", "SqCoreWebAssets");
                 bool isSqCoreWebAssetsChanged = m_lastSqCoreWebAssetsStr != sqCoreWebAssetsStr;
                 if (isSqCoreWebAssetsChanged)
@@ -138,9 +132,25 @@ namespace FinTechCommon
                     m_lastSqCoreWebAssetsStr = sqCoreWebAssetsStr;
                 }
 
-                bool isReloadNeeded = isAllAssetsChangedInDb || isSqCoreWebAssetsChanged;
+                bool isReloadNeeded = isUsersChangedInDb || isAllAssetsChangedInDb || isSqCoreWebAssetsChanged;
+
                 if (isReloadNeeded)
                 {
+                    var usersInDb = JsonSerializer.Deserialize<List<UserInDb>>(sqUserDataStr);
+                    Users = usersInDb.Select(r =>
+                        {
+                            return new User()
+                            {
+                                Id = r.id,
+                                Username = r.username,
+                                Password = r.password,
+                                Title = r.title,
+                                Firstname = r.firstname,
+                                Lastname = r.lastname,
+                                Email = r.email
+                            };
+                        }).ToArray();
+
                     var sqCoreWebAssets = JsonSerializer.Deserialize<Dictionary<string, SqCoreWebAssetInDb>>(m_lastSqCoreWebAssetsStr);
                     var allAssets = JsonSerializer.Deserialize<Dictionary<string, AssetInDb[]>>(m_lastAllAssetsStr);
 

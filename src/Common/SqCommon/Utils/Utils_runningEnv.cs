@@ -118,22 +118,5 @@ namespace SqCommon
                     throw new Exception("RunningPlatform() is not recognized");
             }
         }
-
-        // https://stackoverflow.com/questions/22629951/suppressing-warning-cs4014-because-this-call-is-not-awaited-execution-of-the
-        public static void FireParallelAndForgetAndLogErrorTask(this Task task)
-        {
-            // task is called without await, so it doesn't wait; it will run parallel. "await task.ContinueWith()" would wait the task
-            task.ContinueWith(
-                t => { Utils.Logger.Error(t.Exception.ToString()); },
-                TaskContinuationOptions.OnlyOnFaulted);
-        }
-
-        public static void TurnAsyncToSyncTask(this Task task)
-        {   // RunSynchronously may not be called on a task not bound to a delegate, such as the task returned from an asynchronous method.
-            // So for asynch Methods, use Wait(), or use ConfigureAwait() + GetResult() which is Explicit wait too.
-            // https://stackoverflow.com/questions/14485115/synchronously-waiting-for-an-async-operation-and-why-does-wait-freeze-the-pro
-            task.ConfigureAwait(continueOnCapturedContext: false).GetAwaiter().GetResult();
-        }
-
     }
 }

@@ -22,10 +22,24 @@ def testSpeedtest():
         st = speedtest.Speedtest()  # https://www.speedtest.net/ in browser gives 540Mbit/s, because excellent Chrome C++ implementation, but Python implementation is much slower, equivalent to 250Mbit/s
         spTstNum = st.download() / 1024 / 1024  # in bit per second, convert it to Mbit/s by dividing 1024*1024  "225.8859956876999 Mbit/s." format to 2 decimals
         spTstResult = format(spTstNum, '.2f')
-        print('Yes! Speedtest is OK: ' + spTstResult + ' Mbit/s.')
+        print('Speedtest is: ' + spTstResult + ' Mbit/s.')
     except Exception as e:
-        print('No! Speedtest Failed: ' + e)
+        print('Speedtest Failed: ' + e)
     return spTstNum
+
+
+def speedtest_recursion(thresholdMbit, k, logfile):
+    spTstNum = testSpeedtest()
+    if spTstNum <= 0:
+        spTstNumStr = 'FAIL'
+    else:
+        spTstNumStr = format(spTstNum, '.2f')
+    logfile.write(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') + ',Speedtest,' + spTstNumStr + '\n')  # '2013-09-18 11:16:32'
+    if spTstNum >= thresholdMbit or k <= 0:  # when Speedtest >= thresholdMbit Mbit, accept it as OK.
+        return spTstNum
+    else:   # when Speedtest < 90Mbit AND k > 0 => try again
+        time.sleep(120)  # wait for 120? seconds = every 2 minutes
+        return speedtest_recursion(thresholdMbit, k - 1, logfile)
 
 nCycles = 0
 # https://stackoverflow.com/questions/23704615/is-there-anything-wrong-with-a-python-infinite-loop-and-time-sleep
@@ -60,22 +74,13 @@ while True: # daemon function runs forever with sleep(), with a keyboard interru
         # 2. SPEEDTEST
         if nCycles % 10 == 0:   # runs every 10 cycles, which is usually 10 minutes
             print('Testing Speedtest')
-            spTstNum = testSpeedtest()
-            if spTstNum <= 0:
-                spTstResult = 'FAIL'
-            else:
-                spTstResult = format(spTstNum, '.2f')
-            logfile.write(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') + ',Speedtest,' + spTstResult + '\n')  # '2013-09-18 11:16:32'
-            if spTstNum < 100: # To avoid false positives, when there is a Speedtest < 100Mbit, then test it again in 1 minutes. If both failed, then release it as error.
-                time.sleep(60)  # wait for 60? seconds = every 1 minute
-                spTstNum2 = testSpeedtest()
-                if spTstNum2 <= 0:
-                    spTstResult2 = 'FAIL'
+            thresholdMbit = 90
+            spTstNum = speedtest_recursion(thresholdMbit, 3, logfile)
+            if spTstNum < thresholdMbit:
+                if spTstNum <= 0:
+                    spTstNumStr = 'FAIL'
                 else:
-                    spTstResult2 = format(spTstNum2, '.2f')
-                logfile.write(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') + ',Speedtest,' + spTstResult2 + '\n')  # '2013-09-18 11:16:32'
-                if spTstNum2 < 100:
-                    win32api.MessageBox(0, 'Checking second time. Speedtest download speed is only ' + spTstResult2 + ' Mbit/s.' , 'SqCore:NetworkHealthTestDeamon', 0x00001000) # https://stackoverflow.com/questions/177287/alert-boxes-in-python
-
+                    spTstNumStr = format(spTstNum, '.2f')
+                win32api.MessageBox(0, 'Checking second time. Speedtest download speed is only ' + spTstNumStr + ' Mbit/s.' , 'SqCore:NetworkHealthTestDeamon', 0x00001000) # https://stackoverflow.com/questions/177287/alert-boxes-in-python
     nCycles += 1
     time.sleep(60)  # wait for 60? seconds = every 1 minute

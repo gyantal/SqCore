@@ -378,6 +378,7 @@ namespace SqCoreWeb
                         selectableNavs.Add(nav);
                 }
             }
+            // Utils.Logger.Info($"GetSelectableNavsOrdered(): #{selectableNavs.Count}, ({String.Join(',', selectableNavs.Select(r => r.LastTicker))})");
             return selectableNavs;
         }
 

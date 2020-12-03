@@ -1,7 +1,10 @@
 using System;
+using System.IO;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Json;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 
 
 namespace SqCommon
@@ -51,6 +54,57 @@ namespace SqCommon
         public static string CamelCaseSerialize<TValue>(TValue obj)
         {
             return JsonSerializer.Serialize(obj, g_camelJsonSerializeOpt);
+        }
+
+        public static T LoadFromJSON<T>(string p_str)
+        {
+            try
+            {
+                //don't use FileStream directly to serializer
+                //using (FileStream stream = File.OpenRead(filePath))
+                // Encountered unexpected character 'ï', because
+                // "Please note that DataContractJsonSerializer only supports the following encodings: UTF-8"
+                // see http://blogs.msdn.com/b/cie/archive/2014/03/19/encountered-unexpected-character-239-error-serializing-json.aspx
+
+                //string p_str = System.IO.File.ReadAllText(p_filePath);
+                MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(p_str));
+                DataContractJsonSerializerSettings settings = new DataContractJsonSerializerSettings() { DateTimeFormat = new DateTimeFormat("yyyy-MM-dd'T'HH:mm:ssZ") };    // the 'T' is used by Javascript in HealthMonitor website. 'Z' shows that it is UTC (Zero TimeZone).  That is the reason of the format.
+                settings.UseSimpleDictionaryFormat = true;
+                DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(T), settings);
+                T contract = (T)serializer.ReadObject(ms);
+                return contract;
+                //}
+            }
+            catch
+            {
+                Utils.Logger.Info("LoadFromJSON(): Cannot deserialize json " + p_str);      // Not even a warning. It is quite expected that sometimes, Json serialization fails. The caller will handle rethrown exception.
+                throw;
+            }
+        }
+
+        public static string SaveToJSON<T>(T p_obj)
+        {
+            try
+            {
+                DataContractJsonSerializerSettings settings = new DataContractJsonSerializerSettings() { DateTimeFormat = new DateTimeFormat("yyyy-MM-dd'T'HH:mm:ssZ") };
+                settings.UseSimpleDictionaryFormat = true;
+                DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(T), settings);
+
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    serializer.WriteObject(ms, p_obj);
+                    ms.Position = 0;
+                    StreamReader sr = new StreamReader(ms);
+                    return sr.ReadToEnd();
+
+//                    return Encoding.Unicode.GetString(ms.ToArray());  //UTF-16 is used for in-memory strings because it is faster per character to parse and maps directly to unicode character class and other tables. All string functions in Windows use UTF-16 and have for years.
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Utils.Logger.Info(ex, "Cannot serialize object " + p_obj!.ToString());
+                throw;
+            }
         }
     }
 
