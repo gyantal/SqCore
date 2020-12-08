@@ -288,7 +288,7 @@ namespace FinTechCommon
                     List<KeyValuePair<DateOnly, double>[]> navsDeposits = new List<KeyValuePair<DateOnly, double>[]>();
                     foreach (var navAsset in navAssetsOfUser)
                     {
-                        string redisKey = navAsset.AssetId.ToString() + ".brotli"; // // key: "9:1.brotli"
+                        string redisKey = navAsset.AssetId.ToString() + ".brotli"; // key: "9:1.brotli"
                         byte[] dailyNavBrotli = m_redisDb.HashGet("assetQuoteRaw", redisKey);
                         if (dailyNavBrotli == null)
                             continue; // temproraly: only [9:1] is in RedisDb.

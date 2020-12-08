@@ -298,6 +298,39 @@ namespace RedisManager
 
             Console.WriteLine("InsertNavAssetFromCsvFile() Ended. Conclusion: For 11 years of daily Date/float data. Without compression binary (18.4K) is smaller then CSV text (47.5K). But with Brotli binary (13.4K) is 41% bigger then brotli CSV text (9.5K). Because there is not much repeatable pattern in Float data, while a lot of repeatable comma and digits in text data. And Brotli is attacking the limits of theoretical compression possibilites. Conclusion: USE CSV text data with Brotli. Tested: Brotlied CSV is 30% smaller than brotlied binary.");
         }
+
+        public void ExportNavAssetToTxt(string p_redisKeyPrefix, string p_filename)
+        {
+            IDatabase db = DbCommon.RedisManager.GetDb(Program.gConfiguration.GetConnectionString("RedisDefault"), 0);
+
+            string redisKey = p_redisKeyPrefix + ".brotli"; // key: "9:1.brotli"
+            byte[] dailyNavBrotli = db.HashGet("assetQuoteRaw", redisKey);
+            if (dailyNavBrotli == null) {
+                Console.WriteLine($"Error getting redisKey {redisKey}");
+                return;
+            }
+            var dailyNavStr = Utils.BrotliBin2Str(dailyNavBrotli);
+            string fullPath = Directory.GetCurrentDirectory() + "/" + p_filename;
+            System.IO.File.WriteAllText (fullPath, dailyNavStr);
+            Console.WriteLine($"Created file in CWD:'{fullPath}' from Redis/assetQuoteRaw/'{redisKey}'");
+        }
+
+        public void ImportNavAssetFromTxt(string p_redisKeyPrefix, string p_filename)
+        {
+            IDatabase db = DbCommon.RedisManager.GetDb(Program.gConfiguration.GetConnectionString("RedisDefault"), 0);
+
+            string fullPath = Directory.GetCurrentDirectory() + "/" + p_filename;
+            var dailyNavStr = System.IO.File.ReadAllText(fullPath);
+            if (String.IsNullOrEmpty(dailyNavStr)) {
+                Console.WriteLine($"Error reading file {fullPath}. File is empty. It is unexpected. Do not overwrite the DB.");
+                return;
+            }
+
+            var dailyNavBrotli = Utils.Str2BrotliBin(dailyNavStr);
+            string redisKey = p_redisKeyPrefix + ".brotli"; // key: "9:1.brotli"
+            db.HashSet("assetQuoteRaw", redisKey,  RedisValue.CreateFrom(new System.IO.MemoryStream(dailyNavBrotli)));
+            Console.WriteLine($"The assetQuoteRaw/'{redisKey}' was overwritten in RedisDb from the file '{fullPath}'");
+        }
     }
 
 }

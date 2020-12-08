@@ -83,6 +83,10 @@ namespace FinTechCommon
         public static void Update(UpdateNavsParam p_updateParam)
         {
             Utils.Logger.Info($"UpdateNavsService.Update()");
+            DateTime etNow = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
+            if (etNow.IsWeekend())
+                return;
+
             UpdateFromVbServer(p_updateParam, VBrokerServer.AutoVb);
             UpdateFromVbServer(p_updateParam, VBrokerServer.ManualVb);
         }

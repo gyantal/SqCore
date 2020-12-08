@@ -44,40 +44,8 @@ namespace RedisManager
             string userInput = String.Empty;
             do
             {
-
-                userInput = DisplayMenu();
-                switch (userInput)
-                {
-                    case "1":
-                        Console.WriteLine("Hello. I am not crashed yet! :)");
-                        gLogger.Info("Hello. I am not crashed yet! :)");
-                        break;
-                    case "2":
-                        Controller.g_controller.TestPing();
-                        break;
-                    case "3":
-                        Controller.g_controller.TestPostgreSql();
-                        break;
-                    case "4":
-                        Controller.g_controller.TestRedisCache();
-                        break;
-                    case "5":
-                        Controller.g_controller.ConvertTableDataToRedis(new string[] { "sq_user" });
-                        break;
-                    case "6":
-                        Controller.g_controller.ConvertTableDataToRedis(new string[] { "sq_user", "sq_user" });
-                        break;
-                    case "7":
-                        Controller.g_controller.ConvertTableDataToRedis(new string[] { "sq_user", "sq_user", "sq_user" });
-                        break;
-                    case "8":
-                        //Controller.g_controller.InsertNavAssetFromCsvFile("9:1", @"g:\agy\money\Investment\IB\Reports\PortfolioAnalyst\2020-11-18\Gyorgy_Antal_Inception_November_17_2020.csv");
-                        //Controller.g_controller.InsertNavAssetFromCsvFile("9:2", @"g:\work\Archi-data\Projects\IB-PortfolioAnalyst\2020-11-17\Didier_Charmat_and_Jean-Marc_Charmat_Inception_November_17_2020.csv");
-                        //Controller.g_controller.InsertNavAssetFromCsvFile("9:3", @"g:\work\Archi-data\Projects\IB-PortfolioAnalyst\2020-11-17\DE_BLANZAC_LTD_Inception_November_17_2020.csv");
-                        break;
-                }
-
-            } while (userInput != "9" && userInput != "ConsoleIsForcedToShutDown");
+                userInput = DisplayMenuAndExecute();
+            } while (userInput != "UserChosenExit" && userInput != "ConsoleIsForcedToShutDown");
 
             gLogger.Info("****** Main() END");
             Controller.g_controller.Exit();
@@ -87,7 +55,7 @@ namespace RedisManager
         
 
         static bool gHasBeenCalled = false;
-        static public string DisplayMenu()
+        static public string DisplayMenuAndExecute()
         {
             if (gHasBeenCalled)
             {
@@ -103,12 +71,12 @@ namespace RedisManager
             Console.WriteLine("5. Convert [sq_user] table from PostgreSql to Redis data");
             Console.WriteLine("6. Convert [some important] tables from PostgreSql to Redis data (Quick)");
             Console.WriteLine("7. Convert [all] tables from PostgreSql to Redis data (Full)");
-            Console.WriteLine("8. Convert NAV asset CSV file to RedisDb");
+            Console.WriteLine("8. Manage NAV assets...");
             Console.WriteLine("9. Exit gracefully (Avoid Ctrl-^C).");
-            string result = String.Empty;
+            string userInput = String.Empty;
             try
             {
-                result = Console.ReadLine();
+                userInput = Console.ReadLine();
                 Console.WriteLine();    // it is better to insert a new line for separating the log of the tools from the displayed menu.
             }
             catch (System.IO.IOException e) // on Linux, of somebody closes the Terminal Window, Console.Readline() will throw an Exception with Message "Input/output error"
@@ -116,7 +84,98 @@ namespace RedisManager
                 gLogger.Info($"Console.ReadLine() exception. Somebody closes the Terminal Window: {e.Message}");
                 return "ConsoleIsForcedToShutDown";
             }
-            return result;
+
+            switch (userInput)
+            {
+                case "1":
+                    Console.WriteLine("Hello. I am not crashed yet! :)");
+                    gLogger.Info("Hello. I am not crashed yet! :)");
+                    break;
+                case "2":
+                    Controller.g_controller.TestPing();
+                    break;
+                case "3":
+                    Controller.g_controller.TestPostgreSql();
+                    break;
+                case "4":
+                    Controller.g_controller.TestRedisCache();
+                    break;
+                case "5":
+                    Controller.g_controller.ConvertTableDataToRedis(new string[] { "sq_user" });
+                    break;
+                case "6":
+                    Controller.g_controller.ConvertTableDataToRedis(new string[] { "sq_user", "sq_user" });
+                    break;
+                case "7":
+                    Controller.g_controller.ConvertTableDataToRedis(new string[] { "sq_user", "sq_user", "sq_user" });
+                    break;
+                case "8":
+                    string userInputSub = String.Empty;
+                    do
+                    {
+                        userInputSub = DisplaySubMenuAndExecuteManageNavs();
+                    } while (userInputSub != "UserChosenExit" && userInputSub != "ConsoleIsForcedToShutDown");
+                   break;
+                case "9":
+                    return "UserChosenExit";
+            }
+            return String.Empty;
+        }
+
+        static public string DisplaySubMenuAndExecuteManageNavs()
+        {
+            ColorConsole.WriteLine(ConsoleColor.Magenta, "---- Manage NAV assets...Create Redis backup!!!  ----");
+            Console.WriteLine("1. Convert NAV asset CSV file to RedisDb");
+            Console.WriteLine("2. Export Nav Asset To Txt file: 9:1");
+            Console.WriteLine("3. Export Nav Asset To Txt file: 9:2");
+            Console.WriteLine("4. Export Nav Asset To Txt file: 9:3");
+            Console.WriteLine("5. Import Nav Asset From Txt file: 9:1");
+            Console.WriteLine("6. Import Nav Asset From Txt file: 9:2");
+            Console.WriteLine("7. Import Nav Asset From Txt file: 9:3");
+            
+            Console.WriteLine("9. Exit to main menu.");
+            string userInput = String.Empty;
+            try
+            {
+                userInput = Console.ReadLine();
+                Console.WriteLine();    // it is better to insert a new line for separating the log of the tools from the displayed menu.
+            }
+            catch (System.IO.IOException e) // on Linux, of somebody closes the Terminal Window, Console.Readline() will throw an Exception with Message "Input/output error"
+            {
+                gLogger.Info($"Console.ReadLine() exception. Somebody closes the Terminal Window: {e.Message}");
+                return "ConsoleIsForcedToShutDown";
+            }
+
+            switch (userInput)
+            {
+                case "1":
+                    Console.WriteLine("Warning! Commented lines. Doing nothing at the moment. Be very careful! Create a RedisDb backup, before uncommenting lines, because it will overwrite RedisDb and the daily NAV updates will be lost.");
+                    //Controller.g_controller.InsertNavAssetFromCsvFile("9:1", @"g:\agy\money\Investment\IB\Reports\PortfolioAnalyst\2020-11-18\Gyorgy_Antal_Inception_November_17_2020.csv");
+                    //Controller.g_controller.InsertNavAssetFromCsvFile("9:2", @"g:\work\Archi-data\Projects\IB-PortfolioAnalyst\2020-11-17\Didier_Charmat_and_Jean-Marc_Charmat_Inception_November_17_2020.csv");
+                    //Controller.g_controller.InsertNavAssetFromCsvFile("9:3", @"g:\work\Archi-data\Projects\IB-PortfolioAnalyst\2020-11-17\DE_BLANZAC_LTD_Inception_November_17_2020.csv");
+                    break;
+                case "2":
+                    Controller.g_controller.ExportNavAssetToTxt("9:1", @"assetQuoteRaw-unbrotlied-9-1.txt");
+                    break;
+                case "3":
+                    Controller.g_controller.ExportNavAssetToTxt("9:2", @"assetQuoteRaw-unbrotlied-9-2.txt");
+                    break;
+                case "4":
+                    Controller.g_controller.ExportNavAssetToTxt("9:3", @"assetQuoteRaw-unbrotlied-9-3.txt");
+                    break;
+                case "5":
+                    Controller.g_controller.ImportNavAssetFromTxt("9:1", @"assetQuoteRaw-unbrotlied-9-1.txt");
+                    break;
+                case "6":
+                    Controller.g_controller.ImportNavAssetFromTxt("9:2", @"assetQuoteRaw-unbrotlied-9-2.txt");
+                    break;
+                case "7":
+                    Controller.g_controller.ImportNavAssetFromTxt("9:3", @"assetQuoteRaw-unbrotlied-9-3.txt");
+                    break;
+                case "9":
+                    return "UserChosenExit";
+            }
+            return String.Empty;
         }
 
     }
