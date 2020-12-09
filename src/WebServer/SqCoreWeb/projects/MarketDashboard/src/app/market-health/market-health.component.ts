@@ -173,6 +173,11 @@ export class MarketHealthComponent implements OnInit {
       return;
     }
 
+    // purge out uiCol.last, because user can change between NAVs, and it can happen that the Nav column had a real-time last price for one broker, but not after changing the broker. That case last price is not sent for that asset.
+    for (const uiCol of uiColumns) {
+      uiCol.last = NaN;
+    }
+
     // we have to prepare if the server sends another ticker that is not expected. In that rare case, the append it to the end of the array. That will cause UI blink. And Warn about it, so this can be fixed.
     // start with the NonRt, because that gives the AssetID to ticker definitions.
     for (const stockNonRt of lastNonRt) {
@@ -203,7 +208,8 @@ export class MarketHealthComponent implements OnInit {
     for (const stockRt of lastRt) {
       const existingUiCols = uiColumns.filter(col => col.assetId === stockRt.assetId);
       if (existingUiCols.length === 0) {
-        console.warn(`Received assetId '${stockRt.assetId}' is not found in UiArray.`, 'background: #222; color: red');
+        // it can easily happen. User changes the BrNav, but the realtime price of the previously selected BrNav is already in the websocket so it is coming here.
+        console.warn(`Received assetId '${stockRt.assetId}' is not found in UiArray. Happens if user changes BrNav and old one is already in the way`, 'background: #222; color: red');
         break;
       }
       const uiCol = existingUiCols[0];
@@ -235,7 +241,8 @@ export class MarketHealthComponent implements OnInit {
       uiCol.rtReturnSign = Math.sign(uiCol.rtReturn);
       uiCol.rtReturnClass = (uiCol.rtReturn >= 0 ? 'positivePerf' : 'negativePerf');
       uiCol.rtTooltipStr1 = uiCol.ticker;
-      uiCol.rtTooltipStr2 = 'Period end price: ' + nf.format(uiCol.periodEnd) + '\n'  + 'Last price: ' + uiCol.last.toFixed(2).toString() + '\n' + 'Rt return: ' + (uiCol.rtReturn >= 0 ? '+' : '') + (uiCol.rtReturn * 100).toFixed(2).toString() + '%';
+      uiCol.rtTooltipStr2 = 'Period end price: ' + nf.format(uiCol.periodEnd) + '\n'  + 'Last price: ' + nf.format(uiCol.last) + '\n' + 'Rt return: ' + (uiCol.rtReturn >= 0 ? '+' : '') + (uiCol.rtReturn * 100).toFixed(2).toString() + '%';
+      //uiCol.rtTooltipStr2 = 'Period end price: ' + nf.format(uiCol.periodEnd) + '\n'  + 'Last price: ' + uiCol.last.toFixed(2).toString() + '\n' + 'Rt return: ' + (uiCol.rtReturn >= 0 ? '+' : '') + (uiCol.rtReturn * 100).toFixed(2).toString() + '%';
 
       // filling second row in table. Tooltip contains all indicators (return, DD, DU, maxDD, maxDU), so we have to compute them
       // const dataStartDate: Date = new Date(uiCol.periodStart);
@@ -395,8 +402,12 @@ export class MarketHealthComponent implements OnInit {
 
         this.nRtStatArrived++;
         const jsonArrayObjRt = JSON.parse(msgObjStr);
+        // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
+        jsonArrayObjRt.forEach(element => {
+          element.last = this.ChangeNaNstringToNaNnumber(element.last);
+        });
         const msgStrRt = jsonArrayObjRt.map(s => s.assetId + '=>' + s.last.toFixed(2).toString()).join(', ');  // %Chg: Bloomberg, MarketWatch, TradingView doesn't put "+" sign if it is positive, IB, CNBC, YahooFinance does. Go as IB.
-        // console.log('ws: RtMktSumRtStat arrived: ' + msgStrRt);
+        console.log('ws: RtMktSumRtStat arrived: ' + msgStrRt);
         this.lastRtMsgStr = msgStrRt;
         this.lastRtMsg = jsonArrayObjRt;
         MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);

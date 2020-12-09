@@ -47,7 +47,7 @@ namespace SqCommon
             return "RELEASE";
 #elif DEBUG
             return "DEBUG";
-#elif DEBUG
+#else
             return "UNKNOWN RUNTIME-CONFIG";
 #endif
         }

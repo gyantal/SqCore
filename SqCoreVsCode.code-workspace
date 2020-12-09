@@ -33,5 +33,6 @@
 		"timeline.showView": true,
 		"editor.renderWhitespace": "all",
 		"workbench.editor.highlightModifiedTabs": true,
+		"workbench.editor.enablePreview": false,
 	}
 }

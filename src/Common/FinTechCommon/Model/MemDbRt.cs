@@ -10,6 +10,15 @@ using YahooFinanceApi;
 
 namespace FinTechCommon
 {
+    enum RtFreq { HighFreq, MidFreq, LowFreq };
+    class RtFreqParam {
+        public RtFreq RtFreq { get; set; }
+        public int FreqRthSec { get; set; } // RTH: Regular Trading Hours
+        public int FreqOthSec { get; set; } // OTH: Outside Trading Hours
+        public Timer? Timer { get; set; } = null;
+        public Asset[] Assets { get; set; } = new Asset[0];
+        public uint NTimerPassed { get; set; } = 0;
+    }
     // many functions might use RT price, so it should be part of the MemDb
     public partial class MemDb
     {
@@ -59,103 +68,106 @@ namespace FinTechCommon
         // - cut-off time is too late. Until 14:30 asking PreviousDay, it still gives the price 2 days ago. When YF will have premarket data at 9:00. Although "latestPrice" can be used as close.
         // - the only good thing: in market-hours, RT prices are free, and very quick to obtain and batched.
 
+        RtFreqParam m_highFreqParam = new RtFreqParam() { RtFreq = RtFreq.HighFreq, FreqRthSec = 4, FreqOthSec = 60 }; // high frequency (4sec RTH, 1min otherwise-OTH) refresh for a known fixed stocks (used by VBroker) and those which were queried in the last 5 minutes (by a VBroker-test)
+        RtFreqParam m_midFreqParam = new RtFreqParam() { RtFreq = RtFreq.MidFreq, FreqRthSec =  20 * 60, FreqOthSec = 45 * 60 }; // mid frequency (20min RTH, 45min otherwise) refresh for a know fixed stocks (DashboardClient_mktHealth)
+        RtFreqParam m_lowFreqParam = new RtFreqParam() { RtFreq = RtFreq.LowFreq, FreqRthSec = 60 * 60, FreqOthSec = 2 * 60 * 60 }; // with low frequency (1h RTH, 2h otherwise) we query almost all stocks. Even if nobody access them.
 
-        Timer? m_rtTimer;
-        bool m_rtTimerBusyMode = false;    // busy mode is active if there was a GetLastRtPrice() in the last 5 minutes
-        object m_rtTimerLock = new Object();
+        string[] m_highFreqTickrs = new string[] { /* VBroker */ };
+        string[] m_midFreqTickrs = new string[] {"QQQ", "SPY", "GLD", "TLT", "VXX", "UNG", "USO" /* DashboardClient_mktHealth.cs */ };
 
-        // ManualResetEventSlim m_rtMres = new ManualResetEventSlim(false);     // 50ns (vs. 1000ns of ManualResetEvent). 50x faster. Because no reliance of operation system. http://www.albahari.com/threading/part2.aspx
+        Dictionary<Asset, DateTime> m_lastRtPriceQueryTime = new Dictionary<Asset, DateTime>();
 
-        static int m_rtTimerFrequencyRegularMs = 3 * 1000;    // as a demo go with 3sec, later change it to 5sec, do decrease server load.
-        static int m_rtTimerFrequencyPrePostMs = 60 * 1000;     // 60 sec = 1 min
-        static int m_rtTimerFrequencyInNonBusyModeMs = 60 * 60 * 1000;  // 60 min
-
-        uint[] m_busyModeAssetIds = new uint[0];  // a union of assets that were called in the last 5 minutes in GetLastRtPrice() 
-
-        DateTime m_lastDownloadTimeET = DateTime.MinValue;
         uint m_nIexDownload = 0;
         uint m_nYfDownload = 0;
 
         void InitRt_WT()    // WT : WorkThread
         {
             // Main logic:
-            // schedule RtTimer_Elapsed() at Init() and also once per hour (even if nobody asked it) for All assets in MemDb. So we always have more or less fresh data
-            // schedule RtTimer_Elapsed() in 3sec (RTH) or in 60sec (non-RTH) for m_assetIds only if there was a function call in the last 5 minutes (busyMode)
+            // schedule RtTimer_Elapsed() at Init() (after every OnReloadAssetData) and also once per hour (lowFreq) (even if nobody asked it) for All assets in MemDb. So we always have more or less fresh data
             // GetLastRtPrice() always return data without blocking. Data might be 1 hour old, but it is OK. If we are in a Non-busy mode, then switch to busy and schedule it immediately.
-            m_rtTimer = new System.Threading.Timer(new TimerCallback(RtTimer_Elapsed), this, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));    // start immediately
-        }
-
-        void ReloadRealtimeDataAndSetTimer()
-        {
-            // Download the RT price immediately. Besides, set up Timer that it is called either 3 sec or 60 sec or 1h later. Until there is a 5 minute when nobody accessed RT prices.
-            try
-            {
-                Utils.Logger.Info($"RtTimer_Elapsed(). BEGIN. m_rtTimerBusyMode: {m_rtTimerBusyMode}");
-                uint[] assetIds = (m_rtTimerBusyMode) ? m_busyModeAssetIds : AssetsCache.Assets.Select(r => (uint)r.AssetId).ToArray();
-                m_lastDownloadTimeET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
-                var tradingHoursNow = Utils.UsaTradingHours(m_lastDownloadTimeET);
-                if (tradingHoursNow == TradingHours.RegularTrading)
-                {
-                    DownloadLastPriceIex(assetIds);
-                }
-                else
-                {
-                    DownloadLastPriceYF(assetIds, tradingHoursNow);
-                }
-
-                lock (m_rtTimerLock)
-                {
-                    TimeSpan tsSinceLastRtCall = DateTime.UtcNow - m_lastGetLastRtCall;
-                    m_rtTimerBusyMode = tsSinceLastRtCall <= TimeSpan.FromSeconds(5 * 60);  //  if there was a function call in the last 5 minutes 
-                    int frequencyMs = (!m_rtTimerBusyMode) ? m_rtTimerFrequencyInNonBusyModeMs : ((tradingHoursNow == TradingHours.RegularTrading) ? m_rtTimerFrequencyRegularMs : m_rtTimerFrequencyPrePostMs);
-                    m_rtTimer!.Change(TimeSpan.FromMilliseconds(frequencyMs), TimeSpan.FromMilliseconds(-1.0));
-                }
-                Utils.Logger.Info("RtTimer_Elapsed(). END");
-            }
-            catch (Exception e)
-            {
-                Utils.Logger.Error(e, "RtTimer_Elapsed() exception.");
-                throw;
-            }
+            m_highFreqParam.Timer = new System.Threading.Timer(new TimerCallback(RtTimer_Elapsed), m_highFreqParam, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
+            m_midFreqParam.Timer = new System.Threading.Timer(new TimerCallback(RtTimer_Elapsed), m_midFreqParam, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
+            m_lowFreqParam.Timer = new System.Threading.Timer(new TimerCallback(RtTimer_Elapsed), m_lowFreqParam, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
         }
 
         public void ServerDiagnosticRealtime(StringBuilder p_sb)
         {
-            p_sb.Append($"Realtime: m_rtTimerBusyMode: {m_rtTimerBusyMode}, m_nYfDownload: {m_nYfDownload}, m_nIexDownload:{m_nIexDownload} <br>");
+            var recentlyAskedAssets = m_lastRtPriceQueryTime.Where(r => (DateTime.UtcNow - r.Value) <= TimeSpan.FromSeconds(5 * 60));
+            p_sb.Append($"Realtime: actual non-empty m_nYfDownload: {m_nYfDownload}, actual non-empty m_nIexDownload:{m_nIexDownload}, all recentlyAskedAssets:'{String.Join(',', recentlyAskedAssets.Select(r => r.Key.LastTicker + "(" + ((int)((DateTime.UtcNow - r.Value).TotalSeconds)).ToString() + "sec)"))}' <br>");
+            p_sb.Append($"Realtime (HighFreq): NTimerPassed: {m_highFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_highFreqParam.Assets.Select(r => r.LastTicker))}' <br>");
+            p_sb.Append($"Realtime (MidFreq): NTimerPassed: {m_midFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_midFreqParam.Assets.Select(r => r.LastTicker))}' <br>");
+            p_sb.Append($"Realtime (LowFreq): NTimerPassed: {m_lowFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_lowFreqParam.Assets.Select(r => r.LastTicker))}' <br>");
         }
-        public void RtTimer_Elapsed(object state)    // Timer is coming on a ThreadPool thread
+
+        void OnReloadAssetData_ReloadRtDataAndSetTimer()
         {
-            ((MemDb)state).ReloadRealtimeDataAndSetTimer();
+            Utils.Logger.Info("ReloadRtDataAndSetTimer() START");
+            m_lastRtPriceQueryTime = new Dictionary<Asset, DateTime>(); // purge out history after AssetData reload
+            m_highFreqParam.Assets = m_highFreqTickrs.Select(r => AssetsCache.GetFirstMatchingAssetByLastTicker(r)!).ToArray();
+            m_midFreqParam.Assets = m_midFreqTickrs.Select(r => AssetsCache.GetFirstMatchingAssetByLastTicker(r)!).ToArray();
+            m_lowFreqParam.Assets = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock && !m_highFreqTickrs.Contains(r.LastTicker) && !m_midFreqTickrs.Contains(r.LastTicker)).ToArray()!;
+            RtTimer_Elapsed(m_highFreqParam);
+            RtTimer_Elapsed(m_midFreqParam);
+            RtTimer_Elapsed(m_lowFreqParam);
+            Utils.Logger.Info("ReloadRtDataAndSetTimer() END");
+        }
+
+        public void RtTimer_Elapsed(object p_state)    // Timer is coming on a ThreadPool thread
+        {
+            RtFreqParam freqParam = (RtFreqParam)p_state;
+            Utils.Logger.Info($"MemDbRt.RtTimer_Elapsed({freqParam.RtFreq}). BEGIN.");
+            try
+            {
+                UpdateRt(freqParam);
+            }
+            catch (System.Exception e)  // Exceptions in timers crash the app.
+            {
+                Utils.Logger.Error(e, $"MemDbRt.RtTimer_Elapsed({freqParam.RtFreq}) exception.");
+            }
+            SetTimerRt(freqParam);
+            Utils.Logger.Info($"MemDbRt.RtTimer_Elapsed({freqParam.RtFreq}). END");
+        }
+        private void UpdateRt(RtFreqParam p_freqParam)
+        {
+            p_freqParam.NTimerPassed++;
+            Asset[] downloadAssets = p_freqParam.Assets;
+            if (p_freqParam.RtFreq == RtFreq.HighFreq) // if it is highFreq timer, then add the recently asked assets.
+            {
+                var recentlyAskedNonNavAssets = m_lastRtPriceQueryTime.Where(r => r.Key.AssetId.AssetTypeID == AssetType.Stock && ((DateTime.UtcNow - r.Value) <= TimeSpan.FromSeconds(5 * 60))).Select(r => r.Key); //  if there was a function call in the last 5 minutes
+                downloadAssets = p_freqParam.Assets.Concat(recentlyAskedNonNavAssets).ToArray();
+            }
+            if (downloadAssets.Length == 0)
+                return;
+
+            var tradingHoursNow = Utils.UsaTradingHours(Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow));
+            if (tradingHoursNow == TradingHours.RegularTrading)
+                DownloadLastPriceIex(downloadAssets);
+            else
+                DownloadLastPriceYF(downloadAssets, tradingHoursNow);
+        }
+        private void SetTimerRt(RtFreqParam p_freqParam)
+        {
+            // lock (m_rtTimerLock)
+            var tradingHoursNow = Utils.UsaTradingHours(Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow));
+            p_freqParam.Timer!.Change(TimeSpan.FromSeconds((tradingHoursNow == TradingHours.RegularTrading) ? p_freqParam.FreqRthSec : p_freqParam.FreqOthSec), TimeSpan.FromMilliseconds(-1.0));
         }
 
         
-        DateTime m_lastGetLastRtCall = DateTime.MinValue;
         // GetLastRtPrice() always return data without blocking. Data might be 1 hour old or 3sec (RTH) or in 60sec (non-RTH) for m_assetIds only if there was a function call in the last 5 minutes (busyMode), but it is OK.
         public IEnumerable<(AssetId32Bits SecdID, float LastPrice)> GetLastRtPrice(uint[] p_assetIds)     // C# 7.0 adds tuple types and named tuple literals. uint[] is faster to create and more RAM efficient than linked-list<uint>
         {
-            m_lastGetLastRtCall = DateTime.UtcNow;
-            lock (m_rtTimerLock)
-            {
-                if (!m_rtTimerBusyMode)      // if it is not busy, start busy mode immediately
-                {
-                    Utils.Logger.Info("GetLastRtPrice(). Starting m_rtTimerBusyMode.");
-                    m_busyModeAssetIds = p_assetIds;      // at the moment, it overwrites the asset list. Later, it will be better and aggregate
-
-                    m_rtTimerBusyMode = true;
-                    m_rtTimer!.Change(TimeSpan.FromMilliseconds(0), TimeSpan.FromMilliseconds(-1.0));     // runs immediately, but only once. To avoid that it runs parallel, if first one doesn't finish
-                }
-            }
-
-            var lastDowloadTradingHours = Utils.UsaTradingHours(m_lastDownloadTimeET);
-            return p_assetIds.Select(r =>
+            IEnumerable<(AssetId32Bits SecdID, float LastPrice)> rtPrices = p_assetIds.Select(r =>
                 {
                     var sec = AssetsCache.GetAsset(r);
-                    return (sec.AssetId, (lastDowloadTradingHours == TradingHours.RegularTrading) ? sec.LastPriceIex : sec.LastPriceYF);
+                    m_lastRtPriceQueryTime[sec] = DateTime.UtcNow;
+                    float lastPrice = (sec.AssetId.AssetTypeID == AssetType.BrokerNAV) ? GetLastNavRtPrice(sec) : sec.LastPrice;
+                    return (sec.AssetId, lastPrice);
                 });
+            return rtPrices;
         }
 
 
-        void DownloadLastPriceYF(uint[] p_assetIDs, TradingHours p_tradingHoursNow)  // takes ? ms from WinPC
+        void DownloadLastPriceYF(Asset[] p_assets, TradingHours p_tradingHoursNow)  // takes ? ms from WinPC
         {
             Utils.Logger.Info("DownloadLastPriceYF() START");
             m_nYfDownload++;
@@ -164,14 +176,13 @@ namespace FinTechCommon
                 // https://query1.finance.yahoo.com/v7/finance/quote?symbols=AAPL,AMZN  returns all the fields.
                 // https://query1.finance.yahoo.com/v7/finance/quote?symbols=QQQ%2CSPY%2CGLD%2CTLT%2CVXX%2CUNG%2CUSO&fields=symbol%2CregularMarketPreviousClose%2CregularMarketPrice%2CmarketState%2CpostMarketPrice%2CpreMarketPrice  // returns just the specified fields.
                 // "marketState":"PRE" or "marketState":"POST", In PreMarket both "preMarketPrice" and "postMarketPrice" are returned.
-                var symbols = p_assetIDs.Select(r => AssetsCache.GetAsset(r).LastTicker).ToArray();
+                var symbols = p_assets.Select(r => r.LastTicker).ToArray();
                 var quotes = Yahoo.Symbols(symbols).Fields(new Field[] { Field.Symbol, Field.RegularMarketPreviousClose, Field.RegularMarketPrice, Field.MarketState, Field.PostMarketPrice, Field.PreMarketPrice }).QueryAsync().Result;
                 foreach (var quote in quotes)
                 {
                     Asset? sec = null;
-                    foreach (var secdID in p_assetIDs)
+                    foreach (var s in p_assets)
                     {
-                        var s = AssetsCache.GetAsset(secdID);
                         if (s.LastTicker == quote.Key)
                         {
                             sec = s;
@@ -187,7 +198,7 @@ namespace FinTechCommon
                         if (!quote.Value.Fields.TryGetValue(fieldStr, out lastPrice))
                             lastPrice = (float)quote.Value.RegularMarketPrice;  // fallback: the last regular-market Close price both in Post and next Pre-market
 
-                        sec.LastPriceYF = (float)lastPrice;
+                        sec.LastPrice = (float)lastPrice;
                     }
                 }
             }
@@ -197,20 +208,20 @@ namespace FinTechCommon
             }
         }
 
-        void DownloadLastPriceIex(uint[] p_assetIds)  // takes 450-540ms from WinPC
+        void DownloadLastPriceIex(Asset[] p_assets)  // takes 450-540ms from WinPC
         {
             Utils.Logger.Info("DownloadLastPriceIex() START");
             m_nIexDownload++;
             try
             {
-                if (!Request_api_iextrading_com(string.Format("https://api.iextrading.com/1.0/tops?symbols={0}", String.Join(", ", p_assetIds.Select(r => AssetsCache.GetAsset(r).LastTicker))), out HttpWebResponse? response) || (response == null))
+                if (!Request_api_iextrading_com(string.Format("https://api.iextrading.com/1.0/tops?symbols={0}", String.Join(", ", p_assets.Select(r => r.LastTicker))), out HttpWebResponse? response) || (response == null))
                     return;
 
                 using (var reader = new System.IO.StreamReader(response.GetResponseStream(), ASCIIEncoding.ASCII))
                 {
                     string responseText = reader.ReadToEnd();
                     Utils.Logger.Info("DownloadLastPriceIex() str = '{0}'", responseText);
-                    ExtractAttributeIex(responseText, "lastSalePrice", p_assetIds);
+                    ExtractAttributeIex(responseText, "lastSalePrice", p_assets);
                 }
                 response.Close();
 
@@ -221,7 +232,7 @@ namespace FinTechCommon
             }
         }
 
-        private void ExtractAttributeIex(string responseText, string p_attribute, uint[] p_assetIds)
+        private void ExtractAttributeIex(string responseText, string p_attribute, Asset[] p_assets)
         {
             int iStr = 0;   // this is the fastest. With IndexOf(). Not using RegEx, which is slow.
             while (iStr < responseText.Length)
@@ -244,12 +255,11 @@ namespace FinTechCommon
                 string attributeStr = responseText.Substring(bAttribute, eAttribute - bAttribute);
                 // only search ticker among the stocks p_assetIds. Because duplicate tickers are possible in the MemDb.Assets, but not expected in p_assetIds
                 Asset? asset = null;
-                foreach (var secdID in p_assetIds)
+                foreach (var sec in p_assets)
                 {
-                    var s = AssetsCache.GetAsset(secdID);
-                    if (s.LastTicker == ticker)
+                    if (sec.LastTicker == ticker)
                     {
-                        asset = s;
+                        asset = sec;
                         break;
                     }
                 }
@@ -263,7 +273,7 @@ namespace FinTechCommon
                             // sec.PreviousCloseIex = attribute;
                             break;
                         case "lastSalePrice":
-                            asset.LastPriceIex = attribute;
+                            asset.LastPrice = attribute;
                             break;
                     }
 

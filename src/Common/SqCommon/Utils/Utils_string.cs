@@ -53,6 +53,18 @@ namespace SqCommon
                 return p_fmt ?? String.Empty;
             return String.Format(InvCult, p_fmt, p_args);
         }
+
+        public static int Count(this string p_str, char p_char)
+        {
+            // https://stackoverflow.com/questions/541954/how-would-you-count-occurrences-of-a-string-actually-a-char-within-a-string
+            // foreach is faster than for, because of no boundary checking at every iteration.
+            // "Just tested it with a for loop and it was actually slower than using foreach. Could be because of bounds-checking? (Time was 1.65 sec vs 2.05 on 5 mil iterations.)"
+            int count = 0;
+            foreach (char c in p_str)
+                if (c == p_char)
+                    count++;
+            return count;
+        }
     }
 
 }

@@ -75,6 +75,7 @@ namespace FinTechCommon
             m_assetDataReloadTimer = new System.Threading.Timer(new TimerCallback(ReloadAssetDataTimer_Elapsed), this, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
             m_historicalDataReloadTimer = new System.Threading.Timer(new TimerCallback(ReloadHistoricalDataTimer_Elapsed), this, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
             InitRt_WT();
+            InitNavRt_WT();
 
             ReloadAssetsDataIfChangedAndSetTimer();  // Polling for changes every 1 hour. Downloads the AllAssets, SqCoreWeb-used-Assets from Redis Db, and 
             // if necessary it reloads Historical and Realtime data
@@ -96,6 +97,7 @@ namespace FinTechCommon
             p_sb.Append("<H2>MemDb</H2>");
             p_sb.Append($"Historical: #SqCoreWebAssets+virtualNavs: {AssetsCache.Assets.Count}. ({String.Join(',', AssetsCache.Assets.Select(r => r.LastTicker))}). Used RAM: {memUsedKb:N0}KB<br>");
             ServerDiagnosticRealtime(p_sb);
+            ServerDiagnosticNavRealtime(p_sb);
         }
 
         public void ReloadAssetDataTimer_Elapsed(object state)    // Timer is coming on a ThreadPool thread
@@ -183,7 +185,9 @@ namespace FinTechCommon
                     m_lastAssetsDataReload = DateTime.UtcNow;
 
                     ReloadHistoricalDataAndSetTimer();  // downloads historical prices from YF
-                    ReloadRealtimeDataAndSetTimer(); // downloads realtime prices from YF
+                    OnReloadAssetData_ReloadRtDataAndSetTimer();    // downloads realtime prices from YF or IEX
+                    OnReloadAssetData_ReloadRtNavDataAndSetTimer();   // downloads realtime NAVs from VBrokers
+                    RtNavTimer_Elapsed(String.Empty);    // downloads realtime prices for NAVs
 
                     EvAssetDataReloaded?.Invoke();
                 } // isReloadNeeded

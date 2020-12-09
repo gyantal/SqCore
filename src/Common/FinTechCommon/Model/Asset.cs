@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using SqCommon;
 
 namespace FinTechCommon
 {
@@ -25,10 +26,13 @@ namespace FinTechCommon
         public ExchangeId PrimaryExchange { get; set; } = ExchangeId.Unknown; // different assed with the same "VOD" ticker can exist in LSE, NYSE; YF uses "VOD" and "VOD.L"
         public string ExpectedHistorySpan { get; set; } = String.Empty;		// comes from RedisDb
 		public DateTime ExpectedHistoryStartDateET { get; set; } = DateTime.MaxValue;	// process ExpectedHistorySpan after Assets Reload, so we don't have to do it 3x per day at historical price reload
-		public float LastPriceIex { get; set; } = float.NaN;     // real-time last price
-        public float LastPriceYF { get; set; } = float.NaN;     // real-time last price
+		public float LastPrice { get; set; } = float.NaN;     // real-time last price
 
 		public User? User { get; set; } = null;		// *.NAV assets have user_id data
+
+		public bool IsAggregatedNav {
+			get { return AssetId.AssetTypeID == AssetType.BrokerNAV && (LastTicker.Count('.') < 2); }	// GA.IM.NAV, DC.IM.NAV, DC.ID.NAV, DC.NAV , AggregatedNav has only one '.'.
+		}
     }
 
 	public class AssetInDb	// for quick JSON deserialization. In DB the fields has short names, and not all Asset fields are in the DB anyway
