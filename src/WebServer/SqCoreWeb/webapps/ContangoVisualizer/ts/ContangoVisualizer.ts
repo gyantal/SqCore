@@ -97,7 +97,7 @@ function creatingTables(json) {
 
   // Creating the HTML code of current table.
   let currTableMtx =
-    '<table class="currData"><tr align="center"><td>Future Prices</td><td>F1</td><td>F2</td><td>F3</td><td>F4</td><td>F5</td><td>F6</td><td>F7</td><td>F8</td></tr><tr align="center"><td align="left">Current</td>';
+    '<table class="currData"><tr align="center"><td>Futures Prices</td><td>F1</td><td>F2</td><td>F3</td><td>F4</td><td>F5</td><td>F6</td><td>F7</td><td>F8</td></tr><tr align="center"><td align="left">Current</td>';
   for (let i = 0; i < 8; i++) {
     if (currDataArray[i] === 0) {
       currTableMtx += '<td>' + '---' + '</td>';

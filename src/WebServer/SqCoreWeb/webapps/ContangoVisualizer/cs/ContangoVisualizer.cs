@@ -95,15 +95,16 @@ namespace SqCoreWeb.Controllers
             int nextExpLiveMonth = webpageLive.IndexOf("var mx=['", endPosPrev) + "var mx=['".Length;
             int startSpotVix = webpageLive.IndexOf("{id:'VIX_Index',name:'VIX Index',legendIndex:9,lineWidth:2,color:'green',dashStyle:'LongDash',marker:{enabled:false},dataLabels:{enabled:true,align:'left',x:5,y:4,formatter:function(){if(this.point.x==this.series.data.length-1){return Highcharts.numberFormat(this.y,2);}else{return null;}}},data:[", nextExpLiveMonth) + "{id:'VIX_Index',name:'VIX Index',legendIndex:9,lineWidth:2,color:'green',dashStyle:'LongDash',marker:{enabled:false},dataLabels:{enabled:true,align:'left',x:5,y:4,formatter:function(){if(this.point.x==this.series.data.length-1){return Highcharts.numberFormat(this.y,2);}else{return null;}}},data:[".Length;
             int endSpotVix = webpageLive.IndexOf("]},{id:'VXV_Index',name:'VXV Index',legendIndex:10,lineWidth:2", startSpotVix);
-            liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 20);
+            // liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 20);
+            liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 8);
             liveFuturesNextExp = webpageLive.Substring(nextExpLiveMonth, 3);
             liveFuturesData = webpageLive.Substring(startPosLive, endPosLive - startPosLive);
             prevFuturesData = webpageLive.Substring(startPosPrev, endPosPrev - startPosPrev);
             spotVixData = webpageLive.Substring(startSpotVix, endSpotVix - startSpotVix);
 
-            liveFuturesDataDate = liveFuturesDataDT.Substring(0,10);
-            liveFuturesDataTime = liveFuturesDataDT.Substring(12, 8) + " EST";
-
+            // liveFuturesDataDate = liveFuturesDataDT.Substring(0,10);
+            // liveFuturesDataTime = liveFuturesDataDT.Substring(12, 8) + " EST";
+            
             string[] liveFuturesPrices = liveFuturesData.Split(new string[] { ","}, StringSplitOptions.RemoveEmptyEntries);
             int lengthLiveFuturesPrices = liveFuturesPrices.Length;
             string[] prevFuturesPrices = prevFuturesData.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
@@ -114,10 +115,23 @@ namespace SqCoreWeb.Controllers
             int monthsNum = Array.IndexOf(monthsNumList,liveFuturesNextExp)+1;
           
 
-            DateTime liveDateTime;
+            // DateTime liveDateTime;
+            DateTime timeNowETVIX = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
+            int dayOfWeekVIX;
+            dayOfWeekVIX = Convert.ToInt32(timeNowETVIX.DayOfWeek);
+            if (dayOfWeekVIX == 0)
+            {
+                timeNowETVIX = timeNowETVIX.AddDays(-2);
+            }
+            else if (dayOfWeekVIX == 6)
+            {
+                timeNowETVIX = timeNowETVIX.AddDays(-1);
+            }
             string liveDate = System.String.Empty;
-            liveDateTime = DateTime.Parse(liveFuturesDataDate);
-            liveDate = liveDateTime.ToString("yyyy-MM-dd");
+            // liveDateTime = DateTime.Parse(liveFuturesDataDate);
+            liveDate = timeNowETVIX.ToString("yyyy-MM-dd");
+
+            liveFuturesDataTime = liveFuturesDataDT.Substring(0, 8) + " EST";
 
             //Sorting historical data.
             VixCentralRec2[] vixCentralRec = new VixCentralRec2[2];
