@@ -29,7 +29,8 @@
       ]
     },
     "types": [
-      "youtube" // npm install @types/youtube  was needed
+      "youtube", // npm install @types/youtube  was needed
+      "d3"  // manual installation required (or put it into package.json/"devDependencies"): 'npm install @types/d3' gave error in dependency, but 'npm i --save-dev @types/d3' worked.
     ]
   },
   "include": [  // if include or files are given, only that will be transpiled. see https://www.typescriptlang.org/docs/handbook/tsconfig-json.html

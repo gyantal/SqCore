@@ -251,8 +251,8 @@ function creatingTables(json) {
   let minPrice = 100000;
   let maxPrice = 0;
   dataset1.forEach((series) => {
-    const minPriceI = d3.min(series.history, (d) => d.price);
-    const maxPriceI = d3.max(series.history, (d) => d.price);
+    const minPriceI = d3.min(series.history, (d) => d.price) ?? 100000;
+    const maxPriceI = d3.max(series.history, (d) => d.price) ?? 0;
     if (minPriceI < minPrice) {
       minPrice = minPriceI;
     }
@@ -284,8 +284,8 @@ function creatingChart(data, titleCont, minPrice, maxPrice, maxDays) {
     .range([height, 0]);
   const line = d3
     .line()
-    .x((d) => x(d.days))
-    .y((d) => y(d.price));
+    .x((d : any) => x(d.days))
+    .y((d : any) => y(d.price));
   svg.selectAll('*').remove();
   const chart = d3
     .select('svg')
@@ -344,8 +344,8 @@ function creatingChart(data, titleCont, minPrice, maxPrice, maxDays) {
       .append('circle')
       .attr('fill', d.color)
       .attr('stroke', 'none')
-      .attr('cx', (e: { days: number }) => x(e.days))
-      .attr('cy', (e: { price: number }) => y(e.price))
+      .attr('cx', (e: any) => x(e.days))
+      .attr('cy', (e: any) => y(e.price))
       .attr('r', 4);
 
     numSeries = numSeries + 1;
@@ -417,7 +417,7 @@ function creatingChart(data, titleCont, minPrice, maxPrice, maxDays) {
       .data(series)
       .enter()
       .append('div')
-      .style('color', (d) => d.color);
+      .style('color', (d : any) => d.color);
   }
 }
 
