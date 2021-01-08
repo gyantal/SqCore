@@ -25,8 +25,18 @@ namespace FinTechCommon
    		public String ISIN { get; set; } = String.Empty;    // International Securities Identification Number would be a unique identifier. Not used for now.
         public ExchangeId PrimaryExchange { get; set; } = ExchangeId.Unknown; // different assed with the same "VOD" ticker can exist in LSE, NYSE; YF uses "VOD" and "VOD.L"
         public string ExpectedHistorySpan { get; set; } = String.Empty;		// comes from RedisDb
-		public DateTime ExpectedHistoryStartDateET { get; set; } = DateTime.MaxValue;	// process ExpectedHistorySpan after Assets Reload, so we don't have to do it 3x per day at historical price reload
-		public float LastPrice { get; set; } = float.NaN;     // real-time last price
+		public DateTime ExpectedHistoryStartDateET { get; set; } = DateTime.MaxValue;   // process ExpectedHistorySpan after Assets Reload, so we don't have to do it 3x per day at historical price reload
+        private float m_lastValue = float.NaN; // field
+        public float LastValue // real-time last price. Value is better than Price, because NAV, and ^VIX index has value, but it is not a price.
+        {
+            get { return m_lastValue; }
+            set
+            {
+                m_lastValue = value;
+                LastValueUtc = DateTime.UtcNow;
+            }
+        }
+        public DateTime LastValueUtc { get; set; } = DateTime.MinValue;
 
 		public User? User { get; set; } = null;		// *.NAV assets have user_id data
 

@@ -27,8 +27,9 @@ namespace FinTechCommon
         public void ServerDiagnosticNavRealtime(StringBuilder p_sb)
         {
             p_sb.Append($"NavRealtime: m_nNavDownload: {m_nNavDownload} <br>");
-            p_sb.Append($"NavRealtime (HighFreq): NTimerPassed: {m_highNavFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_highNavFreqParam.Assets.Select(r => r.LastTicker))}' <br>");
-            p_sb.Append($"NavRealtime (LowdFreq): NTimerPassed: {m_lowNavFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_lowNavFreqParam.Assets.Select(r => r.LastTicker))}' <br>");
+            IEnumerable<Asset>? recentlyAskedNavAssets = m_lastRtPriceQueryTime.Where(r => r.Key.AssetId.AssetTypeID == AssetType.BrokerNAV && ((DateTime.UtcNow - r.Value) <= TimeSpan.FromSeconds(5 * 60))).Select(r => r.Key); //  if there was a function call in the last 5 minutes
+            p_sb.Append($"NavRealtime (HighFreq-RTH:{(int)(m_highNavFreqParam.FreqRthSec / 60)}min-OTH:{(int)(m_highNavFreqParam.FreqOthSec / 60)}min): NTimerPassed: {m_highNavFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_highNavFreqParam.Assets.Select(r => r.LastTicker))}', recently asket Assets:'{String.Join(',', recentlyAskedNavAssets.Select(r => r.LastTicker))}' <br>");
+            p_sb.Append($"NavRealtime (LowFreq-RTH:{(int)(m_lowNavFreqParam.FreqRthSec / 60)}min-OTH:{(int)(m_lowNavFreqParam.FreqOthSec / 60)}min): NTimerPassed: {m_lowNavFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_lowNavFreqParam.Assets.Select(r => r.LastTicker))}' <br>");
         }
 
         void OnReloadAssetData_ReloadRtNavDataAndSetTimer()
@@ -82,28 +83,38 @@ namespace FinTechCommon
             DownloadLastPriceNav(downloadAssets.ToList());
         }
         
-        float GetLastNavRtPrice(Asset p_navAsset)
+        (float, DateTime) GetLastNavRtPrice(Asset p_navAsset)
         {
-            float lastPrice;
+            float lastValue;
+            DateTime lastValueUtc;  // if there are 2 subNavs, we want the Minimum of the UTCs. To be conservative how old the aggregated Time is.
             if (p_navAsset.IsAggregatedNav)
             {
-                lastPrice = 0;
+                lastValue = 0;
+                lastValueUtc = DateTime.MaxValue;
                 foreach (var asset in AssetsCache.Assets)
                 {
                     if (asset.User == p_navAsset.User && !asset.IsAggregatedNav)
                     {
-                        if (Single.IsNaN(asset.LastPrice))  // if any of the SubNavs is NaN, because VBroker is not running or didn't return data, then return NaN for the aggregate to show it is invalid
+                        if (Single.IsNaN(asset.LastValue))  // if any of the SubNavs is NaN, because VBroker is not running or didn't return data, then return NaN for the aggregate to show it is invalid
                         {
-                            lastPrice = Single.NaN; // signal an error
+                            lastValue = Single.NaN; // signal an error
                             break;
                         }
-                        lastPrice += asset.LastPrice;
+                        lastValue += asset.LastValue;
+                        if (lastValueUtc > asset.LastValueUtc)
+                            lastValueUtc = asset.LastValueUtc;
                     }
                 }
+                if (lastValueUtc == DateTime.MaxValue)  // we failed to find any good value => indicate error as MinValue. To show data is too old.
+                    lastValueUtc = DateTime.MinValue;
             }
             else
-                lastPrice = p_navAsset.LastPrice;
-            return lastPrice;
+            {
+                lastValue = p_navAsset.LastValue;
+                lastValueUtc = p_navAsset.LastValueUtc;
+            }
+            
+            return (lastValue, lastValueUtc);
         }
 
 
@@ -193,7 +204,7 @@ namespace FinTechCommon
 
                 var brAccNav = p_navAssets.Where(r => r.AssetId.SubTableID == subTableId).FirstOrDefault();
                 if (brAccNav != null) {
-                    brAccNav.LastPrice = (int)Math.Round(nav, MidpointRounding.AwayFromZero); // 0.5 is rounded to 1, -0.5 is rounded to -1. Good.
+                    brAccNav.LastValue = (int)Math.Round(nav, MidpointRounding.AwayFromZero); // 0.5 is rounded to 1, -0.5 is rounded to -1. Good.
                 }
             }
         }

@@ -152,16 +152,42 @@ namespace FinTechCommon
             p_freqParam.Timer!.Change(TimeSpan.FromSeconds((tradingHoursNow == TradingHours.RegularTrading) ? p_freqParam.FreqRthSec : p_freqParam.FreqOthSec), TimeSpan.FromMilliseconds(-1.0));
         }
 
-        
-        // GetLastRtPrice() always return data without blocking. Data might be 1 hour old or 3sec (RTH) or in 60sec (non-RTH) for m_assetIds only if there was a function call in the last 5 minutes (busyMode), but it is OK.
-        public IEnumerable<(AssetId32Bits SecdID, float LastPrice)> GetLastRtPrice(uint[] p_assetIds)     // C# 7.0 adds tuple types and named tuple literals. uint[] is faster to create and more RAM efficient than linked-list<uint>
+
+        // GetLastRtValue() always return data without blocking. Data might be 1 hour old or 3sec (RTH) or in 60sec (non-RTH) for m_assetIds only if there was a function call in the last 5 minutes (busyMode), but it is OK.
+        public IEnumerable<(AssetId32Bits SecdID, float LastValue)> GetLastRtValue(uint[] p_assetIds)     // C# 7.0 adds tuple types and named tuple literals. uint[] is faster to create and more RAM efficient than linked-list<uint>
         {
-            IEnumerable<(AssetId32Bits SecdID, float LastPrice)> rtPrices = p_assetIds.Select(r =>
+            IEnumerable<(AssetId32Bits SecdID, float LastValue)> rtPrices = p_assetIds.Select(r =>
                 {
                     var sec = AssetsCache.GetAsset(r);
                     m_lastRtPriceQueryTime[sec] = DateTime.UtcNow;
-                    float lastPrice = (sec.AssetId.AssetTypeID == AssetType.BrokerNAV) ? GetLastNavRtPrice(sec) : sec.LastPrice;
-                    return (sec.AssetId, lastPrice);
+                    DateTime lastDateTime = DateTime.MinValue;
+                    float lastValue;
+                    if (sec.AssetId.AssetTypeID == AssetType.BrokerNAV)
+                        (lastValue, lastDateTime) = GetLastNavRtPrice(sec);
+                    else
+                    {
+                        lastValue = sec.LastValue;
+                    }
+                    return (sec.AssetId, lastValue);
+                });
+            return rtPrices;
+        }
+        public IEnumerable<(AssetId32Bits SecdID, float LastValue, DateTime LastValueUtc)> GetLastRtValueWithUtc(uint[] p_assetIds)     // C# 7.0 adds tuple types and named tuple literals. uint[] is faster to create and more RAM efficient than linked-list<uint>
+        {
+            IEnumerable<(AssetId32Bits SecdID, float LastValue, DateTime LastValueUtc)> rtPrices = p_assetIds.Select(r =>
+                {
+                    var sec = AssetsCache.GetAsset(r);
+                    m_lastRtPriceQueryTime[sec] = DateTime.UtcNow;
+                    DateTime lastDateTime = DateTime.MinValue;
+                    float lastValue;
+                    if (sec.AssetId.AssetTypeID == AssetType.BrokerNAV)
+                        (lastValue, lastDateTime) = GetLastNavRtPrice(sec);
+                    else
+                    {
+                        lastValue = sec.LastValue;
+                        lastDateTime = sec.LastValueUtc;
+                    }
+                    return (sec.AssetId, lastValue, lastDateTime);
                 });
             return rtPrices;
         }
@@ -192,13 +218,13 @@ namespace FinTechCommon
 
                     if (sec != null)
                     {
-                        dynamic lastPrice = float.NaN;
+                        dynamic lastVal = float.NaN;
                         string fieldStr = (p_tradingHoursNow == TradingHours.PreMarket) ? "PreMarketPrice" : "PostMarketPrice";
                         // TLT doesn't have premarket data. https://finance.yahoo.com/quote/TLT  "quoteSourceName":"Delayed Quote", while others: "quoteSourceName":"Nasdaq Real Time Price"
-                        if (!quote.Value.Fields.TryGetValue(fieldStr, out lastPrice))
-                            lastPrice = (float)quote.Value.RegularMarketPrice;  // fallback: the last regular-market Close price both in Post and next Pre-market
+                        if (!quote.Value.Fields.TryGetValue(fieldStr, out lastVal))
+                            lastVal = (float)quote.Value.RegularMarketPrice;  // fallback: the last regular-market Close price both in Post and next Pre-market
 
-                        sec.LastPrice = (float)lastPrice;
+                        sec.LastValue = (float)lastVal;
                     }
                 }
             }
@@ -273,7 +299,7 @@ namespace FinTechCommon
                             // sec.PreviousCloseIex = attribute;
                             break;
                         case "lastSalePrice":
-                            asset.LastPrice = attribute;
+                            asset.LastValue = attribute;
                             break;
                     }
 

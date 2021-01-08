@@ -28,6 +28,7 @@ namespace SqCoreWeb
         public uint AssetId { get; set; } = 0;
         [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
         public double Last { get; set; } = -100.0;     // real-time last price
+        public DateTime LastUtc { get; set; } = DateTime.MinValue;
     }
 
     // When the user changes Period from YTD to 2y. It is a choice, but we will resend him the PeriodEnd data (and all data) again. Although it is not necessary. That way we only have one class, not 2.
@@ -327,13 +328,14 @@ namespace SqCoreWeb
 
         private IEnumerable<RtMktSumRtStat> GetRtStat()
         {
-            var lastPrices = MemDb.gMemDb.GetLastRtPrice(m_mktSummaryStocks.Select(r => r.AssetId).ToArray());
-            return lastPrices.Where(r => float.IsFinite(r.LastPrice)).Select(r =>
+            var lastValues = MemDb.gMemDb.GetLastRtValueWithUtc(m_mktSummaryStocks.Select(r => r.AssetId).ToArray());
+            return lastValues.Where(r => float.IsFinite(r.LastValue)).Select(r =>
             {
                 var rtStock = new RtMktSumRtStat()
                 {
                     AssetId = r.SecdID,
-                    Last = r.LastPrice,
+                    Last = r.LastValue,
+                    LastUtc = r.LastValueUtc
                 };
                 return rtStock;
             });

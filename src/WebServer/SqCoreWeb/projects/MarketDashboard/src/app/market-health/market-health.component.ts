@@ -13,6 +13,7 @@ type Nullable<T> = T | null;
 class RtMktSumRtStat {
   public assetId = NaN;
   public last  = NaN;
+  public lastUtc = '';
 }
 
 class RtMktSumNonRtStat {
@@ -45,6 +46,7 @@ class UiTableColumn {
 
   // Rt stats directly from server
   public last  = NaN; // last means real-time usually. If there is no real-time price, then the last known.
+  public lastUtc = ''; 
 
   // calculated fields as numbers
   public periodReturn = NaN; // for period: from startDate to endDate
@@ -176,6 +178,7 @@ export class MarketHealthComponent implements OnInit {
     // purge out uiCol.last, because user can change between NAVs, and it can happen that the Nav column had a real-time last price for one broker, but not after changing the broker. That case last price is not sent for that asset.
     for (const uiCol of uiColumns) {
       uiCol.last = NaN;
+      uiCol.lastUtc = '';
     }
 
     // we have to prepare if the server sends another ticker that is not expected. In that rare case, the append it to the end of the array. That will cause UI blink. And Warn about it, so this can be fixed.
@@ -214,6 +217,7 @@ export class MarketHealthComponent implements OnInit {
       }
       const uiCol = existingUiCols[0];
       uiCol.last = stockRt.last;
+      uiCol.lastUtc = stockRt.lastUtc;
     }
 
     const indicatorSelected = (document.getElementById('perfIndicator') as HTMLSelectElement).value;
@@ -241,7 +245,7 @@ export class MarketHealthComponent implements OnInit {
       uiCol.rtReturnSign = Math.sign(uiCol.rtReturn);
       uiCol.rtReturnClass = (uiCol.rtReturn >= 0 ? 'positivePerf' : 'negativePerf');
       uiCol.rtTooltipStr1 = uiCol.ticker;
-      uiCol.rtTooltipStr2 = 'Period end price: ' + nf.format(uiCol.periodEnd) + '\n'  + 'Last price: ' + nf.format(uiCol.last) + '\n' + 'Rt return: ' + (uiCol.rtReturn >= 0 ? '+' : '') + (uiCol.rtReturn * 100).toFixed(2).toString() + '%';
+      uiCol.rtTooltipStr2 = 'Period end value: ' + nf.format(uiCol.periodEnd) + '\n'  + 'Last value: ' + nf.format(uiCol.last) + ' (at ' + uiCol.lastUtc + ')\n' + 'Rt return: ' + (uiCol.rtReturn >= 0 ? '+' : '') + (uiCol.rtReturn * 100).toFixed(2).toString() + '%';
       //uiCol.rtTooltipStr2 = 'Period end price: ' + nf.format(uiCol.periodEnd) + '\n'  + 'Last price: ' + uiCol.last.toFixed(2).toString() + '\n' + 'Rt return: ' + (uiCol.rtReturn >= 0 ? '+' : '') + (uiCol.rtReturn * 100).toFixed(2).toString() + '%';
 
       // filling second row in table. Tooltip contains all indicators (return, DD, DU, maxDD, maxDU), so we have to compute them
