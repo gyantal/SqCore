@@ -160,7 +160,7 @@ namespace FinTechCommon
             if (acceptableNavAssets.Count == 0)
                 return;
 
-            string vbServerIp = p_vbServer == VBrokerServer.AutoVb ? ServerIp.AtsVirtualBrokerServerPublicIpForClients : ServerIp.MtsVirtualBrokerServerPublicIpForClients;
+            string vbServerIp = p_vbServer == VBrokerServer.AutoVb ? ServerIp.AtsVirtualBrokerServerPublicIpForClients : ServerIp.MtsVirtualBrokerServerPrivateIpForClients;
             string brAccStr = String.Join(',', bAccStrArr.ToArray());
 
             string msg = $"?v=1&secTok={TcpMessage.GenerateSecurityToken()}&bAcc={brAccStr}&data=AccSum";

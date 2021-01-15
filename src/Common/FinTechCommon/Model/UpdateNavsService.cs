@@ -93,7 +93,7 @@ namespace FinTechCommon
 
         public static void UpdateFromVbServer(UpdateNavsParam p_updateParam, VBrokerServer p_vbServer)
         {
-            string vbServerIp = p_vbServer == VBrokerServer.AutoVb ? ServerIp.AtsVirtualBrokerServerPublicIpForClients : ServerIp.MtsVirtualBrokerServerPublicIpForClients;
+            string vbServerIp = p_vbServer == VBrokerServer.AutoVb ? ServerIp.AtsVirtualBrokerServerPublicIpForClients : ServerIp.MtsVirtualBrokerServerPrivateIpForClients;
 
             string msg = $"?v=1&secTok={TcpMessage.GenerateSecurityToken()}&bAcc={(p_vbServer == VBrokerServer.AutoVb ? "Gyantal" : "Charmat,DeBlanzac")}&data=AccSum";
             Task<string?> vbMessageTask = TcpMessage.Send(msg, TcpMessageID.GetAccountsInfo, vbServerIp, ServerIp.DefaultVirtualBrokerServerPort);

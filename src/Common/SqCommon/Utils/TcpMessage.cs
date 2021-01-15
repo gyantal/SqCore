@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -90,8 +91,10 @@ namespace SqCommon
             bool wasTimeout = false;
             try
             {
-                connectTask = client.ConnectAsync(TcpServerHost, TcpServerPort);      // usually, we create a task with a CancellationToken. However, this task is not cancellable. I cannot cancel it. I have to wait for its finish.
-                
+                // connectTask = client.ConnectAsync(TcpServerHost, TcpServerPort);      // usually, we create a task with a CancellationToken. However, this task is not cancellable. I cannot cancel it. I have to wait for its finish.
+                IPAddress serverIP = IPAddress.Parse(TcpServerHost);    // it can remove the overhead of the DNS resolution every time.
+                connectTask = client.ConnectAsync(serverIP, TcpServerPort);      // usually, we create a task with a CancellationToken. However, this task is not cancellable. I cannot cancel it. I have to wait for its finish.
+
                 // Problem: if the timeout cancellation completes first we return to the caller the empty string. Fine.
                 // And THEN maybe 10 minutes later the connectTask really terminates with an Exception, 
                 // then, we should observe that exception, otherwise TaskScheduler.UnobservedTaskException will be raised

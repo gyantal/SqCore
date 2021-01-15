@@ -88,6 +88,23 @@ namespace SqCommon
             }
         }
 
+        public static string MtsVirtualBrokerServerPrivateIpForClients   //ManualTraderServer
+        {
+            get
+            {
+                if (Utils.RunningPlatform() == Platform.Windows)
+                    return "127.0.0.1"; // "localhost" without costly DNS name resolution
+                else
+                    // From WebServer To Local (MTrader) VBroker: result of TcpClient.Connect(): 
+                    // "127.0.0.1" Connection refused [::ffff:127.0.0.1]:52101
+                    // "172.31.32.68" it works. But annoying that if I stop VM, and server has new Private IP, I have to redeploy everything.
+                    // TODO: maybe this is a firewall issue. Upgrade Linux to newer, and then try to fix this.
+                    // If Upgrading Ubuntu doesn't solve it. Another idea:
+                    // This functions should give back not strings, but IPAddress, that is already resolved. The DNS resolution of "localhost" string to IPAddress is only done once, here.
+                    return "172.31.32.68"; // "localhost" without costly DNS name resolution
+            }
+        }
+
         public const int DefaultVirtualBrokerServerPort = 52101;    // largest port number: 65535, HealthMonitor listens on 52100, VBroker on 52101
 
     }
