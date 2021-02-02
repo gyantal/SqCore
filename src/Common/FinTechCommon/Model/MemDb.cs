@@ -187,8 +187,6 @@ namespace FinTechCommon
                     ReloadHistoricalDataAndSetTimer();  // downloads historical prices from YF
                     OnReloadAssetData_ReloadRtDataAndSetTimer();    // downloads realtime prices from YF or IEX
                     OnReloadAssetData_ReloadRtNavDataAndSetTimer();   // downloads realtime NAVs from VBrokers
-                    RtNavTimer_Elapsed(String.Empty);    // downloads realtime prices for NAVs
-
                     EvAssetDataReloaded?.Invoke();
                 } // isReloadNeeded
             }
@@ -199,7 +197,7 @@ namespace FinTechCommon
 
             DateTime etNow = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
             DateTime targetDateEt = etNow.AddHours(1);  // Polling for change in every 1 hour
-            Utils.Logger.Info($"m_reloadAssetsDataTimer set next targetdate: {targetDateEt.ToSqDateTimeStr()} ET");
+            Utils.Logger.Info($"ReloadAssetsDataIfChangedAndSetTimer() END. m_reloadAssetsDataTimer set next targetdate: {targetDateEt.ToSqDateTimeStr()} ET");
             m_assetDataReloadTimer.Change(targetDateEt - etNow, TimeSpan.FromMilliseconds(-1.0));     // runs only once
         }
 
@@ -238,7 +236,27 @@ namespace FinTechCommon
                         // checked the YF returned data by stream.ReadToEnd(): it is a CSV structure, with columns. The line "Apr 29, 2020	1:8 Stock Split" is Not in the data. 
                         // https://finance.yahoo.com/quote/USO/history?p=USO The YF website queries the splits separately when it inserts in-between the rows.
                         // Therefore, we have to query the splits separately from YF.
-                        var history = Yahoo.GetHistoricalAsync(asset.LastTicker, asset.ExpectedHistoryStartDateET, DateTime.Now, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
+                        const int nMaxTries = 3;
+                        int nTries = 0;
+                        IReadOnlyList<Candle?>? history = null;
+                        do
+                        {
+                            // YahooFinanceApi.Yahoo.GetResponseStreamAsync() can throw "Flurl.Http.FlurlHttpException: Call failed with status code 502 (internal error - server connection terminated)"
+                            try
+                            {
+                                nTries++;
+                                history = Yahoo.GetHistoricalAsync(asset.LastTicker, asset.ExpectedHistoryStartDateET, DateTime.Now, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
+                            }
+                            catch (Exception e)
+                            {
+                                Utils.Logger.Info(e, $"Exception in Yahoo.GetHistoricalAsync(): Stock:'{asset.LastTicker}', {e.Message}");
+                                Thread.Sleep(3000); // sleep for 3 seconds before trying again.
+                            }
+                        } while (history == null && nTries <= nMaxTries);
+
+                        if (history == null)
+                            throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data after {nMaxTries} tries.");
+
                         dates = history.Select(r => new DateOnly(r!.DateTime)).ToArray();
                         // for penny stocks, IB and YF considers them for max. 4 digits. UWT price (both in IB ask-bid, YF history) 2020-03-19: 0.3160, 2020-03-23: 2302
                         // sec.AdjCloseHistory = history.Select(r => (double)Math.Round(r.AdjustedClose, 4)).ToList();

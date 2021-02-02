@@ -81,27 +81,22 @@ namespace SqCommon
             get
             {
                 if (Utils.RunningPlatform() == Platform.Windows)
-                    //return "localhost";       // sometimes for clients running on Windows (in development), we want localHost if Testing new VirtualBroker features
+                    //return "localhost";       // for Debug: sometimes for clients running on Windows (in development), we want localHost VirtualBroker connection
                     return "34.251.1.119";      // sometimes for clients running on Windows (in development), we want the proper VirtualBroker if Testing runnig VBroker locally
                 else
                     return "34.251.1.119";
             }
         }
 
-        public static string MtsVirtualBrokerServerPrivateIpForClients   //ManualTraderServer
+        //public static string MtsVirtualBrokerServerPrivateIpForClients   //ManualTraderServer 
+        public static string StandardLocalhostWithIP   // "127.0.0.1" is better: equals to "localhost" without costly DNS name resolution
         {
+            // Connection from WebServer To Local (ManualTrader);
+            // 127.0.0.1 is better than the private IP of the server, because that changes every time the AWS VM stopped/restarted.
+            // Future speed improvement: This functions should give back not strings, but IPAddress, that is already resolved. The DNS resolution of "localhost" string to IPAddress is only done once, here.
             get
             {
-                if (Utils.RunningPlatform() == Platform.Windows)
-                    return "127.0.0.1"; // "localhost" without costly DNS name resolution
-                else
-                    // From WebServer To Local (MTrader) VBroker: result of TcpClient.Connect(): 
-                    // "127.0.0.1" Connection refused [::ffff:127.0.0.1]:52101
-                    // "172.31.32.68" it works. But annoying that if I stop VM, and server has new Private IP, I have to redeploy everything.
-                    // TODO: maybe this is a firewall issue. Upgrade Linux to newer, and then try to fix this.
-                    // If Upgrading Ubuntu doesn't solve it. Another idea:
-                    // This functions should give back not strings, but IPAddress, that is already resolved. The DNS resolution of "localhost" string to IPAddress is only done once, here.
-                    return "172.31.32.68"; // "localhost" without costly DNS name resolution
+                    return "127.0.0.1"; // At first, 127.0.0.1 didn't work on Linux, only the private IP of the Linux server worked. But that changes at every VM stop.
             }
         }
 
