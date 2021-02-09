@@ -19,8 +19,6 @@
 			"**/src/WebServer/SqCoreWeb/tslint.json": "jsonc",		// treat json files as jsonc (JSON with Comments), so tslint.json can contain line comments
 			"**/src/WebServer/SqCoreWeb/wwwroot/ts/sq-ngx-logger/tslint.json": "jsonc"
 		},
-		"html.mirrorCursorOnMatchingTag": true,
-		"javascript.implicitProjectConfig.experimentalDecorators": true,
 		"html.format.wrapAttributes": "auto",  // Nested HTML elements are always wrapped. wrap 'attributes' only when line length is exceeded
 		"html.format.wrapLineLength": 0,	// disable max chars per line
 		"workbench.editor.limit.enabled": true,
@@ -34,5 +32,7 @@
 		"editor.renderWhitespace": "all",
 		"workbench.editor.highlightModifiedTabs": true,
 		"workbench.editor.enablePreview": false,
+		"js/ts.implicitProjectConfig.experimentalDecorators": true,
+		"editor.linkedEditing": true,
 	}
 }

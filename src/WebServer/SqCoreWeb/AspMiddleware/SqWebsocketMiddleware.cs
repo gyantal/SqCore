@@ -10,42 +10,13 @@ using Microsoft.AspNetCore.Http;
 // There is a WebSocket without SignalR in AspDotNetCore. Great. We can easily implement that.
 // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/websockets?view=aspnetcore-3.1
 
-// With SignalR Production (Linux server) shows it takes 350ms for SignalR connection (start()) to be established, and another 350ms when server sends back data to client
-// That is too slow. This implementation does vanilla WebSockets instead of the SignalR package (that also uses WebSockets, but we cannot control its inside working)
-// However, see in wwwroot\webapps\ExampleWebSocket\index.html , pure WebSocket connection is opened in 22-25ms (server cold start: 47ms, only once), and first data arrives in just 1ms later. 
-// So, the first data of SignalR 2*350ms =700ms can be reduced to 
-// Dublin server (98-125ms)(because Dublin has a 25-30ms ping latency), local Windows (25ms)(localhost has a 1ms ping latency) if we send All the data instantly to Client. 
-// that 100ms probably cannot be decreased lower, because the localhost 25ms is with an 1ms latency, so the 25ms is a pure CPU cost on the client.ask + server.answer + client.send side again. (assuming 10ms each)
-// and if we assume a 30ms latency, let's say twice, then the 30latency+30latency+25ms CPU gives 85ms, that is what we got in the Dublin server environment. This cannot be decreased further.
-// It is worth using pure Websockets, although we have to implement timeout logic
-
 // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/websockets?view=aspnetcore-3.1
 // "For most applications, we recommend SignalR over raw WebSockets. SignalR provides transport fallback for environments where WebSockets is not available. 
 // "It also provides a simple remote procedure call app model. And in most scenarios, SignalR has no significant performance disadvantage compared to using raw WebSockets."
 // So, they admit that there is performance disadvantage, but they say it is not big.
 
 // ***** Lesson: Native WebSocket speed advantage over bloated SignalR.
-// 1.
-// >SignalR implementation https://dashboard.sqcore.net/ on Linux server.
-// SignalR connection ready: 180ms-400ms
-// 2.
-// >Pure WebSocket (not SignalR) implementation mockup: https://sqcore.net/webapps/ExampleWebSocket/index.html on Linux server.
-// cold start: onopen() : 392ms, on FIRSTmessage() : 399ms
-// warm start: onopen() : 136ms, on FIRSTmessage() : 142ms
-// warm start2: onopen(): 113ms, on FIRSTmessage() :  114ms
-// Ms Edge: in onopen() : 101ms, on FIRSTmessage() : 102ms
-// So, if FIRSTmessage() can arrive in 120ms in real Linux server in Dublin, then why the SignalR implementation of dashboard.sqcore.net takes 450-900ms?
-// This example suggested that this speed can be improved.
-// 3.
-// >Native Websocket implementation is a total success. https://dashboard.sqcore.net/ on SqCore.Net Linux server:
-// Benchmarks from SignalR to native Websocket: From London client to Dublin server
-// >>Cold (server start first) page load: connection ready: from 380ms SignalR to 207ms
-// >>Warm page load: connection ready: from 306ms SignalR to 139ms
-// From Bahamas client to Dublin server
-// First user data (email) arrived: 1363ms SignalR to 720ms  (saving -600ms = 0.6sec. Woooow!)
-// First user data (email) arrived: 1755ms SignalR to 780ms  (saving -1000ms = 1sec. Woooow!)
-
-// After WebSocket implementation only a tiny bit faster than SignalR
+// After WebSocket implementation communication is faster than SignalR
 // From localhost client to localhost server:
 //      First user data (email) arrived: 69ms SignalR to 50ms WebSocket  (saving -19ms = 0.02sec.)
 //      First user data (email) arrived: 66ms SignalR to 61ms WebSocket  (saving -5ms = 0.02sec.)
@@ -59,6 +30,7 @@ using Microsoft.AspNetCore.Http;
 // The conclusion is that SignalR does an extra round-trip at handshake, which is unnecessary for us, 
 // and using native WebSocket we can save initial 0.2sec for London clients and 0.8-2.0 sec for Bahamas clients. 
 // So, use WebSockets instead of SignalR if we can, but it is not cardinal if not.
+// 2021-02: removed SignalR code completely, before migrating to .Net 5.0.
 namespace SqCoreWeb
 {
     public class SqWebsocketMiddleware
