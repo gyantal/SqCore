@@ -32,18 +32,6 @@ namespace SqCommon
             }
         }
 
-        public static string HQaVM1PublicIp
-        {
-            get
-            {
-                if (Utils.RunningPlatform() == Platform.Windows)
-                    return "localhost";       // sometimes for clients running on Windows (in development), we want localHost if Testing new HealthMonitor features
-                                              //return "191.237.218.153";      // public IP for the VBrokerDEV server, sometimes for clients running on Windows (in development), we want the proper Healthmonitor if Testing runnig VBroker locally
-                else
-                    return "191.237.218.153";
-            }
-        }
-
         // VBroker server: private IP: 172.31.56.196, public IP (Elastic): 52.203.240.30
         public static string VirtualBrokerServerPrivateIpForListener
         {
@@ -88,15 +76,26 @@ namespace SqCommon
             }
         }
 
-        //public static string MtsVirtualBrokerServerPrivateIpForClients   //ManualTraderServer 
-        public static string StandardLocalhostWithIP   // "127.0.0.1" is better: equals to "localhost" without costly DNS name resolution
+        // Difference between 127.0.0.1 and 0.0.0.0
+        // https://www.howtogeek.com/225487/what-is-the-difference-between-127.0.0.1-and-0.0.0.0
+        // netstat -lntp  // show listener ports
+        // Future speed improvement: This functions should give back not strings, but IPAddress, that is already resolved. The DNS resolution of "localhost" string to IPAddress is only done once, here.
+        public static string LocalhostLoopbackWithIP   // "127.0.0.1" is better: equals to "localhost" without costly DNS name resolution
         {
-            // Connection from WebServer To Local (ManualTrader);
+            // For example: Connection from WebServer To Local (ManualTrader);
             // 127.0.0.1 is better than the private IP of the server, because that changes every time the AWS VM stopped/restarted.
-            // Future speed improvement: This functions should give back not strings, but IPAddress, that is already resolved. The DNS resolution of "localhost" string to IPAddress is only done once, here.
             get
             {
-                    return "127.0.0.1"; // At first, 127.0.0.1 didn't work on Linux, only the private IP of the Linux server worked. But that changes at every VM stop.
+                    return "127.0.0.1"; // loopback address (works even if machine has no network card); in Debug when you test the service and want to achieve it from the local machine
+            }
+        }
+
+        
+        public static string LocalhostMetaAllPrivateIpWithIP // 0.0.0.0 means all IPv4 addresses on the local machine, cannot be used for target, only for listening
+        {
+            get
+            {
+                    return "0.0.0.0"; // use 0.0.0.0 in Production when you want that it is accessible from the Internet (binding to all local private IPs) 
             }
         }
 
