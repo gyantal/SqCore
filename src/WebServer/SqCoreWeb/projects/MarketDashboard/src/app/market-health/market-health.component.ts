@@ -1,5 +1,4 @@
 import { Component, OnInit, Input } from '@angular/core';
-import { HubConnection } from '@microsoft/signalr';
 import { SqNgCommonUtilsTime } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
 import { gDiag, minDate } from './../../sq-globals';
 
@@ -22,7 +21,7 @@ class RtMktSumNonRtStat {
   public periodStartDate = ''; // preferred to be a new Date(), but when it arrives from server it is a string '2010-09-29T00:00:00' which is ET time zone and better to keep that way than converting to local time-zone Date object
   public periodEndDate = '';
   public periodStart = NaN;
-  public periodEnd = NaN;   // If SignalR receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
+  public periodEnd = NaN;   // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
   public periodHigh = NaN;
   public periodLow = NaN;
   public periodMaxDD = NaN;
@@ -153,7 +152,6 @@ class TradingHoursTimer {
 })
 export class MarketHealthComponent implements OnInit {
 
-  @Input() _parentHubConnection?: HubConnection = undefined;    // although SignalR is not used, leave it for Diagnostics purposes. To compare speed to WebSocket. This property will be input from above parent container
   @Input() _parentWsConnection?: WebSocket = undefined;    // this property will be input from above parent container
   nRtStatArrived = 0;
   nNonRtStatArrived = 0;
@@ -350,49 +348,9 @@ export class MarketHealthComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (this._parentHubConnection != null) {
-      this._parentHubConnection.on('RtMktSumRtStat', (message: RtMktSumRtStat[]) => {
-        if (gDiag.srOnFirstRtMktSumRtStatTime === minDate) {
-          gDiag.srOnFirstRtMktSumRtStatTime = new Date();
-          console.log('sq.d: ' + gDiag.srOnFirstRtMktSumRtStatTime.toISOString() + ': srOnFirstRtMktSumRtStatTime()'); // called 17ms after main.ts
-        }
-        gDiag.srOnLastRtMktSumRtStatTime = new Date();
-        gDiag.srNumRtMktSumRtStat++;
+         // tslint:disable-next-line: no-unused-expression
+         new TradingHoursTimer(document.getElementById('tradingHoursTimer'));
 
-        // native Websocket handles this now, not SignalR
-        // this.nRtStatArrived++;
-        // const msgStr = message.map(s => s.assetId + ' ? =>' + s.last.toFixed(2).toString()).join(', ');  // %Chg: Bloomberg, MarketWatch, TradingView doesn't put "+" sign if it is positive, IB, CNBC, YahooFinance does. Go as IB.
-        // console.log('sr: RtMktSumRtStat arrived: ' + msgStr);
-        // this.lastRtStatStr = msgStr;
-        // this.updateMktSumRt(message, this.marketFullStat);
-      });
-
-      this._parentHubConnection.on('RtMktSumNonRtStat', (message: RtMktSumNonRtStat[]) => {
-        if (gDiag.srOnFirstRtMktSumNonRtStatTime === minDate) {
-          gDiag.srOnFirstRtMktSumNonRtStatTime = new Date();
-          console.log('sq.d: ' + gDiag.srOnFirstRtMktSumNonRtStatTime.toISOString() + ': srOnFirstRtMktSumNonRtStatTime()'); // called 17ms after main.ts
-        }
-
-        // native Websocket handles this now, not SignalR
-        // this.nNonRtStatArrived++;
-        // // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
-        // message.forEach(element => {
-        //   if (element.periodEnd.toString() === 'NaN') {
-        //     element.periodEnd = NaN;
-        //   } else {
-        //     element.periodEnd = Number(element.periodEnd);
-        //   }
-        // });
-        // const msgStr = message.map(s => s.assetId + '-' + s.ticker + ':periodEnd-' + s.periodEnd.toFixed(2).toString() + ' : periodStart-' + s.periodStart.toString() + ':open-' + s.periodStart.toFixed(2).toString() + '/high-' + s.periodHigh.toFixed(2).toString() + '/low-' + s.periodLow.toFixed(2).toString() + '/mdd' + s.periodMaxDD.toFixed(2).toString() + '/mdu' + s.periodMaxDU.toFixed(2).toString()).join(', ');
-        // console.log('ws: RtMktSumNonRtStat arrived: ' + msgStr);
-        // this.lastNonRtStatStr = msgStr;
-        // this.updateMktSumNonRt(message, this.marketFullStat);
-      });
-
-     // tslint:disable-next-line: no-unused-expression
-      new TradingHoursTimer(document.getElementById('tradingHoursTimer'));
-
-    }
   } // ngOnInit()
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
@@ -531,24 +489,6 @@ export class MarketHealthComponent implements OnInit {
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
       this._parentWsConnection.send('changeLookback:Date:' + this.lookbackStartETstr + '...' + this.lookbackEndETstr); // we always send the Date format to server, not the strings of 'YTD/10y'
     }
-    // native Websocket handles this now, not SignalR
-    // if (this._parentHubConnection != null) {
-    //   this._parentHubConnection.invoke('changeLookback', lookbackStr)
-    //     .then((message: RtMktSumNonRtStat[]) => {
-    //       // If SignalR receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
-    //       message.forEach(element => {
-    //         if (element.periodEnd.toString() === 'NaN') {
-    //           element.periodEnd = NaN;
-    //         } else {
-    //           element.periodEnd = Number(element.periodEnd);
-    //         }
-    //       });
-    //       this.updateMktSumNonRt(message, this.marketFullStat);
-    //       const msgStr = message.map(s => s.assetId + '-' + s.ticker + ':periodEnd-' + s.periodEnd.toFixed(2).toString() + ' : periodStart-' + s.periodStart.toString() + ':open-' + s.periodStart.toFixed(2).toString() + '/high-' + s.periodHigh.toFixed(2).toString() + '/low-' + s.periodLow.toFixed(2).toString() + '/mdd' + s.periodMaxDD.toFixed(2).toString() + '/mdu' + s.periodMaxDU.toFixed(2).toString()).join(', ');
-    //       console.log('ws: onClickChangeLookback() got back message ' + msgStr);
-    //       this.lastNonRtStatStr = msgStr;
-    //     });
-    // }
   }
 
   public perfIndicatorSelector(): void {
@@ -591,7 +531,12 @@ export class MarketHealthComponent implements OnInit {
     }
   }
 
-  zeroPad = (num, places: number) => String(num).padStart(places, '0');  // https://stackoverflow.com/questions/2998784/how-to-output-numbers-with-leading-zeros-in-javascript
+  // zeroPad = (num, places: number) => String(num).padStart(places, '0');  // https://stackoverflow.com/questions/2998784/how-to-output-numbers-with-leading-zeros-in-javascript
+  // ES5 approach: because 2021-02: it works in CLI, but VsCode shows problems: "Property 'padStart' does not exist on type 'string'. Do you need to change your target library? Try changing the `lib` compiler option to 'es2017' or later."
+  public zeroPad(num, places) {
+    var zero = places - num.toString().length + 1;
+    return Array(+(zero > 0 && zero)).join("0") + num;
+  }
 
   public Date2PaddedIsoStr(date: Date): string {  // 2020-9-1 is not acceptable. Should be converted to 2020-09-01
     return this.zeroPad(date.getUTCFullYear(), 4) + '-' + this.zeroPad(date.getUTCMonth() + 1, 2) + '-' + this.zeroPad(date.getUTCDate(), 2);

@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,18 +35,19 @@ namespace SqCoreWeb
             DashboardClient? client = null;
             lock (DashboardClient.g_clients)    // find client from the same IP, assuming connection in the last 2000ms
             {
-                client = DashboardClient.g_clients.Find(r => r.ClientIP == clientIP && (thisConnectionTime - r.SignalRConnectionTime).TotalMilliseconds < 2000);
-                if (client == null)
-                {
-                    client = new DashboardClient(clientIP, email);
-                    DashboardClient.g_clients.Add(client);  // takes 0.004ms
-                }
-                client.WsConnectionTime = thisConnectionTime; // used by the other (SignalR, WewbSocket) connection to decide whether to create a new g_clients item.
+                // client = DashboardClient.g_clients.Find(r => r.ClientIP == clientIP && (thisConnectionTime - r.WsConnectionTime).TotalMilliseconds < 2000);
+                // if (client == null)
+                // {
+                client = new DashboardClient(clientIP, email);
+                DashboardClient.g_clients.Add(client);  // takes 0.004ms
+                //}
+                client.WsConnectionTime = thisConnectionTime; // used by the other (secondary) connection to decide whether to create a new g_clients item.
                 client.WsWebSocket = webSocket;
                 client.WsHttpContext = context;
             }
 
             client!.OnConnectedWsAsync_MktHealth();
+            client!.OnConnectedWsAsync_QckflNews();
         }
 
         public static void OnReceiveAsync(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? wsResult, string bufferStr)
@@ -63,7 +63,14 @@ namespace SqCoreWeb
                 string msgCode = bufferStr.Substring(0, semicolonInd);
                 string msgObjStr = bufferStr.Substring(semicolonInd + 1);
 
-                client.OnReceiveWsAsync_MktHealth(wsResult, msgCode, msgObjStr);
+                bool isHandled = client.OnReceiveWsAsync_MktHealth(wsResult, msgCode, msgObjStr);
+                if (!isHandled)
+                    isHandled = client.OnReceiveWsAsync_QckflNews(wsResult, msgCode, msgObjStr);
+                if (!isHandled)
+                {
+                    // throw new Exception($"Unexpected websocket received msgCode '{msgCode}'");
+                    Utils.Logger.Error($"Unexpected websocket received msgCode '{msgCode}'");
+                }
             }
         }
     }   // class

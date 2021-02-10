@@ -1,7 +1,5 @@
-using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 using SqCommon;
 using System.Linq;
 using System.Collections.Generic;
@@ -116,12 +114,10 @@ namespace SqCoreWeb
             Utils.Logger.Info("EvMemDbHistoricalDataReloaded_mktHealth() START");
 
             IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat(m_lastLookbackPeriodStr);     // reset lookback to to YTD. Because of BrokerNAV, lookback period stat is user specific.
-            if (!String.IsNullOrEmpty(SignalRConnectionId))
-                DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(SignalRConnectionId).SendAsync("RtMktSumNonRtStat", periodStatToClient);
-            byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumNonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
             Utils.Logger.Info("EvMemDbHistoricalDataReloaded_mktHealth(). Processing client:" + UserEmail);
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumNonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
             if (WsWebSocket == null)
-                Utils.Logger.Info("Warning (TODO)!: Mystery how client.WsWebSocket can be null? One answer happened: if for the same connection both the SignalR and WebSocket handlers create 2 items in g_clients. But that is a mistake. 2020-11-03: modified code that it hopefully will not happen again. (If client is disconnected client is removed from DashboardClient.g_clients, but the client.WS pointer should not become null. Investigate!) ");
+                Utils.Logger.Info("Warning (TODO)!: Mystery how client.WsWebSocket can be null? Investigate!) ");
             if (WsWebSocket!.State == WebSocketState.Open)
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
         }
@@ -173,7 +169,7 @@ namespace SqCoreWeb
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
         }
 
-        public void OnReceiveWsAsync_MktHealth(WebSocketReceiveResult? wsResult, string msgCode, string msgObjStr)
+        public bool OnReceiveWsAsync_MktHealth(WebSocketReceiveResult? wsResult, string msgCode, string msgObjStr)
         {
             switch (msgCode)
             {
@@ -181,7 +177,7 @@ namespace SqCoreWeb
                     Utils.Logger.Info("OnReceiveWsAsync_MktHealth(): changeLookback");
                     m_lastLookbackPeriodStr = msgObjStr;
                     SendHistoricalWs();
-                    break;
+                    return true;
                 case "changeNav":
                     Utils.Logger.Info($"OnReceiveWsAsync_MktHealth(): changeNav to '{msgObjStr}'");
                     var navAsset = MemDb.gMemDb.AssetsCache.GetFirstMatchingAssetByLastTicker(msgObjStr);
@@ -190,43 +186,10 @@ namespace SqCoreWeb
 
                     SendHistoricalWs();
                     SendRealtimeWs();
-                    break;
+                    return true;
                 default:
-                    // throw new Exception($"Unexpected websocket received msgCode '{msgCode}'");
-                    Utils.Logger.Error($"Unexpected websocket received msgCode '{msgCode}'");
-                    break;
+                    return false;
             }
-        }
-
-        // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
-        public void OnConnectedSignalRAsync_MktHealth()
-        {
-            new Thread(() =>
-            {
-                Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
-
-                // for both the first and the second client, we get RT prices from MemDb immediately and send it back to this Client only.
-
-                // 1. Send the Historical data first. SendAsync() is non-blocking. GetLastRtPrice() can be blocking
-                IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat(m_lastLookbackPeriodStr);
-                Utils.Logger.Info("Clients.Caller.SendAsync: RtMktSumNonRtStat");
-                // Clients.Caller.SendAsync("RtMktSumNonRtStat", periodStatToClient);      // Cannot access a disposed object.
-                DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(SignalRConnectionId).SendAsync("RtMktSumNonRtStat", periodStatToClient);
-
-                // 2. Send RT price later, because GetLastRtPrice() might block the thread, if it is the first client.
-                IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = GetRtStat();
-                DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(SignalRConnectionId).SendAsync("RtMktSumRtStat", rtMktSummaryToClient);   // Cannot access a disposed object.
-
-                // lock (m_rtMktSummaryTimerLock)
-                // {
-                //     if (!m_rtMktSummaryTimerRunning)
-                //     {
-                //         Utils.Logger.Info("OnConnectedAsync_MktHealth(). Starting m_rtMktSummaryTimer.");
-                //         m_rtMktSummaryTimerRunning = true;
-                //         m_rtMktSummaryTimer.Change(TimeSpan.FromMilliseconds(m_rtMktSummaryTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
-                //     }
-                // }
-            }).Start();
         }
 
         private IEnumerable<RtMktSumNonRtStat> GetLookbackStat(string p_lookbackStr)
@@ -384,21 +347,6 @@ namespace SqCoreWeb
             return selectableNavs;
         }
 
-        public void OnDisconnectedSignalRAsync_MktHealth(Exception exception)
-        {
-            if (DashboardClient.g_clients.Count == 0)
-            {
-                lock (m_rtMktSummaryTimerLock)
-                {
-                    if (m_rtMktSummaryTimerRunning)
-                    {
-                        m_rtMktSummaryTimer.Change(TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
-                        m_rtMktSummaryTimerRunning = false;
-                    }
-                }
-            }
-        }
-
         public static void RtMktSummaryTimer_Elapsed(object? state)    // Timer is coming on a ThreadPool thread
         {
             try
@@ -412,11 +360,10 @@ namespace SqCoreWeb
                     IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = client.GetRtStat();
                     byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumRtStat:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
                     if (client.WsWebSocket == null)
-                        Utils.Logger.Info("Warning (TODO)!: Mystery how client.WsWebSocket can be null? One answer happened: if for the same connection both the SignalR and WebSocket handlers create 2 items in g_clients. But that is a mistake. 2020-11-03: modified code that it hopefully will not happen again. (If client is disconnected client is removed from DashboardClient.g_clients, but the client.WS pointer should not become null. Investigate!) ");
+                        Utils.Logger.Info("Warning (TODO)!: Mystery how client.WsWebSocket can be null? Investigate!) ");
                     if (client.WsWebSocket != null && (client.WsWebSocket.State == WebSocketState.Open))
                         client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
                 
-                    DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.Client(client.SignalRConnectionId).SendAsync("RtMktSumRtStat", rtMktSummaryToClient);
                 });
 
                 lock (m_rtMktSummaryTimerLock)

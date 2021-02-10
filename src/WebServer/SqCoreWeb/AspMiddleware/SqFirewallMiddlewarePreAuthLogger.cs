@@ -151,7 +151,7 @@ namespace SqCoreWeb
             // There are 140 files (96 non-brotli) in wwwroot in 2020, there will be 1000 files in it in the future. We don't want a whitelist that performs 1000 string-comparisions, but binary search can help
             List<string> whitelistExact = new List<string>(10);
             List<string> whitelistPrefix = new List<string>(10);
-            whitelistPrefix.AddRange(new string[] { "hub/", "ws/", "signin-google" });   // Add SignalR and WebSocket prefixes; and "/signin-google"
+            whitelistPrefix.AddRange(new string[] { "ws/", "signin-google" });   // Add WebSocket prefixes; and "/signin-google"
 
             DirectoryInfo di = new DirectoryInfo(Program.g_webAppGlobals.KestrelEnv!.WebRootPath);
             AddFileToListRecursive(di, "", ref whitelistExact);

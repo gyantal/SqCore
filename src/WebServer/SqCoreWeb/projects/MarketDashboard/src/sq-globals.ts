@@ -79,15 +79,6 @@ export class SqDiagnostics {
   public dOMContentLoadedTime: Date = minDate;
   public windowOnLoadTime: Date = minDate;
 
-  public srConnectionStartTime: Date = minDate;
-  public srConnectionReadyTime: Date = minDate;
-  public srOnConnectedMsgArrivedTime: Date = minDate;
-
-  public srOnFirstRtMktSumNonRtStatTime: Date = minDate;
-  public srOnFirstRtMktSumRtStatTime: Date = minDate;
-  public srOnLastRtMktSumRtStatTime: Date = minDate;
-  public srNumRtMktSumRtStat = 0;
-
   public wsConnectionStartTime: Date = minDate;
   public wsConnectionReadyTime: Date = minDate;
   public wsOnConnectedMsgArrivedTime: Date = minDate;

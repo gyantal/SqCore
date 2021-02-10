@@ -50,8 +50,6 @@ namespace SqCoreWeb
                 options.HttpsPort = 5001;
             });
 
-            services.AddSignalR();  //  enables bi-directional communication between the browser and server. Based on WebSocket.
-
             // https://docs.microsoft.com/en-us/aspnet/core/performance/caching/response?view=aspnetcore-3.0
             services.AddResponseCaching(); // DI: these services could be used in MVC control/Razor pages (either as [Attributes], or in code)
             services.AddMvc(options =>     // AddMvc() equals AddControllersWithViews() + AddRazorPages()
@@ -224,8 +222,6 @@ namespace SqCoreWeb
                 Console.WriteLine("A_G_CId and A_G_CSe from Config has NOT been found. Cannot initialize GoogelAuthentication.");
                 //Utils.Logger.Warn("A_G_CId and A_G_CSe from Config has NOT been found. Cannot initialize GoogelAuthentication.");
             }
-
-            services.AddHostedService<DashboardPushHubKestrelBckgrndSrv>();
 
         }
 
@@ -481,8 +477,7 @@ namespace SqCoreWeb
             app.UseMiddleware<SqWebsocketMiddleware>();
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapHub<ExSvPushHub>("/hub/exsvpush");
-                endpoints.MapHub<DashboardPushHub>("/hub/dashboardpush");
+                // endpoints.MapHub<ExSvPushHub>("/hub/exsvpush");  // Remove this SignalR example in a second step.
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller}/{action=Index}/{id?}");  // controllers should listen on "/api/" so SubdomainRewriteOptionsRule() can differentiate what to leave as from root and what path to extend

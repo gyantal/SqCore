@@ -7,8 +7,10 @@ using System.ServiceModel.Syndication;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using SqCommon;
-using Microsoft.AspNetCore.SignalR;
 using System.Text.Json;
+using System.Text;
+using System.Net.WebSockets;
+using System.Threading;
 
 namespace SqCoreWeb
 {
@@ -96,15 +98,34 @@ namespace SqCoreWeb
         {
             return new List<string> { "All assets" }.Union(m_stockTickers).ToList();
         }
-
-        internal void GetStockNews(IClientProxy? p_clients) // with 13 tickers, it can take 13 * 2 = 26seconds
+        internal void GetStockNews(List<DashboardClient> p_clients) // with 13 tickers, it can take 13 * 2 = 26seconds
         {
             foreach (string ticker in m_stockTickers)
             {
+                byte[]? encodedMsgRss = null, encodedMsgBenzinga = null, encodedMsgTipranks = null;
                 string rssFeedUrl = string.Format(@"https://feeds.finance.yahoo.com/rss/2.0/headline?s={0}&region=US&lang=en-US", ticker);
-                p_clients.SendAsync("quickfNewsStockNewsUpdated", ReadRSS(rssFeedUrl, NewsSource.YahooRSS, ticker));
-                p_clients.SendAsync("quickfNewsStockNewsUpdated", ReadBenzingaNews(ticker));
-                p_clients.SendAsync("quickfNewsStockNewsUpdated", ReadTipranksNews(ticker));
+                var rss = ReadRSS(rssFeedUrl, NewsSource.YahooRSS, ticker);
+                if (rss.Count > 0)
+                    encodedMsgRss = Encoding.UTF8.GetBytes("quickfNewsStockNewsUpdated:" + Utils.CamelCaseSerialize(rss));
+                var benzinga = ReadBenzingaNews(ticker);
+                if (benzinga.Count > 0)
+                    encodedMsgBenzinga = Encoding.UTF8.GetBytes("quickfNewsStockNewsUpdated:" + Utils.CamelCaseSerialize(benzinga));
+                var tipranks = ReadBenzingaNews(ticker);
+                if (tipranks.Count > 0)
+                    encodedMsgTipranks = Encoding.UTF8.GetBytes("quickfNewsStockNewsUpdated:" + Utils.CamelCaseSerialize(tipranks));
+
+                foreach (var client in p_clients)
+                {
+                    if (client.WsWebSocket != null && client.WsWebSocket!.State == WebSocketState.Open)
+                    {
+                        if (encodedMsgRss != null)
+                            client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgRss, 0, encodedMsgRss.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                        if (encodedMsgBenzinga != null)
+                            client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgBenzinga, 0, encodedMsgBenzinga.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                        if (encodedMsgTipranks != null)
+                            client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgTipranks, 0, encodedMsgTipranks.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                    }
+                }
             }
         }
 
@@ -341,7 +362,7 @@ namespace SqCoreWeb
                 // convert feed to XML using LINQ to XML and finally create new XmlReader object
                 var feed = System.ServiceModel.Syndication.SyndicationFeed.Load(XDocument.Parse(rssFeedAsString).CreateReader());
 
-                List<NewsItem> foundNews = new List<NewsItem>();
+                List<NewsItem> foundNewNews = new List<NewsItem>();
 
                 foreach (SyndicationItem item in feed.Items)
                 {
@@ -357,9 +378,9 @@ namespace SqCoreWeb
                     //newsItem.setFiltered();
 
                     if (AddNewsToMemory(p_ticker, newsItem))
-                        foundNews.Add(newsItem);
+                        foundNewNews.Add(newsItem);
                 }
-                return foundNews;
+                return foundNewNews;
             }
             catch (Exception exception)
             {

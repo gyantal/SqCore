@@ -22,7 +22,6 @@ namespace SqCoreWeb
         // Use IPv6 as it is more future proof. IPv4 can be packed into IPv6.
         public static string GetRequestIPv6(HttpContext p_httpContext, bool p_tryUseXForwardHeader = true)
         {
-            // SignalR "wss://" protocol: Connection.RemoteIpAddress is "127.0.0.1"
             // WebSocket "wss://" protocol: Connection.RemoteIpAddress is "::ffff:127.0.0.1"   // ::ffff: is a subnet prefix for IPv4 (32 bit) addresses that are placed inside an IPv6 (128 bit) space.
             // https://stackoverflow.com/questions/57572020/authenticationhandler-context-connection-remoteipaddress-returns-ffff192
 

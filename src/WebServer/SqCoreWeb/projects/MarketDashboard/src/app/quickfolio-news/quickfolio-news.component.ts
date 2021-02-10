@@ -1,5 +1,4 @@
 import { Component, OnInit, Input } from '@angular/core';
-import { HubConnection } from '@microsoft/signalr';
 
 class NewsItem {
   public ticker = '';
@@ -20,10 +19,10 @@ class NewsItem {
   styleUrls: ['./quickfolio-news.component.scss']
 })
 export class QuickfolioNewsComponent implements OnInit {
-  @Input() _parentHubConnection?: HubConnection = undefined; // this property will be input from above parent container
+  @Input() _parentWsConnection?: WebSocket = undefined;    // this property will be input from above parent container
 
   public request: XMLHttpRequest = new XMLHttpRequest();
-  interval: NodeJS.Timeout;
+  interval: number;
   previewText = '';
   previewTextCommon = '';
   selectedTicker = '';
@@ -32,11 +31,11 @@ export class QuickfolioNewsComponent implements OnInit {
   filteredNewsCount = 0;
   filterDuplicateNewsItems = true;
   previewedCommonNews: NewsItem = new NewsItem();
-  previewCommonInterval: NodeJS.Timeout = setInterval(
+  previewCommonInterval: number = setInterval(
     () => {
     }, 10 * 60 * 1000); // every 10 minutes do nothing (just avoid compiler error (uninitialised))
   previewedStockNews: NewsItem = new NewsItem();
-  previewStockInterval: NodeJS.Timeout = setInterval(
+  previewStockInterval: number = setInterval(
     () => {
     }, 10 * 60 * 1000); // every 10 minutes do nothing (just avoid compiler error (uninitialised))
   stockTickers: string[] = [];
@@ -146,9 +145,11 @@ export class QuickfolioNewsComponent implements OnInit {
   }
 
   public reloadClick(event): void {
-    // console.log('reload clicked');
-    if (this._parentHubConnection != null) {
-      this._parentHubConnection.send('ReloadQuickfolio');
+    console.log('reload clicked');
+
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
+      console.log('reload clicked WS');
+      this._parentWsConnection.send('ReloadQuickfolio:');
     }
   }
 
@@ -274,41 +275,40 @@ export class QuickfolioNewsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (this._parentHubConnection != null) {
-      this._parentHubConnection.on(
-        'quickfNewsCommonNewsUpdated',
-        (message: NewsItem[]) => {
-          console.log('Quickfolio News: general news update arrived');
-          this.extractNewsList(message, this.generalNews);
-          this.previewCommonInterval = setInterval(
-            () => {
-              this.SetCommonPreviewIfEmpty();
-            }, 1000); // after 1 sec
-        }
-      );
-      this._parentHubConnection.on(
-        'stockTickerList',
-        (message: string[]) => {
-          console.log('Quickfolio News: stock ticker list update arrived');
-          this.stockTickers = message;
-          console.log('Init menu');
-          this.menuClick(null, 'All assets');
-          this.removeUnreferencedNews();
-        }
-      );
-      this._parentHubConnection.on(
-        'quickfNewsStockNewsUpdated',
-        (message: NewsItem[]) => {
-          // console.log('Quickfolio News: stock news update arrived');
-          this.extractNewsList(message, this.stockNews);
-          this.UpdateNewsVisibility();
-          this.totalnewsCount = this.stockNews.length;
-          this.previewStockInterval = setInterval(
-            () => {
-              this.SetStockPreviewIfEmpty();
-            }, 1000); // after 1 sec
-        }
-      );
+  }
+
+  public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
+    switch (msgCode) {
+      case 'quickfNewsStockNewsUpdated':  // this is the most frequent case. Should come first.
+        console.log('Quickfolio News: WS: quickfNewsStockNewsUpdated arrived');
+        const jsonObj1 = JSON.parse(msgObjStr);
+        this.extractNewsList(jsonObj1, this.stockNews);
+        this.UpdateNewsVisibility();
+        this.totalnewsCount = this.stockNews.length;
+        this.previewStockInterval = setInterval(
+          () => {
+            this.SetStockPreviewIfEmpty();
+          }, 1000); // after 1 sec
+        return true;
+      case 'quickfNewsCommonNewsUpdated':
+        console.log('Quickfolio News: WS: quickfNewsCommonNewsUpdated arrived');
+        const jsonObj2 = JSON.parse(msgObjStr);
+        this.extractNewsList(jsonObj2, this.generalNews);
+        this.previewCommonInterval = setInterval(
+          () => {
+            this.SetCommonPreviewIfEmpty();
+          }, 1000); // after 1 sec
+        return true;
+      case 'QckflNewsStockTickerList':  // this is the least frequent case. Should come last.
+        console.log('Quickfolio News: WS: stock ticker list update arrived');
+        const jsonObj3 = JSON.parse(msgObjStr);
+        this.stockTickers = jsonObj3;
+        console.log('Init menu');
+        this.menuClick(null, 'All assets');
+        this.removeUnreferencedNews();
+        return true;
+      default:
+        return false;
     }
   }
 

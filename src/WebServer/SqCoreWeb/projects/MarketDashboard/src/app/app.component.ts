@@ -1,8 +1,8 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { HubConnection, HubConnectionBuilder, HttpTransportType } from '@microsoft/signalr';
 import { SettingsDialogComponent } from './settings-dialog/settings-dialog.component';
 import { gDiag, minDate } from './../sq-globals';
 import { MarketHealthComponent } from './market-health/market-health.component';
+import { QuickfolioNewsComponent } from './quickfolio-news/quickfolio-news.component';
 
 class HandshakeMessage {
   public email = '';
@@ -17,6 +17,7 @@ class HandshakeMessage {
 export class AppComponent implements OnInit {
   @ViewChild(SettingsDialogComponent) private settingsDialogComponent!: SettingsDialogComponent;
   @ViewChild(MarketHealthComponent) private childMktHealthComponent!: MarketHealthComponent;
+  @ViewChild(QuickfolioNewsComponent) private childQckflNewsComponent!: QuickfolioNewsComponent;
 
   title = 'MarketDashboard';
   version = '0.1.1';
@@ -31,8 +32,6 @@ export class AppComponent implements OnInit {
   theme = '';
   sqDiagnosticsMsg = 'Benchmarking time, connection speed';
 
-  // http://localhost:4202/hub/exsvpush/negotiate?negotiateVersion=1 404 (Not Found), if it is not served on port 4202 on ng serve (proxy)
-  public _hubConnection: HubConnection = new HubConnectionBuilder().withUrl('/hub/dashboardpush', { skipNegotiation: true, transport: HttpTransportType.WebSockets }).build(); // "ws://localhost:4202/hub/dashboardpush" , Angular proxy will redirect that to wss over HTTPS
   public _socket: WebSocket = new WebSocket('wss://' + document.location.hostname + '/ws/dashboard');   // "wss://127.0.0.1/ws/dashboard" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection
 
   constructor() { // Called first time before the ngOnInit()
@@ -71,38 +70,22 @@ export class AppComponent implements OnInit {
           this.user.email = handshakeMsg.email;
           break;
         default:
-          const isHandled = this.childMktHealthComponent.webSocketOnMessage(msgCode, msgObjStr);
+          let isHandled = this.childMktHealthComponent.webSocketOnMessage(msgCode, msgObjStr);
           if (!isHandled) {
-            console.log('ws: Warning! OnConnected Message arrived, but msgCode is not recognized:' + msgCode + 'obj: ' + msgObjStr);
+            isHandled = this.childQckflNewsComponent.webSocketOnMessage(msgCode, msgObjStr);
+
+            if (!isHandled) {
+              console.log('ws: Warning! OnConnected Message arrived, but msgCode is not recognized:' + msgCode + 'obj: ' + msgObjStr);
+            }
           }
           break;
       }
     };
 
-    // SignalR connection
-    gDiag.srConnectionStartTime = new Date();
-    // console.log('sq.d: ' + gDiag.srConnectionStartTime.toISOString() + ': srConnectionStartTime()');
-
-    this._hubConnection
-      .start()
-      .then(() => {
-        gDiag.srConnectionReadyTime = new Date();
-        // console.log('sq.d: ' + gDiag.srConnectionReadyTime.toISOString() + ': srConnectionReadyTime()');
-        console.log('sr: Connection started! _hubConnection.send() can be used now.');
-      })
-      .catch(err => console.log('Error while establishing connection :('));
-
-    this._hubConnection.on('OnConnected', (message: HandshakeMessage) => {
-      gDiag.srOnConnectedMsgArrivedTime = new Date();
-      // console.log('sq.d: ' + gDiag.srOnConnectedMsgArrivedTime.toISOString() + ': srOnConnectedMsgArrivedTime()');
-      console.log('sr: OnConnected Message arrived:' + message.email);
-      // this.user.email = message.email;
-    });
-
     // 'beforeunload' will be fired if the user submits a form, clicks a link, closes the window (or tab), or goes to a new page using the address bar, search box, or a bookmark.
     window.addEventListener('beforeunload', (unloadEvent) => {
       // dispose objects logic.
-      // WebSocket or SignalR Disconnection at page exit is not necessary, as server will timeout it. But it can be useful to release server resources earlier.
+      // WebSocket Disconnection at page exit is not necessary, as server will timeout it. But it can be useful to release server resources earlier.
       console.log('window.beforeunload()');
 
       if (!this._socket || this._socket.readyState !== WebSocket.OPEN) {
@@ -192,14 +175,6 @@ export class AppComponent implements OnInit {
         'App constructor: ' + (gDiag.mainAngComponentConstructorTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
         'DOM loaded: ' + (gDiag.dOMContentLoadedTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
         'Window loaded: ' + (gDiag.windowOnLoadTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
-        '-----\n' +
-        'SignalR connection start in OnInit: ' + (gDiag.srConnectionStartTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
-        'SignalR connection ready: ' + (gDiag.srConnectionReadyTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
-        'SignalR userdata(email) arrived: ' + (gDiag.srOnConnectedMsgArrivedTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
-        'SignalR First NonRtStat: ' + (gDiag.srOnFirstRtMktSumNonRtStatTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
-        'SignalR First RtStat: ' + (gDiag.srOnFirstRtMktSumRtStatTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' + // if wsOnFirstRtMktSumRtStatTime == minTime, it can be negative
-        'SignalR #RtStat: ' + gDiag.srNumRtMktSumRtStat + '\n' +
-        'SignalR Last RtStat: ' + (new Date().getTime() - gDiag.srOnLastRtMktSumRtStatTime.getTime()) + 'ms ago\n' +
         '-----\n' +
         'WebSocket connection start in OnInit: ' + (gDiag.wsConnectionStartTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
         'WebSocket connection ready: ' + (gDiag.wsConnectionReadyTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
