@@ -1,27 +1,45 @@
 import './../css/main.css';
-import { HubConnectionBuilder } from '@microsoft/signalr';
-
-// examples from https://docs.microsoft.com/en-us/aspnet/core/tutorials/signalr-typescript-webpack
 
 const divMessages: HTMLDivElement | null = document.querySelector('#divMessages');
 const tbMessage: HTMLInputElement | null = document.querySelector('#tbMessage');
 const btnSend: HTMLButtonElement | null = document.querySelector('#btnSend');
-const gUsername = new Date().getTime();
 
-const connection = new HubConnectionBuilder().withUrl('/hub/exsvpush').build();
+var scheme = document.location.protocol === "https:" ? "wss" : "ws";
+var port = document.location.port ? (":" + document.location.port) : "";
+var connectionUrl = scheme + "://" + document.location.hostname + port + "/ws/ExSvPush";
 
-connection.on('messageReceived', (username: string, message: string) => {
-    const m = document.createElement('div');
+var baseTime = new Date().getTime();
+let socket = new WebSocket(connectionUrl);
+console.log('after WebSocket() : ' + (new Date().getTime() - baseTime) + 'ms'); // 1ms
+socket.onopen = function (event) {
+    console.log('in onopen() : ' + (new Date().getTime() - baseTime) + 'ms');   // first (at server start):47ms, 22-25ms later.
+};
+socket.onclose = function (event) {
+    console.log('in onclose() : ' + (new Date().getTime() - baseTime) + 'ms. Connection closed. Code: ' + event.code + '. Reason: ' + event.reason);
+};
+socket.onerror = function (event) {
+    console.error("WebSocket error observed:", event);
+};
+socket.onmessage = function (event) {
+    console.log('in onmessage() : ' + (new Date().getTime() - baseTime) + 'ms. Data received from server:' + event.data);   // first (at server start):48ms (just 1ms later when connection opened), 23-26ms later.
 
-    m.innerHTML = `<div class="message-author">${username}</div><div>${message}</div>`;
+    const semicolonInd = event.data.indexOf(':');
+    const msgCode = event.data.slice(0, semicolonInd);
+    const msgObjStr = event.data.substring(semicolonInd + 1);
+    if (msgCode == 'priceQuoteFromServerCode') {
+        if (spanStream != null) {
+            spanStream.innerHTML = `<span>${msgObjStr}</span>`;      // this is not really single quote('), but (`), which allows C# like string interpolation.
+        }
+    } else {
 
-    if (divMessages != null) {
-        divMessages.appendChild(m);
-        divMessages.scrollTop = divMessages.scrollHeight;
+        if (divMessages != null) {
+            const m = document.createElement('div');
+            m.innerHTML = `<div class="message-author">${msgCode}</div><div>${msgObjStr}</div>`;
+            divMessages.appendChild(m);
+            divMessages.scrollTop = divMessages.scrollHeight;
+        }
     }
-});
-
-connection.start().catch(err => document.write(err));
+};
 
 if (tbMessage != null) {
     tbMessage.addEventListener('keyup', (e: KeyboardEvent) => {
@@ -37,8 +55,10 @@ if (btnSend != null) {
 
 function send() {
     if (tbMessage != null) {
-    connection.send('newMessage', gUsername, tbMessage.value)
-              .then(() => tbMessage.value = '');
+        if (socket != null && socket.readyState === WebSocket.OPEN) {
+            console.log('Sending message to server.');
+            socket.send('clientMsgCode0:' + tbMessage.value);
+        }
     }
 }
 
@@ -51,16 +71,11 @@ if (btnStream != null) {
 }
 
 function startStream() {
-    connection.send('startStreaming', 'message body')
-        .then(() => { });
-}
-
-connection.on('priceQuoteFromServer', (message: string) => {
-    console.log('Stream Message arrived:' + message);
-    if (spanStream != null) {
-        spanStream.innerHTML = `<span>${message}</span>`;      // this is not really single quote('), but (`), which allows C# like string interpolation.
+    if (socket != null && socket.readyState === WebSocket.OPEN) {
+        console.log('Sending startStream message to server.');
+        socket.send('startStreamingCode:' + "someParams");
     }
-});
+}
 
 
 

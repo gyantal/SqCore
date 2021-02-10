@@ -143,8 +143,8 @@ namespace SqCoreWeb
 
         }
 
-        static string[] m_whitelistExact = {"index.html"};    // don't store the initial "/" because that is an extra character check 100x times.
-        static string[] m_whitelistPrefix = {"hub/"};
+        static string[] m_whitelistExact = {"index.html"};    // just examples. Will be overriden. Don't store the initial "/" because that is an extra character check 100x times.
+        static string[] m_whitelistPrefix = {"ws/", "signin-google"};   //  just examples. Will be overriden.
 
         void InitializeWhitelist()
         {
@@ -160,7 +160,7 @@ namespace SqCoreWeb
             // we can also get the name of all the methods inside the Controllers, but we don't want to string-compare 200x times for each http request. So, just get the Controller names.
             Assembly asm = Assembly.GetExecutingAssembly();
             var controllersList = asm.GetTypes()
-                .Where(type => typeof(Microsoft.AspNetCore.Mvc.Controller).IsAssignableFrom(type))
+                .Where(type => typeof(Microsoft.AspNetCore.Mvc.ControllerBase).IsAssignableFrom(type))
                 .Select(type => type.Name.Replace("Controller", "")).ToList();  // Controllers sometimes don't use "/" at the end. (like request "/ContangoVisualizerData", /JsLog") Other times they use: "/WebServer/Ping"
             whitelistPrefix.AddRange(controllersList);
 

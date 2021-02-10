@@ -89,8 +89,11 @@ namespace SqCoreWeb
                 case "/dashboard":
                     await DashboardWs.OnConnectedAsync(context, webSocket);
                     break;
-                case "/example-ws1":
+                case "/example-ws1":  // client sets this URL: connectionUrl.value = scheme + "://" + document.location.hostname + port + "/ws/example-ws1" ;
                     await ExampleWs.OnConnectedAsync(context, webSocket);
+                    break;
+                case "/ExSvPush":
+                    await ExSvPushWs.OnConnectedAsync(context, webSocket);
                     break;
                 default:
                     throw new Exception($"Unexpected websocket connection '{p_requestRemainigPath}' in WebSocketLoopKeptAlive()");
@@ -133,6 +136,9 @@ namespace SqCoreWeb
                                 break;
                             case "/example-ws1":
                                 ExampleWs.OnReceiveAsync(context, webSocket, result, bufferStr);
+                                break;
+                            case "/ExSvPush":
+                                ExSvPushWs.OnReceiveAsync(context, webSocket, result, bufferStr);
                                 break;
                             default:
                                 throw new Exception($"Unexpected websocket connection '{p_requestRemainigPath}' in WebSocketLoopKeptAlive()");

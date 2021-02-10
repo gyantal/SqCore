@@ -477,7 +477,6 @@ namespace SqCoreWeb
             app.UseMiddleware<SqWebsocketMiddleware>();
             app.UseEndpoints(endpoints =>
             {
-                // endpoints.MapHub<ExSvPushHub>("/hub/exsvpush");  // Remove this SignalR example in a second step.
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller}/{action=Index}/{id?}");  // controllers should listen on "/api/" so SubdomainRewriteOptionsRule() can differentiate what to leave as from root and what path to extend
