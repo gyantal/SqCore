@@ -50,7 +50,8 @@ namespace SqCoreWeb
 
         public static T? GetHeaderValueAsNullableReference<T>(HttpContext p_httpContext, string p_headerName) where T : class // string is class, not struct 
         {
-            if (p_httpContext?.Request?.Headers?.TryGetValue(p_headerName, out StringValues values) ?? false)
+            StringValues values = String.Empty;
+            if (p_httpContext?.Request?.Headers?.TryGetValue(p_headerName, out values) ?? false)
             {
                 string rawValues = values.ToString();   // writes out as Csv when there are multiple.
 

@@ -23,6 +23,7 @@ namespace YahooFinanceApi
 	                               period, 
 	                               ShowOption.History,
                                    RowExtension.ToCandle,
+                                   RowExtension.PostprocessCandle,
                                    token).ConfigureAwait(false);
 
         public static async Task<IReadOnlyList<DividendTick?>> GetDividendsAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, CancellationToken token = default)
@@ -32,6 +33,7 @@ namespace YahooFinanceApi
                                    Period.Daily, 
                                    ShowOption.Dividend,
                                    RowExtension.ToDividendTick,
+                                   RowExtension.PostprocessDividendTick,
                                    token).ConfigureAwait(false);
 
         public static async Task<IReadOnlyList<SplitTick?>> GetSplitsAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, CancellationToken token = default)
@@ -41,6 +43,7 @@ namespace YahooFinanceApi
                                    Period.Daily,
                                    ShowOption.Split,
                                    RowExtension.ToSplitTick,
+                                   RowExtension.PostprocessSplitTick,
                                    token).ConfigureAwait(false);
 
         private static async Task<List<ITick>> GetTicksAsync<ITick>(
@@ -50,25 +53,53 @@ namespace YahooFinanceApi
             Period period,
             ShowOption showOption,
             Func<string[], ITick> instanceFunction,
+            Func<ITick, ITick> postprocessFunction,
             CancellationToken token
             )
         {
+            var csvConfig = new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                NewLine = "\n",     // instead of the default Environment.NewLine
+                Delimiter = ",",
+                Quote = '\'',
+                MissingFieldFound = null  // ignore CsvHelper.MissingFieldException, because SplitTick 2 computed fields will be missing.
+            };
+
             using (var stream = await GetResponseStreamAsync(symbol, startTime, endTime, period, showOption.Name(), token).ConfigureAwait(false))
 			using (var sr = new StreamReader(stream))
-			using (var csvReader = new CsvReader(sr, CultureInfo.InvariantCulture))
+			using (var csvReader = new CsvReader(sr, csvConfig))
 			{
-                csvReader.Read(); // skip header
+                // string result = sr.ReadToEnd();
+                // https://joshclose.github.io/CsvHelper/getting-started/
 
                 var ticks = new List<ITick>();
-
+                csvReader.Read(); // skip header
+                csvReader.ReadHeader();
                 while (csvReader.Read())
                 {
-                    var tick = instanceFunction(csvReader.Context.Record);
+                    var record = csvReader.GetRecord<ITick>();
+                    var recordPostprocessed = postprocessFunction(record);
+                    // Do something with the record.
 #pragma warning disable RECS0017 // Possible compare of value type with 'null'
-                    if (tick != null)
+                    if (recordPostprocessed != null)
 #pragma warning restore RECS0017 // Possible compare of value type with 'null'
-                        ticks.Add(tick);
+                        ticks.Add(recordPostprocessed);
                 }
+
+
+
+
+                //                 while (csvReader.Read())
+                //                 {
+                //                     //var tick = instanceFunction(csvReader.Context.Record);
+                //                     var record = csvReader.GetRecord<string>();
+                //                     var tick = instanceFunction(new string [0]);
+                //                     //var tick = instanceFunction(Enumerable.ToArray(records));
+                // #pragma warning disable RECS0017 // Possible compare of value type with 'null'
+                //                     if (tick != null)
+                // #pragma warning restore RECS0017 // Possible compare of value type with 'null'
+                //                         ticks.Add(tick);
+                //                 }
 
                 return ticks;
             }

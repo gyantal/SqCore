@@ -160,7 +160,7 @@ namespace FinTechCommon
                     List<Asset> sqAssets = sqCoreWebAssets.Select(r =>
                     {
                         var assetId = new AssetId32Bits(r.Key);
-                        var assetTypeArr = allAssets[((byte)assetId.AssetTypeID).ToString()];
+                        var assetTypeArr = allAssets![((byte)assetId.AssetTypeID).ToString()];
                         // Linq is slow. List<T>.Find() is faster than Linq.FirstOrDefault() https://stackoverflow.com/questions/14032709/performance-of-find-vs-firstordefault
                         var assetFromDb = Array.Find(assetTypeArr, k => k.ID == assetId.SubTableID);
 
@@ -231,7 +231,7 @@ namespace FinTechCommon
                     if (asset.AssetId.AssetTypeID == AssetType.Stock)
                     {
                         // https://github.com/lppkarl/YahooFinanceApi
-                        // YF: all the Open/High/Low/Close are always adjusted for Splits;  In addition: AdjClose also adjusted for Divididends.
+                        // YF: all the Open/High/Low/Close are always already adjusted for Splits (so, we don't have to adjust it manually);  In addition: AdjClose also adjusted for Divididends.
                         // YF gives back both the onlySplit(butNotDividend)-adjusted row.Close, and SplitAndDividendAdjusted row.AdjustedClose (checked with MO dividend and USO split).
                         // checked the YF returned data by stream.ReadToEnd(): it is a CSV structure, with columns. The line "Apr 29, 2020	1:8 Stock Split" is Not in the data. 
                         // https://finance.yahoo.com/quote/USO/history?p=USO The YF website queries the splits separately when it inserts in-between the rows.
@@ -268,7 +268,7 @@ namespace FinTechCommon
                         var splitHistoryYF = Yahoo.GetSplitsAsync(asset.LastTicker, asset.ExpectedHistoryStartDateET, DateTime.Now).Result;
 
                         // var missingYfSplitDb = new SplitTick[1] { new SplitTick() { DateTime = new DateTime(2020, 06, 08), BeforeSplit = 8, AfterSplit = 1 }};
-                        assetsMissingYfSplits.TryGetValue(((byte)asset.AssetId.AssetTypeID).ToString() + ":" + asset.AssetId.SubTableID.ToString(), out var missingYfSplitDb);
+                        assetsMissingYfSplits!.TryGetValue(((byte)asset.AssetId.AssetTypeID).ToString() + ":" + asset.AssetId.SubTableID.ToString(), out var missingYfSplitDb);
 
                         // if any missingYfSplitDb record is not found in splitHistoryYF, we assume YF is wrong (and our DB is right (probably custom made)), so we do this extra split-adjustment assuming it is not in the YF quote history
                         for (int i = 0; missingYfSplitDb != null && i < missingYfSplitDb.Length; i++)

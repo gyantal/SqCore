@@ -200,7 +200,7 @@ namespace SqCoreWeb
         public static HttpStatusCode GetPageData(string p_uri, out string p_pageData)
         {
             HttpStatusCode status = (HttpStatusCode)0;
-            HttpWebResponse resp = new HttpWebResponse();
+            HttpWebResponse resp = null;
 
             // initialize the out param (in case of error)
             p_pageData = "";

@@ -23,7 +23,7 @@ serverPort = 122    # on MTraderServer, port 22 bandwidth throttled, because of 
 serverUser = "sq-vnc-client"
 serverRsaKeyFile = "g:/work/Archi-data/GitHubRepos/HedgeQuant/src/Server/AmazonAWS/AwsMTrader/AwsMTrader,sq-vnc-client.pem"
 zipExeWithPath = "c:/Program Files/7-Zip/7z.exe"
-rootRemoteDir = "/home/sq-vnc-client/SqCore/Tools/RedisManager/src"
+rootRemoteDir = "/home/sq-vnc-client/SQ/Tools/RedisManager/src"
 
 zipFileNameWithoutPath = "deploy.7z"
 zipFileRemoteName = rootRemoteDir + "/" + zipFileNameWithoutPath

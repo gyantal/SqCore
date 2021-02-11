@@ -25,10 +25,10 @@ start_time = time.time()
 # Parameters to change:
 runningEnvironmentComputerName = platform.node()    # 'gyantal-PC' or Balazs
 if runningEnvironmentComputerName == 'gyantal-PC':
-    rootLocalDir = "g:/work/Archi-data/GitHubRepos/SqCore/src/WebServer/SqCoreWeb/bin/Release/netcoreapp3.1/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
+    rootLocalDir = "g:/work/Archi-data/GitHubRepos/SqCore/src/WebServer/SqCoreWeb/bin/Release/net5.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
     serverRsaKeyFile = "g:/work/Archi-data/GitHubRepos/HedgeQuant/src/Server/AmazonAWS/AwsMTrader/AwsMTrader,sq-vnc-client.pem"
 else:   # TODO: Laci, Balazs, you have to add your IF here (based on the 'name' of your PC)
-    rootLocalDir = "d:/GitHub/SqCore/src/WebServer/SqCoreWeb/bin/Release/netcoreapp3.1/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
+    rootLocalDir = "d:/GitHub/SqCore/src/WebServer/SqCoreWeb/bin/Release/net5.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
     serverRsaKeyFile = "d:/SVN/HedgeQuant/src/Server/AmazonAWS/AwsMTrader/AwsMTrader,sq-vnc-client.pem"
 zipExeWithPath = "c:/Program Files/7-Zip/7z.exe"
 
