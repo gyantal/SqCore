@@ -2,9 +2,3 @@
 >Future development:
 
 https://medium.com/@dneimke/add-typescript-to-an-asp-net-core-project-e8f7411e7b58   (** Introducing webpack too)
-https://docs.microsoft.com/en-us/aspnet/core/tutorials/signalr-typescript-webpack  2019-10, official MS  (**webpack) it also shows how to do 'connection to server' in TS. (to get data from Server, in a simple, non-angular way).
-It is in the 'real-time web-apps' document. So, this is the suggested way of getting for example RT prices from server, and update it on the UI.
-"SignalR is a software library for Microsoft ASP.NET that allows server code to send asynchronous notifications to client-side web applications."
-"Listening to a specific message can be done via the on function."
-"Sending a message through the WebSockets connection requires calling the send method."
->This is good for Real-time tools, which communicate with the server. However, sometimes, we need static webpages. Simpler. We should support that too.
