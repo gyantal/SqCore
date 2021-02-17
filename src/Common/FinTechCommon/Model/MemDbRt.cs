@@ -112,8 +112,11 @@ namespace FinTechCommon
             Utils.Logger.Info("ReloadRtDataAndSetTimer() END");
         }
 
-        public void RtTimer_Elapsed(object p_state)    // Timer is coming on a ThreadPool thread
+        public void RtTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
         {
+            if (p_state == null)
+                throw new Exception("RtTimer_Elapsed() received null object.");
+
             RtFreqParam freqParam = (RtFreqParam)p_state;
             Utils.Logger.Info($"MemDbRt.RtTimer_Elapsed({freqParam.RtFreq}). BEGIN.");
             try
@@ -218,7 +221,7 @@ namespace FinTechCommon
 
                     if (sec != null)
                     {
-                        dynamic lastVal = float.NaN;
+                        dynamic? lastVal = float.NaN;
                         string fieldStr = (p_tradingHoursNow == TradingHours.PreMarket) ? "PreMarketPrice" : "PostMarketPrice";
                         // TLT doesn't have premarket data. https://finance.yahoo.com/quote/TLT  "quoteSourceName":"Delayed Quote", while others: "quoteSourceName":"Nasdaq Real Time Price"
                         if (!quote.Value.Fields.TryGetValue(fieldStr, out lastVal))
@@ -343,7 +346,7 @@ namespace FinTechCommon
             {
                 Utils.Logger.Error("Request_api_iextrading_com() WebException");
                 if (e.Status == WebExceptionStatus.ProtocolError)
-                    response = (HttpWebResponse)e.Response;
+                    response = (HttpWebResponse?)e.Response;
                 else
                     return false;
             }

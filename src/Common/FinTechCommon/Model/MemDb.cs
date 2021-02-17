@@ -100,9 +100,11 @@ namespace FinTechCommon
             ServerDiagnosticNavRealtime(p_sb);
         }
 
-        public void ReloadAssetDataTimer_Elapsed(object state)    // Timer is coming on a ThreadPool thread
+        public void ReloadAssetDataTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
         {
-            ((MemDb)state).ReloadAssetsDataIfChangedAndSetTimer();
+            if (p_state == null)
+                throw new Exception("ReloadAssetDataTimer_Elapsed() received null object.");
+            ((MemDb)p_state).ReloadAssetsDataIfChangedAndSetTimer();
         }
 
         void ReloadAssetsDataIfChangedAndSetTimer()
@@ -139,6 +141,8 @@ namespace FinTechCommon
                 if (isReloadNeeded)
                 {
                     var usersInDb = JsonSerializer.Deserialize<List<UserInDb>>(sqUserDataStr);
+                    if (usersInDb == null)
+                        throw new Exception($"Deserialize failed on '{sqUserDataStr}'");
                     Users = usersInDb.Select(r =>
                         {
                             return new User()
@@ -154,15 +158,22 @@ namespace FinTechCommon
                         }).ToArray();
 
                     var sqCoreWebAssets = JsonSerializer.Deserialize<Dictionary<string, SqCoreWebAssetInDb>>(m_lastSqCoreWebAssetsStr);
+                    if (sqCoreWebAssets == null)
+                        throw new Exception($"Deserialize failed on '{m_lastSqCoreWebAssetsStr}'");
+
                     var allAssets = JsonSerializer.Deserialize<Dictionary<string, AssetInDb[]>>(m_lastAllAssetsStr);
+                    if (allAssets == null)
+                        throw new Exception($"Deserialize failed on '{m_lastAllAssetsStr}'");
 
                     // select only a subset of the allAssets in DB that SqCore webapp needs
                     List<Asset> sqAssets = sqCoreWebAssets.Select(r =>
                     {
                         var assetId = new AssetId32Bits(r.Key);
-                        var assetTypeArr = allAssets![((byte)assetId.AssetTypeID).ToString()];
+                        var assetTypeArr = allAssets[((byte)assetId.AssetTypeID).ToString()];
                         // Linq is slow. List<T>.Find() is faster than Linq.FirstOrDefault() https://stackoverflow.com/questions/14032709/performance-of-find-vs-firstordefault
                         var assetFromDb = Array.Find(assetTypeArr, k => k.ID == assetId.SubTableID);
+                        if (assetFromDb == null)
+                            throw new Exception($"Asset is not found: '{assetId.AssetTypeID}:{assetId.SubTableID}'");
 
                         User? user = null;
                         if (assetId.AssetTypeID == AssetType.BrokerNAV)
@@ -201,9 +212,11 @@ namespace FinTechCommon
             m_assetDataReloadTimer.Change(targetDateEt - etNow, TimeSpan.FromMilliseconds(-1.0));     // runs only once
         }
 
-        public void ReloadHistoricalDataTimer_Elapsed(object state)    // Timer is coming on a ThreadPool thread
+        public void ReloadHistoricalDataTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
         {
-            ((MemDb)state).ReloadHistoricalDataAndSetTimer();
+            if (p_state == null)
+                throw new Exception("ReloadHistoricalDataTimer_Elapsed() received null object.");
+            ((MemDb)p_state).ReloadHistoricalDataAndSetTimer();
         }
 
         void ReloadHistoricalDataAndSetTimer()

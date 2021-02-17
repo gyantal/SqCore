@@ -21,17 +21,19 @@ namespace FinTechCommon
     {
         public static Timer? g_updateTimer = null;
 
-        public static void Timer_Elapsed(object state)    // Timer is coming on a ThreadPool thread
+        public static void Timer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
         {
+            if (p_state == null)
+                throw new Exception("Timer_Elapsed() received null object.");
             try
             {
-                Update((UpdateBrotliParam)state);
+                Update((UpdateBrotliParam)p_state);
             }
             catch (System.Exception e)  // Exceptions in timers crash the app.
             {
                 Utils.Logger.Error(e, "UpdateRedisBrotlisService.Timer_Elapsed() exception.");
             }
-            SetTimer((UpdateBrotliParam)state);
+            SetTimer((UpdateBrotliParam)p_state);
         }
 
         public static void SetTimer(UpdateBrotliParam p_state)

@@ -181,8 +181,9 @@ namespace SqCoreWeb
                 case "changeNav":
                     Utils.Logger.Info($"OnReceiveWsAsync_MktHealth(): changeNav to '{msgObjStr}'");
                     var navAsset = MemDb.gMemDb.AssetsCache.GetFirstMatchingAssetByLastTicker(msgObjStr);
-                    RtMktSummaryStock navStock = m_mktSummaryStocks.FirstOrDefault(r => r.Ticker == g_brNavVirtualTicker);
-                    navStock.AssetId = navAsset!.AssetId;
+                    RtMktSummaryStock? navStock = m_mktSummaryStocks.FirstOrDefault(r => r.Ticker == g_brNavVirtualTicker);
+                    if (navStock != null)
+                        navStock.AssetId = navAsset!.AssetId;
 
                     SendHistoricalWs();
                     SendRealtimeWs();
@@ -321,7 +322,7 @@ namespace SqCoreWeb
             List<Asset> selectableNavs = new List<Asset>();
 
             var userNavAssets = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.User == user && r.AssetId.AssetTypeID == AssetType.BrokerNAV).ToArray();
-            Asset aggNavAsset = userNavAssets.FirstOrDefault(r => r.LastTicker == r.User!.Initials + ".NAV");
+            Asset? aggNavAsset = userNavAssets.FirstOrDefault(r => r.LastTicker == r.User!.Initials + ".NAV");
             if (aggNavAsset != null)
                 selectableNavs.Add(aggNavAsset);
             foreach (var nav in userNavAssets)
@@ -334,7 +335,7 @@ namespace SqCoreWeb
             if (user != dcUser) // if user is dcUser, then don't add NAVs twice
             {
                 var dcUserNavAssets = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.User == dcUser && r.AssetId.AssetTypeID == AssetType.BrokerNAV).ToArray();
-                Asset aggNavAssetDC = dcUserNavAssets.FirstOrDefault(r => r.LastTicker == r.User!.Initials + ".NAV");
+                Asset? aggNavAssetDC = dcUserNavAssets.FirstOrDefault(r => r.LastTicker == r.User!.Initials + ".NAV");
                 if (aggNavAssetDC != null)
                     selectableNavs.Add(aggNavAssetDC);
                 foreach (var nav in dcUserNavAssets)

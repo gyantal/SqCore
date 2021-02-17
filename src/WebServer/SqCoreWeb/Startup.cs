@@ -285,7 +285,6 @@ namespace SqCoreWeb
             var webSocketOptions = new WebSocketOptions() 
             {
                 KeepAliveInterval = TimeSpan.FromSeconds(120),  // default is 2 minutes
-                ReceiveBufferSize = 4 * 1024                    // default is 4KB.
             };
             app.UseWebSockets(webSocketOptions);
 
@@ -309,7 +308,7 @@ namespace SqCoreWeb
             {
                 // main Index.html cache is controlled in SqFirewallMiddlewarePostAuth(), because to differentiate based on Login/Logout
                 if (((Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") || context.Request.Host.Host.StartsWith("sqcore.net")) 
-                    && context.Request.Path.Value.Equals("/index.html", StringComparison.OrdinalIgnoreCase))
+                    && (context.Request.Path.Value?.Equals("/index.html", StringComparison.OrdinalIgnoreCase) ?? false))
                 {
                     await next();
                     return;
@@ -320,9 +319,10 @@ namespace SqCoreWeb
                     // we have to add header Before filling up the response with 'await next();', otherwise 
                     // if we try to add After StaticFiles(), we got exception: "System.InvalidOperationException: Headers are read-only, response has already started."
                     TimeSpan maxBrowserCacheAge = TimeSpan.Zero;
-                    if (context.Request.Path.Value.Equals("/index.html", StringComparison.OrdinalIgnoreCase)   // main index.html has Login/username on it. After Login, the page should be refreshed. So, ignore CacheControl for that
-                        || context.Request.Path.Value.StartsWith("/hub/") || context.Request.Path.Value.StartsWith("/ws/")   // WebSockets should not be cached
-                    )  
+                    var path = context.Request.Path.Value;
+                    if (path != null &&
+                        (path.Equals("/index.html", StringComparison.OrdinalIgnoreCase)   // main index.html has Login/username on it. After Login, the page should be refreshed. So, ignore CacheControl for that
+                        || path.StartsWith("/hub/") || path.StartsWith("/ws/")))   // WebSockets should not be cached
                     {
                         maxBrowserCacheAge = TimeSpan.Zero;
                     }
@@ -403,7 +403,7 @@ namespace SqCoreWeb
 
             //     if (!String.IsNullOrEmpty(angularSpaStr)) {
             //     Problem, this app.UseStaticFiles() never worked here. It didn't file the files, because it is not in the middleware chain.
-            //         context.Request.Path = context.Request.Path.Value.Replace("/" + angularSpaStr, "");
+            //         context.Request.Path = context.Request.Path.Value.Replace("/" + angularSpaStr, String.Empty);
             //         // "Serving UseStaticFiles():  Request.Path: '/HealthMonitor/index.html' in folder:'Angular\dist\HealthMonitor'"
             //         Console.WriteLine($"Serving UseStaticFiles():  Request.Path: '{context.Request.Path.Value}' in folder:'{@"Angular\dist\" + angularSpaStr}'");
             //         app.UseStaticFiles(new StaticFileOptions() { FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Angular\dist\" + angularSpaStr))});
@@ -427,7 +427,7 @@ namespace SqCoreWeb
             //         //     context.Request.Path = "/index.html";
             //         // }
             //         // else if (String.Equals(context.Request.Path.Value, "/index.html", StringComparison.OrdinalIgnoreCase))
-            //         //     context.Request.Path = "";
+            //         //     context.Request.Path = String.Empty;
 
             //         await next();
             //     });
@@ -639,7 +639,7 @@ namespace SqCoreWeb
         //     //         //     context.Request.Path = "/index.html";
         //     //         // }
         //     //         // else if (String.Equals(context.Request.Path.Value, "/index.html", StringComparison.OrdinalIgnoreCase))
-        //     //         //     context.Request.Path = "";
+        //     //         //     context.Request.Path = String.Empty;
 
         //     //         await next();
         //     //     });

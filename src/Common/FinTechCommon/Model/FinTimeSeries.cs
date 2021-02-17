@@ -111,7 +111,7 @@ namespace FinTechCommon
 
         internal static string NotSupported_SortedListNestedWrite
         {
-            get { return ""; }
+            get { return String.Empty; }
         }
 
     }
@@ -184,7 +184,7 @@ namespace FinTechCommon
         {
             int i = IndexOfKey(dateTime);
             if (i < 0)
-                throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, dateTime.ToString()));
+                throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, dateTime.ToString() ?? String.Empty));
 
             return values1[p_tickType][i];
         }
@@ -193,7 +193,7 @@ namespace FinTechCommon
         {
             int i = IndexOfKey(dateTime);
             if (i < 0)
-                throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, dateTime.ToString()));
+                throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, dateTime.ToString() ?? String.Empty));
 
             return values2[p_tickType][i];
         }
@@ -603,7 +603,7 @@ namespace FinTechCommon
                 if (i >= 0)
                     return values1[tickType][i];
 
-                throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
+                throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString() ?? String.Empty));
             }
             set
             {

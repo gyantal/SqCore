@@ -58,7 +58,7 @@ namespace SqCoreWeb.Controllers
 
             StringBuilder sb = new StringBuilder();
             sb.Append("<html><body>");
-            sb.Append("Hello " + (User.Identity.Name ?? "anonymous") + "<br>");
+            sb.Append("Hello " + (User.Identity?.Name ?? "anonymous") + "<br>");
             sb.Append("Request.Path '" + (Request.Path.ToString() ?? "Empty") + "'<br>");
             foreach (var claim in User.Claims)
             {

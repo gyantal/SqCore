@@ -42,7 +42,7 @@ namespace SqCommon
                 case TimeZoneId.UTC:
                     return TimeZoneInfo.Utc;
                 default:
-                    if (g_tzi.TryGetValue(p_tzType, out TimeZoneInfo tzi))
+                    if (g_tzi.TryGetValue(p_tzType, out TimeZoneInfo? tzi))
                         return tzi;
                     string zoneId;
                     switch (p_tzType)
@@ -75,6 +75,7 @@ namespace SqCommon
                     catch (Exception e)
                     {
                         Utils.Logger.Error("ERROR: Unable to find the {0} zone in the registry. {1}", zoneId, e.Message);
+                        throw;
                     }
                     g_tzi[p_tzType] = tzi;
                     return tzi;

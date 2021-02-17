@@ -47,17 +47,19 @@ namespace FinTechCommon
     {
         public static Timer? g_updateTimer = null;
 
-        public static void Timer_Elapsed(object state)    // Timer is coming on a ThreadPool thread
+        public static void Timer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
         {
+            if (p_state == null)
+                throw new Exception("Timer_Elapsed() received null object.");
             try
             {
-                Update((UpdateNavsParam)state);
+                Update((UpdateNavsParam)p_state);
             }
             catch (System.Exception e)  // Exceptions in timers crash the app.
             {
                 Utils.Logger.Error(e, "UpdateNavsService.Timer_Elapsed() exception.");
             }
-            SetTimer((UpdateNavsParam)state);
+            SetTimer((UpdateNavsParam)p_state);
         }
 
         public static void SetTimer(UpdateNavsParam p_state)
@@ -107,6 +109,11 @@ namespace FinTechCommon
             vbReplyStr = vbReplyStr.Replace("\\\"", "\"");
             Utils.Logger.Info($"UpdateNavsService.GetNav(). Received '{vbReplyStr}'");
             var vbReply = Utils.LoadFromJSON<List<BrAccJsonHelper>>(vbReplyStr);
+            if (vbReply == null)
+            {
+                Utils.Logger.Error($"Error. NAV text from Vbroker cannot be interpreted as JSON: '{vbReplyStr}'");
+                return;
+            }
             foreach (var brAccInfo in vbReply) // Charmat,DeBlanzac grouped together or Gyantal
             {
                 string? brAcc = brAccInfo.BrAcc;

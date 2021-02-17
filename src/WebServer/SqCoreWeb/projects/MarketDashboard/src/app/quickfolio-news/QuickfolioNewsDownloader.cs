@@ -84,7 +84,7 @@ namespace SqCoreWeb
             int retryCount = 0;
             while ((foundNewsItems.Count < 1) && (retryCount < 5))
             {
-                foundNewsItems = ReadRSS(rssFeedUrl, NewsSource.CnbcRss, "");
+                foundNewsItems = ReadRSS(rssFeedUrl, NewsSource.CnbcRss, String.Empty);
                 if (foundNewsItems.Count == 0)
                     System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));
                 retryCount++;
@@ -200,10 +200,10 @@ namespace SqCoreWeb
         public static HttpStatusCode GetPageData(string p_uri, out string p_pageData)
         {
             HttpStatusCode status = (HttpStatusCode)0;
-            HttpWebResponse resp = null;
+            HttpWebResponse? resp = null;
 
             // initialize the out param (in case of error)
-            p_pageData = "";
+            p_pageData = String.Empty;
 
             ServicePointManager.Expect100Continue = true;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -235,7 +235,7 @@ namespace SqCoreWeb
             {
                 string str = e.Status.ToString();
 
-                resp = (HttpWebResponse)e.Response;
+                resp = (HttpWebResponse?)e.Response;
                 if (null != resp)
                 {
                     // get the failure code from the response
@@ -300,24 +300,24 @@ namespace SqCoreWeb
             p_dateString = p_dateString.ToUpper();
             if (p_dateString.Contains("AGO"))
             {
-                p_dateString = p_dateString.Replace("AGO", "").Trim();
+                p_dateString = p_dateString.Replace("AGO", String.Empty).Trim();
                 if (p_dateString.Contains("HOUR"))
                 {
-                    p_dateString = p_dateString.Replace("HOURS", "").Replace("HOUR", "").Trim();
+                    p_dateString = p_dateString.Replace("HOURS", String.Empty).Replace("HOUR", String.Empty).Trim();
                     int hours;
                     if (int.TryParse(p_dateString, out hours))
                         return DateTime.Now.AddHours(-hours);
                 }
                 else if (p_dateString.Contains("DAY"))
                 {
-                    p_dateString = p_dateString.Replace("DAYS", "").Replace("DAY", "").Trim();
+                    p_dateString = p_dateString.Replace("DAYS", String.Empty).Replace("DAY", String.Empty).Trim();
                     int days;
                     if (int.TryParse(p_dateString, out days))
                         return DateTime.Now.AddDays(-days);
                 }
                 else if (p_dateString.Contains("MIN"))
                 {
-                    p_dateString = p_dateString.Replace("MINUTES", "").Replace("MIN", "").Replace("MINS", "").Trim();
+                    p_dateString = p_dateString.Replace("MINUTES", String.Empty).Replace("MIN", String.Empty).Replace("MINS", String.Empty).Trim();
                     int days;
                     if (int.TryParse(p_dateString, out days))
                         return DateTime.Now.AddDays(-days);

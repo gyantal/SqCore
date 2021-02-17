@@ -14,7 +14,7 @@ namespace SqCommon
         {
             // task is called without await, so it doesn't wait; it will run parallel. "await task.ContinueWith()" would wait the task
             task.ContinueWith(
-                t => { Utils.Logger.Error(t.Exception.ToString()); },
+                t => { Utils.Logger.Error(t.Exception?.ToString() ?? String.Empty); },
                 TaskContinuationOptions.OnlyOnFaulted);
         }
 
@@ -32,7 +32,7 @@ namespace SqCommon
         public static async Task<T> WithCancellation<T>(this Task<T> task, CancellationToken cancellationToken)
         {
             var tcs = new TaskCompletionSource<bool>();
-            using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
+            using (cancellationToken.Register(s => ((TaskCompletionSource<bool>?)s)?.TrySetResult(true), tcs))
                 if (task != await Task.WhenAny(task, tcs.Task))
                     throw new OperationCanceledException(cancellationToken);
             return await task;
@@ -41,7 +41,7 @@ namespace SqCommon
         public static async Task WithCancellation(this Task task, CancellationToken cancellationToken)
         {
             var tcs = new TaskCompletionSource<bool>();
-            using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), tcs))
+            using (cancellationToken.Register(s => ((TaskCompletionSource<bool>?)s)?.TrySetResult(true), tcs))
                 if (task != await Task.WhenAny(task, tcs.Task))
                     throw new OperationCanceledException(cancellationToken);
                 else 

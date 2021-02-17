@@ -133,7 +133,7 @@ namespace SqCoreWeb
                 if (requestLog.Exception != null && IsSendableToHealthMonitorForEmailing(requestLog.Exception))
                 {
                     StringBuilder sb = new StringBuilder("Exception in SqCore.Website.C#.SqFirewallMiddlewarePreAuthLogger. \r\n");
-                    var requestLogStr = String.Format("{0}#{1}{2} {3} '{4}' from {5} (u: {6}) ret: {7} in {8:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : String.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Path + (String.IsNullOrEmpty(requestLog.QueryString) ? "" : requestLog.QueryString), requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds);
+                    var requestLogStr = String.Format("{0}#{1}{2} {3} '{4}' from {5} (u: {6}) ret: {7} in {8:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : String.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Path + (String.IsNullOrEmpty(requestLog.QueryString) ? String.Empty : requestLog.QueryString), requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds);
                     sb.Append("Request: " + requestLogStr + "\r\n");
                     sb.Append("Exception: '" + requestLog.Exception.ToStringWithShortenedStackTrace(800) + "'\r\n");
                     HealthMonitorMessage.SendAsync(sb.ToString(), HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
@@ -154,14 +154,14 @@ namespace SqCoreWeb
             whitelistPrefix.AddRange(new string[] { "ws/", "signin-google" });   // Add WebSocket prefixes; and "/signin-google"
 
             DirectoryInfo di = new DirectoryInfo(Program.g_webAppGlobals.KestrelEnv!.WebRootPath);
-            AddFileToListRecursive(di, "", ref whitelistExact);
+            AddFileToListRecursive(di, String.Empty, ref whitelistExact);
 
             // https://stackoverflow.com/questions/21583278/getting-all-controllers-and-actions-names-in-c-sharp
             // we can also get the name of all the methods inside the Controllers, but we don't want to string-compare 200x times for each http request. So, just get the Controller names.
             Assembly asm = Assembly.GetExecutingAssembly();
             var controllersList = asm.GetTypes()
                 .Where(type => typeof(Microsoft.AspNetCore.Mvc.ControllerBase).IsAssignableFrom(type))
-                .Select(type => type.Name.Replace("Controller", "")).ToList();  // Controllers sometimes don't use "/" at the end. (like request "/ContangoVisualizerData", /JsLog") Other times they use: "/WebServer/Ping"
+                .Select(type => type.Name.Replace("Controller", String.Empty)).ToList();  // Controllers sometimes don't use "/" at the end. (like request "/ContangoVisualizerData", /JsLog") Other times they use: "/WebServer/Ping"
             whitelistPrefix.AddRange(controllersList);
 
             whitelistExact.Sort(StringComparer.OrdinalIgnoreCase);  // suspicion: by default Sort() uses IgnoreCase on Windows, but CaseSensitive on Linux. They both use the default ICU, which is set on the op.system. https://github.com/dotnet/runtime/issues/20109
@@ -263,7 +263,7 @@ namespace SqCoreWeb
             foreach (var key in request.Headers.Keys)
                 headers += key + "=" + request.Headers[key] + Environment.NewLine;
 
-            string msg = String.Format("{0}{1} {2} '{3}' from {4} (user: {5}) responded {6} in {7:0.00} ms. RequestHeaders: {8}", requestLog.IsError ? "ERROR in " : String.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Path + (String.IsNullOrEmpty(requestLog.QueryString) ? "" : requestLog.QueryString), requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds, headers);
+            string msg = String.Format("{0}{1} {2} '{3}' from {4} (user: {5}) responded {6} in {7:0.00} ms. RequestHeaders: {8}", requestLog.IsError ? "ERROR in " : String.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Path + (String.IsNullOrEmpty(requestLog.QueryString) ? String.Empty : requestLog.QueryString), requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds, headers);
             Console.WriteLine(msg);
             gLogger.Error(msg);    // all the details (IP, Path) go the the Error output, because if the Info level messages are ignored by the Logger totally, this will inform the user. We need all the info in the Error Log. Even though, if Info and Error levels both logged, it results duplicates
         }
@@ -276,7 +276,7 @@ namespace SqCoreWeb
             // we only interested in our bugs our Controller C# code
             string fullExceptionStr = p_exception.ToString();   // You can simply print exception.ToString() -- that will also include the full text for all the nested InnerExceptions.
             bool isSendable = true;
-            if (p_exception is Microsoft.AspNetCore.Server.Kestrel.Core.BadHttpRequestException)
+            if (p_exception is Microsoft.AspNetCore.Http.BadHttpRequestException)
             {
                 // bad request data: "Request is missing Host header."
                 // bad request data: "Invalid request line: ..."

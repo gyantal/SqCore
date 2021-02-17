@@ -504,7 +504,7 @@ namespace SqCommon
             return result;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is DateOnly)
                 return Equals((DateOnly)obj);

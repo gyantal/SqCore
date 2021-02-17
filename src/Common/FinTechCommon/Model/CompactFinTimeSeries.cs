@@ -85,12 +85,12 @@ namespace FinTechCommon
 {
     public class ReverseComparer<TKey> : IComparer<TKey>
     {
-        public int Compare(TKey x, TKey y)
+        public int Compare(TKey? x, TKey? y)
         {
             return Comparer<TKey>.Default.Compare(y, x);    // (x,y ) is reversed to (y,x)
         }
     }
-    public class TsDateData<TKey, TAssetId, TValue1, TValue2>  where TKey : notnull
+    public class TsDateData<TKey, TAssetId, TValue1, TValue2>  where TKey : notnull where TAssetId : notnull
     {
         private int _size;
         public TKey[] Dates;    // dates are in reverse order. Dates[0] is today or yesterday
@@ -157,7 +157,7 @@ namespace FinTechCommon
     // see SortedList<TKey,TValue> as template https://github.com/dotnet/corefx/blob/master/src/System.Collections/src/System/Collections/Generic/SortedList.cs
     [DebuggerDisplay("Count = {m_data.Count}")]
     [Serializable]
-    public class CompactFinTimeSeries<TKey, TAssetId, TValue1, TValue2> where TKey : notnull   // Tkey = DateTime (8 byte), DateTimeAsInt (4 byte), DateOnly (2 byte), or any int, byte (1 byte), or even string (that can be ordered)
+    public class CompactFinTimeSeries<TKey, TAssetId, TValue1, TValue2> where TKey : notnull where TAssetId : notnull   // Tkey = DateTime (8 byte), DateTimeAsInt (4 byte), DateOnly (2 byte), or any int, byte (1 byte), or even string (that can be ordered)
     {
         TsDateData<TKey, TAssetId, TValue1, TValue2> m_data;      // this m_data pointer can be swapped in an atomic instruction after update
 

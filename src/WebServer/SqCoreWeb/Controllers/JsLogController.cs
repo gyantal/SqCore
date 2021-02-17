@@ -59,7 +59,7 @@ namespace SqCoreWeb.Controllers
             try
             {
                 var jsLogObj = JsonSerializer.Deserialize<NGXLogInterface>(jsLogMessage);
-                if (jsLogObj.level == NgxLoggerLevel.ERROR || jsLogObj.level == NgxLoggerLevel.FATAL)
+                if (jsLogObj == null || jsLogObj.level == NgxLoggerLevel.ERROR || jsLogObj.level == NgxLoggerLevel.FATAL)
                 {   // notify HealthMonitor to send an email
                     HealthMonitorMessage.SendAsync(jsLogMsgWithOrigin, HealthMonitorMessageID.SqCoreWebJsError).FireParallelAndForgetAndLogErrorTask();
                 }

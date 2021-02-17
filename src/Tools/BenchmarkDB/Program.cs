@@ -118,7 +118,7 @@ namespace BenchmarkDB
             string result = String.Empty;
             try
             {
-                result = Console.ReadLine();
+                result = Console.ReadLine() ?? String.Empty;
                 Console.WriteLine();    // it is better to insert a new line for separating the log of the tools from the displayed menu.
             }
             catch (System.IO.IOException e) // on Linux, of somebody closes the Terminal Window, Console.Readline() will throw an Exception with Message "Input/output error"

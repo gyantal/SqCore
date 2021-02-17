@@ -58,7 +58,7 @@ namespace SqCoreWeb
                     // Allow without user login only for the main domain's index.html ("sqcore.net/index.html"),  
                     // For subdomains, like "dashboard.sqcore.net/index.html" require UserLogin
                     if (((Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") || httpContext.Request.Host.Host.StartsWith("sqcore.net")) &&
-                        httpContext.Request.Path.Value.Equals("/index.html", StringComparison.OrdinalIgnoreCase))
+                        (httpContext.Request.Path.Value?.Equals("/index.html", StringComparison.OrdinalIgnoreCase) ?? false))
                     { // if it is HTML only allow '/index.html' through
                         isAllowedRequest = true;    // don't replace raw main index.html file by in-memory. Let it through. A brotli version will be delivered, which is better then in-memory non-compressed.
                         
@@ -78,11 +78,11 @@ namespace SqCoreWeb
                 }
                 else if (String.IsNullOrEmpty(ext))  // 2. API requests
                 {
-                    if (httpContext.Request.Path.Value.Equals("/UserAccount/login", StringComparison.OrdinalIgnoreCase))   // if it is an API call only allow '/UserAccount/login' through. 
+                    if (httpContext.Request.Path.Value?.Equals("/UserAccount/login", StringComparison.OrdinalIgnoreCase) ?? false)   // if it is an API call only allow '/UserAccount/login' through. 
                         isAllowedRequest = true;
-                    if ((Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") && httpContext.Request.Path.Value.StartsWith("/hub/", StringComparison.OrdinalIgnoreCase))
+                    if ((Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") && (httpContext.Request.Path.Value?.StartsWith("/hub/", StringComparison.OrdinalIgnoreCase) ?? false))
                         isAllowedRequest = true;    // in Development, when 'ng served'-d with proxy redirection from http://localhost:4202 to https://localhost:5001 , Don't force Google Auth, because 
-                    if ((Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") && httpContext.Request.Path.Value.StartsWith("/ws/", StringComparison.OrdinalIgnoreCase))
+                    if ((Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") && (httpContext.Request.Path.Value?.StartsWith("/ws/", StringComparison.OrdinalIgnoreCase) ?? false))
                         isAllowedRequest = true;
                 }
                 else 
@@ -123,7 +123,7 @@ namespace SqCoreWeb
                 // if user is accepted, index.html should be rewritten to change 'Login' link to username/logout link
                 // in Development, Host = "127.0.0.1"
                 if (((Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") || httpContext.Request.Host.Host.StartsWith("sqcore.net")) 
-                    && httpContext.Request.Path.Value.Equals("/index.html", StringComparison.OrdinalIgnoreCase))
+                    && (httpContext.Request.Path.Value?.Equals("/index.html", StringComparison.OrdinalIgnoreCase) ?? false))
                 {
                     //await _next(httpContext);
                     //await context.Response.WriteAsync($"Hello {CultureInfo.CurrentCulture.DisplayName}");

@@ -12,7 +12,7 @@ namespace SqCommon
     public class DoubleJsonConverterToStr : JsonConverter<double>   // the number is written as a string, with quotes: "previousClose":"272.48"
     {
         public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
-                Double.Parse(reader.GetString());
+                Double.Parse(reader.GetString() ?? String.Empty);
 
         public override void Write(Utf8JsonWriter writer, double doubleValue, JsonSerializerOptions options) =>
                 writer.WriteStringValue(doubleValue.ToString("0.####")); // use 4 decimals instead of 2, because of penny stocks and MaxDD of "-0.2855" means -28.55%. ToString(): 24.00155 is rounded up to 24.0016
@@ -21,7 +21,7 @@ namespace SqCommon
     public class DoubleJsonConverterToNumber4D : JsonConverter<double>   // the number is written as a number, without quotes: ("previousClose":"272.4800109863281") should be ("previousClose":272.48) 
     {
         public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
-                Double.Parse(reader.GetString());
+                Double.Parse(reader.GetString() ?? String.Empty);
 
         public override void Write(Utf8JsonWriter writer, double doubleValue, JsonSerializerOptions options)
         {
@@ -56,7 +56,7 @@ namespace SqCommon
             return JsonSerializer.Serialize(obj, g_camelJsonSerializeOpt);
         }
 
-        public static T LoadFromJSON<T>(string p_str)
+        public static T? LoadFromJSON<T>(string p_str)
         {
             try
             {
@@ -71,7 +71,7 @@ namespace SqCommon
                 DataContractJsonSerializerSettings settings = new DataContractJsonSerializerSettings() { DateTimeFormat = new DateTimeFormat("yyyy-MM-dd'T'HH:mm:ssZ") };    // the 'T' is used by Javascript in HealthMonitor website. 'Z' shows that it is UTC (Zero TimeZone).  That is the reason of the format.
                 settings.UseSimpleDictionaryFormat = true;
                 DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(T), settings);
-                T contract = (T)serializer.ReadObject(ms);
+                T? contract = (T?)serializer.ReadObject(ms);
                 return contract;
                 //}
             }

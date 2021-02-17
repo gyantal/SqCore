@@ -43,7 +43,7 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
 
         public Asset GetAsset(uint p_assetID)
         {
-            if (AssetsByAssetID.TryGetValue(p_assetID, out Asset value))
+            if (AssetsByAssetID.TryGetValue(p_assetID, out Asset? value))
                 return value;
             throw new Exception($"AssetID '{p_assetID}' is missing from MemDb.Assets.");
         }

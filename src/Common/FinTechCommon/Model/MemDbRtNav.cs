@@ -42,8 +42,10 @@ namespace FinTechCommon
             Utils.Logger.Info("ReloadRtNavDataAndSetTimer() END");
         }
 
-        public void RtNavTimer_Elapsed(object p_state)    // Timer is coming on a ThreadPool thread
+        public void RtNavTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
         {
+            if (p_state == null)
+                throw new Exception("RtNavTimer_Elapsed() received null object.");
             RtFreqParam freqParam = (RtFreqParam)p_state;
             Utils.Logger.Info($"MemDbRt.RtNavTimer_Elapsed({freqParam.RtFreq}). BEGIN.");
             try
@@ -176,6 +178,11 @@ namespace FinTechCommon
             vbReplyStr = vbReplyStr.Replace("\\\"", "\"");
             Utils.Logger.Info($"UpdateRtNavFromVbServer(). Received '{vbReplyStr}'");
             var vbReply = Utils.LoadFromJSON<List<BrAccJsonHelper>>(vbReplyStr);
+            if (vbReply == null)
+            {
+                Utils.Logger.Error($"Error. NAV text from Vbroker cannot be interpreted as JSON: '{vbReplyStr}'");
+                return;
+            }
             foreach (var brAccInfo in vbReply) // Charmat,DeBlanzac grouped together or Gyantal
             {
                 string? brAcc = brAccInfo.BrAcc;

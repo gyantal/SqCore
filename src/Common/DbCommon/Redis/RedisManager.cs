@@ -56,7 +56,7 @@ namespace DbCommon
 
         public static ConnectionMultiplexer GetConnection(string p_connStr)
         {
-            ConnectionMultiplexer conn = m_conns.GetValueOrDefault(p_connStr);
+            ConnectionMultiplexer? conn = m_conns.GetValueOrDefault(p_connStr);
             if (conn != null)
                 return conn;
 

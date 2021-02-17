@@ -188,7 +188,7 @@ namespace SqCoreWeb.Controllers
                 
 
                 // var csvDownload = string.Empty;
-                // string yfURI = String.Format("https://{0}?period1={1}&period2={2}&interval={3}&events={4}&crumb={5}", targetUriWithoutHttp, startTimeStr, endTimeStr, allParamsDict["interval"], allParamsDict["events"], Token.Crumb ?? "");
+                // string yfURI = String.Format("https://{0}?period1={1}&period2={2}&interval={3}&events={4}&crumb={5}", targetUriWithoutHttp, startTimeStr, endTimeStr, allParamsDict["interval"], allParamsDict["events"], Token.Crumb ?? String.Empty);
                 // HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(yfURI);
                 // request.CookieContainer = new CookieContainer();
                 // request.Headers[HttpRequestHeader.Cookie] = Token.Cookie;
