@@ -20,10 +20,10 @@ else:
     if (nodeRetCode != 0) :
         sys.exit("Node.js is required to build and run this project. To continue, please install Node.js from https://nodejs.org/")
     sys.exit("SqBuild: PreDebugBuildDev.py checks /node_modules in parallel. And we don't want that both processes start to download that huge folder. Exit now. It only happens once per year.")
-    angularRetCode = os.system("ng --version")
+    # os.system("npm install")    # Install the dependencies in the local node_modules folder.
+    angularRetCode = os.system("ng --version") # requires the local node_modules folder, otherwise raises unhandled exception
     if (angularRetCode != 0) :
-        sys.exit("SqBuild: NodeJs's AngularCLI is required to build and run this project. To continue, please install 'npm install -g @angular/cli@9.0.0-rc.10' on (2020-01-29) ")
-    # os.system("npm install")
+        sys.exit("SqBuild: NodeJs's AngularCLI is required to build and run this project. To continue, please install 'npm install -g @angular/cli'")
     # Path(nodeTouchFile).touch()
 
 

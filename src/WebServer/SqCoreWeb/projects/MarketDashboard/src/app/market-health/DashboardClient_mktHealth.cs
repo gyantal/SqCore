@@ -247,6 +247,9 @@ namespace SqCoreWeb
                 float[] sdaCloses = histData.Data[r.AssetId].Item1[TickType.SplitDivAdjClose];
                 // if startDate is not found, because e.g. we want to go back 3 years, while stock has only 2 years history
                 int iiStartDay = (iStartDay < sdaCloses.Length) ? iStartDay : sdaCloses.Length - 1;
+                if (Single.IsNaN(sdaCloses[iiStartDay]) // if that date in the global MemDb was an USA stock market holiday (e.g. President days is on monday), price is NaN for stocks, but valid value for NAV
+                    && ((iiStartDay + 1) <= sdaCloses.Length))
+                    iiStartDay++;   // that start 1 day earlier. It is better to give back more data, then less. Besides on that holiday day, the previous day price is valid.
 
                 // reverse marching from yesterday into past is not good, because we have to calculate running maxDD, maxDU.
                 float max = float.MinValue, min = float.MaxValue, maxDD = float.MaxValue, maxDU = float.MinValue;
@@ -254,7 +257,7 @@ namespace SqCoreWeb
                 for (int i = iiStartDay; i >= iEndDay; i--)   // iEndDay is index 0 or 1. Reverse marching from yesterday iEndDay to deeper into the past. Until startdate iStartDay or until history beginning reached
                 {
                     if (Single.IsNaN(sdaCloses[i]))
-                        continue;   // if that date in the global MemDb was an USA stock market holiday, price is NaN
+                        continue;   // if that date in the global MemDb was an USA stock market holiday (e.g. President days is on monday), price is NaN for stocks, but valid value for NAV
                     if (iStockFirstDay == Int32.MinValue)
                         iStockFirstDay = i;
                     iStockEndDay = i;

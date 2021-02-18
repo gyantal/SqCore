@@ -1,11 +1,26 @@
 {
   "extends": "tslint:recommended",
   "rules": {
+    "align": {
+      "options": [
+        "parameters",
+        "statements"
+      ]
+    },
     "only-arrow-functions": [true, "allow-declarations", "allow-named-functions"],
     "array-type": false,
+    "arrow-return-shorthand": true,
+    "curly": true,
     "arrow-parens": false,
+    "eofline": true,
     "deprecation": {
       "severity": "warning"
+    },
+    "import-spacing": true,
+    "indent": {
+      "options": [
+        "spaces"
+      ]
     },
     "import-blacklist": [
       true,
@@ -43,11 +58,9 @@
       true,
       "ignore-params"
     ],
-    "no-unused-variable": true,
     "no-non-null-assertion": true,
     "no-redundant-jsdoc": true,
     "no-switch-case-fall-through": true,
-    "no-use-before-declare": true,
     "no-var-requires": false,
     "object-literal-key-quotes": [
       true,
@@ -59,10 +72,52 @@
       true,
       "single"
     ],
+    "semicolon": {
+      "options": [
+        "always"
+      ]
+    },
+    "space-before-function-paren": {
+      "options": {
+        "anonymous": "never",
+        "asyncArrow": "always",
+        "constructor": "never",
+        "method": "never",
+        "named": "never"
+      }
+    },
     "trailing-comma": false,
+    "typedef-whitespace": {
+      "options": [
+        {
+          "call-signature": "nospace",
+          "index-signature": "nospace",
+          "parameter": "nospace",
+          "property-declaration": "nospace",
+          "variable-declaration": "nospace"
+        },
+        {
+          "call-signature": "onespace",
+          "index-signature": "onespace",
+          "parameter": "onespace",
+          "property-declaration": "onespace",
+          "variable-declaration": "onespace"
+        }
+      ]
+    },
     "variable-name": [
       true,
       "allow-leading-underscore"    // allow variable names like '_config'
-    ]
+    ],
+    "whitespace": {
+      "options": [
+        "check-branch",
+        "check-decl",
+        "check-operator",
+        "check-separator",
+        "check-type",
+        "check-typecast"
+      ]
+    }
   }
 }
