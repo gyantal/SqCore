@@ -82,7 +82,7 @@
             "problemMatcher": "$tsc"
         },
         {
-            "label": "PerfTestExperiment build Release ",
+            "label": "PerfTestExperiment build Release",
             "command": "dotnet",
             "type": "process",
             "args": [

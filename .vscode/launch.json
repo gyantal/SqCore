@@ -93,7 +93,7 @@
             "name": "PerfTestExperiment (RELEASE), run without Debugger Attached (Ctrl-F5, not F5)",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "build Release PerfTestExperiment",
+            "preLaunchTask": "PerfTestExperiment build Release",
             "program": "${workspaceFolder}/test/PerfTestExperiment/bin/Release/net5.0/PerfTestExperiment.exe",
             "args": [],
             "cwd": "${workspaceFolder}/test/PerfTestExperiment",
