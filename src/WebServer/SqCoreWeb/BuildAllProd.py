@@ -26,7 +26,8 @@ if nodeJsInstallNeeded:
     nodeRetCode = os.system("node --version")   # don't want to run 'node --version' all the times.
     if (nodeRetCode != 0) :
         sys.exit("SqBuild: Node.js is required to build and run this project. To continue, please install Node.js from https://nodejs.org/")
-    os.system("npm install")    # Install the dependencies in the local node_modules folder.
+    os.system("npm install")    # Install the dependencies in the local node_modules folder.  # -f for suppressing warning of optional SKIPPING OPTIONAL DEPENDENCY: fsevents
+    #os.system("npm install fsevents@latest -f --save-optional")    # Do it once if fsevents (Mac file system) warning appear "npm WARN optional SKIPPING OPTIONAL DEPENDENCY: fsevents" 
     angularRetCode = os.system("ng --version") # requires the local node_modules folder, otherwise raises unhandled exception
     if (angularRetCode != 0) :
         sys.exit("SqBuild: NodeJs's AngularCLI is required to build and run this project. To continue, please install 'npm install -g @angular/cli'")
