@@ -158,7 +158,7 @@ namespace SqCoreWeb.Controllers
                 // TODO: not high priority to fix it. It returns code 403, Forbidden. Also the same problem in SqLab. (it might only work on Linux server if IP should have been registered)
                 // it works on remote server: https://www.snifferquant.net/WebServer/TestGoogleApiGsheet1   (but not locally, and not in SqLab either)
                 // gSheet is public: https://docs.google.com/spreadsheets/d/1onwqrdxQIIUJytd_PMbdFKUXnBx3YSRYok0EmJF8ppM
-                if (!Utils.DownloadStringWithRetry(out valuesFromGSheetStr, "https://sheets.googleapis.com/v4/spreadsheets/1onwqrdxQIIUJytd_PMbdFKUXnBx3YSRYok0EmJF8ppM/values/A1%3AA3?key=" + Utils.Configuration["Google:GoogleApiKeyKey"]))
+                if (!Utils.DownloadStringWithRetry("https://sheets.googleapis.com/v4/spreadsheets/1onwqrdxQIIUJytd_PMbdFKUXnBx3YSRYok0EmJF8ppM/values/A1%3AA3?key=" + Utils.Configuration["Google:GoogleApiKeyKey"], out valuesFromGSheetStr))
                     valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
             }
 

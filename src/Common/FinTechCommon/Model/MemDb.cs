@@ -206,7 +206,7 @@ namespace FinTechCommon
                 Utils.Logger.Error(e, "ReloadAssetsDataIfChangedAndSetTimer()");
             }
 
-            DateTime etNow = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
+            DateTime etNow = DateTime.UtcNow.FromUtcToEt();
             DateTime targetDateEt = etNow.AddHours(1);  // Polling for change in every 1 hour
             Utils.Logger.Info($"ReloadAssetsDataIfChangedAndSetTimer() END. m_reloadAssetsDataTimer set next targetdate: {targetDateEt.ToSqDateTimeStr()} ET");
             m_assetDataReloadTimer.Change(targetDateEt - etNow, TimeSpan.FromMilliseconds(-1.0));     // runs only once
@@ -222,10 +222,90 @@ namespace FinTechCommon
         void ReloadHistoricalDataAndSetTimer()
         {
             Utils.Logger.Info("ReloadHistoricalDataAndSetTimer() START");
+            DateTime etNow = DateTime.UtcNow.FromUtcToEt();
             try
             {
+                var assetCacheTickers = AssetsCache.Assets.ToDictionary(r => r.LastTicker, v => v);
+
                 string missingYfSplitsJson = m_redisDb.HashGet("memDb", "missingYfSplits");
-                var assetsMissingYfSplits = JsonSerializer.Deserialize<Dictionary<string, Split[]>>(missingYfSplitsJson);   // JsonSerializer: Dictionary key <int>,<uint> is not supported
+                Dictionary<AssetId32Bits, List<Split>>? potentialMissingYfSplits = JsonSerializer.Deserialize<Dictionary<string, List<Split>>>(missingYfSplitsJson) // JsonSerializer: Dictionary key <int>,<uint> is not supported
+                    !.ToDictionary(r => new AssetId32Bits(r.Key), r => r.Value);
+
+                // var url = $"https://api.nasdaq.com/api/calendar/splits?date=2021-01-19";
+                var url = $"https://api.nasdaq.com/api/calendar/splits?date={Utils.Date2hYYYYMMDD(etNow.AddDays(-7))}"; // go back 7 days before to include yesterdays splits
+                if (Utils.DownloadStringWithRetry(url, out string nasdaqSplitsJson, 3, TimeSpan.FromSeconds(5), true))
+                {
+                    var ndqSplitsJson = JsonSerializer.Deserialize<Dictionary<string, object>>(nasdaqSplitsJson);
+                    using JsonDocument doc = JsonDocument.Parse(nasdaqSplitsJson);
+                    
+                    var ndqSplits = doc.RootElement.GetProperty("data").GetProperty("rows").EnumerateArray()
+                    .Select(row =>
+                    {
+                        string ticker = row.GetProperty("symbol").ToString() ?? String.Empty;
+                        if (!assetCacheTickers.TryGetValue(ticker, out Asset? asset))
+                            asset = null;
+                        return new
+                        {
+                            Asset = asset,
+                            Row = row
+                        };
+                    }).Where(r =>
+                    {
+                        return r.Asset != null;
+                    }).Select(r =>
+                    {
+                        string executionDateStr = r.Row.GetProperty("executionDate").ToString() ?? String.Empty; // "executionDate":"01/21/2021"
+                        DateTime executionDate = Utils.FastParseMMDDYYYY(executionDateStr);
+
+                        string ratioStr = r.Row.GetProperty("ratio").ToString() ?? String.Empty;
+                        var splitArr = ratioStr.Split(':');  // "ratio":"2 : 1" or "ratio":"5.000%" while YF "2:1", which is the same order.
+                        double beforeSplit = Double.MinValue, afterSplit = Double.MinValue;
+                        if (splitArr.Length == 2)   // "ratio":"2 : 1"
+                        {
+                            afterSplit = Utils.InvariantConvert<double>(splitArr[0]);
+                            beforeSplit = Utils.InvariantConvert<double>(splitArr[1]);
+                        }
+                        else    // "ratio":"5.000%", we can ignore it.
+                        {
+                            // {"symbol":"GNTY","name":"Guaranty Bancshares, Inc.","ratio":"10.000%","payableDate":"02/12/2021","executionDate":"02/04/2021","announcedDate":"01/20/2021"}
+                            // "...has declared a 10% stock dividend for shareholders of record as of February 5, 2021. As an example, each shareholder will receive one additional share of stock for every ten shares owned on the effective date of February 12, 2021.
+                            // however, YF doesn't handle at all these stock-dividends (not cash dividend)
+                            // YF builds it into the quote, so the quote price is smooth, but this cannot be queried as YF split, neither as cash-dividend.
+                        }
+                        var split = new Split() { Date = executionDate, Before = beforeSplit, After = afterSplit };
+                        return new
+                        {
+                            Asset = r.Asset,
+                            Split = split
+                        };
+                    }).Where(r =>
+                    {
+                        return r.Split.Before != Double.MinValue && r.Split.After != Double.MinValue;
+                    });
+
+                    int nUsedNdqSplits = 0;
+                    foreach (var ndqSplitRec in ndqSplits)   // iterate over Nasdaq splits and add it to potentialMissingYfSplits if that date doesn't exist
+                    {
+                        nUsedNdqSplits++;
+                        if (potentialMissingYfSplits.TryGetValue(ndqSplitRec!.Asset!.AssetId, out List<Split>? splitArr))
+                        {
+                            if (!splitArr.Exists(r => r.Date == ndqSplitRec.Split.Date))
+                                splitArr.Add(ndqSplitRec.Split);
+                        }
+                        else
+                        {
+                            var newSplits = new List<Split>(1);
+                            newSplits.Add(ndqSplitRec.Split);
+                            potentialMissingYfSplits.Add(ndqSplitRec!.Asset!.AssetId, newSplits);
+                        }
+                    }
+                    Utils.Logger.Info($"NasdaqSplits file was downloaded fine and it has {nUsedNdqSplits} useable records.");
+                }
+                else
+                {
+                    StrongAssert.Fail(Severity.NoException, $"Error in Downloading '{url}'. Supervisors should be notified.");
+                }
+
 
                 // The startTime & endTime here defaults to EST timezone
                 var assetsDates = new Dictionary<uint, DateOnly[]>();
@@ -281,10 +361,10 @@ namespace FinTechCommon
                         var splitHistoryYF = Yahoo.GetSplitsAsync(asset.LastTicker, asset.ExpectedHistoryStartDateET, DateTime.Now).Result;
 
                         // var missingYfSplitDb = new SplitTick[1] { new SplitTick() { DateTime = new DateTime(2020, 06, 08), BeforeSplit = 8, AfterSplit = 1 }};
-                        assetsMissingYfSplits!.TryGetValue(((byte)asset.AssetId.AssetTypeID).ToString() + ":" + asset.AssetId.SubTableID.ToString(), out var missingYfSplitDb);
+                        potentialMissingYfSplits!.TryGetValue(asset.AssetId, out List<Split>? missingYfSplitDb);
 
                         // if any missingYfSplitDb record is not found in splitHistoryYF, we assume YF is wrong (and our DB is right (probably custom made)), so we do this extra split-adjustment assuming it is not in the YF quote history
-                        for (int i = 0; missingYfSplitDb != null && i < missingYfSplitDb.Length; i++)
+                        for (int i = 0; missingYfSplitDb != null && i < missingYfSplitDb.Count; i++)
                         {
                             var missingSplitDb = missingYfSplitDb[i];
                             if (splitHistoryYF.FirstOrDefault(r => r!.DateTime == missingSplitDb.Date) != null)    // if that date exists in YF already, do nothing; assume YF uses it
@@ -490,7 +570,7 @@ namespace FinTechCommon
             // reload times should be relative to ET (Eastern Time), because that is how USA stock exchanges work.
             // Reload History approx in UTC: at 9:00 (when IB resets its own timers and pre-market starts)(in the 3 weeks when summer-winter DST difference, it is 8:00), at 14:00 (30min before market open, last time to get correct data, because sometimes YF fixes data late), 21:30 (30min after close)
             // In ET time zone, these are: 4:00ET, 9:00ET, 16:30ET. IB starts premarket trading at 4:00. YF starts to have premarket data from 4:00ET.
-            DateTime etNow = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
+            etNow = DateTime.UtcNow.FromUtcToEt();  // refresh etNow
             int nowTimeOnlySec = etNow.Hour * 60 * 60 + etNow.Minute * 60 + etNow.Second;
             int targetTimeOnlySec;
             if (nowTimeOnlySec < 4 * 60 * 60)

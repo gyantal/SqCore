@@ -14,7 +14,7 @@ namespace BenchmarkDB
         //private static readonly NLog.Logger gLogger = NLog.LogManager.GetCurrentClassLogger();   // the name of the logger will be the "Namespace.Class"
         private static readonly NLog.Logger gLogger = NLog.LogManager.GetLogger("Program");   // the name of the logger will be not the "Namespace.Class", but whatever you prefer: "Program"
 
-         public static IConfigurationRoot gConfiguration = new ConfigurationBuilder().Build();
+        public static IConfigurationRoot gConfiguration = new ConfigurationBuilder().Build();
 
         static void Main(string[] args)
         {
@@ -37,7 +37,7 @@ namespace BenchmarkDB
             //.AddEnvironmentVariables();   // not needed in general. We dont' want to clutter op.sys. environment variables with app specific values.
             gConfiguration = builder.Build();
 
-        
+
 
             //Test_Csharp80_Features();
             Controller.g_controller.Start();
@@ -52,6 +52,7 @@ namespace BenchmarkDB
                     case "1":
                         Console.WriteLine("Hello. I am not crashed yet! :)");
                         gLogger.Info("Hello. I am not crashed yet! :)");
+                        Utils.TestDownloadApiNasdaqCom();
                         break;
                     case "2":
                         Controller.g_controller.TestPing();
@@ -63,25 +64,25 @@ namespace BenchmarkDB
                         Controller.g_controller.TestRedisCache();
                         break;
                     case "5":
-                    // Console.WriteLine("5. Benchmark all and make conclusions (target: remote, execute: PC, Linux)");
+                        // Console.WriteLine("5. Benchmark all and make conclusions (target: remote, execute: PC, Linux)");
                         Controller.g_controller.BenchmarkAllAndConclusions(
-                            Program.gConfiguration.GetConnectionString("PingDefault"), 
-                            Program.gConfiguration.GetConnectionString("PostgreSqlDefault"), 
+                            Program.gConfiguration.GetConnectionString("PingDefault"),
+                            Program.gConfiguration.GetConnectionString("PostgreSqlDefault"),
                             Program.gConfiguration.GetConnectionString("RedisDefault"));
                         break;
                     case "6":
-                    // Console.WriteLine("6. Benchmark all and make conclusions (target: localhost, execute: PC)");
-                    // start redis on WSL: in "ubuntu@gyantal-PC:~/redis/redis-stable$" type 'redis-server'     (check if it works in another terminal: 'redis-cli ping')
+                        // Console.WriteLine("6. Benchmark all and make conclusions (target: localhost, execute: PC)");
+                        // start redis on WSL: in "ubuntu@gyantal-PC:~/redis/redis-stable$" type 'redis-server'     (check if it works in another terminal: 'redis-cli ping')
                         Controller.g_controller.BenchmarkAllAndConclusions(
-                            "localhost", 
-                            Program.gConfiguration.GetConnectionString("PostgreSqlWinLocalhost"), 
+                            "localhost",
+                            Program.gConfiguration.GetConnectionString("PostgreSqlWinLocalhost"),
                             Program.gConfiguration.GetConnectionString("RedisWinLocalhost"));
                         break;
                     case "7":
-                    // Console.WriteLine("7. Benchmark all and make conclusions (target: localhost, execute: Linux)");
+                        // Console.WriteLine("7. Benchmark all and make conclusions (target: localhost, execute: Linux)");
                         Controller.g_controller.BenchmarkAllAndConclusions(
-                            "localhost", 
-                            Program.gConfiguration.GetConnectionString("PostgreSqlLinuxLocalhost"), 
+                            "localhost",
+                            Program.gConfiguration.GetConnectionString("PostgreSqlLinuxLocalhost"),
                             Program.gConfiguration.GetConnectionString("RedisLinuxLocalhost"));
                         break;
                 }
@@ -93,7 +94,7 @@ namespace BenchmarkDB
             NLog.LogManager.Shutdown();
         }
 
-        
+
 
         static bool gHasBeenCalled = false;
         static public string DisplayMenu()
@@ -130,12 +131,12 @@ namespace BenchmarkDB
         }
 
 
-    public struct TestCSharp80Class
-    {
-        public double X { get; set; }
-        public double Y { get; set; }
-        public readonly double Distance => Math.Sqrt(X * X + Y * Y);        // Readonly members of a struct is a C#8.0 feature. Doesn't work for classes.
-    }
+        public struct TestCSharp80Class
+        {
+            public double X { get; set; }
+            public double Y { get; set; }
+            public readonly double Distance => Math.Sqrt(X * X + Y * Y);        // Readonly members of a struct is a C#8.0 feature. Doesn't work for classes.
+        }
 
         public static void Test_Csharp80_Features()
         {

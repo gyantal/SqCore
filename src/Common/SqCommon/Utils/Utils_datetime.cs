@@ -152,6 +152,22 @@ namespace SqCommon
             return p_date.ToString("d", InvCult);
         }
 
+        /// <summary> Returns the date part of p_date in "YYYY-MM-DD" format (invariant culture).
+        /// </summary><remarks>
+        /// </remarks>
+        public static string Date2hYYYYMMDD(DateTime p_date) // h means hyphened (-)
+        {
+            return p_date.ToString("yyyy'-'MM'-'dd");
+        }
+
+        /// <summary> Returns the date part of p_date in "YYYYMMDD" format (invariant culture).
+        /// </summary><remarks>
+        /// </remarks>
+        public static string Date2YYYYMMDD(DateTime p_date)
+        {
+            return p_date.ToString("yyyyMMdd");
+        }
+
         /// <summary> Returns p_dateTimeUtc in "2008-10-05T13:00:01Z" format
         /// or in "2008-10-05" if time-of-day is zero. (Both can be parsed
         /// back with invariant culture). </summary>

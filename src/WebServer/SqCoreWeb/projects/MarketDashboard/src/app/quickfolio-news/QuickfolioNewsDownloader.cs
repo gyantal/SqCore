@@ -50,7 +50,7 @@ namespace SqCoreWeb
             string valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
             if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
             {
-                if (!Utils.DownloadStringWithRetry(out valuesFromGSheetStr, "https://sheets.googleapis.com/v4/spreadsheets/1c5ER22sXDEVzW3uKthclpArlZvYuZd6xUffXhs6rRsM/values/A1%3AA1?key=" + Utils.Configuration["Google:GoogleApiKeyKey"]))
+                if (!Utils.DownloadStringWithRetry("https://sheets.googleapis.com/v4/spreadsheets/1c5ER22sXDEVzW3uKthclpArlZvYuZd6xUffXhs6rRsM/values/A1%3AA1?key=" + Utils.Configuration["Google:GoogleApiKeyKey"], out valuesFromGSheetStr))
                     valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
             }
             if (!valuesFromGSheetStr.StartsWith("Error"))
@@ -110,7 +110,7 @@ namespace SqCoreWeb
                 var benzinga = ReadBenzingaNews(ticker);
                 if (benzinga.Count > 0)
                     encodedMsgBenzinga = Encoding.UTF8.GetBytes("quickfNewsStockNewsUpdated:" + Utils.CamelCaseSerialize(benzinga));
-                var tipranks = ReadBenzingaNews(ticker);
+                var tipranks = ReadTipranksNews(ticker);
                 if (tipranks.Count > 0)
                     encodedMsgTipranks = Encoding.UTF8.GetBytes("quickfNewsStockNewsUpdated:" + Utils.CamelCaseSerialize(tipranks));
 
@@ -136,15 +136,15 @@ namespace SqCoreWeb
                 foundNewsItems = new List<NewsItem>();
             //MakeRequests();
             string url = string.Format(@"https://www.tipranks.com/api/stocks/getNews/?ticker={0}", p_ticker);
-            string webpageData;
-            HttpStatusCode status = GetPageData(url, out webpageData);
-            if (status == HttpStatusCode.OK)
+            bool isDownloadOK = Utils.DownloadStringWithRetry(url, out string webpageData);
+            System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));  // to avoid that server bans our IP
+            if (isDownloadOK)
             {
-                ReadTipranksNews(foundNewsItems, p_ticker, webpageData);
+                ReadTipranksNewsItems(foundNewsItems, p_ticker, webpageData);
             }
             return foundNewsItems;
         }
-        private void ReadTipranksNews(List<NewsItem> p_foundNewsItems, string p_ticker, string webpageData)
+        private void ReadTipranksNewsItems(List<NewsItem> p_foundNewsItems, string p_ticker, string webpageData)
         {
             try
             {
@@ -186,80 +186,14 @@ namespace SqCoreWeb
             if (foundNewsItems == null)
                 foundNewsItems = new List<NewsItem>();
             string url = string.Format(@"https://www.benzinga.com/stock/{0}", p_ticker);
-            string webpageData;
-            HttpStatusCode status = GetPageData(url, out webpageData);
-            System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));
-            if (status == HttpStatusCode.OK)
+            bool isDownloadOK = Utils.DownloadStringWithRetry(url, out string webpageData);
+            System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));  // to avoid that server bans our IP
+            if (isDownloadOK)
             {
                 ReadBenzingaSection(foundNewsItems, p_ticker, webpageData, "headlines");
                 ReadBenzingaSection(foundNewsItems, p_ticker, webpageData, "press");
             }
             return foundNewsItems;
-        }
-
-        public static HttpStatusCode GetPageData(string p_uri, out string p_pageData)
-        {
-            HttpStatusCode status = (HttpStatusCode)0;
-            HttpWebResponse? resp = null;
-
-            // initialize the out param (in case of error)
-            p_pageData = String.Empty;
-
-            ServicePointManager.Expect100Continue = true;
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-
-            try
-            {
-                // create the web request
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(p_uri);
-
-                // disable the proxy?
-                //if (this.m_noProxy)
-                //{
-                request.Proxy = new WebProxy();
-                //    req.ProtocolVersion = HttpVersion.Version10; // default is 1.1
-                //}
-                // make the connection
-                resp = (HttpWebResponse)request.GetResponse();
-
-                // get the page data
-                StreamReader sr = new StreamReader(resp.GetResponseStream());
-                p_pageData = sr.ReadToEnd();
-                sr.Close();
-
-                // get the status code (should be 200)
-                status = resp.StatusCode;
-            }
-
-            catch (WebException e)
-            {
-                string str = e.Status.ToString();
-
-                resp = (HttpWebResponse?)e.Response;
-                if (null != resp)
-                {
-                    // get the failure code from the response
-                    status = resp.StatusCode;
-                    str += status;
-                }
-                else
-                {
-                    status = (HttpStatusCode)(-1);  // generic connection error
-                }
-            }
-            catch
-            {
-                status = (HttpStatusCode)(-2);
-            }
-            finally
-            {
-                // close the response
-                if (resp != null)
-                {
-                    resp.Close();
-                }
-            }
-            return status;
         }
 
         private void ReadBenzingaSection(List<NewsItem> p_foundNewsItems, string p_ticker, string p_webpageData, string p_keyWord)

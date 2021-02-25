@@ -237,23 +237,31 @@ namespace FinTechCommon
             }
         }
 
+        // compared to IB data stream, IEX is sometimes 5-10 sec late. But sometimes it is not totally accurate. It is like IB updates its price every second. IEX updates randomli. Sometimes it updates every 1 second, sometime after 10seconds. In general this is fine.
+        // "We limit requests to 100 per second per IP measured in milliseconds, so no more than 1 request per 10 milliseconds."
+        // https://iexcloud.io/pricing/ 
+        // Free account: 50,000 core messages/mo, That is 50000/30/20/60 = 1.4 message per minute. 
+        // Paid account: $1 per 1 million messages/mo: 1000000/30/20/60 = 28 messages per minute.
+        // But maybe it is infinite. Just every 1M messages is $1. The next 1M messages is another $1. Etc. that is likely. Good. So, we don't have to throttle it, just be careful than only download data if it is needed.
+        // At the moment 'tops' works without token, as https://api.iextrading.com/1.0/tops?symbols=QQQ,SPY,TLT,GLD,VXX,UNG,USO
+        // but 'last' or other PreviousClose calls needs token: https://api.iextrading.com/1.0/lasts?symbols=QQQ,SPY,TLT,GLD,VXX,UNG,USO
+        // Solution: query real-time lastPrice ever 2 seconds, but query PreviousClose only once a day.
+        // This doesn't require token: https://api.iextrading.com/1.0/tops?symbols=AAPL,GOOGL
+        // PreviousClose data requires token: https://cloud.iexapis.com/stable/stock/market/batch?symbols=AAPL,FB&types=quote&token=<get it from sensitive-data file>
         void DownloadLastPriceIex(Asset[] p_assets)  // takes 450-540ms from WinPC
         {
             Utils.Logger.Info("DownloadLastPriceIex() START");
             m_nIexDownload++;
             try
             {
-                if (!Request_api_iextrading_com(string.Format("https://api.iextrading.com/1.0/tops?symbols={0}", String.Join(", ", p_assets.Select(r => r.LastTicker))), out HttpWebResponse? response) || (response == null))
+                //string url = string.Format("https://api.iextrading.com/1.0/stock/market/batch?symbols={0}&types=quote", p_tickerString);
+                //string url = string.Format("https://api.iextrading.com/1.0/last?symbols={0}", p_tickerString);       // WebExceptionStatus.ProtocolError: "Not Found"
+                string url = string.Format("https://api.iextrading.com/1.0/tops?symbols={0}", String.Join(", ", p_assets.Select(r => r.LastTicker)));
+                if (!Utils.DownloadStringWithRetry(url, out string responseText))
                     return;
 
-                using (var reader = new System.IO.StreamReader(response.GetResponseStream(), ASCIIEncoding.ASCII))
-                {
-                    string responseText = reader.ReadToEnd();
-                    Utils.Logger.Info("DownloadLastPriceIex() str = '{0}'", responseText);
-                    ExtractAttributeIex(responseText, "lastSalePrice", p_assets);
-                }
-                response.Close();
-
+                Utils.Logger.Info("DownloadLastPriceIex() str = '{0}'", responseText);
+                ExtractAttributeIex(responseText, "lastSalePrice", p_assets);
             }
             catch (Exception e)
             {
@@ -309,55 +317,6 @@ namespace FinTechCommon
                 }
                 iStr = eAttribute;
             }
-        }
-
-        // compared to IB data stream, IEX is sometimes 5-10 sec late. But sometimes it is not totally accurate. It is like IB updates its price every second. IEX updates randomli. Sometimes it updates every 1 second, sometime after 10seconds. In general this is fine.
-        // "We limit requests to 100 per second per IP measured in milliseconds, so no more than 1 request per 10 milliseconds."
-        // https://iexcloud.io/pricing/ 
-        // Free account: 50,000 core messages/mo, That is 50000/30/20/60 = 1.4 message per minute. 
-        // Paid account: $1 per 1 million messages/mo: 1000000/30/20/60 = 28 messages per minute.
-        // But maybe it is infinite. Just every 1M messages is $1. The next 1M messages is another $1. Etc. that is likely. Good. So, we don't have to throttle it, just be careful than only download data if it is needed.
-        // At the moment 'tops' works without token, as https://api.iextrading.com/1.0/tops?symbols=QQQ,SPY,TLT,GLD,VXX,UNG,USO
-        // but 'last' or other PreviousClose calls needs token: https://api.iextrading.com/1.0/lasts?symbols=QQQ,SPY,TLT,GLD,VXX,UNG,USO
-        // Solution: query real-time lastPrice ever 2 seconds, but query PreviousClose only once a day.
-        // This doesn't require token: https://api.iextrading.com/1.0/tops?symbols=AAPL,GOOGL
-        // PreviousClose data requires token: https://cloud.iexapis.com/stable/stock/market/batch?symbols=AAPL,FB&types=quote&token=<get it from sensitive-data file>
-        static bool Request_api_iextrading_com(string p_uri, out HttpWebResponse? response)
-        {
-            response = null;
-            try
-            {
-                //HttpWebRequest request = (HttpWebRequest)WebRequest.Create(string.Format("https://api.iextrading.com/1.0/stock/market/batch?symbols={0}&types=quote", p_tickerString));
-                //HttpWebRequest request = (HttpWebRequest)WebRequest.Create(string.Format("https://api.iextrading.com/1.0/last?symbols={0}", p_tickerString));       // WebExceptionStatus.ProtocolError: "Not Found"
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(p_uri);
-                request.KeepAlive = true;
-                request.Headers.Set(HttpRequestHeader.CacheControl, "max-age=0");
-                request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36";
-                request.Headers.Add("Upgrade-Insecure-Requests", @"1");
-                request.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8";
-                request.Headers.Set(HttpRequestHeader.AcceptEncoding, "gzip, deflate, br");
-                request.Headers.Set(HttpRequestHeader.AcceptLanguage, "hu-HU,hu;q=0.9,en-US;q=0.8,en;q=0.7");
-                //request.Headers.Set(HttpRequestHeader.Cookie, @"_ga=GA1.2.889468537.1517554268; ctoken=<...from SqFramework  source...>");    // it is probably an old token. Not useful. Not necessary.
-                request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-
-                response = (HttpWebResponse)request.GetResponse();
-            }
-            catch (WebException e)
-            {
-                Utils.Logger.Error("Request_api_iextrading_com() WebException");
-                if (e.Status == WebExceptionStatus.ProtocolError)
-                    response = (HttpWebResponse?)e.Response;
-                else
-                    return false;
-            }
-            catch (Exception)
-            {
-                Utils.Logger.Error("Request_api_iextrading_com() Exception");
-                if (response != null)
-                    response.Close();
-                return false;
-            }
-            return true;
         }
 
     }

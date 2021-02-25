@@ -185,23 +185,6 @@ namespace SqCoreWeb.Controllers
                     else
                         endTime = endTime.AddHours(12);    // endTimeStr Date is excluded from daily data, so Add a little bit more to the middle of the UTC day
                 }
-                
-
-                // var csvDownload = string.Empty;
-                // string yfURI = String.Format("https://{0}?period1={1}&period2={2}&interval={3}&events={4}&crumb={5}", targetUriWithoutHttp, startTimeStr, endTimeStr, allParamsDict["interval"], allParamsDict["events"], Token.Crumb ?? String.Empty);
-                // HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(yfURI);
-                // request.CookieContainer = new CookieContainer();
-                // request.Headers[HttpRequestHeader.Cookie] = Token.Cookie;
-                // request.Method = "GET";
-                // var task = request.GetResponseAsync();
-                // task.Wait(10000); // Blocks current thread until GetFooAsync task completes; timeout is 10000msec
-                // using (var response = (HttpWebResponse)task.Result)
-                // {
-                //     using (Stream stream = response.GetResponseStream())
-                //     {
-                //         csvDownload = new StreamReader(stream).ReadToEnd();
-                //     }
-                // }
 
                 Period period = Period.Daily;
                 if (allParamsDict["interval"] == "1w")

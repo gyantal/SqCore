@@ -31,7 +31,7 @@ namespace RedisManager
         public void TestPing()
         {
             string address = Program.gConfiguration.GetConnectionString("PingDefault");
-            int nTries = Utils.InvariantConvert<int>(Program.gConfiguration["AppSettings:TestPingNTries"]);   
+            int nTries = Utils.InvariantConvert<int>(Program.gConfiguration["AppSettings:TestPingNTries"]);
             long sumPingTimes = 0;
             for (int i = 0; i < nTries; i++)
             {
