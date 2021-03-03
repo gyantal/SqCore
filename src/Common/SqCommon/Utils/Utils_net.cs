@@ -1,6 +1,9 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Threading;
 
@@ -33,18 +36,7 @@ namespace SqCommon
         {
             p_webpage = String.Empty;
             int nDownload = 0;
-            var request = new HttpRequestMessage
-            {
-                RequestUri = new Uri(p_url),
-                Method = HttpMethod.Get,
-                Version = HttpVersion.Version20,    // This was the key on Linux!!! The default is Version11 (Silly: "In .NET Core 3.0+, the default value was reverted back to 1.1.")
-                Headers = {
-                            { "accept", "application/json, text/plain, */*" }, // needed on Linux for api.nasdaq.com , otherwise it returns with 'no permission'.
-                            { "user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36" },
-                            { "accept-encoding", "gzip, deflate, br" },
-                            { "accept-language", "en-US,en;q=0.9" }
-                        }
-            };
+            var request = CreateRequest(p_url);
 
             do
             {
@@ -70,13 +62,68 @@ namespace SqCommon
                     // "The operation has timed out " or "Unable to connect to the remote server" exceptions
                     // Don't raise Logger.Error() after the first attempt, because it is not really Exceptional, and an Error email will be sent
                     Utils.Logger.Info(ex, "Exception in DownloadStringWithRetry()" + p_url + ":" + nDownload + ": " + ex.Message);
+                    if (ex is AggregateException)
+                    {
+                        foreach (var errInner in ((AggregateException)ex).InnerExceptions)
+                        {
+                            Utils.Logger.Info(ex, "Exception in DownloadStringWithRetry()" + p_url + ":" + nDownload + ": " + ex.Message);
+                        }
+                    }
                     Thread.Sleep(p_sleepBetweenRetries);
                     if ((nDownload >= p_nRetry) && p_throwExceptionIfUnsuccesfull)
                         throw;  // if exception still persist after many tries, rethrow it to caller
+
+                    // we reuse the same g_httpClient, however, request cannot be reused, because then using the same request again. "System.InvalidOperationException: The request message was already sent. Cannot send the same request message multiple times."
+                    request = CreateRequest(p_url);
                 }
             } while (nDownload < p_nRetry);
 
             return false;
+        }
+
+        // Typical usage, and queries so far. p_url = ?
+        // MemDb:
+        // Yahoo historical data is handled by CsvReader in YahooFinanceApi
+        // "https://api.nasdaq.com/api/calendar/splits?date=2021-02-24"
+        // ContangoVisualizer:
+        // "http://www.cmegroup.com/CmeWS/mvc/Quotes/Future/425/G"
+        // "http://www.cmegroup.com/CmeWS/mvc/ProductCalendar/Future/425"
+        // "http://www.cmegroup.com/CmeWS/mvc/Quotes/Future/444/G"
+        // "http://www.cmegroup.com/CmeWS/mvc/ProductCalendar/Future/444"
+        // QuickfolioNews:
+        // Yahoo RSS is handled in their code.
+        // "https://sheets.googleapis.com/v4/spreadsheets/1c5ER22sXDEVzW3uKthclpArlZvYuZd6xUffXhs6rRsM/values/A1%3AA1?key=AIzaSyCuYzsUQT6ey4D3ycvOdPkhk6kHX60fSPg"
+        // "https://www.benzinga.com/stock/AMZN"
+        // "https://www.tipranks.com/api/stocks/getNews/?ticker=AMZN"
+        public static HttpRequestMessage CreateRequest(string p_url)
+        {
+            // var headers =  new HttpRequestHeaders { { "accept-encoding", "gzip, deflate, br" } };
+            // This doesn't compile:  "'HttpRequestHeaders' does not contain a constructor that takes 0 arguments"
+            // creating a HttpRequestHeaders object by user code is not allowed by design.
+            // Dictionary initialization would work if there is an empty constructor + Add(string key, string value) + GetEnumerator()
+            // https://stackoverflow.com/questions/11694910/how-do-you-use-object-initializers-for-a-list-of-key-value-pairs/11695018
+            // It is not Array initialization, it is Dictionary initialization, but it is not allowed for HttpRequestHeaders by design. Only HttpRequestMessage can create an empty Header.
+
+            if (p_url.StartsWith("https://api.nasdaq.com"))
+                return new HttpRequestMessage
+                {
+                    RequestUri = new Uri(p_url),
+                    Method = HttpMethod.Get,
+                    Version = HttpVersion.Version20,    // This was the key on Linux!!! The default is Version11 (Silly: "In .NET Core 3.0+, the default value was reverted back from 2.0 to 1.1.")
+                    Headers = {
+                            { "accept", "application/json, text/plain, */*" }, // needed on Linux for api.nasdaq.com , otherwise it returns with 'no permission'.
+                            { "user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36" },
+                            { "accept-encoding", "gzip, deflate, br" },
+                            { "accept-language", "en-US,en;q=0.9" }
+                        }
+                };
+
+            return new HttpRequestMessage
+            {
+                RequestUri = new Uri(p_url),
+                Method = HttpMethod.Get,
+                Version = HttpVersion.Version20,    // The default is Version11 (Silly: "In .NET Core 3.0+, the default value was reverted back from 2.0 to 1.1.")
+            };
         }
 
         public static bool TestDownloadApiNasdaqCom()
