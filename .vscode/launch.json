@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "WbSrv/SqCoreWeb (DEBUG)",
+            "name": "WbSrv/SqCoreWeb (C#-DEBUG)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "SqCoreWeb-PreDebugBuildWatchDev",
@@ -34,7 +34,7 @@
             }
         },
         {
-            "name": "WebServer/SqCoreWeb (PUBLISHED), Use Ctrl-F5 to NOT attach the debugger",
+            "name": "WbSrv/SqCoreWeb (PUBLISHED), Use Ctrl-F5 to NOT attach the debugger",
             "type": "coreclr",
             "request": "launch",
             //"preLaunchTask": "WebServer/SqCoreWeb publish",
@@ -48,6 +48,13 @@
                 "order": 2,
                 "hidden": false
             }
+        },
+        {
+            "name": "WbSrv/SqCoreWeb (Chrome-DEBUG)",
+            "type": "chrome",
+            "request": "launch",
+            "url": "https://127.0.0.1:5001/",
+            "webRoot": "${workspaceFolder}/src/WebServer/SqCoreWeb/wwwroot"
         },
         {
             "name": "Tools/RedisManager (DEBUG)",

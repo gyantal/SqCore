@@ -342,13 +342,19 @@ namespace FinTechCommon
                             }
                             catch (Exception e)
                             {
+                                // 2021-02-26T16:30, https://finance.yahoo.com/quote/SPY/history?p=SPY returns for yesterday: "Feb 25, 2021	-	-	-	-	-	-" , other days are correct, this is probably temporary
+                                // YahooFinanceApi\Yahoo - Historical.cs:line 80 receives: "2021-02-25,null,null,null,null,null,null" and crashes on StringToDecimal conversion
+                                // TODO: We don't have a plan for those case when YF historical quote fails. What should we do?
+                                // Option 1: crash the whole SqCore app: not good, because other services: website, VBroker, Timers, ContangoVisualizer can run
+                                // Option 2: Persist YF data to RedisDb every 2 hours. In case of failed YF reload, fall back to latest from RedisDb. Not a real solution if YF gives bad data for days.
+                                // Option 3: (preferred) Use 2 public databases (GF, Nasdaq, Marketwatch, Iex): In case YF fails for a stock for a date, use that other one if that data is believable (within range)
                                 Utils.Logger.Info(e, $"Exception in Yahoo.GetHistoricalAsync(): Stock:'{asset.LastTicker}', {e.Message}");
                                 Thread.Sleep(3000); // sleep for 3 seconds before trying again.
                             }
                         } while (history == null && nTries <= nMaxTries);
 
                         if (history == null)
-                            throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data after {nMaxTries} tries.");
+                            throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{asset.LastTicker}) after {nMaxTries} tries.");
 
                         dates = history.Select(r => new DateOnly(r!.DateTime)).ToArray();
                         // for penny stocks, IB and YF considers them for max. 4 digits. UWT price (both in IB ask-bid, YF history) 2020-03-19: 0.3160, 2020-03-23: 2302

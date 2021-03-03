@@ -88,6 +88,9 @@ namespace SqCoreWeb
                 else 
                     isAllowedRequest = true;    // 3. allow jpeg files and other resources, like favicon.ico
 
+                if ((Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") && httpContext.Request.Host.Host.StartsWith("127.0.0.1"))
+                    isAllowedRequest = true;    // vscode-chrome-debug runs Chrome with --remote-debugging-port=9222. On that Gmail login is not possible. Result "This browser or app may not be secure.". So, don't require user logins if Chrome-Debug is used
+
                 if (isAllowedRequest)
                 {
                     // allow the requests. Let it through to the other handlers in the pipeline.
