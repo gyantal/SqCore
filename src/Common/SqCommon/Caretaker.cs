@@ -7,7 +7,7 @@ using SqCommon;
 
 namespace SqCommon
 {
-    // All apps need Caretaker services
+    // All apps need Caretaker services (e.g. Checking free disk space for log files)
     // Memory resident programs (WebServer, VirtualBroker) might need to monitor excess RAM usage, internet bandwidth slowage, monitor free disk space every day
     // Run-and-Exit programs (crawlers) that runs every day also need the Caretaker, to periodically decimate Log files.
     public class Caretaker

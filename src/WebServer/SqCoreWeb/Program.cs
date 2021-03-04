@@ -1,24 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Text;
 using System.Globalization;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NLog.Web;
+using StackExchange.Redis;
 using SqCommon;
 using DbCommon;
 using FinTechCommon;
-using StackExchange.Redis;
 
 namespace SqCoreWeb
 {
@@ -55,8 +51,8 @@ namespace SqCoreWeb
         {
             string appName = System.Reflection.MethodBase.GetCurrentMethod()?.ReflectedType?.Namespace ?? "UnknownNamespace";
             Console.Title = $"{appName} v1.0.15";
-            string systemEnvStr = $"(v1.0.15, {Utils.RuntimeConfig() /* Debug | Release */}, CLR: {System.Environment.Version}, {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},  OS: {System.Environment.OSVersion}, user: {System.Environment.UserName}, CPU: {System.Environment.ProcessorCount}, ThId-{Thread.CurrentThread.ManagedThreadId})";
-            Console.WriteLine($"Hello {appName}. {systemEnvStr}");
+            string systemEnvStr = $"(v1.0.15,{Utils.RuntimeConfig() /* Debug | Release */},CLR:{System.Environment.Version},{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},OS:{System.Environment.OSVersion},usr:{System.Environment.UserName},CPU:{System.Environment.ProcessorCount},ThId-{Thread.CurrentThread.ManagedThreadId})";
+            Console.WriteLine($"Hi {appName}.{systemEnvStr}");
             gLogger.Info($"********** Main() START {systemEnvStr}");
 
             string sensitiveConfigFullPath = Utils.SensitiveConfigFolderPath() + $"SqCore.WebServer.{appName}.NoGitHub.json";
@@ -73,8 +69,10 @@ namespace SqCoreWeb
             Utils.Configuration = builder.Build();
             Utils.MainThreadIsExiting = new ManualResetEventSlim(false);
             HealthMonitorMessage.InitGlobals(ServerIp.HealthMonitorPublicIp, HealthMonitorMessage.DefaultHealthMonitorServerPort);       // until HealthMonitor runs on the same Server, "localhost" is OK
+            
             Email.SenderName = Utils.Configuration["Emails:HQServer"];
             Email.SenderPwd = Utils.Configuration["Emails:HQServerPwd"];
+            
             StrongAssert.g_strongAssertEvent += StrongAssertMessageSendingEventHandler;
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException; // Occurs when a faulted task's unobserved exception is about to trigger exception which, by default, would terminate the process.
 
@@ -98,6 +96,9 @@ namespace SqCoreWeb
                 }
                 HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MainThread. Exception: '{ e.ToStringWithShortenedStackTrace(1200)}'", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
             }
+
+            Utils.MainThreadIsExiting.Set(); // broadcast main thread shutdown
+            Thread.Sleep(2000); // give 2 seconds for long running background threads to quit
             Caretaker.gCaretaker.Exit();
             MemDb.gMemDb.Exit();
 

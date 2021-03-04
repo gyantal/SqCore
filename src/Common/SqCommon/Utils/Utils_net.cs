@@ -92,7 +92,7 @@ namespace SqCommon
         // "http://www.cmegroup.com/CmeWS/mvc/ProductCalendar/Future/444"
         // QuickfolioNews:
         // Yahoo RSS is handled in their code.
-        // "https://sheets.googleapis.com/v4/spreadsheets/1c5ER22sXDEVzW3uKthclpArlZvYuZd6xUffXhs6rRsM/values/A1%3AA1?key=AIzaSyCuYzsUQT6ey4D3ycvOdPkhk6kHX60fSPg"
+        // "https://sheets.googleapis.com/v4/spreadsheets/1c5ER22sXDEVzW3uKthclpArlZvYuZd6xUffXhs6rRsM/values/A1%3AA1?key=..."
         // "https://www.benzinga.com/stock/AMZN"
         // "https://www.tipranks.com/api/stocks/getNews/?ticker=AMZN"
         public static HttpRequestMessage CreateRequest(string p_url)

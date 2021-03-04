@@ -60,6 +60,28 @@
             "problemMatcher": []
         },
         {
+            "label": "HealthMonitor build Debug",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/src/Server/HealthMonitor/HealthMonitor.csproj"
+            ],
+            "problemMatcher": "$tsc"
+        },
+        {
+            "label": "HealthMonitor publish Release",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "publish",
+                "${workspaceFolder}/src/Server/HealthMonitor/HealthMonitor.csproj",
+				"-c",
+                "Release"
+            ],
+            "problemMatcher": "$tsc"
+        },
+        {
             "label": "PerfTestExperiment run without Debugger Release",
             "command": "dotnet",
             "type": "shell",

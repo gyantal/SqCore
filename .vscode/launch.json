@@ -57,6 +57,22 @@
             "webRoot": "${workspaceFolder}/src/WebServer/SqCoreWeb/wwwroot"
         },
         {
+            "name": "Server/HealthMonitor (DEBUG)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "HealthMonitor build Debug",
+            "program": "${workspaceFolder}/src/Server/HealthMonitor/bin/Debug/net5.0/HealthMonitor.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/Server/HealthMonitor",
+            "console": "externalTerminal",
+            "stopAtEntry": false,
+            "presentation": {
+                "group": "2_Tools",
+                "order": 1,
+                "hidden": false
+            }
+        },
+        {
             "name": "Tools/RedisManager (DEBUG)",
             "type": "coreclr",
             "request": "launch",

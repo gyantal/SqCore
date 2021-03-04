@@ -22,7 +22,7 @@ namespace SqCommon
         // each class can create its own logger with GetCurrentClassLogger(). That is great for unit testing. However, in production, many small util classes exist. Better to not let them allocate separate loggers, but they have one big common Logger.
         public static NLog.Logger Logger = NLog.LogManager.GetLogger("Sq");   // the name of the logger will be not the "Namespace.Class", but whatever you prefer: "App"
         public static IConfigurationRoot Configuration = new ConfigurationBuilder().Build();    // even small Tools have configs for sensitive data like passwords.
-        public static ManualResetEventSlim? MainThreadIsExiting = null;  // some Tools, Apps do not require this, so don't initiate this for them automatically
+        public static ManualResetEventSlim? MainThreadIsExiting = null;  // broadcast main thread shutdown and give 2 seconds for long running background threads to quit. Some Tools, Apps do not require this, so don't initiate this for them automatically
 
 
         // see discussion here in CoreCLR (they are not ready) https://github.com/dotnet/corefx/issues/1017
