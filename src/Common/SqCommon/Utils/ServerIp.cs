@@ -8,17 +8,18 @@ namespace SqCommon
     // gather IPs here so if it changes, it has to be changed only here
     public static class ServerIp
     {
+        // Obsolete: probably delete this HealthMonitorListenerPrivateIp, because HealthMonitor listens on 0.0.0.0 on all localhost + private IPs
         // DEV server: private IP: 172.31.60.145, public static IP (Elastic): 23.20.243.199 == currently http://snifferquant.net/ but what if in the future, the Website and HealthMonitor will be on separate servers. So, use IP, instead of DNS name *.net.
-        public static string HealthMonitorListenerPrivateIp // HealthMonitor.exe thinks that is its IP
-        {
-            get
-            {
-                if (Utils.RunningPlatform() == Platform.Windows)
-                    return "127.0.0.1";
-                else
-                    return "172.31.60.145";     // private IP of the VBrokerDEV server (where the HealthMonitor App runs)
-            }
-        }
+        // public static string HealthMonitorListenerPrivateIp // HealthMonitor.exe thinks that is its IP
+        // {
+        //     get
+        //     {
+        //         if (Utils.RunningPlatform() == Platform.Windows)
+        //             return "127.0.0.1";
+        //         else
+        //             return "172.31.60.145";     // private IP of the VBrokerDEV server (where the HealthMonitor App runs)
+        //     }
+        // }
 
         public static string HealthMonitorPublicIp      // for Clients. Clients of HealthMonitor sees this
         {
@@ -91,7 +92,7 @@ namespace SqCommon
         }
 
         
-        public static string LocalhostMetaAllPrivateIpWithIP // 0.0.0.0 means all IPv4 addresses on the local machine, cannot be used for target, only for listening
+        public static string LocalhostMetaAllPrivateIpWithIP // 0.0.0.0 means all IPv4 addresses on the local machine (equals LocalHost_127.0.0.1 Plus all private IPs of the computer), cannot be used for target, only for listening
         {
             get
             {

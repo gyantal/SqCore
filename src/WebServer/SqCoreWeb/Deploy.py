@@ -1,12 +1,9 @@
-﻿# !!!!!!!!!!!!!     DO a FULL       BUILD ALL  before deploying to Linux
-# before deploying to Linux CHECK that app.module.js and other *.js files are created on Windows into wwwroot/app/* folders 
-# We usually delete these *.js files at GitHub commit, but Linux machine will not compile them, so precompile
-# the other option is to convince GitHub Commit to not offer these *.js files in the wwwroot folder
+# !!!!!!!!!!!!!     DO a FULL       BUILD ALL  before deploying to Linux
 # !!!!!!!!!!!!!     DO a FULL       BUILD ALL  before deploying to Linux
 # !!!!!!!!!!!!!     DO a FULL       BUILD ALL  before deploying to Linux
 # !!!!!!!!!!!!!     DO a FULL       BUILD ALL  before deploying to Linux
 # !!!!!!!!!!!!!     DO a FULL       BUILD ALL  before deploying to Linux 
-
+# Before deploying to Linux CHECK that wwwroot\webapps\MarketDashboard\index.html and other 3 *.js files are created
 
 import platform
 print("Python version: " + platform.python_version() + " (" + platform.architecture()[0] + ")")
@@ -23,29 +20,31 @@ use7zip = True
 
 start_time = time.time()
 # Parameters to change:
+# 1. LocalPC params
 runningEnvironmentComputerName = platform.node()    # 'gyantal-PC' or Balazs
 if runningEnvironmentComputerName == 'gyantal-PC':
     rootLocalDir = "g:/work/Archi-data/GitHubRepos/SqCore/src/WebServer/SqCoreWeb/bin/Release/net5.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
-    serverRsaKeyFile = "g:/work/Archi-data/GitHubRepos/HedgeQuant/src/Server/AmazonAWS/AwsMTrader/AwsMTrader,sq-vnc-client.pem"
+    serverRsaKeyFile = "g:/agy/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
 else:   # TODO: Laci, Balazs, you have to add your IF here (based on the 'name' of your PC)
     rootLocalDir = "d:/GitHub/SqCore/src/WebServer/SqCoreWeb/bin/Release/net5.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
-    serverRsaKeyFile = "d:/SVN/HedgeQuant/src/Server/AmazonAWS/AwsMTrader/AwsMTrader,sq-vnc-client.pem"
+    serverRsaKeyFile = "d:/<fill it to user>/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
+acceptedSubTreeRoots = ["wwwroot"]        # everything under these relPaths is traversed: files or folders too
 zipExeWithPath = "c:/Program Files/7-Zip/7z.exe"
 
-serverHost = "ec2-34-251-1-119.eu-west-1.compute.amazonaws.com"         # MTrader server
+# 2. Server params
+serverHost = "ec2-34-251-1-119.eu-west-1.compute.amazonaws.com"         # SqCore server
 serverPort = 122    # on MTraderServer, port 22 bandwidth throttled, because of VNC viewer usage, a secondary SSH port 122 has no bandwith limit
 serverUser = "sq-vnc-client"
 rootRemoteDir = "/home/" + serverUser + "/SQ/WebServer/SqCoreWeb/published/publish"
-acceptedSubTreeRoots = ["wwwroot"]        # everything under these relPaths is traversed: files or folders too
 
 zipFileNameWithoutPath = "deploy.7z"
 zipFileRemoteName = rootRemoteDir + "/" + zipFileNameWithoutPath
 zipListFileName = rootLocalDir + "/" + "deployList.txt"
 zipFileName = rootLocalDir + "/" + zipFileNameWithoutPath
 
-#excludeDirs = set(["bin", "obj", ".vs", "artifacts", "Properties", "node_modules"])
-excludeDirs = set(["obj", ".vs", "artifacts", "Properties", "node_modules"])
+excludeDirs = set(["bin", "obj", ".vs", "artifacts", "Properties", "node_modules"])
 excludeFileExts = set(["sln", "xproj", "log", "sqlog", "ps1", "sh", "user", "md"])
+excludeFiles = set(["Deploy.py"]) # send *.py files in general, except Deploy.py, start.py to not clutter the root folder on Server
 
 # "mkdir -p" means Create intermediate directories as required. 
 # http://stackoverflow.com/questions/14819681/upload-files-using-sftp-in-python-but-create-directories-if-path-doesnt-exist
@@ -67,7 +66,7 @@ def mkdir_p(sftp, remote_directory):
         sftp.chdir(basename)
         return True
 
-#remove directory recursively
+# remove directory recursively
 # http://stackoverflow.com/questions/20507055/recursive-remove-directory-using-sftp
 # http://stackoverflow.com/questions/3406734/how-to-delete-all-files-in-directory-on-remote-server-in-python
 def isdir(path):
@@ -145,7 +144,7 @@ for root, dirs, files in os.walk(rootLocalDir, topdown=True):
         if not isFilesTraversed:
             continue        # if none of the acceptedSubTreeRoots matched, skip to the next loop cycle
 
-    goodFiles = [f for f in files if os.path.splitext(f)[1][1:].strip().lower() not in excludeFileExts and not f.endswith(".lock.json")]
+    goodFiles = [f for f in files if os.path.splitext(f)[1][1:].strip().lower() not in excludeFileExts and not f.endswith(".lock.json") and f not in excludeFiles]
     for f in goodFiles:
         if curRelPathWin == ".":
             curRelPathLinux = ""

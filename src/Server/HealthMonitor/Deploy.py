@@ -1,4 +1,4 @@
-import platform
+﻿import platform
 print("Python version: " + platform.python_version() + " (" + platform.architecture()[0] + ")")
 
 import os        # listdir, isfile
@@ -17,18 +17,18 @@ start_time = time.time()
 runningEnvironmentComputerName = platform.node()    # 'gyantal-PC' or Balazs
 if runningEnvironmentComputerName == 'gyantal-PC':
     rootLocalDir = "g:/work/Archi-data/GitHubRepos/SqCore/src"        #os.walk() gives back in a way that the last character is not slash, so do that way
-    serverRsaKeyFile = "g:/agy/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
+    serverRsaKeyFile = "g:/agy/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsVbDev/HQaVirtualBrokerDevKeyPairName.pem"
 else:   # TODO: Laci, Balazs, you have to add your IF here (based on the 'name' of your PC)
     rootLocalDir = "d:/GitHub/SqCore/src"       #os.walk() gives back in a way that the last character is not slash, so do that way
-    serverRsaKeyFile = "d:/<fill it to user>/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
-acceptedSubTreeRoots = ["Tools\\BenchmarkDB", "Common\\SqCommon", "Common\\DbCommon"]        # everything under these relPaths is traversed: files or folders too
+    serverRsaKeyFile = "d:/<fill it to user>/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsVbDev/HQaVirtualBrokerDevKeyPairName.pem"
+acceptedSubTreeRoots = ["Server\\HealthMonitor", "Common\\SqCommon", "Common\\DbCommon"]        # everything under these relPaths is traversed: files or folders too
 zipExeWithPath = "c:/Program Files/7-Zip/7z.exe"
 
 # 2. Server params
-serverHost = "ec2-34-251-1-119.eu-west-1.compute.amazonaws.com"         # SqCore server
-serverPort = 122    # on MTraderServer, port 22 bandwidth throttled, because of VNC viewer usage, a secondary SSH port 122 has no bandwith limit
-serverUser = "sq-vnc-client"
-rootRemoteDir = "/home/" + serverUser + "/SQ/Tools/BenchmarkDB/src"
+serverHost = "ec2-23-20-243-199.compute-1.amazonaws.com"         # VBrokerDev server
+serverPort = 22
+serverUser = "ubuntu"
+rootRemoteDir = "/home/" + serverUser + "/SQ/Server/HealthMonitor/src"
 
 zipFileNameWithoutPath = "deploy.7z"
 zipFileRemoteName = rootRemoteDir + "/" + zipFileNameWithoutPath
@@ -37,7 +37,7 @@ zipFileName = rootLocalDir + "/" + zipFileNameWithoutPath
 
 excludeDirs = set(["bin", "obj", ".vs", "artifacts", "Properties", "node_modules"])
 excludeFileExts = set(["sln", "xproj", "log", "sqlog", "ps1", "sh", "user", "md"])
-excludeFiles = set(["Deploy.py"]) # send *.py files in general, except Deploy.py, start.py to not clutter the root folder on Server
+excludeFiles = set(["Deploy.py", "start.py",]) # send *.py files in general, except Deploy.py, start.py to not clutter the root folder on Server
 
 # "mkdir -p" means Create intermediate directories as required. 
 # http://stackoverflow.com/questions/14819681/upload-files-using-sftp-in-python-but-create-directories-if-path-doesnt-exist

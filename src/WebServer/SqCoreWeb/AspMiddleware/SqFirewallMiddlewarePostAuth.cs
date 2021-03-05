@@ -80,6 +80,8 @@ namespace SqCoreWeb
                 {
                     if (httpContext.Request.Path.Value?.Equals("/UserAccount/login", StringComparison.OrdinalIgnoreCase) ?? false)   // if it is an API call only allow '/UserAccount/login' through. 
                         isAllowedRequest = true;
+                    if (httpContext.Request.Path.Value?.Equals("/WebServer/ping", StringComparison.OrdinalIgnoreCase) ?? false)   // HealthMonitor checks https://sqcore.net/WebServer/ping every 9 minutes, so let's allow it without GoogleAuth
+                        isAllowedRequest = true;
                     if ((Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") && (httpContext.Request.Path.Value?.StartsWith("/hub/", StringComparison.OrdinalIgnoreCase) ?? false))
                         isAllowedRequest = true;    // in Development, when 'ng served'-d with proxy redirection from http://localhost:4202 to https://localhost:5001 , Don't force Google Auth, because 
                     if ((Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") && (httpContext.Request.Path.Value?.StartsWith("/ws/", StringComparison.OrdinalIgnoreCase) ?? false))

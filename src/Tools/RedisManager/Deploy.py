@@ -7,31 +7,37 @@ import colorama  # for colourful print
 import subprocess
 from stat import S_ISDIR
 from colorama import Fore, Back, Style
-import platform
 import time
 
 use7zip = True
 
 start_time = time.time()
 # Parameters to change:
-
-rootLocalDir = "g:/work/Archi-data/GitHubRepos/SqCore/src"       #os.walk() gives back in a way that the last character is not slash, so do that way
+# 1. LocalPC params
+runningEnvironmentComputerName = platform.node()    # 'gyantal-PC' or Balazs
+if runningEnvironmentComputerName == 'gyantal-PC':
+    rootLocalDir = "g:/work/Archi-data/GitHubRepos/SqCore/src"        #os.walk() gives back in a way that the last character is not slash, so do that way
+    serverRsaKeyFile = "g:/agy/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
+else:   # TODO: Laci, Balazs, you have to add your IF here (based on the 'name' of your PC)
+    rootLocalDir = "d:/GitHub/SqCore/src"       #os.walk() gives back in a way that the last character is not slash, so do that way
+    serverRsaKeyFile = "d:/<fill it to user>/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
 acceptedSubTreeRoots = ["Tools\\RedisManager", "Common\\SqCommon", "Common\\DbCommon"]        # everything under these relPaths is traversed: files or folders too
+zipExeWithPath = "c:/Program Files/7-Zip/7z.exe"
 
-serverHost = "ec2-34-251-1-119.eu-west-1.compute.amazonaws.com"  # ManualTradingServer
+# 2. Server params
+serverHost = "ec2-34-251-1-119.eu-west-1.compute.amazonaws.com"         # SqCore server
 serverPort = 122    # on MTraderServer, port 22 bandwidth throttled, because of VNC viewer usage, a secondary SSH port 122 has no bandwith limit
 serverUser = "sq-vnc-client"
-serverRsaKeyFile = "g:/work/Archi-data/GitHubRepos/HedgeQuant/src/Server/AmazonAWS/AwsMTrader/AwsMTrader,sq-vnc-client.pem"
-zipExeWithPath = "c:/Program Files/7-Zip/7z.exe"
-rootRemoteDir = "/home/sq-vnc-client/SQ/Tools/RedisManager/src"
+rootRemoteDir = "/home/" + serverUser + "/SQ/Tools/RedisManager/src"
 
 zipFileNameWithoutPath = "deploy.7z"
 zipFileRemoteName = rootRemoteDir + "/" + zipFileNameWithoutPath
 zipListFileName = rootLocalDir + "/" + "deployList.txt"
 zipFileName = rootLocalDir + "/" + zipFileNameWithoutPath
 
-excludeDirs = set(["bin", "obj", ".vs", "artifacts", "Properties"])
-excludeFileExts = set(["sln", "xproj", "log", "sqlog", "ps1", "py", "sh", "user", "md"])
+excludeDirs = set(["bin", "obj", ".vs", "artifacts", "Properties", "node_modules"])
+excludeFileExts = set(["sln", "xproj", "log", "sqlog", "ps1", "sh", "user", "md"])
+excludeFiles = set(["Deploy.py"]) # send *.py files in general, except Deploy.py, start.py to not clutter the root folder on Server
 
 # "mkdir -p" means Create intermediate directories as required. 
 # http://stackoverflow.com/questions/14819681/upload-files-using-sftp-in-python-but-create-directories-if-path-doesnt-exist
@@ -107,7 +113,8 @@ sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 sshClient.connect(serverHost, serverPort, username = serverUser, pkey = paramiko.RSAKey.from_private_key_file(serverRsaKeyFile))
 (stdin, stdout, stderr) = sshClient.exec_command(command)
 for line in stdout.readlines():
-    print(line)
+    if line != "\n":
+        print(line, end='') # tell print not to add any 'new line', because the input already contains that
 
 print("SFTPClient is connecting...")
 transport = paramiko.Transport((serverHost, serverPort))
@@ -116,7 +123,6 @@ sftp = paramiko.SFTPClient.from_transport(transport)
 #rm_onlySubdirectories(sftp, rootRemoteDir)
 
 fileNamesToDeploy = []
-
 for root, dirs, files in os.walk(rootLocalDir, topdown=True):
     curRelPathWin = os.path.relpath(root, rootLocalDir)
     # we have to visit all subdirectories
@@ -131,7 +137,7 @@ for root, dirs, files in os.walk(rootLocalDir, topdown=True):
         if not isFilesTraversed:
             continue        # if none of the acceptedSubTreeRoots matched, skip to the next loop cycle
 
-    goodFiles = [f for f in files if os.path.splitext(f)[1][1:].strip().lower() not in excludeFileExts and not f.endswith(".lock.json")]
+    goodFiles = [f for f in files if os.path.splitext(f)[1][1:].strip().lower() not in excludeFileExts and not f.endswith(".lock.json") and f not in excludeFiles]
     for f in goodFiles:
         if curRelPathWin == ".":
             curRelPathLinux = ""
@@ -169,11 +175,13 @@ if use7zip:
     print(Fore.CYAN + Style.BRIGHT + "Sending packed file ...")
     ret = sftp.put(zipFileName, zipFileRemoteName, None, True)  # Check FileSize after Put() = True
 
+    # unpack files
     print(Fore.CYAN + Style.BRIGHT  + "Unpacking file on the server ...")
     command = "cd " + rootRemoteDir + " && 7z x " + zipFileRemoteName
     (stdin, stdout, stderr) = sshClient.exec_command(command)
     for line in stdout.readlines():
-        print(line, end='') # tell print not to add any 'new line', because the input already contains that
+        if line != "\n":
+            print(line, end='') # tell print not to add any 'new line', because the input already contains that
 
 sshClient.close()
 
@@ -186,5 +194,6 @@ if os.path.isfile(zipFileName):
 if os.path.isfile(zipListFileName):
     os.remove(zipListFileName)  # remove zip file
 
-print("--- Deployment of %d files ended in %03.2f seconds ---" % (len(fileNamesToDeploy), time.time() - start_time))
-#k = input("Press ENTER...")
+print("--- Deployment of %d files ended in %03.2f seconds ---" % (len(fileNamesToDeploy), time.time() - start_time))    # 183 files: one by one upload: 38sec, 7zip: 4.8sec
+
+# k = input("Press ENTER...")

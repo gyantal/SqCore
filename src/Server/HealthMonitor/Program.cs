@@ -28,7 +28,6 @@ namespace HealthMonitor
                .AddJsonFile(sensitiveConfigFullPath, optional: true, reloadOnChange: true);
             Utils.Configuration = builder.Build();
 
-            // HealthMonitorMessage.InitGlobals(ServerIp.HealthMonitorPublicIp, HealthMonitorMessage.DefaultHealthMonitorServerPort);       // until HealthMonitor runs on the same Server, "localhost" is OK
             Email.SenderName = Utils.Configuration["Emails:HQServer"];
             Email.SenderPwd = Utils.Configuration["Emails:HQServerPwd"];
             PhoneCall.TwilioSid = Utils.Configuration["PhoneCall:TwilioSid"];
@@ -40,7 +39,7 @@ namespace HealthMonitor
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException; // Occurs when a faulted task's unobserved exception is about to trigger exception which, by default, would terminate the process.
 
             Caretaker.gCaretaker.Init(Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
-            //HealthMonitor.g_healthMonitor.Init();
+            HealthMonitor.g_healthMonitor.Init();
 
             string? userInput = String.Empty;
             do
@@ -60,13 +59,13 @@ namespace HealthMonitor
                         TestPhoneCall();
                         break;
                     case "4":
-                        //HealthMonitor.g_healthMonitor.CheckAmazonAwsInstances_Elapsed("ConsoleMenu");
+                        HealthMonitor.g_healthMonitor.CheckAmazonAwsInstances_Elapsed("ConsoleMenu");
                         break;
                     case "5":
-                        //Console.WriteLine(HealthMonitor.g_healthMonitor.DailySummaryReport(false).ToString());
+                        Console.WriteLine(HealthMonitor.g_healthMonitor.DailySummaryReport(false).ToString());
                         break;
                     case "6":
-                        //HealthMonitor.g_healthMonitor.DailyReportTimer_Elapsed(null);
+                        HealthMonitor.g_healthMonitor.DailyReportTimer_Elapsed(null);
                         Console.WriteLine("DailyReport email was sent.");
                         break;
                 }
@@ -74,9 +73,12 @@ namespace HealthMonitor
             } while (userInput != "7" && userInput != "ConsoleIsForcedToShutDown");
 
             Utils.MainThreadIsExiting.Set(); // broadcast main thread shutdown
-            Thread.Sleep(2000); // give 2 seconds for long running background threads to quit
+            int timeBeforeExitingSec = 2;
+            Console.WriteLine($"Exiting in {timeBeforeExitingSec}sec...");
+            Thread.Sleep(TimeSpan.FromSeconds(timeBeforeExitingSec)); // give some seconds for long running background threads to quit
+
             Caretaker.gCaretaker.Exit();
-            //HealthMonitor.g_healthMonitor.Exit();
+            HealthMonitor.g_healthMonitor.Exit();
 
             gLogger.Info("****** Main() END");
             NLog.LogManager.Shutdown();
@@ -90,7 +92,7 @@ namespace HealthMonitor
             {
                 new Email
                 {
-                    ToAddresses = Utils.Configuration["EmailGyantal"],
+                    ToAddresses = Utils.Configuration["Emails:Gyant"],
                     Subject = "SQ HealthMonitor: StrongAssert failed.",
                     Body = "SQ HealthMonitor: StrongAssert failed. " + p_msg.Message + "/" + p_msg.StackTrace,
                     IsBodyHtml = false
@@ -99,35 +101,38 @@ namespace HealthMonitor
             }
         }
 
-        private static void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+        static DateTime gLastUnobservedTaskExceptionEmailTime = DateTime.MinValue;
+        private static void TaskScheduler_UnobservedTaskException(object? p_sender, UnobservedTaskExceptionEventArgs p_e)
         {
-            gLogger.Error(e.Exception, $"TaskScheduler_UnobservedTaskException()");
+            gLogger.Error(p_e.Exception, $"TaskScheduler_UnobservedTaskException()");
 
-            // bool isSendable = true;
-            // string msg = "Exception in SqCore.Website.C#.TaskScheduler_UnobservedTaskException.";
-            // if (e.Exception != null) {
-            //     isSendable = SqFirewallMiddlewarePreAuthLogger.IsSendableToHealthMonitorForEmailing(e.Exception);
-            //     if (isSendable)
-            //         msg += $" Exception: '{ e.Exception.ToStringWithShortenedStackTrace(600)}'.";
-            // }
+            string msg = "Exception in SqCore.Website.C#.TaskScheduler_UnobservedTaskException.";
+            if (p_sender != null)
+            {
+                Task? senderTask = p_sender as Task;
+                if (senderTask != null)
+                {
+                    msg += $" Sender is a task. TaskId: {senderTask.Id}, IsCompleted: {senderTask.IsCompleted}, IsCanceled: {senderTask.IsCanceled}, IsFaulted: {senderTask.IsFaulted}, TaskToString(): {senderTask.ToString()}.";
+                    msg += (senderTask.Exception == null) ? " SenderTask.Exception is null" : $" SenderTask.Exception {senderTask.Exception.ToStringWithShortenedStackTrace(800)}";
+                }
+                else
+                    msg += " Sender is not a task.";
+            }
 
-            // if (sender != null)
-            // {
-            //     Task? senderTask = sender as Task;
-            //     if (senderTask != null)
-            //     {
-            //         msg += $" Sender is a task. TaskId: {senderTask.Id}, IsCompleted: {senderTask.IsCompleted}, IsCanceled: {senderTask.IsCanceled}, IsFaulted: {senderTask.IsFaulted}, TaskToString(): {senderTask.ToString()}.";
-            //         msg += (senderTask.Exception == null) ? " SenderTask.Exception is null" : $" SenderTask.Exception {senderTask.Exception.ToStringWithShortenedStackTrace(800)}";
-            //     }
-            //     else
-            //         msg += " Sender is not a task.";
-            // }
+            gLogger.Warn(msg);
+            p_e.SetObserved();        //  preventing it from triggering exception escalation policy which, by default, terminates the process.
 
-            // if (isSendable)
-            //     HealthMonitorMessage.SendAsync(msg, HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
-            // else 
-            //     gLogger.Warn(msg);
-            // e.SetObserved();        //  preventing it from triggering exception escalation policy which, by default, terminates the process.
+            if ((DateTime.UtcNow - gLastUnobservedTaskExceptionEmailTime).TotalMinutes > 30)   // don't send it in every minute, just after 30 minutes
+            {
+                new Email
+                {
+                    ToAddresses = Utils.Configuration["Emails:Gyant"],
+                    Subject = "SQ HealthMonitor: UnobservedTaskException in HealthMonitor.",
+                    Body = "SQ HealthMonitor: UnobservedTaskException in HealthMonitor. " + msg,
+                    IsBodyHtml = false
+                }.Send();
+                gLastUnobservedTaskExceptionEmailTime = DateTime.UtcNow;
+            }
         }
 
         static bool gHasBeenCalled = false;
@@ -179,13 +184,14 @@ namespace HealthMonitor
                 bool didTwilioAcceptedTheCommand = call.MakeTheCall();
                 if (didTwilioAcceptedTheCommand)
                 {
-                    Utils.Logger.Debug("PhoneCall instruction was sent to Twilio.");
+                    Utils.Logger.Debug("TestPhoneCall(): PhoneCall instruction was sent to Twilio.");
                 }
                 else
-                    Utils.Logger.Error("PhoneCall instruction was NOT accepted by Twilio.");
-            } catch (Exception e)
+                    Utils.Logger.Error("TestPhoneCall(): PhoneCall instruction was NOT accepted by Twilio.");
+            }
+            catch (Exception e)
             {
-                Utils.Logger.Error(e, "Exception in TestPhoneCall().");
+                Utils.Logger.Error(e, "TestPhoneCall(): Exception in TestPhoneCall().");
             }
         }
 

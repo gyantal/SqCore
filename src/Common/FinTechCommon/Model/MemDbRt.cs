@@ -142,7 +142,7 @@ namespace FinTechCommon
             if (downloadAssets.Length == 0)
                 return;
 
-            var tradingHoursNow = Utils.UsaTradingHours(Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow));
+            var tradingHoursNow = Utils.UsaTradingHoursNow_withoutHolidays();
             if (tradingHoursNow == TradingHours.RegularTrading)
                 DownloadLastPriceIex(downloadAssets);
             else
@@ -151,7 +151,7 @@ namespace FinTechCommon
         private void SetTimerRt(RtFreqParam p_freqParam)
         {
             // lock (m_rtTimerLock)
-            var tradingHoursNow = Utils.UsaTradingHours(Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow));
+            var tradingHoursNow = Utils.UsaTradingHoursNow_withoutHolidays();
             p_freqParam.Timer!.Change(TimeSpan.FromSeconds((tradingHoursNow == TradingHours.RegularTrading) ? p_freqParam.FreqRthSec : p_freqParam.FreqOthSec), TimeSpan.FromMilliseconds(-1.0));
         }
 
@@ -222,7 +222,7 @@ namespace FinTechCommon
                     if (sec != null)
                     {
                         dynamic? lastVal = float.NaN;
-                        string fieldStr = (p_tradingHoursNow == TradingHours.PreMarket) ? "PreMarketPrice" : "PostMarketPrice";
+                        string fieldStr = (p_tradingHoursNow == TradingHours.PreMarketTrading) ? "PreMarketPrice" : "PostMarketPrice";
                         // TLT doesn't have premarket data. https://finance.yahoo.com/quote/TLT  "quoteSourceName":"Delayed Quote", while others: "quoteSourceName":"Nasdaq Real Time Price"
                         if (!quote.Value.Fields.TryGetValue(fieldStr, out lastVal))
                             lastVal = (float)quote.Value.RegularMarketPrice;  // fallback: the last regular-market Close price both in Post and next Pre-market

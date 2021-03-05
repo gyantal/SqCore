@@ -27,7 +27,7 @@ namespace SqCommon
         public string ToNumber = String.Empty;     // it is not an enum, because callees can be anybody, not only a fixed number of phoneNumbers
         public string Message = "Default message";
         public Caller FromNumber = Caller.Gyantal;      // enum, because we know all the FromNumbers, because that has to be registered with Twilio. Only a fixed, limited numbers can be Callers.
-        public string ResultJSON = String.Empty, Error = String.Empty;
+        public string ResultJSON = String.Empty, ErrorStr = String.Empty;
         public int NRepeatAll = 1; // with this setting = 1, the phone call say the Message only once. However it is common that we want that the message is repeated, so we use = 2.
 
         /// <summary> Returns true when Twilio's server accepted our request, BEFORE the phone begins to ring!
@@ -74,19 +74,23 @@ namespace SqCommon
                 System.Net.Http.HttpResponseMessage response = await client.PostAsync(
                     "https://api.twilio.com/2010-04-01/Accounts/" + TwilioSid + "/Calls.json",  // could be .csv as well, see https://www.twilio.com/docs/api/rest/tips
                     new System.Net.Http.FormUrlEncodedContent(content));
-                string resp = await response.Content.ReadAsStringAsync();
-                if (resp.StartsWith("{\"sid\":"))
-                    ResultJSON = resp;
+                string responseStr = await response.Content.ReadAsStringAsync();
+                if (responseStr.Contains("\"sid\":"))  // Then it looks like a proper JSON answer. Then probably it is executed well. Other JSON parts: (\"status\": \"queued\")
+                {
+                    ResultJSON = responseStr;
+                }
                 else
-                    Error = resp;
+                {
+                    ErrorStr = responseStr;
+                }
             }
             catch (Exception e)
             {
-                Error = ToStringWithoutStackTrace(e);
+                ErrorStr = ToStringWithoutStackTrace(e);
                 //Program.gLogger.Info("Error: " + Error);
-                Console.WriteLine("Error: " + Error);
+                Console.WriteLine("Error: " + ErrorStr);
             }
-            return Error == null;
+            return String.IsNullOrEmpty(ErrorStr);
         }
 
         static string ToStringWithoutStackTrace(Exception e)

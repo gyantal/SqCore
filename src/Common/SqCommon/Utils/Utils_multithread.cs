@@ -25,6 +25,23 @@ namespace SqCommon
             task.ConfigureAwait(continueOnCapturedContext: false).GetAwaiter().GetResult();
         }
 
+        // A Task's exception(s) were not observed either by Waiting on the Task or accessing its Exception property. 
+        // http://stackoverflow.com/questions/7883052/a-tasks-exceptions-were-not-observed-either-by-waiting-on-the-task-or-accessi
+        public static Task LogUnobservedTaskExceptions(this Task p_task, string p_msg)
+        {
+            Utils.Logger.Info("LogUnobservedTaskExceptions().Registering for " + p_msg);
+            p_task.ContinueWith(t =>
+                {
+                    AggregateException? aggException = t?.Exception?.Flatten();
+                    if (aggException != null)
+                        foreach (var exception in aggException.InnerExceptions)
+                            Utils.Logger.Error(exception, "LogUnobservedTaskExceptions().ContinueWithTask(): " + p_msg);
+                },
+                TaskContinuationOptions.OnlyOnFaulted);
+            // Utils.Logger.Info("LogUnobservedTaskExceptions().Registered for " + p_msg);
+            return p_task;
+        }
+        
         // "How do I cancel or timeout non-cancelable async operations?" https://devblogs.microsoft.com/pfxteam/how-do-i-cancel-non-cancelable-async-operations/
         // https://stackoverflow.com/questions/25683980/timeout-pattern-on-task-based-asynchronous-method-in-c-sharp/25684549#25684549
         // if cts.Cancel() is called either by manually or because the delay timeout of cancellationToken expired, then tcs.Task completes,

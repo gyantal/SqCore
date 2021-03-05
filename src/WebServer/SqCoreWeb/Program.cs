@@ -98,7 +98,10 @@ namespace SqCoreWeb
             }
 
             Utils.MainThreadIsExiting.Set(); // broadcast main thread shutdown
-            Thread.Sleep(2000); // give 2 seconds for long running background threads to quit
+            int timeBeforeExitingSec = 2;
+            Console.WriteLine($"Exiting in {timeBeforeExitingSec}sec...");
+            Thread.Sleep(TimeSpan.FromSeconds(timeBeforeExitingSec)); // give some seconds for long running background threads to quit
+
             Caretaker.gCaretaker.Exit();
             MemDb.gMemDb.Exit();
 
@@ -207,21 +210,21 @@ namespace SqCoreWeb
         }
 
         // Called by the GC.FinalizerThread. Occurs when a faulted task's unobserved exception is about to trigger exception which, by default, would terminate the process.
-        private static void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+        private static void TaskScheduler_UnobservedTaskException(object? p_sender, UnobservedTaskExceptionEventArgs p_e)
         {
-            gLogger.Error(e.Exception, $"TaskScheduler_UnobservedTaskException()");
+            gLogger.Error(p_e.Exception, $"TaskScheduler_UnobservedTaskException()");
 
-            bool isSendable = true;
             string msg = "Exception in SqCore.Website.C#.TaskScheduler_UnobservedTaskException.";
-            if (e.Exception != null) {
-                isSendable = SqFirewallMiddlewarePreAuthLogger.IsSendableToHealthMonitorForEmailing(e.Exception);
+            bool isSendable = true;
+            if (p_e.Exception != null) {
+                isSendable = SqFirewallMiddlewarePreAuthLogger.IsSendableToHealthMonitorForEmailing(p_e.Exception);
                 if (isSendable)
-                    msg += $" Exception: '{ e.Exception.ToStringWithShortenedStackTrace(600)}'.";
+                    msg += $" Exception: '{ p_e.Exception.ToStringWithShortenedStackTrace(600)}'.";
             }
 
-            if (sender != null)
+            if (p_sender != null)
             {
-                Task? senderTask = sender as Task;
+                Task? senderTask = p_sender as Task;
                 if (senderTask != null)
                 {
                     msg += $" Sender is a task. TaskId: {senderTask.Id}, IsCompleted: {senderTask.IsCompleted}, IsCanceled: {senderTask.IsCanceled}, IsFaulted: {senderTask.IsFaulted}, TaskToString(): {senderTask.ToString()}.";
@@ -235,7 +238,7 @@ namespace SqCoreWeb
                 HealthMonitorMessage.SendAsync(msg, HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
             else 
                 gLogger.Warn(msg);
-            e.SetObserved();        //  preventing it from triggering exception escalation policy which, by default, terminates the process.
+            p_e.SetObserved();        //  preventing it from triggering exception escalation policy which, by default, terminates the process.
         }
 
         public static void ServerDiagnostic(StringBuilder p_sb)
