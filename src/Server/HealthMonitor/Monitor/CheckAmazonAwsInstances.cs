@@ -142,7 +142,7 @@ namespace HealthMonitor
 
         internal void CheckAmazonAwsInstances_Elapsed(object? p_sender) // Timer is coming on a ThreadPool thread
         {
-            Utils.Logger.Info("CheckAmazonAwsInstances() BEGIN");
+            Utils.Logger.Info($"CheckAmazonAwsInstances_Elapsed (at every {cCheckAmazonAwsTimerFrequencyMinutes} minutes) BEGIN");
 
             string senderStr = Convert.ToString(p_sender) ?? String.Empty;      // This has the added benefit of returning an empty string (string.empty) if the object is null, to avoid any null reference exceptions (unless of course you want an exception thrown in such cases).
 
