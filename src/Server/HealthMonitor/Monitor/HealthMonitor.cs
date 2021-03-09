@@ -61,9 +61,10 @@ namespace HealthMonitor
         Timer? m_dailyMarketOpenTimer = null;   // called at 9:30 ET, may be late or early by 1 hour, if there is a DayLightSaving day
         Timer? m_dailyReportTimer = null;   // called at the market close, because this is set by the MarketOpen Timer, it always use the current day proper DayLightSaving settings. Will be correct.
 
-        const int cRtpsTimerFrequencyMinutes = 15;  // changed from 10min to 15, to decrease strain on VBroker and to get less 'Requested market data is not subscribed' emails.
         const int cHeartbeatTimerFrequencyMinutes = 5;
-
+        const int cRtpsTimerFrequencyMinutes = 15;  // changed from 10min to 15, to decrease strain on VBroker and to get less 'Requested market data is not subscribed' emails.
+        const int cCheckWebsitesTimerFrequencyMinutes = 16;
+        const int cCheckAmazonAwsTimerFrequencyMinutes = 60;
         Object m_lastHealthMonInformSupervisorLock = new Object();   // null value cannot be locked, so we have to create an object
         DateTime m_lastHealthMonErrorEmailTime = DateTime.MinValue;    // don't email if it was made in the last 10 minutes
         DateTime m_lastHealthMonErrorPhoneCallTime = DateTime.MinValue;    // don't call if it was made in the last 30 minutes
@@ -128,15 +129,15 @@ namespace HealthMonitor
             {
                 Utils.Logger.Info("ScheduleDailyTimers() BEGIN");
                 // "if I don't hit the site for 10-15 minutes, it goes to sleep"; "default configuration of an IIS Application pool that is set to have an idle-timeout of 20 minutes"
-                m_checkWebsitesAndKeepAliveTimer = new System.Threading.Timer(new TimerCallback(CheckWebsitesAndKeepAliveTimer_Elapsed), null, TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(9.0));
+                m_checkWebsitesAndKeepAliveTimer = new System.Threading.Timer(new TimerCallback(CheckWebsitesAndKeepAliveTimer_Elapsed), null, TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(cCheckWebsitesTimerFrequencyMinutes));
 
-                m_checkAmazonAwsInstancesTimer = new System.Threading.Timer(new TimerCallback(CheckAmazonAwsInstances_Elapsed), null, TimeSpan.FromSeconds(40), TimeSpan.FromMinutes(60.0));
+                m_checkAmazonAwsInstancesTimer = new System.Threading.Timer(new TimerCallback(CheckAmazonAwsInstances_Elapsed), null, TimeSpan.FromSeconds(40), TimeSpan.FromMinutes(cCheckAmazonAwsTimerFrequencyMinutes));
 
                 m_rtpsTimer = new System.Threading.Timer(new TimerCallback(RtpsTimer_Elapsed), null, TimeSpan.FromSeconds(50), TimeSpan.FromMinutes(cRtpsTimerFrequencyMinutes));
 
                 m_heartbeatTimer = new System.Threading.Timer((e) =>    // Heartbeat log is useful to find out when VM was shut down, or when the App crashed
                 {
-                    Utils.Logger.Info(String.Format("**m_nHeartbeat: {0} (at every {1} minutes)", m_nHeartbeat, cHeartbeatTimerFrequencyMinutes));
+                    Utils.Logger.Info($"**m_nHeartbeat: {m_nHeartbeat} (at every {cHeartbeatTimerFrequencyMinutes} minutes)");
                     m_nHeartbeat++;
                 }, null, TimeSpan.FromMinutes(0.5), TimeSpan.FromMinutes(cHeartbeatTimerFrequencyMinutes));
 

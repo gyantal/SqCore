@@ -22,8 +22,8 @@ namespace HealthMonitor
         {
             try
             {
-                Utils.Logger.Info($"RtpsTimer_Elapsed_{m_nRtpsTimerCalled} ({cRtpsTimerFrequencyMinutes} minutes) BEGIN");
                 m_nRtpsTimerCalled++;
+                Utils.Logger.Info($"RtpsTimer_Elapsed_{m_nRtpsTimerCalled} ({cRtpsTimerFrequencyMinutes} minutes) BEGIN");
                 if (PersistedState == null || !PersistedState.IsRealtimePriceServiceTimerEnabled)
                     return;
 
@@ -36,7 +36,10 @@ namespace HealthMonitor
                     // Now, in 2015, there is no point at checking it overnight, as no Developer will be able to fix it.
                     // in Utc time USA stock market is open around 15:30-21:00 or 14:30-20:00, but developer's sleeping in the main factor
                     // in the future, we may trade non-stop, 7/24, 7 days, 24 hours, but not now, so we can save resources by not checking overnight
-                    if (utcNowTime > new TimeSpan(23, 15, 0) || utcNowTime < new TimeSpan(7, 30, 0))
+                    // USA PreMarket: 4:00ET (9:30UTC or 10:30UTC), Regular: 9:30ET, Post:16:00, Post-ends: 20:00
+                    // Vbroker-server (old USA which will be discontinued, not new Ireland SqCore) reboot time: 8:00UTC. 
+                    // Scheduling RtPriceCheck after that 8:00UTC Vbroker restart, although that will be even before PreMarket starts at 9:30UTC or 10:30UTC
+                    if (utcNowTime > new TimeSpan(23, 15, 0) || utcNowTime < new TimeSpan(8, 30, 0))
                         isCheckingRtPrice = false;
                     //similarly, even though we can trade on the weekend, we don't do that now, so save resources, don't check
                     if (utcNow.DayOfWeek == DayOfWeek.Saturday || utcNow.DayOfWeek == DayOfWeek.Sunday)

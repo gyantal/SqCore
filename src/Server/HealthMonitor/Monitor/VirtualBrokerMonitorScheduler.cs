@@ -127,9 +127,10 @@ namespace HealthMonitor
                 // maybe loop is not required.
                 // in the past we try to get UsaMarketOpenOrCloseTime() every 30 minutes. It was determined from YFinance intrady. "sleep 30 min for DetermineUsaMarketOpenOrCloseTime()"
                 // however, it may be a good idea that the Scheduler periodically wakes up and check Tasks
+                const int cVbSchedulerSleepMinutes = 30;
                 while (true)
                 {
-                    Utils.Logger.Info("VbSchedulerThreadRun() periodic");
+                    Utils.Logger.Info($"VbSchedulerThreadRun() loop BEGIN. Awake at every {cVbSchedulerSleepMinutes}min.");
                     bool isMarketTradingDay;
                     DateTime marketOpenTimeUtc, marketCloseTimeUtc;
                     bool isTradingHoursOK = Utils.DetermineUsaMarketTradingHours(DateTime.UtcNow, out isMarketTradingDay, out marketOpenTimeUtc, out marketCloseTimeUtc, TimeSpan.FromDays(3));
@@ -148,7 +149,7 @@ namespace HealthMonitor
                         }
                     }
 
-                    Thread.Sleep(TimeSpan.FromMinutes(30));     // try reschedulement in 30 minutes
+                    Thread.Sleep(TimeSpan.FromMinutes(cVbSchedulerSleepMinutes));     // try reschedulement in 30 minutes
                 }
             }
             catch (Exception e)

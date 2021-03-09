@@ -36,9 +36,7 @@ namespace SqCommon
                     if (aggException != null)
                         foreach (var exception in aggException.InnerExceptions)
                             Utils.Logger.Error(exception, "LogUnobservedTaskExceptions().ContinueWithTask(): " + p_msg);
-                },
-                TaskContinuationOptions.OnlyOnFaulted);
-            // Utils.Logger.Info("LogUnobservedTaskExceptions().Registered for " + p_msg);
+                }, TaskContinuationOptions.OnlyOnFaulted);
             return p_task;
         }
         

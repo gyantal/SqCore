@@ -60,14 +60,10 @@ namespace HealthMonitor
                 return;
             }
 
-            if (message.ResponseFormat == HealthMonitorMessageResponseFormat.None)
-            {
-                Utils.Logger.Info($"ProcessTcpClient: TcpClientDispose() START");
+            if (message.ResponseFormat == HealthMonitorMessageResponseFormat.None)  // if not required to answer message, then dispose tcpClient quikcly to release resources
                 Utils.TcpClientDispose(p_tcpClient);
-                Utils.Logger.Info($"ProcessTcpClient: TcpClientDispose() END");
-            }
 
-            Utils.Logger.Info($"ProcessTcpClient, Step 2");
+            Utils.Logger.Info($"ProcessTcpClient. Processing messageID {message.ID}.");
             switch (message.ID)
             {
                 case HealthMonitorMessageID.Ping:
@@ -78,9 +74,7 @@ namespace HealthMonitor
                 case HealthMonitorMessageID.ReportErrorFromVirtualBroker:
                 case HealthMonitorMessageID.ReportWarningFromVirtualBroker:
                 case HealthMonitorMessageID.ReportOkFromVirtualBroker:
-                    Utils.Logger.Info($"ProcessTcpClient, Step 3");
                     MessageFromVirtualBroker(p_tcpClient, message);
-                    Utils.Logger.Info($"ProcessTcpClient, Step 4");
                     break;
                 case HealthMonitorMessageID.GetHealthMonitorCurrentStateToHealthMonitorWebsite:
                     CurrentStateToHealthMonitorWebsite(p_tcpClient, message);

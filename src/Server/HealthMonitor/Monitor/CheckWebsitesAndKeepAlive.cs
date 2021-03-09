@@ -34,7 +34,7 @@ namespace HealthMonitor
         {
             try
             {
-                Utils.Logger.Info("CheckWebsitesAndKeepAliveTimer_Elapsed() BEGIN");
+                Utils.Logger.Info($"CheckWebsitesAndKeepAliveTimer_Elapsed(at every {cCheckWebsitesTimerFrequencyMinutes} minutes) BEGIN");
 
                 List<string> failedWebsites = new List<string>();
                 for (int i = 0; i < cWebsitesToCheckAndnFail.Length; i++)
