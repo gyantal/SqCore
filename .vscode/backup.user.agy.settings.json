@@ -1,0 +1,33 @@
+{
+    "editor.fontSize": 18,
+    "terminal.integrated.fontSize": 18,
+    "git.confirmSync": false,
+    "window.restoreWindows": "all",
+    "explorer.confirmDelete": false,
+    "editor.renderControlCharacters": false,
+    "editor.renderWhitespace": "all",
+    "window.zoomLevel": 1,
+    "typescript.reportStyleChecksAsWarnings": false,
+    "git.enableSmartCommit": true,
+    "aws.profile": "profile:default",
+    "diffEditor.ignoreTrimWhitespace": false,
+    "python.pythonPath": "",
+    "remote.SSH.showLoginTerminal": true,
+    "omnisharp.projectLoadTimeout": 1200,
+    "[typescript]": {
+        "editor.defaultFormatter": "vscode.typescript-language-features"    // "esbenp.prettier-vscode" didn't support FormatSelection for me
+    },
+    "html.format.wrapLineLength": 1000,
+    "[html]": {
+        "editor.defaultFormatter": "vscode.html-language-features"      // // "esbenp.prettier-vscode" didn't support FormatSelection
+    },
+    "editor.columnSelection": false,
+    "python.languageServer": "Pylance",
+    "workbench.editorAssociations": [
+        {
+            "viewType": "jupyter.notebook.ipynb",
+            "filenamePattern": "*.ipynb"
+        }
+    ],
+    "window.newWindowDimensions": "offset"
+}

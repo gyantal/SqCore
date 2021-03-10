@@ -190,59 +190,57 @@ namespace SqCoreWeb.Controllers
             return Content($"<HTML><body>TestCaretakerCleanLogfiles() finished with { (success ? "OK" : "Error") }. <br> Note To Client '{noteToClient.ToString()}'</body></HTML>", "text/html");
         }
 
-        [HttpPost, HttpGet]     // we only leave HttpGet here so we got a Log message into a log file.
-        public ActionResult ReportHealthMonitorCurrentStateToDashboardInJSON()
+        // just pass the HealthMonitorWebsite TS query to the HealthMonitor.EXE without further processing.
+        [HttpPost, HttpGet]     // message from HealthMonitor webApp arrives as a Post, not a Get
+        public async Task<ActionResult> ReportHealthMonitorCurrentStateToDashboardInJSON()
         {
-            return Content(@"<HTML><body>Implement when we bring the HealthMonitorFunctionality from SqLab to SqCore</body></HTML>", "text/html"); // TODO: implement when we bring the HealthMonitorFunctionality from SqLab to SqCore
-            // long highResWebRequestReceivedTime = System.Diagnostics.Stopwatch.GetTimestamp();
-            // m_logger.LogInformation("ReportHealthMonitorCurrentStateToDashboardInJSON() is called");
-            // // TODO: we should check here if it is a HttpGet (or a message without data package) and return gracefully
+            Utils.Logger.Info("ReportHealthMonitorCurrentStateToDashboardInJSON() BEGIN");
+            // TODO: we should check here if it is a HttpGet (or a message without data package) and return gracefully
 
-            // try
-            // {
-            //     if (Request.Body.CanSeek)
-            //     {
-            //         Request.Body.Position = 0;                 // Reset the position to zero to read from the beginning.
-            //     }
-            //     string jsonToBackEnd = new StreamReader(Request.Body).ReadToEnd();
+            string response = String.Empty;
+            try
+            {
+                if (Request.Body.CanSeek)
+                    Request.Body.Position = 0;                 // Reset the position to zero to read from the beginning.
+                // string jsonToBackEnd = new StreamReader(Request.Body).ReadToEnd();
+                string jsonToBackEnd = await new StreamReader(Request.Body).ReadToEndAsync();
+                try
+                {
+                    using (var client = new TcpClient())
+                    {
+                        Task task = client.ConnectAsync(ServerIp.HealthMonitorPublicIp, HealthMonitorMessage.DefaultHealthMonitorServerPort);
+                        if (Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(10))).Result != task)
+                        {
+                            Utils.Logger.Error("Error:HealthMonitor server: client.Connect() timeout.");
+                            response = @"{""ResponseToFrontEnd"" : ""Error: Error:HealthMonitor server: client.Connect() timeout.";
+                        }
+                        else
+                        {
+                            BinaryWriter bw = new BinaryWriter(client.GetStream());
+                            bw.Write((Int32)HealthMonitorMessageID.GetHealthMonitorCurrentStateToHealthMonitorWebsite);
+                            bw.Write(jsonToBackEnd);
+                            bw.Write((Int32)HealthMonitorMessageResponseFormat.JSON);
 
-            //     try
-            //     {
-            //         string receivedTcpMsg = null;
-            //         using (var client = new TcpClient())
-            //         {
-            //             Task task = client.ConnectAsync(ServerIp.HealthMonitorPublicIp, HealthMonitorMessage.DefaultHealthMonitorServerPort);
-            //             if (Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(10))).Result != task)
-            //             {
-            //                 m_logger.LogError("Error:HealthMonitor server: client.Connect() timeout.");
-            //                 return Content(@"{""ResponseToFrontEnd"" : ""Error: Error:HealthMonitor server: client.Connect() timeout.", "application/json");
-            //             }
+                            BinaryReader br = new BinaryReader(client.GetStream());
+                            response = br.ReadString();
+                            Utils.Logger.Debug("ReportHealthMonitorCurrentStateToDashboardInJSON() returned answer: " + response);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Utils.Logger.Error(e, "Error:HealthMonitor SendMessage exception.");
+                    response = @"{""ResponseToFrontEnd"" : ""Error:HealthMonitor SendMessage exception. Check log file of the WepApp: " + e.Message;
+                }
+            }
+            catch (Exception ex)
+            {
+                Utils.Logger.Error(ex, "Error:HealthMonitor GetMessage exception.");
+                response = @"{""ResponseToFrontEnd"" : ""Error: " + ex.Message + @"""}";
+            }
 
-            //             BinaryWriter bw = new BinaryWriter(client.GetStream());
-            //             bw.Write((Int32)HealthMonitorMessageID.GetHealthMonitorCurrentStateToHealthMonitorWebsite);
-            //             bw.Write(jsonToBackEnd);
-            //             bw.Write((Int32)HealthMonitorMessageResponseFormat.JSON);
-
-            //             BinaryReader br = new BinaryReader(client.GetStream());
-            //             receivedTcpMsg = br.ReadString();
-            //             m_logger.LogDebug("ReportHealthMonitorCurrentStateToDashboardInJSON() returned answer: " + receivedTcpMsg);
-            //         }
-
-            //         m_logger.LogDebug("ReportHealthMonitorCurrentStateToDashboardInJSON() after WaitMessageFromWebJob()");
-            //         return Content(receivedTcpMsg, "application/json");
-            //     }
-            //     catch (Exception e)
-            //     {
-            //         m_logger.LogError("Error:HealthMonitor SendMessage exception:  " + e);
-            //         return Content(@"{""ResponseToFrontEnd"" : ""Error:HealthMonitor SendMessage exception. Check log file of the WepApp: " + e.Message, "application/json");
-            //     }
-            // }
-            // catch (Exception ex)
-            // {
-            //     return Content(@"{""ResponseToFrontEnd"" : ""Error: " + ex.Message + @"""}", "application/json");
-            // }
-
-
+            Utils.Logger.Info("ReportHealthMonitorCurrentStateToDashboardInJSON() END");
+            return Content(response, "application/json");
         }
     }
 }

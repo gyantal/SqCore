@@ -34,11 +34,13 @@ namespace SqCoreWeb
                 // MVC and other StaticFile routers didn't differentiated based on subdomain.
                 // https://sqcore.net, https://dashboard.sqcore.net, https://healthmonitor.sqcore.net
                 // After the redirection, keep the login, logout links, otherwise CheckAuthorizedGoogleEmail() email is '', and login is not possible.
-                if (req.Path.ToString().EndsWith("UserAccount/login", StringComparison.OrdinalIgnoreCase) || // https://healthmonitor.sqcore.net/UserAccount/login should work with its subdomain. Don't redirect that.
-                    req.Path.ToString().EndsWith("UserAccount/logout", StringComparison.OrdinalIgnoreCase) ||
-                    req.Path.ToString().EndsWith("signin-google", StringComparison.OrdinalIgnoreCase) || // Google calls back on https://healthmonitor.sqcore.net/signin-google
-                    req.Path.ToString().StartsWith("/ws/", StringComparison.OrdinalIgnoreCase) || // WebSocket listeners listen on "/ws/" from root
-                    req.Path.ToString().StartsWith("/api/", StringComparison.OrdinalIgnoreCase)) // some controllers listen on /api
+                string path = req.Path.ToString();
+                if (path.EndsWith("UserAccount/login", StringComparison.OrdinalIgnoreCase) || // https://healthmonitor.sqcore.net/UserAccount/login should work with its subdomain. Don't redirect that.
+                    path.EndsWith("UserAccount/logout", StringComparison.OrdinalIgnoreCase) ||
+                    path.EndsWith("signin-google", StringComparison.OrdinalIgnoreCase) || // Google calls back on https://healthmonitor.sqcore.net/signin-google
+                    path.StartsWith("/ws/", StringComparison.OrdinalIgnoreCase) || // WebSocket listeners listen on "/ws/" from root
+                    path.StartsWith("/api/", StringComparison.OrdinalIgnoreCase) || // some controllers listen on /api
+                    path.StartsWith("/WebServer/", StringComparison.OrdinalIgnoreCase)) // healthmonitor.sqcore.net needs https://healthmonitor.sqcore.net/WebServer/ReportHealthMonitorCurrentStateToDashboardInJSON
                     return;
 
                 Utils.Logger.Info("SubdomainRewriteOptionsRule(): Request with host: " + (req.IsHttps ? "https://" : "http://") + currentHost + req.PathBase + req.Path + req.QueryString);
@@ -52,7 +54,7 @@ namespace SqCoreWeb
                     context.HttpContext.Response.Redirect(newUrl.ToString(), false);     // Redirect is temporary (HTTP 302); Other option is redirect is permanent (HTTP 301), which means browser will cache it forever.
                     context.Result = RuleResult.EndResponse;
                 }
-                else
+                else // silent Rewrite URL (user will not even notice it)
                 {
                     req.Host = (currentHost.Port != null) ?
                         new HostString(currentHost.Host.Substring(p_subdomain.Length), (int)(currentHost.Port)) :

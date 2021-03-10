@@ -3,6 +3,126 @@
   "version": 1, 
   "newProjectRoot": "projects",
   "projects": {
+    "HelloAngular": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "projects/HelloAngular",
+      "sourceRoot": "projects/HelloAngular/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/HelloAngular",
+            "index": "projects/HelloAngular/src/index.html",
+            "main": "projects/HelloAngular/src/main.ts",
+            "polyfills": "projects/HelloAngular/src/polyfills.ts",
+            "tsConfig": "projects/HelloAngular/tsconfig.app.json",
+            "aot": true,
+            "assets": [
+              "projects/HelloAngular/src/favicon.ico",
+              "projects/HelloAngular/src/assets"
+            ],
+            "styles": [
+              "projects/HelloAngular/src/styles.scss"
+            ],
+            "scripts": []
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "projects/HelloAngular/src/environments/environment.ts",
+                  "with": "projects/HelloAngular/src/environments/environment.prod.ts"
+                }
+              ],
+              "optimization": true,
+              "outputHashing": "all",
+              "sourceMap": false,
+              "namedChunks": false,
+              "extractLicenses": true,
+              "vendorChunk": false,
+              "buildOptimizer": true,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2mb",
+                  "maximumError": "5mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kb",
+                  "maximumError": "10kb"
+                }
+              ]
+            }
+          }
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "browserTarget": "HelloAngular:build"
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "HelloAngular:build:production"
+            }
+          }
+        },
+        "extract-i18n": {
+          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "options": {
+            "browserTarget": "HelloAngular:build"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/HelloAngular/src/test.ts",
+            "polyfills": "projects/HelloAngular/src/polyfills.ts",
+            "tsConfig": "projects/HelloAngular/tsconfig.spec.json",
+            "karmaConfig": "projects/HelloAngular/karma.conf.js",
+            "assets": [
+              "projects/HelloAngular/src/favicon.ico",
+              "projects/HelloAngular/src/assets"
+            ],
+            "styles": [
+              "projects/HelloAngular/src/styles.scss"
+            ],
+            "scripts": []
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "projects/HelloAngular/tsconfig.app.json",
+              "projects/HelloAngular/tsconfig.spec.json",
+              "projects/HelloAngular/e2e/tsconfig.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        },
+        "e2e": {
+          "builder": "@angular-devkit/build-angular:protractor",
+          "options": {
+            "protractorConfig": "projects/HelloAngular/e2e/protractor.conf.js",
+            "devServerTarget": "HelloAngular:serve"
+          },
+          "configurations": {
+            "production": {
+              "devServerTarget": "HelloAngular:serve:production"
+            }
+          }
+        }
+      }
+    },
     "HealthMonitor": {
       "projectType": "application",
       "schematics": {
