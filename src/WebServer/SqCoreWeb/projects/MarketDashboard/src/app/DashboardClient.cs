@@ -34,7 +34,7 @@ namespace SqCoreWeb
             // static ctor DashboardPushHub is only called at the time first instance is created, which is only when the first connection happens. It can be days after Kestrel webserver starts. 
             // But that is OK. At least if MarketDashboard is not used by users, it will not consume CPU resources.");
         }
-        public static void EarlyInit()
+        public static void PreInit()
         {
             MemDb.gMemDb.EvAssetDataReloaded += new MemDb.MemDbEventHandler(EvMemDbAssetDataReloaded);
             MemDb.gMemDb.EvHistoricalDataReloaded += new MemDb.MemDbEventHandler(EvMemDbHistoricalDataReloaded);

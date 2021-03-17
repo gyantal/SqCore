@@ -45,49 +45,8 @@ namespace BenchmarkDB
             string userInput = String.Empty;
             do
             {
-
-                userInput = DisplayMenu();
-                switch (userInput)
-                {
-                    case "1":
-                        Console.WriteLine("Hello. I am not crashed yet! :)");
-                        gLogger.Info("Hello. I am not crashed yet! :)");
-                        Utils.TestDownloadApiNasdaqCom();
-                        break;
-                    case "2":
-                        Controller.g_controller.TestPing();
-                        break;
-                    case "3":
-                        Controller.g_controller.TestPostgreSql();
-                        break;
-                    case "4":
-                        Controller.g_controller.TestRedisCache();
-                        break;
-                    case "5":
-                        // Console.WriteLine("5. Benchmark all and make conclusions (target: remote, execute: PC, Linux)");
-                        Controller.g_controller.BenchmarkAllAndConclusions(
-                            Program.gConfiguration.GetConnectionString("PingDefault"),
-                            Program.gConfiguration.GetConnectionString("PostgreSqlDefault"),
-                            Program.gConfiguration.GetConnectionString("RedisDefault"));
-                        break;
-                    case "6":
-                        // Console.WriteLine("6. Benchmark all and make conclusions (target: localhost, execute: PC)");
-                        // start redis on WSL: in "ubuntu@gyantal-PC:~/redis/redis-stable$" type 'redis-server'     (check if it works in another terminal: 'redis-cli ping')
-                        Controller.g_controller.BenchmarkAllAndConclusions(
-                            "localhost",
-                            Program.gConfiguration.GetConnectionString("PostgreSqlWinLocalhost"),
-                            Program.gConfiguration.GetConnectionString("RedisWinLocalhost"));
-                        break;
-                    case "7":
-                        // Console.WriteLine("7. Benchmark all and make conclusions (target: localhost, execute: Linux)");
-                        Controller.g_controller.BenchmarkAllAndConclusions(
-                            "localhost",
-                            Program.gConfiguration.GetConnectionString("PostgreSqlLinuxLocalhost"),
-                            Program.gConfiguration.GetConnectionString("RedisLinuxLocalhost"));
-                        break;
-                }
-
-            } while (userInput != "8" && userInput != "ConsoleIsForcedToShutDown");
+                userInput = DisplayMenuAndExecute();
+            } while (userInput != "UserChosenExit" && userInput != "ConsoleIsForcedToShutDown");
 
             gLogger.Info("********** Main() END");
             Controller.g_controller.Exit();
@@ -96,16 +55,12 @@ namespace BenchmarkDB
 
 
 
-        static bool gHasBeenCalled = false;
-        static public string DisplayMenu()
+         static bool gIsFirstCall = true;
+        static public string DisplayMenuAndExecute()
         {
-            if (gHasBeenCalled)
-            {
+            if (!gIsFirstCall)
                 Console.WriteLine();
-            }
-            gHasBeenCalled = true;
-
-            //Console.WriteLine("Is output redirected: " + Console.IsOutputRedirected + "WindowHeight: " + Console.WindowHeight + "WindowWidth: " + Console.WindowWidth);
+            gIsFirstCall = false;
 
             ColorConsole.WriteLine(ConsoleColor.Magenta, "----  (type and press Enter)  ----");
             Console.WriteLine("1. Say Hello. Don't do anything. Check responsivenes.");
@@ -115,19 +70,62 @@ namespace BenchmarkDB
             Console.WriteLine("5. Benchmark all and make conclusions (target: remote, execute: PC, Linux)");
             Console.WriteLine("6. Benchmark all and make conclusions (target: localhost, execute: PC)");
             Console.WriteLine("7. Benchmark all and make conclusions (target: localhost, execute: Linux)");
-            Console.WriteLine("8. Exit gracefully (Avoid Ctrl-^C).");
-            string result = String.Empty;
+            Console.WriteLine("8. Test downloading api.nasdaq.com (tricky HttpHeaders).");
+            Console.WriteLine("9. Exit gracefully (Avoid Ctrl-^C).");
+            string userInput = String.Empty;
             try
             {
-                result = Console.ReadLine() ?? String.Empty;
-                Console.WriteLine();    // it is better to insert a new line for separating the log of the tools from the displayed menu.
+                userInput = Console.ReadLine() ?? String.Empty;
             }
             catch (System.IO.IOException e) // on Linux, of somebody closes the Terminal Window, Console.Readline() will throw an Exception with Message "Input/output error"
             {
                 gLogger.Info($"Console.ReadLine() exception. Somebody closes the Terminal Window: {e.Message}");
                 return "ConsoleIsForcedToShutDown";
             }
-            return result;
+            switch (userInput)
+            {
+                case "1":
+                    Console.WriteLine("Hello. I am not crashed yet! :)");
+                    gLogger.Info("Hello. I am not crashed yet! :)");
+                    break;
+                case "2":
+                    Controller.g_controller.TestPing();
+                    break;
+                case "3":
+                    Controller.g_controller.TestPostgreSql();
+                    break;
+                case "4":
+                    Controller.g_controller.TestRedisCache();
+                    break;
+                case "5":
+                    // Console.WriteLine("5. Benchmark all and make conclusions (target: remote, execute: PC, Linux)");
+                    Controller.g_controller.BenchmarkAllAndConclusions(
+                        Program.gConfiguration.GetConnectionString("PingDefault"),
+                        Program.gConfiguration.GetConnectionString("PostgreSqlDefault"),
+                        Program.gConfiguration.GetConnectionString("RedisDefault"));
+                    break;
+                case "6":
+                    // Console.WriteLine("6. Benchmark all and make conclusions (target: localhost, execute: PC)");
+                    // start redis on WSL: in "ubuntu@gyantal-PC:~/redis/redis-stable$" type 'redis-server'     (check if it works in another terminal: 'redis-cli ping')
+                    Controller.g_controller.BenchmarkAllAndConclusions(
+                        "localhost",
+                        Program.gConfiguration.GetConnectionString("PostgreSqlWinLocalhost"),
+                        Program.gConfiguration.GetConnectionString("RedisWinLocalhost"));
+                    break;
+                case "7":
+                    // Console.WriteLine("7. Benchmark all and make conclusions (target: localhost, execute: Linux)");
+                    Controller.g_controller.BenchmarkAllAndConclusions(
+                        "localhost",
+                        Program.gConfiguration.GetConnectionString("PostgreSqlLinuxLocalhost"),
+                        Program.gConfiguration.GetConnectionString("RedisLinuxLocalhost"));
+                    break;
+                case "8":
+                    Utils.TestDownloadApiNasdaqCom();
+                    break;
+                case "9":
+                    return "UserChosenExit";
+            }
+            return String.Empty;
         }
 
 

@@ -54,14 +54,12 @@ namespace RedisManager
 
         
 
-        static bool gHasBeenCalled = false;
+        static bool gIsFirstCall = true;
         static public string DisplayMenuAndExecute()
         {
-            if (gHasBeenCalled)
-            {
+            if (!gIsFirstCall)
                 Console.WriteLine();
-            }
-            gHasBeenCalled = true;
+            gIsFirstCall = false;
 
             ColorConsole.WriteLine(ConsoleColor.Magenta, "----  (type and press Enter)  ----");
             Console.WriteLine("1. Say Hello. Don't do anything. Check responsivenes.");
@@ -77,7 +75,6 @@ namespace RedisManager
             try
             {
                 userInput = Console.ReadLine() ?? String.Empty;
-                Console.WriteLine();    // it is better to insert a new line for separating the log of the tools from the displayed menu.
             }
             catch (System.IO.IOException e) // on Linux, of somebody closes the Terminal Window, Console.Readline() will throw an Exception with Message "Input/output error"
             {
@@ -138,7 +135,6 @@ namespace RedisManager
             try
             {
                 userInput = Console.ReadLine() ?? String.Empty;
-                Console.WriteLine();    // it is better to insert a new line for separating the log of the tools from the displayed menu.
             }
             catch (System.IO.IOException e) // on Linux, of somebody closes the Terminal Window, Console.Readline() will throw an Exception with Message "Input/output error"
             {

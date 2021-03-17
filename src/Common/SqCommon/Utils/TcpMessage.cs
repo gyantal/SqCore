@@ -103,8 +103,8 @@ namespace SqCommon
                 {
                     // we should observe that exception, otherwise TaskScheduler.UnobservedTaskException will be raised
                     Utils.Logger.Info("TcpMessage.SendMessage(). connectContinueTask BEGIN.");
-                    if (connTask.Exception != null)
-                        Utils.Logger.Error(connTask.Exception, "Error:TcpMessage.SendMessage(). Exception in ConnectAsync() task.");
+                    if (connTask.Exception != null) // don't raise Error (which logs to console), just a warning. Caller should decide if this is expected sometimes or it is error.
+                        Utils.Logger.Warn(connTask.Exception, $"Warn:TcpMessage.SendMessage(). Exception in ConnectAsync({TcpServerHost}:{TcpServerPort}).");
 
                     // If there was a timeout cancellation, we try to dispose it here, because we couldn't do it in the main thread.
                     if (wasTimeout && connTask.IsCompleted)
@@ -117,11 +117,12 @@ namespace SqCommon
 
                 if (connectTask.Exception != null)
                 {
-                    Utils.Logger.Debug("TcpMessage.SendMessage(). client.ConnectAsync() completed without timeout, but Exception occured.");
+                    // don't raise Error (which logs to console), just a warning. Caller should decide if this is expected sometimes or it is error.
+                    Utils.Logger.Warn($"Warn. TcpMessage.SendMessage(). client.ConnectAsync({TcpServerHost}:{TcpServerPort}) completed without timeout, but Exception occured.");
                 }
                 else
                 {
-                    Utils.Logger.Debug("TcpMessage.SendMessage(). client.ConnectAsync() completed without timeout and no Exception occured");
+                    Utils.Logger.Debug("TcpMessage.SendMessage(). client.ConnectAsync({TcpServerHost}:{TcpServerPort}) completed without timeout and no Exception occured");
                     BinaryWriter bw = new BinaryWriter(client.GetStream()); // sometimes "System.InvalidOperationException: The operation is not allowed on non-connected sockets." at TcpClient.GetStream()
                     SerializeTo(bw);
                     BinaryReader br = new BinaryReader(client.GetStream());

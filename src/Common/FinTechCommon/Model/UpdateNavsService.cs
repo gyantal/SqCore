@@ -102,7 +102,7 @@ namespace FinTechCommon
             string? vbReplyStr = vbMessageTask.Result;
             if (vbMessageTask.Exception != null || String.IsNullOrEmpty(vbReplyStr))
             {
-                string errorMsg = $"Error. Check that both the IB's TWS and the VirtualBroker are running on Manual/Auto Trading Server! Start them manually if needed!";
+                string errorMsg = $"Error. NAV daily to {vbServerIp}:{ServerIp.DefaultVirtualBrokerServerPort}: Check that both the IB's TWS and the VirtualBroker are running on Manual/Auto Trading Server! Start them manually if needed!";
                 Utils.Logger.Error(errorMsg);
                 return;
             }

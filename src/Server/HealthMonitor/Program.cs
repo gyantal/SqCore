@@ -41,36 +41,11 @@ namespace HealthMonitor
             Caretaker.gCaretaker.Init(Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
             HealthMonitor.g_healthMonitor.Init();
 
-            string? userInput = String.Empty;
+            string userInput = String.Empty;
             do
             {
-
-                userInput = DisplayMenu();
-                switch (userInput)
-                {
-                    case "1":
-                        Console.WriteLine("Hello. I am not crashed yet! :)");
-                        Utils.Logger.Info("Hello. I am not crashed yet! :)");
-                        break;
-                    case "2":
-                        TestIntentionalCrash();
-                        break;
-                    case "3":
-                        TestPhoneCall();
-                        break;
-                    case "4":
-                        HealthMonitor.g_healthMonitor.CheckAmazonAwsInstances_Elapsed("ConsoleMenu");
-                        break;
-                    case "5":
-                        Console.WriteLine(HealthMonitor.g_healthMonitor.DailySummaryReport(false).ToString());
-                        break;
-                    case "6":
-                        HealthMonitor.g_healthMonitor.DailyReportTimer_Elapsed(null);
-                        Console.WriteLine("DailyReport email was sent.");
-                        break;
-                }
-
-            } while (userInput != "7" && userInput != "ConsoleIsForcedToShutDown");
+                userInput = DisplayMenuAndExecute();
+            } while (userInput != "UserChosenExit" && userInput != "ConsoleIsForcedToShutDown");
 
             Utils.MainThreadIsExiting.Set(); // broadcast main thread shutdown
             int timeBeforeExitingSec = 2;
@@ -135,14 +110,12 @@ namespace HealthMonitor
             }
         }
 
-        static bool gHasBeenCalled = false;
-        static public string? DisplayMenu()
+        static bool gIsFirstCall = true;
+        static public string DisplayMenuAndExecute()
         {
-            if (gHasBeenCalled)
-            {
+            if (!gIsFirstCall)
                 Console.WriteLine();
-            }
-            gHasBeenCalled = true;
+            gIsFirstCall = false;
 
             ColorConsole.WriteLine(ConsoleColor.Magenta, "----  (type and press Enter)  ----");
             Console.WriteLine("1. Say Hello. Don't do anything. Check responsivenes.");
@@ -152,18 +125,42 @@ namespace HealthMonitor
             Console.WriteLine("5. VirtualBroker Report: show on Console.");
             Console.WriteLine("6. VirtualBroker Report: send Html email.");
             Console.WriteLine("7. Exit gracefully (Avoid Ctrl-^C).");
-            string? result = null;
+            string userInput = String.Empty;
             try
             {
-                result = Console.ReadLine();
+                userInput = Console.ReadLine() ?? String.Empty;
             }
             catch (System.IO.IOException e) // on Linux, of somebody closes the Terminal Window, Console.Readline() will throw an Exception with Message "Input/output error"
             {
-                Utils.Logger.Info($"Console.ReadLine() exception. Somebody closes the Terminal Window: {e.Message}");
+                gLogger.Info($"Console.ReadLine() exception. Somebody closes the Terminal Window: {e.Message}");
                 return "ConsoleIsForcedToShutDown";
             }
-            return result;
-            //return Convert.ToInt32(result);
+            switch (userInput)
+            {
+                case "1":
+                    Console.WriteLine("Hello. I am not crashed yet! :)");
+                    Utils.Logger.Info("Hello. I am not crashed yet! :)");
+                    break;
+                case "2":
+                    TestIntentionalCrash();
+                    break;
+                case "3":
+                    TestPhoneCall();
+                    break;
+                case "4":
+                    HealthMonitor.g_healthMonitor.CheckAmazonAwsInstances_Elapsed("ConsoleMenu");
+                    break;
+                case "5":
+                    Console.WriteLine(HealthMonitor.g_healthMonitor.DailySummaryReport(false).ToString());
+                    break;
+                case "6":
+                    HealthMonitor.g_healthMonitor.DailyReportTimer_Elapsed(null);
+                    Console.WriteLine("DailyReport email was sent.");
+                    break;
+                case "7":
+                    return "UserChosenExit";
+            }
+            return String.Empty;
         }
 
         static public void TestPhoneCall()

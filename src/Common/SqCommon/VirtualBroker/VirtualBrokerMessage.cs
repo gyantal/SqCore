@@ -29,11 +29,9 @@ namespace SqCommon
         public string ParamStr { get; set; } = String.Empty;
         public VirtualBrokerMessageResponseFormat ResponseFormat { get; set; }
 
-        public const int DefaultVirtualBrokerServerPort = 52101;    // largest port number: 65535, HealthMonitor listens on 52100, VBroker on 52101
-
         public static async Task<string?> Send(string p_msg, VirtualBrokerMessageID p_vbMessageId)
         {
-            return await Send(p_msg, p_vbMessageId, ServerIp.AtsVirtualBrokerServerPublicIpForClients, DefaultVirtualBrokerServerPort);
+            return await Send(p_msg, p_vbMessageId, ServerIp.AtsVirtualBrokerServerPublicIpForClients, ServerIp.DefaultVirtualBrokerServerPort);
         }
 
         public static async Task<string?> Send(string p_msg, VirtualBrokerMessageID p_vbMessageId, string p_tcpServerHost, int p_tcpServerPort)

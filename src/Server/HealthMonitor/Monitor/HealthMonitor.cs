@@ -95,7 +95,7 @@ namespace HealthMonitor
 
             ScheduleTimers();
             InitVbScheduler();
-            m_tcpListener = new ParallelTcpListener(ServerIp.LocalhostMetaAllPrivateIpWithIP, HealthMonitorMessage.DefaultHealthMonitorServerPort, ProcessTcpClient);
+            m_tcpListener = new ParallelTcpListener(ServerIp.LocalhostMetaAllPrivateIpWithIP, ServerIp.DefaultHealthMonitorServerPort, ProcessTcpClient);
             m_tcpListener.StartTcpMessageListenerThreads();
         }
 

@@ -208,7 +208,7 @@ namespace SqCoreWeb.Controllers
                 {
                     using (var client = new TcpClient())
                     {
-                        Task task = client.ConnectAsync(ServerIp.HealthMonitorPublicIp, HealthMonitorMessage.DefaultHealthMonitorServerPort);
+                        Task task = client.ConnectAsync(ServerIp.HealthMonitorPublicIp, ServerIp.DefaultHealthMonitorServerPort);
                         if (Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(10))).Result != task)
                         {
                             Utils.Logger.Error("Error:HealthMonitor server: client.Connect() timeout.");

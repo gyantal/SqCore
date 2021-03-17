@@ -122,8 +122,8 @@ namespace SqCoreWeb
 
                 // string.Format("Value is {0}", someValue) which will check for a null reference and replace it with an empty string. It will however throw an exception if you actually pass  null like this string.Format("Value is {0}", null)
                 string msg = String.Format("PreAuth.Postprocess: Returning {0}#{1}{2} {3} '{4} {5}' from {6} (u: {7}) ret: {8} in {9:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : String.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Host, requestLog.Path, requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds);
-                string shortMsg = String.Format("{0}#{1} {2} '{3} {4}' from {5} ({6}) in {7:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : String.Empty, requestLog.Method, requestLog.Host, requestLog.Path, requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.TotalMilliseconds);
-                Console.WriteLine(shortMsg);
+                // string shortMsg = String.Format("{0}#{1} {2} '{3} {4}' from {5} ({6}) in {7:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : String.Empty, requestLog.Method, requestLog.Host, requestLog.Path, requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.TotalMilliseconds);
+                // Console.WriteLine(shortMsg);
                 gLogger.Info(msg);
 
                 if (requestLog.IsError)

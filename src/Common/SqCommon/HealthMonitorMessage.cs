@@ -40,8 +40,6 @@ namespace SqCommon
         public string ParamStr { get; set; } = String.Empty;
         public HealthMonitorMessageResponseFormat ResponseFormat { get; set; }
 
-        public const int DefaultHealthMonitorServerPort = 52100;    // largest port number: 65535, HealthMonitor listens on 52100, VBroker on 52101
-
         static DateTime gLastMessageTime = DateTime.MinValue;   // be warned, this is global for the whole App; better to not use it, because messages can be swallowed silently. HealthMonitor itself should decide if it swallows it or not, and not the SenderApp.
 
 
@@ -130,7 +128,7 @@ namespace SqCommon
             }
             catch (Exception e)
             {
-                gLogger.Error(e, $"Error:HealthMonitorMessage.SendMessage() exception. Check that AWS firewall allows traffic from this IP on port {DefaultHealthMonitorServerPort}");
+                gLogger.Error(e, $"Error:HealthMonitorMessage.SendMessage() exception. Check that AWS firewall allows traffic from this IP on port {ServerIp.DefaultHealthMonitorServerPort}");
             }
             return reply;
         }

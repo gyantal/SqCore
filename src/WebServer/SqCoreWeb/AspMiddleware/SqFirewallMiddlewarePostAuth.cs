@@ -65,7 +65,7 @@ namespace SqCoreWeb
                         // Problem: after Logout/Login Chrome takes index(Logout version).html from disk-cache, instead of reload.
                         // Because when it is read from 'index.html.br' brottli, it adds etag, and last-modified headers.
                         // So, the index(Logout version).html should NOT be cached, while the index(Login version).html should be cached.
-                        Console.WriteLine($"Adding CacheControl NoCache to header '{httpContext.Request.Host} {httpContext.Request.Path}'");
+                        // Console.WriteLine($"Adding CacheControl NoCache to header '{httpContext.Request.Host} {httpContext.Request.Path}'");
                         Utils.Logger.Info($"Adding CacheControl NoCache to header '{httpContext.Request.Host} {httpContext.Request.Path}'");
                         httpContext.Response.GetTypedHeaders().CacheControl =
                             new Microsoft.Net.Http.Headers.CacheControlHeaderValue()
@@ -138,7 +138,7 @@ namespace SqCoreWeb
                     // After UserAccount/logout server redirect goes to => Index.html. Reloads, and it comes from the cach (shows userName), which is bad.
                     // (But one simple manual Browser.Refresh() by the user solves it).
                     // >write to the user in a tooltip: "After Logout, Refresh the browser. That is the price of quick page load, when the user is logged in (99% of the time)"
-                    Console.WriteLine($"Adding CacheControl MaxAge to header '{httpContext.Request.Host} {httpContext.Request.Path}'");
+                    // Console.WriteLine($"Adding CacheControl MaxAge to header '{httpContext.Request.Host} {httpContext.Request.Path}'");
                     Utils.Logger.Info($"Adding CacheControl MaxAge to header '{httpContext.Request.Host} {httpContext.Request.Path}'");
                     httpContext.Response.GetTypedHeaders().CacheControl =
                         new Microsoft.Net.Http.Headers.CacheControlHeaderValue()
