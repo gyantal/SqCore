@@ -30,7 +30,7 @@ namespace SqCommon
             if (p_val == null)
                 throw new Exception("SqCommon.Utils.InvariantConvert(). Parameter object shouldn't be null.");
             else
-                return (T)System.Convert.ChangeType(p_val.ToString() ?? String.Empty, typeof(T), System.Globalization.CultureInfo.InvariantCulture);
+                return (T)System.Convert.ChangeType(p_val.ToString() ?? string.Empty, typeof(T), System.Globalization.CultureInfo.InvariantCulture);
         }
         public static T? InvariantConvertNullableReference<T>(object p_val, bool p_ifNullAllowDefault = false) where T : class // string is class, not struct  // if p_val is null, in general we want to raise exception.
         {
@@ -43,7 +43,7 @@ namespace SqCommon
             if (p_val == null)
                 throw new Exception("SqCommon.Utils.InvariantConvert(). Parameter object shouldn't be null.");
             else
-                return (T)System.Convert.ChangeType(p_val.ToString() ?? String.Empty, typeof(T), System.Globalization.CultureInfo.InvariantCulture);
+                return (T)System.Convert.ChangeType(p_val.ToString() ?? string.Empty, typeof(T), System.Globalization.CultureInfo.InvariantCulture);
         }
 
 

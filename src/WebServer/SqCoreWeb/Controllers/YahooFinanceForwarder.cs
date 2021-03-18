@@ -133,7 +133,7 @@ namespace SqCoreWeb.Controllers
                 }
 
                 string? targetUriWithoutHttp = null;
-                string ticker = String.Empty;
+                string ticker = string.Empty;
                 if (allParamsDict.TryGetValue("yffUri", out queryStrVal))   // yffUri=query1.finance.yahoo.com/v7/finance/download/AAPL&period1=2017-02-02&period2=2017-05-22&interval=1d&events=history
                 {
                     targetUriWithoutHttp = queryStrVal[0];

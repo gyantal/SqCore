@@ -77,13 +77,13 @@ namespace SqCoreWeb.Controllers
             
             //Selecting data from live data string.
             
-            string liveFuturesDataDT = System.String.Empty;
-            string liveFuturesDataDate = System.String.Empty;
-            string liveFuturesDataTime = System.String.Empty;
-            string liveFuturesData = System.String.Empty;
-            string prevFuturesData = System.String.Empty;
-            string liveFuturesNextExp = System.String.Empty;
-            string spotVixData = System.String.Empty;
+            string liveFuturesDataDT = string.Empty;
+            string liveFuturesDataDate = string.Empty;
+            string liveFuturesDataTime = string.Empty;
+            string liveFuturesData = string.Empty;
+            string prevFuturesData = string.Empty;
+            string liveFuturesNextExp = string.Empty;
+            string spotVixData = string.Empty;
             string titleVIX = "VIX Futures Term Structure";
             string dataSourceVIX = "http://vixcentral.com";
 
@@ -127,7 +127,7 @@ namespace SqCoreWeb.Controllers
             {
                 timeNowETVIX = timeNowETVIX.AddDays(-1);
             }
-            string liveDate = System.String.Empty;
+            string liveDate = string.Empty;
             // liveDateTime = DateTime.Parse(liveFuturesDataDate);
             liveDate = timeNowETVIX.ToString("yyyy-MM-dd");
 
@@ -262,12 +262,12 @@ namespace SqCoreWeb.Controllers
                 prevFuturesDataVec[iRows] = prevFuturesDataB;
             }
 
-            string liveFuturesDataDT = System.String.Empty;
-            string liveFuturesDataDate = System.String.Empty;
-            string liveFuturesDataTime = System.String.Empty;
-            string liveFuturesNextExp = System.String.Empty;
-            string futCodeNext = System.String.Empty;
-            string spotVixData = System.String.Empty;
+            string liveFuturesDataDT = string.Empty;
+            string liveFuturesDataDate = string.Empty;
+            string liveFuturesDataTime = string.Empty;
+            string liveFuturesNextExp = string.Empty;
+            string futCodeNext = string.Empty;
+            string spotVixData = string.Empty;
             string titleOIL = "OIL Futures Term Structure";
             string dataSourceOIL = "http://www.cmegroup.com/trading/energy/crude-oil/light-sweet-crude.html";
 
@@ -337,7 +337,7 @@ namespace SqCoreWeb.Controllers
 
 
             DateTime liveDateTime;
-            string liveDate = System.String.Empty;
+            string liveDate = string.Empty;
             liveDateTime = DateTime.Parse(liveFuturesDataDate);
             liveDate = liveDateTime.ToString("yyyy-MM-dd");
 
@@ -437,12 +437,12 @@ namespace SqCoreWeb.Controllers
                 prevFuturesDataVec[iRows] = prevFuturesDataB;
             }
 
-            string liveFuturesDataDT = System.String.Empty;
-            string liveFuturesDataDate = System.String.Empty;
-            string liveFuturesDataTime = System.String.Empty;
-            string liveFuturesNextExp = System.String.Empty;
-            string futCodeNext = System.String.Empty;
-            string spotVixData = System.String.Empty;                
+            string liveFuturesDataDT = string.Empty;
+            string liveFuturesDataDate = string.Empty;
+            string liveFuturesDataTime = string.Empty;
+            string liveFuturesNextExp = string.Empty;
+            string futCodeNext = string.Empty;
+            string spotVixData = string.Empty;                
             string titleGAS = "GAS Futures Term Structure";
             string dataSourceGAS = "http://www.cmegroup.com/trading/energy/natural-gas/natural-gas.html";
 
@@ -509,7 +509,7 @@ namespace SqCoreWeb.Controllers
 
 
             DateTime liveDateTime;
-            string liveDate = System.String.Empty;
+            string liveDate = string.Empty;
             liveDateTime = DateTime.Parse(liveFuturesDataDate);
             liveDate = liveDateTime.ToString("yyyy-MM-dd");
 
@@ -716,9 +716,9 @@ namespace SqCoreWeb.Controllers
     // {
     //     public class ExampleMessage
     //     {
-    //         public string MsgType { get; set; } = String.Empty;
+    //         public string MsgType { get; set; } = string.Empty;
 
-    //         public string StringData { get; set; } = String.Empty;
+    //         public string StringData { get; set; } = string.Empty;
     //         public DateTime DateOrTime { get; set; }
 
     //         public int IntData { get; set; }

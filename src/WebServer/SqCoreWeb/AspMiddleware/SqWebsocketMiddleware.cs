@@ -100,7 +100,7 @@ namespace SqCoreWeb
             }
 
             ArraySegment<Byte> buffer = new ArraySegment<byte>(new Byte[8192]);
-            string bufferStr = String.Empty;
+            string bufferStr = string.Empty;
             WebSocketReceiveResult? result = null;
             // loop until the client closes the connection. The server receives a disconnect message only if the client sends it, which can't be done if the internet connection is lost.
             // If the client isn't always sending messages and you don't want to timeout just because the connection goes idle, have the client use a timer to send a ping message every X seconds. 
@@ -110,7 +110,7 @@ namespace SqCoreWeb
                 try
                 {
                     // convert binary array to string message: https://stackoverflow.com/questions/24450109/how-to-send-receive-messages-through-a-web-socket-on-windows-phone-8-using-the-c
-                    bufferStr = String.Empty;
+                    bufferStr = string.Empty;
                     using (var ms = new MemoryStream())
                     {
                         do

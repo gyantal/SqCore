@@ -3,7 +3,7 @@ using System.Globalization;
 
 namespace YahooFinanceApi
 {
-    internal static class RowExtension
+    public static class RowExtension
     {
         internal static bool IgnoreEmptyRows;
 

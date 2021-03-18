@@ -53,7 +53,7 @@ namespace SqCoreWeb.Controllers
             for (int i = logsPointerArr.Length - 1; i >= 0; i--)        // foreach loop iterates over Queue starting from the oldest item and ending with newest.
             {
                 var requestLog = logsPointerArr[i];
-                string msg = String.Format("{0}#{1}{2} {3} '{4}' from {5} (u: {6}) ret: {7} in {8:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : String.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Path + (String.IsNullOrEmpty(requestLog.QueryString) ? "" : requestLog.QueryString), requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds);
+                string msg = String.Format("{0}#{1}{2} {3} '{4}' from {5} (u: {6}) ret: {7} in {8:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : string.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Path + (String.IsNullOrEmpty(requestLog.QueryString) ? "" : requestLog.QueryString), requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds);
                 sb.Append(msg + "<br />");
             }
 
@@ -197,41 +197,22 @@ namespace SqCoreWeb.Controllers
             Utils.Logger.Info("ReportHealthMonitorCurrentStateToDashboardInJSON() BEGIN");
             // TODO: we should check here if it is a HttpGet (or a message without data package) and return gracefully
 
-            string response = String.Empty;
+            string response = string.Empty;
             try
             {
                 if (Request.Body.CanSeek)
                     Request.Body.Position = 0;                 // Reset the position to zero to read from the beginning.
-                // string jsonToBackEnd = new StreamReader(Request.Body).ReadToEnd();
                 string jsonToBackEnd = await new StreamReader(Request.Body).ReadToEndAsync();
-                try
-                {
-                    using (var client = new TcpClient())
-                    {
-                        Task task = client.ConnectAsync(ServerIp.HealthMonitorPublicIp, ServerIp.DefaultHealthMonitorServerPort);
-                        if (Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(10))).Result != task)
-                        {
-                            Utils.Logger.Error("Error:HealthMonitor server: client.Connect() timeout.");
-                            response = @"{""ResponseToFrontEnd"" : ""Error: Error:HealthMonitor server: client.Connect() timeout.";
-                        }
-                        else
-                        {
-                            BinaryWriter bw = new BinaryWriter(client.GetStream());
-                            bw.Write((Int32)HealthMonitorMessageID.GetHealthMonitorCurrentStateToHealthMonitorWebsite);
-                            bw.Write(jsonToBackEnd);
-                            bw.Write((Int32)HealthMonitorMessageResponseFormat.JSON);
 
-                            BinaryReader br = new BinaryReader(client.GetStream());
-                            response = br.ReadString();
-                            Utils.Logger.Debug("ReportHealthMonitorCurrentStateToDashboardInJSON() returned answer: " + response);
-                        }
-                    }
-                }
-                catch (Exception e)
+                Task<string?> tcpMsgTask = TcpMessage.Send(jsonToBackEnd, (int)HealthMonitorMessageID.GetHealthMonitorCurrentStateToHealthMonitorWebsite, ServerIp.HealthMonitorPublicIp, ServerIp.DefaultHealthMonitorServerPort, TcpMessageResponseFormat.JSON);
+                string? tcpMsgResponse = await tcpMsgTask;
+                if (tcpMsgTask.Exception != null || String.IsNullOrEmpty(tcpMsgResponse))
                 {
-                    Utils.Logger.Error(e, "Error:HealthMonitor SendMessage exception.");
-                    response = @"{""ResponseToFrontEnd"" : ""Error:HealthMonitor SendMessage exception. Check log file of the WepApp: " + e.Message;
+                    Utils.Logger.Error("Error:HealthMonitor SendMessage exception.");
+                    response = @"{""ResponseToFrontEnd"" : ""Error:HealthMonitor SendMessage exception. Check log file of the WepApp: ";
                 }
+                else
+                    response = tcpMsgResponse;
             }
             catch (Exception ex)
             {

@@ -18,12 +18,12 @@ namespace SqCoreWeb
     {
         public DateTime StartTime;
         public bool IsHttps;  // HTTP or HTTPS
-        public string Method = String.Empty; // GET, PUT
-        public HostString Host = new HostString(String.Empty);
-        public string Path = String.Empty;
-        public string QueryString = String.Empty;  // it is not part of the path
-        public string ClientIP = String.Empty;
-        public string ClientUserEmail = String.Empty;
+        public string Method = string.Empty; // GET, PUT
+        public HostString Host = new HostString(string.Empty);
+        public string Path = string.Empty;
+        public string QueryString = string.Empty;  // it is not part of the path
+        public string ClientIP = string.Empty;
+        public string ClientUserEmail = string.Empty;
         public int? StatusCode;
         public double TotalMilliseconds;
         public bool IsError;
@@ -121,8 +121,8 @@ namespace SqCoreWeb
                 // $"{DateTime.UtcNow.ToString("MMdd'T'HH':'mm':'ss.fff")}#
 
                 // string.Format("Value is {0}", someValue) which will check for a null reference and replace it with an empty string. It will however throw an exception if you actually pass  null like this string.Format("Value is {0}", null)
-                string msg = String.Format("PreAuth.Postprocess: Returning {0}#{1}{2} {3} '{4} {5}' from {6} (u: {7}) ret: {8} in {9:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : String.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Host, requestLog.Path, requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds);
-                // string shortMsg = String.Format("{0}#{1} {2} '{3} {4}' from {5} ({6}) in {7:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : String.Empty, requestLog.Method, requestLog.Host, requestLog.Path, requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.TotalMilliseconds);
+                string msg = String.Format("PreAuth.Postprocess: Returning {0}#{1}{2} {3} '{4} {5}' from {6} (u: {7}) ret: {8} in {9:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : string.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Host, requestLog.Path, requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds);
+                // string shortMsg = String.Format("{0}#{1} {2} '{3} {4}' from {5} ({6}) in {7:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : string.Empty, requestLog.Method, requestLog.Host, requestLog.Path, requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.TotalMilliseconds);
                 // Console.WriteLine(shortMsg);
                 gLogger.Info(msg);
 
@@ -133,7 +133,7 @@ namespace SqCoreWeb
                 if (requestLog.Exception != null && IsSendableToHealthMonitorForEmailing(requestLog.Exception))
                 {
                     StringBuilder sb = new StringBuilder("Exception in SqCore.Website.C#.SqFirewallMiddlewarePreAuthLogger. \r\n");
-                    var requestLogStr = String.Format("{0}#{1}{2} {3} '{4}' from {5} (u: {6}) ret: {7} in {8:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : String.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Path + (String.IsNullOrEmpty(requestLog.QueryString) ? String.Empty : requestLog.QueryString), requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds);
+                    var requestLogStr = String.Format("{0}#{1}{2} {3} '{4}' from {5} (u: {6}) ret: {7} in {8:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : string.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Path + (String.IsNullOrEmpty(requestLog.QueryString) ? string.Empty : requestLog.QueryString), requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds);
                     sb.Append("Request: " + requestLogStr + "\r\n");
                     sb.Append("Exception: '" + requestLog.Exception.ToStringWithShortenedStackTrace(800) + "'\r\n");
                     HealthMonitorMessage.SendAsync(sb.ToString(), HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
@@ -154,14 +154,14 @@ namespace SqCoreWeb
             whitelistPrefix.AddRange(new string[] { "ws/", "signin-google" });   // Add WebSocket prefixes; and "/signin-google"
 
             DirectoryInfo di = new DirectoryInfo(Program.g_webAppGlobals.KestrelEnv!.WebRootPath);
-            AddFileToListRecursive(di, String.Empty, ref whitelistExact);
+            AddFileToListRecursive(di, string.Empty, ref whitelistExact);
 
             // https://stackoverflow.com/questions/21583278/getting-all-controllers-and-actions-names-in-c-sharp
             // we can also get the name of all the methods inside the Controllers, but we don't want to string-compare 200x times for each http request. So, just get the Controller names.
             Assembly asm = Assembly.GetExecutingAssembly();
             var controllersList = asm.GetTypes()
                 .Where(type => typeof(Microsoft.AspNetCore.Mvc.ControllerBase).IsAssignableFrom(type))
-                .Select(type => type.Name.Replace("Controller", String.Empty)).ToList();  // Controllers sometimes don't use "/" at the end. (like request "/ContangoVisualizerData", /JsLog") Other times they use: "/WebServer/Ping"
+                .Select(type => type.Name.Replace("Controller", string.Empty)).ToList();  // Controllers sometimes don't use "/" at the end. (like request "/ContangoVisualizerData", /JsLog") Other times they use: "/WebServer/Ping"
             whitelistPrefix.AddRange(controllersList);
 
             whitelistExact.Sort(StringComparer.OrdinalIgnoreCase);  // suspicion: by default Sort() uses IgnoreCase on Windows, but CaseSensitive on Linux. They both use the default ICU, which is set on the op.system. https://github.com/dotnet/runtime/issues/20109
@@ -259,11 +259,11 @@ namespace SqCoreWeb
         static void LogDetailedContextForError(HttpContext httpContext, HttpRequestLog requestLog)
         {
             var request = httpContext.Request;
-            string headers = String.Empty;
+            string headers = string.Empty;
             foreach (var key in request.Headers.Keys)
                 headers += key + "=" + request.Headers[key] + Environment.NewLine;
 
-            string msg = String.Format("{0}{1} {2} '{3}' from {4} (user: {5}) responded {6} in {7:0.00} ms. RequestHeaders: {8}", requestLog.IsError ? "ERROR in " : String.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Path + (String.IsNullOrEmpty(requestLog.QueryString) ? String.Empty : requestLog.QueryString), requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds, headers);
+            string msg = String.Format("{0}{1} {2} '{3}' from {4} (user: {5}) responded {6} in {7:0.00} ms. RequestHeaders: {8}", requestLog.IsError ? "ERROR in " : string.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Path + (String.IsNullOrEmpty(requestLog.QueryString) ? string.Empty : requestLog.QueryString), requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds, headers);
             Console.WriteLine(msg);
             gLogger.Error(msg);    // all the details (IP, Path) go the the Error output, because if the Info level messages are ignored by the Logger totally, this will inform the user. We need all the info in the Error Log. Even though, if Info and Error levels both logged, it results duplicates
         }

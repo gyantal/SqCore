@@ -35,14 +35,27 @@ namespace SqCoreWeb
         public static IWebAppGlobals g_webAppGlobals { get; set; } = new WebAppGlobals();
         private static readonly NLog.Logger gLogger = NLog.LogManager.GetLogger("Program");   // the name of the logger will be not the "Namespace.Class", but whatever you prefer: "Program"
 
+        static Timer? gHeartbeatTimer = null; // If timer object goes out of scope and gets erased by Garbage Collector after some time, which stops callbacks from firing. Save reference to it in a member of class.
+        static long gNheartbeat = 0;
+        const int cHeartbeatTimerFrequencyMinutes = 10;
+
         public static void Main(string[] args)
         {
             string appName = System.Reflection.MethodBase.GetCurrentMethod()?.ReflectedType?.Namespace ?? "UnknownNamespace";
             string systemEnvStr = $"(v1.0.15,{Utils.RuntimeConfig() /* Debug | Release */},CLR:{System.Environment.Version},{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},OS:{System.Environment.OSVersion},usr:{System.Environment.UserName},CPU:{System.Environment.ProcessorCount},ThId-{Thread.CurrentThread.ManagedThreadId})";
             Console.WriteLine($"Hi {appName}.{systemEnvStr}");
             gLogger.Info($"********** Main() START {systemEnvStr}");
+            // Setting Console.Title
+            // on Linux use it only in GUI mode. It works with graphical Xterm in VNC, but with 'screen' or with Putty it is buggy and after this, the next 200 characters are not written to console.
+            // Future work if needed: bring a flag to use it in string[] args, but by default, don't set Title on Linux 
             if (Utils.RunningPlatform() != Platform.Linux) // https://stackoverflow.com/questions/47059468/get-or-set-the-console-title-in-linux-and-macosx-with-net-core
-                Console.Title = $"{appName} v1.0.15"; // "SqCoreWeb v1.0.15", but on Linux it is buggy and after this, the next 200 characters are not written to console. T
+                Console.Title = $"{appName} v1.0.15"; // "SqCoreWeb v1.0.15"
+
+            gHeartbeatTimer = new System.Threading.Timer((e) =>    // Heartbeat log is useful to find out when VM was shut down, or when the App crashed
+            {
+                Utils.Logger.Info($"**g_nHeartbeat: {gNheartbeat} (at every {cHeartbeatTimerFrequencyMinutes} minutes)");
+                gNheartbeat++;
+            }, null, TimeSpan.FromMinutes(0.5), TimeSpan.FromMinutes(cHeartbeatTimerFrequencyMinutes));
 
             string sensitiveConfigFullPath = Utils.SensitiveConfigFolderPath() + $"SqCore.WebServer.{appName}.NoGitHub.json";
             string systemEnvStr2 = $"Current working directory of the app: '{Directory.GetCurrentDirectory()}',{Environment.NewLine}SensitiveConfigFullPath: '{sensitiveConfigFullPath}'";
@@ -57,7 +70,7 @@ namespace SqCoreWeb
             //.AddEnvironmentVariables();   // not needed in general. We dont' want to clutter op.sys. environment variables with app specific values.
             Utils.Configuration = builder.Build();
             Utils.MainThreadIsExiting = new ManualResetEventSlim(false);
-            HealthMonitorMessage.InitGlobals(ServerIp.HealthMonitorPublicIp, ServerIp.DefaultHealthMonitorServerPort);       // until HealthMonitor runs on the same Server, "localhost" is OK
+            // HealthMonitorMessage.InitGlobals(ServerIp.HealthMonitorPublicIp, ServerIp.DefaultHealthMonitorServerPort);       // until HealthMonitor runs on the same Server, "localhost" is OK
 
             Email.SenderName = Utils.Configuration["Emails:HQServer"];
             Email.SenderPwd = Utils.Configuration["Emails:HQServerPwd"];
@@ -75,12 +88,15 @@ namespace SqCoreWeb
                 MemDb.gMemDb.Init(RedisManager.GetDb(redisConnString, 0));
 
                 Caretaker.gCaretaker.Init(Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
+                SqTaskScheduler.gTaskScheduler.Init();
+
+                Overmind.gOvermind.Init();
 
                 // 3. Run services.
                 // Create a dedicated thread for a single task that is running for the lifetime of my application.
                 KestrelWebServer_Run(args);
 
-                string userInput = String.Empty;
+                string userInput = string.Empty;
                 do
                 {
                     userInput = DisplayMenuAndExecute();
@@ -106,6 +122,9 @@ namespace SqCoreWeb
 
              // 5. Dispose service resources
             KestrelWebServer_Exit();
+            Overmind.gOvermind.Exit();
+
+            SqTaskScheduler.gTaskScheduler.Exit();
             Caretaker.gCaretaker.Exit();
             MemDb.gMemDb.Exit();
 
@@ -122,11 +141,17 @@ namespace SqCoreWeb
 
             ColorConsole.WriteLine(ConsoleColor.Magenta, "----  (type and press Enter)  ----");
             Console.WriteLine("1. Say Hello. Don't do anything. Check responsivenes.");
+            Console.WriteLine("2. Show next schedule times (only earliest trigger)");
+            Console.WriteLine("3. Elapse Task: Overmind, Trigger1-MorningCheck");
+            Console.WriteLine("4. Elapse Task: Overmind, Trigger2-MiddayCheck");
+            Console.WriteLine("5. Elapse Task: WebsitesMonitor");
+            Console.WriteLine("6. Elapse Task: VBroker-HarryLong (First Simulation)");
+            Console.WriteLine("7. Elapse Task: VBroker-UberVxx (First Simulation)");
             Console.WriteLine("9. Exit gracefully (Avoid Ctrl-^C).");
-            string userInput = String.Empty;
+            string userInput = string.Empty;
             try
             {
-                userInput = Console.ReadLine() ?? String.Empty;
+                userInput = Console.ReadLine() ?? string.Empty;
             }
             catch (System.IO.IOException e) // on Linux, of somebody closes the Terminal Window, Console.Readline() will throw an Exception with Message "Input/output error"
             {
@@ -140,10 +165,19 @@ namespace SqCoreWeb
                     Console.WriteLine("Hello. I am not crashed yet! :)");
                     gLogger.Info("Hello. I am not crashed yet! :)");
                     break;
+                case "2":
+                    Console.WriteLine(SqTaskScheduler.gTaskScheduler.GetNextScheduleTimes(false).ToString());
+                    break;
+                case "3":
+                    SqTaskScheduler.gTaskScheduler.TestElapseTrigger("Overmind", 0);
+                    break;
+                case "4":
+                    SqTaskScheduler.gTaskScheduler.TestElapseTrigger("Overmind", 1);
+                    break;
                 case "9":
                     return "UserChosenExit";
             }
-            return String.Empty;
+            return string.Empty;
         }
 
         internal static void StrongAssertMessageSendingEventHandler(StrongAssertMessage p_msg)

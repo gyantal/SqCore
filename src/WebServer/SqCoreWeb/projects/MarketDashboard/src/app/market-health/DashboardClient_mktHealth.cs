@@ -13,12 +13,12 @@ using Microsoft.Extensions.Primitives;
 namespace SqCoreWeb
 {
     class HandshakeMktHealth {    //Initial params specific for the MarketHealth tool
-        public String SelectableNavs { get; set; } = String.Empty;
+        public String SelectableNavs { get; set; } = string.Empty;
     }
     class RtMktSummaryStock
     {
         public uint AssetId { get; set; } = 0; // invalid value is best to be 0. If it is Uint32.MaxValue is the invalid, then problems if extending to Uint64
-        public String Ticker { get; set; } = String.Empty;
+        public String Ticker { get; set; } = string.Empty;
     }
 
     class RtMktSumRtStat   // struct sent to browser clients every 2-4 seconds
@@ -34,7 +34,7 @@ namespace SqCoreWeb
     public class RtMktSumNonRtStat   // this is sent to clients usually just once per day, OR when historical data changes, OR when the PeriodStartDate changes at the client
     {
         public uint AssetId { get; set; } = 0;        // set the Client know what is the assetId, because RtStat will not send it.
-        public String Ticker { get; set; } = String.Empty;
+        public String Ticker { get; set; } = string.Empty;
 
         public DateTime PeriodStartDate { get; set; } = DateTime.MinValue;
         public DateTime PeriodEndDate { get; set; } = DateTime.MinValue;

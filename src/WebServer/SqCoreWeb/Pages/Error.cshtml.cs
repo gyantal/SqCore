@@ -19,7 +19,7 @@ namespace SqCoreWeb.Pages
             _logger = logger;
         }
 
-        public string RequestId { get; set; } = String.Empty;
+        public string RequestId { get; set; } = string.Empty;
 
         public bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
 

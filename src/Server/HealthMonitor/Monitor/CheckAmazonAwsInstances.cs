@@ -53,7 +53,7 @@ namespace HealthMonitor
             //Assert.Throws<ArgumentNullException>(() => new BlobReader(null, 1));
             //Assert.Equal(0, new BlobReader(null, 0).Length); // this is valid
             //Assert.Throws<BadImageFormatException>(() => new BlobReader(null, 0).ReadByte()); // but can't read anything non-empty from it...
-            //Assert.Same(String.Empty, new BlobReader(null, 0).ReadUtf8NullTerminated()); // can read empty string.
+            //Assert.Same(string.Empty, new BlobReader(null, 0).ReadUtf8NullTerminated()); // can read empty string.
 
             // Create a date for headers and the credential string
             DateTime t = DateTime.UtcNow;
@@ -135,7 +135,7 @@ namespace HealthMonitor
             // must exist as a header in the request.
             string request_url = endpoint + "?" + canonical_querystring;
             //Utils.Logger.Info("request_url:" + request_url);
-            string hmWebsiteStr = String.Empty;
+            string hmWebsiteStr = string.Empty;
             Utils.DownloadStringWithRetry(request_url, out hmWebsiteStr, 5, TimeSpan.FromSeconds(5), true); // caller will handle Exceptions.
             return hmWebsiteStr;
         }
@@ -144,7 +144,7 @@ namespace HealthMonitor
         {
             Utils.Logger.Info($"CheckAmazonAwsInstances_Elapsed (at every {cCheckAmazonAwsTimerFrequencyMinutes} minutes) BEGIN");
 
-            string senderStr = Convert.ToString(p_sender) ?? String.Empty;      // This has the added benefit of returning an empty string (string.empty) if the object is null, to avoid any null reference exceptions (unless of course you want an exception thrown in such cases).
+            string senderStr = Convert.ToString(p_sender) ?? string.Empty;      // This has the added benefit of returning an empty string (string.empty) if the object is null, to avoid any null reference exceptions (unless of course you want an exception thrown in such cases).
 
             try
             {
@@ -158,7 +158,7 @@ namespace HealthMonitor
                         XmlWriterSettings ws = new XmlWriterSettings();
                         ws.Indent = true;
 
-                        string instanceName = String.Empty, instanceState = String.Empty, instancePublicIp = String.Empty;
+                        string instanceName = string.Empty, instanceState = string.Empty, instancePublicIp = string.Empty;
                         while (reader.Read())
                         {
                             switch (reader.NodeType)
@@ -190,7 +190,7 @@ namespace HealthMonitor
                                     if (reader.Name == "instancesSet")  // "</instancesSet>"
                                     {
                                         awsInstances.Add(new Tuple<string, string, string>(instanceName, instancePublicIp, instanceState));
-                                        instanceName = String.Empty; instanceState = String.Empty; instancePublicIp = String.Empty;
+                                        instanceName = string.Empty; instanceState = string.Empty; instancePublicIp = string.Empty;
                                     }
                                     break;
                             }

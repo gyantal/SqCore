@@ -13,8 +13,11 @@ namespace SqCommon
         public static void FireParallelAndForgetAndLogErrorTask(this Task task)
         {
             // task is called without await, so it doesn't wait; it will run parallel. "await task.ContinueWith()" would wait the task
+            
+            // Also, without a continuation task After an async func, we get the warning 'Because this call is not awaited, execution of the current method continues before the call is completed. Consider applying the 'await' operator to the result of the call.'
+            // https://stackoverflow.com/questions/14903887/warning-this-call-is-not-awaited-execution-of-the-current-method-continues
             task.ContinueWith(
-                t => { Utils.Logger.Error(t.Exception?.ToString() ?? String.Empty); },
+                t => { Utils.Logger.Error(t.Exception?.ToString() ?? string.Empty); },
                 TaskContinuationOptions.OnlyOnFaulted);
         }
 

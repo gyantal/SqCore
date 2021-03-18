@@ -23,7 +23,7 @@ namespace SqCommon
 
         public static bool DownloadStringWithRetry(string p_url, out string p_webpage, int p_nRetry, TimeSpan p_sleepBetweenRetries, bool p_throwExceptionIfUnsuccesfull = true)
         {
-            p_webpage = String.Empty;
+            p_webpage = string.Empty;
             int nDownload = 0;
             var request = CreateRequest(p_url);
 

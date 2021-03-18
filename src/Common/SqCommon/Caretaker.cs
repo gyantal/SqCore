@@ -14,7 +14,7 @@ namespace SqCommon
     {
         public static Caretaker gCaretaker = new Caretaker();
 
-        string m_serviceSupervisorsEmail = String.Empty;
+        string m_serviceSupervisorsEmail = string.Empty;
         bool m_needDailyMaintenance;
         TimeSpan m_dailyMaintenanceFromMidnightET = TimeSpan.MinValue;
 

@@ -19,11 +19,11 @@ namespace HealthMonitor
         void ProcessTcpClient(TcpClient p_tcpClient)
         {
             Utils.Logger.Info($"ProcessTcpClient() START");
-            HealthMonitorMessage? message = null;
+            TcpMessage? message = null;
             try
             {
                 BinaryReader br = new BinaryReader(p_tcpClient.GetStream());
-                message = (new HealthMonitorMessage()).DeserializeFrom(br);
+                message = (new TcpMessage()).DeserializeFrom(br);
                 if (message == null)
                 {
                     Console.WriteLine("<Tcp:>" + DateTime.UtcNow.ToString("MM-dd HH:mm:ss") + $" Msg: NULL");  // user can quickly check from Console the messages
@@ -60,16 +60,16 @@ namespace HealthMonitor
                 return;
             }
 
-            if (message.ResponseFormat == HealthMonitorMessageResponseFormat.None)  // if not required to answer message, then dispose tcpClient quikcly to release resources
+            if (message.ResponseFormat == TcpMessageResponseFormat.None)  // if not required to answer message, then dispose tcpClient quikcly to release resources
                 Utils.TcpClientDispose(p_tcpClient);
 
             Utils.Logger.Info($"ProcessTcpClient. Processing messageID {message.ID}.");
-            switch (message.ID)
+            switch ((HealthMonitorMessageID)message.ID)
             {
                 case HealthMonitorMessageID.Ping:
                     ServePingRequest(p_tcpClient, message);
                     break;
-                case HealthMonitorMessageID.TestHardCash:
+                case HealthMonitorMessageID.TestHardCrash:
                     throw new Exception("Testing Hard Crash by Throwing this Exception");
                 case HealthMonitorMessageID.ReportErrorFromVirtualBroker:
                 case HealthMonitorMessageID.ReportWarningFromVirtualBroker:
@@ -89,7 +89,7 @@ namespace HealthMonitor
                     break;
             }
 
-            if (message.ResponseFormat != HealthMonitorMessageResponseFormat.None)    // if Processing needed Response to Client, we dispose here. otherwise, it was disposed before putting into processing queue
+            if (message.ResponseFormat != TcpMessageResponseFormat.None)    // if Processing needed Response to Client, we dispose here. otherwise, it was disposed before putting into processing queue
             {
                 Utils.TcpClientDispose(p_tcpClient);
             }
@@ -98,9 +98,9 @@ namespace HealthMonitor
         }
 
 
-        internal void ServePingRequest(TcpClient p_tcpClient, HealthMonitorMessage p_message)
+        internal void ServePingRequest(TcpClient p_tcpClient, TcpMessage p_message)
         {
-            if (p_message.ResponseFormat == HealthMonitorMessageResponseFormat.String)
+            if (p_message.ResponseFormat == TcpMessageResponseFormat.String)
             {
                 string responseStr = "Ping. Healthmonitor UtcNow: " + DateTime.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss.fff", CultureInfo.InvariantCulture);
                 BinaryWriter bw = new BinaryWriter(p_tcpClient.GetStream());

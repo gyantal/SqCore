@@ -47,7 +47,7 @@ namespace SqCoreWeb
 
                 if (isRedirect)
                 {
-                    string newHost = currentHost.Host.Substring(p_subdomain.Length) + ((currentHost.Port != null) ? ((int)(currentHost.Port)).ToString() : String.Empty);
+                    string newHost = currentHost.Host.Substring(p_subdomain.Length) + ((currentHost.Port != null) ? ((int)(currentHost.Port)).ToString() : string.Empty);
                     var newUrl = new StringBuilder().Append(req.IsHttps ? "https://" : "http://").Append(newHost).Append(req.PathBase).Append(p_pathPrefixReplacement).Append(req.Path).Append(req.QueryString);
 
                     Utils.Logger.Info("SubdomainRewriteOptionsRule(): Doing Redirection. NewUrl: " + newUrl);

@@ -9,7 +9,6 @@ using SqCommon;
 using StackExchange.Redis;
 using YahooFinanceApi;
 using System.Text.Json;
-using System.IO.Compression;
 using Microsoft.Extensions.Primitives;
 
 namespace FinTechCommon
@@ -22,9 +21,9 @@ namespace FinTechCommon
 
         public User[] Users = new User[0];
 
-        string m_lastUsersStr = String.Empty;
-        string m_lastAllAssetsStr = String.Empty;
-        string m_lastSqCoreWebAssetsStr = String.Empty;
+        string m_lastUsersStr = string.Empty;
+        string m_lastAllAssetsStr = string.Empty;
+        string m_lastSqCoreWebAssetsStr = string.Empty;
         public AssetsCache AssetsCache = new AssetsCache();
 
         // RAM requirement: 1Year = 260*(2+4) = 1560B = 1.5KB,  5y data is: 5*260*(2+4) = 7.8K
@@ -241,7 +240,7 @@ namespace FinTechCommon
                     var ndqSplits = doc.RootElement.GetProperty("data").GetProperty("rows").EnumerateArray()
                     .Select(row =>
                     {
-                        string ticker = row.GetProperty("symbol").ToString() ?? String.Empty;
+                        string ticker = row.GetProperty("symbol").ToString() ?? string.Empty;
                         if (!assetCacheTickers.TryGetValue(ticker, out Asset? asset))
                             asset = null;
                         return new
@@ -254,10 +253,10 @@ namespace FinTechCommon
                         return r.Asset != null;
                     }).Select(r =>
                     {
-                        string executionDateStr = r.Row.GetProperty("executionDate").ToString() ?? String.Empty; // "executionDate":"01/21/2021"
+                        string executionDateStr = r.Row.GetProperty("executionDate").ToString() ?? string.Empty; // "executionDate":"01/21/2021"
                         DateTime executionDate = Utils.FastParseMMDDYYYY(executionDateStr);
 
-                        string ratioStr = r.Row.GetProperty("ratio").ToString() ?? String.Empty;
+                        string ratioStr = r.Row.GetProperty("ratio").ToString() ?? string.Empty;
                         var splitArr = ratioStr.Split(':');  // "ratio":"2 : 1" or "ratio":"5.000%" while YF "2:1", which is the same order.
                         double beforeSplit = Double.MinValue, afterSplit = Double.MinValue;
                         if (splitArr.Length == 2)   // "ratio":"2 : 1"
@@ -329,32 +328,15 @@ namespace FinTechCommon
                         // checked the YF returned data by stream.ReadToEnd(): it is a CSV structure, with columns. The line "Apr 29, 2020	1:8 Stock Split" is Not in the data. 
                         // https://finance.yahoo.com/quote/USO/history?p=USO The YF website queries the splits separately when it inserts in-between the rows.
                         // Therefore, we have to query the splits separately from YF.
-                        const int nMaxTries = 3;
-                        int nTries = 0;
-                        IReadOnlyList<Candle?>? history = null;
-                        do
-                        {
-                            // YahooFinanceApi.Yahoo.GetResponseStreamAsync() can throw "Flurl.Http.FlurlHttpException: Call failed with status code 502 (internal error - server connection terminated)"
-                            try
-                            {
-                                nTries++;
-                                history = Yahoo.GetHistoricalAsync(asset.LastTicker, asset.ExpectedHistoryStartDateET, DateTime.Now, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
-                            }
-                            catch (Exception e)
-                            {
-                                // 2021-02-26T16:30, https://finance.yahoo.com/quote/SPY/history?p=SPY returns for yesterday: "Feb 25, 2021	-	-	-	-	-	-" , other days are correct, this is probably temporary
-                                // YahooFinanceApi\Yahoo - Historical.cs:line 80 receives: "2021-02-25,null,null,null,null,null,null" and crashes on StringToDecimal conversion
-                                // TODO: We don't have a plan for those case when YF historical quote fails. What should we do?
-                                // Option 1: crash the whole SqCore app: not good, because other services: website, VBroker, Timers, ContangoVisualizer can run
-                                // Option 2: Persist YF data to RedisDb every 2 hours. In case of failed YF reload, fall back to latest from RedisDb. Not a real solution if YF gives bad data for days.
-                                // Option 3: (preferred) Use 2 public databases (GF, Nasdaq, Marketwatch, Iex): In case YF fails for a stock for a date, use that other one if that data is believable (within range)
-                                Utils.Logger.Info(e, $"Exception in Yahoo.GetHistoricalAsync(): Stock:'{asset.LastTicker}', {e.Message}");
-                                Thread.Sleep(3000); // sleep for 3 seconds before trying again.
-                            }
-                        } while (history == null && nTries <= nMaxTries);
-
+                        IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(asset.LastTicker, asset.ExpectedHistoryStartDateET, DateTime.Now, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
                         if (history == null)
-                            throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{asset.LastTicker}) after {nMaxTries} tries.");
+                            throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{asset.LastTicker}) after many tries.");
+                        // 2021-02-26T16:30 Exception: https://finance.yahoo.com/quote/SPY/history?p=SPY returns for yesterday: "Feb 25, 2021	-	-	-	-	-	-" , other days are correct, this is probably temporary
+                        // YahooFinanceApi\Yahoo - Historical.cs:line 80 receives: "2021-02-25,null,null,null,null,null,null" and crashes on StringToDecimal conversion
+                        // TODO: We don't have a plan for those case when YF historical quote fails. What should we do?
+                        // Option 1: crash the whole SqCore app: not good, because other services: website, VBroker, Timers, ContangoVisualizer can run
+                        // Option 2: Persist YF data to RedisDb every 2 hours. In case of failed YF reload, fall back to latest from RedisDb. Not a real solution if YF gives bad data for days.
+                        // Option 3: (preferred) Use 2 public databases (GF, Nasdaq, Marketwatch, Iex): In case YF fails for a stock for a date, use that other one if that data is believable (within range)
 
                         dates = history.Select(r => new DateOnly(r!.DateTime)).ToArray();
                         // for penny stocks, IB and YF considers them for max. 4 digits. UWT price (both in IB ask-bid, YF history) 2020-03-19: 0.3160, 2020-03-23: 2302

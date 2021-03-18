@@ -365,7 +365,7 @@ namespace SqCommon
 
         public static DateTime? TryParseShortDateCode(string p_code)
         {
-            string s = (p_code == null) ? String.Empty : p_code.Trim();
+            string s = (p_code == null) ? string.Empty : p_code.Trim();
             if (String.IsNullOrEmpty(s) || s.Length != 4 || s.CompareTo("2100") < 0)
                 return null;
             int y = s[0]; y -= (y < 58) ? 48 : 55;

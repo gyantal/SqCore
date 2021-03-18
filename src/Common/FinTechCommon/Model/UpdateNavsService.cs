@@ -98,20 +98,20 @@ namespace FinTechCommon
             string vbServerIp = p_vbServer == VBrokerServer.AutoVb ? ServerIp.AtsVirtualBrokerServerPublicIpForClients : ServerIp.LocalhostLoopbackWithIP;
 
             string msg = $"?v=1&secTok={TcpMessage.GenerateSecurityToken()}&bAcc={(p_vbServer == VBrokerServer.AutoVb ? "Gyantal" : "Charmat,DeBlanzac")}&data=AccSum";
-            Task<string?> vbMessageTask = TcpMessage.Send(msg, TcpMessageID.GetAccountsInfo, vbServerIp, ServerIp.DefaultVirtualBrokerServerPort);
-            string? vbReplyStr = vbMessageTask.Result;
-            if (vbMessageTask.Exception != null || String.IsNullOrEmpty(vbReplyStr))
+            Task<string?> tcpMsgTask = TcpMessage.Send(msg, (int)TcpMessageID.GetAccountsInfo, vbServerIp, ServerIp.DefaultVirtualBrokerServerPort);
+            string? tcpMsgResponse = tcpMsgTask.Result;
+            if (tcpMsgTask.Exception != null || String.IsNullOrEmpty(tcpMsgResponse))
             {
                 string errorMsg = $"Error. NAV daily to {vbServerIp}:{ServerIp.DefaultVirtualBrokerServerPort}: Check that both the IB's TWS and the VirtualBroker are running on Manual/Auto Trading Server! Start them manually if needed!";
                 Utils.Logger.Error(errorMsg);
                 return;
             }
-            vbReplyStr = vbReplyStr.Replace("\\\"", "\"");
-            Utils.Logger.Info($"UpdateNavsService.GetNav(). Received '{vbReplyStr}'");
-            var vbReply = Utils.LoadFromJSON<List<BrAccJsonHelper>>(vbReplyStr);
+            tcpMsgResponse = tcpMsgResponse.Replace("\\\"", "\"");
+            Utils.Logger.Info($"UpdateNavsService.GetNav(). Received '{tcpMsgResponse}'");
+            var vbReply = Utils.LoadFromJSON<List<BrAccJsonHelper>>(tcpMsgResponse);
             if (vbReply == null)
             {
-                Utils.Logger.Error($"Error. NAV text from Vbroker cannot be interpreted as JSON: '{vbReplyStr}'");
+                Utils.Logger.Error($"Error. NAV text from Vbroker cannot be interpreted as JSON: '{tcpMsgResponse}'");
                 return;
             }
             foreach (var brAccInfo in vbReply) // Charmat,DeBlanzac grouped together or Gyantal

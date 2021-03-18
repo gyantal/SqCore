@@ -13,9 +13,9 @@ namespace HealthMonitor
 
     class DelayedMessageItem
     {
-        public string EmailSubject { get; set; } = String.Empty;
-        public string EmailBody { get; set; } = String.Empty;
-        public string PhoneCallText { get; set; } = String.Empty;
+        public string EmailSubject { get; set; } = string.Empty;
+        public string EmailBody { get; set; } = string.Empty;
+        public string PhoneCallText { get; set; } = string.Empty;
     }
     class DelayedMessage
     {
@@ -49,19 +49,15 @@ namespace HealthMonitor
 
         SavedState? m_persistedState = null;
 
-        //Your timer object goes out of scope and gets erased by Garbage Collector after some time, which stops callbacks from firing. Save reference to it in a member of class.
-        long m_nHeartbeat = 0;
+        // If timer object goes out of scope and gets erased by Garbage Collector after some time, which stops callbacks from firing. Save reference to it in a member of class.
         long m_nRtpsTimerCalled = 0;     // Real Time Price Service
 
-        Timer? m_heartbeatTimer = null;
         Timer? m_checkWebsitesAndKeepAliveTimer = null;
         Timer? m_checkAmazonAwsInstancesTimer = null;
         Timer? m_rtpsTimer = null;
 
         Timer? m_dailyMarketOpenTimer = null;   // called at 9:30 ET, may be late or early by 1 hour, if there is a DayLightSaving day
         Timer? m_dailyReportTimer = null;   // called at the market close, because this is set by the MarketOpen Timer, it always use the current day proper DayLightSaving settings. Will be correct.
-
-        const int cHeartbeatTimerFrequencyMinutes = 5;
         const int cRtpsTimerFrequencyMinutes = 15;  // changed from 10min to 15, to decrease strain on VBroker and to get less 'Requested market data is not subscribed' emails.
         const int cCheckWebsitesTimerFrequencyMinutes = 16;
         const int cCheckAmazonAwsTimerFrequencyMinutes = 60;
@@ -94,7 +90,7 @@ namespace HealthMonitor
             PersistedState = new SavedState();
 
             ScheduleTimers();
-            InitVbScheduler();
+            AddVbTasksToScheduler();
             m_tcpListener = new ParallelTcpListener(ServerIp.LocalhostMetaAllPrivateIpWithIP, ServerIp.DefaultHealthMonitorServerPort, ProcessTcpClient);
             m_tcpListener.StartTcpMessageListenerThreads();
         }
@@ -120,7 +116,6 @@ namespace HealthMonitor
             //PersistedState.Save();
             if (m_tcpListener != null)
                 m_tcpListener.StopTcpMessageListener();
-            ExitVbScheduler();
         }
 
         private void ScheduleTimers()
@@ -134,12 +129,6 @@ namespace HealthMonitor
                 m_checkAmazonAwsInstancesTimer = new System.Threading.Timer(new TimerCallback(CheckAmazonAwsInstances_Elapsed), null, TimeSpan.FromSeconds(40), TimeSpan.FromMinutes(cCheckAmazonAwsTimerFrequencyMinutes));
 
                 m_rtpsTimer = new System.Threading.Timer(new TimerCallback(RtpsTimer_Elapsed), null, TimeSpan.FromSeconds(50), TimeSpan.FromMinutes(cRtpsTimerFrequencyMinutes));
-
-                m_heartbeatTimer = new System.Threading.Timer((e) =>    // Heartbeat log is useful to find out when VM was shut down, or when the App crashed
-                {
-                    Utils.Logger.Info($"**m_nHeartbeat: {m_nHeartbeat} (at every {cHeartbeatTimerFrequencyMinutes} minutes)");
-                    m_nHeartbeat++;
-                }, null, TimeSpan.FromMinutes(0.5), TimeSpan.FromMinutes(cHeartbeatTimerFrequencyMinutes));
 
                 m_dailyMarketOpenTimer = new System.Threading.Timer(new TimerCallback(DailyMarketOpenTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1), TimeSpan.FromMilliseconds(-1));
                 m_dailyReportTimer = new System.Threading.Timer(new TimerCallback(DailyReportTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1), TimeSpan.FromMilliseconds(-1));
@@ -312,7 +301,7 @@ namespace HealthMonitor
                     if (m_VbReport[i].Item1 > utcStartOfToday)
                     {
                         wasAllOkToday &= m_VbReport[i].Item2;
-                        string strategyName = String.Empty;
+                        string strategyName = string.Empty;
                         int strategyNameInd1 = m_VbReport[i].Item3.IndexOf("BrokerTask ");  // "BrokerTask UberVXX was OK" or "had ERROR"
                         if (strategyNameInd1 != -1)
                         {
@@ -452,7 +441,7 @@ namespace HealthMonitor
                 }
 
                 // phonecallText can be aggregated, but we intentionally leave it empty. This timer only happens if the first phonecall was already made. One phonecall per problem type should be enough.
-                SendEmailAndMakePhoneCall(emailSubject, emailBody.ToString(), String.Empty);
+                SendEmailAndMakePhoneCall(emailSubject, emailBody.ToString(), string.Empty);
             }
             catch (Exception e)
             {

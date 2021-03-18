@@ -177,8 +177,8 @@ namespace RedisManager
 
 
         class DailyNavData {
-            public string DateStr = String.Empty;
-            public string ValueStr = String.Empty;
+            public string DateStr = string.Empty;
+            public string ValueStr = string.Empty;
         }
 
         struct DailyNavDataBin {

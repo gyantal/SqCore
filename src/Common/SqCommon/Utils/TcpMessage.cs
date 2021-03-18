@@ -17,16 +17,36 @@ namespace SqCommon
         GetAccountsInfo = 1642, // AccountSummary and Positions and MarketValues info
     };
 
+    public enum HealthMonitorMessageID  // ! if this enum is changed by inserting a new value in the middle, redeploy all apps that uses it, otherwise they interpret the number differently
+    {
+        Undefined = 0,
+        Ping,
+        TestHardCrash,
+        TestSendingEmail,
+        TestMakingPhoneCall,
+        ReportErrorFromVirtualBroker,       // later we need ReportWarningFromVirtualBroker too which will send only emails, but not Phonecalls
+        ReportOkFromVirtualBroker,
+        ReportWarningFromVirtualBroker,
+        SendDailySummaryReportEmail,
+        GetHealthMonitorCurrentState,   // not used at the moment
+        GetHealthMonitorCurrentStateToHealthMonitorWebsite,
+        ReportErrorFromSQLabWebsite,
+        SqCoreWebOk, // SqCoreWeb can actively notify HealthMonitor that a regular event (like a trade scheduling in VBroker) was completed
+        SqCoreWebWarning, // warning will send only emails, but not Phonecalls
+        SqCoreWebCsError,     // C# error on the server side
+        SqCoreWebJsError,   // JavaScript error on the client side
+    };
+
     public enum TcpMessageResponseFormat { None = 0, String, JSON };
 
 
     public class TcpMessage
     {
-        public string TcpServerHost { get; set; } = String.Empty;
+        public string TcpServerHost { get; set; } = string.Empty;
         public int TcpServerPort { get; set; }
 
-        public TcpMessageID ID { get; set; }
-        public string ParamStr { get; set; } = String.Empty;
+        public int ID { get; set; }
+        public string ParamStr { get; set; } = string.Empty;
         public TcpMessageResponseFormat ResponseFormat { get; set; }
 
         public static string GenerateSecurityToken() // for sensitive info only, we need a security token checking, so 3rd party cannot easily get this data
@@ -38,7 +58,8 @@ namespace SqCommon
             return new string(charArray);
         }
 
-        public static async Task<string?> Send(string p_msg, TcpMessageID p_vbMessageId, string p_tcpServerHost, int p_tcpServerPort)
+        // p_vbMessageId: better to be general int than typed enum, because then this function can be used in general
+        public static async Task<string?> Send(string p_msg, int p_vbMessageId, string p_tcpServerHost, int p_tcpServerPort, TcpMessageResponseFormat p_responseFormat = TcpMessageResponseFormat.String)
         {
             Utils.Logger.Info($"TcpMessage.Send(): Message: '{p_msg}'");
 
@@ -48,7 +69,7 @@ namespace SqCommon
                 TcpServerPort = p_tcpServerPort,
                 ID = p_vbMessageId,
                 ParamStr = $"{p_msg}",
-                ResponseFormat = TcpMessageResponseFormat.String
+                ResponseFormat = p_responseFormat
             }.SendMessage());
 
             string? reply = (await t);
@@ -59,14 +80,14 @@ namespace SqCommon
 
         public void SerializeTo(BinaryWriter p_binaryWriter)
         {
-            p_binaryWriter.Write((Int32)ID);
+            p_binaryWriter.Write(ID);
             p_binaryWriter.Write(ParamStr);
             p_binaryWriter.Write((Int32)ResponseFormat);
         }
 
         public TcpMessage DeserializeFrom(BinaryReader p_binaryReader)
         {
-            ID = (TcpMessageID)p_binaryReader.ReadInt32();
+            ID = p_binaryReader.ReadInt32();
             ParamStr = p_binaryReader.ReadString();
             ResponseFormat = (TcpMessageResponseFormat)p_binaryReader.ReadInt32();
             return this;
@@ -82,7 +103,7 @@ namespace SqCommon
         // If it goes to 50, then it shows it is really the problem that there are no free threads. Then we have to rewrite this Tcp communication code.
         // Alternatively, it might be possible ASP.Net Core 2.0 has some bug, which was later corrected in ASP.NET core 3.0, and as we migrate from SqLab to SqCore, we don't really have to worry about this.
         // 2020-06-09: same thing. Number of threads: 25-28, it is not excessive.
-        public async Task<string?> SendMessage()
+        private async Task<string?> SendMessage()
         {
             // https://stackoverflow.com/questions/17118632/how-to-set-the-timeout-for-a-tcpclient/43237063#43237063
             string? reply = null;
@@ -113,7 +134,7 @@ namespace SqCommon
 
                 var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));        // timout 30sec. After which cts.Cancel() is called. That will trigger cancellation of the task
                 var taskWithTimeoutCancellation = connectContinueTask.WithCancellation(cts.Token);
-                await taskWithTimeoutCancellation;
+                await taskWithTimeoutCancellation; // excellent! We use await, instead of TPL
 
                 if (connectTask.Exception != null)
                 {

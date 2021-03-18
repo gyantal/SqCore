@@ -87,7 +87,7 @@ namespace SqCommon
         //         }
         //     }
         //     Utils.Logger.Error("Error in RunningEnvStr(). Couldn't find: " + os_username + ". Returning null.");
-        //     return String.Empty;
+        //     return string.Empty;
         // }
 
         public static string SensitiveConfigFolderPath()

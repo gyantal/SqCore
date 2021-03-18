@@ -75,7 +75,7 @@ namespace SqCoreWeb
                     {
                         // we need to restore the original content type, otherwise it would be based on the compression type
                         // (for example "application/brotli" instead of "text/html")
-                        string contentType = String.Empty;
+                        string contentType = string.Empty;
                         if (contentTypeProvider.TryGetContentType(ctx.File.PhysicalPath.Remove(
                             ctx.File.PhysicalPath.Length - fileExtension.Length, fileExtension.Length), out contentType))
                             ctx.Context.Response.ContentType = contentType;

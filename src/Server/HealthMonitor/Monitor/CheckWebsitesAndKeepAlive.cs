@@ -39,7 +39,7 @@ namespace HealthMonitor
                 List<string> failedWebsites = new List<string>();
                 for (int i = 0; i < cWebsitesToCheckAndnFail.Length; i++)
                 {
-                    string hmWebsiteStr = String.Empty;
+                    string hmWebsiteStr = string.Empty;
                     if (Utils.DownloadStringWithRetry(cWebsitesToCheckAndnFail[i].url, out hmWebsiteStr, 5, TimeSpan.FromSeconds(5), false))
                     {
                         cWebsitesToCheckAndnFail[i].nFail = 0;

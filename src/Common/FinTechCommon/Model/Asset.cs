@@ -11,20 +11,20 @@ namespace FinTechCommon
     public class Asset
     {
         public AssetId32Bits AssetId { get; set; } = AssetId32Bits.Invalid; // invalid value is best to be 0. If it is Uint32.MaxValue is the invalid, then problems if extending to Uint64
-        public string LastTicker { get; set; } = String.Empty;  // a security has a LastTicker Now, but in the past it might have a different ticker before ticker rename
+        public string LastTicker { get; set; } = string.Empty;  // a security has a LastTicker Now, but in the past it might have a different ticker before ticker rename
         public List<TickerChange> TickerChanges { get; set; } = new List<TickerChange>();
 		public bool IsAlive {	 // Maybe it is not necessary to store in DB. If a VXX becomes dead, we can change LastTicker = "VXX-20190130", so actually IsAlive can be computed
 			get { return LastTicker.IndexOf('-') == -1; }	// '-' should not be in the last ticker
 		}	
 
-		public string LastName { get; set; } = String.Empty;
+		public string LastName { get; set; } = string.Empty;
 		public List<string> NameChanges { get; set; } = new List<string>();
 
 		// Stock specific fields:
 		public CurrencyId Currency { get; set; } = CurrencyId.USD;	// if stocks with different currencies are in the portfolio they have to be converted to USD, if they are not. IB has a BaseCurrency of the account. We use USD as the base currency of the program. Every calculations are based in the USD form.
-   		public String ISIN { get; set; } = String.Empty;    // International Securities Identification Number would be a unique identifier. Not used for now.
+   		public String ISIN { get; set; } = string.Empty;    // International Securities Identification Number would be a unique identifier. Not used for now.
         public ExchangeId PrimaryExchange { get; set; } = ExchangeId.Unknown; // different assed with the same "VOD" ticker can exist in LSE, NYSE; YF uses "VOD" and "VOD.L"
-        public string ExpectedHistorySpan { get; set; } = String.Empty;		// comes from RedisDb
+        public string ExpectedHistorySpan { get; set; } = string.Empty;		// comes from RedisDb
 		public DateTime ExpectedHistoryStartDateET { get; set; } = DateTime.MaxValue;   // process ExpectedHistorySpan after Assets Reload, so we don't have to do it 3x per day at historical price reload
         private float m_lastValue = float.NaN; // field
         public float LastValue // real-time last price. Value is better than Price, because NAV, and ^VIX index has value, but it is not a price.
@@ -49,23 +49,23 @@ namespace FinTechCommon
     {
 		public AssetType Type { get; set; } = AssetType.Unknown;	// AssetType
         public uint ID { get; set; } = 0; // invalid value is best to be 0. If it is Uint32.MaxValue is the invalid, then problems if extending to Uint64
-        public string Ticker { get; set; } = String.Empty;  // a security has a LastTicker Now, but in the past it might have a different ticker before ticker rename
-		public string TickerHist { get; set; } = String.Empty;
-		public string Name { get; set; } = String.Empty;
-		public string NameHist { get; set; } = String.Empty;
-		public string PrimExchg { get; set; } = String.Empty;
-		public string user_id { get; set; } = String.Empty;		// *.NAV assets have user_id data
+        public string Ticker { get; set; } = string.Empty;  // a security has a LastTicker Now, but in the past it might have a different ticker before ticker rename
+		public string TickerHist { get; set; } = string.Empty;
+		public string Name { get; set; } = string.Empty;
+		public string NameHist { get; set; } = string.Empty;
+		public string PrimExchg { get; set; } = string.Empty;
+		public string user_id { get; set; } = string.Empty;		// *.NAV assets have user_id data
     }
 
 	public class SqCoreWebAssetInDb	// for quick JSON deserialization. In DB the fields has short names, and not all Asset fields are in the DB anyway
     {
-        public string AssetId { get; set; } = String.Empty;
-		public string LoadPrHist { get; set; } = String.Empty;
+        public string AssetId { get; set; } = string.Empty;
+		public string LoadPrHist { get; set; } = string.Empty;
     }
 
     public class TickerChange {
         public DateTime TimeUtc { get; set; } = DateTime.MinValue;
-        public String Ticker { get; set; } = String.Empty;
+        public String Ticker { get; set; } = string.Empty;
     }
 
     public enum ExchangeId : sbyte // differs from dbo.StockExchange, which is 'int'

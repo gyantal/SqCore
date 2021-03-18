@@ -29,9 +29,9 @@ namespace YahooFinanceApi
 
         internal static string Name<T>(this T @enum)
         {
-            string name = @enum?.ToString() ?? String.Empty;
+            string name = @enum?.ToString() ?? string.Empty;
             if (typeof(T).GetMember(name).First().GetCustomAttribute(typeof(EnumMemberAttribute)) is EnumMemberAttribute attr && attr.IsValueSetExplicitly)
-                name = attr.Value ?? String.Empty;
+                name = attr.Value ?? string.Empty;
             return name;
         }
 

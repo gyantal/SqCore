@@ -42,7 +42,7 @@ namespace BenchmarkDB
             //Test_Csharp80_Features();
             Controller.g_controller.Start();
 
-            string userInput = String.Empty;
+            string userInput = string.Empty;
             do
             {
                 userInput = DisplayMenuAndExecute();
@@ -72,10 +72,10 @@ namespace BenchmarkDB
             Console.WriteLine("7. Benchmark all and make conclusions (target: localhost, execute: Linux)");
             Console.WriteLine("8. Test downloading api.nasdaq.com (tricky HttpHeaders).");
             Console.WriteLine("9. Exit gracefully (Avoid Ctrl-^C).");
-            string userInput = String.Empty;
+            string userInput = string.Empty;
             try
             {
-                userInput = Console.ReadLine() ?? String.Empty;
+                userInput = Console.ReadLine() ?? string.Empty;
             }
             catch (System.IO.IOException e) // on Linux, of somebody closes the Terminal Window, Console.Readline() will throw an Exception with Message "Input/output error"
             {
@@ -125,7 +125,7 @@ namespace BenchmarkDB
                 case "9":
                     return "UserChosenExit";
             }
-            return String.Empty;
+            return string.Empty;
         }
 
 
@@ -176,7 +176,7 @@ namespace BenchmarkDB
             var words_subArrayWithRange = words[1..^0];              // { 2, 3, 4, 5 }, The start of the range is inclusive, but the end of the range is exclusive, meaning the start is included in the range but the end is not included in the range. The range [0..^0] represents the entire range
 
             //string myStr = null;    // C# 8.0 feature: "Nullable references in C# 8.0". just a warning. Build will be succesful.
-            string myStr = String.Empty;
+            string myStr = string.Empty;
 
             Console.WriteLine($"The last word is {words_subArrayWithRange[^1]} {myStr}"); // writes "lazy". this is C# 8.0 feature. Index + Ranges.
 

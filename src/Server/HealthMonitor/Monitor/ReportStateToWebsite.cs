@@ -11,7 +11,7 @@ namespace HealthMonitor
 {
     public class HMtoDashboardData
     {
-        public string StartDate = String.Empty;        // DateTime serialization, deserialization between C# and JS is a real pain. And at the end, we send strings anyway. Easier to do this way.
+        public string StartDate = string.Empty;        // DateTime serialization, deserialization between C# and JS is a real pain. And at the end, we send strings anyway. Easier to do this way.
         public bool DailyEmailReportEnabled;
 
         public bool RtpsTimerEnabled;
@@ -22,13 +22,13 @@ namespace HealthMonitor
         public List<string>? VBrokerReports;
         public List<string>? VBrokerDetailedReports;
 
-        public string CommandToBackEnd = String.Empty;
-        public string ResponseToFrontEnd = String.Empty;   // it is "OK" or the Error message
+        public string CommandToBackEnd = string.Empty;
+        public string ResponseToFrontEnd = string.Empty;   // it is "OK" or the Error message
     }
 
     public partial class HealthMonitor
     {
-        internal void CurrentStateToHealthMonitorWebsite(TcpClient p_tcpClient, HealthMonitorMessage p_message)
+        internal void CurrentStateToHealthMonitorWebsite(TcpClient p_tcpClient, TcpMessage p_message)
         {
             HMtoDashboardData? hmDataOut = null;
             var hmDataIn = Utils.LoadFromJSON<HMtoDashboardData>(p_message.ParamStr);
@@ -56,7 +56,7 @@ namespace HealthMonitor
                 hmDataOut = new HMtoDashboardData() { ResponseToFrontEnd = "Error: unrecognised CommandToBackEnd" };
             }
 
-            if (p_message.ResponseFormat == HealthMonitorMessageResponseFormat.JSON)
+            if (p_message.ResponseFormat == TcpMessageResponseFormat.JSON)
             {
                 var jsonStr = Utils.SaveToJSON<HMtoDashboardData>(hmDataOut);
                 BinaryWriter bw = new BinaryWriter(p_tcpClient.GetStream());

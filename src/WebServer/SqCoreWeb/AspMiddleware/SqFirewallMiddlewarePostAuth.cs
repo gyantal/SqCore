@@ -50,7 +50,7 @@ namespace SqCoreWeb
                 // if user is unknown or not allowed: log it but allow some files (jpeg) through, but not html or APIs
                 
 
-                string ext = Path.GetExtension(httpContext.Request.Path.Value) ?? String.Empty;
+                string ext = Path.GetExtension(httpContext.Request.Path.Value) ?? string.Empty;
                 bool isAllowedRequest = false;
                 
                 if (ext.Equals(".html", StringComparison.OrdinalIgnoreCase) || ext.Equals(".htm", StringComparison.OrdinalIgnoreCase))   // 1. HTML requests

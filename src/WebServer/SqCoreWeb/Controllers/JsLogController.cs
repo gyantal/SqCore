@@ -25,10 +25,10 @@ namespace SqCoreWeb.Controllers
     public class NGXLogInterface
     {
         public NgxLoggerLevel level { get; set; }
-        public string timestamp { get; set; } = String.Empty;
-        public string fileName { get; set; }  = String.Empty;
-        public string lineNumber { get; set; }  = String.Empty;
-        public string message { get; set; }  = String.Empty;
+        public string timestamp { get; set; } = string.Empty;
+        public string fileName { get; set; }  = string.Empty;
+        public string lineNumber { get; set; }  = string.Empty;
+        public string message { get; set; }  = string.Empty;
         public object[] additional { get; set; } = new object[] { };
     }
 
@@ -39,7 +39,7 @@ namespace SqCoreWeb.Controllers
         [HttpGet, HttpPost]
         public async Task<ActionResult> Index()
         {
-            string jsLogMessage = String.Empty;
+            string jsLogMessage = string.Empty;
             using (var reader = new StreamReader(Request.Body))
             {
                 // example: '{"message":"A simple error() test message to NGXLogger","additional":[],"level":5,"timestamp":"2020-01-18T00:46:47.740Z","fileName":"ExampleJsClientGet.js","lineNumber":"52"}'

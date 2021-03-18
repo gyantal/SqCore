@@ -41,7 +41,7 @@ namespace RedisManager
 
             Controller.g_controller.Start();
 
-            string userInput = String.Empty;
+            string userInput = string.Empty;
             do
             {
                 userInput = DisplayMenuAndExecute();
@@ -71,10 +71,10 @@ namespace RedisManager
             Console.WriteLine("7. Convert [all] tables from PostgreSql to Redis data (Full)");
             Console.WriteLine("8. Manage NAV assets...");
             Console.WriteLine("9. Exit gracefully (Avoid Ctrl-^C).");
-            string userInput = String.Empty;
+            string userInput = string.Empty;
             try
             {
-                userInput = Console.ReadLine() ?? String.Empty;
+                userInput = Console.ReadLine() ?? string.Empty;
             }
             catch (System.IO.IOException e) // on Linux, of somebody closes the Terminal Window, Console.Readline() will throw an Exception with Message "Input/output error"
             {
@@ -107,7 +107,7 @@ namespace RedisManager
                     Controller.g_controller.ConvertTableDataToRedis(new string[] { "sq_user", "sq_user", "sq_user" });
                     break;
                 case "8":
-                    string userInputSub = String.Empty;
+                    string userInputSub = string.Empty;
                     do
                     {
                         userInputSub = DisplaySubMenuAndExecuteManageNavs();
@@ -116,7 +116,7 @@ namespace RedisManager
                 case "9":
                     return "UserChosenExit";
             }
-            return String.Empty;
+            return string.Empty;
         }
 
         static public string DisplaySubMenuAndExecuteManageNavs()
@@ -131,10 +131,10 @@ namespace RedisManager
             Console.WriteLine("7. Import Nav Asset From Txt file: 9:3");
             
             Console.WriteLine("9. Exit to main menu.");
-            string userInput = String.Empty;
+            string userInput = string.Empty;
             try
             {
-                userInput = Console.ReadLine() ?? String.Empty;
+                userInput = Console.ReadLine() ?? string.Empty;
             }
             catch (System.IO.IOException e) // on Linux, of somebody closes the Terminal Window, Console.Readline() will throw an Exception with Message "Input/output error"
             {
@@ -171,7 +171,7 @@ namespace RedisManager
                 case "9":
                     return "UserChosenExit";
             }
-            return String.Empty;
+            return string.Empty;
         }
 
     }

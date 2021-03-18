@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace HealthMonitor
@@ -23,10 +24,10 @@ namespace HealthMonitor
         // at VirtualBroke...'", ResponseFormat: "None"
         // 2. Strategy messages OK. Strategy specific. HTML format.
         // Message ID:"ReportOkFromVirtualBroker", ParamStr: "<BriefReport>BrokerTask HarryLong was OK.</BriefReport><DetailedReport>11-09T20:59:49: 'HarryLong'<br><font color="#10ff10">Target: TVIX:-35%, TMV:-65%</font><br/>Real SellAsset  6 UVXY ($82)<br/>Real BuyAsset  29 TMV ($626)<br/>Real BuyAsset  46 UVXY ($626)<br/>Real BuyAsset  581 TMV ($12541)<br/></DetailedReport>", ResponseFormat: "None"
-        private void MessageFromVirtualBroker(TcpClient p_tcpClient, HealthMonitorMessage p_message)
+        private void MessageFromVirtualBroker(TcpClient p_tcpClient, TcpMessage p_message)
         {
             Utils.Logger.Info($"MessageFromVirtualBroker() START");
-            if (p_message.ResponseFormat == HealthMonitorMessageResponseFormat.String)
+            if (p_message.ResponseFormat == TcpMessageResponseFormat.String)
             {
                 BinaryWriter bw = new BinaryWriter(p_tcpClient.GetStream());
                 bw.Write("FromServer: Message received, saved and starting processing: " + p_message.ParamStr);
@@ -57,7 +58,7 @@ namespace HealthMonitor
                 }
             }
 
-            bool isErrorOrWarning = (p_message.ID == HealthMonitorMessageID.ReportErrorFromVirtualBroker) || (p_message.ID == HealthMonitorMessageID.ReportWarningFromVirtualBroker);
+            bool isErrorOrWarning = (p_message.ID == (int)HealthMonitorMessageID.ReportErrorFromVirtualBroker) || (p_message.ID == (int)HealthMonitorMessageID.ReportWarningFromVirtualBroker);
             if (!isErrorOrWarning && (briefReport != null))
             {
                 // sometimes the message seems OK, but if the messageParam contains the word "Error" treat it as error. For example, if this email was sent to the user, with the Message that everything is OK, treat it as error
@@ -74,7 +75,7 @@ namespace HealthMonitor
             {
                 Utils.Logger.Info("Error or Warning FromVirtualBroker().");
                 // Vbroker source can spam error messages every 1 second. We don't want to spam email/phonecalls every second, therefore use urgency as Normal
-                InformSupervisorsEx(DataSource.VBroker, false, "SQ HealthMonitor: ERROR from VirtualBroker.", $"SQ HealthMonitor: ERROR from VirtualBroker. MessageParamStr: { ((briefReport != null) ? briefReport : p_message.ParamStr) }", 
+                InformSupervisorsEx(DataSource.VBroker, false, "SQ HealthMonitor: ERROR from VirtualBroker.", $"SQ HealthMonitor: ERROR from VirtualBroker. MessageParamStr: { ((briefReport != null) ? briefReport : p_message.ParamStr) }",
                     "There is an Error in Virtual Broker. ... I repeat: Error in Virtual Broker.", ref m_lastVbInformSupervisorLock, ref m_lastVbErrorInformTime);
             }
 
@@ -92,7 +93,7 @@ namespace HealthMonitor
                     if (m_VbReport[i].Item1 > p_utcStart)
                     {
                         bool isOK = m_VbReport[i].Item2;
-                        string strategyName = String.Empty;
+                        string strategyName = string.Empty;
                         int strategyNameInd1 = m_VbReport[i].Item3.IndexOf("BrokerTask ");  // "BrokerTask UberVXX/HarryLong was OK" or "had ERROR"
                         if (strategyNameInd1 != -1)
                         {
@@ -123,5 +124,105 @@ namespace HealthMonitor
                 // do nothing. The arrived message can be either an OK or Error message. But if it was an Error message, the Phonecall was already made when the Error message arrived
             }
         }
+
+
+        // Another feauture that was not implemented. Maybe not needed ever:
+        //Periodically check that VirtualBroker is alive and ready(every 60 minutes, if no answer for second time, make phonecall). Skip this one. Reasons:
+        //- not easy to implement.VBroker should be happy to get incoming Tcp messages
+        //- that is unusual, and it means I have to play with security, allowing another IP to access the VBroker server. But when IPs change, that is a lot of hassle
+        //- currently, there are 2 extra simulations intraday. If VbServer is down, the simulation that is 30min before marketClose would be spotted by HealthMon.
+        //- this feature can be mimicked: buy doing UberVXX task Simulation every hour.In that case VBrokerMonitorScheduler will notice that OK message didn't come in the last hour. 
+        //- Sum: this feauture is not necessary, and takes time to implement.Don't do it now.
+        private void AddVbTasksToScheduler()
+        {
+            try
+            {
+                var uberVxxTask = new SqTask()
+                {
+                    Name = "UberVXX",
+                    NameForTextToSpeech = "Uber V X X ",
+                    ExecutionFactory = HmVbTradeStrategyExecution.ExecutionFactoryCreate,
+                };
+                uberVxxTask.Triggers.Add(new SqTrigger()
+                {
+                    SqTask = uberVxxTask,
+                    TriggerType = TriggerType.DailyOnUsaMarketDay,
+                    StartTimeBase = StartTimeBase.BaseOnUsaMarketOpen,
+                    StartTimeOffset = TimeSpan.FromMinutes(25),
+                });
+                uberVxxTask.Triggers.Add(new SqTrigger()
+                {
+                    SqTask = uberVxxTask,
+                    TriggerType = TriggerType.DailyOnUsaMarketDay,
+                    StartTimeBase = StartTimeBase.BaseOnUsaMarketClose,
+                    StartTimeOffset = TimeSpan.FromMinutes(-35),
+                });
+                uberVxxTask.Triggers.Add(new SqTrigger()
+                {
+                    SqTask = uberVxxTask,
+                    TriggerType = TriggerType.DailyOnUsaMarketDay,
+                    StartTimeBase = StartTimeBase.BaseOnUsaMarketClose,
+                    StartTimeOffset = TimeSpan.FromSeconds(-15),    // from -20sec to -15sec. From start, the trade executes in 2seconds
+                });
+                SqTaskScheduler.gSqTasks.Add(uberVxxTask);
+
+
+                var harryLongTask = new SqTask()
+                {
+                    Name = "HarryLong",
+                    NameForTextToSpeech = "Harry Long ",
+                    ExecutionFactory = HmVbTradeStrategyExecution.ExecutionFactoryCreate,
+                };
+                harryLongTask.Triggers.Add(new SqTrigger()
+                {
+                    SqTask = harryLongTask,
+                    TriggerType = TriggerType.DailyOnUsaMarketDay,
+                    StartTimeBase = StartTimeBase.BaseOnUsaMarketOpen,
+                    StartTimeOffset = TimeSpan.FromMinutes(30)
+                });
+                harryLongTask.Triggers.Add(new SqTrigger()
+                {
+                    SqTask = harryLongTask,
+                    TriggerType = TriggerType.DailyOnUsaMarketDay,
+                    StartTimeBase = StartTimeBase.BaseOnUsaMarketClose,
+                    StartTimeOffset = TimeSpan.FromMinutes(-31)
+                });
+                harryLongTask.Triggers.Add(new SqTrigger()
+                {
+                    SqTask = harryLongTask,
+                    TriggerType = TriggerType.DailyOnUsaMarketDay,
+                    StartTimeBase = StartTimeBase.BaseOnUsaMarketClose,
+                    StartTimeOffset = TimeSpan.FromSeconds(-11)    // Give UberVXX priority (executing at -15sec). That is more important because that can change from full 100% long to -200% short. This Harry Long strategy just slowly modifies weights, so if one trade is missed, it is not a problem.
+                });
+                SqTaskScheduler.gSqTasks.Add(harryLongTask);
+            }
+            catch (Exception e)
+            {
+                Utils.Logger.Error(e, "AddVbTasksToScheduler");
+                //HealthMonitorMessage.SendException("BrokerScheduler.RecreateTasksAndLoop Thread", e, HealthMonitorMessageID.ReportErrorFromVirtualBroker);
+            }
+        }
     }
+
+    public class HmVbTradeStrategyExecution : SqExecution
+    {
+        public static SqExecution ExecutionFactoryCreate()
+        {
+            return new HmVbTradeStrategyExecution();
+        }
+
+        public override void Run()
+        {
+            // Check that VBroker OK message arrived properly from the Expected Strategy. Different Tasks may take more time to execute
+            Utils.Logger.Info("HmVbTradeStrategyExecution.Run() BEGIN");
+            if (SqTask != null && (SqTask.Name == "UberVXX" || SqTask.Name == "HarryLong"))
+            {
+                Thread.Sleep(TimeSpan.FromMinutes(5));
+
+                DateTime utcStart = DateTime.UtcNow.AddMinutes(-6);
+                HealthMonitor.g_healthMonitor.CheckOKMessageArrived(utcStart, SqTask.Name);
+            }
+        }
+    }
+
 }

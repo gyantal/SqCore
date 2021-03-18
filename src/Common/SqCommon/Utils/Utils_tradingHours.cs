@@ -84,7 +84,7 @@ namespace SqCommon
             if ((g_holidays != null) && (DateTime.UtcNow - g_holidaysDownloadDate) < p_maxAllowedStaleness)
                 return g_holidays;
 
-            string webPage = String.Empty;
+            string webPage = string.Empty;
 
             // using http://www.thestreet.com/stock-market-news/11771386/market-holidays-2015.html is not recommended, 
             //because for 20x pages it does an Adver redirection instead of giving back the proper info the returned page 

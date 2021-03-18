@@ -14,9 +14,9 @@ namespace SqCoreWeb.Controllers
     {
         public class ExampleMessage
         {
-            public string MsgType { get; set; } = String.Empty;
+            public string MsgType { get; set; } = string.Empty;
 
-            public string StringData { get; set; } = String.Empty;
+            public string StringData { get; set; } = string.Empty;
             public DateTime DateOrTime { get; set; }
 
             public int IntData { get; set; }

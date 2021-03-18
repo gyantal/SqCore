@@ -15,19 +15,19 @@ namespace HealthMonitor
         DateTime m_lastSqWebsiteErrorEmailTime = DateTime.MinValue;    // don't email if it was made in the last 10 minutes
         DateTime m_lastSqWebsiteErrorPhoneCallTime = DateTime.MinValue;    // don't call if it was made in the last 30 minutes
       
-        private void ErrorFromWebsite(TcpClient p_tcpClient, HealthMonitorMessage p_message)
+        private void ErrorFromWebsite(TcpClient p_tcpClient, TcpMessage p_message)
         {
             if (m_persistedState == null || !m_persistedState.IsProcessingSqCoreWebsiteMessagesEnabled)
                 return;
 
-            if (p_message.ResponseFormat == HealthMonitorMessageResponseFormat.String)
+            if (p_message.ResponseFormat == TcpMessageResponseFormat.String)
             {
                 BinaryWriter bw = new BinaryWriter(p_tcpClient.GetStream());
                 bw.Write("FromServer: Message received, saved and starting processing: " + p_message.ParamStr);
             }
 
             string from = "unknown website";
-            switch (p_message.ID)
+            switch ((HealthMonitorMessageID)p_message.ID)
             {
                 case HealthMonitorMessageID.ReportErrorFromSQLabWebsite:
                     from = "SqLab";
@@ -42,7 +42,7 @@ namespace HealthMonitor
 
             Utils.Logger.Info("ErrorFromWebsite().");
 
-            InformSupervisors(InformSuperVisorsUrgency.Normal_UseTimer, $"SQ HealthMonitor: ERROR. Website: {from}.", $"SQ HealthMonitor:ERROR. Website: {from}. MessageParamStr: { p_message.ParamStr}", String.Empty, ref m_lastSqWebsiteInformSupervisorLock, ref m_lastSqWebsiteErrorEmailTime, ref m_lastSqWebsiteErrorPhoneCallTime);
+            InformSupervisors(InformSuperVisorsUrgency.Normal_UseTimer, $"SQ HealthMonitor: ERROR. Website: {from}.", $"SQ HealthMonitor:ERROR. Website: {from}. MessageParamStr: { p_message.ParamStr}", string.Empty, ref m_lastSqWebsiteInformSupervisorLock, ref m_lastSqWebsiteErrorEmailTime, ref m_lastSqWebsiteErrorPhoneCallTime);
         }
 
     

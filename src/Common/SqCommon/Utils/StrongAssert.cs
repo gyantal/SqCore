@@ -22,9 +22,9 @@ namespace SqCommon
     {
         public Severity Severity { get; set; }
         /// <summary> Example: "StrongAssert failed (severity=={0}): {1}" </summary>
-        public String Message { get; set; } = String.Empty;
+        public String Message { get; set; } = string.Empty;
         //public StackTrace StackTrace { get; set; }
-        public string StackTrace { get; set; } = String.Empty;
+        public string StackTrace { get; set; } = string.Empty;
     }
 
     // get keywords for method names from xUnit (or nUnit): https://xunit.github.io/docs/comparisons.html
@@ -36,7 +36,7 @@ namespace SqCommon
         public static void True(bool p_condition, Severity p_severity = Severity.ThrowException)
         {
             if (!p_condition)
-                Fail_core(p_severity, String.Empty, null);
+                Fail_core(p_severity, string.Empty, null);
         }
 
         /// <summary> Severity: Exception </summary>
@@ -55,7 +55,7 @@ namespace SqCommon
         public static void True(bool p_condition, Severity p_severity, Func<string> p_msg)
         {
             if (!p_condition)
-                Fail_core(p_severity, p_msg == null ? String.Empty : p_msg(), null);
+                Fail_core(p_severity, p_msg == null ? string.Empty : p_msg(), null);
         }
 
         public static void NotEmpty(string p_str, Severity p_severity, string p_message, params object[] p_args)
@@ -77,7 +77,7 @@ namespace SqCommon
 
         public static void Fail(Severity p_severity = Severity.ThrowException)
         {
-            Fail_core(p_severity, String.Empty, null);
+            Fail_core(p_severity, string.Empty, null);
         }
 
         /// <summary> Severity: Exception </summary>
@@ -95,7 +95,7 @@ namespace SqCommon
         {
             const string MSG = "StrongAssert failed (severity=={0})";
             string msg = String.Format(MSG, p_severity)
-                + (p_message == null || p_args == null ? String.Empty : ": " + Utils.FormatInvCult(p_message, p_args));
+                + (p_message == null || p_args == null ? string.Empty : ": " + Utils.FormatInvCult(p_message, p_args));
 
             string sTrace = Environment.StackTrace;
             switch (p_severity)

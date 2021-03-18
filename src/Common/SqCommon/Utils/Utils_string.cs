@@ -40,7 +40,7 @@ namespace SqCommon
         }
         public static string ToStringWithShortenedStackTrace(this Exception e, int p_maxLength)
         {
-            string s = (e == null ? null : e.ToString()) ?? String.Empty;
+            string s = (e == null ? null : e.ToString()) ?? string.Empty;
             if (s.Length <= p_maxLength)
                 return s;
             else
@@ -50,7 +50,7 @@ namespace SqCommon
         public static string FormatInvCult(this string p_fmt, params object[] p_args)
         {
             if (p_fmt == null || p_args == null || p_args.Length == 0)
-                return p_fmt ?? String.Empty;
+                return p_fmt ?? string.Empty;
             return String.Format(InvCult, p_fmt, p_args);
         }
 

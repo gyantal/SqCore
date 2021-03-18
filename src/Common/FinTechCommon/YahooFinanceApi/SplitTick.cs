@@ -8,7 +8,7 @@ namespace YahooFinanceApi
         [Name("Date")]
         public DateTime DateTime { get; set; }
         [Name("Stock Splits")]
-        public string StockSplits { get; set; } = String.Empty;
+        public string StockSplits { get; set; } = string.Empty;
 
         public decimal BeforeSplit { get; set; }
 

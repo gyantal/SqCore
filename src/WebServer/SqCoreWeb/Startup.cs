@@ -328,8 +328,8 @@ namespace SqCoreWeb
                     }
                     else
                     {
-                        string ext = Path.GetExtension(context.Request.Path.Value) ?? String.Empty;
-                        if (ext != String.Empty)    // If has any extension, then it is not a Controller (but probably a StaticFile()). If it is "/", then it is already converted to "index.htmL". Controllers will handle its own cacheAge with attributes. 
+                        string ext = Path.GetExtension(context.Request.Path.Value) ?? string.Empty;
+                        if (ext != string.Empty)    // If has any extension, then it is not a Controller (but probably a StaticFile()). If it is "/", then it is already converted to "index.htmL". Controllers will handle its own cacheAge with attributes. 
                         {
                             // UseResponseCaching() will fill up headers, if MVC controllers or Razor pages, we don't want to use this caching, because the Controller will specify it in an attribute.
                             // probably no cache for API calls like "https://localhost:5001/WeatherForecast"  (they probably get RT data), Controllers will handle it.
@@ -390,7 +390,7 @@ namespace SqCoreWeb
 
             // app.UseRewriter(rwOptions);
 
-            // string angularSpaStr = String.Empty;
+            // string angularSpaStr = string.Empty;
 
             // app.Use(async (context, next) =>
             // {
@@ -403,7 +403,7 @@ namespace SqCoreWeb
 
             //     if (!String.IsNullOrEmpty(angularSpaStr)) {
             //     Problem, this app.UseStaticFiles() never worked here. It didn't file the files, because it is not in the middleware chain.
-            //         context.Request.Path = context.Request.Path.Value.Replace("/" + angularSpaStr, String.Empty);
+            //         context.Request.Path = context.Request.Path.Value.Replace("/" + angularSpaStr, string.Empty);
             //         // "Serving UseStaticFiles():  Request.Path: '/HealthMonitor/index.html' in folder:'Angular\dist\HealthMonitor'"
             //         Console.WriteLine($"Serving UseStaticFiles():  Request.Path: '{context.Request.Path.Value}' in folder:'{@"Angular\dist\" + angularSpaStr}'");
             //         app.UseStaticFiles(new StaticFileOptions() { FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Angular\dist\" + angularSpaStr))});
@@ -427,7 +427,7 @@ namespace SqCoreWeb
             //         //     context.Request.Path = "/index.html";
             //         // }
             //         // else if (String.Equals(context.Request.Path.Value, "/index.html", StringComparison.OrdinalIgnoreCase))
-            //         //     context.Request.Path = String.Empty;
+            //         //     context.Request.Path = string.Empty;
 
             //         await next();
             //     });
@@ -639,7 +639,7 @@ namespace SqCoreWeb
         //     //         //     context.Request.Path = "/index.html";
         //     //         // }
         //     //         // else if (String.Equals(context.Request.Path.Value, "/index.html", StringComparison.OrdinalIgnoreCase))
-        //     //         //     context.Request.Path = String.Empty;
+        //     //         //     context.Request.Path = string.Empty;
 
         //     //         await next();
         //     //     });

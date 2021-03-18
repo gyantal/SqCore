@@ -84,7 +84,7 @@ namespace SqCoreWeb
             int retryCount = 0;
             while ((foundNewsItems.Count < 1) && (retryCount < 5))
             {
-                foundNewsItems = ReadRSS(rssFeedUrl, NewsSource.CnbcRss, String.Empty);
+                foundNewsItems = ReadRSS(rssFeedUrl, NewsSource.CnbcRss, string.Empty);
                 if (foundNewsItems.Count == 0)
                     System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));
                 retryCount++;
@@ -234,24 +234,24 @@ namespace SqCoreWeb
             p_dateString = p_dateString.ToUpper();
             if (p_dateString.Contains("AGO"))
             {
-                p_dateString = p_dateString.Replace("AGO", String.Empty).Trim();
+                p_dateString = p_dateString.Replace("AGO", string.Empty).Trim();
                 if (p_dateString.Contains("HOUR"))
                 {
-                    p_dateString = p_dateString.Replace("HOURS", String.Empty).Replace("HOUR", String.Empty).Trim();
+                    p_dateString = p_dateString.Replace("HOURS", string.Empty).Replace("HOUR", string.Empty).Trim();
                     int hours;
                     if (int.TryParse(p_dateString, out hours))
                         return DateTime.Now.AddHours(-hours);
                 }
                 else if (p_dateString.Contains("DAY"))
                 {
-                    p_dateString = p_dateString.Replace("DAYS", String.Empty).Replace("DAY", String.Empty).Trim();
+                    p_dateString = p_dateString.Replace("DAYS", string.Empty).Replace("DAY", string.Empty).Trim();
                     int days;
                     if (int.TryParse(p_dateString, out days))
                         return DateTime.Now.AddDays(-days);
                 }
                 else if (p_dateString.Contains("MIN"))
                 {
-                    p_dateString = p_dateString.Replace("MINUTES", String.Empty).Replace("MIN", String.Empty).Replace("MINS", String.Empty).Trim();
+                    p_dateString = p_dateString.Replace("MINUTES", string.Empty).Replace("MIN", string.Empty).Replace("MINS", string.Empty).Trim();
                     int days;
                     if (int.TryParse(p_dateString, out days))
                         return DateTime.Now.AddDays(-days);

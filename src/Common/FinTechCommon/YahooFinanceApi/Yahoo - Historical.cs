@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Diagnostics;
 using System.Globalization;
+using SqCommon;
 
 namespace YahooFinanceApi
 {
@@ -64,45 +65,57 @@ namespace YahooFinanceApi
                 Quote = '\'',
                 MissingFieldFound = null  // ignore CsvHelper.MissingFieldException, because SplitTick 2 computed fields will be missing.
             };
+            var ticks = new List<ITick>();
 
-            using (var stream = await GetResponseStreamAsync(symbol, startTime, endTime, period, showOption.Name(), token).ConfigureAwait(false))
-			using (var sr = new StreamReader(stream))
-			using (var csvReader = new CsvReader(sr, csvConfig))
-			{
-                // string result = sr.ReadToEnd();
-                // https://joshclose.github.io/CsvHelper/getting-started/
-
-                var ticks = new List<ITick>();
-                csvReader.Read(); // skip header
-                csvReader.ReadHeader();
-                while (csvReader.Read())
+            const int nMaxTries = 3;    // YF server is unreliable, as all web queries. It is worth repeating the download at least 3 times.
+            int nTries = 0;
+            do
+            {
+                try
                 {
-                    var record = csvReader.GetRecord<ITick>();
-                    var recordPostprocessed = postprocessFunction(record);
-                    // Do something with the record.
+                    nTries++;
+
+                    using (var stream = await GetResponseStreamAsync(symbol, startTime, endTime, period, showOption.Name(), token).ConfigureAwait(false))
+                    using (var sr = new StreamReader(stream))
+                    using (var csvReader = new CsvReader(sr, csvConfig))
+                    {
+                        // string result = sr.ReadToEnd();
+                        // https://joshclose.github.io/CsvHelper/getting-started/
+                        csvReader.Read(); // skip header
+                        csvReader.ReadHeader();
+                        while (csvReader.Read())
+                        {
+                            var record = csvReader.GetRecord<ITick>();
+                            var recordPostprocessed = postprocessFunction(record);
+                            // Do something with the record.
 #pragma warning disable RECS0017 // Possible compare of value type with 'null'
-                    if (recordPostprocessed != null)
+                            if (recordPostprocessed != null)
 #pragma warning restore RECS0017 // Possible compare of value type with 'null'
-                        ticks.Add(recordPostprocessed);
+                                ticks.Add(recordPostprocessed);
+                        }
+                        //                 while (csvReader.Read())
+                        //                 {
+                        //                     //var tick = instanceFunction(csvReader.Context.Record);
+                        //                     var record = csvReader.GetRecord<string>();
+                        //                     var tick = instanceFunction(new string [0]);
+                        //                     //var tick = instanceFunction(Enumerable.ToArray(records));
+                        // #pragma warning disable RECS0017 // Possible compare of value type with 'null'
+                        //                     if (tick != null)
+                        // #pragma warning restore RECS0017 // Possible compare of value type with 'null'
+                        //                         ticks.Add(tick);
+                        //                 }
+                        return ticks;
+                    }
+
                 }
+                catch (Exception e)
+                {
+                    Utils.Logger.Info(e, $"Exception in Yahoo.GetTicksAsync(): Stock:'{symbol}', {e.Message}");
+                    Thread.Sleep(3000); // sleep for 3 seconds before trying again.
+                }
+            } while (nTries <= nMaxTries);
 
-
-
-
-                //                 while (csvReader.Read())
-                //                 {
-                //                     //var tick = instanceFunction(csvReader.Context.Record);
-                //                     var record = csvReader.GetRecord<string>();
-                //                     var tick = instanceFunction(new string [0]);
-                //                     //var tick = instanceFunction(Enumerable.ToArray(records));
-                // #pragma warning disable RECS0017 // Possible compare of value type with 'null'
-                //                     if (tick != null)
-                // #pragma warning restore RECS0017 // Possible compare of value type with 'null'
-                //                         ticks.Add(tick);
-                //                 }
-
-                return ticks;
-            }
+            throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{symbol}) after {nMaxTries} tries.");
 		}
 
         private static async Task<Stream> GetResponseStreamAsync(string symbol, DateTime? startTime, DateTime? endTime, Period period, string events, CancellationToken token)

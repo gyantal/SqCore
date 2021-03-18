@@ -10,14 +10,23 @@ namespace HealthMonitor
     class Program
     {
         private static readonly NLog.Logger gLogger = NLog.LogManager.GetLogger("Program");   // the name of the logger will be not the "Namespace.Class", but whatever you prefer: "Program"
-
+        static Timer? gHeartbeatTimer = null; // If timer object goes out of scope and gets erased by Garbage Collector after some time, which stops callbacks from firing. Save reference to it in a member of class.
+        static long gNheartbeat = 0;
+        const int cHeartbeatTimerFrequencyMinutes = 5;
         static void Main(string[] args)
         {
             string appName = System.Reflection.MethodBase.GetCurrentMethod()?.ReflectedType?.Namespace ?? "UnknownNamespace";
-            Console.Title = $"{appName} v1.0.14";
             string systemEnvStr = $"(v1.0.14,{Utils.RuntimeConfig() /* Debug | Release */},CLR:{System.Environment.Version},{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},OS:{System.Environment.OSVersion},usr:{System.Environment.UserName},CPU:{System.Environment.ProcessorCount},ThId-{Thread.CurrentThread.ManagedThreadId})";
             Console.WriteLine($"Hi {appName}.{systemEnvStr}");
             gLogger.Info($"********** Main() START {systemEnvStr}");
+            if (Utils.RunningPlatform() != Platform.Linux) // https://stackoverflow.com/questions/47059468/get-or-set-the-console-title-in-linux-and-macosx-with-net-core
+                Console.Title = $"{appName} v1.0.15"; // "SqCoreWeb v1.0.15", but on Linux use it only in GUI mode. It works with graphical Xterm in VNC, but with 'screen' or with Putty it is buggy and after this, the next 200 characters are not written to console. T
+
+            gHeartbeatTimer = new System.Threading.Timer((e) =>    // Heartbeat log is useful to find out when VM was shut down, or when the App crashed
+            {
+                Utils.Logger.Info($"**g_nHeartbeat: {gNheartbeat} (at every {cHeartbeatTimerFrequencyMinutes} minutes)");
+                gNheartbeat++;
+            }, null, TimeSpan.FromMinutes(0.5), TimeSpan.FromMinutes(cHeartbeatTimerFrequencyMinutes));
 
             string sensitiveConfigFullPath = Utils.SensitiveConfigFolderPath() + $"SqCore.Server.{appName}.NoGitHub.json";
             string systemEnvStr2 = $"Current working directory of the app: '{Directory.GetCurrentDirectory()}',{Environment.NewLine}SensitiveConfigFullPath: '{sensitiveConfigFullPath}'";
@@ -39,9 +48,10 @@ namespace HealthMonitor
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException; // Occurs when a faulted task's unobserved exception is about to trigger exception which, by default, would terminate the process.
 
             Caretaker.gCaretaker.Init(Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
+            SqTaskScheduler.gTaskScheduler.Init();
             HealthMonitor.g_healthMonitor.Init();
 
-            string userInput = String.Empty;
+            string userInput = string.Empty;
             do
             {
                 userInput = DisplayMenuAndExecute();
@@ -52,8 +62,9 @@ namespace HealthMonitor
             Console.WriteLine($"Exiting in {timeBeforeExitingSec}sec...");
             Thread.Sleep(TimeSpan.FromSeconds(timeBeforeExitingSec)); // give some seconds for long running background threads to quit
 
-            Caretaker.gCaretaker.Exit();
             HealthMonitor.g_healthMonitor.Exit();
+            SqTaskScheduler.gTaskScheduler.Exit();
+            Caretaker.gCaretaker.Exit();
 
             gLogger.Info("****** Main() END");
             NLog.LogManager.Shutdown();
@@ -125,10 +136,10 @@ namespace HealthMonitor
             Console.WriteLine("5. VirtualBroker Report: show on Console.");
             Console.WriteLine("6. VirtualBroker Report: send Html email.");
             Console.WriteLine("7. Exit gracefully (Avoid Ctrl-^C).");
-            string userInput = String.Empty;
+            string userInput = string.Empty;
             try
             {
-                userInput = Console.ReadLine() ?? String.Empty;
+                userInput = Console.ReadLine() ?? string.Empty;
             }
             catch (System.IO.IOException e) // on Linux, of somebody closes the Terminal Window, Console.Readline() will throw an Exception with Message "Input/output error"
             {
@@ -160,7 +171,7 @@ namespace HealthMonitor
                 case "7":
                     return "UserChosenExit";
             }
-            return String.Empty;
+            return string.Empty;
         }
 
         static public void TestPhoneCall()

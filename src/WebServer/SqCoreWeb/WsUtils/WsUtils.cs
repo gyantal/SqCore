@@ -14,7 +14,7 @@ namespace SqCoreWeb
         public static string GetRequestUser(HttpContext p_httpContext)
         {
             var userEmailClaim = p_httpContext?.User?.Claims?.FirstOrDefault(p => p.Type == @"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
-            return userEmailClaim?.Value ?? String.Empty;
+            return userEmailClaim?.Value ?? string.Empty;
         }
 
         // Some fallback logic can be added to handle the presence of a Load Balancer.  or CloudFront. Checked: CloudFront uses X-Forwarded-For : "82.44.159.196"
@@ -25,7 +25,7 @@ namespace SqCoreWeb
             // WebSocket "wss://" protocol: Connection.RemoteIpAddress is "::ffff:127.0.0.1"   // ::ffff: is a subnet prefix for IPv4 (32 bit) addresses that are placed inside an IPv6 (128 bit) space.
             // https://stackoverflow.com/questions/57572020/authenticationhandler-context-connection-remoteipaddress-returns-ffff192
 
-            string? remoteIP = String.Empty;
+            string? remoteIP = string.Empty;
             if (p_tryUseXForwardHeader)
             {
                 remoteIP = GetHeaderValueAsNullableReference<string>(p_httpContext, "X-Forwarded-For");       // Old standard, but used by AWS CloudFront
@@ -43,14 +43,14 @@ namespace SqCoreWeb
 
             // another way to get it
             if (String.IsNullOrWhiteSpace(remoteIP) && p_httpContext?.Connection?.RemoteIpAddress != null)
-                remoteIP = p_httpContext?.Connection?.RemoteIpAddress?.MapToIPv6().ToString() ?? String.Empty;
+                remoteIP = p_httpContext?.Connection?.RemoteIpAddress?.MapToIPv6().ToString() ?? string.Empty;
 
             return String.IsNullOrWhiteSpace(remoteIP) ? "<Unknown IP>" : remoteIP;
         }
 
         public static T? GetHeaderValueAsNullableReference<T>(HttpContext p_httpContext, string p_headerName) where T : class // string is class, not struct 
         {
-            StringValues values = String.Empty;
+            StringValues values = string.Empty;
             if (p_httpContext?.Request?.Headers?.TryGetValue(p_headerName, out values) ?? false)
             {
                 string rawValues = values.ToString();   // writes out as Csv when there are multiple.

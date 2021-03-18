@@ -7,13 +7,13 @@ namespace SqCommon
 {
     public class Email
     {
-        public string ToAddresses = String.Empty;
-        public string Subject = String.Empty;
-        public string Body  = String.Empty;
+        public string ToAddresses = string.Empty;
+        public string Subject = string.Empty;
+        public string Body  = string.Empty;
         public bool IsBodyHtml;
 
-        public static string SenderName  = String.Empty;
-        public static string SenderPwd  = String.Empty;
+        public static string SenderName  = string.Empty;
+        public static string SenderPwd  = string.Empty;
 
         // 2017-06: there was a rumour for a couple of months that Mailkit replaces System.Net.Mail.SmtpClient https://www.infoq.com/news/2017/04/MailKit-MimeKit-Official
         // https://dotnetcoretutorials.com/2017/08/20/sending-email-net-core-2-0/#comments

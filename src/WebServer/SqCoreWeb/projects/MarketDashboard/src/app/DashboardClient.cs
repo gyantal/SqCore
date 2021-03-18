@@ -12,8 +12,8 @@ namespace SqCoreWeb
 
     public partial class DashboardClient {
 
-        public string ClientIP { get; set; } = String.Empty;    // Remote Client IP for WebSocket
-        public string UserEmail { get; set; } = String.Empty;
+        public string ClientIP { get; set; } = string.Empty;    // Remote Client IP for WebSocket
+        public string UserEmail { get; set; } = string.Empty;
 
         public WebSocket? WsWebSocket { get; set; } = null; // this pointer uniquely identifies the WebSocket as it is not released until websocket is dead
         public HttpContext? WsHttpContext { get; set; } = null;
@@ -80,7 +80,7 @@ namespace SqCoreWeb
 
     // these members has to be C# properties, not simple data member tags. Otherwise it will not serialize to client.
     class HandshakeMessage {    // General params for the aggregate Dashboard. These params should be not specific to smaller tools, like HealthMonitor, CatalystSniffer, QuickfolioNews
-        public String Email { get; set; } = String.Empty;
+        public String Email { get; set; } = string.Empty;
         public int AnyParam { get; set; } = 55;
     }
 
