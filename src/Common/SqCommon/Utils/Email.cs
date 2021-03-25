@@ -15,6 +15,9 @@ namespace SqCommon
         public static string SenderName  = string.Empty;
         public static string SenderPwd  = string.Empty;
 
+        public static string g_htmlEmailStart = @"<!DOCTYPE html><html><head><style> .sqNormalText {font-size: 125%;} .sqImportantOK {font-size: 140%; color: #11228B; font-weight: bold; } </style></head><body class=""sqNormalText"">";
+        public static string g_htmlEmailEnd = @"</body></html>";
+
         // 2017-06: there was a rumour for a couple of months that Mailkit replaces System.Net.Mail.SmtpClient https://www.infoq.com/news/2017/04/MailKit-MimeKit-Official
         // https://dotnetcoretutorials.com/2017/08/20/sending-email-net-core-2-0/#comments
         // Apparently so, someone made an update to the documentation to remove the obsolete tag : https://github.com/dotnet/docs/commit/7ef4e82ea518a756b1a0d1d1684dde15653845aa#diff-aac793a10e9e8d7daa604332765b29db

@@ -145,6 +145,7 @@ namespace HealthMonitor
                 };
                 uberVxxTask.Triggers.Add(new SqTrigger()
                 {
+                    Name = "MarketOpen+25min",
                     SqTask = uberVxxTask,
                     TriggerType = TriggerType.DailyOnUsaMarketDay,
                     StartTimeBase = StartTimeBase.BaseOnUsaMarketOpen,
@@ -152,6 +153,7 @@ namespace HealthMonitor
                 });
                 uberVxxTask.Triggers.Add(new SqTrigger()
                 {
+                    Name = "MarketClose-35min",
                     SqTask = uberVxxTask,
                     TriggerType = TriggerType.DailyOnUsaMarketDay,
                     StartTimeBase = StartTimeBase.BaseOnUsaMarketClose,
@@ -159,6 +161,7 @@ namespace HealthMonitor
                 });
                 uberVxxTask.Triggers.Add(new SqTrigger()
                 {
+                    Name = "MarketClose-15sec",
                     SqTask = uberVxxTask,
                     TriggerType = TriggerType.DailyOnUsaMarketDay,
                     StartTimeBase = StartTimeBase.BaseOnUsaMarketClose,
@@ -175,6 +178,7 @@ namespace HealthMonitor
                 };
                 harryLongTask.Triggers.Add(new SqTrigger()
                 {
+                    Name = "MarketOpen+30min",
                     SqTask = harryLongTask,
                     TriggerType = TriggerType.DailyOnUsaMarketDay,
                     StartTimeBase = StartTimeBase.BaseOnUsaMarketOpen,
@@ -182,6 +186,7 @@ namespace HealthMonitor
                 });
                 harryLongTask.Triggers.Add(new SqTrigger()
                 {
+                    Name = "MarketClose-31min",
                     SqTask = harryLongTask,
                     TriggerType = TriggerType.DailyOnUsaMarketDay,
                     StartTimeBase = StartTimeBase.BaseOnUsaMarketClose,
@@ -189,6 +194,7 @@ namespace HealthMonitor
                 });
                 harryLongTask.Triggers.Add(new SqTrigger()
                 {
+                    Name = "MarketClose-11sec",
                     SqTask = harryLongTask,
                     TriggerType = TriggerType.DailyOnUsaMarketDay,
                     StartTimeBase = StartTimeBase.BaseOnUsaMarketClose,

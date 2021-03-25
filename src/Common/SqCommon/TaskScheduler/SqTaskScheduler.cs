@@ -40,9 +40,9 @@ namespace SqCommon
                     if (!isMarketHoursValid)
                         Utils.Logger.Error("DetermineUsaMarketTradingHours() was not ok.");  // but we should continue and schedule Daily tasks not related to MarketTradingHours
 
-                    foreach (SqTask taskSchema in gSqTasks)
+                    foreach (SqTask sqTask in gSqTasks)
                     {
-                        foreach (SqTrigger trigger in taskSchema.Triggers)
+                        foreach (SqTrigger trigger in sqTask.Triggers)
                         {
                             ScheduleTrigger(trigger, isMarketHoursValid, isMarketTradingDay, marketOpenTimeUtc, marketCloseTimeUtc);
                         }
@@ -79,7 +79,7 @@ namespace SqCommon
                 }
             }
             // Warn() temporarily to show it on Console
-            //Console.WriteLine($"{DateTime.UtcNow.ToString("dd'T'HH':'mm':'ss")}: Task '" + p_trigger.TriggeredTaskSchema.Name + "' next time: " + ((p_trigger.NextScheduleTimeUtc != null) ? ((DateTime)p_trigger.NextScheduleTimeUtc).ToString("dd'T'HH':'mm':'ss") : "null"));
+            //Console.WriteLine($"{DateTime.UtcNow.ToString("dd'T'HH':'mm':'ss")}: Task '" + p_trigger.TriggeredTask.Name + "' next time: " + ((p_trigger.NextScheduleTimeUtc != null) ? ((DateTime)p_trigger.NextScheduleTimeUtc).ToString("dd'T'HH':'mm':'ss") : "null"));
             Utils.Logger.Info("Task '" + p_trigger.SqTask?.Name ?? string.Empty + "' next time: " + ((p_trigger.NextScheduleTimeUtc != null) ? ((DateTime)p_trigger.NextScheduleTimeUtc).ToString("dd'T'HH':'mm':'ss") : "null"));
         }
 
@@ -113,20 +113,24 @@ namespace SqCommon
             return null;
         }
 
-        public StringBuilder GetNextScheduleTimes(bool p_isHtml)
+        public StringBuilder PrintNextScheduleTimes(bool p_isHtml)  // Get is better word for getting DateTimes[], Print shows it receives a string
         {
-            StringBuilder sb = new StringBuilder();
-            DateTime utcNow = DateTime.UtcNow;
-            foreach (var taskSchema in gSqTasks)
+            List<(DateTime NextTimeUtc, string Name)> nextTimes = new List<(DateTime NextTimeUtc, string Name)>(); // named tuples
+            foreach (var sqTask in gSqTasks)
             {
-                DateTime nextTimeUtc = DateTime.MaxValue;
-                foreach (var trigger in taskSchema.Triggers)
+                foreach (var trigger in sqTask.Triggers)
                 {
-                    if ((trigger.NextScheduleTimeUtc != null) && (trigger.NextScheduleTimeUtc > utcNow) && (trigger.NextScheduleTimeUtc < nextTimeUtc))
-                        nextTimeUtc = (DateTime)trigger.NextScheduleTimeUtc;
+                    nextTimes.Add((trigger.NextScheduleTimeUtc ?? DateTime.MaxValue, String.Concat(sqTask.Name, ".", trigger.Name)));
                 }
+            }
+            nextTimes.Sort(); // in-place. Tuple<T1, T2> documented to sort by Item1 and then Item2
 
-                sb.AppendLine($"{taskSchema.Name}: {nextTimeUtc.ToString("MM-dd HH:mm:ss")}{((p_isHtml) ? "<br>" : string.Empty)}");
+            DateTime utcNow = DateTime.UtcNow;
+            StringBuilder sb = new StringBuilder();
+            foreach (var nextTime in nextTimes)
+            {
+                string nextTimeUtcStr = (nextTime.NextTimeUtc != DateTime.MaxValue && nextTime.NextTimeUtc > utcNow) ? nextTime.NextTimeUtc.TohMMDDHHMMSS(): "---";
+                sb.AppendLine($"{nextTimeUtcStr}: {nextTime.Name}{((p_isHtml) ? "<br>" : string.Empty)}");
             }
             return sb;
         }

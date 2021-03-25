@@ -74,7 +74,11 @@ namespace SqCoreWeb
 
             Email.SenderName = Utils.Configuration["Emails:HQServer"];
             Email.SenderPwd = Utils.Configuration["Emails:HQServerPwd"];
-            
+            PhoneCall.TwilioSid = Utils.Configuration["PhoneCall:TwilioSid"];
+            PhoneCall.TwilioToken = Utils.Configuration["PhoneCall:TwilioToken"];
+            PhoneCall.PhoneNumbers[Caller.Gyantal] = Utils.Configuration["PhoneCall:PhoneNumberGyantal"];
+            PhoneCall.PhoneNumbers[Caller.Charmat0] = Utils.Configuration["PhoneCall:PhoneNumberCharmat0"];
+
             StrongAssert.g_strongAssertEvent += StrongAssertMessageSendingEventHandler;
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException; // Occurs when a faulted task's unobserved exception is about to trigger exception which, by default, would terminate the process.
 
@@ -90,7 +94,7 @@ namespace SqCoreWeb
                 Caretaker.gCaretaker.Init(Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
                 SqTaskScheduler.gTaskScheduler.Init();
 
-                Overmind.gOvermind.Init();
+                Services_Init();
 
                 // 3. Run services.
                 // Create a dedicated thread for a single task that is running for the lifetime of my application.
@@ -122,7 +126,7 @@ namespace SqCoreWeb
 
              // 5. Dispose service resources
             KestrelWebServer_Exit();
-            Overmind.gOvermind.Exit();
+            Services_Exit();
 
             SqTaskScheduler.gTaskScheduler.Exit();
             Caretaker.gCaretaker.Exit();
@@ -144,7 +148,7 @@ namespace SqCoreWeb
             Console.WriteLine("2. Show next schedule times (only earliest trigger)");
             Console.WriteLine("3. Elapse Task: Overmind, Trigger1-MorningCheck");
             Console.WriteLine("4. Elapse Task: Overmind, Trigger2-MiddayCheck");
-            Console.WriteLine("5. Elapse Task: WebsitesMonitor");
+            Console.WriteLine("5. Elapse Task: WebsitesMonitor, Crawl SpIndexChanges");
             Console.WriteLine("6. Elapse Task: VBroker-HarryLong (First Simulation)");
             Console.WriteLine("7. Elapse Task: VBroker-UberVxx (First Simulation)");
             Console.WriteLine("9. Exit gracefully (Avoid Ctrl-^C).");
@@ -166,13 +170,16 @@ namespace SqCoreWeb
                     gLogger.Info("Hello. I am not crashed yet! :)");
                     break;
                 case "2":
-                    Console.WriteLine(SqTaskScheduler.gTaskScheduler.GetNextScheduleTimes(false).ToString());
+                    Console.WriteLine(SqTaskScheduler.gTaskScheduler.PrintNextScheduleTimes(false).ToString());
                     break;
                 case "3":
                     SqTaskScheduler.gTaskScheduler.TestElapseTrigger("Overmind", 0);
                     break;
                 case "4":
                     SqTaskScheduler.gTaskScheduler.TestElapseTrigger("Overmind", 1);
+                    break;
+                case "5":
+                    SqTaskScheduler.gTaskScheduler.TestElapseTrigger("WebsitesMonitor", 0);
                     break;
                 case "9":
                     return "UserChosenExit";

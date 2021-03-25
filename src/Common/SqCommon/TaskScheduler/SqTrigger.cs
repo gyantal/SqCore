@@ -25,6 +25,7 @@ namespace SqCommon
     
     public class SqTrigger
     {
+        public string Name { get; set; } = string.Empty;
         public bool Enabled { get; set; }
         public TriggerType TriggerType { get; set; }   // currently only Daily supported
         public int RepeatEveryXSeconds { get; set; } // -1, if not Recur

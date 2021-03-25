@@ -8,6 +8,11 @@ using YahooFinanceApi;
 
 namespace SqCoreWeb
 {
+    public enum OvermindTaskSettingAction : byte
+    {
+        Unknown = 0, MorningCheck, MiddayCheck
+    }
+
     public class Overmind
     {
         public static Overmind gOvermind = new Overmind();
@@ -22,19 +27,21 @@ namespace SqCoreWeb
             };
             sqTask.Triggers.Add(new SqTrigger()
             {
+                Name = "MorningCheck",
                 SqTask = sqTask,
                 TriggerType = TriggerType.Daily,
                 StartTimeBase = StartTimeBase.BaseOnAbsoluteTimeMidnightUtc,
                 StartTimeOffset = TimeSpan.FromMinutes(9 * 60 + 5), // Activate every day 9:05 UTC,
-                TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, "MorningCheck" } }
+                TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, OvermindTaskSettingAction.MorningCheck } }
             });
             sqTask.Triggers.Add(new SqTrigger()
             {
+                Name = "MiddayCheck",
                 SqTask = sqTask,
                 TriggerType = TriggerType.Daily,
                 StartTimeBase = StartTimeBase.BaseOnAbsoluteTimeMidnightUtc,
                 StartTimeOffset = TimeSpan.FromMinutes(16 * 60 + 45), // Activate every day 16:45 UTC
-                TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, "MiddayCheck" } }
+                TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, OvermindTaskSettingAction.MiddayCheck } }
             });
             SqTaskScheduler.gSqTasks.Add(sqTask);
         }
@@ -43,7 +50,6 @@ namespace SqCoreWeb
         {
             Utils.Logger.Info("****Overmind:Exit()");
         }
-
     }
 
    
@@ -56,21 +62,16 @@ namespace SqCoreWeb
 
         public override void Run()  // try/catch is not necessary, because sqExecution.Run() is wrapped around a try/catch with HealthMonitor notification in SqTrigger.cs
         {
-            // Check that VBroker OK message arrived properly from the Expected Strategy. Different Tasks may take more time to execute
-            Utils.Logger.Info("OvermindExecution.Run() BEGIN");
-            Console.WriteLine("OvermindExecution.Run() BEGIN");
-
-            string triggerName = string.Empty;
-            if (Trigger!.TriggerSettings.TryGetValue(TaskSetting.ActionType, out object? nameObj))
-                triggerName = (string)nameObj;
-
-            Console.WriteLine($"OvermindExecution.Run(), '{triggerName}'-Timer.");
-            Utils.Logger.Info($"OvermindExecution.Run(), '{triggerName}'-Timer.");
-
+            Utils.Logger.Info("OvermindExecution.Run() BEGIN, Trigger: '{Trigger.Name}'");
+            Console.WriteLine("OvermindExecution.Run() BEGIN, Trigger: '{Trigger.Name}'");
             CheckHealthMonitorAlive();
-            if (triggerName == "MorningCheck")
+
+            OvermindTaskSettingAction action = OvermindTaskSettingAction.Unknown;
+            if (Trigger!.TriggerSettings.TryGetValue(TaskSetting.ActionType, out object? actionObj))
+                action = (OvermindTaskSettingAction)actionObj;
+            if (action == OvermindTaskSettingAction.MorningCheck)
                 MorningCheck();
-            else if (triggerName == "MiddayCheck")
+            else if (action == OvermindTaskSettingAction.MiddayCheck)
                 MiddayCheck();
         }
         async void CheckHealthMonitorAlive()
@@ -91,8 +92,8 @@ namespace SqCoreWeb
                 new Email
                 {
                     ToAddresses = Utils.Configuration["Emails:Gyant"],
-                    Subject = "SqCore.Overmind Warning! : HealthMonitor is NOT Alive.",
-                    Body = $"SqCore.Overmind Warning! : HealthMonitor is NOT Alive.",
+                    Subject = "SqCore Warning! : HealthMonitor is NOT Alive.",
+                    Body = $"SqCore Warning! : HealthMonitor is NOT Alive.",
                     IsBodyHtml = false
                 }.SendAsync().FireParallelAndForgetAndLogErrorTask();
         }
@@ -143,8 +144,6 @@ namespace SqCoreWeb
             CheckLastClosePrices();
         }
 
-        static string g_htmlEmailStart = @"<!DOCTYPE html><html><head><style> .sqNormalText {font-size: 125%;} .sqImportantOK {font-size: 140%; color: #11228B; font-weight: bold; } </style></head><body class=""sqNormalText"">";
-        static string g_htmlEmailEnd = @"</body></html>";
         void CheckIfTomorrowIsMonthlyOptionExpirationDay()
         {
             // Expiration date: USA: 3rd Friday of the month. When that Friday falls on a holiday, the expiration date is on the Thursday immediately before.
@@ -158,8 +157,8 @@ namespace SqCoreWeb
             if (tomorrowDateUtc.Day < 15 || tomorrowDateUtc.Day > 21)
                 return;
             // if we are here, it is Friday and dayOfMonth in [15,21], which is the 3rd Friday
-            string subjectPart = "Monthly Option expiration. Trade HarryLong 2 manually!";
-            StringBuilder sb = new StringBuilder(g_htmlEmailStart);
+            string subject = "SqCore: Monthly Option expiration. Trade HarryLong 2 manually!";
+            StringBuilder sb = new StringBuilder(Email.g_htmlEmailStart);
             sb.Append(
                 @"<small>Because of the EU PRIIPs (KID) Regulation, IB UK doesn't allow US domiciled ETFs like SPY, QQQ, VXX to buy until the account is worth less than 500K EUR. Workaround is options.<br/>
 - for shorting VXX stock, we buy VXX Put option (cheap, very close to expiration, when time value is tiny), then we let it expire or force-exercise. The result is 100 short VXX stock immediately. It WORKED !, because it is technically not a stock shorting/buying, and EU regulation protect Funds (ETF) only, and when you trade options you are assumed to be sophisticated investor already.<br/>
@@ -173,10 +172,10 @@ namespace SqCoreWeb
 <li>Round the number of stocks up to the nearest 100 or just ignore them if tiny. Buy options and force exercise them. Liquidate the unnecessary stock parts.</li>
 <li>Register trades as stocks into SQDeskop.</li>
 </ul>");
-            sb.Append(g_htmlEmailEnd);
+            sb.Append(Email.g_htmlEmailEnd);
 
             string emailHtmlBody = sb.ToString();
-            new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore.Overmind: " + subjectPart, Body = emailHtmlBody, IsBodyHtml = true }.Send();
+            new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();
         }
 
         void CheckIntradayStockPctChanges()
@@ -218,7 +217,7 @@ namespace SqCoreWeb
 
             if (!String.IsNullOrEmpty(gyantalEmailInnerlStr))
             {
-                new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore.Overmind: Price Warning", Body = gyantalEmailInnerlStr, IsBodyHtml = false }.Send();
+                new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore: Price Warning", Body = gyantalEmailInnerlStr, IsBodyHtml = false }.Send();
                 var call = new PhoneCall
                 {
                     FromNumber = Caller.Gyantal,
@@ -231,7 +230,7 @@ namespace SqCoreWeb
 
             if (!String.IsNullOrEmpty(charmatEmailInnerlStr))
             {
-                new Email { ToAddresses = Utils.Configuration["Emails:Charm0"], Subject = "SqCore.Overmind: Price Warning", Body = charmatEmailInnerlStr, IsBodyHtml = false }.Send();
+                new Email { ToAddresses = Utils.Configuration["Emails:Charm0"], Subject = "SqCore: Price Warning", Body = charmatEmailInnerlStr, IsBodyHtml = false }.Send();
                 var call = new PhoneCall
                 {
                     FromNumber = Caller.Gyantal,
@@ -320,15 +319,15 @@ namespace SqCoreWeb
 
             if (isVixSpike)  // if  1.2*SMA(VIX, 50) < VIX_last_close, sends an email. So, we can trade VIX MR subjectively.
             {
-                string subject = "SqCore.Overmind: VIX spike detected";
-                StringBuilder sb = new StringBuilder(g_htmlEmailStart);
+                string subject = "SqCore: VIX spike detected";
+                StringBuilder sb = new StringBuilder(Email.g_htmlEmailStart);
                 sb.Append(@"<span class=""sqImportantOK""><strong>VIX Spike</strong> is detected!</span><br/><br/>");
                 sb.Append($"Using yesterday close prices for VIX, the condition<br/> <strong>'VIX_lastClose &gt; 1.2 * SMA(VIX, 50)'</strong><br/> ({lastClose:0.##} &gt;  1.2 * {sma:0.##}) was triggered.<br/>");
                 sb.Append(@"Our <a href=""https://docs.google.com/document/d/1YA8uBscP1WbxEFIHXDaqR50KIxLw9FBnD7qqCW1z794"">VIX spikes collection gDoc</a> uses the same formula for identifying panic times.<br/>");
                 sb.Append("Intraday price was not used for this trigger. You need to act with a delay anyway.<br/><br/>");
                 sb.Append("<strong>Action: </strong><br/> This is a Mean Reversion (MR) opportunity.<br/> Trading 'fading the VIX spike' can be considered.<br/>");
                 sb.Append("Maybe risking 1/10th of the portfolio.<br/> Doubling down in another chunk maximum 3 times.<br/>");
-                sb.Append(g_htmlEmailEnd);
+                sb.Append(Email.g_htmlEmailEnd);
 
                 string emailHtmlBody = sb.ToString();
                 new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();

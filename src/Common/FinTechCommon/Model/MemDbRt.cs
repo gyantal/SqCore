@@ -257,11 +257,11 @@ namespace FinTechCommon
                 //string url = string.Format("https://api.iextrading.com/1.0/stock/market/batch?symbols={0}&types=quote", p_tickerString);
                 //string url = string.Format("https://api.iextrading.com/1.0/last?symbols={0}", p_tickerString);       // WebExceptionStatus.ProtocolError: "Not Found"
                 string url = string.Format("https://api.iextrading.com/1.0/tops?symbols={0}", String.Join(", ", p_assets.Select(r => r.LastTicker)));
-                if (!Utils.DownloadStringWithRetry(url, out string responseText))
+                if (!Utils.DownloadStringWithRetry(url, out string responseStr))
                     return;
 
-                Utils.Logger.Info("DownloadLastPriceIex() str = '{0}'", responseText);
-                ExtractAttributeIex(responseText, "lastSalePrice", p_assets);
+                Utils.Logger.Info("DownloadLastPriceIex() str = '{0}'", responseStr);
+                ExtractAttributeIex(responseStr, "lastSalePrice", p_assets);
             }
             catch (Exception e)
             {
@@ -269,27 +269,27 @@ namespace FinTechCommon
             }
         }
 
-        private void ExtractAttributeIex(string responseText, string p_attribute, Asset[] p_assets)
+        private void ExtractAttributeIex(string p_responseStr, string p_attribute, Asset[] p_assets)
         {
             int iStr = 0;   // this is the fastest. With IndexOf(). Not using RegEx, which is slow.
-            while (iStr < responseText.Length)
+            while (iStr < p_responseStr.Length)
             {
-                int bSymbol = responseText.IndexOf("symbol\":\"", iStr);
+                int bSymbol = p_responseStr.IndexOf("symbol\":\"", iStr);
                 if (bSymbol == -1)
                     break;
                 bSymbol += "symbol\":\"".Length;
-                int eSymbol = responseText.IndexOf("\"", bSymbol);
+                int eSymbol = p_responseStr.IndexOf("\"", bSymbol);
                 if (eSymbol == -1)
                     break;
-                string ticker = responseText.Substring(bSymbol, eSymbol - bSymbol);
-                int bAttribute = responseText.IndexOf(p_attribute + "\":", eSymbol);
+                string ticker = p_responseStr.Substring(bSymbol, eSymbol - bSymbol);
+                int bAttribute = p_responseStr.IndexOf(p_attribute + "\":", eSymbol);
                 if (bAttribute == -1)
                     break;
                 bAttribute += (p_attribute + "\":").Length;
-                int eAttribute = responseText.IndexOf(",\"", bAttribute);
+                int eAttribute = p_responseStr.IndexOf(",\"", bAttribute);
                 if (eAttribute == -1)
                     break;
-                string attributeStr = responseText.Substring(bAttribute, eAttribute - bAttribute);
+                string attributeStr = p_responseStr.Substring(bAttribute, eAttribute - bAttribute);
                 // only search ticker among the stocks p_assetIds. Because duplicate tickers are possible in the MemDb.Assets, but not expected in p_assetIds
                 Asset? asset = null;
                 foreach (var sec in p_assets)

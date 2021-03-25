@@ -1,0 +1,11 @@
+> Some part of the Overmind should live in a Server (SqCore), because it has to be running all the time. Even at night.
+> Some should run on the user's Windows client.
+
+>it basically learns from the user's daily activity, what it can do automatically. Like
+	> monitoring network speed
+	> monitoring whether website or Vbroker apps are online
+	> reboot PC the first time when it is started today (if faulty CPU needs daily reboot)
+
+>it should be a hiding Windows task, only available through the Windows quickbar
+
+no idea now to implement.

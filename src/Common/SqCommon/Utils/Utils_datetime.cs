@@ -159,6 +159,10 @@ namespace SqCommon
         {
             return p_date.ToString("yyyy'-'MM'-'dd");
         }
+        public static string TohYYYYMMDD(this DateTime p_dateTime)
+        {
+            return Utils.Date2hYYYYMMDD(p_dateTime);
+        }
 
         /// <summary> Returns the date part of p_date in "YYYYMMDD" format (invariant culture).
         /// </summary><remarks>
@@ -166,6 +170,18 @@ namespace SqCommon
         public static string Date2YYYYMMDD(DateTime p_date)
         {
             return p_date.ToString("yyyyMMdd");
+        }
+
+        /// <summary> Returns the date part of p_date in "MM-DD  HH:mm:ss" format (invariant culture).
+        /// </summary><remarks>
+        /// </remarks>
+        public static string Date2hMMDDHHMMSS(DateTime p_date) // h means hyphened (-)
+        {
+            return p_date.ToString("MM-dd HH:mm:ss");
+        }
+        public static string TohMMDDHHMMSS(this DateTime p_dateTime)
+        {
+            return Utils.Date2hMMDDHHMMSS(p_dateTime);
         }
 
         /// <summary> Returns p_dateTimeUtc in "2008-10-05T13:00:01Z" format
