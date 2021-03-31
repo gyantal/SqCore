@@ -49,8 +49,7 @@ namespace SqCoreWeb
 
         public override void Run()  // try/catch is not necessary, because sqExecution.Run() is wrapped around a try/catch with HealthMonitor notification in SqTrigger.cs
         {
-            Utils.Logger.Info("OvermindExecution.Run() BEGIN, Trigger: '{Trigger.Name}'");
-            Console.WriteLine("OvermindExecution.Run() BEGIN, Trigger: '{Trigger.Name}'");
+            Utils.Logger.Info($"WebsitesMonitorExecution.Run() BEGIN, Trigger: '{Trigger!.Name}'");
 
             WsMonTaskSettingAction action = WsMonTaskSettingAction.Unknown;
             if (Trigger!.TriggerSettings.TryGetValue(TaskSetting.ActionType, out object? actionObj))

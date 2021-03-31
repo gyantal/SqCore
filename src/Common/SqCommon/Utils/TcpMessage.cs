@@ -123,7 +123,7 @@ namespace SqCommon
                 Task connectContinueTask = connectTask.ContinueWith(connTask =>
                 {
                     // we should observe that exception, otherwise TaskScheduler.UnobservedTaskException will be raised
-                    Utils.Logger.Info("TcpMessage.SendMessage(). connectContinueTask BEGIN.");
+                    Utils.Logger.Debug("TcpMessage.SendMessage(). connectContinueTask BEGIN.");
                     if (connTask.Exception != null) // don't raise Error (which logs to console), just a warning. Caller should decide if this is expected sometimes or it is error.
                         Utils.Logger.Warn(connTask.Exception, $"Warn:TcpMessage.SendMessage(). Exception in ConnectAsync({TcpServerHost}:{TcpServerPort}).");
 

@@ -355,7 +355,7 @@ namespace SqCoreWeb
         {
             try
             {
-                Utils.Logger.Info("RtMktSummaryTimer_Elapsed(). BEGIN");
+                Utils.Logger.Debug("RtMktSummaryTimer_Elapsed(). BEGIN");
                 if (!m_rtMktSummaryTimerRunning)
                     return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
 

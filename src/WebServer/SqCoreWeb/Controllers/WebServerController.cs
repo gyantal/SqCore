@@ -75,6 +75,14 @@ namespace SqCoreWeb.Controllers
             return Content(sb.Append("</body></HTML>").ToString(), "text/html");
         }
 
+        [HttpGet]
+        public ActionResult TaskSchedulerNextTimes()
+        {
+            StringBuilder sb = new StringBuilder(@"<HTML><body><h1>TaskScheduler Next Times</h1>");
+            StringBuilder scheduleTimesSb = SqTaskScheduler.gTaskScheduler.PrintNextScheduleTimes(true);
+            return Content(sb.Append(scheduleTimesSb).Append("</body></HTML>").ToString(), "text/html");
+        }
+
 
         [HttpGet]
         public ActionResult HttpRequestHeader()

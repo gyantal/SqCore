@@ -4,9 +4,7 @@
     "files.exclude": {
         "**/*.js.map": true
     },
-    "python.jediEnabled": false,
     "python.terminal.activateEnvironment": false,
     "html.format.wrapLineLength": 0,
-    "diffEditor.ignoreTrimWhitespace": false,
-    "python.languageServer": "Microsoft"
+    "diffEditor.ignoreTrimWhitespace": false
 }

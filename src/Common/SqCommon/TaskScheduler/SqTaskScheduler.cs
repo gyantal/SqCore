@@ -80,7 +80,7 @@ namespace SqCommon
             }
             // Warn() temporarily to show it on Console
             //Console.WriteLine($"{DateTime.UtcNow.ToString("dd'T'HH':'mm':'ss")}: Task '" + p_trigger.TriggeredTask.Name + "' next time: " + ((p_trigger.NextScheduleTimeUtc != null) ? ((DateTime)p_trigger.NextScheduleTimeUtc).ToString("dd'T'HH':'mm':'ss") : "null"));
-            Utils.Logger.Info("Task '" + p_trigger.SqTask?.Name ?? string.Empty + "' next time: " + ((p_trigger.NextScheduleTimeUtc != null) ? ((DateTime)p_trigger.NextScheduleTimeUtc).ToString("dd'T'HH':'mm':'ss") : "null"));
+            Utils.Logger.Info("Trigger '" + String.Concat(p_trigger.SqTask!.Name, ".", p_trigger.Name) + "' next time: " + ((p_trigger.NextScheduleTimeUtc != null) ? ((DateTime)p_trigger.NextScheduleTimeUtc).ToString("dd'T'HH':'mm':'ss") : "null"));
         }
 
         private DateTime? CalcNextTriggerTime(SqTrigger p_trigger, bool p_isMarketHoursValid, bool p_isMarketTradingDay, DateTime p_marketOpenTimeUtc, DateTime p_marketCloseTimeUtc)
@@ -129,7 +129,7 @@ namespace SqCommon
             StringBuilder sb = new StringBuilder();
             foreach (var nextTime in nextTimes)
             {
-                string nextTimeUtcStr = (nextTime.NextTimeUtc != DateTime.MaxValue && nextTime.NextTimeUtc > utcNow) ? nextTime.NextTimeUtc.TohMMDDHHMMSS(): "---";
+                string nextTimeUtcStr = (nextTime.NextTimeUtc != DateTime.MaxValue && nextTime.NextTimeUtc > utcNow) ? nextTime.NextTimeUtc.TohMMDDHHMMSS() + " (UTC)": "---";
                 sb.AppendLine($"{nextTimeUtcStr}: {nextTime.Name}{((p_isHtml) ? "<br>" : string.Empty)}");
             }
             return sb;

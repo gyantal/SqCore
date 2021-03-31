@@ -170,8 +170,13 @@ namespace FinTechCommon
             string? tcpMsgResponse = tcpMsgTask.Result;
             if (tcpMsgTask.Exception != null || String.IsNullOrEmpty(tcpMsgResponse))
             {
-                string errorMsg = $"Error. NAV realtime to {vbServerIp}:{ServerIp.DefaultVirtualBrokerServerPort}: Check that both the IB's TWS and the VirtualBroker are running on Manual/Auto Trading Server! Start them manually if needed!";
-                Utils.Logger.Error(errorMsg);
+                string infoMsg = $"Warning! NAV realtime to {vbServerIp}:{ServerIp.DefaultVirtualBrokerServerPort} failed. Check that both the IB's TWS and the VirtualBroker are running on Manual/Auto Trading Server! Start them manually if needed!";
+                // This exception is expected. Not an error. IB TWS is expected to be down from 23:40 to 06:50.
+                var timeFromMidnightUtc = DateTime.UtcNow.TimeOfDay;
+                if (timeFromMidnightUtc >= TimeSpan.FromHours(10) && timeFromMidnightUtc <= TimeSpan.FromHours(23)) // should be available from 10-23h UTC
+                    Utils.Logger.Error(infoMsg);
+                else
+                    Utils.Logger.Info(infoMsg);
                 return;
             }
             tcpMsgResponse = tcpMsgResponse.Replace("\\\"", "\"");

@@ -128,7 +128,7 @@ namespace FinTechCommon
                 Utils.Logger.Error(e, $"MemDbRt.RtTimer_Elapsed({freqParam.RtFreq}) exception.");
             }
             SetTimerRt(freqParam);
-            Utils.Logger.Info($"MemDbRt.RtTimer_Elapsed({freqParam.RtFreq}). END");
+            Utils.Logger.Debug($"MemDbRt.RtTimer_Elapsed({freqParam.RtFreq}). END");
         }
         private void UpdateRt(RtFreqParam p_freqParam)
         {
@@ -198,7 +198,7 @@ namespace FinTechCommon
 
         void DownloadLastPriceYF(Asset[] p_assets, TradingHours p_tradingHoursNow)  // takes ? ms from WinPC
         {
-            Utils.Logger.Info("DownloadLastPriceYF() START");
+            Utils.Logger.Debug("DownloadLastPriceYF() START");
             m_nYfDownload++;
             try
             {
@@ -250,7 +250,7 @@ namespace FinTechCommon
         // PreviousClose data requires token: https://cloud.iexapis.com/stable/stock/market/batch?symbols=AAPL,FB&types=quote&token=<get it from sensitive-data file>
         void DownloadLastPriceIex(Asset[] p_assets)  // takes 450-540ms from WinPC
         {
-            Utils.Logger.Info("DownloadLastPriceIex() START");
+            Utils.Logger.Debug("DownloadLastPriceIex() START");
             m_nIexDownload++;
             try
             {
