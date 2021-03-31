@@ -129,6 +129,22 @@
             "stopAtEntry": false
         },
         {
+            "name": "Tools/blukucz/AnalystDbUpgrader (DEBUG)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "blukucz-AnalystDbUpgrader build Debug",
+            "program": "${workspaceFolder}/src/Tools/blukucz/AnalystDbUpgrader/bin/Debug/net5.0/AnalystDbUpgrader.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/Tools/blukucz/AnalystDbUpgrader",
+            "console": "externalTerminal",
+            "stopAtEntry": false,
+            "presentation": {
+                "group": "2_Tools",
+                "order": 1,
+                "hidden": false
+            }
+        },
+        {
             "name": ".NET Core Attach",
             "type": "coreclr",
             "request": "attach",
