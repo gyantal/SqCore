@@ -174,7 +174,7 @@ namespace HealthMonitor
             return string.Empty;
         }
 
-        static public void TestPhoneCall()
+        public static async void TestPhoneCall()
         {
             Console.WriteLine("Calling phone number via Twilio. It should ring out.");
             Utils.Logger.Info("Calling phone number via Twilio. It should ring out.");
@@ -189,7 +189,7 @@ namespace HealthMonitor
                     NRepeatAll = 2
                 };
                 // skipped temporarily
-                bool didTwilioAcceptedTheCommand = call.MakeTheCall();
+                bool didTwilioAcceptedTheCommand = await call. MakeTheCallAsync();
                 if (didTwilioAcceptedTheCommand)
                 {
                     Utils.Logger.Debug("TestPhoneCall(): PhoneCall instruction was sent to Twilio.");

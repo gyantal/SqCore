@@ -70,9 +70,8 @@ namespace SqCoreWeb.Controllers
         {
             
             //Downloading live data from vixcentral.com.
-            string webpageLive;
-            bool isOkLive = Utils.DownloadStringWithRetry("http://vixcentral.com", out webpageLive, 3, TimeSpan.FromSeconds(2), true);
-            if (!isOkLive)
+            string? webpageLive = Utils.DownloadStringWithRetryAsync("http://vixcentral.com", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+            if (webpageLive == null)
                 return "Error in live data";
             
             //Selecting data from live data string.
@@ -220,10 +219,9 @@ namespace SqCoreWeb.Controllers
         {
 
             //Downloading live data from cmegroup.com.
-            string webpageLive;
+            string? webpageLive = Utils.DownloadStringWithRetryAsync("http://www.cmegroup.com/CmeWS/mvc/Quotes/Future/425/G", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
             //bool isOkLive = Utils.DownloadStringWithRetry(out webpageLive, "http://www.cmegroup.com/trading/energy/crude-oil/light-sweet-crude.html", 3, TimeSpan.FromSeconds(2), true);
-            bool isOkLive = Utils.DownloadStringWithRetry("http://www.cmegroup.com/CmeWS/mvc/Quotes/Future/425/G", out webpageLive, 3, TimeSpan.FromSeconds(2), true);
-            if (!isOkLive)
+            if (webpageLive == null)
                 return "Error in live data";
 
             //Selecting data from live data string.
@@ -283,9 +281,8 @@ namespace SqCoreWeb.Controllers
             futCodeNext = webpageLive.Substring(futCodeInd, 3);
 
             //Downloading expiration dates from cmegroup.com.
-            string webpageLiveExp;
-            bool isOkLiveExp = Utils.DownloadStringWithRetry("http://www.cmegroup.com/CmeWS/mvc/ProductCalendar/Future/425", out webpageLiveExp, 3, TimeSpan.FromSeconds(2), true);
-            if (!isOkLiveExp)
+            string? webpageLiveExp = Utils.DownloadStringWithRetryAsync("http://www.cmegroup.com/CmeWS/mvc/ProductCalendar/Future/425", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+            if (webpageLiveExp == null)
                 return "Error in live data";
 
             string[] liveFuturesDataExpVec = new string[8];
@@ -395,10 +392,9 @@ namespace SqCoreWeb.Controllers
         {
 
             //Downloading live data from cmegroup.com.
-            string webpageLive;
+            string? webpageLive = Utils.DownloadStringWithRetryAsync("http://www.cmegroup.com/CmeWS/mvc/Quotes/Future/444/G", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
             //bool isOkLive = Utils.DownloadStringWithRetry("http://www.cmegroup.com/trading/energy/natural-gas/natural-gas.html", out webpageLive, 3, TimeSpan.FromSeconds(2), true);
-            bool isOkLive = Utils.DownloadStringWithRetry("http://www.cmegroup.com/CmeWS/mvc/Quotes/Future/444/G", out webpageLive, 3, TimeSpan.FromSeconds(2), true);
-            if (!isOkLive)
+            if (webpageLive == null)
                 return "Error in live data";
 
             //Selecting data from live data string.
@@ -458,9 +454,8 @@ namespace SqCoreWeb.Controllers
             futCodeNext = webpageLive.Substring(futCodeInd, 3);
 
             //Downloading expiration dates from cmegroup.com.
-            string webpageLiveExp;
-            bool isOkLiveExp = Utils.DownloadStringWithRetry("http://www.cmegroup.com/CmeWS/mvc/ProductCalendar/Future/444", out webpageLiveExp, 3, TimeSpan.FromSeconds(2), true);
-            if (!isOkLiveExp)
+            string? webpageLiveExp = Utils.DownloadStringWithRetryAsync("http://www.cmegroup.com/CmeWS/mvc/ProductCalendar/Future/444", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+            if (webpageLiveExp == null)
                 return "Error in live data";
 
             string[] liveFuturesDataExpVec = new string[8];

@@ -92,14 +92,21 @@ namespace FinTechCommon
             UpdateFromVbServer(p_updateParam, VBrokerServer.ManualVb);
         }
 
-        public static void UpdateFromVbServer(UpdateNavsParam p_updateParam, VBrokerServer p_vbServer)
+        public static async void UpdateFromVbServer(UpdateNavsParam p_updateParam, VBrokerServer p_vbServer)
         {
             string vbServerIp = p_vbServer == VBrokerServer.AutoVb ? ServerIp.AtsVirtualBrokerServerPublicIpForClients : ServerIp.LocalhostLoopbackWithIP;
 
             string msg = $"?v=1&secTok={TcpMessage.GenerateSecurityToken()}&bAcc={(p_vbServer == VBrokerServer.AutoVb ? "Gyantal" : "Charmat,DeBlanzac")}&data=AccSum";
-            Task<string?> tcpMsgTask = TcpMessage.Send(msg, (int)TcpMessageID.GetAccountsInfo, vbServerIp, ServerIp.DefaultVirtualBrokerServerPort);
-            string? tcpMsgResponse = tcpMsgTask.Result;
-            if (tcpMsgTask.Exception != null || String.IsNullOrEmpty(tcpMsgResponse))
+            string? tcpMsgResponse = null;
+            try
+            {
+                tcpMsgResponse = await TcpMessage.Send(msg, (int)TcpMessageID.GetAccountsInfo, vbServerIp, ServerIp.DefaultVirtualBrokerServerPort);
+            }
+            catch (System.Exception)
+            {
+                tcpMsgResponse = null;
+            }
+            if (String.IsNullOrEmpty(tcpMsgResponse))
             {
                 string errorMsg = $"Error. NAV daily to {vbServerIp}:{ServerIp.DefaultVirtualBrokerServerPort}: Check that both the IB's TWS and the VirtualBroker are running on Manual/Auto Trading Server! Start them manually if needed!";
                 Utils.Logger.Error(errorMsg);

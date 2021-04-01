@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace SqCommon
 {
@@ -84,13 +85,11 @@ namespace SqCommon
             if ((g_holidays != null) && (DateTime.UtcNow - g_holidaysDownloadDate) < p_maxAllowedStaleness)
                 return g_holidays;
 
-            string webPage = string.Empty;
-
             // using http://www.thestreet.com/stock-market-news/11771386/market-holidays-2015.html is not recommended, 
             //because for 20x pages it does an Adver redirection instead of giving back the proper info the returned page 
             // is an advert. So, stick to the official NYSE website.
-            bool isDownloaded = Utils.DownloadStringWithRetry("https://www.nyse.com/markets/hours-calendars", out webPage, 5, TimeSpan.FromSeconds(2), false);
-            if (!isDownloaded)
+            string? webPage = Utils.DownloadStringWithRetryAsync("https://www.nyse.com/markets/hours-calendars", 5, TimeSpan.FromSeconds(2), false).TurnAsyncToSyncTask();
+            if (webPage == null)
             {
                 if ((g_holidays != null))
                 {

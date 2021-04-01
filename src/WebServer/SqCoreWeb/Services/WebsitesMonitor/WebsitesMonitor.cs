@@ -62,7 +62,7 @@ namespace SqCoreWeb
         private void CheckSpIndexChanges() // try/catch is not necessary, because sqExecution.Run() is wrapped around a try/catch with HealthMonitor notification in SqTrigger.cs
         {
             string url = "https://www.spglobal.com/spdji/en/indices/equity/sp-500/#news-research";
-            Utils.DownloadStringWithRetry(url, out string webpage);
+            string? webpage = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
 
             StrongAssert.True(!String.IsNullOrEmpty(webpage), Severity.ThrowException, "Error in Overmind.CheckSpIndexChanges().DownloadStringWithRetry()");
             
@@ -74,11 +74,11 @@ namespace SqCoreWeb
             // string[] split = webpage.Split("<li class=\"meta-data-date\">", StringSplitOptions.RemoveEmptyEntries);
             // string firstDateTime = split[1].Split("</li>\n")[0].Trim() + " " + split[2].Split("</li>\n")[0].Trim();
 
-            int pos1 = webpage.IndexOf("<li class=\"meta-data-date\">") + "<li class=\"meta-data-date\">".Length;
+            int pos1 = webpage!.IndexOf("<li class=\"meta-data-date\">") + "<li class=\"meta-data-date\">".Length;
             int pos2 = webpage.IndexOf("</li>\n", pos1);
             int pos3 = webpage.IndexOf("<li class=\"meta-data-date\">", pos2 + "</li>\n".Length) + "<li class=\"meta-data-date\">".Length;
             int pos4 = webpage.IndexOf("</li>\n", pos3);
-            ReadOnlySpan<char> pageSpan1 = webpage.AsSpan().Slice(pos1, pos2 - pos1);
+            ReadOnlySpan<char> pageSpan1 = webpage.AsSpan().Slice(pos1, pos2 - pos1); // 'ReadOnlySpan<char>' cannot be declared in async methods or lambda expressions.
             ReadOnlySpan<char> pageSpan2 = webpage.AsSpan().Slice(pos3, pos4 - pos3);
             string firstDateTime = String.Concat(pageSpan1, " ", pageSpan2);
 

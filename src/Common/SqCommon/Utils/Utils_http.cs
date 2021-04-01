@@ -2,6 +2,7 @@ using System;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace SqCommon
 {
@@ -15,15 +16,14 @@ namespace SqCommon
         // HttpWebRequest vs. HttpClient. Never use HttpWebRequest. HttpClient is preferred over HttpWebRequest. https://www.diogonunes.com/blog/webclient-vs-httpclient-vs-httpwebrequest/
         static HttpClient g_httpClient = new HttpClient(g_httpHandler); // for efficiency, we can make it global, because it can handle multiple queries in multithread
 
-
-        public static bool DownloadStringWithRetry(string p_url, out string p_webpage)
+        public static async Task<string?> DownloadStringWithRetryAsync(string p_url)
         {
-            return DownloadStringWithRetry(p_url, out p_webpage, 3, TimeSpan.FromSeconds(2), true);
+            return await DownloadStringWithRetryAsync(p_url, 3, TimeSpan.FromSeconds(2), true);
         }
 
-        public static bool DownloadStringWithRetry(string p_url, out string p_webpage, int p_nRetry, TimeSpan p_sleepBetweenRetries, bool p_throwExceptionIfUnsuccesfull = true)
+        public static async Task<string?> DownloadStringWithRetryAsync(string p_url, int p_nRetry, TimeSpan p_sleepBetweenRetries, bool p_throwExceptionIfUnsuccesfull = true)
         {
-            p_webpage = string.Empty;
+            string webpage = string.Empty;
             int nDownload = 0;
             var request = CreateRequest(p_url);
 
@@ -32,18 +32,18 @@ namespace SqCommon
                 try
                 {
                     nDownload++;
-                    var response = g_httpClient.SendAsync(request).Result;
+                    var response = await g_httpClient.SendAsync(request);
                     using (HttpContent content = response.Content)
                     {
-                        p_webpage = content.ReadAsStringAsync().Result;
+                        webpage = await content.ReadAsStringAsync();
                     }
 
                     // httpClient.DefaultRequestHeaders.AcceptEncoding.ParseAdd("gzip, deflate, br");
                     // httpClient.DefaultRequestHeaders.Connection.ParseAdd("keep-alive"); // for https://www.nasdaq.com/api keep-alive is needed, otherwise Timeout
-                    // p_webpage = httpClient.GetStringAsync(p_url).Result;
+                    // p_webpage = await httpClient.GetStringAsync(p_url);
 
-                    Utils.Logger.Debug(String.Format("DownloadStringWithRetry() OK:{0}, nDownload-{1}, Length of reply:{2}", p_url, nDownload, p_webpage.Length));
-                    return true;
+                    Utils.Logger.Debug(String.Format("DownloadStringWithRetry() OK:{0}, nDownload-{1}, Length of reply:{2}", p_url, nDownload, webpage.Length));
+                    return webpage;
                 }
                 catch (Exception ex)
                 {
@@ -67,7 +67,7 @@ namespace SqCommon
                 }
             } while (nDownload < p_nRetry);
 
-            return false;
+            return null;
         }
 
         // Typical usage, and queries so far. p_url = ?
@@ -115,7 +115,7 @@ namespace SqCommon
             };
         }
 
-        public static bool TestDownloadApiNasdaqCom()
+        public static async void TestDownloadApiNasdaqCom()
         {
             // 1. Case study for api.nasdaq.com
             // url = $"https://api.nasdaq.com/api/calendar/splits?date=2021-02-24";  // content-type: application/json; charset=utf-8  content-encoding: gzip
@@ -164,14 +164,12 @@ namespace SqCommon
             Console.WriteLine($"HttpRequestMessage:'{request.ToString()}'");
 
             HttpClient httpClient = new HttpClient(g_httpHandler);
-            var response = httpClient.SendAsync(request).Result;
+            var response = await httpClient.SendAsync(request);
             using (HttpContent content = response.Content)
             {
-                var contentStr = content.ReadAsStringAsync().Result;
+                var contentStr = await content.ReadAsStringAsync();
                 Console.WriteLine($"TestDownloadApiNasdaqCom Returned: '{contentStr}'");
             }
-
-            return true;
         }
 
     }

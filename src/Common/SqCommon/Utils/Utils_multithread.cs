@@ -7,13 +7,46 @@ using Microsoft.Extensions.Configuration;
 
 namespace SqCommon
 {
+    // We should use async-await (TAP: Task-based Asynchronous Pattern), instead of TPL's '.Result/Wait'
+    // In the future, base classes (e.g. Microsoft.AspNet.Identity) will only have async API methods, not old-style sync. So use async extensively.
     public static partial class Utils
     {
+        // How to run async method synchronously  (see MultithreadTips.txt)
+        // https://stackoverflow.com/questions/5095183/how-would-i-run-an-async-taskt-method-synchronously
+        // This confirms that GetResult() will not create AggregateExceptions
+        // "int result = BlahAsync().GetAwaiter().GetResult();"
+        // >it doesn't swallow exceptions (like Wait)
+        // >it won't wrap any exceptions thrown in an AggregateException (like Result)
+        // >works for both Task and Task<T>
+        //
+        // https://stackoverflow.com/questions/9343594/how-to-call-asynchronous-method-from-synchronous-method-in-c
+        // If in the future we need improvements to this code: "Microsoft built an AsyncHelper (internal) class to run Async as Sync. The source looks like:"
+        public static void TurnAsyncToSyncTask(this Task task)
+        {
+            task.ConfigureAwait(continueOnCapturedContext: false).GetAwaiter().GetResult();
+        }
+
+        public static T TurnAsyncToSyncTask<T>(this Task<T> task)
+        {
+            return task.ConfigureAwait(continueOnCapturedContext: false).GetAwaiter().GetResult();
+        }
+
+        // run async method in a separate thread and return immediately (in FireAndForget way)
+        // Execution in calling thread will continue immedietaly. Even the first instruction of FuncAsync() will be in a separate ThreadPool thread.
+        public static void RunInNewThread(Func<Task?> function)
+        {
+            // task is called without await, so it doesn't wait; it will run parallel. 
+            Task.Run(function);  // Task.Run will start something in a new thread pool thread and we don't wait it.
+        }
+
         // https://stackoverflow.com/questions/22629951/suppressing-warning-cs4014-because-this-call-is-not-awaited-execution-of-the
-        public static void FireParallelAndForgetAndLogErrorTask(this Task task)
+        // usage: don't await it. Call "FuncAsync().ContinueInSameThreadButDontWait();" 
+        // don't do: "await FuncAsync().ContinueInSameThreadButDontWait();"
+        // Execution in calling thread will continue until the first inner 'await'. Then FuncAsync() continues where it was called.
+        public static void RunInSameThreadButReturnAtFirstAwaitAndLogError(this Task task)
         {
             // task is called without await, so it doesn't wait; it will run parallel. "await task.ContinueWith()" would wait the task
-            
+
             // Also, without a continuation task After an async func, we get the warning 'Because this call is not awaited, execution of the current method continues before the call is completed. Consider applying the 'await' operator to the result of the call.'
             // https://stackoverflow.com/questions/14903887/warning-this-call-is-not-awaited-execution-of-the-current-method-continues
             task.ContinueWith(
@@ -21,18 +54,12 @@ namespace SqCommon
                 TaskContinuationOptions.OnlyOnFaulted);
         }
 
-        public static void TurnAsyncToSyncTask(this Task task)
-        {   // RunSynchronously may not be called on a task not bound to a delegate, such as the task returned from an asynchronous method.
-            // So for asynch Methods, use Wait(), or use ConfigureAwait() + GetResult() which is Explicit wait too.
-            // https://stackoverflow.com/questions/14485115/synchronously-waiting-for-an-async-operation-and-why-does-wait-freeze-the-pro
-            task.ConfigureAwait(continueOnCapturedContext: false).GetAwaiter().GetResult();
-        }
-
         // A Task's exception(s) were not observed either by Waiting on the Task or accessing its Exception property. 
         // http://stackoverflow.com/questions/7883052/a-tasks-exceptions-were-not-observed-either-by-waiting-on-the-task-or-accessi
+        // Used for long-runnig Tasks with Task.Factory.StartNew() to create non-ThreadPool threads.
         public static Task LogUnobservedTaskExceptions(this Task p_task, string p_msg)
         {
-            Utils.Logger.Info("LogUnobservedTaskExceptions().Registering for " + p_msg);
+            Utils.Logger.Info("LogUnobservedTaskExceptions().Registering for long running task" + p_msg);
             p_task.ContinueWith(t =>
                 {
                     AggregateException? aggException = t?.Exception?.Flatten();

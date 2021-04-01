@@ -34,5 +34,6 @@
 		"workbench.editor.enablePreview": false,
 		"js/ts.implicitProjectConfig.experimentalDecorators": true,
 		"editor.linkedEditing": true,
+		"files.autoSaveDelay": 1500,
 	}
 }

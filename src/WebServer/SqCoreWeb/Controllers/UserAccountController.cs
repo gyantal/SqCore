@@ -46,7 +46,7 @@ namespace SqCoreWeb.Controllers
 #if !DEBUG
         [Authorize]     // we can live without it, because ControllerCommon.CheckAuthorizedGoogleEmail() will redirect to /login anyway, but it is quicker that this automatically redirects without clicking another URL link.
 #endif
-        public ActionResult UserInfo()
+        public async Task<ActionResult> UserInfo()
         {
             var userAuthCheck = WsUtils.CheckAuthorizedGoogleEmail(this.HttpContext);
             if (userAuthCheck != UserAuthCheckResult.UserKnownAuthOK)
@@ -66,10 +66,10 @@ namespace SqCoreWeb.Controllers
             }
 
             sb.Append("Tokens:<br>");
-            sb.Append("Access Token: " + HttpContext.GetTokenAsync("access_token").Result + "<br>");
-            sb.Append("Refresh Token: " + HttpContext.GetTokenAsync("refresh_token").Result + "<br>");
-            sb.Append("Token Type: " + HttpContext.GetTokenAsync("token_type").Result + "<br>");
-            sb.Append("expires_at: " + HttpContext.GetTokenAsync("expires_at").Result + "<br>");
+            sb.Append("Access Token: " + await HttpContext.GetTokenAsync("access_token") + "<br>");
+            sb.Append("Refresh Token: " + await HttpContext.GetTokenAsync("refresh_token") + "<br>");
+            sb.Append("Token Type: " + await HttpContext.GetTokenAsync("token_type") + "<br>");
+            sb.Append("expires_at: " + await HttpContext.GetTokenAsync("expires_at") + "<br>");
             sb.Append("<a href=\"/logout\">Logout</a><br>");
             sb.Append("</body></html>");
 

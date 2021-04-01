@@ -160,13 +160,14 @@ namespace SqCoreWeb.Controllers
         {
             Utils.Logger.Info("TestGoogleApiGsheet1() BEGIN");
 
-            string valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
+            string? valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
             if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
             {
                 // TODO: not high priority to fix it. It returns code 403, Forbidden. Also the same problem in SqLab. (it might only work on Linux server if IP should have been registered)
                 // it works on remote server: https://www.snifferquant.net/WebServer/TestGoogleApiGsheet1   (but not locally, and not in SqLab either)
                 // gSheet is public: https://docs.google.com/spreadsheets/d/1onwqrdxQIIUJytd_PMbdFKUXnBx3YSRYok0EmJF8ppM
-                if (!Utils.DownloadStringWithRetry("https://sheets.googleapis.com/v4/spreadsheets/1onwqrdxQIIUJytd_PMbdFKUXnBx3YSRYok0EmJF8ppM/values/A1%3AA3?key=" + Utils.Configuration["Google:GoogleApiKeyKey"], out valuesFromGSheetStr))
+                valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync("https://sheets.googleapis.com/v4/spreadsheets/1onwqrdxQIIUJytd_PMbdFKUXnBx3YSRYok0EmJF8ppM/values/A1%3AA3?key=" + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
+                if (valuesFromGSheetStr == null)
                     valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
             }
 

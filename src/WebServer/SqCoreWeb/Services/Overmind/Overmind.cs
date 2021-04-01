@@ -95,15 +95,15 @@ namespace SqCoreWeb
                     Subject = "SqCore Warning! : HealthMonitor is NOT Alive.",
                     Body = $"SqCore Warning! : HealthMonitor is NOT Alive.",
                     IsBodyHtml = false
-                }.SendAsync().FireParallelAndForgetAndLogErrorTask();
+                }.SendAsync().RunInSameThreadButReturnAtFirstAwaitAndLogError();
         }
 
         
-        void MorningCheck()
+        async void MorningCheck()
         {
             string todayMonthAndDayStr = DateTime.UtcNow.ToString("MM-dd");
             if (todayMonthAndDayStr == "10-05")        // Orsi's birthday
-                new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore.Overmind: Orsi's birthday", Body = "Orsi's birthday is on 1976-10-09.", IsBodyHtml = false }.SendAsync().FireParallelAndForgetAndLogErrorTask();
+                await new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore.Overmind: Orsi's birthday", Body = "Orsi's birthday is on 1976-10-09.", IsBodyHtml = false }.SendAsync();
 
             Utils.Logger.Info("Overmind.MorningCheck(): Checking first day of the month");
             if (DateTime.UtcNow.AddDays(0).Day == 1)
@@ -178,7 +178,7 @@ namespace SqCoreWeb
             new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();
         }
 
-        void CheckIntradayStockPctChanges()
+        async void CheckIntradayStockPctChanges()
         {
             string gyantalEmailInnerlStr = string.Empty;
             string gyantalPhoneCallInnerStr = string.Empty;
@@ -225,7 +225,7 @@ namespace SqCoreWeb
                     Message = "This is a warning notification from SnifferQuant. There's a large up or down movement in " + gyantalPhoneCallInnerStr + " ... I repeat " + gyantalPhoneCallInnerStr,
                     NRepeatAll = 2
                 };
-                Console.WriteLine("call.MakeTheCall() return: " + call.MakeTheCall());
+                Console.WriteLine("call.MakeTheCall() return: " + await call. MakeTheCallAsync());
             }
 
             if (!String.IsNullOrEmpty(charmatEmailInnerlStr))
@@ -238,7 +238,7 @@ namespace SqCoreWeb
                     Message = "This is a warning notification from SnifferQuant. There's a large up or down movement in " + charmatPhoneCallInnerStr + " ... I repeat " + charmatPhoneCallInnerStr,
                     NRepeatAll = 2
                 };
-                Console.WriteLine("call.MakeTheCall() return: " + call.MakeTheCall());
+                Console.WriteLine("call.MakeTheCall() return: " + await call. MakeTheCallAsync());
             }
         }
 
@@ -251,9 +251,11 @@ namespace SqCoreWeb
             // https://finance.google.com/finance?q=BATS%3AVXX
             string url = $"https://www.cnbc.com/quotes/?symbol=" + p_exchangeWithTicker.Replace(":", "%3A");
             Utils.Logger.Trace("DownloadStringWithRetry() queried with:'" + url + "'");
-            Utils.DownloadStringWithRetry(url, out string priceHtml);
+            string? priceHtml = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
+            if (priceHtml == null)
+                return double.NaN;
 
-            string firstCharsWithSubString = !String.IsNullOrWhiteSpace(priceHtml) && priceHtml.Length >= 300 ? priceHtml.Substring(0, 300) : priceHtml;
+            string firstCharsWithSubString = !String.IsNullOrWhiteSpace(priceHtml!) && priceHtml.Length >= 300 ? priceHtml.Substring(0, 300) : priceHtml;
             Utils.Logger.Trace("HttpClient().GetStringAsync returned: " + firstCharsWithSubString);
 
             double? realTimePrice = null, dailyChange = null;
@@ -341,7 +343,9 @@ namespace SqCoreWeb
         {
             string errorMessage = string.Empty;
             double price = 0.0;
-            var isDownloadOk = Utils.DownloadStringWithRetry(p_amazonProductUrl, out string webpage);
+            string? webpage = Utils.DownloadStringWithRetryAsync(p_amazonProductUrl).TurnAsyncToSyncTask();
+            if (webpage == null)
+                return null;
             Utils.Logger.Info("HttpClient().GetStringAsync returned: " + ((webpage.Length > 100) ? webpage.Substring(0, 100) : webpage));
 
             // <span id="priceblock_ourprice" class="a-size-medium a-color-price">£199.95</span>

@@ -192,7 +192,7 @@ namespace SqCoreWeb
         internal static void StrongAssertMessageSendingEventHandler(StrongAssertMessage p_msg)
         {
             gLogger.Info("StrongAssertEmailSendingEventHandler()");
-            HealthMonitorMessage.SendAsync($"Msg from SqCore.Website.C#.StrongAssert. StrongAssert Warning (if Severity is NoException, it is just a mild Warning. If Severity is ThrowException, that exception triggers a separate message to HealthMonitor as an Error). Severity: {p_msg.Severity}, Message: { p_msg.Message}, StackTrace: { p_msg.StackTrace.ToStringWithShortenedStackTrace(800)}", HealthMonitorMessageID.SqCoreWebCsError).FireParallelAndForgetAndLogErrorTask();
+            HealthMonitorMessage.SendAsync($"Msg from SqCore.Website.C#.StrongAssert. StrongAssert Warning (if Severity is NoException, it is just a mild Warning. If Severity is ThrowException, that exception triggers a separate message to HealthMonitor as an Error). Severity: {p_msg.Severity}, Message: { p_msg.Message}, StackTrace: { p_msg.StackTrace.ToStringWithShortenedStackTrace(800)}", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
         }
 
         // Called by the GC.FinalizerThread. Occurs when a faulted task's unobserved exception is about to trigger exception which, by default, would terminate the process.
@@ -232,6 +232,9 @@ namespace SqCoreWeb
             p_sb.Append("<H2>Program.exe</H2>");
             var timeSinceAppStart = DateTime.UtcNow - g_webAppGlobals.WebAppStartTime;
             p_sb.Append($"WebAppStartTimeUtc: {g_webAppGlobals.WebAppStartTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}({timeSinceAppStart:dd} days {timeSinceAppStart:hh\\:mm} hours ago)<br>");
+            ThreadPool.GetMinThreads(out int minWorkerTh, out int minIoThread);
+            ThreadPool.GetMinThreads(out int maxWorkerTh, out int maxIoThread);
+            p_sb.Append($"ThId-{Thread.CurrentThread.ManagedThreadId}, ThreadPool#:{ThreadPool.ThreadCount}, WorkerTh: [{minWorkerTh}...{maxWorkerTh}], IoTh: [{minIoThread}...{maxIoThread}] <br>");
         }
 
     }

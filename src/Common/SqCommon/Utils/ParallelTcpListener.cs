@@ -42,7 +42,7 @@ namespace SqCommon
         
 
         // http://stackoverflow.com/questions/7690520/c-sharp-networking-tcpclient
-        void TcpListenerLoop()
+        async void TcpListenerLoop()
         {
             try
             {
@@ -53,7 +53,7 @@ namespace SqCommon
                 while (true)
                 {
                     var tcpListenerCurrentClientTask = m_tcpListener.AcceptTcpClientAsync();
-                    var tcpClient = tcpListenerCurrentClientTask.Result;        // Task.Result is blocking. OK. When App is exiting gracefully, there is an Exception: no problem. Let VS swallow it.
+                    var tcpClient = await tcpListenerCurrentClientTask;        // await Task is blocking. OK. When App is exiting gracefully, there is an Exception: no problem. Let VS swallow it.
                     Console.WriteLine($"TcpListenerLoop.NextClientAccepted.");
                     Utils.Logger.Info($"TcpListenerLoop.NextClientAccepted.");
                     if (Utils.MainThreadIsExiting?.IsSet ?? false)
@@ -106,7 +106,7 @@ namespace SqCommon
             }
         }
 
-        public void StopTcpMessageListener()
+        public async void StopTcpMessageListener()
         {
             Console.WriteLine("StopTcpMessageListener() exiting...");
             // you can finish current TcpConnections properly if it is important
@@ -114,7 +114,7 @@ namespace SqCommon
             TcpClient dummyClient = new TcpClient();
             // Connecting to listening-all-meta-address 0.0.0.0 is not possible. (SocketException : The requested address is not valid). We have to connect to 127.0.0.1 instead
             var dummyClientIp = (m_privateIP == ServerIp.LocalhostMetaAllPrivateIpWithIP) ? ServerIp.LocalhostLoopbackWithIP : m_privateIP;
-            dummyClient.ConnectAsync(dummyClientIp, m_port).Wait();
+            await dummyClient.ConnectAsync(dummyClientIp, m_port);
             Console.WriteLine($"StopTcpMessageListener(). Is DummyClient connected: {dummyClient.Connected}");
             Utils.TcpClientDispose(dummyClient);
 

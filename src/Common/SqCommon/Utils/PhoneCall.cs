@@ -30,14 +30,10 @@ namespace SqCommon
         public string ResultJSON = string.Empty, ErrorStr = string.Empty;
         public int NRepeatAll = 1; // with this setting = 1, the phone call say the Message only once. However it is common that we want that the message is repeated, so we use = 2.
 
+
         /// <summary> Returns true when Twilio's server accepted our request, BEFORE the phone begins to ring!
         /// Returns false if the server rejected our request with error message, or .NET exception occurred </summary>
-        public bool MakeTheCall()
-        {
-            return MakeTheCallAsync().Result;
-        }
-
-        async System.Threading.Tasks.Task<bool> MakeTheCallAsync()
+        public async Task<bool> MakeTheCallAsync()
         {
             string caller = PhoneNumbers[FromNumber];
             if (caller == null)

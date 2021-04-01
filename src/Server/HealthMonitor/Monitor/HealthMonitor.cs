@@ -452,7 +452,7 @@ namespace HealthMonitor
         }
 
 
-        private static void SendEmailAndMakePhoneCall(string p_emailSubject, string p_emailBody, string p_phonecallText)
+        private static async void SendEmailAndMakePhoneCall(string p_emailSubject, string p_emailBody, string p_phonecallText)
         {
             Utils.Logger.Info("InformSupervisors(). Sending Warning email.");
             try
@@ -482,7 +482,7 @@ namespace HealthMonitor
                     Message = p_phonecallText,
                     NRepeatAll = 2
                 };
-                bool didTwilioAcceptedTheCommand = call.MakeTheCall();
+                bool didTwilioAcceptedTheCommand = await call.MakeTheCallAsync();
                 if (didTwilioAcceptedTheCommand)
                 {
                     Utils.Logger.Debug("PhoneCall instruction was sent to Twilio.");
@@ -547,7 +547,7 @@ namespace HealthMonitor
                         NRepeatAll = 2
                     };
                     // skipped temporarily
-                    bool didTwilioAcceptedTheCommand = call.MakeTheCall();
+                    bool didTwilioAcceptedTheCommand = call.MakeTheCallAsync().TurnAsyncToSyncTask();
                     if (didTwilioAcceptedTheCommand)
                     {
                         Utils.Logger.Debug("PhoneCall instruction was sent to Twilio.");

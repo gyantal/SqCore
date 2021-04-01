@@ -196,7 +196,7 @@ namespace FinTechCommon
         }
 
 
-        void DownloadLastPriceYF(Asset[] p_assets, TradingHours p_tradingHoursNow)  // takes ? ms from WinPC
+        async void DownloadLastPriceYF(Asset[] p_assets, TradingHours p_tradingHoursNow)  // takes ? ms from WinPC
         {
             Utils.Logger.Debug("DownloadLastPriceYF() START");
             m_nYfDownload++;
@@ -206,7 +206,7 @@ namespace FinTechCommon
                 // https://query1.finance.yahoo.com/v7/finance/quote?symbols=QQQ%2CSPY%2CGLD%2CTLT%2CVXX%2CUNG%2CUSO&fields=symbol%2CregularMarketPreviousClose%2CregularMarketPrice%2CmarketState%2CpostMarketPrice%2CpreMarketPrice  // returns just the specified fields.
                 // "marketState":"PRE" or "marketState":"POST", In PreMarket both "preMarketPrice" and "postMarketPrice" are returned.
                 var symbols = p_assets.Select(r => r.LastTicker).ToArray();
-                var quotes = Yahoo.Symbols(symbols).Fields(new Field[] { Field.Symbol, Field.RegularMarketPreviousClose, Field.RegularMarketPrice, Field.MarketState, Field.PostMarketPrice, Field.PreMarketPrice }).QueryAsync().Result;
+                var quotes = await Yahoo.Symbols(symbols).Fields(new Field[] { Field.Symbol, Field.RegularMarketPreviousClose, Field.RegularMarketPrice, Field.MarketState, Field.PostMarketPrice, Field.PreMarketPrice }).QueryAsync();
                 foreach (var quote in quotes)
                 {
                     Asset? sec = null;
@@ -248,7 +248,7 @@ namespace FinTechCommon
         // Solution: query real-time lastPrice ever 2 seconds, but query PreviousClose only once a day.
         // This doesn't require token: https://api.iextrading.com/1.0/tops?symbols=AAPL,GOOGL
         // PreviousClose data requires token: https://cloud.iexapis.com/stable/stock/market/batch?symbols=AAPL,FB&types=quote&token=<get it from sensitive-data file>
-        void DownloadLastPriceIex(Asset[] p_assets)  // takes 450-540ms from WinPC
+        async void DownloadLastPriceIex(Asset[] p_assets)  // takes 450-540ms from WinPC
         {
             Utils.Logger.Debug("DownloadLastPriceIex() START");
             m_nIexDownload++;
@@ -257,7 +257,8 @@ namespace FinTechCommon
                 //string url = string.Format("https://api.iextrading.com/1.0/stock/market/batch?symbols={0}&types=quote", p_tickerString);
                 //string url = string.Format("https://api.iextrading.com/1.0/last?symbols={0}", p_tickerString);       // WebExceptionStatus.ProtocolError: "Not Found"
                 string url = string.Format("https://api.iextrading.com/1.0/tops?symbols={0}", String.Join(", ", p_assets.Select(r => r.LastTicker)));
-                if (!Utils.DownloadStringWithRetry(url, out string responseStr))
+                string? responseStr = await Utils.DownloadStringWithRetryAsync(url);
+                if (responseStr == null)
                     return;
 
                 Utils.Logger.Info("DownloadLastPriceIex() str = '{0}'", responseStr);

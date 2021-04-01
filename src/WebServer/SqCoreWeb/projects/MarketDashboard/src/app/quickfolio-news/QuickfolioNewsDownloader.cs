@@ -47,10 +47,11 @@ namespace SqCoreWeb
 
         public void UpdateStockTickers()
         {
-            string valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
+            string? valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
             if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
             {
-                if (!Utils.DownloadStringWithRetry("https://sheets.googleapis.com/v4/spreadsheets/1c5ER22sXDEVzW3uKthclpArlZvYuZd6xUffXhs6rRsM/values/A1%3AA1?key=" + Utils.Configuration["Google:GoogleApiKeyKey"], out valuesFromGSheetStr))
+                valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync("https://sheets.googleapis.com/v4/spreadsheets/1c5ER22sXDEVzW3uKthclpArlZvYuZd6xUffXhs6rRsM/values/A1%3AA1?key=" + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
+                if (valuesFromGSheetStr == null)
                     valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
             }
             if (!valuesFromGSheetStr.StartsWith("Error"))
@@ -136,9 +137,9 @@ namespace SqCoreWeb
                 foundNewsItems = new List<NewsItem>();
             //MakeRequests();
             string url = string.Format(@"https://www.tipranks.com/api/stocks/getNews/?ticker={0}", p_ticker);
-            bool isDownloadOK = Utils.DownloadStringWithRetry(url, out string webpageData);
+            string? webpageData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
             System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));  // to avoid that server bans our IP
-            if (isDownloadOK)
+            if (webpageData != null)
             {
                 ReadTipranksNewsItems(foundNewsItems, p_ticker, webpageData);
             }
@@ -186,9 +187,9 @@ namespace SqCoreWeb
             if (foundNewsItems == null)
                 foundNewsItems = new List<NewsItem>();
             string url = string.Format(@"https://www.benzinga.com/stock/{0}", p_ticker);
-            bool isDownloadOK = Utils.DownloadStringWithRetry(url, out string webpageData);
+            string? webpageData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
             System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));  // to avoid that server bans our IP
-            if (isDownloadOK)
+            if (webpageData != null)
             {
                 ReadBenzingaSection(foundNewsItems, p_ticker, webpageData, "headlines");
                 ReadBenzingaSection(foundNewsItems, p_ticker, webpageData, "press");

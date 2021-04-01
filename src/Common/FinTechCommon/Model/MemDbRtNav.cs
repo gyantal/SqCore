@@ -135,7 +135,7 @@ namespace FinTechCommon
             }
         }
 
-        private void DownloadLastPriceNavFromVbServer(List<Asset> p_navAssets, VBrokerServer p_vbServer)
+        private async void DownloadLastPriceNavFromVbServer(List<Asset> p_navAssets, VBrokerServer p_vbServer)
         {
             List<Asset> acceptableNavAssets = new List<Asset>();
             List<string> bAccStrArr = new List<string>();
@@ -166,9 +166,16 @@ namespace FinTechCommon
             string brAccStr = String.Join(',', bAccStrArr.ToArray());
 
             string msg = $"?v=1&secTok={TcpMessage.GenerateSecurityToken()}&bAcc={brAccStr}&data=AccSum";
-            Task<string?> tcpMsgTask = TcpMessage.Send(msg, (int)TcpMessageID.GetAccountsInfo, vbServerIp, ServerIp.DefaultVirtualBrokerServerPort);
-            string? tcpMsgResponse = tcpMsgTask.Result;
-            if (tcpMsgTask.Exception != null || String.IsNullOrEmpty(tcpMsgResponse))
+            string? tcpMsgResponse = null;
+            try
+            {
+                tcpMsgResponse = await TcpMessage.Send(msg, (int)TcpMessageID.GetAccountsInfo, vbServerIp, ServerIp.DefaultVirtualBrokerServerPort);
+            }
+            catch (System.Exception)
+            {
+                tcpMsgResponse = null;
+            }
+            if (String.IsNullOrEmpty(tcpMsgResponse))
             {
                 string infoMsg = $"Warning! NAV realtime to {vbServerIp}:{ServerIp.DefaultVirtualBrokerServerPort} failed. Check that both the IB's TWS and the VirtualBroker are running on Manual/Auto Trading Server! Start them manually if needed!";
                 // This exception is expected. Not an error. IB TWS is expected to be down from 23:40 to 06:50.

@@ -10,6 +10,7 @@ using StackExchange.Redis;
 using YahooFinanceApi;
 using System.Text.Json;
 using Microsoft.Extensions.Primitives;
+using System.Threading.Tasks;
 
 namespace FinTechCommon
 {
@@ -60,10 +61,10 @@ namespace FinTechCommon
         public void Init(Db p_db)
         {
             m_Db = p_db;
-            ThreadPool.QueueUserWorkItem(Init_WT);
+            Utils.RunInNewThread(() => Init_WT());
         }
 
-        void Init_WT(object? p_state)    // WT : WorkThread, input p_state = null
+        async Task Init_WT()    // WT : WorkThread
         {
             // Better to do long consuming data preprocess in working thread than in the constructor in the main thread
             Thread.CurrentThread.Name = "MemDb.Init_WT Thread";
@@ -72,7 +73,7 @@ namespace FinTechCommon
             InitRt_WT();
             InitNavRt_WT();
 
-            ReloadAssetsDataIfChangedAndSetTimer();  // Polling for changes every 1 hour. Downloads the AllAssets, SqCoreWeb-used-Assets from Redis Db, and 
+            await ReloadAssetsDataIfChangedAndSetTimer();  // Polling for changes every 1 hour. Downloads the AllAssets, SqCoreWeb-used-Assets from Redis Db, and 
             // if necessary it reloads Historical and Realtime data
             // ReloadHistoricalDataAndSetTimer() // Polling for changes 3x every day
             // ReloadRealtimeDataAndSetTimer() // Polling for changes in every 3sec, every 1min or every 60min
@@ -95,14 +96,14 @@ namespace FinTechCommon
             ServerDiagnosticNavRealtime(p_sb);
         }
 
-        public void ReloadAssetDataTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
+        public async void ReloadAssetDataTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
         {
             if (p_state == null)
                 throw new Exception("ReloadAssetDataTimer_Elapsed() received null object.");
-            ((MemDb)p_state).ReloadAssetsDataIfChangedAndSetTimer();
+            await ((MemDb)p_state).ReloadAssetsDataIfChangedAndSetTimer();
         }
 
-        void ReloadAssetsDataIfChangedAndSetTimer()
+        async Task ReloadAssetsDataIfChangedAndSetTimer()
         {
             Utils.Logger.Info("ReloadAssetsDataIfChangedAndSetTimer() START");
             try
@@ -115,7 +116,7 @@ namespace FinTechCommon
                     AssetsCache = AssetsCache.CreateAssetCache(sqCoreAssets!);
                     m_lastAssetsDataReload = DateTime.UtcNow;
 
-                    ReloadHistoricalDataAndSetTimer();  // downloads historical prices from YF
+                    await ReloadHistoricalDataAndSetTimer();  // downloads historical prices from YF
                     OnReloadAssetData_ReloadRtDataAndSetTimer();    // downloads realtime prices from YF or IEX
                     OnReloadAssetData_ReloadRtNavDataAndSetTimer();   // downloads realtime NAVs from VBrokers
                     EvAssetDataReloaded?.Invoke();
@@ -132,14 +133,14 @@ namespace FinTechCommon
             m_assetDataReloadTimer.Change(targetDateEt - etNow, TimeSpan.FromMilliseconds(-1.0));     // runs only once
         }
 
-        public void ReloadHistoricalDataTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
+        public async void ReloadHistoricalDataTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
         {
             if (p_state == null)
                 throw new Exception("ReloadHistoricalDataTimer_Elapsed() received null object.");
-            ((MemDb)p_state).ReloadHistoricalDataAndSetTimer();
+            await ((MemDb)p_state).ReloadHistoricalDataAndSetTimer();
         }
 
-        void ReloadHistoricalDataAndSetTimer()
+        async Task ReloadHistoricalDataAndSetTimer()
         {
             Utils.Logger.Info("ReloadHistoricalDataAndSetTimer() START");
             DateTime etNow = DateTime.UtcNow.FromUtcToEt();
@@ -151,7 +152,8 @@ namespace FinTechCommon
 
                 // var url = $"https://api.nasdaq.com/api/calendar/splits?date=2021-01-19";
                 var url = $"https://api.nasdaq.com/api/calendar/splits?date={Utils.Date2hYYYYMMDD(etNow.AddDays(-7))}"; // go back 7 days before to include yesterdays splits
-                if (Utils.DownloadStringWithRetry(url, out string nasdaqSplitsJson, 3, TimeSpan.FromSeconds(5), true))
+                string? nasdaqSplitsJson = await Utils.DownloadStringWithRetryAsync(url, 3, TimeSpan.FromSeconds(5), true);
+                if (nasdaqSplitsJson != null)
                 {
                     var ndqSplitsJson = JsonSerializer.Deserialize<Dictionary<string, object>>(nasdaqSplitsJson);
                     using JsonDocument doc = JsonDocument.Parse(nasdaqSplitsJson);
@@ -247,7 +249,7 @@ namespace FinTechCommon
                         // checked the YF returned data by stream.ReadToEnd(): it is a CSV structure, with columns. The line "Apr 29, 2020	1:8 Stock Split" is Not in the data. 
                         // https://finance.yahoo.com/quote/USO/history?p=USO The YF website queries the splits separately when it inserts in-between the rows.
                         // Therefore, we have to query the splits separately from YF.
-                        IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(asset.LastTicker, asset.ExpectedHistoryStartDateET, DateTime.Now, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
+                        IReadOnlyList<Candle?>? history = await Yahoo.GetHistoricalAsync(asset.LastTicker, asset.ExpectedHistoryStartDateET, DateTime.Now, Period.Daily); // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
                         if (history == null)
                             throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{asset.LastTicker}) after many tries.");
                         // 2021-02-26T16:30 Exception: https://finance.yahoo.com/quote/SPY/history?p=SPY returns for yesterday: "Feb 25, 2021	-	-	-	-	-	-" , other days are correct, this is probably temporary
@@ -265,7 +267,7 @@ namespace FinTechCommon
                         // 2020-04-29: USO split: Split-adjustment was not done in YF. For these exceptional cases, so we need an additional data-source for double check
                         // First just add the manual data source from Redis/Sql database, and let’s see how unreliable YF is in the future. 
                         // If it fails frequently, then we can implement query-ing another website, like https://www.nasdaq.com/market-activity/stock-splits
-                        var splitHistoryYF = Yahoo.GetSplitsAsync(asset.LastTicker, asset.ExpectedHistoryStartDateET, DateTime.Now).Result;
+                        var splitHistoryYF = await Yahoo.GetSplitsAsync(asset.LastTicker, asset.ExpectedHistoryStartDateET, DateTime.Now);
 
                         // var missingYfSplitDb = new SplitTick[1] { new SplitTick() { DateTime = new DateTime(2020, 06, 08), BeforeSplit = 8, AfterSplit = 1 }};
                         potentialMissingYfSplits!.TryGetValue(asset.AssetId, out List<Split>? missingYfSplitDb);
@@ -458,7 +460,7 @@ namespace FinTechCommon
             catch (Exception e)
             {
                 Utils.Logger.Error(e, "Exception in ReloadHistoricalDataAndSetTimer()");
-                HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MemDb. Exception: '{ e.ToStringWithShortenedStackTrace(1200)}'", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
+                await HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MemDb. Exception: '{ e.ToStringWithShortenedStackTrace(1200)}'", HealthMonitorMessageID.SqCoreWebCsError);
             }
 
             m_lastHistoricalDataReload = DateTime.UtcNow;

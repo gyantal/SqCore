@@ -39,8 +39,8 @@ namespace HealthMonitor
                 List<string> failedWebsites = new List<string>();
                 for (int i = 0; i < cWebsitesToCheckAndnFail.Length; i++)
                 {
-                    string hmWebsiteStr = string.Empty;
-                    if (Utils.DownloadStringWithRetry(cWebsitesToCheckAndnFail[i].url, out hmWebsiteStr, 5, TimeSpan.FromSeconds(5), false))
+                    string? hmWebsiteStr = Utils.DownloadStringWithRetryAsync(cWebsitesToCheckAndnFail[i].url, 5, TimeSpan.FromSeconds(5), false).TurnAsyncToSyncTask();
+                    if (hmWebsiteStr != null)
                     {
                         cWebsitesToCheckAndnFail[i].nFail = 0;
                         Utils.Logger.Info(cWebsitesToCheckAndnFail[i].url + " returned: " + (hmWebsiteStr.Substring(0, (hmWebsiteStr.Length > 45) ? 45 : hmWebsiteStr.Length)).Replace("\r\n", "").Replace("\n", "")); // it is better to see it as one line in the log file

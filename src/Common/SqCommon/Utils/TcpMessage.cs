@@ -134,7 +134,7 @@ namespace SqCommon
 
                 var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));        // timout 30sec. After which cts.Cancel() is called. That will trigger cancellation of the task
                 var taskWithTimeoutCancellation = connectContinueTask.WithCancellation(cts.Token);
-                await taskWithTimeoutCancellation; // excellent! We use await, instead of TPL
+                await taskWithTimeoutCancellation;
 
                 if (connectTask.Exception != null)
                 {

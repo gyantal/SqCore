@@ -133,13 +133,13 @@ namespace YahooCrawler
             }
         }
 
-        public void DownloadYFtoCsv()
+        public async void DownloadYFtoCsv()
         {
             ReadTickerUniverse();
             foreach (var ticker in m_universeTickers)
             {
                 DateTime expectedHistoryStartDateET = new DateTime(2010, 1, 1);
-                IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(ticker, expectedHistoryStartDateET, DateTime.Now, Period.Daily).Result;
+                IReadOnlyList<Candle?>? history = await Yahoo.GetHistoricalAsync(ticker, expectedHistoryStartDateET, DateTime.Now, Period.Daily);
 
                 YFRecord[] yfRecords = history.Select(r => new YFRecord() { Date = Utils.Date2hYYYYMMDD(r!.DateTime), AdjClose = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4), Close = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.Close, 4) }).ToArray();
 

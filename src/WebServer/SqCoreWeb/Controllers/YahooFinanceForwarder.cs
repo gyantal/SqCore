@@ -9,6 +9,7 @@ using System.IO;
 using System.Net;
 using System.Text;
 using YahooFinanceApi;
+using System.Threading.Tasks;
 
 
 // *********************************************************************************************************************
@@ -58,14 +59,14 @@ namespace SqCoreWeb.Controllers
         }
 
         [Authorize]
-        public ActionResult Index()
+        public async Task<ActionResult> Index()
         {
-            Tuple<string, string> contentAndType = GenerateYffResponse();
+            Tuple<string, string> contentAndType = await GenerateYffResponse();
             return Content(contentAndType.Item1, contentAndType.Item2);
 
         }
 
-        private Tuple<string, string> GenerateYffResponse()
+        private async Task<Tuple<string, string>> GenerateYffResponse()
         {
             try
             {
@@ -192,7 +193,7 @@ namespace SqCoreWeb.Controllers
                 else if (allParamsDict["interval"] == "1m")
                     period = Period.Monthly;
 
-                var history = Yahoo.GetHistoricalAsync(ticker, startTime, endTime, period).Result;
+                var history = await Yahoo.GetHistoricalAsync(ticker, startTime, endTime, period);
 
 
                 // 4.1 Process YF CSV file either as JSON or as CSV: Header
