@@ -17,13 +17,9 @@ namespace FinTechCommon
     {
 
         public static MemDb gMemDb = new MemDb();
-        IDatabase m_redisDb;
+        Db m_Db;
 
         public User[] Users = new User[0];
-
-        string m_lastUsersStr = string.Empty;
-        string m_lastAllAssetsStr = string.Empty;
-        string m_lastSqCoreWebAssetsStr = string.Empty;
         public AssetsCache AssetsCache = new AssetsCache();
 
         // RAM requirement: 1Year = 260*(2+4) = 1560B = 1.5KB,  5y data is: 5*260*(2+4) = 7.8K
@@ -50,20 +46,20 @@ namespace FinTechCommon
         DateTime m_lastAssetsDataReload = DateTime.MinValue; // UTC
 
         public delegate void MemDbEventHandler();
-        public event MemDbEventHandler? EvFirstInitialized = null;     // it can be ReInitialized in every 1 hour because of RedisDb polling
+        public event MemDbEventHandler? EvFirstInitialized = null;     // it can be ReInitialized in every 1 hour because of Database polling
         public event MemDbEventHandler? EvAssetDataReloaded = null;
         public event MemDbEventHandler? EvHistoricalDataReloaded = null;
 
 
-#pragma warning disable CS8618 // Non-nullable field 'm_redisDb' is uninitialized.
+#pragma warning disable CS8618 // Non-nullable field 'm_assetDataReloadTimer' is uninitialized.
         public MemDb()  // constructor runs in main thread
         {
         }
 #pragma warning restore CS8618
 
-        public void Init(IDatabase p_redisDb)
+        public void Init(Db p_db)
         {
-            m_redisDb = p_redisDb;
+            m_Db = p_db;
             ThreadPool.QueueUserWorkItem(Init_WT);
         }
 
@@ -86,8 +82,8 @@ namespace FinTechCommon
 
             // User updates only the JSON text version of data (assets, OptionPrices in either Redis or in SqlDb). But we use the Redis's Brotli version for faster DB access.
             Thread.Sleep(TimeSpan.FromSeconds(20));     // can start it in a separate thread, but it is fine to use this background thread
-            UpdateRedisBrotlisService.SetTimer(new UpdateBrotliParam() { RedisDb = m_redisDb});
-            UpdateNavsService.SetTimer(new UpdateNavsParam() { RedisDb = m_redisDb});
+            UpdateRedisBrotlisService.SetTimer(new UpdateBrotliParam() { Db = m_Db });
+            UpdateNavsService.SetTimer(new UpdateNavsParam() { Db = m_Db });
         }
 
         public void ServerDiagnostic(StringBuilder p_sb)
@@ -112,86 +108,11 @@ namespace FinTechCommon
             try
             {
                 // GA.IM.NAV assets have user_id data, so User data has to be reloaded too.
-                string sqUserDataStr = m_redisDb.StringGet("sq_user");
-                bool isUsersChangedInDb = m_lastUsersStr != sqUserDataStr;
-                if (isUsersChangedInDb)
+                (bool isDbReloadNeeded, User[]? users, List<Asset>? sqCoreAssets) = m_Db.GetDataIfReloadNeeded();
+                if (isDbReloadNeeded)
                 {
-                    m_lastUsersStr = sqUserDataStr;
-                }
-
-                // start using Redis:'allAssets.brotli' (520bytes instead of 1.52KB) immediately. See UpdateRedisBrotlisService();
-                byte[] allAssetsBin = m_redisDb.HashGet("memDb", "allAssets.brotli");
-                var allAssetsBinToStr = Utils.BrotliBin2Str(allAssetsBin);
-                bool isAllAssetsChangedInDb = m_lastAllAssetsStr != allAssetsBinToStr;
-                if (isAllAssetsChangedInDb)
-                {
-                    m_lastAllAssetsStr = allAssetsBinToStr;
-                }
-
-                string sqCoreWebAssetsStr = m_redisDb.HashGet("memDb", "SqCoreWebAssets");
-                bool isSqCoreWebAssetsChanged = m_lastSqCoreWebAssetsStr != sqCoreWebAssetsStr;
-                if (isSqCoreWebAssetsChanged)
-                {
-                    m_lastSqCoreWebAssetsStr = sqCoreWebAssetsStr;
-                }
-
-                bool isReloadNeeded = isUsersChangedInDb || isAllAssetsChangedInDb || isSqCoreWebAssetsChanged;
-
-                if (isReloadNeeded)
-                {
-                    var usersInDb = JsonSerializer.Deserialize<List<UserInDb>>(sqUserDataStr);
-                    if (usersInDb == null)
-                        throw new Exception($"Deserialize failed on '{sqUserDataStr}'");
-                    Users = usersInDb.Select(r =>
-                        {
-                            return new User()
-                            {
-                                Id = r.id,
-                                Username = r.username,
-                                Password = r.password,
-                                Title = r.title,
-                                Firstname = r.firstname,
-                                Lastname = r.lastname,
-                                Email = r.email
-                            };
-                        }).ToArray();
-
-                    var sqCoreWebAssets = JsonSerializer.Deserialize<Dictionary<string, SqCoreWebAssetInDb>>(m_lastSqCoreWebAssetsStr);
-                    if (sqCoreWebAssets == null)
-                        throw new Exception($"Deserialize failed on '{m_lastSqCoreWebAssetsStr}'");
-
-                    var allAssets = JsonSerializer.Deserialize<Dictionary<string, AssetInDb[]>>(m_lastAllAssetsStr);
-                    if (allAssets == null)
-                        throw new Exception($"Deserialize failed on '{m_lastAllAssetsStr}'");
-
-                    // select only a subset of the allAssets in DB that SqCore webapp needs
-                    List<Asset> sqAssets = sqCoreWebAssets.Select(r =>
-                    {
-                        var assetId = new AssetId32Bits(r.Key);
-                        var assetTypeArr = allAssets[((byte)assetId.AssetTypeID).ToString()];
-                        // Linq is slow. List<T>.Find() is faster than Linq.FirstOrDefault() https://stackoverflow.com/questions/14032709/performance-of-find-vs-firstordefault
-                        var assetFromDb = Array.Find(assetTypeArr, k => k.ID == assetId.SubTableID);
-                        if (assetFromDb == null)
-                            throw new Exception($"Asset is not found: '{assetId.AssetTypeID}:{assetId.SubTableID}'");
-
-                        User? user = null;
-                        if (assetId.AssetTypeID == AssetType.BrokerNAV)
-                        {
-                            user = Users.FirstOrDefault(k => k.Id == Int32.Parse(assetFromDb.user_id));
-                        }
-                        return new Asset()
-                        {
-                            AssetId = assetId,
-                            PrimaryExchange = ExchangeId.NYSE, // NYSE is is larger than Nasdaq. If it is not specified assume NYSE. Saving DB space. https://www.statista.com/statistics/270126/largest-stock-exchange-operators-by-market-capitalization-of-listed-companies/
-                            LastTicker = assetFromDb.Ticker,
-                            LastName = assetFromDb.Name,
-                            ExpectedHistorySpan = r.Value.LoadPrHist,
-                            ExpectedHistoryStartDateET = GetExpectedHistoryStartDate(r.Value.LoadPrHist, assetFromDb.Ticker),
-                            User = user
-                        };
-                    }).ToList();
-
-                    AssetsCache = AssetsCache.CreateAssetCache(sqAssets);
+                    Users = users!;
+                    AssetsCache = AssetsCache.CreateAssetCache(sqCoreAssets!);
                     m_lastAssetsDataReload = DateTime.UtcNow;
 
                     ReloadHistoricalDataAndSetTimer();  // downloads historical prices from YF
@@ -226,9 +147,7 @@ namespace FinTechCommon
             {
                 var assetCacheTickers = AssetsCache.Assets.ToDictionary(r => r.LastTicker, v => v);
 
-                string missingYfSplitsJson = m_redisDb.HashGet("memDb", "missingYfSplits");
-                Dictionary<AssetId32Bits, List<Split>>? potentialMissingYfSplits = JsonSerializer.Deserialize<Dictionary<string, List<Split>>>(missingYfSplitsJson) // JsonSerializer: Dictionary key <int>,<uint> is not supported
-                    !.ToDictionary(r => new AssetId32Bits(r.Key), r => r.Value);
+                Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits = m_Db.GetMissingYfSplits();
 
                 // var url = $"https://api.nasdaq.com/api/calendar/splits?date=2021-01-19";
                 var url = $"https://api.nasdaq.com/api/calendar/splits?date={Utils.Date2hYYYYMMDD(etNow.AddDays(-7))}"; // go back 7 days before to include yesterdays splits
@@ -335,7 +254,7 @@ namespace FinTechCommon
                         // YahooFinanceApi\Yahoo - Historical.cs:line 80 receives: "2021-02-25,null,null,null,null,null,null" and crashes on StringToDecimal conversion
                         // TODO: We don't have a plan for those case when YF historical quote fails. What should we do?
                         // Option 1: crash the whole SqCore app: not good, because other services: website, VBroker, Timers, ContangoVisualizer can run
-                        // Option 2: Persist YF data to RedisDb every 2 hours. In case of failed YF reload, fall back to latest from RedisDb. Not a real solution if YF gives bad data for days.
+                        // Option 2: Persist YF data to DB every 2 hours. In case of failed YF reload, fall back to latest from DB. Not a real solution if YF gives bad data for days.
                         // Option 3: (preferred) Use 2 public databases (GF, Nasdaq, Marketwatch, Iex): In case YF fails for a stock for a date, use that other one if that data is believable (within range)
 
                         dates = history.Select(r => new DateOnly(r!.DateTime)).ToArray();
@@ -391,11 +310,10 @@ namespace FinTechCommon
                     List<KeyValuePair<DateOnly, double>[]> navsDeposits = new List<KeyValuePair<DateOnly, double>[]>();
                     foreach (var navAsset in navAssetsOfUser)
                     {
-                        string redisKey = navAsset.AssetId.ToString() + ".brotli"; // key: "9:1.brotli"
-                        byte[] dailyNavBrotli = m_redisDb.HashGet("assetQuoteRaw", redisKey);
-                        if (dailyNavBrotli == null)
+                        var dailyNavStr = m_Db.GetAssetQuoteRaw(navAsset.AssetId); // 47K text data from 9.5K brotli data, starts with FormatString: "D/C,20090102/16460,20090105/16826,..."
+                        if (dailyNavStr == null)
                             continue; // temproraly: only [9:1] is in RedisDb.
-                        var dailyNavStr = Utils.BrotliBin2Str(dailyNavBrotli);  // 47K text data from 9.5K brotli data, starts with FormatString: "D/C,20090102/16460,20090105/16826,..."
+                        
                         int iFirstComma = dailyNavStr.IndexOf(',');
                         string formatString = dailyNavStr.Substring(0, iFirstComma);  // "D/C" for Date/Closes
                         if (formatString != "D/C")
@@ -405,16 +323,7 @@ namespace FinTechCommon
                         DateOnly[] dates = dailyNavStrSplit.Select(r => new DateOnly(Int32.Parse(r.Substring(0, 4)), Int32.Parse(r.Substring(4, 2)), Int32.Parse(r.Substring(6, 2)))).ToArray();
                         double[] unadjustedClosesNav = dailyNavStrSplit.Select(r => Double.Parse(r.Substring(9))).ToArray();
                         
-                        byte[] dailyDepositBrotli = m_redisDb.HashGet("assetBrokerNavDeposit", redisKey);
-                        var dailyDepositStr = Utils.BrotliBin2Str(dailyDepositBrotli);  // 479 byte text data from 179 byte brotli data, starts with FormatString: "20090310/1903,20100305/2043,..."
-                        KeyValuePair<DateOnly, double>[] deposits = dailyDepositStr.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(r => {
-                            // format: "20200323/-1000000"
-                            var depositsDays = r.Split('/', StringSplitOptions.RemoveEmptyEntries);
-                            DateTime date = Utils.FastParseYYYYMMDD(new StringSegment(r, 0, 8));
-                            double deposit = Double.Parse(new StringSegment(r, 9, r.Length - 9));
-                            return new KeyValuePair<DateOnly, double>(new DateOnly(date), deposit);
-                        }).ToArray();
-
+                        KeyValuePair<DateOnly, double>[] deposits = m_Db.GetAssetBrokerNavDeposit(navAsset.AssetId);
 
                         CreateAdjNavAndIntegrate(navAsset, dates, unadjustedClosesNav, deposits, assetsDates, assetsAdjustedCloses);
                         navsDates.Add(dates);
@@ -435,7 +344,7 @@ namespace FinTechCommon
                                 LastTicker = aggAssetTicker,
                                 LastName = "Aggregated NAV, " + user.Initials,
                                 ExpectedHistorySpan = "1y",
-                                ExpectedHistoryStartDateET = GetExpectedHistoryStartDate("1y", aggAssetTicker),
+                                ExpectedHistoryStartDateET = m_Db.GetExpectedHistoryStartDate("1y", aggAssetTicker),
                                 User = user
                             };
                             AssetsCache.AddAsset(aggNavAsset);
@@ -454,7 +363,7 @@ namespace FinTechCommon
                             }
                         }
                         var aggDatesSortedDict = aggDatesDict.OrderBy(p => p.Key); // if you need to sort it once, don't use SortedDictionary() https://www.c-sharpcorner.com/article/performance-sorteddictionary-vs-dictionary/
-                        var aggDates = aggDatesSortedDict.Select(r => r.Key).ToArray();    // it is ordered from earliest (2011) to latest (2020) exactly how the dates come from RedisDb
+                        var aggDates = aggDatesSortedDict.Select(r => r.Key).ToArray();    // it is ordered from earliest (2011) to latest (2020) exactly how the dates come from DB
                         var aggUnadjustedCloses = aggDatesSortedDict.Select(r => r.Value).ToArray();
 
                         var aggDepositsDict = new Dictionary<DateOnly, double>();
@@ -651,41 +560,6 @@ namespace FinTechCommon
             assetsDates[navAsset.AssetId] = dates;
             assetsAdjustedCloses[navAsset.AssetId] = adjCloses;
             Debug.WriteLine($"{navAsset.LastTicker}, first: DateTime: {dates.First()}, Close: {adjCloses.First()}, last: DateTime: {dates.Last()}, Close: {adjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
-        }
-
-        DateTime GetExpectedHistoryStartDate(string p_expectedHistorySpan, string p_ticker)
-        {
-            DateTime startDateET = new DateTime(2018, 02, 01, 0, 0, 0);
-            if (p_expectedHistorySpan.StartsWith("Date:"))
-            {
-                if (!DateTime.TryParseExact(p_expectedHistorySpan.Substring("Date:".Length), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDateET))
-                    throw new Exception($"ReloadHistoricalDataAndSetTimer(): wrong ExpectedHistorySpan for ticker {p_ticker}");
-            }
-            else if (p_expectedHistorySpan.EndsWith("y"))
-            {
-                if (!Int32.TryParse(p_expectedHistorySpan.Substring(0, p_expectedHistorySpan.Length - 1), out int nYears))
-                    throw new Exception($"ReloadHistoricalDataAndSetTimer(): wrong ExpectedHistorySpan for ticker {p_ticker}");
-                startDateET = DateTime.UtcNow.FromUtcToEt().AddYears(-1 * nYears).Date;
-            }
-            else if (p_expectedHistorySpan.EndsWith("m")) // RenewedUber requires only the last 2-3 days. Last 1year is unnecessary, so do only last 2 months
-            {
-                if (!Int32.TryParse(p_expectedHistorySpan.Substring(0, p_expectedHistorySpan.Length - 1), out int nMonths))
-                    throw new Exception($"ReloadHistoricalDataAndSetTimer(): wrong ExpectedHistorySpan for ticker {p_ticker}");
-                startDateET = DateTime.UtcNow.FromUtcToEt().AddMonths(-1 * nMonths).Date;
-            }
-
-            if (!p_expectedHistorySpan.StartsWith("Date:")) // if "Date:" was given, we assume admin was specific for a reason. Then don't go back 1 day earlier. Otherwise (months, years), go back 1 day earlier for safety.
-            {
-                // Keep this method in MemDb, cos we might use MemDb.Holiday data in the future.
-                // if startDateET is weekend, we have to go back to previous Friday
-                if (startDateET.DayOfWeek == DayOfWeek.Sunday)
-                    startDateET = startDateET.AddDays(-2);
-                if (startDateET.DayOfWeek == DayOfWeek.Saturday)
-                    startDateET = startDateET.AddDays(-1);
-                startDateET = startDateET.AddDays(-1);  // go back another extra day, in case that Friday was a stock market holiday
-            }
-
-            return startDateET;
         }
 
         public void Exit()

@@ -89,7 +89,9 @@ namespace SqCoreWeb
 
                 // 2. Init services
                 var redisConnString = (Utils.RunningPlatform() == Platform.Windows) ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
-                MemDb.gMemDb.Init(RedisManager.GetDb(redisConnString, 0));
+                var redisDb = RedisManager.GetDb(redisConnString, 0);   // lowest level DB module
+                var db = new Db(redisDb, null);   // mid-level DB wrapper above low-level DB
+                MemDb.gMemDb.Init(db); // high level DB used by functionalities
 
                 Caretaker.gCaretaker.Init(Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
                 SqTaskScheduler.gTaskScheduler.Init();

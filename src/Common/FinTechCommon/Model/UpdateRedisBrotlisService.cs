@@ -13,8 +13,7 @@ namespace FinTechCommon
     // Because of that, if Change is detected, this code will not update MemDb. The regular MemDb Asset checker will periodically do that.
     public class UpdateBrotliParam
     {
-        public IDatabase? RedisDb { get; set; } = null;
-        public IDatabase? SqlDb { get; set; } = null;
+        public Db? Db { get; set; } = null;
     }
 
     public class UpdateRedisBrotlisService
@@ -51,32 +50,16 @@ namespace FinTechCommon
 
         public static void Update(UpdateBrotliParam p_state)
         {
-            // 1. Check if BrotliRecords in RedisDb is Consistent With source (Json in either in RedisDb, but more likely in PostgreSql)
-            // start using Redis:'allAssets.brotli' (520bytes instead of 1.52KB) immediately. User only modifyes the JSON version Redis:'allAssets'.
+            // 1. Check if binary BrotliRecords in RedisDb is Consistent With the text Json source (Json in either in RedisDb, but more likely in PostgreSql)
+            // start using Redis:'allAssets.brotli' (520bytes instead of 1.52KB) immediately. User only modifies the JSON version Redis:'allAssets'.
             // 15 seconds later check the Redis consistency. In a very rare case when that finds discrepancy between 'allAssets.brotli' vs. 'allAssets' then 
             // it updates Redis:'allAssets.brotli' and re-call HistoricalDataReloadAndSetTimer()
 
             Utils.Logger.Info($"UpdateRedisBrotlisService.Update()");
-            string allAssetsJson = p_state.RedisDb!.HashGet("memDb", "allAssets");
-            
-            byte[] allAssetsBin = p_state.RedisDb!.HashGet("memDb", "allAssets.brotli");
-            var allAssetsBinToStr = Utils.BrotliBin2Str(allAssetsBin);
-
-            bool wasAnyBrotliUpdated = false;
-            if (allAssetsJson != allAssetsBinToStr)
-            {
-                // Write brotli to DB
-                var allAssetsBrotli = Utils.Str2BrotliBin(allAssetsJson);
-                p_state.RedisDb!.HashSet("memDb", "allAssets.brotli", RedisValue.CreateFrom(new System.IO.MemoryStream(allAssetsBrotli)));
-                wasAnyBrotliUpdated = true;
-            }
+            bool wasAnyBrotliUpdated = p_state.Db!.UpdateBrotlisIfNeeded();
             if (wasAnyBrotliUpdated)
-            {
                 Utils.Logger.Info($"Some Brotlis were updated in RedisDb.");
-            }
 
-            // if (!wasAnyBrotliUpdated)
-            //     return;
             // if any brotli was updated, do NOT invoke Reload. It is not the task of this service.
             // ReloadAssetsDataIfChangedAndSetTimer();
         }

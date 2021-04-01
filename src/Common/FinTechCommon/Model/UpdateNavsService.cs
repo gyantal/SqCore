@@ -30,8 +30,7 @@ namespace FinTechCommon
 
     public class UpdateNavsParam
     {
-        public IDatabase? RedisDb { get; set; } = null;
-        public IDatabase? SqlDb { get; set; } = null;
+        public Db? Db { get; set; } = null;
     }
 
 
@@ -146,12 +145,9 @@ namespace FinTechCommon
 
         private static void UpdateAssetInDb(UpdateNavsParam p_updateParam, AssetId32Bits p_assetId, double p_todayNav)
         {
-            string redisKey = p_assetId.ToString() + ".brotli"; // // key: "9:1.brotli"
-            byte[] dailyNavBrotli = p_updateParam.RedisDb!.HashGet("assetQuoteRaw", redisKey);
-            if (dailyNavBrotli == null)
-                return;
-            var dailyNavStr = Utils.BrotliBin2Str(dailyNavBrotli);  // "D/C" for Date/Closes: "D/C,20090102/16461,20090105/16827,..."
-            int iFirstComma = dailyNavStr.IndexOf(',');
+            var dailyNavStr = p_updateParam.Db!.GetAssetQuoteRaw(p_assetId); // "D/C" for Date/Closes: "D/C,20090102/16461,20090105/16827,..."
+            
+            int iFirstComma = dailyNavStr!.IndexOf(',');
             string formatString = dailyNavStr.Substring(0, iFirstComma);  // "D/C" for Date/Closes
             if (formatString != "D/C")
                 return;
@@ -175,8 +171,7 @@ namespace FinTechCommon
             var useFromOldSg = new StringSegment(dailyNavStr, 0, lengthToUseFromOld);   // StringSegment doesn't duplicate the long string
             string newDailyNavStr = useFromOldSg + $",{todayEt.ToString("yyyyMMdd")}/{nearestIntValue}";    // append last record at end
 
-            var outputCsvBrotli = Utils.Str2BrotliBin(newDailyNavStr);
-            p_updateParam.RedisDb!.HashSet("assetQuoteRaw", redisKey,  RedisValue.CreateFrom(new System.IO.MemoryStream(outputCsvBrotli)));
+            p_updateParam.Db!.SetAssetQuoteRaw(p_assetId, newDailyNavStr);
         }
     }
 }

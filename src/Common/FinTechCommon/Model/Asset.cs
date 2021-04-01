@@ -140,7 +140,7 @@ namespace FinTechCommon
 		Unknown = -1
 	}
 
-	class Split
+	public class Split
     {
         public DateTime Date { get; set; }
 
