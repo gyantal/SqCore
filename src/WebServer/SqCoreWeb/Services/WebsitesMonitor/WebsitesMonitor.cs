@@ -65,7 +65,7 @@ namespace SqCoreWeb
             string? webpage = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
 
             StrongAssert.True(!String.IsNullOrEmpty(webpage), Severity.ThrowException, "Error in Overmind.CheckSpIndexChanges().DownloadStringWithRetry()");
-            
+
             // "<li class=\"meta-data-date\">Mar 24, 2021</li>\n                                       <li class=\"meta-data-date\">5:15 PM</li>\n"
             // Skip the first split and assume every second <li> is a Date, every second <li> is a time for that day.
             // It is enough to check the first entry.
@@ -80,10 +80,10 @@ namespace SqCoreWeb
             int pos4 = webpage.IndexOf("</li>\n", pos3);
             ReadOnlySpan<char> pageSpan1 = webpage.AsSpan().Slice(pos1, pos2 - pos1); // 'ReadOnlySpan<char>' cannot be declared in async methods or lambda expressions.
             ReadOnlySpan<char> pageSpan2 = webpage.AsSpan().Slice(pos3, pos4 - pos3);
-            string firstDateTime = String.Concat(pageSpan1, " ", pageSpan2);
+            string firstDateTimeStr = String.Concat(pageSpan1, " ", pageSpan2);
 
-            Utils.Logger.Info($"CheckSpIndexChanges() firstDateTime: '{firstDateTime}'");
-            DateTime firstDateET = DateTime.ParseExact(firstDateTime, "MMM dd, yyyy h:mm tt", null);
+            Utils.Logger.Info($"CheckSpIndexChanges() firstDateTime: '{firstDateTimeStr}'");
+            DateTime firstDateET = ParseSpglobalDateStr(firstDateTimeStr);
             bool isLatestNewsTodayAfterClose = firstDateET.Date == DateTime.UtcNow.FromUtcToEt().Date && firstDateET.Hour >= 16;
             if (isLatestNewsTodayAfterClose)
             {
@@ -99,6 +99,12 @@ namespace SqCoreWeb
                 new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();
                 new Email { ToAddresses = Utils.Configuration["Emails:Charm0"], Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();
             }
+        }
+
+        // xUnit test Examples: "Apr 5, 2021 5:15 PM"
+        public static DateTime ParseSpglobalDateStr(string p_firstDateTime)
+        {
+            return DateTime.ParseExact(p_firstDateTime, "MMM d, yyyy h:mm tt", null);
         }
     }
 }

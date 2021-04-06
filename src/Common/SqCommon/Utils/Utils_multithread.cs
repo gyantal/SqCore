@@ -12,6 +12,7 @@ namespace SqCommon
     public static partial class Utils
     {
         // How to run async method synchronously  (see MultithreadTips.txt)
+        // Use it rarely. In general it is a bad practice: you should implement both async and sync version of a library and call the sync one without a wrapper.
         // https://stackoverflow.com/questions/5095183/how-would-i-run-an-async-taskt-method-synchronously
         // This confirms that GetResult() will not create AggregateExceptions
         // "int result = BlahAsync().GetAwaiter().GetResult();"

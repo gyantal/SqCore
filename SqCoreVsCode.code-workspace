@@ -35,5 +35,6 @@
 		"js/ts.implicitProjectConfig.experimentalDecorators": true,
 		"editor.linkedEditing": true,
 		"files.autoSaveDelay": 1500,
+		"dotnet-test-explorer.testProjectPath": "../*.tests",
 	}
 }
