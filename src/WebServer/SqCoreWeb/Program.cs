@@ -39,7 +39,7 @@ namespace SqCoreWeb
         static long gNheartbeat = 0;
         const int cHeartbeatTimerFrequencyMinutes = 10;
 
-        public static void Main(string[] args)
+        public static void Main(string[] args)   // entry point Main cannot be flagged as async, because at first await, Main thread would go back to Threadpool, but that terminates the Console app
         {
             string appName = System.Reflection.MethodBase.GetCurrentMethod()?.ReflectedType?.Namespace ?? "UnknownNamespace";
             string systemEnvStr = $"(v1.0.15,{Utils.RuntimeConfig() /* Debug | Release */},CLR:{System.Environment.Version},{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},OS:{System.Environment.OSVersion},usr:{System.Environment.UserName},CPU:{System.Environment.ProcessorCount},ThId-{Thread.CurrentThread.ManagedThreadId})";
@@ -105,7 +105,7 @@ namespace SqCoreWeb
                 string userInput = string.Empty;
                 do
                 {
-                    userInput = DisplayMenuAndExecute();
+                    userInput = DisplayMenuAndExecute().Result;  // we cannot 'await' it, because Main thread would terminate, which would close the whole Console app.
                 } while (userInput != "UserChosenExit" && userInput != "ConsoleIsForcedToShutDown");
             }
             catch (Exception e)
@@ -139,7 +139,7 @@ namespace SqCoreWeb
         }
 
         static bool gIsFirstCall = true;
-        static public string DisplayMenuAndExecute()
+        static public async Task<string> DisplayMenuAndExecute()
         {
             if (!gIsFirstCall)
                 Console.WriteLine();
@@ -151,8 +151,10 @@ namespace SqCoreWeb
             Console.WriteLine("3. Elapse Task: Overmind, Trigger1-MorningCheck");
             Console.WriteLine("4. Elapse Task: Overmind, Trigger2-MiddayCheck");
             Console.WriteLine("5. Elapse Task: WebsitesMonitor, Crawl SpIndexChanges");
-            Console.WriteLine("6. Elapse Task: VBroker-HarryLong (First Simulation)");
-            Console.WriteLine("7. Elapse Task: VBroker-UberVxx (First Simulation)");
+            Console.WriteLine("6. MemDb: Force Reload only HistData And SetNewTimer");
+            Console.WriteLine("7. MemDb: Reload All DbData Only If Changed");
+            Console.WriteLine("X. Elapse Task: VBroker-HarryLong (First Simulation)");
+            Console.WriteLine("X. Elapse Task: VBroker-UberVxx (First Simulation)");
             Console.WriteLine("9. Exit gracefully (Avoid Ctrl-^C).");
             string userInput = string.Empty;
             try
@@ -182,6 +184,12 @@ namespace SqCoreWeb
                     break;
                 case "5":
                     SqTaskScheduler.gTaskScheduler.TestElapseTrigger("WebsitesMonitor", 0);
+                    break;
+                case "6":
+                    Console.WriteLine((await MemDb.gMemDb.ReloadHistData(false)).ToString());
+                    break;
+                case "7":
+                    Console.WriteLine((await MemDb.gMemDb.ReloadDbDataIfChanged(false)).ToString());
                     break;
                 case "9":
                     return "UserChosenExit";

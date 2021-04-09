@@ -36,7 +36,7 @@ namespace SqCoreWeb
         }
         public static void PreInit()
         {
-            MemDb.gMemDb.EvAssetDataReloaded += new MemDb.MemDbEventHandler(EvMemDbAssetDataReloaded);
+            MemDb.gMemDb.EvDbDataReloaded += new MemDb.MemDbEventHandler(EvMemDbAssetDataReloaded);
             MemDb.gMemDb.EvHistoricalDataReloaded += new MemDb.MemDbEventHandler(EvMemDbHistoricalDataReloaded);
         }
 

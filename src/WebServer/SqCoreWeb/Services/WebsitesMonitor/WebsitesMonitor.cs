@@ -96,8 +96,7 @@ namespace SqCoreWeb
                 sb.Append($"<strong>Action: </strong><br/> Go to <a href=\"{url}\">the site</a> and read the latest news.");
                 sb.Append(Email.g_htmlEmailEnd);
                 string emailHtmlBody = sb.ToString();
-                new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();
-                new Email { ToAddresses = Utils.Configuration["Emails:Charm0"], Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();
+                new Email { ToAddresses = String.Concat(Utils.Configuration["Emails:Gyant"], ";", Utils.Configuration["Emails:Charm0"]), Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();
             }
         }
 

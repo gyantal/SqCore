@@ -172,8 +172,6 @@ namespace FinTechCommon
 
             var ts1 = new CompactFinTimeSeries<DateOnly, uint, float, uint>();
             ts1.ChangeData(dates, data);
-
-
         }
 
         public CompactFinTimeSeries()
@@ -181,6 +179,11 @@ namespace FinTechCommon
             var values = new Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>>();
             TsDateData<TKey, TAssetId, TValue1, TValue2> data = new TsDateData<TKey, TAssetId, TValue1, TValue2>(new TKey[0], values);
             m_data = data;  // 64 bit values are atomic on x64
+        }
+
+        public CompactFinTimeSeries(TKey[] p_dates, Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>> p_data)
+        {
+            m_data = new TsDateData<TKey, TAssetId, TValue1, TValue2>(p_dates, p_data);
         }
 
         // ChangeData() will replace a pointer in an atomic way

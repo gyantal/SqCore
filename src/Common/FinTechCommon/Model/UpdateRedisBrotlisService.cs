@@ -1,8 +1,6 @@
 using System;
 using System.Threading;
 using SqCommon;
-using StackExchange.Redis;
-
 
 namespace FinTechCommon
 {
@@ -61,7 +59,7 @@ namespace FinTechCommon
                 Utils.Logger.Info($"Some Brotlis were updated in RedisDb.");
 
             // if any brotli was updated, do NOT invoke Reload. It is not the task of this service.
-            // ReloadAssetsDataIfChangedAndSetTimer();
+            // ReloadDbDataIfChangedAndSetTimer();
         }
 
     }

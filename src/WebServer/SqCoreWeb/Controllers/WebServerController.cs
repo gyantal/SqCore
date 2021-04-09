@@ -76,6 +76,22 @@ namespace SqCoreWeb.Controllers
         }
 
         [HttpGet]
+        public async Task<ActionResult> MemDbReloadHistData()
+        {
+            StringBuilder sb = new StringBuilder(@"<HTML><body><h1>MemDb: Force Reload Only Historical Data and Set New Timer</h1>");
+            StringBuilder memDbSb = await MemDb.gMemDb.ReloadHistData(true);
+            return Content(sb.Append(memDbSb).Append("</body></HTML>").ToString(), "text/html");
+        }
+
+        [HttpGet]
+        public async Task<ActionResult> MemDbReloadDbData()
+        {
+            StringBuilder sb = new StringBuilder(@"<HTML><body><h1>MemDb: Reload All Db Data only If changed and Set New Timer</h1>");
+            StringBuilder memDbSb = await MemDb.gMemDb.ReloadDbDataIfChanged(true);
+            return Content(sb.Append(memDbSb).Append("</body></HTML>").ToString(), "text/html");
+        }
+
+        [HttpGet]
         public ActionResult TaskSchedulerNextTimes()
         {
             StringBuilder sb = new StringBuilder(@"<HTML><body><h1>TaskScheduler Next Times</h1>");
