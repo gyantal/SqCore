@@ -18,7 +18,7 @@ namespace SqCoreWeb
     class RtMktSummaryStock
     {
         public uint AssetId { get; set; } = 0; // invalid value is best to be 0. If it is Uint32.MaxValue is the invalid, then problems if extending to Uint64
-        public String Ticker { get; set; } = string.Empty;
+        public String SqTicker { get; set; } = string.Empty;
     }
 
     class RtMktSumRtStat   // struct sent to browser clients every 2-4 seconds
@@ -34,7 +34,7 @@ namespace SqCoreWeb
     public class RtMktSumNonRtStat   // this is sent to clients usually just once per day, OR when historical data changes, OR when the PeriodStartDate changes at the client
     {
         public uint AssetId { get; set; } = 0;        // set the Client know what is the assetId, because RtStat will not send it.
-        public String Ticker { get; set; } = string.Empty;
+        public String SqTicker { get; set; } = string.Empty;
 
         public DateTime PeriodStartDate { get; set; } = DateTime.MinValue;
         public DateTime PeriodEndDate { get; set; } = DateTime.MinValue;
@@ -73,14 +73,14 @@ namespace SqCoreWeb
         List<RtMktSummaryStock> m_mktSummaryStocks = new List<RtMktSummaryStock>() { // this list can be market specific
             // DC.NAV is the aggregate of DC.IM.NAV + DC.ID.NAV. "BrNAV": It is good if there is a lowercase character in it, to show that it is different.
             //new RtMktSummaryStock() { Ticker = "GA.IM.NAV"},
-            new RtMktSummaryStock() { Ticker = g_brNavVirtualTicker},    // BrNAV or any other ticker can be user specific. It can be different for every user. Don't even add it to global.
-            new RtMktSummaryStock() { Ticker = "QQQ"},
-            new RtMktSummaryStock() { Ticker = "SPY"},
-            new RtMktSummaryStock() { Ticker = "GLD"},
-            new RtMktSummaryStock() { Ticker = "TLT"},
-            new RtMktSummaryStock() { Ticker = "VXX"},
-            new RtMktSummaryStock() { Ticker = "UNG"},
-            new RtMktSummaryStock() { Ticker = "USO"}};
+            new RtMktSummaryStock() { SqTicker = g_brNavVirtualTicker},    // BrNAV or any other ticker can be user specific. It can be different for every user. Don't even add it to global.
+            new RtMktSummaryStock() { SqTicker = "S/QQQ"},
+            new RtMktSummaryStock() { SqTicker = "S/SPY"},
+            new RtMktSummaryStock() { SqTicker = "S/GLD"},
+            new RtMktSummaryStock() { SqTicker = "S/TLT"},
+            new RtMktSummaryStock() { SqTicker = "S/VXX"},
+            new RtMktSummaryStock() { SqTicker = "S/UNG"},
+            new RtMktSummaryStock() { SqTicker = "S/USO"}};
 
         string m_lastLookbackPeriodStr = "YTD";
 
@@ -93,10 +93,10 @@ namespace SqCoreWeb
             // fill up AssetId based on Tickers. For faster access later.
             foreach (var stock in m_mktSummaryStocks)
             {
-                string ticker = stock.Ticker;
+                string ticker = stock.SqTicker;
                 Asset? sec;
-                if (stock.Ticker != g_brNavVirtualTicker)
-                    sec = MemDb.gMemDb.AssetsCache.GetFirstMatchingAssetByLastTicker(ticker);
+                if (stock.SqTicker != g_brNavVirtualTicker)
+                    sec = MemDb.gMemDb.AssetsCache.GetAsset(ticker);
                 else // Broker NAV
                     sec = GetSelectableNavsOrdered()[0];
                 stock.AssetId = sec!.AssetId;
@@ -179,9 +179,10 @@ namespace SqCoreWeb
                     SendHistoricalWs();
                     return true;
                 case "changeNav":
-                    Utils.Logger.Info($"OnReceiveWsAsync_MktHealth(): changeNav to '{msgObjStr}'");
-                    var navAsset = MemDb.gMemDb.AssetsCache.GetFirstMatchingAssetByLastTicker(msgObjStr);
-                    RtMktSummaryStock? navStock = m_mktSummaryStocks.FirstOrDefault(r => r.Ticker == g_brNavVirtualTicker);
+                    Utils.Logger.Info($"OnReceiveWsAsync_MktHealth(): changeNav to '{msgObjStr}'"); // DC.IM.NAV
+                    string sqTicker = "N/" + msgObjStr.Replace(".NAV", ""); // turn DC.IM.NAV to N/DC.IM
+                    var navAsset = MemDb.gMemDb.AssetsCache.GetAsset(sqTicker);
+                    RtMktSummaryStock? navStock = m_mktSummaryStocks.FirstOrDefault(r => r.SqTicker == g_brNavVirtualTicker);
                     if (navStock != null)
                         navStock.AssetId = navAsset!.AssetId;
 
@@ -277,7 +278,7 @@ namespace SqCoreWeb
                 var rtStock = new RtMktSumNonRtStat()
                 {
                     AssetId = r.AssetId,
-                    Ticker = r.Ticker, // DateTime.MaxValue: {9999-12-31 23:59:59}
+                    SqTicker = r.SqTicker, // DateTime.MaxValue: {9999-12-31 23:59:59}
                     PeriodStartDate = (iStockFirstDay >= 0) ? (DateTime)dates[iStockFirstDay] : DateTime.MaxValue,    // it may be not the 'asked' start date if asset has less price history
                     PeriodEndDate = (iStockEndDay >= 0) ? (DateTime)dates[iStockEndDay] : DateTime.MaxValue,        // by default it is the date of yesterday, but the user can change it
                     PeriodStart = (iStockFirstDay >= 0) ? sdaCloses[iStockFirstDay] : Double.NaN,
@@ -311,39 +312,39 @@ namespace SqCoreWeb
         private HandshakeMktHealth GetHandshakeMktHlth()
         {
             //string selectableNavs = "GA.IM.NAV, DC.NAV, DC.IM.NAV, DC.IB.NAV";
-            List<Asset> selectableNavs = GetSelectableNavsOrdered();
-            string selectableNavsCSV = String.Join(',', selectableNavs.Select(r => r.LastTicker));
+            List<BrokerNav> selectableNavs = GetSelectableNavsOrdered();
+            string selectableNavsCSV = String.Join(',', selectableNavs.Select(r => r.Symbol + ".NAV")); // on the UI, postfix ".NAV" looks better than prefix "N/"
             return new HandshakeMktHealth() { SelectableNavs = selectableNavsCSV };
         }
 
-        List<Asset> GetSelectableNavsOrdered()
+        List<BrokerNav> GetSelectableNavsOrdered()
         {
             // SelectableNavs is an ordered list of tickers. The first item is user specific. User should be able to select between the NAVs. DB, Main, Aggregate.
             // bool isAdmin = UserEmail == Utils.Configuration["Emails:Gyant"].ToLower();
             // if (isAdmin) // Now, it is not used. Now, every Google email user with an email can see DC NAVs. Another option is that only Admin users (GA,BL,LN) can see the DC user NAVs.
             var user = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == UserEmail);
-            List<Asset> selectableNavs = new List<Asset>();
+            List<BrokerNav> selectableNavs = new List<BrokerNav>();
 
-            var userNavAssets = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.User == user && r.AssetId.AssetTypeID == AssetType.BrokerNAV).ToArray();
-            Asset? aggNavAsset = userNavAssets.FirstOrDefault(r => r.LastTicker == r.User!.Initials + ".NAV");
+            BrokerNav[] userNavAssets = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV && (r as BrokerNav)!.User == user).Select(r => (BrokerNav)r).ToArray();
+            BrokerNav? aggNavAsset = userNavAssets.FirstOrDefault(r => r.IsAggregatedNav);
             if (aggNavAsset != null)
-                selectableNavs.Add(aggNavAsset);
+                selectableNavs.Add(aggNavAsset);    // Add AggNav first, so it is the first in the list.
             foreach (var nav in userNavAssets)
             {
                 if (nav != aggNavAsset)
                     selectableNavs.Add(nav);
             }
 
-            var dcUser = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == Utils.Configuration["Emails:Charm0"].ToLower());
+            User? dcUser = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == Utils.Configuration["Emails:Charm0"].ToLower());
             if (user != dcUser) // if user is dcUser, then don't add NAVs twice
             {
-                var dcUserNavAssets = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.User == dcUser && r.AssetId.AssetTypeID == AssetType.BrokerNAV).ToArray();
-                Asset? aggNavAssetDC = dcUserNavAssets.FirstOrDefault(r => r.LastTicker == r.User!.Initials + ".NAV");
+                BrokerNav[] dcUserNavAssets = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV && (r as BrokerNav)!.User == dcUser).Select(r => (BrokerNav)r).ToArray();
+                BrokerNav? aggNavAssetDC = dcUserNavAssets.FirstOrDefault(r => r.IsAggregatedNav);
                 if (aggNavAssetDC != null)
                     selectableNavs.Add(aggNavAssetDC);
                 foreach (var nav in dcUserNavAssets)
                 {
-                    if (nav != aggNavAssetDC)
+                    if (nav != aggNavAssetDC && nav.SqTicker != "N/DC.TM")  // Don't add TradeStation DC.TM to list.
                         selectableNavs.Add(nav);
                 }
             }

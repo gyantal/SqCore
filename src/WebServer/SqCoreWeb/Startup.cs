@@ -187,7 +187,6 @@ namespace SqCoreWeb
                         OnCreatingTicket = context =>
                         {
                             Utils.Logger.Info("GoogleAuth.OnCreatingTicket(), User: " + context.User);
-                            // string email = context.User.Value<Newtonsoft.Json.Linq.JArray>("emails")[0]["value"].ToString();
                             // Utils.Logger.Debug($"[Authorize] attribute forced Google auth. Email:'{email ?? "null"}', RedirectUri: '{context.Properties.RedirectUri ?? "null"}'");
 
                             // if (!Utils.IsAuthorizedGoogleUsers(Utils.Configuration, email))

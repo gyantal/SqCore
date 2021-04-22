@@ -3,30 +3,27 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
+using System.Text.Json;
 using SqCommon;
 
 namespace FinTechCommon
 {
-    [DebuggerDisplay("LastTicker = {LastTicker}, AssetId({AssetId})")]
+    // All Assets gSheet: https://docs.google.com/spreadsheets/d/1gkZlvD5epmBV8zi-l0BbLaEtwScvhHvHOYFZ4Ah_MA4/edit#gid=898941432
+
+    [DebuggerDisplay("SqTicker = {SqTicker}, AssetId({AssetId})")]
     public class Asset
     {
-        public AssetId32Bits AssetId { get; set; } = AssetId32Bits.Invalid; // invalid value is best to be 0. If it is Uint32.MaxValue is the invalid, then problems if extending to Uint64
-        public string LastTicker { get; set; } = string.Empty;  // a security has a LastTicker Now, but in the past it might have a different ticker before ticker rename
-        public List<TickerChange> TickerChanges { get; set; } = new List<TickerChange>();
-		public bool IsAlive {	 // Maybe it is not necessary to store in DB. If a VXX becomes dead, we can change LastTicker = "VXX-20190130", so actually IsAlive can be computed
-			get { return LastTicker.IndexOf('-') == -1; }	// '-' should not be in the last ticker
-		}	
+        public AssetId32Bits AssetId { get; set; } = AssetId32Bits.Invalid; // Unique assetId for code. Faster than SqTicker. Invalid value is best to be 0. If it is Uint32.MaxValue is the invalid, then problems if extending to Uint64
+		public string Symbol { get; set; } = string.Empty;	// can be shown on the UI
+		public string Name { get; set; } = string.Empty;
+		public string ShortName { get; set; } = string.Empty;
+		public CurrencyId Currency { get; set; } = CurrencyId.USD;  // if stocks with different currencies are in the portfolio they have to be converted to USD, if they are not. IB has a BaseCurrency of the account. We use USD as the base currency of the program. Every calculations are based in the USD form.
 
-		public string LastName { get; set; } = string.Empty;
-		public List<string> NameChanges { get; set; } = new List<string>();
+		public string SqTicker { get; set; } = string.Empty;    // Unique assetId for humans to read. Better to store it as static field then recalculating at every request in derived classes
 
-		// Stock specific fields:
-		public CurrencyId Currency { get; set; } = CurrencyId.USD;	// if stocks with different currencies are in the portfolio they have to be converted to USD, if they are not. IB has a BaseCurrency of the account. We use USD as the base currency of the program. Every calculations are based in the USD form.
-   		public String ISIN { get; set; } = string.Empty;    // International Securities Identification Number would be a unique identifier. Not used for now.
-        public ExchangeId PrimaryExchange { get; set; } = ExchangeId.Unknown; // different assed with the same "VOD" ticker can exist in LSE, NYSE; YF uses "VOD" and "VOD.L"
-        public string ExpectedHistorySpan { get; set; } = string.Empty;		// comes from RedisDb
-		public DateTime ExpectedHistoryStartDateET { get; set; } = DateTime.MaxValue;   // process ExpectedHistorySpan after Assets Reload, so we don't have to do it 3x per day at historical price reload
         private float m_lastValue = float.NaN; // field
+        public DateTime LastValueUtc { get; set; } = DateTime.MinValue;
         public float LastValue // real-time last price. Value is better than Price, because NAV, and ^VIX index has value, but it is not a price.
         {
             get { return m_lastValue; }
@@ -36,115 +33,198 @@ namespace FinTechCommon
                 LastValueUtc = DateTime.UtcNow;
             }
         }
-        public DateTime LastValueUtc { get; set; } = DateTime.MinValue;
+		public Asset()
+        {
+        }
 
-		public User? User { get; set; } = null;		// *.NAV assets have user_id data
+		public Asset(AssetId32Bits assetId, string symbol, string name, string shortName, CurrencyId currency)
+		{
+			AssetId = assetId;
+            Symbol = symbol;
+            Name = name;
+            ShortName = shortName;
+			Currency = currency;
 
-		public bool IsAggregatedNav {
-			get { return AssetId.AssetTypeID == AssetType.BrokerNAV && (LastTicker.Count('.') < 2); }	// GA.IM.NAV, DC.IM.NAV, DC.ID.NAV, DC.NAV , AggregatedNav has only one '.'.
+			SqTicker = AssetHelper.gAssetTypeCode[AssetId.AssetTypeID] + "/" + Symbol;
 		}
+
+
+        public Asset(AssetType assetType, JsonElement row)
+        {
+            AssetId = new AssetId32Bits(assetType, uint.Parse(row[0].ToString()!));
+            Symbol = row[1].ToString()!;
+            Name = row[2].ToString()!;
+            ShortName = row[3].ToString()!;
+
+			string baseCurrencyStr = row[4].ToString()!;
+            if (String.IsNullOrEmpty(baseCurrencyStr))
+                baseCurrencyStr = "USD";
+            Currency = AssetHelper.gStrToCurrency[baseCurrencyStr];
+
+			SqTicker = AssetHelper.gAssetTypeCode[assetType] + "/" + Symbol;	// by default it is good for most Assets. "C/EUR", "D/GBP.USD", "N/DC.IM"
+        }
+
+		public static string BasicSqTicker(AssetType assetType, string symbol)
+		{
+			return AssetHelper.gAssetTypeCode[assetType] + "/" + symbol;
+		}
+
     }
 
-	public class AssetInDb	// for quick JSON deserialization. In DB the fields has short names, and not all Asset fields are in the DB anyway
+	public class Cash : Asset
     {
-		public AssetType Type { get; set; } = AssetType.Unknown;	// AssetType
-        public uint ID { get; set; } = 0; // invalid value is best to be 0. If it is Uint32.MaxValue is the invalid, then problems if extending to Uint64
-        public string Ticker { get; set; } = string.Empty;  // a security has a LastTicker Now, but in the past it might have a different ticker before ticker rename
-		public string TickerHist { get; set; } = string.Empty;
-		public string Name { get; set; } = string.Empty;
+        public Cash(JsonElement row) : base(AssetType.CurrencyCash, row)
+        {
+        }
+	}
+
+    public class CurrPair : Asset
+    {
+		public CurrencyId TargetCurrency { get; set; } = CurrencyId.Unknown;
+		public string TradingSymbol { get; set; } = string.Empty;
+
+		public DateTime ExpectedHistoryStartDateLoc { get; set; } = DateTime.MaxValue; // not necessarily ET. Depends on the asset.
+
+		public CurrPair(JsonElement row) : base(AssetType.CurrencyPair, row)
+        {
+            string symbol = row[1].ToString()!;
+            int iDot = symbol.IndexOf('.');
+            string targetCurrencyStr = iDot == -1 ? symbol : symbol.Substring(0, iDot); // prepared for symbol "HUF.EUR" or "HUF". But we choose the symbol without the '.'
+
+            TargetCurrency = AssetHelper.gStrToCurrency[targetCurrencyStr];
+            TradingSymbol = row[5].ToString()!;
+
+			string baseCurrencyStr = row[4].ToString()!;
+            if (String.IsNullOrEmpty(baseCurrencyStr))
+                baseCurrencyStr = "USD";
+			SqTicker = SqTicker + "." + baseCurrencyStr;	// The default SqTicker just add the "D/HUF", the target currency. But we have to add the base currency as for the pair to be unique.
+        }
+    }
+
+	public class RealEstate : Asset
+    {
+		public User? User { get; set; } = null;
+
+		public RealEstate(JsonElement row, User[] users) : base(AssetType.RealEstate, row)
+        {
+			User = users.FirstOrDefault(r => r.Username == row[5].ToString()!);
+        }
+	}
+
+	public class BrokerNav : Asset
+    {
+		public User? User { get; set; } = null;
+
+		public DateTime ExpectedHistoryStartDateLoc { get; set; } = DateTime.MaxValue;	// not necessarily ET. Depends on the asset.
+
+		public BrokerNav(JsonElement row, User[] users) : base(AssetType.BrokerNAV, row)
+        {
+			User = users.FirstOrDefault(r => r.Username == row[5].ToString()!);
+			if (User == null)
+				throw new SqException($"BrokerNAV asset '{SqTicker}' should have a user.");
+        }
+
+		public BrokerNav(AssetId32Bits assetId, string symbol, string name, string shortName, CurrencyId currency, User user, DateTime histStartDate)
+			: base(assetId, symbol, name, shortName, currency)
+        {
+			User = user;
+			ExpectedHistoryStartDateLoc = histStartDate;
+        }
+
+        public bool IsAggregatedNav
+        {
+            get { return (SqTicker.Count('.') == 0); }   // N/GA.IM, N/DC.IM, N/DC.ID, N/DC , AggregatedNav has no '.'.
+        }
+    }
+
+	public class Portfolio : Asset
+    {
+		public User? User { get; set; } = null;
+
+		public Portfolio(JsonElement row, User[] users) : base(AssetType.Portfolio, row)
+        {
+			User = users.FirstOrDefault(r => r.Username == row[5].ToString()!);
+        }
+	}
+
+	public class Company : Asset
+    {
+		public string ExpirationDate { get; set; } = string.Empty;	// maybe convert it to DateTime in the future
+
+		public string SymbolHist { get; set; } = string.Empty;
 		public string NameHist { get; set; } = string.Empty;
-		public string PrimExchg { get; set; } = string.Empty;
-		public string user_id { get; set; } = string.Empty;		// *.NAV assets have user_id data
-    }
 
-	public class SqCoreWebAssetInDb	// for quick JSON deserialization. In DB the fields has short names, and not all Asset fields are in the DB anyway
+		public string GicsSector { get; set; } = string.Empty;
+		public string GicsSubIndustry { get; set; } = string.Empty;
+		public Company(JsonElement row) : base(AssetType.Company, row)
+        {
+			ExpirationDate = row[5].ToString()!;
+			SymbolHist = row[6].ToString()!;
+			NameHist = row[7].ToString()!;
+			GicsSector = row[8].ToString()!;
+			GicsSubIndustry = row[9].ToString()!;
+
+			if (!string.IsNullOrEmpty(ExpirationDate))
+				SqTicker = SqTicker + "*" + ExpirationDate;
+        }
+
+	}
+
+	public class Stock : Asset
     {
-        public string AssetId { get; set; } = string.Empty;
-		public string LoadPrHist { get; set; } = string.Empty;
-    }
+		public StockType StockType { get; set; } = StockType.Unknown;
+		public string PrimaryExchange { get; set; } = string.Empty;
+		public ExchangeId PrimaryExchangeId { get; set; } = ExchangeId.Unknown; // different assed with the same "VOD" ticker can exist in LSE, NYSE; YF uses "VOD" and "VOD.L"
+		
+		public string TradingSymbol { get; set; } = string.Empty;
 
-    public class TickerChange {
-        public DateTime TimeUtc { get; set; } = DateTime.MinValue;
-        public String Ticker { get; set; } = string.Empty;
-    }
+		public string ExpirationDate { get; set; } = string.Empty;	// maybe convert it to DateTime in the future
 
-    public enum ExchangeId : sbyte // differs from dbo.StockExchange, which is 'int'
-	{
-		NASDAQ = 1,
-		NYSE = 2,
-		[Description("NYSE MKT LLC")]
-		AMEX = 3,
-		[Description("Pink OTC Markets")]
-		PINK = 4,
-		CDNX = 5,       // Canadian Venture Exchange, postfix: ".V"
-		LSE = 6,        // London Stock Exchange, postfix: ".L"
-		[Description("XTRA")]
-		XETRA = 7,      // Exchange Electronic Trading (Germany)
-		CBOE = 8,
-		[Description("NYSE ARCA")]
-		ARCA = 9,
-		BATS = 10,
-		[Description("OTC Bulletin Boards")]
-		OTCBB = 11,
+		public string SymbolHist { get; set; } = string.Empty;
+		public string NameHist { get; set; } = string.Empty;
 
-		Unknown = -1    // BooleanFilterWith1CacheEntryPerAssetID.CacheRec.StockExchangeID exploits that values fit in an sbyte
-		                // TickerProvider.OldStockTickers exploits that values fit in a byte
-	}
+		public string YfTicker { get; set; } = string.Empty;
+		public string Flags { get; set; } = string.Empty;
+		public string ISIN { get; set; } = string.Empty; // International Securities Identification Number would be a unique identifier. Not used for now.
 
-	public enum CurrencyId : byte   // there are 192 countries in the world, and less than 192 currencies
-	{                               // PortfolioEvaluator.BulkPreparer.Plan() exploits that all values are in 1..62
-		USD = 1,
-		EUR = 2,
-		GBX = 3,
-		JPY = 4,
-		HUF = 5,
-		CNY = 6,
-		CAD = 7,
-        CHF = 8,
-        ILS = 9,
-		Unknown = 255
-        // Some routines use ~GBX == 252 to indicate GBP, e.g. DBUtils.ConvertToUsd(),ConvertFromUsd(),YQCrawler.CurrencyConverter etc.
-	}
+		public Asset? Company { get; set; } = null;	// if not StockType.ETF
 
+		public DateTime ExpectedHistoryStartDateLoc { get; set; } = DateTime.MaxValue; // not necessarily ET. Depends on the asset.
 
-	public enum CountryId : byte    // there are 192 countries in the world. warning: 2009-06: the Company.BaseCountryID is in reality CountryCode
-	{
-		UnitedStates = 1,
-		UnitedKingdom = 2,
-		China = 3,
-		Japan = 4,
-		Germany = 5,
-		France = 6,
-		Canada = 7,
-		Russia = 8,
-		Brazil = 9,
-		India = 10,
-		Hungary = 11,
+		public Stock(JsonElement row, List<Asset> assets) : base(AssetType.Stock, row)
+        {
+			StockType = AssetHelper.gStrToStockType[row[5].ToString()!];
+			PrimaryExchange = row[6].ToString()!;
+			TradingSymbol = string.IsNullOrEmpty(row[7].ToString()) ? Symbol : row[7].ToString()!; // if not given, use Symbol by default
+			ExpirationDate = row[8].ToString()!;
+			SymbolHist = row[9].ToString()!;
+			NameHist = row[10].ToString()!;
+			YfTicker = string.IsNullOrEmpty(row[11].ToString()) ? Symbol : row[11].ToString()!; // if not given, use Symbol by default
+			Flags = row[12].ToString()!;
+			ISIN = row[13].ToString()!;
 
-        // DBUtils.g_defaultMarketHolidays exploits that 0 < CountryID.USA,UK,Germany < 20
+            if (StockType != StockType.ETF)
+            {
+                string companySqTicker = row[14].ToString()!;
+				if (String.IsNullOrEmpty(companySqTicker))	// if not specified, assume the Stock.Symbol
+					companySqTicker = Symbol;
+                string seekedSqTicker = AssetHelper.gAssetTypeCode[AssetType.Company] + "/" + companySqTicker;
+                var comps = assets.FindAll(r => r.AssetId.AssetTypeID == AssetType.Company && r.SqTicker == seekedSqTicker);
+                if (comps == null)
+                    throw new SqException($"Company SqTicker '{seekedSqTicker}' was not found.");
+                if (comps.Count > 1)
+                    throw new SqException($"To many ({comps.Count}) Company SqTicker '{seekedSqTicker}' was found.");
+				Company = comps[0];
+            }
+			if (!string.IsNullOrEmpty(PrimaryExchange))
+				SqTicker = SqTicker + "^" + PrimaryExchange[0];
+			if (!string.IsNullOrEmpty(ExpirationDate))
+				SqTicker = SqTicker + "*" + ExpirationDate;
+		}
 
-		Unknown = 255
-	}
-
-	
-	public enum StockIndexId : short    // According to dbo.StockIndex
-	{
-		SP500 = 1,
-		VIX,
-		Nasdaq,
-		DowJones,
-		Russell2000,
-		Russell1000,
-		PHLX_Semiconductor,
-		VXN,
-		Unknown = -1
-	}
-
-	public class Split
-    {
-        public DateTime Date { get; set; }
-
-		public double Before { get; set; }
-		public double After { get; set; }
+        public bool IsAlive
+        {    // Maybe it is not necessary to store in DB. If a VXX becomes dead, we can change LastTicker = "VXX-20190130", so actually IsAlive can be computed
+            get { return ExpirationDate == string.Empty; }   // '-' should not be in the last ticker
+        }
     }
 }

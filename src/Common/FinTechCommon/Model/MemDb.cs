@@ -119,11 +119,20 @@ namespace FinTechCommon
 
         public void ServerDiagnostic(StringBuilder p_sb)
         {
-            int memUsedKb = DailyHist.GetDataDirect().MemUsed() / 1024;
+            var hist = DailyHist.GetDataDirect();
+            int memUsedKb = hist.MemUsed() / 1024;
             p_sb.Append("<H2>MemDb</H2>");
-            p_sb.Append($"Historical: #SqCoreWebAssets+virtualNavs: {AssetsCache.Assets.Count}. ({String.Join(',', AssetsCache.Assets.Select(r => r.LastTicker))}). Used RAM: {memUsedKb:N0}KB<br>");
-            p_sb.Append($"m_lastDbReloadTs {m_lastDbReloadTs.TotalSeconds:0.0}sec, m_lastHistoricalDataReloadTs {m_lastHistoricalDataReloadTs.TotalSeconds:0.0}sec,.<br>");
+            p_sb.Append($"#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {hist.Data.Count}, Used RAM: {memUsedKb:N0}KB<br>");  // hist.Data.Count = Srv.LoadPrHist + DC Aggregated NAV 
+            var lastDbReloadWithoutHist = m_lastDbReloadTs - m_lastHistoricalDataReloadTs;
+            p_sb.Append($"lastDbReloadWithoutHist {lastDbReloadWithoutHist.TotalSeconds:0.000}sec, m_lastHistoricalDataReloadTs {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec,.<br>");
+            
+            var yfTickers = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).Select(r => ((Stock)r).YfTicker).ToArray();
+            p_sb.Append($"StockAssets (#{yfTickers.Length}): ");
+            p_sb.AppendLongListByLine(yfTickers, ",", 10, "<br>");
+            p_sb.Append($"<br><br>");
+
             ServerDiagnosticRealtime(p_sb);
+            p_sb.Append($"<br>");
             ServerDiagnosticNavRealtime(p_sb);
         }
 
@@ -139,7 +148,7 @@ namespace FinTechCommon
             StringBuilder sb = new StringBuilder();
             await ReloadDbDataIfChangedAndSetNewTimer();
             int memUsedKb = DailyHist.GetDataDirect().MemUsed() / 1024;
-            sb.Append($"Historical: #SqCoreWebAssets+virtualNavs: {AssetsCache.Assets.Count}. ({String.Join(',', AssetsCache.Assets.Select(r => r.LastTicker))}). Used RAM: {memUsedKb:N0}KB{((p_isHtml) ? "<br>" : string.Empty)}");
+            sb.Append($"Historical: #SqCoreWebAssets+virtualNavs: {AssetsCache.Assets.Count}. ({String.Join(',', AssetsCache.Assets.Select(r => r.SqTicker))}). Used RAM: {memUsedKb:N0}KB{((p_isHtml) ? "<br>" : string.Empty)}");
             return sb;
         }
 
@@ -195,6 +204,7 @@ namespace FinTechCommon
 
         async Task ReloadDbDataIfChangedImpl()   // if necessary it reloads Historical and Realtime data
         {
+            Console.WriteLine("ReloadDbData is in progress...");
             DateTime startTime = DateTime.UtcNow;
             // GA.IM.NAV assets have user_id data, so User data has to be reloaded too before Assets
             (bool isDbReloadNeeded, User[]? newUsers, List<Asset>? sqCoreAssets) = m_Db.GetDataIfReloadNeeded();
@@ -220,6 +230,7 @@ namespace FinTechCommon
             OnReloadAssetData_ReloadRtDataAndSetTimer();    // downloads realtime prices from YF or IEX
             OnReloadAssetData_ReloadRtNavDataAndSetTimer();   // downloads realtime NAVs from VBrokers
             EvDbDataReloaded?.Invoke();
+            Console.WriteLine($"ReloadDbData END in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
         }
 
         public (User[], AssetsCache, CompactFinTimeSeries<DateOnly, uint, float, uint>) GetAssuredConsistentTables()

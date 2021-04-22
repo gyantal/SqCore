@@ -26,17 +26,17 @@ namespace FinTechCommon
 
         public void ServerDiagnosticNavRealtime(StringBuilder p_sb)
         {
-            p_sb.Append($"NavRealtime: m_nNavDownload: {m_nNavDownload} <br>");
             IEnumerable<Asset>? recentlyAskedNavAssets = m_lastRtPriceQueryTime.Where(r => r.Key.AssetId.AssetTypeID == AssetType.BrokerNAV && ((DateTime.UtcNow - r.Value) <= TimeSpan.FromSeconds(5 * 60))).Select(r => r.Key); //  if there was a function call in the last 5 minutes
-            p_sb.Append($"NavRealtime (HighFreq-RTH:{(int)(m_highNavFreqParam.FreqRthSec / 60)}min-OTH:{(int)(m_highNavFreqParam.FreqOthSec / 60)}min): NTimerPassed: {m_highNavFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_highNavFreqParam.Assets.Select(r => r.LastTicker))}', recently asket Assets:'{String.Join(',', recentlyAskedNavAssets.Select(r => r.LastTicker))}' <br>");
-            p_sb.Append($"NavRealtime (LowFreq-RTH:{(int)(m_lowNavFreqParam.FreqRthSec / 60)}min-OTH:{(int)(m_lowNavFreqParam.FreqOthSec / 60)}min): NTimerPassed: {m_lowNavFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_lowNavFreqParam.Assets.Select(r => r.LastTicker))}' <br>");
+            p_sb.Append($"NavRealtime: m_nNavDownload: {m_nNavDownload} <br>");
+            p_sb.Append($"NavRealtime (HighFreq-RTH:{(int)(m_highNavFreqParam.FreqRthSec / 60)}min-OTH:{(int)(m_highNavFreqParam.FreqOthSec / 60)}min): NTimerPassed: {m_highNavFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_highNavFreqParam.Assets.Select(r => r.SqTicker))}', recently asket Assets:'{String.Join(',', recentlyAskedNavAssets.Select(r => r.SqTicker))}' <br>");
+            p_sb.Append($"NavRealtime (LowFreq-RTH:{(int)(m_lowNavFreqParam.FreqRthSec / 60)}min-OTH:{(int)(m_lowNavFreqParam.FreqOthSec / 60)}min): NTimerPassed: {m_lowNavFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_lowNavFreqParam.Assets.Select(r => r.SqTicker))}' <br>");
         }
 
         void OnReloadAssetData_ReloadRtNavDataAndSetTimer()
         {
             Utils.Logger.Info("ReloadRtNavDataAndSetTimer() START");
             m_highNavFreqParam.Assets = new Asset[0];
-            m_lowNavFreqParam.Assets = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV && !r.IsAggregatedNav && !m_highNavFreqParam.Assets.Contains(r)).ToArray()!;
+            m_lowNavFreqParam.Assets = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV && !((r as BrokerNav)!.IsAggregatedNav) && !m_highNavFreqParam.Assets.Contains(r)).ToArray()!;
             RtNavTimer_Elapsed(m_highNavFreqParam);
             RtNavTimer_Elapsed(m_lowNavFreqParam);
             Utils.Logger.Info("ReloadRtNavDataAndSetTimer() END");
@@ -68,12 +68,12 @@ namespace FinTechCommon
             if (p_freqParam.RtFreq == RtFreq.HighFreq)  // if it is highFreq timer, then add the recently asked assets.
             {
                 List<Asset> updatingNavAssets = new List<Asset>();
-                var recentlyAskedNavAssets = m_lastRtPriceQueryTime.Where(r => r.Key.AssetId.AssetTypeID == AssetType.BrokerNAV && ((DateTime.UtcNow - r.Value) <= TimeSpan.FromSeconds(5 * 60))).Select(r => r.Key); //  if there was a function call in the last 5 minutes
+                var recentlyAskedNavAssets = m_lastRtPriceQueryTime.Where(r => r.Key.AssetId.AssetTypeID == AssetType.BrokerNAV && ((DateTime.UtcNow - r.Value) <= TimeSpan.FromSeconds(5 * 60))).Select(r => (r.Key as BrokerNav)!); //  if there was a function call in the last 5 minutes
                 foreach (var nav in recentlyAskedNavAssets)
                 {
                     // the virtual DC.NAV assets: replace them with the underlying sub-Navs
                     if (nav.IsAggregatedNav)    // add the underlying sub-Navs
-                        updatingNavAssets.AddRange(AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV && !r.IsAggregatedNav && r.User == nav.User));
+                        updatingNavAssets.AddRange(AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV && !((r as BrokerNav)!.IsAggregatedNav) && (r as BrokerNav)!.User == nav.User));
                     else
                         updatingNavAssets.Add(nav);
                 }
@@ -85,7 +85,7 @@ namespace FinTechCommon
             DownloadLastPriceNav(downloadAssets.ToList());
         }
         
-        (float, DateTime) GetLastNavRtPrice(Asset p_navAsset)
+        (float, DateTime) GetLastNavRtPrice(BrokerNav p_navAsset)
         {
             float lastValue;
             DateTime lastValueUtc;  // if there are 2 subNavs, we want the Minimum of the UTCs. To be conservative how old the aggregated Time is.
@@ -95,7 +95,7 @@ namespace FinTechCommon
                 lastValueUtc = DateTime.MaxValue;
                 foreach (var asset in AssetsCache.Assets)
                 {
-                    if (asset.User == p_navAsset.User && !asset.IsAggregatedNav)
+                    if (asset.AssetId.AssetTypeID == AssetType.BrokerNAV && (asset as BrokerNav)!.User == p_navAsset.User && !((asset as BrokerNav)!.IsAggregatedNav))
                     {
                         if (Single.IsNaN(asset.LastValue))  // if any of the SubNavs is NaN, because VBroker is not running or didn't return data, then return NaN for the aggregate to show it is invalid
                         {
@@ -177,7 +177,7 @@ namespace FinTechCommon
             }
             if (String.IsNullOrEmpty(tcpMsgResponse))
             {
-                string infoMsg = $"Warning! NAV realtime to {vbServerIp}:{ServerIp.DefaultVirtualBrokerServerPort} failed. Check that both the IB's TWS and the VirtualBroker are running on Manual/Auto Trading Server! Start them manually if needed!";
+                string infoMsg = $"Warning! NAV realtime of '{brAccStr}' to {vbServerIp}:{ServerIp.DefaultVirtualBrokerServerPort} failed. Check that both the IB's TWS and the VirtualBroker are running on Manual/Auto Trading Server! Start them manually if needed!";
                 // This exception is expected. Not an error. IB TWS is expected to be down from 23:40 to 06:50.
                 var timeFromMidnightUtc = DateTime.UtcNow.TimeOfDay;
                 if (timeFromMidnightUtc >= TimeSpan.FromHours(10) && timeFromMidnightUtc <= TimeSpan.FromHours(23)) // should be available from 10-23h UTC

@@ -179,8 +179,10 @@ namespace SqCoreWeb.Controllers
             string? valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
             if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
             {
-                // TODO: not high priority to fix it. It returns code 403, Forbidden. Also the same problem in SqLab. (it might only work on Linux server if IP should have been registered)
-                // it works on remote server: https://www.snifferquant.net/WebServer/TestGoogleApiGsheet1   (but not locally, and not in SqLab either)
+                // https://developers.google.com/sheets/api/guides/concepts
+                // This gives back text colour and formatting of each cell. Not needed in general: https://sheets.googleapis.com/v4/spreadsheets/<spreadsheetId>?ranges=A1:C10&fields=properties.title,sheets(properties,data.rowData.values(effectiveValue,effectiveFormat))&key=<key>
+                // This gives back only the values: https://sheets.googleapis.com/v4/spreadsheets/<spreadsheetId>/values/General!A:A?key=<key>
+                
                 // gSheet is public: https://docs.google.com/spreadsheets/d/1onwqrdxQIIUJytd_PMbdFKUXnBx3YSRYok0EmJF8ppM
                 valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync("https://sheets.googleapis.com/v4/spreadsheets/1onwqrdxQIIUJytd_PMbdFKUXnBx3YSRYok0EmJF8ppM/values/A1%3AA3?key=" + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
                 if (valuesFromGSheetStr == null)

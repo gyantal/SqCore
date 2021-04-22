@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Text.RegularExpressions;
 
 
@@ -64,6 +66,23 @@ namespace SqCommon
                 if (c == p_char)
                     count++;
             return count;
+        }
+
+        // thousands of tickers are too long on a page. Break them into new lines for ever 10-20 tickers.
+        public static void AppendLongListByLine(this StringBuilder p_sb, IEnumerable<string> p_strs, string p_cellSep, int p_maxPerLine, string p_lineSep)
+        {
+            int i = 0;
+            foreach (var s in p_strs)
+            {
+                if (i != 0 && i % 10 == 0)
+                    p_sb.Append(p_lineSep);
+
+                if (i == 0)
+                    p_sb.Append(p_cellSep);
+                else
+                    p_sb.Append(p_cellSep + s); // write "," in front of cell, but only if it not the first cell
+                i++;
+            }
         }
     }
 

@@ -3,6 +3,8 @@ using System.Diagnostics;
 
 namespace FinTechCommon
 {
+    // All Users in gSheet: https://docs.google.com/spreadsheets/d/10fc451YcdIQxtAHI_clCzYmZxdbGzzd5xZq67oKj0H8/edit#gid=0
+    
     [DebuggerDisplay("Username = {Username}, Email({Email})")]
     public class User
     {

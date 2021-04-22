@@ -13,6 +13,7 @@ namespace FinTechCommon
     enum RtFreq { HighFreq, MidFreq, LowFreq };
     class RtFreqParam {
         public RtFreq RtFreq { get; set; }
+        public string Name { get; set; } = string.Empty;
         public int FreqRthSec { get; set; } // RTH: Regular Trading Hours
         public int FreqOthSec { get; set; } // OTH: Outside Trading Hours
         public Timer? Timer { get; set; } = null;
@@ -68,12 +69,12 @@ namespace FinTechCommon
         // - cut-off time is too late. Until 14:30 asking PreviousDay, it still gives the price 2 days ago. When YF will have premarket data at 9:00. Although "latestPrice" can be used as close.
         // - the only good thing: in market-hours, RT prices are free, and very quick to obtain and batched.
 
-        RtFreqParam m_highFreqParam = new RtFreqParam() { RtFreq = RtFreq.HighFreq, FreqRthSec = 4, FreqOthSec = 60 }; // high frequency (4sec RTH, 1min otherwise-OTH) refresh for a known fixed stocks (used by VBroker) and those which were queried in the last 5 minutes (by a VBroker-test)
-        RtFreqParam m_midFreqParam = new RtFreqParam() { RtFreq = RtFreq.MidFreq, FreqRthSec =  20 * 60, FreqOthSec = 45 * 60 }; // mid frequency (20min RTH, 45min otherwise) refresh for a know fixed stocks (DashboardClient_mktHealth)
-        RtFreqParam m_lowFreqParam = new RtFreqParam() { RtFreq = RtFreq.LowFreq, FreqRthSec = 60 * 60, FreqOthSec = 2 * 60 * 60 }; // with low frequency (1h RTH, 2h otherwise) we query almost all stocks. Even if nobody access them.
+        RtFreqParam m_highFreqParam = new RtFreqParam() { RtFreq = RtFreq.HighFreq, Name="HighFreq", FreqRthSec = 4, FreqOthSec = 60 }; // high frequency (4sec RTH, 1min otherwise-OTH) refresh for a known fixed stocks (used by VBroker) and those which were queried in the last 5 minutes (by a VBroker-test)
+        RtFreqParam m_midFreqParam = new RtFreqParam() { RtFreq = RtFreq.MidFreq, Name="MidFreq", FreqRthSec =  20 * 60, FreqOthSec = 45 * 60 }; // mid frequency (20min RTH, 45min otherwise) refresh for a know fixed stocks (DashboardClient_mktHealth)
+        RtFreqParam m_lowFreqParam = new RtFreqParam() { RtFreq = RtFreq.LowFreq, Name="LowFreq", FreqRthSec = 60 * 60, FreqOthSec = 2 * 60 * 60 }; // with low frequency (1h RTH, 2h otherwise) we query almost all stocks. Even if nobody access them.
 
         string[] m_highFreqTickrs = new string[] { /* VBroker */ };
-        string[] m_midFreqTickrs = new string[] {"QQQ", "SPY", "GLD", "TLT", "VXX", "UNG", "USO" /* DashboardClient_mktHealth.cs */ };
+        string[] m_midFreqTickrs = new string[] {"S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO" /* DashboardClient_mktHealth.cs */ };
 
         Dictionary<Asset, DateTime> m_lastRtPriceQueryTime = new Dictionary<Asset, DateTime>();
 
@@ -93,19 +94,27 @@ namespace FinTechCommon
         public void ServerDiagnosticRealtime(StringBuilder p_sb)
         {
             var recentlyAskedAssets = m_lastRtPriceQueryTime.Where(r => (DateTime.UtcNow - r.Value) <= TimeSpan.FromSeconds(5 * 60));
-            p_sb.Append($"Realtime: actual non-empty m_nYfDownload: {m_nYfDownload}, actual non-empty m_nIexDownload:{m_nIexDownload}, all recentlyAskedAssets:'{String.Join(',', recentlyAskedAssets.Select(r => r.Key.LastTicker + "(" + ((int)((DateTime.UtcNow - r.Value).TotalSeconds)).ToString() + "sec)"))}' <br>");
-            p_sb.Append($"Realtime (HighFreq): NTimerPassed: {m_highFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_highFreqParam.Assets.Select(r => r.LastTicker))}' <br>");
-            p_sb.Append($"Realtime (MidFreq): NTimerPassed: {m_midFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_midFreqParam.Assets.Select(r => r.LastTicker))}' <br>");
-            p_sb.Append($"Realtime (LowFreq): NTimerPassed: {m_lowFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_lowFreqParam.Assets.Select(r => r.LastTicker))}' <br>");
+            p_sb.Append($"Realtime: actual non-empty m_nYfDownload: {m_nYfDownload}, actual non-empty m_nIexDownload:{m_nIexDownload}, all recentlyAskedAssets:'{String.Join(',', recentlyAskedAssets.Select(r => r.Key.SqTicker + "(" + ((int)((DateTime.UtcNow - r.Value).TotalSeconds)).ToString() + "sec)"))}' <br>");
+
+            ServerDiagnosticRealtime(p_sb, m_highFreqParam);
+            ServerDiagnosticRealtime(p_sb, m_midFreqParam);
+            ServerDiagnosticRealtime(p_sb, m_lowFreqParam);
+        }
+
+        private static void ServerDiagnosticRealtime(StringBuilder p_sb, RtFreqParam p_rtFreqParam)
+        {
+            p_sb.Append($"Realtime ({p_rtFreqParam.Name}): FreqRthSec: {p_rtFreqParam.FreqRthSec}, FreqOthSec: {p_rtFreqParam.FreqOthSec}, NTimerPassed: {p_rtFreqParam.NTimerPassed}, assets: '");
+            p_sb.AppendLongListByLine(p_rtFreqParam.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).Select(r => ((Stock)r).YfTicker), ",", 10, "<br>");
+            p_sb.Append($"'<br>");
         }
 
         void OnReloadAssetData_ReloadRtDataAndSetTimer()
         {
             Utils.Logger.Info("ReloadRtDataAndSetTimer() START");
             m_lastRtPriceQueryTime = new Dictionary<Asset, DateTime>(); // purge out history after AssetData reload
-            m_highFreqParam.Assets = m_highFreqTickrs.Select(r => AssetsCache.GetFirstMatchingAssetByLastTicker(r)!).ToArray();
-            m_midFreqParam.Assets = m_midFreqTickrs.Select(r => AssetsCache.GetFirstMatchingAssetByLastTicker(r)!).ToArray();
-            m_lowFreqParam.Assets = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock && !m_highFreqTickrs.Contains(r.LastTicker) && !m_midFreqTickrs.Contains(r.LastTicker)).ToArray()!;
+            m_highFreqParam.Assets = m_highFreqTickrs.Select(r => AssetsCache.GetAsset(r)!).ToArray();
+            m_midFreqParam.Assets = m_midFreqTickrs.Select(r => AssetsCache.GetAsset(r)!).ToArray();
+            m_lowFreqParam.Assets = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock && (r as Stock)!.ExpirationDate == string.Empty && !m_highFreqTickrs.Contains(r.SqTicker) && !m_midFreqTickrs.Contains(r.SqTicker)).ToArray()!;
             RtTimer_Elapsed(m_highFreqParam);
             RtTimer_Elapsed(m_midFreqParam);
             RtTimer_Elapsed(m_lowFreqParam);
@@ -166,7 +175,7 @@ namespace FinTechCommon
                     DateTime lastDateTime = DateTime.MinValue;
                     float lastValue;
                     if (sec.AssetId.AssetTypeID == AssetType.BrokerNAV)
-                        (lastValue, lastDateTime) = GetLastNavRtPrice(sec);
+                        (lastValue, lastDateTime) = GetLastNavRtPrice((sec as BrokerNav)!);
                     else
                     {
                         lastValue = sec.LastValue;
@@ -184,7 +193,7 @@ namespace FinTechCommon
                     DateTime lastDateTime = DateTime.MinValue;
                     float lastValue;
                     if (sec.AssetId.AssetTypeID == AssetType.BrokerNAV)
-                        (lastValue, lastDateTime) = GetLastNavRtPrice(sec);
+                        (lastValue, lastDateTime) = GetLastNavRtPrice((sec as BrokerNav)!);
                     else
                     {
                         lastValue = sec.LastValue;
@@ -205,14 +214,14 @@ namespace FinTechCommon
                 // https://query1.finance.yahoo.com/v7/finance/quote?symbols=AAPL,AMZN  returns all the fields.
                 // https://query1.finance.yahoo.com/v7/finance/quote?symbols=QQQ%2CSPY%2CGLD%2CTLT%2CVXX%2CUNG%2CUSO&fields=symbol%2CregularMarketPreviousClose%2CregularMarketPrice%2CmarketState%2CpostMarketPrice%2CpreMarketPrice  // returns just the specified fields.
                 // "marketState":"PRE" or "marketState":"POST", In PreMarket both "preMarketPrice" and "postMarketPrice" are returned.
-                var symbols = p_assets.Select(r => r.LastTicker).ToArray();
-                var quotes = await Yahoo.Symbols(symbols).Fields(new Field[] { Field.Symbol, Field.RegularMarketPreviousClose, Field.RegularMarketPrice, Field.MarketState, Field.PostMarketPrice, Field.PreMarketPrice }).QueryAsync();
+                var yfTickers = p_assets.Select(r => (r as Stock)!.YfTicker).ToArray();
+                var quotes = await Yahoo.Symbols(yfTickers).Fields(new Field[] { Field.Symbol, Field.RegularMarketPreviousClose, Field.RegularMarketPrice, Field.MarketState, Field.PostMarketPrice, Field.PreMarketPrice }).QueryAsync();
                 foreach (var quote in quotes)
                 {
                     Asset? sec = null;
                     foreach (var s in p_assets)
                     {
-                        if (s.LastTicker == quote.Key)
+                        if ((s as Stock)!.YfTicker == quote.Key)
                         {
                             sec = s;
                             break;
@@ -254,9 +263,10 @@ namespace FinTechCommon
             m_nIexDownload++;
             try
             {
+                var yfTickers = p_assets.Select(r => (r as Stock)!.YfTicker).ToArray(); // treat similarly as DownloadLastPriceYF()
                 //string url = string.Format("https://api.iextrading.com/1.0/stock/market/batch?symbols={0}&types=quote", p_tickerString);
                 //string url = string.Format("https://api.iextrading.com/1.0/last?symbols={0}", p_tickerString);       // WebExceptionStatus.ProtocolError: "Not Found"
-                string url = string.Format("https://api.iextrading.com/1.0/tops?symbols={0}", String.Join(", ", p_assets.Select(r => r.LastTicker)));
+                string url = string.Format("https://api.iextrading.com/1.0/tops?symbols={0}", String.Join(", ", yfTickers));
                 string? responseStr = await Utils.DownloadStringWithRetryAsync(url);
                 if (responseStr == null)
                     return;
@@ -292,17 +302,20 @@ namespace FinTechCommon
                     break;
                 string attributeStr = p_responseStr.Substring(bAttribute, eAttribute - bAttribute);
                 // only search ticker among the stocks p_assetIds. Because duplicate tickers are possible in the MemDb.Assets, but not expected in p_assetIds
-                Asset? asset = null;
+                Stock? stock = null;
                 foreach (var sec in p_assets)
                 {
-                    if (sec.LastTicker == ticker)
+                    Stock? iStock = sec as Stock;
+                    if (iStock == null)
+                        continue;
+                    if (iStock.YfTicker == ticker)
                     {
-                        asset = sec;
+                        stock = iStock;
                         break;
                     }
                 }
 
-                if (asset != null)
+                if (stock != null)
                 {
                     float.TryParse(attributeStr, out float attribute);
                     switch (p_attribute)
@@ -311,7 +324,7 @@ namespace FinTechCommon
                             // sec.PreviousCloseIex = attribute;
                             break;
                         case "lastSalePrice":
-                            asset.LastValue = attribute;
+                            stock.LastValue = attribute;
                             break;
                     }
 

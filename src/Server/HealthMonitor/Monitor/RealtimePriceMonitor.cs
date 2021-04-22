@@ -2,11 +2,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-//Since the System.Web.dll is dropped, the JavaScriptSerializer was also not included in ASP.Net 5. And Microsoft also suggesting us to use the `Newtonsoft.Json`.
-//You can use Newtonsoft.Json, it's a dependency of Microsoft.AspNet.Mvc.Formatters.Json witch 
-//is a dependency of Microsoft.AspNet.Mvc. So, you don't need to add a dependency in your project.json.
 
 namespace HealthMonitor
 {

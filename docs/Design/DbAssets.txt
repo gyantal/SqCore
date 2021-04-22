@@ -1,0 +1,23 @@
+>1.0: In general follow IB terminology and data. We will use VBroker with them. Better to be conform. Also trading VIX futures, options.
+Try to follow IB data. In VBroker I will use IB ticker "BRK B", not YfTicker "BRK-B". And try to calculate YfTicker from it. If it cannot be calculated it can be an optional given field in DB.
+IB.ContractID = AssetType + AssetSubTableID (= AssetID) is also unique, but SqTicker is also unique (human readable)
+IB uses ContractID, because IB talks about Contracts. However, I am doing Assets. 
+
+>1.1 Asset.SqTicker can be made unique with rules as
+    Name Intentionaly as SqTicker, and don't create a field as Ticker () because it is too general. Just "YfTicker."
+    ^ as indices.
+    .NAV as NAV (maybe change postfix to preFix 'N/') options for What?  Better if it is a prefix "N". Everything else is a prefix.
+    CountryCode: .L would be London. So VOD and VOD.L is fine.
+    VXX.SQ => SQ is SnifferQuant virtual. (that can be merged with real VXX recent prices). It is still a stock (not options), but has special Flag.
+    And this would be a lastTicker. but old VOD 20 years ago is a different stock as current VOD which is alive.
+    We can make SqTicker unique even historically if we attach the deathDate at the end. VOD.Date2010-03-15 (see how we do it in SQL)
+    For CHAR codes, see gAssetTypeCode is AssetHelper.cs
+
+>1.2. make MemDb and everything to be ready for multi-currency (EUR, GBX, GBP, USD) stocks, portfolios, cash. (Before expanding the universe too much). 
+For that we introduce a Cash AssetType. So, there will be no single Cash in the Portfolio. It can contain many CashAssets. 
+Selling GBP stock increases GBP CashAsset, selling USD stock increases USD CashAsset. 
+At the end, the Portfolio can have a default Base Currency, but that is only for NAV calculation.
+Beside CashAssets in currencies, there is a need for CurrencyPair (GBP/USD), for converting between them. 
+A Currency pair cannot be owned (not an asset inself), but we add it into Assets, because we need daily historical AssetQuotes for them.
+
+

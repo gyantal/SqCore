@@ -17,6 +17,7 @@ class RtMktSumRtStat {
 
 class RtMktSumNonRtStat {
   public assetId = NaN;  // JavaScript Numbers are Always 64-bit Floating Point
+  public sqTicker = '';
   public ticker = '';
   public periodStartDate = ''; // preferred to be a new Date(), but when it arrives from server it is a string '2010-09-29T00:00:00' which is ET time zone and better to keep that way than converting to local time-zone Date object
   public periodEndDate = '';
@@ -30,6 +31,7 @@ class RtMktSumNonRtStat {
 
 class UiTableColumn {
   public assetId = NaN;  // JavaScript Numbers are Always 64-bit Floating Point
+  public sqTicker = '';
   public ticker = '';
   public isNavColumn = false;
 
@@ -87,7 +89,8 @@ class UiTableColumn {
   public lookbackErrorStr = '';
   public lookbackErrorClass = '';
 
-  constructor(tckr: string, isNavCol: boolean) {
+  constructor(sqTckr: string, tckr: string, isNavCol: boolean) {
+    this.sqTicker = sqTckr;
     this.ticker = tckr;
     this.isNavColumn = isNavCol;
     if (!isNavCol) {
@@ -186,7 +189,7 @@ export class MarketHealthComponent implements OnInit {
       const existingUiCols = uiColumns.filter(col => col.ticker === stockNonRt.ticker);
       if (existingUiCols.length === 0) {
         console.warn(`Received ticker '${stockNonRt.ticker}' is not expected. UiArray should be increased. This will cause UI redraw and blink. Add this ticker to defaultTickerExpected!`, 'background: #222; color: red');
-        uiCol = new UiTableColumn(stockNonRt.ticker, false);
+        uiCol = new UiTableColumn(stockNonRt.sqTicker, stockNonRt.ticker, false);
         uiColumns.push(uiCol);
       } else if (existingUiCols.length === 1) {
         uiCol = existingUiCols[0];
@@ -327,13 +330,13 @@ export class MarketHealthComponent implements OnInit {
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
 
-    this.lookbackStartET = new Date(todayET.getUTCFullYear() - 1, 11, 31);  // set YTD as default
+    this.lookbackStartET = new Date(todayET.getFullYear() - 1, 11, 31);  // set YTD as default
     this.lookbackStartETstr = this.Date2PaddedIsoStr(this.lookbackStartET);
 
     // https://stackoverflow.com/questions/563406/add-days-to-javascript-date
     const yesterDayET = new Date(todayET);
     yesterDayET.setDate(yesterDayET.getDate() - 1);
-    this.lookbackEndET = new Date(yesterDayET.getUTCFullYear(), yesterDayET.getMonth(), yesterDayET.getDate());  // set yesterdayET as default
+    this.lookbackEndET = new Date(yesterDayET.getFullYear(), yesterDayET.getMonth(), yesterDayET.getDate());  // set yesterdayET as default
     this.lookbackEndETstr = this.Date2PaddedIsoStr(this.lookbackEndET);
     this.FillDataWithEmptyValuesToAvoidUiBlinkingWhenDataArrives();
   }
@@ -343,7 +346,8 @@ export class MarketHealthComponent implements OnInit {
     // the header cells better to be fixed strings determined at window.load(), so UI doesn't blink when data arrives 100-500ms later. Therefore a general "BrNav" virtual ticker is fine.
     const defaultTickerExpected = ['BrNAV', 'QQQ', 'SPY', 'GLD', 'TLT', 'VXX', 'UNG', 'USO']; // to avoid UI blinking while building the UI early, we better know the number of columns, but then the name of tickers as well. If server sends something different, we will readjust with blinking UI.
     for (const tkr of defaultTickerExpected) {
-      this.uiTableColumns.push(new UiTableColumn(tkr, tkr === 'BrNAV'));
+      let sqTicker = tkr === 'BrNAV' ? tkr : "S/" + tkr;
+      this.uiTableColumns.push(new UiTableColumn(sqTicker, tkr, tkr === 'BrNAV'));
     }
   }
 
@@ -383,6 +387,10 @@ export class MarketHealthComponent implements OnInit {
         const jsonArrayObjNonRt = JSON.parse(msgObjStr);
         // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
         jsonArrayObjNonRt.forEach(element => {
+          if (element.sqTicker.startsWith("S/"))
+            element.ticker = element.sqTicker.substring(2); // "sqTicker":"S/QQQ"
+          else
+            element.ticker = element.sqTicker;  // "sqTicker":"BrNAV"
           element.periodStart = this.ChangeNaNstringToNaNnumber(element.periodStart);
           element.periodEnd = this.ChangeNaNstringToNaNnumber(element.periodEnd);
           element.periodHigh = this.ChangeNaNstringToNaNnumber(element.periodHigh);
@@ -455,16 +463,16 @@ export class MarketHealthComponent implements OnInit {
     console.log('Sq.onClickChangeLookback(): ' + lookbackStr);
     const currDateET: Date = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     if (lookbackStr === 'YTD') {
-      this.lookbackStartET = new Date(currDateET.getUTCFullYear() - 1, 11, 31);
+      this.lookbackStartET = new Date(currDateET.getFullYear() - 1, 11, 31);
     } else if (lookbackStr.endsWith('y')) {
       const lbYears = parseInt(lookbackStr.substr(0, lookbackStr.length - 1), 10);
-      this.lookbackStartET = new Date(currDateET.setUTCFullYear(currDateET.getUTCFullYear() - lbYears));
+      this.lookbackStartET = new Date(currDateET.setFullYear(currDateET.getFullYear() - lbYears));
     } else if (lookbackStr.endsWith('m')) {
       const lbMonths = parseInt(lookbackStr.substr(0, lookbackStr.length - 1), 10);
-      this.lookbackStartET = new Date(currDateET.setUTCMonth(currDateET.getUTCMonth() - lbMonths));
+      this.lookbackStartET = new Date(currDateET.setMonth(currDateET.getMonth() - lbMonths));
     } else if (lookbackStr.endsWith('w')) {
       const lbWeeks = parseInt(lookbackStr.substr(0, lookbackStr.length - 1), 10);
-      this.lookbackStartET = new Date(currDateET.setUTCDate(currDateET.getUTCDate() - lbWeeks * 7));
+      this.lookbackStartET = new Date(currDateET.setDate(currDateET.getDate() - lbWeeks * 7));
     } else if (lookbackStr === 'D\'99') {
       this.lookbackStartET = new Date(1999, 3 - 1, 10); // start date of QQQ
     } else if (lookbackStr === 'Date') {
@@ -477,7 +485,7 @@ export class MarketHealthComponent implements OnInit {
       todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
       const yesterDayET = new Date(todayET);
       yesterDayET.setDate(yesterDayET.getDate() - 1);
-      this.lookbackEndET = new Date(yesterDayET.getUTCFullYear(), yesterDayET.getMonth(), yesterDayET.getDate());  // set yesterdayET as default
+      this.lookbackEndET = new Date(yesterDayET.getFullYear(), yesterDayET.getMonth(), yesterDayET.getDate());  // set yesterdayET as default
       this.lookbackEndETstr = this.Date2PaddedIsoStr(this.lookbackEndET);
     }
     this.onLookbackChange();
@@ -539,7 +547,10 @@ export class MarketHealthComponent implements OnInit {
   }
 
   public Date2PaddedIsoStr(date: Date): string {  // 2020-9-1 is not acceptable. Should be converted to 2020-09-01
-    return this.zeroPad(date.getUTCFullYear(), 4) + '-' + this.zeroPad(date.getUTCMonth() + 1, 2) + '-' + this.zeroPad(date.getUTCDate(), 2);
+    // don't use UTC versions, because they will convert local time zone dates to UTC first, then we might have bad result.
+    // "date = 'Tue Apr 13 2021 00:00:00 GMT+0100 (British Summer Time)'" because local BST is not UTC date.getUTCDate() = 12, while date.getDate()=13 (correct)
+    //return this.zeroPad(date.getUTCFullYear(), 4) + '-' + this.zeroPad(date.getUTCMonth() + 1, 2) + '-' + this.zeroPad(date.getUTCDate(), 2);
+    return this.zeroPad(date.getFullYear(), 4) + '-' + this.zeroPad(date.getMonth() + 1, 2) + '-' + this.zeroPad(date.getDate(), 2);
   }
 
   public PaddedIsoStr3Date(dateStr: string): Date {
