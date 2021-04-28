@@ -60,7 +60,7 @@ namespace HealthMonitor
                 return;
             }
 
-            if (message.ResponseFormat == TcpMessageResponseFormat.None)  // if not required to answer message, then dispose tcpClient quikcly to release resources
+            if (message.ResponseFormat == TcpMessageResponseFormat.None)  // if not required to answer message, then dispose tcpClient quickly to release resources
                 Utils.TcpClientDispose(p_tcpClient);
 
             Utils.Logger.Info($"ProcessTcpClient. Processing messageID {message.ID}.");

@@ -119,21 +119,26 @@ namespace FinTechCommon
 
         public void ServerDiagnostic(StringBuilder p_sb)
         {
-            var hist = DailyHist.GetDataDirect();
-            int memUsedKb = hist.MemUsed() / 1024;
             p_sb.Append("<H2>MemDb</H2>");
-            p_sb.Append($"#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {hist.Data.Count}, Used RAM: {memUsedKb:N0}KB<br>");  // hist.Data.Count = Srv.LoadPrHist + DC Aggregated NAV 
-            var lastDbReloadWithoutHist = m_lastDbReloadTs - m_lastHistoricalDataReloadTs;
-            p_sb.Append($"lastDbReloadWithoutHist {lastDbReloadWithoutHist.TotalSeconds:0.000}sec, m_lastHistoricalDataReloadTs {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec,.<br>");
-            
-            var yfTickers = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).Select(r => ((Stock)r).YfTicker).ToArray();
-            p_sb.Append($"StockAssets (#{yfTickers.Length}): ");
-            p_sb.AppendLongListByLine(yfTickers, ",", 10, "<br>");
+            ServerDiagnosticMemDb(p_sb, true);
             p_sb.Append($"<br><br>");
 
             ServerDiagnosticRealtime(p_sb);
             p_sb.Append($"<br>");
             ServerDiagnosticNavRealtime(p_sb);
+        }
+
+        private void ServerDiagnosticMemDb(StringBuilder p_sb, bool p_isHtml)
+        {
+            var hist = DailyHist.GetDataDirect();
+            int memUsedKb = hist.MemUsed() / 1024;
+            p_sb.Append($"#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {hist.Data.Count}, Used RAM: {memUsedKb:N0}KB<br>");  // hist.Data.Count = Srv.LoadPrHist + DC Aggregated NAV 
+            var lastDbReloadWithoutHist = m_lastDbReloadTs - m_lastHistoricalDataReloadTs;
+            p_sb.Append($"m_lastHistoricalDataReloadTimeUtc: '{m_lastHistoricalDataReload}', lastDbReloadWithoutHist: {lastDbReloadWithoutHist.TotalSeconds:0.000}sec, m_lastHistoricalDataReloadTs: {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec.<br>");
+
+            var yfTickers = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).Select(r => ((Stock)r).YfTicker).ToArray();
+            p_sb.Append($"StockAssets (#{yfTickers.Length}): ");
+            p_sb.AppendLongListByLine(yfTickers, ",", 10, "<br>");
         }
 
         public async void ReloadDbDataTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
@@ -147,8 +152,7 @@ namespace FinTechCommon
         {
             StringBuilder sb = new StringBuilder();
             await ReloadDbDataIfChangedAndSetNewTimer();
-            int memUsedKb = DailyHist.GetDataDirect().MemUsed() / 1024;
-            sb.Append($"Historical: #SqCoreWebAssets+virtualNavs: {AssetsCache.Assets.Count}. ({String.Join(',', AssetsCache.Assets.Select(r => r.SqTicker))}). Used RAM: {memUsedKb:N0}KB{((p_isHtml) ? "<br>" : string.Empty)}");
+            ServerDiagnosticMemDb(sb, p_isHtml);
             return sb;
         }
 

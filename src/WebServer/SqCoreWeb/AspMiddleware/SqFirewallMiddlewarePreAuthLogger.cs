@@ -135,7 +135,7 @@ namespace SqCoreWeb
                     StringBuilder sb = new StringBuilder("Exception in SqCore.Website.C#.SqFirewallMiddlewarePreAuthLogger. \r\n");
                     var requestLogStr = String.Format("{0}#{1}{2} {3} '{4}' from {5} (u: {6}) ret: {7} in {8:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : string.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Path + (String.IsNullOrEmpty(requestLog.QueryString) ? string.Empty : requestLog.QueryString), requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds);
                     sb.Append("Request: " + requestLogStr + "\r\n");
-                    sb.Append("Exception: '" + requestLog.Exception.ToStringWithShortenedStackTrace(800) + "'\r\n");
+                    sb.Append("Exception: '" + requestLog.Exception.ToStringWithShortenedStackTrace(1600) + "'\r\n");
                     HealthMonitorMessage.SendAsync(sb.ToString(), HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
                 }
 

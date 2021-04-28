@@ -119,5 +119,19 @@ namespace SqCommon
                     throw new Exception("RunningPlatform() is not recognized");
             }
         }
+
+        public static string TaskScheduler_UnobservedTaskExceptionMsg(object? p_sender, UnobservedTaskExceptionEventArgs p_e)
+        {
+            Task? senderTask = (p_sender != null) ? null : p_sender as Task;
+            if (senderTask != null)
+            {
+                string msg = $"Sender is a task. TaskId: {senderTask.Id}, IsCompleted: {senderTask.IsCompleted}, IsCanceled: {senderTask.IsCanceled}, IsFaulted: {senderTask.IsFaulted}, TaskToString(): {senderTask.ToString()}.";
+                msg += (senderTask.Exception == null) ? " SenderTask.Exception is null" : $" SenderTask.Exception {senderTask.Exception.ToStringWithShortenedStackTrace(1600)}";
+                return msg;
+            }
+            else
+                return "Sender is not a task.";
+        }
+
     }
 }

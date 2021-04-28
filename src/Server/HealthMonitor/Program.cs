@@ -45,6 +45,7 @@ namespace HealthMonitor
 
             Utils.MainThreadIsExiting = new ManualResetEventSlim(false);
             StrongAssert.g_strongAssertEvent += StrongAssertMessageSendingEventHandler;
+            AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(AppDomain_BckgThrds_UnhandledException);
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException; // Occurs when a faulted task's unobserved exception is about to trigger exception which, by default, would terminate the process.
 
             Caretaker.gCaretaker.Init(Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
@@ -87,24 +88,29 @@ namespace HealthMonitor
             }
         }
 
+        private static void AppDomain_BckgThrds_UnhandledException(object p_sender, UnhandledExceptionEventArgs p_e)
+        {
+            Exception exception = (p_e.ExceptionObject as Exception) ?? new SqException($"Unhandled exception doesn't derive from System.Exception: {p_e.ToString() ?? "Null ExceptionObject"}");
+            Utils.Logger.Error(exception, $"AppDomain_BckgThrds_UnhandledException(). Terminating '{p_e?.IsTerminating.ToString() ?? "Null ExceptionObject"}'. Exception: '{ exception.ToStringWithShortenedStackTrace(1600)}'");
+
+            // isSendable check is not required. This background thread crash will terminate the main app. We should surely notify HealthMonitor.
+            string msg = $"App 'HealthMonitor' is terminated because exception in background thread. C#.AppDomain_BckgThrds_UnhandledException(). See log files.";
+            new Email   // no need to check that we don't spam emails, because it will terminate the app anyway
+            {
+                ToAddresses = Utils.Configuration["Emails:Gyant"],
+                Subject = "SQ HealthMonitor: AppDomain_BckgThrds_UnhandledException in HealthMonitor.",
+                Body = "SQ HealthMonitor: AppDomain_BckgThrds_UnhandledException in HealthMonitor. " + msg,
+                IsBodyHtml = false
+            }.Send();
+        }
+
         static DateTime gLastUnobservedTaskExceptionEmailTime = DateTime.MinValue;
         private static void TaskScheduler_UnobservedTaskException(object? p_sender, UnobservedTaskExceptionEventArgs p_e)
         {
             gLogger.Error(p_e.Exception, $"TaskScheduler_UnobservedTaskException()");
 
-            string msg = "Exception in SqCore.Website.C#.TaskScheduler_UnobservedTaskException.";
-            if (p_sender != null)
-            {
-                Task? senderTask = p_sender as Task;
-                if (senderTask != null)
-                {
-                    msg += $" Sender is a task. TaskId: {senderTask.Id}, IsCompleted: {senderTask.IsCompleted}, IsCanceled: {senderTask.IsCanceled}, IsFaulted: {senderTask.IsFaulted}, TaskToString(): {senderTask.ToString()}.";
-                    msg += (senderTask.Exception == null) ? " SenderTask.Exception is null" : $" SenderTask.Exception {senderTask.Exception.ToStringWithShortenedStackTrace(800)}";
-                }
-                else
-                    msg += " Sender is not a task.";
-            }
-
+            string msg = $"Exception in SqCore.Website.C#.TaskScheduler_UnobservedTaskException. Exception: '{ p_e.Exception.ToStringWithShortenedStackTrace(1600)}'. ";
+            msg += Utils.TaskScheduler_UnobservedTaskExceptionMsg(p_sender, p_e);
             gLogger.Warn(msg);
             p_e.SetObserved();        //  preventing it from triggering exception escalation policy which, by default, terminates the process.
 

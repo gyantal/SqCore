@@ -322,16 +322,17 @@ namespace SqCoreWeb
             // SelectableNavs is an ordered list of tickers. The first item is user specific. User should be able to select between the NAVs. DB, Main, Aggregate.
             // bool isAdmin = UserEmail == Utils.Configuration["Emails:Gyant"].ToLower();
             // if (isAdmin) // Now, it is not used. Now, every Google email user with an email can see DC NAVs. Another option is that only Admin users (GA,BL,LN) can see the DC user NAVs.
+            TsDateData<DateOnly, uint, float, uint> histData = MemDb.gMemDb.DailyHist.GetDataDirect(); // only add navs which has history. Otherwise, there is no point to show to user, and it will crash.
             var user = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == UserEmail);
             List<BrokerNav> selectableNavs = new List<BrokerNav>();
 
             BrokerNav[] userNavAssets = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV && (r as BrokerNav)!.User == user).Select(r => (BrokerNav)r).ToArray();
             BrokerNav? aggNavAsset = userNavAssets.FirstOrDefault(r => r.IsAggregatedNav);
-            if (aggNavAsset != null)
+            if (aggNavAsset != null && histData.Data.ContainsKey(aggNavAsset.AssetId))
                 selectableNavs.Add(aggNavAsset);    // Add AggNav first, so it is the first in the list.
             foreach (var nav in userNavAssets)
             {
-                if (nav != aggNavAsset)
+                if (nav != aggNavAsset && histData.Data.ContainsKey(nav.AssetId))
                     selectableNavs.Add(nav);
             }
 
@@ -340,11 +341,11 @@ namespace SqCoreWeb
             {
                 BrokerNav[] dcUserNavAssets = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV && (r as BrokerNav)!.User == dcUser).Select(r => (BrokerNav)r).ToArray();
                 BrokerNav? aggNavAssetDC = dcUserNavAssets.FirstOrDefault(r => r.IsAggregatedNav);
-                if (aggNavAssetDC != null)
+                if (aggNavAssetDC != null && histData.Data.ContainsKey(aggNavAssetDC.AssetId))
                     selectableNavs.Add(aggNavAssetDC);
                 foreach (var nav in dcUserNavAssets)
                 {
-                    if (nav != aggNavAssetDC && nav.SqTicker != "N/DC.TM")  // Don't add TradeStation DC.TM to list.
+                    if (nav != aggNavAssetDC && histData.Data.ContainsKey(nav.AssetId))  // Don't add TradeStation DC.TM to list.  //  && nav.SqTicker != "N/DC.TM"
                         selectableNavs.Add(nav);
                 }
             }

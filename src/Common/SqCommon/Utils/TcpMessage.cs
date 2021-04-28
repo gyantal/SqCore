@@ -146,8 +146,12 @@ namespace SqCommon
                     Utils.Logger.Debug("TcpMessage.SendMessage(). client.ConnectAsync({TcpServerHost}:{TcpServerPort}) completed without timeout and no Exception occured");
                     BinaryWriter bw = new BinaryWriter(client.GetStream()); // sometimes "System.InvalidOperationException: The operation is not allowed on non-connected sockets." at TcpClient.GetStream()
                     SerializeTo(bw);
-                    BinaryReader br = new BinaryReader(client.GetStream());
-                    reply = br.ReadString(); // sometimes "System.IO.EndOfStreamException: Unable to read beyond the end of the stream." at ReadString()
+
+                    if (ResponseFormat != TcpMessageResponseFormat.None)
+                    {
+                        BinaryReader br = new BinaryReader(client.GetStream());
+                        reply = br.ReadString(); // sometimes "System.IO.EndOfStreamException: Unable to read beyond the end of the stream." at ReadString()
+                    }
                 }
             }
             catch (Exception e) // in local Win development, Exception: 'No connection could be made because the target machine actively refused it' comes here.

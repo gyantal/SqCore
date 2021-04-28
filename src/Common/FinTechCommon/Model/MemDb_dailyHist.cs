@@ -47,8 +47,8 @@ namespace FinTechCommon
         {
             StringBuilder sb = new StringBuilder();
             await ReloadHistDataAndSetNewTimer();
-            int memUsedKb = DailyHist.GetDataDirect().MemUsed() / 1024;
-            sb.Append($"Historical: #SqCoreWebAssets+virtualNavs: {AssetsCache.Assets.Count}. ({String.Join(',', AssetsCache.Assets.Select(r => r.SqTicker))}). Used RAM: {memUsedKb:N0}KB{((p_isHtml) ? "<br>" : string.Empty)}");
+
+            ServerDiagnosticMemDb(sb, p_isHtml);
             return sb;
         }
 
@@ -113,7 +113,7 @@ namespace FinTechCommon
             catch (Exception e)
             {
                 Utils.Logger.Error(e, "Exception in ReloadHistoricalDataAndSetTimer()");
-                await HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MemDb. Exception: '{ e.ToStringWithShortenedStackTrace(1200)}'", HealthMonitorMessageID.SqCoreWebCsError);
+                await HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MemDb. Exception: '{ e.ToStringWithShortenedStackTrace(1600)}'", HealthMonitorMessageID.SqCoreWebCsError);
             }
             return null;
         }

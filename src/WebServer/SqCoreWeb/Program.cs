@@ -80,6 +80,7 @@ namespace SqCoreWeb
             PhoneCall.PhoneNumbers[Caller.Charmat0] = Utils.Configuration["PhoneCall:PhoneNumberCharmat0"];
 
             StrongAssert.g_strongAssertEvent += StrongAssertMessageSendingEventHandler;
+            AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(AppDomain_BckgThrds_UnhandledException);
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException; // Occurs when a faulted task's unobserved exception is about to trigger exception which, by default, would terminate the process.
 
             try
@@ -115,7 +116,7 @@ namespace SqCoreWeb
                 {
                     gLogger.Error("Linux. See 'Allow non-root process to bind to port under 1024.txt'. If Dotnet.exe was updated, it lost privilaged port. Try 'whereis dotnet','sudo setcap 'cap_net_bind_service=+ep' /usr/share/dotnet/dotnet'.");
                 }
-                HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MainThread. Exception: '{ e.ToStringWithShortenedStackTrace(1200)}'", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
+                HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MainThread. Exception: '{ e.ToStringWithShortenedStackTrace(1600)}'", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
             }
 
             Utils.MainThreadIsExiting.Set(); // broadcast main thread shutdown
@@ -200,7 +201,17 @@ namespace SqCoreWeb
         internal static void StrongAssertMessageSendingEventHandler(StrongAssertMessage p_msg)
         {
             gLogger.Info("StrongAssertEmailSendingEventHandler()");
-            HealthMonitorMessage.SendAsync($"Msg from SqCore.Website.C#.StrongAssert. StrongAssert Warning (if Severity is NoException, it is just a mild Warning. If Severity is ThrowException, that exception triggers a separate message to HealthMonitor as an Error). Severity: {p_msg.Severity}, Message: { p_msg.Message}, StackTrace: { p_msg.StackTrace.ToStringWithShortenedStackTrace(800)}", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
+            HealthMonitorMessage.SendAsync($"Msg from SqCore.Website.C#.StrongAssert. StrongAssert Warning (if Severity is NoException, it is just a mild Warning. If Severity is ThrowException, that exception triggers a separate message to HealthMonitor as an Error). Severity: {p_msg.Severity}, Message: { p_msg.Message}, StackTrace: { p_msg.StackTrace.ToStringWithShortenedStackTrace(1600)}", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
+        }
+
+        private static void AppDomain_BckgThrds_UnhandledException(object p_sender, UnhandledExceptionEventArgs p_e)
+        {
+            Exception exception = (p_e.ExceptionObject as Exception) ?? new SqException($"Unhandled exception doesn't derive from System.Exception: {p_e.ToString() ?? "Null ExceptionObject"}");
+            Utils.Logger.Error(exception, $"AppDomain_BckgThrds_UnhandledException(). Terminating '{p_e?.IsTerminating.ToString() ?? "Null ExceptionObject"}'. Exception: '{ exception.ToStringWithShortenedStackTrace(1600)}'");
+
+            // isSendable check is not required. This background thread crash will terminate the main app. We should surely notify HealthMonitor.
+            string msg = $"App 'SqCore.Website' is terminated because exception in background thread. C#.AppDomain_BckgThrds_UnhandledException(). See log files.";
+            HealthMonitorMessage.SendAsync(msg, HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
         }
 
         // Called by the GC.FinalizerThread. Occurs when a faulted task's unobserved exception is about to trigger exception which, by default, would terminate the process.
@@ -208,31 +219,14 @@ namespace SqCoreWeb
         {
             gLogger.Error(p_e.Exception, $"TaskScheduler_UnobservedTaskException()");
 
-            string msg = "Exception in SqCore.Website.C#.TaskScheduler_UnobservedTaskException.";
-            bool isSendable = true;
-            if (p_e.Exception != null) {
-                isSendable = SqFirewallMiddlewarePreAuthLogger.IsSendableToHealthMonitorForEmailing(p_e.Exception);
-                if (isSendable)
-                    msg += $" Exception: '{ p_e.Exception.ToStringWithShortenedStackTrace(600)}'.";
-            }
+            string msg = $"Exception in SqCore.Website.C#.TaskScheduler_UnobservedTaskException. Exception: '{ p_e.Exception.ToStringWithShortenedStackTrace(1600)}'. ";
+            msg += Utils.TaskScheduler_UnobservedTaskExceptionMsg(p_sender, p_e);
+            gLogger.Warn(msg);
+            p_e.SetObserved();        //  preventing it from triggering exception escalation policy which, by default, terminates the process.
 
-            if (p_sender != null)
-            {
-                Task? senderTask = p_sender as Task;
-                if (senderTask != null)
-                {
-                    msg += $" Sender is a task. TaskId: {senderTask.Id}, IsCompleted: {senderTask.IsCompleted}, IsCanceled: {senderTask.IsCanceled}, IsFaulted: {senderTask.IsFaulted}, TaskToString(): {senderTask.ToString()}.";
-                    msg += (senderTask.Exception == null) ? " SenderTask.Exception is null" : $" SenderTask.Exception {senderTask.Exception.ToStringWithShortenedStackTrace(800)}";
-                }
-                else
-                    msg += " Sender is not a task.";
-            }
-
+            bool isSendable = SqFirewallMiddlewarePreAuthLogger.IsSendableToHealthMonitorForEmailing(p_e.Exception);
             if (isSendable)
                 HealthMonitorMessage.SendAsync(msg, HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
-            else 
-                gLogger.Warn(msg);
-            p_e.SetObserved();        //  preventing it from triggering exception escalation policy which, by default, terminates the process.
         }
 
         public static void ServerDiagnostic(StringBuilder p_sb)
