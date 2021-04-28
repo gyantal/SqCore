@@ -93,19 +93,16 @@ namespace FinTechCommon
             {
                 lastValue = 0;
                 lastValueUtc = DateTime.MaxValue;
-                foreach (var asset in AssetsCache.Assets)
+                foreach (var asset in p_navAsset.AggregateNavChildren)
                 {
-                    if (asset.AssetId.AssetTypeID == AssetType.BrokerNAV && (asset as BrokerNav)!.User == p_navAsset.User && !((asset as BrokerNav)!.IsAggregatedNav))
+                    if (Single.IsNaN(asset.LastValue))  // if any of the SubNavs is NaN, because VBroker is not running or didn't return data, then return NaN for the aggregate to show it is invalid
                     {
-                        if (Single.IsNaN(asset.LastValue))  // if any of the SubNavs is NaN, because VBroker is not running or didn't return data, then return NaN for the aggregate to show it is invalid
-                        {
-                            lastValue = Single.NaN; // signal an error
-                            break;
-                        }
-                        lastValue += asset.LastValue;
-                        if (lastValueUtc > asset.LastValueUtc)
-                            lastValueUtc = asset.LastValueUtc;
+                        lastValue = Single.NaN; // signal an error
+                        break;
                     }
+                    lastValue += asset.LastValue;
+                    if (lastValueUtc > asset.LastValueUtc)
+                        lastValueUtc = asset.LastValueUtc;
                 }
                 if (lastValueUtc == DateTime.MaxValue)  // we failed to find any good value => indicate error as MinValue. To show data is too old.
                     lastValueUtc = DateTime.MinValue;
@@ -162,7 +159,9 @@ namespace FinTechCommon
             if (acceptableNavAssets.Count == 0)
                 return;
 
-            string vbServerIp = p_vbServer == VBrokerServer.AutoVb ? ServerIp.AtsVirtualBrokerServerPublicIpForClients : ServerIp.LocalhostLoopbackWithIP;
+            // ManualVb: On Linux: use LocalhostLoopbackWithIP 127.0.0.1, on Windows Debug: use the proper public IP of SqCore MTS
+            string vbServerIp = p_vbServer == VBrokerServer.AutoVb ? ServerIp.AtsVirtualBrokerServerPublicIpForClients : (Utils.RunningPlatform() == Platform.Windows) ? ServerIp.MtsVirtualBrokerServerPublicIpForClients : ServerIp.LocalhostLoopbackWithIP;
+
             string brAccStr = String.Join(',', bAccStrArr.ToArray());
 
             string msg = $"?v=1&secTok={TcpMessage.GenerateSecurityToken()}&bAcc={brAccStr}&data=AccSum";

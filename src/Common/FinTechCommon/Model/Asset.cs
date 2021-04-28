@@ -117,6 +117,8 @@ namespace FinTechCommon
 
 		public DateTime ExpectedHistoryStartDateLoc { get; set; } = DateTime.MaxValue;	// not necessarily ET. Depends on the asset.
 
+		public List<BrokerNav> AggregateNavChildren { get; set; } = new List<BrokerNav>();
+
 		public BrokerNav(JsonElement row, User[] users) : base(AssetType.BrokerNAV, row)
         {
 			User = users.FirstOrDefault(r => r.Username == row[5].ToString()!);
@@ -124,16 +126,17 @@ namespace FinTechCommon
 				throw new SqException($"BrokerNAV asset '{SqTicker}' should have a user.");
         }
 
-		public BrokerNav(AssetId32Bits assetId, string symbol, string name, string shortName, CurrencyId currency, User user, DateTime histStartDate)
+		public BrokerNav(AssetId32Bits assetId, string symbol, string name, string shortName, CurrencyId currency, User user, DateTime histStartDate, List<BrokerNav> aggregateNavChildren)
 			: base(assetId, symbol, name, shortName, currency)
         {
 			User = user;
 			ExpectedHistoryStartDateLoc = histStartDate;
+			AggregateNavChildren = aggregateNavChildren;
         }
-
+		
         public bool IsAggregatedNav
         {
-            get { return (SqTicker.Count('.') == 0); }   // N/GA.IM, N/DC.IM, N/DC.ID, N/DC , AggregatedNav has no '.'.
+            get { return (AggregateNavChildren.Count  > 0); }   // N/GA.IM, N/DC.IM, N/DC.ID, N/DC , AggregatedNav has no '.'.
         }
     }
 

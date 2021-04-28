@@ -94,7 +94,8 @@ namespace FinTechCommon
 
         public static async void UpdateFromVbServer(UpdateNavsParam p_updateParam, VBrokerServer p_vbServer)
         {
-            string vbServerIp = p_vbServer == VBrokerServer.AutoVb ? ServerIp.AtsVirtualBrokerServerPublicIpForClients : ServerIp.LocalhostLoopbackWithIP;
+            // ManualVb: On Linux: use LocalhostLoopbackWithIP 127.0.0.1, on Windows Debug: use the proper public IP of SqCore MTS
+            string vbServerIp = p_vbServer == VBrokerServer.AutoVb ? ServerIp.AtsVirtualBrokerServerPublicIpForClients : (Utils.RunningPlatform() == Platform.Windows) ? ServerIp.MtsVirtualBrokerServerPublicIpForClients : ServerIp.LocalhostLoopbackWithIP;
 
             string msg = $"?v=1&secTok={TcpMessage.GenerateSecurityToken()}&bAcc={(p_vbServer == VBrokerServer.AutoVb ? "Gyantal" : "Charmat,DeBlanzac")}&data=AccSum";
             string? tcpMsgResponse = null;

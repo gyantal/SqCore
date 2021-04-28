@@ -358,23 +358,25 @@ namespace FinTechCommon
             return (dates, adjCloses);
         }
 
-        private static void AddNavAssetsOfUserToAdjCloses(IGrouping<User?, Asset> navAssetsOfUser, AssetsCache p_assetCache, Db p_db, ref int nVirtualAggNavAssets, Dictionary<uint, DateOnly[]> assetsDates, Dictionary<uint, float[]> assetsAdjustedCloses)
+        private static void AddNavAssetsOfUserToAdjCloses(IGrouping<User?, BrokerNav> navAssetsOfUser, AssetsCache p_assetCache, Db p_db, ref int nVirtualAggNavAssets, Dictionary<uint, DateOnly[]> assetsDates, Dictionary<uint, float[]> assetsAdjustedCloses)
         {
             User user = navAssetsOfUser.Key!;
             List<DateOnly[]> navsDates = new List<DateOnly[]>();
             List<double[]> navsUnadjustedCloses = new List<double[]>();
             List<KeyValuePair<DateOnly, double>[]> navsDeposits = new List<KeyValuePair<DateOnly, double>[]>();
+            List<BrokerNav> navAssetsWithQuotes = new List<BrokerNav>();
             foreach (var navAsset in navAssetsOfUser)
             {
                 var dailyNavStr = p_db.GetAssetQuoteRaw(navAsset.AssetId); // 47K text data from 9.5K brotli data, starts with FormatString: "D/C,20090102/16460,20090105/16826,..."
                 if (dailyNavStr == null)
-                    continue; // temproraly: only [9:1] is in RedisDb.
+                    continue; // "DC.IM", "DC.ID" quote history is in RedisDb,but "DC.TM" TradeStation NAV is not. We exit here, and aggregate only the valid ones.
 
                 int iFirstComma = dailyNavStr.IndexOf(',');
                 string formatString = dailyNavStr.Substring(0, iFirstComma);  // "D/C" for Date/Closes
                 if (formatString != "D/C")
                     continue;
 
+                navAssetsWithQuotes.Add(navAsset);
                 var dailyNavStrSplit = dailyNavStr.Substring(iFirstComma + 1, dailyNavStr.Length - (iFirstComma + 1)).Split(',', StringSplitOptions.RemoveEmptyEntries);
                 DateOnly[] dates = dailyNavStrSplit.Select(r => new DateOnly(Int32.Parse(r.Substring(0, 4)), Int32.Parse(r.Substring(4, 2)), Int32.Parse(r.Substring(6, 2)))).ToArray();
                 double[] unadjustedClosesNav = dailyNavStrSplit.Select(r => Double.Parse(r.Substring(9))).ToArray();
@@ -386,14 +388,14 @@ namespace FinTechCommon
                 navsUnadjustedCloses.Add(unadjustedClosesNav);
                 navsDeposits.Add(deposits);
             }   // All NAVs of the user
-            if (navsDates.Count >= 2)   // if more than 2 NAVs for the user, a virtual synthetic aggregatedNAV and a virtual AssetID should be generated.
+            if (navAssetsWithQuotes.Count >= 2)   // if more than 2 NAVs for the user has valid history, a virtual synthetic aggregatedNAV and a virtual AssetID should be generated.
             {
                 string aggAssetSqTicker = "N/" + user.Initials; // e.g. "N/DC";
                 Asset? aggNavAsset = p_assetCache.TryGetAsset(aggAssetSqTicker); // at sucessive ReloadHistoricalData(), the p_assetCache already contains the aggregated virtual asset
                 if (aggNavAsset == null)
                 {
                     var aggAssetId = new AssetId32Bits(AssetType.BrokerNAV, (uint)(10000 + nVirtualAggNavAssets++));
-                    aggNavAsset = new BrokerNav(aggAssetId, user.Initials, "Aggregated NAV, " + user.Initials, "", CurrencyId.USD, user, p_db.GetExpectedHistoryStartDate("1y", aggAssetSqTicker));
+                    aggNavAsset = new BrokerNav(aggAssetId, user.Initials, "Aggregated NAV, " + user.Initials, "", CurrencyId.USD, user, p_db.GetExpectedHistoryStartDate("1y", aggAssetSqTicker), navAssetsWithQuotes);
                     p_assetCache.AddAsset(aggNavAsset);
                 }
 
