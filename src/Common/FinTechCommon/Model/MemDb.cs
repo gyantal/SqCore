@@ -106,10 +106,12 @@ namespace FinTechCommon
             InitRt_WT();
             InitNavRt_WT();
 
-            await ReloadDbDataIfChangedAndSetNewTimer();  // Polling for changes every 1 hour. Downloads the AllAssets, SqCoreWeb-used-Assets from Redis Db, and 
+            await ReloadDbDataIfChangedAndSetNewTimer();  // Polling for changes every 1 hour. Downloads the AllAssets, SqCoreWeb-used-Assets from Redis Db, and even HistData 
 
             IsInitialized = true;
             EvFirstInitialized?.Invoke();    // inform observers that MemDb was reloaded
+
+            SetNextReloadHistDataTriggerTime();
 
             // User updates only the JSON text version of data (assets, OptionPrices in either Redis or in SqlDb). But we use the Redis's Brotli version for faster DB access.
             Thread.Sleep(TimeSpan.FromSeconds(20));     // can start it in a separate thread, but it is fine to use this background thread

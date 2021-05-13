@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using SqCommon;
 
 namespace SqCoreWeb
@@ -64,8 +65,16 @@ namespace SqCoreWeb
             string url = "https://www.spglobal.com/spdji/en/indices/equity/sp-500/#news-research";
             string? webpage = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
 
-            StrongAssert.True(!String.IsNullOrEmpty(webpage), Severity.ThrowException, "Error in Overmind.CheckSpIndexChanges().DownloadStringWithRetry()");
-
+            StrongAssert.True(!String.IsNullOrEmpty(webpage), Severity.ThrowException, "Error in Overmind.CheckSpIndexChanges(). DownloadStringWithRetry()");
+            if (webpage!.Length < 20000) { // usually, it is 270K. If it is less than 50K, maybe an error message: "504 ERROR...The request could not be satisfied...CloudFront attempted to establish a connection with the origin"
+                // once per month rarely we receive "<head><title>502 Bad Gateway</title></head>"
+                // they have to restart their server so for 5-10 minutes, it is not available even in Chrome clients.
+                // in this case, sleep for 10 min, then retry
+                Utils.Logger.Warn($"CheckSpIndexChanges(). Page size is unexpectedly small: '{webpage}'");
+                Thread.Sleep(TimeSpan.FromMinutes(10));
+                webpage = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
+                StrongAssert.True(!String.IsNullOrEmpty(webpage), Severity.ThrowException, "Error in Overmind.CheckSpIndexChanges(). 2x DownloadStringWithRetry()");
+            }
             // "<li class=\"meta-data-date\">Mar 24, 2021</li>\n                                       <li class=\"meta-data-date\">5:15 PM</li>\n"
             // Skip the first split and assume every second <li> is a Date, every second <li> is a time for that day.
             // It is enough to check the first entry.
