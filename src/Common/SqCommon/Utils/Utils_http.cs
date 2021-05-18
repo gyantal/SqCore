@@ -75,10 +75,10 @@ namespace SqCommon
         // Yahoo historical data is handled by CsvReader in YahooFinanceApi
         // "https://api.nasdaq.com/api/calendar/splits?date=2021-02-24"
         // ContangoVisualizer:
-        // "http://www.cmegroup.com/CmeWS/mvc/Quotes/Future/425/G"
-        // "http://www.cmegroup.com/CmeWS/mvc/ProductCalendar/Future/425"
-        // "http://www.cmegroup.com/CmeWS/mvc/Quotes/Future/444/G"
-        // "http://www.cmegroup.com/CmeWS/mvc/ProductCalendar/Future/444"
+        // "https://www.cmegroup.com/CmeWS/mvc/Quotes/Future/425/G"
+        // "https://www.cmegroup.com/CmeWS/mvc/ProductCalendar/Future/425"
+        // "https://www.cmegroup.com/CmeWS/mvc/Quotes/Future/444/G"
+        // "https://www.cmegroup.com/CmeWS/mvc/ProductCalendar/Future/444"
         // QuickfolioNews:
         // Yahoo RSS is handled in their code.
         // "https://sheets.googleapis.com/v4/spreadsheets/1c5ER22sXDEVzW3uKthclpArlZvYuZd6xUffXhs6rRsM/values/A1%3AA1?key=..."
@@ -93,7 +93,7 @@ namespace SqCommon
             // https://stackoverflow.com/questions/11694910/how-do-you-use-object-initializers-for-a-list-of-key-value-pairs/11695018
             // It is not Array initialization, it is Dictionary initialization, but it is not allowed for HttpRequestHeaders by design. Only HttpRequestMessage can create an empty Header.
 
-            if (p_url.StartsWith("https://api.nasdaq.com"))
+            if (p_url.StartsWith("https://api.nasdaq.com") || p_url.StartsWith("https://www.cmegroup.com"))
                 return new HttpRequestMessage
                 {
                     RequestUri = new Uri(p_url),

@@ -219,7 +219,7 @@ namespace SqCoreWeb.Controllers
         {
 
             //Downloading live data from cmegroup.com.
-            string? webpageLive = Utils.DownloadStringWithRetryAsync("http://www.cmegroup.com/CmeWS/mvc/Quotes/Future/425/G", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+            string? webpageLive = Utils.DownloadStringWithRetryAsync("https://www.cmegroup.com/CmeWS/mvc/Quotes/Future/425/G", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
             //bool isOkLive = Utils.DownloadStringWithRetry(out webpageLive, "http://www.cmegroup.com/trading/energy/crude-oil/light-sweet-crude.html", 3, TimeSpan.FromSeconds(2), true);
             if (webpageLive == null)
                 return "Error in live data";
@@ -267,7 +267,7 @@ namespace SqCoreWeb.Controllers
             string futCodeNext = string.Empty;
             string spotVixData = string.Empty;
             string titleOIL = "OIL Futures Term Structure";
-            string dataSourceOIL = "http://www.cmegroup.com/trading/energy/crude-oil/light-sweet-crude.html";
+            string dataSourceOIL = "https://www.cmegroup.com/trading/energy/crude-oil/light-sweet-crude.html";
 
             int startPosLiveDate = webpageLive.IndexOf("\"updated\":\"",liveFuturesDataVecInd[0]) + "\"updated\":\"".Length;
             liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 29);
@@ -281,7 +281,7 @@ namespace SqCoreWeb.Controllers
             futCodeNext = webpageLive.Substring(futCodeInd, 3);
 
             //Downloading expiration dates from cmegroup.com.
-            string? webpageLiveExp = Utils.DownloadStringWithRetryAsync("http://www.cmegroup.com/CmeWS/mvc/ProductCalendar/Future/425", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+            string? webpageLiveExp = Utils.DownloadStringWithRetryAsync("https://www.cmegroup.com/CmeWS/mvc/ProductCalendar/Future/425", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
             if (webpageLiveExp == null)
                 return "Error in live data";
 
@@ -392,7 +392,7 @@ namespace SqCoreWeb.Controllers
         {
 
             //Downloading live data from cmegroup.com.
-            string? webpageLive = Utils.DownloadStringWithRetryAsync("http://www.cmegroup.com/CmeWS/mvc/Quotes/Future/444/G", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+            string? webpageLive = Utils.DownloadStringWithRetryAsync("https://www.cmegroup.com/CmeWS/mvc/Quotes/Future/444/G", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
             //bool isOkLive = Utils.DownloadStringWithRetry("http://www.cmegroup.com/trading/energy/natural-gas/natural-gas.html", out webpageLive, 3, TimeSpan.FromSeconds(2), true);
             if (webpageLive == null)
                 return "Error in live data";
@@ -440,7 +440,7 @@ namespace SqCoreWeb.Controllers
             string futCodeNext = string.Empty;
             string spotVixData = string.Empty;                
             string titleGAS = "GAS Futures Term Structure";
-            string dataSourceGAS = "http://www.cmegroup.com/trading/energy/natural-gas/natural-gas.html";
+            string dataSourceGAS = "https://www.cmegroup.com/trading/energy/natural-gas/natural-gas.html";
 
             int startPosLiveDate = webpageLive.IndexOf("\"updated\":\"", liveFuturesDataVecInd[0]) + "\"updated\":\"".Length;
             liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 29);
@@ -454,7 +454,7 @@ namespace SqCoreWeb.Controllers
             futCodeNext = webpageLive.Substring(futCodeInd, 3);
 
             //Downloading expiration dates from cmegroup.com.
-            string? webpageLiveExp = Utils.DownloadStringWithRetryAsync("http://www.cmegroup.com/CmeWS/mvc/ProductCalendar/Future/444", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+            string? webpageLiveExp = Utils.DownloadStringWithRetryAsync("https://www.cmegroup.com/CmeWS/mvc/ProductCalendar/Future/444", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
             if (webpageLiveExp == null)
                 return "Error in live data";
 
