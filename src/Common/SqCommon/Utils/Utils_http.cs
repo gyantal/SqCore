@@ -21,7 +21,7 @@ namespace SqCommon
             return await DownloadStringWithRetryAsync(p_url, 3, TimeSpan.FromSeconds(2), true);
         }
 
-        public static async Task<string?> DownloadStringWithRetryAsync(string p_url, int p_nRetry, TimeSpan p_sleepBetweenRetries, bool p_throwExceptionIfUnsuccesfull = true)
+        public static async Task<string?> DownloadStringWithRetryAsync(string p_url, int p_nRetry, TimeSpan p_sleepBetweenRetries, bool p_throwExceptionIfUnsuccesful = true)
         {
             string webpage = string.Empty;
             int nDownload = 0;
@@ -59,7 +59,7 @@ namespace SqCommon
                         }
                     }
                     Thread.Sleep(p_sleepBetweenRetries);
-                    if ((nDownload >= p_nRetry) && p_throwExceptionIfUnsuccesfull)
+                    if ((nDownload >= p_nRetry) && p_throwExceptionIfUnsuccesful)
                         throw;  // if exception still persist after many tries, rethrow it to caller
 
                     // we reuse the same g_httpClient, however, request cannot be reused, because then using the same request again. "System.InvalidOperationException: The request message was already sent. Cannot send the same request message multiple times."
@@ -93,7 +93,7 @@ namespace SqCommon
             // https://stackoverflow.com/questions/11694910/how-do-you-use-object-initializers-for-a-list-of-key-value-pairs/11695018
             // It is not Array initialization, it is Dictionary initialization, but it is not allowed for HttpRequestHeaders by design. Only HttpRequestMessage can create an empty Header.
 
-            if (p_url.StartsWith("https://api.nasdaq.com") || p_url.StartsWith("https://www.cmegroup.com"))
+            if (p_url.StartsWith("https://api.nasdaq.com"))
                 return new HttpRequestMessage
                 {
                     RequestUri = new Uri(p_url),
@@ -104,6 +104,30 @@ namespace SqCommon
                             { "user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36" },
                             { "accept-encoding", "gzip, deflate, br" },
                             { "accept-language", "en-US,en;q=0.9" }
+                        }
+                };
+            else if (p_url.StartsWith("https://www.cmegroup.com"))
+            // had to copy All headers from Linux Chrome + setting up Http1.1 to make it work with curl (wget is only http1.0, use curl)
+            // there is no need for cookies (yet)
+            // curl -v --http1.1 -H 'Host: www.cmegroup.com' -H 'Connection: keep-alive' -H 'Cache-Control: max-age=0' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' -H 'Sec-Fetch-Site: none' -H 'Sec-Fetch-Mode: navigate' -H 'Sec-Fetch-User: ?1' -H 'Sec-Fetch-Dest: document' -H 'Accept-Encoding: gzip, deflate, br' -H 'Accept-Language: en-US,en;q=0.9' --output cme444brotli.br  https://www.cmegroup.com/CmeWS/mvc/Quotes/Future/444/G
+                return new HttpRequestMessage
+                {
+                    RequestUri = new Uri(p_url),
+                    Method = HttpMethod.Get,
+                    Version = HttpVersion.Version11,    // Changed from Version20 to 11, but it didn't help on Linux
+                    Headers = {
+                            { "Host", "www.cmegroup.com" }, // copied from Linux Chrome, worked in curl.
+                            { "Connection", "keep-alive" },
+                            { "Cache-Control", "max-age=0" },
+                            { "Upgrade-Insecure-Requests", "1" },
+                            { "User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36" },
+                            { "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0." },
+                            { "Sec-Fetch-Site", "none" },
+                            { "Sec-Fetch-Mode", "navigate" },
+                            { "Sec-Fetch-User", "?1" },
+                            { "Sec-Fetch-Dest", "document" },
+                            { "Accept-Encoding", "gzip, deflate, br" },
+                            { "Accept-Language", "en-US,en;q=0.9" }
                         }
                 };
 
