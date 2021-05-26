@@ -15,6 +15,7 @@
             <h3>Tools</h3>
             <ul>
               <li><a href="#" (click)="onChangeActiveTool('MarketHealth')">MarketHealth</a></li>
+              <li><a href="#" (click)="onChangeActiveTool('BrPrtfViewer')">BrPrtfViewer</a></li>
               <li><a href="#" (click)="onChangeActiveTool('CatalystSniffer')">CatalystSniffer</a></li>
               <li><a href="#" (click)="onChangeActiveTool('QuickfolioNews')">QuickfolioNews</a></li>
             </ul>
@@ -66,6 +67,7 @@
 
 <div class="content">
   <app-market-health [hidden]="!(activeTool=='MarketHealth')" [_parentWsConnection]="_socket"></app-market-health>
+  <app-brprtf-viewer [hidden]="!(activeTool=='BrPrtfViewer')" ></app-brprtf-viewer>
   <app-catalyst-sniffer [hidden]="!(activeTool=='CatalystSniffer')" ></app-catalyst-sniffer>
   <app-quickfolio-news [hidden]="!(activeTool=='QuickfolioNews')" [_parentWsConnection]="_socket"></app-quickfolio-news>
   <app-tooltip-sandpit [hidden]="!(activeTool=='TooltipSandpit')" ></app-tooltip-sandpit>

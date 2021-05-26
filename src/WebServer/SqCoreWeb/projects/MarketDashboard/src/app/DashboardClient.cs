@@ -73,7 +73,8 @@ namespace SqCoreWeb
             ClientIP = p_clientIP;
             UserEmail = p_userEmail;
 
-            Ctor_mktHealth();
+            Ctor_MktHealth();
+            Ctor_BrPrtfViewer();
             Ctor_QuickfNews();
         }
     }

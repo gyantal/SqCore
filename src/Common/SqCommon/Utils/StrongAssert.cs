@@ -67,9 +67,11 @@ namespace SqCommon
         // http://stackoverflow.com/questions/814878/c-sharp-difference-between-and-equals
         // When == is used on an expression of type object, it'll resolve to System.Object.ReferenceEquals.
         // Equals is just a virtual method and behaves as such, so the overridden version will be used(which, for string type compares the contents).
-        public static void Equal<T>(T p_obj1, T p_obj2, Severity p_severity, string p_message, params object[] p_args) where T : struct
+        // public static void Equal<T>(T p_obj1, T p_obj2, Severity p_severity, string p_message, params object[] p_args) where T : struct
+        public static void Equal<T>(T p_obj1, T p_obj2, Severity p_severity, string p_message, params object[] p_args)
         {
-            if (!p_obj1.Equals(p_obj2))
+            bool isEqual = p_obj1 != null && p_obj2 != null && p_obj1.Equals(p_obj2);
+            if (!isEqual)
                 Fail_core(p_severity, p_message, p_args);
         }
 

@@ -84,7 +84,7 @@ namespace SqCoreWeb
 
         string m_lastLookbackPeriodStr = "YTD";
 
-        void Ctor_mktHealth()
+        void Ctor_MktHealth()
         {
             InitAssetData();
         }

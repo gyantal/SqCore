@@ -54,12 +54,12 @@ namespace SqCoreWeb
             {
                 webBuilder.ConfigureKestrel(serverOptions =>
                 {
-                        // Because of Google Auth cookie usage and Chrome SameSite policy, use only the HTTPS protocol (no HTTP), even in local development. See explanation at Google Auth code.
-                        // Safe to leave ports 5000, 5001 on IPAddress.Loopback (localhost), because localhost can be accessed only from local machine. From the public web, the ports 5000, 5001 is not accessable.
-                        // See cookies: Facebook and Google logins only work in HTTPS (even locally), and because we want in Local development the same experience (user email info) as is production, we eliminate HTTP in local development
-                        // serverOptions.Listen(IPAddress.Loopback, 5000); // 2020-10: HTTP still works for basic things // In IPv4, 127.0.0.1 is the most commonly used loopback address, in IP6, it is [::1],  "localhost" means either 127.0.0.1 or  [::1] 
+                    // Because of Google Auth cookie usage and Chrome SameSite policy, use only the HTTPS protocol (no HTTP), even in local development. See explanation at Google Auth code.
+                    // Safe to leave ports 5000, 5001 on IPAddress.Loopback (localhost), because localhost can be accessed only from local machine. From the public web, the ports 5000, 5001 is not accessable.
+                    // See cookies: Facebook and Google logins only work in HTTPS (even locally), and because we want in Local development the same experience (user email info) as is production, we eliminate HTTP in local development
+                    // serverOptions.Listen(IPAddress.Loopback, 5000); // 2020-10: HTTP still works for basic things // In IPv4, 127.0.0.1 is the most commonly used loopback address, in IP6, it is [::1],  "localhost" means either 127.0.0.1 or  [::1] 
 
-                        string sensitiveConfigFullPath = Utils.SensitiveConfigFolderPath() + $"sqcore.net.merged_pubCert_privKey.pfx";
+                    string sensitiveConfigFullPath = Utils.SensitiveConfigFolderPath() + $"sqcore.net.merged_pubCert_privKey.pfx";
                     Utils.Logger.Info($"Pfx file: " + sensitiveConfigFullPath);
                     serverOptions.Listen(IPAddress.Loopback /* '127.0.0.1' (it is not 'localhost') */, 5001, listenOptions =>  // On Linux server: only 'localhost:5001' is opened, but '<PublicIP>:5001>' is not. We would need PublicAny for that. But for security, it is fine.
                     {

@@ -50,7 +50,7 @@ namespace FinTechCommon
             // Although 'Assets.brotli' would be 520bytes instead of 1.52KB, we don't not use binary brotli data for Assets, only for historical data.
             // Reason is that it is difficult to maintain, append new Stocks into Redis.Assets if it is binary brotli. Just a lot of headache.
             // At the same time it is a small table (not historical), and it is only loaded at once at program start, when we can afford longer loading times.
-            
+
             string sqUserDataStr = m_redisDb.StringGet("sq_user");
             bool isUsersChangedInDb = m_lastUsersStr != sqUserDataStr;
             string assetsStr = m_redisDb.HashGet("memDb", "Assets");

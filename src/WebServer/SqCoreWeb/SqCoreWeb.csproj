@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Common\FinTechCommon\FinTechCommon.csproj" />
+    <ProjectReference Include="..\..\Common\BrokerCommon\BrokerCommon.csproj" />
     <ProjectReference Include="..\..\Common\SqCommon\SqCommon.csproj" />
     <ProjectReference Include="..\..\Common\DbCommon\DbCommon.csproj" />
     <None Update="NLog.config" CopyToOutputDirectory="PreserveNewest" />

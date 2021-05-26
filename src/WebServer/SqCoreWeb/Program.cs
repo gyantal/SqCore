@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using SqCommon;
 using DbCommon;
 using FinTechCommon;
+using BrokerCommon;
 
 namespace SqCoreWeb
 {
@@ -93,6 +94,7 @@ namespace SqCoreWeb
                 int redisDbIndex = 0;  // DB-0 is ProductionDB. DB-1+ can be used for Development when changing database schema, so the Production system can still work on the ProductionDB
                 var db = new Db(redisConnString, redisDbIndex, null);   // mid-level DB wrapper above low-level DB
                 MemDb.gMemDb.Init(db); // high level DB used by functionalities
+                BrokersWatcher.gWatcher.Init();
 
                 Caretaker.gCaretaker.Init(Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
                 SqTaskScheduler.gTaskScheduler.Init();
@@ -133,6 +135,7 @@ namespace SqCoreWeb
 
             SqTaskScheduler.gTaskScheduler.Exit();
             Caretaker.gCaretaker.Exit();
+            BrokersWatcher.gWatcher.Exit();
             MemDb.gMemDb.Exit();
 
             gLogger.Info("****** Main() END");
