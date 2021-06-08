@@ -93,16 +93,21 @@ namespace SqCoreWeb
                 if ((Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") && httpContext.Request.Host.Host.StartsWith("127.0.0.1"))
                     isAllowedRequest = true;    // vscode-chrome-debug runs Chrome with --remote-debugging-port=9222. On that Gmail login is not possible. Result "This browser or app may not be secure.". So, don't require user logins if Chrome-Debug is used
 
+                string ipStr = WsUtils.GetRequestIPv6(httpContext, false);
                 if (isAllowedRequest)
                 {
                     // allow the requests. Let it through to the other handlers in the pipeline.
-                    string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow.ToString("HH':'mm':'ss.f")}#Uknown user, but we allow request: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {WsUtils.GetRequestIPv6(httpContext)}. Falling through to further Kestrel middleware without redirecting to '/UserAccount/login'.");
-                    Console.WriteLine(msg);
-                    gLogger.Info(msg);
+                    bool isExpectedAllowed = (ipStr == ServerIp.HealthMonitorPublicIp); // Request.Path = "/WebServer/ping". if it comes from a known IP, don't write error message out to console/log.
+                    if (!isExpectedAllowed)
+                    {
+                        string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow.ToString("HH':'mm':'ss.f")}#Uknown user, but we allow request: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {ipStr}. Falling through to further Kestrel middleware without redirecting to '/UserAccount/login'.");
+                        Console.WriteLine(msg);
+                        gLogger.Info(msg);
+                    }
                 }
                 else
                 {
-                    string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow.ToString("HH':'mm':'ss.f")}#Uknown or not allowed user request: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {WsUtils.GetRequestIPv6(httpContext)}. Redirecting to '/UserAccount/login'.");
+                    string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow.ToString("HH':'mm':'ss.f")}#Uknown or not allowed user request: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {ipStr}. Redirecting to '/UserAccount/login'.");
                     Console.WriteLine(msg);
                     gLogger.Info(msg);
 

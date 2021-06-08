@@ -14,6 +14,7 @@ namespace SqCommon
     {
         public static Caretaker gCaretaker = new Caretaker();
 
+        string m_appName = string.Empty;
         string m_serviceSupervisorsEmail = string.Empty;
         bool m_needDailyMaintenance;
         TimeSpan m_dailyMaintenanceFromMidnightET = TimeSpan.MinValue;
@@ -25,8 +26,9 @@ namespace SqCommon
         // ManualTrader server:
         // SqCoreWeb: 2:00 ET
         // VBroker: 2:30 ET
-        public void Init(string p_serviceSupervisorsEmail, bool p_needDailyMaintenance, TimeSpan p_dailyMaintenanceFromMidnightET)
+        public void Init(string p_appName, string p_serviceSupervisorsEmail, bool p_needDailyMaintenance, TimeSpan p_dailyMaintenanceFromMidnightET)
         {
+            m_appName = p_appName;
             m_serviceSupervisorsEmail = p_serviceSupervisorsEmail;
             m_needDailyMaintenance = p_needDailyMaintenance;
             m_dailyMaintenanceFromMidnightET = p_dailyMaintenanceFromMidnightET;
@@ -59,8 +61,31 @@ namespace SqCommon
         public void Timer_Elapsed(object? state)    // Timer is coming on a ThreadPool thread
         {
             Utils.Logger.Info($"Caretaker.Timer_Elapsed() START");
-            DailyMaintenance();
-            SetTimer(m_timer!);
+            try
+            {
+                DailyMaintenance();
+                SetTimer(m_timer!);
+            }
+            catch (System.Exception e)
+            {
+                // 2021-06-02: HealthMonitor app: unexplained exception coupled with 'not enough free memory' message on Linux VNC desktop: "
+                // "Unhandled exception. System.IO.FileNotFoundException: Unable to find the specified file.
+                //    at Interop.Sys.GetCwdHelper(Byte* ptr, Int32 bufferSize)
+                //    at Interop.Sys.GetCwd()   // Directory.GetCurrentDirectory() was called
+                //    at SqCommon.Caretaker.CheckFreeDiskSpace(StringBuilder p_noteToClient)
+
+                Utils.Logger.Error(e, "Exception in Caretaker.Timer_Elapsed().");
+                string emailBody = e.ToStringWithShortenedStackTrace(1000);
+                new Email()
+                {
+                    Body = emailBody,
+                    IsBodyHtml = false,
+                    Subject = $"{m_appName} Caretaker Error! App crashed.",    // 'error' or 'warning' should be in the subject line to trigger attention of users
+                    ToAddresses = m_serviceSupervisorsEmail
+                }.Send();             // see SqCore.WebServer.SqCoreWeb.NoGitHub.json
+                throw;    // we can choose to swallow the exception or crash the app. If we swallow it, we might risk that error will go undetected forever.
+            }
+            
             Utils.Logger.Info($"Caretaker.Timer_Elapsed() END");
         }
 
@@ -78,6 +103,7 @@ namespace SqCommon
         {
             Utils.Logger.Info($"Caretaker.CheckFreeDiskSpace() START");
             string currentWorkingDir = Directory.GetCurrentDirectory();
+            Utils.Logger.Info($"Caretaker.GetCurrentDirectory(): '{currentWorkingDir}'");   // this can throw System.IO.FileNotFoundException if we redeploy the App, and overwrite (delete) folders under the app, without stopping/restarting the app.
             string foundIssues = string.Empty;
             int requiredFreeSpaceGb = 2;
             if (p_noteToClient != null)
@@ -116,7 +142,7 @@ namespace SqCommon
                 {
                     Body = p_noteToClient.ToString(),
                     IsBodyHtml = false,
-                    Subject = "Warning! CheckFreeDiskSpace found low free space",    // 'error' or 'warning' should be in the subject line to trigger attention of users
+                    Subject = $"{m_appName} Caretaker Warning! CheckFreeDiskSpace found low free space",    // 'error' or 'warning' should be in the subject line to trigger attention of users
                     ToAddresses = m_serviceSupervisorsEmail
                 }.Send();             // see SqCore.WebServer.SqCoreWeb.NoGitHub.json
             }

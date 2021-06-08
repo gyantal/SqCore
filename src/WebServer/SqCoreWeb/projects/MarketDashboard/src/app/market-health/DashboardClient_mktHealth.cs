@@ -9,6 +9,7 @@ using FinTechCommon;
 using System.Text.Json.Serialization;
 using System.Net.WebSockets;
 using Microsoft.Extensions.Primitives;
+using System.Threading.Tasks;
 
 namespace SqCoreWeb
 {
@@ -125,12 +126,12 @@ namespace SqCoreWeb
         // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
         public void OnConnectedWsAsync_MktHealth()
         {
-            new Thread(() =>
+            Task.Run(() =>  // running parallel on a ThreadPool thread
             {
                 Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
 
-                HandshakeMktHealth handshakeMktHlth = GetHandshakeMktHlth();
-                byte[] encodedMsg = Encoding.UTF8.GetBytes("HandshakeMktHlth:" + Utils.CamelCaseSerialize(handshakeMktHlth));
+                HandshakeMktHealth handshake = GetHandshakeMktHlth();
+                byte[] encodedMsg = Encoding.UTF8.GetBytes("HandshakeMktHlth:" + Utils.CamelCaseSerialize(handshake));
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
 
@@ -150,7 +151,7 @@ namespace SqCoreWeb
                         m_rtMktSummaryTimer.Change(TimeSpan.FromMilliseconds(m_rtMktSummaryTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
                     }
                 }
-            }).Start();
+            });
         }
 
         private void SendHistoricalWs()

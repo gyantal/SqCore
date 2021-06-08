@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using SqCommon;
+using BrokerCommon;
 using YahooFinanceApi;
 
 namespace FinTechCommon
@@ -64,20 +65,20 @@ namespace FinTechCommon
             // NAV Tickers GA.IM.NAV, DC.IM.NAV, DC.ID.NAV, DC.NAV , but select only the Non-virtual non-Aggregate ones.
             // Most of the time, DC watches he "DC.NAV" real-time only. In that case, don't update Agy's "GA.IM.NAV" in every 60 seconds.
             p_freqParam.NTimerPassed++;
-            Asset[] downloadAssets = p_freqParam.Assets;
+            BrokerNav[] downloadAssets = p_freqParam.Assets.Select(r => (r as BrokerNav)!).ToArray();
             if (p_freqParam.RtFreq == RtFreq.HighFreq)  // if it is highFreq timer, then add the recently asked assets.
             {
-                List<Asset> updatingNavAssets = new List<Asset>();
+                List<BrokerNav> updatingNavAssets = new List<BrokerNav>();
                 var recentlyAskedNavAssets = m_lastRtPriceQueryTime.Where(r => r.Key.AssetId.AssetTypeID == AssetType.BrokerNAV && ((DateTime.UtcNow - r.Value) <= TimeSpan.FromSeconds(5 * 60))).Select(r => (r.Key as BrokerNav)!); //  if there was a function call in the last 5 minutes
                 foreach (var nav in recentlyAskedNavAssets)
                 {
                     // the virtual DC.NAV assets: replace them with the underlying sub-Navs
                     if (nav.IsAggregatedNav)    // add the underlying sub-Navs
-                        updatingNavAssets.AddRange(AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV && !((r as BrokerNav)!.IsAggregatedNav) && (r as BrokerNav)!.User == nav.User));
+                        updatingNavAssets.AddRange(AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV && !((r as BrokerNav)!.IsAggregatedNav) && (r as BrokerNav)!.User == nav.User).Select(r => (r as BrokerNav)!));
                     else
                         updatingNavAssets.Add(nav);
                 }
-                downloadAssets = p_freqParam.Assets.Concat(updatingNavAssets).ToArray();
+                downloadAssets = downloadAssets.Concat(updatingNavAssets).ToArray();
             }
             if (downloadAssets.Length == 0)
                 return;
@@ -116,113 +117,30 @@ namespace FinTechCommon
             return (lastValue, lastValueUtc);
         }
 
-
-        void DownloadLastPriceNav(List<Asset> p_navAssets)
+        void DownloadLastPriceNav(List<BrokerNav> p_navAssets)
         {
             Utils.Logger.Info("DownloadLastPriceNav() START");
             m_nNavDownload++;
             try
             {
-                DownloadLastPriceNavFromVbServer(p_navAssets, VBrokerServer.AutoVb);
-                DownloadLastPriceNavFromVbServer(p_navAssets, VBrokerServer.ManualVb);
+                foreach (var navAsset in p_navAssets)
+                {
+                    GatewayId gatewayId = navAsset.GatewayId;
+                    if (gatewayId == GatewayId.None)
+                        continue;
+                    List<AccSum>? accSums = BrokersWatcher.gWatcher.GetAccountSums(gatewayId);
+                    if (accSums == null)
+                        continue;
+                    
+                    string navStr = accSums.First(r => r.Tag == "NetLiquidation").Value;
+                    if (!Double.TryParse(navStr, out double nav))
+                        nav = Double.NegativeInfinity;
+                    navAsset.LastValue = (int)Math.Round(nav, MidpointRounding.AwayFromZero); // 0.5 is rounded to 1, -0.5 is rounded to -1. Good.	
+                }
             }
             catch (Exception e)
             {
                 Utils.Logger.Error(e, "DownloadLastPriceNav()");
-            }
-        }
-
-        private async void DownloadLastPriceNavFromVbServer(List<Asset> p_navAssets, VBrokerServer p_vbServer)
-        {
-            List<Asset> acceptableNavAssets = new List<Asset>();
-            List<string> bAccStrArr = new List<string>();
-            foreach (var nav in p_navAssets)
-            {
-                if (p_vbServer == VBrokerServer.AutoVb && nav.AssetId.SubTableID == 1)
-                {
-                    acceptableNavAssets.Add(nav);
-                    bAccStrArr.Add("Gyantal");
-                }
-                else if (p_vbServer == VBrokerServer.ManualVb)
-                { 
-                    if (nav.AssetId.SubTableID == 2)
-                    {
-                        acceptableNavAssets.Add(nav);
-                        bAccStrArr.Add("Charmat");
-                    } else if (nav.AssetId.SubTableID == 3)
-                    {
-                        acceptableNavAssets.Add(nav);
-                        bAccStrArr.Add("DeBlanzac");
-                    }
-                }
-            }
-            if (acceptableNavAssets.Count == 0)
-                return;
-
-            // ManualVb: On Linux: use LocalhostLoopbackWithIP 127.0.0.1, on Windows Debug: use the proper public IP of SqCore MTS
-            string vbServerIp = p_vbServer == VBrokerServer.AutoVb ? ServerIp.AtsVirtualBrokerServerPublicIpForClients : (Utils.RunningPlatform() == Platform.Windows) ? ServerIp.MtsVirtualBrokerServerPublicIpForClients : ServerIp.LocalhostLoopbackWithIP;
-
-            string brAccStr = String.Join(',', bAccStrArr.ToArray());
-
-            string msg = $"?v=1&secTok={TcpMessage.GenerateSecurityToken()}&bAcc={brAccStr}&data=AccSum";
-            string? tcpMsgResponse = null;
-            try
-            {
-                tcpMsgResponse = await TcpMessage.Send(msg, (int)TcpMessageID.GetAccountsInfo, vbServerIp, ServerIp.DefaultVirtualBrokerServerPort);
-            }
-            catch (System.Exception)
-            {
-                tcpMsgResponse = null;
-            }
-            if (String.IsNullOrEmpty(tcpMsgResponse))
-            {
-                string infoMsg = $"Warning! NAV realtime of '{brAccStr}' to {vbServerIp}:{ServerIp.DefaultVirtualBrokerServerPort} failed. Check that both the IB's TWS and the VirtualBroker are running on Manual/Auto Trading Server! Start them manually if needed!";
-                // This exception is expected. Not an error. IB TWS is expected to be down from 23:40 to 06:50.
-                var timeFromMidnightUtc = DateTime.UtcNow.TimeOfDay;
-                if (timeFromMidnightUtc >= TimeSpan.FromHours(10) && timeFromMidnightUtc <= TimeSpan.FromHours(23)) // should be available from 10-23h UTC
-                    Utils.Logger.Error(infoMsg);
-                else
-                    Utils.Logger.Info(infoMsg);
-                return;
-            }
-            tcpMsgResponse = tcpMsgResponse.Replace("\\\"", "\"");
-            Utils.Logger.Info($"UpdateRtNavFromVbServer(). Received '{tcpMsgResponse}'");
-            var vbReply = Utils.LoadFromJSON<List<BrAccJsonHelper>>(tcpMsgResponse);
-            if (vbReply == null)
-            {
-                Utils.Logger.Error($"Error. NAV text from Vbroker cannot be interpreted as JSON: '{tcpMsgResponse}'");
-                return;
-            }
-            foreach (var brAccInfo in vbReply) // Charmat,DeBlanzac grouped together or Gyantal
-            {
-                string? brAcc = brAccInfo.BrAcc;
-                double nav = Double.NegativeInfinity;
-                foreach (var accSum in brAccInfo.AccSums!)  // in theory it can return 2 AccInfo if user has 2 accounts, but probably it is a failed implementation. However, I keep it for current compatibility with SqLab VBroker.
-                {
-                    if (accSum["Tag"] != "NetLiquidation")
-                        continue;
-                    string navStr = accSum["Value"];
-                    if (!Double.TryParse(navStr, out nav))
-                        nav = Double.NegativeInfinity;
-                    break;
-                }
-                if (nav == Double.NegativeInfinity)
-                    continue;
-
-                var subTableId = brAcc switch
-                {
-                    "Gyantal" => 1,
-                    "Charmat" => 2,
-                    "DeBlanzac" => 3,
-                    _ => Int32.MinValue,
-                };
-                if (subTableId == Int32.MinValue)
-                    continue;
-
-                var brAccNav = p_navAssets.Where(r => r.AssetId.SubTableID == subTableId).FirstOrDefault();
-                if (brAccNav != null) {
-                    brAccNav.LastValue = (int)Math.Round(nav, MidpointRounding.AwayFromZero); // 0.5 is rounded to 1, -0.5 is rounded to -1. Good.
-                }
             }
         }
 

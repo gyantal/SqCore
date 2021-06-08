@@ -5,6 +5,8 @@ using SqCommon;
 using StackExchange.Redis;
 using Microsoft.Extensions.Primitives;
 using System.Threading.Tasks;
+using BrokerCommon;
+using System.Linq;
 
 namespace FinTechCommon
 {
@@ -88,68 +90,23 @@ namespace FinTechCommon
             if (etNow.IsWeekend())
                 return;
 
-            UpdateFromVbServer(p_updateParam, VBrokerServer.AutoVb);
-            UpdateFromVbServer(p_updateParam, VBrokerServer.ManualVb);
-        }
+            Dictionary<GatewayId, uint> GatewayId2SubTableId = new Dictionary<GatewayId, uint>() {
+                    {GatewayId.GyantalMain, 1}, {GatewayId.CharmatMain, 2}, {GatewayId.DeBlanzacMain, 3}};
 
-        public static async void UpdateFromVbServer(UpdateNavsParam p_updateParam, VBrokerServer p_vbServer)
-        {
-            // ManualVb: On Linux: use LocalhostLoopbackWithIP 127.0.0.1, on Windows Debug: use the proper public IP of SqCore MTS
-            string vbServerIp = p_vbServer == VBrokerServer.AutoVb ? ServerIp.AtsVirtualBrokerServerPublicIpForClients : (Utils.RunningPlatform() == Platform.Windows) ? ServerIp.MtsVirtualBrokerServerPublicIpForClients : ServerIp.LocalhostLoopbackWithIP;
-
-            string msg = $"?v=1&secTok={TcpMessage.GenerateSecurityToken()}&bAcc={(p_vbServer == VBrokerServer.AutoVb ? "Gyantal" : "Charmat,DeBlanzac")}&data=AccSum";
-            string? tcpMsgResponse = null;
-            try
+            foreach (var gw2SubTableId in GatewayId2SubTableId)
             {
-                tcpMsgResponse = await TcpMessage.Send(msg, (int)TcpMessageID.GetAccountsInfo, vbServerIp, ServerIp.DefaultVirtualBrokerServerPort);
-            }
-            catch (System.Exception)
-            {
-                tcpMsgResponse = null;
-            }
-            if (String.IsNullOrEmpty(tcpMsgResponse))
-            {
-                string errorMsg = $"Error. NAV daily to {vbServerIp}:{ServerIp.DefaultVirtualBrokerServerPort}: Check that both the IB's TWS and the VirtualBroker are running on Manual/Auto Trading Server! Start them manually if needed!";
-                Utils.Logger.Error(errorMsg);
-                return;
-            }
-            tcpMsgResponse = tcpMsgResponse.Replace("\\\"", "\"");
-            Utils.Logger.Info($"UpdateNavsService.GetNav(). Received '{tcpMsgResponse}'");
-            var vbReply = Utils.LoadFromJSON<List<BrAccJsonHelper>>(tcpMsgResponse);
-            if (vbReply == null)
-            {
-                Utils.Logger.Error($"Error. NAV text from Vbroker cannot be interpreted as JSON: '{tcpMsgResponse}'");
-                return;
-            }
-            foreach (var brAccInfo in vbReply) // Charmat,DeBlanzac grouped together or Gyantal
-            {
-                string? brAcc = brAccInfo.BrAcc;
-                double nav = Double.NegativeInfinity;
-                foreach (var accSum in brAccInfo.AccSums!)  // in theory it can return 2 AccInfo if user has 2 accounts, but probably it is a failed implementation. However, I keep it for current compatibility with SqLab VBroker.
-                {
-                    if (accSum["Tag"] != "NetLiquidation")
-                        continue;
-                    string navStr = accSum["Value"];
-                    if (!Double.TryParse(navStr, out nav))
-                        nav = Double.NegativeInfinity;
-                    break;
-                }
-                if (nav == Double.NegativeInfinity)
+                GatewayId gatewayId = gw2SubTableId.Key;
+                List<AccSum>? accSums = BrokersWatcher.gWatcher.GetAccountSums(gatewayId);
+                if (accSums == null)
                     continue;
 
-                var subTableId = brAcc switch
-                {
-                    "Gyantal" => 1,
-                    "Charmat" => 2,
-                    "DeBlanzac" => 3,
-                    _ => Int32.MinValue,
-                };
-                if (subTableId == Int32.MinValue)
-                    continue;
-
-                UpdateAssetInDb(p_updateParam, new AssetId32Bits(AssetType.BrokerNAV, (uint)subTableId), nav);
+                string navStr = accSums.First(r => r.Tag == "NetLiquidation").Value;
+                if (!Double.TryParse(navStr, out double nav))
+                    nav = Double.NegativeInfinity;
+                UpdateAssetInDb(p_updateParam, new AssetId32Bits(AssetType.BrokerNAV, gw2SubTableId.Value), nav);
             }
         }
+
 
         private static void UpdateAssetInDb(UpdateNavsParam p_updateParam, AssetId32Bits p_assetId, double p_todayNav)
         {

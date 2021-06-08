@@ -48,7 +48,7 @@ namespace HealthMonitor
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(AppDomain_BckgThrds_UnhandledException);
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException; // Occurs when a faulted task's unobserved exception is about to trigger exception which, by default, would terminate the process.
 
-            Caretaker.gCaretaker.Init(Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
+            Caretaker.gCaretaker.Init("HealthMonitor", Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
             SqTaskScheduler.gTaskScheduler.Init();
             HealthMonitor.g_healthMonitor.Init();
 

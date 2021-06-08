@@ -47,6 +47,7 @@ namespace SqCoreWeb
             }
 
             client!.OnConnectedWsAsync_MktHealth();
+            client!.OnConnectedWsAsync_BrPrtfViewer();
             client!.OnConnectedWsAsync_QckflNews();
         }
 

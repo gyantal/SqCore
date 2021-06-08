@@ -64,7 +64,7 @@ namespace BrokerCommon
             throw new NotImplementedException();
         }
 
-        public bool Connect(GatewayUser p_gatewayUser, int p_socketPort, int p_brokerConnectionClientID)
+        public bool Connect(GatewayId p_gatewayUser, string host, int p_socketPort, int p_brokerConnectionClientID)
         {
             m_isConnected = true;
             return true;

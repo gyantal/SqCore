@@ -91,7 +91,8 @@ namespace IBApi
             catch (Exception ex)
             {
                 if (eClientSocket.IsConnected())
-                    eClientSocket.Wrapper.error(ex.Message);
+                    // eClientSocket.Wrapper.error(ex.Message); in 2019 API version it calls error(string) version. That is bad!! It is for errors from IbGateway.
+                    eClientSocket.Wrapper.error(ex); // in 2015 API version, it called error(Exception) that is the good one. It is for C# client runtime exceptions.
 
                 return false;
             }

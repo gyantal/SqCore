@@ -16,7 +16,7 @@ namespace BrokerCommon
 {
     public class BrokerWrapperIb : IBrokerWrapper
     {
-        GatewayUser m_gatewayUser;
+        GatewayId m_gatewayId;
         EClientSocket clientSocket;
         public readonly EReaderSignal Signal = new EReaderMonitorSignal();
         EReader? m_eReader;
@@ -83,16 +83,16 @@ namespace BrokerCommon
         }
 
 
-        public virtual bool Connect(GatewayUser p_gatewayUser, int p_socketPort, int p_brokerConnectionClientID)
+        public virtual bool Connect(GatewayId p_gatewayId, string host, int p_socketPort, int p_brokerConnectionClientID)
         {
-            m_gatewayUser = p_gatewayUser;
-            Utils.Logger.Info($"ClientSocket.eConnect(127.0.0.1, {p_socketPort}, {p_brokerConnectionClientID}, false)");
-            ClientSocket.eConnect("127.0.0.1", p_socketPort, p_brokerConnectionClientID, false);
+            m_gatewayId = p_gatewayId;
+            Utils.Logger.Info($"ClientSocket.eConnect({host}:{p_socketPort}, {p_brokerConnectionClientID}, false)");
+            ClientSocket.eConnect(host, p_socketPort, p_brokerConnectionClientID, false); // IB API is not async. It uses TcpClient(host, port) which waits until it is connected.
             //Create a reader to consume messages from the TWS. The EReader will consume the incoming messages and put them in a queue
             m_eReader = new EReader(ClientSocket, Signal);
             m_eReader.Start();
             //Once the messages are in the queue, an additional thread need to fetch them. This is a very long running Thread, always waiting for all messages (Price, historicalData, etc.). This Thread calls the IbWrapper Callbacks.
-            new Thread(() =>
+            new Thread(() => // For long running task, creating new thread is OK. Don't need to consume the quick ThreadPool.
             {
                 try
                 {
@@ -106,7 +106,7 @@ namespace BrokerCommon
                 {
                     if (Utils.MainThreadIsExiting != null && Utils.MainThreadIsExiting.IsSet)
                         return; // if App is exiting gracefully, this Exception is not a problem
-                    Utils.Logger.Error("Exception caught in Gateway Thread that is fetching messages. " + e.Message + " ,InnerException: " + ((e.InnerException != null) ? e.InnerException.Message : ""));
+                    Utils.Logger.Error("Exception caught in the Gateway Thread loop that is fetching messages. Communication with broker stops forever. " + e.Message + " ,InnerException: " + ((e.InnerException != null) ? e.InnerException.Message : "<none>"));
                     throw;  // else, rethrow. This will Crash the App, which is OK. Without IB connection, there is no point to continue the VBroker App.
                 }
             })
@@ -157,15 +157,14 @@ namespace BrokerCommon
         public virtual void connectionClosed()
         {
             //Notifes when the API-TWS connectivity has been closed. via call to ClientSocket.eDisconnect();
-            Utils.Logger.Info($"BrokerWrapperIb.connectionClosed() callback: {m_gatewayUser}");
-            Console.WriteLine($"*{DateTime.UtcNow.ToString("dd'T'HH':'mm':'ss")}: Warning! IB Connection Closed: {m_gatewayUser}.");
+            Utils.Logger.Info($"BrokerWrapperIb.connectionClosed() callback: {m_gatewayId}");
+            Console.WriteLine($"*{DateTime.UtcNow.ToString("dd'T'HH':'mm':'ss")}: Warning! IB Connection Closed: {m_gatewayId}.");
         }
 
         // Exception thrown: System.IO.EndOfStreamException: Unable to read beyond the end of the stream.     (if IBGateways are crashing down.)
         public virtual void error(Exception e)
         {
-            //Console.WriteLine("BrokerWrapperIb.error(). Exception: " + e);    // Utils.Logger.Error() will write to console anyway
-            Utils.Logger.Info("BrokerWrapperIb.error(). Exception: " + e);  // exception.ToString() writes the Stacktrace, not only the Message, which is OK.
+            Utils.Logger.Info("BrokerWrapperIb.error(). Client code C# runtime Exception: " + e);  // exception.ToString() writes the Stacktrace, not only the Message, which is OK.
 
             bool isExpectedException = false;
             // Expect no connection at ManualTraderServer, don't clutter the Console, but save it to log file.
@@ -219,26 +218,16 @@ namespace BrokerCommon
                 // If it is not Expected exception => this thread will terminate, which will terminate the whole App. Send HealthMonitorMessage, if it is an active.
                 Utils.Logger.Error("Unexpected BrokerWrapperIb.error(). Exception thrown: " + e);
                 if (Utils.RunningPlatform() == Platform.Linux)
-                    HealthMonitorMessage.SendAsync($"Exception in Unexpected  BrokerWrapperIb.error(). Exception: '{ e.ToStringWithShortenedStackTrace(400)}'", HealthMonitorMessageID.ReportErrorFromVirtualBroker).TurnAsyncToSyncTask();
+                    HealthMonitorMessage.SendAsync($"Exception in Unexpected  SqCore.BrokerWrapperIb.error(). Client code C# runtime Exception: '{ e.ToStringWithShortenedStackTrace(400)}'", HealthMonitorMessageID.ReportErrorFromVirtualBroker).TurnAsyncToSyncTask();
                 throw e;    
             }
         }
 
-        public virtual void error(string p_str)
-        {
-            string errMsg = "BrokerWrapper.error(str). " + p_str;
-            Console.WriteLine(errMsg);
-            Utils.Logger.Error(errMsg);
-            if (Utils.RunningPlatform() == Platform.Linux)
-                HealthMonitorMessage.SendAsync($"Msg from BrokerWrapperIb.error(). {errMsg}", HealthMonitorMessageID.ReportErrorFromVirtualBroker).TurnAsyncToSyncTask();
-            //If there is a single trading error, we may want to continue, so don't terminate the thread or the App, just inform HealthMonitor.
-            //throw e;    // this thread will terminate. Because we don't expect this exception. Safer to terminate thread, which will terminate App. The user probably has to restart IBGateways manually anyway.
-        }
-
         public virtual void error(int id, int errorCode, string errorMsg)
         {
-            string errMsg = "Id: " + id + ", ErrCode: " + errorCode + ", Msg: " + errorMsg;
-            Utils.Logger.Debug("BrokerWrapper.error(id,errCode,errMsg). " + errMsg); // even if we return and continue, Log it, so it is conserved in the log file.
+            string errMsg = $"BrokerWrapper.error(id, code, msg). IbGateway({m_gatewayId}) sent error with msgVersion >= 2. Id: {id}, ErrCode: {errorCode}, Msg: {errorMsg}";
+            //Utils.Logger.Debug(errMsg); // even if we return and continue, Log it, so it is conserved in the log file.
+            Utils.Logger.Info(errMsg); 
             bool isAddOrderInfoToErrMsg = false;
 
             if (id == -1)       // -1 probably means there is no ID of the error. It is a special notation.
@@ -252,8 +241,8 @@ namespace BrokerCommon
                     // Id: 1, ErrCode: 100, Msg: Max rate of messages per second has been exceeded:max=50 rec=651 (1)
                     // If that error happens, we have to investigate logs (are messages lost?), and if necessary write code to slow the query down.
                     // 2018-12: GetAccountInfoPos(): we query 113 RT prices, even without options underlyings. "Waiting for RT prices: 1297.74 ms. Queried: 113, ReceivedOk: 113, ReceivedErr: 0, Missing: 0"
-                    Utils.Logger.Warn("Strong Warning. BrokerWrapper.error(id,errCode,errMsg). " + errMsg);
-                    Console.WriteLine("Strong Warning. BrokerWrapper.error(id,errCode,errMsg). " + errMsg);
+                    Utils.Logger.Warn("Strong Warning. " + errMsg);
+                    Console.WriteLine("Strong Warning. " + errMsg);
                     return; // skip processing the error further. Don't send it to HealthMonitor.
                 }
                 if (errorCode == 2104 || errorCode == 2106 || errorCode == 2107 || errorCode == 2108 || errorCode == 2119 || errorCode == 2158)
@@ -277,11 +266,16 @@ namespace BrokerCommon
                     //IB Error. ErrId: -1, ErrCode: 2157, Msg: Sec-def data farm connection is broken:secdefnj
                     if (BrokersWatcher.IgnoreErrorsBasedOnMarketTradingTime())
                         return; // skip processing the error further. Don't send it to HealthMonitor.
-                    var vbServerEnvironment = Utils.Configuration["VbServerEnvironment"];
-                    if (vbServerEnvironment.ToLower() == "ManualTradingServer".ToLower())
-                    {
-                        return; // it can happen on MTS after market open, because TWS is there, not the IBGateway, which is less reliable. Eventually broken data connection will be restored. Skip processing the error further. Don't send it to HealthMonitor.
-                    }
+
+                    // it can happen on MTS after market open, because TWS is there, not the IBGateway, which is less reliable. 
+                    // Eventually broken data connection will be restored. Skip processing the error further. Don't send it to HealthMonitor.
+                    // ... SqCore will be a trading server, so marketData farm is important for 'main' gateway. But for others gateways, it is not important.
+
+                    // var vbServerEnvironment = Utils.Configuration["VbServerEnvironment"];
+                    // if (vbServerEnvironment.ToLower() == "ManualTradingServer".ToLower())   // System.NullReferenceException if vbServerEnvironment is null.
+                    // {
+                    //     return; // it can happen on MTS after market open, because TWS is there, not the IBGateway, which is less reliable. Eventually broken data connection will be restored. Skip processing the error further. Don't send it to HealthMonitor.
+                    // }
 
                     // otherwise, during market hours, consider this as an error, => so HealthMonitor will be notified
                 }
@@ -323,7 +317,7 @@ namespace BrokerCommon
                 // Warrants, like "EDMC.WAR." give this. However, we don't care about warrants now.
                 if (MktDataSubscriptions.TryGetValue(id, out MktDataSubscription? mktDataSubscription))
                 {
-                    errMsg += $". Id {id} is found in MktDataSubscriptions. Ticker: '{mktDataSubscription.Contract.Symbol}', IsAnyPriceArrived: {mktDataSubscription.IsAnyPriceArrived} on GatewayUser {m_gatewayUser}.";
+                    errMsg += $". Id {id} is found in MktDataSubscriptions. Ticker: '{mktDataSubscription.Contract.Symbol}', IsAnyPriceArrived: {mktDataSubscription.IsAnyPriceArrived} on GatewayId {m_gatewayId}.";
                     Utils.Logger.Info(errMsg);
                     mktDataSubscription.MarketDataError?.Invoke(id, mktDataSubscription, errorCode, errorMsg);
                     // it is expected that for some stocks, there is no market data, but error message. Fine. Prepare for it and don't wait in that case.
@@ -359,7 +353,7 @@ namespace BrokerCommon
                 // Id: 1018, ErrCode: 354, Msg: Requested market data is not subscribed.Delayed market data is not available.NOKIA HEX/TOP/ALL.
                 if (MktDataSubscriptions.TryGetValue(id, out MktDataSubscription? mktDataSubscription))
                 {
-                    errMsg += $". Id {id} is found in MktDataSubscriptions. Ticker: '{mktDataSubscription.Contract.Symbol}', IsAnyPriceArrived: {mktDataSubscription.IsAnyPriceArrived} on GatewayUser {m_gatewayUser}.";
+                    errMsg += $". Id {id} is found in MktDataSubscriptions. Ticker: '{mktDataSubscription.Contract.Symbol}', IsAnyPriceArrived: {mktDataSubscription.IsAnyPriceArrived} on GatewayId {m_gatewayId}.";
                     Utils.Logger.Info(errMsg);
                     mktDataSubscription.MarketDataError?.Invoke(id, mktDataSubscription, errorCode, errorMsg);
                     // it is expected that for some stocks, there is no market data, but error message. Fine. Prepare for it and don't wait in that case.
@@ -367,7 +361,7 @@ namespace BrokerCommon
                 }
                 else if (CancelledMktDataSubscriptions.TryGetValue(id, out mktDataSubscription))
                 {
-                    errMsg += $". Id {id} is found in CancelledMktDataSubscriptions. Ticker: '{mktDataSubscription.Contract.Symbol}', IsAnyPriceArrived: {mktDataSubscription.IsAnyPriceArrived} on GatewayUser {m_gatewayUser}.";
+                    errMsg += $". Id {id} is found in CancelledMktDataSubscriptions. Ticker: '{mktDataSubscription.Contract.Symbol}', IsAnyPriceArrived: {mktDataSubscription.IsAnyPriceArrived} on GatewayId {m_gatewayId}.";
 
                     if (!mktDataSubscription.IsAnyPriceArrived)
                     {
@@ -388,6 +382,13 @@ namespace BrokerCommon
             {
                 // ErrId: 28, ErrCode: 404, Msg: Order held while securities are located.  // when stocks cannot be borrowed for shorting. OrderID = Id
                 isAddOrderInfoToErrMsg = true;
+            }
+
+            if (errorCode == 504) // ErrCode: 504, Msg: Not connected
+            {
+                // 2021-06-01: when moving IbApi to SqCore
+                if (BrokersWatcher.IgnoreErrorsBasedOnMarketTradingTime()) // 
+                    return; // skip processing the error further. Don't send it to HealthMonitor.
             }
 
             if (errorCode == 506)
@@ -450,10 +451,22 @@ namespace BrokerCommon
                 }
                 else
                 {
-                    errMsg += $". OrderId {id} is found in OrderSubscriptions: {orderSubscription.Order.Action} {orderSubscription.Order.TotalQuantity} {orderSubscription.Contract.Symbol} on GatewayUser {m_gatewayUser}.";
+                    errMsg += $". OrderId {id} is found in OrderSubscriptions: {orderSubscription.Order.Action} {orderSubscription.Order.TotalQuantity} {orderSubscription.Contract.Symbol} on GatewayId {m_gatewayId}.";
                 }
             }
             error(errMsg);
+        }
+
+        
+        public virtual void error(string p_str)
+        {
+            string errMsg = "BrokerWrapper.error(str). IbGateway sent error. " + p_str;
+            Console.WriteLine(errMsg);
+            Utils.Logger.Error(errMsg);
+            if (Utils.RunningPlatform() == Platform.Linux)
+                HealthMonitorMessage.SendAsync($"Msg from SqCore.BrokerWrapperIb.error(). {errMsg}", HealthMonitorMessageID.ReportErrorFromVirtualBroker).TurnAsyncToSyncTask();
+            //If there is a single trading error, we may want to continue, so don't terminate the thread or the App, just inform HealthMonitor.
+            //throw e;    // this thread will terminate. Because we don't expect this exception. Safer to terminate thread, which will terminate App. The user probably has to restart IBGateways manually anyway.
         }
 
         static string GetUsefulAccountSummaryTags()

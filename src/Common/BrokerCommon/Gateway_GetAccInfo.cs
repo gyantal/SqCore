@@ -56,14 +56,14 @@ namespace BrokerCommon
 
         public List<AccSum>? GetAccountSums()
         {
-            m_accSums = new List<AccSum>(); // delete old values
-
+            List<AccSum> result = new List<AccSum>();
             int accReqId = -1;
             try
             {
                 Stopwatch sw1 = Stopwatch.StartNew();
                 lock (m_getAccountSummaryLock)          // IB only allows one query at a time, so next client has to wait
                 {
+                    m_accSums = new List<AccSum>(); // delete old values
                     if (m_getAccountSummaryMres == null)
                         m_getAccountSummaryMres = new ManualResetEventSlim(false);  // initialize as unsignaled
                     else
@@ -75,9 +75,10 @@ namespace BrokerCommon
                     if (!wasLightSet)
                         Utils.Logger.Error("ReqAccountSummary() ended with timeout error.");
                     //m_getAccountSummaryMres.Dispose();    // not necessary. We keep it for the next sessions for faster execution.
+                    result = m_accSums; // save it before releasing the lock, so other threads will not overwrite the result
                 }
                 sw1.Stop();
-                Console.WriteLine($"ReqAccountSummary() ends in {sw1.ElapsedMilliseconds}ms GW user: '{this.GatewayUser}', Thread Id= {Thread.CurrentThread.ManagedThreadId}");
+                Utils.Logger.Info($"ReqAccountSummary() ends in {sw1.ElapsedMilliseconds}ms GatewayId: '{this.GatewayId}', Thread Id= {Thread.CurrentThread.ManagedThreadId}");
             }
             catch (Exception e)
             {
@@ -89,7 +90,7 @@ namespace BrokerCommon
                 if (accReqId != -1)
                     BrokerWrapper.CancelAccountSummary(accReqId);
             }
-            return m_accSums;
+            return result;
         }
 
         public List<AccPos>? GetAccountPoss(string[] p_exclSymbolsArr)
@@ -112,7 +113,7 @@ namespace BrokerCommon
                         Utils.Logger.Error("ReqPositions() ended with timeout error.");
                 }
                 sw2.Stop();
-                Console.WriteLine($"ReqPositions() ends in {sw2.ElapsedMilliseconds}ms GW user: '{this.GatewayUser}', Thread Id= {Thread.CurrentThread.ManagedThreadId}");
+                Utils.Logger.Info($"ReqPositions() ends in {sw2.ElapsedMilliseconds}ms GatewayId: '{this.GatewayId}', Thread Id= {Thread.CurrentThread.ManagedThreadId}");
             }
             catch (Exception e)
             {

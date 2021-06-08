@@ -24,9 +24,9 @@ namespace SqCommon
         TestHardCrash,
         TestSendingEmail,
         TestMakingPhoneCall,
-        ReportErrorFromVirtualBroker,       // later we need ReportWarningFromVirtualBroker too which will send only emails, but not Phonecalls
+        ReportErrorFromVirtualBroker,       // SqCoreWebApp will be the New VBroker, so it can send all ErrorFromVirtualBroker, SqCoreWebCsError, SqCoreWebJsError.
         ReportOkFromVirtualBroker,
-        ReportWarningFromVirtualBroker,
+        ReportWarningFromVirtualBroker, // will send only emails, but not Phonecalls
         SendDailySummaryReportEmail,
         GetHealthMonitorCurrentState,   // not used at the moment
         GetHealthMonitorCurrentStateToHealthMonitorWebsite,

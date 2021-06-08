@@ -50,6 +50,12 @@ namespace BrokerCommon
             Console.WriteLine($"SupportPreStreamRealtimePrices: {isSupportPreStreamRealtimePricesStr ?? "False"}");
             m_isSupportPreStreamRealtimePrices = isSupportPreStreamRealtimePricesStr != null && isSupportPreStreamRealtimePricesStr.ToUpper() == "TRUE";
 
+            // For succesful remote connection, check the following:
+            // 1. Remote SqCore connection: "sudo ufw allow 7303/7308/7301"  (check "sudo ufw status") 
+            // 2. in Amazon AWS: allow All TCP traffic to the developer machine IP only. (Don't allow 7303 port in general to the public. Unsafe, because there is no username/pwd check at connection to port 7303)
+            // 3. in IB TWS: Configure/Api/Settings/Trusted IPs: insert public IP of Windows machine (Google: what is my IP)
+            // <optional> 4. in Windows PowerShell: Test-NetConnection 34.251.1.119 -Port 7303  (it should say Success). Then you might have to restart the Linux server, because IB TWS started the connection and is confused
+
             if (Utils.RunningPlatform() == Platform.Windows)    // Windows Debug: Gyantal is local port, Charmat, DeBlanzac is remote port.
             {
                 // Option1: m_mainGateway can be null, if we Debug "WebSite"-related code and no gateway is attached at all (for speed)
@@ -57,22 +63,23 @@ namespace BrokerCommon
                 // m_mainGateway = null;
 
                 //  Option2: only 1 gateway1 is attached to local TWS
-                Gateway gateway1 = new Gateway(GatewayUser.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", SocketPort = (int)GatewayUserPort.GyantalMain, BrokerConnectionClientID = 33 };
+                Gateway gateway1 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = ServerIp.LocalhostLoopbackWithIP, SocketPort = (int)GatewayPort.GyantalMain, BrokerConnectionClientID = 33 };
                 m_gateways = new List<Gateway>() {gateway1};
                 m_mainGateway = gateway1;
 
                 //  Option3: all gateways are attached to remote or local servers. To Debug vBroker trading 
-                // Gateway gateway1 = new Gateway(GatewayUser.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", SocketPort = (int)GatewayUserPort.CharmatMain, BrokerConnectionClientID = 31 };
-                // Gateway gateway2 = new Gateway(GatewayUser.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", SocketPort = (int)GatewayUserPort.DeBlanzacMain, BrokerConnectionClientID = 32 };
-                // Gateway gateway3 = new Gateway(GatewayUser.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", SocketPort = (int)GatewayUserPort.GyantalMain, BrokerConnectionClientID = 33 };
+                // Gateway gateway1 = new Gateway(GatewayId.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", Host = ServerIp.SqCoreServerPublicIpForClients, SocketPort = (int)GatewayPort.SqCoreSrvCharmatMain, BrokerConnectionClientID = 31 };
+                // Gateway gateway2 = new Gateway(GatewayId.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", Host = ServerIp.SqCoreServerPublicIpForClients, SocketPort = (int)GatewayPort.SqCoreSrvDeBlanzacMain, BrokerConnectionClientID = 32 };
+                // Gateway gateway3 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = ServerIp.AtsVirtualBrokerServerPublicIpForClients, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, BrokerConnectionClientID = 33 };
+                // m_gateways = new List<Gateway>() {gateway1, gateway2, gateway3};
+                // m_mainGateway = gateway1;
             }
             else    // Linux Production: Gyantal is remote port (on VBrokerServer), Charmat, DeBlanzac is local port.
             {
-                Gateway gateway1 = new Gateway(GatewayUser.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", SocketPort = (int)GatewayUserPort.CharmatMain, BrokerConnectionClientID = 131 };
-                // Gateway gateway2 = new Gateway(GatewayUser.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", SocketPort = (int)GatewayUserPort.DeBlanzacMain, BrokerConnectionClientID = 132 };
-                // Gateway gateway3 = new Gateway(GatewayUser.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", SocketPort = (int)GatewayUserPort.GyantalMain, BrokerConnectionClientID = 133 };
-                // m_gateways = new List<Gateway>() {gateway1, gateway2, gateway3};
-                m_gateways = new List<Gateway>() {gateway1};
+                Gateway gateway1 = new Gateway(GatewayId.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", Host = ServerIp.LocalhostLoopbackWithIP, SocketPort = (int)GatewayPort.SqCoreSrvCharmatMain, BrokerConnectionClientID = 131 };
+                Gateway gateway2 = new Gateway(GatewayId.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", Host = ServerIp.LocalhostLoopbackWithIP, SocketPort = (int)GatewayPort.SqCoreSrvDeBlanzacMain, BrokerConnectionClientID = 132 };
+                Gateway gateway3 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = ServerIp.AtsVirtualBrokerServerPublicIpForClients, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, BrokerConnectionClientID = 133 };
+                m_gateways = new List<Gateway>() {gateway1, gateway2, gateway3};
                 m_mainGateway = gateway1;   // CharmatMain
             }
 
@@ -85,25 +92,20 @@ namespace BrokerCommon
             try
             {
                 bool isMainGatewayConnectedBefore = m_mainGateway != null && m_mainGateway.IsConnected;
-                //Task connectTask1 = Task.Factory.StartNew(ReconnectToGateway, gateway1, TaskCreationOptions.LongRunning);
-                //Task connectTask2 = Task.Factory.StartNew(ReconnectToGateway, gateway2, TaskCreationOptions.LongRunning);
-                var reconnectTasks = m_gateways.Where(l=> !l.IsConnected).Select(r => Task.Factory.StartNew(ReconnectToGateway, r, TaskCreationOptions.LongRunning).LogUnobservedTaskExceptions("GatewaysWatcher.reconnectTasks"));
 
-                // At the beginning: Linux had a problem to Connect sequentially on 2 separate threads. Maybe Linux DotNetCore 'Beta' implementation synchronization problem. Temporary connect sequentally. maybe doing Connection sequentially, not parallel would help
-                foreach (var task in reconnectTasks)
-                {
-                    Thread.Sleep(TimeSpan.FromSeconds(1));  // just for synch safety. However, if Linux has synch problem, we can have problems at order execution...!!
-                    task.Wait();
-                }
-                //await Task.WhenAll(reconnectTasks); // async. This threadpool thread will return to the threadpool for temporary reuse, and when tasks are ready, it will be recallade
-                ////Task.WaitAll(connectTask1, connectTask2);     // blocking wait. This thread will wait forever if needed, but we don't want to starve the threadpool
+                // IB API is not async. Thread waits until the connection is established.
+                // Task.Run() uses threads from the thread pool, so it executes those connections parallel in the background. Then wait for them.
+                var reconnectTasks = m_gateways.Where(l => !l.IsConnected).Select(r => Task.Run(() => r.Reconnect()));
+                Task.WhenAll(reconnectTasks).TurnAsyncToSyncTask(); // "await Task.WhenAll()" has to be waited properly
+
                 Utils.Logger.Info("GatewaysWatcher:ReconnectToGateways() reconnectTasks ended.");
-
                 foreach (var gateway in m_gateways)
                 {
-                    Utils.Logger.Info($"GatewayUser: '{gateway.GatewayUser}' IsConnected: {gateway.IsConnected}");
+                    Utils.Logger.Info($"GatewayId: '{gateway.GatewayId}' IsConnected: {gateway.IsConnected}");
                 }
-                if (!isMainGatewayConnectedBefore && m_mainGateway != null && m_mainGateway.IsConnected)   // if this is the first time mainGateway connected after being dead
+
+                bool isMainGatewayConnectedNow = m_mainGateway != null && m_mainGateway.IsConnected;
+                if (!isMainGatewayConnectedBefore && isMainGatewayConnectedNow)   // if this is the first time mainGateway connected after being dead
                     MainGatewayJustConnected();
             }
             catch (Exception e)
@@ -115,7 +117,7 @@ namespace BrokerCommon
             // Without all the IB connections (isAllConnected), we can choose to crash the App, but we do NOT do that, because we may be able to recover them later. 
             // It is a strategic (safety vs. conveniency) decision: in that case if not all IBGW is connected, (it can be an 'expected error'), VBroker runs further and try connecting every 10 min.
             // on ManualTrader server failed connection is expected. Don't send Error. However, on AutoTraderServer, it is unexpected (at the moment), because IBGateways and VBrokers restarts every day.
-            var notConnectedGateways = String.Join(",", m_gateways.Where(l => !l.IsConnected).Select(r => r.GatewayUser + "/"));
+            var notConnectedGateways = String.Join(",", m_gateways.Where(l => !l.IsConnected).Select(r => r.GatewayId + "/"));
             if (!String.IsNullOrEmpty(notConnectedGateways))
             {
                 if (IgnoreErrorsBasedOnMarketTradingTime(offsetToOpenMin: -60))
@@ -123,20 +125,6 @@ namespace BrokerCommon
                 HealthMonitorMessage.SendAsync($"Gateways are not connected. Not connected gateways {notConnectedGateways}", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
             }
             Utils.Logger.Info("GatewaysWatcher:ReconnectToGatewaysTimer_Elapsed() END");
-        }
-
-        void ReconnectToGateway(object? p_object)
-        {
-            Gateway? gateway = (Gateway?)p_object;
-            try
-            {
-                if (gateway != null)
-                    gateway.Reconnect();
-            }
-            catch (System.Exception)
-            {
-                // swallow the exception. we can choose not to crash the App, but repeat connection later
-            }
         }
 
         private void MainGatewayJustConnected()
@@ -197,6 +185,15 @@ namespace BrokerCommon
             //StopTcpMessageListener();
         }
 
+        public void ServerDiagnostic(StringBuilder p_sb)
+        {
+            p_sb.Append("<H2>BrokersWatcher</H2>");
+            foreach (Gateway gw in m_gateways)
+            {
+                gw.ServerDiagnostic(p_sb);
+            }
+     }
+
         // there are some weird IB errors that happen usually when IB server is down. 99% of the time it is at the weekend, or when pre or aftermarket. In this exceptional times, ignore errors.
         public static bool IgnoreErrorsBasedOnMarketTradingTime(int offsetToOpenMin = 0, int offsetToCloseMin = 40)
         {
@@ -218,9 +215,9 @@ namespace BrokerCommon
             return false;
         }
 
-        internal bool IsGatewayConnected(GatewayUser p_ibGatewayUserToTrade)
+        internal bool IsGatewayConnected(GatewayId p_ibGatewayIdToTrade)
         {
-            var gateway = m_gateways.FirstOrDefault(r => r.GatewayUser == p_ibGatewayUserToTrade);
+            var gateway = m_gateways.FirstOrDefault(r => r.GatewayId == p_ibGatewayIdToTrade);
             if (gateway == null)
                 return false;
             return (gateway.IsConnected);
@@ -242,13 +239,13 @@ namespace BrokerCommon
             return m_mainGateway.BrokerWrapper.ReqHistoricalData(p_endDateTime, p_lookbackWindowSize, p_whatToShow, p_contract, out p_quotes);
         }
 
-        internal int PlaceOrder(GatewayUser p_gatewayUserToTrade, double p_portfolioMaxTradeValueInCurrency, double p_portfolioMinTradeValueInCurrency, 
+        internal int PlaceOrder(GatewayId p_gatewayIdToTrade, double p_portfolioMaxTradeValueInCurrency, double p_portfolioMinTradeValueInCurrency, 
             Contract p_contract, TransactionType p_transactionType, double p_volume, OrderExecution p_orderExecution, OrderTimeInForce p_orderTif, double? p_limitPrice, double? p_stopPrice, bool p_isSimulatedTrades, double p_oldVolume, StringBuilder p_detailedReportSb)
         {
-            Gateway? userGateway = m_gateways.FirstOrDefault(r => r.GatewayUser == p_gatewayUserToTrade);
+            Gateway? userGateway = m_gateways.FirstOrDefault(r => r.GatewayId == p_gatewayIdToTrade);
             if (userGateway == null || !userGateway.IsConnected)
             {
-                Utils.Logger.Error($"ERROR. PlacingOrder(). GatewayUserToTrade {p_gatewayUserToTrade} is not found among connected Gateways or it is not connected.");
+                Utils.Logger.Error($"ERROR. PlacingOrder(). GatewayIdToTrade {p_gatewayIdToTrade} is not found among connected Gateways or it is not connected.");
                 return -1;
             }
 
@@ -259,18 +256,18 @@ namespace BrokerCommon
             return virtualOrderId;
         }
 
-        internal bool WaitOrder(GatewayUser p_gatewayUserToTrade, int p_virtualOrderId, bool p_isSimulatedTrades)
+        internal bool WaitOrder(GatewayId p_gatewayIdToTrade, int p_virtualOrderId, bool p_isSimulatedTrades)
         {
-            Gateway? userGateway = m_gateways.FirstOrDefault(r => r.GatewayUser == p_gatewayUserToTrade);
+            Gateway? userGateway = m_gateways.FirstOrDefault(r => r.GatewayId == p_gatewayIdToTrade);
             if (userGateway == null || !userGateway.IsConnected)
                 return false;
 
             return userGateway.WaitOrder(p_virtualOrderId, p_isSimulatedTrades);
         }
 
-        internal bool GetVirtualOrderExecutionInfo(GatewayUser p_gatewayUserToTrade, int p_virtualOrderId, ref OrderStatus orderStatus, ref double executedVolume, ref double executedAvgPrice, ref DateTime executionTime, bool p_isSimulatedTrades)
+        internal bool GetVirtualOrderExecutionInfo(GatewayId p_gatewayIdToTrade, int p_virtualOrderId, ref OrderStatus orderStatus, ref double executedVolume, ref double executedAvgPrice, ref DateTime executionTime, bool p_isSimulatedTrades)
         {
-             Gateway? userGateway = m_gateways.FirstOrDefault(r => r.GatewayUser == p_gatewayUserToTrade);
+             Gateway? userGateway = m_gateways.FirstOrDefault(r => r.GatewayId == p_gatewayIdToTrade);
             if (userGateway == null)
                 return false;
 

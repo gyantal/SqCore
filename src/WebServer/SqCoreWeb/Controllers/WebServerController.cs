@@ -1,17 +1,15 @@
 using System;
 using System.Globalization;
 using System.IO;
-using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using SqCommon;
 using FinTechCommon;
+using BrokerCommon;
 
 namespace SqCoreWeb.Controllers
 {
@@ -68,6 +66,7 @@ namespace SqCoreWeb.Controllers
         {
             StringBuilder sb = new StringBuilder(@"<HTML><body><h1>ServerDiagnostics</h1>");
             Program.ServerDiagnostic(sb);
+            BrokersWatcher.gWatcher.ServerDiagnostic(sb);
             MemDb.gMemDb.ServerDiagnostic(sb);
             SqWebsocketMiddleware.ServerDiagnostic(sb);
             DashboardClient.ServerDiagnostic(sb);

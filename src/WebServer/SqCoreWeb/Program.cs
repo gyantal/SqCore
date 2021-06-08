@@ -96,7 +96,7 @@ namespace SqCoreWeb
                 MemDb.gMemDb.Init(db); // high level DB used by functionalities
                 BrokersWatcher.gWatcher.Init();
 
-                Caretaker.gCaretaker.Init(Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
+                Caretaker.gCaretaker.Init("SqCoreServer", Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
                 SqTaskScheduler.gTaskScheduler.Init();
 
                 Services_Init();
@@ -157,7 +157,7 @@ namespace SqCoreWeb
             Console.WriteLine("5. Elapse Task: WebsitesMonitor, Crawl SpIndexChanges");
             Console.WriteLine("6. MemDb: Force Reload only HistData And SetNewTimer");
             Console.WriteLine("7. MemDb: Reload All DbData Only If Changed");
-            Console.WriteLine("X. Elapse Task: VBroker-HarryLong (First Simulation)");
+            Console.WriteLine("X. Elapse Task: VBroker-Sobek (First Simulation)");
             Console.WriteLine("X. Elapse Task: VBroker-UberVxx (First Simulation)");
             Console.WriteLine("9. Exit gracefully (Avoid Ctrl-^C).");
             string userInput = string.Empty;

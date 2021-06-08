@@ -3,6 +3,7 @@ import { SettingsDialogComponent } from './settings-dialog/settings-dialog.compo
 import { gDiag, minDate } from './../sq-globals';
 import { MarketHealthComponent } from './market-health/market-health.component';
 import { QuickfolioNewsComponent } from './quickfolio-news/quickfolio-news.component';
+import { BrPrtfViewerComponent } from './brprtf-viewer/brprtf-viewer.component';
 
 class HandshakeMessage {
   public email = '';
@@ -18,6 +19,7 @@ export class AppComponent implements OnInit {
   @ViewChild(SettingsDialogComponent) private settingsDialogComponent!: SettingsDialogComponent;
   @ViewChild(MarketHealthComponent) private childMktHealthComponent!: MarketHealthComponent;
   @ViewChild(QuickfolioNewsComponent) private childQckflNewsComponent!: QuickfolioNewsComponent;
+  @ViewChild(BrPrtfViewerComponent) private childBrPrtfViewerComponent!: BrPrtfViewerComponent;
 
   title = 'MarketDashboard';
   version = '0.1.1';
@@ -71,12 +73,13 @@ export class AppComponent implements OnInit {
           break;
         default:
           let isHandled = this.childMktHealthComponent.webSocketOnMessage(msgCode, msgObjStr);
-          if (!isHandled) {
+          if (!isHandled)
+          isHandled = this.childBrPrtfViewerComponent.webSocketOnMessage(msgCode, msgObjStr);
+          if (!isHandled)
             isHandled = this.childQckflNewsComponent.webSocketOnMessage(msgCode, msgObjStr);
 
-            if (!isHandled) {
-              console.log('ws: Warning! OnConnected Message arrived, but msgCode is not recognized:' + msgCode + 'obj: ' + msgObjStr);
-            }
+          if (!isHandled) {
+            console.log('ws: Warning! OnConnected Message arrived, but msgCode is not recognized:' + msgCode + 'obj: ' + msgObjStr);
           }
           break;
       }

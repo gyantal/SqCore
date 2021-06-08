@@ -11,28 +11,32 @@ using System.Text;
 
 namespace BrokerCommon
 {
-    public enum GatewayUser { None, Demo, GyantalMain, GyantalSecondary, GyantalPaper, CharmatMain, CharmatSecondary, CharmatPaper, CharmatWifeMain, CharmatWifeSecondary, CharmatWifePaper, DeBlanzacMain, DeBlanzacSecondary, TuMain, TuSecondary, }
-    public enum GatewayUserPort : int { None, Demo, GyantalMain = 7301, GyantalSecondary = 7301, GyantalPaper, CharmatMain = 7303, CharmatSecondary = 7303, CharmatPaper, CharmatWifeMain, CharmatWifeSecondary, CharmatWifePaper, DeBlanzacMain = 7308, DeBlanzacSecondary, TuMain = 7304, TuSecondary = 7304, }
+    // GateWayId is not User. DC user has 2 Gateways: Main, DeBlanzac. But same user.
+    public enum GatewayId { None, Demo, GyantalMain, GyantalSecondary, GyantalPaper, CharmatMain, CharmatSecondary, CharmatPaper, CharmatWifeMain, CharmatWifeSecondary, CharmatWifePaper, DeBlanzacMain, DeBlanzacSecondary, TuMain, TuSecondary, }
+    public enum GatewayPort : int { None, Demo, GyantalMain = 7301, VbSrvGyantalSecondary = 7301, GyantalPaper, SqCoreSrvCharmatMain = 7303, CharmatSecondary = 7303, CharmatPaper, CharmatWifeMain, CharmatWifeSecondary, CharmatWifePaper, SqCoreSrvDeBlanzacMain = 7308, DeBlanzacSecondary, TuMain = 7304, TuSecondary = 7304, }
 
     public static class GatewayExtensions
     {
-        public static string ToShortFriendlyString(this GatewayUser me)
+        public static Dictionary<string, GatewayId> NavSymbol2GatewayId = new Dictionary<string, GatewayId>() { 
+            {"GA.IM", GatewayId.GyantalMain}, {"DC.IM", GatewayId.CharmatMain}, {"DC.ID", GatewayId.DeBlanzacMain}};
+
+        public static string ToShortFriendlyString(this GatewayId me)
         {
             switch (me)
             {
-                case GatewayUser.None:
+                case GatewayId.None:
                     return "None";
-                case GatewayUser.GyantalMain:
-                case GatewayUser.GyantalSecondary:
+                case GatewayId.GyantalMain:
+                case GatewayId.GyantalSecondary:
                     return "G";
-                case GatewayUser.CharmatMain:
-                case GatewayUser.CharmatSecondary:
+                case GatewayId.CharmatMain:
+                case GatewayId.CharmatSecondary:
                     return "DC";
-                case GatewayUser.TuMain:
-                case GatewayUser.TuSecondary:
+                case GatewayId.TuMain:
+                case GatewayId.TuSecondary:
                     return "T";
-                case GatewayUser.DeBlanzacMain:
-                case GatewayUser.DeBlanzacSecondary:
+                case GatewayId.DeBlanzacMain:
+                case GatewayId.DeBlanzacSecondary:
                     return "D";
                 default:
                     return "ERR";
@@ -64,8 +68,9 @@ namespace BrokerCommon
 
     public partial class Gateway
     {
-        public GatewayUser GatewayUser { get;  }
+        public GatewayId GatewayId { get;  }
         public string VbAccountsList { get; set; } = string.Empty;
+        public string Host { get; set; } = string.Empty;
         public int SocketPort { get; set; }
         public int BrokerConnectionClientID { get; set; }
         public bool IsConnected
@@ -115,9 +120,9 @@ namespace BrokerCommon
             set { m_maxNOrdersRecentlyAllowed = value; }
         }
 
-        public Gateway(GatewayUser p_gatewayUser, double p_accountMaxTradeValueInCurrency = Double.NaN, double p_accountMaxEstimatedValueSumRecentlyAllowed = Double.NaN)   // gateWayUser will be fixed. We don't allow to change it later.
+        public Gateway(GatewayId p_gatewayUser, double p_accountMaxTradeValueInCurrency = Double.NaN, double p_accountMaxEstimatedValueSumRecentlyAllowed = Double.NaN)   // gateWayUser will be fixed. We don't allow to change it later.
         {
-            GatewayUser = p_gatewayUser;
+            GatewayId = p_gatewayUser;
             if (!Double.IsNaN(p_accountMaxTradeValueInCurrency))
                 m_IbAccountMaxTradeValueInCurrency = p_accountMaxTradeValueInCurrency;
             if (!Double.IsNaN(p_accountMaxEstimatedValueSumRecentlyAllowed))
@@ -149,11 +154,11 @@ namespace BrokerCommon
                             ibWrapper = new BrokerWrapperIb(AccSumArrived, AccSumEnd, AccPosArrived, AccPosEnd);
                             // ibWrapper = new BrokerWrapperYF();     // Before market open, or After market close. Simulated real time price is needed to determine current portfolio $size.
                     }
-                    if (!ibWrapper.Connect(GatewayUser, SocketPort, BrokerConnectionClientID))
+                    if (!ibWrapper.Connect(GatewayId, Host, SocketPort, BrokerConnectionClientID))
                     {
-                        Utils.Logger.Info($"No connection to IB {GatewayUser}, port {SocketPort}. Trials: {nConnectionRetry}/{nMaxRetry}");
+                        Utils.Logger.Info($"No connection to IB {GatewayId} on {Host}:{SocketPort}. Trials: {nConnectionRetry}/{nMaxRetry}");
                         if (nConnectionRetry == nMaxRetry)
-                            Console.WriteLine($"*{DateTime.UtcNow.ToString("dd'T'HH':'mm':'ss")}: No connection to IB {GatewayUser}. Trials: {nConnectionRetry}/{nMaxRetry}");
+                            Console.WriteLine($"*{DateTime.UtcNow.ToString("dd'T'HH':'mm':'ss")}: No connection to IB {GatewayId}. Trials: {nConnectionRetry}/{nMaxRetry}");
                         continue;
                     }
                     string str1 = ibWrapper!.IbAccountsList;
@@ -165,23 +170,23 @@ namespace BrokerCommon
                     BrokerWrapper = ibWrapper;
 
                     string warnMessage = (ibWrapper is BrokerWrapperIb) ? "" : "!!!WARNING. Fake Broker (YF!). ";
-                    Utils.Logger.Info($"{warnMessage}Gateway {ibWrapper} is connected. User {GatewayUser} acc {VbAccountsList}.");
-                    Console.WriteLine($"*{DateTime.UtcNow.ToString("dd'T'HH':'mm':'ss")}: {warnMessage}Gateway {GatewayUser} acc {VbAccountsList} connected.");
+                    Utils.Logger.Info($"{warnMessage}Gateway {ibWrapper} is connected. User {GatewayId} acc {VbAccountsList}.");
+                    Console.WriteLine($"*{DateTime.UtcNow.ToString("dd'T'HH':'mm':'ss")}: {warnMessage}Gateway {GatewayId} acc {VbAccountsList} connected.");
                     
                     // TEMP here. Can be removed later.
                     List<AccSum>? accSums = GetAccountSums();
                     if (accSums != null)
                     {
                         string navStr = accSums.First(r => r.Tag == "NetLiquidation").Value;
-                        Utils.Logger.Info($"Gateway {GatewayUser}'s NAV: {navStr}");
-                        Console.WriteLine($"Gateway {GatewayUser}'s NAV: {navStr}");
+                        Utils.Logger.Info($"Gateway {GatewayId}'s NAV: {navStr}");
+                        Console.WriteLine($"Gateway {GatewayId}'s NAV: {navStr}");
                     }
                     return;
                 }
                 catch (Exception e)
                 {
                     //If IBGateways doesn't connect: Retry the connection about 3 times, before Exception. So, so this problem is an Expected problem if another try to reconnect solves it.
-                    Utils.Logger.Info(e, $"Exception in ReconnectToGateway()-user:{GatewayUser}: nRetry:{nConnectionRetry} : Msg:{e.Message}");
+                    Utils.Logger.Info(e, $"Exception in ReconnectToGateway()-user:{GatewayId}: nRetry:{nConnectionRetry} : Msg:{e.Message}");
                     if (nConnectionRetry >= nMaxRetry)
                     {
                         Utils.Logger.Info("GatewaysWatcher:ReconnectToGateway(). This gateway failed after many retries. We could send HealthMonitor message here, but better at a higher level if the second Gateway fails too.");
@@ -202,6 +207,11 @@ namespace BrokerCommon
             if (BrokerWrapper == null)
                 return;
             BrokerWrapper.Disconnect();
+        }
+
+        public void ServerDiagnostic(StringBuilder p_sb)
+        {
+            p_sb.AppendLine($"GatewayId: {GatewayId}, IsConnected: {IsConnected}<br>");
         }
 
         // PlayTransactionsViaBroker(). Consider these use-cases:
@@ -319,7 +329,7 @@ namespace BrokerCommon
             // vbOrderId and ibOrderID is different, because some Limit orders, or other tricky orders are executed in real life by many concrete IB orders
             // or there are two opposite vbOrder that cancels each other out at MOC, therefore there is no ibOrder at all
             double transactionOfOldVolumePct = (p_oldVolume == 0) ? 1.00 : p_volume / p_oldVolume;
-            string logMsg = $"{this.GatewayUser.ToShortFriendlyString()}: {(p_isSimulatedTrades ? "Simulated" : "Real")} {p_transactionType} {p_volume} ({transactionOfOldVolumePct*100:F2}%) {p_contract.Symbol} (${estimatedTransactionValue:F0})";
+            string logMsg = $"{this.GatewayId.ToShortFriendlyString()}: {(p_isSimulatedTrades ? "Simulated" : "Real")} {p_transactionType} {p_volume} ({transactionOfOldVolumePct*100:F2}%) {p_contract.Symbol} (${estimatedTransactionValue:F0})";
             ColorConsole.WriteLine(null, false, logMsg);
             Utils.Logger.Info(logMsg);
             p_detailedReportSb.AppendLine(logMsg);

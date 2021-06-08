@@ -66,6 +66,15 @@ namespace BrokerCommon
     public partial class BrokersWatcher
     {
 
+        public List<AccSum>? GetAccountSums(GatewayId p_gatewayId)
+        {
+            var gateway = m_gateways.FirstOrDefault(r => r.GatewayId == p_gatewayId);
+            if (gateway == null)
+                return null;
+            
+            return gateway.GetAccountSums();
+        }
+
         //$"?v=1&secTok={securityTokenVer2}&bAcc=Gyantal,Charmat,DeBlanzac&data=AccSum,Pos,EstPr,OptDelta&posExclSymbols=VIX,BLKCF,AXXDF&addPrInfoSymbols=QQQ,SPY,TLT,VXX,UNG";
         // public string GetAccountsInfo(string p_input)     
         // {
@@ -134,13 +143,13 @@ namespace BrokerCommon
         //         switch (bAcc.ToUpper())
         //         {
         //             case "GYANTAL":
-        //                 gw = FindFirstConnectedGateway(new GatewayUser[] { GatewayUser.GyantalMain, GatewayUser.GyantalSecondary });
+        //                 gw = FindFirstConnectedGateway(new GatewayId[] { GatewayId.GyantalMain, GatewayId.GyantalSecondary });
         //                 break;
         //             case "CHARMAT":
-        //                 gw = FindFirstConnectedGateway(new GatewayUser[] { GatewayUser.CharmatMain, GatewayUser.CharmatSecondary });
+        //                 gw = FindFirstConnectedGateway(new GatewayId[] { GatewayId.CharmatMain, GatewayId.CharmatSecondary });
         //                 break;
         //             case "DEBLANZAC":
-        //                 gw = FindFirstConnectedGateway(new GatewayUser[] { GatewayUser.DeBlanzacMain });
+        //                 gw = FindFirstConnectedGateway(new GatewayId[] { GatewayId.DeBlanzacMain });
         //                 break;
         //             default:
         //                 Utils.Logger.Error($"GetAccountsInfo() error. Unrecognized brokeraccount '{bAcc.ToUpper()}'");
@@ -720,11 +729,11 @@ namespace BrokerCommon
         //     Console.WriteLine(msg3);
         // }  // CollectEstimatedPrices()
 
-        private Gateway? FindFirstConnectedGateway(GatewayUser[] p_possibleGwUsers)
+        private Gateway? FindFirstConnectedGateway(GatewayId[] p_possibleGwIds)
         {
-            foreach (var gwUser in p_possibleGwUsers)
+            foreach (var gwId in p_possibleGwIds)
             {
-                Gateway? gw = m_gateways.Find(r => r.GatewayUser == gwUser);
+                Gateway? gw = m_gateways.Find(r => r.GatewayId == gwId);
                 if (gw != null && gw.IsConnected)   // only add the connected gateways
                 {
                     return gw;

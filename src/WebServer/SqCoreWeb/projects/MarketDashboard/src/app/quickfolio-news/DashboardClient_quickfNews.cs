@@ -4,6 +4,7 @@ using SqCommon;
 using System.Collections.Generic;
 using System.Text;
 using System.Net.WebSockets;
+using System.Threading.Tasks;
 
 namespace SqCoreWeb
 {
@@ -21,7 +22,7 @@ namespace SqCoreWeb
 
         public void OnConnectedWsAsync_QckflNews()
         {
-            new Thread(() =>
+            Task.Run(() => // running parallel on a ThreadPool thread
             {
                 Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
                 Thread.Sleep(TimeSpan.FromSeconds(10)); // Quickfolio News is not the default active panel. It makes sense to send data later to speed up client at the start.
@@ -31,7 +32,7 @@ namespace SqCoreWeb
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
 
                 TriggerQuickfolioNewsDownloader();
-            }).Start();
+            });
         }
 
         public bool OnReceiveWsAsync_QckflNews(WebSocketReceiveResult? wsResult, string msgCode, string msgObjStr)
