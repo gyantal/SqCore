@@ -69,6 +69,7 @@ namespace SqCommon
             }
             catch (Exception e)
             {
+                Utils.Logger.Error(e, "Trigger.Timer_Elapsed() Exception");
                 HealthMonitorMessage.SendAsync($"Exception in BrokerTaskExecutionThreadRun(). Exception: '{ e.ToStringWithShortenedStackTrace(1600)}'", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
             }
         }

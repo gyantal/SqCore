@@ -48,7 +48,7 @@ namespace SqCoreWeb
             return new WebsitesMonitorExecution();
         }
 
-        public override void Run()  // try/catch is not necessary, because sqExecution.Run() is wrapped around a try/catch with HealthMonitor notification in SqTrigger.cs
+        public override void Run()  // try/catch is only necessary if there is a non-awaited async that continues later in a different tPool thread. See comment in SqExecution.cs
         {
             Utils.Logger.Info($"WebsitesMonitorExecution.Run() BEGIN, Trigger: '{Trigger!.Name}'");
 
@@ -60,7 +60,7 @@ namespace SqCoreWeb
                 CheckSpIndexChanges();
         }
 
-        private void CheckSpIndexChanges() // try/catch is not necessary, because sqExecution.Run() is wrapped around a try/catch with HealthMonitor notification in SqTrigger.cs
+        private void CheckSpIndexChanges()
         {
             string url = "https://www.spglobal.com/spdji/en/indices/equity/sp-500/#news-research";
             string? webpage = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();

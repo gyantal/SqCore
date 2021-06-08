@@ -60,10 +60,10 @@ namespace SqCoreWeb
             return new OvermindExecution();
         }
 
-        public override void Run()  // try/catch is not necessary, because sqExecution.Run() is wrapped around a try/catch with HealthMonitor notification in SqTrigger.cs
+        public override void Run()  // try/catch is only necessary if there is a non-awaited async that continues later in a different tPool thread. See comment in SqExecution.cs
         {
-            Utils.Logger.Info("OvermindExecution.Run() BEGIN, Trigger: '{Trigger.Name}'");
-            Console.WriteLine("OvermindExecution.Run() BEGIN, Trigger: '{Trigger.Name}'");
+            Utils.Logger.Info($"OvermindExecution.Run() BEGIN, Trigger: '{Trigger?.Name ?? string.Empty}'");
+            Console.WriteLine($"OvermindExecution.Run() BEGIN, Trigger: '{Trigger?.Name ?? string.Empty}'");
             CheckHealthMonitorAlive();
 
             OvermindTaskSettingAction action = OvermindTaskSettingAction.Unknown;
@@ -140,7 +140,7 @@ namespace SqCoreWeb
             }
 
             CheckIfTomorrowIsMonthlyOptionExpirationDay();
-            CheckIntradayStockPctChanges();
+            CheckIntradayStockPctChanges(); // if we don't wait the async method, it returns very quickly, but later it continues in a different threadpool bck thread, but then it loses stacktrace, and exception is not caught in try/catch, but it becomes an AppDomain_BckgThrds_UnhandledException() 
             CheckLastClosePrices();
         }
 
@@ -178,7 +178,7 @@ namespace SqCoreWeb
             new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();
         }
 
-        async void CheckIntradayStockPctChanges()
+        void CheckIntradayStockPctChanges()
         {
             string gyantalEmailInnerlStr = string.Empty;
             string gyantalPhoneCallInnerStr = string.Empty;
@@ -225,7 +225,7 @@ namespace SqCoreWeb
                     Message = "This is a warning notification from SnifferQuant. There's a large up or down movement in " + gyantalPhoneCallInnerStr + " ... I repeat " + gyantalPhoneCallInnerStr,
                     NRepeatAll = 2
                 };
-                Console.WriteLine("call.MakeTheCall() return: " + await call. MakeTheCallAsync());
+                Console.WriteLine("call.MakeTheCall() return: " + call.MakeTheCallAsync().TurnAsyncToSyncTask());
             }
 
             if (!String.IsNullOrEmpty(charmatEmailInnerlStr))
@@ -238,7 +238,7 @@ namespace SqCoreWeb
                     Message = "This is a warning notification from SnifferQuant. There's a large up or down movement in " + charmatPhoneCallInnerStr + " ... I repeat " + charmatPhoneCallInnerStr,
                     NRepeatAll = 2
                 };
-                Console.WriteLine("call.MakeTheCall() return: " + await call. MakeTheCallAsync());
+                Console.WriteLine("call.MakeTheCall() return: " + call.MakeTheCallAsync().TurnAsyncToSyncTask());
             }
         }
 
@@ -247,7 +247,7 @@ namespace SqCoreWeb
         // 2021-03-18: kept www.cnbc.com, because this way this code doesn't depend on MemDb (it can be outsourced later); And more Tickers can be checked, which are not in MemDb at all
         private static double GetTodayPctChange(string p_exchangeWithTicker)    // for GoogleFinance: TSE:VXX is the Toronto stock exchange, we need "NYSEARCA:VXX"
         {
-            Utils.Logger.Trace("GetTodayPctChange(): " + p_exchangeWithTicker);
+            Utils.Logger.Info("GetTodayPctChange(): " + p_exchangeWithTicker);
             // https://finance.google.com/finance?q=BATS%3AVXX
             string url = $"https://www.cnbc.com/quotes/?symbol=" + p_exchangeWithTicker.Replace(":", "%3A");
             Utils.Logger.Trace("DownloadStringWithRetry() queried with:'" + url + "'");
@@ -277,6 +277,7 @@ namespace SqCoreWeb
                         if (iChangePriceEnd != -1)
                         {
                             var changePriceStr = priceHtml.Substring(iChangePriceStart, iChangePriceEnd - iChangePriceStart);
+                            Utils.Logger.Info($"GetTodayPctChange().changePriceStr: '{changePriceStr}' ");  // TEMP: uncomment when it is fixed: 2021-06-08, System.FormatException: Input string was not in a correct format.
                             dailyChange = Double.Parse(changePriceStr);
 
                             double yesterdayClose = (double)realTimePrice - (double)dailyChange;
@@ -289,7 +290,7 @@ namespace SqCoreWeb
             return Double.NaN;
         }
 
-        async void CheckLastClosePrices()
+        void CheckLastClosePrices()
         {
             // Data sources. Sometimes YF, sometimes GF is not good. We could try to use our Database then, but we don't have ^VIX futures historical price data in it yet.
             DateTime endDateET = DateTime.UtcNow.AddDays(0);    // include today, which is a realtime price, but more accurate estimation
@@ -297,7 +298,7 @@ namespace SqCoreWeb
 
             List<string> tickers = new List<string>() { "^VIX" };
 
-            IReadOnlyList<Candle?> history = await Yahoo.GetHistoricalAsync("^VIX", startDateET, endDateET, Period.Daily); // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
+            IReadOnlyList<Candle?> history = Yahoo.GetHistoricalAsync("^VIX", startDateET, endDateET, Period.Daily).TurnAsyncToSyncTask(); // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
             DateOnly[] dates = history.Select(r => new DateOnly(r!.DateTime)).ToArray();
             // for penny stocks, IB and YF considers them for max. 4 digits. UWT price (both in IB ask-bid, YF history) 2020-03-19: 0.3160, 2020-03-23: 2302
             float[] adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();

@@ -217,7 +217,7 @@ namespace HealthMonitor
             return new HmVbTradeStrategyExecution();
         }
 
-        public override void Run()
+        public override void Run() // try/catch is only necessary if there is a non-awaited async that continues later in a different tPool thread. See comment in SqExecution.cs
         {
             // Check that VBroker OK message arrived properly from the Expected Strategy. Different Tasks may take more time to execute
             Utils.Logger.Info("HmVbTradeStrategyExecution.Run() BEGIN");

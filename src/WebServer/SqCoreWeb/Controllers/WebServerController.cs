@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using SqCommon;
 using FinTechCommon;
 using BrokerCommon;
+using Microsoft.AspNetCore.Authorization;   // needed in PROD, not in DBG
 
 namespace SqCoreWeb.Controllers
 {
