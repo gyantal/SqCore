@@ -3,14 +3,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using IBApi;
 using SqCommon;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Globalization;
 using Utils = SqCommon.Utils;
-using System.Diagnostics;
 
 namespace BrokerCommon
 {
@@ -260,23 +258,33 @@ namespace BrokerCommon
                 {
                     // This is Usually not an error if it is received pre-market or after market. IBGateway will try reconnecting, so this is usually temporary. However, log it.
                     //IB Error. ErrId: -1, ErrCode: 2103, Msg: Market data farm connection is broken:usfarm
+                    //IB Error. ErrId: -1, ErrCode: 2103, Msg: Market data farm connection is broken:hfarm
+                    //IB Error. ErrId: -1, ErrCode: 2103, Msg: Market data farm connection is broken:jfarm
                     //IB Error. ErrId: -1, ErrCode: 2105, Msg: HMDS data farm connection is broken:ushmds
                     //IB Error. ErrId: -1, ErrCode: 1100, Msg: Connectivity between IB and Trader Workstation has been lost.
                     //IB Error. ErrId: -1, ErrCode: 1102, Msg: Connectivity between IB and Trader Workstation has been restored - data maintained.
                     //IB Error. ErrId: -1, ErrCode: 2157, Msg: Sec-def data farm connection is broken:secdefnj
+
+                    // possible data farms: eufarm, usfarm, usfuture, cashfarm, 
+                    // jfarm  // Japan?  (maybe that is the time when japan servers restart)
+                    // hfarm // Hong Kong?
+
+                    // every day around 17:10 GMT+1, the jfarm and hfarm disconnects for 20 seconds. 
+                    // Maybe that is the time when there is server reset in Japan and Hong Kong
+                    // It only effects the DcMain-Tws. (not DeBlanzac, neither Agy IbGateway). It probably disappears if we disable price data for those 2 exchanges for the main DC user.
+                    // Anyhow, this farms can be ignored, because we don't trade Japan or Hong Kong.
+                    // For other farms (usfarm), this is an important message, so don't ignore them. 
+                    
+                    // However, if data 'usfarm' disconnects only for 20 seconds sporadically, implement the following ideas in the future.
+                    // - If broken farm error message is received, swallow the error, save the time and error code + msg, and start a timer. That checks it in 1 minute.
+                    // - When connection OK arrives 10 sec later, try to find the pair in the list, by replacing the string "connection is OK" with "connection is broken". Then eliminate it from the list. Linear search is fine. If more than one is found, eliminate all.
+                    // - When timer triggers in 1 minute, check if 'data farm connection' list is empty. If not, inform HealthMonitor about the error.
+
                     if (BrokersWatcher.IgnoreErrorsBasedOnMarketTradingTime())
                         return; // skip processing the error further. Don't send it to HealthMonitor.
 
-                    // it can happen on MTS after market open, because TWS is there, not the IBGateway, which is less reliable. 
-                    // Eventually broken data connection will be restored. Skip processing the error further. Don't send it to HealthMonitor.
-                    // ... SqCore will be a trading server, so marketData farm is important for 'main' gateway. But for others gateways, it is not important.
-
-                    // var vbServerEnvironment = Utils.Configuration["VbServerEnvironment"];
-                    // if (vbServerEnvironment.ToLower() == "ManualTradingServer".ToLower())   // System.NullReferenceException if vbServerEnvironment is null.
-                    // {
-                    //     return; // it can happen on MTS after market open, because TWS is there, not the IBGateway, which is less reliable. Eventually broken data connection will be restored. Skip processing the error further. Don't send it to HealthMonitor.
-                    // }
-
+                    if (errorCode == 2103 && (errorMsg == "Market data farm connection is broken:jfarm" || errorMsg == "Market data farm connection is broken:hfarm"))
+                        return;
                     // otherwise, during market hours, consider this as an error, => so HealthMonitor will be notified
                 }
             }
