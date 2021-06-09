@@ -8,6 +8,9 @@ namespace BrokerCommon.tests
 {
     public class UnitTestGateway
     {
+        // TODO:
+        // 1. if a buy order is sent with estimated realtime of $1M+, then it is not allowed. BrokerWatcher.PlaceOrder($1M) should give an error, before placing the order.
+
         [Fact]
         public void TestGateway_ConnectToGA_CheckNav()
         {
