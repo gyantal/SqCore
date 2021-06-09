@@ -12,8 +12,40 @@ using System.Text;
 namespace BrokerCommon
 {
     // GateWayId is not User. DC user has 2 Gateways: Main, DeBlanzac. But same user.
-    public enum GatewayId { None, Demo, GyantalMain, GyantalSecondary, GyantalPaper, CharmatMain, CharmatSecondary, CharmatPaper, CharmatWifeMain, CharmatWifeSecondary, CharmatWifePaper, DeBlanzacMain, DeBlanzacSecondary, TuMain, TuSecondary, }
-    public enum GatewayPort : int { None, Demo, GyantalMain = 7301, VbSrvGyantalSecondary = 7301, GyantalPaper, SqCoreSrvCharmatMain = 7303, CharmatSecondary = 7303, CharmatPaper, CharmatWifeMain, CharmatWifeSecondary, CharmatWifePaper, SqCoreSrvDeBlanzacMain = 7308, DeBlanzacSecondary, TuMain = 7304, TuSecondary = 7304, }
+    public enum GatewayId { None, Demo, GyantalMain, GyantalSecondary, GyantalPaper, CharmatMain, CharmatSecondary, CharmatPaper, CharmatWifeMain, CharmatWifeSecondary, CharmatWifePaper, DeBlanzacMain, DeBlanzacSecondary, TuMain, TuSecondary }
+    public enum GatewayPort : int { None, Demo, GyantalMain = 7301, VbSrvGyantalSecondary = 7301, GyantalPaper, SqCoreSrvCharmatMain = 7303, CharmatSecondary = 7303, CharmatPaper, CharmatWifeMain, CharmatWifeSecondary, CharmatWifePaper, SqCoreSrvDeBlanzacMain = 7308, DeBlanzacSecondary, TuMain = 7304, TuSecondary = 7304 }
+    public enum GatewayClientID : int
+    {
+        None,
+        // used in SqLab, obsolete, delete them later
+        // SqLabAtsToGa = 41,
+        // SqLabAtsToDc = 42,
+        // SqLabMtsToDc = 142,
+        // SqLabMtsToDb = 144,
+        LocalTws1 = 50,
+        LocalTws2 = 51,
+
+        SqCoreToGaProd = 60,
+        SqCoreToGaDev1 = 61,    // Agy
+        SqCoreToGaDev2 = 62,    // Daya
+        SqCoreToGaDev3 = 63,   // Balazs
+        SqCoreToGaDev4 = 64,    // Laci
+        SqCoreToGaTest1 = 69,    // it can clash if many developers run the tests at the same time, but that is not likely.
+
+        SqCoreToDcProd = 70,
+        SqCoreToDcDev1 = 71,
+        SqCoreToDcDev2 = 72,
+        SqCoreToDcDev3 = 73,
+        SqCoreToDcDev4 = 74,
+        SqCoreToDcTest1 = 79,
+
+        SqCoreToDbProd = 80,
+        SqCoreToDbDev1 = 81,
+        SqCoreToDbDev2 = 82,
+        SqCoreToDbDev3 = 83,
+        SqCoreToDbDev4 = 84,
+        SqCoreToDbTest1 = 89
+    }
 
     public static class GatewayExtensions
     {
@@ -72,7 +104,7 @@ namespace BrokerCommon
         public string VbAccountsList { get; set; } = string.Empty;
         public string Host { get; set; } = string.Empty;
         public int SocketPort { get; set; }
-        public int BrokerConnectionClientID { get; set; }
+        public GatewayClientID BrokerConnectionClientID { get; set; } = GatewayClientID.None;
         public bool IsConnected
         {
             get
@@ -154,7 +186,7 @@ namespace BrokerCommon
                             ibWrapper = new BrokerWrapperIb(AccSumArrived, AccSumEnd, AccPosArrived, AccPosEnd);
                             // ibWrapper = new BrokerWrapperYF();     // Before market open, or After market close. Simulated real time price is needed to determine current portfolio $size.
                     }
-                    if (!ibWrapper.Connect(GatewayId, Host, SocketPort, BrokerConnectionClientID))
+                    if (!ibWrapper.Connect(GatewayId, Host, SocketPort, (int)BrokerConnectionClientID))
                     {
                         Utils.Logger.Info($"No connection to IB {GatewayId} on {Host}:{SocketPort}. Trials: {nConnectionRetry}/{nMaxRetry}");
                         if (nConnectionRetry == nMaxRetry)

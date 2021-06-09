@@ -12,7 +12,7 @@ namespace SqCoreWeb.tests   // create test project name with '*.test' of the mai
         }
 
         [Fact]
-        public void Test_WebsitesMonitor_ParseSpglobalDateStr()
+        public void TestWebsitesMonitor_ParseSpglobalDateStr()
         {
             Console.WriteLine("Hello Test2");
             DateTime dt;

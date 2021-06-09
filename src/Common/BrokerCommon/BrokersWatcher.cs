@@ -63,22 +63,22 @@ namespace BrokerCommon
                 // m_mainGateway = null;
 
                 //  Option2: only 1 gateway1 is attached to local TWS
-                Gateway gateway1 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = ServerIp.LocalhostLoopbackWithIP, SocketPort = (int)GatewayPort.GyantalMain, BrokerConnectionClientID = 33 };
-                m_gateways = new List<Gateway>() {gateway1};
-                m_mainGateway = gateway1;
+                // Gateway gateway1 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = ServerIp.LocalhostLoopbackWithIP, SocketPort = (int)GatewayPort.GyantalMain, BrokerConnectionClientID = GatewayClientID.LocalTws1 };
+                // m_gateways = new List<Gateway>() {gateway1};
+                // m_mainGateway = gateway1;
 
                 //  Option3: all gateways are attached to remote or local servers. To Debug vBroker trading 
-                // Gateway gateway1 = new Gateway(GatewayId.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", Host = ServerIp.SqCoreServerPublicIpForClients, SocketPort = (int)GatewayPort.SqCoreSrvCharmatMain, BrokerConnectionClientID = 31 };
-                // Gateway gateway2 = new Gateway(GatewayId.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", Host = ServerIp.SqCoreServerPublicIpForClients, SocketPort = (int)GatewayPort.SqCoreSrvDeBlanzacMain, BrokerConnectionClientID = 32 };
-                // Gateway gateway3 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = ServerIp.AtsVirtualBrokerServerPublicIpForClients, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, BrokerConnectionClientID = 33 };
-                // m_gateways = new List<Gateway>() {gateway1, gateway2, gateway3};
-                // m_mainGateway = gateway1;
+                Gateway gateway1 = new Gateway(GatewayId.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", Host = ServerIp.SqCoreServerPublicIpForClients, SocketPort = (int)GatewayPort.SqCoreSrvCharmatMain, BrokerConnectionClientID = GatewayClientID.SqCoreToDcDev1 };
+                Gateway gateway2 = new Gateway(GatewayId.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", Host = ServerIp.SqCoreServerPublicIpForClients, SocketPort = (int)GatewayPort.SqCoreSrvDeBlanzacMain, BrokerConnectionClientID = GatewayClientID.SqCoreToDbDev1 };
+                Gateway gateway3 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = ServerIp.AtsVirtualBrokerServerPublicIpForClients, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, BrokerConnectionClientID = GatewayClientID.SqCoreToGaDev1 };
+                m_gateways = new List<Gateway>() {gateway1, gateway2, gateway3};
+                m_mainGateway = gateway1;
             }
             else    // Linux Production: Gyantal is remote port (on VBrokerServer), Charmat, DeBlanzac is local port.
             {
-                Gateway gateway1 = new Gateway(GatewayId.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", Host = ServerIp.LocalhostLoopbackWithIP, SocketPort = (int)GatewayPort.SqCoreSrvCharmatMain, BrokerConnectionClientID = 131 };
-                Gateway gateway2 = new Gateway(GatewayId.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", Host = ServerIp.LocalhostLoopbackWithIP, SocketPort = (int)GatewayPort.SqCoreSrvDeBlanzacMain, BrokerConnectionClientID = 132 };
-                Gateway gateway3 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = ServerIp.AtsVirtualBrokerServerPublicIpForClients, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, BrokerConnectionClientID = 133 };
+                Gateway gateway1 = new Gateway(GatewayId.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", Host = ServerIp.LocalhostLoopbackWithIP, SocketPort = (int)GatewayPort.SqCoreSrvCharmatMain, BrokerConnectionClientID = GatewayClientID.SqCoreToDcProd };
+                Gateway gateway2 = new Gateway(GatewayId.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", Host = ServerIp.LocalhostLoopbackWithIP, SocketPort = (int)GatewayPort.SqCoreSrvDeBlanzacMain, BrokerConnectionClientID = GatewayClientID.SqCoreToDbProd };
+                Gateway gateway3 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = ServerIp.AtsVirtualBrokerServerPublicIpForClients, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, BrokerConnectionClientID = GatewayClientID.SqCoreToGaProd };
                 m_gateways = new List<Gateway>() {gateway1, gateway2, gateway3};
                 m_mainGateway = gateway1;   // CharmatMain
             }
