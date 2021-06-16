@@ -15,7 +15,21 @@ namespace SqCommon
         // On an event:
         AtApplicationStartup, AtApplicationExit, OnGatewayDisconnectionEvent, OnError, Unknown
     };
-    public enum StartTimeBase : byte { BaseOnAbsoluteTimeMidnightUtc, BaseOnUsaMarketOpen, BaseOnUsaMarketClose, Unknown };
+
+    // TODO: after migration SqLab to SqCore. Rename StartTimeBase to RelativeTimeBase
+    public enum StartTimeBase : byte { Unknown = 0, BaseOnAbsoluteTimeMidnightUtc, BaseOnUsaMarketOpen, BaseOnUsaMarketClose, BaseOnFedReleaseTime };
+
+    public class RelativeTime  // not absolute fixed hours, but relative to an event. E.g. on half-trading days before USA stock market holidays, MOC time is not 16:00, but 13:00
+    {
+        public StartTimeBase StartTimeBase { get; set; }
+        public TimeSpan TimeOffset { get; set; }    // -60min: 60 min before the base event, +60min: 60 min after the base event.
+    }
+
+    public class RelativeTimePeriod
+    {
+        public RelativeTime Start { get; set; } = new RelativeTime() { StartTimeBase = StartTimeBase.Unknown, TimeOffset = TimeSpan.Zero };
+        public RelativeTime End { get; set; } = new RelativeTime() { StartTimeBase = StartTimeBase.Unknown, TimeOffset = TimeSpan.Zero };
+    }
 
     public enum TaskSetting // general Task settings valid for all Triggers or it can be specific TriggerSettings
     {

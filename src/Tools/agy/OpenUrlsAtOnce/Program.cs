@@ -13,6 +13,7 @@ namespace OpenUrlsAtOnce
 
             OpenBrowser("https://www.wsj.com/"); Thread.Sleep(sleepInMsec);    // free speech: allow comments
             OpenBrowser("http://www.ft.com/home/europe"); Thread.Sleep(sleepInMsec);   // free speech: allow comments
+            OpenBrowser("https://www.gbnews.uk"); Thread.Sleep(sleepInMsec); // 2021-06 new news channel. a bit right-leaning, GB indicates a bit national, hopefully liberal with programs as "Free Speech Nation"
             OpenBrowser("https://www.theguardian.com/uk?INTCMP=CE_UK"); Thread.Sleep(sleepInMsec); // 2018-05: Changed from Independent to TheGuardian, because it has 3x as much circulation, but I don't like it because too leftist (instead of liberal), and doesn't allow free speach, no comments
 
             // OpenBrowser("http://444.hu/"); Thread.Sleep(sleepInMsec);  // After index.hu fiasco, everybody went to 444, but it is only politics, it doesn't contain Tech or Viral news.

@@ -6,7 +6,6 @@
     "explorer.confirmDelete": false,
     "editor.renderControlCharacters": false,
     "editor.renderWhitespace": "all",
-    "window.zoomLevel": 1,
     "typescript.reportStyleChecksAsWarnings": false,
     "git.enableSmartCommit": true,
     "aws.profile": "profile:default",
@@ -23,11 +22,11 @@
     },
     "editor.columnSelection": false,
     "python.languageServer": "Pylance",
-    "workbench.editorAssociations": [
-        {
-            "viewType": "jupyter.notebook.ipynb",
-            "filenamePattern": "*.ipynb"
-        }
-    ],
-    "window.newWindowDimensions": "offset"
+    "workbench.editorAssociations": {
+        "*.ipynb": "jupyter.notebook.ipynb"
+    },
+    "window.newWindowDimensions": "offset",
+    "files.autoSave": "afterDelay",
+    "window.zoomLevel": 1,
+    "security.workspace.trust.enabled": false
 }

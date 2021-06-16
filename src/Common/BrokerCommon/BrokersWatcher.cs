@@ -120,9 +120,16 @@ namespace BrokerCommon
             var notConnectedGateways = String.Join(",", m_gateways.Where(l => !l.IsConnected).Select(r => r.GatewayId + "/"));
             if (!String.IsNullOrEmpty(notConnectedGateways))
             {
-                if (IgnoreErrorsBasedOnMarketTradingTime(offsetToOpenMin: -60))
+                if (IgnoreErrorsBasedOnMarketTradingTime(offsetToOpenMin: -60))  // ignore errors only before 8:30, instead of 9:30 OpenTime
                     return; // skip processing the error further. Don't send it to HealthMonitor.
-                HealthMonitorMessage.SendAsync($"Gateways are not connected. Not connected gateways {notConnectedGateways}", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
+                
+                // It can happen if somebody manually closed TWS on MTS and restarted it.
+                // But don't ignore for all gateways. It can be important for 'some' gateways, because SqCore server can do live trading.
+
+                // Also in the future: check IsCriticalTradingTime() usage AND
+                // write a service that runs at every CriticalTradingTime starts, and checks that the TradeableGatewayIds are connected
+                // and That should send the HealthMonitor warning, not this
+                HealthMonitorMessage.SendAsync($"ReconnectToGatewaysTimer() tried to connect to not connected gateways (3x, 10sec sleep). Still not connected gateways {notConnectedGateways}", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
             }
             Utils.Logger.Info("GatewaysWatcher:ReconnectToGatewaysTimer_Elapsed() END");
         }
@@ -197,12 +204,12 @@ namespace BrokerCommon
         // there are some weird IB errors that happen usually when IB server is down. 99% of the time it is at the weekend, or when pre or aftermarket. In this exceptional times, ignore errors.
         public static bool IgnoreErrorsBasedOnMarketTradingTime(int offsetToOpenMin = 0, int offsetToCloseMin = 40)
         {
-            DateTime utcNow = DateTime.UtcNow;
-            DateTime etNow = Utils.ConvertTimeFromUtcToEt(utcNow);
-            if (etNow.DayOfWeek == DayOfWeek.Saturday || etNow.DayOfWeek == DayOfWeek.Sunday)   // if it is the weekend => no Error
+            DateTime timeUtc = DateTime.UtcNow;
+            DateTime timeEt = Utils.ConvertTimeFromUtcToEt(timeUtc);
+            if (timeEt.DayOfWeek == DayOfWeek.Saturday || timeEt.DayOfWeek == DayOfWeek.Sunday)   // if it is the weekend => no Error
                 return true;
 
-            TimeSpan timeTodayEt = etNow - etNow.Date;
+            TimeSpan timeTodayEt = timeEt - timeEt.Date;
             // The NYSE and NYSE MKT are open from Monday through Friday 9:30 a.m. to 4:00 p.m. ET.
             // "Gateways are not connected" errors handled with more strictness. We expect that there is a connection to IBGateway at least 1 hour before open. At 8:30.
             if (timeTodayEt.TotalMinutes < 9 * 60 + 29 + offsetToOpenMin) // ignore errors before 9:30. 
@@ -212,6 +219,43 @@ namespace BrokerCommon
                 return true;   // if it is not Approximately around market hours => no Error
 
             // TODO: <not too important> you can skip holiday days too later; and use real trading hours, which sometimes are shortened, before or after holidays.
+            return false;
+        }
+
+        public static bool IsCriticalTradingTime(GatewayId p_gatewayId, DateTime p_timeUtc)
+        {
+            DateTime timeEt = Utils.ConvertTimeFromUtcToEt(p_timeUtc);
+            if (timeEt.DayOfWeek == DayOfWeek.Saturday || timeEt.DayOfWeek == DayOfWeek.Sunday)   // quick check: if it is the weekend => not critical time.
+                return false;
+
+            bool isMarketHoursValid = Utils.DetermineUsaMarketTradingHours(p_timeUtc, out bool isMarketTradingDay, out DateTime marketOpenTimeUtc, out DateTime marketCloseTimeUtc, TimeSpan.FromDays(3));
+            if (isMarketHoursValid && !isMarketTradingDay)
+                return false;
+
+            foreach (var critTradingRange in GatewayExtensions.CriticalTradingPeriods)
+            {
+                if (critTradingRange.GatewayId != p_gatewayId)
+                    continue;
+
+                if (!isMarketHoursValid)
+                    return true;    // Caution: if DetermineUsaMarketTradingHours() failed, better to report that we are in a critical period.
+
+                DateTime critPeriodStartUtc = DateTime.MinValue; // Caution: 
+                if (critTradingRange.RelativeTimePeriod.Start.StartTimeBase == StartTimeBase.BaseOnUsaMarketOpen)
+                    critPeriodStartUtc = marketOpenTimeUtc + critTradingRange.RelativeTimePeriod.Start.TimeOffset;
+                else if (critTradingRange.RelativeTimePeriod.Start.StartTimeBase == StartTimeBase.BaseOnUsaMarketClose)
+                    critPeriodStartUtc = marketCloseTimeUtc + critTradingRange.RelativeTimePeriod.Start.TimeOffset;
+
+                DateTime critPeriodEndUtc = DateTime.MaxValue;
+                if (critTradingRange.RelativeTimePeriod.End.StartTimeBase == StartTimeBase.BaseOnUsaMarketOpen)
+                    critPeriodEndUtc = marketOpenTimeUtc + critTradingRange.RelativeTimePeriod.End.TimeOffset;
+                else if (critTradingRange.RelativeTimePeriod.End.StartTimeBase == StartTimeBase.BaseOnUsaMarketClose)
+                    critPeriodEndUtc = marketCloseTimeUtc + critTradingRange.RelativeTimePeriod.End.TimeOffset;
+
+                if (critPeriodStartUtc <= p_timeUtc && p_timeUtc <= critPeriodEndUtc)   // if p_timeUtc is between [Start, End]
+                    return true;
+            }
+
             return false;
         }
 

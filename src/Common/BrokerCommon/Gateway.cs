@@ -47,10 +47,41 @@ namespace BrokerCommon
         SqCoreToDbTest1 = 89
     }
 
+
+    public class GatewayTradingPeriod {
+        public GatewayId GatewayId { get; set; } = GatewayId.None;
+        public RelativeTimePeriod RelativeTimePeriod { get; set; } = new RelativeTimePeriod();
+    }
+
     public static class GatewayExtensions
     {
         public static Dictionary<string, GatewayId> NavSymbol2GatewayId = new Dictionary<string, GatewayId>() { 
             {"GA.IM", GatewayId.GyantalMain}, {"DC.IM", GatewayId.CharmatMain}, {"DC.ID", GatewayId.DeBlanzacMain}};
+
+
+        // CriticalTrading times when IbGateway connections should be checked, and during which time disconnections are not allowed and generate HealthMonitor error
+        // One Gateway can have many small critical periods
+        public static List<GatewayTradingPeriod> CriticalTradingPeriods = new List<GatewayTradingPeriod>() {
+            new GatewayTradingPeriod() {
+                GatewayId = GatewayId.GyantalMain,
+                RelativeTimePeriod = new RelativeTimePeriod() {    // for testing: from 20min before Open to 5min after Close
+                    Start = new RelativeTime() { StartTimeBase = StartTimeBase.BaseOnUsaMarketOpen, TimeOffset = TimeSpan.FromMinutes(-20) },
+                    End = new RelativeTime() { StartTimeBase = StartTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(5) } }
+            },
+            new GatewayTradingPeriod() {
+                GatewayId = GatewayId.CharmatMain,
+                RelativeTimePeriod = new RelativeTimePeriod() {    // realistic: 10min before Open to 35min after Open.
+                    Start = new RelativeTime() { StartTimeBase = StartTimeBase.BaseOnUsaMarketOpen, TimeOffset = TimeSpan.FromMinutes(-10) },
+                    End = new RelativeTime() { StartTimeBase = StartTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(35) } }
+            },
+            new GatewayTradingPeriod() {
+                GatewayId = GatewayId.CharmatMain,
+                RelativeTimePeriod = new RelativeTimePeriod() {    // realistic: 1h before Close to 5min after Close. Simulations run 30 min before Close.
+                    Start = new RelativeTime() { StartTimeBase = StartTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(-60) },
+                    End = new RelativeTime() { StartTimeBase = StartTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(5) } }
+            }
+         };
+
 
         public static string ToShortFriendlyString(this GatewayId me)
         {

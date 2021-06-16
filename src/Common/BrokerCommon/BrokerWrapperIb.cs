@@ -394,9 +394,15 @@ namespace BrokerCommon
 
             if (errorCode == 504) // ErrCode: 504, Msg: Not connected
             {
-                // 2021-06-01: when moving IbApi to SqCore
-                if (BrokersWatcher.IgnoreErrorsBasedOnMarketTradingTime()) // 
+                // This message is received if somebody manually closed TWS on MTS and restarted it.
+                // But don't ignore it for all gateways. It can be important for 'some' gateways, because SqCore server can do live trading.
+
+                // If it is a TradableGateway (DcMain, GA, not DeBlanzac), then it is important to send emails around critical trading hours. Otherwise, it can be ignored.
+                if (!BrokersWatcher.IsCriticalTradingTime(m_gatewayId, DateTime.UtcNow))
                     return; // skip processing the error further. Don't send it to HealthMonitor.
+
+                // ReconnectToGatewaysTimer_Elapsed() runs in every 15 minutes in general.
+                // TODO: Future work: write a service that runs at every CriticalTradingTime starts, and checks that the TradeableGatewayIds are connected
             }
 
             if (errorCode == 506)
