@@ -42,6 +42,15 @@ namespace BrokerCommon
             }
         }
 
+        private List<Gateway> Gateways  // maybe it is safer to NOT expose this internal list. Clients can query using GatewayId.
+        {
+            get
+            {
+                return m_gateways;
+            }
+        }
+
+
         public void Init()
         {
             Utils.Logger.Info("***GatewaysWatcher:Init()");
@@ -241,15 +250,15 @@ namespace BrokerCommon
                     return true;    // Caution: if DetermineUsaMarketTradingHours() failed, better to report that we are in a critical period.
 
                 DateTime critPeriodStartUtc = DateTime.MinValue; // Caution: 
-                if (critTradingRange.RelativeTimePeriod.Start.StartTimeBase == StartTimeBase.BaseOnUsaMarketOpen)
+                if (critTradingRange.RelativeTimePeriod.Start.Base == RelativeTimeBase.BaseOnUsaMarketOpen)
                     critPeriodStartUtc = marketOpenTimeUtc + critTradingRange.RelativeTimePeriod.Start.TimeOffset;
-                else if (critTradingRange.RelativeTimePeriod.Start.StartTimeBase == StartTimeBase.BaseOnUsaMarketClose)
+                else if (critTradingRange.RelativeTimePeriod.Start.Base == RelativeTimeBase.BaseOnUsaMarketClose)
                     critPeriodStartUtc = marketCloseTimeUtc + critTradingRange.RelativeTimePeriod.Start.TimeOffset;
 
                 DateTime critPeriodEndUtc = DateTime.MaxValue;
-                if (critTradingRange.RelativeTimePeriod.End.StartTimeBase == StartTimeBase.BaseOnUsaMarketOpen)
+                if (critTradingRange.RelativeTimePeriod.End.Base == RelativeTimeBase.BaseOnUsaMarketOpen)
                     critPeriodEndUtc = marketOpenTimeUtc + critTradingRange.RelativeTimePeriod.End.TimeOffset;
-                else if (critTradingRange.RelativeTimePeriod.End.StartTimeBase == StartTimeBase.BaseOnUsaMarketClose)
+                else if (critTradingRange.RelativeTimePeriod.End.Base == RelativeTimeBase.BaseOnUsaMarketClose)
                     critPeriodEndUtc = marketCloseTimeUtc + critTradingRange.RelativeTimePeriod.End.TimeOffset;
 
                 if (critPeriodStartUtc <= p_timeUtc && p_timeUtc <= critPeriodEndUtc)   // if p_timeUtc is between [Start, End]

@@ -50,6 +50,14 @@ namespace IBApi
                 }
                 catch (Exception ex)
                 {
+                    // 1. System.IO.IOException is expected when main thread exits and after it calls ClientSocket.eDisconnect();
+                    // in the msg processing loop this throws the exception: IbApiSocketClient.dll!IBApi.EClient.ReadInt()
+                    // Fine. It seems we cannot prevent it. We cannot cancel this putMessageToQueue() loop. 
+                    // It is written that once it is started, it always listen. No way to cancel it.
+
+                    // 2. System.IO.EndOfStreamException happens when a previous disconnection went wrong and IbGateway still hangs-on the connection, not realizing it was disconnected.
+                    // Succesive connections have problems. Solution: restart the IbGateway/TWS that is stuck on that open connection.
+
                     eClientSocket.Wrapper.error(ex);
                     eClientSocket.eDisconnect();
                 }

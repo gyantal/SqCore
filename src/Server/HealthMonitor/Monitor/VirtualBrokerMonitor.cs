@@ -148,24 +148,21 @@ namespace HealthMonitor
                     Name = "MarketOpen+25min",
                     SqTask = uberVxxTask,
                     TriggerType = TriggerType.DailyOnUsaMarketDay,
-                    StartTimeBase = StartTimeBase.BaseOnUsaMarketOpen,
-                    StartTimeOffset = TimeSpan.FromMinutes(25),
+                    Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketOpen, TimeOffset = TimeSpan.FromMinutes(25) }
                 });
                 uberVxxTask.Triggers.Add(new SqTrigger()
                 {
                     Name = "MarketClose-35min",
                     SqTask = uberVxxTask,
                     TriggerType = TriggerType.DailyOnUsaMarketDay,
-                    StartTimeBase = StartTimeBase.BaseOnUsaMarketClose,
-                    StartTimeOffset = TimeSpan.FromMinutes(-35),
+                    Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(-35) }
                 });
                 uberVxxTask.Triggers.Add(new SqTrigger()
                 {
                     Name = "MarketClose-15sec",
                     SqTask = uberVxxTask,
                     TriggerType = TriggerType.DailyOnUsaMarketDay,
-                    StartTimeBase = StartTimeBase.BaseOnUsaMarketClose,
-                    StartTimeOffset = TimeSpan.FromSeconds(-15),    // from -20sec to -15sec. From start, the trade executes in 2seconds
+                    Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(-15) } // from -20sec to -15sec. From start, the trade executes in 2seconds
                 });
                 SqTaskScheduler.gSqTasks.Add(uberVxxTask);
 
@@ -181,24 +178,21 @@ namespace HealthMonitor
                     Name = "MarketOpen+30min",
                     SqTask = harryLongTask,
                     TriggerType = TriggerType.DailyOnUsaMarketDay,
-                    StartTimeBase = StartTimeBase.BaseOnUsaMarketOpen,
-                    StartTimeOffset = TimeSpan.FromMinutes(30)
+                    Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketOpen, TimeOffset = TimeSpan.FromMinutes(30) }
                 });
                 harryLongTask.Triggers.Add(new SqTrigger()
                 {
                     Name = "MarketClose-31min",
                     SqTask = harryLongTask,
                     TriggerType = TriggerType.DailyOnUsaMarketDay,
-                    StartTimeBase = StartTimeBase.BaseOnUsaMarketClose,
-                    StartTimeOffset = TimeSpan.FromMinutes(-31)
+                    Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(-31) }
                 });
                 harryLongTask.Triggers.Add(new SqTrigger()
                 {
                     Name = "MarketClose-11sec",
                     SqTask = harryLongTask,
                     TriggerType = TriggerType.DailyOnUsaMarketDay,
-                    StartTimeBase = StartTimeBase.BaseOnUsaMarketClose,
-                    StartTimeOffset = TimeSpan.FromSeconds(-11)    // Give UberVXX priority (executing at -15sec). That is more important because that can change from full 100% long to -200% short. This Harry Long strategy just slowly modifies weights, so if one trade is missed, it is not a problem.
+                    Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(-11) } // Give UberVXX priority (executing at -15sec). That is more important because that can change from full 100% long to -200% short. This Harry Long strategy just slowly modifies weights, so if one trade is missed, it is not a problem.
                 });
                 SqTaskScheduler.gSqTasks.Add(harryLongTask);
             }

@@ -204,6 +204,19 @@ namespace FinTechCommon
             return rtPrices;
         }
 
+        public float GetLastRtValue(Asset p_asset)
+        {
+
+            m_lastRtPriceQueryTime[p_asset] = DateTime.UtcNow;
+            DateTime lastDateTime = DateTime.MinValue;
+            float lastValue;
+            if (p_asset.AssetId.AssetTypeID == AssetType.BrokerNAV)
+                lastValue = GetLastNavRtPrice((p_asset as BrokerNav)!).LastValue;
+            else
+                lastValue = p_asset.LastValue;
+            return lastValue;
+        }
+
 
         async void DownloadLastPriceYF(Asset[] p_assets, TradingHours p_tradingHoursNow)  // takes ? ms from WinPC
         {

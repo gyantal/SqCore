@@ -401,6 +401,7 @@ namespace BrokerCommon
                 if (!BrokersWatcher.IsCriticalTradingTime(m_gatewayId, DateTime.UtcNow))
                     return; // skip processing the error further. Don't send it to HealthMonitor.
 
+                Utils.Logger.Info("TEMP text: errorCode == 504, IsCriticalTradingTime() = true. We signal error to HealthMonitor.");
                 // ReconnectToGatewaysTimer_Elapsed() runs in every 15 minutes in general.
                 // TODO: Future work: write a service that runs at every CriticalTradingTime starts, and checks that the TradeableGatewayIds are connected
             }

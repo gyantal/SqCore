@@ -34,6 +34,17 @@ namespace BrokerCommon
         public string Currency { get; set; } = string.Empty;
     }
 
+    public static class AccSumHelper
+    {
+        public static double GetValue(this List<AccSum> accSums, string tagStr)
+        {
+            string valStr = accSums.First(r => r.Tag == tagStr).Value;
+            if (!Double.TryParse(valStr, out double valDouble))
+                valDouble = Double.NegativeInfinity; // Math.Round() would crash on NaN
+            return (int)Math.Round(valDouble, MidpointRounding.AwayFromZero); // 0.5 is rounded to 1, -0.5 is rounded to -1. Good.
+        }
+    }
+
     public class AccPos
     {
         public Contract Contract { get; set; }
@@ -73,6 +84,15 @@ namespace BrokerCommon
                 return null;
             
             return gateway.GetAccountSums();
+        }
+
+        public List<AccPos>? GetAccountPoss(GatewayId p_gatewayId)
+        {
+            var gateway = m_gateways.FirstOrDefault(r => r.GatewayId == p_gatewayId);
+            if (gateway == null || !gateway.IsConnected)
+                return null;
+            
+            return gateway.GetAccountPoss(new string[0]);
         }
 
         //$"?v=1&secTok={securityTokenVer2}&bAcc=Gyantal,Charmat,DeBlanzac&data=AccSum,Pos,EstPr,OptDelta&posExclSymbols=VIX,BLKCF,AXXDF&addPrInfoSymbols=QQQ,SPY,TLT,VXX,UNG";

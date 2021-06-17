@@ -8,6 +8,7 @@ import { Component, OnInit } from '@angular/core';
 export class BrPrtfViewerComponent implements OnInit {
   
   handshakeMsgStr = '[Nothing arrived yet]';
+  brPortfolioPossStr = '[Nothing arrived yet]';
 
   constructor() { }
 
@@ -35,7 +36,9 @@ export class BrPrtfViewerComponent implements OnInit {
         // this.lastRtMsg = jsonArrayObjRt;
         // MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
         return true;
-      case 'BrPrtfViewer.Y':
+      case 'BrPrtfViewer.BrPortfolioPoss':
+        console.log('BrPrtfViewer.BrPortfolioPoss:' + msgObjStr);
+        this.brPortfolioPossStr = msgObjStr;
         // if (gDiag.wsOnFirstRtMktSumNonRtStatTime === minDate) {
         //   gDiag.wsOnFirstRtMktSumNonRtStatTime = new Date();
         // }

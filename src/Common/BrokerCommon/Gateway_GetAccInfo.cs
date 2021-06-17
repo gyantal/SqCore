@@ -12,7 +12,7 @@ using System.Diagnostics;
 
 namespace BrokerCommon
 {
-  
+
 
     public partial class Gateway
     {
@@ -41,8 +41,8 @@ namespace BrokerCommon
         public void AccPosArrived(string p_account, Contract p_contract, double p_pos, double p_avgCost)
         {
             // 2018-11: EUR cash is coming ONLY on DeBlanzac account, not Main account, neither Agy, which also has many other currencies. Maybe it is only a 'virtual' cash FX position. Assume it is virtual, so ignore it.
-            if (p_contract.SecType == "CASH")
-                return;
+            // if (p_contract.SecType == "CASH")
+            //     return;
             if (p_pos != 0.0 && !m_exclSymbolsArr.Contains(p_contract.Symbol))   // If a position is 0, it means we just sold it, but IB reports it during that day, because of Realized P&L. However, we don't need that position any more.
                 m_accPoss.Add(new AccPos(p_contract) { Position = p_pos, AvgCost = p_avgCost });
         }
@@ -56,7 +56,7 @@ namespace BrokerCommon
 
         public List<AccSum>? GetAccountSums()
         {
-            List<AccSum> result = new List<AccSum>();
+            List<AccSum>? result = null;
             int accReqId = -1;
             try
             {
@@ -95,13 +95,14 @@ namespace BrokerCommon
 
         public List<AccPos>? GetAccountPoss(string[] p_exclSymbolsArr)
         {
-            m_accPoss = new List<AccPos>();  // delete old values
-            m_exclSymbolsArr = p_exclSymbolsArr;
+            List<AccPos>? result = null;
             try
             {
                 Stopwatch sw2 = Stopwatch.StartNew();
                 lock (m_getAccountPositionsLock)          //ReqPositions() doesn't have a reqID, so if we allow multiple threads to do it at the same time, we cannot sort out the output
                 {
+                    m_accPoss = new List<AccPos>();  // delete old values
+                    m_exclSymbolsArr = p_exclSymbolsArr;
                     if (m_getAccountPosMres == null)
                         m_getAccountPosMres = new ManualResetEventSlim(false);  // initialize as unsignaled
                     else
@@ -111,18 +112,19 @@ namespace BrokerCommon
                     bool wasLightSet = m_getAccountPosMres.Wait(10000);     // timeout at 10sec
                     if (!wasLightSet)
                         Utils.Logger.Error("ReqPositions() ended with timeout error.");
+
+                    result = m_accPoss; // save it before releasing the lock, so other threads will not overwrite the result
                 }
-                sw2.Stop();
+                sw2.Stop(); // London local DEV client to servers: US-East: 180ms, Dublin: 51-64ms. This is 2x ping time. Linux server will be 5-10ms.
                 Utils.Logger.Info($"ReqPositions() ends in {sw2.ElapsedMilliseconds}ms GatewayId: '{this.GatewayId}', Thread Id= {Thread.CurrentThread.ManagedThreadId}");
             }
             catch (Exception e)
             {
                 Utils.Logger.Error("ReqPositions() ended with exception: " + e.Message);
+                return null;
             }
-            return m_accPoss;
+            return result;
         }
-
-        
     }
 
-    }
+}

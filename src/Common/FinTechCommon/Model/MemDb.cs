@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using SqCommon;
 using System.Threading.Tasks;
+using System.Globalization;
 
 namespace FinTechCommon
 {
@@ -78,6 +79,7 @@ namespace FinTechCommon
         DateTime m_lastHistoricalDataReload = DateTime.MinValue; // UTC
         TimeSpan m_lastHistoricalDataReloadTs;  // YF downloads. For 12 stocks, it is 3sec. so for 120 stocks 30sec, for 600 stocks 2.5min, for 1200 stocks 5min
  
+        public List<BrPortfolio> BrPortfolios{ get; set; } = new List<BrPortfolio>();   // only Broker dependent data. When AssetCache is reloaded from RedisDb, this should not be wiped or reloaded
 
         public delegate void MemDbEventHandler();
         public event MemDbEventHandler? EvFirstInitialized = null;     // it can be ReInitialized in every 1 hour because of Database polling
@@ -128,6 +130,9 @@ namespace FinTechCommon
             ServerDiagnosticRealtime(p_sb);
             p_sb.Append($"<br>");
             ServerDiagnosticNavRealtime(p_sb);
+
+            p_sb.Append($"<br>");
+            ServerDiagnosticBrPortfolio(p_sb, true);
         }
 
         private void ServerDiagnosticMemDb(StringBuilder p_sb, bool p_isHtml)
@@ -141,6 +146,14 @@ namespace FinTechCommon
             var yfTickers = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).Select(r => ((Stock)r).YfTicker).ToArray();
             p_sb.Append($"StockAssets (#{yfTickers.Length}): ");
             p_sb.AppendLongListByLine(yfTickers, ",", 10, "<br>");
+        }
+
+        private void ServerDiagnosticBrPortfolio(StringBuilder p_sb, bool p_isHtml)
+        {
+            foreach (var brPortfolio in BrPortfolios)
+            {
+                p_sb.Append($"BrPortfolio GatewayId: {brPortfolio.GatewayId}, LastUpdateUtc: {brPortfolio.LastUpdate.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}, NAV: {brPortfolio.NetLiquidation}, #Pos: {brPortfolio.AccPoss.Count}<br>");
+            }
         }
 
         public async void ReloadDbDataTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread

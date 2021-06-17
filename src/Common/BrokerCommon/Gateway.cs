@@ -12,7 +12,7 @@ using System.Text;
 namespace BrokerCommon
 {
     // GateWayId is not User. DC user has 2 Gateways: Main, DeBlanzac. But same user.
-    public enum GatewayId { None, Demo, GyantalMain, GyantalSecondary, GyantalPaper, CharmatMain, CharmatSecondary, CharmatPaper, CharmatWifeMain, CharmatWifeSecondary, CharmatWifePaper, DeBlanzacMain, DeBlanzacSecondary, TuMain, TuSecondary }
+    public enum GatewayId { Unknown, Demo, GyantalMain, GyantalSecondary, GyantalPaper, CharmatMain, CharmatSecondary, CharmatPaper, CharmatWifeMain, CharmatWifeSecondary, CharmatWifePaper, DeBlanzacMain, DeBlanzacSecondary, TuMain, TuSecondary }
     public enum GatewayPort : int { None, Demo, GyantalMain = 7301, VbSrvGyantalSecondary = 7301, GyantalPaper, SqCoreSrvCharmatMain = 7303, CharmatSecondary = 7303, CharmatPaper, CharmatWifeMain, CharmatWifeSecondary, CharmatWifePaper, SqCoreSrvDeBlanzacMain = 7308, DeBlanzacSecondary, TuMain = 7304, TuSecondary = 7304 }
     public enum GatewayClientID : int
     {
@@ -49,7 +49,7 @@ namespace BrokerCommon
 
 
     public class GatewayTradingPeriod {
-        public GatewayId GatewayId { get; set; } = GatewayId.None;
+        public GatewayId GatewayId { get; set; } = GatewayId.Unknown;
         public RelativeTimePeriod RelativeTimePeriod { get; set; } = new RelativeTimePeriod();
     }
 
@@ -58,6 +58,12 @@ namespace BrokerCommon
         public static Dictionary<string, GatewayId> NavSymbol2GatewayId = new Dictionary<string, GatewayId>() { 
             {"GA.IM", GatewayId.GyantalMain}, {"DC.IM", GatewayId.CharmatMain}, {"DC.ID", GatewayId.DeBlanzacMain}};
 
+        public static Dictionary<string, List<GatewayId>> NavSqSymbol2GatewayIds = new Dictionary<string,List<GatewayId>>() { 
+            {"N/GA.IM", new List<GatewayId>() {GatewayId.GyantalMain}}, 
+            {"N/DC.IM", new List<GatewayId>() {GatewayId.CharmatMain}}, 
+            {"N/DC.ID", new List<GatewayId>() {GatewayId.DeBlanzacMain}},
+            {"N/DC", new List<GatewayId>() {GatewayId.CharmatMain, GatewayId.DeBlanzacMain}}};
+
 
         // CriticalTrading times when IbGateway connections should be checked, and during which time disconnections are not allowed and generate HealthMonitor error
         // One Gateway can have many small critical periods
@@ -65,20 +71,20 @@ namespace BrokerCommon
             new GatewayTradingPeriod() {
                 GatewayId = GatewayId.GyantalMain,
                 RelativeTimePeriod = new RelativeTimePeriod() {    // for testing: from 20min before Open to 5min after Close
-                    Start = new RelativeTime() { StartTimeBase = StartTimeBase.BaseOnUsaMarketOpen, TimeOffset = TimeSpan.FromMinutes(-20) },
-                    End = new RelativeTime() { StartTimeBase = StartTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(5) } }
+                    Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketOpen, TimeOffset = TimeSpan.FromMinutes(-20) },
+                    End = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(5) } }
             },
             new GatewayTradingPeriod() {
                 GatewayId = GatewayId.CharmatMain,
                 RelativeTimePeriod = new RelativeTimePeriod() {    // realistic: 10min before Open to 35min after Open.
-                    Start = new RelativeTime() { StartTimeBase = StartTimeBase.BaseOnUsaMarketOpen, TimeOffset = TimeSpan.FromMinutes(-10) },
-                    End = new RelativeTime() { StartTimeBase = StartTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(35) } }
+                    Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketOpen, TimeOffset = TimeSpan.FromMinutes(-10) },
+                    End = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(35) } }
             },
             new GatewayTradingPeriod() {
                 GatewayId = GatewayId.CharmatMain,
                 RelativeTimePeriod = new RelativeTimePeriod() {    // realistic: 1h before Close to 5min after Close. Simulations run 30 min before Close.
-                    Start = new RelativeTime() { StartTimeBase = StartTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(-60) },
-                    End = new RelativeTime() { StartTimeBase = StartTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(5) } }
+                    Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(-60) },
+                    End = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(5) } }
             }
          };
 
@@ -87,7 +93,7 @@ namespace BrokerCommon
         {
             switch (me)
             {
-                case GatewayId.None:
+                case GatewayId.Unknown:
                     return "None";
                 case GatewayId.GyantalMain:
                 case GatewayId.GyantalSecondary:
@@ -100,7 +106,7 @@ namespace BrokerCommon
                     return "T";
                 case GatewayId.DeBlanzacMain:
                 case GatewayId.DeBlanzacSecondary:
-                    return "D";
+                    return "DB";
                 default:
                     return "ERR";
             }
@@ -240,7 +246,7 @@ namespace BrokerCommon
                     List<AccSum>? accSums = GetAccountSums();
                     if (accSums != null)
                     {
-                        string navStr = accSums.First(r => r.Tag == "NetLiquidation").Value;
+                        string navStr = accSums.First(r => r.Tag == AccountSummaryTags.NetLiquidation).Value;
                         Utils.Logger.Info($"Gateway {GatewayId}'s NAV: {navStr}");
                         Console.WriteLine($"Gateway {GatewayId}'s NAV: {navStr}");
                     }

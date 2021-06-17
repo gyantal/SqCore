@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SqCommon;
 using Xunit;
+using IBApi;
 
 namespace BrokerCommon.tests
 {
@@ -24,7 +25,7 @@ namespace BrokerCommon.tests
             if (accSums == null)
                 return;
 
-            string navStr = accSums.First(r => r.Tag == "NetLiquidation").Value;
+            string navStr = accSums.First(r => r.Tag == AccountSummaryTags.NetLiquidation).Value;
             Assert.False(String.IsNullOrEmpty(navStr));
 
             Assert.True(Double.TryParse(navStr, out double nav));

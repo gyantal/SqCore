@@ -7,6 +7,7 @@ using Microsoft.Extensions.Primitives;
 using System.Threading.Tasks;
 using BrokerCommon;
 using System.Linq;
+using IBApi;
 
 namespace FinTechCommon
 {
@@ -100,10 +101,8 @@ namespace FinTechCommon
                 if (accSums == null)
                     continue;
 
-                string navStr = accSums.First(r => r.Tag == "NetLiquidation").Value;
-                if (!Double.TryParse(navStr, out double nav))
-                    nav = Double.NegativeInfinity;
-                UpdateAssetInDb(p_updateParam, new AssetId32Bits(AssetType.BrokerNAV, gw2SubTableId.Value), nav);
+                var navRounded = accSums.GetValue(AccountSummaryTags.NetLiquidation);
+                UpdateAssetInDb(p_updateParam, new AssetId32Bits(AssetType.BrokerNAV, gw2SubTableId.Value), navRounded);
             }
         }
 

@@ -120,7 +120,7 @@ namespace FinTechCommon
 
         public List<BrokerNav> AggregateNavChildren { get; set; } = new List<BrokerNav>();
 
-        public GatewayId GatewayId { get; set; } = GatewayId.None;
+        public GatewayId GatewayId { get; set; } = GatewayId.Unknown;
 
         public BrokerNav(JsonElement row, User[] users) : base(AssetType.BrokerNAV, row)
         {
@@ -149,15 +149,6 @@ namespace FinTechCommon
         }
     }
 
-    public class Portfolio : Asset
-    {
-        public User? User { get; set; } = null;
-
-        public Portfolio(JsonElement row, User[] users) : base(AssetType.Portfolio, row)
-        {
-            User = users.FirstOrDefault(r => r.Username == row[5].ToString()!);
-        }
-    }
 
     public class Company : Asset
     {

@@ -11,24 +11,23 @@ namespace SqCommon
     public enum TriggerType : byte
     {   // similar to Windows TaskScheduler
         // On a schedule: 
-        OneTime, Daily, DailyOnUsaMarketDay, DailyOnUkMarketDay, Weekly, Monthly,
+        OneTime, Periodic, Daily, DailyOnUsaMarketDay, DailyOnUkMarketDay, Weekly, Monthly,
         // On an event:
         AtApplicationStartup, AtApplicationExit, OnGatewayDisconnectionEvent, OnError, Unknown
     };
 
-    // TODO: after migration SqLab to SqCore. Rename StartTimeBase to RelativeTimeBase
-    public enum StartTimeBase : byte { Unknown = 0, BaseOnAbsoluteTimeMidnightUtc, BaseOnUsaMarketOpen, BaseOnUsaMarketClose, BaseOnFedReleaseTime };
+    public enum RelativeTimeBase : byte { Unknown = 0, BaseOnAbsoluteTimeMidnightUtc, BaseOnAbsoluteTimeAtEveryHourUtc, BaseOnUsaMarketOpen, BaseOnUsaMarketClose, BaseOnFedReleaseTime };
 
     public class RelativeTime  // not absolute fixed hours, but relative to an event. E.g. on half-trading days before USA stock market holidays, MOC time is not 16:00, but 13:00
     {
-        public StartTimeBase StartTimeBase { get; set; }
+        public RelativeTimeBase Base { get; set; }
         public TimeSpan TimeOffset { get; set; }    // -60min: 60 min before the base event, +60min: 60 min after the base event.
     }
 
     public class RelativeTimePeriod
     {
-        public RelativeTime Start { get; set; } = new RelativeTime() { StartTimeBase = StartTimeBase.Unknown, TimeOffset = TimeSpan.Zero };
-        public RelativeTime End { get; set; } = new RelativeTime() { StartTimeBase = StartTimeBase.Unknown, TimeOffset = TimeSpan.Zero };
+        public RelativeTime Start { get; set; } = new RelativeTime() { Base = RelativeTimeBase.Unknown, TimeOffset = TimeSpan.Zero };
+        public RelativeTime End { get; set; } = new RelativeTime() { Base = RelativeTimeBase.Unknown, TimeOffset = TimeSpan.Zero };
     }
 
     public enum TaskSetting // general Task settings valid for all Triggers or it can be specific TriggerSettings
@@ -43,8 +42,7 @@ namespace SqCommon
         public bool Enabled { get; set; }
         public TriggerType TriggerType { get; set; }   // currently only Daily supported
         public int RepeatEveryXSeconds { get; set; } // -1, if not Recur
-        public StartTimeBase StartTimeBase { get; set; }
-        public TimeSpan StartTimeOffset { get; set; }
+        public RelativeTime Start { get; set; } = new RelativeTime() { Base = RelativeTimeBase.Unknown, TimeOffset = TimeSpan.Zero };
         public DateTime StartTimeExplicitUtc { get; set; }
         public Dictionary<object, object> TriggerSettings { get; set; } = new Dictionary<object, object>(); // changing TriggerSettings should be merged with general TaskSettings
 

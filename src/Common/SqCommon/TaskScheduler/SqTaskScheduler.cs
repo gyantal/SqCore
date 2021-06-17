@@ -12,6 +12,8 @@ namespace SqCommon
     {
         public static SqTaskScheduler gTaskScheduler = new SqTaskScheduler();    // this is the Boss of the Virtual Broker bees. It schedules them.
         public static List<SqTask> gSqTasks = new List<SqTask>();  // the worker bees, the Trading Agents
+        const int cVbSchedulerSleepMinutes = 30;
+        DateTime m_schedulerStartupTime = DateTime.MaxValue;
     
         public void Init()
         {
@@ -24,12 +26,12 @@ namespace SqCommon
             try
             {
                 Thread.CurrentThread.Name = "VBroker scheduler";
-                Thread.Sleep(TimeSpan.FromSeconds(5));  // wait 5 seconds, so that IBGateways can connect at first
+                Thread.Sleep(TimeSpan.FromSeconds(5));  // wait 5 seconds, so that IBGateways can connect first
+                m_schedulerStartupTime = DateTime.UtcNow;
 
                 // maybe loop is not required.
                 // in the past we try to get UsaMarketOpenOrCloseTime() every 30 minutes. It was determined from YFinance intrady. "sleep 30 min for DetermineUsaMarketOpenOrCloseTime()"
                 // however, it may be a good idea that the Scheduler periodically wakes up and check Tasks
-                const int cVbSchedulerSleepMinutes = 30;
                 while (true) 
                 {
                     Utils.Logger.Info($"SchedulerThreadRun() loop BEGIN. Awake at every {cVbSchedulerSleepMinutes}min.");
@@ -92,21 +94,35 @@ namespace SqCommon
 
             if (p_trigger.TriggerType == TriggerType.Daily)
             {
-                if (p_trigger.StartTimeBase == StartTimeBase.BaseOnAbsoluteTimeMidnightUtc)
-                    proposedTime = DateTime.UtcNow.Date + p_trigger.StartTimeOffset;
-
+                if (p_trigger.Start.Base == RelativeTimeBase.BaseOnAbsoluteTimeMidnightUtc)
+                    proposedTime = DateTime.UtcNow.Date + p_trigger.Start.TimeOffset;
             }
             else if (p_trigger.TriggerType == TriggerType.DailyOnUsaMarketDay)
             {
                 if (p_isMarketHoursValid && p_isMarketTradingDay)  // in this case market open and close times are not given
                 {
-                    if (p_trigger.StartTimeBase == StartTimeBase.BaseOnUsaMarketOpen)
-                        proposedTime = p_marketOpenTimeUtc + p_trigger.StartTimeOffset;
+                    if (p_trigger.Start.Base == RelativeTimeBase.BaseOnUsaMarketOpen)
+                        proposedTime = p_marketOpenTimeUtc + p_trigger.Start.TimeOffset;
 
-                    if (p_trigger.StartTimeBase == StartTimeBase.BaseOnUsaMarketClose)
-                        proposedTime = p_marketCloseTimeUtc + p_trigger.StartTimeOffset;
+                    if (p_trigger.Start.Base == RelativeTimeBase.BaseOnUsaMarketClose)
+                        proposedTime = p_marketCloseTimeUtc + p_trigger.Start.TimeOffset;
                 }
             }
+            else if (p_trigger.TriggerType == TriggerType.AtApplicationStartup)
+            {
+                proposedTime = m_schedulerStartupTime + p_trigger.Start.TimeOffset;
+            }
+            else if (p_trigger.TriggerType == TriggerType.Periodic)
+            {
+                if (p_trigger.Start.Base == RelativeTimeBase.BaseOnAbsoluteTimeAtEveryHourUtc) 
+                {
+                    DateTime utcNow = DateTime.UtcNow;
+                    DateTime nextWholeHour = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, utcNow.Hour, 0, 0).AddHours(1);
+                    proposedTime = nextWholeHour + p_trigger.Start.TimeOffset;
+                }
+            }
+            else
+                throw new NotImplementedException();
 
             if (proposedTime > tresholdNowTime)
                 return proposedTime;

@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using SqCommon;
 using BrokerCommon;
-using YahooFinanceApi;
+using IBApi;
 
 namespace FinTechCommon
 {
@@ -86,7 +86,7 @@ namespace FinTechCommon
             DownloadLastPriceNav(downloadAssets.ToList());
         }
         
-        (float, DateTime) GetLastNavRtPrice(BrokerNav p_navAsset)
+        (float LastValue, DateTime LastValueUtc) GetLastNavRtPrice(BrokerNav p_navAsset)
         {
             float lastValue;
             DateTime lastValueUtc;  // if there are 2 subNavs, we want the Minimum of the UTCs. To be conservative how old the aggregated Time is.
@@ -126,16 +126,13 @@ namespace FinTechCommon
                 foreach (var navAsset in p_navAssets)
                 {
                     GatewayId gatewayId = navAsset.GatewayId;
-                    if (gatewayId == GatewayId.None)
+                    if (gatewayId == GatewayId.Unknown)
                         continue;
                     List<AccSum>? accSums = BrokersWatcher.gWatcher.GetAccountSums(gatewayId);
                     if (accSums == null)
                         continue;
-                    
-                    string navStr = accSums.First(r => r.Tag == "NetLiquidation").Value;
-                    if (!Double.TryParse(navStr, out double nav))
-                        nav = Double.NegativeInfinity;
-                    navAsset.LastValue = (int)Math.Round(nav, MidpointRounding.AwayFromZero); // 0.5 is rounded to 1, -0.5 is rounded to -1. Good.	
+
+                    navAsset.LastValue = (float)accSums.GetValue(AccountSummaryTags.NetLiquidation);
                 }
             }
             catch (Exception e)

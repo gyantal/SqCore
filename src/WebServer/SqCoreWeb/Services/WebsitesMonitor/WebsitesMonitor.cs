@@ -28,8 +28,9 @@ namespace SqCoreWeb
                 Name = "SpIndexChanges",
                 SqTask = sqTask,
                 TriggerType = TriggerType.DailyOnUsaMarketDay,
-                StartTimeBase = StartTimeBase.BaseOnUsaMarketOpen,  // Market close is sometimes 16:00, sometimes 13:00. Better to be relative to market open.
-                StartTimeOffset = TimeSpan.FromMinutes((17-9.5) * 60 + 20), // 5min after release time 17:15 ET, which is 1h15min after market close. Market open: 9:30 ET.
+                // Market close is sometimes 16:00, sometimes 13:00. Better to be relative to market open.
+                // 5min after release time 17:15 ET, which is 1h15min after market close. Market open: 9:30 ET.
+                Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketOpen, TimeOffset = TimeSpan.FromMinutes((17-9.5) * 60 + 20) },
                 TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, WsMonTaskSettingAction.SpIndexChanges } }
             });
             SqTaskScheduler.gSqTasks.Add(sqTask);

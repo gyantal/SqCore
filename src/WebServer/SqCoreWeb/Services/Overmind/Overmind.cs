@@ -30,8 +30,7 @@ namespace SqCoreWeb
                 Name = "MorningCheck",
                 SqTask = sqTask,
                 TriggerType = TriggerType.Daily,
-                StartTimeBase = StartTimeBase.BaseOnAbsoluteTimeMidnightUtc,
-                StartTimeOffset = TimeSpan.FromMinutes(9 * 60 + 5), // Activate every day 9:05 UTC,
+                Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnAbsoluteTimeMidnightUtc, TimeOffset = TimeSpan.FromMinutes(9 * 60 + 5) },  // Activate every day 9:05 UTC,
                 TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, OvermindTaskSettingAction.MorningCheck } }
             });
             sqTask.Triggers.Add(new SqTrigger()
@@ -39,8 +38,7 @@ namespace SqCoreWeb
                 Name = "MiddayCheck",
                 SqTask = sqTask,
                 TriggerType = TriggerType.Daily,
-                StartTimeBase = StartTimeBase.BaseOnAbsoluteTimeMidnightUtc,
-                StartTimeOffset = TimeSpan.FromMinutes(16 * 60 + 45), // Activate every day 16:45 UTC
+                Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnAbsoluteTimeMidnightUtc, TimeOffset = TimeSpan.FromMinutes(16 * 60 + 45) },  // Activate every day 16:45 UTC
                 TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, OvermindTaskSettingAction.MiddayCheck } }
             });
             SqTaskScheduler.gSqTasks.Add(sqTask);

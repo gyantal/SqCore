@@ -305,7 +305,7 @@ namespace SqCoreWeb
                     newsItem.Ticker = p_ticker;
                     newsItem.LinkUrl = item.Links[0].Uri.AbsoluteUri;
                     newsItem.Title = WebUtility.HtmlDecode(item.Title.Text);
-                    newsItem.Summary = WebUtility.HtmlDecode(item.Summary.Text);
+                    newsItem.Summary = WebUtility.HtmlDecode(item.Summary?.Text ?? string.Empty);   // <description> is missing sometimes, so Summary = null
                     newsItem.PublishDate = item.PublishDate.LocalDateTime;
                     newsItem.DownloadTime = DateTime.Now;
                     newsItem.Source = p_newsSource.ToString();
@@ -319,7 +319,7 @@ namespace SqCoreWeb
             }
             catch (Exception exception)
             {
-                Console.WriteLine(exception.Message);
+                Console.WriteLine($"QuickfolioNewsDownloader.ReadRSS() exception: '{exception.Message}'");
                 return new List<NewsItem>();
             }
         }
