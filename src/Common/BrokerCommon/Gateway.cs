@@ -78,7 +78,7 @@ namespace BrokerCommon
                 GatewayId = GatewayId.CharmatMain,
                 RelativeTimePeriod = new RelativeTimePeriod() {    // realistic: 10min before Open to 35min after Open.
                     Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketOpen, TimeOffset = TimeSpan.FromMinutes(-10) },
-                    End = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(35) } }
+                    End = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketOpen, TimeOffset = TimeSpan.FromMinutes(35) } }
             },
             new GatewayTradingPeriod() {
                 GatewayId = GatewayId.CharmatMain,

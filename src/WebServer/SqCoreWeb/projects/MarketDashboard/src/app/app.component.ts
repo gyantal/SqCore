@@ -4,6 +4,7 @@ import { gDiag, minDate } from './../sq-globals';
 import { MarketHealthComponent } from './market-health/market-health.component';
 import { QuickfolioNewsComponent } from './quickfolio-news/quickfolio-news.component';
 import { BrPrtfViewerComponent } from './brprtf-viewer/brprtf-viewer.component';
+import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
 
 class HandshakeMessage {
   public email = '';
@@ -23,6 +24,11 @@ export class AppComponent implements OnInit {
 
   title = 'MarketDashboard';
   version = '0.1.1';
+
+  // UrlQueryParams (keep them short): // ?t=bpv
+  // t (Active (T)ool) = mh (Market Health), bpv (Broker Portfolio Viewer)
+  public urlQueryParamsArr : string[][];
+  public urlQueryParamsObj = {};  // empty object. If queryParamsObj['t'] doesn't exist, it returns 'undefined'
   user = {
     name: 'Anonymous',
     email: '             '
@@ -36,9 +42,23 @@ export class AppComponent implements OnInit {
 
   public _socket: WebSocket = new WebSocket('wss://' + document.location.hostname + '/ws/dashboard');   // "wss://127.0.0.1/ws/dashboard" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection
 
+  public urlParamActiveTool2UiActiveTool = {
+    'mh': 'MarketHealth',
+    'bpv': 'BrPrtfViewer',
+    'cs': 'CatalystSniffer',
+    'qn': 'QuickfolioNews'
+  };
+
   constructor() { // Called first time before the ngOnInit()
     gDiag.mainAngComponentConstructorTime = new Date();
     // console.log('sq.d: ' + gDiag.mainAngComponentConstructorTime.toISOString() + ': mainAngComponentConstructor()'); // called 17ms after main.ts
+    // console.log('AppComponent.ctor: ' + window.location.search);
+
+    this.urlQueryParamsArr = SqNgCommonUtils.getUrlQueryParamsArray();
+    this.urlQueryParamsObj = SqNgCommonUtils.Array2Obj(this.urlQueryParamsArr);
+    console.log('AppComponent.ctor: queryParamsArr.Length: ' + this.urlQueryParamsArr.length);
+    console.log('AppComponent.ctor: Active Tool, queryParamsObj["t"]: ' + this.urlQueryParamsObj['t']);
+    // console.log('AppComponent.ctor: queryParams.t: ' + queryParams.t);
   }
 
   // called after Angular has initialized all data-bound properties before any of the view or content children have been checked. Called after the constructor and called  after the first ngOnChanges()
@@ -101,6 +121,13 @@ export class AppComponent implements OnInit {
       return unloadEvent;
     });
 
+    // Change the Active tool if it is requested by the Url Query String ?t=bpv
+    let paramActiveTool = this.urlQueryParamsObj['t'];
+    if (paramActiveTool != undefined && paramActiveTool != 'mh') { // if it is not missing and not the efault active tool: MarketHealth
+      let uiActiveTool = this.urlParamActiveTool2UiActiveTool[paramActiveTool];
+      if (uiActiveTool != undefined)
+        this.onChangeActiveTool(uiActiveTool);  // we need some mapping of 'bpv' => 'BrPrtfViewer'
+    }
   }
 
   public onSetTheme($event: string) {

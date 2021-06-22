@@ -85,6 +85,11 @@ namespace YahooFinanceApi
                         csvReader.ReadHeader();
                         while (csvReader.Read())
                         {
+                            // 2021-06-18T15:00 : exception thrown CsvHelper.TypeConversion.TypeConverterException
+                            // because https://finance.yahoo.com/quote/SPY/history returns RawRecord: "2021-06-17,null,null,null,null,null,null"
+                            // YF has intermittent data problems for yesterday.
+                            // TODO: future work. We need a backup data source, like https://www.nasdaq.com/market-activity/funds-and-etfs/spy/historical
+                            // or IbGateway in cases when YF doesn't give data.
                             var record = csvReader.GetRecord<ITick>();
                             var recordPostprocessed = postprocessFunction(record);
                             // Do something with the record.
