@@ -16,7 +16,7 @@ namespace SqCoreWeb
 {
     class HandshakeBrPrtfViewer
     {    //Initial params specific for the BrPrtfViewer tool
-        public String SelectableNavs { get; set; } = string.Empty;
+        public String SelectableBrPrtfs { get; set; } = string.Empty;
     }
 
     class BrPrtfViewerPos
@@ -103,12 +103,12 @@ namespace SqCoreWeb
 
         private HandshakeBrPrtfViewer GetHandshakeBrPrtfViewer()
         {
-            //string selectableNavs = "GA.IM.NAV, DC.NAV, DC.IM.NAV, DC.IB.NAV";
-            List<BrokerNav> selectableNavs = GetSelectableNavsOrdered();
-            string selectableNavsCSV = String.Join(',', selectableNavs.Select(r => r.Symbol + ".NAV")); // on the UI, postfix ".NAV" looks better than prefix "N/"
+            //string selectableNavs = "GA.IM, DC(virtual), DC.IM, DC.IB";
+            List<BrokerNav> selectableNavs = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == UserEmail)!.GetAllVisibleBrokerNavsOrdered();
+            string selectableBrPrtfsCSV = String.Join(',', selectableNavs.Select(r => r.Symbol));
             
             
-            return new HandshakeBrPrtfViewer() { SelectableNavs = selectableNavsCSV };
+            return new HandshakeBrPrtfViewer() { SelectableBrPrtfs = selectableBrPrtfsCSV };
         }
 
         private BrPrtfViewerPortfolio? GetBrPortfolio(string p_sqTicker) // "N/GA.IM, N/DC, N/DC.IM, N/DC.IB"

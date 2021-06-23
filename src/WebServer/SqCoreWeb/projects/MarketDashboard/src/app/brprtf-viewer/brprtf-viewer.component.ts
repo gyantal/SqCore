@@ -68,7 +68,7 @@ export class BrPrtfViewerComponent implements OnInit {
         console.log('BrPrtfViewer.Handshake:' + msgObjStr);
         this.handshakeMsgStr = msgObjStr;
         const jsonObjHandshake = JSON.parse(msgObjStr);
-        console.log(`BrPrtfViewer.Handshake.Selectable NAVs:: '${jsonObjHandshake.selectableNavs}'`);
+        console.log(`BrPrtfViewer.Handshake.SelectableBrPrtfs: '${jsonObjHandshake.selectableBrPrtfs}'`);
         //this.updateUiSelectableNavs(jsonObjHandshake.selectableNavs);
         return true;
       default:

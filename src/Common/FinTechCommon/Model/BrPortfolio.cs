@@ -4,6 +4,9 @@ using BrokerCommon;
 
 namespace FinTechCommon
 {
+     // intially named: BrPortfolio. Was not a good terminology, because we have an other Portfolio as Asset. That Portfolio has historical price. This BrokerPortfolio is just a snapshot.
+     // a better name: BrokerAccount, although we also have a Virtual Aggregated BrokerAccount, but still better.
+     // Broker Accounts have features like MarginRequirement. A Portfolio is just a list of assets. It shouldn't care about Margin.
     public class BrPortfolio
     {
         public GatewayId GatewayId { get; set; } = GatewayId.Unknown;

@@ -188,19 +188,48 @@ namespace FinTechCommon
             var usersInDb = JsonSerializer.Deserialize<List<UserInDb>>(p_sqUserDataStr);
             if (usersInDb == null)
                 throw new SqException($"Deserialize failed on '{p_sqUserDataStr}'");
-            return usersInDb.Select(r =>
+
+            var users = new List<User>(usersInDb.Count);
+            foreach (var usrDb in usersInDb)
             {
-                return new User()
+                users.Add(new User()
                 {
-                    Id = r.id,
-                    Username = r.username,
-                    Password = r.password,
-                    Title = r.title,
-                    Firstname = r.firstname,
-                    Lastname = r.lastname,
-                    Email = r.email
-                };
-            }).ToArray();
+                    Id = usrDb.id,
+                    Username = usrDb.name,
+                    Password = usrDb.pwd,
+                    Email = usrDb.email,
+                    Title = usrDb.title,
+                    Firstname = usrDb.firstname,
+                    Lastname = usrDb.lastname,
+                    IsAdmin = usrDb.isadmin == "1"
+                    
+                });
+            }
+            // after all users are created, process visibleUsers list.
+            var visibleUsers = new List<User>[usersInDb.Count];
+            for (int i = 0; i < users.Count; i++)
+            {
+                visibleUsers[i] = new List<User>();
+                string visibleUsersStrt = usersInDb[i].visibleusers;    // reach back to the usersInDb list
+                if (String.IsNullOrEmpty(visibleUsersStrt))
+                    continue;
+                string[] usernames = visibleUsersStrt.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                foreach (var username in usernames)
+                {
+                    User? user = users.Find(r => r.Username == username);
+                    if (user == null)
+                        continue;
+                    visibleUsers[i].Add(user);
+                }
+            }
+
+            for (int i = 0; i < users.Count; i++)
+            {
+                users[i].VisibleUsers = visibleUsers[i].ToArray();
+            }
+
+            
+            return users.ToArray();
         }
 
         public Dictionary<string, List<Split>> GetMissingYfSplits()
