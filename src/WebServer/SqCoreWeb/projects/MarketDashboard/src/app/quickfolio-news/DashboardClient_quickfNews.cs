@@ -15,19 +15,25 @@ namespace SqCoreWeb
         Timer? m_newsReloadTimer = null;    // separate Timer is needed for each client
         QuickfolioNewsDownloader m_newsDownloader = new QuickfolioNewsDownloader();
 
+        public static TimeSpan c_initialSleepIfNotActiveToolQn = TimeSpan.FromMilliseconds(10000); // 10sec
+
         void Ctor_QuickfNews()
         {
             m_newsReloadTimer = new Timer(NewsReloadTimerElapsed, null, m_newsReloadInterval, m_newsReloadInterval);
         }
 
-        public void OnConnectedWsAsync_QckflNews()
+        public void OnConnectedWsAsync_QckflNews(bool p_isThisActiveToolAtConnectionInit)
         {
             Task.Run(() => // running parallel on a ThreadPool thread
             {
                 Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
-                Thread.Sleep(TimeSpan.FromSeconds(10)); // Quickfolio News is not the default active panel. It makes sense to send data later to speed up client at the start.
+
+                // Assuming this tool is not the main Tab page on the client, we delay sending all the data, to avoid making the network and client too busy an unresponsive
+                if (!p_isThisActiveToolAtConnectionInit)
+                    Thread.Sleep(DashboardClient.c_initialSleepIfNotActiveToolQn); // 10 sec is quite a long waiting, but we rarely use this tool.
+
                 m_newsDownloader.UpdateStockTickers();
-                byte[] encodedMsg = Encoding.UTF8.GetBytes("QckflNewsStockTickerList:" + Utils.CamelCaseSerialize(m_newsDownloader.GetStockTickers()));
+                byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.Tickers:" + Utils.CamelCaseSerialize(m_newsDownloader.GetStockTickers()));
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
 
@@ -54,9 +60,8 @@ namespace SqCoreWeb
             // but that complicates things, because then what if we start to send all news to this fresh client, and 2 seconds later NewsReloadTimerElapsed triggers.
             // so, at the moment, whenever a new client connects, we resend all news to all old clients. If NewsReloadTimerElapsed() triggers during that, we send it twice.
             List<NewsItem> commonNews = m_newsDownloader.GetCommonNews();
-            // DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All.SendAsync("quickfNewsCommonNewsUpdated", commonNews);
 
-            byte[] encodedMsg = Encoding.UTF8.GetBytes("quickfNewsCommonNewsUpdated:" + Utils.CamelCaseSerialize(commonNews));
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(commonNews));
             if (WsWebSocket != null && WsWebSocket!.State == WebSocketState.Open)
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
 
@@ -75,7 +80,7 @@ namespace SqCoreWeb
 
         public void ReloadQuickfolioMsgArrived() {
             // m_newsDownloader.UpdateStockTickers();
-            // DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All.SendAsync("QckflNewsStockTickerList", m_newsDownloader.GetStockTickers());
+            // DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All.SendAsync("QckfNews.Tickers", m_newsDownloader.GetStockTickers());
             // m_newsDownloader.GetStockNews(DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All);
         }
 

@@ -67,9 +67,9 @@ export class BrPrtfViewerComponent implements OnInit {
       case 'BrPrtfViewer.Handshake':  // this is the least frequent case. Should come last.
         console.log('BrPrtfViewer.Handshake:' + msgObjStr);
         this.handshakeMsgStr = msgObjStr;
-        const jsonObjHandshakeMktHlth = JSON.parse(msgObjStr);
-        console.log(`BrPrtfViewer.Handshake: '${jsonObjHandshakeMktHlth.selectableNavs}'`);
-        //this.updateUiSelectableNavs(jsonObjHandshakeMktHlth.selectableNavs);
+        const jsonObjHandshake = JSON.parse(msgObjStr);
+        console.log(`BrPrtfViewer.Handshake.Selectable NAVs:: '${jsonObjHandshake.selectableNavs}'`);
+        //this.updateUiSelectableNavs(jsonObjHandshake.selectableNavs);
         return true;
       default:
         return false;

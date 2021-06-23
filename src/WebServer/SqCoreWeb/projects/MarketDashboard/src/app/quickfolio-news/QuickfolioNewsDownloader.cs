@@ -107,18 +107,24 @@ namespace SqCoreWeb
                 string rssFeedUrl = string.Format(@"https://feeds.finance.yahoo.com/rss/2.0/headline?s={0}&region=US&lang=en-US", ticker);
                 var rss = ReadRSS(rssFeedUrl, NewsSource.YahooRSS, ticker);
                 if (rss.Count > 0)
-                    encodedMsgRss = Encoding.UTF8.GetBytes("quickfNewsStockNewsUpdated:" + Utils.CamelCaseSerialize(rss));
+                    encodedMsgRss = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(rss));
                 var benzinga = ReadBenzingaNews(ticker);
                 if (benzinga.Count > 0)
-                    encodedMsgBenzinga = Encoding.UTF8.GetBytes("quickfNewsStockNewsUpdated:" + Utils.CamelCaseSerialize(benzinga));
+                    encodedMsgBenzinga = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(benzinga));
                 var tipranks = ReadTipranksNews(ticker);
                 if (tipranks.Count > 0)
-                    encodedMsgTipranks = Encoding.UTF8.GetBytes("quickfNewsStockNewsUpdated:" + Utils.CamelCaseSerialize(tipranks));
+                    encodedMsgTipranks = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(tipranks));
 
                 foreach (var client in p_clients)
                 {
                     if (client.WsWebSocket != null && client.WsWebSocket!.State == WebSocketState.Open)
                     {
+                        // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
+                        // OnConnectedWsAsync() sleeps for a while if not active tool.
+                        TimeSpan timeSinceConnect = DateTime.UtcNow - client.WsConnectionTime;
+                        if (client.ActivePage != ActivePage.MarketHealth && timeSinceConnect < DashboardClient.c_initialSleepIfNotActiveToolQn.Add(TimeSpan.FromMilliseconds(100)))
+                            continue;
+
                         if (encodedMsgRss != null)
                             client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgRss, 0, encodedMsgRss.Length), WebSocketMessageType.Text, true, CancellationToken.None);
                         if (encodedMsgBenzinga != null)

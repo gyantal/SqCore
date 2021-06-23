@@ -36,11 +36,11 @@ export class AppComponent implements OnInit {
   isToolSelectionVisible = false;
   isUserSelectionVisible = false;
   toolSelectionMsg = 'Click red arrow in toolbar! isToolSelectionVisible is set to ' + this.isToolSelectionVisible;
-  activeTool = 'MarketHealth';
+  public activeTool = 'MarketHealth';
   theme = '';
   sqDiagnosticsMsg = 'Benchmarking time, connection speed';
 
-  public _socket: WebSocket = new WebSocket('wss://' + document.location.hostname + '/ws/dashboard');   // "wss://127.0.0.1/ws/dashboard" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection
+  public _socket: WebSocket;  // initialize later in ctor, becuse we have to send back the activeTool from urlQueryParams
 
   public urlParamActiveTool2UiActiveTool = {
     'mh': 'MarketHealth',
@@ -59,6 +59,13 @@ export class AppComponent implements OnInit {
     console.log('AppComponent.ctor: queryParamsArr.Length: ' + this.urlQueryParamsArr.length);
     console.log('AppComponent.ctor: Active Tool, queryParamsObj["t"]: ' + this.urlQueryParamsObj['t']);
     // console.log('AppComponent.ctor: queryParams.t: ' + queryParams.t);
+
+    let wsQueryStr = '';
+    let paramActiveTool = this.urlQueryParamsObj['t'];
+    if (paramActiveTool != undefined && paramActiveTool != 'mh') // if it is not missing and not the default active tool: MarketHealth
+      wsQueryStr = '?t=' + paramActiveTool; // ?t=bpv
+
+    this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/dashboard' + wsQueryStr);   // "wss://127.0.0.1/ws/dashboard" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection
   }
 
   // called after Angular has initialized all data-bound properties before any of the view or content children have been checked. Called after the constructor and called  after the first ngOnChanges()
@@ -123,7 +130,7 @@ export class AppComponent implements OnInit {
 
     // Change the Active tool if it is requested by the Url Query String ?t=bpv
     let paramActiveTool = this.urlQueryParamsObj['t'];
-    if (paramActiveTool != undefined && paramActiveTool != 'mh') { // if it is not missing and not the efault active tool: MarketHealth
+    if (paramActiveTool != undefined && paramActiveTool != 'mh') { // if it is not missing and not the default active tool: MarketHealth
       let uiActiveTool = this.urlParamActiveTool2UiActiveTool[paramActiveTool];
       if (uiActiveTool != undefined)
         this.onChangeActiveTool(uiActiveTool);  // we need some mapping of 'bpv' => 'BrPrtfViewer'
@@ -184,6 +191,7 @@ export class AppComponent implements OnInit {
       return;
     }
     this.activeTool = tool;
+    return false; // assure that HREF will not reload the page  // https://stackoverflow.com/questions/13955667/disabled-href-tag
   }
 
   closeDropdownMenu(menuItem: string) {

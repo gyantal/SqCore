@@ -57,14 +57,15 @@ namespace SqCoreWeb
         }
 
         // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
-        public void OnConnectedWsAsync_BrPrtfViewer()
+        public void OnConnectedWsAsync_BrPrtfViewer(bool p_isThisActiveToolAtConnectionInit)
         {
             Task.Run(() => // running parallel on a ThreadPool thread
             {
                 Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
 
-                // Assuming BrPrtfViewer is not the main Tab page on the client, we delay sending all the data, to avoid making the network and client too busy an unresponsive
-                Thread.Sleep(TimeSpan.FromMilliseconds(200));   // 
+                // Assuming this tool is not the main Tab page on the client, we delay sending all the data, to avoid making the network and client too busy an unresponsive
+                if (!p_isThisActiveToolAtConnectionInit)
+                    Thread.Sleep(TimeSpan.FromMilliseconds(5000));
 
                 // BrPrtfViewer is not visible at the start for the user. We don't have to hurry to be responsive. 
                 // With the handshake msg, we can take our time to collect All necessary data, and send it a bit (500ms) later.

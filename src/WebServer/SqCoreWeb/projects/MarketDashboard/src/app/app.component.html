@@ -14,6 +14,7 @@
           <ul>
             <h3>Tools</h3>
             <ul>
+              <!-- onChangeActiveTool() disabled reloading URL. If it doesn't work in PROD, remove href. If still not work, rewrite to not A-tag, but Div, with underline.  https://stackoverflow.com/questions/13955667/disabled-href-tag -->
               <li><a href="#" (click)="onChangeActiveTool('MarketHealth')">MarketHealth</a></li>
               <li><a href="#" (click)="onChangeActiveTool('BrPrtfViewer')">BrPrtfViewer</a></li>
               <li><a href="#" (click)="onChangeActiveTool('CatalystSniffer')">CatalystSniffer</a></li>

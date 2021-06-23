@@ -359,7 +359,7 @@ export class MarketHealthComponent implements OnInit {
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
-      case 'RtMktSumRtStat':  // this is the most frequent case. Should come first.
+      case 'MktHlth.RtStat':  // this is the most frequent case. Should come first.
         if (gDiag.wsOnFirstRtMktSumRtStatTime === minDate) {
           gDiag.wsOnFirstRtMktSumRtStatTime = new Date();
         }
@@ -378,7 +378,7 @@ export class MarketHealthComponent implements OnInit {
         this.lastRtMsg = jsonArrayObjRt;
         MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
         return true;
-      case 'RtMktSumNonRtStat':
+      case 'MktHlth.NonRtStat':
         if (gDiag.wsOnFirstRtMktSumNonRtStatTime === minDate) {
           gDiag.wsOnFirstRtMktSumNonRtStatTime = new Date();
         }
@@ -404,10 +404,10 @@ export class MarketHealthComponent implements OnInit {
         this.lastNonRtMsg = jsonArrayObjNonRt;
         MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
         return true;
-      case 'HandshakeMktHlth':  // this is the least frequent case. Should come last.
-        const jsonObjHandshakeMktHlth = JSON.parse(msgObjStr);
-        console.log(`Selectable NAVs: '${jsonObjHandshakeMktHlth.selectableNavs}'`);
-        this.updateUiSelectableNavs(jsonObjHandshakeMktHlth.selectableNavs);
+      case 'MktHlth.Handshake':  // this is the least frequent case. Should come last.
+        const jsonObjHandshake = JSON.parse(msgObjStr);
+        console.log(`MktHlth.Handshake.Selectable NAVs: '${jsonObjHandshake.selectableNavs}'`);
+        this.updateUiSelectableNavs(jsonObjHandshake.selectableNavs);
         return true;
       default:
         return false;

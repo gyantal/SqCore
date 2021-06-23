@@ -19,8 +19,15 @@ namespace SqCoreWeb
     {
         public static async Task OnConnectedAsync(HttpContext context, WebSocket webSocket)
         {
+            // context.Request comes as: 'wss://' + document.location.hostname + '/ws/dashboard?t=bpv'
             var userEmailClaim = context?.User?.Claims?.FirstOrDefault(p => p.Type == @"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
             var email = userEmailClaim?.Value ?? "unknown@gmail.com";
+
+            string? activeToolAtConnectionInit = context!.Request.Query["t"];   // if "t" is not found, the empty StringValues casted to string as null
+            if (activeToolAtConnectionInit == null)
+                activeToolAtConnectionInit = "mh";
+            if (!DashboardClient.c_urlParam2ActivePage.TryGetValue(activeToolAtConnectionInit, out ActivePage activePage))
+                activePage = ActivePage.Unknown;
 
             // https://stackoverflow.com/questions/24450109/how-to-send-receive-messages-through-a-web-socket-on-windows-phone-8-using-the-c
             var msgObj = new HandshakeMessage() { Email = email };
@@ -44,11 +51,12 @@ namespace SqCoreWeb
                 client.WsConnectionTime = thisConnectionTime; // used by the other (secondary) connection to decide whether to create a new g_clients item.
                 client.WsWebSocket = webSocket;
                 client.WsHttpContext = context;
+                client.ActivePage = activePage;
             }
 
-            client!.OnConnectedWsAsync_MktHealth();
-            client!.OnConnectedWsAsync_BrPrtfViewer();
-            client!.OnConnectedWsAsync_QckflNews();
+            client!.OnConnectedWsAsync_MktHealth(activePage == ActivePage.MarketHealth);
+            client!.OnConnectedWsAsync_BrPrtfViewer(activePage == ActivePage.BrPrtfViewer);
+            client!.OnConnectedWsAsync_QckflNews(activePage == ActivePage.QuickfolioNews);
         }
 
         public static void OnReceiveAsync(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? wsResult, string bufferStr)

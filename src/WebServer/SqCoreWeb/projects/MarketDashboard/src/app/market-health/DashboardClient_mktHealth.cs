@@ -67,6 +67,8 @@ namespace SqCoreWeb
 
         static int m_rtMktSummaryTimerFrequencyMs = 3000;    // as a demo go with 3sec, later change it to 5sec, do decrease server load.
 
+        public static TimeSpan c_initialSleepIfNotActiveToolMh = TimeSpan.FromMilliseconds(5000);
+
         // Alphabetical order is not required here, because it is searched in MemDb one by one, and that search is fast, because that is ordered alphabetically.
         // This is the order of appearance on the UI.
         // This should not be static, because it us user specific. BrNAV AssetID is user specific. Other assets might be later: User might later change the UNG ticker to sg. else.
@@ -116,7 +118,7 @@ namespace SqCoreWeb
 
             IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat(m_lastLookbackPeriodStr);     // reset lookback to to YTD. Because of BrokerNAV, lookback period stat is user specific.
             Utils.Logger.Info("EvMemDbHistoricalDataReloaded_mktHealth(). Processing client:" + UserEmail);
-            byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumNonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("MktHlth.NonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
             if (WsWebSocket == null)
                 Utils.Logger.Info("Warning (TODO)!: Mystery how client.WsWebSocket can be null? Investigate!) ");
             if (WsWebSocket!.State == WebSocketState.Open)
@@ -124,14 +126,18 @@ namespace SqCoreWeb
         }
 
         // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
-        public void OnConnectedWsAsync_MktHealth()
+        public void OnConnectedWsAsync_MktHealth(bool p_isThisActiveToolAtConnectionInit)
         {
             Task.Run(() =>  // running parallel on a ThreadPool thread
             {
                 Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
 
+                // Assuming this tool is not the main Tab page on the client, we delay sending all the data, to avoid making the network and client too busy an unresponsive
+                if (!p_isThisActiveToolAtConnectionInit)
+                    Thread.Sleep(c_initialSleepIfNotActiveToolMh);
+
                 HandshakeMktHealth handshake = GetHandshakeMktHlth();
-                byte[] encodedMsg = Encoding.UTF8.GetBytes("HandshakeMktHlth:" + Utils.CamelCaseSerialize(handshake));
+                byte[] encodedMsg = Encoding.UTF8.GetBytes("MktHlth.Handshake:" + Utils.CamelCaseSerialize(handshake));
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
 
@@ -157,7 +163,7 @@ namespace SqCoreWeb
         private void SendHistoricalWs()
         {
             IEnumerable<RtMktSumNonRtStat> periodStatToClient = GetLookbackStat(m_lastLookbackPeriodStr);
-            byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumNonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("MktHlth.NonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
             if (WsWebSocket!.State == WebSocketState.Open)
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
         }
@@ -165,7 +171,7 @@ namespace SqCoreWeb
         private void SendRealtimeWs()
         {
             IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = GetRtStat();
-            byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumRtStat:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("MktHlth.RtStat:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
             if (WsWebSocket!.State == WebSocketState.Open)
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
         }
@@ -364,8 +370,14 @@ namespace SqCoreWeb
 
                 DashboardClient.g_clients.ForEach(client =>
                 {
+                    // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
+                    // OnConnectedWsAsync() sleeps for a while if not active tool.
+                    TimeSpan timeSinceConnect = DateTime.UtcNow - client.WsConnectionTime;
+                    if (client.ActivePage != ActivePage.MarketHealth && timeSinceConnect < c_initialSleepIfNotActiveToolMh.Add(TimeSpan.FromMilliseconds(100)))
+                        return;
+
                     IEnumerable<RtMktSumRtStat> rtMktSummaryToClient = client.GetRtStat();
-                    byte[] encodedMsg = Encoding.UTF8.GetBytes("RtMktSumRtStat:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
+                    byte[] encodedMsg = Encoding.UTF8.GetBytes("MktHlth.RtStat:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
                     if (client.WsWebSocket == null)
                         Utils.Logger.Info("Warning (TODO)!: Mystery how client.WsWebSocket can be null? Investigate!) ");
                     if (client.WsWebSocket != null && (client.WsWebSocket.State == WebSocketState.Open))

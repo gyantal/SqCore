@@ -279,8 +279,8 @@ export class QuickfolioNewsComponent implements OnInit {
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
-      case 'quickfNewsStockNewsUpdated':  // this is the most frequent case. Should come first.
-        console.log('Quickfolio News: WS: quickfNewsStockNewsUpdated arrived');
+      case 'QckfNews.StockNews':  // this is the most frequent case. Should come first.
+        console.log('Quickfolio News: WS: QckfNews.StockNews arrived');
         const jsonObj1 = JSON.parse(msgObjStr);
         this.extractNewsList(jsonObj1, this.stockNews);
         this.UpdateNewsVisibility();
@@ -290,8 +290,8 @@ export class QuickfolioNewsComponent implements OnInit {
             this.SetStockPreviewIfEmpty();
           }, 1000); // after 1 sec
         return true;
-      case 'quickfNewsCommonNewsUpdated':
-        console.log('Quickfolio News: WS: quickfNewsCommonNewsUpdated arrived');
+      case 'QckfNews.CommonNews':
+        console.log('Quickfolio News: WS: QckfNews.CommonNews arrived');
         const jsonObj2 = JSON.parse(msgObjStr);
         this.extractNewsList(jsonObj2, this.generalNews);
         this.previewCommonInterval = setInterval(
@@ -299,8 +299,8 @@ export class QuickfolioNewsComponent implements OnInit {
             this.SetCommonPreviewIfEmpty();
           }, 1000); // after 1 sec
         return true;
-      case 'QckflNewsStockTickerList':  // this is the least frequent case. Should come last.
-        console.log('Quickfolio News: WS: stock ticker list update arrived');
+      case 'QckfNews.Tickers':  // this is the least frequent case. Should come last.
+        console.log('Quickfolio News: WS: QckfNews.Tickers arrived');
         const jsonObj3 = JSON.parse(msgObjStr);
         this.stockTickers = jsonObj3;
         console.log('Init menu');
@@ -433,4 +433,4 @@ export class QuickfolioNewsComponent implements OnInit {
     const timediffDays = Math.floor(timeDiffHours / 24);
     return timediffDays.toString() + ' days ago';
   }
-} // class
+}

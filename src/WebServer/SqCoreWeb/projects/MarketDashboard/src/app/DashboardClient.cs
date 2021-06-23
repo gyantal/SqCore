@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace SqCoreWeb
 {
-    public enum ActivePage { Unknown, MarketHealth, CatalystSniffer, QuickfolioNews, TooltipSandpit, Docs }
+    public enum ActivePage { Unknown, MarketHealth, BrPrtfViewer, CatalystSniffer, QuickfolioNews, TooltipSandpit, Docs }
 
     public partial class DashboardClient {
 
@@ -23,10 +23,12 @@ namespace SqCoreWeb
             get { return this.ClientIP + " at " + WsConnectionTime.ToString("MM'-'dd'T'HH':'mm':'ss"); }
         }
         public bool IsOnline = true;
-        public ActivePage ActivePage = ActivePage.MarketHealth; // knowing which Tool is active can be useful. We might not send data to tools which never becomes active
+        public ActivePage ActivePage = ActivePage.Unknown; // knowing which Tool is active can be useful. We might not send data to tools which never becomes active
 
 
         public static List<DashboardClient> g_clients = new List<DashboardClient>();
+        public static Dictionary<string, ActivePage> c_urlParam2ActivePage = new Dictionary<string, ActivePage>() { 
+            {"mh", ActivePage.MarketHealth}, {"bpv", ActivePage.BrPrtfViewer}, {"cs", ActivePage.CatalystSniffer}, {"qn", ActivePage.QuickfolioNews}};
 
 
         static DashboardClient()
