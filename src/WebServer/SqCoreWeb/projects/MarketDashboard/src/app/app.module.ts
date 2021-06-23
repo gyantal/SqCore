@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { MarketHealthComponent } from './market-health/market-health.component';
-import { BrPrtfViewerComponent } from './brprtf-viewer/brprtf-viewer.component';
+import { BrAccViewerComponent } from './bracc-viewer/bracc-viewer.component';
 import { CatalystSnifferComponent } from './catalyst-sniffer/catalyst-sniffer.component';
 import { QuickfolioNewsComponent } from './quickfolio-news/quickfolio-news.component';
 import { TooltipSandpitComponent } from './tooltip-sandpit/tooltip-sandpit.component';
@@ -17,7 +17,7 @@ import { SettingsDialogComponent } from './settings-dialog/settings-dialog.compo
   declarations: [
     AppComponent,
     MarketHealthComponent,
-    BrPrtfViewerComponent,
+    BrAccViewerComponent,
     CatalystSnifferComponent,
     QuickfolioNewsComponent,
     TooltipSandpitComponent,

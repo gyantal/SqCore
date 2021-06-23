@@ -1,20 +1,20 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { BrPrtfViewerComponent } from './brprtf-viewer.component';
+import { BrAccViewerComponent } from './bracc-viewer.component';
 
-describe('BrPrtfViewerComponent', () => {
-  let component: BrPrtfViewerComponent;
-  let fixture: ComponentFixture<BrPrtfViewerComponent>;
+describe('BrAccViewerComponent', () => {
+  let component: BrAccViewerComponent;
+  let fixture: ComponentFixture<BrAccViewerComponent>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ BrPrtfViewerComponent ]
+      declarations: [ BrAccViewerComponent ]
     })
     .compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(BrPrtfViewerComponent);
+    fixture = TestBed.createComponent(BrAccViewerComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

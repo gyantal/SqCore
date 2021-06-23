@@ -14,12 +14,12 @@ using BrokerCommon;
 
 namespace SqCoreWeb
 {
-    class HandshakeBrPrtfViewer
-    {    //Initial params specific for the BrPrtfViewer tool
-        public String SelectableBrPrtfs { get; set; } = string.Empty;
+    class HandshakeBrAccViewer
+    {    //Initial params specific for the BrAccViewer tool
+        public String SelectableBrAccs { get; set; } = string.Empty;
     }
 
-    class BrPrtfViewerPos
+    class BrAccViewerPos
     {
         public string SqTicker { get; set; } = string.Empty;
         public double Pos { get; set; }
@@ -32,7 +32,7 @@ namespace SqCoreWeb
         public string AccId { get; set; } = string.Empty; // AccountId: "Cha", "DeB", "Gya" (in case of virtual combined portfolio)
     }
 
-    class BrPrtfViewerPortfolio
+    class BrAccViewerAccount
     {
         public DateTime LastUpdate { get; set; } = DateTime.MinValue;
         public long NetLiquidation { get; set; } = long.MinValue;    // prefer whole numbers. Max int32 is 2B.
@@ -40,24 +40,24 @@ namespace SqCoreWeb
         public long TotalCashValue { get; set; } = long.MinValue;
         public long InitMarginReq { get; set; } = long.MinValue;
         public long MaintMarginReq { get; set; } = long.MinValue;
-        public List<BrPrtfViewerPos> Poss { get; set; } = new List<BrPrtfViewerPos>();
+        public List<BrAccViewerPos> Poss { get; set; } = new List<BrAccViewerPos>();
     }
 
     public partial class DashboardClient
     {
 
-        void Ctor_BrPrtfViewer()
+        void Ctor_BrAccViewer()
         {
             // InitAssetData();
         }
 
-        void EvMemDbAssetDataReloaded_BrPrtfViewer()
+        void EvMemDbAssetDataReloaded_BrAccViewer()
         {
             //InitAssetData();
         }
 
         // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
-        public void OnConnectedWsAsync_BrPrtfViewer(bool p_isThisActiveToolAtConnectionInit)
+        public void OnConnectedWsAsync_BrAccViewer(bool p_isThisActiveToolAtConnectionInit)
         {
             Task.Run(() => // running parallel on a ThreadPool thread
             {
@@ -67,17 +67,17 @@ namespace SqCoreWeb
                 if (!p_isThisActiveToolAtConnectionInit)
                     Thread.Sleep(TimeSpan.FromMilliseconds(5000));
 
-                // BrPrtfViewer is not visible at the start for the user. We don't have to hurry to be responsive. 
+                // BrAccViewer is not visible at the start for the user. We don't have to hurry to be responsive. 
                 // With the handshake msg, we can take our time to collect All necessary data, and send it a bit (500ms) later.
-                HandshakeBrPrtfViewer handshake = GetHandshakeBrPrtfViewer();
-                byte[] encodedMsg = Encoding.UTF8.GetBytes("BrPrtfViewer.Handshake:" + Utils.CamelCaseSerialize(handshake));
+                HandshakeBrAccViewer handshake = GetHandshakeBrAccViewer();
+                byte[] encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.Handshake:" + Utils.CamelCaseSerialize(handshake));
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
 
-                var brPortf = GetBrPortfolio("N/DC");
-                if (brPortf != null)
+                var brAcc = GetBrAccount("N/DC");
+                if (brAcc != null)
                 {
-                    encodedMsg = Encoding.UTF8.GetBytes("BrPrtfViewer.BrPortfolioPoss:"  + Utils.CamelCaseSerialize(brPortf));
+                    encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.BrAccPoss:"  + Utils.CamelCaseSerialize(brAcc));
                     if (WsWebSocket!.State == WebSocketState.Open)
                         WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
                 }
@@ -101,39 +101,37 @@ namespace SqCoreWeb
             });
         }
 
-        private HandshakeBrPrtfViewer GetHandshakeBrPrtfViewer()
+        private HandshakeBrAccViewer GetHandshakeBrAccViewer()
         {
             //string selectableNavs = "GA.IM, DC(virtual), DC.IM, DC.IB";
             List<BrokerNav> selectableNavs = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == UserEmail)!.GetAllVisibleBrokerNavsOrdered();
-            string selectableBrPrtfsCSV = String.Join(',', selectableNavs.Select(r => r.Symbol));
-            
-            
-            return new HandshakeBrPrtfViewer() { SelectableBrPrtfs = selectableBrPrtfsCSV };
+            string selectableBrAccsCSV = String.Join(',', selectableNavs.Select(r => r.Symbol));
+            return new HandshakeBrAccViewer() { SelectableBrAccs = selectableBrAccsCSV };
         }
 
-        private BrPrtfViewerPortfolio? GetBrPortfolio(string p_sqTicker) // "N/GA.IM, N/DC, N/DC.IM, N/DC.IB"
+        private BrAccViewerAccount? GetBrAccount(string p_sqTicker) // "N/GA.IM, N/DC, N/DC.IM, N/DC.IB"
         {
             // if it is aggregated portfolio (DC Main + DeBlanzac), then a virtual combination is needed
             if (!GatewayExtensions.NavSqSymbol2GatewayIds.TryGetValue(p_sqTicker, out List<GatewayId>? gatewayIds))
                 return null;
 
-            BrPrtfViewerPortfolio? result = null;
+            BrAccViewerAccount? result = null;
             foreach (GatewayId gwId in gatewayIds)
             {
-                BrPortfolio? brPortfolio = MemDb.gMemDb.BrPortfolios.FirstOrDefault(r => r.GatewayId == gwId);
-                if (brPortfolio == null)
+                BrAccount? brAccount = MemDb.gMemDb.BrAccounts.FirstOrDefault(r => r.GatewayId == gwId);
+                if (brAccount == null)
                     return null;
 
                 if (result == null)
                 {
-                    result = new BrPrtfViewerPortfolio()
+                    result = new BrAccViewerAccount()
                     {
-                        LastUpdate = brPortfolio.LastUpdate,
-                        GrossPositionValue = (long)brPortfolio.GrossPositionValue,
-                        TotalCashValue = (long)brPortfolio.TotalCashValue,
-                        InitMarginReq = (long)brPortfolio.InitMarginReq,
-                        MaintMarginReq = (long)brPortfolio.MaintMarginReq,
-                        Poss = brPortfolio.AccPoss.Select(r => new BrPrtfViewerPos()
+                        LastUpdate = brAccount.LastUpdate,
+                        GrossPositionValue = (long)brAccount.GrossPositionValue,
+                        TotalCashValue = (long)brAccount.TotalCashValue,
+                        InitMarginReq = (long)brAccount.InitMarginReq,
+                        MaintMarginReq = (long)brAccount.MaintMarginReq,
+                        Poss = brAccount.AccPoss.Select(r => new BrAccViewerPos()
                         {
                             SqTicker = r.Contract.ToString(),
                             Pos = r.Position,
@@ -144,11 +142,11 @@ namespace SqCoreWeb
                 }
                 else
                 {
-                    result.GrossPositionValue += (long)brPortfolio.GrossPositionValue;
-                    result.TotalCashValue += (long)brPortfolio.TotalCashValue;
-                    result.InitMarginReq += (long)brPortfolio.InitMarginReq;
-                    result.MaintMarginReq += (long)brPortfolio.MaintMarginReq;
-                    result.Poss.AddRange(brPortfolio.AccPoss.Select(r => new BrPrtfViewerPos()
+                    result.GrossPositionValue += (long)brAccount.GrossPositionValue;
+                    result.TotalCashValue += (long)brAccount.TotalCashValue;
+                    result.InitMarginReq += (long)brAccount.InitMarginReq;
+                    result.MaintMarginReq += (long)brAccount.MaintMarginReq;
+                    result.Poss.AddRange(brAccount.AccPoss.Select(r => new BrAccViewerPos()
                     {
                         SqTicker = r.Contract.ToString(),
                         Pos = r.Position,
@@ -160,7 +158,7 @@ namespace SqCoreWeb
 
             if (result != null)
             {
-                Asset navAsset = MemDb.gMemDb.AssetsCache.AssetsBySqTicker[p_sqTicker];    // realtime NavAsset.LastValue is more up-to-date then from BrPortfolio (updated 1h in RTH only)
+                Asset navAsset = MemDb.gMemDb.AssetsCache.AssetsBySqTicker[p_sqTicker];    // realtime NavAsset.LastValue is more up-to-date then from BrAccount (updated 1h in RTH only)
                 result.NetLiquidation = (long)MemDb.gMemDb.GetLastRtValue(navAsset);
             }
             return result;

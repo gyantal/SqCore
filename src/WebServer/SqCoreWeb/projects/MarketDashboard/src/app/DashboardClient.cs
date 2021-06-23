@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace SqCoreWeb
 {
-    public enum ActivePage { Unknown, MarketHealth, BrPrtfViewer, CatalystSniffer, QuickfolioNews, TooltipSandpit, Docs }
+    public enum ActivePage { Unknown, MarketHealth, BrAccViewer, CatalystSniffer, QuickfolioNews, TooltipSandpit, Docs }
 
     public partial class DashboardClient {
 
@@ -28,7 +28,7 @@ namespace SqCoreWeb
 
         public static List<DashboardClient> g_clients = new List<DashboardClient>();
         public static Dictionary<string, ActivePage> c_urlParam2ActivePage = new Dictionary<string, ActivePage>() { 
-            {"mh", ActivePage.MarketHealth}, {"bpv", ActivePage.BrPrtfViewer}, {"cs", ActivePage.CatalystSniffer}, {"qn", ActivePage.QuickfolioNews}};
+            {"mh", ActivePage.MarketHealth}, {"bav", ActivePage.BrAccViewer}, {"cs", ActivePage.CatalystSniffer}, {"qn", ActivePage.QuickfolioNews}};
 
 
         static DashboardClient()
@@ -76,7 +76,7 @@ namespace SqCoreWeb
             UserEmail = p_userEmail;
 
             Ctor_MktHealth();
-            Ctor_BrPrtfViewer();
+            Ctor_BrAccViewer();
             Ctor_QuickfNews();
         }
     }

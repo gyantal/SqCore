@@ -3,7 +3,7 @@ import { SettingsDialogComponent } from './settings-dialog/settings-dialog.compo
 import { gDiag, minDate } from './../sq-globals';
 import { MarketHealthComponent } from './market-health/market-health.component';
 import { QuickfolioNewsComponent } from './quickfolio-news/quickfolio-news.component';
-import { BrPrtfViewerComponent } from './brprtf-viewer/brprtf-viewer.component';
+import { BrAccViewerComponent } from './bracc-viewer/bracc-viewer.component';
 import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
 
 class HandshakeMessage {
@@ -20,13 +20,13 @@ export class AppComponent implements OnInit {
   @ViewChild(SettingsDialogComponent) private settingsDialogComponent!: SettingsDialogComponent;
   @ViewChild(MarketHealthComponent) private childMktHealthComponent!: MarketHealthComponent;
   @ViewChild(QuickfolioNewsComponent) private childQckflNewsComponent!: QuickfolioNewsComponent;
-  @ViewChild(BrPrtfViewerComponent) private childBrPrtfViewerComponent!: BrPrtfViewerComponent;
+  @ViewChild(BrAccViewerComponent) private childBrAccViewerComponent!: BrAccViewerComponent;
 
   title = 'MarketDashboard';
   version = '0.1.1';
 
-  // UrlQueryParams (keep them short): // ?t=bpv
-  // t (Active (T)ool) = mh (Market Health), bpv (Broker Portfolio Viewer)
+  // UrlQueryParams (keep them short): // ?t=bav
+  // t (Active (T)ool) = mh (Market Health), bav (Broker Portfolio Viewer)
   public urlQueryParamsArr : string[][];
   public urlQueryParamsObj = {};  // empty object. If queryParamsObj['t'] doesn't exist, it returns 'undefined'
   user = {
@@ -44,7 +44,7 @@ export class AppComponent implements OnInit {
 
   public urlParamActiveTool2UiActiveTool = {
     'mh': 'MarketHealth',
-    'bpv': 'BrPrtfViewer',
+    'bav': 'BrAccViewer',
     'cs': 'CatalystSniffer',
     'qn': 'QuickfolioNews'
   };
@@ -63,7 +63,7 @@ export class AppComponent implements OnInit {
     let wsQueryStr = '';
     let paramActiveTool = this.urlQueryParamsObj['t'];
     if (paramActiveTool != undefined && paramActiveTool != 'mh') // if it is not missing and not the default active tool: MarketHealth
-      wsQueryStr = '?t=' + paramActiveTool; // ?t=bpv
+      wsQueryStr = '?t=' + paramActiveTool; // ?t=bav
 
     this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/dashboard' + wsQueryStr);   // "wss://127.0.0.1/ws/dashboard" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection
   }
@@ -101,7 +101,7 @@ export class AppComponent implements OnInit {
         default:
           let isHandled = this.childMktHealthComponent.webSocketOnMessage(msgCode, msgObjStr);
           if (!isHandled)
-          isHandled = this.childBrPrtfViewerComponent.webSocketOnMessage(msgCode, msgObjStr);
+          isHandled = this.childBrAccViewerComponent.webSocketOnMessage(msgCode, msgObjStr);
           if (!isHandled)
             isHandled = this.childQckflNewsComponent.webSocketOnMessage(msgCode, msgObjStr);
 
@@ -128,12 +128,12 @@ export class AppComponent implements OnInit {
       return unloadEvent;
     });
 
-    // Change the Active tool if it is requested by the Url Query String ?t=bpv
+    // Change the Active tool if it is requested by the Url Query String ?t=bav
     let paramActiveTool = this.urlQueryParamsObj['t'];
     if (paramActiveTool != undefined && paramActiveTool != 'mh') { // if it is not missing and not the default active tool: MarketHealth
       let uiActiveTool = this.urlParamActiveTool2UiActiveTool[paramActiveTool];
       if (uiActiveTool != undefined)
-        this.onChangeActiveTool(uiActiveTool);  // we need some mapping of 'bpv' => 'BrPrtfViewer'
+        this.onChangeActiveTool(uiActiveTool);  // we need some mapping of 'bav' => 'BrAccViewer'
     }
   }
 
@@ -190,6 +190,7 @@ export class AppComponent implements OnInit {
     if (this.activeTool === tool) {
       return;
     }
+    console.log('Changing activeTool to ' + tool)
     this.activeTool = tool;
     return false; // assure that HREF will not reload the page  // https://stackoverflow.com/questions/13955667/disabled-href-tag
   }

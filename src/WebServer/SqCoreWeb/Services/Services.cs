@@ -9,13 +9,13 @@ namespace SqCoreWeb
         {
             Overmind.gOvermind.Init();
             WebsitesMonitor.gWebsitesMonitor.Init();
-            BrPrtfChecker.gBrPrtfChecker.Init();
+            BrAccChecker.gBrAccChecker.Init();
         }
         
 
         public static  void Services_Exit()
         {
-            BrPrtfChecker.gBrPrtfChecker.Exit();
+            BrAccChecker.gBrAccChecker.Exit();
             WebsitesMonitor.gWebsitesMonitor.Exit();
             Overmind.gOvermind.Exit();
         }

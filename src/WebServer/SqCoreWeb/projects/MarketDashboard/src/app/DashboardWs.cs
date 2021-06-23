@@ -19,7 +19,7 @@ namespace SqCoreWeb
     {
         public static async Task OnConnectedAsync(HttpContext context, WebSocket webSocket)
         {
-            // context.Request comes as: 'wss://' + document.location.hostname + '/ws/dashboard?t=bpv'
+            // context.Request comes as: 'wss://' + document.location.hostname + '/ws/dashboard?t=bav'
             var userEmailClaim = context?.User?.Claims?.FirstOrDefault(p => p.Type == @"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
             var email = userEmailClaim?.Value ?? "unknown@gmail.com";
 
@@ -55,7 +55,7 @@ namespace SqCoreWeb
             }
 
             client!.OnConnectedWsAsync_MktHealth(activePage == ActivePage.MarketHealth);
-            client!.OnConnectedWsAsync_BrPrtfViewer(activePage == ActivePage.BrPrtfViewer);
+            client!.OnConnectedWsAsync_BrAccViewer(activePage == ActivePage.BrAccViewer);
             client!.OnConnectedWsAsync_QckflNews(activePage == ActivePage.QuickfolioNews);
         }
 

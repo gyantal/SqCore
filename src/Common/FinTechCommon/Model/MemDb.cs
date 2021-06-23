@@ -79,7 +79,7 @@ namespace FinTechCommon
         DateTime m_lastHistoricalDataReload = DateTime.MinValue; // UTC
         TimeSpan m_lastHistoricalDataReloadTs;  // YF downloads. For 12 stocks, it is 3sec. so for 120 stocks 30sec, for 600 stocks 2.5min, for 1200 stocks 5min
  
-        public List<BrPortfolio> BrPortfolios{ get; set; } = new List<BrPortfolio>();   // only Broker dependent data. When AssetCache is reloaded from RedisDb, this should not be wiped or reloaded
+        public List<BrAccount> BrAccounts{ get; set; } = new List<BrAccount>();   // only Broker dependent data. When AssetCache is reloaded from RedisDb, this should not be wiped or reloaded
 
         public delegate void MemDbEventHandler();
         public event MemDbEventHandler? EvFirstInitialized = null;     // it can be ReInitialized in every 1 hour because of Database polling
@@ -132,7 +132,7 @@ namespace FinTechCommon
             ServerDiagnosticNavRealtime(p_sb);
 
             p_sb.Append($"<br>");
-            ServerDiagnosticBrPortfolio(p_sb, true);
+            ServerDiagnosticBrAccount(p_sb, true);
         }
 
         private void ServerDiagnosticMemDb(StringBuilder p_sb, bool p_isHtml)
@@ -148,11 +148,11 @@ namespace FinTechCommon
             p_sb.AppendLongListByLine(yfTickers, ",", 10, "<br>");
         }
 
-        private void ServerDiagnosticBrPortfolio(StringBuilder p_sb, bool p_isHtml)
+        private void ServerDiagnosticBrAccount(StringBuilder p_sb, bool p_isHtml)
         {
-            foreach (var brPortfolio in BrPortfolios)
+            foreach (var brAccount in BrAccounts)
             {
-                p_sb.Append($"BrPortfolio GatewayId: {brPortfolio.GatewayId}, LastUpdateUtc: {brPortfolio.LastUpdate.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}, NAV: {brPortfolio.NetLiquidation}, #Pos: {brPortfolio.AccPoss.Count}<br>");
+                p_sb.Append($"BrAccount GatewayId: {brAccount.GatewayId}, LastUpdateUtc: {brAccount.LastUpdate.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}, NAV: {brAccount.NetLiquidation}, #Pos: {brAccount.AccPoss.Count}<br>");
             }
         }
 

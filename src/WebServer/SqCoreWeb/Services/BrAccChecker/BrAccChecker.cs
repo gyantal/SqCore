@@ -7,24 +7,24 @@ using IBApi;
 
 namespace SqCoreWeb
 {
-    public enum BrPrtfCheckerTaskSettingAction : byte
+    public enum BrAccCheckerTaskSettingAction : byte
     {
         Unknown = 0, AtApplicationStartupCheck, OpenCheck, CloseCheck, PeriodicCheck
     }
 
     // Firstly, the service can check periodically and warn users if a position is out of order (bigger than -20% loss today)
     // Secondly, every 1h RTH, it stores the portfolio positions in MemDb, and Dashboard can quickly show it in the webpage
-    public class BrPrtfChecker // shortened BrokerPortfolioPositionsChecker
+    public class BrAccChecker // shortened BrokerAccountPositionsChecker
     {
-        public static BrPrtfChecker gBrPrtfChecker = new BrPrtfChecker();
+        public static BrAccChecker gBrAccChecker = new BrAccChecker();
 
         public void Init()
         {
-            Utils.Logger.Info("****BrPrtfChecker:Init()");
+            Utils.Logger.Info("****BrAccChecker:Init()");
             var sqTask = new SqTask()
             {
-                Name = "BrPrtfChecker",
-                ExecutionFactory = BrPrtfCheckerExecution.ExecutionFactoryCreate,
+                Name = "BrAccChecker",
+                ExecutionFactory = BrAccCheckerExecution.ExecutionFactoryCreate,
             };
 
             // trigger times: it is worth doing: 5 minutes after Open, 5 minutes after close, because that is when trades happen.
@@ -37,7 +37,7 @@ namespace SqCoreWeb
                 SqTask = sqTask,
                 TriggerType = TriggerType.AtApplicationStartup,
                 Start = new RelativeTime() { Base = RelativeTimeBase.Unknown, TimeOffset = TimeSpan.FromSeconds(30) },   // a bit later then App startup, to give time to Gateways to connect
-                TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, BrPrtfCheckerTaskSettingAction.AtApplicationStartupCheck } }
+                TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, BrAccCheckerTaskSettingAction.AtApplicationStartupCheck } }
             });
             sqTask.Triggers.Add(new SqTrigger()
             {
@@ -45,7 +45,7 @@ namespace SqCoreWeb
                 SqTask = sqTask,
                 TriggerType = TriggerType.DailyOnUsaMarketDay,
                 Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketOpen, TimeOffset = TimeSpan.FromMinutes(5) },
-                TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, BrPrtfCheckerTaskSettingAction.OpenCheck } }
+                TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, BrAccCheckerTaskSettingAction.OpenCheck } }
             });
             sqTask.Triggers.Add(new SqTrigger()
             {
@@ -53,7 +53,7 @@ namespace SqCoreWeb
                 SqTask = sqTask,
                 TriggerType = TriggerType.DailyOnUsaMarketDay,
                 Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnUsaMarketClose, TimeOffset = TimeSpan.FromMinutes(5) },
-                TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, BrPrtfCheckerTaskSettingAction.CloseCheck } }
+                TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, BrAccCheckerTaskSettingAction.CloseCheck } }
             });
             // at every whole hours: 10:10, 11:10, ... but not in OTH, when positions will not change
             sqTask.Triggers.Add(new SqTrigger()
@@ -62,34 +62,34 @@ namespace SqCoreWeb
                 SqTask = sqTask,
                 TriggerType = TriggerType.Periodic,
                 Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnAbsoluteTimeAtEveryHourUtc, TimeOffset = TimeSpan.FromMinutes(10) },
-                TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, BrPrtfCheckerTaskSettingAction.PeriodicCheck } }
+                TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, BrAccCheckerTaskSettingAction.PeriodicCheck } }
             });
             SqTaskScheduler.gSqTasks.Add(sqTask);
         }
 
         public void Exit()
         {
-            Utils.Logger.Info("****BrPrtfChecker:Exit()");
+            Utils.Logger.Info("****BrAccChecker:Exit()");
         }
     }
 
-    public class BrPrtfCheckerExecution : SqExecution
+    public class BrAccCheckerExecution : SqExecution
     {
         public static SqExecution ExecutionFactoryCreate()
         {
-            return new BrPrtfCheckerExecution();
+            return new BrAccCheckerExecution();
         }
 
         public override void Run()  // try/catch is only necessary if there is a non-awaited async that continues later in a different tPool thread. See comment in SqExecution.cs
         {
-            Utils.Logger.Info($"BrPrtfCheckerExecution.Run() BEGIN, Trigger: '{Trigger!.Name}'");
+            Utils.Logger.Info($"BrAccCheckerExecution.Run() BEGIN, Trigger: '{Trigger!.Name}'");
 
-            BrPrtfCheckerTaskSettingAction action = BrPrtfCheckerTaskSettingAction.Unknown;
+            BrAccCheckerTaskSettingAction action = BrAccCheckerTaskSettingAction.Unknown;
             if (Trigger!.TriggerSettings.TryGetValue(TaskSetting.ActionType, out object? actionObj))
-                action = (BrPrtfCheckerTaskSettingAction)actionObj;
+                action = (BrAccCheckerTaskSettingAction)actionObj;
 
             bool isPossUpdateNeeded = true;
-            if (action == BrPrtfCheckerTaskSettingAction.PeriodicCheck)
+            if (action == BrAccCheckerTaskSettingAction.PeriodicCheck)
             {
                 // at every whole hours: 10:10, 11:10, ... but if it is OTH, we assume there is no position change.
                 // it is last updated at 16:05 anyway, because of CloseCheck
@@ -98,14 +98,14 @@ namespace SqCoreWeb
             }
             if (isPossUpdateNeeded)
             {
-                UpdateBrPrtfPoss(GatewayId.CharmatMain);
-                UpdateBrPrtfPoss(GatewayId.DeBlanzacMain);
-                UpdateBrPrtfPoss(GatewayId.GyantalMain);
-                Console.WriteLine("BrokerPortfolios are updated.");
+                UpdateBrAccPoss(GatewayId.CharmatMain);
+                UpdateBrAccPoss(GatewayId.DeBlanzacMain);
+                UpdateBrAccPoss(GatewayId.GyantalMain);
+                Console.WriteLine("BrokerAccounts are updated.");
             }
         }
 
-        private void UpdateBrPrtfPoss(GatewayId p_gatewayId)
+        private void UpdateBrAccPoss(GatewayId p_gatewayId)
         {
             List<AccSum>? accSums = BrokersWatcher.gWatcher.GetAccountSums(p_gatewayId);
             if (accSums == null)
@@ -115,28 +115,28 @@ namespace SqCoreWeb
             if (accPoss == null)
                 return;
 
-            BrPortfolio? brPortfolio = null;
-            foreach (var portfolio in MemDb.gMemDb.BrPortfolios)
+            BrAccount? brAccount = null;
+            foreach (var account in MemDb.gMemDb.BrAccounts)
             {
-                if (portfolio.GatewayId == p_gatewayId)
+                if (account.GatewayId == p_gatewayId)
                 {
-                    brPortfolio = portfolio;
+                    brAccount = account;
                     break;
                 }
             }
-            if (brPortfolio == null)
+            if (brAccount == null)
             {
-                brPortfolio = new BrPortfolio() { GatewayId = p_gatewayId };
-                MemDb.gMemDb.BrPortfolios.Add(brPortfolio);
+                brAccount = new BrAccount() { GatewayId = p_gatewayId };
+                MemDb.gMemDb.BrAccounts.Add(brAccount);
             }
 
-            brPortfolio.NetLiquidation = accSums.GetValue(AccountSummaryTags.NetLiquidation);
-            brPortfolio.GrossPositionValue = accSums.GetValue(AccountSummaryTags.GrossPositionValue);
-            brPortfolio.TotalCashValue = accSums.GetValue(AccountSummaryTags.TotalCashValue);
-            brPortfolio.InitMarginReq = accSums.GetValue(AccountSummaryTags.InitMarginReq);
-            brPortfolio.MaintMarginReq = accSums.GetValue(AccountSummaryTags.MaintMarginReq);
-            brPortfolio.AccPoss = accPoss;
-            brPortfolio.LastUpdate = DateTime.UtcNow;
+            brAccount.NetLiquidation = accSums.GetValue(AccountSummaryTags.NetLiquidation);
+            brAccount.GrossPositionValue = accSums.GetValue(AccountSummaryTags.GrossPositionValue);
+            brAccount.TotalCashValue = accSums.GetValue(AccountSummaryTags.TotalCashValue);
+            brAccount.InitMarginReq = accSums.GetValue(AccountSummaryTags.InitMarginReq);
+            brAccount.MaintMarginReq = accSums.GetValue(AccountSummaryTags.MaintMarginReq);
+            brAccount.AccPoss = accPoss;
+            brAccount.LastUpdate = DateTime.UtcNow;
         }
     }
 
