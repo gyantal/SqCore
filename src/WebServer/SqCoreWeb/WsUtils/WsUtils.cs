@@ -88,6 +88,7 @@ namespace SqCoreWeb
 
         public static bool IsAuthorizedGoogleUsers(string p_email)
         {
+            // TODO: maybe we should get these emails data from Redis.sq_user , so when we introduce a new user we don't have to create them in 2 places: RedisDb, config.json
             if (g_authorizedGoogleUsers == null)
             {
                 g_authorizedGoogleUsers = new List<string>() {
@@ -105,7 +106,8 @@ namespace SqCoreWeb
                     Utils.Configuration["Emails:Charm3"].ToLower(),
                     Utils.Configuration["Emails:JCharm1"].ToLower(),
                     Utils.Configuration["Emails:Brook"].ToLower(),
-                    Utils.Configuration["Emails:Dinah1"].ToLower()
+                    Utils.Configuration["Emails:Dinah1"].ToLower(),
+                    Utils.Configuration["Emails:Kamal1"].ToLower(),
                 };
             }
             bool isUserOK = g_authorizedGoogleUsers.Contains(p_email.ToLower());

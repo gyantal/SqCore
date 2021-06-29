@@ -8,7 +8,8 @@ import { Component, OnInit } from '@angular/core';
 export class BrAccViewerComponent implements OnInit {
   
   handshakeMsgStr = '[Nothing arrived yet]';
-  brAccountPossStr = '[Nothing arrived yet]';
+  brAccountSnapshotStr = '[Nothing arrived yet]';
+  brAccountNavHistoryStr = '[Nothing arrived yet]';
 
   constructor() { }
 
@@ -36,9 +37,9 @@ export class BrAccViewerComponent implements OnInit {
         // this.lastRtMsg = jsonArrayObjRt;
         // MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
         return true;
-      case 'BrAccViewer.BrAccPoss':
-        console.log('BrAccViewer.BrAccPoss:' + msgObjStr);
-        this.brAccountPossStr = msgObjStr;
+      case 'BrAccViewer.BrAccSnapshot':
+        console.log('BrAccViewer.BrAccSnapshot:' + msgObjStr);
+        this.brAccountSnapshotStr = msgObjStr;
         // if (gDiag.wsOnFirstRtMktSumNonRtStatTime === minDate) {
         //   gDiag.wsOnFirstRtMktSumNonRtStatTime = new Date();
         // }
@@ -63,6 +64,10 @@ export class BrAccViewerComponent implements OnInit {
         // this.lastNonRtMsgStr = msgStrNonRt;
         // this.lastNonRtMsg = jsonArrayObjNonRt;
         // MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
+        return true;
+      case 'BrAccViewer.BrAccNavHist':
+        console.log('BrAccViewer.BrAccNavHist:' + msgObjStr);
+        this.brAccountNavHistoryStr = msgObjStr;
         return true;
       case 'BrAccViewer.Handshake':  // this is the least frequent case. Should come last.
         console.log('BrAccViewer.Handshake:' + msgObjStr);

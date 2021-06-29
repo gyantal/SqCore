@@ -171,6 +171,10 @@ namespace SqCommon
         {
             return p_date.ToString("yyyyMMdd");
         }
+        public static string ToYYYYMMDD(this DateTime p_dateTime)   // very concise, without hyphen, good for sending data
+        {
+            return Utils.Date2YYYYMMDD(p_dateTime);
+        }
 
         /// <summary> Returns the date part of p_date in "MM-DD  HH:mm:ss" format (invariant culture).
         /// </summary><remarks>

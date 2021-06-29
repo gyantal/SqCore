@@ -32,7 +32,7 @@ namespace SqCoreWeb
         public string AccId { get; set; } = string.Empty; // AccountId: "Cha", "DeB", "Gya" (in case of virtual combined portfolio)
     }
 
-    class BrAccViewerAccount
+    class BrAccViewerAccountSnapshot // this is sent to UI client
     {
         public DateTime LastUpdate { get; set; } = DateTime.MinValue;
         public long NetLiquidation { get; set; } = long.MinValue;    // prefer whole numbers. Max int32 is 2B.
@@ -41,11 +41,25 @@ namespace SqCoreWeb
         public long InitMarginReq { get; set; } = long.MinValue;
         public long MaintMarginReq { get; set; } = long.MinValue;
         public List<BrAccViewerPos> Poss { get; set; } = new List<BrAccViewerPos>();
+
+    }
+
+    // Don't integrate this to BrAccViewerAccount. By default we sent YTD. But client might ask for last 10 years. 
+    // But we don't want to send 10 years data and the today positions snapshot all the time together.
+    class BrAccViewerAccountNavHist
+    {
+        public List<string> HistDates { get; set; } = new List<string>();   // we convert manually DateOnly to short string
+        public List<int> HistSdaCloses { get; set; } = new List<int>(); // NAV value: float takes too much data
+    }
+
+    class BrAccViewerAccountRt  // see RtMktSumRtStat. Can we refactor that to AssetRtStat and use that in both places?
+    {
+        public List<string> HistDates { get; set; } = new List<string>();   // we convert manually DateOnly to short string
+        public List<int> HistSdaCloses { get; set; } = new List<int>(); // NAV value: float takes too much data
     }
 
     public partial class DashboardClient
     {
-
         void Ctor_BrAccViewer()
         {
             // InitAssetData();
@@ -74,10 +88,18 @@ namespace SqCoreWeb
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
 
-                var brAcc = GetBrAccount("N/DC");
+                var brAcc = GetBrAccViewerAccountSnapshot("N/DC");
                 if (brAcc != null)
                 {
-                    encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.BrAccPoss:"  + Utils.CamelCaseSerialize(brAcc));
+                    encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.BrAccSnapshot:"  + Utils.CamelCaseSerialize(brAcc));
+                    if (WsWebSocket!.State == WebSocketState.Open)
+                        WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                }
+
+                var brAccHist = GetBrAccViewerAccountNavHist("N/DC");
+                if (brAccHist != null)
+                {
+                    encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.BrAccHist:"  + Utils.CamelCaseSerialize(brAccHist));
                     if (WsWebSocket!.State == WebSocketState.Open)
                         WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
                 }
@@ -109,13 +131,15 @@ namespace SqCoreWeb
             return new HandshakeBrAccViewer() { SelectableBrAccs = selectableBrAccsCSV };
         }
 
-        private BrAccViewerAccount? GetBrAccount(string p_sqTicker) // "N/GA.IM, N/DC, N/DC.IM, N/DC.IB"
+        private BrAccViewerAccountSnapshot? GetBrAccViewerAccountSnapshot(string p_sqTicker) // "N/GA.IM, N/DC, N/DC.IM, N/DC.IB"
         {
             // if it is aggregated portfolio (DC Main + DeBlanzac), then a virtual combination is needed
             if (!GatewayExtensions.NavSqSymbol2GatewayIds.TryGetValue(p_sqTicker, out List<GatewayId>? gatewayIds))
                 return null;
 
-            BrAccViewerAccount? result = null;
+            TsDateData<DateOnly, uint, float, uint> histData = MemDb.gMemDb.DailyHist.GetDataDirect();
+
+            BrAccViewerAccountSnapshot? result = null;
             foreach (GatewayId gwId in gatewayIds)
             {
                 BrAccount? brAccount = MemDb.gMemDb.BrAccounts.FirstOrDefault(r => r.GatewayId == gwId);
@@ -124,7 +148,7 @@ namespace SqCoreWeb
 
                 if (result == null)
                 {
-                    result = new BrAccViewerAccount()
+                    result = new BrAccViewerAccountSnapshot()
                     {
                         LastUpdate = brAccount.LastUpdate,
                         GrossPositionValue = (long)brAccount.GrossPositionValue,
@@ -162,6 +186,15 @@ namespace SqCoreWeb
                 result.NetLiquidation = (long)MemDb.gMemDb.GetLastRtValue(navAsset);
             }
             return result;
+        }
+
+        private BrAccViewerAccountNavHist? GetBrAccViewerAccountNavHist(string p_sqTicker) // "N/GA.IM, N/DC, N/DC.IM, N/DC.IB"
+        {
+            return new BrAccViewerAccountNavHist()
+            {
+                HistDates = new List<string>() { new DateTime(2021, 1, 31).ToYYYYMMDD()},
+                HistSdaCloses = new List<int>() { 1234 }
+            };
         }
     }
 }
