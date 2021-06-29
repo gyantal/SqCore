@@ -38,7 +38,7 @@
   text-align: center;
   width: 11%;
 }
-.navHeaderCl {
+.selectedNavMktHlthCl {
   position: relative;
   display: inline-block;
   cursor: pointer;
@@ -49,10 +49,10 @@
 
   color: #9900ff;
 }
-.navHeaderCl:hover {
+.selectedNavMktHlthCl:hover {
   color: #f39c12;
 }
-.navHeaderPopupCl {
+.navSelectionPopupMktHlthCl {
   visibility: hidden;
   width: 160px;
   background-color: rgba(85, 85, 85, 0.50);
@@ -67,7 +67,7 @@
   left: 50%;
   margin-left: -80px;
 }
-.navHeaderCl .navHeaderPopupCl::after { // Popup arrow
+.selectedNavMktHlthCl .navSelectionPopupMktHlthCl::after { // Popup arrow
   content: "";
   position: absolute;
   top: 100%;
@@ -77,16 +77,16 @@
   border-style: solid;
   border-color: rgba(85, 85, 85, 0.50) transparent transparent transparent;
 }
-.navHeaderCl .show {  // Toggle this class - hide and show the popup. Note, this is not the popup. Strange, but works.
+.selectedNavMktHlthCl .show {  // Toggle this class - hide and show the popup. Note, this is not the popup. Strange, but works.
   visibility: visible;
-  -webkit-animation: fadeIn 1s;
-  animation: fadeIn 1s;
+  -webkit-animation: fadeInMktHlth 1s;
+  animation: fadeInMktHlth 1s;
 }
-@keyframes fadeIn { // Add animation (fade in the popup)
+@keyframes fadeInMktHlth { // Add animation (fade in the popup)
   from {opacity: 0;}
   to {opacity:1 ;}
 }
-@-webkit-keyframes fadeIn {
+@-webkit-keyframes fadeInMktHlth {
   from {opacity: 0;} 
   to {opacity: 1;}
 }

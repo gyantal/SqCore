@@ -6,10 +6,10 @@
                 <th *ngFor="let item of uiTableColumns">
                     <span *ngIf="!item.isNavColumn"><a href="{{item.referenceUrl}}" target="_blank">{{item.ticker}} </a></span>
                     <span *ngIf="item.isNavColumn" >
-                        <span class="navHeaderCl" (click)=onNavHeaderClicked($event)>{{item.ticker}}&#x25bc;
-                            <span class="navHeaderPopupCl" id="navHeaderPopupId" (click)=onNavHeaderPopupClicked($event)>
+                        <span class="selectedNavMktHlthCl" (click)=onSelectedNavClicked($event)>{{item.ticker}}&#x25bc;
+                            <span class="navSelectionPopupMktHlthCl" id="mktHlthNavSelectionPopupId" (click)=onNavSelectionPopupClicked($event)>
                                 NAVs:
-                                <select  id="navSelect" (change)="onNavSelectChange($event)">
+                                <select  id="mktHlthNavSelect" (change)="onNavSelectChange($event)">
                                 </select>
                                 </span>
                         </span>

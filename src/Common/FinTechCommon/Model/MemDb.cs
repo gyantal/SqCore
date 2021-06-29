@@ -55,6 +55,15 @@ namespace FinTechCommon
     // lock(object) is banned in async function (because lock is intended for very short time.) 
     // The official way is SemaphoreSlim (although slower, but writing happens very rarely)
     // if same thread calls SemaphoreSlim.Wait() second time, it will block. It uses a counter mechanism, and it doesn't store which thread acquired the lock already. So, reentry is not possible.
+    
+    // AggregatedNav data:
+    // AggregatedNav history: DailyHist stores the AggregatedNav merged history properly. Although it increases RAM usage, it has to be done only once, at MemDb reload. Better to store it.
+    // AggregatedNav realtime: AssetsCache has the realtime prices for subNavs. But it is not merged automatically, so AggregatedNav.LastValue is not up-to-date. 
+    // RT price has to be calculated from subNavs all the time. Two reasons: 
+    // 1. RT NAV price can arrive every 5 seconds. We don't want to do CPU intensive searches all the time to find the parentNav, then find all children, then aggregate RT prices
+    // 2. Aggregating RT is actually not easy. As when a new RT-Sub1 price arrives, if we update the AggregatedNav RT, that might be false. Because what if 1 sec later the RT-Sub2 price arrives.
+    // That also has to do the searches and aggregate all the children again. And all of these calculations maybe totally pointless if nobody watches the AggregatedNav. 
+    // So, better to aggregate RT prices only rarely when it is required by a user.
     public partial class MemDb
     {
 
@@ -62,7 +71,7 @@ namespace FinTechCommon
         // public object gMemDbUpdateLock = new object();  // the rare clients who care about inter-table consintency (VBroker) should obtain the lock before getting pointers to subtables
         Db m_Db;
 
-        MemData m_memData = new MemData();  // strictly private. Don't allow clients to store separate MemData pointers.
+        MemData m_memData = new MemData();  // strictly private. Don't allow clients to store separate MemData pointers. Clients should use GetAssuredConsistentTables() in general.
         MemDataWlocks m_memDataWlocks = new MemDataWlocks(); // locks should not be replaced whem m_memData pointer is replaced, because Wait() was called before the pointer swap, Release() is called after the swap.
  
         public User[] Users { get { return m_memData.Users; } }

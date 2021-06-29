@@ -162,6 +162,7 @@ export class MarketHealthComponent implements OnInit {
   lastNonRtMsgStr = 'NonRt data from server';
   lastRtMsg: Nullable<RtMktSumRtStat[]> = null;
   lastNonRtMsg: Nullable<RtMktSumNonRtStat[]> = null;
+  selectedNav = '';
 
   uiTableColumns: UiTableColumn[] = []; // this is connected to Angular UI with *ngFor. If pointer is replaced or if size changes, Angular should rebuild the DOM tree. UI can blink. To avoid that only modify its inner field strings.
 
@@ -495,7 +496,7 @@ export class MarketHealthComponent implements OnInit {
     console.log('Calling server with new lookback. StartDateETstr: ' + this.lookbackStartETstr + ', lookbackStartET: ' + this.lookbackStartET);
     gDiag.wsOnLastRtMktSumLookbackChgStart = new Date();
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
-      this._parentWsConnection.send('changeLookback:Date:' + this.lookbackStartETstr + '...' + this.lookbackEndETstr); // we always send the Date format to server, not the strings of 'YTD/10y'
+      this._parentWsConnection.send('MktHlth.ChangeLookback:Date:' + this.lookbackStartETstr + '...' + this.lookbackEndETstr); // we always send the Date format to server, not the strings of 'YTD/10y'
     }
   }
 
@@ -506,36 +507,39 @@ export class MarketHealthComponent implements OnInit {
     }
   }
 
-  updateUiSelectableNavs(pSelectableNavs: string) {
-    const navSelectElement = document.getElementById('navSelect') as HTMLSelectElement;
+  updateUiSelectableNavs(pSelectableNavs: string) {  // same in MktHlth and BrAccViewer
+    const navSelectElement = document.getElementById('mktHlthNavSelect') as HTMLSelectElement;
+    this.selectedNav = '';
     for (const nav of pSelectableNavs.split(',')) {
+      if (this.selectedNav == '') // by default, the selected Nav is the first from the list
+        this.selectedNav = nav;
       navSelectElement.options[navSelectElement.options.length] = new Option(nav, nav);
     }
     navSelectElement.selectedIndex = 0; // select the first item
   }
 
-  onNavHeaderClicked(pEvent: any) {
+  onSelectedNavClicked(pEvent: any) {   // same in MktHlth and BrAccViewer
     // https://www.w3schools.com/howto/howto_js_popup.asp
     // When the user clicks on header, open the popup
     // https://stackoverflow.com/questions/10554446/no-onclick-when-child-is-clicked
     // part of the event object is the target member. This will tell you which element triggered the event to begin with.
-    console.log('onNavHeaderClicked()');
-    const popupSpan = document.getElementById('navHeaderPopupId') as HTMLSpanElement;
+    console.log('onSelectedNavClicked()');
+    const popupSpan = document.getElementById('mktHlthNavSelectionPopupId') as HTMLSpanElement;
     if (!(pEvent.target === popupSpan)) { // if not child popup, but the header
       popupSpan.classList.toggle('show');
     }
   }
 
-  onNavHeaderPopupClicked(pEvent: any) {
-    console.log('onNavHeaderPopupClicked()');
+  onNavSelectionPopupClicked(pEvent: any) { // same in MktHlth and BrAccViewer
+    console.log('onNavSelectionPopupClicked()');
     pEvent.stopPropagation();
   }
 
-  onNavSelectChange(pEvent: any) {
-    const navSelectTicker = (document.getElementById('navSelect') as HTMLSelectElement).value;
+  onNavSelectChange(pEvent: any) {  // same in MktHlth and BrAccViewer
+    const navSelectTicker = (document.getElementById('mktHlthNavSelect') as HTMLSelectElement).value;
     console.log(navSelectTicker);
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
-      this._parentWsConnection.send('changeNav:' + navSelectTicker);
+      this._parentWsConnection.send('MktHlth.ChangeNav:' + navSelectTicker);
     }
   }
 

@@ -1,11 +1,27 @@
-<p style="text-align: center;">BrokerPortfolio Viewer works!</p>
-<!-- <img src="assets/images/CatalystSnifferTimelineUiPlan.jpg" /> -->
-<br>
-<hr>
-<p style="text-align: center;">Broker Portfolio Info,v1.1</p>
 
-handshakeMsgStr: <span>{{ handshakeMsgStr }}</span>
+[BrAcc selection control help sample]<br>
+BrAcc:
+<span class="selectedNavBraccCl" (click)=onSelectedNavClicked($event)>{{selectedNav}}&#x25bc;
+    <span class="navSelectionPopupBraccCl" id="braccViewerNavSelectionPopupId" (click)=onNavSelectionPopupClicked($event)>
+        NAVs:
+        <select  id="braccViewerNavSelect" (change)="onNavSelectChange($event)">
+        </select>
+        </span>
+</span>
+
+<hr>
+[1. MarketBar on top, QQQ, SPY, TLT, VXX, UNG, USO]<br>
+[2. [AccountData under it]<br>
+    2.1 [AccountSummary, 1/3rd on the left box] NAV selection combo-box, P&L Today, NAV (only)<br>
+    2.2 [AccountDetails, 2/3rd on the right box] Tabpage with 2 tabs<br>
+        2.2.1 [HistoricalChart] default: visible, PeridSelectionComboBox (YTD) at bottom<br>
+        2.2.2 [MoreDetails: Cash, MarginReq], default: hidden<br>
+[3. AccountPositions under it, the data table]<br>
+
+<hr>
+<br><br>Temporary Debug Info: <br>
+HandshakeMsgStr: <span>{{ handshakeMsgStr }}</span>
 <br><br>
-BrAccountHistory: <br> <span>{{ brAccountNavHistoryStr }}</span>
+HistStr: <br> <span>{{ histStr }}</span>
 <br><br>
 BrAccountSnapshot: <br> <span>{{ brAccountSnapshotStr }}</span>

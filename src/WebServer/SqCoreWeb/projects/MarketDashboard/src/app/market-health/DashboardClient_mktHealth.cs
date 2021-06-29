@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace SqCoreWeb
 {
-    class HandshakeMktHealth {    //Initial params specific for the MarketHealth tool
+    class HandshakeMktHealth {    //Initial params
         public String SelectableNavs { get; set; } = string.Empty;
     }
     class RtMktSummaryStock
@@ -180,14 +180,14 @@ namespace SqCoreWeb
         {
             switch (msgCode)
             {
-                case "changeLookback":
+                case "MktHlth.ChangeLookback":
                     Utils.Logger.Info("OnReceiveWsAsync_MktHealth(): changeLookback");
                     m_lastLookbackPeriodStr = msgObjStr;
                     SendHistoricalWs();
                     return true;
-                case "changeNav":
-                    Utils.Logger.Info($"OnReceiveWsAsync_MktHealth(): changeNav to '{msgObjStr}'"); // DC.IM.NAV
-                    string sqTicker = "N/" + msgObjStr.Replace(".NAV", ""); // turn DC.IM.NAV to N/DC.IM
+                case "MktHlth.ChangeNav":
+                    Utils.Logger.Info($"OnReceiveWsAsync_MktHealth(): changeNav to '{msgObjStr}'"); // DC.IM
+                    string sqTicker = "N/" + msgObjStr; // turn DC.IM to N/DC.IM
                     var navAsset = MemDb.gMemDb.AssetsCache.GetAsset(sqTicker);
                     RtMktSummaryStock? navStock = m_mktSummaryStocks.FirstOrDefault(r => r.SqTicker == g_brNavVirtualTicker);
                     if (navStock != null)
@@ -318,9 +318,9 @@ namespace SqCoreWeb
 
         private HandshakeMktHealth GetHandshakeMktHlth()
         {
-            //string selectableNavs = "GA.IM.NAV, DC.NAV, DC.IM.NAV, DC.IB.NAV";
+            //string selectableNavs = "GA.IM, DC, DC.IM, DC.IB";
             List<BrokerNav> selectableNavs = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == UserEmail)!.GetAllVisibleBrokerNavsOrdered();
-            string selectableNavsCSV = String.Join(',', selectableNavs.Select(r => r.Symbol + ".NAV")); // on the UI, postfix ".NAV" looks better than prefix "N/"
+            string selectableNavsCSV = String.Join(',', selectableNavs.Select(r => r.Symbol));
             return new HandshakeMktHealth() { SelectableNavs = selectableNavsCSV };
         }
 

@@ -74,6 +74,8 @@ namespace SqCoreWeb
 
                 bool isHandled = client.OnReceiveWsAsync_MktHealth(wsResult, msgCode, msgObjStr);
                 if (!isHandled)
+                    isHandled = client.OnReceiveWsAsync_BrAccViewer(wsResult, msgCode, msgObjStr);
+                if (!isHandled)
                     isHandled = client.OnReceiveWsAsync_QckflNews(wsResult, msgCode, msgObjStr);
                 if (!isHandled)
                 {

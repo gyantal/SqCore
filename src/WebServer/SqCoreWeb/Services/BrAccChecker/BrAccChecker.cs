@@ -36,7 +36,7 @@ namespace SqCoreWeb
                 Name = "AtApplicationStartupCheck",
                 SqTask = sqTask,
                 TriggerType = TriggerType.AtApplicationStartup,
-                Start = new RelativeTime() { Base = RelativeTimeBase.Unknown, TimeOffset = TimeSpan.FromSeconds(30) },   // a bit later then App startup, to give time to Gateways to connect
+                Start = new RelativeTime() { Base = RelativeTimeBase.Unknown, TimeOffset = TimeSpan.FromSeconds(10) },   // a bit later then App startup, to give time to Gateways to connect
                 TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, BrAccCheckerTaskSettingAction.AtApplicationStartupCheck } }
             });
             sqTask.Triggers.Add(new SqTrigger()

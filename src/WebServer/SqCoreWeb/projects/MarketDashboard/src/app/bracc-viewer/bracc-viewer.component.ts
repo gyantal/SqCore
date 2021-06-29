@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Input } from '@angular/core';
 
 @Component({
   selector: 'app-bracc-viewer',
@@ -6,10 +6,12 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./bracc-viewer.component.scss']
 })
 export class BrAccViewerComponent implements OnInit {
+  @Input() _parentWsConnection?: WebSocket = undefined;    // this property will be input from above parent container
+  selectedNav = '';
   
   handshakeMsgStr = '[Nothing arrived yet]';
   brAccountSnapshotStr = '[Nothing arrived yet]';
-  brAccountNavHistoryStr = '[Nothing arrived yet]';
+  histStr = '[Nothing arrived yet]';
 
   constructor() { }
 
@@ -40,6 +42,9 @@ export class BrAccViewerComponent implements OnInit {
       case 'BrAccViewer.BrAccSnapshot':
         console.log('BrAccViewer.BrAccSnapshot:' + msgObjStr);
         this.brAccountSnapshotStr = msgObjStr;
+        const jsonObjSnap = JSON.parse(msgObjStr);
+        this.updateUiWithSnapshot(jsonObjSnap);
+
         // if (gDiag.wsOnFirstRtMktSumNonRtStatTime === minDate) {
         //   gDiag.wsOnFirstRtMktSumNonRtStatTime = new Date();
         // }
@@ -65,20 +70,62 @@ export class BrAccViewerComponent implements OnInit {
         // this.lastNonRtMsg = jsonArrayObjNonRt;
         // MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
         return true;
-      case 'BrAccViewer.BrAccNavHist':
-        console.log('BrAccViewer.BrAccNavHist:' + msgObjStr);
-        this.brAccountNavHistoryStr = msgObjStr;
+      case 'BrAccViewer.Hist':
+        console.log('BrAccViewer.Hist:' + msgObjStr);
+        this.histStr = msgObjStr;
         return true;
       case 'BrAccViewer.Handshake':  // this is the least frequent case. Should come last.
         console.log('BrAccViewer.Handshake:' + msgObjStr);
         this.handshakeMsgStr = msgObjStr;
         const jsonObjHandshake = JSON.parse(msgObjStr);
         console.log(`BrAccViewer.Handshake.SelectableBrAccs: '${jsonObjHandshake.selectableBrAccs}'`);
-        //this.updateUiSelectableNavs(jsonObjHandshake.selectableNavs);
+        this.updateUiSelectableNavs(jsonObjHandshake.selectableNavs);
         return true;
       default:
         return false;
     }
+  }
+
+  updateUiSelectableNavs(pSelectableNavs: string) {  // same in MktHlth and BrAccViewer
+    const navSelectElement = document.getElementById('braccViewerNavSelect') as HTMLSelectElement;
+    this.selectedNav = '';
+    for (const nav of pSelectableNavs.split(',')) {
+      if (this.selectedNav == '') // by default, the selected Nav is the first from the list
+        this.selectedNav = nav;
+      navSelectElement.options[navSelectElement.options.length] = new Option(nav, nav);
+    }
+    navSelectElement.selectedIndex = 0; // select the first item
+  }
+
+  onSelectedNavClicked(pEvent: any) {   // same in MktHlth and BrAccViewer
+    // https://www.w3schools.com/howto/howto_js_popup.asp
+    // When the user clicks on header, open the popup
+    // https://stackoverflow.com/questions/10554446/no-onclick-when-child-is-clicked
+    // part of the event object is the target member. This will tell you which element triggered the event to begin with.
+    console.log('onSelectedNavClicked()');
+    const popupSpan = document.getElementById('braccViewerNavSelectionPopupId') as HTMLSpanElement;
+    if (!(pEvent.target === popupSpan)) { // if not child popup, but the header
+      popupSpan.classList.toggle('show');
+    }
+  }
+
+  onNavSelectionPopupClicked(pEvent: any) { // same in MktHlth and BrAccViewer
+    console.log('onNavSelectionPopupClicked()');
+    pEvent.stopPropagation();
+  }
+
+  onNavSelectChange(pEvent: any) {  // same in MktHlth and BrAccViewer
+    const navSelectTicker = (document.getElementById('braccViewerNavSelect') as HTMLSelectElement).value;
+    console.log(navSelectTicker);
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
+      this._parentWsConnection.send('BrAccViewer.ChangeNav:' + navSelectTicker);
+    }
+  }
+
+  updateUiWithSnapshot(jsonObjSnap: any)  {
+    console.log(`BrAccViewer.updateUiWithSnapshot(). Symbol: '${jsonObjSnap.symbol}'`);
+    if (this.selectedNav != jsonObjSnap.symbol) // change UI only if it is a meaningful change
+      this.selectedNav = jsonObjSnap.symbol;
   }
 
 }

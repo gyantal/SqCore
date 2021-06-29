@@ -15,8 +15,8 @@ using BrokerCommon;
 namespace SqCoreWeb
 {
     class HandshakeBrAccViewer
-    {    //Initial params specific for the BrAccViewer tool
-        public String SelectableBrAccs { get; set; } = string.Empty;
+    {    //Initial params
+        public String SelectableNavs { get; set; } = string.Empty;
     }
 
     class BrAccViewerPos
@@ -34,6 +34,7 @@ namespace SqCoreWeb
 
     class BrAccViewerAccountSnapshot // this is sent to UI client
     {
+        public String Symbol { get; set; } = string.Empty;
         public DateTime LastUpdate { get; set; } = DateTime.MinValue;
         public long NetLiquidation { get; set; } = long.MinValue;    // prefer whole numbers. Max int32 is 2B.
         public long GrossPositionValue { get; set; } = long.MinValue;
@@ -44,22 +45,32 @@ namespace SqCoreWeb
 
     }
 
+
+
     // Don't integrate this to BrAccViewerAccount. By default we sent YTD. But client might ask for last 10 years. 
     // But we don't want to send 10 years data and the today positions snapshot all the time together.
-    class BrAccViewerAccountNavHist
+    public class BrAccViewerHist   // this is sent to clients usually just once per day, OR when historical data changes, OR when the PeriodStartDate changes at the client
     {
+        public uint AssetId { get; set; } = 0;        // set the Client know what is the assetId, because Rt will not send it.
+        public String SqTicker { get; set; } = string.Empty;  // this has to be SqTicker, not Symbol. "N/DC" is different to "S/DC"
+
+        public DateTime PeriodStartDate { get; set; } = DateTime.MinValue;
+        public DateTime PeriodEndDate { get; set; } = DateTime.MinValue;
+
         public List<string> HistDates { get; set; } = new List<string>();   // we convert manually DateOnly to short string
         public List<int> HistSdaCloses { get; set; } = new List<int>(); // NAV value: float takes too much data
     }
 
-    class BrAccViewerAccountRt  // see RtMktSumRtStat. Can we refactor that to AssetRtStat and use that in both places?
+    class BrAccViewerAssetRt  // see RtMktSumRtStat. Can we refactor that to AssetRtStat and use that in both places?
     {
-        public List<string> HistDates { get; set; } = new List<string>();   // we convert manually DateOnly to short string
-        public List<int> HistSdaCloses { get; set; } = new List<int>(); // NAV value: float takes too much data
+        // sent SPY realtime price can be used in 3 places: MarketBar, HistoricalChart, UserAssetList (so, don't send it 3 times. Client will decide what to do with RT price)
+        // sent NAV realtime price can be used in 2 places: HistoricalChart, AccountSummary
     }
 
     public partial class DashboardClient
     {
+        BrokerNav? m_selectedNavAsset = null;   // remember which NAV is selected so we can send RT data
+
         void Ctor_BrAccViewer()
         {
             // InitAssetData();
@@ -83,26 +94,16 @@ namespace SqCoreWeb
 
                 // BrAccViewer is not visible at the start for the user. We don't have to hurry to be responsive. 
                 // With the handshake msg, we can take our time to collect All necessary data, and send it a bit (500ms) later.
-                HandshakeBrAccViewer handshake = GetHandshakeBrAccViewer();
+                //string selectableNavs = "GA.IM, DC, DC.IM, DC.IB";
+                List<BrokerNav> selectableNavs = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == UserEmail)!.GetAllVisibleBrokerNavsOrdered();
+                HandshakeBrAccViewer handshake = GetHandshakeBrAccViewer(selectableNavs);
                 byte[] encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.Handshake:" + Utils.CamelCaseSerialize(handshake));
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-
-                var brAcc = GetBrAccViewerAccountSnapshot("N/DC");
-                if (brAcc != null)
-                {
-                    encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.BrAccSnapshot:"  + Utils.CamelCaseSerialize(brAcc));
-                    if (WsWebSocket!.State == WebSocketState.Open)
-                        WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                }
-
-                var brAccHist = GetBrAccViewerAccountNavHist("N/DC");
-                if (brAccHist != null)
-                {
-                    encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.BrAccHist:"  + Utils.CamelCaseSerialize(brAccHist));
-                    if (WsWebSocket!.State == WebSocketState.Open)
-                        WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                }
+                
+                m_selectedNavAsset = selectableNavs.FirstOrDefault();
+                if (m_selectedNavAsset != null)
+                    BrAccViewerSendSnapshotAndHist(m_selectedNavAsset.SqTicker);
 
                 // for both the first and the second client, we get RT prices from MemDb immediately and send it back to this Client only.
 
@@ -123,12 +124,30 @@ namespace SqCoreWeb
             });
         }
 
-        private HandshakeBrAccViewer GetHandshakeBrAccViewer()
+        private void BrAccViewerSendSnapshotAndHist(string p_sqTicker)
         {
-            //string selectableNavs = "GA.IM, DC(virtual), DC.IM, DC.IB";
-            List<BrokerNav> selectableNavs = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == UserEmail)!.GetAllVisibleBrokerNavsOrdered();
-            string selectableBrAccsCSV = String.Join(',', selectableNavs.Select(r => r.Symbol));
-            return new HandshakeBrAccViewer() { SelectableBrAccs = selectableBrAccsCSV };
+            byte[]? encodedMsg = null;
+            var brAcc = GetBrAccViewerAccountSnapshot(p_sqTicker);
+            if (brAcc != null)
+            {
+                encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.BrAccSnapshot:" + Utils.CamelCaseSerialize(brAcc));
+                if (WsWebSocket!.State == WebSocketState.Open)
+                    WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+            }
+
+            IEnumerable<BrAccViewerHist> brAccViewerHist = GetBrAccViewerHist(p_sqTicker, "YTD");
+            if (brAccViewerHist != null)
+            {
+                encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.Hist:" + Utils.CamelCaseSerialize(brAccViewerHist));
+                if (WsWebSocket!.State == WebSocketState.Open)
+                    WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+            }
+        }
+
+        private HandshakeBrAccViewer GetHandshakeBrAccViewer(List<BrokerNav> p_selectableNavs)
+        {
+            string selectableNavsCSV = String.Join(',', p_selectableNavs.Select(r => r.Symbol));
+            return new HandshakeBrAccViewer() { SelectableNavs = selectableNavsCSV };
         }
 
         private BrAccViewerAccountSnapshot? GetBrAccViewerAccountSnapshot(string p_sqTicker) // "N/GA.IM, N/DC, N/DC.IM, N/DC.IB"
@@ -150,6 +169,7 @@ namespace SqCoreWeb
                 {
                     result = new BrAccViewerAccountSnapshot()
                     {
+                        Symbol = p_sqTicker.Replace("N/", string.Empty),
                         LastUpdate = brAccount.LastUpdate,
                         GrossPositionValue = (long)brAccount.GrossPositionValue,
                         TotalCashValue = (long)brAccount.TotalCashValue,
@@ -188,13 +208,56 @@ namespace SqCoreWeb
             return result;
         }
 
-        private BrAccViewerAccountNavHist? GetBrAccViewerAccountNavHist(string p_sqTicker) // "N/GA.IM, N/DC, N/DC.IM, N/DC.IB"
+        private IEnumerable<BrAccViewerHist> GetBrAccViewerHist(string p_sqTicker, string p_lookbackStr)
         {
-            return new BrAccViewerAccountNavHist()
+            var result = new List<BrAccViewerHist>();
+            var navHist = new BrAccViewerHist()
             {
-                HistDates = new List<string>() { new DateTime(2021, 1, 31).ToYYYYMMDD()},
+                AssetId = 1,
+                SqTicker = p_sqTicker,
+                PeriodStartDate = DateTime.UtcNow.Date,
+                PeriodEndDate = DateTime.UtcNow.Date,
+                HistDates = new List<string>() { new DateTime(2021, 1, 21).ToYYYYMMDD() },
                 HistSdaCloses = new List<int>() { 1234 }
             };
+            result.Add(navHist);
+            var spyHist = new BrAccViewerHist()
+            {
+                SqTicker = "S/SPY",
+                PeriodStartDate = DateTime.UtcNow.Date,
+                PeriodEndDate = DateTime.UtcNow.Date,
+                HistDates = new List<string>() { new DateTime(2021, 2, 20).ToYYYYMMDD() },
+                HistSdaCloses = new List<int>() { 4300 }
+            };
+            result.Add(spyHist);
+            return result;
         }
+
+        public bool OnReceiveWsAsync_BrAccViewer(WebSocketReceiveResult? wsResult, string msgCode, string msgObjStr)
+        {
+            switch (msgCode)
+            {
+                case "BrAccViewer.ChangeLookback":
+                    Utils.Logger.Info("OnReceiveWsAsync_BrAccViewer(): changeLookback");
+                    // m_lastLookbackPeriodStr = msgObjStr;
+                    // SendHistoricalWs();
+                    return true;
+                case "BrAccViewer.ChangeNav":
+                    Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): changeNav to '{msgObjStr}'"); // DC.IM
+                    string sqTicker = "N/" + msgObjStr; // turn DC.IM to N/DC.IM
+                    BrAccViewerSendSnapshotAndHist(sqTicker);
+                    // var navAsset = MemDb.gMemDb.AssetsCache.GetAsset(sqTicker);
+                    // RtMktSummaryStock? navStock = m_mktSummaryStocks.FirstOrDefault(r => r.SqTicker == g_brNavVirtualTicker);
+                    // if (navStock != null)
+                    //     navStock.AssetId = navAsset!.AssetId;
+
+                    // SendHistoricalWs();
+                    // SendRealtimeWs();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
     }
 }
