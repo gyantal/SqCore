@@ -107,6 +107,7 @@ namespace SqCoreWeb
                     Utils.Configuration["Emails:JCharm1"].ToLower(),
                     Utils.Configuration["Emails:Brook"].ToLower(),
                     Utils.Configuration["Emails:Dinah1"].ToLower(),
+                    Utils.Configuration["Emails:Daya1"].ToLower(),
                     Utils.Configuration["Emails:Kamal1"].ToLower(),
                 };
             }
