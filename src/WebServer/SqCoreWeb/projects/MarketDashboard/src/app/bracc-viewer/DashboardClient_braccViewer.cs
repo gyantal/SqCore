@@ -16,7 +16,14 @@ namespace SqCoreWeb
 {
     class HandshakeBrAccViewer
     {    //Initial params
-        public String SelectableNavs { get; set; } = string.Empty;
+        public List<AssetJs> MarketBarAssets { get; set; } = new List<AssetJs>();
+        public List<AssetJs> SelectableNavAssets { get; set; } = new List<AssetJs>();
+
+        // Don't send ChartBenchmarkPossibleAssets at the beginning. By default, we don't want to compare with anything. Keep the connection fast. It is not needed usually.
+        // However, there will be a text input for CSV values of tickers, like "SPY,QQQ". If user types that and click then server should answer and send the BenchMarkAsset
+        // But it should not be in the intial Handshake.
+
+        // public List<AssetJs> ChartBenchmarkPossibleAssets { get; set; } = new List<AssetJs>();
     }
 
     class BrAccViewerPos
@@ -45,31 +52,16 @@ namespace SqCoreWeb
 
     }
 
-
-
-    // Don't integrate this to BrAccViewerAccount. By default we sent YTD. But client might ask for last 10 years. 
-    // But we don't want to send 10 years data and the today positions snapshot all the time together.
-    public class BrAccViewerHist   // this is sent to clients usually just once per day, OR when historical data changes, OR when the PeriodStartDate changes at the client
-    {
-        public uint AssetId { get; set; } = 0;        // set the Client know what is the assetId, because Rt will not send it.
-        public String SqTicker { get; set; } = string.Empty;  // this has to be SqTicker, not Symbol. "N/DC" is different to "S/DC"
-
-        public DateTime PeriodStartDate { get; set; } = DateTime.MinValue;
-        public DateTime PeriodEndDate { get; set; } = DateTime.MinValue;
-
-        public List<string> HistDates { get; set; } = new List<string>();   // we convert manually DateOnly to short string
-        public List<int> HistSdaCloses { get; set; } = new List<int>(); // NAV value: float takes too much data
-    }
-
-    class BrAccViewerAssetRt  // see RtMktSumRtStat. Can we refactor that to AssetRtStat and use that in both places?
-    {
-        // sent SPY realtime price can be used in 3 places: MarketBar, HistoricalChart, UserAssetList (so, don't send it 3 times. Client will decide what to do with RT price)
-        // sent NAV realtime price can be used in 2 places: HistoricalChart, AccountSummary
-    }
-
     public partial class DashboardClient
     {
-        BrokerNav? m_selectedNavAsset = null;   // remember which NAV is selected so we can send RT data
+        // If we store asset pointers (Stock, Nav) if the MemDb reloads, we should reload these pointers from the new MemDb. That adds extra code complexity.
+        // However, for fast execution, it is still better to keep asset pointers, instead of keeping the asset's SqTicker and always find them again and again in MemDb.
+        BrokerNav? m_braccSelectedNavAsset = null;   // remember which NAV is selected, so we can send RT data
+        List<string> c_marketBarSqTickersDefault = new List<string>() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO"};
+        List<string> c_marketBarSqTickersDc = new List<string>() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/GLD"};
+        List<Asset> m_marketBarAssets = new List<Asset>();      // remember, so we can send RT data
+
+        List<Asset> m_navChartBenchmarkAssets = new List<Asset>();
 
         void Ctor_BrAccViewer()
         {
@@ -81,8 +73,13 @@ namespace SqCoreWeb
             //InitAssetData();
         }
 
+        void EvMemDbHistoricalDataReloaded_BrAccViewer()
+        {
+            // see EvMemDbHistoricalDataReloaded_MktHealth()()
+        }
+
         // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
-        public void OnConnectedWsAsync_BrAccViewer(bool p_isThisActiveToolAtConnectionInit)
+        public void OnConnectedWsAsync_BrAccViewer(bool p_isThisActiveToolAtConnectionInit, User p_user)
         {
             Task.Run(() => // running parallel on a ThreadPool thread
             {
@@ -92,18 +89,20 @@ namespace SqCoreWeb
                 if (!p_isThisActiveToolAtConnectionInit)
                     Thread.Sleep(TimeSpan.FromMilliseconds(5000));
 
-                // BrAccViewer is not visible at the start for the user. We don't have to hurry to be responsive. 
-                // With the handshake msg, we can take our time to collect All necessary data, and send it a bit (500ms) later.
-                //string selectableNavs = "GA.IM, DC, DC.IM, DC.IB";
-                List<BrokerNav> selectableNavs = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == UserEmail)!.GetAllVisibleBrokerNavsOrdered();
+                List<BrokerNav> selectableNavs = p_user.GetAllVisibleBrokerNavsOrdered();
+                m_braccSelectedNavAsset = selectableNavs.FirstOrDefault();
+
+                List<string> marketBarSqTickers = (p_user.Username == "drcharmat") ? c_marketBarSqTickersDc : c_marketBarSqTickersDefault;
+                m_marketBarAssets = marketBarSqTickers.Select(r => MemDb.gMemDb.AssetsCache.GetAsset(r)).ToList();
+
                 HandshakeBrAccViewer handshake = GetHandshakeBrAccViewer(selectableNavs);
                 byte[] encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.Handshake:" + Utils.CamelCaseSerialize(handshake));
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+
+                BrAccViewerSendMarketBarLastCloses();
                 
-                m_selectedNavAsset = selectableNavs.FirstOrDefault();
-                if (m_selectedNavAsset != null)
-                    BrAccViewerSendSnapshotAndHist(m_selectedNavAsset.SqTicker);
+                BrAccViewerSendSnapshotAndHist();
 
                 // for both the first and the second client, we get RT prices from MemDb immediately and send it back to this Client only.
 
@@ -124,10 +123,42 @@ namespace SqCoreWeb
             });
         }
 
-        private void BrAccViewerSendSnapshotAndHist(string p_sqTicker)
+        private void BrAccViewerSendMarketBarLastCloses()
         {
+            DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // Can be Monday
+            DateOnly lookbackEnd = todayET.AddDays(-1); // Can be Sunday, but we have to find Friday before
+
+            TsDateData<DateOnly, uint, float, uint> histData = MemDb.gMemDb.DailyHist.GetDataDirect();
+            DateOnly[] dates = histData.Dates;
+            // At 16:00, or even intraday: YF gives even the today last-realtime price with a today-date. We have to find any date backwards, which is NOT today. That is the PreviousClose.
+            int iEndDay = 0;
+            for (int i = 0; i < dates.Length; i++)
+            {
+                if (dates[i] <= lookbackEnd)
+                {
+                    iEndDay = i;
+                    break;
+                }
+            }
+            Debug.WriteLine($"BrAccViewerSendMarketBarLastCloses().EndDate: {dates[iEndDay]}");
+
+            var mktBrLastCloses = m_marketBarAssets.Select(r =>
+            {
+                float[] sdaCloses = histData.Data[r.AssetId].Item1[TickType.SplitDivAdjClose];
+                return new AssetLastCloseJs() { AssetId = r.AssetId, SdaLastClose = sdaCloses[iEndDay], Date = dates[iEndDay] };
+            });
+
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.MktBrLstCls:" + Utils.CamelCaseSerialize(mktBrLastCloses));
+            if (WsWebSocket!.State == WebSocketState.Open)
+                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+        private void BrAccViewerSendSnapshotAndHist()
+        {
+            if (m_braccSelectedNavAsset == null)
+                return;
+            string sqTicker = m_braccSelectedNavAsset.SqTicker;
             byte[]? encodedMsg = null;
-            var brAcc = GetBrAccViewerAccountSnapshot(p_sqTicker);
+            var brAcc = GetBrAccViewerAccountSnapshot(sqTicker);
             if (brAcc != null)
             {
                 encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.BrAccSnapshot:" + Utils.CamelCaseSerialize(brAcc));
@@ -135,7 +166,7 @@ namespace SqCoreWeb
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
             }
 
-            IEnumerable<BrAccViewerHist> brAccViewerHist = GetBrAccViewerHist(p_sqTicker, "YTD");
+            IEnumerable<AssetHistJs> brAccViewerHist = GetBrAccViewerHist(sqTicker, "YTD");
             if (brAccViewerHist != null)
             {
                 encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.Hist:" + Utils.CamelCaseSerialize(brAccViewerHist));
@@ -144,10 +175,13 @@ namespace SqCoreWeb
             }
         }
 
+
         private HandshakeBrAccViewer GetHandshakeBrAccViewer(List<BrokerNav> p_selectableNavs)
         {
-            string selectableNavsCSV = String.Join(',', p_selectableNavs.Select(r => r.Symbol));
-            return new HandshakeBrAccViewer() { SelectableNavs = selectableNavsCSV };
+            List<AssetJs> marketBarAssets = m_marketBarAssets.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
+            List<AssetJs> selectableNavAssets = p_selectableNavs.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
+
+            return new HandshakeBrAccViewer() { MarketBarAssets = marketBarAssets, SelectableNavAssets = selectableNavAssets };
         }
 
         private BrAccViewerAccountSnapshot? GetBrAccViewerAccountSnapshot(string p_sqTicker) // "N/GA.IM, N/DC, N/DC.IM, N/DC.IB"
@@ -208,26 +242,30 @@ namespace SqCoreWeb
             return result;
         }
 
-        private IEnumerable<BrAccViewerHist> GetBrAccViewerHist(string p_sqTicker, string p_lookbackStr)
+        private IEnumerable<AssetHistJs> GetBrAccViewerHist(string p_sqTicker, string p_lookbackStr)
         {
-            var result = new List<BrAccViewerHist>();
-            var navHist = new BrAccViewerHist()
+            var result = new List<AssetHistJs>();
+            var navHist = new AssetHistJs()
             {
                 AssetId = 1,
                 SqTicker = p_sqTicker,
                 PeriodStartDate = DateTime.UtcNow.Date,
                 PeriodEndDate = DateTime.UtcNow.Date,
                 HistDates = new List<string>() { new DateTime(2021, 1, 21).ToYYYYMMDD() },
-                HistSdaCloses = new List<int>() { 1234 }
+                HistSdaCloses = new List<double>() { 1234.0 }
             };
             result.Add(navHist);
-            var spyHist = new BrAccViewerHist()
+
+            // By default we don't send any benchmark because the ChartBenchmarks text input is empty.
+            
+            // foreach (var benchmark in m_navChartBenchmarkAssets) { 
+            var spyHist = new AssetHistJs()
             {
                 SqTicker = "S/SPY",
                 PeriodStartDate = DateTime.UtcNow.Date,
                 PeriodEndDate = DateTime.UtcNow.Date,
                 HistDates = new List<string>() { new DateTime(2021, 2, 20).ToYYYYMMDD() },
-                HistSdaCloses = new List<int>() { 4300 }
+                HistSdaCloses = new List<double>() { 4300.1 }
             };
             result.Add(spyHist);
             return result;
@@ -245,7 +283,8 @@ namespace SqCoreWeb
                 case "BrAccViewer.ChangeNav":
                     Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): changeNav to '{msgObjStr}'"); // DC.IM
                     string sqTicker = "N/" + msgObjStr; // turn DC.IM to N/DC.IM
-                    BrAccViewerSendSnapshotAndHist(sqTicker);
+                    m_braccSelectedNavAsset = MemDb.gMemDb.AssetsCache.GetAsset(sqTicker) as BrokerNav;
+                    BrAccViewerSendSnapshotAndHist();
                     // var navAsset = MemDb.gMemDb.AssetsCache.GetAsset(sqTicker);
                     // RtMktSummaryStock? navStock = m_mktSummaryStocks.FirstOrDefault(r => r.SqTicker == g_brNavVirtualTicker);
                     // if (navStock != null)

@@ -54,8 +54,15 @@ namespace SqCoreWeb
                 client.ActivePage = activePage;
             }
 
-            client!.OnConnectedWsAsync_MktHealth(activePage == ActivePage.MarketHealth);
-            client!.OnConnectedWsAsync_BrAccViewer(activePage == ActivePage.BrAccViewer);
+            User? user = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == client!.UserEmail);
+            if (user == null)
+            {
+                Utils.Logger.Error($"Error. UserEmail is not found among MemDb users '{client!.UserEmail}'.");
+                return;
+            }
+
+            client!.OnConnectedWsAsync_MktHealth(activePage == ActivePage.MarketHealth, user);
+            client!.OnConnectedWsAsync_BrAccViewer(activePage == ActivePage.BrAccViewer, user);
             client!.OnConnectedWsAsync_QckflNews(activePage == ActivePage.QuickfolioNews);
         }
 

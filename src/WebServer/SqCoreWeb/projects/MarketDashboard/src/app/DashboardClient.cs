@@ -46,7 +46,8 @@ namespace SqCoreWeb
         {
             DashboardClient.g_clients.ForEach(client =>   // Notify all the connected clients.
             {
-                client.EvMemDbAssetDataReloaded_mktHealth();
+                client.EvMemDbAssetDataReloaded_MktHealth();
+                client.EvMemDbAssetDataReloaded_BrAccViewer();
             });
             
         }
@@ -55,7 +56,8 @@ namespace SqCoreWeb
         {
             DashboardClient.g_clients.ForEach(client =>   // Notify all the connected clients.
             {
-                client.EvMemDbHistoricalDataReloaded_mktHealth();
+                client.EvMemDbHistoricalDataReloaded_MktHealth();
+                client.EvMemDbHistoricalDataReloaded_BrAccViewer();
             });
         }
 

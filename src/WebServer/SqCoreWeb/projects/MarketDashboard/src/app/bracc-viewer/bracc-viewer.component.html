@@ -12,7 +12,7 @@ BrAcc:
 <hr>
 [1. MarketBar on top, QQQ, SPY, TLT, VXX, UNG, USO]<br>
 [2. [AccountData under it]<br>
-    2.1 [AccountSummary, 1/3rd on the left box] NAV selection combo-box, P&L Today, NAV (only)<br>
+    2.1 [AccountSummary, 1/3rd on the left box] NAV selection combo-box, P&L Today (both from Positions and yesterdayNav), NAV (only)<br>
     2.2 [AccountDetails, 2/3rd on the right box] Tabpage with 2 tabs<br>
         2.2.1 [HistoricalChart] default: visible, PeridSelectionComboBox (YTD) at bottom<br>
         2.2.2 [MoreDetails: Cash, MarginReq], default: hidden<br>
@@ -20,8 +20,7 @@ BrAcc:
 
 <hr>
 <br><br>Temporary Debug Info: <br>
-HandshakeMsgStr: <span>{{ handshakeMsgStr }}</span>
-<br><br>
-HistStr: <br> <span>{{ histStr }}</span>
-<br><br>
+HandshakeMsgStr: <br> <span>{{ handshakeMsgStr }}</span><br><br>
+MarketBarLastClosesStr: <br> <span>{{ mktBrLstClsStr }}</span><br><br>
+HistStr: <br> <span>{{ histStr }}</span><br><br>
 BrAccountSnapshot: <br> <span>{{ brAccountSnapshotStr }}</span>

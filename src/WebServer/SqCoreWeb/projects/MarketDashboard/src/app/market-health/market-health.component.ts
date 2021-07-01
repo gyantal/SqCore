@@ -391,7 +391,7 @@ export class MarketHealthComponent implements OnInit {
           if (element.sqTicker.startsWith("S/"))
             element.ticker = element.sqTicker.substring(2); // "sqTicker":"S/QQQ"
           else
-            element.ticker = element.sqTicker;  // "sqTicker":"BrNAV"
+            element.ticker = "BrNAV";  // "sqTicker":"N/GA.IM", but on UI we show it as "BrNAV" header
           element.periodStart = this.ChangeNaNstringToNaNnumber(element.periodStart);
           element.periodEnd = this.ChangeNaNstringToNaNnumber(element.periodEnd);
           element.periodHigh = this.ChangeNaNstringToNaNnumber(element.periodHigh);
@@ -407,8 +407,9 @@ export class MarketHealthComponent implements OnInit {
         return true;
       case 'MktHlth.Handshake':  // this is the least frequent case. Should come last.
         const jsonObjHandshake = JSON.parse(msgObjStr);
-        console.log(`MktHlth.Handshake.Selectable NAVs: '${jsonObjHandshake.selectableNavs}'`);
-        this.updateUiSelectableNavs(jsonObjHandshake.selectableNavs);
+        console.log(`MktHlth.Handshake.selectableNavAssets: '${jsonObjHandshake.selectableNavAssets}'`);
+        console.log(`MktHlth.Handshake.marketSummaryAssets: '${jsonObjHandshake.marketSummaryAssets}'`);
+        this.updateUiSelectableNavs(jsonObjHandshake.selectableNavAssets);
         return true;
       default:
         return false;
@@ -507,13 +508,13 @@ export class MarketHealthComponent implements OnInit {
     }
   }
 
-  updateUiSelectableNavs(pSelectableNavs: string) {  // same in MktHlth and BrAccViewer
+  updateUiSelectableNavs(pSelectableNavAssets: any) {  // same in MktHlth and BrAccViewer
     const navSelectElement = document.getElementById('mktHlthNavSelect') as HTMLSelectElement;
     this.selectedNav = '';
-    for (const nav of pSelectableNavs.split(',')) {
+    for (const nav of pSelectableNavAssets) {
       if (this.selectedNav == '') // by default, the selected Nav is the first from the list
-        this.selectedNav = nav;
-      navSelectElement.options[navSelectElement.options.length] = new Option(nav, nav);
+        this.selectedNav = nav.symbol;
+      navSelectElement.options[navSelectElement.options.length] = new Option(nav.symbol, nav.symbol);
     }
     navSelectElement.selectedIndex = 0; // select the first item
   }

@@ -10,6 +10,7 @@ export class BrAccViewerComponent implements OnInit {
   selectedNav = '';
   
   handshakeMsgStr = '[Nothing arrived yet]';
+  mktBrLstClsStr = '[Nothing arrived yet]';
   brAccountSnapshotStr = '[Nothing arrived yet]';
   histStr = '[Nothing arrived yet]';
 
@@ -74,25 +75,29 @@ export class BrAccViewerComponent implements OnInit {
         console.log('BrAccViewer.Hist:' + msgObjStr);
         this.histStr = msgObjStr;
         return true;
+      case 'BrAccViewer.MktBrLstCls':
+        console.log('BrAccViewer.MktBrLstCls:' + msgObjStr);
+        this.mktBrLstClsStr = msgObjStr;
+        return true;
       case 'BrAccViewer.Handshake':  // this is the least frequent case. Should come last.
         console.log('BrAccViewer.Handshake:' + msgObjStr);
         this.handshakeMsgStr = msgObjStr;
         const jsonObjHandshake = JSON.parse(msgObjStr);
         console.log(`BrAccViewer.Handshake.SelectableBrAccs: '${jsonObjHandshake.selectableBrAccs}'`);
-        this.updateUiSelectableNavs(jsonObjHandshake.selectableNavs);
+        this.updateUiSelectableNavs(jsonObjHandshake.selectableNavAssets);
         return true;
       default:
         return false;
     }
   }
 
-  updateUiSelectableNavs(pSelectableNavs: string) {  // same in MktHlth and BrAccViewer
+  updateUiSelectableNavs(pSelectableNavAssets: any) {  // same in MktHlth and BrAccViewer
     const navSelectElement = document.getElementById('braccViewerNavSelect') as HTMLSelectElement;
     this.selectedNav = '';
-    for (const nav of pSelectableNavs.split(',')) {
+    for (const nav of pSelectableNavAssets) {
       if (this.selectedNav == '') // by default, the selected Nav is the first from the list
-        this.selectedNav = nav;
-      navSelectElement.options[navSelectElement.options.length] = new Option(nav, nav);
+        this.selectedNav = nav.symbol;
+      navSelectElement.options[navSelectElement.options.length] = new Option(nav.symbol, nav.symbol);
     }
     navSelectElement.selectedIndex = 0; // select the first item
   }
