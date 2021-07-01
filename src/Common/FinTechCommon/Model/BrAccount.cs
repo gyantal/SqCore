@@ -17,7 +17,7 @@ namespace FinTechCommon
         public double TotalCashValue { get; set; } = double.NaN;
         public double InitMarginReq { get; set; } = double.NaN;
         public double MaintMarginReq { get; set; } = double.NaN;
-        public List<AccPos> AccPoss { get; set; } = new List<AccPos>();
+        public List<BrAccPos> AccPoss { get; set; } = new List<BrAccPos>();
 
     }
 

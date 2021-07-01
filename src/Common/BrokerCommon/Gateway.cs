@@ -243,7 +243,7 @@ namespace BrokerCommon
                     Console.WriteLine($"*{DateTime.UtcNow.ToString("dd'T'HH':'mm':'ss")}: {warnMessage}Gateway {GatewayId} acc {VbAccountsList} connected.");
                     
                     // TEMP here. Can be removed later.
-                    List<AccSum>? accSums = GetAccountSums();
+                    List<BrAccSum>? accSums = GetAccountSums();
                     if (accSums != null)
                     {
                         string navStr = accSums.First(r => r.Tag == AccountSummaryTags.NetLiquidation).Value;

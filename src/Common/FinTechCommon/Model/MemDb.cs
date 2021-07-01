@@ -6,6 +6,7 @@ using System.Threading;
 using SqCommon;
 using System.Threading.Tasks;
 using System.Globalization;
+using BrokerCommon;
 
 namespace FinTechCommon
 {
@@ -24,6 +25,8 @@ namespace FinTechCommon
     {
         public volatile User[] Users = new User[0];   // writable: admin might insert a new user from HTML UI
         public volatile AssetsCache AssetsCache = new AssetsCache();  // writable: user might insert a new asset from HTML UI
+
+        // As Portfolios are assets (nesting), we might store portfolios in AssetCache, not separately
         public volatile List<string> Portfolios = new List<string>(); // temporary illustration of a data that will be not only read, but written by SqCore
         public volatile CompactFinTimeSeries<DateOnly, uint, float, uint> DailyHist = new CompactFinTimeSeries<DateOnly, uint, float, uint>();
 
@@ -255,6 +258,11 @@ namespace FinTechCommon
             m_lastDbReload = DateTime.UtcNow;
             m_lastDbReloadTs = DateTime.UtcNow - startTime;
 
+            foreach (var brAccount in BrAccounts)
+            {
+                UpdateBrAccPosAssetIds(brAccount.AccPoss);
+            }
+
             OnReloadAssetData_ReloadRtDataAndSetTimer();    // downloads realtime prices from YF or IEX
             OnReloadAssetData_ReloadRtNavDataAndSetTimer();   // downloads realtime NAVs from VBrokers
             EvDbDataReloaded?.Invoke();
@@ -266,6 +274,21 @@ namespace FinTechCommon
             // if client wants to be totally secure and consistent when getting subtables
             MemData localMemData = m_memData; // if m_memData swap occurs, that will not ruin our consistency
             return (localMemData.Users, localMemData.AssetsCache, localMemData.DailyHist);
+        }
+
+        public void UpdateBrAccPosAssetIds(List<BrAccPos> p_accPoss)
+        {
+            foreach (BrAccPos pos in p_accPoss)
+            {
+                pos.AssetId = AssetId32Bits.Invalid;
+                if (pos.Contract.SecType != "STK")
+                    continue;
+
+                var asset = AssetsCache.TryGetAsset("S/" + pos.Contract.Symbol);
+                if (asset != null)
+                    pos.AssetId = asset.AssetId;
+            }
+
         }
 
         public void Exit()

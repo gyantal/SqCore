@@ -16,14 +16,14 @@ namespace BrokerCommon
 
     public partial class Gateway
     {
-        List<AccSum> m_accSums = new List<AccSum>();
-        List<AccPos> m_accPoss = new List<AccPos>();
+        List<BrAccSum> m_accSums = new List<BrAccSum>();
+        List<BrAccPos> m_accPoss = new List<BrAccPos>();
         string[] m_exclSymbolsArr = new string[0];
         private readonly object m_getAccountSummaryLock = new object();
 
         public void AccSumArrived(int p_reqId, string p_tag, string p_value, string p_currency)
         {
-            m_accSums.Add(new AccSum() { Tag = p_tag, Value = p_value, Currency = p_currency });
+            m_accSums.Add(new BrAccSum() { Tag = p_tag, Value = p_value, Currency = p_currency });
         }
 
         ManualResetEventSlim? m_getAccountSummaryMres;
@@ -44,7 +44,7 @@ namespace BrokerCommon
             // if (p_contract.SecType == "CASH")
             //     return;
             if (p_pos != 0.0 && !m_exclSymbolsArr.Contains(p_contract.Symbol))   // If a position is 0, it means we just sold it, but IB reports it during that day, because of Realized P&L. However, we don't need that position any more.
-                m_accPoss.Add(new AccPos(p_contract) { Position = p_pos, AvgCost = p_avgCost });
+                m_accPoss.Add(new BrAccPos(p_contract) { Position = p_pos, AvgCost = p_avgCost });
         }
 
         ManualResetEventSlim? m_getAccountPosMres;
@@ -54,16 +54,16 @@ namespace BrokerCommon
                 m_getAccountPosMres.Set();  // Sets the state of the event to signaled, which allows one or more threads waiting on the event to proceed.
         }
 
-        public List<AccSum>? GetAccountSums()
+        public List<BrAccSum>? GetAccountSums()
         {
-            List<AccSum>? result = null;
+            List<BrAccSum>? result = null;
             int accReqId = -1;
             try
             {
                 Stopwatch sw1 = Stopwatch.StartNew();
                 lock (m_getAccountSummaryLock)          // IB only allows one query at a time, so next client has to wait
                 {
-                    m_accSums = new List<AccSum>(); // delete old values
+                    m_accSums = new List<BrAccSum>(); // delete old values
                     if (m_getAccountSummaryMres == null)
                         m_getAccountSummaryMres = new ManualResetEventSlim(false);  // initialize as unsignaled
                     else
@@ -93,15 +93,15 @@ namespace BrokerCommon
             return result;
         }
 
-        public List<AccPos>? GetAccountPoss(string[] p_exclSymbolsArr)
+        public List<BrAccPos>? GetAccountPoss(string[] p_exclSymbolsArr)
         {
-            List<AccPos>? result = null;
+            List<BrAccPos>? result = null;
             try
             {
                 Stopwatch sw2 = Stopwatch.StartNew();
                 lock (m_getAccountPositionsLock)          //ReqPositions() doesn't have a reqID, so if we allow multiple threads to do it at the same time, we cannot sort out the output
                 {
-                    m_accPoss = new List<AccPos>();  // delete old values
+                    m_accPoss = new List<BrAccPos>();  // delete old values
                     m_exclSymbolsArr = p_exclSymbolsArr;
                     if (m_getAccountPosMres == null)
                         m_getAccountPosMres = new ManualResetEventSlim(false);  // initialize as unsignaled

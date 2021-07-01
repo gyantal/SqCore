@@ -17,8 +17,8 @@ namespace BrokerCommon
     {
         public string BrAccStr { get; set; } = String.Empty;
         public Gateway Gateway { get; set; }
-        public List<AccSum> AccSums = new List<AccSum>();   // AccSummary
-        public List<AccPos> AccPoss = new List<AccPos>();   // Positions
+        public List<BrAccSum> AccSums = new List<BrAccSum>();   // AccSummary
+        public List<BrAccPos> AccPoss = new List<BrAccPos>();   // Positions
 
         public AccInfo(string brAccStr, Gateway gateway)
         {
@@ -27,16 +27,16 @@ namespace BrokerCommon
         }
     }
 
-    public class AccSum
+    public class BrAccSum
     {
         public string Tag { get; set; } = string.Empty;
         public string Value { get; set; } = string.Empty;
         public string Currency { get; set; } = string.Empty;
     }
 
-    public static class AccSumHelper
+    public static class BrAccSumHelper
     {
-        public static double GetValue(this List<AccSum> accSums, string tagStr)
+        public static double GetValue(this List<BrAccSum> accSums, string tagStr)
         {
             string valStr = accSums.First(r => r.Tag == tagStr).Value;
             if (!Double.TryParse(valStr, out double valDouble))
@@ -45,8 +45,9 @@ namespace BrokerCommon
         }
     }
 
-    public class AccPos
+    public class BrAccPos
     {
+        public uint AssetId { get; set; } = 0;  // AssetId.Invalid = 0;  we cannot store Asset pointers, because FinTechCommon is a higher module than BrokerCommon
         public Contract Contract { get; set; }
         public int FakeContractID { get; set; } // when we cannot change Contract.ConID which should be left 0, but we use an Int in the dictionary.
         public double Position { get; set; }    // in theory, position is Int (whole number) for all the examples I seen. However, IB gives back as double, just in case of a complex contract. Be prepared.
@@ -61,13 +62,13 @@ namespace BrokerCommon
         public double LastPrice { get; set; } = Double.NaN;
         public double IbMarkPrice { get; set; } = Double.NaN;       // streamed (non-snapshot) mode. Usually LastPrice, but if Last is not in Ask-Bid range, then Ask or Bid, whichever makes sense
 
-        public KeyValuePair<int, List<AccPos>> UnderlyingDictItem { get; set; }
+        public KeyValuePair<int, List<BrAccPos>> UnderlyingDictItem { get; set; }
 
         public double IbComputedImpVol { get; set; } = Double.NaN;
         public double IbComputedDelta { get; set; } = Double.NaN;
         public double IbComputedUndPrice { get; set; } = Double.NaN;
 
-        public AccPos(Contract contract)
+        public BrAccPos(Contract contract)
         {
             Contract = contract;
         }
@@ -77,7 +78,7 @@ namespace BrokerCommon
     public partial class BrokersWatcher
     {
 
-        public List<AccSum>? GetAccountSums(GatewayId p_gatewayId)
+        public List<BrAccSum>? GetAccountSums(GatewayId p_gatewayId)
         {
             var gateway = m_gateways.FirstOrDefault(r => r.GatewayId == p_gatewayId);
             if (gateway == null)
@@ -86,7 +87,7 @@ namespace BrokerCommon
             return gateway.GetAccountSums();
         }
 
-        public List<AccPos>? GetAccountPoss(GatewayId p_gatewayId)
+        public List<BrAccPos>? GetAccountPoss(GatewayId p_gatewayId)
         {
             var gateway = m_gateways.FirstOrDefault(r => r.GatewayId == p_gatewayId);
             if (gateway == null || !gateway.IsConnected)

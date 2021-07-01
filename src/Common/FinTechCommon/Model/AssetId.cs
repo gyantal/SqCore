@@ -19,7 +19,7 @@ namespace FinTechCommon
         public const uint SubTableIdMin = 0;
         public const uint SubTableIdMax =  134217727;
 
-        public const uint Invalid =  0; // invalid value is best to be 0. 
+        public const uint Invalid =  0; // invalid value is best to be 0, because it is easy to malloc an array of Invalid (0) objects
 
         public AssetId32Bits(uint p_value) { m_value = p_value; }
         public AssetId32Bits(IAssetID p_assetID)

@@ -97,7 +97,7 @@ namespace FinTechCommon
             foreach (var gw2SubTableId in GatewayId2SubTableId)
             {
                 GatewayId gatewayId = gw2SubTableId.Key;
-                List<AccSum>? accSums = BrokersWatcher.gWatcher.GetAccountSums(gatewayId);
+                List<BrAccSum>? accSums = BrokersWatcher.gWatcher.GetAccountSums(gatewayId);
                 if (accSums == null)
                     continue;
 

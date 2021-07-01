@@ -107,13 +107,15 @@ namespace SqCoreWeb
 
         private void UpdateBrAccPoss(GatewayId p_gatewayId)
         {
-            List<AccSum>? accSums = BrokersWatcher.gWatcher.GetAccountSums(p_gatewayId);
+            List<BrAccSum>? accSums = BrokersWatcher.gWatcher.GetAccountSums(p_gatewayId);
             if (accSums == null)
                 return;
 
-            List<AccPos>? accPoss = BrokersWatcher.gWatcher.GetAccountPoss(p_gatewayId);
+            List<BrAccPos>? accPoss = BrokersWatcher.gWatcher.GetAccountPoss(p_gatewayId);
             if (accPoss == null)
                 return;
+
+            MemDb.gMemDb.UpdateBrAccPosAssetIds(accPoss);
 
             BrAccount? brAccount = null;
             foreach (var account in MemDb.gMemDb.BrAccounts)

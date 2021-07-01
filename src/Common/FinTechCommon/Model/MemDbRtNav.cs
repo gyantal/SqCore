@@ -128,7 +128,7 @@ namespace FinTechCommon
                     GatewayId gatewayId = navAsset.GatewayId;
                     if (gatewayId == GatewayId.Unknown)
                         continue;
-                    List<AccSum>? accSums = BrokersWatcher.gWatcher.GetAccountSums(gatewayId);
+                    List<BrAccSum>? accSums = BrokersWatcher.gWatcher.GetAccountSums(gatewayId);
                     if (accSums == null)
                         continue;
 

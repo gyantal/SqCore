@@ -156,9 +156,8 @@ namespace SqCoreWeb
         {
             if (m_braccSelectedNavAsset == null)
                 return;
-            string sqTicker = m_braccSelectedNavAsset.SqTicker;
             byte[]? encodedMsg = null;
-            var brAcc = GetBrAccViewerAccountSnapshot(sqTicker);
+            var brAcc = GetBrAccViewerAccountSnapshot();
             if (brAcc != null)
             {
                 encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.BrAccSnapshot:" + Utils.CamelCaseSerialize(brAcc));
@@ -166,7 +165,7 @@ namespace SqCoreWeb
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
             }
 
-            IEnumerable<AssetHistJs> brAccViewerHist = GetBrAccViewerHist(sqTicker, "YTD");
+            IEnumerable<AssetHistJs>? brAccViewerHist = GetBrAccViewerHist("YTD");
             if (brAccViewerHist != null)
             {
                 encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.Hist:" + Utils.CamelCaseSerialize(brAccViewerHist));
@@ -184,38 +183,36 @@ namespace SqCoreWeb
             return new HandshakeBrAccViewer() { MarketBarAssets = marketBarAssets, SelectableNavAssets = selectableNavAssets };
         }
 
-        private BrAccViewerAccountSnapshot? GetBrAccViewerAccountSnapshot(string p_sqTicker) // "N/GA.IM, N/DC, N/DC.IM, N/DC.IB"
+        private BrAccViewerAccountSnapshot? GetBrAccViewerAccountSnapshot() // "N/GA.IM, N/DC, N/DC.IM, N/DC.IB"
         {
+            if (m_braccSelectedNavAsset == null)
+                return null;
+            string navSqTicker = m_braccSelectedNavAsset.SqTicker;
             // if it is aggregated portfolio (DC Main + DeBlanzac), then a virtual combination is needed
-            if (!GatewayExtensions.NavSqSymbol2GatewayIds.TryGetValue(p_sqTicker, out List<GatewayId>? gatewayIds))
+            if (!GatewayExtensions.NavSqSymbol2GatewayIds.TryGetValue(navSqTicker, out List<GatewayId>? gatewayIds))
                 return null;
 
             TsDateData<DateOnly, uint, float, uint> histData = MemDb.gMemDb.DailyHist.GetDataDirect();
 
             BrAccViewerAccountSnapshot? result = null;
-            foreach (GatewayId gwId in gatewayIds)
+            foreach (GatewayId gwId in gatewayIds)  // AggregateNav has 2 Gateways
             {
                 BrAccount? brAccount = MemDb.gMemDb.BrAccounts.FirstOrDefault(r => r.GatewayId == gwId);
                 if (brAccount == null)
                     return null;
 
+                string gwIdStr = gwId.ToShortFriendlyString();
                 if (result == null)
                 {
                     result = new BrAccViewerAccountSnapshot()
                     {
-                        Symbol = p_sqTicker.Replace("N/", string.Empty),
+                        Symbol = navSqTicker.Replace("N/", string.Empty),
                         LastUpdate = brAccount.LastUpdate,
                         GrossPositionValue = (long)brAccount.GrossPositionValue,
                         TotalCashValue = (long)brAccount.TotalCashValue,
                         InitMarginReq = (long)brAccount.InitMarginReq,
                         MaintMarginReq = (long)brAccount.MaintMarginReq,
-                        Poss = brAccount.AccPoss.Select(r => new BrAccViewerPos()
-                        {
-                            SqTicker = r.Contract.ToString(),
-                            Pos = r.Position,
-                            AvgCost = r.AvgCost,
-                            AccId = gwId.ToShortFriendlyString()
-                        }).ToList()
+                        Poss = GetBrAccViewerPos(brAccount.AccPoss, gwIdStr).ToList()
                     };
                 }
                 else
@@ -224,31 +221,45 @@ namespace SqCoreWeb
                     result.TotalCashValue += (long)brAccount.TotalCashValue;
                     result.InitMarginReq += (long)brAccount.InitMarginReq;
                     result.MaintMarginReq += (long)brAccount.MaintMarginReq;
-                    result.Poss.AddRange(brAccount.AccPoss.Select(r => new BrAccViewerPos()
-                    {
-                        SqTicker = r.Contract.ToString(),
-                        Pos = r.Position,
-                        AvgCost = r.AvgCost,
-                        AccId = gwId.ToShortFriendlyString()
-                    }));
+                    result.Poss.AddRange(GetBrAccViewerPos(brAccount.AccPoss, gwIdStr));
                 }
             }
 
             if (result != null)
             {
-                Asset navAsset = MemDb.gMemDb.AssetsCache.AssetsBySqTicker[p_sqTicker];    // realtime NavAsset.LastValue is more up-to-date then from BrAccount (updated 1h in RTH only)
+                Asset navAsset = MemDb.gMemDb.AssetsCache.AssetsBySqTicker[navSqTicker];    // realtime NavAsset.LastValue is more up-to-date then from BrAccount (updated 1h in RTH only)
                 result.NetLiquidation = (long)MemDb.gMemDb.GetLastRtValue(navAsset);
             }
             return result;
         }
 
-        private IEnumerable<AssetHistJs> GetBrAccViewerHist(string p_sqTicker, string p_lookbackStr)
+        private IEnumerable<BrAccViewerPos> GetBrAccViewerPos(List<BrAccPos> p_accPos, string p_gwIdStr)
         {
+            return p_accPos.Where(r => r.AssetId != AssetId32Bits.Invalid).Select(r =>
+            {
+                Asset asset = MemDb.gMemDb.AssetsCache.AssetsByAssetID[r.AssetId];
+
+                return new BrAccViewerPos()
+                {
+                    SqTicker = asset.SqTicker,
+                    Pos = r.Position,
+                    AvgCost = r.AvgCost,
+                    AccId = p_gwIdStr
+                };
+            });
+        }
+
+        private IEnumerable<AssetHistJs>? GetBrAccViewerHist(string p_lookbackStr)
+        {
+            if (m_braccSelectedNavAsset == null)
+                return null;
+            string navSqTicker = m_braccSelectedNavAsset.SqTicker;
+
             var result = new List<AssetHistJs>();
             var navHist = new AssetHistJs()
             {
                 AssetId = 1,
-                SqTicker = p_sqTicker,
+                SqTicker = navSqTicker,
                 PeriodStartDate = DateTime.UtcNow.Date,
                 PeriodEndDate = DateTime.UtcNow.Date,
                 HistDates = new List<string>() { new DateTime(2021, 1, 21).ToYYYYMMDD() },

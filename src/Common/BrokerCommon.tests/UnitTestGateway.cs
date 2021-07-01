@@ -20,7 +20,7 @@ namespace BrokerCommon.tests
             gw.Reconnect();
             Assert.True(gw.IsConnected);
 
-            List<AccSum>? accSums = gw.GetAccountSums();
+            List<BrAccSum>? accSums = gw.GetAccountSums();
             Assert.NotNull(accSums);
             if (accSums == null)
                 return;
