@@ -76,7 +76,7 @@ namespace SqCoreWeb
             m_stockTickers = cellValue.Split(',').Select(x => x.Trim()).ToArray();
         }
 
-        internal List<NewsItem> GetCommonNews()
+        internal void GetCommonNewsAndSendToClient(DashboardClient p_client)
         {
             string rssFeedUrl = string.Format(@"https://www.cnbc.com/id/100003114/device/rss/rss.html");
 
@@ -92,14 +92,39 @@ namespace SqCoreWeb
             }
             // AddFoundNews(0, foundNewsItems);
             // return NewsToString(m_newsMemory[0]);
-            return foundNewsItems;
+
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(foundNewsItems));
+            if (p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)
+            {
+                // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
+                // OnConnectedWsAsync() sleeps for a while if not active tool.
+                TimeSpan timeSinceConnect = DateTime.UtcNow - p_client.WsConnectionTime;
+                if (p_client.ActivePage != ActivePage.QuickfolioNews && timeSinceConnect < DashboardClient.c_initialSleepIfNotActiveToolQn.Add(TimeSpan.FromMilliseconds(100)))
+                    return;
+
+                p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+            }
+
+            // foreach (var client in p_clients)        // List<DashboardClient> p_clients
+            // {
+            //     if (client.WsWebSocket != null && client.WsWebSocket!.State == WebSocketState.Open)
+            //     {
+            //         // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
+            //         // OnConnectedWsAsync() sleeps for a while if not active tool.
+            //         TimeSpan timeSinceConnect = DateTime.UtcNow - client.WsConnectionTime;
+            //         if (client.ActivePage != ActivePage.QuickfolioNews && timeSinceConnect < DashboardClient.c_initialSleepIfNotActiveToolQn.Add(TimeSpan.FromMilliseconds(100)))
+            //             continue;
+
+            //         client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+            //     }
+            // }
         }
 
         internal List<string> GetStockTickers()
         {
             return new List<string> { "All assets" }.Union(m_stockTickers).ToList();
         }
-        internal void GetStockNews(List<DashboardClient> p_clients) // with 13 tickers, it can take 13 * 2 = 26seconds
+        internal void GetStockNewsAndSendToClient(DashboardClient p_client) // with 13 tickers, it can take 13 * 2 = 26seconds
         {
             foreach (string ticker in m_stockTickers)
             {
@@ -115,23 +140,20 @@ namespace SqCoreWeb
                 if (tipranks.Count > 0)
                     encodedMsgTipranks = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(tipranks));
 
-                foreach (var client in p_clients)
+                if (p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)
                 {
-                    if (client.WsWebSocket != null && client.WsWebSocket!.State == WebSocketState.Open)
-                    {
-                        // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
-                        // OnConnectedWsAsync() sleeps for a while if not active tool.
-                        TimeSpan timeSinceConnect = DateTime.UtcNow - client.WsConnectionTime;
-                        if (client.ActivePage != ActivePage.MarketHealth && timeSinceConnect < DashboardClient.c_initialSleepIfNotActiveToolQn.Add(TimeSpan.FromMilliseconds(100)))
-                            continue;
+                    // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
+                    // OnConnectedWsAsync() sleeps for a while if not active tool.
+                    TimeSpan timeSinceConnect = DateTime.UtcNow - p_client.WsConnectionTime;
+                    if (p_client.ActivePage != ActivePage.QuickfolioNews && timeSinceConnect < DashboardClient.c_initialSleepIfNotActiveToolQn.Add(TimeSpan.FromMilliseconds(100)))
+                        continue;
 
-                        if (encodedMsgRss != null)
-                            client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgRss, 0, encodedMsgRss.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                        if (encodedMsgBenzinga != null)
-                            client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgBenzinga, 0, encodedMsgBenzinga.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                        if (encodedMsgTipranks != null)
-                            client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgTipranks, 0, encodedMsgTipranks.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                    }
+                    if (encodedMsgRss != null)
+                        p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgRss, 0, encodedMsgRss.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                    if (encodedMsgBenzinga != null)
+                        p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgBenzinga, 0, encodedMsgBenzinga.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                    if (encodedMsgTipranks != null)
+                        p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgTipranks, 0, encodedMsgTipranks.Length), WebSocketMessageType.Text, true, CancellationToken.None);
                 }
             }
         }
