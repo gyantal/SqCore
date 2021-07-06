@@ -11,9 +11,9 @@ namespace SqCoreWeb
     
     public partial class DashboardClient
     {
-        const int m_newsReloadInterval = 10 * 60 * 1000; // 10 minutes in milliseconds
-        Timer? m_newsReloadTimer = null;    // separate Timer is needed for each client
-        QuickfolioNewsDownloader m_newsDownloader = new QuickfolioNewsDownloader();
+        const int m_newsReloadInterval = 15 * 60 * 1000; // 15 minutes in milliseconds
+        Timer? m_newsReloadTimer = null;    // separate Timer is needed for each client  (that is a waste of resources, but fine temporarily)
+        QuickfolioNewsDownloader m_newsDownloader = new QuickfolioNewsDownloader(); // separate downloader for each client.
 
         public static TimeSpan c_initialSleepIfNotActiveToolQn = TimeSpan.FromMilliseconds(10000); // 10sec
 
@@ -54,20 +54,36 @@ namespace SqCoreWeb
             }
         }
 
-        private void TriggerQuickfolioNewsDownloader()
+        int nExceptionsTriggerQuickfolioNewsDownloader = 0;
+        private void TriggerQuickfolioNewsDownloader()  // called at OnConnected and also periodically. Separete for each clients.
         {
-            // we can only send all news to the newly connected p_connId, and not All clients.
-            // but that complicates things, because then what if we start to send all news to this fresh client, and 2 seconds later NewsReloadTimerElapsed triggers.
-            // so, at the moment, whenever a new client connects, we resend all news to all old clients. If NewsReloadTimerElapsed() triggers during that, we send it twice.
-            List<NewsItem> commonNews = m_newsDownloader.GetCommonNews();
+            try
+            {
+                // we only send all news to the newly connected p_connId, and not All clients.
+                // each client has its own private m_newsDownloader, and own timer.
+                // this is a waste of resources, because we download things separately for each clients
+                // TODO Daya:
+                // in the future, we might store news in memory and feed the users from that, and we don't download news multiple times.
+                // m_newsDownloader.GetCommonNewsAndSendToClient(DashboardClient.g_clients);
+                m_newsDownloader.GetCommonNewsAndSendToClient(this);
 
-            byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(commonNews));
-            if (WsWebSocket != null && WsWebSocket!.State == WebSocketState.Open)
-                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-
-            // m_newsDownloader.GetStockNews(DashboardPushHubKestrelBckgrndSrv.HubContext?.Clients.All);   // with 13 tickers, it can take 13 * 2 = 26seconds
-
-            m_newsDownloader.GetStockNews(DashboardClient.g_clients);   // with 13 tickers, it can take 13 * 2 = 26seconds
+                m_newsDownloader.GetStockNewsAndSendToClient(this);   // with 13 tickers, it can take 13 * 2 = 26seconds
+                nExceptionsTriggerQuickfolioNewsDownloader = 0;
+            }
+            catch
+            {
+                // It is expected that DownloadStringWithRetryAsync() throws exceptions sometimes and download fails. Around midnight.
+                // The request was canceled due to the configured HttpClient.Timeout of 100 seconds elapsing.
+                // We only inform HealthMonitor if it happened 4*4=16 times. (about 4 hours)
+                nExceptionsTriggerQuickfolioNewsDownloader++;
+            }
+            if (nExceptionsTriggerQuickfolioNewsDownloader >= 16)
+            {
+                Utils.Logger.Error($"TriggerQuickfolioNewsDownloader() nExceptionsTriggerQuickfolioNewsDownloader: {nExceptionsTriggerQuickfolioNewsDownloader}");
+                string msg = $"SqCore.TriggerQuickfolioNewsDownloader() failed {nExceptionsTriggerQuickfolioNewsDownloader}x. See log files.";
+                HealthMonitorMessage.SendAsync(msg, HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
+                nExceptionsTriggerQuickfolioNewsDownloader = 0;
+            }
         }
 
         private void NewsReloadTimerElapsed(object? state)
