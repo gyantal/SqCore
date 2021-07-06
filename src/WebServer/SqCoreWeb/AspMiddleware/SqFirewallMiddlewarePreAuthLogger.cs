@@ -80,13 +80,19 @@ namespace SqCoreWeb
             var sw = Stopwatch.StartNew();
             try
             {
-                await _next(httpContext);
+                // if (httpContext.Request.Path.ToString().StartsWith("/signin-google"))
+                //     Utils.Logger.Info("SqFirewallMiddlewarePreAuthLogger._next() will be called to check Google Authentication.");
+                await _next(httpContext);   // continue in middleware app.UseAuthentication();
             }
             catch (Exception e)
             {
                 // when NullReference exception was raised in TestHealthMonitorEmailByRaisingException(), The exception didn't fall to here. if 
                 // It was handled already and I got a nice Error page to the client. So, here, we don't have the exceptions and exception messages and the stack trace.
                 exception = e;
+
+                Utils.Logger.Error(e, "SqFirewallMiddlewarePreAuthLogger._next() middleware");
+                if (e.InnerException != null)
+                    Utils.Logger.Error(e, "SqFirewallMiddlewarePreAuthLogger._next() middleware. InnerException.");
                 throw;
             }
             finally
