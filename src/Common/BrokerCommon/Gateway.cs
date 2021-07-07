@@ -64,6 +64,64 @@ namespace BrokerCommon
             {"N/DC.ID", new List<GatewayId>() {GatewayId.DeBlanzacMain}},
             {"N/DC", new List<GatewayId>() {GatewayId.CharmatMain, GatewayId.DeBlanzacMain}}};
 
+        // Need different IP for different platforms, and different GwClientID for different developers (if they happen to code and connect to IbGateways at the same time)
+        public static (string HostIp, GatewayClientID GwClientID) GetHostIpAndGatewayClientID(GatewayId p_gatewayId)
+        {
+            switch (Utils.RunningPlatform())
+            {
+                case Platform.Linux:
+                    return p_gatewayId switch
+                    {
+                        GatewayId.CharmatMain => (ServerIp.LocalhostLoopbackWithIP, GatewayClientID.SqCoreToDcProd),
+                        GatewayId.DeBlanzacMain => (ServerIp.LocalhostLoopbackWithIP, GatewayClientID.SqCoreToDbProd),
+                        GatewayId.GyantalMain => (ServerIp.AtsVirtualBrokerServerPublicIpForClients, GatewayClientID.SqCoreToGaProd),
+                        _ => throw new NotImplementedException()
+                    };
+
+                case Platform.Windows:
+                    // find out which user from the team and determine it accordingly. Or just check whether folders exists (but that takes HDD read, which is slow)
+                    switch (Environment.UserName)   // Windows user name
+                    {
+                        case "gyantal":
+                            return p_gatewayId switch
+                            {
+                                GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev1),
+                                GatewayId.DeBlanzacMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDbDev1),
+                                GatewayId.GyantalMain => (ServerIp.AtsVirtualBrokerServerPublicIpForClients, GatewayClientID.SqCoreToGaDev1),
+                                _ => throw new NotImplementedException()
+                            };
+                        case "Balazs":
+                            return p_gatewayId switch
+                            {
+                                GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev2),
+                                GatewayId.DeBlanzacMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDbDev2),
+                                GatewayId.GyantalMain => (ServerIp.AtsVirtualBrokerServerPublicIpForClients, GatewayClientID.SqCoreToGaDev2),
+                                _ => throw new NotImplementedException()
+                            };
+                        case "Laci":
+                            return p_gatewayId switch
+                            {
+                                GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev3),
+                                GatewayId.DeBlanzacMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDbDev3),
+                                GatewayId.GyantalMain => (ServerIp.AtsVirtualBrokerServerPublicIpForClients, GatewayClientID.SqCoreToGaDev3),
+                                _ => throw new NotImplementedException()
+                            };
+                        case "vinci":
+                            return p_gatewayId switch
+                            {
+                                GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev4),
+                                GatewayId.DeBlanzacMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDbDev4),
+                                GatewayId.GyantalMain => (ServerIp.AtsVirtualBrokerServerPublicIpForClients, GatewayClientID.SqCoreToGaDev4),
+                                _ => throw new NotImplementedException()
+                            };
+                        default:
+                            throw new Exception("Windows user name is not recognized. Add your username and folder here!");
+                    }
+                default:
+                    throw new Exception("RunningPlatform() is not recognized");
+            }
+        }
+
 
         // CriticalTrading times when IbGateway connections should be checked, and during which time disconnections are not allowed and generate HealthMonitor error
         // One Gateway can have many small critical periods
@@ -209,7 +267,7 @@ namespace BrokerCommon
                 try
                 {
                     nConnectionRetry++;
-                    Console.WriteLine($"Try Reconnect() to IB {GatewayId} on {Host}:{SocketPort}. Trials: {nConnectionRetry}/{nMaxRetry}");
+                    Console.WriteLine($"Connecting to IB {GatewayId} on {Host}:{SocketPort} with ClientID:{(int)BrokerConnectionClientID}...");
                     IBrokerWrapper ibWrapper;
                     if (Utils.RunningPlatform() == Platform.Linux)
                     {

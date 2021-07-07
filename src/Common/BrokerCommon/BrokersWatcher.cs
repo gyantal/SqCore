@@ -65,32 +65,25 @@ namespace BrokerCommon
             // 3. in IB TWS: Configure/Api/Settings/Trusted IPs: insert public IP of Windows machine (Google: what is my IP)
             // <optional> 4. in Windows PowerShell: Test-NetConnection 34.251.1.119 -Port 7303  (it should say Success). Then you might have to restart the Linux server, because IB TWS started the connection and is confused
 
-            if (Utils.RunningPlatform() == Platform.Windows)    // Windows Debug: Gyantal is local port, Charmat, DeBlanzac is remote port.
-            {
-                // Option1: m_mainGateway can be null, if we Debug "WebSite"-related code and no gateway is attached at all (for speed)
-                // m_gateways = new List<Gateway>();
-                // m_mainGateway = null;
 
-                //  Option2: only 1 gateway1 is attached to local TWS
-                // Gateway gateway1 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = ServerIp.LocalhostLoopbackWithIP, SocketPort = (int)GatewayPort.GyantalMain, BrokerConnectionClientID = GatewayClientID.LocalTws1 };
-                // m_gateways = new List<Gateway>() {gateway1};
-                // m_mainGateway = gateway1;
+            // Option1: m_mainGateway can be null, if we Debug "WebSite"-related code and no gateway is attached at all (for speed)
+            // m_gateways = new List<Gateway>();
+            // m_mainGateway = null;
 
-                //  Option3: all gateways are attached to remote or local servers. To Debug vBroker trading 
-                Gateway gateway1 = new Gateway(GatewayId.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", Host = ServerIp.SqCoreServerPublicIpForClients, SocketPort = (int)GatewayPort.SqCoreSrvCharmatMain, BrokerConnectionClientID = GatewayClientID.SqCoreToDcDev1 };
-                Gateway gateway2 = new Gateway(GatewayId.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", Host = ServerIp.SqCoreServerPublicIpForClients, SocketPort = (int)GatewayPort.SqCoreSrvDeBlanzacMain, BrokerConnectionClientID = GatewayClientID.SqCoreToDbDev1 };
-                Gateway gateway3 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = ServerIp.AtsVirtualBrokerServerPublicIpForClients, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, BrokerConnectionClientID = GatewayClientID.SqCoreToGaDev1 };
-                m_gateways = new List<Gateway>() {gateway1, gateway2, gateway3};
-                m_mainGateway = gateway1;
-            }
-            else    // Linux Production: Gyantal is remote port (on VBrokerServer), Charmat, DeBlanzac is local port.
-            {
-                Gateway gateway1 = new Gateway(GatewayId.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", Host = ServerIp.LocalhostLoopbackWithIP, SocketPort = (int)GatewayPort.SqCoreSrvCharmatMain, BrokerConnectionClientID = GatewayClientID.SqCoreToDcProd };
-                Gateway gateway2 = new Gateway(GatewayId.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", Host = ServerIp.LocalhostLoopbackWithIP, SocketPort = (int)GatewayPort.SqCoreSrvDeBlanzacMain, BrokerConnectionClientID = GatewayClientID.SqCoreToDbProd };
-                Gateway gateway3 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = ServerIp.AtsVirtualBrokerServerPublicIpForClients, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, BrokerConnectionClientID = GatewayClientID.SqCoreToGaProd };
-                m_gateways = new List<Gateway>() {gateway1, gateway2, gateway3};
-                m_mainGateway = gateway1;   // CharmatMain
-            }
+            //  Option2: only 1 gateway1 is attached to local TWS
+            // Gateway gateway1 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = ServerIp.LocalhostLoopbackWithIP, SocketPort = (int)GatewayPort.GyantalMain, BrokerConnectionClientID = GatewayClientID.LocalTws1 };
+            // m_gateways = new List<Gateway>() {gateway1};
+            // m_mainGateway = gateway1;
+
+            //  Option3: all gateways are attached to remote or local servers. To Debug vBroker trading 
+            var hgwidCM = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.CharmatMain);
+            var hgwidDM = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.DeBlanzacMain);
+            var hgwidGA = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.GyantalMain);
+            Gateway gateway1 = new Gateway(GatewayId.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", Host = hgwidCM.HostIp, SocketPort = (int)GatewayPort.SqCoreSrvCharmatMain, BrokerConnectionClientID = hgwidCM.GwClientID };
+            Gateway gateway2 = new Gateway(GatewayId.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", Host = hgwidDM.HostIp, SocketPort = (int)GatewayPort.SqCoreSrvDeBlanzacMain, BrokerConnectionClientID = hgwidDM.GwClientID };
+            Gateway gateway3 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = hgwidGA.HostIp, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, BrokerConnectionClientID = hgwidGA.GwClientID };
+            m_gateways = new List<Gateway>() { gateway1, gateway2, gateway3 };
+            m_mainGateway = gateway1;
 
             m_reconnectTimer = new System.Threading.Timer(new TimerCallback(ReconnectToGatewaysTimer_Elapsed), null, TimeSpan.Zero, TimeSpan.FromMinutes(cReconnectTimerFrequencyMinutes));
         }

@@ -82,7 +82,7 @@ namespace BrokerCommon
             }
             catch (Exception e)
             {
-                Utils.Logger.Error("ReqAccountSummary() ended with exception: " + e.Message);
+                Utils.Logger.Error($"ReqAccountSummary() ended with exception: {e.Message}. BrokerYF is only replaced by BrokerIB after the IB connection had been established.");
                 return null;
             }
             finally
