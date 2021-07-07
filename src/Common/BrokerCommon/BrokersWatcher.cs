@@ -104,8 +104,8 @@ namespace BrokerCommon
 
                 // IB API is not async. Thread waits until the connection is established.
                 // Task.Run() uses threads from the thread pool, so it executes those connections parallel in the background. Then wait for them.
-                //var reconnectTasks = m_gateways.Where(l => !l.IsConnected).Select(r => Task.Run(() => r.Reconnect()));
-                //Task.WhenAll(reconnectTasks).TurnAsyncToSyncTask(); // "await Task.WhenAll()" has to be waited properly
+                var reconnectTasks = m_gateways.Where(l => !l.IsConnected).Select(r => Task.Run(() => r.Reconnect()));
+                Task.WhenAll(reconnectTasks).TurnAsyncToSyncTask(); // "await Task.WhenAll()" has to be waited properly
 
                 Utils.Logger.Info("GatewaysWatcher:ReconnectToGateways() reconnectTasks ended.");
                 foreach (var gateway in m_gateways)

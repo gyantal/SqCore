@@ -98,9 +98,9 @@ namespace SqCoreWeb
             }
             if (isPossUpdateNeeded)
             {
-                //UpdateBrAccPoss(GatewayId.CharmatMain);
-                //UpdateBrAccPoss(GatewayId.DeBlanzacMain);
-                //UpdateBrAccPoss(GatewayId.GyantalMain);
+                UpdateBrAccPoss(GatewayId.CharmatMain);
+                UpdateBrAccPoss(GatewayId.DeBlanzacMain);
+                UpdateBrAccPoss(GatewayId.GyantalMain);
                 Console.WriteLine("BrokerAccounts are updated.");
             }
         }

@@ -128,11 +128,11 @@ namespace FinTechCommon
                     GatewayId gatewayId = navAsset.GatewayId;
                     if (gatewayId == GatewayId.Unknown)
                         continue;
-                    // List<BrAccSum>? accSums = BrokersWatcher.gWatcher.GetAccountSums(gatewayId);
-                    // if (accSums == null)
-                    //     continue;
+                    List<BrAccSum>? accSums = BrokersWatcher.gWatcher.GetAccountSums(gatewayId);
+                    if (accSums == null)
+                        continue;
 
-                    //navAsset.LastValue = (float)accSums.GetValue(AccountSummaryTags.NetLiquidation);
+                    navAsset.LastValue = (float)accSums.GetValue(AccountSummaryTags.NetLiquidation);
                 }
             }
             catch (Exception e)

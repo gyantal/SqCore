@@ -36,18 +36,6 @@
             "problemMatcher": []
         },
         {
-            "label": "TestRunPython.py",
-            "type": "process",      // process is run inside terminal and it waits until it is finished.
-            "command": "python",
-            "args": [
-                "${workspaceFolder}/src/WebServer/SqCoreWeb/TestRunPython.py"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}/src/WebServer/SqCoreWeb"
-            },
-            "problemMatcher": "$msCompile"
-        },
-        {
             "label": "SqCoreWeb-PostDebugWatchDev.py",
             "type": "shell",
             "command": "${workspaceFolder}/src/WebServer/SqCoreWeb/PostDebugWatchDev.py",

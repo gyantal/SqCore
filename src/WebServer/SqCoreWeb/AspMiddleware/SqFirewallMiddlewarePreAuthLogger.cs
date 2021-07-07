@@ -80,8 +80,8 @@ namespace SqCoreWeb
             var sw = Stopwatch.StartNew();
             try
             {
-                // if (httpContext.Request.Path.ToString().StartsWith("/signin-google"))
-                //     Utils.Logger.Info("SqFirewallMiddlewarePreAuthLogger._next() will be called to check Google Authentication.");
+                if (httpContext.Request.Path.ToString().StartsWith("/signin-google"))
+                    Utils.Logger.Info("SqFirewallMiddlewarePreAuthLogger._next() will be called to check Google Authentication.");
                 await _next(httpContext);   // continue in middleware app.UseAuthentication();
             }
             catch (Exception e)
