@@ -208,9 +208,28 @@ namespace SqCoreWeb
 
                             return Task.FromResult(0);
                         },
-                        OnRemoteFailure = context =>
+                        OnRemoteFailure = remoteFailureContext =>
                         {
-                            Utils.Logger.Info("GoogleAuth.OnRemoteFailure()");
+                            Utils.Logger.Error("GoogleAuth.OnRemoteFailure()");
+                            Console.WriteLine("Error! GoogleAuth.OnRemoteFailure(");
+                            // 2021-07-06: Daya had login problems on localhost:5001 only. 
+                            // "/signin-google?...<signin-token>" crashed in SqFirewallMiddlewarePreAuthLogger: _await _next(httpContext);
+                            // "Microsoft.AspNetCore.Authentication.Google.GoogleHandler: Information: Error from RemoteAuthentication: A task was canceled.."
+                            // StackTrace:
+                            // at System.Net.Http.HttpConnectionPool.GetHttpConnectionAsync()
+                            // ...
+                            // at System.Net.Http.HttpClient.SendAsyncCore()
+                            // ..
+                            // at Microsoft.AspNetCore.Authentication.AuthenticationMiddleware.Invoke(HttpContext context)
+                            // at SqCoreWeb.SqFirewallMiddlewarePreAuthLogger.Invoke(HttpContext httpContext)
+                            // It seems that when Google returns our token in "/signin-google?...<signin-token>", ASP.Net core downloads something from GoogleServer with HttpClient
+                            // That failed. We don't know the reason yet.
+                            // It was quickly solved by that Daya changed his internet service provider to BackupInternet2 (maybe mobile-internet). With that internet connection this HttpClient download didn't fail.
+                            // Some people in the forums complain about the same things and said that they solved it by setting up a Proxy.
+                            // So, something is weird with Daya's Main internet service provider. He will have a new fiber optic internet in a week.
+                            // https://github.com/googleapis/google-api-dotnet-client/issues/1394
+                            // https://github.com/Clancey/SimpleAuth/issues/41  " if there is no [proper, secure] internet connection ... it results in a TaskCanceledException"
+                            HealthMonitorMessage.SendAsync("GoogleAuth.OnRemoteFailure(). See comments in code.", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
                             return Task.FromResult(0);
                         }
                     };

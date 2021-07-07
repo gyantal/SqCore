@@ -209,6 +209,7 @@ namespace BrokerCommon
                 try
                 {
                     nConnectionRetry++;
+                    Console.WriteLine($"Try Reconnect() to IB {GatewayId} on {Host}:{SocketPort}. Trials: {nConnectionRetry}/{nMaxRetry}");
                     IBrokerWrapper ibWrapper;
                     if (Utils.RunningPlatform() == Platform.Linux)
                     {
