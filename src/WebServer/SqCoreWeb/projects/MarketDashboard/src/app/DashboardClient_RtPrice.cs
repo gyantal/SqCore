@@ -29,8 +29,8 @@ namespace SqCoreWeb
     class AssetRtJs   // struct sent to browser clients every 2-4 seconds
     {
         public uint AssetId { get; set; } = 0;
-        [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
-        public double Last { get; set; } = -100.0;     // real-time last price
+        [JsonConverter(typeof(FloatJsonConverterToNumber4D))]
+        public float Last { get; set; } = -100.0f;     // real-time last price
         public DateTime LastUtc { get; set; } = DateTime.MinValue;
     }
 
@@ -39,8 +39,8 @@ namespace SqCoreWeb
         public uint AssetId { get; set; } = 0;        // set the Client know what is the assetId, because Rt will not send it.
         public DateTime Date { get; set; } = DateTime.MinValue;
 
-        [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
-        public double SdaLastClose { get; set; } = 0;
+        [JsonConverter(typeof(FloatJsonConverterToNumber4D))]
+        public float LastClose { get; set; } = 0;   // Split Dividend Adjusted. Should be called SdaLastClose, but name goes to client, better to be short.
     }
 
 
@@ -55,7 +55,7 @@ namespace SqCoreWeb
         public DateTime PeriodEndDate { get; set; } = DateTime.MinValue;
 
         public List<string> HistDates { get; set; } = new List<string>();   // we convert manually DateOnly to short string
-        public List<double> HistSdaCloses { get; set; } = new List<double>(); // float takes too much data, but 
+        public List<float> HistSdaCloses { get; set; } = new List<float>(); // float takes too much data, but 
     }
 
     // When the user changes Period from YTD to 2y. It is a choice, but we will resend him the PeriodEnd data (and all data) again. Although it is not necessary. That way we only have one class, not 2.

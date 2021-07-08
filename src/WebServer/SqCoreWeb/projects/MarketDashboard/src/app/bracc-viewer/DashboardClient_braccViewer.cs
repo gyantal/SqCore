@@ -26,20 +26,25 @@ namespace SqCoreWeb
         // public List<AssetJs> ChartBenchmarkPossibleAssets { get; set; } = new List<AssetJs>();
     }
 
-    class BrAccViewerPos
+    class BrAccViewerPosJs  // sent to browser clients
     {
+        public uint AssetId { get; set; } = 0;
         public string SqTicker { get; set; } = string.Empty;
+        public string Symbol { get; set; } = string.Empty;  // can be shown on the HTML UI
         public double Pos { get; set; }
         public double AvgCost { get; set; }
 
         // Double.NaN cannot be serialized. Send 0.0 for missing values.
+
+        [JsonConverter(typeof(FloatJsonConverterToNumber4D))]
+        public float LastClose { get; set; } = 0.0f;  // MktValue can be calculated
         public double EstPrice { get; set; } = 0.0;  // MktValue can be calculated, 
         public double EstUndPrice { get; set; } = 0.0;   // In case of options DeliveryValue can be calculated
 
         public string AccId { get; set; } = string.Empty; // AccountId: "Cha", "DeB", "Gya" (in case of virtual combined portfolio)
     }
 
-    class BrAccViewerAccountSnapshot // this is sent to UI client
+    class BrAccViewerAccountSnapshotJs // this is sent to UI client
     {
         public String Symbol { get; set; } = string.Empty;
         public DateTime LastUpdate { get; set; } = DateTime.MinValue;
@@ -48,7 +53,7 @@ namespace SqCoreWeb
         public long TotalCashValue { get; set; } = long.MinValue;
         public long InitMarginReq { get; set; } = long.MinValue;
         public long MaintMarginReq { get; set; } = long.MinValue;
-        public List<BrAccViewerPos> Poss { get; set; } = new List<BrAccViewerPos>();
+        public List<BrAccViewerPosJs> Poss { get; set; } = new List<BrAccViewerPosJs>();
 
     }
 
@@ -125,33 +130,17 @@ namespace SqCoreWeb
 
         private void BrAccViewerSendMarketBarLastCloses()
         {
-            DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // Can be Monday
-            DateOnly lookbackEnd = todayET.AddDays(-1); // Can be Sunday, but we have to find Friday before
-
-            TsDateData<DateOnly, uint, float, uint> histData = MemDb.gMemDb.DailyHist.GetDataDirect();
-            DateOnly[] dates = histData.Dates;
-            // At 16:00, or even intraday: YF gives even the today last-realtime price with a today-date. We have to find any date backwards, which is NOT today. That is the PreviousClose.
-            int iEndDay = 0;
-            for (int i = 0; i < dates.Length; i++)
+            var lastCloses = MemDb.gMemDb.GetSdaLastCloses(Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow), m_marketBarAssets);
+            var mktBrLastCloses = lastCloses.Select(r =>
             {
-                if (dates[i] <= lookbackEnd)
-                {
-                    iEndDay = i;
-                    break;
-                }
-            }
-            Debug.WriteLine($"BrAccViewerSendMarketBarLastCloses().EndDate: {dates[iEndDay]}");
-
-            var mktBrLastCloses = m_marketBarAssets.Select(r =>
-            {
-                float[] sdaCloses = histData.Data[r.AssetId].Item1[TickType.SplitDivAdjClose];
-                return new AssetLastCloseJs() { AssetId = r.AssetId, SdaLastClose = sdaCloses[iEndDay], Date = dates[iEndDay] };
+                return new AssetLastCloseJs() { AssetId = r.Asset.AssetId, LastClose = r.SdaLastClose, Date = r.Date };
             });
 
             byte[] encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.MktBrLstCls:" + Utils.CamelCaseSerialize(mktBrLastCloses));
             if (WsWebSocket!.State == WebSocketState.Open)
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
         }
+
         private void BrAccViewerSendSnapshotAndHist()
         {
             if (m_braccSelectedNavAsset == null)
@@ -183,7 +172,7 @@ namespace SqCoreWeb
             return new HandshakeBrAccViewer() { MarketBarAssets = marketBarAssets, SelectableNavAssets = selectableNavAssets };
         }
 
-        private BrAccViewerAccountSnapshot? GetBrAccViewerAccountSnapshot() // "N/GA.IM, N/DC, N/DC.IM, N/DC.IB"
+        private BrAccViewerAccountSnapshotJs? GetBrAccViewerAccountSnapshot() // "N/GA.IM, N/DC, N/DC.IM, N/DC.IB"
         {
             if (m_braccSelectedNavAsset == null)
                 return null;
@@ -194,7 +183,7 @@ namespace SqCoreWeb
 
             TsDateData<DateOnly, uint, float, uint> histData = MemDb.gMemDb.DailyHist.GetDataDirect();
 
-            BrAccViewerAccountSnapshot? result = null;
+            BrAccViewerAccountSnapshotJs? result = null;
             foreach (GatewayId gwId in gatewayIds)  // AggregateNav has 2 Gateways
             {
                 BrAccount? brAccount = MemDb.gMemDb.BrAccounts.FirstOrDefault(r => r.GatewayId == gwId);
@@ -204,7 +193,7 @@ namespace SqCoreWeb
                 string gwIdStr = gwId.ToShortFriendlyString();
                 if (result == null)
                 {
-                    result = new BrAccViewerAccountSnapshot()
+                    result = new BrAccViewerAccountSnapshotJs()
                     {
                         Symbol = navSqTicker.Replace("N/", string.Empty),
                         LastUpdate = brAccount.LastUpdate,
@@ -233,20 +222,30 @@ namespace SqCoreWeb
             return result;
         }
 
-        private IEnumerable<BrAccViewerPos> GetBrAccViewerPos(List<BrAccPos> p_accPos, string p_gwIdStr)
+        private List<BrAccViewerPosJs> GetBrAccViewerPos(List<BrAccPos> p_accPoss, string p_gwIdStr)
         {
-            return p_accPos.Where(r => r.AssetId != AssetId32Bits.Invalid).Select(r =>
-            {
-                Asset asset = MemDb.gMemDb.AssetsCache.AssetsByAssetID[r.AssetId];
+            var validBrPoss = p_accPoss.Where(r => r.AssetId != AssetId32Bits.Invalid).ToList();
+            var assets = validBrPoss.Select(r => MemDb.gMemDb.AssetsCache.AssetsByAssetID[r.AssetId]);
+            List<AssetLastClose> lastCloses = MemDb.gMemDb.GetSdaLastCloses(Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow), assets).ToList();
 
-                return new BrAccViewerPos()
+            // merge the 2 lists together: validBrPoss, lastCloses
+            List<BrAccViewerPosJs> result = new List<BrAccViewerPosJs>(validBrPoss.Count);
+            for (int i = 0; i < validBrPoss.Count; i++)
+            {
+                BrAccPos posBr = validBrPoss[i];
+                AssetLastClose posLc = lastCloses[i];
+                result.Add(new BrAccViewerPosJs()
                 {
-                    SqTicker = asset.SqTicker,
-                    Pos = r.Position,
-                    AvgCost = r.AvgCost,
+                    AssetId = posBr.AssetId,
+                    SqTicker = posLc.Asset.SqTicker,
+                    Symbol = posLc.Asset.Symbol,
+                    Pos = posBr.Position,
+                    AvgCost = posBr.AvgCost,
+                    LastClose = posLc.SdaLastClose,
                     AccId = p_gwIdStr
-                };
-            });
+                });
+            }
+            return result;
         }
 
         private IEnumerable<AssetHistJs>? GetBrAccViewerHist(string p_lookbackStr)
@@ -263,7 +262,7 @@ namespace SqCoreWeb
                 PeriodStartDate = DateTime.UtcNow.Date,
                 PeriodEndDate = DateTime.UtcNow.Date,
                 HistDates = new List<string>() { new DateTime(2021, 1, 21).ToYYYYMMDD() },
-                HistSdaCloses = new List<double>() { 1234.0 }
+                HistSdaCloses = new List<float>() { 1234.0f }
             };
             result.Add(navHist);
 
@@ -276,7 +275,7 @@ namespace SqCoreWeb
                 PeriodStartDate = DateTime.UtcNow.Date,
                 PeriodEndDate = DateTime.UtcNow.Date,
                 HistDates = new List<string>() { new DateTime(2021, 2, 20).ToYYYYMMDD() },
-                HistSdaCloses = new List<double>() { 4300.1 }
+                HistSdaCloses = new List<float>() { 4300.1f }
             };
             result.Add(spyHist);
             return result;

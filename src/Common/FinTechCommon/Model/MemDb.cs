@@ -294,7 +294,5 @@ namespace FinTechCommon
         public void Exit()
         {
         }
-
     }
-
 }

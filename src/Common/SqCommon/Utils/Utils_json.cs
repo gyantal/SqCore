@@ -14,8 +14,8 @@ namespace SqCommon
         public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
                 Double.Parse(reader.GetString() ?? string.Empty);
 
-        public override void Write(Utf8JsonWriter writer, double doubleValue, JsonSerializerOptions options) =>
-                writer.WriteStringValue(doubleValue.ToString("0.####")); // use 4 decimals instead of 2, because of penny stocks and MaxDD of "-0.2855" means -28.55%. ToString(): 24.00155 is rounded up to 24.0016
+        public override void Write(Utf8JsonWriter writer, double p_value, JsonSerializerOptions options) =>
+                writer.WriteStringValue(p_value.ToString("0.####")); // use 4 decimals instead of 2, because of penny stocks and MaxDD of "-0.2855" means -28.55%. ToString(): 24.00155 is rounded up to 24.0016
     }
 
     public class DoubleJsonConverterToNumber4D : JsonConverter<double>   // the number is written as a number, without quotes: ("previousClose":"272.4800109863281") should be ("previousClose":272.48) 
@@ -23,7 +23,7 @@ namespace SqCommon
         public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
                 Double.Parse(reader.GetString() ?? string.Empty);
 
-        public override void Write(Utf8JsonWriter writer, double doubleValue, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, double p_value, JsonSerializerOptions options)
         {
             // https://github.com/dotnet/runtime/issues/31024
             // ArgumentException' in System.Text.Json.dll: '.NET number values such as positive and negative infinity cannot be written as valid JSON.'
@@ -31,13 +31,37 @@ namespace SqCommon
             // The only way these can be successfully serialized/deserialized is by representing them by using an alternative format (such as strings).
             // Writes ["Infinity","NaN",0.1,1.0002,3.141592653589793]
             // And the following succeeds: JsonConvert.DeserializeObject<double[]>("[\"Infinity\",\"NaN\",0.1,1.0002,3.141592653589793]");
-            if (double.IsFinite(doubleValue))
+            if (double.IsFinite(p_value))
             {
-                writer.WriteNumberValue(Convert.ToDecimal(Math.Round(doubleValue, 4))); // use 4 decimals instead of 2, because of penny stocks and MaxDD of "-0.2855" means -28.55%. ToString(): 24.00155 is rounded up to 24.0016
+                writer.WriteNumberValue(Convert.ToDecimal(Math.Round(p_value, 4))); // use 4 decimals instead of 2, because of penny stocks and MaxDD of "-0.2855" means -28.55%. ToString(): 24.00155 is rounded up to 24.0016
             }
             else
             {
-                writer.WriteStringValue(doubleValue.ToString());
+                writer.WriteStringValue(p_value.ToString());
+            }
+        }
+    }
+
+    public class FloatJsonConverterToNumber4D : JsonConverter<float>   // the number is written as a number, without quotes: ("previousClose":"272.4800109863281") should be ("previousClose":272.48) 
+    {
+        public override float Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+                Single.Parse(reader.GetString() ?? string.Empty);
+
+        public override void Write(Utf8JsonWriter writer, float p_value, JsonSerializerOptions options)
+        {
+            // https://github.com/dotnet/runtime/issues/31024
+            // ArgumentException' in System.Text.Json.dll: '.NET number values such as positive and negative infinity cannot be written as valid JSON.'
+            // This is a more complicated scenario as some floating-point values (+infinity, -infinity, and NaN) can't be represented as JSON "numbers".
+            // The only way these can be successfully serialized/deserialized is by representing them by using an alternative format (such as strings).
+            // Writes ["Infinity","NaN",0.1,1.0002,3.141592653589793]
+            // And the following succeeds: JsonConvert.DeserializeObject<double[]>("[\"Infinity\",\"NaN\",0.1,1.0002,3.141592653589793]");
+            if (float.IsFinite(p_value))
+            {
+                writer.WriteNumberValue(Convert.ToDecimal(Math.Round(p_value, 4))); // use 4 decimals instead of 2, because of penny stocks and MaxDD of "-0.2855" means -28.55%. ToString(): 24.00155 is rounded up to 24.0016
+            }
+            else
+            {
+                writer.WriteStringValue(p_value.ToString());
             }
         }
     }
