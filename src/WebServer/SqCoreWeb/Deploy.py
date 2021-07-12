@@ -25,6 +25,9 @@ runningEnvironmentComputerName = platform.node()    # 'gyantal-PC' or Balazs
 if runningEnvironmentComputerName == 'gyantal-PC':
     rootLocalDir = "g:/work/Archi-data/GitHubRepos/SqCore/src/WebServer/SqCoreWeb/bin/Release/net5.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
     serverRsaKeyFile = "g:/agy/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
+elif runningEnvironmentComputerName == 'daya-PC':
+    rootLocalDir = "c:/GitHubRepos/SqCore/src/WebServer/SqCoreWeb/bin/Release/net5.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
+    serverRsaKeyFile = "c:/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
 else:   # TODO: Laci, Balazs, you have to add your IF here (based on the 'name' of your PC)
     rootLocalDir = "d:/GitHub/SqCore/src/WebServer/SqCoreWeb/bin/Release/net5.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
     serverRsaKeyFile = "d:/<fill it to user>/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
@@ -184,12 +187,16 @@ if use7zip:
 
     # unpack files and restart webserver in screen
     print(Fore.CYAN + Style.BRIGHT  + "Unpacking file on the server ...")
+    sshClient2 = paramiko.SSHClient()
+    sshClient2.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    sshClient2.connect(serverHost, serverPort, username = serverUser, pkey = paramiko.RSAKey.from_private_key_file(serverRsaKeyFile))
+    print(Fore.CYAN + Style.BRIGHT  + "Unpacking file on the server ...")
     command = "cd " + rootRemoteDir + " && 7z x " + zipFileRemoteName + " && /home/sq-vnc-client/SQ/admin/restart-sqcoreweb-in-screen.sh"
-    (stdin, stdout, stderr) = sshClient.exec_command(command)
+    (stdin, stdout, stderr) = sshClient2.exec_command(command)
     for line in stdout.readlines():
         if line != "\n":
             print(line, end='') # tell print not to add any 'new line', because the input already contains that
-
+    sshClient2.close()
 sshClient.close()
 
 print(Fore.MAGENTA + Style.BRIGHT  +  "SFTPClient is closing. Deployment '" + acceptedSubTreeRoots[0] + "' is OK.")
