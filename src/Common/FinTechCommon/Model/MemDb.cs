@@ -149,6 +149,8 @@ namespace FinTechCommon
 
         private void ServerDiagnosticMemDb(StringBuilder p_sb, bool p_isHtml)
         {
+            p_sb.Append($"#Users: {Users.Length}: <br>");
+
             var hist = DailyHist.GetDataDirect();
             int memUsedKb = hist.MemUsed() / 1024;
             p_sb.Append($"#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {hist.Data.Count}, Used RAM: {memUsedKb:N0}KB<br>");  // hist.Data.Count = Srv.LoadPrHist + DC Aggregated NAV 
@@ -235,7 +237,7 @@ namespace FinTechCommon
 
         async Task ReloadDbDataIfChangedImpl()   // if necessary it reloads Historical and Realtime data
         {
-            Console.WriteLine("ReloadDbData is in progress...");
+            Console.WriteLine("*MemDb is not yet ready! ReloadDbData is in progress...");
             DateTime startTime = DateTime.UtcNow;
             // GA.IM.NAV assets have user_id data, so User data has to be reloaded too before Assets
             (bool isDbReloadNeeded, User[]? newUsers, List<Asset>? sqCoreAssets) = m_Db.GetDataIfReloadNeeded();
@@ -266,7 +268,7 @@ namespace FinTechCommon
             OnReloadAssetData_ReloadRtDataAndSetTimer();    // downloads realtime prices from YF or IEX
             OnReloadAssetData_ReloadRtNavDataAndSetTimer();   // downloads realtime NAVs from VBrokers
             EvDbDataReloaded?.Invoke();
-            Console.WriteLine($"ReloadDbData END in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
+            Console.WriteLine($"*MemDb is ready! (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {DailyHist.GetDataDirect().Data.Count}) in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
         }
 
         public (User[], AssetsCache, CompactFinTimeSeries<DateOnly, uint, float, uint>) GetAssuredConsistentTables()
