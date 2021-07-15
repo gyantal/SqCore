@@ -73,7 +73,7 @@ namespace SqCommon
         public static JsonSerializerOptions g_camelJsonSerializeOpt = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping   // without this "S&P" is serialized as "S\u0026P", which is ugly. Our results will not be URL data, or HTML data. We send our data in Websocket. We don't want these Escapings.
         };
 
         // in Javascript, class field members should use CamelCase: https://www.robinwieruch.de/javascript-naming-conventions  "AnyParam" turns to "anyParam"

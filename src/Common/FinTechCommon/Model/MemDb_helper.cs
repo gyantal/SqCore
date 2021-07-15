@@ -34,6 +34,8 @@ namespace FinTechCommon
         // Imagine we want to find the LastClose price which was valid on day p_dateExclET
         // Different assets can have different LastCloseDates. If there was an EU holiday on Friday, then the EU stock's LastClose is Thursday, while an USA stock LastClose is Friday
         // keep the order and the length of p_assets list. So, it can be indexed. p_assets[i] is the same item as result[i]
+        // If an asset has no history, we return NaN as lastClose price.
+        // This requre more RAM than the other solution which only returns the filled rows, but it will save CPU time later, when the result is processed at the caller. He don't have to do double FORs to iterate.
         public IEnumerable<AssetLastClose> GetSdaLastCloses(DateTime p_dateExclET, IEnumerable<Asset> p_assets)
         {
             DateOnly lookbackEnd = p_dateExclET.Date.AddDays(-1); // if (p_dateExclET is Monday), -1 days is Sunday, but we have to find Friday before
@@ -54,7 +56,10 @@ namespace FinTechCommon
 
             var lastCloses = p_assets.Select(r =>
             {
-                float[] sdaCloses = histData.Data[r.AssetId].Item1[TickType.SplitDivAdjClose];
+                if (!histData.Data.TryGetValue(r.AssetId, out Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>? assetHist))
+                    return new AssetLastClose(r, DateTime.MinValue, float.NaN);  // the Asset might be in MemDb, but has no history at all.
+
+                float[] sdaCloses = assetHist.Item1[TickType.SplitDivAdjClose];
                 // If there was an EU holiday on Friday, then the EU stock's LastClose is Thursday, while an USA stock LastClose is Friday
                 int j = iEndDay;
                 do
@@ -65,7 +70,7 @@ namespace FinTechCommon
                     }
                     j++;
                 } while (j < dates.Length);
-                return new AssetLastClose(r, dates[j], float.NaN);
+                return new AssetLastClose(r, DateTime.MinValue, float.NaN);
 
             });
 

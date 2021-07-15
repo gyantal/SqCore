@@ -224,7 +224,10 @@ namespace SqCoreWeb
 
         private List<BrAccViewerPosJs> GetBrAccViewerPos(List<BrAccPos> p_accPoss, string p_gwIdStr)
         {
-            var validBrPoss = p_accPoss.Where(r => r.AssetId != AssetId32Bits.Invalid).ToList();
+            // One option is to only send those positions that have both valid AssetId (260 stocks) AND valid HistoricalPrice (only 20 stocks subset)
+            // Because in general LastClose is needed in the UI calculations.
+            // But decided it is better to send these LastClose=NaN rows as well. To show on the client that those historical prices are missing. Needs fixing in MemDb.Hist.
+            List<BrAccPos> validBrPoss = p_accPoss.Where(r => r.AssetId != AssetId32Bits.Invalid).ToList();
             var assets = validBrPoss.Select(r => MemDb.gMemDb.AssetsCache.AssetsByAssetID[r.AssetId]);
             List<AssetLastClose> lastCloses = MemDb.gMemDb.GetSdaLastCloses(Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow), assets).ToList();
 
