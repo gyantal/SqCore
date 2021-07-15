@@ -5,6 +5,7 @@ using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Encodings.Web;
 
 
 namespace SqCommon
@@ -69,9 +70,10 @@ namespace SqCommon
 
     public static partial class Utils
     {
-        static JsonSerializerOptions g_camelJsonSerializeOpt = new JsonSerializerOptions
+        public static JsonSerializerOptions g_camelJsonSerializeOpt = new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         };
 
         // in Javascript, class field members should use CamelCase: https://www.robinwieruch.de/javascript-naming-conventions  "AnyParam" turns to "anyParam"

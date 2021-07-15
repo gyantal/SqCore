@@ -19,7 +19,7 @@ namespace SqCoreWeb
     class AssetJs   // the class Asset converted to the the JS client. Usually it is sent to client tool in the Handshake msg. It can be used later for AssetId to Asset connection.
     {
         public uint AssetId { get; set; } = 0; // invalid value is best to be 0. If it is Uint32.MaxValue is the invalid, then problems if extending to Uint64
-        public String SqTicker { get; set; } = string.Empty;    // used for unique identification. "N/DC" (NavAsset) is different to "S/DC" (StockAsset)
+        public string SqTicker { get; set; } = string.Empty;    // used for unique identification. "N/DC" (NavAsset) is different to "S/DC" (StockAsset)
         public string Symbol { get; set; } = string.Empty;  // can be shown on the HTML UI
         public string Name { get; set; } = string.Empty;    // if the client has to show the name on the UI.
     }

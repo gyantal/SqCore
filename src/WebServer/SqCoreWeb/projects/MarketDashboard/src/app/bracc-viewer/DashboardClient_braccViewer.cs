@@ -106,7 +106,7 @@ namespace SqCoreWeb
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
 
                 BrAccViewerSendMarketBarLastCloses();
-                
+
                 BrAccViewerSendSnapshotAndHist();
 
                 // for both the first and the second client, we get RT prices from MemDb immediately and send it back to this Client only.
