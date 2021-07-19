@@ -63,6 +63,7 @@ namespace FinTechCommon
                     m_memData.DailyHist = newDailyHist;  // swap pointer in atomic operation
                 m_lastHistoricalDataReload = DateTime.UtcNow;
                 m_lastHistoricalDataReloadTs = DateTime.UtcNow - startTime;
+                Console.WriteLine($"MemDb.ReloadHistData (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {newDailyHist?.GetDataDirect().Data.Count ?? 0}) in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
                 EvHistoricalDataReloaded?.Invoke();
             }
             finally
@@ -77,6 +78,7 @@ namespace FinTechCommon
         static async Task<CompactFinTimeSeries<DateOnly, uint, float, uint>?> CreateDailyHist(Db p_db, User[] p_users, AssetsCache p_assetCache)
         {
             Utils.Logger.Info("ReloadHistoricalDataAndSetTimer() START");
+            Console.Write("*MemDb.DailyHist Download from YF: ");
             DateTime etNow = DateTime.UtcNow.FromUtcToEt();
             try
             {
@@ -91,7 +93,8 @@ namespace FinTechCommon
                     {
                         assetsDates[asset.AssetId] = dates;
                         assetsAdjustedCloses[asset.AssetId] = adjCloses;
-                        Debug.WriteLine($"{asset.SqTicker}, first: DateTime: {dates.First()}, Close: {adjCloses.First()}, last: DateTime: {dates.Last()}, Close: {adjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
+                        Console.Write($"{asset.Symbol}, ");
+                        Debug.Write($"{asset.SqTicker}, first: DateTime: {dates.First()}, Close: {adjCloses.First()}, last: DateTime: {dates.Last()}, Close: {adjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
                     }
                 }
 

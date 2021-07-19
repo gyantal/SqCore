@@ -125,12 +125,12 @@ namespace FinTechCommon
             IsInitialized = true;
             EvFirstInitialized?.Invoke();    // inform observers that MemDb was reloaded
 
-            SetNextReloadHistDataTriggerTime();
-
             // User updates only the JSON text version of data (assets, OptionPrices in either Redis or in SqlDb). But we use the Redis's Brotli version for faster DB access.
-            Thread.Sleep(TimeSpan.FromSeconds(20));     // can start it in a separate thread, but it is fine to use this background thread
+            // Thread.Sleep(TimeSpan.FromSeconds(20));     // can start it in a separate thread, but it is fine to use this background thread
             UpdateRedisBrotlisService.SetTimer(new UpdateBrotliParam() { Db = m_Db });
             UpdateNavsService.SetTimer(new UpdateNavsParam() { Db = m_Db });
+
+            await ReloadHistDataAndSetNewTimer();   // initial ReloadDbData doesn't fill up HistData. We say MemDb is initialized and we fill up HistData later.
         }
 
         public void ServerDiagnostic(StringBuilder p_sb)
@@ -248,15 +248,34 @@ namespace FinTechCommon
             var newAssetCache = AssetsCache.CreateAssetCache(sqCoreAssets!);
             // var newPortfolios = GeneratePortfolios();
 
-            DateTime startTimeHist = DateTime.UtcNow;
-            var newDailyHist = await CreateDailyHist(m_Db, newUsers!, newAssetCache);  // downloads historical prices from YF
-            if (newDailyHist == null)
-                newDailyHist = new CompactFinTimeSeries<DateOnly, uint, float, uint>();
-            m_lastHistoricalDataReload = DateTime.UtcNow;
-            m_lastHistoricalDataReloadTs = DateTime.UtcNow - startTimeHist;
+            if (IsInitialized)
+            {
+                // if this is the periodic (not initial) reload of RedisDb, then we don't surprise clients by emptying HistPrices 
+                // and not having HistPrices for 20minutes. So, we download HistPrices before swapping m_memData pointer
+                DateTime startTimeHist = DateTime.UtcNow;
+                var newDailyHist = await CreateDailyHist(m_Db, newUsers!, newAssetCache);  // downloads historical prices from YF. Assume it takes 20min
+                if (newDailyHist == null)
+                    newDailyHist = new CompactFinTimeSeries<DateOnly, uint, float, uint>();
+                m_lastHistoricalDataReload = DateTime.UtcNow;
+                m_lastHistoricalDataReloadTs = DateTime.UtcNow - startTimeHist;
 
-            var newMemData = new MemData(newUsers!, newAssetCache, newDailyHist);
-            m_memData = newMemData; // swap pointer in atomic operation
+                var newMemData = new MemData(newUsers!, newAssetCache, newDailyHist);
+                m_memData = newMemData; // swap pointer in atomic operation
+                Console.WriteLine($"*MemDb is ready! (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {DailyHist.GetDataDirect().Data.Count}) in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
+            }
+            else
+            {
+                // if this is the first time to load DB from Redis, then we don't demand HistData. Assume HistData crawling takes 20min
+                // many clients can survive without historical data first. MarketDashboard. However, they need Asset and User data immediately.
+                // BrAccInfo is fine wihout historical. It will send NaN as a LastClose. Fine. Client will handle it.
+                // So, we don't need to wait for Historical to finish InitDb (that might take 20 minutes in the future).
+                // !!! Also, in development, we don't want to wait until All HistData arrives, but start Debugging code right away after starting the WebServer.
+                // Clients of MemDb should handle properly if HistData is not yet ready (NaN and later Refresh).
+                var newMemData = new MemData(newUsers!, newAssetCache, new CompactFinTimeSeries<DateOnly, uint, float, uint>());
+                m_memData = newMemData; // swap pointer in atomic operation
+                Console.WriteLine($"*MemDb is half-ready! (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: 0)");
+            }
+
             m_lastDbReload = DateTime.UtcNow;
             m_lastDbReloadTs = DateTime.UtcNow - startTime;
 
@@ -268,7 +287,6 @@ namespace FinTechCommon
             OnReloadAssetData_ReloadRtDataAndSetTimer();    // downloads realtime prices from YF or IEX
             OnReloadAssetData_ReloadRtNavDataAndSetTimer();   // downloads realtime NAVs from VBrokers
             EvDbDataReloaded?.Invoke();
-            Console.WriteLine($"*MemDb is ready! (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {DailyHist.GetDataDirect().Data.Count}) in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
         }
 
         public (User[], AssetsCache, CompactFinTimeSeries<DateOnly, uint, float, uint>) GetAssuredConsistentTables()
