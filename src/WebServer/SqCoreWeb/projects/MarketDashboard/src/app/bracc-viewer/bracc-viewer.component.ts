@@ -73,7 +73,11 @@ export class BrAccViewerComponent implements OnInit {
         return true;
       case 'BrAccViewer.Hist':
         console.log('BrAccViewer.Hist:' + msgObjStr);
-        this.histStr = msgObjStr;
+        // if message is too large without spaces, we have problems as there is no horizontal scrollbar in browser. So, shorten the message.
+        if (msgObjStr.length < 200)
+          this.histStr = msgObjStr;
+        else
+          this.histStr = msgObjStr.substring(0, 200) + '... [more data arrived]';
         return true;
       case 'BrAccViewer.MktBrLstCls':
         console.log('BrAccViewer.MktBrLstCls:' + msgObjStr);

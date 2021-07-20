@@ -43,10 +43,17 @@ namespace SqCoreWeb
         public float LastClose { get; set; } = 0;   // Split Dividend Adjusted. Should be called SdaLastClose, but name goes to client, better to be short.
     }
 
+    public class AssetHistJs    // duplicate that the AssetId is in both HistValues and HistStat, but sometimes client needs only values (a QuickTester), sometimes only stats
+    {
+         public AssetHistValuesJs? HistValues { get; set; } = null;
+         public AssetHistStatJs? HistStat { get; set; } = null;
+
+    }
+
 
     // Don't integrate this to BrAccViewerAccount. By default we sent YTD. But client might ask for last 10 years. 
     // But we don't want to send 10 years data and the today positions snapshot all the time together.
-    public class AssetHistJs   // this is sent to clients usually just once per day, OR when historical data changes, OR when the Period changes at the client
+    public class AssetHistValuesJs   // this is sent to clients usually just once per day, OR when historical data changes, OR when the Period changes at the client
     {
         public uint AssetId { get; set; } = 0;        // set the Client know what is the assetId, because Rt will not send it.
         public String SqTicker { get; set; } = string.Empty;  // Not necessary to send as AssetJs contains the SqTicker, but we send it for Debug purposes

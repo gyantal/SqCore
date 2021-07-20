@@ -130,7 +130,7 @@ namespace SqCoreWeb
 
         private void BrAccViewerSendMarketBarLastCloses()
         {
-            var lastCloses = MemDb.gMemDb.GetSdaLastCloses(Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow), m_marketBarAssets);
+            var lastCloses = MemDb.gMemDb.GetSdaLastCloses(m_marketBarAssets, Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow));
             var mktBrLastCloses = lastCloses.Select(r =>
             {
                 return new AssetLastCloseJs() { AssetId = r.Asset.AssetId, LastClose = r.SdaLastClose, Date = r.Date };
@@ -229,7 +229,7 @@ namespace SqCoreWeb
             // But decided it is better to send these LastClose=NaN rows as well. To show on the client that those historical prices are missing. Needs fixing in MemDb.Hist.
             List<BrAccPos> validBrPoss = p_accPoss.Where(r => r.AssetId != AssetId32Bits.Invalid).ToList();
             var assets = validBrPoss.Select(r => MemDb.gMemDb.AssetsCache.AssetsByAssetID[r.AssetId]);
-            List<AssetLastClose> lastCloses = MemDb.gMemDb.GetSdaLastCloses(Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow), assets).ToList();
+            List<AssetLastClose> lastCloses = MemDb.gMemDb.GetSdaLastCloses(assets, Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow)).ToList();
 
             // merge the 2 lists together: validBrPoss, lastCloses
             List<BrAccViewerPosJs> result = new List<BrAccViewerPosJs>(validBrPoss.Count);
@@ -255,33 +255,55 @@ namespace SqCoreWeb
         {
             if (m_braccSelectedNavAsset == null)
                 return null;
-            string navSqTicker = m_braccSelectedNavAsset.SqTicker;
 
-            var result = new List<AssetHistJs>();
-            var navHist = new AssetHistJs()
-            {
-                AssetId = 1,
-                SqTicker = navSqTicker,
-                PeriodStartDate = DateTime.UtcNow.Date,
-                PeriodEndDate = DateTime.UtcNow.Date,
-                HistDates = new List<string>() { new DateTime(2021, 1, 21).ToYYYYMMDD() },
-                HistSdaCloses = new List<float>() { 1234.0f }
-            };
-            result.Add(navHist);
+            List<Asset> assets = new List<Asset>();
+            assets.Add(m_braccSelectedNavAsset);
+            assets.Add(MemDb.gMemDb.AssetsCache.GetAsset("S/SPY")); // add it to BrokerNav for benchmark for the chart
 
-            // By default we don't send any benchmark because the ChartBenchmarks text input is empty.
-            
-            // foreach (var benchmark in m_navChartBenchmarkAssets) { 
-            var spyHist = new AssetHistJs()
+            DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
+            DateOnly lookbackStart = new DateOnly(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
+            DateOnly lookbackEnd = todayET.AddDays(-1);
+            if (p_lookbackStr.StartsWith("Date:"))  // Browser client never send anything, but "Date:" inputs. Format: "Date:2019-11-11...2020-11-10"
             {
-                SqTicker = "S/SPY",
-                PeriodStartDate = DateTime.UtcNow.Date,
-                PeriodEndDate = DateTime.UtcNow.Date,
-                HistDates = new List<string>() { new DateTime(2021, 2, 20).ToYYYYMMDD() },
-                HistSdaCloses = new List<float>() { 4300.1f }
-            };
-            result.Add(spyHist);
-            return result;
+                lookbackStart = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length, 10));
+                lookbackEnd = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length + 13, 10));
+            }
+
+            IEnumerable<AssetHist> assetHists = MemDb.gMemDb.GetSdaHistCloses(assets, lookbackStart, lookbackEnd, true, true);
+
+            IEnumerable<AssetHistJs> histToClient = assetHists.Select(r =>
+            {
+                var histStat = new AssetHistStatJs()
+                {
+                    AssetId = r.Asset.AssetId,
+                    SqTicker = r.Asset.SqTicker,
+                    PeriodStartDate = r.PeriodStartDate,    // it may be not the 'asked' start date if asset has less price history
+                    PeriodEndDate = r.PeriodEndDate,        // by default it is the date of yesterday, but the user can change it
+                    PeriodStart = r.Stat?.PeriodStart ?? Double.NaN,
+                    PeriodEnd = r.Stat?.PeriodEnd ?? Double.NaN,
+                    PeriodHigh = r.Stat?.PeriodHigh ?? Double.NaN,
+                    PeriodLow = r.Stat?.PeriodLow ?? Double.NaN,
+                    PeriodMaxDD = r.Stat?.PeriodMaxDD ?? Double.NaN,
+                    PeriodMaxDU = r.Stat?.PeriodMaxDU ?? Double.NaN
+                };
+
+                var dates = r.Values!.Select(k => ((DateTime)k.Date).ToYYYYMMDD()).ToList();
+                var values = r.Values!.Select(k => k.SdaValue).ToList();
+
+                var histValues = new AssetHistValuesJs()
+                {
+                    AssetId = r.Asset.AssetId,
+                    SqTicker = r.Asset.SqTicker,
+                    PeriodStartDate = r.PeriodStartDate,
+                    PeriodEndDate = r.PeriodEndDate,
+                    HistDates = dates,
+                    HistSdaCloses = values
+                };
+
+                return new AssetHistJs() {HistValues = histValues, HistStat = histStat};
+            });
+
+            return histToClient;
         }
 
         public bool OnReceiveWsAsync_BrAccViewer(WebSocketReceiveResult? wsResult, string msgCode, string msgObjStr)

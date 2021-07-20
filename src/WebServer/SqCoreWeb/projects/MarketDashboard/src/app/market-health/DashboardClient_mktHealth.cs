@@ -152,6 +152,10 @@ namespace SqCoreWeb
 
         private IEnumerable<AssetHistStatJs> GetLookbackStat(string p_lookbackStr)
         {
+            List<Asset> allAssets = m_marketSummaryAssets.ToList();   // duplicate the asset pointers. Don't add navAsset to m_marketSummaryAssets
+            if (m_mkthSelectedNavAsset != null)
+                allAssets.Add(m_mkthSelectedNavAsset);
+
             DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
             DateOnly lookbackStart = new DateOnly(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
             DateOnly lookbackEnd = todayET.AddDays(-1);
@@ -176,79 +180,24 @@ namespace SqCoreWeb
             //         lookbackStart = todayET.AddDays(-7 * nWeeks);
             // }
 
-            TsDateData<DateOnly, uint, float, uint> histData = MemDb.gMemDb.DailyHist.GetDataDirect();
-            DateOnly[] dates = histData.Dates;
-            // At 16:00, or even intraday: YF gives even the today last-realtime price with a today-date. We have to find any date backwards, which is NOT today. That is the PreviousClose.
-            int iEndDay = 0;
-            for (int i = 0; i < dates.Length; i++)
+            IEnumerable<AssetHist> assetHists = MemDb.gMemDb.GetSdaHistCloses(allAssets, lookbackStart, lookbackEnd, false, true);
+            IEnumerable<AssetHistStatJs> lookbackStatToClient = assetHists.Select(r =>
             {
-                if (dates[i] <= lookbackEnd)
-                {
-                    iEndDay = i;
-                    break;
-                }
-            }
-            Debug.WriteLine($"EndDate: {dates[iEndDay]}");
-
-            int iStartDay = histData.IndexOfKeyOrAfter(new DateOnly(lookbackStart));      // the valid price at the weekend is the one on the previous Friday. After.
-            if (iStartDay == -1 || iStartDay >= dates.Length) // If not found then fix the startDate as the first available date of history.
-            {
-                iStartDay = dates.Length - 1;
-            }
-            Debug.WriteLine($"StartDate: {dates[iStartDay]}");
-
-            var allAssetIds = m_marketSummaryAssets.ToList();   // duplicate the asset pointers. Don't add navAsset to m_marketSummaryAssets
-            if (m_mkthSelectedNavAsset != null)
-                allAssetIds.Add(m_mkthSelectedNavAsset);
-
-            IEnumerable<AssetHistStatJs> lookbackStatToClient = allAssetIds.Select(r =>
-            {
-                float[] sdaCloses = histData.Data[r.AssetId].Item1[TickType.SplitDivAdjClose];
-                // if startDate is not found, because e.g. we want to go back 3 years, while stock has only 2 years history
-                int iiStartDay = (iStartDay < sdaCloses.Length) ? iStartDay : sdaCloses.Length - 1;
-                if (Single.IsNaN(sdaCloses[iiStartDay]) // if that date in the global MemDb was an USA stock market holiday (e.g. President days is on monday), price is NaN for stocks, but valid value for NAV
-                    && ((iiStartDay + 1) <= sdaCloses.Length))
-                    iiStartDay++;   // that start 1 day earlier. It is better to give back more data, then less. Besides on that holiday day, the previous day price is valid.
-
-                // reverse marching from yesterday into past is not good, because we have to calculate running maxDD, maxDU.
-                float max = float.MinValue, min = float.MaxValue, maxDD = float.MaxValue, maxDU = float.MinValue;
-                int iStockEndDay = Int32.MinValue, iStockFirstDay = Int32.MinValue;
-                for (int i = iiStartDay; i >= iEndDay; i--)   // iEndDay is index 0 or 1. Reverse marching from yesterday iEndDay to deeper into the past. Until startdate iStartDay or until history beginning reached
-                {
-                    if (Single.IsNaN(sdaCloses[i]))
-                        continue;   // if that date in the global MemDb was an USA stock market holiday (e.g. President days is on monday), price is NaN for stocks, but valid value for NAV
-                    if (iStockFirstDay == Int32.MinValue)
-                        iStockFirstDay = i;
-                    iStockEndDay = i;
-                    if (sdaCloses[i] > max)
-                        max = sdaCloses[i];
-                    if (sdaCloses[i] < min)
-                        min = sdaCloses[i];
-                    float dailyDD = sdaCloses[i] / max - 1;     // -0.1 = -10%. daily Drawdown = how far from High = loss felt compared to Highest
-                    if (dailyDD < maxDD)                        // dailyDD are a negative values, so we should do MIN-search to find the Maximum negative value
-                        maxDD = dailyDD;                        // maxDD = maximum loss, pain felt over the period
-                    float dailyDU = sdaCloses[i] / min - 1;     // daily DrawUp = how far from Low = profit felt compared to Lowest
-                    if (dailyDU > maxDU)
-                        maxDU = dailyDU;                        // maxDU = maximum profit, happiness felt over the period
-                }
-
-                // it is possible that both iStockFirstDay, iStockEndDay are left as Int32.MinValue, because there is no valid value at all in that range. Fine.
                 var rtStock = new AssetHistStatJs()
                 {
-                    AssetId = r.AssetId,
-                    SqTicker = r.SqTicker, // DateTime.MaxValue: {9999-12-31 23:59:59}
-                    PeriodStartDate = (iStockFirstDay >= 0) ? (DateTime)dates[iStockFirstDay] : DateTime.MaxValue,    // it may be not the 'asked' start date if asset has less price history
-                    PeriodEndDate = (iStockEndDay >= 0) ? (DateTime)dates[iStockEndDay] : DateTime.MaxValue,        // by default it is the date of yesterday, but the user can change it
-                    PeriodStart = (iStockFirstDay >= 0) ? sdaCloses[iStockFirstDay] : Double.NaN,
-                    PeriodEnd = (iStockEndDay >= 0) ? sdaCloses[iStockEndDay] : Double.NaN,
-                    PeriodHigh = (max == float.MinValue) ? float.NaN : max,
-                    PeriodLow = (min == float.MaxValue) ? float.NaN : min,
-                    PeriodMaxDD = (maxDD == float.MaxValue) ? float.NaN : maxDD,
-                    PeriodMaxDU = (maxDU == float.MinValue) ? float.NaN : maxDU
+                    AssetId = r.Asset.AssetId,
+                    SqTicker = r.Asset.SqTicker,
+                    PeriodStartDate = r.PeriodStartDate,    // it may be not the 'asked' start date if asset has less price history
+                    PeriodEndDate = r.PeriodEndDate,        // by default it is the date of yesterday, but the user can change it
+                    PeriodStart = r.Stat?.PeriodStart ?? Double.NaN,
+                    PeriodEnd = r.Stat?.PeriodEnd ?? Double.NaN,
+                    PeriodHigh = r.Stat?.PeriodHigh ?? Double.NaN,
+                    PeriodLow = r.Stat?.PeriodLow ?? Double.NaN,
+                    PeriodMaxDD = r.Stat?.PeriodMaxDD ?? Double.NaN,
+                    PeriodMaxDU = r.Stat?.PeriodMaxDU ?? Double.NaN
                 };
                 return rtStock;
             });
-
             return lookbackStatToClient;
         }
 
