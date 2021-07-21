@@ -1,4 +1,15 @@
-
+MarketBar
+<span>
+    <td *ngFor="let item of mktBrUi"> 
+        <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>: {{item.pctChg}},
+    </td>
+</span>
+<hr>
+<br><br>
+<span style="font: x-large sans-serif">
+P&L Today:
+</span>
+<hr>
 [BrAcc selection control help sample]<br>
 BrAcc:
 <span class="selectedNavBraccCl" (click)=onSelectedNavClicked($event)>{{selectedNav}}&#x25bc;
@@ -24,3 +35,16 @@ HandshakeMsgStr: <br> <span>{{ handshakeMsgStr }}</span><br><br>
 MarketBarLastClosesStr: <br> <span>{{ mktBrLstClsStr }}</span><br><br>
 HistStr: <br> <span>{{ histStr }}</span><br><br>
 BrAccountSnapshot: <br> <span>{{ brAccountSnapshotStr }}</span>
+<hr>
+<table class = "selectedBrcViewTbl">
+    <thead>
+        <tr>
+            <th>Symbol</th><th>LocalSymbol</th><th>Pos</th><th>Cost</th><th>Last Close</th><th>Est Price</th><th>Chg% Today</th><th>P&L Today</th><th>P&L</th><th>MktVal</th><th>EstUndPr</th><th>IbComp UndPr</th>
+        </tr>
+    </thead>
+    <tbody>
+        <td *ngFor="let item of mktBrUi">
+            <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>
+        </td>
+    </tbody>
+</table>

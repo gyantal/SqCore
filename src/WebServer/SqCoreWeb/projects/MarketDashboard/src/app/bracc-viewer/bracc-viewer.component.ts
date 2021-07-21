@@ -1,5 +1,13 @@
 import { Component, OnInit, Input } from '@angular/core';
 
+
+class UiMktBarItem {
+  public assetId = NaN;  // JavaScript Numbers are Always 64-bit Floating Point
+  public sqTicker = '';
+  public symbol = '';
+  public pctChg = 0.01;
+}
+
 @Component({
   selector: 'app-bracc-viewer',
   templateUrl: './bracc-viewer.component.html',
@@ -8,15 +16,25 @@ import { Component, OnInit, Input } from '@angular/core';
 export class BrAccViewerComponent implements OnInit {
   @Input() _parentWsConnection?: WebSocket = undefined;    // this property will be input from above parent container
   selectedNav = '';
+  mktBrUi: UiMktBarItem[] = []; 
   
   handshakeMsgStr = '[Nothing arrived yet]';
   mktBrLstClsStr = '[Nothing arrived yet]';
   brAccountSnapshotStr = '[Nothing arrived yet]';
   histStr = '[Nothing arrived yet]';
 
-  constructor() { }
+  constructor() {
+    this.mktBrUi = [
+      {assetId:1, sqTicker:"S/QQQ",symbol:"QQQ",pctChg:0.001},
+      {assetId:2, sqTicker:"S/SPY",symbol:"SPY",pctChg:-0.00134},
+      {assetId:3, sqTicker:"S/TLT",symbol:"TLT",pctChg:0.001},
+      {assetId:4, sqTicker:"S/VXX",symbol:"VXX",pctChg:0.001},
+    ];
+   }
 
   ngOnInit(): void {
+  
+    // item1 = new UiMktBarItem(1, "S/SPY", "SPY", 0.01);
   }
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
