@@ -55,3 +55,16 @@
 //   border: 1px solid black;
 //   border-collapse: collapse;
 // }
+/* Style the lines by removing the fill and applying a stroke */
+::ng-deep .line {
+  fill:none;
+  stroke: #ffab00;
+  stroke-width: 3;
+}
+.chart {
+  width: 900;
+  height: 500;
+
+  margin: 20px 25px;
+}
+

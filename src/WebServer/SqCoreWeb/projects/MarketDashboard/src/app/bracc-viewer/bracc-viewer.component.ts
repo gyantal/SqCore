@@ -1,5 +1,10 @@
-import { Component, OnInit, Input } from '@angular/core';
-
+import { Component, OnInit, Input} from '@angular/core';
+// Importing d3 library
+import * as d3 from 'd3';
+import * as d3Scale from 'd3';
+import * as d3Shape from 'd3';
+import * as d3Array from 'd3';
+import * as d3Axis from 'd3';
 
 class UiMktBarItem {
   public assetId = NaN;  // JavaScript Numbers are Always 64-bit Floating Point
@@ -8,6 +13,13 @@ class UiMktBarItem {
   public pctChg = 0.01;
 }
 
+class UiBrAccChrt {
+  public assetId = NaN;
+  public dt ='';
+  public brNAV = 0.01;
+  public SPY = 0.01;
+
+}
 @Component({
   selector: 'app-bracc-viewer',
   templateUrl: './bracc-viewer.component.html',
@@ -17,12 +29,26 @@ export class BrAccViewerComponent implements OnInit {
   @Input() _parentWsConnection?: WebSocket = undefined;    // this property will be input from above parent container
   selectedNav = '';
   mktBrUi: UiMktBarItem[] = []; 
+  BrAccChrt: UiBrAccChrt[] = [];  // rename BrAccChrt
   
   handshakeMsgStr = '[Nothing arrived yet]';
   mktBrLstClsStr = '[Nothing arrived yet]';
   brAccountSnapshotStr = '[Nothing arrived yet]';
   histStr = '[Nothing arrived yet]';
+  // required for chart
+  private margin = {top: 20, right:20, bottom: 30, left: 50};
+  private width: number;
+  private height: number;
+  private x: any;
+  private y: any;
+  private svg: any;
+  public tooltip: any;
+  private line!: d3Shape.Line<[number, number]>;
+  // private pageX: any;
+  // private pageY: any;
 
+
+  
   constructor() {
     this.mktBrUi = [
       {assetId:1, sqTicker:"S/QQQ",symbol:"QQQ",pctChg:0.001},
@@ -30,12 +56,77 @@ export class BrAccViewerComponent implements OnInit {
       {assetId:3, sqTicker:"S/TLT",symbol:"TLT",pctChg:0.001},
       {assetId:4, sqTicker:"S/VXX",symbol:"VXX",pctChg:0.001},
     ];
+
+    // Creating a line chart dummy data
+    this.BrAccChrt = [
+      {assetId:1,dt:"2010-01-01",brNAV:310.45,SPY:290},
+      {assetId:2,dt:"2010-01-02",brNAV:320.45,SPY:300},
+      {assetId:3,dt:"2010-01-03",brNAV:330.45,SPY:310},
+      {assetId:4,dt:"2010-01-04",brNAV:320.45,SPY:320},
+    ];
+
+    this.width = 960 - this.margin.left - this.margin.right;
+    this.height = 500 - this.margin.top - this.margin.bottom;
+
    }
 
   ngOnInit(): void {
   
     // item1 = new UiMktBarItem(1, "S/SPY", "SPY", 0.01);
+    // functions for developing charts
+    this.buildSvg();
+    this.addXandYAxis();
+    this.drawLineAndPath();
   }
+// Chart functions start
+  private buildSvg() {
+    this.svg = d3.select('svg')
+      .append('g')
+      .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
+    
+    this.tooltip = d3.select("body")
+    .append('div')
+    .classed("chart-tooltip", true)
+    .style("display","none")
+  }
+
+  private addXandYAxis() {
+    // range of data configuring
+    this.x = d3Scale.scaleTime().range([0, this.width]);
+    this.y = d3Scale.scaleLinear().range([this.height,0]);
+    this.x.domain(d3Array.extent(this.BrAccChrt, (d: { dt: any; }) => d.dt ));
+    this.y.domain(d3Array.extent(this.BrAccChrt, (d: { brNAV: any; }) => d.brNAV ));
+    // this.y.domain(d3Array.extent(this.data, (d: { SPY: any; }) => d.SPY ));
+    // Configure the X axis
+    this.svg.append('g')
+      .attr('transform', 'translate(0,' + this.height + ')')
+      .call(d3Axis.axisBottom(this.x));
+    // Configure the Y Axis
+    this.svg.append('g')
+      .attr('class', 'axis axis--y')
+      .call(d3Axis.axisLeft(this.y));
+  }
+
+  private drawLineAndPath() {
+    this.line = d3Shape.line()
+      .x( (d: any) => this.x(d.dt))
+      .y( (d: any) => this.y(d.brNAV))
+      // .y( (d: any) => this.y(d.brNAV))
+      .curve(d3.curveMonotoneX);
+    // Configuring line path
+    // Append the path, bind the data, and call the line generator
+    this.svg.append('path')
+    .datum(this.BrAccChrt) // Binds data to the line
+    .attr('class', 'line') //Assign a class for styling
+    .attr('d', this.line); // Calls the line generator
+
+// Appends a circle for each datapoint
+    this.svg.selectAll(".dot")
+    .data(this.BrAccChrt)
+    .enter().append("circle")
+    .attr("class", "dot")
+  }
+  // Chart functions end
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
