@@ -157,30 +157,30 @@ namespace SqCoreWeb
                 allAssets.Add(m_mkthSelectedNavAsset);
 
             DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
-            DateOnly lookbackStart = new DateOnly(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
-            DateOnly lookbackEnd = todayET.AddDays(-1);
+            DateOnly lookbackStartInc = new DateOnly(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
+            DateOnly lookbackEndExcl = todayET;
             if (p_lookbackStr.StartsWith("Date:"))  // Browser client never send anything, but "Date:" inputs. Format: "Date:2019-11-11...2020-11-10"
             {
-                lookbackStart = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length, 10));
-                lookbackEnd = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length + 13, 10));
+                lookbackStartInc = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length, 10));
+                lookbackEndExcl = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length + 13, 10));
             }
             // else if (p_lookbackStr.EndsWith("y"))
             // {
             //     if (Int32.TryParse(p_lookbackStr.Substring(0, p_lookbackStr.Length - 1), out int nYears))
-            //         lookbackStart = todayET.AddYears(-1 * nYears);
+            //         lookbackStartInc = todayET.AddYears(-1 * nYears);
             // }
             // else if (p_lookbackStr.EndsWith("m"))
             // {
             //     if (Int32.TryParse(p_lookbackStr.Substring(0, p_lookbackStr.Length - 1), out int nMonths))
-            //         lookbackStart = todayET.AddMonths(-1 * nMonths);
+            //         lookbackStartInc = todayET.AddMonths(-1 * nMonths);
             // }
             // else if (p_lookbackStr.EndsWith("w"))
             // {
             //     if (Int32.TryParse(p_lookbackStr.Substring(0, p_lookbackStr.Length - 1), out int nWeeks))
-            //         lookbackStart = todayET.AddDays(-7 * nWeeks);
+            //         lookbackStartInc = todayET.AddDays(-7 * nWeeks);
             // }
 
-            IEnumerable<AssetHist> assetHists = MemDb.gMemDb.GetSdaHistCloses(allAssets, lookbackStart, lookbackEnd, false, true);
+            IEnumerable<AssetHist> assetHists = MemDb.gMemDb.GetSdaHistCloses(allAssets, lookbackStartInc, lookbackEndExcl, false, true);
             IEnumerable<AssetHistStatJs> lookbackStatToClient = assetHists.Select(r =>
             {
                 var rtStock = new AssetHistStatJs()

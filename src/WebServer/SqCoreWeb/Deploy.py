@@ -25,6 +25,9 @@ runningEnvironmentComputerName = platform.node()    # 'gyantal-PC' or Balazs
 if runningEnvironmentComputerName == 'gyantal-PC':
     rootLocalDir = "g:/work/Archi-data/GitHubRepos/SqCore/src/WebServer/SqCoreWeb/bin/Release/net5.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
     serverRsaKeyFile = "g:/agy/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
+elif runningEnvironmentComputerName == 'gyantal-SfBook3':
+    rootLocalDir = "c:/GitHubRepos/SqCore/src/WebServer/SqCoreWeb/bin/Release/net5.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
+    serverRsaKeyFile = "c:/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
 elif runningEnvironmentComputerName == 'daya-PC':
     rootLocalDir = "c:/GitHubRepos/SqCore/src/WebServer/SqCoreWeb/bin/Release/net5.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
     serverRsaKeyFile = "c:/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
