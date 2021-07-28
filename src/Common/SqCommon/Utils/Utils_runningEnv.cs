@@ -108,6 +108,8 @@ namespace SqCommon
                     {
                         case "gyantal":
                             return "g:/agy/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/";
+                        case "gyant":
+                            return "c:/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/";
                         case "Balazs":
                             return "d:/GDrive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/";
                         case "Laci":

@@ -80,7 +80,7 @@ export class BrAccViewerComponent implements OnInit {
   }
 // Chart functions start
   private buildSvg() {
-    this.svg = d3.select('svg')
+    this.svg = d3.select('svg#chartNav')
       .append('g')
       .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
     

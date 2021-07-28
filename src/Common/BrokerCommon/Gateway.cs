@@ -83,6 +83,7 @@ namespace BrokerCommon
                     switch (Environment.UserName)   // Windows user name
                     {
                         case "gyantal":
+                        case "gyant":
                             return p_gatewayId switch
                             {
                                 GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev1),
