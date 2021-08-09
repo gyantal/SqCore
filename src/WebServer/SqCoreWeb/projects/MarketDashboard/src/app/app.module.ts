@@ -12,6 +12,7 @@ import { TooltipSandpitComponent } from './tooltip-sandpit/tooltip-sandpit.compo
 import { DocsWhatIsNewComponent, DocsGetStartedComponent, DocsTutorialComponent } from './docs/docs.component';
 import { ClickOutsideDirective } from './../../../sq-ng-common/src/lib/sq-ng-common.directive.click-outside';
 import { SettingsDialogComponent } from './settings-dialog/settings-dialog.component';
+import { MatTabsModule } from '@angular/material/tabs'; // used for creating multiple tabs
 
 @NgModule({
   declarations: [
@@ -30,7 +31,8 @@ import { SettingsDialogComponent } from './settings-dialog/settings-dialog.compo
   imports: [
     BrowserModule,
     AppRoutingModule,
-    FormsModule
+    FormsModule,
+    MatTabsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

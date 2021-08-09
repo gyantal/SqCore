@@ -1,17 +1,21 @@
 MarketBar
 <span>
     <td *ngFor="let item of mktBrUi"> 
-        <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>: {{item.pctChg | percent:'1.2'}},
+        <a href="https://uk.tradingview.com/chart/?symbol={{item.ticker}}">{{item.ticker}}</a>: {{item.last | percent:'1.2'}},
     </td>
 </span>
 <hr>
 <br><br>
+<div class="AccSumm">
 <span style="font: x-large sans-serif">
-P&L Today:
+<!-- P&L Today: {{item.symbol}} -->
 </span>
+</div>
 <h2>Line Chart</h2>
 <div >
-    <svg id="chartNav" class= "chart"></svg>
+    <svg id="chartNav" class= "chart" >
+      
+    </svg>
 </div>
 <hr>
 [BrAcc selection control help sample]<br>
@@ -34,11 +38,14 @@ BrAcc:
 [3. AccountPositions under it, the data table]<br>
 
 <hr>
+<!-- Addded class "selectedTempDebug" to limit the text output in the UI-->
+<div class="selectedTempDebug">
 <br><br>Temporary Debug Info: <br>
 HandshakeMsgStr: <br> <span>{{ handshakeMsgStr }}</span><br><br>
 MarketBarLastClosesStr: <br> <span>{{ mktBrLstClsStr }}</span><br><br>
 HistStr: <br> <span>{{ histStr }}</span><br><br>
 BrAccountSnapshot: <br> <span>{{ brAccountSnapshotStr }}</span>
+</div>
 <hr>
 <table class = "selectedBrcViewTbl">
     <thead>
@@ -48,7 +55,24 @@ BrAccountSnapshot: <br> <span>{{ brAccountSnapshotStr }}</span>
     </thead>
     <tbody>
         <td *ngFor="let item of mktBrUi">
-            <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>
+            <a href="https://uk.tradingview.com/chart/?symbol={{item.ticker}}">{{item.ticker}}</a>
         </td>
     </tbody>
 </table>
+<hr>
+<!-- Creating multiple tabs -->
+<mat-tab-group>
+        <mat-tab label="BrAccView">
+            Tab Content 1
+            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Quod maxime quaerat iste delectus ducimus beatae corrupti, expedita atque minus! Hic illo cumque, atque dolores accusamus neque ducimus! Voluptates, odio quibusdam?</p>
+            <!-- <td *ngFor="let item of mktBrUi"> 
+                <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>: {{item.pctChg | percent:'1.2'}},
+            </td> -->
+        </mat-tab>
+        <mat-tab label="BrAccView1">
+            Tab Content 2
+            <!-- <td *ngFor="let item of mktBrUi"> 
+                <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>: {{item.pctChg | percent:'1.2'}},
+            </td> -->
+        </mat-tab>
+</mat-tab-group>
