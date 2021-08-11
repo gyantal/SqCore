@@ -278,7 +278,10 @@ export class BrAccViewerComponent implements OnInit {
         // this.lastRtMsgStr = msgStrRt;
         // this.lastRtMsg = jsonArrayObjRt;
         // MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
-        BrAccViewerComponent.updateMktBarUi(this.handShkMsg.marketBarAssets, null, null, this.uiMktBar);
+        // if (this.handShkMsg != null)
+        //   BrAccViewerComponent.updateMktBarUi(this.handShkMsg.marketBarAssets, null, null, this.uiMktBar);
+
+        BrAccViewerComponent.updateMktBarUi((this.handShkMsg == null) ? null : this.handShkMsg.marketBarAssets, null, null, this.uiMktBar);
         return true;
       case 'BrAccViewer.BrAccSnapshot':
         console.log('BrAccViewer.BrAccSnapshot:' + msgObjStr);
@@ -324,14 +327,15 @@ export class BrAccViewerComponent implements OnInit {
         this.mktBrLstClsStr = msgObjStr;
         // TODO: create a class for this, but convert string to json object and send it into updateMktBarUi
         //this.mktBrLstClsMsg = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateMktBarUi(this.handShkMsg.marketBarAssets, null, null, this.uiMktBar);
+        // BrAccViewerComponent.updateMktBarUi(this.handShkMsg.marketBarAssets, null, null, this.uiMktBar);
+        BrAccViewerComponent.updateMktBarUi((this.handShkMsg == null) ? null : this.handShkMsg.marketBarAssets, null, null, this.uiMktBar);
         return true;
       case 'BrAccViewer.Handshake':  // this is the least frequent case. Should come last.
         console.log('BrAccViewer.Handshake:' + msgObjStr);
         this.handshakeMsgStr = msgObjStr;
         this.handShkMsg = JSON.parse(msgObjStr);
-        console.log(`BrAccViewer.Handshake.SelectableBrAccs: '${this.handShkMsg.selectableNavAssets}'`);
-        this.updateUiSelectableNavs(this.handShkMsg.selectableNavAssets);
+        console.log(`BrAccViewer.Handshake.SelectableBrAccs: '${(this.handShkMsg == null) ? null : this.handShkMsg.selectableNavAssets}'`);
+        this.updateUiSelectableNavs((this.handShkMsg == null) ? null : this.handShkMsg.selectableNavAssets);
         return true;
       default:
         return false;
@@ -381,8 +385,38 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, lastCloses: Nullable<RtMktSumNonRtStat[]>, lastRt: Nullable<RtMktSumRtStat[]>, uiMktBar: UiMktBarItem[]) {
+     // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
+     if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(lastRt) && lastRt.length > 0 && Array.isArray(lastCloses) && lastCloses.length > 0)) {
+      return;
+    }
+    
     // uiMktBar is visualized in HTML
     // Step 1.
+
+    // for (const uiCol of uiMktBar) {
+    //   uiCol.lastClose = NaN;
+    //   uiCol.last = 500;
+     
+    // }
+    for (const item of marketBarAssets ){
+      let uiCol: UiMktBarItem;
+      const existingUiCols = uiMktBar.filter(col => col.sqTicker === item.sqTicker);
+      if (existingUiCols.length === 0) {
+        console.warn(`Received ticker '${item.sqTicker}' is not expected. UiArray should be increased. This will cause UI redraw and blink. Add this ticker to defaultTickerExpected!`, 'background: #222; color: red');
+        // uiCol = new UiMktBarItem(stockNonRt.sqTicker, stockNonRt.ticker, false);
+        uiCol = new UiMktBarItem();
+        uiMktBar.push(uiCol);
+      } else if (existingUiCols.length === 1) {
+        uiCol = existingUiCols[0];
+      } else {
+        console.warn(`Received ticker '${item.sqTicker}' has duplicates in UiArray. This might be legit if both VOD.L and VOD wants to be used. ToDo: Differentiation based on assetId is needed.`, 'background: #222; color: red');
+        uiCol = existingUiCols[0];
+      }
+
+      uiCol.assetId = item.assetId;
+      uiCol.sqTicker = item.sqTicker;
+      uiCol.symbol = item.symbol;
+      uiCol.name  = item.name;
     // write a code here that goes through marketBarAssets array and fill up uiMktBar.Symbol
     // So, this will be visualized in HTML
     // ignore LastCloses, and RealTime prices at the moment.
@@ -390,7 +424,7 @@ export class BrAccViewerComponent implements OnInit {
 
     // Step 2: use LastCloses data, and write it into uiMktBar array.
     // Step 3: use real-time data (we have to temporary generate it)
-
+    }
   }
 
   static updateMarketBarUi_old(lastRt: Nullable<RtMktSumRtStat[]>, lastNonRt: Nullable<RtMktSumNonRtStat[]>, lookbackStartDateET: Date, uiColumns: UiMktBarItem_old[]) {
@@ -445,7 +479,7 @@ export class BrAccViewerComponent implements OnInit {
       uiCol.lastUtc = stockRt.lastUtc;
     }
 
-    const indicatorSelected = (document.getElementById('perfIndicator') as HTMLSelectElement).value;
+    // const indicatorSelected = (document.getElementById('perfIndicator') as HTMLSelectElement).value;
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
     const nf = new Intl.NumberFormat();  // for thousands commas(,) https://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript

@@ -1,7 +1,7 @@
 MarketBar
 <span>
-    <td *ngFor="let item of mktBrUi"> 
-        <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>: {{item.last | percent:'1.2'}},
+    <td *ngFor="let item of uiMktBar"> 
+        <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>: {{item.lastClose | percent:'1.2'}},
     </td>
 </span>
 <hr>
@@ -12,11 +12,11 @@ MarketBar
 </span>
 </div>
 <h2>Line Chart</h2>
-<div >
+<!-- <div >
     <svg id="chartNav" class= "chart" >
       
     </svg>
-</div>
+</div> -->
 <hr>
 [BrAcc selection control help sample]<br>
 BrAcc:
@@ -54,8 +54,8 @@ BrAccountSnapshot: <br> <span>{{ brAccountSnapshotStr }}</span>
         </tr>
     </thead>
     <tbody>
-        <td *ngFor="let item of mktBrUi">
-            <a href="https://uk.tradingview.com/chart/?symbol={{item.ticker}}">{{item.ticker}}</a>
+        <td *ngFor="let item of uiMktBar">
+            <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>
         </td>
     </tbody>
 </table>

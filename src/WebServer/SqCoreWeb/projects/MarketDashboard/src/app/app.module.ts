@@ -13,6 +13,7 @@ import { DocsWhatIsNewComponent, DocsGetStartedComponent, DocsTutorialComponent 
 import { ClickOutsideDirective } from './../../../sq-ng-common/src/lib/sq-ng-common.directive.click-outside';
 import { SettingsDialogComponent } from './settings-dialog/settings-dialog.component';
 import { MatTabsModule } from '@angular/material/tabs'; // used for creating multiple tabs
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 @NgModule({
   declarations: [
@@ -32,7 +33,8 @@ import { MatTabsModule } from '@angular/material/tabs'; // used for creating mul
     BrowserModule,
     AppRoutingModule,
     FormsModule,
-    MatTabsModule
+    MatTabsModule,
+    BrowserAnimationsModule
   ],
   providers: [],
   bootstrap: [AppComponent]
