@@ -17,6 +17,12 @@ class AssetJs {
   public name = '';
 }
 
+class AssetLastCloseJs {
+  public assetId = NaN;
+  public date = ''; // preferred to be a new Date(), but when it arrives from server it is a string '2010-09-29T00:00:00' which is ET time zone and better to keep that way than converting to local time-zone Date object
+  public lastClose = NaN;
+}
+
 class BrAccVwrHandShk {
   marketBarAssets: Nullable<AssetJs[]> = null;
   selectableNavAssets: Nullable<AssetJs[]> = null;
@@ -114,17 +120,19 @@ class UiBrAccChrt {
 })
 export class BrAccViewerComponent implements OnInit {
   @Input() _parentWsConnection?: WebSocket = undefined;    // this property will be input from above parent container
+  
+  handshakeStr = '[Nothing arrived yet]';
+  handshakeObj: Nullable<BrAccVwrHandShk> = null;
+  mktBrLstClsStr = '[Nothing arrived yet]';
+  mktBrLstClsObj: Nullable<AssetLastCloseJs[]> = null;
+
   selectedNav = '';
   uiMktBar: UiMktBarItem[] = [];
   BrAccChrt: UiBrAccChrt[] = [];  // rename BrAccChrt
 
-  handShkMsg: Nullable<BrAccVwrHandShk> = null;
-
   lastRtMsg: Nullable<RtMktSumRtStat[]> = null;
   lastNonRtMsg: Nullable<RtMktSumNonRtStat[]> = null;
-  
-  handshakeMsgStr = '[Nothing arrived yet]';
-  mktBrLstClsStr = '[Nothing arrived yet]';
+
   brAccountSnapshotStr = '[Nothing arrived yet]';
   histStr = '[Nothing arrived yet]';
   // required for chart
@@ -278,10 +286,8 @@ export class BrAccViewerComponent implements OnInit {
         // this.lastRtMsgStr = msgStrRt;
         // this.lastRtMsg = jsonArrayObjRt;
         // MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
-        // if (this.handShkMsg != null)
-        //   BrAccViewerComponent.updateMktBarUi(this.handShkMsg.marketBarAssets, null, null, this.uiMktBar);
 
-        BrAccViewerComponent.updateMktBarUi((this.handShkMsg == null) ? null : this.handShkMsg.marketBarAssets, null, null, this.uiMktBar);
+        BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, null, this.uiMktBar);
         return true;
       case 'BrAccViewer.BrAccSnapshot':
         console.log('BrAccViewer.BrAccSnapshot:' + msgObjStr);
@@ -325,17 +331,15 @@ export class BrAccViewerComponent implements OnInit {
       case 'BrAccViewer.MktBrLstCls':
         console.log('BrAccViewer.MktBrLstCls:' + msgObjStr);
         this.mktBrLstClsStr = msgObjStr;
-        // TODO: create a class for this, but convert string to json object and send it into updateMktBarUi
-        //this.mktBrLstClsMsg = JSON.parse(msgObjStr);
-        // BrAccViewerComponent.updateMktBarUi(this.handShkMsg.marketBarAssets, null, null, this.uiMktBar);
-        BrAccViewerComponent.updateMktBarUi((this.handShkMsg == null) ? null : this.handShkMsg.marketBarAssets, null, null, this.uiMktBar);
+        this.mktBrLstClsObj = JSON.parse(msgObjStr);
+        BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, null, this.uiMktBar);
         return true;
       case 'BrAccViewer.Handshake':  // this is the least frequent case. Should come last.
         console.log('BrAccViewer.Handshake:' + msgObjStr);
-        this.handshakeMsgStr = msgObjStr;
-        this.handShkMsg = JSON.parse(msgObjStr);
-        console.log(`BrAccViewer.Handshake.SelectableBrAccs: '${(this.handShkMsg == null) ? null : this.handShkMsg.selectableNavAssets}'`);
-        this.updateUiSelectableNavs((this.handShkMsg == null) ? null : this.handShkMsg.selectableNavAssets);
+        this.handshakeStr = msgObjStr;
+        this.handshakeObj = JSON.parse(msgObjStr);
+        console.log(`BrAccViewer.Handshake.SelectableBrAccs: '${(this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets}'`);
+        this.updateUiSelectableNavs((this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets);
         return true;
       default:
         return false;
@@ -384,23 +388,20 @@ export class BrAccViewerComponent implements OnInit {
       this.selectedNav = jsonObjSnap.symbol;
   }
 
-  static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, lastCloses: Nullable<RtMktSumNonRtStat[]>, lastRt: Nullable<RtMktSumRtStat[]>, uiMktBar: UiMktBarItem[]) {
+  static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, lastCloses: Nullable<AssetLastCloseJs[]>, lastRt: Nullable<RtMktSumRtStat[]>, uiMktBar: UiMktBarItem[]) {
      // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
      if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 )) {
     //  && Array.isArray(lastRt) && lastRt.length > 0 && Array.isArray(lastCloses) && lastCloses.length > 0)
      
       return;
     }
-    
+
     // uiMktBar is visualized in HTML
     // Step 1.
+    // write a code here that goes through marketBarAssets array and fill up uiMktBar.Symbol
+    // So, this will be visualized in HTML
 
-    // for (const uiCol of uiMktBar) {
-    //   uiCol.lastClose = NaN;
-    //   uiCol.last = 500;
-     
-    // }
-    for (const item of marketBarAssets ){
+    for (const item of marketBarAssets ) {
       let uiItem: UiMktBarItem;
       const existingUiCols = uiMktBar.filter(col => col.sqTicker === item.sqTicker);
       if (existingUiCols.length === 0) {
@@ -418,16 +419,20 @@ export class BrAccViewerComponent implements OnInit {
         console.warn(`Received ticker '${item.sqTicker}' has duplicates in UiArray. This might be legit if both VOD.L and VOD wants to be used. ToDo: Differentiation based on assetId is needed.`, 'background: #222; color: red');
         uiItem = existingUiCols[0];
       }
-
-      
-    // write a code here that goes through marketBarAssets array and fill up uiMktBar.Symbol
-    // So, this will be visualized in HTML
-    // ignore LastCloses, and RealTime prices at the moment.
-    // ...
+    }
 
     // Step 2: use LastCloses data, and write it into uiMktBar array.
+    // in HTML visualize the LastClose prices temporarily, instead of the real time PercentChange
+
     // Step 3: use real-time data (we have to temporary generate it)
-    }
+
+    
+    // for (const uiItem of uiMktBar) {
+    //   uiItem.lastClose = NaN;
+    //   uiItem.last = 500;
+     
+    // }
+    
   }
 
   static updateMarketBarUi_old(lastRt: Nullable<RtMktSumRtStat[]>, lastNonRt: Nullable<RtMktSumNonRtStat[]>, lookbackStartDateET: Date, uiColumns: UiMktBarItem_old[]) {
