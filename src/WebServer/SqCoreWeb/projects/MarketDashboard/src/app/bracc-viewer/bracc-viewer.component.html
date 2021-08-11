@@ -1,7 +1,7 @@
 MarketBar
 <span>
     <td *ngFor="let item of mktBrUi"> 
-        <a href="https://uk.tradingview.com/chart/?symbol={{item.ticker}}">{{item.ticker}}</a>: {{item.last | percent:'1.2'}},
+        <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>: {{item.last | percent:'1.2'}},
     </td>
 </span>
 <hr>

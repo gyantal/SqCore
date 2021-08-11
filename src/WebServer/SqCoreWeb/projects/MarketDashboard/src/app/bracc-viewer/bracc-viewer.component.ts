@@ -9,6 +9,30 @@ import { SqNgCommonUtilsTime } from '../../../../sq-ng-common/src/lib/sq-ng-comm
 
 type Nullable<T> = T | null;
 
+
+class AssetJs {
+  public assetId = NaN;
+  public sqTicker = '';
+  public symbol = '';
+  public name = '';
+}
+
+class BrAccVwrHandShk {
+  marketBarAssets: Nullable<AssetJs[]> = null;
+  selectableNavAssets: Nullable<AssetJs[]> = null;
+}
+
+class UiMktBarItem {
+  public assetId = NaN;
+  public sqTicker = '';
+  public symbol = '';
+  public name = '';
+
+  public lastClose  = NaN;
+  public last  = 500;
+}
+
+
 class RtMktSumRtStat {
   public assetId = NaN;
   public last  = NaN;
@@ -29,7 +53,7 @@ class RtMktSumNonRtStat {
   // public periodMaxDU = NaN;
 }
 
-class UiMktBarItem {
+class UiMktBarItem_old {
   public assetId = NaN;  // JavaScript Numbers are Always 64-bit Floating Point
   public sqTicker = '';
   public ticker = '';
@@ -91,8 +115,11 @@ class UiBrAccChrt {
 export class BrAccViewerComponent implements OnInit {
   @Input() _parentWsConnection?: WebSocket = undefined;    // this property will be input from above parent container
   selectedNav = '';
-  mktBrUi: UiMktBarItem[] = []; 
+  uiMktBar: UiMktBarItem[] = [];
   BrAccChrt: UiBrAccChrt[] = [];  // rename BrAccChrt
+
+  handShkMsg: Nullable<BrAccVwrHandShk> = null;
+
   lastRtMsg: Nullable<RtMktSumRtStat[]> = null;
   lastNonRtMsg: Nullable<RtMktSumNonRtStat[]> = null;
   
@@ -123,11 +150,11 @@ export class BrAccViewerComponent implements OnInit {
     // if (!isNavCol) {
     //   this.referenceUrl = 'https://uk.tradingview.com/chart/?symbol=' + tckr;
     // }
-    // this.mktBrUi = [
-    //   {assetId:1, sqTicker:"S/QQQ",ticker:"QQQ",pctChg:0.001,last:12,lastUtc:'211'},
-    //   {assetId:2, sqTicker:"S/SPY",ticker:"SPY",pctChg:-0.00134,last:12,lastUtc:'211'},
-    //   {assetId:3, sqTicker:"S/TLT",ticker:"TLT",pctChg:0.001,last:12,lastUtc:'211'},
-    //   {assetId:4, sqTicker:"S/VXX",ticker:"VXX",pctChg:0.001,last:12,lastUtc:'211'},
+    // this.uiMktBar = [
+    //   {assetId:1, sqTicker:"S/QQQ",symbol:"QQQ",pctChg:0.001,last:12,lastUtc:'211'},
+    //   {assetId:2, sqTicker:"S/SPY",symbol:"SPY",pctChg:-0.00134,last:12,lastUtc:'211'},
+    //   {assetId:3, sqTicker:"S/TLT",symbol:"TLT",pctChg:0.001,last:12,lastUtc:'211'},
+    //   {assetId:4, sqTicker:"S/VXX",symbol:"VXX",pctChg:0.001,last:12,lastUtc:'211'},
     // ];
 
     // Creating a line chart dummy data
@@ -233,7 +260,7 @@ export class BrAccViewerComponent implements OnInit {
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
-      case 'BrAccViewer.X':  // this is the most frequent case. Should come first.
+      case 'BrAccViewer.RtStat':  // this is the most frequent case. Should come first.
         // if (gDiag.wsOnFirstRtMktSumRtStatTime === minDate) {
         //   gDiag.wsOnFirstRtMktSumRtStatTime = new Date();
         // }
@@ -251,6 +278,7 @@ export class BrAccViewerComponent implements OnInit {
         // this.lastRtMsgStr = msgStrRt;
         // this.lastRtMsg = jsonArrayObjRt;
         // MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
+        BrAccViewerComponent.updateMktBarUi(this.handShkMsg.marketBarAssets, null, null, this.uiMktBar);
         return true;
       case 'BrAccViewer.BrAccSnapshot':
         console.log('BrAccViewer.BrAccSnapshot:' + msgObjStr);
@@ -294,13 +322,16 @@ export class BrAccViewerComponent implements OnInit {
       case 'BrAccViewer.MktBrLstCls':
         console.log('BrAccViewer.MktBrLstCls:' + msgObjStr);
         this.mktBrLstClsStr = msgObjStr;
+        // TODO: create a class for this, but convert string to json object and send it into updateMktBarUi
+        //this.mktBrLstClsMsg = JSON.parse(msgObjStr);
+        BrAccViewerComponent.updateMktBarUi(this.handShkMsg.marketBarAssets, null, null, this.uiMktBar);
         return true;
       case 'BrAccViewer.Handshake':  // this is the least frequent case. Should come last.
         console.log('BrAccViewer.Handshake:' + msgObjStr);
         this.handshakeMsgStr = msgObjStr;
-        const jsonObjHandshake = JSON.parse(msgObjStr);
-        console.log(`BrAccViewer.Handshake.SelectableBrAccs: '${jsonObjHandshake.selectableBrAccs}'`);
-        this.updateUiSelectableNavs(jsonObjHandshake.selectableNavAssets);
+        this.handShkMsg = JSON.parse(msgObjStr);
+        console.log(`BrAccViewer.Handshake.SelectableBrAccs: '${this.handShkMsg.selectableNavAssets}'`);
+        this.updateUiSelectableNavs(this.handShkMsg.selectableNavAssets);
         return true;
       default:
         return false;
@@ -348,8 +379,21 @@ export class BrAccViewerComponent implements OnInit {
     if (this.selectedNav != jsonObjSnap.symbol) // change UI only if it is a meaningful change
       this.selectedNav = jsonObjSnap.symbol;
   }
-  // Added by Daya for getting the last close values
-  static updateMarketBarUi(lastRt: Nullable<RtMktSumRtStat[]>, lastNonRt: Nullable<RtMktSumNonRtStat[]>, lookbackStartDateET: Date, uiColumns: UiMktBarItem[]) {
+
+  static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, lastCloses: Nullable<RtMktSumNonRtStat[]>, lastRt: Nullable<RtMktSumRtStat[]>, uiMktBar: UiMktBarItem[]) {
+    // uiMktBar is visualized in HTML
+    // Step 1.
+    // write a code here that goes through marketBarAssets array and fill up uiMktBar.Symbol
+    // So, this will be visualized in HTML
+    // ignore LastCloses, and RealTime prices at the moment.
+    // ...
+
+    // Step 2: use LastCloses data, and write it into uiMktBar array.
+    // Step 3: use real-time data (we have to temporary generate it)
+
+  }
+
+  static updateMarketBarUi_old(lastRt: Nullable<RtMktSumRtStat[]>, lastNonRt: Nullable<RtMktSumNonRtStat[]>, lookbackStartDateET: Date, uiColumns: UiMktBarItem_old[]) {
     // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
     if (!(Array.isArray(lastRt) && lastRt.length > 0 && Array.isArray(lastNonRt) && lastNonRt.length > 0)) {
       return;
@@ -364,12 +408,12 @@ export class BrAccViewerComponent implements OnInit {
     // we have to prepare if the server sends another ticker that is not expected. In that rare case, the append it to the end of the array. That will cause UI blink. And Warn about it, so this can be fixed.
     // start with the NonRt, because that gives the AssetID to ticker definitions.
     for (const stockNonRt of lastNonRt) {
-      let uiCol: UiMktBarItem;
+      let uiCol: UiMktBarItem_old;
       const existingUiCols = uiColumns.filter(col => col.ticker === stockNonRt.ticker);
       if (existingUiCols.length === 0) {
         console.warn(`Received ticker '${stockNonRt.ticker}' is not expected. UiArray should be increased. This will cause UI redraw and blink. Add this ticker to defaultTickerExpected!`, 'background: #222; color: red');
         // uiCol = new UiMktBarItem(stockNonRt.sqTicker, stockNonRt.ticker, false);
-        uiCol = new UiMktBarItem();
+        uiCol = new UiMktBarItem_old();
         uiColumns.push(uiCol);
       } else if (existingUiCols.length === 1) {
         uiCol = existingUiCols[0];
@@ -453,59 +497,12 @@ export class BrAccViewerComponent implements OnInit {
       // uiCol.lookbackErrorStr = (dataStartDateET > lookbackStartDateET) ? `! Period data starts on ${dataStartDateETStr}\n instead of the expected ${lookbackStartDateET.toISOString().slice(0, 10)}.\n\n` : '';
       // uiCol.lookbackErrorClass = (dataStartDateET > lookbackStartDateET) ? 'lookbackError' : '';
 
-      BrAccViewerComponent.updateUiColumnBasedOnSelectedIndicator(uiCol, indicatorSelected);
-     } // for
+      // BrAccViewerComponent.updateUiColumnBasedOnSelectedIndicator(uiCol, indicatorSelected);
+      uiCol.selectedPerfIndSign = Math.sign(uiCol.return);
+      uiCol.selectedPerfIndClass = (uiCol.selectedPerfIndSign === 1) ? 'positivePerf' : 'negativePerf';
+      uiCol.selectedPerfIndStr = uiCol.returnStr;
+    } // for
     
-  }
-
-  static updateUiColumnBasedOnSelectedIndicator(uiCol: UiMktBarItem, indicatorSelected: string) {
-    switch (indicatorSelected) {
-      case 'TotRet':
-        uiCol.selectedPerfIndSign = Math.sign(uiCol.return);
-        uiCol.selectedPerfIndClass = (uiCol.selectedPerfIndSign === 1) ? 'positivePerf' : 'negativePerf';
-        uiCol.selectedPerfIndStr = uiCol.returnStr;
-        break;
-      // case 'TotCagr':
-      //   uiCol.selectedPerfIndSign = Math.sign(uiCol.cagr);
-      //   uiCol.selectedPerfIndClass = (uiCol.selectedPerfIndSign === 1) ? 'positivePerf' : 'negativePerf';
-      //   uiCol.selectedPerfIndStr = uiCol.cagrStr;
-      //   break;
-      // case 'CDD':
-      //   uiCol.selectedPerfIndSign = -1;
-      //   uiCol.selectedPerfIndClass = 'negativePerf';
-      //   uiCol.selectedPerfIndStr = uiCol.drawDownStr;
-      //   break;
-      // case 'CDU':
-      //   uiCol.selectedPerfIndSign = 1;
-      //   uiCol.selectedPerfIndClass = 'positivePerf';
-      //   uiCol.selectedPerfIndStr = uiCol.drawUpStr;
-      //   break;
-      // case 'MDD':
-      //   uiCol.selectedPerfIndSign = -1;
-      //   uiCol.selectedPerfIndClass = 'negativePerf';
-      //   uiCol.selectedPerfIndStr = uiCol.maxDrawDownStr;
-      //   break;
-      // case 'MDU':
-      //   uiCol.selectedPerfIndSign = 1;
-      //   uiCol.selectedPerfIndClass = 'positivePerf';
-      //   uiCol.selectedPerfIndStr = uiCol.maxDrawUpStr;
-      //   break;
-      // case 'PerRet':
-      //   uiCol.selectedPerfIndSign = Math.sign(uiCol.periodReturn);
-      //   uiCol.selectedPerfIndClass = (uiCol.selectedPerfIndSign === 1) ? 'positivePerf' : 'negativePerf';
-      //   uiCol.selectedPerfIndStr = uiCol.periodReturnStr;
-      //   break;
-      // case 'PerMDD':
-      //   uiCol.selectedPerfIndSign = Math.sign(uiCol.periodMaxDrawDown);
-      //   uiCol.selectedPerfIndClass = 'negativePerf';
-      //   uiCol.selectedPerfIndStr = uiCol.periodMaxDrawDownStr;
-        // break;
-      default:
-        uiCol.selectedPerfIndSign = Math.sign(uiCol.return);
-        uiCol.selectedPerfIndClass = '';
-        uiCol.selectedPerfIndStr = '';
-        break;
-    } // switch
   }
 
 
