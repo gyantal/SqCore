@@ -386,7 +386,9 @@ export class BrAccViewerComponent implements OnInit {
 
   static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, lastCloses: Nullable<RtMktSumNonRtStat[]>, lastRt: Nullable<RtMktSumRtStat[]>, uiMktBar: UiMktBarItem[]) {
      // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
-     if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(lastRt) && lastRt.length > 0 && Array.isArray(lastCloses) && lastCloses.length > 0)) {
+     if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 )) {
+    //  && Array.isArray(lastRt) && lastRt.length > 0 && Array.isArray(lastCloses) && lastCloses.length > 0)
+     
       return;
     }
     
@@ -399,24 +401,25 @@ export class BrAccViewerComponent implements OnInit {
      
     // }
     for (const item of marketBarAssets ){
-      let uiCol: UiMktBarItem;
+      let uiItem: UiMktBarItem;
       const existingUiCols = uiMktBar.filter(col => col.sqTicker === item.sqTicker);
       if (existingUiCols.length === 0) {
-        console.warn(`Received ticker '${item.sqTicker}' is not expected. UiArray should be increased. This will cause UI redraw and blink. Add this ticker to defaultTickerExpected!`, 'background: #222; color: red');
+        // console.warn(`Received ticker '${item.sqTicker}' is not expected. UiArray should be increased. This will cause UI redraw and blink. Add this ticker to defaultTickerExpected!`, 'background: #222; color: red');
         // uiCol = new UiMktBarItem(stockNonRt.sqTicker, stockNonRt.ticker, false);
-        uiCol = new UiMktBarItem();
-        uiMktBar.push(uiCol);
+        uiItem = new UiMktBarItem();
+        uiItem.assetId = item.assetId;
+        uiItem.sqTicker = item.sqTicker;
+        uiItem.symbol = item.symbol;
+        uiItem.name  = item.name;
+        uiMktBar.push(uiItem);
       } else if (existingUiCols.length === 1) {
-        uiCol = existingUiCols[0];
+        uiItem = existingUiCols[0];
       } else {
         console.warn(`Received ticker '${item.sqTicker}' has duplicates in UiArray. This might be legit if both VOD.L and VOD wants to be used. ToDo: Differentiation based on assetId is needed.`, 'background: #222; color: red');
-        uiCol = existingUiCols[0];
+        uiItem = existingUiCols[0];
       }
 
-      uiCol.assetId = item.assetId;
-      uiCol.sqTicker = item.sqTicker;
-      uiCol.symbol = item.symbol;
-      uiCol.name  = item.name;
+      
     // write a code here that goes through marketBarAssets array and fill up uiMktBar.Symbol
     // So, this will be visualized in HTML
     // ignore LastCloses, and RealTime prices at the moment.
