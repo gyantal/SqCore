@@ -390,7 +390,7 @@ export class BrAccViewerComponent implements OnInit {
 
   static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, lastCloses: Nullable<AssetLastCloseJs[]>, lastRt: Nullable<RtMktSumRtStat[]>, uiMktBar: UiMktBarItem[]) {
      // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
-     if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 )) {
+     if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(lastCloses) && lastCloses.length > 0)) {
     //  && Array.isArray(lastRt) && lastRt.length > 0 && Array.isArray(lastCloses) && lastCloses.length > 0)
      
       return;
@@ -423,7 +423,16 @@ export class BrAccViewerComponent implements OnInit {
 
     // Step 2: use LastCloses data, and write it into uiMktBar array.
     // in HTML visualize the LastClose prices temporarily, instead of the real time PercentChange
-
+    for (const nonRt of lastCloses){
+      const existingUiCols = uiMktBar.filter(col => col.assetId === nonRt.assetId);
+      if (existingUiCols.length === 0){
+        console.warn(`Received assetId '${nonRt.assetId}' is not found in UiArray. Happens if user changes BrNav and old one is already in the way`, 'background: #222; color: red');
+        break;
+      }
+      const uiItem = existingUiCols[0];
+      uiItem.lastClose = nonRt.lastClose;     
+      
+    }
     // Step 3: use real-time data (we have to temporary generate it)
 
     
