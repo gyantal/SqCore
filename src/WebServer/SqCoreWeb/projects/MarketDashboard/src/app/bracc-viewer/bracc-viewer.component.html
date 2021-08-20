@@ -9,10 +9,15 @@ BrAcc:
 </span>
 MarketBar
 <span>
-    <td *ngFor="let item of uiMktBar"> 
-        <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>: {{item.lastClose}},
+    <tr *ngFor="let item of uiMktBar"> 
+        <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>: 
+        <td [ngClass]="{
+            'mktBarPositivePerf' : item.pctChg > 0,
+            'mktbarNegativePerf' : item.pctChg < 0
+         }">{{item.pctChg | percent:'1.2'}},
         <!-- {{item.lastClose | percent:'1.2'}} -->
-    </td>
+        </td>
+    </tr>
 </span>
 <hr>
 <div class="AccSumm">
@@ -62,14 +67,26 @@ BrAccountSnapshot: <br> <span>{{ brAccountSnapshotStr }}</span>
         <mat-tab label="BrAccView">
             Tab Content 1
             <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Quod maxime quaerat iste delectus ducimus beatae corrupti, expedita atque minus! Hic illo cumque, atque dolores accusamus neque ducimus! Voluptates, odio quibusdam?</p>
-            <!-- <td *ngFor="let item of mktBrUi"> 
-                <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>: {{item.pctChg | percent:'1.2'}},
-            </td> -->
+            <tr *ngFor="let item of uiMktBar"> 
+                <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>:
+                <td [ngClass]="{
+                    'mktBarPositivePerf' : item.lastClose > 0,
+                    'mktbarNegativePerf' : item.lastClose < 0
+                 }">{{item.lastClose}},
+                <!-- {{item.lastClose | percent:'1.2'}} -->
+                </td>
+            </tr>
         </mat-tab>
         <mat-tab label="BrAccView1">
             Tab Content 2
-            <!-- <td *ngFor="let item of mktBrUi"> 
+            <td *ngFor="let item of uiMktBar"> 
                 <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>: {{item.pctChg | percent:'1.2'}},
-            </td> -->
+                <!-- {{item.lastClose | percent:'1.2'}} -->
+            </td>
         </mat-tab>
+        <!-- <mat-tab label="Chart">
+            <ng-template matTabContent>
+                <svg id ="brNavChrt" width="900" height="700"></svg>
+            </ng-template>
+        </mat-tab> -->
 </mat-tab-group>

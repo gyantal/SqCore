@@ -28,6 +28,12 @@ class BrAccVwrHandShk {
   selectableNavAssets: Nullable<AssetJs[]> = null;
 }
 
+class AssetLastJs {
+  public assetId = NaN;
+  public lastUtc = ''; // preferred to be a new Date(), but when it arrives from server it is a string '2010-09-29T00:00:00'.
+  public last = NaN;
+}
+
 class UiMktBarItem {
   public assetId = NaN;
   public sqTicker = '';
@@ -36,6 +42,12 @@ class UiMktBarItem {
 
   public lastClose  = NaN;
   public last  = 500;
+  public pctChg  = 0.01;
+  public pctChgStr = '';
+
+  public selectedPerfIndSign = 1; // return or cagr or maxDD
+  public selectedPerfIndClass = ''; // positive or negative
+  public selectedPerfIndStr = ''; // the value of the cell in the table
 }
 
 
@@ -80,6 +92,8 @@ export class BrAccViewerComponent implements OnInit {
   handshakeObj: Nullable<BrAccVwrHandShk> = null;
   mktBrLstClsStr = '[Nothing arrived yet]';
   mktBrLstClsObj: Nullable<AssetLastCloseJs[]> = null;
+
+  mktBrLstObj: Nullable<AssetLastJs[]> = null;
 
   selectedNav = '';
   uiMktBar: UiMktBarItem[] = [];
@@ -268,6 +282,18 @@ export class BrAccViewerComponent implements OnInit {
         this.mktBrLstClsStr = msgObjStr;
         this.mktBrLstClsObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, null, this.uiMktBar);
+        // cerate a JS timer to run a function MockupRtPriceArrived()
+        //setInterval(this.mockupRtPriceArrived, 3000)
+        setInterval(
+          (function(self) {         //Self-executing func which takes 'this' as self
+              return function() {   //Return a function in the context of 'self'
+                  self.mockupRtPriceArrived(); //Thing you wanted to run as non-window 'this'
+              }
+          })(this),
+          3000     //normal interval, 'this' scope not impacted here.
+      ); 
+        //...
+
         return true;
       case 'BrAccViewer.Handshake':  // this is the least frequent case. Should come last.
         console.log('BrAccViewer.Handshake:' + msgObjStr);
@@ -279,6 +305,42 @@ export class BrAccViewerComponent implements OnInit {
       default:
         return false;
     }
+  }
+
+  public mockupRtPriceArrived() {
+    console.log("mock up price arrived");
+
+    this.mktBrLstObj = [];
+
+    let marketBarAssets = (this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets;
+    if (marketBarAssets == null)
+      return;
+  
+    for (const mktBrAsset of marketBarAssets) {
+      let rtItem =  new AssetLastJs();
+      rtItem.assetId = mktBrAsset.assetId;
+      rtItem.lastUtc = '';
+
+      let lastClose = 100.0;
+      if (this.mktBrLstClsObj == null)
+        return;
+      var lastCloseArr = this.mktBrLstClsObj.filter(r => r.assetId === mktBrAsset.assetId);
+     
+      if (lastCloseArr.length === 1) {
+        lastClose = lastCloseArr[0].lastClose;
+      } else {
+        console.warn('Mockup Real time price and last close not found');
+      }
+
+      rtItem.last = lastClose*(1+ Math.random()*0.06-0.03);
+      console.log('RT price generated:' + rtItem.last);
+      
+
+      this.mktBrLstObj.push(rtItem);
+
+    }
+
+    BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.mktBrLstObj, this.uiMktBar);
   }
 
   updateUiSelectableNavs(pSelectableNavAssets: any) {  // same in MktHlth and BrAccViewer
@@ -323,9 +385,9 @@ export class BrAccViewerComponent implements OnInit {
       this.selectedNav = jsonObjSnap.symbol;
   }
 
-  static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, lastCloses: Nullable<AssetLastCloseJs[]>, lastRt: Nullable<RtMktSumRtStat[]>, uiMktBar: UiMktBarItem[]) {
+  static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, lastCloses: Nullable<AssetLastCloseJs[]>, lastRt: Nullable<AssetLastJs[]>, uiMktBar: UiMktBarItem[]) {
      // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
-     if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(lastCloses) && lastCloses.length > 0)) {
+     if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(lastCloses) && lastCloses.length > 0  && Array.isArray(lastRt) && lastRt.length > 0)) {
     //  && Array.isArray(lastRt) && lastRt.length > 0 && Array.isArray(lastCloses) && lastCloses.length > 0)
      
       return;
@@ -336,9 +398,11 @@ export class BrAccViewerComponent implements OnInit {
     // write a code here that goes through marketBarAssets array and fill up uiMktBar.Symbol
     // So, this will be visualized in HTML
 
-    for (const item of marketBarAssets ) {
+    for (const item of marketBarAssets) {
       let uiItem: UiMktBarItem;
-      const existingUiCols = uiMktBar.filter(col => col.sqTicker === item.sqTicker);
+      const existingUiCols = uiMktBar.filter(
+        (col) => col.sqTicker === item.sqTicker
+      );
       if (existingUiCols.length === 0) {
         // console.warn(`Received ticker '${item.sqTicker}' is not expected. UiArray should be increased. This will cause UI redraw and blink. Add this ticker to defaultTickerExpected!`, 'background: #222; color: red');
         // uiCol = new UiMktBarItem(stockNonRt.sqTicker, stockNonRt.ticker, false);
@@ -346,37 +410,50 @@ export class BrAccViewerComponent implements OnInit {
         uiItem.assetId = item.assetId;
         uiItem.sqTicker = item.sqTicker;
         uiItem.symbol = item.symbol;
-        uiItem.name  = item.name;
+        uiItem.name = item.name;
         uiMktBar.push(uiItem);
       } else if (existingUiCols.length === 1) {
         uiItem = existingUiCols[0];
       } else {
-        console.warn(`Received ticker '${item.sqTicker}' has duplicates in UiArray. This might be legit if both VOD.L and VOD wants to be used. ToDo: Differentiation based on assetId is needed.`, 'background: #222; color: red');
+        console.warn(
+          `Received ticker '${item.sqTicker}' has duplicates in UiArray. This might be legit if both VOD.L and VOD wants to be used. ToDo: Differentiation based on assetId is needed.`,
+          "background: #222; color: red"
+        );
         uiItem = existingUiCols[0];
       }
     }
 
     // Step 2: use LastCloses data, and write it into uiMktBar array.
     // in HTML visualize the LastClose prices temporarily, instead of the real time PercentChange
-    for (const nonRt of lastCloses){
-      const existingUiCols = uiMktBar.filter(col => col.assetId === nonRt.assetId);
-      if (existingUiCols.length === 0){
-        console.warn(`Received assetId '${nonRt.assetId}' is not found in UiArray. Happens if user changes BrNav and old one is already in the way`, 'background: #222; color: red');
+    for (const nonRt of lastCloses) {
+      const existingUiCols = uiMktBar.filter(
+        (r) => r.assetId === nonRt.assetId
+      );
+      if (existingUiCols.length === 0) {
+        console.warn(
+          `Received assetId '${nonRt.assetId}' is not found in UiArray.`
+        );
         break;
       }
       const uiItem = existingUiCols[0];
-      uiItem.lastClose = nonRt.lastClose;     
-      
+      uiItem.lastClose = nonRt.lastClose;
     }
     // Step 3: use real-time data (we have to temporary generate it)
-  //    
-    
-    // for (const uiItem of uiMktBar) {
-    //   uiItem.lastClose = NaN;
-    //   uiItem.last = 500;
-     
-    // }
+    for (const rtItem of lastRt) {
+      const existingUiItems = uiMktBar.filter(
+        (r) => r.assetId === rtItem.assetId
+      );
+      if (existingUiItems.length === 0) {
+        console.warn(
+          `Received assetId '${rtItem.assetId}' is not found in UiArray.`
+        );
+        break;
+      }
+      const uiItem = existingUiItems[0];
+      uiItem.pctChg = (rtItem.last - uiItem.lastClose) / uiItem.lastClose;
+      
+    }
     
   }
-  
+    
 }
