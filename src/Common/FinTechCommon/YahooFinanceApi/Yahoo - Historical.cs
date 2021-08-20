@@ -90,13 +90,34 @@ namespace YahooFinanceApi
                             // YF has intermittent data problems for yesterday.
                             // TODO: future work. We need a backup data source, like https://www.nasdaq.com/market-activity/funds-and-etfs/spy/historical
                             // or IbGateway in cases when YF doesn't give data.
-                            var record = csvReader.GetRecord<ITick>();
-                            var recordPostprocessed = postprocessFunction(record);
-                            // Do something with the record.
+                            // 2021-08-20: YF gives ^VIX history badly for this date for the last 2 weeks. "2021-08-09,null,null,null,null,null,null"
+                            // They don't fix it. CBOE, WSJ has proper data for that day.
+                            ITick? record = default(ITick);
+                            try
+                            {
+                                record = csvReader.GetRecord<ITick>();
+                            }
+                            catch (Exception e) // "The conversion cannot be performed."  RawRecord:\r\n2021-08-09,null,null,null,null,null,null\n\r\n"
+                            {
+                                Utils.Logger.Warn(e, $"Warning in Yahoo.GetTicksAsync(): Stock:'{symbol}', {e.Message}");
+                                // There is a business decision what to do when 1 day in the middle is missing from the last 200 days of VIX data.
+                                // Option 1. At the moment, we swallow it, and don't give that date-record back to the client (imitating that the source was totally bad, and missed even the date)
+                                // Probably that is the best way to handle, so it is the caller's responsibility to check that all Date he expects is given.
+                                // Because there is no point for us giving back the user the "2021-08-09,null,null,null,null,null,null" VIX records if it is possible that YF skips a whole day record, omitting that day.
+                                // Checking that kind of data-error has to be done on the Caller side anyway. So we just pass the data-checking problem to the caller.
+                                // Option 2: We can give back the Caller a "2021-08-09,null,null,null,null,null,null" record. But the caller has to check missing days anyway. So, we just increase its load.
+                                // Option 3: We can terminate the price query, and raise an Exception. However, that we we wouldn't give anything to the Caller.
+                                // If only 1 record is missing in the 10 years history, it is better to return the 'almost-complete' data to the Caller than returning nothing at all.
+                            }
+                            if (record != null)
+                            {
+                                var recordPostprocessed = postprocessFunction(record);
+                                // Do something with the record.
 #pragma warning disable RECS0017 // Possible compare of value type with 'null'
-                            if (recordPostprocessed != null)
+                                if (recordPostprocessed != null)
 #pragma warning restore RECS0017 // Possible compare of value type with 'null'
-                                ticks.Add(recordPostprocessed);
+                                    ticks.Add(recordPostprocessed);
+                            }
                         }
                         //                 while (csvReader.Read())
                         //                 {
