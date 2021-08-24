@@ -1,4 +1,4 @@
-import { Component, OnInit, Input} from '@angular/core';
+import { ViewChild, Component, AfterViewInit,ElementRef, Input} from '@angular/core';
 // Importing d3 library
 import * as d3 from 'd3';
 import * as d3Scale from 'd3';
@@ -71,23 +71,76 @@ class RtMktSumNonRtStat {
   // public periodMaxDU = NaN;
 }
 
-
-// UiBrAccChrt is for developing the chart
-class UiBrAccChrt {
+// 
+class AssetHistValuesJs{
   public assetId = NaN;
-  public dt ='';
-  public brNAV = 0.01;
-  public SPY = 0.01;
+  public sqTicker = '';
+  public periodStartDate = '';
+  public periodEndDate = '';
+  public histDates = [];
+  public histSdaCloses = [];
+}
+
+class AssetHistStatJs{
+  public assetId = NaN;
+  public sqTicker = '';
+  public periodStartDate = '';
+  public periodEndDate = '';
+  public periodStart = NaN;
+  public periodEnd = NaN;
+  public periodHigh = NaN;
+  public periodLow = NaN;
+  public periodMaxDD = NaN;
+  public periodMaxDU = NaN;
 
 }
+
+class BrAccVwrChrtDataRaw {
+  histValues : Nullable<AssetHistValuesJs[]>=null;
+  histStat : Nullable<AssetHistStatJs[]>=null;
+}
+
+class UiBrAccChrtHistValRaw {
+  public assetId = NaN;
+  public histDates = [];
+  public histSdaCloses = [];
+
+  // Hist stat values
+  public periodStartDate = '';
+  public periodEndDate = '';
+  public periodStart = NaN;
+  public periodEnd = NaN;
+  public periodHigh = NaN;
+  public periodLow = NaN;
+  public periodMaxDD = NaN;
+  public periodMaxDU = NaN;
+
+}
+
+// UiBrAccChrt is for developing the chart
+class UiBrAccChrtDataRaw {
+  public assetId = NaN;
+  public dateStr ='';
+  public brNAV = 0.01;
+  public SPY = 0.01;
+}
+
+class UiBrAccChrtData {
+  public assetId = NaN;
+  public dateStr = new Date('2021-01-01');
+  public brNAV = 0.01;
+  public SPY = 0.01;
+}
+
 @Component({
   selector: 'app-bracc-viewer',
   templateUrl: './bracc-viewer.component.html',
-  styleUrls: ['./bracc-viewer.component.scss']
+  styleUrls: ['./bracc-viewer.component.scss'],
+  // encapsulation: ViewEncapsulation.None
 })
-export class BrAccViewerComponent implements OnInit {
+export class BrAccViewerComponent implements AfterViewInit {
   @Input() _parentWsConnection?: WebSocket = undefined;    // this property will be input from above parent container
-  
+  @ViewChild('chart') chartRef!:ElementRef;
   handshakeStr = '[Nothing arrived yet]';
   handshakeObj: Nullable<BrAccVwrHandShk> = null;
   mktBrLstClsStr = '[Nothing arrived yet]';
@@ -95,17 +148,28 @@ export class BrAccViewerComponent implements OnInit {
 
   mktBrLstObj: Nullable<AssetLastJs[]> = null;
 
+  histStr = '[Nothing arrived yet]';
+  // histObj: Nullable<BrAccVwrChrtDataRaw[]>=null;
+
+  histStatStr = '[Nothing arrived yet]';
+  histStatObj: Nullable<BrAccVwrChrtDataRaw>=null;
+  // histStatObj: Nullable<AssetHistStatJs[]>=null;
+
   selectedNav = '';
   uiMktBar: UiMktBarItem[] = [];
-  BrAccChrt: UiBrAccChrt[] = [];  // rename BrAccChrt
+  brAccChrtDataRaw: UiBrAccChrtDataRaw[] = [];
+  brAccChrtData: UiBrAccChrtData[] = [];
+
+  // brAccChrtDataRaw1: UiBrAccChrtDataRaw1[] = [];
+  brAccChrtData1: UiBrAccChrtHistValRaw[] = [];
 
   lastRtMsg: Nullable<RtMktSumRtStat[]> = null;
   lastNonRtMsg: Nullable<RtMktSumNonRtStat[]> = null;
 
   brAccountSnapshotStr = '[Nothing arrived yet]';
-  histStr = '[Nothing arrived yet]';
+  
   // required for chart
-  private margin = {top: 20, right:20, bottom: 30, left: 50};
+  private margin = {top:20, right:20, bottom:30, left:50};
   private width: number;
   private height: number;
   private x: any;
@@ -113,78 +177,76 @@ export class BrAccViewerComponent implements OnInit {
   private svg: any;
   public tooltip: any;
   private line!: d3Shape.Line<[number, number]>;
+  private line1!: d3Shape.Line<[number, number]>;
   sqTicker: any;
   ticker: any;
   isNavColumn: any;
   // private pageX: any;
   // private pageY: any;
-
+  
   constructor() {
     
     // Creating a line chart dummy data
-    this.BrAccChrt = [
-      {assetId:1,dt:"2010-01-01",brNAV:310.45,SPY:290},
-      {assetId:2,dt:"2010-01-02",brNAV:320.45,SPY:300},
-      {assetId:3,dt:"2010-01-03",brNAV:330.45,SPY:310},
-      {assetId:4,dt:"2010-01-04",brNAV:320.45,SPY:320},
+    this.brAccChrtDataRaw = [
+      {assetId:1, dateStr:"2010-01-01", brNAV:310.45, SPY:309},
+      {assetId:2, dateStr:"2010-01-02", brNAV:320.45, SPY:317},
+      {assetId:3, dateStr:"2010-01-03", brNAV:350.45, SPY:360},
+      {assetId:4, dateStr:"2010-01-04", brNAV:340.45, SPY:315},
     ];
 
-    this.width = 960 - this.margin.left - this.margin.right;
-    this.height = 500 - this.margin.top - this.margin.bottom;
+    this.width = 1000 - this.margin.left - this.margin.right;
+    this.height = 550 - this.margin.top - this.margin.bottom;
 
 
    }
 
-  ngOnInit(): void {
+  ngAfterViewInit(): void {
   
     // functions for developing charts
-    this.buildSvg();
-    this.addXandYAxis();
-    this.drawLineAndPath();
+    this.initChart();
+    
   }
 // Chart functions start
-  private buildSvg() {
+  private initChart() {
     this.svg = d3.select('svg#chartNav')
-      .attr('width',900 )
-      .attr('height',500)
-      .append('g')
-      .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
-    
-    this.tooltip = d3.select("body")
-    .append('div')
-    .classed("chart-tooltip", true)
-    .style("display","none")
-  }
-
-  private addXandYAxis() {
+                 .attr("width", this.width + this.margin.left + this.margin.right)
+                 .attr("height", this.height + this.margin.top + this.margin.bottom)
+                //  .call(responsivefy)
+    this.svg.append('g')
+    .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
+    this.brAccChrtData = this.brAccChrtDataRaw.map(
+      (d: {assetId:string | number; dateStr: string | number | Date; brNAV: string | number; SPY: string | number; }) => ({assetId: +d.assetId,
+        dateStr: new Date(d.dateStr),
+        brNAV: +d.brNAV,
+        SPY: +d.SPY
+      }))
     // range of data configuring
+
+
+
     this.x = d3Scale.scaleTime().range([0, this.width]);
     this.y = d3Scale.scaleLinear().range([this.height,0]);
-    this.x.domain(d3Array.extent(this.BrAccChrt, (d: { dt: any; }) => d.dt ));
-    this.y.domain(d3Array.extent(this.BrAccChrt, (d: { brNAV: any; }) => d.brNAV ));
-    // this.y.domain(d3Array.extent(this.data, (d: { SPY: any; }) => d.SPY ));
+    this.x.domain(d3Array.extent(this.brAccChrtData, (d: { dateStr: any; }) => d.dateStr ));
+    // this.y.domain(d3Array.extent(this.brAccChrtData, (d: { brNAV: any; }) => d.brNAV ));
+    this.y.domain(d3Array.extent(this.brAccChrtData, (d: { SPY: any; }) => d.SPY ));
+
     // Configure the X axis
     this.svg.append('g')
       .attr('transform', 'translate(0,' + this.height + ')')
       .call(d3Axis.axisBottom(this.x).ticks(10))
-      // .tickFormat(this.x = > (${this.x.toFixed(1)}));
-
-      
-
+    
     // text label for x-axis
     this.svg.append("text")
       .attr("x", this.width/2)
-      .attr("y", this.height + this.margin.bottom)
-      
+      .attr("y", this.height + this.margin.bottom) 
       .style("text-anchor","middle")
       .text("Date");
-
     // Configure the Y Axis
     this.svg.append('g')
-      .attr('class', 'axis axis--y')
-      .call(d3Axis.axisLeft(this.y).ticks(10,"$"));
+    .attr('class', 'axis--y')
+    .call(d3Axis.axisLeft(this.y).ticks(10,"$"));
 
-     // text label for y-axis
+    // text label for y-axis
     this.svg.append("text")
       .attr("transform", "rotate(-90)")
       .attr("y", 0-this.margin.left)
@@ -192,28 +254,38 @@ export class BrAccViewerComponent implements OnInit {
       .attr("dy","1em")
       .style("text-anchor", "middle")
       .text("brNAV");
-  }
-
-  private drawLineAndPath() {
+// Genereating line - for brNAV 
     this.line = d3Shape.line()
-      .x( (d: any) => this.x(d.dt))
+      .x( (d: any) => this.x(d.dateStr))
       .y( (d: any) => this.y(d.brNAV))
-      // .y( (d: any) => this.y(d.brNAV))
-      // .curve(d3.curveMonotoneX);
-    // Configuring line path
-    // Append the path, bind the data, and call the line generator
-    this.svg.append('path')
-    .datum(this.BrAccChrt) // Binds data to the line
-    .attr('class', 'line') //Assign a class for styling
-    .attr('d', this.line); // Calls the line generator
+// Genereating line - for SPY
+    this.line1 = d3Shape.line()
+    .x( (d: any) => this.x(d.dateStr))
+    .y( (d: any) => this.y(d.SPY))
 
-// Appends a circle for each datapoint
-    this.svg.selectAll(".dot")
-    .data(this.BrAccChrt)
-    .enter().append("circle")
-    .attr("class", "dot")
+
+    // Configuring line path
+    // Append the path, bind the data, and call the line generator (brNAV)
+    this.svg.append('path')
+      .datum(this.brAccChrtData) // Binds data to the line
+      .attr('class', 'line') //Assign a class for styling
+      .attr('d', this.line); // Calls the line generator
+  
+// Append the path, bind the data, and call the line generator (SPY)
+    this.svg.append('path')
+    .datum(this.brAccChrtData) // Binds data to the line
+    .attr('class', 'line') //Assign a class for styling
+    .attr('d', this.line1); 
+
+    // this.svg.append('g')
+    // .curve(d3.curveCardinal);
+
+    this.tooltip = d3.select("body")
+    .append('div')
+    .classed("chart-tooltip", true)
+    .style("display","none")
   }
-  // Chart functions end
+ // Chart functions end
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
@@ -271,6 +343,10 @@ export class BrAccViewerComponent implements OnInit {
         return true;
       case 'BrAccViewer.Hist':
         console.log('BrAccViewer.Hist:' + msgObjStr);
+        this.histStatStr = msgObjStr;
+        this.histStatObj = JSON.parse(msgObjStr);
+        BrAccViewerComponent.updateMktBarChrtUi((this.histStatObj == null) ? null : this.histStatObj[0].histValues, (this.histStatObj == null) ? null :this.histStatObj[1].histStat, this.brAccChrtData1);
+
         // if message is too large without spaces, we have problems as there is no horizontal scrollbar in browser. So, shorten the message.
         if (msgObjStr.length < 200)
           this.histStr = msgObjStr;
@@ -334,8 +410,6 @@ export class BrAccViewerComponent implements OnInit {
 
       rtItem.last = lastClose*(1+ Math.random()*0.06-0.03);
       console.log('RT price generated:' + rtItem.last);
-      
-
       this.mktBrLstObj.push(rtItem);
 
     }
@@ -401,7 +475,7 @@ export class BrAccViewerComponent implements OnInit {
     for (const item of marketBarAssets) {
       let uiItem: UiMktBarItem;
       const existingUiCols = uiMktBar.filter(
-        (col) => col.sqTicker === item.sqTicker
+        (r) => r.sqTicker === item.sqTicker
       );
       if (existingUiCols.length === 0) {
         // console.warn(`Received ticker '${item.sqTicker}' is not expected. UiArray should be increased. This will cause UI redraw and blink. Add this ticker to defaultTickerExpected!`, 'background: #222; color: red');
@@ -454,6 +528,72 @@ export class BrAccViewerComponent implements OnInit {
       
     }
     
+    // for (const citem of histValues){
+    //   let chrtItem: brAccChrtData1;
+    //   const existingchrtItems = brAccChrtData1.filter((r) => r.assetId === chrtItem.assetId );
+    //   if (existingchrtItems.length === 0) {
+    //     chrtItem = new brAccChrtData1();
+    //     console.warn(
+    //       `Recieved assetId '${chrtItem.assetId}' is not found in chrtArray`
+    //     );
+    //     break
+    //   }
+    //   const chrtItem = existingchrtItems[0];
+
+    // }
+    
+  }
+
+  static updateMktBarChrtUi(histValues : Nullable<AssetHistValuesJs[]>, histStat:Nullable<AssetHistStatJs[]>, brAccChrtData1: UiBrAccChrtHistValRaw[]) {
+    if (!(Array.isArray(histValues) && histValues.length > 0 && Array.isArray(histStat) && histStat.length > 0)){
+      return true
+    }
+    for (const item of histValues){
+      let chrtItem : UiBrAccChrtHistValRaw;
+      const existingUiChrtCols = brAccChrtData1.filter(
+        (r) => r.assetId === item.assetId );
+      if (existingUiChrtCols.length === 0) {
+          // console.warn(`Received ticker '${item.sqTicker}' is not expected. UiArray should be increased. This will cause UI redraw and blink. Add this ticker to defaultTickerExpected!`, 'background: #222; color: red');
+          // uiCol = new UiMktBarItem(stockNonRt.sqTicker, stockNonRt.ticker, false);
+          chrtItem = new UiBrAccChrtHistValRaw();
+          chrtItem.assetId = item.assetId;
+          chrtItem.histDates = item.histDates;
+          chrtItem.histSdaCloses = item.histSdaCloses;
+          brAccChrtData1.push(chrtItem);
+        } else if (existingUiChrtCols.length === 1) {
+          chrtItem = existingUiChrtCols[0];
+        } else {
+          // console.warn(
+          //   `Received ticker '${ciItem.assetId}' has duplicates in UiArray. This might be legit if both VOD.L and VOD wants to be used. ToDo: Differentiation based on assetId is needed.`,
+          //   "background: #222; color: red"
+          // );
+          chrtItem = existingUiChrtCols[0];
+        }
+
+        for (const stItem of histStat ){
+          const existingUiChrtCols = brAccChrtData1.filter(
+            (r) => r.assetId === item.assetId );
+          if (existingUiChrtCols.length === 0) {
+            console.warn(
+              `Received assetId '${stItem.assetId}' is not found in UiArray.`
+            );
+            break;
+          }
+          chrtItem = existingUiChrtCols[1];
+          chrtItem.periodStartDate = stItem.periodStartDate;
+          chrtItem.periodEndDate = stItem.periodEndDate;
+          chrtItem.periodStart = stItem.periodStart;
+          chrtItem.periodEnd = stItem.periodEnd;
+          chrtItem.periodHigh = stItem.periodHigh;
+          chrtItem.periodLow = stItem.periodLow;
+          chrtItem.periodMaxDD = stItem.periodMaxDD;
+          chrtItem.periodMaxDU = stItem.periodMaxDU;
+
+
+        }
+      
+    }
+
   }
     
 }

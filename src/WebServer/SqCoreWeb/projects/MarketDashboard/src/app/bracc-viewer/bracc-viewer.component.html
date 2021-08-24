@@ -25,11 +25,18 @@ MarketBar
 </span>
 </div>
 <h2>Line Chart</h2>
-<!-- <div >
-    <svg id="chartNav" class= "chart" >
-      
-    </svg>
-</div> -->
+<mat-tab-group>
+    <mat-tab label="BrAccView Chart">
+        <svg id="chartNav" viewBox="0 0 960 600"
+            preserveAspectRatio="xMidYMid meet"
+            >
+        </svg>
+    </mat-tab>
+    <mat-tab label="Chart1">
+        <!-- <div id=secondTab></div> -->
+        <svg width=900 height=500></svg>
+    </mat-tab>
+</mat-tab-group>
 <hr>
 [1. MarketBar on top, QQQ, SPY, TLT, VXX, UNG, USO]<br>
 [2. [AccountData under it]<br>
