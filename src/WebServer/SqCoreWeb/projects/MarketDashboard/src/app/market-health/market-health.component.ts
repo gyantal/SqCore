@@ -180,6 +180,13 @@ export class MarketHealthComponent implements OnInit {
     // start with the NonRt, because that gives the AssetID to ticker definitions.
     for (const stockNonRt of lastNonRt) {
       let uiCol: UiTableColumn;
+      // When NavUser changes the whole lastNonRT is resent. That contains the proper AssetID for the single NAV asset
+      // Handshake Message contains all selectable NAVs, tickers, and assetIds
+      // We could use that and find the incoming nonRt.assetId by that. But we also have to store the NavAssetId after a user selects another NAV
+      // So, it is easier to just filter based on ticker ("BrNAV") than filtering by assetId
+      // uiColumns[0].ticker = "BrNAV" all the time. But it doesn't contain proper assetID at the beginning, and in the half second after user changed NAV asset.
+      // If we want to do it properly: Process Handshake Message. Store assetId of the first NAV asset. And every time a user change NAV, remember the new AssetID
+      // it is just much easier to do uiColumns.filter() by ticker, not AssetID
       const existingUiCols = uiColumns.filter(col => col.ticker === stockNonRt.ticker);
       if (existingUiCols.length === 0) {
         console.warn(`Received ticker '${stockNonRt.ticker}' is not expected. UiArray should be increased. This will cause UI redraw and blink. Add this ticker to defaultTickerExpected!`, 'background: #222; color: red');
@@ -205,11 +212,9 @@ export class MarketHealthComponent implements OnInit {
 
     for (const stockRt of lastRt) {
       const existingUiCols = uiColumns.filter(col => col.assetId === stockRt.assetId);
-      if (existingUiCols.length === 0) {
-        // it can easily happen. User changes the BrNav, but the realtime price of the previously selected BrNav is already in the websocket so it is coming here.
-        console.warn(`Received assetId '${stockRt.assetId}' is not found in UiArray. Happens if user changes BrNav and old one is already in the way`, 'background: #222; color: red');
-        break;
-      }
+      if (existingUiCols.length === 0)
+        continue;
+
       const uiCol = existingUiCols[0];
       uiCol.last = stockRt.last;
       uiCol.lastUtc = stockRt.lastUtc;

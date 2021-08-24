@@ -52,12 +52,23 @@ namespace SqCoreWeb
                 return;
             }
 
-            client!.OnConnectedWsAsync_MktHealth(activePage == ActivePage.MarketHealth, user);
-            client!.OnConnectedWsAsync_BrAccViewer(activePage == ActivePage.BrAccViewer, user);
+            ManualResetEvent waitHandleMkthConnect = new ManualResetEvent(false);
+            ManualResetEvent waitHandleBrAccConnect = new ManualResetEvent(false);
+
+            client!.OnConnectedWsAsync_MktHealth(activePage == ActivePage.MarketHealth, user, waitHandleMkthConnect);  // runs in a separate thread for being faster
+            client!.OnConnectedWsAsync_BrAccViewer(activePage == ActivePage.BrAccViewer, user, waitHandleBrAccConnect); // runs in a separate thread for being faster
             client!.OnConnectedWsAsync_QckflNews(activePage == ActivePage.QuickfolioNews);
+            Utils.Logger.Info("OnConnectedAsync() 4");
+
+            // have to wait until the tools initialize themselves to know what assets need RT prices
+            bool sucessfullWait = ManualResetEvent.WaitAll(new WaitHandle[] { waitHandleMkthConnect }, 10000);
+            Utils.Logger.Info("OnConnectedAsync() 5");
+            if (!sucessfullWait)
+                Utils.Logger.Warn("OnConnectedAsync():ManualResetEvent.WaitAll() timeout.");
 
             client!.OnConnectedWsAsync_Rt();    // immediately send SPY realtime price. It can be used in 3+2 places: BrAccViewer:MarketBar, HistoricalChart, UserAssetList, MktHlth, CatalystSniffer (so, don't send it 5 times. Client will decide what to do with RT price)
 
+            Utils.Logger.Info("OnConnectedAsync() 6");
             lock (DashboardClient.g_clients)    // RtTimer runs in every 3-5 seconds and uses g_clients, so don't add client to g_clients too early, because RT would be sent there even before OnConnection is not ready.
                 DashboardClient.g_clients.Add(client);  // takes 0.004ms
         }

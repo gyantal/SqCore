@@ -62,9 +62,9 @@ namespace SqCoreWeb
         // If we store asset pointers (Stock, Nav) if the MemDb reloads, we should reload these pointers from the new MemDb. That adds extra code complexity.
         // However, for fast execution, it is still better to keep asset pointers, instead of keeping the asset's SqTicker and always find them again and again in MemDb.
         BrokerNav? m_braccSelectedNavAsset = null;   // remember which NAV is selected, so we can send RT data
-        List<string> c_marketBarSqTickersDefault = new List<string>() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO"};
+        List<string> c_marketBarSqTickersDefault = new List<string>() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/AMZN"};    // TEMP: AMZN is here to test that realtime price is sent to client properly
         List<string> c_marketBarSqTickersDc = new List<string>() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/GLD"};
-        List<Asset> m_marketBarAssets = new List<Asset>();      // remember, so we can send RT data
+        List<Asset> m_brAccMktBrAssets = new List<Asset>();      // remember, so we can send RT data
 
         List<Asset> m_navChartBenchmarkAssets = new List<Asset>();
 
@@ -84,53 +84,38 @@ namespace SqCoreWeb
         }
 
         // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
-        public void OnConnectedWsAsync_BrAccViewer(bool p_isThisActiveToolAtConnectionInit, User p_user)
+        public void OnConnectedWsAsync_BrAccViewer(bool p_isThisActiveToolAtConnectionInit, User p_user, ManualResetEvent p_waitHandleRtPriceSending)
         {
             Task.Run(() => // running parallel on a ThreadPool thread
             {
                 Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
 
-                // Assuming this tool is not the main Tab page on the client, we delay sending all the data, to avoid making the network and client too busy an unresponsive
-                if (!p_isThisActiveToolAtConnectionInit)
-                    Thread.Sleep(TimeSpan.FromMilliseconds(5000));
-
                 List<BrokerNav> selectableNavs = p_user.GetAllVisibleBrokerNavsOrdered();
                 m_braccSelectedNavAsset = selectableNavs.FirstOrDefault();
 
                 List<string> marketBarSqTickers = (p_user.Username == "drcharmat") ? c_marketBarSqTickersDc : c_marketBarSqTickersDefault;
-                m_marketBarAssets = marketBarSqTickers.Select(r => MemDb.gMemDb.AssetsCache.GetAsset(r)).ToList();
+                m_brAccMktBrAssets = marketBarSqTickers.Select(r => MemDb.gMemDb.AssetsCache.GetAsset(r)).ToList();
 
                 HandshakeBrAccViewer handshake = GetHandshakeBrAccViewer(selectableNavs);
                 byte[] encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.Handshake:" + Utils.CamelCaseSerialize(handshake));
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
 
+                p_waitHandleRtPriceSending.Set();   // after handshake was sent to this Tool, assume tool can handle if RtPrice arrives.
+
+                // Assuming this tool is not the main Tab page on the client, we delay sending all the data, to avoid making the network and client too busy an unresponsive
+                if (!p_isThisActiveToolAtConnectionInit)
+                    Thread.Sleep(TimeSpan.FromMilliseconds(5000));
+
                 BrAccViewerSendMarketBarLastCloses();
 
                 BrAccViewerSendSnapshotAndHist();
-
-                // for both the first and the second client, we get RT prices from MemDb immediately and send it back to this Client only.
-
-                // // 1. Send the Historical data first. SendAsync() is non-blocking. GetLastRtPrice() can be blocking
-                // SendHistoricalWs();
-                // // 2. Send RT price later, because GetLastRtPrice() might block the thread, if it is the first client.
-                // SendRealtimeWs();
-
-                // lock (m_rtMktSummaryTimerLock)
-                // {
-                //     if (!m_rtMktSummaryTimerRunning)
-                //     {
-                //         Utils.Logger.Info("OnConnectedAsync_MktHealth(). Starting m_rtMktSummaryTimer.");
-                //         m_rtMktSummaryTimerRunning = true;
-                //         m_rtMktSummaryTimer.Change(TimeSpan.FromMilliseconds(m_rtMktSummaryTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
-                //     }
-                // }
             });
         }
 
         private void BrAccViewerSendMarketBarLastCloses()
         {
-            var lastCloses = MemDb.gMemDb.GetSdaLastCloses(m_marketBarAssets, Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow));
+            var lastCloses = MemDb.gMemDb.GetSdaLastCloses(m_brAccMktBrAssets, Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow));
             var mktBrLastCloses = lastCloses.Select(r =>
             {
                 return new AssetLastCloseJs() { AssetId = r.Asset.AssetId, LastClose = r.SdaLastClose, Date = r.Date };
@@ -166,7 +151,7 @@ namespace SqCoreWeb
 
         private HandshakeBrAccViewer GetHandshakeBrAccViewer(List<BrokerNav> p_selectableNavs)
         {
-            List<AssetJs> marketBarAssets = m_marketBarAssets.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
+            List<AssetJs> marketBarAssets = m_brAccMktBrAssets.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
             List<AssetJs> selectableNavAssets = p_selectableNavs.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
 
             return new HandshakeBrAccViewer() { MarketBarAssets = marketBarAssets, SelectableNavAssets = selectableNavAssets };

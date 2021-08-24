@@ -204,6 +204,25 @@ namespace FinTechCommon
             return rtPrices;
         }
 
+        public IEnumerable<(AssetId32Bits SecdID, float LastValue, DateTime LastValueUtc)> GetLastRtValueWithUtc(List<Asset> p_assets)     // C# 7.0 adds tuple types and named tuple literals. uint[] is faster to create and more RAM efficient than List<uint>
+        {
+            IEnumerable<(AssetId32Bits SecdID, float LastValue, DateTime LastValueUtc)> rtPrices = p_assets.Select(r =>
+                {
+                    m_lastRtPriceQueryTime[r] = DateTime.UtcNow;
+                    DateTime lastDateTime = DateTime.MinValue;
+                    float lastValue;
+                    if (r.AssetId.AssetTypeID == AssetType.BrokerNAV)
+                        (lastValue, lastDateTime) = GetLastNavRtPrice((r as BrokerNav)!);
+                    else
+                    {
+                        lastValue = r.LastValue;
+                        lastDateTime = r.LastValueUtc;
+                    }
+                    return (r.AssetId, lastValue, lastDateTime);
+                });
+            return rtPrices;
+        }
+
         public float GetLastRtValue(Asset p_asset)
         {
 

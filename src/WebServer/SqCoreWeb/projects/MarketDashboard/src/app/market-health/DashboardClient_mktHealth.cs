@@ -32,7 +32,7 @@ namespace SqCoreWeb
         // However, for fast execution, it is still better to keep asset pointers, instead of keeping the asset's SqTicker and always find them again and again in MemDb.
         List<string> c_marketSummarySqTickersDefault = new List<string>() { "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO"};
         List<string> c_marketSummarySqTickersDc = new List<string>() { "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO"};   // at the moment DC uses the same as default
-        List<Asset> m_marketSummaryAssets = new List<Asset>();      // remember, so we can send RT data
+        List<Asset> m_mkthAssets = new List<Asset>();      // remember, so we can send RT data
         BrokerNav? m_mkthSelectedNavAsset = null;   // remember which NAV is selected, so we can send RT data
 
         void Ctor_MktHealth()
@@ -60,30 +60,29 @@ namespace SqCoreWeb
         }
 
         // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
-        public void OnConnectedWsAsync_MktHealth(bool p_isThisActiveToolAtConnectionInit, User p_user)
+        public void OnConnectedWsAsync_MktHealth(bool p_isThisActiveToolAtConnectionInit, User p_user, ManualResetEvent p_waitHandleRtPriceSending)
         {
             Task.Run(() =>  // running parallel on a ThreadPool thread
             {
                 Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
 
-                // Assuming this tool is not the main Tab page on the client, we delay sending all the data, to avoid making the network and client too busy an unresponsive
-                if (!p_isThisActiveToolAtConnectionInit)
-                    Thread.Sleep(c_initialSleepIfNotActiveToolMh);
-
                 List<BrokerNav> selectableNavs = p_user.GetAllVisibleBrokerNavsOrdered();
                 m_mkthSelectedNavAsset = selectableNavs.FirstOrDefault();
 
                 List<string> marketSummarySqTickers = (p_user.Username == "drcharmat") ? c_marketSummarySqTickersDc : c_marketSummarySqTickersDefault;
-                m_marketSummaryAssets = marketSummarySqTickers.Select(r => MemDb.gMemDb.AssetsCache.GetAsset(r)).ToList();
+                m_mkthAssets = marketSummarySqTickers.Select(r => MemDb.gMemDb.AssetsCache.GetAsset(r)).ToList();
 
                 HandshakeMktHealth handshake = GetHandshakeMktHlth(selectableNavs);
                 byte[] encodedMsg = Encoding.UTF8.GetBytes("MktHlth.Handshake:" + Utils.CamelCaseSerialize(handshake));
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
 
-                // for both the first and the second client, we get RT prices from MemDb immediately and send it back to this Client only.
+                p_waitHandleRtPriceSending.Set();   // after handshake was sent to this Tool, assume tool can handle if RtPrice arrives.
 
-                // 1. Send the Historical data first. SendAsync() is non-blocking. GetLastRtPrice() can be blocking
+                // Assuming this tool is not the main Tab page on the client, we delay sending all the data, to avoid making the network and client too busy an unresponsive
+                if (!p_isThisActiveToolAtConnectionInit)
+                    Thread.Sleep(c_initialSleepIfNotActiveToolMh);
+
                 SendHistoricalWs();
             });
         }
@@ -121,7 +120,7 @@ namespace SqCoreWeb
 
         private IEnumerable<AssetHistStatJs> GetLookbackStat(string p_lookbackStr)
         {
-            List<Asset> allAssets = m_marketSummaryAssets.ToList();   // duplicate the asset pointers. Don't add navAsset to m_marketSummaryAssets
+            List<Asset> allAssets = m_mkthAssets.ToList();   // duplicate the asset pointers. Don't add navAsset to m_marketSummaryAssets
             if (m_mkthSelectedNavAsset != null)
                 allAssets.Add(m_mkthSelectedNavAsset);
 
@@ -173,7 +172,7 @@ namespace SqCoreWeb
         private HandshakeMktHealth GetHandshakeMktHlth(List<BrokerNav> p_selectableNavs)
         {
             //string selectableNavs = "GA.IM, DC, DC.IM, DC.IB";
-            List<AssetJs> marketSummaryAssets = m_marketSummaryAssets.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
+            List<AssetJs> marketSummaryAssets = m_mkthAssets.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
             List<AssetJs> selectableNavAssets = p_selectableNavs.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
             return new HandshakeMktHealth() { MarketSummaryAssets = marketSummaryAssets, SelectableNavAssets = selectableNavAssets };
         }

@@ -25,9 +25,9 @@ namespace SqCoreWeb
         public string Name { get; set; } = string.Empty;    // if the client has to show the name on the UI.
     }
 
-    // sent SPY realtime price can be used in 3+2 places: BrAccViewer:MarketBar, HistoricalChart, UserAssetList, MktHlth, CatalystSniffer (so, don't send it 5 times. Client will decide what to do with RT price)
-    // sent NAV realtime price can be used in 2 places: BrAccViewer.HistoricalChart, AccountSummary, MktHlth (if that is the viewed NAV)
-    class AssetRtJs   // struct sent to browser clients every 2-4 seconds
+    // Don't call it RT=Realtime. If it is the weekend, we don't have RT price, but we have Last Known price that we have to send.
+    // Don't call it Price, because NAV or other time series (^VIX) has Values, not Price. So, LastValue is the best terminology.
+    class AssetLastJs   // struct sent to browser clients every 2-4 seconds
     {
         public uint AssetId { get; set; } = 0;
         
@@ -119,11 +119,7 @@ namespace SqCoreWeb
 
         private void SendRealtimeWs()
         {
-            IEnumerable<AssetRtJs> rtMktSummaryToClient = GetRtStat();
-            // byte[] encodedMsg = Encoding.UTF8.GetBytes("MktHlth.RtStat:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
-
-            // Don't call it RT=Realtime. If it is the weekend, we don't have RT price, but we have Last Known price that we have to send.
-            // Don't call it Price, because NAV or other time series has Values, not Price. So, LastValue is the best terminology.
+            IEnumerable<AssetLastJs> rtMktSummaryToClient = GetHighPriorityRtStat();
             byte[] encodedMsg = Encoding.UTF8.GetBytes("All.LstVal:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
             if (WsWebSocket == null)
                 Utils.Logger.Info("Warning (TODO)!: Mystery how client.WsWebSocket can be null? Investigate!) ");
@@ -171,17 +167,28 @@ namespace SqCoreWeb
             }
         }
 
-        
-        private IEnumerable<AssetRtJs> GetRtStat()
-        {
-            var allAssetIds = m_marketSummaryAssets.Select(r => (uint)r.AssetId).ToList();
-            if (m_mkthSelectedNavAsset != null)
-                allAssetIds.Add(m_mkthSelectedNavAsset.AssetId);
 
-            var lastValues = MemDb.gMemDb.GetLastRtValueWithUtc(allAssetIds.ToArray()); // GetLastRtValue() is non-blocking, returns immediately (maybe with NaN values)
-            return lastValues.Where(r => float.IsFinite(r.LastValue)).Select(r =>
+        private IEnumerable<AssetLastJs> GetHighPriorityRtStat()
+        {
+            // sent SPY realtime price can be used in 3+2 places: BrAccViewer:MarketBar, HistoricalChart, UserAssetList, MktHlth, CatalystSniffer (so, don't send it 5 times. Client will decide what to do with RT price)
+            // sent NAV realtime price can be used in 2 places: BrAccViewer.HistoricalChart, AccountSummary, MktHlth (if that is the viewed NAV)
+
+            List<Asset> highPriorityAssets = new List<Asset>(m_mkthAssets);
+            foreach (Asset mktBrAsset in m_brAccMktBrAssets)
             {
-                var rtStock = new AssetRtJs()
+                if (!highPriorityAssets.Contains(mktBrAsset))
+                    highPriorityAssets.Add(mktBrAsset);
+            }
+
+            if (m_mkthSelectedNavAsset != null)
+                highPriorityAssets.Add(m_mkthSelectedNavAsset);
+            if (m_braccSelectedNavAsset != null && !highPriorityAssets.Contains(m_braccSelectedNavAsset))
+                highPriorityAssets.Add(m_braccSelectedNavAsset);
+
+            var lastValues = MemDb.gMemDb.GetLastRtValueWithUtc(highPriorityAssets); // GetLastRtValue() is non-blocking, returns immediately (maybe with NaN values)
+            return lastValues.Where(r => float.IsFinite(r.LastValue)).Select(r =>   // there is no point of sending if LastValue is NaN
+            {
+                var rtStock = new AssetLastJs()
                 {
                     AssetId = r.SecdID,
                     Last = r.LastValue,
@@ -191,6 +198,15 @@ namespace SqCoreWeb
             });
         }
 
-        
+        private IEnumerable<AssetLastJs> GetMidPriorityRtStat()
+        {
+            // TODO: <when BrAcc Snapshot needs RT data for positions> Realtime price sending should be prioritized.
+            // HighRtPriorityAssets list (QQQ,SPY,VXX) maybe sent in evere 5 seconds. MarketHealth.MarketSummary + BrAccViewer.MktBar
+            // MidPriority: every 30 seconds. GameChanger1s in BrAccViewer.SnapshotPos
+            // LowPriority: everything else (BrAccViewer.SnapshotPos). (2 minutes or randomly 20 in every 1 minute. DC has 300 stocks, so those belong to that.)
+            throw new NotImplementedException();
+        }
+
+
     }
 }
