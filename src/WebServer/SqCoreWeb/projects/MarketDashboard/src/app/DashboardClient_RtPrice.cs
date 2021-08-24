@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading;
 using FinTechCommon;
 using Microsoft.AspNetCore.Http;
 using SqCommon;
@@ -29,9 +30,10 @@ namespace SqCoreWeb
     class AssetRtJs   // struct sent to browser clients every 2-4 seconds
     {
         public uint AssetId { get; set; } = 0;
+        
+        public DateTime LastUtc { get; set; } = DateTime.MinValue;
         [JsonConverter(typeof(FloatJsonConverterToNumber4D))]
         public float Last { get; set; } = -100.0f;     // real-time last price
-        public DateTime LastUtc { get; set; } = DateTime.MinValue;
     }
 
     public class AssetLastCloseJs   // this is sent to clients usually just once per day, OR when historical data changes
@@ -92,7 +94,103 @@ namespace SqCoreWeb
 
     public partial class DashboardClient {
 
+        // one global static real-time price Timer serves all clients. For efficiency.
+        static Timer m_rtMktSummaryTimer = new System.Threading.Timer(new TimerCallback(RtMktSummaryTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
+        static bool m_rtMktSummaryTimerRunning = false;
+        static object m_rtMktSummaryTimerLock = new Object();
+        static int m_rtMktSummaryTimerFrequencyMs = 3000;    // as a demo go with 3sec, later change it to 5sec, do decrease server load.
+
+
+        public void OnConnectedWsAsync_Rt()
+        {
+            // 2. Send RT price (after ClosePrices are sent to Tools)
+            SendRealtimeWs();
+
+            lock (m_rtMktSummaryTimerLock)
+            {
+                if (!m_rtMktSummaryTimerRunning)
+                {
+                    Utils.Logger.Info("OnConnectedAsync_MktHealth(). Starting m_rtMktSummaryTimer.");
+                    m_rtMktSummaryTimerRunning = true;
+                    m_rtMktSummaryTimer.Change(TimeSpan.FromMilliseconds(m_rtMktSummaryTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
+                }
+            }
+        }
+
+        private void SendRealtimeWs()
+        {
+            IEnumerable<AssetRtJs> rtMktSummaryToClient = GetRtStat();
+            // byte[] encodedMsg = Encoding.UTF8.GetBytes("MktHlth.RtStat:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
+
+            // Don't call it RT=Realtime. If it is the weekend, we don't have RT price, but we have Last Known price that we have to send.
+            // Don't call it Price, because NAV or other time series has Values, not Price. So, LastValue is the best terminology.
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("All.LstVal:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
+            if (WsWebSocket == null)
+                Utils.Logger.Info("Warning (TODO)!: Mystery how client.WsWebSocket can be null? Investigate!) ");
+            if (WsWebSocket != null && WsWebSocket!.State == WebSocketState.Open)
+                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+        }
+
+
+        public static void RtMktSummaryTimer_Elapsed(object? state)    // Timer is coming on a ThreadPool thread
+        {
+            try
+            {
+                Utils.Logger.Debug("RtMktSummaryTimer_Elapsed(). BEGIN");
+                if (!m_rtMktSummaryTimerRunning)
+                    return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
+
+                List<DashboardClient>? g_clientsCpy = null;  // Clone the list, because .Add() can increase its size in another thread
+                lock (DashboardClient.g_clients)
+                    g_clientsCpy = new List<DashboardClient>(DashboardClient.g_clients);
+
+                g_clientsCpy.ForEach(client =>
+                {
+                    // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
+                    // OnConnectedWsAsync() sleeps for a while if not active tool.
+                    TimeSpan timeSinceConnect = DateTime.UtcNow - client.WsConnectionTime;
+                    if (client.ActivePage != ActivePage.MarketHealth && timeSinceConnect < c_initialSleepIfNotActiveToolMh.Add(TimeSpan.FromMilliseconds(100)))
+                        return;
+
+                    client.SendRealtimeWs();
+                });
+
+                lock (m_rtMktSummaryTimerLock)
+                {
+                    if (m_rtMktSummaryTimerRunning)
+                    {
+                        m_rtMktSummaryTimer.Change(TimeSpan.FromMilliseconds(m_rtMktSummaryTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
+                    }
+                }
+                // Utils.Logger.Info("RtMktSummaryTimer_Elapsed(). END");
+            }
+            catch (Exception e)
+            {
+                Utils.Logger.Error(e, "RtMktSummaryTimer_Elapsed() exception.");
+                throw;
+            }
+        }
+
+        
+        private IEnumerable<AssetRtJs> GetRtStat()
+        {
+            var allAssetIds = m_marketSummaryAssets.Select(r => (uint)r.AssetId).ToList();
+            if (m_mkthSelectedNavAsset != null)
+                allAssetIds.Add(m_mkthSelectedNavAsset.AssetId);
+
+            var lastValues = MemDb.gMemDb.GetLastRtValueWithUtc(allAssetIds.ToArray()); // GetLastRtValue() is non-blocking, returns immediately (maybe with NaN values)
+            return lastValues.Where(r => float.IsFinite(r.LastValue)).Select(r =>
+            {
+                var rtStock = new AssetRtJs()
+                {
+                    AssetId = r.SecdID,
+                    Last = r.LastValue,
+                    LastUtc = r.LastValueUtc
+                };
+                return rtStock;
+            });
+        }
+
         
     }
-
 }

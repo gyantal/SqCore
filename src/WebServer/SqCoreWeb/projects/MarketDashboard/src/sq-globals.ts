@@ -91,3 +91,9 @@ export class SqDiagnostics {
   public wsOnLastRtMktSumLookbackChgStart: Date = minDate;
 }
 export const gDiag: SqDiagnostics = new SqDiagnostics();
+
+export class AssetLastJs {
+  public assetId = NaN;
+  public lastUtc = ''; // preferred to be a new Date(), but when it arrives from server it is a string '2010-09-29T00:00:00'.
+  public last = NaN;
+}

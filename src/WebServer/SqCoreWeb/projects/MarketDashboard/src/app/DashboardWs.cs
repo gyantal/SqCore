@@ -39,20 +39,11 @@ namespace SqCoreWeb
             var clientIP = WsUtils.GetRequestIPv6(context!);    // takes 0.346ms
             Utils.Logger.Info($"DashboardWs.OnConnectedAsync(), Connection from IP: {clientIP} with email '{email}'");  // takes 1.433ms
             var thisConnectionTime = DateTime.UtcNow;
-            DashboardClient? client = null;
-            lock (DashboardClient.g_clients)    // find client from the same IP, assuming connection in the last 2000ms
-            {
-                // client = DashboardClient.g_clients.Find(r => r.ClientIP == clientIP && (thisConnectionTime - r.WsConnectionTime).TotalMilliseconds < 2000);
-                // if (client == null)
-                // {
-                client = new DashboardClient(clientIP, email);
-                DashboardClient.g_clients.Add(client);  // takes 0.004ms
-                //}
-                client.WsConnectionTime = thisConnectionTime; // used by the other (secondary) connection to decide whether to create a new g_clients item.
-                client.WsWebSocket = webSocket;
-                client.WsHttpContext = context;
-                client.ActivePage = activePage;
-            }
+            DashboardClient? client = new DashboardClient(clientIP, email);
+            client.WsConnectionTime = thisConnectionTime; // used by the other (secondary) connection to decide whether to create a new g_clients item.
+            client.WsWebSocket = webSocket;
+            client.WsHttpContext = context;
+            client.ActivePage = activePage;
 
             User? user = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == client!.UserEmail);
             if (user == null)
@@ -64,15 +55,18 @@ namespace SqCoreWeb
             client!.OnConnectedWsAsync_MktHealth(activePage == ActivePage.MarketHealth, user);
             client!.OnConnectedWsAsync_BrAccViewer(activePage == ActivePage.BrAccViewer, user);
             client!.OnConnectedWsAsync_QckflNews(activePage == ActivePage.QuickfolioNews);
+
+            client!.OnConnectedWsAsync_Rt();    // immediately send SPY realtime price. It can be used in 3+2 places: BrAccViewer:MarketBar, HistoricalChart, UserAssetList, MktHlth, CatalystSniffer (so, don't send it 5 times. Client will decide what to do with RT price)
+
+            lock (DashboardClient.g_clients)    // RtTimer runs in every 3-5 seconds and uses g_clients, so don't add client to g_clients too early, because RT would be sent there even before OnConnection is not ready.
+                DashboardClient.g_clients.Add(client);  // takes 0.004ms
         }
 
         public static void OnReceiveAsync(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? wsResult, string bufferStr)
         {
             DashboardClient? client = null;
             lock (DashboardClient.g_clients)    // find client from the same IP, assuming connection in the last 1000ms
-            {
                 client = DashboardClient.g_clients.Find(r => r.WsWebSocket == webSocket);
-            }
             if (client != null)
             {
                 var semicolonInd = bufferStr.IndexOf(':');

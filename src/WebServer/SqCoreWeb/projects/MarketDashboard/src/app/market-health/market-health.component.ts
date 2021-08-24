@@ -1,6 +1,7 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { SqNgCommonUtilsTime } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
-import { gDiag, minDate } from './../../sq-globals';
+import { ChangeNaNstringToNaNnumber } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils';
+import { gDiag, minDate, AssetLastJs } from './../../sq-globals';
 
 // The MarketHealth table frame is shown immediately (without numbers) even at DOMContentLoaded time. And later, it is filled with data as it arrives.
 // This avoid UI blinking at load and later shifting HTML elements under the table downwards.
@@ -8,12 +9,6 @@ import { gDiag, minDate } from './../../sq-globals';
 // We have to show the UI with empty cells. Window.loaded: 70ms, WebSocket data: 140ms, so it is worth doing it, as the data arrives 70ms later than window is ready.
 
 type Nullable<T> = T | null;
-
-class RtMktSumRtStat {
-  public assetId = NaN;
-  public last  = NaN;
-  public lastUtc = '';
-}
 
 class RtMktSumNonRtStat {
   public assetId = NaN;  // JavaScript Numbers are Always 64-bit Floating Point
@@ -156,12 +151,10 @@ class TradingHoursTimer {
 export class MarketHealthComponent implements OnInit {
 
   @Input() _parentWsConnection?: WebSocket = undefined;    // this property will be input from above parent container
-  nRtStatArrived = 0;
   nNonRtStatArrived = 0;
-  lastRtMsgStr = 'Rt data from server';
   lastNonRtMsgStr = 'NonRt data from server';
-  lastRtMsg: Nullable<RtMktSumRtStat[]> = null;
   lastNonRtMsg: Nullable<RtMktSumNonRtStat[]> = null;
+  lstValObj: Nullable<AssetLastJs[]> = null;  // realtime or last values
   selectedNav = '';
 
   uiTableColumns: UiTableColumn[] = []; // this is connected to Angular UI with *ngFor. If pointer is replaced or if size changes, Angular should rebuild the DOM tree. UI can blink. To avoid that only modify its inner field strings.
@@ -171,7 +164,7 @@ export class MarketHealthComponent implements OnInit {
   lookbackEndET: Date;
   lookbackEndETstr: string;
 
-  static updateUi(lastRt: Nullable<RtMktSumRtStat[]>, lastNonRt: Nullable<RtMktSumNonRtStat[]>, lookbackStartDateET: Date, uiColumns: UiTableColumn[]) {
+  static updateUi(lastRt: Nullable<AssetLastJs[]>, lastNonRt: Nullable<RtMktSumNonRtStat[]>, lookbackStartDateET: Date, uiColumns: UiTableColumn[]) {
     // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
     if (!(Array.isArray(lastRt) && lastRt.length > 0 && Array.isArray(lastNonRt) && lastNonRt.length > 0)) {
       return;
@@ -243,7 +236,7 @@ export class MarketHealthComponent implements OnInit {
       uiCol.maxDrawUp = Math.max(uiCol.periodMaxDU, uiCol.drawUp);
 
       // filling first row in table
-      uiCol.rtReturnStr = (uiCol.rtReturn >= 0 ? '+' : '') + (uiCol.rtReturn * 100).toFixed(2).toString() + '%';
+      uiCol.rtReturnStr = (uiCol.rtReturn >= 0 ? '+' : '') + (uiCol.rtReturn * 100).toFixed(2).toString() + '%';  // %Chg: Bloomberg, MarketWatch, TradingView doesn't put "+" sign if it is positive, IB, CNBC, YahooFinance does. Go as IB.
       uiCol.rtReturnSign = Math.sign(uiCol.rtReturn);
       uiCol.rtReturnClass = (uiCol.rtReturn >= 0 ? 'positivePerf' : 'negativePerf');
       uiCol.rtTooltipStr1 = uiCol.ticker;
@@ -360,25 +353,6 @@ export class MarketHealthComponent implements OnInit {
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
-      case 'MktHlth.RtStat':  // this is the most frequent case. Should come first.
-        if (gDiag.wsOnFirstRtMktSumRtStatTime === minDate) {
-          gDiag.wsOnFirstRtMktSumRtStatTime = new Date();
-        }
-        gDiag.wsOnLastRtMktSumRtStatTime = new Date();
-        gDiag.wsNumRtMktSumRtStat++;
-
-        this.nRtStatArrived++;
-        const jsonArrayObjRt = JSON.parse(msgObjStr);
-        // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
-        jsonArrayObjRt.forEach(element => {
-          element.last = this.ChangeNaNstringToNaNnumber(element.last);
-        });
-        const msgStrRt = jsonArrayObjRt.map(s => s.assetId + '=>' + s.last.toFixed(2).toString()).join(', ');  // %Chg: Bloomberg, MarketWatch, TradingView doesn't put "+" sign if it is positive, IB, CNBC, YahooFinance does. Go as IB.
-        console.log('ws: RtMktSumRtStat arrived: ' + msgStrRt);
-        this.lastRtMsgStr = msgStrRt;
-        this.lastRtMsg = jsonArrayObjRt;
-        MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
-        return true;
       case 'MktHlth.NonRtStat':
         if (gDiag.wsOnFirstRtMktSumNonRtStatTime === minDate) {
           gDiag.wsOnFirstRtMktSumNonRtStatTime = new Date();
@@ -392,18 +366,18 @@ export class MarketHealthComponent implements OnInit {
             element.ticker = element.sqTicker.substring(2); // "sqTicker":"S/QQQ"
           else
             element.ticker = "BrNAV";  // "sqTicker":"N/GA.IM", but on UI we show it as "BrNAV" header
-          element.periodStart = this.ChangeNaNstringToNaNnumber(element.periodStart);
-          element.periodEnd = this.ChangeNaNstringToNaNnumber(element.periodEnd);
-          element.periodHigh = this.ChangeNaNstringToNaNnumber(element.periodHigh);
-          element.periodLow = this.ChangeNaNstringToNaNnumber(element.periodLow);
-          element.periodMaxDD = this.ChangeNaNstringToNaNnumber(element.periodMaxDD);
-          element.periodMaxDU = this.ChangeNaNstringToNaNnumber(element.periodMaxDU);
+          element.periodStart = ChangeNaNstringToNaNnumber(element.periodStart);
+          element.periodEnd = ChangeNaNstringToNaNnumber(element.periodEnd);
+          element.periodHigh = ChangeNaNstringToNaNnumber(element.periodHigh);
+          element.periodLow = ChangeNaNstringToNaNnumber(element.periodLow);
+          element.periodMaxDD = ChangeNaNstringToNaNnumber(element.periodMaxDD);
+          element.periodMaxDU = ChangeNaNstringToNaNnumber(element.periodMaxDU);
         });
         const msgStrNonRt = jsonArrayObjNonRt.map(s => s.assetId + '|' + s.ticker + '|periodEnd:' + s.periodEnd.toFixed(2).toString() + '|periodStart:' + s.periodStart.toString() + '|open:' + s.periodStart.toFixed(2).toString() + '|high:' + s.periodHigh.toFixed(2).toString() + '|low:' + s.periodLow.toFixed(2).toString() + '|mdd:' + s.periodMaxDD.toFixed(2).toString() + '|mdu:' + s.periodMaxDU.toFixed(2).toString()).join(', ');
         // console.log('ws: RtMktSumNonRtStat arrived: ' + msgStrNonRt);
         this.lastNonRtMsgStr = msgStrNonRt;
         this.lastNonRtMsg = jsonArrayObjNonRt;
-        MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
+        MarketHealthComponent.updateUi(this.lstValObj, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
         return true;
       case 'MktHlth.Handshake':  // this is the least frequent case. Should come last.
         const jsonObjHandshake = JSON.parse(msgObjStr);
@@ -416,12 +390,9 @@ export class MarketHealthComponent implements OnInit {
     }
   }
 
-  private ChangeNaNstringToNaNnumber(elementField: any): number {
-    if (elementField.toString() === 'NaN') {
-      return NaN;
-    } else {
-      return Number(elementField);
-    }
+  public webSocketLstValArrived(p_lstValObj: Nullable<AssetLastJs[]>) {
+    this.lstValObj = p_lstValObj;
+    MarketHealthComponent.updateUi(this.lstValObj, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
   }
 
   // https://stackoverflow.com/questions/44840735/change-vs-ngmodelchange-in-angular

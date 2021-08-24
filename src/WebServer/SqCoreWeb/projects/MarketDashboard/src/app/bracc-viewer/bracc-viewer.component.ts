@@ -6,6 +6,7 @@ import * as d3Shape from 'd3';
 import * as d3Array from 'd3';
 import * as d3Axis from 'd3';
 // import { SqNgCommonUtilsTime } from '../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
+import { AssetLastJs } from './../../sq-globals';
 
 type Nullable<T> = T | null;
 
@@ -26,12 +27,6 @@ class AssetLastCloseJs {
 class BrAccVwrHandShk {
   marketBarAssets: Nullable<AssetJs[]> = null;
   selectableNavAssets: Nullable<AssetJs[]> = null;
-}
-
-class AssetLastJs {
-  public assetId = NaN;
-  public lastUtc = ''; // preferred to be a new Date(), but when it arrives from server it is a string '2010-09-29T00:00:00'.
-  public last = NaN;
 }
 
 class UiMktBarItem {
@@ -145,6 +140,8 @@ export class BrAccViewerComponent implements AfterViewInit {
   handshakeObj: Nullable<BrAccVwrHandShk> = null;
   mktBrLstClsStr = '[Nothing arrived yet]';
   mktBrLstClsObj: Nullable<AssetLastCloseJs[]> = null;
+
+  lstValObj: Nullable<AssetLastJs[]> = null;  // realtime or last values
 
   mktBrLstObj: Nullable<AssetLastJs[]> = null;
 
@@ -360,14 +357,14 @@ export class BrAccViewerComponent implements AfterViewInit {
         BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, null, this.uiMktBar);
         // cerate a JS timer to run a function MockupRtPriceArrived()
         //setInterval(this.mockupRtPriceArrived, 3000)
-        setInterval(
-          (function(self) {         //Self-executing func which takes 'this' as self
-              return function() {   //Return a function in the context of 'self'
-                  self.mockupRtPriceArrived(); //Thing you wanted to run as non-window 'this'
-              }
-          })(this),
-          3000     //normal interval, 'this' scope not impacted here.
-      ); 
+        // setInterval(
+        //   (function (self) {         //Self-executing func which takes 'this' as self
+        //     return function () {   //Return a function in the context of 'self'
+        //       self.mockupRtPriceArrived(); //Thing you wanted to run as non-window 'this'
+        //     }
+        //   })(this),
+        //   3000     //normal interval, 'this' scope not impacted here.
+        // );
         //...
 
         return true;
@@ -383,39 +380,44 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
   }
 
-  public mockupRtPriceArrived() {
-    console.log("mock up price arrived");
-
-    this.mktBrLstObj = [];
-
-    let marketBarAssets = (this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets;
-    if (marketBarAssets == null)
-      return;
-  
-    for (const mktBrAsset of marketBarAssets) {
-      let rtItem =  new AssetLastJs();
-      rtItem.assetId = mktBrAsset.assetId;
-      rtItem.lastUtc = '';
-
-      let lastClose = 100.0;
-      if (this.mktBrLstClsObj == null)
-        return;
-      var lastCloseArr = this.mktBrLstClsObj.filter(r => r.assetId === mktBrAsset.assetId);
-     
-      if (lastCloseArr.length === 1) {
-        lastClose = lastCloseArr[0].lastClose;
-      } else {
-        console.warn('Mockup Real time price and last close not found');
-      }
-
-      rtItem.last = lastClose*(1+ Math.random()*0.06-0.03);
-      console.log('RT price generated:' + rtItem.last);
-      this.mktBrLstObj.push(rtItem);
-
-    }
-
-    BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.mktBrLstObj, this.uiMktBar);
+  public webSocketLstValArrived(p_lstValObj: Nullable<AssetLastJs[]>) {
+    this.lstValObj = p_lstValObj;
+    BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.lstValObj, this.uiMktBar);
   }
+
+  // public mockupRtPriceArrived() {
+  //   console.log("mock up price arrived");
+
+  //   this.mktBrLstObj = [];
+
+  //   let marketBarAssets = (this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets;
+  //   if (marketBarAssets == null)
+  //     return;
+  
+  //   for (const mktBrAsset of marketBarAssets) {
+  //     let rtItem =  new AssetLastJs();
+  //     rtItem.assetId = mktBrAsset.assetId;
+  //     rtItem.lastUtc = '';
+
+  //     let lastClose = 100.0;
+  //     if (this.mktBrLstClsObj == null)
+  //       return;
+  //     var lastCloseArr = this.mktBrLstClsObj.filter(r => r.assetId === mktBrAsset.assetId);
+     
+  //     if (lastCloseArr.length === 1) {
+  //       lastClose = lastCloseArr[0].lastClose;
+  //     } else {
+  //       console.warn('Mockup Real time price and last close not found');
+  //     }
+
+  //     rtItem.last = lastClose*(1+ Math.random()*0.06-0.03);
+  //     console.log('RT price generated:' + rtItem.last);
+  //     this.mktBrLstObj.push(rtItem);
+
+  //   }
+
+  //   BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.mktBrLstObj, this.uiMktBar);
+  // }
 
   updateUiSelectableNavs(pSelectableNavAssets: any) {  // same in MktHlth and BrAccViewer
     const navSelectElement = document.getElementById('braccViewerNavSelect') as HTMLSelectElement;
@@ -517,12 +519,9 @@ export class BrAccViewerComponent implements AfterViewInit {
       const existingUiItems = uiMktBar.filter(
         (r) => r.assetId === rtItem.assetId
       );
-      if (existingUiItems.length === 0) {
-        console.warn(
-          `Received assetId '${rtItem.assetId}' is not found in UiArray.`
-        );
-        break;
-      }
+      if (existingUiItems.length === 0)
+        continue;
+      
       const uiItem = existingUiItems[0];
       uiItem.pctChg = (rtItem.last - uiItem.lastClose) / uiItem.lastClose;
       

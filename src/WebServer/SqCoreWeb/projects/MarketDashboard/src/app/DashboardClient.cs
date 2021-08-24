@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
+using System.Threading;
 using FinTechCommon;
 using Microsoft.AspNetCore.Http;
 
@@ -29,7 +30,6 @@ namespace SqCoreWeb
         public static List<DashboardClient> g_clients = new List<DashboardClient>();
         public static Dictionary<string, ActivePage> c_urlParam2ActivePage = new Dictionary<string, ActivePage>() { 
             {"mh", ActivePage.MarketHealth}, {"bav", ActivePage.BrAccViewer}, {"cs", ActivePage.CatalystSniffer}, {"qn", ActivePage.QuickfolioNews}};
-
 
         static DashboardClient()
         {
@@ -66,9 +66,7 @@ namespace SqCoreWeb
             p_sb.Append("<H2>Dashboard Clients</H2>");
  
             lock (DashboardClient.g_clients)
-            {
                 p_sb.Append($"#Clients (WebSocket): {DashboardClient.g_clients.Count}: {String.Join(",", DashboardClient.g_clients.Select(r => "'" + r.UserEmail + "'"))}<br>");
-            }
             p_sb.Append($"mktSummaryTimerRunning: {m_rtMktSummaryTimerRunning}<br>");
         }
 

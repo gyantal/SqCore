@@ -1,10 +1,12 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { SettingsDialogComponent } from './settings-dialog/settings-dialog.component';
-import { gDiag, minDate } from './../sq-globals';
+import { gDiag, minDate, AssetLastJs } from './../sq-globals';
 import { MarketHealthComponent } from './market-health/market-health.component';
 import { QuickfolioNewsComponent } from './quickfolio-news/quickfolio-news.component';
 import { BrAccViewerComponent } from './bracc-viewer/bracc-viewer.component';
-import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
+import { ChangeNaNstringToNaNnumber, SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
+
+type Nullable<T> = T | null;
 
 class HandshakeMessage {
   public email = '';
@@ -49,6 +51,10 @@ export class AppComponent implements OnInit {
     'qn': 'QuickfolioNews'
   };
 
+  nLstValArrived = 0;
+  lstValStr = '[Nothing arrived yet]';
+  lstValObj: Nullable<AssetLastJs[]> = null;
+
   constructor() { // Called first time before the ngOnInit()
     gDiag.mainAngComponentConstructorTime = new Date();
     // console.log('sq.d: ' + gDiag.mainAngComponentConstructorTime.toISOString() + ': mainAngComponentConstructor()'); // called 17ms after main.ts
@@ -90,6 +96,26 @@ export class AppComponent implements OnInit {
       const msgCode = event.data.slice(0, semicolonInd);
       const msgObjStr = event.data.substring(semicolonInd + 1);
       switch (msgCode) {
+        case 'All.LstVal':  // this is the most frequent case. Should come first.
+          if (gDiag.wsOnFirstRtMktSumRtStatTime === minDate) {
+            gDiag.wsOnFirstRtMktSumRtStatTime = new Date();
+          }
+          gDiag.wsOnLastRtMktSumRtStatTime = new Date();
+          gDiag.wsNumRtMktSumRtStat++;
+          this.nLstValArrived++;
+          const jsonArrayObjRt = JSON.parse(msgObjStr);
+          // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
+          jsonArrayObjRt.forEach(element => {
+            element.last = ChangeNaNstringToNaNnumber(element.last);
+          });
+
+          this.lstValStr = jsonArrayObjRt.map(s => s.assetId + '=>' + s.last.toFixed(2).toString()).join(', ');
+          console.log('ws: RtMktSumRtStat arrived: ' + this.lstValStr);
+          this.lstValObj = jsonArrayObjRt;
+
+          this.childMktHealthComponent.webSocketLstValArrived(this.lstValObj);
+          this.childBrAccViewerComponent.webSocketLstValArrived(this.lstValObj);
+          break;
         case 'OnConnected':
           gDiag.wsOnConnectedMsgArrivedTime = new Date();
           // console.log('sq.d: ' + gDiag.wsOnConnectedMsgArrivedTime.toISOString() + ': wsOnConnectedMsgArrivedTime()');
@@ -226,5 +252,4 @@ export class AppComponent implements OnInit {
       this.sqDiagnosticsMsg = diag;
     }
   }
-
 }

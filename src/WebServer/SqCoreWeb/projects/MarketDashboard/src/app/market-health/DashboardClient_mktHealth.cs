@@ -4,9 +4,7 @@ using SqCommon;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
-using System.Diagnostics;
 using FinTechCommon;
-using System.Text.Json.Serialization;
 using System.Net.WebSockets;
 using Microsoft.Extensions.Primitives;
 using System.Threading.Tasks;
@@ -25,26 +23,17 @@ namespace SqCoreWeb
     // Clients should be slim programmed. They should only care, that IF they receive a new data, then Refresh.
     public partial class DashboardClient
     {
-        // one global static real-time price Timer serves all clients. For efficiency.
-        static Timer m_rtMktSummaryTimer = new System.Threading.Timer(new TimerCallback(RtMktSummaryTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
-        static bool m_rtMktSummaryTimerRunning = false;
-        static object m_rtMktSummaryTimerLock = new Object();
-
-        static int m_rtMktSummaryTimerFrequencyMs = 3000;    // as a demo go with 3sec, later change it to 5sec, do decrease server load.
-
         public static TimeSpan c_initialSleepIfNotActiveToolMh = TimeSpan.FromMilliseconds(5000);
-
-
-        string m_lastLookbackPeriodStr = "YTD";
+        string m_lastLookbackPeriodStrMh = "YTD";
 
 
         // try to convert to use these fields. At least on the server side.
         // If we store asset pointers (Stock, Nav) if the MemDb reloads, we should reload these pointers from the new MemDb. That adds extra code complexity.
         // However, for fast execution, it is still better to keep asset pointers, instead of keeping the asset's SqTicker and always find them again and again in MemDb.
-        BrokerNav? m_mkthSelectedNavAsset = null;   // remember which NAV is selected, so we can send RT data
         List<string> c_marketSummarySqTickersDefault = new List<string>() { "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO"};
         List<string> c_marketSummarySqTickersDc = new List<string>() { "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO"};   // at the moment DC uses the same as default
         List<Asset> m_marketSummaryAssets = new List<Asset>();      // remember, so we can send RT data
+        BrokerNav? m_mkthSelectedNavAsset = null;   // remember which NAV is selected, so we can send RT data
 
         void Ctor_MktHealth()
         {
@@ -61,7 +50,7 @@ namespace SqCoreWeb
         {
             Utils.Logger.Info("EvMemDbHistoricalDataReloaded_mktHealth() START");
 
-            IEnumerable<AssetHistStatJs> periodStatToClient = GetLookbackStat(m_lastLookbackPeriodStr);     // reset lookback to to YTD. Because of BrokerNAV, lookback period stat is user specific.
+            IEnumerable<AssetHistStatJs> periodStatToClient = GetLookbackStat(m_lastLookbackPeriodStrMh);     // reset lookback to to YTD. Because of BrokerNAV, lookback period stat is user specific.
             Utils.Logger.Info("EvMemDbHistoricalDataReloaded_mktHealth(). Processing client:" + UserEmail);
             byte[] encodedMsg = Encoding.UTF8.GetBytes("MktHlth.NonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
             if (WsWebSocket == null)
@@ -96,33 +85,13 @@ namespace SqCoreWeb
 
                 // 1. Send the Historical data first. SendAsync() is non-blocking. GetLastRtPrice() can be blocking
                 SendHistoricalWs();
-                // 2. Send RT price later, because GetLastRtPrice() might block the thread, if it is the first client.
-                SendRealtimeWs();
-
-                lock (m_rtMktSummaryTimerLock)
-                {
-                    if (!m_rtMktSummaryTimerRunning)
-                    {
-                        Utils.Logger.Info("OnConnectedAsync_MktHealth(). Starting m_rtMktSummaryTimer.");
-                        m_rtMktSummaryTimerRunning = true;
-                        m_rtMktSummaryTimer.Change(TimeSpan.FromMilliseconds(m_rtMktSummaryTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
-                    }
-                }
             });
         }
 
         private void SendHistoricalWs()
         {
-            IEnumerable<AssetHistStatJs> periodStatToClient = GetLookbackStat(m_lastLookbackPeriodStr);
+            IEnumerable<AssetHistStatJs> periodStatToClient = GetLookbackStat(m_lastLookbackPeriodStrMh);
             byte[] encodedMsg = Encoding.UTF8.GetBytes("MktHlth.NonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
-            if (WsWebSocket!.State == WebSocketState.Open)
-                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
-        }
-
-        private void SendRealtimeWs()
-        {
-            IEnumerable<AssetRtJs> rtMktSummaryToClient = GetRtStat();
-            byte[] encodedMsg = Encoding.UTF8.GetBytes("MktHlth.RtStat:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
             if (WsWebSocket!.State == WebSocketState.Open)
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
         }
@@ -133,7 +102,7 @@ namespace SqCoreWeb
             {
                 case "MktHlth.ChangeLookback":
                     Utils.Logger.Info("OnReceiveWsAsync_MktHealth(): changeLookback");
-                    m_lastLookbackPeriodStr = msgObjStr;
+                    m_lastLookbackPeriodStrMh = msgObjStr;
                     SendHistoricalWs();
                     return true;
                 case "MktHlth.ChangeNav":
@@ -201,25 +170,6 @@ namespace SqCoreWeb
             return lookbackStatToClient;
         }
 
-        private IEnumerable<AssetRtJs> GetRtStat()
-        {
-            var allAssetIds = m_marketSummaryAssets.Select(r => (uint)r.AssetId).ToList();
-            if (m_mkthSelectedNavAsset != null)
-                allAssetIds.Add(m_mkthSelectedNavAsset.AssetId);
-
-            var lastValues = MemDb.gMemDb.GetLastRtValueWithUtc(allAssetIds.ToArray());
-            return lastValues.Where(r => float.IsFinite(r.LastValue)).Select(r =>
-            {
-                var rtStock = new AssetRtJs()
-                {
-                    AssetId = r.SecdID,
-                    Last = r.LastValue,
-                    LastUtc = r.LastValueUtc
-                };
-                return rtStock;
-            });
-        }
-
         private HandshakeMktHealth GetHandshakeMktHlth(List<BrokerNav> p_selectableNavs)
         {
             //string selectableNavs = "GA.IM, DC, DC.IM, DC.IB";
@@ -228,45 +178,5 @@ namespace SqCoreWeb
             return new HandshakeMktHealth() { MarketSummaryAssets = marketSummaryAssets, SelectableNavAssets = selectableNavAssets };
         }
 
-        public static void RtMktSummaryTimer_Elapsed(object? state)    // Timer is coming on a ThreadPool thread
-        {
-            try
-            {
-                Utils.Logger.Debug("RtMktSummaryTimer_Elapsed(). BEGIN");
-                if (!m_rtMktSummaryTimerRunning)
-                    return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
-
-                DashboardClient.g_clients.ForEach(client =>
-                {
-                    // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
-                    // OnConnectedWsAsync() sleeps for a while if not active tool.
-                    TimeSpan timeSinceConnect = DateTime.UtcNow - client.WsConnectionTime;
-                    if (client.ActivePage != ActivePage.MarketHealth && timeSinceConnect < c_initialSleepIfNotActiveToolMh.Add(TimeSpan.FromMilliseconds(100)))
-                        return;
-
-                    IEnumerable<AssetRtJs> rtMktSummaryToClient = client.GetRtStat();
-                    byte[] encodedMsg = Encoding.UTF8.GetBytes("MktHlth.RtStat:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
-                    if (client.WsWebSocket == null)
-                        Utils.Logger.Info("Warning (TODO)!: Mystery how client.WsWebSocket can be null? Investigate!) ");
-                    if (client.WsWebSocket != null && (client.WsWebSocket.State == WebSocketState.Open))
-                        client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
-                
-                });
-
-                lock (m_rtMktSummaryTimerLock)
-                {
-                    if (m_rtMktSummaryTimerRunning)
-                    {
-                        m_rtMktSummaryTimer.Change(TimeSpan.FromMilliseconds(m_rtMktSummaryTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
-                    }
-                }
-                // Utils.Logger.Info("RtMktSummaryTimer_Elapsed(). END");
-            }
-            catch (Exception e)
-            {
-                Utils.Logger.Error(e, "RtMktSummaryTimer_Elapsed() exception.");
-                throw;
-            }
-        }
     }
 }
