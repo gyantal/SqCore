@@ -78,7 +78,7 @@ namespace SqCommon
                     p_sb.Append(p_lineSep);
 
                 if (i == 0)
-                    p_sb.Append(p_cellSep);
+                    p_sb.Append(s);
                 else
                     p_sb.Append(p_cellSep + s); // write "," in front of cell, but only if it not the first cell
                 i++;

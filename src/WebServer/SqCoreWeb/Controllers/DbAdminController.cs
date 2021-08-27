@@ -43,7 +43,9 @@ namespace SqCoreWeb.Controllers
         // Don't write code for it. Do manually, so we are more careful. RedisDesktop + Redis CLI commands.
         // RedisDesktop is error prone when copying binary. Or when coping big text to Clipboard. Try to not use it.
         // Also, don't copy separate hash-keys one by one. . Instead copy the whole Hash in one go.
-        // From Redis CLI:
+        // From Redis CLI:  (Backup DB0 to DB2 before overwriting it with DB1)
+        // SELECT 0  // choose DB-0  (PROD database)
+        // COPY memDb memDb DB 2 REPLACE   // copy hash to target DB-2 as a backup
         // SELECT 1  // choose DB-1  (DEV-1 database)
         // COPY memDb memDb DB 0 REPLACE   // copy hash to target DB-0 (the PROD database)
 

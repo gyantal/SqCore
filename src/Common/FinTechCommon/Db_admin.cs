@@ -153,7 +153,7 @@ namespace FinTechCommon
                             if (rowArr.Length == 0)
                                 continue;   // skip empty gSheet rows in JSON: "[],"
 
-                            if (rowArr[0].ToString() == "A")    // Stock
+                            if (rowArr[0].ToString() == "A")    // Company
                             {
                                 if (isFirstComp)
                                     isFirstComp = false;
