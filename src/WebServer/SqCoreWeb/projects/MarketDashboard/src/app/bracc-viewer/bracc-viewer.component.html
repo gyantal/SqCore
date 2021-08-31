@@ -9,34 +9,55 @@ BrAcc:
 </span>
 MarketBar
 <span>
-    <tr *ngFor="let item of uiMktBar"> 
+    <span *ngFor="let item of uiMktBar"> 
         <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>: 
-        <td [ngClass]="{
+        <span [ngClass]="{
             'mktBarPositivePerf' : item.pctChg > 0,
             'mktbarNegativePerf' : item.pctChg < 0
          }">{{item.pctChg | percent:'1.2'}},
         <!-- {{item.lastClose | percent:'1.2'}} -->
-        </td>
-    </tr>
+        </span>
+    </span>
 </span>
 <hr>
-<div class="AccSumm">
-<span style="font: x-large sans-serif">
+
+<div>
+    <span>
+    <div class="AccSumm">
+        <h4>Account Summary</h4>
+        <div>P&L Today :</div>
+        <div>NAV IB Total NetLiquidation (with cash) : <Span id="liqVal">{{uiSnapTab.netLiquidationStr | currency:'USD':'$'}}</Span> </div>
+        <div>IB Total Cash :</div>
+    </div>
+    <div class="ChartSumm">
+        <h4>AccountDetails</h4>
+        <button class="tablinks" onclick="openTab(event, 'HistoricalChart')" id="defaultOpen">HistoricalChart</button>
+        <button class="tablinks" onclick="openTab(event, 'MoreDetails')">MoreDetails</button>
+    </div>
+    <div id ="HistoricalChart" class="tabcontent">
+        <!-- <span onclick="this.parentElement.style.display='none'" class="topright">&times</span> -->
+        <h3>AccountDetails</h3>
+        <p>Display the chart here</p>
+    </div>
+    <div id ="MoreDetails" class="tabcontent">
+        <!-- <span onclick="this.parentElement.style.display='none'" class="topright">&times</span> -->
+        <h3>MoreDetails</h3>
+        <p>Display the details></p>
+    </div>
+    <!-- <div class="ChartSumm">
+    <h4>AccountDetails</h4>
+        <mat-tab-group>
+            <mat-tab class="main" label="HistoricalChart">
+                
+            </mat-tab>
+            <mat-tab class="main" label="MoreDetails">
+               
+            </mat-tab>
+        </mat-tab-group>
+    </div> -->
 </span>
 </div>
-<h2>Line Chart</h2>
-<mat-tab-group>
-    <mat-tab label="BrAccView Chart">
-        <svg id="chartNav" viewBox="0 0 960 600"
-            preserveAspectRatio="xMidYMid meet"
-            >
-        </svg>
-    </mat-tab>
-    <mat-tab label="Chart1">
-        <!-- <div id=secondTab></div> -->
-        <svg width=900 height=500></svg>
-    </mat-tab>
-</mat-tab-group>
+<br>
 <hr>
 [1. MarketBar on top, QQQ, SPY, TLT, VXX, UNG, USO]<br>
 [2. [AccountData under it]<br>
@@ -45,7 +66,35 @@ MarketBar
         2.2.1 [HistoricalChart] default: visible, PeridSelectionComboBox (YTD) at bottom<br>
         2.2.2 [MoreDetails: Cash, MarginReq], default: hidden<br>
 [3. AccountPositions under it, the data table]<br>
-
+<hr>
+<table class = "selectedBrcAccSnapShotTbl">
+    <thead class = "selectedBrcAccSnapShotTbl">
+        <th onclick="tableHeaderClicked()">Symbol</th><th>LocalSymbol</th><th>Pos</th><th>Cost</th><th>Last<br>Close</th><th>Est<br>Price</th><th>Chg%<br>Today</th><th>P&L<br>Today</th><th>P&L</th><th>MktVal</th><th>Est<br>UndPr</th><th>IbComp<br>UndPr</th><th>IbComp<br>Deltar</th>
+        <th>Deliv<br>Value</th><th>DltAdj<br>DelivVal</th><th>gBeta</th><th>BetaDltAdj<br>MktOriVal</th><th>Acc</th>
+    </thead>
+    <tr  *ngFor="let item of uiSnapPos">
+        <td>{{item.symbol}}</td>
+        <td></td>
+        <td>{{item.pos}}</td>
+        <td>{{item.avgCost | number:'1.1-2'}}</td>
+        <td>{{item.lastClose}}</td>
+        <!-- <td>{{item.lastCloseStr}}</td> -->
+        <td>{{item.estPrice}}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>{{item.estUndPrice}}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td>{{item.accId}}</td>
+    </tr>
+   
+</table>
 <hr>
 <!-- Addded class "selectedTempDebug" to limit the text output in the UI-->
 <div class="selectedTempDebug">
@@ -55,45 +104,5 @@ MarketBarLastClosesStr: <br> <span>{{ mktBrLstClsStr }}</span><br><br>
 HistStr: <br> <span>{{ histStr }}</span><br><br>
 BrAccountSnapshot: <br> <span>{{ brAccountSnapshotStr }}</span>
 </div>
+
 <hr>
-<table class = "selectedBrcViewTbl">
-    <thead>
-        <tr>
-            <th>Symbol</th><th>LocalSymbol</th><th>Pos</th><th>Cost</th><th>Last Close</th><th>Est Price</th><th>Chg% Today</th><th>P&L Today</th><th>P&L</th><th>MktVal</th><th>EstUndPr</th><th>IbComp UndPr</th>
-        </tr>
-    </thead>
-    <tbody>
-        <td *ngFor="let item of uiMktBar">
-            <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>
-        </td>
-    </tbody>
-</table>
-<hr>
-<!-- Creating multiple tabs -->
-<mat-tab-group>
-        <mat-tab label="BrAccView">
-            Tab Content 1
-            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Quod maxime quaerat iste delectus ducimus beatae corrupti, expedita atque minus! Hic illo cumque, atque dolores accusamus neque ducimus! Voluptates, odio quibusdam?</p>
-            <tr *ngFor="let item of uiMktBar"> 
-                <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>:
-                <td [ngClass]="{
-                    'mktBarPositivePerf' : item.lastClose > 0,
-                    'mktbarNegativePerf' : item.lastClose < 0
-                 }">{{item.lastClose}},
-                <!-- {{item.lastClose | percent:'1.2'}} -->
-                </td>
-            </tr>
-        </mat-tab>
-        <mat-tab label="BrAccView1">
-            Tab Content 2
-            <td *ngFor="let item of uiMktBar"> 
-                <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>: {{item.pctChg | percent:'1.2'}},
-                <!-- {{item.lastClose | percent:'1.2'}} -->
-            </td>
-        </mat-tab>
-        <!-- <mat-tab label="Chart">
-            <ng-template matTabContent>
-                <svg id ="brNavChrt" width="900" height="700"></svg>
-            </ng-template>
-        </mat-tab> -->
-</mat-tab-group>

@@ -1,10 +1,11 @@
 import { ViewChild, Component, AfterViewInit,ElementRef, Input} from '@angular/core';
 // Importing d3 library
-import * as d3 from 'd3';
-import * as d3Scale from 'd3';
-import * as d3Shape from 'd3';
-import * as d3Array from 'd3';
-import * as d3Axis from 'd3';
+// import * as d3 from 'd3';
+// import * as d3Scale from 'd3';
+// import * as d3Shape from 'd3';
+// import * as d3Array from 'd3';
+// import * as d3Axis from 'd3';
+// import { text } from 'd3';
 // import { SqNgCommonUtilsTime } from '../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { AssetLastJs } from './../../sq-globals';
 
@@ -38,11 +39,7 @@ class UiMktBarItem {
   public lastClose  = NaN;
   public last  = 500;
   public pctChg  = 0.01;
-  public pctChgStr = '';
 
-  public selectedPerfIndSign = 1; // return or cagr or maxDD
-  public selectedPerfIndClass = ''; // positive or negative
-  public selectedPerfIndStr = ''; // the value of the cell in the table
 }
 
 
@@ -90,6 +87,11 @@ class AssetHistStatJs{
 
 }
 
+class HistJs {
+  public histValues : Nullable<AssetHistValuesJs> = null;
+  public histStat :Nullable<AssetHistStatJs> = null;
+}
+
 class BrAccVwrChrtDataRaw {
   histValues : Nullable<AssetHistValuesJs[]>=null;
   histStat : Nullable<AssetHistStatJs[]>=null;
@@ -112,6 +114,56 @@ class UiBrAccChrtHistValRaw {
 
 }
 
+class AssetSnapPossPosJs {
+  public assetId = NaN;
+  public sqTicker = '';
+  public symbol = '';
+  public pos = NaN;
+  public avgCost = NaN;
+  public lastClose = NaN;
+  public estPrice = NaN;
+  public estUndPrice = NaN;
+  public accId = ''
+}
+
+class AssetSnapPossJs {
+  public symbol = '';
+  public lastUpdate = '';
+  public netLiquidation = NaN;
+  public grossPositionValue = NaN;
+  public totalCashValue = NaN;
+  public initialMarginReq = NaN;
+  public mainMarginReq = NaN;
+  public poss : Nullable<AssetSnapPossPosJs[]> = null;
+}
+
+class UiSnapTable {
+  public symbol = '';
+  public lastUpdate = '';
+  public netLiquidation = NaN;
+  public netLiquidationStr = '';
+  public grossPositionValue = NaN;
+  public totalCashValue = NaN;
+  public initialMarginReq = NaN;
+  public mainMarginReq = NaN;
+  public poss = [];
+}
+
+
+// class UiAssetSnapPossPos {
+//   public assetId = NaN;
+//   public sqTicker = '';
+//   public symbol = '';
+//   public pos = NaN;
+//   public avgCost = NaN;
+//   public lastClose = NaN;
+//   public lastCloseStr = '';
+//   public estPrice = NaN;
+//   public estUndPrice = NaN;
+//   public accId = ''
+// }
+
+
 // UiBrAccChrt is for developing the chart
 class UiBrAccChrtDataRaw {
   public assetId = NaN;
@@ -125,6 +177,14 @@ class UiBrAccChrtData {
   public dateStr = new Date('2021-01-01');
   public brNAV = 0.01;
   public SPY = 0.01;
+}
+
+class UiBrAccChrtDataRaw1 {
+  public assetId = NaN;
+  public sqTicker = "";
+  public histDateStr ='';
+  public histSdaClose = 0.01;
+
 }
 
 @Component({
@@ -146,7 +206,7 @@ export class BrAccViewerComponent implements AfterViewInit {
   mktBrLstObj: Nullable<AssetLastJs[]> = null;
 
   histStr = '[Nothing arrived yet]';
-  // histObj: Nullable<BrAccVwrChrtDataRaw[]>=null;
+  histObj: Nullable<HistJs[]> = null;
 
   histStatStr = '[Nothing arrived yet]';
   histStatObj: Nullable<BrAccVwrChrtDataRaw>=null;
@@ -157,42 +217,48 @@ export class BrAccViewerComponent implements AfterViewInit {
   brAccChrtDataRaw: UiBrAccChrtDataRaw[] = [];
   brAccChrtData: UiBrAccChrtData[] = [];
 
-  // brAccChrtDataRaw1: UiBrAccChrtDataRaw1[] = [];
+  brAccChrtDataRaw1: UiBrAccChrtDataRaw1[] = [];
   brAccChrtData1: UiBrAccChrtHistValRaw[] = [];
 
   lastRtMsg: Nullable<RtMktSumRtStat[]> = null;
   lastNonRtMsg: Nullable<RtMktSumNonRtStat[]> = null;
 
   brAccountSnapshotStr = '[Nothing arrived yet]';
-  
+  brAccountSnapshotObj : Nullable<AssetSnapPossJs>=null;
+
+  uiSnapTab : UiSnapTable = new UiSnapTable();
+  uiSnapPos : AssetSnapPossPosJs[] = [];
+ 
+
+
   // required for chart
-  private margin = {top:20, right:20, bottom:30, left:50};
-  private width: number;
-  private height: number;
-  private x: any;
-  private y: any;
-  private svg: any;
-  public tooltip: any;
-  private line!: d3Shape.Line<[number, number]>;
-  private line1!: d3Shape.Line<[number, number]>;
-  sqTicker: any;
-  ticker: any;
-  isNavColumn: any;
+  // private margin = {top:20, right:20, bottom:30, left:50};
+  // private width: number;
+  // private height: number;
+  // private x: any;
+  // private y: any;
+  // private svg: any;
+  // public tooltip: any;
+  // private line!: d3Shape.Line<[number, number]>;
+  // private line1!: d3Shape.Line<[number, number]>;
+  // sqTicker: any;
+  // ticker: any;
+  // isNavColumn: any;
   // private pageX: any;
   // private pageY: any;
   
   constructor() {
     
     // Creating a line chart dummy data
-    this.brAccChrtDataRaw = [
-      {assetId:1, dateStr:"2010-01-01", brNAV:310.45, SPY:309},
-      {assetId:2, dateStr:"2010-01-02", brNAV:320.45, SPY:317},
-      {assetId:3, dateStr:"2010-01-03", brNAV:350.45, SPY:360},
-      {assetId:4, dateStr:"2010-01-04", brNAV:340.45, SPY:315},
-    ];
+    // this.brAccChrtDataRaw = [
+    //   {assetId:1, dateStr:"2010-01-01", brNAV:310.45, SPY:309},
+    //   {assetId:2, dateStr:"2010-01-02", brNAV:320.45, SPY:317},
+    //   {assetId:3, dateStr:"2010-01-03", brNAV:350.45, SPY:360},
+    //   {assetId:4, dateStr:"2010-01-04", brNAV:340.45, SPY:315},
+    // ];
 
-    this.width = 1000 - this.margin.left - this.margin.right;
-    this.height = 550 - this.margin.top - this.margin.bottom;
+    // this.width = 1000 - this.margin.left - this.margin.right;
+    // this.height = 550 - this.margin.top - this.margin.bottom;
 
 
    }
@@ -200,89 +266,10 @@ export class BrAccViewerComponent implements AfterViewInit {
   ngAfterViewInit(): void {
   
     // functions for developing charts
-    this.initChart();
+    // this.initChart();
     
   }
-// Chart functions start
-  private initChart() {
-    this.svg = d3.select('svg#chartNav')
-                 .attr("width", this.width + this.margin.left + this.margin.right)
-                 .attr("height", this.height + this.margin.top + this.margin.bottom)
-                //  .call(responsivefy)
-    this.svg.append('g')
-    .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
-    this.brAccChrtData = this.brAccChrtDataRaw.map(
-      (d: {assetId:string | number; dateStr: string | number | Date; brNAV: string | number; SPY: string | number; }) => ({assetId: +d.assetId,
-        dateStr: new Date(d.dateStr),
-        brNAV: +d.brNAV,
-        SPY: +d.SPY
-      }))
-    // range of data configuring
 
-
-
-    this.x = d3Scale.scaleTime().range([0, this.width]);
-    this.y = d3Scale.scaleLinear().range([this.height,0]);
-    this.x.domain(d3Array.extent(this.brAccChrtData, (d: { dateStr: any; }) => d.dateStr ));
-    // this.y.domain(d3Array.extent(this.brAccChrtData, (d: { brNAV: any; }) => d.brNAV ));
-    this.y.domain(d3Array.extent(this.brAccChrtData, (d: { SPY: any; }) => d.SPY ));
-
-    // Configure the X axis
-    this.svg.append('g')
-      .attr('transform', 'translate(0,' + this.height + ')')
-      .call(d3Axis.axisBottom(this.x).ticks(10))
-    
-    // text label for x-axis
-    this.svg.append("text")
-      .attr("x", this.width/2)
-      .attr("y", this.height + this.margin.bottom) 
-      .style("text-anchor","middle")
-      .text("Date");
-    // Configure the Y Axis
-    this.svg.append('g')
-    .attr('class', 'axis--y')
-    .call(d3Axis.axisLeft(this.y).ticks(10,"$"));
-
-    // text label for y-axis
-    this.svg.append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("y", 0-this.margin.left)
-      .attr("x", 0-(this.height/2))
-      .attr("dy","1em")
-      .style("text-anchor", "middle")
-      .text("brNAV");
-// Genereating line - for brNAV 
-    this.line = d3Shape.line()
-      .x( (d: any) => this.x(d.dateStr))
-      .y( (d: any) => this.y(d.brNAV))
-// Genereating line - for SPY
-    this.line1 = d3Shape.line()
-    .x( (d: any) => this.x(d.dateStr))
-    .y( (d: any) => this.y(d.SPY))
-
-
-    // Configuring line path
-    // Append the path, bind the data, and call the line generator (brNAV)
-    this.svg.append('path')
-      .datum(this.brAccChrtData) // Binds data to the line
-      .attr('class', 'line') //Assign a class for styling
-      .attr('d', this.line); // Calls the line generator
-  
-// Append the path, bind the data, and call the line generator (SPY)
-    this.svg.append('path')
-    .datum(this.brAccChrtData) // Binds data to the line
-    .attr('class', 'line') //Assign a class for styling
-    .attr('d', this.line1); 
-
-    // this.svg.append('g')
-    // .curve(d3.curveCardinal);
-
-    this.tooltip = d3.select("body")
-    .append('div')
-    .classed("chart-tooltip", true)
-    .style("display","none")
-  }
- // Chart functions end
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
@@ -310,8 +297,11 @@ export class BrAccViewerComponent implements AfterViewInit {
       case 'BrAccViewer.BrAccSnapshot':
         console.log('BrAccViewer.BrAccSnapshot:' + msgObjStr);
         this.brAccountSnapshotStr = msgObjStr;
+        this.brAccountSnapshotObj = JSON.parse(msgObjStr);
+        BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.uiSnapTab, this.uiSnapPos) 
         const jsonObjSnap = JSON.parse(msgObjStr);
         this.updateUiWithSnapshot(jsonObjSnap);
+    
 
         // if (gDiag.wsOnFirstRtMktSumNonRtStatTime === minDate) {
         //   gDiag.wsOnFirstRtMktSumNonRtStatTime = new Date();
@@ -340,9 +330,9 @@ export class BrAccViewerComponent implements AfterViewInit {
         return true;
       case 'BrAccViewer.Hist':
         console.log('BrAccViewer.Hist:' + msgObjStr);
-        this.histStatStr = msgObjStr;
-        this.histStatObj = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateMktBarChrtUi((this.histStatObj == null) ? null : this.histStatObj[0].histValues, (this.histStatObj == null) ? null :this.histStatObj[1].histStat, this.brAccChrtData1);
+        this.histStr = msgObjStr;
+        this.histObj = JSON.parse(msgObjStr);
+        BrAccViewerComponent.updateChrtUi(this.histObj, this.brAccChrtData1);
 
         // if message is too large without spaces, we have problems as there is no horizontal scrollbar in browser. So, shorten the message.
         if (msgObjStr.length < 200)
@@ -355,17 +345,7 @@ export class BrAccViewerComponent implements AfterViewInit {
         this.mktBrLstClsStr = msgObjStr;
         this.mktBrLstClsObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, null, this.uiMktBar);
-        // cerate a JS timer to run a function MockupRtPriceArrived()
-        //setInterval(this.mockupRtPriceArrived, 3000)
-        // setInterval(
-        //   (function (self) {         //Self-executing func which takes 'this' as self
-        //     return function () {   //Return a function in the context of 'self'
-        //       self.mockupRtPriceArrived(); //Thing you wanted to run as non-window 'this'
-        //     }
-        //   })(this),
-        //   3000     //normal interval, 'this' scope not impacted here.
-        // );
-        //...
+       
 
         return true;
       case 'BrAccViewer.Handshake':  // this is the least frequent case. Should come last.
@@ -385,39 +365,6 @@ export class BrAccViewerComponent implements AfterViewInit {
     BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.lstValObj, this.uiMktBar);
   }
 
-  // public mockupRtPriceArrived() {
-  //   console.log("mock up price arrived");
-
-  //   this.mktBrLstObj = [];
-
-  //   let marketBarAssets = (this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets;
-  //   if (marketBarAssets == null)
-  //     return;
-  
-  //   for (const mktBrAsset of marketBarAssets) {
-  //     let rtItem =  new AssetLastJs();
-  //     rtItem.assetId = mktBrAsset.assetId;
-  //     rtItem.lastUtc = '';
-
-  //     let lastClose = 100.0;
-  //     if (this.mktBrLstClsObj == null)
-  //       return;
-  //     var lastCloseArr = this.mktBrLstClsObj.filter(r => r.assetId === mktBrAsset.assetId);
-     
-  //     if (lastCloseArr.length === 1) {
-  //       lastClose = lastCloseArr[0].lastClose;
-  //     } else {
-  //       console.warn('Mockup Real time price and last close not found');
-  //     }
-
-  //     rtItem.last = lastClose*(1+ Math.random()*0.06-0.03);
-  //     console.log('RT price generated:' + rtItem.last);
-  //     this.mktBrLstObj.push(rtItem);
-
-  //   }
-
-  //   BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.mktBrLstObj, this.uiMktBar);
-  // }
 
   updateUiSelectableNavs(pSelectableNavAssets: any) {  // same in MktHlth and BrAccViewer
     const navSelectElement = document.getElementById('braccViewerNavSelect') as HTMLSelectElement;
@@ -455,6 +402,32 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
   }
 
+  //  tableHeaderClicked() {
+  //    console.log('table header click');
+  //  }
+
+  // openTab() {
+  // }
+//   openTab (pEvent: any, tabName:any) {
+//     console.log('tab are  clicked');
+//    if(tabName === "") {return;}
+//     var i, tabcontent, tablinks;
+//     tabcontent = document.getElementsByClassName("tabcontent");
+//     for (i = 0; i < tabcontent.length; i++){
+//         tabcontent[i].style.display = "none";
+//     }
+//     tablinks = document.getElementsByClassName("tablinks");
+//     for (i = 0; i < tablinks.length; i++){
+//         tablinks[i].className = tablinks.className.replace(" active", "");
+//     }
+//     let xxx = document.getElementById(tabName);
+//     if (xxx == null)
+//       return;
+//     xxx.style.display = "block";
+//     pEvent.currentTarget.className += " active";
+// }
+
+ 
   updateUiWithSnapshot(jsonObjSnap: any)  {
     console.log(`BrAccViewer.updateUiWithSnapshot(). Symbol: '${jsonObjSnap.symbol}'`);
     if (this.selectedNav != jsonObjSnap.symbol) // change UI only if it is a meaningful change
@@ -527,71 +500,119 @@ export class BrAccViewerComponent implements AfterViewInit {
       
     }
     
-    // for (const citem of histValues){
-    //   let chrtItem: brAccChrtData1;
-    //   const existingchrtItems = brAccChrtData1.filter((r) => r.assetId === chrtItem.assetId );
-    //   if (existingchrtItems.length === 0) {
-    //     chrtItem = new brAccChrtData1();
-    //     console.warn(
-    //       `Recieved assetId '${chrtItem.assetId}' is not found in chrtArray`
-    //     );
-    //     break
-    //   }
-    //   const chrtItem = existingchrtItems[0];
 
-    // }
-    
   }
 
-  static updateMktBarChrtUi(histValues : Nullable<AssetHistValuesJs[]>, histStat:Nullable<AssetHistStatJs[]>, brAccChrtData1: UiBrAccChrtHistValRaw[]) {
-    if (!(Array.isArray(histValues) && histValues.length > 0 && Array.isArray(histStat) && histStat.length > 0)){
-      return true
-    }
-    for (const item of histValues){
-      let chrtItem : UiBrAccChrtHistValRaw;
-      const existingUiChrtCols = brAccChrtData1.filter(
-        (r) => r.assetId === item.assetId );
-      if (existingUiChrtCols.length === 0) {
-          // console.warn(`Received ticker '${item.sqTicker}' is not expected. UiArray should be increased. This will cause UI redraw and blink. Add this ticker to defaultTickerExpected!`, 'background: #222; color: red');
-          // uiCol = new UiMktBarItem(stockNonRt.sqTicker, stockNonRt.ticker, false);
-          chrtItem = new UiBrAccChrtHistValRaw();
-          chrtItem.assetId = item.assetId;
-          chrtItem.histDates = item.histDates;
-          chrtItem.histSdaCloses = item.histSdaCloses;
-          brAccChrtData1.push(chrtItem);
-        } else if (existingUiChrtCols.length === 1) {
-          chrtItem = existingUiChrtCols[0];
-        } else {
-          // console.warn(
-          //   `Received ticker '${ciItem.assetId}' has duplicates in UiArray. This might be legit if both VOD.L and VOD wants to be used. ToDo: Differentiation based on assetId is needed.`,
-          //   "background: #222; color: red"
-          // );
-          chrtItem = existingUiChrtCols[0];
-        }
+  static updateSnapshotTable(brAccSnap : Nullable<AssetSnapPossJs>, uiSnapTab : UiSnapTable, uiSnapPos: AssetSnapPossPosJs[])
+  {
+    if (brAccSnap === null || brAccSnap.poss === null) 
+      return;
 
-        for (const stItem of histStat ){
-          const existingUiChrtCols = brAccChrtData1.filter(
-            (r) => r.assetId === item.assetId );
-          if (existingUiChrtCols.length === 0) {
-            console.warn(
-              `Received assetId '${stItem.assetId}' is not found in UiArray.`
-            );
-            break;
-          }
-          chrtItem = existingUiChrtCols[1];
-          chrtItem.periodStartDate = stItem.periodStartDate;
-          chrtItem.periodEndDate = stItem.periodEndDate;
-          chrtItem.periodStart = stItem.periodStart;
-          chrtItem.periodEnd = stItem.periodEnd;
-          chrtItem.periodHigh = stItem.periodHigh;
-          chrtItem.periodLow = stItem.periodLow;
-          chrtItem.periodMaxDD = stItem.periodMaxDD;
-          chrtItem.periodMaxDU = stItem.periodMaxDU;
+      uiSnapTab.symbol = brAccSnap.symbol;
+      uiSnapTab.lastUpdate = brAccSnap.lastUpdate;
+      uiSnapTab.netLiquidation = brAccSnap.netLiquidation;
+      uiSnapTab.netLiquidationStr = brAccSnap.netLiquidation.toString();
 
-
-        }
+    // let snapShotItems = brAccSnap['']
+    for (const uiSnapItem of brAccSnap.poss) {
       
+
+      console.log("The Positions of Snapshot data are :" + uiSnapItem.pos);
+      // if (existingUiSanpItems.length === 0)
+      //   continue;
+      let possItem = new AssetSnapPossPosJs();
+      possItem.assetId = uiSnapItem.assetId;
+      possItem.sqTicker = uiSnapItem.sqTicker;
+      possItem.symbol = uiSnapItem.symbol;
+      possItem.pos = uiSnapItem.pos;
+      possItem.avgCost = uiSnapItem.avgCost;
+      possItem.lastClose = uiSnapItem.lastClose;
+      possItem.estPrice = uiSnapItem.estPrice;
+      possItem.estUndPrice = uiSnapItem.estUndPrice;
+      possItem.accId = uiSnapItem.accId;
+      uiSnapPos.push(possItem);
+
     }
+  }
+
+  static updateChrtUi(histObj : Nullable<HistJs[]>, brAccChrtData1: UiBrAccChrtHistValRaw[]) {
+    // (this.histStatObj == null) ? null : this.histStatObj[0].histValues, 
+    // (this.histStatObj == null) ? null :this.histStatObj[1].histStat
+    // if (!(Array.isArray(histValues) && histValues.length > 0 && Array.isArray(histStat) && histStat.length > 0)){
+    //   return true
+    // }
+
+    if (histObj == null)
+      return;
+
+      for (const histItem of histObj) {
+        if (histItem.histStat == null) continue;
+        if (histItem.histValues == null) continue;
+        console.log(histItem.histStat.sqTicker);
+        console.log(histItem.histStat.assetId);
+
+        let chrtItem = new UiBrAccChrtHistValRaw();
+        
+
+        chrtItem.assetId = histItem.histStat.assetId;
+        chrtItem.histDates = histItem.histValues.histDates;
+        chrtItem.histSdaCloses = histItem.histValues.histSdaCloses;
+
+        // create chartDataArray = UiBrAccChrtData[]
+        // for on histItem.histValues.histSdaCloses or histDates
+        // chartDataArray.push (new UiBrAccChrtData())
+      }
+
+    let histValues = histObj[0].histValues;
+    // let histStat = histObj[0].histStat;
+    if (histValues == null)
+      return;
+    // for (const item of histValues) {
+    //   let chrtItem : UiBrAccChrtHistValRaw;
+    //   const existingUiChrtCols = brAccChrtData1.filter(
+    //     (r) => r.assetId === item.assetId );
+    //   if (existingUiChrtCols.length === 0) {
+    //       // console.warn(`Received ticker '${item.sqTicker}' is not expected. UiArray should be increased. This will cause UI redraw and blink. Add this ticker to defaultTickerExpected!`, 'background: #222; color: red');
+    //       // uiCol = new UiMktBarItem(stockNonRt.sqTicker, stockNonRt.ticker, false);
+    //       chrtItem = new UiBrAccChrtHistValRaw();
+    //       chrtItem.assetId = item.assetId;
+    //       chrtItem.histDates = item.histDates;
+    //       chrtItem.histSdaCloses = item.histSdaCloses;
+    //       brAccChrtData1.push(chrtItem);
+    //     } else if (existingUiChrtCols.length === 1) {
+    //       chrtItem = existingUiChrtCols[0];
+    //     } else {
+    //       // console.warn(
+    //       //   `Received ticker '${ciItem.assetId}' has duplicates in UiArray. This might be legit if both VOD.L and VOD wants to be used. ToDo: Differentiation based on assetId is needed.`,
+    //       //   "background: #222; color: red"
+    //       // );
+    //       chrtItem = existingUiChrtCols[0];
+    //     }
+
+        
+      
+    // }
+    // for (const stItem of histStat ) {
+    //   const existingUiChrtCols = brAccChrtData1.filter(
+    //     (r) => r.assetId === item.assetId );
+    //   if (existingUiChrtCols.length === 0) {
+    //     console.warn(
+    //       `Received assetId '${stItem.assetId}' is not found in UiArray.`
+    //     );
+    //     break;
+    //   }
+    //   chrtItem = existingUiChrtCols[1];
+    //   chrtItem.periodStartDate = stItem.periodStartDate;
+    //   chrtItem.periodEndDate = stItem.periodEndDate;
+    //   chrtItem.periodStart = stItem.periodStart;
+    //   chrtItem.periodEnd = stItem.periodEnd;
+    //   chrtItem.periodHigh = stItem.periodHigh;
+    //   chrtItem.periodLow = stItem.periodLow;
+    //   chrtItem.periodMaxDD = stItem.periodMaxDD;
+    //   chrtItem.periodMaxDU = stItem.periodMaxDU;
+
+
+    //}
 
   }
     

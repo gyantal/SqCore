@@ -55,18 +55,46 @@
 //   border: 1px solid black;
 //   border-collapse: collapse;
 // }
-/* Style the lines by removing the fill and applying a stroke */
-::ng-deep .line {
-  fill:none;
-  stroke: #ffab00;
-  stroke-width: 3;
+*{
+  box-sizing: border-box;
 }
-#chartNav .chart {
-  width: 900;
-  height: 500;
+.AccSumm {
+  width: 25%;
+  float: left;
+  padding: 15px;
+  font-size: 0.75em;
+  border: 1px solid red;
+}
 
-  margin: 20px 25px;
+.ChartSumm{
+  width: 75%;
+  float: left;
+  padding: 15px;
+  border: 1px solid red;
 }
+
+
+// .main{
+//   width:75%;
+//   height:95%;
+
+// }
+/* Style the lines by removing the fill and applying a stroke */
+// ::ng-deep .line {
+//   fill:none;
+//   stroke: #ffab00;
+//   stroke-width: 3;
+// }
+// ::ng-deep .line1 {
+//   fill:none;
+//   stroke: #00ffff;
+//   stroke-width: 3;
+// }
+// #chartNav .chart {
+//   width: 900;
+//   height: 500;
+//   margin: 20px 25px;
+// }
 .selectedTempDebug{
   word-wrap: break-word;
   width: 100%;
@@ -82,22 +110,90 @@
   color: red;
   font-weight: bold;
 }
-svg {
-  transform: translate(50px, 30px);
-  width: 100%;
-  height: 100%;
+// svg {
+//   transform: translate(50px, 30px);
+//   width: 80%;
+//   height: 80%;
 
- }
- ::ng-deep .mat-tab-list .mat-tab-labels .mat-tab-label-active {
-  color:blue;
-  font-size: medium;
+//  }
+//  ::ng-deep .mat-tab-list .mat-tab-labels .mat-tab-label-active {
+//   color:blue;
+//   // font-size: medium;
+//   font-weight: bold;
+//   // padding: 5px;
+//   // background-color: gray;
+  
+//   }
+  
+//   ::ng-deep .mat-tab-list .mat-tab-labels {
+//   color:black;
+//   // background-color: gray;
+//   } 
+
+  // .selectedBrcAccSnapShotTbl {
+#liqVal{
   font-weight: bold;
-  padding: 5px;
-  background-color: gray;
-  
-  }
-  
-  ::ng-deep .mat-tab-list .mat-tab-labels {
-  color:black;
-  // background-color: gray;
-  } 
+}
+  // }
+table, td, thead, th {
+    border: 1px solid #9cd3db;;
+    border-collapse: collapse;
+    padding: 2px 10px;
+    text-align: center;
+    white-space: nowrap;
+    font-family: 16px 'Times New Roman';
+    border-color: #9cd3db;;
+    // background-color: #fff;
+    box-shadow: 0 0 7rem rgb(48 138 255 / 60%), 
+                0 0.5rem 2rem rgb(48 138 255 / 60%), 
+                0 0.2rem 2rem rgb(48 138 255  /60%),
+                inset 0 0.1rem #fff,
+                inset 0 -0.1rem #fff;
+    color: #000;
+    
+}
+thead {
+  font-weight: bold;
+  cursor: pointer;
+  background-color: #9cd3db;
+}
+td {
+  font-size: small;
+}
+
+// style for ab pages 
+
+.tab {
+  overflow: hidden;
+  border: 1px solid #ccc;
+  background-color: #f1f1f1;
+}
+.tab button {
+  background-color: inherit;
+  float: left;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  transition: 0.3s;
+  font-size: 17px;
+}
+
+/* Change background color of buttons on hover */
+.tab button:hover {
+  background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.tab button.active {
+  background-color: #ccc;
+}
+
+/* Style the tab content */
+.tabcontent {
+  display: none;
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-top: none;
+}
+
