@@ -130,6 +130,21 @@ namespace SqCommon
                             { "Accept-Language", "en-US,en;q=0.9" }
                         }
                 };
+            else if (p_url.StartsWith("http://vixcentral.com/ajax_update"))
+            // curl -i -H "Accept: application/json" -H "Accept: text/javascript" -H "Accept: */*" -H "Accept-encoding: gzip deflate" -e "http://vixcentral.com/" -H "Host: vixcentral.com" -H "Connection: keep-alive" -H "X-Requested-With: XMLHttpRequest" "http://vixcentral.com/ajax_update"
+                return new HttpRequestMessage
+                {
+                    RequestUri = new Uri(p_url),
+                    Method = HttpMethod.Get,
+                    Version = HttpVersion.Version20,    // This was the key on Linux!!! The default is Version11 (Silly: "In .NET Core 3.0+, the default value was reverted back from 2.0 to 1.1.")
+                    Headers = {
+                            { "accept", "application/json, text/javascript, */*" }, // needed on Linux for api.nasdaq.com , otherwise it returns with 'no permission'.
+                            { "accept-encoding", "gzip, deflate" },
+                            { "Host", "vixcentral.com" },
+                            { "Connection", "keep-alive" },
+                            { "X-Requested-With","XMLHttpRequest"}
+                        }
+                };
 
             return new HttpRequestMessage
             {

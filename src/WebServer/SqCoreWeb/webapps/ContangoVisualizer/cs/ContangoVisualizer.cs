@@ -73,42 +73,55 @@ namespace SqCoreWeb.Controllers
             string? webpageLive = Utils.DownloadStringWithRetryAsync("http://vixcentral.com", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
             if (webpageLive == null)
                 return "Error in live data";
+
+            string? webpageLiveAjax = Utils.DownloadStringWithRetryAsync("http://vixcentral.com/ajax_update", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+            if (webpageLiveAjax == null)
+                return "Error in live data";
             
+            string[] resuRows = webpageLiveAjax.Split(new string[] { "[", "]" }, StringSplitOptions.RemoveEmptyEntries);
+            string[] liveFuturesPrices = resuRows[4].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
+            string[] spotVixPrices = resuRows[16].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
+            double spotVixValue = Double.Parse(spotVixPrices[0]);
+            string[] futuresNextExps = resuRows[0].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
+            string liveFuturesNextExp = futuresNextExps[0].Substring(1,3);
+            string[] liveFuturesTime = resuRows[2].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
+            string liveFuturesDataTime = liveFuturesTime[0].Substring(1,8);
+
             //Selecting data from live data string.
             
-            string liveFuturesDataDT = string.Empty;
-            string liveFuturesDataDate = string.Empty;
-            string liveFuturesDataTime = string.Empty;
-            string liveFuturesData = string.Empty;
+            // string liveFuturesDataDT = string.Empty;
+            // string liveFuturesDataDate = string.Empty;
+            // string liveFuturesDataTime = string.Empty;
+            // string liveFuturesData = string.Empty;
             string prevFuturesData = string.Empty;
-            string liveFuturesNextExp = string.Empty;
-            string spotVixData = string.Empty;
+            // string liveFuturesNextExp = string.Empty;
+            // string spotVixData = string.Empty;
             string titleVIX = "VIX Futures Term Structure";
             string dataSourceVIX = "http://vixcentral.com";
 
-            int startPosLiveDate = webpageLive.IndexOf("var time_data_var=['") + "var time_data_var=['".Length;
-            int startPosLive = webpageLive.IndexOf("var last_data_var=[",startPosLiveDate) + "var last_data_var=[".Length;
-            int endPosLive = webpageLive.IndexOf("];last_data_var=clean_array(last_data_var);", startPosLive);
-            int startPosPrev = webpageLive.IndexOf("];var previous_close_var=[", endPosLive) + "];var previous_close_var=[".Length;
+            // int startPosLiveDate = webpageLive.IndexOf("var time_data_var=['") + "var time_data_var=['".Length;
+            // int startPosLive = webpageLive.IndexOf("var last_data_var=[",startPosLiveDate) + "var last_data_var=[".Length;
+            // int endPosLive = webpageLive.IndexOf("];last_data_var=clean_array(last_data_var);", startPosLive);
+            int startPosPrev = webpageLive.IndexOf("];var previous_close_var=[", 0) + "];var previous_close_var=[".Length;
             int endPosPrev = webpageLive.IndexOf("];var contango_graph_exists=", startPosPrev);
-            int nextExpLiveMonth = webpageLive.IndexOf("var mx=['", endPosPrev) + "var mx=['".Length;
-            int startSpotVix = webpageLive.IndexOf("{id:'VIX_Index',name:'VIX Index',legendIndex:9,lineWidth:2,color:'green',dashStyle:'LongDash',marker:{enabled:false},dataLabels:{enabled:true,align:'left',x:5,y:4,formatter:function(){if(this.point.x==this.series.data.length-1){return Highcharts.numberFormat(this.y,2);}else{return null;}}},data:[", nextExpLiveMonth) + "{id:'VIX_Index',name:'VIX Index',legendIndex:9,lineWidth:2,color:'green',dashStyle:'LongDash',marker:{enabled:false},dataLabels:{enabled:true,align:'left',x:5,y:4,formatter:function(){if(this.point.x==this.series.data.length-1){return Highcharts.numberFormat(this.y,2);}else{return null;}}},data:[".Length;
-            int endSpotVix = webpageLive.IndexOf("]},{id:'VXV_Index',name:'VXV Index',legendIndex:10,lineWidth:2", startSpotVix);
+            // int nextExpLiveMonth = webpageLive.IndexOf("var mx=['", endPosPrev) + "var mx=['".Length;
+            // int startSpotVix = webpageLive.IndexOf("{id:'VIX_Index',name:'VIX Index',legendIndex:9,lineWidth:2,color:'green',dashStyle:'LongDash',marker:{enabled:false},dataLabels:{enabled:true,align:'left',x:5,y:4,formatter:function(){if(this.point.x==this.series.data.length-1){return Highcharts.numberFormat(this.y,2);}else{return null;}}},data:[", nextExpLiveMonth) + "{id:'VIX_Index',name:'VIX Index',legendIndex:9,lineWidth:2,color:'green',dashStyle:'LongDash',marker:{enabled:false},dataLabels:{enabled:true,align:'left',x:5,y:4,formatter:function(){if(this.point.x==this.series.data.length-1){return Highcharts.numberFormat(this.y,2);}else{return null;}}},data:[".Length;
+            // int endSpotVix = webpageLive.IndexOf("]},{id:'VXV_Index',name:'VXV Index',legendIndex:10,lineWidth:2", startSpotVix);
             // liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 20);
-            liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 8);
-            liveFuturesNextExp = webpageLive.Substring(nextExpLiveMonth, 3);
-            liveFuturesData = webpageLive.Substring(startPosLive, endPosLive - startPosLive);
+            // liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 8);
+            // liveFuturesNextExp = webpageLive.Substring(nextExpLiveMonth, 3);
+            // liveFuturesData = webpageLive.Substring(startPosLive, endPosLive - startPosLive);
             prevFuturesData = webpageLive.Substring(startPosPrev, endPosPrev - startPosPrev);
-            spotVixData = webpageLive.Substring(startSpotVix, endSpotVix - startSpotVix);
+            // spotVixData = webpageLive.Substring(startSpotVix, endSpotVix - startSpotVix);
 
             // liveFuturesDataDate = liveFuturesDataDT.Substring(0,10);
             // liveFuturesDataTime = liveFuturesDataDT.Substring(12, 8) + " EST";
             
-            string[] liveFuturesPrices = liveFuturesData.Split(new string[] { ","}, StringSplitOptions.RemoveEmptyEntries);
+            // string[] liveFuturesPrices = liveFuturesData.Split(new string[] { ","}, StringSplitOptions.RemoveEmptyEntries);
             int lengthLiveFuturesPrices = liveFuturesPrices.Length;
             string[] prevFuturesPrices = prevFuturesData.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
-            string[] spotVixPrices = spotVixData.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
-            double spotVixValue = Double.Parse(spotVixPrices[0]);
+            // string[] spotVixPrices = spotVixData.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
+            // double spotVixValue = Double.Parse(spotVixPrices[0]);
 
             string[] monthsNumList = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
             int monthsNum = Array.IndexOf(monthsNumList,liveFuturesNextExp)+1;
@@ -130,7 +143,7 @@ namespace SqCoreWeb.Controllers
             // liveDateTime = DateTime.Parse(liveFuturesDataDate);
             liveDate = timeNowETVIX.ToString("yyyy-MM-dd");
 
-            liveFuturesDataTime = liveFuturesDataDT.Substring(0, 8) + " EST";
+            // liveFuturesDataTime = liveFuturesDataDT.Substring(0, 8) + " EST";
 
             //Sorting historical data.
             VixCentralRec2[] vixCentralRec = new VixCentralRec2[2];
