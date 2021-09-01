@@ -295,10 +295,12 @@ namespace FinTechCommon
             m_nIexDownload++;
             try
             {
-                var yfTickers = p_assets.Select(r => (r as Stock)!.YfTicker).ToArray(); // treat similarly as DownloadLastPriceYF()
                 //string url = string.Format("https://api.iextrading.com/1.0/stock/market/batch?symbols={0}&types=quote", p_tickerString);
                 //string url = string.Format("https://api.iextrading.com/1.0/last?symbols={0}", p_tickerString);       // WebExceptionStatus.ProtocolError: "Not Found"
-                string url = string.Format("https://api.iextrading.com/1.0/tops?symbols={0}", String.Join(", ", yfTickers));
+
+                string[]? iexTickers = p_assets.Select(r => (r as Stock)!.IexTicker).ToArray(); // treat similarly as DownloadLastPriceYF()
+
+                string url = string.Format("https://api.iextrading.com/1.0/tops?symbols={0}", String.Join(",", iexTickers));
                 string? responseStr = await Utils.DownloadStringWithRetryAsync(url);
                 if (responseStr == null)
                     return;
@@ -324,7 +326,7 @@ namespace FinTechCommon
                 int eSymbol = p_responseStr.IndexOf("\"", bSymbol);
                 if (eSymbol == -1)
                     break;
-                string ticker = p_responseStr.Substring(bSymbol, eSymbol - bSymbol);
+                string iexTicker = p_responseStr.Substring(bSymbol, eSymbol - bSymbol);
                 int bAttribute = p_responseStr.IndexOf(p_attribute + "\":", eSymbol);
                 if (bAttribute == -1)
                     break;
@@ -340,7 +342,7 @@ namespace FinTechCommon
                     Stock? iStock = sec as Stock;
                     if (iStock == null)
                         continue;
-                    if (iStock.YfTicker == ticker)
+                    if (iStock.IexTicker == iexTicker)
                     {
                         stock = iStock;
                         break;

@@ -15,7 +15,7 @@ namespace FinTechCommon
     public class Asset
     {
         public AssetId32Bits AssetId { get; set; } = AssetId32Bits.Invalid; // Unique assetId for code. Faster than SqTicker. Invalid value is best to be 0. If it is Uint32.MaxValue is the invalid, then problems if extending to Uint64
-        public string Symbol { get; set; } = string.Empty;  // can be shown on the UI
+        public string Symbol { get; set; } = string.Empty;  // can be shown on the UI. It is the IB Symbol, so it is "BRK B", not "BRK-B", which is YfTicker or "BRK.B", which is IexTicker
         public string Name { get; set; } = string.Empty;
         public string ShortName { get; set; } = string.Empty;
         public CurrencyId Currency { get; set; } = CurrencyId.USD;  // if stocks with different currencies are in the portfolio they have to be converted to USD, if they are not. IB has a BaseCurrency of the account. We use USD as the base currency of the program. Every calculations are based in the USD form.
@@ -148,6 +148,12 @@ namespace FinTechCommon
         public string NameHist { get; set; } = string.Empty;
 
         public string YfTicker { get; set; } = string.Empty;
+
+        // IbSymbol: "BRK B" YFTicker: "BRK-B", but IEX gets it only as "BRK.B"
+        // https://api.iextrading.com/1.0/tops?symbols=BRK B     => returns empty string
+        // https://api.iextrading.com/1.0/tops?symbols=BRK-B     => returns empty string
+        // https://api.iextrading.com/1.0/tops?symbols=BRK.B     => returns correctly
+        public string IexTicker { get; set; } = string.Empty;
         public string Flags { get; set; } = string.Empty;
         public string ISIN { get; set; } = string.Empty; // International Securities Identification Number would be a unique identifier. Not used for now.
 
@@ -164,6 +170,7 @@ namespace FinTechCommon
             SymbolHist = row[9].ToString()!;
             NameHist = row[10].ToString()!;
             YfTicker = string.IsNullOrEmpty(row[11].ToString()) ? Symbol : row[11].ToString()!; // if not given, use Symbol by default
+            IexTicker = YfTicker.Replace('-', '.'); // change "BRK-B" to "BRK.B"
             Flags = row[12].ToString()!;
             ISIN = row[13].ToString()!;
 
@@ -174,7 +181,7 @@ namespace FinTechCommon
                     companySqTicker = Symbol;
                 string seekedSqTicker = AssetHelper.gAssetTypeCode[AssetType.Company] + "/" + companySqTicker;
                 var comps = assets.FindAll(r => r.AssetId.AssetTypeID == AssetType.Company && r.SqTicker == seekedSqTicker);
-                if (comps == null)
+                if (comps == null || comps.Count == 0)
                     throw new SqException($"Company SqTicker '{seekedSqTicker}' was not found.");
                 if (comps.Count > 1)
                     throw new SqException($"To many ({comps.Count}) Company SqTicker '{seekedSqTicker}' was found.");

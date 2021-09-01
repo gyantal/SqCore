@@ -298,16 +298,28 @@ namespace FinTechCommon
 
         public void UpdateBrAccPosAssetIds(List<BrAccPos> p_accPoss)
         {
+            List<BrAccPos> memDbUnrecognizedAssets = new List<BrAccPos>();
             foreach (BrAccPos pos in p_accPoss)
             {
                 pos.AssetId = AssetId32Bits.Invalid;
                 if (pos.Contract.SecType != "STK")
+                {
+                    memDbUnrecognizedAssets.Add(pos);
                     continue;
+                }
 
                 var asset = AssetsCache.TryGetAsset("S/" + pos.Contract.Symbol);
                 if (asset != null)
                     pos.AssetId = asset.AssetId;
+                else
+                    memDbUnrecognizedAssets.Add(pos);
             }
+
+            StringBuilder sb = new StringBuilder();
+            var unrecognizedExtendedSymbols = memDbUnrecognizedAssets.Select(r => r.Contract.SecType + ":" + r.Contract.Symbol).ToArray();
+            sb.Append($"UpdateBrAccPosAssetIds(). MemDb doesn't recognize these assets (#{unrecognizedExtendedSymbols.Length}): ");
+            sb.AppendLongListByLine(unrecognizedExtendedSymbols, ",", 1000, "");
+            Utils.Logger.Warn(sb.ToString());
 
         }
 
