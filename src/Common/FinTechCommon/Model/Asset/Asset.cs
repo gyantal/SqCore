@@ -22,6 +22,7 @@ namespace FinTechCommon
 
         public string SqTicker { get; set; } = string.Empty;    // Unique assetId for humans to read. Better to store it as static field then recalculating at every request in derived classes
 
+        // The Last (realtime price) and the PriorClose values are too frequently used (for daily %Chg calculation) in many Asset classes: Stocks, Futures, Options. Although it is not necessary in other classes, but let them have here in the parent class
         private float m_lastValue = float.NaN; // field
         public DateTime LastValueUtc { get; set; } = DateTime.MinValue;
         public float LastValue // real-time last price. Value is better than Price, because NAV, and ^VIX index has value, but it is not a price.
@@ -33,6 +34,8 @@ namespace FinTechCommon
                 LastValueUtc = DateTime.UtcNow;
             }
         }
+
+        public float PriorClose { get; set; } = float.NaN;  // IB calls it PriorClose, YF, Iex calls PreviousClose. Nobody calls it "Last"Close, because that is better to use for the "Last"-price
         public Asset()
         {
         }

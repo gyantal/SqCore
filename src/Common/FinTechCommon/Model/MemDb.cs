@@ -267,7 +267,7 @@ namespace FinTechCommon
             {
                 // if this is the first time to load DB from Redis, then we don't demand HistData. Assume HistData crawling takes 20min
                 // many clients can survive without historical data first. MarketDashboard. However, they need Asset and User data immediately.
-                // BrAccInfo is fine wihout historical. It will send NaN as a LastClose. Fine. Client will handle it.
+                // BrAccInfo is fine wihout historical. It will send NaN as a PriorClose. Fine. Client will handle it.
                 // So, we don't need to wait for Historical to finish InitDb (that might take 20 minutes in the future).
                 // !!! Also, in development, we don't want to wait until All HistData arrives, but start Debugging code right away after starting the WebServer.
                 // Clients of MemDb should handle properly if HistData is not yet ready (NaN and later Refresh).

@@ -422,9 +422,9 @@ namespace BrokerCommon
         //             // 2018-12:  Instead of about 150 positions, we decrease it to 96.  Helps in IB pacing restriction (50 msg per sec).
         //             // Warrants and "CORPACT" exchange stocks are not important for us. For the sake of being brief and save time, we don't return them to the caller.
         //             // CORPACT stocks: INNL.CVR or EDMC.WAR. (a STK). Last ClosePrice comes only after 5 sec. It doesn't worth to wait for it. Skip them.
-        //             // VALUE stocks: 2 out of 7 Value stocks, KWKAQ, IRGTQ, return no Ask/Bid/Last/IbMarkPrices. Only return LastClose prices 4 seconds after query. It doesn't worth waiting for them.
-        //             // PINK stocks: 4 out of 7 PINK stocks, RGDXQ, HGGGQ, DXIEF, IMRSQ After MarketClose: only have LastClosePrice, and not LastPrice or IbMarkPrice, so they are missing.
-        //             // We can accept PINK's LastClose quickly without delay, but better to decrease number of stocks for IB pacing restriction (50 msg per sec).
+        //             // VALUE stocks: 2 out of 7 Value stocks, KWKAQ, IRGTQ, return no Ask/Bid/Last/IbMarkPrices. Only return PriorClose prices 4 seconds after query. It doesn't worth waiting for them.
+        //             // PINK stocks: 4 out of 7 PINK stocks, RGDXQ, HGGGQ, DXIEF, IMRSQ After MarketClose: only have PriorClose, and not LastPrice or IbMarkPrice, so they are missing.
+        //             // We can accept PINK's PriorClose quickly without delay, but better to decrease number of stocks for IB pacing restriction (50 msg per sec).
         //             // Currency: EUR, Exchange: SBF: Like GNF, After Market Close only MarketDataType=2(Frozen) came, then nothing. During market hour it worked. Anyway, small position. Ignore.
         //             Utils.Logger.Trace($"GetAccountsInfo(). RT prices. Skipping not important troublesome stock: {contract.Symbol} SecTye: {contract.SecType}, Exchange:{contract.Exchange}");
         //             poss[0].IsHidingFromClient = true;
@@ -503,7 +503,7 @@ namespace BrokerCommon
         //                         if (isAskBidAcceptable && !isInRegularUsaTradingHoursNow)
         //                         {   // sometimes before premarket: ask: 8.0 Bid: 100,000.01. In that case, don't accept it as a correct AskBid
         //                             // but BRK.A is "340,045" and legit. So, big values should be accepted if both Ask, Bid is big.
-        //                             // if it is premarket, check that their difference, the AskBid spread is also small. If not, ignore them (and later LastClose will be given back)
+        //                             // if it is premarket, check that their difference, the AskBid spread is also small. If not, ignore them (and later PriorClose will be given back)
         //                             // NOTE: maybe this should be considered an error, no matter if it is isInRegularUsaTradingHoursNow or not.
         //                             isAskBidAcceptable = (Math.Abs(Math.Abs(poss[0].AskPrice) - Math.Abs(poss[0].BidPrice)) < 90000);
         //                         }
@@ -530,7 +530,7 @@ namespace BrokerCommon
         //                 {
         //                     if (cb_mktDataSubscr.Contract.Exchange == "PINK")   // even though we ignore PINK, we may need them in the future.
         //                     {
-        //                         //For PINK stocks, especially AMC, If MarketDataType() = 2 (Frozen), we should accept LastClosePrice as Estimated price.
+        //                         //For PINK stocks, especially AMC, If MarketDataType() = 2 (Frozen), we should accept PriorClose as Estimated price.
         //                         if (cb_tickType == TickType.CLOSE && Double.IsNaN(poss[0].EstPrice))    // only increase the nKnownConIdsPrReadyOk counter once when we turn from NaN to a proper number.
         //                         {
         //                             poss[0].EstPrice = cb_price;

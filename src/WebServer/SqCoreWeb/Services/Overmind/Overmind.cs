@@ -143,7 +143,7 @@ namespace SqCoreWeb
 
             CheckIfTomorrowIsMonthlyOptionExpirationDay();
             CheckIntradayStockPctChanges(); // if we don't wait the async method, it returns very quickly, but later it continues in a different threadpool bck thread, but then it loses stacktrace, and exception is not caught in try/catch, but it becomes an AppDomain_BckgThrds_UnhandledException() 
-            CheckLastClosePrices();
+            CheckPriorClosePrices();
         }
 
         void CheckIfTomorrowIsMonthlyOptionExpirationDay()
@@ -292,7 +292,7 @@ namespace SqCoreWeb
             return Double.NaN;
         }
 
-        void CheckLastClosePrices()
+        void CheckPriorClosePrices()
         {
             // Data sources. Sometimes YF, sometimes GF is not good. We could try to use our Database then, but we don't have ^VIX futures historical price data in it yet.
             DateTime endDateET = DateTime.UtcNow.AddDays(0);    // include today, which is a realtime price, but more accurate estimation
@@ -307,14 +307,14 @@ namespace SqCoreWeb
 
             // Check that 1.2*SMA(VIX, 50) < VIX_last_close:  (this is used by the VIX spikes document)
             // this is used in the Balazs's VIX spikes gDoc: https://docs.google.com/document/d/1YA8uBscP1WbxEFIHXDaqR50KIxLw9FBnD7qqCW1z794
-            double lastClose = adjCloses[adjCloses.Length - 1];
+            double priorClose = adjCloses[adjCloses.Length - 1];
             int nSmaDays = 50;
             double sma = 0;
             for (int i = 0; i < nSmaDays; i++)
                 sma += adjCloses[adjCloses.Length - 1 - i];
             sma /= (double)nSmaDays;
 
-            bool isVixSpike = 1.2 * sma < lastClose;
+            bool isVixSpike = 1.2 * sma < priorClose;
             // VIX spike can be detected with another formulation if wished
             //Maybe I should use this(or Both) in the VIX checking email service
             //"Marked on the chart are instances where the VIX has risen by at least 30% (from close to"
@@ -327,7 +327,7 @@ namespace SqCoreWeb
                 string subject = "SqCore: VIX spike detected";
                 StringBuilder sb = new StringBuilder(Email.g_htmlEmailStart);
                 sb.Append(@"<span class=""sqImportantOK""><strong>VIX Spike</strong> is detected!</span><br/><br/>");
-                sb.Append($"Using yesterday close prices for VIX, the condition<br/> <strong>'VIX_lastClose &gt; 1.2 * SMA(VIX, 50)'</strong><br/> ({lastClose:0.##} &gt;  1.2 * {sma:0.##}) was triggered.<br/>");
+                sb.Append($"Using yesterday close prices for VIX, the condition<br/> <strong>'VIX_priorClose &gt; 1.2 * SMA(VIX, 50)'</strong><br/> ({priorClose:0.##} &gt;  1.2 * {sma:0.##}) was triggered.<br/>");
                 sb.Append(@"Our <a href=""https://docs.google.com/document/d/1YA8uBscP1WbxEFIHXDaqR50KIxLw9FBnD7qqCW1z794"">VIX spikes collection gDoc</a> uses the same formula for identifying panic times.<br/>");
                 sb.Append("Intraday price was not used for this trigger. You need to act with a delay anyway.<br/><br/>");
                 sb.Append("<strong>Action: </strong><br/> This is a Mean Reversion (MR) opportunity.<br/> Trading 'fading the VIX spike' can be considered.<br/>");

@@ -42,7 +42,7 @@ namespace SqCoreWeb
         public DateTime Date { get; set; } = DateTime.MinValue;
 
         [JsonConverter(typeof(FloatJsonConverterToNumber4D))]
-        public float PriorClose { get; set; } = 0;   // Split Dividend Adjusted. Should be called SdaLastClose, but name goes to client, better to be short.
+        public float PriorClose { get; set; } = 0;   // Split Dividend Adjusted. Should be called SdaPriorClose, but name goes to client, better to be short.
     }
 
     public class AssetHistJs    // duplicate that the AssetId is in both HistValues and HistStat, but sometimes client needs only values (a QuickTester), sometimes only stats

@@ -586,7 +586,7 @@ namespace BrokerCommon
         //	>this wouldn't work if VBroker started after market Open, because ReSubscribe wouldn't be called.
         //>Solution3: or maybe do both previous ideas.
         // Good news: Solution1 worked perfectly. After cancelMktData() and reqMktData() again, RUT index data started to come instantly, 
-        // but at 8.a.m CET, only last,lastClose,High/Low prices were given (there was no USA market). So, it was really connected the second time.
+        // but at 8.a.m CET, only last,PriorClose,High/Low prices were given (there was no USA market). So, it was really connected the second time.
         // However, when USA market opened, at 14:30, RUT lastPrice data poured in at every 5 seconds.
         public void MktDataIsAliveTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
         {
@@ -645,7 +645,7 @@ namespace BrokerCommon
                         }
                     }
 
-                    if (item.Key == TickType.MID || item.Key == TickType.LAST)  // override the time to timestamp, which comes every 1 second.  if item.Key = LastClose price, we don't need to bother with this
+                    if (item.Key == TickType.MID || item.Key == TickType.LAST)  // override the time to timestamp, which comes every 1 second.  if item.Key = PriorClose price, we don't need to bother with this
                     {
                         // it happens that ASK, BID doesn't change for 40-60 minutes, when the $price is small. For example USO was ASK=10.11, BID=10.10 on 2017-03-22. In even smaller case 1 cent change could be 1%, which means ASK, BID may not change for the whole day.
                         // However, LastPrice was changing more frequently (every minute), alternating between 10.10 or 10.11. When checking the Staleness of MID price, we should use the LastPrice Time, not the time of ASK or BID, because that may not change.

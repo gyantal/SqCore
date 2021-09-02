@@ -107,21 +107,21 @@ namespace SqCoreWeb
                 if (!p_isThisActiveToolAtConnectionInit)
                     Thread.Sleep(TimeSpan.FromMilliseconds(5000));
 
-                BrAccViewerSendMarketBarLastCloses();
+                BrAccViewerSendMarketBarPriorCloses();
 
                 BrAccViewerSendSnapshotAndHist();
             });
         }
 
-        private void BrAccViewerSendMarketBarLastCloses()
+        private void BrAccViewerSendMarketBarPriorCloses()
         {
-            var lastCloses = MemDb.gMemDb.GetSdaLastCloses(m_brAccMktBrAssets, Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow));
-            var mktBrLastCloses = lastCloses.Select(r =>
+            var priorCloses = MemDb.gMemDb.GetSdaPriorCloses(m_brAccMktBrAssets, Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow));
+            var mktBrPriorCloses = priorCloses.Select(r =>
             {
-                return new AssetPriorCloseJs() { AssetId = r.Asset.AssetId, PriorClose = r.SdaLastClose, Date = r.Date };
+                return new AssetPriorCloseJs() { AssetId = r.Asset.AssetId, PriorClose = r.SdaPriorClose, Date = r.Date };
             });
 
-            byte[] encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.MktBrLstCls:" + Utils.CamelCaseSerialize(mktBrLastCloses));
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.MktBrLstCls:" + Utils.CamelCaseSerialize(mktBrPriorCloses));
             if (WsWebSocket!.State == WebSocketState.Open)
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
         }
@@ -210,18 +210,18 @@ namespace SqCoreWeb
         private List<BrAccViewerPosJs> GetBrAccViewerPos(List<BrAccPos> p_accPoss, string p_gwIdStr)
         {
             // One option is to only send those positions that have both valid AssetId (260 stocks) AND valid HistoricalPrice (only 20 stocks subset)
-            // Because in general LastClose is needed in the UI calculations.
-            // But decided it is better to send these LastClose=NaN rows as well. To show on the client that those historical prices are missing. Needs fixing in MemDb.Hist.
+            // Because in general PriorClose is needed in the UI calculations.
+            // But decided it is better to send these PriorClose=NaN rows as well. To show on the client that those historical prices are missing. Needs fixing in MemDb.Hist.
             List<BrAccPos> validBrPoss = p_accPoss.Where(r => r.AssetId != AssetId32Bits.Invalid).ToList();
             var assets = validBrPoss.Select(r => MemDb.gMemDb.AssetsCache.AssetsByAssetID[r.AssetId]);
-            List<AssetLastClose> lastCloses = MemDb.gMemDb.GetSdaLastCloses(assets, Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow)).ToList();
+            List<AssetPriorClose> priorCloses = MemDb.gMemDb.GetSdaPriorCloses(assets, Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow)).ToList();
 
-            // merge the 2 lists together: validBrPoss, lastCloses
+            // merge the 2 lists together: validBrPoss, priorCloses
             List<BrAccViewerPosJs> result = new List<BrAccViewerPosJs>(validBrPoss.Count);
             for (int i = 0; i < validBrPoss.Count; i++)
             {
                 BrAccPos posBr = validBrPoss[i];
-                AssetLastClose posLc = lastCloses[i];
+                AssetPriorClose posLc = priorCloses[i];
                 result.Add(new BrAccViewerPosJs()
                 {
                     AssetId = posBr.AssetId,
@@ -229,7 +229,7 @@ namespace SqCoreWeb
                     Symbol = posLc.Asset.Symbol,
                     Pos = posBr.Position,
                     AvgCost = posBr.AvgCost,
-                    PriorClose = posLc.SdaLastClose,
+                    PriorClose = posLc.SdaPriorClose,
                     AccId = p_gwIdStr
                 });
             }

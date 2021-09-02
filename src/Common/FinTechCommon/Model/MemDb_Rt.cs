@@ -286,7 +286,7 @@ namespace FinTechCommon
         // But maybe it is infinite. Just every 1M messages is $1. The next 1M messages is another $1. Etc. that is likely. Good. So, we don't have to throttle it, just be careful than only download data if it is needed.
         // At the moment 'tops' works without token, as https://api.iextrading.com/1.0/tops?symbols=QQQ,SPY,TLT,GLD,VXX,UNG,USO
         // but 'last' or other PreviousClose calls needs token: https://api.iextrading.com/1.0/lasts?symbols=QQQ,SPY,TLT,GLD,VXX,UNG,USO
-        // Solution: query real-time lastPrice ever 2 seconds, but query PreviousClose only once a day.
+        // Solution: query real-time lastPrice every 2 seconds, but query PreviousClose only once a day.
         // This doesn't require token: https://api.iextrading.com/1.0/tops?symbols=AAPL,GOOGL
         // PreviousClose data requires token: https://cloud.iexapis.com/stable/stock/market/batch?symbols=AAPL,FB&types=quote&token=<get it from sensitive-data file>
         async void DownloadLastPriceIex(Asset[] p_assets)  // takes 450-540ms from WinPC
