@@ -36,13 +36,13 @@ namespace SqCoreWeb
         public float Last { get; set; } = -100.0f;     // real-time last price
     }
 
-    public class AssetLastCloseJs   // this is sent to clients usually just once per day, OR when historical data changes
+    public class AssetPriorCloseJs   // this is sent to clients usually just once per day, OR when historical data changes
     {
         public uint AssetId { get; set; } = 0;        // set the Client know what is the assetId, because Rt will not send it.
         public DateTime Date { get; set; } = DateTime.MinValue;
 
         [JsonConverter(typeof(FloatJsonConverterToNumber4D))]
-        public float LastClose { get; set; } = 0;   // Split Dividend Adjusted. Should be called SdaLastClose, but name goes to client, better to be short.
+        public float PriorClose { get; set; } = 0;   // Split Dividend Adjusted. Should be called SdaLastClose, but name goes to client, better to be short.
     }
 
     public class AssetHistJs    // duplicate that the AssetId is in both HistValues and HistStat, but sometimes client needs only values (a QuickTester), sometimes only stats

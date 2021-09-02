@@ -19,10 +19,10 @@ class AssetJs {
   public name = '';
 }
 
-class AssetLastCloseJs {
+class AssetPriorCloseJs {
   public assetId = NaN;
   public date = ''; // preferred to be a new Date(), but when it arrives from server it is a string '2010-09-29T00:00:00' which is ET time zone and better to keep that way than converting to local time-zone Date object
-  public lastClose = NaN;
+  public priorClose = NaN;
 }
 
 class BrAccVwrHandShk {
@@ -36,7 +36,7 @@ class UiMktBarItem {
   public symbol = '';
   public name = '';
 
-  public lastClose  = NaN;
+  public priorClose  = NaN;
   public last  = 500;
   public pctChg  = 0.01;
 
@@ -120,10 +120,11 @@ class AssetSnapPossPosJs {
   public symbol = '';
   public pos = NaN;
   public avgCost = NaN;
-  public lastClose = NaN;
+  public priorClose = NaN;
   public estPrice = NaN;
   public estUndPrice = NaN;
   public accId = ''
+  public mktVal = NaN;
 }
 
 class AssetSnapPossJs {
@@ -187,6 +188,10 @@ class UiBrAccChrtDataRaw1 {
 
 }
 
+// class uiTabBetaArr {
+//   public QQQ
+// }
+
 @Component({
   selector: 'app-bracc-viewer',
   templateUrl: './bracc-viewer.component.html',
@@ -199,7 +204,7 @@ export class BrAccViewerComponent implements AfterViewInit {
   handshakeStr = '[Nothing arrived yet]';
   handshakeObj: Nullable<BrAccVwrHandShk> = null;
   mktBrLstClsStr = '[Nothing arrived yet]';
-  mktBrLstClsObj: Nullable<AssetLastCloseJs[]> = null;
+  mktBrLstClsObj: Nullable<AssetPriorCloseJs[]> = null;
 
   lstValObj: Nullable<AssetLastJs[]> = null;  // realtime or last values
 
@@ -228,7 +233,10 @@ export class BrAccViewerComponent implements AfterViewInit {
 
   uiSnapTab : UiSnapTable = new UiSnapTable();
   uiSnapPos : AssetSnapPossPosJs[] = [];
- 
+
+  tabPageVisibleIdx = 1;
+
+  betaArr: { [id: string] : number; } = {};
 
 
   // required for chart
@@ -260,6 +268,27 @@ export class BrAccViewerComponent implements AfterViewInit {
     // this.width = 1000 - this.margin.left - this.margin.right;
     // this.height = 550 - this.margin.top - this.margin.bottom;
 
+// guessed Beta for HL hedges and companies 
+ 
+  //   // MarketWatch Beta calculation is quite good. Use that If it is available.  There, Beta of QQQ: 1.18, that is the base.  
+    this.betaArr = {"QQQ": 1.18/1.18, "TQQQ": 3.0, "SQQQ": -3.0, "SPY": 1/1.18, "SPXL": 3*1/1.18, "UPRO": 3*1/1.18, "SPXS": -3*1/1.18, "SPXU": -3*1/1.18, "TWM": -2.07/1.18,            // market ETFs
+    "VXX": -3.4/1.18,  "VXZ": -1.82/1.18,  "SVXY": 1.7/1.18, "ZIV": 1.81/1.18,                  // VIX
+    "TLT": -0.50/1.18, // https://www.ishares.com/us/products/239454/ishares-20-year-treasury-bond-etf says -0.25, MarketWatch: -0.31, discretionary override from -0.31 to -0.50 (TMF too)
+    "TMF": 3*-0.50/1.18, "TMV": -1*3*-0.50/1.18,  "TIP": -0.06/1.18, 
+    "USO": 0.83/1.18, "SCO": -2.0*0.83/1.18, "UCO": 1.25/1.18, 
+    "UNG": 0.23/1.18,   // discretionary override from 0.03 to 0.23 (UGAZ too)
+    "UGAZ": 3*0.23/1.18,     
+    "GLD": (-0.24*1.18)/1.18,  // GLD has no Beta on MarketWatch. YF (5Years, monthly): 0.04. But DC's discretionary (logical) override: -0.24 
+    "TAIL": -1/1.18,    // compared TAIL vs. SPY and it moves about the same beta, just opposite
+    "UUP": (-0.31)/1.18,    // YF Beta calculation; when market panics, the whole world wants to buy safe USA treasuries, therefore USD goes up => negative correlation.
+    // companies                     
+    "PM": 0.62/1.18 ,        
+    };     // it is QQQ Beta, not SPY beta  
+
+    // let x = 5;
+    // x = this.betaArr["xx"];
+    // let str = 'eeu';
+    // str = this.betaArr["xx"];
 
    }
 
@@ -402,30 +431,99 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
   }
 
-  //  tableHeaderClicked() {
-  //    console.log('table header click');
-  //  }
+  isAscendic = true;
 
-  // openTab() {
+  // send(){
+  //   this.isAscendic?this.ascendic():this.descendic()
   // }
-//   openTab (pEvent: any, tabName:any) {
-//     console.log('tab are  clicked');
-//    if(tabName === "") {return;}
-//     var i, tabcontent, tablinks;
-//     tabcontent = document.getElementsByClassName("tabcontent");
-//     for (i = 0; i < tabcontent.length; i++){
-//         tabcontent[i].style.display = "none";
-//     }
-//     tablinks = document.getElementsByClassName("tablinks");
-//     for (i = 0; i < tablinks.length; i++){
-//         tablinks[i].className = tablinks.className.replace(" active", "");
-//     }
-//     let xxx = document.getElementById(tabName);
-//     if (xxx == null)
-//       return;
-//     xxx.style.display = "block";
-//     pEvent.currentTarget.className += " active";
-// }
+
+  compare(){
+    this.isAscendic = false;
+    this.uiSnapPos = this.uiSnapPos.sort((n1,n2) => {
+      if (n1 < n2){
+        return 1;
+      }
+      if(n1 > n2) {
+        return -1;
+      }
+      return 0;
+    });
+  }
+
+  descendic(){
+    this.isAscendic = true;
+    this.uiSnapPos = this.uiSnapPos.sort((n1,n2) => {
+      if (n1 > n2) {
+        return 1;
+      }
+      if (n1 < n2) {
+        return -1;
+      }
+      return 0;
+    });
+  }
+// sorting
+  // sortDir = 1;
+
+  // onSortClick(event:any){
+  //   let target = event.currentTarget,
+  //   classList = target.classList;
+
+  //   if (classList.contains('fa-chevron-up')){
+  //     classList.remove('fa-chevron-up');
+  //     classList.add('fa-chevron-down');
+  //     this.sortDir=-1;
+  //   }else {
+  //     classList.add('fa-chevron-up');
+  //     classList.remove('fa-chevron-down');
+  //     this.sortDir=1;
+  //   }
+  //   this.sortArr('symbol');
+
+  // }
+  // sortArr(colName:any){
+  //   this.uiSnapPos.sort((a,b)=>{
+  //     a = a[colName].toLowerCase();
+  //     b = b[colName].toLowerCase();
+  //     return a.compare(b) * this.sortDir
+  //   })
+  // }
+  // sorting
+  onSort (){
+    var tabLen = document.getElementsByClassName("selectedBrcAccSnapShotTbl");
+    console.log(tabLen);
+    for (const item of tabLen){
+      //  let x = (document.getElementsByTagName(item) as HTMLSelectElement).value
+       console.log(item);
+    }
+  }
+
+  tabHeaderClicked (event: any, tabIdx: number) {
+    this.tabPageVisibleIdx = tabIdx;
+
+  }
+// tabpages - multiple tabs
+  openTab (event: any, tabName: string) {
+    console.log('tabs are  clicked');
+     var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++){
+        tabcontent[i].style.display = "none";
+    }
+    tablinks = document.getElementsByClassName("tablinks");
+    console.log(tablinks);
+    // for (j = 0; j < tablinks.length; j++){
+    //     tablinks[j].className = tablinks.className.replace(" active", "");
+    // // https://github.com/jnwltr/swagger-angular-generator/issues/92 - to be discussed with George
+    // }
+    let tbNa = document.getElementById(tabName);
+    console.log(tbNa);
+    if (tbNa == null)
+      return;
+    tbNa.style.display = "block";
+    // document.getElementById(tabName).style.display = "block";
+    event.currentTarget.className += " active";
+  }
 
  
   updateUiWithSnapshot(jsonObjSnap: any)  {
@@ -434,9 +532,9 @@ export class BrAccViewerComponent implements AfterViewInit {
       this.selectedNav = jsonObjSnap.symbol;
   }
 
-  static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, lastCloses: Nullable<AssetLastCloseJs[]>, lastRt: Nullable<AssetLastJs[]>, uiMktBar: UiMktBarItem[]) {
+  static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, priorCloses: Nullable<AssetPriorCloseJs[]>, lastRt: Nullable<AssetLastJs[]>, uiMktBar: UiMktBarItem[]) {
      // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
-     if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(lastCloses) && lastCloses.length > 0  && Array.isArray(lastRt) && lastRt.length > 0)) {
+     if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(priorCloses) && priorCloses.length > 0  && Array.isArray(lastRt) && lastRt.length > 0)) {
     //  && Array.isArray(lastRt) && lastRt.length > 0 && Array.isArray(lastCloses) && lastCloses.length > 0)
      
       return;
@@ -474,7 +572,7 @@ export class BrAccViewerComponent implements AfterViewInit {
 
     // Step 2: use LastCloses data, and write it into uiMktBar array.
     // in HTML visualize the LastClose prices temporarily, instead of the real time PercentChange
-    for (const nonRt of lastCloses) {
+    for (const nonRt of priorCloses) {
       const existingUiCols = uiMktBar.filter(
         (r) => r.assetId === nonRt.assetId
       );
@@ -485,7 +583,7 @@ export class BrAccViewerComponent implements AfterViewInit {
         break;
       }
       const uiItem = existingUiCols[0];
-      uiItem.lastClose = nonRt.lastClose;
+      uiItem.priorClose = nonRt.priorClose;
     }
     // Step 3: use real-time data (we have to temporary generate it)
     for (const rtItem of lastRt) {
@@ -496,7 +594,7 @@ export class BrAccViewerComponent implements AfterViewInit {
         continue;
       
       const uiItem = existingUiItems[0];
-      uiItem.pctChg = (rtItem.last - uiItem.lastClose) / uiItem.lastClose;
+      uiItem.pctChg = (rtItem.last - uiItem.priorClose) / uiItem.priorClose;
       
     }
     
@@ -513,6 +611,8 @@ export class BrAccViewerComponent implements AfterViewInit {
       uiSnapTab.netLiquidation = brAccSnap.netLiquidation;
       uiSnapTab.netLiquidationStr = brAccSnap.netLiquidation.toString();
 
+      // uiSnapPos = [];
+
     // let snapShotItems = brAccSnap['']
     for (const uiSnapItem of brAccSnap.poss) {
       
@@ -526,10 +626,11 @@ export class BrAccViewerComponent implements AfterViewInit {
       possItem.symbol = uiSnapItem.symbol;
       possItem.pos = uiSnapItem.pos;
       possItem.avgCost = uiSnapItem.avgCost;
-      possItem.lastClose = uiSnapItem.lastClose;
+      possItem.priorClose = uiSnapItem.priorClose;
       possItem.estPrice = uiSnapItem.estPrice;
       possItem.estUndPrice = uiSnapItem.estUndPrice;
       possItem.accId = uiSnapItem.accId;
+      possItem.mktVal = uiSnapItem.pos * uiSnapItem.avgCost;
       uiSnapPos.push(possItem);
 
     }

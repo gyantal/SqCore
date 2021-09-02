@@ -29,20 +29,27 @@ MarketBar
         <div>NAV IB Total NetLiquidation (with cash) : <Span id="liqVal">{{uiSnapTab.netLiquidationStr | currency:'USD':'$'}}</Span> </div>
         <div>IB Total Cash :</div>
     </div>
-    <div class="ChartSumm">
+    <!-- <my-tabs>
+        <div (click)="tabHeaderClicked($event,1)"> header 1 </div>
+        <div (click)="tabHeaderClicked($event,2)" > header 2 </div>
+        <div *ngIf={tabPageVisibleIdx = 1} id="tab1">HistoricalChart</div>
+        <div *ngIf={tabPageVisibleIdx = 2} id="tab2">MoreDetails</div>
+    </my-tabs> -->
+    <div class="ChartSumm tab">
         <h4>AccountDetails</h4>
-        <button class="tablinks" onclick="openTab(event, 'HistoricalChart')" id="defaultOpen">HistoricalChart</button>
-        <button class="tablinks" onclick="openTab(event, 'MoreDetails')">MoreDetails</button>
-    </div>
-    <div id ="HistoricalChart" class="tabcontent">
-        <!-- <span onclick="this.parentElement.style.display='none'" class="topright">&times</span> -->
-        <h3>AccountDetails</h3>
-        <p>Display the chart here</p>
-    </div>
-    <div id ="MoreDetails" class="tabcontent">
-        <!-- <span onclick="this.parentElement.style.display='none'" class="topright">&times</span> -->
-        <h3>MoreDetails</h3>
-        <p>Display the details></p>
+        <button class="tablinks" (click)="openTab($event,'HistoricalChart')">HistoricalChart</button>
+        <button class="tablinks" (click)="openTab($event, 'MoreDetails')">MoreDetails</button>
+    
+        <div id ="HistoricalChart" class="tabcontent">
+            <!-- <span onclick="this.parentElement.style.display='none'" class="topright">&times</span> -->
+            <h4>AccountDetails</h4>
+            <p>Display the chart here</p>
+        </div>
+        <div id ="MoreDetails" class="tabcontent">
+            <!-- <span onclick="this.parentElement.style.display='none'" class="topright">&times</span> -->
+            <h4>MoreDetails</h4>
+            <p>Display the details></p>
+        </div>
     </div>
     <!-- <div class="ChartSumm">
     <h4>AccountDetails</h4>
@@ -69,21 +76,22 @@ MarketBar
 <hr>
 <table class = "selectedBrcAccSnapShotTbl">
     <thead class = "selectedBrcAccSnapShotTbl">
-        <th onclick="tableHeaderClicked()">Symbol</th><th>LocalSymbol</th><th>Pos</th><th>Cost</th><th>Last<br>Close</th><th>Est<br>Price</th><th>Chg%<br>Today</th><th>P&L<br>Today</th><th>P&L</th><th>MktVal</th><th>Est<br>UndPr</th><th>IbComp<br>UndPr</th><th>IbComp<br>Deltar</th>
+        <th>Symbol</th><th>LocalSymbol</th><th>Pos</th><th>Cost</th><th>Prior<br>Close</th><th>Est<br>Price</th><th>Chg%<br>Today</th><th>P&L<br>Today</th><th>P&L</th><th>MktVal</th><th>Est<br>UndPr</th><th>IbComp<br>UndPr</th><th>IbComp<br>Deltar</th>
         <th>Deliv<br>Value</th><th>DltAdj<br>DelivVal</th><th>gBeta</th><th>BetaDltAdj<br>MktOriVal</th><th>Acc</th>
     </thead>
+    <tbody class = "selectedBrcAccSnapShotTbl">
     <tr  *ngFor="let item of uiSnapPos">
         <td>{{item.symbol}}</td>
         <td></td>
         <td>{{item.pos}}</td>
         <td>{{item.avgCost | number:'1.1-2'}}</td>
-        <td>{{item.lastClose}}</td>
+        <td>{{item.priorClose}}</td>
         <!-- <td>{{item.lastCloseStr}}</td> -->
         <td>{{item.estPrice}}</td>
         <td></td>
         <td></td>
         <td></td>
-        <td></td>
+        <td>{{item.mktVal | number:'1.1-2'}}</td>
         <td>{{item.estUndPrice}}</td>
         <td></td>
         <td></td>
@@ -93,8 +101,9 @@ MarketBar
         <td></td>
         <td>{{item.accId}}</td>
     </tr>
-   
+    </tbody>
 </table>
+<!-- <button (click)="onSort()">Sort</button> -->
 <hr>
 <!-- Addded class "selectedTempDebug" to limit the text output in the UI-->
 <div class="selectedTempDebug">

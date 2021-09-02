@@ -37,7 +37,7 @@ namespace SqCoreWeb
         // Double.NaN cannot be serialized. Send 0.0 for missing values.
 
         [JsonConverter(typeof(FloatJsonConverterToNumber4D))]
-        public float LastClose { get; set; } = 0.0f;  // MktValue can be calculated
+        public float PriorClose { get; set; } = 0.0f;  // MktValue can be calculated
         public double EstPrice { get; set; } = 0.0;  // MktValue can be calculated, 
         public double EstUndPrice { get; set; } = 0.0;   // In case of options DeliveryValue can be calculated
 
@@ -118,7 +118,7 @@ namespace SqCoreWeb
             var lastCloses = MemDb.gMemDb.GetSdaLastCloses(m_brAccMktBrAssets, Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow));
             var mktBrLastCloses = lastCloses.Select(r =>
             {
-                return new AssetLastCloseJs() { AssetId = r.Asset.AssetId, LastClose = r.SdaLastClose, Date = r.Date };
+                return new AssetPriorCloseJs() { AssetId = r.Asset.AssetId, PriorClose = r.SdaLastClose, Date = r.Date };
             });
 
             byte[] encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.MktBrLstCls:" + Utils.CamelCaseSerialize(mktBrLastCloses));
@@ -229,7 +229,7 @@ namespace SqCoreWeb
                     Symbol = posLc.Asset.Symbol,
                     Pos = posBr.Position,
                     AvgCost = posBr.AvgCost,
-                    LastClose = posLc.SdaLastClose,
+                    PriorClose = posLc.SdaLastClose,
                     AccId = p_gwIdStr
                 });
             }
