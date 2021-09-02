@@ -248,6 +248,8 @@ namespace FinTechCommon
             var newAssetCache = AssetsCache.CreateAssetCache(sqCoreAssets!);
             // var newPortfolios = GeneratePortfolios();
 
+            FillAllAssetsPriorCloseAndLastPrice(newAssetCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
+
             if (IsInitialized)
             {
                 // if this is the periodic (not initial) reload of RedisDb, then we don't surprise clients by emptying HistPrices 

@@ -10,7 +10,7 @@
     <a href="/DbAdmin/MirrorProdDb?targetDb=DEV2">Mirror Whole Production DB-0 to DB-2 (for DEV and Testing)</a><br />
     Intentionally don't implement code for mirroring from DEV-1 to PROD. Too dangerous. Use Redis CLI commands instead.<br />
     <hr>
-    <a href="/DbAdmin/UpsertAssets?targetDb=DEV1">Upsert gSheet Assets to DB-1</a><br />
+    <a href="/DbAdmin/UpsertAssets?targetDb=DEV1">Upsert gSheet Assets to ActiveDB. (Insert into DB-0 only if you are sure (backup to DB2 before), otherwise switch to DB-1 at program start)</a><br />
 </body>
 
 </HTML>

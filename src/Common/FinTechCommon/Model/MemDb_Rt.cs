@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using SqCommon;
 using YahooFinanceApi;
 
@@ -108,6 +109,15 @@ namespace FinTechCommon
             p_sb.Append($"'<br>");
         }
 
+        static void FillAllAssetsPriorCloseAndLastPrice(AssetsCache p_newAssetCache)
+        {
+            Asset[] downloadAliveAssets = p_newAssetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock  && (r as Stock)!.ExpirationDate == string.Empty).ToArray();
+            if (downloadAliveAssets.Length == 0)
+                return;
+            var tradingHoursNow = Utils.UsaTradingHoursNow_withoutHolidays();
+            DownloadPriorCloseAndLastPriceYF(downloadAliveAssets, tradingHoursNow);
+        }
+
         void OnReloadAssetData_ReloadRtDataAndSetTimer()
         {
             Utils.Logger.Info("ReloadRtDataAndSetTimer() START");
@@ -151,11 +161,26 @@ namespace FinTechCommon
             if (downloadAssets.Length == 0)
                 return;
 
+            // IEX is faster (I guess) and we don't risk that YF bans our server for important historical data. Don't query YF too frequently.
+            // Prefer YF, because IEX returns "lastSalePrice":0, while YF returns correctly these 6 RT prices: BIB,IDX,MVV,RTH,VXZ,LBTYB
+            // https://api.iextrading.com/1.0/tops?symbols=BIB,IDX,MVV,RTH,VXZ,LBTYB
+            // https://query1.finance.yahoo.com/v7/finance/quote?symbols=BIB,IDX,MVV,RTH,VXZ,LBTYB
+            // Therefore, use IEX only for High/Mid Freq, and only in RegularTrading.
+            // LowFreq is the all 700 tickers. For that we need those 6 assets as well.
+
             var tradingHoursNow = Utils.UsaTradingHoursNow_withoutHolidays();
-            if (tradingHoursNow == TradingHours.RegularTrading)
+            bool useIexRt = p_freqParam.RtFreq != RtFreq.LowFreq || tradingHoursNow == TradingHours.RegularTrading;
+
+            if (useIexRt)
+            {
+                m_nIexDownload++;
                 DownloadLastPriceIex(downloadAssets);
+            }
             else
-                DownloadLastPriceYF(downloadAssets, tradingHoursNow);
+            {
+                m_nYfDownload++;
+                DownloadPriorCloseAndLastPriceYF(downloadAssets, tradingHoursNow);
+            }
         }
         private void SetTimerRt(RtFreqParam p_freqParam)
         {
@@ -237,17 +262,27 @@ namespace FinTechCommon
         }
 
 
-        async void DownloadLastPriceYF(Asset[] p_assets, TradingHours p_tradingHoursNow)  // takes ? ms from WinPC
+        async static void DownloadPriorCloseAndLastPriceYF(Asset[] p_assets, TradingHours p_tradingHoursNow)  // takes ? ms from WinPC
         {
             Utils.Logger.Debug("DownloadLastPriceYF() START");
-            m_nYfDownload++;
             try
             {
+                string lastValFieldStr = p_tradingHoursNow switch
+                {
+                    TradingHours.PreMarketTrading => "PreMarketPrice",
+                    TradingHours.RegularTrading => "RegularMarketPrice",
+                    TradingHours.PostMarketTrading => "PostMarketPrice",
+                    TradingHours.Closed => "PostMarketPrice",
+                    _ => throw new ArgumentOutOfRangeException(nameof(p_tradingHoursNow), $"Not expected p_tradingHoursNow value: {p_tradingHoursNow}"),
+                };
+
                 // https://query1.finance.yahoo.com/v7/finance/quote?symbols=AAPL,AMZN  returns all the fields.
                 // https://query1.finance.yahoo.com/v7/finance/quote?symbols=QQQ%2CSPY%2CGLD%2CTLT%2CVXX%2CUNG%2CUSO&fields=symbol%2CregularMarketPreviousClose%2CregularMarketPrice%2CmarketState%2CpostMarketPrice%2CpreMarketPrice  // returns just the specified fields.
                 // "marketState":"PRE" or "marketState":"POST", In PreMarket both "preMarketPrice" and "postMarketPrice" are returned.
                 var yfTickers = p_assets.Select(r => (r as Stock)!.YfTicker).ToArray();
                 var quotes = await Yahoo.Symbols(yfTickers).Fields(new Field[] { Field.Symbol, Field.RegularMarketPreviousClose, Field.RegularMarketPrice, Field.MarketState, Field.PostMarketPrice, Field.PreMarketPrice }).QueryAsync();
+                
+                int nReceivedAndRecognized = 0;
                 foreach (var quote in quotes)
                 {
                     Asset? sec = null;
@@ -262,15 +297,20 @@ namespace FinTechCommon
 
                     if (sec != null)
                     {
-                        dynamic? lastVal = float.NaN;
-                        string fieldStr = (p_tradingHoursNow == TradingHours.PreMarketTrading) ? "PreMarketPrice" : "PostMarketPrice";
+                        nReceivedAndRecognized++;
                         // TLT doesn't have premarket data. https://finance.yahoo.com/quote/TLT  "quoteSourceName":"Delayed Quote", while others: "quoteSourceName":"Nasdaq Real Time Price"
-                        if (!quote.Value.Fields.TryGetValue(fieldStr, out lastVal))
+                        dynamic? lastVal = float.NaN;
+                        if (!quote.Value.Fields.TryGetValue(lastValFieldStr, out lastVal))
                             lastVal = (float)quote.Value.RegularMarketPrice;  // fallback: the last regular-market Close price both in Post and next Pre-market
-
                         sec.LastValue = (float)lastVal;
+
+                        if (quote.Value.Fields.TryGetValue("RegularMarketPreviousClose", out dynamic? priorClose))
+                            sec.PriorClose = (float)priorClose;
                     }
                 }
+
+                if (nReceivedAndRecognized != yfTickers.Length)
+                    Utils.Logger.Warn($"DownloadLastPriceYF() problem. #queried:{yfTickers.Length}, #received:{nReceivedAndRecognized}");
             }
             catch (Exception e)
             {
@@ -289,10 +329,9 @@ namespace FinTechCommon
         // Solution: query real-time lastPrice every 2 seconds, but query PreviousClose only once a day.
         // This doesn't require token: https://api.iextrading.com/1.0/tops?symbols=AAPL,GOOGL
         // PreviousClose data requires token: https://cloud.iexapis.com/stable/stock/market/batch?symbols=AAPL,FB&types=quote&token=<get it from sensitive-data file>
-        async void DownloadLastPriceIex(Asset[] p_assets)  // takes 450-540ms from WinPC
+        static async void DownloadLastPriceIex(Asset[] p_assets)  // takes 450-540ms from WinPC
         {
             Utils.Logger.Debug("DownloadLastPriceIex() START");
-            m_nIexDownload++;
             try
             {
                 //string url = string.Format("https://api.iextrading.com/1.0/stock/market/batch?symbols={0}&types=quote", p_tickerString);
@@ -314,8 +353,9 @@ namespace FinTechCommon
             }
         }
 
-        private void ExtractAttributeIex(string p_responseStr, string p_attribute, Asset[] p_assets)
+        static private void ExtractAttributeIex(string p_responseStr, string p_attribute, Asset[] p_assets)
         {
+            List<string> zeroValueSymbols = new List<string>();
             int iStr = 0;   // this is the fastest. With IndexOf(). Not using RegEx, which is slow.
             while (iStr < p_responseStr.Length)
             {
@@ -352,19 +392,27 @@ namespace FinTechCommon
                 if (stock != null)
                 {
                     float.TryParse(attributeStr, out float attribute);
-                    switch (p_attribute)
-                    {
-                        case "previousClose":
-                            // sec.PreviousCloseIex = attribute;
-                            break;
-                        case "lastSalePrice":
-                            stock.LastValue = attribute;
-                            break;
-                    }
 
+                    if (attribute == 0.0f)
+                        zeroValueSymbols.Add(stock.Symbol);
+                    else // don't overwrite the MemDb data with false 0.0 values.
+                    {
+                        switch (p_attribute)
+                        {
+                            case "previousClose":
+                                // sec.PreviousCloseIex = attribute;
+                                break;
+                            case "lastSalePrice":
+                                stock.LastValue = attribute;
+                                break;
+                        }
+                    }
                 }
                 iStr = eAttribute;
             }
+
+            if (zeroValueSymbols.Count != 0)
+                Utils.Logger.Warn($"ExtractAttributeIex() zero lastPrice values: {String.Join(',', zeroValueSymbols)}");
         }
 
     }

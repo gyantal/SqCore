@@ -71,7 +71,7 @@ namespace FinTechCommon
         // keep the order and the length of p_assets list. So, it can be indexed. p_assets[i] is the same item as result[i]
         // If an asset has no history, we return NaN as PriorClose price.
         // This requre more RAM than the other solution which only returns the filled rows, but it will save CPU time later, when the result is processed at the caller. He don't have to do double FORs to iterate.
-        public IEnumerable<AssetPriorClose> GetSdaPriorCloses(IEnumerable<Asset> p_assets, DateTime p_dateExclLoc /* usually given as current time today */)
+        public IEnumerable<AssetPriorClose> GetSdaPriorClosesFromHist(IEnumerable<Asset> p_assets, DateTime p_dateExclLoc /* usually given as current time today */)
         {
             DateOnly lookbackEnd = p_dateExclLoc.Date.AddDays(-1); // if (p_dateExclLoc is Monday), -1 days is Sunday, but we have to find Friday before
 
@@ -87,7 +87,7 @@ namespace FinTechCommon
                     break;
                 }
             }
-            Debug.WriteLine($"MemDb.GetSdaPriorCloses().EndDate: {dates[iEndDay]}");
+            Debug.WriteLine($"MemDb.GetSdaPriorClosesFromHist().EndDate: {dates[iEndDay]}");
 
             var priorCloses = p_assets.Select(r =>
             {
@@ -107,6 +107,18 @@ namespace FinTechCommon
                 } while (j < dates.Length);
                 return new AssetPriorClose(r, DateTime.MinValue, float.NaN);
 
+            });
+
+            return priorCloses;
+        }
+
+        // Not really necessary function, because PriorClose can be queried directly from Asset
+        public IEnumerable<AssetPriorClose> GetSdaPriorCloses(IEnumerable<Asset> p_assets)
+        {
+            DateTime mockupPriorDate = DateTime.UtcNow.Date.AddDays(-1); // we get PriorClose from Asset directly. That comes from YF, which don't tell us the date of PriorClose
+            var priorCloses = p_assets.Select(r =>
+            {
+                return new AssetPriorClose(r, mockupPriorDate, r.PriorClose);
             });
 
             return priorCloses;

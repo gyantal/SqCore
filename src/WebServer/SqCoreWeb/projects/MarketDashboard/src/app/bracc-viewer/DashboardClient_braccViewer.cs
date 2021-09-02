@@ -115,10 +115,11 @@ namespace SqCoreWeb
 
         private void BrAccViewerSendMarketBarPriorCloses()
         {
-            var priorCloses = MemDb.gMemDb.GetSdaPriorCloses(m_brAccMktBrAssets, Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow));
-            var mktBrPriorCloses = priorCloses.Select(r =>
+            DateTime mockupPriorDate = DateTime.UtcNow.Date.AddDays(-1); // we get PriorClose from Asset directly. That comes from YF, which don't tell us the date of PriorClose
+
+            var mktBrPriorCloses = m_brAccMktBrAssets.Select(r =>
             {
-                return new AssetPriorCloseJs() { AssetId = r.Asset.AssetId, PriorClose = r.SdaPriorClose, Date = r.Date };
+                return new AssetPriorCloseJs() { AssetId = r.AssetId, PriorClose = r.PriorClose, Date = mockupPriorDate };
             });
 
             byte[] encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.MktBrLstCls:" + Utils.CamelCaseSerialize(mktBrPriorCloses));
@@ -213,23 +214,23 @@ namespace SqCoreWeb
             // Because in general PriorClose is needed in the UI calculations.
             // But decided it is better to send these PriorClose=NaN rows as well. To show on the client that those historical prices are missing. Needs fixing in MemDb.Hist.
             List<BrAccPos> validBrPoss = p_accPoss.Where(r => r.AssetId != AssetId32Bits.Invalid).ToList();
-            var assets = validBrPoss.Select(r => MemDb.gMemDb.AssetsCache.AssetsByAssetID[r.AssetId]);
-            List<AssetPriorClose> priorCloses = MemDb.gMemDb.GetSdaPriorCloses(assets, Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow)).ToList();
+            List<Asset> validBrPossAssets = validBrPoss.Select(r => MemDb.gMemDb.AssetsCache.AssetsByAssetID[r.AssetId]).ToList();
 
-            // merge the 2 lists together: validBrPoss, priorCloses
+            // merge the 2 lists together: validBrPoss, validBrPossAssets
             List<BrAccViewerPosJs> result = new List<BrAccViewerPosJs>(validBrPoss.Count);
             for (int i = 0; i < validBrPoss.Count; i++)
             {
                 BrAccPos posBr = validBrPoss[i];
-                AssetPriorClose posLc = priorCloses[i];
+                Asset asset = validBrPossAssets[i];
                 result.Add(new BrAccViewerPosJs()
                 {
                     AssetId = posBr.AssetId,
-                    SqTicker = posLc.Asset.SqTicker,
-                    Symbol = posLc.Asset.Symbol,
+                    SqTicker = asset.SqTicker,
+                    Symbol = asset.Symbol,
                     Pos = posBr.Position,
                     AvgCost = posBr.AvgCost,
-                    PriorClose = posLc.SdaPriorClose,
+                    PriorClose = asset.PriorClose,
+                    EstPrice = asset.LastValue,
                     AccId = p_gwIdStr
                 });
             }
