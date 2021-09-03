@@ -124,7 +124,6 @@ class AssetSnapPossPosJs {
   public estPrice = NaN;
   public estUndPrice = NaN;
   public accId = ''
-  public mktVal = NaN;
 }
 
 class AssetSnapPossJs {
@@ -133,8 +132,8 @@ class AssetSnapPossJs {
   public netLiquidation = NaN;
   public grossPositionValue = NaN;
   public totalCashValue = NaN;
-  public initialMarginReq = NaN;
-  public mainMarginReq = NaN;
+  public initMarginReq = NaN;
+  public maintMarginReq = NaN;
   public poss : Nullable<AssetSnapPossPosJs[]> = null;
 }
 
@@ -146,23 +145,30 @@ class UiSnapTable {
   public grossPositionValue = NaN;
   public totalCashValue = NaN;
   public initialMarginReq = NaN;
-  public mainMarginReq = NaN;
+  public maintMarginReq = NaN;
   public poss = [];
+  public sumPlTod = 0;
+  public guessedBetaN = 1;
+
 }
 
 
-// class UiAssetSnapPossPos {
-//   public assetId = NaN;
-//   public sqTicker = '';
-//   public symbol = '';
-//   public pos = NaN;
-//   public avgCost = NaN;
-//   public lastClose = NaN;
-//   public lastCloseStr = '';
-//   public estPrice = NaN;
-//   public estUndPrice = NaN;
-//   public accId = ''
-// }
+class UiAssetSnapPossPos {
+  public assetId = NaN;
+  public sqTicker = '';
+  public symbol = '';
+  public pos = NaN;
+  public avgCost = NaN;
+  public priorClose = NaN;
+  public priorCloseStr = '';
+  public estPrice = NaN;
+  public estUndPrice = NaN;
+  public accId = ''
+  public mktVal = NaN;
+  public pctChgTod = NaN;
+  public plTod = NaN;
+  
+}
 
 
 // UiBrAccChrt is for developing the chart
@@ -233,11 +239,11 @@ export class BrAccViewerComponent implements AfterViewInit {
 
   uiSnapTab : UiSnapTable = new UiSnapTable();
   uiSnapPos : AssetSnapPossPosJs[] = [];
+  uiSnapPosItem: UiAssetSnapPossPos[] = [];
 
   tabPageVisibleIdx = 1;
 
   betaArr: { [id: string] : number; } = {};
-
 
   // required for chart
   // private margin = {top:20, right:20, bottom:30, left:50};
@@ -285,11 +291,6 @@ export class BrAccViewerComponent implements AfterViewInit {
     "PM": 0.62/1.18 ,        
     };     // it is QQQ Beta, not SPY beta  
 
-    // let x = 5;
-    // x = this.betaArr["xx"];
-    // let str = 'eeu';
-    // str = this.betaArr["xx"];
-
    }
 
   ngAfterViewInit(): void {
@@ -327,7 +328,7 @@ export class BrAccViewerComponent implements AfterViewInit {
         console.log('BrAccViewer.BrAccSnapshot:' + msgObjStr);
         this.brAccountSnapshotStr = msgObjStr;
         this.brAccountSnapshotObj = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.uiSnapTab, this.uiSnapPos) 
+        BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.uiSnapTab, this.uiSnapPosItem) 
         const jsonObjSnap = JSON.parse(msgObjStr);
         this.updateUiWithSnapshot(jsonObjSnap);
     
@@ -497,35 +498,12 @@ export class BrAccViewerComponent implements AfterViewInit {
        console.log(item);
     }
   }
-
+// tabpage 
   tabHeaderClicked (event: any, tabIdx: number) {
     this.tabPageVisibleIdx = tabIdx;
 
   }
-// tabpages - multiple tabs
-  openTab (event: any, tabName: string) {
-    console.log('tabs are  clicked');
-     var i, tabcontent, tablinks;
-    tabcontent = document.getElementsByClassName("tabcontent");
-    for (i = 0; i < tabcontent.length; i++){
-        tabcontent[i].style.display = "none";
-    }
-    tablinks = document.getElementsByClassName("tablinks");
-    console.log(tablinks);
-    // for (j = 0; j < tablinks.length; j++){
-    //     tablinks[j].className = tablinks.className.replace(" active", "");
-    // // https://github.com/jnwltr/swagger-angular-generator/issues/92 - to be discussed with George
-    // }
-    let tbNa = document.getElementById(tabName);
-    console.log(tbNa);
-    if (tbNa == null)
-      return;
-    tbNa.style.display = "block";
-    // document.getElementById(tabName).style.display = "block";
-    event.currentTarget.className += " active";
-  }
 
- 
   updateUiWithSnapshot(jsonObjSnap: any)  {
     console.log(`BrAccViewer.updateUiWithSnapshot(). Symbol: '${jsonObjSnap.symbol}'`);
     if (this.selectedNav != jsonObjSnap.symbol) // change UI only if it is a meaningful change
@@ -601,39 +579,51 @@ export class BrAccViewerComponent implements AfterViewInit {
 
   }
 
-  static updateSnapshotTable(brAccSnap : Nullable<AssetSnapPossJs>, uiSnapTab : UiSnapTable, uiSnapPos: AssetSnapPossPosJs[])
+  static updateSnapshotTable(brAccSnap : Nullable<AssetSnapPossJs>, uiSnapTab : UiSnapTable, uiSnapPosItem: UiAssetSnapPossPos[])
   {
     if (brAccSnap === null || brAccSnap.poss === null) 
       return;
 
       uiSnapTab.symbol = brAccSnap.symbol;
       uiSnapTab.lastUpdate = brAccSnap.lastUpdate;
+      uiSnapTab.totalCashValue = brAccSnap.totalCashValue;
+      uiSnapTab.initialMarginReq = brAccSnap.initMarginReq;
+      uiSnapTab.maintMarginReq = brAccSnap.maintMarginReq;
+      uiSnapTab.grossPositionValue = brAccSnap.grossPositionValue;
       uiSnapTab.netLiquidation = brAccSnap.netLiquidation;
       uiSnapTab.netLiquidationStr = brAccSnap.netLiquidation.toString();
 
       // uiSnapPos = [];
+      uiSnapPosItem.length = 0;
 
-    // let snapShotItems = brAccSnap['']
-    for (const uiSnapItem of brAccSnap.poss) {
-      
 
-      console.log("The Positions of Snapshot data are :" + uiSnapItem.pos);
-      // if (existingUiSanpItems.length === 0)
-      //   continue;
-      let possItem = new AssetSnapPossPosJs();
-      possItem.assetId = uiSnapItem.assetId;
-      possItem.sqTicker = uiSnapItem.sqTicker;
-      possItem.symbol = uiSnapItem.symbol;
-      possItem.pos = uiSnapItem.pos;
-      possItem.avgCost = uiSnapItem.avgCost;
-      possItem.priorClose = uiSnapItem.priorClose;
-      possItem.estPrice = uiSnapItem.estPrice;
-      possItem.estUndPrice = uiSnapItem.estUndPrice;
-      possItem.accId = uiSnapItem.accId;
-      possItem.mktVal = uiSnapItem.pos * uiSnapItem.avgCost;
-      uiSnapPos.push(possItem);
+      for (const possItem of brAccSnap.poss) {
+        console.log("The positions of UiSnapTable are :" + possItem.pos);
 
-    }
+        let uiPosItem = new UiAssetSnapPossPos()
+        uiPosItem.assetId = possItem.assetId;
+        uiPosItem.sqTicker = possItem.sqTicker;
+        uiPosItem.symbol = possItem.symbol;
+        uiPosItem.pos = possItem.pos;
+        uiPosItem.avgCost = possItem.avgCost;
+        uiPosItem.priorClose = possItem.priorClose;
+        uiPosItem.priorCloseStr = possItem.priorClose.toString();
+        uiPosItem.estPrice = possItem.estPrice;
+        uiPosItem.estUndPrice = possItem.estUndPrice;
+        uiPosItem.accId = possItem.accId;
+        uiPosItem.mktVal = Math.round(possItem.pos * possItem.estPrice);
+        uiPosItem.pctChgTod = (possItem.estPrice-possItem.priorClose)/possItem.estPrice;
+        uiPosItem.plTod = Math.round(possItem.pos * (possItem.estPrice - possItem.priorClose))
+        uiSnapPosItem.push(uiPosItem);
+
+      }
+
+      //var sumPlTod = 0;
+      uiSnapTab.sumPlTod = 0;
+      for (const item of uiSnapPosItem){
+        uiSnapTab.sumPlTod += item.plTod;
+      }
+    
   }
 
   static updateChrtUi(histObj : Nullable<HistJs[]>, brAccChrtData1: UiBrAccChrtHistValRaw[]) {

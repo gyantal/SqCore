@@ -134,6 +134,11 @@
 #liqVal{
   font-weight: bold;
 }
+#plSum {
+  font-weight: bold;
+  // color: aqua;
+
+}
   // }
 table, td, thead, th {
     border: 1px solid #9cd3db;;
@@ -163,13 +168,13 @@ td {
 
 // style for ab pages 
 
-.tab {
-  overflow: hidden;
-  border: 1px solid red;
-  background-color: #fff;
+// .tab {
+//   overflow: hidden;
+//   // border: 1px solid red;
+//   background-color: #fff;
   
-}
-.tab button {
+// }
+.tab #default{
   background-color: inherit;
   float: left;
   border: none;
@@ -185,13 +190,13 @@ td {
 }
 
 /* Change background color of buttons on hover */
-.tab button:hover {
+.tab tab1:hover {
   background-color: #ddd;
 }
 
 /* Create an active/current tablink class */
-.tab button.active {
-  background-color: #ccc;
+.tab #default {
+  background-color: aqua;
   /* Set transitions up. */
   -webkit-transition: max-height 0.7s;
   -moz-transition: max-height 0.7s;
