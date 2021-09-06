@@ -148,7 +148,6 @@ class UiSnapTable {
   public maintMarginReq = NaN;
   public poss = [];
   public sumPlTod = 0;
-  public guessedBetaN = 1;
 
 }
 
@@ -167,6 +166,9 @@ class UiAssetSnapPossPos {
   public mktVal = NaN;
   public pctChgTod = NaN;
   public plTod = NaN;
+  public pl = NaN;
+  public gBeta = 1; // guessed Beta
+  public betaDltAdj = 1;
   
 }
 
@@ -243,7 +245,10 @@ export class BrAccViewerComponent implements AfterViewInit {
 
   tabPageVisibleIdx = 1;
 
-  betaArr: { [id: string] : number; } = {};
+  sortColumn : string = "DailyPL";
+  sortDirection : string = "Increase";
+
+  static betaArr: { [id: string] : number; } = {};
 
   // required for chart
   // private margin = {top:20, right:20, bottom:30, left:50};
@@ -277,7 +282,7 @@ export class BrAccViewerComponent implements AfterViewInit {
 // guessed Beta for HL hedges and companies 
  
   //   // MarketWatch Beta calculation is quite good. Use that If it is available.  There, Beta of QQQ: 1.18, that is the base.  
-    this.betaArr = {"QQQ": 1.18/1.18, "TQQQ": 3.0, "SQQQ": -3.0, "SPY": 1/1.18, "SPXL": 3*1/1.18, "UPRO": 3*1/1.18, "SPXS": -3*1/1.18, "SPXU": -3*1/1.18, "TWM": -2.07/1.18,            // market ETFs
+    BrAccViewerComponent.betaArr = {"QQQ": 1.18/1.18, "TQQQ": 3.0, "SQQQ": -3.0, "SPY": 1/1.18, "SPXL": 3*1/1.18, "UPRO": 3*1/1.18, "SPXS": -3*1/1.18, "SPXU": -3*1/1.18, "TWM": -2.07/1.18,            // market ETFs
     "VXX": -3.4/1.18,  "VXZ": -1.82/1.18,  "SVXY": 1.7/1.18, "ZIV": 1.81/1.18,                  // VIX
     "TLT": -0.50/1.18, // https://www.ishares.com/us/products/239454/ishares-20-year-treasury-bond-etf says -0.25, MarketWatch: -0.31, discretionary override from -0.31 to -0.50 (TMF too)
     "TMF": 3*-0.50/1.18, "TMV": -1*3*-0.50/1.18,  "TIP": -0.06/1.18, 
@@ -290,6 +295,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     // companies                     
     "PM": 0.62/1.18 ,        
     };     // it is QQQ Beta, not SPY beta  
+    
 
    }
 
@@ -297,6 +303,7 @@ export class BrAccViewerComponent implements AfterViewInit {
   
     // functions for developing charts
     // this.initChart();
+    
     
   }
 
@@ -328,7 +335,7 @@ export class BrAccViewerComponent implements AfterViewInit {
         console.log('BrAccViewer.BrAccSnapshot:' + msgObjStr);
         this.brAccountSnapshotStr = msgObjStr;
         this.brAccountSnapshotObj = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.uiSnapTab, this.uiSnapPosItem) 
+        BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.sortColumn, this.sortDirection, this.uiSnapTab, this.uiSnapPosItem) 
         const jsonObjSnap = JSON.parse(msgObjStr);
         this.updateUiWithSnapshot(jsonObjSnap);
     
@@ -438,67 +445,14 @@ export class BrAccViewerComponent implements AfterViewInit {
   //   this.isAscendic?this.ascendic():this.descendic()
   // }
 
-  compare(){
-    this.isAscendic = false;
-    this.uiSnapPos = this.uiSnapPos.sort((n1,n2) => {
-      if (n1 < n2){
-        return 1;
-      }
-      if(n1 > n2) {
-        return -1;
-      }
-      return 0;
-    });
+  onSortingClicked(event, p_sortColumn, p_sortDirection){
+    this.sortColumn = p_sortColumn;
+    this.sortDirection = p_sortDirection;
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.sortColumn, this.sortDirection, this.uiSnapTab, this.uiSnapPosItem) 
+
   }
 
-  descendic(){
-    this.isAscendic = true;
-    this.uiSnapPos = this.uiSnapPos.sort((n1,n2) => {
-      if (n1 > n2) {
-        return 1;
-      }
-      if (n1 < n2) {
-        return -1;
-      }
-      return 0;
-    });
-  }
-// sorting
-  // sortDir = 1;
-
-  // onSortClick(event:any){
-  //   let target = event.currentTarget,
-  //   classList = target.classList;
-
-  //   if (classList.contains('fa-chevron-up')){
-  //     classList.remove('fa-chevron-up');
-  //     classList.add('fa-chevron-down');
-  //     this.sortDir=-1;
-  //   }else {
-  //     classList.add('fa-chevron-up');
-  //     classList.remove('fa-chevron-down');
-  //     this.sortDir=1;
-  //   }
-  //   this.sortArr('symbol');
-
-  // }
-  // sortArr(colName:any){
-  //   this.uiSnapPos.sort((a,b)=>{
-  //     a = a[colName].toLowerCase();
-  //     b = b[colName].toLowerCase();
-  //     return a.compare(b) * this.sortDir
-  //   })
-  // }
-  // sorting
-  onSort (){
-    var tabLen = document.getElementsByClassName("selectedBrcAccSnapShotTbl");
-    console.log(tabLen);
-    for (const item of tabLen){
-      //  let x = (document.getElementsByTagName(item) as HTMLSelectElement).value
-       console.log(item);
-    }
-  }
-// tabpage 
+  // tabpage 
   tabHeaderClicked (event: any, tabIdx: number) {
     this.tabPageVisibleIdx = tabIdx;
 
@@ -579,51 +533,118 @@ export class BrAccViewerComponent implements AfterViewInit {
 
   }
 
-  static updateSnapshotTable(brAccSnap : Nullable<AssetSnapPossJs>, uiSnapTab : UiSnapTable, uiSnapPosItem: UiAssetSnapPossPos[])
+  static updateSnapshotTable(brAccSnap : Nullable<AssetSnapPossJs>, sortColumn : string, sortDirection : string, uiSnapTab : UiSnapTable, uiSnapPosItem: UiAssetSnapPossPos[])
   {
-    if (brAccSnap === null || brAccSnap.poss === null) 
-      return;
+    if (brAccSnap === null || brAccSnap.poss === null) return;
 
-      uiSnapTab.symbol = brAccSnap.symbol;
-      uiSnapTab.lastUpdate = brAccSnap.lastUpdate;
-      uiSnapTab.totalCashValue = brAccSnap.totalCashValue;
-      uiSnapTab.initialMarginReq = brAccSnap.initMarginReq;
-      uiSnapTab.maintMarginReq = brAccSnap.maintMarginReq;
-      uiSnapTab.grossPositionValue = brAccSnap.grossPositionValue;
-      uiSnapTab.netLiquidation = brAccSnap.netLiquidation;
-      uiSnapTab.netLiquidationStr = brAccSnap.netLiquidation.toString();
+    uiSnapTab.symbol = brAccSnap.symbol;
+    uiSnapTab.lastUpdate = brAccSnap.lastUpdate;
+    uiSnapTab.totalCashValue = brAccSnap.totalCashValue;
+    uiSnapTab.initialMarginReq = brAccSnap.initMarginReq;
+    uiSnapTab.maintMarginReq = brAccSnap.maintMarginReq;
+    uiSnapTab.grossPositionValue = brAccSnap.grossPositionValue;
+    uiSnapTab.netLiquidation = brAccSnap.netLiquidation;
+    uiSnapTab.netLiquidationStr = brAccSnap.netLiquidation.toString();
 
-      // uiSnapPos = [];
-      uiSnapPosItem.length = 0;
+    // uiSnapPos = [];
+    uiSnapPosItem.length = 0;
 
+    for (const possItem of brAccSnap.poss) {
+      console.log("The positions of UiSnapTable are :" + possItem.pos);
 
-      for (const possItem of brAccSnap.poss) {
-        console.log("The positions of UiSnapTable are :" + possItem.pos);
+      let uiPosItem = new UiAssetSnapPossPos();
+      uiPosItem.assetId = possItem.assetId;
+      uiPosItem.sqTicker = possItem.sqTicker;
+      uiPosItem.symbol = possItem.symbol;
+      // BrAccViewerComponent.betaArr 
+      uiPosItem.gBeta = (uiPosItem.symbol in BrAccViewerComponent.betaArr ) ? BrAccViewerComponent.betaArr [uiPosItem.symbol] : 1.0;
+      uiPosItem.pos = possItem.pos;
+      uiPosItem.avgCost = possItem.avgCost;
+      uiPosItem.priorClose = possItem.priorClose;
+      uiPosItem.priorCloseStr = possItem.priorClose.toString();
+      uiPosItem.estPrice = possItem.estPrice;
+      uiPosItem.estUndPrice = possItem.estUndPrice;
+      uiPosItem.accId = possItem.accId;
+      uiPosItem.mktVal = Math.round(possItem.pos * possItem.estPrice);
+      uiPosItem.pctChgTod =
+        (possItem.estPrice - possItem.priorClose) / possItem.estPrice;
+      uiPosItem.plTod = Math.round(
+        possItem.pos * (possItem.estPrice - possItem.priorClose)
+      );
+      uiPosItem.pl = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost))
+      uiPosItem.betaDltAdj = Math.round(uiPosItem.gBeta * uiPosItem.mktVal)
+      uiSnapPosItem.push(uiPosItem);
+    }
 
-        let uiPosItem = new UiAssetSnapPossPos()
-        uiPosItem.assetId = possItem.assetId;
-        uiPosItem.sqTicker = possItem.sqTicker;
-        uiPosItem.symbol = possItem.symbol;
-        uiPosItem.pos = possItem.pos;
-        uiPosItem.avgCost = possItem.avgCost;
-        uiPosItem.priorClose = possItem.priorClose;
-        uiPosItem.priorCloseStr = possItem.priorClose.toString();
-        uiPosItem.estPrice = possItem.estPrice;
-        uiPosItem.estUndPrice = possItem.estUndPrice;
-        uiPosItem.accId = possItem.accId;
-        uiPosItem.mktVal = Math.round(possItem.pos * possItem.estPrice);
-        uiPosItem.pctChgTod = (possItem.estPrice-possItem.priorClose)/possItem.estPrice;
-        uiPosItem.plTod = Math.round(possItem.pos * (possItem.estPrice - possItem.priorClose))
-        uiSnapPosItem.push(uiPosItem);
+    //var sumPlTod = 0;
+    uiSnapTab.sumPlTod = 0;
+    for (const item of uiSnapPosItem) {
+      uiSnapTab.sumPlTod += item.plTod;
+    }
 
+  
+    // sort by sortColumn
+
+    uiSnapPosItem.sort((n1: UiAssetSnapPossPos, n2: UiAssetSnapPossPos) => {
+
+      let dirMultiplier = (sortDirection == "Increasing") ? 1 : -1;
+
+      switch (sortColumn) {
+        case 'Symbol':
+          if (n1.symbol < n2.symbol) return 1 * dirMultiplier;
+          if (n1.symbol > n2.symbol) return -1 * dirMultiplier;
+          break;
+        case 'Pos':
+          if (n1.pos < n2.pos) return 1 * dirMultiplier;
+          if (n1.pos > n2.pos) return -1 * dirMultiplier;
+          break;
+        case 'Cost':
+          if (n1.avgCost < n2.avgCost) return 1 * dirMultiplier;
+          if (n1.avgCost > n2.avgCost) return -1 * dirMultiplier;
+          break;
+        case 'PriorClose':
+          if (n1.priorClose < n2.priorClose) return 1 * dirMultiplier;
+          if (n1.priorClose > n2.priorClose) return -1 * dirMultiplier;
+          break;
+        case 'EstPrice':
+          if (n1.estPrice < n2.estPrice) return 1 * dirMultiplier;
+          if (n1.estPrice > n2.estPrice) return -1 * dirMultiplier;
+          break;
+        case 'DailyPctChg':
+          if (n1.pctChgTod < n2.pctChgTod) return 1 * dirMultiplier;
+          if (n1.pctChgTod > n2.pctChgTod) return -1 * dirMultiplier;
+          break;
+        case 'DailyPL':
+          if (n1.plTod < n2.plTod) return 1 * dirMultiplier;
+          if (n1.plTod > n2.plTod) return -1 * dirMultiplier;
+          break;
+        case 'MktVal':
+          if (n1.mktVal < n2.mktVal) return 1 * dirMultiplier;
+          if (n1.mktVal > n2.mktVal) return -1 * dirMultiplier;
+          break;
+        case 'EstUndPrice':
+          if (n1.estUndPrice < n2.estUndPrice) return 1 * dirMultiplier;
+          if (n1.estUndPrice > n2.estUndPrice) return -1 * dirMultiplier;
+          break;
+        // case 'IbCompUndPr':
+        //   if (n1.ibCompUndr < n2.ibCompUndr) return 1 * dirMultiplier;
+        //   if (n1.ibCompUndr > n2.ibCompUndr) return -1 * dirMultiplier;
+        //   break;
+        case 'gBeta':
+          if (n1.gBeta < n2.gBeta) return 1 * dirMultiplier;
+          if (n1.gBeta > n2.gBeta) return -1 * dirMultiplier;
+          break;
+        case 'gBetaDltAdj':
+          if (n1.betaDltAdj < n2.betaDltAdj) return 1 * dirMultiplier;
+          if (n1.betaDltAdj > n2.betaDltAdj) return -1 * dirMultiplier;
+          break;
+      
+        default:
+          console.warn("Urecognized...***");
+          break;
       }
-
-      //var sumPlTod = 0;
-      uiSnapTab.sumPlTod = 0;
-      for (const item of uiSnapPosItem){
-        uiSnapTab.sumPlTod += item.plTod;
-      }
-    
+      return 0;
+    });
   }
 
   static updateChrtUi(histObj : Nullable<HistJs[]>, brAccChrtData1: UiBrAccChrtHistValRaw[]) {

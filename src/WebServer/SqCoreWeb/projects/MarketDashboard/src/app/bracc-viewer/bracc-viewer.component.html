@@ -83,11 +83,27 @@ MarketBar
 <hr>
 <table class = "selectedBrcAccSnapShotTbl">
     <thead class = "selectedBrcAccSnapShotTbl">
-        <th>Symbol</th><th>LocalSymbol</th><th>Pos</th><th>Cost</th><th>Prior<br>Close</th><th>Est<br>Price</th><th>Chg%<br>Today</th><th>P&L<br>Today</th><th>P&L</th><th>MktVal</th><th>Est<br>UndPr</th><th>IbComp<br>UndPr</th><th>IbComp<br>Deltar</th>
-        <th>Deliv<br>Value</th><th>DltAdj<br>DelivVal</th><th>gBeta</th><th>BetaDltAdj<br>MktOriVal</th><th>Acc</th>
+        <th (click)="onSortingClicked($event, 'Symbol','Increasing')">Symbol</th>
+        <th>LocalSymbol</th>
+        <th (click)="onSortingClicked($event, 'Pos','Increasing')">Pos</th>
+        <th (click)="onSortingClicked($event, 'Cost','Increasing')">Cost</th>
+        <th (click)="onSortingClicked($event, 'PriorClose','Increasing')">Prior<br>Close</th>
+        <th (click)="onSortingClicked($event, 'estPrice','Increasing')">Est<br>Price</th>
+        <th (click)="onSortingClicked($event, 'DailyPctChg','Increasing')">Chg%<br>Today</th>
+        <th (click)="onSortingClicked($event, 'plTod','Increasing')">P&L<br>Today</th>
+        <th (click)="onSortingClicked($event, 'ProfLos','Increasing')">P&L</th>
+        <th (click)="onSortingClicked($event, 'MktVal','Increasing')">MktVal</th>
+        <th (click)="onSortingClicked($event, 'EstUndPrice','Increasing')">Est<br>UndPr</th>
+        <th (click)="onSortingClicked($event, 'IbCompUndPr','Increasing')">IbComp<br>UndPr</th>
+        <th (click)="onSortingClicked($event, 'IbCompDeltar','Increasing')">IbComp<br>Deltar</th>
+        <th (click)="onSortingClicked($event, 'DelivVal','Increasing')">Deliv<br>Value</th>
+        <th (click)="onSortingClicked($event, 'DltAdjDelivVal','Increasing')">DltAdj<br>DelivVal</th>
+        <th (click)="onSortingClicked($event, 'gBeta','Increasing')">gBeta</th>
+        <th (click)="onSortingClicked($event, 'gBetaDltAdj','Increasing')">BetaDltAdj<br>MktOriVal</th>
+        <th (click)="onSortingClicked($event, 'Acc','Increasing')">Acc</th>
     </thead>
     <tbody class = "selectedBrcAccSnapShotTbl">
-    <tr  *ngFor="let item of uiSnapPosItem">
+    <tr *ngFor="let item of uiSnapPosItem">
         <td>{{item.symbol}}</td>
         <td></td>
         <td>{{item.pos}}</td>
@@ -99,21 +115,21 @@ MarketBar
             'mktBarPositivePerf' : item.pctChgTod > 0,
             'mktbarNegativePerf' : item.pctChgTod < 0
          }">{{item.pctChgTod | percent:'1.2'}}</td>
-        <td>{{item.plTod}}</td>
-        <td></td>
+        <td >{{item.plTod}}</td>
+        <td>{{item.pl}}</td>
         <td>{{item.mktVal}}</td>
-        <td>{{item.estUndPrice}}</td>
         <td></td>
         <td></td>
         <td></td>
         <td></td>
         <td></td>
-        <td></td>
+        <td>{{item.gBeta | number:'1.1-2'}}</td>
+        <td>{{item.betaDltAdj}}</td>
         <td>{{item.accId}}</td>
     </tr>
     </tbody>
 </table>
-<!-- <button (click)="onSort()">Sort</button> -->
+<!-- <button (click)="onSortClicked($event)">Sort</button>fv -->
 <hr>
 <!-- Addded class "selectedTempDebug" to limit the text output in the UI-->
 <div class="selectedTempDebug">
