@@ -52,6 +52,17 @@ namespace SqCommon
 #endif
         }
 
+        public static bool IsDebugRuntimeConfig()
+        {
+#if RELEASE
+            return false;
+#elif DEBUG
+            return true;
+#else
+            return false;
+#endif
+        }
+
         // public enum RunningEnvStrType
         // {
         //     Unknown,

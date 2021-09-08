@@ -25,26 +25,31 @@ namespace BrokerCommon
         LocalTws1 = 50,
         LocalTws2 = 51,
 
+        // https://github.com/pilwon/node-ib/issues/27
+        // https://groups.io/g/twsapi/topic/4044575
+        // leave at least 3 ClientIDs between each of them, so if retry the connection with the next consecutive id
+        // If the clientId is not ultimately freed up you will eventually hit the maximum number of TWS clients.
+        // The only cure for that is to restart TWS.  There is no mechanism I'm aware of to close client connections from within TWS.
         SqCoreToGaProd = 60,
-        SqCoreToGaDev1 = 61,    // Agy
-        SqCoreToGaDev2 = 62,    // Daya
-        SqCoreToGaDev3 = 63,   // Balazs
-        SqCoreToGaDev4 = 64,    // Laci
-        SqCoreToGaTest1 = 69,    // it can clash if many developers run the tests at the same time, but that is not likely.
+        SqCoreToGaDev1 = 63,    // Agy
+        SqCoreToGaDev2 = 66,    // Daya
+        SqCoreToGaDev3 = 69,   // Balazs
+        SqCoreToGaDev4 = 72,    // Laci
+        SqCoreToGaTest1 = 75,    // it can clash if many developers run the tests at the same time, but that is not likely.
 
-        SqCoreToDcProd = 70,
-        SqCoreToDcDev1 = 71,
-        SqCoreToDcDev2 = 72,
-        SqCoreToDcDev3 = 73,
-        SqCoreToDcDev4 = 74,
-        SqCoreToDcTest1 = 79,
+        SqCoreToDcProd = 80,
+        SqCoreToDcDev1 = 83,
+        SqCoreToDcDev2 = 86,
+        SqCoreToDcDev3 = 89,
+        SqCoreToDcDev4 = 92,
+        SqCoreToDcTest1 = 95,
 
-        SqCoreToDbProd = 80,
-        SqCoreToDbDev1 = 81,
-        SqCoreToDbDev2 = 82,
-        SqCoreToDbDev3 = 83,
-        SqCoreToDbDev4 = 84,
-        SqCoreToDbTest1 = 89
+        SqCoreToDbProd = 100,
+        SqCoreToDbDev1 = 103,
+        SqCoreToDbDev2 = 106,
+        SqCoreToDbDev3 = 109,
+        SqCoreToDbDev4 = 112,
+        SqCoreToDbTest1 = 115
     }
 
 
@@ -200,7 +205,8 @@ namespace BrokerCommon
         public string VbAccountsList { get; set; } = string.Empty;
         public string Host { get; set; } = string.Empty;
         public int SocketPort { get; set; }
-        public GatewayClientID BrokerConnectionClientID { get; set; } = GatewayClientID.None;
+        public int SuggestedIbConnectionClientID { get; set; } = (int)GatewayClientID.None;
+        public int RealIbConnectionClientID { get; set; } = (int)GatewayClientID.None;
         public bool IsConnected
         {
             get
@@ -267,8 +273,16 @@ namespace BrokerCommon
             {
                 try
                 {
+                    // (Sometimes, but not always) if we stop abruptly the Debugging mode, then next time the client application tries to connect to TWS with the same id, 
+                    // the connection is rejected, because TWS didn't notice that the old connection was broken. TWS promised to fix this and eventually close the broken connection.
+                    // Error is something like this: Unable connect as the client id is already in use. Retry with a unique client id.
+                    // Other times, it is perfectly OK to abruptly stop the client with Debug-termination. When I wanted I couldn't reproduce the error.
+                    // because we left at least 3 ClientIDs between each of them, so we retry the connection with the next consecutive id
+                    // If the clientId is not ultimately freed up you will eventually hit the maximum number of TWS clients.
+                    // The only cure for that is to restart TWS.  There is no mechanism I'm aware of to close client connections from within TWS.
+                    RealIbConnectionClientID = SuggestedIbConnectionClientID + nConnectionRetry;
                     nConnectionRetry++;
-                    Console.WriteLine($"Connecting to IB {GatewayId} on {Host}:{SocketPort} with ClientID:{(int)BrokerConnectionClientID}...");
+                    Console.WriteLine($"Connecting to IB {GatewayId} on {Host}:{SocketPort} with ClientID:{(int)SuggestedIbConnectionClientID}...");
                     IBrokerWrapper ibWrapper;
                     if (Utils.RunningPlatform() == Platform.Linux)
                     {
@@ -283,7 +297,7 @@ namespace BrokerCommon
                             ibWrapper = new BrokerWrapperIb(AccSumArrived, AccSumEnd, AccPosArrived, AccPosEnd);
                             // ibWrapper = new BrokerWrapperYF();     // Before market open, or After market close. Simulated real time price is needed to determine current portfolio $size.
                     }
-                    if (!ibWrapper.Connect(GatewayId, Host, SocketPort, (int)BrokerConnectionClientID))
+                    if (!ibWrapper.Connect(GatewayId, Host, SocketPort, RealIbConnectionClientID))
                     {
                         Utils.Logger.Info($"No connection to IB {GatewayId} on {Host}:{SocketPort}. Trials: {nConnectionRetry}/{nMaxRetry}");
                         if (nConnectionRetry == nMaxRetry)

@@ -1,6 +1,11 @@
 
 - start vscode in any directory in CMD, type: "code ."  // runs code with the current directory.
 
+- Better way (than GitHub diff) to show the Diff of previous changes in the Timeline.
+"If you haven't seen Visual Studio Code for the Web in action, you can press '.' (the period key) in the <> Code tab of a GitHub repository 
+and you will launch a web-based version of VS Code to browse and edit the source code."
+>Debug doesn't work of course, but in theory changes can be made and Commit can be made to GitHub.
+
 Menu: "File / Auto Save" toggle that turns on and off save after a delay (1000ms). Never have to press Ctrl-S again. Worth switching on, so we don't have to check that everything is saved before compiling.
 
 Shortcuts:

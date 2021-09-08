@@ -37,5 +37,6 @@
 		"files.autoSaveDelay": 1500,
 		"dotnet-test-explorer.testProjectPath": "**/*.tests.csproj",
 		"dotnet-test-explorer.runInParallel": true,
+		"editor.bracketPairColorization.enabled": true,
 	}
 }

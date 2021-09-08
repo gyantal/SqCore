@@ -16,7 +16,7 @@ namespace BrokerCommon.tests
         public void TestGateway_ConnectToGA_CheckNav()
         {
             Console.WriteLine("TestGatewayConnectToGA()");
-            Gateway gw = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = ServerIp.AtsVirtualBrokerServerPublicIpForClients, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, BrokerConnectionClientID = GatewayClientID.SqCoreToGaTest1 };
+            Gateway gw = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = ServerIp.AtsVirtualBrokerServerPublicIpForClients, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, SuggestedIbConnectionClientID = (int)GatewayClientID.SqCoreToGaTest1 };
             gw.Reconnect();
             Assert.True(gw.IsConnected);
 

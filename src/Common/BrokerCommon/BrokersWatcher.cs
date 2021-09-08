@@ -79,9 +79,9 @@ namespace BrokerCommon
             var hgwidCM = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.CharmatMain);
             var hgwidDM = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.DeBlanzacMain);
             var hgwidGA = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.GyantalMain);
-            Gateway gateway1 = new Gateway(GatewayId.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", Host = hgwidCM.HostIp, SocketPort = (int)GatewayPort.SqCoreSrvCharmatMain, BrokerConnectionClientID = hgwidCM.GwClientID };
-            Gateway gateway2 = new Gateway(GatewayId.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", Host = hgwidDM.HostIp, SocketPort = (int)GatewayPort.SqCoreSrvDeBlanzacMain, BrokerConnectionClientID = hgwidDM.GwClientID };
-            Gateway gateway3 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = hgwidGA.HostIp, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, BrokerConnectionClientID = hgwidGA.GwClientID };
+            Gateway gateway1 = new Gateway(GatewayId.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", Host = hgwidCM.HostIp, SocketPort = (int)GatewayPort.SqCoreSrvCharmatMain, SuggestedIbConnectionClientID = (int)hgwidCM.GwClientID };
+            Gateway gateway2 = new Gateway(GatewayId.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", Host = hgwidDM.HostIp, SocketPort = (int)GatewayPort.SqCoreSrvDeBlanzacMain, SuggestedIbConnectionClientID = (int)hgwidDM.GwClientID };
+            Gateway gateway3 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = hgwidGA.HostIp, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, SuggestedIbConnectionClientID = (int)hgwidGA.GwClientID };
             m_gateways = new List<Gateway>() { gateway1, gateway2, gateway3 };
             m_mainGateway = gateway1;
 
