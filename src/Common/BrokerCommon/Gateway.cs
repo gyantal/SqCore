@@ -282,7 +282,7 @@ namespace BrokerCommon
                     // The only cure for that is to restart TWS.  There is no mechanism I'm aware of to close client connections from within TWS.
                     RealIbConnectionClientID = SuggestedIbConnectionClientID + nConnectionRetry;
                     nConnectionRetry++;
-                    Console.WriteLine($"Connecting to IB {GatewayId} on {Host}:{SocketPort} with ClientID:{(int)SuggestedIbConnectionClientID}...");
+                    Console.WriteLine($"Connecting to IB {GatewayId} on {Host}:{SocketPort} with ClientID:{(int)RealIbConnectionClientID}...");
                     IBrokerWrapper ibWrapper;
                     if (Utils.RunningPlatform() == Platform.Linux)
                     {
@@ -316,14 +316,14 @@ namespace BrokerCommon
                     Utils.Logger.Info($"{warnMessage}Gateway {ibWrapper} is connected. User {GatewayId} acc {VbAccountsList}.");
                     Console.WriteLine($"*{DateTime.UtcNow.ToString("dd'T'HH':'mm':'ss")}: {warnMessage}Gateway {GatewayId} acc {VbAccountsList} connected.");
                     
-                    // TEMP here. Can be removed later.
-                    List<BrAccSum>? accSums = GetAccountSums();
-                    if (accSums != null)
-                    {
-                        string navStr = accSums.First(r => r.Tag == AccountSummaryTags.NetLiquidation).Value;
-                        Utils.Logger.Info($"Gateway {GatewayId}'s NAV: {navStr}");
-                        Console.WriteLine($"Gateway {GatewayId}'s NAV: {navStr}");
-                    }
+                    // TEMP here just for double checking that connection is right... Can be removed later, because we don't want to hold up the connections of other IBservers.
+                    // List<BrAccSum>? accSums = GetAccountSums(); // takes 144ms
+                    // if (accSums != null)
+                    // {
+                    //     string navStr = accSums.First(r => r.Tag == AccountSummaryTags.NetLiquidation).Value;
+                    //     Utils.Logger.Info($"Gateway {GatewayId}'s NAV: {navStr}");
+                    //     Console.WriteLine($"Gateway {GatewayId}'s NAV: {navStr}");
+                    // }
                     return;
                 }
                 catch (Exception e)

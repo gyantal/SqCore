@@ -281,12 +281,13 @@ namespace FinTechCommon
             m_lastDbReload = DateTime.UtcNow;
             m_lastDbReloadTs = DateTime.UtcNow - startTime;
 
+            OnReloadAssetData_ReloadRtDataAndSetTimer();    // downloads realtime prices from YF or IEX. It doesn't need Brokers, so do this first.
             foreach (var brAccount in BrAccounts)
             {
                 UpdateBrAccPosAssetIds(brAccount.AccPoss);
             }
 
-            OnReloadAssetData_ReloadRtDataAndSetTimer();    // downloads realtime prices from YF or IEX
+            // we might wait until all the IbBrokers are connected. But as the connection started earlier than MemDb.Init() hopefully, they are right.
             OnReloadAssetData_ReloadRtNavDataAndSetTimer();   // downloads realtime NAVs from VBrokers
             EvDbDataReloaded?.Invoke();
         }

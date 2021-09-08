@@ -26,7 +26,7 @@ namespace SqCommon
             try
             {
                 Thread.CurrentThread.Name = "VBroker scheduler";
-                Thread.Sleep(TimeSpan.FromSeconds(5));  // wait 5 seconds, so that IBGateways can connect first
+                Thread.Sleep(TimeSpan.FromSeconds(1));  // wait 1 seconds, so that IBGateways can connect first. DetermineUsaMarketTradingHours() will be slow anyway as it downloads a webpage
                 m_schedulerStartupTime = DateTime.UtcNow;
 
                 // maybe loop is not required.
@@ -87,9 +87,9 @@ namespace SqCommon
 
         private DateTime? CalcNextTriggerTime(SqTrigger p_trigger, bool p_isMarketHoursValid, bool p_isMarketTradingDay, DateTime p_marketOpenTimeUtc, DateTime p_marketCloseTimeUtc)
         {
-            // if it is scheduled 5 seconds from now, just forget it (1 seconds was not enough)
+            // if it is scheduled 3 seconds from now, just forget it (1 seconds was not enough)
             // once the timer was set to ellapse at 20:30:00, but it ellapsed at 20:29:58sec.5, so the trade was scheduled again, because it was later than 1 sec
-            DateTime tresholdNowTime = DateTime.UtcNow.AddSeconds(5);
+            DateTime tresholdNowTime = DateTime.UtcNow.AddSeconds(3);
             DateTime proposedTime = DateTime.MinValue;
 
             if (p_trigger.TriggerType == TriggerType.Daily)

@@ -31,12 +31,13 @@ namespace SqCoreWeb
             // also schedule at every whole hours: 10:00, 11:00, ... but if it is OTH, only execute portfolio position updates if lastDate is more than 5h old.
             // user can also initiate forced update, but this is the automatic ones.
 
+            // Later it can be implemented that Run() is called when BOTH Gateways and MemDb is Initialized, but for now, this fixed 5 seconds is fine.
             sqTask.Triggers.Add(new SqTrigger()
             {
                 Name = "AtApplicationStartupCheck",
                 SqTask = sqTask,
                 TriggerType = TriggerType.AtApplicationStartup,
-                Start = new RelativeTime() { Base = RelativeTimeBase.Unknown, TimeOffset = TimeSpan.FromSeconds(10) },   // a bit later then App startup, to give time to Gateways to connect
+                Start = new RelativeTime() { Base = RelativeTimeBase.Unknown, TimeOffset = TimeSpan.FromSeconds(5) },   // a bit later then App startup, to give time to Gateways to connect
                 TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, BrAccCheckerTaskSettingAction.AtApplicationStartupCheck } }
             });
             sqTask.Triggers.Add(new SqTrigger()
@@ -98,6 +99,7 @@ namespace SqCoreWeb
             }
             if (isPossUpdateNeeded)
             {
+                Console.WriteLine("*Broker data (accInfo, positions) is acquired...");
                 UpdateBrAccPoss(GatewayId.CharmatMain);
                 UpdateBrAccPoss(GatewayId.DeBlanzacMain);
                 UpdateBrAccPoss(GatewayId.GyantalMain);
