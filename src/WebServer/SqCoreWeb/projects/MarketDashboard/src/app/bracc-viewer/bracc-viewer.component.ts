@@ -113,7 +113,26 @@ class UiBrAccChrtHistValRaw {
   public periodMaxDU = NaN;
 
 }
+// // Hist stat Values
+class uiHistStatValues {
+  public assetId = NaN;
 
+  public periodStartDate = '';
+  public periodEndDate = '';
+  public periodStart = NaN;
+  public periodEnd = NaN;
+  public periodHigh = NaN;
+  public periodLow = NaN;
+  public periodMaxDD = NaN;
+  public periodMaxDU = NaN;
+}
+
+// Hist chart values
+class uiBrcAccChrtval {
+  public assetId = NaN;
+  public date = '';
+  public sdaClose = NaN;
+}
 class AssetSnapPossPosJs {
   public assetId = NaN;
   public sqTicker = '';
@@ -147,7 +166,8 @@ class UiSnapTable {
   public initialMarginReq = NaN;
   public maintMarginReq = NaN;
   public poss = [];
-  public sumPlTod = 0;
+  public sumPlTodVal = 0;
+  public sumPlTodPct = 0;
 
 }
 
@@ -161,14 +181,14 @@ class UiAssetSnapPossPos {
   public priorClose = NaN;
   public priorCloseStr = '';
   public estPrice = NaN;
-  public estUndPrice = NaN;
-  public accId = ''
-  public mktVal = NaN;
   public pctChgTod = NaN;
   public plTod = NaN;
   public pl = NaN;
+  public mktVal = NaN;
+  public estUndPrice = NaN;
   public gBeta = 1; // guessed Beta
   public betaDltAdj = 1;
+  public accId = '';
   
 }
 
@@ -232,6 +252,9 @@ export class BrAccViewerComponent implements AfterViewInit {
 
   brAccChrtDataRaw1: UiBrAccChrtDataRaw1[] = [];
   brAccChrtData1: UiBrAccChrtHistValRaw[] = [];
+  brAccHistStatVal : uiHistStatValues [] = []; // histstat values can be used in brAccViewer
+  brAccChrtActuals : uiBrcAccChrtval [] = [] ; //Combining 2 arrays histdates and histsdaclose
+
 
   lastRtMsg: Nullable<RtMktSumRtStat[]> = null;
   lastNonRtMsg: Nullable<RtMktSumNonRtStat[]> = null;
@@ -245,8 +268,14 @@ export class BrAccViewerComponent implements AfterViewInit {
 
   tabPageVisibleIdx = 1;
 
+  // plTodayStyle = 'blue';
+
   sortColumn : string = "DailyPL";
   sortDirection : string = "Increase";
+  isAscendic = true;
+
+  navSelectionChoices = ['GA', 'DC', 'DC.IM', 'DC.IB'];
+  navSelectionSelected = '';
 
   static betaArr: { [id: string] : number; } = {};
 
@@ -369,7 +398,7 @@ export class BrAccViewerComponent implements AfterViewInit {
         console.log('BrAccViewer.Hist:' + msgObjStr);
         this.histStr = msgObjStr;
         this.histObj = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateChrtUi(this.histObj, this.brAccChrtData1);
+        BrAccViewerComponent.updateChrtUi(this.histObj, this.brAccChrtData1, this.brAccHistStatVal);
 
         // if message is too large without spaces, we have problems as there is no horizontal scrollbar in browser. So, shorten the message.
         if (msgObjStr.length < 200)
@@ -439,15 +468,19 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
   }
 
-  isAscendic = true;
+  
 
   // send(){
   //   this.isAscendic?this.ascendic():this.descendic()
   // }
 
-  onSortingClicked(event, p_sortColumn, p_sortDirection){
+  onSortingClicked(event, p_sortColumn){
     this.sortColumn = p_sortColumn;
-    this.sortDirection = p_sortDirection;
+    // this.sortDirection = p_sortDirection;
+    if (this.sortDirection == "Increasing")
+      this.sortDirection = "Decreasing";
+    else 
+      this.sortDirection = "Increasing";
     BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.sortColumn, this.sortDirection, this.uiSnapTab, this.uiSnapPosItem) 
 
   }
@@ -545,6 +578,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     uiSnapTab.grossPositionValue = brAccSnap.grossPositionValue;
     uiSnapTab.netLiquidation = brAccSnap.netLiquidation;
     uiSnapTab.netLiquidationStr = brAccSnap.netLiquidation.toString();
+    
 
     // uiSnapPos = [];
     uiSnapPosItem.length = 0;
@@ -561,7 +595,7 @@ export class BrAccViewerComponent implements AfterViewInit {
       uiPosItem.pos = possItem.pos;
       uiPosItem.avgCost = possItem.avgCost;
       uiPosItem.priorClose = possItem.priorClose;
-      uiPosItem.priorCloseStr = possItem.priorClose.toString();
+      uiPosItem.priorCloseStr = possItem.priorClose.toFixed(2).toString();
       uiPosItem.estPrice = possItem.estPrice;
       uiPosItem.estUndPrice = possItem.estUndPrice;
       uiPosItem.accId = possItem.accId;
@@ -577,22 +611,27 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
 
     //var sumPlTod = 0;
-    uiSnapTab.sumPlTod = 0;
+    uiSnapTab.sumPlTodVal = 0;
     for (const item of uiSnapPosItem) {
-      uiSnapTab.sumPlTod += item.plTod;
+      uiSnapTab.sumPlTodVal += item.plTod;
     }
+    uiSnapTab.sumPlTodPct = uiSnapTab.sumPlTodVal/uiSnapTab.netLiquidation;
 
   
     // sort by sortColumn
 
     uiSnapPosItem.sort((n1: UiAssetSnapPossPos, n2: UiAssetSnapPossPos) => {
 
-      let dirMultiplier = (sortDirection == "Increasing") ? 1 : -1;
+      let dirMultiplier = (sortDirection === "Increasing") ? 1 : -1;
+      // The sort method is functioning only in one direction - to be reviewed
 
       switch (sortColumn) {
         case 'Symbol':
-          if (n1.symbol < n2.symbol) return 1 * dirMultiplier;
-          if (n1.symbol > n2.symbol) return -1 * dirMultiplier;
+          if (n1.symbol < n2.symbol) {
+            return 1 * dirMultiplier;
+          } else if (n1.symbol > n2.symbol) {
+            return -1 * dirMultiplier;
+          }
           break;
         case 'Pos':
           if (n1.pos < n2.pos) return 1 * dirMultiplier;
@@ -615,6 +654,10 @@ export class BrAccViewerComponent implements AfterViewInit {
           if (n1.pctChgTod > n2.pctChgTod) return -1 * dirMultiplier;
           break;
         case 'DailyPL':
+          if (n1.plTod < n2.plTod) return 1 * dirMultiplier;
+          if (n1.plTod > n2.plTod) return -1 * dirMultiplier;
+          break;
+        case 'ProfLos':
           if (n1.plTod < n2.plTod) return 1 * dirMultiplier;
           if (n1.plTod > n2.plTod) return -1 * dirMultiplier;
           break;
@@ -647,7 +690,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     });
   }
 
-  static updateChrtUi(histObj : Nullable<HistJs[]>, brAccChrtData1: UiBrAccChrtHistValRaw[]) {
+  static updateChrtUi(histObj : Nullable<HistJs[]>, brAccChrtData1: UiBrAccChrtHistValRaw[], brAccHistStatVal : uiHistStatValues[]) {
     // (this.histStatObj == null) ? null : this.histStatObj[0].histValues, 
     // (this.histStatObj == null) ? null :this.histStatObj[1].histStat
     // if (!(Array.isArray(histValues) && histValues.length > 0 && Array.isArray(histStat) && histStat.length > 0)){
@@ -676,56 +719,44 @@ export class BrAccViewerComponent implements AfterViewInit {
       }
 
     let histValues = histObj[0].histValues;
-    // let histStat = histObj[0].histStat;
+    let histStat = histObj[0].histStat;
     if (histValues == null)
       return;
-    // for (const item of histValues) {
-    //   let chrtItem : UiBrAccChrtHistValRaw;
-    //   const existingUiChrtCols = brAccChrtData1.filter(
-    //     (r) => r.assetId === item.assetId );
-    //   if (existingUiChrtCols.length === 0) {
-    //       // console.warn(`Received ticker '${item.sqTicker}' is not expected. UiArray should be increased. This will cause UI redraw and blink. Add this ticker to defaultTickerExpected!`, 'background: #222; color: red');
-    //       // uiCol = new UiMktBarItem(stockNonRt.sqTicker, stockNonRt.ticker, false);
-    //       chrtItem = new UiBrAccChrtHistValRaw();
-    //       chrtItem.assetId = item.assetId;
-    //       chrtItem.histDates = item.histDates;
-    //       chrtItem.histSdaCloses = item.histSdaCloses;
-    //       brAccChrtData1.push(chrtItem);
-    //     } else if (existingUiChrtCols.length === 1) {
-    //       chrtItem = existingUiChrtCols[0];
-    //     } else {
-    //       // console.warn(
-    //       //   `Received ticker '${ciItem.assetId}' has duplicates in UiArray. This might be legit if both VOD.L and VOD wants to be used. ToDo: Differentiation based on assetId is needed.`,
-    //       //   "background: #222; color: red"
-    //       // );
-    //       chrtItem = existingUiChrtCols[0];
-    //     }
+  
+    if (histStat ==  null) {
+      return ;
+    }
 
-        
-      
-    // }
-    // for (const stItem of histStat ) {
-    //   const existingUiChrtCols = brAccChrtData1.filter(
-    //     (r) => r.assetId === item.assetId );
-    //   if (existingUiChrtCols.length === 0) {
-    //     console.warn(
-    //       `Received assetId '${stItem.assetId}' is not found in UiArray.`
-    //     );
-    //     break;
-    //   }
-    //   chrtItem = existingUiChrtCols[1];
-    //   chrtItem.periodStartDate = stItem.periodStartDate;
-    //   chrtItem.periodEndDate = stItem.periodEndDate;
-    //   chrtItem.periodStart = stItem.periodStart;
-    //   chrtItem.periodEnd = stItem.periodEnd;
-    //   chrtItem.periodHigh = stItem.periodHigh;
-    //   chrtItem.periodLow = stItem.periodLow;
-    //   chrtItem.periodMaxDD = stItem.periodMaxDD;
-    //   chrtItem.periodMaxDU = stItem.periodMaxDU;
+    for (const hisStatItem  of histObj) {
+      if (hisStatItem.histStat ==  null) continue;
+      let statItem = new uiHistStatValues();
 
+      statItem.assetId = hisStatItem.histStat.assetId;      
+      statItem.periodEnd = hisStatItem.histStat.periodEnd;
+      statItem.periodEndDate = hisStatItem.histStat.periodEndDate;
+      statItem.periodHigh = hisStatItem.histStat.periodHigh;
+      statItem.periodLow = hisStatItem.histStat.periodLow;
+      statItem.periodMaxDD = hisStatItem.histStat.periodMaxDD;
+      statItem.periodMaxDU = hisStatItem.histStat.periodMaxDU;
+      statItem.periodStart = hisStatItem.histStat.periodStart
+      statItem.periodStartDate = hisStatItem.histStat.periodStartDate;
+      brAccHistStatVal.push(statItem);
+    }
 
-    //}
+  //   for (const hisValItem  of histObj) {
+  //     if (hisValItem.histValues ==  null) continue;
 
+  //   var key = ["Date"];
+
+  //   for (var i = 0; i < histValues.histDates.length; i++ ) {
+  //     let elem = new uiBrcAccChrtval();
+  //     for (var j = 0; j < key.length; j++) {
+  //       elem[key[j]] = histValues[i][j];
+  //     }
+  //     elements.push(elem);
+
+  //   }
+  // }
   }
     
 }
