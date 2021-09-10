@@ -168,6 +168,11 @@ class UiSnapTable {
   public poss = [];
   public sumPlTodVal = 0;
   public sumPlTodPct = 0;
+  public longStcokValue = 0;
+  public shortStockValue = 0;
+  public totalMaxRiskedN = 0;
+  public totalMaxRiskedLeverage = 0;
+  public numOfPoss = 0;
 
 }
 
@@ -272,10 +277,13 @@ export class BrAccViewerComponent implements AfterViewInit {
 
   sortColumn : string = "DailyPL";
   sortDirection : string = "Increase";
-  isAscendic = true;
 
-  navSelectionChoices = ['GA', 'DC', 'DC.IM', 'DC.IB'];
-  navSelectionSelected = '';
+  navSelectionChoices = ['GA.IM', 'DC', 'DC.IM', 'DC.ID'];
+  navSelectionSelected = 'GA.IM';
+
+  yrSelectionChoices = ['YTD','1M','1Y','3Y','5Y'];
+  yrSelectionSelected = 'YTD';
+
 
   static betaArr: { [id: string] : number; } = {};
 
@@ -432,7 +440,8 @@ export class BrAccViewerComponent implements AfterViewInit {
   }
 
 
-  updateUiSelectableNavs(pSelectableNavAssets: any) {  // same in MktHlth and BrAccViewer
+  updateUiSelectableNavs(pSelectableNavAssets: Nullable<AssetJs[]>) {  // same in MktHlth and BrAccViewer
+    if(pSelectableNavAssets == null) return;
     const navSelectElement = document.getElementById('braccViewerNavSelect') as HTMLSelectElement;
     this.selectedNav = '';
     for (const nav of pSelectableNavAssets) {
@@ -468,7 +477,13 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
   }
 
-  
+ onNavSelectedChangeAng(pEvent: any) {
+  // this.navSelectionSelected = this.navSelectionChoices[selectedIndex]
+  console.log(this.navSelectionSelected);
+  if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
+    this._parentWsConnection.send('BrAccViewer.ChangeNav:' + this.navSelectionSelected);
+  }
+ }
 
   // send(){
   //   this.isAscendic?this.ascendic():this.descendic()
@@ -612,11 +627,28 @@ export class BrAccViewerComponent implements AfterViewInit {
 
     //var sumPlTod = 0;
     uiSnapTab.sumPlTodVal = 0;
+    uiSnapTab.longStcokValue = 0;
+    uiSnapTab.shortStockValue = 0;
+    uiSnapTab.totalMaxRiskedN = 0;
     for (const item of uiSnapPosItem) {
       uiSnapTab.sumPlTodVal += item.plTod;
-    }
-    uiSnapTab.sumPlTodPct = uiSnapTab.sumPlTodVal/uiSnapTab.netLiquidation;
+      if (item.mktVal > 0){ //Long and Short stock values
+        uiSnapTab.longStcokValue += item.mktVal;
+      } else if (item.mktVal < 0) {
+        uiSnapTab.shortStockValue += item.mktVal;
+      }
+      uiSnapTab.totalMaxRiskedN += Math.abs(item.mktVal);
 
+    }
+//     if (totalMaxRiskedN != 0.0)
+//     document.getElementById("idTotalMaxRiskedLeverage").innerHTML = (round(100 * totalMaxRiskedN / totalNetLiquidation) / 100.0).toLocaleString();
+// else
+//     document.getElementById("idTotalMaxRiskedLeverage").innerHTML = "";
+
+   
+    uiSnapTab.sumPlTodPct = uiSnapTab.sumPlTodVal/uiSnapTab.netLiquidation; // profit & Loss total percent change
+    uiSnapTab.totalMaxRiskedLeverage = (uiSnapTab.totalMaxRiskedN/uiSnapTab.netLiquidation)/100;
+    uiSnapTab.numOfPoss = (uiSnapPosItem.length) - 1;
   
     // sort by sortColumn
 
@@ -688,6 +720,9 @@ export class BrAccViewerComponent implements AfterViewInit {
       }
       return 0;
     });
+
+     
+  
   }
 
   static updateChrtUi(histObj : Nullable<HistJs[]>, brAccChrtData1: UiBrAccChrtHistValRaw[], brAccHistStatVal : uiHistStatValues[]) {
@@ -726,6 +761,9 @@ export class BrAccViewerComponent implements AfterViewInit {
     if (histStat ==  null) {
       return ;
     }
+    // uiSnapPosItem.length = 0;
+
+    brAccHistStatVal.length = 0;
 
     for (const hisStatItem  of histObj) {
       if (hisStatItem.histStat ==  null) continue;
@@ -757,6 +795,15 @@ export class BrAccViewerComponent implements AfterViewInit {
 
   //   }
   // }
+  }
+  onMouseover(pEvent:any) {
+    if (this.uiSnapTab.totalMaxRiskedLeverage < 1.3) {
+      console.log("green");
+    } else if (this.uiSnapTab.totalMaxRiskedLeverage >= 1.3 && this.uiSnapTab.totalMaxRiskedLeverage < 1.5) {
+      console.log("orange");
+    }else {
+      console.log("red")
+    }
   }
     
 }

@@ -59,16 +59,16 @@
   box-sizing: border-box;
 }
 .AccSumm {
-  width: 25%;
   float: left;
+  width: 25%;
   padding: 15px;
   font-size: 0.75em;
   border: 1px solid red;
 }
 
 .ChartSumm{
-  width: 75%;
   float: left;
+  width: 75%;
   padding: 15px;
   border: 1px solid red;
 }
@@ -139,6 +139,61 @@
   // color: aqua;
 
 }
+.sections {
+  float: left;
+  width: 25%;
+  padding: 10px;
+  font-size: small;
+  height: 200px;
+  border-right: 1px solid #333;
+}
+// tooltip maxRisked ngClass
+.red {
+  color: red;
+  font-size: large;
+}
+.orange {
+  color: orange;
+
+}
+.green {
+  color: green;
+}
+
+.tooltipCell {
+  position: relative;
+  cursor: help;
+  // display: inline-block;
+  // border-bottom: 1px dotted black;
+}
+
+.tooltipCell .tooltipSnap {
+  padding:0.3rem;
+  font-size: 0.8rem;
+  font-weight: normal;
+  display: none;
+  background:rgb(210, 252, 176);
+  border: 0.1rem solid rgb(19, 7, 177);
+  color: rgb(6, 8, 153);
+  text-align: left;
+  border-radius: 1rem;
+  position: absolute;
+  z-index: 100;
+  white-space: pre;
+  opacity: 0.87;
+}
+
+.tooltipCell .tooltipSnap .snapshot{
+  font-weight: bold;
+}
+
+.tooltipCell .tooltipSnap .smallTT{
+  font-size: 0.2rem;
+}
+
+.tooltipCell:hover .tooltipSnap {
+  display: inline-block;
+}
   // }
 table, td, thead, th {
     border: 1px solid #9cd3db;;
@@ -193,12 +248,12 @@ td {
   
 // }
 .tab #default{
-  background-color: inherit;
+  background-color: aqua;
   float: left;
   border: none;
   outline: none;
   cursor: pointer;
-  padding: 10px 10px;
+  padding: 4px;
   transition: 0.3s;
   font-size: 12px;
   /* Set transitions up. */
@@ -207,25 +262,7 @@ td {
   transition: max—height 0.7s;
 }
 
-
-/* Create an active/current tablink class */
-.tab{
-  background-color: aqua;
-  /* Set transitions up. */
-  -webkit-transition: max-height 0.7s;
-  -moz-transition: max-height 0.7s;
-  transition: max—height 0.7s;
-}
 /* Change background color of buttons on hover */
 .tab :hover {
   background-color: black;
-}
-
-/* Style the tab content */
-.tabcontent {
-  display: none;
-  padding: 6px 12px;
-  border: 1px solid #ccc;
-  border-top: none;
-  
 }

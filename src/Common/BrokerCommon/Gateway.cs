@@ -32,9 +32,9 @@ namespace BrokerCommon
         // The only cure for that is to restart TWS.  There is no mechanism I'm aware of to close client connections from within TWS.
         SqCoreToGaProd = 60,
         SqCoreToGaDev1 = 63,    // Agy
-        SqCoreToGaDev2 = 66,    // Daya
-        SqCoreToGaDev3 = 69,   // Balazs
-        SqCoreToGaDev4 = 72,    // Laci
+        SqCoreToGaDev2 = 66,    // Balazs
+        SqCoreToGaDev3 = 69,   // Laci
+        SqCoreToGaDev4 = 72,    // Daya
         SqCoreToGaTest1 = 75,    // it can clash if many developers run the tests at the same time, but that is not likely.
 
         SqCoreToDcProd = 80,

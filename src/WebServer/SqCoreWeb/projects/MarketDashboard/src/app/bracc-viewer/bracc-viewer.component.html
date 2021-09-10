@@ -21,7 +21,11 @@ MarketBar
     </span>
 </span>
 <hr>
-
+<!-- (change)="onNavSelectedChangeAng($event.target.value)" -->
+<select [(ngModel)] = "navSelectionSelected" (change)="onNavSelectedChangeAng($event)">
+    <option *ngFor="let item of navSelectionChoices" [value]="item">{{item}}</option>
+</select>
+<p>{{"Selected: " + navSelectionSelected}}</p>
 <div>
     <span>
     <div class="AccSumm">
@@ -49,14 +53,47 @@ MarketBar
         <div>
             <div *ngIf="tabPageVisibleIdx == 1" id="tab1">
                 <h4>AccountDetails</h4>
-      <div *ngFor="let item of brAccHistStatVal">AssetID : {{item.assetId}}, periodStartDate {{item.periodStartDate}}, periodEndDate {{item.periodEndDate}}</div>
+                <select [(ngModel)] = "yrSelectionSelected">
+                    <option *ngFor="let item of yrSelectionChoices" [value]="item">{{item}}</option>
+                </select>
+                <p>{{"Selected: " + yrSelectionSelected}}</p>
+                <div *ngFor="let item of brAccHistStatVal">
+                    AssetID : {{item.assetId}}, periodStartDate {{item.periodStartDate}}, 
+                    periodEndDate {{item.periodEndDate}}
+                </div>
             </div>
             <div *ngIf="tabPageVisibleIdx == 2" id="tab2">
-                <h4>MoreDetails</h4>
-                <div>IB Total Cash: <span id="idTotalCash">{{uiSnapTab.totalCashValue}}</span></div>
-                <div>IB Initial MarginReq: <span id="idTotalInitMarginReq">{{uiSnapTab.initialMarginReq}}</span></div>
-                <div>IB Maintenance MarginReq: <span id="idTotalMaintMarginReq">{{uiSnapTab.maintMarginReq}}</span></div>
-                <div>IB Gross Position Value: <span id="idTotalGrossPosValue">{{uiSnapTab.grossPositionValue}}</span></div>
+                <div class="sections">
+                    <div>IB Total Cash: <span id="plSum">{{uiSnapTab.totalCashValue}}</span></div>
+                    <div>IB Initial MarginReq: <span id="plSum">{{uiSnapTab.initialMarginReq}}</span></div>
+                    <div>IB Maintenance MarginReq: <span id="plSum">{{uiSnapTab.maintMarginReq}}</span></div>
+                    <div>IB Gross Position Value: <span id="plSum">{{uiSnapTab.grossPositionValue}}</span></div>
+                    <div>Number Of Positions: <span id="plSum">{{uiSnapTab.numOfPoss}}</span></div>
+                </div>
+                <div class="sections">
+                    <div>Long Stock MktValue: <span id="plSum">{{uiSnapTab.longStcokValue}}</span><span> (!! Long VXX is here, although it is market bearish. 'Short VXX', 'short SH' are market bullish, but not here.)</span> </div>
+                    <div>Short Stock MktValue: <span id="plSum">{{uiSnapTab.shortStockValue}}</span></div>
+                    <div>Call Option Delta Adjusted DelivValue: <span id="plSum"></span></div>
+                    <div>Put Option Delta Adjusted DelivValue: <span id="plSum"></span></div>
+                </div>
+                <div class="sections">
+                    <div>Max Risked estimate:(LongStk + ShortStk (incorrect! Infinite) + LongOptMktValue + ShortOptMktValue(incorrect! Infinite)): <span id="plSum"></span>
+                    <span id="plSum" class="tooltipCell"
+                        [ngClass]="{'green' : uiSnapTab.totalMaxRiskedLeverage < 1.3,
+                                    'orange': uiSnapTab.totalMaxRiskedLeverage >= 1.3 || uiSnapTab.totalMaxRiskedLeverage <=1.5,
+                                    'red' : uiSnapTab.totalMaxRiskedLeverage > 1.5}"> (Leverage <b>{{uiSnapTab.totalMaxRiskedLeverage  | percent:'1.2'}}</b>)*
+                            <div class="tooltipSnap">
+                                <div class="snapshot">
+                                    Leverage greater than 1.5 -> red <br>
+                                    Leverage between 1.3 - 1.5 -> orange <br>
+                                    Leverage less than 1.3 -> green
+                                </div>
+                            </div>
+                    </span>
+                    </div>
+                    <div>Delta Adjusted Bullish/Bearish Market Orientation:(LongStock - ShortStock + dAdj.CallOption - dAdj.PutOption) <span id="plSum"></span></div>
+                    <div>Beta Delta Adjusted Bullish/Bearish Market Orientation (approx. mkt exposure sum)<span id="plSum"></span></div>
+                </div>
             </div>
         </div>
     </div>
