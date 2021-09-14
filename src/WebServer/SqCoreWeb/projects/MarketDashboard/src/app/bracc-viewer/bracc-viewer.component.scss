@@ -6,6 +6,7 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    border: none;
   
     color: #9900ff;
   }
@@ -141,7 +142,7 @@
 }
 .sections {
   float: left;
-  width: 25%;
+  width: 33.3%;
   padding: 10px;
   font-size: small;
   height: 200px;

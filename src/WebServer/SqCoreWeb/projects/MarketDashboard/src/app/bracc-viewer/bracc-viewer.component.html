@@ -1,11 +1,16 @@
 BrAcc:
-<span class="selectedNavBraccCl" (click)=onSelectedNavClicked($event)>{{selectedNav}}&#x25bc;
+<span >
+    <select class="selectedNavBraccCl" [(ngModel)] = "navSelectionSelected" (change)="onNavSelectedChangeAng($event)">
+        <option *ngFor="let item of uiNavSel" [value]="item">{{item}}</option>
+    </select>
+</span>
+<!-- <span class="selectedNavBraccCl" (click)=onSelectedNavClicked($event)>{{selectedNav}}&#x25bc;
     <span class="navSelectionPopupBraccCl" id="braccViewerNavSelectionPopupId" (click)=onNavSelectionPopupClicked($event)>
         NAVs:
         <select  id="braccViewerNavSelect" (change)="onNavSelectChange($event)">
         </select>
         </span>
-</span>
+</span> -->
 <!-- <select  id="braccViewerNavSelectAngular" selected = {{navSelectionSelected}} (change)="onNavSelectChangeAngular($event)">
 </select> -->
 MarketBar
@@ -21,11 +26,6 @@ MarketBar
     </span>
 </span>
 <hr>
-<!-- (change)="onNavSelectedChangeAng($event.target.value)" -->
-<select [(ngModel)] = "navSelectionSelected" (change)="onNavSelectedChangeAng($event)">
-    <option *ngFor="let item of navSelectionChoices" [value]="item">{{item}}</option>
-</select>
-<p>{{"Selected: " + navSelectionSelected}}</p>
 <div>
     <span>
     <div class="AccSumm">
@@ -34,7 +34,7 @@ MarketBar
             <span [ngClass]="{
                 'mktBarPositivePerf' : uiSnapTab.sumPlTodVal > 0,
                 'mktbarNegativePerf' : uiSnapTab.sumPlTodVal < 0
-                }">{{uiSnapTab.sumPlTodVal}}
+                }">{{uiSnapTab.sumPlTodVal | number }}
             </span>
             <span [ngClass]="{
                 'mktBarPositivePerf' : uiSnapTab.sumPlTodPct > 0,
@@ -42,7 +42,7 @@ MarketBar
                 }">({{uiSnapTab.sumPlTodPct | percent:'1.2'}})
             </span> 
         </div>
-        <div><span id="plSum">NAV,</span> Total NetLiquidation (with cash) :<Span id="liqVal">{{uiSnapTab.netLiquidationStr | currency:'USD':'$'}}</Span> </div>
+        <div><span id="plSum">NAV,</span> Total NetLiquidation (with cash) :<Span id="liqVal">{{uiSnapTab.netLiquidationStr | currency:'USD':true:'1.0'}}</Span> </div>
         
     </div>
     <div class="ChartSumm">
@@ -50,13 +50,25 @@ MarketBar
             <span id="default" (click)="tabHeaderClicked($event,1)"> HistoricalChart </span>
             <span id="default" (click)="tabHeaderClicked($event,2)"> MoreDetails </span>
         </span>
-        <div>
+    </div>
+        <div class="ChartSumm">
             <div *ngIf="tabPageVisibleIdx == 1" id="tab1">
-                <h4>AccountDetails</h4>
-                <select [(ngModel)] = "yrSelectionSelected">
-                    <option *ngFor="let item of yrSelectionChoices" [value]="item">{{item}}</option>
-                </select>
-                <p>{{"Selected: " + yrSelectionSelected}}</p>
+                <span>
+                    <span>
+                    <h4>AccountDetails</h4>
+                    <select [(ngModel)] = "yrSelectionSelected">
+                        <option *ngFor="let item of yrSelectionChoices" [value]="item">{{item}}</option>
+                    </select>
+                    StartDate:<input type="date" id="StartDate" name="startDate" min="01-01-1975">
+                    EndDate:<input type="date" id="EndDate" name="EndDate" min="01-01-1975">  
+                    <select name="" id="">
+                        <option value="TotRet" selected>Return</option>
+                        <option value="MDD">MaxDrawDown</option>
+                    </select>
+                    <p>{{"Selected: " + yrSelectionSelected}}</p>
+                    
+                    </span>
+                </span>
                 <div *ngFor="let item of brAccHistStatVal">
                     AssetID : {{item.assetId}}, periodStartDate {{item.periodStartDate}}, 
                     periodEndDate {{item.periodEndDate}}
@@ -64,15 +76,25 @@ MarketBar
             </div>
             <div *ngIf="tabPageVisibleIdx == 2" id="tab2">
                 <div class="sections">
-                    <div>IB Total Cash: <span id="plSum">{{uiSnapTab.totalCashValue}}</span></div>
-                    <div>IB Initial MarginReq: <span id="plSum">{{uiSnapTab.initialMarginReq}}</span></div>
-                    <div>IB Maintenance MarginReq: <span id="plSum">{{uiSnapTab.maintMarginReq}}</span></div>
-                    <div>IB Gross Position Value: <span id="plSum">{{uiSnapTab.grossPositionValue}}</span></div>
+                    <div>IB Total Cash: <span id="plSum">{{uiSnapTab.totalCashValue | number}}</span></div>
+                    <div>IB Initial MarginReq: <span id="plSum">{{uiSnapTab.initialMarginReq | number}}</span></div>
+                    <div>IB Maintenance MarginReq: <span id="plSum">{{uiSnapTab.maintMarginReq | number}}</span></div>
+                    <div>IB Gross Position Value: <span id="plSum">{{uiSnapTab.grossPositionValue | number}}</span></div>
                     <div>Number Of Positions: <span id="plSum">{{uiSnapTab.numOfPoss}}</span></div>
                 </div>
                 <div class="sections">
-                    <div>Long Stock MktValue: <span id="plSum">{{uiSnapTab.longStcokValue}}</span><span> (!! Long VXX is here, although it is market bearish. 'Short VXX', 'short SH' are market bullish, but not here.)</span> </div>
-                    <div>Short Stock MktValue: <span id="plSum">{{uiSnapTab.shortStockValue}}</span></div>
+                    <div>Long Stock MktValue: 
+                        <span id="plSum" class="tooltipCell">
+                        <b>{{uiSnapTab.longStcokValue | number}}*</b>
+                            <div class="tooltipSnap">
+                                <div class="snapshot">
+                                    (!! Long VXX is here, although it is market bearish.<br>
+                                     'Short VXX', 'short SH' are market bullish, but not here.)
+                                </div>
+                            </div>
+                        </span>
+                        </div>
+                    <div>Short Stock MktValue: <span id="plSum">{{uiSnapTab.shortStockValue | number}}</span></div>
                     <div>Call Option Delta Adjusted DelivValue: <span id="plSum"></span></div>
                     <div>Put Option Delta Adjusted DelivValue: <span id="plSum"></span></div>
                 </div>
@@ -81,7 +103,7 @@ MarketBar
                     <span id="plSum" class="tooltipCell"
                         [ngClass]="{'green' : uiSnapTab.totalMaxRiskedLeverage < 1.3,
                                     'orange': uiSnapTab.totalMaxRiskedLeverage >= 1.3 || uiSnapTab.totalMaxRiskedLeverage <=1.5,
-                                    'red' : uiSnapTab.totalMaxRiskedLeverage > 1.5}"> (Leverage <b>{{uiSnapTab.totalMaxRiskedLeverage  | percent:'1.2'}}</b>)*
+                                    'red' : uiSnapTab.totalMaxRiskedLeverage > 1.5}"> (Leverage <b>{{uiSnapTab.totalMaxRiskedLeverage | number :'1.1-2'}}</b>)*
                             <div class="tooltipSnap">
                                 <div class="snapshot">
                                     Leverage greater than 1.5 -> red <br>
@@ -91,11 +113,11 @@ MarketBar
                             </div>
                     </span>
                     </div>
-                    <div>Delta Adjusted Bullish/Bearish Market Orientation:(LongStock - ShortStock + dAdj.CallOption - dAdj.PutOption) <span id="plSum"></span></div>
+                    <div>Delta Adjusted Bullish/Bearish Market Orientation:(LongStock - ShortStock + dAdj.CallOption - dAdj.PutOption)</div>
                     <div>Beta Delta Adjusted Bullish/Bearish Market Orientation (approx. mkt exposure sum)<span id="plSum"></span></div>
                 </div>
             </div>
-        </div>
+       
     </div>
 </span>
 </div>
@@ -127,7 +149,7 @@ MarketBar
     <tr *ngFor="let item of uiSnapPosItem">
         <td [ngStyle]="{'font-weight': 'bold'}"><a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">{{item.symbol}}</a></td>
         <td></td>
-        <td>{{item.pos}}</td>
+        <td>{{item.pos | number}}</td>
         <td>{{item.avgCost | number:'1.1-2'}}</td>
         <td>{{item.priorCloseStr}}</td>
         <!-- <td>{{item.lastCloseStr}}</td> -->
@@ -136,21 +158,20 @@ MarketBar
             'mktBarPositivePerf' : item.pctChgTod > 0,
             'mktbarNegativePerf' : item.pctChgTod < 0
          }">{{item.pctChgTod | percent:'1.2'}}</td>
-        <td >{{item.plTod}}</td>
-        <td>{{item.pl}}</td>
-        <td>{{item.mktVal}}</td>
+        <td >{{item.plTod | number}}</td>
+        <td>{{item.pl | number}}</td>
+        <td>{{item.mktVal | number}}</td>
         <td>{{item.estUndPrice}}</td>
         <td></td>
         <td></td>
         <td></td>
         <td></td>
         <td>{{item.gBeta | number:'1.1-2'}}</td>
-        <td>{{item.betaDltAdj}}</td>
+        <td>{{item.betaDltAdj | number}}</td>
         <td>{{item.accId}}</td>
     </tr>
     </tbody>
 </table>
-<!-- <button (click)="onSortClicked($event)">Sort</button>fv -->
 <hr>
 <!-- Addded class "selectedTempDebug" to limit the text output in the UI-->
 <div class="selectedTempDebug">
@@ -160,7 +181,6 @@ MarketBarLastClosesStr: <br> <span>{{ mktBrLstClsStr }}</span><br><br>
 HistStr: <br> <span>{{ histStr }}</span><br><br>
 BrAccountSnapshot: <br> <span>{{ brAccountSnapshotStr }}</span>
 </div>
-
 <hr>
 [1. MarketBar on top, QQQ, SPY, TLT, VXX, UNG, USO]<br>
 [2. [AccountData under it]<br>
@@ -169,3 +189,4 @@ BrAccountSnapshot: <br> <span>{{ brAccountSnapshotStr }}</span>
         2.2.1 [HistoricalChart] default: visible, PeridSelectionComboBox (YTD) at bottom<br>
         2.2.2 [MoreDetails: Cash, MarginReq], default: hidden<br>
 [3. AccountPositions under it, the data table]<br>
+<hr>

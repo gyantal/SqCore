@@ -42,7 +42,6 @@ class UiMktBarItem {
 
 }
 
-
 class RtMktSumRtStat {
   public assetId = NaN;
   public last  = NaN;
@@ -278,8 +277,11 @@ export class BrAccViewerComponent implements AfterViewInit {
   sortColumn : string = "DailyPL";
   sortDirection : string = "Increase";
 
-  navSelectionChoices = ['GA.IM', 'DC', 'DC.IM', 'DC.ID'];
-  navSelectionSelected = 'GA.IM';
+  // navSelectionChoices = ['GA.IM', 'DC', 'DC.IM', 'DC.ID'];
+  // navSelectionSelected = 'GA.IM';
+
+  uiNavSel : string[] = [];
+  navSelectionSelected = '';
 
   yrSelectionChoices = ['YTD','1M','1Y','3Y','5Y'];
   yrSelectionSelected = 'YTD';
@@ -441,7 +443,23 @@ export class BrAccViewerComponent implements AfterViewInit {
 
 
   updateUiSelectableNavs(pSelectableNavAssets: Nullable<AssetJs[]>) {  // same in MktHlth and BrAccViewer
+
     if(pSelectableNavAssets == null) return;
+    // ...
+    //uiNavSel : UiNavSelectionChoices1[] = [];
+    // navSelectionSelected1 = '';
+    this.navSelectionSelected = '';
+    for (const nav of pSelectableNavAssets) {
+      if (this.navSelectionSelected == '') // by default, the selected Nav is the first from the list
+        this.navSelectionSelected = nav.symbol;
+      this.uiNavSel.push(nav.symbol)
+      //navSelectElement.options[navSelectElement.options.length] = new Option(nav.symbol, nav.symbol);
+    }
+
+    // for (i = 0 ... i< Array.length.)
+    //   date = dateArray[i]
+    //   value = valueArray[i]
+    
     const navSelectElement = document.getElementById('braccViewerNavSelect') as HTMLSelectElement;
     this.selectedNav = '';
     for (const nav of pSelectableNavAssets) {
@@ -451,6 +469,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
     navSelectElement.selectedIndex = 0; // select the first item
   }
+
 
   onSelectedNavClicked(pEvent: any) {   // same in MktHlth and BrAccViewer
     // https://www.w3schools.com/howto/howto_js_popup.asp
@@ -479,7 +498,7 @@ export class BrAccViewerComponent implements AfterViewInit {
 
  onNavSelectedChangeAng(pEvent: any) {
   // this.navSelectionSelected = this.navSelectionChoices[selectedIndex]
-  console.log(this.navSelectionSelected);
+  console.log("The Nav Selected angular way:" + this.navSelectionSelected);
   if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
     this._parentWsConnection.send('BrAccViewer.ChangeNav:' + this.navSelectionSelected);
   }
@@ -647,7 +666,7 @@ export class BrAccViewerComponent implements AfterViewInit {
 
    
     uiSnapTab.sumPlTodPct = uiSnapTab.sumPlTodVal/uiSnapTab.netLiquidation; // profit & Loss total percent change
-    uiSnapTab.totalMaxRiskedLeverage = (uiSnapTab.totalMaxRiskedN/uiSnapTab.netLiquidation)/100;
+    uiSnapTab.totalMaxRiskedLeverage = (uiSnapTab.totalMaxRiskedN/uiSnapTab.netLiquidation);
     uiSnapTab.numOfPoss = (uiSnapPosItem.length) - 1;
   
     // sort by sortColumn
@@ -796,14 +815,4 @@ export class BrAccViewerComponent implements AfterViewInit {
   //   }
   // }
   }
-  onMouseover(pEvent:any) {
-    if (this.uiSnapTab.totalMaxRiskedLeverage < 1.3) {
-      console.log("green");
-    } else if (this.uiSnapTab.totalMaxRiskedLeverage >= 1.3 && this.uiSnapTab.totalMaxRiskedLeverage < 1.5) {
-      console.log("orange");
-    }else {
-      console.log("red")
-    }
-  }
-    
 }
