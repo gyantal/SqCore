@@ -187,8 +187,9 @@ namespace RedisManager
         }
 
         // How to create the CVS containing NAV data + deposit?
+        // IbMain: used 2nd user, IbDeBlan: used 1st user.
         // IB: PortfolioAnalyst/Reports/CreateCustomReport (SinceInception, Daily, Detailed + AccountOverview/Allocation by Financial Instrument/Deposits). Create in PDF + CSV.
-        // If it timeouts, run a Custom date for the last 2-5 years. It can be merged together manually as a last resort.
+        // 2021-09-09: both IbMain, IbDbl worked without timeout. If it timeouts, run a Custom date for the last 2-5 years. It can be merged together manually as a last resort.
         // >DC-IB-MAIN, it seems: 2011-02-02 is the inception date. 2011-02-02, 2011-03-01: didn't work. Timeout. But 2014-12-31 worked. Try at another time.
         public void InsertNavAssetFromCsvFile(string p_redisKeyPrefix, string p_csvFullpath)
         {
@@ -206,10 +207,10 @@ namespace RedisManager
                     if (iRow == 1 && currentLine != @"Introduction,Header,Name,Account,Alias,BaseCurrency,AccountType,AnalysisPeriod,PerformanceMeasure")
                         throw new Exception();
 
-                    // "Allocation by Financial Instrument,Header,Date,ETFs,Options,Stocks,Cash,NAV" or "Allocation by Financial Instrument,Header,Date,ETFs,Options,Stocks,Warrants,Cash,NAV"
-                    if (iRow == 5)
+                    // "Allocation by Financial Instrument,Header,Date,ETFs,Options,Stocks,Cash,NAV" (Agy) or "Allocation by Financial Instrument,Header,Date,ETFs,Futures Options,Options,Stocks,Warrants,Cash,NAV" (DC)
+                    if (iRow == 7)
                     {
-                        if (!currentLine.StartsWith(@"Allocation by Financial Instrument,Header,Date,ETFs,Options,Stocks"))
+                        if (!currentLine.StartsWith(@"Allocation by Financial Instrument,Header,Date,ETFs")) // just search prefix of the string. Don't include 'Futures, Warrants, etc', because DC's file will  fail
                             throw new Exception();
                         
                         var navHeaderParts = currentLine.Split(',', StringSplitOptions.RemoveEmptyEntries);

@@ -35,7 +35,10 @@ namespace FinTechCommon
         // YF, IB, IEX preMarket, postMarket behaviour
         // >UTC-7:50: YF:  no pre-market price. IB: there is no ask-bid, but there is an indicative value somehow, because Dashboard bar shows QQQ: 216.13 (+0.25%). I checked, that is the 'Mark price'. IB estimates that (probably for pre-market margin calls). YF and others will never have that, because it is sophisticated.
         // >UTC-8:50: YF:  no pre-market price. IB: there is no ask-bid, but previously good indicative value went back to PreviousClose, so ChgPct = 0%, so in PreMarket that far away from Open, this MarkPrice is not very useful. IB did reset the price, because preparing for pre-market open in 10min.
-        // >UTC-9:10: YF (started at 9:00, there is premarket price: "Pre-Market: 4:03AM EST"), IB: There is Ask-bid spread. This is 5.5h before market open. That should be enough. So, I don't need IB indicative MarkPrice. IB AccInfo website is also good, showing QQQ change. IEX: IEX shows some false data, which is not yesterday close, but probably last day postMarket lastPrice sometime, which is not useful. So, in pre-market this IEX 'top' cannot be used. But maybe IEX cloud can be used in pre-market. Investigate.
+        // >UTC-9:10: YF (started at 9:00, there is premarket price: "Pre-Market: 4:03AM EST"), IB: There is Ask-bid spread. This is 5.5h before market open. That should be enough. 
+        // So, I don't need IB indicative MarkPrice. IB AccInfo website is also good, showing QQQ change. IEX: IEX shows some false data, which is not yesterday close, 
+        // but probably last day postMarket lastPrice sometime, which is not useful. 
+        // So, in pre-market this IEX 'top' cannot be used. But maybe IEX cloud can be used in pre-market. Investigate.
         // It is important here, because of summer/winter time zones that IB/YF all are relative to ET time zone 4:00AM EST. This is usually 9:00 in London, 
         // but in 2020-03-12, when USA set summer time zone 2 weeks early, the 4:00AM cutoff time was 8:00AM in London. And IB/YF measured itself to EST time, not UTC time. Implement this behaviour.
         // >UTC-0:50: (at night).
@@ -70,10 +73,12 @@ namespace FinTechCommon
         // - cut-off time is too late. Until 14:30 asking PreviousDay, it still gives the price 2 days ago. When YF will have premarket data at 9:00. Although "latestPrice" can be used as close.
         // - the only good thing: in market-hours, RT prices are free, and very quick to obtain and batched.
 
-        RtFreqParam m_highFreqParam = new RtFreqParam() { RtFreq = RtFreq.HighFreq, Name="HighFreq", FreqRthSec = 4, FreqOthSec = 60 }; // high frequency (4sec RTH, 1min otherwise-OTH) refresh for a known fixed stocks (used by VBroker) and those which were queried in the last 5 minutes (by a VBroker-test)
-        RtFreqParam m_midFreqParam = new RtFreqParam() { RtFreq = RtFreq.MidFreq, Name="MidFreq", FreqRthSec =  20 * 60, FreqOthSec = 45 * 60 }; // mid frequency (20min RTH, 45min otherwise) refresh for a know fixed stocks (DashboardClient_mktHealth)
-        RtFreqParam m_lowFreqParam = new RtFreqParam() { RtFreq = RtFreq.LowFreq, Name="LowFreq", FreqRthSec = 60 * 60, FreqOthSec = 2 * 60 * 60 }; // with low frequency (1h RTH, 2h otherwise) we query almost all stocks. Even if nobody access them.
+        // use IEX only for High/Mid Freq, and only in RegularTrading. So, High/MidFreq OTH uses YF. But use it sparingly, so YF doesn't ban us.
+        RtFreqParam m_highFreqParam = new RtFreqParam() { RtFreq = RtFreq.HighFreq, Name="HighFreq", FreqRthSec = 4, FreqOthSec = 5 * 60 }; // high frequency (4sec RTH, 1min otherwise-OTH) refresh for a known fixed stocks (used by VBroker) and those which were queried in the last 5 minutes (by a VBroker-test)
+        RtFreqParam m_midFreqParam = new RtFreqParam() { RtFreq = RtFreq.MidFreq, Name="MidFreq", FreqRthSec =  15 * 60, FreqOthSec = 40 * 60 }; // mid frequency (20min RTH, 45min otherwise) refresh for a know fixed stocks (DashboardClient_mktHealth)
+        RtFreqParam m_lowFreqParam = new RtFreqParam() { RtFreq = RtFreq.LowFreq, Name="LowFreq", FreqRthSec = 30 * 60, FreqOthSec = 1 * 60 * 60 }; // with low frequency (30 RTH, 1h otherwise) we almost all stocks. Even if nobody access them.
 
+        // In general: higFreq: probably the traded stocks + what was RT queried by users. Mid: some special tickers (e.g. on MarketDashboard), LowFreq: ALL alive stocks.
         string[] m_highFreqTickrs = new string[] { /* VBroker */ };
         string[] m_midFreqTickrs = new string[] {"S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO" /* DashboardClient_mktHealth.cs */ };
 
@@ -114,7 +119,7 @@ namespace FinTechCommon
             Asset[] downloadAliveAssets = p_newAssetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock  && (r as Stock)!.ExpirationDate == string.Empty).ToArray();
             if (downloadAliveAssets.Length == 0)
                 return;
-            var tradingHoursNow = Utils.UsaTradingHoursNow_withoutHolidays();
+            var tradingHoursNow = Utils.UsaTradingHoursExNow_withoutHolidays();
             DownloadPriorCloseAndLastPriceYF(downloadAliveAssets, tradingHoursNow);
         }
 
@@ -140,7 +145,7 @@ namespace FinTechCommon
             Utils.Logger.Info($"MemDbRt.RtTimer_Elapsed({freqParam.RtFreq}). BEGIN.");
             try
             {
-                UpdateRt(freqParam);
+                UpdateRtAndPriorClose(freqParam);
             }
             catch (System.Exception e)  // Exceptions in timers crash the app.
             {
@@ -149,7 +154,7 @@ namespace FinTechCommon
             SetTimerRt(freqParam);
             Utils.Logger.Debug($"MemDbRt.RtTimer_Elapsed({freqParam.RtFreq}). END");
         }
-        private void UpdateRt(RtFreqParam p_freqParam)
+        private void UpdateRtAndPriorClose(RtFreqParam p_freqParam)
         {
             p_freqParam.NTimerPassed++;
             Asset[] downloadAssets = p_freqParam.Assets;
@@ -162,14 +167,17 @@ namespace FinTechCommon
                 return;
 
             // IEX is faster (I guess) and we don't risk that YF bans our server for important historical data. Don't query YF too frequently.
-            // Prefer YF, because IEX returns "lastSalePrice":0, while YF returns correctly these 6 RT prices: BIB,IDX,MVV,RTH,VXZ,LBTYB
+            // Prefer YF, because IEX returns "lastSalePrice":0, while YF returns RT correctly for these 6 stocks: BIB,IDX,MVV,RTH,VXZ,LBTYB
             // https://api.iextrading.com/1.0/tops?symbols=BIB,IDX,MVV,RTH,VXZ,LBTYB
             // https://query1.finance.yahoo.com/v7/finance/quote?symbols=BIB,IDX,MVV,RTH,VXZ,LBTYB
             // Therefore, use IEX only for High/Mid Freq, and only in RegularTrading.
             // LowFreq is the all 700 tickers. For that we need those 6 assets as well.
 
-            var tradingHoursNow = Utils.UsaTradingHoursNow_withoutHolidays();
-            bool useIexRt = p_freqParam.RtFreq != RtFreq.LowFreq || tradingHoursNow == TradingHours.RegularTrading;
+            var tradingHoursNow = Utils.UsaTradingHoursExNow_withoutHolidays();
+            bool useIexRt = p_freqParam.RtFreq != RtFreq.LowFreq && tradingHoursNow == TradingHoursEx.RegularTrading; // use IEX only for High/Mid Freq, and only in RegularTrading.
+
+            if (p_freqParam.RtFreq == RtFreq.LowFreq)
+                Utils.Logger.Info($"UpdateRtAndPriorClose(RtFreq.LowFreq): useIexRt:{useIexRt}");
 
             if (useIexRt)
             {
@@ -185,8 +193,8 @@ namespace FinTechCommon
         private void SetTimerRt(RtFreqParam p_freqParam)
         {
             // lock (m_rtTimerLock)
-            var tradingHoursNow = Utils.UsaTradingHoursNow_withoutHolidays();
-            p_freqParam.Timer!.Change(TimeSpan.FromSeconds((tradingHoursNow == TradingHours.RegularTrading) ? p_freqParam.FreqRthSec : p_freqParam.FreqOthSec), TimeSpan.FromMilliseconds(-1.0));
+            var tradingHoursNow = Utils.UsaTradingHoursExNow_withoutHolidays();
+            p_freqParam.Timer!.Change(TimeSpan.FromSeconds((tradingHoursNow == TradingHoursEx.RegularTrading) ? p_freqParam.FreqRthSec : p_freqParam.FreqOthSec), TimeSpan.FromMilliseconds(-1.0));
         }
 
 
@@ -262,17 +270,33 @@ namespace FinTechCommon
         }
 
 
-        async static void DownloadPriorCloseAndLastPriceYF(Asset[] p_assets, TradingHours p_tradingHoursNow)  // takes ? ms from WinPC
+        async static void DownloadPriorCloseAndLastPriceYF(Asset[] p_assets, TradingHoursEx p_tradingHoursNow)  // takes ? ms from WinPC
         {
             Utils.Logger.Debug("DownloadLastPriceYF() START");
             try
             {
                 string lastValFieldStr = p_tradingHoursNow switch
                 {
-                    TradingHours.PreMarketTrading => "PreMarketPrice",
-                    TradingHours.RegularTrading => "RegularMarketPrice",
-                    TradingHours.PostMarketTrading => "PostMarketPrice",
-                    TradingHours.Closed => "PostMarketPrice",
+                    TradingHoursEx.PrePreMarketTrading => "PostMarketPrice",
+                    TradingHoursEx.PreMarketTrading => "PreMarketPrice",
+                    TradingHoursEx.RegularTrading => "RegularMarketPrice",
+                    TradingHoursEx.PostMarketTrading => "PostMarketPrice",
+                    TradingHoursEx.Closed => "PostMarketPrice",
+                    _ => throw new ArgumentOutOfRangeException(nameof(p_tradingHoursNow), $"Not expected p_tradingHoursNow value: {p_tradingHoursNow}"),
+                };
+
+                // What field to excract for PriorClose from YF?
+                // > At the weekend, we would like to see the Friday data, so regularMarketPreviousClose (Thursday) is fine.
+                // >PrePreMarket: What about 6:00GMT on Monday? That is 1:00ET. That is not regular trading yet, which starts at 4:00ET. But IB shows Friday closes at that time is PriorClose. We would like to see Friday closes as well. So, in PrePreMarket, use regularMarketPrice
+                // >If we are in PreMarket trading (then proper RT prices will come), then use regularMarketPrice
+                // >If we are RTH or PostMarket, or Close, use regularMarketPreviousClose. That way, at the weekend, we can observe BrAccViewer table as it was at Friday night.
+                string priorCloseFieldStr = p_tradingHoursNow switch
+                {
+                    TradingHoursEx.PrePreMarketTrading => "regularMarketPrice",
+                    TradingHoursEx.PreMarketTrading => "regularMarketPrice",
+                    TradingHoursEx.RegularTrading => "RegularMarketPreviousClose",
+                    TradingHoursEx.PostMarketTrading => "RegularMarketPreviousClose",
+                    TradingHoursEx.Closed => "RegularMarketPreviousClose",
                     _ => throw new ArgumentOutOfRangeException(nameof(p_tradingHoursNow), $"Not expected p_tradingHoursNow value: {p_tradingHoursNow}"),
                 };
 
@@ -304,7 +328,7 @@ namespace FinTechCommon
                             lastVal = (float)quote.Value.RegularMarketPrice;  // fallback: the last regular-market Close price both in Post and next Pre-market
                         sec.LastValue = (float)lastVal;
 
-                        if (quote.Value.Fields.TryGetValue("RegularMarketPreviousClose", out dynamic? priorClose))
+                        if (quote.Value.Fields.TryGetValue(priorCloseFieldStr, out dynamic? priorClose))
                             sec.PriorClose = (float)priorClose;
                     }
                 }
@@ -318,7 +342,7 @@ namespace FinTechCommon
             }
         }
 
-        // compared to IB data stream, IEX is sometimes 5-10 sec late. But sometimes it is not totally accurate. It is like IB updates its price every second. IEX updates randomli. Sometimes it updates every 1 second, sometime after 10seconds. In general this is fine.
+        // compared to IB data stream, IEX is sometimes 5-10 sec late. But sometimes it is not totally accurate. It is like IB updates its price every second. IEX updates randomly. Sometimes it updates every 1 second, sometime after 10seconds. In general this is fine.
         // "We limit requests to 100 per second per IP measured in milliseconds, so no more than 1 request per 10 milliseconds."
         // https://iexcloud.io/pricing/ 
         // Free account: 50,000 core messages/mo, That is 50000/30/20/60 = 1.4 message per minute. 
@@ -327,7 +351,7 @@ namespace FinTechCommon
         // At the moment 'tops' works without token, as https://api.iextrading.com/1.0/tops?symbols=QQQ,SPY,TLT,GLD,VXX,UNG,USO
         // but 'last' or other PreviousClose calls needs token: https://api.iextrading.com/1.0/lasts?symbols=QQQ,SPY,TLT,GLD,VXX,UNG,USO
         // Solution: query real-time lastPrice every 2 seconds, but query PreviousClose only once a day.
-        // This doesn't require token: https://api.iextrading.com/1.0/tops?symbols=AAPL,GOOGL
+        // This doesn't require token (but doesn't have PriorClose): https://api.iextrading.com/1.0/tops?symbols=AAPL,GOOGL
         // PreviousClose data requires token: https://cloud.iexapis.com/stable/stock/market/batch?symbols=AAPL,FB&types=quote&token=<get it from sensitive-data file>
         static async void DownloadLastPriceIex(Asset[] p_assets)  // takes 450-540ms from WinPC
         {

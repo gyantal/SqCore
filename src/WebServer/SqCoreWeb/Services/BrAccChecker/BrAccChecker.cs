@@ -99,7 +99,7 @@ namespace SqCoreWeb
             }
             if (isPossUpdateNeeded)
             {
-                Console.WriteLine("*Broker data (accInfo, positions) is acquired...");
+                Console.WriteLine("*Broker data (accInfo, positions) is getting acquired...");
                 UpdateBrAccPoss(GatewayId.CharmatMain);
                 UpdateBrAccPoss(GatewayId.DeBlanzacMain);
                 UpdateBrAccPoss(GatewayId.GyantalMain);

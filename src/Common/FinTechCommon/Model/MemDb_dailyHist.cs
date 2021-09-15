@@ -464,7 +464,39 @@ namespace FinTechCommon
             // That gives that every daily %return is the same as before.
             // Same can be said for positive Deposits. If we add deposit, NAV is increased, but we don't want to see that as a performance measure %return.
 
-            // >It is like doing a Time-Weighted-Return per day. Basically, we calculate the synthetic daily%returns that every day gives back the daily %return. Then we aggregate these in a way that the final price is the current NAV.
+            // >It is like doing a Time-Weighted-Return per day. Basically, we calculate the synthetic daily%returns that every day gives back the daily %return. 
+            // Then we aggregate these in a way that the final price is the current NAV.
+
+            // >For example, if we had a NAV value of 4.4M, then added a deposit of 4M, then the first multiplier = 1.9, almost 2.
+            // Then we use that 1.9 multiplier for all the previous NAVs. Good. It is not additive. TWR is multiplicative of the periods.
+            // Virtually we create a synthetic virtual NAV, that was not properly as it was in real life. However, if we calculate daily %Chg on
+            // virtual synthetic NAV, then that daily %Chg will give back exactly the daily %changes how it happened in real life.
+            // So, the virtualNAV values will not be real life, but the %Chg-es will be real life.
+            // If we don't do this NAV adjustments, then the NAV values will be real and correct and how it happened in real life, but then 
+            // the calculated daily %Changes will not be how it happend. (because there will be a daily doubling on a given day. 
+            // That would be a 200% daily performance, which is what happened, but that would be not a good measure to evaluate the performance of this fund manager.)
+
+            // >2021-09-09 experience with DeBlanzad deposit adjustements: Success, but it didn't help in return (only in minValue, maxDD changed). 
+            // The TWR calculation more or less stayed the same. The TWR calculation is multiplicative, DeBlan lost too much in percentage -30% when it was at NAV 5M. 
+            // That -30% return is multiplicative in final TWR calculation.
+            // >First understand that the TWR is the right calculation for long-term return. There is no other way mathematically.
+            // I would like to evaluate a virtual Fund manager based on TWR, the aggregation of monthly return.
+            // Imagine: for 11 months, fund manager return is -10% with 1M NAV start. That is a monthly 0.9 multiplier.
+            // Then extra 10M NAV cash deposit comes in on 1st December, so now he has 10.1M NAV. He does 50% on that during that single 1 month December.
+            // How should we evaluate his performance?
+            // TWR-return: 0.9*0.9*....0.9*1.5. Should we say he did That Yes. That would be correct to evaluate his performance.
+            // How to do in an additive way? start: 1M, end:15M. 
+            // But we cannot just subtract 10M from the previous months, because they become negative.
+            // Similarly we cannot just add 10M to the previous months, because then the January NAV would become from 11M to 10.9M, but that is not exual to his poort -10% performance in January.
+            // So, there is no way that the additional or subtractional method would work. The only option is multiplicative on the periods. That is exactly the TWR.
+            // >See what happened with the DeBlanzac account in 2021.
+            // 2021-01-01 NAV: 10M.  Then we removed -5M in February, and added +4M in July. On 2021-09-09 we have NAV of 8.3M.
+            // A. The naive thinking is that we removed -1M net, but we had 10M in January, so we should have 9M now for breakeven. But because we have 8.3M now, it means we are in a -7.8% loss this year. 
+            // B. However, TWR calculates this year performance as -16%. Rightly. But why?
+            // 10M becomes => 5M => then came a -30% loss (-1.5M) and NAV become 3.5M => +4M deposit increased NAV to 7.5M. Currently the NAV is 8.3M (11%). So, how would you evaluate it? 
+            // I would say we had a -30% performance in the first period on NAV value 5M, then we had a +11% performance on NAV value 7.5M. 
+            // TWR calculation for the periods : 0.7*1.11 = current -16% shown in SqCore.
+            // >The NAV values should be adjusted by deposits/withdrawal, otherwise the minValue, MaxDD will be wrong.
 
             double multiplier = 1.0;    // cummulative multiplier
             float[] adjCloses = new float[dates.Length];

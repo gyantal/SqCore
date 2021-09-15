@@ -7,6 +7,11 @@ namespace SqCommon
 {
     public enum TradingHours { PreMarketTrading, RegularTrading, PostMarketTrading, Closed }
 
+
+    // many times we want to distinguish time from 0:00ET to 4:00ET, so PriorCloses are updated with Friday closesprices if we are in PrePreMarket, not only later at real PreMarket.
+    // TODO: replace TradingHours to TradingHoursEx in code
+    public enum TradingHoursEx { PrePreMarketTrading, PreMarketTrading, RegularTrading, PostMarketTrading, Closed }
+
     public static partial class Utils
     {
         static List<Tuple<DateTime, DateTime?>>? g_holidays = null;
@@ -22,6 +27,9 @@ namespace SqCommon
         public static TradingHours UsaTradingHours_withoutHolidays(DateTime p_timeET)
         {
             // we should use Holiday day data from Nasdaq website later. See code in SqLab.
+            if (p_timeET.IsWeekend())
+                return TradingHours.Closed;
+
             int nowTimeOnlySec = p_timeET.Hour * 60 * 60 + p_timeET.Minute * 60 + p_timeET.Second;
             if (nowTimeOnlySec < 4 * 60 * 60)
                 return TradingHours.Closed;
@@ -33,6 +41,32 @@ namespace SqCommon
                 return TradingHours.PostMarketTrading;
             else
                 return TradingHours.Closed;
+        }
+
+        public static TradingHoursEx UsaTradingHoursExNow_withoutHolidays()
+        {
+            DateTime etNow = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
+            return UsaTradingHoursEx_withoutHolidays(etNow);
+        }
+
+        // PreMarket: 4:00ET, Regular: 9:30ET, Post:16:00, Post-ends: 20:00
+        public static TradingHoursEx UsaTradingHoursEx_withoutHolidays(DateTime p_timeET)
+        {
+            // we should use Holiday day data from Nasdaq website later. See code in SqLab.
+            if (p_timeET.IsWeekend())
+                return TradingHoursEx.Closed;
+
+            int nowTimeOnlySec = p_timeET.Hour * 60 * 60 + p_timeET.Minute * 60 + p_timeET.Second;
+            if (nowTimeOnlySec < 4 * 60 * 60)
+                return TradingHoursEx.PrePreMarketTrading;
+            else if (nowTimeOnlySec < 9 * 60 * 60 + 30 * 60)
+                return TradingHoursEx.PreMarketTrading;
+            else if (nowTimeOnlySec < 16 * 60 * 60)
+                return TradingHoursEx.RegularTrading;
+            else if (nowTimeOnlySec < 20 * 60 * 60)
+                return TradingHoursEx.PostMarketTrading;
+            else
+                return TradingHoursEx.Closed;
         }
 
         public static bool IsInRegularUsaTradingHoursNow()

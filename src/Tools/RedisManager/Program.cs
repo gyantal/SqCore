@@ -123,12 +123,12 @@ namespace RedisManager
         {
             ColorConsole.WriteLine(ConsoleColor.Magenta, "---- Manage NAV assets...Create Redis backup!!!  ----");
             Console.WriteLine("1. Convert NAV asset CSV file to RedisDb");
-            Console.WriteLine("2. Export Nav Asset To Txt file: 9:1");
-            Console.WriteLine("3. Export Nav Asset To Txt file: 9:2");
-            Console.WriteLine("4. Export Nav Asset To Txt file: 9:3");
-            Console.WriteLine("5. Import Nav Asset From Txt file: 9:1");
-            Console.WriteLine("6. Import Nav Asset From Txt file: 9:2");
-            Console.WriteLine("7. Import Nav Asset From Txt file: 9:3");
+            Console.WriteLine("2. Export Nav Asset To Txt file: 11:1");
+            Console.WriteLine("3. Export Nav Asset To Txt file: 11:2");
+            Console.WriteLine("4. Export Nav Asset To Txt file: 11:3");
+            Console.WriteLine("5. Import Nav Asset From Txt file: 11:1");
+            Console.WriteLine("6. Import Nav Asset From Txt file: 11:2");
+            Console.WriteLine("7. Import Nav Asset From Txt file: 11:3");
             
             Console.WriteLine("9. Exit to main menu.");
             string userInput = string.Empty;
@@ -145,28 +145,28 @@ namespace RedisManager
             switch (userInput)
             {
                 case "1":
-                    Console.WriteLine("Warning! Commented lines. Doing nothing at the moment. Be very careful! Create a RedisDb backup, before uncommenting lines, because it will overwrite RedisDb and the daily NAV updates will be lost.");
-                    //Controller.g_controller.InsertNavAssetFromCsvFile("9:1", @"g:\agy\money\Investment\IB\Reports\PortfolioAnalyst\2020-11-18\Gyorgy_Antal_Inception_November_17_2020.csv");
-                    //Controller.g_controller.InsertNavAssetFromCsvFile("9:2", @"g:\work\Archi-data\Projects\IB-PortfolioAnalyst\2020-11-17\Didier_Charmat_and_Jean-Marc_Charmat_Inception_November_17_2020.csv");
-                    //Controller.g_controller.InsertNavAssetFromCsvFile("9:3", @"g:\work\Archi-data\Projects\IB-PortfolioAnalyst\2020-11-17\DE_BLANZAC_LTD_Inception_November_17_2020.csv");
+                    Console.WriteLine("Warning! Commented lines. Doing nothing at the moment. Be very careful! Create a RedisDb backup (see RedisBackup.txt), before uncommenting lines, because it will overwrite RedisDb and the daily NAV updates will be lost.");
+                    //Controller.g_controller.InsertNavAssetFromCsvFile("11:1", @"g:\agy\money\Investment\IB\Reports\PortfolioAnalyst\2021-09-09\Gyorgy_Antal_Inception_September_08_2021.csv");
+                    //Controller.g_controller.InsertNavAssetFromCsvFile("11:2", @"g:\work\Archi-data\Projects\IB-PortfolioAnalyst\2021-09-09\Didier_Charmat_and_Jean-Marc_Charmat_Inception_September_08_2021.csv");
+                    //Controller.g_controller.InsertNavAssetFromCsvFile("11:3", @"g:\work\Archi-data\Projects\IB-PortfolioAnalyst\2021-09-09\DE_BLANZAC_LTD_Inception_September_08_2021.csv");
                     break;
                 case "2":
-                    Controller.g_controller.ExportNavAssetToTxt("9:1", @"assetQuoteRaw-unbrotlied-9-1.txt");
+                    Controller.g_controller.ExportNavAssetToTxt("11:1", @"assetQuoteRaw-unbrotlied-11-1.txt");
                     break;
                 case "3":
-                    Controller.g_controller.ExportNavAssetToTxt("9:2", @"assetQuoteRaw-unbrotlied-9-2.txt");
+                    Controller.g_controller.ExportNavAssetToTxt("11:2", @"assetQuoteRaw-unbrotlied-11-2.txt");
                     break;
                 case "4":
-                    Controller.g_controller.ExportNavAssetToTxt("9:3", @"assetQuoteRaw-unbrotlied-9-3.txt");
+                    Controller.g_controller.ExportNavAssetToTxt("11:3", @"assetQuoteRaw-unbrotlied-11-3.txt");
                     break;
                 case "5":
-                    Controller.g_controller.ImportNavAssetFromTxt("9:1", @"assetQuoteRaw-unbrotlied-9-1.txt");
+                    Controller.g_controller.ImportNavAssetFromTxt("11:1", @"assetQuoteRaw-unbrotlied-11-1.txt");
                     break;
                 case "6":
-                    Controller.g_controller.ImportNavAssetFromTxt("9:2", @"assetQuoteRaw-unbrotlied-9-2.txt");
+                    Controller.g_controller.ImportNavAssetFromTxt("11:2", @"assetQuoteRaw-unbrotlied-11-2.txt");
                     break;
                 case "7":
-                    Controller.g_controller.ImportNavAssetFromTxt("9:3", @"assetQuoteRaw-unbrotlied-9-3.txt");
+                    Controller.g_controller.ImportNavAssetFromTxt("11:3", @"assetQuoteRaw-unbrotlied-11-3.txt");
                     break;
                 case "9":
                     return "UserChosenExit";
