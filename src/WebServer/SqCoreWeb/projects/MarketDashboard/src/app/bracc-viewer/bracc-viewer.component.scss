@@ -52,10 +52,10 @@
     to {opacity: 1;}
   }
   // added by DAYA
-// .selectedBrViewTbl {
-//   border: 1px solid black;
-//   border-collapse: collapse;
-// }
+.selectedBrcAccSnapShotTbl {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
 *{
   box-sizing: border-box;
 }
@@ -70,32 +70,43 @@
 .ChartSumm{
   float: left;
   width: 75%;
-  padding: 15px;
+  padding: 15px 32px;
   border: 1px solid red;
+  
 }
 
-
-// .main{
-//   width:75%;
-//   height:95%;
+// .NormalTableHeader
+// {
+//   background-color: red;
 
 // }
+// .ActiveSortTableHeader
+// {
+//   background-color: blue;
+//   font-size: large;
+// }
+
+.main{
+  width:75%;
+  height:95%;
+
+}
 /* Style the lines by removing the fill and applying a stroke */
-// ::ng-deep .line {
-//   fill:none;
-//   stroke: #ffab00;
-//   stroke-width: 3;
-// }
-// ::ng-deep .line1 {
-//   fill:none;
-//   stroke: #00ffff;
-//   stroke-width: 3;
-// }
-// #chartNav .chart {
-//   width: 900;
-//   height: 500;
-//   margin: 20px 25px;
-// }
+::ng-deep .line {
+  fill:none;
+  stroke: #ffab00;
+  stroke-width: 3;
+}
+::ng-deep .line1 {
+  fill:none;
+  stroke: #00ffff;
+  stroke-width: 3;
+}
+#chartNav .chart {
+  width: 500;
+  height: 600;
+  margin: 20px 25px;
+}
 .selectedTempDebug{
   word-wrap: break-word;
   width: 100%;
@@ -111,12 +122,14 @@
   color: red;
   font-weight: bold;
 }
-// svg {
-//   transform: translate(50px, 30px);
-//   width: 80%;
-//   height: 80%;
+svg {
+  transform: translate(50px, 30px);
+  // width: 80%;
+  // height: 80%;
+     width: 80%;
+     height: 95%;
 
-//  }
+ }
 //  ::ng-deep .mat-tab-list .mat-tab-labels .mat-tab-label-active {
 //   color:blue;
 //   // font-size: medium;
@@ -143,10 +156,14 @@
 .sections {
   float: left;
   width: 33.3%;
-  padding: 10px;
+  padding: 4px;
   font-size: small;
-  height: 200px;
-  border-right: 1px solid #333;
+  height: 125px;
+  
+}
+.sections{
+  border-right: 0.5px solid blue;
+  padding-left: 20px ;
 }
 // tooltip maxRisked ngClass
 .red {
@@ -248,22 +265,41 @@ td {
 //   background-color: #fff;
   
 // }
-.tab #default{
-  background-color: aqua;
-  float: left;
+.ChartSumm .tab{
+  // background-color: aqua;
+  // float: left;
   border: none;
   outline: none;
   cursor: pointer;
-  padding: 4px;
+  padding: 15px 32px;
   transition: 0.3s;
   font-size: 12px;
+  display: inline-block;
   /* Set transitions up. */
   -webkit-transition: max-height 0.7s;
   -moz-transition: max-height 0.7s;
   transition: max—height 0.7s;
+  padding-bottom: 2px;
+  
+ 
 }
 
 /* Change background color of buttons on hover */
 .tab :hover {
-  background-color: black;
+  border: .1rem solid green;
+  backdrop-filter: blur(1rem);
+  transform: skewX(-10deg);
+  height: 2.5rem;
+  width: 14rem;
+  border-radius: 2rem .5rem 2rem 0;
+  position: relative;
+  justify-content: center;
+  transition: all .2s ease;
+  font: 1.4rem;
+  font-weight: 300;
+  text-shadow: 0 0 2rem #fff;
+  text-transform: uppercase;
+  animation: breath2 2s .5s infinite alternate;
+
+  cursor: pointer;
 }

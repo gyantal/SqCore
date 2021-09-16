@@ -1,10 +1,10 @@
 import { ViewChild, Component, AfterViewInit,ElementRef, Input} from '@angular/core';
 // Importing d3 library
-// import * as d3 from 'd3';
+import * as d3 from 'd3';
 // import * as d3Scale from 'd3';
-// import * as d3Shape from 'd3';
+import * as d3Shape from 'd3';
 // import * as d3Array from 'd3';
-// import * as d3Axis from 'd3';
+import * as d3Axis from 'd3';
 // import { text } from 'd3';
 // import { SqNgCommonUtilsTime } from '../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { AssetLastJs } from './../../sq-globals';
@@ -220,10 +220,6 @@ class UiBrAccChrtDataRaw1 {
 
 }
 
-// class uiTabBetaArr {
-//   public QQQ
-// }
-
 @Component({
   selector: 'app-bracc-viewer',
   templateUrl: './bracc-viewer.component.html',
@@ -290,15 +286,15 @@ export class BrAccViewerComponent implements AfterViewInit {
   static betaArr: { [id: string] : number; } = {};
 
   // required for chart
-  // private margin = {top:20, right:20, bottom:30, left:50};
-  // private width: number;
-  // private height: number;
-  // private x: any;
-  // private y: any;
-  // private svg: any;
-  // public tooltip: any;
-  // private line!: d3Shape.Line<[number, number]>;
-  // private line1!: d3Shape.Line<[number, number]>;
+  private margin = {top:20, right:20, bottom:30, left:50};
+  private width: number;
+  private height: number;
+  private x: any;
+  private y: any;
+  private svg: any;
+  public tooltip: any;
+  private line!: d3Shape.Line<[number, number]>;
+  private line1!: d3Shape.Line<[number, number]>;
   // sqTicker: any;
   // ticker: any;
   // isNavColumn: any;
@@ -308,15 +304,15 @@ export class BrAccViewerComponent implements AfterViewInit {
   constructor() {
     
     // Creating a line chart dummy data
-    // this.brAccChrtDataRaw = [
-    //   {assetId:1, dateStr:"2010-01-01", brNAV:310.45, SPY:309},
-    //   {assetId:2, dateStr:"2010-01-02", brNAV:320.45, SPY:317},
-    //   {assetId:3, dateStr:"2010-01-03", brNAV:350.45, SPY:360},
-    //   {assetId:4, dateStr:"2010-01-04", brNAV:340.45, SPY:315},
-    // ];
+    this.brAccChrtDataRaw = [
+      {assetId:1, dateStr:"2010-01-01", brNAV:310.45, SPY:309},
+      {assetId:2, dateStr:"2010-01-02", brNAV:320.45, SPY:317},
+      {assetId:3, dateStr:"2010-01-03", brNAV:350.45, SPY:360},
+      {assetId:4, dateStr:"2010-01-04", brNAV:340.45, SPY:315},
+    ];
 
-    // this.width = 1000 - this.margin.left - this.margin.right;
-    // this.height = 550 - this.margin.top - this.margin.bottom;
+    this.width = 960 - this.margin.left - this.margin.right;
+    this.height = 500 - this.margin.top - this.margin.bottom;
 
 // guessed Beta for HL hedges and companies 
  
@@ -341,10 +337,100 @@ export class BrAccViewerComponent implements AfterViewInit {
   ngAfterViewInit(): void {
   
     // functions for developing charts
-    // this.initChart();
+    this.initChart();
     
     
   }
+  // Chart functions start
+  private initChart() {
+    this.svg = d3.select('svg#chartNav')
+                 .attr("width", this.width + this.margin.left + this.margin.right)
+                 .attr("height", this.height + this.margin.top + this.margin.bottom)
+                //  .call(responsivefy)
+    this.svg.append('g')
+    .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
+    this.brAccChrtData = this.brAccChrtDataRaw.map(
+      (d: {assetId:string | number; dateStr: string | number | Date; brNAV: string | number; SPY: string | number; }) => ({assetId: +d.assetId,
+        dateStr: new Date(d.dateStr),
+        brNAV: +d.brNAV,
+        SPY: +d.SPY
+      }))
+    
+    // find data range
+    const xMin = d3.min(this.brAccChrtData, (d:{ dateStr: any; }) => d.dateStr);
+    const xMax = d3.max(this.brAccChrtData, (d:{ dateStr: any; }) => d.dateStr);
+    const yMin = d3.min(this.brAccChrtData, (d: { SPY: any; }) => d.SPY );
+    const yMax = d3.max(this.brAccChrtData, (d: { SPY: any; }) => d.SPY );
+
+    this.x = d3.scaleTime()
+              .domain([xMin, xMax])
+              .range([0, this.width]);
+    this.y = d3.scaleLinear()
+               .domain([yMin-5, yMax])
+               .range([this.height, 0]);
+    // // range of data configuring
+    // this.x = d3Scale.scaleTime().range([0, this.width]);
+    // this.y = d3Scale.scaleLinear().range([this.height,0]);
+    // this.x.domain(d3Array.extent(this.brAccChrtData, (d: { dateStr: any; }) => d.dateStr ));
+    // // this.y.domain(d3Array.extent(this.brAccChrtData, (d: { brNAV: any; }) => d.brNAV ));
+    // this.y.domain(d3Array.extent(this.brAccChrtData, (d: { SPY: any; }) => d.SPY ));
+
+    // Configure the X axis
+    this.svg.append('g')
+      .attr('transform', 'translate(0,' + this.height + ')')
+      .call(d3Axis.axisBottom(this.x).ticks(10))
+    
+    // text label for x-axis
+    this.svg.append("text")
+      .attr("x", this.width/2)
+      .attr("y", this.height + this.margin.bottom) 
+      .style("text-anchor","middle")
+      .text("Date");
+    // Configure the Y Axis
+    this.svg.append('g')
+    .attr('class', 'axis--y')
+    .call(d3Axis.axisLeft(this.y).ticks(10,"$"));
+
+    // text label for y-axis
+    this.svg.append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 0-this.margin.left)
+      .attr("x", 0-(this.height/2))
+      .attr("dy","1em")
+      .style("text-anchor", "middle")
+      .text("brNAV");
+// Genereating line - for brNAV 
+    this.line = d3Shape.line()
+      .x( (d: any) => this.x(d.dateStr))
+      .y( (d: any) => this.y(d.brNAV))
+// Genereating line - for SPY
+    this.line1 = d3Shape.line()
+    .x( (d: any) => this.x(d.dateStr))
+    .y( (d: any) => this.y(d.SPY))
+
+
+    // Configuring line path
+    // Append the path, bind the data, and call the line generator (brNAV)
+    this.svg.append('path')
+      .datum(this.brAccChrtData) // Binds data to the line
+      .attr('class', 'line') //Assign a class for styling
+      .attr('d', this.line
+      .curve(d3.curveCardinal)); // Calls the line generator
+  
+// Append the path, bind the data, and call the line generator (SPY)
+    this.svg.append('path')
+    .datum(this.brAccChrtData) // Binds data to the line
+    .attr('class', 'line') //Assign a class for styling
+    .attr('d', this.line1
+    .curve(d3.curveCardinal)); 
+
+
+    this.tooltip = d3.select("body")
+    .append('div')
+    .classed("chart-tooltip", true)
+    .style("display","none")
+  }
+ // Chart functions end
 
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
@@ -445,9 +531,6 @@ export class BrAccViewerComponent implements AfterViewInit {
   updateUiSelectableNavs(pSelectableNavAssets: Nullable<AssetJs[]>) {  // same in MktHlth and BrAccViewer
 
     if(pSelectableNavAssets == null) return;
-    // ...
-    //uiNavSel : UiNavSelectionChoices1[] = [];
-    // navSelectionSelected1 = '';
     this.navSelectionSelected = '';
     for (const nav of pSelectableNavAssets) {
       if (this.navSelectionSelected == '') // by default, the selected Nav is the first from the list
@@ -456,9 +539,7 @@ export class BrAccViewerComponent implements AfterViewInit {
       //navSelectElement.options[navSelectElement.options.length] = new Option(nav.symbol, nav.symbol);
     }
 
-    // for (i = 0 ... i< Array.length.)
-    //   date = dateArray[i]
-    //   value = valueArray[i]
+    
     
     const navSelectElement = document.getElementById('braccViewerNavSelect') as HTMLSelectElement;
     this.selectedNav = '';
@@ -799,7 +880,11 @@ export class BrAccViewerComponent implements AfterViewInit {
       statItem.periodStartDate = hisStatItem.histStat.periodStartDate;
       brAccHistStatVal.push(statItem);
     }
-
+     
+    // for (i = 0 ... i< Array.length.)
+    //   date = dateArray[i]
+    //   value = valueArray[i]
+    
   //   for (const hisValItem  of histObj) {
   //     if (hisValItem.histValues ==  null) continue;
 
