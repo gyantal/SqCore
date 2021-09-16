@@ -177,7 +177,7 @@ namespace FinTechCommon
             bool useIexRt = p_freqParam.RtFreq != RtFreq.LowFreq && tradingHoursNow == TradingHoursEx.RegularTrading; // use IEX only for High/Mid Freq, and only in RegularTrading.
 
             if (p_freqParam.RtFreq == RtFreq.LowFreq)
-                Utils.Logger.Info($"UpdateRtAndPriorClose(RtFreq.LowFreq): useIexRt:{useIexRt}");
+                Utils.Logger.Info($"UpdateRtAndPriorClose(RtFreq.LowFreq): useIexRt:{useIexRt}");  // TEMP
 
             if (useIexRt)
             {
@@ -277,7 +277,7 @@ namespace FinTechCommon
             {
                 string lastValFieldStr = p_tradingHoursNow switch
                 {
-                    TradingHoursEx.PrePreMarketTrading => "PostMarketPrice",
+                    TradingHoursEx.PrePreMarketTrading => "PostMarketPrice",    // YF data fields ([R]egularMarketPrice) have to be capitalized in C# even though the JSON data has JS notation, starting with lowercase.
                     TradingHoursEx.PreMarketTrading => "PreMarketPrice",
                     TradingHoursEx.RegularTrading => "RegularMarketPrice",
                     TradingHoursEx.PostMarketTrading => "PostMarketPrice",
@@ -292,8 +292,8 @@ namespace FinTechCommon
                 // >If we are RTH or PostMarket, or Close, use regularMarketPreviousClose. That way, at the weekend, we can observe BrAccViewer table as it was at Friday night.
                 string priorCloseFieldStr = p_tradingHoursNow switch
                 {
-                    TradingHoursEx.PrePreMarketTrading => "regularMarketPrice",
-                    TradingHoursEx.PreMarketTrading => "regularMarketPrice",
+                    TradingHoursEx.PrePreMarketTrading => "RegularMarketPrice",
+                    TradingHoursEx.PreMarketTrading => "RegularMarketPrice",
                     TradingHoursEx.RegularTrading => "RegularMarketPreviousClose",
                     TradingHoursEx.PostMarketTrading => "RegularMarketPreviousClose",
                     TradingHoursEx.Closed => "RegularMarketPreviousClose",
@@ -330,8 +330,15 @@ namespace FinTechCommon
 
                         if (quote.Value.Fields.TryGetValue(priorCloseFieldStr, out dynamic? priorClose))
                             sec.PriorClose = (float)priorClose;
+
+                        if (sec.SqTicker == "S/UNG")
+                            Utils.Logger.Info($"UNG priorClose: {sec.PriorClose}, lastVal:{sec.LastValue}");  // TEMP
                     }
                 }
+
+
+                if (p_assets.Length > 100)  // only called in LowFreq timer.
+                    Utils.Logger.Info($"DownloadPriorCloseAndLastPriceYF: #queried:{yfTickers.Length}, #received:{nReceivedAndRecognized}");  // TEMP
 
                 if (nReceivedAndRecognized != yfTickers.Length)
                     Utils.Logger.Warn($"DownloadLastPriceYF() problem. #queried:{yfTickers.Length}, #received:{nReceivedAndRecognized}");
