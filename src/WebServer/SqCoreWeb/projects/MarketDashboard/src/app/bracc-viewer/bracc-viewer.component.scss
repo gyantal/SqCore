@@ -75,11 +75,12 @@
   
 }
 
-// .NormalTableHeader
-// {
-//   background-color: red;
+.NormalTableHeader
+{
+  background-color: blue;
+  font-size: large;
 
-// }
+}
 // .ActiveSortTableHeader
 // {
 //   background-color: blue;
@@ -212,7 +213,43 @@ svg {
 .tooltipCell:hover .tooltipSnap {
   display: inline-block;
 }
-  // }
+// Tooltip posotioning for the stock postions 
+  .tooltipStck {
+    position: relative;
+    cursor: help;
+  }
+  
+  .tooltipStck .tooltipSnap {
+    padding:0.3rem;
+    font-size: 0.8rem;
+    font-weight: normal;
+    display: none;
+    background:rgb(210, 252, 176);
+    border: 0.1rem solid rgb(19, 7, 177);
+    color: rgb(6, 8, 153);
+    text-align: left;
+    border-radius: 1rem;
+    position: absolute;
+    z-index: 100;
+    white-space: pre;
+    opacity: 0.87;
+  }
+  
+  .tooltipStck .tooltipSnap .snapshot{
+    font-weight: bold;
+  }
+  
+  .tooltipStck .tooltipSnap .smallTT{
+    font-size: 0.2rem;
+  }
+  
+  .tooltipStck:hover .tooltipSnap {
+    display: inline-block;
+    top: -15%;
+    left: 100%;
+    transform: translateX(-15%);
+    margin-top: -10px;
+  }
 table, td, thead, th {
     border: 1px solid #9cd3db;;
     border-collapse: collapse;

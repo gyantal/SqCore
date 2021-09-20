@@ -31,6 +31,8 @@ namespace SqCoreWeb
         public uint AssetId { get; set; } = 0;
         public string SqTicker { get; set; } = string.Empty;
         public string Symbol { get; set; } = string.Empty;  // can be shown on the HTML UI
+
+        public string Name { get; set; } = string.Empty;
         public double Pos { get; set; }
         public double AvgCost { get; set; }
 
@@ -227,6 +229,7 @@ namespace SqCoreWeb
                     AssetId = posBr.AssetId,
                     SqTicker = asset.SqTicker,
                     Symbol = asset.Symbol,
+                    Name = asset.Name,
                     Pos = posBr.Position,
                     AvgCost = posBr.AvgCost,
                     PriorClose = asset.PriorClose,

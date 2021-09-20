@@ -34,7 +34,7 @@ MarketBar
             <span [ngClass]="{
                 'mktBarPositivePerf' : uiSnapTab.sumPlTodVal > 0,
                 'mktbarNegativePerf' : uiSnapTab.sumPlTodVal < 0
-                }">{{uiSnapTab.sumPlTodVal | currency:'USD':true:'1.0' }}
+                }">{{uiSnapTab.sumPlTodVal | currency:'USD':'symbol':'1.0' }}
             </span>
             <span [ngClass]="{
                 'mktBarPositivePerf' : uiSnapTab.sumPlTodPct > 0,
@@ -44,7 +44,7 @@ MarketBar
         </div>
         <div id="plSum" class="tooltipCell">NAV :
             <span id="liqVal">
-                {{uiSnapTab.netLiquidationStr | currency:'USD':true:'1.0'}}
+                {{uiSnapTab.netLiquidationStr | currency:'USD':'symbol':'1.0'}}
             </span>
             <div class="tooltipSnap">
                 <div class="snapshot">
@@ -52,23 +52,16 @@ MarketBar
                 </div>
             </div>
         </div>
+        <!-- <div *ngFor = "let item of brAccChrtActuals"> AssetID:{{item.assetId}}</div> -->
         <div>
             <span class="tab">
-                <button [ngStyle]="{'background-color':tabPageVisibleIdx == 1 ? 'aqua':''}"(click)="tabHeaderClicked($event,1)"> HistoricalChart </button>
-                <button [ngStyle]="{'background-color':tabPageVisibleIdx == 2 ? 'aqua':''}"(click)="tabHeaderClicked($event,2)"> MoreDetails </button>
+                <button [ngStyle]="{'background-color':tabPageVisibleIdx == 1 ? 'aqua':''}"(click)="tabHeaderClicked($event,1)"> MoreDetails </button>
+                <button [ngStyle]="{'background-color':tabPageVisibleIdx == 2 ? 'aqua':''}"(click)="tabHeaderClicked($event,2)"> HistoricalChart </button>
             </span>
         </div>
     </div>
     <div class="ChartSumm">
             <div [hidden]="tabPageVisibleIdx != 1" id="tab1">
-                <div>
-                    <svg id ="chartNav" viewBox="30 0 960 600"
-                        preserveAspectRatio="xMidYMid meet">
-                    </svg>
-                </div>
-                
-            </div>
-            <div [hidden]="tabPageVisibleIdx == 1" id="tab2">
                 <div class="sections">
                     <div>IB Total Cash: <span id="plSum">{{uiSnapTab.totalCashValue | number}}</span></div>
                     <div>IB Initial MarginReq: <span id="plSum">{{uiSnapTab.initialMarginReq | number}}</span></div>
@@ -126,8 +119,25 @@ MarketBar
                         </div>
                     </div>
                 </div>
-        </div>
-       
+            </div>
+            <div [hidden]="tabPageVisibleIdx == 1" id="tab2">
+                <div>
+                    <svg id ="chartNav" viewBox="30 0 960 600"
+                        preserveAspectRatio="xMidYMid meet">
+                    </svg>
+                    <div>
+                        <select [(ngModel)] = "yrSelectionSelected">
+                            <option *ngFor="let item of yrSelectionChoices" [value]="item">{{item}}</option>YTD
+                        </select>
+                        StartDate:<input type="date" id="StartDate" name="startDate" min="01-01-1975">
+                        EndDate:<input type="date" id="EndDate" name="EndDate" min="01-01-1975">  
+                        <select name="" id="">
+                            <option value="TotRet" selected>Return</option>
+                            <option value="MDD">MaxDrawDown</option>
+                        </select>
+                     </div>
+                </div>
+            </div>
     </div>
 </span>
 </div>
@@ -136,28 +146,49 @@ MarketBar
 <hr>
 <table class = "selectedBrcAccSnapShotTbl">
     <thead class = "selectedBrcAccSnapShotTbl">
-        <th [ngStyle]="{'background-color':sortColumn ==='Symbol'? 'blue':''}" (click)="onSortingClicked($event, 'Symbol')">Symbol</th>
-        <th [ngStyle]="{'background-color':sortColumn ==='LocalSymbol'? 'blue':''}" >LocalSymbol</th>
-        <th [ngStyle]="{'background-color':sortColumn ==='Pos'? 'blue':''}" (click)="onSortingClicked($event, 'Pos')">Pos</th>
-        <th [ngStyle]="{'background-color':sortColumn ==='Cost'? 'blue':''}" (click)="onSortingClicked($event, 'Cost')">Cost</th>
-        <th [ngStyle]="{'background-color':sortColumn ==='PriorClose'? 'blue':''}" (click)="onSortingClicked($event, 'PriorClose')">Prior<br>Close</th>
-        <th [ngStyle]="{'background-color':sortColumn ==='estPrice'? 'blue':''}" (click)="onSortingClicked($event, 'estPrice')">Est<br>Price</th>
-        <th [ngStyle]="{'background-color':sortColumn ==='DailyPctChg'? 'blue':''}" (click)="onSortingClicked($event, 'DailyPctChg')">Chg%<br>Today</th>
-        <th [ngStyle]="{'background-color':sortColumn ==='DailyPL'? 'blue':''}" (click)="onSortingClicked($event, 'DailyPL')">P&L<br>Today</th>
-        <th [ngStyle]="{'background-color':sortColumn ==='ProfLos'? 'blue':''}"(click)="onSortingClicked($event, 'ProfLos')">P&L</th>
-        <th [ngStyle]="{'background-color':sortColumn ==='MktVal'? 'blue':''}"(click)="onSortingClicked($event, 'MktVal')">MktVal</th>
-        <th [ngStyle]="{'background-color':sortColumn ==='EstUndPrice'? 'blue':''}"(click)="onSortingClicked($event, 'EstUndPrice')">Est<br>UndPr</th>
-        <th [ngStyle]="{'background-color':sortColumn ==='IbCompUndPr'? 'blue':''}"(click)="onSortingClicked($event, 'IbCompUndPr')">IbComp<br>UndPr</th>
-        <th [ngStyle]="{'background-color':sortColumn ==='IbCompDeltar'? 'blue':''}"(click)="onSortingClicked($event, 'IbCompDeltar')">IbComp<br>Delta</th>
-        <th [ngStyle]="{'background-color':sortColumn ==='DelivVal'? 'blue':''}"(click)="onSortingClicked($event, 'DelivVal')">Deliv<br>Value</th>
-        <th [ngStyle]="{'background-color':sortColumn ==='DltAdjDelivVal'? 'blue':''}"(click)="onSortingClicked($event, 'DltAdjDelivVal')">DltAdj<br>DelivVal</th>
-        <th [ngStyle]="{'background-color':sortColumn ==='gBeta'? 'blue':''}"(click)="onSortingClicked($event, 'gBeta')">gBeta</th>
-        <th [ngStyle]="{'background-color':sortColumn ==='gBetaDltAdj'? 'blue':''}"(click)="onSortingClicked($event, 'gBetaDltAdj')">BetaDltAdj<br>MktOriVal</th>
-        <th [ngStyle]="{'background-color':sortColumn ==='Acc'? 'blue':''}"(click)="onSortingClicked($event, 'Acc')">Acc</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='Symbol'}" (click)="onSortingClicked($event, 'Symbol')">Symbol</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='LocalSymbol'}" >LocalSymbol</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='Pos'}" (click)="onSortingClicked($event, 'Pos')">Pos</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='Cost'}" (click)="onSortingClicked($event, 'Cost')">Cost</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='PriorClose'}" (click)="onSortingClicked($event, 'PriorClose')">Prior<br>Close</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='estPrice'}" (click)="onSortingClicked($event, 'estPrice')">Est<br>Price</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='DailyPctChg'}" (click)="onSortingClicked($event, 'DailyPctChg')">Chg%<br>Today</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='DailyPL'}" (click)="onSortingClicked($event, 'DailyPL')">P&L<br>Today</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='ProfLos'}"(click)="onSortingClicked($event, 'ProfLos')">P&L</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='MktVal'}"(click)="onSortingClicked($event, 'MktVal')">MktVal</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='EstUndPrice'}"(click)="onSortingClicked($event, 'EstUndPrice')">Est<br>UndPr</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='IbCompUndPr'}"(click)="onSortingClicked($event, 'IbCompUndPr')">IbComp<br>UndPr</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='IbCompDeltar'}"(click)="onSortingClicked($event, 'IbCompDeltar')">IbComp<br>Delta</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='DelivVal'}"(click)="onSortingClicked($event, 'DelivVal')">Deliv<br>Value</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='DltAdjDelivVal'}"(click)="onSortingClicked($event, 'DltAdjDelivVal')">DltAdj<br>DelivVal</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='gBeta'}"(click)="onSortingClicked($event, 'gBeta')">gBeta</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='gBetaDltAdj'}"(click)="onSortingClicked($event, 'gBetaDltAdj')">BetaDltAdj<br>MktOriVal</th>
+        <th [ngClass]="{'NormalTableHeader':sortColumn ==='Acc'}"(click)="onSortingClicked($event, 'Acc')">Acc</th>
     </thead>
     <tbody class = "selectedBrcAccSnapShotTbl">
     <tr *ngFor="let item of uiSnapPosItem">
-        <td [ngStyle]="{'font-weight': 'bold'}"><a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">{{item.symbol}}</a></td>
+        <td class="tooltipStck" [ngStyle]="{'font-weight': 'bold'}">
+            <span class="tooltipSnap">
+                <span class="snapshot">Name:
+                    {{item.name}} <br>
+                    <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">TV
+                        <!-- <svg width="36" height="28" viewBox="0 0 36 28" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M14 22H7V11H0V4h14v18zM28 22h-8l7.5-18h8L28 22z" fill="currentColor"></path>
+                            <circle cx="20" cy="8" r="4" fill="currentColor"></circle>
+                        </svg> -->
+                    </a>,
+                    <a href="https://finance.yahoo.com/quote/?symbol={{item.symbol}}" target="_blank"><img border='0' alt='YF' src='../assets/images/YF.webp' width='12' height='12'></a>,
+                    <a href="https://www.zacks.com/stock/quote/?symbol={{item.symbol}}" target="_blank"><img border='0' alt='Zacks' src='../assets/images/Zacks.webp' width='12' height='12'></a>,
+                    <a href="https://www.earningswhispers.com/tradeview/?symbol={{item.symbol}}" target="_blank"><img border='earningswhispers-BeforeEarnings' alt='YF' src='../assets/images/EW-BE.webp' width='12' height='12'></a>,
+                    <a href="https://www.earningswhispers.com/epsdetails/?symbol={{item.symbol}}" target="_blank"><img border='0' alt='earningswhispers-AfterEarnings' src='../assets/images/EW-AE.webp' width='12' height='12'></a>,
+                    <a href="https://www.tipranks.com/stocks/?symbol={{item.symbol}}" target="_blank"><img border='0' alt='TipRanks' src='../assets/images/TR.webp' width='12' height='12'></a>,
+                    <a href="https://stockcharts.com/h-sc/ui?s={{item.symbol}}" target="_blank"><img border='0' alt='stocksCharts' src='../assets/images/SC.webp' width='12' height='12'></a>
+                </span>
+            </span>
+            <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">
+                {{item.symbol}}
+            </a>
+        </td>
         <td></td>
         <td>{{item.pos | number}}</td>
         <td>{{item.avgCost | number:'1.1-2'}}</td>
