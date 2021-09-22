@@ -85,7 +85,7 @@ namespace SqCoreWeb.Controllers
             string[] futuresNextExps = resuRows[0].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
             string liveFuturesNextExp = futuresNextExps[0].Substring(1,3);
             string[] liveFuturesTime = resuRows[2].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
-            string liveFuturesDataTime = liveFuturesTime[0].Substring(1,8);
+            string liveFuturesDataTime = (liveFuturesTime[0].Length>3)?liveFuturesTime[0].Substring(1,8):"99:99:99";
 
             //Selecting data from live data string.
             
