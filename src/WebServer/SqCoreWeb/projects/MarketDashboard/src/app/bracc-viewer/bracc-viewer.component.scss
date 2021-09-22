@@ -70,7 +70,7 @@
 .ChartSumm{
   float: left;
   width: 75%;
-  padding: 15px 32px;
+  padding: 10px 5px 10px;
   border: 1px solid red;
   
 }
@@ -96,18 +96,18 @@
 ::ng-deep .line {
   fill:none;
   stroke: #ffab00;
-  stroke-width: 3;
+  stroke-width: 1.5;
 }
 ::ng-deep .line1 {
   fill:none;
   stroke: #00ffff;
   stroke-width: 3;
 }
-#chartNav .chart {
-  width: 500;
-  height: 600;
-  margin: 20px 25px;
-}
+// #chartNav .chart {
+//   width: 500;
+//   height: 600;
+//   margin: 20px 25px;
+// }
 .selectedTempDebug{
   word-wrap: break-word;
   width: 100%;
@@ -123,14 +123,15 @@
   color: red;
   font-weight: bold;
 }
-svg {
-  transform: translate(50px, 30px);
-  // width: 80%;
-  // height: 80%;
-     width: 80%;
-     height: 95%;
+// svg {
+//   transform: translate(50px, 30px);
+//   // width: 80%;
+//   // height: 80%;
+//      width: 80%;
+//      height: 95%;
+//     //  padding: 0%;
 
- }
+//  }
 //  ::ng-deep .mat-tab-list .mat-tab-labels .mat-tab-label-active {
 //   color:blue;
 //   // font-size: medium;
@@ -165,6 +166,11 @@ svg {
 .sections{
   border-right: 0.5px solid blue;
   padding-left: 20px ;
+}
+// remove border od section 3
+#borderRemove{
+  border-right: none;
+  // padding-left: 20px ;
 }
 // tooltip maxRisked ngClass
 .red {
@@ -214,64 +220,64 @@ svg {
   display: inline-block;
 }
 // Tooltip posotioning for the stock postions 
-  .tooltipStck {
-    position: relative;
-    cursor: help;
-  }
+.tooltipStck {
+  position: relative;
+  cursor: help;
+}
   
-  .tooltipStck .tooltipSnap {
-    padding:0.3rem;
-    font-size: 0.8rem;
-    font-weight: normal;
-    display: none;
-    background:rgb(210, 252, 176);
-    border: 0.1rem solid rgb(19, 7, 177);
-    color: rgb(6, 8, 153);
-    text-align: left;
-    border-radius: 1rem;
-    position: absolute;
-    z-index: 100;
-    white-space: pre;
-    opacity: 0.87;
-  }
-  
-  .tooltipStck .tooltipSnap .snapshot{
-    font-weight: bold;
-  }
-  
-  .tooltipStck .tooltipSnap .smallTT{
-    font-size: 0.2rem;
-  }
-  
-  .tooltipStck:hover .tooltipSnap {
-    display: inline-block;
-    top: -15%;
-    left: 100%;
-    transform: translateX(-15%);
-    margin-top: -10px;
-  }
+.tooltipStck .tooltipSnap {
+  padding:0.3rem;
+  font-size: 0.8rem;
+  font-weight: normal;
+  display: none;
+  background:rgb(210, 252, 176);
+  border: 0.1rem solid rgb(19, 7, 177);
+  color: rgb(6, 8, 153);
+  text-align: left;
+  border-radius: 1rem;
+  position: absolute;
+  z-index: 100;
+  white-space: pre;
+  opacity: 0.87;
+}
+
+.tooltipStck .tooltipSnap .snapshot{
+  font-weight: bold;
+}
+
+.tooltipStck .tooltipSnap .smallTT{
+  font-size: 0.2rem;
+}
+
+.tooltipStck:hover .tooltipSnap {
+  display: inline-block;
+  top: -15%;
+  left: 150%;
+  transform: translateX(-15%);
+  margin-top: -10px;
+}
 table, td, thead, th {
-    border: 1px solid #9cd3db;;
-    border-collapse: collapse;
-    padding: 2px 10px;
-    text-align: center;
-    white-space: nowrap;
-    font-family: 16px 'Times New Roman';
-    border-color: #9cd3db;;
-    // background-color: #fff;
-    box-shadow: 0 0 7rem rgb(48 138 255 / 60%), 
-                0 0.5rem 2rem rgb(48 138 255 / 60%), 
-                0 0.2rem 2rem rgb(48 138 255  /60%),
-                inset 0 0.1rem #fff,
-                inset 0 -0.1rem #fff;
-    color: #000;
-    
+  border: 1px solid #9cd3db;;
+  border-collapse: collapse;
+  padding: 2px 10px;
+  text-align: center;
+  white-space: nowrap;
+  font-family: 16px 'Times New Roman';
+  border-color: #9cd3db;;
+  // background-color: #fff;
+  box-shadow: 0 0 7rem rgb(48 138 255 / 60%), 
+              0 0.5rem 2rem rgb(48 138 255 / 60%), 
+              0 0.2rem 2rem rgb(48 138 255  /60%),
+              inset 0 0.1rem #fff,
+              inset 0 -0.1rem #fff;
+  color: #000;
+  
 }
 thead {
   font-weight: bold;
   cursor: pointer;
   background-image: linear-gradient(
-90deg,#3080c7 5%,#5b9dd7 10%,#d5f5f6 30%,#d5f5f6 70%,#ace16b 90%,#91d73a 95%);
+  90deg,#3080c7 5%,#5b9dd7 10%,#d5f5f6 30%,#d5f5f6 70%,#ace16b 90%,#91d73a 95%);
   opacity: 0.8;
 }
 thead :hover {

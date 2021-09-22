@@ -4,19 +4,10 @@ BrAcc:
         <option *ngFor="let item of uiNavSel" [value]="item">{{item}}</option>
     </select>
 </span>
-<!-- <span class="selectedNavBraccCl" (click)=onSelectedNavClicked($event)>{{selectedNav}}&#x25bc;
-    <span class="navSelectionPopupBraccCl" id="braccViewerNavSelectionPopupId" (click)=onNavSelectionPopupClicked($event)>
-        NAVs:
-        <select  id="braccViewerNavSelect" (change)="onNavSelectChange($event)">
-        </select>
-        </span>
-</span> -->
-<!-- <select  id="braccViewerNavSelectAngular" selected = {{navSelectionSelected}} (change)="onNavSelectChangeAngular($event)">
-</select> -->
 MarketBar
 <span>
     <span *ngFor="let item of uiMktBar"> 
-        <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}">{{item.symbol}}</a>: 
+        <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">{{item.symbol}}</a>: 
         <span [ngClass]="{
             'mktBarPositivePerf' : item.pctChg > 0,
             'mktbarNegativePerf' : item.pctChg < 0
@@ -85,13 +76,13 @@ MarketBar
                     <div>Call Option Delta Adjusted DelivValue: <span id="plSum"></span></div>
                     <div>Put Option Delta Adjusted DelivValue: <span id="plSum"></span></div>
                 </div>
-                <div class="sections">
+                <div class="sections" id="borderRemove">
                     <div class="tooltipCell">Max Risked estimate:
                         <span id="plSum"
                         [ngClass]="{'green' : uiSnapTab.totalMaxRiskedLeverage < 1.3,
                                     'orange': uiSnapTab.totalMaxRiskedLeverage >= 1.3 || uiSnapTab.totalMaxRiskedLeverage <=1.5,
                                     'red' : uiSnapTab.totalMaxRiskedLeverage > 1.5}"> 
-                            Leverage <b>{{uiSnapTab.totalMaxRiskedLeverage | number :'1.1-2'}}</b>*
+                            (Leverage <b>{{uiSnapTab.totalMaxRiskedLeverage | number :'1.1-2'}})</b>*
                          </span>
                         <div class="tooltipSnap">
                             <div class="snapshot">
@@ -107,11 +98,12 @@ MarketBar
                     <div class="tooltipCell">Delta Adjusted Bullish/<br>Bearish Market Orientation:
                         <div class="tooltipSnap">
                             <div class="snapshot">
-                                LongStock - ShortStock + dAdj.CallOption - dAdj.PutOption
+                                LongStock - ShortStock + dAdj.CallOption <br>
+                                 - dAdj.PutOption
                             </div>
                         </div>
                     </div>
-                    <div class="tooltipCell">Beta Delta Adjusted Bullish/Bearish Market Orientation :
+                    <div class="tooltipCell">Beta Delta Adjusted Bullish/<br>Bearish Market Orientation :
                         <div class="tooltipSnap">
                             <div class="snapshot">
                                 approx. mkt exposure sum
@@ -122,8 +114,9 @@ MarketBar
             </div>
             <div [hidden]="tabPageVisibleIdx == 1" id="tab2">
                 <div>
-                    <svg id ="chartNav" viewBox="30 0 960 600"
-                        preserveAspectRatio="xMidYMid meet">
+                    <svg 
+                        style="border: solid 1px blue" 
+                        id ="chartNav" viewBox="20 0 780 480"  preserveAspectRatio="xMidYMid meet">
                     </svg>
                     <div>
                         <select [(ngModel)] = "yrSelectionSelected">
@@ -142,7 +135,6 @@ MarketBar
 </span>
 </div>
 <br>
-
 <hr>
 <table class = "selectedBrcAccSnapShotTbl">
     <thead class = "selectedBrcAccSnapShotTbl">
@@ -171,18 +163,24 @@ MarketBar
             <span class="tooltipSnap">
                 <span class="snapshot">Name:
                     {{item.name}} <br>
-                    <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">TV
-                        <!-- <svg width="36" height="28" viewBox="0 0 36 28" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M14 22H7V11H0V4h14v18zM28 22h-8l7.5-18h8L28 22z" fill="currentColor"></path>
-                            <circle cx="20" cy="8" r="4" fill="currentColor"></circle>
-                        </svg> -->
-                    </a>,
-                    <a href="https://finance.yahoo.com/quote/?symbol={{item.symbol}}" target="_blank"><img border='0' alt='YF' src='../assets/images/YF.webp' width='12' height='12'></a>,
-                    <a href="https://www.zacks.com/stock/quote/?symbol={{item.symbol}}" target="_blank"><img border='0' alt='Zacks' src='../assets/images/Zacks.webp' width='12' height='12'></a>,
-                    <a href="https://www.earningswhispers.com/tradeview/?symbol={{item.symbol}}" target="_blank"><img border='earningswhispers-BeforeEarnings' alt='YF' src='../assets/images/EW-BE.webp' width='12' height='12'></a>,
-                    <a href="https://www.earningswhispers.com/epsdetails/?symbol={{item.symbol}}" target="_blank"><img border='0' alt='earningswhispers-AfterEarnings' src='../assets/images/EW-AE.webp' width='12' height='12'></a>,
-                    <a href="https://www.tipranks.com/stocks/?symbol={{item.symbol}}" target="_blank"><img border='0' alt='TipRanks' src='../assets/images/TR.webp' width='12' height='12'></a>,
-                    <a href="https://stockcharts.com/h-sc/ui?s={{item.symbol}}" target="_blank"><img border='0' alt='stocksCharts' src='../assets/images/SC.webp' width='12' height='12'></a>
+                    <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">
+                        <!-- <img border='0' alt='YF' src='../assets/images/TV.webp' width='18' height='18'> -->
+                        <svg width="28" height="22" viewBox="0 0 28 22" xmlns="http://www.w3.org/2000/svg" >
+                            <path d="M 12 20 H 7 V 11 H 0 V 4 h 12 v 16 z 
+                                     M 24 20 h-8 l 7.5-18 h 8 L 22 20 z" fill="currentColor">
+                            </path>
+                            <circle cx="16.5" cy="7" r="4" fill="currentColor"/>
+                        </svg>
+                    </a>, 
+                    <a href="https://finance.yahoo.com/quote/{{item.symbol}}" target="_blank"><img border='0' alt='YF' src='../assets/images/YF.webp' width='20' height='20'></a>,
+                    <a href="https://www.zacks.com/stock/quote/{{item.symbol}}" target="_blank"><img border='0' alt='Zacks' src='../assets/images/Zacks.webp' width='20' height='20'></a>,
+                    <a href="https://www.earningswhispers.com/stocks/{{item.symbol}}" target="_blank"><img border='earningswhispers-BeforeEarnings' alt='YF' src='../assets/images/EW-BE.webp' width='20' height='20'></a>,
+                    <a href="https://www.earningswhispers.com/stocks/{{item.symbol}}" target="_blank"><img border='0' alt='earningswhispers-AfterEarnings' src='../assets/images/EW-AE.webp' width='20' height='20'></a>,
+                    <a href="https://www.tipranks.com/stocks/{{item.symbol}}/forecast" target="_blank"><img border='0' alt='TipRanks' src='../assets/images/TR.webp' width='20' height='20'></a>,
+                    <a href="https://stockcharts.com/h-sc/ui?s={{item.symbol}}" target="_blank"><img border='0' alt='stocksCharts' src='../assets/images/SC.webp' width='20' height='20'></a> <br>
+                    <svg style="border: solid 1px blue">
+                        <rect x = 10 y =10 width = 20 height = 20></rect>
+                    </svg>
                 </span>
             </span>
             <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">
@@ -243,7 +241,7 @@ BrAccountSnapshot: <br> <span>{{ brAccountSnapshotStr }}</span>
     </select>
     <p>{{"Selected: " + yrSelectionSelected}}</p>
     <div *ngFor="let item of brAccHistStatVal">
-        AssetID : {{item.assetId}}, periodStartDate {{item.periodStartDate}}, 
-        periodEndDate {{item.periodEndDate}}
+        AssetID : {{item.assetId}}, periodStartDate: {{item.periodStartDate}}, 
+        periodEndDate: {{item.periodEndDate}} , realTimeReturn: {{item.rtReturn}}
     </div>
 </div>

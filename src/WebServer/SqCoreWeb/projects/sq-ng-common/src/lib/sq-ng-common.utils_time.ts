@@ -32,6 +32,10 @@ export class SqNgCommonUtilsTime implements OnInit {
     return dateEt;
   }
 
+  public static ConvertDateUtcToLoc(utcDate: Date) {
+    // TODO
+  }
+
   // https://stackoverflow.com/questions/948532/how-do-you-convert-a-javascript-date-to-utc    "a method I've been using many times. function convertDateToUTC(date) {..."
   public static ConvertDateLocToEt(locDate: Date) {
     const dateUtc = new Date(locDate.getUTCFullYear(), locDate.getUTCMonth(), locDate.getUTCDate(), locDate.getUTCHours(), locDate.getUTCMinutes());
