@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using System.Globalization;
 using BrokerCommon;
 
+// MemDb Init Flowchart: https://docs.google.com/document/d/1fwW7u4IvMIFNwx_l1YI8vop0bJ1Cl0bAPETGC-FIvxs
+
 namespace FinTechCommon
 {
     // the pure data MemData class has 2 purposes:
@@ -108,10 +110,10 @@ namespace FinTechCommon
         public void Init(Db p_db)
         {
             m_Db = p_db;
-            Utils.RunInNewThread(() => Init_WT());
+            Utils.RunInNewThread(ignored => Init_WT());
         }
 
-        async Task Init_WT()    // WT : WorkThread
+        async void Init_WT()    // WT : WorkThread
         {
             // Better to do long consuming data preprocess in working thread than in the constructor in the main thread
             Thread.CurrentThread.Name = "MemDb.Init_WT Thread";
@@ -123,7 +125,7 @@ namespace FinTechCommon
             await ReloadDbDataIfChangedAndSetNewTimer();  // Polling for changes every 1 hour. Downloads the AllAssets, SqCoreWeb-used-Assets from Redis Db, and even HistData 
 
             IsInitialized = true;
-            EvFirstInitialized?.Invoke();    // inform observers that MemDb was reloaded
+            EvFirstInitialized?.Invoke();    // inform observers that MemDb was reloaded. Invoke() uses the same thread, BeginInvoke() uses ThreadPool threads
 
             // User updates only the JSON text version of data (assets, OptionPrices in either Redis or in SqlDb). But we use the Redis's Brotli version for faster DB access.
             // Thread.Sleep(TimeSpan.FromSeconds(20));     // can start it in a separate thread, but it is fine to use this background thread
@@ -250,7 +252,19 @@ namespace FinTechCommon
 
             FillAllAssetsPriorCloseAndLastPrice(newAssetCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
 
-            if (IsInitialized)
+            if (!IsInitialized)
+            {
+                // if this is the first time to load DB from Redis, then we don't demand HistData. Assume HistData crawling takes 20min
+                // many clients can survive without historical data first. MarketDashboard. However, they need Asset and User data immediately.
+                // BrAccInfo is fine wihout historical. It will send NaN as a PriorClose. Fine. Client will handle it.
+                // So, we don't need to wait for Historical to finish InitDb (that might take 20 minutes in the future).
+                // !!! Also, in development, we don't want to wait until All HistData arrives, but start Debugging code right away after starting the WebServer.
+                // Clients of MemDb should handle properly if HistData is not yet ready (NaN and later Refresh).
+                var newMemData = new MemData(newUsers!, newAssetCache, new CompactFinTimeSeries<DateOnly, uint, float, uint>());
+                m_memData = newMemData; // swap pointer in atomic operation
+                Console.WriteLine($"*MemDb is half-ready! (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: 0)");
+            }
+            else
             {
                 // if this is the periodic (not initial) reload of RedisDb, then we don't surprise clients by emptying HistPrices 
                 // and not having HistPrices for 20minutes. So, we download HistPrices before swapping m_memData pointer
@@ -264,18 +278,6 @@ namespace FinTechCommon
                 var newMemData = new MemData(newUsers!, newAssetCache, newDailyHist);
                 m_memData = newMemData; // swap pointer in atomic operation
                 Console.WriteLine($"*MemDb is ready! (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {DailyHist.GetDataDirect().Data.Count}) in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
-            }
-            else
-            {
-                // if this is the first time to load DB from Redis, then we don't demand HistData. Assume HistData crawling takes 20min
-                // many clients can survive without historical data first. MarketDashboard. However, they need Asset and User data immediately.
-                // BrAccInfo is fine wihout historical. It will send NaN as a PriorClose. Fine. Client will handle it.
-                // So, we don't need to wait for Historical to finish InitDb (that might take 20 minutes in the future).
-                // !!! Also, in development, we don't want to wait until All HistData arrives, but start Debugging code right away after starting the WebServer.
-                // Clients of MemDb should handle properly if HistData is not yet ready (NaN and later Refresh).
-                var newMemData = new MemData(newUsers!, newAssetCache, new CompactFinTimeSeries<DateOnly, uint, float, uint>());
-                m_memData = newMemData; // swap pointer in atomic operation
-                Console.WriteLine($"*MemDb is half-ready! (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: 0)");
             }
 
             m_lastDbReload = DateTime.UtcNow;

@@ -80,7 +80,7 @@ namespace SqCommon
                 while (true)
                 {
                     var packet = m_tcpClientQueue.Take(); //this blocks if there are no items in the queue.
-                    ThreadPool.QueueUserWorkItem(state =>
+                    ThreadPool.QueueUserWorkItem(state =>   // FireAndForget: QueueUserWorkItem [26microsec] is 25% faster than Task.Run [35microsec]
                     {
                         try
                         {

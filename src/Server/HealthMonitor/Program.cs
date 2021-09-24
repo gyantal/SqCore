@@ -229,10 +229,10 @@ namespace HealthMonitor
 
             // https://stackoverflow.com/questions/17996738/how-to-make-c-sharp-application-crash
             // All the others can be handled by the top level ApplicationDomain.OnUnhandledException and the like.
-            ThreadPool.QueueUserWorkItem(new WaitCallback(ignored =>
+            ThreadPool.QueueUserWorkItem(ignored =>
             {
                 throw new Exception();
-            }));
+            });
 
         }
     }

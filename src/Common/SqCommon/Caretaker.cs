@@ -32,7 +32,7 @@ namespace SqCommon
             m_serviceSupervisorsEmail = p_serviceSupervisorsEmail;
             m_needDailyMaintenance = p_needDailyMaintenance;
             m_dailyMaintenanceFromMidnightET = p_dailyMaintenanceFromMidnightET;
-            ThreadPool.QueueUserWorkItem(Init_WT);
+            Utils.RunInNewThread(Init_WT);
         }
 
         void Init_WT(object? p_state)    // WT : WorkThread

@@ -34,10 +34,17 @@ namespace SqCommon
 
         // run async method in a separate thread and return immediately (in FireAndForget way)
         // Execution in calling thread will continue immedietaly. Even the first instruction of FuncAsync() will be in a separate ThreadPool thread.
-        public static void RunInNewThread(Func<Task?> function)
+        // QueueUserWorkItem is preferred. QueueUserWorkItem [26microsec] is 25% faster than Task.Run [35microsec]. see "Task.Run vs ThreadPool.QueueUserWorkItem.txt"
+        // However, use this RunInNewThread() wrapper, in case  in the future Task.Run() becomes better or faster, we might switch to that implementation.
+        // In rare rare case we have to Wait for completion (Not FireAndForget way), we should use Task.Run instead of ThreadPool.QueueUserWorkItem
+        public static void RunInNewThread(WaitCallback function)
         {
-            // task is called without await, so it doesn't wait; it will run parallel. 
-            Task.Run(function);  // Task.Run will start something in a new thread pool thread and we don't wait it.
+            ThreadPool.QueueUserWorkItem(function); // FireAndForget: QueueUserWorkItem [26microsec] is 25% faster than Task.Run [35microsec]
+        }
+
+        public static void RunInNewThread(WaitCallback function, object? state)
+        {
+            ThreadPool.QueueUserWorkItem(function, state); // FireAndForget: QueueUserWorkItem [26microsec] is 25% faster than Task.Run [35microsec]
         }
 
         // https://stackoverflow.com/questions/22629951/suppressing-warning-cs4014-because-this-call-is-not-awaited-execution-of-the

@@ -14,7 +14,7 @@ namespace SqCoreWeb
         {
             // m_webSocket = webSocket;
 
-            _ = Task.Run(async () => // do CPU-bound work on a background thread.  '_' is a discard variable in C# 7.0
+            _ = Task.Run(async () => // need async, so use Task.Run, instead of ThreadPool.QueueUserWorkItem, do CPU-bound work on a background thread.  '_' is a discard variable in C# 7.0
             {
                 byte[] encodedMsg = Encoding.UTF8.GetBytes("msgCode0:" + "OnConnectedAsync() was triggered on server.");
                 if (webSocket!.State == WebSocketState.Open) // https://stackoverflow.com/questions/14903887/warning-this-call-is-not-awaited-execution-of-the-current-method-continues
@@ -42,7 +42,7 @@ namespace SqCoreWeb
 
             if (msgCode == "startStreamingCode")
             {
-                _ = Task.Run(async () => // do CPU-bound work on a ThreadPool background thread.  '_' is a discard variable in C# 7.0
+                _ = Task.Run(async () => // need async, so use Task.Run, instead of ThreadPool.QueueUserWorkItem, do CPU-bound work on a ThreadPool background thread.  '_' is a discard variable in C# 7.0
                 {
                     for (int i = 0; i < 15; i++)
                     {

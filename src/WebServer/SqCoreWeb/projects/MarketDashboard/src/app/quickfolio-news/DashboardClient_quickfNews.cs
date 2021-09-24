@@ -24,7 +24,7 @@ namespace SqCoreWeb
 
         public void OnConnectedWsAsync_QckflNews(bool p_isThisActiveToolAtConnectionInit)
         {
-            Task.Run(() => // running parallel on a ThreadPool thread
+            Utils.RunInNewThread(ignored => // running parallel on a ThreadPool thread, FireAndForget: QueueUserWorkItem [26microsec] is 25% faster than Task.Run [35microsec]
             {
                 Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
 
