@@ -19,10 +19,16 @@ namespace FinTechCommon
 
         uint m_nNavDownload = 0;
 
-        void InitNavRt_WT()    // WT : WorkThread
+        void InitAndScheduleNavRtTimers()
         {
             m_highNavFreqParam.Timer = new System.Threading.Timer(new TimerCallback(RtNavTimer_Elapsed), m_highNavFreqParam, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
             m_lowNavFreqParam.Timer = new System.Threading.Timer(new TimerCallback(RtNavTimer_Elapsed), m_lowNavFreqParam, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
+
+            m_highNavFreqParam.Assets = new Asset[0];
+            m_lowNavFreqParam.Assets = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV && !((r as BrokerNav)!.IsAggregatedNav) && !m_highNavFreqParam.Assets.Contains(r)).ToArray()!;
+
+            ScheduleTimerRt(m_highNavFreqParam);
+            ScheduleTimerRt(m_lowNavFreqParam);
         }
 
         public void ServerDiagnosticNavRealtime(StringBuilder p_sb)
@@ -57,7 +63,7 @@ namespace FinTechCommon
             {
                 Utils.Logger.Error(e, $"MemDbRt.RtNavTimer_Elapsed({freqParam.RtFreq}) exception.");
             }
-            SetTimerRt(freqParam);
+            ScheduleTimerRt(freqParam);
             Utils.Logger.Info($"MemDbRt.RtNavTimer_Elapsed({freqParam.RtFreq}). END");
         }
         private void UpdateNavRt(RtFreqParam p_freqParam)

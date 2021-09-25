@@ -8,6 +8,7 @@ using YahooFinanceApi;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Text;
+using System.Threading;
 
 namespace FinTechCommon
 {
@@ -35,6 +36,16 @@ namespace FinTechCommon
     // But until the whole YF data download takes 5 minutes, this separation of the last day is not necessary.
     public partial class MemDb
     {
+        Timer m_historicalDataReloadTimer; // forced reload In ET time zone: 4:00ET, 9:00ET, 16:30ET.
+        DateTime m_lastHistoricalDataReload = DateTime.MinValue; // UTC
+        TimeSpan m_lastHistoricalDataReloadTs;  // YF downloads. For 12 stocks, it is 3sec. so for 120 stocks 30sec, for 600 stocks 2.5min, for 1200 stocks 5min
+ 
+        void InitAndScheduleHistoricalTimer()
+        {
+            m_historicalDataReloadTimer = new System.Threading.Timer(new TimerCallback(ReloadHistoricalDataTimer_Elapsed), this, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
+            SetNextReloadHistDataTriggerTime();
+        }
+
         public async void ReloadHistoricalDataTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
         {
             if (p_state == null)
@@ -43,7 +54,7 @@ namespace FinTechCommon
             await ((MemDb)p_state).ReloadHistDataAndSetNewTimer();
         }
 
-        public async Task<StringBuilder> ReloadHistData(bool p_isHtml)  // print log to Console or HTML
+        public async Task<StringBuilder> ForceReloadHistData(bool p_isHtml)  // print log to Console or HTML
         {
             StringBuilder sb = new StringBuilder();
             await ReloadHistDataAndSetNewTimer();
@@ -57,14 +68,7 @@ namespace FinTechCommon
             m_memDataWlocks.m_dailyHistWlock.Wait();    // if whole DbReload is happening at the same time or some other service modifies histData, wait until that is finished.
             try
             {
-                DateTime startTime = DateTime.UtcNow;
-                var newDailyHist = await CreateDailyHist(m_Db, Users, AssetsCache);
-                if (newDailyHist != null)
-                    m_memData.DailyHist = newDailyHist;  // swap pointer in atomic operation
-                m_lastHistoricalDataReload = DateTime.UtcNow;
-                m_lastHistoricalDataReloadTs = DateTime.UtcNow - startTime;
-                Console.WriteLine($"MemDb.ReloadHistData (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {newDailyHist?.GetDataDirect().Data.Count ?? 0}) in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
-                EvHistoricalDataReloaded?.Invoke();
+                await ReloadMemDbHistData(true);    // calls EvOnlyHistoricalDataReloaded.Invoke()
             }
             finally
             {
@@ -73,13 +77,38 @@ namespace FinTechCommon
             SetNextReloadHistDataTriggerTime();
         }
 
+        public async Task ReloadMemDbHistData(bool p_informEventObservers)
+        {
+            var newDailyHist = await CreateDailyHistWrapper();
+            // if we reloadHist routinely in every 2 hours (or at Init()) and it fails, we keep the currently good history in MemDb. 
+            // However, if it was a forced ReloadRedisDb, because assets changed Assets, then we throw away old history, even if download fails. But that is handled separately in ReloadDbDataIfChangedImpl()
+            if (newDailyHist == null)
+                return;
+
+            m_memData.DailyHist = newDailyHist;  // swap pointer in atomic operation
+            if (p_informEventObservers)
+                EvOnlyHistoricalDataReloaded?.Invoke();
+        }
+
+        public async Task<CompactFinTimeSeries<DateOnly, uint, float, uint>?> CreateDailyHistWrapper()  // Create hist, but don't yet overwrite m_memData.DailyHist
+        {
+            DateTime startTime = DateTime.UtcNow;
+
+            var newDailyHist = await CreateDailyHist(m_Db, Users, AssetsCache);
+            
+            m_lastHistoricalDataReload = DateTime.UtcNow;
+            m_lastHistoricalDataReloadTs = DateTime.UtcNow - startTime;
+            Console.WriteLine($"CreateDailyHist() finished (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {newDailyHist?.GetDataDirect().Data.Count ?? 0}) in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
+            return newDailyHist;
+        }
+
+
         // Polling for changes 3x every day
         // historical data can partially come from our Redis-Sql DB or partially from YF
         static async Task<CompactFinTimeSeries<DateOnly, uint, float, uint>?> CreateDailyHist(Db p_db, User[] p_users, AssetsCache p_assetCache)
         {
-            Utils.Logger.Info("ReloadHistoricalDataAndSetTimer() START");
-            Console.Write("*MemDb.DailyHist Download from YF: ");
-            DateTime etNow = DateTime.UtcNow.FromUtcToEt();
+            Utils.Logger.Info("CreateDailyHist() START");
+            Console.WriteLine("*MemDb.DailyHist Download from YF starts.");
             try
             {
                 Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits = await GetPotentianMissingYfSplits(p_db, p_assetCache);
@@ -97,6 +126,7 @@ namespace FinTechCommon
                         Debug.Write($"{asset.SqTicker}, first: DateTime: {dates.First()}, Close: {adjCloses.First()}, last: DateTime: {dates.Last()}, Close: {adjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
                     }
                 }
+                Console.WriteLine();    // after the last ticker, write an Enter.
 
                 // NAV assets should be grouped by user, because we create a synthetic new aggregatedNAV. This aggregate should add up the RAW UnadjustedNAV (not adding up the adjustedNAV), so we have to create it at MemDbReload.
                 var navAssets = p_assetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV).Select(r => (BrokerNav)r);

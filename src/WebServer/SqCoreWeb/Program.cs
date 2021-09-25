@@ -191,7 +191,7 @@ namespace SqCoreWeb
                     SqTaskScheduler.gTaskScheduler.TestElapseTrigger("WebsitesMonitor", 0);
                     break;
                 case "6":
-                    Console.WriteLine((await MemDb.gMemDb.ReloadHistData(false)).ToString());
+                    Console.WriteLine((await MemDb.gMemDb.ForceReloadHistData(false)).ToString());
                     break;
                 case "7":
                     Console.WriteLine((await MemDb.gMemDb.ReloadDbDataIfChanged(false)).ToString());

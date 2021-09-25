@@ -79,7 +79,7 @@ namespace SqCoreWeb.Controllers
         public async Task<ActionResult> MemDbReloadHistData()
         {
             StringBuilder sb = new StringBuilder(@"<HTML><body><h1>MemDb: Force Reload Only Historical Data and Set New Timer</h1>");
-            StringBuilder memDbSb = await MemDb.gMemDb.ReloadHistData(true);
+            StringBuilder memDbSb = await MemDb.gMemDb.ForceReloadHistData(true);
             return Content(sb.Append(memDbSb).Append("</body></HTML>").ToString(), "text/html");
         }
 

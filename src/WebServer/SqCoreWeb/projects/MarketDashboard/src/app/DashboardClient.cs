@@ -38,21 +38,26 @@ namespace SqCoreWeb
         }
         public static void PreInit()
         {
-            MemDb.gMemDb.EvDbDataReloaded += new MemDb.MemDbEventHandler(EvMemDbAssetDataReloaded);
-            MemDb.gMemDb.EvHistoricalDataReloaded += new MemDb.MemDbEventHandler(EvMemDbHistoricalDataReloaded);
+            MemDb.gMemDb.EvMemDbInitNoHistoryYet += new MemDb.MemDbEventHandler(OnEvMemDbInitNoHistoryYet);
+            MemDb.gMemDb.EvFullMemDbDataReloaded += new MemDb.MemDbEventHandler(OnEvFullMemDbDataReloaded);
+            MemDb.gMemDb.EvOnlyHistoricalDataReloaded += new MemDb.MemDbEventHandler(OnEvMemDbHistoricalDataReloaded);
         }
 
-        static void EvMemDbAssetDataReloaded()
+        static void OnEvMemDbInitNoHistoryYet()
+        {
+            // TODO
+        }
+
+        static void OnEvFullMemDbDataReloaded()
         {
             DashboardClient.g_clients.ForEach(client =>   // Notify all the connected clients.
             {
                 client.EvMemDbAssetDataReloaded_MktHealth();
                 client.EvMemDbAssetDataReloaded_BrAccViewer();
             });
-            
         }
 
-        static void EvMemDbHistoricalDataReloaded()
+        static void OnEvMemDbHistoricalDataReloaded()
         {
             DashboardClient.g_clients.ForEach(client =>   // Notify all the connected clients.
             {

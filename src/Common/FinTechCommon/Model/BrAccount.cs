@@ -10,6 +10,8 @@ namespace FinTechCommon
     public class BrAccount
     {
         public GatewayId GatewayId { get; set; } = GatewayId.Unknown;
+
+        public BrokerNav? NavAsset { get; set; } = null;    // so, we can fill RT price in NavAsset.LastValue
         public DateTime LastUpdate { get; set; } = DateTime.MinValue;
 
         public double NetLiquidation { get; set; } = double.NaN;    // NAV is updated realtime, but at LastUpdate timestamp these are the valid values of GrossPosValue, etc.

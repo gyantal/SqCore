@@ -7,8 +7,9 @@ using SqCommon;
 using System.Threading.Tasks;
 using System.Globalization;
 using BrokerCommon;
+using IBApi;
 
-// MemDb Init Flowchart: https://docs.google.com/document/d/1fwW7u4IvMIFNwx_l1YI8vop0bJ1Cl0bAPETGC-FIvxs
+// MemDb.Init() Flowchart: https://docs.google.com/document/d/1fwW7u4IvMIFNwx_l1YI8vop0bJ1Cl0bAPETGC-FIvxs
 
 namespace FinTechCommon
 {
@@ -87,18 +88,22 @@ namespace FinTechCommon
         public bool IsInitialized { get; set; } = false;
 
         Timer m_dbReloadTimer;  // checks every 1 hour, but reloads RAM only if Db data change is detected.
-        DateTime m_lastDbReload = DateTime.MinValue; // UTC
-        TimeSpan m_lastDbReloadTs;  // RedisDb reload: 2-3 tables: 0.2sec, It is about 100ms per table.
-        Timer m_historicalDataReloadTimer; // forced reload In ET time zone: 4:00ET, 9:00ET, 16:30ET. 
-        DateTime m_lastHistoricalDataReload = DateTime.MinValue; // UTC
-        TimeSpan m_lastHistoricalDataReloadTs;  // YF downloads. For 12 stocks, it is 3sec. so for 120 stocks 30sec, for 600 stocks 2.5min, for 1200 stocks 5min
- 
+
+        DateTime m_lastRedisReload = DateTime.MinValue; // UTC
+        TimeSpan m_lastRedisReloadTs;  // RedisDb reload: 2-3 tables: 0.2sec, It is about 100ms per table.
+        DateTime m_lastFullMemDbReload = DateTime.MinValue; // UTC
+        TimeSpan m_lastFullMemDbReloadTs;
+
         public List<BrAccount> BrAccounts{ get; set; } = new List<BrAccount>();   // only Broker dependent data. When AssetCache is reloaded from RedisDb, this should not be wiped or reloaded
 
         public delegate void MemDbEventHandler();
-        public event MemDbEventHandler? EvFirstInitialized = null;     // it can be ReInitialized in every 1 hour because of Database polling
-        public event MemDbEventHandler? EvDbDataReloaded = null;
-        public event MemDbEventHandler? EvHistoricalDataReloaded = null;
+        // Don't send too granual (separate EvAssetReloaded, EvBrokerDataReloaded) events to observers, because they will be confused.
+        // These 2 broad categories are enough: Full MemDbReload (happened because Assets changed in RedisDb), and 3-4 times a day HistoricalData reload, which should be periodic as clients should know when PreviousClose prices change.
+        // Observers will be confused to receive many messages. 
+        // Just use 3 events: EvMemDbDataReloadedNoHistoryYet, EvFullMemDbDataReloaded, and EvOnlyHistoricalDataReloaded
+        public event MemDbEventHandler? EvMemDbInitNoHistoryYet = null;
+        public event MemDbEventHandler? EvFullMemDbDataReloaded = null;
+        public event MemDbEventHandler? EvOnlyHistoricalDataReloaded = null;
 
 
 #pragma warning disable CS8618 // Non-nullable field 'm_assetDataReloadTimer' is uninitialized.
@@ -110,29 +115,97 @@ namespace FinTechCommon
         public void Init(Db p_db)
         {
             m_Db = p_db;
-            Utils.RunInNewThread(ignored => Init_WT());
+            Utils.RunInNewThread(ignored => Init_WT()); // Better to do long consuming data preprocess in working thread than in the main thread, so other services can start to initialize in parallel
         }
 
+        // MemDb.Init() Flowchart: https://docs.google.com/document/d/1fwW7u4IvMIFNwx_l1YI8vop0bJ1Cl0bAPETGC-FIvxs
         async void Init_WT()    // WT : WorkThread
         {
-            // Better to do long consuming data preprocess in working thread than in the constructor in the main thread
             Thread.CurrentThread.Name = "MemDb.Init_WT Thread";
-            m_dbReloadTimer = new System.Threading.Timer(new TimerCallback(ReloadDbDataTimer_Elapsed), this, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
-            m_historicalDataReloadTimer = new System.Threading.Timer(new TimerCallback(ReloadHistoricalDataTimer_Elapsed), this, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
-            InitRt_WT();
-            InitNavRt_WT();
+            Console.WriteLine("*MemDb is not yet ready! ReloadDbData is in progress...");
+            DateTime startTime = DateTime.UtcNow;
 
-            await ReloadDbDataIfChangedAndSetNewTimer();  // Polling for changes every 1 hour. Downloads the AllAssets, SqCoreWeb-used-Assets from Redis Db, and even HistData 
+            // Step 1: Redis Assets, Users
+            // GA.IM.NAV assets have user_id data, so User data has to be reloaded too before Assets
+            (bool isDbReloadNeeded, User[]? newUsers, List<Asset>? newAssets) = m_Db.GetDataIfReloadNeeded();    // isDbReloadNeeded can be ignored as it is surely true at Init()
+            var newAssetCache = AssetsCache.CreateAssetCache(newAssets!);               // TODO: var newPortfolios = GeneratePortfolios();
+            m_memData = new MemData(newUsers!, newAssetCache, new CompactFinTimeSeries<DateOnly, uint, float, uint>());
+            m_lastRedisReload = DateTime.UtcNow;
+            m_lastRedisReloadTs = DateTime.UtcNow - startTime;
+            // can inform Observers that MemDb is 1/4th ready: Users, Assets OK
+            Console.WriteLine($"*MemDb is 1/4-ready! RedisAssets (#Assets: {AssetsCache.Assets.Count}, #Brokers: 0, #HistoricalAssets: 0) in {m_lastRedisReloadTs.TotalSeconds:0.000}sec");
+            // spawn threads for Broker Connections and ReloadHistData
 
+            // Step 2: BrokerNav, Poss in separate threads
+            BrAccounts.Add(new BrAccount() { GatewayId = GatewayId.CharmatMain, NavAsset = (BrokerNav)m_memData.AssetsCache.GetAsset("N/DC.IM") });
+            BrAccounts.Add(new BrAccount() { GatewayId = GatewayId.DeBlanzacMain, NavAsset = (BrokerNav)m_memData.AssetsCache.GetAsset("N/DC.ID") });
+            BrAccounts.Add(new BrAccount() { GatewayId = GatewayId.GyantalMain, NavAsset = (BrokerNav)m_memData.AssetsCache.GetAsset("N/GA.IM") });
+            List<Task> brTasks = new List<Task>();
+            foreach (var brAccount in BrAccounts)
+            {
+                Task brTask = Task.Run(() =>    // Task.Run() runs it immediately
+                {
+                    // IB API is not async. Thread waits until the connection is established.
+                    // Task.Run() uses threads from the thread pool, so it executes those connections parallel in the background. Then wait for them.
+                    bool isConnected = BrokersWatcher.gWatcher.GatewayReconnect(brAccount.GatewayId);
+                    if (!isConnected)
+                        return;
+                    MemDb.gMemDb.UpdateBrAccount(brAccount, brAccount.GatewayId);  // brAccount.Poss
+                    brAccount.NavAsset!.LastValue = (float)brAccount.NetLiquidation;    // fill RT price
+                });
+                brTasks.Add(brTask);
+            }
+
+            // Step 3: Assets history in separate thread
+            Task histTask = Task.Run(async () =>    // Task.Run() runs it 'immediately'
+            {
+                await ReloadMemDbHistData(false); // inside don't call EvOnlyHistoricalDataReloaded.Invoke(), because we will call later the EvFullMemDbDataReloaded?.Invoke();
+            });
+
+            // Step 4: PriorClose and Rt prices download in the current thread. This is the quickest.
+            FillAllAssetsPriorCloseAndLastPrice(newAssetCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
+            Console.WriteLine($"*MemDb is 2/4--ready! Prior,Rt (#Assets: {AssetsCache.Assets.Count}, #Brokers: 0, #HistoricalAssets: 0) in {(DateTime.UtcNow - startTime).TotalSeconds:0.000}sec");
+
+            // Step 5: Wait for threads completion and inform observers via events or WaitHandles (ManualResetEvent)
+            await Task.WhenAll(brTasks);
+            int nConnectedBrokers = BrAccounts.Count(r => BrokersWatcher.gWatcher.IsGatewayConnected(r.GatewayId));
+            Console.WriteLine($"*MemDb is 3/4--ready! BrokerNav,Poss (#Assets: {AssetsCache.Assets.Count}, #Brokers: {nConnectedBrokers}, #HistoricalAssets: 0) in {(DateTime.UtcNow - startTime).TotalSeconds:0.000}sec");
+            EvMemDbInitNoHistoryYet?.Invoke();
+
+            // inform Observers that MemDb is 3/4rd ready: Assets, PriorAndRtPrices, BrokerNavAndPoss.
+            // However, don't go too many gradual events, because observers will be confused to receive many messages. 
+            // Just use these 3 events: EvMemDbInitNoHistoryYet, EvFullMemDbDataReloaded, and EvOnlyHistoricalDataReloaded
+
+            // When this is the first time to load DB from Redis, then we don't demand HistData. Assume HistData crawling for 700 stocks takes 20min
+            // Many clients can survive without historical data first. MarketDashboard. However, they need Asset and User data immediately.
+            // BrAccInfo is fine wihout historical. It will send NaN as a PriorClose. Fine. Client will handle it.
+            // So, we don't need to wait for Historical to finish InitDb (that might take 20 minutes in the future).
+            // !!! Also, in development, we don't want to wait until All HistData arrives, but start Debugging code right away after starting the WebServer.
+            // Clients of MemDb should handle properly if HistData is not yet ready (NaN and later Refresh).
+            
+            await histTask;
+            m_lastFullMemDbReload = DateTime.UtcNow;
+            m_lastFullMemDbReloadTs = DateTime.UtcNow - startTime;
+            Console.WriteLine($"*MemDb is full-ready! Hist (#Assets: {AssetsCache.Assets.Count}, #Brokers: {nConnectedBrokers}, #HistoricalAssets: {m_memData.DailyHist.GetDataDirect().Data.Count }) in {m_lastFullMemDbReloadTs.TotalSeconds:0.000}sec");
+            // Benchmarking: EvMemDbInitNoHistoryYet: 1.2sec (when MemDb is usable for clients), because Broker.Connections is 800ms each, but it is parallelized, while 20 YF history is extra 5sec, 
+            // so altogether if single-threaded it would be 0.2(Redis)+1+1+1(Brokers)+5 = 8.3sec, 
+            // but because it is massively multithreaded it finishes in 5.3sec, which is the necessery Redis + the longest task the YfHistory. A saving of 3seconds
+
+            // inform Observers that MemDb is full ready: Assets, PriorAndRtPrices, BrokerNavAndPoss, AssetHist
             IsInitialized = true;
-            EvFirstInitialized?.Invoke();    // inform observers that MemDb was reloaded. Invoke() uses the same thread, BeginInvoke() uses ThreadPool threads
+            EvFullMemDbDataReloaded?.Invoke();
 
-            // User updates only the JSON text version of data (assets, OptionPrices in either Redis or in SqlDb). But we use the Redis's Brotli version for faster DB access.
+            // Step 6: Start timers: Broker.ReconnectTimers, MemDb.StockRt-priceTimers(high-low-mid), MemDb.HistDataTimer. The CheckBrokerPoss-timer works in a Service, which schedules itself
+            m_dbReloadTimer = new System.Threading.Timer(new TimerCallback(ReloadDbDataTimer_Elapsed), this, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
+            ScheduleReloadDbDataIfChangedTimer();
+            BrokersWatcher.gWatcher.ScheduleReconnectTimer();
+            InitAndScheduleHistoricalTimer();
+            InitAndScheduleRtTimers();
+            InitAndScheduleNavRtTimers();
+
             // Thread.Sleep(TimeSpan.FromSeconds(20));     // can start it in a separate thread, but it is fine to use this background thread
             UpdateRedisBrotlisService.SetTimer(new UpdateBrotliParam() { Db = m_Db });
             UpdateNavsService.SetTimer(new UpdateNavsParam() { Db = m_Db });
-
-            await ReloadHistDataAndSetNewTimer();   // initial ReloadDbData doesn't fill up HistData. We say MemDb is initialized and we fill up HistData later.
         }
 
         public void ServerDiagnostic(StringBuilder p_sb)
@@ -156,7 +229,7 @@ namespace FinTechCommon
             var hist = DailyHist.GetDataDirect();
             int memUsedKb = hist.MemUsed() / 1024;
             p_sb.Append($"#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {hist.Data.Count}, Used RAM: {memUsedKb:N0}KB<br>");  // hist.Data.Count = Srv.LoadPrHist + DC Aggregated NAV 
-            var lastDbReloadWithoutHist = m_lastDbReloadTs - m_lastHistoricalDataReloadTs;
+            var lastDbReloadWithoutHist = m_lastFullMemDbReloadTs - m_lastHistoricalDataReloadTs;
             p_sb.Append($"m_lastHistoricalDataReloadTimeUtc: '{m_lastHistoricalDataReload}', lastDbReloadWithoutHist: {lastDbReloadWithoutHist.TotalSeconds:0.000}sec, m_lastHistoricalDataReloadTs: {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec.<br>");
 
             var yfTickers = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).Select(r => ((Stock)r).YfTicker).ToArray();
@@ -230,7 +303,11 @@ namespace FinTechCommon
             {
                 m_memDataWlocks.m_usersWlock.Release();
             }
+            ScheduleReloadDbDataIfChangedTimer();
+        }
 
+        internal void ScheduleReloadDbDataIfChangedTimer()
+        {
             DateTime etNow = DateTime.UtcNow.FromUtcToEt();
             DateTime targetDateEt = etNow.AddHours(1);  // Polling for change in every 1 hour
             Utils.Logger.Info($"ReloadDbDataIfChangedAndSetTimer() END. m_reloadAssetsDataTimer set next targetdate: {targetDateEt.ToSqDateTimeStr()} ET");
@@ -239,7 +316,7 @@ namespace FinTechCommon
 
         async Task ReloadDbDataIfChangedImpl()   // if necessary it reloads Historical and Realtime data
         {
-            Console.WriteLine("*MemDb is not yet ready! ReloadDbData is in progress...");
+            Console.WriteLine("*ReloadDbDataIfChangedImpl() is in progress...");
             DateTime startTime = DateTime.UtcNow;
             // GA.IM.NAV assets have user_id data, so User data has to be reloaded too before Assets
             (bool isDbReloadNeeded, User[]? newUsers, List<Asset>? sqCoreAssets) = m_Db.GetDataIfReloadNeeded();
@@ -252,46 +329,30 @@ namespace FinTechCommon
 
             FillAllAssetsPriorCloseAndLastPrice(newAssetCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
 
-            if (!IsInitialized)
-            {
-                // if this is the first time to load DB from Redis, then we don't demand HistData. Assume HistData crawling takes 20min
-                // many clients can survive without historical data first. MarketDashboard. However, they need Asset and User data immediately.
-                // BrAccInfo is fine wihout historical. It will send NaN as a PriorClose. Fine. Client will handle it.
-                // So, we don't need to wait for Historical to finish InitDb (that might take 20 minutes in the future).
-                // !!! Also, in development, we don't want to wait until All HistData arrives, but start Debugging code right away after starting the WebServer.
-                // Clients of MemDb should handle properly if HistData is not yet ready (NaN and later Refresh).
-                var newMemData = new MemData(newUsers!, newAssetCache, new CompactFinTimeSeries<DateOnly, uint, float, uint>());
-                m_memData = newMemData; // swap pointer in atomic operation
-                Console.WriteLine($"*MemDb is half-ready! (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: 0)");
-            }
-            else
-            {
-                // if this is the periodic (not initial) reload of RedisDb, then we don't surprise clients by emptying HistPrices 
-                // and not having HistPrices for 20minutes. So, we download HistPrices before swapping m_memData pointer
-                DateTime startTimeHist = DateTime.UtcNow;
-                var newDailyHist = await CreateDailyHist(m_Db, newUsers!, newAssetCache);  // downloads historical prices from YF. Assume it takes 20min
-                if (newDailyHist == null)
-                    newDailyHist = new CompactFinTimeSeries<DateOnly, uint, float, uint>();
-                m_lastHistoricalDataReload = DateTime.UtcNow;
-                m_lastHistoricalDataReloadTs = DateTime.UtcNow - startTimeHist;
+            // if this is the periodic (not initial) reload of RedisDb, then we don't surprise clients by emptying HistPrices 
+            // and not having HistPrices for 20minutes. So, we download HistPrices before swapping m_memData pointer
+            var newDailyHist = await CreateDailyHistWrapper(); // downloads historical prices from YF. Assume it takes 20min
+            if (newDailyHist == null)
+                newDailyHist = new CompactFinTimeSeries<DateOnly, uint, float, uint>();
 
-                var newMemData = new MemData(newUsers!, newAssetCache, newDailyHist);
-                m_memData = newMemData; // swap pointer in atomic operation
-                Console.WriteLine($"*MemDb is ready! (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {DailyHist.GetDataDirect().Data.Count}) in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
-            }
+            var newMemData = new MemData(newUsers!, newAssetCache, newDailyHist);
+            m_memData = newMemData; // swap pointer in atomic operation
+            Console.WriteLine($"*MemDb is ready! (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {DailyHist.GetDataDirect().Data.Count}) in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
+            // }
 
-            m_lastDbReload = DateTime.UtcNow;
-            m_lastDbReloadTs = DateTime.UtcNow - startTime;
+            m_lastFullMemDbReload = DateTime.UtcNow;
+            m_lastFullMemDbReloadTs = DateTime.UtcNow - startTime;
 
             OnReloadAssetData_ReloadRtDataAndSetTimer();    // downloads realtime prices from YF or IEX. It doesn't need Brokers, so do this first.
+
+            // at ReloadDbData(), we can decide to fully reload the BrokerNav, Poss from Brokers (maybe safer). But at the moment, we decided just to update the in-memory BrAccounts array with the new AssetIds
             foreach (var brAccount in BrAccounts)
             {
                 UpdateBrAccPosAssetIds(brAccount.AccPoss);
             }
 
-            // we might wait until all the IbBrokers are connected. But as the connection started earlier than MemDb.Init() hopefully, they are right.
             OnReloadAssetData_ReloadRtNavDataAndSetTimer();   // downloads realtime NAVs from VBrokers
-            EvDbDataReloaded?.Invoke();
+            EvFullMemDbDataReloaded?.Invoke();
         }
 
         public (User[], AssetsCache, CompactFinTimeSeries<DateOnly, uint, float, uint>) GetAssuredConsistentTables()
@@ -299,6 +360,46 @@ namespace FinTechCommon
             // if client wants to be totally secure and consistent when getting subtables
             MemData localMemData = m_memData; // if m_memData swap occurs, that will not ruin our consistency
             return (localMemData.Users, localMemData.AssetsCache, localMemData.DailyHist);
+        }
+
+        public void UpdateBrAccount(GatewayId p_gatewayId)
+        {
+            BrAccount? brAccount = null;
+            foreach (var account in BrAccounts)
+            {
+                if (account.GatewayId == p_gatewayId)
+                {
+                    brAccount = account;
+                    break;
+                }
+            }
+            if (brAccount == null)
+            {
+                brAccount = new BrAccount() { GatewayId = p_gatewayId };
+                BrAccounts.Add(brAccount);
+            }
+            UpdateBrAccount(brAccount, p_gatewayId);
+        }
+
+        public void UpdateBrAccount(BrAccount brAccount, GatewayId p_gatewayId)
+        {
+            List<BrAccSum>? accSums = BrokersWatcher.gWatcher.GetAccountSums(p_gatewayId);
+            if (accSums == null)
+                return;
+
+            List<BrAccPos>? accPoss = BrokersWatcher.gWatcher.GetAccountPoss(p_gatewayId);
+            if (accPoss == null)
+                return;
+
+            UpdateBrAccPosAssetIds(accPoss);
+
+            brAccount.NetLiquidation = accSums.GetValue(AccountSummaryTags.NetLiquidation);
+            brAccount.GrossPositionValue = accSums.GetValue(AccountSummaryTags.GrossPositionValue);
+            brAccount.TotalCashValue = accSums.GetValue(AccountSummaryTags.TotalCashValue);
+            brAccount.InitMarginReq = accSums.GetValue(AccountSummaryTags.InitMarginReq);
+            brAccount.MaintMarginReq = accSums.GetValue(AccountSummaryTags.MaintMarginReq);
+            brAccount.AccPoss = accPoss;
+            brAccount.LastUpdate = DateTime.UtcNow;
         }
 
         public void UpdateBrAccPosAssetIds(List<BrAccPos> p_accPoss)
@@ -325,7 +426,6 @@ namespace FinTechCommon
             sb.Append($"UpdateBrAccPosAssetIds(). MemDb doesn't recognize these assets (#{unrecognizedExtendedSymbols.Length}): ");
             sb.AppendLongListByLine(unrecognizedExtendedSymbols, ",", 1000, "");
             Utils.Logger.Warn(sb.ToString());
-
         }
 
         public void Exit()

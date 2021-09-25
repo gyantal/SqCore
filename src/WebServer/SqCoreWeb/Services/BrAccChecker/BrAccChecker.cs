@@ -31,15 +31,15 @@ namespace SqCoreWeb
             // also schedule at every whole hours: 10:00, 11:00, ... but if it is OTH, only execute portfolio position updates if lastDate is more than 5h old.
             // user can also initiate forced update, but this is the automatic ones.
 
-            // Later it can be implemented that Run() is called when BOTH Gateways and MemDb is Initialized, but for now, this fixed 5 seconds is fine.
-            sqTask.Triggers.Add(new SqTrigger()
-            {
-                Name = "AtApplicationStartupCheck",
-                SqTask = sqTask,
-                TriggerType = TriggerType.AtApplicationStartup,
-                Start = new RelativeTime() { Base = RelativeTimeBase.Unknown, TimeOffset = TimeSpan.FromSeconds(5) },   // a bit later then App startup, to give time to Gateways to connect
-                TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, BrAccCheckerTaskSettingAction.AtApplicationStartupCheck } }
-            });
+            // Later it was implemented that MemDb.gMemDb.UpdateBrAccount()-s were called when BOTH Gateways and MemDb is Initialized at Init(), but before, this fixed 5 seconds was fine.
+            // sqTask.Triggers.Add(new SqTrigger()
+            // {
+            //     Name = "AtApplicationStartupCheck",
+            //     SqTask = sqTask,
+            //     TriggerType = TriggerType.AtApplicationStartup,
+            //     Start = new RelativeTime() { Base = RelativeTimeBase.Unknown, TimeOffset = TimeSpan.FromSeconds(5) },   // a bit later then App startup, to give time to Gateways to connect
+            //     TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, BrAccCheckerTaskSettingAction.AtApplicationStartupCheck } }
+            // });
             sqTask.Triggers.Add(new SqTrigger()
             {
                 Name = "OpenCheck",
@@ -100,48 +100,13 @@ namespace SqCoreWeb
             if (isPossUpdateNeeded)
             {
                 Console.WriteLine("*Broker data (accInfo, positions) is getting acquired...");
-                UpdateBrAccPoss(GatewayId.CharmatMain);
-                UpdateBrAccPoss(GatewayId.DeBlanzacMain);
-                UpdateBrAccPoss(GatewayId.GyantalMain);
+                MemDb.gMemDb.UpdateBrAccount(GatewayId.CharmatMain);
+                MemDb.gMemDb.UpdateBrAccount(GatewayId.DeBlanzacMain);
+                MemDb.gMemDb.UpdateBrAccount(GatewayId.GyantalMain);
                 Console.WriteLine("*Broker data (accInfo, positions) is ready.");
             }
         }
 
-        private void UpdateBrAccPoss(GatewayId p_gatewayId)
-        {
-            List<BrAccSum>? accSums = BrokersWatcher.gWatcher.GetAccountSums(p_gatewayId);
-            if (accSums == null)
-                return;
-
-            List<BrAccPos>? accPoss = BrokersWatcher.gWatcher.GetAccountPoss(p_gatewayId);
-            if (accPoss == null)
-                return;
-
-            MemDb.gMemDb.UpdateBrAccPosAssetIds(accPoss);
-
-            BrAccount? brAccount = null;
-            foreach (var account in MemDb.gMemDb.BrAccounts)
-            {
-                if (account.GatewayId == p_gatewayId)
-                {
-                    brAccount = account;
-                    break;
-                }
-            }
-            if (brAccount == null)
-            {
-                brAccount = new BrAccount() { GatewayId = p_gatewayId };
-                MemDb.gMemDb.BrAccounts.Add(brAccount);
-            }
-
-            brAccount.NetLiquidation = accSums.GetValue(AccountSummaryTags.NetLiquidation);
-            brAccount.GrossPositionValue = accSums.GetValue(AccountSummaryTags.GrossPositionValue);
-            brAccount.TotalCashValue = accSums.GetValue(AccountSummaryTags.TotalCashValue);
-            brAccount.InitMarginReq = accSums.GetValue(AccountSummaryTags.InitMarginReq);
-            brAccount.MaintMarginReq = accSums.GetValue(AccountSummaryTags.MaintMarginReq);
-            brAccount.AccPoss = accPoss;
-            brAccount.LastUpdate = DateTime.UtcNow;
-        }
     }
 
 }

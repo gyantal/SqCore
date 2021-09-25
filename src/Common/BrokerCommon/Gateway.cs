@@ -265,7 +265,7 @@ namespace BrokerCommon
             BrokerWrapper = new BrokerWrapperYF();  // just a mock-up
         }
 
-        public void Reconnect()
+        public bool Reconnect()
         {
             int nMaxRetry = 3;
             int nConnectionRetry = 0;
@@ -304,6 +304,7 @@ namespace BrokerCommon
                             Console.WriteLine($"*{DateTime.UtcNow.ToString("dd'T'HH':'mm':'ss")}: No connection to IB {GatewayId}. Trials: {nConnectionRetry}/{nMaxRetry}");
                         continue;
                     }
+                    // we are connected succesfully
                     string str1 = ibWrapper!.IbAccountsList;
                     string str2 = VbAccountsList;
                     string msg = $"Expected IbAccount {VbAccountsList} is not found: { ibWrapper.IbAccountsList}.";
@@ -324,7 +325,7 @@ namespace BrokerCommon
                     //     Utils.Logger.Info($"Gateway {GatewayId}'s NAV: {navStr}");
                     //     Console.WriteLine($"Gateway {GatewayId}'s NAV: {navStr}");
                     // }
-                    return;
+                    return true;
                 }
                 catch (Exception e)
                 {
@@ -334,7 +335,7 @@ namespace BrokerCommon
                     {
                         Utils.Logger.Info("GatewaysWatcher:ReconnectToGateway(). This gateway failed after many retries. We could send HealthMonitor message here, but better at a higher level if the second Gateway fails too.");
                         //HealthMonitorMessage.SendException($"ReConnectToGateway Thread: nMaxRetry: {nMaxRetry}", e, HealthMonitorMessageID.ReportErrorFromVirtualBroker);  // the higher level ReconnectToGateways() will send the Error to HealthMonitor
-                        throw;
+                        return false;
                     }
                     else
                     {
@@ -343,6 +344,7 @@ namespace BrokerCommon
                     }
                 }
             } while (nConnectionRetry < nMaxRetry);
+            return false;
         }
 
         public void Disconnect()

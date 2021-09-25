@@ -84,9 +84,41 @@ namespace BrokerCommon
             Gateway gateway3 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = hgwidGA.HostIp, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, SuggestedIbConnectionClientID = (int)hgwidGA.GwClientID };
             m_gateways = new List<Gateway>() { gateway1, gateway2, gateway3 };
             m_mainGateway = gateway1;
-
-            m_reconnectTimer = new System.Threading.Timer(new TimerCallback(ReconnectToGatewaysTimer_Elapsed), null, TimeSpan.Zero, TimeSpan.FromMinutes(cReconnectTimerFrequencyMinutes));
         }
+
+
+
+        public bool GatewayReconnect(GatewayId p_gatewayId)
+        {
+            var gateway = m_gateways.FirstOrDefault(r => r.GatewayId == p_gatewayId);
+            if (gateway == null)
+                return false;
+            if (gateway.IsConnected)
+                return true;
+
+            bool isOK = gateway.Reconnect();
+            bool connectedNow = gateway.IsConnected;    // better to double check this way. It will call the IbWrapper.IsConnected again to double check.
+            Utils.Logger.Info($"GatewayId: '{gateway.GatewayId}' IsConnected: {connectedNow}");
+           
+            if (gateway == m_mainGateway && connectedNow)   // if this is the first time mainGateway connected after being dead
+                MainGatewayJustConnected();
+
+            return connectedNow;
+        }
+
+        public bool IsGatewayConnected(GatewayId p_ibGatewayIdToTrade)
+        {
+            var gateway = m_gateways.FirstOrDefault(r => r.GatewayId == p_ibGatewayIdToTrade);
+            if (gateway == null)
+                return false;
+            return gateway.IsConnected;
+        }
+
+        public void ScheduleReconnectTimer()
+        {
+            m_reconnectTimer = new System.Threading.Timer(new TimerCallback(ReconnectToGatewaysTimer_Elapsed), null, TimeSpan.FromMinutes(cReconnectTimerFrequencyMinutes), TimeSpan.FromMinutes(cReconnectTimerFrequencyMinutes));
+        }
+
 
         private void ReconnectToGatewaysTimer_Elapsed(object? p_stateObj)   // Timer is coming on a ThreadPool thread
         {
@@ -260,15 +292,6 @@ namespace BrokerCommon
 
             return false;
         }
-
-        internal bool IsGatewayConnected(GatewayId p_ibGatewayIdToTrade)
-        {
-            var gateway = m_gateways.FirstOrDefault(r => r.GatewayId == p_ibGatewayIdToTrade);
-            if (gateway == null)
-                return false;
-            return (gateway.IsConnected);
-        }
-
 
         internal bool GetAlreadyStreamedPrice(Contract p_contract, ref Dictionary<int, PriceAndTime> p_quotes)
         {
