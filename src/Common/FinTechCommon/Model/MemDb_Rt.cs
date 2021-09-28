@@ -6,6 +6,7 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Globalization;
 using SqCommon;
 using YahooFinanceApi;
 
@@ -20,6 +21,7 @@ namespace FinTechCommon
         public Timer? Timer { get; set; } = null;
         public Asset[] Assets { get; set; } = new Asset[0];
         public uint NTimerPassed { get; set; } = 0;
+        public DateTime LastUpdateTimeUtc { get; set; } = DateTime.MinValue;
     }
     // many functions might use RT price, so it should be part of the MemDb
     public partial class MemDb
@@ -87,8 +89,22 @@ namespace FinTechCommon
         uint m_nIexDownload = 0;
         uint m_nYfDownload = 0;
 
-        void InitAndScheduleRtTimers()
+        static void InitAllAssetsPriorCloseAndLastPrice(AssetsCache p_newAssetCache)
         {
+            Asset[] downloadAliveAssets = p_newAssetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock  && (r as Stock)!.ExpirationDate == string.Empty).ToArray();
+            if (downloadAliveAssets.Length == 0)
+                return;
+            var tradingHoursNow = Utils.UsaTradingHoursExNow_withoutHolidays();
+            DownloadPriorCloseAndLastPriceYF(downloadAliveAssets, tradingHoursNow);
+        }
+
+        void InitAndScheduleRtTimers()  // this is called at Program.Init() and at ReloadDbDataIfChangedImpl()
+        {
+            m_lastRtPriceQueryTime = new Dictionary<Asset, DateTime>(); // purge out history after AssetData reload
+            m_highFreqParam.Assets = m_highFreqTickrs.Select(r => AssetsCache.GetAsset(r)!).ToArray();
+            m_midFreqParam.Assets = m_midFreqTickrs.Select(r => AssetsCache.GetAsset(r)!).ToArray();
+            m_lowFreqParam.Assets = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock && (r as Stock)!.ExpirationDate == string.Empty && !m_highFreqTickrs.Contains(r.SqTicker) && !m_midFreqTickrs.Contains(r.SqTicker)).ToArray()!;
+
             // Main logic:
             // schedule RtTimer_Elapsed() at Init() (after every OnReloadAssetData) and also once per hour (lowFreq) (even if nobody asked it) for All assets in MemDb. So we always have more or less fresh data
             // GetLastRtPrice() always return data without blocking. Data might be 1 hour old, but it is OK. If we are in a Non-busy mode, then switch to busy and schedule it immediately.
@@ -113,31 +129,9 @@ namespace FinTechCommon
 
         private static void ServerDiagnosticRealtime(StringBuilder p_sb, RtFreqParam p_rtFreqParam)
         {
-            p_sb.Append($"Realtime ({p_rtFreqParam.Name}): FreqRthSec: {p_rtFreqParam.FreqRthSec}, FreqOthSec: {p_rtFreqParam.FreqOthSec}, NTimerPassed: {p_rtFreqParam.NTimerPassed}, assets: '");
+            p_sb.Append($"Realtime ({p_rtFreqParam.Name}): LastUpdateUtc: {p_rtFreqParam.LastUpdateTimeUtc.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}, FreqRthSec: {p_rtFreqParam.FreqRthSec}, FreqOthSec: {p_rtFreqParam.FreqOthSec}, #TimerPassed: {p_rtFreqParam.NTimerPassed}, assets: '");
             p_sb.AppendLongListByLine(p_rtFreqParam.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).Select(r => ((Stock)r).YfTicker), ",", 10, "<br>");
             p_sb.Append($"'<br>");
-        }
-
-        static void FillAllAssetsPriorCloseAndLastPrice(AssetsCache p_newAssetCache)
-        {
-            Asset[] downloadAliveAssets = p_newAssetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock  && (r as Stock)!.ExpirationDate == string.Empty).ToArray();
-            if (downloadAliveAssets.Length == 0)
-                return;
-            var tradingHoursNow = Utils.UsaTradingHoursExNow_withoutHolidays();
-            DownloadPriorCloseAndLastPriceYF(downloadAliveAssets, tradingHoursNow);
-        }
-
-        void OnReloadAssetData_ReloadRtDataAndSetTimer()
-        {
-            Utils.Logger.Info("ReloadRtDataAndSetTimer() START");
-            m_lastRtPriceQueryTime = new Dictionary<Asset, DateTime>(); // purge out history after AssetData reload
-            m_highFreqParam.Assets = m_highFreqTickrs.Select(r => AssetsCache.GetAsset(r)!).ToArray();
-            m_midFreqParam.Assets = m_midFreqTickrs.Select(r => AssetsCache.GetAsset(r)!).ToArray();
-            m_lowFreqParam.Assets = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock && (r as Stock)!.ExpirationDate == string.Empty && !m_highFreqTickrs.Contains(r.SqTicker) && !m_midFreqTickrs.Contains(r.SqTicker)).ToArray()!;
-            RtTimer_Elapsed(m_highFreqParam);
-            RtTimer_Elapsed(m_midFreqParam);
-            RtTimer_Elapsed(m_lowFreqParam);
-            Utils.Logger.Info("ReloadRtDataAndSetTimer() END");
         }
 
         public void RtTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
@@ -147,6 +141,7 @@ namespace FinTechCommon
 
             RtFreqParam freqParam = (RtFreqParam)p_state;
             Utils.Logger.Info($"MemDbRt.RtTimer_Elapsed({freqParam.RtFreq}). BEGIN.");
+            freqParam.LastUpdateTimeUtc = DateTime.UtcNow;
             try
             {
                 UpdateRtAndPriorClose(freqParam);
@@ -379,7 +374,7 @@ namespace FinTechCommon
                 if (responseStr == null)
                     return;
 
-                Utils.Logger.Info("DownloadLastPriceIex() str = '{0}'", responseStr);
+                Utils.Logger.Debug("DownloadLastPriceIex() str = '{0}'", responseStr);
                 ExtractAttributeIex(responseStr, "lastSalePrice", p_assets);
             }
             catch (Exception e)

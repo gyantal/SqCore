@@ -62,7 +62,6 @@ namespace FinTechCommon
 
     public partial class MemDb
     {
-
         // ************** Helper methods for functions that are used frequently in the code-base
         // p_dateExclLoc: not UTC, but ET (in USA stocks), CET (in EU stocks) or whatever is the local time at the exchange of the stock. 
         // The date of the query. If p_dateExclLoc = Monday, then PriorCloseDate will be previous Friday.

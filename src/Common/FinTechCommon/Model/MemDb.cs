@@ -163,7 +163,7 @@ namespace FinTechCommon
             });
 
             // Step 4: PriorClose and Rt prices download in the current thread. This is the quickest.
-            FillAllAssetsPriorCloseAndLastPrice(newAssetCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
+            InitAllAssetsPriorCloseAndLastPrice(newAssetCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
             Console.WriteLine($"*MemDb is 2/4--ready! Prior,Rt (#Assets: {AssetsCache.Assets.Count}, #Brokers: 0, #HistoricalAssets: 0) in {(DateTime.UtcNow - startTime).TotalSeconds:0.000}sec");
 
             // Step 5: Wait for threads completion and inform observers via events or WaitHandles (ManualResetEvent)
@@ -327,7 +327,7 @@ namespace FinTechCommon
             var newAssetCache = AssetsCache.CreateAssetCache(sqCoreAssets!);
             // var newPortfolios = GeneratePortfolios();
 
-            FillAllAssetsPriorCloseAndLastPrice(newAssetCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
+            InitAllAssetsPriorCloseAndLastPrice(newAssetCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
 
             // if this is the periodic (not initial) reload of RedisDb, then we don't surprise clients by emptying HistPrices 
             // and not having HistPrices for 20minutes. So, we download HistPrices before swapping m_memData pointer
@@ -342,8 +342,6 @@ namespace FinTechCommon
 
             m_lastFullMemDbReload = DateTime.UtcNow;
             m_lastFullMemDbReloadTs = DateTime.UtcNow - startTime;
-
-            OnReloadAssetData_ReloadRtDataAndSetTimer();    // downloads realtime prices from YF or IEX. It doesn't need Brokers, so do this first.
 
             // at ReloadDbData(), we can decide to fully reload the BrokerNav, Poss from Brokers (maybe safer). But at the moment, we decided just to update the in-memory BrAccounts array with the new AssetIds
             foreach (var brAccount in BrAccounts)
