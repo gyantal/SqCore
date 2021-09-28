@@ -74,6 +74,14 @@
   border: 1px solid red;
   
 }
+.sectionForSelection {
+  float: left;
+  width: 20%;
+}
+.sectionForSvg {
+  float: left;
+  width: 80%;
+}
 
 .NormalTableHeader
 {
@@ -103,10 +111,14 @@
   stroke: #00ffff;
   stroke-width: 3;
 }
-// #chartNav .chart {
-//   width: 500;
-//   height: 600;
-//   margin: 20px 25px;
+// #chartNav{
+ 
+// transform: translate(50px, 30px);
+//   // width: 80%;
+//   // height: 80%;
+//   width: 80rem;
+//   height: 40rem;
+//      padding: 10%;
 // }
 .selectedTempDebug{
   word-wrap: break-word;
@@ -123,6 +135,8 @@
   color: red;
   font-weight: bold;
 }
+
+
 // svg {
 //   transform: translate(50px, 30px);
 //   // width: 80%;
@@ -130,21 +144,6 @@
 //      width: 80%;
 //      height: 95%;
 //     //  padding: 0%;
-
-//  }
-//  ::ng-deep .mat-tab-list .mat-tab-labels .mat-tab-label-active {
-//   color:blue;
-//   // font-size: medium;
-//   font-weight: bold;
-//   // padding: 5px;
-//   // background-color: gray;
-  
-//   }
-  
-//   ::ng-deep .mat-tab-list .mat-tab-labels {
-//   color:black;
-//   // background-color: gray;
-//   } 
 
   // .selectedBrcAccSnapShotTbl {
 #liqVal{
@@ -155,6 +154,7 @@
   // color: aqua;
 
 }
+
 .sections {
   float: left;
   width: 33.3%;
@@ -167,7 +167,7 @@
   border-right: 0.5px solid blue;
   padding-left: 20px ;
 }
-// remove border od section 3
+// remove border of section 3
 #borderRemove{
   border-right: none;
   // padding-left: 20px ;
@@ -302,12 +302,6 @@ td {
 
 // style for ab pages 
 
-// .tab {
-//   overflow: hidden;
-//   // border: 1px solid red;
-//   background-color: #fff;
-  
-// }
 .ChartSumm .tab{
   // background-color: aqua;
   // float: left;
@@ -343,6 +337,24 @@ td {
   text-shadow: 0 0 2rem #fff;
   text-transform: uppercase;
   animation: breath2 2s .5s infinite alternate;
-
   cursor: pointer;
+}
+.AccSumm #refersh {
+  font-weight: none;
+  font-size: 0.8em;
+}
+
+#tooltip {
+  display: none;
+  position: absolute;
+  background-color: lightgray;
+  min-width: 20rem;
+  max-width: 200rem;
+  font-size: 1.2rem;
+  background-color: dodgerblue;
+  color: gainsboro;
+  text-align: center;
+  opacity: 0.92;
+  padding: 0.5rem 0;
+  border-radius: 0.6rem;
 }

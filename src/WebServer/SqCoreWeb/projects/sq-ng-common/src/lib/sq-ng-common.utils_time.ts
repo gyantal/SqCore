@@ -33,7 +33,23 @@ export class SqNgCommonUtilsTime implements OnInit {
   }
 
   public static ConvertDateUtcToLoc(utcDate: Date) {
-    // TODO
+    // not sure it works. check it later.
+    // const monthOriUTC = utcDate.getMonth() + 1;
+    // const dayOriUTC = utcDate.getDate();
+    // const dayOfWeekOriUTC = utcDate.getDay(); // Sunday is 0, Monday is 1, and so on.
+
+    // // https://en.wikipedia.org/wiki/Eastern_Time_Zone
+    // // on the second Sunday in March, at 2:00 a.m. EST, clocks are advanced to 3:00 a.m. EDT leaving a one-hour "gap". On the first Sunday in November, at 2:00 a.m. EDT,
+    // // clocks are moved back to 1:00 a.m. EST, thus "duplicating" one hour. Southern parts of the zone (Panama and the Caribbean) do not observe daylight saving time.""
+    // let offsetToNYTime = 5.30;
+    // if (monthOriUTC < 3 || monthOriUTC === 12
+    //   || (monthOriUTC === 3 && (dayOriUTC - dayOfWeekOriUTC) < 8)
+    //   || (monthOriUTC === 11 && (dayOriUTC - dayOfWeekOriUTC) >= 1)) {  // (dayOriUTC - dayOfWeekOriUTC) is the date of the previous Sunday from today. If 1st of November = Sunday, on 2nd Nov, Monday, offset should be -5
+    //   offsetToNYTime = 4.30;
+    // }
+    // const dateLoc: Date = utcDate;
+    // dateLoc.setTime(dateLoc.getTime() + offsetToNYTime * 60 * 60000);
+    // return dateLoc;
   }
 
   // https://stackoverflow.com/questions/948532/how-do-you-convert-a-javascript-date-to-utc    "a method I've been using many times. function convertDateToUTC(date) {..."

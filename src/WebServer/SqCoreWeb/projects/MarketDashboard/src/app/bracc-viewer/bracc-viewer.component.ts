@@ -2,20 +2,13 @@ import { ViewChild, Component, AfterViewInit,ElementRef, Input} from '@angular/c
 import { SqNgCommonUtilsTime } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
 // Importing d3 library
 import * as d3 from 'd3';
-// import * as d3Scale from 'd3';
 import * as d3Shape from 'd3';
-// import * as d3Array from 'd3';
 import * as d3Axis from 'd3';
-// import { text } from 'd3';
-// import { SqNgCommonUtilsTime } from '../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
-// import { AssetLastJs } from './../../sq-globals';
 import { gDiag, AssetLastJs } from './../../sq-globals';
 
 type Nullable<T> = T | null;
 
 // Input data classes
-// ...
-
 
 class AssetJs {
   public assetId = NaN;
@@ -51,18 +44,12 @@ class AssetSnapPossJs {
   public symbol = '';
   public lastUpdate = '';
   public netLiquidation = NaN;
+  public priorCloseNetLiquidation = NaN;
   public grossPositionValue = NaN;
   public totalCashValue = NaN;
   public initMarginReq = NaN;
   public maintMarginReq = NaN;
   public poss : Nullable<AssetSnapPossPosJs[]> = null;
-}
-
-
-class RtMktSumRtStat {
-  public assetId = NaN;
-  public last  = NaN;
-  public lastUtc = '';
 }
 
 class RtMktSumNonRtStat {
@@ -72,7 +59,6 @@ class RtMktSumNonRtStat {
  
 }
 
-// 
 class AssetHistValuesJs{
   public assetId = NaN;
   public sqTicker = '';
@@ -101,14 +87,7 @@ class HistJs {
   public histStat :Nullable<AssetHistStatJs> = null;
 }
 
-class BrAccVwrChrtDataRaw {
-  histValues : Nullable<AssetHistValuesJs[]>=null;
-  histStat : Nullable<AssetHistStatJs[]>=null;
-}
-
-
 // UI classes
-// ...
 class UiMktBarItem {
   public assetId = NaN;
   public sqTicker = '';
@@ -170,16 +149,14 @@ class uiBrcAccChrtval {
   public date = new Date('2021-01-01');
   public sdaClose = NaN;
 }
-class uiBrcAccChrtval1 {
-  public assetId = NaN;
-  public date = new Date('2021-01-01');
-  public sdaClose = NaN;
-}
 
 class UiSnapTable {
   public symbol = '';
   
   public lastUpdate = '';
+  public snapLastUpateTime = new Date();
+  public snapLastUpdateTimeAgo = NaN;
+  public snapLastUpdateTimeAgoStr = '';
   public netLiquidation = NaN;
   public netLiquidationStr = '';
   public grossPositionValue = NaN;
@@ -196,7 +173,6 @@ class UiSnapTable {
   public numOfPoss = 0;
 
 }
-
 
 class UiAssetSnapPossPos {
   public assetId = NaN;
@@ -219,29 +195,6 @@ class UiAssetSnapPossPos {
   
 }
 
-
-// UiBrAccChrt is for developing the chart
-class UiBrAccChrtDataRaw {
-  public assetId = NaN;
-  public dateStr ='';
-  public brNAV = 0.01;
-  public SPY = 0.01;
-}
-
-class UiBrAccChrtData {
-  public assetId = NaN;
-  public dateStr = new Date('2021-01-01');
-  public brNAV = 0.01;
-  public SPY = 0.01;
-}
-
-class UiBrAccChrtDataRaw1 {
-  public assetId = NaN;
-  public sqTicker = "";
-  public histDateStr ='';
-  public histSdaClose = 0.01;
-
-}
 
 @Component({
   selector: 'app-bracc-viewer',
@@ -282,23 +235,13 @@ export class BrAccViewerComponent implements AfterViewInit {
   histStr = '[Nothing arrived yet]';
   histObj: Nullable<HistJs[]> = null;
 
-  histStatStr = '[Nothing arrived yet]';
-  histStatObj: Nullable<BrAccVwrChrtDataRaw>=null;
-  // histStatObj: Nullable<AssetHistStatJs[]>=null;
-
   selectedNav = '';
   uiMktBar: UiMktBarItem[] = [];
-  brAccChrtDataRaw: UiBrAccChrtDataRaw[] = [];
-  brAccChrtData: UiBrAccChrtData[] = [];
 
-  brAccChrtDataRaw1: UiBrAccChrtDataRaw1[] = [];
   brAccChrtData1: UiBrAccChrtHistValRaw[] = [];
   brAccHistStatVal : uiHistStatValues [] = []; // histstat values can be used in brAccViewer
   brAccChrtActuals : uiBrcAccChrtval [] = [] ; //Combining 2 arrays histdates and histsdaclose
-  brAccChrtActuals1 : uiBrcAccChrtval1 [] = [] ;
 
-
-  lastRtMsg: Nullable<RtMktSumRtStat[]> = null;
   lastNonRtMsg: Nullable<RtMktSumNonRtStat[]> = null;
 
   brAccountSnapshotStr = '[Nothing arrived yet]';
@@ -310,13 +253,8 @@ export class BrAccViewerComponent implements AfterViewInit {
 
   tabPageVisibleIdx = 1;
 
-  // plTodayStyle = 'blue';
-
   sortColumn : string = "DailyPL";
   sortDirection : string = "Increase";
-
-  // navSelectionChoices = ['GA.IM', 'DC', 'DC.IM', 'DC.ID'];
-  // navSelectionSelected = 'GA.IM';
 
   uiNavSel : string[] = [];
   navSelectionSelected = '';
@@ -330,7 +268,7 @@ export class BrAccViewerComponent implements AfterViewInit {
   lookbackEndETstr: string;
 
   // required for chart
-  private margin = {top:20, right:20, bottom:30, left:50};
+  private margin = {top: 40, right: 50, bottom: 35, left: 100 };
   private width: number;
   private height: number;
   private x: any;
@@ -342,9 +280,7 @@ export class BrAccViewerComponent implements AfterViewInit {
   // sqTicker: any;
   // ticker: any;
   // isNavColumn: any;
-  // private pageX: any;
-  // private pageY: any;
-  
+
   constructor() {
 
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
@@ -359,41 +295,14 @@ export class BrAccViewerComponent implements AfterViewInit {
     this.lookbackEndET = new Date(yesterDayET.getFullYear(), yesterDayET.getMonth(), yesterDayET.getDate());  // set yesterdayET as default
     this.lookbackEndETstr = this.Date2PaddedIsoStr(this.lookbackEndET);
     
-    // Creating a line chart dummy data
-    this.brAccChrtDataRaw = [
-      {assetId:1, dateStr:"2010-01-01", brNAV:310.45, SPY:309},
-      {assetId:2, dateStr:"2010-01-02", brNAV:320.45, SPY:317},
-      {assetId:3, dateStr:"2010-01-03", brNAV:350.45, SPY:360},
-      {assetId:4, dateStr:"2010-01-04", brNAV:340.45, SPY:315},
-    ];
-
-    this.width = 960 - this.margin.left - this.margin.right;
-    this.height = 500 - this.margin.top - this.margin.bottom;
+    // Creating a Width and Height data points
+    this.width = 800 - this.margin.left - this.margin.right;
+    this.height = 400 - this.margin.top - this.margin.bottom;
    }
-
- 
-  
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
       case 'BrAccViewer.RtStat':  // this is the most frequent case. Should come first.
-        // if (gDiag.wsOnFirstRtMktSumRtStatTime === minDate) {
-        //   gDiag.wsOnFirstRtMktSumRtStatTime = new Date();
-        // }
-        // gDiag.wsOnLastRtMktSumRtStatTime = new Date();
-        // gDiag.wsNumRtMktSumRtStat++;
-
-        // this.nRtStatArrived++;
-        // const jsonArrayObjRt = JSON.parse(msgObjStr);
-        // // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
-        // jsonArrayObjRt.forEach(element => {
-        //   element.last = this.ChangeNaNstringToNaNnumber(element.last);
-        // });
-        // const msgStrRt = jsonArrayObjRt.map(s => s.assetId + '=>' + s.last.toFixed(2).toString()).join(', ');  // %Chg: Bloomberg, MarketWatch, TradingView doesn't put "+" sign if it is positive, IB, CNBC, YahooFinance does. Go as IB.
-        // console.log('ws: RtMktSumRtStat arrived: ' + msgStrRt);
-        // this.lastRtMsgStr = msgStrRt;
-        // this.lastRtMsg = jsonArrayObjRt;
-        // MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
 
         BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, null, this.uiMktBar);
         return true;
@@ -404,32 +313,6 @@ export class BrAccViewerComponent implements AfterViewInit {
         BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.sortColumn, this.sortDirection, this.uiSnapTab, this.uiSnapPosItem) 
         const jsonObjSnap = JSON.parse(msgObjStr);
         this.updateUiWithSnapshot(jsonObjSnap);
-    
-
-        // if (gDiag.wsOnFirstRtMktSumNonRtStatTime === minDate) {
-        //   gDiag.wsOnFirstRtMktSumNonRtStatTime = new Date();
-        // }
-        // gDiag.wsOnLastRtMktSumNonRtStatTime = new Date();
-        // this.nNonRtStatArrived++;
-        // const jsonArrayObjNonRt = JSON.parse(msgObjStr);
-        // // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
-        // jsonArrayObjNonRt.forEach(element => {
-        //   if (element.sqTicker.startsWith("S/"))
-        //     element.ticker = element.sqTicker.substring(2); // "sqTicker":"S/QQQ"
-        //   else
-        //     element.ticker = element.sqTicker;  // "sqTicker":"BrNAV"
-        //   element.periodStart = this.ChangeNaNstringToNaNnumber(element.periodStart);
-        //   element.periodEnd = this.ChangeNaNstringToNaNnumber(element.periodEnd);
-        //   element.periodHigh = this.ChangeNaNstringToNaNnumber(element.periodHigh);
-        //   element.periodLow = this.ChangeNaNstringToNaNnumber(element.periodLow);
-        //   element.periodMaxDD = this.ChangeNaNstringToNaNnumber(element.periodMaxDD);
-        //   element.periodMaxDU = this.ChangeNaNstringToNaNnumber(element.periodMaxDU);
-        // });
-        // const msgStrNonRt = jsonArrayObjNonRt.map(s => s.assetId + '|' + s.ticker + '|periodEnd:' + s.periodEnd.toFixed(2).toString() + '|periodStart:' + s.periodStart.toString() + '|open:' + s.periodStart.toFixed(2).toString() + '|high:' + s.periodHigh.toFixed(2).toString() + '|low:' + s.periodLow.toFixed(2).toString() + '|mdd:' + s.periodMaxDD.toFixed(2).toString() + '|mdu:' + s.periodMaxDU.toFixed(2).toString()).join(', ');
-        // // console.log('ws: RtMktSumNonRtStat arrived: ' + msgStrNonRt);
-        // this.lastNonRtMsgStr = msgStrNonRt;
-        // this.lastNonRtMsg = jsonArrayObjNonRt;
-        // MarketHealthComponent.updateUi(this.lastRtMsg, this.lastNonRtMsg, this.lookbackStartET, this.uiTableColumns);
         return true;
       case 'BrAccViewer.Hist':
         console.log('BrAccViewer.Hist:' + msgObjStr);
@@ -437,7 +320,7 @@ export class BrAccViewerComponent implements AfterViewInit {
         this.histObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateChrtUi(this.histObj, this.brAccChrtData1, this.brAccHistStatVal, this.brAccChrtActuals,this.uiSnapPosItem);
         this.fillChartWithData();
-
+      
         // if message is too large without spaces, we have problems as there is no horizontal scrollbar in browser. So, shorten the message.
         if (msgObjStr.length < 200)
           this.histStr = msgObjStr;
@@ -450,7 +333,6 @@ export class BrAccViewerComponent implements AfterViewInit {
         this.mktBrLstClsObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, null, this.uiMktBar);
        
-
         return true;
       case 'BrAccViewer.Handshake':  // this is the least frequent case. Should come last.
         console.log('BrAccViewer.Handshake:' + msgObjStr);
@@ -468,8 +350,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     this.lstValObj = p_lstValObj;
     BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.lstValObj, this.uiMktBar);
   }
-
-
+  
   updateUiSelectableNavs(pSelectableNavAssets: Nullable<AssetJs[]>) {  // same in MktHlth and BrAccViewer
 
     if(pSelectableNavAssets == null) return;
@@ -480,76 +361,50 @@ export class BrAccViewerComponent implements AfterViewInit {
       this.uiNavSel.push(nav.symbol)
       //navSelectElement.options[navSelectElement.options.length] = new Option(nav.symbol, nav.symbol);
     }
-
-    
-    
-    // const navSelectElement = document.getElementById('braccViewerNavSelect') as HTMLSelectElement;
-    // this.selectedNav = '';
-    // for (const nav of pSelectableNavAssets) {
-    //   if (this.selectedNav == '') // by default, the selected Nav is the first from the list
-    //     this.selectedNav = nav.symbol;
-    //   navSelectElement.options[navSelectElement.options.length] = new Option(nav.symbol, nav.symbol);
-    // }
-    // navSelectElement.selectedIndex = 0; // select the first item
   }
-
-
-  onSelectedNavClicked(pEvent: any) {   // same in MktHlth and BrAccViewer
-    // https://www.w3schools.com/howto/howto_js_popup.asp
-    // When the user clicks on header, open the popup
-    // https://stackoverflow.com/questions/10554446/no-onclick-when-child-is-clicked
-    // part of the event object is the target member. This will tell you which element triggered the event to begin with.
-    console.log('onSelectedNavClicked()');
-    const popupSpan = document.getElementById('braccViewerNavSelectionPopupId') as HTMLSpanElement;
-    if (!(pEvent.target === popupSpan)) { // if not child popup, but the header
-      popupSpan.classList.toggle('show');
-    }
-  }
-
-  onNavSelectionPopupClicked(pEvent: any) { // same in MktHlth and BrAccViewer
-    console.log('onNavSelectionPopupClicked()');
-    pEvent.stopPropagation();
-  }
-
-  onNavSelectChange(pEvent: any) {  // same in MktHlth and BrAccViewer
-    const navSelectTicker = (document.getElementById('braccViewerNavSelect') as HTMLSelectElement).value;
-    console.log(navSelectTicker);
-    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
-      this._parentWsConnection.send('BrAccViewer.ChangeNav:' + navSelectTicker);
-    }
-  }
-
- onNavSelectedChangeAng(pEvent: any) {
-  // this.navSelectionSelected = this.navSelectionChoices[selectedIndex]
-  console.log("The Nav Selected angular way:" + this.navSelectionSelected);
-  if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
-    this._parentWsConnection.send('BrAccViewer.ChangeNav:' + this.navSelectionSelected);
-  }
- }
- onLookbackChangeAng() {
-  console.log('Calling server with new lookback. StartDateETstr: ' + this.lookbackStartETstr + ', lookbackStartET: ' + this.lookbackStartET);
-  gDiag.wsOnLastRtMktSumLookbackChgStart = new Date();
-  if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
-    this._parentWsConnection.send('MktHlth.ChangeLookback:Date:' + this.lookbackStartETstr + '...' + this.lookbackEndETstr); // we always send the Date format to server, not the strings of 'YTD/10y'
-  }
-}
   
+  onNavSelectedChangeAng(pEvent: any) {
+    // this.navSelectionSelected = this.navSelectionChoices[selectedIndex]
+    console.log("The Nav Selected angular way:" + this.navSelectionSelected);
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
+      this._parentWsConnection.send('BrAccViewer.ChangeNav:' + this.navSelectionSelected);
+    }
+  }
+  onLookbackChangeAng() {
+    console.log('Calling server with new lookback. StartDateETstr: ' + this.lookbackStartETstr + ', lookbackStartET: ' + this.lookbackStartET);
+    gDiag.wsOnLastRtMktSumLookbackChgStart = new Date();
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
+      this._parentWsConnection.send('MktHlth.ChangeLookback:Date:' + this.lookbackStartETstr + '...' + this.lookbackEndETstr); // we always send the Date format to server, not the strings of 'YTD/10y'
+    }
+  }
 
   onSortingClicked(event, p_sortColumn){
     this.sortColumn = p_sortColumn;
-    // this.sortDirection = p_sortDirection;
     if (this.sortDirection == "Increasing")
       this.sortDirection = "Decreasing";
     else 
       this.sortDirection = "Increasing";
     BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.sortColumn, this.sortDirection, this.uiSnapTab, this.uiSnapPosItem) 
-
   }
 
   // tabpage 
   tabHeaderClicked (event: any, tabIdx: number) {
     this.tabPageVisibleIdx = tabIdx;
+  }
 
+  onDateRefreshClicked (event) {
+    // console.log("Refreshing every 3 secs");
+    setInterval ( function (self) {
+      // console.log("Refreshing every 3 secs")}, 3000);
+    // this.uiSnapTab.snapLastUpdateTimeAgo = setInterval( (function(self) {         //Self-executing func which takes 'this' as self
+          return function(self) {   //Return a function in the context of 'self'
+            self.onMockupRefresh() //Thing you wanted to run as non-window 'this'
+          }
+      }),
+      3000     //normal interval, 'this' scope not impacted here); 
+  }
+  onMockupRefresh () {
+    return this.uiSnapTab.snapLastUpdateTimeAgoStr
   }
 
   updateUiWithSnapshot(jsonObjSnap: any)  {
@@ -561,24 +416,14 @@ export class BrAccViewerComponent implements AfterViewInit {
   static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, priorCloses: Nullable<AssetPriorCloseJs[]>, lastRt: Nullable<AssetLastJs[]>, uiMktBar: UiMktBarItem[]) {
      // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
      if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(priorCloses) && priorCloses.length > 0  && Array.isArray(lastRt) && lastRt.length > 0)) {
-    //  && Array.isArray(lastRt) && lastRt.length > 0 && Array.isArray(lastCloses) && lastCloses.length > 0)
-     
       return;
     }
-
-    // uiMktBar is visualized in HTML
-    // Step 1.
-    // write a code here that goes through marketBarAssets array and fill up uiMktBar.Symbol
-    // So, this will be visualized in HTML
-
     for (const item of marketBarAssets) {
       let uiItem: UiMktBarItem;
       const existingUiCols = uiMktBar.filter(
         (r) => r.sqTicker === item.sqTicker
       );
       if (existingUiCols.length === 0) {
-        // console.warn(`Received ticker '${item.sqTicker}' is not expected. UiArray should be increased. This will cause UI redraw and blink. Add this ticker to defaultTickerExpected!`, 'background: #222; color: red');
-        // uiCol = new UiMktBarItem(stockNonRt.sqTicker, stockNonRt.ticker, false);
         uiItem = new UiMktBarItem();
         uiItem.assetId = item.assetId;
         uiItem.sqTicker = item.sqTicker;
@@ -588,24 +433,16 @@ export class BrAccViewerComponent implements AfterViewInit {
       } else if (existingUiCols.length === 1) {
         uiItem = existingUiCols[0];
       } else {
-        console.warn(
-          `Received ticker '${item.sqTicker}' has duplicates in UiArray. This might be legit if both VOD.L and VOD wants to be used. ToDo: Differentiation based on assetId is needed.`,
-          "background: #222; color: red"
-        );
+        console.warn(`Received ticker '${item.sqTicker}' has duplicates in UiArray. This might be legit if both VOD.L and VOD wants to be used. ToDo: Differentiation based on assetId is needed.`,"background: #222; color: red");
         uiItem = existingUiCols[0];
       }
     }
 
     // Step 2: use LastCloses data, and write it into uiMktBar array.
-    // in HTML visualize the LastClose prices temporarily, instead of the real time PercentChange
     for (const nonRt of priorCloses) {
-      const existingUiCols = uiMktBar.filter(
-        (r) => r.assetId === nonRt.assetId
-      );
+      const existingUiCols = uiMktBar.filter((r) => r.assetId === nonRt.assetId);
       if (existingUiCols.length === 0) {
-        console.warn(
-          `Received assetId '${nonRt.assetId}' is not found in UiArray.`
-        );
+        console.warn(`Received assetId '${nonRt.assetId}' is not found in UiArray.`);
         break;
       }
       const uiItem = existingUiCols[0];
@@ -613,18 +450,13 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
     // Step 3: use real-time data (we have to temporary generate it)
     for (const rtItem of lastRt) {
-      const existingUiItems = uiMktBar.filter(
-        (r) => r.assetId === rtItem.assetId
-      );
+      const existingUiItems = uiMktBar.filter((r) => r.assetId === rtItem.assetId);
       if (existingUiItems.length === 0)
         continue;
-      
       const uiItem = existingUiItems[0];
       uiItem.pctChg = (rtItem.last - uiItem.priorClose) / uiItem.priorClose;
       
     }
-    
-
   }
 
   static updateSnapshotTable(brAccSnap : Nullable<AssetSnapPossJs>, sortColumn : string, sortDirection : string, uiSnapTab : UiSnapTable, uiSnapPosItem: UiAssetSnapPossPos[])
@@ -633,6 +465,15 @@ export class BrAccViewerComponent implements AfterViewInit {
 
     uiSnapTab.symbol = brAccSnap.symbol;
     uiSnapTab.lastUpdate = brAccSnap.lastUpdate;
+    uiSnapTab.snapLastUpateTime = new Date(brAccSnap.lastUpdate);
+    const timestampDate = new Date (brAccSnap.lastUpdate);
+    const timeAgoMsec = new Date (Date.now()- timestampDate.getTime());
+    const timeAgoMSecStr = timeAgoMsec.toString();     // number of milliseconds
+    console.log("the Time Stamp is", timeAgoMSecStr);
+    console.log(timeAgoMSecStr.substring(19,21) + 'min' + timeAgoMSecStr.substring(22,24) + 'sec' );
+    uiSnapTab.snapLastUpdateTimeAgoStr = timeAgoMSecStr.substring(19,21) + 'min' + timeAgoMSecStr.substring(22,24) + 'sec' ;
+    uiSnapTab.snapLastUpdateTimeAgo = Math.round((Date.now() - (new Date (brAccSnap.lastUpdate).getTime()))/ (1000 * 60));
+    console.log("The snapLastUpdateTimeAgo: ", uiSnapTab.snapLastUpdateTimeAgo);
     uiSnapTab.totalCashValue = brAccSnap.totalCashValue;
     uiSnapTab.initialMarginReq = brAccSnap.initMarginReq;
     uiSnapTab.maintMarginReq = brAccSnap.maintMarginReq;
@@ -640,7 +481,6 @@ export class BrAccViewerComponent implements AfterViewInit {
     uiSnapTab.netLiquidation = brAccSnap.netLiquidation;
     uiSnapTab.netLiquidationStr = brAccSnap.netLiquidation.toString();
     
-
     // uiSnapPos = [];
     uiSnapPosItem.length = 0;
 
@@ -685,14 +525,7 @@ export class BrAccViewerComponent implements AfterViewInit {
         uiSnapTab.shortStockValue += item.mktVal;
       }
       uiSnapTab.totalMaxRiskedN += Math.abs(item.mktVal);
-
-    }
-//     if (totalMaxRiskedN != 0.0)
-//     document.getElementById("idTotalMaxRiskedLeverage").innerHTML = (round(100 * totalMaxRiskedN / totalNetLiquidation) / 100.0).toLocaleString();
-// else
-//     document.getElementById("idTotalMaxRiskedLeverage").innerHTML = "";
-
-   
+    } 
     uiSnapTab.sumPlTodPct = uiSnapTab.sumPlTodVal/uiSnapTab.netLiquidation; // profit & Loss total percent change
     uiSnapTab.totalMaxRiskedLeverage = (uiSnapTab.totalMaxRiskedN/uiSnapTab.netLiquidation);
     uiSnapTab.numOfPoss = (uiSnapPosItem.length) - 1;
@@ -702,8 +535,6 @@ export class BrAccViewerComponent implements AfterViewInit {
     uiSnapPosItem.sort((n1: UiAssetSnapPossPos, n2: UiAssetSnapPossPos) => {
 
       let dirMultiplier = (sortDirection === "Increasing") ? 1 : -1;
-      // The sort method is functioning only in one direction - to be reviewed
-
       switch (sortColumn) {
         case 'Symbol':
           if (n1.symbol < n2.symbol) {
@@ -767,18 +598,9 @@ export class BrAccViewerComponent implements AfterViewInit {
       }
       return 0;
     });
-
-     
-  
   }
 
   static updateChrtUi(histObj : Nullable<HistJs[]>, brAccChrtData1: UiBrAccChrtHistValRaw[], brAccHistStatVal : uiHistStatValues[], brAccChrtActuals : uiBrcAccChrtval [],uiSnapPosItem: UiAssetSnapPossPos[]) {
-    // (this.histStatObj == null) ? null : this.histStatObj[0].histValues, 
-    // (this.histStatObj == null) ? null :this.histStatObj[1].histStat
-    // if (!(Array.isArray(histValues) && histValues.length > 0 && Array.isArray(histStat) && histStat.length > 0)){
-    //   return true
-    // }
-
     if (histObj == null)
       return;
 
@@ -789,15 +611,9 @@ export class BrAccViewerComponent implements AfterViewInit {
         console.log(histItem.histStat.assetId);
 
         let chrtItem = new UiBrAccChrtHistValRaw();
-        
-
         chrtItem.assetId = histItem.histStat.assetId;
         chrtItem.histDates = histItem.histValues.histDates;
         chrtItem.histSdaCloses = histItem.histValues.histSdaCloses;
-
-        // create chartDataArray = UiBrAccChrtData[]
-        // for on histItem.histValues.histSdaCloses or histDates
-        // chartDataArray.push (new UiBrAccChrtData())
       }
 
     let histValues = histObj[0].histValues;
@@ -810,7 +626,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
     // uiSnapPosItem.length = 0;
 
-    brAccHistStatVal.length = 0;
+    // brAccHistStatVal.length = 0;
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
 
@@ -849,158 +665,143 @@ export class BrAccViewerComponent implements AfterViewInit {
       brAccHistStatVal.push(statItem);
     }
 
-
+    brAccChrtActuals.length = 0;
     for (var i = 0; i < histValues.histDates.length; i++ ) {
       let elem = new uiBrcAccChrtval();
       elem.assetId = histValues.assetId;
       //let shortDateStr = histValues.histDates[i];
       //let longDateStr = shortDateStr.substring(0,4) + '-' + ...
       elem.dateStr = histValues.histDates[i];
-      elem.date = new Date (elem.dateStr);
+      elem.date = new Date (elem.dateStr.substring(0,4) + '-' + elem.dateStr.substring(4,6) + '-' + elem.dateStr.substring(6,8));
       elem.sdaClose = histValues.histSdaCloses[i]
       brAccChrtActuals.push(elem);
-      console.log("The brAccChrtActual legnth is ", brAccChrtActuals.length);
+      // console.log("The brAccChrtActual legnth is ", brAccChrtActuals.length);
     }
   }
   ngAfterViewInit(): void {
   
     // functions for developing charts
     this.initChart();
-    
-    
+        
   }
   // Chart functions start
   private initChart() {
     // 
   }
-    
+  // private showToolTip() {
+
+  // }
   private fillChartWithData() {
-    this.svg = d3.select('svg#chartNav')
-                 .attr("width", this.width + this.margin.left + this.margin.right)
-                 .attr("height", this.height + this.margin.top + this.margin.bottom)
+
+  this.svg = d3.select('svg#chartNav')
+                .attr("width", this.width + this.margin.left + this.margin.right)
+                .attr("height", this.height + this.margin.top + this.margin.bottom);
                 //  .call(responsivefy)
-    this.svg.append('g')
-    .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
-    // this.brAccChrtData = this.brAccChrtDataRaw.map(
-    //   (d: {assetId:string | number; dateStr: string | number | Date; brNAV: string | number; SPY: string | number; }) => ({assetId: +d.assetId,
-    //     dateStr: new Date(d.dateStr),
-    //     brNAV: +d.brNAV,
-    //     SPY: +d.SPY
-    //   }))
-    // var parseTime = d3.timeParse("%Y%m%d");
-    // const formatdate = d3.timeFormat('%Y%m%d'); //20211231
-    // formatdate(new Date)
-    // Date1 = Date.parse(this.brAccChrtActuals['date'])
-      // this.brAccChrtActuals1 =
-      //  this.brAccChrtActuals.map(
-      //   (d: {assetId:string | number; date: string | number | Date; sdaClose: string | number; }) => 
-      //   ({assetId: +d.assetId,
-      //     date: new Date(d.date),
-      //     sdaClose: +d.sdaClose,
-      //   }))
+  this.svg.append('g').attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
+  // this.svg.reset();
+  this.brAccChrtActuals.map(
+      (d: {assetId:string | number; date: string | number | Date; sdaClose: string | number; }) => 
+      ({assetId: +d.assetId,
+        date: new Date(d.date),
+        sdaClose: +d.sdaClose,
+      }))
       // find data range
-    // const xMin = d3.min(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
-    // const xMax = d3.max(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
-    // const yMin = d3.min(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose );
-    // const yMax = d3.max(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose );
-	
-    // const domain = d3.extent(this.brAccChrtActuals1, (d:{ date: any; }) => d.date)
-    // find data range
-    // const xMin = d3.min(this.brAccChrtData, (d:{ dateStr: any; }) => d.dateStr);
-    // const xMax = d3.max(this.brAccChrtData, (d:{ dateStr: any; }) => d.dateStr);
-    // const yMin = d3.min(this.brAccChrtData, (d: { SPY: any; }) => d.SPY );
-    // const yMax = d3.max(this.brAccChrtData, (d: { SPY: any; }) => d.SPY );
+  const xMin = d3.min(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
+  const xMax = d3.max(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
+  const yMin = d3.min(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose );
+  const yMax = d3.max(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose );
+  // range of data configuring
+  this.x = d3.scaleTime()
+            .domain([xMin, xMax])
+            .range([0, this.width]);
+  this.y = d3.scaleLinear()
+              .domain([yMin-5, yMax])
+              .range([this.height, 0]);
 
-    // this.x = d3.scaleTime()
-    //           .domain([xMin, xMax])
-    //           .range([0, this.width]);
-    // this.y = d3.scaleLinear()
-    //            .domain([yMin-5, yMax])
-    //            .range([this.height, 0]);
-
-    // this.x = d3.scaleTime()
-    //            .domain(d3.extent(this.brAccChrtActuals, (d: { date: any; }) => d.date ))
-    //            .range([0, this.width]);
-    // this.y = d3.scaleLinear()
-    //             .domain(d3.extent(this.brAccChrtActuals,(d: { sdaClose: any; }) => d.sdaClose ))
-    //             .range([this.height, 0]);
-    // // range of data configuring
-    this.x = d3.scaleTime().range([0, this.width]);
-    this.y = d3.scaleLinear().range([this.height,0]);
-    this.x.domain(d3.extent(this.brAccChrtActuals, (d: { date: any; }) => d.date ));
-    // // this.y.domain(d3Array.extent(this.brAccChrtData, (d: { brNAV: any; }) => d.brNAV ));
-    this.y.domain(d3.extent(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose ));
-    // this.x = d3Scale.scaleTime().range([0, this.width]);
-    // this.y = d3Scale.scaleLinear().range([this.height,0]);
-    // this.x.domain(d3Array.extent(this.brAccChrtData, (d: { dateStr: any; }) => d.dateStr ));
-    // // this.y.domain(d3Array.extent(this.brAccChrtData, (d: { brNAV: any; }) => d.brNAV ));
-    // this.y.domain(d3Array.extent(this.brAccChrtData, (d: { SPY: any; }) => d.SPY ));
-    //  let tickvalues = this.brAccChrtActuals.map((d: { date: any; }) => new Date(d.date));
-    // Configure the X axis
-    this.svg.append('g')
-      .attr('transform', 'translate(0,' + this.height + ')')
-      .call(d3Axis.axisBottom(this.x))
-        // .tickFormat(d3.timeFormat("%Y%m%d"))
-        // .tickValues(tickvalues));
+  // const tooltip = d3.select('#tooltip');
+  // const tooltipLine = this.svg.append('line');
+  // Configure the X axis
     
+  this.svg.append('g')
+          .attr('transform', 'translate(0,' + this.height + ')')
+          .call(d3Axis.axisBottom(this.x))
+    // .tickFormat(d3.format('%Y-%m-%d'));
+    // .tickFormat(((d:{ date: any; }) => d.date))
+      // .tickFormat(d3.timeFormat("%Y-%m-%d"))
+      // .tickValues(tickvalues));
+  
     // text label for x-axis
-    this.svg.append("text")
-      .attr("x", this.width/2)
-      .attr("y", this.height + this.margin.bottom) 
-      .style("text-anchor","middle")
-      .text("Date");
+  this.svg.append("text")
+          .attr("x", this.width/2)
+          .attr("y", this.height + this.margin.bottom) 
+          .style("text-anchor","middle")
+          .text("Date");
     // Configure the Y Axis
-    this.svg.append('g')
-    .attr('class', 'axis--y')
-    .call(d3Axis.axisLeft(this.y));
+  this.svg.append('g')
+          .attr('class', 'axis--y')
+          .call(d3Axis.axisLeft(this.y))
+  // .tickFormat(d3.format('$.4'));
 
     // text label for y-axis
-    this.svg.append("text")
+  this.svg.append("text")
       .attr("transform", "rotate(-90)")
       .attr("y", 0-this.margin.left)
       .attr("x", 0-(this.height/2))
       .attr("dy","1em")
       .style("text-anchor", "middle")
       .text("sdaClose");
-// Genereating line - for brNAV 
-    // this.line = d3Shape.line()
-    //   .x( (d: any) => this.x(d.dateStr))
-    //   .y( (d: any) => this.y(d.brNAV))
+
+  const coordinates = function (event){
+      let coords = d3.pointer(event);
+      console.log("The Coordinate values in coordinate function are : ", coords[0], coords[1]);
+    }
+
   // Genereating line - for sdaCloses 
-    this.line = d3Shape.line()
-    .x( (d: any) => this.x(d.date))
-    .y( (d: any) => this.y(d.sdaClose))
+  this.line = d3Shape.line()
+                     .x( (d: any) => this.x(d.date))
+                     .y( (d: any) => this.y(d.sdaClose))
 // Genereating line - for SPY
     // this.line1 = d3Shape.line()
     // .x( (d: any) => this.x(d.dateStr))
     // .y( (d: any) => this.y(d.SPY))
 
-
     // Configuring line path
     // Append the path, bind the data, and call the line generator (brNAV)
-    this.svg.append('path')
-      .datum(this.brAccChrtActuals) // Binds data to the line
-      .attr('class', 'line') //Assign a class for styling
-      .attr('d', this.line
-      .curve(d3.curveCardinal)); // Calls the line generator
-    // this.svg.append('path')
-    // .datum(this.brAccChrtActuals1) // Binds data to the line
-    // .attr('class', 'line') //Assign a class for styling
-    // .attr('d', this.line
-    // .curve(d3.curveCardinal)); // Calls the line generator
-  
+  this.svg.append('path')
+          .datum(this.brAccChrtActuals) // Binds data to the line
+          .attr('class', 'line') //Assign a class for styling
+          .attr('d', this.line
+          .curve(d3.curveCardinal))
+          .on("mouseenter", coordinates)
+      //  (d: any) => { 
+      //   // showToolTip(d.sdaClose);
+      //           d3.select('#tooltip')
+      //       // .append('text')
+      //           .attr('d',this.y(d.sdaClose))
+      //           .style("display", "block")
+      // })
+          .on("mouseleave", (d: any) => { 
+                      d3.select('#tooltip')
+                      .style("display", "none")
+                    })
+          .on("mouseover",(d: any) => {
+                    d3.select('#tooltip')
+                    // .append("text")
+                    // .text(d.price)
+                    .attr("x", this.x(d.date))
+                    .attr("y", this.y(d.sdaClose))
+                    .style("display", "block")}) // Calls the line generator
+          .on("mousemove",function(event) {
+            let coords = d3.pointer(event);
+            console.log( "The coordinates are: ",coords[0], coords[1] ) // log the mouse x,y position
+          });
+    
 // Append the path, bind the data, and call the line generator (SPY)
     // this.svg.append('path')
     // .datum(this.brAccChrtData) // Binds data to the line
     // .attr('class', 'line') //Assign a class for styling
     // .attr('d', this.line1
     // .curve(d3.curveCardinal)); 
-
-
-    this.tooltip = d3.select("body")
-    .append('div')
-    .classed("chart-tooltip", true)
-    .style("display","none")
   }
  // Chart functions end
 

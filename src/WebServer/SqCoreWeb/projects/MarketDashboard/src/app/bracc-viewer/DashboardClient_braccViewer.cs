@@ -51,6 +51,7 @@ namespace SqCoreWeb
         public String Symbol { get; set; } = string.Empty;
         public DateTime LastUpdate { get; set; } = DateTime.MinValue;
         public long NetLiquidation { get; set; } = long.MinValue;    // prefer whole numbers. Max int32 is 2B.
+        public long PriorCloseNetLiquidation { get; set; } = 0; 
         public long GrossPositionValue { get; set; } = long.MinValue;
         public long TotalCashValue { get; set; } = long.MinValue;
         public long InitMarginReq { get; set; } = long.MinValue;
@@ -206,6 +207,11 @@ namespace SqCoreWeb
             {
                 Asset navAsset = MemDb.gMemDb.AssetsCache.AssetsBySqTicker[navSqTicker];    // realtime NavAsset.LastValue is more up-to-date then from BrAccount (updated 1h in RTH only)
                 result.NetLiquidation = (long)MemDb.gMemDb.GetLastRtValue(navAsset);
+
+                List<Asset> assets = new List<Asset>() { m_braccSelectedNavAsset };
+                DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;
+                List<AssetPriorClose> priorCloses = MemDb.gMemDb.GetSdaPriorClosesFromHist(assets, todayET).ToList();
+                result.PriorCloseNetLiquidation  = (long)priorCloses[0].SdaPriorClose;
             }
             return result;
         }
