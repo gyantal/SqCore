@@ -7,7 +7,6 @@
     -ms-user-select: none;
     user-select: none;
     border: none;
-  
     color: #9900ff;
   }
   .selectedNavBraccCl:hover {
@@ -76,11 +75,11 @@
 }
 .sectionForSelection {
   float: left;
-  width: 20%;
+  width: 25%;
 }
 .sectionForSvg {
-  float: left;
-  width: 80%;
+  float: middle;
+  width: 75%;
 }
 
 .NormalTableHeader
@@ -151,6 +150,7 @@
 }
 #plSum {
   font-weight: bold;
+  font-size: small
   // color: aqua;
 
 }
@@ -203,13 +203,18 @@
   text-align: left;
   border-radius: 1rem;
   position: absolute;
-  z-index: 100;
+  z-index: 1;
+  bottom: 100%;
+  left: 50%;
+  margin-left: -50px;
   white-space: pre;
   opacity: 0.87;
+ 
 }
 
 .tooltipCell .tooltipSnap .snapshot{
   font-weight: bold;
+ 
 }
 
 .tooltipCell .tooltipSnap .smallTT{
@@ -256,6 +261,43 @@
   transform: translateX(-15%);
   margin-top: -10px;
 }
+
+// Tooltip posotioning for the Tempdebug 
+.tooltipTempDebug {
+  position: relative;
+  cursor: help;
+}
+  
+.tooltipTempDebug .tooltipSnap {
+  padding:0.3rem;
+  font-size: 0.8rem;
+  font-weight: normal;
+  display: none;
+  background:rgb(210, 252, 176);
+  border: 0.1rem solid rgb(19, 7, 177);
+  color: rgb(6, 8, 153);
+  text-align: left;
+  border-radius: 1rem;
+  position: absolute;
+  z-index: 100;
+  white-space: pre;
+  opacity: 0.87;
+}
+
+.tooltipTempDebug .tooltipSnap .snapshot{
+  font-weight: bold;
+}
+
+.tooltipTempDebug .tooltipSnap .smallTT{
+  font-size: 0.2rem;
+}
+.tooltipTempDebug:hover .tooltipSnap {
+  display: inline-block;
+  // top: -15%;
+  // left: 150%;
+  // transform: translateX(-15%);
+  // margin-top: -10px;
+}
 table, td, thead, th {
   border: 1px solid #9cd3db;;
   border-collapse: collapse;
@@ -285,7 +327,6 @@ thead :hover {
   backdrop-filter: blur(1rem);
     transform: skewX(-10deg);
   // transition: all .2s ease;
-
   animation: breath2 2s .5s infinite alternate;
   animation-duration: 2s;
   animation-timing-function: ease;
@@ -317,8 +358,6 @@ td {
   -moz-transition: max-height 0.7s;
   transition: max—height 0.7s;
   padding-bottom: 2px;
-  
- 
 }
 
 /* Change background color of buttons on hover */
@@ -345,7 +384,6 @@ td {
 }
 
 #tooltip {
-  display: none;
   position: absolute;
   background-color: lightgray;
   min-width: 20rem;
@@ -357,4 +395,5 @@ td {
   opacity: 0.92;
   padding: 0.5rem 0;
   border-radius: 0.6rem;
+  display: none;
 }

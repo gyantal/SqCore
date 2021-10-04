@@ -134,6 +134,12 @@ namespace SqCoreWeb
         {
             if (m_braccSelectedNavAsset == null)
                 return;
+            BrAccViewerSendSnapshot();
+            BrAccViewerSendHist();
+        }
+
+        private void BrAccViewerSendSnapshot()
+        {
             byte[]? encodedMsg = null;
             var brAcc = GetBrAccViewerAccountSnapshot();
             if (brAcc != null)
@@ -142,7 +148,10 @@ namespace SqCoreWeb
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
             }
-
+        }
+        private void BrAccViewerSendHist()
+        {
+            byte[]? encodedMsg = null;
             IEnumerable<AssetHistJs>? brAccViewerHist = GetBrAccViewerHist("YTD");
             if (brAccViewerHist != null)
             {
@@ -151,7 +160,6 @@ namespace SqCoreWeb
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
             }
         }
-
 
         private HandshakeBrAccViewer GetHandshakeBrAccViewer(List<BrokerNav> p_selectableNavs)
         {
@@ -323,10 +331,21 @@ namespace SqCoreWeb
                     // SendHistoricalWs();
                     // SendRealtimeWs();
                     return true;
+                case "BrAccViewer.RefreshSnapshot":
+                    BrAccViewerRefreshSnapshot();
+                    return true;
                 default:
                     return false;
             }
         }
 
+        private void BrAccViewerRefreshSnapshot()
+        {
+            // Step 1: Force reload of poss from IB Gateways.
+
+            // Step 2: send Snapshot to Client.
+            BrAccViewerSendSnapshot();
+            
+        }
     }
 }

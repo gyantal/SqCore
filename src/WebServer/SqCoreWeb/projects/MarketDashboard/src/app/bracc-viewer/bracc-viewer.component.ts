@@ -4,6 +4,7 @@ import { SqNgCommonUtilsTime } from './../../../../sq-ng-common/src/lib/sq-ng-co
 import * as d3 from 'd3';
 import * as d3Shape from 'd3';
 import * as d3Axis from 'd3';
+// import {bisector,pointer} from 'd3';
 import { gDiag, AssetLastJs } from './../../sq-globals';
 
 type Nullable<T> = T | null;
@@ -159,6 +160,7 @@ class UiSnapTable {
   public snapLastUpdateTimeAgoStr = '';
   public netLiquidation = NaN;
   public netLiquidationStr = '';
+  public priorCloseNetLiquidation = NaN;
   public grossPositionValue = NaN;
   public totalCashValue = NaN;
   public initialMarginReq = NaN;
@@ -171,6 +173,8 @@ class UiSnapTable {
   public totalMaxRiskedN = 0;
   public totalMaxRiskedLeverage = 0;
   public numOfPoss = 0;
+  public plTodPrNav = NaN;
+  public pctChgTodPrNav = NaN;
 
 }
 
@@ -187,6 +191,7 @@ class UiAssetSnapPossPos {
   public pctChgTod = NaN;
   public plTod = NaN;
   public pl = NaN;
+ 
   public mktVal = NaN;
   public estUndPrice = NaN;
   public gBeta = 1; // guessed Beta
@@ -258,6 +263,7 @@ export class BrAccViewerComponent implements AfterViewInit {
 
   uiNavSel : string[] = [];
   navSelectionSelected = '';
+  perfIndicatorSelected = '';
 
   yrSelectionChoices = ['YTD','1M','1Y','3Y','5Y'];
   yrSelectionSelected = 'YTD';
@@ -276,6 +282,9 @@ export class BrAccViewerComponent implements AfterViewInit {
   private svg: any;
   public tooltip: any;
   private line!: d3Shape.Line<[number, number]>;
+  // // private focus: Selection<any, any, any, any>;
+  // private focus : a
+  // hovered: { date: Date; sdaClose: number };
   // private line1!: d3Shape.Line<[number, number]>;
   // sqTicker: any;
   // ticker: any;
@@ -298,6 +307,11 @@ export class BrAccViewerComponent implements AfterViewInit {
     // Creating a Width and Height data points
     this.width = 800 - this.margin.left - this.margin.right;
     this.height = 400 - this.margin.top - this.margin.bottom;
+
+    setInterval(function (self) {
+      return function(self) {   //Return a function in the context of 'self'
+        self.snapshotRefresh() //Thing you wanted to run as non-window 'this'
+      }}, 10*60*1000);  // 10 min
    }
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
@@ -370,6 +384,11 @@ export class BrAccViewerComponent implements AfterViewInit {
       this._parentWsConnection.send('BrAccViewer.ChangeNav:' + this.navSelectionSelected);
     }
   }
+
+  onPerfIndicatorSelectedChange (pEvent: any){
+    console.log("The performance indicator selected :" + this.perfIndicatorSelected);
+  }
+
   onLookbackChangeAng() {
     console.log('Calling server with new lookback. StartDateETstr: ' + this.lookbackStartETstr + ', lookbackStartET: ' + this.lookbackStartET);
     gDiag.wsOnLastRtMktSumLookbackChgStart = new Date();
@@ -392,19 +411,13 @@ export class BrAccViewerComponent implements AfterViewInit {
     this.tabPageVisibleIdx = tabIdx;
   }
 
-  onDateRefreshClicked (event) {
-    // console.log("Refreshing every 3 secs");
-    setInterval ( function (self) {
-      // console.log("Refreshing every 3 secs")}, 3000);
-    // this.uiSnapTab.snapLastUpdateTimeAgo = setInterval( (function(self) {         //Self-executing func which takes 'this' as self
-          return function(self) {   //Return a function in the context of 'self'
-            self.onMockupRefresh() //Thing you wanted to run as non-window 'this'
-          }
-      }),
-      3000     //normal interval, 'this' scope not impacted here); 
+  onSnapshotRefreshClicked (event) {
+    this.snapshotRefresh();
   }
-  onMockupRefresh () {
-    return this.uiSnapTab.snapLastUpdateTimeAgoStr
+  snapshotRefresh () {
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
+      this._parentWsConnection.send('BrAccViewer.RefreshSnapshot:' + this.navSelectionSelected);
+    }
   }
 
   updateUiWithSnapshot(jsonObjSnap: any)  {
@@ -412,6 +425,13 @@ export class BrAccViewerComponent implements AfterViewInit {
     if (this.selectedNav != jsonObjSnap.symbol) // change UI only if it is a meaningful change
       this.selectedNav = jsonObjSnap.symbol;
   }
+
+  // public perfIndicatorSelector(): void {
+  //   const indicatorSelected = (document.getElementById('perfIndicator') as HTMLSelectElement).value;
+  //   for (const item of this.brAccHistStatVal) {
+  //     BrAccViewerComponent.updateUiColumnBasedOnSelectedIndicator(item, indicatorSelected);
+  //   }
+  // }
 
   static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, priorCloses: Nullable<AssetPriorCloseJs[]>, lastRt: Nullable<AssetLastJs[]>, uiMktBar: UiMktBarItem[]) {
      // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
@@ -438,7 +458,6 @@ export class BrAccViewerComponent implements AfterViewInit {
       }
     }
 
-    // Step 2: use LastCloses data, and write it into uiMktBar array.
     for (const nonRt of priorCloses) {
       const existingUiCols = uiMktBar.filter((r) => r.assetId === nonRt.assetId);
       if (existingUiCols.length === 0) {
@@ -448,7 +467,6 @@ export class BrAccViewerComponent implements AfterViewInit {
       const uiItem = existingUiCols[0];
       uiItem.priorClose = nonRt.priorClose;
     }
-    // Step 3: use real-time data (we have to temporary generate it)
     for (const rtItem of lastRt) {
       const existingUiItems = uiMktBar.filter((r) => r.assetId === rtItem.assetId);
       if (existingUiItems.length === 0)
@@ -471,7 +489,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     const timeAgoMSecStr = timeAgoMsec.toString();     // number of milliseconds
     console.log("the Time Stamp is", timeAgoMSecStr);
     console.log(timeAgoMSecStr.substring(19,21) + 'min' + timeAgoMSecStr.substring(22,24) + 'sec' );
-    uiSnapTab.snapLastUpdateTimeAgoStr = timeAgoMSecStr.substring(19,21) + 'min' + timeAgoMSecStr.substring(22,24) + 'sec' ;
+    uiSnapTab.snapLastUpdateTimeAgoStr = timeAgoMSecStr.substring(19,21) + 'min' + timeAgoMSecStr.substring(22,24) + 'sec ago' ;
     uiSnapTab.snapLastUpdateTimeAgo = Math.round((Date.now() - (new Date (brAccSnap.lastUpdate).getTime()))/ (1000 * 60));
     console.log("The snapLastUpdateTimeAgo: ", uiSnapTab.snapLastUpdateTimeAgo);
     uiSnapTab.totalCashValue = brAccSnap.totalCashValue;
@@ -480,8 +498,10 @@ export class BrAccViewerComponent implements AfterViewInit {
     uiSnapTab.grossPositionValue = brAccSnap.grossPositionValue;
     uiSnapTab.netLiquidation = brAccSnap.netLiquidation;
     uiSnapTab.netLiquidationStr = brAccSnap.netLiquidation.toString();
-    
-    // uiSnapPos = [];
+    uiSnapTab.priorCloseNetLiquidation = brAccSnap.priorCloseNetLiquidation;
+    uiSnapTab.plTodPrNav = Math.round(brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation);
+    uiSnapTab.pctChgTodPrNav = (brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation)/brAccSnap.priorCloseNetLiquidation;
+ 
     uiSnapPosItem.length = 0;
 
     for (const possItem of brAccSnap.poss) {
@@ -509,10 +529,10 @@ export class BrAccViewerComponent implements AfterViewInit {
       );
       uiPosItem.pl = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost))
       uiPosItem.betaDltAdj = Math.round(uiPosItem.gBeta * uiPosItem.mktVal)
+      // uiPosItem.plTodPrNav = Math.round()
       uiSnapPosItem.push(uiPosItem);
     }
 
-    //var sumPlTod = 0;
     uiSnapTab.sumPlTodVal = 0;
     uiSnapTab.longStcokValue = 0;
     uiSnapTab.shortStockValue = 0;
@@ -615,30 +635,19 @@ export class BrAccViewerComponent implements AfterViewInit {
         chrtItem.histDates = histItem.histValues.histDates;
         chrtItem.histSdaCloses = histItem.histValues.histSdaCloses;
       }
-
     let histValues = histObj[0].histValues;
     let histStat = histObj[0].histStat;
     if (histValues == null)
       return;
-  
-    if (histStat ==  null) {
+      if (histStat ==  null) {
       return ;
     }
-    // uiSnapPosItem.length = 0;
-
-    // brAccHistStatVal.length = 0;
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
-
-    // for (const item of uiSnapPosItem) {
-    //   let statItem = new uiHistStatValues();
-    //   statItem.priorClose = item.priorClose;
-    // }
 
     for (const hisStatItem  of histObj) {
       if (hisStatItem.histStat ==  null) continue;
       let statItem = new uiHistStatValues();
-
       statItem.assetId = hisStatItem.histStat.assetId;      
       statItem.periodEnd = hisStatItem.histStat.periodEnd;
       statItem.periodEndDate = hisStatItem.histStat.periodEndDate;
@@ -669,43 +678,41 @@ export class BrAccViewerComponent implements AfterViewInit {
     for (var i = 0; i < histValues.histDates.length; i++ ) {
       let elem = new uiBrcAccChrtval();
       elem.assetId = histValues.assetId;
-      //let shortDateStr = histValues.histDates[i];
-      //let longDateStr = shortDateStr.substring(0,4) + '-' + ...
       elem.dateStr = histValues.histDates[i];
       elem.date = new Date (elem.dateStr.substring(0,4) + '-' + elem.dateStr.substring(4,6) + '-' + elem.dateStr.substring(6,8));
       elem.sdaClose = histValues.histSdaCloses[i]
       brAccChrtActuals.push(elem);
-      // console.log("The brAccChrtActual legnth is ", brAccChrtActuals.length);
     }
   }
   ngAfterViewInit(): void {
-  
     // functions for developing charts
     this.initChart();
-        
   }
   // Chart functions start
   private initChart() {
     // 
   }
-  // private showToolTip() {
-
-  // }
   private fillChartWithData() {
 
   this.svg = d3.select('svg#chartNav')
-                .attr("width", this.width + this.margin.left + this.margin.right)
-                .attr("height", this.height + this.margin.top + this.margin.bottom);
-                //  .call(responsivefy)
+                .attr("width", this.width - this.margin.left - this.margin.right)
+                .attr("height", this.height - this.margin.top - this.margin.bottom);
+  //  .call(responsivefy)
   this.svg.append('g').attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
-  // this.svg.reset();
+  
+  this.svg.selectAll("*").remove();
   this.brAccChrtActuals.map(
       (d: {assetId:string | number; date: string | number | Date; sdaClose: string | number; }) => 
       ({assetId: +d.assetId,
         date: new Date(d.date),
         sdaClose: +d.sdaClose,
       }))
-      // find data range
+  var  bisectDate = d3.bisector((d: any) => d.date).left
+  console.log(`The bisected date is ${0}`,bisectDate);
+
+  var focus = d3.select("#tooltip").append("g")                                // **********
+                  .style("display", "none"); 
+  // find data range
   const xMin = d3.min(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
   const xMax = d3.max(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
   const yMin = d3.min(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose );
@@ -751,58 +758,99 @@ export class BrAccViewerComponent implements AfterViewInit {
       .style("text-anchor", "middle")
       .text("sdaClose");
 
-  const coordinates = function (event){
-      let coords = d3.pointer(event);
-      console.log("The Coordinate values in coordinate function are : ", coords[0], coords[1]);
-    }
-
+  // const coordinates = function (event){
+  //     let coords = d3.pointer(event);
+  //     console.log("The Coordinate values in coordinate function are : ", coords[0], coords[1]);
+  //     d3.select('#tooltip')
+  //     .append('g')
+  //     .data(coords)
+  //   }
   // Genereating line - for sdaCloses 
   this.line = d3Shape.line()
                      .x( (d: any) => this.x(d.date))
                      .y( (d: any) => this.y(d.sdaClose))
+  // append the circle at the intersection               // **********
+  focus.append("circle")
+        .attr("class", "y")
+        .style("fill", "none")
+        .style("stroke", "blue")
+        .attr("r", 4);
+
 // Genereating line - for SPY
     // this.line1 = d3Shape.line()
     // .x( (d: any) => this.x(d.dateStr))
     // .y( (d: any) => this.y(d.SPY))
+     // Configuring line path
 
-    // Configuring line path
+    //  function showToolTip(text,coords){
+    //    d3.select("#tooltip")
+    //    .text(text)
+          // .style("left", coords[0])
+          // .style("top", coords[1])
+    //    .style("left", (d3.pointer(this)[0]) + "px")
+    //    .style("top", (d3.pointer(this)[1]) + "px")
+    //    .style("display", "block")
+
+    //  }
     // Append the path, bind the data, and call the line generator (brNAV)
   this.svg.append('path')
           .datum(this.brAccChrtActuals) // Binds data to the line
           .attr('class', 'line') //Assign a class for styling
           .attr('d', this.line
           .curve(d3.curveCardinal))
-          .on("mouseenter", coordinates)
-      //  (d: any) => { 
+          .on("mouseenter", 
+          //  (d: any) => { showToolTip(d.sdaClose,[d3.pointer(this)[0]) + "px",d3.pointer(this)[1]) + "px"])})
+          // coordinates)
+       (d: any) => { 
       //   // showToolTip(d.sdaClose);
-      //           d3.select('#tooltip')
-      //       // .append('text')
-      //           .attr('d',this.y(d.sdaClose))
-      //           .style("display", "block")
-      // })
-          .on("mouseleave", (d: any) => { 
-                      d3.select('#tooltip')
-                      .style("display", "none")
-                    })
-          .on("mouseover",(d: any) => {
-                    d3.select('#tooltip')
-                    // .append("text")
-                    // .text(d.price)
-                    .attr("x", this.x(d.date))
-                    .attr("y", this.y(d.sdaClose))
-                    .style("display", "block")}) // Calls the line generator
+                d3.select('#tooltip')
+            // .append('text')
+                .attr('d',this.y(d.sdaClose))
+                .style("left", (d3.pointer(this.x)[0]) + "px")  // mouse.X mouse.Y   OR mouseArr[0] mouseArr[1]    mouse.X[X]
+                .style("top", (d3.pointer(this.y)[1]) + "px")
+                .style("display", "block")
+      })
+          // .on("mouseleave", (d: any) => { 
+          //             d3.select('#tooltip')
+          //             .style("display", "none")
+          //           })
+          // .on("mouseover",(d: any) => {
+          //           d3.select('#tooltip')
+          //           // .append("text")
+          //           // .text(d.price)
+          //           .attr("x", this.x(d.date))
+          //           .attr("y", this.y(d.sdaClose))
+          //           .style("display", "block")}) // Calls the line generator
           .on("mousemove",function(event) {
             let coords = d3.pointer(event);
             console.log( "The coordinates are: ",coords[0], coords[1] ) // log the mouse x,y position
           });
-    
+      // append the rectangle to capture mouse               // **********
+// focus.append("rect")
+// .attr("width", this.width)
+// .attr("height", this.height)
+// .style("fill", "none")
+// .style("pointer-events", "all")
+// .on("mouseover", function() { focus.style("display", null); })
+// .on("mouseout", function() { focus.style("display", "none"); })
+// .on("mousemove", () => {
+//   const x0 = this.x.invert(d3.pointer(this)[0]),
+//       i = bisectDate(this.brAccChrtActuals,x0, 1),
+//       d0 = this.brAccChrtActuals[i - 1],
+//       d1 = this.brAccChrtActuals[i],
+//       d = x0 - new Date(d0.date).getTime() > new Date(d1.date).getTime() - x0 ? d1 : d0;
+//   focus.select("circle.y")
+//   .attr("transform","translate(" + this.x(d.date) + "," + this.y(d.sdaClose) + ")");
+// });  
 // Append the path, bind the data, and call the line generator (SPY)
     // this.svg.append('path')
     // .datum(this.brAccChrtData) // Binds data to the line
     // .attr('class', 'line') //Assign a class for styling
     // .attr('d', this.line1
     // .curve(d3.curveCardinal)); 
-  }
+    // set the dimensions and margins of the graph
+}
+
  // Chart functions end
 
   // zeroPad = (num, places: number) => String(num).padStart(places, '0');  // https://stackoverflow.com/questions/2998784/how-to-output-numbers-with-leading-zeros-in-javascript

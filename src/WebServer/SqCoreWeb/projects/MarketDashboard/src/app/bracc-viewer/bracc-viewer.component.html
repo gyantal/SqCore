@@ -32,8 +32,8 @@ MarketBar
                 'mktbarNegativePerf' : uiSnapTab.sumPlTodPct < 0
                 }">({{uiSnapTab.sumPlTodPct | percent:'1.2'}})
             </span> 
-            <img border='0' alt='YF' src='../assets/images/refresh64.webp' width='15' height='15'>
-            <span id="refersh" (click)="onDateRefreshClicked">{{uiSnapTab.snapLastUpateTime | date:'h:mm'}}({{uiSnapTab.snapLastUpdateTimeAgoStr}})</span>
+            <img id="refresh" border='0' alt='YF' src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked($event)" width='15' height='15'>
+            <span id="refresh" >{{uiSnapTab.snapLastUpateTime | date:'H:mm'}} ({{uiSnapTab.snapLastUpdateTimeAgoStr}})</span>
             <div class="tooltipSnap">
                 <div class="snapshot">
                     Profit is calculated as a sum of the table cells 
@@ -53,14 +53,14 @@ MarketBar
         </div>
         <div id="plSum" class="tooltipCell">P&L Today (PriorNAV) : 
             <span [ngClass]="{
-                'mktBarPositivePerf' : uiSnapTab.sumPlTodVal > 0,
-                'mktbarNegativePerf' : uiSnapTab.sumPlTodVal < 0
-                }">
+                'mktBarPositivePerf' : uiSnapTab.plTodPrNav > 0,
+                'mktbarNegativePerf' : uiSnapTab.plTodPrNav < 0
+                }"> {{uiSnapTab.plTodPrNav | currency:'USD':'symbol':'1.0'}}
             </span>
             <span [ngClass]="{
-                'mktBarPositivePerf' : uiSnapTab.sumPlTodPct > 0,
-                'mktbarNegativePerf' : uiSnapTab.sumPlTodPct < 0
-                }">
+                'mktBarPositivePerf' : uiSnapTab.pctChgTodPrNav > 0,
+                'mktbarNegativePerf' : uiSnapTab.pctChgTodPrNav < 0
+                }"> ({{uiSnapTab.pctChgTodPrNav | percent:'1.2'}})
             </span>
             <div class="tooltipSnap">
                 <div class="snapshot">
@@ -146,22 +146,21 @@ MarketBar
                         <div>StartDate: <input type="date" id="StartDate" name="startDate" min="01-01-1975"></div>
                         <div>EndDate: <input type="date" id="EndDate" name="EndDate" min="01-01-1975"></div>
                         <div>
-                            <select name="" id="">
-                            <option value="TotRet" selected>Return</option>
-                            <option value="MDD">MaxDrawDown</option>
+                            <select name="" id="" [(ngModel)] = "perfIndicatorSelected" (change)="onPerfIndicatorSelectedChange($event)">
+                            <option *ngFor="let item of brAccHistStatVal" value="item">Return: {{item.rtReturn}}</option>
+                            <option *ngFor="let item of brAccHistStatVal" value="item">MaxDD: {{item.maxDrawDown}}</option>
+                            <!-- <option value="item" >MaxDrawDown: {{item.maxDrawDown}}</option> -->
                             </select>
                         </div>
                      </div>
-                     <div class="sectionForSvg">
+                     <span class="sectionForSvg">
                      <svg 
                         style="border: solid 1px blue" 
                         id ="chartNav" viewBox = "0 0 780 480">
                     </svg>
                     <div id="tooltip"></div>
-                    </div>
+                </span>
                    </span>
-                    
-                    
                 </div>
             </div>
     </div>
@@ -247,11 +246,39 @@ MarketBar
 <hr>
 <!-- Addded class "selectedTempDebug" to limit the text output in the UI-->
 <div class="selectedTempDebug">
-<br><br>Temporary Debug Info: <br>
-HandshakeMsgStr: <br> <span>{{ handshakeStr }}</span><br><br>
+<br><br>Temporary Debug Info:<br>
+<div class="tooltipTempDebug">HandshakeMsgStr:
+    <div class="tooltipSnap">
+        <div class="snapshot">
+            {{ handshakeStr }}
+        </div>
+    </div>
+</div>
+<div class="tooltipTempDebug">MarketBarLastClosesStr:
+    <div class="tooltipSnap">
+        <div class="snapshot">
+            {{ mktBrLstClsStr }}
+        </div>
+    </div>
+</div>
+<div class="tooltipTempDebug">HistStr:
+    <div class="tooltipSnap">
+        <div class="snapshot">
+            {{ histStr }}
+        </div>
+    </div>
+</div>
+<div class="tooltipTempDebug">BrAccountSnapshot:
+    <div class="tooltipSnap">
+        <div class="snapshot">
+            {{ brAccountSnapshotStr }}
+        </div>
+    </div>
+</div>
+<!-- HandshakeMsgStr: <br> <span>{{ handshakeStr }}</span><br><br>
 MarketBarLastClosesStr: <br> <span>{{ mktBrLstClsStr }}</span><br><br>
 HistStr: <br> <span>{{ histStr }}</span><br><br>
-BrAccountSnapshot: <br> <span>{{ brAccountSnapshotStr }}</span>
+BrAccountSnapshot: <br> <span>{{ brAccountSnapshotStr }}</span> -->
 </div>
 <hr>
 [1. MarketBar on top, QQQ, SPY, TLT, VXX, UNG, USO]<br>
