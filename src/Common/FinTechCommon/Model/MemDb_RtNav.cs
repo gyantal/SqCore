@@ -31,14 +31,6 @@ namespace FinTechCommon
             ScheduleTimerRt(m_lowNavFreqParam);
         }
 
-        public void ServerDiagnosticNavRealtime(StringBuilder p_sb)
-        {
-            IEnumerable<Asset>? recentlyAskedNavAssets = m_lastRtPriceQueryTime.Where(r => r.Key.AssetId.AssetTypeID == AssetType.BrokerNAV && ((DateTime.UtcNow - r.Value) <= TimeSpan.FromSeconds(5 * 60))).Select(r => r.Key); //  if there was a function call in the last 5 minutes
-            p_sb.Append($"NavRealtime: m_nNavDownload: {m_nNavDownload} <br>");
-            p_sb.Append($"NavRealtime (HighFreq-RTH:{(int)(m_highNavFreqParam.FreqRthSec / 60)}min-OTH:{(int)(m_highNavFreqParam.FreqOthSec / 60)}min): NTimerPassed: {m_highNavFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_highNavFreqParam.Assets.Select(r => r.SqTicker))}', recently asket Assets:'{String.Join(',', recentlyAskedNavAssets.Select(r => r.SqTicker))}' <br>");
-            p_sb.Append($"NavRealtime (LowFreq-RTH:{(int)(m_lowNavFreqParam.FreqRthSec / 60)}min-OTH:{(int)(m_lowNavFreqParam.FreqOthSec / 60)}min): NTimerPassed: {m_lowNavFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_lowNavFreqParam.Assets.Select(r => r.SqTicker))}' <br>");
-        }
-
         void OnReloadAssetData_ReloadRtNavDataAndSetTimer()
         {
             Utils.Logger.Info("ReloadRtNavDataAndSetTimer() START");
@@ -47,6 +39,14 @@ namespace FinTechCommon
             RtNavTimer_Elapsed(m_highNavFreqParam);
             RtNavTimer_Elapsed(m_lowNavFreqParam);
             Utils.Logger.Info("ReloadRtNavDataAndSetTimer() END");
+        }
+
+        public void ServerDiagnosticNavRealtime(StringBuilder p_sb)
+        {
+            IEnumerable<Asset>? recentlyAskedNavAssets = m_lastRtPriceQueryTime.Where(r => r.Key.AssetId.AssetTypeID == AssetType.BrokerNAV && ((DateTime.UtcNow - r.Value) <= TimeSpan.FromSeconds(5 * 60))).Select(r => r.Key); //  if there was a function call in the last 5 minutes
+            p_sb.Append($"NavRealtime: m_nNavDownload: {m_nNavDownload} <br>");
+            p_sb.Append($"NavRealtime (HighFreq-RTH:{(int)(m_highNavFreqParam.FreqRthSec / 60)}min-OTH:{(int)(m_highNavFreqParam.FreqOthSec / 60)}min): NTimerPassed: {m_highNavFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_highNavFreqParam.Assets.Select(r => r.SqTicker))}', recently asket Assets:'{String.Join(',', recentlyAskedNavAssets.Select(r => r.SqTicker))}' <br>");
+            p_sb.Append($"NavRealtime (LowFreq-RTH:{(int)(m_lowNavFreqParam.FreqRthSec / 60)}min-OTH:{(int)(m_lowNavFreqParam.FreqOthSec / 60)}min): NTimerPassed: {m_lowNavFreqParam.NTimerPassed}, fix Assets:'{String.Join(',', m_lowNavFreqParam.Assets.Select(r => r.SqTicker))}' <br>");
         }
 
         public void RtNavTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread

@@ -200,7 +200,7 @@ namespace FinTechCommon
             ScheduleReloadDbDataIfChangedTimer();
             BrokersWatcher.gWatcher.ScheduleReconnectTimer();
             InitAndScheduleHistoricalTimer();
-            InitAndScheduleRtTimers();
+            OnReloadAssetData_InitAndScheduleRtTimers();
             InitAndScheduleNavRtTimers();
 
             // Thread.Sleep(TimeSpan.FromSeconds(20));     // can start it in a separate thread, but it is fine to use this background thread
@@ -349,6 +349,7 @@ namespace FinTechCommon
                 UpdateBrAccPosAssetIds(brAccount.AccPoss);
             }
 
+            OnReloadAssetData_InitAndScheduleRtTimers();
             OnReloadAssetData_ReloadRtNavDataAndSetTimer();   // downloads realtime NAVs from VBrokers
             EvFullMemDbDataReloaded?.Invoke();
         }

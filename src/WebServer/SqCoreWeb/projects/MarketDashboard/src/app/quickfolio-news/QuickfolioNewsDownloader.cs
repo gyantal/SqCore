@@ -212,16 +212,20 @@ namespace SqCoreWeb
         private List<NewsItem> ReadBenzingaNews(string p_ticker)
         {
             List<NewsItem> foundNewsItems = new List<NewsItem>();
-            if (foundNewsItems == null)
-                foundNewsItems = new List<NewsItem>();
-            string url = string.Format(@"https://www.benzinga.com/stock/{0}", p_ticker);
-            string? webpageData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
-            System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));  // to avoid that server bans our IP
-            if (webpageData != null)
-            {
-                ReadBenzingaSection(foundNewsItems, p_ticker, webpageData, "headlines");
-                ReadBenzingaSection(foundNewsItems, p_ticker, webpageData, "press");
-            }
+            // >2021-10-01: benzinga banned  the IP of the server. Even in Chrome, even the simple www.benzinga.com doesn't work. They have a Varnish cache server, that refuses to give the page.
+            // There is nothing to do. They didn't ban all AWS servers, because it works from our other Linux servers.
+            // They only banned the SqCore server, because they noticed that there were too many queries. This is why we have to be cautious.
+            // Laszlo's crawler only queries Benzinga once per day. And they didn't ban him. However, we queried Benzinga at every NewClientConnection. About 20-30x per day. (No timer was set), so it wasn't excessive.
+            // However, in the future (after they release the ban) we might implement that it only crawles Benzinga news max 1-2x per day.
+
+            // string url = string.Format(@"https://www.benzinga.com/stock/{0}", p_ticker);
+            // string? webpageData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
+            // System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));  // to avoid that server bans our IP
+            // if (webpageData != null)
+            // {
+            //     ReadBenzingaSection(foundNewsItems, p_ticker, webpageData, "headlines");
+            //     ReadBenzingaSection(foundNewsItems, p_ticker, webpageData, "press");
+            // }
             return foundNewsItems;
         }
 
