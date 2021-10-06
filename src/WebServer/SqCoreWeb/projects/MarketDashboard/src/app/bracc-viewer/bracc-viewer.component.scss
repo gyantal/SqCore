@@ -381,8 +381,13 @@ td {
 .AccSumm #refersh {
   font-weight: none;
   font-size: 0.8em;
+  
 }
-
+#refersh{
+  width:15;
+  height:15;
+  cursor: pointer;
+}
 #tooltip {
   position: absolute;
   background-color: lightgray;

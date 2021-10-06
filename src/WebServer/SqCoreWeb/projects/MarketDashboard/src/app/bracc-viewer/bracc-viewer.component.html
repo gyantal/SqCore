@@ -32,14 +32,13 @@ MarketBar
                 'mktbarNegativePerf' : uiSnapTab.sumPlTodPct < 0
                 }">({{uiSnapTab.sumPlTodPct | percent:'1.2'}})
             </span> 
-            <img id="refresh" border='0' alt='YF' src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked($event)" width='15' height='15'>
-            <span id="refresh" >{{uiSnapTab.snapLastUpateTime | date:'H:mm'}} ({{uiSnapTab.snapLastUpdateTimeAgoStr}})</span>
+            
             <div class="tooltipSnap">
                 <div class="snapshot">
                     Profit is calculated as a sum of the table cells 
                 </div>
             </div>
-            
+            <span id="refresh"><img id="refresh" border='0' alt='YF' src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked($event)" width='15' height='15'>{{uiSnapTab.snapLastUpateTime | date:'H:mm'}} ({{uiSnapTab.snapLastUpdateTimeAgoStr}})</span>
         </div>
         <div id="plSum" class="tooltipCell">NAV :
             <span id="liqVal">
@@ -153,12 +152,13 @@ MarketBar
                             </select>
                         </div>
                      </div>
+                     <div id="my_dataviz"></div>
                      <span class="sectionForSvg">
-                     <svg 
+                     <!-- <svg 
                         style="border: solid 1px blue" 
                         id ="chartNav" viewBox = "0 0 780 480">
-                    </svg>
-                    <div id="tooltip"></div>
+                    </svg> -->
+                   
                 </span>
                    </span>
                 </div>

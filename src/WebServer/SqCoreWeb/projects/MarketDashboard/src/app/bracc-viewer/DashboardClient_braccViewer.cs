@@ -342,6 +342,16 @@ namespace SqCoreWeb
         private void BrAccViewerRefreshSnapshot()
         {
             // Step 1: Force reload of poss from IB Gateways.
+            if (m_braccSelectedNavAsset == null)
+                return;
+            string navSqTicker = m_braccSelectedNavAsset.SqTicker;
+            // if it is aggregated portfolio (DC Main + DeBlanzac), then we have to force reload all sub-brAccounts
+            if (!GatewayExtensions.NavSqSymbol2GatewayIds.TryGetValue(navSqTicker, out List<GatewayId>? gatewayIds))
+                return;
+            foreach (GatewayId gwId in gatewayIds)  // AggregateNav has 2 Gateways
+            {
+                MemDb.gMemDb.UpdateBrAccount(gwId);
+            }
 
             // Step 2: send Snapshot to Client.
             BrAccViewerSendSnapshot();

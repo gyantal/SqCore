@@ -1,10 +1,8 @@
 import { ViewChild, Component, AfterViewInit,ElementRef, Input} from '@angular/core';
 import { SqNgCommonUtilsTime } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
-// Importing d3 library
 import * as d3 from 'd3';
 import * as d3Shape from 'd3';
 import * as d3Axis from 'd3';
-// import {bisector,pointer} from 'd3';
 import { gDiag, AssetLastJs } from './../../sq-globals';
 
 type Nullable<T> = T | null;
@@ -28,7 +26,8 @@ class BrAccVwrHandShk {
   marketBarAssets: Nullable<AssetJs[]> = null;
   selectableNavAssets: Nullable<AssetJs[]> = null;
 }
-class AssetSnapPossPosJs {
+
+class BrAccSnapshotPosJs {
   public assetId = NaN;
   public sqTicker = '';
   public symbol = '';
@@ -41,7 +40,7 @@ class AssetSnapPossPosJs {
   public accId = ''
 }
 
-class AssetSnapPossJs {
+class BrAccSnapshotJs {
   public symbol = '';
   public lastUpdate = '';
   public netLiquidation = NaN;
@@ -50,14 +49,7 @@ class AssetSnapPossJs {
   public totalCashValue = NaN;
   public initMarginReq = NaN;
   public maintMarginReq = NaN;
-  public poss : Nullable<AssetSnapPossPosJs[]> = null;
-}
-
-class RtMktSumNonRtStat {
-  public assetId = NaN;  // JavaScript Numbers are Always 64-bit Floating Point
-  public sqTicker = '';
-  public ticker = '';
- 
+  public poss : Nullable<BrAccSnapshotPosJs[]> = null;
 }
 
 class AssetHistValuesJs{
@@ -80,7 +72,6 @@ class AssetHistStatJs{
   public periodLow = NaN;
   public periodMaxDD = NaN;
   public periodMaxDU = NaN;
-
 }
 
 class HistJs {
@@ -229,6 +220,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     };     // it is QQQ Beta, not SPY beta
 
   handshakeStr = '[Nothing arrived yet]';
+  handshakeStrFormatted = '[Nothing arrived yet]';
   handshakeObj: Nullable<BrAccVwrHandShk> = null;
   mktBrLstClsStr = '[Nothing arrived yet]';
   mktBrLstClsObj: Nullable<AssetPriorCloseJs[]> = null;
@@ -247,13 +239,11 @@ export class BrAccViewerComponent implements AfterViewInit {
   brAccHistStatVal : uiHistStatValues [] = []; // histstat values can be used in brAccViewer
   brAccChrtActuals : uiBrcAccChrtval [] = [] ; //Combining 2 arrays histdates and histsdaclose
 
-  lastNonRtMsg: Nullable<RtMktSumNonRtStat[]> = null;
-
   brAccountSnapshotStr = '[Nothing arrived yet]';
-  brAccountSnapshotObj : Nullable<AssetSnapPossJs>=null;
+  brAccountSnapshotObj : Nullable<BrAccSnapshotJs>=null;
 
   uiSnapTab : UiSnapTable = new UiSnapTable();
-  uiSnapPos : AssetSnapPossPosJs[] = [];
+  uiSnapPos : BrAccSnapshotPosJs[] = [];
   uiSnapPosItem: UiAssetSnapPossPos[] = [];
 
   tabPageVisibleIdx = 1;
@@ -272,13 +262,14 @@ export class BrAccViewerComponent implements AfterViewInit {
   lookbackStartETstr: string; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a 	A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
   lookbackEndET: Date;
   lookbackEndETstr: string;
+  selectedData : string[] = [];
 
   // required for chart
-  private margin = {top: 40, right: 50, bottom: 35, left: 100 };
+  private margin = {top: 10, right: 30, bottom: 30, left: 60 };
   private width: number;
   private height: number;
-  private x: any;
-  private y: any;
+  private myX: any;
+  private myY: any;
   private svg: any;
   public tooltip: any;
   private line!: d3Shape.Line<[number, number]>;
@@ -305,13 +296,14 @@ export class BrAccViewerComponent implements AfterViewInit {
     this.lookbackEndETstr = this.Date2PaddedIsoStr(this.lookbackEndET);
     
     // Creating a Width and Height data points
-    this.width = 800 - this.margin.left - this.margin.right;
+    this.width = 560 - this.margin.left - this.margin.right;
     this.height = 400 - this.margin.top - this.margin.bottom;
+    this.selectedData = []
 
     setInterval(function (self) {
       return function(self) {   //Return a function in the context of 'self'
         self.snapshotRefresh() //Thing you wanted to run as non-window 'this'
-      }}, 10*60*1000);  // 10 min
+      }}(this), 10*60*1000);  // 10 min
    }
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
@@ -351,6 +343,7 @@ export class BrAccViewerComponent implements AfterViewInit {
       case 'BrAccViewer.Handshake':  // this is the least frequent case. Should come last.
         console.log('BrAccViewer.Handshake:' + msgObjStr);
         this.handshakeStr = msgObjStr;
+        this.handshakeStrFormatted = this.formatStr(msgObjStr);
         this.handshakeObj = JSON.parse(msgObjStr);
         console.log(`BrAccViewer.Handshake.SelectableBrAccs: '${(this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets}'`);
         this.updateUiSelectableNavs((this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets);
@@ -358,6 +351,12 @@ export class BrAccViewerComponent implements AfterViewInit {
       default:
         return false;
     }
+  }
+
+  formatStr(p_str: string): string {
+    let result = 'first line\nsecond line\nthird line.';
+    // 
+    return result;
   }
 
   public webSocketLstValArrived(p_lstValObj: Nullable<AssetLastJs[]>) {
@@ -477,7 +476,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
   }
 
-  static updateSnapshotTable(brAccSnap : Nullable<AssetSnapPossJs>, sortColumn : string, sortDirection : string, uiSnapTab : UiSnapTable, uiSnapPosItem: UiAssetSnapPossPos[])
+  static updateSnapshotTable(brAccSnap : Nullable<BrAccSnapshotJs>, sortColumn : string, sortDirection : string, uiSnapTab : UiSnapTable, uiSnapPosItem: UiAssetSnapPossPos[])
   {
     if (brAccSnap === null || brAccSnap.poss === null) return;
 
@@ -692,163 +691,138 @@ export class BrAccViewerComponent implements AfterViewInit {
   private initChart() {
     // 
   }
+
+  private mousemove2(event: any) {
+    const mousePos = d3.pointer(event);
+    const xCCL = event.clientX;
+    const yCCL = event.clientY;
+    // const ttX = xCCL - mousePos[0];
+    // const ttY = yCCL - mousePos[1];
+    console.log( "The coordinates are: ", mousePos[0], "," , mousePos[1], "-", xCCL, "," , yCCL);
+
+    // recover coordinate we need
+    // var x0 = this.myX.invert(mousePos[0]);
+    // console.log("the xo",x0);
+  }
+
   private fillChartWithData() {
-
-  this.svg = d3.select('svg#chartNav')
-                .attr("width", this.width - this.margin.left - this.margin.right)
-                .attr("height", this.height - this.margin.top - this.margin.bottom);
-  //  .call(responsivefy)
-  this.svg.append('g').attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
-  
-  this.svg.selectAll("*").remove();
-  this.brAccChrtActuals.map(
-      (d: {assetId:string | number; date: string | number | Date; sdaClose: string | number; }) => 
-      ({assetId: +d.assetId,
-        date: new Date(d.date),
-        sdaClose: +d.sdaClose,
-      }))
-  var  bisectDate = d3.bisector((d: any) => d.date).left
-  console.log(`The bisected date is ${0}`,bisectDate);
-
-  var focus = d3.select("#tooltip").append("g")                                // **********
-                  .style("display", "none"); 
-  // find data range
-  const xMin = d3.min(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
-  const xMax = d3.max(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
-  const yMin = d3.min(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose );
-  const yMax = d3.max(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose );
+    d3.selectAll("#my_dataviz > *").remove(); 
+    this.svg = d3.select('#my_dataviz').append('svg')
+                .attr("width", this.width + this.margin.left + this.margin.right)
+                .attr("height", this.height + this.margin.top + this.margin.bottom)
+                .append('g')
+                .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
+ 
+    this.brAccChrtActuals.map(
+            (d: {assetId:string | number; date: string | number | Date; sdaClose: string | number; }) => 
+            ({assetId: +d.assetId,
+              date: new Date(d.date),
+              sdaClose: +d.sdaClose,
+            }))
+     this.svg.selectAll("#my_dataviz").remove();
+    var  bisectDate = d3.bisector((d: any) => d.date).left
+    console.log(bisectDate);
+    // find data range
+  var xMin = d3.min(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
+  var xMax = d3.max(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
+  var yMin = d3.min(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose );
+  var yMax = d3.max(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose );
   // range of data configuring
-  this.x = d3.scaleTime()
+  //  const x = d3.scaleLinear().domain([0, maxDays + 10]).range([0, width]);
+  this.myX = d3.scaleTime()
             .domain([xMin, xMax])
             .range([0, this.width]);
-  this.y = d3.scaleLinear()
+  this.myY = d3.scaleLinear()
               .domain([yMin-5, yMax])
               .range([this.height, 0]);
-
-  // const tooltip = d3.select('#tooltip');
-  // const tooltipLine = this.svg.append('line');
-  // Configure the X axis
-    
   this.svg.append('g')
           .attr('transform', 'translate(0,' + this.height + ')')
-          .call(d3Axis.axisBottom(this.x))
-    // .tickFormat(d3.format('%Y-%m-%d'));
-    // .tickFormat(((d:{ date: any; }) => d.date))
-      // .tickFormat(d3.timeFormat("%Y-%m-%d"))
-      // .tickValues(tickvalues));
-  
+          .call(d3Axis.axisBottom(this.myX))
+
+  this.svg.append('g')
+          // .attr('class', 'axis--y')
+          .call(d3Axis.axisLeft(this.myY))
+
     // text label for x-axis
   this.svg.append("text")
           .attr("x", this.width/2)
           .attr("y", this.height + this.margin.bottom) 
           .style("text-anchor","middle")
           .text("Date");
-    // Configure the Y Axis
-  this.svg.append('g')
-          .attr('class', 'axis--y')
-          .call(d3Axis.axisLeft(this.y))
-  // .tickFormat(d3.format('$.4'));
-
-    // text label for y-axis
+  // text label for y-axis
   this.svg.append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("y", 0-this.margin.left)
-      .attr("x", 0-(this.height/2))
-      .attr("dy","1em")
-      .style("text-anchor", "middle")
-      .text("sdaClose");
+          .attr("transform", "rotate(-90)")
+          .attr("y", 0-this.margin.left)
+          .attr("x", 0-(this.height/2))
+          .attr("dy","1em")
+          .style("text-anchor", "middle")
+          .text("sdaClose");
+    // Create the circle that travels along the curve of chart
+  var focus = this.svg
+                  .append('g')
+                  .append('circle')
+                  .style("fill", "none")
+                  .attr("stroke", "black")
+                  .attr('r', 8.5)
+                  .style("opacity", 0)
+  // Create the text that travels along the curve of chart
+  var focusText = this.svg
+                      .append('g')
+                      .append('text')
+                      .style("opacity", 0)
+                      .attr("text-anchor", "left")
+                      .attr("alignment-baseline", "middle")
 
-  // const coordinates = function (event){
-  //     let coords = d3.pointer(event);
-  //     console.log("The Coordinate values in coordinate function are : ", coords[0], coords[1]);
-  //     d3.select('#tooltip')
-  //     .append('g')
-  //     .data(coords)
-  //   }
-  // Genereating line - for sdaCloses 
+   // Genereating line - for sdaCloses 
   this.line = d3Shape.line()
-                     .x( (d: any) => this.x(d.date))
-                     .y( (d: any) => this.y(d.sdaClose))
-  // append the circle at the intersection               // **********
-  focus.append("circle")
-        .attr("class", "y")
-        .style("fill", "none")
-        .style("stroke", "blue")
-        .attr("r", 4);
+                     .x( (d: any) => this.myX(d.date))
+                     .y( (d: any) => this.myY(d.sdaClose))
 
-// Genereating line - for SPY
-    // this.line1 = d3Shape.line()
-    // .x( (d: any) => this.x(d.dateStr))
-    // .y( (d: any) => this.y(d.SPY))
-     // Configuring line path
-
-    //  function showToolTip(text,coords){
-    //    d3.select("#tooltip")
-    //    .text(text)
-          // .style("left", coords[0])
-          // .style("top", coords[1])
-    //    .style("left", (d3.pointer(this)[0]) + "px")
-    //    .style("top", (d3.pointer(this)[1]) + "px")
-    //    .style("display", "block")
-
-    //  }
-    // Append the path, bind the data, and call the line generator (brNAV)
   this.svg.append('path')
-          .datum(this.brAccChrtActuals) // Binds data to the line
-          .attr('class', 'line') //Assign a class for styling
-          .attr('d', this.line
-          .curve(d3.curveCardinal))
-          .on("mouseenter", 
-          //  (d: any) => { showToolTip(d.sdaClose,[d3.pointer(this)[0]) + "px",d3.pointer(this)[1]) + "px"])})
-          // coordinates)
-       (d: any) => { 
-      //   // showToolTip(d.sdaClose);
-                d3.select('#tooltip')
-            // .append('text')
-                .attr('d',this.y(d.sdaClose))
-                .style("left", (d3.pointer(this.x)[0]) + "px")  // mouse.X mouse.Y   OR mouseArr[0] mouseArr[1]    mouse.X[X]
-                .style("top", (d3.pointer(this.y)[1]) + "px")
-                .style("display", "block")
-      })
-          // .on("mouseleave", (d: any) => { 
-          //             d3.select('#tooltip')
-          //             .style("display", "none")
-          //           })
-          // .on("mouseover",(d: any) => {
-          //           d3.select('#tooltip')
-          //           // .append("text")
-          //           // .text(d.price)
-          //           .attr("x", this.x(d.date))
-          //           .attr("y", this.y(d.sdaClose))
-          //           .style("display", "block")}) // Calls the line generator
-          .on("mousemove",function(event) {
-            let coords = d3.pointer(event);
-            console.log( "The coordinates are: ",coords[0], coords[1] ) // log the mouse x,y position
-          });
-      // append the rectangle to capture mouse               // **********
-// focus.append("rect")
-// .attr("width", this.width)
-// .attr("height", this.height)
-// .style("fill", "none")
-// .style("pointer-events", "all")
-// .on("mouseover", function() { focus.style("display", null); })
-// .on("mouseout", function() { focus.style("display", "none"); })
-// .on("mousemove", () => {
-//   const x0 = this.x.invert(d3.pointer(this)[0]),
-//       i = bisectDate(this.brAccChrtActuals,x0, 1),
-//       d0 = this.brAccChrtActuals[i - 1],
-//       d1 = this.brAccChrtActuals[i],
-//       d = x0 - new Date(d0.date).getTime() > new Date(d1.date).getTime() - x0 ? d1 : d0;
-//   focus.select("circle.y")
-//   .attr("transform","translate(" + this.x(d.date) + "," + this.y(d.sdaClose) + ")");
-// });  
-// Append the path, bind the data, and call the line generator (SPY)
-    // this.svg.append('path')
-    // .datum(this.brAccChrtData) // Binds data to the line
-    // .attr('class', 'line') //Assign a class for styling
-    // .attr('d', this.line1
-    // .curve(d3.curveCardinal)); 
-    // set the dimensions and margins of the graph
+            .attr('class', 'line') //Assign a class for styling
+            .datum(this.brAccChrtActuals) // Binds data to the line
+            .attr('d', this.line
+            .curve(d3.curveCardinal))
+
+  this.svg.append('rect')
+          .style("fill", "none")
+          .style("pointer-events", "all")
+          .attr('width', this.width)
+          .attr('height', this.height)
+          .on('mouseover', mouseover)
+          .on('mousemove', mousemove)
+          .on('mousemove', this.mousemove2)
+          .on('mouseout', mouseout);
+          
+  function mouseover() {
+    focus.style("opacity", 1)
+    focusText.style("opacity",1)
+  }
+  function mousemove(event: any) {
+    const mousePos = d3.pointer(event);
+    const xCCL = event.clientX;
+    const yCCL = event.clientY;
+    // const ttX = xCCL - mousePos[0];
+    // const ttY = yCCL - mousePos[1];
+    console.log( "The coordinates are: ", mousePos[0], "," , mousePos[1], "-", xCCL, "," , yCCL);
+
+    // recover coordinate we need
+    // var x0 = x.invert(d3.pointer(event)[0]);
+    
+    // var i = bisectDate(this.brAccChrtActuals, x0, 1);
+    // this.selectedData = this.brAccChrtActuals[i]
+    // focus
+    //   .attr("cx", this.x(this.selectedData.x))
+    //   .attr("cy", this.y(this.selectedData.y))
+    // focusText
+    //   .html("x:" + this.selectedData.x + "  -  " + "y:" + this.selectedData.y)
+    //   .attr("x", this.x(this.selectedData.x)+15)
+    //   .attr("y", this.y(this.selectedData.y))
+    }
+    function mouseout() {
+      focus.style("opacity", 0)
+      focusText.style("opacity", 0)
+    }
 }
 
  // Chart functions end
