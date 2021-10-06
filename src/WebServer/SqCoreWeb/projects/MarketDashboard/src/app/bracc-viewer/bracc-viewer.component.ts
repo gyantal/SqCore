@@ -692,17 +692,22 @@ export class BrAccViewerComponent implements AfterViewInit {
     // 
   }
 
-  private mousemove2(event: any) {
+  private mousemove2(event: any, p_thisHtmlElement: any) {
+    let _thisClass = this;
+    let _thisHtmlElement = p_thisHtmlElement;
+    console.log("Class of _thisClass: ", _thisClass.constructor.name, ", Class of _thisHtmlElement: ", _thisHtmlElement.constructor.name);
+    // !!! until you get used to which is which, don't use 'this.' in mouse callback functions, but use _thisClass vs. _thisHtmlElement
+
     const mousePos = d3.pointer(event);
     const xCCL = event.clientX;
     const yCCL = event.clientY;
-    // const ttX = xCCL - mousePos[0];
-    // const ttY = yCCL - mousePos[1];
-    console.log( "The coordinates are: ", mousePos[0], "," , mousePos[1], "-", xCCL, "," , yCCL);
+    const ttX = xCCL - mousePos[0];
+    const ttY = yCCL - mousePos[1];
+    console.log("The coordinates are: ", mousePos[0], "," , mousePos[1], "-", xCCL, "," , yCCL, "-", ttX, "," , ttY);
 
     // recover coordinate we need
-    // var x0 = this.myX.invert(mousePos[0]);
-    // console.log("the xo",x0);
+    var x0 = _thisClass.myX.invert(mousePos[0]);
+    console.log(`The X0: '${x0}'`);
   }
 
   private fillChartWithData() {
@@ -784,41 +789,43 @@ export class BrAccViewerComponent implements AfterViewInit {
             .attr('d', this.line
             .curve(d3.curveCardinal))
 
+  let _thisClass = this;
+            
   this.svg.append('rect')
           .style("fill", "none")
           .style("pointer-events", "all")
           .attr('width', this.width)
           .attr('height', this.height)
           .on('mouseover', mouseover)
-          .on('mousemove', mousemove)
-          .on('mousemove', this.mousemove2)
+          // .on('mousemove', mousemove)
+          .on('mousemove', function(this: any, event: any) { _thisClass.mousemove2(event, this) })
           .on('mouseout', mouseout);
           
   function mouseover() {
     focus.style("opacity", 1)
     focusText.style("opacity",1)
   }
-  function mousemove(event: any) {
-    const mousePos = d3.pointer(event);
-    const xCCL = event.clientX;
-    const yCCL = event.clientY;
-    // const ttX = xCCL - mousePos[0];
-    // const ttY = yCCL - mousePos[1];
-    console.log( "The coordinates are: ", mousePos[0], "," , mousePos[1], "-", xCCL, "," , yCCL);
+  // function mousemove(event: any) {
+  //   const mousePos = d3.pointer(event);
+  //   const xCCL = event.clientX;
+  //   const yCCL = event.clientY;
+  //   // const ttX = xCCL - mousePos[0];
+  //   // const ttY = yCCL - mousePos[1];
+  //   console.log( "The coordinates are: ", mousePos[0], "," , mousePos[1], "-", xCCL, "," , yCCL);
 
-    // recover coordinate we need
-    // var x0 = x.invert(d3.pointer(event)[0]);
+  //   // recover coordinate we need
+  //   // var x0 = x.invert(d3.pointer(event)[0]);
     
-    // var i = bisectDate(this.brAccChrtActuals, x0, 1);
-    // this.selectedData = this.brAccChrtActuals[i]
-    // focus
-    //   .attr("cx", this.x(this.selectedData.x))
-    //   .attr("cy", this.y(this.selectedData.y))
-    // focusText
-    //   .html("x:" + this.selectedData.x + "  -  " + "y:" + this.selectedData.y)
-    //   .attr("x", this.x(this.selectedData.x)+15)
-    //   .attr("y", this.y(this.selectedData.y))
-    }
+  //   // var i = bisectDate(this.brAccChrtActuals, x0, 1);
+  //   // this.selectedData = this.brAccChrtActuals[i]
+  //   // focus
+  //   //   .attr("cx", this.x(this.selectedData.x))
+  //   //   .attr("cy", this.y(this.selectedData.y))
+  //   // focusText
+  //   //   .html("x:" + this.selectedData.x + "  -  " + "y:" + this.selectedData.y)
+  //   //   .attr("x", this.x(this.selectedData.x)+15)
+  //   //   .attr("y", this.y(this.selectedData.y))
+  //   }
     function mouseout() {
       focus.style("opacity", 0)
       focusText.style("opacity", 0)
