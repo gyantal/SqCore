@@ -9,6 +9,11 @@ type Nullable<T> = T | null;
 
 // Input data classes
 
+class BrAccVwrHandShk {
+  marketBarAssets: Nullable<AssetJs[]> = null;
+  selectableNavAssets: Nullable<AssetJs[]> = null;
+}
+
 class AssetJs {
   public assetId = NaN;
   public sqTicker = '';
@@ -16,15 +21,16 @@ class AssetJs {
   public name = '';
 }
 
-class AssetPriorCloseJs {
-  public assetId = NaN;
-  public date = ''; // preferred to be a new Date(), but when it arrives from server it is a string '2010-09-29T00:00:00' which is ET time zone and better to keep that way than converting to local time-zone Date object
-  public priorClose = NaN;
-}
-
-class BrAccVwrHandShk {
-  marketBarAssets: Nullable<AssetJs[]> = null;
-  selectableNavAssets: Nullable<AssetJs[]> = null;
+class BrAccSnapshotJs {
+  public symbol = '';
+  public lastUpdate = '';
+  public netLiquidation = NaN;
+  public priorCloseNetLiquidation = NaN;
+  public grossPositionValue = NaN;
+  public totalCashValue = NaN;
+  public initMarginReq = NaN;
+  public maintMarginReq = NaN;
+  public poss : Nullable<BrAccSnapshotPosJs[]> = null;
 }
 
 class BrAccSnapshotPosJs {
@@ -40,28 +46,12 @@ class BrAccSnapshotPosJs {
   public accId = ''
 }
 
-class BrAccSnapshotJs {
-  public symbol = '';
-  public lastUpdate = '';
-  public netLiquidation = NaN;
-  public priorCloseNetLiquidation = NaN;
-  public grossPositionValue = NaN;
-  public totalCashValue = NaN;
-  public initMarginReq = NaN;
-  public maintMarginReq = NaN;
-  public poss : Nullable<BrAccSnapshotPosJs[]> = null;
+class HistJs {
+  public histStat :Nullable<BrAccHistStatJs> = null;
+  public histValues : Nullable<BrAccHistValuesJs> = null;
 }
 
-class AssetHistValuesJs{
-  public assetId = NaN;
-  public sqTicker = '';
-  public periodStartDate = '';
-  public periodEndDate = '';
-  public histDates = [];
-  public histSdaCloses = [];
-}
-
-class AssetHistStatJs{
+class BrAccHistStatJs{
   public assetId = NaN;
   public sqTicker = '';
   public periodStartDate = '';
@@ -74,9 +64,19 @@ class AssetHistStatJs{
   public periodMaxDU = NaN;
 }
 
-class HistJs {
-  public histValues : Nullable<AssetHistValuesJs> = null;
-  public histStat :Nullable<AssetHistStatJs> = null;
+class BrAccHistValuesJs{
+  public assetId = NaN;
+  public sqTicker = '';
+  public periodStartDate = '';
+  public periodEndDate = '';
+  public histDates = [];
+  public histSdaCloses = [];
+}
+
+class AssetPriorCloseJs {
+  public assetId = NaN;
+  public date = ''; // preferred to be a new Date(), but when it arrives from server it is a string '2010-09-29T00:00:00' which is ET time zone and better to keep that way than converting to local time-zone Date object
+  public priorClose = NaN;
 }
 
 // UI classes
@@ -85,66 +85,13 @@ class UiMktBarItem {
   public sqTicker = '';
   public symbol = '';
   public name = '';
-
   public priorClose  = NaN;
   public last  = 500;
   public pctChg  = 0.01;
-
-}
-
-class UiBrAccChrtHistValRaw {
-  public assetId = NaN;
-  public histDates = [];
-  public histSdaCloses = [];
-
-  // Hist stat values
-  public periodStartDate = '';
-  public periodEndDate = '';
-  public periodStart = NaN;
-  public periodEnd = NaN;
-  public periodHigh = NaN;
-  public periodLow = NaN;
-  public periodMaxDD = NaN;
-  public periodMaxDU = NaN;
-
-}
-// // Hist stat Values
-class uiHistStatValues {
-  public assetId = NaN;
-  public priorClose = NaN;
-
-  public periodStartDate = '';
-  public periodEndDate = '';
-  public periodStart = NaN;
-  public periodEnd = NaN;
-  public periodHigh = NaN;
-  public periodLow = NaN;
-  public periodMaxDD = NaN;
-  public periodMaxDU = NaN;
-
-  // calculated fields as numbers
-  public periodReturn = NaN; // for period: from startDate to endDate
-  public periodMaxDrawDown = NaN; // for period: from startDate to endDate
-  public rtReturn = NaN;  // comparing last (rt) price to periodEnd price.
-  public return = NaN;  // Total return (from startDate to endDate to last realtime): adding period-return and realtime-return together. Every other performance number (cagr, maxDD) is also Total.
-  public cagr = NaN;
-  public drawDown = NaN;
-  public drawUp = NaN;
-  public maxDrawDown = NaN;
-  public maxDrawUp = NaN;
-}
-
-// Hist chart values
-class uiBrcAccChrtval {
-  public assetId = NaN;
-  public dateStr = '';
-  public date = new Date('2021-01-01');
-  public sdaClose = NaN;
 }
 
 class UiSnapTable {
   public symbol = '';
-  
   public lastUpdate = '';
   public snapLastUpateTime = new Date();
   public snapLastUpdateTimeAgo = NaN;
@@ -166,7 +113,6 @@ class UiSnapTable {
   public numOfPoss = 0;
   public plTodPrNav = NaN;
   public pctChgTodPrNav = NaN;
-
 }
 
 class UiAssetSnapPossPos {
@@ -182,15 +128,59 @@ class UiAssetSnapPossPos {
   public pctChgTod = NaN;
   public plTod = NaN;
   public pl = NaN;
- 
   public mktVal = NaN;
   public estUndPrice = NaN;
   public gBeta = 1; // guessed Beta
   public betaDltAdj = 1;
   public accId = '';
-  
 }
 
+class UiBrAccChrtHistValRaw {
+  public assetId = NaN;
+  public histDates = [];
+  public histSdaCloses = [];
+  // Hist stat values
+  public periodStartDate = '';
+  public periodEndDate = '';
+  public periodStart = NaN;
+  public periodEnd = NaN;
+  public periodHigh = NaN;
+  public periodLow = NaN;
+  public periodMaxDD = NaN;
+  public periodMaxDU = NaN;
+}
+
+// Hist stat Values
+class UiHistStatValues {
+  public assetId = NaN;
+  public priorClose = NaN;
+  public periodStartDate = '';
+  public periodEndDate = '';
+  public periodStart = NaN;
+  public periodEnd = NaN;
+  public periodHigh = NaN;
+  public periodLow = NaN;
+  public periodMaxDD = NaN;
+  public periodMaxDU = NaN;
+  // calculated fields as numbers
+  public periodReturn = NaN; // for period: from startDate to endDate
+  public periodMaxDrawDown = NaN; // for period: from startDate to endDate
+  public rtReturn = NaN;  // comparing last (rt) price to periodEnd price.
+  public return = NaN;  // Total return (from startDate to endDate to last realtime): adding period-return and realtime-return together. Every other performance number (cagr, maxDD) is also Total.
+  public cagr = NaN;
+  public drawDown = NaN;
+  public drawUp = NaN;
+  public maxDrawDown = NaN;
+  public maxDrawUp = NaN;
+}
+
+// Hist chart values
+class UiBrcAccChrtval {
+  public assetId = NaN;
+  public dateStr = '';
+  public date = new Date('2021-01-01');
+  public sdaClose = NaN;
+}
 
 @Component({
   selector: 'app-bracc-viewer',
@@ -220,9 +210,10 @@ export class BrAccViewerComponent implements AfterViewInit {
     };     // it is QQQ Beta, not SPY beta
 
   handshakeStr = '[Nothing arrived yet]';
-  handshakeStrFormatted = '[Nothing arrived yet]';
+  handshakeStrFormatted : string[] = [];
   handshakeObj: Nullable<BrAccVwrHandShk> = null;
   mktBrLstClsStr = '[Nothing arrived yet]';
+  mktBrLstClsStrFormatted : string[] = [];
   mktBrLstClsObj: Nullable<AssetPriorCloseJs[]> = null;
 
   lstValObj: Nullable<AssetLastJs[]> = null;  // realtime or last values
@@ -230,16 +221,18 @@ export class BrAccViewerComponent implements AfterViewInit {
   mktBrLstObj: Nullable<AssetLastJs[]> = null;
 
   histStr = '[Nothing arrived yet]';
+  histStrFormatted : string[] = [];
   histObj: Nullable<HistJs[]> = null;
 
   selectedNav = '';
   uiMktBar: UiMktBarItem[] = [];
 
   brAccChrtData1: UiBrAccChrtHistValRaw[] = [];
-  brAccHistStatVal : uiHistStatValues [] = []; // histstat values can be used in brAccViewer
-  brAccChrtActuals : uiBrcAccChrtval [] = [] ; //Combining 2 arrays histdates and histsdaclose
+  brAccHistStatVal : UiHistStatValues [] = []; // histstat values can be used in brAccViewer
+  brAccChrtActuals : UiBrcAccChrtval [] = [] ; //Combining 2 arrays histdates and histsdaclose
 
   brAccountSnapshotStr = '[Nothing arrived yet]';
+  brAccountSnapshotStrFormatted : string[] = [];
   brAccountSnapshotObj : Nullable<BrAccSnapshotJs>=null;
 
   uiSnapTab : UiSnapTable = new UiSnapTable();
@@ -262,7 +255,7 @@ export class BrAccViewerComponent implements AfterViewInit {
   lookbackStartETstr: string; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a 	A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
   lookbackEndET: Date;
   lookbackEndETstr: string;
-  selectedData : string[] = [];
+ 
 
   // required for chart
   private margin = {top: 10, right: 30, bottom: 30, left: 60 };
@@ -273,13 +266,6 @@ export class BrAccViewerComponent implements AfterViewInit {
   private svg: any;
   public tooltip: any;
   private line!: d3Shape.Line<[number, number]>;
-  // // private focus: Selection<any, any, any, any>;
-  // private focus : a
-  // hovered: { date: Date; sdaClose: number };
-  // private line1!: d3Shape.Line<[number, number]>;
-  // sqTicker: any;
-  // ticker: any;
-  // isNavColumn: any;
 
   constructor() {
 
@@ -296,9 +282,8 @@ export class BrAccViewerComponent implements AfterViewInit {
     this.lookbackEndETstr = this.Date2PaddedIsoStr(this.lookbackEndET);
     
     // Creating a Width and Height data points
-    this.width = 560 - this.margin.left - this.margin.right;
+    this.width = 660 - this.margin.left - this.margin.right;
     this.height = 400 - this.margin.top - this.margin.bottom;
-    this.selectedData = []
 
     setInterval(function (self) {
       return function(self) {   //Return a function in the context of 'self'
@@ -315,6 +300,7 @@ export class BrAccViewerComponent implements AfterViewInit {
       case 'BrAccViewer.BrAccSnapshot':
         console.log('BrAccViewer.BrAccSnapshot:' + msgObjStr);
         this.brAccountSnapshotStr = msgObjStr;
+        this.brAccountSnapshotStrFormatted = this.formatStr(msgObjStr);
         this.brAccountSnapshotObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.sortColumn, this.sortDirection, this.uiSnapTab, this.uiSnapPosItem) 
         const jsonObjSnap = JSON.parse(msgObjStr);
@@ -323,8 +309,9 @@ export class BrAccViewerComponent implements AfterViewInit {
       case 'BrAccViewer.Hist':
         console.log('BrAccViewer.Hist:' + msgObjStr);
         this.histStr = msgObjStr;
+        this.histStrFormatted = this.formatStr(msgObjStr);
         this.histObj = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateChrtUi(this.histObj, this.brAccChrtData1, this.brAccHistStatVal, this.brAccChrtActuals,this.uiSnapPosItem);
+        BrAccViewerComponent.updateChrtUi(this.histObj, this.brAccChrtData1, this.brAccHistStatVal, this.brAccChrtActuals);
         this.fillChartWithData();
       
         // if message is too large without spaces, we have problems as there is no horizontal scrollbar in browser. So, shorten the message.
@@ -336,6 +323,7 @@ export class BrAccViewerComponent implements AfterViewInit {
       case 'BrAccViewer.MktBrLstCls':
         console.log('BrAccViewer.MktBrLstCls:' + msgObjStr);
         this.mktBrLstClsStr = msgObjStr;
+        this.mktBrLstClsStrFormatted = this.formatStr(msgObjStr);
         this.mktBrLstClsObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, null, this.uiMktBar);
        
@@ -352,11 +340,22 @@ export class BrAccViewerComponent implements AfterViewInit {
         return false;
     }
   }
+  formatStr(p_str:string) : string[] {
+    var chunks : string[] = [];
+    for (var i = 0; i < p_str.length; i += 250) {
+      chunks.push(p_str.substring(i, i + 250));
+    }
+    console.log("The chunks are", chunks);
+    return chunks;
+  }
 
-  formatStr(p_str: string): string {
-    let result = 'first line\nsecond line\nthird line.';
-    // 
-    return result;
+  formatStr2(p_str:string) : string {
+    var chunks : string[] = [];
+    for (var i = 0; i < p_str.length; i += 250) {
+      chunks.push(p_str.substring(i, i + 250));
+    }
+    console.log("The chunks are", chunks);
+    return chunks.join("\n");
   }
 
   public webSocketLstValArrived(p_lstValObj: Nullable<AssetLastJs[]>) {
@@ -499,7 +498,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     uiSnapTab.netLiquidationStr = brAccSnap.netLiquidation.toString();
     uiSnapTab.priorCloseNetLiquidation = brAccSnap.priorCloseNetLiquidation;
     uiSnapTab.plTodPrNav = Math.round(brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation);
-    uiSnapTab.pctChgTodPrNav = (brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation)/brAccSnap.priorCloseNetLiquidation;
+    uiSnapTab.pctChgTodPrNav = (brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation) / brAccSnap.priorCloseNetLiquidation;
  
     uiSnapPosItem.length = 0;
 
@@ -522,7 +521,7 @@ export class BrAccViewerComponent implements AfterViewInit {
       uiPosItem.accId = possItem.accId;
       uiPosItem.mktVal = Math.round(possItem.pos * possItem.estPrice);
       uiPosItem.pctChgTod =
-        (possItem.estPrice - possItem.priorClose) / possItem.estPrice;
+        (possItem.estPrice - possItem.priorClose) / possItem.priorClose;
       uiPosItem.plTod = Math.round(
         possItem.pos * (possItem.estPrice - possItem.priorClose)
       );
@@ -545,8 +544,8 @@ export class BrAccViewerComponent implements AfterViewInit {
       }
       uiSnapTab.totalMaxRiskedN += Math.abs(item.mktVal);
     } 
-    uiSnapTab.sumPlTodPct = uiSnapTab.sumPlTodVal/uiSnapTab.netLiquidation; // profit & Loss total percent change
-    uiSnapTab.totalMaxRiskedLeverage = (uiSnapTab.totalMaxRiskedN/uiSnapTab.netLiquidation);
+    uiSnapTab.sumPlTodPct = uiSnapTab.sumPlTodVal / uiSnapTab.priorCloseNetLiquidation; // profit & Loss total percent change
+    uiSnapTab.totalMaxRiskedLeverage = (uiSnapTab.totalMaxRiskedN / uiSnapTab.netLiquidation);
     uiSnapTab.numOfPoss = (uiSnapPosItem.length) - 1;
   
     // sort by sortColumn
@@ -619,9 +618,8 @@ export class BrAccViewerComponent implements AfterViewInit {
     });
   }
 
-  static updateChrtUi(histObj : Nullable<HistJs[]>, brAccChrtData1: UiBrAccChrtHistValRaw[], brAccHistStatVal : uiHistStatValues[], brAccChrtActuals : uiBrcAccChrtval [],uiSnapPosItem: UiAssetSnapPossPos[]) {
-    if (histObj == null)
-      return;
+  static updateChrtUi(histObj : Nullable<HistJs[]>, brAccChrtData1: UiBrAccChrtHistValRaw[], brAccHistStatVal : UiHistStatValues[], brAccChrtActuals : UiBrcAccChrtval []) {
+    if (histObj == null) return;
 
       for (const histItem of histObj) {
         if (histItem.histStat == null) continue;
@@ -636,17 +634,14 @@ export class BrAccViewerComponent implements AfterViewInit {
       }
     let histValues = histObj[0].histValues;
     let histStat = histObj[0].histStat;
-    if (histValues == null)
-      return;
-      if (histStat ==  null) {
-      return ;
-    }
+    if (histValues == null || histStat ==  null ) return;
+
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
 
     for (const hisStatItem  of histObj) {
       if (hisStatItem.histStat ==  null) continue;
-      let statItem = new uiHistStatValues();
+      let statItem = new UiHistStatValues();
       statItem.assetId = hisStatItem.histStat.assetId;      
       statItem.periodEnd = hisStatItem.histStat.periodEnd;
       statItem.periodEndDate = hisStatItem.histStat.periodEndDate;
@@ -675,7 +670,7 @@ export class BrAccViewerComponent implements AfterViewInit {
 
     brAccChrtActuals.length = 0;
     for (var i = 0; i < histValues.histDates.length; i++ ) {
-      let elem = new uiBrcAccChrtval();
+      let elem = new UiBrcAccChrtval();
       elem.assetId = histValues.assetId;
       elem.dateStr = histValues.histDates[i];
       elem.date = new Date (elem.dateStr.substring(0,4) + '-' + elem.dateStr.substring(4,6) + '-' + elem.dateStr.substring(6,8));
@@ -692,24 +687,6 @@ export class BrAccViewerComponent implements AfterViewInit {
     // 
   }
 
-  private mousemove2(event: any, p_thisHtmlElement: any) {
-    let _thisClass = this;
-    let _thisHtmlElement = p_thisHtmlElement;
-    console.log("Class of _thisClass: ", _thisClass.constructor.name, ", Class of _thisHtmlElement: ", _thisHtmlElement.constructor.name);
-    // !!! until you get used to which is which, don't use 'this.' in mouse callback functions, but use _thisClass vs. _thisHtmlElement
-
-    const mousePos = d3.pointer(event);
-    const xCCL = event.clientX;
-    const yCCL = event.clientY;
-    const ttX = xCCL - mousePos[0];
-    const ttY = yCCL - mousePos[1];
-    console.log("The coordinates are: ", mousePos[0], "," , mousePos[1], "-", xCCL, "," , yCCL, "-", ttX, "," , ttY);
-
-    // recover coordinate we need
-    var x0 = _thisClass.myX.invert(mousePos[0]);
-    console.log(`The X0: '${x0}'`);
-  }
-
   private fillChartWithData() {
     d3.selectAll("#my_dataviz > *").remove(); 
     this.svg = d3.select('#my_dataviz').append('svg')
@@ -717,121 +694,114 @@ export class BrAccViewerComponent implements AfterViewInit {
                 .attr("height", this.height + this.margin.top + this.margin.bottom)
                 .append('g')
                 .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
- 
+    
     this.brAccChrtActuals.map(
             (d: {assetId:string | number; date: string | number | Date; sdaClose: string | number; }) => 
             ({assetId: +d.assetId,
               date: new Date(d.date),
               sdaClose: +d.sdaClose,
             }))
-     this.svg.selectAll("#my_dataviz").remove();
+    //  this.svg.selectAll("#my_dataviz").remove();
+    //  const parseDate = d3.timeParse("%Y%m%d")
+    //         formatDate = d3.timeFormat("%b %d"),
+    const formatMonth = d3.timeFormat("%Y%m%d");
     var  bisectDate = d3.bisector((d: any) => d.date).left
-    console.log(bisectDate);
+    // console.log(bisectDate);
     // find data range
-  var xMin = d3.min(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
-  var xMax = d3.max(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
-  var yMin = d3.min(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose );
-  var yMax = d3.max(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose );
+    var xMin = d3.min(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
+    var xMax = d3.max(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
+    var yMin = d3.min(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose );
+    var yMax = d3.max(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose );
   // range of data configuring
   //  const x = d3.scaleLinear().domain([0, maxDays + 10]).range([0, width]);
-  this.myX = d3.scaleTime()
-            .domain([xMin, xMax])
-            .range([0, this.width]);
-  this.myY = d3.scaleLinear()
-              .domain([yMin-5, yMax])
-              .range([this.height, 0]);
-  this.svg.append('g')
-          .attr('transform', 'translate(0,' + this.height + ')')
-          .call(d3Axis.axisBottom(this.myX))
+    this.myX = d3.scaleTime()
+              .domain([xMin, xMax])
+              .range([0, this.width]);
+    this.myY = d3.scaleLinear()
+                .domain([yMin-5, yMax])
+                .range([this.height, 0]);
+    this.svg.append('g')
+            .attr('transform', 'translate(0,' + this.height + ')')
+            .call(d3Axis.axisBottom(this.myX))
 
-  this.svg.append('g')
-          // .attr('class', 'axis--y')
-          .call(d3Axis.axisLeft(this.myY))
+    this.svg.append('g')
+            // .attr('class', 'axis--y')
+            .call(d3Axis.axisLeft(this.myY))
 
-    // text label for x-axis
-  this.svg.append("text")
-          .attr("x", this.width/2)
-          .attr("y", this.height + this.margin.bottom) 
-          .style("text-anchor","middle")
-          .text("Date");
-  // text label for y-axis
-  this.svg.append("text")
-          .attr("transform", "rotate(-90)")
-          .attr("y", 0-this.margin.left)
-          .attr("x", 0-(this.height/2))
-          .attr("dy","1em")
-          .style("text-anchor", "middle")
-          .text("sdaClose");
-    // Create the circle that travels along the curve of chart
-  var focus = this.svg
-                  .append('g')
-                  .append('circle')
-                  .style("fill", "none")
-                  .attr("stroke", "black")
-                  .attr('r', 8.5)
-                  .style("opacity", 0)
-  // Create the text that travels along the curve of chart
-  var focusText = this.svg
-                      .append('g')
-                      .append('text')
-                      .style("opacity", 0)
-                      .attr("text-anchor", "left")
-                      .attr("alignment-baseline", "middle")
+      // text label for x-axis
+    this.svg.append("text")
+            .attr("x", this.width/2)
+            .attr("y", this.height + this.margin.bottom) 
+            .style("text-anchor","middle")
+            .text("Date");
+    // text label for y-axis
+    this.svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 0-this.margin.left)
+            .attr("x", 0-(this.height/2))
+            .attr("dy","1em")
+            .style("text-anchor", "middle")
+            .text("sdaClose");
+      // Create the circle that travels along the curve of chart
+    var focus = this.svg
+                    .append('g')
+                    .append('circle')
+                    .style("fill", "none")
+                    .attr("stroke", "black")
+                    .attr('r', 5)
+                    .style("opacity", 0)
+    // Create the text that travels along the curve of chart
+    var focusText = this.svg
+                        .append('g')
+                        .append('text')
+                        .style("opacity", 0)
+                        .attr("text-anchor", "left")
+                        .attr("alignment-baseline", "middle")
 
-   // Genereating line - for sdaCloses 
-  this.line = d3Shape.line()
-                     .x( (d: any) => this.myX(d.date))
-                     .y( (d: any) => this.myY(d.sdaClose))
+    // Genereating line - for sdaCloses 
+    this.line = d3Shape.line()
+                       .x( (d: any) => this.myX(d.date))
+                       .y( (d: any) => this.myY(d.sdaClose))
 
-  this.svg.append('path')
+    this.svg.append('path')
             .attr('class', 'line') //Assign a class for styling
             .datum(this.brAccChrtActuals) // Binds data to the line
             .attr('d', this.line
             .curve(d3.curveCardinal))
 
-  let _thisClass = this;
+    let _thisClass = this;
+              
+    this.svg.append('rect')
+            .style("fill", "none")
+            .style("pointer-events", "all")
+            .attr('width', this.width)
+            .attr('height', this.height)
+            .on('mouseover', mouseover)
+            .on('mousemove', mousemove)
+            // .on('mousemove', function(this: any, event: any) { _thisClass.mousemove2(event, this) })
+            .on('mouseout', mouseout);
             
-  this.svg.append('rect')
-          .style("fill", "none")
-          .style("pointer-events", "all")
-          .attr('width', this.width)
-          .attr('height', this.height)
-          .on('mouseover', mouseover)
-          // .on('mousemove', mousemove)
-          .on('mousemove', function(this: any, event: any) { _thisClass.mousemove2(event, this) })
-          .on('mouseout', mouseout);
-          
-  function mouseover() {
-    focus.style("opacity", 1)
-    focusText.style("opacity",1)
-  }
-  // function mousemove(event: any) {
-  //   const mousePos = d3.pointer(event);
-  //   const xCCL = event.clientX;
-  //   const yCCL = event.clientY;
-  //   // const ttX = xCCL - mousePos[0];
-  //   // const ttY = yCCL - mousePos[1];
-  //   console.log( "The coordinates are: ", mousePos[0], "," , mousePos[1], "-", xCCL, "," , yCCL);
-
-  //   // recover coordinate we need
-  //   // var x0 = x.invert(d3.pointer(event)[0]);
-    
-  //   // var i = bisectDate(this.brAccChrtActuals, x0, 1);
-  //   // this.selectedData = this.brAccChrtActuals[i]
-  //   // focus
-  //   //   .attr("cx", this.x(this.selectedData.x))
-  //   //   .attr("cy", this.y(this.selectedData.y))
-  //   // focusText
-  //   //   .html("x:" + this.selectedData.x + "  -  " + "y:" + this.selectedData.y)
-  //   //   .attr("x", this.x(this.selectedData.x)+15)
-  //   //   .attr("y", this.y(this.selectedData.y))
-  //   }
+    function mouseover() {
+      focus.style("opacity", 1)
+      focusText.style("opacity",1)
+    }
+    function mousemove(event: any) {
+       // recover coordinate we need
+      var x0 = _thisClass.myX.invert(d3.pointer(event)[0]);
+      // console.log(`The X0: '${x0}'`);
+      var i = bisectDate(_thisClass.brAccChrtActuals, x0, 1), // index value on the chart area
+      selectedData = _thisClass.brAccChrtActuals[i]
+      focus.attr("cx",_thisClass.myX(selectedData.date))
+          .attr("cy",_thisClass.myY(selectedData.sdaClose))
+      focusText.html("x:" + formatMonth(selectedData.date) +  " - " + "y:" + selectedData.sdaClose)
+              .attr("x", _thisClass.myX(selectedData.date)+15)
+              .attr("y",_thisClass.myY(selectedData.sdaClose))
+    }
     function mouseout() {
       focus.style("opacity", 0)
       focusText.style("opacity", 0)
     }
 }
-
  // Chart functions end
 
   // zeroPad = (num, places: number) => String(num).padStart(places, '0');  // https://stackoverflow.com/questions/2998784/how-to-output-numbers-with-leading-zeros-in-javascript

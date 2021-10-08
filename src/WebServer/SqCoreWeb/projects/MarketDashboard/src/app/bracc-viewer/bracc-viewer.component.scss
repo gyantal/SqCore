@@ -54,6 +54,8 @@
 .selectedBrcAccSnapShotTbl {
   border: 1px solid black;
   border-collapse: collapse;
+  // height:100vh;
+  // overflow: scroll;
 }
 *{
   box-sizing: border-box;
@@ -293,9 +295,9 @@
 }
 .tooltipTempDebug:hover .tooltipSnap {
   display: inline-block;
-  // top: -15%;
-  // left: 150%;
-  // transform: translateX(-15%);
+  top: -50%;
+  left: 10%;
+  // transform: translateX(5%);
   // margin-top: -10px;
 }
 table, td, thead, th {
@@ -383,7 +385,7 @@ td {
   font-size: 0.8em;
   
 }
-#refersh{
+#refresh{
   width:15;
   height:15;
   cursor: pointer;

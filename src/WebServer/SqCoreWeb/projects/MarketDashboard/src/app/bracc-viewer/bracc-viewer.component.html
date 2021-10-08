@@ -32,7 +32,6 @@ MarketBar
                 'mktbarNegativePerf' : uiSnapTab.sumPlTodPct < 0
                 }">({{uiSnapTab.sumPlTodPct | percent:'1.2'}})
             </span> 
-            
             <div class="tooltipSnap">
                 <div class="snapshot">
                     Profit is calculated as a sum of the table cells 
@@ -116,7 +115,6 @@ MarketBar
                                 Leverage less than 1.3 -> green
                             </div>
                         </div>
-                    
                     </div>
                     <div class="tooltipCell">Delta Adjusted Bullish/<br>Bearish Market Orientation:
                         <div class="tooltipSnap">
@@ -196,7 +194,6 @@ MarketBar
                 <span class="snapshot">Name:
                     {{item.name}} <br>
                     <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">
-                        <!-- <img border='0' alt='YF' src='../assets/images/TV.webp' width='18' height='18'> -->
                         <svg width="28" height="22" viewBox="0 0 28 22" xmlns="http://www.w3.org/2000/svg" >
                             <path d="M 12 20 H 7 V 11 H 0 V 4 h 12 v 16 z 
                                      M 24 20 h-8 l 7.5-18 h 8 L 22 20 z" fill="currentColor">
@@ -206,8 +203,8 @@ MarketBar
                     </a>, 
                     <a href="https://finance.yahoo.com/quote/{{item.symbol}}" target="_blank"><img border='0' alt='YF' src='../assets/images/YF.webp' width='20' height='20'></a>,
                     <a href="https://www.zacks.com/stock/quote/{{item.symbol}}" target="_blank"><img border='0' alt='Zacks' src='../assets/images/Zacks.webp' width='20' height='20'></a>,
-                    <a href="https://www.earningswhispers.com/stocks/{{item.symbol}}" target="_blank"><img border='earningswhispers-BeforeEarnings' alt='YF' src='../assets/images/EW-BE.webp' width='20' height='20'></a>,
-                    <a href="https://www.earningswhispers.com/stocks/{{item.symbol}}" target="_blank"><img border='0' alt='earningswhispers-AfterEarnings' src='../assets/images/EW-AE.webp' width='20' height='20'></a>,
+                    <a href="https://www.earningswhispers.com/tradeview/{{item.symbol}}" target="_blank"><img border='earningswhispers-BeforeEarnings' alt='YF' src='../assets/images/EW-BE.webp' width='20' height='20'></a>,
+                    <a href="https://www.earningswhispers.com/epsdetails/{{item.symbol}}" target="_blank"><img border='0' alt='earningswhispers-AfterEarnings' src='../assets/images/EW-AE.webp' width='20' height='20'></a>,
                     <a href="https://www.tipranks.com/stocks/{{item.symbol}}/forecast" target="_blank"><img border='0' alt='TipRanks' src='../assets/images/TR.webp' width='20' height='20'></a>,
                     <a href="https://stockcharts.com/h-sc/ui?s={{item.symbol}}" target="_blank"><img border='0' alt='stocksCharts' src='../assets/images/SC.webp' width='20' height='20'></a> <br>
                     <svg style="border: solid 1px blue">
@@ -250,28 +247,28 @@ MarketBar
 <div class="tooltipTempDebug">HandshakeMsgStr:
     <div class="tooltipSnap">
         <div class="snapshot">
-            {{ handshakeStr }}
+        <div *ngFor= "let item of handshakeStrFormatted">{{ item }}</div>
         </div>
     </div>
 </div>
 <div class="tooltipTempDebug">MarketBarLastClosesStr:
     <div class="tooltipSnap">
         <div class="snapshot">
-            {{ mktBrLstClsStr }}
+            <div *ngFor= "let item of mktBrLstClsStrFormatted">{{ item }}</div>
         </div>
     </div>
 </div>
 <div class="tooltipTempDebug">HistStr:
     <div class="tooltipSnap">
         <div class="snapshot">
-            {{ histStr }}
+            <div *ngFor= "let item of histStrFormatted">{{ item }}</div>
         </div>
     </div>
 </div>
 <div class="tooltipTempDebug">BrAccountSnapshot:
     <div class="tooltipSnap">
         <div class="snapshot">
-            {{ brAccountSnapshotStr }}
+            <div *ngFor= "let item of brAccountSnapshotStrFormatted">{{ item }}</div>
         </div>
     </div>
 </div>
