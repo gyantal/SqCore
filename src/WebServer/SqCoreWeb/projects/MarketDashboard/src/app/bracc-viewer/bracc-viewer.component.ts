@@ -139,15 +139,6 @@ class UiBrAccChrtHistValRaw {
   public assetId = NaN;
   public histDates = [];
   public histSdaCloses = [];
-  // Hist stat values
-  public periodStartDate = '';
-  public periodEndDate = '';
-  public periodStart = NaN;
-  public periodEnd = NaN;
-  public periodHigh = NaN;
-  public periodLow = NaN;
-  public periodMaxDD = NaN;
-  public periodMaxDU = NaN;
 }
 
 // Hist stat Values
@@ -177,6 +168,7 @@ class UiHistStatValues {
 // Hist chart values
 class UiBrcAccChrtval {
   public assetId = NaN;
+  public sqTicker = '';
   public dateStr = '';
   public date = new Date('2021-01-01');
   public sdaClose = NaN;
@@ -186,7 +178,6 @@ class UiBrcAccChrtval {
   selector: 'app-bracc-viewer',
   templateUrl: './bracc-viewer.component.html',
   styleUrls: ['./bracc-viewer.component.scss'],
-  // encapsulation: ViewEncapsulation.None
 })
 export class BrAccViewerComponent implements AfterViewInit {
   @Input() _parentWsConnection?: WebSocket = undefined;    // this property will be input from above parent container
@@ -210,53 +201,40 @@ export class BrAccViewerComponent implements AfterViewInit {
     };     // it is QQQ Beta, not SPY beta
 
   handshakeStr = '[Nothing arrived yet]';
-  handshakeStrFormatted : string[] = [];
+  handshakeStrFormatted1 : string[] = [];
+  handshakeStrFormatted = '[Nothing arrived yet]';
   handshakeObj: Nullable<BrAccVwrHandShk> = null;
   mktBrLstClsStr = '[Nothing arrived yet]';
-  mktBrLstClsStrFormatted : string[] = [];
+  mktBrLstClsStrFormatted = '[Nothing arrived yet]';
   mktBrLstClsObj: Nullable<AssetPriorCloseJs[]> = null;
-
   lstValObj: Nullable<AssetLastJs[]> = null;  // realtime or last values
-
-  mktBrLstObj: Nullable<AssetLastJs[]> = null;
-
   histStr = '[Nothing arrived yet]';
-  histStrFormatted : string[] = [];
+  histStrFormatted = '[Nothing arrived yet]';
   histObj: Nullable<HistJs[]> = null;
-
   selectedNav = '';
   uiMktBar: UiMktBarItem[] = [];
-
-  brAccChrtData1: UiBrAccChrtHistValRaw[] = [];
+  brAccChrtData: UiBrAccChrtHistValRaw[] = [];
   brAccHistStatVal : UiHistStatValues [] = []; // histstat values can be used in brAccViewer
   brAccChrtActuals : UiBrcAccChrtval [] = [] ; //Combining 2 arrays histdates and histsdaclose
-
   brAccountSnapshotStr = '[Nothing arrived yet]';
-  brAccountSnapshotStrFormatted : string[] = [];
+  brAccountSnapshotStrFormatted = '[Nothing arrived yet]';
   brAccountSnapshotObj : Nullable<BrAccSnapshotJs>=null;
-
   uiSnapTab : UiSnapTable = new UiSnapTable();
   uiSnapPos : BrAccSnapshotPosJs[] = [];
   uiSnapPosItem: UiAssetSnapPossPos[] = [];
-
   tabPageVisibleIdx = 1;
-
   sortColumn : string = "DailyPL";
   sortDirection : string = "Increase";
-
   uiNavSel : string[] = [];
   navSelectionSelected = '';
   perfIndicatorSelected = '';
-
   yrSelectionChoices = ['YTD','1M','1Y','3Y','5Y'];
   yrSelectionSelected = 'YTD';
-
   lookbackStartET: Date; // set in ctor. We need this in JS client to check that the received data is long enough or not (Expected Date)
   lookbackStartETstr: string; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a 	A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
   lookbackEndET: Date;
   lookbackEndETstr: string;
  
-
   // required for chart
   private margin = {top: 10, right: 30, bottom: 30, left: 60 };
   private width: number;
@@ -264,7 +242,6 @@ export class BrAccViewerComponent implements AfterViewInit {
   private myX: any;
   private myY: any;
   private svg: any;
-  public tooltip: any;
   private line!: d3Shape.Line<[number, number]>;
 
   constructor() {
@@ -294,7 +271,6 @@ export class BrAccViewerComponent implements AfterViewInit {
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
       case 'BrAccViewer.RtStat':  // this is the most frequent case. Should come first.
-
         BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, null, this.uiMktBar);
         return true;
       case 'BrAccViewer.BrAccSnapshot':
@@ -311,9 +287,8 @@ export class BrAccViewerComponent implements AfterViewInit {
         this.histStr = msgObjStr;
         this.histStrFormatted = this.formatStr(msgObjStr);
         this.histObj = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateChrtUi(this.histObj, this.brAccChrtData1, this.brAccHistStatVal, this.brAccChrtActuals);
+        BrAccViewerComponent.updateChrtUi(this.histObj, this.brAccChrtData, this.brAccHistStatVal, this.brAccChrtActuals);
         this.fillChartWithData();
-      
         // if message is too large without spaces, we have problems as there is no horizontal scrollbar in browser. So, shorten the message.
         if (msgObjStr.length < 200)
           this.histStr = msgObjStr;
@@ -326,7 +301,6 @@ export class BrAccViewerComponent implements AfterViewInit {
         this.mktBrLstClsStrFormatted = this.formatStr(msgObjStr);
         this.mktBrLstClsObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, null, this.uiMktBar);
-       
         return true;
       case 'BrAccViewer.Handshake':  // this is the least frequent case. Should come last.
         console.log('BrAccViewer.Handshake:' + msgObjStr);
@@ -340,22 +314,17 @@ export class BrAccViewerComponent implements AfterViewInit {
         return false;
     }
   }
-  formatStr(p_str:string) : string[] {
+ 
+  formatStr(p_str:string) : string {
     var chunks : string[] = [];
+    var strArr : string ='';
     for (var i = 0; i < p_str.length; i += 250) {
       chunks.push(p_str.substring(i, i + 250));
+      strArr = chunks.join("\n");
+      // return strArr;
     }
     console.log("The chunks are", chunks);
-    return chunks;
-  }
-
-  formatStr2(p_str:string) : string {
-    var chunks : string[] = [];
-    for (var i = 0; i < p_str.length; i += 250) {
-      chunks.push(p_str.substring(i, i + 250));
-    }
-    console.log("The chunks are", chunks);
-    return chunks.join("\n");
+    return strArr;
   }
 
   public webSocketLstValArrived(p_lstValObj: Nullable<AssetLastJs[]>) {
@@ -364,14 +333,12 @@ export class BrAccViewerComponent implements AfterViewInit {
   }
   
   updateUiSelectableNavs(pSelectableNavAssets: Nullable<AssetJs[]>) {  // same in MktHlth and BrAccViewer
-
     if(pSelectableNavAssets == null) return;
     this.navSelectionSelected = '';
     for (const nav of pSelectableNavAssets) {
       if (this.navSelectionSelected == '') // by default, the selected Nav is the first from the list
         this.navSelectionSelected = nav.symbol;
       this.uiNavSel.push(nav.symbol)
-      //navSelectElement.options[navSelectElement.options.length] = new Option(nav.symbol, nav.symbol);
     }
   }
   
@@ -433,14 +400,11 @@ export class BrAccViewerComponent implements AfterViewInit {
 
   static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, priorCloses: Nullable<AssetPriorCloseJs[]>, lastRt: Nullable<AssetLastJs[]>, uiMktBar: UiMktBarItem[]) {
      // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
-     if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(priorCloses) && priorCloses.length > 0  && Array.isArray(lastRt) && lastRt.length > 0)) {
-      return;
-    }
+    if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(priorCloses) && priorCloses.length > 0  && Array.isArray(lastRt) && lastRt.length > 0)) return;
+    
     for (const item of marketBarAssets) {
       let uiItem: UiMktBarItem;
-      const existingUiCols = uiMktBar.filter(
-        (r) => r.sqTicker === item.sqTicker
-      );
+      const existingUiCols = uiMktBar.filter((r) => r.sqTicker === item.sqTicker);
       if (existingUiCols.length === 0) {
         uiItem = new UiMktBarItem();
         uiItem.assetId = item.assetId;
@@ -455,7 +419,6 @@ export class BrAccViewerComponent implements AfterViewInit {
         uiItem = existingUiCols[0];
       }
     }
-
     for (const nonRt of priorCloses) {
       const existingUiCols = uiMktBar.filter((r) => r.assetId === nonRt.assetId);
       if (existingUiCols.length === 0) {
@@ -467,18 +430,15 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
     for (const rtItem of lastRt) {
       const existingUiItems = uiMktBar.filter((r) => r.assetId === rtItem.assetId);
-      if (existingUiItems.length === 0)
-        continue;
+      if (existingUiItems.length === 0) continue;
       const uiItem = existingUiItems[0];
       uiItem.pctChg = (rtItem.last - uiItem.priorClose) / uiItem.priorClose;
-      
     }
   }
 
   static updateSnapshotTable(brAccSnap : Nullable<BrAccSnapshotJs>, sortColumn : string, sortDirection : string, uiSnapTab : UiSnapTable, uiSnapPosItem: UiAssetSnapPossPos[])
   {
     if (brAccSnap === null || brAccSnap.poss === null) return;
-
     uiSnapTab.symbol = brAccSnap.symbol;
     uiSnapTab.lastUpdate = brAccSnap.lastUpdate;
     uiSnapTab.snapLastUpateTime = new Date(brAccSnap.lastUpdate);
@@ -504,7 +464,6 @@ export class BrAccViewerComponent implements AfterViewInit {
 
     for (const possItem of brAccSnap.poss) {
       console.log("The positions of UiSnapTable are :" + possItem.pos);
-
       let uiPosItem = new UiAssetSnapPossPos();
       uiPosItem.assetId = possItem.assetId;
       uiPosItem.sqTicker = possItem.sqTicker;
@@ -520,14 +479,10 @@ export class BrAccViewerComponent implements AfterViewInit {
       uiPosItem.estUndPrice = possItem.estUndPrice;
       uiPosItem.accId = possItem.accId;
       uiPosItem.mktVal = Math.round(possItem.pos * possItem.estPrice);
-      uiPosItem.pctChgTod =
-        (possItem.estPrice - possItem.priorClose) / possItem.priorClose;
-      uiPosItem.plTod = Math.round(
-        possItem.pos * (possItem.estPrice - possItem.priorClose)
-      );
+      uiPosItem.pctChgTod = (possItem.estPrice - possItem.priorClose) / possItem.priorClose;
+      uiPosItem.plTod = Math.round(possItem.pos * (possItem.estPrice - possItem.priorClose));
       uiPosItem.pl = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost))
       uiPosItem.betaDltAdj = Math.round(uiPosItem.gBeta * uiPosItem.mktVal)
-      // uiPosItem.plTodPrNav = Math.round()
       uiSnapPosItem.push(uiPosItem);
     }
 
@@ -549,9 +504,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     uiSnapTab.numOfPoss = (uiSnapPosItem.length) - 1;
   
     // sort by sortColumn
-
     uiSnapPosItem.sort((n1: UiAssetSnapPossPos, n2: UiAssetSnapPossPos) => {
-
       let dirMultiplier = (sortDirection === "Increasing") ? 1 : -1;
       switch (sortColumn) {
         case 'Symbol':
@@ -609,7 +562,6 @@ export class BrAccViewerComponent implements AfterViewInit {
           if (n1.betaDltAdj < n2.betaDltAdj) return 1 * dirMultiplier;
           if (n1.betaDltAdj > n2.betaDltAdj) return -1 * dirMultiplier;
           break;
-      
         default:
           console.warn("Urecognized...***");
           break;
@@ -618,19 +570,18 @@ export class BrAccViewerComponent implements AfterViewInit {
     });
   }
 
-  static updateChrtUi(histObj : Nullable<HistJs[]>, brAccChrtData1: UiBrAccChrtHistValRaw[], brAccHistStatVal : UiHistStatValues[], brAccChrtActuals : UiBrcAccChrtval []) {
+  static updateChrtUi(histObj : Nullable<HistJs[]>, brAccChrtData: UiBrAccChrtHistValRaw[], brAccHistStatVal : UiHistStatValues[], brAccChrtActuals : UiBrcAccChrtval []) {
     if (histObj == null) return;
 
       for (const histItem of histObj) {
-        if (histItem.histStat == null) continue;
-        if (histItem.histValues == null) continue;
+        if (histItem.histStat == null || histItem.histValues == null ) continue;
         console.log(histItem.histStat.sqTicker);
         console.log(histItem.histStat.assetId);
-
         let chrtItem = new UiBrAccChrtHistValRaw();
         chrtItem.assetId = histItem.histStat.assetId;
         chrtItem.histDates = histItem.histValues.histDates;
         chrtItem.histSdaCloses = histItem.histValues.histSdaCloses;
+        brAccChrtData.push(chrtItem);
       }
     let histValues = histObj[0].histValues;
     let histStat = histObj[0].histStat;
@@ -651,7 +602,6 @@ export class BrAccViewerComponent implements AfterViewInit {
       statItem.periodMaxDU = hisStatItem.histStat.periodMaxDU;
       statItem.periodStart = hisStatItem.histStat.periodStart
       statItem.periodStartDate = hisStatItem.histStat.periodStartDate;
-
       // preparing values
       statItem.periodReturn = statItem.periodEnd / statItem.periodStart - 1;
       statItem.periodMaxDrawDown = statItem.periodMaxDD;
@@ -672,6 +622,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     for (var i = 0; i < histValues.histDates.length; i++ ) {
       let elem = new UiBrcAccChrtval();
       elem.assetId = histValues.assetId;
+      elem.sqTicker = histValues.sqTicker;
       elem.dateStr = histValues.histDates[i];
       elem.date = new Date (elem.dateStr.substring(0,4) + '-' + elem.dateStr.substring(4,6) + '-' + elem.dateStr.substring(6,8));
       elem.sdaClose = histValues.histSdaCloses[i]
@@ -690,30 +641,24 @@ export class BrAccViewerComponent implements AfterViewInit {
   private fillChartWithData() {
     d3.selectAll("#my_dataviz > *").remove(); 
     this.svg = d3.select('#my_dataviz').append('svg')
-                .attr("width", this.width + this.margin.left + this.margin.right)
-                .attr("height", this.height + this.margin.top + this.margin.bottom)
-                .append('g')
-                .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
+                 .attr("width", this.width + this.margin.left + this.margin.right)
+                 .attr("height", this.height + this.margin.top + this.margin.bottom)
+                 .append('g')
+                 .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
     
-    this.brAccChrtActuals.map(
-            (d: {assetId:string | number; date: string | number | Date; sdaClose: string | number; }) => 
+    this.brAccChrtActuals.map((d: {assetId:string | number; date: string | number | Date; sdaClose: string | number; }) => 
             ({assetId: +d.assetId,
               date: new Date(d.date),
               sdaClose: +d.sdaClose,
-            }))
-    //  this.svg.selectAll("#my_dataviz").remove();
-    //  const parseDate = d3.timeParse("%Y%m%d")
-    //         formatDate = d3.timeFormat("%b %d"),
+            }));
     const formatMonth = d3.timeFormat("%Y%m%d");
-    var  bisectDate = d3.bisector((d: any) => d.date).left
-    // console.log(bisectDate);
+    var  bisectDate = d3.bisector((d: any) => d.date).left;
     // find data range
     var xMin = d3.min(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
     var xMax = d3.max(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
     var yMin = d3.min(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose );
     var yMax = d3.max(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose );
   // range of data configuring
-  //  const x = d3.scaleLinear().domain([0, maxDays + 10]).range([0, width]);
     this.myX = d3.scaleTime()
               .domain([xMin, xMax])
               .range([0, this.width]);
@@ -722,11 +667,11 @@ export class BrAccViewerComponent implements AfterViewInit {
                 .range([this.height, 0]);
     this.svg.append('g')
             .attr('transform', 'translate(0,' + this.height + ')')
-            .call(d3Axis.axisBottom(this.myX))
+            .call(d3Axis.axisBottom(this.myX));
 
     this.svg.append('g')
             // .attr('class', 'axis--y')
-            .call(d3Axis.axisLeft(this.myY))
+            .call(d3Axis.axisLeft(this.myY));
 
       // text label for x-axis
     this.svg.append("text")
@@ -749,25 +694,23 @@ export class BrAccViewerComponent implements AfterViewInit {
                     .style("fill", "none")
                     .attr("stroke", "black")
                     .attr('r', 5)
-                    .style("opacity", 0)
+                    .style("opacity", 0);
     // Create the text that travels along the curve of chart
     var focusText = this.svg
                         .append('g')
                         .append('text')
                         .style("opacity", 0)
                         .attr("text-anchor", "left")
-                        .attr("alignment-baseline", "middle")
-
+                        .attr("alignment-baseline", "middle");
     // Genereating line - for sdaCloses 
     this.line = d3Shape.line()
                        .x( (d: any) => this.myX(d.date))
-                       .y( (d: any) => this.myY(d.sdaClose))
-
+                       .y( (d: any) => this.myY(d.sdaClose));
     this.svg.append('path')
             .attr('class', 'line') //Assign a class for styling
             .datum(this.brAccChrtActuals) // Binds data to the line
             .attr('d', this.line
-            .curve(d3.curveCardinal))
+            .curve(d3.curveCardinal));
 
     let _thisClass = this;
               
@@ -778,13 +721,13 @@ export class BrAccViewerComponent implements AfterViewInit {
             .attr('height', this.height)
             .on('mouseover', mouseover)
             .on('mousemove', mousemove)
-            // .on('mousemove', function(this: any, event: any) { _thisClass.mousemove2(event, this) })
             .on('mouseout', mouseout);
             
     function mouseover() {
       focus.style("opacity", 1)
       focusText.style("opacity",1)
     }
+
     function mousemove(event: any) {
        // recover coordinate we need
       var x0 = _thisClass.myX.invert(d3.pointer(event)[0]);
@@ -797,6 +740,7 @@ export class BrAccViewerComponent implements AfterViewInit {
               .attr("x", _thisClass.myX(selectedData.date)+15)
               .attr("y",_thisClass.myY(selectedData.sdaClose))
     }
+
     function mouseout() {
       focus.style("opacity", 0)
       focusText.style("opacity", 0)

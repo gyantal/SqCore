@@ -51,12 +51,12 @@
     to {opacity: 1;}
   }
   // added by DAYA
-.selectedBrcAccSnapShotTbl {
-  border: 1px solid black;
-  border-collapse: collapse;
-  // height:100vh;
-  // overflow: scroll;
-}
+// .selectedBrcAccSnapShotTbl {
+//   border: 1px solid black;
+//   border-collapse: collapse;
+//   // height:100vh;
+//   // overflow: scroll;
+// }
 *{
   box-sizing: border-box;
 }
@@ -300,6 +300,9 @@
   // transform: translateX(5%);
   // margin-top: -10px;
 }
+table{
+  width: 100%;
+}
 table, td, thead, th {
   border: 1px solid #9cd3db;;
   border-collapse: collapse;
@@ -315,7 +318,6 @@ table, td, thead, th {
               inset 0 0.1rem #fff,
               inset 0 -0.1rem #fff;
   color: #000;
-  
 }
 thead {
   font-weight: bold;
@@ -342,7 +344,9 @@ thead :hover {
 td {
   font-size: small;
 }
-
+tbody{
+  overflow-y: scroll;
+}
 // style for ab pages 
 
 .ChartSumm .tab{
@@ -383,7 +387,6 @@ td {
 .AccSumm #refersh {
   font-weight: none;
   font-size: 0.8em;
-  
 }
 #refresh{
   width:15;
@@ -403,4 +406,14 @@ td {
   padding: 0.5rem 0;
   border-radius: 0.6rem;
   display: none;
+}
+.horizontal-scroll {
+  overflow: hidden;
+  overflow-x: auto;
+  clear: both;
+  width: 100%;
+}
+
+.selectedBrcAccSnapShotTbl {
+  min-width: rem-calc(640);
 }

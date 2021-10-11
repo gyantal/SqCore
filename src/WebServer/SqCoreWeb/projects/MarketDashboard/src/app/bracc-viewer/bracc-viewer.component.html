@@ -165,7 +165,9 @@ MarketBar
 </span>
 </div>
 <br>
+<br>
 <hr>
+<div class="horizontal-scroll">
 <table class = "selectedBrcAccSnapShotTbl">
     <thead class = "selectedBrcAccSnapShotTbl">
         <th [ngClass]="{'NormalTableHeader':sortColumn ==='Symbol'}" (click)="onSortingClicked($event, 'Symbol')">Symbol</th>
@@ -240,6 +242,7 @@ MarketBar
     </tr>
     </tbody>
 </table>
+</div>
 <hr>
 <!-- Addded class "selectedTempDebug" to limit the text output in the UI-->
 <div class="selectedTempDebug">
@@ -247,28 +250,28 @@ MarketBar
 <div class="tooltipTempDebug">HandshakeMsgStr:
     <div class="tooltipSnap">
         <div class="snapshot">
-        <div *ngFor= "let item of handshakeStrFormatted">{{ item }}</div>
+            {{handshakeStrFormatted}}
         </div>
     </div>
 </div>
 <div class="tooltipTempDebug">MarketBarLastClosesStr:
     <div class="tooltipSnap">
         <div class="snapshot">
-            <div *ngFor= "let item of mktBrLstClsStrFormatted">{{ item }}</div>
+            {{mktBrLstClsStrFormatted}}
         </div>
     </div>
 </div>
 <div class="tooltipTempDebug">HistStr:
     <div class="tooltipSnap">
         <div class="snapshot">
-            <div *ngFor= "let item of histStrFormatted">{{ item }}</div>
+            {{histStrFormatted}}
         </div>
     </div>
 </div>
 <div class="tooltipTempDebug">BrAccountSnapshot:
     <div class="tooltipSnap">
         <div class="snapshot">
-            <div *ngFor= "let item of brAccountSnapshotStrFormatted">{{ item }}</div>
+            {{brAccountSnapshotStrFormatted}}
         </div>
     </div>
 </div>
