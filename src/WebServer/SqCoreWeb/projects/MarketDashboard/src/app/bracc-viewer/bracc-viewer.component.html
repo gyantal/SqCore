@@ -23,25 +23,25 @@ MarketBar
         <h4>Account Summary</h4>
         <div id="plSum" class="tooltipCell">P&L Today (Positions) : 
             <span [ngClass]="{
-                'mktBarPositivePerf' : uiSnapTab.sumPlTodVal > 0,
-                'mktbarNegativePerf' : uiSnapTab.sumPlTodVal < 0
-                }">{{uiSnapTab.sumPlTodVal | currency:'USD':'symbol':'1.0' }}
+                'mktBarPositivePerf' : uiSnapTable.sumPlTodVal > 0,
+                'mktbarNegativePerf' : uiSnapTable.sumPlTodVal < 0
+                }">{{uiSnapTable.sumPlTodVal | currency:'USD':'symbol':'1.0' }}
             </span>
             <span [ngClass]="{
-                'mktBarPositivePerf' : uiSnapTab.sumPlTodPct > 0,
-                'mktbarNegativePerf' : uiSnapTab.sumPlTodPct < 0
-                }">({{uiSnapTab.sumPlTodPct | percent:'1.2'}})
+                'mktBarPositivePerf' : uiSnapTable.sumPlTodPct > 0,
+                'mktbarNegativePerf' : uiSnapTable.sumPlTodPct < 0
+                }">({{uiSnapTable.sumPlTodPct | percent:'1.2'}})
             </span> 
             <div class="tooltipSnap">
                 <div class="snapshot">
                     Profit is calculated as a sum of the table cells 
                 </div>
             </div>
-            <span id="refresh"><img id="refresh" border='0' alt='YF' src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked($event)" width='15' height='15'>{{uiSnapTab.snapLastUpateTime | date:'H:mm'}} ({{uiSnapTab.snapLastUpdateTimeAgoStr}})</span>
+            <span id="refresh"><img id="refresh" border='0' alt='YF' src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked($event)" width='15' height='15'>{{uiSnapTable.snapLastUpateTime | date:'H:mm'}} ({{uiSnapTable.snapLastUpdateTimeAgoStr}})</span>
         </div>
         <div id="plSum" class="tooltipCell">NAV :
             <span id="liqVal">
-                {{uiSnapTab.netLiquidationStr | currency:'USD':'symbol':'1.0'}}
+                {{uiSnapTable.netLiquidationStr | currency:'USD':'symbol':'1.0'}}
             </span>
             <div class="tooltipSnap">
                 <div class="snapshot">
@@ -51,14 +51,14 @@ MarketBar
         </div>
         <div id="plSum" class="tooltipCell">P&L Today (PriorNAV) : 
             <span [ngClass]="{
-                'mktBarPositivePerf' : uiSnapTab.plTodPrNav > 0,
-                'mktbarNegativePerf' : uiSnapTab.plTodPrNav < 0
-                }"> {{uiSnapTab.plTodPrNav | currency:'USD':'symbol':'1.0'}}
+                'mktBarPositivePerf' : uiSnapTable.plTodPrNav > 0,
+                'mktbarNegativePerf' : uiSnapTable.plTodPrNav < 0
+                }"> {{uiSnapTable.plTodPrNav | currency:'USD':'symbol':'1.0'}}
             </span>
             <span [ngClass]="{
-                'mktBarPositivePerf' : uiSnapTab.pctChgTodPrNav > 0,
-                'mktbarNegativePerf' : uiSnapTab.pctChgTodPrNav < 0
-                }"> ({{uiSnapTab.pctChgTodPrNav | percent:'1.2'}})
+                'mktBarPositivePerf' : uiSnapTable.pctChgTodPrNav > 0,
+                'mktbarNegativePerf' : uiSnapTable.pctChgTodPrNav < 0
+                }"> ({{uiSnapTable.pctChgTodPrNav | percent:'1.2'}})
             </span>
             <div class="tooltipSnap">
                 <div class="snapshot">
@@ -76,16 +76,16 @@ MarketBar
     <div class="ChartSumm">
             <div [hidden]="tabPageVisibleIdx != 1" id="tab1">
                 <div class="sections">
-                    <div>IB Total Cash: <span id="plSum">{{uiSnapTab.totalCashValue | number}}</span></div>
-                    <div>IB Initial MarginReq: <span id="plSum">{{uiSnapTab.initialMarginReq | number}}</span></div>
-                    <div>IB Maintenance MarginReq: <span id="plSum">{{uiSnapTab.maintMarginReq | number}}</span></div>
-                    <div>IB Gross Position Value: <span id="plSum">{{uiSnapTab.grossPositionValue | number}}</span></div>
+                    <div>IB Total Cash: <span id="plSum">{{uiSnapTable.totalCashValue | number}}</span></div>
+                    <div>IB Initial MarginReq: <span id="plSum">{{uiSnapTable.initialMarginReq | number}}</span></div>
+                    <div>IB Maintenance MarginReq: <span id="plSum">{{uiSnapTable.maintMarginReq | number}}</span></div>
+                    <div>IB Gross Position Value: <span id="plSum">{{uiSnapTable.grossPositionValue | number}}</span></div>
                 </div>
                 <div class="sections">
-                    <div>Number Of Positions: <span id="plSum">{{uiSnapTab.numOfPoss}}</span></div>
+                    <div>Number Of Positions: <span id="plSum">{{uiSnapTable.numOfPoss}}</span></div>
                     <div>Long Stock MktValue: 
                         <span id="plSum" class="tooltipCell">
-                        <b>{{uiSnapTab.longStcokValue | number}}*</b>
+                        <b>{{uiSnapTable.longStcokValue | number}}*</b>
                             <div class="tooltipSnap">
                                 <div class="snapshot">
                                     !! Long VXX is here, although it is market bearish.<br>
@@ -94,17 +94,17 @@ MarketBar
                             </div>
                         </span>
                         </div>
-                    <div>Short Stock MktValue: <span id="plSum">{{uiSnapTab.shortStockValue | number}}</span></div>
+                    <div>Short Stock MktValue: <span id="plSum">{{uiSnapTable.shortStockValue | number}}</span></div>
                     <div>Call Option Delta Adjusted DelivValue: <span id="plSum"></span></div>
                     <div>Put Option Delta Adjusted DelivValue: <span id="plSum"></span></div>
                 </div>
                 <div class="sections" id="borderRemove">
                     <div class="tooltipCell">Max Risked estimate:
                         <span id="plSum"
-                        [ngClass]="{'green' : uiSnapTab.totalMaxRiskedLeverage < 1.3,
-                                    'orange': uiSnapTab.totalMaxRiskedLeverage >= 1.3 || uiSnapTab.totalMaxRiskedLeverage <=1.5,
-                                    'red' : uiSnapTab.totalMaxRiskedLeverage > 1.5}"> 
-                            (Leverage <b>{{uiSnapTab.totalMaxRiskedLeverage | number :'1.1-2'}})</b>*
+                        [ngClass]="{'green' : uiSnapTable.totalMaxRiskedLeverage < 1.3,
+                                    'orange': uiSnapTable.totalMaxRiskedLeverage >= 1.3 || uiSnapTable.totalMaxRiskedLeverage <=1.5,
+                                    'red' : uiSnapTable.totalMaxRiskedLeverage > 1.5}"> 
+                            (Leverage <b>{{uiSnapTable.totalMaxRiskedLeverage | number :'1.1-2'}})</b>*
                          </span>
                         <div class="tooltipSnap">
                             <div class="snapshot">
@@ -190,7 +190,7 @@ MarketBar
         <th [ngClass]="{'NormalTableHeader':sortColumn ==='Acc'}"(click)="onSortingClicked($event, 'Acc')">Acc</th>
     </thead>
     <tbody class = "selectedBrcAccSnapShotTbl">
-    <tr *ngFor="let item of uiSnapPosItem">
+    <tr *ngFor="let item of uiSnapTable.poss">
         <td class="tooltipStck" [ngStyle]="{'font-weight': 'bold'}">
             <span class="tooltipSnap">
                 <span class="snapshot">Name:

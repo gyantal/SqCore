@@ -1,4 +1,5 @@
 import { ViewChild, Component, AfterViewInit,ElementRef, Input} from '@angular/core';
+import { SqNgCommonUtilsStr } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_str';
 import { SqNgCommonUtilsTime } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
 import * as d3 from 'd3';
 import * as d3Shape from 'd3';
@@ -103,7 +104,7 @@ class UiSnapTable {
   public totalCashValue = NaN;
   public initialMarginReq = NaN;
   public maintMarginReq = NaN;
-  public poss = [];
+  public poss : UiAssetSnapPossPos[] = [];
   public sumPlTodVal = 0;
   public sumPlTodPct = 0;
   public longStcokValue = 0;
@@ -135,12 +136,6 @@ class UiAssetSnapPossPos {
   public accId = '';
 }
 
-class UiBrAccChrtHistValRaw {
-  public assetId = NaN;
-  public histDates = [];
-  public histSdaCloses = [];
-}
-
 // Hist stat Values
 class UiHistStatValues {
   public assetId = NaN;
@@ -163,13 +158,21 @@ class UiHistStatValues {
   public drawUp = NaN;
   public maxDrawDown = NaN;
   public maxDrawUp = NaN;
+
+  //brAccChrtData: UiBrAccChrtHistValRaw;
+  //brAccChrtActuals : UiBrcAccChrtval;
+}
+
+class UiBrAccChrtHistValRaw {
+  public assetId = NaN;
+  public histDates = [];
+  public histSdaCloses = [];
 }
 
 // Hist chart values
 class UiBrcAccChrtval {
   public assetId = NaN;
-  public sqTicker = '';
-  public dateStr = '';
+  public sqTicker = ''; // shown on the chart chart tooltip
   public date = new Date('2021-01-01');
   public sdaClose = NaN;
 }
@@ -213,15 +216,16 @@ export class BrAccViewerComponent implements AfterViewInit {
   histObj: Nullable<HistJs[]> = null;
   selectedNav = '';
   uiMktBar: UiMktBarItem[] = [];
-  brAccChrtData: UiBrAccChrtHistValRaw[] = [];
-  brAccHistStatVal : UiHistStatValues [] = []; // histstat values can be used in brAccViewer
-  brAccChrtActuals : UiBrcAccChrtval [] = [] ; //Combining 2 arrays histdates and histsdaclose
+
   brAccountSnapshotStr = '[Nothing arrived yet]';
   brAccountSnapshotStrFormatted = '[Nothing arrived yet]';
   brAccountSnapshotObj : Nullable<BrAccSnapshotJs>=null;
-  uiSnapTab : UiSnapTable = new UiSnapTable();
-  uiSnapPos : BrAccSnapshotPosJs[] = [];
-  uiSnapPosItem: UiAssetSnapPossPos[] = [];
+  uiSnapTable : UiSnapTable = new UiSnapTable();
+  
+  brAccHistStatVal : UiHistStatValues [] = []; // histstat values can be used in brAccViewer
+  brAccChrtData: UiBrAccChrtHistValRaw[] = [];
+  brAccChrtActuals : UiBrcAccChrtval [] = [] ; //Combining 2 arrays histdates and histsdaclose
+  
   tabPageVisibleIdx = 1;
   sortColumn : string = "DailyPL";
   sortDirection : string = "Increase";
@@ -265,7 +269,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     setInterval(function (self) {
       return function(self) {   //Return a function in the context of 'self'
         self.snapshotRefresh() //Thing you wanted to run as non-window 'this'
-      }}(this), 10*60*1000);  // 10 min
+      }}(this), 60*60*1000);  // 60 min
    }
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
@@ -276,16 +280,16 @@ export class BrAccViewerComponent implements AfterViewInit {
       case 'BrAccViewer.BrAccSnapshot':
         console.log('BrAccViewer.BrAccSnapshot:' + msgObjStr);
         this.brAccountSnapshotStr = msgObjStr;
-        this.brAccountSnapshotStrFormatted = this.formatStr(msgObjStr);
+        this.brAccountSnapshotStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.brAccountSnapshotObj = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.sortColumn, this.sortDirection, this.uiSnapTab, this.uiSnapPosItem) 
+        BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.sortColumn, this.sortDirection, this.uiSnapTable);
         const jsonObjSnap = JSON.parse(msgObjStr);
         this.updateUiWithSnapshot(jsonObjSnap);
         return true;
       case 'BrAccViewer.Hist':
         console.log('BrAccViewer.Hist:' + msgObjStr);
         this.histStr = msgObjStr;
-        this.histStrFormatted = this.formatStr(msgObjStr);
+        this.histStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.histObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateChrtUi(this.histObj, this.brAccChrtData, this.brAccHistStatVal, this.brAccChrtActuals);
         this.fillChartWithData();
@@ -298,14 +302,14 @@ export class BrAccViewerComponent implements AfterViewInit {
       case 'BrAccViewer.MktBrLstCls':
         console.log('BrAccViewer.MktBrLstCls:' + msgObjStr);
         this.mktBrLstClsStr = msgObjStr;
-        this.mktBrLstClsStrFormatted = this.formatStr(msgObjStr);
+        this.mktBrLstClsStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.mktBrLstClsObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, null, this.uiMktBar);
         return true;
       case 'BrAccViewer.Handshake':  // this is the least frequent case. Should come last.
         console.log('BrAccViewer.Handshake:' + msgObjStr);
         this.handshakeStr = msgObjStr;
-        this.handshakeStrFormatted = this.formatStr(msgObjStr);
+        this.handshakeStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.handshakeObj = JSON.parse(msgObjStr);
         console.log(`BrAccViewer.Handshake.SelectableBrAccs: '${(this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets}'`);
         this.updateUiSelectableNavs((this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets);
@@ -315,17 +319,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
   }
  
-  formatStr(p_str:string) : string {
-    var chunks : string[] = [];
-    var strArr : string ='';
-    for (var i = 0; i < p_str.length; i += 250) {
-      chunks.push(p_str.substring(i, i + 250));
-      strArr = chunks.join("\n");
-      // return strArr;
-    }
-    console.log("The chunks are", chunks);
-    return strArr;
-  }
+  
 
   public webSocketLstValArrived(p_lstValObj: Nullable<AssetLastJs[]>) {
     this.lstValObj = p_lstValObj;
@@ -368,7 +362,7 @@ export class BrAccViewerComponent implements AfterViewInit {
       this.sortDirection = "Decreasing";
     else 
       this.sortDirection = "Increasing";
-    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.sortColumn, this.sortDirection, this.uiSnapTab, this.uiSnapPosItem) 
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.sortColumn, this.sortDirection, this.uiSnapTable) 
   }
 
   // tabpage 
@@ -430,37 +424,38 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
     for (const rtItem of lastRt) {
       const existingUiItems = uiMktBar.filter((r) => r.assetId === rtItem.assetId);
-      if (existingUiItems.length === 0) continue;
+      if (existingUiItems.length === 0) 
+        continue;
       const uiItem = existingUiItems[0];
       uiItem.pctChg = (rtItem.last - uiItem.priorClose) / uiItem.priorClose;
     }
   }
 
-  static updateSnapshotTable(brAccSnap : Nullable<BrAccSnapshotJs>, sortColumn : string, sortDirection : string, uiSnapTab : UiSnapTable, uiSnapPosItem: UiAssetSnapPossPos[])
+  static updateSnapshotTable(brAccSnap : Nullable<BrAccSnapshotJs>, sortColumn : string, sortDirection : string, uiSnapTable : UiSnapTable)
   {
     if (brAccSnap === null || brAccSnap.poss === null) return;
-    uiSnapTab.symbol = brAccSnap.symbol;
-    uiSnapTab.lastUpdate = brAccSnap.lastUpdate;
-    uiSnapTab.snapLastUpateTime = new Date(brAccSnap.lastUpdate);
+    uiSnapTable.symbol = brAccSnap.symbol;
+    uiSnapTable.lastUpdate = brAccSnap.lastUpdate;
+    uiSnapTable.snapLastUpateTime = new Date(brAccSnap.lastUpdate);
     const timestampDate = new Date (brAccSnap.lastUpdate);
     const timeAgoMsec = new Date (Date.now()- timestampDate.getTime());
     const timeAgoMSecStr = timeAgoMsec.toString();     // number of milliseconds
     console.log("the Time Stamp is", timeAgoMSecStr);
     console.log(timeAgoMSecStr.substring(19,21) + 'min' + timeAgoMSecStr.substring(22,24) + 'sec' );
-    uiSnapTab.snapLastUpdateTimeAgoStr = timeAgoMSecStr.substring(19,21) + 'min' + timeAgoMSecStr.substring(22,24) + 'sec ago' ;
-    uiSnapTab.snapLastUpdateTimeAgo = Math.round((Date.now() - (new Date (brAccSnap.lastUpdate).getTime()))/ (1000 * 60));
-    console.log("The snapLastUpdateTimeAgo: ", uiSnapTab.snapLastUpdateTimeAgo);
-    uiSnapTab.totalCashValue = brAccSnap.totalCashValue;
-    uiSnapTab.initialMarginReq = brAccSnap.initMarginReq;
-    uiSnapTab.maintMarginReq = brAccSnap.maintMarginReq;
-    uiSnapTab.grossPositionValue = brAccSnap.grossPositionValue;
-    uiSnapTab.netLiquidation = brAccSnap.netLiquidation;
-    uiSnapTab.netLiquidationStr = brAccSnap.netLiquidation.toString();
-    uiSnapTab.priorCloseNetLiquidation = brAccSnap.priorCloseNetLiquidation;
-    uiSnapTab.plTodPrNav = Math.round(brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation);
-    uiSnapTab.pctChgTodPrNav = (brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation) / brAccSnap.priorCloseNetLiquidation;
+    uiSnapTable.snapLastUpdateTimeAgoStr = timeAgoMSecStr.substring(19,21) + 'min' + timeAgoMSecStr.substring(22,24) + 'sec ago' ;
+    uiSnapTable.snapLastUpdateTimeAgo = Math.round((Date.now() - (new Date (brAccSnap.lastUpdate).getTime()))/ (1000 * 60));
+    console.log("The snapLastUpdateTimeAgo: ", uiSnapTable.snapLastUpdateTimeAgo);
+    uiSnapTable.totalCashValue = brAccSnap.totalCashValue;
+    uiSnapTable.initialMarginReq = brAccSnap.initMarginReq;
+    uiSnapTable.maintMarginReq = brAccSnap.maintMarginReq;
+    uiSnapTable.grossPositionValue = brAccSnap.grossPositionValue;
+    uiSnapTable.netLiquidation = brAccSnap.netLiquidation;
+    uiSnapTable.netLiquidationStr = brAccSnap.netLiquidation.toString();
+    uiSnapTable.priorCloseNetLiquidation = brAccSnap.priorCloseNetLiquidation;
+    uiSnapTable.plTodPrNav = Math.round(brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation);
+    uiSnapTable.pctChgTodPrNav = (brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation) / brAccSnap.priorCloseNetLiquidation;
  
-    uiSnapPosItem.length = 0;
+    uiSnapTable.poss.length = 0;
 
     for (const possItem of brAccSnap.poss) {
       console.log("The positions of UiSnapTable are :" + possItem.pos);
@@ -483,28 +478,28 @@ export class BrAccViewerComponent implements AfterViewInit {
       uiPosItem.plTod = Math.round(possItem.pos * (possItem.estPrice - possItem.priorClose));
       uiPosItem.pl = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost))
       uiPosItem.betaDltAdj = Math.round(uiPosItem.gBeta * uiPosItem.mktVal)
-      uiSnapPosItem.push(uiPosItem);
+      uiSnapTable.poss.push(uiPosItem);
     }
 
-    uiSnapTab.sumPlTodVal = 0;
-    uiSnapTab.longStcokValue = 0;
-    uiSnapTab.shortStockValue = 0;
-    uiSnapTab.totalMaxRiskedN = 0;
-    for (const item of uiSnapPosItem) {
-      uiSnapTab.sumPlTodVal += item.plTod;
+    uiSnapTable.sumPlTodVal = 0;
+    uiSnapTable.longStcokValue = 0;
+    uiSnapTable.shortStockValue = 0;
+    uiSnapTable.totalMaxRiskedN = 0;
+    for (const item of uiSnapTable.poss) {
+      uiSnapTable.sumPlTodVal += item.plTod;
       if (item.mktVal > 0){ //Long and Short stock values
-        uiSnapTab.longStcokValue += item.mktVal;
+        uiSnapTable.longStcokValue += item.mktVal;
       } else if (item.mktVal < 0) {
-        uiSnapTab.shortStockValue += item.mktVal;
+        uiSnapTable.shortStockValue += item.mktVal;
       }
-      uiSnapTab.totalMaxRiskedN += Math.abs(item.mktVal);
+      uiSnapTable.totalMaxRiskedN += Math.abs(item.mktVal);
     } 
-    uiSnapTab.sumPlTodPct = uiSnapTab.sumPlTodVal / uiSnapTab.priorCloseNetLiquidation; // profit & Loss total percent change
-    uiSnapTab.totalMaxRiskedLeverage = (uiSnapTab.totalMaxRiskedN / uiSnapTab.netLiquidation);
-    uiSnapTab.numOfPoss = (uiSnapPosItem.length) - 1;
+    uiSnapTable.sumPlTodPct = uiSnapTable.sumPlTodVal / uiSnapTable.priorCloseNetLiquidation; // profit & Loss total percent change
+    uiSnapTable.totalMaxRiskedLeverage = (uiSnapTable.totalMaxRiskedN / uiSnapTable.netLiquidation);
+    uiSnapTable.numOfPoss = (uiSnapTable.poss.length) - 1;
   
     // sort by sortColumn
-    uiSnapPosItem.sort((n1: UiAssetSnapPossPos, n2: UiAssetSnapPossPos) => {
+    uiSnapTable.poss.sort((n1: UiAssetSnapPossPos, n2: UiAssetSnapPossPos) => {
       let dirMultiplier = (sortDirection === "Increasing") ? 1 : -1;
       switch (sortColumn) {
         case 'Symbol':
@@ -571,10 +566,12 @@ export class BrAccViewerComponent implements AfterViewInit {
   }
 
   static updateChrtUi(histObj : Nullable<HistJs[]>, brAccChrtData: UiBrAccChrtHistValRaw[], brAccHistStatVal : UiHistStatValues[], brAccChrtActuals : UiBrcAccChrtval []) {
-    if (histObj == null) return;
+    if (histObj == null)
+       return;
 
       for (const histItem of histObj) {
-        if (histItem.histStat == null || histItem.histValues == null ) continue;
+        if (histItem.histStat == null || histItem.histValues == null ) 
+          continue;
         console.log(histItem.histStat.sqTicker);
         console.log(histItem.histStat.assetId);
         let chrtItem = new UiBrAccChrtHistValRaw();
@@ -583,15 +580,14 @@ export class BrAccViewerComponent implements AfterViewInit {
         chrtItem.histSdaCloses = histItem.histValues.histSdaCloses;
         brAccChrtData.push(chrtItem);
       }
-    let histValues = histObj[0].histValues;
-    let histStat = histObj[0].histStat;
-    if (histValues == null || histStat ==  null ) return;
+    
 
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
 
     for (const hisStatItem  of histObj) {
-      if (hisStatItem.histStat ==  null) continue;
+      if (hisStatItem.histStat ==  null) 
+        continue;
       let statItem = new UiHistStatValues();
       statItem.assetId = hisStatItem.histStat.assetId;      
       statItem.periodEnd = hisStatItem.histStat.periodEnd;
@@ -618,16 +614,22 @@ export class BrAccViewerComponent implements AfterViewInit {
       brAccHistStatVal.push(statItem);
     }
 
+    let histValues = histObj[0].histValues;
+    let histStat = histObj[0].histStat;
+    if (histValues == null || histStat ==  null ) 
+      return;
     brAccChrtActuals.length = 0;
     for (var i = 0; i < histValues.histDates.length; i++ ) {
       let elem = new UiBrcAccChrtval();
       elem.assetId = histValues.assetId;
       elem.sqTicker = histValues.sqTicker;
-      elem.dateStr = histValues.histDates[i];
-      elem.date = new Date (elem.dateStr.substring(0,4) + '-' + elem.dateStr.substring(4,6) + '-' + elem.dateStr.substring(6,8));
+      var dateStr : string = histValues.histDates[i];
+      elem.date = new Date (dateStr.substring(0,4) + '-' + dateStr.substring(4,6) + '-' + dateStr.substring(6,8));
       elem.sdaClose = histValues.histSdaCloses[i]
       brAccChrtActuals.push(elem);
+      console.log("The BrAccChrt:", brAccChrtActuals[i]);
     }
+    
   }
   ngAfterViewInit(): void {
     // functions for developing charts
