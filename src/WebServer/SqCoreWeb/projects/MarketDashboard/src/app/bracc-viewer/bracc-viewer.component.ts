@@ -137,7 +137,7 @@ class UiAssetSnapPossPos {
 }
 
 // Hist stat Values
-class UiHistStatValues {
+class UiHistData {
   public assetId = NaN;
   public priorClose = NaN;
   public periodStartDate = '';
@@ -158,15 +158,14 @@ class UiHistStatValues {
   public drawUp = NaN;
   public maxDrawDown = NaN;
   public maxDrawUp = NaN;
-
-  //brAccChrtData: UiBrAccChrtHistValRaw;
-  //brAccChrtActuals : UiBrcAccChrtval;
-}
-
-class UiBrAccChrtHistValRaw {
-  public assetId = NaN;
   public histDates = [];
   public histSdaCloses = [];
+  public sqTicker ='';
+  public chartDate = new Date('2021-01-01');
+  public chartSdaClose = NaN;
+
+  // public brAccChrtData: UiBrAccChrtHistValRaw [] = [];
+  public brAccChrtActuals : UiBrcAccChrtval [] = [];
 }
 
 // Hist chart values
@@ -174,7 +173,7 @@ class UiBrcAccChrtval {
   public assetId = NaN;
   public sqTicker = ''; // shown on the chart chart tooltip
   public date = new Date('2021-01-01');
-  public sdaClose = NaN;
+  public chrtSdaClose = NaN;
 }
 
 @Component({
@@ -222,8 +221,7 @@ export class BrAccViewerComponent implements AfterViewInit {
   brAccountSnapshotObj : Nullable<BrAccSnapshotJs>=null;
   uiSnapTable : UiSnapTable = new UiSnapTable();
   
-  brAccHistStatVal : UiHistStatValues [] = []; // histstat values can be used in brAccViewer
-  brAccChrtData: UiBrAccChrtHistValRaw[] = [];
+  brAccHistStatVal : UiHistData [] = []; // histstat values can be used in brAccViewer
   brAccChrtActuals : UiBrcAccChrtval [] = [] ; //Combining 2 arrays histdates and histsdaclose
   
   tabPageVisibleIdx = 1;
@@ -291,7 +289,7 @@ export class BrAccViewerComponent implements AfterViewInit {
         this.histStr = msgObjStr;
         this.histStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.histObj = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateChrtUi(this.histObj, this.brAccChrtData, this.brAccHistStatVal, this.brAccChrtActuals);
+        BrAccViewerComponent.updateChrtUi(this.histObj, this.brAccHistStatVal, this.brAccChrtActuals);
         this.fillChartWithData();
         // if message is too large without spaces, we have problems as there is no horizontal scrollbar in browser. So, shorten the message.
         if (msgObjStr.length < 200)
@@ -319,15 +317,14 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
   }
  
-  
-
   public webSocketLstValArrived(p_lstValObj: Nullable<AssetLastJs[]>) {
     this.lstValObj = p_lstValObj;
     BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.lstValObj, this.uiMktBar);
   }
   
   updateUiSelectableNavs(pSelectableNavAssets: Nullable<AssetJs[]>) {  // same in MktHlth and BrAccViewer
-    if(pSelectableNavAssets == null) return;
+    if(pSelectableNavAssets == null)
+     return;
     this.navSelectionSelected = '';
     for (const nav of pSelectableNavAssets) {
       if (this.navSelectionSelected == '') // by default, the selected Nav is the first from the list
@@ -337,8 +334,6 @@ export class BrAccViewerComponent implements AfterViewInit {
   }
   
   onNavSelectedChangeAng(pEvent: any) {
-    // this.navSelectionSelected = this.navSelectionChoices[selectedIndex]
-    console.log("The Nav Selected angular way:" + this.navSelectionSelected);
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
       this._parentWsConnection.send('BrAccViewer.ChangeNav:' + this.navSelectionSelected);
     }
@@ -385,7 +380,7 @@ export class BrAccViewerComponent implements AfterViewInit {
       this.selectedNav = jsonObjSnap.symbol;
   }
 
-  // public perfIndicatorSelector(): void {
+  // public perfIndicatorSelector(): void { 
   //   const indicatorSelected = (document.getElementById('perfIndicator') as HTMLSelectElement).value;
   //   for (const item of this.brAccHistStatVal) {
   //     BrAccViewerComponent.updateUiColumnBasedOnSelectedIndicator(item, indicatorSelected);
@@ -394,7 +389,8 @@ export class BrAccViewerComponent implements AfterViewInit {
 
   static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, priorCloses: Nullable<AssetPriorCloseJs[]>, lastRt: Nullable<AssetLastJs[]>, uiMktBar: UiMktBarItem[]) {
      // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
-    if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(priorCloses) && priorCloses.length > 0  && Array.isArray(lastRt) && lastRt.length > 0)) return;
+    if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(priorCloses) && priorCloses.length > 0  && Array.isArray(lastRt) && lastRt.length > 0))
+     return;
     
     for (const item of marketBarAssets) {
       let uiItem: UiMktBarItem;
@@ -433,7 +429,8 @@ export class BrAccViewerComponent implements AfterViewInit {
 
   static updateSnapshotTable(brAccSnap : Nullable<BrAccSnapshotJs>, sortColumn : string, sortDirection : string, uiSnapTable : UiSnapTable)
   {
-    if (brAccSnap === null || brAccSnap.poss === null) return;
+    if (brAccSnap === null || brAccSnap.poss === null)
+      return;
     uiSnapTable.symbol = brAccSnap.symbol;
     uiSnapTable.lastUpdate = brAccSnap.lastUpdate;
     uiSnapTable.snapLastUpateTime = new Date(brAccSnap.lastUpdate);
@@ -480,7 +477,6 @@ export class BrAccViewerComponent implements AfterViewInit {
       uiPosItem.betaDltAdj = Math.round(uiPosItem.gBeta * uiPosItem.mktVal)
       uiSnapTable.poss.push(uiPosItem);
     }
-
     uiSnapTable.sumPlTodVal = 0;
     uiSnapTable.longStcokValue = 0;
     uiSnapTable.shortStockValue = 0;
@@ -565,30 +561,17 @@ export class BrAccViewerComponent implements AfterViewInit {
     });
   }
 
-  static updateChrtUi(histObj : Nullable<HistJs[]>, brAccChrtData: UiBrAccChrtHistValRaw[], brAccHistStatVal : UiHistStatValues[], brAccChrtActuals : UiBrcAccChrtval []) {
+  static updateChrtUi(histObj : Nullable<HistJs[]>, uiHistData : UiHistData[], brAccChrtActuals : UiBrcAccChrtval []) {
     if (histObj == null)
        return;
-
-      for (const histItem of histObj) {
-        if (histItem.histStat == null || histItem.histValues == null ) 
-          continue;
-        console.log(histItem.histStat.sqTicker);
-        console.log(histItem.histStat.assetId);
-        let chrtItem = new UiBrAccChrtHistValRaw();
-        chrtItem.assetId = histItem.histStat.assetId;
-        chrtItem.histDates = histItem.histValues.histDates;
-        chrtItem.histSdaCloses = histItem.histValues.histSdaCloses;
-        brAccChrtData.push(chrtItem);
-      }
-    
-
+  
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
 
     for (const hisStatItem  of histObj) {
-      if (hisStatItem.histStat ==  null) 
+      if (hisStatItem.histStat ==  null || hisStatItem.histValues == null) 
         continue;
-      let statItem = new UiHistStatValues();
+      let statItem = new UiHistData();
       statItem.assetId = hisStatItem.histStat.assetId;      
       statItem.periodEnd = hisStatItem.histStat.periodEnd;
       statItem.periodEndDate = hisStatItem.histStat.periodEndDate;
@@ -611,9 +594,30 @@ export class BrAccViewerComponent implements AfterViewInit {
       statItem.drawUp = statItem.priorClose > 0 ? statItem.priorClose / Math.min(statItem.periodLow, statItem.priorClose) - 1 : statItem.periodEnd / statItem.periodLow - 1;
       statItem.maxDrawDown = Math.min(statItem.periodMaxDD, statItem.drawDown);
       statItem.maxDrawUp = Math.max(statItem.periodMaxDU, statItem.drawUp);
-      brAccHistStatVal.push(statItem);
+      statItem.histDates = hisStatItem.histValues.histDates;
+      statItem.histSdaCloses = hisStatItem.histValues.histSdaCloses;
+      statItem.sqTicker = hisStatItem.histValues.sqTicker;
+      for (var i = 0; i < statItem.histDates.length; i++ ) {
+        var dateStr : string = statItem.histDates[i];
+        statItem.chartDate = new Date (dateStr.substring(0,4) + '-' + dateStr.substring(4,6) + '-' + dateStr.substring(6,8));
+        statItem.chartSdaClose = statItem.histSdaCloses[i]
+      }
+      uiHistData.push(statItem);
+      console.log("The brAccStat  data of dates: ", uiHistData);
+      console.log("The Ui data for brAccItem of brAccChrtActuals is : ",statItem.brAccChrtActuals.length);
+      console.log("The Ui data for brAccItem of histDates is : ",statItem.histDates.length);
+      console.log("The Ui data for brAccItem of histSdaCloses is : ",statItem.histSdaCloses.length);
+      
     }
-
+    // for (var i = 0; i < brAccItem.histDates.length;) {
+    //   let brAccItem1 = new UiBrcAccChrtval1();
+    //   brAccItem1.date = brAccItem.histDates[i];
+    //   brAccItem1.chrtSdaClose = brAccItem.histSdaCloses[i];
+    //   brAccChrtActuals1.push(brAccItem1);
+           
+    // }
+    // console.log("The Ui data for brAccItem of brAccChrtActuals is : ",brAccChrtActuals1);
+   
     let histValues = histObj[0].histValues;
     let histStat = histObj[0].histStat;
     if (histValues == null || histStat ==  null ) 
@@ -625,11 +629,10 @@ export class BrAccViewerComponent implements AfterViewInit {
       elem.sqTicker = histValues.sqTicker;
       var dateStr : string = histValues.histDates[i];
       elem.date = new Date (dateStr.substring(0,4) + '-' + dateStr.substring(4,6) + '-' + dateStr.substring(6,8));
-      elem.sdaClose = histValues.histSdaCloses[i]
+      elem.chrtSdaClose = histValues.histSdaCloses[i]
       brAccChrtActuals.push(elem);
-      console.log("The BrAccChrt:", brAccChrtActuals[i]);
+      // console.log("The BrAccChrt:", brAccChrtActuals[i]);
     }
-    
   }
   ngAfterViewInit(): void {
     // functions for developing charts
@@ -648,18 +651,18 @@ export class BrAccViewerComponent implements AfterViewInit {
                  .append('g')
                  .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
     
-    this.brAccChrtActuals.map((d: {assetId:string | number; date: string | number | Date; sdaClose: string | number; }) => 
+    this.brAccChrtActuals.map((d: {assetId:string | number; date: string | number | Date; chrtSdaClose: string | number; }) => 
             ({assetId: +d.assetId,
               date: new Date(d.date),
-              sdaClose: +d.sdaClose,
+              chrtSdaClose: +d.chrtSdaClose,
             }));
     const formatMonth = d3.timeFormat("%Y%m%d");
     var  bisectDate = d3.bisector((d: any) => d.date).left;
     // find data range
     var xMin = d3.min(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
     var xMax = d3.max(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
-    var yMin = d3.min(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose );
-    var yMax = d3.max(this.brAccChrtActuals, (d: { sdaClose: any; }) => d.sdaClose );
+    var yMin = d3.min(this.brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose );
+    var yMax = d3.max(this.brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose );
   // range of data configuring
     this.myX = d3.scaleTime()
               .domain([xMin, xMax])
@@ -707,7 +710,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     // Genereating line - for sdaCloses 
     this.line = d3Shape.line()
                        .x( (d: any) => this.myX(d.date))
-                       .y( (d: any) => this.myY(d.sdaClose));
+                       .y( (d: any) => this.myY(d.chrtSdaClose));
     this.svg.append('path')
             .attr('class', 'line') //Assign a class for styling
             .datum(this.brAccChrtActuals) // Binds data to the line
@@ -737,10 +740,10 @@ export class BrAccViewerComponent implements AfterViewInit {
       var i = bisectDate(_thisClass.brAccChrtActuals, x0, 1), // index value on the chart area
       selectedData = _thisClass.brAccChrtActuals[i]
       focus.attr("cx",_thisClass.myX(selectedData.date))
-          .attr("cy",_thisClass.myY(selectedData.sdaClose))
-      focusText.html("x:" + formatMonth(selectedData.date) +  " - " + "y:" + selectedData.sdaClose)
+          .attr("cy",_thisClass.myY(selectedData.chrtSdaClose))
+      focusText.html("x:" + formatMonth(selectedData.date) +  " - " + "y:" + selectedData.chrtSdaClose)
               .attr("x", _thisClass.myX(selectedData.date)+15)
-              .attr("y",_thisClass.myY(selectedData.sdaClose))
+              .attr("y",_thisClass.myY(selectedData.chrtSdaClose))
     }
 
     function mouseout() {

@@ -9,9 +9,11 @@
     border: none;
     color: #9900ff;
   }
+  
   .selectedNavBraccCl:hover {
     color: #f39c12;
   }
+ 
   .navSelectionPopupBraccCl {
     visibility: hidden;
     width: 160px;
@@ -50,322 +52,38 @@
     from {opacity: 0;} 
     to {opacity: 1;}
   }
-  // added by DAYA
-// .selectedBrcAccSnapShotTbl {
-//   border: 1px solid black;
-//   border-collapse: collapse;
-//   // height:100vh;
-//   // overflow: scroll;
-// }
+  .mktBarPositivePerf {
+    color: green;
+    font-weight: bold;
+  }
+  .mktbarNegativePerf {
+    color: red;
+    font-weight: bold;
+  }
+ 
 *{
   box-sizing: border-box;
 }
 .AccSumm {
   float: left;
   width: 25%;
-  padding: 15px;
-  font-size: 0.75em;
-  border: 1px solid red;
-}
-
-.ChartSumm{
-  float: left;
-  width: 75%;
   padding: 10px 5px 10px;
+  font-size: 0.5em;
   border: 1px solid red;
-  
 }
-.sectionForSelection {
-  float: left;
-  width: 25%;
-}
-.sectionForSvg {
-  float: middle;
-  width: 75%;
-}
-
-.NormalTableHeader
-{
-  background-color: blue;
-  font-size: large;
-
-}
-// .ActiveSortTableHeader
-// {
-//   background-color: blue;
-//   font-size: large;
-// }
-
-.main{
-  width:75%;
-  height:95%;
-
-}
-/* Style the lines by removing the fill and applying a stroke */
-::ng-deep .line {
-  fill:none;
-  stroke: #ffab00;
-  stroke-width: 1.5;
-}
-::ng-deep .line1 {
-  fill:none;
-  stroke: #00ffff;
-  stroke-width: 3;
-}
-// #chartNav{
- 
-// transform: translate(50px, 30px);
-//   // width: 80%;
-//   // height: 80%;
-//   width: 80rem;
-//   height: 40rem;
-//      padding: 10%;
-// }
-.selectedTempDebug{
-  word-wrap: break-word;
-  width: 100%;
-  padding: 2em;
-}
-
-.mktBarPositivePerf {
-  color: green;
-  font-weight: bold;
-}
-
-.mktbarNegativePerf {
-  color: red;
-  font-weight: bold;
-}
-
-
-// svg {
-//   transform: translate(50px, 30px);
-//   // width: 80%;
-//   // height: 80%;
-//      width: 80%;
-//      height: 95%;
-//     //  padding: 0%;
-
-  // .selectedBrcAccSnapShotTbl {
 #liqVal{
   font-weight: bold;
 }
 #plSum {
   font-weight: bold;
   font-size: small
-  // color: aqua;
-
 }
-
-.sections {
-  float: left;
-  width: 33.3%;
-  padding: 4px;
-  font-size: small;
-  height: 125px;
-  
-}
-.sections{
-  border-right: 0.5px solid blue;
-  padding-left: 20px ;
-}
-// remove border of section 3
-#borderRemove{
-  border-right: none;
-  // padding-left: 20px ;
-}
-// tooltip maxRisked ngClass
-.red {
-  color: red;
-  font-size: large;
-}
-.orange {
-  color: orange;
-
-}
-.green {
-  color: green;
-}
-
-.tooltipCell {
-  position: relative;
-  cursor: help;
-  // display: inline-block;
-  // border-bottom: 1px dotted black;
-}
-
-.tooltipCell .tooltipSnap {
-  padding:0.3rem;
-  font-size: 0.8rem;
-  font-weight: normal;
-  display: none;
-  background:rgb(210, 252, 176);
-  border: 0.1rem solid rgb(19, 7, 177);
-  color: rgb(6, 8, 153);
-  text-align: left;
-  border-radius: 1rem;
-  position: absolute;
-  z-index: 1;
-  bottom: 100%;
-  left: 50%;
-  margin-left: -50px;
-  white-space: pre;
-  opacity: 0.87;
- 
-}
-
-.tooltipCell .tooltipSnap .snapshot{
-  font-weight: bold;
- 
-}
-
-.tooltipCell .tooltipSnap .smallTT{
-  font-size: 0.2rem;
-}
-
-.tooltipCell:hover .tooltipSnap {
-  display: inline-block;
-}
-// Tooltip posotioning for the stock postions 
-.tooltipStck {
-  position: relative;
-  cursor: help;
-}
-  
-.tooltipStck .tooltipSnap {
-  padding:0.3rem;
-  font-size: 0.8rem;
-  font-weight: normal;
-  display: none;
-  background:rgb(210, 252, 176);
-  border: 0.1rem solid rgb(19, 7, 177);
-  color: rgb(6, 8, 153);
-  text-align: left;
-  border-radius: 1rem;
-  position: absolute;
-  z-index: 100;
-  white-space: pre;
-  opacity: 0.87;
-}
-
-.tooltipStck .tooltipSnap .snapshot{
-  font-weight: bold;
-}
-
-.tooltipStck .tooltipSnap .smallTT{
-  font-size: 0.2rem;
-}
-
-.tooltipStck:hover .tooltipSnap {
-  display: inline-block;
-  top: -15%;
-  left: 150%;
-  transform: translateX(-15%);
-  margin-top: -10px;
-}
-
-// Tooltip posotioning for the Tempdebug 
-.tooltipTempDebug {
-  position: relative;
-  cursor: help;
-}
-  
-.tooltipTempDebug .tooltipSnap {
-  padding:0.3rem;
-  font-size: 0.8rem;
-  font-weight: normal;
-  display: none;
-  background:rgb(210, 252, 176);
-  border: 0.1rem solid rgb(19, 7, 177);
-  color: rgb(6, 8, 153);
-  text-align: left;
-  border-radius: 1rem;
-  position: absolute;
-  z-index: 100;
-  white-space: pre;
-  opacity: 0.87;
-}
-
-.tooltipTempDebug .tooltipSnap .snapshot{
-  font-weight: bold;
-}
-
-.tooltipTempDebug .tooltipSnap .smallTT{
-  font-size: 0.2rem;
-}
-.tooltipTempDebug:hover .tooltipSnap {
-  display: inline-block;
-  top: -50%;
-  left: 10%;
-  // transform: translateX(5%);
-  // margin-top: -10px;
-}
-table{
-  width: 100%;
-}
-table, td, thead, th {
-  border: 1px solid #9cd3db;;
-  border-collapse: collapse;
-  padding: 2px 10px;
-  text-align: center;
-  white-space: nowrap;
-  font-family: 16px 'Times New Roman';
-  border-color: #9cd3db;;
-  // background-color: #fff;
-  box-shadow: 0 0 7rem rgb(48 138 255 / 60%), 
-              0 0.5rem 2rem rgb(48 138 255 / 60%), 
-              0 0.2rem 2rem rgb(48 138 255  /60%),
-              inset 0 0.1rem #fff,
-              inset 0 -0.1rem #fff;
-  color: #000;
-}
-thead {
-  font-weight: bold;
+.AccSumm #refresh{
+  width:15;
+  height:15;
   cursor: pointer;
-  background-image: linear-gradient(
-  90deg,#3080c7 5%,#5b9dd7 10%,#d5f5f6 30%,#d5f5f6 70%,#ace16b 90%,#91d73a 95%);
-  opacity: 0.8;
+  font-size: 0.8em;
 }
-thead :hover {
-  // background-color: #9cd3db;
-  backdrop-filter: blur(1rem);
-    transform: skewX(-10deg);
-  // transition: all .2s ease;
-  animation: breath2 2s .5s infinite alternate;
-  animation-duration: 2s;
-  animation-timing-function: ease;
-  animation-delay: 0.5s;
-  animation-iteration-count: infinite;
-  animation-direction: alternate;
-  animation-fill-mode: none;
-  animation-play-state: running;
-  animation-name: breath2;
-}
-td {
-  font-size: small;
-}
-tbody{
-  overflow-y: scroll;
-}
-// style for ab pages 
-
-.ChartSumm .tab{
-  // background-color: aqua;
-  // float: left;
-  border: none;
-  outline: none;
-  cursor: pointer;
-  padding: 15px 32px;
-  transition: 0.3s;
-  font-size: 12px;
-  display: inline-block;
-  /* Set transitions up. */
-  -webkit-transition: max-height 0.7s;
-  -moz-transition: max-height 0.7s;
-  transition: max—height 0.7s;
-  padding-bottom: 2px;
-}
-
 /* Change background color of buttons on hover */
 .tab :hover {
   border: .1rem solid green;
@@ -384,36 +102,204 @@ tbody{
   animation: breath2 2s .5s infinite alternate;
   cursor: pointer;
 }
-.AccSumm #refersh {
-  font-weight: none;
-  font-size: 0.8em;
+// remove border of section 3
+#borderRemove{
+  border-right: none;
 }
-#refresh{
-  width:15;
-  height:15;
-  cursor: pointer;
+// tooltip maxRisked ngClass
+.red {
+  color: red;
+  font-size: large;
 }
-#tooltip {
-  position: absolute;
-  background-color: lightgray;
-  min-width: 20rem;
-  max-width: 200rem;
-  font-size: 1.2rem;
-  background-color: dodgerblue;
-  color: gainsboro;
-  text-align: center;
-  opacity: 0.92;
-  padding: 0.5rem 0;
-  border-radius: 0.6rem;
-  display: none;
+.orange {
+  color: orange;
 }
-.horizontal-scroll {
-  overflow: hidden;
-  overflow-x: auto;
-  clear: both;
-  width: 100%;
+.green {
+  color: green;
 }
 
-.selectedBrcAccSnapShotTbl {
-  min-width: rem-calc(640);
+.ChartSumm{
+  float: left;
+  width: 75%;
+  padding: 10px 5px 10px;
+  border: 1px solid red;
+  
+}
+.sectionForSelection {
+  float: left;
+  width: 25%;
+}
+.sectionForSvg {
+  float: middle;
+  width: 75%;
+}
+.sections {
+  float: left;
+  width: 33.3%;
+  padding: 4px;
+  font-size: small;
+  height: 125px;
+  border-right: 0.5px solid blue;
+  padding-left: 20px ;
+  
+}
+
+// Table stylings
+table{
+  width: 100%;
+}
+table, td, thead, th {
+  border: 1px solid #9cd3db;;
+  border-collapse: collapse;
+  padding: 2px 10px;
+  text-align: center;
+  white-space: nowrap;
+  font-family: 16px 'Times New Roman';
+  border-color: #9cd3db;;
+  box-shadow: 0 0 7rem rgb(48 138 255 / 60%), 
+              0 0.5rem 2rem rgb(48 138 255 / 60%), 
+              0 0.2rem 2rem rgb(48 138 255  /60%),
+              inset 0 0.1rem #fff,
+              inset 0 -0.1rem #fff;
+  color: #000;
+}
+thead {
+  font-weight: bold;
+  cursor: pointer;
+  background-image: linear-gradient(
+  90deg,#3080c7 5%,#5b9dd7 10%,#d5f5f6 30%,#d5f5f6 70%,#ace16b 90%,#91d73a 95%);
+  opacity: 0.8;
+}
+thead :hover {
+  backdrop-filter: blur(1rem);
+    transform: skewX(-10deg);
+  animation: breath2 2s .5s infinite alternate;
+  animation-duration: 2s;
+  animation-timing-function: ease;
+  animation-delay: 0.5s;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  animation-fill-mode: none;
+  animation-play-state: running;
+  animation-name: breath2;
+}
+td {
+  font-size: small;
+}
+tbody{
+  overflow-y: scroll;
+}
+.ActiveSortTableHeader
+{
+  background-color: blue;
+  font-size: large;
+}
+
+/* Graph -  Style the lines by removing the fill and applying a stroke */
+::ng-deep .line {
+  fill:none;
+  stroke: #ffab00;
+  stroke-width: 1.5;
+}
+::ng-deep .line1 {
+  fill:none;
+  stroke: #00ffff;
+  stroke-width: 3;
+}
+
+// Common for all the tooltips 
+.tooltipCell {
+  position: relative;
+  cursor: help;
+}
+.tooltipCell .tooltipSnap {
+  padding:0.3rem;
+  font-size: 0.8rem;
+  font-weight: normal;
+  display: none;
+  background:rgb(210, 252, 176);
+  border: 0.1rem solid rgb(19, 7, 177);
+  color: rgb(6, 8, 153);
+  text-align: left;
+  border-radius: 1rem;
+  position: absolute;
+  z-index: 1;
+  bottom: 100%;
+  left: 50%;
+  margin-left: -50px;
+  white-space: pre;
+  opacity: 0.87;
+}
+.tooltipCell .tooltipSnap .snapshot{
+  font-weight: bold;
+}
+.tooltipCell .tooltipSnap .smallTT{
+  font-size: 0.2rem;
+}
+.tooltipCell:hover .tooltipSnap {
+  display: inline-block;
+}
+// Tooltip posotioning for the stock postions 
+.tooltipStck {
+  position: relative;
+  cursor: help;
+}
+.tooltipStck .tooltipSnap {
+  padding:0.3rem;
+  font-size: 0.8rem;
+  font-weight: normal;
+  display: none;
+  background:rgb(210, 252, 176);
+  border: 0.1rem solid rgb(19, 7, 177);
+  color: rgb(6, 8, 153);
+  text-align: left;
+  border-radius: 1rem;
+  position: absolute;
+  z-index: 100;
+  white-space: pre;
+  opacity: 0.87;
+}
+.tooltipStck .tooltipSnap .snapshot{
+  font-weight: bold;
+}
+.tooltipStck .tooltipSnap .smallTT{
+  font-size: 0.2rem;
+}
+.tooltipStck:hover .tooltipSnap {
+  display: inline-block;
+  top: -15%;
+  left: 150%;
+  transform: translateX(-15%);
+  margin-top: -10px;
+}
+// Tooltip posotioning for the Tempdebug 
+.tooltipTempDebug {
+  position: relative;
+  cursor: help;
+}
+.tooltipTempDebug .tooltipSnap {
+  padding:0.3rem;
+  font-size: 0.8rem;
+  font-weight: normal;
+  display: none;
+  background:rgb(210, 252, 176);
+  border: 0.1rem solid rgb(19, 7, 177);
+  color: rgb(6, 8, 153);
+  text-align: left;
+  border-radius: 1rem;
+  position: absolute;
+  z-index: 100;
+  white-space: pre;
+  opacity: 0.87;
+}
+.tooltipTempDebug .tooltipSnap .snapshot{
+  font-weight: bold;
+}
+.tooltipTempDebug .tooltipSnap .smallTT{
+  font-size: 0.2rem;
+}
+.tooltipTempDebug:hover .tooltipSnap {
+  display: inline-block;
+  top: -50%;
+  left: 10%;
 }

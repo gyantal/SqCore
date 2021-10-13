@@ -12,7 +12,6 @@ MarketBar
             'mktBarPositivePerf' : item.pctChg > 0,
             'mktbarNegativePerf' : item.pctChg < 0
          }">{{item.pctChg | percent:'1.2'}},
-        <!-- {{item.lastClose | percent:'1.2'}} -->
         </span>
     </span>
 </span>
@@ -146,17 +145,11 @@ MarketBar
                             <select name="" id="" [(ngModel)] = "perfIndicatorSelected" (change)="onPerfIndicatorSelectedChange($event)">
                             <option *ngFor="let item of brAccHistStatVal" value="item">Return: {{item.rtReturn}}</option>
                             <option *ngFor="let item of brAccHistStatVal" value="item">MaxDD: {{item.maxDrawDown}}</option>
-                            <!-- <option value="item" >MaxDrawDown: {{item.maxDrawDown}}</option> -->
                             </select>
                         </div>
                      </div>
                      <div id="my_dataviz"></div>
                      <span class="sectionForSvg">
-                     <!-- <svg 
-                        style="border: solid 1px blue" 
-                        id ="chartNav" viewBox = "0 0 780 480">
-                    </svg> -->
-                   
                 </span>
                    </span>
                 </div>
@@ -164,30 +157,30 @@ MarketBar
     </div>
 </span>
 </div>
-<br>
-<br>
+
 <hr>
-<div class="horizontal-scroll">
+<div id="table-wrapper">
+<div id="table-scroll">
 <table class = "selectedBrcAccSnapShotTbl">
     <thead class = "selectedBrcAccSnapShotTbl">
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='Symbol'}" (click)="onSortingClicked($event, 'Symbol')">Symbol</th>
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='LocalSymbol'}" >LocalSymbol</th>
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='Pos'}" (click)="onSortingClicked($event, 'Pos')">Pos</th>
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='Cost'}" (click)="onSortingClicked($event, 'Cost')">Cost</th>
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='PriorClose'}" (click)="onSortingClicked($event, 'PriorClose')">Prior<br>Close</th>
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='estPrice'}" (click)="onSortingClicked($event, 'estPrice')">Est<br>Price</th>
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='DailyPctChg'}" (click)="onSortingClicked($event, 'DailyPctChg')">Chg%<br>Today</th>
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='DailyPL'}" (click)="onSortingClicked($event, 'DailyPL')">P&L<br>Today</th>
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='ProfLos'}"(click)="onSortingClicked($event, 'ProfLos')">P&L</th>
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='MktVal'}"(click)="onSortingClicked($event, 'MktVal')">MktVal</th>
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='EstUndPrice'}"(click)="onSortingClicked($event, 'EstUndPrice')">Est<br>UndPr</th>
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='IbCompUndPr'}"(click)="onSortingClicked($event, 'IbCompUndPr')">IbComp<br>UndPr</th>
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='IbCompDeltar'}"(click)="onSortingClicked($event, 'IbCompDeltar')">IbComp<br>Delta</th>
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='DelivVal'}"(click)="onSortingClicked($event, 'DelivVal')">Deliv<br>Value</th>
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='DltAdjDelivVal'}"(click)="onSortingClicked($event, 'DltAdjDelivVal')">DltAdj<br>DelivVal</th>
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='gBeta'}"(click)="onSortingClicked($event, 'gBeta')">gBeta</th>
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='gBetaDltAdj'}"(click)="onSortingClicked($event, 'gBetaDltAdj')">BetaDltAdj<br>MktOriVal</th>
-        <th [ngClass]="{'NormalTableHeader':sortColumn ==='Acc'}"(click)="onSortingClicked($event, 'Acc')">Acc</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='Symbol'}" (click)="onSortingClicked($event, 'Symbol')">Symbol</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='LocalSymbol'}" >LocalSymbol</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='Pos'}" (click)="onSortingClicked($event, 'Pos')">Pos</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='Cost'}" (click)="onSortingClicked($event, 'Cost')">Cost</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='PriorClose'}" (click)="onSortingClicked($event, 'PriorClose')">Prior<br>Close</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='estPrice'}" (click)="onSortingClicked($event, 'estPrice')">Est<br>Price</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='DailyPctChg'}" (click)="onSortingClicked($event, 'DailyPctChg')">Chg%<br>Today</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='DailyPL'}" (click)="onSortingClicked($event, 'DailyPL')">P&L<br>Today</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='ProfLos'}"(click)="onSortingClicked($event, 'ProfLos')">P&L</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='MktVal'}"(click)="onSortingClicked($event, 'MktVal')">MktVal</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='EstUndPrice'}"(click)="onSortingClicked($event, 'EstUndPrice')">Est<br>UndPr</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='IbCompUndPr'}"(click)="onSortingClicked($event, 'IbCompUndPr')">IbComp<br>UndPr</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='IbCompDeltar'}"(click)="onSortingClicked($event, 'IbCompDeltar')">IbComp<br>Delta</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='DelivVal'}"(click)="onSortingClicked($event, 'DelivVal')">Deliv<br>Value</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='DltAdjDelivVal'}"(click)="onSortingClicked($event, 'DltAdjDelivVal')">DltAdj<br>DelivVal</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='gBeta'}"(click)="onSortingClicked($event, 'gBeta')">gBeta</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='gBetaDltAdj'}"(click)="onSortingClicked($event, 'gBetaDltAdj')">BetaDltAdj<br>MktOriVal</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='Acc'}"(click)="onSortingClicked($event, 'Acc')">Acc</th>
     </thead>
     <tbody class = "selectedBrcAccSnapShotTbl">
     <tr *ngFor="let item of uiSnapTable.poss">
@@ -222,7 +215,6 @@ MarketBar
         <td>{{item.pos | number}}</td>
         <td>{{item.avgCost | number:'1.1-2'}}</td>
         <td>{{item.priorCloseStr}}</td>
-        <!-- <td>{{item.lastCloseStr}}</td> -->
         <td>{{item.estPrice | number:'1.1-2'}}</td>
         <td [ngClass]="{
             'mktBarPositivePerf' : item.pctChgTod > 0,
@@ -242,6 +234,7 @@ MarketBar
     </tr>
     </tbody>
 </table>
+</div>
 </div>
 <hr>
 <!-- Addded class "selectedTempDebug" to limit the text output in the UI-->
