@@ -62,7 +62,7 @@ namespace SqCoreWeb
                 Name = "PeriodicCheck",
                 SqTask = sqTask,
                 TriggerType = TriggerType.Periodic,
-                Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnAbsoluteTimeAtEveryHourUtc, TimeOffset = TimeSpan.FromMinutes(10) },
+                Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnAbsoluteTimeAtEveryHourUtc, TimeOffset = TimeSpan.FromMinutes(30) },
                 TriggerSettings = new Dictionary<object, object>() { { TaskSetting.ActionType, BrAccCheckerTaskSettingAction.PeriodicCheck } }
             });
             SqTaskScheduler.gSqTasks.Add(sqTask);

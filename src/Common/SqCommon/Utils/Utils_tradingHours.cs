@@ -79,14 +79,14 @@ namespace SqCommon
             DateTime utcNow = DateTime.UtcNow;
             
             // 1. quick response for trivial case that works most of the time, that don't need DetermineUsaMarketTradingHours()
-            DateTime utcNowET = Utils.ConvertTimeFromUtcToEt(utcNow).Date;
+            DateTime utcNowET = Utils.ConvertTimeFromUtcToEt(utcNow);
             if (utcNowET.DayOfWeek == DayOfWeek.Saturday || utcNowET.DayOfWeek == DayOfWeek.Sunday)
                 return false;
             DateTime openInET = new DateTime(utcNowET.Year, utcNowET.Month, utcNowET.Day, 9, 30, 0);
             if (utcNowET < openInET)
                 return false;
             DateTime maxPossibleCloseInET = new DateTime(utcNowET.Year, utcNowET.Month, utcNowET.Day, 16, 0, 0); // usually it is 16:00, but when half-day trading, then it is 13:00
-            if (utcNowET > openInET)
+            if (utcNowET > maxPossibleCloseInET)
                 return false;
 
             // 2. During RTH on weekdays, we have to be more thorough.

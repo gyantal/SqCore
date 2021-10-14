@@ -59,15 +59,6 @@ namespace SqCommon
         public virtual void Timer_Elapsed(object? state)    // Timer is coming on a ThreadPool thread
         {
             Utils.Logger.Info("Trigger.Timer_Elapsed() ");
-            NextScheduleTimeUtc = null;
-
-            bool isMarketTradingDay;
-            DateTime marketOpenTimeUtc, marketCloseTimeUtc;
-            bool isMarketHoursValid = Utils.DetermineUsaMarketTradingHours(DateTime.UtcNow, out isMarketTradingDay, out marketOpenTimeUtc, out marketCloseTimeUtc, TimeSpan.FromDays(3));
-            if (!isMarketHoursValid)
-                Utils.Logger.Error("DetermineUsaMarketTradingHours() was not ok.");
-            
-            SqTaskScheduler.gTaskScheduler.ScheduleTrigger(this, isMarketHoursValid, isMarketTradingDay, marketOpenTimeUtc, marketCloseTimeUtc);
 
             try
             {
@@ -84,6 +75,12 @@ namespace SqCommon
                 Utils.Logger.Error(e, "Trigger.Timer_Elapsed() Exception");
                 HealthMonitorMessage.SendAsync($"Exception in BrokerTaskExecutionThreadRun(). Exception: '{ e.ToStringWithShortenedStackTrace(1600)}'", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
             }
+
+            NextScheduleTimeUtc = null;
+            bool isMarketHoursValid = Utils.DetermineUsaMarketTradingHours(DateTime.UtcNow, out bool isMarketTradingDay, out DateTime marketOpenTimeUtc, out DateTime marketCloseTimeUtc, TimeSpan.FromDays(3));
+            if (!isMarketHoursValid)
+                Utils.Logger.Error("DetermineUsaMarketTradingHours() was not ok.");
+            SqTaskScheduler.gTaskScheduler.ScheduleTrigger(this, isMarketHoursValid, isMarketTradingDay, marketOpenTimeUtc, marketCloseTimeUtc);
         }
 
     }
