@@ -114,11 +114,22 @@ namespace SqCommon
             }
             else if (p_trigger.TriggerType == TriggerType.Periodic)
             {
-                if (p_trigger.Start.Base == RelativeTimeBase.BaseOnAbsoluteTimeAtEveryHourUtc) 
+                // ScheduleTrigger() runs in every 30min.
+                // if (p_trigger.NextScheduleTimeUtc) is already set in the Future, then don't change it. Otherwise DateTime.UtcNow.AddHours(1) would always push that more into the future and it never runs.
+                DateTime utcNow = DateTime.UtcNow;
+                bool isAlreadySetInTheFuture = false;
+                if (p_trigger.NextScheduleTimeUtc != null)
+                    isAlreadySetInTheFuture = p_trigger.NextScheduleTimeUtc - utcNow > TimeSpan.Zero;
+
+                if (p_trigger.Start.Base == RelativeTimeBase.BaseOnAbsoluteTimeAtEveryHourUtc)
                 {
-                    DateTime utcNow = DateTime.UtcNow;
-                    DateTime nextWholeHour = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, utcNow.Hour, 0, 0).AddHours(1);
-                    proposedTime = nextWholeHour + p_trigger.Start.TimeOffset;
+                    if (!isAlreadySetInTheFuture)
+                    {
+                        DateTime pastWholeHour = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, utcNow.Hour, 0, 0); // if utcNow is 20:10 and TimeOffset = 40 min of every whole hours, then we schedule 20:40
+                        proposedTime = pastWholeHour + p_trigger.Start.TimeOffset;
+                        if (proposedTime <= tresholdNowTime)
+                            proposedTime = proposedTime.AddHours(1);
+                    }
                 }
             }
             else

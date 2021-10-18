@@ -165,11 +165,16 @@ namespace BrokerCommon
             Utils.Logger.Info("BrokerWrapperIb.error(). Client code C# runtime Exception: " + e);  // exception.ToString() writes the Stacktrace, not only the Message, which is OK.
 
             bool isExpectedException = false;
-            // Expect no connection at ManualTraderServer, don't clutter the Console, but save it to log file.
+            // Expect that periodically (once a day automatically, or at manual restarts) IB TWS connection closes. In these cases, do an orderly Disconnect().
+            // There is a service that try to reconnect these in every 10-20 minutes later.
+            // Don't clutter the Console, but save it to log file.
             if (e.Message.StartsWith("One or more errors occurred. (No connection could be made because the target machine actively refused it") ||     // on Windows local development
                 (e.Message.IndexOf("Connection refused") != -1))   // on Linux, ManualTraderServer, after IB TWS auto-exited and no longer exist.
                 isExpectedException = true;
-            if (e is System.IO.EndOfStreamException) {
+
+            if (e is System.IO.EndOfStreamException || // EndOfStreamException comes generally when IB TWS is closed manually
+                e is System.IO.IOException) // IOException: only Daya had that on his locally running Windows connecting to IB TWS. At 13:53 India time. Possible reason: his Internet went away.
+            {
                 isExpectedException = true;
                 // Do not reset now. We can decide to reset MktDataSubscriptions, but HistDataSubscriptions and OrderSubscriptions are better to keep, so it needs more thinking whether to discard old things. 
                 // E.g. a BrokerTask will be able to get data of Finished orders, or finished historical prices, if we leave those data.
