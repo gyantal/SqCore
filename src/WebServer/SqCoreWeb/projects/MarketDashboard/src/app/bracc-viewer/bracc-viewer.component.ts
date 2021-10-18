@@ -2,8 +2,6 @@ import { ViewChild, Component, AfterViewInit,ElementRef, Input} from '@angular/c
 import { SqNgCommonUtilsStr } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_str';
 import { SqNgCommonUtilsTime } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
 import * as d3 from 'd3';
-import * as d3Shape from 'd3';
-import * as d3Axis from 'd3';
 import { gDiag, AssetLastJs } from './../../sq-globals';
 
 type Nullable<T> = T | null;
@@ -164,7 +162,6 @@ class UiHistData {
   public chartDate = new Date('2021-01-01');
   public chartSdaClose = NaN;
 
-  // public brAccChrtData: UiBrAccChrtHistValRaw [] = [];
   public brAccChrtActuals : UiBrcAccChrtval [] = [];
 }
 
@@ -172,7 +169,7 @@ class UiHistData {
 class UiBrcAccChrtval {
   public assetId = NaN;
   public sqTicker = ''; // shown on the chart chart tooltip
-  public date = new Date('2021-01-01');
+  public chartDate = new Date('2021-01-01');
   public chrtSdaClose = NaN;
 }
 
@@ -220,9 +217,7 @@ export class BrAccViewerComponent implements AfterViewInit {
   brAccountSnapshotStrFormatted = '[Nothing arrived yet]';
   brAccountSnapshotObj : Nullable<BrAccSnapshotJs>=null;
   uiSnapTable : UiSnapTable = new UiSnapTable();
-  
-  brAccHistStatVal : UiHistData [] = []; // histstat values can be used in brAccViewer
-  brAccChrtActuals : UiBrcAccChrtval [] = [] ; //Combining 2 arrays histdates and histsdaclose
+  uiHistData : UiHistData [] = [];
   
   tabPageVisibleIdx = 1;
   sortColumn : string = "DailyPL";
@@ -244,7 +239,7 @@ export class BrAccViewerComponent implements AfterViewInit {
   private myX: any;
   private myY: any;
   private svg: any;
-  private line!: d3Shape.Line<[number, number]>;
+  private line!: d3.Line<[number, number]>;
 
   constructor() {
 
@@ -252,13 +247,13 @@ export class BrAccViewerComponent implements AfterViewInit {
     todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
 
     this.lookbackStartET = new Date(todayET.getFullYear() - 1, 11, 31);  // set YTD as default
-    this.lookbackStartETstr = this.Date2PaddedIsoStr(this.lookbackStartET);
+    this.lookbackStartETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.lookbackStartET);
 
     // https://stackoverflow.com/questions/563406/add-days-to-javascript-date
     const yesterDayET = new Date(todayET);
     yesterDayET.setDate(yesterDayET.getDate() - 1);
     this.lookbackEndET = new Date(yesterDayET.getFullYear(), yesterDayET.getMonth(), yesterDayET.getDate());  // set yesterdayET as default
-    this.lookbackEndETstr = this.Date2PaddedIsoStr(this.lookbackEndET);
+    this.lookbackEndETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.lookbackEndET);
     
     // Creating a Width and Height data points
     this.width = 660 - this.margin.left - this.margin.right;
@@ -267,7 +262,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     setInterval(function (self) {
       return function(self) {   //Return a function in the context of 'self'
         self.snapshotRefresh() //Thing you wanted to run as non-window 'this'
-      }}(this), 60*60*1000);  // 60 min
+      }}(this), 3*60*1000);  // 60 min
    }
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
@@ -289,7 +284,7 @@ export class BrAccViewerComponent implements AfterViewInit {
         this.histStr = msgObjStr;
         this.histStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.histObj = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateChrtUi(this.histObj, this.brAccHistStatVal, this.brAccChrtActuals);
+        BrAccViewerComponent.updateChrtUi(this.histObj, this.uiHistData);
         this.fillChartWithData();
         // if message is too large without spaces, we have problems as there is no horizontal scrollbar in browser. So, shorten the message.
         if (msgObjStr.length < 200)
@@ -437,11 +432,9 @@ export class BrAccViewerComponent implements AfterViewInit {
     const timestampDate = new Date (brAccSnap.lastUpdate);
     const timeAgoMsec = new Date (Date.now()- timestampDate.getTime());
     const timeAgoMSecStr = timeAgoMsec.toString();     // number of milliseconds
-    console.log("the Time Stamp is", timeAgoMSecStr);
-    console.log(timeAgoMSecStr.substring(19,21) + 'min' + timeAgoMSecStr.substring(22,24) + 'sec' );
-    uiSnapTable.snapLastUpdateTimeAgoStr = timeAgoMSecStr.substring(19,21) + 'min' + timeAgoMSecStr.substring(22,24) + 'sec ago' ;
+    console.log(timeAgoMSecStr.substring(16,18) + 'hr' + timeAgoMSecStr.substring(19,21) + 'min' + timeAgoMSecStr.substring(22,24) + 'sec' );
+    uiSnapTable.snapLastUpdateTimeAgoStr = timeAgoMSecStr.substring(16,18) + 'hr' + timeAgoMSecStr.substring(19,21) + 'min' + timeAgoMSecStr.substring(22,24) + 'sec ago' ;
     uiSnapTable.snapLastUpdateTimeAgo = Math.round((Date.now() - (new Date (brAccSnap.lastUpdate).getTime()))/ (1000 * 60));
-    console.log("The snapLastUpdateTimeAgo: ", uiSnapTable.snapLastUpdateTimeAgo);
     uiSnapTable.totalCashValue = brAccSnap.totalCashValue;
     uiSnapTable.initialMarginReq = brAccSnap.initMarginReq;
     uiSnapTable.maintMarginReq = brAccSnap.maintMarginReq;
@@ -499,11 +492,8 @@ export class BrAccViewerComponent implements AfterViewInit {
       let dirMultiplier = (sortDirection === "Increasing") ? 1 : -1;
       switch (sortColumn) {
         case 'Symbol':
-          if (n1.symbol < n2.symbol) {
-            return 1 * dirMultiplier;
-          } else if (n1.symbol > n2.symbol) {
-            return -1 * dirMultiplier;
-          }
+          if (n1.symbol < n2.symbol) return 1 * dirMultiplier;
+          else if (n1.symbol > n2.symbol) return -1 * dirMultiplier;
           break;
         case 'Pos':
           if (n1.pos < n2.pos) return 1 * dirMultiplier;
@@ -561,78 +551,59 @@ export class BrAccViewerComponent implements AfterViewInit {
     });
   }
 
-  static updateChrtUi(histObj : Nullable<HistJs[]>, uiHistData : UiHistData[], brAccChrtActuals : UiBrcAccChrtval []) {
+  static updateChrtUi(histObj : Nullable<HistJs[]>, uiHistData : UiHistData[]) {
     if (histObj == null)
        return;
   
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
 
+    uiHistData.length = 0;
+
     for (const hisStatItem  of histObj) {
       if (hisStatItem.histStat ==  null || hisStatItem.histValues == null) 
         continue;
-      let statItem = new UiHistData();
-      statItem.assetId = hisStatItem.histStat.assetId;      
-      statItem.periodEnd = hisStatItem.histStat.periodEnd;
-      statItem.periodEndDate = hisStatItem.histStat.periodEndDate;
-      statItem.periodHigh = hisStatItem.histStat.periodHigh;
-      statItem.periodLow = hisStatItem.histStat.periodLow;
-      statItem.periodMaxDD = hisStatItem.histStat.periodMaxDD;
-      statItem.periodMaxDU = hisStatItem.histStat.periodMaxDU;
-      statItem.periodStart = hisStatItem.histStat.periodStart
-      statItem.periodStartDate = hisStatItem.histStat.periodStartDate;
+      let uiHistItem = new UiHistData();
+      uiHistItem.assetId = hisStatItem.histStat.assetId;      
+      uiHistItem.periodEnd = hisStatItem.histStat.periodEnd;
+      uiHistItem.periodEndDate = hisStatItem.histStat.periodEndDate;
+      uiHistItem.periodHigh = hisStatItem.histStat.periodHigh;
+      uiHistItem.periodLow = hisStatItem.histStat.periodLow;
+      uiHistItem.periodMaxDD = hisStatItem.histStat.periodMaxDD;
+      uiHistItem.periodMaxDU = hisStatItem.histStat.periodMaxDU;
+      uiHistItem.periodStart = hisStatItem.histStat.periodStart
+      uiHistItem.periodStartDate = hisStatItem.histStat.periodStartDate;
       // preparing values
-      statItem.periodReturn = statItem.periodEnd / statItem.periodStart - 1;
-      statItem.periodMaxDrawDown = statItem.periodMaxDD;
-      statItem.rtReturn = statItem.priorClose > 0 ? statItem.priorClose / statItem.periodEnd - 1 : 0;
-      statItem.return = statItem.priorClose > 0 ? statItem.priorClose / statItem.periodStart - 1 : statItem.periodEnd / statItem.periodStart - 1;
-      const dataStartDateET = new Date(statItem.periodStartDate);  // '2010-09-29T00:00:00' which was UTC is converted to DateObj interpreted in Local time zone {Tue Sept 29 2010 00:00:00 GMT+0000 (Greenwich Mean Time)}
+      uiHistItem.periodReturn = uiHistItem.periodEnd / uiHistItem.periodStart - 1;
+      uiHistItem.periodMaxDrawDown = uiHistItem.periodMaxDD;
+      uiHistItem.rtReturn = uiHistItem.priorClose > 0 ? uiHistItem.priorClose / uiHistItem.periodEnd - 1 : 0;
+      uiHistItem.return = uiHistItem.priorClose > 0 ? uiHistItem.priorClose / uiHistItem.periodStart - 1 : uiHistItem.periodEnd / uiHistItem.periodStart - 1;
+      const dataStartDateET = new Date(uiHistItem.periodStartDate);  // '2010-09-29T00:00:00' which was UTC is converted to DateObj interpreted in Local time zone {Tue Sept 29 2010 00:00:00 GMT+0000 (Greenwich Mean Time)}
       const nDays = SqNgCommonUtilsTime.DateDiffNdays(dataStartDateET, todayET); // 2 weeks = 14 days, 2020 year: 366 days, because it is a leap year.
       const nYears = nDays / 365.25; // exact number of days in a year in average 365.25 days, because it is 3 times 365 and 1 time 366
-      statItem.cagr = Math.pow(1 + statItem.return, 1.0 / nYears) - 1;
-      statItem.drawDown = statItem.priorClose > 0 ? statItem.priorClose / Math.max(statItem.periodHigh, statItem.priorClose) - 1 : statItem.periodEnd / statItem.periodHigh - 1;
-      statItem.drawUp = statItem.priorClose > 0 ? statItem.priorClose / Math.min(statItem.periodLow, statItem.priorClose) - 1 : statItem.periodEnd / statItem.periodLow - 1;
-      statItem.maxDrawDown = Math.min(statItem.periodMaxDD, statItem.drawDown);
-      statItem.maxDrawUp = Math.max(statItem.periodMaxDU, statItem.drawUp);
-      statItem.histDates = hisStatItem.histValues.histDates;
-      statItem.histSdaCloses = hisStatItem.histValues.histSdaCloses;
-      statItem.sqTicker = hisStatItem.histValues.sqTicker;
-      for (var i = 0; i < statItem.histDates.length; i++ ) {
-        var dateStr : string = statItem.histDates[i];
-        statItem.chartDate = new Date (dateStr.substring(0,4) + '-' + dateStr.substring(4,6) + '-' + dateStr.substring(6,8));
-        statItem.chartSdaClose = statItem.histSdaCloses[i]
+      uiHistItem.cagr = Math.pow(1 + uiHistItem.return, 1.0 / nYears) - 1;
+      uiHistItem.drawDown = uiHistItem.priorClose > 0 ? uiHistItem.priorClose / Math.max(uiHistItem.periodHigh, uiHistItem.priorClose) - 1 : uiHistItem.periodEnd / uiHistItem.periodHigh - 1;
+      uiHistItem.drawUp = uiHistItem.priorClose > 0 ? uiHistItem.priorClose / Math.min(uiHistItem.periodLow, uiHistItem.priorClose) - 1 : uiHistItem.periodEnd / uiHistItem.periodLow - 1;
+      uiHistItem.maxDrawDown = Math.min(uiHistItem.periodMaxDD, uiHistItem.drawDown);
+      uiHistItem.maxDrawUp = Math.max(uiHistItem.periodMaxDU, uiHistItem.drawUp);
+      uiHistItem.histDates = hisStatItem.histValues.histDates;
+      uiHistItem.histSdaCloses = hisStatItem.histValues.histSdaCloses;
+      uiHistItem.sqTicker = hisStatItem.histValues.sqTicker;
+      for (var i = 0; i < uiHistItem.histDates.length; i++ ) {
+        var dateStr : string = uiHistItem.histDates[i];
+        uiHistItem.chartDate = new Date (dateStr.substring(0,4) + '-' + dateStr.substring(4,6) + '-' + dateStr.substring(6,8));
+        uiHistItem.chartSdaClose = uiHistItem.histSdaCloses[i];
+     
+        let brAccItem = new UiBrcAccChrtval();
+        brAccItem.assetId = uiHistItem.assetId;
+        brAccItem.sqTicker = uiHistItem.sqTicker;
+        brAccItem.chartDate = uiHistItem.chartDate;
+        brAccItem.chrtSdaClose = uiHistItem.chartSdaClose;
+        uiHistItem.brAccChrtActuals.push(brAccItem);
       }
-      uiHistData.push(statItem);
-      console.log("The brAccStat  data of dates: ", uiHistData);
-      console.log("The Ui data for brAccItem of brAccChrtActuals is : ",statItem.brAccChrtActuals.length);
-      console.log("The Ui data for brAccItem of histDates is : ",statItem.histDates.length);
-      console.log("The Ui data for brAccItem of histSdaCloses is : ",statItem.histSdaCloses.length);
-      
+      uiHistData.push(uiHistItem);
     }
-    // for (var i = 0; i < brAccItem.histDates.length;) {
-    //   let brAccItem1 = new UiBrcAccChrtval1();
-    //   brAccItem1.date = brAccItem.histDates[i];
-    //   brAccItem1.chrtSdaClose = brAccItem.histSdaCloses[i];
-    //   brAccChrtActuals1.push(brAccItem1);
-           
-    // }
-    // console.log("The Ui data for brAccItem of brAccChrtActuals is : ",brAccChrtActuals1);
    
-    let histValues = histObj[0].histValues;
-    let histStat = histObj[0].histStat;
-    if (histValues == null || histStat ==  null ) 
-      return;
-    brAccChrtActuals.length = 0;
-    for (var i = 0; i < histValues.histDates.length; i++ ) {
-      let elem = new UiBrcAccChrtval();
-      elem.assetId = histValues.assetId;
-      elem.sqTicker = histValues.sqTicker;
-      var dateStr : string = histValues.histDates[i];
-      elem.date = new Date (dateStr.substring(0,4) + '-' + dateStr.substring(4,6) + '-' + dateStr.substring(6,8));
-      elem.chrtSdaClose = histValues.histSdaCloses[i]
-      brAccChrtActuals.push(elem);
-      // console.log("The BrAccChrt:", brAccChrtActuals[i]);
-    }
   }
   ngAfterViewInit(): void {
     // functions for developing charts
@@ -651,18 +622,18 @@ export class BrAccViewerComponent implements AfterViewInit {
                  .append('g')
                  .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
     
-    this.brAccChrtActuals.map((d: {assetId:string | number; date: string | number | Date; chrtSdaClose: string | number; }) => 
+    this.uiHistData[0].brAccChrtActuals.map((d: {assetId:string | number; chartDate: string | number | Date; chrtSdaClose: string | number; }) => 
             ({assetId: +d.assetId,
-              date: new Date(d.date),
+              chartDate: new Date(d.chartDate),
               chrtSdaClose: +d.chrtSdaClose,
             }));
     const formatMonth = d3.timeFormat("%Y%m%d");
-    var  bisectDate = d3.bisector((d: any) => d.date).left;
+    var  bisectDate = d3.bisector((d: any) => d.chartDate).left;
     // find data range
-    var xMin = d3.min(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
-    var xMax = d3.max(this.brAccChrtActuals, (d:{ date: any; }) => d.date);
-    var yMin = d3.min(this.brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose );
-    var yMax = d3.max(this.brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose );
+    var xMin = d3.min(this.uiHistData[0].brAccChrtActuals, (d:{ chartDate: any; }) => d.chartDate);
+    var xMax = d3.max(this.uiHistData[0].brAccChrtActuals, (d:{ chartDate: any; }) => d.chartDate);
+    var yMin = d3.min(this.uiHistData[0].brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose );
+    var yMax = d3.max(this.uiHistData[0].brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose );
   // range of data configuring
     this.myX = d3.scaleTime()
               .domain([xMin, xMax])
@@ -672,11 +643,11 @@ export class BrAccViewerComponent implements AfterViewInit {
                 .range([this.height, 0]);
     this.svg.append('g')
             .attr('transform', 'translate(0,' + this.height + ')')
-            .call(d3Axis.axisBottom(this.myX));
+            .call(d3.axisBottom(this.myX));
 
     this.svg.append('g')
             // .attr('class', 'axis--y')
-            .call(d3Axis.axisLeft(this.myY));
+            .call(d3.axisLeft(this.myY));
 
       // text label for x-axis
     this.svg.append("text")
@@ -708,12 +679,12 @@ export class BrAccViewerComponent implements AfterViewInit {
                         .attr("text-anchor", "left")
                         .attr("alignment-baseline", "middle");
     // Genereating line - for sdaCloses 
-    this.line = d3Shape.line()
-                       .x( (d: any) => this.myX(d.date))
-                       .y( (d: any) => this.myY(d.chrtSdaClose));
+    this.line = d3.line()
+                  .x( (d: any) => this.myX(d.chartDate))
+                  .y( (d: any) => this.myY(d.chrtSdaClose));
     this.svg.append('path')
             .attr('class', 'line') //Assign a class for styling
-            .datum(this.brAccChrtActuals) // Binds data to the line
+            .datum(this.uiHistData[0].brAccChrtActuals) // Binds data to the line
             .attr('d', this.line
             .curve(d3.curveCardinal));
 
@@ -737,12 +708,12 @@ export class BrAccViewerComponent implements AfterViewInit {
        // recover coordinate we need
       var x0 = _thisClass.myX.invert(d3.pointer(event)[0]);
       // console.log(`The X0: '${x0}'`);
-      var i = bisectDate(_thisClass.brAccChrtActuals, x0, 1), // index value on the chart area
-      selectedData = _thisClass.brAccChrtActuals[i]
-      focus.attr("cx",_thisClass.myX(selectedData.date))
+      var i = bisectDate(_thisClass.uiHistData[0].brAccChrtActuals, x0, 1), // index value on the chart area
+      selectedData = _thisClass.uiHistData[0].brAccChrtActuals[i]
+      focus.attr("cx",_thisClass.myX(selectedData.chartDate))
           .attr("cy",_thisClass.myY(selectedData.chrtSdaClose))
-      focusText.html("x:" + formatMonth(selectedData.date) +  " - " + "y:" + selectedData.chrtSdaClose)
-              .attr("x", _thisClass.myX(selectedData.date)+15)
+      focusText.html("x:" + formatMonth(selectedData.chartDate) +  " - " + "y:" + selectedData.chrtSdaClose)
+              .attr("x", _thisClass.myX(selectedData.chartDate)+15)
               .attr("y",_thisClass.myY(selectedData.chrtSdaClose))
     }
 
@@ -752,27 +723,4 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
 }
  // Chart functions end
-
-  // zeroPad = (num, places: number) => String(num).padStart(places, '0');  // https://stackoverflow.com/questions/2998784/how-to-output-numbers-with-leading-zeros-in-javascript
-  // ES5 approach: because 2021-02: it works in CLI, but VsCode shows problems: "Property 'padStart' does not exist on type 'string'. Do you need to change your target library? Try changing the `lib` compiler option to 'es2017' or later."
-  public zeroPad(num, places) {
-    var zero = places - num.toString().length + 1;
-    return Array(+(zero > 0 && zero)).join("0") + num;
-  }
-
-  public Date2PaddedIsoStr(date: Date): string {  // 2020-9-1 is not acceptable. Should be converted to 2020-09-01
-    // don't use UTC versions, because they will convert local time zone dates to UTC first, then we might have bad result.
-    // "date = 'Tue Apr 13 2021 00:00:00 GMT+0100 (British Summer Time)'" because local BST is not UTC date.getUTCDate() = 12, while date.getDate()=13 (correct)
-    //return this.zeroPad(date.getUTCFullYear(), 4) + '-' + this.zeroPad(date.getUTCMonth() + 1, 2) + '-' + this.zeroPad(date.getUTCDate(), 2);
-    return this.zeroPad(date.getFullYear(), 4) + '-' + this.zeroPad(date.getMonth() + 1, 2) + '-' + this.zeroPad(date.getDate(), 2);
-  }
-
-  public PaddedIsoStr3Date(dateStr: string): Date {
-    const parts = dateStr.split('-');
-    const year = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10);
-    const day = parseInt(parts[2], 10);
-    return new Date(year, month - 1, day);
-  }
-
 }

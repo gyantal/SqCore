@@ -143,8 +143,8 @@ MarketBar
                         <div>EndDate: <input type="date" id="EndDate" name="EndDate" min="01-01-1975"></div>
                         <div>
                             <select name="" id="" [(ngModel)] = "perfIndicatorSelected" (change)="onPerfIndicatorSelectedChange($event)">
-                            <option *ngFor="let item of brAccHistStatVal" value="item">Return: {{item.rtReturn}}</option>
-                            <option *ngFor="let item of brAccHistStatVal" value="item">MaxDD: {{item.maxDrawDown}}</option>
+                            <option *ngFor="let item of uiHistData" value="item">{{item.rtReturn}}</option>
+                            <option *ngFor="let item of uiHistData" value="item">MaxDD: {{item.maxDrawDown}}</option>
                             </select>
                         </div>
                      </div>
@@ -159,10 +159,11 @@ MarketBar
 </div>
 
 <hr>
-<div id="table-wrapper">
+<div class="brAccSnapTap">
 <div id="table-scroll">
 <table class = "selectedBrcAccSnapShotTbl">
     <thead class = "selectedBrcAccSnapShotTbl">
+        <tr class="tableHeader">
         <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='Symbol'}" (click)="onSortingClicked($event, 'Symbol')">Symbol</th>
         <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='LocalSymbol'}" >LocalSymbol</th>
         <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='Pos'}" (click)="onSortingClicked($event, 'Pos')">Pos</th>
@@ -181,6 +182,7 @@ MarketBar
         <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='gBeta'}"(click)="onSortingClicked($event, 'gBeta')">gBeta</th>
         <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='gBetaDltAdj'}"(click)="onSortingClicked($event, 'gBetaDltAdj')">BetaDltAdj<br>MktOriVal</th>
         <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='Acc'}"(click)="onSortingClicked($event, 'Acc')">Acc</th>
+        </tr>
     </thead>
     <tbody class = "selectedBrcAccSnapShotTbl">
     <tr *ngFor="let item of uiSnapTable.poss">
@@ -268,33 +270,6 @@ MarketBar
         </div>
     </div>
 </div>
-<!-- HandshakeMsgStr: <br> <span>{{ handshakeStr }}</span><br><br>
-MarketBarLastClosesStr: <br> <span>{{ mktBrLstClsStr }}</span><br><br>
-HistStr: <br> <span>{{ histStr }}</span><br><br>
-BrAccountSnapshot: <br> <span>{{ brAccountSnapshotStr }}</span> -->
 </div>
+<br><br><br>
 <hr>
-[1. MarketBar on top, QQQ, SPY, TLT, VXX, UNG, USO]<br>
-[2. [AccountData under it]<br>
-    2.1 [AccountSummary, 1/3rd on the left box] NAV selection combo-box, P&L Today (both from Positions and yesterdayNav), NAV (only)<br>
-    2.2 [AccountDetails, 2/3rd on the right box] Tabpage with 2 tabs<br>
-        2.2.1 [HistoricalChart] default: visible, PeridSelectionComboBox (YTD) at bottom<br>
-        2.2.2 [MoreDetails: Cash, MarginReq], default: hidden<br>
-[3. AccountPositions under it, the data table]<br>
-<hr>
-<div>
-    <select [(ngModel)] = "yrSelectionSelected">
-        <option *ngFor="let item of yrSelectionChoices" [value]="item">{{item}}</option>
-    </select>
-    StartDate:<input type="date" id="StartDate" name="startDate" min="01-01-1975">
-    EndDate:<input type="date" id="EndDate" name="EndDate" min="01-01-1975">  
-    <select name="" id="">
-        <option value="TotRet" selected>Return</option>
-        <option value="MDD">MaxDrawDown</option>
-    </select>
-    <p>{{"Selected: " + yrSelectionSelected}}</p>
-    <div *ngFor="let item of brAccHistStatVal">
-        AssetID : {{item.assetId}}, periodStartDate: {{item.periodStartDate}}, 
-        periodEndDate: {{item.periodEndDate}} , realTimeReturn: {{item.rtReturn}}
-    </div>
-</div>

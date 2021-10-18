@@ -330,13 +330,13 @@ export class MarketHealthComponent implements OnInit {
     todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
 
     this.lookbackStartET = new Date(todayET.getFullYear() - 1, 11, 31);  // set YTD as default
-    this.lookbackStartETstr = this.Date2PaddedIsoStr(this.lookbackStartET);
+    this.lookbackStartETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.lookbackStartET);
 
     // https://stackoverflow.com/questions/563406/add-days-to-javascript-date
     const yesterDayET = new Date(todayET);
     yesterDayET.setDate(yesterDayET.getDate() - 1);
     this.lookbackEndET = new Date(yesterDayET.getFullYear(), yesterDayET.getMonth(), yesterDayET.getDate());  // set yesterdayET as default
-    this.lookbackEndETstr = this.Date2PaddedIsoStr(this.lookbackEndET);
+    this.lookbackEndETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.lookbackEndET);
     this.FillDataWithEmptyValuesToAvoidUiBlinkingWhenDataArrives();
   }
 
@@ -428,10 +428,10 @@ export class MarketHealthComponent implements OnInit {
 
     if (pEvent.target.id === 'startDate') {
       this.lookbackStartETstr = pEvent.target.value;
-      this.lookbackStartET = this.PaddedIsoStr3Date(this.lookbackStartETstr);
+      this.lookbackStartET = SqNgCommonUtilsTime.PaddedIsoStr3Date(this.lookbackStartETstr);
     } else if (pEvent.target.id === 'endDate') {
       this.lookbackEndETstr = pEvent.target.value;
-      this.lookbackEndET = this.PaddedIsoStr3Date(this.lookbackEndETstr);
+      this.lookbackEndET = SqNgCommonUtilsTime.PaddedIsoStr3Date(this.lookbackEndETstr);
     }
     this.onLookbackChange();
   }
@@ -454,9 +454,9 @@ export class MarketHealthComponent implements OnInit {
     } else if (lookbackStr === 'D\'99') {
       this.lookbackStartET = new Date(1999, 3 - 1, 10); // start date of QQQ
     } else if (lookbackStr === 'Date') {
-      this.lookbackStartET = this.PaddedIsoStr3Date(this.lookbackStartETstr);
+      this.lookbackStartET = SqNgCommonUtilsTime.PaddedIsoStr3Date(this.lookbackStartETstr);
     }
-    this.lookbackStartETstr = this.Date2PaddedIsoStr(this.lookbackStartET);
+    this.lookbackStartETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.lookbackStartET);
 
     if (!(lookbackStr === 'Date')) {  // change back the end date to yesterday, except if it is in CustomDate mode
       const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
@@ -464,7 +464,7 @@ export class MarketHealthComponent implements OnInit {
       const yesterDayET = new Date(todayET);
       yesterDayET.setDate(yesterDayET.getDate() - 1);
       this.lookbackEndET = new Date(yesterDayET.getFullYear(), yesterDayET.getMonth(), yesterDayET.getDate());  // set yesterdayET as default
-      this.lookbackEndETstr = this.Date2PaddedIsoStr(this.lookbackEndET);
+      this.lookbackEndETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.lookbackEndET);
     }
     this.onLookbackChange();
   }
@@ -522,23 +522,23 @@ export class MarketHealthComponent implements OnInit {
 
   // zeroPad = (num, places: number) => String(num).padStart(places, '0');  // https://stackoverflow.com/questions/2998784/how-to-output-numbers-with-leading-zeros-in-javascript
   // ES5 approach: because 2021-02: it works in CLI, but VsCode shows problems: "Property 'padStart' does not exist on type 'string'. Do you need to change your target library? Try changing the `lib` compiler option to 'es2017' or later."
-  public zeroPad(num, places) {
-    var zero = places - num.toString().length + 1;
-    return Array(+(zero > 0 && zero)).join("0") + num;
-  }
+  // public zeroPad(num, places) {
+  //   var zero = places - num.toString().length + 1;
+  //   return Array(+(zero > 0 && zero)).join("0") + num;
+  // }
 
-  public Date2PaddedIsoStr(date: Date): string {  // 2020-9-1 is not acceptable. Should be converted to 2020-09-01
-    // don't use UTC versions, because they will convert local time zone dates to UTC first, then we might have bad result.
-    // "date = 'Tue Apr 13 2021 00:00:00 GMT+0100 (British Summer Time)'" because local BST is not UTC date.getUTCDate() = 12, while date.getDate()=13 (correct)
-    //return this.zeroPad(date.getUTCFullYear(), 4) + '-' + this.zeroPad(date.getUTCMonth() + 1, 2) + '-' + this.zeroPad(date.getUTCDate(), 2);
-    return this.zeroPad(date.getFullYear(), 4) + '-' + this.zeroPad(date.getMonth() + 1, 2) + '-' + this.zeroPad(date.getDate(), 2);
-  }
+  // public Date2PaddedIsoStr(date: Date): string {  // 2020-9-1 is not acceptable. Should be converted to 2020-09-01
+  //   // don't use UTC versions, because they will convert local time zone dates to UTC first, then we might have bad result.
+  //   // "date = 'Tue Apr 13 2021 00:00:00 GMT+0100 (British Summer Time)'" because local BST is not UTC date.getUTCDate() = 12, while date.getDate()=13 (correct)
+  //   //return this.zeroPad(date.getUTCFullYear(), 4) + '-' + this.zeroPad(date.getUTCMonth() + 1, 2) + '-' + this.zeroPad(date.getUTCDate(), 2);
+  //   return this.zeroPad(date.getFullYear(), 4) + '-' + this.zeroPad(date.getMonth() + 1, 2) + '-' + this.zeroPad(date.getDate(), 2);
+  // }
 
-  public PaddedIsoStr3Date(dateStr: string): Date {
-    const parts = dateStr.split('-');
-    const year = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10);
-    const day = parseInt(parts[2], 10);
-    return new Date(year, month - 1, day);
-  }
+  // public PaddedIsoStr3Date(dateStr: string): Date {
+  //   const parts = dateStr.split('-');
+  //   const year = parseInt(parts[0], 10);
+  //   const month = parseInt(parts[1], 10);
+  //   const day = parseInt(parts[2], 10);
+  //   return new Date(year, month - 1, day);
+  // }
 }

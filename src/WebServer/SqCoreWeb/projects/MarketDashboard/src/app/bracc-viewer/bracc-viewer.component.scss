@@ -1,3 +1,13 @@
+:host {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-size: 1.4rem;
+  color: rgb(32, 34, 148);
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  width: 100%;
+}
 .selectedNavBraccCl {
     position: relative;
     display: inline-block;
@@ -73,6 +83,16 @@
 }
 #liqVal{
   font-weight: bold;
+  border-radius: 20px 50px 30px;
+  text-shadow: 2px 2px 5px red;
+  animation: mymove 2s infinite;
+}
+@keyframes mymove {
+  from {background-color: red;}
+  to {background-color: yellow;}
+  // 0%{opacity: 0;}
+  // 50%{opacity: .5;}
+  // 100%{opacity: 1;}
 }
 #plSum {
   font-weight: bold;
@@ -145,23 +165,27 @@
 }
 
 // Table stylings
-table{
-  width: 100%;
+.brAccSnapTap {
+width: 100%;
+display: flex;
+align-items: stretch;
+justify-content: space-between;
 }
-table, td, thead, th {
-  border: 1px solid #9cd3db;;
-  border-collapse: collapse;
-  padding: 2px 10px;
-  text-align: center;
-  white-space: nowrap;
-  font-family: 16px 'Times New Roman';
-  border-color: #9cd3db;;
-  box-shadow: 0 0 7rem rgb(48 138 255 / 60%), 
+.brAccSnapTap table{
+border-collapse: collapse;
+}
+.brAccSnapTap table td, th{
+padding: 0rem;
+border-style: ridge;
+border-width: 0.2rem;
+border-color: #4e95f4 ;
+width: 7rem;
+text-align: center;
+box-shadow: 0 0 7rem rgb(48 138 255 / 60%), 
               0 0.5rem 2rem rgb(48 138 255 / 60%), 
               0 0.2rem 2rem rgb(48 138 255  /60%),
               inset 0 0.1rem #fff,
               inset 0 -0.1rem #fff;
-  color: #000;
 }
 thead {
   font-weight: bold;
@@ -170,7 +194,7 @@ thead {
   90deg,#3080c7 5%,#5b9dd7 10%,#d5f5f6 30%,#d5f5f6 70%,#ace16b 90%,#91d73a 95%);
   opacity: 0.8;
 }
-thead :hover {
+thead tr :hover {
   backdrop-filter: blur(1rem);
     transform: skewX(-10deg);
   animation: breath2 2s .5s infinite alternate;
@@ -183,15 +207,9 @@ thead :hover {
   animation-play-state: running;
   animation-name: breath2;
 }
-td {
-  font-size: small;
-}
-tbody{
-  overflow-y: scroll;
-}
 .ActiveSortTableHeader
 {
-  background-color: blue;
+  background-color: #FFAE42;
   font-size: large;
 }
 
