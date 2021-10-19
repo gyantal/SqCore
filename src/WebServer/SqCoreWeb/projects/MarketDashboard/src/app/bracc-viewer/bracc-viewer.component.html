@@ -48,23 +48,7 @@ MarketBar
                 </div>
             </div>
         </div>
-        <div id="plSum" class="tooltipCell">P&L Today (PriorNAV) : 
-            <span [ngClass]="{
-                'mktBarPositivePerf' : uiSnapTable.plTodPrNav > 0,
-                'mktbarNegativePerf' : uiSnapTable.plTodPrNav < 0
-                }"> {{uiSnapTable.plTodPrNav | currency:'USD':'symbol':'1.0'}}
-            </span>
-            <span [ngClass]="{
-                'mktBarPositivePerf' : uiSnapTable.pctChgTodPrNav > 0,
-                'mktbarNegativePerf' : uiSnapTable.pctChgTodPrNav < 0
-                }"> ({{uiSnapTable.pctChgTodPrNav | percent:'1.2'}})
-            </span>
-            <div class="tooltipSnap">
-                <div class="snapshot">
-                    Profit is calculated from current and previous day NAV 
-                </div>
-            </div> 
-        </div>
+       
         <div>
             <span class="tab">
                 <button [ngStyle]="{'background-color':tabPageVisibleIdx == 1 ? 'aqua':''}"(click)="tabHeaderClicked($event,1)"> MoreDetails </button>
@@ -75,6 +59,23 @@ MarketBar
     <div class="ChartSumm">
             <div [hidden]="tabPageVisibleIdx != 1" id="tab1">
                 <div class="sections">
+                    <div id="plSum" class="tooltipCell">P&L Today (PriorNAV) : 
+                        <span [ngClass]="{
+                            'mktBarPositivePerf' : uiSnapTable.plTodPrNav > 0,
+                            'mktbarNegativePerf' : uiSnapTable.plTodPrNav < 0
+                            }"> {{uiSnapTable.plTodPrNav | currency:'USD':'symbol':'1.0'}}
+                        </span>
+                        <span [ngClass]="{
+                            'mktBarPositivePerf' : uiSnapTable.pctChgTodPrNav > 0,
+                            'mktbarNegativePerf' : uiSnapTable.pctChgTodPrNav < 0
+                            }"> ({{uiSnapTable.pctChgTodPrNav | percent:'1.2'}})
+                        </span>
+                        <div class="tooltipSnap">
+                            <div class="snapshot">
+                                Profit is calculated from current and previous day NAV 
+                            </div>
+                        </div> 
+                    </div>
                     <div>IB Total Cash: <span id="plSum">{{uiSnapTable.totalCashValue | number}}</span></div>
                     <div>IB Initial MarginReq: <span id="plSum">{{uiSnapTable.initialMarginReq | number}}</span></div>
                     <div>IB Maintenance MarginReq: <span id="plSum">{{uiSnapTable.maintMarginReq | number}}</span></div>
@@ -159,8 +160,7 @@ MarketBar
 </div>
 
 <hr>
-<div class="brAccSnapTap">
-<div id="table-scroll">
+<div class="brAccSnapTable">
 <table class = "selectedBrcAccSnapShotTbl">
     <thead class = "selectedBrcAccSnapShotTbl">
         <tr class="tableHeader">
@@ -236,7 +236,6 @@ MarketBar
     </tr>
     </tbody>
 </table>
-</div>
 </div>
 <hr>
 <!-- Addded class "selectedTempDebug" to limit the text output in the UI-->

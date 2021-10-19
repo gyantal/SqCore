@@ -519,26 +519,4 @@ export class MarketHealthComponent implements OnInit {
       this._parentWsConnection.send('MktHlth.ChangeNav:' + navSelectTicker);
     }
   }
-
-  // zeroPad = (num, places: number) => String(num).padStart(places, '0');  // https://stackoverflow.com/questions/2998784/how-to-output-numbers-with-leading-zeros-in-javascript
-  // ES5 approach: because 2021-02: it works in CLI, but VsCode shows problems: "Property 'padStart' does not exist on type 'string'. Do you need to change your target library? Try changing the `lib` compiler option to 'es2017' or later."
-  // public zeroPad(num, places) {
-  //   var zero = places - num.toString().length + 1;
-  //   return Array(+(zero > 0 && zero)).join("0") + num;
-  // }
-
-  // public Date2PaddedIsoStr(date: Date): string {  // 2020-9-1 is not acceptable. Should be converted to 2020-09-01
-  //   // don't use UTC versions, because they will convert local time zone dates to UTC first, then we might have bad result.
-  //   // "date = 'Tue Apr 13 2021 00:00:00 GMT+0100 (British Summer Time)'" because local BST is not UTC date.getUTCDate() = 12, while date.getDate()=13 (correct)
-  //   //return this.zeroPad(date.getUTCFullYear(), 4) + '-' + this.zeroPad(date.getUTCMonth() + 1, 2) + '-' + this.zeroPad(date.getUTCDate(), 2);
-  //   return this.zeroPad(date.getFullYear(), 4) + '-' + this.zeroPad(date.getMonth() + 1, 2) + '-' + this.zeroPad(date.getDate(), 2);
-  // }
-
-  // public PaddedIsoStr3Date(dateStr: string): Date {
-  //   const parts = dateStr.split('-');
-  //   const year = parseInt(parts[0], 10);
-  //   const month = parseInt(parts[1], 10);
-  //   const day = parseInt(parts[2], 10);
-  //   return new Date(year, month - 1, day);
-  // }
 }

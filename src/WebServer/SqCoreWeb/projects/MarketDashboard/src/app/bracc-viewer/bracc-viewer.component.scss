@@ -83,17 +83,9 @@
 }
 #liqVal{
   font-weight: bold;
-  border-radius: 20px 50px 30px;
-  text-shadow: 2px 2px 5px red;
-  animation: mymove 2s infinite;
+  text-shadow: 2px 2px 5px #FFA500;
 }
-@keyframes mymove {
-  from {background-color: red;}
-  to {background-color: yellow;}
-  // 0%{opacity: 0;}
-  // 50%{opacity: .5;}
-  // 100%{opacity: 1;}
-}
+
 #plSum {
   font-weight: bold;
   font-size: small
@@ -165,16 +157,16 @@
 }
 
 // Table stylings
-.brAccSnapTap {
+.brAccSnapTable {
 width: 100%;
 display: flex;
 align-items: stretch;
 justify-content: space-between;
 }
-.brAccSnapTap table{
+.brAccSnapTable table{
 border-collapse: collapse;
 }
-.brAccSnapTap table td, th{
+.brAccSnapTable table td, th{
 padding: 0rem;
 border-style: ridge;
 border-width: 0.2rem;

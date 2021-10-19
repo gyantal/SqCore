@@ -137,6 +137,8 @@ class UiAssetSnapPossPos {
 // Hist stat Values
 class UiHistData {
   public assetId = NaN;
+  public sqTicker ='';
+
   public priorClose = NaN;
   public periodStartDate = '';
   public periodEndDate = '';
@@ -158,11 +160,11 @@ class UiHistData {
   public maxDrawUp = NaN;
   public histDates = [];
   public histSdaCloses = [];
-  public sqTicker ='';
   public chartDate = new Date('2021-01-01');
   public chartSdaClose = NaN;
 
   public brAccChrtActuals : UiBrcAccChrtval [] = [];
+  // svg, myX, myY
 }
 
 // Hist chart values
@@ -217,7 +219,7 @@ export class BrAccViewerComponent implements AfterViewInit {
   brAccountSnapshotStrFormatted = '[Nothing arrived yet]';
   brAccountSnapshotObj : Nullable<BrAccSnapshotJs>=null;
   uiSnapTable : UiSnapTable = new UiSnapTable();
-  uiHistData : UiHistData [] = [];
+  uiHistData : UiHistData [] = [];  // length: 2: (uiHistData[0].assetId + uiHistData[0].brAccChrtActuals)  vs.  (uiHistData[1].assetId + uiHistData[1].brAccChrtActuals)
   
   tabPageVisibleIdx = 1;
   sortColumn : string = "DailyPL";
@@ -259,10 +261,10 @@ export class BrAccViewerComponent implements AfterViewInit {
     this.width = 660 - this.margin.left - this.margin.right;
     this.height = 400 - this.margin.top - this.margin.bottom;
 
-    setInterval(function (self) {
-      return function(self) {   //Return a function in the context of 'self'
-        self.snapshotRefresh() //Thing you wanted to run as non-window 'this'
-      }}(this), 3*60*1000);  // 60 min
+    setInterval(
+      () => {
+        this.snapshotRefresh();
+      }, 30*60*1000); // 30 mins
    }
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
@@ -367,6 +369,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
       this._parentWsConnection.send('BrAccViewer.RefreshSnapshot:' + this.navSelectionSelected);
     }
+    console.log("hello")
   }
 
   updateUiWithSnapshot(jsonObjSnap: any)  {
@@ -433,7 +436,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     const timeAgoMsec = new Date (Date.now()- timestampDate.getTime());
     const timeAgoMSecStr = timeAgoMsec.toString();     // number of milliseconds
     console.log(timeAgoMSecStr.substring(16,18) + 'hr' + timeAgoMSecStr.substring(19,21) + 'min' + timeAgoMSecStr.substring(22,24) + 'sec' );
-    uiSnapTable.snapLastUpdateTimeAgoStr = timeAgoMSecStr.substring(16,18) + 'hr' + timeAgoMSecStr.substring(19,21) + 'min' + timeAgoMSecStr.substring(22,24) + 'sec ago' ;
+    uiSnapTable.snapLastUpdateTimeAgoStr = timeAgoMSecStr.substring(16,18) + 'h ' + timeAgoMSecStr.substring(19,21) + 'm ' + timeAgoMSecStr.substring(22,24) + 's ago' ;
     uiSnapTable.snapLastUpdateTimeAgo = Math.round((Date.now() - (new Date (brAccSnap.lastUpdate).getTime()))/ (1000 * 60));
     uiSnapTable.totalCashValue = brAccSnap.totalCashValue;
     uiSnapTable.initialMarginReq = brAccSnap.initMarginReq;
@@ -602,6 +605,9 @@ export class BrAccViewerComponent implements AfterViewInit {
         uiHistItem.brAccChrtActuals.push(brAccItem);
       }
       uiHistData.push(uiHistItem);
+
+      // chart processing
+      // ...
     }
    
   }
@@ -614,8 +620,8 @@ export class BrAccViewerComponent implements AfterViewInit {
     // 
   }
 
-  private fillChartWithData() {
-    d3.selectAll("#my_dataviz > *").remove(); 
+  private fillChartWithData(/* uiHistData : UiHistData[] */) {
+    d3.selectAll("#my_dataviz > *").remove();
     this.svg = d3.select('#my_dataviz').append('svg')
                  .attr("width", this.width + this.margin.left + this.margin.right)
                  .attr("height", this.height + this.margin.top + this.margin.bottom)
