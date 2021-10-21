@@ -7,7 +7,6 @@ import { gDiag, AssetLastJs } from './../../sq-globals';
 type Nullable<T> = T | null;
 
 // Input data classes
-
 class BrAccVwrHandShk {
   marketBarAssets: Nullable<AssetJs[]> = null;
   selectableNavAssets: Nullable<AssetJs[]> = null;
@@ -50,7 +49,7 @@ class HistJs {
   public histValues : Nullable<BrAccHistValuesJs> = null;
 }
 
-class BrAccHistStatJs{
+class BrAccHistStatJs {
   public assetId = NaN;
   public sqTicker = '';
   public periodStartDate = '';
@@ -63,7 +62,7 @@ class BrAccHistStatJs{
   public periodMaxDU = NaN;
 }
 
-class BrAccHistValuesJs{
+class BrAccHistValuesJs {
   public assetId = NaN;
   public sqTicker = '';
   public periodStartDate = '';
@@ -160,17 +159,11 @@ class UiHistData {
   public maxDrawUp = NaN;
   public histDates = [];
   public histSdaCloses = [];
-  public chartDate = new Date('2021-01-01');
-  public chartSdaClose = NaN;
-
   public brAccChrtActuals : UiBrcAccChrtval [] = [];
-  // svg, myX, myY
 }
 
 // Hist chart values
 class UiBrcAccChrtval {
-  public assetId = NaN;
-  public sqTicker = ''; // shown on the chart chart tooltip
   public chartDate = new Date('2021-01-01');
   public chrtSdaClose = NaN;
 }
@@ -202,22 +195,22 @@ export class BrAccViewerComponent implements AfterViewInit {
     };     // it is QQQ Beta, not SPY beta
 
   handshakeStr = '[Nothing arrived yet]';
-  handshakeStrFormatted1 : string[] = [];
   handshakeStrFormatted = '[Nothing arrived yet]';
   handshakeObj: Nullable<BrAccVwrHandShk> = null;
   mktBrLstClsStr = '[Nothing arrived yet]';
   mktBrLstClsStrFormatted = '[Nothing arrived yet]';
   mktBrLstClsObj: Nullable<AssetPriorCloseJs[]> = null;
-  lstValObj: Nullable<AssetLastJs[]> = null;  // realtime or last values
   histStr = '[Nothing arrived yet]';
   histStrFormatted = '[Nothing arrived yet]';
   histObj: Nullable<HistJs[]> = null;
-  selectedNav = '';
-  uiMktBar: UiMktBarItem[] = [];
-
   brAccountSnapshotStr = '[Nothing arrived yet]';
   brAccountSnapshotStrFormatted = '[Nothing arrived yet]';
   brAccountSnapshotObj : Nullable<BrAccSnapshotJs>=null;
+  lstValObj: Nullable<AssetLastJs[]> = null;  // realtime or last values
+  
+  selectedNav = '';
+  uiMktBar: UiMktBarItem[] = [];
+
   uiSnapTable : UiSnapTable = new UiSnapTable();
   uiHistData : UiHistData [] = [];  // length: 2: (uiHistData[0].assetId + uiHistData[0].brAccChrtActuals)  vs.  (uiHistData[1].assetId + uiHistData[1].brAccChrtActuals)
   
@@ -234,15 +227,6 @@ export class BrAccViewerComponent implements AfterViewInit {
   lookbackEndET: Date;
   lookbackEndETstr: string;
  
-  // required for chart
-  private margin = {top: 10, right: 30, bottom: 30, left: 60 };
-  private width: number;
-  private height: number;
-  private myX: any;
-  private myY: any;
-  private svg: any;
-  private line!: d3.Line<[number, number]>;
-
   constructor() {
 
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
@@ -256,15 +240,11 @@ export class BrAccViewerComponent implements AfterViewInit {
     yesterDayET.setDate(yesterDayET.getDate() - 1);
     this.lookbackEndET = new Date(yesterDayET.getFullYear(), yesterDayET.getMonth(), yesterDayET.getDate());  // set yesterdayET as default
     this.lookbackEndETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.lookbackEndET);
-    
-    // Creating a Width and Height data points
-    this.width = 660 - this.margin.left - this.margin.right;
-    this.height = 400 - this.margin.top - this.margin.bottom;
 
     setInterval(
       () => {
         this.snapshotRefresh();
-      }, 30*60*1000); // 30 mins
+      }, 60*60*1000); // 60 mins
    }
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
@@ -287,7 +267,7 @@ export class BrAccViewerComponent implements AfterViewInit {
         this.histStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.histObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateChrtUi(this.histObj, this.uiHistData);
-        this.fillChartWithData();
+        // this.fillChartWithData();
         // if message is too large without spaces, we have problems as there is no horizontal scrollbar in browser. So, shorten the message.
         if (msgObjStr.length < 200)
           this.histStr = msgObjStr;
@@ -336,7 +316,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
   }
 
-  onPerfIndicatorSelectedChange (pEvent: any){
+  onPerfIndicatorSelectedChange(pEvent: any) {
     console.log("The performance indicator selected :" + this.perfIndicatorSelected);
   }
 
@@ -348,7 +328,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
   }
 
-  onSortingClicked(event, p_sortColumn){
+  onSortingClicked(event, p_sortColumn) {
     this.sortColumn = p_sortColumn;
     if (this.sortDirection == "Increasing")
       this.sortDirection = "Decreasing";
@@ -358,21 +338,21 @@ export class BrAccViewerComponent implements AfterViewInit {
   }
 
   // tabpage 
-  tabHeaderClicked (event: any, tabIdx: number) {
+  tabHeaderClicked(event: any, tabIdx: number) {
     this.tabPageVisibleIdx = tabIdx;
   }
 
-  onSnapshotRefreshClicked (event) {
+  onSnapshotRefreshClicked(event) {
     this.snapshotRefresh();
   }
-  snapshotRefresh () {
+  snapshotRefresh() {
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
       this._parentWsConnection.send('BrAccViewer.RefreshSnapshot:' + this.navSelectionSelected);
     }
     console.log("hello")
   }
 
-  updateUiWithSnapshot(jsonObjSnap: any)  {
+  updateUiWithSnapshot(jsonObjSnap: any) {
     console.log(`BrAccViewer.updateUiWithSnapshot(). Symbol: '${jsonObjSnap.symbol}'`);
     if (this.selectedNav != jsonObjSnap.symbol) // change UI only if it is a meaningful change
       this.selectedNav = jsonObjSnap.symbol;
@@ -563,7 +543,7 @@ export class BrAccViewerComponent implements AfterViewInit {
 
     uiHistData.length = 0;
 
-    for (const hisStatItem  of histObj) {
+    for(const hisStatItem  of histObj) {
       if (hisStatItem.histStat ==  null || hisStatItem.histValues == null) 
         continue;
       let uiHistItem = new UiHistData();
@@ -593,140 +573,132 @@ export class BrAccViewerComponent implements AfterViewInit {
       uiHistItem.histSdaCloses = hisStatItem.histValues.histSdaCloses;
       uiHistItem.sqTicker = hisStatItem.histValues.sqTicker;
       for (var i = 0; i < uiHistItem.histDates.length; i++ ) {
-        var dateStr : string = uiHistItem.histDates[i];
-        uiHistItem.chartDate = new Date (dateStr.substring(0,4) + '-' + dateStr.substring(4,6) + '-' + dateStr.substring(6,8));
-        uiHistItem.chartSdaClose = uiHistItem.histSdaCloses[i];
-     
         let brAccItem = new UiBrcAccChrtval();
-        brAccItem.assetId = uiHistItem.assetId;
-        brAccItem.sqTicker = uiHistItem.sqTicker;
-        brAccItem.chartDate = uiHistItem.chartDate;
-        brAccItem.chrtSdaClose = uiHistItem.chartSdaClose;
+        var dateStr : string = uiHistItem.histDates[i];
+        brAccItem.chartDate = new Date (dateStr.substring(0,4) + '-' + dateStr.substring(4,6) + '-' + dateStr.substring(6,8));
+        brAccItem.chrtSdaClose = (uiHistItem.histSdaCloses[i])/1000; // divided by thousand to show data in K (Ex: 20,000 = 20K)
         uiHistItem.brAccChrtActuals.push(brAccItem);
       }
       uiHistData.push(uiHistItem);
-
-      // chart processing
-      // ...
     }
+     // chart processing
+     this.uiHistChrt(uiHistData)
+    }
+    
+  static uiHistChrt(uiHistData : UiHistData[]) {
+    d3.selectAll("#my_dataviz > *").remove();
+     var margin = {top: 10, right: 30, bottom: 30, left: 60 };
+     var width = 660 - margin.left - margin.right;
+     var height = 400 - margin.top - margin.bottom;
+ 
+     var histChrtSvg = d3.select('#my_dataviz').append('svg')
+                  .attr("width", width + margin.left + margin.right)
+                  .attr("height", height + margin.top + margin.bottom)
+                  .append('g')
+                  .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+ 
+     uiHistData[0].brAccChrtActuals.map((d: {chartDate: string | number | Date; chrtSdaClose: string | number; }) => 
+             ({chartDate: new Date(d.chartDate),chrtSdaClose: +d.chrtSdaClose}));
+ 
+     const formatMonth = d3.timeFormat("%Y%m%d");
+     var  bisectDate = d3.bisector((d: any) => d.chartDate).left;
+     // find data range
+     var xMin = d3.min(uiHistData[0].brAccChrtActuals, (d:{ chartDate: any; }) => d.chartDate);
+     var xMax = d3.max(uiHistData[0].brAccChrtActuals, (d:{ chartDate: any; }) => d.chartDate);
+     var yMin = d3.min(uiHistData[0].brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose );
+     var yMax = d3.max(uiHistData[0].brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose );
+ 
+              // range of data configuring
+     var histChrtScaleX = d3.scaleTime()
+               .domain([xMin, xMax])
+               .range([0, width]);
+     var histChrtScaleY = d3.scaleLinear()
+                 .domain([yMin-5, yMax])
+                 .range([height, 0]);
+    
+     histChrtSvg.append('g')
+                .attr('transform', 'translate(0,' + height + ')')
+                .call(d3.axisBottom(histChrtScaleX));
+ 
+     histChrtSvg.append('g')
+                .call(d3.axisLeft(histChrtScaleY));
+      
+     // text label for x-axis
+     histChrtSvg.append("text")
+                .attr("x", width/2)
+                .attr("y", height + margin.bottom) 
+                .style("text-anchor","middle")
+                .text("Date");
+     // text label for y-axis primary
+     histChrtSvg.append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0-margin.left)
+                .attr("x", 0-(height/2))
+                .attr("dy","1em")
+                .style("text-anchor", "middle")
+                .text("sdaClose(K)");
+      histChrtSvg.append("text")
+                .attr('transform', 'translate(' + width + ', 0)')
+                .attr("y", 0-margin.left)
+                .attr("x", 0-(height/2))
+                .attr("dy","1em")
+                .style("text-anchor", "middle")
+                .text("sdaClose(K)");
+     // Create the circle that travels along the curve of chart
+      var focus = histChrtSvg.append('g')
+                            .append('circle')
+                            .style("fill", "none")
+                            .attr("stroke", "black")
+                            .attr('r', 5)
+                            .style("opacity", 0);
+     // Create the text that travels along the curve of chart
+      var focusText = histChrtSvg.append('g')
+                                .append('text')
+                                .style("opacity", 0)
+                                .attr("text-anchor", "left")
+                                .attr("alignment-baseline", "middle");
+     // Genereating line - for sdaCloses 
+      var line = d3.line()
+                   .x( (d: any) => histChrtScaleX(d.chartDate))
+                   .y( (d: any) => histChrtScaleY(d.chrtSdaClose))
+                   .curve(d3.curveCardinal);
+      
+      histChrtSvg.append('path')
+                 .attr('class', 'line') //Assign a class for styling
+                 .datum(uiHistData[0].brAccChrtActuals) // Binds data to the line
+                 .attr('d', line as any);
+     
+      histChrtSvg.append('rect')
+                 .style("fill", "none")
+                 .style("pointer-events", "all")
+                 .attr('width', width)
+                 .attr('height', height)
+                 .on('mouseover', mouseover)
+                 .on('mousemove', mousemove)
+                 .on('mouseout', mouseout);
+     function mouseover() {
+       focus.style("opacity", 1)
+       focusText.style("opacity",1)
+     }
+     function mousemove(event: any) {
+        // recover coordinate we need
+       var x0 = histChrtScaleX.invert(d3.pointer(event)[0]);
+       // console.log(`The X0: '${x0}'`);
+       var i = bisectDate(uiHistData[0].brAccChrtActuals, x0, 1), // index value on the chart area
+       selectedData = uiHistData[0].brAccChrtActuals[i],
+       selectedData1 = uiHistData[0]
+       focus.attr("cx",histChrtScaleX(selectedData.chartDate))
+           .attr("cy",histChrtScaleY(selectedData.chrtSdaClose))
+       focusText.html("s:" + selectedData1.sqTicker + " - " + "x:" + formatMonth(selectedData.chartDate) +  " - " + "y:" + (selectedData.chrtSdaClose).toFixed(2))
+               .attr("x", histChrtScaleX(selectedData.chartDate)+15)
+               .attr("y",histChrtScaleY(selectedData.chrtSdaClose))
+     }
+     function mouseout() {
+       focus.style("opacity", 0)
+       focusText.style("opacity", 0)
+     }
+    }
+  ngAfterViewInit(): void {
    
   }
-  ngAfterViewInit(): void {
-    // functions for developing charts
-    this.initChart();
-  }
-  // Chart functions start
-  private initChart() {
-    // 
-  }
-
-  private fillChartWithData(/* uiHistData : UiHistData[] */) {
-    d3.selectAll("#my_dataviz > *").remove();
-    this.svg = d3.select('#my_dataviz').append('svg')
-                 .attr("width", this.width + this.margin.left + this.margin.right)
-                 .attr("height", this.height + this.margin.top + this.margin.bottom)
-                 .append('g')
-                 .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
-    
-    this.uiHistData[0].brAccChrtActuals.map((d: {assetId:string | number; chartDate: string | number | Date; chrtSdaClose: string | number; }) => 
-            ({assetId: +d.assetId,
-              chartDate: new Date(d.chartDate),
-              chrtSdaClose: +d.chrtSdaClose,
-            }));
-    const formatMonth = d3.timeFormat("%Y%m%d");
-    var  bisectDate = d3.bisector((d: any) => d.chartDate).left;
-    // find data range
-    var xMin = d3.min(this.uiHistData[0].brAccChrtActuals, (d:{ chartDate: any; }) => d.chartDate);
-    var xMax = d3.max(this.uiHistData[0].brAccChrtActuals, (d:{ chartDate: any; }) => d.chartDate);
-    var yMin = d3.min(this.uiHistData[0].brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose );
-    var yMax = d3.max(this.uiHistData[0].brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose );
-  // range of data configuring
-    this.myX = d3.scaleTime()
-              .domain([xMin, xMax])
-              .range([0, this.width]);
-    this.myY = d3.scaleLinear()
-                .domain([yMin-5, yMax])
-                .range([this.height, 0]);
-    this.svg.append('g')
-            .attr('transform', 'translate(0,' + this.height + ')')
-            .call(d3.axisBottom(this.myX));
-
-    this.svg.append('g')
-            // .attr('class', 'axis--y')
-            .call(d3.axisLeft(this.myY));
-
-      // text label for x-axis
-    this.svg.append("text")
-            .attr("x", this.width/2)
-            .attr("y", this.height + this.margin.bottom) 
-            .style("text-anchor","middle")
-            .text("Date");
-    // text label for y-axis
-    this.svg.append("text")
-            .attr("transform", "rotate(-90)")
-            .attr("y", 0-this.margin.left)
-            .attr("x", 0-(this.height/2))
-            .attr("dy","1em")
-            .style("text-anchor", "middle")
-            .text("sdaClose");
-      // Create the circle that travels along the curve of chart
-    var focus = this.svg
-                    .append('g')
-                    .append('circle')
-                    .style("fill", "none")
-                    .attr("stroke", "black")
-                    .attr('r', 5)
-                    .style("opacity", 0);
-    // Create the text that travels along the curve of chart
-    var focusText = this.svg
-                        .append('g')
-                        .append('text')
-                        .style("opacity", 0)
-                        .attr("text-anchor", "left")
-                        .attr("alignment-baseline", "middle");
-    // Genereating line - for sdaCloses 
-    this.line = d3.line()
-                  .x( (d: any) => this.myX(d.chartDate))
-                  .y( (d: any) => this.myY(d.chrtSdaClose));
-    this.svg.append('path')
-            .attr('class', 'line') //Assign a class for styling
-            .datum(this.uiHistData[0].brAccChrtActuals) // Binds data to the line
-            .attr('d', this.line
-            .curve(d3.curveCardinal));
-
-    let _thisClass = this;
-              
-    this.svg.append('rect')
-            .style("fill", "none")
-            .style("pointer-events", "all")
-            .attr('width', this.width)
-            .attr('height', this.height)
-            .on('mouseover', mouseover)
-            .on('mousemove', mousemove)
-            .on('mouseout', mouseout);
-            
-    function mouseover() {
-      focus.style("opacity", 1)
-      focusText.style("opacity",1)
-    }
-
-    function mousemove(event: any) {
-       // recover coordinate we need
-      var x0 = _thisClass.myX.invert(d3.pointer(event)[0]);
-      // console.log(`The X0: '${x0}'`);
-      var i = bisectDate(_thisClass.uiHistData[0].brAccChrtActuals, x0, 1), // index value on the chart area
-      selectedData = _thisClass.uiHistData[0].brAccChrtActuals[i]
-      focus.attr("cx",_thisClass.myX(selectedData.chartDate))
-          .attr("cy",_thisClass.myY(selectedData.chrtSdaClose))
-      focusText.html("x:" + formatMonth(selectedData.chartDate) +  " - " + "y:" + selectedData.chrtSdaClose)
-              .attr("x", _thisClass.myX(selectedData.chartDate)+15)
-              .attr("y",_thisClass.myY(selectedData.chrtSdaClose))
-    }
-
-    function mouseout() {
-      focus.style("opacity", 0)
-      focusText.style("opacity", 0)
-    }
-}
- // Chart functions end
 }

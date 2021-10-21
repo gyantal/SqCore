@@ -77,24 +77,24 @@
 .AccSumm {
   float: left;
   width: 25%;
-  padding: 10px 5px 10px;
   font-size: 0.5em;
-  border: 1px solid red;
+  padding: 0.1rem 0.05rem 0.1rem;
+  border: 0.01rem solid red;
 }
 #liqVal{
   font-weight: bold;
-  text-shadow: 2px 2px 5px #FFA500;
+  text-shadow: .2rem .2rem .5rem #FFA500;
 }
 
 #plSum {
   font-weight: bold;
-  font-size: small
+  font-size: 1rem
 }
 .AccSumm #refresh{
   width:15;
   height:15;
   cursor: pointer;
-  font-size: 0.8em;
+  font-size: 1rem;
 }
 /* Change background color of buttons on hover */
 .tab :hover {
@@ -121,7 +121,7 @@
 // tooltip maxRisked ngClass
 .red {
   color: red;
-  font-size: large;
+  font-size: 1.5rem;
 }
 .orange {
   color: orange;
@@ -133,8 +133,8 @@
 .ChartSumm{
   float: left;
   width: 75%;
-  padding: 10px 5px 10px;
-  border: 1px solid red;
+  padding: 0.1rem 0.05rem 0.1rem;
+  border: 0.01rem solid red;
   
 }
 .sectionForSelection {
@@ -148,11 +148,11 @@
 .sections {
   float: left;
   width: 33.3%;
-  padding: 4px;
-  font-size: small;
+  padding: 0.004rem;
+  font-size: 1.2rem;
   height: 125px;
-  border-right: 0.5px solid blue;
-  padding-left: 20px ;
+  border-right: 0.005rem solid blue;
+  padding-left: 4rem ;
   
 }
 
@@ -202,19 +202,19 @@ thead tr :hover {
 .ActiveSortTableHeader
 {
   background-color: #FFAE42;
-  font-size: large;
+  font-size: 1.5rem;
 }
 
 /* Graph -  Style the lines by removing the fill and applying a stroke */
 ::ng-deep .line {
   fill:none;
-  stroke: #ffab00;
+  stroke: #0000ff;
   stroke-width: 1.5;
 }
-::ng-deep .line1 {
+::ng-deep .line2 {
   fill:none;
-  stroke: #00ffff;
-  stroke-width: 3;
+  stroke: #ffab00;
+  stroke-width: 1.5;
 }
 
 // Common for all the tooltips 
