@@ -1,10 +1,11 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { SettingsDialogComponent } from './settings-dialog/settings-dialog.component';
-import { gDiag, minDate, AssetLastJs } from './../sq-globals';
+import { gDiag, AssetLastJs } from './../sq-globals';
 import { MarketHealthComponent } from './market-health/market-health.component';
 import { QuickfolioNewsComponent } from './quickfolio-news/quickfolio-news.component';
 import { BrAccViewerComponent } from './bracc-viewer/bracc-viewer.component';
 import { ChangeNaNstringToNaNnumber, SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
+import { SqNgCommonUtilsTime, minDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 
 type Nullable<T> = T | null;
 
@@ -97,9 +98,9 @@ export class AppComponent implements OnInit {
       const msgObjStr = event.data.substring(semicolonInd + 1);
       switch (msgCode) {
         case 'All.LstVal':  // this is the most frequent case. Should come first.
-          if (gDiag.wsOnFirstRtMktSumRtStatTime === minDate) {
+          if (gDiag.wsOnFirstRtMktSumRtStatTime === minDate)
             gDiag.wsOnFirstRtMktSumRtStatTime = new Date();
-          }
+
           gDiag.wsOnLastRtMktSumRtStatTime = new Date();
           gDiag.wsNumRtMktSumRtStat++;
           this.nLstValArrived++;
@@ -131,9 +132,9 @@ export class AppComponent implements OnInit {
           if (!isHandled)
             isHandled = this.childQckflNewsComponent.webSocketOnMessage(msgCode, msgObjStr);
 
-          if (!isHandled) {
+          if (!isHandled)
             console.log('ws: Warning! OnConnected Message arrived, but msgCode is not recognized:' + msgCode + 'obj: ' + msgObjStr);
-          }
+
           break;
       }
     };
@@ -234,22 +235,22 @@ export class AppComponent implements OnInit {
   }
 
   mouseEnter(div: string) {
-    console.log('mouse enter : ' + div);
     if (div === 'sqDiagnostics') {
-      const diag =
-        'App constructor: ' + (gDiag.mainAngComponentConstructorTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
-        'DOM loaded: ' + (gDiag.dOMContentLoadedTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
-        'Window loaded: ' + (gDiag.windowOnLoadTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
+      this.sqDiagnosticsMsg = `App constructor: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.mainAngComponentConstructorTime)}\n` +
+        `DOM loaded: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.dOMContentLoadedTime)}\n` +
+        `Window loaded: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.windowOnLoadTime)}\n` +
         '-----\n' +
-        'WebSocket connection start in OnInit: ' + (gDiag.wsConnectionStartTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
-        'WebSocket connection ready: ' + (gDiag.wsConnectionReadyTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
-        'WebSocket userdata(email) arrived: ' + (gDiag.wsOnConnectedMsgArrivedTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
-        'WebSocket First NonRtStat: ' + (gDiag.wsOnFirstRtMktSumNonRtStatTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' +
-        'WebSocket First RtStat: ' + (gDiag.wsOnFirstRtMktSumRtStatTime.getTime() - gDiag.mainTsTime.getTime()) + 'ms\n' + // if wsOnFirstRtMktSumRtStatTime == minTime, it can be negative
-        'WebSocket #RtStat: ' + gDiag.wsNumRtMktSumRtStat + '\n' +
-        'WebSocket Last RtStat: ' + (new Date().getTime() - gDiag.wsOnLastRtMktSumRtStatTime.getTime()) + 'ms ago\n' +
-        'WebSocket Last Lookback Chg latency: ' + ((gDiag.wsOnLastRtMktSumLookbackChgStart === minDate) ? 'NaN\n' : (gDiag.wsOnLastRtMktSumNonRtStatTime.getTime() - gDiag.wsOnLastRtMktSumLookbackChgStart.getTime()) + 'ms\n');  // 14-20ms LocalDev, 27-33ms London to Dublin, thanks to the open WS connection. If a new connection has to be opened, it would be 80-130ms; 120ms Bahamas to Dublin (with a new connection it would be 500ms)
-      this.sqDiagnosticsMsg = diag;
+        `WS connection start in OnInit: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsConnectionStartTime)}\n` +
+        `WS connection ready: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsConnectionReadyTime)}\n` +
+        `WS userdata(email) arrived: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsOnConnectedMsgArrivedTime)}\n` +
+        `WS First NonRtStat: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsOnFirstRtMktSumNonRtStatTime)}\n` +
+        `WS First RtStat: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsOnFirstRtMktSumRtStatTime)}\n` + // if wsOnFirstRtMktSumRtStatTime == minTime, it can be negative
+        `WS #RtStat: ${gDiag.wsNumRtMktSumRtStat}\n` +
+        `WS Last RtStat: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.wsOnLastRtMktSumRtStatTime, new Date())} ago\n` +
+        `WS Last Lookback Chg latency: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.wsOnLastRtMktSumLookbackChgStart, gDiag.wsOnLastRtMktSumNonRtStatTime)}\n` + // 14-20ms LocalDev, 27-33ms London to Dublin, thanks to the open WS connection. If a new connection has to be opened, it would be 80-130ms; 120ms Bahamas to Dublin (with a new connection it would be 500ms)
+        '-----\n' +
+        `WS First BrAccVw.MktBrLstCls: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsOnFirstBrAccVwMktBrLstCls)}\n`;
     }
   }
+
 }

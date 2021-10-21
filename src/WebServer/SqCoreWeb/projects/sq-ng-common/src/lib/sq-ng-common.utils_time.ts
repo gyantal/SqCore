@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 
+export const minDate = new Date(-8640000000000000);
+
 @Component({
   selector: 'lib-sq-ng-common',
   template: `
@@ -10,6 +12,11 @@ import { Component, OnInit } from '@angular/core';
   styles: []
 })
 export class SqNgCommonUtilsTime implements OnInit {
+
+  constructor() { }
+
+  ngOnInit(): void {
+  }
 
   // Javascript doesn't support timezones, so either use moment.js or hack it here.
   // https://stackoverflow.com/questions/36206260/how-to-set-date-always-to-eastern-time-regardless-of-users-time-zone/36206597
@@ -91,10 +98,10 @@ export class SqNgCommonUtilsTime implements OnInit {
     return new Date(year, month - 1, day);
   }
 
-  constructor() { }
-
-  ngOnInit(): void {
+  public static getTimespanStr(p_dateFrom: Date, p_dateTo: Date): string {
+    return ((p_dateFrom === minDate || p_dateTo === minDate) ? 'NaN' : (p_dateTo.getTime() - p_dateFrom.getTime()) + 'ms');
   }
+
 
 
 }

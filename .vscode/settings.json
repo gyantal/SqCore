@@ -1,4 +1,4 @@
-{
+{   // !!! Not used in general. Settings.json is used when open a folder as workspace. But we open .code-workspace file, so the settings in that one is used.
     "git.autofetch": true,
     "git.enableSmartCommit": true,
     "files.exclude": {

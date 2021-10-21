@@ -1,6 +1,6 @@
 import { ViewChild, Component, AfterViewInit,ElementRef, Input} from '@angular/core';
 import { SqNgCommonUtilsStr } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_str';
-import { SqNgCommonUtilsTime } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
+import { SqNgCommonUtilsTime, minDate } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
 import * as d3 from 'd3';
 import { gDiag, AssetLastJs } from './../../sq-globals';
 
@@ -249,10 +249,7 @@ export class BrAccViewerComponent implements AfterViewInit {
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
-      case 'BrAccViewer.RtStat':  // this is the most frequent case. Should come first.
-        BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, null, this.uiMktBar);
-        return true;
-      case 'BrAccViewer.BrAccSnapshot':
+      case 'BrAccViewer.BrAccSnapshot': // this is the most frequent message after LstVal (realtime price). Should come first.
         console.log('BrAccViewer.BrAccSnapshot:' + msgObjStr);
         this.brAccountSnapshotStr = msgObjStr;
         this.brAccountSnapshotStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
@@ -275,13 +272,15 @@ export class BrAccViewerComponent implements AfterViewInit {
           this.histStr = msgObjStr.substring(0, 200) + '... [more data arrived]';
         return true;
       case 'BrAccViewer.MktBrLstCls':
+        if (gDiag.wsOnFirstBrAccVwMktBrLstCls === minDate)
+          gDiag.wsOnFirstBrAccVwMktBrLstCls = new Date();
         console.log('BrAccViewer.MktBrLstCls:' + msgObjStr);
         this.mktBrLstClsStr = msgObjStr;
         this.mktBrLstClsStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.mktBrLstClsObj = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, null, this.uiMktBar);
+        BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.lstValObj, this.uiMktBar);
         return true;
-      case 'BrAccViewer.Handshake':  // this is the least frequent case. Should come last.
+      case 'BrAccViewer.Handshake':  // this is the least frequent message. Should come last.
         console.log('BrAccViewer.Handshake:' + msgObjStr);
         this.handshakeStr = msgObjStr;
         this.handshakeStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
@@ -294,7 +293,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
   }
  
-  public webSocketLstValArrived(p_lstValObj: Nullable<AssetLastJs[]>) {
+  public webSocketLstValArrived(p_lstValObj: Nullable<AssetLastJs[]>) { // real time price data
     this.lstValObj = p_lstValObj;
     BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.lstValObj, this.uiMktBar);
   }

@@ -70,8 +70,8 @@
 // Websocket First NonRtStat: 1859ms
 // Websocket First RtStat: -864159....ms (wrong somehow, maybe it was MinTime). When the tooltip was created RT was not called yet.
 
+import { minDate } from './../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 
-export const minDate = new Date(-8640000000000000);
 export class SqDiagnostics {
   public mainTsTime: Date = new Date();
   public mainAngComponentConstructorTime: Date = minDate;
@@ -89,7 +89,10 @@ export class SqDiagnostics {
   public wsOnLastRtMktSumRtStatTime: Date = minDate;
   public wsNumRtMktSumRtStat = 0;
   public wsOnLastRtMktSumLookbackChgStart: Date = minDate;
+
+  public wsOnFirstBrAccVwMktBrLstCls: Date = minDate;
 }
+
 export const gDiag: SqDiagnostics = new SqDiagnostics();
 
 export class AssetLastJs {

@@ -14,6 +14,19 @@
 		}
 	],
 	"settings": {
+		"files.autoSaveDelay": 1500,
+		"editor.bracketPairColorization.enabled": true,
+		"editor.renderWhitespace": "all",
+		"editor.linkedEditing": true,
+		"workbench.editor.limit.enabled": true,
+		"workbench.editor.limit.value": 16,
+		"workbench.colorCustomizations": {
+			"activityBar.activeBorder": "#8A2BE2",
+			"activityBar.activeBackground": "#061b5f",
+			"minimap.background": "#00000055"
+		},
+		"workbench.editor.highlightModifiedTabs": true,
+		"workbench.editor.enablePreview": false,
 		"typescript.reportStyleChecksAsWarnings": false,
 		"files.associations": {
 			"**/src/WebServer/SqCoreWeb/tslint.json": "jsonc",		// treat json files as jsonc (JSON with Comments), so tslint.json can contain line comments
@@ -21,22 +34,8 @@
 		},
 		"html.format.wrapAttributes": "auto",  // Nested HTML elements are always wrapped. wrap 'attributes' only when line length is exceeded
 		"html.format.wrapLineLength": 0,	// disable max chars per line
-		"workbench.editor.limit.enabled": true,
-		"workbench.editor.limit.value": 8,
-		"workbench.colorCustomizations": {
-			"activityBar.activeBorder": "#8A2BE2",
-			"activityBar.activeBackground": "#061b5f",
-			"minimap.background": "#00000055"
-		},
-		"timeline.showView": true,
-		"editor.renderWhitespace": "all",
-		"workbench.editor.highlightModifiedTabs": true,
-		"workbench.editor.enablePreview": false,
 		"js/ts.implicitProjectConfig.experimentalDecorators": true,
-		"editor.linkedEditing": true,
-		"files.autoSaveDelay": 1500,
 		"dotnet-test-explorer.testProjectPath": "**/*.tests.csproj",
-		"dotnet-test-explorer.runInParallel": true,
-		"editor.bracketPairColorization.enabled": true,
+		"dotnet-test-explorer.runInParallel": true
 	}
 }

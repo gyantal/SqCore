@@ -91,6 +91,8 @@ namespace SqCoreWeb
         {
             Utils.RunInNewThread(ignored => // running parallel on a ThreadPool thread, FireAndForget: QueueUserWorkItem [26microsec] is 25% faster than Task.Run [35microsec]
             {
+                Utils.Logger.Debug($"OnConnectedWsAsync_BrAccViewer BEGIN, Connection from IP: {this.ClientIP} with email '{this.UserEmail}'");
+
                 Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
 
                 List<BrokerNav> selectableNavs = p_user.GetAllVisibleBrokerNavsOrdered();
@@ -110,9 +112,12 @@ namespace SqCoreWeb
                 if (!p_isThisActiveToolAtConnectionInit)
                     Thread.Sleep(TimeSpan.FromMilliseconds(5000));
 
+                Utils.Logger.Debug($"OnConnectedWsAsync_BrAccViewer.SendMarketBarPriorCloses() BEGIN, Connection from IP: {this.ClientIP} with email '{this.UserEmail}'");
                 BrAccViewerSendMarketBarPriorCloses();
 
+                Utils.Logger.Debug($"OnConnectedWsAsync_BrAccViewer.SendSnapshotAndHist() BEGIN, Connection from IP: {this.ClientIP} with email '{this.UserEmail}'");
                 BrAccViewerSendSnapshotAndHist();
+                Utils.Logger.Debug($"OnConnectedWsAsync_BrAccViewer END, Connection from IP: {this.ClientIP} with email '{this.UserEmail}'");
             });
         }
 

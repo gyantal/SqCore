@@ -19,6 +19,7 @@ namespace SqCoreWeb
     {
         public static async Task OnConnectedAsync(HttpContext context, WebSocket webSocket)
         {
+            Utils.Logger.Debug($"DashboardWs.OnConnectedAsync()) BEGIN");
             // context.Request comes as: 'wss://' + document.location.hostname + '/ws/dashboard?t=bav'
             var userEmailClaim = context?.User?.Claims?.FirstOrDefault(p => p.Type == @"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
             var email = userEmailClaim?.Value ?? "unknown@gmail.com";
