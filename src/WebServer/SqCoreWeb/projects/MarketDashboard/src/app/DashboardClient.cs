@@ -72,7 +72,7 @@ namespace SqCoreWeb
  
             lock (DashboardClient.g_clients)
                 p_sb.Append($"#Clients (WebSocket): {DashboardClient.g_clients.Count}: {String.Join(",", DashboardClient.g_clients.Select(r => "'" + r.UserEmail + "'"))}<br>");
-            p_sb.Append($"mktSummaryTimerRunning: {m_rtMktSummaryTimerRunning}<br>");
+            p_sb.Append($"rtDashboardTimerRunning: {m_rtDashboardTimerRunning}<br>");
         }
 
         public DashboardClient(string p_clientIP, string p_userEmail)

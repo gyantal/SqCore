@@ -48,6 +48,7 @@ namespace SqCoreWeb
 
     class BrAccViewerAccountSnapshotJs // this is sent to UI client
     {
+        public uint AssetId { get; set; } = 0;
         public String Symbol { get; set; } = string.Empty;
         public DateTime LastUpdate { get; set; } = DateTime.MinValue;
         public long NetLiquidation { get; set; } = long.MinValue;    // prefer whole numbers. Max int32 is 2B.
@@ -218,8 +219,9 @@ namespace SqCoreWeb
 
             if (result != null)
             {
-                Asset navAsset = MemDb.gMemDb.AssetsCache.AssetsBySqTicker[navSqTicker];    // realtime NavAsset.LastValue is more up-to-date then from BrAccount (updated 1h in RTH only)
-                result.NetLiquidation = (long)MemDb.gMemDb.GetLastRtValue(navAsset);
+                result.AssetId = m_braccSelectedNavAsset.AssetId;
+                // Asset navAsset = MemDb.gMemDb.AssetsCache.AssetsBySqTicker[navSqTicker];    // realtime NavAsset.LastValue is more up-to-date then from BrAccount (updated 1h in RTH only)
+                result.NetLiquidation = (long)MemDb.gMemDb.GetLastRtValue(m_braccSelectedNavAsset);
 
                 List<Asset> assets = new List<Asset>() { m_braccSelectedNavAsset };
                 DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;

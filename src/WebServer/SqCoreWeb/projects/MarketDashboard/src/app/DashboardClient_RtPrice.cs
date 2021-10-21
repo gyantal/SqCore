@@ -95,10 +95,10 @@ namespace SqCoreWeb
     public partial class DashboardClient {
 
         // one global static real-time price Timer serves all clients. For efficiency.
-        static Timer m_rtMktSummaryTimer = new System.Threading.Timer(new TimerCallback(RtMktSummaryTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
-        static bool m_rtMktSummaryTimerRunning = false;
-        static object m_rtMktSummaryTimerLock = new Object();
-        static int m_rtMktSummaryTimerFrequencyMs = 3000;    // as a demo go with 3sec, later change it to 5sec, do decrease server load.
+        static Timer m_rtDashboardTimer = new System.Threading.Timer(new TimerCallback(RtDashboardTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
+        static bool m_rtDashboardTimerRunning = false;
+        static object m_rtDashboardTimerLock = new Object();
+        static int m_rtDashboardTimerFrequencyMs = 3000;    // as a demo go with 3sec, later change it to 5sec, do decrease server load.
 
 
         public void OnConnectedWsAsync_Rt()
@@ -106,21 +106,21 @@ namespace SqCoreWeb
             // 2. Send RT price (after ClosePrices are sent to Tools)
             SendRealtimeWs();
 
-            lock (m_rtMktSummaryTimerLock)
+            lock (m_rtDashboardTimerLock)
             {
-                if (!m_rtMktSummaryTimerRunning)
+                if (!m_rtDashboardTimerRunning)
                 {
-                    Utils.Logger.Info("OnConnectedAsync_MktHealth(). Starting m_rtMktSummaryTimer.");
-                    m_rtMktSummaryTimerRunning = true;
-                    m_rtMktSummaryTimer.Change(TimeSpan.FromMilliseconds(m_rtMktSummaryTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
+                    Utils.Logger.Info("OnConnectedAsync_MktHealth(). Starting m_rtDashboardTimer.");
+                    m_rtDashboardTimerRunning = true;
+                    m_rtDashboardTimer.Change(TimeSpan.FromMilliseconds(m_rtDashboardTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
                 }
             }
         }
 
         private void SendRealtimeWs()
         {
-            IEnumerable<AssetLastJs> rtMktSummaryToClient = GetHighPriorityRtStat();
-            byte[] encodedMsg = Encoding.UTF8.GetBytes("All.LstVal:" + Utils.CamelCaseSerialize(rtMktSummaryToClient));
+            IEnumerable<AssetLastJs> rtDataToClient = GetHighPriorityRtStat();
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("All.LstVal:" + Utils.CamelCaseSerialize(rtDataToClient));
             if (WsWebSocket == null)
                 Utils.Logger.Info("Warning (TODO)!: Mystery how client.WsWebSocket can be null? Investigate!) ");
             if (WsWebSocket != null && WsWebSocket!.State == WebSocketState.Open)
@@ -128,12 +128,12 @@ namespace SqCoreWeb
         }
 
 
-        public static void RtMktSummaryTimer_Elapsed(object? state)    // Timer is coming on a ThreadPool thread
+        public static void RtDashboardTimer_Elapsed(object? state)    // Timer is coming on a ThreadPool thread
         {
             try
             {
-                Utils.Logger.Debug("RtMktSummaryTimer_Elapsed(). BEGIN");
-                if (!m_rtMktSummaryTimerRunning)
+                Utils.Logger.Debug("RtDashboardTimer_Elapsed(). BEGIN");
+                if (!m_rtDashboardTimerRunning)
                     return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
 
                 List<DashboardClient>? g_clientsCpy = null;  // Clone the list, because .Add() can increase its size in another thread
@@ -151,18 +151,18 @@ namespace SqCoreWeb
                     client.SendRealtimeWs();
                 });
 
-                lock (m_rtMktSummaryTimerLock)
+                lock (m_rtDashboardTimerLock)
                 {
-                    if (m_rtMktSummaryTimerRunning)
+                    if (m_rtDashboardTimerRunning)
                     {
-                        m_rtMktSummaryTimer.Change(TimeSpan.FromMilliseconds(m_rtMktSummaryTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
+                        m_rtDashboardTimer.Change(TimeSpan.FromMilliseconds(m_rtDashboardTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
                     }
                 }
-                // Utils.Logger.Info("RtMktSummaryTimer_Elapsed(). END");
+                // Utils.Logger.Info("RtDashboardTimer_Elapsed(). END");
             }
             catch (Exception e)
             {
-                Utils.Logger.Error(e, "RtMktSummaryTimer_Elapsed() exception.");
+                Utils.Logger.Error(e, "RtDashboardTimer_Elapsed() exception.");
                 throw;
             }
         }
@@ -171,7 +171,7 @@ namespace SqCoreWeb
         private IEnumerable<AssetLastJs> GetHighPriorityRtStat()
         {
             // sent SPY realtime price can be used in 3+2 places: BrAccViewer:MarketBar, HistoricalChart, UserAssetList, MktHlth, CatalystSniffer (so, don't send it 5 times. Client will decide what to do with RT price)
-            // sent NAV realtime price can be used in 2 places: BrAccViewer.HistoricalChart, AccountSummary, MktHlth (if that is the viewed NAV)
+            // sent NAV realtime price can be used in 3 places: BrAccViewer.HistoricalChart, AccountSummary, MktHlth (if that is the viewed NAV)
 
             List<Asset> highPriorityAssets = new List<Asset>(m_mkthAssets);
             foreach (Asset mktBrAsset in m_brAccMktBrAssets)

@@ -20,6 +20,7 @@ class AssetJs {
 }
 
 class BrAccSnapshotJs {
+  public assetId = NaN;
   public symbol = '';
   public lastUpdate = '';
   public netLiquidation = NaN;
@@ -241,10 +242,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     this.lookbackEndET = new Date(yesterDayET.getFullYear(), yesterDayET.getMonth(), yesterDayET.getDate());  // set yesterdayET as default
     this.lookbackEndETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.lookbackEndET);
 
-    setInterval(
-      () => {
-        this.snapshotRefresh();
-      }, 60*60*1000); // 60 mins
+    setInterval(() => { this.snapshotRefresh(); }, 60 * 60 * 1000); // forced Snapshot table refresh timer in every 60 mins
    }
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
@@ -296,6 +294,7 @@ export class BrAccViewerComponent implements AfterViewInit {
   public webSocketLstValArrived(p_lstValObj: Nullable<AssetLastJs[]>) { // real time price data
     this.lstValObj = p_lstValObj;
     BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.lstValObj, this.uiMktBar);
+    BrAccViewerComponent.updateSnapshotTableWithRtNav(p_lstValObj, this.uiSnapTable);
   }
   
   updateUiSelectableNavs(pSelectableNavAssets: Nullable<AssetJs[]>) {  // same in MktHlth and BrAccViewer
@@ -531,6 +530,11 @@ export class BrAccViewerComponent implements AfterViewInit {
       }
       return 0;
     });
+  }
+
+  static updateSnapshotTableWithRtNav(p_lstValObj: Nullable<AssetLastJs[]>, uiSnapTable : UiSnapTable)
+  {
+
   }
 
   static updateChrtUi(histObj : Nullable<HistJs[]>, uiHistData : UiHistData[]) {
