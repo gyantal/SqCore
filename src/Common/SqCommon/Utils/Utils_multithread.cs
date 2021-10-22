@@ -22,6 +22,8 @@ namespace SqCommon
         //
         // https://stackoverflow.com/questions/9343594/how-to-call-asynchronous-method-from-synchronous-method-in-c
         // If in the future we need improvements to this code: "Microsoft built an AsyncHelper (internal) class to run Async as Sync. The source looks like:"
+        // Task.RunSynchronously() is not a solution, because it throws "InvalidOperationException: RunSynchronously may not be called on a task not bound to a delegate, such as the task returned from an asynchronous method."
+        // so, RunSynchronously() cannot be called on a Task that is the return of a function.
         public static void TurnAsyncToSyncTask(this Task task)
         {
             task.ConfigureAwait(continueOnCapturedContext: false).GetAwaiter().GetResult();

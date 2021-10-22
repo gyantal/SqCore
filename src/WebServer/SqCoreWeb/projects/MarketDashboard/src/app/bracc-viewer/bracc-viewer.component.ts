@@ -248,6 +248,7 @@ export class BrAccViewerComponent implements AfterViewInit {
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
       case 'BrAccViewer.BrAccSnapshot': // this is the most frequent message after LstVal (realtime price). Should come first.
+        gDiag.wsOnLastBrAccVwSnapshot = new Date();
         console.log('BrAccViewer.BrAccSnapshot:' + msgObjStr);
         this.brAccountSnapshotStr = msgObjStr;
         this.brAccountSnapshotStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
@@ -344,6 +345,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     this.snapshotRefresh();
   }
   snapshotRefresh() {
+    gDiag.wsOnLastBrAccVwRefreshSnapshotStart = new Date();
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
       this._parentWsConnection.send('BrAccViewer.RefreshSnapshot:' + this.navSelectionSelected);
     }

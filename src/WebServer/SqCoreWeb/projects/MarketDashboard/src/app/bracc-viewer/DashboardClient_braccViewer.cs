@@ -223,10 +223,9 @@ namespace SqCoreWeb
                 // Asset navAsset = MemDb.gMemDb.AssetsCache.AssetsBySqTicker[navSqTicker];    // realtime NavAsset.LastValue is more up-to-date then from BrAccount (updated 1h in RTH only)
                 result.NetLiquidation = (long)MemDb.gMemDb.GetLastRtValue(m_braccSelectedNavAsset);
 
-                List<Asset> assets = new List<Asset>() { m_braccSelectedNavAsset };
                 DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;
-                List<AssetPriorClose> priorCloses = MemDb.gMemDb.GetSdaPriorClosesFromHist(assets, todayET).ToList();
-                result.PriorCloseNetLiquidation  = (long)priorCloses[0].SdaPriorClose;
+                List<AssetPriorClose> navPriorCloses = MemDb.gMemDb.GetSdaPriorClosesFromHist(new List<Asset>() { m_braccSelectedNavAsset }, todayET).ToList();
+                result.PriorCloseNetLiquidation  = (long)navPriorCloses[0].SdaPriorClose;
             }
             return result;
         }
@@ -355,14 +354,24 @@ namespace SqCoreWeb
             // if it is aggregated portfolio (DC Main + DeBlanzac), then we have to force reload all sub-brAccounts
             if (!GatewayExtensions.NavSqSymbol2GatewayIds.TryGetValue(navSqTicker, out List<GatewayId>? gatewayIds))
                 return;
+            HashSet<AssetId32Bits> validBrPossAssetIds = new HashSet<AssetId32Bits>();  // AggregatedNav can contain the same company stocks many times. We need it only once.
             foreach (GatewayId gwId in gatewayIds)  // AggregateNav has 2 Gateways
             {
-                MemDb.gMemDb.UpdateBrAccount(gwId);
+                BrAccount? brAccount = MemDb.gMemDb.BrAccounts.FirstOrDefault(r => r.GatewayId == gwId);
+                if (brAccount == null)
+                    continue;
+                MemDb.gMemDb.UpdateBrAccount(brAccount, gwId);
+
+                brAccount.AccPoss.Where(r => r.AssetId != AssetId32Bits.Invalid).ToList().ForEach(r => validBrPossAssetIds.Add(r.AssetId));
             }
 
-            // Step 2: send Snapshot to Client.
+            // Step 2: update the RT prices of only those 30-120 stocks (150ms) that is in the IbPortfolio. Don't need to update all the 700 (later 2000) stocks in MemDb, that is done automatically by RtTimer in every 30min
+            Asset[] validBrPossAssets = validBrPossAssetIds.Select(r => MemDb.gMemDb.AssetsCache.AssetsByAssetID[r]).ToArray();
+            // validBrPossAssets is a mix of stocks, options, futures. Fix that when we introduce Options to MemDb
+            MemDb.DownloadPriorCloseAndLastPriceYF(validBrPossAssets).TurnAsyncToSyncTask();
+
+            // Step 3: send Snapshot to Client.
             BrAccViewerSendSnapshot();
-            
         }
     }
 }

@@ -234,7 +234,7 @@ namespace FinTechCommon
 
             var yfTickers = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).Select(r => ((Stock)r).YfTicker).ToArray();
             p_sb.Append($"StockAssets (#{yfTickers.Length}): ");
-            p_sb.AppendLongListByLine(yfTickers, ",", 10, "<br>");
+            p_sb.AppendLongListByLine(yfTickers, ",", 30, "<br>");
         }
 
         private void ServerDiagnosticBrAccount(StringBuilder p_sb, bool p_isHtml)

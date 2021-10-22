@@ -95,7 +95,7 @@ namespace FinTechCommon
             if (downloadAliveAssets.Length == 0)
                 return;
             var tradingHoursNow = Utils.UsaTradingHoursExNow_withoutHolidays();
-            DownloadPriorCloseAndLastPriceYF(downloadAliveAssets, tradingHoursNow);
+            DownloadPriorCloseAndLastPriceYF(downloadAliveAssets, tradingHoursNow).TurnAsyncToSyncTask();
         }
 
         void OnReloadAssetData_InitAndScheduleRtTimers()  // this is called at Program.Init() and at ReloadDbDataIfChangedImpl()
@@ -133,7 +133,7 @@ namespace FinTechCommon
         private static void ServerDiagnosticRealtime(StringBuilder p_sb, RtFreqParam p_rtFreqParam)
         {
             p_sb.Append($"Realtime ({p_rtFreqParam.Name}): LastUpdateUtc: {p_rtFreqParam.LastUpdateTimeUtc.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}, FreqRthSec: {p_rtFreqParam.FreqRthSec}, FreqOthSec: {p_rtFreqParam.FreqOthSec}, #TimerPassed: {p_rtFreqParam.NTimerPassed}, assets: '");
-            p_sb.AppendLongListByLine(p_rtFreqParam.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).Select(r => ((Stock)r).YfTicker), ",", 10, "<br>");
+            p_sb.AppendLongListByLine(p_rtFreqParam.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).Select(r => ((Stock)r).YfTicker), ",", 30, "<br>");
             p_sb.Append($"'<br>");
         }
 
@@ -184,12 +184,12 @@ namespace FinTechCommon
             if (useIexRt)
             {
                 m_nIexDownload++;
-                DownloadLastPriceIex(downloadAssets);
+                DownloadLastPriceIex(downloadAssets).TurnAsyncToSyncTask();
             }
             else
             {
                 m_nYfDownload++;
-                DownloadPriorCloseAndLastPriceYF(downloadAssets, tradingHoursNow);
+                DownloadPriorCloseAndLastPriceYF(downloadAssets, tradingHoursNow).TurnAsyncToSyncTask();
             }
         }
         private void ScheduleTimerRt(RtFreqParam p_freqParam)
@@ -271,8 +271,13 @@ namespace FinTechCommon
             return lastValue;
         }
 
+        public static Task DownloadPriorCloseAndLastPriceYF(Asset[] p_assets)  // takes ? ms from WinPC
+        {
+            var tradingHoursNow = Utils.UsaTradingHoursExNow_withoutHolidays();
+            return DownloadPriorCloseAndLastPriceYF(p_assets, tradingHoursNow);
+        }
 
-        async static void DownloadPriorCloseAndLastPriceYF(Asset[] p_assets, TradingHoursEx p_tradingHoursNow)  // takes ? ms from WinPC
+        async static Task DownloadPriorCloseAndLastPriceYF(Asset[] p_assets, TradingHoursEx p_tradingHoursNow)  // takes ? ms from WinPC
         {
             Utils.Logger.Debug("DownloadLastPriceYF() START");
             try
@@ -362,7 +367,7 @@ namespace FinTechCommon
         // Solution: query real-time lastPrice every 2 seconds, but query PreviousClose only once a day.
         // This doesn't require token (but doesn't have PriorClose): https://api.iextrading.com/1.0/tops?symbols=AAPL,GOOGL
         // PreviousClose data requires token: https://cloud.iexapis.com/stable/stock/market/batch?symbols=AAPL,FB&types=quote&token=<get it from sensitive-data file>
-        static async void DownloadLastPriceIex(Asset[] p_assets)  // takes 450-540ms from WinPC
+        static async Task DownloadLastPriceIex(Asset[] p_assets)  // takes 450-540ms from WinPC
         {
             Utils.Logger.Debug("DownloadLastPriceIex() START");
             try

@@ -91,6 +91,8 @@ export class SqDiagnostics {
   public wsOnLastRtMktSumLookbackChgStart: Date = minDate;
 
   public wsOnFirstBrAccVwMktBrLstCls: Date = minDate;
+  public wsOnLastBrAccVwRefreshSnapshotStart: Date = minDate;
+  public wsOnLastBrAccVwSnapshot: Date = minDate;
 }
 
 export const gDiag: SqDiagnostics = new SqDiagnostics();

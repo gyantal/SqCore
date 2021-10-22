@@ -1,0 +1,46 @@
+>Client-Server communication logic.
+There can be 2 main approaches. Or a hybrid. We do a hybrid.
+
+Approach 1: Server sends nothing automatically to the client. Client asks when it needs data.
+But for realtime (RT) prices it is not good. Client needs a timer in every 1 second, and ask server. 
+But server knows better when it has later data. So, if RT price is only refreshed every 10seconds on the server, the 1-second client-timer does 10 unnecessery query/receive cycles.
+
+Approach 2: Client never asks for anything. It is always that server sends it.
+But this can be problematic if there are many clients (or zombie clients, not really alive). 
+The server tries do feed these zombie clients, which hung up threadpool threads unnecessarily. 
+In this case, it is better that we let the clients asks the info, so only the really alive clients will use CPU resources.
+
+>So, how should we design?
+>If a data is refreshed on the server frequently (RT), then we don't want a 1-second timer on the client, and the server knows better when it is refreshed, so it auto-sends the RT data to all clients.
+>If a data is refreshed on the server sporadically (history, PriorClose, once every 24 hours), then client has enough time to do a 1 hour timer and forceRefresh.
+Advantages:
+    - That way, only alive clients will use valuable server resources. 
+    - Alive clients can be smart. If they detect that a specific tool is not visible (not ActiveTool), then they will not query the server unnecessarily.
+    - Also, those many client timers will execute randomly over an hour. Much better distribution of server CPU. No danger of choking the server CPU 
+    by being so busy with work that it seems that server is frozen for 10 seconds.
+So, in general, it is better that server don't send data to all clients as auto, but the clients query it whenever they neede it.
+		
+
+>special case: MarketDashboard.BrAccVwMktBar: Asset.PriorClose
+On top of it, it is not easy to detect an Event, when the MemDB.Assets[i].PriorClose values change. 
+YF probably don't update all the stocks priorcloses at the same time, so there could be a 10-30 minutes difference between the first asset PriorClose change vs. the last asset.
+If we generate the EvAllAssetsPriorCloseChanged event when we detect the first change like that, we might be too early.
+If we try to generate that event at the last detected Asset.PriorClose change, that will fail: 
+It is impossible to know which change is the last one, because maybe another change will happen 30min later, or never happens. 
+One tip to solve: start a timer that executes 30min after the first change is detected. That is not very precise, but probably works. 
+But there can be errors, when the client will miss some PriorClose changes, if it is updated by YF only much later.
+So, the best solution is that the Clients query from the server the PriorClose data in every 1-2 hours. It is much failproof.
+		
+>special case: MarketDashboard.BrAccVwSnapshotTable: Asset.EstimatedPrices: How RealTime should they be?
+DC combined portfolio has 120 positions. We don't want to stream 120 realtime prices in every 2-3 seconds. That would choke the server.
+If the user don't force refresh manually, during RTH, Realtime LowFreq timer runs in every 30 min, and refreshed All 700 stocks in 1 YF query (priorClose, RT price.)
+The client does a 60 minutes timer for forceRefresh the Snapshot table. This means that the snapshot table RT prices are about 30min to 90min fresh. 
+That is enough in general, so the user should Not press any Refresh.
+If the user presses SnapshotTable.ForceRefresh, the positions are 1 second old, but the RT prices can be 0 to 30min old. We can do it better.
+We can implement that in this case, we also update the RT prices of only those 30-120 stocks that is in the IbPortfolio. 
+We don't need to update all the 700 (later 2000) stocks in MemDb, although it only takes 250ms to download the RT prices from YF for the current 700 YF.
+If we only download for the necessary 30 stocks, it is probably only an extra 150ms overhead.
+
+
+
+

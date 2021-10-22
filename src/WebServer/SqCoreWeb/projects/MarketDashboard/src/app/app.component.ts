@@ -249,7 +249,8 @@ export class AppComponent implements OnInit {
         `WS Last RtStat: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.wsOnLastRtMktSumRtStatTime, new Date())} ago\n` +
         `WS Last Lookback Chg latency: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.wsOnLastRtMktSumLookbackChgStart, gDiag.wsOnLastRtMktSumNonRtStatTime)}\n` + // 14-20ms LocalDev, 27-33ms London to Dublin, thanks to the open WS connection. If a new connection has to be opened, it would be 80-130ms; 120ms Bahamas to Dublin (with a new connection it would be 500ms)
         '-----\n' +
-        `WS First BrAccVw.MktBrLstCls: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsOnFirstBrAccVwMktBrLstCls)}\n`;
+        `WS First BrAccVw.MktBrLstCls: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsOnFirstBrAccVwMktBrLstCls)}\n` +
+        `WS Last  BrAccVw.RfrSnapshot latency: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.wsOnLastBrAccVwRefreshSnapshotStart, gDiag.wsOnLastBrAccVwSnapshot)}\n`;
     }
   }
 
