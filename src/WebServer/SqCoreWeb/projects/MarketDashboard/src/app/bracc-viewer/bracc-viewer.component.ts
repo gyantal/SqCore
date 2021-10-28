@@ -1,4 +1,4 @@
-import { ViewChild, Component, AfterViewInit,ElementRef, Input} from '@angular/core';
+import { Component, AfterViewInit, Input } from '@angular/core';
 import { SqNgCommonUtilsStr } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_str';
 import { SqNgCommonUtilsTime, minDate } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
 import * as d3 from 'd3';
@@ -42,7 +42,7 @@ class BrAccSnapshotPosJs {
   public priorClose = NaN;
   public estPrice = NaN;
   public estUndPrice = NaN;
-  public accId = ''
+  public accId = '';
 }
 
 class HistJs {
@@ -85,15 +85,18 @@ class UiMktBarItem {
   public symbol = '';
   public name = '';
   public priorClose  = NaN;
-  public last  = 500;
+  // public last  = 500;
   public pctChg  = 0.01;
+  public lstValTime = new Date();
 }
 
 class UiSnapTable {
   public symbol = '';
+  public assetId = NaN;
+  public rtPriceLastUpdate = '';
   public lastUpdate = '';
   public snapLastUpateTime = new Date();
-  public snapLastUpdateTimeAgo = NaN;
+  // public snapLastUpdateTimeAgo = NaN;
   public snapLastUpdateTimeAgoStr = '';
   public netLiquidation = NaN;
   public netLiquidationStr = '';
@@ -176,7 +179,7 @@ class UiBrcAccChrtval {
 })
 export class BrAccViewerComponent implements AfterViewInit {
   @Input() _parentWsConnection?: WebSocket = undefined;    // this property will be input from above parent container
-  @ViewChild('chart') chartRef!:ElementRef;
+  // @ViewChild('chart') chartRef!:ElementRef;
 
   // Guessed Beta for HL hedges and companies
   // MarketWatch Beta calculation is quite good. Use that If it is available.  There, Beta of QQQ: 1.18, that is the base.  
@@ -208,26 +211,24 @@ export class BrAccViewerComponent implements AfterViewInit {
   brAccountSnapshotStrFormatted = '[Nothing arrived yet]';
   brAccountSnapshotObj : Nullable<BrAccSnapshotJs>=null;
   lstValObj: Nullable<AssetLastJs[]> = null;  // realtime or last values
-  
-  selectedNav = '';
+  lstValLastTime: Date;
+  navSelectionSelected = '';
+  uiNavSel : string[] = [];
   uiMktBar: UiMktBarItem[] = [];
-
   uiSnapTable : UiSnapTable = new UiSnapTable();
-  uiHistData : UiHistData [] = [];  // length: 2: (uiHistData[0].assetId + uiHistData[0].brAccChrtActuals)  vs.  (uiHistData[1].assetId + uiHistData[1].brAccChrtActuals)
+  uiHistData : UiHistData [] = []; 
   
   tabPageVisibleIdx = 1;
   sortColumn : string = "DailyPL";
   sortDirection : string = "Increase";
-  uiNavSel : string[] = [];
-  navSelectionSelected = '';
-  perfIndicatorSelected = '';
+
   yrSelectionChoices = ['YTD','1M','1Y','3Y','5Y'];
   yrSelectionSelected = 'YTD';
   lookbackStartET: Date; // set in ctor. We need this in JS client to check that the received data is long enough or not (Expected Date)
   lookbackStartETstr: string; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a 	A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
   lookbackEndET: Date;
   lookbackEndETstr: string;
- 
+  
   constructor() {
 
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
@@ -235,6 +236,7 @@ export class BrAccViewerComponent implements AfterViewInit {
 
     this.lookbackStartET = new Date(todayET.getFullYear() - 1, 11, 31);  // set YTD as default
     this.lookbackStartETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.lookbackStartET);
+    this.lstValLastTime = todayET;
 
     // https://stackoverflow.com/questions/563406/add-days-to-javascript-date
     const yesterDayET = new Date(todayET);
@@ -243,6 +245,12 @@ export class BrAccViewerComponent implements AfterViewInit {
     this.lookbackEndETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.lookbackEndET);
 
     setInterval(() => { this.snapshotRefresh(); }, 60 * 60 * 1000); // forced Snapshot table refresh timer in every 60 mins
+    // setInterval(() => {this.lstValLastTime})
+    setInterval(() => { 
+      if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
+            this._parentWsConnection.send('BrAccViewer.RefreshMktBrPriorCloses:' + this.uiMktBar);
+      }}, 120 * 60 * 1000);
+      
    }
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
@@ -254,16 +262,13 @@ export class BrAccViewerComponent implements AfterViewInit {
         this.brAccountSnapshotStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.brAccountSnapshotObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.sortColumn, this.sortDirection, this.uiSnapTable);
-        const jsonObjSnap = JSON.parse(msgObjStr);
-        this.updateUiWithSnapshot(jsonObjSnap);
         return true;
       case 'BrAccViewer.Hist':
         console.log('BrAccViewer.Hist:' + msgObjStr);
         this.histStr = msgObjStr;
         this.histStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.histObj = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateChrtUi(this.histObj, this.uiHistData);
-        // this.fillChartWithData();
+        BrAccViewerComponent.updateUiWithHist(this.histObj, this.uiHistData);
         // if message is too large without spaces, we have problems as there is no horizontal scrollbar in browser. So, shorten the message.
         if (msgObjStr.length < 200)
           this.histStr = msgObjStr;
@@ -277,7 +282,7 @@ export class BrAccViewerComponent implements AfterViewInit {
         this.mktBrLstClsStr = msgObjStr;
         this.mktBrLstClsStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.mktBrLstClsObj = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.lstValObj, this.uiMktBar);
+        BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.lstValObj, this.lstValLastTime,this.uiMktBar);
         return true;
       case 'BrAccViewer.Handshake':  // this is the least frequent message. Should come last.
         console.log('BrAccViewer.Handshake:' + msgObjStr);
@@ -291,13 +296,14 @@ export class BrAccViewerComponent implements AfterViewInit {
         return false;
     }
   }
- 
+
   public webSocketLstValArrived(p_lstValObj: Nullable<AssetLastJs[]>) { // real time price data
+    this.lstValLastTime = new Date();
     this.lstValObj = p_lstValObj;
-    BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.lstValObj, this.uiMktBar);
-    BrAccViewerComponent.updateSnapshotTableWithRtNav(p_lstValObj, this.uiSnapTable);
+    BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.lstValObj, this.lstValLastTime,this.uiMktBar);
+    BrAccViewerComponent.updateSnapshotTableWithRtNav(this.lstValObj, this.uiSnapTable);
   }
-  
+
   updateUiSelectableNavs(pSelectableNavAssets: Nullable<AssetJs[]>) {  // same in MktHlth and BrAccViewer
     if(pSelectableNavAssets == null)
      return;
@@ -308,22 +314,18 @@ export class BrAccViewerComponent implements AfterViewInit {
       this.uiNavSel.push(nav.symbol)
     }
   }
-  
-  onNavSelectedChangeAng(pEvent: any) {
+
+  onNavSelectedChange(pEvent: any) {
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
       this._parentWsConnection.send('BrAccViewer.ChangeNav:' + this.navSelectionSelected);
     }
   }
 
-  onPerfIndicatorSelectedChange(pEvent: any) {
-    console.log("The performance indicator selected :" + this.perfIndicatorSelected);
-  }
-
-  onLookbackChangeAng() {
+  onLookbackChange() {
     console.log('Calling server with new lookback. StartDateETstr: ' + this.lookbackStartETstr + ', lookbackStartET: ' + this.lookbackStartET);
     gDiag.wsOnLastRtMktSumLookbackChgStart = new Date();
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
-      this._parentWsConnection.send('MktHlth.ChangeLookback:Date:' + this.lookbackStartETstr + '...' + this.lookbackEndETstr); // we always send the Date format to server, not the strings of 'YTD/10y'
+      this._parentWsConnection.send('BrAccViewer.ChangeLookback:Date:' + this.lookbackStartETstr + '...' + this.lookbackEndETstr); // we always send the Date format to server, not the strings of 'YTD/10y'
     }
   }
 
@@ -346,26 +348,11 @@ export class BrAccViewerComponent implements AfterViewInit {
   }
   snapshotRefresh() {
     gDiag.wsOnLastBrAccVwRefreshSnapshotStart = new Date();
-    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('BrAccViewer.RefreshSnapshot:' + this.navSelectionSelected);
-    }
-    console.log("hello")
   }
 
-  updateUiWithSnapshot(jsonObjSnap: any) {
-    console.log(`BrAccViewer.updateUiWithSnapshot(). Symbol: '${jsonObjSnap.symbol}'`);
-    if (this.selectedNav != jsonObjSnap.symbol) // change UI only if it is a meaningful change
-      this.selectedNav = jsonObjSnap.symbol;
-  }
-
-  // public perfIndicatorSelector(): void { 
-  //   const indicatorSelected = (document.getElementById('perfIndicator') as HTMLSelectElement).value;
-  //   for (const item of this.brAccHistStatVal) {
-  //     BrAccViewerComponent.updateUiColumnBasedOnSelectedIndicator(item, indicatorSelected);
-  //   }
-  // }
-
-  static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, priorCloses: Nullable<AssetPriorCloseJs[]>, lastRt: Nullable<AssetLastJs[]>, uiMktBar: UiMktBarItem[]) {
+  static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, priorCloses: Nullable<AssetPriorCloseJs[]>, lastRt: Nullable<AssetLastJs[]>, lstValLastTime, uiMktBar: UiMktBarItem[]) {
      // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
     if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(priorCloses) && priorCloses.length > 0  && Array.isArray(lastRt) && lastRt.length > 0))
      return;
@@ -398,26 +385,36 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
     for (const rtItem of lastRt) {
       const existingUiItems = uiMktBar.filter((r) => r.assetId === rtItem.assetId);
-      if (existingUiItems.length === 0) 
+      if (existingUiItems.length === 0)
         continue;
       const uiItem = existingUiItems[0];
       uiItem.pctChg = (rtItem.last - uiItem.priorClose) / uiItem.priorClose;
     }
+    let uilstValItem: UiMktBarItem;
+    uilstValItem = new UiMktBarItem();
+    uilstValItem.lstValTime = lstValLastTime;
+    // const l1 = lstValLastTime;
+    // console.log("The longTime is :" , l1.substring(16,18) + 'h ' + l1.substring(19,21) + 'm ' + l1.substring(22,24) + 's ago' );
+    console.log("The lstValTime is : ", uilstValItem.lstValTime);
+    
   }
 
-  static updateSnapshotTable(brAccSnap : Nullable<BrAccSnapshotJs>, sortColumn : string, sortDirection : string, uiSnapTable : UiSnapTable)
-  {
+  static updateSnapshotTable(brAccSnap : Nullable<BrAccSnapshotJs>, sortColumn : string, sortDirection : string, uiSnapTable : UiSnapTable) {
     if (brAccSnap === null || brAccSnap.poss === null)
       return;
+    uiSnapTable.assetId = brAccSnap.assetId;
     uiSnapTable.symbol = brAccSnap.symbol;
     uiSnapTable.lastUpdate = brAccSnap.lastUpdate;
     uiSnapTable.snapLastUpateTime = new Date(brAccSnap.lastUpdate);
     const timestampDate = new Date (brAccSnap.lastUpdate);
     const timeAgoMsec = new Date (Date.now()- timestampDate.getTime());
+    // Created timeAgoMsec1 fore degubbing purpose will remove once discussed
+    const timeAgoMsec1 = new Date (Date.now()- timestampDate.getTime()).toLocaleString("en-US",  { hour12: false });
+    console.log("The Local time stamp conversion is :", timeAgoMsec1);
     const timeAgoMSecStr = timeAgoMsec.toString();     // number of milliseconds
-    console.log(timeAgoMSecStr.substring(16,18) + 'hr' + timeAgoMSecStr.substring(19,21) + 'min' + timeAgoMSecStr.substring(22,24) + 'sec' );
+    console.log("the Snap update time ago string is:", timeAgoMSecStr,timeAgoMSecStr.substring(16,18) + 'hr' + timeAgoMSecStr.substring(19,21) + 'min' + timeAgoMSecStr.substring(22,24) + 'sec' );
     uiSnapTable.snapLastUpdateTimeAgoStr = timeAgoMSecStr.substring(16,18) + 'h ' + timeAgoMSecStr.substring(19,21) + 'm ' + timeAgoMSecStr.substring(22,24) + 's ago' ;
-    uiSnapTable.snapLastUpdateTimeAgo = Math.round((Date.now() - (new Date (brAccSnap.lastUpdate).getTime()))/ (1000 * 60));
+    // uiSnapTable.snapLastUpdateTimeAgo = Math.round((Date.now() - (new Date (brAccSnap.lastUpdate).getTime()))/ (1000 * 60));
     uiSnapTable.totalCashValue = brAccSnap.totalCashValue;
     uiSnapTable.initialMarginReq = brAccSnap.initMarginReq;
     uiSnapTable.maintMarginReq = brAccSnap.maintMarginReq;
@@ -427,11 +424,11 @@ export class BrAccViewerComponent implements AfterViewInit {
     uiSnapTable.priorCloseNetLiquidation = brAccSnap.priorCloseNetLiquidation;
     uiSnapTable.plTodPrNav = Math.round(brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation);
     uiSnapTable.pctChgTodPrNav = (brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation) / brAccSnap.priorCloseNetLiquidation;
- 
+
     uiSnapTable.poss.length = 0;
 
     for (const possItem of brAccSnap.poss) {
-      console.log("The positions of UiSnapTable are :" + possItem.pos);
+      // console.log("The positions of UiSnapTable are :" + possItem.pos);
       let uiPosItem = new UiAssetSnapPossPos();
       uiPosItem.assetId = possItem.assetId;
       uiPosItem.sqTicker = possItem.sqTicker;
@@ -442,7 +439,7 @@ export class BrAccViewerComponent implements AfterViewInit {
       uiPosItem.pos = possItem.pos;
       uiPosItem.avgCost = possItem.avgCost;
       uiPosItem.priorClose = possItem.priorClose;
-      uiPosItem.priorCloseStr = possItem.priorClose.toFixed(2).toString();
+      // uiPosItem.priorCloseStr = possItem.priorClose.toFixed(2).toString();
       uiPosItem.estPrice = possItem.estPrice;
       uiPosItem.estUndPrice = possItem.estUndPrice;
       uiPosItem.accId = possItem.accId;
@@ -468,8 +465,8 @@ export class BrAccViewerComponent implements AfterViewInit {
     } 
     uiSnapTable.sumPlTodPct = uiSnapTable.sumPlTodVal / uiSnapTable.priorCloseNetLiquidation; // profit & Loss total percent change
     uiSnapTable.totalMaxRiskedLeverage = (uiSnapTable.totalMaxRiskedN / uiSnapTable.netLiquidation);
-    uiSnapTable.numOfPoss = (uiSnapTable.poss.length) - 1;
-  
+    uiSnapTable.numOfPoss = uiSnapTable.poss.length;
+
     // sort by sortColumn
     uiSnapTable.poss.sort((n1: UiAssetSnapPossPos, n2: UiAssetSnapPossPos) => {
       let dirMultiplier = (sortDirection === "Increasing") ? 1 : -1;
@@ -532,22 +529,35 @@ export class BrAccViewerComponent implements AfterViewInit {
       }
       return 0;
     });
+    
   }
 
-  static updateSnapshotTableWithRtNav(p_lstValObj: Nullable<AssetLastJs[]>, uiSnapTable : UiSnapTable)
-  {
-
+  static updateSnapshotTableWithRtNav(p_lstValObj: Nullable<AssetLastJs[]>, uiSnapTable : UiSnapTable) {
+    // uiSnapTable.netLiquidation = 
+    if (!(Array.isArray(p_lstValObj) && p_lstValObj.length > 0))
+     return;
+    for (const item of p_lstValObj) {
+      if (item.assetId === uiSnapTable.assetId) {
+        let uiSnapTable = new UiSnapTable();
+        uiSnapTable.netLiquidation = item.last;
+        console.log("The NetLiquidation value is: ", uiSnapTable.netLiquidation);
+        const timestampDate = new Date (item.lastUtc);
+        const timeAgoMsec = new Date (Date.now()- timestampDate.getTime());
+        const timeAgoMSecStr = timeAgoMsec.toString();
+        uiSnapTable.rtPriceLastUpdate = timeAgoMSecStr.substring(16,18) + 'h ' + timeAgoMSecStr.substring(19,21) + 'm ' + timeAgoMSecStr.substring(22,24) + 's ago' ;
+        console.log("The RealtimePrice for LastUpdate is :" ,uiSnapTable.rtPriceLastUpdate);
+    }
+      // uiSnapTable.p
   }
+}
 
-  static updateChrtUi(histObj : Nullable<HistJs[]>, uiHistData : UiHistData[]) {
+  static updateUiWithHist(histObj : Nullable<HistJs[]>, uiHistData : UiHistData[]) {
     if (histObj == null)
        return;
-  
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
 
     uiHistData.length = 0;
-
     for(const hisStatItem  of histObj) {
       if (hisStatItem.histStat ==  null || hisStatItem.histValues == null) 
         continue;
@@ -587,10 +597,10 @@ export class BrAccViewerComponent implements AfterViewInit {
       uiHistData.push(uiHistItem);
     }
      // chart processing
-     this.uiHistChrt(uiHistData)
+     BrAccViewerComponent.processUiWithHistChrt(uiHistData);
     }
     
-  static uiHistChrt(uiHistData : UiHistData[]) {
+  static processUiWithHistChrt(uiHistData : UiHistData[]) {
     d3.selectAll("#my_dataviz > *").remove();
      var margin = {top: 10, right: 30, bottom: 30, left: 60 };
      var width = 660 - margin.left - margin.right;
@@ -610,10 +620,10 @@ export class BrAccViewerComponent implements AfterViewInit {
      // find data range
      var xMin = d3.min(uiHistData[0].brAccChrtActuals, (d:{ chartDate: any; }) => d.chartDate);
      var xMax = d3.max(uiHistData[0].brAccChrtActuals, (d:{ chartDate: any; }) => d.chartDate);
-     var yMin = d3.min(uiHistData[0].brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose );
-     var yMax = d3.max(uiHistData[0].brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose );
+     var yMin = d3.min(uiHistData[0].brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose);
+     var yMax = d3.max(uiHistData[0].brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose);
  
-              // range of data configuring
+     // range of data configuring
      var histChrtScaleX = d3.scaleTime()
                .domain([xMin, xMax])
                .range([0, width]);
@@ -688,12 +698,11 @@ export class BrAccViewerComponent implements AfterViewInit {
      function mousemove(event: any) {
         // recover coordinate we need
        var x0 = histChrtScaleX.invert(d3.pointer(event)[0]);
-       // console.log(`The X0: '${x0}'`);
        var i = bisectDate(uiHistData[0].brAccChrtActuals, x0, 1), // index value on the chart area
        selectedData = uiHistData[0].brAccChrtActuals[i],
        selectedData1 = uiHistData[0]
        focus.attr("cx",histChrtScaleX(selectedData.chartDate))
-           .attr("cy",histChrtScaleY(selectedData.chrtSdaClose))
+            .attr("cy",histChrtScaleY(selectedData.chrtSdaClose))
        focusText.html("s:" + selectedData1.sqTicker + " - " + "x:" + formatMonth(selectedData.chartDate) +  " - " + "y:" + (selectedData.chrtSdaClose).toFixed(2))
                .attr("x", histChrtScaleX(selectedData.chartDate)+15)
                .attr("y",histChrtScaleY(selectedData.chrtSdaClose))

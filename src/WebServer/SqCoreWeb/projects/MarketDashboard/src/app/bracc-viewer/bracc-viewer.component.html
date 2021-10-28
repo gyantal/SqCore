@@ -1,6 +1,6 @@
 BrAcc:
 <span >
-    <select class="selectedNavBraccCl" [(ngModel)] = "navSelectionSelected" (change)="onNavSelectedChangeAng($event)">
+    <select class="selectedNavBraccCl" [(ngModel)] = "navSelectionSelected" (change)="onNavSelectedChange($event)">
         <option *ngFor="let item of uiNavSel" [value]="item">{{item}}</option>
     </select>
 </span>
@@ -14,41 +14,69 @@ MarketBar
          }">{{item.pctChg | percent:'1.2'}},
         </span>
     </span>
+    <span *ngFor="let item of uiMktBar"> {{item.lstValTime | date:'mm:ss'}}</span>   
+    
 </span>
 <hr>
 <div>
     <span>
     <div class="AccSumm">
         <h4>Account Summary</h4>
-        <div id="plSum" class="tooltipCell">P&L Today (Positions) : 
+        <span id="plSum" class="tooltipCell">P&L Today
+            <span id="notImpInfo">(Positions)</span> : 
             <span [ngClass]="{
                 'mktBarPositivePerf' : uiSnapTable.sumPlTodVal > 0,
                 'mktbarNegativePerf' : uiSnapTable.sumPlTodVal < 0
                 }">{{uiSnapTable.sumPlTodVal | currency:'USD':'symbol':'1.0' }}
             </span>
-            <span [ngClass]="{
+            <span id="notImpInfo" [ngClass]="{
                 'mktBarPositivePerf' : uiSnapTable.sumPlTodPct > 0,
                 'mktbarNegativePerf' : uiSnapTable.sumPlTodPct < 0
                 }">({{uiSnapTable.sumPlTodPct | percent:'1.2'}})
             </span> 
             <div class="tooltipSnap">
                 <div class="snapshot">
-                    Profit is calculated as a sum of the table cells 
+                    Profit is calculated as <br>a sum of the table cells 
                 </div>
             </div>
-            <span id="refresh"><img id="refresh" border='0' alt='YF' src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked($event)" width='15' height='15'>{{uiSnapTable.snapLastUpateTime | date:'H:mm'}} ({{uiSnapTable.snapLastUpdateTimeAgoStr}})</span>
-        </div>
+        </span>
+        <span id="plSum" class="tooltipCell">
+            <div class="tooltipSnap">
+                <div class="snapshot">
+                    Force reload snapshot table<br> (Realtime: NAV, #Pos, EstPrice)
+                </div>
+            </div>
+            <span id="refresh"><img id="refresh" border='0' alt='YF' src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked($event)" width='15' height='15'></span>
+        </span>
+        <span id="notImpInfo">{{uiSnapTable.snapLastUpateTime | date:'H:mm'}} ({{uiSnapTable.snapLastUpdateTimeAgoStr}})</span>
         <div id="plSum" class="tooltipCell">NAV :
             <span id="liqVal">
-                {{uiSnapTable.netLiquidationStr | currency:'USD':'symbol':'1.0'}}
+                {{uiSnapTable.netLiquidationStr | currency:'USD':'symbol':'1.0'}} {{uiSnapTable.rtPriceLastUpdate}}
             </span>
             <div class="tooltipSnap">
                 <div class="snapshot">
-                    Total NetLiquidation (with cash) 
+                    Total NetLiquidation<br>(with cash) 
                 </div>
             </div>
         </div>
-       
+        <div id="plSum" class="tooltipCell">P&L Today
+            <span id="notImpInfo"> (PriorNAV)</span> : 
+            <span [ngClass]="{
+                'mktBarPositivePerf' : uiSnapTable.plTodPrNav > 0,
+                'mktbarNegativePerf' : uiSnapTable.plTodPrNav < 0
+                }"> {{uiSnapTable.plTodPrNav | currency:'USD':'symbol':'1.0'}}
+            </span>
+            <span id="notImpInfo" [ngClass]="{
+                'mktBarPositivePerf' : uiSnapTable.pctChgTodPrNav > 0,
+                'mktbarNegativePerf' : uiSnapTable.pctChgTodPrNav < 0
+                }"> ({{uiSnapTable.pctChgTodPrNav | percent:'1.2'}})
+            </span>
+            <div class="tooltipSnap">
+                <div class="snapshot">
+                    Profit is calculated from<br> current  and previous day NAV 
+                </div>
+            </div> 
+        </div>
         <div>
             <span class="tab">
                 <button [ngStyle]="{'background-color':tabPageVisibleIdx == 1 ? 'aqua':''}"(click)="tabHeaderClicked($event,1)"> MoreDetails </button>
@@ -58,34 +86,17 @@ MarketBar
     </div>
     <div class="ChartSumm">
             <div [hidden]="tabPageVisibleIdx != 1" id="tab1">
-                <div class="sections">
-                    <div id="plSum" class="tooltipCell">P&L Today (PriorNAV) : 
-                        <span [ngClass]="{
-                            'mktBarPositivePerf' : uiSnapTable.plTodPrNav > 0,
-                            'mktbarNegativePerf' : uiSnapTable.plTodPrNav < 0
-                            }"> {{uiSnapTable.plTodPrNav | currency:'USD':'symbol':'1.0'}}
-                        </span>
-                        <span [ngClass]="{
-                            'mktBarPositivePerf' : uiSnapTable.pctChgTodPrNav > 0,
-                            'mktbarNegativePerf' : uiSnapTable.pctChgTodPrNav < 0
-                            }"> ({{uiSnapTable.pctChgTodPrNav | percent:'1.2'}})
-                        </span>
-                        <div class="tooltipSnap">
-                            <div class="snapshot">
-                                Profit is calculated from current and previous day NAV 
-                            </div>
-                        </div> 
-                    </div>
-                    <div>IB Total Cash: <span id="plSum">{{uiSnapTable.totalCashValue | number}}</span></div>
-                    <div>IB Initial MarginReq: <span id="plSum">{{uiSnapTable.initialMarginReq | number}}</span></div>
-                    <div>IB Maintenance MarginReq: <span id="plSum">{{uiSnapTable.maintMarginReq | number}}</span></div>
-                    <div>IB Gross Position Value: <span id="plSum">{{uiSnapTable.grossPositionValue | number}}</span></div>
+                <div class="moreDetailsPartitions">
+                    <div>PriorNAV: <span id="moreDetailsSum">{{uiSnapTable.priorCloseNetLiquidation}}</span></div>
+                    <div>IB Total Cash: <span id="moreDetailsSum">{{uiSnapTable.totalCashValue | number}}</span></div>
+                    <div>IB Initial MarginReq: <span id="moreDetailsSum">{{uiSnapTable.initialMarginReq | number}}</span></div>
+                    <div>IB Maintenance MarginReq: <span id="moreDetailsSum">{{uiSnapTable.maintMarginReq | number}}</span></div>
+                    <div>IB Gross Position Value: <span id="moreDetailsSum">{{uiSnapTable.grossPositionValue | number}}</span></div>
                 </div>
-                <div class="sections">
-                    <div>Number Of Positions: <span id="plSum">{{uiSnapTable.numOfPoss}}</span></div>
+                <div class="moreDetailsPartitions">
+                    <div>Number Of Positions: <span id="moreDetailsSum">{{uiSnapTable.numOfPoss}}</span></div>
                     <div>Long Stock MktValue: 
-                        <span id="plSum" class="tooltipCell">
-                        <b>{{uiSnapTable.longStcokValue | number}}*</b>
+                        <span id="moreDetailsSum" class="tooltipCell">{{uiSnapTable.longStcokValue | number}}*
                             <div class="tooltipSnap">
                                 <div class="snapshot">
                                     !! Long VXX is here, although it is market bearish.<br>
@@ -94,17 +105,17 @@ MarketBar
                             </div>
                         </span>
                         </div>
-                    <div>Short Stock MktValue: <span id="plSum">{{uiSnapTable.shortStockValue | number}}</span></div>
-                    <div>Call Option Delta Adjusted DelivValue: <span id="plSum"></span></div>
-                    <div>Put Option Delta Adjusted DelivValue: <span id="plSum"></span></div>
+                    <div>Short Stock MktValue: <span id="moreDetailsSum">{{uiSnapTable.shortStockValue | number}}</span></div>
+                    <div>Call Option Delta Adjusted DelivValue: <span id="moreDetailsSum"></span></div>
+                    <div>Put Option Delta Adjusted DelivValue: <span id="moreDetailsSum"></span></div>
                 </div>
-                <div class="sections" id="borderRemove">
+                <div class="moreDetailsPartitions" id="borderRemove">
                     <div class="tooltipCell">Max Risked estimate:
-                        <span id="plSum"
+                        <span id="moreDetailsSum"
                         [ngClass]="{'green' : uiSnapTable.totalMaxRiskedLeverage < 1.3,
-                                    'orange': uiSnapTable.totalMaxRiskedLeverage >= 1.3 || uiSnapTable.totalMaxRiskedLeverage <=1.5,
+                                    'orange': uiSnapTable.totalMaxRiskedLeverage >= 1.3 || uiSnapTable.totalMaxRiskedLeverage <= 1.5,
                                     'red' : uiSnapTable.totalMaxRiskedLeverage > 1.5}"> 
-                            (Leverage <b>{{uiSnapTable.totalMaxRiskedLeverage | number :'1.1-2'}})</b>*
+                            (Leverage - {{uiSnapTable.totalMaxRiskedLeverage | number :'1.1-2'}})*
                          </span>
                         <div class="tooltipSnap">
                             <div class="snapshot">
@@ -136,22 +147,20 @@ MarketBar
             <div [hidden]="tabPageVisibleIdx == 1" id="tab2">
                 <div >
                    <span>
-                    <div class="sectionForSelection">
+                    <div class="chrtTimeFrameSelection">
                         <select [(ngModel)] = "yrSelectionSelected">
                             <option *ngFor="let item of yrSelectionChoices" [value]="item">{{item}}</option>YTD
                         </select>
-                        <div>StartDate: <input type="date" id="StartDate" name="startDate" min="01-01-1975"></div>
-                        <div>EndDate: <input type="date" id="EndDate" name="EndDate" min="01-01-1975"></div>
-                        <div>
-                            <select name="" id="" [(ngModel)] = "perfIndicatorSelected" (change)="onPerfIndicatorSelectedChange($event)">
-                            <option *ngFor="let item of uiHistData" value="item">{{item.rtReturn}}</option>
-                            <option *ngFor="let item of uiHistData" value="item">MaxDD: {{item.maxDrawDown}}</option>
-                            </select>
-                        </div>
-                     </div>
+                        <div>StartDate: <input type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="lookbackStartETstr"></div>
+                        <div>EndDate: <input type="date" id="EndDate" name="EndDate" min="01-01-1975" [(ngModel)]="lookbackEndETstr"></div>
+                        <div *ngFor="let item of uiHistData let i = index">MaxDD(NAV/BnchMrk):
+                            <span *ngIf="i==0">{{i}}{{item.periodMaxDD | percent:'1.2'}}</span>
+                            <span *ngIf="i==1">{{i}}{{item.periodMaxDD | percent:'1.2'}}</span> </div>
+                        <div *ngFor="let item of uiHistData">Return(NAV/BnchMrk): {{item.periodReturn | percent:'1.2'}}</div>
+                        <div>UiHistDataLength:{{uiHistData.length}}</div>
+                       
+                    </div>
                      <div id="my_dataviz"></div>
-                     <span class="sectionForSvg">
-                </span>
                    </span>
                 </div>
             </div>
@@ -160,7 +169,7 @@ MarketBar
 </div>
 
 <hr>
-<div class="brAccSnapTable">
+<div class="brAccSnapTbl">
 <table class = "selectedBrcAccSnapShotTbl">
     <thead class = "selectedBrcAccSnapShotTbl">
         <tr class="tableHeader">
@@ -215,9 +224,9 @@ MarketBar
         </td>
         <td></td>
         <td>{{item.pos | number}}</td>
-        <td>{{item.avgCost | number:'1.1-2'}}</td>
-        <td>{{item.priorCloseStr}}</td>
-        <td>{{item.estPrice | number:'1.1-2'}}</td>
+        <td>{{item.avgCost | number:'1.2-2'}}</td>
+        <td>{{item.priorClose | number:'1.2-2'}}</td>
+        <td>{{item.estPrice | number:'1.2-2'}}</td>
         <td [ngClass]="{
             'mktBarPositivePerf' : item.pctChgTod > 0,
             'mktbarNegativePerf' : item.pctChgTod < 0

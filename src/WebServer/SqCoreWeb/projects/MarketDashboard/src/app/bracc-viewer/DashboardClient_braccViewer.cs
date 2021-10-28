@@ -340,6 +340,10 @@ namespace SqCoreWeb
                 case "BrAccViewer.RefreshSnapshot":
                     BrAccViewerRefreshSnapshot();
                     return true;
+                case "BrAccViewer.RefreshMktBrPriorCloses":
+                    BrAccViewerRefreshMktBar();
+                    // BrAccViewerSendMarketBarPriorCloses();
+                    return true;
                 default:
                     return false;
             }
@@ -372,6 +376,26 @@ namespace SqCoreWeb
 
             // Step 3: send Snapshot to Client.
             BrAccViewerSendSnapshot();
+        }
+
+        private void BrAccViewerRefreshMktBar() 
+        {
+            // Step 1: Force reload of mktBar Tickers from IB Gateways.
+            if (m_brAccMktBrAssets == null)
+                return;
+             DateTime mockupPriorDate = DateTime.UtcNow.Date.AddDays(-1); // we get PriorClose from Asset directly. That comes from YF, which don't tell us the date of PriorClose
+
+            var mktBrPriorCloses = m_brAccMktBrAssets.Select(r =>
+            {
+                return new AssetPriorCloseJs() { AssetId = r.AssetId, PriorClose = r.PriorClose, Date = mockupPriorDate };
+            });
+             byte[] encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.MktBrLstCls:" + Utils.CamelCaseSerialize(mktBrPriorCloses));
+            if (WsWebSocket!.State == WebSocketState.Open)
+                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+
+
+            // BrAccViewerSendMarketBarPriorCloses()
+
         }
     }
 }
