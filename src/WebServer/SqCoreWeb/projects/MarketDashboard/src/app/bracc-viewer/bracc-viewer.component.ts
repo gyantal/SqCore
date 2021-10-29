@@ -93,9 +93,9 @@ class UiMktBarItem {
 class UiSnapTable {
   public symbol = '';
   public assetId = NaN;
-  public rtPriceLastUpdate = '';
+  public rtPriceLastUpdate = 'hello';
   public lastUpdate = '';
-  public snapLastUpateTime = new Date();
+  public snapLastUpateTimeLoc = new Date();
   // public snapLastUpdateTimeAgo = NaN;
   public snapLastUpdateTimeAgoStr = '';
   public netLiquidation = NaN;
@@ -216,7 +216,8 @@ export class BrAccViewerComponent implements AfterViewInit {
   uiNavSel : string[] = [];
   uiMktBar: UiMktBarItem[] = [];
   uiSnapTable : UiSnapTable = new UiSnapTable();
-  uiHistData : UiHistData [] = []; 
+  uiHistData : UiHistData [] = [];
+  // uiHistDataMisc : UiHistDataMisc = new UiHistDateMisc();
   
   tabPageVisibleIdx = 1;
   sortColumn : string = "DailyPL";
@@ -298,7 +299,7 @@ export class BrAccViewerComponent implements AfterViewInit {
   }
 
   public webSocketLstValArrived(p_lstValObj: Nullable<AssetLastJs[]>) { // real time price data
-    this.lstValLastTime = new Date();
+    // this.lstValLastTime = new Date();
     this.lstValObj = p_lstValObj;
     BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.lstValObj, this.lstValLastTime,this.uiMktBar);
     BrAccViewerComponent.updateSnapshotTableWithRtNav(this.lstValObj, this.uiSnapTable);
@@ -405,7 +406,11 @@ export class BrAccViewerComponent implements AfterViewInit {
     uiSnapTable.assetId = brAccSnap.assetId;
     uiSnapTable.symbol = brAccSnap.symbol;
     uiSnapTable.lastUpdate = brAccSnap.lastUpdate;
-    uiSnapTable.snapLastUpateTime = new Date(brAccSnap.lastUpdate);
+    uiSnapTable.snapLastUpateTimeLoc = new Date(brAccSnap.lastUpdate);
+    const nowLoc = new Date();
+    console.log("The current local time is:",nowLoc);
+    // const diff = nowLoc - uiSnapTable.snapLastUpateTimeLoc;
+
     const timestampDate = new Date (brAccSnap.lastUpdate);
     const timeAgoMsec = new Date (Date.now()- timestampDate.getTime());
     // Created timeAgoMsec1 fore degubbing purpose will remove once discussed
@@ -544,7 +549,7 @@ export class BrAccViewerComponent implements AfterViewInit {
         const timestampDate = new Date (item.lastUtc);
         const timeAgoMsec = new Date (Date.now()- timestampDate.getTime());
         const timeAgoMSecStr = timeAgoMsec.toString();
-        uiSnapTable.rtPriceLastUpdate = timeAgoMSecStr.substring(16,18) + 'h ' + timeAgoMSecStr.substring(19,21) + 'm ' + timeAgoMSecStr.substring(22,24) + 's ago' ;
+        uiSnapTable.rtPriceLastUpdate = (timeAgoMSecStr.substring(16,18) + 'h ' + timeAgoMSecStr.substring(19,21) + 'm ' + timeAgoMSecStr.substring(22,24) + 's ago') ;
         console.log("The RealtimePrice for LastUpdate is :" ,uiSnapTable.rtPriceLastUpdate);
     }
       // uiSnapTable.p
