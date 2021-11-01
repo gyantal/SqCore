@@ -1,8 +1,8 @@
 import { Component, AfterViewInit, Input } from '@angular/core';
+import { gDiag, AssetLastJs } from './../../sq-globals';
 import { SqNgCommonUtilsStr } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_str';
 import { SqNgCommonUtilsTime, minDate } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
 import * as d3 from 'd3';
-import { gDiag, AssetLastJs } from './../../sq-globals';
 
 type Nullable<T> = T | null;
 
@@ -85,18 +85,17 @@ class UiMktBarItem {
   public symbol = '';
   public name = '';
   public priorClose  = NaN;
-  // public last  = 500;
   public pctChg  = 0.01;
   public lstValTime = new Date();
+  public minValTime = '';
 }
 
 class UiSnapTable {
   public symbol = '';
   public assetId = NaN;
-  public rtPriceLastUpdate = 'hello';
+  public rtPriceLastUpdate = '';
   public lastUpdate = '';
   public snapLastUpateTimeLoc = new Date();
-  // public snapLastUpdateTimeAgo = NaN;
   public snapLastUpdateTimeAgoStr = '';
   public netLiquidation = NaN;
   public netLiquidationStr = '';
@@ -105,16 +104,16 @@ class UiSnapTable {
   public totalCashValue = NaN;
   public initialMarginReq = NaN;
   public maintMarginReq = NaN;
-  public poss : UiAssetSnapPossPos[] = [];
   public sumPlTodVal = 0;
   public sumPlTodPct = 0;
-  public longStcokValue = 0;
+  public longStockValue = 0;
   public shortStockValue = 0;
   public totalMaxRiskedN = 0;
   public totalMaxRiskedLeverage = 0;
-  public numOfPoss = 0;
   public plTodPrNav = NaN;
   public pctChgTodPrNav = NaN;
+  public numOfPoss = 0;
+  public poss : UiAssetSnapPossPos[] = [];
 }
 
 class UiAssetSnapPossPos {
@@ -141,7 +140,6 @@ class UiAssetSnapPossPos {
 class UiHistData {
   public assetId = NaN;
   public sqTicker ='';
-
   public priorClose = NaN;
   public periodStartDate = '';
   public periodEndDate = '';
@@ -246,13 +244,14 @@ export class BrAccViewerComponent implements AfterViewInit {
     this.lookbackEndETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.lookbackEndET);
 
     setInterval(() => { this.snapshotRefresh(); }, 60 * 60 * 1000); // forced Snapshot table refresh timer in every 60 mins
-    // setInterval(() => {this.lstValLastTime})
     setInterval(() => { 
-      if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
+      if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) 
             this._parentWsConnection.send('BrAccViewer.RefreshMktBrPriorCloses:' + this.uiMktBar);
-      }}, 120 * 60 * 1000);
-      
+      }, 120 * 60 * 1000);
    }
+     
+  ngAfterViewInit(): void {
+  }
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
@@ -316,43 +315,6 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
   }
 
-  onNavSelectedChange(pEvent: any) {
-    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
-      this._parentWsConnection.send('BrAccViewer.ChangeNav:' + this.navSelectionSelected);
-    }
-  }
-
-  onLookbackChange() {
-    console.log('Calling server with new lookback. StartDateETstr: ' + this.lookbackStartETstr + ', lookbackStartET: ' + this.lookbackStartET);
-    gDiag.wsOnLastRtMktSumLookbackChgStart = new Date();
-    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
-      this._parentWsConnection.send('BrAccViewer.ChangeLookback:Date:' + this.lookbackStartETstr + '...' + this.lookbackEndETstr); // we always send the Date format to server, not the strings of 'YTD/10y'
-    }
-  }
-
-  onSortingClicked(event, p_sortColumn) {
-    this.sortColumn = p_sortColumn;
-    if (this.sortDirection == "Increasing")
-      this.sortDirection = "Decreasing";
-    else 
-      this.sortDirection = "Increasing";
-    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.sortColumn, this.sortDirection, this.uiSnapTable) 
-  }
-
-  // tabpage 
-  tabHeaderClicked(event: any, tabIdx: number) {
-    this.tabPageVisibleIdx = tabIdx;
-  }
-
-  onSnapshotRefreshClicked(event) {
-    this.snapshotRefresh();
-  }
-  snapshotRefresh() {
-    gDiag.wsOnLastBrAccVwRefreshSnapshotStart = new Date();
-    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('BrAccViewer.RefreshSnapshot:' + this.navSelectionSelected);
-  }
-
   static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, priorCloses: Nullable<AssetPriorCloseJs[]>, lastRt: Nullable<AssetLastJs[]>, lstValLastTime, uiMktBar: UiMktBarItem[]) {
      // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
     if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(priorCloses) && priorCloses.length > 0  && Array.isArray(lastRt) && lastRt.length > 0))
@@ -407,19 +369,10 @@ export class BrAccViewerComponent implements AfterViewInit {
     uiSnapTable.symbol = brAccSnap.symbol;
     uiSnapTable.lastUpdate = brAccSnap.lastUpdate;
     uiSnapTable.snapLastUpateTimeLoc = new Date(brAccSnap.lastUpdate);
-    const nowLoc = new Date();
-    console.log("The current local time is:",nowLoc);
-    // const diff = nowLoc - uiSnapTable.snapLastUpateTimeLoc;
-
     const timestampDate = new Date (brAccSnap.lastUpdate);
-    const timeAgoMsec = new Date (Date.now()- timestampDate.getTime());
-    // Created timeAgoMsec1 fore degubbing purpose will remove once discussed
-    const timeAgoMsec1 = new Date (Date.now()- timestampDate.getTime()).toLocaleString("en-US",  { hour12: false });
-    console.log("The Local time stamp conversion is :", timeAgoMsec1);
-    const timeAgoMSecStr = timeAgoMsec.toString();     // number of milliseconds
-    console.log("the Snap update time ago string is:", timeAgoMSecStr,timeAgoMSecStr.substring(16,18) + 'hr' + timeAgoMSecStr.substring(19,21) + 'min' + timeAgoMSecStr.substring(22,24) + 'sec' );
-    uiSnapTable.snapLastUpdateTimeAgoStr = timeAgoMSecStr.substring(16,18) + 'h ' + timeAgoMSecStr.substring(19,21) + 'm ' + timeAgoMSecStr.substring(22,24) + 's ago' ;
-    // uiSnapTable.snapLastUpdateTimeAgo = Math.round((Date.now() - (new Date (brAccSnap.lastUpdate).getTime()))/ (1000 * 60));
+    const timeAgoMsec = Date.now()- timestampDate.getTime();
+    const timeAgoMSecStr = SqNgCommonUtilsTime.ConvertMilliSecToTime(timeAgoMsec.toString());
+    uiSnapTable.snapLastUpdateTimeAgoStr = timeAgoMSecStr.substring(0,2) + 'h ' + timeAgoMSecStr.substring(4,6) + 'm ' + timeAgoMSecStr.substring(8,10) + 's ago';
     uiSnapTable.totalCashValue = brAccSnap.totalCashValue;
     uiSnapTable.initialMarginReq = brAccSnap.initMarginReq;
     uiSnapTable.maintMarginReq = brAccSnap.maintMarginReq;
@@ -433,7 +386,6 @@ export class BrAccViewerComponent implements AfterViewInit {
     uiSnapTable.poss.length = 0;
 
     for (const possItem of brAccSnap.poss) {
-      // console.log("The positions of UiSnapTable are :" + possItem.pos);
       let uiPosItem = new UiAssetSnapPossPos();
       uiPosItem.assetId = possItem.assetId;
       uiPosItem.sqTicker = possItem.sqTicker;
@@ -444,7 +396,6 @@ export class BrAccViewerComponent implements AfterViewInit {
       uiPosItem.pos = possItem.pos;
       uiPosItem.avgCost = possItem.avgCost;
       uiPosItem.priorClose = possItem.priorClose;
-      // uiPosItem.priorCloseStr = possItem.priorClose.toFixed(2).toString();
       uiPosItem.estPrice = possItem.estPrice;
       uiPosItem.estUndPrice = possItem.estUndPrice;
       uiPosItem.accId = possItem.accId;
@@ -456,13 +407,13 @@ export class BrAccViewerComponent implements AfterViewInit {
       uiSnapTable.poss.push(uiPosItem);
     }
     uiSnapTable.sumPlTodVal = 0;
-    uiSnapTable.longStcokValue = 0;
+    uiSnapTable.longStockValue = 0;
     uiSnapTable.shortStockValue = 0;
     uiSnapTable.totalMaxRiskedN = 0;
     for (const item of uiSnapTable.poss) {
       uiSnapTable.sumPlTodVal += item.plTod;
       if (item.mktVal > 0){ //Long and Short stock values
-        uiSnapTable.longStcokValue += item.mktVal;
+        uiSnapTable.longStockValue += item.mktVal;
       } else if (item.mktVal < 0) {
         uiSnapTable.shortStockValue += item.mktVal;
       }
@@ -538,21 +489,18 @@ export class BrAccViewerComponent implements AfterViewInit {
   }
 
   static updateSnapshotTableWithRtNav(p_lstValObj: Nullable<AssetLastJs[]>, uiSnapTable : UiSnapTable) {
-    // uiSnapTable.netLiquidation = 
     if (!(Array.isArray(p_lstValObj) && p_lstValObj.length > 0))
      return;
     for (const item of p_lstValObj) {
       if (item.assetId === uiSnapTable.assetId) {
-        let uiSnapTable = new UiSnapTable();
         uiSnapTable.netLiquidation = item.last;
         console.log("The NetLiquidation value is: ", uiSnapTable.netLiquidation);
         const timestampDate = new Date (item.lastUtc);
-        const timeAgoMsec = new Date (Date.now()- timestampDate.getTime());
-        const timeAgoMSecStr = timeAgoMsec.toString();
-        uiSnapTable.rtPriceLastUpdate = (timeAgoMSecStr.substring(16,18) + 'h ' + timeAgoMSecStr.substring(19,21) + 'm ' + timeAgoMSecStr.substring(22,24) + 's ago') ;
+        const timeAgoMsec = SqNgCommonUtilsTime.ConvertMilliSecToTime(Date.now()- timestampDate.getTime()).toString();
+        console.log("The milli sec to time is: ", SqNgCommonUtilsTime.ConvertMilliSecToTime(timeAgoMsec));
+        uiSnapTable.rtPriceLastUpdate = timeAgoMsec.substring(0,2) + 'h ' + timeAgoMsec.substring(4,6) + 'm ' + timeAgoMsec.substring(8,10) + 's ago';
         console.log("The RealtimePrice for LastUpdate is :" ,uiSnapTable.rtPriceLastUpdate);
     }
-      // uiSnapTable.p
   }
 }
 
@@ -596,99 +544,108 @@ export class BrAccViewerComponent implements AfterViewInit {
         let brAccItem = new UiBrcAccChrtval();
         var dateStr : string = uiHistItem.histDates[i];
         brAccItem.chartDate = new Date (dateStr.substring(0,4) + '-' + dateStr.substring(4,6) + '-' + dateStr.substring(6,8));
-        brAccItem.chrtSdaClose = (uiHistItem.histSdaCloses[i])/1000; // divided by thousand to show data in K (Ex: 20,000 = 20K)
+        brAccItem.chrtSdaClose = (uiHistItem.histSdaCloses[i]); // divided by thousand to show data in K (Ex: 20,000 = 20K)
         uiHistItem.brAccChrtActuals.push(brAccItem);
       }
       uiHistData.push(uiHistItem);
     }
-     // chart processing
      BrAccViewerComponent.processUiWithHistChrt(uiHistData);
-    }
+  }
     
   static processUiWithHistChrt(uiHistData : UiHistData[]) {
+
     d3.selectAll("#my_dataviz > *").remove();
-     var margin = {top: 10, right: 30, bottom: 30, left: 60 };
-     var width = 660 - margin.left - margin.right;
-     var height = 400 - margin.top - margin.bottom;
- 
-     var histChrtSvg = d3.select('#my_dataviz').append('svg')
-                  .attr("width", width + margin.left + margin.right)
-                  .attr("height", height + margin.top + margin.bottom)
-                  .append('g')
-                  .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
- 
-     uiHistData[0].brAccChrtActuals.map((d: {chartDate: string | number | Date; chrtSdaClose: string | number; }) => 
+    var margin = {top: 10, right: 30, bottom: 30, left: 60 };
+    var width = 660 - margin.left - margin.right;
+    var height = 400 - margin.top - margin.bottom;
+
+    uiHistData[0].brAccChrtActuals.map((d: {chartDate: string | number | Date; chrtSdaClose: string | number; }) => 
              ({chartDate: new Date(d.chartDate),chrtSdaClose: +d.chrtSdaClose}));
- 
-     const formatMonth = d3.timeFormat("%Y%m%d");
-     var  bisectDate = d3.bisector((d: any) => d.chartDate).left;
+    uiHistData[1].brAccChrtActuals.map((d: {chartDate: string | number | Date; chrtSdaClose: string | number; }) => 
+             ({chartDate: new Date(d.chartDate),chrtSdaClose: +d.chrtSdaClose,}));
+
+    const formatMonth = d3.timeFormat("%Y%m%d");
+    var  bisectDate = d3.bisector((d: any) => d.chartDate).left;
      // find data range
-     var xMin = d3.min(uiHistData[0].brAccChrtActuals, (d:{ chartDate: any; }) => d.chartDate);
-     var xMax = d3.max(uiHistData[0].brAccChrtActuals, (d:{ chartDate: any; }) => d.chartDate);
-     var yMin = d3.min(uiHistData[0].brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose);
-     var yMax = d3.max(uiHistData[0].brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose);
- 
+    var xMin = d3.min(uiHistData[0].brAccChrtActuals, (d:{ chartDate: any; }) => d.chartDate);
+    var xMax = d3.max(uiHistData[0].brAccChrtActuals, (d:{ chartDate: any; }) => d.chartDate);
+    var yMin = d3.min(uiHistData[0].brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose);
+    var yMax = d3.max(uiHistData[0].brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose);
+    var yMin2 = d3.min(uiHistData[1].brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose );
+    var yMax2 = d3.max(uiHistData[1].brAccChrtActuals, (d: { chrtSdaClose: any; }) => d.chrtSdaClose );
      // range of data configuring
-     var histChrtScaleX = d3.scaleTime()
-               .domain([xMin, xMax])
-               .range([0, width]);
-     var histChrtScaleY = d3.scaleLinear()
-                 .domain([yMin-5, yMax])
-                 .range([height, 0]);
-    
-     histChrtSvg.append('g')
-                .attr('transform', 'translate(0,' + height + ')')
-                .call(d3.axisBottom(histChrtScaleX));
- 
-     histChrtSvg.append('g')
-                .call(d3.axisLeft(histChrtScaleY));
-      
+    var histChrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, width]);
+    var histChrtScaleY = d3.scaleLinear().domain([yMin-5, yMax]).range([height, 0]);
+    var histChrtScaleY2 = d3.scaleLinear().domain([yMin2, yMax2]).range([height, 0]);
+    var histChrtSvg = d3.select('#my_dataviz').append('svg')
+                        .attr("width", width + margin.left + margin.right)
+                        .attr("height", height + margin.top + margin.bottom)
+                        .append('g')
+                        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+    var histChrtScaleYAxis = d3.axisLeft(histChrtScaleY)
+                               .tickFormat((d: any) => Math.round(d*100/yMax) + "%");
+    var histChrtScaleYAxis2 = d3.axisLeft(histChrtScaleY2)
+                               .tickFormat((d: any) => Math.round(d*100/yMax2) + "%");
+    histChrtSvg.append('g')
+               .attr('transform', 'translate(0,' + height + ')')
+               .call(d3.axisBottom(histChrtScaleX));
+    histChrtSvg.append('g')
+               .call(histChrtScaleYAxis);
+    histChrtSvg.append('g')
+               .attr("transform", "translate(" + width + " ,0)")	
+               .call(histChrtScaleYAxis2);
      // text label for x-axis
-     histChrtSvg.append("text")
+    histChrtSvg.append("text")
                 .attr("x", width/2)
                 .attr("y", height + margin.bottom) 
                 .style("text-anchor","middle")
                 .text("Date");
      // text label for y-axis primary
-     histChrtSvg.append("text")
+    histChrtSvg.append("text")
                 .attr("transform", "rotate(-90)")
                 .attr("y", 0-margin.left)
                 .attr("x", 0-(height/2))
                 .attr("dy","1em")
                 .style("text-anchor", "middle")
-                .text("sdaClose(K)");
-      histChrtSvg.append("text")
+                .text("sdaClose(%)");
+    histChrtSvg.append("text")
                 .attr('transform', 'translate(' + width + ', 0)')
                 .attr("y", 0-margin.left)
                 .attr("x", 0-(height/2))
                 .attr("dy","1em")
                 .style("text-anchor", "middle")
-                .text("sdaClose(K)");
+                .text("sdaClose(%)");
      // Create the circle that travels along the curve of chart
-      var focus = histChrtSvg.append('g')
+    var focus = histChrtSvg.append('g')
                             .append('circle')
                             .style("fill", "none")
                             .attr("stroke", "black")
                             .attr('r', 5)
                             .style("opacity", 0);
      // Create the text that travels along the curve of chart
-      var focusText = histChrtSvg.append('g')
+    var focusText = histChrtSvg.append('g')
                                 .append('text')
                                 .style("opacity", 0)
                                 .attr("text-anchor", "left")
                                 .attr("alignment-baseline", "middle");
-     // Genereating line - for sdaCloses 
-      var line = d3.line()
-                   .x( (d: any) => histChrtScaleX(d.chartDate))
-                   .y( (d: any) => histChrtScaleY(d.chrtSdaClose))
-                   .curve(d3.curveCardinal);
-      
-      histChrtSvg.append('path')
+    // Genereating line - for sdaCloses 
+    var line = d3.line()
+                 .x( (d: any) => histChrtScaleX(d.chartDate))
+                 .y( (d: any) => histChrtScaleY(d.chrtSdaClose))
+                 .curve(d3.curveCardinal);
+    var line2 = d3.line()
+                  .x( (d: any) => histChrtScaleX(d.chartDate))
+                  .y( (d: any) => histChrtScaleY2(d.chrtSdaClose))
+                  .curve(d3.curveCardinal);
+    histChrtSvg.append('path')
                  .attr('class', 'line') //Assign a class for styling
                  .datum(uiHistData[0].brAccChrtActuals) // Binds data to the line
                  .attr('d', line as any);
-     
-      histChrtSvg.append('rect')
+    histChrtSvg.append('path')
+                 .attr('class', 'line2') //Assign a class for styling
+                 .datum(uiHistData[1].brAccChrtActuals) // Binds data to the line2
+                 .attr('d', line2 as any);
+    histChrtSvg.append('rect')
                  .style("fill", "none")
                  .style("pointer-events", "all")
                  .attr('width', width)
@@ -696,10 +653,12 @@ export class BrAccViewerComponent implements AfterViewInit {
                  .on('mouseover', mouseover)
                  .on('mousemove', mousemove)
                  .on('mouseout', mouseout);
-     function mouseover() {
+
+    function mouseover() {
        focus.style("opacity", 1)
        focusText.style("opacity",1)
      }
+
      function mousemove(event: any) {
         // recover coordinate we need
        var x0 = histChrtScaleX.invert(d3.pointer(event)[0]);
@@ -712,12 +671,45 @@ export class BrAccViewerComponent implements AfterViewInit {
                .attr("x", histChrtScaleX(selectedData.chartDate)+15)
                .attr("y",histChrtScaleY(selectedData.chrtSdaClose))
      }
+
      function mouseout() {
        focus.style("opacity", 0)
        focusText.style("opacity", 0)
      }
-    }
-  ngAfterViewInit(): void {
-   
+  }
+  
+  onNavSelectedChange(pEvent: any) {
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) 
+      this._parentWsConnection.send('BrAccViewer.ChangeNav:' + this.navSelectionSelected);
+  }
+
+  onLookbackChange() {
+    console.log('Calling server with new lookback. StartDateETstr: ' + this.lookbackStartETstr + ', lookbackStartET: ' + this.lookbackStartET);
+    gDiag.wsOnLastRtMktSumLookbackChgStart = new Date();
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+      this._parentWsConnection.send('BrAccViewer.ChangeLookback:Date:' + this.lookbackStartETstr + '...' + this.lookbackEndETstr); // we always send the Date format to server, not the strings of 'YTD/10y'
+  }
+
+  onSortingClicked(event, p_sortColumn) {
+    this.sortColumn = p_sortColumn;
+    if (this.sortDirection == "Increasing")
+      this.sortDirection = "Decreasing";
+    else 
+      this.sortDirection = "Increasing";
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.sortColumn, this.sortDirection, this.uiSnapTable) 
+  }
+
+  onTabHeaderClicked(event: any, tabIdx: number) {
+    this.tabPageVisibleIdx = tabIdx;
+  }
+
+  onSnapshotRefreshClicked(event) {
+    this.snapshotRefresh();
+  }
+
+  snapshotRefresh() {
+    gDiag.wsOnLastBrAccVwRefreshSnapshotStart = new Date();
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+      this._parentWsConnection.send('BrAccViewer.RefreshSnapshot:' + this.navSelectionSelected);
   }
 }

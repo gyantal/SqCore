@@ -14,10 +14,15 @@ MarketBar
          }">{{item.pctChg | percent:'1.2'}},
         </span>
     </span>
-    <span *ngFor="let item of uiMktBar let i=index">
-        <span *ngIf = "i == 0">
-         {{item.lstValTime | date:'mm:ss'}}
+    <span *ngFor="let listitem of uiMktBar let i=index" class="tooltipCell">
+        <span *ngIf="i==0">
+         {{listitem.lstValTime |date:'mm:ss'}}
         </span>
+        <!-- <div class="tooltipSnap">
+            <div class="snapshot">
+                Profit is calculated as <br>a sum of the table cells 
+            </div>
+        </div> -->
     </span>   
     
 </span>
@@ -55,8 +60,9 @@ MarketBar
         <span id="notImpInfo">{{uiSnapTable.snapLastUpateTimeLoc | date:'H:mm'}} ({{uiSnapTable.snapLastUpdateTimeAgoStr}})</span>
         <div id="plSum" class="tooltipCell">NAV :
             <span id="liqVal">
-                {{uiSnapTable.netLiquidationStr | currency:'USD':'symbol':'1.0'}} {{uiSnapTable.rtPriceLastUpdate}}
+                {{uiSnapTable.netLiquidationStr | currency:'USD':'symbol':'1.0'}}
             </span>
+            {{uiSnapTable.rtPriceLastUpdate}}
             <div class="tooltipSnap">
                 <div class="snapshot">
                     Total NetLiquidation<br>(with cash) 
@@ -83,15 +89,15 @@ MarketBar
         </div>
         <div>
             <span class="tab">
-                <button [ngStyle]="{'background-color':tabPageVisibleIdx == 1 ? 'aqua':''}"(click)="tabHeaderClicked($event,1)"> MoreDetails </button>
-                <button [ngStyle]="{'background-color':tabPageVisibleIdx == 2 ? 'aqua':''}"(click)="tabHeaderClicked($event,2)"> HistoricalChart </button>
+                <button [ngStyle]="{'background-color':tabPageVisibleIdx == 1 ? 'aqua':''}"(click)="onTabHeaderClicked($event,1)"> MoreDetails </button>
+                <button [ngStyle]="{'background-color':tabPageVisibleIdx == 2 ? 'aqua':''}"(click)="onTabHeaderClicked($event,2)"> HistoricalChart </button>
             </span>
         </div>
     </div>
     <div class="ChartSumm">
             <div [hidden]="tabPageVisibleIdx != 1" id="tab1">
                 <div class="moreDetailsPartitions">
-                    <div>PriorNAV: <span id="moreDetailsSum">{{uiSnapTable.priorCloseNetLiquidation}}</span></div>
+                    <div>PriorNAV: <span id="moreDetailsSum">{{uiSnapTable.priorCloseNetLiquidation | number}}</span></div>
                     <div>IB Total Cash: <span id="moreDetailsSum">{{uiSnapTable.totalCashValue | number}}</span></div>
                     <div>IB Initial MarginReq: <span id="moreDetailsSum">{{uiSnapTable.initialMarginReq | number}}</span></div>
                     <div>IB Maintenance MarginReq: <span id="moreDetailsSum">{{uiSnapTable.maintMarginReq | number}}</span></div>
@@ -100,7 +106,7 @@ MarketBar
                 <div class="moreDetailsPartitions">
                     <div>Number Of Positions: <span id="moreDetailsSum">{{uiSnapTable.numOfPoss}}</span></div>
                     <div>Long Stock MktValue: 
-                        <span id="moreDetailsSum" class="tooltipCell">{{uiSnapTable.longStcokValue | number}}*
+                        <span id="moreDetailsSum" class="tooltipCell">{{uiSnapTable.longStockValue | number}}*
                             <div class="tooltipSnap">
                                 <div class="snapshot">
                                     !! Long VXX is here, although it is market bearish.<br>

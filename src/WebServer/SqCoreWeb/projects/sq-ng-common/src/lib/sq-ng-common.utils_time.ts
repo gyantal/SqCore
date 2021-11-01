@@ -102,6 +102,11 @@ export class SqNgCommonUtilsTime implements OnInit {
     return ((p_dateFrom === minDate || p_dateTo === minDate) ? 'NaN' : (p_dateTo.getTime() - p_dateFrom.getTime()) + 'ms');
   }
 
-
-
+  public static ConvertMilliSecToTime(milli) {
+    const milliseconds = milli % 1000;
+    const seconds = Math.floor((milli / 1000) % 60);
+    const minutes = Math.floor((milli / (60 * 1000)) % 60);
+    const hours = Math.floor((milli / (3600 * 1000)) % 60);
+    return "0" + hours +"h"+ ":" + minutes + "m"+ ":" + seconds + "s" + "." + milliseconds;
+  }
 }
