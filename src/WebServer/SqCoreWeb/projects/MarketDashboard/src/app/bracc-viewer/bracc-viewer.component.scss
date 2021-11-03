@@ -211,14 +211,14 @@ thead tr :hover {
 
 /* Graph -  Style the lines by removing the fill and applying a stroke */
 ::ng-deep .line {
-  fill:none;
+  fill: none;
   stroke: #0000ff;
   stroke-width: 1.5;
 }
 ::ng-deep .line2 {
-  fill:none;
+  fill: none;
   stroke: #ffab00;
-  stroke-width: 1.5;
+  stroke-width: 0.5;
 }
 
 // Common for all the tooltips 

@@ -29,7 +29,7 @@ class BrAccSnapshotJs {
   public totalCashValue = NaN;
   public initMarginReq = NaN;
   public maintMarginReq = NaN;
-  public poss : Nullable<BrAccSnapshotPosJs[]> = null;
+  public poss: Nullable<BrAccSnapshotPosJs[]> = null;
 }
 
 class BrAccSnapshotPosJs {
@@ -46,8 +46,8 @@ class BrAccSnapshotPosJs {
 }
 
 class HistJs {
-  public histStat :Nullable<BrAccHistStatJs> = null;
-  public histValues : Nullable<BrAccHistValuesJs> = null;
+  public histStat: Nullable<BrAccHistStatJs> = null;
+  public histValues: Nullable<BrAccHistValuesJs> = null;
 }
 
 class BrAccHistStatJs {
@@ -79,15 +79,21 @@ class AssetPriorCloseJs {
 }
 
 // UI classes
+class UiMktBar {
+  public lstValLastRefreshTime = new Date();
+  public lstValLastRefreshTimeStr = '';
+  public poss: UiMktBarItem[] = [];
+}
+
 class UiMktBarItem {
   public assetId = NaN;
   public sqTicker = '';
   public symbol = '';
   public name = '';
-  public priorClose  = NaN;
-  public pctChg  = 0.01;
+  public priorClose = NaN;
+  public pctChg = 0.01;
   public lstValTime = new Date();
-  public minValTime = '';
+  public lstValTimeStr = '';
 }
 
 class UiSnapTable {
@@ -113,7 +119,7 @@ class UiSnapTable {
   public plTodPrNav = NaN;
   public pctChgTodPrNav = NaN;
   public numOfPoss = 0;
-  public poss : UiAssetSnapPossPos[] = [];
+  public poss: UiAssetSnapPossPos[] = [];
 }
 
 class UiAssetSnapPossPos {
@@ -159,9 +165,10 @@ class UiHistData {
   public drawUp = NaN;
   public maxDrawDown = NaN;
   public maxDrawUp = NaN;
+  public conPeriodMaxRtReturn = '';
   public histDates = [];
   public histSdaCloses = [];
-  public brAccChrtActuals : UiBrcAccChrtval [] = [];
+  public brAccChrtActuals: UiBrcAccChrtval [] = [];
 }
 
 // Hist chart values
@@ -207,19 +214,18 @@ export class BrAccViewerComponent implements AfterViewInit {
   histObj: Nullable<HistJs[]> = null;
   brAccountSnapshotStr = '[Nothing arrived yet]';
   brAccountSnapshotStrFormatted = '[Nothing arrived yet]';
-  brAccountSnapshotObj : Nullable<BrAccSnapshotJs>=null;
+  brAccountSnapshotObj: Nullable<BrAccSnapshotJs> = null;
   lstValObj: Nullable<AssetLastJs[]> = null;  // realtime or last values
-  lstValLastTime: Date;
+  lstValLastTime = new Date();
   navSelectionSelected = '';
-  uiNavSel : string[] = [];
-  uiMktBar: UiMktBarItem[] = [];
-  uiSnapTable : UiSnapTable = new UiSnapTable();
-  uiHistData : UiHistData [] = [];
-  // uiHistDataMisc : UiHistDataMisc = new UiHistDateMisc();
+  uiNavSel: string[] = [];
+  uiMktBar: UiMktBar = new UiMktBar();
+  uiSnapTable: UiSnapTable = new UiSnapTable();
+  uiHistData: UiHistData [] = [];
   
   tabPageVisibleIdx = 1;
-  sortColumn : string = "DailyPL";
-  sortDirection : string = "Increase";
+  sortColumn: string = "DailyPL";
+  sortDirection: string = "Increase";
 
   yrSelectionChoices = ['YTD','1M','1Y','3Y','5Y'];
   yrSelectionSelected = 'YTD';
@@ -235,7 +241,7 @@ export class BrAccViewerComponent implements AfterViewInit {
 
     this.lookbackStartET = new Date(todayET.getFullYear() - 1, 11, 31);  // set YTD as default
     this.lookbackStartETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.lookbackStartET);
-    this.lstValLastTime = todayET;
+    // this.lstValLastTime = todayET;
 
     // https://stackoverflow.com/questions/563406/add-days-to-javascript-date
     const yesterDayET = new Date(todayET);
@@ -282,7 +288,7 @@ export class BrAccViewerComponent implements AfterViewInit {
         this.mktBrLstClsStr = msgObjStr;
         this.mktBrLstClsStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.mktBrLstClsObj = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.lstValObj, this.lstValLastTime,this.uiMktBar);
+        BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.lstValObj, this.lstValLastTime, this.uiMktBar);
         return true;
       case 'BrAccViewer.Handshake':  // this is the least frequent message. Should come last.
         console.log('BrAccViewer.Handshake:' + msgObjStr);
@@ -298,7 +304,7 @@ export class BrAccViewerComponent implements AfterViewInit {
   }
 
   public webSocketLstValArrived(p_lstValObj: Nullable<AssetLastJs[]>) { // real time price data
-    // this.lstValLastTime = new Date();
+    this.lstValLastTime = new Date();
     this.lstValObj = p_lstValObj;
     BrAccViewerComponent.updateMktBarUi((this.handshakeObj == null) ? null : this.handshakeObj.marketBarAssets, this.mktBrLstClsObj, this.lstValObj, this.lstValLastTime,this.uiMktBar);
     BrAccViewerComponent.updateSnapshotTableWithRtNav(this.lstValObj, this.uiSnapTable);
@@ -315,54 +321,55 @@ export class BrAccViewerComponent implements AfterViewInit {
     }
   }
 
-  static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, priorCloses: Nullable<AssetPriorCloseJs[]>, lastRt: Nullable<AssetLastJs[]>, lstValLastTime, uiMktBar: UiMktBarItem[]) {
-     // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
-    if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(priorCloses) && priorCloses.length > 0  && Array.isArray(lastRt) && lastRt.length > 0))
-     return;
-    
-    for (const item of marketBarAssets) {
-      let uiItem: UiMktBarItem;
-      const existingUiCols = uiMktBar.filter((r) => r.sqTicker === item.sqTicker);
-      if (existingUiCols.length === 0) {
-        uiItem = new UiMktBarItem();
-        uiItem.assetId = item.assetId;
-        uiItem.sqTicker = item.sqTicker;
-        uiItem.symbol = item.symbol;
-        uiItem.name = item.name;
-        uiMktBar.push(uiItem);
-      } else if (existingUiCols.length === 1) {
-        uiItem = existingUiCols[0];
-      } else {
-        console.warn(`Received ticker '${item.sqTicker}' has duplicates in UiArray. This might be legit if both VOD.L and VOD wants to be used. ToDo: Differentiation based on assetId is needed.`,"background: #222; color: red");
-        uiItem = existingUiCols[0];
-      }
+  static updateMktBarUi(marketBarAssets: Nullable<AssetJs[]>, priorCloses: Nullable<AssetPriorCloseJs[]>, lastRt: Nullable<AssetLastJs[]>, lstValLastTime: Date, uiMktBar: UiMktBar) {
+    // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
+   if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(priorCloses) && priorCloses.length > 0  && Array.isArray(lastRt) && lastRt.length > 0))
+    return;
+  
+   uiMktBar.lstValLastRefreshTime = lstValLastTime;
+   console.log("The lastTime is :", uiMktBar.lstValLastRefreshTime);
+   const timestampDate = new Date ( uiMktBar.lstValLastRefreshTime);
+   const timeAgoMsec = Date.now()- timestampDate.getTime();
+   const timeAgoMSecStr = SqNgCommonUtilsTime.ConvertMilliSecToTime(timeAgoMsec);
+   uiMktBar.lstValLastRefreshTimeStr = timeAgoMSecStr.substring(4,6) + 'm ' + timeAgoMSecStr.substring(8,10) + 's ago';
+   console.log("The lastTime string is :", uiMktBar.lstValLastRefreshTimeStr);
+   console.log("The longTime is :" ,uiMktBar.lstValLastRefreshTimeStr.substring(19,21) + 'm ' + uiMktBar.lstValLastRefreshTimeStr.substring(22,24) + 's ago' );
+   for (const item of marketBarAssets) {
+     let uiItem = new UiMktBarItem();
+    const existingUiCols = uiMktBar.poss.filter((r) => r.sqTicker === item.sqTicker);
+    if (existingUiCols.length === 0) {
+      uiItem.assetId = item.assetId;
+      uiItem.sqTicker = item.sqTicker;
+      uiItem.symbol = item.symbol;
+      uiItem.name = item.name;
+      uiMktBar.poss.push(uiItem);
+      
+    } else if (existingUiCols.length === 1) {
+      uiItem = existingUiCols[0];
+    } else {
+      console.warn(`Received ticker '${item.sqTicker}' has duplicates in UiArray. This might be legit if both VOD.L and VOD wants to be used. ToDo: Differentiation based on assetId is needed.`,"background: #222; color: red");
+      uiItem = existingUiCols[0];
     }
-    for (const nonRt of priorCloses) {
-      const existingUiCols = uiMktBar.filter((r) => r.assetId === nonRt.assetId);
-      if (existingUiCols.length === 0) {
-        console.warn(`Received assetId '${nonRt.assetId}' is not found in UiArray.`);
-        break;
-      }
-      const uiItem = existingUiCols[0];
-      uiItem.priorClose = nonRt.priorClose;
-    }
-    for (const rtItem of lastRt) {
-      const existingUiItems = uiMktBar.filter((r) => r.assetId === rtItem.assetId);
-      if (existingUiItems.length === 0)
-        continue;
-      const uiItem = existingUiItems[0];
-      uiItem.pctChg = (rtItem.last - uiItem.priorClose) / uiItem.priorClose;
-    }
-    let uilstValItem: UiMktBarItem;
-    uilstValItem = new UiMktBarItem();
-    uilstValItem.lstValTime = lstValLastTime;
-    // const l1 = lstValLastTime;
-    // console.log("The longTime is :" , l1.substring(16,18) + 'h ' + l1.substring(19,21) + 'm ' + l1.substring(22,24) + 's ago' );
-    console.log("The lstValTime is : ", uilstValItem.lstValTime);
-    
   }
+  for (const nonRt of priorCloses) {
+    const existingUiCols = uiMktBar.poss.filter((r) => r.assetId === nonRt.assetId);
+    if (existingUiCols.length === 0) {
+      console.warn(`Received assetId '${nonRt.assetId}' is not found in UiArray.`);
+      break;
+    }
+    const uiItem = existingUiCols[0];
+    uiItem.priorClose = nonRt.priorClose;
+  }
+  for (const rtItem of lastRt) {
+    const existingUiItems = uiMktBar.poss.filter((r) => r.assetId === rtItem.assetId);
+    if (existingUiItems.length === 0)
+      continue;
+    const uiItem = existingUiItems[0];
+    uiItem.pctChg = (rtItem.last - uiItem.priorClose) / uiItem.priorClose;
+  }  
+}
 
-  static updateSnapshotTable(brAccSnap : Nullable<BrAccSnapshotJs>, sortColumn : string, sortDirection : string, uiSnapTable : UiSnapTable) {
+  static updateSnapshotTable(brAccSnap: Nullable<BrAccSnapshotJs>, sortColumn: string, sortDirection: string, uiSnapTable: UiSnapTable) {
     if (brAccSnap === null || brAccSnap.poss === null)
       return;
     uiSnapTable.assetId = brAccSnap.assetId;
@@ -371,7 +378,7 @@ export class BrAccViewerComponent implements AfterViewInit {
     uiSnapTable.snapLastUpateTimeLoc = new Date(brAccSnap.lastUpdate);
     const timestampDate = new Date (brAccSnap.lastUpdate);
     const timeAgoMsec = Date.now()- timestampDate.getTime();
-    const timeAgoMSecStr = SqNgCommonUtilsTime.ConvertMilliSecToTime(timeAgoMsec.toString());
+    const timeAgoMSecStr = SqNgCommonUtilsTime.ConvertMilliSecToTime(timeAgoMsec);
     uiSnapTable.snapLastUpdateTimeAgoStr = timeAgoMSecStr.substring(0,2) + 'h ' + timeAgoMSecStr.substring(4,6) + 'm ' + timeAgoMSecStr.substring(8,10) + 's ago';
     uiSnapTable.totalCashValue = brAccSnap.totalCashValue;
     uiSnapTable.initialMarginReq = brAccSnap.initMarginReq;
@@ -488,23 +495,21 @@ export class BrAccViewerComponent implements AfterViewInit {
     
   }
 
-  static updateSnapshotTableWithRtNav(p_lstValObj: Nullable<AssetLastJs[]>, uiSnapTable : UiSnapTable) {
+  static updateSnapshotTableWithRtNav(p_lstValObj: Nullable<AssetLastJs[]>, uiSnapTable: UiSnapTable) {
     if (!(Array.isArray(p_lstValObj) && p_lstValObj.length > 0))
      return;
     for (const item of p_lstValObj) {
       if (item.assetId === uiSnapTable.assetId) {
         uiSnapTable.netLiquidation = item.last;
-        console.log("The NetLiquidation value is: ", uiSnapTable.netLiquidation);
         const timestampDate = new Date (item.lastUtc);
         const timeAgoMsec = SqNgCommonUtilsTime.ConvertMilliSecToTime(Date.now()- timestampDate.getTime()).toString();
-        console.log("The milli sec to time is: ", SqNgCommonUtilsTime.ConvertMilliSecToTime(timeAgoMsec));
         uiSnapTable.rtPriceLastUpdate = timeAgoMsec.substring(0,2) + 'h ' + timeAgoMsec.substring(4,6) + 'm ' + timeAgoMsec.substring(8,10) + 's ago';
         console.log("The RealtimePrice for LastUpdate is :" ,uiSnapTable.rtPriceLastUpdate);
     }
   }
 }
 
-  static updateUiWithHist(histObj : Nullable<HistJs[]>, uiHistData : UiHistData[]) {
+  static updateUiWithHist(histObj: Nullable<HistJs[]>, uiHistData: UiHistData[]) {
     if (histObj == null)
        return;
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
@@ -544,7 +549,7 @@ export class BrAccViewerComponent implements AfterViewInit {
         let brAccItem = new UiBrcAccChrtval();
         var dateStr : string = uiHistItem.histDates[i];
         brAccItem.chartDate = new Date (dateStr.substring(0,4) + '-' + dateStr.substring(4,6) + '-' + dateStr.substring(6,8));
-        brAccItem.chrtSdaClose = (uiHistItem.histSdaCloses[i]); // divided by thousand to show data in K (Ex: 20,000 = 20K)
+        brAccItem.chrtSdaClose = (uiHistItem.histSdaCloses[i])/1000; // divided by thousand to show data in K (Ex: 20,000 = 20K)
         uiHistItem.brAccChrtActuals.push(brAccItem);
       }
       uiHistData.push(uiHistItem);
@@ -552,7 +557,7 @@ export class BrAccViewerComponent implements AfterViewInit {
      BrAccViewerComponent.processUiWithHistChrt(uiHistData);
   }
     
-  static processUiWithHistChrt(uiHistData : UiHistData[]) {
+  static processUiWithHistChrt(uiHistData: UiHistData[]) {
 
     d3.selectAll("#my_dataviz > *").remove();
     var margin = {top: 10, right: 30, bottom: 30, left: 60 };

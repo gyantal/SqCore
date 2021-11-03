@@ -102,11 +102,23 @@ export class SqNgCommonUtilsTime implements OnInit {
     return ((p_dateFrom === minDate || p_dateTo === minDate) ? 'NaN' : (p_dateTo.getTime() - p_dateFrom.getTime()) + 'ms');
   }
 
-  public static ConvertMilliSecToTime(milli) {
-    const milliseconds = milli % 1000;
-    const seconds = Math.floor((milli / 1000) % 60);
-    const minutes = Math.floor((milli / (60 * 1000)) % 60);
-    const hours = Math.floor((milli / (3600 * 1000)) % 60);
-    return "0" + hours +"h"+ ":" + minutes + "m"+ ":" + seconds + "s" + "." + milliseconds;
+  // public static ConvertMilliSecToTimeStr(totalMilliSec: number, abbreviate: boolean): string {
+  public static ConvertMilliSecToTime(totalMilliSec: number) {
+
+    let milliseconds = totalMilliSec % 1000;
+    let seconds = Math.floor((totalMilliSec / 1000) % 60).toString();
+    let minutes = Math.floor((totalMilliSec / (60 * 1000)) % 60).toString();
+    let hours = Math.floor((totalMilliSec / (3600 * 1000)) % 60).toString();
+
+    if (hours.length < 2) hours = '0' + hours;
+    if (minutes.length < 2) minutes= '0' + minutes;
+    if (seconds.length < 2) seconds = '0' + seconds;
+
+    if (hours == '0') {
+      return + minutes + "m" + ":" + seconds + "s" + "." + milliseconds;
+    } else if (hours == '0' && minutes == '0') {
+      return + seconds + "s" + "." + milliseconds;
+    } else
+     return  hours + "h" + ":" + minutes + "m" + ":" + seconds + "s" + "." + milliseconds;
   }
 }
