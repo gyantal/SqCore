@@ -15,17 +15,6 @@ MarketBar
         </span>
     </span>
     <span>{{uiMktBar.lstValLastRefreshTimeStr}}</span>
-    <!-- <span *ngFor="let listitem of uiMktBar let i=index" class="tooltipCell">
-        <span *ngIf="i==0">
-         ({{listitem.lstValTime |date:'mm:ss'}})
-        </span>
-        <div class="tooltipSnap">
-            <div class="snapshot">
-                Profit is calculated as <br>a sum of the table cells 
-            </div>
-        </div>
-    </span>    -->
-    
 </span>
 <hr>
 <div>
@@ -162,16 +151,25 @@ MarketBar
                         <select [(ngModel)] = "yrSelectionSelected">
                             <option *ngFor="let item of yrSelectionChoices" [value]="item">{{item}}</option>YTD
                         </select>
-                        <div>StartDate: <input type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="lookbackStartETstr"></div>
-                        <div>EndDate: <input type="date" id="EndDate" name="EndDate" min="01-01-1975" [(ngModel)]="lookbackEndETstr"></div>
-                        <!-- {{uiHistData[0].periodMaxDD}}   second:  {{uiHistData[1].periodMaxDD}} -->
-                        <!-- {{uiHistDataMisc.AggMaxDDStr}} -->
-                        <div *ngFor="let item of uiHistData let i = index">MaxDD(NAV/BnchMrk):
-                            <span *ngIf="i==0">{{i}}{{item.periodMaxDD | percent:'1.2'}}</span>
-                            <span *ngIf="i==1">{{i}}{{item.periodMaxDD | percent:'1.2'}}</span> </div>
-                        <div *ngFor="let item of uiHistData">Return(NAV/BnchMrk): {{item.periodReturn | percent:'1.2'}}</div>
-                        <div>UiHistDataLength:{{uiHistData.length}}</div>
-                       
+                        <div id="moreDetailsPartitions">StartDate: <input type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="lookbackStartETstr"></div>
+                        <div id="moreDetailsPartitions">EndDate: <input type="date" id="EndDate" name="EndDate" min="01-01-1975" [(ngModel)]="lookbackEndETstr"></div>
+                        <div id="moreDetailsPartitions">BenchMark:
+                            <select>
+                                <option *ngFor="let item of uiMktBar.poss" [value]="item">{{item.sqTicker}}</option>
+                            </select>
+                        </div>
+                        <div id="moreDetailsPartitions">MaxDD<span id="notImpInfo">(NAV/BnchMrk):</span>
+                            <span id="histBchMrkDetails" *ngFor="let item of uiHistData;last as isLast">
+                              {{item.periodMaxDD | percent:'1.2'}}
+                              <ng-container *ngIf="!isLast">/</ng-container>
+                            </span>
+                        </div>
+                        <div id="moreDetailsPartitions">Return<span id="notImpInfo">(NAV/BnchMrk):</span>
+                            <span id="histBchMrkDetails" *ngFor="let item of uiHistData;last as isLast">
+                              {{item.periodReturn | percent:'1.2'}}
+                              <ng-container *ngIf="!isLast">/</ng-container>
+                            </span>
+                        </div>
                     </div>
                      <div id="my_dataviz"></div>
                    </span>

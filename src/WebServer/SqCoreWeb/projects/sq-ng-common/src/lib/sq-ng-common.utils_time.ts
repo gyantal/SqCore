@@ -103,9 +103,9 @@ export class SqNgCommonUtilsTime implements OnInit {
   }
 
   // public static ConvertMilliSecToTimeStr(totalMilliSec: number, abbreviate: boolean): string {
-  public static ConvertMilliSecToTime(totalMilliSec: number) {
+  public static ConvertMilliSecToTimeStr(totalMilliSec: number): string {
 
-    let milliseconds = totalMilliSec % 1000;
+    // let milliseconds = totalMilliSec % 1000;
     let seconds = Math.floor((totalMilliSec / 1000) % 60).toString();
     let minutes = Math.floor((totalMilliSec / (60 * 1000)) % 60).toString();
     let hours = Math.floor((totalMilliSec / (3600 * 1000)) % 60).toString();
@@ -114,11 +114,11 @@ export class SqNgCommonUtilsTime implements OnInit {
     if (minutes.length < 2) minutes= '0' + minutes;
     if (seconds.length < 2) seconds = '0' + seconds;
 
-    if (hours == '0') {
-      return + minutes + "m" + ":" + seconds + "s" + "." + milliseconds;
-    } else if (hours == '0' && minutes == '0') {
-      return + seconds + "s" + "." + milliseconds;
-    } else
-     return  hours + "h" + ":" + minutes + "m" + ":" + seconds + "s" + "." + milliseconds;
+    if (hours == "00" && minutes == "00") {
+      return seconds + "s ago";
+    } else if (hours == "00") {
+      return minutes + "m" + " " + seconds + "s ago";
+    } else return hours + "h" + " " + minutes + "m" + " " + seconds + "s ago";
+
   }
 }

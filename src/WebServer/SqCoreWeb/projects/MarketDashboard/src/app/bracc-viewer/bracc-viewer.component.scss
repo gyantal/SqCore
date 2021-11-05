@@ -160,6 +160,10 @@
   float: left;
   width: 25%;
 }
+#histBchMrkDetails {
+  font-weight: bold;
+  font-size: 1.2rem
+}
 
 // Table stylings
 .brAccSnapTbl {
@@ -217,7 +221,7 @@ thead tr :hover {
 }
 ::ng-deep .line2 {
   fill: none;
-  stroke: #ffab00;
+  stroke: #0000ff;
   stroke-width: 0.5;
 }
 
