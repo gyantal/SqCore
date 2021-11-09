@@ -348,6 +348,7 @@ namespace SqCoreWeb
             }
         }
 
+        // On the SqCore Linux server, the London user browser RefreshSnapshot-latency: only 380ms. That includes getting message at server + 2 IbUpdateBrAccount() for DC.IM, DC.DB, +  RT price from YF for 120 stocks + And sending back data to client. Pretty fast with all the cleverness.
         private void BrAccViewerRefreshSnapshot()
         {
             // Step 1: Force reload of poss from IB Gateways.

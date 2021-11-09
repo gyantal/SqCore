@@ -11,7 +11,7 @@ using IBApi;
 
 namespace FinTechCommon
 {
-    // - Created a Google Calendar item:
+    // - Created a Google Calendar item (Annually on January 5):
     // Subject: SqCore Maintenance: Update deposit/withdrawal & daily NAV history annually in RedisDb
     // Text: "
     // SqCore saves daily NAV values that it tries to query every day at 16:00 ET (but it is not accurate)  

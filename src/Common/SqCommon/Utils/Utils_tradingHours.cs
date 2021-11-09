@@ -158,16 +158,16 @@ namespace SqCommon
                 string holidayTable = webPage.Substring(iTHead, iTBody - iTHead);
 
                 
-                int iFootnoteStart = webPage.IndexOf(">* Each", iTBody, StringComparison.CurrentCultureIgnoreCase);   // 2017-02-08: a ">*Each" got a space as ">* Each"
+                int iFootnoteStart = webPage.IndexOf("<div", iTBody, StringComparison.CurrentCultureIgnoreCase);   // 2017-02-08: a ">*Each" got a space as ">* Each"
                 int iFootnoteEnd = webPage.IndexOf(@"</div>", iFootnoteStart);// in 2017: Footnote section is was Before the second-holiday-table in the html source, in 2018: no
                 string footnote = webPage.Substring(iFootnoteStart, iFootnoteEnd - iFootnoteStart);
 
                 int year1 = -1, year2 = -1;
-                var trs = holidayTable.Split(new string[] { "<tr>\n  ", "<tr>", "</tr>\n  ", "</tr>" }, StringSplitOptions.RemoveEmptyEntries);
+                var trs = holidayTable.Split(new string[] { "<tr>\n  ", "<tr>", "<tr style=", "</tr>\n  ", "</tr>" }, StringSplitOptions.RemoveEmptyEntries);
                 var headerRow = trs[1];
-                var tdsHeader = headerRow.Split(new string[] { @"<td>", @"</td>" }, StringSplitOptions.RemoveEmptyEntries);
-                year1 = Int32.Parse(tdsHeader[3]);
-                year2 = Int32.Parse(tdsHeader[5]);
+                var tdsHeader = headerRow.Split(new string[] { @"<th>", @"</th>" }, StringSplitOptions.RemoveEmptyEntries);
+                year1 = Int32.Parse(tdsHeader[2]);
+                year2 = Int32.Parse(tdsHeader[3]);
                 //year3 = Int32.Parse(tdsHeader[7]);  // there is year3 too, but we don't need it in VBroker or healthmonitor. So, just ignore them
 
                 for (int i = 2; i < trs.Length; i++)
@@ -177,8 +177,8 @@ namespace SqCommon
 
                     var tds = trs[i].Split(new string[] { @"<th>", @"</th>", @"<td>", @"</td>" }, StringSplitOptions.RemoveEmptyEntries);
                     //string holidayName = tds[1];
-                    ProcessHolidayCellInET(tds[3].Trim(), year1, footnote, holidays1);
-                    ProcessHolidayCellInET(tds[5].Trim(), year2, footnote, holidays2);
+                    ProcessHolidayCellInET(tds[1].Trim(), year1, footnote, holidays1);
+                    ProcessHolidayCellInET(tds[2].Trim(), year2, footnote, holidays2);
                     //ProcessHolidayCellInET(tds[5], year2, footnote, holidays2);   // there is year3 too, but we don't need it in VBroker or healthmonitor. So, just ignore them
                 }
 
@@ -209,7 +209,7 @@ namespace SqCommon
             //< td > December 25(Observed December 26) ***</ td >  this has both Observed and a half-holiday too
 
             // at first 
-            string cellTrimmedLwr = p_td.Trim().ToLower();
+            p_td = p_td.Trim();
             if (p_td.IndexOf('*') != -1)    // read the footnotes; there will be a half-holiday on the next or the previous day
             {
                 // "**Each market will close early at 1:00 p.m. on Friday, November 27, 2015 and Friday, November 25, 2016 (the day after Thanksgiving)"
@@ -236,24 +236,27 @@ namespace SqCommon
                 string explanation = p_footnote.Substring(indExplanation, indExplanationEnd - indExplanation);
 
                 int indTimeET = explanation.IndexOf("Each market will close early at ");
-                int indTimeET1 = indTimeET + "Each market will close early at ".Length;
-                int indTimeET2 = explanation.IndexOf(':', indTimeET1);
-                int indTimeET3 = explanation.IndexOf("p.m.", indTimeET2);
-                string earlyCloseHourStr = explanation.Substring(indTimeET1, indTimeET2 - indTimeET1);
-                string earlyCloseMinStr = explanation.Substring(indTimeET2 + 1, indTimeET3 - indTimeET2 - 1);
-                int earlyCloseHour = Int32.Parse(earlyCloseHourStr) + 12; //"1 p.m." means you have to add 12 hours to the recognized digit
-                int earlyCloseMin = Int32.Parse(earlyCloseMinStr);
+                if (indTimeET != -1)    // 2022-01-01: footnote is "* No holiday observed, pursuant to NYSE Rule 7.2, NYSE American Rule 7.2E, NYSE Arca Rules 7.2-O and 7.2-E, NYSE Chicago Rule 7.2, and NYSE National Rule 7.2."
+                {
+                    int indTimeET1 = indTimeET + "Each market will close early at ".Length;
+                    int indTimeET2 = explanation.IndexOf(':', indTimeET1);
+                    int indTimeET3 = explanation.IndexOf("p.m.", indTimeET2);
+                    string earlyCloseHourStr = explanation.Substring(indTimeET1, indTimeET2 - indTimeET1);
+                    string earlyCloseMinStr = explanation.Substring(indTimeET2 + 1, indTimeET3 - indTimeET2 - 1);
+                    int earlyCloseHour = Int32.Parse(earlyCloseHourStr) + 12; //"1 p.m." means you have to add 12 hours to the recognized digit
+                    int earlyCloseMin = Int32.Parse(earlyCloseMinStr);
 
-                // try to find the Year in the text, then wark backwards for 2 commas
-                int indYear = explanation.IndexOf(p_year.ToString(), indTimeET3);
-                int indFirstComma = explanation.LastIndexOf(',', indYear);
-                int indSecondComma = explanation.LastIndexOf(',', indFirstComma - 1);
-                string dateStr = explanation.Substring(indSecondComma + 1, (indFirstComma - 1) - indSecondComma);
-                DateTime halfDay = DateTime.Parse(dateStr + ", " + p_year.ToString());
-                // the holidays list is not ordered by date, because sometimes this halfDay comes before/after the holiday day
-                p_holidays.Add(new Tuple<DateTime, DateTime?>(halfDay, new DateTime(halfDay.Year, halfDay.Month, halfDay.Day, earlyCloseHour, earlyCloseMin, 0)));
+                    // try to find the Year in the text, then wark backwards for 2 commas
+                    int indYear = explanation.IndexOf(p_year.ToString(), indTimeET3);
+                    int indFirstComma = explanation.LastIndexOf(',', indYear);
+                    int indSecondComma = explanation.LastIndexOf(',', indFirstComma - 1);
+                    string dateStr = explanation.Substring(indSecondComma + 1, (indFirstComma - 1) - indSecondComma);
+                    DateTime halfDay = DateTime.Parse(dateStr + ", " + p_year.ToString());
+                    // the holidays list is not ordered by date, because sometimes this halfDay comes before/after the holiday day
+                    p_holidays.Add(new Tuple<DateTime, DateTime?>(halfDay, new DateTime(halfDay.Year, halfDay.Month, halfDay.Day, earlyCloseHour, earlyCloseMin, 0)));
+                }
 
-                p_td = p_td.Replace('*', ' ');  //remove ** if it is in the string, because Date.Parse() will fail on that
+                p_td = p_td.Replace('*', ' ').Trim();  //remove ** if it is in the string, because Date.Parse() will fail on that
             }
 
             // p_td can be "Friday, July 4 (Observed July 3)" or "Friday, July 3 (July 4 holiday observed)" or "Friday, July 3"
@@ -274,7 +277,7 @@ namespace SqCommon
                     dateHoliday = DateTime.Parse(p_td.Substring(0, indObservedStart) + ", " + p_year.ToString());
                 } else {
                     
-                    if (cellTrimmedLwr == "&#8212;" || cellTrimmedLwr == "—") // &#8212; = "—". This means that holiday is a weekend, therefore no need to store. In some cases, this missing "NewYearsEve" it can be deducted, in other cases, Independence Day, it can be any day, so better to not invent a non-existant holiday which is at the weekend and put it into DB.
+                    if (p_td == "&#8212;" || p_td == "—") // &#8212; = "—". This means that holiday is a weekend, therefore no need to store. In some cases, this missing "NewYearsEve" it can be deducted, in other cases, Independence Day, it can be any day, so better to not invent a non-existant holiday which is at the weekend and put it into DB.
                     {
                         // do nothing.
                     }
