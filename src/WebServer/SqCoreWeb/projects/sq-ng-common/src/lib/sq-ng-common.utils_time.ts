@@ -102,23 +102,50 @@ export class SqNgCommonUtilsTime implements OnInit {
     return ((p_dateFrom === minDate || p_dateTo === minDate) ? 'NaN' : (p_dateTo.getTime() - p_dateFrom.getTime()) + 'ms');
   }
 
-  // public static ConvertMilliSecToTimeStr(totalMilliSec: number, abbreviate: boolean): string {
   public static ConvertMilliSecToTimeStr(totalMilliSec: number): string {
 
     // let milliseconds = totalMilliSec % 1000;
     let seconds = Math.floor((totalMilliSec / 1000) % 60).toString();
     let minutes = Math.floor((totalMilliSec / (60 * 1000)) % 60).toString();
     let hours = Math.floor((totalMilliSec / (3600 * 1000)) % 60).toString();
+    let days = Math.floor((totalMilliSec/ (24 * 3600 * 1000)) % 60).toString();
 
+    if (days.length < 2) days = '0' + days;
     if (hours.length < 2) hours = '0' + hours;
     if (minutes.length < 2) minutes= '0' + minutes;
     if (seconds.length < 2) seconds = '0' + seconds;
 
-    if (hours == "00" && minutes == "00") {
-      return seconds + "s ago";
-    } else if (hours == "00") {
-      return minutes + "m" + " " + seconds + "s ago";
-    } else return hours + "h" + " " + minutes + "m" + " " + seconds + "s ago";
+    if (days == '00' && hours == '00' && minutes == '00' && seconds == '00') {
+      return '0s ago';
+    } else if (days == '00' && hours == '00' && minutes == '00') {
+      return seconds + 's ago';
+    } else if (days == '00' && hours == '00') {
+      return minutes + 'm' + ' ' + seconds + 's ago';
+    } else if (days == '00') {
+      return hours + 'h' + ' ' + minutes + 'm' + ' ' + seconds + 's ago';
+    } else return days + 'd' + hours + 'h' + ' ' + minutes + 'm' + ' ' + seconds + 's ago';
+
+  }
+
+  public static CheckInputDateIsValidOrNot(p_date: string) {
+
+    let isGoodDate = !(p_date === '');
+    const parts = p_date.split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    const day = parseInt(parts[2], 10);
+    if (year < 1980 || year > 2040) {
+      isGoodDate = false;
+    }
+    if (month < 1 || month > 12) {
+      isGoodDate = false;
+    }
+    if (day < 1 || day > 31) {
+      isGoodDate = false;
+    }
+    if (!isGoodDate) {
+      return;
+    }
 
   }
 }

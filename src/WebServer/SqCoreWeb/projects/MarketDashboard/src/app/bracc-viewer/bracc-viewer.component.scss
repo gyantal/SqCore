@@ -63,14 +63,14 @@
   }
   .brAccSnapTbl table{
     border-collapse: collapse;
-    color: black;
+    color: #000000;
   }
   .mktBarPositivePerf {
-    color: green;
+    color: #228B22;
     font-weight: bold;
   }
   .mktbarNegativePerf {
-    color: red;
+    color: #FF0000;
     font-weight: bold;
   }
  
@@ -82,7 +82,7 @@
   width: 30%;
   font-size: 1.4rem;
   padding: 0.1rem 0.05rem 0.1rem;
-  border: 0.01rem solid red;
+  border: 0.01rem solid #FF0000;
 }
 #liqVal{
   font-weight: bold;
@@ -103,7 +103,7 @@
 }
 /* Change background color of buttons on hover */
 .tab :hover {
-  border: .1rem solid green;
+  border: .1rem solid #228B22;
   backdrop-filter: blur(1rem);
   transform: skewX(-10deg);
   height: 2.5rem;
@@ -125,7 +125,7 @@
   padding: 0.004rem;
   font-size: 1.4rem;
   height: 125px;
-  border-right: 0.005rem solid blue;
+  border-right: 0.005rem solid #0000ff;
   padding-left: 4rem ;
   
 }
@@ -135,21 +135,21 @@
 }
 // tooltip maxRisked ngClass
 .red {
-  color: red;
+  color: #FF0000;
   font-size: 1.5rem;
 }
 .orange {
-  color: orange;
+  color: #FFA500;
 }
 .green {
-  color: green;
+  color: #228B22;
 }
 
 .ChartSumm{
   float: left;
   width: 70%;
   padding: 0.1rem 0.05rem 0.1rem;
-  border: 0.01rem solid red;
+  border: 0.01rem solid #FF0000;
   
 }
 #moreDetailsSum {
@@ -221,7 +221,7 @@ thead tr :hover {
 }
 ::ng-deep .line2 {
   fill: none;
-  stroke: #0000ff;
+  stroke: #964B00;
   stroke-width: 0.5;
 }
 

@@ -1,7 +1,7 @@
 BrAcc:
 <span >
     <select class="selectedNavBraccCl" [(ngModel)] = "navSelectionSelected" (change)="onNavSelectedChange($event)">
-        <option *ngFor="let item of uiNavSel" [value]="item">{{item}}</option>
+        <option *ngFor="let item of navSelection" [value]="item">{{item}}</option>
     </select>
 </span>
 MarketBar
@@ -20,7 +20,7 @@ MarketBar
 <div>
     <span>
     <div class="AccSumm">
-        <h4>Account Summary</h4>
+        <div id="plSum">Account Summary</div>
         <span id="plSum" class="tooltipCell">P&L Today
             <span id="notImpInfo">(Positions)</span> : 
             <span [ngClass]="{
@@ -57,7 +57,7 @@ MarketBar
                     </div>
                 </div>
             </span>
-            <span id="notImpInfo"> ({{uiSnapTable.rtPriceLastUpdate}})</span>
+            <span id="notImpInfo"> ({{uiSnapTable.navRtPriceLastUpdate}})</span>
         </div>
         <div id="plSum" class="tooltipCell">P&L Today
             <span id="notImpInfo"> (PriorNAV)</span> : 
@@ -148,28 +148,31 @@ MarketBar
                 <div >
                    <span>
                     <div class="chrtTimeFrameSelection">
-                        <select [(ngModel)] = "yrSelectionSelected">
-                            <option *ngFor="let item of yrSelectionChoices" [value]="item">{{item}}</option>YTD
+                        <select [(ngModel)] = "histPeriodSelectionSelected">
+                            <option *ngFor="let item of histPeriodSelection" [value]="item">{{item}}</option>YTD
                         </select>
-                        <div id="moreDetailsPartitions">StartDate: <input type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="lookbackStartETstr"></div>
-                        <div id="moreDetailsPartitions">EndDate: <input type="date" id="EndDate" name="EndDate" min="01-01-1975" [(ngModel)]="lookbackEndETstr"></div>
+                        <div id="moreDetailsPartitions">StartDate: <input type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr"></div>
+                        <div id="moreDetailsPartitions">EndDate: <input type="date" id="EndDate" name="EndDate" min="01-01-1975" [(ngModel)]="histPeriodEndETstr"></div>
                         <div id="moreDetailsPartitions">BenchMark:
-                            <select>
-                                <option *ngFor="let item of uiMktBar.poss" [value]="item">{{item.sqTicker}}</option>
+                            <select [(ngModel)] = "uiMktBar.poss" (keypress)="OnParameterInputKeypress($event)">
+                                <option *ngFor="let item of uiMktBar.poss" [value]="item">
+                                        {{item.sqTicker}}
+                                </option>
                             </select>
                         </div>
                         <div id="moreDetailsPartitions">MaxDD<span id="notImpInfo">(NAV/BnchMrk):</span>
-                            <span id="histBchMrkDetails" *ngFor="let item of uiHistData;last as isLast">
+                            <span id="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
                               {{item.periodMaxDD | percent:'1.2'}}
                               <ng-container *ngIf="!isLast">/</ng-container>
                             </span>
                         </div>
                         <div id="moreDetailsPartitions">Return<span id="notImpInfo">(NAV/BnchMrk):</span>
-                            <span id="histBchMrkDetails" *ngFor="let item of uiHistData;last as isLast">
+                            <span id="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
                               {{item.periodReturn | percent:'1.2'}}
                               <ng-container *ngIf="!isLast">/</ng-container>
                             </span>
                         </div>
+                        <!-- <ng-select [items] = "uiMktBar.poss" bindLabel="sqTicker" placeholder="select ticker" [(ngModel)]=""uiMktBar.poss"></ng-select> -->
                     </div>
                      <div id="my_dataviz"></div>
                    </span>
@@ -252,7 +255,7 @@ MarketBar
         <td></td>
         <td>{{item.gBeta | number:'1.1-2'}}</td>
         <td>{{item.betaDltAdj | number}}</td>
-        <td>{{item.accId}}</td>
+        <td>{{item.accIdStr}}</td>
     </tr>
     </tbody>
 </table>

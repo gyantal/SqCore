@@ -323,6 +323,7 @@ namespace SqCoreWeb
                     Utils.Logger.Info("OnReceiveWsAsync_BrAccViewer(): changeLookback");
                     // m_lastLookbackPeriodStr = msgObjStr;
                     // SendHistoricalWs();
+                    BrAccViewerSendHist();
                     return true;
                 case "BrAccViewer.ChangeNav":
                     Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): changeNav to '{msgObjStr}'"); // DC.IM
