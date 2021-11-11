@@ -121,7 +121,7 @@ class UiSnapTable {
 }
 
 class UiAssetSnapPossPos {
-  public navAssetId = NaN;
+  public assetId = NaN;
   public sqTicker = '';
   public symbol = '';
   public name = '';
@@ -237,11 +237,12 @@ export class BrAccViewerComponent implements OnInit {
     this.histPeriodEndETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.histPeriodEndET);
 
     setInterval(() => { this.snapshotRefresh(); }, 60 * 60 * 1000); // forced Snapshot table refresh timer in every 60 mins
+    setInterval(() => { this.uiSnapTable.snapLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - (new Date (this.uiSnapTable.snapLastUpateTimeLoc)).getTime()); }, 1000);
     setInterval(() => { 
       if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
         this._parentWsConnection.send('BrAccViewer.RefreshMktBrPriorCloses:' + this.uiMktBar);
       }, 120 * 60 * 1000);
-    setInterval(() => { this.uiMktBar.lstValLastRefreshTimeStr; }, 2000);
+    setInterval(() => { this.uiMktBar.lstValLastRefreshTimeStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiMktBar.lstValLastRefreshTime.getTime()); }, 1000);
    }
      
   ngOnInit(): void {
@@ -261,7 +262,6 @@ export class BrAccViewerComponent implements OnInit {
         this.histStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.histObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateUiWithHist(this.histObj, this.uiHistData);
-        // this.onHistPeriodChange();
         return true;
       case 'BrAccViewer.MktBrLstCls':
         if (gDiag.wsOnFirstBrAccVwMktBrLstCls === minDate)
@@ -317,12 +317,8 @@ export class BrAccViewerComponent implements OnInit {
         uiItem.symbol = item.symbol;
         uiItem.name = item.name;
         uiMktBar.poss.push(uiItem);
-      } else if (existingUiCols.length >= 1) {
-        uiItem = existingUiCols[0];
-      } else {
+      } else if (existingUiCols.length >= 2)
         console.warn(`Received ticker '${item.sqTicker}' has duplicates in UiArray. This might be legit if both VOD.L and VOD wants to be used. ToDo: Differentiation based on assetId is needed.`,'background: #222; color: red');
-        uiItem = existingUiCols[0];
-      }
     }
     for (const nonRt of priorCloses) {
       const existingUiCols = uiMktBar.poss.filter((r) => r.assetId === nonRt.assetId);
@@ -364,7 +360,7 @@ export class BrAccViewerComponent implements OnInit {
 
     for (const possItem of brAccSnap.poss) {
       let uiPosItem = new UiAssetSnapPossPos();
-      uiPosItem.navAssetId = possItem.assetId;
+      uiPosItem.assetId = possItem.assetId;
       uiPosItem.sqTicker = possItem.sqTicker;
       uiPosItem.symbol = possItem.symbol;
       uiPosItem.name = possItem.name;
@@ -393,7 +389,7 @@ export class BrAccViewerComponent implements OnInit {
         uiSnapTable.longStockValue += item.mktVal;
       } else if (item.mktVal < 0) {
         uiSnapTable.shortStockValue += item.mktVal;
-      } else
+      }
       uiSnapTable.totalMaxRiskedN += Math.abs(item.mktVal);
     } 
     uiSnapTable.sumPlTodPct = uiSnapTable.sumPlTodVal / uiSnapTable.priorCloseNetLiquidation; // profit & Loss total percent change
@@ -544,6 +540,7 @@ export class BrAccViewerComponent implements OnInit {
     var yMax = d3.max(uiHistData[0].brAccChrtActuals, (d:{ chrtSdaClose: any; }) => d.chrtSdaClose);
     var yMin2 = d3.min(uiHistData[1].brAccChrtActuals, (d:{ chrtSdaClose: any; }) => d.chrtSdaClose );
     var yMax2 = d3.max(uiHistData[1].brAccChrtActuals, (d:{ chrtSdaClose: any; }) => d.chrtSdaClose );
+    //var yMax = Max(yMax1, yMax2);
      // range of data configuring
     var histChrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, width]);
     var histChrtScaleY = d3.scaleLinear().domain([yMin, yMax]).range([height, 0]);

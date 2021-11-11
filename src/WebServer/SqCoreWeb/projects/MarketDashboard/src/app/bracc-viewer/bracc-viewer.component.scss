@@ -165,6 +165,18 @@
   font-size: 1.2rem
 }
 
+.histPeriodDateCl {
+  border: 0 !important;
+  border-radius: .5rem;
+  background: #a5cde4;
+  color: blue;
+  height: 1.5rem;
+  font-size: 1.07rem;  // make a bit smaller
+  width: 10.8rem;  // 2021-05-19: 10.6 rem was needed to not cut off date "2021-05-18"
+  vertical-align: top;
+  margin-top: 0.25rem;
+}
+
 // Table stylings
 .brAccSnapTbl {
 width: 100%;

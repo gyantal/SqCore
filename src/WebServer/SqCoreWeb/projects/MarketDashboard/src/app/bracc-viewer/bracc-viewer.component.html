@@ -151,8 +151,8 @@ MarketBar
                         <select [(ngModel)] = "histPeriodSelectionSelected">
                             <option *ngFor="let item of histPeriodSelection" [value]="item">{{item}}</option>YTD
                         </select>
-                        <div id="moreDetailsPartitions">StartDate: <input type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr"></div>
-                        <div id="moreDetailsPartitions">EndDate: <input type="date" id="EndDate" name="EndDate" min="01-01-1975" [(ngModel)]="histPeriodEndETstr"></div>
+                        <div id="moreDetailsPartitions">StartDate: <input class = "histPeriodDateCl" type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr"></div>
+                        <div id="moreDetailsPartitions">EndDate: <input class = "histPeriodDateCl" type="date" id="EndDate" name="EndDate" min="01-01-1975" [(ngModel)]="histPeriodEndETstr"></div>
                         <div id="moreDetailsPartitions">BenchMark:
                             <select [(ngModel)] = "uiMktBar.poss" (keypress)="OnParameterInputKeypress($event)">
                                 <option *ngFor="let item of uiMktBar.poss" [value]="item">
@@ -174,7 +174,13 @@ MarketBar
                         </div>
                         <!-- <ng-select [items] = "uiMktBar.poss" bindLabel="sqTicker" placeholder="select ticker" [(ngModel)]=""uiMktBar.poss"></ng-select> -->
                     </div>
-                     <div id="my_dataviz"></div>
+                     <div id="my_dataviz">
+                     </div>
+                     <!-- <svg style="border: solid 1px blue">
+                        <rect x = 10 y =10 width = 20 height = 20></rect>
+                        <line x1="200" y1="50" x2="300" y2="50" stroke="blue">Tikcer</line>
+                        <line x1="200" y1="60" x2="300" y2="60" stroke ="blue" stroke-dasharray="5,5">BenchMark</line>
+                    </svg> -->
                    </span>
                 </div>
             </div>
