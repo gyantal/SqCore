@@ -19,8 +19,8 @@ namespace FinTechCommon
         public double TotalCashValue { get; set; } = double.NaN;
         public double InitMarginReq { get; set; } = double.NaN;
         public double MaintMarginReq { get; set; } = double.NaN;
-        public List<BrAccPos> AccPoss { get; set; } = new List<BrAccPos>();
-
+        public List<BrAccPos> AccPoss { get; set; } = new List<BrAccPos>();     // contains All contracts returned by IB (stocks, options, futures, cash)
+        public List<BrAccPos> AccPossUnrecognizedAssets { get; set; } = new List<BrAccPos>(); // precalculate unrecognized assets, so it doesn't have to be done every time there is a Dashboard.BrAccViewer refresh.
     }
 
 }

@@ -15,7 +15,7 @@ namespace BrokerCommon
 {
     public class AccInfo
     {
-        public string BrAccStr { get; set; } = String.Empty;
+        public string BrAccStr { get; set; } = string.Empty;
         public Gateway Gateway { get; set; }
         public List<BrAccSum> AccSums = new List<BrAccSum>();   // AccSummary
         public List<BrAccPos> AccPoss = new List<BrAccPos>();   // Positions

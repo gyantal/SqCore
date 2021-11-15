@@ -22,7 +22,7 @@ namespace SqCommon
     {
         public Severity Severity { get; set; }
         /// <summary> Example: "StrongAssert failed (severity=={0}): {1}" </summary>
-        public String Message { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
         //public StackTrace StackTrace { get; set; }
         public string StackTrace { get; set; } = string.Empty;
     }

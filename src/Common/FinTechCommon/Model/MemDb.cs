@@ -346,7 +346,7 @@ namespace FinTechCommon
             // at ReloadDbData(), we can decide to fully reload the BrokerNav, Poss from Brokers (maybe safer). But at the moment, we decided just to update the in-memory BrAccounts array with the new AssetIds
             foreach (var brAccount in BrAccounts)
             {
-                UpdateBrAccPosAssetIds(brAccount.AccPoss);
+                UpdateBrAccPosAssetIds(brAccount);
             }
 
             OnReloadAssetData_InitAndScheduleRtTimers();
@@ -390,8 +390,6 @@ namespace FinTechCommon
             if (accPoss == null)
                 return;
 
-            UpdateBrAccPosAssetIds(accPoss);
-
             brAccount.NetLiquidation = accSums.GetValue(AccountSummaryTags.NetLiquidation);
             brAccount.GrossPositionValue = accSums.GetValue(AccountSummaryTags.GrossPositionValue);
             brAccount.TotalCashValue = accSums.GetValue(AccountSummaryTags.TotalCashValue);
@@ -399,17 +397,18 @@ namespace FinTechCommon
             brAccount.MaintMarginReq = accSums.GetValue(AccountSummaryTags.MaintMarginReq);
             brAccount.AccPoss = accPoss;
             brAccount.LastUpdate = DateTime.UtcNow;
+
+            UpdateBrAccPosAssetIds(brAccount);
         }
 
-        public void UpdateBrAccPosAssetIds(List<BrAccPos> p_accPoss)
+        public void UpdateBrAccPosAssetIds(BrAccount p_brAccount)
         {
-            List<BrAccPos> memDbUnrecognizedAssets = new List<BrAccPos>();
-            foreach (BrAccPos pos in p_accPoss)
+            foreach (BrAccPos pos in p_brAccount.AccPoss)
             {
                 pos.AssetId = AssetId32Bits.Invalid;
                 if (pos.Contract.SecType != "STK")
                 {
-                    memDbUnrecognizedAssets.Add(pos);
+                    p_brAccount.AccPossUnrecognizedAssets.Add(pos);
                     continue;
                 }
 
@@ -417,12 +416,11 @@ namespace FinTechCommon
                 if (asset != null)
                     pos.AssetId = asset.AssetId;
                 else
-                    memDbUnrecognizedAssets.Add(pos);
+                    p_brAccount.AccPossUnrecognizedAssets.Add(pos);
             }
 
-            StringBuilder sb = new StringBuilder();
-            var unrecognizedExtendedSymbols = memDbUnrecognizedAssets.Select(r => r.Contract.SecType + ":" + r.Contract.Symbol).ToArray();
-            sb.Append($"UpdateBrAccPosAssetIds(). MemDb doesn't recognize these assets (#{unrecognizedExtendedSymbols.Length}): ");
+            StringBuilder sb = new StringBuilder($"MemDb.UpdateBrAccPosAssetIds(). Unrecognised IB contracts as valid SqCore assets (#{p_brAccount.AccPossUnrecognizedAssets.Count}): ");
+            var unrecognizedExtendedSymbols = p_brAccount.AccPossUnrecognizedAssets.Select(r => r.Contract.SecType + ":" + r.Contract.Symbol);
             sb.AppendLongListByLine(unrecognizedExtendedSymbols, ",", 1000, "");
             Utils.Logger.Warn(sb.ToString());
         }

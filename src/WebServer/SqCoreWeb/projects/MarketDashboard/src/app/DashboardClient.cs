@@ -88,7 +88,7 @@ namespace SqCoreWeb
 
     // these members has to be C# properties, not simple data member tags. Otherwise it will not serialize to client.
     class HandshakeMessage {    // General params for the aggregate Dashboard. These params should be not specific to smaller tools, like HealthMonitor, CatalystSniffer, QuickfolioNews
-        public String Email { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
         public int AnyParam { get; set; } = 55;
     }
 

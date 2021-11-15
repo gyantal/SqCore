@@ -49,7 +49,7 @@ namespace SqCoreWeb
     class BrAccViewerAccountSnapshotJs // this is sent to UI client
     {
         public uint AssetId { get; set; } = 0;
-        public String Symbol { get; set; } = string.Empty;
+        public string Symbol { get; set; } = string.Empty;
         public DateTime LastUpdate { get; set; } = DateTime.MinValue;
         public long NetLiquidation { get; set; } = long.MinValue;    // prefer whole numbers. Max int32 is 2B.
         public long PriorCloseNetLiquidation { get; set; } = 0; 
@@ -59,6 +59,7 @@ namespace SqCoreWeb
         public long MaintMarginReq { get; set; } = long.MinValue;
         public List<BrAccViewerPosJs> Poss { get; set; } = new List<BrAccViewerPosJs>();
 
+        public string ClientMsg { get; set; } = string.Empty;     // string can send many warnings at once. Separated by ";". Such as: "Info:...;Warning: ...;Warning: ...;Error:"
     }
 
     public partial class DashboardClient
@@ -187,6 +188,7 @@ namespace SqCoreWeb
             TsDateData<DateOnly, uint, float, uint> histData = MemDb.gMemDb.DailyHist.GetDataDirect();
 
             BrAccViewerAccountSnapshotJs? result = null;
+            List<BrAccPos> unrecognizedAssets = new List<BrAccPos>();
             foreach (GatewayId gwId in gatewayIds)  // AggregateNav has 2 Gateways
             {
                 BrAccount? brAccount = MemDb.gMemDb.BrAccounts.FirstOrDefault(r => r.GatewayId == gwId);
@@ -194,7 +196,7 @@ namespace SqCoreWeb
                     return null;
 
                 string gwIdStr = gwId.ToShortFriendlyString();
-                if (result == null)
+                if (result == null) // if this is the first gwID
                 {
                     result = new BrAccViewerAccountSnapshotJs()
                     {
@@ -215,10 +217,32 @@ namespace SqCoreWeb
                     result.MaintMarginReq += (long)brAccount.MaintMarginReq;
                     result.Poss.AddRange(GetBrAccViewerPos(brAccount.AccPoss, gwIdStr));
                 }
+                unrecognizedAssets.AddRange(brAccount.AccPossUnrecognizedAssets);
             }
 
             if (result != null)
             {
+                if (unrecognizedAssets.Count > 0)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    var unrecognizedStocks = unrecognizedAssets.Where(r => r.Contract.SecType == "STK").Select(r => r.Contract.SecType + "-" + r.Contract.Symbol).ToList(); // if there is a Where(), ToList() is faster than ToArray()
+                    if (unrecognizedStocks.Count > 0)
+                    {
+                        sb.Append($"Warning: Unrecognised stocks: (#{unrecognizedStocks.Count}): ");
+                        unrecognizedStocks.ForEach(r => sb.Append(r + ","));
+                    }
+
+                    var unrecognizedNonStocks = unrecognizedAssets.Where(r => r.Contract.SecType != "STK").Select(r => r.Contract.SecType + "-" + r.Contract.Symbol).ToList();
+                    if (unrecognizedNonStocks.Count > 0)
+                    {
+                        if (unrecognizedStocks.Count > 0)   // if there is a previous warning in StringBuilder. (Note: we don't want to use StringBuilder.Length because that will collapse the StringBuilder, and there is no IsEmpty method)
+                            sb.Append(";"); // separate many Warnings by ";"
+                        sb.Append($"Warning: Unrecognised non-stocks: (#{unrecognizedNonStocks.Count}): ");
+                        unrecognizedNonStocks.ForEach(r => sb.Append(r + ","));
+                    }
+                    result.ClientMsg += sb.ToString();
+                }
+
                 result.AssetId = m_braccSelectedNavAsset.AssetId;
                 // Asset navAsset = MemDb.gMemDb.AssetsCache.AssetsBySqTicker[navSqTicker];    // realtime NavAsset.LastValue is more up-to-date then from BrAccount (updated 1h in RTH only)
                 result.NetLiquidation = (long)MemDb.gMemDb.GetLastRtValue(m_braccSelectedNavAsset);
