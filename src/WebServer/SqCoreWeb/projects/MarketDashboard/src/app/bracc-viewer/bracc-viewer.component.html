@@ -20,15 +20,15 @@ MarketBar
 <div>
     <span>
     <div class="AccSumm">
-        <div id="plSum">Account Summary</div>
-        <span id="plSum" class="tooltipCell">P&L Today
-            <span id="notImpInfo">(Positions)</span> : 
+        <div class="plSum">Account Summary</div>
+        <span class="tooltipCell plSum">P&L Today
+            <span class="notImpInfo">(Positions)</span> : 
             <span [ngClass]="{
                 'mktBarPositivePerf' : uiSnapTable.sumPlTodVal > 0,
                 'mktbarNegativePerf' : uiSnapTable.sumPlTodVal < 0
                 }">{{uiSnapTable.sumPlTodVal | currency:'USD':'symbol':'1.0' }}
             </span>
-            <span id="notImpInfo" [ngClass]="{
+            <span class="notImpInfo" [ngClass]="{
                 'mktBarPositivePerf' : uiSnapTable.sumPlTodPct > 0,
                 'mktbarNegativePerf' : uiSnapTable.sumPlTodPct < 0
                 }">({{uiSnapTable.sumPlTodPct | percent:'1.2'}})
@@ -39,34 +39,34 @@ MarketBar
                 </div>
             </div>
         </span>
-        <span id="plSum" class="tooltipCell">
+        <span class="tooltipCell plSum">
             <div class="tooltipSnap">
                 <div class="snapshot">
                     Force reload snapshot table<br> (Realtime: NAV, #Pos, EstPrice)
                 </div>
             </div>
-            <span id="refresh"><img id="refresh" border='0' alt='YF' src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked($event)" width='15' height='15'></span>
+            <span><img id="refresh" border='0' alt='YF' src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked($event)" width='15' height='15'></span>
         </span>
-        <span id="notImpInfo">{{uiSnapTable.snapLastUpateTimeLoc | date:'H:mm'}} ({{uiSnapTable.snapLastUpdateTimeAgoStr}})</span>
+        <span class="notImpInfo">{{uiSnapTable.snapLastUpateTimeLoc | date:'H:mm'}} ({{uiSnapTable.snapLastUpdateTimeAgoStr}})</span>
         <div>
-            <span id="plSum" class="tooltipCell">NAV :
-                <span id="liqVal">{{uiSnapTable.netLiquidationStr | currency:'USD':'symbol':'1.0'}}</span>
+            <span class="tooltipCell plSum">NAV :
+                <span id="liqVal">{{uiSnapTable.netLiquidation | currency:'USD':'symbol':'1.0'}}</span>
                 <div class="tooltipSnap">
                     <div class="snapshot">
                         Total NetLiquidation<br>(with cash) 
                     </div>
                 </div>
             </span>
-            <span id="notImpInfo"> ({{uiSnapTable.navRtPriceLastUpdate}})</span>
+            <span class="notImpInfo"> ({{uiSnapTable.navRtPriceLastUpdate}})</span>
         </div>
-        <div id="plSum" class="tooltipCell">P&L Today
-            <span id="notImpInfo"> (PriorNAV)</span> : 
+        <div class="tooltipCell plSum">P&L Today
+            <span class="notImpInfo"> (PriorNAV)</span> : 
             <span [ngClass]="{
                 'mktBarPositivePerf' : uiSnapTable.plTodPrNav > 0,
                 'mktbarNegativePerf' : uiSnapTable.plTodPrNav < 0
                 }"> {{uiSnapTable.plTodPrNav | currency:'USD':'symbol':'1.0'}}
             </span>
-            <span id="notImpInfo" [ngClass]="{
+            <span class="notImpInfo" [ngClass]="{
                 'mktBarPositivePerf' : uiSnapTable.pctChgTodPrNav > 0,
                 'mktbarNegativePerf' : uiSnapTable.pctChgTodPrNav < 0
                 }"> ({{uiSnapTable.pctChgTodPrNav | percent:'1.2'}})
@@ -85,18 +85,18 @@ MarketBar
         </div>
     </div>
     <div class="ChartSumm">
-            <div [hidden]="tabPageVisibleIdx != 1" id="tab1">
+            <div [hidden]="tabPageVisibleIdx!= 1" id="tab1">
                 <div class="moreDetailsPartitions">
-                    <div>PriorNAV: <span id="moreDetailsSum">{{uiSnapTable.priorCloseNetLiquidation | number}}</span></div>
-                    <div>IB Total Cash: <span id="moreDetailsSum">{{uiSnapTable.totalCashValue | number}}</span></div>
-                    <div>IB Initial MarginReq: <span id="moreDetailsSum">{{uiSnapTable.initialMarginReq | number}}</span></div>
-                    <div>IB Maintenance MarginReq: <span id="moreDetailsSum">{{uiSnapTable.maintMarginReq | number}}</span></div>
-                    <div>IB Gross Position Value: <span id="moreDetailsSum">{{uiSnapTable.grossPositionValue | number}}</span></div>
+                    <div>PriorNAV: <span class="moreDetailsSum">{{uiSnapTable.priorCloseNetLiquidation | number}}</span></div>
+                    <div>IB Total Cash: <span class="moreDetailsSum">{{uiSnapTable.totalCashValue | number}}</span></div>
+                    <div>IB Initial MarginReq: <span class="moreDetailsSum">{{uiSnapTable.initialMarginReq | number}}</span></div>
+                    <div>IB Maintenance MarginReq: <span class="moreDetailsSum">{{uiSnapTable.maintMarginReq | number}}</span></div>
+                    <div>IB Gross Position Value: <span class="moreDetailsSum">{{uiSnapTable.grossPositionValue | number}}</span></div>
                 </div>
                 <div class="moreDetailsPartitions">
-                    <div>Number Of Positions: <span id="moreDetailsSum">{{uiSnapTable.numOfPoss}}</span></div>
+                    <div>Number Of Positions: <span class="moreDetailsSum">{{uiSnapTable.numOfPoss}}</span></div>
                     <div>Long Stock MktValue: 
-                        <span id="moreDetailsSum" class="tooltipCell">{{uiSnapTable.longStockValue | number}}*
+                        <span class="tooltipCell moreDetailsSum">{{uiSnapTable.longStockValue | number}}*
                             <div class="tooltipSnap">
                                 <div class="snapshot">
                                     !! Long VXX is here, although it is market bearish.<br>
@@ -105,13 +105,13 @@ MarketBar
                             </div>
                         </span>
                         </div>
-                    <div>Short Stock MktValue: <span id="moreDetailsSum">{{uiSnapTable.shortStockValue | number}}</span></div>
-                    <div>Call Option Delta Adjusted DelivValue: <span id="moreDetailsSum"></span></div>
-                    <div>Put Option Delta Adjusted DelivValue: <span id="moreDetailsSum"></span></div>
+                    <div>Short Stock MktValue: <span class="moreDetailsSum">{{uiSnapTable.shortStockValue | number}}</span></div>
+                    <div>Call Option Delta Adjusted DelivValue: <span class="moreDetailsSum"></span></div>
+                    <div>Put Option Delta Adjusted DelivValue: <span class="moreDetailsSum"></span></div>
                 </div>
                 <div class="moreDetailsPartitions" id="borderRemove">
                     <div class="tooltipCell">Max Risked estimate:
-                        <span id="moreDetailsSum"
+                        <span class="moreDetailsSum"
                         [ngClass]="{'green' : uiSnapTable.totalMaxRiskedLeverage < 1.3,
                                     'orange': uiSnapTable.totalMaxRiskedLeverage >= 1.3 || uiSnapTable.totalMaxRiskedLeverage <= 1.5,
                                     'red' : uiSnapTable.totalMaxRiskedLeverage > 1.5}"> 
@@ -151,23 +151,23 @@ MarketBar
                         <select [(ngModel)] = "histPeriodSelectionSelected">
                             <option *ngFor="let item of histPeriodSelection" [value]="item">{{item}}</option>YTD
                         </select>
-                        <div id="moreDetailsPartitions">StartDate: <input class = "histPeriodDateCl" type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr"></div>
-                        <div id="moreDetailsPartitions">EndDate: <input class = "histPeriodDateCl" type="date" id="EndDate" name="EndDate" min="01-01-1975" [(ngModel)]="histPeriodEndETstr"></div>
-                        <div id="moreDetailsPartitions">BenchMark:
-                            <select [(ngModel)] = "uiMktBar.poss" (keypress)="OnParameterInputKeypress($event)">
+                        <div>StartDate: <input class = "histPeriodDateCl" type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr"></div>
+                        <div>EndDate: <input class = "histPeriodDateCl" type="date" id="EndDate" name="EndDate" min="01-01-1975" [(ngModel)]="histPeriodEndETstr"></div>
+                        <div>BenchMark:
+                            <select [(ngModel)] = "uiMktBar.poss" (keypress)="OnHistBnchmkInputKeypress($event)">
                                 <option *ngFor="let item of uiMktBar.poss" [value]="item">
                                         {{item.sqTicker}}
                                 </option>
                             </select>
                         </div>
-                        <div id="moreDetailsPartitions">MaxDD<span id="notImpInfo">(NAV/BnchMrk):</span>
-                            <span id="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
+                        <div>MaxDD<span class="notImpInfo">(NAV/BnchMrk):</span>
+                            <span class="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
                               {{item.periodMaxDD | percent:'1.2'}}
                               <ng-container *ngIf="!isLast">/</ng-container>
                             </span>
                         </div>
-                        <div id="moreDetailsPartitions">Return<span id="notImpInfo">(NAV/BnchMrk):</span>
-                            <span id="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
+                        <div>Return<span class="notImpInfo">(NAV/BnchMrk):</span>
+                            <span class="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
                               {{item.periodReturn | percent:'1.2'}}
                               <ng-container *ngIf="!isLast">/</ng-container>
                             </span>

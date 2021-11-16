@@ -88,11 +88,11 @@
   font-weight: bold;
   text-shadow: .2rem .2rem .5rem #FFA500;
 }
-#plSum {
+.plSum {
   font-weight: bold;
   font-size: 1.6rem
 }
-#notImpInfo {
+.notImpInfo {
   font-size: 1.0rem
 }
 .AccSumm #refresh{
@@ -152,7 +152,7 @@
   border: 0.01rem solid #FF0000;
   
 }
-#moreDetailsSum {
+.moreDetailsSum {
   font-weight: bold;
   font-size: 1.4rem
 }
@@ -160,7 +160,7 @@
   float: left;
   width: 25%;
 }
-#histBchMrkDetails {
+.histBchMrkDetails {
   font-weight: bold;
   font-size: 1.2rem
 }
@@ -291,6 +291,7 @@ thead tr :hover {
 }
 .tooltipStck .tooltipSnap .snapshot{
   font-weight: bold;
+  font-size: 1.4rem;
 }
 .tooltipStck .tooltipSnap .smallTT{
   font-size: 0.2rem;
