@@ -76,7 +76,7 @@ namespace FinTechCommon
         // - the only good thing: in market-hours, RT prices are free, and very quick to obtain and batched.
 
         // use IEX only for High/Mid Freq, and only in RegularTrading. So, High/MidFreq OTH uses YF. But use it sparingly, so YF doesn't ban us.
-        RtFreqParam m_highFreqParam = new RtFreqParam() { RtFreq = RtFreq.HighFreq, Name="HighFreq", FreqRthSec = 4, FreqOthSec = 5 * 60 }; // high frequency (4sec RTH, 5min otherwise-OTH) refresh for a known fixed stocks (used by VBroker) and those which were queried in the last 5 minutes (by a VBroker-test)
+        RtFreqParam m_highFreqParam = new RtFreqParam() { RtFreq = RtFreq.HighFreq, Name="HighFreq", FreqRthSec = 5, FreqOthSec = 5 * 60 }; // high frequency (5sec RTH, 5min otherwise-OTH) refresh for a known fixed stocks (used by VBroker) and those which were queried in the last 5 minutes (by a VBroker-test)
         RtFreqParam m_midFreqParam = new RtFreqParam() { RtFreq = RtFreq.MidFreq, Name="MidFreq", FreqRthSec =  15 * 60, FreqOthSec = 40 * 60 }; // mid frequency (15min RTH, 40min otherwise) refresh for a know fixed stocks (DashboardClient_mktHealth)
         RtFreqParam m_lowFreqParam = new RtFreqParam() { RtFreq = RtFreq.LowFreq, Name="LowFreq", FreqRthSec = 30 * 60, FreqOthSec = 1 * 60 * 60 }; // with low frequency (30 RTH, 1h otherwise) we almost all stocks. Even if nobody access them.
 

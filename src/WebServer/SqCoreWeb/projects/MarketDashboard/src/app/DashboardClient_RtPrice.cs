@@ -98,7 +98,7 @@ namespace SqCoreWeb
         static Timer m_rtDashboardTimer = new System.Threading.Timer(new TimerCallback(RtDashboardTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
         static bool m_rtDashboardTimerRunning = false;
         static object m_rtDashboardTimerLock = new Object();
-        static int m_rtDashboardTimerFrequencyMs = 3000;    // as a demo go with 3sec, later change it to 5sec, do decrease server load.
+        static int m_rtDashboardTimerFrequencyMs = 5000;    // 3sec is too fast and unnecessary. 5 sec is fine. don't increase the server load too much.
 
 
         public void OnConnectedWsAsync_Rt()
