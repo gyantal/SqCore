@@ -110,7 +110,7 @@ namespace RedisManager
                     string userInputSub = string.Empty;
                     do
                     {
-                        userInputSub = DisplaySubMenuAndExecuteManageNavs();
+                        userInputSub = DisplaySubMenuAndExecute_ManageNavs();
                     } while (userInputSub != "UserChosenExit" && userInputSub != "ConsoleIsForcedToShutDown");
                    break;
                 case "9":
@@ -119,7 +119,7 @@ namespace RedisManager
             return string.Empty;
         }
 
-        static public string DisplaySubMenuAndExecuteManageNavs()
+        static public string DisplaySubMenuAndExecute_ManageNavs()
         {
             ColorConsole.WriteLine(ConsoleColor.Magenta, "---- Manage NAV assets...Create Redis backup!!!  ----");
             Console.WriteLine("1. Convert NAV asset CSV file to RedisDb");

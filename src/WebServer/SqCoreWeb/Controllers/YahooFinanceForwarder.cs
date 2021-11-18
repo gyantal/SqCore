@@ -52,7 +52,7 @@ using System.Threading.Tasks;
 namespace SqCoreWeb.Controllers
 {
     //[Route("api/[controller]")]
-    public class YahooFinanceForwarder : Controller
+    public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
     {
         public YahooFinanceForwarder()
         {

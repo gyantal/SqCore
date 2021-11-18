@@ -11,18 +11,14 @@ namespace FinTechCommon
 {
     public partial class Db
     {
-        public void TestRedisExecutePing()
+        public string TestRedisExecutePing()
         {
-            string cacheCommand = "PING"; // There are "server" commands, not a "database" (DB-0) commands, but redisDb.Execute() tricks it, and we can send Server commands as well.
-            Console.WriteLine("\nCache command  : " + cacheCommand);
-            Console.WriteLine("Cache response : " + m_redisDb.Execute(cacheCommand).ToString());
+            string command = "PING"; // There are "server" commands, not a "database" (DB-0) commands, but redisDb.Execute() tricks it, and we can send Server commands as well.
+            return "RedisDb response: " + m_redisDb.Execute(command).ToString();
         }
 
-        public void MirrorProdDb(string p_targetDb) // DEV1 or DEV2
+        public void DbCopy(int sourceDbIdx, int destDbIdx)    // copy DB-copyFromIdx to DB-copyToIdx
         {
-            int targetDbInd = Int32.Parse(p_targetDb.Last().ToString());    // DEV1 => 1, DEV2 => 2
-            if (m_redisDbInd != 0 || targetDbInd < 1 || targetDbInd > 9)
-                throw new ArgumentOutOfRangeException("MirrorProdDb() expects mirroring from DB-0 to DB index [1..9]");
             // KeyMove() from db0 to db1 is possible, but that will delete the key from source  // https://redis.io/commands/move
             // KeyMigrate() copy possible, but that is designed between 2 Servers, so it timeouts and never executes  // https://redis.io/commands/MIGRATE
             // https://github.com/StackExchange/StackExchange.Redis/issues/775
@@ -30,26 +26,41 @@ namespace FinTechCommon
             // Except if we iterate over all keys. But we should know how to Execute LUA commands on Redis server anyway (for backups)
             // Also, don't do the Dump/Restore way, because that downloads and uploads all data to between RedisClient and RedisServer. "COPY sq_user sq_user DB 1 REPLACE" works fully on the server.
 
-            var redisConnString = (Utils.RunningPlatform() == Platform.Windows) ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
-            var redisConn = RedisManager.GetConnection(redisConnString);    // get the main connection. Doesn't recreate a new connection.
-            EndPoint endPoint = redisConn.GetEndPoints().First();
-            var server = redisConn.GetServer(endPoint);
-            RedisKey[] keys = server.Keys(0, pattern: "*").ToArray();   // it automatically do KEYS or the more efficient SCAN commands in the background
-            foreach (var key in keys)
-            {
-                // Console.WriteLine($"key: {key.ToString()}");
-                // "SELECT 0"   // by default DB-0 is selected. You might need to use "SELECT 1" if copy from DB-1 to DB-0
-                // "COPY sq_user sq_user DB 1 REPLACE" works from redis-cli, but ArgumentOutOfRangeException if it is a command bigger than 23 binary bytes.
-                RedisResult result = m_redisDb.Execute("COPY", $"{key.ToString()}", $"{key.ToString()}", "DB", targetDbInd.ToString(), "REPLACE");  // https://redis.io/commands/copy
+            if (sourceDbIdx < 0 || sourceDbIdx > 15 || destDbIdx < 0 || destDbIdx > 15 || sourceDbIdx == destDbIdx)
+                throw new ArgumentOutOfRangeException("MirrorDb() expects idx from [0..15], and they should be different.");
 
-                // Dump to binary, download to client and Restore back
+            // 1. Create a new connection. Don't use the MemDb main connection, because we might want to switch to a non-default DB, like DB-1. It is safer this way. Don't tinker with the MemDb main connection
+            var redisConnString = (Utils.RunningPlatform() == Platform.Windows) ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
+            ConnectionMultiplexer newConn = ConnectionMultiplexer.Connect(redisConnString);
+            EndPoint endPoint = newConn.GetEndPoints().First();
+            var server = newConn.GetServer(endPoint);
+            var sourceDb = newConn.GetDatabase(sourceDbIdx);
+            var destDb = newConn.GetDatabase(destDbIdx);
+            // There are "server" commands, not a "database" (DB-0) commands, but redisDb.Execute() tricks it, and we can send Server commands as well.
+            // redisDb.Execute("select","1"); cannot be used to select DB-1. But that is OK. See https://github.com/StackExchange/StackExchange.Redis/issues/774
+            // "The database is specified when using GetDatabase, and is bound to that database instance. This is very deliberate for multi-threaded scenarios, so that two concurrent callers don't trip over each-other.
+
+            // 2. Delete all keys from target DB
+            Console.WriteLine($"Deleting all keys in db{destDbIdx}...by FLUSHDB");
+            RedisResult result = destDb.Execute("FLUSHDB");  // clears currently active database
+
+            // 3. Iterate keys over source DB
+            RedisKey[] keys = server.Keys(sourceDbIdx, pattern: "*").ToArray();   // it automatically do KEYS or the more efficient SCAN commands in the background
+            foreach (RedisKey key in keys)
+            {
+                Console.WriteLine($"Copying from db{sourceDbIdx} to db{destDbIdx}: key '{key.ToString()}'");
+                // "COPY sq_user sq_user DB 1 REPLACE" works from redis-cli, but ArgumentOutOfRangeException if it is a command bigger than 23 binary bytes.
+                result = sourceDb.Execute("COPY", $"{key.ToString()}", $"{key.ToString()}", "DB", $"{destDbIdx}", "REPLACE");  // https://redis.io/commands/copy   You need to use "SELECT 1" if copy from DB-1 to DB-0
+
+                // Option 2: Dump to binary, download to client and Restore back
                 // byte[] dump = m_redisDb.KeyDump(key);
                 // var redisDbTarget = redisConn.GetDatabase(1);
                 // redisDbTarget.KeyRestore(key, dump); // if it already exists, exception: 'BUSYKEY Target key name already exists.'
             }
         }
 
-        public void UpsertAssets(string p_targetDb) // DEV1 or DEV2
+        // "Redis Desktop Manager 0.9.3.817" is error prone when copying binary. Or when coping big text to Clipboard. Try to not use it.
+        public void UpsertAssets(int destDbIdx) // DB0 or DB1.  Developer is supposed to change the MemDb.ActiveDb to DB1, restart SqCore webserver. Change DB on this secondary DB1 first, and test if it works.
         {
             // AllAssets gSheet location: https://docs.google.com/spreadsheets/d/1gkZlvD5epmBV8zi-l0BbLaEtwScvhHvHOYFZ4Ah_MA4/edit#gid=898941432
             string gApiKey = Utils.Configuration["Google:GoogleApiKeyKey"];
@@ -199,7 +210,14 @@ namespace FinTechCommon
                 sbStock.Append("]");
                 StringBuilder sb = new StringBuilder("{");
                 sb.Append(sbCash).Append(sbCpair).Append(sbReEst).Append(sbNav).Append(sbPortf).Append(sbComp).Append(sbStock).Append("}");
-                m_redisDb.HashSet("memDb", "Assets", new RedisValue(sb.ToString()));
+
+                // Create a new connection. Don't use the MemDb main connection, because we might want to switch to a non-default DB, like DB-1. It is safer this way. Don't tinker with the MemDb main connection
+                var redisConnString = (Utils.RunningPlatform() == Platform.Windows) ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
+                ConnectionMultiplexer newConn = ConnectionMultiplexer.Connect(redisConnString);
+                var destDb = newConn.GetDatabase(destDbIdx);
+
+                destDb.HashSet("memDb", "Assets", new RedisValue(sb.ToString()));
+                Console.WriteLine($"Hash 'memDb.Assets' was created in db{destDbIdx}.");
 
                 // At the moment, the NAV's and StockAsset table's "Srv.LoadPrHist(Span)" column is not mirrored from gSheet to RedisDb automatically.
                 // We add these manually to RedisDb now. Not bad, because adding them manually forces us to think about whether we really need that extra stock consuming RAM and YF downloads.

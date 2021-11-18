@@ -15,7 +15,7 @@ using Microsoft.AspNetCore.Authorization;   // needed in PROD, not in DBG
 namespace SqCoreWeb.Controllers
 {
     //[Route("WebServer")]
-    public class WebServerController : Controller
+    public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
     {
         private readonly ILogger<Program> m_loggerKestrelStyleDontUse; // Kestrel sends the logs to AspLogger, which will send it back to NLog. It can be used, but practially never use it. Even though this is the official ASP practice. It saves execution resource to not use it. Also, it is more consistent to use Utils.Logger global everywhere in our code.
         private readonly IConfigurationRoot m_configKestrelStyleDontUse; // use the global Utils.Configuration instead. That way you don't have to pass down further in the call stack later

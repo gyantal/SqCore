@@ -41,7 +41,7 @@ namespace SqCoreWeb.Controllers
     }
 
     //--[Route("[controller]")]
-    public class ContangoVisualizerDataController : Controller
+    public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Controller
     {
 // #if !DEBUG
 //         [Authorize]

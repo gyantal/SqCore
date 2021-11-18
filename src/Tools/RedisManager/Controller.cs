@@ -52,7 +52,6 @@ namespace RedisManager
             }
 
             Console.WriteLine($"Average Ping time: {sumPingTimes / (double)nTries :0.00}ms");       // Ping takes 24 ms
-
         }
 
         //https://www.npgsql.org/doc/index.html

@@ -13,7 +13,7 @@ namespace SqCoreWeb.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class UserAccountController : Controller
+    public class UserAccountController : Microsoft.AspNetCore.Mvc.Controller
     {
         [HttpGet("[action]")]       // from the Route template "template: "{controller=Home}/{action=Index}/{id?}");" only action is used.
         public async Task Login(string? returnUrl) // (string returnUrl = "/")

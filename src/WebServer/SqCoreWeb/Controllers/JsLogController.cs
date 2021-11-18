@@ -33,7 +33,7 @@ namespace SqCoreWeb.Controllers
     }
 
     // Logger for Javascript code. This can notify Healthmonitor if Crash occurs in HTML JS in the client side.
-    public class JsLogController : Controller
+    public class JsLogController : Microsoft.AspNetCore.Mvc.Controller
     {
         // http://stackoverflow.com/questions/16996713/receiving-a-http-post-in-http-handler
         [HttpGet, HttpPost]

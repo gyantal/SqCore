@@ -55,7 +55,9 @@ namespace FinTechCommon
                 throw new Exception("Timer_Elapsed() received null object.");
             try
             {
+#if !DEBUG  // in general, only update daily final NAV data on the Linux server. Avoid to insert duplicated values coming from Dev machines.
                 Update((UpdateNavsParam)p_state);
+#endif
             }
             catch (System.Exception e)  // Exceptions in timers crash the app.
             {

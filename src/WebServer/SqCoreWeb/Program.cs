@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using SqCommon;
-using DbCommon;
 using FinTechCommon;
 using BrokerCommon;
 
@@ -152,12 +151,13 @@ namespace SqCoreWeb
 
             ColorConsole.WriteLine(ConsoleColor.Magenta, "----  (type and press Enter)  ----");
             Console.WriteLine("1. Say Hello. Don't do anything. Check responsivenes.");
-            Console.WriteLine("2. Show next schedule times (only earliest trigger)");
-            Console.WriteLine("3. Elapse Task: Overmind, Trigger1-MorningCheck");
-            Console.WriteLine("4. Elapse Task: Overmind, Trigger2-MiddayCheck");
-            Console.WriteLine("5. Elapse Task: WebsitesMonitor, Crawl SpIndexChanges");
-            Console.WriteLine("6. MemDb: Force Reload only HistData And SetNewTimer");
-            Console.WriteLine("7. MemDb: Reload All DbData Only If Changed");
+            Console.WriteLine("2. DB Admin (Redis, SQL) ...");
+            Console.WriteLine("3. Show next schedule times (only earliest trigger)");
+            Console.WriteLine("4. Elapse Task: Overmind, Trigger1-MorningCheck");
+            Console.WriteLine("5. Elapse Task: Overmind, Trigger2-MiddayCheck");
+            Console.WriteLine("6. Elapse Task: WebsitesMonitor, Crawl SpIndexChanges");
+            Console.WriteLine("7. MemDb: Force Reload only HistData And SetNewTimer");
+            Console.WriteLine("8. MemDb: Reload All DbData Only If Changed");
             Console.WriteLine("X. Elapse Task: VBroker-Sobek (First Simulation)");
             Console.WriteLine("X. Elapse Task: VBroker-UberVxx (First Simulation)");
             Console.WriteLine("9. Exit gracefully (Avoid Ctrl-^C).");
@@ -179,22 +179,68 @@ namespace SqCoreWeb
                     gLogger.Info("Hello. I am not crashed yet! :)");
                     break;
                 case "2":
-                    Console.WriteLine(SqTaskScheduler.gTaskScheduler.PrintNextScheduleTimes(false).ToString());
+                    string userInputSub = string.Empty;
+                    do
+                    {
+                        userInputSub = DisplaySubMenuAndExecute_DbAdmin();
+                    } while (userInputSub != "UserChosenExit" && userInputSub != "ConsoleIsForcedToShutDown");
                     break;
                 case "3":
-                    SqTaskScheduler.gTaskScheduler.TestElapseTrigger("Overmind", 0);
+                    Console.WriteLine(SqTaskScheduler.gTaskScheduler.PrintNextScheduleTimes(false).ToString());
                     break;
                 case "4":
-                    SqTaskScheduler.gTaskScheduler.TestElapseTrigger("Overmind", 1);
+                    SqTaskScheduler.gTaskScheduler.TestElapseTrigger("Overmind", 0);
                     break;
                 case "5":
-                    SqTaskScheduler.gTaskScheduler.TestElapseTrigger("WebsitesMonitor", 0);
+                    SqTaskScheduler.gTaskScheduler.TestElapseTrigger("Overmind", 1);
                     break;
                 case "6":
-                    Console.WriteLine((await MemDb.gMemDb.ForceReloadHistData(false)).ToString());
+                    SqTaskScheduler.gTaskScheduler.TestElapseTrigger("WebsitesMonitor", 0);
                     break;
                 case "7":
+                    Console.WriteLine((await MemDb.gMemDb.ForceReloadHistData(false)).ToString());
+                    break;
+                case "8":
                     Console.WriteLine((await MemDb.gMemDb.ReloadDbDataIfChanged(false)).ToString());
+                    break;
+                case "9":
+                    return "UserChosenExit";
+            }
+            return string.Empty;
+        }
+
+        static public string DisplaySubMenuAndExecute_DbAdmin()
+        {
+            ColorConsole.WriteLine(ConsoleColor.Magenta, "---- DbAdmin !!!  ----");
+            Console.WriteLine("1. RedisDb: Ping");
+            Console.WriteLine("2. RedisDb: Get Active DB index (Production: DB-0)");
+            Console.WriteLine("3. RedisDb: Mirror DB-i to DB-j");
+            Console.WriteLine("4. RedisDb: Upsert gSheet Assets to DB-?.(!!! See steps as comments in Controller.cs))");
+            Console.WriteLine("9. Exit to main menu.");
+            string userInput = string.Empty;
+            try
+            {
+                userInput = Console.ReadLine() ?? string.Empty;
+            }
+            catch (System.IO.IOException e) // on Linux, of somebody closes the Terminal Window, Console.Readline() will throw an Exception with Message "Input/output error"
+            {
+                gLogger.Info($"Console.ReadLine() exception. Somebody closes the Terminal Window: {e.Message}");
+                return "ConsoleIsForcedToShutDown";
+            }
+
+            switch (userInput)
+            {
+                case "1":
+                    Console.WriteLine(MemDb.gMemDb.TestRedisExecutePing());
+                    break;
+                case "2":
+                    Console.WriteLine($"MemDb.gMemDb.RedisDbInd: {MemDb.gMemDb.RedisDbIdx}. Active database is db{MemDb.gMemDb.RedisDbIdx}");
+                    break;
+                case "3":
+                    Controller.g_controller.RedisMirrorDb();
+                    break;
+                case "4":
+                    Controller.g_controller.UpsertgSheetAssets();
                     break;
                 case "9":
                     return "UserChosenExit";

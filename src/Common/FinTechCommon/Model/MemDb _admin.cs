@@ -10,14 +10,20 @@ namespace FinTechCommon
 {
     public partial class MemDb
     {
-        public void MirrorProdDb(string p_targetDb)
+        public int RedisDbIdx { get { return m_Db.RedisDbIdx; } }
+
+        public string TestRedisExecutePing()
         {
-            m_Db.MirrorProdDb(p_targetDb);
+            return m_Db.TestRedisExecutePing();
+        }
+        public void DbCopy(int sourceDbIdx, int destDbIdx)
+        {
+            m_Db.DbCopy(sourceDbIdx, destDbIdx);
         }
 
-        public void UpsertAssets(string p_targetDb)
+        public void UpsertAssets(int destDbIdx)
         {
-            m_Db.UpsertAssets(p_targetDb);
+            m_Db.UpsertAssets(destDbIdx);
         }
 
     }

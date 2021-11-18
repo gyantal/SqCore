@@ -191,7 +191,7 @@ namespace SqCoreWeb
                 { // File
 #if DEBUG
                     if (fi.Name.EndsWith(".BR"))
-                        throw new Exception("SqDev warning. Fix it.: The wwroot folder should contain only lowercase extensions for Linux conformity.");
+                        throw new Exception("SqDev warning. Fix it.: The wwwroot folder should contain only lowercase extensions for Linux conformity.");
 #endif
                     if (!fi.Name.EndsWith(".br"))   // don't add Brotli files to the list.
                         p_whitelistExact.Add(p_relPath + fi.Name);

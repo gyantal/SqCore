@@ -28,7 +28,8 @@ namespace FinTechCommon
         IDatabase m_redisDb;
          //public IDatabase? SqlDb { get; set; } = null;
 #pragma warning restore CS8618
-        int m_redisDbInd;
+        int m_redisDbIdx;
+        public int RedisDbIdx { get { return m_redisDbIdx; } }
         string m_lastUsersStr = string.Empty;
         string m_lastAssetsStr = string.Empty;
         string m_lastSrvLoadPrHistStr = string.Empty;
@@ -38,10 +39,10 @@ namespace FinTechCommon
             m_redisDb = p_redisDb;
         }
 
-        public Db(string p_redisConnString, int p_redisDbNum, IDatabase? p_sqlDb)
+        public Db(string p_redisConnString, int p_redisDbIdx, IDatabase? p_sqlDb)
         {
-            m_redisDbInd = p_redisDbNum;
-            m_redisDb = RedisManager.GetDb(p_redisConnString, m_redisDbInd);   // lowest level DB module
+            m_redisDbIdx = p_redisDbIdx;
+            m_redisDb = RedisManager.GetDb(p_redisConnString, m_redisDbIdx);   // lowest level DB module
         }
 
 
