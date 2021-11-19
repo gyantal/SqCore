@@ -410,6 +410,7 @@ namespace FinTechCommon
 
         public void UpdateBrAccPosAssetIds(BrAccount p_brAccount)
         {
+            p_brAccount.AccPossUnrecognizedAssets = new List<BrAccPos>();
             foreach (BrAccPos pos in p_brAccount.AccPoss)
             {
                 pos.AssetId = AssetId32Bits.Invalid;
