@@ -11,8 +11,8 @@ import { Component, OnInit } from '@angular/core';
 })
 export class SqNgCommonUtilsStr implements OnInit {
 
-  public static  splitStrToMulLines(p_str:string) : string {
-      var chunks : string[] = [];
+  public static splitStrToMulLines(p_str:string) : string {
+      var chunks: string[] = [];
       for (var i = 0; i < p_str.length; i += 250) {
         chunks.push(p_str.substring(i, i + 250));
       }

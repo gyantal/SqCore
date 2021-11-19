@@ -236,7 +236,10 @@ thead tr :hover {
   stroke: #964B00;
   stroke-width: 0.5;
 }
-
+#warning {
+  color: red;
+  white-space: pre-wrap;
+}
 // Common for all the tooltips 
 .tooltipCell {
   position: relative;
