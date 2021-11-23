@@ -244,68 +244,78 @@ namespace FinTechCommon
                 var ndqSplitsJson = JsonSerializer.Deserialize<Dictionary<string, object>>(nasdaqSplitsJson);
                 using JsonDocument doc = JsonDocument.Parse(nasdaqSplitsJson);
 
-                var ndqSplits = doc.RootElement.GetProperty("data").GetProperty("rows").EnumerateArray()
-                .Select(row =>
+                var ndqData = doc.RootElement.GetProperty("data");
+                if (ndqData.ToString() != string.Empty)
                 {
-                    string symbol = row.GetProperty("symbol").ToString() ?? string.Empty;
-                    string sqTicker = Asset.BasicSqTicker(AssetType.Stock, symbol);
-                    Asset? asset = p_assetCache.TryGetAsset(sqTicker);
-                    return new
+                    var ndqSplits = ndqData.GetProperty("rows").EnumerateArray()
+                    .Select(row =>
                     {
-                        Asset = asset,
-                        Row = row
-                    };
-                }).Where(r =>
-                {
-                    return r.Asset != null;
-                }).Select(r =>
-                {
-                    string executionDateStr = r.Row.GetProperty("executionDate").ToString() ?? string.Empty; // "executionDate":"01/21/2021"
+                        string symbol = row.GetProperty("symbol").ToString() ?? string.Empty;
+                        string sqTicker = Asset.BasicSqTicker(AssetType.Stock, symbol);
+                        Asset? asset = p_assetCache.TryGetAsset(sqTicker);
+                        return new
+                        {
+                            Asset = asset,
+                            Row = row
+                        };
+                    }).Where(r =>
+                    {
+                        return r.Asset != null;
+                    }).Select(r =>
+                    {
+                        string executionDateStr = r.Row.GetProperty("executionDate").ToString() ?? string.Empty; // "executionDate":"01/21/2021"
                     DateTime executionDate = Utils.FastParseMMDDYYYY(executionDateStr);
 
-                    string ratioStr = r.Row.GetProperty("ratio").ToString() ?? string.Empty;
-                    var splitArr = ratioStr.Split(':');  // "ratio":"2 : 1" or "ratio":"5.000%" while YF "2:1", which is the same order.
+                        string ratioStr = r.Row.GetProperty("ratio").ToString() ?? string.Empty;
+                        var splitArr = ratioStr.Split(':');  // "ratio":"2 : 1" or "ratio":"5.000%" while YF "2:1", which is the same order.
                     double beforeSplit = Double.MinValue, afterSplit = Double.MinValue;
-                    if (splitArr.Length == 2)   // "ratio":"2 : 1"
+                        if (splitArr.Length == 2)   // "ratio":"2 : 1"
                     {
-                        afterSplit = Utils.InvariantConvert<double>(splitArr[0]);
-                        beforeSplit = Utils.InvariantConvert<double>(splitArr[1]);
-                    }
-                    else    // "ratio":"5.000%", we can ignore it.
+                            afterSplit = Utils.InvariantConvert<double>(splitArr[0]);
+                            beforeSplit = Utils.InvariantConvert<double>(splitArr[1]);
+                        }
+                        else    // "ratio":"5.000%", we can ignore it.
                     {
                         // {"symbol":"GNTY","name":"Guaranty Bancshares, Inc.","ratio":"10.000%","payableDate":"02/12/2021","executionDate":"02/04/2021","announcedDate":"01/20/2021"}
                         // "...has declared a 10% stock dividend for shareholders of record as of February 5, 2021. As an example, each shareholder will receive one additional share of stock for every ten shares owned on the effective date of February 12, 2021.
                         // however, YF doesn't handle at all these stock-dividends (not cash dividend)
                         // YF builds it into the quote, so the quote price is smooth, but this cannot be queried as YF split, neither as cash-dividend.
                     }
-                    var split = new Split() { Date = executionDate, Before = beforeSplit, After = afterSplit };
-                    return new
+                        var split = new Split() { Date = executionDate, Before = beforeSplit, After = afterSplit };
+                        return new
+                        {
+                            Asset = r.Asset!,
+                            Split = split
+                        };
+                    }).Where(r =>
                     {
-                        Asset = r.Asset!,
-                        Split = split
-                    };
-                }).Where(r =>
-                {
-                    return r.Split.Before != Double.MinValue && r.Split.After != Double.MinValue;
-                });
+                        return r.Split.Before != Double.MinValue && r.Split.After != Double.MinValue;
+                    });
 
-                int nUsedNdqSplits = 0;
-                foreach (var ndqSplitRec in ndqSplits)   // iterate over Nasdaq splits and add it to potentialMissingYfSplits if that date doesn't exist
-                {
-                    nUsedNdqSplits++;
-                    if (potentialMissingYfSplits.TryGetValue(ndqSplitRec!.Asset!.AssetId, out List<Split>? splitArr))
+                    int nUsedNdqSplits = 0;
+                    foreach (var ndqSplitRec in ndqSplits)   // iterate over Nasdaq splits and add it to potentialMissingYfSplits if that date doesn't exist
                     {
-                        if (!splitArr.Exists(r => r.Date == ndqSplitRec.Split.Date))
-                            splitArr.Add(ndqSplitRec.Split);
+                        nUsedNdqSplits++;
+                        if (potentialMissingYfSplits.TryGetValue(ndqSplitRec!.Asset!.AssetId, out List<Split>? splitArr))
+                        {
+                            if (!splitArr.Exists(r => r.Date == ndqSplitRec.Split.Date))
+                                splitArr.Add(ndqSplitRec.Split);
+                        }
+                        else
+                        {
+                            var newSplits = new List<Split>(1);
+                            newSplits.Add(ndqSplitRec.Split);
+                            potentialMissingYfSplits.Add(ndqSplitRec!.Asset!.AssetId, newSplits);
+                        }
                     }
-                    else
-                    {
-                        var newSplits = new List<Split>(1);
-                        newSplits.Add(ndqSplitRec.Split);
-                        potentialMissingYfSplits.Add(ndqSplitRec!.Asset!.AssetId, newSplits);
-                    }
+                    Utils.Logger.Info($"NasdaqSplits file was downloaded fine and it has {nUsedNdqSplits} useable records.");
                 }
-                Utils.Logger.Info($"NasdaqSplits file was downloaded fine and it has {nUsedNdqSplits} useable records.");
+                else
+                {
+                    string msg = $"NasdaqSplits file was downloaded, but data is missing. '{url}'. Supervisors should be notified.";
+                    Console.WriteLine(msg);
+                    StrongAssert.Fail(Severity.NoException, msg);
+                }
             }
             else
             {
