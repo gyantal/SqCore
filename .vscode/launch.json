@@ -117,13 +117,25 @@
             }
         },
         {
-            "name": "PerfTestExperiment (RELEASE), run without Debugger Attached (Ctrl-F5, not F5)",
+            "name": "PerfTestExperiment (DEBUG), RUN WITH Debugger Attached (F5, not Ctrl-F5)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "PerfTestExperiment build Debug",
+            "program": "${workspaceFolder}/src/test.perf/PerfTestExperiment/bin/Debug/net5.0/PerfTestExperiment.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/test.perf/PerfTestExperiment",
+            "console": "externalTerminal",
+            "externalConsole": true,
+            "stopAtEntry": false
+        },
+        {
+            "name": "PerfTestExperiment (RELEASE), RUN WITHOUT Debugger Attached (Ctrl-F5, not F5)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "PerfTestExperiment build Release",
-            "program": "${workspaceFolder}/test/PerfTestExperiment/bin/Release/net5.0/PerfTestExperiment.exe",
+            "program": "${workspaceFolder}/src/test.perf/PerfTestExperiment/bin/Release/net5.0/PerfTestExperiment.exe",
             "args": [],
-            "cwd": "${workspaceFolder}/test/PerfTestExperiment",
+            "cwd": "${workspaceFolder}/src/test.perf/PerfTestExperiment",
             "console": "externalTerminal",
             "externalConsole": true,
             "stopAtEntry": false

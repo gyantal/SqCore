@@ -82,25 +82,15 @@
             "problemMatcher": "$tsc"
         },
         {
-            "label": "PerfTestExperiment run without Debugger Release",
+            "label": "PerfTestExperiment build Debug",
             "command": "dotnet",
-            "type": "shell",
+            "type": "process",
             "args": [
-                "run",
-                "-p",
-                "${workspaceFolder}/test/PerfTestExperiment/PerfTestExperiment.csproj",
+                "build",
+                "${workspaceFolder}/src/test.perf/PerfTestExperiment/PerfTestExperiment.csproj",
                 "-c",
-                "Release"
+                "Debug"
             ],
-            "options": {
-                "shell": {
-                    "executable": "cmd.exe",
-                    "args": [
-                        "/d",
-                        "/c"
-                    ]
-                }
-            },
             "problemMatcher": "$tsc"
         },
         {
@@ -109,7 +99,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/test/PerfTestExperiment/PerfTestExperiment.csproj",
+                "${workspaceFolder}/src/test.perf/PerfTestExperiment/PerfTestExperiment.csproj",
                 "-c",
                 "Release"
             ],

@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.12.1" />
-    <ProjectReference Include="..\..\src\Common\SqCommon\SqCommon.csproj" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.1" />
+    <ProjectReference Include="..\..\Common\SqCommon\SqCommon.csproj" />
   </ItemGroup>
 
 </Project>

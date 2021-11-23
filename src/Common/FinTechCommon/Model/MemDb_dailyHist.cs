@@ -111,7 +111,7 @@ namespace FinTechCommon
             Console.WriteLine("*MemDb.DailyHist Download from YF starts.");
             try
             {
-                Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits = await GetPotentianMissingYfSplits(p_db, p_assetCache);
+                Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits = await GetPotentialMissingYfSplits(p_db, p_assetCache);
 
                 var assetsDates = new Dictionary<uint, DateOnly[]>();
                 var assetsAdjustedCloses = new Dictionary<uint, float[]>();
@@ -230,97 +230,111 @@ namespace FinTechCommon
             return mergedDates;
         }
 
-        private static async Task<Dictionary<AssetId32Bits, List<Split>>> GetPotentianMissingYfSplits(Db p_db, AssetsCache p_assetCache)
+        private static async Task<Dictionary<AssetId32Bits, List<Split>>> GetPotentialMissingYfSplits(Db p_db, AssetsCache p_assetCache)
         {
             DateTime etNow = DateTime.UtcNow.FromUtcToEt();
             Dictionary<string, List<Split>> missingYfSplitSqTickers = p_db.GetMissingYfSplits();    // first get it from Redis Db, then Add items from Nasdaq
             Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits = missingYfSplitSqTickers.ToDictionary(r => p_assetCache.GetAsset(r.Key).AssetId, r => r.Value);
 
-            // var url = $"https://api.nasdaq.com/api/calendar/splits?date=2021-01-19";
+            // https://www.nasdaq.com/market-activity/stock-splits
+
+            // 2021-11-23:  Nasdaq API as split info data source problems.
+            // Last working: https://api.nasdaq.com/api/calendar/splits?date=2021-11-12 only "symbol":"SRL" in it, data is not Null.
+            // Next day: https://api.nasdaq.com/api/calendar/splits?date=2021-11-13 ""data":null", "Splits Calendar: No record found."
+            // {"data":null,"message":null,"status":{"rCode":200,"bCodeMessage":[{"code":1002,"errorMessage":"Splits Calendar: No record found."}],"developerMessage":null}}
+            // This doesn't seem to be an error. It seems Nasdaq doesn't have any split data at the moment. This is confirmed by going to the website:
+            // https://www.nasdaq.com/market-activity/stock-splits  No error, but "0 RESULTS".
+            // And yes, split events are rare these days. Other Split calendars show hardly any proper split in the next 30 days.
+            // https://finance.yahoo.com/calendar/splits/
+            // https://eresearch.fidelity.com/eresearch/conferenceCalls.jhtml?tab=splits
+            // I don't want to reimplement the source, because Nasdaq "should" be a reliable data source.
+            // Let's monitor it. If next time there is a real split in an important stock, like VXX, SVXY, UNG,
+            // and if Nasdaq misses that, then introducing a secondary data source is justified. 
+            // Until that, I am not sure we need the complications of another data source maintenance.
             var url = $"https://api.nasdaq.com/api/calendar/splits?date={Utils.Date2hYYYYMMDD(etNow.AddDays(-7))}"; // go back 7 days before to include yesterdays splits
             string? nasdaqSplitsJson = await Utils.DownloadStringWithRetryAsync(url, 3, TimeSpan.FromSeconds(5), true);
-            if (nasdaqSplitsJson != null)
-            {
-                var ndqSplitsJson = JsonSerializer.Deserialize<Dictionary<string, object>>(nasdaqSplitsJson);
-                using JsonDocument doc = JsonDocument.Parse(nasdaqSplitsJson);
+            if (String.IsNullOrEmpty(nasdaqSplitsJson))
+            {   // Treat it as an unexpected error.
+                StrongAssert.Fail(Severity.NoException, $"Error in Downloading '{url}'. Supervisors should be notified.");
+                return potentialMissingYfSplits;
+            }
 
-                var ndqData = doc.RootElement.GetProperty("data");
-                if (ndqData.ToString() != string.Empty)
+            var ndqSplitsJson = JsonSerializer.Deserialize<Dictionary<string, object>>(nasdaqSplitsJson);
+            using JsonDocument doc = JsonDocument.Parse(nasdaqSplitsJson);
+            JsonElement ndqData = doc.RootElement.GetProperty("data");
+            if (ndqData.ToString() == string.Empty)
+            {   // Treat it as an expected warning. Maybe it is not an error, but genuine that data: "0 RESULTS", there are no splits in the next 2 weeks.
+                string msg = $"Warning. NasdaqSplits file: data is missing('0 RESULTS'). '{url}'. Monitor splits in important stocks.Implement secondary data source only if necessary.";
+                Console.WriteLine(msg);
+                Utils.Logger.Warn(msg);
+                return potentialMissingYfSplits;
+            }
+
+            // https://api.nasdaq.com/api/calendar/splits?date=2021-11-12
+            // {"data":{"headers":{"symbol":"SYMBOL","name":"COMPANY","ratio":"RATIO","payableDate":"PAYABLE ON","executionDate":"EX-DATE","announcedDate":"ANNOUNCED"},"rows":[{"symbol":"SRL","name":"Scully Royalty Ltd.","ratio":"8.000%","payableDate":"11/30/2021","executionDate":"11/12/2021","announcedDate":"N/A"}]},"message":null,"status":{"rCode":200,"bCodeMessage":null,"developerMessage":null}}
+            var ndqSplits = ndqData.GetProperty("rows").EnumerateArray()
+            .Select(row =>
+            {
+                string symbol = row.GetProperty("symbol").ToString() ?? string.Empty;
+                string sqTicker = Asset.BasicSqTicker(AssetType.Stock, symbol);
+                Asset? asset = p_assetCache.TryGetAsset(sqTicker);
+                return new
                 {
-                    var ndqSplits = ndqData.GetProperty("rows").EnumerateArray()
-                    .Select(row =>
-                    {
-                        string symbol = row.GetProperty("symbol").ToString() ?? string.Empty;
-                        string sqTicker = Asset.BasicSqTicker(AssetType.Stock, symbol);
-                        Asset? asset = p_assetCache.TryGetAsset(sqTicker);
-                        return new
-                        {
-                            Asset = asset,
-                            Row = row
-                        };
-                    }).Where(r =>
-                    {
-                        return r.Asset != null;
-                    }).Select(r =>
-                    {
-                        string executionDateStr = r.Row.GetProperty("executionDate").ToString() ?? string.Empty; // "executionDate":"01/21/2021"
+                    Asset = asset,
+                    Row = row
+                };
+            }).Where(r =>
+            {
+                return r.Asset != null;
+            }).Select(r =>
+            {
+                string executionDateStr = r.Row.GetProperty("executionDate").ToString() ?? string.Empty; // "executionDate":"01/21/2021"
                     DateTime executionDate = Utils.FastParseMMDDYYYY(executionDateStr);
 
-                        string ratioStr = r.Row.GetProperty("ratio").ToString() ?? string.Empty;
-                        var splitArr = ratioStr.Split(':');  // "ratio":"2 : 1" or "ratio":"5.000%" while YF "2:1", which is the same order.
+                string ratioStr = r.Row.GetProperty("ratio").ToString() ?? string.Empty;
+                var splitArr = ratioStr.Split(':');  // "ratio":"2 : 1" or "ratio":"5.000%" while YF "2:1", which is the same order.
                     double beforeSplit = Double.MinValue, afterSplit = Double.MinValue;
-                        if (splitArr.Length == 2)   // "ratio":"2 : 1"
+                if (splitArr.Length == 2)   // "ratio":"2 : 1"
                     {
-                            afterSplit = Utils.InvariantConvert<double>(splitArr[0]);
-                            beforeSplit = Utils.InvariantConvert<double>(splitArr[1]);
-                        }
-                        else    // "ratio":"5.000%", we can ignore it.
+                    afterSplit = Utils.InvariantConvert<double>(splitArr[0]);
+                    beforeSplit = Utils.InvariantConvert<double>(splitArr[1]);
+                }
+                else    // "ratio":"5.000%", we can ignore it.
                     {
                         // {"symbol":"GNTY","name":"Guaranty Bancshares, Inc.","ratio":"10.000%","payableDate":"02/12/2021","executionDate":"02/04/2021","announcedDate":"01/20/2021"}
                         // "...has declared a 10% stock dividend for shareholders of record as of February 5, 2021. As an example, each shareholder will receive one additional share of stock for every ten shares owned on the effective date of February 12, 2021.
                         // however, YF doesn't handle at all these stock-dividends (not cash dividend)
                         // YF builds it into the quote, so the quote price is smooth, but this cannot be queried as YF split, neither as cash-dividend.
                     }
-                        var split = new Split() { Date = executionDate, Before = beforeSplit, After = afterSplit };
-                        return new
-                        {
-                            Asset = r.Asset!,
-                            Split = split
-                        };
-                    }).Where(r =>
-                    {
-                        return r.Split.Before != Double.MinValue && r.Split.After != Double.MinValue;
-                    });
+                var split = new Split() { Date = executionDate, Before = beforeSplit, After = afterSplit };
+                return new
+                {
+                    Asset = r.Asset!,
+                    Split = split
+                };
+            }).Where(r =>
+            {
+                return r.Split.Before != Double.MinValue && r.Split.After != Double.MinValue;
+            });
 
-                    int nUsedNdqSplits = 0;
-                    foreach (var ndqSplitRec in ndqSplits)   // iterate over Nasdaq splits and add it to potentialMissingYfSplits if that date doesn't exist
-                    {
-                        nUsedNdqSplits++;
-                        if (potentialMissingYfSplits.TryGetValue(ndqSplitRec!.Asset!.AssetId, out List<Split>? splitArr))
-                        {
-                            if (!splitArr.Exists(r => r.Date == ndqSplitRec.Split.Date))
-                                splitArr.Add(ndqSplitRec.Split);
-                        }
-                        else
-                        {
-                            var newSplits = new List<Split>(1);
-                            newSplits.Add(ndqSplitRec.Split);
-                            potentialMissingYfSplits.Add(ndqSplitRec!.Asset!.AssetId, newSplits);
-                        }
-                    }
-                    Utils.Logger.Info($"NasdaqSplits file was downloaded fine and it has {nUsedNdqSplits} useable records.");
+            int nUsedNdqSplits = 0;
+            foreach (var ndqSplitRec in ndqSplits)   // iterate over Nasdaq splits and add it to potentialMissingYfSplits if that date doesn't exist
+            {
+                nUsedNdqSplits++;
+                if (potentialMissingYfSplits.TryGetValue(ndqSplitRec!.Asset!.AssetId, out List<Split>? splitArr))
+                {
+                    if (!splitArr.Exists(r => r.Date == ndqSplitRec.Split.Date))
+                        splitArr.Add(ndqSplitRec.Split);
                 }
                 else
                 {
-                    string msg = $"NasdaqSplits file was downloaded, but data is missing. '{url}'. Supervisors should be notified.";
-                    Console.WriteLine(msg);
-                    StrongAssert.Fail(Severity.NoException, msg);
+                    var newSplits = new List<Split>(1);
+                    newSplits.Add(ndqSplitRec.Split);
+                    potentialMissingYfSplits.Add(ndqSplitRec!.Asset!.AssetId, newSplits);
                 }
             }
-            else
-            {
-                StrongAssert.Fail(Severity.NoException, $"Error in Downloading '{url}'. Supervisors should be notified.");
-            }
+            Utils.Logger.Info($"NasdaqSplits file was downloaded fine and it has {nUsedNdqSplits} useable records.");
+
             return potentialMissingYfSplits;
         }
 
