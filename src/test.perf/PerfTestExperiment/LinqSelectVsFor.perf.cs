@@ -21,57 +21,67 @@ namespace SqBenchmarks
 // Here are the performance measurements made by BenchmarkDotNet (Release).
 // Note: BenchmarkDotNet makes it very hard to accidentally do Debug runs.
 
-// |         Method | DataLen |          Mean |       Error |      StdDev | Ratio |   Gen 0 |   Gen 1 | Allocated |
-// |--------------- |-------- |--------------:|------------:|------------:|------:|--------:|--------:|----------:|
-// |    Linq.Select |       0 |     38.793 ns |   0.4550 ns |   0.4033 ns |  1.00 |  0.0124 |       - |     104 B |
-// |   ForOnObjList |       0 |      8.283 ns |   0.0790 ns |   0.0739 ns |  0.21 |  0.0038 |       - |      32 B |
-// |    ForOnObjArr |       0 |      1.937 ns |   0.0576 ns |   0.0538 ns |  0.05 |  0.0029 |       - |      24 B |
-// | ForOnStructArr |       0 |      1.865 ns |   0.0703 ns |   0.0657 ns |  0.05 |  0.0029 |       - |      24 B |
-// |                |         |               |             |             |       |         |         |           |
-// |    Linq.Select |       1 |     39.425 ns |   0.1653 ns |   0.1465 ns |  1.00 |  0.0191 |       - |     160 B |
-// |   ForOnObjList |       1 |     12.766 ns |   0.2596 ns |   0.2428 ns |  0.32 |  0.0105 |       - |      88 B |
-// |    ForOnObjArr |       1 |      6.261 ns |   0.0903 ns |   0.0801 ns |  0.16 |  0.0067 |       - |      56 B |
-// | ForOnStructArr |       1 |      2.763 ns |   0.0357 ns |   0.0334 ns |  0.07 |  0.0038 |       - |      32 B |
-// |                |         |               |             |             |       |         |         |           |
-// |    Linq.Select |       6 |     69.984 ns |   0.5657 ns |   0.5292 ns |  1.00 |  0.0381 |       - |     320 B |
-// |   ForOnObjList |       6 |     35.861 ns |   0.5386 ns |   0.5038 ns |  0.51 |  0.0296 |       - |     248 B |
-// |    ForOnObjArr |       6 |     27.466 ns |   0.2438 ns |   0.2281 ns |  0.39 |  0.0258 |       - |     216 B |
-// | ForOnStructArr |       6 |      6.043 ns |   0.0876 ns |   0.0819 ns |  0.09 |  0.0057 |       - |      48 B |
-// |                |         |               |             |             |       |         |         |           |
-// |    Linq.Select |      10 |    101.930 ns |   1.0724 ns |   1.0031 ns |  1.00 |  0.0535 |  0.0001 |     448 B |
-// |   ForOnObjList |      10 |     61.854 ns |   0.7295 ns |   0.6824 ns |  0.61 |  0.0449 |  0.0001 |     376 B |
-// |    ForOnObjArr |      10 |     43.847 ns |   0.3506 ns |   0.2927 ns |  0.43 |  0.0411 |  0.0001 |     344 B |
-// | ForOnStructArr |      10 |      9.142 ns |   0.1075 ns |   0.0953 ns |  0.09 |  0.0076 |       - |      64 B |
-// |                |         |               |             |             |       |         |         |           |
-// |    Linq.Select |      39 |    270.856 ns |   1.2153 ns |   1.0774 ns |  1.00 |  0.1645 |  0.0014 |   1,376 B |
-// |   ForOnObjList |      39 |    195.170 ns |   0.9391 ns |   0.7332 ns |  0.72 |  0.1557 |  0.0014 |   1,304 B |
-// |    ForOnObjArr |      39 |    173.261 ns |   1.9927 ns |   1.7664 ns |  0.64 |  0.1519 |  0.0014 |   1,272 B |
-// | ForOnStructArr |      39 |     30.342 ns |   0.3052 ns |   0.2854 ns |  0.11 |  0.0220 |       - |     184 B |
-// |                |         |               |             |             |       |         |         |           |
-// |    Linq.Select |     100 |    620.678 ns |   2.8486 ns |   2.3787 ns |  1.00 |  0.3977 |  0.0095 |   3,328 B |
-// |   ForOnObjList |     100 |    487.939 ns |   7.1035 ns |   6.2971 ns |  0.78 |  0.3891 |  0.0086 |   3,256 B |
-// |    ForOnObjArr |     100 |    418.686 ns |   1.6983 ns |   1.5055 ns |  0.67 |  0.3853 |  0.0091 |   3,224 B |
-// | ForOnStructArr |     100 |     79.951 ns |   0.7215 ns |   0.6748 ns |  0.13 |  0.0507 |       - |     424 B |
-// |                |         |               |             |             |       |         |         |           |
-// |    Linq.Select |     666 |  3,987.387 ns |  24.6445 ns |  21.8467 ns |  1.00 |  2.5558 |  0.3204 |  21,440 B |
-// |   ForOnObjList |     666 |  3,224.699 ns |  48.1311 ns |  45.0218 ns |  0.81 |  2.5520 |  0.3166 |  21,368 B |
-// |    ForOnObjArr |     666 |  2,765.155 ns |  18.5471 ns |  16.4415 ns |  0.69 |  2.5482 |  0.3166 |  21,336 B |
-// | ForOnStructArr |     666 |    482.252 ns |   2.6599 ns |   2.2212 ns |  0.12 |  0.3204 |  0.0029 |   2,688 B |
-// |                |         |               |             |             |       |         |         |           |
-// |    Linq.Select |    1000 |  6,023.477 ns |  47.2371 ns |  44.1856 ns |  1.00 |  3.8376 |  0.6485 |  32,128 B |
-// |   ForOnObjList |    1000 |  4,868.348 ns |  12.8791 ns |  10.7546 ns |  0.81 |  3.8300 |  0.6485 |  32,056 B |
-// |    ForOnObjArr |    1000 |  4,180.904 ns |  38.1239 ns |  35.6611 ns |  0.69 |  3.8223 |  0.6332 |  32,024 B |
-// | ForOnStructArr |    1000 |    715.218 ns |   4.8852 ns |   4.5696 ns |  0.12 |  0.4807 |  0.0067 |   4,024 B |
-// |                |         |               |             |             |       |         |         |           |
-// |    Linq.Select |    1337 |  8,150.741 ns |  55.7886 ns |  49.4551 ns |  1.00 |  5.1270 |  1.0376 |  42,912 B |
-// |   ForOnObjList |    1337 |  6,636.393 ns |  34.6983 ns |  32.4568 ns |  0.81 |  5.1193 |  1.0223 |  42,840 B |
-// |    ForOnObjArr |    1337 |  5,695.062 ns |  69.2681 ns |  61.4044 ns |  0.70 |  5.1117 |  1.2741 |  42,808 B |
-// | ForOnStructArr |    1337 |    955.824 ns |   8.2955 ns |   7.3538 ns |  0.12 |  0.6409 |  0.0114 |   5,376 B |
-// |                |         |               |             |             |       |         |         |           |
-// |    Linq.Select |   10000 | 69,890.422 ns | 613.3549 ns | 573.7326 ns |  1.00 | 38.2080 | 18.9209 | 320,128 B |
-// |   ForOnObjList |   10000 | 59,838.902 ns | 298.4527 ns | 264.5705 ns |  0.86 | 38.1470 | 15.2588 | 320,056 B |
-// |    ForOnObjArr |   10000 | 54,131.012 ns | 665.6403 ns | 622.6404 ns |  0.77 | 38.1470 | 15.2588 | 320,024 B |
-// | ForOnStructArr |   10000 |  6,888.553 ns |  40.7039 ns |  36.0829 ns |  0.10 |  4.7607 |  0.5951 |  40,024 B |
+// |           Method | DataLen |          Mean |       Error |      StdDev | Ratio |   Gen 0 |   Gen 1 | Allocated |
+// |----------------- |-------- |--------------:|------------:|------------:|------:|--------:|--------:|----------:|
+// |      Linq.Select |       0 |     36.468 ns |   0.2606 ns |   0.2310 ns |  1.00 |  0.0124 |       - |     104 B |
+// |     ForOnObjList |       0 |      8.541 ns |   0.0784 ns |   0.0733 ns |  0.23 |  0.0038 |       - |      32 B |
+// | ForeachOnObjList |       0 |     10.848 ns |   0.1291 ns |   0.1078 ns |  0.30 |  0.0038 |       - |      32 B |
+// |      ForOnObjArr |       0 |      1.745 ns |   0.0329 ns |   0.0291 ns |  0.05 |  0.0029 |       - |      24 B |
+// |   ForOnStructArr |       0 |      1.816 ns |   0.0301 ns |   0.0267 ns |  0.05 |  0.0029 |       - |      24 B |
+// |                  |         |               |             |             |       |         |         |           |
+// |      Linq.Select |       1 |     43.488 ns |   0.2323 ns |   0.2173 ns |  1.00 |  0.0191 |       - |     160 B |
+// |     ForOnObjList |       1 |     12.208 ns |   0.1022 ns |   0.0956 ns |  0.28 |  0.0105 |       - |      88 B |
+// | ForeachOnObjList |       1 |     16.958 ns |   0.1860 ns |   0.1649 ns |  0.39 |  0.0105 |       - |      88 B |
+// |      ForOnObjArr |       1 |      6.655 ns |   0.1383 ns |   0.1226 ns |  0.15 |  0.0067 |       - |      56 B |
+// |   ForOnStructArr |       1 |      2.488 ns |   0.0541 ns |   0.0506 ns |  0.06 |  0.0038 |       - |      32 B |
+// |                  |         |               |             |             |       |         |         |           |
+// |      Linq.Select |       6 |     67.065 ns |   0.6557 ns |   0.5119 ns |  1.00 |  0.0381 |       - |     320 B |
+// |     ForOnObjList |       6 |     36.116 ns |   0.4054 ns |   0.3594 ns |  0.54 |  0.0296 |       - |     248 B |
+// | ForeachOnObjList |       6 |     51.494 ns |   0.5945 ns |   0.5561 ns |  0.77 |  0.0296 |       - |     248 B |
+// |      ForOnObjArr |       6 |     26.992 ns |   0.2051 ns |   0.1818 ns |  0.40 |  0.0258 |       - |     216 B |
+// |   ForOnStructArr |       6 |      5.947 ns |   0.0400 ns |   0.0374 ns |  0.09 |  0.0057 |       - |      48 B |
+// |                  |         |               |             |             |       |         |         |           |
+// |      Linq.Select |      10 |     92.606 ns |   0.6391 ns |   0.5666 ns |  1.00 |  0.0535 |  0.0001 |     448 B |
+// |     ForOnObjList |      10 |     60.374 ns |   0.3902 ns |   0.3459 ns |  0.65 |  0.0449 |  0.0001 |     376 B |
+// | ForeachOnObjList |      10 |     85.998 ns |   0.6782 ns |   0.6012 ns |  0.93 |  0.0449 |  0.0001 |     376 B |
+// |      ForOnObjArr |      10 |     43.369 ns |   0.1226 ns |   0.1087 ns |  0.47 |  0.0411 |  0.0001 |     344 B |
+// |   ForOnStructArr |      10 |      8.979 ns |   0.0664 ns |   0.0589 ns |  0.10 |  0.0076 |       - |      64 B |
+// |                  |         |               |             |             |       |         |         |           |
+// |      Linq.Select |      39 |    275.368 ns |   2.1582 ns |   2.0188 ns |  1.00 |  0.1645 |  0.0014 |   1,376 B |
+// |     ForOnObjList |      39 |    192.216 ns |   1.3441 ns |   1.1915 ns |  0.70 |  0.1557 |  0.0014 |   1,304 B |
+// | ForeachOnObjList |      39 |    277.897 ns |   2.1260 ns |   1.8846 ns |  1.01 |  0.1554 |  0.0014 |   1,304 B |
+// |      ForOnObjArr |      39 |    170.586 ns |   3.2658 ns |   3.4943 ns |  0.62 |  0.1519 |  0.0014 |   1,272 B |
+// |   ForOnStructArr |      39 |     29.762 ns |   0.4803 ns |   0.4493 ns |  0.11 |  0.0220 |       - |     184 B |
+// |                  |         |               |             |             |       |         |         |           |
+// |      Linq.Select |     100 |    592.703 ns |   4.9878 ns |   4.4215 ns |  1.00 |  0.3977 |  0.0095 |   3,328 B |
+// |     ForOnObjList |     100 |    478.343 ns |   4.4946 ns |   4.2043 ns |  0.81 |  0.3891 |  0.0091 |   3,256 B |
+// | ForeachOnObjList |     100 |    679.658 ns |   2.2509 ns |   1.9953 ns |  1.15 |  0.3891 |  0.0086 |   3,256 B |
+// |      ForOnObjArr |     100 |    405.812 ns |   3.3285 ns |   2.9506 ns |  0.68 |  0.3853 |  0.0091 |   3,224 B |
+// |   ForOnStructArr |     100 |     78.718 ns |   1.4036 ns |   1.3129 ns |  0.13 |  0.0507 |       - |     424 B |
+// |                  |         |               |             |             |       |         |         |           |
+// |      Linq.Select |     666 |  3,772.060 ns |  14.4814 ns |  12.8374 ns |  1.00 |  2.5597 |  0.3281 |  21,440 B |
+// |     ForOnObjList |     666 |  3,170.079 ns |  20.8241 ns |  18.4600 ns |  0.84 |  2.5520 |  0.3166 |  21,368 B |
+// | ForeachOnObjList |     666 |  4,485.960 ns |  34.2815 ns |  32.0670 ns |  1.19 |  2.5482 |  0.3128 |  21,368 B |
+// |      ForOnObjArr |     666 |  2,707.709 ns |  20.2349 ns |  17.9377 ns |  0.72 |  2.5482 |  0.3166 |  21,336 B |
+// |   ForOnStructArr |     666 |    476.948 ns |   6.3435 ns |   5.6234 ns |  0.13 |  0.3204 |  0.0029 |   2,688 B |
+// |                  |         |               |             |             |       |         |         |           |
+// |      Linq.Select |    1000 |  5,691.712 ns |  25.5326 ns |  22.6340 ns |  1.00 |  3.8376 |  0.6485 |  32,128 B |
+// |     ForOnObjList |    1000 |  4,793.336 ns |  17.9553 ns |  15.9169 ns |  0.84 |  3.8300 |  0.6485 |  32,056 B |
+// | ForeachOnObjList |    1000 |  6,998.193 ns |  28.6676 ns |  25.4131 ns |  1.23 |  3.8300 |  0.6485 |  32,056 B |
+// |      ForOnObjArr |    1000 |  4,129.911 ns |  25.8939 ns |  22.9543 ns |  0.73 |  3.8223 |  0.6332 |  32,024 B |
+// |   ForOnStructArr |    1000 |    704.512 ns |   6.3611 ns |   5.6389 ns |  0.12 |  0.4807 |  0.0067 |   4,024 B |
+// |                  |         |               |             |             |       |         |         |           |
+// |      Linq.Select |    1337 |  7,645.676 ns |  70.5076 ns |  62.5032 ns |  1.00 |  5.1270 |  1.0376 |  42,912 B |
+// |     ForOnObjList |    1337 |  6,474.703 ns |  30.3026 ns |  26.8625 ns |  0.85 |  5.1193 |  1.0223 |  42,840 B |
+// | ForeachOnObjList |    1337 |  9,385.328 ns |  65.6321 ns |  54.8058 ns |  1.23 |  5.1117 |  1.0223 |  42,840 B |
+// |      ForOnObjArr |    1337 |  5,590.121 ns |  50.4048 ns |  44.6826 ns |  0.73 |  5.1117 |  1.2741 |  42,808 B |
+// |   ForOnStructArr |    1337 |    935.202 ns |   5.6073 ns |   4.9707 ns |  0.12 |  0.6409 |  0.0114 |   5,376 B |
+// |                  |         |               |             |             |       |         |         |           |
+// |      Linq.Select |   10000 | 69,100.129 ns | 556.0135 ns | 492.8915 ns |  1.00 | 38.2080 | 18.9209 | 320,128 B |
+// |     ForOnObjList |   10000 | 59,334.170 ns | 324.8883 ns | 303.9007 ns |  0.86 | 38.1470 | 15.2588 | 320,056 B |
+// | ForeachOnObjList |   10000 | 79,212.381 ns | 408.3835 ns | 362.0213 ns |  1.15 | 38.0859 | 15.2588 | 320,056 B |
+// |      ForOnObjArr |   10000 | 55,850.769 ns | 392.4516 ns | 367.0995 ns |  0.81 | 38.1470 | 15.2588 | 320,024 B |
+// |   ForOnStructArr |   10000 |  6,801.443 ns |  27.1639 ns |  25.4092 ns |  0.10 |  4.7607 |  0.5951 |  40,024 B |
 
 // See code in GitHubRepos\SqCore\src\test.perf\PerfTestExperiment\LinqSelectVsFor.perf.cs
 
@@ -88,15 +98,17 @@ namespace SqBenchmarks
 // We have to use a system like BenchmarkDotNet that runs tests many times and measures the volatility.
 
 // 3. Later runs: scrutinize the measurements with DataLength = 100 or 666 as those are the most typical.
-// LINQ takes +27% more than the List of Class. 
-// LINQ takes +48% more than the Array of Class.
-// LINQ takes +8x-10x more than the Array of Struct.
+// LINQ takes +15% less than foreach on class-list. Avoid foreach!
+// LINQ takes +27% more than for on class-list 
+// LINQ takes +48% more than for on class-array
+// LINQ takes +8x-10x more than for on struct-array
 
 // So, use Array if possible. Furthermore, use Struct with arrays. That is the fastest.
 
 // 4. Case study of 1000 long list:
 // If you write LINQ like : resultList = inputList.Select(r => new ClassB() { Data = r.Data + 10 }).ToList();
 // For a List<Class>, that takes 6,000ns. = 6us (micro-second), which is significant, when 1 ms is a huge time waste in general.
+// If you write Foreach loop with List<class>, it takes 7,000ns. Even worse than LINQ.
 // If you write For loop with List<class>, it takes 4,800ns.
 // If you write For loop with Array<class>, it takes 4,100ns.
 // If you write For loop with Array<struct>, it takes 700ns. (about 9x less)
@@ -113,8 +125,52 @@ namespace SqBenchmarks
 // 	Step 3: Iterating over the source array and populate the output array.
 // But it is not necessary to implement this fastest method all the time. If the code runs only sporadically, maintaining simple and clean code has a higher priority.
 
+// 7.The For vs. Foreach battle is not decided. Sometimes this is better, sometimes the other.
+// >https://stackoverflow.com/questions/1124753/performance-difference-for-control-structures-for-and-foreach-in-c-sharp
+// "A for loop gets compiled to code approximately equivalent to this:
+// int tempCount = 0;
+// while (tempCount < list.Count)
+// {
+//     if (list[tempCount].value == value)
+//     {
+//         // Do something
+//     }
+//     tempCount++;
+// }
+// Where as a foreach loop gets compiled to code approximately equivalent to this:
+// using (IEnumerator<T> e = list.GetEnumerator())
+// {
+//     while (e.MoveNext())
+//     {
+//         T o = (MyClass)e.Current;
+//         if (row.value == value)
+//         {
+//             // Do something
+//         }
+//     }
+// }"
+// >https://www.c-sharpcorner.com/article/c-sharp-performance-of-code-for-loop-vs-for-each-loop/
+// "The foreach loop took 107 milliseconds to execute the same process while the classic for loop took 14 milliseconds"
+// "If we have to access the local variable value multiple times in the for loop, in that case, the performance will decrease."
+// >https://stackoverflow.com/questions/365615/in-net-which-loop-runs-faster-for-or-foreach
+// "for loops on List are a bit more than 2 times cheaper than foreach loops on List.
+// Looping on array is around 2 times cheaper than looping on List.
+// As a consequence, looping on array using for is 5 times cheaper than looping on List using foreach (which I believe, is what we all do)."
+// >But others found negligible difference. Or that sometimes Foreach was faster.
+// https://stackoverflow.com/questions/365615/in-net-which-loop-runs-faster-for-or-foreach
+
+// 8. The For vs. Foreach battle: Advantage of foreach (sometimes)
+// Foreach() is slower than for(), but it can warn List<> modifications in multithreaded environment. 
+// That can be very useful, so bugs are immediately appear, and not like randomly (once a month) in the future.
+// foreach (var item in itemsList)
+// 	// will throw exception "Collection was modified; enumeration operation may not execute." if another thread Add(), Remove() from the list.
+// for (int i = 0; i < itemsList.Count; i++) 
+// for (int i = itemsList.Count - 1; i >= 0; i--) 
+// 	// will not throw exception. If another thread Add(), Remove() from the list, weird things can happen: Skipping one item, or processing some items twice.
+// Therefore, if the List is accessed by multiple threads, use foreach() in general. Even though it is slower than for().
 
 // Brief Conclusion:
+// - Avoid foreach. Even worse than LINQ.Select (7000ns). But used foreach() if the List is accessed by multiple threads and there is a possibility of Add()/Remove(). It will warn if misused.
 // - Use struct arrays if possible. That is the fastest. (700ns)
 // - If you have to use Classes, no structs (like Asset classes), then use arrays of Classes (4,100ns)
 // - Use Arrays over List. Arrays are +20% faster than List. Because Array implements IEnumerable<T>, LINQ can use arrays as well, not only list. Just think about the length of the data. If it can change the size, then use List. But 90% of the time that list never changes length. So, you should use Arrays.
@@ -175,6 +231,18 @@ namespace SqBenchmarks
             for (int i = 0; i < len; i++)
             {
                 result.Add(new ClassB() { Data = InputObjList[i].Data + 10 });
+            }
+            return result;
+        }
+
+        [Benchmark(Description = "ForeachOnObjList")]
+        public List<ClassB> ForeachOnObjList()
+        {
+            int len = InputObjList.Count;
+            List<ClassB> result = new List<ClassB>(len);
+            foreach (var item in InputObjList)
+            {
+                result.Add(new ClassB() { Data = item.Data + 10 });
             }
             return result;
         }

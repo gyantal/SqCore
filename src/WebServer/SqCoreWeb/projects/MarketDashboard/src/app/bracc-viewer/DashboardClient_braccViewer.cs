@@ -31,6 +31,7 @@ namespace SqCoreWeb
         public uint AssetId { get; set; } = 0;
         public string SqTicker { get; set; } = string.Empty;
         public string Symbol { get; set; } = string.Empty;  // can be shown on the HTML UI
+        public string SymbolEx { get; set; } = string.Empty;
 
         public string Name { get; set; } = string.Empty;
         public double Pos { get; set; }
@@ -260,7 +261,8 @@ namespace SqCoreWeb
             // Because in general PriorClose is needed in the UI calculations.
             // But decided it is better to send these PriorClose=NaN rows as well. To show on the client that those historical prices are missing. Needs fixing in MemDb.Hist.
             List<BrAccPos> validBrPoss = p_accPoss.Where(r => r.AssetId != AssetId32Bits.Invalid).ToList();
-            List<Asset> validBrPossAssets = validBrPoss.Select(r => MemDb.gMemDb.AssetsCache.AssetsByAssetID[r.AssetId]).ToList();
+            List<Asset> validBrPossAssets = validBrPoss.Select(r => (Asset)r.AssetObj!).ToList();
+            // List<Asset> validBrPossAssets = validBrPoss.Select(r => MemDb.gMemDb.AssetsCache.AssetsByAssetID[r.AssetId]).ToList();
 
             // merge the 2 lists together: validBrPoss, validBrPossAssets
             List<BrAccViewerPosJs> result = new List<BrAccViewerPosJs>(validBrPoss.Count);
@@ -273,11 +275,12 @@ namespace SqCoreWeb
                     AssetId = posBr.AssetId,
                     SqTicker = asset.SqTicker,
                     Symbol = asset.Symbol,
+                    SymbolEx = asset.SymbolEx,
                     Name = asset.Name,
                     Pos = posBr.Position,
                     AvgCost = posBr.AvgCost,
-                    PriorClose = asset.PriorClose,
-                    EstPrice = asset.LastValue,
+                    PriorClose = (float.IsNaN(asset.PriorClose)) ? 1.234f : asset.PriorClose,
+                    EstPrice = (float.IsNaN(asset.LastValue)) ? 1.234f : asset.LastValue,
                     AccId = p_gwIdStr
                 });
             }

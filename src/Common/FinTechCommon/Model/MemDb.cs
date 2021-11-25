@@ -27,10 +27,10 @@ namespace FinTechCommon
     internal class MemData  // don't expose to clients.
     {
         public volatile User[] Users = new User[0];   // writable: admin might insert a new user from HTML UI
-        public volatile AssetsCache AssetsCache = new AssetsCache();  // writable: user might insert a new asset from HTML UI
+        public volatile AssetsCache AssetsCache = new AssetsCache();  // writable: user might insert a new asset from HTML UI (although this is dangerous, how to propagate it the gSheet Asset replica)
 
         // As Portfolios are assets (nesting), we might store portfolios in AssetCache, not separately
-        public volatile List<string> Portfolios = new List<string>(); // temporary illustration of a data that will be not only read, but written by SqCore
+        public volatile List<string> Portfolios = new List<string>(); // temporary illustration of a data that will be not only read, but written by SqCore. Portfolios are not necessary here, because they are Assets as well, so they can go to AssetsCache
         public volatile CompactFinTimeSeries<DateOnly, uint, float, uint> DailyHist = new CompactFinTimeSeries<DateOnly, uint, float, uint>();
 
         public MemData()
@@ -72,7 +72,6 @@ namespace FinTechCommon
     // So, better to aggregate RT prices only rarely when it is required by a user.
     public partial class MemDb
     {
-
         public static MemDb gMemDb = new MemDb();   // Singleton pattern
         // public object gMemDbUpdateLock = new object();  // the rare clients who care about inter-table consintency (VBroker) should obtain the lock before getting pointers to subtables
         Db m_Db;
@@ -82,8 +81,8 @@ namespace FinTechCommon
  
         public User[] Users { get { return m_memData.Users; } }
         public AssetsCache AssetsCache { get { return m_memData.AssetsCache; } }
-        public List<string> Portfolios { get { return m_memData.Portfolios; } }
         public CompactFinTimeSeries<DateOnly, uint, float, uint> DailyHist { get { return m_memData.DailyHist; } }
+        public List<string> Portfolios { get { throw new NotImplementedException(); } } // Portfolios are Assets as well, so they can go to AssetsCache
 
         public bool IsInitialized { get; set; } = false;
 
@@ -129,7 +128,7 @@ namespace FinTechCommon
                 // Step 1: Redis Assets, Users
                 // GA.IM.NAV assets have user_id data, so User data has to be reloaded too before Assets
                 (bool isDbReloadNeeded, User[]? newUsers, List<Asset>? newAssets) = m_Db.GetDataIfReloadNeeded();    // isDbReloadNeeded can be ignored as it is surely true at Init()
-                var newAssetCache = AssetsCache.CreateAssetCache(newAssets!);               // TODO: var newPortfolios = GeneratePortfolios();
+                var newAssetCache = new AssetsCache(newAssets!);               // TODO: var newPortfolios = GeneratePortfolios();
                 m_memData = new MemData(newUsers!, newAssetCache, new CompactFinTimeSeries<DateOnly, uint, float, uint>());
                 m_lastRedisReload = DateTime.UtcNow;
                 m_lastRedisReloadTs = DateTime.UtcNow - startTime;
@@ -146,13 +145,13 @@ namespace FinTechCommon
                 {
                     Task brTask = Task.Run(() =>    // Task.Run() runs it immediately
                     {
-                    // IB API is not async. Thread waits until the connection is established.
-                    // Task.Run() uses threads from the thread pool, so it executes those connections parallel in the background. Then wait for them.
-                    bool isConnected = BrokersWatcher.gWatcher.GatewayReconnect(brAccount.GatewayId);
+                        // IB API is not async. Thread waits until the connection is established.
+                        // Task.Run() uses threads from the thread pool, so it executes those connections parallel in the background. Then wait for them.
+                        bool isConnected = BrokersWatcher.gWatcher.GatewayReconnect(brAccount.GatewayId);
                         if (!isConnected)
                             return;
                         MemDb.gMemDb.UpdateBrAccount(brAccount, brAccount.GatewayId);  // brAccount.Poss
-                    brAccount.NavAsset!.LastValue = (float)brAccount.NetLiquidation;    // fill RT price
+                        brAccount.NavAsset!.LastValue = (float)brAccount.NetLiquidation;    // fill RT price
                     });
                     brTasks.Add(brTask);
                 }
@@ -331,7 +330,7 @@ namespace FinTechCommon
                 return;
 
             // to minimize the time memDb is not consintent we create everything into new pointers first, then update them quickly
-            var newAssetCache = AssetsCache.CreateAssetCache(sqCoreAssets!);
+            var newAssetCache = new AssetsCache(sqCoreAssets!);
             // var newPortfolios = GeneratePortfolios();
 
             InitAllAssetsPriorCloseAndLastPrice(newAssetCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
@@ -413,18 +412,56 @@ namespace FinTechCommon
             p_brAccount.AccPossUnrecognizedAssets = new List<BrAccPos>();
             foreach (BrAccPos pos in p_brAccount.AccPoss)
             {
-                pos.AssetId = AssetId32Bits.Invalid;
-                if (pos.Contract.SecType != "STK")
+                Asset? asset = null;
+                Contract contract = pos.Contract;
+                switch (contract.SecType)
                 {
-                    p_brAccount.AccPossUnrecognizedAssets.Add(pos);
-                    continue;
+                    case "STK":
+                        asset = AssetsCache.TryGetAsset("S/" + contract.Symbol);
+                        if (asset == null)
+                            p_brAccount.AccPossUnrecognizedAssets.Add(pos);
+                        break;
+                    case "OPT":
+                        if (contract.Symbol == "VIX")
+                        {
+                            Utils.Logger.Info($"UpdateBrAccPosAssetIds(): Skip VIX-futures option contract.'{contract.LocalSymbol}'");
+                            break;  // TEMP: ignore VIX index options at the moment. Just concentrate on StockOptions, not FuturesOptions. Too many different contracts. They just add up clutter on the UI. Also, they are based on Futures, not stocks, so more difficult to implement them.
+                        }
+
+                        string sqTicker = Option.GenerateSqTicker(contract.Symbol, contract.LastTradeDateOrContractMonth, contract.Right[0], contract.Strike);
+                        asset = AssetsCache.TryGetAsset(sqTicker);
+                        if (asset == null)
+                        {
+                            if (contract.Currency != "USD")
+                                break;
+                            if (!Int32.TryParse(contract.Multiplier, out int multiplier))
+                                break;
+
+                            OptionRight right = contract.Right switch
+                            {
+                                "C" => OptionRight.Call,
+                                "P" => OptionRight.Put,
+                                _ => OptionRight.Unknown
+                            };
+                            asset = AssetsCache.CreateNonPersistedOption(CurrencyId.USD, OptionType.StockOption, contract.Symbol, contract.LastTradeDateOrContractMonth, right, contract.Strike, multiplier);
+                        }
+                        // p_brAccount.AccPossUnrecognizedAssets.Add(pos);
+                        break;
+                    case "CASH":    // Ignore Virtual Forex positions. "Cash contract" is virtual (to follow the AvgPrice). 
+                        // Cash position is real, but that is part of the Account, not the contracts. For the BrAccViewer UI, the cash positions are not important. They don't change intraday, and they would just clutter the datatable.
+                        // You can remove Virtual Forex positions in IB: Account/VirtualFx positions/RightClick/Change Virtual price or position/Set position = 0 / Restart IB.
+                        Utils.Logger.Info($"UpdateBrAccPosAssetIds(): Skip Virtual Forex contracts, which is not the real cash. It is only the VirtualFX position in the Account dialog. Set Pos=0 in TWS and it will disappear. Pos: {pos.Position}, Currency: {contract.Currency}, LocalSymbol: {contract.LocalSymbol}. Something weird. Seemingly wrong position, and only one Cash arrived.");
+                        break;
+                    default:
+                        Utils.Logger.Warn($"UpdateBrAccPosAssetIds(): unrecognized SecType: '{contract.SecType}'");
+                        break;
                 }
 
-                var asset = AssetsCache.TryGetAsset("S/" + pos.Contract.Symbol);
-                if (asset != null)
-                    pos.AssetId = asset.AssetId;
+                pos.AssetObj = asset;
+                if (asset == null)
+                    pos.AssetId = AssetId32Bits.Invalid;
                 else
-                    p_brAccount.AccPossUnrecognizedAssets.Add(pos);
+                    pos.AssetId = asset.AssetId;
             }
 
             StringBuilder sb = new StringBuilder($"MemDb.UpdateBrAccPosAssetIds(). Unrecognised IB contracts as valid SqCore assets (#{p_brAccount.AccPossUnrecognizedAssets.Count}): ");

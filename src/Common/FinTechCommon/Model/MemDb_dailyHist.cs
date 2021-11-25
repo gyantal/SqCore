@@ -37,8 +37,8 @@ namespace FinTechCommon
     public partial class MemDb
     {
         Timer m_historicalDataReloadTimer; // forced reload In ET time zone: 4:00ET, 9:00ET, 16:30ET.
-        DateTime m_lastHistoricalDataReload = DateTime.MinValue; // UTC
-        TimeSpan m_lastHistoricalDataReloadTs;  // YF downloads. For 12 stocks, it is 3sec. so for 120 stocks 30sec, for 600 stocks 2.5min, for 1200 stocks 5min
+        static DateTime m_lastHistoricalDataReload = DateTime.MinValue; // UTC
+        static TimeSpan m_lastHistoricalDataReloadTs;  // YF downloads. For 12 stocks, it is 3sec. so for 120 stocks 30sec, for 600 stocks 2.5min, for 1200 stocks 5min
  
         void InitAndScheduleHistoricalTimer()
         {
@@ -94,7 +94,7 @@ namespace FinTechCommon
         {
             DateTime startTime = DateTime.UtcNow;
 
-            var newDailyHist = await CreateDailyHist(m_Db, Users, AssetsCache);
+            var newDailyHist = await CreateDailyHist(m_Db, AssetsCache);
             
             m_lastHistoricalDataReload = DateTime.UtcNow;
             m_lastHistoricalDataReloadTs = DateTime.UtcNow - startTime;
@@ -102,10 +102,9 @@ namespace FinTechCommon
             return newDailyHist;
         }
 
-
         // Polling for changes 3x every day
         // historical data can partially come from our Redis-Sql DB or partially from YF
-        static async Task<CompactFinTimeSeries<DateOnly, uint, float, uint>?> CreateDailyHist(Db p_db, User[] p_users, AssetsCache p_assetCache)
+        static async Task<CompactFinTimeSeries<DateOnly, uint, float, uint>?> CreateDailyHist(Db p_db, AssetsCache p_assetCache)
         {
             Utils.Logger.Info("CreateDailyHist() START");
             Console.WriteLine("*MemDb.DailyHist Download from YF starts.");
@@ -452,7 +451,7 @@ namespace FinTechCommon
                 if (aggNavAsset == null)
                 {
                     var aggAssetId = new AssetId32Bits(AssetType.BrokerNAV, (uint)(10000 + nVirtualAggNavAssets++));
-                    aggNavAsset = new BrokerNav(aggAssetId, user.Initials, "Aggregated NAV, " + user.Initials, "", CurrencyId.USD, user, p_db.GetExpectedHistoryStartDate("1y", aggAssetSqTicker), navAssetsWithQuotes);
+                    aggNavAsset = new BrokerNav(aggAssetId, user.Initials, "Aggregated NAV, " + user.Initials, "", CurrencyId.USD, false, user, p_db.GetExpectedHistoryStartDate("1y", aggAssetSqTicker), navAssetsWithQuotes);
                     p_assetCache.AddAsset(aggNavAsset);
                 }
 

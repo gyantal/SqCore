@@ -27,8 +27,8 @@ namespace FinTechCommon
                 GatewayId = gatewayId;
         }
 
-        public BrokerNav(AssetId32Bits assetId, string symbol, string name, string shortName, CurrencyId currency, User user, DateTime histStartDate, List<BrokerNav> aggregateNavChildren)
-            : base(assetId, symbol, name, shortName, currency)
+        public BrokerNav(AssetId32Bits assetId, string symbol, string name, string shortName, CurrencyId currency, bool isDbPersisted, User user, DateTime histStartDate, List<BrokerNav> aggregateNavChildren)
+            : base(assetId, symbol, name, shortName, currency, isDbPersisted)
         {
             User = user;
             ExpectedHistoryStartDateLoc = histStartDate;

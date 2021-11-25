@@ -12,7 +12,11 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
         // In Redis, AssetId will be permanent. Starting from 1...increasing by 1. Redis 'tables' will be ordered by AssetId, because of faster JOIN operations.
         // The top bits of AssetId is the Type=Stock, Options, so there can be gaps in the AssetId ordered list. But at least, we can aim to order this array by AssetId. (as in Redis)
         public List<Asset> Assets { get; set; } = new List<Asset>();    // it is loaded from RedisDb by filtering 'memDb.allAssets' by 'memDb.SqCoreWebAssets'
-
+        
+        uint m_stocksSubTableIdMax = 0;   // for generating new AssetID for NonPersistent Stocks, Options that might come from IB-TWS
+        uint m_optionsSubTableIdMax = 0;  // for generating new AssetID for NonPersistent Stocks, Options that might come from IB-TWS
+        uint m_navSubTableIdMax = 0;    // for generating new AssetID for Aggregated BrokerNav assets
+        
         // O(1) search for Dictionaries. Tradeoff between CPU-usage and RAM-usage. Use excess memory in order to search as fast as possible.
         // Another alternative is to implement a virtual ordering in an index table: int[] m_idxByTicker (used by Sql DBs), but that also uses RAM and the access would be only O(logN). Hashtable uses more memory, but it is faster.
         // BinarySearch is a good idea for 10,000 Dates in time series, but not for this, when we have a small number of discrete values of AssetID or Tickers
@@ -28,16 +32,30 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
         // It also supports null keys, and returns always a valid result, so it appears as more resilient to unknown input (less prone than Dictionary to raise exceptions).
         // https://stackoverflow.com/questions/13362490/difference-between-lookup-and-dictionaryof-list
         public ILookup<string, Asset> AssetsBySymbol = Enumerable.Empty<Asset>().ToLookup(x => default(string)!); // LSE:"VOD", NYSE:"VOD" both can be in database  // Lookup doesn't have default constructor.
-        
-        public static AssetsCache CreateAssetCache(List<Asset> p_assets)
+
+        public AssetsCache()
         {
-            return new AssetsCache()
+        }
+        public AssetsCache(List<Asset> p_assets)
+        {
+            Assets = p_assets;    // replace AssetsCache in one atomic operation by changing the pointer, so no inconsistency
+            AssetsByAssetID = p_assets.ToDictionary(r => r.AssetId);
+            AssetsBySqTicker = p_assets.ToDictionary(r => r.SqTicker);
+            AssetsBySymbol = p_assets.ToLookup(r => r.Symbol); // if it contains duplicates, ToLookup() allows for multiple values per key.
+
+            // actualize m_stocksSubTableIdMax, m_navSubTableIdMax, m_optionsSubTableIdMax
+            for (int i = 0; i < Assets.Count; i++)  // Fast code for about 2-3000 assets
             {
-                Assets = p_assets,    // replace AssetsCache in one atomic operation by changing the pointer, so no inconsistency
-                AssetsByAssetID = p_assets.ToDictionary(r => r.AssetId),
-                AssetsBySqTicker = p_assets.ToDictionary(r => r.SqTicker),
-                AssetsBySymbol = p_assets.ToLookup(r => r.Symbol), // if it contains duplicates, ToLookup() allows for multiple values per key.
-            };
+                var asset = Assets[i];
+                var assetTypeId = asset.AssetId.AssetTypeID;
+                var subTableId = asset.AssetId.SubTableID;
+                if (assetTypeId == AssetType.Stock && subTableId > m_stocksSubTableIdMax)
+                    m_stocksSubTableIdMax = subTableId;
+                if (assetTypeId == AssetType.Option && subTableId > m_optionsSubTableIdMax)
+                    m_optionsSubTableIdMax = subTableId;
+                if (assetTypeId == AssetType.BrokerNAV && subTableId > m_navSubTableIdMax)
+                    m_navSubTableIdMax = subTableId;
+            }
         }
 
         public void AddAsset(Asset p_asset)
@@ -67,6 +85,23 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
             if (AssetsBySqTicker.TryGetValue(p_sqTicker, out Asset? value))
                 return value;
             return null;
+        }
+
+        public Asset? CreateNonPersistedOption(CurrencyId p_currency, OptionType p_optionType, string p_underlyingSymbol, string p_lastTradeDateOrContractMonth, OptionRight p_optionRight, double p_strike, int p_multiplier)
+        {
+            AssetId32Bits assedId = new AssetId32Bits(AssetType.Option, ++m_optionsSubTableIdMax);
+            string optionSymbol = Option.GenerateOptionSymbol(p_underlyingSymbol, p_lastTradeDateOrContractMonth, p_optionRight, p_strike);
+
+            Option option = new Option(assedId, p_underlyingSymbol, $"<Example stock or Index> option, Call, Strike 5, Exp: 10", string.Empty, p_currency, false, 
+                p_optionType, optionSymbol, p_underlyingSymbol, p_lastTradeDateOrContractMonth, p_optionRight, p_strike, p_multiplier);
+            
+            // ERROR|Sq: Exception in ReloadHistoricalDataAndSetTimer() Collection was modified; enumeration operation may not execute.
+            // AddAsset(option);    // TEMP: comment it out.
+
+            // 3. need locking: CreateAssets, and putting that into the Assets List needs locking, otherwise separate threads can do trouble.
+
+            // 4. AggNavAssets creation is also on the fly. Needs locking as well, and assetId creation similar to this.
+            return option;
         }
 
         // Also can be historical using Assets.TickerChanges

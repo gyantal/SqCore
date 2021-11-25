@@ -98,7 +98,20 @@ namespace FinTechCommon
 		ADR = 2,
 		ETF = 3,
 		Virtual = 4  // VXX.SQ is a virtual stock
+	}
 
+    public enum OptionType : byte
+    {
+		Unknown = 0,
+		StockOption = 1,
+		IndexOption = 2 // in IB for VIX options, the underlying is "VIX index", because "VIX index" is also the underlying of VIX futures. This is better. Don't introduce a chain that "VIX options" => "VIX futures" => "VIX index"
+	}
+
+    public enum OptionRight : byte  // Put or Call: right to buy or sell
+    {
+		Unknown = 0,
+		Call = 1,
+		Put = 2
 	}
 
 	public enum ExchangeId : sbyte // differs from dbo.StockExchange, which is 'int'

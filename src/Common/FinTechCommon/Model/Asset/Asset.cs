@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
-using BrokerCommon;
 using SqCommon;
 
 namespace FinTechCommon
@@ -15,12 +13,18 @@ namespace FinTechCommon
     public class Asset
     {
         public AssetId32Bits AssetId { get; set; } = AssetId32Bits.Invalid; // Unique assetId for code. Faster than SqTicker. Invalid value is best to be 0. If it is Uint32.MaxValue is the invalid, then problems if extending to Uint64
-        public string Symbol { get; set; } = string.Empty;  // can be shown on the UI. It is the IB Symbol, so it is "BRK B", not "BRK-B", which is YfTicker or "BRK.B", which is IexTicker
-        public string Name { get; set; } = string.Empty;
-        public string ShortName { get; set; } = string.Empty;
+        
+        // Symbol can be shown on the UI. It is the IB Symbol, so it is "BRK B", not "BRK-B", which is YfTicker or "BRK.B", which is IexTicker. 
+        // For option "O/SVXY*220121P15", the Symbol is only "SVXY". This symbol is shown in BrAccViewer table, so it should be only 3-4 chars.
+        public string Symbol { get; set; } = string.Empty;
+        public string SymbolEx { get; set; } = string.Empty;    // EXtended Symbol for options, futures. E.g. "SVXY 220121P15", show on UI. Need this, 'coz Asset.Symbol = "SVXY", kept short. Asset.Name is long company name. Asset.ShortName is only 1-2 char for currencies.
+        public string Name { get; set; } = string.Empty;    // longer company name or ETF name. For VXX, it is "iPath Series B S&P 500 VIX Short-Term Futures ETN"
+        public string ShortName { get; set; } = string.Empty;   // only used for currencies, for very short 1-2 chars
         public CurrencyId Currency { get; set; } = CurrencyId.USD;  // if stocks with different currencies are in the portfolio they have to be converted to USD, if they are not. IB has a BaseCurrency of the account. We use USD as the base currency of the program. Every calculations are based in the USD form.
 
         public string SqTicker { get; set; } = string.Empty;    // Unique assetId for humans to read. Better to store it as static field then recalculating at every request in derived classes
+
+        public bool IsDbPersisted { get; set; } = true;   // There are special adHoc temporary, runtime-only Stocks, Options coming from IB-TWS. They don't exist in the RedisDb. They cannot be part of a Buy transaction in a Portfolio.
 
         // The Last (realtime price) and the PriorClose values are too frequently used (for daily %Chg calculation) in many Asset classes: Stocks, Futures, Options. Although it is not necessary in other classes, but let them have here in the parent class
         private float m_lastValue = float.NaN; // field
@@ -40,13 +44,14 @@ namespace FinTechCommon
         {
         }
 
-        public Asset(AssetId32Bits assetId, string symbol, string name, string shortName, CurrencyId currency)
+        public Asset(AssetId32Bits assetId, string symbol, string name, string shortName, CurrencyId currency, bool isDbPersisted = true)
         {
             AssetId = assetId;
             Symbol = symbol;
             Name = name;
             ShortName = shortName;
             Currency = currency;
+            IsDbPersisted = isDbPersisted;
 
             SqTicker = AssetHelper.gAssetTypeCode[AssetId.AssetTypeID] + "/" + Symbol;
         }

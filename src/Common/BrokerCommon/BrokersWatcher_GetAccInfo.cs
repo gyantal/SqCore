@@ -47,7 +47,8 @@ namespace BrokerCommon
 
     public class BrAccPos
     {
-        public uint AssetId { get; set; } = 0;  // AssetId.Invalid = 0;  we cannot store Asset pointers, because FinTechCommon is a higher module than BrokerCommon
+        public uint AssetId { get; set; } = 0;  // AssetId.Invalid = 0;  we cannot store Asset pointers, because FinTechCommon is a higher module than BrokerCommon. Although we can store Objects that point to Assets
+        public object? AssetObj { get; set; } = null;
         public Contract Contract { get; set; }
         public int FakeContractID { get; set; } // when we cannot change Contract.ConID which should be left 0, but we use an Int in the dictionary.
         public double Position { get; set; }    // in theory, position is Int (whole number) for all the examples I seen. However, IB gives back as double, just in case of a complex contract. Be prepared.

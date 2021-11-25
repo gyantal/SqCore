@@ -1,0 +1,66 @@
+
+
+using System;
+using System.Collections.Generic;
+using System.Text.Json;
+using SqCommon;
+
+namespace FinTechCommon
+{
+    public class Option : Asset
+    {
+        public OptionType OptionType { get; set; } = OptionType.Unknown;
+        public string UnderlyingSymbol { get; set; } = string.Empty;    // Stock or "VIX index", because "VIX index" is also the underlying of VIX futures.
+        public Asset? UnderlyingAsset { get; set; } = null;
+        public string LastTradeDateOrContractMonthStr { get; set; } = string.Empty;     // commodity (oil, natgas) futures options may have not a precise date here, but only a ContractMonth
+        public DateTime ExpirationDate { get; set; } = DateOnly.NO_DATE;    // for VIX options, this is 1 day after the LastTradeDate
+        public DateTime LastTradeDate { get; set; } = DateOnly.NO_DATE;     // this is given by ID in LastTradeDateOrContractMonthStr. IB can contain the time in it as well: "DEC 21'21 15:15 CST"
+        
+
+        public OptionRight OptionRight { get; set; } = OptionRight.Unknown;     // Put or Call
+        public double Strike { get; set; } = double.NaN;
+        public int Multiplier { get; set; } = -1;
+
+        public string PrimaryExchange { get; set; } = string.Empty;
+        public ExchangeId PrimaryExchangeId { get; set; } = ExchangeId.Unknown; // different assed with the same "VOD" ticker can exist in LSE, NYSE; YF uses "VOD" and "VOD.L"
+
+        public Option(AssetId32Bits assetId, string symbol, string name, string shortName, CurrencyId currency, bool isDbPersisted,
+            OptionType optionType, string optionSymbol, string underlyingSymbol, string lastTradeDateOrContractMonth, OptionRight optionRight, double strike, 
+            int multiplier) : base(assetId, symbol, name, shortName, currency, isDbPersisted)
+        {
+            // an IB example
+            // IB-Symbol [string]:"SVXY"
+            // IB-LastTradeDateOrContractMonth [string]:"20220121"
+            // IB-Right [string]:"P"
+            // IB-Strike [double]:15
+            // IB-LocalSymbol: "SVXY  220121P00015000"
+            // SqTicker: "O/SVXY*220121P15"
+            // SqSymbol (for UI): "SVXY 220121P15"
+            OptionType = optionType;
+            SymbolEx = optionSymbol;
+            UnderlyingSymbol = underlyingSymbol;
+            LastTradeDateOrContractMonthStr = lastTradeDateOrContractMonth;
+            OptionRight = optionRight;
+            Strike = strike;
+            Multiplier = multiplier;
+
+            SqTicker = GenerateSqTicker(underlyingSymbol, lastTradeDateOrContractMonth, (optionRight == OptionRight.Call) ? 'C' : ((optionRight == OptionRight.Put) ? 'P' : '?'), strike);
+        }
+
+        public static string GenerateOptionSymbol(string p_underlyingSymbol, string p_lastTradeDateOrContractMonth, OptionRight p_optionRight, double p_strike)
+        {
+            char right = (p_optionRight == OptionRight.Call) ? 'C' : ((p_optionRight == OptionRight.Put) ? 'P' : '?');
+            return  $"{p_underlyingSymbol} {p_lastTradeDateOrContractMonth}{right}{p_strike}";
+        }
+        // generate "O/ARKK*20230120C77.96", "O/VXX*220617P16"
+        public static string GenerateSqTicker(string p_underlyingSymbol, string p_lastTradeDateOrContractMonth, char p_right, double p_strike)
+        {
+            return  $"O/{p_underlyingSymbol}*{p_lastTradeDateOrContractMonth}{p_right}{p_strike}";
+        }
+
+        public Option(JsonElement row, List<Asset> assets) : base(AssetType.Option, row)
+        {
+
+        }
+    }
+}
