@@ -21,7 +21,7 @@ MarketBar
     <span>
     <div class="AccSumm">
         <div class="plSum">Account Summary</div>
-        <span class="tooltipCell plSum">P&L Today
+        <span class="tooltipGeneral plSum">P&L Today
             <span class="notImpInfo">(Positions)</span> : 
             <span [ngClass]="{
                 'mktBarPositivePerf' : uiSnapTable.sumPlTodVal > 0,
@@ -39,17 +39,17 @@ MarketBar
                 </div>
             </div>
         </span>
-        <span class="tooltipCell plSum">
+        <span class="tooltipGeneral plSum">
             <div class="tooltipSnap">
                 <div class="snapshot">
                     Force reload snapshot table<br> (Realtime: NAV, #Pos, EstPrice)
                 </div>
             </div>
-            <span><img id="refresh" border='0' alt='YF' src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked($event)" width='15' height='15'></span>
+            <span class="refresh"><img class="refresh" border='0' alt='YF' src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked($event)"></span>
         </span>
         <span class="notImpInfo">{{uiSnapTable.snapLastUpateTimeLoc | date:'H:mm'}} ({{uiSnapTable.snapLastUpdateTimeAgoStr}})</span>
         <div>
-            <span class="tooltipCell plSum">NAV :
+            <span class="plSum tooltipGeneral">NAV :
                 <span id="liqVal">{{uiSnapTable.netLiquidation | currency:'USD':'symbol':'1.0'}}</span>
                 <div class="tooltipSnap">
                     <div class="snapshot">
@@ -59,7 +59,7 @@ MarketBar
             </span>
             <span class="notImpInfo"> ({{uiSnapTable.navLastUpdateTimeAgoStr}})</span>
         </div>
-        <div class="tooltipCell plSum">P&L Today
+        <div class="plSum tooltipGeneral">P&L Today
             <span class="notImpInfo"> (PriorNAV)</span> : 
             <span [ngClass]="{
                 'mktBarPositivePerf' : uiSnapTable.plTodPrNav > 0,
@@ -96,7 +96,7 @@ MarketBar
                 <div class="moreDetailsPartitions">
                     <div>Number Of Positions: <span class="moreDetailsSum">{{uiSnapTable.numOfPoss}}</span></div>
                     <div>Long Stock MktValue: 
-                        <span class="tooltipCell moreDetailsSum">{{uiSnapTable.longStockValue | number}}*
+                        <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.longStockValue | number}}*
                             <div class="tooltipSnap">
                                 <div class="snapshot">
                                     !! Long VXX is here, although it is market bearish.<br>
@@ -110,7 +110,7 @@ MarketBar
                     <div>Put Option Delta Adjusted DelivValue: <span class="moreDetailsSum"></span></div>
                 </div>
                 <div class="moreDetailsPartitions" id="borderRemove">
-                    <div class="tooltipCell">Max Risked estimate:
+                    <div class="tooltipGeneral">Max Risked estimate:
                         <span class="moreDetailsSum"
                         [ngClass]="{'green' : uiSnapTable.totalMaxRiskedLeverage < 1.3,
                                     'orange': uiSnapTable.totalMaxRiskedLeverage >= 1.3 || uiSnapTable.totalMaxRiskedLeverage <= 1.5,
@@ -127,7 +127,7 @@ MarketBar
                             </div>
                         </div>
                     </div>
-                    <div class="tooltipCell">Delta Adjusted Bullish/<br>Bearish Market Orientation:
+                    <div class="tooltipGeneral">Delta Adjusted Bullish/<br>Bearish Market Orientation:
                         <div class="tooltipSnap">
                             <div class="snapshot">
                                 LongStock - ShortStock + dAdj.CallOption <br>
@@ -135,7 +135,7 @@ MarketBar
                             </div>
                         </div>
                     </div>
-                    <div class="tooltipCell">Beta Delta Adjusted Bullish/<br>Bearish Market Orientation :
+                    <div class="tooltipGeneral">Beta Delta Adjusted Bullish/<br>Bearish Market Orientation :
                         <div class="tooltipSnap">
                             <div class="snapshot">
                                 approx. mkt exposure sum
@@ -154,14 +154,14 @@ MarketBar
                         <div>StartDate: <input class = "histPeriodDateCl" type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr"></div>
                         <div>EndDate: <input class = "histPeriodDateCl" type="date" id="EndDate" name="EndDate" min="01-01-1975" [(ngModel)]="histPeriodEndETstr"></div>
                         <div>BenchMark:
-                            <select [(ngModel)] = "uiMktBar.poss" (keypress)="OnHistBnchmkInputKeypress($event)">
-                                <option *ngFor="let item of uiMktBar.poss" [value]="item">
-                                        {{item.sqTicker}}
-                                </option>
-                            </select>
-                        </div>
-                        <div>BenchMark2: Experimenting with NavSel <input type="text" placeholder="Select Ticker" [(ngModel)]="selectedTicker" (keypress)="OnHistBnchmkInputKeypress($event)"/>
-                            <div *ngFor="let item of navSelection | filter: selectedTicker">{{item}}</div>
+                            <input class="selectedSqTicker" type="text" name="ticker" list="selectedSqTicker" placeholder="Select Ticker"/>
+                                <datalist id="selectedSqTicker">
+                                    <select [(ngModel)] = "uiMktBar.poss" (keypress)="OnHistBnchmkInputKeypress($event)">
+                                        <option *ngFor="let item of uiMktBar.poss">
+                                            {{item.sqTicker}}
+                                        </option>
+                                    </select>
+                                 </datalist>
                         </div>
                         <div>MaxDD<span class="notImpInfo">(NAV/BnchMrk):</span>
                             <span class="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">

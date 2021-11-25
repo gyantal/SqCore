@@ -81,7 +81,7 @@ class AssetPriorCloseJs {
 
 // UI classes
 class UiMktBar {
-  public lstValLastRefreshTime = new Date();
+  public lstValLastRefreshTimeLoc = new Date();
   public lstValLastRefreshTimeStr = '';
   public poss: UiMktBarItem[] = [];
 }
@@ -205,7 +205,7 @@ export class BrAccViewerComponent implements OnInit {
   brAccountSnapshotStrFormatted = '[Nothing arrived yet]';
   brAccountSnapshotObj: Nullable<BrAccSnapshotJs> = null;
   lstValObj: Nullable<AssetLastJs[]> = null;  // realtime or last values
-  lstValLastUiRefreshTime = new Date(); // This is not the time of the Rt data, but the time when last refresh was sent from server to UI.
+  lstValLastUiRefreshTimeLoc = new Date(); // This is not the time of the Rt data, but the time when last refresh was sent from server to UI.
   navSelection: string[] = [];
   navSelectionSelected = '';
   uiMktBar: UiMktBar = new UiMktBar();
@@ -238,9 +238,9 @@ export class BrAccViewerComponent implements OnInit {
     this.histPeriodEndETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.histPeriodEndET);
 
     setInterval(() => { this.snapshotRefresh(); }, 60 * 60 * 1000); // forced Snapshot table refresh timer in every 60 mins
-    setInterval(() => { this.uiSnapTable.snapLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - (new Date (this.uiSnapTable.snapLastUpateTimeLoc)).getTime());
-                        this.uiMktBar.lstValLastRefreshTimeStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiMktBar.lstValLastRefreshTime.getTime());
-                        this.uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - (new Date (this.uiSnapTable.navLastUpdateTimeLoc)).getTime());
+    setInterval(() => { this.uiMktBar.lstValLastRefreshTimeStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiMktBar.lstValLastRefreshTimeLoc.getTime());
+                        this.uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.navLastUpdateTimeLoc.getTime());
+                        this.uiSnapTable.snapLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.snapLastUpateTimeLoc.getTime());
                       }, 1000);
     setInterval(() => { 
       if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
@@ -272,7 +272,7 @@ export class BrAccViewerComponent implements OnInit {
         console.log('BrAccViewer.MktBrLstCls:' + msgObjStr);
         this.mktBrLstClsStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.mktBrLstClsObj = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateMktBarUi(this.handshakeObj, this.mktBrLstClsObj, this.lstValObj, this.lstValLastUiRefreshTime, this.uiMktBar);
+        BrAccViewerComponent.updateMktBarUi(this.handshakeObj, this.mktBrLstClsObj, this.lstValObj, this.lstValLastUiRefreshTimeLoc, this.uiMktBar);
         return true;
       case 'BrAccViewer.Handshake':  // this is the least frequent message. Should come last.
         console.log('BrAccViewer.Handshake:' + msgObjStr);
@@ -287,9 +287,9 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   public webSocketLstValArrived(p_lstValObj: Nullable<AssetLastJs[]>) { // real time price data
-    this.lstValLastUiRefreshTime = new Date();
+    this.lstValLastUiRefreshTimeLoc = new Date();
     this.lstValObj = p_lstValObj;
-    BrAccViewerComponent.updateMktBarUi(this.handshakeObj, this.mktBrLstClsObj, this.lstValObj, this.lstValLastUiRefreshTime,this.uiMktBar);
+    BrAccViewerComponent.updateMktBarUi(this.handshakeObj, this.mktBrLstClsObj, this.lstValObj, this.lstValLastUiRefreshTimeLoc,this.uiMktBar);
     BrAccViewerComponent.updateSnapshotTableWithRtNav(this.lstValObj, this.uiSnapTable);
   }
 
@@ -309,8 +309,8 @@ export class BrAccViewerComponent implements OnInit {
     // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
     if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(priorCloses) && priorCloses.length > 0  && Array.isArray(lastRt) && lastRt.length > 0))
       return;
-    uiMktBar.lstValLastRefreshTime = lstValLastUiRefreshTime;
-    uiMktBar.lstValLastRefreshTimeStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - uiMktBar.lstValLastRefreshTime.getTime());
+    uiMktBar.lstValLastRefreshTimeLoc = lstValLastUiRefreshTime;
+    uiMktBar.lstValLastRefreshTimeStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - uiMktBar.lstValLastRefreshTimeLoc.getTime());
     for (const item of marketBarAssets) {
       let uiItem = new UiMktBarItem();
       const existingUiCols = uiMktBar.poss.filter((r) => r.sqTicker === item.sqTicker);
@@ -356,9 +356,7 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.priorCloseNetLiquidation = brAccSnap.priorCloseNetLiquidation;
     uiSnapTable.plTodPrNav = Math.round(brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation);
     uiSnapTable.pctChgTodPrNav = (brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation) / brAccSnap.priorCloseNetLiquidation;
-    uiSnapTable.clientMsg = brAccSnap.clientMsg.replace(';',',').split(',,').join('\n').toString();
-    console.log("The Client msg is: ", uiSnapTable.clientMsg);
-
+    uiSnapTable.clientMsg = brAccSnap.clientMsg.split(';').join('\n');
     uiSnapTable.poss.length = 0;
 
     for (const possItem of brAccSnap.poss) {
@@ -532,28 +530,28 @@ export class BrAccViewerComponent implements OnInit {
     var firstEleOfHistDataArr1 = uiHistData[0].brAccChrtActuals[0].chrtSdaClose; // used to convert the data into percentage values
     var firstEleOfHistDataArr2 = uiHistData[1].brAccChrtActuals[0].chrtSdaClose; // used to convert the data into percentage values
 
-    var histChrtData = uiHistData[0].brAccChrtActuals.map((d:{ chartDate: Date; chrtSdaClose: number; }) => 
-            ({chartDate: new Date(d.chartDate), chrtSdaClose: (100 * d.chrtSdaClose / firstEleOfHistDataArr1)}));
-    var histChrtData1 = uiHistData[1].brAccChrtActuals.map((d:{ chartDate: Date; chrtSdaClose: number; }) => 
-            ({chartDate: new Date(d.chartDate), chrtSdaClose: (100 * d.chrtSdaClose / firstEleOfHistDataArr2)}));
+    var histChrtData1 = uiHistData[0].brAccChrtActuals.map((r:{ chartDate: Date; chrtSdaClose: number; }) => 
+            ({chartDate: new Date(r.chartDate), chrtSdaClose: (100 * r.chrtSdaClose / firstEleOfHistDataArr1)}));
+    var histChrtData2 = uiHistData[1].brAccChrtActuals.map((r:{ chartDate: Date; chrtSdaClose: number; }) => 
+            ({chartDate: new Date(r.chartDate), chrtSdaClose: (100 * r.chrtSdaClose / firstEleOfHistDataArr2)}));
 
     const formatMonth = d3.timeFormat('%Y%m%d');
-    var  bisectDate = d3.bisector((d: any) => d.chartDate).left;
+    var  bisectDate = d3.bisector((r: any) => r.chartDate).left;
     // find data range
-    var xMin = d3.min(histChrtData, (d:{ chartDate: any; }) => d.chartDate);
-    var xMax = d3.max(histChrtData, (d:{ chartDate: any; }) => d.chartDate);
-    var yMinAxis = Math.min(d3.min(histChrtData, (d:{ chrtSdaClose: any; }) => d.chrtSdaClose), d3.min(histChrtData1, (d:{ chrtSdaClose: any; }) => d.chrtSdaClose ));
-    var yMaxAxis = Math.max(d3.max(histChrtData, (d:{ chrtSdaClose: any; }) => d.chrtSdaClose), d3.max(histChrtData1, (d:{ chrtSdaClose: any; }) => d.chrtSdaClose ));
+    var xMin = d3.min(histChrtData1, (r:{ chartDate: any; }) => r.chartDate);
+    var xMax = d3.max(histChrtData1, (r:{ chartDate: any; }) => r.chartDate);
+    var yMinAxis = Math.min(d3.min(histChrtData1, (r:{ chrtSdaClose: any; }) => r.chrtSdaClose), d3.min(histChrtData2, (r:{ chrtSdaClose: any; }) => r.chrtSdaClose ));
+    var yMaxAxis = Math.max(d3.max(histChrtData1, (r:{ chrtSdaClose: any; }) => r.chrtSdaClose), d3.max(histChrtData2, (r:{ chrtSdaClose: any; }) => r.chrtSdaClose ));
     // range of data configuring
     var histChrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, width]);
-    var histChrtScaleY = d3.scaleLinear().domain([yMinAxis-5, yMaxAxis+5]).range([height, 0]);
+    var histChrtScaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([height, 0]);
 
     var histChrtSvg = d3.select('#my_dataviz').append('svg')
                         .attr('width', width + margin.left + margin.right)
                         .attr('height', height + margin.top + margin.bottom)
                         .append('g')
                         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-    var histChrtScaleYAxis = d3.axisLeft(histChrtScaleY).tickFormat((d: any) => Math.round(d) + '%');
+    var histChrtScaleYAxis = d3.axisLeft(histChrtScaleY).tickFormat((r: any) => Math.round(r) + '%');
 
     histChrtSvg.append('g')
               .attr('transform', 'translate(0,' + height + ')')
@@ -562,12 +560,12 @@ export class BrAccViewerComponent implements OnInit {
 
     // Define the line
     var line = d3.line()
-                    .x( (d: any) => histChrtScaleX(d.chartDate))
-                    .y( (d: any) => histChrtScaleY(d.chrtSdaClose))
+                    .x((r: any) => histChrtScaleX(r.chartDate))
+                    .y((r: any) => histChrtScaleY(r.chrtSdaClose))
                     .curve(d3.curveCardinal);
     var line2 = d3.line()
-                      .x( (d: any) => histChrtScaleX(d.chartDate))
-                      .y( (d: any) => histChrtScaleY(d.chrtSdaClose))
+                      .x((r: any) => histChrtScaleX(r.chartDate))
+                      .y((r: any) => histChrtScaleY(r.chrtSdaClose))
                       .curve(d3.curveCardinal);
 
     var histChrtlineSvg = histChrtSvg.append('g');
@@ -575,13 +573,13 @@ export class BrAccViewerComponent implements OnInit {
   // Add the valueline path.
     histChrtlineSvg.append('path')
                   .attr('class', 'line')
-                  .datum(histChrtData) // Binds data to the line
+                  .datum(histChrtData1) // Binds data to the line
                   .attr('d', line as any)
 
     histChrtlineSvg.append('path')
                   .attr('class', 'line2')
                   .style('stroke-dasharray', ('3, 3'))
-                  .datum(histChrtData1) // Binds data to the line
+                  .datum(histChrtData2) // Binds data to the line
                   .attr('d', line2 as any)
 
      // append the x line
@@ -658,27 +656,27 @@ export class BrAccViewerComponent implements OnInit {
 
     function mousemove(event: any) {
       var x0 = histChrtScaleX.invert(d3.pointer(event)[0]),
-      i = bisectDate(histChrtData, x0, 1),
-      d = histChrtData[i]
+      i = bisectDate(histChrtData1, x0, 1),
+      r = histChrtData1[i]
       focus.select('circle.y')
-          .attr('transform', 'translate(' + histChrtScaleX(d.chartDate) + ',' + histChrtScaleY(d.chrtSdaClose) + ')');
+          .attr('transform', 'translate(' + histChrtScaleX(r.chartDate) + ',' + histChrtScaleY(r.chrtSdaClose) + ')');
       focus.select('text.y1')
-          .attr('transform', 'translate(' + histChrtScaleX(d.chartDate) + ',' + histChrtScaleY(d.chrtSdaClose) + ')')
-          .text(d.chrtSdaClose);
+          .attr('transform', 'translate(' + histChrtScaleX(r.chartDate) + ',' + histChrtScaleY(r.chrtSdaClose) + ')')
+          .text(r.chrtSdaClose);
       focus.select('text.y2')
-          .attr('transform', 'translate(' + histChrtScaleX(d.chartDate) + ',' + histChrtScaleY(d.chrtSdaClose) + ')')
-          .text((d.chrtSdaClose*firstEleOfHistDataArr1/100).toFixed(2)+'K');
+          .attr('transform', 'translate(' + histChrtScaleX(r.chartDate) + ',' + histChrtScaleY(r.chrtSdaClose) + ')')
+          .text(d3.format(',')(Math.round((r.chrtSdaClose*firstEleOfHistDataArr1/100))) + 'K');
       focus.select('text.y3')
-          .attr('transform', 'translate(' + histChrtScaleX(d.chartDate) + ',' + histChrtScaleY(d.chrtSdaClose) + ')')
-          .text(formatMonth(d.chartDate));
+          .attr('transform', 'translate(' + histChrtScaleX(r.chartDate) + ',' + histChrtScaleY(r.chrtSdaClose) + ')')
+          .text(formatMonth(r.chartDate));
       focus.select('text.y4')
-          .attr('transform','translate(' + histChrtScaleX(d.chartDate) + ',' + histChrtScaleY(d.chrtSdaClose) + ')')
-          .text(formatMonth(d.chartDate));
+          .attr('transform','translate(' + histChrtScaleX(r.chartDate) + ',' + histChrtScaleY(r.chrtSdaClose) + ')')
+          .text(formatMonth(r.chartDate));
       focus.select('.x')
-          .attr('transform', 'translate(' + histChrtScaleX(d.chartDate) + ',' + histChrtScaleY(d.chrtSdaClose) + ')')
-          .attr('y2', height - histChrtScaleY(d.chrtSdaClose));
+          .attr('transform', 'translate(' + histChrtScaleX(r.chartDate) + ',' + histChrtScaleY(r.chrtSdaClose) + ')')
+          .attr('y2', height - histChrtScaleY(r.chrtSdaClose));
       focus.select('.y')
-          .attr('transform', 'translate(' + width * -1 + ',' + histChrtScaleY(d.chrtSdaClose) + ')')
+          .attr('transform', 'translate(' + width * -1 + ',' + histChrtScaleY(r.chrtSdaClose) + ')')
           .attr('x2', width + width);
     }
   }

@@ -95,11 +95,11 @@
 .notImpInfo {
   font-size: 1.0rem
 }
-.AccSumm #refresh{
-  width:15;
-  height:15;
-  cursor: pointer;
+.AccSumm .refresh{
+  width:1.5rem;
+  height:1.5rem;
   font-size: 1.4rem;
+  cursor: pointer;
 }
 /* Change background color of buttons on hover */
 .tab :hover {
@@ -176,6 +176,10 @@
   vertical-align: top;
   margin-top: 0.25rem;
 }
+.selectedSqTicker {
+  width: 10.8rem
+}
+
 
 // Table stylings
 .brAccSnapTbl {
@@ -241,11 +245,11 @@ thead tr :hover {
   white-space: pre-wrap;
 }
 // Common for all the tooltips 
-.tooltipCell {
+.tooltipGeneral {
   position: relative;
   cursor: help;
 }
-.tooltipCell .tooltipSnap {
+.tooltipGeneral .tooltipSnap {
   padding:0.3rem;
   font-size: 0.8rem;
   font-weight: normal;
@@ -263,13 +267,13 @@ thead tr :hover {
   white-space: pre;
   opacity: 0.87;
 }
-.tooltipCell .tooltipSnap .snapshot{
+.tooltipGeneral .tooltipSnap .snapshot{
   font-weight: bold;
 }
-.tooltipCell .tooltipSnap .smallTT{
+.tooltipGeneral .tooltipSnap .smallTT{
   font-size: 0.2rem;
 }
-.tooltipCell:hover .tooltipSnap {
+.tooltipGeneral:hover .tooltipSnap {
   display: inline-block;
 }
 // Tooltip posotioning for the stock postions 

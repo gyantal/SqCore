@@ -14,7 +14,7 @@ import { ClickOutsideDirective } from './../../../sq-ng-common/src/lib/sq-ng-com
 import { SettingsDialogComponent } from './settings-dialog/settings-dialog.component';
 import { MatTabsModule } from '@angular/material/tabs'; // used for creating multiple tabs
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { FilterPipe } from './../../../sq-ng-common/src/lib/sq-ng-common.pipe';
+
 
 @NgModule({
   declarations: [
@@ -28,8 +28,7 @@ import { FilterPipe } from './../../../sq-ng-common/src/lib/sq-ng-common.pipe';
     DocsGetStartedComponent,
     DocsTutorialComponent,
     ClickOutsideDirective,
-    SettingsDialogComponent,
-    FilterPipe
+    SettingsDialogComponent
   ],
   imports: [
     BrowserModule,
