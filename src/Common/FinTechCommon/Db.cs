@@ -86,6 +86,7 @@ namespace FinTechCommon
                     string aggAssetSqTicker = "N/" + user.Initials; // e.g. "N/DC";
                     var aggAssetId = new AssetId32Bits(AssetType.BrokerNAV, (uint)(10000 + nVirtualAggNavAssets++));
                     var aggNavAsset = new BrokerNav(aggAssetId, user.Initials, "Aggregated NAV, " + user.Initials, "", CurrencyId.USD, false, user, GetExpectedHistoryStartDate("1y", aggAssetSqTicker), subNavAssets);
+                    subNavAssets.ForEach(r => r.AggregateNavParent = aggNavAsset);
                     assets.Add(aggNavAsset);
                 }
             } // NAVs per user

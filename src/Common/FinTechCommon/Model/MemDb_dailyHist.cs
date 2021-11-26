@@ -37,8 +37,8 @@ namespace FinTechCommon
     public partial class MemDb
     {
         Timer m_historicalDataReloadTimer; // forced reload In ET time zone: 4:00ET, 9:00ET, 16:30ET.
-        static DateTime m_lastHistoricalDataReload = DateTime.MinValue; // UTC
-        static TimeSpan m_lastHistoricalDataReloadTs;  // YF downloads. For 12 stocks, it is 3sec. so for 120 stocks 30sec, for 600 stocks 2.5min, for 1200 stocks 5min
+        static DateTime g_lastHistoricalDataReload = DateTime.MinValue; // UTC
+        static TimeSpan g_lastHistoricalDataReloadTs;  // YF downloads. For 12 stocks, it is 3sec. so for 120 stocks 30sec, for 600 stocks 2.5min, for 1200 stocks 5min
  
         void InitAndScheduleHistoricalTimer()
         {
@@ -68,7 +68,13 @@ namespace FinTechCommon
             m_memDataWlocks.m_dailyHistWlock.Wait();    // if whole DbReload is happening at the same time or some other service modifies histData, wait until that is finished.
             try
             {
-                await ReloadMemDbHistData(true);    // calls EvOnlyHistoricalDataReloaded.Invoke()
+                var newDailyHist = await CreateDailyHist(m_memData, m_Db);
+                // If reload HistData fails AND if we reloadHist routinely in every 2 hours => we keep the currently good history in MemDb. 
+                if (newDailyHist != null)
+                {
+                    m_memData.DailyHist = newDailyHist;  // swap pointer in atomic operation
+                    EvOnlyHistoricalDataReloaded?.Invoke();
+                }
             }
             finally
             {
@@ -77,63 +83,53 @@ namespace FinTechCommon
             SetNextReloadHistDataTriggerTime();
         }
 
-        public async Task ReloadMemDbHistData(bool p_informEventObservers)
-        {
-            var newDailyHist = await CreateDailyHistWrapper();
-            // if we reloadHist routinely in every 2 hours (or at Init()) and it fails, we keep the currently good history in MemDb. 
-            // However, if it was a forced ReloadRedisDb, because assets changed Assets, then we throw away old history, even if download fails. But that is handled separately in ReloadDbDataIfChangedImpl()
-            if (newDailyHist == null)
-                return;
-
-            m_memData.DailyHist = newDailyHist;  // swap pointer in atomic operation
-            if (p_informEventObservers)
-                EvOnlyHistoricalDataReloaded?.Invoke();
-        }
-
-        public async Task<CompactFinTimeSeries<DateOnly, uint, float, uint>?> CreateDailyHistWrapper()  // Create hist, but don't yet overwrite m_memData.DailyHist
+        static internal async Task<CompactFinTimeSeries<DateOnly, uint, float, uint>?> CreateDailyHist(MemData p_memData, Db p_db)  // Create hist, but don't yet overwrite m_memData.DailyHist
         {
             DateTime startTime = DateTime.UtcNow;
 
-            var newDailyHist = await CreateDailyHist(m_Db, AssetsCache);
-            
-            m_lastHistoricalDataReload = DateTime.UtcNow;
-            m_lastHistoricalDataReloadTs = DateTime.UtcNow - startTime;
-            Console.WriteLine($"CreateDailyHist() finished (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {newDailyHist?.GetDataDirect().Data.Count ?? 0}) in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
+            List<Asset> assetsNeedDailyHist = p_memData.AssetsCache.Assets.Where(r => (r.AssetId.AssetTypeID == AssetType.BrokerNAV) || 
+                ((r.AssetId.AssetTypeID == AssetType.Stock) && (((Stock)r).ExpectedHistoryStartDateLoc != DateTime.MaxValue))).ToList();   // out of 800 stocks, we only keep 20 history in MemDb
+            Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits = await GetPotentialMissingYfSplits(p_db, p_memData.AssetsCache);
+
+            var newDailyHist = await CreateDailyHistImpl(assetsNeedDailyHist, p_db, potentialMissingYfSplits);
+
+            g_lastHistoricalDataReload = DateTime.UtcNow;
+            g_lastHistoricalDataReloadTs = DateTime.UtcNow - startTime;
+            Console.WriteLine($"CreateDailyHist() finished (#Assets: {p_memData.AssetsCache.Assets.Count}, #HistoricalAssets: {newDailyHist?.GetDataDirect().Data.Count ?? 0}) in {g_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
             return newDailyHist;
         }
 
         // Polling for changes 3x every day
         // historical data can partially come from our Redis-Sql DB or partially from YF
-        static async Task<CompactFinTimeSeries<DateOnly, uint, float, uint>?> CreateDailyHist(Db p_db, AssetsCache p_assetCache)
+        static async Task<CompactFinTimeSeries<DateOnly, uint, float, uint>?> CreateDailyHistImpl(List<Asset> p_assetsNeedDailyHist, Db p_db, Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits)
         {
             Utils.Logger.Info("CreateDailyHist() START");
             Console.WriteLine("*MemDb.DailyHist Download from YF starts.");
             try
             {
-                Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits = await GetPotentialMissingYfSplits(p_db, p_assetCache);
-
                 var assetsDates = new Dictionary<uint, DateOnly[]>();
                 var assetsAdjustedCloses = new Dictionary<uint, float[]>();
-                foreach (var asset in p_assetCache.Assets)
+                foreach (var stock in p_assetsNeedDailyHist.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).Select(r => (Stock)r))
                 {
-                    (DateOnly[] dates, float[] adjCloses) = await GetDatesAndAdjCloses(asset, potentialMissingYfSplits);
+                    (DateOnly[] dates, float[] adjCloses) = await CreateDailyHist_Stock(stock as Stock, potentialMissingYfSplits);
                     if (adjCloses.Length != 0)
                     {
-                        assetsDates[asset.AssetId] = dates;
-                        assetsAdjustedCloses[asset.AssetId] = adjCloses;
-                        Console.Write($"{asset.Symbol}, ");
-                        Debug.Write($"{asset.SqTicker}, first: DateTime: {dates.First()}, Close: {adjCloses.First()}, last: DateTime: {dates.Last()}, Close: {adjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
+                        assetsDates[stock.AssetId] = dates;
+                        assetsAdjustedCloses[stock.AssetId] = adjCloses;
+                        Console.Write($"{stock.Symbol}, ");
+                        Debug.Write($"{stock.SqTicker}, first: DateTime: {dates.First()}, Close: {adjCloses.First()}, last: DateTime: {dates.Last()}, Close: {adjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
                     }
                 }
                 Console.WriteLine();    // after the last ticker, write an Enter.
 
                 // NAV assets should be grouped by user, because we create a synthetic new aggregatedNAV. This aggregate should add up the RAW UnadjustedNAV (not adding up the adjustedNAV), so we have to create it at MemDbReload.
-                var navAssets = p_assetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV).Select(r => (BrokerNav)r);
+                var navAssets = p_assetsNeedDailyHist.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV).Select(r => (BrokerNav)r);
                 var navAssetsByUser = navAssets.ToLookup(r => r.User); // ToLookup() uses User.Equals()
-                int nVirtualAggNavAssets = 0;
+
                 foreach (IGrouping<User?, BrokerNav>? navAssetsOfUser in navAssetsByUser)
                 {
-                    AddNavAssetsOfUserToAdjCloses(navAssetsOfUser, p_assetCache, p_db, ref nVirtualAggNavAssets, assetsDates, assetsAdjustedCloses);
+                    BrokerNav? aggNavAsset = navAssetsOfUser.First().AggregateNavParent;    // The first BrokerNav can contain it. 
+                    CreateDailyHist_UserNavs(navAssetsOfUser, aggNavAsset, p_db, assetsDates, assetsAdjustedCloses);
                 } // NAVs per user
 
                 List<DateOnly> mergedDates = UnionAllDates(assetsDates);
@@ -144,7 +140,7 @@ namespace FinTechCommon
             }
             catch (Exception e)
             {
-                Utils.Logger.Error(e, "Exception in ReloadHistoricalDataAndSetTimer()");
+                Utils.Logger.Error(e, "Exception in CreateDailyHist()");
                 await HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MemDb. Exception: '{ e.ToStringWithShortenedStackTrace(1600)}'", HealthMonitorMessageID.SqCoreWebCsError);
             }
             return null;
@@ -337,84 +333,79 @@ namespace FinTechCommon
             return potentialMissingYfSplits;
         }
 
-        private static async Task<(DateOnly[], float[])> GetDatesAndAdjCloses(Asset asset, Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits)
+        private static async Task<(DateOnly[], float[])> CreateDailyHist_Stock(Stock stock, Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits)
         {
             DateOnly[] dates = new DateOnly[0];  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards
             float[] adjCloses = new float[0];
 
-            Stock? stock = asset as Stock;
-            if (stock != null)
+            if (stock.ExpectedHistoryStartDateLoc == DateTime.MaxValue) // if Initial value was not overwritten. For Dead stocks, like "S/VXX*20190130"
+                return (dates, adjCloses);
+            // https://github.com/lppkarl/YahooFinanceApi
+            // YF: all the Open/High/Low/Close are always already adjusted for Splits (so, we don't have to adjust it manually);  In addition: AdjClose also adjusted for Divididends.
+            // YF gives back both the onlySplit(butNotDividend)-adjusted row.Close, and SplitAndDividendAdjusted row.AdjustedClose (checked with MO dividend and USO split).
+            // checked the YF returned data by stream.ReadToEnd(): it is a CSV structure, with columns. The line "Apr 29, 2020	1:8 Stock Split" is Not in the data. 
+            // https://finance.yahoo.com/quote/USO/history?p=USO The YF website queries the splits separately when it inserts in-between the rows.
+            // Therefore, we have to query the splits separately from YF.
+            // The startTime & endTime here defaults to EST timezone
+            IReadOnlyList<Candle?>? history = await Yahoo.GetHistoricalAsync(stock.YfTicker, stock.ExpectedHistoryStartDateLoc, DateTime.Now, Period.Daily); // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
+            if (history == null)
+                throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{stock.SqTicker}) after many tries.");
+            // 2021-02-26T16:30 Exception: https://finance.yahoo.com/quote/SPY/history?p=SPY returns for yesterday: "Feb 25, 2021	-	-	-	-	-	-" , other days are correct, this is probably temporary
+            // YahooFinanceApi\Yahoo - Historical.cs:line 80 receives: "2021-02-25,null,null,null,null,null,null" and crashes on StringToDecimal conversion
+            // TODO: We don't have a plan for those case when YF historical quote fails. What should we do?
+            // Option 1: crash the whole SqCore app: not good, because other services: website, VBroker, Timers, ContangoVisualizer can run
+            // Option 2: Persist YF data to DB every 2 hours. In case of failed YF reload, fall back to latest from DB. Not a real solution if YF gives bad data for days.
+            // Option 3: (preferred) Use 2 public databases (GF, Nasdaq, Marketwatch, Iex): In case YF fails for a stock for a date, use that other one if that data is believable (within range)
+
+            dates = history.Select(r => new DateOnly(r!.DateTime)).ToArray();
+
+            // YF sends this weird Texts, which are converted to Decimals, so we don't lose TEXT conversion info.
+            // AAPL:    DateTime: 2016-01-04 00:00:00, Open: 102.610001, High: 105.370003, Low: 102.000000, Close: 105.349998, Volume: 67649400, AdjustedClose: 98.213585  (original)
+            //          DateTime: 2016-01-04 00:00:00, Open: 102.61, High: 105.37, Low: 102, Close: 105.35, Volume: 67649400, AdjustedClose: 98.2136
+            // we have to round values of 102.610001 to 2 decimals (in normal stocks), but some stocks price is 0.00452, then that should be left without conversion.
+            // AdjustedClose 98.213585 is exactly how YF sends it, which is correct. Just in YF HTML UI, it is converted to 98.21. However, for calculations, we may need better precision.
+            // In general, round these price data Decimals to 4 decimal precision.
+
+            // for penny stocks, IB and YF considers them for max. 4 digits. UWT price (both in IB ask-bid, YF history) 2020-03-19: 0.3160, 2020-03-23: 2302
+            // sec.AdjCloseHistory = history.Select(r => (double)Math.Round(r.AdjustedClose, 4)).ToList();
+            adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
+
+            // 2020-04-29: USO split: Split-adjustment was not done in YF. For these exceptional cases, so we need an additional data-source for double check
+            // First just add the manual data source from Redis/Sql database, and let’s see how unreliable YF is in the future. 
+            // If it fails frequently, then we can implement query-ing another website, like https://www.nasdaq.com/market-activity/stock-splits
+            var splitHistoryYF = await Yahoo.GetSplitsAsync(stock.YfTicker, stock.ExpectedHistoryStartDateLoc, DateTime.Now);
+
+            DateTime etNow = DateTime.UtcNow.FromUtcToEt();  // refresh etNow
+            // var missingYfSplitDb = new SplitTick[1] { new SplitTick() { DateTime = new DateTime(2020, 06, 08), BeforeSplit = 8, AfterSplit = 1 }};
+            potentialMissingYfSplits!.TryGetValue(stock.AssetId, out List<Split>? missingYfSplitDb);
+
+            // if any missingYfSplitDb record is not found in splitHistoryYF, we assume YF is wrong (and our DB is right (probably custom made)), so we do this extra split-adjustment assuming it is not in the YF quote history
+            for (int i = 0; missingYfSplitDb != null && i < missingYfSplitDb.Count; i++)
             {
-                if (stock.ExpectedHistoryStartDateLoc == DateTime.MaxValue) // if Initial value was not overwritten. For Dead stocks, like "S/VXX*20190130"
-                    return (dates, adjCloses);
-                // https://github.com/lppkarl/YahooFinanceApi
-                // YF: all the Open/High/Low/Close are always already adjusted for Splits (so, we don't have to adjust it manually);  In addition: AdjClose also adjusted for Divididends.
-                // YF gives back both the onlySplit(butNotDividend)-adjusted row.Close, and SplitAndDividendAdjusted row.AdjustedClose (checked with MO dividend and USO split).
-                // checked the YF returned data by stream.ReadToEnd(): it is a CSV structure, with columns. The line "Apr 29, 2020	1:8 Stock Split" is Not in the data. 
-                // https://finance.yahoo.com/quote/USO/history?p=USO The YF website queries the splits separately when it inserts in-between the rows.
-                // Therefore, we have to query the splits separately from YF.
-                // The startTime & endTime here defaults to EST timezone
-                IReadOnlyList<Candle?>? history = await Yahoo.GetHistoricalAsync(stock.YfTicker, stock.ExpectedHistoryStartDateLoc, DateTime.Now, Period.Daily); // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
-                if (history == null)
-                    throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{stock.SqTicker}) after many tries.");
-                // 2021-02-26T16:30 Exception: https://finance.yahoo.com/quote/SPY/history?p=SPY returns for yesterday: "Feb 25, 2021	-	-	-	-	-	-" , other days are correct, this is probably temporary
-                // YahooFinanceApi\Yahoo - Historical.cs:line 80 receives: "2021-02-25,null,null,null,null,null,null" and crashes on StringToDecimal conversion
-                // TODO: We don't have a plan for those case when YF historical quote fails. What should we do?
-                // Option 1: crash the whole SqCore app: not good, because other services: website, VBroker, Timers, ContangoVisualizer can run
-                // Option 2: Persist YF data to DB every 2 hours. In case of failed YF reload, fall back to latest from DB. Not a real solution if YF gives bad data for days.
-                // Option 3: (preferred) Use 2 public databases (GF, Nasdaq, Marketwatch, Iex): In case YF fails for a stock for a date, use that other one if that data is believable (within range)
+                var missingSplitDb = missingYfSplitDb[i];
 
-                dates = history.Select(r => new DateOnly(r!.DateTime)).ToArray();
+                // ignore future data of https://api.nasdaq.com/api/calendar/splits?date=2021-04-14
+                if (missingSplitDb.Date > etNow)    // interpret missingSplitDb.Date in in ET time zone.
+                    continue;
+                if (splitHistoryYF.FirstOrDefault(r => r!.DateTime == missingSplitDb.Date) != null)    // if that date exists in YF already, do nothing; assume YF uses it
+                    continue;
 
-                // YF sends this weird Texts, which are converted to Decimals, so we don't lose TEXT conversion info.
-                // AAPL:    DateTime: 2016-01-04 00:00:00, Open: 102.610001, High: 105.370003, Low: 102.000000, Close: 105.349998, Volume: 67649400, AdjustedClose: 98.213585  (original)
-                //          DateTime: 2016-01-04 00:00:00, Open: 102.61, High: 105.37, Low: 102, Close: 105.35, Volume: 67649400, AdjustedClose: 98.2136
-                // we have to round values of 102.610001 to 2 decimals (in normal stocks), but some stocks price is 0.00452, then that should be left without conversion.
-                // AdjustedClose 98.213585 is exactly how YF sends it, which is correct. Just in YF HTML UI, it is converted to 98.21. However, for calculations, we may need better precision.
-                // In general, round these price data Decimals to 4 decimal precision.
-
-                // for penny stocks, IB and YF considers them for max. 4 digits. UWT price (both in IB ask-bid, YF history) 2020-03-19: 0.3160, 2020-03-23: 2302
-                // sec.AdjCloseHistory = history.Select(r => (double)Math.Round(r.AdjustedClose, 4)).ToList();
-                adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
-
-                // 2020-04-29: USO split: Split-adjustment was not done in YF. For these exceptional cases, so we need an additional data-source for double check
-                // First just add the manual data source from Redis/Sql database, and let’s see how unreliable YF is in the future. 
-                // If it fails frequently, then we can implement query-ing another website, like https://www.nasdaq.com/market-activity/stock-splits
-                var splitHistoryYF = await Yahoo.GetSplitsAsync(stock.YfTicker, stock.ExpectedHistoryStartDateLoc, DateTime.Now);
-
-                DateTime etNow = DateTime.UtcNow.FromUtcToEt();  // refresh etNow
-                // var missingYfSplitDb = new SplitTick[1] { new SplitTick() { DateTime = new DateTime(2020, 06, 08), BeforeSplit = 8, AfterSplit = 1 }};
-                potentialMissingYfSplits!.TryGetValue(stock.AssetId, out List<Split>? missingYfSplitDb);
-
-                // if any missingYfSplitDb record is not found in splitHistoryYF, we assume YF is wrong (and our DB is right (probably custom made)), so we do this extra split-adjustment assuming it is not in the YF quote history
-                for (int i = 0; missingYfSplitDb != null && i < missingYfSplitDb.Count; i++)
+                double multiplier = (double)missingSplitDb.Before / (double)missingSplitDb.After;
+                // USO split date from YF: "Apr 29, 2020" Time: 00:00. Means that very early morning, 9:30 hours before market open. That is the inflection point.
+                // Split adjust (multiply) everything before that time, but do NOT split adjust that exact date.
+                DateOnly missingSplitDbDate = new DateOnly(missingSplitDb.Date);
+                for (int j = 0; j < dates.Length; j++)
                 {
-                    var missingSplitDb = missingYfSplitDb[i];
-
-                    // ignore future data of https://api.nasdaq.com/api/calendar/splits?date=2021-04-14
-                    if (missingSplitDb.Date > etNow)    // interpret missingSplitDb.Date in in ET time zone.
-                        continue;
-                    if (splitHistoryYF.FirstOrDefault(r => r!.DateTime == missingSplitDb.Date) != null)    // if that date exists in YF already, do nothing; assume YF uses it
-                        continue;
-
-                    double multiplier = (double)missingSplitDb.Before / (double)missingSplitDb.After;
-                    // USO split date from YF: "Apr 29, 2020" Time: 00:00. Means that very early morning, 9:30 hours before market open. That is the inflection point.
-                    // Split adjust (multiply) everything before that time, but do NOT split adjust that exact date.
-                    DateOnly missingSplitDbDate = new DateOnly(missingSplitDb.Date);
-                    for (int j = 0; j < dates.Length; j++)
-                    {
-                        if (dates[j] < missingSplitDbDate)
-                            adjCloses[j] = (float)((double)adjCloses[j] * multiplier);
-                        else
-                            break;  // dates are in increasing order. So, once we passed the critical date, we can safely exit
-                    }
+                    if (dates[j] < missingSplitDbDate)
+                        adjCloses[j] = (float)((double)adjCloses[j] * multiplier);
+                    else
+                        break;  // dates are in increasing order. So, once we passed the critical date, we can safely exit
                 }
             }
-
             return (dates, adjCloses);
         }
 
-        private static void AddNavAssetsOfUserToAdjCloses(IGrouping<User?, BrokerNav> navAssetsOfUser, AssetsCache p_assetCache, Db p_db, ref int nVirtualAggNavAssets, Dictionary<uint, DateOnly[]> assetsDates, Dictionary<uint, float[]> assetsAdjustedCloses)
+        private static void CreateDailyHist_UserNavs(IGrouping<User?, BrokerNav> navAssetsOfUser, BrokerNav? aggNavAsset, Db p_db, Dictionary<uint, DateOnly[]> assetsDates, Dictionary<uint, float[]> assetsAdjustedCloses)
         {
             User user = navAssetsOfUser.Key!;
             List<DateOnly[]> navsDates = new List<DateOnly[]>();
@@ -439,19 +430,20 @@ namespace FinTechCommon
 
                 KeyValuePair<DateOnly, double>[] deposits = p_db.GetAssetBrokerNavDeposit(navAsset.AssetId);
 
-                CreateAdjNavAndIntegrate(navAsset, dates, unadjustedClosesNav, deposits, assetsDates, assetsAdjustedCloses);
+                // CreateAdjNavAndIntegrate(navAsset, dates, unadjustedClosesNav, deposits, assetsDates, assetsAdjustedCloses);
+                float[] adjCloses = CalcAdjNavUsingDeposits(dates, unadjustedClosesNav, deposits);
+                assetsDates[navAsset.AssetId] = dates;
+                assetsAdjustedCloses[navAsset.AssetId] = adjCloses;
+                Debug.WriteLine($"{navAsset.SqTicker}, first: DateTime: {dates.First()}, Close: {adjCloses.First()}, last: DateTime: {dates.Last()}, Close: {adjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
+
                 navsDates.Add(dates);
                 navsUnadjustedCloses.Add(unadjustedClosesNav);
                 navsDeposits.Add(deposits);
             }   // All NAVs of the user
 
             // if more than 2 NAVs for the user has valid history, then there is a virtual synthetic aggregatedNAV that has to be updated
-            if (navAssetsWithHistQuotes.Count < 2)
+            if (aggNavAsset == null || navAssetsWithHistQuotes.Count < 2)
                 return;
-            string aggAssetSqTicker = "N/" + user.Initials; // e.g. "N/DC";
-            Asset? aggNavAsset = p_assetCache.TryGetAsset(aggAssetSqTicker); // at sucessive ReloadHistoricalData(), the p_assetCache already contains the aggregated virtual asset
-            if (aggNavAsset == null)
-                return; // Impossible, because we created the Aggregate NAV when AssetCache was created.
 
             // merging Lists. Union and LINQ has very bad performance. Use Dict. https://stackoverflow.com/questions/4031262/how-to-merge-2-listt-and-removing-duplicate-values-from-it-in-c-sharp
             var aggDatesDict = new Dictionary<DateOnly, double>();
@@ -481,12 +473,15 @@ namespace FinTechCommon
                 }
             }
             var aggDepositsSortedDict = aggDepositsDict.OrderBy(p => p.Key); // if you need to sort it once, don't use SortedDictionary() https://www.c-sharpcorner.com/article/performance-sorteddictionary-vs-dictionary/
-            CreateAdjNavAndIntegrate(aggNavAsset, aggDates, aggUnadjustedCloses, aggDepositsSortedDict.ToArray(), assetsDates, assetsAdjustedCloses);
+            float[] aggAdjCloses = CalcAdjNavUsingDeposits(aggDates, aggUnadjustedCloses, aggDepositsSortedDict.ToArray());
+            assetsDates[aggNavAsset.AssetId] = aggDates;
+            assetsAdjustedCloses[aggNavAsset.AssetId] = aggAdjCloses;
+            Debug.WriteLine($"{aggNavAsset.SqTicker}, first: DateTime: {aggDates.First()}, Close: {aggAdjCloses.First()}, last: DateTime: {aggDates.Last()}, Close: {aggAdjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
         }
 
 
 
-        static private void CreateAdjNavAndIntegrate(Asset navAsset, DateOnly[] dates, double[] unadjustedClosesNav, KeyValuePair<DateOnly, double>[] deposits, Dictionary<uint, DateOnly[]> assetsDates, Dictionary<uint, float[]> assetsAdjustedCloses)
+        static private float[] CalcAdjNavUsingDeposits(DateOnly[] dates, double[] unadjustedClosesNav, KeyValuePair<DateOnly, double>[] deposits)
         {
             // ************************ Stock dividend ajustment and NAV deposit adjustment
             // https://www.investopedia.com/ask/answers/06/adjustedclosingprice.asp
@@ -582,18 +577,7 @@ namespace FinTechCommon
                     multiplier *= mult;
                 }
             }
-
-            // For debugging purposes. To copy to a CSV file.
-            // StringBuilder sb = new StringBuilder();
-            // for (int i = 0; i < adjCloses.Length; i++)
-            // {
-            //     sb.Append(dates[i] + ", " + adjCloses[i] + Environment.NewLine);
-            // }
-            // string adjClosesStr = sb.ToString();
-
-            assetsDates[navAsset.AssetId] = dates;
-            assetsAdjustedCloses[navAsset.AssetId] = adjCloses;
-            Debug.WriteLine($"{navAsset.SqTicker}, first: DateTime: {dates.First()}, Close: {adjCloses.First()}, last: DateTime: {dates.Last()}, Close: {adjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
+            return adjCloses;
         }
 
         private void SetNextReloadHistDataTriggerTime()

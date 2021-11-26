@@ -159,7 +159,10 @@ namespace FinTechCommon
                 // Step 3: Assets history in separate thread
                 Task histTask = Task.Run(async () =>    // Task.Run() runs it 'immediately'
                 {
-                    await ReloadMemDbHistData(false); // inside don't call EvOnlyHistoricalDataReloaded.Invoke(), because we will call later the EvFullMemDbDataReloaded?.Invoke();
+                    var newDailyHist = await CreateDailyHist(m_memData, m_Db);
+                    if (newDailyHist != null)   // if it fails, keep the empty DailyHist that was just created at the start
+                        m_memData.DailyHist = newDailyHist;  // swap pointer in atomic operation
+                    // Here don't call EvOnlyHistoricalDataReloaded.Invoke(), because we will call later the EvFullMemDbDataReloaded?.Invoke();
                 });
 
                 // Step 4: PriorClose and Rt prices download in the current thread. This is the quickest.
@@ -235,8 +238,8 @@ namespace FinTechCommon
             var hist = DailyHist.GetDataDirect();
             int memUsedKb = hist.MemUsed() / 1024;
             p_sb.Append($"#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {hist.Data.Count}, Used RAM: {memUsedKb:N0}KB<br>");  // hist.Data.Count = Srv.LoadPrHist + DC Aggregated NAV 
-            var lastDbReloadWithoutHist = m_lastFullMemDbReloadTs - m_lastHistoricalDataReloadTs;
-            p_sb.Append($"m_lastHistoricalDataReloadTimeUtc: '{m_lastHistoricalDataReload}', lastDbReloadWithoutHist: {lastDbReloadWithoutHist.TotalSeconds:0.000}sec, m_lastHistoricalDataReloadTs: {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec.<br>");
+            var lastDbReloadWithoutHist = m_lastFullMemDbReloadTs - g_lastHistoricalDataReloadTs;
+            p_sb.Append($"m_lastHistoricalDataReloadTimeUtc: '{g_lastHistoricalDataReload}', lastDbReloadWithoutHist: {lastDbReloadWithoutHist.TotalSeconds:0.000}sec, m_lastHistoricalDataReloadTs: {g_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec.<br>");
 
             var yfTickers = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).Select(r => ((Stock)r).YfTicker).ToArray();
             p_sb.Append($"StockAssets (#{yfTickers.Length}): ");
@@ -331,20 +334,17 @@ namespace FinTechCommon
 
             // to minimize the time memDb is not consintent we create everything into new pointers first, then update them quickly
             var newAssetCache = new AssetsCache(sqCoreAssets!);
-            // var newPortfolios = GeneratePortfolios();
+            var newMemData = new MemData(newUsers!, newAssetCache, new CompactFinTimeSeries<DateOnly, uint, float, uint>());
+            
+            var newDailyHist = await CreateDailyHist(newMemData, m_Db); // downloads historical prices from YF. Assume it takes 20min
+            // If reload HistData fails AND if it is a forced ReloadRedisDb, because assets changed Assets => we throw away old history, even if download fails.
+            if (newDailyHist != null)
+                newMemData.DailyHist = newDailyHist;
 
             InitAllAssetsPriorCloseAndLastPrice(newAssetCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
-
-            // if this is the periodic (not initial) reload of RedisDb, then we don't surprise clients by emptying HistPrices 
-            // and not having HistPrices for 20minutes. So, we download HistPrices before swapping m_memData pointer
-            var newDailyHist = await CreateDailyHistWrapper(); // downloads historical prices from YF. Assume it takes 20min
-            if (newDailyHist == null)
-                newDailyHist = new CompactFinTimeSeries<DateOnly, uint, float, uint>();
-
-            var newMemData = new MemData(newUsers!, newAssetCache, newDailyHist);
+            
             m_memData = newMemData; // swap pointer in atomic operation
-            Console.WriteLine($"*MemDb is ready! (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {DailyHist.GetDataDirect().Data.Count}) in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
-            // }
+            Console.WriteLine($"*MemDb is ready! (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {DailyHist.GetDataDirect().Data.Count}) in {g_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
 
             m_lastFullMemDbReload = DateTime.UtcNow;
             m_lastFullMemDbReloadTs = DateTime.UtcNow - startTime;
