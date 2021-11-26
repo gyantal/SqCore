@@ -69,6 +69,27 @@ namespace FinTechCommon
 
             User[] users = GetUsers(m_lastUsersStr);
             List<Asset> assets = GetAssetsFromJson(m_lastAssetsStr, users);
+
+            // Add the user's AggNavAsset into assets very early, so we don't have to Add items to AssetCache later, because that is problematic in multithreaded app (of something iterates over AssetCache)
+            // Imitate that the Db already has the AggNavAsset (other option is to move this addition up to MemDb, instead of this Db class)
+            // NAV assets should be grouped by user, because we create a synthetic new aggregatedNAV. This aggregate should add up the RAW UnadjustedNAV (not adding up the adjustedNAV), so we have to create it at MemDbReload.
+            var navAssets = assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV).Select(r => (BrokerNav)r);
+            var navAssetsByUser = navAssets.ToLookup(r => r.User); // ToLookup() uses User.Equals()
+            int nVirtualAggNavAssets = 0;
+            foreach (IGrouping<User?, BrokerNav>? navAssetsOfUser in navAssetsByUser)
+            {
+                // only aggregate IB assets, not TradeStation assets, because we only have histQuotes for IB. So "DC.IM", "DC.ID" is considered, but "DC.TM" is not. Trader code starts with letter "I"
+                List<BrokerNav> subNavAssets = navAssetsOfUser.Where(r => r.Symbol[3] == 'I').ToList();    // it adds all BrokerNav for DC: IbMain+IbDeBlan+TradeStation  (if problem, just code in that TradeStation Navs are not considered: "DC.TM","TS Main NAV, DC","DC.TM.NAV")
+                if (subNavAssets.Count >= 2)   // if more than 2 NAVs for the user has valid history, a virtual synthetic aggregatedNAV and a virtual AssetID should be generated
+                {
+                    User user = navAssetsOfUser.Key!;
+                    string aggAssetSqTicker = "N/" + user.Initials; // e.g. "N/DC";
+                    var aggAssetId = new AssetId32Bits(AssetType.BrokerNAV, (uint)(10000 + nVirtualAggNavAssets++));
+                    var aggNavAsset = new BrokerNav(aggAssetId, user.Initials, "Aggregated NAV, " + user.Initials, "", CurrencyId.USD, false, user, GetExpectedHistoryStartDate("1y", aggAssetSqTicker), subNavAssets);
+                    assets.Add(aggNavAsset);
+                }
+            } // NAVs per user
+
             AddLoadPrHistToAssets(m_lastSrvLoadPrHistStr, assets);
             return (isReloadNeeded, users, assets);
         }

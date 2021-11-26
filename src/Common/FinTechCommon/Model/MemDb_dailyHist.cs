@@ -420,7 +420,7 @@ namespace FinTechCommon
             List<DateOnly[]> navsDates = new List<DateOnly[]>();
             List<double[]> navsUnadjustedCloses = new List<double[]>();
             List<KeyValuePair<DateOnly, double>[]> navsDeposits = new List<KeyValuePair<DateOnly, double>[]>();
-            List<BrokerNav> navAssetsWithQuotes = new List<BrokerNav>();
+            List<BrokerNav> navAssetsWithHistQuotes = new List<BrokerNav>();
             foreach (var navAsset in navAssetsOfUser)
             {
                 var dailyNavStr = p_db.GetAssetQuoteRaw(navAsset.AssetId); // 47K text data from 9.5K brotli data, starts with FormatString: "D/C,20090102/16460,20090105/16826,..."
@@ -432,7 +432,7 @@ namespace FinTechCommon
                 if (formatString != "D/C")
                     continue;
 
-                navAssetsWithQuotes.Add(navAsset);
+                navAssetsWithHistQuotes.Add(navAsset);
                 var dailyNavStrSplit = dailyNavStr.Substring(iFirstComma + 1, dailyNavStr.Length - (iFirstComma + 1)).Split(',', StringSplitOptions.RemoveEmptyEntries);
                 DateOnly[] dates = dailyNavStrSplit.Select(r => new DateOnly(Int32.Parse(r.Substring(0, 4)), Int32.Parse(r.Substring(4, 2)), Int32.Parse(r.Substring(6, 2)))).ToArray();
                 double[] unadjustedClosesNav = dailyNavStrSplit.Select(r => Double.Parse(r.Substring(9))).ToArray();
@@ -444,47 +444,44 @@ namespace FinTechCommon
                 navsUnadjustedCloses.Add(unadjustedClosesNav);
                 navsDeposits.Add(deposits);
             }   // All NAVs of the user
-            if (navAssetsWithQuotes.Count >= 2)   // if more than 2 NAVs for the user has valid history, a virtual synthetic aggregatedNAV and a virtual AssetID should be generated.
+
+            // if more than 2 NAVs for the user has valid history, then there is a virtual synthetic aggregatedNAV that has to be updated
+            if (navAssetsWithHistQuotes.Count < 2)
+                return;
+            string aggAssetSqTicker = "N/" + user.Initials; // e.g. "N/DC";
+            Asset? aggNavAsset = p_assetCache.TryGetAsset(aggAssetSqTicker); // at sucessive ReloadHistoricalData(), the p_assetCache already contains the aggregated virtual asset
+            if (aggNavAsset == null)
+                return; // Impossible, because we created the Aggregate NAV when AssetCache was created.
+
+            // merging Lists. Union and LINQ has very bad performance. Use Dict. https://stackoverflow.com/questions/4031262/how-to-merge-2-listt-and-removing-duplicate-values-from-it-in-c-sharp
+            var aggDatesDict = new Dictionary<DateOnly, double>();
+            for (int iNav = 0; iNav < navsDates.Count; iNav++)
             {
-                string aggAssetSqTicker = "N/" + user.Initials; // e.g. "N/DC";
-                Asset? aggNavAsset = p_assetCache.TryGetAsset(aggAssetSqTicker); // at sucessive ReloadHistoricalData(), the p_assetCache already contains the aggregated virtual asset
-                if (aggNavAsset == null)
+                for (int j = 0; j < navsDates[iNav].Length; j++)
                 {
-                    var aggAssetId = new AssetId32Bits(AssetType.BrokerNAV, (uint)(10000 + nVirtualAggNavAssets++));
-                    aggNavAsset = new BrokerNav(aggAssetId, user.Initials, "Aggregated NAV, " + user.Initials, "", CurrencyId.USD, false, user, p_db.GetExpectedHistoryStartDate("1y", aggAssetSqTicker), navAssetsWithQuotes);
-                    p_assetCache.AddAsset(aggNavAsset);
+                    if (!aggDatesDict.ContainsKey(navsDates[iNav][j]))
+                        aggDatesDict[navsDates[iNav][j]] = navsUnadjustedCloses[iNav][j];
+                    else
+                        aggDatesDict[navsDates[iNav][j]] += navsUnadjustedCloses[iNav][j];
                 }
+            }
+            var aggDatesSortedDict = aggDatesDict.OrderBy(p => p.Key); // if you need to sort it once, don't use SortedDictionary() https://www.c-sharpcorner.com/article/performance-sorteddictionary-vs-dictionary/
+            var aggDates = aggDatesSortedDict.Select(r => r.Key).ToArray();    // it is ordered from earliest (2011) to latest (2020) exactly how the dates come from DB
+            var aggUnadjustedCloses = aggDatesSortedDict.Select(r => r.Value).ToArray();
 
-                // merging Lists. Union and LINQ has very bad performance. Use Dict. https://stackoverflow.com/questions/4031262/how-to-merge-2-listt-and-removing-duplicate-values-from-it-in-c-sharp
-                var aggDatesDict = new Dictionary<DateOnly, double>();
-                for (int iNav = 0; iNav < navsDates.Count; iNav++)
+            var aggDepositsDict = new Dictionary<DateOnly, double>();
+            for (int iNav = 0; iNav < navsDates.Count; iNav++)
+            {
+                foreach (var deposit in navsDeposits[iNav])
                 {
-                    for (int j = 0; j < navsDates[iNav].Length; j++)
-                    {
-                        if (!aggDatesDict.ContainsKey(navsDates[iNav][j]))
-                            aggDatesDict[navsDates[iNav][j]] = navsUnadjustedCloses[iNav][j];
-                        else
-                            aggDatesDict[navsDates[iNav][j]] += navsUnadjustedCloses[iNav][j];
-                    }
+                    if (!aggDepositsDict.ContainsKey(deposit.Key))
+                        aggDepositsDict[deposit.Key] = deposit.Value;
+                    else
+                        aggDepositsDict[deposit.Key] += deposit.Value;
                 }
-                var aggDatesSortedDict = aggDatesDict.OrderBy(p => p.Key); // if you need to sort it once, don't use SortedDictionary() https://www.c-sharpcorner.com/article/performance-sorteddictionary-vs-dictionary/
-                var aggDates = aggDatesSortedDict.Select(r => r.Key).ToArray();    // it is ordered from earliest (2011) to latest (2020) exactly how the dates come from DB
-                var aggUnadjustedCloses = aggDatesSortedDict.Select(r => r.Value).ToArray();
-
-                var aggDepositsDict = new Dictionary<DateOnly, double>();
-                for (int iNav = 0; iNav < navsDates.Count; iNav++)
-                {
-                    foreach (var deposit in navsDeposits[iNav])
-                    {
-                        if (!aggDepositsDict.ContainsKey(deposit.Key))
-                            aggDepositsDict[deposit.Key] = deposit.Value;
-                        else
-                            aggDepositsDict[deposit.Key] += deposit.Value;
-                    }
-                }
-                var aggDepositsSortedDict = aggDepositsDict.OrderBy(p => p.Key); // if you need to sort it once, don't use SortedDictionary() https://www.c-sharpcorner.com/article/performance-sorteddictionary-vs-dictionary/
-                CreateAdjNavAndIntegrate(aggNavAsset, aggDates, aggUnadjustedCloses, aggDepositsSortedDict.ToArray(), assetsDates, assetsAdjustedCloses);
-            }   // if there is 2 or more NAVs for the user.
+            }
+            var aggDepositsSortedDict = aggDepositsDict.OrderBy(p => p.Key); // if you need to sort it once, don't use SortedDictionary() https://www.c-sharpcorner.com/article/performance-sorteddictionary-vs-dictionary/
+            CreateAdjNavAndIntegrate(aggNavAsset, aggDates, aggUnadjustedCloses, aggDepositsSortedDict.ToArray(), assetsDates, assetsAdjustedCloses);
         }
 
 
