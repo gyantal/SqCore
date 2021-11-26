@@ -123,6 +123,15 @@ namespace FinTechCommon
             return (lastValue, lastValueUtc);
         }
 
+
+        // AggregatedNav data:
+        // AggregatedNav history: DailyHist stores the AggregatedNav merged history properly. Although it increases RAM usage, it has to be done only once, at MemDb reload. Better to store it.
+        // AggregatedNav realtime: AssetsCache has the realtime prices for subNavs. But it is not merged automatically, so AggregatedNav.LastValue is not up-to-date. 
+        // RT price has to be calculated from subNavs all the time. Two reasons: 
+        // 1. RT NAV price can arrive every 5 seconds. We don't want to do CPU intensive searches all the time to find the parentNav, then find all children, then aggregate RT prices
+        // 2. Aggregating RT is actually not easy. As when a new RT-Sub1 price arrives, if we update the AggregatedNav RT, that might be false. Because what if 1 sec later the RT-Sub2 price arrives.
+        // That also has to do the searches and aggregate all the children again. And all of these calculations maybe totally pointless if nobody watches the AggregatedNav. 
+        // So, better to aggregate RT prices only rarely when it is required by a user.
         void DownloadLastPriceNav(List<BrokerNav> p_navAssets)
         {
             Utils.Logger.Info("DownloadLastPriceNav() START");

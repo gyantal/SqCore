@@ -10,66 +10,8 @@ using BrokerCommon;
 using IBApi;
 
 // MemDb.Init() Flowchart: https://docs.google.com/document/d/1fwW7u4IvMIFNwx_l1YI8vop0bJ1Cl0bAPETGC-FIvxs
-
 namespace FinTechCommon
 {
-    // the pure data MemData class has 2 purposes:
-    // 1. collect the Data part of MemDb into one smaller entity. Without the MemDb functionality like timers, or Sql/Redis update.
-    // 2. at UpdateAll data, the changing of all pure data is just a pointer assignment.
-    // While Writer is swapping users/assets/HistData pointers client can get NewUserData and OldAssetData.
-    // Without reader locking even careful clients - who don't store pointers - can get inconsistent pointers.
-    // It can be solved with a global gMemDbUpdateLock, but then clients should use that, and they will forget it.
-    // This way it is still possible for a client to get m_memData.OldUserData and 1ms later m_memData.NewAssetData (if write happened between them), but 
-    //   - it is less likely, because pointer swap happened much quicker
-    //   - if reader clients ask GetAssuredConsistentTables() that doesn't require waiting in a Lock, but very fast, just a pointer local copy. Clients should use that.
-    // Still better to not expose MemData to the outside world, because clients could store its pointers, and GC will not collect old data
-    // Clients can still store Assets pointers, but it is better if there are 5 old Assets pointers at clients consuming RAM, then if there are 5 old big MemData at clients holding a lot of memory.
-    internal class MemData  // don't expose to clients.
-    {
-        public volatile User[] Users = new User[0];   // writable: admin might insert a new user from HTML UI
-        public volatile AssetsCache AssetsCache = new AssetsCache();  // writable: user might insert a new asset from HTML UI (although this is dangerous, how to propagate it the gSheet Asset replica)
-
-        // As Portfolios are assets (nesting), we might store portfolios in AssetCache, not separately
-        public volatile List<string> Portfolios = new List<string>(); // temporary illustration of a data that will be not only read, but written by SqCore. Portfolios are not necessary here, because they are Assets as well, so they can go to AssetsCache
-        public volatile CompactFinTimeSeries<DateOnly, uint, float, uint> DailyHist = new CompactFinTimeSeries<DateOnly, uint, float, uint>();
-
-        public MemData()
-        {
-        }
-
-        public MemData(User[] newUsers, AssetsCache newAssetCache, CompactFinTimeSeries<DateOnly, uint, float, uint> newDailyHist)
-        {
-            Users = newUsers;
-            AssetsCache = newAssetCache;
-            DailyHist = newDailyHist;
-        }
-    }
-
-    class MemDataWlocks // locks should not be replaced whem m_memData pointer is replaced, because Wait() was called before the pointer swap, Release() is called after the swap.
-    {
-        internal readonly SemaphoreSlim m_usersWlock = new SemaphoreSlim(1, 1);
-        internal readonly SemaphoreSlim m_assetsWlock = new SemaphoreSlim(1, 1);
-        internal readonly SemaphoreSlim m_portfoliosWlock = new SemaphoreSlim(1, 1);
-        internal readonly SemaphoreSlim m_dailyHistWlock = new SemaphoreSlim(1, 1);
-    }
-
-    // Multithreading of shared resource. Implement Lockfree-Read, Copy-Modify-Swap-Write Pattern described https://stackoverflow.com/questions/10556806/make-a-linked-list-thread-safe/10557130#10557130
-    // lockObj is necessary, volatile is necessary (because of readers to not have old copies hiding in their CpuCache)
-    // the lock is a WriterLock only. No need for ReaderLock. For high concurrency.
-    // Readers of the Users, Assets, DailyHist, Portfolios should keep the pointer locally as the pointer may get swapped out any time
-
-    // lock(object) is banned in async function (because lock is intended for very short time.) 
-    // The official way is SemaphoreSlim (although slower, but writing happens very rarely)
-    // if same thread calls SemaphoreSlim.Wait() second time, it will block. It uses a counter mechanism, and it doesn't store which thread acquired the lock already. So, reentry is not possible.
-    
-    // AggregatedNav data:
-    // AggregatedNav history: DailyHist stores the AggregatedNav merged history properly. Although it increases RAM usage, it has to be done only once, at MemDb reload. Better to store it.
-    // AggregatedNav realtime: AssetsCache has the realtime prices for subNavs. But it is not merged automatically, so AggregatedNav.LastValue is not up-to-date. 
-    // RT price has to be calculated from subNavs all the time. Two reasons: 
-    // 1. RT NAV price can arrive every 5 seconds. We don't want to do CPU intensive searches all the time to find the parentNav, then find all children, then aggregate RT prices
-    // 2. Aggregating RT is actually not easy. As when a new RT-Sub1 price arrives, if we update the AggregatedNav RT, that might be false. Because what if 1 sec later the RT-Sub2 price arrives.
-    // That also has to do the searches and aggregate all the children again. And all of these calculations maybe totally pointless if nobody watches the AggregatedNav. 
-    // So, better to aggregate RT prices only rarely when it is required by a user.
     public partial class MemDb
     {
         public static MemDb gMemDb = new MemDb();   // Singleton pattern
@@ -77,9 +19,12 @@ namespace FinTechCommon
         Db m_Db;
 
         MemData m_memData = new MemData();  // strictly private. Don't allow clients to store separate MemData pointers. Clients should use GetAssuredConsistentTables() in general.
-        MemDataWlocks m_memDataWlocks = new MemDataWlocks(); // locks should not be replaced whem m_memData pointer is replaced, because Wait() was called before the pointer swap, Release() is called after the swap.
- 
+
         public User[] Users { get { return m_memData.Users; } }
+
+        // Because Writers use the 'Non-locking copy-and-swap-on-write' pattern, before iterating on AssetCache, Readers using foreach() should get a local pointer and iterate on that. Readers can use Linq.Select() or Where() without local pointer though.
+        // AssetsCache localAssetCache = MemDb.AssetCache;
+        // foreach (Asset item in localAssetCache)
         public AssetsCache AssetsCache { get { return m_memData.AssetsCache; } }
         public CompactFinTimeSeries<DateOnly, uint, float, uint> DailyHist { get { return m_memData.DailyHist; } }
         public List<string> Portfolios { get { throw new NotImplementedException(); } } // Portfolios are Assets as well, so they can go to AssetsCache
@@ -272,45 +217,13 @@ namespace FinTechCommon
         async Task ReloadDbDataIfChangedAndSetNewTimer()
         {
             Utils.Logger.Info("ReloadDbDataIfChangedAndSetTimer() START");
-            m_memDataWlocks.m_usersWlock.Wait();
             try
             {
-                m_memDataWlocks.m_assetsWlock.Wait();
-                try
-                {
-                    m_memDataWlocks.m_portfoliosWlock.Wait();
-                    try
-                    {
-                        m_memDataWlocks.m_dailyHistWlock.Wait();
-                        try
-                        {
-                            try
-                            {
-                                await ReloadDbDataIfChangedImpl();
-                            }
-                            catch (Exception e)
-                            {
-                                Utils.Logger.Error(e, "ReloadDbDataIfChangedAndSetTimer()");
-                            }
-                        }
-                        finally
-                        {
-                            m_memDataWlocks.m_dailyHistWlock.Release();
-                        }
-                    }
-                    finally
-                    {
-                        m_memDataWlocks.m_portfoliosWlock.Release();
-                    }
-                }
-                finally
-                {
-                    m_memDataWlocks.m_assetsWlock.Release();
-                }
+                await ReloadDbDataIfChangedImpl();
             }
-            finally
+            catch (Exception e)
             {
-                m_memDataWlocks.m_usersWlock.Release();
+                Utils.Logger.Error(e, "ReloadDbDataIfChangedAndSetTimer()");
             }
             ScheduleReloadDbDataIfChangedTimer();
         }
@@ -410,6 +323,9 @@ namespace FinTechCommon
         public void UpdateBrAccPosAssetIds(BrAccount p_brAccount)
         {
             p_brAccount.AccPossUnrecognizedAssets = new List<BrAccPos>();
+
+            // First loop: just create newAssetsList and fill BrAccPos.SqTicker
+            List<Asset> newAssetsToMemDb = new List<Asset>();
             foreach (BrAccPos pos in p_brAccount.AccPoss)
             {
                 Asset? asset = null;
@@ -417,7 +333,8 @@ namespace FinTechCommon
                 switch (contract.SecType)
                 {
                     case "STK":
-                        asset = AssetsCache.TryGetAsset("S/" + contract.Symbol);
+                        pos.SqTicker = "S/" + contract.Symbol;
+                        asset = AssetsCache.TryGetAsset(pos.SqTicker);
                         if (asset == null)
                             p_brAccount.AccPossUnrecognizedAssets.Add(pos);
                         break;
@@ -428,24 +345,27 @@ namespace FinTechCommon
                             break;  // TEMP: ignore VIX index options at the moment. Just concentrate on StockOptions, not FuturesOptions. Too many different contracts. They just add up clutter on the UI. Also, they are based on Futures, not stocks, so more difficult to implement them.
                         }
 
-                        string sqTicker = Option.GenerateSqTicker(contract.Symbol, contract.LastTradeDateOrContractMonth, contract.Right[0], contract.Strike);
-                        asset = AssetsCache.TryGetAsset(sqTicker);
+                        pos.SqTicker = Option.GenerateSqTicker(contract.Symbol, contract.LastTradeDateOrContractMonth, contract.Right[0], contract.Strike);
+                        asset = AssetsCache.TryGetAsset(pos.SqTicker);
                         if (asset == null)
                         {
                             if (contract.Currency != "USD")
                                 break;
                             if (!Int32.TryParse(contract.Multiplier, out int multiplier))
                                 break;
-
                             OptionRight right = contract.Right switch
                             {
                                 "C" => OptionRight.Call,
                                 "P" => OptionRight.Put,
                                 _ => OptionRight.Unknown
                             };
-                            asset = AssetsCache.CreateNonPersistedOption(CurrencyId.USD, OptionType.StockOption, contract.Symbol, contract.LastTradeDateOrContractMonth, right, contract.Strike, multiplier);
+
+                            string optionSymbol = Option.GenerateOptionSymbol(contract.Symbol, contract.LastTradeDateOrContractMonth, right, contract.Strike);
+                            // This asset might not be the final one, coz parallel IB threads can create the same Option in parallel. Only one of them will be added by the MemDb.MemData Writer lock
+                            asset = new Option(AssetId32Bits.Invalid, contract.Symbol, $"<Example stock or Index> option, Call, Strike 5, Exp: 10", string.Empty, CurrencyId.USD, false,
+                                OptionType.StockOption, optionSymbol, contract.Symbol, contract.LastTradeDateOrContractMonth, right, contract.Strike, multiplier);
+                            newAssetsToMemDb.Add(asset);
                         }
-                        // p_brAccount.AccPossUnrecognizedAssets.Add(pos);
                         break;
                     case "CASH":    // Ignore Virtual Forex positions. "Cash contract" is virtual (to follow the AvgPrice). 
                         // Cash position is real, but that is part of the Account, not the contracts. For the BrAccViewer UI, the cash positions are not important. They don't change intraday, and they would just clutter the datatable.
@@ -456,7 +376,14 @@ namespace FinTechCommon
                         Utils.Logger.Warn($"UpdateBrAccPosAssetIds(): unrecognized SecType: '{contract.SecType}'");
                         break;
                 }
+            }
 
+            if (newAssetsToMemDb.Count != 0)
+                m_memData.AddToAssetCacheIfMissing(newAssetsToMemDb);   // will fill asset.AssetId from invalid to a proper number
+            // we have to iterate again, because we might have to use a different Option object that was created by another IB-thread
+            foreach (BrAccPos pos in p_brAccount.AccPoss)
+            {
+                Asset? asset = AssetsCache.TryGetAsset(pos.SqTicker);
                 pos.AssetObj = asset;
                 if (asset == null)
                     pos.AssetId = AssetId32Bits.Invalid;

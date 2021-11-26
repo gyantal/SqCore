@@ -65,20 +65,13 @@ namespace FinTechCommon
 
         async Task ReloadHistDataAndSetNewTimer()
         {
-            m_memDataWlocks.m_dailyHistWlock.Wait();    // if whole DbReload is happening at the same time or some other service modifies histData, wait until that is finished.
-            try
+            MemData memDataLocal = m_memData;   // copy pointer, so if it changes, we will not ruin the new memData
+            var newDailyHist = await CreateDailyHist(memDataLocal, m_Db);  // if whole DbReload is happening at the same time and creates newMemData, then we just change the old memData. Pointless, but fine, it happens once per year
+                                                                           // If reload HistData fails AND if we reloadHist routinely in every 2 hours => we keep the currently good history in MemDb. 
+            if (newDailyHist != null)
             {
-                var newDailyHist = await CreateDailyHist(m_memData, m_Db);
-                // If reload HistData fails AND if we reloadHist routinely in every 2 hours => we keep the currently good history in MemDb. 
-                if (newDailyHist != null)
-                {
-                    m_memData.DailyHist = newDailyHist;  // swap pointer in atomic operation
-                    EvOnlyHistoricalDataReloaded?.Invoke();
-                }
-            }
-            finally
-            {
-                m_memDataWlocks.m_dailyHistWlock.Release();
+                memDataLocal.DailyHist = newDailyHist;  // swap pointer in atomic operation
+                EvOnlyHistoricalDataReloaded?.Invoke();
             }
             SetNextReloadHistDataTriggerTime();
         }

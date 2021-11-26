@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SqCommon;
 
 namespace FinTechCommon
 {
@@ -16,6 +17,8 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
         uint m_stocksSubTableIdMax = 0;   // for generating new AssetID for NonPersistent Stocks, Options that might come from IB-TWS
         uint m_optionsSubTableIdMax = 0;  // for generating new AssetID for NonPersistent Stocks, Options that might come from IB-TWS
         uint m_navSubTableIdMax = 0;    // for generating new AssetID for Aggregated BrokerNav assets
+
+        public uint NextUnusedOptionsSubTableId = 0;
         
         // O(1) search for Dictionaries. Tradeoff between CPU-usage and RAM-usage. Use excess memory in order to search as fast as possible.
         // Another alternative is to implement a virtual ordering in an index table: int[] m_idxByTicker (used by Sql DBs), but that also uses RAM and the access would be only O(logN). Hashtable uses more memory, but it is faster.
@@ -56,14 +59,25 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
                 if (assetTypeId == AssetType.BrokerNAV && subTableId > m_navSubTableIdMax)
                     m_navSubTableIdMax = subTableId;
             }
+
+            NextUnusedOptionsSubTableId = m_optionsSubTableIdMax + 1;
+        }
+
+        internal AssetId32Bits GenerateUniqueAssetId(Asset newAsset)
+        {
+            if (newAsset is Option)
+                return new AssetId32Bits(AssetType.Option, NextUnusedOptionsSubTableId++);
+
+            throw new NotImplementedException();    //at the moment, we only create new Options run-time
         }
 
         public void AddAsset(Asset p_asset)
         {
-            Assets.Add(p_asset);
-            AssetsByAssetID = Assets.ToDictionary(r => r.AssetId);
-            AssetsBySqTicker = Assets.ToDictionary(r => r.SqTicker);
-            AssetsBySymbol = Assets.ToLookup(r => r.Symbol); // if it contains duplicates, ToLookup() allows for multiple values per key.
+            throw new SqException("MemData.AssetsCache Readers will have inconsistent for(), foreach() enumerations. Use MemData.AddToAssetCacheIfMissing() instead.");
+            // Assets.Add(p_asset);
+            // AssetsByAssetID = Assets.ToDictionary(r => r.AssetId);
+            // AssetsBySqTicker = Assets.ToDictionary(r => r.SqTicker);
+            // AssetsBySymbol = Assets.ToLookup(r => r.Symbol); // if it contains duplicates, ToLookup() allows for multiple values per key.
         }
 
         public Asset GetAsset(uint p_assetID)
@@ -80,6 +94,8 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
             throw new Exception($"SqTicker '{p_sqTicker}' is missing from MemDb.Assets.");
         }
 
+
+
         public Asset? TryGetAsset(string p_sqTicker)    // sometimes, it is expected that asset is not found. Just return null.
         {
             if (AssetsBySqTicker.TryGetValue(p_sqTicker, out Asset? value))
@@ -87,22 +103,6 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
             return null;
         }
 
-        public Asset? CreateNonPersistedOption(CurrencyId p_currency, OptionType p_optionType, string p_underlyingSymbol, string p_lastTradeDateOrContractMonth, OptionRight p_optionRight, double p_strike, int p_multiplier)
-        {
-            AssetId32Bits assedId = new AssetId32Bits(AssetType.Option, ++m_optionsSubTableIdMax);
-            string optionSymbol = Option.GenerateOptionSymbol(p_underlyingSymbol, p_lastTradeDateOrContractMonth, p_optionRight, p_strike);
-
-            Option option = new Option(assedId, p_underlyingSymbol, $"<Example stock or Index> option, Call, Strike 5, Exp: 10", string.Empty, p_currency, false, 
-                p_optionType, optionSymbol, p_underlyingSymbol, p_lastTradeDateOrContractMonth, p_optionRight, p_strike, p_multiplier);
-            
-            // ERROR|Sq: Exception in ReloadHistoricalDataAndSetTimer() Collection was modified; enumeration operation may not execute.
-            // AddAsset(option);    // TEMP: comment it out.
-
-            // 3. need locking: CreateAssets, and putting that into the Assets List needs locking, otherwise separate threads can do trouble.
-
-            // 4. AggNavAssets creation is also on the fly. Needs locking as well, and assetId creation similar to this.
-            return option;
-        }
 
         // Also can be historical using Assets.TickerChanges
         public Stock[] GetAllMatchingStocksBySymbol(string p_symbol, ExchangeId p_primExchangeID =  ExchangeId.Unknown, DateTime? p_timeUtc = null)

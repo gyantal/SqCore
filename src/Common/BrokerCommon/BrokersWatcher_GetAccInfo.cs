@@ -47,6 +47,7 @@ namespace BrokerCommon
 
     public class BrAccPos
     {
+        public string SqTicker { get; set; } = string.Empty;
         public uint AssetId { get; set; } = 0;  // AssetId.Invalid = 0;  we cannot store Asset pointers, because FinTechCommon is a higher module than BrokerCommon. Although we can store Objects that point to Assets
         public object? AssetObj { get; set; } = null;
         public Contract Contract { get; set; }
