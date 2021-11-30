@@ -215,9 +215,10 @@ export class BrAccViewerComponent implements OnInit {
   tabPageVisibleIdx = 1;
   sortColumn: string = 'DailyPL';
   sortDirection: string = 'Increase';
-  selectedTicker: string = ''; // under development
   histPeriodSelection = ['YTD','1M','1Y','3Y','5Y'];
   histPeriodSelectionSelected = 'YTD';
+  tickerSelectionSelected = ['SPY', 'QQQ', 'TLT', 'VXX', 'SVXY', 'UNG', 'USO'];
+  tickerSelection: string = '';
   histPeriodStartET: Date; // set in ctor. We need this in JS client to check that the received data is long enough or not (Expected Date)
   histPeriodStartETstr: string; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a 	A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
   histPeriodEndET: Date;
@@ -241,8 +242,9 @@ export class BrAccViewerComponent implements OnInit {
     setInterval(() => { this.uiMktBar.lstValLastRefreshTimeStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiMktBar.lstValLastRefreshTimeLoc.getTime());
                         this.uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.navLastUpdateTimeLoc.getTime());
                         this.uiSnapTable.snapLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.snapLastUpateTimeLoc.getTime());
+                        this.uiSnapTable.plTodPrNav = Math.round(this.uiSnapTable.netLiquidation - this.uiSnapTable.priorCloseNetLiquidation);
                       }, 1000);
-    setInterval(() => { 
+    setInterval(() => {
       if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
         this._parentWsConnection.send('BrAccViewer.RefreshMktBrPriorCloses:' + this.uiMktBar);
       }, 120 * 60 * 1000);
@@ -356,7 +358,7 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.priorCloseNetLiquidation = brAccSnap.priorCloseNetLiquidation;
     uiSnapTable.plTodPrNav = Math.round(brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation);
     uiSnapTable.pctChgTodPrNav = (brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation) / brAccSnap.priorCloseNetLiquidation;
-    uiSnapTable.clientMsg = brAccSnap.clientMsg.split(';').join('\n');
+    uiSnapTable.clientMsg = brAccSnap.clientMsg.replace(';','\n');  // .replace(";", "\n")
     uiSnapTable.poss.length = 0;
 
     for (const possItem of brAccSnap.poss) {
@@ -686,8 +688,18 @@ export class BrAccViewerComponent implements OnInit {
       this._parentWsConnection.send('BrAccViewer.ChangeNav:' + this.navSelectionSelected);
   }
 
-  onHistPeriodChange() {
+  onHistPeriodChange(pEvent: any) {
+    (document.getElementById('lookBackPeriod') as HTMLSelectElement).value = 'Date';
+
+    if (pEvent.target.id === 'startDate') {
+      this.histPeriodStartETstr = pEvent.target.value;
+      this.histPeriodStartET = SqNgCommonUtilsTime.PaddedIsoStr3Date(this.histPeriodStartETstr);
+    } else if (pEvent.target.id === 'endDate') {
+      this.histPeriodEndETstr = pEvent.target.value;
+      this.histPeriodEndET = SqNgCommonUtilsTime.PaddedIsoStr3Date(this.histPeriodEndETstr);
+    }
     console.log('Calling server with new lookback. StartDateETstr: ' + this.histPeriodStartETstr + ', lookbackStartET: ' + this.histPeriodStartET);
+    gDiag.wsOnLastRtMktSumLookbackChgStart = new Date();
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('BrAccViewer.ChangeLookback:Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr); // we always send the Date format to server, not the strings of 'YTD/10y'
   }

@@ -45,7 +45,7 @@ MarketBar
                     Force reload snapshot table<br> (Realtime: NAV, #Pos, EstPrice)
                 </div>
             </div>
-            <span class="refresh"><img class="refresh" border='0' alt='YF' src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked($event)"></span>
+            <span class="refresh"><img class="refresh" src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked($event)"></span>
         </span>
         <span class="notImpInfo">{{uiSnapTable.snapLastUpateTimeLoc | date:'H:mm'}} ({{uiSnapTable.snapLastUpdateTimeAgoStr}})</span>
         <div>
@@ -151,15 +151,13 @@ MarketBar
                         <select [(ngModel)] = "histPeriodSelectionSelected">
                             <option *ngFor="let item of histPeriodSelection" [value]="item">{{item}}</option>YTD
                         </select>
-                        <div>StartDate: <input class = "histPeriodDateCl" type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr"></div>
-                        <div>EndDate: <input class = "histPeriodDateCl" type="date" id="EndDate" name="EndDate" min="01-01-1975" [(ngModel)]="histPeriodEndETstr"></div>
+                        <div>StartDate: <input class = "histPeriodDateCl" type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr" (change)="onHistPeriodChange($event)"></div>
+                        <div>EndDate: <input class = "histPeriodDateCl" type="date" id="EndDate" name="EndDate" min="01-01-1975" max="01-01-2040" [(ngModel)]="histPeriodEndETstr" (change)="onHistPeriodChange($event)"></div>
                         <div>BenchMark:
-                            <input class="selectedSqTicker" type="text" name="ticker" list="selectedSqTicker" placeholder="Select Ticker"/>
+                            <input class="selectedSqTicker" type="text" name="ticker" list="selectedSqTicker" placeholder="SPY"/>
                                 <datalist id="selectedSqTicker">
-                                    <select [(ngModel)] = "uiMktBar.poss" (keypress)="OnHistBnchmkInputKeypress($event)">
-                                        <option *ngFor="let item of uiMktBar.poss">
-                                            {{item.sqTicker}}
-                                        </option>
+                                    <select [(ngModel)] = "tickerSelection" (keypress)="OnHistBnchmkInputKeypress($event)">
+                                        <option *ngFor="let item of tickerSelectionSelected" [value]="item">{{item}}</option>
                                     </select>
                                  </datalist>
                         </div>
