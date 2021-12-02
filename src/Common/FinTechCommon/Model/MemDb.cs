@@ -95,8 +95,8 @@ namespace FinTechCommon
                         bool isConnected = BrokersWatcher.gWatcher.GatewayReconnect(brAccount.GatewayId);
                         if (!isConnected)
                             return;
-                        MemDb.gMemDb.UpdateBrAccount(brAccount, brAccount.GatewayId);  // brAccount.Poss
-                        brAccount.NavAsset!.LastValue = (float)brAccount.NetLiquidation;    // fill RT price
+                        MemDb.gMemDb.UpdateBrAccount_AddAssetsToMemData(brAccount, brAccount.GatewayId);  // brAccount.Poss. LockFree Option addition. Clone&Replace. Replaces m_memData.AssetCache pointer with a new AssetCache
+                        brAccount.NavAsset!.EstValue = (float)brAccount.NetLiquidation;    // fill RT price
                     });
                     brTasks.Add(brTask);
                 }
@@ -111,11 +111,13 @@ namespace FinTechCommon
                 });
 
                 // Step 4: PriorClose and Rt prices download in the current thread. This is the quickest.
-                InitAllAssetsPriorCloseAndLastPrice(newAssetCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
+                InitAllStockAssetsPriorCloseAndLastPrice(m_memData.AssetsCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
                 Console.WriteLine($"*MemDb is 2/4-ready! Prior,Rt (#Assets:{AssetsCache.Assets.Count},#Brokers:0,#HistAssets:0) in {(DateTime.UtcNow - startTime).TotalSeconds:0.000}sec");
 
                 // Step 5: Wait for threads completion and inform observers via events or WaitHandles (ManualResetEvent)
                 await Task.WhenAll(brTasks);
+                InitAllOptionAssetsPriorCloseAndLastPrice(m_memData.AssetsCache);   // after Ib Gateways created the NonPersisted options, we need Delta and Est Option price. Without waiting for lowFreqRt timer to run 1h later.
+
                 int nConnectedBrokers = BrAccounts.Count(r => BrokersWatcher.gWatcher.IsGatewayConnected(r.GatewayId));
                 Console.WriteLine($"*MemDb is 3/4-ready! BrokerNav,Poss (#Assets:{AssetsCache.Assets.Count},#Brokers:{nConnectedBrokers},#HistAssets:0) in {(DateTime.UtcNow - startTime).TotalSeconds:0.000}sec");
                 EvMemDbInitNoHistoryYet?.Invoke();
@@ -254,9 +256,9 @@ namespace FinTechCommon
             if (newDailyHist != null)
                 newMemData.DailyHist = newDailyHist;
 
-            InitAllAssetsPriorCloseAndLastPrice(newAssetCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
+            InitAllStockAssetsPriorCloseAndLastPrice(newAssetCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
             
-            m_memData = newMemData; // swap pointer in atomic operation
+            m_memData = newMemData; // swap pointer in atomic operation. After this, m_memData is now the new Data
             Console.WriteLine($"*MemDb is ready! (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {DailyHist.GetDataDirect().Data.Count}) in {g_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
 
             m_lastFullMemDbReload = DateTime.UtcNow;
@@ -265,8 +267,9 @@ namespace FinTechCommon
             // at ReloadDbData(), we can decide to fully reload the BrokerNav, Poss from Brokers (maybe safer). But at the moment, we decided just to update the in-memory BrAccounts array with the new AssetIds
             foreach (var brAccount in BrAccounts)
             {
-                UpdateBrAccPosAssetIds(brAccount);
+                UpdateBrAccPosAssetIds_AddAssetsToMemData(brAccount);
             }
+            InitAllOptionAssetsPriorCloseAndLastPrice(m_memData.AssetsCache);
 
             OnReloadAssetData_InitAndScheduleRtTimers();
             OnReloadAssetData_ReloadRtNavDataAndSetTimer();   // downloads realtime NAVs from VBrokers
@@ -296,10 +299,10 @@ namespace FinTechCommon
                 brAccount = new BrAccount() { GatewayId = p_gatewayId };
                 BrAccounts.Add(brAccount);
             }
-            UpdateBrAccount(brAccount, p_gatewayId);
+            UpdateBrAccount_AddAssetsToMemData(brAccount, p_gatewayId);
         }
 
-        public void UpdateBrAccount(BrAccount brAccount, GatewayId p_gatewayId)
+        public void UpdateBrAccount_AddAssetsToMemData(BrAccount brAccount, GatewayId p_gatewayId)
         {
             List<BrAccSum>? accSums = BrokersWatcher.gWatcher.GetAccountSums(p_gatewayId);
             if (accSums == null)
@@ -317,15 +320,16 @@ namespace FinTechCommon
             brAccount.AccPoss = accPoss;
             brAccount.LastUpdate = DateTime.UtcNow;
 
-            UpdateBrAccPosAssetIds(brAccount);
+            UpdateBrAccPosAssetIds_AddAssetsToMemData(brAccount);
         }
 
-        public void UpdateBrAccPosAssetIds(BrAccount p_brAccount)
+        // LockFree Option addition. Clone&Replace. Replaces m_memData.AssetCache pointer with a new AssetCache
+        public void UpdateBrAccPosAssetIds_AddAssetsToMemData(BrAccount p_brAccount)
         {
             p_brAccount.AccPossUnrecognizedAssets = new List<BrAccPos>();
 
             // First loop: just create newAssetsList and fill BrAccPos.SqTicker
-            List<Asset> newAssetsToMemDb = new List<Asset>();
+            List<Asset> newAssetsToMemData = new List<Asset>();
             foreach (BrAccPos pos in p_brAccount.AccPoss)
             {
                 Asset? asset = null;
@@ -361,10 +365,11 @@ namespace FinTechCommon
                             };
 
                             string optionSymbol = Option.GenerateOptionSymbol(contract.Symbol, contract.LastTradeDateOrContractMonth, right, contract.Strike);
+                            string optionName = Option.GenerateOptionName(contract.Symbol, contract.LastTradeDateOrContractMonth, right, contract.Strike);
                             // This asset might not be the final one, coz parallel IB threads can create the same Option in parallel. Only one of them will be added by the MemDb.MemData Writer lock
-                            asset = new Option(AssetId32Bits.Invalid, contract.Symbol, $"<Example stock or Index> option, Call, Strike 5, Exp: 10", string.Empty, CurrencyId.USD, false,
-                                OptionType.StockOption, optionSymbol, contract.Symbol, contract.LastTradeDateOrContractMonth, right, contract.Strike, multiplier);
-                            newAssetsToMemDb.Add(asset);
+                            asset = new Option(AssetId32Bits.Invalid, contract.Symbol, optionName, string.Empty, CurrencyId.USD, false,
+                                OptionType.StockOption, optionSymbol, contract.Symbol, contract.LastTradeDateOrContractMonth, right, contract.Strike, multiplier, contract.LocalSymbol, contract);
+                            newAssetsToMemData.Add(asset);
                         }
                         break;
                     case "CASH":    // Ignore Virtual Forex positions. "Cash contract" is virtual (to follow the AvgPrice). 
@@ -378,8 +383,8 @@ namespace FinTechCommon
                 }
             }
 
-            if (newAssetsToMemDb.Count != 0)
-                m_memData.AddToAssetCacheIfMissing(newAssetsToMemDb);   // will fill asset.AssetId from invalid to a proper number
+            if (newAssetsToMemData.Count != 0)
+                m_memData.AddToAssetCacheIfMissing(newAssetsToMemData);   // will fill asset.AssetId from invalid to a proper number
             // we have to iterate again, because we might have to use a different Option object that was created by another IB-thread
             foreach (BrAccPos pos in p_brAccount.AccPoss)
             {
@@ -388,7 +393,20 @@ namespace FinTechCommon
                 if (asset == null)
                     pos.AssetId = AssetId32Bits.Invalid;
                 else
+                {
                     pos.AssetId = asset.AssetId;
+                    if (asset.AssetId.AssetTypeID == AssetType.Option)  // for option assets, we require that the UnderlyingAsset should be in RedisDb (don't create a NonPersisted Stock here). Just inform user, and we should add it to RedisDb.
+                    {
+                        var underlyingAsset = AssetsCache.TryGetAsset("S/" + asset.Symbol);
+                        if (underlyingAsset == null)
+                        {
+                            var underlyingBrAccPos = new BrAccPos(VBrokerUtils.MakeStockContract(asset.Symbol));
+                            p_brAccount.AccPossUnrecognizedAssets.Add(underlyingBrAccPos);
+                        }
+                        else
+                            ((Option)asset)!.UnderlyingAsset = underlyingAsset;
+                    }
+                }
             }
 
             StringBuilder sb = new StringBuilder($"MemDb.UpdateBrAccPosAssetIds(). Unrecognised IB contracts as valid SqCore assets (#{p_brAccount.AccPossUnrecognizedAssets.Count}): ");

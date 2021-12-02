@@ -182,19 +182,19 @@ namespace BrokerCommon
                 // m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.ParseSqTickerToContract("TWM"));
 
                 // for UberVXX
-                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.ParseSqTickerToContract("VXX"));
-                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.ParseSqTickerToContract("SVXY"));
+                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.MakeStockContract("VXX"));
+                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.MakeStockContract("SVXY"));
                 //m_mainGateway.BrokerWrapper.ReqMktDataStream(new Contract() { Symbol = "SPY", SecType = "STK", Currency = "USD", Exchange = "SMART" }); // for TotM forecast, but it is not needed just yet
 
                 // for HarryLong
-                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.ParseSqTickerToContract("TQQQ"));
-                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.ParseSqTickerToContract("TMV"));
-                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.ParseSqTickerToContract("VXZ"));
-                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.ParseSqTickerToContract("SCO"));  // 2020-04-02: use SCO (2x); instead of short USO (1x), short UWT (-3x) was used, but it was delisted, because it went to penny stock
-                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.ParseSqTickerToContract("UNG"));
+                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.MakeStockContract("TQQQ"));
+                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.MakeStockContract("TMV"));
+                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.MakeStockContract("VXZ"));
+                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.MakeStockContract("SCO"));  // 2020-04-02: use SCO (2x); instead of short USO (1x), short UWT (-3x) was used, but it was delisted, because it went to penny stock
+                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.MakeStockContract("UNG"));
 
-                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.ParseSqTickerToContract("TMF")); // Can be commented out: TMF (3x) is for Agy,
-                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.ParseSqTickerToContract("USO")); // Can be commented out: Agy uses partial SCO, partial USO for diversifying and because SCO is not a good tracker of USO
+                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.MakeStockContract("TMF")); // Can be commented out: TMF (3x) is for Agy,
+                m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.MakeStockContract("USO")); // Can be commented out: Agy uses partial SCO, partial USO for diversifying and because SCO is not a good tracker of USO
 
                 // for TAA, but it is only temporary. We will not stream this unnecessary data all day long, as TAA can take its time. It only trades MOC. Extra 2-3 seconds doesn't matter.
                 // "TLT"+ "MDY","ILF","FEZ","EEM","EPP","VNQ","IBB"  +  "MVV", "URE", "BIB"

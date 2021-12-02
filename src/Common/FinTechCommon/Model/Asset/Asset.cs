@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
+using BrokerCommon;
 using SqCommon;
 
 namespace FinTechCommon
@@ -27,19 +28,28 @@ namespace FinTechCommon
         public bool IsDbPersisted { get; set; } = true;   // There are special adHoc temporary, runtime-only Stocks, Options coming from IB-TWS. They don't exist in the RedisDb. They cannot be part of a Buy transaction in a Portfolio.
 
         // The Last (realtime price) and the PriorClose values are too frequently used (for daily %Chg calculation) in many Asset classes: Stocks, Futures, Options. Although it is not necessary in other classes, but let them have here in the parent class
-        private float m_lastValue = float.NaN; // field
-        public DateTime LastValueUtc { get; set; } = DateTime.MinValue;
-        public float LastValue // real-time last price. Value is better than Price, because NAV, and ^VIX index has value, but it is not a price.
+        // Don't name it LastPrice. Because it might refer to LastTrade Price. 
+        // EstPrice can be calculated from Ask/Bid, even if there is no Last Trade price (as Options may not trade even 1 contracts for days, so there is no Last Trade, but we estimate the price from RT Ask/Bid)
+        // EstValue is a similar concept to IB's MarkPrice. An estimated price (Mark-to-Mark) that is used for margin calculations. It has a discretionary calculation, and can based on Ask/Bid/LastTrade (if happened recently)
+        private float m_estValue = float.NaN; // field
+        public DateTime EstValueUtc { get; set; } = DateTime.MinValue;
+        public float EstValue // real-time last price. Value is better than Price, because NAV, and ^VIX index has value, but it is not a price.
         {
-            get { return m_lastValue; }
+            get { return m_estValue; }
             set
             {
-                m_lastValue = value;
-                LastValueUtc = DateTime.UtcNow;
+                m_estValue = value;
+                EstValueUtc = DateTime.UtcNow;
             }
         }
 
         public float PriorClose { get; set; } = float.NaN;  // IB calls it PriorClose, YF, Iex calls PreviousClose. Nobody calls it "Last"Close, because that is better to use for the "Last"-price
+
+        public static string BasicSqTicker(AssetType assetType, string symbol)
+        {
+            return AssetHelper.gAssetTypeCode[assetType] + "/" + symbol;
+        }
+
         public Asset()
         {
         }
@@ -72,9 +82,11 @@ namespace FinTechCommon
             SqTicker = AssetHelper.gAssetTypeCode[assetType] + "/" + Symbol;	// by default it is good for most Assets. "C/EUR", "D/GBP.USD", "N/DC.IM"
         }
 
-        public static string BasicSqTicker(AssetType assetType, string symbol)
+
+
+        public virtual IBApi.Contract? MakeIbContract()
         {
-            return AssetHelper.gAssetTypeCode[assetType] + "/" + symbol;
+            return null;
         }
 
     }
@@ -204,6 +216,11 @@ namespace FinTechCommon
         public bool IsAlive
         {    // Maybe it is not necessary to store in DB. If a VXX becomes dead, we can change LastTicker = "VXX-20190130", so actually IsAlive can be computed
             get { return ExpirationDate == string.Empty; }   // '-' should not be in the last ticker
+        }
+
+        public override IBApi.Contract? MakeIbContract()
+        {
+            return VBrokerUtils.MakeStockContract(Symbol);
         }
     }
 }

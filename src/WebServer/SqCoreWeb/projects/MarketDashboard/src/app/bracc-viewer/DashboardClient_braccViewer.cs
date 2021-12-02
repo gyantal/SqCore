@@ -35,14 +35,23 @@ namespace SqCoreWeb
 
         public string Name { get; set; } = string.Empty;
         public double Pos { get; set; }
+
+        [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
         public double AvgCost { get; set; }
 
         // Double.NaN cannot be serialized. Send 0.0 for missing values.
 
-        [JsonConverter(typeof(FloatJsonConverterToNumber4D))]
-        public float PriorClose { get; set; } = 0.0f;  // MktValue can be calculated
+        [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
+        public double PriorClose { get; set; } = 0.0f;  // MktValue can be calculated
+
+        [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
         public double EstPrice { get; set; } = 0.0;  // MktValue can be calculated, 
+
+        [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
         public double EstUndPrice { get; set; } = 0.0;   // In case of options DeliveryValue can be calculated
+
+        [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
+        public double IbCompDelta { get; set; } = 0.0;   // Ib computed Delta for options
 
         public string AccId { get; set; } = string.Empty; // AccountId: "Cha", "DeB", "Gya" (in case of virtual combined portfolio)
     }
@@ -270,17 +279,21 @@ namespace SqCoreWeb
             {
                 BrAccPos posBr = validBrPoss[i];
                 Asset asset = validBrPossAssets[i];
+                float estUndValue = (asset as Option)?.UnderlyingAsset?.EstValue ?? float.NaN;
+                double ibCompDelta = (asset  as Option)?.IbCompDelta ?? double.NaN;
                 result.Add(new BrAccViewerPosJs()
                 {
                     AssetId = posBr.AssetId,
-                    SqTicker = asset.SqTicker,
+                    SqTicker = asset!.SqTicker,
                     Symbol = asset.Symbol,
                     SymbolEx = asset.SymbolEx,
                     Name = asset.Name,
                     Pos = posBr.Position,
                     AvgCost = posBr.AvgCost,
                     PriorClose = (float.IsNaN(asset.PriorClose)) ? 1.234f : asset.PriorClose,
-                    EstPrice = (float.IsNaN(asset.LastValue)) ? 1.234f : asset.LastValue,
+                    EstPrice = (float.IsNaN(asset.EstValue)) ? 1.234f : asset.EstValue,
+                    EstUndPrice = (float.IsNaN(estUndValue)) ? 0.0f : estUndValue,
+                    IbCompDelta = (double.IsNaN(ibCompDelta)) ? 0.0 : ibCompDelta,
                     AccId = p_gwIdStr
                 });
             }
@@ -392,7 +405,7 @@ namespace SqCoreWeb
                 BrAccount? brAccount = MemDb.gMemDb.BrAccounts.FirstOrDefault(r => r.GatewayId == gwId);
                 if (brAccount == null)
                     continue;
-                MemDb.gMemDb.UpdateBrAccount(brAccount, gwId);
+                MemDb.gMemDb.UpdateBrAccount_AddAssetsToMemData(brAccount, gwId);
 
                 brAccount.AccPoss.Where(r => r.AssetId != AssetId32Bits.Invalid).ToList().ForEach(r => validBrPossAssetIds.Add(r.AssetId));
             }

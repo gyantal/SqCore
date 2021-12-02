@@ -222,7 +222,7 @@ namespace BrokerCommon
                 Utils.Logger.Error("Unexpected BrokerWrapperIb.error(). Exception thrown: " + e);
                 if (Utils.RunningPlatform() == Platform.Linux)
                     HealthMonitorMessage.SendAsync($"Exception in Unexpected  SqCore.BrokerWrapperIb.error(). Client code C# runtime Exception: '{ e.ToStringWithShortenedStackTrace(400)}'", HealthMonitorMessageID.ReportErrorFromVirtualBroker).TurnAsyncToSyncTask();
-                throw e;    
+                throw e;
             }
         }
 
@@ -536,6 +536,20 @@ namespace BrokerCommon
         // 1. IB do not provide tick data. For U.S. Equities, you get one price update (not a tick!) per 250ms. Assuming that the exchanges step at 1ms, TTBOMK, this is some kind of volume-weighted average of these 250 data points.
         public virtual int ReqMktDataStream(Contract p_contract, string p_genericTickList = "", bool p_snapshot = false, MktDataSubscription.MktDataArrivedFunc? p_mktDataArrivedFunc = null, MktDataSubscription.MktDataErrorFunc? p_mktDataErrorFunc = null, MktDataSubscription.MktDataTickGenericFunc? p_mktDataTickGenericFunc = null, MktDataSubscription.MktDataTypeFunc? p_mktDataTypeFunc = null, MktDataSubscription.MktDataTickOptionComputationFunc? p_mktDataTickOptionComputationFunc = null)
         {
+            // >https://interactivebrokers.github.io/tws-api/top_data.html#md_snapshot
+            // "Streaming Data Snapshots
+            // With an exchange market data subscription, such as Network A (NYSE), Network B(ARCA), or Network C(NASDAQ) for US stocks, 
+            // it is possible to request a snapshot of the current state of the market once instead of requesting a stream of updates continuously as market values change. 
+            // By invoking the IBApi::EClient::reqMktData function passing in true for the snapshot parameter, the client application will receive the currently 
+            // available market data once before a IBApi.EWrapper.tickSnapshotEnd event is sent 11 seconds later. Snapshot requests can only be made for the default tick types; 
+            // no generic ticks can be specified. It is important to note that a snapshot request will only return available data over the 11 second span; 
+            // in some cases values may not be returned for all tick types."
+            // >https://dimon.ca/dmitrys-tws-api-faq/#h.sgip3650k9h
+            // "[Q] Snapshot market data vs “real time” data.
+            // A: Using reqMktData, the difference between snapshot and streaming is that once a value is provided for each field (bid Price, AskPrice, bid size, ask size, last price, volume, etc.) 
+            // the snapshot is done and the request is effectively canceled. I pointed out the caveat to this before that 
+            // if a field has not updated in the prior 11 seconds, it will not be echoed back with the snapshot:
+
             int marketDataId = GetUniqueReqMktDataID;
             Utils.Logger.Debug($"ReqMktDataStream() {p_contract.Symbol}{((p_contract.LocalSymbol != null)? ("(" + p_contract.LocalSymbol + ")"):"")}: { marketDataId} START");
 
@@ -555,8 +569,16 @@ namespace BrokerCommon
             MktDataSubscriptions.TryAdd(marketDataId, mktDataSubscr);
 
             ClientSocket.reqMarketDataType(2);    // 2: streaming data (for realtime), 1: frozen (for historical prices)
+
             //ClientSocket.reqMktData(marketDataId, p_contract, "221", false, null);    // p_snapshot = false, stream is needed for IbMarkPrice. Otherwise: Id: 1002, ErrCode: 321, Msg: Error validating request:-'bR' : cause - Snapshot market data subscription is not applicable to generic ticks; 
-            ClientSocket.reqMktData(marketDataId, p_contract, p_genericTickList, p_snapshot, p_snapshot, null);
+
+            // set regulatorySnaphsot = false, otherwise Error message.
+            // "BrokerWrapper.error(id, code, msg). IbGateway(GyantalMain) sent error with msgVersion >= 2. Id: 1001, ErrCode: 10170, Msg: No permissions on regulatory snapshot for UNG DEC 03 '21 18 Put"
+            // >https://interactivebrokers.github.io/tws-api/md_request.html
+            // "The fifth argument to reqMktData specifies a regulatory snapshot request to US stocks and options. Regulatory snapshots require TWS/IBG v963 and API 973.02 or higher and specific market data subscriptions."
+            // "* @param regulatory snapshot for US stocks requests NBBO snapshots for users which have "US Securities Snapshot Bundle" subscription "
+            // That is the difference between SqLab and SqCore. In SqLab, there was no "bool regulatorySnaphsot," parameter. And in SqCore I filled it as the same as the "snapshot".
+            ClientSocket.reqMktData(marketDataId, p_contract, p_genericTickList, p_snapshot, false, null);  // set regulatorySnaphsot = false
 
             Utils.Logger.Debug($"ReqMktDataStream() {p_contract.Symbol}: { marketDataId} END");
             return marketDataId;
@@ -896,7 +918,7 @@ namespace BrokerCommon
                 + ", OptionPrice: " + optPrice + ", pvDividend: " + pvDividend + ", Gamma: " + gamma + ", Vega: " + vega + ", Theta: " + theta + ", UnderlyingPrice: " + undPrice;
 
             Utils.Logger.Trace(logStr);
-            Console.WriteLine(logStr);  // TEMP until feature is developed
+            // Console.WriteLine(logStr);  // TEMP until feature is developed
 
             if (!MktDataSubscriptions.TryGetValue(tickerId, out MktDataSubscription? mktDataSubscription))
             {
@@ -1427,7 +1449,7 @@ namespace BrokerCommon
 
         public virtual void tickReqParams(int tickerId, double minTick, string bboExchange, int snapshotPermissions)
         {
-            Console.WriteLine("tickReqParams: " + tickerId + "\n");
+            // Console.WriteLine("tickReqParams: " + tickerId + "\n");
         }
 
         public virtual void newsProviders(NewsProvider[] newsProviders)

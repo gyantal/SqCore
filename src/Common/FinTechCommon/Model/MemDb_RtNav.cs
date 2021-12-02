@@ -102,22 +102,22 @@ namespace FinTechCommon
                 lastValueUtc = DateTime.MaxValue;
                 foreach (var asset in p_navAsset.AggregateNavChildren)
                 {
-                    if (Single.IsNaN(asset.LastValue))  // if any of the SubNavs is NaN, because VBroker is not running or didn't return data, then return NaN for the aggregate to show it is invalid
+                    if (Single.IsNaN(asset.EstValue))  // if any of the SubNavs is NaN, because VBroker is not running or didn't return data, then return NaN for the aggregate to show it is invalid
                     {
                         lastValue = Single.NaN; // signal an error
                         break;
                     }
-                    lastValue += asset.LastValue;
-                    if (lastValueUtc > asset.LastValueUtc)
-                        lastValueUtc = asset.LastValueUtc;
+                    lastValue += asset.EstValue;
+                    if (lastValueUtc > asset.EstValueUtc)
+                        lastValueUtc = asset.EstValueUtc;
                 }
                 if (lastValueUtc == DateTime.MaxValue)  // we failed to find any good value => indicate error as MinValue. To show data is too old.
                     lastValueUtc = DateTime.MinValue;
             }
             else
             {
-                lastValue = p_navAsset.LastValue;
-                lastValueUtc = p_navAsset.LastValueUtc;
+                lastValue = p_navAsset.EstValue;
+                lastValueUtc = p_navAsset.EstValueUtc;
             }
             
             return (lastValue, lastValueUtc);
@@ -147,7 +147,7 @@ namespace FinTechCommon
                     if (accSums == null)
                         continue;
 
-                    navAsset.LastValue = (float)accSums.GetValue(AccountSummaryTags.NetLiquidation);
+                    navAsset.EstValue = (float)accSums.GetValue(AccountSummaryTags.NetLiquidation);
                 }
             }
             catch (Exception e)

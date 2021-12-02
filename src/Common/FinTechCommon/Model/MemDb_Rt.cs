@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Globalization;
 using SqCommon;
 using YahooFinanceApi;
+using BrokerCommon;
 
 namespace FinTechCommon
 {
@@ -76,7 +77,8 @@ namespace FinTechCommon
         // - the only good thing: in market-hours, RT prices are free, and very quick to obtain and batched.
 
         // use IEX only for High/Mid Freq, and only in RegularTrading. So, High/MidFreq OTH uses YF. But use it sparingly, so YF doesn't ban us.
-        RtFreqParam m_highFreqParam = new RtFreqParam() { RtFreq = RtFreq.HighFreq, Name="HighFreq", FreqRthSec = 5, FreqOthSec = 5 * 60 }; // high frequency (5sec RTH, 5min otherwise-OTH) refresh for a known fixed stocks (used by VBroker) and those which were queried in the last 5 minutes (by a VBroker-test)
+        // For RT highFreq: 3sec is too fast and unnecessary. 6 sec is fine. (10x in 1 min). Don't increase the server load too much.
+        RtFreqParam m_highFreqParam = new RtFreqParam() { RtFreq = RtFreq.HighFreq, Name="HighFreq", FreqRthSec = 6, FreqOthSec = 5 * 60 }; // high frequency (6sec RTH, 5min otherwise-OTH) refresh for a known fixed stocks (used by VBroker) and those which were queried in the last 5 minutes (by a VBroker-test)
         RtFreqParam m_midFreqParam = new RtFreqParam() { RtFreq = RtFreq.MidFreq, Name="MidFreq", FreqRthSec =  15 * 60, FreqOthSec = 40 * 60 }; // mid frequency (15min RTH, 40min otherwise) refresh for a know fixed stocks (DashboardClient_mktHealth)
         RtFreqParam m_lowFreqParam = new RtFreqParam() { RtFreq = RtFreq.LowFreq, Name="LowFreq", FreqRthSec = 30 * 60, FreqOthSec = 1 * 60 * 60 }; // with low frequency (30 RTH, 1h otherwise) we almost all stocks. Even if nobody access them.
 
@@ -89,13 +91,17 @@ namespace FinTechCommon
         uint m_nIexDownload = 0;
         uint m_nYfDownload = 0;
 
-        static void InitAllAssetsPriorCloseAndLastPrice(AssetsCache p_newAssetCache)    // this is called at Program.Init() and at ReloadDbDataIfChangedImpl()
+        static void InitAllStockAssetsPriorCloseAndLastPrice(AssetsCache p_newAssetCache)    // this is called at Program.Init() and at ReloadDbDataIfChangedImpl()
         {
-            Asset[] downloadAliveAssets = p_newAssetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock  && (r as Stock)!.ExpirationDate == string.Empty).ToArray();
-            if (downloadAliveAssets.Length == 0)
-                return;
-            var tradingHoursNow = Utils.UsaTradingHoursExNow_withoutHolidays();
-            DownloadPriorCloseAndLastPriceYF(downloadAliveAssets, tradingHoursNow).TurnAsyncToSyncTask();
+            Asset[] aliveStocks = p_newAssetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock  && (r as Stock)!.ExpirationDate == string.Empty).ToArray();
+            DownloadPriorCloseAndLastPriceYF(aliveStocks).TurnAsyncToSyncTask();
+        }
+
+        static void InitAllOptionAssetsPriorCloseAndLastPrice(AssetsCache p_newAssetCache)    // this is called at Program.Init() and at ReloadDbDataIfChangedImpl()
+        {
+            // var options = p_newAssetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Option).Take(1).Select(r => (Option)r).ToArray();
+            var options = p_newAssetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Option).Select(r => (Option)r).ToArray();
+            DownloadLastPriceOptionsIb(options);
         }
 
         void OnReloadAssetData_InitAndScheduleRtTimers()  // this is called at Program.Init() and at ReloadDbDataIfChangedImpl()
@@ -191,7 +197,11 @@ namespace FinTechCommon
                 m_nYfDownload++;
                 DownloadPriorCloseAndLastPriceYF(downloadAssets, tradingHoursNow).TurnAsyncToSyncTask();
             }
+
+            if (p_freqParam.RtFreq == RtFreq.LowFreq)
+                DownloadLastPriceOptionsIb(MemDb.gMemDb.AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Option).Select(r => (Option)r).ToArray());
         }
+
         private void ScheduleTimerRt(RtFreqParam p_freqParam)
         {
             // lock (m_rtTimerLock)
@@ -213,7 +223,7 @@ namespace FinTechCommon
                         (lastValue, lastDateTime) = GetLastNavRtPrice((sec as BrokerNav)!);
                     else
                     {
-                        lastValue = sec.LastValue;
+                        lastValue = sec.EstValue;
                     }
                     return (sec.AssetId, lastValue);
                 });
@@ -231,8 +241,8 @@ namespace FinTechCommon
                         (lastValue, lastDateTime) = GetLastNavRtPrice((sec as BrokerNav)!);
                     else
                     {
-                        lastValue = sec.LastValue;
-                        lastDateTime = sec.LastValueUtc;
+                        lastValue = sec.EstValue;
+                        lastDateTime = sec.EstValueUtc;
                     }
                     return (sec.AssetId, lastValue, lastDateTime);
                 });
@@ -250,8 +260,8 @@ namespace FinTechCommon
                         (lastValue, lastDateTime) = GetLastNavRtPrice((r as BrokerNav)!);
                     else
                     {
-                        lastValue = r.LastValue;
-                        lastDateTime = r.LastValueUtc;
+                        lastValue = r.EstValue;
+                        lastDateTime = r.EstValueUtc;
                     }
                     return (r.AssetId, lastValue, lastDateTime);
                 });
@@ -267,12 +277,14 @@ namespace FinTechCommon
             if (p_asset.AssetId.AssetTypeID == AssetType.BrokerNAV)
                 lastValue = GetLastNavRtPrice((p_asset as BrokerNav)!).LastValue;
             else
-                lastValue = p_asset.LastValue;
+                lastValue = p_asset.EstValue;
             return lastValue;
         }
 
         public static Task DownloadPriorCloseAndLastPriceYF(Asset[] p_assets)  // takes ? ms from WinPC
         {
+            if (p_assets.Length == 0)
+                return Task.CompletedTask;
             var tradingHoursNow = Utils.UsaTradingHoursExNow_withoutHolidays();
             return DownloadPriorCloseAndLastPriceYF(p_assets, tradingHoursNow);
         }
@@ -333,13 +345,13 @@ namespace FinTechCommon
                         dynamic? lastVal = float.NaN;
                         if (!quote.Value.Fields.TryGetValue(lastValFieldStr, out lastVal))
                             lastVal = (float)quote.Value.RegularMarketPrice;  // fallback: the last regular-market Close price both in Post and next Pre-market
-                        sec.LastValue = (float)lastVal;
+                        sec.EstValue = (float)lastVal;
 
                         if (quote.Value.Fields.TryGetValue(priorCloseFieldStr, out dynamic? priorClose))
                             sec.PriorClose = (float)priorClose;
 
                         if (sec.SqTicker == "S/UNG")
-                            Utils.Logger.Info($"UNG priorClose: {sec.PriorClose}, lastVal:{sec.LastValue}");  // TEMP
+                            Utils.Logger.Info($"UNG priorClose: {sec.PriorClose}, lastVal:{sec.EstValue}");  // TEMP
                     }
                 }
 
@@ -441,7 +453,7 @@ namespace FinTechCommon
                                 // sec.PreviousCloseIex = attribute;
                                 break;
                             case "lastSalePrice":
-                                stock.LastValue = attribute;
+                                stock.EstValue = attribute;
                                 break;
                         }
                     }
@@ -453,6 +465,25 @@ namespace FinTechCommon
                 Utils.Logger.Warn($"ExtractAttributeIex() zero lastPrice values: {String.Join(',', zeroValueSymbols)}");
         }
 
+
+
+        private static void DownloadLastPriceOptionsIb(Option[] p_options)
+        {
+            // MktData[] mktDatas = p_options.Select(r => new MktData(r.MakeIbContract()!) { AssetObj = r}).Take(1).ToArray();  // For Debug.
+            MktData[] mktDatas = p_options.Select(r => new MktData(r.MakeIbContract()!) { AssetObj = r}).ToArray();
+            BrokersWatcher.gWatcher.CollectIbMarketData(mktDatas, true);
+
+            foreach (var mktData in mktDatas)
+            {
+                Option option = (Option)mktData.AssetObj!;
+                option.PriorClose = (float)mktData.PriorClosePrice * option.Multiplier;
+
+                // Do not want to see ugly "NaN" values on the UI, because that catches the eye too quickly. Better to send the client "-1". That is known that it is impossible value for PriorClose, EstPrice
+                // Treat EstPrice = "-1.00" as error, as NaN. Not available data. Then, we can use the PriorClose as EstPrice. That solves everything. (On the UI the P&L Today will be 0 at these lines. Fine.)
+                option.EstValue = (double.IsNaN(mktData.EstPrice) || mktData.EstPrice == -1.0) ? (float)mktData.PriorClosePrice * option.Multiplier : (float)mktData.EstPrice * option.Multiplier;
+                option.IbCompDelta = mktData.IbComputedDelta;
+            }
+        }
     }
 
 }

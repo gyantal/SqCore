@@ -74,7 +74,7 @@ namespace BrokerCommon
                         {
                             string sqTicker = symbol.ToUpper().Replace("^^", "#");  // Robert's suggestion all Futures tickers #+Underlying, therefore #^VIX, because the underlying is ^VIX
 
-                            Contract contract = VBrokerUtils.ParseSqTickerToContract(sqTicker);
+                            Contract contract = VBrokerUtils.ParseYfTickerToContract(sqTicker);
                             Dictionary<int, PriceAndTime> rtPrices;
                             if (sqTicker[0] == '^') // if Index, not stock. Index has only LastPrice and TickType.ClosePrice
                             {
@@ -125,7 +125,7 @@ namespace BrokerCommon
                             {
                                 if (tickerList[i].Item2 == null) // if it is temporary ticker  (it should be -2, at this point)
                                 {
-                                    int mktDataId = BrokerWrapper.ReqMktDataStream(VBrokerUtils.ParseSqTickerToContract(tickerList[i].Item1), string.Empty, true,
+                                    int mktDataId = BrokerWrapper.ReqMktDataStream(VBrokerUtils.ParseYfTickerToContract(tickerList[i].Item1), string.Empty, true,
                                         (cb_mktDataId, cb_mktDataSubscr, cb_tickType, cb_price) => {
                                             Utils.Logger.Trace($"{cb_mktDataSubscr.Contract.Symbol} : {cb_tickType}: {cb_price}");
                                             //Console.WriteLine($"{cb_mktDataSubscr.Contract.Symbol} : {cb_tickType}: {cb_price}");  // better not clutter the console
@@ -158,7 +158,7 @@ namespace BrokerCommon
                                         {
                                             string sqTicker = tickerList[i].Item1;
                                             int mktDataId = tickerList[i].Item3;
-                                            Contract contract = VBrokerUtils.ParseSqTickerToContract(sqTicker);
+                                            Contract contract = VBrokerUtils.ParseYfTickerToContract(sqTicker);
                                             Dictionary<int, PriceAndTime> rtPrices;
                                             if (sqTicker[0] == '^') // if Index, not stock. Index has only LastPrice and TickType.ClosePrice
                                             {

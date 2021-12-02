@@ -141,30 +141,53 @@ namespace BrokerCommon
             return true;    // so it is acceptable
         }
 
+        public static Contract MakeStockContract(string p_symbol)
+        {
+            var contract = new IBApi.Contract() { Symbol = p_symbol, SecType = "STK", Currency = "USD", Exchange = "SMART" };
+            switch (p_symbol.ToUpper())
+            {
+                case "GLD":     // ErrCode: 200, Msg: The contract description specified for GLD is ambiguous.  Because there is a UK stock with the same name, Symbol:GLD,Underlying:GLD,Currency:USD,Exchange:SMART,PrimaryExchange:LSE,IssuerCountry:IE. 
+                                // So, in this case we have to specify ARCA, but we don't want to specify for All USA stocks, because other stocks are on NYSE.
+                    contract.PrimaryExch = "ARCA";
+                    break;
+                case "MSFT":     // ErrCode: 200, Msg: The contract description specified for MSFT is ambiguous.
+                    contract.PrimaryExch = "NASDAQ";
+                    break;
+            }
+            return contract;
+        }
+
+        public static Contract MakeOptionContract(string p_symbol, string p_rightStr, double p_strike, int p_multiplier, string p_lastTradeDateOrContractMonthStr, string p_ibLocalSymbol)
+        {
+            var contract = new IBApi.Contract() { Symbol = p_symbol, SecType = "OPT", Currency = "USD", Exchange = "SMART", 
+                Strike = p_strike, Multiplier = p_multiplier.ToString(), Right = p_rightStr, LastTradeDateOrContractMonth = p_lastTradeDateOrContractMonthStr, LocalSymbol = p_ibLocalSymbol };
+            return contract;
+        }
+
         // use YahooFinance ticker terminology (^GSPC instead of SPX); uppercase is a must. Hide it here, so it is not global. threadLock is not required
         // e.g. "SPY,^VIX,^GSPC,SVXY,#^VIX201610,GOOG"
-        public static Contract ParseSqTickerToContract(string p_sqTicker)    
+        public static Contract ParseYfTickerToContract(string p_yfTicker)
         {
             Contract contract;
-            if (p_sqTicker[0] == '^') // if Index, not stock. Index has only LastPrice and TickType.ClosePrice
+            if (p_yfTicker[0] == '^') // if Index, not stock. Index has only LastPrice and TickType.ClosePrice
             {
-                string symbol = p_sqTicker.Substring(1); // skip the "^"
+                string symbol = p_yfTicker.Substring(1); // skip the "^"
                 if (symbol == "GSPC")       //
                     symbol = "SPX";
                 else if (symbol == "VXV")   // On September 18, 2017 the ticker symbol for the Cboe 3-Month Volatility Index was changed from “VXV” to “VIX3M”; So IB returns 'No security definition has been found' for VXV, but accepts VIX3M.
                     symbol = "VIX3M";
-                string exchange = (p_sqTicker == "^RUT") ? "RUSSELL" : "CBOE";
+                string exchange = (p_yfTicker == "^RUT") ? "RUSSELL" : "CBOE";
                 string localSymbol = symbol;        // maybe it is not necessary. However for RUT, it worked
                 contract = new Contract() { Symbol = symbol, SecType = "IND", Currency = "USD", Exchange = exchange, LocalSymbol = localSymbol };  // remove the ^ when you send to IB
             }
-            else if (p_sqTicker[0] == '#')    // ?s=^^VIX201404 was converted to ?s=#^VIX201404
+            else if (p_yfTicker[0] == '#')    // ?s=^^VIX201404 was converted to ?s=#^VIX201404
             {
                 // assume last YYYYMM 6 characters is the expiry
-                string symbol = p_sqTicker.Substring(1, p_sqTicker.Length - 6 - 1);
+                string symbol = p_yfTicker.Substring(1, p_yfTicker.Length - 6 - 1);
                 if (symbol[0] == '^')
                     symbol = symbol.Substring(1, symbol.Length - 1);
 
-                string expiry = p_sqTicker.Substring(p_sqTicker.Length - 6);        // expiry = "201610", however in real life expire = "20161019" as last day can be also specified for LastTradeDateOrContractMonth
+                string expiry = p_yfTicker.Substring(p_yfTicker.Length - 6);        // expiry = "201610", however in real life expire = "20161019" as last day can be also specified for LastTradeDateOrContractMonth
                 string exchange = "CFE";    // works for VIX futures
                 // from 2016: they introduced weekly VIX futures, not only monthly. Those have same Multiplier = 1000, but different TradingClass.
                 // Ib error: "The contract description specified for VIX is ambiguous; you must specify the multiplier or trading class."
@@ -185,8 +208,8 @@ namespace BrokerCommon
             }
             else
             {
-                contract = new Contract() { Symbol = p_sqTicker, SecType = "STK", Currency = "USD", Exchange = "SMART" };
-                switch (p_sqTicker.ToUpper())
+                contract = new Contract() { Symbol = p_yfTicker, SecType = "STK", Currency = "USD", Exchange = "SMART" };
+                switch (p_yfTicker.ToUpper())
                 {
                     case "GLD":     // ErrCode: 200, Msg: The contract description specified for GLD is ambiguous.  Because there is a UK stock with the same name, Symbol:GLD,Underlying:GLD,Currency:USD,Exchange:SMART,PrimaryExchange:LSE,IssuerCountry:IE. 
                         // So, in this case we have to specify ARCA, but we don't want to specify for All USA stocks, because other stocks are on NYSE.
