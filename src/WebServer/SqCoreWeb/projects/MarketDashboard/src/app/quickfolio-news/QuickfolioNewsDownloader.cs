@@ -11,6 +11,7 @@ using System.Text.Json;
 using System.Text;
 using System.Net.WebSockets;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace SqCoreWeb
 {
@@ -76,7 +77,7 @@ namespace SqCoreWeb
             m_stockTickers = cellValue.Split(',').Select(x => x.Trim()).ToArray();
         }
 
-        internal void GetCommonNewsAndSendToClient(DashboardClient p_client)
+        internal async void GetCommonNewsAndSendToClient(DashboardClient p_client)
         {
             string rssFeedUrl = string.Format(@"https://www.cnbc.com/id/100003114/device/rss/rss.html");
 
@@ -85,7 +86,7 @@ namespace SqCoreWeb
             int retryCount = 0;
             while ((foundNewsItems.Count < 1) && (retryCount < 5))
             {
-                foundNewsItems = ReadRSS(rssFeedUrl, NewsSource.CnbcRss, string.Empty);
+                foundNewsItems = await ReadRSSAsync(rssFeedUrl, NewsSource.CnbcRss, string.Empty);
                 if (foundNewsItems.Count == 0)
                     System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));
                 retryCount++;
@@ -102,7 +103,7 @@ namespace SqCoreWeb
                 if (p_client.ActivePage != ActivePage.QuickfolioNews && timeSinceConnect < DashboardClient.c_initialSleepIfNotActiveToolQn.Add(TimeSpan.FromMilliseconds(100)))
                     return;
 
-                p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
             }
 
             // foreach (var client in p_clients)        // List<DashboardClient> p_clients
@@ -124,13 +125,13 @@ namespace SqCoreWeb
         {
             return new List<string> { "All assets" }.Union(m_stockTickers).ToList();
         }
-        internal void GetStockNewsAndSendToClient(DashboardClient p_client) // with 13 tickers, it can take 13 * 2 = 26seconds
+        internal async void GetStockNewsAndSendToClient(DashboardClient p_client) // with 13 tickers, it can take 13 * 2 = 26seconds
         {
             foreach (string ticker in m_stockTickers)
             {
                 byte[]? encodedMsgRss = null, encodedMsgBenzinga = null, encodedMsgTipranks = null;
                 string rssFeedUrl = string.Format(@"https://feeds.finance.yahoo.com/rss/2.0/headline?s={0}&region=US&lang=en-US", ticker);
-                var rss = ReadRSS(rssFeedUrl, NewsSource.YahooRSS, ticker);
+                var rss = await ReadRSSAsync(rssFeedUrl, NewsSource.YahooRSS, ticker);
                 if (rss.Count > 0)
                     encodedMsgRss = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(rss));
                 var benzinga = ReadBenzingaNews(ticker);
@@ -149,11 +150,11 @@ namespace SqCoreWeb
                         continue;
 
                     if (encodedMsgRss != null)
-                        p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgRss, 0, encodedMsgRss.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                        await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgRss, 0, encodedMsgRss.Length), WebSocketMessageType.Text, true, CancellationToken.None);
                     if (encodedMsgBenzinga != null)
-                        p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgBenzinga, 0, encodedMsgBenzinga.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                        await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgBenzinga, 0, encodedMsgBenzinga.Length), WebSocketMessageType.Text, true, CancellationToken.None);
                     if (encodedMsgTipranks != null)
-                        p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgTipranks, 0, encodedMsgTipranks.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                        await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgTipranks, 0, encodedMsgTipranks.Length), WebSocketMessageType.Text, true, CancellationToken.None);
                 }
             }
         }
@@ -315,17 +316,17 @@ namespace SqCoreWeb
             //     }
         }
 
-        private List<NewsItem> ReadRSS(string p_url, NewsSource p_newsSource, string p_ticker)
+        private async Task<List<NewsItem>> ReadRSSAsync(string p_url, NewsSource p_newsSource, string p_ticker)
         {
             try
             {
-                var webClient = new WebClient();
-                // hide ;-)
-                webClient.Headers.Add("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)");
-                // fetch feed as string
-                var content = webClient.OpenRead(p_url);
-                var contentReader = new StreamReader(content);
-                var rssFeedAsString = contentReader.ReadToEnd();
+                string? rssFeedAsString = await Utils.DownloadStringWithRetryAsync(p_url, 3, TimeSpan.FromSeconds(5), true);
+                if (String.IsNullOrEmpty(rssFeedAsString))
+                {
+                    Console.WriteLine($"QuickfolioNewsDownloader.ReadRSS() url download failed.");
+                    return new List<NewsItem>();
+                }
+
                 // convert feed to XML using LINQ to XML and finally create new XmlReader object
                 var feed = System.ServiceModel.Syndication.SyndicationFeed.Load(XDocument.Parse(rssFeedAsString).CreateReader());
 

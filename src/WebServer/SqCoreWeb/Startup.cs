@@ -72,7 +72,7 @@ namespace SqCoreWeb
                         //Duration = (int)TimeSpan.FromHours(12).TotalSeconds
                         Duration = 100000   // 100,000 seconds = 27 hours
                     });
-            }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
+            }); //.SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
             //services.AddControllersWithViews();        // AddMvc() equals AddControllersWithViews() + AddRazorPages(), so we don't use Razor pages now.
             // In production, the Angular files (index.html) will be served from this directory, but actually we don't use UseSpaStaticFiles(), so we don't need this here.
             services.AddSpaStaticFiles(configuration =>

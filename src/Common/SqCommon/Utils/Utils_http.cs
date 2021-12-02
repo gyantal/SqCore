@@ -145,6 +145,15 @@ namespace SqCommon
                             { "X-Requested-With","XMLHttpRequest"}
                         }
                 };
+            else if (p_url.StartsWith("https://www.cnbc.com/id/100003114/device/rss/rss.html"))
+                return new HttpRequestMessage
+                {
+                    RequestUri = new Uri(p_url),
+                    Method = HttpMethod.Get,
+                    Headers = {
+                            { "user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.2; .NET CLR 1.0.3705;)" }
+                        }
+                };
 
             return new HttpRequestMessage
             {

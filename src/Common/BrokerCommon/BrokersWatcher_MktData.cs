@@ -347,7 +347,7 @@ namespace BrokerCommon
             string msg2 = $"Time until having all EstPrices (and Deltas): {(DateTime.UtcNow - waitEstPrStartTime).TotalMilliseconds:0.00} ms. Pr.Queried: {nKnownConIdsPrQueried}, ReceivedOk: {nKnownConIdsPrReadyOk}, ReceivedErr: {nKnownConIdsPrReadyErr}, Missing: {nKnownConIdsPrQueried - nKnownConIdsPrReadyOk - nKnownConIdsPrReadyErr}, Delta.Queried: {nKnownConIdsDeltaQueried}, ReceivedOk: {nKnownConIdsDeltaReadyOk}, ReceivedErr: {nKnownConIdsDeltaReadyErr}, Missing: {nKnownConIdsDeltaQueried - nKnownConIdsDeltaReadyOk - nKnownConIdsDeltaReadyErr}";
             Utils.Logger.Trace(msg2);  // RT prices: After MOC:185.5ms, during Market:FirstTime:900-1100ms,Next times:450-600ms, Local development all 58 stocks + options, Queried: 58, ReceivedOk: 57, ReceivedErr: 1, Missing: 0,  
             // Console.WriteLine(msg2);
-            Console.WriteLine($"IB.ReqMktData() #OkPrice: {nKnownConIdsPrReadyOk} in {nKnownConIdsPrReadyOk}, #OkDelta: {nKnownConIdsDeltaReadyOk} in {nKnownConIdsDeltaReadyOk} in {(DateTime.UtcNow - waitEstPrStartTime).TotalSeconds:0.000}sec.");
+            Console.WriteLine($"IB.ReqMktData() #OkPrice: {nKnownConIdsPrReadyOk} in {nKnownConIdsPrQueried}, #OkDelta: {nKnownConIdsDeltaReadyOk} in {nKnownConIdsDeltaQueried} in {(DateTime.UtcNow - waitEstPrStartTime).TotalSeconds:0.000}sec.");
 
             // we should cancel even the snapshot mktData from BrokerWrapperIb, because the field m_MktDataSubscription is just growing and growing there.
             DateTime cancelDataStartTime = DateTime.UtcNow;
