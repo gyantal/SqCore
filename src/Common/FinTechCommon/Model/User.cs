@@ -75,7 +75,7 @@ namespace FinTechCommon
             // SelectableNavs is an ordered list of tickers. The first item is user specific. User should be able to select between the NAVs. DB, Main, Aggregate.
             // bool isAdmin = UserEmail == Utils.Configuration["Emails:Gyant"].ToLower();
             // if (isAdmin) // Now, it is not used. Now, every Google email user with an email can see DC NAVs. Another option is that only Admin users (GA,BL,LN) can see the DC user NAVs.
-            TsDateData<DateOnly, uint, float, uint> histData = MemDb.gMemDb.DailyHist.GetDataDirect(); // only add navs which has history. Otherwise, there is no point to show to user, and it will crash.
+            TsDateData<SqDateOnly, uint, float, uint> histData = MemDb.gMemDb.DailyHist.GetDataDirect(); // only add navs which has history. Otherwise, there is no point to show to user, and it will crash.
             List<BrokerNav> allNavsWithHistory = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV && histData.Data.ContainsKey(r.AssetId)).Select(r => (BrokerNav)r).ToList();
 
             List<BrokerNav> visibleNavs = new List<BrokerNav>();

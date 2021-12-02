@@ -181,7 +181,7 @@ namespace RedisManager
         }
 
         struct DailyNavDataBin {
-            public DateOnly dateOnly;
+            public SqDateOnly dateOnly;
             public float floatValue;
         }
 
@@ -253,7 +253,7 @@ namespace RedisManager
 
             // 2.1 Bin data: 3069*6=18.4K. Brotlied: 15.268K (less compression if date + float are mixed)
             var dailyStructsBin = dailyNavData.Select(r => {
-                DateOnly dateOnly = new DateOnly(Int32.Parse(r.DateStr.Substring(0, 4)), Int32.Parse(r.DateStr.Substring(4, 2)), Int32.Parse(r.DateStr.Substring(6, 2)));
+                SqDateOnly dateOnly = new SqDateOnly(Int32.Parse(r.DateStr.Substring(0, 4)), Int32.Parse(r.DateStr.Substring(4, 2)), Int32.Parse(r.DateStr.Substring(6, 2)));
                 float navValue = (float)Double.Parse(r.ValueStr);
                 return new DailyNavDataBin() { dateOnly = dateOnly, floatValue = navValue  };
             }).ToArray();
@@ -269,7 +269,7 @@ namespace RedisManager
             var outputBin2 = new byte[dailyNavData.Count * 6];
             var dateOnlyArr = dailyNavData.Select(r =>
             {
-                DateOnly dateOnly = new DateOnly(Int32.Parse(r.DateStr.Substring(0, 4)), Int32.Parse(r.DateStr.Substring(4, 2)), Int32.Parse(r.DateStr.Substring(6, 2)));
+                SqDateOnly dateOnly = new SqDateOnly(Int32.Parse(r.DateStr.Substring(0, 4)), Int32.Parse(r.DateStr.Substring(4, 2)), Int32.Parse(r.DateStr.Substring(6, 2)));
                 return dateOnly.ToBinary();
             }).ToArray();
             Buffer.BlockCopy(dateOnlyArr, 0, outputBin2, 0, dateOnlyArr.Length * 2);     // 'Object must be an array of primitives.'

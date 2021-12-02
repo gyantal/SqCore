@@ -195,7 +195,7 @@ namespace SqCoreWeb
             if (!GatewayExtensions.NavSqSymbol2GatewayIds.TryGetValue(navSqTicker, out List<GatewayId>? gatewayIds))
                 return null;
 
-            TsDateData<DateOnly, uint, float, uint> histData = MemDb.gMemDb.DailyHist.GetDataDirect();
+            TsDateData<SqDateOnly, uint, float, uint> histData = MemDb.gMemDb.DailyHist.GetDataDirect();
 
             BrAccViewerAccountSnapshotJs? result = null;
             List<BrAccPos> unrecognizedAssets = new List<BrAccPos>();
@@ -310,8 +310,8 @@ namespace SqCoreWeb
             assets.Add(MemDb.gMemDb.AssetsCache.GetAsset("S/SPY")); // add it to BrokerNav for benchmark for the chart
 
             DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
-            DateOnly lookbackStart = new DateOnly(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
-            DateOnly lookbackEnd = todayET.AddDays(-1);
+            SqDateOnly lookbackStart = new SqDateOnly(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
+            SqDateOnly lookbackEnd = todayET.AddDays(-1);
             if (p_lookbackStr.StartsWith("Date:"))  // Browser client never send anything, but "Date:" inputs. Format: "Date:2019-11-11...2020-11-10"
             {
                 lookbackStart = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length, 10));

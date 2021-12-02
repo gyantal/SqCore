@@ -76,7 +76,7 @@ namespace FinTechCommon
             SetNextReloadHistDataTriggerTime();
         }
 
-        static internal async Task<CompactFinTimeSeries<DateOnly, uint, float, uint>?> CreateDailyHist(MemData p_memData, Db p_db)  // Create hist, but don't yet overwrite m_memData.DailyHist
+        static internal async Task<CompactFinTimeSeries<SqDateOnly, uint, float, uint>?> CreateDailyHist(MemData p_memData, Db p_db)  // Create hist, but don't yet overwrite m_memData.DailyHist
         {
             DateTime startTime = DateTime.UtcNow;
 
@@ -94,17 +94,17 @@ namespace FinTechCommon
 
         // Polling for changes 3x every day
         // historical data can partially come from our Redis-Sql DB or partially from YF
-        static async Task<CompactFinTimeSeries<DateOnly, uint, float, uint>?> CreateDailyHistImpl(List<Asset> p_assetsNeedDailyHist, Db p_db, Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits)
+        static async Task<CompactFinTimeSeries<SqDateOnly, uint, float, uint>?> CreateDailyHistImpl(List<Asset> p_assetsNeedDailyHist, Db p_db, Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits)
         {
             Utils.Logger.Info("CreateDailyHist() START");
             Console.WriteLine("*MemDb.DailyHist Download from YF starts.");
             try
             {
-                var assetsDates = new Dictionary<uint, DateOnly[]>();
+                var assetsDates = new Dictionary<uint, SqDateOnly[]>();
                 var assetsAdjustedCloses = new Dictionary<uint, float[]>();
                 foreach (var stock in p_assetsNeedDailyHist.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).Select(r => (Stock)r))
                 {
-                    (DateOnly[] dates, float[] adjCloses) = await CreateDailyHist_Stock(stock as Stock, potentialMissingYfSplits);
+                    (SqDateOnly[] dates, float[] adjCloses) = await CreateDailyHist_Stock(stock as Stock, potentialMissingYfSplits);
                     if (adjCloses.Length != 0)
                     {
                         assetsDates[stock.AssetId] = dates;
@@ -125,11 +125,11 @@ namespace FinTechCommon
                     CreateDailyHist_UserNavs(navAssetsOfUser, aggNavAsset, p_db, assetsDates, assetsAdjustedCloses);
                 } // NAVs per user
 
-                List<DateOnly> mergedDates = UnionAllDates(assetsDates);
-                DateOnly[] mergedDatesArr = mergedDates.ToArray();
+                List<SqDateOnly> mergedDates = UnionAllDates(assetsDates);
+                SqDateOnly[] mergedDatesArr = mergedDates.ToArray();
                 var values = MergeCloses(assetsDates, assetsAdjustedCloses, mergedDatesArr);
 
-                return new CompactFinTimeSeries<DateOnly, uint, float, uint>(mergedDatesArr, values);
+                return new CompactFinTimeSeries<SqDateOnly, uint, float, uint>(mergedDatesArr, values);
             }
             catch (Exception e)
             {
@@ -139,7 +139,7 @@ namespace FinTechCommon
             return null;
         }
 
-        private static Dictionary<uint, Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>> MergeCloses(Dictionary<uint, DateOnly[]> assetsDates, Dictionary<uint, float[]> assetsAdjustedCloses, DateOnly[] mergedDatesArr)
+        private static Dictionary<uint, Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>> MergeCloses(Dictionary<uint, SqDateOnly[]> assetsDates, Dictionary<uint, float[]> assetsAdjustedCloses, SqDateOnly[] mergedDatesArr)
         {
             var values = new Dictionary<uint, Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>>();
             foreach (var closes in assetsAdjustedCloses)
@@ -177,13 +177,13 @@ namespace FinTechCommon
             return values;
         }
 
-        private static List<DateOnly> UnionAllDates(Dictionary<uint, DateOnly[]> assetsDates)
+        private static List<SqDateOnly> UnionAllDates(Dictionary<uint, SqDateOnly[]> assetsDates)
         {
             // Merge all dates into a big date array
             // We don't know which days are holidays, so we have to walk all the dates simultaneously, and put into merged date array all the existing dates.
             // walk backward, because the first item will be the latest, the yesterday.
             Dictionary<uint, int> idx = new Dictionary<uint, int>();  // AssetId => to index of the walking where we are
-            DateOnly minDate = DateOnly.MaxValue, maxDate = DateOnly.MinValue;
+            SqDateOnly minDate = SqDateOnly.MaxValue, maxDate = SqDateOnly.MinValue;
             foreach (var dates in assetsDates)  // assume first date is the oldest, last day is yesterday
             {
                 if (minDate > dates.Value.First())
@@ -193,13 +193,13 @@ namespace FinTechCommon
                 idx.Add(dates.Key, dates.Value.Length - 1);
             }
 
-            List<DateOnly> mergedDates = new List<DateOnly>();
-            DateOnly currDate = maxDate; // this maxDate is today, or yesterday. We walk backwards.
+            List<SqDateOnly> mergedDates = new List<SqDateOnly>();
+            SqDateOnly currDate = maxDate; // this maxDate is today, or yesterday. We walk backwards.
             while (true)
             {
                 mergedDates.Add(currDate);
 
-                DateOnly largestPrevDate = DateOnly.MinValue;
+                SqDateOnly largestPrevDate = SqDateOnly.MinValue;
                 foreach (var dates in assetsDates)
                 {
                     if (idx[dates.Key] >= 0 && dates.Value[idx[dates.Key]] == currDate)
@@ -210,7 +210,7 @@ namespace FinTechCommon
                     if (idx[dates.Key] >= 0 && dates.Value[idx[dates.Key]] > largestPrevDate)
                         largestPrevDate = dates.Value[idx[dates.Key]];
                 }
-                if (largestPrevDate == DateOnly.MinValue)  // it was not updated, so all idx reached 0
+                if (largestPrevDate == SqDateOnly.MinValue)  // it was not updated, so all idx reached 0
                     break;
                 currDate = largestPrevDate;
             }
@@ -326,9 +326,9 @@ namespace FinTechCommon
             return potentialMissingYfSplits;
         }
 
-        private static async Task<(DateOnly[], float[])> CreateDailyHist_Stock(Stock stock, Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits)
+        private static async Task<(SqDateOnly[], float[])> CreateDailyHist_Stock(Stock stock, Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits)
         {
-            DateOnly[] dates = new DateOnly[0];  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards
+            SqDateOnly[] dates = new SqDateOnly[0];  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards
             float[] adjCloses = new float[0];
 
             if (stock.ExpectedHistoryStartDateLoc == DateTime.MaxValue) // if Initial value was not overwritten. For Dead stocks, like "S/VXX*20190130"
@@ -350,7 +350,7 @@ namespace FinTechCommon
             // Option 2: Persist YF data to DB every 2 hours. In case of failed YF reload, fall back to latest from DB. Not a real solution if YF gives bad data for days.
             // Option 3: (preferred) Use 2 public databases (GF, Nasdaq, Marketwatch, Iex): In case YF fails for a stock for a date, use that other one if that data is believable (within range)
 
-            dates = history.Select(r => new DateOnly(r!.DateTime)).ToArray();
+            dates = history.Select(r => new SqDateOnly(r!.DateTime)).ToArray();
 
             // YF sends this weird Texts, which are converted to Decimals, so we don't lose TEXT conversion info.
             // AAPL:    DateTime: 2016-01-04 00:00:00, Open: 102.610001, High: 105.370003, Low: 102.000000, Close: 105.349998, Volume: 67649400, AdjustedClose: 98.213585  (original)
@@ -386,7 +386,7 @@ namespace FinTechCommon
                 double multiplier = (double)missingSplitDb.Before / (double)missingSplitDb.After;
                 // USO split date from YF: "Apr 29, 2020" Time: 00:00. Means that very early morning, 9:30 hours before market open. That is the inflection point.
                 // Split adjust (multiply) everything before that time, but do NOT split adjust that exact date.
-                DateOnly missingSplitDbDate = new DateOnly(missingSplitDb.Date);
+                SqDateOnly missingSplitDbDate = new SqDateOnly(missingSplitDb.Date);
                 for (int j = 0; j < dates.Length; j++)
                 {
                     if (dates[j] < missingSplitDbDate)
@@ -398,12 +398,12 @@ namespace FinTechCommon
             return (dates, adjCloses);
         }
 
-        private static void CreateDailyHist_UserNavs(IGrouping<User?, BrokerNav> navAssetsOfUser, BrokerNav? aggNavAsset, Db p_db, Dictionary<uint, DateOnly[]> assetsDates, Dictionary<uint, float[]> assetsAdjustedCloses)
+        private static void CreateDailyHist_UserNavs(IGrouping<User?, BrokerNav> navAssetsOfUser, BrokerNav? aggNavAsset, Db p_db, Dictionary<uint, SqDateOnly[]> assetsDates, Dictionary<uint, float[]> assetsAdjustedCloses)
         {
             User user = navAssetsOfUser.Key!;
-            List<DateOnly[]> navsDates = new List<DateOnly[]>();
+            List<SqDateOnly[]> navsDates = new List<SqDateOnly[]>();
             List<double[]> navsUnadjustedCloses = new List<double[]>();
-            List<KeyValuePair<DateOnly, double>[]> navsDeposits = new List<KeyValuePair<DateOnly, double>[]>();
+            List<KeyValuePair<SqDateOnly, double>[]> navsDeposits = new List<KeyValuePair<SqDateOnly, double>[]>();
             List<BrokerNav> navAssetsWithHistQuotes = new List<BrokerNav>();
             foreach (var navAsset in navAssetsOfUser)
             {
@@ -418,10 +418,10 @@ namespace FinTechCommon
 
                 navAssetsWithHistQuotes.Add(navAsset);
                 var dailyNavStrSplit = dailyNavStr.Substring(iFirstComma + 1, dailyNavStr.Length - (iFirstComma + 1)).Split(',', StringSplitOptions.RemoveEmptyEntries);
-                DateOnly[] dates = dailyNavStrSplit.Select(r => new DateOnly(Int32.Parse(r.Substring(0, 4)), Int32.Parse(r.Substring(4, 2)), Int32.Parse(r.Substring(6, 2)))).ToArray();
+                SqDateOnly[] dates = dailyNavStrSplit.Select(r => new SqDateOnly(Int32.Parse(r.Substring(0, 4)), Int32.Parse(r.Substring(4, 2)), Int32.Parse(r.Substring(6, 2)))).ToArray();
                 double[] unadjustedClosesNav = dailyNavStrSplit.Select(r => Double.Parse(r.Substring(9))).ToArray();
 
-                KeyValuePair<DateOnly, double>[] deposits = p_db.GetAssetBrokerNavDeposit(navAsset.AssetId);
+                KeyValuePair<SqDateOnly, double>[] deposits = p_db.GetAssetBrokerNavDeposit(navAsset.AssetId);
 
                 // CreateAdjNavAndIntegrate(navAsset, dates, unadjustedClosesNav, deposits, assetsDates, assetsAdjustedCloses);
                 float[] adjCloses = CalcAdjNavUsingDeposits(dates, unadjustedClosesNav, deposits);
@@ -439,7 +439,7 @@ namespace FinTechCommon
                 return;
 
             // merging Lists. Union and LINQ has very bad performance. Use Dict. https://stackoverflow.com/questions/4031262/how-to-merge-2-listt-and-removing-duplicate-values-from-it-in-c-sharp
-            var aggDatesDict = new Dictionary<DateOnly, double>();
+            var aggDatesDict = new Dictionary<SqDateOnly, double>();
             for (int iNav = 0; iNav < navsDates.Count; iNav++)
             {
                 for (int j = 0; j < navsDates[iNav].Length; j++)
@@ -454,7 +454,7 @@ namespace FinTechCommon
             var aggDates = aggDatesSortedDict.Select(r => r.Key).ToArray();    // it is ordered from earliest (2011) to latest (2020) exactly how the dates come from DB
             var aggUnadjustedCloses = aggDatesSortedDict.Select(r => r.Value).ToArray();
 
-            var aggDepositsDict = new Dictionary<DateOnly, double>();
+            var aggDepositsDict = new Dictionary<SqDateOnly, double>();
             for (int iNav = 0; iNav < navsDates.Count; iNav++)
             {
                 foreach (var deposit in navsDeposits[iNav])
@@ -474,7 +474,7 @@ namespace FinTechCommon
 
 
 
-        static private float[] CalcAdjNavUsingDeposits(DateOnly[] dates, double[] unadjustedClosesNav, KeyValuePair<DateOnly, double>[] deposits)
+        static private float[] CalcAdjNavUsingDeposits(SqDateOnly[] dates, double[] unadjustedClosesNav, KeyValuePair<SqDateOnly, double>[] deposits)
         {
             // ************************ Stock dividend ajustment and NAV deposit adjustment
             // https://www.investopedia.com/ask/answers/06/adjustedclosingprice.asp
@@ -541,7 +541,7 @@ namespace FinTechCommon
             int iDeposits = deposits.Length - 1;
             for (int i = dates.Length - 1; i >= 0; i--)    // go from yesterday backwards, because adjustment is a multiplier.
             {
-                DateOnly date = dates[i];
+                SqDateOnly date = dates[i];
                 adjCloses[i] = (float)(unadjustedClosesNav![i] * multiplier);
                 if (iDeposits >= 0 && date == deposits[iDeposits].Key)
                 {

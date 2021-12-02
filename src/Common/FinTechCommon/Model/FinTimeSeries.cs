@@ -22,7 +22,7 @@
 // because DailyRecord would contain All potential TickType fields that is EVER used, consuming huge RAM
 // Also Date, ClosePrice values are stored in Array, which is much faster than List
 
-// Keep the TKey as parameter as: DateTime (A DateTime is a 8 byte struct, per millisecond data), DateTimeAsInt (4 byte, per minute data), DateOnly (2 byte) 
+// Keep the TKey as parameter as: DateTime (A DateTime is a 8 byte struct, per millisecond data), DateTimeAsInt (4 byte, per minute data), SqDateOnly (2 byte) 
 
 using System;
 using System.Collections;
@@ -121,7 +121,7 @@ namespace FinTechCommon
     // see SortedList<TKey,TValue> as template https://github.com/dotnet/corefx/blob/master/src/System.Collections/src/System/Collections/Generic/SortedList.cs
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
-    public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : notnull   // Tkey = DateTime (8 byte), DateTimeAsInt (4 byte), DateOnly (2 byte), or any int, byte (1 byte), or even string (that can be ordered)
+    public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : notnull   // Tkey = DateTime (8 byte), DateTimeAsInt (4 byte), SqDateOnly (2 byte), or any int, byte (1 byte), or even string (that can be ordered)
     {
         private TKey[] keys;  // Key which is used for OrderBy the other arrays. This array should be ordered from smallest to largest
         public Dictionary<TickType, TValue1[]> values1;
@@ -138,22 +138,22 @@ namespace FinTechCommon
         static void HowToUseThisClassExamples()
         {
             // 1. set up timeSeries
-            var ts2 = new FinTimeSeries<DateOnly, float, uint>(new TickType[] { TickType.SplitDivAdjClose }, new TickType[] { TickType.Volume });
+            var ts2 = new FinTimeSeries<SqDateOnly, float, uint>(new TickType[] { TickType.SplitDivAdjClose }, new TickType[] { TickType.Volume });
             ts2.Capacity = 10;  // set capacity will increase all TickType arrays
 
             // Arrays are refence types. Just create the arrays and pass it to the constructor
             var kvpar1 = new KeyValuePair<TickType, float[]>(TickType.SplitDivAdjClose, Array.Empty<float>());
             var kvpar2 = new KeyValuePair<TickType, uint[]>(TickType.Volume, Array.Empty<uint>());
-            var ts1 = new FinTimeSeries<DateOnly, float, uint>(
-                new DateOnly[] { },
+            var ts1 = new FinTimeSeries<SqDateOnly, float, uint>(
+                new SqDateOnly[] { },
                 new KeyValuePair<TickType, float[]>[] { kvpar1 },
                 new KeyValuePair<TickType, uint[]>[] { kvpar2 }
             );
 
 
             // 2. consume timeSeries via public methods
-            float ts1YesterdayClose3 = ts1.GetValues1(new DateOnly(), TickType.Close);  // neat if data is accessed via methods
-            bool isOkTs1YesterdayClose3 = ts1.TryGetValue1(new DateOnly(), TickType.Close, out float value);
+            float ts1YesterdayClose3 = ts1.GetValues1(new SqDateOnly(), TickType.Close);  // neat if data is accessed via methods
+            bool isOkTs1YesterdayClose3 = ts1.TryGetValue1(new SqDateOnly(), TickType.Close, out float value);
 
             // access array via a List, indirectly. There is no memory consumption. Direct reference to the private array.
             // supports only: [] indexer as one by one direct access, and CopyTo() into destination TValue1[] arrays.
@@ -161,18 +161,18 @@ namespace FinTechCommon
 
             // 3. access timeSeries via private members (can be accessed only from inside the class)
             float[] array1 = ts1.values1[TickType.Close];       // access array directly, although it should be private
-            float ts1YesterdayClose2 = ts1.values1[TickType.Close][ts1.IndexOfKey(new DateOnly())];   // possible to access inner members and manipulate if needed
+            float ts1YesterdayClose2 = ts1.values1[TickType.Close][ts1.IndexOfKey(new SqDateOnly())];   // possible to access inner members and manipulate if needed
 
             // 4. The most efficient, faster usage is the direct usage of the array. Better than (linked-) List, and there is no indirection.
-            DateOnly[] dates = ts1.GetKeyArrayDirect();
+            SqDateOnly[] dates = ts1.GetKeyArrayDirect();
             float[] sdaClose = ts1.GetValue1ArrayDirect(TickType.SplitDivAdjClose);
 
             // Example usage from MemDb:
             // Security sec = MemDb.gMemDb.GetFirstMatchingSecurity(r.Ticker);
-            // DateOnly[] dates = sec.DailyHistory.GetKeyArrayDirect();
+            // SqDateOnly[] dates = sec.DailyHistory.GetKeyArrayDirect();
             // float[] sdaCloses = sec.DailyHistory.GetValue1ArrayDirect(TickType.SplitDivAdjClose);
             // // At 16:00, or even intraday: YF gives even the today last-realtime price with a today-date. We have to find any date backwards, which is NOT today. That is the PreviousClose.
-            // int i = (dates[dates.Length - 1] >= new DateOnly(DateTime.UtcNow)) ? dates.Length - 2 : dates.Length - 1;
+            // int i = (dates[dates.Length - 1] >= new SqDateOnly(DateTime.UtcNow)) ? dates.Length - 2 : dates.Length - 1;
             // Debug.WriteLine($"Found: {r.Ticker}, {dates[i]}:{sdaCloses[i]}");
 
             // DateTime[] ts1LastWeekDates = ts1.GetRangeIncDate(new DateTime(), new DateTime());

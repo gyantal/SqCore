@@ -163,14 +163,14 @@ namespace FinTechCommon
 
         static void HowToUseThisClassExamples()
         {
-            DateOnly[] dates = new DateOnly[2] { new DateOnly(2020, 05, 05), new DateOnly(2020, 05, 06)};
+            SqDateOnly[] dates = new SqDateOnly[2] { new SqDateOnly(2020, 05, 05), new SqDateOnly(2020, 05, 06)};
             var dict1 = new Dictionary<TickType, float[]>() { { TickType.SplitDivAdjClose, new float[2] { 10.1f, 12.1f } } };
             var dict2 = new Dictionary<TickType, uint[]>();
             uint assetId = 1;
             var data = new Dictionary<uint, Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>>()
                     { { assetId, new Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>(dict1, dict2)}};
 
-            var ts1 = new CompactFinTimeSeries<DateOnly, uint, float, uint>();
+            var ts1 = new CompactFinTimeSeries<SqDateOnly, uint, float, uint>();
             ts1.ChangeData(dates, data);
         }
 

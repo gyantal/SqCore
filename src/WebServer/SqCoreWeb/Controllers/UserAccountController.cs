@@ -100,7 +100,8 @@ namespace SqCoreWeb.Controllers
             var userEmailClaim = HttpContext?.User?.Claims?.FirstOrDefault(p => p.Type == @"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
             string email = userEmailClaim?.Value ?? "Unknown email";
 
-            if (!String.Equals(email, "foo@google.com"))
+            // if (!String.Equals(email, "foo@google.com"))
+            if (!WsUtils.IsAuthorizedGoogleUsers(email))
                 return "You don't belong to our precious users. Your email is: " + email;
 
             return "You are one of our precious users. Cheers. Your email is: " + email;

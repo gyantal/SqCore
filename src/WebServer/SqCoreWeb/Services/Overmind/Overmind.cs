@@ -301,7 +301,7 @@ namespace SqCoreWeb
             List<string> tickers = new List<string>() { "^VIX" };
 
             IReadOnlyList<Candle?> history = Yahoo.GetHistoricalAsync("^VIX", startDateET, endDateET, Period.Daily).TurnAsyncToSyncTask(); // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
-            DateOnly[] dates = history.Select(r => new DateOnly(r!.DateTime)).ToArray();
+            SqDateOnly[] dates = history.Select(r => new SqDateOnly(r!.DateTime)).ToArray();
             // for penny stocks, IB and YF considers them for max. 4 digits. UWT price (both in IB ask-bid, YF history) 2020-03-19: 0.3160, 2020-03-23: 2302
             float[] adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
 

@@ -80,7 +80,7 @@ namespace SqCoreWeb
             if (IsAuthorizedGoogleUsers(email))
                 return UserAuthCheckResult.UserKnownAuthOK;
             else
-                return UserAuthCheckResult.UserKnownAuthNotEnugh;               
+                return UserAuthCheckResult.UserKnownAuthNotEnugh;
 //#endif
         }
 

@@ -14,8 +14,8 @@ namespace FinTechCommon
         public string UnderlyingSymbol { get; set; } = string.Empty;    // Stock or "VIX index", because "VIX index" is also the underlying of VIX futures.
         public Asset? UnderlyingAsset { get; set; } = null;
         public string LastTradeDateOrContractMonthStr { get; set; } = string.Empty;     // commodity (oil, natgas) futures options may have not a precise date here, but only a ContractMonth
-        public DateTime ExpirationDate { get; set; } = DateOnly.NO_DATE;    // for VIX options, this is 1 day after the LastTradeDate
-        public DateTime LastTradeDate { get; set; } = DateOnly.NO_DATE;     // this is given by ID in LastTradeDateOrContractMonthStr. IB can contain the time in it as well: "DEC 21'21 15:15 CST"
+        public DateTime ExpirationDate { get; set; } = SqDateOnly.NO_DATE;    // for VIX options, this is 1 day after the LastTradeDate
+        public DateTime LastTradeDate { get; set; } = SqDateOnly.NO_DATE;     // this is given by ID in LastTradeDateOrContractMonthStr. IB can contain the time in it as well: "DEC 21'21 15:15 CST"
         public OptionRight OptionRight { get; set; } = OptionRight.Unknown;     // Put or Call
         public double Strike { get; set; } = double.NaN;
         public int Multiplier { get; set; } = -1;

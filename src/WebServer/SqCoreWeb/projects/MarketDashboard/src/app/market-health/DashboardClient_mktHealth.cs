@@ -125,8 +125,8 @@ namespace SqCoreWeb
                 allAssets.Add(m_mkthSelectedNavAsset);
 
             DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
-            DateOnly lookbackStartInc = new DateOnly(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
-            DateOnly lookbackEndExcl = todayET;
+            SqDateOnly lookbackStartInc = new SqDateOnly(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
+            SqDateOnly lookbackEndExcl = todayET;
             if (p_lookbackStr.StartsWith("Date:"))  // Browser client never send anything, but "Date:" inputs. Format: "Date:2019-11-11...2020-11-10"
             {
                 lookbackStartInc = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length, 10));

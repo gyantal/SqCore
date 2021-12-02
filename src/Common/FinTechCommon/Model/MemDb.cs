@@ -26,7 +26,7 @@ namespace FinTechCommon
         // AssetsCache localAssetCache = MemDb.AssetCache;
         // foreach (Asset item in localAssetCache)
         public AssetsCache AssetsCache { get { return m_memData.AssetsCache; } }
-        public CompactFinTimeSeries<DateOnly, uint, float, uint> DailyHist { get { return m_memData.DailyHist; } }
+        public CompactFinTimeSeries<SqDateOnly, uint, float, uint> DailyHist { get { return m_memData.DailyHist; } }
         public List<string> Portfolios { get { throw new NotImplementedException(); } } // Portfolios are Assets as well, so they can go to AssetsCache
 
         public bool IsInitialized { get; set; } = false;
@@ -74,7 +74,7 @@ namespace FinTechCommon
                 // GA.IM.NAV assets have user_id data, so User data has to be reloaded too before Assets
                 (bool isDbReloadNeeded, User[]? newUsers, List<Asset>? newAssets) = m_Db.GetDataIfReloadNeeded();    // isDbReloadNeeded can be ignored as it is surely true at Init()
                 var newAssetCache = new AssetsCache(newAssets!);               // TODO: var newPortfolios = GeneratePortfolios();
-                m_memData = new MemData(newUsers!, newAssetCache, new CompactFinTimeSeries<DateOnly, uint, float, uint>());
+                m_memData = new MemData(newUsers!, newAssetCache, new CompactFinTimeSeries<SqDateOnly, uint, float, uint>());
                 m_lastRedisReload = DateTime.UtcNow;
                 m_lastRedisReloadTs = DateTime.UtcNow - startTime;
                 // can inform Observers that MemDb is 1/4th ready: Users, Assets OK
@@ -249,7 +249,7 @@ namespace FinTechCommon
 
             // to minimize the time memDb is not consintent we create everything into new pointers first, then update them quickly
             var newAssetCache = new AssetsCache(sqCoreAssets!);
-            var newMemData = new MemData(newUsers!, newAssetCache, new CompactFinTimeSeries<DateOnly, uint, float, uint>());
+            var newMemData = new MemData(newUsers!, newAssetCache, new CompactFinTimeSeries<SqDateOnly, uint, float, uint>());
             
             var newDailyHist = await CreateDailyHist(newMemData, m_Db); // downloads historical prices from YF. Assume it takes 20min
             // If reload HistData fails AND if it is a forced ReloadRedisDb, because assets changed Assets => we throw away old history, even if download fails.
@@ -276,7 +276,7 @@ namespace FinTechCommon
             EvFullMemDbDataReloaded?.Invoke();
         }
 
-        public (User[], AssetsCache, CompactFinTimeSeries<DateOnly, uint, float, uint>) GetAssuredConsistentTables()
+        public (User[], AssetsCache, CompactFinTimeSeries<SqDateOnly, uint, float, uint>) GetAssuredConsistentTables()
         {
             // if client wants to be totally secure and consistent when getting subtables
             MemData localMemData = m_memData; // if m_memData swap occurs, that will not ruin our consistency

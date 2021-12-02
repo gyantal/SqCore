@@ -413,8 +413,8 @@ namespace SqCommon
             DateTime? result;
             if (p_value is DateTime)
                 result = (DateTime)p_value;
-            else if (p_value is DateOnly)
-                result = (DateOnly)p_value;
+            else if (p_value is SqDateOnly)
+                result = (SqDateOnly)p_value;
             else if (p_value is DateTimeAsInt)
                 result = (DateTimeAsInt)p_value;
             else if (p_customParser != null && (result = p_customParser(p_value)).HasValue)
@@ -442,18 +442,18 @@ namespace SqCommon
     // stores DateOnly in 2 bytes. Number of days since epoch, 1900-01-01. The max nDays is 65535, which is 178 years from 1900, being valid until 2078.
     // This implementation is better than an experimental CoreFxLab Date(only).cs, which stores it in 4-byte int. However, there might be good implementation ideas in that source code
     // https://github.com/dotnet/corefxlab/blob/master/src/System.Time/System/Date.cs
-    public struct DateOnly : IComparable<DateOnly>, IEquatable<DateOnly>, IEquatable<DateTime>
+    public struct SqDateOnly : IComparable<SqDateOnly>, IEquatable<SqDateOnly>, IEquatable<DateTime>
     {
         const long g_epoch = 599265216000000000L;   // new DateTime(1899, 12, 31).Ticks
         public const long MinTicks = g_epoch + TimeSpan.TicksPerDay;
         public const long MaxTicks = g_epoch + ushort.MaxValue * TimeSpan.TicksPerDay;
         ushort m_days;
 
-        public DateOnly(DateTime p_value)
+        public SqDateOnly(DateTime p_value)
         {
             m_days = BinaryValue(p_value);
         }
-        public DateOnly(int p_year, int p_month, int p_day)
+        public SqDateOnly(int p_year, int p_month, int p_day)
         {
             m_days = BinaryValue(new DateTime(p_year, p_month, p_day));
         }
@@ -462,7 +462,7 @@ namespace SqCommon
         /// since 1970).</summary><exception cref="ArgumentOutOfRangeException">when p_intVal
         /// is out of the above intervals (i.e. within 65536..70100 or 991232..19000100) or
         /// represents an invalid date (like 170229).</exception>
-        public DateOnly(int p_intVal)
+        public SqDateOnly(int p_intVal)
         {
             if (unchecked((uint)p_intVal < 65536u))
                 m_days = (ushort)p_intVal;
@@ -489,9 +489,9 @@ namespace SqCommon
         }
         public DateTime Time { get { return Date; } }   // for convenience
         public bool IsValid  { get { return m_days != 0; } }
-        public static DateOnly NO_DATE  { get { return default(DateOnly); } }
-        public static DateOnly MinValue { get { return new DateOnly { m_days = 1 }; } }
-        public static DateOnly MaxValue { get { return new DateOnly { m_days = ushort.MaxValue }; } }
+        public static SqDateOnly NO_DATE  { get { return default(SqDateOnly); } }
+        public static SqDateOnly MinValue { get { return new SqDateOnly { m_days = 1 }; } }
+        public static SqDateOnly MaxValue { get { return new SqDateOnly { m_days = ushort.MaxValue }; } }
         public bool IsWeekend { get { return ((m_days + 1) % 7) < 2; } }    // Utils.NO_DATE is weekend
         /// <summary> Increases by 1 every weekday, but not on weekends.
         /// Examples:
@@ -525,14 +525,14 @@ namespace SqCommon
             }
         }
         /// <summary> Returns NO_DATE if 0 >= p_wi </summary>
-        public static DateOnly FromWeekdayIndex(int p_wi)
+        public static SqDateOnly FromWeekdayIndex(int p_wi)
         {
             if (p_wi <= 0)
-                return default(DateOnly);
+                return default(SqDateOnly);
             int day = ((p_wi << 3) + 2 - p_wi) / 5;
             while (((day + 1) % 7) < 2)     // == while (DateOnly.FromBinary(day).IsWeekend)
                 --day;
-            DateOnly result;
+            SqDateOnly result;
             result.m_days = checked((ushort)day);
             // Now 'result' is almost accurate: +/- 2 days difference is possible. This is corrected below:
             for (ushort w; (w = result.WeekdayIndex) != p_wi; )
@@ -542,25 +542,25 @@ namespace SqCommon
 
         public override bool Equals(object? obj)
         {
-            if (obj is DateOnly)
-                return Equals((DateOnly)obj);
+            if (obj is SqDateOnly)
+                return Equals((SqDateOnly)obj);
             if (obj is DateTime)
-                return Equals(new DateOnly((DateTime)obj));
+                return Equals(new SqDateOnly((DateTime)obj));
             return false;
         }
         public override int GetHashCode()                               { return m_days; }
         public override string ToString()                               { return Date.ToString("yyyy'-'MM'-'dd"); }
-        public bool Equals(DateOnly p_other)                            { return m_days == p_other.m_days; }
-        public bool Equals(DateTime p_other)                            { return this.Equals(new DateOnly(p_other)); }
-        public int CompareTo(DateOnly p_other)                          { return (int)m_days - (int)p_other.m_days; }
+        public bool Equals(SqDateOnly p_other)                            { return m_days == p_other.m_days; }
+        public bool Equals(DateTime p_other)                            { return this.Equals(new SqDateOnly(p_other)); }
+        public int CompareTo(SqDateOnly p_other)                          { return (int)m_days - (int)p_other.m_days; }
         public ushort ToBinary()                                        { return m_days; }
-        public static DateOnly FromBinary(ushort p_days)                { DateOnly d; d.m_days = p_days; return d; }
-        public static bool operator ==(DateOnly p_d1, DateOnly p_d2)    { return p_d1.Equals(p_d2); }
-        public static bool operator !=(DateOnly p_d1, DateOnly p_d2)    { return !p_d1.Equals(p_d2); }
-        public static bool operator < (DateOnly p_d1, DateOnly p_d2)    { return p_d1.m_days <  p_d2.m_days; }
-        public static bool operator <=(DateOnly p_d1, DateOnly p_d2)    { return p_d1.m_days <= p_d2.m_days; }
-        public static bool operator > (DateOnly p_d1, DateOnly p_d2)    { return p_d1.m_days >  p_d2.m_days; }
-        public static bool operator >=(DateOnly p_d1, DateOnly p_d2)    { return p_d1.m_days >= p_d2.m_days; }
+        public static SqDateOnly FromBinary(ushort p_days)                { SqDateOnly d; d.m_days = p_days; return d; }
+        public static bool operator ==(SqDateOnly p_d1, SqDateOnly p_d2)    { return p_d1.Equals(p_d2); }
+        public static bool operator !=(SqDateOnly p_d1, SqDateOnly p_d2)    { return !p_d1.Equals(p_d2); }
+        public static bool operator < (SqDateOnly p_d1, SqDateOnly p_d2)    { return p_d1.m_days <  p_d2.m_days; }
+        public static bool operator <=(SqDateOnly p_d1, SqDateOnly p_d2)    { return p_d1.m_days <= p_d2.m_days; }
+        public static bool operator > (SqDateOnly p_d1, SqDateOnly p_d2)    { return p_d1.m_days >  p_d2.m_days; }
+        public static bool operator >=(SqDateOnly p_d1, SqDateOnly p_d2)    { return p_d1.m_days >= p_d2.m_days; }
         // The followings are removed because it's not easy to interpret that
         // DateOnly is extended to DateTime (DateTime's operator is used)
         // or DateTime is truncated to DateOnly (DateOnly's operator is used).
@@ -573,16 +573,16 @@ namespace SqCommon
         //public static bool operator <=(DateOnly p_d1, DateTime p_d2)    { return p_d1 <= (DateOnly)p_d2; }
         //public static bool operator > (DateOnly p_d1, DateTime p_d2)    { return p_d1 >  (DateOnly)p_d2; }
         //public static bool operator >=(DateOnly p_d1, DateTime p_d2)    { return p_d1 >= (DateOnly)p_d2; }
-        public static implicit operator DateTime(DateOnly p_this)       { return p_this.Date; }
-        public static implicit operator DateOnly(DateTime p_datetime)   { return new DateOnly(p_datetime); }
-        public static DateOnly operator--(DateOnly p_d1)                { return p_d1 + (-1); }
-        public static DateOnly operator++(DateOnly p_d1)                { return p_d1 + 1; }
+        public static implicit operator DateTime(SqDateOnly p_this)       { return p_this.Date; }
+        public static implicit operator SqDateOnly(DateTime p_datetime)   { return new SqDateOnly(p_datetime); }
+        public static SqDateOnly operator--(SqDateOnly p_d1)                { return p_d1 + (-1); }
+        public static SqDateOnly operator++(SqDateOnly p_d1)                { return p_d1 + 1; }
         // public static int   operator -(DateOnly p_d1, DateOnly p_d2) { return p_d1.m_days - p_d2.m_days; } -> would cause error on DateTime-DateTime expressions (CS0034: Operator '-' is ambiguous on operands of type 'DateTime' and 'DateOnly')
-        public int  Sub(DateOnly  p_other)   => m_days - p_other.m_days;
-        public int? Sub(DateOnly? p_other)   => p_other.HasValue ? m_days - p_other.Value.m_days : (int?)null;
-        public int  SubAbs(DateOnly p_other) => Math.Abs(m_days - p_other.m_days);
-        public static DateOnly operator -(DateOnly p_d1, int p_days)    { return p_d1 + (-p_days); }
-        public static DateOnly operator +(DateOnly p_d1, int p_days)
+        public int  Sub(SqDateOnly  p_other)   => m_days - p_other.m_days;
+        public int? Sub(SqDateOnly? p_other)   => p_other.HasValue ? m_days - p_other.Value.m_days : (int?)null;
+        public int  SubAbs(SqDateOnly p_other) => Math.Abs(m_days - p_other.m_days);
+        public static SqDateOnly operator -(SqDateOnly p_d1, int p_days)    { return p_d1 + (-p_days); }
+        public static SqDateOnly operator +(SqDateOnly p_d1, int p_days)
         {
             p_days += p_d1.m_days;
             p_d1.m_days = unchecked((ushort)((uint)p_days <= ushort.MaxValue ? p_days : ~(p_days >> 31)));    // ==  (n < 0) ? 0 : (n <= 65535 ? n : 65535)

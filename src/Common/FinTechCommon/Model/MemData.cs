@@ -32,7 +32,7 @@ namespace FinTechCommon
         // AssetsCache localAssetCache = MemDb.AssetCache;
         // foreach (Asset item in localAssetCache)
         public volatile AssetsCache AssetsCache = new AssetsCache();  // writable: user might insert a new asset from HTML UI (although this is dangerous, how to propagate it the gSheet Asset replica)
-        public volatile CompactFinTimeSeries<DateOnly, uint, float, uint> DailyHist = new CompactFinTimeSeries<DateOnly, uint, float, uint>();
+        public volatile CompactFinTimeSeries<SqDateOnly, uint, float, uint> DailyHist = new CompactFinTimeSeries<SqDateOnly, uint, float, uint>();
 
         // As Portfolios are assets (nesting), we might store portfolios in AssetCache, not separately
         public volatile List<string> Portfolios = new List<string>(); // temporary illustration of a data that will be not only read, but written by SqCore. Portfolios are not necessary here, because they are Assets as well, so they can go to AssetsCache
@@ -58,7 +58,7 @@ namespace FinTechCommon
         {
         }
 
-        public MemData(User[] newUsers, AssetsCache newAssetsCache, CompactFinTimeSeries<DateOnly, uint, float, uint> newDailyHist)
+        public MemData(User[] newUsers, AssetsCache newAssetsCache, CompactFinTimeSeries<SqDateOnly, uint, float, uint> newDailyHist)
         {
             Users = newUsers;
             AssetsCache = newAssetsCache;

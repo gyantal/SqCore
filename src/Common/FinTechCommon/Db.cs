@@ -281,18 +281,18 @@ namespace FinTechCommon
             m_redisDb.HashSet("assetQuoteRaw", redisKey,  RedisValue.CreateFrom(new System.IO.MemoryStream(outputCsvBrotli)));
         }
 
-        public KeyValuePair<DateOnly, double>[] GetAssetBrokerNavDeposit(AssetId32Bits p_assetId)
+        public KeyValuePair<SqDateOnly, double>[] GetAssetBrokerNavDeposit(AssetId32Bits p_assetId)
         {
             string redisKey = p_assetId.ToString() + ".brotli"; // key: "9:1.brotli"
             byte[] dailyDepositBrotli = m_redisDb.HashGet("assetBrokerNavDeposit", redisKey);
             var dailyDepositStr = Utils.BrotliBin2Str(dailyDepositBrotli);  // 479 byte text data from 179 byte brotli data, starts with FormatString: "20090310/1903,20100305/2043,..."
-            KeyValuePair<DateOnly, double>[] deposits = dailyDepositStr.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(r =>
+            KeyValuePair<SqDateOnly, double>[] deposits = dailyDepositStr.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(r =>
             {
                 // format: "20200323/-1000000"
                 var depositsDays = r.Split('/', StringSplitOptions.RemoveEmptyEntries);
                 DateTime date = Utils.FastParseYYYYMMDD(new StringSegment(r, 0, 8));
                 double deposit = Double.Parse(new StringSegment(r, 9, r.Length - 9));
-                return new KeyValuePair<DateOnly, double>(new DateOnly(date), deposit);
+                return new KeyValuePair<SqDateOnly, double>(new SqDateOnly(date), deposit);
             }).ToArray();
             return deposits;
         }

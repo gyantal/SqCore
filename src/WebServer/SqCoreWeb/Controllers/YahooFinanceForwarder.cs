@@ -160,7 +160,7 @@ namespace SqCoreWeb.Controllers
                 // 3. With the Token.Cookie and Crumb download YF CSV file
                 string startTimeStr = allParamsDict["period1"];
                 string endTimeStr = allParamsDict["period2"];
-                DateTime startTime = DateOnly.MinValue, endTime = DateTime.UtcNow;
+                DateTime startTime = SqDateOnly.MinValue, endTime = DateTime.UtcNow;
                 if (startTimeStr.IndexOf('-') != -1)    // format '2017-05-20' has hyphen in it; if it has hyphen, try to convert to Date.
                 {
                     startTime = DateTime.ParseExact(startTimeStr, "yyyy-MM-dd", CultureInfo.InvariantCulture);

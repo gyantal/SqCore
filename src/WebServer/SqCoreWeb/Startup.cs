@@ -203,8 +203,11 @@ namespace SqCoreWeb
                             Utils.Logger.Info("GoogleAuth.OnTicketReceived()");
                             // if this is not set, then the cookie in the browser expires, even though the validation-info in the cookie is still valid. By default, cookies expire: "When the browsing session ends" Expires: 'session'
                             // https://www.jerriepelser.com/blog/managing-session-lifetime-aspnet-core-oauth-providers/
-                            context.Properties.IsPersistent = true;
-                            context.Properties.ExpiresUtc = DateTimeOffset.UtcNow.AddDays(25);
+                            if (context.Properties != null)
+                            {
+                                context.Properties.IsPersistent = true;
+                                context.Properties.ExpiresUtc = DateTimeOffset.UtcNow.AddDays(25);
+                            }
 
                             return Task.FromResult(0);
                         },

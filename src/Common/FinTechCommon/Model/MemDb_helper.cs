@@ -45,7 +45,7 @@ namespace FinTechCommon
 
     public class AssetHistValue
     {
-        public DateOnly Date { get; set; }
+        public SqDateOnly Date { get; set; }
         public float SdaValue { get; set; }
     }
 
@@ -72,10 +72,10 @@ namespace FinTechCommon
         // This requre more RAM than the other solution which only returns the filled rows, but it will save CPU time later, when the result is processed at the caller. He don't have to do double FORs to iterate.
         public IEnumerable<AssetPriorClose> GetSdaPriorClosesFromHist(IEnumerable<Asset> p_assets, DateTime p_dateExclLoc /* usually given as current time today */)
         {
-            DateOnly lookbackEnd = p_dateExclLoc.Date.AddDays(-1); // if (p_dateExclLoc is Monday), -1 days is Sunday, but we have to find Friday before
+            SqDateOnly lookbackEnd = p_dateExclLoc.Date.AddDays(-1); // if (p_dateExclLoc is Monday), -1 days is Sunday, but we have to find Friday before
 
-            TsDateData<DateOnly, uint, float, uint> histData = DailyHist.GetDataDirect();
-            DateOnly[] dates = histData.Dates;
+            TsDateData<SqDateOnly, uint, float, uint> histData = DailyHist.GetDataDirect();
+            SqDateOnly[] dates = histData.Dates;
             // At 16:00, or even intraday: YF gives even the today last-realtime price with a today-date. We have to find any date backwards, which is NOT today. That is the PreviousClose.
             int iEndDay = 0;
             for (int i = 0; i < dates.Length; i++)
@@ -127,10 +127,10 @@ namespace FinTechCommon
         public IEnumerable<AssetHist> GetSdaHistCloses(IEnumerable<Asset> p_assets, DateTime p_startIncLoc, DateTime p_endExclLoc /* usually given as current time today */,
             bool p_valuesNeeded, bool p_statNeeded)
         {
-            DateOnly lookbackEnd = p_endExclLoc.Date.AddDays(-1); // if (p_dateExclLoc is Monday), -1 days is Sunday, but we have to find Friday before
+            SqDateOnly lookbackEnd = p_endExclLoc.Date.AddDays(-1); // if (p_dateExclLoc is Monday), -1 days is Sunday, but we have to find Friday before
 
-            TsDateData<DateOnly, uint, float, uint> histData = DailyHist.GetDataDirect();
-            DateOnly[] dates = histData.Dates;
+            TsDateData<SqDateOnly, uint, float, uint> histData = DailyHist.GetDataDirect();
+            SqDateOnly[] dates = histData.Dates;
 
             // At 16:00, or even intraday: YF gives even the today last-realtime price with a today-date. We have to find any date backwards, which is NOT today. That is the PreviousClose.
             int iEndDay = 0;
@@ -144,7 +144,7 @@ namespace FinTechCommon
             }
             Debug.WriteLine($"MemDb.GetSdaHistCloses().EndDate: {dates[iEndDay]}");
 
-            int iStartDay = histData.IndexOfKeyOrAfter(new DateOnly(p_startIncLoc));      // the valid price at the weekend is the one on the previous Friday. After.
+            int iStartDay = histData.IndexOfKeyOrAfter(new SqDateOnly(p_startIncLoc));      // the valid price at the weekend is the one on the previous Friday. After.
             if (iStartDay == -1 || iStartDay >= dates.Length) // If not found then fix the startDate as the first available date of history.
             {
                 iStartDay = dates.Length - 1;
