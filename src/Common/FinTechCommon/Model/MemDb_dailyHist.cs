@@ -594,6 +594,17 @@ namespace FinTechCommon
             Utils.Logger.Info($"m_reloadHistoricalDataTimer set next targetdate: {targetDateEt.ToSqDateTimeStr()} ET");
             m_historicalDataReloadTimer.Change(targetDateEt - etNow, TimeSpan.FromMilliseconds(-1.0));     // runs only once.
         }
+// under developement Daya
+        // private static void GetBnchmkHistData()
+        // {
+        //     IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync("SPY", new SqDateOnly(2019, 1, 2), DateTime.Now, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
+        //     if (history == null)
+        //         throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{"SPY"}) after many tries.");
 
+        //     var dates = history.Select(r => new DateOnly(r!.DateTime)).ToArray();
+        //     var adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
+        //     // return (dates, adjCloses); 
+
+        // }
     }
 }

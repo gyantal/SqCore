@@ -152,7 +152,7 @@ namespace SqCoreWeb
             if (m_braccSelectedNavAsset == null)
                 return;
             BrAccViewerSendSnapshot();
-            BrAccViewerSendHist();
+            BrAccViewerSendHist("YTD", "S/SPY");
         }
 
         private void BrAccViewerSendSnapshot()
@@ -166,10 +166,10 @@ namespace SqCoreWeb
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
             }
         }
-        private void BrAccViewerSendHist()
+        private void BrAccViewerSendHist(string p_lookbackStr, string p_bnchmrkTicker)
         {
             byte[]? encodedMsg = null;
-            IEnumerable<AssetHistJs>? brAccViewerHist = GetBrAccViewerHist("YTD");
+            IEnumerable<AssetHistJs>? brAccViewerHist = GetBrAccViewerHist(p_lookbackStr, p_bnchmrkTicker);
             if (brAccViewerHist != null)
             {
                 encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.Hist:" + Utils.CamelCaseSerialize(brAccViewerHist));
@@ -300,14 +300,14 @@ namespace SqCoreWeb
             return result;
         }
 
-        private IEnumerable<AssetHistJs>? GetBrAccViewerHist(string p_lookbackStr)
+        private IEnumerable<AssetHistJs>? GetBrAccViewerHist(string p_lookbackStr, string p_bnchmrkTicker)
         {
             if (m_braccSelectedNavAsset == null)
                 return null;
 
             List<Asset> assets = new List<Asset>();
             assets.Add(m_braccSelectedNavAsset);
-            assets.Add(MemDb.gMemDb.AssetsCache.GetAsset("S/SPY")); // add it to BrokerNav for benchmark for the chart
+            assets.Add(MemDb.gMemDb.AssetsCache.GetAsset(p_bnchmrkTicker)); // add it to BrokerNav for benchmark for the chart
 
             DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
             SqDateOnly lookbackStart = new SqDateOnly(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
@@ -363,7 +363,7 @@ namespace SqCoreWeb
                     Utils.Logger.Info("OnReceiveWsAsync_BrAccViewer(): changeLookback");
                     // m_lastLookbackPeriodStr = msgObjStr;
                     // SendHistoricalWs();
-                    BrAccViewerSendHist();
+                    BrAccViewerSendHist("YTD", "S/SPY");
                     return true;
                 case "BrAccViewer.ChangeNav":
                     Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): changeNav to '{msgObjStr}'"); // DC.IM
@@ -383,6 +383,14 @@ namespace SqCoreWeb
                     return true;
                 case "BrAccViewer.RefreshMktBrPriorCloses":
                     BrAccViewerSendMarketBarPriorCloses();
+                    return true;
+                case "BrAccViewer.GetHistData":
+                    Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): GetHistData to '{msgObjStr}'");
+                    string selectedTicker = msgObjStr;
+                    // we need startDate, endDate, bnchmrkTicker
+                    // BrAccViewerSendHist("YTD", "S/SPY");
+                    // m_braccSelectedTicker = MemDb.gMemDb.GetAsset(selectedTicker);
+                    // BrAccViewerSendHist();
                     return true;
                 default:
                     return false;

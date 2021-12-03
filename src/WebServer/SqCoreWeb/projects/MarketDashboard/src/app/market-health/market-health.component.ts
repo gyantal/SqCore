@@ -155,8 +155,8 @@ export class MarketHealthComponent implements OnInit {
   lastNonRtMsgStr = 'NonRt data from server';
   lastNonRtMsg: Nullable<RtMktSumNonRtStat[]> = null;
   lstValObj: Nullable<AssetLastJs[]> = null;  // realtime or last values
-  selectedNav = '';
-
+  navSelection: string[] = [];
+  navSelectionSelected = '';
   uiTableColumns: UiTableColumn[] = []; // this is connected to Angular UI with *ngFor. If pointer is replaced or if size changes, Angular should rebuild the DOM tree. UI can blink. To avoid that only modify its inner field strings.
 
   lookbackStartET: Date; // set in ctor. We need this in JS client to check that the received data is long enough or not (Expected Date)
@@ -484,39 +484,20 @@ export class MarketHealthComponent implements OnInit {
     }
   }
 
+  //Under development Daya
   updateUiSelectableNavs(pSelectableNavAssets: any) {  // same in MktHlth and BrAccViewer
-    const navSelectElement = document.getElementById('mktHlthNavSelect') as HTMLSelectElement;
-    this.selectedNav = '';
+    if(pSelectableNavAssets == null)
+      return;
+    this.navSelectionSelected = '';
     for (const nav of pSelectableNavAssets) {
-      if (this.selectedNav == '') // by default, the selected Nav is the first from the list
-        this.selectedNav = nav.symbol;
-      navSelectElement.options[navSelectElement.options.length] = new Option(nav.symbol, nav.symbol);
-    }
-    navSelectElement.selectedIndex = 0; // select the first item
-  }
-
-  onSelectedNavClicked(pEvent: any) {   // same in MktHlth and BrAccViewer
-    // https://www.w3schools.com/howto/howto_js_popup.asp
-    // When the user clicks on header, open the popup
-    // https://stackoverflow.com/questions/10554446/no-onclick-when-child-is-clicked
-    // part of the event object is the target member. This will tell you which element triggered the event to begin with.
-    console.log('onSelectedNavClicked()');
-    const popupSpan = document.getElementById('mktHlthNavSelectionPopupId') as HTMLSpanElement;
-    if (!(pEvent.target === popupSpan)) { // if not child popup, but the header
-      popupSpan.classList.toggle('show');
+      if (this.navSelectionSelected == '') // by default, the selected Nav is the first from the list
+        this.navSelectionSelected = nav.symbol;
+      this.navSelection.push(nav.symbol)
     }
   }
 
-  onNavSelectionPopupClicked(pEvent: any) { // same in MktHlth and BrAccViewer
-    console.log('onNavSelectionPopupClicked()');
-    pEvent.stopPropagation();
-  }
-
-  onNavSelectChange(pEvent: any) {  // same in MktHlth and BrAccViewer
-    const navSelectTicker = (document.getElementById('mktHlthNavSelect') as HTMLSelectElement).value;
-    console.log(navSelectTicker);
-    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
-      this._parentWsConnection.send('MktHlth.ChangeNav:' + navSelectTicker);
-    }
+  onNavSelectedChange(pEvent: any) {
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) 
+      this._parentWsConnection.send('MktHlth.ChangeNav:' + this.navSelectionSelected);
   }
 }

@@ -37,12 +37,16 @@ class BrAccSnapshotPosJs {
   public assetId = NaN;
   public sqTicker = '';
   public symbol = '';
+  public symbolEx = '';
   public name = '';
   public pos = NaN;
   public avgCost = NaN;
   public priorClose = NaN;
   public estPrice = NaN;
   public estUndPrice = NaN;
+  public ibCompDelta = NaN;
+  public delivValue = NaN;
+  public dltAdjDelivVal = NaN;
   public accId = '';
 }
 
@@ -125,6 +129,7 @@ class UiAssetSnapPossPos {
   public assetId = NaN;
   public sqTicker = '';
   public symbol = '';
+  public symbolEx = '';
   public name = '';
   public pos = NaN;
   public avgCost = NaN;
@@ -135,6 +140,9 @@ class UiAssetSnapPossPos {
   public pl = NaN;
   public mktVal = NaN;
   public estUndPrice = NaN;
+  public ibCompDelta = NaN;
+  public delivValue = NaN;
+  public dltAdjDelivVal = NaN;
   public gBeta = 1; // guessed Beta
   public betaDltAdj = 1;
   public accIdStr = '';
@@ -217,8 +225,8 @@ export class BrAccViewerComponent implements OnInit {
   sortDirection: string = 'Increase';
   histPeriodSelection = ['YTD','1M','1Y','3Y','5Y'];
   histPeriodSelectionSelected = 'YTD';
-  tickerSelectionSelected = ['SPY', 'QQQ', 'TLT', 'VXX', 'SVXY', 'UNG', 'USO'];
-  tickerSelection: string = '';
+  bnchmkTickerSelection = ['SPY', 'QQQ', 'TLT', 'VXX', 'SVXY', 'UNG', 'USO'];
+  bnchmkTickerSelectionSelected : string = 'SPY';
   histPeriodStartET: Date; // set in ctor. We need this in JS client to check that the received data is long enough or not (Expected Date)
   histPeriodStartETstr: string; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a 	A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
   histPeriodEndET: Date;
@@ -243,6 +251,7 @@ export class BrAccViewerComponent implements OnInit {
                         this.uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.navLastUpdateTimeLoc.getTime());
                         this.uiSnapTable.snapLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.snapLastUpateTimeLoc.getTime());
                         this.uiSnapTable.plTodPrNav = Math.round(this.uiSnapTable.netLiquidation - this.uiSnapTable.priorCloseNetLiquidation);
+                        this.uiSnapTable.pctChgTodPrNav = (this.uiSnapTable.netLiquidation - this.uiSnapTable.priorCloseNetLiquidation) / this.uiSnapTable.priorCloseNetLiquidation;
                       }, 1000);
     setInterval(() => {
       if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
@@ -350,6 +359,8 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.navSymbol = brAccSnap.symbol;
     uiSnapTable.snapLastUpateTimeLoc = new Date(brAccSnap.lastUpdate);
     uiSnapTable.snapLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - (new Date (brAccSnap.lastUpdate)).getTime());
+    uiSnapTable.navLastUpdateTimeLoc = new Date(brAccSnap.lastUpdate);
+    uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - (new Date (brAccSnap.lastUpdate)).getTime());
     uiSnapTable.totalCashValue = brAccSnap.totalCashValue;
     uiSnapTable.initialMarginReq = brAccSnap.initMarginReq;
     uiSnapTable.maintMarginReq = brAccSnap.maintMarginReq;
@@ -358,7 +369,7 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.priorCloseNetLiquidation = brAccSnap.priorCloseNetLiquidation;
     uiSnapTable.plTodPrNav = Math.round(brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation);
     uiSnapTable.pctChgTodPrNav = (brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation) / brAccSnap.priorCloseNetLiquidation;
-    uiSnapTable.clientMsg = brAccSnap.clientMsg.replace(';','\n');  // .replace(";", "\n")
+    uiSnapTable.clientMsg = brAccSnap.clientMsg.replace(';','\n');
     uiSnapTable.poss.length = 0;
 
     for (const possItem of brAccSnap.poss) {
@@ -366,6 +377,7 @@ export class BrAccViewerComponent implements OnInit {
       uiPosItem.assetId = possItem.assetId;
       uiPosItem.sqTicker = possItem.sqTicker;
       uiPosItem.symbol = possItem.symbol;
+      uiPosItem.symbolEx = possItem.symbolEx;
       uiPosItem.name = possItem.name;
       // BrAccViewerComponent.betaArr 
       uiPosItem.gBeta = (uiPosItem.symbol in BrAccViewerComponent.betaArr ) ? BrAccViewerComponent.betaArr [uiPosItem.symbol] : 1.0;
@@ -374,11 +386,34 @@ export class BrAccViewerComponent implements OnInit {
       uiPosItem.priorClose = possItem.priorClose;
       uiPosItem.estPrice = possItem.estPrice;
       uiPosItem.estUndPrice = possItem.estUndPrice;
+      uiPosItem.ibCompDelta = possItem.ibCompDelta;
+      // uiPosItem.delivValue = Math.round(uiPosItem.pos * uiPosItem.estUndPrice);
+      // uiPosItem.dltAdjDelivVal = Math.round(uiPosItem.ibCompDelta * uiPosItem.delivValue);
       uiPosItem.accIdStr = possItem.accId;
       uiPosItem.mktVal = Math.round(possItem.pos * possItem.estPrice);
       uiPosItem.pctChgTod = (possItem.estPrice - possItem.priorClose) / possItem.priorClose;
       uiPosItem.plTod = Math.round(possItem.pos * (possItem.estPrice - possItem.priorClose));
       uiPosItem.pl = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost))
+      
+      // 
+
+      // combinedUndPrice = estUnderyingPriceNum;
+      // if (isNaN(combinedUndPrice) || combinedUndPrice == 0.0)
+      //     combinedUndPrice = ibComputedUndPriceNum;
+
+      // if (accPos.SecType == "OPT" && !isNaN(combinedUndPrice) && combinedUndPrice != 0.0) {
+      //     optCallPutMulN = 1;
+      //     if (accPos.Right == "P")
+      //         optCallPutMulN = -1;
+      //     deliveryValueN = round(posN * optCallPutMulN * Number(accPos.Multiplier) * Number(combinedUndPrice));
+      //     deliveryValue = deliveryValueN.toLocaleString(undefined, { maximumFractionDigits: 0 });
+
+      //     deltaAdjDeliveryValueN = Math.abs(deliveryValueN) * ibComputedDelta;    // deliveryValueN can be negative, because of optCallPutMulN, and delta is also negative for Put options.
+      //     deltaAdjDeliveryValue = deltaAdjDeliveryValueN.toLocaleString(undefined, { maximumFractionDigits: 0 });
+      // }
+
+
+      
       uiPosItem.betaDltAdj = Math.round(uiPosItem.gBeta * uiPosItem.mktVal)
       uiSnapTable.poss.push(uiPosItem);
     }
@@ -406,6 +441,10 @@ export class BrAccViewerComponent implements OnInit {
         case 'Symbol':
           if (n1.symbol < n2.symbol) return 1 * dirMultiplier;
           else if (n1.symbol > n2.symbol) return -1 * dirMultiplier;
+          break;
+        case 'SymbolEx':
+          if (n1.symbolEx < n2.symbolEx) return 1 * dirMultiplier;
+          else if (n1.symbolEx > n2.symbolEx) return -1 * dirMultiplier;
           break;
         case 'Pos':
           if (n1.pos < n2.pos) return 1 * dirMultiplier;
@@ -443,10 +482,18 @@ export class BrAccViewerComponent implements OnInit {
           if (n1.estUndPrice < n2.estUndPrice) return 1 * dirMultiplier;
           if (n1.estUndPrice > n2.estUndPrice) return -1 * dirMultiplier;
           break;
-        // case 'IbCompUndPr':
-        //   if (n1.ibCompUndr < n2.ibCompUndr) return 1 * dirMultiplier;
-        //   if (n1.ibCompUndr > n2.ibCompUndr) return -1 * dirMultiplier;
-        //   break;
+        case 'DelivValue':
+          if (n1.delivValue < n2.delivValue) return 1 * dirMultiplier;
+          if (n1.delivValue > n2.delivValue) return -1 * dirMultiplier;
+          break;
+        case 'IbCompDelta':
+          if (n1.ibCompDelta < n2.ibCompDelta) return 1 * dirMultiplier;
+          if (n1.ibCompDelta > n2.ibCompDelta) return -1 * dirMultiplier;
+          break;
+        case 'DltAdjDelivVal':
+          if (n1.dltAdjDelivVal < n2.dltAdjDelivVal) return 1 * dirMultiplier;
+          if (n1.dltAdjDelivVal > n2.dltAdjDelivVal) return -1 * dirMultiplier;
+          break;
         case 'gBeta':
           if (n1.gBeta < n2.gBeta) return 1 * dirMultiplier;
           if (n1.gBeta > n2.gBeta) return -1 * dirMultiplier;
@@ -689,19 +736,9 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   onHistPeriodChange(pEvent: any) {
-    (document.getElementById('lookBackPeriod') as HTMLSelectElement).value = 'Date';
-
-    if (pEvent.target.id === 'startDate') {
-      this.histPeriodStartETstr = pEvent.target.value;
-      this.histPeriodStartET = SqNgCommonUtilsTime.PaddedIsoStr3Date(this.histPeriodStartETstr);
-    } else if (pEvent.target.id === 'endDate') {
-      this.histPeriodEndETstr = pEvent.target.value;
-      this.histPeriodEndET = SqNgCommonUtilsTime.PaddedIsoStr3Date(this.histPeriodEndETstr);
-    }
-    console.log('Calling server with new lookback. StartDateETstr: ' + this.histPeriodStartETstr + ', lookbackStartET: ' + this.histPeriodStartET);
-    gDiag.wsOnLastRtMktSumLookbackChgStart = new Date();
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('BrAccViewer.ChangeLookback:Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr); // we always send the Date format to server, not the strings of 'YTD/10y'
+      this._parentWsConnection.send('BrAccViewer.GetHistData:Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
+    console.log("The ticker seleceted is: ", this.bnchmkTickerSelectionSelected + " " + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
   }
 
   onSortingClicked(event, p_sortColumn) {
