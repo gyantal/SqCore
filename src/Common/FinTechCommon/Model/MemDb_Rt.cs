@@ -100,7 +100,7 @@ namespace FinTechCommon
         static void InitAllOptionAssetsPriorCloseAndLastPrice(AssetsCache p_newAssetCache)    // this is called at Program.Init() and at ReloadDbDataIfChangedImpl()
         {
             // var options = p_newAssetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Option).Take(1).Select(r => (Option)r).ToArray();
-            var options = p_newAssetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Option).Select(r => (Option)r).ToArray();
+            var options = p_newAssetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Option).ToArray();
             DownloadLastPriceOptionsIb(options);
         }
 
@@ -199,7 +199,7 @@ namespace FinTechCommon
             }
 
             if (p_freqParam.RtFreq == RtFreq.LowFreq)
-                DownloadLastPriceOptionsIb(MemDb.gMemDb.AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Option).Select(r => (Option)r).ToArray());
+                DownloadLastPriceOptionsIb(MemDb.gMemDb.AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Option).ToArray());
         }
 
         private void ScheduleTimerRt(RtFreqParam p_freqParam)
@@ -281,7 +281,7 @@ namespace FinTechCommon
             return lastValue;
         }
 
-        public static Task DownloadPriorCloseAndLastPriceYF(Asset[] p_assets)  // takes ? ms from WinPC
+        public static Task DownloadPriorCloseAndLastPriceYF(Asset[] p_assets)  // faster execution if instead of Stock[] and casting, we allow Asset[], because we don't have to cast it runtime all the time
         {
             if (p_assets.Length == 0)
                 return Task.CompletedTask;
@@ -467,7 +467,7 @@ namespace FinTechCommon
 
 
 
-        private static void DownloadLastPriceOptionsIb(Option[] p_options)
+        public static void DownloadLastPriceOptionsIb(Asset[] p_options)   // faster execution if instead of Option[] and casting, we allow Asset[], because we don't have to cast it runtime all the time
         {
             // MktData[] mktDatas = p_options.Select(r => new MktData(r.MakeIbContract()!) { AssetObj = r}).Take(1).ToArray();  // For Debug.
             MktData[] mktDatas = p_options.Select(r => new MktData(r.MakeIbContract()!) { AssetObj = r}).ToArray();
@@ -475,8 +475,11 @@ namespace FinTechCommon
 
             foreach (var mktData in mktDatas)
             {
-                Option option = (Option)mktData.AssetObj!;
-                option.PriorClose = (float)mktData.PriorClosePrice * option.Multiplier;
+                Option option = (Option)mktData.AssetObj!;  // throws exception if asset is not an option. OK. We want to catch those cases. Monitor log files.
+
+                double newPriorClose = mktData.PriorClosePrice * option.Multiplier; // it will be NaN if mktData.PriorClosePrice is NaN
+                if (!double.IsNaN(newPriorClose))   // If it is not given by IB, don't overwrite current value by NaN. QQQ 20220121Put100: its value is very low. Bid=None, Ask = 0.02. No wonder its PriorClose = 0.0. But Ib gives proper 0.0 value 80% of the time, with snapshot data 20% of the time it is not filled and left as NaN.
+                    option.PriorClose = (float)newPriorClose;
 
                 // Do not want to see ugly "NaN" values on the UI, because that catches the eye too quickly. Better to send the client "-1". That is known that it is impossible value for PriorClose, EstPrice
                 // Treat EstPrice = "-1.00" as error, as NaN. Not available data. Then, we can use the PriorClose as EstPrice. That solves everything. (On the UI the P&L Today will be 0 at these lines. Fine.)

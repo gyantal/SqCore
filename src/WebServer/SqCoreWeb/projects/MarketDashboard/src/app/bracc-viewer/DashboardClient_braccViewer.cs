@@ -407,7 +407,7 @@ namespace SqCoreWeb
             // if it is aggregated portfolio (DC Main + DeBlanzac), then we have to force reload all sub-brAccounts
             if (!GatewayExtensions.NavSqSymbol2GatewayIds.TryGetValue(navSqTicker, out List<GatewayId>? gatewayIds))
                 return;
-            HashSet<AssetId32Bits> validBrPossAssetIds = new HashSet<AssetId32Bits>();  // AggregatedNav can contain the same company stocks many times. We need it only once.
+            HashSet<Asset> validBrPossAssets = new HashSet<Asset>(ReferenceEqualityComparer.Instance);     // AggregatedNav can contain the same company stocks many times. We need it only once. Force ReferenceEquality, even if the Asset class later implements deep IEquality
             foreach (GatewayId gwId in gatewayIds)  // AggregateNav has 2 Gateways
             {
                 BrAccount? brAccount = MemDb.gMemDb.BrAccounts.FirstOrDefault(r => r.GatewayId == gwId);
@@ -415,16 +415,18 @@ namespace SqCoreWeb
                     continue;
                 MemDb.gMemDb.UpdateBrAccount_AddAssetsToMemData(brAccount, gwId);
 
-                brAccount.AccPoss.Where(r => r.AssetId != AssetId32Bits.Invalid).ToList().ForEach(r => validBrPossAssetIds.Add(r.AssetId));
+                brAccount.AccPoss.Where(r => r.AssetObj != null).ForEach(r => validBrPossAssets.Add((Asset)r.AssetObj!));
             }
 
             // Step 2: update the RT prices of only those 30-120 stocks (150ms) that is in the IbPortfolio. Don't need to update all the 700 (later 2000) stocks in MemDb, that is done automatically by RtTimer in every 30min
-            Asset[] validBrPossAssets = validBrPossAssetIds.Select(r => MemDb.gMemDb.AssetsCache.AssetsByAssetID[r]).ToArray();
-            // validBrPossAssets is a mix of stocks, options, futures. Fix that when we introduce Options to MemDb
-            MemDb.DownloadPriorCloseAndLastPriceYF(validBrPossAssets).TurnAsyncToSyncTask();
+            // validBrPossAssets is a mix of stocks, options, futures.
+            MemDb.DownloadPriorCloseAndLastPriceYF(validBrPossAssets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).ToArray()).TurnAsyncToSyncTask();
 
             // Step 3: send Snapshot to Client.
-            BrAccViewerSendSnapshot();
+            BrAccViewerSendSnapshot();  // Report to the user immediately after the YF returned the realtime stock prices.
+
+            MemDb.DownloadLastPriceOptionsIb(validBrPossAssets.Where(r => r.AssetId.AssetTypeID == AssetType.Option).ToArray());    // can take 7-20 seconds, don't wait it. Report to the user earlier.
+            BrAccViewerSendSnapshot();  // Report to the user 6..16 seconds later again. With the updated option prices.
         }
     }
 }
