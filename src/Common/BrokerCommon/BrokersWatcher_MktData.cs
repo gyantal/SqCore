@@ -40,9 +40,88 @@ namespace BrokerCommon
 
     public partial class BrokersWatcher
     {
+        struct MktDataProgress
+        {
+            internal string Name;
+            internal int nQueried { get; set; } = 0;
+            internal int nArrived { get; set; } = 0;
+            internal int nError { get; set; } = 0;
+            internal int nMissing { get { return nQueried - nArrived - nError; } }   // nMissing = nQueried - nArrived - nError(arrived)
+
+            internal bool IsAllReceived { get { return (nArrived + nError) >= nQueried; } }
+
+            internal List<string> NotArrivedTickers;
+            internal List<string> ErrorArrivedTickers;
+
+            internal MktDataProgress(string p_name, int p_length)
+            {
+                Name = p_name;
+                NotArrivedTickers = new List<string>(p_length);
+                ErrorArrivedTickers = new List<string>();
+            }
+
+            internal void RegisterTicker(string p_localSymbol)
+            {
+                nQueried++;
+                NotArrivedTickers.Add(p_localSymbol);
+            }
+
+            internal void TickerDataArrived(string p_localSymbol)
+            {
+                bool wasInListAndRemoved = NotArrivedTickers.Remove(p_localSymbol);
+                if (wasInListAndRemoved)
+                    nArrived++;
+            }
+
+            internal void ErrorArrived(string p_localSymbol)
+            {
+                if (ErrorArrivedTickers.Contains(p_localSymbol))
+                    return;
+                ErrorArrivedTickers.Add(p_localSymbol);
+                nError++;
+            }
+
+            internal void LogIfMissing()
+            {
+                if (NotArrivedTickers.Count == 0)
+                    return;
+                string msg = $"IB.MktData: Missing {Name}: '{String.Join(",", NotArrivedTickers)}'";
+                Utils.Logger.Info(msg);
+                Console.WriteLine(msg);
+            }
+        }
+
+        // 2021-12-07: Case Study 1: Missing estPrice: 'SVXY  220121P00015000'  (a penny-option). Snapshot data. RTH: Regular Trading Hours.
+        // ReqMktData(1006) CB: 917.57 ms. close: 0.12
+        // ReqMktData(1006) CB: 930.08 ms. bidPrice: -1
+        // ReqMktData(1006) CB: 931.57 ms. askPrice: 1
+        // Received PriorClose = 0.12. Good. In IB TWS: Bid = NaN, Ask= 1.0, from this, we cannot have EstPrice. IbMarkPrice is 0.11, but snapshot-data has no Mark price, which is fine.
+        // >If we do streaming price (instead of snapshot) we could have IbMarkPrice. But for better resource management, this is not that important. 
+        // These exceptional penny-options are marginal positions. The situation exists because its values are close to 0, so there is no Bid. Nobody wants to buy it, only sell.
+        // >If EstPrice is missing, in theory we can estimate it with the Average = Ask/Bid = 0+1.0= 0.50, but that would be a grossly overestimate, as IbMark = 0.11, and PriorClose = 0.12. 
+        // So, if we estimate from Ask/Bid that would be less accurate. 
+        // >Better to just admid that there is no EstPrice at the moment. Higher level functions should use PriorClose if the EstPrice is NaN.
+        // This is actually fine as an Estimation.
+
+        // 2021-12-07: Case Study 2: Missing priorClose: 'QQQ   220121P00100000' and many others. 
+        // [with Snapshot]  IB.ReqMktData() #OkEstPrice: 11 in 14,  #OkPriorClose: 6 in 14, #OkDelta: 14 in 14 in 13.184sec.
+        // [with Streaming] IB.ReqMktData() #OkEstPrice: 13 in 14,  #OkPriorClose: 14 in 14, #OkDelta: 14 in 14 in 60.723sec.
+        // So, streaming and snapshot: no difference. (stick to Snapshot if possible)
+        // Only on when IbClient is the Linux server. No missing priorClose from WinClient.
+        // Windows Client: Note: Close and Last comes first.
+        // ReqMktData(1010) CB: 1032.34 ms. close: 0
+        // ReqMktData(1010) CB: 1035.48 ms. lastPrice: 0.01
+        // ReqMktData(1010) CB: 1049.82 ms. bidPrice: -1
+        // ReqMktData(1010) CB: 1051.94 ms. askPrice: 0.01
+        // But on Linux server, the same program code, results many more missing (only #OkPriorClose: 6 in 14). Most importantly Missing PriorClose!!
+        // No Last, no Close on Linux server
+        // ReqMktData(1010) CB: 932.09 ms. bidPrice: -1
+        // ReqMktData(1010) CB: 932.33 ms. askPrice: 0.01
+        // after reboot the Linux machine, the same Linux code works as on Windows.
+        // Next time try to restart only TWS, not the whole VM. So, the problem is probably in IbTWS, we might have to restart TWS before RTH daily. Or we have to upgrade TWS version too, hope that they solved it in the new TWS version.
+        // But next time it happens: quick solution: restart TWS or the Linux server.
         public bool CollectIbMarketData(MktData[] p_mktDatas, bool p_isNeedOptDelta)
         {
-            // Console.WriteLine($"CollectEstimatedPrices() #{p_mktDatas.Length}");
             if (p_mktDatas.Length == 0)
                 return true;
             if (m_mainGateway == null)
@@ -66,11 +145,10 @@ namespace BrokerCommon
             // But changing snapshot to streaming and waiting 26sec didn't solve it. Still have: IB.MktData: Missing priorClose: 'ARKG  211217C00094210' (even with streaming). Same problem there. Bid=None, PriorClose in TWS is 0.0.
             // Maybe we should do the same here as TWS. If PriorClose doesn't come, assume it as 0.0. (although do it at higher level of code, not here)
             bool isStreamMktData = false;       // Stream or Snapshot. Prefer snapshot mode if possible because less resources. Although IbMarkPrice works only in stream mode, not in snapshot.
-            DateTime waitEstPrStartTime = DateTime.UtcNow;
+            DateTime startTime = DateTime.UtcNow;
             AutoResetEvent priceOrDeltaTickARE = new AutoResetEvent(false);    // set it to non-signaled => which means Block
-            int nKnownConIdsPrQueried = 0, nKnownConIdsPrReadyOk = 0, nKnownConIdsPrReadyErr = 0;
-            int nKnownConIdsDeltaQueried = 0, nKnownConIdsDeltaReadyOk = 0, nKnownConIdsDeltaReadyErr = 0;
-            List<string> estPriceExpectedTickers = new List<string>(p_mktDatas.Length), priorCloseExpectedTickers = new List<string>(p_mktDatas.Length), deltaExpectedTickers = new List<string>(p_mktDatas.Length);
+            MktDataProgress progressEstPrice = new MktDataProgress("estPrice", p_mktDatas.Length), progressPriorClose = new MktDataProgress("priorClose", p_mktDatas.Length), progressDelta = new MktDataProgress("delta", p_mktDatas.Length);
+
             foreach (var mktData in p_mktDatas)
             {
                 Contract contract = mktData.Contract;
@@ -97,17 +175,13 @@ namespace BrokerCommon
                 if (String.IsNullOrEmpty(contract.Exchange) || contract.Exchange == "NASDAQ" || contract.Exchange == "PINK")
                     contract.Exchange = "SMART";
 
-                nKnownConIdsPrQueried++;
-                estPriceExpectedTickers.Add(mktData.Contract.LocalSymbol);
-                priorCloseExpectedTickers.Add(mktData.Contract.LocalSymbol);
+                progressEstPrice.RegisterTicker(mktData.Contract.LocalSymbol);
+                progressPriorClose.RegisterTicker(mktData.Contract.LocalSymbol);
                 if (contract.SecType == "OPT")
-                {
-                    nKnownConIdsDeltaQueried++;
-                    deltaExpectedTickers.Add(mktData.Contract.LocalSymbol);
-                }
+                    progressDelta.RegisterTicker(mktData.Contract.LocalSymbol);
 
                 Gateway? ibGateway = m_mainGateway;
-                // ibGateway = m_gateways.FirstOrDefault(r => r.GatewayId == GatewayId.GyantalMain);
+                // ibGateway = m_gateways.FirstOrDefault(r => r.GatewayId == GatewayId.GyantalMain);    // DEBUG
                 if (ibGateway == null)
                     return false;
                 Thread.Sleep(c_IbPacingViolationSleepMs);    // OK.  "Waiting for RT prices: 396.23 ms. Queried: 96; AllUser_AccPos_WithEstPrices ends in 5277ms". 
@@ -115,14 +189,14 @@ namespace BrokerCommon
                     (cb_mktDataId, cb_mktDataSubscr, cb_tickType, cb_price) =>  // MktDataArrived callback
                     {
                         Utils.Logger.Trace($"{cb_mktDataSubscr.Contract.Symbol} : {TickType.getField(cb_tickType)}: {cb_price}");
-                        if (cb_mktDataSubscr.Contract.Symbol == "ARKK" && cb_mktDataSubscr.Contract.SecType == "OPT" && cb_mktDataSubscr.Contract.Strike == 77.96)    // for DEBUGGING
-                            Console.WriteLine($"ReqMktData({cb_mktDataSubscr.MarketDataId}) CB: {(DateTime.UtcNow - waitEstPrStartTime).TotalMilliseconds:0.00} ms. {TickType.getField(cb_tickType)}: {cb_price}");
-                        // Console.WriteLine($"ReqMktData() CB: {(DateTime.UtcNow - waitEstPrStartTime).TotalMilliseconds:0.00} ms. {TickType.getField(cb_tickType)}: {cb_price}");
+                        // if (cb_mktDataSubscr.Contract.SecType == "OPT" && cb_mktDataSubscr.Contract.Symbol == "SVXY" && cb_mktDataSubscr.Contract.Strike == 15.00)    // for DEBUGGING
+                        if (cb_mktDataSubscr.Contract.SecType == "OPT" && cb_mktDataSubscr.Contract.LocalSymbol == "QQQ   220121P00100000")    // for DEBUGGING
+                            Console.WriteLine($"ReqMktData({cb_mktDataSubscr.MarketDataId}) CB: {(DateTime.UtcNow - startTime).TotalMilliseconds:0.00} ms. {TickType.getField(cb_tickType)}: {cb_price}");
 
                         if (cb_tickType == TickType.CLOSE)  // Prior Close, Previous day Close price.
                         {
                             mktData.PriorClosePrice = cb_price; // should we do priceOrDeltaTickARE.Set(); and wait for all PriorClose as well? Probably.
-                            priorCloseExpectedTickers.Remove(mktData.Contract.LocalSymbol);
+                            progressPriorClose.TickerDataArrived(mktData.Contract.LocalSymbol);
                         }
                         // 2021-12-01: OTH: ASK = BID = -1, but LAST is given.
                         // Store both IbMarkPrice and LastPrice too. And any of them is fine. Sometimes both are given, but at the weekend only LastPrice is given no IbMarkPrice. So, we cannot rely on that. 
@@ -136,8 +210,7 @@ namespace BrokerCommon
                             if (Double.IsNaN(mktData.EstPrice))    // only increase the nKnownConIdsPrReadyOk counter once when we turn from NaN to a proper number.
                             {
                                 mktData.EstPrice = cb_price;
-                                nKnownConIdsPrReadyOk++;
-                                estPriceExpectedTickers.Remove(mktData.Contract.LocalSymbol);
+                                progressEstPrice.TickerDataArrived(mktData.Contract.LocalSymbol);
                                 priceOrDeltaTickARE.Set();
                             }
                             else
@@ -209,8 +282,7 @@ namespace BrokerCommon
                                 if (Double.IsNaN(mktData.EstPrice))    // only increase the nKnownConIdsPrReadyOk counter once when we turn from NaN to a proper number.
                                 {
                                     mktData.EstPrice = proposedPrice;
-                                    nKnownConIdsPrReadyOk++;
-                                    estPriceExpectedTickers.Remove(mktData.Contract.LocalSymbol);
+                                    progressEstPrice.TickerDataArrived(mktData.Contract.LocalSymbol);
                                     priceOrDeltaTickARE.Set();
                                 }
                                 else
@@ -224,7 +296,7 @@ namespace BrokerCommon
                     {
                         Utils.Logger.Trace($"Error in ReqMktDataStream(). {cb_mktDataSubscr.Contract.Symbol} : {cb_errorCode}: {cb_errorMsg}");
                         mktData.EstPrice = 0;
-                        nKnownConIdsPrReadyErr++;
+                        progressEstPrice.ErrorArrived(mktData.Contract.LocalSymbol);
                         priceOrDeltaTickARE.Set();
                     },
                     (cb_mktDataId, cb_mktDataSubscr, cb_field, cb_value) => // MktDataTickGeneric callback. (e.g. MarkPrice) Assume this is the last callback for snapshot data. (!Not true for OTC stocks, but we only use this for options) Note sometimes it is not called, only Ask,Bid is coming.
@@ -243,8 +315,7 @@ namespace BrokerCommon
                                 if (Double.IsNaN(mktData.EstPrice))    // only increase the nKnownConIdsPrReadyOk counter once when we turn from NaN to a proper number.
                                 {
                                     mktData.EstPrice = proposedPrice;
-                                    nKnownConIdsPrReadyOk++;
-                                    estPriceExpectedTickers.Remove(mktData.Contract.LocalSymbol);
+                                    progressEstPrice.TickerDataArrived(mktData.Contract.LocalSymbol);
                                     priceOrDeltaTickARE.Set();
                                 }
                                 else
@@ -268,8 +339,7 @@ namespace BrokerCommon
                             {
                                 Utils.Logger.Trace($"MarketDataType in ReqMktDataStream(). Filling zero estimation for {cb_mktDataSubscr.Contract.Symbol}");
                                 mktData.EstPrice = 0;
-                                nKnownConIdsPrReadyOk++;
-                                estPriceExpectedTickers.Remove(mktData.Contract.LocalSymbol);
+                                progressEstPrice.TickerDataArrived(mktData.Contract.LocalSymbol);
                                 priceOrDeltaTickARE.Set();
                             }
                         }
@@ -289,16 +359,14 @@ namespace BrokerCommon
                             if (cb_delta != Double.MaxValue && cb_undPrice != 0.0)
                             {
                                 // TickType.MODEL_OPTION is more accurate than TickType.ASK_OPTION, TickType.BID_OPTION, TickType.LAST_OPTION  (those are calculated based on Ask/Bid/Last price)
-                                if (cb_field == TickType.MODEL_OPTION && Double.IsNaN(mktData.IbComputedDelta))    // only increase the nKnownConIdsPrReadyOk counter once when we turn from NaN to a proper number.
+                                // Accept any Delta at the beginning, but later prefer cb_field = TickType.MODEL_OPTION if it arrives (instead of Ask_option, Bid_option, Last_option)
+                                bool useDelta = Double.IsNaN(mktData.IbComputedDelta) || cb_field == TickType.MODEL_OPTION;
+                                if (useDelta)
                                 {
-                                    Utils.Logger.Trace($"TickGeneric() callback. Filling zero Delta estimation for {cb_mktDataSubscr.Contract.Symbol}");
                                     mktData.IbComputedDelta = cb_delta;
-                                    nKnownConIdsDeltaReadyOk++;
+                                    progressDelta.TickerDataArrived(mktData.Contract.LocalSymbol);
                                     priceOrDeltaTickARE.Set();
-                                } else
-                                    if (cb_field == TickType.MODEL_OPTION)  // accept any Delta at the beginning, but later prefer cb_field = TickType.MODEL_OPTION if it arrives (instead of Ask_option, Bid_option, Last_option)
-                                        mktData.IbComputedDelta = cb_delta;
-                                deltaExpectedTickers.Remove(mktData.SqTicker);
+                                }
                             }
                             if (cd_impVol != Double.MaxValue)
                                 mktData.IbComputedImpVol = cd_impVol;
@@ -308,9 +376,6 @@ namespace BrokerCommon
                     });    // ReqMktDataStream(): as Snapshot, not streaming data
                 mktData.MktDataID = mktDataId;
             }
-            string msg1 = $"ReqMktData() sending time for Est prices: {(DateTime.UtcNow - waitEstPrStartTime).TotalMilliseconds:0.00} ms. Queried: {nKnownConIdsPrQueried}, ReceivedOk: {nKnownConIdsPrReadyOk}, ReceivedErr: {nKnownConIdsPrReadyErr}, Missing: {nKnownConIdsPrQueried - nKnownConIdsPrReadyOk - nKnownConIdsPrReadyErr}";
-            Utils.Logger.Trace(msg1);  // RT prices: After MOC:185.5ms, during Market:FirstTime:900-1100ms,Next times:450-600ms, Local development all 58 stocks + options, Queried: 58, ReceivedOk: 57, ReceivedErr: 1, Missing: 0,  
-            // Console.WriteLine(msg1);
 
             // instead of Thread.Sleep(3000);  // wait until data is here; make it sophisticated.
             // for 23 stocks, 0 options, LocalDevelopment, collecting RT price: 273-300ms
@@ -322,54 +387,48 @@ namespace BrokerCommon
             // ReqMktData() CB: 7651 ms. low: 7.5
             // ReqMktData() CB: 7652 ms. close: 9.7
             int iTimeoutCount = 0;
-            int cMaxTimeout = 16 * 4;   // 6*4*250 = 6sec was not enough. Needed another 5sec for option Delta calculation. So, now do 16*4*250=16sec.
+            // "a snapshot request will only return available data over the 11 second span; ",  https://interactivebrokers.github.io/tws-api/top_data.html#md_snapshot
+            int cMaxTimeout = ((isStreamMktData) ? 60 : 12) * 4;   // 6*4*250 = 6sec was not enough. Needed another 5sec for option Delta calculation. So, now do 16*4*250=16sec.
             while (iTimeoutCount < cMaxTimeout)    // all these checks usually takes 0.1 seconds = 100msec, so do it every time after connection 
             {
-                bool isOneSignalReceived = priceOrDeltaTickARE.WaitOne(250);  // 250ms wait, max 4 * 16 times.
+                bool isOneSignalReceived = priceOrDeltaTickARE.WaitOne(250);  // 250ms wait, max 4 * 12 times.
                 if (isOneSignalReceived)   // so, it was not a timeout, but a real signal
                 {
-                    var waitingDuration = DateTime.UtcNow - waitEstPrStartTime;
-                    if (waitingDuration.TotalMilliseconds > 16000.0)    // OTH: waiting for 8 seconds is not enough to get Option.PriorClose price.
+                    var waitingDuration = DateTime.UtcNow - startTime;
+                    if (waitingDuration.TotalMilliseconds > cMaxTimeout * 250)    // OTH: waiting for 8 seconds is not enough to get Option.PriorClose price.
                         break;  // if we wait more than 16 seconds, break the While loop
 
-
-                    bool isAllPrInfoReceived = ((nKnownConIdsPrReadyOk + nKnownConIdsPrReadyErr) >= nKnownConIdsPrQueried);
-                    bool isAllDeltaInfoReceived = ((nKnownConIdsDeltaReadyOk + nKnownConIdsDeltaReadyErr) >= nKnownConIdsDeltaQueried);
-                    if (isAllPrInfoReceived)    // break from while if all is received
+                    if (progressEstPrice.IsAllReceived)    // break from while if all is received
                     {
                         // local Windoms TWS: "Time until having all EstPrices (and Deltas): "
                         // Only 37 prices: 1409.78 ms,  37 prices + 12 option deltas: 1762.84 ms, so we have to wait extra 300msec if we wait for option Deltas too. Fine. However, after MOC, on TWS Main, it took 11 seconds more to get all the Deltas.
                         if (!p_isNeedOptDelta)
                             break;
-                        if (isAllDeltaInfoReceived)
+                        if (progressDelta.IsAllReceived)
                             break; 
                     }
                 }
                 else
                 {
                     iTimeoutCount++;
-                    int nMissingLastPrice = 0;
+                    int nMissingEstPrice = 0;
                     foreach (var mktData in p_mktDatas)
                     {
                         if (Double.IsNaN(mktData.EstPrice))     // These shouldn't be here. These are the Totally Unexpected missing ones or the errors. Estimate missing numbers with zero.
                         {
-                            nMissingLastPrice++;
+                            nMissingEstPrice++;
                             Utils.Logger.Trace($"Missing: '{mktData.Contract.LocalSymbol}', {mktData.MktDataID}");
                         }
                     }
-                    Utils.Logger.Trace($"GetAccountsInfo(). RT prices {iTimeoutCount}/{cMaxTimeout}x Timeout after {(DateTime.UtcNow - waitEstPrStartTime).TotalMilliseconds} ms. nReceived {nKnownConIdsPrReadyOk + nKnownConIdsPrReadyErr} out of {nKnownConIdsPrQueried}. nMissingLastPrice:{nMissingLastPrice}");
+                    Utils.Logger.Trace($"GetAccountsInfo(). RT prices {iTimeoutCount}/{cMaxTimeout}x Timeout after {(DateTime.UtcNow - startTime).TotalMilliseconds} ms. nMissingEsttPrice:{nMissingEstPrice}");
                 }
             }
-            string msg2 = $"Time until having all EstPrices (and Deltas): {(DateTime.UtcNow - waitEstPrStartTime).TotalMilliseconds:0.00} ms. Pr.Queried: {nKnownConIdsPrQueried}, ReceivedOk: {nKnownConIdsPrReadyOk}, ReceivedErr: {nKnownConIdsPrReadyErr}, Missing: {nKnownConIdsPrQueried - nKnownConIdsPrReadyOk - nKnownConIdsPrReadyErr}, Delta.Queried: {nKnownConIdsDeltaQueried}, ReceivedOk: {nKnownConIdsDeltaReadyOk}, ReceivedErr: {nKnownConIdsDeltaReadyErr}, Missing: {nKnownConIdsDeltaQueried - nKnownConIdsDeltaReadyOk - nKnownConIdsDeltaReadyErr}";
-            Utils.Logger.Trace(msg2);  // RT prices: After MOC:185.5ms, during Market:FirstTime:900-1100ms,Next times:450-600ms, Local development all 58 stocks + options, Queried: 58, ReceivedOk: 57, ReceivedErr: 1, Missing: 0,  
-            // Console.WriteLine(msg2);
-            Console.WriteLine($"IB.ReqMktData() #OkPrice: {nKnownConIdsPrReadyOk} in {nKnownConIdsPrQueried}, #OkDelta: {nKnownConIdsDeltaReadyOk} in {nKnownConIdsDeltaQueried} in {(DateTime.UtcNow - waitEstPrStartTime).TotalSeconds:0.000}sec.");
-            if (estPriceExpectedTickers.Count != 0)
-                Console.WriteLine($"IB.MktData: Missing estPrice: '{String.Join(",", estPriceExpectedTickers)}'");
-            if (priorCloseExpectedTickers.Count != 0)
-                Console.WriteLine($"IB.MktData: Missing priorClose: '{String.Join(",", priorCloseExpectedTickers)}'");
-            if (deltaExpectedTickers.Count != 0)
-                Console.WriteLine($"IB.MktData: Missing delta: '{String.Join(",", deltaExpectedTickers)}'");
+            string logMsg = $"IB.ReqMktData() #OkEstPrice: {progressEstPrice.nArrived} in {progressEstPrice.nQueried},  #OkPriorClose: {progressPriorClose.nArrived} in {progressPriorClose.nQueried}, #OkDelta: {progressDelta.nArrived} in {progressDelta.nQueried} in {(DateTime.UtcNow - startTime).TotalSeconds:0.000}sec.";
+            Utils.Logger.Trace(logMsg);  // RT prices: After MOC:185.5ms, during Market:FirstTime:900-1100ms,Next times:450-600ms, Local development all 58 stocks + options, Queried: 58, ReceivedOk: 57, ReceivedErr: 1, Missing: 0,  
+            Console.WriteLine(logMsg);
+            progressEstPrice.LogIfMissing();
+            progressPriorClose.LogIfMissing();
+            progressDelta.LogIfMissing();
 
             // we should cancel even the snapshot mktData from BrokerWrapperIb, because the field m_MktDataSubscription is just growing and growing there.
             DateTime cancelDataStartTime = DateTime.UtcNow;
@@ -382,9 +441,8 @@ namespace BrokerCommon
                     m_mainGateway.BrokerWrapper.CancelMktData(mktData.MktDataID);
                 }
             }
-            string msg3 = $"CancelMktData (!we can do it later) in {(DateTime.UtcNow - cancelDataStartTime).TotalMilliseconds:0.00} ms";
-            Utils.Logger.Trace(msg3);  // RT prices: After MOC:185.5ms, during Market:FirstTime:900-1100ms,Next times:450-600ms, Local development all 58 stocks + options, Queried: 58, ReceivedOk: 57, ReceivedErr: 1, Missing: 0,  
-            // Console.WriteLine(msg3);
+            // string msg3 = $"CancelMktData (!we can do it later) in {(DateTime.UtcNow - cancelDataStartTime).TotalMilliseconds:0.00} ms";
+            // Utils.Logger.Trace(msg3);  // RT prices: After MOC:185.5ms, during Market:FirstTime:900-1100ms,Next times:450-600ms, Local development all 58 stocks + options, Queried: 58, ReceivedOk: 57, ReceivedErr: 1, Missing: 0,  
             return true;
         }
 
