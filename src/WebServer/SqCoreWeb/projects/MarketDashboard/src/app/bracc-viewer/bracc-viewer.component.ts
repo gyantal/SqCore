@@ -231,6 +231,7 @@ export class BrAccViewerComponent implements OnInit {
   histPeriodStartETstr: string; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a 	A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
   histPeriodEndET: Date;
   histPeriodEndETstr: string;
+  chrtTickerSelected: string = 'SPY';
   
   constructor() {
 
@@ -291,6 +292,9 @@ export class BrAccViewerComponent implements OnInit {
         this.handshakeObj = JSON.parse(msgObjStr);
         console.log(`BrAccViewer.Handshake.SelectableBrAccs: '${(this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets}'`);
         this.updateUiSelectableNavs((this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets);
+        return true;
+      case 'BrAccViewer.SelectedTickerHist':
+        console.log('BrAccViewer.SelectedTickerHist:' + msgObjStr)
         return true;
       default:
         return false;
@@ -387,15 +391,21 @@ export class BrAccViewerComponent implements OnInit {
       uiPosItem.estPrice = possItem.estPrice;
       uiPosItem.estUndPrice = possItem.estUndPrice;
       uiPosItem.ibCompDelta = possItem.ibCompDelta;
-      // uiPosItem.delivValue = Math.round(uiPosItem.pos * uiPosItem.estUndPrice);
-      // uiPosItem.dltAdjDelivVal = Math.round(uiPosItem.ibCompDelta * uiPosItem.delivValue);
+      if (possItem.sqTicker.startsWith('O') && !isNaN(possItem.ibCompDelta) && possItem.ibCompDelta != 0.0) {
+        var optCallPutMulN = 1;
+          if (possItem.name.includes('Call')) {
+            var optCallPutMulN = -1;
+            uiPosItem.delivValue = Math.round(possItem.pos * optCallPutMulN * 100 * Number(possItem.ibCompDelta));
+            uiPosItem.dltAdjDelivVal = Math.round(uiPosItem.ibCompDelta * uiPosItem.delivValue);
+          }
+        uiPosItem.delivValue = Math.round(possItem.pos * optCallPutMulN * 100 * Number(possItem.ibCompDelta));
+        uiPosItem.dltAdjDelivVal = Math.round(uiPosItem.ibCompDelta * uiPosItem.delivValue);
+      }
       uiPosItem.accIdStr = possItem.accId;
       uiPosItem.mktVal = Math.round(possItem.pos * possItem.estPrice);
       uiPosItem.pctChgTod = (possItem.estPrice - possItem.priorClose) / possItem.priorClose;
       uiPosItem.plTod = Math.round(possItem.pos * (possItem.estPrice - possItem.priorClose));
       uiPosItem.pl = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost))
-      
-      // 
 
       // combinedUndPrice = estUnderyingPriceNum;
       // if (isNaN(combinedUndPrice) || combinedUndPrice == 0.0)
@@ -609,13 +619,13 @@ export class BrAccViewerComponent implements OnInit {
 
     // Define the line
     var line = d3.line()
-                    .x((r: any) => histChrtScaleX(r.chartDate))
-                    .y((r: any) => histChrtScaleY(r.chrtSdaClose))
-                    .curve(d3.curveCardinal);
+                  .x((r: any) => histChrtScaleX(r.chartDate))
+                  .y((r: any) => histChrtScaleY(r.chrtSdaClose))
+                  .curve(d3.curveCardinal);
     var line2 = d3.line()
-                      .x((r: any) => histChrtScaleX(r.chartDate))
-                      .y((r: any) => histChrtScaleY(r.chrtSdaClose))
-                      .curve(d3.curveCardinal);
+                  .x((r: any) => histChrtScaleX(r.chartDate))
+                  .y((r: any) => histChrtScaleY(r.chrtSdaClose))
+                  .curve(d3.curveCardinal);
 
     var histChrtlineSvg = histChrtSvg.append('g');
     var focus = histChrtSvg.append('g').style('display', 'none');
@@ -736,8 +746,12 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   onHistPeriodChange(pEvent: any) {
+    for ( let item in this.navSelection) {
+      if (item != this.navSelectionSelected)
+        alert("the ticker is not avaiable, pls select the available tickers")
+    }
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('BrAccViewer.GetHistData:Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
+      this._parentWsConnection.send('BrAccViewer.GetHistData:Date:' + this.bnchmkTickerSelectionSelected + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
     console.log("The ticker seleceted is: ", this.bnchmkTickerSelectionSelected + " " + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
   }
 
@@ -754,7 +768,7 @@ export class BrAccViewerComponent implements OnInit {
     this.tabPageVisibleIdx = tabIdx;
   }
 
-  onSnapshotRefreshClicked(event) {
+  onSnapshotRefreshClicked(event: any) {
     this.snapshotRefresh();
   }
 
@@ -764,9 +778,15 @@ export class BrAccViewerComponent implements OnInit {
       this._parentWsConnection.send('BrAccViewer.RefreshSnapshot:' + this.navSelectionSelected);
   }
 
-  OnHistBnchmkInputKeypress(event: any) {
+  onHistBnchmkInputKeypress(event: any) {
     var chCode = ('charCode' in event) ? event.charCode : event.keyCode;
     if (chCode == 13)
       console.log("The key pressed code is :", chCode);
+  }
+
+  onHistChrtTicker(event: any) {
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+    this._parentWsConnection.send('BrAccViewer.GetChrtTickerHistData:' + event );
+    console.log("The ticker selected on chart tooltip is :", event);
   }
 }

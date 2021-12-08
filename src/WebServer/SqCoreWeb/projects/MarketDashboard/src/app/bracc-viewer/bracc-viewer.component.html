@@ -155,11 +155,11 @@ MarketBar
                         <div>EndDate: <input class = "histPeriodDateCl" type="date" id="EndDate" name="EndDate" min="01-01-1975" max="01-01-2040" [(ngModel)]="histPeriodEndETstr" (change)="onHistPeriodChange($event)"></div>
                         <div>BenchMark:
                             <input class="selectedSqTicker" type="text" name="ticker" list="selectedSqTicker" placeholder="SPY"/>
-                                <!-- <datalist id="selectedSqTicker"> -->
-                                    <select [(ngModel)] = "bnchmkTickerSelectionSelected" (change)="onHistPeriodChange($event)" (keypress)="OnHistBnchmkInputKeypress($event)">
+                                <datalist id="selectedSqTicker">
+                                    <select [(ngModel)] = "bnchmkTickerSelectionSelected" (change)="onHistPeriodChange($event)" (keypress)="onHistBnchmkInputKeypress($event)">
                                         <option *ngFor="let item of bnchmkTickerSelection" [value]="item">{{item}}</option>
                                     </select>
-                                 <!-- </datalist> -->
+                                 </datalist>
                         </div>
                         <div>MaxDD<span class="notImpInfo">(NAV/BnchMrk):</span>
                             <span class="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
@@ -214,7 +214,7 @@ MarketBar
     </thead>
     <tbody class = "selectedBrcAccSnapShotTbl">
     <tr *ngFor="let item of uiSnapTable.poss">
-        <td class="tooltipStck" [ngStyle]="{'font-weight': 'bold'}">
+        <td class="tooltipStck" [ngStyle]="{'font-weight': 'bold'}" (click)="onHistChrtTicker(item.symbol)">
             <span class="tooltipSnap">
                 <span class="snapshot">Name:
                     {{item.name}} <br>
@@ -226,12 +226,12 @@ MarketBar
                             <circle cx="16.5" cy="7" r="4" fill="currentColor"/>
                         </svg>
                     </a>, 
-                    <a href="https://finance.yahoo.com/quote/{{item.symbol}}" target="_blank"><img border='0' alt='YF' src='../assets/images/YF.webp' width='20' height='20'></a>,
-                    <a href="https://www.zacks.com/stock/quote/{{item.symbol}}" target="_blank"><img border='0' alt='Zacks' src='../assets/images/Zacks.webp' width='20' height='20'></a>,
-                    <a href="https://www.earningswhispers.com/tradeview/{{item.symbol}}" target="_blank"><img border='earningswhispers-BeforeEarnings' alt='YF' src='../assets/images/EW-BE.webp' width='20' height='20'></a>,
-                    <a href="https://www.earningswhispers.com/epsdetails/{{item.symbol}}" target="_blank"><img border='0' alt='earningswhispers-AfterEarnings' src='../assets/images/EW-AE.webp' width='20' height='20'></a>,
-                    <a href="https://www.tipranks.com/stocks/{{item.symbol}}/forecast" target="_blank"><img border='0' alt='TipRanks' src='../assets/images/TR.webp' width='20' height='20'></a>,
-                    <a href="https://stockcharts.com/h-sc/ui?s={{item.symbol}}" target="_blank"><img border='0' alt='stocksCharts' src='../assets/images/SC.webp' width='20' height='20'></a> <br>
+                    <a href="https://finance.yahoo.com/quote/{{item.symbol}}" target="_blank"><img alt='YF' src='../assets/images/YF.webp' width='20' height='20'></a>,
+                    <a href="https://www.zacks.com/stock/quote/{{item.symbol}}" target="_blank"><img alt='Zacks' src='../assets/images/Zacks.webp' width='20' height='20'></a>,
+                    <a href="https://www.earningswhispers.com/tradeview/{{item.symbol}}" target="_blank"><img alt='earningswhispers-BeforeEarnings' src='../assets/images/EW-BE.webp' width='20' height='20'></a>,
+                    <a href="https://www.earningswhispers.com/epsdetails/{{item.symbol}}" target="_blank"><img alt='earningswhispers-AfterEarnings' src='../assets/images/EW-AE.webp' width='20' height='20'></a>,
+                    <a href="https://www.tipranks.com/stocks/{{item.symbol}}/forecast" target="_blank"><img alt='TipRanks' src='../assets/images/TR.webp' width='20' height='20'></a>,
+                    <a href="https://stockcharts.com/h-sc/ui?s={{item.symbol}}" target="_blank"><img alt='stocksCharts' src='../assets/images/SC.webp' width='20' height='20'></a> <br>
                     <svg style="border: solid 1px blue">
                         <rect x = 10 y =10 width = 20 height = 20></rect>
                     </svg>

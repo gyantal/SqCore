@@ -177,7 +177,18 @@ namespace SqCoreWeb
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
             }
         }
-
+        // Under developement Daya
+        private void BrAccViewerSendSelectedTickerHist(string p_lookbackStr, string p_bnchmrkTicker)
+        {
+            byte[]? encodedMsg = null;
+            IEnumerable<AssetHistJs>? brAccViewerHist = GetBrAccViewerHist(p_lookbackStr, p_bnchmrkTicker);
+            if (brAccViewerHist != null)
+            {
+                encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.SelectedTickerHist:" + Utils.CamelCaseSerialize(brAccViewerHist));
+                if (WsWebSocket!.State == WebSocketState.Open)
+                    WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+            }
+        }
         private HandshakeBrAccViewer GetHandshakeBrAccViewer(List<BrokerNav> p_selectableNavs)
         {
             List<AssetJs> marketBarAssets = m_brAccMktBrAssets.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
@@ -386,11 +397,14 @@ namespace SqCoreWeb
                     return true;
                 case "BrAccViewer.GetHistData":
                     Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): GetHistData to '{msgObjStr}'");
-                    string selectedTicker = msgObjStr;
+                    string selectedTicker = msgObjStr.Substring(0,3);
                     // we need startDate, endDate, bnchmrkTicker
-                    // BrAccViewerSendHist("YTD", "S/SPY");
-                    // m_braccSelectedTicker = MemDb.gMemDb.GetAsset(selectedTicker);
-                    // BrAccViewerSendHist();
+                    BrAccViewerSendHist("YTD", selectedTicker);
+                    return true;
+                case "BrAccViewer.GetChrtTickerHistData":
+                    Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): GetChrtTickerHistData to '{msgObjStr}'");
+                    string ticker = msgObjStr.Substring(0,3);
+                    BrAccViewerSendSelectedTickerHist("YTD", ticker);
                     return true;
                 default:
                     return false;

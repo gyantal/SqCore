@@ -9,6 +9,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using System.Text;
 using System.Threading;
+using Microsoft.Extensions.Primitives;
 
 namespace FinTechCommon
 {
@@ -594,17 +595,22 @@ namespace FinTechCommon
             Utils.Logger.Info($"m_reloadHistoricalDataTimer set next targetdate: {targetDateEt.ToSqDateTimeStr()} ET");
             m_historicalDataReloadTimer.Change(targetDateEt - etNow, TimeSpan.FromMilliseconds(-1.0));     // runs only once.
         }
-// under developement Daya
-        // private static void GetBnchmkHistData()
-        // {
-        //     IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync("SPY", new SqDateOnly(2019, 1, 2), DateTime.Now, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
-        //     if (history == null)
-        //         throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{"SPY"}) after many tries.");
+        // under developement Daya
+        private static void GetSelectedTickerHistData(string bnchmrkTicker)
+        {
+            SqDateOnly[] dates = new SqDateOnly[0];  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards
+            float[] adjCloses = new float[0];
+            DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
+            SqDateOnly lookbackStart = new SqDateOnly(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
+            SqDateOnly lookbackEnd = todayET.AddDays(-1);
+            IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(bnchmrkTicker, lookbackStart, lookbackEnd, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
+            if (history == null)
+                throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{"SPY"}) after many tries.");
 
-        //     var dates = history.Select(r => new DateOnly(r!.DateTime)).ToArray();
-        //     var adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
-        //     // return (dates, adjCloses); 
+            dates = history.Select(r => new SqDateOnly(r!.DateTime)).ToArray();
+            adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
+            // return (dates, adjCloses); 
 
-        // }
+        }
     }
 }
