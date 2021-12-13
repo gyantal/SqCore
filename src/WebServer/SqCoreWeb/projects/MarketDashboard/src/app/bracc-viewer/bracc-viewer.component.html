@@ -147,7 +147,7 @@ MarketBar
             <div [hidden]="tabPageVisibleIdx == 1" id="tab2">
                 <div >
                    <span>
-                    <div class="chrtTimeFrameSelection" id="lookBackPeriod">
+                    <div class="chrtTimeFrameSelection">
                         <select [(ngModel)] = "histPeriodSelectionSelected">
                             <option *ngFor="let item of histPeriodSelection" [value]="item">{{item}}</option>YTD
                         </select>
@@ -214,7 +214,7 @@ MarketBar
     </thead>
     <tbody class = "selectedBrcAccSnapShotTbl">
     <tr *ngFor="let item of uiSnapTable.poss">
-        <td class="tooltipStck" [ngStyle]="{'font-weight': 'bold'}" (click)="onHistChrtTicker(item.symbol)">
+        <td class="tooltipStck" [ngStyle]="{'font-weight': 'bold'}" (click)="onStockChrtTicker(item.symbol)">
             <span class="tooltipSnap">
                 <span class="snapshot">Name:
                     {{item.name}} <br>
