@@ -423,7 +423,7 @@ namespace BrokerCommon
                     Utils.Logger.Trace($"GetAccountsInfo(). RT prices {iTimeoutCount}/{cMaxTimeout}x Timeout after {(DateTime.UtcNow - startTime).TotalMilliseconds} ms. nMissingEsttPrice:{nMissingEstPrice}");
                 }
             }
-            string logMsg = $"IB.ReqMktData() #OkEstPrice: {progressEstPrice.nArrived} in {progressEstPrice.nQueried},  #OkPriorClose: {progressPriorClose.nArrived} in {progressPriorClose.nQueried}, #OkDelta: {progressDelta.nArrived} in {progressDelta.nQueried} in {(DateTime.UtcNow - startTime).TotalSeconds:0.000}sec.";
+            string logMsg = $"IB.ReqMktData. #OkEstPr: {progressEstPrice.nArrived} in {progressEstPrice.nQueried}, #OkPriorCls: {progressPriorClose.nArrived} in {progressPriorClose.nQueried}, #OkDelta: {progressDelta.nArrived} in {progressDelta.nQueried} in {(DateTime.UtcNow - startTime).TotalSeconds:0.000}sec";
             Utils.Logger.Trace(logMsg);  // RT prices: After MOC:185.5ms, during Market:FirstTime:900-1100ms,Next times:450-600ms, Local development all 58 stocks + options, Queried: 58, ReceivedOk: 57, ReceivedErr: 1, Missing: 0,  
             Console.WriteLine(logMsg);
             progressEstPrice.LogIfMissing();

@@ -22,7 +22,6 @@
             "main": "projects/HelloAngular/src/main.ts",
             "polyfills": "projects/HelloAngular/src/polyfills.ts",
             "tsConfig": "projects/HelloAngular/tsconfig.app.json",
-            "aot": true,
             "assets": [
               "projects/HelloAngular/src/favicon.ico",
               "projects/HelloAngular/src/assets"
@@ -30,7 +29,13 @@
             "styles": [
               "projects/HelloAngular/src/styles.scss"
             ],
-            "scripts": []
+            "scripts": [],
+            "vendorChunk": true,
+            "extractLicenses": false,
+            "buildOptimizer": false,
+            "sourceMap": true,
+            "optimization": false,
+            "namedChunks": true
           },
           "configurations": {
             "production": {
@@ -60,7 +65,8 @@
                 }
               ]
             }
-          }
+          },
+          "defaultConfiguration": ""
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
@@ -142,7 +148,6 @@
             "main": "projects/HealthMonitor/src/main.ts",
             "polyfills": "projects/HealthMonitor/src/polyfills.ts",
             "tsConfig": "projects/HealthMonitor/tsconfig.app.json",
-            "aot": true,
             "assets": [
               "projects/HealthMonitor/src/favicon.ico",
               "projects/HealthMonitor/src/assets"
@@ -150,7 +155,13 @@
             "styles": [
               "projects/HealthMonitor/src/styles.scss"
             ],
-            "scripts": []
+            "scripts": [],
+            "vendorChunk": true,
+            "extractLicenses": false,
+            "buildOptimizer": false,
+            "sourceMap": true,
+            "optimization": false,
+            "namedChunks": true
           },
           "configurations": {
             "production": {
@@ -180,7 +191,8 @@
                 }
               ]
             }
-          }
+          },
+          "defaultConfiguration": ""
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
@@ -262,7 +274,6 @@
             "main": "projects/MarketDashboard/src/main.ts",
             "polyfills": "projects/MarketDashboard/src/polyfills.ts",
             "tsConfig": "projects/MarketDashboard/tsconfig.app.json",
-            "aot": true,
             "assets": [
               "projects/MarketDashboard/src/favicon.ico",
               "projects/MarketDashboard/src/assets"
@@ -270,7 +281,13 @@
             "styles": [
               "projects/MarketDashboard/src/styles.scss"
             ],
-            "scripts": []
+            "scripts": [],
+            "vendorChunk": true,
+            "extractLicenses": false,
+            "buildOptimizer": false,
+            "sourceMap": true,
+            "optimization": false,
+            "namedChunks": true
           },
           "configurations": {
             "production": {
@@ -300,7 +317,8 @@
                 }
               ]
             }
-          }
+          },
+          "defaultConfiguration": ""
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
