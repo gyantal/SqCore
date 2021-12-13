@@ -1,6 +1,11 @@
 {
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
-  "version": 1, 
+  "version": 1,
+  "cli": {
+    "cache": {
+      "enabled": false
+    }
+  },
   "newProjectRoot": "projects",
   "projects": {
     "HelloAngular": {
@@ -100,19 +105,6 @@
               "projects/HelloAngular/src/styles.scss"
             ],
             "scripts": []
-          }
-        },
-        "lint": {
-          "builder": "@angular-devkit/build-angular:tslint",
-          "options": {
-            "tsConfig": [
-              "projects/HelloAngular/tsconfig.app.json",
-              "projects/HelloAngular/tsconfig.spec.json",
-              "projects/HelloAngular/e2e/tsconfig.json"
-            ],
-            "exclude": [
-              "**/node_modules/**"
-            ]
           }
         },
         "e2e": {
@@ -228,19 +220,6 @@
             "scripts": []
           }
         },
-        "lint": {
-          "builder": "@angular-devkit/build-angular:tslint",
-          "options": {
-            "tsConfig": [
-              "projects/HealthMonitor/tsconfig.app.json",
-              "projects/HealthMonitor/tsconfig.spec.json",
-              "projects/HealthMonitor/e2e/tsconfig.json"
-            ],
-            "exclude": [
-              "**/node_modules/**"
-            ]
-          }
-        },
         "e2e": {
           "builder": "@angular-devkit/build-angular:protractor",
           "options": {
@@ -354,19 +333,6 @@
             "scripts": []
           }
         },
-        "lint": {
-          "builder": "@angular-devkit/build-angular:tslint",
-          "options": {
-            "tsConfig": [
-              "projects/MarketDashboard/tsconfig.app.json",
-              "projects/MarketDashboard/tsconfig.spec.json",
-              "projects/MarketDashboard/e2e/tsconfig.json"
-            ],
-            "exclude": [
-              "**/node_modules/**"
-            ]
-          }
-        },
         "e2e": {
           "builder": "@angular-devkit/build-angular:protractor",
           "options": {
@@ -405,18 +371,6 @@
             "main": "projects/sq-ng-common/src/test.ts",
             "tsConfig": "projects/sq-ng-common/tsconfig.spec.json",
             "karmaConfig": "projects/sq-ng-common/karma.conf.js"
-          }
-        },
-        "lint": {
-          "builder": "@angular-devkit/build-angular:tslint",
-          "options": {
-            "tsConfig": [
-              "projects/sq-ng-common/tsconfig.lib.json",
-              "projects/sq-ng-common/tsconfig.spec.json"
-            ],
-            "exclude": [
-              "**/node_modules/**"
-            ]
           }
         }
       }

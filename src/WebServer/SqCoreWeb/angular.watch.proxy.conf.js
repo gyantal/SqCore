@@ -5,7 +5,7 @@ const PROXY_CONFIG = [
             "/UserAccount/",
             "/WebServer/"
         ],
-        target: "https://localhost:5001",
+        target: "https://127.0.0.1:5001",
         secure: false, // A backend server running on HTTPS with an invalid certificate will not be accepted by default. If you want to, you need to set secure: false.
         "ws": true,
         changeOrigin: true,
