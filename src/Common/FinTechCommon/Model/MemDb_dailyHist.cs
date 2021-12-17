@@ -596,18 +596,11 @@ namespace FinTechCommon
             m_historicalDataReloadTimer.Change(targetDateEt - etNow, TimeSpan.FromMilliseconds(-1.0));     // runs only once.
         }
         // under developement Daya
-        private static (SqDateOnly[], float[]) GetSelectedTickerHistData(string p_lookbackStr, string yfTicker) // send startdate and end date
+        public static (SqDateOnly[], float[]) GetSelectedStockTickerHistData(SqDateOnly lookbackStart, SqDateOnly lookbackEnd, string yfTicker) // send startdate and end date
         {
             SqDateOnly[] dates = new SqDateOnly[0];  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards
             float[] adjCloses = new float[0];
-            DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
-            SqDateOnly lookbackStart = new SqDateOnly(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
-            SqDateOnly lookbackEnd = todayET.AddDays(-1);
-            if (p_lookbackStr.StartsWith("-"))  // Browser client never send anything, but "Date:" inputs. Format: "Date:2019-11-11...2020-11-10"
-            {
-                lookbackStart = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "-".Length, 10));
-                lookbackEnd = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "-".Length + 13, 10));
-            }
+            
             IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(yfTicker, lookbackStart, lookbackEnd, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
             if (history == null)
                 throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{"SPY"}) after many tries.");

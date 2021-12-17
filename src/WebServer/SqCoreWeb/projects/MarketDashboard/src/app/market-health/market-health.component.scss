@@ -53,31 +53,6 @@
   color: #f39c12;
 }
 
-.selectedNavMktHlthCl ::after { // Popup arrow
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 5px;
-  border-style: solid;
-  border-color: rgba(85, 85, 85, 0.50) transparent transparent transparent;
-}
-.selectedNavMktHlthCl .show {  // Toggle this class - hide and show the popup. Note, this is not the popup. Strange, but works.
-  visibility: visible;
-  -webkit-animation: fadeInMktHlth 1s;
-  animation: fadeInMktHlth 1s;
-}
-@keyframes fadeInMktHlth { // Add animation (fade in the popup)
-  from {opacity: 0;}
-  to {opacity:1 ;}
-}
-@-webkit-keyframes fadeInMktHlth {
-  from {opacity: 0;} 
-  to {opacity: 1;}
-}
-
-
 .dashboardTopCont .realtimeRow{
   font-size: 1.6rem;
   font-weight: 500;

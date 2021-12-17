@@ -154,12 +154,10 @@ MarketBar
                         <div>StartDate: <input class = "histPeriodDateCl" type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr" (change)="onHistPeriodChange($event)"></div>
                         <div>EndDate: <input class = "histPeriodDateCl" type="date" id="EndDate" name="EndDate" min="01-01-1975" max="01-01-2040" [(ngModel)]="histPeriodEndETstr" (change)="onHistPeriodChange($event)"></div>
                         <div>BenchMark:
-                            <input class="selectedSqTicker" type="text" name="ticker" list="selectedSqTicker" placeholder="SPY"/>
+                            <input type="text" list="selectedSqTicker" [(ngModel)] = "bnchmkTickerSelectionSelected" (change)="onHistPeriodChange($event)" (keypress)="onHistBnchmkInputKeypress($event)">
                                 <datalist id="selectedSqTicker">
-                                    <select [(ngModel)] = "bnchmkTickerSelectionSelected" (change)="onHistPeriodChange($event)" (keypress)="onHistBnchmkInputKeypress($event)">
-                                        <option *ngFor="let item of bnchmkTickerSelection" [value]="item">{{item}}</option>
-                                    </select>
-                                 </datalist>
+                                    <option *ngFor="let item of bnchmkTickerSelection" [value]="item">{{item}}</option>
+                                </datalist>
                         </div>
                         <div>MaxDD<span class="notImpInfo">(NAV/BnchMrk):</span>
                             <span class="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
@@ -187,7 +185,11 @@ MarketBar
     </div>
 </span>
 </div>
-
+<span>
+    <input type="checkbox" [ngClass]="{'ActiveSortTableHeader':hideItem ==='MktVal'}" (click)="onTableHiding($event, 'MktVal')">MktVal-Small
+    <input type="checkbox" [ngClass]="{'ActiveSortTableHeader':hideItem ==='DailyPctChg'}" (click)="onTableHiding($event, 'DailyPctChg')">P&L-Small
+    <input type="checkbox" [ngClass]="{'ActiveSortTableHeader':hideItem ==='SqTicker'}" (click)="onTableHiding($event, 'SqTicker')">Options
+</span>
 <hr>
 <div class="brAccSnapTbl">
 <table class = "selectedBrcAccSnapShotTbl">
@@ -235,6 +237,7 @@ MarketBar
                     <svg style="border: solid 1px blue">
                         <rect x = 10 y =10 width = 20 height = 20></rect>
                     </svg>
+                    <div style="border: solid 1px blue" id="my_datavi"></div>
                 </span>
             </span>
             <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">
@@ -294,6 +297,13 @@ MarketBar
     <div class="tooltipSnap">
         <div class="snapshot">
             {{brAccountSnapshotStrFormatted}}
+        </div>
+    </div>
+</div>
+<div class="tooltipTempDebug">StockHistData:
+    <div class="tooltipSnap">
+        <div class="snapshot">
+            {{stockHistDataFormatted}}
         </div>
     </div>
 </div>

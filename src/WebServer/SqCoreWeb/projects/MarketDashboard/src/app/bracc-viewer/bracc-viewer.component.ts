@@ -219,6 +219,7 @@ export class BrAccViewerComponent implements OnInit {
   uiMktBar: UiMktBar = new UiMktBar();
   uiSnapTable: UiSnapTable = new UiSnapTable();
   uiHistData: UiHistData[] = [];
+  stockObj: Nullable<BrAccHistValuesJs[]> = null;
 
   tabPageVisibleIdx = 1;
   sortColumn: string = 'DailyPL';
@@ -232,6 +233,7 @@ export class BrAccViewerComponent implements OnInit {
   histPeriodEndET: Date;
   histPeriodEndETstr: string;
   chrtTickerSelected: string = 'SPY';
+  hideItem: string = 'MktVal'
   
   constructor() {
 
@@ -251,8 +253,8 @@ export class BrAccViewerComponent implements OnInit {
     setInterval(() => { this.uiMktBar.lstValLastRefreshTimeStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiMktBar.lstValLastRefreshTimeLoc.getTime());
                         this.uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.navLastUpdateTimeLoc.getTime());
                         this.uiSnapTable.snapLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.snapLastUpateTimeLoc.getTime());
-                        this.uiSnapTable.plTodPrNav = Math.round(this.uiSnapTable.netLiquidation - this.uiSnapTable.priorCloseNetLiquidation);
-                        this.uiSnapTable.pctChgTodPrNav = (this.uiSnapTable.netLiquidation - this.uiSnapTable.priorCloseNetLiquidation) / this.uiSnapTable.priorCloseNetLiquidation;
+                        // this.uiSnapTable.plTodPrNav = Math.round(this.uiSnapTable.netLiquidation - this.uiSnapTable.priorCloseNetLiquidation);
+                        // this.uiSnapTable.pctChgTodPrNav = (this.uiSnapTable.netLiquidation - this.uiSnapTable.priorCloseNetLiquidation) / this.uiSnapTable.priorCloseNetLiquidation;
                       }, 1000);
     setInterval(() => {
       if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
@@ -272,8 +274,8 @@ export class BrAccViewerComponent implements OnInit {
         this.brAccountSnapshotObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.sortColumn, this.sortDirection, this.uiSnapTable);
         return true;
-      case 'BrAccViewer.Hist':
-        console.log('BrAccViewer.Hist:' + msgObjStr);
+      case 'BrAccViewer.NavHist':
+        console.log('BrAccViewer.NavHist:' + msgObjStr);
         this.histStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.histObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateUiWithHist(this.histObj, this.uiHistData);
@@ -293,11 +295,12 @@ export class BrAccViewerComponent implements OnInit {
         console.log(`BrAccViewer.Handshake.SelectableBrAccs: '${(this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets}'`);
         this.updateUiSelectableNavs((this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets);
         return true;
-      case 'BrAccViewer.SelectedStockTickerHist':
-        console.log('BrAccViewer.SelectedStockTickerHist:' + msgObjStr)
+      case 'BrAccViewer.StockHist':
+        console.log('BrAccViewer.StockHist:' + msgObjStr);
         this.stockHistDataFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
-        this.histObj = JSON.parse(msgObjStr);
-        // BrAccViewerComponent.updateStockHistData(this.histObj, this.uiSnapTable)
+        this.stockObj = JSON.parse(msgObjStr);
+        BrAccViewerComponent.updateStockHistData(this.stockObj, this.uiSnapTable);
+        // BrAccViewerComponent.processUiWithStockChrt(this.uiSnapTable.stockChartVals);
         return true;
       default:
         return false;
@@ -357,7 +360,7 @@ export class BrAccViewerComponent implements OnInit {
       const uiItem = existingUiItems[0];
       uiItem.pctChg = (rtItem.last - uiItem.priorClose) / uiItem.priorClose;
     }  
-}
+  }
 
   static updateSnapshotTable(brAccSnap: Nullable<BrAccSnapshotJs>, sortColumn: string, sortDirection: string, uiSnapTable: UiSnapTable) {
     if (brAccSnap === null || brAccSnap.poss === null)
@@ -525,8 +528,8 @@ export class BrAccViewerComponent implements OnInit {
     todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
 
     uiHistData.length = 0;
-    for(const hisStatItem  of histObj) {
-      if (hisStatItem.histStat ==  null || hisStatItem.histValues == null) 
+    for(const hisStatItem of histObj) {
+      if (hisStatItem.histStat == null || hisStatItem.histValues == null) 
         continue;
       let uiHistItem = new UiHistData();
       uiHistItem.assetId = hisStatItem.histStat.assetId;      
@@ -724,21 +727,26 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   // bioler plate code for Stock chrt data - under development (Daya)
-  static updateStockHistData(histObj: Nullable<HistJs[]>, uiSnapTable: UiSnapTable[]) {
-    if (histObj == null)
+  static updateStockHistData(stockObj: Nullable<BrAccHistValuesJs[]>, uiSnapTable: UiSnapTable) {
+    // if (!(Array.isArray(stockObj) && stockObj.length > 0))
+    //   return;
+    if (stockObj == null)
       return;
-    let item = new UiSnapTable();
-    for (const histValItem of histObj) {
-      if (histValItem.histValues == null) 
+    uiSnapTable.stockChartVals.length = 0;
+    for (const stockItem of stockObj) {
+      if (stockItem.histDates == null || stockItem.histSdaCloses == null)
         continue;
-      let stockItem = new UiChrtval();
-      for (var i = 0; i < histValItem.histValues.histDates.length; i++) {
-        stockItem.date = histValItem.histValues.histDates[i];
-        stockItem.sdaClose = histValItem.histValues.histSdaCloses[i];
-        item.stockChartVals.push(stockItem);
+      console.log("the len of stock dates :", stockItem.histDates.length);
+      let stockVal = new UiChrtval();
+      for (var i = 0; i < stockItem.histDates.length; i++) {
+        var dateStr : string = stockItem.histDates[i];
+        stockVal.date = new Date (dateStr.substring(0,4) + '-' + dateStr.substring(4,6) + '-' + dateStr.substring(6,8));
+        stockVal.sdaClose = stockItem.histSdaCloses[i];
       }
-      uiSnapTable.push(item);
+      uiSnapTable.stockChartVals.push(stockVal);
     }
+    BrAccViewerComponent.processUiWithStockChrt(uiSnapTable.stockChartVals);
+    console.log("The length of uiStckVals is :", uiSnapTable.stockChartVals.length);
   }
 
   onNavSelectedChange(pEvent: any) {
@@ -746,23 +754,13 @@ export class BrAccViewerComponent implements OnInit {
       this._parentWsConnection.send('BrAccViewer.ChangeNav:' + this.navSelectionSelected);
   }
 
-  onLookbackSelectChange() {
+  onLookbackSelectChange(pEvent: any) {
     const currDateET: Date = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     if (this.histPeriodSelectionSelected === 'YTD') {
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 1, 11, 31)).toString();
     } else if (this.histPeriodSelectionSelected.endsWith('y')) {
-      const lbYears = parseInt(this.histPeriodStartETstr.substr(0, this.histPeriodStartETstr.length - 1), 10);
+      const lbYears = parseInt(this.histPeriodStartETstr.substring(0, this.histPeriodStartETstr.length - 1), 10);
       this.histPeriodStartETstr = (new Date(currDateET.setFullYear(currDateET.getFullYear() - lbYears))).toString();
-    // } else if (lookbackStr.endsWith('m')) {
-    //   const lbMonths = parseInt(this.histPeriodStartETstr.substr(0, this.histPeriodStartETstr.length - 1), 10);
-    //   this.histPeriodStartETstr = new Date(currDateET.setMonth(currDateET.getMonth() - lbMonths));
-    // } else if (lookbackStr.endsWith('w')) {
-    //   const lbWeeks = parseInt(this.histPeriodStartETstr.substr(0, this.histPeriodStartETstr.length - 1), 10);
-    //   this.histPeriodStartETstr = new Date(currDateET.setDate(currDateET.getDate() - lbWeeks * 7));
-    // } else if (lookbackStr === 'D\'99') {
-    //   this.histPeriodStartETstr = new Date(1999, 3 - 1, 10); // start date of QQQ
-    // } else if (lookbackStr === 'Date') {
-    //   this.histPeriodStartETstr = SqNgCommonUtilsTime.PaddedIsoStr3Date(this.lookbackStartETstr);
     }
     this.histPeriodStartETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(this.histPeriodStartETstr));
 
@@ -772,18 +770,18 @@ export class BrAccViewerComponent implements OnInit {
       const yesterDayET = new Date(todayET);
       yesterDayET.setDate(yesterDayET.getDate() - 1);
       this.histPeriodEndETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(yesterDayET.getFullYear(), yesterDayET.getMonth(), yesterDayET.getDate()));  // set yesterdayET as default
-    // this.onHistPeriodChange();
+    this.onHistPeriodChange(pEvent);
   }
 }
 
   onHistPeriodChange(pEvent: any) {
-    // for ( let item in this.navSelection) {
-    //   if (item != this.navSelectionSelected)
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+      this._parentWsConnection.send('BrAccViewer.GetNavChrtData:Bnchmrk:' + this.bnchmkTickerSelectionSelected + ",Date:" + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
+    console.log("The ticker seleceted is: ", this.bnchmkTickerSelectionSelected + "," + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
+    // for ( let item in this.bnchmkTickerSelection) {
+    //   if (item != this.bnchmkTickerSelectionSelected)
     //     alert("the ticker is not avaiable, pls select the available tickers")
     // }
-    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('BrAccViewer.GetHistData:Bnchmrk:' + this.bnchmkTickerSelectionSelected + ",Date:" + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
-    console.log("The ticker seleceted is: ", this.bnchmkTickerSelectionSelected + "," + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
   }
 
   onSortingClicked(event, p_sortColumn) {
@@ -797,6 +795,7 @@ export class BrAccViewerComponent implements OnInit {
 
   onTabHeaderClicked(event: any, tabIdx: number) {
     this.tabPageVisibleIdx = tabIdx;
+    document.title = "MD:" + "$" + (this.uiSnapTable.plTodPrNav + "(" + ((this.uiSnapTable.pctChgTodPrNav)*100).toFixed(2) + "%)").toString();
   }
 
   onSnapshotRefreshClicked(event: any) {
@@ -817,7 +816,168 @@ export class BrAccViewerComponent implements OnInit {
 
   onStockChrtTicker(event: any) {
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('BrAccViewer.GetStockChrtTickerHistData:' + event );
+      this._parentWsConnection.send('BrAccViewer.GetStockChrtData:' + "S/" + event );
     console.log("The ticker selected on chart tooltip is :", event);
+  }
+  // Under Development Daya - Table hiding feature for small P&L , MktVal and options
+  onTableHiding(event: any, hideItem: string) {
+    var filteredItems: any[] = [];
+    for (var i = 0; i < this.uiSnapTable.poss.length; i++) {
+      switch (hideItem) {
+        case 'MktVal':
+          if (this.uiSnapTable.poss[i].mktVal < 500)
+            filteredItems.push(this.uiSnapTable.poss[i]);
+          break;
+        case 'DailyPctChg':
+          if (this.uiSnapTable.poss[i].pctChgTod < 0.1)
+            filteredItems.push(this.uiSnapTable.poss[i]);
+          break;
+        case 'SqTicker':
+          if (this.uiSnapTable.poss[i].sqTicker.startsWith('O'))
+            filteredItems.push(this.uiSnapTable.poss[i]);
+          break;
+        default:
+          console.warn('Urecognized...***');
+          break;
+      }
+    return filteredItems;
+    }
+  }
+
+  static processUiWithStockChrt(uiStckVals: UiChrtval[]) {
+    d3.selectAll('#my_datavi > *').remove();
+    var margin = {top: 10, right: 30, bottom: 30, left: 60 };
+    var width = 660 - margin.left - margin.right;
+    var height = 400 - margin.top - margin.bottom;
+
+    var stckChrtData = uiStckVals.map((r:{ date: Date; sdaClose: number; }) => 
+            ({date: new Date(r.date), sdaClose: (100 * r.sdaClose)}));
+
+    const formatMonth = d3.timeFormat('%Y%m%d');
+    var  bisectDate = d3.bisector((r: any) => r.date).left;
+    // find data range
+    var xMin = d3.min(stckChrtData, (r:{ date: any; }) => r.date);
+    var xMax = d3.max(stckChrtData, (r:{ date: any; }) => r.date);
+    var yMinAxis = d3.min(stckChrtData, (r:{ sdaClose: any; }) => r.sdaClose);
+    var yMaxAxis = d3.max(stckChrtData, (r:{ sdaClose: any; }) => r.sdaClose);
+    // range of data configuring
+    var stckChrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, width]);
+    var stckChrtScaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([height, 0]);
+
+    var stckChrtSvg = d3.select('#my_datavi').append('svg')
+                        .attr('width', width + margin.left + margin.right)
+                        .attr('height', height + margin.top + margin.bottom)
+                        .append('g')
+                        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+    stckChrtSvg.append('g')
+              .attr('transform', 'translate(0,' + height + ')')
+              .call(d3.axisBottom(stckChrtScaleX));
+    stckChrtSvg.append('g').call(d3.axisLeft(stckChrtScaleY));
+
+    // Define the line
+    var line = d3.line()
+                  .x((r: any) => stckChrtScaleX(r.date))
+                  .y((r: any) => stckChrtScaleY(r.sdaClose))
+                  .curve(d3.curveCardinal);
+
+    var stckChrtlineSvg = stckChrtSvg.append('g');
+    var focus = stckChrtSvg.append('g').style('display', 'none');
+  // Add the valueline path.
+    stckChrtlineSvg.append('path')
+                  .attr('class', 'line')
+                  .datum(stckChrtData) // Binds data to the line
+                  .attr('d', line as any)
+
+     // append the x line
+    focus.append('line')
+        .attr('class', 'x')
+        .style('stroke', 'blue')
+        .style('stroke-dasharray', '3,3')
+        .style('opacity', 0.5)
+        .attr('y1', 0)
+        .attr('y2', height);
+
+ // append the y line
+    focus.append('line')
+        .attr('class', 'y')
+        .style('stroke', 'blue')
+        .style('stroke-dasharray', '3,3')
+        .style('opacity', 0.5)
+        .attr('x1', width)
+        .attr('x2', width);
+
+    // append the circle at the intersection
+    focus.append('circle')
+        .attr('class', 'y')
+        .style('fill', 'none')
+        .style('stroke', 'blue')
+        .attr('r', 4);
+
+    // place the value at the intersection
+    focus.append('text')
+        .attr('class', 'y1')
+        .style('stroke', 'white')
+        .style('stroke-width', '3.5px')
+        .style('opacity', 0.8)
+        .attr('dx', 8)
+        .attr('dy', '-.3em');
+    focus.append('text')
+        .attr('class', 'y2')
+        .attr('dx', 8)
+        .attr('dy', '-.3em');
+
+    // place the date at the intersection
+    focus.append('text')
+        .attr('class', 'y3')
+        .style('stroke', 'white')
+        .style('stroke-width', '3.5px')
+        .style('opacity', 0.8)
+        .attr('dx', 8)
+        .attr('dy', '1em');
+    focus.append('text')
+        .attr('class', 'y4')
+        .attr('dx', 8)
+        .attr('dy', '1em');
+    focus.append('text')
+        .attr('class', 'y4')
+        .attr('dx', 8)
+        .attr('dy', '1em');
+    
+    // append the rectangle to capture mouse
+    stckChrtSvg.append('rect')
+        .attr('width', width)
+        .attr('height', height)
+        .style('fill', 'none')
+        .style('pointer-events', 'all')
+        .on('mouseover', function() { focus.style('display', null); })
+        .on('mouseout', function() { focus.style('display', 'none'); })
+        .on('mousemove', mousemove);
+
+    function mousemove(event: any) {
+      var x0 = stckChrtScaleX.invert(d3.pointer(event)[0]),
+      i = bisectDate(stckChrtData, x0, 1),
+      r = stckChrtData[i]
+      focus.select('circle.y')
+          .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')');
+      focus.select('text.y1')
+          .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')')
+          .text(r.sdaClose);
+      focus.select('text.y2')
+          .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')')
+          .text(d3.format(',')(Math.round((r.sdaClose))) + 'K');
+      focus.select('text.y3')
+          .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')')
+          .text(formatMonth(r.date));
+      focus.select('text.y4')
+          .attr('transform','translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')')
+          .text(formatMonth(r.date));
+      focus.select('.x')
+          .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')')
+          .attr('y2', height - stckChrtScaleY(r.sdaClose));
+      focus.select('.y')
+          .attr('transform', 'translate(' + width * -1 + ',' + stckChrtScaleY(r.sdaClose) + ')')
+          .attr('x2', width + width);
+    }
   }
 }

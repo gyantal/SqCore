@@ -11,7 +11,6 @@ using System.Net.WebSockets;
 using Microsoft.Extensions.Primitives;
 using System.Threading.Tasks;
 using BrokerCommon;
-using YahooFinanceApi;
 
 namespace SqCoreWeb
 {
@@ -173,13 +172,13 @@ namespace SqCoreWeb
             IEnumerable<AssetHistJs>? brAccViewerHist = GetBrAccViewerHist(p_lookbackStr, p_bnchmrkTicker);
             if (brAccViewerHist != null)
             {
-                encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.Hist:" + Utils.CamelCaseSerialize(brAccViewerHist));
+                encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.NavHist:" + Utils.CamelCaseSerialize(brAccViewerHist));
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
             }
         }
         // Under developement Daya
-        private void BrAccViewerSendSelectedStockTickerHist(string p_lookbackStr, string sqTicker)
+        private void BrAccViewerSendStockHist(string p_lookbackStr, string sqTicker)
         {
             Asset? asset = MemDb.gMemDb.AssetsCache.TryGetAsset(sqTicker);
             if (asset == null)
@@ -200,34 +199,31 @@ namespace SqCoreWeb
             DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
             SqDateOnly lookbackStart = new SqDateOnly(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
             SqDateOnly lookbackEnd = todayET.AddDays(-1);
-
-            (SqDateOnly[] dates, float[] adjCloses) = GetSelectedStockTickerHistData(p_lookbackStr, yfTicker);
-            // create AssetHistValuesJs from the  previously received data
-            AssetHistValuesJs histValueJs = new AssetHistValuesJs();
-            // if (adjCloses.Length != 0)
-            // {
-            //     histValueJs.HistDates = dates;
-            //     histValueJs.HistSdaCloses = adjCloses;
-            // }
-            // histValueJs.HistDates = stockHist.dates;
-            // histValueJs.HistSdaCloses = stockHist.adjCloses;
-            // IEnumerable<AssetHistValuesJs> histToClient = histValueJs.Select(r =>
-            // {
-            // var histValuesJs = new AssetHistValuesJs()
-            //     {
-            //         AssetId = r.Asset.AssetId,
-            //         SqTicker = r.Asset.SqTicker,
-            //         PeriodStartDate = r.PeriodStartDate,
-            //         PeriodEndDate = r.PeriodEndDate,
-            //         HistDates = dates,
-            //         HistSdaCloses = values
-            //     };
-            // return new AssetHistValuesJs() {HistValues = histValues};
-            // });
-            // this is not needed IEnumerable<AssetHistValuesJs>? brAccViewerHist = GetBrAccViewerHist(p_lookbackStr, sqTicker); // assethistValues only AssetHistValuesJs
-            if (histValueJs != null)
+            if (p_lookbackStr.StartsWith("Date:"))  // Browser client never send anything, but "Date:" inputs. Format: "Date:2019-11-11...2020-11-10"
             {
-                encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.SelectedStockTickerHist:" + Utils.CamelCaseSerialize(histValueJs));
+                lookbackStart = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length, 10));
+                lookbackEnd = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length + 13, 10));
+            }
+
+            (SqDateOnly[] dates, float[] adjCloses) = MemDb.GetSelectedStockTickerHistData(lookbackStart, lookbackEnd, yfTicker);
+
+            // AssetHistValuesJs stockHistValues = new AssetHistValuesJs();
+            // create AssetHistValuesJs from the  previously received data
+            AssetHistValuesJs stockHistValues = new AssetHistValuesJs()
+            {
+                AssetId = AssetId32Bits.Invalid,
+                SqTicker = sqTicker,
+                PeriodStartDate = lookbackStart.Date,
+                PeriodEndDate = lookbackEnd.Date,
+            };
+            if (adjCloses.Length != 0)
+            {
+                stockHistValues.HistDates = dates.Select(r => r.Date.ToYYYYMMDD()).ToList();
+                stockHistValues.HistSdaCloses = adjCloses.ToList();
+            }
+            if (stockHistValues != null)
+            {
+                encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.StockHist:" + Utils.CamelCaseSerialize(stockHistValues));
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
             }
@@ -438,24 +434,23 @@ namespace SqCoreWeb
                 case "BrAccViewer.RefreshMktBrPriorCloses":
                     BrAccViewerSendMarketBarPriorCloses();
                     return true;
-                case "BrAccViewer.GetHistData":
-                    Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): GetHistData to '{msgObjStr}'");
+                case "BrAccViewer.GetNavChrtData": // msg: "Bnchmrk:SPY,Date:2021-01-02...2021-12-12"
+                    Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): GetNavChrtData to '{msgObjStr}'");
                     int bnchmkStartIdx = msgObjStr.IndexOf(":");
-                    int bnchmkcommaIdx = msgObjStr.IndexOf(",");
-                    if (bnchmkStartIdx == -1 || bnchmkcommaIdx == -1)
+                    int periodStartIdx = msgObjStr.IndexOf("," ,bnchmkStartIdx);
+                    if (bnchmkStartIdx == -1 || periodStartIdx == -1)
                         return false;
-                    int periodStartIdx = msgObjStr.IndexOf(",");
                     if (periodStartIdx == -1)
                         return false;
-                    string selectedTicker = "S/" + msgObjStr.Substring(bnchmkStartIdx + 1 ,bnchmkcommaIdx-bnchmkStartIdx - 1);
+                    string selectedTicker = "S/" + msgObjStr.Substring(bnchmkStartIdx + 1 ,periodStartIdx-bnchmkStartIdx - 1);
                     string periodSelected = msgObjStr.Substring(periodStartIdx + 1);
                   // we need startDate, endDate, bnchmrkTicker
                     BrAccViewerSendHist(periodSelected, selectedTicker);
                     return true;
-                case "BrAccViewer.GetStockChrtTickerHistData":
-                    Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): GetStockChrtTickerHistData to '{msgObjStr}'");
+                case "BrAccViewer.GetStockChrtData":
+                    Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): GetStockChrtData to '{msgObjStr}'");
                     string ticker = msgObjStr;
-                    BrAccViewerSendSelectedStockTickerHist("YTD", ticker);
+                    BrAccViewerSendStockHist("YTD", ticker);
                     return true;
                 default:
                     return false;
@@ -492,27 +487,6 @@ namespace SqCoreWeb
 
             MemDb.DownloadLastPriceOptionsIb(validBrPossAssets.Where(r => r.AssetId.AssetTypeID == AssetType.Option).ToArray());    // can take 7-20 seconds, don't wait it. Report to the user earlier.
             BrAccViewerSendSnapshot();  // Report to the user 6..16 seconds later again. With the updated option prices.
-        }
-
-        private static (SqDateOnly[], float[]) GetSelectedStockTickerHistData(string p_lookbackStr, string yfTicker) // send startdate and end date
-        {
-            SqDateOnly[] dates = new SqDateOnly[0];  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards
-            float[] adjCloses = new float[0];
-            DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
-            SqDateOnly lookbackStart = new SqDateOnly(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
-            SqDateOnly lookbackEnd = todayET.AddDays(-1);
-            if (p_lookbackStr.StartsWith("Date:"))  // Browser client never send anything, but "Date:" inputs. Format: "Date:2019-11-11...2020-11-10"
-            {
-                lookbackStart = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length, 10));
-                lookbackEnd = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length + 13, 10));
-            }
-            IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(yfTicker, lookbackStart, lookbackEnd, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
-            if (history == null)
-                throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{"SPY"}) after many tries.");
-
-            dates = history.Select(r => new SqDateOnly(r!.DateTime)).ToArray();
-            adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
-            return (dates, adjCloses); 
         }
     }
 }
