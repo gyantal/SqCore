@@ -603,7 +603,7 @@ namespace FinTechCommon
             
             IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(yfTicker, lookbackStart, lookbackEnd, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
             if (history == null)
-                throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{"SPY"}) after many tries.");
+                throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{yfTicker}) after many tries.");
 
             dates = history.Select(r => new SqDateOnly(r!.DateTime)).ToArray();
             adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();

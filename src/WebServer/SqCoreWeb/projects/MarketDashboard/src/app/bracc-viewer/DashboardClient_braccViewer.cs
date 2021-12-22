@@ -152,7 +152,7 @@ namespace SqCoreWeb
             if (m_braccSelectedNavAsset == null)
                 return;
             BrAccViewerSendSnapshot();
-            BrAccViewerSendHist("YTD", "S/SPY");
+            BrAccViewerSendNavHist("YTD", "S/SPY");
         }
 
         private void BrAccViewerSendSnapshot()
@@ -166,10 +166,10 @@ namespace SqCoreWeb
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
             }
         }
-        private void BrAccViewerSendHist(string p_lookbackStr, string p_bnchmrkTicker)
+        private void BrAccViewerSendNavHist(string p_lookbackStr, string p_bnchmrkTicker)
         {
             byte[]? encodedMsg = null;
-            IEnumerable<AssetHistJs>? brAccViewerHist = GetBrAccViewerHist(p_lookbackStr, p_bnchmrkTicker);
+            IEnumerable<AssetHistJs>? brAccViewerHist = GetBrAccViewerNavHist(p_lookbackStr, p_bnchmrkTicker);
             if (brAccViewerHist != null)
             {
                 encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.NavHist:" + Utils.CamelCaseSerialize(brAccViewerHist));
@@ -350,11 +350,13 @@ namespace SqCoreWeb
             return result;
         }
 
-        private IEnumerable<AssetHistJs>? GetBrAccViewerHist(string p_lookbackStr, string p_bnchmrkTicker)
+        private IEnumerable<AssetHistJs>? GetBrAccViewerNavHist(string p_lookbackStr, string p_bnchmrkTicker)
         {
             if (m_braccSelectedNavAsset == null)
                 return null;
-
+            // Asset? asset = MemDb.gMemDb.AssetsCache.TryGetAsset(p_bnchmrkTicker);
+            // if (asset == null) 
+            //   return;
             List<Asset> assets = new List<Asset>();
             assets.Add(m_braccSelectedNavAsset);
             assets.Add(MemDb.gMemDb.AssetsCache.GetAsset(p_bnchmrkTicker)); // add it to BrokerNav for benchmark for the chart
@@ -413,7 +415,7 @@ namespace SqCoreWeb
                     Utils.Logger.Info("OnReceiveWsAsync_BrAccViewer(): changeLookback");
                     // m_lastLookbackPeriodStr = msgObjStr;
                     // SendHistoricalWs();
-                    BrAccViewerSendHist("YTD", "S/SPY");
+                    BrAccViewerSendNavHist("YTD", "S/SPY");
                     return true;
                 case "BrAccViewer.ChangeNav":
                     Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): changeNav to '{msgObjStr}'"); // DC.IM
@@ -437,20 +439,20 @@ namespace SqCoreWeb
                 case "BrAccViewer.GetNavChrtData": // msg: "Bnchmrk:SPY,Date:2021-01-02...2021-12-12"
                     Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): GetNavChrtData to '{msgObjStr}'");
                     int bnchmkStartIdx = msgObjStr.IndexOf(":");
-                    int periodStartIdx = msgObjStr.IndexOf("," ,bnchmkStartIdx);
-                    if (bnchmkStartIdx == -1 || periodStartIdx == -1)
-                        return false;
+                    if (bnchmkStartIdx == -1)
+                      return false;
+                    int periodStartIdx = msgObjStr.IndexOf(",", bnchmkStartIdx);
                     if (periodStartIdx == -1)
-                        return false;
-                    string selectedTicker = "S/" + msgObjStr.Substring(bnchmkStartIdx + 1 ,periodStartIdx-bnchmkStartIdx - 1);
+                      return false;
+                    string selectedSqTicker = "S/" + msgObjStr.Substring(bnchmkStartIdx + 1, (periodStartIdx - bnchmkStartIdx - 1));
                     string periodSelected = msgObjStr.Substring(periodStartIdx + 1);
                   // we need startDate, endDate, bnchmrkTicker
-                    BrAccViewerSendHist(periodSelected, selectedTicker);
+                    BrAccViewerSendNavHist(periodSelected, selectedSqTicker);
                     return true;
                 case "BrAccViewer.GetStockChrtData":
                     Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): GetStockChrtData to '{msgObjStr}'");
-                    string ticker = msgObjStr;
-                    BrAccViewerSendStockHist("YTD", ticker);
+                    string stockSqTicker = msgObjStr;
+                    BrAccViewerSendStockHist("YTD", stockSqTicker);
                     return true;
                 default:
                     return false;
