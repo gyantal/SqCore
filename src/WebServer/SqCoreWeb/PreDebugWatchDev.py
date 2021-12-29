@@ -34,8 +34,7 @@ def threaded_function(commandStr):
      #processObj = subprocess.run("tsc --watch", shell=True, stdout=subprocess.PIPE)  # This will run the command and return any output into process.output
 
 def startShellCallingThread(pCommandStr):
-    thread = Thread(target = threaded_function, args = (pCommandStr,))
-    thread.setDaemon(True)  # daemon = true didn't help. Main thread exited, but watchers were left alive.
+    thread = Thread(target = threaded_function, daemon = True, args = (pCommandStr,))
     thread.start()  #thread1.join()
 
 # 2.1 Non-Webpack webapps in ./wwwroot/webapps should be transpiled from TS to JS

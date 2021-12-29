@@ -166,13 +166,13 @@ namespace SqCommon
                 var trs = holidayTable.Split(new string[] { "<tr>\n  ", "<tr>", "<tr style=", "</tr>\n  ", "</tr>" }, StringSplitOptions.RemoveEmptyEntries);
                 var headerRow = trs[1];
                 var tdsHeader = headerRow.Split(new string[] { @"<th>", @"</th>" }, StringSplitOptions.RemoveEmptyEntries);
-                year1 = Int32.Parse(tdsHeader[2]);
-                year2 = Int32.Parse(tdsHeader[3]);
+                year1 = Int32.Parse(tdsHeader[1]);
+                year2 = Int32.Parse(tdsHeader[2]);
                 //year3 = Int32.Parse(tdsHeader[7]);  // there is year3 too, but we don't need it in VBroker or healthmonitor. So, just ignore them
 
                 for (int i = 2; i < trs.Length; i++)
                 {
-                    if (!trs[i].TrimStart().StartsWith(@"<th>"))
+                    if (!trs[i].TrimStart().StartsWith(@"<td>"))
                         continue;
 
                     var tds = trs[i].Split(new string[] { @"<th>", @"</th>", @"<td>", @"</td>" }, StringSplitOptions.RemoveEmptyEntries);

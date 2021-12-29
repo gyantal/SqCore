@@ -16,7 +16,7 @@
         },
         {
             "label": "SqCoreWeb-PreDebugBuildDev.py",
-            "type": "process",      // process is run inside terminal and it waits until it is finished.
+            "type": "process",      // process runs inside integrated terminal and it waits until it is finished.
             "command": "python",
             "args": [
                 "${workspaceFolder}/src/WebServer/SqCoreWeb/PreDebugBuildDev.py"
@@ -28,8 +28,8 @@
         },
         {
             "label": "SqCoreWeb-PreDebugWatchDev.py",
-            "type": "shell",    // shell will not wait, but return immediately to the caller.
-            "command": "${workspaceFolder}/src/WebServer/SqCoreWeb/PreDebugWatchDev.py",
+            "type": "shell",    // shell also runs in integrated terminal, but will not wait, but return immediately to the caller.
+            "command": "Start-Process -FilePath \"${workspaceFolder}/src/WebServer/SqCoreWeb/PreDebugWatchDev.py\"",    // Force running in external terminal: https://stackoverflow.com/questions/47993595/launch-vscode-task-in-external-terminal-via-tasks-2-0-0
             "options": {
                 "cwd": "${workspaceFolder}/src/WebServer/SqCoreWeb"
             },
@@ -38,7 +38,7 @@
         {
             "label": "SqCoreWeb-PostDebugWatchDev.py",
             "type": "shell",
-            "command": "${workspaceFolder}/src/WebServer/SqCoreWeb/PostDebugWatchDev.py",
+            "command": "Start-Process -FilePath \"${workspaceFolder}/src/WebServer/SqCoreWeb/PostDebugWatchDev.py\"",
             "options": {
                 "cwd": "${workspaceFolder}/src/WebServer/SqCoreWeb"
             },
@@ -47,7 +47,7 @@
         {
             "label": "SqCoreWeb-BuildAllProd.py",
             "type": "shell",
-            "command": "${workspaceFolder}/src/WebServer/SqCoreWeb/BuildAllProd.py",
+            "command": "Start-Process -FilePath \"${workspaceFolder}/src/WebServer/SqCoreWeb/BuildAllProd.py\"",
             "options": {
                 "cwd": "${workspaceFolder}/src/WebServer/SqCoreWeb"
                 // "shell": {
