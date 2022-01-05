@@ -595,7 +595,6 @@ namespace FinTechCommon
             Utils.Logger.Info($"m_reloadHistoricalDataTimer set next targetdate: {targetDateEt.ToSqDateTimeStr()} ET");
             m_historicalDataReloadTimer.Change(targetDateEt - etNow, TimeSpan.FromMilliseconds(-1.0));     // runs only once.
         }
-        // under developement Daya
         public static (SqDateOnly[], float[]) GetSelectedStockTickerHistData(SqDateOnly lookbackStart, SqDateOnly lookbackEnd, string yfTicker) // send startdate and end date
         {
             SqDateOnly[] dates = new SqDateOnly[0];  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards

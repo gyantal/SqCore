@@ -207,9 +207,9 @@ export class BrAccViewerComponent implements OnInit {
   handshakeObj: Nullable<BrAccVwrHandShk> = null;
   mktBrLstClsStrFormatted = '[Nothing arrived yet]';
   mktBrLstClsObj: Nullable<AssetPriorCloseJs[]> = null;
-  histStrFormatted = '[Nothing arrived yet]';
+  navHistStrFormatted = '[Nothing arrived yet]';
   navHistObj: Nullable<HistJs[]> = null;
-  stockHistDataFormatted = '[Nothing arrived yet]';
+  stockHistStrFormatted = '[Nothing arrived yet]';
   stockHistObj: Nullable<BrAccHistValuesJs> = null;
   brAccountSnapshotStrFormatted = '[Nothing arrived yet]';
   brAccountSnapshotObj: Nullable<BrAccSnapshotJs> = null;
@@ -223,17 +223,19 @@ export class BrAccViewerComponent implements OnInit {
 
   tabPageVisibleIdx = 1;
   sortColumn: string = 'plTod';
-  asc: boolean = true; // sortDirection
+  isSortingDirectionAscending: boolean = true;
   histPeriodSelection = ['YTD', '1M', '1Y', '3Y', '5Y', 'Date'];
   histPeriodSelectionSelected = 'YTD';
   bnchmkTickerSelection = ['SPY', 'QQQ', 'TLT', 'VXX', 'SVXY', 'UNG', 'USO'];
-  bnchmkTickerSelectionSelected : string = 'SPY';
+  bnchmkTickerSelectionSelected: string = 'SPY';
   histPeriodStartET: Date; // set in ctor. We need this in JS client to check that the received data is long enough or not (Expected Date)
   histPeriodStartETstr: string; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a 	A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
   histPeriodEndET: Date;
   histPeriodEndETstr: string;
   chrtTickerSelected: string = 'SPY';
-  isVisible: boolean = true;
+  isFilteringBasedonMktVal: boolean = false;
+  isFilteringBasedonPlDaily: boolean = true;
+  isFilteringBasedonOptions: boolean = false;
   
   constructor() {
 
@@ -253,8 +255,6 @@ export class BrAccViewerComponent implements OnInit {
     setInterval(() => { this.uiMktBar.lstValLastRefreshTimeStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiMktBar.lstValLastRefreshTimeLoc.getTime());
                         this.uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.navLastUpdateTimeLoc.getTime());
                         this.uiSnapTable.snapLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.snapLastUpateTimeLoc.getTime());
-                        // this.uiSnapTable.plTodPrNav = Math.round(this.uiSnapTable.netLiquidation - this.uiSnapTable.priorCloseNetLiquidation);
-                        // this.uiSnapTable.pctChgTodPrNav = (this.uiSnapTable.netLiquidation - this.uiSnapTable.priorCloseNetLiquidation) / this.uiSnapTable.priorCloseNetLiquidation;
                       }, 1000);
     setInterval(() => {
       if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
@@ -272,11 +272,11 @@ export class BrAccViewerComponent implements OnInit {
         console.log('BrAccViewer.BrAccSnapshot:' + msgObjStr);
         this.brAccountSnapshotStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.brAccountSnapshotObj = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.uiSnapTable);
+        BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
         return true;
       case 'BrAccViewer.NavHist':
         console.log('BrAccViewer.NavHist:' + msgObjStr);
-        this.histStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
+        this.navHistStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.navHistObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateUiWithHist(this.navHistObj, this.uiHistData);
         return true;
@@ -297,7 +297,7 @@ export class BrAccViewerComponent implements OnInit {
         return true;
       case 'BrAccViewer.StockHist':
         console.log('BrAccViewer.StockHist:' + msgObjStr);
-        this.stockHistDataFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
+        this.stockHistStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.stockHistObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateStockHistData(this.stockHistObj, this.uiSnapTable);
         return true;
@@ -320,7 +320,7 @@ export class BrAccViewerComponent implements OnInit {
     for (const nav of pSelectableNavAssets) {
       if (this.navSelectionSelected == '') // by default, the selected Nav is the first from the list
         this.navSelectionSelected = nav.symbol;
-      this.navSelection.push(nav.symbol)
+      this.navSelection.push(nav.symbol);
     }
   }
 
@@ -361,7 +361,7 @@ export class BrAccViewerComponent implements OnInit {
     }  
   }
 
-  static updateSnapshotTable(brAccSnap: Nullable<BrAccSnapshotJs>, uiSnapTable: UiSnapTable) {
+  static updateSnapshotTable(brAccSnap: Nullable<BrAccSnapshotJs>, isSortingDirectionAscending: boolean, sortColumn: string, isFilteringBasedonMktVal: boolean, isFilteringBasedonPlDaily: boolean, isFilteringBasedonOptions: boolean, uiSnapTable: UiSnapTable) {
     if (brAccSnap === null || brAccSnap.poss === null)
       return;
     uiSnapTable.navAssetId = brAccSnap.assetId;
@@ -380,6 +380,7 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.pctChgTodPrNav = (brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation) / brAccSnap.priorCloseNetLiquidation;
     uiSnapTable.clientMsg = brAccSnap.clientMsg.replace(';','\n');
     uiSnapTable.poss.length = 0;
+    var smallMktValThreshold = uiSnapTable.priorCloseNetLiquidation * 0.0005; // smallMktVal based on 400K NAV
 
     for (const possItem of brAccSnap.poss) {
       let uiPosItem = new UiAssetSnapPossPos();
@@ -410,9 +411,18 @@ export class BrAccViewerComponent implements OnInit {
       uiPosItem.mktVal = Math.round(possItem.pos * possItem.estPrice);
       uiPosItem.pctChgTod = (possItem.estPrice - possItem.priorClose) / possItem.priorClose;
       uiPosItem.plTod = Math.round(possItem.pos * (possItem.estPrice - possItem.priorClose));
-      uiPosItem.pl = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost))
-      uiPosItem.betaDltAdj = Math.round(uiPosItem.gBeta * uiPosItem.mktVal)
-      uiSnapTable.poss.push(uiPosItem);
+      uiPosItem.pl = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost));
+      uiPosItem.betaDltAdj = Math.round(uiPosItem.gBeta * uiPosItem.mktVal);
+
+      let isShowPos = true;
+      if (isFilteringBasedonMktVal && uiPosItem.mktVal < smallMktValThreshold)
+        isShowPos = false;
+      if (isFilteringBasedonPlDaily && uiPosItem.plTod < 400)
+        isShowPos = false;
+      if (isFilteringBasedonOptions && possItem.sqTicker.startsWith('O'))
+        isShowPos = false;
+      if (isShowPos)
+        uiSnapTable.poss.push(uiPosItem);
     }
     uiSnapTable.sumPlTodVal = 0;
     uiSnapTable.longStockValue = 0;
@@ -430,6 +440,14 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.sumPlTodPct = uiSnapTable.sumPlTodVal / uiSnapTable.priorCloseNetLiquidation; // profit & Loss total percent change
     uiSnapTable.totalMaxRiskedLeverage = (uiSnapTable.totalMaxRiskedN / uiSnapTable.netLiquidation);
     uiSnapTable.numOfPoss = uiSnapTable.poss.length;
+
+    uiSnapTable.poss = uiSnapTable.poss.sort((n1: UiAssetSnapPossPos, n2: UiAssetSnapPossPos) => {
+      if (isSortingDirectionAscending) {
+        return (n1[sortColumn] > n2[sortColumn]) ? 1 : ((n1[sortColumn] < n2[sortColumn]) ? -1 : 0);
+      } else {
+        return (n2[sortColumn] > n1[sortColumn]) ? 1 : ((n2[sortColumn] < n1[sortColumn]) ? -1 : 0);
+      }
+    })
   }
 
   static updateSnapshotTableWithRtNav(p_lstValObj: Nullable<AssetLastJs[]>, uiSnapTable: UiSnapTable) {
@@ -440,6 +458,7 @@ export class BrAccViewerComponent implements OnInit {
         uiSnapTable.netLiquidation = item.last;
         uiSnapTable.navLastUpdateTimeLoc = new Date(item.lastUtc);
         uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - (uiSnapTable.navLastUpdateTimeLoc).getTime()) == null ? SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(uiSnapTable.snapLastUpateTimeLoc.getTime()) : SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - (uiSnapTable.navLastUpdateTimeLoc).getTime());
+        document.title = "MD:" + "$" + (uiSnapTable.plTodPrNav + "(" + ((uiSnapTable.pctChgTodPrNav) * 100).toFixed(2) + "%)").toString();
       }
     }
   }
@@ -490,7 +509,7 @@ export class BrAccViewerComponent implements OnInit {
   }
     
   static processUiWithNavChrt(uiHistData: UiHistData[]) {
-    d3.selectAll('#my_dataviz > *').remove();
+    d3.selectAll('#navChrt > *').remove();
     var margin = {top: 10, right: 30, bottom: 30, left: 60 };
     var width = 660 - margin.left - margin.right;
     var height = 400 - margin.top - margin.bottom;
@@ -514,7 +533,7 @@ export class BrAccViewerComponent implements OnInit {
     var navChrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, width]);
     var navChrtScaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([height, 0]);
 
-    var navChrtSvg = d3.select('#my_dataviz').append('svg')
+    var navChrtSvg = d3.select('#navChrt').append('svg')
                         .attr('width', width + margin.left + margin.right)
                         .attr('height', height + margin.top + margin.bottom)
                         .append('g')
@@ -694,24 +713,16 @@ export class BrAccViewerComponent implements OnInit {
   histPeriodChange() {
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('BrAccViewer.GetNavChrtData:Bnchmrk:' + this.bnchmkTickerSelectionSelected.toUpperCase() + ",Date:" + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
-    console.log("The ticker seleceted is: ", this.bnchmkTickerSelectionSelected + "," + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
   }
 
-  onSortingClicked(p_sortColumn: string, asc: boolean) {
-    this.asc = !this.asc;
+  onSortingClicked(p_sortColumn: string, event) {
+    this.isSortingDirectionAscending = !this.isSortingDirectionAscending;
     this.sortColumn = p_sortColumn;
-    this.uiSnapTable.poss = this.uiSnapTable.poss.sort((n1: UiAssetSnapPossPos, n2: UiAssetSnapPossPos) => {
-      if (this.asc) {
-        return (n1[this.sortColumn] > n2[this.sortColumn]) ? 1 : ((n1[this.sortColumn] < n2[this.sortColumn]) ? -1 : 0);
-      } else {
-        return (n2[this.sortColumn] > n1[this.sortColumn])? 1 : ((n2[this.sortColumn] < n1[this.sortColumn]) ? -1 : 0);
-      }
-    })
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
   onTabHeaderClicked(event: any, tabIdx: number) {
     this.tabPageVisibleIdx = tabIdx;
-    document.title = "MD:" + "$" + (this.uiSnapTable.plTodPrNav + "(" + ((this.uiSnapTable.pctChgTodPrNav)*100).toFixed(2) + "%)").toString();
   }
 
   onSnapshotRefreshClicked(event: any) {
@@ -724,44 +735,31 @@ export class BrAccViewerComponent implements OnInit {
       this._parentWsConnection.send('BrAccViewer.RefreshSnapshot:' + this.navSelectionSelected);
   }
 
-  // onHistBnchmkInputKeypress(event: any) {
-  //   var chCode = ('charCode' in event) ? event.charCode : event.keyCode;
-  //   if (chCode == 13)
-  //     console.log("The key pressed code is :", chCode);
-  //     // this.histPeriodChange();
-  //}
-  onSnapTableHidingClicked(isVisible: boolean) {
-    this.isVisible = !this.isVisible;
-    if (!this.isVisible) {
-      this.snapTableHiding();
-    } else {
-      BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.uiSnapTable);
-    }
+  onSnapTableSmallMktValClicked(event: any) {
+    this.isFilteringBasedonMktVal = !this.isFilteringBasedonMktVal;
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
-  snapTableHiding() {
-    var items: any = [];
-    for (let i = 0; i < this.uiSnapTable.poss.length; i++) {
-      if (this.uiSnapTable.poss[i].pl > 500)
-        items.push(this.uiSnapTable.poss[i]);
-    }
-    this.uiSnapTable.poss = [];
-    for (let i = 0; i < items.length; i++) {
-      this.uiSnapTable.poss.push(items[i]);
-    }
+  onSnapTableSmallPlDailyClicked(event: any) {
+    this.isFilteringBasedonPlDaily = !this.isFilteringBasedonPlDaily;
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
+  }
+
+  onSnapTableOptionsClicked(event: any) {
+    this.isFilteringBasedonOptions = !this.isFilteringBasedonOptions;
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
   onStockChrtTicker(event: any) {
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('BrAccViewer.GetStockChrtData:' + "S/" + event );
-    console.log("The ticker selected on chart tooltip is :", event);
   }
 
   static processUiWithStockChrt(uiSnapTable: UiSnapTable) {
-    d3.selectAll('#my_datavi > *').remove();
+    d3.selectAll('#stockChrt > *').remove();
     var margin = {top: 10, right: 30, bottom: 30, left: 60 };
-    var width = 660 - margin.left - margin.right;
-    var height = 400 - margin.top - margin.bottom;
+    var width = 460 - margin.left - margin.right;
+    var height = 200 - margin.top - margin.bottom;
     var stckVals = uiSnapTable.stockChartVals;
     var stckChrtData = stckVals.map((r:{ date: Date; sdaClose: number; }) => 
             ({date: new Date(r.date), sdaClose: (100 * r.sdaClose)}));
@@ -777,12 +775,11 @@ export class BrAccViewerComponent implements OnInit {
     var stckChrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, width]);
     var stckChrtScaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([height, 0]);
 
-    var stckChrtSvg = d3.select('#my_datavi').append('svg')
+    var stckChrtSvg = d3.select('#stockChrt').append('svg')
                         .attr('width', width + margin.left + margin.right)
                         .attr('height', height + margin.top + margin.bottom)
                         .append('g')
                         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-    console.log("The length of :", stckChrtSvg.data.length); //debugging purpose
     stckChrtSvg.append('g')
               .attr('transform', 'translate(0,' + height + ')')
               .call(d3.axisBottom(stckChrtScaleX));
