@@ -148,9 +148,10 @@ MarketBar
                 <div >
                    <span>
                     <div class="chrtTimeFrameSelection">
-                        <select [(ngModel)] = "histPeriodSelectionSelected">
+                        <input id="histPeriod" type="text" list="selectedPeriod" [(ngModel)] = "histPeriodSelectionSelected" (change)="onLookbackSelectChange($event)" >
+                        <datalist id="selectedPeriod">
                             <option *ngFor="let item of histPeriodSelection" [value]="item">{{item}}</option>YTD
-                        </select>
+                        </datalist>
                         <div>StartDate: <input class = "histPeriodDateCl" type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr" (change)="onHistPeriodChangeClicked($event)"></div>
                         <div>EndDate: <input class = "histPeriodDateCl" type="date" id="EndDate" name="EndDate" min="01-01-1975" max="01-01-2040" [(ngModel)]="histPeriodEndETstr" (change)="onHistPeriodChangeClicked($event)"></div>
                         <div>BenchMark:
@@ -172,10 +173,9 @@ MarketBar
                             </span>
                         </div>
                     </div>
-                     <div id="my_dataviz">
-                     </div>
                    </span>
                 </div>
+                <div id="navChrt"></div>
             </div>
     </div>
 </span>
@@ -211,7 +211,7 @@ MarketBar
     </thead>
     <tbody class = "selectedBrcAccSnapShotTbl">
     <tr *ngFor="let item of uiSnapTable.poss">
-        <td class="tooltipStck" (mouseenter)="onStockChrtTicker(item.symbol)">
+        <td class="tooltipStck" (mouseenter)="onStockChrtTicker(item.symbol)" (mouseover)="onStockChrtShow(true)" (mouseleave)="onStockChrtShow(false)">
             <span class="tooltipSnap">
                 <span class="snapshot">Name:
                     {{item.name}} <br>
@@ -230,7 +230,6 @@ MarketBar
                     <a href="https://www.tipranks.com/stocks/{{item.symbol}}/forecast" target="_blank"><img alt='TipRanks' src='../assets/images/TR.webp' width='20' height='20'></a>,
                     <a href="https://stockcharts.com/h-sc/ui?s={{item.symbol}}" target="_blank"><img alt='stocksCharts' src='../assets/images/SC.webp' width='20' height='20'></a> <br>
                 </span>
-                <div style="border: solid 1px blue" id="stockChrt"></div>
             </span>
             <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">
                 {{item.symbol}}
@@ -260,6 +259,7 @@ MarketBar
 </table>
 </div>
 <hr>
+<div *ngIf="isShowStockChrt" id="stockChrt"></div>
 <!-- Addded class "selectedTempDebug" to limit the text output in the UI-->
 <div id="warning">{{uiSnapTable.clientMsg}}</div>
 <div class="selectedTempDebug">

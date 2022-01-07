@@ -177,7 +177,7 @@ namespace SqCoreWeb
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
             }
         }
-        // Under developement Daya
+
         private void BrAccViewerSendStockHist(string sqTicker)
         {
             Asset? asset = MemDb.gMemDb.AssetsCache.TryGetAsset(sqTicker);
@@ -195,11 +195,9 @@ namespace SqCoreWeb
 
             string yfTicker = stock.YfTicker;
             byte[]? encodedMsg = null;
-            // startDate endDate
-            DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
-            SqDateOnly lookbackStart = new SqDateOnly(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
+            DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;
+            SqDateOnly lookbackStart = new SqDateOnly(todayET.Year - 1, todayET.Month, todayET.Day);  // gets the 1 year data starting from yesterday to back 1 year
             SqDateOnly lookbackEnd = todayET.AddDays(-1);
-
             (SqDateOnly[] dates, float[] adjCloses) = MemDb.GetSelectedStockTickerHistData(lookbackStart, lookbackEnd, yfTicker);
 
             AssetHistValuesJs stockHistValues = new AssetHistValuesJs()
@@ -427,7 +425,6 @@ namespace SqCoreWeb
                       return false;
                     string selectedSqTicker = "S/" + msgObjStr.Substring(bnchmkStartIdx + 1, (periodStartIdx - bnchmkStartIdx - 1));
                     string periodSelected = msgObjStr.Substring(periodStartIdx + 1);
-                  // we need startDate, endDate, bnchmrkTicker
                     BrAccViewerSendNavHist(periodSelected, selectedSqTicker);
                     return true;
                 case "BrAccViewer.GetStockChrtData":

@@ -225,7 +225,7 @@ export class BrAccViewerComponent implements OnInit {
   sortColumn: string = 'plTod';
   isSortingDirectionAscending: boolean = true;
   histPeriodSelection = ['YTD', '1M', '1Y', '3Y', '5Y', 'Date'];
-  histPeriodSelectionSelected = 'YTD';
+  histPeriodSelectionSelected: string = 'YTD';
   bnchmkTickerSelection = ['SPY', 'QQQ', 'TLT', 'VXX', 'SVXY', 'UNG', 'USO'];
   bnchmkTickerSelectionSelected: string = 'SPY';
   histPeriodStartET: Date; // set in ctor. We need this in JS client to check that the received data is long enough or not (Expected Date)
@@ -236,6 +236,7 @@ export class BrAccViewerComponent implements OnInit {
   isFilteringBasedonMktVal: boolean = false;
   isFilteringBasedonPlDaily: boolean = true;
   isFilteringBasedonOptions: boolean = false;
+  isShowStockChrt: boolean = true;
   
   constructor() {
 
@@ -688,26 +689,31 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   onLookbackSelectChange(pEvent: any) {
-    const currDateET: Date = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
-    if (this.histPeriodSelectionSelected === 'YTD') {
+    const currDateET: Date = new Date(); // gets today's date
+    if (this.histPeriodSelectionSelected.toUpperCase() === 'YTD') {
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 1, 11, 31)).toString();
+    } else if (this.histPeriodSelectionSelected.endsWith('m')) {
+      this.histPeriodStartETstr = (new Date(currDateET.getFullYear(), currDateET.getMonth() - 1, currDateET.getDay())).toString();
+    } else if (this.histPeriodSelectionSelected.startsWith('3')) {
+      this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 3, currDateET.getMonth(), currDateET.getDay())).toString();
+    } else if (this.histPeriodSelectionSelected.startsWith('5')) {
+      this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 5, currDateET.getMonth(), currDateET.getDay())).toString();
     } else if (this.histPeriodSelectionSelected.endsWith('y')) {
-      const lbYears = parseInt(this.histPeriodStartETstr.substring(0, this.histPeriodStartETstr.length - 1), 10);
-      this.histPeriodStartETstr = (new Date(currDateET.setFullYear(currDateET.getFullYear() - lbYears))).toString();
+      this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 1, currDateET.getMonth(), currDateET.getDay())).toString();
     }
     this.histPeriodStartETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(this.histPeriodStartETstr));
 
     if (!(this.histPeriodSelectionSelected === 'Date')) {  // change back the end date to yesterday, except if it is in CustomDate mode
-      const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
+      const todayET = new Date();
       todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds )and milliseconds
       const yesterDayET = new Date(todayET);
       yesterDayET.setDate(yesterDayET.getDate() - 1);
       this.histPeriodEndETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(yesterDayET.getFullYear(), yesterDayET.getMonth(), yesterDayET.getDate()));  // set yesterdayET as default
-    this.histPeriodChange();
+    this.onHistPeriodChangeClicked(pEvent);
   }
 }
   onHistPeriodChangeClicked(pEvent: any) {
-    this.histPeriodChange()
+    this.histPeriodChange();
   }
 
   histPeriodChange() {
@@ -755,6 +761,10 @@ export class BrAccViewerComponent implements OnInit {
       this._parentWsConnection.send('BrAccViewer.GetStockChrtData:' + "S/" + event );
   }
 
+  onStockChrtShow(show: boolean) {
+    this.isShowStockChrt = show;
+  }
+
   static processUiWithStockChrt(uiSnapTable: UiSnapTable) {
     d3.selectAll('#stockChrt > *').remove();
     var margin = {top: 10, right: 30, bottom: 30, left: 60 };
@@ -798,7 +808,6 @@ export class BrAccViewerComponent implements OnInit {
                   .attr('class', 'line')
                   .datum(stckChrtData) // Binds data to the line
                   .attr('d', line as any)
-
      // append the x line
     focus.append('line')
         .attr('class', 'x')
