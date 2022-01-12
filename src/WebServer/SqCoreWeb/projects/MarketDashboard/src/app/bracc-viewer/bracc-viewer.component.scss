@@ -342,3 +342,14 @@ thead tr :hover {
   top: -50%;
   left: 10%;
 }
+
+#stckTooltip {
+  position: absolute;
+  top: 10rem;
+  left: 15rem;
+  background:rgb(210, 252, 176);
+  border: 0.1rem solid rgb(19, 7, 177);
+  color: rgb(6, 8, 153);
+  border-radius: 1rem;
+  font-weight: bold;
+}

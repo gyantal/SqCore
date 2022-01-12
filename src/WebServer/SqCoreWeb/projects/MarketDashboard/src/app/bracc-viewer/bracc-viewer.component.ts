@@ -120,7 +120,8 @@ class UiSnapTable {
   public totalMaxRiskedLeverage = 0;
   public plTodPrNav = NaN;
   public pctChgTodPrNav = NaN;
-  public numOfPoss = 0;
+  public numOfVisiblePoss = 0;
+  public numOfAllPoss = 0;
   public poss: UiAssetSnapPossPos[] = [];
   public clientMsg = '';
   public stockChartVals: UiChrtval[] = [];
@@ -236,7 +237,8 @@ export class BrAccViewerComponent implements OnInit {
   isFilteringBasedonMktVal: boolean = false;
   isFilteringBasedonPlDaily: boolean = true;
   isFilteringBasedonOptions: boolean = false;
-  isShowStockChrt: boolean = true;
+  snapTableSymbolInTooltip: string = '';
+  isShowStockTooltip: boolean = false;
   
   constructor() {
 
@@ -380,7 +382,12 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.plTodPrNav = Math.round(brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation);
     uiSnapTable.pctChgTodPrNav = (brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation) / brAccSnap.priorCloseNetLiquidation;
     uiSnapTable.clientMsg = brAccSnap.clientMsg.replace(';','\n');
+    uiSnapTable.numOfAllPoss = brAccSnap.poss.length;
     uiSnapTable.poss.length = 0;
+    uiSnapTable.sumPlTodVal = 0;
+    uiSnapTable.longStockValue = 0;
+    uiSnapTable.shortStockValue = 0;
+    uiSnapTable.totalMaxRiskedN = 0;
     var smallMktValThreshold = uiSnapTable.priorCloseNetLiquidation * 0.0005; // smallMktVal based on 400K NAV
 
     for (const possItem of brAccSnap.poss) {
@@ -415,32 +422,27 @@ export class BrAccViewerComponent implements OnInit {
       uiPosItem.pl = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost));
       uiPosItem.betaDltAdj = Math.round(uiPosItem.gBeta * uiPosItem.mktVal);
 
+      uiSnapTable.sumPlTodVal += uiPosItem.plTod;
+      if (uiPosItem.mktVal > 0) { //Long and Short stock values
+        uiSnapTable.longStockValue += uiPosItem.mktVal;
+      } else if (uiPosItem.mktVal < 0) {
+        uiSnapTable.shortStockValue += uiPosItem.mktVal;
+      }
+      uiSnapTable.totalMaxRiskedN += Math.abs(uiPosItem.mktVal);
+
       let isShowPos = true;
-      if (isFilteringBasedonMktVal && uiPosItem.mktVal < smallMktValThreshold)
+      if (isFilteringBasedonMktVal && Math.abs(uiPosItem.mktVal) < smallMktValThreshold)
         isShowPos = false;
-      if (isFilteringBasedonPlDaily && uiPosItem.plTod < 400)
+      if (isFilteringBasedonPlDaily && Math.abs(uiPosItem.plTod) < 400)
         isShowPos = false;
       if (isFilteringBasedonOptions && possItem.sqTicker.startsWith('O'))
         isShowPos = false;
       if (isShowPos)
-        uiSnapTable.poss.push(uiPosItem);
+      uiSnapTable.poss.push(uiPosItem);
     }
-    uiSnapTable.sumPlTodVal = 0;
-    uiSnapTable.longStockValue = 0;
-    uiSnapTable.shortStockValue = 0;
-    uiSnapTable.totalMaxRiskedN = 0;
-    for (const item of uiSnapTable.poss) {
-      uiSnapTable.sumPlTodVal += item.plTod;
-      if (item.mktVal > 0) { //Long and Short stock values
-        uiSnapTable.longStockValue += item.mktVal;
-      } else if (item.mktVal < 0) {
-        uiSnapTable.shortStockValue += item.mktVal;
-      }
-      uiSnapTable.totalMaxRiskedN += Math.abs(item.mktVal);
-    } 
     uiSnapTable.sumPlTodPct = uiSnapTable.sumPlTodVal / uiSnapTable.priorCloseNetLiquidation; // profit & Loss total percent change
     uiSnapTable.totalMaxRiskedLeverage = (uiSnapTable.totalMaxRiskedN / uiSnapTable.netLiquidation);
-    uiSnapTable.numOfPoss = uiSnapTable.poss.length;
+    uiSnapTable.numOfVisiblePoss = uiSnapTable.poss.length;
 
     uiSnapTable.poss = uiSnapTable.poss.sort((n1: UiAssetSnapPossPos, n2: UiAssetSnapPossPos) => {
       if (isSortingDirectionAscending) {
@@ -710,8 +712,8 @@ export class BrAccViewerComponent implements OnInit {
       yesterDayET.setDate(yesterDayET.getDate() - 1);
       this.histPeriodEndETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(yesterDayET.getFullYear(), yesterDayET.getMonth(), yesterDayET.getDate()));  // set yesterdayET as default
     this.onHistPeriodChangeClicked(pEvent);
+    }
   }
-}
   onHistPeriodChangeClicked(pEvent: any) {
     this.histPeriodChange();
   }
@@ -757,12 +759,14 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   onStockChrtTicker(event: any) {
+    this.snapTableSymbolInTooltip = event;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('BrAccViewer.GetStockChrtData:' + "S/" + event );
   }
 
-  onStockChrtShow(show: boolean) {
-    this.isShowStockChrt = show;
+  onStockChrtShow(show: boolean, event: any) {
+    this.isShowStockTooltip = show;
+    this.uiSnapTable.poss;
   }
 
   static processUiWithStockChrt(uiSnapTable: UiSnapTable) {
