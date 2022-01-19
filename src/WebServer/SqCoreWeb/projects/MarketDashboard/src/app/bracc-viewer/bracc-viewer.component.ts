@@ -234,10 +234,11 @@ export class BrAccViewerComponent implements OnInit {
   histPeriodEndET: Date;
   histPeriodEndETstr: string;
   chrtTickerSelected: string = 'SPY';
-  isFilteringBasedonMktVal: boolean = false;
-  isFilteringBasedonPlDaily: boolean = true;
+  isFilteringBasedonMktVal: boolean = true;
+  isFilteringBasedonPlDaily: boolean = false;
   isFilteringBasedonOptions: boolean = false;
-  snapTableSymbolInTooltip: string = '';
+  stockTooltipSymbol: string = '';
+  stockTooltipName: string = '';
   isShowStockTooltip: boolean = false;
   
   constructor() {
@@ -388,7 +389,7 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.longStockValue = 0;
     uiSnapTable.shortStockValue = 0;
     uiSnapTable.totalMaxRiskedN = 0;
-    var smallMktValThreshold = uiSnapTable.priorCloseNetLiquidation * 0.0005; // smallMktVal based on 400K NAV
+    var smallMktValThreshold = uiSnapTable.priorCloseNetLiquidation * 0.005; // smallMktVal based on 500K NAV
 
     for (const possItem of brAccSnap.poss) {
       let uiPosItem = new UiAssetSnapPossPos();
@@ -433,7 +434,7 @@ export class BrAccViewerComponent implements OnInit {
       let isShowPos = true;
       if (isFilteringBasedonMktVal && Math.abs(uiPosItem.mktVal) < smallMktValThreshold)
         isShowPos = false;
-      if (isFilteringBasedonPlDaily && Math.abs(uiPosItem.plTod) < 400)
+      if (isFilteringBasedonPlDaily && Math.abs(uiPosItem.plTod) < 500) // can be made as % of NAV, but $500 nominal value is fine now
         isShowPos = false;
       if (isFilteringBasedonOptions && possItem.sqTicker.startsWith('O'))
         isShowPos = false;
@@ -461,6 +462,8 @@ export class BrAccViewerComponent implements OnInit {
         uiSnapTable.netLiquidation = item.last;
         uiSnapTable.navLastUpdateTimeLoc = new Date(item.lastUtc);
         uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - (uiSnapTable.navLastUpdateTimeLoc).getTime()) == null ? SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(uiSnapTable.snapLastUpateTimeLoc.getTime()) : SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - (uiSnapTable.navLastUpdateTimeLoc).getTime());
+        uiSnapTable.plTodPrNav = Math.round(uiSnapTable.netLiquidation - uiSnapTable.priorCloseNetLiquidation);
+        uiSnapTable.pctChgTodPrNav = (uiSnapTable.netLiquidation - uiSnapTable.priorCloseNetLiquidation) / uiSnapTable.priorCloseNetLiquidation;
         document.title = "MD:" + "$" + (uiSnapTable.plTodPrNav + "(" + ((uiSnapTable.pctChgTodPrNav) * 100).toFixed(2) + "%)").toString();
       }
     }
@@ -759,12 +762,12 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   onStockChrtTicker(event: any) {
-    this.snapTableSymbolInTooltip = event;
+    this.stockTooltipSymbol = event;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('BrAccViewer.GetStockChrtData:' + "S/" + event );
   }
 
-  onStockChrtShow(show: boolean, event: any) {
+  onMouseover(show: boolean, event: any) {
     this.isShowStockTooltip = show;
     this.uiSnapTable.poss;
   }

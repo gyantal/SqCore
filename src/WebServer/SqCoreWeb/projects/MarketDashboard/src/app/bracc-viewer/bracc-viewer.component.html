@@ -21,33 +21,6 @@ MarketBar
     <span>
     <div class="AccSumm">
         <div class="plSum">Account Summary</div>
-        <span class="tooltipGeneral plSum">P&L Today
-            <span class="notImpInfo">(Positions)</span> : 
-            <span [ngClass]="{
-                'mktBarPositivePerf' : uiSnapTable.sumPlTodVal > 0,
-                'mktbarNegativePerf' : uiSnapTable.sumPlTodVal < 0
-                }">{{uiSnapTable.sumPlTodVal | currency:'USD':'symbol':'1.0' }}
-            </span>
-            <span class="notImpInfo" [ngClass]="{
-                'mktBarPositivePerf' : uiSnapTable.sumPlTodPct > 0,
-                'mktbarNegativePerf' : uiSnapTable.sumPlTodPct < 0
-                }">({{uiSnapTable.sumPlTodPct | percent:'1.2'}})
-            </span> 
-            <div class="tooltipSnap">
-                <div class="snapshot">
-                    Profit is calculated as <br>a sum of the table cells 
-                </div>
-            </div>
-        </span>
-        <span class="tooltipGeneral plSum">
-            <div class="tooltipSnap">
-                <div class="snapshot">
-                    Force reload snapshot table<br> (Realtime: NAV, #Pos, EstPrice)
-                </div>
-            </div>
-            <span class="refresh"><img class="refresh" src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked($event)"></span>
-        </span>
-        <span class="notImpInfo">{{uiSnapTable.snapLastUpateTimeLoc | date:'H:mm'}} ({{uiSnapTable.snapLastUpdateTimeAgoStr}})</span>
         <div>
             <span class="plSum tooltipGeneral">NAV :
                 <span id="liqVal">{{uiSnapTable.netLiquidation | currency:'USD':'symbol':'1.0'}}</span>
@@ -77,6 +50,33 @@ MarketBar
                 </div>
             </div> 
         </div>
+        <span class="tooltipGeneral plSum">P&L Today
+            <span class="notImpInfo">(Positions)</span> : 
+            <span [ngClass]="{
+                'mktBarPositivePerf' : uiSnapTable.sumPlTodVal > 0,
+                'mktbarNegativePerf' : uiSnapTable.sumPlTodVal < 0
+                }">{{uiSnapTable.sumPlTodVal | currency:'USD':'symbol':'1.0' }}
+            </span>
+            <span class="notImpInfo" [ngClass]="{
+                'mktBarPositivePerf' : uiSnapTable.sumPlTodPct > 0,
+                'mktbarNegativePerf' : uiSnapTable.sumPlTodPct < 0
+                }">({{uiSnapTable.sumPlTodPct | percent:'1.2'}})
+            </span> 
+            <div class="tooltipSnap">
+                <div class="snapshot">
+                    Profit is calculated as <br>a sum of the table cells 
+                </div>
+            </div>
+        </span>
+        <span class="tooltipGeneral plSum">
+            <div class="tooltipSnap">
+                <div class="snapshot">
+                    Force reload snapshot table<br> (Realtime: NAV, #Pos, EstPrice)
+                </div>
+            </div>
+            <span class="refresh"><img class="refresh" src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked($event)"></span>
+        </span>
+        <span class="notImpInfo">{{uiSnapTable.snapLastUpateTimeLoc | date:'H:mm'}} ({{uiSnapTable.snapLastUpdateTimeAgoStr}})</span>
         <div>
             <span class="tab">
                 <button [ngStyle]="{'background-color':tabPageVisibleIdx == 1 ? 'aqua':''}"(click)="onTabHeaderClicked($event,1)"> MoreDetails </button>
@@ -182,8 +182,8 @@ MarketBar
 </span>
 </div>
 <span>
+    <input type="checkbox" [checked]="isFilteringBasedonMktVal" (click)="onSnapTableSmallMktValClicked($event)">HideSmallMktVal
     <input type="checkbox" [checked]="isFilteringBasedonPlDaily" (click)="onSnapTableSmallPlDailyClicked($event)">HideSmallPLt
-    <input type="checkbox" [checked]="isFilteringBasedonMktVal" (click)="onSnapTableSmallMktValClicked($event)">HideSmallMktVal    
     <input type="checkbox" [checked]="isFilteringBasedonOptions" (click)="onSnapTableOptionsClicked($event)">HideOptions
 </span>
 <hr>
@@ -212,7 +212,7 @@ MarketBar
     </thead>
     <tbody class = "selectedBrcAccSnapShotTbl">
     <tr *ngFor="let item of uiSnapTable.poss">
-        <td class="tooltipStck" (mouseenter)="onStockChrtTicker(item.symbol)" (mouseover)="onStockChrtShow(true, $event)" (mouseleave)="onStockChrtShow(false, $event)">
+        <td class="tooltipStck" (mouseenter)="onStockChrtTicker(item.symbol)" (mouseover)="onMouseover(true, $event)" (mouseleave)="onMouseover(false, $event)">
             <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">
                 {{item.symbol}}
             </a>
@@ -241,9 +241,9 @@ MarketBar
 </table>
 </div>
 <hr>
-<div id="stckTooltip" *ngFor="let item of uiSnapTable.poss">
-    <div *ngIf="isShowStockTooltip">
-        <span *ngIf="item.symbol === snapTableSymbolInTooltip">Name:
+<div id="stckTooltip" *ngIf="isShowStockTooltip">
+    <div class="tooltipSnap" *ngFor="let item of uiSnapTable.poss">
+        <span  *ngIf="item.symbol === stockTooltipSymbol">Name:
             {{item.name}} <br>
             <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">
                 <svg width="28" height="22" viewBox="0 0 28 22" xmlns="http://www.w3.org/2000/svg" >
