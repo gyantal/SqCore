@@ -373,7 +373,20 @@ namespace FinTechCommon
             // var missingYfSplitDb = new SplitTick[1] { new SplitTick() { DateTime = new DateTime(2020, 06, 08), BeforeSplit = 8, AfterSplit = 1 }};
             potentialMissingYfSplits!.TryGetValue(stock.AssetId, out List<Split>? missingYfSplitDb);
 
-            // if any missingYfSplitDb record is not found in splitHistoryYF, we assume YF is wrong (and our DB is right (probably custom made)), so we do this extra split-adjustment assuming it is not in the YF quote history
+            // if any missingYfSplitDb record is not found in splitHistoryYF, we assume YF is wrong (and our DB is right (probably custom made)), 
+            // so we do this extra split-adjustment assuming it is not in the YF quote history
+            // This can fixes YF data errors. For example ProShares UltraPro QQQ (TQQQ), https://finance.yahoo.com/quote/TQQQ/history?p=TQQQ on 2022-01-13 (whole day from 0:0 to 24:0 it was)
+            // Date	Open	High	Low	Close*	Adj Close**
+            // Jan 13, 2022	77.13	77.55	70.02	70.80	70.80
+            // Jan 12, 2022	153.97	155.93	149.88	152.68	152.68  // obviously these required the Multiplier: 0.5, but YF didn't have the Split in their Database. We have it from Nasdaq however.
+            // Jan 11, 2022	143.43	151.03	141.04	150.96	150.96
+            // This automatic Nasdaq Split data fixes the YF missing split problem for that given day. Good.
+            // But note that stock has a Stock.PriorClose value directly in the Stock object.
+            // And clients (like MarketDashboard.BrokerAccountViewer uses Stock.PriorClose, instead of the historical closeprice of yesterday).
+            // That Stock.PriorClose comes from YF realtime API. That was fixed at 9:30 ET, at market open. So, the Stock.PriorClose was properly split-adjusted at 14:30
+            // And this historical Close values was also properly split-adjusted (because we got the missing split from Nasdaq)
+            // So, in SqCore: TQQQ historical prices was good immediately at 0:00 in the morning. And Stock.PriorClose was good at 9:30ET (when YF fixed the YF real-time API)
+            // This is good. We don't need more development here. What is important that after market open, it should be OK. And it is OK. Both historical and Stock.PriorClose. After 9:30 ET.
             for (int i = 0; missingYfSplitDb != null && i < missingYfSplitDb.Count; i++)
             {
                 var missingSplitDb = missingYfSplitDb[i];

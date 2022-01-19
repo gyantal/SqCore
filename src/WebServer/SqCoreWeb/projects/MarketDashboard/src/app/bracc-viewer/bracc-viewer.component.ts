@@ -398,30 +398,27 @@ export class BrAccViewerComponent implements OnInit {
       uiPosItem.symbol = possItem.symbol;
       uiPosItem.symbolEx = possItem.symbolEx;
       uiPosItem.name = possItem.name;
+      uiPosItem.accIdStr = possItem.accId;
       // BrAccViewerComponent.betaArr 
-      uiPosItem.gBeta = (uiPosItem.symbol in BrAccViewerComponent.betaArr ) ? BrAccViewerComponent.betaArr [uiPosItem.symbol] : 1.0;
       uiPosItem.pos = possItem.pos;
       uiPosItem.avgCost = possItem.avgCost;
       uiPosItem.priorClose = possItem.priorClose;
       uiPosItem.estPrice = possItem.estPrice;
-      uiPosItem.estUndPrice = possItem.estUndPrice;
-      uiPosItem.ibCompDelta = possItem.ibCompDelta;
-      if (possItem.sqTicker.startsWith('O') && !isNaN(possItem.ibCompDelta) && possItem.ibCompDelta != 0.0) {
-        var optCallPutMulN = 1;
-        if (possItem.name.includes('Call')) {
-          var optCallPutMulN = -1;
-          uiPosItem.delivValue = Math.round(possItem.pos * optCallPutMulN * 100 * Number(possItem.ibCompDelta));
-          uiPosItem.dltAdjDelivVal = Math.round(uiPosItem.ibCompDelta * uiPosItem.delivValue);
-        }
-        uiPosItem.delivValue = Math.round(possItem.pos * optCallPutMulN * 100 * Number(possItem.ibCompDelta));
-        uiPosItem.dltAdjDelivVal = Math.round(uiPosItem.ibCompDelta * uiPosItem.delivValue);
-      }
-      uiPosItem.accIdStr = possItem.accId;
-      uiPosItem.mktVal = Math.round(possItem.pos * possItem.estPrice);
       uiPosItem.pctChgTod = (possItem.estPrice - possItem.priorClose) / possItem.priorClose;
       uiPosItem.plTod = Math.round(possItem.pos * (possItem.estPrice - possItem.priorClose));
       uiPosItem.pl = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost));
-      uiPosItem.betaDltAdj = Math.round(uiPosItem.gBeta * uiPosItem.mktVal);
+      uiPosItem.mktVal = Math.round(possItem.pos * possItem.estPrice);
+      uiPosItem.gBeta = (uiPosItem.symbol in BrAccViewerComponent.betaArr ) ? BrAccViewerComponent.betaArr [uiPosItem.symbol] : 1.0;
+      if (possItem.sqTicker.startsWith('O') && !isNaN(possItem.ibCompDelta) && possItem.ibCompDelta != 0.0) {
+        uiPosItem.estUndPrice = possItem.estUndPrice;
+        var optCallPutMulN = possItem.name.includes('Call') ? 1 : -1;  // Call option  has positive multiplier
+        uiPosItem.delivValue = Math.round(possItem.pos * 100 * possItem.estUndPrice * optCallPutMulN);  // Assuming option multiplier is 100
+        uiPosItem.ibCompDelta = possItem.ibCompDelta;
+        uiPosItem.dltAdjDelivVal = Math.round(uiPosItem.ibCompDelta * uiPosItem.delivValue);
+        uiPosItem.betaDltAdj = Math.round(uiPosItem.gBeta * uiPosItem.dltAdjDelivVal);
+      }
+      else
+        uiPosItem.betaDltAdj = Math.round(uiPosItem.gBeta * uiPosItem.mktVal);
 
       uiSnapTable.sumPlTodVal += uiPosItem.plTod;
       if (uiPosItem.mktVal > 0) { //Long and Short stock values
