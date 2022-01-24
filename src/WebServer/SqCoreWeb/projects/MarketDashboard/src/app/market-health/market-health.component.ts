@@ -484,7 +484,6 @@ export class MarketHealthComponent implements OnInit {
     }
   }
 
-  //Under development Daya
   updateUiSelectableNavs(pSelectableNavAssets: any) {  // same in MktHlth and BrAccViewer
     if(pSelectableNavAssets == null)
       return;

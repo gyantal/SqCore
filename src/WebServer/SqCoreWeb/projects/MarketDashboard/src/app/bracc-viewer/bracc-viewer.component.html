@@ -212,7 +212,7 @@ MarketBar
     </thead>
     <tbody class = "selectedBrcAccSnapShotTbl">
     <tr *ngFor="let item of uiSnapTable.poss">
-        <td class="tooltipStck" (mouseenter)="onStockChrtTicker(item.symbol)" (mouseover)="onMouseover(true, $event)" (mouseleave)="onMouseover(false, $event)">
+        <td class="tooltipStck" (mouseenter)="onMouseEnterSnapTableSymbol(item)" (mousemove)="onMouseMoveSnapTableSymbol($event)" (mouseover)="onMouseOverOrLeaveStockSymbol(true)">
             <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">
                 {{item.symbol}}
             </a>
@@ -241,27 +241,23 @@ MarketBar
 </table>
 </div>
 <hr>
-<div id="stckTooltip" *ngIf="isShowStockTooltip">
-    <div class="tooltipSnap" *ngFor="let item of uiSnapTable.poss">
-        <span  *ngIf="item.symbol === stockTooltipSymbol">Name:
-            {{item.name}} <br>
-            <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">
-                <svg width="28" height="22" viewBox="0 0 28 22" xmlns="http://www.w3.org/2000/svg" >
-                    <path d="M 12 20 H 7 V 11 H 0 V 4 h 12 v 16 z 
-                            M 24 20 h-8 l 7.5-18 h 8 L 22 20 z" fill="currentColor">
-                    </path>
-                    <circle cx="16.5" cy="7" r="4" fill="currentColor"/>
-                </svg>
-            </a>, 
-            <a href="https://finance.yahoo.com/quote/{{item.symbol}}" target="_blank"><img alt='YF' src='../assets/images/YF.webp' width='20' height='20'></a>,
-            <a href="https://www.zacks.com/stock/quote/{{item.symbol}}" target="_blank"><img alt='Zacks' src='../assets/images/Zacks.webp' width='20' height='20'></a>,
-            <a href="https://www.earningswhispers.com/tradeview/{{item.symbol}}" target="_blank"><img alt='earningswhispers-BeforeEarnings' src='../assets/images/EW-BE.webp' width='20' height='20'></a>,
-            <a href="https://www.earningswhispers.com/epsdetails/{{item.symbol}}" target="_blank"><img alt='earningswhispers-AfterEarnings' src='../assets/images/EW-AE.webp' width='20' height='20'></a>,
-            <a href="https://www.tipranks.com/stocks/{{item.symbol}}/forecast" target="_blank"><img alt='TipRanks' src='../assets/images/TR.webp' width='20' height='20'></a>,
-            <a href="https://stockcharts.com/h-sc/ui?s={{item.symbol}}" target="_blank"><img alt='stocksCharts' src='../assets/images/SC.webp' width='20' height='20'></a> <br>
-            <span id="stockChrt"></span>
-        </span>
-    </div>
+<div id="stckTooltip" class="tooltipSnap" (mouseenter)="onMouseEnterStockTooltip(true)" (mouseleave)="onMouseLeaveStockTooltip(false)" *ngIf="isShowStockTooltip">
+    <span id="stckTooltipName">Name: {{stockTooltipName}}<br></span> 
+    <a href="https://uk.tradingview.com/chart/?symbol={{stockTooltipSymbol}}" target="_blank">
+        <svg width="28" height="22" viewBox="0 0 28 22" xmlns="http://www.w3.org/2000/svg" >
+            <path d="M 12 20 H 7 V 11 H 0 V 4 h 12 v 16 z 
+                        M 24 20 h-8 l 7.5-18 h 8 L 22 20 z" fill="currentColor">
+            </path>
+            <circle cx="16.5" cy="7" r="4" fill="currentColor"/>
+        </svg>
+    </a>,
+    <a href="https://finance.yahoo.com/quote/{{stockTooltipSymbol}}" target="_blank"><img alt='YF' src='../assets/images/YF.webp' width='20' height='20'></a>,
+    <a href="https://www.zacks.com/stock/quote/{{stockTooltipSymbol}}" target="_blank"><img alt='Zacks' src='../assets/images/Zacks.webp' width='20' height='20'></a>,
+    <a href="https://www.earningswhispers.com/tradeview/{{stockTooltipSymbol}}" target="_blank"><img alt='earningswhispers-BeforeEarnings' src='../assets/images/EW-BE.webp' width='20' height='20'></a>,
+    <a href="https://www.earningswhispers.com/epsdetails/{{stockTooltipSymbol}}" target="_blank"><img alt='earningswhispers-AfterEarnings' src='../assets/images/EW-AE.webp' width='20' height='20'></a>,
+    <a href="https://www.tipranks.com/stocks/{{stockTooltipSymbol}}/forecast" target="_blank"><img alt='TipRanks' src='../assets/images/TR.webp' width='20' height='20'></a>,
+    <a href="https://stockcharts.com/h-sc/ui?s={{stockTooltipSymbol}}" target="_blank"><img alt='stocksCharts' src='../assets/images/SC.webp' width='20' height='20'></a> <br>
+    <span id="stockChrt"></span>
 </div>
 <!-- Addded class "selectedTempDebug" to limit the text output in the UI-->
 <div id="warning">{{uiSnapTable.clientMsg}}</div>

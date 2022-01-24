@@ -344,13 +344,26 @@ thead tr :hover {
 }
 
 #stckTooltip {
-  position: absolute;
+  position: fixed;
   top: 10rem;
   left: 15rem;
   background:rgb(210, 252, 176);
   border: 0.1rem solid rgb(19, 7, 177);
   color: rgb(6, 8, 153);
   border-radius: 1rem;
-  font-weight: bold;
   cursor: pointer;
+  width: 45rem;
+  height: 25rem;
+}
+
+#stckTooltip:hover .tooltipSnap{
+  display: inline-block;
+  top: -15%;
+  left: 150%;
+  transform: translateX(-15%);
+  margin-top: -10px;
+}
+
+#stckTooltipName {
+  font-weight: bold;
 }

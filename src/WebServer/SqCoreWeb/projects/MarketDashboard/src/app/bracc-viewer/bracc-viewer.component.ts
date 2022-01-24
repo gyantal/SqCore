@@ -240,7 +240,9 @@ export class BrAccViewerComponent implements OnInit {
   stockTooltipSymbol: string = '';
   stockTooltipName: string = '';
   isShowStockTooltip: boolean = false;
-  
+  isMouseInSnapSymbolCell: boolean = false;
+  isMouseInTooltip: boolean = true;
+
   constructor() {
 
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
@@ -389,7 +391,7 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.longStockValue = 0;
     uiSnapTable.shortStockValue = 0;
     uiSnapTable.totalMaxRiskedN = 0;
-    var smallMktValThreshold = uiSnapTable.priorCloseNetLiquidation * 0.005; // smallMktVal based on 500K NAV
+    var smallMktValThreshold = uiSnapTable.priorCloseNetLiquidation * 0.01; //1% of NAV. For a 400K NAV, it is 4K. For a 8M NAV it is 80K.
 
     for (const possItem of brAccSnap.poss) {
       let uiPosItem = new UiAssetSnapPossPos();
@@ -416,8 +418,7 @@ export class BrAccViewerComponent implements OnInit {
         uiPosItem.ibCompDelta = possItem.ibCompDelta;
         uiPosItem.dltAdjDelivVal = Math.round(uiPosItem.ibCompDelta * uiPosItem.delivValue);
         uiPosItem.betaDltAdj = Math.round(uiPosItem.gBeta * uiPosItem.dltAdjDelivVal);
-      }
-      else
+      } else
         uiPosItem.betaDltAdj = Math.round(uiPosItem.gBeta * uiPosItem.mktVal);
 
       uiSnapTable.sumPlTodVal += uiPosItem.plTod;
@@ -501,9 +502,9 @@ export class BrAccViewerComponent implements OnInit {
       uiHistItem.sqTicker = hisStatItem.histValues.sqTicker;
       for (var i = 0; i < hisStatItem.histValues.histDates.length; i++ ) {
         let brAccItem = new UiChrtval();
-        var dateStr : string = hisStatItem.histValues.histDates[i];
+        var dateStr: string = hisStatItem.histValues.histDates[i];
         brAccItem.date = new Date (dateStr.substring(0,4) + '-' + dateStr.substring(4,6) + '-' + dateStr.substring(6,8));
-        brAccItem.sdaClose = (hisStatItem.histValues.histSdaCloses[i])/1000; // divided by thousand to show data in K (Ex: 20,000 = 20K)
+        brAccItem.sdaClose = (hisStatItem.histValues.histSdaCloses[i]) / 1000; // divided by thousand to show data in K (Ex: 20,000 = 20K)
         uiHistItem.navChrtVals.push(brAccItem);
       }
       uiHistData.push(uiHistItem);
@@ -677,7 +678,7 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.stockChartVals.length = 0;
     for (var i = 0; i < stockObj.histDates.length; i++) {
       let stockVal = new UiChrtval();
-      var dateStr : string = stockObj.histDates[i];
+      var dateStr: string = stockObj.histDates[i];
       stockVal.date = new Date (dateStr.substring(0,4) + '-' + dateStr.substring(4,6) + '-' + dateStr.substring(6,8));
       stockVal.sdaClose = stockObj.histSdaCloses[i];
       uiSnapTable.stockChartVals.push(stockVal);
@@ -758,15 +759,36 @@ export class BrAccViewerComponent implements OnInit {
     BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
-  onStockChrtTicker(event: any) {
-    this.stockTooltipSymbol = event;
+  onMouseEnterSnapTableSymbol(snapPos: UiAssetSnapPossPos) {
+    this.stockTooltipSymbol = snapPos.symbol;
+    this.stockTooltipName = snapPos.name;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('BrAccViewer.GetStockChrtData:' + "S/" + event );
+      this._parentWsConnection.send('BrAccViewer.GetStockChrtData:' + "S/" + snapPos.symbol);
   }
 
-  onMouseover(show: boolean, event: any) {
-    this.isShowStockTooltip = show;
+  onMouseEnterStockTooltip(event: boolean) {
+    this.isMouseInTooltip = event;
+    this.isShowStockTooltip = this.isMouseInSnapSymbolCell || this.isMouseInTooltip;
+  }
+
+  onMouseOverOrLeaveStockSymbol(event: boolean) {
+    this.isMouseInSnapSymbolCell = event;
+    this.isShowStockTooltip = this.isMouseInSnapSymbolCell || this.isMouseInTooltip;
     this.uiSnapTable.poss;
+  }
+
+  onMouseLeaveStockTooltip(event: boolean) {
+    this.isMouseInSnapSymbolCell = event;
+    this.isMouseInTooltip = event;
+    this.isShowStockTooltip = this.isMouseInSnapSymbolCell && this.isMouseInTooltip
+  }
+
+  onMouseMoveSnapTableSymbol(event: any) {
+    var stockTooltipCoords = (document.getElementById("stckTooltip") as HTMLSelectElement) ;
+    const scrollLeft = (window.pageXOffset !== undefined) ? window.pageXOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollLeft;
+    const scrollTop = (window.pageYOffset !== undefined) ? window.pageYOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollTop;
+    stockTooltipCoords.style.left = event.pageX - scrollLeft + 'px';
+    stockTooltipCoords.style.top = event.pageY - scrollTop + 'px';
   }
 
   static processUiWithStockChrt(uiSnapTable: UiSnapTable) {
@@ -776,7 +798,7 @@ export class BrAccViewerComponent implements OnInit {
     var height = 200 - margin.top - margin.bottom;
     var stckVals = uiSnapTable.stockChartVals;
     var stckChrtData = stckVals.map((r:{ date: Date; sdaClose: number; }) => 
-            ({date: new Date(r.date), sdaClose: (100 * r.sdaClose)}));
+            ({date: new Date(r.date), sdaClose: (r.sdaClose)}));
 
     const formatMonth = d3.timeFormat('%Y%m%d');
     var  bisectDate = d3.bisector((r: any) => r.date).left;
