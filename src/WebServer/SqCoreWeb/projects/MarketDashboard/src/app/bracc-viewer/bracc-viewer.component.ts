@@ -241,7 +241,9 @@ export class BrAccViewerComponent implements OnInit {
   stockTooltipName: string = '';
   isShowStockTooltip: boolean = false;
   isMouseInSnapSymbolCell: boolean = false;
-  isMouseInTooltip: boolean = true;
+  isMouseInTooltip: boolean = false;
+  mouseMoveInStockTooltipLastTime: Date = new Date();
+  mouseMoveInSymbolCellLastTime: Date = new Date();
 
   constructor() {
 
@@ -261,7 +263,9 @@ export class BrAccViewerComponent implements OnInit {
     setInterval(() => { this.uiMktBar.lstValLastRefreshTimeStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiMktBar.lstValLastRefreshTimeLoc.getTime());
                         this.uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.navLastUpdateTimeLoc.getTime());
                         this.uiSnapTable.snapLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.snapLastUpateTimeLoc.getTime());
-                      }, 1000);
+                        if ((this.isMouseInSnapSymbolCell == false || this.isMouseInTooltip == false) && ((Date.now() - this.mouseMoveInStockTooltipLastTime.getTime()) || (Date.now() -  this.mouseMoveInSymbolCellLastTime.getTime())) > 10)
+                          this.isShowStockTooltip = false;
+                      }, 10 * 1000); // refresh at every 10 secs
     setInterval(() => {
       if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
         this._parentWsConnection.send('BrAccViewer.RefreshMktBrPriorCloses:' + this.uiMktBar);
@@ -462,7 +466,7 @@ export class BrAccViewerComponent implements OnInit {
         uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - (uiSnapTable.navLastUpdateTimeLoc).getTime()) == null ? SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(uiSnapTable.snapLastUpateTimeLoc.getTime()) : SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - (uiSnapTable.navLastUpdateTimeLoc).getTime());
         uiSnapTable.plTodPrNav = Math.round(uiSnapTable.netLiquidation - uiSnapTable.priorCloseNetLiquidation);
         uiSnapTable.pctChgTodPrNav = (uiSnapTable.netLiquidation - uiSnapTable.priorCloseNetLiquidation) / uiSnapTable.priorCloseNetLiquidation;
-        document.title = "MD:" + "$" + (uiSnapTable.plTodPrNav + "(" + ((uiSnapTable.pctChgTodPrNav) * 100).toFixed(2) + "%)").toString();
+        document.title = "MD:" + "$" + ((uiSnapTable.plTodPrNav / 1000).toFixed(1) + "K" + "(" + ((uiSnapTable.pctChgTodPrNav) * 100).toFixed(2) + "%)").toString();
       }
     }
   }
@@ -744,63 +748,71 @@ export class BrAccViewerComponent implements OnInit {
       this._parentWsConnection.send('BrAccViewer.RefreshSnapshot:' + this.navSelectionSelected);
   }
 
-  onSnapTableSmallMktValClicked(event: any) {
+  onSnapTableSmallMktValClicked() {
     this.isFilteringBasedonMktVal = !this.isFilteringBasedonMktVal;
     BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
-  onSnapTableSmallPlDailyClicked(event: any) {
+  onSnapTableSmallPlDailyClicked() {
     this.isFilteringBasedonPlDaily = !this.isFilteringBasedonPlDaily;
     BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
-  onSnapTableOptionsClicked(event: any) {
+  onSnapTableOptionsClicked() {
     this.isFilteringBasedonOptions = !this.isFilteringBasedonOptions;
     BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
-  onMouseEnterSnapTableSymbol(snapPos: UiAssetSnapPossPos) {
+  onMouseEnterSnapTableSymbol(event: any, snapPos: UiAssetSnapPossPos) {
     this.stockTooltipSymbol = snapPos.symbol;
     this.stockTooltipName = snapPos.name;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('BrAccViewer.GetStockChrtData:' + "S/" + snapPos.symbol);
-  }
 
-  onMouseEnterStockTooltip(event: boolean) {
-    this.isMouseInTooltip = event;
-    this.isShowStockTooltip = this.isMouseInSnapSymbolCell || this.isMouseInTooltip;
-  }
-
-  onMouseOverOrLeaveStockSymbol(event: boolean) {
-    this.isMouseInSnapSymbolCell = event;
-    this.isShowStockTooltip = this.isMouseInSnapSymbolCell || this.isMouseInTooltip;
-    this.uiSnapTable.poss;
-  }
-
-  onMouseLeaveStockTooltip(event: boolean) {
-    this.isMouseInSnapSymbolCell = event;
-    this.isMouseInTooltip = event;
-    this.isShowStockTooltip = this.isMouseInSnapSymbolCell && this.isMouseInTooltip
-  }
-
-  onMouseMoveSnapTableSymbol(event: any) {
     var stockTooltipCoords = (document.getElementById("stckTooltip") as HTMLSelectElement) ;
     const scrollLeft = (window.pageXOffset !== undefined) ? window.pageXOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollLeft;
     const scrollTop = (window.pageYOffset !== undefined) ? window.pageYOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollTop;
     stockTooltipCoords.style.left = event.pageX - scrollLeft + 'px';
     stockTooltipCoords.style.top = event.pageY - scrollTop + 'px';
+    this.mouseMoveInSymbolCellLastTime = new Date();
+  }
+
+  onMouseOverStockSymbol() {
+    this.isMouseInSnapSymbolCell = true;
+    this.isShowStockTooltip = this.isMouseInSnapSymbolCell || this.isMouseInTooltip;
+    this.uiSnapTable.poss;
+  }
+
+  onMouseEnterStockTooltip() {
+    this.isMouseInTooltip = true;
+    this.isShowStockTooltip = this.isMouseInSnapSymbolCell || this.isMouseInTooltip;
+    this.mouseMoveInStockTooltipLastTime = new Date();
+  }
+
+  onMouseLeaveStockTooltip(mouseNotOnSnapSymbolOrTooltip: boolean) {
+    this.isMouseInSnapSymbolCell = mouseNotOnSnapSymbolOrTooltip;
+    this.isMouseInTooltip = mouseNotOnSnapSymbolOrTooltip;
+    this.isShowStockTooltip = this.isMouseInSnapSymbolCell && this.isMouseInTooltip
   }
 
   static processUiWithStockChrt(uiSnapTable: UiSnapTable) {
     d3.selectAll('#stockChrt > *').remove();
-    var margin = {top: 10, right: 30, bottom: 30, left: 60 };
+    var margin = {top: 10, right: 30, bottom: 30, left: 40 };
     var width = 460 - margin.left - margin.right;
     var height = 200 - margin.top - margin.bottom;
     var stckVals = uiSnapTable.stockChartVals;
     var stckChrtData = stckVals.map((r:{ date: Date; sdaClose: number; }) => 
             ({date: new Date(r.date), sdaClose: (r.sdaClose)}));
-
-    const formatMonth = d3.timeFormat('%Y%m%d');
+    var customFormatDate = d3.timeFormat(".%L"),
+              formatMonth = d3.timeFormat("%b"),
+              formatYear = d3.timeFormat("%Y");
+    // Define filter conditions
+    function shortMonthFormat(date) {
+      return (d3.timeSecond(date) < date ? customFormatDate
+        : d3.timeYear(date) < date ? formatMonth
+        : formatYear)(date);
+    }
+    const formatDate = d3.timeFormat('%Y%m%d');
     var  bisectDate = d3.bisector((r: any) => r.date).left;
     // find data range
     var xMin = d3.min(stckChrtData, (r:{ date: any; }) => r.date);
@@ -810,7 +822,7 @@ export class BrAccViewerComponent implements OnInit {
     // range of data configuring
     var stckChrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, width]);
     var stckChrtScaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([height, 0]);
-
+    var stckChrtScaleXAxis = d3.axisBottom(stckChrtScaleX).tickFormat(shortMonthFormat);
     var stckChrtSvg = d3.select('#stockChrt').append('svg')
                         .attr('width', width + margin.left + margin.right)
                         .attr('height', height + margin.top + margin.bottom)
@@ -818,7 +830,7 @@ export class BrAccViewerComponent implements OnInit {
                         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
     stckChrtSvg.append('g')
               .attr('transform', 'translate(0,' + height + ')')
-              .call(d3.axisBottom(stckChrtScaleX));
+              .call(stckChrtScaleXAxis);
     stckChrtSvg.append('g').call(d3.axisLeft(stckChrtScaleY));
 
     // Define the line
@@ -913,10 +925,10 @@ export class BrAccViewerComponent implements OnInit {
           .text(d3.format(',')(Math.round((r.sdaClose))) + 'K');
       focus.select('text.y3')
           .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')')
-          .text(formatMonth(r.date));
+          .text(formatDate(r.date));
       focus.select('text.y4')
           .attr('transform','translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')')
-          .text(formatMonth(r.date));
+          .text(formatDate(r.date));
       focus.select('.x')
           .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')')
           .attr('y2', height - stckChrtScaleY(r.sdaClose));

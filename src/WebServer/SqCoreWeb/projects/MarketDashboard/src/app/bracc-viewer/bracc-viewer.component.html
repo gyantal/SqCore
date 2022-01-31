@@ -30,7 +30,7 @@ MarketBar
                     </div>
                 </div>
             </span>
-            <span class="notImpInfo"> ({{uiSnapTable.navLastUpdateTimeAgoStr}})</span>
+            <span class="timeInfoNav"> ({{uiSnapTable.navLastUpdateTimeAgoStr}})</span>
         </div>
         <div class="plSum tooltipGeneral">P&L Today
             <span class="notImpInfo"> (PriorNAV)</span> : 
@@ -48,7 +48,8 @@ MarketBar
                 <div class="snapshot">
                     Profit is calculated from<br> current  and previous day NAV 
                 </div>
-            </div> 
+            </div>
+            <span class="timeInfoNav"> ({{uiSnapTable.navLastUpdateTimeAgoStr}})</span>
         </div>
         <span class="tooltipGeneral plSum">P&L Today
             <span class="notImpInfo">(Positions)</span> : 
@@ -149,10 +150,17 @@ MarketBar
                 <div >
                    <span>
                     <div class="chrtTimeFrameSelection">
+                        <div class="tooltipHistPeriodSelection">
                         <input id="histPeriod" type="text" list="selectedPeriod" [(ngModel)] = "histPeriodSelectionSelected" (change)="onLookbackSelectChange($event)" >
-                        <datalist id="selectedPeriod">
-                            <option *ngFor="let item of histPeriodSelection" [value]="item">{{item}}</option>YTD
-                        </datalist>
+                                <datalist id="selectedPeriod">
+                                    <option *ngFor="let item of histPeriodSelection" [value]="item">{{item}}</option>YTD
+                                </datalist>
+                            <div class="tooltipHistPeriod">
+                                <div class="histPer">
+                                Hist periods for selection [{{histPeriodSelection}}]
+                                </div>
+                            </div>
+                        </div>
                         <div>StartDate: <input class = "histPeriodDateCl" type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr" (change)="onHistPeriodChangeClicked($event)"></div>
                         <div>EndDate: <input class = "histPeriodDateCl" type="date" id="EndDate" name="EndDate" min="01-01-1975" max="01-01-2040" [(ngModel)]="histPeriodEndETstr" (change)="onHistPeriodChangeClicked($event)"></div>
                         <div>BenchMark:
@@ -182,9 +190,9 @@ MarketBar
 </span>
 </div>
 <span>
-    <input type="checkbox" [checked]="isFilteringBasedonMktVal" (click)="onSnapTableSmallMktValClicked($event)">HideSmallMktVal
-    <input type="checkbox" [checked]="isFilteringBasedonPlDaily" (click)="onSnapTableSmallPlDailyClicked($event)">HideSmallPLt
-    <input type="checkbox" [checked]="isFilteringBasedonOptions" (click)="onSnapTableOptionsClicked($event)">HideOptions
+    <input type="checkbox" [checked]="isFilteringBasedonMktVal" (click)="onSnapTableSmallMktValClicked()">HideSmallMktVal
+    <input type="checkbox" [checked]="isFilteringBasedonPlDaily" (click)="onSnapTableSmallPlDailyClicked()">HideSmallPLt
+    <input type="checkbox" [checked]="isFilteringBasedonOptions" (click)="onSnapTableOptionsClicked()">HideOptions
 </span>
 <hr>
 <div class="brAccSnapTbl">
@@ -212,7 +220,7 @@ MarketBar
     </thead>
     <tbody class = "selectedBrcAccSnapShotTbl">
     <tr *ngFor="let item of uiSnapTable.poss">
-        <td class="tooltipStck" (mouseenter)="onMouseEnterSnapTableSymbol(item)" (mousemove)="onMouseMoveSnapTableSymbol($event)" (mouseover)="onMouseOverOrLeaveStockSymbol(true)">
+        <td class="tooltipStck" (mouseenter)="onMouseEnterSnapTableSymbol($event, item)" (mouseover)="onMouseOverStockSymbol()">
             <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">
                 {{item.symbol}}
             </a>
@@ -241,7 +249,7 @@ MarketBar
 </table>
 </div>
 <hr>
-<div id="stckTooltip" class="tooltipSnap" (mouseenter)="onMouseEnterStockTooltip(true)" (mouseleave)="onMouseLeaveStockTooltip(false)" *ngIf="isShowStockTooltip">
+<div id="stckTooltip" class="tooltipSnap" (mouseenter)="onMouseEnterStockTooltip()" (mouseleave)="onMouseLeaveStockTooltip(false)" *ngIf="isShowStockTooltip">
     <span id="stckTooltipName">Name: {{stockTooltipName}}<br></span> 
     <a href="https://uk.tradingview.com/chart/?symbol={{stockTooltipSymbol}}" target="_blank">
         <svg width="28" height="22" viewBox="0 0 28 22" xmlns="http://www.w3.org/2000/svg" >

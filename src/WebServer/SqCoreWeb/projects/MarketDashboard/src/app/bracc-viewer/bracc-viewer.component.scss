@@ -90,10 +90,14 @@
 }
 .plSum {
   font-weight: bold;
-  font-size: 1.6rem
+  font-size: 1.6rem;
 }
 .notImpInfo {
-  font-size: 1.0rem
+  font-size: 1.0rem;
+}
+.timeInfoNav {
+  font-size: 1.0rem;
+  font-weight: normal;
 }
 .AccSumm .refresh {
   width:1.5rem;
@@ -197,11 +201,11 @@ border-width: 0.2rem;
 border-color: #4e95f4 ;
 width: 7rem;
 text-align: center;
-box-shadow: 0 0 7rem rgb(48 138 255 / 60%), 
-              0 0.5rem 2rem rgb(48 138 255 / 60%), 
-              0 0.2rem 2rem rgb(48 138 255  /60%),
-              inset 0 0.1rem #fff,
-              inset 0 -0.1rem #fff;
+// box-shadow: 0 0 7rem rgb(48 138 255 / 60%), 
+//               0 0.5rem 2rem rgb(48 138 255 / 60%), 
+//               0 0.2rem 2rem rgb(48 138 255  /60%),
+//               inset 0 0.1rem #fff,
+//               inset 0 -0.1rem #fff;
 }
 thead {
   font-weight: bold;
@@ -227,6 +231,9 @@ thead tr :hover {
 {
   background-color: #FFAE42;
   font-size: 1.5rem;
+}
+tr:nth-child(even) {
+  background-color:#9dcef8;
 }
 
 /* Graph -  Style the lines by removing the fill and applying a stroke */
@@ -352,11 +359,11 @@ thead tr :hover {
   color: rgb(6, 8, 153);
   border-radius: 1rem;
   cursor: pointer;
-  width: 45rem;
+  width: 46rem;
   height: 25rem;
 }
 
-#stckTooltip:hover .tooltipSnap{
+#stckTooltip:hover .tooltipSnap {
   display: inline-block;
   top: -15%;
   left: 150%;
@@ -366,4 +373,36 @@ thead tr :hover {
 
 #stckTooltipName {
   font-weight: bold;
+}
+
+.tooltipHistPeriodSelection {
+  position: relative;
+  cursor: help;
+}
+.tooltipHistPeriodSelection .tooltipHistPeriod {
+  padding:0.3rem;
+  font-size: 0.8rem;
+  font-weight: normal;
+  display: none;
+  background:rgb(210, 252, 176);
+  border: 0.1rem solid rgb(19, 7, 177);
+  color: rgb(6, 8, 153);
+  text-align: left;
+  border-radius: 1rem;
+  position: absolute;
+  z-index: 1;
+  bottom: 100%;
+  left: 10%;
+  margin-left: -90px;
+  white-space: pre;
+  opacity: 0.87;
+}
+.tooltipHistPeriodSelection .tooltipHistPeriod .histPer {
+  font-weight: bold;
+}
+.tooltipHistPeriodSelection .tooltipHistPeriod .smallTT {
+  font-size: 0.2rem;
+}
+.tooltipHistPeriodSelection:hover .tooltipHistPeriod {
+  display: inline-block;
 }
