@@ -15,6 +15,12 @@ using System.Text.Json;
 
 namespace SqCoreWeb
 {
+    // these members has to be C# properties, not simple data member tags. Otherwise it will not serialize to client.
+    class HandshakeMessage {    // General params for the aggregate Dashboard. These params should be not specific to smaller tools, like HealthMonitor, CatalystSniffer, QuickfolioNews
+        public string Email { get; set; } = string.Empty;
+        public int AnyParam { get; set; } = 55;
+    }
+
     public partial class DashboardWs
     {
         public static async Task OnConnectedAsync(HttpContext context, WebSocket webSocket)
@@ -56,6 +62,7 @@ namespace SqCoreWeb
             ManualResetEvent waitHandleMkthConnect = new ManualResetEvent(false);
             ManualResetEvent waitHandleBrAccConnect = new ManualResetEvent(false);
 
+            client!.OnConnectedWsAsync_DshbrdClient(activePage == ActivePage.MarketHealth, user, waitHandleMkthConnect);  // runs in a separate thread for being faster
             client!.OnConnectedWsAsync_MktHealth(activePage == ActivePage.MarketHealth, user, waitHandleMkthConnect);  // runs in a separate thread for being faster
             client!.OnConnectedWsAsync_BrAccViewer(activePage == ActivePage.BrAccViewer, user, waitHandleBrAccConnect); // runs in a separate thread for being faster
             client!.OnConnectedWsAsync_QckflNews(activePage == ActivePage.QuickfolioNews);
@@ -84,8 +91,9 @@ namespace SqCoreWeb
                 var semicolonInd = bufferStr.IndexOf(':');
                 string msgCode = bufferStr.Substring(0, semicolonInd);
                 string msgObjStr = bufferStr.Substring(semicolonInd + 1);
-
-                bool isHandled = client.OnReceiveWsAsync_MktHealth(wsResult, msgCode, msgObjStr);
+                bool isHandled = client.OnReceiveWsAsync_DshbrdClient(wsResult, msgCode, msgObjStr);
+                if (!isHandled)
+                    isHandled = client.OnReceiveWsAsync_MktHealth(wsResult, msgCode, msgObjStr);
                 if (!isHandled)
                     isHandled = client.OnReceiveWsAsync_BrAccViewer(wsResult, msgCode, msgObjStr);
                 if (!isHandled)
@@ -97,5 +105,6 @@ namespace SqCoreWeb
                 }
             }
         }
+
     }   // class
 }

@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using FinTechCommon;
 using Microsoft.AspNetCore.Http;
+using SqCommon;
 
 namespace SqCoreWeb
 {
@@ -28,14 +29,9 @@ namespace SqCoreWeb
 
 
         public static List<DashboardClient> g_clients = new List<DashboardClient>();
-        public static Dictionary<string, ActivePage> c_urlParam2ActivePage = new Dictionary<string, ActivePage>() { 
+        public static readonly Dictionary<string, ActivePage> c_urlParam2ActivePage = new Dictionary<string, ActivePage>() { 
             {"mh", ActivePage.MarketHealth}, {"bav", ActivePage.BrAccViewer}, {"cs", ActivePage.CatalystSniffer}, {"qn", ActivePage.QuickfolioNews}};
 
-        static DashboardClient()
-        {
-            // static ctor DashboardPushHub is only called at the time first instance is created, which is only when the first connection happens. It can be days after Kestrel webserver starts. 
-            // But that is OK. At least if MarketDashboard is not used by users, it will not consume CPU resources.");
-        }
         public static void PreInit()
         {
             MemDb.gMemDb.EvMemDbInitNoHistoryYet += new MemDb.MemDbEventHandler(OnEvMemDbInitNoHistoryYet);
@@ -45,7 +41,6 @@ namespace SqCoreWeb
 
         static void OnEvMemDbInitNoHistoryYet()
         {
-            // TODO
         }
 
         static void OnEvFullMemDbDataReloaded()
@@ -71,7 +66,7 @@ namespace SqCoreWeb
             p_sb.Append("<H2>Dashboard Clients</H2>");
  
             lock (DashboardClient.g_clients)
-                p_sb.Append($"#Clients (WebSocket): {DashboardClient.g_clients.Count}: {String.Join(",", DashboardClient.g_clients.Select(r => "'" + r.UserEmail + "'"))}<br>");
+                p_sb.Append($"#Clients (WebSocket): {DashboardClient.g_clients.Count}: {String.Join(",", DashboardClient.g_clients.Select(r => $"'{r.UserEmail}/{r.ClientIP}'"))}<br>");
             p_sb.Append($"rtDashboardTimerRunning: {m_rtDashboardTimerRunning}<br>");
         }
 
@@ -84,12 +79,40 @@ namespace SqCoreWeb
             Ctor_BrAccViewer();
             Ctor_QuickfNews();
         }
-    }
 
-    // these members has to be C# properties, not simple data member tags. Otherwise it will not serialize to client.
-    class HandshakeMessage {    // General params for the aggregate Dashboard. These params should be not specific to smaller tools, like HealthMonitor, CatalystSniffer, QuickfolioNews
-        public string Email { get; set; } = string.Empty;
-        public int AnyParam { get; set; } = 55;
-    }
+        // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
+        public void OnConnectedWsAsync_DshbrdClient(bool p_isThisActiveToolAtConnectionInit, User p_user, ManualResetEvent p_waitHandleRtPriceSending)
+        {
+            // Note: as client is not fully initialized yet, 'this.client' is not yet in DashboardClient.g_clients list.
+        }
 
+        public bool OnReceiveWsAsync_DshbrdClient(WebSocketReceiveResult? wsResult, string msgCode, string msgObjStr)
+        {
+            switch (msgCode)
+            {
+                case "Dshbrd.IsDshbrdOpenManyTimes":
+                    Utils.Logger.Info("OnReceiveWsAsync__DshbrdClient(): IsDashboardOpenManyTimes");
+                    SendIsDashboardOpenManyTimes();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public void SendIsDashboardOpenManyTimes()    // If Dashboard is open in more than one tab or browser.
+        {
+            int nClientsWitSameUserAndIp = 0;
+            foreach (var client in DashboardClient.g_clients)   // !Warning: Multithreaded Warning: This Reader code is fine. But potential problem if another thread removes clients from the List. The Modifier (Writer) thread should be careful, and Copy and Pointer-Swap when that Edit is taken.
+            {
+                if (client.UserEmail == UserEmail && client.ClientIP == ClientIP)
+                    nClientsWitSameUserAndIp++;
+                if (nClientsWitSameUserAndIp > 1)
+                    break;
+            }
+            bool isDashboardOpenManyTimes = nClientsWitSameUserAndIp > 1;
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("Dshbrd.IsDshbrdOpenManyTimes:" + Utils.CamelCaseSerialize(isDashboardOpenManyTimes)); // => e.g. "Dshbrd.IsDshbrdOpenManyTimes:false"
+            if (WsWebSocket!.State == WebSocketState.Open)
+                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+        }
+    }
 }
