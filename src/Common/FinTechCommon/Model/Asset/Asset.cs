@@ -170,9 +170,9 @@ namespace FinTechCommon
         public string YfTicker { get; set; } = string.Empty;
 
         // IbSymbol: "BRK B" YFTicker: "BRK-B", but IEX gets it only as "BRK.B"
-        // https://api.iextrading.com/1.0/tops?symbols=BRK B     => returns empty string
-        // https://api.iextrading.com/1.0/tops?symbols=BRK-B     => returns empty string
-        // https://api.iextrading.com/1.0/tops?symbols=BRK.B     => returns correctly
+        // https://cloud.iexapis.com/stable/tops?token=<...>&symbols=BRK B     => returns empty string
+        // https://cloud.iexapis.com/stable/tops?token=<...>&symbols=BRK-B     => returns empty string
+        // https://cloud.iexapis.com/stable/tops?token=<...>&symbols=BRK.B     => returns correctly
         public string IexTicker { get; set; } = string.Empty;
         public string Flags { get; set; } = string.Empty;
         public string ISIN { get; set; } = string.Empty; // International Securities Identification Number would be a unique identifier. Not used for now.

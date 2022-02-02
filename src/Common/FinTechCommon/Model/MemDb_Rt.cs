@@ -29,7 +29,7 @@ namespace FinTechCommon
     {
         // ***** Plan: Historical and RT quote data
         // - the Website.app, once a day, gets historical price data from YF. Get all history.
-        // - for RT price: during market-hours use IEX 'top', because it is free (and YF might ban our IP if we query too many times, IB has rate limit per minute, and VBroker need that bandwidth)
+        // - for RT price: during market-hours use IEX 'top', because monhly 50K queries are free (can use multiple IEX accounts) (and YF might ban our IP if we query too many times, IB has rate limit per minute, and VBroker need that bandwidth)
         // - pre/postmarket, also use YF, but with very-very low frequency. Once per every 5 sec. (only if any user is connected). We don't need to use IB Markprice, because YF pre-market is very quickly available at 9:00, 5.5h before open.
         // - code should know whether it is pre/postmarket hours, so we have to implement the same logic as in VBroker. (with the holiday days, and DB).
         // - Call AfterMarket = PostMarket, because shorter and tradingview.com also calls "post-market" (YF calls: After hours)
@@ -41,15 +41,15 @@ namespace FinTechCommon
         // >UTC-9:10: YF (started at 9:00, there is premarket price: "Pre-Market: 4:03AM EST"), IB: There is Ask-bid spread. This is 5.5h before market open. That should be enough. 
         // So, I don't need IB indicative MarkPrice. IB AccInfo website is also good, showing QQQ change. IEX: IEX shows some false data, which is not yesterday close, 
         // but probably last day postMarket lastPrice sometime, which is not useful. 
-        // So, in pre-market this IEX 'top' cannot be used. But maybe IEX cloud can be used in pre-market. Investigate.
+        // So, in pre-market this IEX 'top' cannot be used. Investigated. Even IEX cloud can be used in pre-market. ("lastSalePrice":0)
         // It is important here, because of summer/winter time zones that IB/YF all are relative to ET time zone 4:00AM EST. This is usually 9:00 in London, 
         // but in 2020-03-12, when USA set summer time zone 2 weeks early, the 4:00AM cutoff time was 8:00AM in London. And IB/YF measured itself to EST time, not UTC time. Implement this behaviour.
         // >UTC-0:50: (at night).
 
         // ***************************************************
         // IEX specific only
-        // https://github.com/iexg/IEX-API
-        // https://cloud.iexapis.com/stable/stock/market/batch?symbols=QQQ&types=quote&token=<...>  takes about 250ms, no matter how many tickers are queried, so it is quite fast.
+        // https://cloud.iexapis.com/stable/tops?token=pk_281c0e3abdef4f6f9fbf917c6d6e67af&symbols=QQQ,SPY   just a short price data, takes about 150ms, no matter how many tickers are queried, so it is quite fast.
+        // https://cloud.iexapis.com/stable/stock/market/batch?symbols=QQQ&types=quote&token=<...>  a bigger data,, takes about 250ms, no matter how many tickers are queried, so it is quite fast.
         // >08:20: "previousClose":215.37, !!! that is wrong. So IEX, next day at 8:20, it still gives back PreviousClose as 2 days ago. Wrong., ""latestPrice":216.48, "latestSource":"Close","latestUpdate":1582750800386," is the correct one, "iexRealtimePrice":216.44 is the 1 second earlier.
         // >09:32: "previousClose":215.37  (still wrong), ""latestPrice":216.48, "latestSource":"Close","latestUpdate":1582750800386," is the correct one, "iexRealtimePrice":216.44 is the 1 second earlier.
         // >10:12: "previousClose":215.37  (still wrong), "close":216.48,"closeTime":1582750800386  // That 'close' is correct, but previousClose is not.
@@ -61,34 +61,31 @@ namespace FinTechCommon
         // which is bad. The today Close price at 21:00 was 205.64, but it is not in the text anywhere. prevClose is 2 days ago, latestPrice is the 1 second early, not the ClosePrice.
         // https://cloud.iexapis.com/stable/stock/market/batch?symbols=QQQ&types=chart&token=<...> 'chart': last 30 days data per day:
         // https://cloud.iexapis.com/stable/stock/market/batch?symbols=QQQ&types=previous&token=<...>   'previous':
-        // https://github.com/iexg/IEX-API/issues/357
-        // This is available in /stock/quote https://iextrading.com/developer/docs/#quote
-        // extendedPrice, extendedChange, extendedChangePercent, extendedPriceTime
-        // These represent prices from 8am-9:30am and 4pm-5pm. We are aiming to cover the full pre/post market hours in a future version.
-        // https://github.com/iexg/IEX-API/issues/693
-        // >Use /stock/aapl/quote, this will return extended hours data (8AM - 5PM), "on Feb 26, 2019"
-        // "I have built a pretty solid scanner and research platform on IEX, but for live trading IEX is obviously not suitable (yet?). I hope one day IEX will provide truly real-time data. Otherwise, I am pretty happy with IEX so far. Been using it for 2 years now/"
-        // "We offer true real time IEX trades and quotes. IEX is the only exchange that provides free market data."
-        // >"// Paid account: $1 per 1 million messages/mo: 1000000/30/20/60 = 28 messages per minute." But maybe it is infinite. Just every 1M messages is $1. The next 1M messages is another $1. Etc. that is likely. Good. So, we don't have to throttle it, just be careful than only download data if it is needed.
+        // >"// Paid account: $9 per month per 5 million messages/mo: 5000000/30/20/60 = 138 messages per minute."
         // --------------------------------------------------------------
         // ------------------ Problems of IEX:
         // - pre/Postmarket only: 8am-9:30am and 4pm-5pm, when Yahoo has it from 9:00 UTC. So, it is not enough.
         // - cut-off time is too late. Until 14:30 asking PreviousDay, it still gives the price 2 days ago. When YF will have premarket data at 9:00. Although "latestPrice" can be used as close.
-        // - the only good thing: in market-hours, RT prices are free, and very quick to obtain and batched.
+        // - the only good thing: in market-hours, RT prices are free (max 50K queries per month), and very quick to obtain and batched.
 
+        // for Vbroker trading, we will use IB streaming data. No frequency timer is required. It is streamed directly.
         // use IEX only for High/Mid Freq, and only in RegularTrading. So, High/MidFreq OTH uses YF. But use it sparingly, so YF doesn't ban us.
-        // For RT highFreq: 3sec is too fast and unnecessary. 6 sec is fine. (10x in 1 min). Don't increase the server load too much.
-        RtFreqParam m_highFreqParam = new RtFreqParam() { RtFreq = RtFreq.HighFreq, Name="HighFreq", FreqRthSec = 6, FreqOthSec = 5 * 60 }; // high frequency (6sec RTH, 5min otherwise-OTH) refresh for a known fixed stocks (used by VBroker) and those which were queried in the last 5 minutes (by a VBroker-test)
+        // IEX: free account: 50000/30/8/60/60= 3.5. We can do max 3 queries per minute with 1 user-token. But we can use 2 tokens. Just to be on the safe side:
+        // For RT highFreq: use 30 seconds, but alternade the 2 tokens we use. That will be about 1 query per minute per token = 60*8*30 = 15K queries per token per month. Although Developers also use some of the quota while developing.
+        // Is there a need for 2 IEX timers? (High/Mid Freq) MidFreq timer can be deleted. Questionable, but keep this logic! In the future, we might use a 3rd RT service.
+        RtFreqParam m_highFreqParam = new RtFreqParam() { RtFreq = RtFreq.HighFreq, Name="HighFreq", FreqRthSec = 30, FreqOthSec = 5 * 60 }; // high frequency (30sec RTH, 5min otherwise-OTH) refresh for a known fixed stocks (used by VBroker) and those which were queried in the last 5 minutes (by a VBroker-test)
         RtFreqParam m_midFreqParam = new RtFreqParam() { RtFreq = RtFreq.MidFreq, Name="MidFreq", FreqRthSec =  15 * 60, FreqOthSec = 40 * 60 }; // mid frequency (15min RTH, 40min otherwise) refresh for a know fixed stocks (DashboardClient_mktHealth)
         RtFreqParam m_lowFreqParam = new RtFreqParam() { RtFreq = RtFreq.LowFreq, Name="LowFreq", FreqRthSec = 30 * 60, FreqOthSec = 1 * 60 * 60 }; // with low frequency (30 RTH, 1h otherwise) we almost all stocks. Even if nobody access them.
 
         // In general: higFreq: probably the traded stocks + what was RT queried by users. Mid: some special tickers (e.g. on MarketDashboard), LowFreq: ALL alive stocks.
+        string[] m_ibRtStreamedTickrs = new string[] { /* VBroker */ };   // no need for frequency Timer. IB prices will be streamed. So, in the future, we might delete m_highFreqParam. But maybe we need 10seconds ticker prices for non VBroker tasks. So, probably keep the streamed tickers very low. And this can be about 6-20seconds frequency.
         string[] m_highFreqTickrs = new string[] { /* VBroker */ };
         string[] m_midFreqTickrs = new string[] {"S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO" /* DashboardClient_mktHealth.cs */ };
 
         Dictionary<Asset, DateTime> m_lastRtPriceQueryTime = new Dictionary<Asset, DateTime>();
 
         uint m_nIexDownload = 0;
+        byte m_lastIexApiTokenInd = 1; // possible values: { 1, 2}. Alternate 2 API tokens to stay bellow the 50K quota. Token1 is the hedgequantserver, Token2 is the UnknownUser.
         uint m_nYfDownload = 0;
 
         static void InitAllStockAssetsPriorCloseAndLastPrice(AssetsCache p_newAssetCache)    // this is called at Program.Init() and at ReloadDbDataIfChangedImpl()
@@ -176,7 +173,7 @@ namespace FinTechCommon
 
             // IEX is faster (I guess) and we don't risk that YF bans our server for important historical data. Don't query YF too frequently.
             // Prefer YF, because IEX returns "lastSalePrice":0, while YF returns RT correctly for these 6 stocks: BIB,IDX,MVV,RTH,VXZ,LBTYB
-            // https://api.iextrading.com/1.0/tops?symbols=BIB,IDX,MVV,RTH,VXZ,LBTYB
+            // https://cloud.iexapis.com/stable/tops?token=<...>&symbols=BIB,IDX,MVV,RTH,VXZ,LBTYB
             // https://query1.finance.yahoo.com/v7/finance/quote?symbols=BIB,IDX,MVV,RTH,VXZ,LBTYB
             // Therefore, use IEX only for High/Mid Freq, and only in RegularTrading.
             // LowFreq is the all 700 tickers. For that we need those 6 assets as well.
@@ -190,7 +187,11 @@ namespace FinTechCommon
             if (useIexRt)
             {
                 m_nIexDownload++;
-                DownloadLastPriceIex(downloadAssets).TurnAsyncToSyncTask();
+                if (m_lastIexApiTokenInd < 2)
+                    m_lastIexApiTokenInd++;
+                else
+                    m_lastIexApiTokenInd = 1;
+                DownloadLastPriceIex(downloadAssets, m_lastIexApiTokenInd).TurnAsyncToSyncTask();
             }
             else
             {
@@ -372,24 +373,16 @@ namespace FinTechCommon
         // "We limit requests to 100 per second per IP measured in milliseconds, so no more than 1 request per 10 milliseconds."
         // https://iexcloud.io/pricing/ 
         // Free account: 50,000 core messages/mo, That is 50000/30/20/60 = 1.4 message per minute. 
-        // Paid account: $1 per 1 million messages/mo: 1000000/30/20/60 = 28 messages per minute.
-        // But maybe it is infinite. Just every 1M messages is $1. The next 1M messages is another $1. Etc. that is likely. Good. So, we don't have to throttle it, just be careful than only download data if it is needed.
-        // At the moment 'tops' works without token, as https://api.iextrading.com/1.0/tops?symbols=QQQ,SPY,TLT,GLD,VXX,UNG,USO
-        // but 'last' or other PreviousClose calls needs token: https://api.iextrading.com/1.0/lasts?symbols=QQQ,SPY,TLT,GLD,VXX,UNG,USO
-        // Solution: query real-time lastPrice every 2 seconds, but query PreviousClose only once a day.
-        // This doesn't require token (but doesn't have PriorClose): https://api.iextrading.com/1.0/tops?symbols=AAPL,GOOGL
-        // PreviousClose data requires token: https://cloud.iexapis.com/stable/stock/market/batch?symbols=AAPL,FB&types=quote&token=<get it from sensitive-data file>
-        static async Task DownloadLastPriceIex(Asset[] p_assets)  // takes 450-540ms from WinPC
+        // Paid account: $9 per 5 million messages/mo: 5000000/30/20/60 = 134 messages per minute.
+        // PreviousClose data: https://cloud.iexapis.com/stable/stock/market/batch?symbols=AAPL,FB&types=quote&token=<get it from sensitive-data file>
+        static async Task DownloadLastPriceIex(Asset[] p_assets, byte p_iexApiTokenInd)  // takes 450-540ms from WinPC
         {
             Utils.Logger.Debug("DownloadLastPriceIex() START");
             try
             {
-                //string url = string.Format("https://api.iextrading.com/1.0/stock/market/batch?symbols={0}&types=quote", p_tickerString);
-                //string url = string.Format("https://api.iextrading.com/1.0/last?symbols={0}", p_tickerString);       // WebExceptionStatus.ProtocolError: "Not Found"
-
                 string[]? iexTickers = p_assets.Select(r => (r as Stock)!.IexTicker).ToArray(); // treat similarly as DownloadLastPriceYF()
-
-                string url = string.Format("https://api.iextrading.com/1.0/tops?symbols={0}", String.Join(",", iexTickers));
+                var iexApiToken = Utils.Configuration[$"Iex:ApiToken{p_iexApiTokenInd}"];
+                string url = $"https://cloud.iexapis.com/stable/tops?token={iexApiToken}&symbols={String.Join(",", iexTickers)}";
                 string? responseStr = await Utils.DownloadStringWithRetryAsync(url);
                 if (responseStr == null)
                     return;
@@ -406,6 +399,7 @@ namespace FinTechCommon
         static private void ExtractAttributeIex(string p_responseStr, string p_attribute, Asset[] p_assets)
         {
             List<string> zeroValueSymbols = new List<string>();
+            List<string> properlyArrivedSymbols = new List<string>();
             int iStr = 0;   // this is the fastest. With IndexOf(). Not using RegEx, which is slow.
             while (iStr < p_responseStr.Length)
             {
@@ -447,6 +441,7 @@ namespace FinTechCommon
                         zeroValueSymbols.Add(stock.Symbol);
                     else // don't overwrite the MemDb data with false 0.0 values.
                     {
+                        properlyArrivedSymbols.Add(stock.Symbol);
                         switch (p_attribute)
                         {
                             case "previousClose":
@@ -459,6 +454,14 @@ namespace FinTechCommon
                     }
                 }
                 iStr = eAttribute;
+            }
+
+            if (properlyArrivedSymbols.Count != p_assets.Length)
+            {
+                var missing = p_assets.Where(r => !properlyArrivedSymbols.Contains(r.Symbol)).ToList();
+                var msg = $"IEX RT price: Ok({properlyArrivedSymbols.Count})<Queried({p_assets.Length}). Missing:{String.Join(',', missing.Select(r => r.Symbol))}";
+                SqConsole.WriteLine(msg);
+                Utils.Logger.Warn(msg);
             }
 
             if (zeroValueSymbols.Count != 0)

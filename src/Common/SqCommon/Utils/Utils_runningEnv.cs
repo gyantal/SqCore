@@ -76,7 +76,7 @@ namespace SqCommon
         //         new Dictionary<string, string>()
         //         {
         //             { "Lin.*", "/home/ubuntu/SQ/WebServer/SQLab/SQLab.WebServer.SQLab.NoGitHub.json" },
-        //             { "Win.gyantal", "g:/agy/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/" }
+        //             { "Win.gyantal", "c:/agy/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/" }
         //         }
         //     },
         //     { RunningEnvStrType.HttpsCertificateFullPath,
@@ -117,9 +117,9 @@ namespace SqCommon
                     // find out which user from the team and determine it accordingly. Or just check whether folders exists (but that takes HDD read, which is slow)
                     switch (Environment.UserName)   // Windows user name
                     {
-                        case "gyantal":
-                            return "g:/agy/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/";
-                        case "gyant":
+                        case "gyantal": // gyantal-PC
+                            return "c:/agy/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/";
+                        case "gyant":  // gyantal-Laptop
                             return "c:/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/";
                         case "Balazs":
                             return "d:/GDrive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/";

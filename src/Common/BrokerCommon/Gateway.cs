@@ -301,7 +301,7 @@ namespace BrokerCommon
                     {
                         Utils.Logger.Info($"No connection to IB {GatewayId} on {Host}:{SocketPort}. Trials: {nConnectionRetry}/{nMaxRetry}");
                         if (nConnectionRetry == nMaxRetry)
-                            Console.WriteLine($"*{DateTime.UtcNow.ToString("dd'T'HH':'mm':'ss")}: No connection to IB {GatewayId}. Trials: {nConnectionRetry}/{nMaxRetry}");
+                            SqConsole.WriteLine($"No connection to IB {GatewayId}. Trials: {nConnectionRetry}/{nMaxRetry}");
                         continue;
                     }
                     // we are connected succesfully
@@ -315,7 +315,7 @@ namespace BrokerCommon
 
                     string warnMessage = (ibWrapper is BrokerWrapperIb) ? "" : "!!!WARNING. Fake Broker (YF!). ";
                     Utils.Logger.Info($"{warnMessage}Gateway {ibWrapper} is connected. User {GatewayId} acc {VbAccountsList}.");
-                    Console.WriteLine($"*{DateTime.UtcNow.ToString("dd'T'HH':'mm':'ss")}: {warnMessage}Gateway {GatewayId} acc {VbAccountsList} connected.");
+                    SqConsole.WriteLine($"{warnMessage}Gateway {GatewayId} acc {VbAccountsList} connected.");
                     
                     // TEMP here just for double checking that connection is right... Can be removed later, because we don't want to hold up the connections of other IBservers.
                     // List<BrAccSum>? accSums = GetAccountSums(); // takes 144ms

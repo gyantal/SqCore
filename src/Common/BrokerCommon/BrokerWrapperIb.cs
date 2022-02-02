@@ -156,7 +156,7 @@ namespace BrokerCommon
         {
             //Notifes when the API-TWS connectivity has been closed. via call to ClientSocket.eDisconnect();
             Utils.Logger.Info($"BrokerWrapperIb.connectionClosed() callback: {m_gatewayId}");
-            Console.WriteLine($"*{DateTime.UtcNow.ToString("dd'T'HH':'mm':'ss")}: Warning! IB Connection Closed: {m_gatewayId}.");
+            SqConsole.WriteLine($"Warning! IB Connection Closed: {m_gatewayId}.");
         }
 
         // Exception thrown: System.IO.EndOfStreamException: Unable to read beyond the end of the stream.     (if IBGateways are crashing down.)
