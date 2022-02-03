@@ -242,8 +242,6 @@ export class BrAccViewerComponent implements OnInit {
   isShowStockTooltip: boolean = false;
   isMouseInSnapSymbolCell: boolean = false;
   isMouseInTooltip: boolean = false;
-  mouseMoveInStockTooltipLastTime: Date = new Date();
-  mouseMoveInSymbolCellLastTime: Date = new Date();
 
   constructor() {
 
@@ -263,9 +261,6 @@ export class BrAccViewerComponent implements OnInit {
     setInterval(() => { this.uiMktBar.lstValLastRefreshTimeStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiMktBar.lstValLastRefreshTimeLoc.getTime());
                         this.uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.navLastUpdateTimeLoc.getTime());
                         this.uiSnapTable.snapLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.snapLastUpateTimeLoc.getTime());
-
-                        if (!(this.isMouseInSnapSymbolCell || this.isMouseInTooltip) && ((Date.now() - this.mouseMoveInSymbolCellLastTime.getTime()) > 1000))
-                          this.isShowStockTooltip = false;
                       }, 1000); // refresh at every 1 secs
     setInterval(() => {
       if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
@@ -776,7 +771,6 @@ export class BrAccViewerComponent implements OnInit {
     const scrollTop = (window.pageYOffset !== undefined) ? window.pageYOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollTop;
     stockTooltipCoords.style.left = event.pageX - scrollLeft + 'px';
     stockTooltipCoords.style.top = event.pageY - scrollTop + 'px';
-    this.mouseMoveInSymbolCellLastTime = new Date();
   }
 
   onMouseOverSnapTableSymbol() {
@@ -786,18 +780,17 @@ export class BrAccViewerComponent implements OnInit {
 
   onMouseLeaveSnapTableSymbol() {
     this.isMouseInSnapSymbolCell = false;
-    // this.isShowStockTooltip = this.isMouseInSnapSymbolCell || this.isMouseInTooltip;  // don't remove tooltip immediately, because onMouseEnterStockTooltip() will not be called
+    setTimeout(() => { this.isShowStockTooltip = this.isMouseInSnapSymbolCell || this.isMouseInTooltip; }, 200); // don't remove tooltip immediately, because onMouseEnterStockTooltip() will only be called later if Tooltip doesn't disappear
   }
 
   onMouseEnterStockTooltip() {
     this.isMouseInTooltip = true;
     this.isShowStockTooltip = this.isMouseInSnapSymbolCell || this.isMouseInTooltip;
-    this.mouseMoveInStockTooltipLastTime = new Date();
   }
 
   onMouseLeaveStockTooltip() {
     this.isMouseInTooltip = false;
-    this.isShowStockTooltip = !(this.isMouseInSnapSymbolCell && this.isMouseInTooltip)
+    this.isShowStockTooltip = this.isMouseInSnapSymbolCell || this.isMouseInTooltip;
   }
 
   static shortMonthFormat(date: any) : string {
