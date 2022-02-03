@@ -263,9 +263,11 @@ export class BrAccViewerComponent implements OnInit {
     setInterval(() => { this.uiMktBar.lstValLastRefreshTimeStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiMktBar.lstValLastRefreshTimeLoc.getTime());
                         this.uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.navLastUpdateTimeLoc.getTime());
                         this.uiSnapTable.snapLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.snapLastUpateTimeLoc.getTime());
-                        if ((this.isMouseInSnapSymbolCell == false || this.isMouseInTooltip == false) && ((Date.now() - this.mouseMoveInStockTooltipLastTime.getTime()) || (Date.now() -  this.mouseMoveInSymbolCellLastTime.getTime())) > 10)
-                          this.isShowStockTooltip = false;
-                      }, 10 * 1000); // refresh at every 10 secs
+                      }, 1000); // refresh at every 1 secs
+    setInterval(() => { 
+      if ((this.isMouseInSnapSymbolCell == false || this.isMouseInTooltip == false) || ((Date.now() - this.mouseMoveInSymbolCellLastTime.getTime()) > 5000))
+        this.isShowStockTooltip = false 
+      }, 5 * 1000);
     setInterval(() => {
       if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
         this._parentWsConnection.send('BrAccViewer.RefreshMktBrPriorCloses:' + this.uiMktBar);
@@ -530,8 +532,6 @@ export class BrAccViewerComponent implements OnInit {
     var navChrtData2 = uiHistData[1].navChrtVals.map((r:{ date: Date; sdaClose: number; }) => 
             ({date: new Date(r.date), sdaClose: (100 * r.sdaClose / firstEleOfHistDataArr2)}));
 
-    const formatMonth = d3.timeFormat('%Y%m%d');
-    var  bisectDate = d3.bisector((r: any) => r.date).left;
     // find data range
     var xMin = d3.min(navChrtData1, (r:{ date: any; }) => r.date);
     var xMax = d3.max(navChrtData1, (r:{ date: any; }) => r.date);
@@ -649,6 +649,9 @@ export class BrAccViewerComponent implements OnInit {
         .on('mouseout', function() { focus.style('display', 'none'); })
         .on('mousemove', mousemove);
 
+    const formatMonth = d3.timeFormat('%Y%m%d');
+    var bisectDate = d3.bisector((r: any) => r.date).left;
+
     function mousemove(event: any) {
       var x0 = navChrtScaleX.invert(d3.pointer(event)[0]),
       i = bisectDate(navChrtData1, x0, 1),
@@ -695,17 +698,17 @@ export class BrAccViewerComponent implements OnInit {
       this._parentWsConnection.send('BrAccViewer.ChangeNav:' + this.navSelectionSelected);
   }
 
-  onLookbackSelectChange(pEvent: any) {
+  onLookbackSelectChange() {
     const currDateET: Date = new Date(); // gets today's date
     if (this.histPeriodSelectionSelected.toUpperCase() === 'YTD') {
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 1, 11, 31)).toString();
-    } else if (this.histPeriodSelectionSelected.endsWith('m')) {
+    } else if (this.histPeriodSelectionSelected.endsWith('m') || this.histPeriodSelectionSelected.endsWith('M')) {
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear(), currDateET.getMonth() - 1, currDateET.getDay())).toString();
     } else if (this.histPeriodSelectionSelected.startsWith('3')) {
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 3, currDateET.getMonth(), currDateET.getDay())).toString();
     } else if (this.histPeriodSelectionSelected.startsWith('5')) {
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 5, currDateET.getMonth(), currDateET.getDay())).toString();
-    } else if (this.histPeriodSelectionSelected.endsWith('y')) {
+    } else if (this.histPeriodSelectionSelected.endsWith('y') || this.histPeriodSelectionSelected.endsWith('Y')) {
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 1, currDateET.getMonth(), currDateET.getDay())).toString();
     }
     this.histPeriodStartETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(this.histPeriodStartETstr));
@@ -716,10 +719,10 @@ export class BrAccViewerComponent implements OnInit {
       const yesterDayET = new Date(todayET);
       yesterDayET.setDate(yesterDayET.getDate() - 1);
       this.histPeriodEndETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(yesterDayET.getFullYear(), yesterDayET.getMonth(), yesterDayET.getDate()));  // set yesterdayET as default
-    this.onHistPeriodChangeClicked(pEvent);
+    this.onHistPeriodChangeClicked();
     }
   }
-  onHistPeriodChangeClicked(pEvent: any) {
+  onHistPeriodChangeClicked() {
     this.histPeriodChange();
   }
 
@@ -728,17 +731,17 @@ export class BrAccViewerComponent implements OnInit {
       this._parentWsConnection.send('BrAccViewer.GetNavChrtData:Bnchmrk:' + this.bnchmkTickerSelectionSelected.toUpperCase() + ",Date:" + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
   }
 
-  onSortingClicked(p_sortColumn: string, event) {
+  onSortingClicked(p_sortColumn: string) {
     this.isSortingDirectionAscending = !this.isSortingDirectionAscending;
     this.sortColumn = p_sortColumn;
     BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
-  onTabHeaderClicked(event: any, tabIdx: number) {
+  onTabHeaderClicked(tabIdx: number) {
     this.tabPageVisibleIdx = tabIdx;
   }
 
-  onSnapshotRefreshClicked(event: any) {
+  onSnapshotRefreshClicked() {
     this.snapshotRefresh();
   }
 
@@ -780,7 +783,6 @@ export class BrAccViewerComponent implements OnInit {
   onMouseOverStockSymbol() {
     this.isMouseInSnapSymbolCell = true;
     this.isShowStockTooltip = this.isMouseInSnapSymbolCell || this.isMouseInTooltip;
-    this.uiSnapTable.poss;
   }
 
   onMouseEnterStockTooltip() {
@@ -789,10 +791,15 @@ export class BrAccViewerComponent implements OnInit {
     this.mouseMoveInStockTooltipLastTime = new Date();
   }
 
-  onMouseLeaveStockTooltip(mouseNotOnSnapSymbolOrTooltip: boolean) {
-    this.isMouseInSnapSymbolCell = mouseNotOnSnapSymbolOrTooltip;
-    this.isMouseInTooltip = mouseNotOnSnapSymbolOrTooltip;
-    this.isShowStockTooltip = this.isMouseInSnapSymbolCell && this.isMouseInTooltip
+  onMouseLeaveStockTooltip() {
+    this.isShowStockTooltip = !(this.isMouseInSnapSymbolCell && this.isMouseInTooltip)
+  }
+
+  static shortMonthFormat(date: any) : string {
+    var formatMillisec = d3.timeFormat(".%L"), formatShortMonth = d3.timeFormat("%b"), formatYear = d3.timeFormat("%Y");
+    return (d3.timeSecond(date) < date ? formatMillisec
+      : d3.timeYear(date) < date ? formatShortMonth
+      : formatYear)(date);
   }
 
   static processUiWithStockChrt(uiSnapTable: UiSnapTable) {
@@ -803,17 +810,7 @@ export class BrAccViewerComponent implements OnInit {
     var stckVals = uiSnapTable.stockChartVals;
     var stckChrtData = stckVals.map((r:{ date: Date; sdaClose: number; }) => 
             ({date: new Date(r.date), sdaClose: (r.sdaClose)}));
-    var customFormatDate = d3.timeFormat(".%L"),
-              formatMonth = d3.timeFormat("%b"),
-              formatYear = d3.timeFormat("%Y");
-    // Define filter conditions
-    function shortMonthFormat(date) {
-      return (d3.timeSecond(date) < date ? customFormatDate
-        : d3.timeYear(date) < date ? formatMonth
-        : formatYear)(date);
-    }
-    const formatDate = d3.timeFormat('%Y%m%d');
-    var  bisectDate = d3.bisector((r: any) => r.date).left;
+
     // find data range
     var xMin = d3.min(stckChrtData, (r:{ date: any; }) => r.date);
     var xMax = d3.max(stckChrtData, (r:{ date: any; }) => r.date);
@@ -822,7 +819,8 @@ export class BrAccViewerComponent implements OnInit {
     // range of data configuring
     var stckChrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, width]);
     var stckChrtScaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([height, 0]);
-    var stckChrtScaleXAxis = d3.axisBottom(stckChrtScaleX).tickFormat(shortMonthFormat);
+
+    var stckChrtScaleXAxis = d3.axisBottom(stckChrtScaleX).tickFormat(BrAccViewerComponent.shortMonthFormat);
     var stckChrtSvg = d3.select('#stockChrt').append('svg')
                         .attr('width', width + margin.left + margin.right)
                         .attr('height', height + margin.top + margin.bottom)
@@ -874,7 +872,7 @@ export class BrAccViewerComponent implements OnInit {
     // place the value at the intersection
     focus.append('text')
         .attr('class', 'y1')
-        .style('stroke', 'white')
+        .style('stroke', 'rgb(210, 252, 176)')
         .style('stroke-width', '3.5px')
         .style('opacity', 0.8)
         .attr('dx', 8)
@@ -887,7 +885,7 @@ export class BrAccViewerComponent implements OnInit {
     // place the date at the intersection
     focus.append('text')
         .attr('class', 'y3')
-        .style('stroke', 'white')
+        .style('stroke', 'rgb(210, 252, 176)')
         .style('stroke-width', '3.5px')
         .style('opacity', 0.8)
         .attr('dx', 8)
@@ -910,6 +908,9 @@ export class BrAccViewerComponent implements OnInit {
         .on('mouseover', function() { focus.style('display', null); })
         .on('mouseout', function() { focus.style('display', 'none'); })
         .on('mousemove', mousemove);
+
+    const formatDate = d3.timeFormat('%Y%m%d');
+    var  bisectDate = d3.bisector((r: any) => r.date).left;
 
     function mousemove(event: any) {
       var x0 = stckChrtScaleX.invert(d3.pointer(event)[0]),

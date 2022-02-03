@@ -82,7 +82,6 @@
   width: 30%;
   font-size: 1.4rem;
   padding: 0.1rem 0.05rem 0.1rem;
-  border: 0.01rem solid #FF0000;
 }
 #liqVal {
   font-weight: bold;
@@ -153,7 +152,6 @@
   float: left;
   width: 70%;
   padding: 0.1rem 0.05rem 0.1rem;
-  border: 0.01rem solid #FF0000;
   
 }
 .moreDetailsSum {
@@ -201,11 +199,6 @@ border-width: 0.2rem;
 border-color: #4e95f4 ;
 width: 7rem;
 text-align: center;
-// box-shadow: 0 0 7rem rgb(48 138 255 / 60%), 
-//               0 0.5rem 2rem rgb(48 138 255 / 60%), 
-//               0 0.2rem 2rem rgb(48 138 255  /60%),
-//               inset 0 0.1rem #fff,
-//               inset 0 -0.1rem #fff;
 }
 thead {
   font-weight: bold;
@@ -367,19 +360,20 @@ tr:nth-child(even) {
   display: inline-block;
   top: -15%;
   left: 150%;
+  right: 10%;
   transform: translateX(-15%);
-  margin-top: -10px;
+  margin-top: -1rem;
 }
 
 #stckTooltipName {
   font-weight: bold;
 }
 
-.tooltipHistPeriodSelection {
+.tooltipHistPeriodAndBnchMrkSelection {
   position: relative;
   cursor: help;
 }
-.tooltipHistPeriodSelection .tooltipHistPeriod {
+.tooltipHistPeriodAndBnchMrkSelection .tooltipHistPeriodAndBnchMrk {
   padding:0.3rem;
   font-size: 0.8rem;
   font-weight: normal;
@@ -397,12 +391,12 @@ tr:nth-child(even) {
   white-space: pre;
   opacity: 0.87;
 }
-.tooltipHistPeriodSelection .tooltipHistPeriod .histPer {
+.tooltipHistPeriodAndBnchMrkSelection .tooltipHistPeriodAndBnchMrk .histPerAndBnchMrk {
   font-weight: bold;
 }
-.tooltipHistPeriodSelection .tooltipHistPeriod .smallTT {
+.tooltipHistPeriodAndBnchMrkSelection .tooltipHistPeriodAndBnchMrk .smallTT {
   font-size: 0.2rem;
 }
-.tooltipHistPeriodSelection:hover .tooltipHistPeriod {
+.tooltipHistPeriodAndBnchMrkSelection:hover .tooltipHistPeriodAndBnchMrk {
   display: inline-block;
 }

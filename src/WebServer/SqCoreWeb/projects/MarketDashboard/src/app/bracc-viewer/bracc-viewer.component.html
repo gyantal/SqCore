@@ -75,13 +75,13 @@ MarketBar
                     Force reload snapshot table<br> (Realtime: NAV, #Pos, EstPrice)
                 </div>
             </div>
-            <span class="refresh"><img class="refresh" src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked($event)"></span>
+            <span class="refresh"><img class="refresh" src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked()"></span>
         </span>
         <span class="notImpInfo">{{uiSnapTable.snapLastUpateTimeLoc | date:'H:mm'}} ({{uiSnapTable.snapLastUpdateTimeAgoStr}})</span>
         <div>
             <span class="tab">
-                <button [ngStyle]="{'background-color':tabPageVisibleIdx == 1 ? 'aqua':''}"(click)="onTabHeaderClicked($event,1)"> MoreDetails </button>
-                <button [ngStyle]="{'background-color':tabPageVisibleIdx == 2 ? 'aqua':''}"(click)="onTabHeaderClicked($event,2)"> HistoricalChart </button>
+                <button [ngStyle]="{'background-color':tabPageVisibleIdx == 1 ? 'aqua':''}"(click)="onTabHeaderClicked(1)"> MoreDetails </button>
+                <button [ngStyle]="{'background-color':tabPageVisibleIdx == 2 ? 'aqua':''}"(click)="onTabHeaderClicked(2)"> HistoricalChart </button>
             </span>
         </div>
     </div>
@@ -115,7 +115,7 @@ MarketBar
                     <div class="tooltipGeneral">Max Risked estimate:
                         <span class="moreDetailsSum"
                         [ngClass]="{'green' : uiSnapTable.totalMaxRiskedLeverage < 1.3,
-                                    'orange': uiSnapTable.totalMaxRiskedLeverage >= 1.3 || uiSnapTable.totalMaxRiskedLeverage <= 1.5,
+                                    'orange': uiSnapTable.totalMaxRiskedLeverage <= 1.5,
                                     'red' : uiSnapTable.totalMaxRiskedLeverage > 1.5}"> 
                             (Leverage - {{uiSnapTable.totalMaxRiskedLeverage | number :'1.2-2'}})*
                          </span>
@@ -150,24 +150,29 @@ MarketBar
                 <div >
                    <span>
                     <div class="chrtTimeFrameSelection">
-                        <div class="tooltipHistPeriodSelection">
-                        <input id="histPeriod" type="text" list="selectedPeriod" [(ngModel)] = "histPeriodSelectionSelected" (change)="onLookbackSelectChange($event)" >
+                        <div class="tooltipHistPeriodAndBnchMrkSelection">
+                        <input id="histPeriod" type="text" list="selectedPeriod" [(ngModel)] = "histPeriodSelectionSelected" (change)="onLookbackSelectChange()" >
                                 <datalist id="selectedPeriod">
                                     <option *ngFor="let item of histPeriodSelection" [value]="item">{{item}}</option>YTD
                                 </datalist>
-                            <div class="tooltipHistPeriod">
-                                <div class="histPer">
+                            <div class="tooltipHistPeriodAndBnchMrk">
+                                <div class="histPerAndBnchMrk">
                                 Hist periods for selection [{{histPeriodSelection}}]
                                 </div>
                             </div>
                         </div>
-                        <div>StartDate: <input class = "histPeriodDateCl" type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr" (change)="onHistPeriodChangeClicked($event)"></div>
-                        <div>EndDate: <input class = "histPeriodDateCl" type="date" id="EndDate" name="EndDate" min="01-01-1975" max="01-01-2040" [(ngModel)]="histPeriodEndETstr" (change)="onHistPeriodChangeClicked($event)"></div>
-                        <div>BenchMark:
-                            <input id="sqTicker" type="text" list="selectedSqTicker" [(ngModel)] = "bnchmkTickerSelectionSelected" (change)="onHistPeriodChangeClicked($event)" >
+                        <div>StartDate: <input class = "histPeriodDateCl" type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr" (change)="onHistPeriodChangeClicked()"></div>
+                        <div>EndDate: <input class = "histPeriodDateCl" type="date" id="EndDate" name="EndDate" min="01-01-1975" max="01-01-2040" [(ngModel)]="histPeriodEndETstr" (change)="onHistPeriodChangeClicked()"></div>
+                        <div class="tooltipHistPeriodAndBnchMrkSelection">BenchMark:
+                            <input id="sqTicker" type="text" list="selectedSqTicker" [(ngModel)] = "bnchmkTickerSelectionSelected" (change)="onHistPeriodChangeClicked()" >
                                 <datalist id="selectedSqTicker">
                                     <option *ngFor="let item of bnchmkTickerSelection" [value]="item">{{item}}</option>
                                 </datalist>
+                            <div class="tooltipHistPeriodAndBnchMrk">
+                                <div class="histPerAndBnchMrk">
+                                Tickers for selection [{{bnchmkTickerSelection}}]
+                                </div>
+                            </div>
                         </div>
                         <div>MaxDD<span class="notImpInfo">(NAV/BnchMrk):</span>
                             <span class="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
@@ -189,33 +194,33 @@ MarketBar
     </div>
 </span>
 </div>
+<hr>
 <span>
     <input type="checkbox" [checked]="isFilteringBasedonMktVal" (click)="onSnapTableSmallMktValClicked()">HideSmallMktVal
     <input type="checkbox" [checked]="isFilteringBasedonPlDaily" (click)="onSnapTableSmallPlDailyClicked()">HideSmallPLt
     <input type="checkbox" [checked]="isFilteringBasedonOptions" (click)="onSnapTableOptionsClicked()">HideOptions
 </span>
-<hr>
 <div class="brAccSnapTbl">
 <table class = "selectedBrcAccSnapShotTbl">
     <thead class = "selectedBrcAccSnapShotTbl">
         <tr class="tableHeader">
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='symbol'}" (click)="onSortingClicked('symbol', $event)">Symbol</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='symbolEx'}" (click)="onSortingClicked('symbolEx', $event)">SymbolEx</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='pos'}" (click)="onSortingClicked('pos', $event)">Pos</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='avgCost'}" (click)="onSortingClicked('avgCost', $event)">Cost</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='priorClose'}" (click)="onSortingClicked('priorClose', $event)">Prior<br>Close</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='estPrice'}" (click)="onSortingClicked('estPrice', $event)">Est<br>Price</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='pctChgTod'}" (click)="onSortingClicked('pctChgTod', $event)">Chg%<br>Today</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='plTod'}" (click)="onSortingClicked('plTod', $event)">P&L<br>Today</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='pl'}"(click)="onSortingClicked('pl', $event)">P&L</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='mktVal'}"(click)="onSortingClicked('mktVal', $event)">MktVal</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='estUndPrice'}"(click)="onSortingClicked('estUndPrice', $event)">Est<br>UndPr</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='delivValue'}"(click)="onSortingClicked('delivValue', $event)">Deliv<br>Value</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='ibCompDelta'}"(click)="onSortingClicked('ibCompDelta', $event)">IbComp<br>Delta</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='dltAdjDelivVal'}"(click)="onSortingClicked('dltAdjDelivVal', $event)">DltAdj<br>DelivVal</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='gBeta'}"(click)="onSortingClicked('gBeta', $event)">gBeta</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='betaDltAdj'}"(click)="onSortingClicked('betaDltAdj', $event)">BetaDltAdj<br>MktOriVal</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='accIdStr'}"(click)="onSortingClicked('accIdStr', $event)">Acc</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='symbol'}" (click)="onSortingClicked('symbol')">Symbol</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='symbolEx'}" (click)="onSortingClicked('symbolEx')">SymbolEx</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='pos'}" (click)="onSortingClicked('pos')">Pos</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='avgCost'}" (click)="onSortingClicked('avgCost')">Cost</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='priorClose'}" (click)="onSortingClicked('priorClose')">Prior<br>Close</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='estPrice'}" (click)="onSortingClicked('estPrice')">Est<br>Price</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='pctChgTod'}" (click)="onSortingClicked('pctChgTod')">Chg%<br>Today</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='plTod'}" (click)="onSortingClicked('plTod')">P&L<br>Today</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='pl'}"(click)="onSortingClicked('pl')">P&L</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='mktVal'}"(click)="onSortingClicked('mktVal')">MktVal</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='estUndPrice'}"(click)="onSortingClicked('estUndPrice')">Est<br>UndPr</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='delivValue'}"(click)="onSortingClicked('delivValue')">Deliv<br>Value</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='ibCompDelta'}"(click)="onSortingClicked('ibCompDelta')">IbComp<br>Delta</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='dltAdjDelivVal'}"(click)="onSortingClicked('dltAdjDelivVal')">DltAdj<br>DelivVal</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='gBeta'}"(click)="onSortingClicked('gBeta')">gBeta</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='betaDltAdj'}"(click)="onSortingClicked('betaDltAdj')">BetaDltAdj<br>MktOriVal</th>
+        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='accIdStr'}"(click)="onSortingClicked('accIdStr')">Acc</th>
         </tr>
     </thead>
     <tbody class = "selectedBrcAccSnapShotTbl">
@@ -248,8 +253,8 @@ MarketBar
     </tbody>
 </table>
 </div>
-<hr>
-<div id="stckTooltip" class="tooltipSnap" (mouseenter)="onMouseEnterStockTooltip()" (mouseleave)="onMouseLeaveStockTooltip(false)" *ngIf="isShowStockTooltip">
+<!-- <hr> -->
+<div id="stckTooltip" class="tooltipSnap" (mouseenter)="onMouseEnterStockTooltip()" (mouseleave)="onMouseLeaveStockTooltip()" *ngIf="isShowStockTooltip">
     <span id="stckTooltipName">Name: {{stockTooltipName}}<br></span> 
     <a href="https://uk.tradingview.com/chart/?symbol={{stockTooltipSymbol}}" target="_blank">
         <svg width="28" height="22" viewBox="0 0 28 22" xmlns="http://www.w3.org/2000/svg" >
