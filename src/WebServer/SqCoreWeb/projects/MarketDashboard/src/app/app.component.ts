@@ -137,6 +137,8 @@ export class AppComponent implements OnInit {
 
           break;
       }
+// under development Daya
+      setTimeout(this.multipleDshbrdClientsCheck, 1000);
     };
 
     // 'beforeunload' will be fired if the user submits a form, clicks a link, closes the window (or tab), or goes to a new page using the address bar, search box, or a bookmark.
@@ -252,6 +254,9 @@ export class AppComponent implements OnInit {
         `WS First BrAccVw.MktBrLstCls: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsOnFirstBrAccVwMktBrLstCls)}\n` +
         `WS Last  BrAccVw.RfrSnapshot latency: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.wsOnLastBrAccVwRefreshSnapshotStart, gDiag.wsOnLastBrAccVwSnapshot)}\n`;
     }
+  }
+// under development Daya
+  multipleDshbrdClientsCheck() {
   }
 
 }

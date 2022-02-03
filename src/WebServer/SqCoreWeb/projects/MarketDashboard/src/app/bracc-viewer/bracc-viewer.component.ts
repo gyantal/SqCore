@@ -263,11 +263,10 @@ export class BrAccViewerComponent implements OnInit {
     setInterval(() => { this.uiMktBar.lstValLastRefreshTimeStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiMktBar.lstValLastRefreshTimeLoc.getTime());
                         this.uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.navLastUpdateTimeLoc.getTime());
                         this.uiSnapTable.snapLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.snapLastUpateTimeLoc.getTime());
+
+                        if (!(this.isMouseInSnapSymbolCell || this.isMouseInTooltip) && ((Date.now() - this.mouseMoveInSymbolCellLastTime.getTime()) > 1000))
+                          this.isShowStockTooltip = false;
                       }, 1000); // refresh at every 1 secs
-    setInterval(() => { 
-      if ((this.isMouseInSnapSymbolCell == false || this.isMouseInTooltip == false) || ((Date.now() - this.mouseMoveInSymbolCellLastTime.getTime()) > 5000))
-        this.isShowStockTooltip = false 
-      }, 5 * 1000);
     setInterval(() => {
       if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
         this._parentWsConnection.send('BrAccViewer.RefreshMktBrPriorCloses:' + this.uiMktBar);
@@ -780,9 +779,14 @@ export class BrAccViewerComponent implements OnInit {
     this.mouseMoveInSymbolCellLastTime = new Date();
   }
 
-  onMouseOverStockSymbol() {
+  onMouseOverSnapTableSymbol() {
     this.isMouseInSnapSymbolCell = true;
     this.isShowStockTooltip = this.isMouseInSnapSymbolCell || this.isMouseInTooltip;
+  }
+
+  onMouseLeaveSnapTableSymbol() {
+    this.isMouseInSnapSymbolCell = false;
+    // this.isShowStockTooltip = this.isMouseInSnapSymbolCell || this.isMouseInTooltip;  // don't remove tooltip immediately, because onMouseEnterStockTooltip() will not be called
   }
 
   onMouseEnterStockTooltip() {
@@ -792,6 +796,7 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   onMouseLeaveStockTooltip() {
+    this.isMouseInTooltip = false;
     this.isShowStockTooltip = !(this.isMouseInSnapSymbolCell && this.isMouseInTooltip)
   }
 

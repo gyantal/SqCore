@@ -225,7 +225,7 @@ MarketBar
     </thead>
     <tbody class = "selectedBrcAccSnapShotTbl">
     <tr *ngFor="let item of uiSnapTable.poss">
-        <td class="tooltipStck" (mouseenter)="onMouseEnterSnapTableSymbol($event, item)" (mouseover)="onMouseOverStockSymbol()">
+        <td class="tooltipStck" (mouseenter)="onMouseEnterSnapTableSymbol($event, item)" (mouseover)="onMouseOverSnapTableSymbol()" (mouseleave)="onMouseLeaveSnapTableSymbol()">
             <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">
                 {{item.symbol}}
             </a>
