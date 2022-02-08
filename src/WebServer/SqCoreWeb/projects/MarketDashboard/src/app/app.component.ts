@@ -129,7 +129,7 @@ export class AppComponent implements OnInit {
           break;
         case 'Dshbrd.IsDshbrdOpenManyTimes':
           console.log("The Dashboard opened multiple times string:", msgObjStr);
-          this.isDshbrdOpenManyTimes = msgObjStr;
+          this.isDshbrdOpenManyTimes = String(msgObjStr).toLowerCase() === 'true';
           if (this.isDshbrdOpenManyTimes) {
             var multipleDshbrdClientsMsg = document.getElementById("multipleDshbrdTabs") as HTMLElement;
             multipleDshbrdClientsMsg.style.visibility = "visible";
