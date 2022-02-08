@@ -38,6 +38,8 @@ export class AppComponent implements OnInit {
   };
   isToolSelectionVisible = false;
   isUserSelectionVisible = false;
+  isDshbrdOpenManyTimes: boolean = false;
+  m_isDshbrdOpenManyTimesDialogVisible: boolean = false;
   toolSelectionMsg = 'Click red arrow in toolbar! isToolSelectionVisible is set to ' + this.isToolSelectionVisible;
   public activeTool = 'MarketHealth';
   theme = '';
@@ -125,6 +127,17 @@ export class AppComponent implements OnInit {
           const handshakeMsg: HandshakeMessage = Object.assign(new HandshakeMessage(), JSON.parse(msgObjStr));
           this.user.email = handshakeMsg.email;
           break;
+        case 'Dshbrd.IsDshbrdOpenManyTimes':
+          console.log("The Dashboard opened multiple times string:", msgObjStr);
+          this.isDshbrdOpenManyTimes = msgObjStr;
+          if (this.isDshbrdOpenManyTimes) {
+            var multipleDshbrdClientsMsg = document.getElementById("multipleDshbrdTabs") as HTMLElement;
+            multipleDshbrdClientsMsg.style.visibility = "visible";
+            multipleDshbrdClientsMsg.style.display = "block";
+      
+            // m_isDshbrdOpenManyTimesDialogVisible = true;
+          }
+          break;
         default:
           let isHandled = this.childMktHealthComponent.webSocketOnMessage(msgCode, msgObjStr);
           if (!isHandled)
@@ -137,8 +150,6 @@ export class AppComponent implements OnInit {
 
           break;
       }
-// under development Daya
-      setTimeout(this.multipleDshbrdClientsCheck, 1000);
     };
 
     // 'beforeunload' will be fired if the user submits a form, clicks a link, closes the window (or tab), or goes to a new page using the address bar, search box, or a bookmark.
@@ -164,6 +175,11 @@ export class AppComponent implements OnInit {
       if (uiActiveTool != undefined)
         this.onChangeActiveTool(uiActiveTool);  // we need some mapping of 'bav' => 'BrAccViewer'
     }
+
+    setTimeout(() => {
+      if (this._socket != null && this._socket.readyState === WebSocket.OPEN)
+        this._socket.send('Dshbrd.IsDshbrdOpenManyTimes:');
+      }, 3000);
   }
 
   public onSetTheme($event: string) {
@@ -256,7 +272,15 @@ export class AppComponent implements OnInit {
     }
   }
 // under development Daya
-  multipleDshbrdClientsCheck() {
+  dshbrdOpenedManyTimesPopup() {
+    this.m_isDshbrdOpenManyTimesDialogVisible = false;
+
+    var multipleDshbrdClientsMsg = document.getElementById("multipleDshbrdTabs") as HTMLElement;
+    multipleDshbrdClientsMsg.style.visibility = "hidden";
+  }
+
+  onWindowClose() {
+    window.close();
   }
 
 }

@@ -696,13 +696,13 @@ export class BrAccViewerComponent implements OnInit {
     const currDateET: Date = new Date(); // gets today's date
     if (this.histPeriodSelectionSelected.toUpperCase() === 'YTD') {
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 1, 11, 31)).toString();
-    } else if (this.histPeriodSelectionSelected.endsWith('m') || this.histPeriodSelectionSelected.endsWith('M')) {
+    } else if (this.histPeriodSelectionSelected.toLowerCase().endsWith('m')) {
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear(), currDateET.getMonth() - 1, currDateET.getDay())).toString();
     } else if (this.histPeriodSelectionSelected.startsWith('3')) {
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 3, currDateET.getMonth(), currDateET.getDay())).toString();
     } else if (this.histPeriodSelectionSelected.startsWith('5')) {
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 5, currDateET.getMonth(), currDateET.getDay())).toString();
-    } else if (this.histPeriodSelectionSelected.endsWith('y') || this.histPeriodSelectionSelected.endsWith('Y')) {
+    } else if (this.histPeriodSelectionSelected.toLowerCase().endsWith('y')) {
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 1, currDateET.getMonth(), currDateET.getDay())).toString();
     }
     this.histPeriodStartETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(this.histPeriodStartETstr));
@@ -769,7 +769,7 @@ export class BrAccViewerComponent implements OnInit {
     var stockTooltipCoords = (document.getElementById("stckTooltip") as HTMLSelectElement) ;
     const scrollLeft = (window.pageXOffset !== undefined) ? window.pageXOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollLeft;
     const scrollTop = (window.pageYOffset !== undefined) ? window.pageYOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollTop;
-    stockTooltipCoords.style.left = event.pageX - scrollLeft + 'px';
+    stockTooltipCoords.style.left = 10 + event.pageX - scrollLeft + 'px';
     stockTooltipCoords.style.top = event.pageY - scrollTop + 'px';
   }
 

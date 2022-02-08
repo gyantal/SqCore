@@ -282,35 +282,7 @@ tr:nth-child(even) {
   cursor: help;
   font-weight: bold;
 }
-.tooltipStck .tooltipSnap {
-  padding:0.3rem;
-  font-size: 0.8rem;
-  font-weight: normal;
-  display: none;
-  background:rgb(210, 252, 176);
-  border: 0.1rem solid rgb(19, 7, 177);
-  color: rgb(6, 8, 153);
-  text-align: left;
-  border-radius: 1rem;
-  position: absolute;
-  z-index: 100;
-  white-space: pre;
-  opacity: 0.87;
-}
-.tooltipStck .tooltipSnap .snapshot {
-  font-weight: bold;
-  font-size: 1.4rem;
-}
-.tooltipStck .tooltipSnap .smallTT {
-  font-size: 0.2rem;
-}
-.tooltipStck:hover .tooltipSnap {
-  display: inline-block;
-  top: -15%;
-  left: 150%;
-  transform: translateX(-15%);
-  margin-top: -10px;
-}
+
 // Tooltip posotioning for the Tempdebug 
 .tooltipTempDebug {
   position: relative;
@@ -345,8 +317,7 @@ tr:nth-child(even) {
 
 #stckTooltip {
   position: fixed;
-  top: 10rem;
-  left: 15rem;
+  right: 10rem;
   background:rgb(210, 252, 176);
   border: 0.1rem solid rgb(19, 7, 177);
   color: rgb(6, 8, 153);
@@ -355,16 +326,14 @@ tr:nth-child(even) {
   width: 46rem;
   height: 25rem;
 }
-
 #stckTooltip:hover .tooltipSnap {
   display: inline-block;
-  top: -15%;
+  top: -5%;
   left: 150%;
   right: 10%;
   transform: translateX(-15%);
   margin-top: -1rem;
 }
-
 #stckTooltipName {
   font-weight: bold;
 }
