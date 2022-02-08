@@ -15,7 +15,7 @@ namespace SqCoreWeb
         Timer? m_newsReloadTimer = null;    // separate Timer is needed for each client  (that is a waste of resources, but fine temporarily)
         QuickfolioNewsDownloader m_newsDownloader = new QuickfolioNewsDownloader(); // separate downloader for each client.
 
-        public static TimeSpan c_initialSleepIfNotActiveToolQn = TimeSpan.FromMilliseconds(10000); // 10sec
+        public static TimeSpan c_initialSleepIfNotActiveToolQn = TimeSpan.FromMilliseconds(10 * 1000); // 10sec
 
         void Ctor_QuickfNews()
         {

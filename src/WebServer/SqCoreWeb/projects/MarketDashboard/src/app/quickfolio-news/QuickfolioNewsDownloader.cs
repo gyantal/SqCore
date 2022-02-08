@@ -56,9 +56,7 @@ namespace SqCoreWeb
                     valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
             }
             if (!valuesFromGSheetStr.StartsWith("Error"))
-            {
                 ExtractTickers(valuesFromGSheetStr);
-            }
         }
 
         private void ExtractTickers(string p_spreadsheetString)

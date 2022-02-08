@@ -12,8 +12,8 @@ namespace SqCoreWeb
 {
     public enum ActivePage { Unknown, MarketHealth, BrAccViewer, CatalystSniffer, QuickfolioNews, TooltipSandpit, Docs }
 
-    public partial class DashboardClient {
-
+    public partial class DashboardClient
+    {
         public string ClientIP { get; set; } = string.Empty;    // Remote Client IP for WebSocket
         public string UserEmail { get; set; } = string.Empty;
 
@@ -78,6 +78,7 @@ namespace SqCoreWeb
             Ctor_MktHealth();
             Ctor_BrAccViewer();
             Ctor_QuickfNews();
+            Ctor_QuickfNews2();
         }
 
         // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here

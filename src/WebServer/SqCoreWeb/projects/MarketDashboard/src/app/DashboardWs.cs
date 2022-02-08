@@ -66,10 +66,11 @@ namespace SqCoreWeb
             client!.OnConnectedWsAsync_MktHealth(activePage == ActivePage.MarketHealth, user, waitHandleMkthConnect);  // runs in a separate thread for being faster
             client!.OnConnectedWsAsync_BrAccViewer(activePage == ActivePage.BrAccViewer, user, waitHandleBrAccConnect); // runs in a separate thread for being faster
             client!.OnConnectedWsAsync_QckflNews(activePage == ActivePage.QuickfolioNews);
+            client!.OnConnectedWsAsync_QckflNews2(activePage == ActivePage.QuickfolioNews);
             Utils.Logger.Info("OnConnectedAsync() 4");
 
             // have to wait until the tools initialize themselves to know what assets need RT prices
-            bool sucessfullWait = ManualResetEvent.WaitAll(new WaitHandle[] { waitHandleMkthConnect }, 10000);
+            bool sucessfullWait = ManualResetEvent.WaitAll(new WaitHandle[] { waitHandleMkthConnect }, 10 * 1000);
             Utils.Logger.Info("OnConnectedAsync() 5");
             if (!sucessfullWait)
                 Utils.Logger.Warn("OnConnectedAsync():ManualResetEvent.WaitAll() timeout.");
@@ -98,6 +99,8 @@ namespace SqCoreWeb
                     isHandled = client.OnReceiveWsAsync_BrAccViewer(wsResult, msgCode, msgObjStr);
                 if (!isHandled)
                     isHandled = client.OnReceiveWsAsync_QckflNews(wsResult, msgCode, msgObjStr);
+                if (!isHandled)
+                    isHandled = client.OnReceiveWsAsync_QckflNews2(wsResult, msgCode, msgObjStr);
                 if (!isHandled)
                 {
                     // throw new Exception($"Unexpected websocket received msgCode '{msgCode}'");

@@ -92,8 +92,8 @@ namespace SqCoreWeb
         public double PeriodMaxDU { get; set; } = -100.0;
     }
 
-    public partial class DashboardClient {
-
+    public partial class DashboardClient
+    {
         // one global static real-time price Timer serves all clients. For efficiency.
         static Timer m_rtDashboardTimer = new System.Threading.Timer(new TimerCallback(RtDashboardTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
         static bool m_rtDashboardTimerRunning = false;
