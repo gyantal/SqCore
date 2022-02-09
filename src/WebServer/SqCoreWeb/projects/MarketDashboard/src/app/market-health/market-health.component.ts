@@ -351,7 +351,7 @@ export class MarketHealthComponent implements OnInit {
   }
 
   ngOnInit(): void {
-         // tslint:disable-next-line: no-unused-expression
+         // eslint:disable-next-line: no-unused-expression
          new TradingHoursTimer(document.getElementById('tradingHoursTimer'));
 
   } // ngOnInit()

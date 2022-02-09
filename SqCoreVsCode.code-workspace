@@ -28,9 +28,8 @@
 		"workbench.editor.highlightModifiedTabs": true,
 		"workbench.editor.enablePreview": false,
 		"typescript.reportStyleChecksAsWarnings": false,
-		"files.associations": {
-			"**/src/WebServer/SqCoreWeb/tslint.json": "jsonc",		// treat json files as jsonc (JSON with Comments), so tslint.json can contain line comments
-			"**/src/WebServer/SqCoreWeb/wwwroot/ts/sq-ngx-logger/tslint.json": "jsonc"
+		"files.associations": {	// treat json files as jsonc (JSON with Comments), so they can contain line comments
+
 		},
 		"html.format.wrapAttributes": "auto",  // Nested HTML elements are always wrapped. wrap 'attributes' only when line length is exceeded
 		"html.format.wrapLineLength": 0,	// disable max chars per line

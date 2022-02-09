@@ -1,4 +1,4 @@
-{ // In contrary to tslint.json, tsconfig.json cannot be 'nested'. So, subfolders will not overwrite main folders.  https://stackoverflow.com/questions/52709947/specific-tsconfig-json-rules-inside-folder
+{ // tsconfig.json cannot be 'nested'. So, subfolders will not overwrite main folders.  https://stackoverflow.com/questions/52709947/specific-tsconfig-json-rules-inside-folder
   "compileOnSave": true,
   "compilerOptions": {
     "baseUrl": "./",	  // error TS5060: Option 'paths' cannot be used without specifying '--baseUrl' option. And that is used for the Angular common library: "sq-ng-common"
