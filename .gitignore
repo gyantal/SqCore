@@ -204,6 +204,7 @@ ClientBin/
 orleans.codegen.cs
 
 node_modules
+.angularCache
 
 # RIA/Silverlight projects
 Generated_Code/
