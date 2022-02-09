@@ -28,7 +28,7 @@
 		"workbench.editor.highlightModifiedTabs": true,
 		"workbench.editor.enablePreview": false,
 		"typescript.reportStyleChecksAsWarnings": false,
-		"files.associations": {	// treat json files as jsonc (JSON with Comments), so they can contain line comments
+		"files.associations": {	// treat json files as jsonc (JSON with Comments), so they can contain line comments. Such as "**/src/WebServer/SqCoreWeb/*.json": "jsonc",
 
 		},
 		"html.format.wrapAttributes": "auto",  // Nested HTML elements are always wrapped. wrap 'attributes' only when line length is exceeded

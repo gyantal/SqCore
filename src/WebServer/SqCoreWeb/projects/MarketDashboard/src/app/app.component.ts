@@ -4,7 +4,7 @@ import { gDiag, AssetLastJs } from './../sq-globals';
 import { MarketHealthComponent } from './market-health/market-health.component';
 import { QuickfolioNewsComponent } from './quickfolio-news/quickfolio-news.component';
 import { BrAccViewerComponent } from './bracc-viewer/bracc-viewer.component';
-import { ChangeNaNstringToNaNnumber, SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
+import { ChangeNaNstringToNaNnumber, SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils'; // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
 import { SqNgCommonUtilsTime, minDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 
 type Nullable<T> = T | null;
@@ -31,7 +31,7 @@ export class AppComponent implements OnInit {
   // UrlQueryParams (keep them short): // ?t=bav
   // t (Active (T)ool) = mh (Market Health), bav (Broker Portfolio Viewer)
   public urlQueryParamsArr : string[][];
-  public urlQueryParamsObj = {};  // empty object. If queryParamsObj['t'] doesn't exist, it returns 'undefined'
+  public urlQueryParamsObj = {}; // empty object. If queryParamsObj['t'] doesn't exist, it returns 'undefined'
   user = {
     name: 'Anonymous',
     email: '             '
@@ -45,7 +45,7 @@ export class AppComponent implements OnInit {
   theme = '';
   sqDiagnosticsMsg = 'Benchmarking time, connection speed';
 
-  public _socket: WebSocket;  // initialize later in ctor, becuse we have to send back the activeTool from urlQueryParams
+  public _socket: WebSocket; // initialize later in ctor, becuse we have to send back the activeTool from urlQueryParams
 
   public urlParamActiveTool2UiActiveTool = {
     'mh': 'MarketHealth',
@@ -70,11 +70,11 @@ export class AppComponent implements OnInit {
     // console.log('AppComponent.ctor: queryParams.t: ' + queryParams.t);
 
     let wsQueryStr = '';
-    let paramActiveTool = this.urlQueryParamsObj['t'];
+    const paramActiveTool = this.urlQueryParamsObj['t'];
     if (paramActiveTool != undefined && paramActiveTool != 'mh') // if it is not missing and not the default active tool: MarketHealth
       wsQueryStr = '?t=' + paramActiveTool; // ?t=bav
 
-    this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/dashboard' + wsQueryStr);   // "wss://127.0.0.1/ws/dashboard" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection
+    this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/dashboard' + wsQueryStr); // "wss://127.0.0.1/ws/dashboard" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection
   }
 
   // called after Angular has initialized all data-bound properties before any of the view or content children have been checked. Called after the constructor and called  after the first ngOnChanges()
@@ -99,7 +99,7 @@ export class AppComponent implements OnInit {
       const msgCode = event.data.slice(0, semicolonInd);
       const msgObjStr = event.data.substring(semicolonInd + 1);
       switch (msgCode) {
-        case 'All.LstVal':  // this is the most frequent case. Should come first.
+        case 'All.LstVal': // this is the most frequent case. Should come first.
           if (gDiag.wsOnFirstRtMktSumRtStatTime === minDate)
             gDiag.wsOnFirstRtMktSumRtStatTime = new Date();
 
@@ -108,11 +108,11 @@ export class AppComponent implements OnInit {
           this.nLstValArrived++;
           const jsonArrayObjRt = JSON.parse(msgObjStr);
           // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
-          jsonArrayObjRt.forEach(element => {
-            element.last = ChangeNaNstringToNaNnumber(element.last);
+          jsonArrayObjRt.forEach((r) => {
+            r.last = ChangeNaNstringToNaNnumber(r.last);
           });
 
-          this.lstValStr = jsonArrayObjRt.map(s => s.assetId + '=>' + s.last.toFixed(2).toString()).join(', ');
+          this.lstValStr = jsonArrayObjRt.map((r) => r.assetId + '=>' + r.last.toFixed(2).toString()).join(', ');
           console.log('ws: RtMktSumRtStat arrived: ' + this.lstValStr);
           this.lstValObj = jsonArrayObjRt;
 
@@ -128,20 +128,20 @@ export class AppComponent implements OnInit {
           this.user.email = handshakeMsg.email;
           break;
         case 'Dshbrd.IsDshbrdOpenManyTimes':
-          console.log("The Dashboard opened multiple times string:", msgObjStr);
+          console.log('The Dashboard opened multiple times string:', msgObjStr);
           this.isDshbrdOpenManyTimes = String(msgObjStr).toLowerCase() === 'true';
           if (this.isDshbrdOpenManyTimes) {
-            var multipleDshbrdClientsMsg = document.getElementById("multipleDshbrdTabs") as HTMLElement;
-            multipleDshbrdClientsMsg.style.visibility = "visible";
-            multipleDshbrdClientsMsg.style.display = "block";
-      
+            const multipleDshbrdClientsMsg = document.getElementById('multipleDshbrdTabs') as HTMLElement;
+            multipleDshbrdClientsMsg.style.visibility = 'visible';
+            multipleDshbrdClientsMsg.style.display = 'block';
+
             // m_isDshbrdOpenManyTimesDialogVisible = true;
           }
           break;
         default:
           let isHandled = this.childMktHealthComponent.webSocketOnMessage(msgCode, msgObjStr);
           if (!isHandled)
-          isHandled = this.childBrAccViewerComponent.webSocketOnMessage(msgCode, msgObjStr);
+            isHandled = this.childBrAccViewerComponent.webSocketOnMessage(msgCode, msgObjStr);
           if (!isHandled)
             isHandled = this.childQckflNewsComponent.webSocketOnMessage(msgCode, msgObjStr);
 
@@ -158,9 +158,9 @@ export class AppComponent implements OnInit {
       // WebSocket Disconnection at page exit is not necessary, as server will timeout it. But it can be useful to release server resources earlier.
       console.log('window.beforeunload()');
 
-      if (!this._socket || this._socket.readyState !== WebSocket.OPEN) {
+      if (!this._socket || this._socket.readyState !== WebSocket.OPEN)
         alert('socket not connected');
-      }
+
       this._socket.close(1000, 'Closing from client');
 
       // unloadEvent.preventDefault();
@@ -169,17 +169,17 @@ export class AppComponent implements OnInit {
     });
 
     // Change the Active tool if it is requested by the Url Query String ?t=bav
-    let paramActiveTool = this.urlQueryParamsObj['t'];
+    const paramActiveTool = this.urlQueryParamsObj['t'];
     if (paramActiveTool != undefined && paramActiveTool != 'mh') { // if it is not missing and not the default active tool: MarketHealth
-      let uiActiveTool = this.urlParamActiveTool2UiActiveTool[paramActiveTool];
+      const uiActiveTool = this.urlParamActiveTool2UiActiveTool[paramActiveTool];
       if (uiActiveTool != undefined)
-        this.onChangeActiveTool(uiActiveTool);  // we need some mapping of 'bav' => 'BrAccViewer'
+        this.onChangeActiveTool(uiActiveTool); // we need some mapping of 'bav' => 'BrAccViewer'
     }
 
     setTimeout(() => {
       if (this._socket != null && this._socket.readyState === WebSocket.OPEN)
         this._socket.send('Dshbrd.IsDshbrdOpenManyTimes:');
-      }, 3000);
+    }, 3000);
   }
 
   public onSetTheme($event: string) {
@@ -232,20 +232,19 @@ export class AppComponent implements OnInit {
 
   // input comes from HTML. such as 'Docs-WhatIsNew'
   onChangeActiveTool(tool: string) {
-    if (this.activeTool === tool) {
+    if (this.activeTool === tool)
       return;
-    }
-    console.log('Changing activeTool to ' + tool)
+
+    console.log('Changing activeTool to ' + tool);
     this.activeTool = tool;
     return false; // assure that HREF will not reload the page  // https://stackoverflow.com/questions/13955667/disabled-href-tag
   }
 
   closeDropdownMenu(menuItem: string) {
-    if (menuItem === 'Tools') {
+    if (menuItem === 'Tools')
       this.isToolSelectionVisible = false;
-    } else if (menuItem === 'User') {
+    else if (menuItem === 'User')
       this.isUserSelectionVisible = false;
-    }
   }
 
   openSettings() {
@@ -271,16 +270,16 @@ export class AppComponent implements OnInit {
         `WS Last  BrAccVw.RfrSnapshot latency: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.wsOnLastBrAccVwRefreshSnapshotStart, gDiag.wsOnLastBrAccVwSnapshot)}\n`;
     }
   }
-// under development Daya
+
+  // under development Daya
   dshbrdOpenedManyTimesPopup() {
     this.m_isDshbrdOpenManyTimesDialogVisible = false;
 
-    var multipleDshbrdClientsMsg = document.getElementById("multipleDshbrdTabs") as HTMLElement;
-    multipleDshbrdClientsMsg.style.visibility = "hidden";
+    const multipleDshbrdClientsMsg = document.getElementById('multipleDshbrdTabs') as HTMLElement;
+    multipleDshbrdClientsMsg.style.visibility = 'hidden';
   }
 
   onWindowClose() {
     window.close();
   }
-
 }
