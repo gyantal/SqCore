@@ -1,7 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { gDiag, AssetLastJs } from './../../sq-globals';
 import { SqNgCommonUtilsStr } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_str';
-import { SqNgCommonUtilsTime, minDate } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time';   // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
+import { SqNgCommonUtilsTime, minDate } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time'; // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
 import * as d3 from 'd3';
 
 type Nullable<T> = T | null;
@@ -165,7 +165,7 @@ class UiHistData {
   // calculated fields as numbers
   public periodReturn = NaN; // for period: from startDate to endDate
   public periodMaxDrawDown = NaN; // for period: from startDate to endDate
-  public return = NaN;  // Total return (from startDate to endDate to last realtime): adding period-return and realtime-return together. Every other performance number (cagr, maxDD) is also Total.
+  public return = NaN; // Total return (from startDate to endDate to last realtime): adding period-return and realtime-return together. Every other performance number (cagr, maxDD) is also Total.
   public cagr = NaN;
   public drawDown = NaN;
   public drawUp = NaN;
@@ -186,23 +186,23 @@ class UiChrtval {
   styleUrls: ['./bracc-viewer.component.scss'],
 })
 export class BrAccViewerComponent implements OnInit {
-  @Input() _parentWsConnection?: WebSocket = undefined;    // this property will be input from above parent container
+  @Input() _parentWsConnection?: WebSocket = undefined; // this property will be input from above parent container
 
-  // Guessed Beta for HL hedges and companies.MarketWatch Beta calculation is quite good. Use that If it is available.  There, Beta of QQQ: 1.18, that is the base.  
-  static betaArr: { [id: string] : number; } = 
-    {'QQQ': 1.18/1.18, 'TQQQ': 3.0, 'SQQQ': -3.0, 'SPY': 1/1.18, 'SPXL': 3*1/1.18, 'UPRO': 3*1/1.18, 'SPXS': -3*1/1.18, 'SPXU': -3*1/1.18, 'TWM': -2.07/1.18,            // market ETFs
-    'VXX': -3.4/1.18,  'VXZ': -1.82/1.18,  'SVXY': 1.7/1.18, 'ZIV': 1.81/1.18,                  // VIX
-    'TLT': -0.50/1.18, // https://www.ishares.com/us/products/239454/ishares-20-year-treasury-bond-etf says -0.25, MarketWatch: -0.31, discretionary override from -0.31 to -0.50 (TMF too)
-    'TMF': 3*-0.50/1.18, 'TMV': -1*3*-0.50/1.18,  'TIP': -0.06/1.18, 
-    'USO': 0.83/1.18, 'SCO': -2.0*0.83/1.18, 'UCO': 1.25/1.18, 
-    'UNG': 0.23/1.18,   // discretionary override from 0.03 to 0.23 (UGAZ too)
-    'UGAZ': 3*0.23/1.18,     
-    'GLD': (-0.24*1.18)/1.18,  // GLD has no Beta on MarketWatch. YF (5Years, monthly): 0.04. But DC's discretionary (logical) override: -0.24 
-    'TAIL': -1/1.18,    // compared TAIL vs. SPY and it moves about the same beta, just opposite
-    'UUP': (-0.31)/1.18,    // YF Beta calculation; when market panics, the whole world wants to buy safe USA treasuries, therefore USD goes up => negative correlation.
-    // companies
-    'PM': 0.62/1.18 ,
-    };     // it is QQQ Beta, not SPY beta
+  // Guessed Beta for HL hedges and companies.MarketWatch Beta calculation is quite good. Use that If it is available.  There, Beta of QQQ: 1.18, that is the base.
+  static betaArr: { [id: string] : number; } =
+    {'QQQ': 1.18/1.18, 'TQQQ': 3.0, 'SQQQ': -3.0, 'SPY': 1/1.18, 'SPXL': 3*1/1.18, 'UPRO': 3*1/1.18, 'SPXS': -3*1/1.18, 'SPXU': -3*1/1.18, 'TWM': -2.07/1.18, // market ETFs
+      'VXX': -3.4/1.18, 'VXZ': -1.82/1.18, 'SVXY': 1.7/1.18, 'ZIV': 1.81/1.18, // VIX
+      'TLT': -0.50/1.18, // https://www.ishares.com/us/products/239454/ishares-20-year-treasury-bond-etf says -0.25, MarketWatch: -0.31, discretionary override from -0.31 to -0.50 (TMF too)
+      'TMF': 3*-0.50/1.18, 'TMV': -1*3*-0.50/1.18, 'TIP': -0.06/1.18,
+      'USO': 0.83/1.18, 'SCO': -2.0*0.83/1.18, 'UCO': 1.25/1.18,
+      'UNG': 0.23/1.18, // discretionary override from 0.03 to 0.23 (UGAZ too)
+      'UGAZ': 3*0.23/1.18,
+      'GLD': (-0.24*1.18)/1.18, // GLD has no Beta on MarketWatch. YF (5Years, monthly): 0.04. But DC's discretionary (logical) override: -0.24
+      'TAIL': -1/1.18, // compared TAIL vs. SPY and it moves about the same beta, just opposite
+      'UUP': (-0.31)/1.18, // YF Beta calculation; when market panics, the whole world wants to buy safe USA treasuries, therefore USD goes up => negative correlation.
+      // companies
+      'PM': 0.62/1.18,
+    }; // it is QQQ Beta, not SPY beta
 
   handshakeStrFormatted = '[Nothing arrived yet]';
   handshakeObj: Nullable<BrAccVwrHandShk> = null;
@@ -214,7 +214,7 @@ export class BrAccViewerComponent implements OnInit {
   stockHistObj: Nullable<BrAccHistValuesJs> = null;
   brAccountSnapshotStrFormatted = '[Nothing arrived yet]';
   brAccountSnapshotObj: Nullable<BrAccSnapshotJs> = null;
-  lstValObj: Nullable<AssetLastJs[]> = null;  // realtime or last values
+  lstValObj: Nullable<AssetLastJs[]> = null; // realtime or last values
   lstValLastUiRefreshTimeLoc = new Date(); // This is not the time of the Rt data, but the time when last refresh was sent from server to UI.
   navSelection: string[] = [];
   navSelectionSelected = '';
@@ -230,7 +230,7 @@ export class BrAccViewerComponent implements OnInit {
   bnchmkTickerSelection = ['SPY', 'QQQ', 'TLT', 'VXX', 'SVXY', 'UNG', 'USO'];
   bnchmkTickerSelectionSelected: string = 'SPY';
   histPeriodStartET: Date; // set in ctor. We need this in JS client to check that the received data is long enough or not (Expected Date)
-  histPeriodStartETstr: string; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a 	A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
+  histPeriodStartETstr: string; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
   histPeriodEndET: Date;
   histPeriodEndETstr: string;
   chrtTickerSelected: string = 'SPY';
@@ -244,30 +244,30 @@ export class BrAccViewerComponent implements OnInit {
   isMouseInTooltip: boolean = false;
 
   constructor() {
-
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
 
-    this.histPeriodStartET = new Date(todayET.getFullYear() - 1, 11, 31);  // set YTD as default
+    this.histPeriodStartET = new Date(todayET.getFullYear() - 1, 11, 31); // set YTD as default
     this.histPeriodStartETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.histPeriodStartET);
 
     // https://stackoverflow.com/questions/563406/add-days-to-javascript-date
     const yesterDayET = new Date(todayET);
     yesterDayET.setDate(yesterDayET.getDate() - 1);
-    this.histPeriodEndET = new Date(yesterDayET.getFullYear(), yesterDayET.getMonth(), yesterDayET.getDate());  // set yesterdayET as default
+    this.histPeriodEndET = new Date(yesterDayET.getFullYear(), yesterDayET.getMonth(), yesterDayET.getDate()); // set yesterdayET as default
     this.histPeriodEndETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.histPeriodEndET);
 
     setInterval(() => { this.snapshotRefresh(); }, 60 * 60 * 1000); // forced Snapshot table refresh timer in every 60 mins
-    setInterval(() => { this.uiMktBar.lstValLastRefreshTimeStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiMktBar.lstValLastRefreshTimeLoc.getTime());
-                        this.uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.navLastUpdateTimeLoc.getTime());
-                        this.uiSnapTable.snapLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.snapLastUpateTimeLoc.getTime());
-                      }, 1000); // refresh at every 1 secs
+    setInterval(() => {
+      this.uiMktBar.lstValLastRefreshTimeStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiMktBar.lstValLastRefreshTimeLoc.getTime());
+      this.uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.navLastUpdateTimeLoc.getTime());
+      this.uiSnapTable.snapLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - this.uiSnapTable.snapLastUpateTimeLoc.getTime());
+    }, 1000); // refresh at every 1 secs
     setInterval(() => {
       if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
         this._parentWsConnection.send('BrAccViewer.RefreshMktBrPriorCloses:' + this.uiMktBar);
-      }, 120 * 60 * 1000);
-   }
-     
+    }, 120 * 60 * 1000);
+  }
+
   ngOnInit(): void {
   }
 
@@ -294,7 +294,7 @@ export class BrAccViewerComponent implements OnInit {
         this.mktBrLstClsObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateMktBarUi(this.handshakeObj, this.mktBrLstClsObj, this.lstValObj, this.lstValLastUiRefreshTimeLoc, this.uiMktBar);
         return true;
-      case 'BrAccViewer.Handshake':  // this is the least frequent message. Should come last.
+      case 'BrAccViewer.Handshake': // this is the least frequent message. Should come last.
         console.log('BrAccViewer.Handshake:' + msgObjStr);
         this.handshakeStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.handshakeObj = JSON.parse(msgObjStr);
@@ -312,15 +312,16 @@ export class BrAccViewerComponent implements OnInit {
     }
   }
 
-  public webSocketLstValArrived(p_lstValObj: Nullable<AssetLastJs[]>) { // real time price data
+
+  public webSocketLstValArrived(lstValObj: Nullable<AssetLastJs[]>) { // real time price data
     this.lstValLastUiRefreshTimeLoc = new Date();
-    this.lstValObj = p_lstValObj;
-    BrAccViewerComponent.updateMktBarUi(this.handshakeObj, this.mktBrLstClsObj, this.lstValObj, this.lstValLastUiRefreshTimeLoc,this.uiMktBar);
+    this.lstValObj = lstValObj;
+    BrAccViewerComponent.updateMktBarUi(this.handshakeObj, this.mktBrLstClsObj, this.lstValObj, this.lstValLastUiRefreshTimeLoc, this.uiMktBar);
     BrAccViewerComponent.updateSnapshotTableWithRtNav(this.lstValObj, this.uiSnapTable);
   }
 
-  updateUiSelectableNavs(pSelectableNavAssets: Nullable<AssetJs[]>) {  // same in MktHlth and BrAccViewer
-    if(pSelectableNavAssets == null)
+  updateUiSelectableNavs(pSelectableNavAssets: Nullable<AssetJs[]>) { // same in MktHlth and BrAccViewer
+    if (pSelectableNavAssets == null)
       return;
     this.navSelectionSelected = '';
     for (const nav of pSelectableNavAssets) {
@@ -331,14 +332,14 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   static updateMktBarUi(handshakeObj: Nullable<BrAccVwrHandShk>, priorCloses: Nullable<AssetPriorCloseJs[]>, lastRt: Nullable<AssetLastJs[]>, lstValLastUiRefreshTime: Date, uiMktBar: UiMktBar) {
-    let marketBarAssets: Nullable<AssetJs[]> = (handshakeObj == null) ? null : handshakeObj.marketBarAssets;
+    const marketBarAssets: Nullable<AssetJs[]> = (handshakeObj == null) ? null : handshakeObj.marketBarAssets;
     // check if both array exist; instead of the old-school way, do ES5+ way: https://stackoverflow.com/questions/11743392/check-if-an-array-is-empty-or-exists
-    if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(priorCloses) && priorCloses.length > 0  && Array.isArray(lastRt) && lastRt.length > 0))
+    if (!(Array.isArray(marketBarAssets) && marketBarAssets.length > 0 && Array.isArray(priorCloses) && priorCloses.length > 0 && Array.isArray(lastRt) && lastRt.length > 0))
       return;
     uiMktBar.lstValLastRefreshTimeLoc = lstValLastUiRefreshTime;
     uiMktBar.lstValLastRefreshTimeStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - uiMktBar.lstValLastRefreshTimeLoc.getTime());
     for (const item of marketBarAssets) {
-      let uiItem = new UiMktBarItem();
+      const uiItem = new UiMktBarItem();
       const existingUiCols = uiMktBar.poss.filter((r) => r.sqTicker === item.sqTicker);
       if (existingUiCols.length === 0) {
         uiItem.assetId = item.assetId;
@@ -347,7 +348,7 @@ export class BrAccViewerComponent implements OnInit {
         uiItem.name = item.name;
         uiMktBar.poss.push(uiItem);
       } else if (existingUiCols.length >= 2)
-        console.warn(`Received ticker '${item.sqTicker}' has duplicates in UiArray. This might be legit if both VOD.L and VOD wants to be used. ToDo: Differentiation based on assetId is needed.`,'background: #222; color: red');
+        console.warn(`Received ticker '${item.sqTicker}' has duplicates in UiArray. This might be legit if both VOD.L and VOD wants to be used. ToDo: Differentiation based on assetId is needed.`, 'background: #222; color: red');
     }
     for (const nonRt of priorCloses) {
       const existingUiCols = uiMktBar.poss.filter((r) => r.assetId === nonRt.assetId);
@@ -364,7 +365,7 @@ export class BrAccViewerComponent implements OnInit {
         continue;
       const uiItem = existingUiItems[0];
       uiItem.pctChg = (rtItem.last - uiItem.priorClose) / uiItem.priorClose;
-    }  
+    }
   }
 
   static updateSnapshotTable(brAccSnap: Nullable<BrAccSnapshotJs>, isSortingDirectionAscending: boolean, sortColumn: string, isFilteringBasedonMktVal: boolean, isFilteringBasedonPlDaily: boolean, isFilteringBasedonOptions: boolean, uiSnapTable: UiSnapTable) {
@@ -373,9 +374,9 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.navAssetId = brAccSnap.assetId;
     uiSnapTable.navSymbol = brAccSnap.symbol;
     uiSnapTable.snapLastUpateTimeLoc = new Date(brAccSnap.lastUpdate);
-    uiSnapTable.snapLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - (new Date (brAccSnap.lastUpdate)).getTime());
+    uiSnapTable.snapLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - (new Date(brAccSnap.lastUpdate)).getTime());
     uiSnapTable.navLastUpdateTimeLoc = new Date(brAccSnap.lastUpdate);
-    uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - (new Date (brAccSnap.lastUpdate)).getTime());
+    uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - (new Date(brAccSnap.lastUpdate)).getTime());
     uiSnapTable.totalCashValue = brAccSnap.totalCashValue;
     uiSnapTable.initialMarginReq = brAccSnap.initMarginReq;
     uiSnapTable.maintMarginReq = brAccSnap.maintMarginReq;
@@ -384,24 +385,24 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.priorCloseNetLiquidation = brAccSnap.priorCloseNetLiquidation;
     uiSnapTable.plTodPrNav = Math.round(brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation);
     uiSnapTable.pctChgTodPrNav = (brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation) / brAccSnap.priorCloseNetLiquidation;
-    uiSnapTable.clientMsg = brAccSnap.clientMsg.replace(';','\n');
+    uiSnapTable.clientMsg = brAccSnap.clientMsg.replace(';', '\n');
     uiSnapTable.numOfAllPoss = brAccSnap.poss.length;
     uiSnapTable.poss.length = 0;
     uiSnapTable.sumPlTodVal = 0;
     uiSnapTable.longStockValue = 0;
     uiSnapTable.shortStockValue = 0;
     uiSnapTable.totalMaxRiskedN = 0;
-    var smallMktValThreshold = uiSnapTable.priorCloseNetLiquidation * 0.01; //1% of NAV. For a 400K NAV, it is 4K. For a 8M NAV it is 80K.
+    const smallMktValThreshold = uiSnapTable.priorCloseNetLiquidation * 0.01; // 1% of NAV. For a 400K NAV, it is 4K. For a 8M NAV it is 80K.
 
     for (const possItem of brAccSnap.poss) {
-      let uiPosItem = new UiAssetSnapPossPos();
+      const uiPosItem = new UiAssetSnapPossPos();
       uiPosItem.assetId = possItem.assetId;
       uiPosItem.sqTicker = possItem.sqTicker;
       uiPosItem.symbol = possItem.symbol;
       uiPosItem.symbolEx = possItem.symbolEx;
       uiPosItem.name = possItem.name;
       uiPosItem.accIdStr = possItem.accId;
-      // BrAccViewerComponent.betaArr 
+      // BrAccViewerComponent.betaArr
       uiPosItem.pos = possItem.pos;
       uiPosItem.avgCost = possItem.avgCost;
       uiPosItem.priorClose = possItem.priorClose;
@@ -413,8 +414,8 @@ export class BrAccViewerComponent implements OnInit {
       uiPosItem.gBeta = (uiPosItem.symbol in BrAccViewerComponent.betaArr ) ? BrAccViewerComponent.betaArr [uiPosItem.symbol] : 1.0;
       if (possItem.sqTicker.startsWith('O') && !isNaN(possItem.ibCompDelta) && possItem.ibCompDelta != 0.0) {
         uiPosItem.estUndPrice = possItem.estUndPrice;
-        var optCallPutMulN = possItem.name.includes('Call') ? 1 : -1;  // Call option  has positive multiplier
-        uiPosItem.delivValue = Math.round(possItem.pos * 100 * possItem.estUndPrice * optCallPutMulN);  // Assuming option multiplier is 100
+        const optCallPutMulN = possItem.name.includes('Call') ? 1 : -1; // Call option  has positive multiplier
+        uiPosItem.delivValue = Math.round(possItem.pos * 100 * possItem.estUndPrice * optCallPutMulN); // Assuming option multiplier is 100
         uiPosItem.ibCompDelta = possItem.ibCompDelta;
         uiPosItem.dltAdjDelivVal = Math.round(uiPosItem.ibCompDelta * uiPosItem.delivValue);
         uiPosItem.betaDltAdj = Math.round(uiPosItem.gBeta * uiPosItem.dltAdjDelivVal);
@@ -422,11 +423,11 @@ export class BrAccViewerComponent implements OnInit {
         uiPosItem.betaDltAdj = Math.round(uiPosItem.gBeta * uiPosItem.mktVal);
 
       uiSnapTable.sumPlTodVal += uiPosItem.plTod;
-      if (uiPosItem.mktVal > 0) { //Long and Short stock values
+      if (uiPosItem.mktVal > 0) { // Long and Short stock values
         uiSnapTable.longStockValue += uiPosItem.mktVal;
-      } else if (uiPosItem.mktVal < 0) {
+      } else if (uiPosItem.mktVal < 0)
         uiSnapTable.shortStockValue += uiPosItem.mktVal;
-      }
+
       uiSnapTable.totalMaxRiskedN += Math.abs(uiPosItem.mktVal);
 
       let isShowPos = true;
@@ -437,32 +438,31 @@ export class BrAccViewerComponent implements OnInit {
       if (isFilteringBasedonOptions && possItem.sqTicker.startsWith('O'))
         isShowPos = false;
       if (isShowPos)
-      uiSnapTable.poss.push(uiPosItem);
+        uiSnapTable.poss.push(uiPosItem);
     }
     uiSnapTable.sumPlTodPct = uiSnapTable.sumPlTodVal / uiSnapTable.priorCloseNetLiquidation; // profit & Loss total percent change
     uiSnapTable.totalMaxRiskedLeverage = (uiSnapTable.totalMaxRiskedN / uiSnapTable.netLiquidation);
     uiSnapTable.numOfVisiblePoss = uiSnapTable.poss.length;
 
     uiSnapTable.poss = uiSnapTable.poss.sort((n1: UiAssetSnapPossPos, n2: UiAssetSnapPossPos) => {
-      if (isSortingDirectionAscending) {
+      if (isSortingDirectionAscending)
         return (n1[sortColumn] > n2[sortColumn]) ? 1 : ((n1[sortColumn] < n2[sortColumn]) ? -1 : 0);
-      } else {
+      else
         return (n2[sortColumn] > n1[sortColumn]) ? 1 : ((n2[sortColumn] < n1[sortColumn]) ? -1 : 0);
-      }
-    })
+    });
   }
 
-  static updateSnapshotTableWithRtNav(p_lstValObj: Nullable<AssetLastJs[]>, uiSnapTable: UiSnapTable) {
-    if (!(Array.isArray(p_lstValObj) && p_lstValObj.length > 0))
+  static updateSnapshotTableWithRtNav(lstValObj: Nullable<AssetLastJs[]>, uiSnapTable: UiSnapTable) {
+    if (!(Array.isArray(lstValObj) && lstValObj.length > 0))
       return;
-    for (const item of p_lstValObj) {
+    for (const item of lstValObj) {
       if (item.assetId === uiSnapTable.navAssetId) {
         uiSnapTable.netLiquidation = item.last;
         uiSnapTable.navLastUpdateTimeLoc = new Date(item.lastUtc);
         uiSnapTable.navLastUpdateTimeAgoStr = SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - (uiSnapTable.navLastUpdateTimeLoc).getTime()) == null ? SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(uiSnapTable.snapLastUpateTimeLoc.getTime()) : SqNgCommonUtilsTime.ConvertMilliSecToTimeStr(Date.now() - (uiSnapTable.navLastUpdateTimeLoc).getTime());
         uiSnapTable.plTodPrNav = Math.round(uiSnapTable.netLiquidation - uiSnapTable.priorCloseNetLiquidation);
         uiSnapTable.pctChgTodPrNav = (uiSnapTable.netLiquidation - uiSnapTable.priorCloseNetLiquidation) / uiSnapTable.priorCloseNetLiquidation;
-        document.title = "MD:" + "$" + ((uiSnapTable.plTodPrNav / 1000).toFixed(1) + "K" + "(" + ((uiSnapTable.pctChgTodPrNav) * 100).toFixed(2) + "%)").toString();
+        document.title = 'MD:' + '$' + ((uiSnapTable.plTodPrNav / 1000).toFixed(1) + 'K' + '(' + ((uiSnapTable.pctChgTodPrNav) * 100).toFixed(2) + '%)').toString();
       }
     }
   }
@@ -474,24 +474,24 @@ export class BrAccViewerComponent implements OnInit {
     todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
 
     uiHistData.length = 0;
-    for(const hisStatItem of histObj) {
-      if (hisStatItem.histStat == null || hisStatItem.histValues == null) 
+    for (const hisStatItem of histObj) {
+      if (hisStatItem.histStat == null || hisStatItem.histValues == null)
         continue;
-      let uiHistItem = new UiHistData();
-      uiHistItem.assetId = hisStatItem.histStat.assetId;      
+      const uiHistItem = new UiHistData();
+      uiHistItem.assetId = hisStatItem.histStat.assetId;
       uiHistItem.periodEnd = hisStatItem.histStat.periodEnd;
       uiHistItem.periodEndDate = hisStatItem.histStat.periodEndDate;
       uiHistItem.periodHigh = hisStatItem.histStat.periodHigh;
       uiHistItem.periodLow = hisStatItem.histStat.periodLow;
       uiHistItem.periodMaxDD = hisStatItem.histStat.periodMaxDD;
       uiHistItem.periodMaxDU = hisStatItem.histStat.periodMaxDU;
-      uiHistItem.periodStart = hisStatItem.histStat.periodStart
+      uiHistItem.periodStart = hisStatItem.histStat.periodStart;
       uiHistItem.periodStartDate = hisStatItem.histStat.periodStartDate;
       // preparing values
       uiHistItem.periodReturn = uiHistItem.periodEnd / uiHistItem.periodStart - 1;
       uiHistItem.periodMaxDrawDown = uiHistItem.periodMaxDD;
       uiHistItem.return = uiHistItem.periodEnd / uiHistItem.periodStart - 1;
-      const dataStartDateET = new Date(uiHistItem.periodStartDate);  // '2010-09-29T00:00:00' which was UTC is converted to DateObj interpreted in Local time zone {Tue Sept 29 2010 00:00:00 GMT+0000 (Greenwich Mean Time)}
+      const dataStartDateET = new Date(uiHistItem.periodStartDate); // '2010-09-29T00:00:00' which was UTC is converted to DateObj interpreted in Local time zone {Tue Sept 29 2010 00:00:00 GMT+0000 (Greenwich Mean Time)}
       const nDays = SqNgCommonUtilsTime.DateDiffNdays(dataStartDateET, todayET); // 2 weeks = 14 days, 2020 year: 366 days, because it is a leap year.
       const nYears = nDays / 365.25; // exact number of days in a year in average 365.25 days, because it is 3 times 365 and 1 time 366
       uiHistItem.cagr = Math.pow(1 + uiHistItem.return, 1.0 / nYears) - 1;
@@ -500,10 +500,10 @@ export class BrAccViewerComponent implements OnInit {
       uiHistItem.maxDrawDown = Math.min(uiHistItem.periodMaxDD, uiHistItem.drawDown);
       uiHistItem.maxDrawUp = Math.max(uiHistItem.periodMaxDU, uiHistItem.drawUp);
       uiHistItem.sqTicker = hisStatItem.histValues.sqTicker;
-      for (var i = 0; i < hisStatItem.histValues.histDates.length; i++ ) {
-        let brAccItem = new UiChrtval();
-        var dateStr: string = hisStatItem.histValues.histDates[i];
-        brAccItem.date = new Date (dateStr.substring(0,4) + '-' + dateStr.substring(4,6) + '-' + dateStr.substring(6,8));
+      for (let i = 0; i < hisStatItem.histValues.histDates.length; i++ ) {
+        const brAccItem = new UiChrtval();
+        const dateStr: string = hisStatItem.histValues.histDates[i];
+        brAccItem.date = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(4, 6) + '-' + dateStr.substring(6, 8));
         brAccItem.sdaClose = (hisStatItem.histValues.histSdaCloses[i]) / 1000; // divided by thousand to show data in K (Ex: 20,000 = 20K)
         uiHistItem.navChrtVals.push(brAccItem);
       }
@@ -511,67 +511,67 @@ export class BrAccViewerComponent implements OnInit {
     }
     BrAccViewerComponent.processUiWithNavChrt(uiHistData);
   }
-    
+
   static processUiWithNavChrt(uiHistData: UiHistData[]) {
     d3.selectAll('#navChrt > *').remove();
-    var margin = {top: 10, right: 30, bottom: 30, left: 60 };
-    var width = 660 - margin.left - margin.right;
-    var height = 400 - margin.top - margin.bottom;
+    const margin = {top: 10, right: 30, bottom: 30, left: 60 };
+    const width = 660 - margin.left - margin.right;
+    const height = 400 - margin.top - margin.bottom;
 
-    var firstEleOfHistDataArr1 = uiHistData[0].navChrtVals[0].sdaClose; // used to convert the data into percentage values
-    var firstEleOfHistDataArr2 = uiHistData[1].navChrtVals[0].sdaClose; // used to convert the data into percentage values
+    const firstEleOfHistDataArr1 = uiHistData[0].navChrtVals[0].sdaClose; // used to convert the data into percentage values
+    const firstEleOfHistDataArr2 = uiHistData[1].navChrtVals[0].sdaClose; // used to convert the data into percentage values
 
-    var navChrtData1 = uiHistData[0].navChrtVals.map((r:{ date: Date; sdaClose: number; }) => 
-            ({date: new Date(r.date), sdaClose: (100 * r.sdaClose / firstEleOfHistDataArr1)}));
-    var navChrtData2 = uiHistData[1].navChrtVals.map((r:{ date: Date; sdaClose: number; }) => 
-            ({date: new Date(r.date), sdaClose: (100 * r.sdaClose / firstEleOfHistDataArr2)}));
+    const navChrtData1 = uiHistData[0].navChrtVals.map((r:{ date: Date; sdaClose: number; }) =>
+      ({date: new Date(r.date), sdaClose: (100 * r.sdaClose / firstEleOfHistDataArr1)}));
+    const navChrtData2 = uiHistData[1].navChrtVals.map((r:{ date: Date; sdaClose: number; }) =>
+      ({date: new Date(r.date), sdaClose: (100 * r.sdaClose / firstEleOfHistDataArr2)}));
 
     // find data range
-    var xMin = d3.min(navChrtData1, (r:{ date: any; }) => r.date);
-    var xMax = d3.max(navChrtData1, (r:{ date: any; }) => r.date);
-    var yMinAxis = Math.min(d3.min(navChrtData1, (r:{ sdaClose: any; }) => r.sdaClose), d3.min(navChrtData2, (r:{ sdaClose: any; }) => r.sdaClose ));
-    var yMaxAxis = Math.max(d3.max(navChrtData1, (r:{ sdaClose: any; }) => r.sdaClose), d3.max(navChrtData2, (r:{ sdaClose: any; }) => r.sdaClose ));
+    const xMin = d3.min(navChrtData1, (r:{ date: any; }) => r.date);
+    const xMax = d3.max(navChrtData1, (r:{ date: any; }) => r.date);
+    const yMinAxis = Math.min(d3.min(navChrtData1, (r:{ sdaClose: any; }) => r.sdaClose), d3.min(navChrtData2, (r:{ sdaClose: any; }) => r.sdaClose ));
+    const yMaxAxis = Math.max(d3.max(navChrtData1, (r:{ sdaClose: any; }) => r.sdaClose), d3.max(navChrtData2, (r:{ sdaClose: any; }) => r.sdaClose ));
     // range of data configuring
-    var navChrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, width]);
-    var navChrtScaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([height, 0]);
+    const navChrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, width]);
+    const navChrtScaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([height, 0]);
 
-    var navChrtSvg = d3.select('#navChrt').append('svg')
-                        .attr('width', width + margin.left + margin.right)
-                        .attr('height', height + margin.top + margin.bottom)
-                        .append('g')
-                        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-    var navChrtScaleYAxis = d3.axisLeft(navChrtScaleY).tickFormat((r: any) => Math.round(r) + '%');
+    const navChrtSvg = d3.select('#navChrt').append('svg')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', height + margin.top + margin.bottom)
+        .append('g')
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+    const navChrtScaleYAxis = d3.axisLeft(navChrtScaleY).tickFormat((r: any) => Math.round(r) + '%');
 
     navChrtSvg.append('g')
-              .attr('transform', 'translate(0,' + height + ')')
-              .call(d3.axisBottom(navChrtScaleX));
-    navChrtSvg.append('g').call(navChrtScaleYAxis)
+        .attr('transform', 'translate(0,' + height + ')')
+        .call(d3.axisBottom(navChrtScaleX));
+    navChrtSvg.append('g').call(navChrtScaleYAxis);
 
     // Define the line
-    var line = d3.line()
-                  .x((r: any) => navChrtScaleX(r.date))
-                  .y((r: any) => navChrtScaleY(r.sdaClose))
-                  .curve(d3.curveCardinal);
-    var line2 = d3.line()
-                  .x((r: any) => navChrtScaleX(r.date))
-                  .y((r: any) => navChrtScaleY(r.sdaClose))
-                  .curve(d3.curveCardinal);
+    const line = d3.line()
+        .x((r: any) => navChrtScaleX(r.date))
+        .y((r: any) => navChrtScaleY(r.sdaClose))
+        .curve(d3.curveCardinal);
+    const line2 = d3.line()
+        .x((r: any) => navChrtScaleX(r.date))
+        .y((r: any) => navChrtScaleY(r.sdaClose))
+        .curve(d3.curveCardinal);
 
-    var navChrtlineSvg = navChrtSvg.append('g');
-    var focus = navChrtSvg.append('g').style('display', 'none');
-  // Add the valueline path.
+    const navChrtlineSvg = navChrtSvg.append('g');
+    const focus = navChrtSvg.append('g').style('display', 'none');
+    // Add the valueline path.
     navChrtlineSvg.append('path')
-                  .attr('class', 'line')
-                  .datum(navChrtData1) // Binds data to the line
-                  .attr('d', line as any)
+        .attr('class', 'line')
+        .datum(navChrtData1) // Binds data to the line
+        .attr('d', line as any);
 
     navChrtlineSvg.append('path')
-                  .attr('class', 'line2')
-                  .style('stroke-dasharray', ('3, 3'))
-                  .datum(navChrtData2) // Binds data to the line
-                  .attr('d', line2 as any)
+        .attr('class', 'line2')
+        .style('stroke-dasharray', ('3, 3'))
+        .datum(navChrtData2) // Binds data to the line
+        .attr('d', line2 as any);
 
-     // append the x line
+    // append the x line
     focus.append('line')
         .attr('class', 'x')
         .style('stroke', 'blue')
@@ -580,7 +580,7 @@ export class BrAccViewerComponent implements OnInit {
         .attr('y1', 0)
         .attr('y2', height);
 
- // append the y line
+    // append the y line
     focus.append('line')
         .attr('class', 'y')
         .style('stroke', 'blue')
@@ -632,7 +632,7 @@ export class BrAccViewerComponent implements OnInit {
         .attr('class', 'y4')
         .attr('dx', 8)
         .attr('dy', '1em');
-    
+
     // append the rectangle to capture mouse
     navChrtSvg.append('rect')
         .attr('width', width)
@@ -644,12 +644,12 @@ export class BrAccViewerComponent implements OnInit {
         .on('mousemove', mousemove);
 
     const formatMonth = d3.timeFormat('%Y%m%d');
-    var bisectDate = d3.bisector((r: any) => r.date).left;
+    const bisectDate = d3.bisector((r: any) => r.date).left;
 
     function mousemove(event: any) {
-      var x0 = navChrtScaleX.invert(d3.pointer(event)[0]),
-      i = bisectDate(navChrtData1, x0, 1),
-      r = navChrtData1[i]
+      const x0 = navChrtScaleX.invert(d3.pointer(event)[0]);
+      const i = bisectDate(navChrtData1, x0, 1);
+      const r = navChrtData1[i];
       focus.select('circle.y')
           .attr('transform', 'translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')');
       focus.select('text.y1')
@@ -662,7 +662,7 @@ export class BrAccViewerComponent implements OnInit {
           .attr('transform', 'translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')')
           .text(formatMonth(r.date));
       focus.select('text.y4')
-          .attr('transform','translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')')
+          .attr('transform', 'translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')')
           .text(formatMonth(r.date));
       focus.select('.x')
           .attr('transform', 'translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')')
@@ -677,10 +677,10 @@ export class BrAccViewerComponent implements OnInit {
     if (stockObj == null)
       return;
     uiSnapTable.stockChartVals.length = 0;
-    for (var i = 0; i < stockObj.histDates.length; i++) {
-      let stockVal = new UiChrtval();
-      var dateStr: string = stockObj.histDates[i];
-      stockVal.date = new Date (dateStr.substring(0,4) + '-' + dateStr.substring(4,6) + '-' + dateStr.substring(6,8));
+    for (let i = 0; i < stockObj.histDates.length; i++) {
+      const stockVal = new UiChrtval();
+      const dateStr: string = stockObj.histDates[i];
+      stockVal.date = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(4, 6) + '-' + dateStr.substring(6, 8));
       stockVal.sdaClose = stockObj.histSdaCloses[i];
       uiSnapTable.stockChartVals.push(stockVal);
     }
@@ -688,32 +688,32 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   onNavSelectedChange(pEvent: any) {
-    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) 
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('BrAccViewer.ChangeNav:' + this.navSelectionSelected);
   }
 
   onLookbackSelectChange() {
     const currDateET: Date = new Date(); // gets today's date
-    if (this.histPeriodSelectionSelected.toUpperCase() === 'YTD') {
+    if (this.histPeriodSelectionSelected.toUpperCase() === 'YTD')
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 1, 11, 31)).toString();
-    } else if (this.histPeriodSelectionSelected.toLowerCase().endsWith('m')) {
+    else if (this.histPeriodSelectionSelected.toLowerCase().endsWith('m'))
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear(), currDateET.getMonth() - 1, currDateET.getDay())).toString();
-    } else if (this.histPeriodSelectionSelected.startsWith('3')) {
+    else if (this.histPeriodSelectionSelected.startsWith('3'))
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 3, currDateET.getMonth(), currDateET.getDay())).toString();
-    } else if (this.histPeriodSelectionSelected.startsWith('5')) {
+    else if (this.histPeriodSelectionSelected.startsWith('5'))
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 5, currDateET.getMonth(), currDateET.getDay())).toString();
-    } else if (this.histPeriodSelectionSelected.toLowerCase().endsWith('y')) {
+    else if (this.histPeriodSelectionSelected.toLowerCase().endsWith('y'))
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 1, currDateET.getMonth(), currDateET.getDay())).toString();
-    }
+
     this.histPeriodStartETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(this.histPeriodStartETstr));
 
-    if (!(this.histPeriodSelectionSelected === 'Date')) {  // change back the end date to yesterday, except if it is in CustomDate mode
+    if (!(this.histPeriodSelectionSelected === 'Date')) { // change back the end date to yesterday, except if it is in CustomDate mode
       const todayET = new Date();
       todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds )and milliseconds
       const yesterDayET = new Date(todayET);
       yesterDayET.setDate(yesterDayET.getDate() - 1);
-      this.histPeriodEndETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(yesterDayET.getFullYear(), yesterDayET.getMonth(), yesterDayET.getDate()));  // set yesterdayET as default
-    this.onHistPeriodChangeClicked();
+      this.histPeriodEndETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(yesterDayET.getFullYear(), yesterDayET.getMonth(), yesterDayET.getDate())); // set yesterdayET as default
+      this.onHistPeriodChangeClicked();
     }
   }
   onHistPeriodChangeClicked() {
@@ -722,12 +722,12 @@ export class BrAccViewerComponent implements OnInit {
 
   histPeriodChange() {
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('BrAccViewer.GetNavChrtData:Bnchmrk:' + this.bnchmkTickerSelectionSelected.toUpperCase() + ",Date:" + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
+      this._parentWsConnection.send('BrAccViewer.GetNavChrtData:Bnchmrk:' + this.bnchmkTickerSelectionSelected.toUpperCase() + ',Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
   }
 
-  onSortingClicked(p_sortColumn: string) {
+  onSortingClicked(sortColumn: string) {
     this.isSortingDirectionAscending = !this.isSortingDirectionAscending;
-    this.sortColumn = p_sortColumn;
+    this.sortColumn = sortColumn;
     BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
@@ -764,9 +764,9 @@ export class BrAccViewerComponent implements OnInit {
     this.stockTooltipSymbol = snapPos.symbol;
     this.stockTooltipName = snapPos.name;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('BrAccViewer.GetStockChrtData:' + "S/" + snapPos.symbol);
+      this._parentWsConnection.send('BrAccViewer.GetStockChrtData:' + 'S/' + snapPos.symbol);
 
-    var stockTooltipCoords = (document.getElementById("stckTooltip") as HTMLSelectElement) ;
+    const stockTooltipCoords = (document.getElementById('stckTooltip') as HTMLSelectElement);
     const scrollLeft = (window.pageXOffset !== undefined) ? window.pageXOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollLeft;
     const scrollTop = (window.pageYOffset !== undefined) ? window.pageYOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollTop;
     stockTooltipCoords.style.left = 10 + event.pageX - scrollLeft + 'px';
@@ -794,55 +794,57 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   static shortMonthFormat(date: any) : string {
-    var formatMillisec = d3.timeFormat(".%L"), formatShortMonth = d3.timeFormat("%b"), formatYear = d3.timeFormat("%Y");
-    return (d3.timeSecond(date) < date ? formatMillisec
-      : d3.timeYear(date) < date ? formatShortMonth
-      : formatYear)(date);
+    const formatMillisec = d3.timeFormat('.%L');
+    const formatShortMonth = d3.timeFormat('%b');
+    const formatYear = d3.timeFormat('%Y');
+    return (d3.timeSecond(date) < date ? formatMillisec :
+      d3.timeYear(date) < date ? formatShortMonth :
+      formatYear)(date);
   }
 
   static processUiWithStockChrt(uiSnapTable: UiSnapTable) {
     d3.selectAll('#stockChrt > *').remove();
-    var margin = {top: 10, right: 30, bottom: 30, left: 40 };
-    var width = 460 - margin.left - margin.right;
-    var height = 200 - margin.top - margin.bottom;
-    var stckVals = uiSnapTable.stockChartVals;
-    var stckChrtData = stckVals.map((r:{ date: Date; sdaClose: number; }) => 
-            ({date: new Date(r.date), sdaClose: (r.sdaClose)}));
+    const margin = {top: 10, right: 30, bottom: 30, left: 40 };
+    const width = 460 - margin.left - margin.right;
+    const height = 200 - margin.top - margin.bottom;
+    const stckVals = uiSnapTable.stockChartVals;
+    const stckChrtData = stckVals.map((r:{ date: Date; sdaClose: number; }) =>
+      ({date: new Date(r.date), sdaClose: (r.sdaClose)}));
 
     // find data range
-    var xMin = d3.min(stckChrtData, (r:{ date: any; }) => r.date);
-    var xMax = d3.max(stckChrtData, (r:{ date: any; }) => r.date);
-    var yMinAxis = d3.min(stckChrtData, (r:{ sdaClose: any; }) => r.sdaClose);
-    var yMaxAxis = d3.max(stckChrtData, (r:{ sdaClose: any; }) => r.sdaClose);
+    const xMin = d3.min(stckChrtData, (r:{ date: any; }) => r.date);
+    const xMax = d3.max(stckChrtData, (r:{ date: any; }) => r.date);
+    const yMinAxis = d3.min(stckChrtData, (r:{ sdaClose: any; }) => r.sdaClose);
+    const yMaxAxis = d3.max(stckChrtData, (r:{ sdaClose: any; }) => r.sdaClose);
     // range of data configuring
-    var stckChrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, width]);
-    var stckChrtScaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([height, 0]);
+    const stckChrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, width]);
+    const stckChrtScaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([height, 0]);
 
-    var stckChrtScaleXAxis = d3.axisBottom(stckChrtScaleX).tickFormat(BrAccViewerComponent.shortMonthFormat);
-    var stckChrtSvg = d3.select('#stockChrt').append('svg')
-                        .attr('width', width + margin.left + margin.right)
-                        .attr('height', height + margin.top + margin.bottom)
-                        .append('g')
-                        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+    const stckChrtScaleXAxis = d3.axisBottom(stckChrtScaleX).tickFormat(BrAccViewerComponent.shortMonthFormat);
+    const stckChrtSvg = d3.select('#stockChrt').append('svg')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', height + margin.top + margin.bottom)
+        .append('g')
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
     stckChrtSvg.append('g')
-              .attr('transform', 'translate(0,' + height + ')')
-              .call(stckChrtScaleXAxis);
+        .attr('transform', 'translate(0,' + height + ')')
+        .call(stckChrtScaleXAxis);
     stckChrtSvg.append('g').call(d3.axisLeft(stckChrtScaleY));
 
     // Define the line
-    var line = d3.line()
-                  .x((r: any) => stckChrtScaleX(r.date))
-                  .y((r: any) => stckChrtScaleY(r.sdaClose))
-                  .curve(d3.curveCardinal);
+    const line = d3.line()
+        .x((r: any) => stckChrtScaleX(r.date))
+        .y((r: any) => stckChrtScaleY(r.sdaClose))
+        .curve(d3.curveCardinal);
 
-    var stckChrtlineSvg = stckChrtSvg.append('g');
-    var focus = stckChrtSvg.append('g').style('display', 'none');
-  // Add the valueline path.
+    const stckChrtlineSvg = stckChrtSvg.append('g');
+    const focus = stckChrtSvg.append('g').style('display', 'none');
+    // Add the valueline path.
     stckChrtlineSvg.append('path')
-                  .attr('class', 'line')
-                  .datum(stckChrtData) // Binds data to the line
-                  .attr('d', line as any)
-     // append the x line
+        .attr('class', 'line')
+        .datum(stckChrtData) // Binds data to the line
+        .attr('d', line as any);
+    // append the x line
     focus.append('line')
         .attr('class', 'x')
         .style('stroke', 'blue')
@@ -851,7 +853,7 @@ export class BrAccViewerComponent implements OnInit {
         .attr('y1', 0)
         .attr('y2', height);
 
- // append the y line
+    // append the y line
     focus.append('line')
         .attr('class', 'y')
         .style('stroke', 'blue')
@@ -896,7 +898,7 @@ export class BrAccViewerComponent implements OnInit {
         .attr('class', 'y4')
         .attr('dx', 8)
         .attr('dy', '1em');
-    
+
     // append the rectangle to capture mouse
     stckChrtSvg.append('rect')
         .attr('width', width)
@@ -908,12 +910,12 @@ export class BrAccViewerComponent implements OnInit {
         .on('mousemove', mousemove);
 
     const formatDate = d3.timeFormat('%Y%m%d');
-    var  bisectDate = d3.bisector((r: any) => r.date).left;
+    const bisectDate = d3.bisector((r: any) => r.date).left;
 
     function mousemove(event: any) {
-      var x0 = stckChrtScaleX.invert(d3.pointer(event)[0]),
-      i = bisectDate(stckChrtData, x0, 1),
-      r = stckChrtData[i]
+      const x0 = stckChrtScaleX.invert(d3.pointer(event)[0]);
+      const i = bisectDate(stckChrtData, x0, 1);
+      const r = stckChrtData[i];
       focus.select('circle.y')
           .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')');
       focus.select('text.y1')
@@ -926,7 +928,7 @@ export class BrAccViewerComponent implements OnInit {
           .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')')
           .text(formatDate(r.date));
       focus.select('text.y4')
-          .attr('transform','translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')')
+          .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')')
           .text(formatDate(r.date));
       focus.select('.x')
           .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')')

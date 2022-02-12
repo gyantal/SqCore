@@ -39,7 +39,7 @@ export class AppComponent implements OnInit {
   isToolSelectionVisible = false;
   isUserSelectionVisible = false;
   isDshbrdOpenManyTimes: boolean = false;
-  m_isDshbrdOpenManyTimesDialogVisible: boolean = false;
+  isDshbrdOpenManyTimesDialogVisible: boolean = false;
   toolSelectionMsg = 'Click red arrow in toolbar! isToolSelectionVisible is set to ' + this.isToolSelectionVisible;
   public activeTool = 'MarketHealth';
   theme = '';
@@ -130,13 +130,8 @@ export class AppComponent implements OnInit {
         case 'Dshbrd.IsDshbrdOpenManyTimes':
           console.log('The Dashboard opened multiple times string:', msgObjStr);
           this.isDshbrdOpenManyTimes = String(msgObjStr).toLowerCase() === 'true';
-          if (this.isDshbrdOpenManyTimes) {
-            const multipleDshbrdClientsMsg = document.getElementById('multipleDshbrdTabs') as HTMLElement;
-            multipleDshbrdClientsMsg.style.visibility = 'visible';
-            multipleDshbrdClientsMsg.style.display = 'block';
-
-            // m_isDshbrdOpenManyTimesDialogVisible = true;
-          }
+          if (this.isDshbrdOpenManyTimes)
+            this.isDshbrdOpenManyTimesDialogVisible = true;
           break;
         default:
           let isHandled = this.childMktHealthComponent.webSocketOnMessage(msgCode, msgObjStr);
@@ -271,15 +266,11 @@ export class AppComponent implements OnInit {
     }
   }
 
-  // under development Daya
-  dshbrdOpenedManyTimesPopup() {
-    this.m_isDshbrdOpenManyTimesDialogVisible = false;
-
-    const multipleDshbrdClientsMsg = document.getElementById('multipleDshbrdTabs') as HTMLElement;
-    multipleDshbrdClientsMsg.style.visibility = 'hidden';
+  onDshbrdOpenedManyTimesContinueClicked() {
+    this.isDshbrdOpenManyTimesDialogVisible = false;
   }
 
-  onWindowClose() {
+  onDshbrdOpenedManyTimesCloseClicked() {
     window.close();
   }
 }

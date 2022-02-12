@@ -1,4 +1,3 @@
-
 // html { } // global styles are in styles.scss, because they don't work from here, from the component
 // body { }  // global styles are in styles.scss, because they don't work from here, from the component
 // Source: https://code.tutsplus.com/tutorials/how-to-build-a-kick-butt-css3-mega-drop-down-menu--net-15129
@@ -343,40 +342,34 @@ svg.material-icons2 path {
   align-items: center;
 }
 
-// Under development by daya
-#multipleDshbrdTabs {
-  visibility: hidden;
-  width: 60rem;
-  height: 30rem;
-  color: rgb(32, 34, 148);
-}
-.multipleDshbrdClients {
-  display: none;
+
+.manyDshbrdClientsDialog {
+  display: block;
   position: fixed;
   z-index: 1;
-  vertical-align: middle;
+  text-align: center;
   left: 40rem;
   top: 20rem;
   bottom: 20rem;
-  width: 55rem;
-  height: 25rem;
+  width: 60rem;
+  height: 12.5rem;
   overflow: auto;
-}
-.multipleDshbrdClients-content {
+  color: rgb(32, 34, 148);
   background-color: #FFA500;
+}
+.manyDshbrdClientsDialog-content {
   margin: auto;
   padding: 1rem 2rem 2rem 2rem;
   vertical-align: middle;
-  border: 1px solid #888;
   width: 55rem;
   animation-name: animatetop;
   animation-duration: 0.4s;
 }
 @keyframes animatetop {
-  from {top: -300px; opacity: 0}
+  from {top: -30rem; opacity: 0}
   to {top: 0; opacity: 1}
 }
-.suggestionMrktDshbrd {
+.manyDshbrdClntDialogSuggestion {
   font-weight: bold;
   font-size: 1.3rem;
 }

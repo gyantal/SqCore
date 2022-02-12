@@ -56,23 +56,23 @@ namespace SqCoreWeb
                     valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
             }
             if (!valuesFromGSheetStr.StartsWith("Error"))
-                ExtractTickers(valuesFromGSheetStr);
+                m_stockTickers = ExtractTickers(valuesFromGSheetStr) ?? new string[0];
         }
 
-        private void ExtractTickers(string p_spreadsheetString)
+        private static string[]? ExtractTickers(string p_spreadsheetString)
         {
             int pos = p_spreadsheetString.IndexOf(@"""values"":");
             if (pos < 0)
-                return;
+                return null;
             p_spreadsheetString = p_spreadsheetString.Substring(pos + 9); // cut off until the end of "values":
             int posStart = p_spreadsheetString.IndexOf(@"""");
             if (posStart < 0)
-                return;
+                return null;
             int posEnd = p_spreadsheetString.IndexOf(@"""", posStart + 1);
             if (posEnd < 0)
-                return;
+                return null;
             string cellValue = p_spreadsheetString.Substring(posStart + 1, posEnd - posStart - 1);
-            m_stockTickers = cellValue.Split(',').Select(x => x.Trim()).ToArray();
+            return cellValue.Split(',').Select(x => x.Trim()).ToArray();
         }
 
         internal async void GetCommonNewsAndSendToClient(DashboardClient p_client)

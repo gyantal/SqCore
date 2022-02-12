@@ -122,15 +122,20 @@
   animation: breath2 2s .5s infinite alternate;
   cursor: pointer;
 }
+
 .moreDetailsPartitions {
   float: left;
   width: 33.3%;
   padding: 0.004rem;
   font-size: 1.4rem;
-  height: 125px;
+  height: 12rem;
   border-right: 0.005rem solid #0000ff;
-  padding-left: 4rem ;
-  
+  padding-left: 4rem;
+
+}
+
+hr#hrSymmetry {
+  margin: 0rem;
 }
 // remove border of section 3
 #borderRemove{
@@ -356,7 +361,7 @@ tr:nth-child(even) {
   z-index: 1;
   bottom: 100%;
   left: 10%;
-  margin-left: -90px;
+  margin-left: -9rem;
   white-space: pre;
   opacity: 0.87;
 }
