@@ -114,7 +114,12 @@ namespace SqCoreWeb
                 // So I will report to accountant only on 1st day of every month, and maybe he will get it later. 
                 // And this has an advantage that as I don't send the holidays report earlier, if they forget to tell me their 'last minute' holiday day-offs, it is not reported to accountant too early.
                 // So less headache overall.
-                new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore.Overmind: send holidays, bank report to accountant", Body = "Send holidays, bank report to accountant. In 3 days, it is the 1st day of the month. ", IsBodyHtml = false }.Send();
+                new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore.Overmind: send holidays, bank report to accountant", Body = "Send holidays, bank report to accountant. In 3 days, it is the 1st day of the month.", IsBodyHtml = false }.Send();
+            }
+            if ((new int[] { 11, 12, 1, 2, 3}).Contains(DateTime.UtcNow.Month) && (DateTime.UtcNow.Day == 1 || DateTime.UtcNow.Day == 16))
+            {
+                // every 2 weeks in winter, if I don't use the car, the battery is depleted. Charge it on Saturday.
+                new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore.Overmind: Charge Car battery in winter", Body = "Warning in every 2 weeks in winter: Charge car battery on Saturdays, otherwise you have to buy a battery every 2 years. (a lot of time to disassemble battery)", IsBodyHtml = false }.Send();
             }
 
             //double? price = GetAmazonProductPrice("https://www.amazon.co.uk/Electronics-Sennheiser-Professional-blocking-gaming-headset-Black/dp/B00JQDOANK/");
@@ -137,7 +142,7 @@ namespace SqCoreWeb
             // TODO: if market holiday: it shouldn't process anything either
             if (DateTime.UtcNow.DayOfWeek == DayOfWeek.Saturday || DateTime.UtcNow.DayOfWeek == DayOfWeek.Sunday)
             {
-                Utils.Logger.Debug("Overmind.MorningCheck(). Weekend is detected. Don't do a thing.");
+                Utils.Logger.Debug("Overmind.MiddayCheck(). Weekend is detected. Don't do a thing.");
                 return;
             }
 

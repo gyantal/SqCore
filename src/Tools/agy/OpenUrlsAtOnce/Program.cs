@@ -12,14 +12,13 @@ namespace OpenUrlsAtOnce
             int sleepInMsec = 300;       // 50 was not enough for digg.com and channel9, 100msec was not enough on 2012-07-18, 150mset was not enough on 2012-07-19
 
             // OpenBrowser("https://www.wsj.com/"); Thread.Sleep(sleepInMsec);    // free speech: allow comments, 2021-08: disable it to save time
-            OpenBrowser("http://www.ft.com/home/europe"); Thread.Sleep(sleepInMsec);   // free speech: allow comments
-            OpenBrowser("https://www.gbnews.uk"); Thread.Sleep(sleepInMsec); // 2021-06 new news channel. a bit right-leaning, GB indicates a bit national, hopefully liberal with programs as "Free Speech Nation"
             // OpenBrowser("https://www.theguardian.com/uk?INTCMP=CE_UK"); Thread.Sleep(sleepInMsec); // 2018-05: Changed from Independent to TheGuardian, because it has 3x as much circulation, but I don't like it because too leftist (instead of liberal), and doesn't allow free speach, no comments. 2021-08: disable it to save time
-
             // OpenBrowser("http://444.hu/"); Thread.Sleep(sleepInMsec);  // After index.hu fiasco, everybody went to 444, but it is only politics, it doesn't contain Tech or Viral news.
             // OpenBrowser("https://telex.hu"); Thread.Sleep(sleepInMsec);    // the old Index authors went to this. But later I found it is too socialist: write about 'virus-tagadok', etc. discontinue.
             OpenBrowser("https://24.hu/"); Thread.Sleep(sleepInMsec);  // this is more like Index.hu portal. Has a small Tech/VIP persons section
-            
+            OpenBrowser("http://www.ft.com/home/europe"); Thread.Sleep(sleepInMsec);   // free speech: allow comments
+            OpenBrowser("https://www.gbnews.uk"); Thread.Sleep(sleepInMsec); // 2021-06 new news channel. a bit right-leaning, GB indicates a bit national, hopefully liberal with programs as "Free Speech Nation"
+
             OpenBrowser("http://www.napi.hu/"); Thread.Sleep(sleepInMsec);
             // OpenBrowser("http://prog.hu/"); Thread.Sleep(sleepInMsec);  // 2021-08: disable it to save time
             OpenBrowser("http://www.hwsw.hu/"); Thread.Sleep(sleepInMsec);

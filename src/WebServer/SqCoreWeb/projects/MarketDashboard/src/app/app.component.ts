@@ -128,7 +128,7 @@ export class AppComponent implements OnInit {
           this.user.email = handshakeMsg.email;
           break;
         case 'Dshbrd.IsDshbrdOpenManyTimes':
-          console.log('The Dashboard opened multiple times string:', msgObjStr);
+          console.log('The Dashboard opened many times string:', msgObjStr);
           this.isDshbrdOpenManyTimes = String(msgObjStr).toLowerCase() === 'true';
           if (this.isDshbrdOpenManyTimes)
             this.isDshbrdOpenManyTimesDialogVisible = true;
