@@ -1,6 +1,7 @@
 # EditorConfig is awesome: https://EditorConfig.org
 
-# Leave this EditorConfig here as an example how a sub-project can contain different editorConfig settings than the other projects in the Workspace
+# Leave EditorConfig as an example how a sub-project can contain different editorConfig settings than the other projects in the Workspace
+# EditorConfig is needed, because Omnisharp.json settings are not nestable. And Omnisharp supports EditorConfig officially. And EditorConfig is nestable. (subfolders can overwrite root folder settings)
 
 # top-most EditorConfig file
 root = true

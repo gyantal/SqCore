@@ -35,6 +35,7 @@
 		"html.format.wrapLineLength": 0,	// disable max chars per line
 		"js/ts.implicitProjectConfig.experimentalDecorators": true,
 		"dotnet-test-explorer.testProjectPath": "**/*.tests.csproj",
-		"dotnet-test-explorer.runInParallel": true
+		"dotnet-test-explorer.runInParallel": true,
+		"omnisharp.enableRoslynAnalyzers": true
 	}
 }
