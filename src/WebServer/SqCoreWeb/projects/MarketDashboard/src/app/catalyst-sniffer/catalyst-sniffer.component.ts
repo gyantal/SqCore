@@ -6,10 +6,8 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./catalyst-sniffer.component.scss']
 })
 export class CatalystSnifferComponent implements OnInit {
-
   constructor() { }
 
   ngOnInit(): void {
   }
-
 }

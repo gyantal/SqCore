@@ -39,6 +39,7 @@ export class QuickfolioNewsComponent implements OnInit {
     () => {
     }, 10 * 60 * 1000); // every 10 minutes do nothing (just avoid compiler error (uninitialised))
   stockTickers: string[] = [];
+  qckflNewsStockTickers2: string[] = []; // temporary - for new code development DAYA
   stockNews: NewsItem[] = [];
   generalNews: NewsItem[] = [
     // {
@@ -80,6 +81,7 @@ export class QuickfolioNewsComponent implements OnInit {
     //   publishDate: '2020-01-02 03:04'
     // }
   ];
+
 
   constructor() {
     this.interval = setInterval(
@@ -307,6 +309,11 @@ export class QuickfolioNewsComponent implements OnInit {
         this.menuClick(null, 'All assets');
         this.removeUnreferencedNews();
         return true;
+      case 'QckfNews.Tickers2':
+        console.log('Quickfolio News: WS: QckfNews.Tickers arrived2');
+        this.qckflNewsStockTickers2 = JSON.parse(msgObjStr);
+        console.log('The Quickfolio News stockTickers are', this.qckflNewsStockTickers2);
+        console.log('Init menu');
       default:
         return false;
     }

@@ -12,7 +12,6 @@ export const minDate = new Date(-8640000000000000);
   styles: []
 })
 export class SqNgCommonUtilsTime implements OnInit {
-
   constructor() { }
 
   ngOnInit(): void {
@@ -29,9 +28,9 @@ export class SqNgCommonUtilsTime implements OnInit {
     // on the second Sunday in March, at 2:00 a.m. EST, clocks are advanced to 3:00 a.m. EDT leaving a one-hour "gap". On the first Sunday in November, at 2:00 a.m. EDT,
     // clocks are moved back to 1:00 a.m. EST, thus "duplicating" one hour. Southern parts of the zone (Panama and the Caribbean) do not observe daylight saving time.""
     let offsetToNYTime = -4;
-    if (monthOriUTC < 3 || monthOriUTC === 12
-      || (monthOriUTC === 3 && (dayOriUTC - dayOfWeekOriUTC) < 8)
-      || (monthOriUTC === 11 && (dayOriUTC - dayOfWeekOriUTC) >= 1)) {  // (dayOriUTC - dayOfWeekOriUTC) is the date of the previous Sunday from today. If 1st of November = Sunday, on 2nd Nov, Monday, offset should be -5
+    if (monthOriUTC < 3 || monthOriUTC === 12 ||
+      (monthOriUTC === 3 && (dayOriUTC - dayOfWeekOriUTC) < 8) ||
+      (monthOriUTC === 11 && (dayOriUTC - dayOfWeekOriUTC) >= 1)) { // (dayOriUTC - dayOfWeekOriUTC) is the date of the previous Sunday from today. If 1st of November = Sunday, on 2nd Nov, Monday, offset should be -5
       offsetToNYTime = -5;
     }
     const dateEt: Date = utcDate;
@@ -75,18 +74,17 @@ export class SqNgCommonUtilsTime implements OnInit {
     return Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
   }
 
-  
   // zeroPad = (num, places: number) => String(num).padStart(places, '0');  // https://stackoverflow.com/questions/2998784/how-to-output-numbers-with-leading-zeros-in-javascript
   // ES5 approach: because 2021-02: it works in CLI, but VsCode shows problems: "Property 'padStart' does not exist on type 'string'. Do you need to change your target library? Try changing the `lib` compiler option to 'es2017' or later."
   public static zeroPad(num, places) {
-    var zero = places - num.toString().length + 1;
-    return Array(+(zero > 0 && zero)).join("0") + num;
+    const zero = places - num.toString().length + 1;
+    return Array(+(zero > 0 && zero)).join('0') + num;
   }
 
-  public static Date2PaddedIsoStr(date: Date): string {  // 2020-9-1 is not acceptable. Should be converted to 2020-09-01
+  public static Date2PaddedIsoStr(date: Date): string { // 2020-9-1 is not acceptable. Should be converted to 2020-09-01
     // don't use UTC versions, because they will convert local time zone dates to UTC first, then we might have bad result.
     // "date = 'Tue Apr 13 2021 00:00:00 GMT+0100 (British Summer Time)'" because local BST is not UTC date.getUTCDate() = 12, while date.getDate()=13 (correct)
-    //return this.zeroPad(date.getUTCFullYear(), 4) + '-' + this.zeroPad(date.getUTCMonth() + 1, 2) + '-' + this.zeroPad(date.getUTCDate(), 2);
+    // return this.zeroPad(date.getUTCFullYear(), 4) + '-' + this.zeroPad(date.getUTCMonth() + 1, 2) + '-' + this.zeroPad(date.getUTCDate(), 2);
     return this.zeroPad(date.getFullYear(), 4) + '-' + this.zeroPad(date.getMonth() + 1, 2) + '-' + this.zeroPad(date.getDate(), 2);
   }
 
@@ -98,12 +96,11 @@ export class SqNgCommonUtilsTime implements OnInit {
     return new Date(year, month - 1, day);
   }
 
-  public static getTimespanStr(p_dateFrom: Date, p_dateTo: Date): string {
-    return ((p_dateFrom === minDate || p_dateTo === minDate) ? 'NaN' : (p_dateTo.getTime() - p_dateFrom.getTime()) + 'ms');
+  public static getTimespanStr(dateFrom: Date, dateTo: Date): string {
+    return ((dateFrom === minDate || dateTo === minDate) ? 'NaN' : (dateTo.getTime() - dateFrom.getTime()) + 'ms');
   }
 
   public static ConvertMilliSecToTimeStr(totalMilliSec: number): string {
-
     // let milliseconds = totalMilliSec % 1000;
     let seconds = Math.floor((totalMilliSec / 1000) % 60).toString();
     let minutes = Math.floor((totalMilliSec / (60 * 1000)) % 60).toString();
@@ -115,37 +112,30 @@ export class SqNgCommonUtilsTime implements OnInit {
     if (minutes.length < 2) minutes= '0' + minutes;
     if (seconds.length < 2) seconds = '0' + seconds;
 
-    if (days == '00' && hours == '00' && minutes == '00' && seconds == '00') {
+    if (days == '00' && hours == '00' && minutes == '00' && seconds == '00')
       return '0s ago';
-    } else if (days == '00' && hours == '00' && minutes == '00') {
+    else if (days == '00' && hours == '00' && minutes == '00')
       return seconds + 's ago';
-    } else if (days == '00' && hours == '00') {
+    else if (days == '00' && hours == '00')
       return minutes + 'm' + ' ' + seconds + 's ago';
-    } else if (days == '00') {
+    else if (days == '00')
       return hours + 'h' + ' ' + minutes + 'm' + ' ' + seconds + 's ago';
-    } else return days + 'd' + hours + 'h' + ' ' + minutes + 'm' + ' ' + seconds + 's ago';
-
+    else return days + 'd' + hours + 'h' + ' ' + minutes + 'm' + ' ' + seconds + 's ago';
   }
 
-  public static CheckInputDateIsValidOrNot(p_date: string) {
-
-    let isGoodDate = !(p_date === '');
-    const parts = p_date.split('-');
+  public static CheckInputDateIsValidOrNot(date: string) {
+    let isGoodDate = !(date === '');
+    const parts = date.split('-');
     const year = parseInt(parts[0], 10);
     const month = parseInt(parts[1], 10);
     const day = parseInt(parts[2], 10);
-    if (year < 1980 || year > 2040) {
+    if (year < 1980 || year > 2040)
       isGoodDate = false;
-    }
-    if (month < 1 || month > 12) {
+    if (month < 1 || month > 12)
       isGoodDate = false;
-    }
-    if (day < 1 || day > 31) {
+    if (day < 1 || day > 31)
       isGoodDate = false;
-    }
-    if (!isGoodDate) {
+    if (!isGoodDate)
       return;
-    }
-
   }
 }

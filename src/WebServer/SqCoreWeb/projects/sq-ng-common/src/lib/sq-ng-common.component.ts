@@ -10,10 +10,8 @@ import { Component, OnInit } from '@angular/core';
   styles: []
 })
 export class SqNgCommonComponent implements OnInit {
-
   constructor() { }
 
   ngOnInit(): void {
   }
-
 }

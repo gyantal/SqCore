@@ -362,13 +362,8 @@ svg.material-icons2 path {
   padding: 1rem 2rem 2rem 2rem;
   vertical-align: middle;
   width: 55rem;
-  animation-name: animatetop;
-  animation-duration: 0.4s;
 }
-@keyframes animatetop {
-  from {top: -30rem; opacity: 0}
-  to {top: 0; opacity: 1}
-}
+
 .manyDshbrdClntDialogSuggestion {
   font-weight: bold;
   font-size: 1.3rem;

@@ -10,19 +10,15 @@ import { Component, OnInit } from '@angular/core';
   styles: []
 })
 export class SqNgCommonUtilsStr implements OnInit {
-
-  public static splitStrToMulLines(p_str:string) : string {
-      var chunks: string[] = [];
-      for (var i = 0; i < p_str.length; i += 250) {
-        chunks.push(p_str.substring(i, i + 250));
-      }
-      return chunks.join("\n");
+  public static splitStrToMulLines(str:string) : string {
+    const chunks: string[] = [];
+    for (let i = 0; i < str.length; i += 250)
+      chunks.push(str.substring(i, i + 250));
+    return chunks.join('\n');
   }
 
   constructor() { }
 
   ngOnInit(): void {
   }
-
-
 }
