@@ -77,7 +77,6 @@ namespace SqCommon
         public static bool IsInRegularUsaTradingHoursNow(TimeSpan p_maxAllowedStaleness)
         {
             DateTime utcNow = DateTime.UtcNow;
-            
             // 1. quick response for trivial case that works most of the time, that don't need DetermineUsaMarketTradingHours()
             DateTime utcNowET = Utils.ConvertTimeFromUtcToEt(utcNow);
             if (utcNowET.DayOfWeek == DayOfWeek.Saturday || utcNowET.DayOfWeek == DayOfWeek.Sunday)
@@ -119,8 +118,8 @@ namespace SqCommon
             if ((g_holidays != null) && (DateTime.UtcNow - g_holidaysDownloadDate) < p_maxAllowedStaleness)
                 return g_holidays;
 
-            // using http://www.thestreet.com/stock-market-news/11771386/market-holidays-2015.html is not recommended, 
-            //because for 20x pages it does an Adver redirection instead of giving back the proper info the returned page 
+            // using http://www.thestreet.com/stock-market-news/11771386/market-holidays-2015.html is not recommended,
+            //because for 20x pages it does an Adver redirection instead of giving back the proper info the returned page
             // is an advert. So, stick to the official NYSE website.
             string? webPage = Utils.DownloadStringWithRetryAsync("https://www.nyse.com/markets/hours-calendars", 5, TimeSpan.FromSeconds(2), false).TurnAsyncToSyncTask();
             if (webPage == null)
@@ -151,13 +150,12 @@ namespace SqCommon
             {
                 // 1. Get section from <thead> to </tbody> for the holidays
                 // 2. Get section from ">*", ">**", ">***" to </p> to get the 3 footnotes
-                // 2018: holiday table appears twice in the HTML. One in the middle, but one at the end is shorter, cleaner, get that. 
+                // 2018: holiday table appears twice in the HTML. One in the middle, but one at the end is shorter, cleaner, get that.
                 // 2019: holiday table appears only once in the HTML.
                 int iTHead = webPage.IndexOf(@"<table class=""table table-layout-fixed"">");
                 int iTBody = webPage.IndexOf(@"</table>", iTHead);
                 string holidayTable = webPage.Substring(iTHead, iTBody - iTHead);
 
-                
                 int iFootnoteStart = webPage.IndexOf("<div", iTBody, StringComparison.CurrentCultureIgnoreCase);   // 2017-02-08: a ">*Each" got a space as ">* Each"
                 int iFootnoteEnd = webPage.IndexOf(@"</div>", iFootnoteStart);// in 2017: Footnote section is was Before the second-holiday-table in the html source, in 2018: no
                 string footnote = webPage.Substring(iFootnoteStart, iFootnoteEnd - iFootnoteStart);

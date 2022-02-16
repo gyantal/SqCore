@@ -7,14 +7,13 @@ using System.Threading.Tasks;
 
 namespace SqCommon
 {
-    
     public class SqTaskScheduler
     {
-        public static SqTaskScheduler gTaskScheduler = new SqTaskScheduler();    // this is the Boss of the Virtual Broker bees. It schedules them.
-        public static List<SqTask> gSqTasks = new List<SqTask>();  // the worker bees, the Trading Agents
+        public static SqTaskScheduler gTaskScheduler = new();    // this is the Boss of the Virtual Broker bees. It schedules them.
+        public static List<SqTask> gSqTasks = new();  // the worker bees, the Trading Agents
         const int cVbSchedulerSleepMinutes = 30;
         DateTime m_schedulerStartupTime = DateTime.MaxValue;
-    
+
         public void Init()
         {
             Utils.Logger.Info("****Scheduler:Init()");
@@ -32,13 +31,11 @@ namespace SqCommon
                 // maybe loop is not required.
                 // in the past we try to get UsaMarketOpenOrCloseTime() every 30 minutes. It was determined from YFinance intrady. "sleep 30 min for DetermineUsaMarketOpenOrCloseTime()"
                 // however, it may be a good idea that the Scheduler periodically wakes up and check Tasks
-                while (true) 
+                while (true)
                 {
                     Utils.Logger.Info($"SchedulerThreadRun() loop BEGIN. Awake at every {cVbSchedulerSleepMinutes}min.");
-                    bool isMarketTradingDay;
-                    DateTime marketOpenTimeUtc, marketCloseTimeUtc;
-                    //  Utils.DetermineUsaMarketTradingHours():  may throw an exception once per year, when Nasdaq page changes. BrokerScheduler.SchedulerThreadRun() catches it and HealthMonitor notified in VBroker.
-                    bool isMarketHoursValid = Utils.DetermineUsaMarketTradingHours(DateTime.UtcNow, out isMarketTradingDay, out marketOpenTimeUtc, out marketCloseTimeUtc, TimeSpan.FromDays(3));
+                    // Utils.DetermineUsaMarketTradingHours():  may throw an exception once per year, when Nasdaq page changes. BrokerScheduler.SchedulerThreadRun() catches it and HealthMonitor notified in VBroker.
+                    bool isMarketHoursValid = Utils.DetermineUsaMarketTradingHours(DateTime.UtcNow, out bool isMarketTradingDay, out DateTime marketOpenTimeUtc, out DateTime marketCloseTimeUtc, TimeSpan.FromDays(3));
                     if (!isMarketHoursValid)
                         Utils.Logger.Error("DetermineUsaMarketTradingHours() was not ok.");  // but we should continue and schedule Daily tasks not related to MarketTradingHours
 
@@ -55,8 +52,8 @@ namespace SqCommon
             }
             catch (Exception e)
             {
-                //  Utils.DetermineUsaMarketTradingHours():  may throw an exception once per year, when Nasdaq page changes. BrokerScheduler.SchedulerThreadRun() catches it and HealthMonitor notified in VBroker.               
-                HealthMonitorMessage.SendAsync($"Exception in Scheduler.RecreateTasksAndLoopThread. Exception: '{ e.ToStringWithShortenedStackTrace(1600)}'", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
+                // Utils.DetermineUsaMarketTradingHours():  may throw an exception once per year, when Nasdaq page changes. BrokerScheduler.SchedulerThreadRun() catches it and HealthMonitor notified in VBroker.
+                HealthMonitorMessage.SendAsync($"Exception in Scheduler.RecreateTasksAndLoopThread. Exception: '{e.ToStringWithShortenedStackTrace(1600)}'", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
             }
         }
 
@@ -69,7 +66,7 @@ namespace SqCommon
                 if (p_trigger.NextScheduleTimeUtc != null)
                 {
                     TimeSpan timeSpan = ((DateTime)p_trigger.NextScheduleTimeUtc > (DateTime)proposedTime) ? (DateTime)p_trigger.NextScheduleTimeUtc - (DateTime)proposedTime : (DateTime)proposedTime - (DateTime)p_trigger.NextScheduleTimeUtc;
-                    if (timeSpan.TotalMilliseconds < 1000.0)    // if the proposedTime is not significantly different that the scheduledTime
+                    if (timeSpan.TotalMilliseconds < 1000.0) // if the proposedTime is not significantly different that the scheduledTime
                         doSetTimer = false;
                 }
                 if (doSetTimer)
@@ -81,7 +78,7 @@ namespace SqCommon
                 }
             }
             // Warn() temporarily to show it on Console
-            //Console.WriteLine($"{DateTime.UtcNow.ToString("dd'T'HH':'mm':'ss")}: Task '" + p_trigger.TriggeredTask.Name + "' next time: " + ((p_trigger.NextScheduleTimeUtc != null) ? ((DateTime)p_trigger.NextScheduleTimeUtc).ToString("dd'T'HH':'mm':'ss") : "null"));
+            // Console.WriteLine($"{DateTime.UtcNow.ToString("dd'T'HH':'mm':'ss")}: Task '" + p_trigger.TriggeredTask.Name + "' next time: " + ((p_trigger.NextScheduleTimeUtc != null) ? ((DateTime)p_trigger.NextScheduleTimeUtc).ToString("dd'T'HH':'mm':'ss") : "null"));
             Utils.Logger.Info("Trigger '" + String.Concat(p_trigger.SqTask!.Name, ".", p_trigger.Name) + "' next time: " + ((p_trigger.NextScheduleTimeUtc != null) ? ((DateTime)p_trigger.NextScheduleTimeUtc).ToString("dd'T'HH':'mm':'ss") : "null"));
         }
 
@@ -99,7 +96,7 @@ namespace SqCommon
             }
             else if (p_trigger.TriggerType == TriggerType.DailyOnUsaMarketDay)
             {
-                if (p_isMarketHoursValid && p_isMarketTradingDay)  // in this case market open and close times are not given
+                if (p_isMarketHoursValid && p_isMarketTradingDay) // in this case market open and close times are not given
                 {
                     if (p_trigger.Start.Base == RelativeTimeBase.BaseOnUsaMarketOpen)
                         proposedTime = p_marketOpenTimeUtc + p_trigger.Start.TimeOffset;
@@ -125,7 +122,7 @@ namespace SqCommon
                 {
                     if (!isAlreadySetInTheFuture)
                     {
-                        DateTime pastWholeHour = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, utcNow.Hour, 0, 0); // if utcNow is 20:10 and TimeOffset = 40 min of every whole hours, then we schedule 20:40
+                        DateTime pastWholeHour = new(utcNow.Year, utcNow.Month, utcNow.Day, utcNow.Hour, 0, 0); // if utcNow is 20:10 and TimeOffset = 40 min of every whole hours, then we schedule 20:40
                         proposedTime = pastWholeHour + p_trigger.Start.TimeOffset;
                         if (proposedTime <= tresholdNowTime)
                             proposedTime = proposedTime.AddHours(1);
@@ -133,16 +130,18 @@ namespace SqCommon
                 }
             }
             else
+            {
                 throw new NotImplementedException();
+            }
 
             if (proposedTime > tresholdNowTime)
                 return proposedTime;
             return null;
         }
 
-        public StringBuilder PrintNextScheduleTimes(bool p_isHtml)  // Get is better word for getting DateTimes[], Print shows it receives a string
+        public StringBuilder PrintNextScheduleTimes(bool p_isHtml) // Get is better word for getting DateTimes[], Print shows it receives a string
         {
-            List<(DateTime NextTimeUtc, string Name)> nextTimes = new List<(DateTime NextTimeUtc, string Name)>(); // named tuples
+            List<(DateTime NextTimeUtc, string Name)> nextTimes = new(); // named tuples
             foreach (var sqTask in gSqTasks)
             {
                 foreach (var trigger in sqTask.Triggers)
@@ -153,16 +152,16 @@ namespace SqCommon
             nextTimes.Sort(); // in-place. Tuple<T1, T2> documented to sort by Item1 and then Item2
 
             DateTime utcNow = DateTime.UtcNow;
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             foreach (var nextTime in nextTimes)
             {
-                string nextTimeUtcStr = (nextTime.NextTimeUtc != DateTime.MaxValue && nextTime.NextTimeUtc > utcNow) ? nextTime.NextTimeUtc.TohMMDDHHMMSS() + " (UTC)": "---";
-                sb.AppendLine($"{nextTimeUtcStr}: {nextTime.Name}{((p_isHtml) ? "<br>" : string.Empty)}");
+                string nextTimeUtcStr = (nextTime.NextTimeUtc != DateTime.MaxValue && nextTime.NextTimeUtc > utcNow) ? nextTime.NextTimeUtc.TohMMDDHHMMSS() + " (UTC)" : "---";
+                sb.AppendLine($"{nextTimeUtcStr}: {nextTime.Name}{(p_isHtml ? "<br>" : string.Empty)}");
             }
             return sb;
         }
 
-        public void TestElapseTrigger(string p_taskName, int p_triggerInd)
+        public static void TestElapseTrigger(string p_taskName, int p_triggerInd)
         {
             var sqTask = gSqTasks.Find(r => r.Name == p_taskName);
             if (sqTask == null)
@@ -178,5 +177,4 @@ namespace SqCommon
         {
         }
     }
-
 }

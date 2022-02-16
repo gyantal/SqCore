@@ -3,14 +3,13 @@ using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.Encodings.Web;
-
 
 namespace SqCommon
 {
-    public class DoubleJsonConverterToStr : JsonConverter<double>   // the number is written as a string, with quotes: "previousClose":"272.48"
+    public class DoubleJsonConverterToStr : JsonConverter<double> // the number is written as a string, with quotes: "previousClose":"272.48"
     {
         public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
                 Double.Parse(reader.GetString() ?? string.Empty);
@@ -19,7 +18,7 @@ namespace SqCommon
                 writer.WriteStringValue(p_value.ToString("0.####")); // use 4 decimals instead of 2, because of penny stocks and MaxDD of "-0.2855" means -28.55%. ToString(): 24.00155 is rounded up to 24.0016
     }
 
-    public class DoubleJsonConverterToNumber4D : JsonConverter<double>   // the number is written as a number, without quotes: ("previousClose":"272.4800109863281") should be ("previousClose":272.48) 
+    public class DoubleJsonConverterToNumber4D : JsonConverter<double> // the number is written as a number, without quotes: ("previousClose":"272.4800109863281") should be ("previousClose":272.48)
     {
         public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
                 Double.Parse(reader.GetString() ?? string.Empty);
@@ -43,7 +42,7 @@ namespace SqCommon
         }
     }
 
-    public class FloatJsonConverterToNumber4D : JsonConverter<float>   // the number is written as a number, without quotes: ("previousClose":"272.4800109863281") should be ("previousClose":272.48) 
+    public class FloatJsonConverterToNumber4D : JsonConverter<float> // the number is written as a number, without quotes: ("previousClose":"272.4800109863281") should be ("previousClose":272.48)
     {
         public override float Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
                 Single.Parse(reader.GetString() ?? string.Empty);
@@ -67,13 +66,12 @@ namespace SqCommon
         }
     }
 
-
     public static partial class Utils
     {
-        public static JsonSerializerOptions g_camelJsonSerializeOpt = new JsonSerializerOptions
+        public static JsonSerializerOptions g_camelJsonSerializeOpt = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping   // without this "S&P" is serialized as "S\u0026P", which is ugly. Our results will not be URL data, or HTML data. We send our data in Websocket. We don't want these Escapings.
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // without this "S&P" is serialized as "S\u0026P", which is ugly. Our results will not be URL data, or HTML data. We send our data in Websocket. We don't want these Escapings.
         };
 
         // in Javascript, class field members should use CamelCase: https://www.robinwieruch.de/javascript-naming-conventions  "AnyParam" turns to "anyParam"
@@ -86,20 +84,19 @@ namespace SqCommon
         {
             try
             {
-                //don't use FileStream directly to serializer
-                //using (FileStream stream = File.OpenRead(filePath))
+                // don't use FileStream directly to serializer
+                // using (FileStream stream = File.OpenRead(filePath))
                 // Encountered unexpected character 'ï', because
                 // "Please note that DataContractJsonSerializer only supports the following encodings: UTF-8"
                 // see http://blogs.msdn.com/b/cie/archive/2014/03/19/encountered-unexpected-character-239-error-serializing-json.aspx
 
-                //string p_str = System.IO.File.ReadAllText(p_filePath);
-                MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(p_str));
-                DataContractJsonSerializerSettings settings = new DataContractJsonSerializerSettings() { DateTimeFormat = new DateTimeFormat("yyyy-MM-dd'T'HH:mm:ssZ") };    // the 'T' is used by Javascript in HealthMonitor website. 'Z' shows that it is UTC (Zero TimeZone).  That is the reason of the format.
+                // string p_str = System.IO.File.ReadAllText(p_filePath);
+                MemoryStream ms = new(Encoding.UTF8.GetBytes(p_str));
+                DataContractJsonSerializerSettings settings = new() { DateTimeFormat = new DateTimeFormat("yyyy-MM-dd'T'HH:mm:ssZ") };    // the 'T' is used by Javascript in HealthMonitor website. 'Z' shows that it is UTC (Zero TimeZone).  That is the reason of the format.
                 settings.UseSimpleDictionaryFormat = true;
-                DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(T), settings);
+                DataContractJsonSerializer serializer = new(typeof(T), settings);
                 T? contract = (T?)serializer.ReadObject(ms);
                 return contract;
-                //}
             }
             catch
             {
@@ -112,19 +109,16 @@ namespace SqCommon
         {
             try
             {
-                DataContractJsonSerializerSettings settings = new DataContractJsonSerializerSettings() { DateTimeFormat = new DateTimeFormat("yyyy-MM-dd'T'HH:mm:ssZ") };
+                DataContractJsonSerializerSettings settings = new() { DateTimeFormat = new DateTimeFormat("yyyy-MM-dd'T'HH:mm:ssZ") };
                 settings.UseSimpleDictionaryFormat = true;
-                DataContractJsonSerializer serializer = new DataContractJsonSerializer(typeof(T), settings);
+                DataContractJsonSerializer serializer = new(typeof(T), settings);
 
-                using (MemoryStream ms = new MemoryStream())
-                {
-                    serializer.WriteObject(ms, p_obj);
-                    ms.Position = 0;
-                    StreamReader sr = new StreamReader(ms);
-                    return sr.ReadToEnd();
-
-//                    return Encoding.Unicode.GetString(ms.ToArray());  //UTF-16 is used for in-memory strings because it is faster per character to parse and maps directly to unicode character class and other tables. All string functions in Windows use UTF-16 and have for years.
-                }
+                using MemoryStream ms = new();
+                serializer.WriteObject(ms, p_obj);
+                ms.Position = 0;
+                StreamReader sr = new(ms);
+                return sr.ReadToEnd();
+                // return Encoding.Unicode.GetString(ms.ToArray());  //UTF-16 is used for in-memory strings because it is faster per character to parse and maps directly to unicode character class and other tables. All string functions in Windows use UTF-16 and have for years.
             }
             catch (System.Exception ex)
             {
@@ -133,5 +127,4 @@ namespace SqCommon
             }
         }
     }
-
 }

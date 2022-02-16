@@ -6,12 +6,12 @@ using System.Threading.Tasks;
 
 namespace SqCommon
 {
-    public enum ExecutionState : byte { NeverStarted, Working, FinishedOk, FinishedError, Unknown };
+    public enum ExecutionState : byte { NeverStarted, Working, FinishedOk, FinishedError, Unknown }
     public class SqExecution
     {
         public SqTask? SqTask { get; set; }
         public SqTrigger? Trigger { get; set; }
-        public ExecutionState BrokerTaskState { get; set; } = ExecutionState.NeverStarted; 
+        public ExecutionState BrokerTaskState { get; set; } = ExecutionState.NeverStarted;
 
         // try/catch is not necessary, because sqExecution.Run() is wrapped around a try/catch with HealthMonitor notification in SqTrigger.cs
         // but that catch is only triggered if there is no non-awaited async function in it.
@@ -22,7 +22,6 @@ namespace SqCommon
         // see MultithreadTips.txt
         public virtual void Run() // try/catch is only necessary Only if there is a non-awaited async that continues later in a different tPool thread. See comment in SqExecution.cs
         {
-            
         }
     }
 }

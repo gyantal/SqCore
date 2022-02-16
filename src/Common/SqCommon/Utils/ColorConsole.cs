@@ -18,7 +18,7 @@ namespace SqCommon
     // this works in a C++ program: printf("\033[1;35m  Hello, world!\n");   (even on the VirtualBroker server)
     public class ColorConsole
     {
-        private static readonly NLog.Logger gLogger = NLog.LogManager.GetCurrentClassLogger();   // the name of the logger will be the "Namespace.Class"
+        private static readonly NLog.Logger g_logger = NLog.LogManager.GetCurrentClassLogger(); // the name of the logger will be the "Namespace.Class"
         public static string GetLinuxVT100ForeColorCodes(ConsoleColor p_color)
         {
             switch (p_color)
@@ -58,11 +58,10 @@ namespace SqCommon
                 case ConsoleColor.Gray:
                     return (char)27 + "[1;37m";
                 default:
-                    string LinuxDefaultConsoleColor = (char)27 + "[0m";  //VT100 codes, http://www.cplusplus.com/forum/unices/36461/
-                    return LinuxDefaultConsoleColor;
+                    string linuxDefaultConsoleColor = (char)27 + "[0m";  // VT100 codes, http://www.cplusplus.com/forum/unices/36461/
+                    return linuxDefaultConsoleColor;
             }
         }
-
 
         public static Tuple<ConsoleColor?, ConsoleColor?> ConsoleColorBegin(ConsoleColor? p_foregroundColor, ConsoleColor? p_backgroundColor)
         {
@@ -86,7 +85,7 @@ namespace SqCommon
             {
                 if (Utils.RunningPlatform() == Platform.Linux)
                 {
-                    gLogger.Trace("Linux background colour is not yet implemented. The whole Linux implementation is temporary anyway, until DotNetCore is fixed on Linux.");
+                    g_logger.Trace("Linux background colour is not yet implemented. The whole Linux implementation is temporary anyway, until DotNetCore is fixed on Linux.");
                 }
                 previousBackColor = Console.BackgroundColor;
                 Console.BackgroundColor = (ConsoleColor)p_backgroundColor;
@@ -149,6 +148,5 @@ namespace SqCommon
                 Console.Write(p_value);
             ConsoleColorRestore(colors);
         }
-
     }
 }

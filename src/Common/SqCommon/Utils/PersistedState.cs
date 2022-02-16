@@ -12,7 +12,7 @@ namespace SqCommon
             throw new NotImplementedException();
         }
 
-        public void Save()  // Save to file
+        public void Save() // Save to file
         {
             throw new NotImplementedException();
         }
@@ -21,11 +21,11 @@ namespace SqCommon
     public static class PersistedStateExtensions
     {
         // purpose of this is only that writing "m_state = new SavedState().CreateOrOpenEx();" is possible in one line.
-        public static TDerived CreateOrOpenEx<TDerived>(this TDerived p_this) where TDerived : PersistedState
+        public static TDerived CreateOrOpenEx<TDerived>(this TDerived p_this)
+            where TDerived : PersistedState
         {
             p_this.CreateOrOpen();
             return p_this;
         }
     }
-
 }

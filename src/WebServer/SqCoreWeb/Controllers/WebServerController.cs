@@ -199,7 +199,7 @@ namespace SqCoreWeb.Controllers
             Utils.Logger.Info("TestCaretakerCheckFreeDiskSpace() BEGIN");
 
             StringBuilder noteToClient = new StringBuilder();
-            bool success = Caretaker.gCaretaker.CheckFreeDiskSpace(noteToClient);
+            bool success = Caretaker.g_caretaker.CheckFreeDiskSpace(noteToClient);
 
             Utils.Logger.Info("TestCaretakerCheckFreeDiskSpace() END");
             return Content($"<HTML><body>TestCaretakerCheckFreeDiskSpace() finished with { (success ? "OK" : "Error") }. <br> Note To Client '<br>{noteToClient.Replace(Environment.NewLine, "<br>").Replace("    ", "&nbsp;&nbsp;&nbsp;&nbsp;").ToString()}'</body></HTML>", "text/html");
@@ -211,7 +211,7 @@ namespace SqCoreWeb.Controllers
             Utils.Logger.Info("TestCaretakerCleanLogfiles() BEGIN");
 
             StringBuilder noteToClient = new StringBuilder();
-            bool success = Caretaker.gCaretaker.CleanLogfiles(noteToClient);
+            bool success = Caretaker.g_caretaker.CleanLogfiles(noteToClient);
 
             Utils.Logger.Info("TestCaretakerCleanLogfiles() END");
             return Content($"<HTML><body>TestCaretakerCleanLogfiles() finished with { (success ? "OK" : "Error") }. <br> Note To Client '{noteToClient.ToString()}'</body></HTML>", "text/html");

@@ -1,6 +1,6 @@
-﻿using System.Net.Mail;
+﻿using System;
 using System.Net;
-using System;
+using System.Net.Mail;
 using System.Threading.Tasks;
 
 namespace SqCommon
@@ -9,11 +9,11 @@ namespace SqCommon
     {
         public string ToAddresses = string.Empty;
         public string Subject = string.Empty;
-        public string Body  = string.Empty;
+        public string Body = string.Empty;
         public bool IsBodyHtml;
 
-        public static string SenderName  = string.Empty;
-        public static string SenderPwd  = string.Empty;
+        public static string SenderName = string.Empty;
+        public static string SenderPwd = string.Empty;
 
         public static string g_htmlEmailStart = @"<!DOCTYPE html><html><head><style> .sqNormalText {font-size: 125%;} .sqImportantOK {font-size: 140%; color: #11228B; font-weight: bold; } </style></head><body class=""sqNormalText"">";
         public static string g_htmlEmailEnd = @"</body></html>";
@@ -28,74 +28,66 @@ namespace SqCommon
         public void Send()
         {
             // https://stackoverflow.com/questions/32260/sending-email-in-net-through-gmail
-            using (var message = new MailMessage()
+            using var message = new MailMessage() // C# 8.0 'a using declaration'. Will call dispose at the end of the method on the 'using' variable.
             {
                 Subject = Subject,
                 Body = Body,
-                IsBodyHtml = IsBodyHtml
-            })
+                IsBodyHtml = IsBodyHtml,
+                From = new MailAddress(SenderName)
+            };
+            var toAddresses = ToAddresses.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < toAddresses.Length; i++)
             {
-                message.From = new MailAddress(SenderName);
-                var toAddresses = ToAddresses.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-                for (int i = 0; i < toAddresses.Length; i++)
-                {
-                    message.To.Add(toAddresses[i]);
-                }
-
-                using (var smtp = new SmtpClient
-                {
-                    Host = "smtp.gmail.com",
-                    Port = 587,
-                    EnableSsl = true,
-                    DeliveryMethod = SmtpDeliveryMethod.Network,
-                    UseDefaultCredentials = false,
-                    Credentials = new NetworkCredential(SenderName, SenderPwd),
-                    Timeout = 10000 // in msec, so we use 10 sec timeout
-                })
-                {
-                    Utils.Logger.Info("Email.Send() START");
-                    smtp.Send(message);
-                    Utils.Logger.Info("Email.Send() ENDS");
-                }
+                message.To.Add(toAddresses[i]);
             }
+
+            using var smtp = new SmtpClient
+            {
+                Host = "smtp.gmail.com",
+                Port = 587,
+                EnableSsl = true,
+                DeliveryMethod = SmtpDeliveryMethod.Network,
+                UseDefaultCredentials = false,
+                Credentials = new NetworkCredential(SenderName, SenderPwd),
+                Timeout = 10000 // in msec, so we use 10 sec timeout
+            };
+            Utils.Logger.Info("Email.Send() START");
+            smtp.Send(message);
+            Utils.Logger.Info("Email.Send() ENDS");
         }
 
         // https://stackoverflow.com/questions/7276375/what-are-best-practices-for-using-smtpclient-sendasync-and-dispose-under-net-4
-        // Warning	CS4014 can be supressed if it returns void instead of Task, however as it is a util function, it shouldn't be fire_forget. The caller should handle it.
+        // Warning, CS4014 can be supressed if it returns void instead of Task, however as it is a util function, it shouldn't be fire_forget. The caller should handle it.
         // https://stackoverflow.com/questions/22629951/suppressing-warning-cs4014-because-this-call-is-not-awaited-execution-of-the
         public async Task SendAsync()
         {
             // https://stackoverflow.com/questions/32260/sending-email-in-net-through-gmail
-            using (var message = new MailMessage()
+            using var message = new MailMessage()
             {
                 Subject = Subject,
                 Body = Body,
-                IsBodyHtml = IsBodyHtml
-            })
+                IsBodyHtml = IsBodyHtml,
+                From = new MailAddress(SenderName)
+            };
+            var toAddresses = ToAddresses.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < toAddresses.Length; i++)
             {
-                message.From = new MailAddress(SenderName);
-                var toAddresses = ToAddresses.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-                for (int i = 0; i < toAddresses.Length; i++)
-                {
-                    message.To.Add(toAddresses[i]);
-                }
-
-                using (var smtp = new SmtpClient
-                {
-                    Host = "smtp.gmail.com",
-                    Port = 587,
-                    EnableSsl = true,
-                    DeliveryMethod = SmtpDeliveryMethod.Network,
-                    UseDefaultCredentials = false,
-                    Credentials = new NetworkCredential(SenderName, SenderPwd),
-                    Timeout = 10000 // in msec, so we use 10 sec timeout
-                })
-                {
-                    Utils.Logger.Info("Email.Send() START");    // this is running in the calling thread (maybe the Main Thread)
-                    await smtp.SendMailAsync(message);          // Caller (Main) thread returns here
-                    Utils.Logger.Info("Email.Send() ENDS");     // this is running a separate worker thread.
-                }
+                message.To.Add(toAddresses[i]);
             }
+
+            using var smtp = new SmtpClient
+            {
+                Host = "smtp.gmail.com",
+                Port = 587,
+                EnableSsl = true,
+                DeliveryMethod = SmtpDeliveryMethod.Network,
+                UseDefaultCredentials = false,
+                Credentials = new NetworkCredential(SenderName, SenderPwd),
+                Timeout = 10000 // in msec, so we use 10 sec timeout
+            };
+            Utils.Logger.Info("Email.Send() START");    // this is running in the calling thread (maybe the Main Thread)
+            await smtp.SendMailAsync(message);          // Caller (Main) thread returns here
+            Utils.Logger.Info("Email.Send() ENDS");     // this is running a separate worker thread.
         }
     }
 }

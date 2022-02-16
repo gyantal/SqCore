@@ -5,7 +5,6 @@ using System.Text.RegularExpressions;
 
 namespace SqCommon
 {
-
     public static partial class Utils
     {
         // There is no Foreach of IEnumerable, only for List/Array.
@@ -13,8 +12,10 @@ namespace SqCommon
         // https://stackoverflow.com/questions/1509442/linq-style-for-each
         public static void ForEach<T>(this IEnumerable<T> source, Action<T> action)
         {
-            if (source == null) throw new ArgumentNullException("source");
-            if (action == null) throw new ArgumentNullException("action");
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+            if (action == null)
+                throw new ArgumentNullException(nameof(action));
 
             foreach (T item in source)
             {
@@ -31,5 +32,4 @@ namespace SqCommon
             list[0] = item;
         }
     }
-
 }

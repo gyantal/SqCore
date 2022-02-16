@@ -15,9 +15,9 @@ namespace SqCommon
         GetVirtualBrokerCurrentState = 1640,   // not used at the moment. HealthMonitor may do active polling to query if VBroker is alive or not.
         GetRealtimePrice = 1641,
         GetAccountsInfo = 1642, // AccountSummary and Positions and MarketValues info
-    };
+    }
 
-    public enum HealthMonitorMessageID  // ! if this enum is changed by inserting a new value in the middle, redeploy all apps that uses it, otherwise they interpret the number differently
+    public enum HealthMonitorMessageID // ! if this enum is changed by inserting a new value in the middle, redeploy all apps that uses it, otherwise they interpret the number differently
     {
         Undefined = 0,
         Ping,
@@ -35,10 +35,9 @@ namespace SqCommon
         SqCoreWebWarning, // warning will send only emails, but not Phonecalls
         SqCoreWebCsError,     // C# error on the server side
         SqCoreWebJsError,   // JavaScript error on the client side
-    };
+    }
 
-    public enum TcpMessageResponseFormat { None = 0, String, JSON };
-
+    public enum TcpMessageResponseFormat { None = 0, String, JSON }
 
     public class TcpMessage
     {
@@ -51,7 +50,7 @@ namespace SqCommon
 
         public static string GenerateSecurityToken() // for sensitive info only, we need a security token checking, so 3rd party cannot easily get this data
         {
-            DateTime secTokenTimeBegin = new DateTime(2010, 1, 1);
+            DateTime secTokenTimeBegin = new(2010, 1, 1);
             string securityTokenVer1 = ((long)(DateTime.UtcNow - secTokenTimeBegin).TotalSeconds).ToString();
             char[] charArray = securityTokenVer1.ToCharArray();     // reverse it, so it is not that obvious that it is the seconds
             Array.Reverse(charArray);
@@ -63,20 +62,18 @@ namespace SqCommon
         {
             Utils.Logger.Info($"TcpMessage.Send(): Message: '{p_msg}'");
 
-            var t = (new TcpMessage()
+            var taskSendMsg = new TcpMessage()
             {
                 TcpServerHost = p_tcpServerHost,
                 TcpServerPort = p_tcpServerPort,
                 ID = p_vbMessageId,
                 ParamStr = $"{p_msg}",
                 ResponseFormat = p_responseFormat
-            }.SendMessage());
+            }.SendMessage();
 
-            string? reply = (await t);
+            string? reply = await taskSendMsg;
             return reply;
         }
-
-
 
         public void SerializeTo(BinaryWriter p_binaryWriter)
         {
@@ -93,7 +90,7 @@ namespace SqCommon
             return this;
         }
 
-        // 2020-06-07: After HTTP GET '/rtp' as real-time price query message sent to Vbroker, the server slowed down with 100% CPU. 
+        // 2020-06-07: After HTTP GET '/rtp' as real-time price query message sent to Vbroker, the server slowed down with 100% CPU.
         // 1 minute later Kestrel logged: #Warn: Heartbeat took longer than "00:00:01"
         // https://github.com/dotnet/aspnetcore/issues/17321    https://github.com/dotnet/aspnetcore/issues/4760
         // this is usually happens if thread pool is starved, because it cannot find any free threads in threadpool, because each of them is blocked and waiting.
@@ -107,7 +104,7 @@ namespace SqCommon
         {
             // https://stackoverflow.com/questions/17118632/how-to-set-the-timeout-for-a-tcpclient/43237063#43237063
             string? reply = null;
-            TcpClient client = new TcpClient();
+            TcpClient client = new();
             Task? connectTask = null;
             bool wasTimeout = false;
             try
@@ -117,7 +114,7 @@ namespace SqCommon
                 connectTask = client.ConnectAsync(serverIP, TcpServerPort);      // usually, we create a task with a CancellationToken. However, this task is not cancellable. I cannot cancel it. I have to wait for its finish.
 
                 // Problem: if the timeout cancellation completes first we return to the caller the empty string. Fine.
-                // And THEN maybe 10 minutes later the connectTask really terminates with an Exception, 
+                // And THEN maybe 10 minutes later the connectTask really terminates with an Exception,
                 // then, we should observe that exception, otherwise TaskScheduler.UnobservedTaskException will be raised
                 // We should ALWAYS observe the connectTask.Exception (both in timeout, and no timeout cases)
                 Task connectContinueTask = connectTask.ContinueWith(connTask =>
@@ -144,12 +141,12 @@ namespace SqCommon
                 else
                 {
                     Utils.Logger.Debug("TcpMessage.SendMessage(). client.ConnectAsync({TcpServerHost}:{TcpServerPort}) completed without timeout and no Exception occured");
-                    BinaryWriter bw = new BinaryWriter(client.GetStream()); // sometimes "System.InvalidOperationException: The operation is not allowed on non-connected sockets." at TcpClient.GetStream()
+                    BinaryWriter bw = new(client.GetStream()); // sometimes "System.InvalidOperationException: The operation is not allowed on non-connected sockets." at TcpClient.GetStream()
                     SerializeTo(bw);
 
                     if (ResponseFormat != TcpMessageResponseFormat.None)
                     {
-                        BinaryReader br = new BinaryReader(client.GetStream());
+                        BinaryReader br = new(client.GetStream());
                         reply = br.ReadString(); // sometimes "System.IO.EndOfStreamException: Unable to read beyond the end of the stream." at ReadString()
                     }
                 }
@@ -157,12 +154,13 @@ namespace SqCommon
             catch (Exception e) // in local Win development, Exception: 'No connection could be made because the target machine actively refused it' comes here.
             {
                 Utils.Logger.Error(e, "Error:TcpMessage.SendMessage exception. Check both AWS and Linux firewalls!");
-                
-                if (e is OperationCanceledException) {
+
+                if (e is OperationCanceledException)
+                {
                     wasTimeout = true;
                     Utils.Logger.Error(e, "Error:TcpMessage.SendMessage exception. connectTask was cancelled by our timeout");
                 }
-                
+
                 // we should observe that exception, otherwise TaskScheduler.UnobservedTaskException will be raised
                 if (connectTask != null && connectTask.Exception != null)
                     Utils.Logger.Error(connectTask.Exception, "Error:TcpMessage.SendMessage(). Exception in ConnectAsync() task.");
@@ -170,7 +168,7 @@ namespace SqCommon
             finally
             {
                 // 'A task may only be disposed if it is in a completion state (RanToCompletion, Faulted or Canceled).'
-                // If there was a timeout cancellation, we cannot dispose it. It is still running and it may finish 10min later and GC will dispose it. 
+                // If there was a timeout cancellation, we cannot dispose it. It is still running and it may finish 10min later and GC will dispose it.
                 if (connectTask != null && connectTask.IsCompleted)
                     connectTask.Dispose();
                 Utils.TcpClientDispose(client);

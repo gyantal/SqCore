@@ -11,9 +11,9 @@ namespace SqCommon
     {
         public string Name { get; set; } = string.Empty;
         string m_nameForTextToSpeech = string.Empty;
-        public string NameForTextToSpeech  // "UberVXX" is said as 'bsxxx' by Twilio on the phonecall, which is unrecognisable
+        public string NameForTextToSpeech // "UberVXX" is said as 'bsxxx' by Twilio on the phonecall, which is unrecognisable
         {
-            get { return (String.IsNullOrEmpty(m_nameForTextToSpeech)) ? Name : m_nameForTextToSpeech; }
+            get { return String.IsNullOrEmpty(m_nameForTextToSpeech) ? Name : m_nameForTextToSpeech; }
             set { m_nameForTextToSpeech = value; }
         }
         public List<SqTrigger> Triggers { get; set; } = new List<SqTrigger>();

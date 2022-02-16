@@ -80,7 +80,7 @@ namespace SqCoreWeb
             PhoneCall.PhoneNumbers[Caller.Gyantal] = Utils.Configuration["PhoneCall:PhoneNumberGyantal"];
             PhoneCall.PhoneNumbers[Caller.Charmat0] = Utils.Configuration["PhoneCall:PhoneNumberCharmat0"];
 
-            StrongAssert.g_strongAssertEvent += StrongAssertMessageSendingEventHandler;
+            StrongAssert.G_strongAssertEvent += StrongAssertMessageSendingEventHandler;
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(AppDomain_BckgThrds_UnhandledException);
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException; // Occurs when a faulted task's unobserved exception is about to trigger exception which, by default, would terminate the process.
 
@@ -96,7 +96,7 @@ namespace SqCoreWeb
                 BrokersWatcher.gWatcher.Init(); // Returns quickly, because Broker connections happen in a separate ThreadPool threads. FintechCommon's MemDb is built on BrokerCommon's BrokerWatcher. So, it makes sense to initialize Brokers asap. Before MemDb uses it for RtNavTimer_Elapsed.ownloadLastPriceNav() very early
                 MemDb.gMemDb.Init(db); // high level DB used by functionalities
 
-                Caretaker.gCaretaker.Init("SqCoreServer", Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
+                Caretaker.g_caretaker.Init("SqCoreServer", Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
                 SqTaskScheduler.gTaskScheduler.Init();
 
                 Services_Init();
@@ -134,7 +134,7 @@ namespace SqCoreWeb
             Services_Exit();
 
             SqTaskScheduler.gTaskScheduler.Exit();
-            Caretaker.gCaretaker.Exit();
+            Caretaker.g_caretaker.Exit();
             MemDb.gMemDb.Exit();
             BrokersWatcher.gWatcher.Exit();
 
@@ -189,13 +189,13 @@ namespace SqCoreWeb
                     Console.WriteLine(SqTaskScheduler.gTaskScheduler.PrintNextScheduleTimes(false).ToString());
                     break;
                 case "4":
-                    SqTaskScheduler.gTaskScheduler.TestElapseTrigger("Overmind", 0);
+                    SqTaskScheduler.TestElapseTrigger("Overmind", 0);
                     break;
                 case "5":
-                    SqTaskScheduler.gTaskScheduler.TestElapseTrigger("Overmind", 1);
+                    SqTaskScheduler.TestElapseTrigger("Overmind", 1);
                     break;
                 case "6":
-                    SqTaskScheduler.gTaskScheduler.TestElapseTrigger("WebsitesMonitor", 0);
+                    SqTaskScheduler.TestElapseTrigger("WebsitesMonitor", 0);
                     break;
                 case "7":
                     Console.WriteLine((await MemDb.gMemDb.ForceReloadHistData(false)).ToString());

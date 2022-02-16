@@ -2,7 +2,8 @@ using System;
 
 namespace SqCommon
 {
-    public enum VBrokerServer {
+    public enum VBrokerServer
+    {
         AutoVb, ManualVb
     }
     // gather IPs here so if it changes, it has to be changed only here
@@ -21,19 +22,19 @@ namespace SqCommon
         //     }
         // }
 
-        public static string HealthMonitorPublicIp      // for Clients. Clients of HealthMonitor sees this
+        public static string HealthMonitorPublicIp // for Clients. Clients of HealthMonitor sees this
         {
             get
             {
                 if (Utils.RunningPlatform() == Platform.Windows)
-                    //return "localhost";       // sometimes for clients running on Windows (in development), we want localHost if Testing new HealthMonitor features
+                    // return "localhost";       // sometimes for clients running on Windows (in development), we want localHost if Testing new HealthMonitor features
                     return "23.20.243.199";      // public IP for the VBrokerDEV server, sometimes for clients running on Windows (in development), we want the proper Healthmonitor if Testing runnig VBroker locally
                 else
                     return "23.20.243.199";
             }
         }
 
-        public static string AtsVirtualBrokerServerPublicIpForClients   // AutoTraderServer
+        public static string AtsVirtualBrokerServerPublicIpForClients // AutoTraderServer
         {
             get
             {
@@ -41,7 +42,7 @@ namespace SqCommon
             }
         }
 
-        public static string SqCoreServerPublicIpForClients   //ManualTraderServer
+        public static string SqCoreServerPublicIpForClients // ManualTraderServer
         {
             get
             {
@@ -53,7 +54,7 @@ namespace SqCommon
         // https://www.howtogeek.com/225487/what-is-the-difference-between-127.0.0.1-and-0.0.0.0
         // netstat -lntp  // show listener ports
         // Future speed improvement: This functions should give back not strings, but IPAddress, that is already resolved. The DNS resolution of "localhost" string to IPAddress is only done once, here.
-        public static string LocalhostLoopbackWithIP   // "127.0.0.1" is better: equals to "localhost" without costly DNS name resolution
+        public static string LocalhostLoopbackWithIP // "127.0.0.1" is better: equals to "localhost" without costly DNS name resolution
         {
             // For example: Connection from WebServer To Local (ManualTrader);
             // 127.0.0.1 is better than the private IP of the server, because that changes every time the AWS VM stopped/restarted.
@@ -63,17 +64,15 @@ namespace SqCommon
             }
         }
 
-        
         public static string LocalhostMetaAllPrivateIpWithIP // 0.0.0.0 means all IPv4 addresses on the local machine (equals LocalHost_127.0.0.1 Plus all private IPs of the computer), cannot be used for target, only for listening
         {
             get
             {
-                    return "0.0.0.0"; // use 0.0.0.0 in Production when you want that it is accessible from the Internet (binding to all local private IPs) 
+                    return "0.0.0.0"; // use 0.0.0.0 in Production when you want that it is accessible from the Internet (binding to all local private IPs)
             }
         }
 
         public const int DefaultHealthMonitorServerPort = 52100;    // largest port number: 65535, HealthMonitor listens on 52100, VBroker on 52101
         public const int DefaultVirtualBrokerServerPort = 52101;    // largest port number: 65535, HealthMonitor listens on 52100, VBroker on 52101
-
     }
 }

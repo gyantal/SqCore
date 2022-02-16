@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 
-
 namespace SqCommon
 {
-
     public static partial class Utils
     {
         public static bool IsDigit(char p_char)
@@ -19,13 +17,13 @@ namespace SqCommon
             if (string.IsNullOrEmpty(str) || str.Length <= maxLengthAllowed)
                 return str;
             // add "..." at the end only if it was truncated
-      
-            return str.Substring(0, maxLengthAllowed - "...".Length) + "...";
+
+            return string.Concat(str.AsSpan(0, maxLengthAllowed - "...".Length), "...");
         }
 
         public static string[] SplitStringByCommaWithCharArray(this string str)
         {
-            return str.Split(new char[] {','}, StringSplitOptions.RemoveEmptyEntries);
+            return str.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
         }
 
         public static string[] SplitStringByCommaWithRegex(this string str)
@@ -38,15 +36,15 @@ namespace SqCommon
             if (s.Length <= p_maxLength)
                 return s;
             else
-                return s.Substring(0, p_maxLength) + "...";
+                return string.Concat(s.AsSpan(0, p_maxLength), "...");
         }
         public static string ToStringWithShortenedStackTrace(this Exception e, int p_maxLength)
         {
-            string s = (e == null ? null : e.ToString()) ?? string.Empty;
+            string s = e?.ToString() ?? string.Empty;
             if (s.Length <= p_maxLength)
                 return s;
             else
-                return s.Substring(0, p_maxLength) + "...";
+                return string.Concat(s.AsSpan(0, p_maxLength), "...");
         }
 
         public static string FormatInvCult(this string p_fmt, params object[] p_args)
@@ -63,8 +61,10 @@ namespace SqCommon
             // "Just tested it with a for loop and it was actually slower than using foreach. Could be because of bounds-checking? (Time was 1.65 sec vs 2.05 on 5 mil iterations.)"
             int count = 0;
             foreach (char c in p_str)
+            {
                 if (c == p_char)
                     count++;
+            }
             return count;
         }
 
@@ -85,5 +85,4 @@ namespace SqCommon
             }
         }
     }
-
 }

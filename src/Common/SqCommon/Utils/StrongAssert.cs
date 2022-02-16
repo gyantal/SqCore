@@ -8,38 +8,37 @@ namespace SqCommon
 {
     public enum Severity
     {
-        /// <summary> Debug.Fail() + Logger.Error() (to be sent in email) </summary>
+        // <summary> Debug.Fail() + Logger.Error() (to be sent in email) </summary>
         NoException,
-        /// <summary> Debug.Fail() + Logger.Error() + throw exception </summary>
+        // <summary> Debug.Fail() + Logger.Error() + throw exception </summary>
         ThrowException,
-        /// <summary> Debug.Fail() + Logger.Error() + freeze (current implementation: throw exception) </summary>
+        // <summary> Debug.Fail() + Logger.Error() + freeze (current implementation: throw exception) </summary>
         Freeze,
-        /// <summary> Debug.Fail() + Logger.Error() (email immediately) + Environment.Exit() </summary>
+        // <summary> Debug.Fail() + Logger.Error() (email immediately) + Environment.Exit() </summary>
         Halt
     }
 
     public class StrongAssertMessage
     {
         public Severity Severity { get; set; }
-        /// <summary> Example: "StrongAssert failed (severity=={0}): {1}" </summary>
+        // <summary> Example: "StrongAssert failed (severity=={0}): {1}" </summary>
         public string Message { get; set; } = string.Empty;
-        //public StackTrace StackTrace { get; set; }
+        // public StackTrace StackTrace { get; set; }
         public string StackTrace { get; set; } = string.Empty;
     }
 
     // get keywords for method names from xUnit (or nUnit): https://xunit.github.io/docs/comparisons.html
     public class StrongAssert
     {
-        public static event Action<StrongAssertMessage>? g_strongAssertEvent;
-        
+        public static event Action<StrongAssertMessage>? G_strongAssertEvent;   // Action is a function. Upper case start is justified.
 
         public static void True(bool p_condition, Severity p_severity = Severity.ThrowException)
         {
             if (!p_condition)
-                Fail_core(p_severity, string.Empty, null);
+                Fail_core(p_severity, string.Empty, Array.Empty<object>());
         }
 
-        /// <summary> Severity: Exception </summary>
+        // <summary> Severity: Exception. </summary>
         public static void True(bool p_condition, string p_message, params object[] p_args)
         {
             if (!p_condition)
@@ -55,7 +54,7 @@ namespace SqCommon
         public static void True(bool p_condition, Severity p_severity, Func<string> p_msg)
         {
             if (!p_condition)
-                Fail_core(p_severity, p_msg == null ? string.Empty : p_msg(), null);
+                Fail_core(p_severity, p_msg == null ? string.Empty : p_msg(), Array.Empty<object>());
         }
 
         public static void NotEmpty(string p_str, Severity p_severity, string p_message, params object[] p_args)
@@ -75,14 +74,12 @@ namespace SqCommon
                 Fail_core(p_severity, p_message, p_args);
         }
 
-
-
         public static void Fail(Severity p_severity = Severity.ThrowException)
         {
-            Fail_core(p_severity, string.Empty, null);
+            Fail_core(p_severity, string.Empty, Array.Empty<object>());
         }
 
-        /// <summary> Severity: Exception </summary>
+        // <summary> Severity: Exception </summary>
         public static void Fail(string p_message, params object[] p_args)
         {
             Fail_core(Severity.ThrowException, p_message, p_args);
@@ -93,7 +90,7 @@ namespace SqCommon
             Fail_core(p_severity, p_message, p_args); // this is needed to add +1 level of stack trace
         }
 
-        private static void Fail_core(Severity p_severity, string p_message, object[]? p_args)
+        private static void Fail_core(Severity p_severity, string p_message, object[] p_args)
         {
             const string MSG = "StrongAssert failed (severity=={0})";
             string msg = String.Format(MSG, p_severity)
@@ -102,15 +99,15 @@ namespace SqCommon
             string sTrace = Environment.StackTrace;
             switch (p_severity)
             {
-                //case Severity.NoException:        // not sure, it is safer if it is an Error, and HealthMonitor is always warned
+                // case Severity.NoException:        // not sure, it is safer if it is an Error, and HealthMonitor is always warned
                 //    Utils.Logger.Warn("*** {1}{0}Stack trace:{0}{2}", Environment.NewLine, msg, sTrace);    // this will not send message to HealthMonitor, only log the Warning
                 //    break;
                 default:
                     Utils.Logger.Error("*** {1}{0}Stack trace:{0}{2}", Environment.NewLine, msg, sTrace);   // Errors will be sent to HealthMonitor
                     break;
             }
-            
-            Action<StrongAssertMessage>? listeners = g_strongAssertEvent;
+
+            Action<StrongAssertMessage>? listeners = G_strongAssertEvent;
             if (listeners != null)
             {
                 Utils.Logger.Info("Calling g_strongAssertEvent event... ");
@@ -124,17 +121,16 @@ namespace SqCommon
                 default:
                     throw new Exception(msg);
                 case Severity.Freeze:
-                //ApplicationState.SleepIfNotExiting(Timeout.Infinite); break;
+                // ApplicationState.SleepIfNotExiting(Timeout.Infinite); break;
                 case Severity.Halt:
                     if (listeners == null)
                     {
-                        //Trace.WriteLine(msg);
-                        //Trace.Flush();
+                        // Trace.WriteLine(msg);
+                        // Trace.Flush();
                     }
                     Environment.Exit(-1);
                     break;
             }
         }
-
     }
 }

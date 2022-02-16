@@ -44,11 +44,11 @@ namespace HealthMonitor
             PhoneCall.PhoneNumbers[Caller.Gyantal] = Utils.Configuration["PhoneCall:PhoneNumberGyantal"];
 
             Utils.MainThreadIsExiting = new ManualResetEventSlim(false);
-            StrongAssert.g_strongAssertEvent += StrongAssertMessageSendingEventHandler;
+            StrongAssert.G_strongAssertEvent += StrongAssertMessageSendingEventHandler;
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(AppDomain_BckgThrds_UnhandledException);
             TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException; // Occurs when a faulted task's unobserved exception is about to trigger exception which, by default, would terminate the process.
 
-            Caretaker.gCaretaker.Init("HealthMonitor", Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
+            Caretaker.g_caretaker.Init("HealthMonitor", Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
             SqTaskScheduler.gTaskScheduler.Init();
             HealthMonitor.g_healthMonitor.Init();
 
@@ -65,7 +65,7 @@ namespace HealthMonitor
 
             HealthMonitor.g_healthMonitor.Exit();
             SqTaskScheduler.gTaskScheduler.Exit();
-            Caretaker.gCaretaker.Exit();
+            Caretaker.g_caretaker.Exit();
 
             gLogger.Info("****** Main() END");
             NLog.LogManager.Shutdown();

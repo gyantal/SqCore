@@ -14,7 +14,6 @@ namespace SqCommon
         Mac
     }
 
-
     public static partial class Utils
     {
         public static readonly System.Globalization.CultureInfo InvCult = System.Globalization.CultureInfo.InvariantCulture;
@@ -24,21 +23,15 @@ namespace SqCommon
         public static IConfigurationRoot Configuration = new ConfigurationBuilder().Build();    // even small Tools have configs for sensitive data like passwords.
         public static ManualResetEventSlim? MainThreadIsExiting = null;  // broadcast main thread shutdown and give 2 seconds for long running background threads to quit. Some Tools, Apps do not require this, so don't initiate this for them automatically
 
-
         // see discussion here in CoreCLR (they are not ready) https://github.com/dotnet/corefx/issues/1017
         public static Platform RunningPlatform()
         {
-            switch (Environment.NewLine)
+            return Environment.NewLine switch
             {
-                case "\n":
-                    return Platform.Linux;
-
-                case "\r\n":
-                    return Platform.Windows;
-
-                default:
-                    throw new Exception("RunningPlatform() not recognized");
-            }
+                "\n" => Platform.Linux,
+                "\r\n" => Platform.Windows,
+                _ => throw new Exception("RunningPlatform() not recognized"),
+            };
         }
 
         public static string RuntimeConfig()
@@ -91,7 +84,7 @@ namespace SqCommon
         // {
         //     string os_username = (RunningPlatform() == Platform.Linux) ? "Lin.*" : "Win." + Environment.UserName);
         //     if (RunningEnvStrDict.TryGetValue(p_runningEnvStrType, out Dictionary<string, string> dictRe))
-        //     {                
+        //     {
         //         if (dictRe.TryGetValue(os_username, out string str))
         //         {
         //             return str;
@@ -103,36 +96,27 @@ namespace SqCommon
 
         public static string SensitiveConfigFolderPath()
         {
-            switch (RunningPlatform())
+            return RunningPlatform() switch
             {
-                case Platform.Linux:
-                    //return "/home/ubuntu/SQ/Tools/BenchmarkDB/";  // on Linux, sometimes it is not the 'ubuntu' superuser, but something else.
-                    // GetCurrentDirectory() is the current working directory of the app. Most likely it is the folder of the '*.csproj'.
-                    // but deployment rm -rf everything until the src folder.
-                    //return Directory.GetCurrentDirectory() + "/../../.." + "/";
-                    //return "/home/sq-vnc-client/SQ/NonCommitedSensitiveData/";
-                    return $"/home/{Environment.UserName}/SQ/NonCommitedSensitiveData/";
-
-               case Platform.Windows:
-                    // find out which user from the team and determine it accordingly. Or just check whether folders exists (but that takes HDD read, which is slow)
-                    switch (Environment.UserName)   // Windows user name
-                    {
-                        case "gyantal": // gyantal-PC
-                            return "c:/agy/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/";
-                        case "gyant":  // gyantal-Laptop
-                            return "c:/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/";
-                        case "Balazs":
-                            return "d:/GDrive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/";
-                        case "Laci":
-                            return "d:\\ArchiData\\GoogleDrive\\GDriveHedgeQuant\\shared\\GitHubRepos\\NonCommitedSensitiveData\\";
-                        case "vinci":
-                            return "c:\\Google Drive\\GDriveHedgeQuant\\shared\\GitHubRepos\\NonCommitedSensitiveData\\";
-                        default:
-                            throw new Exception("Windows user name is not recognized. Add your username and folder here!");
-                    }
-                default:
-                    throw new Exception("RunningPlatform() is not recognized");
-            }
+                // return "/home/ubuntu/SQ/Tools/BenchmarkDB/";  // on Linux, sometimes it is not the 'ubuntu' superuser, but something else.
+                // GetCurrentDirectory() is the current working directory of the app. Most likely it is the folder of the '*.csproj'.
+                // but deployment rm -rf everything until the src folder.
+                // return Directory.GetCurrentDirectory() + "/../../.." + "/";
+                // return "/home/sq-vnc-client/SQ/NonCommitedSensitiveData/";
+                Platform.Linux => $"/home/{Environment.UserName}/SQ/NonCommitedSensitiveData/",
+                Platform.Windows => Environment.UserName switch // Windows user name
+                {
+                    // gyantal-PC
+                    "gyantal" => "c:/agy/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/",
+                    // gyantal-Laptop
+                    "gyant" => "c:/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/",
+                    "Balazs" => "d:/GDrive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/",
+                    "Laci" => "d:\\ArchiData\\GoogleDrive\\GDriveHedgeQuant\\shared\\GitHubRepos\\NonCommitedSensitiveData\\",
+                    "vinci" => "c:\\Google Drive\\GDriveHedgeQuant\\shared\\GitHubRepos\\NonCommitedSensitiveData\\",
+                    _ => throw new Exception("Windows user name is not recognized. Add your username and folder here!"),
+                }, // find out which user from the team and determine it accordingly. Or just check whether folders exists (but that takes HDD read, which is slow)
+                _ => throw new Exception("RunningPlatform() is not recognized"),
+            };
         }
 
         public static string TaskScheduler_UnobservedTaskExceptionMsg(object? p_sender, UnobservedTaskExceptionEventArgs p_e)
@@ -140,13 +124,12 @@ namespace SqCommon
             Task? senderTask = (p_sender != null) ? null : p_sender as Task;
             if (senderTask != null)
             {
-                string msg = $"Sender is a task. TaskId: {senderTask.Id}, IsCompleted: {senderTask.IsCompleted}, IsCanceled: {senderTask.IsCanceled}, IsFaulted: {senderTask.IsFaulted}, TaskToString(): {senderTask.ToString()}.";
+                string msg = $"Sender is a task. TaskId: {senderTask.Id}, IsCompleted: {senderTask.IsCompleted}, IsCanceled: {senderTask.IsCanceled}, IsFaulted: {senderTask.IsFaulted}, TaskToString(): {senderTask}.";
                 msg += (senderTask.Exception == null) ? " SenderTask.Exception is null" : $" SenderTask.Exception {senderTask.Exception.ToStringWithShortenedStackTrace(1600)}";
                 return msg;
             }
             else
                 return "Sender is not a task.";
         }
-
     }
 }
