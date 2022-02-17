@@ -13,7 +13,7 @@ namespace SqCoreWeb
 {
     public partial class Program
     {
-        static CancellationTokenSource gKestrelCancelTs = new CancellationTokenSource();
+        static CancellationTokenSource gKestrelCancelTs = new();
         public static void KestrelWebServer_Init(string[] args)
         {
         }

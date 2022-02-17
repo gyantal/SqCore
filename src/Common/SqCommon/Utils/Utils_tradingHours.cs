@@ -7,7 +7,6 @@ namespace SqCommon
 {
     public enum TradingHours { PreMarketTrading, RegularTrading, PostMarketTrading, Closed }
 
-
     // many times we want to distinguish time from 0:00ET to 4:00ET, so PriorCloses are updated with Friday closesprices if we are in PrePreMarket, not only later at real PreMarket.
     // TODO: replace TradingHours to TradingHoursEx in code
     public enum TradingHoursEx { PrePreMarketTrading, PreMarketTrading, RegularTrading, PostMarketTrading, Closed }
@@ -30,7 +29,7 @@ namespace SqCommon
             if (p_timeET.IsWeekend())
                 return TradingHours.Closed;
 
-            int nowTimeOnlySec = p_timeET.Hour * 60 * 60 + p_timeET.Minute * 60 + p_timeET.Second;
+            int nowTimeOnlySec = (p_timeET.Hour * 60 * 60) + p_timeET.Minute * 60 + p_timeET.Second;
             if (nowTimeOnlySec < 4 * 60 * 60)
                 return TradingHours.Closed;
             else if (nowTimeOnlySec < 9 * 60 * 60 + 30 * 60)
@@ -81,10 +80,10 @@ namespace SqCommon
             DateTime utcNowET = Utils.ConvertTimeFromUtcToEt(utcNow);
             if (utcNowET.DayOfWeek == DayOfWeek.Saturday || utcNowET.DayOfWeek == DayOfWeek.Sunday)
                 return false;
-            DateTime openInET = new DateTime(utcNowET.Year, utcNowET.Month, utcNowET.Day, 9, 30, 0);
+            DateTime openInET = new(utcNowET.Year, utcNowET.Month, utcNowET.Day, 9, 30, 0);
             if (utcNowET < openInET)
                 return false;
-            DateTime maxPossibleCloseInET = new DateTime(utcNowET.Year, utcNowET.Month, utcNowET.Day, 16, 0, 0); // usually it is 16:00, but when half-day trading, then it is 13:00
+            DateTime maxPossibleCloseInET = new(utcNowET.Year, utcNowET.Month, utcNowET.Day, 16, 0, 0); // usually it is 16:00, but when half-day trading, then it is 13:00
             if (utcNowET > maxPossibleCloseInET)
                 return false;
 
@@ -109,8 +108,6 @@ namespace SqCommon
                 return true;
             }
         }
-
-
 
         // the advantage of using https://www.nyse.com/markets/hours-calendars is that it not only gives back Early Closes, but the Holiday days too
         public static List<Tuple<DateTime, DateTime?>>? GetHolidaysAndHalfHolidaysWithCloseTimesInET(TimeSpan p_maxAllowedStaleness)
@@ -274,7 +271,6 @@ namespace SqCommon
                     int indObservedStart = p_td.LastIndexOf('(', indObserved - 1, indObserved);
                     dateHoliday = DateTime.Parse(p_td.Substring(0, indObservedStart) + ", " + p_year.ToString());
                 } else {
-                    
                     if (p_td == "&#8212;" || p_td == "—") // &#8212; = "—". This means that holiday is a weekend, therefore no need to store. In some cases, this missing "NewYearsEve" it can be deducted, in other cases, Independence Day, it can be any day, so better to not invent a non-existant holiday which is at the weekend and put it into DB.
                     {
                         // do nothing.
@@ -285,7 +281,6 @@ namespace SqCommon
             }
             if (dateHoliday != DateTime.MinValue)
                 p_holidays.Add(new Tuple<DateTime, DateTime?>(dateHoliday, null));
-
         }
 
         // it is important that p_timeUtc can be a Time and it is in UTC. Convert it to ET to work with it.
@@ -321,10 +316,10 @@ namespace SqCommon
                 return false; // temporarily off
             }
 
-            DateTime openInET = new DateTime(timeET.Year, timeET.Month, timeET.Day, 9, 30, 0);
+            DateTime openInET = new(timeET.Year, timeET.Month, timeET.Day, 9, 30, 0);
             DateTime closeInET;
             var todayHoliday = holidaysAndHalfHolidays.FirstOrDefault(r => r.Item1 == timeET.Date);
-            if (todayHoliday == null)   // it is a normal day, not holiday: "The NYSE and NYSE MKT are open from Monday through Friday 9:30 a.m. to 4:00 p.m. ET."
+            if (todayHoliday == null) // it is a normal day, not holiday: "The NYSE and NYSE MKT are open from Monday through Friday 9:30 a.m. to 4:00 p.m. ET."
             {
                 p_isMarketTradingDay = true;
                 closeInET = new DateTime(timeET.Year, timeET.Month, timeET.Day, 16, 0, 0);
@@ -340,7 +335,7 @@ namespace SqCommon
                 else
                 {
                     p_isMarketTradingDay = true;
-                    closeInET = (DateTime)todayHoliday.Item2;  // yes, halfHolidays are in ET 
+                    closeInET = (DateTime)todayHoliday.Item2;  // yes, halfHolidays are in ET
                 }
             }
 

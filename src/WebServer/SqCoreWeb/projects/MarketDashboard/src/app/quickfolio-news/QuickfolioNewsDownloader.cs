@@ -37,9 +37,9 @@ namespace SqCoreWeb
 
     public class QuickfolioNewsDownloader
     {
-        Dictionary<string, List<NewsItem>> m_newsMemory = new Dictionary<string, List<NewsItem>>();
-        Random m_random = new Random(DateTime.Now.Millisecond);
-        KeyValuePair<int, int> m_sleepBetweenDnsMs = new KeyValuePair<int, int>(2000, 1000);     // <fix, random>
+        Dictionary<string, List<NewsItem>> m_newsMemory = new();
+        Random m_random = new(DateTime.Now.Millisecond);
+        KeyValuePair<int, int> m_sleepBetweenDnsMs = new(2000, 1000);     // <fix, random>
         string[] m_stockTickers = { "AAPL", "ADBE", "AMZN", "BABA", "CRM", "FB", "GOOGL", "MA", "MSFT", "NVDA", "PYPL", "QCOM", "V" };
 
         public QuickfolioNewsDownloader()
@@ -79,7 +79,7 @@ namespace SqCoreWeb
         {
             string rssFeedUrl = string.Format(@"https://www.cnbc.com/id/100003114/device/rss/rss.html");
 
-            List<NewsItem> foundNewsItems = new List<NewsItem>();
+            List<NewsItem> foundNewsItems = new();
             // try max 5 downloads to leave the tread for sure (call this method repeats continuosly)
             int retryCount = 0;
             while ((foundNewsItems.Count < 1) && (retryCount < 5))
@@ -156,7 +156,7 @@ namespace SqCoreWeb
 
         private List<NewsItem> ReadTipranksNews(string p_ticker)
         {
-            List<NewsItem> foundNewsItems = new List<NewsItem>();
+            List<NewsItem> foundNewsItems = new();
             if (foundNewsItems == null)
                 foundNewsItems = new List<NewsItem>();
             //MakeRequests();
@@ -184,7 +184,7 @@ namespace SqCoreWeb
                 JsonElement newssElement = root.GetProperty("news");
                 foreach (JsonElement news in newssElement.EnumerateArray())
                 {
-                    NewsItem newsItem = new NewsItem();
+                    NewsItem newsItem = new();
                     newsItem.Ticker = p_ticker;
                     newsItem.LinkUrl = news.GetProperty("url").GetRawText().Trim('"');
                     newsItem.Title = news.GetProperty("title").GetRawText().Trim('"'); 
@@ -207,7 +207,7 @@ namespace SqCoreWeb
         }
         private List<NewsItem> ReadBenzingaNews(string p_ticker)
         {
-            List<NewsItem> foundNewsItems = new List<NewsItem>();
+            List<NewsItem> foundNewsItems = new();
             // >2021-10-01: benzinga banned  the IP of the server. Even in Chrome, even the simple www.benzinga.com doesn't work. They have a Varnish cache server, that refuses to give the page.
             // There is nothing to do. They didn't ban all AWS servers, because it works from our other Linux servers.
             // They only banned the SqCore server, because they noticed that there were too many queries. This is why we have to be cautious.
@@ -227,9 +227,9 @@ namespace SqCoreWeb
 
         private void ReadBenzingaSection(List<NewsItem> p_foundNewsItems, string p_ticker, string p_webpageData, string p_keyWord)
         {
-            Regex regexBenzingaLists = new Regex(@"<div[^>]*?class=""stories""[^>]*?" + p_keyWord + @"(?<CONTENT>(\s|\S)*?)</div>"
+            Regex regexBenzingaLists = new(@"<div[^>]*?class=""stories""[^>]*?" + p_keyWord + @"(?<CONTENT>(\s|\S)*?)</div>"
                 , RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
-            Regex regexBenzingaNews = new Regex(@"<li(\s|\S)*?class=""story""(\s|\S)*?<a href=""(?<LINK>[^""]*)"">(?<TITLE>[^<]*)<(\s|\S)*?<span class=""date"">(?<DATE>[^<]*)"
+            Regex regexBenzingaNews = new(@"<li(\s|\S)*?class=""story""(\s|\S)*?<a href=""(?<LINK>[^""]*)"">(?<TITLE>[^<]*)<(\s|\S)*?<span class=""date"">(?<DATE>[^<]*)"
                 , RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
             MatchCollection matches = regexBenzingaLists.Matches(p_webpageData);
             if (matches == null)
@@ -241,7 +241,7 @@ namespace SqCoreWeb
                 for (int indexNews = 0; indexNews < matchesNews.Count; indexNews++)
                 {
                     Match matchNews = matchesNews[indexNews];
-                    NewsItem newsItem = new NewsItem();
+                    NewsItem newsItem = new();
                     newsItem.Ticker = p_ticker;
                     newsItem.LinkUrl = matchNews.Groups["LINK"].Value;
                     newsItem.Title = WebUtility.HtmlDecode(matchNews.Groups["TITLE"].Value);
@@ -325,11 +325,11 @@ namespace SqCoreWeb
                 // convert feed to XML using LINQ to XML and finally create new XmlReader object
                 var feed = System.ServiceModel.Syndication.SyndicationFeed.Load(XDocument.Parse(rssFeedAsString).CreateReader());
 
-                List<NewsItem> foundNewNews = new List<NewsItem>();
+                List<NewsItem> foundNewNews = new();
 
                 foreach (SyndicationItem item in feed.Items)
                 {
-                    NewsItem newsItem = new NewsItem();
+                    NewsItem newsItem = new();
                     newsItem.Ticker = p_ticker;
                     newsItem.LinkUrl = item.Links[0].Uri.AbsoluteUri;
                     newsItem.Title = WebUtility.HtmlDecode(item.Title.Text);

@@ -401,10 +401,10 @@ namespace IBApi
 
         private void CompletedOrderEvent()
         {
-            Contract contract = new Contract();
-            Order order = new Order();
-            OrderState orderState = new OrderState();
-            EOrderDecoder eOrderDecoder = new EOrderDecoder(this, contract, order, orderState, Int32.MaxValue, serverVersion);
+            Contract contract = new();
+            Order order = new();
+            OrderState orderState = new();
+            EOrderDecoder eOrderDecoder = new(this, contract, order, orderState, Int32.MaxValue, serverVersion);
 
             // read contract fields
             eOrderDecoder.readContractFields();
@@ -504,7 +504,7 @@ namespace IBApi
                     double price = ReadDouble();
                     int size = ReadInt();
                     mask = new BitMask(ReadInt());
-                    TickAttribLast tickAttribLast = new TickAttribLast();
+                    TickAttribLast tickAttribLast = new();
                     tickAttribLast.PastLimit = mask[0];
                     tickAttribLast.Unreported = mask[1];
                     String exchange = ReadString();
@@ -517,7 +517,7 @@ namespace IBApi
                     int bidSize = ReadInt();
                     int askSize = ReadInt();
                     mask = new BitMask(ReadInt());
-                    TickAttribBidAsk tickAttribBidAsk = new TickAttribBidAsk();
+                    TickAttribBidAsk tickAttribBidAsk = new();
                     tickAttribBidAsk.BidPastLow = mask[0];
                     tickAttribBidAsk.AskPastHigh = mask[1];
                     eWrapper.tickByTickBidAsk(reqId, time, bidPrice, askPrice, bidSize, askSize, tickAttribBidAsk);
@@ -538,8 +538,8 @@ namespace IBApi
             for (int i = 0; i < nTicks; i++)
             {
                 var time = ReadLong();
-                BitMask mask = new BitMask(ReadInt());
-                TickAttribLast tickAttribLast = new TickAttribLast();
+                BitMask mask = new(ReadInt());
+                TickAttribLast tickAttribLast = new();
                 tickAttribLast.PastLimit = mask[0];
                 tickAttribLast.Unreported = mask[1];
                 var price = ReadDouble();
@@ -564,8 +564,8 @@ namespace IBApi
             for (int i = 0; i < nTicks; i++)
             {
                 var time = ReadLong();
-                BitMask mask = new BitMask(ReadInt());
-                TickAttribBidAsk tickAttribBidAsk = new TickAttribBidAsk();
+                BitMask mask = new(ReadInt());
+                TickAttribBidAsk tickAttribBidAsk = new();
                 tickAttribBidAsk.AskPastHigh = mask[0];
                 tickAttribBidAsk.BidPastLow = mask[1];
                 var priceBid = ReadDouble();
@@ -821,7 +821,7 @@ namespace IBApi
                 for (int i = 0; i < nContractDescriptions; ++i)
                 {
                     // read contract fields
-                    Contract contract = new Contract();
+                    Contract contract = new();
                     contract.ConId = ReadInt();
                     contract.Symbol = ReadString();
                     contract.SecType = ReadString();
@@ -840,7 +840,7 @@ namespace IBApi
                         }
                     }
 
-                    ContractDescription contractDescription = new ContractDescription(contract, derivativeSecTypes);
+                    ContractDescription contractDescription = new(contract, derivativeSecTypes);
                     contractDescriptions[i] = contractDescription;
                 }
             }
@@ -920,8 +920,8 @@ namespace IBApi
             string tradingClass = ReadString();
             string multiplier = ReadString();
             int expirationsSize = ReadInt();
-            HashSet<string> expirations = new HashSet<string>();
-            HashSet<double> strikes = new HashSet<double>();
+            HashSet<string> expirations = new();
+            HashSet<double> strikes = new();
 
             for (int i = 0; i < expirationsSize; i++)
             {
@@ -1002,7 +1002,7 @@ namespace IBApi
             if (msgVersion >= 2)
                 size = ReadInt();
 
-            TickAttrib attr = new TickAttrib();
+            TickAttrib attr = new();
 
             if (msgVersion >= 3)
             {
@@ -1012,7 +1012,7 @@ namespace IBApi
 
                 if (serverVersion >= MinServerVer.PAST_LIMIT)
                 {
-                    BitMask mask = new BitMask(attrMask);
+                    BitMask mask = new(attrMask);
 
                     attr.CanAutoExecute = mask[0];
                     attr.PastLimit = mask[1];
@@ -1149,7 +1149,7 @@ namespace IBApi
         {
             int msgVersion = ReadInt();
             int requestId = ReadInt();
-            DeltaNeutralContract deltaNeutralContract = new DeltaNeutralContract();
+            DeltaNeutralContract deltaNeutralContract = new();
             deltaNeutralContract.ConId = ReadInt();
             deltaNeutralContract.Delta = ReadDouble();
             deltaNeutralContract.Price = ReadDouble();
@@ -1256,7 +1256,7 @@ namespace IBApi
                 requestId = ReadInt();
             }
 
-            ContractDetails contract = new ContractDetails();
+            ContractDetails contract = new();
 
             contract.Contract.Symbol = ReadString();
             contract.Contract.SecType = ReadString();
@@ -1307,7 +1307,7 @@ namespace IBApi
                     contract.SecIdList = new List<TagValue>();
                     for (int i = 0; i < secIdListCount; ++i)
                     {
-                        TagValue tagValue = new TagValue();
+                        TagValue tagValue = new();
                         tagValue.Tag = ReadString();
                         tagValue.Value = ReadString();
                         contract.SecIdList.Add(tagValue);
@@ -1329,7 +1329,7 @@ namespace IBApi
         private void PortfolioValueEvent()
         {
             int msgVersion = ReadInt();
-            Contract contract = new Contract();
+            Contract contract = new();
             if (msgVersion >= 6)
                 contract.ConId = ReadInt();
             contract.Symbol = ReadString();
@@ -1447,10 +1447,10 @@ namespace IBApi
         {
             int msgVersion = serverVersion < MinServerVer.ORDER_CONTAINER ? ReadInt() : serverVersion;
 
-            Contract contract = new Contract();
-            Order order = new Order();
-            OrderState orderState = new OrderState();
-            EOrderDecoder eOrderDecoder = new EOrderDecoder(this, contract, order, orderState, msgVersion, serverVersion);
+            Contract contract = new();
+            Order order = new();
+            OrderState orderState = new();
+            EOrderDecoder eOrderDecoder = new(this, contract, order, orderState, msgVersion, serverVersion);
 
             // read order id
             eOrderDecoder.readOrderId();
@@ -1539,7 +1539,7 @@ namespace IBApi
             int requestId = -1;
             if (msgVersion >= 3)
                 requestId = ReadInt();
-            ContractDetails contract = new ContractDetails();
+            ContractDetails contract = new();
             contract.Contract.Symbol = ReadString();
             contract.Contract.SecType = ReadString();
             readLastTradeDate(contract, false);
@@ -1595,7 +1595,7 @@ namespace IBApi
                     contract.SecIdList = new List<TagValue>(secIdListCount);
                     for (int i = 0; i < secIdListCount; ++i)
                     {
-                        TagValue tagValue = new TagValue();
+                        TagValue tagValue = new();
                         tagValue.Tag = ReadString();
                         tagValue.Value = ReadString();
                         contract.SecIdList.Add(tagValue);
@@ -1644,7 +1644,7 @@ namespace IBApi
             if (msgVersion >= 7)
                 requestId = ReadInt();
             int orderId = ReadInt();
-            Contract contract = new Contract();
+            Contract contract = new();
             if (msgVersion >= 5)
             {
                 contract.ConId = ReadInt();
@@ -1666,7 +1666,7 @@ namespace IBApi
                 contract.TradingClass = ReadString();
             }
 
-            Execution exec = new Execution();
+            Execution exec = new();
             exec.OrderId = orderId;
             exec.ExecId = ReadString();
             exec.Time = ReadString();
@@ -1724,7 +1724,7 @@ namespace IBApi
         private void CommissionReportEvent()
         {
             int msgVersion = ReadInt();
-            CommissionReport commissionReport = new CommissionReport();
+            CommissionReport commissionReport = new();
             commissionReport.ExecId = ReadString();
             commissionReport.Commission = ReadDouble();
             commissionReport.Currency = ReadString();
@@ -1847,7 +1847,7 @@ namespace IBApi
         {
             int msgVersion = ReadInt();
             string account = ReadString();
-            Contract contract = new Contract();
+            Contract contract = new();
             contract.ConId = ReadInt();
             contract.Symbol = ReadString();
             contract.SecType = ReadString();
@@ -1906,7 +1906,7 @@ namespace IBApi
             for (int i = 0; i < numberOfElements; i++)
             {
                 int rank = ReadInt();
-                ContractDetails conDet = new ContractDetails();
+                ContractDetails conDet = new();
                 if (msgVersion >= 3)
                     conDet.Contract.ConId = ReadInt();
                 conDet.Contract.Symbol = ReadString();
@@ -1946,7 +1946,7 @@ namespace IBApi
             int msgVersion = ReadInt();
             int requestId = ReadInt();
             string account = ReadString();
-            Contract contract = new Contract();
+            Contract contract = new();
             contract.ConId = ReadInt();
             contract.Symbol = ReadString();
             contract.SecType = ReadString();
@@ -2059,7 +2059,7 @@ namespace IBApi
             }
             else
             {
-                StringBuilder strBuilder = new StringBuilder();
+                StringBuilder strBuilder = new();
                 strBuilder.Append((char)b);
                 while (true)
                 {

@@ -95,9 +95,9 @@ namespace SqCoreWeb
     public partial class DashboardClient
     {
         // one global static real-time price Timer serves all clients. For efficiency.
-        static Timer m_rtDashboardTimer = new System.Threading.Timer(new TimerCallback(RtDashboardTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
+        static Timer m_rtDashboardTimer = new(new TimerCallback(RtDashboardTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
         static bool m_rtDashboardTimerRunning = false;
-        static object m_rtDashboardTimerLock = new Object();
+        static object m_rtDashboardTimerLock = new();
         static int m_rtDashboardTimerFrequencyMs = 6 * 1000;    // similar to the m_highFreqParam in MemDb_RT.
 
 
@@ -173,7 +173,7 @@ namespace SqCoreWeb
             // sent SPY realtime price can be used in 3+2 places: BrAccViewer:MarketBar, HistoricalChart, UserAssetList, MktHlth, CatalystSniffer (so, don't send it 5 times. Client will decide what to do with RT price)
             // sent NAV realtime price can be used in 3 places: BrAccViewer.HistoricalChart, AccountSummary, MktHlth (if that is the viewed NAV)
 
-            List<Asset> highPriorityAssets = new List<Asset>(m_mkthAssets);
+            List<Asset> highPriorityAssets = new(m_mkthAssets);
             foreach (Asset mktBrAsset in m_brAccMktBrAssets)
             {
                 if (!highPriorityAssets.Contains(mktBrAsset))

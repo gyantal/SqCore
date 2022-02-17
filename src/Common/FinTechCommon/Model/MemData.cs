@@ -31,11 +31,11 @@ namespace FinTechCommon
         // Because Writers use the 'Non-locking copy-and-swap-on-write' pattern, before iterating on AssetCache, Readers using foreach() should get a local pointer and iterate on that. Readers can use Linq.Select() or Where() without local pointer though.
         // AssetsCache localAssetCache = MemDb.AssetCache;
         // foreach (Asset item in localAssetCache)
-        public volatile AssetsCache AssetsCache = new AssetsCache();  // writable: user might insert a new asset from HTML UI (although this is dangerous, how to propagate it the gSheet Asset replica)
-        public volatile CompactFinTimeSeries<SqDateOnly, uint, float, uint> DailyHist = new CompactFinTimeSeries<SqDateOnly, uint, float, uint>();
+        public volatile AssetsCache AssetsCache = new();  // writable: user might insert a new asset from HTML UI (although this is dangerous, how to propagate it the gSheet Asset replica)
+        public volatile CompactFinTimeSeries<SqDateOnly, uint, float, uint> DailyHist = new();
 
         // As Portfolios are assets (nesting), we might store portfolios in AssetCache, not separately
-        public volatile List<string> Portfolios = new List<string>(); // temporary illustration of a data that will be not only read, but written by SqCore. Portfolios are not necessary here, because they are Assets as well, so they can go to AssetsCache
+        public volatile List<string> Portfolios = new(); // temporary illustration of a data that will be not only read, but written by SqCore. Portfolios are not necessary here, because they are Assets as well, so they can go to AssetsCache
 
         // Clients can add new Assets to AssetCache, like NonPersinted Options, or new Portfolios. Other clients enumerate all AssetCache (e.g. reloading HistData in every 2 hours). 
         // So a ReaderWriterLock is needed or 'Non-locking copy-and-swap-on-write' is needed.
@@ -50,8 +50,8 @@ namespace FinTechCommon
         // - less chance for deadlock. (only writers can lock themselves out, but that is rare).
         // disadvantage 1: clients can have stalled pointers stored.
         // disadvantage 2: without reader locking even careful clients - who don't store pointers - can get inconsistent pointers. while Writer is swapping users/assets/HistData pointers client can get NewUserData and OldAssetData.
-        public object AssetsUpdateLock = new Object();    // Many Writers.
-        public object UsersUpdateLock = new Object();
+        public object AssetsUpdateLock = new();    // Many Writers.
+        public object UsersUpdateLock = new();
         // public object DailyHistUpdateLock = new Object();   // not needed, there is only 1 writer thread. We never change its items one by one. We always recreate the whole in every 2 hours and pointer swap, but there is only 1 writer
 
         public MemData()
@@ -72,7 +72,7 @@ namespace FinTechCommon
                 return;
             lock (AssetsUpdateLock)
             {
-                List<Asset> cloneAssets = new List<Asset>(AssetsCache.Assets);  // shallow copy of the List
+                List<Asset> cloneAssets = new(AssetsCache.Assets);  // shallow copy of the List
                 foreach (var newAsset in p_newAssets)
                 {
                     if (cloneAssets.Exists(r => r.SqTicker == newAsset.SqTicker))

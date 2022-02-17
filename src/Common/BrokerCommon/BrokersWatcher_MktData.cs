@@ -146,8 +146,8 @@ namespace BrokerCommon
             // Maybe we should do the same here as TWS. If PriorClose doesn't come, assume it as 0.0. (although do it at higher level of code, not here)
             bool isStreamMktData = false;       // Stream or Snapshot. Prefer snapshot mode if possible because less resources. Although IbMarkPrice works only in stream mode, not in snapshot.
             DateTime startTime = DateTime.UtcNow;
-            AutoResetEvent priceOrDeltaTickARE = new AutoResetEvent(false);    // set it to non-signaled => which means Block
-            MktDataProgress progressEstPrice = new MktDataProgress("estPrice", p_mktDatas.Length), progressPriorClose = new MktDataProgress("priorClose", p_mktDatas.Length), progressDelta = new MktDataProgress("delta", p_mktDatas.Length);
+            AutoResetEvent priceOrDeltaTickARE = new(false);    // set it to non-signaled => which means Block
+            MktDataProgress progressEstPrice = new("estPrice", p_mktDatas.Length), progressPriorClose = new("priorClose", p_mktDatas.Length), progressDelta = new("delta", p_mktDatas.Length);
 
             foreach (var mktData in p_mktDatas)
             {

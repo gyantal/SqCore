@@ -14,8 +14,8 @@ namespace FinTechCommon
 {
     public partial class MemDb
     {
-        RtFreqParam m_highNavFreqParam = new RtFreqParam() { RtFreq = RtFreq.HighFreq, FreqRthSec = 60, FreqOthSec = 10 * 60 }; // 1min RTH, 10 min OTH
-        RtFreqParam m_lowNavFreqParam = new RtFreqParam() { RtFreq = RtFreq.LowFreq, FreqRthSec = 1 * 60 * 60, FreqOthSec = 3 * 60 * 60 }; // 1h RTH, 3h OTH
+        RtFreqParam m_highNavFreqParam = new() { RtFreq = RtFreq.HighFreq, FreqRthSec = 60, FreqOthSec = 10 * 60 }; // 1min RTH, 10 min OTH
+        RtFreqParam m_lowNavFreqParam = new() { RtFreq = RtFreq.LowFreq, FreqRthSec = 1 * 60 * 60, FreqOthSec = 3 * 60 * 60 }; // 1h RTH, 3h OTH
 
         uint m_nNavDownload = 0;
 
@@ -74,7 +74,7 @@ namespace FinTechCommon
             BrokerNav[] downloadAssets = p_freqParam.Assets.Select(r => (r as BrokerNav)!).ToArray();
             if (p_freqParam.RtFreq == RtFreq.HighFreq)  // if it is highFreq timer, then add the recently asked assets.
             {
-                List<BrokerNav> updatingNavAssets = new List<BrokerNav>();
+                List<BrokerNav> updatingNavAssets = new();
                 var recentlyAskedNavAssets = m_lastRtPriceQueryTime.Where(r => r.Key.AssetId.AssetTypeID == AssetType.BrokerNAV && ((DateTime.UtcNow - r.Value) <= TimeSpan.FromSeconds(5 * 60))).Select(r => (r.Key as BrokerNav)!); //  if there was a function call in the last 5 minutes
                 foreach (var nav in recentlyAskedNavAssets)
                 {

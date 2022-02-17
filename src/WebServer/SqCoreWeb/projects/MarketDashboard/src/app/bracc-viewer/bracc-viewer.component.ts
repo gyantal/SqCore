@@ -233,7 +233,6 @@ export class BrAccViewerComponent implements OnInit {
   histPeriodStartETstr: string; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
   histPeriodEndET: Date;
   histPeriodEndETstr: string;
-  chrtTickerSelected: string = 'SPY';
   isFilteringBasedonMktVal: boolean = true;
   isFilteringBasedonPlDaily: boolean = false;
   isFilteringBasedonOptions: boolean = false;

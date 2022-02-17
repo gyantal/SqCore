@@ -48,7 +48,7 @@ namespace SqCoreWeb.Controllers
                 logsPointerArr = m_webAppGlobals.HttpRequestLogs.ToArray();     // it copies only max 50 pointers to Array. Quick.
             }
 
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             for (int i = logsPointerArr.Length - 1; i >= 0; i--)        // foreach loop iterates over Queue starting from the oldest item and ending with newest.
             {
                 var requestLog = logsPointerArr[i];
@@ -65,7 +65,7 @@ namespace SqCoreWeb.Controllers
 #endif
         public ActionResult ServerDiagnostics()
         {
-            StringBuilder sb = new StringBuilder(@"<HTML><body><h1>ServerDiagnostics</h1>");
+            StringBuilder sb = new(@"<HTML><body><h1>ServerDiagnostics</h1>");
             Program.ServerDiagnostic(sb);
             BrokersWatcher.gWatcher.ServerDiagnostic(sb);
             MemDb.gMemDb.ServerDiagnostic(sb);
@@ -78,7 +78,7 @@ namespace SqCoreWeb.Controllers
         [HttpGet]
         public async Task<ActionResult> MemDbReloadHistData()
         {
-            StringBuilder sb = new StringBuilder(@"<HTML><body><h1>MemDb: Force Reload Only Historical Data and Set New Timer</h1>");
+            StringBuilder sb = new(@"<HTML><body><h1>MemDb: Force Reload Only Historical Data and Set New Timer</h1>");
             StringBuilder memDbSb = await MemDb.gMemDb.ForceReloadHistData(true);
             return Content(sb.Append(memDbSb).Append("</body></HTML>").ToString(), "text/html");
         }
@@ -86,7 +86,7 @@ namespace SqCoreWeb.Controllers
         [HttpGet]
         public async Task<ActionResult> MemDbReloadDbData()
         {
-            StringBuilder sb = new StringBuilder(@"<HTML><body><h1>MemDb: Reload All Db Data only If changed and Set New Timer</h1>");
+            StringBuilder sb = new(@"<HTML><body><h1>MemDb: Reload All Db Data only If changed and Set New Timer</h1>");
             StringBuilder memDbSb = await MemDb.gMemDb.ReloadDbDataIfChanged(true);
             return Content(sb.Append(memDbSb).Append("</body></HTML>").ToString(), "text/html");
         }
@@ -94,7 +94,7 @@ namespace SqCoreWeb.Controllers
         [HttpGet]
         public ActionResult TaskSchedulerNextTimes()
         {
-            StringBuilder sb = new StringBuilder(@"<HTML><body><h1>TaskScheduler Next Times</h1>");
+            StringBuilder sb = new(@"<HTML><body><h1>TaskScheduler Next Times</h1>");
             StringBuilder scheduleTimesSb = SqTaskScheduler.gTaskScheduler.PrintNextScheduleTimes(true);
             return Content(sb.Append(scheduleTimesSb).Append("</body></HTML>").ToString(), "text/html");
         }
@@ -103,7 +103,7 @@ namespace SqCoreWeb.Controllers
         [HttpGet]
         public ActionResult HttpRequestHeader()
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             sb.Append("<html><body>");
             sb.Append("Request.Headers: <br><br>");
             foreach (var header in Request.Headers)
@@ -121,7 +121,7 @@ namespace SqCoreWeb.Controllers
             var parts = "www.domain.com".Split('.');
             Console.WriteLine(parts[12]);       // raises System.IndexOutOfRangeException()
 
-            StringBuilder sb = new StringBuilder(); // The Code will not arrive here.
+            StringBuilder sb = new(); // The Code will not arrive here.
             sb.Append("<html><body>");
             sb.Append("TestHealthMonitorEmailByRaisingException: <br><br>");
             sb.Append("</body></html>");
@@ -139,12 +139,12 @@ namespace SqCoreWeb.Controllers
 
         static void RunUnobservedTaskException()
         {
-            Task task1 = new Task(() =>
+            Task task1 = new(() =>
             {
                 throw new ArgumentNullException();
             });
 
-            Task task2 = new Task(() =>
+            Task task2 = new(() =>
             {
                 throw new ArgumentOutOfRangeException();
             });
@@ -198,7 +198,7 @@ namespace SqCoreWeb.Controllers
         {
             Utils.Logger.Info("TestCaretakerCheckFreeDiskSpace() BEGIN");
 
-            StringBuilder noteToClient = new StringBuilder();
+            StringBuilder noteToClient = new();
             bool success = Caretaker.g_caretaker.CheckFreeDiskSpace(noteToClient);
 
             Utils.Logger.Info("TestCaretakerCheckFreeDiskSpace() END");
@@ -210,7 +210,7 @@ namespace SqCoreWeb.Controllers
         {
             Utils.Logger.Info("TestCaretakerCleanLogfiles() BEGIN");
 
-            StringBuilder noteToClient = new StringBuilder();
+            StringBuilder noteToClient = new();
             bool success = Caretaker.g_caretaker.CleanLogfiles(noteToClient);
 
             Utils.Logger.Info("TestCaretakerCleanLogfiles() END");

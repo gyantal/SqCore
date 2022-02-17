@@ -151,7 +151,7 @@ MarketBar
                    <span>
                     <div class="chrtTimeFrameSelection">
                         <div class="tooltipHistPeriodAndBnchMrkSelection">
-                        <input id="histPeriod" type="text" list="selectedPeriod" [(ngModel)] = "histPeriodSelectionSelected" (change)="onLookbackSelectChange()" >
+                        <input id="histPeriod" type="text" list="selectedPeriod" [(ngModel)] = "histPeriodSelectionSelected" (change)="onLookbackSelectChange()">
                                 <datalist id="selectedPeriod">
                                     <option *ngFor="let item of histPeriodSelection" [value]="item">{{item}}</option>YTD
                                 </datalist>

@@ -57,7 +57,7 @@ namespace FinTechCommon
 
         public async Task<StringBuilder> ForceReloadHistData(bool p_isHtml)  // print log to Console or HTML
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             await ReloadHistDataAndSetNewTimer();
 
             ServerDiagnosticMemDb(sb, p_isHtml);
@@ -183,7 +183,7 @@ namespace FinTechCommon
             // Merge all dates into a big date array
             // We don't know which days are holidays, so we have to walk all the dates simultaneously, and put into merged date array all the existing dates.
             // walk backward, because the first item will be the latest, the yesterday.
-            Dictionary<uint, int> idx = new Dictionary<uint, int>();  // AssetId => to index of the walking where we are
+            Dictionary<uint, int> idx = new();  // AssetId => to index of the walking where we are
             SqDateOnly minDate = SqDateOnly.MaxValue, maxDate = SqDateOnly.MinValue;
             foreach (var dates in assetsDates)  // assume first date is the oldest, last day is yesterday
             {
@@ -194,7 +194,7 @@ namespace FinTechCommon
                 idx.Add(dates.Key, dates.Value.Length - 1);
             }
 
-            List<SqDateOnly> mergedDates = new List<SqDateOnly>();
+            List<SqDateOnly> mergedDates = new();
             SqDateOnly currDate = maxDate; // this maxDate is today, or yesterday. We walk backwards.
             while (true)
             {
@@ -400,7 +400,7 @@ namespace FinTechCommon
                 double multiplier = (double)missingSplitDb.Before / (double)missingSplitDb.After;
                 // USO split date from YF: "Apr 29, 2020" Time: 00:00. Means that very early morning, 9:30 hours before market open. That is the inflection point.
                 // Split adjust (multiply) everything before that time, but do NOT split adjust that exact date.
-                SqDateOnly missingSplitDbDate = new SqDateOnly(missingSplitDb.Date);
+                SqDateOnly missingSplitDbDate = new(missingSplitDb.Date);
                 for (int j = 0; j < dates.Length; j++)
                 {
                     if (dates[j] < missingSplitDbDate)
@@ -415,10 +415,10 @@ namespace FinTechCommon
         private static void CreateDailyHist_UserNavs(IGrouping<User?, BrokerNav> navAssetsOfUser, BrokerNav? aggNavAsset, Db p_db, Dictionary<uint, SqDateOnly[]> assetsDates, Dictionary<uint, float[]> assetsAdjustedCloses)
         {
             User user = navAssetsOfUser.Key!;
-            List<SqDateOnly[]> navsDates = new List<SqDateOnly[]>();
-            List<double[]> navsUnadjustedCloses = new List<double[]>();
-            List<KeyValuePair<SqDateOnly, double>[]> navsDeposits = new List<KeyValuePair<SqDateOnly, double>[]>();
-            List<BrokerNav> navAssetsWithHistQuotes = new List<BrokerNav>();
+            List<SqDateOnly[]> navsDates = new();
+            List<double[]> navsUnadjustedCloses = new();
+            List<KeyValuePair<SqDateOnly, double>[]> navsDeposits = new();
+            List<BrokerNav> navAssetsWithHistQuotes = new();
             foreach (var navAsset in navAssetsOfUser)
             {
                 var dailyNavStr = p_db.GetAssetQuoteRaw(navAsset.AssetId); // 47K text data from 9.5K brotli data, starts with FormatString: "D/C,20090102/16460,20090105/16826,..."

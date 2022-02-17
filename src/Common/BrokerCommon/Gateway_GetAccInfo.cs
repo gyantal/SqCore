@@ -16,10 +16,10 @@ namespace BrokerCommon
 
     public partial class Gateway
     {
-        List<BrAccSum> m_accSums = new List<BrAccSum>();
-        List<BrAccPos> m_accPoss = new List<BrAccPos>();
+        List<BrAccSum> m_accSums = new();
+        List<BrAccPos> m_accPoss = new();
         string[] m_exclSymbolsArr = new string[0];
-        private readonly object m_getAccountSummaryLock = new object();
+        private readonly object m_getAccountSummaryLock = new();
 
         public void AccSumArrived(int p_reqId, string p_tag, string p_value, string p_currency)
         {
@@ -37,7 +37,7 @@ namespace BrokerCommon
             BrokerWrapper.CancelAccountSummary(p_reqId);
         }
 
-        private readonly object m_getAccountPositionsLock = new object();
+        private readonly object m_getAccountPositionsLock = new();
         public void AccPosArrived(string p_account, Contract p_contract, double p_pos, double p_avgCost)
         {
             // 2018-11: EUR cash is coming ONLY on DeBlanzac account, not Main account, neither Agy, which also has many other currencies. Maybe it is only a 'virtual' cash FX position. Assume it is virtual, so ignore it.

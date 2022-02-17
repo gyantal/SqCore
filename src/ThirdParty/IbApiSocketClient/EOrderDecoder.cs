@@ -485,7 +485,7 @@ namespace IBApi
                         String designatedLocation = eDecoder.ReadString();
                         int exemptCode = eDecoder.ReadInt();
 
-                        ComboLeg comboLeg = new ComboLeg(conId, ratio, action, exchange, openClose,
+                        ComboLeg comboLeg = new(conId, ratio, action, exchange, openClose,
                                 shortSaleSlot, designatedLocation, exemptCode);
                         contract.ComboLegs.Add(comboLeg);
                     }
@@ -499,7 +499,7 @@ namespace IBApi
                     {
                         double price = eDecoder.ReadDoubleMax();
 
-                        OrderComboLeg orderComboLeg = new OrderComboLeg(price);
+                        OrderComboLeg orderComboLeg = new(price);
                         order.OrderComboLegs.Add(orderComboLeg);
                     }
                 }
@@ -516,7 +516,7 @@ namespace IBApi
                     order.SmartComboRoutingParams = new List<TagValue>(smartComboRoutingParamsCount);
                     for (int i = 0; i < smartComboRoutingParamsCount; ++i)
                     {
-                        TagValue tagValue = new TagValue();
+                        TagValue tagValue = new();
                         tagValue.Tag = eDecoder.ReadString();
                         tagValue.Value = eDecoder.ReadString();
                         order.SmartComboRoutingParams.Add(tagValue);
@@ -598,7 +598,7 @@ namespace IBApi
             {
                 if (eDecoder.ReadBoolFromInt())
                 {
-                    DeltaNeutralContract deltaNeutralContract = new DeltaNeutralContract();
+                    DeltaNeutralContract deltaNeutralContract = new();
                     deltaNeutralContract.ConId = eDecoder.ReadInt();
                     deltaNeutralContract.Delta = eDecoder.ReadDouble();
                     deltaNeutralContract.Price = eDecoder.ReadDouble();
@@ -620,7 +620,7 @@ namespace IBApi
                         order.AlgoParams = new List<TagValue>(algoParamsCount);
                         for (int i = 0; i < algoParamsCount; ++i)
                         {
-                            TagValue tagValue = new TagValue();
+                            TagValue tagValue = new();
                             tagValue.Tag = eDecoder.ReadString();
                             tagValue.Value = eDecoder.ReadString();
                             order.AlgoParams.Add(tagValue);

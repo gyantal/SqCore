@@ -56,7 +56,7 @@ namespace SqCoreWeb.Controllers
                     "</body></HTML>", "text/html");
             }
 
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             sb.Append("<html><body>");
             sb.Append("Hello " + (User.Identity?.Name ?? "anonymous") + "<br>");
             sb.Append("Request.Path '" + (Request.Path.ToString() ?? "Empty") + "'<br>");

@@ -98,7 +98,7 @@ namespace FinTechCommon
 
         List<Asset> GetAssetsFromJson(string p_json, User[] users)
         {
-            List<Asset> assets = new List<Asset>();
+            List<Asset> assets = new();
             using (JsonDocument doc = JsonDocument.Parse(p_json))
             {
                 foreach (JsonElement row in doc.RootElement.GetProperty("C").EnumerateArray())
@@ -132,7 +132,7 @@ namespace FinTechCommon
             }
 
             // Double check that sqTickers are unique id
-            Dictionary<string, Asset> assetChecker = new Dictionary<string, Asset>();
+            Dictionary<string, Asset> assetChecker = new();
             foreach (var asset in assets)
             {
                 if (assetChecker.ContainsKey(asset.SqTicker))
@@ -154,8 +154,8 @@ namespace FinTechCommon
                 string sqTicker = item.Key;
                 DateTime startDate =  GetExpectedHistoryStartDate(item.Value.LoadPrHist, sqTicker);
                 Asset asset = assets.Find(r => r.SqTicker == sqTicker)!;
-                if (asset is Stock)
-                    ((Stock)asset).ExpectedHistoryStartDateLoc = startDate;
+                if (asset is Stock stock)
+                    stock.ExpectedHistoryStartDateLoc = startDate;
                 else if (asset is BrokerNav)
                     ((BrokerNav)asset).ExpectedHistoryStartDateLoc = startDate;
                 else if (asset is CurrPair)
@@ -167,7 +167,7 @@ namespace FinTechCommon
 
         public DateTime GetExpectedHistoryStartDate(string p_expectedHistorySpan, string p_ticker)
         {
-            DateTime startDateET = new DateTime(2018, 02, 01, 0, 0, 0);
+            DateTime startDateET = new(2018, 02, 01, 0, 0, 0);
             if (p_expectedHistorySpan.StartsWith("Date:"))
             {
                 if (!DateTime.TryParseExact(p_expectedHistorySpan.Substring("Date:".Length), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDateET))

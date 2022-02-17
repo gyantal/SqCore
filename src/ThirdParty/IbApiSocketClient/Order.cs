@@ -166,8 +166,8 @@ namespace IBApi
         // Smart combo routing params
         private List<TagValue> smartComboRoutingParams;
         // order combo legs
-        private List<OrderComboLeg> orderComboLegs = new List<OrderComboLeg>();
-        private List<TagValue> orderMiscOptions = new List<TagValue>();
+        private List<OrderComboLeg> orderComboLegs = new();
+        private List<TagValue> orderMiscOptions = new();
         private bool solicited;
         private string modelCode;
         private string extOperator;

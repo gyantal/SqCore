@@ -84,7 +84,9 @@
   <div class="manyDshbrdClientsDialog-content">
     <p>"MarketDashboard is open in more than one tab or browser. This slows down both client and server. <br>
       <span class="manyDshbrdClntDialogSuggestion">Suggestion: Close this browser tabpage and find the other MarketDashboard."</span></p>
-    <button type="button" (click)="onDshbrdOpenedManyTimesContinueClicked()">Continue this tab</button>
-    <button type="button" (click)="onDshbrdOpenedManyTimesCloseClicked()">Close this tab</button>
+    <span class="dshbrdDialogButtons">
+      <button type="button" (click)="onDshbrdOpenedManyTimesContinueClicked()">Continue this tab</button>
+      <button type="button" (click)="onDshbrdOpenedManyTimesCloseClicked()">Close this tab</button>
+    </span>
 
 <router-outlet></router-outlet>

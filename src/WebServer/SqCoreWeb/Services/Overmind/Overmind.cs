@@ -15,7 +15,7 @@ namespace SqCoreWeb
 
     public class Overmind
     {
-        public static Overmind gOvermind = new Overmind();
+        public static Overmind gOvermind = new();
 
         public void Init()
         {
@@ -165,7 +165,7 @@ namespace SqCoreWeb
                 return;
             // if we are here, it is Friday and dayOfMonth in [15,21], which is the 3rd Friday
             string subject = "SqCore: Monthly Option expiration. Trade HarryLong 2 manually!";
-            StringBuilder sb = new StringBuilder(Email.g_htmlEmailStart);
+            StringBuilder sb = new(Email.g_htmlEmailStart);
             sb.Append(
                 @"<small>Because of the EU PRIIPs (KID) Regulation, IB UK doesn't allow US domiciled ETFs like SPY, QQQ, VXX to buy until the account is worth less than 500K EUR. Workaround is options.<br/>
 - for shorting VXX stock, we buy VXX Put option (cheap, very close to expiration, when time value is tiny), then we let it expire or force-exercise. The result is 100 short VXX stock immediately. It WORKED !, because it is technically not a stock shorting/buying, and EU regulation protect Funds (ETF) only, and when you trade options you are assumed to be sophisticated investor already.<br/>
@@ -303,7 +303,7 @@ namespace SqCoreWeb
             DateTime endDateET = DateTime.UtcNow.AddDays(0);    // include today, which is a realtime price, but more accurate estimation
             DateTime startDateET = endDateET.AddDays(-90);   // we need the last 50 items, but ask more trading days. Just to be sure. With this 90 calendar days, we got 62 trading days in July. However, in the Xmas season, we get less. So, keep the 90 calendar days.
 
-            List<string> tickers = new List<string>() { "^VIX" };
+            List<string> tickers = new() { "^VIX" };
 
             IReadOnlyList<Candle?> history = Yahoo.GetHistoricalAsync("^VIX", startDateET, endDateET, Period.Daily).TurnAsyncToSyncTask(); // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
             SqDateOnly[] dates = history.Select(r => new SqDateOnly(r!.DateTime)).ToArray();
@@ -330,7 +330,7 @@ namespace SqCoreWeb
             if (isVixSpike)  // if  1.2*SMA(VIX, 50) < VIX_last_close, sends an email. So, we can trade VIX MR subjectively.
             {
                 string subject = "SqCore: VIX spike detected";
-                StringBuilder sb = new StringBuilder(Email.g_htmlEmailStart);
+                StringBuilder sb = new(Email.g_htmlEmailStart);
                 sb.Append(@"<span class=""sqImportantOK""><strong>VIX Spike</strong> is detected!</span><br/><br/>");
                 sb.Append($"Using yesterday close prices for VIX, the condition<br/> <strong>'VIX_priorClose &gt; 1.2 * SMA(VIX, 50)'</strong><br/> ({priorClose:0.##} &gt;  1.2 * {sma:0.##}) was triggered.<br/>");
                 sb.Append(@"Our <a href=""https://docs.google.com/document/d/1YA8uBscP1WbxEFIHXDaqR50KIxLw9FBnD7qqCW1z794"">VIX spikes collection gDoc</a> uses the same formula for identifying panic times.<br/>");

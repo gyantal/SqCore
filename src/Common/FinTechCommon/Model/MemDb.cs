@@ -14,11 +14,11 @@ namespace FinTechCommon
 {
     public partial class MemDb
     {
-        public static MemDb gMemDb = new MemDb();   // Singleton pattern
+        public static MemDb gMemDb = new();   // Singleton pattern
         // public object gMemDbUpdateLock = new object();  // the rare clients who care about inter-table consintency (VBroker) should obtain the lock before getting pointers to subtables
         Db m_Db;
 
-        MemData m_memData = new MemData();  // strictly private. Don't allow clients to store separate MemData pointers. Clients should use GetAssuredConsistentTables() in general.
+        MemData m_memData = new();  // strictly private. Don't allow clients to store separate MemData pointers. Clients should use GetAssuredConsistentTables() in general.
 
         public User[] Users { get { return m_memData.Users; } }
 
@@ -85,7 +85,7 @@ namespace FinTechCommon
                 BrAccounts.Add(new BrAccount() { GatewayId = GatewayId.CharmatMain, NavAsset = (BrokerNav)m_memData.AssetsCache.GetAsset("N/DC.IM") });
                 BrAccounts.Add(new BrAccount() { GatewayId = GatewayId.DeBlanzacMain, NavAsset = (BrokerNav)m_memData.AssetsCache.GetAsset("N/DC.ID") });
                 BrAccounts.Add(new BrAccount() { GatewayId = GatewayId.GyantalMain, NavAsset = (BrokerNav)m_memData.AssetsCache.GetAsset("N/GA.IM") });
-                List<Task> brTasks = new List<Task>();
+                List<Task> brTasks = new();
                 foreach (var brAccount in BrAccounts)
                 {
                     Task brTask = Task.Run(() =>    // Task.Run() runs it immediately
@@ -210,7 +210,7 @@ namespace FinTechCommon
 
         public async Task<StringBuilder> ReloadDbDataIfChanged(bool p_isHtml)  // print log to Console or HTML
         {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             await ReloadDbDataIfChangedAndSetNewTimer();
             ServerDiagnosticMemDb(sb, p_isHtml);
             return sb;
@@ -329,7 +329,7 @@ namespace FinTechCommon
             p_brAccount.AccPossUnrecognizedAssets = new List<BrAccPos>();
 
             // First loop: just create newAssetsList and fill BrAccPos.SqTicker
-            List<Asset> newAssetsToMemData = new List<Asset>();
+            List<Asset> newAssetsToMemData = new();
             foreach (BrAccPos pos in p_brAccount.AccPoss)
             {
                 Asset? asset = null;
@@ -409,7 +409,7 @@ namespace FinTechCommon
                 }
             }
 
-            StringBuilder sb = new StringBuilder($"MemDb.UpdateBrAccPosAssetIds(). Unrecognised IB contracts as valid SqCore assets (#{p_brAccount.AccPossUnrecognizedAssets.Count}): ");
+            StringBuilder sb = new($"MemDb.UpdateBrAccPosAssetIds(). Unrecognised IB contracts as valid SqCore assets (#{p_brAccount.AccPossUnrecognizedAssets.Count}): ");
             var unrecognizedExtendedSymbols = p_brAccount.AccPossUnrecognizedAssets.Select(r => r.Contract.SecType + ":" + r.Contract.Symbol);
             sb.AppendLongListByLine(unrecognizedExtendedSymbols, ",", 1000, "");
             Utils.Logger.Warn(sb.ToString());

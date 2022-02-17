@@ -69,7 +69,7 @@ namespace FinTechCommon
         public static void SetTimer(UpdateNavsParam p_state)
         {
             DateTime etNow = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
-            DateTime targetTimeEt = new DateTime(etNow.Year, etNow.Month, etNow.Day, 16, 1, 0); // 1 minute after market close to avoid too busy periods when VirtualBroker trades happen or when IB is busy
+            DateTime targetTimeEt = new(etNow.Year, etNow.Month, etNow.Day, 16, 1, 0); // 1 minute after market close to avoid too busy periods when VirtualBroker trades happen or when IB is busy
             TimeSpan tsTillTarget = targetTimeEt - etNow;
             if (tsTillTarget < TimeSpan.FromSeconds(10))   // if negative timespan or too close to targetTime, it means etNow is after target time. Then target next day.
             {
@@ -93,7 +93,7 @@ namespace FinTechCommon
             if (etNow.IsWeekend())
                 return;
 
-            Dictionary<GatewayId, uint> GatewayId2SubTableId = new Dictionary<GatewayId, uint>() {
+            Dictionary<GatewayId, uint> GatewayId2SubTableId = new() {
                     {GatewayId.GyantalMain, 1}, {GatewayId.CharmatMain, 2}, {GatewayId.DeBlanzacMain, 3}};
 
             foreach (var gw2SubTableId in GatewayId2SubTableId)

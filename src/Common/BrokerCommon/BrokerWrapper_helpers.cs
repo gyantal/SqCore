@@ -12,7 +12,7 @@ namespace BrokerCommon
     public class PriceAndTime      // it makes sense to store Time, because values older than X hours cannot be used, even if they are stored in the RAM
     {
         public double Price = Double.NaN;
-        public DateTime Time = new DateTime(1950, 1, 1);    // a very old date
+        public DateTime Time = new(1950, 1, 1);    // a very old date
 
         public bool IsTimeUnchanged()
         {

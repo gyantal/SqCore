@@ -60,10 +60,10 @@ namespace BrokerCommon
 
     public static class GatewayExtensions
     {
-        public static Dictionary<string, GatewayId> NavSymbol2GatewayId = new Dictionary<string, GatewayId>() { 
+        public static Dictionary<string, GatewayId> NavSymbol2GatewayId = new() { 
             {"GA.IM", GatewayId.GyantalMain}, {"DC.IM", GatewayId.CharmatMain}, {"DC.ID", GatewayId.DeBlanzacMain}};
 
-        public static Dictionary<string, List<GatewayId>> NavSqSymbol2GatewayIds = new Dictionary<string,List<GatewayId>>() { 
+        public static Dictionary<string, List<GatewayId>> NavSqSymbol2GatewayIds = new() { 
             {"N/GA.IM", new List<GatewayId>() {GatewayId.GyantalMain}}, 
             {"N/DC.IM", new List<GatewayId>() {GatewayId.CharmatMain}}, 
             {"N/DC.ID", new List<GatewayId>() {GatewayId.DeBlanzacMain}},
@@ -131,7 +131,7 @@ namespace BrokerCommon
 
         // CriticalTrading times when IbGateway connections should be checked, and during which time disconnections are not allowed and generate HealthMonitor error
         // One Gateway can have many small critical periods
-        public static List<GatewayTradingPeriod> CriticalTradingPeriods = new List<GatewayTradingPeriod>() {
+        public static List<GatewayTradingPeriod> CriticalTradingPeriods = new() {
             new GatewayTradingPeriod() {
                 GatewayId = GatewayId.GyantalMain,
                 RelativeTimePeriod = new RelativeTimePeriod() {    // for testing: from 20min before Open to 5min after Close

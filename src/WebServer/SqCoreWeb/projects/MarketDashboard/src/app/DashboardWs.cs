@@ -46,7 +46,7 @@ namespace SqCoreWeb
             var clientIP = WsUtils.GetRequestIPv6(context!);    // takes 0.346ms
             Utils.Logger.Info($"DashboardWs.OnConnectedAsync(), Connection from IP: {clientIP} with email '{email}'");  // takes 1.433ms
             var thisConnectionTime = DateTime.UtcNow;
-            DashboardClient? client = new DashboardClient(clientIP, email);
+            DashboardClient? client = new(clientIP, email);
             client.WsConnectionTime = thisConnectionTime; // used by the other (secondary) connection to decide whether to create a new g_clients item.
             client.WsWebSocket = webSocket;
             client.WsHttpContext = context;
@@ -59,8 +59,8 @@ namespace SqCoreWeb
                 return;
             }
 
-            ManualResetEvent waitHandleMkthConnect = new ManualResetEvent(false);
-            ManualResetEvent waitHandleBrAccConnect = new ManualResetEvent(false);
+            ManualResetEvent waitHandleMkthConnect = new(false);
+            ManualResetEvent waitHandleBrAccConnect = new(false);
 
             client!.OnConnectedWsAsync_DshbrdClient(activePage == ActivePage.MarketHealth, user, waitHandleMkthConnect);  // runs in a separate thread for being faster
             client!.OnConnectedWsAsync_MktHealth(activePage == ActivePage.MarketHealth, user, waitHandleMkthConnect);  // runs in a separate thread for being faster

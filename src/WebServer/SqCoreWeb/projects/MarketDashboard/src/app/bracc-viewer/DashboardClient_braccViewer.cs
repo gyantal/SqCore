@@ -77,11 +77,11 @@ namespace SqCoreWeb
         // If we store asset pointers (Stock, Nav) if the MemDb reloads, we should reload these pointers from the new MemDb. That adds extra code complexity.
         // However, for fast execution, it is still better to keep asset pointers, instead of keeping the asset's SqTicker and always find them again and again in MemDb.
         BrokerNav? m_braccSelectedNavAsset = null;   // remember which NAV is selected, so we can send RT data
-        List<string> c_marketBarSqTickersDefault = new List<string>() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/AMZN"};    // TEMP: AMZN is here to test that realtime price is sent to client properly
-        List<string> c_marketBarSqTickersDc = new List<string>() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/GLD"};
-        List<Asset> m_brAccMktBrAssets = new List<Asset>();      // remember, so we can send RT data
+        List<string> c_marketBarSqTickersDefault = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/AMZN"};    // TEMP: AMZN is here to test that realtime price is sent to client properly
+        List<string> c_marketBarSqTickersDc = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/GLD"};
+        List<Asset> m_brAccMktBrAssets = new();      // remember, so we can send RT data
 
-        List<Asset> m_navChartBenchmarkAssets = new List<Asset>();
+        List<Asset> m_navChartBenchmarkAssets = new();
 
         void Ctor_BrAccViewer()
         {
@@ -196,11 +196,11 @@ namespace SqCoreWeb
             string yfTicker = stock.YfTicker;
             byte[]? encodedMsg = null;
             DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;
-            SqDateOnly lookbackStart = new SqDateOnly(todayET.Year - 1, todayET.Month, todayET.Day);  // gets the 1 year data starting from yesterday to back 1 year
+            SqDateOnly lookbackStart = new(todayET.Year - 1, todayET.Month, todayET.Day);  // gets the 1 year data starting from yesterday to back 1 year
             SqDateOnly lookbackEnd = todayET.AddDays(-1);
             (SqDateOnly[] dates, float[] adjCloses) = MemDb.GetSelectedStockTickerHistData(lookbackStart, lookbackEnd, yfTicker);
 
-            AssetHistValuesJs stockHistValues = new AssetHistValuesJs()
+            AssetHistValuesJs stockHistValues = new()
             {
                 AssetId = AssetId32Bits.Invalid,
                 SqTicker = sqTicker,
@@ -239,7 +239,7 @@ namespace SqCoreWeb
             TsDateData<SqDateOnly, uint, float, uint> histData = MemDb.gMemDb.DailyHist.GetDataDirect();
 
             BrAccViewerAccountSnapshotJs? result = null;
-            List<BrAccPos> unrecognizedAssets = new List<BrAccPos>();
+            List<BrAccPos> unrecognizedAssets = new();
             foreach (GatewayId gwId in gatewayIds)  // AggregateNav has 2 Gateways
             {
                 BrAccount? brAccount = MemDb.gMemDb.BrAccounts.FirstOrDefault(r => r.GatewayId == gwId);
@@ -275,7 +275,7 @@ namespace SqCoreWeb
             {
                 if (unrecognizedAssets.Count > 0)
                 {
-                    StringBuilder sb = new StringBuilder();
+                    StringBuilder sb = new();
                     var unrecognizedStocks = unrecognizedAssets.Where(r => r.Contract.SecType == "STK").Select(r => r.Contract.SecType + "-" + r.Contract.Symbol).ToList(); // if there is a Where(), ToList() is faster than ToArray()
                     if (unrecognizedStocks.Count > 0)
                     {
@@ -287,7 +287,7 @@ namespace SqCoreWeb
                     if (unrecognizedNonStocks.Count > 0)
                     {
                         if (unrecognizedStocks.Count > 0)   // if there is a previous warning in StringBuilder. (Note: we don't want to use StringBuilder.Length because that will collapse the StringBuilder, and there is no IsEmpty method)
-                            sb.Append(";"); // separate many Warnings by ";"
+                            sb.Append(';'); // separate many Warnings by ";"
                         sb.Append($"Warning: Unrecognised non-stocks: (#{unrecognizedNonStocks.Count}): ");
                         unrecognizedNonStocks.ForEach(r => sb.Append(r + ","));
                     }
@@ -315,7 +315,7 @@ namespace SqCoreWeb
             // List<Asset> validBrPossAssets = validBrPoss.Select(r => MemDb.gMemDb.AssetsCache.AssetsByAssetID[r.AssetId]).ToList();
 
             // merge the 2 lists together: validBrPoss, validBrPossAssets
-            List<BrAccViewerPosJs> result = new List<BrAccViewerPosJs>(validBrPoss.Count);
+            List<BrAccViewerPosJs> result = new(validBrPoss.Count);
             for (int i = 0; i < validBrPoss.Count; i++)
             {
                 BrAccPos posBr = validBrPoss[i];
@@ -345,12 +345,12 @@ namespace SqCoreWeb
         {
             if (m_braccSelectedNavAsset == null)
                 return null;
-            List<Asset> assets = new List<Asset>();
+            List<Asset> assets = new();
             assets.Add(m_braccSelectedNavAsset);
             assets.Add(MemDb.gMemDb.AssetsCache.GetAsset(p_bnchmrkTicker)); // add it to BrokerNav for benchmark for the chart
 
             DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
-            SqDateOnly lookbackStart = new SqDateOnly(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
+            SqDateOnly lookbackStart = new(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
             SqDateOnly lookbackEnd = todayET.AddDays(-1);
             if (p_lookbackStr.StartsWith("Date:"))  // Browser client never send anything, but "Date:" inputs. Format: "Date:2019-11-11...2020-11-10"
             {
@@ -447,7 +447,7 @@ namespace SqCoreWeb
             // if it is aggregated portfolio (DC Main + DeBlanzac), then we have to force reload all sub-brAccounts
             if (!GatewayExtensions.NavSqSymbol2GatewayIds.TryGetValue(navSqTicker, out List<GatewayId>? gatewayIds))
                 return;
-            HashSet<Asset> validBrPossAssets = new HashSet<Asset>(ReferenceEqualityComparer.Instance);     // AggregatedNav can contain the same company stocks many times. We need it only once. Force ReferenceEquality, even if the Asset class later implements deep IEquality
+            HashSet<Asset> validBrPossAssets = new(ReferenceEqualityComparer.Instance);     // AggregatedNav can contain the same company stocks many times. We need it only once. Force ReferenceEquality, even if the Asset class later implements deep IEquality
             foreach (GatewayId gwId in gatewayIds)  // AggregateNav has 2 Gateways
             {
                 BrAccount? brAccount = MemDb.gMemDb.BrAccounts.FirstOrDefault(r => r.GatewayId == gwId);

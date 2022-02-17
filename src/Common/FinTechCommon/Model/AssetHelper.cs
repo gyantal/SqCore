@@ -158,7 +158,7 @@ namespace FinTechCommon
         // https://stackoverflow.com/questions/16100/convert-a-string-to-an-enum-in-c-sharp
         // performance of Enum.Parse() is awful, because it is implemented via reflection. 
         // I've measured 3ms to convert a string to an Enum on the first run, on a desktop computer. (Just to illustrate the level of awfullness).
-        public static Dictionary<string, CurrencyId> gStrToCurrency = new Dictionary<string, CurrencyId>() {
+        public static Dictionary<string, CurrencyId> gStrToCurrency = new() {
             { "NaN", CurrencyId.Unknown},
             { "USD", CurrencyId.USD},
             { "EUR", CurrencyId.EUR},
@@ -170,14 +170,14 @@ namespace FinTechCommon
             { "CAD", CurrencyId.CAD},
             { "CHF", CurrencyId.CHF}};
 
-        public static Dictionary<string, StockType> gStrToStockType = new Dictionary<string, StockType>() {
+        public static Dictionary<string, StockType> gStrToStockType = new() {
             { "NaN", StockType.Unknown},
             { "", StockType.Common},
             { "ADR", StockType.ADR},
             { "ETF", StockType.ETF},
             { "VIR", StockType.Virtual}};
 
-        public static Dictionary<AssetType, char> gAssetTypeCode = new Dictionary<AssetType, char>() {
+        public static Dictionary<AssetType, char> gAssetTypeCode = new() {
             { AssetType.Unknown, '?' },
             { AssetType.CurrencyCash, 'C' },
             { AssetType.CurrencyPair, 'D' },    // P is for Portfolio, so I don't want P as Pair. Just use D, that is the next letter after C in the ABC.
@@ -203,7 +203,7 @@ namespace FinTechCommon
             if (p_timeUtc != null)
                 throw new NotImplementedException();    // use Asset.TickerChanges list for historical queries.
 
-            List<Stock> result = new List<Stock>();
+            List<Stock> result = new();
             foreach (var sec in p_assets)
             {
                 Stock? stock = sec as Stock;

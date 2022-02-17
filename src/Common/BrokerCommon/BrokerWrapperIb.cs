@@ -1008,7 +1008,7 @@ namespace BrokerCommon
         public int PlaceOrder(Contract p_contract, TransactionType p_transactionType, double p_volume, OrderExecution p_orderExecution, OrderTimeInForce p_orderTif, double? p_limitPrice, double? p_stopPrice, double p_estimatedPrice, bool p_isSimulatedTrades)
         {
 
-            Order order = new Order();
+            Order order = new();
             switch (p_transactionType)
             {
                 case TransactionType.BuyAsset:

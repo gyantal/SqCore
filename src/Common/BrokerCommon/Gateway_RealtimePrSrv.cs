@@ -63,7 +63,7 @@ namespace BrokerCommon
 
                 string[] inputParams = input.Split(new char[] { '&' }, StringSplitOptions.RemoveEmptyEntries);
 
-                List<Tuple<string, Dictionary<int, PriceAndTime>?, int>> tickerList = new List<Tuple<string, Dictionary<int, PriceAndTime>?, int>>();
+                List<Tuple<string, Dictionary<int, PriceAndTime>?, int>> tickerList = new();
                 int nTempTickers = 0;
                 foreach (var inputParam in inputParams)
                 {
@@ -118,7 +118,7 @@ namespace BrokerCommon
                     {
                         try
                         {
-                            AutoResetEvent priceTickARE = new AutoResetEvent(false);    // set it to non-signaled => which means Block
+                            AutoResetEvent priceTickARE = new(false);    // set it to non-signaled => which means Block
                             //priceTickARE.Reset();       // set it to non-signaled => which means Block
 
                             for (int i = 0; i < tickerList.Count; i++)
@@ -218,7 +218,7 @@ namespace BrokerCommon
                 } // if nTempTickers
 
                 // 2. Assuming BrokerWrapper.GetAlreadyStreamedPrice() now has all the data
-                StringBuilder jsonResultBuilder = new StringBuilder(resultPrefix + "[");
+                StringBuilder jsonResultBuilder = new(resultPrefix + "[");
                 bool isFirstTickerWrittenToOutput = false;
                 foreach (var tickerItem in tickerList)
                 {

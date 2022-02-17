@@ -207,7 +207,7 @@ namespace FinTechCommon
 
                 var periodStartDateInc = (iStockFirstDay >= 0) ? (DateTime)dates[iStockFirstDay] : DateTime.MaxValue;    // it may be not the 'asked' start date if asset has less price history
                 var periodEndDateInc = (iStockEndDay >= 0) ? (DateTime)dates[iStockEndDay] : DateTime.MaxValue;        // by default it is the date of yesterday, but the user can change it
-                AssetHist hist = new AssetHist(r, periodStartDateInc, periodEndDateInc, stat, values);
+                AssetHist hist = new(r, periodStartDateInc, periodEndDateInc, stat, values);
                 return hist;
             });
 

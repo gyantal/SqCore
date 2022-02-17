@@ -7,12 +7,11 @@ using System.Threading.Tasks;
 
 namespace SqCommon
 {
-
-    public enum TimeZoneId : byte {  UTC = 0, EST = 1, London = 2, CET = 3, Unknown=255 }  // similar to dbo.StockExchange.TimeZone
+    public enum TimeZoneId : byte { UTC = 0, EST = 1, London = 2, CET = 3, Unknown = 255 } // similar to dbo.StockExchange.TimeZone
 
     public static partial class Utils
     {
-        private static ConcurrentDictionary<TimeZoneId, TimeZoneInfo> g_tzi = new ConcurrentDictionary<TimeZoneId, TimeZoneInfo>();
+        private static ConcurrentDictionary<TimeZoneId, TimeZoneInfo> g_tzi = new();
 
         // http://www.mcnearney.net/blog/windows-timezoneinfo-olson-mapping/
         // http://unicode.org/repos/cldr/trunk/common/supplemental/windowsZones.xml
@@ -85,7 +84,7 @@ namespace SqCommon
         public static DateTime ConvertTimeFromEtToUtc(DateTime p_dateTimeET)
         {
             TimeZoneInfo utcZone = TimeZoneInfo.Utc;
-            TimeZoneInfo? estZone = null;
+            TimeZoneInfo? estZone;
             try
             {
                 estZone = Utils.FindSystemTimeZoneById(TimeZoneId.EST);
@@ -107,7 +106,7 @@ namespace SqCommon
         public static DateTime ConvertTimeFromUtcToEt(DateTime p_dateTimeUtc)
         {
             TimeZoneInfo utcZone = TimeZoneInfo.Utc;
-            TimeZoneInfo? estZone = null;
+            TimeZoneInfo? estZone;
             try
             {
                 estZone = Utils.FindSystemTimeZoneById(TimeZoneId.EST);
@@ -126,27 +125,25 @@ namespace SqCommon
             return Utils.ConvertTimeFromUtcToEt(p_dateTimeUtc);
         }
 
-
-        public static DateTime UnixTimeStampToDateTimeUtc(long p_unixTimeStamp)      // Int would roll over to a negative in 2038 (if you are using UNIX timestamp), so long is safer
+        public static DateTime UnixTimeStampToDateTimeUtc(long p_unixTimeStamp) // Int would roll over to a negative in 2038 (if you are using UNIX timestamp), so long is safer
         {
             // Unix timestamp is seconds past epoch
-            System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+            System.DateTime dtDateTime = new(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
             dtDateTime = dtDateTime.AddSeconds(p_unixTimeStamp);
             return dtDateTime;
         }
 
-        //public static DateTime UnixTimeStampToDateTimeLoc(long p_unixTimeStamp)      // Int would roll over to a negative in 2038 (if you are using UNIX timestamp), so long is safer
-        //{
-        //    return UnixTimeStampToDateTimeUtc(p_unixTimeStamp).ToLocalTime();
-        //}
+    // public static DateTime UnixTimeStampToDateTimeLoc(long p_unixTimeStamp)      // Int would roll over to a negative in 2038 (if you are using UNIX timestamp), so long is safer
+    // {
+    //    return UnixTimeStampToDateTimeUtc(p_unixTimeStamp).ToLocalTime();
+    // }
 
-        public static long DateTimeUtcToUnixTimeStamp(DateTime p_utcDate)      // Int would roll over to a negative in 2038 (if you are using UNIX timestamp), so long is safer
+        public static long DateTimeUtcToUnixTimeStamp(DateTime p_utcDate) // Int would roll over to a negative in 2038 (if you are using UNIX timestamp), so long is safer
         {
             // Unix timestamp is seconds past epoch
-            System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+            System.DateTime dtDateTime = new(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
             TimeSpan span = p_utcDate - dtDateTime;
             return (long)span.TotalSeconds;
         }
-
     }
 }

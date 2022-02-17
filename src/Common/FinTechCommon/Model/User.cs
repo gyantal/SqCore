@@ -78,7 +78,7 @@ namespace FinTechCommon
             TsDateData<SqDateOnly, uint, float, uint> histData = MemDb.gMemDb.DailyHist.GetDataDirect(); // only add navs which has history. Otherwise, there is no point to show to user, and it will crash.
             List<BrokerNav> allNavsWithHistory = MemDb.gMemDb.AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV && histData.Data.ContainsKey(r.AssetId)).Select(r => (BrokerNav)r).ToList();
 
-            List<BrokerNav> visibleNavs = new List<BrokerNav>();
+            List<BrokerNav> visibleNavs = new();
             visibleNavs.AddRange(GetBrokerNavsOrdered(allNavsWithHistory));    // First add the current user NAVs. Virtual Aggregated should come first.
 
             User[] addUsers = (IsAdmin) ? MemDb.gMemDb.Users : VisibleUsers;             // then the NAVs of other users

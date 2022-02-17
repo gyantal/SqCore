@@ -76,25 +76,26 @@ namespace FinTechCommon
             if (baseAssetsJson == null || stockAssetsJson == null || companyAssetsJson == null)
                 throw new SqException("DownloadStringWithRetryAsync() failed.");
 
-            StringBuilder sbCash = new StringBuilder("\"C\":[\n");
+            StringBuilder sbCash = new("\"C\":[\n");
             bool isFirstCash = true;
-            StringBuilder sbCpair = new StringBuilder("\"D\":[\n");
+            StringBuilder sbCpair = new("\"D\":[\n");
             bool isFirstCpair = true;
-            StringBuilder sbReEst = new StringBuilder("\"R\":[\n");
+            StringBuilder sbReEst = new("\"R\":[\n");
             bool isFirstReEst = true;
-            StringBuilder sbNav = new StringBuilder("\"N\":[\n");
+            StringBuilder sbNav = new("\"N\":[\n");
             bool isFirstNav = true;
-            StringBuilder sbPortf = new StringBuilder("\"P\":[\n");
+            StringBuilder sbPortf = new("\"P\":[\n");
             bool isFirstPortf = true;
 
-            StringBuilder sbComp = new StringBuilder("\"A\":[\n"); // companies should come first, because stocks refer to companies
+            StringBuilder sbComp = new("\"A\":[\n"); // companies should come first, because stocks refer to companies
             bool isFirstComp = true;
-            StringBuilder sbStock = new StringBuilder("\"S\":[\n");
+            StringBuilder sbStock = new("\"S\":[\n");
             bool isFirstStock = true;
 
 
             // https://marcroussy.com/2020/08/17/deserialization-with-system-text-json/     // POCO: Plain Old Class Object
             using (JsonDocument baseDoc = JsonDocument.Parse(baseAssetsJson))
+            // using (JsonDocument baseDoc = JsonDocument.Parse(baseAssetsJson))
             {
                 JsonElement baseValues = baseDoc.RootElement.GetProperty("values");
                 bool wasHeaderParsed = false;
@@ -113,7 +114,7 @@ namespace FinTechCommon
                             if (isFirstCash)
                                 isFirstCash = false;
                             else
-                                sbCash.Append(",");
+                                sbCash.Append(',');
                             sbCash.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\"]");
                         }
                         if (rowArr[0].ToString() == "D")    // CurrencyPair
@@ -121,7 +122,7 @@ namespace FinTechCommon
                             if (isFirstCpair)
                                 isFirstCpair = false;
                             else
-                                sbCpair.Append(",");
+                                sbCpair.Append(',');
                             sbCpair.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\",\"{rowArr[7]}\"]");
                         }
                         if (rowArr[0].ToString() == "R")    // RealEstate
@@ -129,7 +130,7 @@ namespace FinTechCommon
                             if (isFirstReEst)
                                 isFirstReEst = false;
                             else
-                                sbReEst.Append(",");
+                                sbReEst.Append(',');
                             sbReEst.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\",\"{rowArr[8]}\"]");
                         }
                         if (rowArr[0].ToString() == "N")    // BrokerNav
@@ -137,7 +138,7 @@ namespace FinTechCommon
                             if (isFirstNav)
                                 isFirstNav = false;
                             else
-                                sbNav.Append(",");
+                                sbNav.Append(',');
                             sbNav.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\",\"{rowArr[8]}\"]");
                         }
                         if (rowArr[0].ToString() == "P")    // Portfolio
@@ -145,7 +146,7 @@ namespace FinTechCommon
                             if (isFirstPortf)
                                 isFirstPortf = false;
                             else
-                                sbPortf.Append(",");
+                                sbPortf.Append(',');
                             sbPortf.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\",\"{rowArr[8]}\"]");
                         }
                     }
@@ -169,7 +170,7 @@ namespace FinTechCommon
                                 if (isFirstComp)
                                     isFirstComp = false;
                                 else
-                                    sbComp.Append(",");
+                                    sbComp.Append(',');
                                 sbComp.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{Get(rowArr, 4)}\",\"{Get(rowArr, 5)}\",\"{Get(rowArr, 7)}\",\"{Get(rowArr, 8)}\",\"{Get(rowArr, 9)}\",\"{Get(rowArr, 10)}\",\"{Get(rowArr, 11)}\"]");
                             }
                         }
@@ -194,7 +195,7 @@ namespace FinTechCommon
                                 if (isFirstStock)
                                     isFirstStock = false;
                                 else
-                                    sbStock.Append(",");
+                                    sbStock.Append(',');
                                 sbStock.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{Get(rowArr, 4)}\",\"{Get(rowArr, 5)}\",\"{Get(rowArr, 7)}\",\"{Get(rowArr, 8)}\",\"{Get(rowArr, 9)}\",\"{Get(rowArr, 10)}\",\"{Get(rowArr, 11)}\",\"{Get(rowArr, 12)}\",\"{Get(rowArr, 13)}\",\"{Get(rowArr, 14)}\",\"{Get(rowArr, 15)}\",\"{Get(rowArr, 16)}\"]");
                             }
                         }
@@ -207,9 +208,9 @@ namespace FinTechCommon
                 sbNav.Append("],\n");
                 sbPortf.Append("],\n");
                 sbComp.Append("],\n");
-                sbStock.Append("]");
-                StringBuilder sb = new StringBuilder("{");
-                sb.Append(sbCash).Append(sbCpair).Append(sbReEst).Append(sbNav).Append(sbPortf).Append(sbComp).Append(sbStock).Append("}");
+                sbStock.Append(']');
+                StringBuilder sb = new("{");
+                sb.Append(sbCash).Append(sbCpair).Append(sbReEst).Append(sbNav).Append(sbPortf).Append(sbComp).Append(sbStock).Append('}');
 
                 // Create a new connection. Don't use the MemDb main connection, because we might want to switch to a non-default DB, like DB-1. It is safer this way. Don't tinker with the MemDb main connection
                 var redisConnString = (Utils.RunningPlatform() == Platform.Windows) ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];

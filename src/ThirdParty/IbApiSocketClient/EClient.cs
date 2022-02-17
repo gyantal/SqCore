@@ -134,7 +134,7 @@ namespace IBApi
                 }
                 else
                 {
-                    List<byte> buf = new List<byte>();
+                    List<byte> buf = new();
 
                     buf.AddRange(UTF8Encoding.UTF8.GetBytes(Constants.ClientVersion.ToString()));
                     buf.Add(Constants.EOL);

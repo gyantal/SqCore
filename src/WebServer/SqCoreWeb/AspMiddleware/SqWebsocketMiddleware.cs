@@ -99,7 +99,7 @@ namespace SqCoreWeb
                     throw new Exception($"Unexpected websocket connection '{p_requestRemainigPath}' in WebSocketLoopKeptAlive()");
             }
 
-            ArraySegment<Byte> buffer = new ArraySegment<byte>(new Byte[8192]);
+            ArraySegment<Byte> buffer = new(new Byte[8192]);
             string bufferStr = string.Empty;
             WebSocketReceiveResult? result = null;
             // loop until the client closes the connection. The server receives a disconnect message only if the client sends it, which can't be done if the internet connection is lost.

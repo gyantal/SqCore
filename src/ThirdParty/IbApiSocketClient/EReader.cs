@@ -16,7 +16,7 @@ namespace IBApi
     {
         EClientSocket eClientSocket;
         EReaderSignal eReaderSignal;
-        Queue<EMessage> msgQueue = new Queue<EMessage>();
+        Queue<EMessage> msgQueue = new();
         EDecoder processMsgsDecoder;
         const int defaultInBufSize = ushort.MaxValue / 8;
 
@@ -106,7 +106,7 @@ namespace IBApi
             }
         }
 
-        List<byte> inBuf = new List<byte>(defaultInBufSize);
+        List<byte> inBuf = new(defaultInBufSize);
 
         private EMessage readSingleMessage()
         {

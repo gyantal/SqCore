@@ -23,8 +23,8 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
         // O(1) search for Dictionaries. Tradeoff between CPU-usage and RAM-usage. Use excess memory in order to search as fast as possible.
         // Another alternative is to implement a virtual ordering in an index table: int[] m_idxByTicker (used by Sql DBs), but that also uses RAM and the access would be only O(logN). Hashtable uses more memory, but it is faster.
         // BinarySearch is a good idea for 10,000 Dates in time series, but not for this, when we have a small number of discrete values of AssetID or Tickers
-        public Dictionary<AssetId32Bits, Asset> AssetsByAssetID = new Dictionary<AssetId32Bits, Asset>();  // Assets are ordered by AssetId, so BinarySearch could be used, but Hashtable is faster.
-        public Dictionary<string, Asset> AssetsBySqTicker = new Dictionary<string, Asset>();
+        public Dictionary<AssetId32Bits, Asset> AssetsByAssetID = new();  // Assets are ordered by AssetId, so BinarySearch could be used, but Hashtable is faster.
+        public Dictionary<string, Asset> AssetsBySqTicker = new();
 
         // AssetID uint is unique identifier for fast access.
         // SqTicker is also a unique identifier. Not too fast, because a hashcode is generated from string. But it is human readable.

@@ -22,7 +22,7 @@ namespace DbCommon
 
 
         // sometimes we keep open connections to different Redis servers (local vs. server1 vs. server2). We need support for multiple connections.
-        private static ConcurrentDictionary<string, ConnectionMultiplexer> m_conns = new ConcurrentDictionary<string, ConnectionMultiplexer>();
+        private static ConcurrentDictionary<string, ConnectionMultiplexer> m_conns = new();
 
         // "The point of ConnectionMultiplexer is to have just one ConnectionMultiplexer which is shared between all requests (which is why you want a static singleton); 
         // that’s how it pipelines things to make them really efficient. If the connection dies you want it to automatically recover."

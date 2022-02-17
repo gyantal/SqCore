@@ -86,7 +86,7 @@ namespace SqCoreWeb.Controllers
                 bool isOutputJson = !String.Equals(outputFormat, "csv", StringComparison.CurrentCultureIgnoreCase);
 
                 string? yffColumns = null;
-                List<string> yffColumnsList = new List<string>();
+                List<string> yffColumnsList = new();
                 if (allParamsDict.TryGetValue("yffColumns", out queryStrVal))
                 {
                     yffColumns = queryStrVal[0];
@@ -197,7 +197,7 @@ namespace SqCoreWeb.Controllers
 
 
                 // 4.1 Process YF CSV file either as JSON or as CSV: Header
-                StringBuilder responseStrBldr = new StringBuilder();
+                StringBuilder responseStrBldr = new();
                 bool wasDataLineWritten = false;        // real data line, not header line
                 if (isOutputJson)
                 {
@@ -287,7 +287,7 @@ namespace SqCoreWeb.Controllers
             }
         }
 
-        private readonly Dictionary<string, int> cCommandToIndDict = new Dictionary<string, int>() { { "d", 0 }, { "o", 1 }, { "h", 2 }, { "l", 3 }, { "c", 4 }, { "c1", 5 }, { "v", 6 } };
+        private readonly Dictionary<string, int> cCommandToIndDict = new() { { "d", 0 }, { "o", 1 }, { "h", 2 }, { "l", 3 }, { "c", 4 }, { "c1", 5 }, { "v", 6 } };
 
         private void WriteCell(string p_command, string[] cells, StringBuilder responseStrBldr, ref bool wasCellWritten)
         {

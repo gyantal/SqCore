@@ -19,7 +19,7 @@ namespace SqCoreWeb
         public DateTime StartTime;
         public bool IsHttps;  // HTTP or HTTPS
         public string Method = string.Empty; // GET, PUT
-        public HostString Host = new HostString(string.Empty);
+        public HostString Host = new(string.Empty);
         public string Path = string.Empty;
         public string QueryString = string.Empty;  // it is not part of the path
         public string ClientIP = string.Empty;
@@ -139,7 +139,7 @@ namespace SqCoreWeb
                 // at the moment, send only raised Exceptions to HealthMonitor, not general IsErrors, like wrong statusCodes
                 if (requestLog.Exception != null && IsSendableToHealthMonitorForEmailing(requestLog.Exception))
                 {
-                    StringBuilder sb = new StringBuilder("Exception in SqCore.Website.C#.SqFirewallMiddlewarePreAuthLogger. \r\n");
+                    StringBuilder sb = new("Exception in SqCore.Website.C#.SqFirewallMiddlewarePreAuthLogger. \r\n");
                     var requestLogStr = String.Format("{0}#{1}{2} {3} '{4}' from {5} (u: {6}) ret: {7} in {8:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : string.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Path + (String.IsNullOrEmpty(requestLog.QueryString) ? string.Empty : requestLog.QueryString), requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds);
                     sb.Append("Request: " + requestLogStr + "\r\n");
                     sb.Append("Exception: '" + requestLog.Exception.ToStringWithShortenedStackTrace(1600) + "'\r\n");
@@ -156,11 +156,11 @@ namespace SqCoreWeb
         void InitializeWhitelist()
         {
             // There are 140 files (96 non-brotli) in wwwroot in 2020, there will be 1000 files in it in the future. We don't want a whitelist that performs 1000 string-comparisions, but binary search can help
-            List<string> whitelistExact = new List<string>(10);
-            List<string> whitelistPrefix = new List<string>(10);
+            List<string> whitelistExact = new(10);
+            List<string> whitelistPrefix = new(10);
             whitelistPrefix.AddRange(new string[] { "ws/", "signin-google" });   // Add WebSocket prefixes; and "/signin-google"
 
-            DirectoryInfo di = new DirectoryInfo(Program.g_webAppGlobals.KestrelEnv!.WebRootPath);
+            DirectoryInfo di = new(Program.g_webAppGlobals.KestrelEnv!.WebRootPath);
             AddFileToListRecursive(di, string.Empty, ref whitelistExact);
 
             // https://stackoverflow.com/questions/21583278/getting-all-controllers-and-actions-names-in-c-sharp

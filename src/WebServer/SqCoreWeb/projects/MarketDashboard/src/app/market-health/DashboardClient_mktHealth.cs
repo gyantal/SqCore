@@ -30,9 +30,9 @@ namespace SqCoreWeb
         // try to convert to use these fields. At least on the server side.
         // If we store asset pointers (Stock, Nav) if the MemDb reloads, we should reload these pointers from the new MemDb. That adds extra code complexity.
         // However, for fast execution, it is still better to keep asset pointers, instead of keeping the asset's SqTicker and always find them again and again in MemDb.
-        List<string> c_marketSummarySqTickersDefault = new List<string>() { "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO"};
-        List<string> c_marketSummarySqTickersDc = new List<string>() { "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO"};   // at the moment DC uses the same as default
-        List<Asset> m_mkthAssets = new List<Asset>();      // remember, so we can send RT data
+        List<string> c_marketSummarySqTickersDefault = new() { "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO"};
+        List<string> c_marketSummarySqTickersDc = new() { "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO"};   // at the moment DC uses the same as default
+        List<Asset> m_mkthAssets = new();      // remember, so we can send RT data
         BrokerNav? m_mkthSelectedNavAsset = null;   // remember which NAV is selected, so we can send RT data
 
         void Ctor_MktHealth()
@@ -125,7 +125,7 @@ namespace SqCoreWeb
                 allAssets.Add(m_mkthSelectedNavAsset);
 
             DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
-            SqDateOnly lookbackStartInc = new SqDateOnly(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
+            SqDateOnly lookbackStartInc = new(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
             SqDateOnly lookbackEndExcl = todayET;
             if (p_lookbackStr.StartsWith("Date:"))  // Browser client never send anything, but "Date:" inputs. Format: "Date:2019-11-11...2020-11-10"
             {

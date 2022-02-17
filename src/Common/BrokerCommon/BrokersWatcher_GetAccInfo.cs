@@ -17,8 +17,8 @@ namespace BrokerCommon
     {
         public string BrAccStr { get; set; } = string.Empty;
         public Gateway Gateway { get; set; }
-        public List<BrAccSum> AccSums = new List<BrAccSum>();   // AccSummary
-        public List<BrAccPos> AccPoss = new List<BrAccPos>();   // Positions
+        public List<BrAccSum> AccSums = new();   // AccSummary
+        public List<BrAccPos> AccPoss = new();   // Positions
 
         public AccInfo(string brAccStr, Gateway gateway)
         {

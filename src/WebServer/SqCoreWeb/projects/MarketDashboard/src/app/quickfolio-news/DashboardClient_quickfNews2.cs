@@ -6,18 +6,27 @@ using System.Text;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Xml.Linq;
+using System.ServiceModel.Syndication;
+using System.Net;
 
 namespace SqCoreWeb
 {
     public partial class DashboardClient
     {
-        static QuickfolioNewsDownloader g_newsDownloader = new QuickfolioNewsDownloader(); // only 1 global downloader for all clients
+        static QuickfolioNewsDownloader g_newsDownloader = new(); // only 1 global downloader for all clients
         // one global static quickfolio News Timer serves all clients. For efficiency.
-        static Timer m_qckflNewsTimer = new System.Threading.Timer(new TimerCallback(RtDashboardTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
+        static Timer m_qckflNewsTimer = new(new TimerCallback(QckflNewsTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
         static bool isQckflNewsTimerRunning = false;
+        static object m_qckflNewsTimerLock = new();
+        static int m_qckflNewsTimerFrequencyMs = 15 * 60 * 1000; // timer for 15 minutes
         public static TimeSpan c_initialSleepIfNotActiveToolQn2 = TimeSpan.FromMilliseconds(10 * 1000); // 10sec
+        Dictionary<string, List<NewsItem>> m_newsMemory = new();
+        Random m_random = new(DateTime.Now.Millisecond);
+        KeyValuePair<int, int> m_sleepBetweenDnsMs = new(2000, 1000); // <fix, random>
 
 
+        // string[] m_stockTickers2 = { };
         string[] m_stockTickers2 = { };
 
         void Ctor_QuickfNews2()
@@ -49,30 +58,6 @@ namespace SqCoreWeb
                 // in that timer, when the downloading of news are done => send it to All open Clients.
             });
         }
-
-        // int nExceptionsTriggerQuickfolioNewsDownloader2 = 0;
-        // private void TriggerQuickfolioNewsDownloader2()  // called at OnConnected and also periodically. Separete for each clients.
-        // {
-        //     try
-        //     {
-        //         g_newsDownloader.GetStockNewsAndSendToClient(this);   // with 13 tickers, it can take 13 * 2 = 26seconds
-        //         nExceptionsTriggerQuickfolioNewsDownloader2 = 0;
-        //     }
-        //     catch
-        //     {
-        //         // It is expected that DownloadStringWithRetryAsync() throws exceptions sometimes and download fails. Around midnight.
-        //         // The request was canceled due to the configured HttpClient.Timeout of 100 seconds elapsing.
-        //         // We only inform HealthMonitor if it happened 4*4=16 times. (about 4 hours)
-        //         nExceptionsTriggerQuickfolioNewsDownloader2++;
-        //     }
-        //     if (nExceptionsTriggerQuickfolioNewsDownloader2 >= 16)
-        //     {
-        //         Utils.Logger.Error($"TriggerQuickfolioNewsDownloader() nExceptionsTriggerQuickfolioNewsDownloader: {nExceptionsTriggerQuickfolioNewsDownloader2}");
-        //         string msg = $"SqCore.TriggerQuickfolioNewsDownloader() failed {nExceptionsTriggerQuickfolioNewsDownloader2}x. See log files.";
-        //         HealthMonitorMessage.SendAsync(msg, HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
-        //         nExceptionsTriggerQuickfolioNewsDownloader2 = 0;
-        //     }
-        // }
         public static string[]? GetQckflStockTickers2()
         {
             string? valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
@@ -99,6 +84,89 @@ namespace SqCoreWeb
             }
             else
                 return null;
+        }
+        internal async void GetQckflCommonNews()
+        {
+            string rssFeedUrl = string.Format(@"https://www.cnbc.com/id/100003114/device/rss/rss.html");
+
+            List<NewsItem> foundNewsItems = new();
+            // try max 5 downloads to leave the tread for sure (call this method repeats continuosly)
+            int retryCount = 0;
+            while ((foundNewsItems.Count < 1) && (retryCount < 5))
+            {
+                foundNewsItems = await ReadRSSAsync2(rssFeedUrl, NewsSource.CnbcRss, string.Empty);
+                if (foundNewsItems.Count == 0)
+                    System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));
+                retryCount++;
+            }
+
+            // return commonNewsList;
+        }
+        private async Task<List<NewsItem>> ReadRSSAsync2(string p_url, NewsSource p_newsSource, string p_ticker)
+        {
+            try
+            {
+                string? rssFeedAsString = await Utils.DownloadStringWithRetryAsync(p_url, 3, TimeSpan.FromSeconds(5), true);
+                if (String.IsNullOrEmpty(rssFeedAsString))
+                {
+                    Console.WriteLine($"QuickfolioNewsDownloader.ReadRSS() url download failed.");
+                    return new List<NewsItem>();
+                }
+
+                // convert feed to XML using LINQ to XML and finally create new XmlReader object
+                var feed = System.ServiceModel.Syndication.SyndicationFeed.Load(XDocument.Parse(rssFeedAsString).CreateReader());
+
+                List<NewsItem> foundNewNews = new();
+
+                foreach (SyndicationItem item in feed.Items)
+                {
+                    NewsItem newsItem = new();
+                    newsItem.Ticker = p_ticker;
+                    newsItem.LinkUrl = item.Links[0].Uri.AbsoluteUri;
+                    newsItem.Title = WebUtility.HtmlDecode(item.Title.Text);
+                    newsItem.Summary = WebUtility.HtmlDecode(item.Summary?.Text ?? string.Empty);   // <description> is missing sometimes, so Summary = null
+                    newsItem.PublishDate = item.PublishDate.LocalDateTime;
+                    newsItem.DownloadTime = DateTime.Now;
+                    newsItem.Source = p_newsSource.ToString();
+                    newsItem.DisplayText = string.Empty;
+                    //newsItem.setFiltered();
+                    if (!m_newsMemory.ContainsKey(p_ticker))
+                        m_newsMemory.Add(p_ticker, new List<NewsItem>());
+                        foundNewNews.Add(newsItem);
+                }
+                return foundNewNews;
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine($"QuickfolioNewsDownloader.ReadRSS() exception: '{exception.Message}'");
+                return new List<NewsItem>();
+            }
+        }
+        public static void QckflNewsTimer_Elapsed(object? state)    // Timer is coming on a ThreadPool thread
+        {
+            try
+            {
+                Utils.Logger.Debug("QckflNewsTimer_Elapsed(). BEGIN");
+                if (!isQckflNewsTimerRunning)
+                    return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
+
+                // Download common newws
+
+                // company specific news.
+
+                lock (m_qckflNewsTimerLock)
+                {
+                    if (isQckflNewsTimerRunning)
+                    {
+                        m_qckflNewsTimer.Change(TimeSpan.FromMilliseconds(m_qckflNewsTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Utils.Logger.Error(e, "QckflNewsTimer_Elapsed() exception.");
+                throw;
+            }
         }
         public bool OnReceiveWsAsync_QckflNews2(WebSocketReceiveResult? wsResult, string msgCode, string msgObjStr)
         {

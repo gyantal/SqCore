@@ -5,7 +5,7 @@ namespace SqCoreWeb
 {
     class Controller
     {
-        static public Controller g_controller = new Controller();
+        static public Controller g_controller = new();
 
         internal void RedisMirrorDb()   // Mirror DB-i to DB-j
         {

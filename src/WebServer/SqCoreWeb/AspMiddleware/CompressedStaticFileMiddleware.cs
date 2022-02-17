@@ -16,8 +16,7 @@ namespace SqCoreWeb
 {
     public class CompressedStaticFileMiddleware
     {
-        private static Dictionary<string, string> compressionTypes =
-            new Dictionary<string, string>()
+        private static Dictionary<string, string> compressionTypes = new()
             {
                 { "gzip", ".gz" }, {"br", ".br" }
             };

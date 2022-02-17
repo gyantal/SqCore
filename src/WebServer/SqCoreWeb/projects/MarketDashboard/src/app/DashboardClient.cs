@@ -28,8 +28,8 @@ namespace SqCoreWeb
         public ActivePage ActivePage = ActivePage.Unknown; // knowing which Tool is active can be useful. We might not send data to tools which never becomes active
 
 
-        public static List<DashboardClient> g_clients = new List<DashboardClient>();
-        public static readonly Dictionary<string, ActivePage> c_urlParam2ActivePage = new Dictionary<string, ActivePage>() { 
+        public static List<DashboardClient> g_clients = new();
+        public static readonly Dictionary<string, ActivePage> c_urlParam2ActivePage = new() { 
             {"mh", ActivePage.MarketHealth}, {"bav", ActivePage.BrAccViewer}, {"cs", ActivePage.CatalystSniffer}, {"qn", ActivePage.QuickfolioNews}};
 
         public static void PreInit()

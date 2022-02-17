@@ -103,7 +103,7 @@ namespace IBApi
 
         public static string TagValueListToString(List<TagValue> options)
         {
-            StringBuilder tagValuesStr = new StringBuilder();
+            StringBuilder tagValuesStr = new();
             int tagValuesCount = options == null ? 0 : options.Count;
 
             for (int i = 0; i < tagValuesCount; i++)

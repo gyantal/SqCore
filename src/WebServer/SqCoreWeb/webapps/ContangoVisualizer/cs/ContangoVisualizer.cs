@@ -36,7 +36,7 @@ namespace SqCoreWeb.Controllers
 
         public override string ToString()
         {
-            return $"{Date.ToString("yyyy-MM-dd")},{FirstMonth}, {F1:F3}, {F2:F3}, {F3:F3}, {F4:F3}, {F5:F3}, {F6:F3}, {F7:F3}, {F8:F3}, {STCont:P2}, {LTCont:P2}, {NextExpiryDate.ToString("yyyy-MM-dd")}, {F1expDays}, {F2expDays}, {F3expDays}, {F4expDays}, {F5expDays}, {F6expDays}, {F7expDays}, {F8expDays} ";
+            return $"{Date:yyyy-MM-dd},{FirstMonth}, {F1:F3}, {F2:F3}, {F3:F3}, {F4:F3}, {F5:F3}, {F6:F3}, {F7:F3}, {F8:F3}, {STCont:P2}, {LTCont:P2}, {NextExpiryDate:yyyy-MM-dd}, {F1expDays}, {F2expDays}, {F3expDays}, {F4expDays}, {F5expDays}, {F6expDays}, {F7expDays}, {F8expDays} ";
         }
     }
 
@@ -56,7 +56,8 @@ namespace SqCoreWeb.Controllers
                     return Content(GetStrOIL(), "text/html");
                 case 3:
                     return Content(GetStrGAS(), "text/html");
-
+                default:
+                    break;
             }
             return Content(GetStr2(), "text/html");
         }
@@ -196,7 +197,7 @@ namespace SqCoreWeb.Controllers
             DateTime[] expDates = new DateTime[expDatesDat.GetLength(0)];
             for (int iRows = 0; iRows < expDates.Length; iRows++)
             {
-                DateTime thirdFriday = new DateTime(expDatesDat[iRows,0], expDatesDat[iRows,1], 15);
+                DateTime thirdFriday = new(expDatesDat[iRows,0], expDatesDat[iRows,1], 15);
                 while (thirdFriday.DayOfWeek != DayOfWeek.Friday)
                 {
                     thirdFriday = thirdFriday.AddDays(1);
@@ -663,7 +664,7 @@ namespace SqCoreWeb.Controllers
 
 
             //Creating input string for JavaScript.
-            StringBuilder sb = new StringBuilder("{" + Environment.NewLine);
+            StringBuilder sb = new("{" + Environment.NewLine);
 
             sb.Append(@"""dataSource"": """+ p_dataSource);
 

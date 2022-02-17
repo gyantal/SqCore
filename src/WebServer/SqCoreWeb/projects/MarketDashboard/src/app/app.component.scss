@@ -356,6 +356,7 @@ svg.material-icons2 path {
   overflow: auto;
   color: rgb(32, 34, 148);
   background-color: #FFA500;
+  border-radius: 2rem .5rem 2rem 0;
 }
 .manyDshbrdClientsDialog-content {
   margin: auto;
@@ -367,4 +368,21 @@ svg.material-icons2 path {
 .manyDshbrdClntDialogSuggestion {
   font-weight: bold;
   font-size: 1.3rem;
+}
+
+.dshbrdDialogButtons :hover {
+  border: .1rem solid #228B22;
+  backdrop-filter: blur(1rem);
+  transform: skewX(-10deg);
+  height: 2.5rem;
+  width: 14rem;
+  border-radius: 2rem .5rem 2rem 0;
+  position: relative;
+  justify-content: center;
+  transition: all .2s ease;
+  font: 1.2rem;
+  font-weight: 300;
+  text-shadow: 0 0 2rem #fff;
+  animation: breath2 2s .5s infinite alternate;
+  cursor: pointer;
 }

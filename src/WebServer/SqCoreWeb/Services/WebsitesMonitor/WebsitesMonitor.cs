@@ -13,7 +13,7 @@ namespace SqCoreWeb
     }
     public class WebsitesMonitor
     {
-        public static WebsitesMonitor gWebsitesMonitor = new WebsitesMonitor();
+        public static WebsitesMonitor gWebsitesMonitor = new();
 
         public void Init()
         {
@@ -98,7 +98,7 @@ namespace SqCoreWeb
             if (isLatestNewsTodayAfterClose)
             {
                 string subject = "SqCore: Potential S&P500 index change is detected!";
-                StringBuilder sb = new StringBuilder(Email.g_htmlEmailStart);
+                StringBuilder sb = new(Email.g_htmlEmailStart);
                 sb.Append(@"<span class=""sqImportantOK"">Potential <strong>S&P500 index change</strong> is detected!</span><br/><br/>");
                 sb.Append($"The official S&P website has a <strong>new post</strong> published today in the last 5-10 minutes.<br/>");
                 sb.Append($"The news items are often PDF files, English sentences, which cannot be processed by a program.<br/>");

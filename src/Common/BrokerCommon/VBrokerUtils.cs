@@ -74,7 +74,7 @@ namespace BrokerCommon
     {
         internal static List<QuoteData> ParseCSVToQuotes(string p_csvStr, bool p_oldestFirst)
         {
-            List<QuoteData> parsedData = new List<QuoteData>();
+            List<QuoteData> parsedData = new();
 
             try
             {
