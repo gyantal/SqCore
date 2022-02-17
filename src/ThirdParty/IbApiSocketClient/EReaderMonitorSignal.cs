@@ -10,7 +10,7 @@ namespace IBApi
 {
     public class EReaderMonitorSignal : EReaderSignal
     {
-        object cs = new();
+        object cs = new object();
         bool open = false;
 
         public void issueSignal()

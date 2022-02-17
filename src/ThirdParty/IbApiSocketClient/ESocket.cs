@@ -12,7 +12,7 @@ namespace IBApi
     class ESocket : ETransport, IDisposable
     {
         BinaryWriter tcpWriter;
-        object tcpWriterLock = new();
+        object tcpWriterLock = new object();
 
         public ESocket(Stream socketStream)
         {

@@ -47,7 +47,7 @@ namespace IBApi
             {
                 if (serverVersion < MinServerVer.LINKING)
                 {
-                    List<byte> buf = new();
+                    List<byte> buf = new List<byte>();
 
                     buf.AddRange(UTF8Encoding.UTF8.GetBytes(clientId.ToString()));
                     buf.Add(Constants.EOL);
