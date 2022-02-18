@@ -24,14 +24,11 @@ namespace SqCoreWeb
         {
             get { return this.ClientIP + " at " + WsConnectionTime.ToString("MM'-'dd'T'HH':'mm':'ss"); }
         }
-        public bool IsOnline = true;
         public ActivePage ActivePage = ActivePage.Unknown; // knowing which Tool is active can be useful. We might not send data to tools which never becomes active
-
-
-        public static List<DashboardClient> g_clients = new();
         public static readonly Dictionary<string, ActivePage> c_urlParam2ActivePage = new() { 
             {"mh", ActivePage.MarketHealth}, {"bav", ActivePage.BrAccViewer}, {"cs", ActivePage.CatalystSniffer}, {"qn", ActivePage.QuickfolioNews}};
 
+        public static List<DashboardClient> g_clients = new();
         public static void PreInit()
         {
             MemDb.gMemDb.EvMemDbInitNoHistoryYet += new MemDb.MemDbEventHandler(OnEvMemDbInitNoHistoryYet);
@@ -64,10 +61,9 @@ namespace SqCoreWeb
         public static void ServerDiagnostic(StringBuilder p_sb)
         {
             p_sb.Append("<H2>Dashboard Clients</H2>");
- 
-            lock (DashboardClient.g_clients)
-                p_sb.Append($"#Clients (WebSocket): {DashboardClient.g_clients.Count}: {String.Join(",", DashboardClient.g_clients.Select(r => $"'{r.UserEmail}/{r.ClientIP}'"))}<br>");
-            p_sb.Append($"rtDashboardTimerRunning: {m_rtDashboardTimerRunning}<br>");
+            p_sb.Append($"Clients (WebSocket) (#{DashboardClient.g_clients.Count}): ");
+            p_sb.AppendLongListByLine(DashboardClient.g_clients.Select(r => $"'{r.UserEmail}/{r.ClientIP}'").ToArray(), ",", 3, "<br>");
+            p_sb.Append($"<br>rtDashboardTimerRunning: {m_rtDashboardTimerRunning}<br>");
         }
 
         public DashboardClient(string p_clientIP, string p_userEmail)
@@ -95,6 +91,10 @@ namespace SqCoreWeb
                     Utils.Logger.Info("OnReceiveWsAsync__DshbrdClient(): IsDashboardOpenManyTimes");
                     SendIsDashboardOpenManyTimes();
                     return true;
+                case "Dshbrd.BrowserWindowUnload":
+                    Utils.Logger.Info("OnReceiveWsAsync__DshbrdClient(): BrowserWindowUnload");
+                    OnBrowserWindowUnload();
+                    return true;
                 default:
                     return false;
             }
@@ -114,6 +114,17 @@ namespace SqCoreWeb
             byte[] encodedMsg = Encoding.UTF8.GetBytes("Dshbrd.IsDshbrdOpenManyTimes:" + Utils.CamelCaseSerialize(isDashboardOpenManyTimes)); // => e.g. "Dshbrd.IsDshbrdOpenManyTimes:false"
             if (WsWebSocket!.State == WebSocketState.Open)
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+        }
+
+        public void OnBrowserWindowUnload()
+        {
+            // 'beforeunload' will be fired if the user submits a form, clicks a link, closes the window (or tab), or goes to a new page using the address bar, search box, or a bookmark.
+            // server removes this client from DashboardClient.g_clients list
+
+            // !Warning: Multithreaded Warning: The Modifier (Writer) thread should be careful, and Copy and Pointer-Swap when Edit/Remove is done.
+            List<DashboardClient> clonedClients = new(DashboardClient.g_clients);
+            clonedClients.Remove(this);
+            DashboardClient.g_clients = clonedClients;
         }
     }
 }

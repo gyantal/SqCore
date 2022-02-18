@@ -149,14 +149,16 @@ export class AppComponent implements OnInit {
 
     // 'beforeunload' will be fired if the user submits a form, clicks a link, closes the window (or tab), or goes to a new page using the address bar, search box, or a bookmark.
     window.addEventListener('beforeunload', (unloadEvent) => {
-      // dispose objects logic.
-      // WebSocket Disconnection at page exit is not necessary, as server will timeout it. But it can be useful to release server resources earlier.
+      // Dispose objects logic.
+      // Signal the server that it can remove this client from DashboardClient.g_clients list.
       console.log('window.beforeunload()');
 
-      if (!this._socket || this._socket.readyState !== WebSocket.OPEN)
+      if (this._socket != null && this._socket.readyState === WebSocket.OPEN)
+        this._socket.send('Dshbrd.BrowserWindowUnload:');
+      else
         alert('socket not connected');
 
-      this._socket.close(1000, 'Closing from client');
+      this._socket.close(1000, 'Closing from client'); // the close() method does not discard previously-sent messages before starting that closing handshake; even if the user agent is still busy sending those messages, the handshake will only start after the messages are sent.
 
       // unloadEvent.preventDefault();
       // unloadEvent.returnValue = 'window.beforeunload event: Unsaved modifications are possible';  // Define the returnValue only if you want to prompt user before unload.
