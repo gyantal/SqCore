@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using SqCommon;
 
 // There is a WebSocket without SignalR in AspDotNetCore. Great. We can easily implement that.
 // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/websockets?view=aspnetcore-3.1
@@ -33,6 +34,20 @@ using Microsoft.AspNetCore.Http;
 // 2021-02: removed SignalR code completely, before migrating to .Net 5.0.
 namespace SqCoreWeb
 {
+    class PingTimerData
+    {
+        public PingTimerData(WebSocket p_webSocket, CancellationTokenSource p_cancelTokenSrc, DateTime p_lastPongReceived)
+        {
+            WebSocket = p_webSocket;
+            CancelTokenSrc = p_cancelTokenSrc;
+            LastPongReceived = p_lastPongReceived;
+        }
+        public Timer? PingTimer { get; set; } = null;
+        public WebSocket WebSocket { get; set; }
+        public CancellationTokenSource CancelTokenSrc { get; set; }
+        public DateTime LastPongReceived { get; set; }
+    }
+
     public class SqWebsocketMiddleware
     {
         private static readonly NLog.Logger gLogger = NLog.LogManager.GetCurrentClassLogger();   // the name of the logger will be the "Namespace.Class"
@@ -42,10 +57,7 @@ namespace SqCoreWeb
 
         public SqWebsocketMiddleware(RequestDelegate next)
         {
-            if (next == null)
-                throw new ArgumentNullException(nameof(next));
-            _next = next;
-
+            _next = next ?? throw new ArgumentNullException(nameof(next));
         }
 
         public async Task Invoke(HttpContext httpContext)
@@ -63,6 +75,10 @@ namespace SqCoreWeb
                     {
                         await WebSocketLoopKeptAlive(httpContext, remainingPathStr);
                         // after WebSocket is Closed many minutes later, execution continues here.
+                    }
+                    catch (Exception e)
+                    {
+                        gLogger.Error(e, $"WebSocketLoopKeptAlive(). Unexpected exception.");
                     }
                     finally
                     {
@@ -87,17 +103,26 @@ namespace SqCoreWeb
             switch (p_requestRemainigPath)
             {
                 case "/dashboard":
-                    await DashboardWs.OnConnectedAsync(context, webSocket);
+                    await DashboardWs.OnWsConnectedAsync(context, webSocket);
                     break;
                 case "/example-ws1":  // client sets this URL: connectionUrl.value = scheme + "://" + document.location.hostname + port + "/ws/example-ws1" ;
-                    await ExampleWs.OnConnectedAsync(context, webSocket);
+                    await ExampleWs.OnWsConnectedAsync(context, webSocket);
                     break;
                 case "/ExSvPush":
-                    await ExSvPushWs.OnConnectedAsync(context, webSocket);
+                    await ExSvPushWs.OnWsConnectedAsync(context, webSocket);
                     break;
                 default:
                     throw new Exception($"Unexpected websocket connection '{p_requestRemainigPath}' in WebSocketLoopKeptAlive()");
             }
+
+            // When the computer goes to sleep it behaves the same as if it is disconnected from the internet
+            // Start heartbeats, ping-pong messages to check zombie websockets.
+            // The WebSocket protocol includes support for a protocol level ping that the JavaScript API doesn't expose. It's a bit lower-level than the user level pinging that is often implemented.
+            // Clients must not use pings or unsolicited pongs to aid the server; it is assumed that servers will solicit pongs whenever appropriate for the server’s needs.
+            CancellationTokenSource pingCancelToken = new();    // CancelToken is not used, because that leads to a termination with costly OperationCanceledException. However, leave it in the code for future use.
+            PingTimerData pingTimerData = new(webSocket, pingCancelToken, DateTime.UtcNow); // assume LastPongReceived = now, as we are opening the connection
+            Timer pingTimer = new(new TimerCallback(PingTimer_Elapsed), pingTimerData, TimeSpan.FromSeconds(10), TimeSpan.FromMilliseconds(-1.0));
+            pingTimerData.PingTimer = pingTimer;
 
             ArraySegment<Byte> buffer = new(new Byte[8192]);
             string bufferStr = string.Empty;
@@ -105,7 +130,7 @@ namespace SqCoreWeb
             // loop until the client closes the connection. The server receives a disconnect message only if the client sends it, which can't be done if the internet connection is lost.
             // If the client isn't always sending messages and you don't want to timeout just because the connection goes idle, have the client use a timer to send a ping message every X seconds. 
             // On the server, if a message hasn't arrived within 2*X seconds after the previous one, terminate the connection and report that the client disconnected.
-            while (webSocket.State == WebSocketState.Open && (result?.CloseStatus == null || !result.CloseStatus.HasValue))
+            while (webSocket.State == WebSocketState.Open && !pingCancelToken.IsCancellationRequested && (result?.CloseStatus == null || !result.CloseStatus.HasValue))
             {
                 try
                 {
@@ -115,7 +140,9 @@ namespace SqCoreWeb
                     {
                         do
                         {
-                            result = await webSocket.ReceiveAsync(buffer, CancellationToken.None);  // client can send CloseStatus = NormalClosure for initiating close
+                            // If client closes the window, we receive the "Dshbrd.BrowserWindowUnload" message first. Because we called _socket.send('Dshbrd.BrowserWindowUnload:') in TS. We process it.
+                            // Then when we try to call webSocket.ReceiveAsync() in the next loop, it returns immediately with webSocket.State = CloseReceived, because in TS we called _socket.close()
+                            result = await webSocket.ReceiveAsync(buffer, pingCancelToken.Token);  // client can send CloseStatus = NormalClosure for initiating close
                             ms.Write(buffer.Array!, buffer.Offset, result.Count);
                         } while (!result.EndOfMessage);
 
@@ -126,40 +153,98 @@ namespace SqCoreWeb
                     // gLogger.Trace($"WebSocketLoopKeptAlive(). received msg: '{bufferStr}'"); // logging takes 1ms
 
                     // if result.CloseStatus = NormalClosure message received, or any other fault, don't pass msg to listeners. We manage complexity in this class.
-                    bool isGoodNonClientClosedConnection = webSocket.State == WebSocketState.Open && result != null && (result.CloseStatus == null || !result.CloseStatus.HasValue);
+                    bool isGoodNonClientClosedConnection = webSocket.State == WebSocketState.Open && !pingCancelToken.IsCancellationRequested && result != null && (result.CloseStatus == null || !result.CloseStatus.HasValue);
                     if (isGoodNonClientClosedConnection && result != null)
                     {
-                        switch (p_requestRemainigPath)
-                        {
-                            case "/dashboard":
-                                DashboardWs.OnReceiveAsync(context, webSocket, result, bufferStr);  // no await. There is no need to Wait until all of its async inner methods are completed
-                                break;
-                            case "/example-ws1":
-                                ExampleWs.OnReceiveAsync(context, webSocket, result, bufferStr);
-                                break;
-                            case "/ExSvPush":
-                                ExSvPushWs.OnReceiveAsync(context, webSocket, result, bufferStr);
-                                break;
-                            default:
-                                throw new Exception($"Unexpected websocket connection '{p_requestRemainigPath}' in WebSocketLoopKeptAlive()");
-                        }
+                        if (bufferStr.StartsWith("Pong:"))
+                            pingTimerData.LastPongReceived = DateTime.UtcNow;
+                        else
+                            switch (p_requestRemainigPath)
+                            {
+                                case "/dashboard":
+                                    DashboardWs.OnWsReceiveAsync(context, webSocket, result, bufferStr);  // no await. There is no need to Wait until all of its async inner methods are completed
+                                    break;
+                                case "/example-ws1":
+                                    ExampleWs.OnWsReceiveAsync(context, webSocket, result, bufferStr);
+                                    break;
+                                case "/ExSvPush":
+                                    ExSvPushWs.OnWsReceiveAsync(context, webSocket, result, bufferStr);
+                                    break;
+                                default:
+                                    throw new Exception($"Unexpected websocket connection '{p_requestRemainigPath}' in WebSocketLoopKeptAlive()");
+                            }
                     }
 
                     // If Client never sent any proper data, and closes browser tabpage, ReceiveAsync() returns without Exception and result.CloseStatus = EndpointUnavailable
                     // If Client sent any proper data, and closes browser tabpage, ReceiveAsync() returns with Exception WebSocketError.ConnectionClosedPrematurely
                 }
-                catch (System.Net.WebSockets.WebSocketException e)
+                catch (WebSocketException e)
                 {
                     if (e.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) // 'The remote party closed the WebSocket connection without completing the close handshake.'
-                    {
                         gLogger.Trace($"WebSocketLoopKeptAlive(). Expected exception: '{e.Message}'");
-                    }
                     else
                         throw;
                 }
+                catch (OperationCanceledException e)
+                {
+                    if (e.CancellationToken == pingCancelToken.Token)
+                        gLogger.Trace($"WebSocketLoopKeptAlive(). Expected exception because not receiving the PONG, we cancelled the webSocket.ReceiveAsync(): '{e.Message}'");
+                }
+                catch (Exception) 
+                {
+                    throw;
+                }
             }
-            if (result?.CloseStatus != null)    // if client sends Close request then result.CloseStatus = NormalClosure and websocket.State == CloseReceived. In that case, we just answer back that we are closing.
-                await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+            if ((webSocket.State == WebSocketState.Open || webSocket.State == WebSocketState.CloseReceived || webSocket.State == WebSocketState.CloseSent) && result?.CloseStatus != null)    // if client sends Close request then result.CloseStatus = NormalClosure and websocket.State == CloseReceived. In that case, we just answer back that we are closing.
+                await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None); // The graceful way is CloseAsync which when initiated sends a message to the connected party, and waits for acknowledgement
+            pingTimer.Dispose();
+
+            switch (p_requestRemainigPath)
+            {
+                case "/dashboard":
+                    DashboardWs.OnWsClose(context, webSocket, result);
+                    break;
+                case "/example-ws1":
+                    ExampleWs.OnWsClose(context, webSocket, result);
+                    break;
+                case "/ExSvPush":
+                    ExSvPushWs.OnWsClose(context, webSocket, result);
+                    break;
+                default:
+                    throw new Exception($"Unexpected websocket connection '{p_requestRemainigPath}' in WebSocketLoopKeptAlive()");
+            }
+        }
+
+        public void PingTimer_Elapsed(object? p_state) // Timer is coming on a ThreadPool thread
+        {
+            try
+            {
+                if (p_state is not PingTimerData pingTimerData)
+                    return;
+
+                // We send PING, but don't wait for PONG. We check that PONG arrived only the next time this timer runs.
+                // First: Check that last PONG arrived. If it hasn't arrived a long-long time ago, there is no point sending the new PING
+                TimeSpan timeSinceLastPongArrived = DateTime.UtcNow - pingTimerData.LastPongReceived;
+                if (timeSinceLastPongArrived > TimeSpan.FromSeconds(11 * 60))   // Close connection after 11 minutes not receivig PONG. Client should skip 2x PONG, then we are sure it is not a temporary Internet outage. 
+                {
+                    // pingTimerData.CancelTokenSrc.Cancel();  // Option 1: ugly and costly Exception is raised. After Cancel() pingTimerData.WebSocket.State = Aborted, and webSocket.ReceiveAsync() ends with OperationCanceledException
+                    if (pingTimerData.WebSocket.State == WebSocketState.Open)  // Option 2: No need of Exception. CloseOutputAsync() sets WebSocket.State = CloseSent immediately. In the other thread, webSocket.ReceiveAsync() ends with State = Closed properly, and even result.CloseStatus = EndpointUnavailable.
+                        pingTimerData.WebSocket.CloseOutputAsync(WebSocketCloseStatus.EndpointUnavailable, "PING failed over a long time", CancellationToken.None);  // “fire-and-forget” way to close. Don't send client the handshake and  don't wait
+                    return;
+                }
+
+                byte[] encodedMsg = Encoding.UTF8.GetBytes("Ping:");
+                if (pingTimerData.WebSocket.State == WebSocketState.Open)
+                    pingTimerData.WebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+
+                if (pingTimerData.PingTimer != null)
+                    pingTimerData.PingTimer.Change(TimeSpan.FromSeconds(5 * 60), TimeSpan.FromMilliseconds(-1.0));     // runs every 5 minutes
+            }
+            catch (System.Exception)
+            {
+                throw;    // we can choose to swallow the exception or crash the app. If we swallow it, we might risk that error will go undetected forever.
+            }
+
         }
 
         public static void ServerDiagnostic(StringBuilder p_sb)

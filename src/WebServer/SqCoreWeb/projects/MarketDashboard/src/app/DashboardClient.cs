@@ -61,7 +61,7 @@ namespace SqCoreWeb
         public static void ServerDiagnostic(StringBuilder p_sb)
         {
             p_sb.Append("<H2>Dashboard Clients</H2>");
-            p_sb.Append($"Clients (WebSocket) (#{DashboardClient.g_clients.Count}): ");
+            p_sb.Append($"DashboardClient.g_clients (#{DashboardClient.g_clients.Count}): ");
             p_sb.AppendLongListByLine(DashboardClient.g_clients.Select(r => $"'{r.UserEmail}/{r.ClientIP}'").ToArray(), ",", 3, "<br>");
             p_sb.Append($"<br>rtDashboardTimerRunning: {m_rtDashboardTimerRunning}<br>");
         }
@@ -91,10 +91,6 @@ namespace SqCoreWeb
                     Utils.Logger.Info("OnReceiveWsAsync__DshbrdClient(): IsDashboardOpenManyTimes");
                     SendIsDashboardOpenManyTimes();
                     return true;
-                case "Dshbrd.BrowserWindowUnload":
-                    Utils.Logger.Info("OnReceiveWsAsync__DshbrdClient(): BrowserWindowUnload");
-                    OnBrowserWindowUnload();
-                    return true;
                 default:
                     return false;
             }
@@ -116,14 +112,14 @@ namespace SqCoreWeb
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
         }
 
-        public void OnBrowserWindowUnload()
+        public static void RemoveFromClients(DashboardClient p_client)
         {
             // 'beforeunload' will be fired if the user submits a form, clicks a link, closes the window (or tab), or goes to a new page using the address bar, search box, or a bookmark.
             // server removes this client from DashboardClient.g_clients list
 
             // !Warning: Multithreaded Warning: The Modifier (Writer) thread should be careful, and Copy and Pointer-Swap when Edit/Remove is done.
             List<DashboardClient> clonedClients = new(DashboardClient.g_clients);
-            clonedClients.Remove(this);
+            clonedClients.Remove(p_client);
             DashboardClient.g_clients = clonedClients;
         }
     }

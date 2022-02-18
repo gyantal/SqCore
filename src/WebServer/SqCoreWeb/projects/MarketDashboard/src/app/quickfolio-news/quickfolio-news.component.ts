@@ -282,7 +282,7 @@ export class QuickfolioNewsComponent implements OnInit {
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
       case 'QckfNews.StockNews':  // this is the most frequent case. Should come first.
-        console.log('Quickfolio News: WS: QckfNews.StockNews arrived');
+        // console.log('Quickfolio News: WS: QckfNews.StockNews arrived');
         const jsonObj1 = JSON.parse(msgObjStr);
         this.extractNewsList(jsonObj1, this.stockNews);
         this.UpdateNewsVisibility();

@@ -127,17 +127,23 @@ namespace SqCoreWeb
         {
             foreach (string ticker in m_stockTickers)
             {
-                byte[]? encodedMsgRss = null, encodedMsgBenzinga = null, encodedMsgTipranks = null;
+                byte[]? encodedMsgRss = null;
+                // byte[]? encodedMsgBenzinga = null;
+                // byte[]? encodedMsgTipranks = null;
                 string rssFeedUrl = string.Format(@"https://feeds.finance.yahoo.com/rss/2.0/headline?s={0}&region=US&lang=en-US", ticker);
                 var rss = await ReadRSSAsync(rssFeedUrl, NewsSource.YahooRSS, ticker);
                 if (rss.Count > 0)
                     encodedMsgRss = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(rss));
-                var benzinga = ReadBenzingaNews(ticker);
-                if (benzinga.Count > 0)
-                    encodedMsgBenzinga = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(benzinga));
-                var tipranks = ReadTipranksNews(ticker);
-                if (tipranks.Count > 0)
-                    encodedMsgTipranks = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(tipranks));
+
+                // >2021-10-01: benzinga banned  the IP of the server. Disabled this code.
+                // var benzinga = ReadBenzingaNews(ticker);
+                // if (benzinga.Count > 0)
+                //     encodedMsgBenzinga = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(benzinga));
+
+                // Fix later. Disabled it temporarily. https://www.tipranks.com/api/stocks/getNews/?ticker=ISRG returns a <HTML> in C# (first char: '<'), while it returns a proper JSON in Chrome (first char: '{')
+                // var tipranks = ReadTipranksNews(ticker);
+                // if (tipranks.Count > 0)
+                //     encodedMsgTipranks = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(tipranks));
 
                 // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
                 // OnConnectedWsAsync() sleeps for a while if not active tool.
@@ -147,10 +153,10 @@ namespace SqCoreWeb
 
                 if (encodedMsgRss != null && p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)    // to avoid The remote party closed the WebSocket connection without completing the close handshake.
                     await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgRss, 0, encodedMsgRss.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                if (encodedMsgBenzinga != null && p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)
-                    await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgBenzinga, 0, encodedMsgBenzinga.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                if (encodedMsgTipranks != null && p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)
-                    await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgTipranks, 0, encodedMsgTipranks.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                // if (encodedMsgBenzinga != null && p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)
+                //     await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgBenzinga, 0, encodedMsgBenzinga.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                // if (encodedMsgTipranks != null && p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)
+                //     await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgTipranks, 0, encodedMsgTipranks.Length), WebSocketMessageType.Text, true, CancellationToken.None);
             }
         }
 

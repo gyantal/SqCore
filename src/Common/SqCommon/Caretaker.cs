@@ -53,9 +53,6 @@ namespace SqCommon
             DateTime etNow = DateTime.UtcNow.FromUtcToEt();
             DateTime targetDateEt = etNow.Date.AddDays(1).Add(m_dailyMaintenanceFromMidnightET);  // e.g. run maintenance 2:00 ET, which is 7:00 GMT usually. Preopen market starts at 5:00ET.
             p_timer.Change(targetDateEt - etNow, TimeSpan.FromMilliseconds(-1.0));     // runs only once.
-
-            // temporary for testing purposes: set timer to 5 seconds to test maintenance
-            // p_timer.Change(TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(-1.0));     // runs only once.
         }
 
         public void Timer_Elapsed(object? state) // Timer is coming on a ThreadPool thread

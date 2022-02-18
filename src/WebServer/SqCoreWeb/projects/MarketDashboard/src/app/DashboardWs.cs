@@ -21,9 +21,9 @@ namespace SqCoreWeb
         public int AnyParam { get; set; } = 55;
     }
 
-    public partial class DashboardWs
+    public class DashboardWs
     {
-        public static async Task OnConnectedAsync(HttpContext context, WebSocket webSocket)
+        public static async Task OnWsConnectedAsync(HttpContext context, WebSocket webSocket)
         {
             Utils.Logger.Debug($"DashboardWs.OnConnectedAsync()) BEGIN");
             // context.Request comes as: 'wss://' + document.location.hostname + '/ws/dashboard?t=bav'
@@ -78,35 +78,59 @@ namespace SqCoreWeb
             client!.OnConnectedWsAsync_Rt();    // immediately send SPY realtime price. It can be used in 3+2 places: BrAccViewer:MarketBar, HistoricalChart, UserAssetList, MktHlth, CatalystSniffer (so, don't send it 5 times. Client will decide what to do with RT price)
 
             Utils.Logger.Info("OnConnectedAsync() 6");
-            lock (DashboardClient.g_clients)    // RtTimer runs in every 3-5 seconds and uses g_clients, so don't add client to g_clients too early, because RT would be sent there even before OnConnection is not ready.
-                DashboardClient.g_clients.Add(client);  // takes 0.004ms
+            // RtTimer runs in every 3-5 seconds and uses g_clients, so don't add client to g_clients too early, because RT would be sent there even before OnConnection is not ready.
+            lock (DashboardClient.g_clients)    // lock assures that there are no 2 threads that is Adding at the same time on Cloned g_glients.
+            {
+                // !Warning: Multithreaded Warning: The Modifier (Writer) thread should be careful, and Copy and Pointer-Swap when Edit/Remove is done.
+                List<DashboardClient> clonedClients = new(DashboardClient.g_clients); // adding new item to clone assures that no enumerating reader threads will throw exception.
+                clonedClients.Add(client);
+                DashboardClient.g_clients = clonedClients;
+            }
         }
 
-        public static void OnReceiveAsync(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? wsResult, string bufferStr)
+        public static void OnWsReceiveAsync(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? wsResult, string bufferStr)
         {
-            DashboardClient? client = null;
-            lock (DashboardClient.g_clients)    // find client from the same IP, assuming connection in the last 1000ms
-                client = DashboardClient.g_clients.Find(r => r.WsWebSocket == webSocket);
-            if (client != null)
+            DashboardClient? client = DashboardClient.g_clients.Find(r => r.WsWebSocket == webSocket);
+            if (client == null)
+                return;
+
+            var semicolonInd = bufferStr.IndexOf(':');
+            string msgCode = bufferStr.Substring(0, semicolonInd);
+            string msgObjStr = bufferStr.Substring(semicolonInd + 1);
+            if (msgCode == "Dshbrd.BrowserWindowUnload")
             {
-                var semicolonInd = bufferStr.IndexOf(':');
-                string msgCode = bufferStr.Substring(0, semicolonInd);
-                string msgObjStr = bufferStr.Substring(semicolonInd + 1);
-                bool isHandled = client.OnReceiveWsAsync_DshbrdClient(wsResult, msgCode, msgObjStr);
-                if (!isHandled)
-                    isHandled = client.OnReceiveWsAsync_MktHealth(wsResult, msgCode, msgObjStr);
-                if (!isHandled)
-                    isHandled = client.OnReceiveWsAsync_BrAccViewer(wsResult, msgCode, msgObjStr);
-                if (!isHandled)
-                    isHandled = client.OnReceiveWsAsync_QckflNews(wsResult, msgCode, msgObjStr);
-                if (!isHandled)
-                    isHandled = client.OnReceiveWsAsync_QckflNews2(wsResult, msgCode, msgObjStr);
-                if (!isHandled)
-                {
-                    // throw new Exception($"Unexpected websocket received msgCode '{msgCode}'");
-                    Utils.Logger.Error($"Unexpected websocket received msgCode '{msgCode}'");
-                }
+                DisposeClient(client);
+                return;
             }
+
+            bool isHandled = client.OnReceiveWsAsync_DshbrdClient(wsResult, msgCode, msgObjStr);
+            if (!isHandled)
+                isHandled = client.OnReceiveWsAsync_MktHealth(wsResult, msgCode, msgObjStr);
+            if (!isHandled)
+                isHandled = client.OnReceiveWsAsync_BrAccViewer(wsResult, msgCode, msgObjStr);
+            if (!isHandled)
+                isHandled = client.OnReceiveWsAsync_QckflNews(wsResult, msgCode, msgObjStr);
+            if (!isHandled)
+                isHandled = client.OnReceiveWsAsync_QckflNews2(wsResult, msgCode, msgObjStr);
+            if (!isHandled)
+            {
+                // throw new Exception($"Unexpected websocket received msgCode '{msgCode}'");
+                Utils.Logger.Error($"Unexpected websocket received msgCode '{msgCode}'");
+            }
+        }
+
+        public static void OnWsClose(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? wsResult)
+        {
+            DashboardClient? client = DashboardClient.g_clients.Find(r => r.WsWebSocket == webSocket);
+            DisposeClient(client);
+        }
+
+        public static void DisposeClient(DashboardClient? client)
+        {
+            // We might be called DisposeClient() twice. Once from "Dshbrd.BrowserWindowUnload" message. And once from the websocket.Close() event.
+            // do all client resource disposal
+            if (client != null)
+                DashboardClient.RemoveFromClients(client);
         }
 
     }   // class

@@ -16,7 +16,7 @@ namespace SqCoreWeb
 {
     public partial class ExampleWs
     {
-        public static async Task OnConnectedAsync(HttpContext context, WebSocket webSocket)
+        public static async Task OnWsConnectedAsync(HttpContext context, WebSocket webSocket)
         {
             // https://stackoverflow.com/questions/24450109/how-to-send-receive-messages-through-a-web-socket-on-windows-phone-8-using-the-c
             string msgSendAtConnection = $"Example string sent from Server immediately at WebSocket connection acceptance.";
@@ -25,12 +25,16 @@ namespace SqCoreWeb
             await webSocket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
-        internal static void OnReceiveAsync(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? lastResult, string bufferStr)
+        internal static void OnWsReceiveAsync(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? lastResult, string bufferStr)
         {
             // if it is not a Close-message from client, send it back temporarily
             var encoded = Encoding.UTF8.GetBytes(bufferStr);
             var buffer = new ArraySegment<Byte>(encoded, 0, encoded.Length);
             webSocket.SendAsync(buffer, WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+
+        public static void OnWsClose(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? wsResult)
+        {
         }
     }   // class
 }

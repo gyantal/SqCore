@@ -44,6 +44,7 @@ export class AppComponent implements OnInit {
   public activeTool = 'MarketHealth';
   theme = '';
   sqDiagnosticsMsg = 'Benchmarking time, connection speed';
+  lastTimeOpSysSleepWakeupChecked = 0;
 
   public _socket: WebSocket; // initialize later in ctor, becuse we have to send back the activeTool from urlQueryParams
 
@@ -75,6 +76,16 @@ export class AppComponent implements OnInit {
       wsQueryStr = '?t=' + paramActiveTool; // ?t=bav
 
     this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/dashboard' + wsQueryStr); // "wss://127.0.0.1/ws/dashboard" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection
+
+    this.lastTimeOpSysSleepWakeupChecked = (new Date()).getTime();
+    setInterval(() => { // there is no official JS callback for sleep/wakeup events, but this is the standard way to detect waking up.
+      const currentTimeNum = (new Date()).getTime();
+      if (currentTimeNum > (this.lastTimeOpSysSleepWakeupChecked + 5 * 60 * 1000)) { // ignore delays less than 5 minute (that can happen because breakpoint debugging in Chrome F12)
+        // detect disruptions in the JS timeline (e.g. laptop sleep, alert windows that block JS excecution, debugger statements that open the debugger)
+        alert('Sleep and wakup was detected. You probably lost connection to server. Refresh (reload) page in the browser manually.'); // Probably just woke up!
+      }
+      this.lastTimeOpSysSleepWakeupChecked = currentTimeNum;
+    }, 5 * 1000); // refresh at every 5 secs
   }
 
   // called after Angular has initialized all data-bound properties before any of the view or content children have been checked. Called after the constructor and called  after the first ngOnChanges()
@@ -113,16 +124,20 @@ export class AppComponent implements OnInit {
           });
 
           this.lstValStr = jsonArrayObjRt.map((r) => r.assetId + '=>' + r.last.toFixed(2).toString()).join(', ');
-          console.log('ws: RtMktSumRtStat arrived: ' + this.lstValStr);
+          // console.log('ws: RtMktSumRtStat arrived: ' + this.lstValStr);
           this.lstValObj = jsonArrayObjRt;
 
           this.childMktHealthComponent.webSocketLstValArrived(this.lstValObj);
           this.childBrAccViewerComponent.webSocketLstValArrived(this.lstValObj);
           break;
+        case 'Ping': // Server sends heartbeats, ping-pong messages to check zombie websockets.
+          console.log('ws: Ping message arrived:', msgObjStr);
+          if (this._socket != null && this._socket.readyState === WebSocket.OPEN)
+            this._socket.send('Pong:');
+          break;
         case 'OnConnected':
           gDiag.wsOnConnectedMsgArrivedTime = new Date();
-          // console.log('sq.d: ' + gDiag.wsOnConnectedMsgArrivedTime.toISOString() + ': wsOnConnectedMsgArrivedTime()');
-          console.log('ws: OnConnected Message arrived:' + event.data);
+          console.log('ws: OnConnected message arrived:' + event.data);
 
           const handshakeMsg: HandshakeMessage = Object.assign(new HandshakeMessage(), JSON.parse(msgObjStr));
           this.user.email = handshakeMsg.email;
@@ -141,7 +156,7 @@ export class AppComponent implements OnInit {
             isHandled = this.childQckflNewsComponent.webSocketOnMessage(msgCode, msgObjStr);
 
           if (!isHandled)
-            console.log('ws: Warning! OnConnected Message arrived, but msgCode is not recognized:' + msgCode + 'obj: ' + msgObjStr);
+            console.log('ws: Warning! OnConnected Message arrived, but msgCode is not recognized.Code:' + msgCode + ', Obj: ' + msgObjStr);
 
           break;
       }
