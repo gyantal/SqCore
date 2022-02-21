@@ -356,7 +356,8 @@ svg.material-icons2 path {
   overflow: auto;
   color: rgb(32, 34, 148);
   background-color: #FFA500;
-  border-radius: 2rem .5rem 2rem 0;
+  border: .3rem solid #FF5F1F;
+  border-radius: 1rem;
 }
 .manyDshbrdClientsDialog-content {
   margin: auto;
@@ -386,3 +387,6 @@ svg.material-icons2 path {
   animation: breath2 2s .5s infinite alternate;
   cursor: pointer;
 }
+// .animatedButtonHolderDiv{
+//     width: 50;
+// }

@@ -24,7 +24,7 @@ namespace FinTechCommon
             m_highNavFreqParam.Timer = new System.Threading.Timer(new TimerCallback(RtNavTimer_Elapsed), m_highNavFreqParam, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
             m_lowNavFreqParam.Timer = new System.Threading.Timer(new TimerCallback(RtNavTimer_Elapsed), m_lowNavFreqParam, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
 
-            m_highNavFreqParam.Assets = new Asset[0];
+            m_highNavFreqParam.Assets = Array.Empty<Asset>();
             m_lowNavFreqParam.Assets = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV && !((r as BrokerNav)!.IsAggregatedNav) && !m_highNavFreqParam.Assets.Contains(r)).ToArray()!;
 
             ScheduleTimerRt(m_highNavFreqParam);
@@ -34,7 +34,7 @@ namespace FinTechCommon
         void OnReloadAssetData_ReloadRtNavDataAndSetTimer()
         {
             Utils.Logger.Info("ReloadRtNavDataAndSetTimer() START");
-            m_highNavFreqParam.Assets = new Asset[0];
+            m_highNavFreqParam.Assets = Array.Empty<Asset>();
             m_lowNavFreqParam.Assets = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.BrokerNAV && !((r as BrokerNav)!.IsAggregatedNav) && !m_highNavFreqParam.Assets.Contains(r)).ToArray()!;
             RtNavTimer_Elapsed(m_highNavFreqParam);
             RtNavTimer_Elapsed(m_lowNavFreqParam);

@@ -177,7 +177,7 @@ namespace FinTechCommon
         public CompactFinTimeSeries()
         {
             var values = new Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>>();
-            TsDateData<TKey, TAssetId, TValue1, TValue2> data = new(new TKey[0], values);
+            TsDateData<TKey, TAssetId, TValue1, TValue2> data = new(Array.Empty<TKey>(), values);
             m_data = data;  // 64 bit values are atomic on x64
         }
 

@@ -17,7 +17,7 @@ namespace SqCoreWeb
 
         readonly RequestDelegate _next;
 
-        string[] mainIndexHtmlCached = new string[0];   // faster if it is pre-split into parts. Pattern matching search doesn't take real-time at every query to the main index.html.
+        string[] mainIndexHtmlCached = Array.Empty<string>();   // faster if it is pre-split into parts. Pattern matching search doesn't take real-time at every query to the main index.html.
 
         public SqFirewallMiddlewarePostAuth(RequestDelegate next)
         {

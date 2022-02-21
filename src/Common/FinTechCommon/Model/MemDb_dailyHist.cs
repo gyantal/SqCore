@@ -329,8 +329,8 @@ namespace FinTechCommon
 
         private static async Task<(SqDateOnly[], float[])> CreateDailyHist_Stock(Stock stock, Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits)
         {
-            SqDateOnly[] dates = new SqDateOnly[0];  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards
-            float[] adjCloses = new float[0];
+            SqDateOnly[] dates = Array.Empty<SqDateOnly>();  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards
+            float[] adjCloses = Array.Empty<float>();
 
             if (stock.ExpectedHistoryStartDateLoc == DateTime.MaxValue) // if Initial value was not overwritten. For Dead stocks, like "S/VXX*20190130"
                 return (dates, adjCloses);
@@ -610,8 +610,8 @@ namespace FinTechCommon
         }
         public static (SqDateOnly[], float[]) GetSelectedStockTickerHistData(SqDateOnly lookbackStart, SqDateOnly lookbackEnd, string yfTicker) // send startdate and end date
         {
-            SqDateOnly[] dates = new SqDateOnly[0];  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards
-            float[] adjCloses = new float[0];
+            SqDateOnly[] dates = Array.Empty<SqDateOnly>();  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards
+            float[] adjCloses = Array.Empty<float>();
             
             IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(yfTicker, lookbackStart, lookbackEnd, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
             if (history == null)

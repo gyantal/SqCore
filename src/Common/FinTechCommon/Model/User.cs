@@ -20,7 +20,7 @@ namespace FinTechCommon
         public string Firstname { get; set; } = string.Empty;
         public string Lastname { get; set; } = string.Empty;
         public bool IsAdmin { get; set; } = false;
-        public User[] VisibleUsers { get; set; } = new User[0]; // array is faster than List, https://stackoverflow.com/questions/454916/performance-of-arrays-vs-lists
+        public User[] VisibleUsers { get; set; } = Array.Empty<User>(); // array is faster than List, https://stackoverflow.com/questions/454916/performance-of-arrays-vs-lists
 
         public string Fullname { get { return $"{Title} {Firstname} {Lastname}"; } }
         public string Initials { get { return $"{Firstname[0]}{Lastname[0]}"; } }

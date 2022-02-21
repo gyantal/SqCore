@@ -92,7 +92,7 @@ namespace YahooFinanceApi
                             // or IbGateway in cases when YF doesn't give data.
                             // 2021-08-20: YF gives ^VIX history badly for this date for the last 2 weeks. "2021-08-09,null,null,null,null,null,null"
                             // They don't fix it. CBOE, WSJ has proper data for that day.
-                            ITick? record = default(ITick);
+                            ITick? record = default;
                             try
                             {
                                 record = csvReader.GetRecord<ITick>();

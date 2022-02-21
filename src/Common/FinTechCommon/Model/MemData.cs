@@ -26,7 +26,7 @@ namespace FinTechCommon
     // if same thread calls SemaphoreSlim.Wait() second time, it will block. It uses a counter mechanism, and it doesn't store which thread acquired the lock already. So, reentry is not possible.
     internal class MemData  // don't expose to clients.
     {
-        public volatile User[] Users = new User[0];   // writable: admin might insert a new user from HTML UI
+        public volatile User[] Users = Array.Empty<User>();   // writable: admin might insert a new user from HTML UI
 
         // Because Writers use the 'Non-locking copy-and-swap-on-write' pattern, before iterating on AssetCache, Readers using foreach() should get a local pointer and iterate on that. Readers can use Linq.Select() or Where() without local pointer though.
         // AssetsCache localAssetCache = MemDb.AssetCache;

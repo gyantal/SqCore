@@ -65,7 +65,7 @@ namespace SqCoreWeb
                 if (!String.IsNullOrEmpty(rawValues))
                     return (T)Convert.ChangeType(values.ToString(), typeof(T));
             }
-            return default(T);
+            return default;
         }
 
         public static UserAuthCheckResult CheckAuthorizedGoogleEmail(HttpContext p_httpContext)

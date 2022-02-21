@@ -42,7 +42,7 @@ namespace SqCoreWeb.Controllers
 #endif
         public ActionResult HttpRequestActivityLog()
         {
-            HttpRequestLog[] logsPointerArr = new HttpRequestLog[0];
+            HttpRequestLog[] logsPointerArr = Array.Empty<HttpRequestLog>();
             lock (m_webAppGlobals.HttpRequestLogs)  // prepare for multiple threads
             {
                 logsPointerArr = m_webAppGlobals.HttpRequestLogs.ToArray();     // it copies only max 50 pointers to Array. Quick.

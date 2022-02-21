@@ -29,7 +29,7 @@ namespace SqCoreWeb.Controllers
         public string fileName { get; set; }  = string.Empty;
         public string lineNumber { get; set; }  = string.Empty;
         public string message { get; set; }  = string.Empty;
-        public object[] additional { get; set; } = new object[] { };
+        public object[] additional { get; set; } = Array.Empty<object>();
     }
 
     // Logger for Javascript code. This can notify Healthmonitor if Crash occurs in HTML JS in the client side.

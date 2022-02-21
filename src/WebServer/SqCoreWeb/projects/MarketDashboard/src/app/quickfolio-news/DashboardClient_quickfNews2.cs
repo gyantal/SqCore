@@ -27,7 +27,7 @@ namespace SqCoreWeb
 
 
         // string[] m_stockTickers2 = { };
-        string[] m_stockTickers2 = { };
+        string[] m_stockTickers2 = Array.Empty<string>();
 
         void Ctor_QuickfNews2()
         {
@@ -45,7 +45,7 @@ namespace SqCoreWeb
                     Thread.Sleep(DashboardClient.c_initialSleepIfNotActiveToolQn2); // 10 sec is quite a long waiting, but we rarely use this tool.
                 
                 if (m_stockTickers2.Length == 0)
-                    m_stockTickers2 = GetQckflStockTickers2() ?? new string[0];
+                    m_stockTickers2 = GetQckflStockTickers2() ?? Array.Empty<string>();
                 
                 byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.Tickers2:" + Utils.CamelCaseSerialize(new List<string> { "All assets" }.Union(m_stockTickers2).ToList()));
                 if (WsWebSocket!.State == WebSocketState.Open)
@@ -100,7 +100,7 @@ namespace SqCoreWeb
                 retryCount++;
             }
 
-            // return commonNewsList;
+            // return foundNewsItems;
         }
         private async Task<List<NewsItem>> ReadRSSAsync2(string p_url, NewsSource p_newsSource, string p_ticker)
         {
@@ -140,6 +140,18 @@ namespace SqCoreWeb
             {
                 Console.WriteLine($"QuickfolioNewsDownloader.ReadRSS() exception: '{exception.Message}'");
                 return new List<NewsItem>();
+            }
+        }
+        internal async void GetQckflStockNews() // with 13 tickers, it can take 13 * 2 = 26seconds
+        {
+            foreach (string ticker in m_stockTickers2)
+            {
+                byte[]? encodedMsgRss = null;
+                string rssFeedUrl = string.Format(@"https://feeds.finance.yahoo.com/rss/2.0/headline?s={0}&region=US&lang=en-US", ticker);
+                var rss = await ReadRSSAsync2(rssFeedUrl, NewsSource.YahooRSS, ticker);
+                if (rss.Count > 0)
+                    encodedMsgRss = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(rss));
+                    Console.WriteLine("The stocknews items are :" + encodedMsgRss);
             }
         }
         public static void QckflNewsTimer_Elapsed(object? state)    // Timer is coming on a ThreadPool thread

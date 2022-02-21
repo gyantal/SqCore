@@ -94,7 +94,7 @@ namespace BrokerCommon
             if (gateway == null || !gateway.IsConnected)
                 return null;
 
-            return gateway.GetAccountPoss(new string[0]);
+            return gateway.GetAccountPoss(Array.Empty<string>());
         }
     }
 }

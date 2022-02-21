@@ -9,28 +9,28 @@ import * as d3 from 'd3';
 console.log('SqCore: Script BEGIN4');
 
 async function AsyncStartDownloadAndExecuteCbLater(
-  url: string,
-  callback: (json: any) => any
+    url: string,
+    callback: (json: any) => any
 ) {
   fetch(url)
-    .then((response) => {
+      .then((response) => {
       // asynch long running task finishes. Resolves to get the Response object (http header, info), but not the full body (that might be streaming and arriving later)
-      console.log(
-        'SqCore.AsyncStartDownloadAndExecuteCbLater(): Response object arrived:'
-      );
-      if (!response.ok) {
-        return Promise.reject(new Error('Invalid response status'));
-      }
-      response.json().then((json) => {
+        console.log(
+            'SqCore.AsyncStartDownloadAndExecuteCbLater(): Response object arrived:'
+        );
+        if (!response.ok)
+          return Promise.reject(new Error('Invalid response status'));
+
+        response.json().then((json) => {
         // asynch long running task finishes. Resolves to the body, converted to json() object or text()
         // const jsonToStr = JSON.stringify(json).substr(0, 60) + '...';
         // console.log('SqCore.AsyncStartDownloadAndExecuteCbLater():: data body arrived:' + jsonToStr);
-        callback(json);
+          callback(json);
+        });
+      })
+      .catch((err) => {
+        console.log('SqCore: Download error.');
       });
-    })
-    .catch((err) => {
-      console.log('SqCore: Download error.');
-    });
 }
 
 function getDocElementById(id: string): HTMLElement {
@@ -52,23 +52,22 @@ function onImageClickGAS() {
 function onImageClick(index: number) {
   console.log('OnClick received.' + index);
   AsyncStartDownloadAndExecuteCbLater(
-    '/ContangoVisualizerData?commo=' + index,
-    (json: any) => {
-      onDataReceived(json);
-    }
+      '/ContangoVisualizerData?commo=' + index,
+      (json: any) => {
+        onDataReceived(json);
+      }
   );
 }
 
 function onDataReceived(json: any) {
-
   // Creating first row (dates) of webpage.
   const divTitleCont = document.getElementById('idTitleCont') as HTMLElement;
   const divTimeNow = document.getElementById('idTimeNow') as HTMLElement;
   const divLiveDataDate = document.getElementById(
-    'idLiveDataDate'
+      'idLiveDataDate'
   ) as HTMLElement;
   const divLiveDataTime = document.getElementById(
-    'idLiveDataTime'
+      'idLiveDataTime'
   ) as HTMLElement;
   const divMyLink = document.getElementById('myLink') as HTMLElement;
   const divChart = document.getElementById('inviCharts') as HTMLElement;
@@ -99,37 +98,34 @@ function creatingTables(json) {
   let currTableMtx =
     '<table class="currData"><tr align="center"><td>Futures Prices</td><td>F1</td><td>F2</td><td>F3</td><td>F4</td><td>F5</td><td>F6</td><td>F7</td><td>F8</td></tr><tr align="center"><td align="left">Current</td>';
   for (let i = 0; i < 8; i++) {
-    if (currDataArray[i] === 0) {
+    if (currDataArray[i] === 0) 
       currTableMtx += '<td>' + '---' + '</td>';
-    } else {
+    else
       currTableMtx += '<td>' + currDataArray[i] + '</td>';
-    }
   }
 
   currTableMtx +=
     '</tr><tr align="center"><td align="left">Previous Close</td>';
   for (let i = 0; i < 8; i++) {
-    if (currDataArray[i] === 0) {
+    if (currDataArray[i] === 0)
       currTableMtx += '<td>' + '---' + '</td>';
-    } else {
+    else
       currTableMtx += '<td>' + prevDataArray[i] + '</td>';
-    }
   }
   currTableMtx +=
     '</tr><tr align="center"><td align="left">Daily Abs. Change</td>';
   for (let i = 0; i < 8; i++) {
-    if (currDataArray[i] === 0) {
+    if (currDataArray[i] === 0)
       currTableMtx += '<td>' + '---' + '</td>';
-    } else {
+    else
       currTableMtx += '<td>' + currDataDiffArray[i] + '</td>';
-    }
   }
   currTableMtx +=
     '</tr><tr align="center"><td align="left">Daily % Change</td>';
   for (let i = 0; i < 8; i++) {
-    if (currDataArray[i] === 0) {
+    if (currDataArray[i] === 0)
       currTableMtx += '<td>' + '---' + '</td>';
-    } else {
+    else {
       currTableMtx +=
         '<td>' + (currDataPercChArray[i] * 100).toFixed(2) + '%</td>';
     }
@@ -137,11 +133,10 @@ function creatingTables(json) {
   currTableMtx +=
     '</tr><tr align="center"><td align="left">Cal. Days to Expiration</td>';
   for (let i = 0; i < 8; i++) {
-    if (currDataArray[i] === 0) {
+    if (currDataArray[i] === 0)
       currTableMtx += '<td>' + '---' + '</td>';
-    } else {
+    else
       currTableMtx += '<td>' + currDataDaysArray[i] + '</td>';
-    }
   }
   currTableMtx += '</tr></table>';
 
@@ -150,19 +145,18 @@ function creatingTables(json) {
     (currDataArray[8] * 100).toFixed(2) +
     '%</strong></td>';
   for (let i = 20; i < 27; i++) {
-    if (currDataArray[i] === 0) {
+    if (currDataArray[i] === 0)
       currTableMtx3 += '<td>' + '---' + '</td>';
-    } else {
+    else
       currTableMtx3 += '<td>' + (currDataArray[i] * 100).toFixed(2) + '%</td>';
-    }
   }
   currTableMtx3 +=
     '<td><strong>' + (currDataArray[27] * 100).toFixed(2) + '%</strong></td>';
   currTableMtx3 += '</tr><tr align="center"><td align="left">Difference</td>';
   for (let i = 10; i < 19; i++) {
-    if (currDataArray[i] === 0) {
+    if (currDataArray[i] === 0)
       currTableMtx3 += '<td>' + '---' + '</td>';
-    } else {
+    else {
       currTableMtx3 +=
         '<td>' + ((currDataArray[i] * 100) / 100).toFixed(2) + '</td>';
     }
@@ -171,11 +165,11 @@ function creatingTables(json) {
 
   // "Sending" data to HTML file.
   const currTableMtx2 = document.getElementById(
-    'idCurrTableMtx'
+      'idCurrTableMtx'
   ) as HTMLTableElement;
   currTableMtx2.innerHTML = currTableMtx;
   const currTableMtx4 = document.getElementById(
-    'idCurrTableMtx3'
+      'idCurrTableMtx3'
   ) as HTMLTableElement;
   currTableMtx4.innerHTML = currTableMtx3;
 
@@ -253,12 +247,10 @@ function creatingTables(json) {
   dataset1.forEach((series) => {
     const minPriceI = d3.min(series.history, (d) => d.price) ?? 100000;
     const maxPriceI = d3.max(series.history, (d) => d.price) ?? 0;
-    if (minPriceI < minPrice) {
+    if (minPriceI < minPrice)
       minPrice = minPriceI;
-    }
-    if (maxPriceI > maxPrice) {
+    if (maxPriceI > maxPrice)
       maxPrice = maxPriceI;
-    }
   });
   const maxDays = currDataDaysArray[nCurrData - 1];
 
@@ -275,22 +267,22 @@ function creatingChart(data, titleCont, minPrice, maxPrice, maxDays) {
 
   // Define the scales and tell D3 how to draw the line
   const x = d3
-    .scaleLinear()
-    .domain([0, maxDays + 10])
-    .range([0, width]);
+      .scaleLinear()
+      .domain([0, maxDays + 10])
+      .range([0, width]);
   const y = d3
-    .scaleLinear()
-    .domain([minPrice * 0.87, maxPrice * 1.13])
-    .range([height, 0]);
+      .scaleLinear()
+      .domain([minPrice * 0.87, maxPrice * 1.13])
+      .range([height, 0]);
   const line = d3
-    .line()
-    .x((d : any) => x(d.days))
-    .y((d : any) => y(d.price));
+      .line()
+      .x((d : any) => x(d.days))
+      .y((d : any) => y(d.price));
   svg.selectAll('*').remove();
   const chart = d3
-    .select('svg')
-    .append('g')
-    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      .select('svg')
+      .append('g')
+      .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
   const tooltip = d3.select('#tooltip');
   const tooltipLine = chart.append('line');
@@ -300,18 +292,18 @@ function creatingChart(data, titleCont, minPrice, maxPrice, maxDays) {
   const yAxis = d3.axisLeft(y).tickFormat(d3.format('$.4'));
   chart.append('g').call(yAxis);
   chart
-    .append('g')
-    .attr('transform', 'translate(0,' + height + ')')
-    .call(xAxis);
+      .append('g')
+      .attr('transform', 'translate(0,' + height + ')')
+      .call(xAxis);
   chart.append('text').html(titleCont).attr('x', 200);
 
   // text label for the x axis
   chart
-    .append('text')
-    .attr('transform', 'translate(' + width / 2 + ' ,' + (height + 30) + ')')
-    .style('text-anchor', 'middle')
-    .style('font-size', '1.2rem')
-    .text('Days until expiration');
+      .append('text')
+      .attr('transform', 'translate(' + width / 2 + ' ,' + (height + 30) + ')')
+      .style('text-anchor', 'middle')
+      .style('font-size', '1.2rem')
+      .text('Days until expiration');
 
   // Load the data and draw a chart
   let numSeries = 0;
@@ -320,52 +312,50 @@ function creatingChart(data, titleCont, minPrice, maxPrice, maxDays) {
     series = d;
 
     chart
-      .append('path')
-      .attr('fill', 'none')
-      .attr('stroke', d.color)
-      .attr('stroke-width', 2)
-      .datum(d.history)
-      .attr('d', line);
+        .append('path')
+        .attr('fill', 'none')
+        .attr('stroke', d.color)
+        .attr('stroke-width', 2)
+        .datum(d.history)
+        .attr('d', line);
 
     chart
-      .append('text')
-      .html(d.name)
-      .style('font-size', '1.4rem')
-      .attr('fill', d.color)
-      .attr('alignment-baseline', 'middle')
-      .attr('x', width - 100)
-      .attr('dx', '.5em')
-      .attr('y', 30 + 20 * numSeries);
+        .append('text')
+        .html(d.name)
+        .style('font-size', '1.4rem')
+        .attr('fill', d.color)
+        .attr('alignment-baseline', 'middle')
+        .attr('x', width - 100)
+        .attr('dx', '.5em')
+        .attr('y', 30 + 20 * numSeries);
 
     chart
-      .selectAll('myCircles')
-      .data(d.history)
-      .enter()
-      .append('circle')
-      .attr('fill', d.color)
-      .attr('stroke', 'none')
-      .attr('cx', (e: any) => x(e.days))
-      .attr('cy', (e: any) => y(e.price))
-      .attr('r', 4);
+        .selectAll('myCircles')
+        .data(d.history)
+        .enter()
+        .append('circle')
+        .attr('fill', d.color)
+        .attr('stroke', 'none')
+        .attr('cx', (e: any) => x(e.days))
+        .attr('cy', (e: any) => y(e.price))
+        .attr('r', 4);
 
     numSeries = numSeries + 1;
   });
 
   chart
-    .append('rect')
-    .attr('width', width)
-    .attr('height', height)
-    .attr('opacity', 0)
-    .on('mousemove', drawTooltip)
-    .on('mouseout', removeTooltip);
+      .append('rect')
+      .attr('width', width)
+      .attr('height', height)
+      .attr('opacity', 0)
+      .on('mousemove', drawTooltip)
+      .on('mouseout', removeTooltip);
 
   function removeTooltip() {
-    if (tooltip) {
+    if (tooltip)
       tooltip.style('display', 'none');
-    }
-    if (tooltipLine) {
+    if (tooltipLine)
       tooltipLine.attr('stroke', 'none');
-    }
   }
 
   function drawTooltip(event: any) {
@@ -380,17 +370,17 @@ function creatingChart(data, titleCont, minPrice, maxPrice, maxDays) {
     const yCoord = mousePos[1];
 
     const closestXCoord = daysArray.sort(
-      (a, b) => Math.abs(xCoord - a) - Math.abs(xCoord - b)
+        (a, b) => Math.abs(xCoord - a) - Math.abs(xCoord - b)
     )[0];
     const closestYCoord = data[0].history.find((h) => h.days === closestXCoord)
-      .price;
+        .price;
     const closestInvX = (closestXCoord / (maxDays + 10)) * width;
     const ttX = xCCL - mousePos[0] + closestInvX;
     const ttY = yCCL - yCoord + y(closestYCoord);
 
     const ttTextArray = new Array();
     ttTextArray.push(
-      '<i>Number of days till expiration: ' + closestXCoord + '</i><br>'
+        '<i>Number of days till expiration: ' + closestXCoord + '</i><br>'
     );
     data.forEach((d) => {
       const seriesText =
@@ -402,34 +392,34 @@ function creatingChart(data, titleCont, minPrice, maxPrice, maxDays) {
     });
 
     tooltipLine
-      .attr('stroke', 'black')
-      .attr('x1', x(closestXCoord))
-      .attr('x2', x(closestXCoord))
-      .attr('y1', 0 + 10)
-      .attr('y2', height);
+        .attr('stroke', 'black')
+        .attr('x1', x(closestXCoord))
+        .attr('x2', x(closestXCoord))
+        .attr('y1', 0 + 10)
+        .attr('y2', height);
 
     tooltip
-      .html(ttTextArray.join(''))
-      .style('display', 'block')
-      .style('left', ttX + 10)
-      .style('top', ttY + 25)
-      .selectAll()
-      .data(series)
-      .enter()
-      .append('div')
-      .style('color', (d : any) => d.color);
+        .html(ttTextArray.join(''))
+        .style('display', 'block')
+        .style('left', ttX + 10)
+        .style('top', ttY + 25)
+        .selectAll()
+        .data(series)
+        .enter()
+        .append('div')
+        .style('color', (d : any) => d.color);
   }
 }
 
 document.addEventListener('DOMContentLoaded', (event) => {
   console.log(
-    'DOMContentLoaded(). All JS were downloaded. DOM fully loaded and parsed.'
+      'DOMContentLoaded(). All JS were downloaded. DOM fully loaded and parsed.'
   );
 });
 
 window.onload = function onLoadWindow() {
   console.log(
-    'SqCore: window.onload() BEGIN. All CSS, and images were downloaded.'
+      'SqCore: window.onload() BEGIN. All CSS, and images were downloaded.'
   ); // images are loaded at this time, so their sizes are known
 
   getDocElementById('VIXimage').onclick = onImageClickVIX;

@@ -18,7 +18,7 @@ namespace BrokerCommon
     {
         List<BrAccSum> m_accSums = new();
         List<BrAccPos> m_accPoss = new();
-        string[] m_exclSymbolsArr = new string[0];
+        string[] m_exclSymbolsArr = Array.Empty<string>();
         private readonly object m_getAccountSummaryLock = new();
 
         public void AccSumArrived(int p_reqId, string p_tag, string p_value, string p_currency)

@@ -695,14 +695,14 @@ export class BrAccViewerComponent implements OnInit {
     const currDateET: Date = new Date(); // gets today's date
     if (this.histPeriodSelectionSelected.toUpperCase() === 'YTD')
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 1, 11, 31)).toString();
-    else if (this.histPeriodSelectionSelected.toLowerCase().endsWith('m'))
-      this.histPeriodStartETstr = (new Date(currDateET.getFullYear(), currDateET.getMonth() - 1, currDateET.getDay())).toString();
-    else if (this.histPeriodSelectionSelected.startsWith('3'))
-      this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 3, currDateET.getMonth(), currDateET.getDay())).toString();
-    else if (this.histPeriodSelectionSelected.startsWith('5'))
-      this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 5, currDateET.getMonth(), currDateET.getDay())).toString();
-    else if (this.histPeriodSelectionSelected.toLowerCase().endsWith('y'))
-      this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 1, currDateET.getMonth(), currDateET.getDay())).toString();
+    else if (this.histPeriodSelectionSelected.toLowerCase().endsWith('y')) {
+      const lbYears = parseInt(this.histPeriodSelectionSelected.substr(0, this.histPeriodSelectionSelected.length - 1), 10);
+      this.histPeriodStartETstr = (new Date(currDateET.setFullYear(currDateET.getFullYear() - lbYears)).toString());
+    } else if (this.histPeriodSelectionSelected.toLowerCase().endsWith('m')) {
+      const lbMonths = parseInt(this.histPeriodSelectionSelected.substr(0, this.histPeriodSelectionSelected.length - 1), 10);
+      this.histPeriodStartETstr = (new Date(currDateET.setMonth(currDateET.getMonth() - lbMonths)).toString());
+    } else if (this.histPeriodSelectionSelected === 'Date')
+      this.histPeriodStartETstr = SqNgCommonUtilsTime.PaddedIsoStr3Date(this.histPeriodSelectionSelected).toString();
 
     this.histPeriodStartETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(this.histPeriodStartETstr));
 

@@ -145,7 +145,7 @@ namespace FinTechCommon
             var kvpar1 = new KeyValuePair<TickType, float[]>(TickType.SplitDivAdjClose, Array.Empty<float>());
             var kvpar2 = new KeyValuePair<TickType, uint[]>(TickType.Volume, Array.Empty<uint>());
             var ts1 = new FinTimeSeries<SqDateOnly, float, uint>(
-                new SqDateOnly[] { },
+                Array.Empty<SqDateOnly>(),
                 new KeyValuePair<TickType, float[]>[] { kvpar1 },
                 new KeyValuePair<TickType, uint[]>[] { kvpar2 }
             );
@@ -686,7 +686,7 @@ namespace FinTechCommon
                 return true;
             }
 
-            value = default(TValue1)!;
+            value = default!;
             return false;
         }
 
@@ -699,7 +699,7 @@ namespace FinTechCommon
                 return true;
             }
 
-            value = default(TValue2)!;
+            value = default!;
             return false;
         }
 
@@ -725,20 +725,20 @@ namespace FinTechCommon
             }
             if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
             {
-                keys[_size] = default(TKey)!;
+                keys[_size] = default!;
             }
             if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue1>())
             {
                 foreach (var kvPair in values1)
                 {
-                    values1[kvPair.Key][_size] = default(TValue1)!;
+                    values1[kvPair.Key][_size] = default!;
                 }
             }
             if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue2>())
             {
                 foreach (var kvPair in values2)
                 {
-                    values2[kvPair.Key][_size] = default(TValue2)!;
+                    values2[kvPair.Key][_size] = default!;
                 }
             }
             version++;
