@@ -22,7 +22,7 @@ namespace HealthMonitor
             TcpMessage? message = null;
             try
             {
-                BinaryReader br = new BinaryReader(p_tcpClient.GetStream());
+                BinaryReader br = new(p_tcpClient.GetStream());
                 message = (new TcpMessage()).DeserializeFrom(br);
                 if (message == null)
                 {

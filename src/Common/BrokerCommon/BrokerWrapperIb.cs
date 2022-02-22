@@ -723,7 +723,7 @@ namespace BrokerCommon
                     DateTime quoteAcquirationTime = item.Value.Time;
                     if ((DateTime.UtcNow - quoteAcquirationTime).TotalMinutes > 35.0)
                     {
-                        Utils.Logger.Warn($"Warning. Something may be wrong. We have the Realtime price of {TickType.getField(item.Key)} for '{p_contract.Symbol}' (MarketDataId:{mktDataSubscr.MarketDataId}), which is {item.Value.Price:F2} , but it ({quoteAcquirationTime.ToString()}) is older than 35 minutes. Maybe Gateway was disconnected. Returning False for price.");
+                        Utils.Logger.Warn($"Warning. Something may be wrong. We have the Realtime price of {TickType.getField(item.Key)} for '{p_contract.Symbol}' (MarketDataId:{mktDataSubscr.MarketDataId}), which is {item.Value.Price:F2} , but it ({quoteAcquirationTime}) is older than 35 minutes. Maybe Gateway was disconnected. Returning False for price.");
                         isOk = false;
                     }
                 }
@@ -973,8 +973,7 @@ namespace BrokerCommon
                 return;
             }
 
-            OrderStatus orderStatus;
-            if (!Enum.TryParse<OrderStatus>(status, true, out orderStatus))
+            if (!Enum.TryParse<OrderStatus>(status, true, out OrderStatus orderStatus))
             {
                 orderStatus = OrderStatus.Unrecognized;
                 Utils.Logger.Error($"Order status string {status} was not recognised to Enum. We still continue.");
@@ -1100,9 +1099,7 @@ namespace BrokerCommon
             } else if (orderType == "MOC")
             {
                 // calculate times until MarketClose and wait max 2 minutes after that
-                bool isMarketTradingDay;
-                DateTime marketOpenTimeUtc, marketCloseTimeUtc;
-                bool isTradingHoursOK = Utils.DetermineUsaMarketTradingHours(DateTime.UtcNow, out isMarketTradingDay, out marketOpenTimeUtc, out marketCloseTimeUtc, TimeSpan.FromDays(3));
+                bool isTradingHoursOK = Utils.DetermineUsaMarketTradingHours(DateTime.UtcNow, out bool isMarketTradingDay, out DateTime marketOpenTimeUtc, out DateTime marketCloseTimeUtc, TimeSpan.FromDays(3));
                 if (!isTradingHoursOK)
                 {
                     Utils.Logger.Error("WaitOrder().DetermineUsaMarketTradingHours() was not ok.");
@@ -1114,7 +1111,7 @@ namespace BrokerCommon
                     return false;
                 }
                 DateTime marketClosePlusExtra = marketCloseTimeUtc.AddMinutes(2);
-                Utils.Logger.Info($"WaitOrder() waits until {marketClosePlusExtra.ToString("HH:mm:ss")}");
+                Utils.Logger.Info($"WaitOrder() waits until {marketClosePlusExtra:HH:mm:ss}");
                 TimeSpan timeToWait = marketClosePlusExtra - DateTime.UtcNow;
                 if (timeToWait < TimeSpan.Zero)
                     return true;

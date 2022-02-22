@@ -11,7 +11,7 @@ namespace HealthMonitor
 {
     public partial class HealthMonitor
     {
-        Object m_lastSqWebsiteInformSupervisorLock = new Object();   // null value cannot be locked, so we have to create an object
+        Object m_lastSqWebsiteInformSupervisorLock = new();   // null value cannot be locked, so we have to create an object
         DateTime m_lastSqWebsiteErrorEmailTime = DateTime.MinValue;    // don't email if it was made in the last 10 minutes
         DateTime m_lastSqWebsiteErrorPhoneCallTime = DateTime.MinValue;    // don't call if it was made in the last 30 minutes
       
@@ -22,7 +22,7 @@ namespace HealthMonitor
 
             if (p_message.ResponseFormat == TcpMessageResponseFormat.String)
             {
-                BinaryWriter bw = new BinaryWriter(p_tcpClient.GetStream());
+                BinaryWriter bw = new(p_tcpClient.GetStream());
                 bw.Write("FromServer: Message received, saved and starting processing: " + p_message.ParamStr);
             }
 

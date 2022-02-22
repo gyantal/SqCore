@@ -17,7 +17,7 @@ namespace BrokerCommon.tests
         public void TestGateway_ConnectToGA_CheckNav()
         {
             Console.WriteLine("TestGatewayConnectToGA()");
-            Gateway gw = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) 
+            Gateway gw = new(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) 
                 { VbAccountsList = "U407941", Host = ServerIp.AtsVirtualBrokerServerPublicIpForClients, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, 
                 SuggestedIbConnectionClientID = (int)GatewayClientID.SqCoreToGaTest1 };
             gw.Reconnect();
@@ -42,7 +42,7 @@ namespace BrokerCommon.tests
         public void TestGateway_ConnectToGA_CheckTickOptionComputation()
         {
             Console.WriteLine("TestGatewayConnectToGA()");
-            Gateway gw = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) 
+            Gateway gw = new(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) 
                 //{ VbAccountsList = "U407941", Host = ServerIp.AtsVirtualBrokerServerPublicIpForClients, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, 
                 { VbAccountsList = "U407941", Host = ServerIp.LocalhostLoopbackWithIP, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, 
                 SuggestedIbConnectionClientID = (int)GatewayClientID.SqCoreToGaTest1 };
@@ -60,7 +60,7 @@ namespace BrokerCommon.tests
             Contract contractOwned = poss!.Where(r => r.Contract.SecType == "OPT" && r.Contract.Symbol != "VIX").FirstOrDefault()!.Contract;
             contractOwned.Exchange = "SMART";   // Contract.Exchange cannot be left empty, so if it is empty (like with options), fill with SMART
 
-            Contract contractOption = new Contract() {
+            Contract contractOption = new() {
                 // ConId = 522425461,   // ContractID is not necessary to get price data or Option greeks
                 // LocalSymbol = "UNG   211203P00018000",
                 //TradingClass = "UNG"
@@ -74,7 +74,7 @@ namespace BrokerCommon.tests
                 Symbol = "UNG"
             };
 
-            Contract contractStock = new Contract() {
+            Contract contractStock = new() {
                 Currency = "USD",
                 Exchange = "SMART",
                 SecType = "STK",

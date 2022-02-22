@@ -14,7 +14,7 @@ namespace RedisManager
 {
     class Controller
     {
-        static public Controller g_controller = new Controller();
+        static public Controller g_controller = new();
 
         internal void Start()
         {
@@ -37,7 +37,7 @@ namespace RedisManager
             {
                 try
                 {
-                    Ping myPing = new Ping();
+                    Ping myPing = new();
                     PingReply reply = myPing.Send(address, 1000);
                     if (reply != null)
                     {
@@ -192,10 +192,10 @@ namespace RedisManager
         // >DC-IB-MAIN, it seems: 2011-02-02 is the inception date. 2011-02-02, 2011-03-01: didn't work. Timeout. But 2014-12-31 worked. Try at another time.
         public void InsertNavAssetFromCsvFile(string p_redisKeyPrefix, string p_csvFullpath)
         {
-            List<DailyNavData> dailyNavData = new List<DailyNavData>();
-            List<DailyNavData> dailyDepositData = new List<DailyNavData>();
+            List<DailyNavData> dailyNavData = new();
+            List<DailyNavData> dailyDepositData = new();
 
-            using (StreamReader sr = new StreamReader(p_csvFullpath))
+            using (StreamReader sr = new(p_csvFullpath))
             {
                 int iNavColumn = -1;
                 int iRow = 0;
@@ -253,7 +253,7 @@ namespace RedisManager
 
             // 2.1 Bin data: 3069*6=18.4K. Brotlied: 15.268K (less compression if date + float are mixed)
             var dailyStructsBin = dailyNavData.Select(r => {
-                SqDateOnly dateOnly = new SqDateOnly(Int32.Parse(r.DateStr.Substring(0, 4)), Int32.Parse(r.DateStr.Substring(4, 2)), Int32.Parse(r.DateStr.Substring(6, 2)));
+                SqDateOnly dateOnly = new(Int32.Parse(r.DateStr.Substring(0, 4)), Int32.Parse(r.DateStr.Substring(4, 2)), Int32.Parse(r.DateStr.Substring(6, 2)));
                 float navValue = (float)Double.Parse(r.ValueStr);
                 return new DailyNavDataBin() { dateOnly = dateOnly, floatValue = navValue  };
             }).ToArray();
@@ -269,7 +269,7 @@ namespace RedisManager
             var outputBin2 = new byte[dailyNavData.Count * 6];
             var dateOnlyArr = dailyNavData.Select(r =>
             {
-                SqDateOnly dateOnly = new SqDateOnly(Int32.Parse(r.DateStr.Substring(0, 4)), Int32.Parse(r.DateStr.Substring(4, 2)), Int32.Parse(r.DateStr.Substring(6, 2)));
+                SqDateOnly dateOnly = new(Int32.Parse(r.DateStr.Substring(0, 4)), Int32.Parse(r.DateStr.Substring(4, 2)), Int32.Parse(r.DateStr.Substring(6, 2)));
                 return dateOnly.ToBinary();
             }).ToArray();
             Buffer.BlockCopy(dateOnlyArr, 0, outputBin2, 0, dateOnlyArr.Length * 2);     // 'Object must be an array of primitives.'

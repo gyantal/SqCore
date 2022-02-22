@@ -9,6 +9,7 @@ using System.Linq;
 using System.Xml.Linq;
 using System.ServiceModel.Syndication;
 using System.Net;
+using System.Diagnostics;
 
 namespace SqCoreWeb
 {
@@ -161,7 +162,7 @@ namespace SqCoreWeb
                 Utils.Logger.Debug("QckflNewsTimer_Elapsed(). BEGIN");
                 if (!isQckflNewsTimerRunning)
                     return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
-
+                Debug.WriteLine("QckflNewsTimer_Elapsed(). Started");
                 // Download common newws
 
                 // company specific news.

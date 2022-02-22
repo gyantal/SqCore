@@ -22,7 +22,7 @@ namespace HealthMonitor
         public Timer? Timer { get; set; } = null;
         public object Lock { get; set; } = new object();
         public DataSource DataSource { get; set; }
-        public List<DelayedMessageItem> MessageItems = new List<DelayedMessageItem>();
+        public List<DelayedMessageItem> MessageItems = new();
     }
 
     [Flags]
@@ -44,7 +44,7 @@ namespace HealthMonitor
 
     public partial class HealthMonitor
     {
-        static public HealthMonitor g_healthMonitor = new HealthMonitor();
+        static public HealthMonitor g_healthMonitor = new();
         DateTime m_startTime;
 
         SavedState? m_persistedState = null;
@@ -61,11 +61,11 @@ namespace HealthMonitor
         const int cRtpsTimerFrequencyMinutes = 15;  // changed from 10min to 15, to decrease strain on VBroker and to get less 'Requested market data is not subscribed' emails.
         const int cCheckWebsitesTimerFrequencyMinutes = 16;
         const int cCheckAmazonAwsTimerFrequencyMinutes = 60;
-        Object m_lastHealthMonInformSupervisorLock = new Object();   // null value cannot be locked, so we have to create an object
+        Object m_lastHealthMonInformSupervisorLock = new();   // null value cannot be locked, so we have to create an object
         DateTime m_lastHealthMonErrorEmailTime = DateTime.MinValue;    // don't email if it was made in the last 10 minutes
         DateTime m_lastHealthMonErrorPhoneCallTime = DateTime.MinValue;    // don't call if it was made in the last 30 minutes
 
-        ConcurrentDictionary<DataSource, DelayedMessage> m_delayedMessages = new ConcurrentDictionary<DataSource, DelayedMessage>();
+        ConcurrentDictionary<DataSource, DelayedMessage> m_delayedMessages = new();
 
         public SavedState? PersistedState
         {
@@ -151,7 +151,7 @@ namespace HealthMonitor
         private void SetupNotRepeatingDailyMarketOpenTimer()
         {
             DateTime utcNow = DateTime.UtcNow;
-            DateTime openInET = new DateTime(utcNow.Year, utcNow.Month, utcNow.Day, 9, 30, 0);  // USA market always open at 9:30 ET
+            DateTime openInET = new(utcNow.Year, utcNow.Month, utcNow.Day, 9, 30, 0);  // USA market always open at 9:30 ET
             DateTime requiredUtcTime = TimeZoneInfo.ConvertTime(openInET, SqCommon.Utils.FindSystemTimeZoneById(TimeZoneId.EST), TimeZoneInfo.Utc);
 
             // trigger the event at 15:00 in UTC; USA market opens at 14:30 in general or sometimes at 13:30 (only in 2 weeks)
@@ -170,9 +170,7 @@ namespace HealthMonitor
 
         private void SetupNotRepeatingDailyReportTimer()
         {
-            bool isMarketTradingDay;
-            DateTime openTimeUtc, closeTimeUtc;
-            bool isTradingHoursOK = Utils.DetermineUsaMarketTradingHours(DateTime.UtcNow, out isMarketTradingDay, out openTimeUtc, out closeTimeUtc, TimeSpan.FromDays(3));
+            bool isTradingHoursOK = Utils.DetermineUsaMarketTradingHours(DateTime.UtcNow, out bool isMarketTradingDay, out DateTime openTimeUtc, out DateTime closeTimeUtc, TimeSpan.FromDays(3));
             if (!isTradingHoursOK)
             {
                 Utils.Logger.Warn("DetermineUsaMarketTradingHours() was not ok.");
@@ -270,7 +268,7 @@ namespace HealthMonitor
             if (PersistedState == null || !PersistedState.IsDailyEmailReportEnabled)
                 return new StringBuilder();
 
-            StringBuilder sb = new StringBuilder((p_isHtml) ? m_dailyReportEmailStr1 : "Realtime Price:");
+            StringBuilder sb = new((p_isHtml) ? m_dailyReportEmailStr1 : "Realtime Price:");
 
             bool? rtpsLastDownloadAccepted = null;
             var rtpsLastDownloadsSnapshot = m_rtpsLastDownloads.ToArray(); // we have to make a snapshot anyway, so the Timer thread can write it while we itarate
@@ -292,8 +290,8 @@ namespace HealthMonitor
             bool wasAllOkToday = true;
             int nReportsToday = 0;
 
-            Dictionary<string, string> lastDetailedVBrokerReports = new Dictionary<string, string>();
-            StringBuilder sb2 = new StringBuilder();
+            Dictionary<string, string> lastDetailedVBrokerReports = new();
+            StringBuilder sb2 = new();
             lock (m_VbReport)
             {
                 for (int i = 0; i < m_VbReport.Count; i++)
@@ -430,7 +428,7 @@ namespace HealthMonitor
                 DataSource dataSource = (DataSource)p_stateObj;
                 var delayedMsg = m_delayedMessages[dataSource];
                 string emailSubject = "SQ HealthMonitor: Pooled messages"; 
-                StringBuilder emailBody = new StringBuilder();
+                StringBuilder emailBody = new();
                 lock (delayedMsg.Lock)
                 {
                     foreach (var msg in delayedMsg.MessageItems)

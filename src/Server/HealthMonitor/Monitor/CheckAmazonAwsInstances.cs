@@ -19,7 +19,7 @@ namespace HealthMonitor
         //# http://docs.aws.amazon.com/general/latest/gr/signature-v4-examples.html#signature-v4-examples-python
         internal byte[] sign(byte[] key, string msg)
         {
-            HMACSHA256 hmac = new HMACSHA256(key);
+            HMACSHA256 hmac = new(key);
             var computedDigest = hmac.ComputeHash(Encoding.UTF8.GetBytes(msg));
             return computedDigest;
             //return hmac.new(key, msg.encode('utf-8'), hashlib.sha256).digest();
@@ -118,7 +118,7 @@ namespace HealthMonitor
             byte[] signing_key = getSignatureKey(secret_key, datestamp, region, service);
 
             // Sign the string_to_sign using the signing_key
-            HMACSHA256 hmac = new HMACSHA256(signing_key);
+            HMACSHA256 hmac = new(signing_key);
             var computedHexDigest = BitConverter.ToString(hmac.ComputeHash(Encoding.UTF8.GetBytes(string_to_sign))).Replace("-", string.Empty).ToLower();
             string signature = computedHexDigest;
             //signature = hmac.new(signing_key, (string_to_sign).encode("utf-8"), hashlib.sha256).hexdigest()
@@ -147,10 +147,10 @@ namespace HealthMonitor
 
             try
             {
-                StringBuilder sbWarning = new StringBuilder();
+                StringBuilder sbWarning = new();
                 try
                 {
-                    List<Tuple<string, string, string>> awsInstances = new List<Tuple<string, string, string>>();
+                    List<Tuple<string, string, string>> awsInstances = new();
                     string? awsInstancesXml = GetAmazonApiResponse("DescribeInstances");
                     if (awsInstancesXml == null)
                         sbWarning.AppendLine("GetAmazonApiResponse() returned null");
@@ -158,7 +158,7 @@ namespace HealthMonitor
                     {
                         using (XmlReader reader = XmlReader.Create(new StringReader(awsInstancesXml)))
                         {
-                            XmlWriterSettings ws = new XmlWriterSettings();
+                            XmlWriterSettings ws = new();
                             ws.Indent = true;
 
                             string instanceName = string.Empty, instanceState = string.Empty, instancePublicIp = string.Empty;

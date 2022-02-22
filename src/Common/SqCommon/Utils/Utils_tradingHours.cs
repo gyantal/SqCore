@@ -88,9 +88,7 @@ namespace SqCommon
                 return false;
 
             // 2. During RTH on weekdays, we have to be more thorough.
-            bool isMarketTradingDay;
-            DateTime openTimeUtc, closeTimeUtc;
-            bool isTradingHoursOK = Utils.DetermineUsaMarketTradingHours(utcNow, out isMarketTradingDay, out openTimeUtc, out closeTimeUtc, p_maxAllowedStaleness);
+            bool isTradingHoursOK = Utils.DetermineUsaMarketTradingHours(utcNow, out bool isMarketTradingDay, out DateTime openTimeUtc, out DateTime closeTimeUtc, p_maxAllowedStaleness);
             if (!isTradingHoursOK)
             {
                 Utils.Logger.Error("DetermineUsaMarketTradingHours() was not OK.");

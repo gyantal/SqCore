@@ -195,9 +195,8 @@ namespace SqCoreWeb
                     newsItem.LinkUrl = news.GetProperty("url").GetRawText().Trim('"');
                     newsItem.Title = news.GetProperty("title").GetRawText().Trim('"'); 
                     newsItem.Summary = "  ";
-                    newsItem.Sentiment = news.GetProperty("sentiment").GetRawText().Trim('"'); 
-                    DateTime date;
-                    if (DateTime.TryParse(news.GetProperty("articleTimestamp").GetRawText().Trim('"'), out date))
+                    newsItem.Sentiment = news.GetProperty("sentiment").GetRawText().Trim('"');
+                    if (DateTime.TryParse(news.GetProperty("articleTimestamp").GetRawText().Trim('"'), out DateTime date))
                         newsItem.PublishDate = date;
                     newsItem.DownloadTime = DateTime.Now;
                     newsItem.Source = NewsSource.TipRanks.ToString();
@@ -263,8 +262,7 @@ namespace SqCoreWeb
         }
         private DateTime GetNewsDate(string p_dateString)
         {
-            DateTime date;
-            if (DateTime.TryParse(p_dateString, out date))
+            if (DateTime.TryParse(p_dateString, out DateTime date))
                 return date;
             p_dateString = p_dateString.ToUpper();
             if (p_dateString.Contains("AGO"))
@@ -273,22 +271,19 @@ namespace SqCoreWeb
                 if (p_dateString.Contains("HOUR"))
                 {
                     p_dateString = p_dateString.Replace("HOURS", string.Empty).Replace("HOUR", string.Empty).Trim();
-                    int hours;
-                    if (int.TryParse(p_dateString, out hours))
+                    if (int.TryParse(p_dateString, out int hours))
                         return DateTime.Now.AddHours(-hours);
                 }
                 else if (p_dateString.Contains("DAY"))
                 {
                     p_dateString = p_dateString.Replace("DAYS", string.Empty).Replace("DAY", string.Empty).Trim();
-                    int days;
-                    if (int.TryParse(p_dateString, out days))
+                    if (int.TryParse(p_dateString, out int days))
                         return DateTime.Now.AddDays(-days);
                 }
                 else if (p_dateString.Contains("MIN"))
                 {
                     p_dateString = p_dateString.Replace("MINUTES", string.Empty).Replace("MIN", string.Empty).Replace("MINS", string.Empty).Trim();
-                    int days;
-                    if (int.TryParse(p_dateString, out days))
+                    if (int.TryParse(p_dateString, out int days))
                         return DateTime.Now.AddDays(-days);
                 }
             }

@@ -12,7 +12,7 @@ namespace BenchmarkDB
     class Controller
     {
         private static readonly NLog.Logger gLogger = NLog.LogManager.GetCurrentClassLogger();
-        static public Controller g_controller = new Controller();
+        static public Controller g_controller = new();
 
 
         internal void Start()
@@ -37,7 +37,7 @@ namespace BenchmarkDB
             {
                 try
                 {
-                    Ping myPing = new Ping();
+                    Ping myPing = new();
                     PingReply reply = myPing.Send(address, 1000);
                     if (reply != null)
                     {
@@ -167,7 +167,7 @@ namespace BenchmarkDB
             {
                 try
                 {
-                    Ping myPing = new Ping();
+                    Ping myPing = new();
                     PingReply reply = myPing.Send(p_pingConnStr, 1000);
                     if (reply != null)
                     {

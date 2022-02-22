@@ -135,7 +135,7 @@ namespace FinTechCommon
                 
             // dailyNavStr = dailyNavStr.Substring(0, lengthToUseFromOld);
             var useFromOldSg = new StringSegment(dailyNavStr, 0, lengthToUseFromOld);   // StringSegment doesn't duplicate the long string
-            string newDailyNavStr = useFromOldSg + $",{todayEt.ToString("yyyyMMdd")}/{nearestIntValue}";    // append last record at end
+            string newDailyNavStr = useFromOldSg + $",{todayEt:yyyyMMdd}/{nearestIntValue}";    // append last record at end
 
             p_updateParam.Db!.SetAssetQuoteRaw(p_assetId, newDailyNavStr);
         }

@@ -59,7 +59,7 @@ namespace HealthMonitor
             if (p_message.ResponseFormat == TcpMessageResponseFormat.JSON)
             {
                 var jsonStr = Utils.SaveToJSON<HMtoDashboardData>(hmDataOut);
-                BinaryWriter bw = new BinaryWriter(p_tcpClient.GetStream());
+                BinaryWriter bw = new(p_tcpClient.GetStream());
                 bw.Write(jsonStr);
                 //bw.Write(@"{""AppOk"":""OK"",""StartDate"":""1998-11-16T00:00:00"",""StartDateLoc"":""1998-11-16T00:00:00.000Z"",""StartDateTimeSpanStr"":"""",""DailyEmailReportEnabled"":false,""RtpsOk"":""OK"",""RtpsTimerEnabled"":false,""RtpsTimerFrequencyMinutes"":-999,""RtpsDownloads"":[""aaaaaaaaaaaaaaaaaaaaaaaaaa"",""b""],""VBrokerOk"":""OK"",""ProcessingVBrokerMessagesEnabled"":false,""VBrokerReports"":[""a"",""b""],""VBrokerDetailedReports"":[""a"",""b""],""CommandToBackEnd"":""OnlyGetData"",""ResponseToFrontEnd"":""OK""}");
             }

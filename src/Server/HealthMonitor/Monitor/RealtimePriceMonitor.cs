@@ -10,7 +10,7 @@ namespace HealthMonitor
         const int c_maxAllowedFail = 1;     // when Linux restarts every day, one query can be a failed one. That is OK. Don't send warning email.
         int m_nFail = 0;
         bool m_isThisServiceOutageWarningEmailWasSent = false;  // to avoid sending the same warning email every 10 minutes; send only once
-        ConcurrentQueue<Tuple<DateTime, bool>> m_rtpsLastDownloads = new ConcurrentQueue<Tuple<DateTime, bool>>();
+        ConcurrentQueue<Tuple<DateTime, bool>> m_rtpsLastDownloads = new();
 
         // imagine how and when a human user would check that the service is still OK. He wouldn't check it on the weekends e.g.
         private void RtpsTimer_Elapsed(object? p_stateObj)   // Real Time Price Service, // Timer is coming on a ThreadPool thread
@@ -149,8 +149,7 @@ namespace HealthMonitor
                 }
                 if (String.IsNullOrEmpty(vxxLastPriceStr))  // "Last":21.97
                     return false;   // 3. if it's Last price is empty. 
-                double vxxLastPrice;
-                if (!Double.TryParse(vxxLastPriceStr, out vxxLastPrice))
+                if (!Double.TryParse(vxxLastPriceStr, out double vxxLastPrice))
                     return false;   // 4. if it is not a number. For example if it is "N/A", we return error
 
             }

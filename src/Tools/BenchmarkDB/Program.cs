@@ -186,7 +186,7 @@ namespace BenchmarkDB
             System.Console.WriteLine($"RuntimeInformation.FrameworkDescription: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}");
 
             System.Console.WriteLine($"System.Environment.ProcessorCount: {System.Environment.ProcessorCount}");
-            System.Console.WriteLine($"System.Environment.OSVersion: {System.Environment.OSVersion.ToString()}");
+            System.Console.WriteLine($"System.Environment.OSVersion: {System.Environment.OSVersion}");
             System.Console.WriteLine($"System.Environment.UserName: {System.Environment.UserName}");
 
             //// " using var file = new " is disposed here, when it goes out of scope

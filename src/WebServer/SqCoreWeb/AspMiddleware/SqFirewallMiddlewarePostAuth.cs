@@ -100,14 +100,14 @@ namespace SqCoreWeb
                     bool isExpectedAllowed = (ipStr == ServerIp.HealthMonitorPublicIp); // Request.Path = "/WebServer/ping". if it comes from a known IP, don't write error message out to console/log.
                     if (!isExpectedAllowed)
                     {
-                        string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow.ToString("HH':'mm':'ss.f")}#Uknown user, but we allow request: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {ipStr}. Falling through to further Kestrel middleware without redirecting to '/UserAccount/login'.");
+                        string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow:HH':'mm':'ss.f}#Uknown user, but we allow request: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {ipStr}. Falling through to further Kestrel middleware without redirecting to '/UserAccount/login'.");
                         Console.WriteLine(msg);
                         gLogger.Info(msg);
                     }
                 }
                 else
                 {
-                    string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow.ToString("HH':'mm':'ss.f")}#Uknown or not allowed user request: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {ipStr}. Redirecting to '/UserAccount/login'.");
+                    string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow:HH':'mm':'ss.f}#Uknown or not allowed user request: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {ipStr}. Redirecting to '/UserAccount/login'.");
                     Console.WriteLine(msg);
                     gLogger.Info(msg);
 

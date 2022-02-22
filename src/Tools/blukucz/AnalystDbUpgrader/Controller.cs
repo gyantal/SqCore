@@ -104,13 +104,13 @@ namespace YahooCrawler
     }
     class Controller
     {
-        static public Controller g_controller = new Controller();
+        static public Controller g_controller = new();
 
         string[] m_universeTickers = { };
         OrigRecomm[] m_recommRecords = { };
 
         OrigRecomm[] m_slimmedRecommRecords = { };
-        List<OutputRecomm> m_outputRec = new List<OutputRecomm>();
+        List<OutputRecomm> m_outputRec = new();
 
         IDictionary<string, List<YFRecord>> m_yfDataFromCsv = new Dictionary<string, List<YFRecord>>();
 
@@ -195,7 +195,7 @@ namespace YahooCrawler
                 int iDay126a = iDay + 126 >= yfPrices.Count ? yfPrices.Count - 1 : iDay + 126;
                 int iDay252a = iDay + 252 >= yfPrices.Count ? yfPrices.Count - 1 : iDay + 252;
 
-                OutputRecomm newRec = new OutputRecomm(item);
+                OutputRecomm newRec = new(item);
                 newRec.AdjClose126db = yfPrices[iDay126b].AdjClose;
                 newRec.AdjClose63db = yfPrices[iDay63b].AdjClose;
                 newRec.AdjClose21db = yfPrices[iDay21b].AdjClose;

@@ -36,7 +36,7 @@ namespace HealthMonitor
             {
                 Utils.Logger.Info($"CheckWebsitesAndKeepAliveTimer_Elapsed (at every {cCheckWebsitesTimerFrequencyMinutes} minutes) BEGIN");
 
-                List<string> failedWebsites = new List<string>();
+                List<string> failedWebsites = new();
                 for (int i = 0; i < cWebsitesToCheckAndnFail.Length; i++)
                 {
                     string? hmWebsiteStr = Utils.DownloadStringWithRetryAsync(cWebsitesToCheckAndnFail[i].url, 5, TimeSpan.FromSeconds(5), false).TurnAsyncToSyncTask();

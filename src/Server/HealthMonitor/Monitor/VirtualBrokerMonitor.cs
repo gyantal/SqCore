@@ -12,10 +12,10 @@ namespace HealthMonitor
 {
     public partial class HealthMonitor
     {
-        Object m_lastVbInformSupervisorLock = new Object();   // null value cannot be locked, so we have to create an object
+        Object m_lastVbInformSupervisorLock = new();   // null value cannot be locked, so we have to create an object
         DateTime m_lastVbErrorInformTime = DateTime.MinValue;    // don't email if it was made in the last 10 minutes
         // DateTime m_lastVbErrorPhoneCallTime = DateTime.MinValue;    // don't call if it was made in the last 30 minutes
-        List<Tuple<DateTime, bool, string, string>> m_VbReport = new List<Tuple<DateTime, bool, string, string>>(); // List<> is not thread safe: <Date, IsOk, BriefReport, DetailedReport>
+        List<Tuple<DateTime, bool, string, string>> m_VbReport = new(); // List<> is not thread safe: <Date, IsOk, BriefReport, DetailedReport>
 
         // this is called every time the VirtualBroker send OK or Error: after every simulated trading
         // 1. General Error message looks like this. No HTML. Not Strategy (UberVXX, HarryLong) specific. VBroker can crash anywhere, without any strategy affiliation.
@@ -29,7 +29,7 @@ namespace HealthMonitor
             Utils.Logger.Info($"MessageFromVirtualBroker() START");
             if (p_message.ResponseFormat == TcpMessageResponseFormat.String)
             {
-                BinaryWriter bw = new BinaryWriter(p_tcpClient.GetStream());
+                BinaryWriter bw = new(p_tcpClient.GetStream());
                 bw.Write("FromServer: Message received, saved and starting processing: " + p_message.ParamStr);
             }
 

@@ -203,7 +203,7 @@ namespace SqBenchmarks
         //[Params(0, 1, 6, 10, 39, 100)]
         public int DataLen { get; set; }
 
-        public Random rand = new Random();
+        public Random rand = new();
         public List<ClassA> InputObjList;
         public ClassA[] InputObjArr;
         public StructA[] InputStructArr;
@@ -227,7 +227,7 @@ namespace SqBenchmarks
         public List<ClassB> ForLoopOnObjList()
         {
             int len = InputObjList.Count;
-            List<ClassB> result = new List<ClassB>(len);
+            List<ClassB> result = new(len);
             for (int i = 0; i < len; i++)
             {
                 result.Add(new ClassB() { Data = InputObjList[i].Data + 10 });
@@ -239,7 +239,7 @@ namespace SqBenchmarks
         public List<ClassB> ForeachOnObjList()
         {
             int len = InputObjList.Count;
-            List<ClassB> result = new List<ClassB>(len);
+            List<ClassB> result = new(len);
             foreach (var item in InputObjList)
             {
                 result.Add(new ClassB() { Data = item.Data + 10 });
@@ -275,10 +275,10 @@ namespace SqBenchmarks
 
         public static void RenameThisToMain_StopwatchBenchmark(string[] args)
         {
-            Random r = new Random();
+            Random r = new();
 
             int dataLen = 100;
-            List<ClassA> inputObjList = new List<ClassA>(dataLen);
+            List<ClassA> inputObjList = new(dataLen);
             for (int i = 0; i < dataLen; i++)
             {
                 inputObjList.Add(new ClassA() { Data = r.Next() }); // make it random.
@@ -328,7 +328,7 @@ namespace SqBenchmarks
 
             // Execution time calculation using for loop
             Stopwatch swi1 = Stopwatch.StartNew();
-            List<ClassB> resultImp = new List<ClassB>(dataLen);
+            List<ClassB> resultImp = new(dataLen);
             for (int i = 0; i < dataLen; i++)
             {
                 resultImp.Add(new ClassB() { Data = inputObjList[i].Data + 10 });
@@ -338,7 +338,7 @@ namespace SqBenchmarks
             Console.WriteLine($"Write some of the results, so compiler cannot overoptimize: '{resultImp[0].Data}'");
 
             Stopwatch swi2 = Stopwatch.StartNew();
-            List<ClassB> resultImp2 = new List<ClassB>(dataLen);
+            List<ClassB> resultImp2 = new(dataLen);
             for (int i = 0; i < dataLen; i++)
             {
                 resultImp2.Add(new ClassB() { Data = inputObjList[i].Data + 10 });
