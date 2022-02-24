@@ -84,10 +84,15 @@
   <div class="manyDshbrdClientsDialog-content">
     <p>"MarketDashboard is open in more than one tab or browser. This slows down both client and server. <br>
       <span class="manyDshbrdClntDialogSuggestion">Suggestion: Close this browser tabpage and find the other MarketDashboard."</span></p>
-    <span class="dshbrdDialogButtons">
-        <!-- <div class="animatedButtonHolderDiv"> TBC DAYA -->
+    </div>
+    <div class="animatedButtonHolderDiv">
+        <div class="dshbrdDialogButtons">
             <button type="button" (click)="onDshbrdOpenedManyTimesContinueClicked()">Continue this tab</button>
+        </div>
+        <div class="dshbrdDialogButtons">
             <button type="button" (click)="onDshbrdOpenedManyTimesCloseClicked()">Close this tab</button>
-        <!-- </div> -->
-    </span>
+        </div>
+    </div>
+</div>
+
 <router-outlet></router-outlet>

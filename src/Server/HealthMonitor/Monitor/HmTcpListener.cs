@@ -103,7 +103,7 @@ namespace HealthMonitor
             if (p_message.ResponseFormat == TcpMessageResponseFormat.String)
             {
                 string responseStr = "Ping. Healthmonitor UtcNow: " + DateTime.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss.fff", CultureInfo.InvariantCulture);
-                BinaryWriter bw = new BinaryWriter(p_tcpClient.GetStream());
+                BinaryWriter bw = new(p_tcpClient.GetStream());
                 bw.Write(responseStr);                
             }
         }

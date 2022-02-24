@@ -51,8 +51,16 @@ namespace SqCoreWeb
                 byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.Tickers2:" + Utils.CamelCaseSerialize(new List<string> { "All assets" }.Union(m_stockTickers2).ToList()));
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                // TriggerQuickfolioNewsDownloader2();
 
+                lock (m_qckflNewsTimerLock)
+                {
+                    if (!isQckflNewsTimerRunning)
+                    {
+                        Utils.Logger.Info("OnConnectedAsync_QckflNews(). Starting m_qckflNewsTimer.");
+                        isQckflNewsTimerRunning = true;
+                        m_qckflNewsTimer.Change(TimeSpan.FromMilliseconds(m_qckflNewsTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
+                    }
+                }
                 // first client connects, we start the timer immediately. helper: bool isQckflNewsTimerRunning = false;
                 // after that... this timer should be run every 15min
                 // in that timer function... we have do download CommonNews + Stock news.
@@ -162,7 +170,6 @@ namespace SqCoreWeb
                 Utils.Logger.Debug("QckflNewsTimer_Elapsed(). BEGIN");
                 if (!isQckflNewsTimerRunning)
                     return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
-                Debug.WriteLine("QckflNewsTimer_Elapsed(). Started");
                 // Download common newws
 
                 // company specific news.
@@ -172,6 +179,7 @@ namespace SqCoreWeb
                     if (isQckflNewsTimerRunning)
                     {
                         m_qckflNewsTimer.Change(TimeSpan.FromMilliseconds(m_qckflNewsTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
+                        Utils.Logger.Info("QckflNewsTimer_Elapsed(). Started");
                     }
                 }
             }

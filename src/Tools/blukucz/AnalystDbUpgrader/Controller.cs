@@ -106,10 +106,10 @@ namespace YahooCrawler
     {
         static public Controller g_controller = new();
 
-        string[] m_universeTickers = { };
-        OrigRecomm[] m_recommRecords = { };
+        string[] m_universeTickers = Array.Empty<string>();
+        OrigRecomm[] m_recommRecords = Array.Empty<OrigRecomm>();
 
-        OrigRecomm[] m_slimmedRecommRecords = { };
+        OrigRecomm[] m_slimmedRecommRecords = Array.Empty<OrigRecomm>();
         List<OutputRecomm> m_outputRec = new();
 
         IDictionary<string, List<YFRecord>> m_yfDataFromCsv = new Dictionary<string, List<YFRecord>>();
@@ -138,7 +138,7 @@ namespace YahooCrawler
             ReadTickerUniverse();
             foreach (var ticker in m_universeTickers)
             {
-                DateTime expectedHistoryStartDateET = new DateTime(2010, 1, 1);
+                DateTime expectedHistoryStartDateET = new(2010, 1, 1);
                 IReadOnlyList<Candle?>? history = await Yahoo.GetHistoricalAsync(ticker, expectedHistoryStartDateET, DateTime.Now, Period.Daily);
 
                 YFRecord[] yfRecords = history.Select(r => new YFRecord() { Date = Utils.Date2hYYYYMMDD(r!.DateTime), AdjClose = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4), Close = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.Close, 4) }).ToArray();

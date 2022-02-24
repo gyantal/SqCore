@@ -241,6 +241,7 @@ export class BrAccViewerComponent implements OnInit {
   isShowStockTooltip: boolean = false;
   isMouseInSnapSymbolCell: boolean = false;
   isMouseInTooltip: boolean = false;
+  isMouseInHistPeriodCombox: boolean = false; // under development Daya
 
   constructor() {
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
@@ -790,6 +791,12 @@ export class BrAccViewerComponent implements OnInit {
   onMouseLeaveStockTooltip() {
     this.isMouseInTooltip = false;
     this.isShowStockTooltip = this.isMouseInSnapSymbolCell || this.isMouseInTooltip;
+  }
+  // under development Daya
+  onMouseOverHistPeriodComboBox() {
+    this.isMouseInHistPeriodCombox = true;
+    this.histPeriodSelection;
+    console.log('The hist period selection is ', this.histPeriodSelection);
   }
 
   static shortMonthFormat(date: any) : string {

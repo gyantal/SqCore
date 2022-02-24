@@ -54,7 +54,7 @@ namespace BrokerCommon.tests
                 return;
 
 
-            List<BrAccPos>? poss = gw.GetAccountPoss(new string[0]);
+            List<BrAccPos>? poss = gw.GetAccountPoss(Array.Empty<string>());
 
             // Contract contractOwned = poss!.Where(r => r.Contract.SecType == "OPT" && r.Contract.Symbol == "UNG" && r.Contract.Strike == 18).FirstOrDefault()!.Contract;
             Contract contractOwned = poss!.Where(r => r.Contract.SecType == "OPT" && r.Contract.Symbol != "VIX").FirstOrDefault()!.Contract;
