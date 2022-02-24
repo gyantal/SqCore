@@ -16,15 +16,17 @@ namespace SqCoreWeb
     {
         public string ClientIP { get; set; } = string.Empty;    // Remote Client IP for WebSocket
         public string UserEmail { get; set; } = string.Empty;
+        public DateTime ConnectionTime { get; set; } = DateTime.MinValue;
+        public ActivePage ActivePage = ActivePage.Unknown; // knowing which Tool is active can be useful. We might not send data to tools which never becomes active
+
+        public string ConnectionId // calculated field: a debugger friendly way of identifying the same websocket, in case WebSocket pointer is not good enough
+        {
+            get { return this.ClientIP + "@" + ConnectionTime.ToString("MM'-'dd'T'HH':'mm':'ss"); }
+        }
 
         public WebSocket? WsWebSocket { get; set; } = null; // this pointer uniquely identifies the WebSocket as it is not released until websocket is dead
         public HttpContext? WsHttpContext { get; set; } = null;
-        public DateTime WsConnectionTime { get; set; } = DateTime.MinValue;
-        public string WsConnectionId // calculated field: a debugger friendly way of identifying the same websocket, in case WebSocket pointer is not good enough
-        {
-            get { return this.ClientIP + " at " + WsConnectionTime.ToString("MM'-'dd'T'HH':'mm':'ss"); }
-        }
-        public ActivePage ActivePage = ActivePage.Unknown; // knowing which Tool is active can be useful. We might not send data to tools which never becomes active
+
         public static readonly Dictionary<string, ActivePage> c_urlParam2ActivePage = new() { 
             {"mh", ActivePage.MarketHealth}, {"bav", ActivePage.BrAccViewer}, {"cs", ActivePage.CatalystSniffer}, {"qn", ActivePage.QuickfolioNews}};
 
@@ -62,14 +64,15 @@ namespace SqCoreWeb
         {
             p_sb.Append("<H2>Dashboard Clients</H2>");
             p_sb.Append($"DashboardClient.g_clients (#{DashboardClient.g_clients.Count}): ");
-            p_sb.AppendLongListByLine(DashboardClient.g_clients.Select(r => $"'{r.UserEmail}/{r.ClientIP}'").ToArray(), ",", 3, "<br>");
+            p_sb.AppendLongListByLine(DashboardClient.g_clients.Select(r => $"'{r.UserEmail}/{r.ConnectionId}'").ToArray(), ",", 3, "<br>");
             p_sb.Append($"<br>rtDashboardTimerRunning: {m_rtDashboardTimerRunning}<br>");
         }
 
-        public DashboardClient(string p_clientIP, string p_userEmail)
+        public DashboardClient(string p_clientIP, string p_userEmail, DateTime p_connectionTime)
         {
             ClientIP = p_clientIP;
             UserEmail = p_userEmail;
+            ConnectionTime = p_connectionTime;
 
             Ctor_MktHealth();
             Ctor_BrAccViewer();

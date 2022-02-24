@@ -45,9 +45,7 @@ namespace SqCoreWeb
             // create a connectionID based on client IP + connectionTime; the userID is the email as each user must be authenticated by an email.
             var clientIP = WsUtils.GetRequestIPv6(context!);    // takes 0.346ms
             Utils.Logger.Info($"DashboardWs.OnConnectedAsync(), Connection from IP: {clientIP} with email '{email}'");  // takes 1.433ms
-            var thisConnectionTime = DateTime.UtcNow;
-            DashboardClient? client = new(clientIP, email);
-            client.WsConnectionTime = thisConnectionTime; // used by the other (secondary) connection to decide whether to create a new g_clients item.
+            DashboardClient? client = new(clientIP, email, DateTime.UtcNow);
             client.WsWebSocket = webSocket;
             client.WsHttpContext = context;
             client.ActivePage = activePage;

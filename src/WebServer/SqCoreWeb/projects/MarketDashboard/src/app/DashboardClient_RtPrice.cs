@@ -144,7 +144,7 @@ namespace SqCoreWeb
                 {
                     // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
                     // OnConnectedWsAsync() sleeps for a while if not active tool.
-                    TimeSpan timeSinceConnect = DateTime.UtcNow - client.WsConnectionTime;
+                    TimeSpan timeSinceConnect = DateTime.UtcNow - client.ConnectionTime;
                     if (client.ActivePage != ActivePage.MarketHealth && timeSinceConnect < c_initialSleepIfNotActiveToolMh.Add(TimeSpan.FromMilliseconds(100)))
                         return;
 
