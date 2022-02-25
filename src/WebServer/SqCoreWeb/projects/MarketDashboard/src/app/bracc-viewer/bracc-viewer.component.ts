@@ -795,7 +795,6 @@ export class BrAccViewerComponent implements OnInit {
   // under development Daya
   onMouseOverHistPeriodComboBox() {
     this.isMouseInHistPeriodCombox = true;
-    this.histPeriodSelection;
     console.log('The hist period selection is ', this.histPeriodSelection);
   }
 

@@ -85,6 +85,8 @@ export class AppComponent implements OnInit {
         alert('Sleep and wakup was detected. You probably lost connection to server. Refresh (reload) page in the browser manually.'); // Probably just woke up!
       }
       this.lastTimeOpSysSleepWakeupChecked = currentTimeNum;
+
+      // isSrvConnectionAlive = this._socket != null && this._socket.readyState === WebSocket.OPEN;
     }, 5 * 1000); // refresh at every 5 secs
   }
 

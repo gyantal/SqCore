@@ -105,22 +105,25 @@
   cursor: pointer;
 }
 /* Change background color of buttons on hover */
-.tab :hover {
+.brAccViewerMoreDetailsAndHistChartButtons :hover {
   border: .1rem solid #228B22;
   backdrop-filter: blur(1rem);
   transform: skewX(-10deg);
   height: 2.5rem;
-  width: 14rem;
-  border-radius: 2rem .5rem 2rem 0;
+  width: 11rem;
+  border-radius: 1rem .5rem 1rem 0;
   position: relative;
   justify-content: center;
   transition: all .2s ease;
-  font: 1.4rem;
-  font-weight: 300;
-  text-shadow: 0 0 2rem #fff;
-  text-transform: uppercase;
-  animation: breath2 1s .5s infinite alternate;
+  font: 1rem;
+  font-weight: 200;
+  text-shadow: 0 0 1rem #fff;
+  animation: breath2 2s .5s infinite alternate;
   cursor: pointer;
+}
+.brAccViewerMoreDetailsAndHistChartButtons {
+  display: inline-block;
+  width: 30%;
 }
 
 .moreDetailsPartitions {

@@ -171,7 +171,7 @@ namespace BrokerCommon
             Contract contract;
             if (p_yfTicker[0] == '^') // if Index, not stock. Index has only LastPrice and TickType.ClosePrice
             {
-                string symbol = p_yfTicker.Substring(1); // skip the "^"
+                string symbol = p_yfTicker[1..]; // skip the "^"
                 if (symbol == "GSPC")       //
                     symbol = "SPX";
                 else if (symbol == "VXV")   // On September 18, 2017 the ticker symbol for the Cboe 3-Month Volatility Index was changed from “VXV” to “VIX3M”; So IB returns 'No security definition has been found' for VXV, but accepts VIX3M.
@@ -187,7 +187,7 @@ namespace BrokerCommon
                 if (symbol[0] == '^')
                     symbol = symbol.Substring(1, symbol.Length - 1);
 
-                string expiry = p_yfTicker.Substring(p_yfTicker.Length - 6);        // expiry = "201610", however in real life expire = "20161019" as last day can be also specified for LastTradeDateOrContractMonth
+                string expiry = p_yfTicker[^6..];        // expiry = "201610", however in real life expire = "20161019" as last day can be also specified for LastTradeDateOrContractMonth
                 string exchange = "CFE";    // works for VIX futures
                 // from 2016: they introduced weekly VIX futures, not only monthly. Those have same Multiplier = 1000, but different TradingClass.
                 // Ib error: "The contract description specified for VIX is ambiguous; you must specify the multiplier or trading class."

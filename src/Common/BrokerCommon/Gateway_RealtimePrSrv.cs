@@ -59,7 +59,7 @@ namespace BrokerCommon
 
 
                 // caret(^) is not a valid URL character, so it is encoded to %5E; skip the first '?'  , convert everything to Uppercase, because '%5e', and '%5E' is the same for us
-                string input = Uri.UnescapeDataString(p_input.Substring(1));    // change %20 to ' ', and %5E to '^'  , "^VIX" is encoded in the URI as "^%5EVIX"
+                string input = Uri.UnescapeDataString(p_input[1..]);    // change %20 to ' ', and %5E to '^'  , "^VIX" is encoded in the URI as "^%5EVIX"
 
                 string[] inputParams = input.Split(new char[] { '&' }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -103,7 +103,7 @@ namespace BrokerCommon
 
                     if (inputParam.StartsWith("JSONP=", StringComparison.CurrentCultureIgnoreCase))    // symbols
                     {
-                        string jsonpPrefix = inputParam.Substring(6);
+                        string jsonpPrefix = inputParam[6..];
                         resultPrefix = jsonpPrefix + "(";
                         resultPostfix = ")";  // semicolon; ';' is not required in JS, because of semicolon auto-insertion
                     }

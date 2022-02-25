@@ -37,7 +37,7 @@ namespace FinTechCommon
             if (iColon == -1)
                 throw new Exception($"AssetId32Bits cannot find : in '{p_typeSubTableStr}'");
 
-            m_value = IntValue((AssetType)byte.Parse(p_typeSubTableStr.Substring(0, iColon)), uint.Parse(p_typeSubTableStr.Substring(iColon + 1, p_typeSubTableStr.Length - iColon - 1)));
+            m_value = IntValue((AssetType)byte.Parse(p_typeSubTableStr[..iColon]), uint.Parse(p_typeSubTableStr.Substring(iColon + 1, p_typeSubTableStr.Length - iColon - 1)));
         }
         public AssetType AssetTypeID        { get { return (AssetType)(m_value >> 27); } }
         public uint SubTableID               { get { return (m_value << 5) >> 5; } }

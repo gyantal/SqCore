@@ -114,7 +114,7 @@ namespace FinTechCommon
             var dailyNavStr = p_updateParam.Db!.GetAssetQuoteRaw(p_assetId); // "D/C" for Date/Closes: "D/C,20090102/16461,20090105/16827,..."
             
             int iFirstComma = dailyNavStr!.IndexOf(',');
-            string formatString = dailyNavStr.Substring(0, iFirstComma);  // "D/C" for Date/Closes
+            string formatString = dailyNavStr[..iFirstComma];  // "D/C" for Date/Closes
             if (formatString != "D/C")
                 return;
 
@@ -125,8 +125,8 @@ namespace FinTechCommon
             // double[] unadjustedClosesNav = dailyNavStrSplit.Select(r => Double.Parse(r.Substring(9))).ToArray();
             //unadjustedClosesNav[dates.Length - 1] = todayNav;   // update the last item.
             int iLastComma = dailyNavStr.LastIndexOf(',');
-            string lastRecord = dailyNavStr.Substring(iLastComma + 1);
-            DateTime lastDate = Utils.FastParseYYYYMMDD(lastRecord.Substring(0, 8));
+            string lastRecord = dailyNavStr[(iLastComma + 1)..];
+            DateTime lastDate = Utils.FastParseYYYYMMDD(lastRecord[..8]);
 
             DateTime todayEt = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;
             int lengthToUseFromOld = dailyNavStr.Length;

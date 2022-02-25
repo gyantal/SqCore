@@ -48,9 +48,9 @@ namespace FinTechCommon
             RedisKey[] keys = server.Keys(sourceDbIdx, pattern: "*").ToArray();   // it automatically do KEYS or the more efficient SCAN commands in the background
             foreach (RedisKey key in keys)
             {
-                Console.WriteLine($"Copying from db{sourceDbIdx} to db{destDbIdx}: key '{key.ToString()}'");
+                Console.WriteLine($"Copying from db{sourceDbIdx} to db{destDbIdx}: key '{key}'");
                 // "COPY sq_user sq_user DB 1 REPLACE" works from redis-cli, but ArgumentOutOfRangeException if it is a command bigger than 23 binary bytes.
-                result = sourceDb.Execute("COPY", $"{key.ToString()}", $"{key.ToString()}", "DB", $"{destDbIdx}", "REPLACE");  // https://redis.io/commands/copy   You need to use "SELECT 1" if copy from DB-1 to DB-0
+                result = sourceDb.Execute("COPY", $"{key}", $"{key}", "DB", $"{destDbIdx}", "REPLACE");  // https://redis.io/commands/copy   You need to use "SELECT 1" if copy from DB-1 to DB-0
 
                 // Option 2: Dump to binary, download to client and Restore back
                 // byte[] dump = m_redisDb.KeyDump(key);

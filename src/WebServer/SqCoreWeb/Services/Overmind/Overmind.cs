@@ -262,7 +262,7 @@ namespace SqCoreWeb
             if (priceHtml == null)
                 return double.NaN;
 
-            string firstCharsWithSubString = !String.IsNullOrWhiteSpace(priceHtml!) && priceHtml.Length >= 300 ? priceHtml.Substring(0, 300) : priceHtml;
+            string firstCharsWithSubString = !String.IsNullOrWhiteSpace(priceHtml!) && priceHtml.Length >= 300 ? priceHtml[..300] : priceHtml;
             Utils.Logger.Trace("HttpClient().GetStringAsync returned: " + firstCharsWithSubString);
 
             double? realTimePrice = null, dailyChange = null;
@@ -350,11 +350,10 @@ namespace SqCoreWeb
         private static double? GetAmazonProductPrice(string p_amazonProductUrl)
         {
             string errorMessage = string.Empty;
-            double price = 0.0;
             string? webpage = Utils.DownloadStringWithRetryAsync(p_amazonProductUrl).TurnAsyncToSyncTask();
             if (webpage == null)
                 return null;
-            Utils.Logger.Info("HttpClient().GetStringAsync returned: " + ((webpage.Length > 100) ? webpage.Substring(0, 100) : webpage));
+            Utils.Logger.Info("HttpClient().GetStringAsync returned: " + ((webpage.Length > 100) ? webpage[..100] : webpage));
 
             // <span id="priceblock_ourprice" class="a-size-medium a-color-price">£199.95</span>
             string searchStr = @"id=""priceblock_ourprice"" class=""a-size-medium a-color-price"">";
@@ -371,7 +370,7 @@ namespace SqCoreWeb
                 return null;
             }
             string priceStr = webpage.Substring(startInd + searchStr.Length + 1, endInd - (startInd + searchStr.Length + 1));
-            if (!Double.TryParse(priceStr, out price))
+            if (!Double.TryParse(priceStr, out double price))
             {
                 Utils.Logger.Info($"{priceStr} cannot be parsed to Double.");
                 return null;

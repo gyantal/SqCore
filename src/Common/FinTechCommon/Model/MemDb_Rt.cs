@@ -424,8 +424,7 @@ namespace FinTechCommon
                 Stock? stock = null;
                 foreach (var sec in p_assets)
                 {
-                    Stock? iStock = sec as Stock;
-                    if (iStock == null)
+                    if (sec is not Stock iStock)
                         continue;
                     if (iStock.IexTicker == iexTicker)
                     {

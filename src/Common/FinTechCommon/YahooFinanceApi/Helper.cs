@@ -8,7 +8,8 @@ namespace YahooFinanceApi
 {
     internal static class Helper
     {
-        private static readonly DateTime Epoch = new(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        private const int StartIndex = 1;
+        private static readonly DateTime Epoch = new(1970, StartIndex, StartIndex, 0, 0, 0, DateTimeKind.Utc);
 
         private static readonly TimeZoneInfo TzEst = TimeZoneInfo
             .GetSystemTimeZones()
@@ -36,13 +37,13 @@ namespace YahooFinanceApi
         }
 
         internal static string GetRandomString(int length) =>
-            Guid.NewGuid().ToString().Substring(0, length);
+            Guid.NewGuid().ToString()[..length];
 
         internal static string ToLowerCamel(this string pascal) =>
-            pascal.Substring(0, 1).ToLower() + pascal.Substring(1);
+            pascal[..StartIndex].ToLower() + pascal[1..];
 
         internal static string ToPascal(this string lowerCamel) =>
-            lowerCamel.Substring(0, 1).ToUpper() + lowerCamel.Substring(1);
+            lowerCamel[..StartIndex].ToUpper() + lowerCamel[StartIndex..];
 
         internal static IEnumerable<string> Duplicates(this IEnumerable<string> items)
         {

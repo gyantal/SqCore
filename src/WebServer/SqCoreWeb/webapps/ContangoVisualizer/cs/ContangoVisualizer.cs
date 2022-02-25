@@ -286,7 +286,7 @@ namespace SqCoreWeb.Controllers
             int startPosLiveDate = webpageLive.IndexOf("\"updated\":\"",liveFuturesDataVecInd[0]) + "\"updated\":\"".Length;
             liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 29);
             liveFuturesDataDate = liveFuturesDataDT.Substring(18, 11);
-            liveFuturesDataTime = liveFuturesDataDT.Substring(0, 8) + " CT";
+            liveFuturesDataTime = liveFuturesDataDT[..8] + " CT";
 
             int nextExpLiveMonth = webpageLive.IndexOf("\"expirationMonth\":\"", 0) + "\"expirationMonth\":\"".Length;
             liveFuturesNextExp = webpageLive.Substring(nextExpLiveMonth, 3);
@@ -459,7 +459,7 @@ namespace SqCoreWeb.Controllers
             int startPosLiveDate = webpageLive.IndexOf("\"updated\":\"", liveFuturesDataVecInd[0]) + "\"updated\":\"".Length;
             liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 29);
             liveFuturesDataDate = liveFuturesDataDT.Substring(18, 11);
-            liveFuturesDataTime = liveFuturesDataDT.Substring(0, 8) + " CT";
+            liveFuturesDataTime = liveFuturesDataDT[..8] + " CT";
 
             int nextExpLiveMonth = webpageLive.IndexOf("\"expirationMonth\":\"", 0) + "\"expirationMonth\":\"".Length;
             liveFuturesNextExp = webpageLive.Substring(nextExpLiveMonth, 3);

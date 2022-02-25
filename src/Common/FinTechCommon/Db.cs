@@ -156,10 +156,10 @@ namespace FinTechCommon
                 Asset asset = assets.Find(r => r.SqTicker == sqTicker)!;
                 if (asset is Stock stock)
                     stock.ExpectedHistoryStartDateLoc = startDate;
-                else if (asset is BrokerNav)
-                    ((BrokerNav)asset).ExpectedHistoryStartDateLoc = startDate;
-                else if (asset is CurrPair)
-                    ((CurrPair)asset).ExpectedHistoryStartDateLoc = startDate;
+                else if (asset is BrokerNav nav)
+                    nav.ExpectedHistoryStartDateLoc = startDate;
+                else if (asset is CurrPair pair)
+                    pair.ExpectedHistoryStartDateLoc = startDate;
                 else
                     throw new NotImplementedException();
             }
@@ -170,7 +170,7 @@ namespace FinTechCommon
             DateTime startDateET = new(2018, 02, 01, 0, 0, 0);
             if (p_expectedHistorySpan.StartsWith("Date:"))
             {
-                if (!DateTime.TryParseExact(p_expectedHistorySpan.Substring("Date:".Length), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDateET))
+                if (!DateTime.TryParseExact(p_expectedHistorySpan["Date:".Length..], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out startDateET))
                     throw new SqException($"ReloadHistoricalDataAndSetTimer(): wrong ExpectedHistorySpan for ticker {p_ticker}");
             }
             else if (p_expectedHistorySpan.EndsWith("y"))

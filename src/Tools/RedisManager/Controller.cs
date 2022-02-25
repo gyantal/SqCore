@@ -227,7 +227,7 @@ namespace RedisManager
                         var currentLineParts = currentLine.Split(',', StringSplitOptions.RemoveEmptyEntries);   // date is in this format: "03/10/09" MM/DD/YY
                         if (currentLineParts[3] == "Deposit" || currentLineParts[3] == "Incoming Account Transfer" || currentLineParts[3] == "Withdrawal" || currentLineParts[3] == "Outgoing Account Transfer")
                         {
-                            var monthStr = currentLineParts[2].Substring(0, 2);
+                            var monthStr = currentLineParts[2][..2];
                             var dayStr = currentLineParts[2].Substring(3, 2);
                             var yearStr = currentLineParts[2].Substring(6, 2); // 09 means 2009, 99 means 1999
                             var year = Int32.Parse(yearStr);

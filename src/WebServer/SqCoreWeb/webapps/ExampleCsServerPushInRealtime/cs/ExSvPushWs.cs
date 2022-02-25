@@ -37,8 +37,8 @@ namespace SqCoreWeb
         public static void OnWsReceiveAsync(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? wsResult, string bufferStr)
         {
             var semicolonInd = bufferStr.IndexOf(':');
-            string msgCode = bufferStr.Substring(0, semicolonInd);
-            string msgObjStr = bufferStr.Substring(semicolonInd + 1);
+            string msgCode = bufferStr[..semicolonInd];
+            string msgObjStr = bufferStr[(semicolonInd + 1)..];
 
             if (msgCode == "startStreamingCode")
             {

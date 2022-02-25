@@ -23,8 +23,8 @@ namespace SqCoreWeb
         static int m_qckflNewsTimerFrequencyMs = 15 * 60 * 1000; // timer for 15 minutes
         public static TimeSpan c_initialSleepIfNotActiveToolQn2 = TimeSpan.FromMilliseconds(10 * 1000); // 10sec
         Dictionary<string, List<NewsItem>> m_newsMemory = new();
-        Random m_random = new(DateTime.Now.Millisecond);
-        KeyValuePair<int, int> m_sleepBetweenDnsMs = new(2000, 1000); // <fix, random>
+        static Random g_random = new(DateTime.Now.Millisecond);
+        static KeyValuePair<int, int> g_sleepBetweenDnsMs = new(2000, 1000); // <fix, random>
 
 
         // string[] m_stockTickers2 = { };
@@ -48,7 +48,7 @@ namespace SqCoreWeb
                 if (m_stockTickers2.Length == 0)
                     m_stockTickers2 = GetQckflStockTickers2() ?? Array.Empty<string>();
                 
-                byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.Tickers2:" + Utils.CamelCaseSerialize(new List<string> { "All assets" }.Union(m_stockTickers2).ToList()));
+                byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.Tickers:" + Utils.CamelCaseSerialize(new List<string> { "All assets" }.Union(m_stockTickers2).ToList()));
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
 
@@ -58,7 +58,7 @@ namespace SqCoreWeb
                     {
                         Utils.Logger.Info("OnConnectedAsync_QckflNews(). Starting m_qckflNewsTimer.");
                         isQckflNewsTimerRunning = true;
-                        m_qckflNewsTimer.Change(TimeSpan.FromMilliseconds(m_qckflNewsTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
+                        m_qckflNewsTimer.Change(System.TimeSpan.Zero, TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
                     }
                 }
                 // first client connects, we start the timer immediately. helper: bool isQckflNewsTimerRunning = false;
@@ -81,7 +81,7 @@ namespace SqCoreWeb
                 int pos = valuesFromGSheetStr.IndexOf(@"""values"":");
                 if (pos < 0)
                     return null;
-                valuesFromGSheetStr = valuesFromGSheetStr.Substring(pos + 9); // cut off until the end of "values":
+                valuesFromGSheetStr = valuesFromGSheetStr[(pos + 9)..]; // cut off until the end of "values":
                 int posStart = valuesFromGSheetStr.IndexOf(@"""");
                 if (posStart < 0)
                     return null;
@@ -94,7 +94,7 @@ namespace SqCoreWeb
             else
                 return null;
         }
-        internal async void GetQckflCommonNews()
+        public static List<NewsItem> GetQckflCommonNews2()
         {
             string rssFeedUrl = string.Format(@"https://www.cnbc.com/id/100003114/device/rss/rss.html");
 
@@ -103,19 +103,19 @@ namespace SqCoreWeb
             int retryCount = 0;
             while ((foundNewsItems.Count < 1) && (retryCount < 5))
             {
-                foundNewsItems = await ReadRSSAsync2(rssFeedUrl, NewsSource.CnbcRss, string.Empty);
+                foundNewsItems = ReadRSSAsync2(rssFeedUrl, NewsSource.CnbcRss, string.Empty);
                 if (foundNewsItems.Count == 0)
-                    System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));
+                    System.Threading.Thread.Sleep(g_sleepBetweenDnsMs.Key + g_random.Next(g_sleepBetweenDnsMs.Value));
                 retryCount++;
             }
 
-            // return foundNewsItems;
+            return foundNewsItems;
         }
-        private async Task<List<NewsItem>> ReadRSSAsync2(string p_url, NewsSource p_newsSource, string p_ticker)
+        public static List<NewsItem> ReadRSSAsync2(string p_url, NewsSource p_newsSource, string p_ticker)
         {
             try
             {
-                string? rssFeedAsString = await Utils.DownloadStringWithRetryAsync(p_url, 3, TimeSpan.FromSeconds(5), true);
+                string? rssFeedAsString = Utils.DownloadStringWithRetryAsync(p_url, 3, TimeSpan.FromSeconds(5), true).TurnAsyncToSyncTask();
                 if (String.IsNullOrEmpty(rssFeedAsString))
                 {
                     Console.WriteLine($"QuickfolioNewsDownloader.ReadRSS() url download failed.");
@@ -125,7 +125,7 @@ namespace SqCoreWeb
                 // convert feed to XML using LINQ to XML and finally create new XmlReader object
                 var feed = System.ServiceModel.Syndication.SyndicationFeed.Load(XDocument.Parse(rssFeedAsString).CreateReader());
 
-                List<NewsItem> foundNewNews = new();
+                List<NewsItem> foundNews = new();
 
                 foreach (SyndicationItem item in feed.Items)
                 {
@@ -135,15 +135,14 @@ namespace SqCoreWeb
                     newsItem.Title = WebUtility.HtmlDecode(item.Title.Text);
                     newsItem.Summary = WebUtility.HtmlDecode(item.Summary?.Text ?? string.Empty);   // <description> is missing sometimes, so Summary = null
                     newsItem.PublishDate = item.PublishDate.LocalDateTime;
-                    newsItem.DownloadTime = DateTime.Now;
+                    newsItem.DownloadTime = DateTime.UtcNow;
                     newsItem.Source = p_newsSource.ToString();
                     newsItem.DisplayText = string.Empty;
                     //newsItem.setFiltered();
-                    if (!m_newsMemory.ContainsKey(p_ticker))
-                        m_newsMemory.Add(p_ticker, new List<NewsItem>());
-                        foundNewNews.Add(newsItem);
+                    // we might filter news and bring Laszlo's bool SkipNewsItem(string p_title) here. Later. Not now.
+                    foundNews.Add(newsItem);
                 }
-                return foundNewNews;
+                return foundNews;
             }
             catch (Exception exception)
             {
@@ -151,13 +150,13 @@ namespace SqCoreWeb
                 return new List<NewsItem>();
             }
         }
-        internal async void GetQckflStockNews() // with 13 tickers, it can take 13 * 2 = 26seconds
+        public void GetQckflStockNews() // with 13 tickers, it can take 13 * 2 = 26seconds
         {
             foreach (string ticker in m_stockTickers2)
             {
                 byte[]? encodedMsgRss = null;
                 string rssFeedUrl = string.Format(@"https://feeds.finance.yahoo.com/rss/2.0/headline?s={0}&region=US&lang=en-US", ticker);
-                var rss = await ReadRSSAsync2(rssFeedUrl, NewsSource.YahooRSS, ticker);
+                var rss = ReadRSSAsync2(rssFeedUrl, NewsSource.YahooRSS, ticker);
                 if (rss.Count > 0)
                     encodedMsgRss = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(rss));
                     Console.WriteLine("The stocknews items are :" + encodedMsgRss);
@@ -170,16 +169,25 @@ namespace SqCoreWeb
                 Utils.Logger.Debug("QckflNewsTimer_Elapsed(). BEGIN");
                 if (!isQckflNewsTimerRunning)
                     return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
-                // Download common newws
 
+                // Check if the number of Clients > 0. If not => don't do processing and set isQckflNewsTimerRunning = false and don't restart the timer
+
+                // do processing...
+                // Download common news
+                // g_newsDownloader.
+                List<NewsItem> commonNews = GetQckflCommonNews2();
                 // company specific news.
 
+                // Sending only commonNews to All clients
+                byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(commonNews));
+
+                // Setting the timer if it is needed
                 lock (m_qckflNewsTimerLock)
                 {
                     if (isQckflNewsTimerRunning)
                     {
+                        Utils.Logger.Info("QckflNewsTimer_Elapsed(). We restart timer.");
                         m_qckflNewsTimer.Change(TimeSpan.FromMilliseconds(m_qckflNewsTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
-                        Utils.Logger.Info("QckflNewsTimer_Elapsed(). Started");
                     }
                 }
             }

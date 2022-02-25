@@ -40,9 +40,7 @@ namespace SqCoreWeb
 
         public SqFirewallMiddlewarePreAuthLogger(RequestDelegate next)
         {
-            if (next == null)
-                throw new ArgumentNullException(nameof(next));
-            _next = next;
+            _next = next ?? throw new ArgumentNullException(nameof(next));
 
             InitializeWhitelist();
         }
@@ -212,7 +210,7 @@ namespace SqCoreWeb
             // If number increases, to speed things up, we can do BinarySearch(), which will return an index near. Then we can check +1, -1 around that candidate. It might work for Prefixes.
             string prefixSearch = p_httpContext.Request.Path;
             if (prefixSearch[0] == '/')
-                prefixSearch = prefixSearch.Substring(1); // remove initial '/' for comparisions
+                prefixSearch = prefixSearch[1..]; // remove initial '/' for comparisions
             foreach (var whitelistStr in m_whitelistPrefix)
             {
                 if (prefixSearch.StartsWith(whitelistStr, StringComparison.OrdinalIgnoreCase))
@@ -235,7 +233,7 @@ namespace SqCoreWeb
             // 2020-10: m_whitelistExact has 96 non-brotli out of 140 files both in the WindowsDev/wwwroot folder (Angular projects added) and on Linux
             // 2^7=128, so that is about 7 string comparisons with BinarySearch. Excellent.
             if (exactSearch[0] == '/')
-                exactSearch = exactSearch.Substring(1); // remove initial '/' for comparisions
+                exactSearch = exactSearch[1..]; // remove initial '/' for comparisions
             int iExact = Array.BinarySearch(m_whitelistExact, exactSearch, StringComparer.OrdinalIgnoreCase);
             // Console.WriteLine($"Array.BinarySearch() for '{exactSearch}', result is {iExact}.'");
             if (iExact >= 0)

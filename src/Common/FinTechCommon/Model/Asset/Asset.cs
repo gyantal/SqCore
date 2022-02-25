@@ -109,7 +109,7 @@ namespace FinTechCommon
         {
             string symbol = row[1].ToString()!;
             int iDot = symbol.IndexOf('.');
-            string targetCurrencyStr = iDot == -1 ? symbol : symbol.Substring(0, iDot); // prepared for symbol "HUF.EUR" or "HUF". But we choose the symbol without the '.'
+            string targetCurrencyStr = iDot == -1 ? symbol : symbol[..iDot]; // prepared for symbol "HUF.EUR" or "HUF". But we choose the symbol without the '.'
 
             TargetCurrency = AssetHelper.gStrToCurrency[targetCurrencyStr];
             TradingSymbol = row[5].ToString()!;

@@ -33,9 +33,9 @@ namespace SqCoreWeb
                     Thread.Sleep(DashboardClient.c_initialSleepIfNotActiveToolQn); // 10 sec is quite a long waiting, but we rarely use this tool.
 
                 m_newsDownloader.UpdateStockTickers();
-                byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.Tickers:" + Utils.CamelCaseSerialize(m_newsDownloader.GetStockTickers()));
-                if (WsWebSocket!.State == WebSocketState.Open)
-                    WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                // byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.Tickers:" + Utils.CamelCaseSerialize(m_newsDownloader.GetStockTickers()));
+                // if (WsWebSocket!.State == WebSocketState.Open)
+                //     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
 
                 TriggerQuickfolioNewsDownloader();
             });
@@ -67,7 +67,7 @@ namespace SqCoreWeb
                 // m_newsDownloader.GetCommonNewsAndSendToClient(DashboardClient.g_clients);
                 m_newsDownloader.GetCommonNewsAndSendToClient(this);
 
-                m_newsDownloader.GetStockNewsAndSendToClient(this);   // with 13 tickers, it can take 13 * 2 = 26seconds
+                // m_newsDownloader.GetStockNewsAndSendToClient(this);   // with 13 tickers, it can take 13 * 2 = 26seconds
                 nExceptionsTriggerQuickfolioNewsDownloader = 0;
             }
             catch

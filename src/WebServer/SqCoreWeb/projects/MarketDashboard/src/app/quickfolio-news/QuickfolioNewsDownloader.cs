@@ -64,7 +64,7 @@ namespace SqCoreWeb
             int pos = p_spreadsheetString.IndexOf(@"""values"":");
             if (pos < 0)
                 return null;
-            p_spreadsheetString = p_spreadsheetString.Substring(pos + 9); // cut off until the end of "values":
+            p_spreadsheetString = p_spreadsheetString[(pos + 9)..]; // cut off until the end of "values":
             int posStart = p_spreadsheetString.IndexOf(@"""");
             if (posStart < 0)
                 return null;

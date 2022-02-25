@@ -206,8 +206,7 @@ namespace FinTechCommon
             List<Stock> result = new();
             foreach (var sec in p_assets)
             {
-                Stock? stock = sec as Stock;
-                if (stock == null)
+                if (sec is not Stock stock)
                     continue;
                 bool accepted = false;
                 if (p_primExchangeID == ExchangeId.Unknown) // if exchange is not known, assume all exchange is good
@@ -235,8 +234,7 @@ namespace FinTechCommon
         {
             foreach (var sec in p_assets)
             {
-                Stock? stock = sec as Stock;
-                if (stock == null)
+                if (sec is not Stock stock)
                     continue;
                 if (p_primExchangeID == ExchangeId.Unknown) // if exchange is not known, assume all exchange is good
                 {

@@ -21,9 +21,7 @@ namespace SqCoreWeb
 
         public SqFirewallMiddlewarePostAuth(RequestDelegate next)
         {
-            if (next == null)
-                throw new ArgumentNullException(nameof(next));
-            _next = next;
+            _next = next ?? throw new ArgumentNullException(nameof(next));
 
             var mainIndexHtml = System.IO.File.ReadAllText(Program.g_webAppGlobals.KestrelEnv?.WebRootPath + "/index.html");
             var mainIndexHtmlArray = mainIndexHtml.Split(@"<a href=""/UserAccount/login"">Login</a>", StringSplitOptions.RemoveEmptyEntries);  // has only 2 items. Searched string is not included.

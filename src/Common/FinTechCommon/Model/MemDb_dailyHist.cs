@@ -426,14 +426,14 @@ namespace FinTechCommon
                     continue; // "DC.IM", "DC.ID" quote history is in RedisDb,but "DC.TM" TradeStation NAV is not. We exit here, and aggregate only the valid ones.
 
                 int iFirstComma = dailyNavStr.IndexOf(',');
-                string formatString = dailyNavStr.Substring(0, iFirstComma);  // "D/C" for Date/Closes
+                string formatString = dailyNavStr[..iFirstComma];  // "D/C" for Date/Closes
                 if (formatString != "D/C")
                     continue;
 
                 navAssetsWithHistQuotes.Add(navAsset);
                 var dailyNavStrSplit = dailyNavStr.Substring(iFirstComma + 1, dailyNavStr.Length - (iFirstComma + 1)).Split(',', StringSplitOptions.RemoveEmptyEntries);
-                SqDateOnly[] dates = dailyNavStrSplit.Select(r => new SqDateOnly(Int32.Parse(r.Substring(0, 4)), Int32.Parse(r.Substring(4, 2)), Int32.Parse(r.Substring(6, 2)))).ToArray();
-                double[] unadjustedClosesNav = dailyNavStrSplit.Select(r => Double.Parse(r.Substring(9))).ToArray();
+                SqDateOnly[] dates = dailyNavStrSplit.Select(r => new SqDateOnly(Int32.Parse(r[..4]), Int32.Parse(r.Substring(4, 2)), Int32.Parse(r.Substring(6, 2)))).ToArray();
+                double[] unadjustedClosesNav = dailyNavStrSplit.Select(r => Double.Parse(r[9..])).ToArray();
 
                 KeyValuePair<SqDateOnly, double>[] deposits = p_db.GetAssetBrokerNavDeposit(navAsset.AssetId);
 

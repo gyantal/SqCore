@@ -186,8 +186,7 @@ namespace SqCoreWeb
             Stock? stock = asset as Stock;
             if (stock == null)
             {
-                Option? option = asset as Option;
-                if (option != null)
+                if (asset is Option option)
                     stock = option.UnderlyingAsset as Stock;
             }
             if (stock == null)
@@ -424,7 +423,7 @@ namespace SqCoreWeb
                     if (periodStartIdx == -1)
                       return false;
                     string selectedSqTicker = "S/" + msgObjStr.Substring(bnchmkStartIdx + 1, (periodStartIdx - bnchmkStartIdx - 1));
-                    string periodSelected = msgObjStr.Substring(periodStartIdx + 1);
+                    string periodSelected = msgObjStr[(periodStartIdx + 1)..];
                     BrAccViewerSendNavHist(periodSelected, selectedSqTicker);
                     return true;
                 case "BrAccViewer.GetStockChrtData":

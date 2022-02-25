@@ -93,8 +93,8 @@ namespace SqCoreWeb
                 return;
 
             var semicolonInd = bufferStr.IndexOf(':');
-            string msgCode = bufferStr.Substring(0, semicolonInd);
-            string msgObjStr = bufferStr.Substring(semicolonInd + 1);
+            string msgCode = bufferStr[..semicolonInd];
+            string msgObjStr = bufferStr[(semicolonInd + 1)..];
             if (msgCode == "Dshbrd.BrowserWindowUnload")
             {
                 DisposeClient(client);

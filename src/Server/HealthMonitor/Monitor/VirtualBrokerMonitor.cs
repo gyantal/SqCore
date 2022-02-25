@@ -69,13 +69,14 @@ namespace HealthMonitor
             }
 
             lock (m_VbReport)
-                m_VbReport.Add(new Tuple<DateTime, bool, string, string>(DateTime.UtcNow, !isErrorOrWarning, ((briefReport != null) ? briefReport : "ReportFromVirtualBroker without BriefReport"), ((detailedReport != null) ? detailedReport : p_message.ParamStr)));
+                m_VbReport.Add(new Tuple<DateTime, bool, string, string>(DateTime.UtcNow, !isErrorOrWarning, briefReport ?? "ReportFromVirtualBroker without BriefReport", detailedReport ?? p_message.ParamStr));
+                //  m_VbReport.Add(new Tuple<DateTime, bool, string, string>(DateTime.UtcNow, !isErrorOrWarning, ((briefReport != null) ? briefReport : "ReportFromVirtualBroker without BriefReport"), ((detailedReport != null) ? detailedReport : p_message.ParamStr)));
 
             if (isErrorOrWarning)
             {
                 Utils.Logger.Info("Error or Warning FromVirtualBroker().");
                 // Vbroker source can spam error messages every 1 second. We don't want to spam email/phonecalls every second, therefore use urgency as Normal
-                InformSupervisorsEx(DataSource.VBroker, false, "SQ HealthMonitor: ERROR from VirtualBroker.", $"SQ HealthMonitor: ERROR from VirtualBroker. MessageParamStr: { ((briefReport != null) ? briefReport : p_message.ParamStr) }",
+                InformSupervisorsEx(DataSource.VBroker, false, "SQ HealthMonitor: ERROR from VirtualBroker.", $"SQ HealthMonitor: ERROR from VirtualBroker. MessageParamStr: { briefReport ?? p_message.ParamStr }",
                     "There is an Error in Virtual Broker. ... I repeat: Error in Virtual Broker.", ref m_lastVbInformSupervisorLock, ref m_lastVbErrorInformTime);
             }
 
