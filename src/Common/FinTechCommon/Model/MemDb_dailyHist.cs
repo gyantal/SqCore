@@ -431,7 +431,7 @@ namespace FinTechCommon
                     continue;
 
                 navAssetsWithHistQuotes.Add(navAsset);
-                var dailyNavStrSplit = dailyNavStr.Substring(iFirstComma + 1, dailyNavStr.Length - (iFirstComma + 1)).Split(',', StringSplitOptions.RemoveEmptyEntries);
+                var dailyNavStrSplit = dailyNavStr[(iFirstComma + 1)..].Split(',', StringSplitOptions.RemoveEmptyEntries);
                 SqDateOnly[] dates = dailyNavStrSplit.Select(r => new SqDateOnly(Int32.Parse(r[..4]), Int32.Parse(r.Substring(4, 2)), Int32.Parse(r.Substring(6, 2)))).ToArray();
                 double[] unadjustedClosesNav = dailyNavStrSplit.Select(r => Double.Parse(r[9..])).ToArray();
 

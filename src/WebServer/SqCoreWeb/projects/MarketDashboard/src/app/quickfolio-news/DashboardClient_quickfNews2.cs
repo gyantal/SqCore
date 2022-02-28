@@ -94,22 +94,15 @@ namespace SqCoreWeb
             else
                 return null;
         }
-        public static List<NewsItem> GetQckflCommonNews2()
+        public void GetQckflCommonNews2()
         {
             string rssFeedUrl = string.Format(@"https://www.cnbc.com/id/100003114/device/rss/rss.html");
 
-            List<NewsItem> foundNewsItems = new();
-            // try max 5 downloads to leave the tread for sure (call this method repeats continuosly)
-            int retryCount = 0;
-            while ((foundNewsItems.Count < 1) && (retryCount < 5))
-            {
-                foundNewsItems = ReadRSSAsync2(rssFeedUrl, NewsSource.CnbcRss, string.Empty);
-                if (foundNewsItems.Count == 0)
-                    System.Threading.Thread.Sleep(g_sleepBetweenDnsMs.Key + g_random.Next(g_sleepBetweenDnsMs.Value));
-                retryCount++;
-            }
-
-            return foundNewsItems;
+            // List<NewsItem> foundNewsItems = new();
+            List<NewsItem> foundNewsItems = new (ReadRSSAsync2(rssFeedUrl, NewsSource.CnbcRss, string.Empty));
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(foundNewsItems));
+            if (WsWebSocket!.State == WebSocketState.Open)
+                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
         }
         public static List<NewsItem> ReadRSSAsync2(string p_url, NewsSource p_newsSource, string p_ticker)
         {
@@ -150,18 +143,18 @@ namespace SqCoreWeb
                 return new List<NewsItem>();
             }
         }
-        public void GetQckflStockNews() // with 13 tickers, it can take 13 * 2 = 26seconds
-        {
-            foreach (string ticker in m_stockTickers2)
-            {
-                byte[]? encodedMsgRss = null;
-                string rssFeedUrl = string.Format(@"https://feeds.finance.yahoo.com/rss/2.0/headline?s={0}&region=US&lang=en-US", ticker);
-                var rss = ReadRSSAsync2(rssFeedUrl, NewsSource.YahooRSS, ticker);
-                if (rss.Count > 0)
-                    encodedMsgRss = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(rss));
-                    Console.WriteLine("The stocknews items are :" + encodedMsgRss);
-            }
-        }
+        // public void GetQckflStockNews() // with 13 tickers, it can take 13 * 2 = 26seconds
+        // {
+        //     foreach (string ticker in m_stockTickers2)
+        //     {
+        //         byte[]? encodedMsgRss = null;
+        //         string rssFeedUrl = string.Format(@"https://feeds.finance.yahoo.com/rss/2.0/headline?s={0}&region=US&lang=en-US", ticker);
+        //         var rss = ReadRSSAsync2(rssFeedUrl, NewsSource.YahooRSS, ticker);
+        //         if (rss.Count > 0)
+        //             encodedMsgRss = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(rss));
+        //             Console.WriteLine("The stocknews items are :" + encodedMsgRss);
+        //     }
+        // }
         public static void QckflNewsTimer_Elapsed(object? state)    // Timer is coming on a ThreadPool thread
         {
             try
@@ -171,25 +164,46 @@ namespace SqCoreWeb
                     return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
 
                 // Check if the number of Clients > 0. If not => don't do processing and set isQckflNewsTimerRunning = false and don't restart the timer
+                if (DashboardClient.g_clients.Count > 0)
+                {
+                    List<DashboardClient>? g_clientsCpy = null;  // Clone the list, because .Add() can increase its size in another thread
+                    lock (DashboardClient.g_clients)
+                        g_clientsCpy = new List<DashboardClient>(DashboardClient.g_clients);
 
+                    g_clientsCpy.ForEach(client =>
+                    {
+                        // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
+                        // OnConnectedWsAsync() sleeps for a while if not active tool.
+                        TimeSpan timeSinceConnect = DateTime.UtcNow - client.ConnectionTime;
+                        if (client.ActivePage != ActivePage.QuickfolioNews && timeSinceConnect < c_initialSleepIfNotActiveToolQn2.Add(TimeSpan.FromMilliseconds(100)))
+                            return;
+
+                        client.GetQckflCommonNews2();
+                    });
+                } else
+                {
+                    isQckflNewsTimerRunning = false;
+                    lock (m_qckflNewsTimerLock)
+                    {
+                        if (isQckflNewsTimerRunning)
+                        {
+                            Utils.Logger.Info("QckflNewsTimer_Elapsed(). We restart timer.");
+                            m_qckflNewsTimer.Change(TimeSpan.FromMilliseconds(m_qckflNewsTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
+                        }
+                    }
+                }
+               
                 // do processing...
                 // Download common news
                 // g_newsDownloader.
-                List<NewsItem> commonNews = GetQckflCommonNews2();
+                // List<NewsItem> commonNews = GetQckflCommonNews2();
                 // company specific news.
 
                 // Sending only commonNews to All clients
-                byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(commonNews));
+                // byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(commonNews));
 
                 // Setting the timer if it is needed
-                lock (m_qckflNewsTimerLock)
-                {
-                    if (isQckflNewsTimerRunning)
-                    {
-                        Utils.Logger.Info("QckflNewsTimer_Elapsed(). We restart timer.");
-                        m_qckflNewsTimer.Change(TimeSpan.FromMilliseconds(m_qckflNewsTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
-                    }
-                }
+                
             }
             catch (Exception e)
             {

@@ -102,7 +102,7 @@ namespace HealthMonitor
                             int strategyNameInd3 = m_VbReport[i].Item3.IndexOf(" ", strategyNameInd2);
                             if (strategyNameInd3 != -1)
                             {
-                                strategyName = m_VbReport[i].Item3.Substring(strategyNameInd2, strategyNameInd3 - strategyNameInd2);
+                                strategyName = m_VbReport[i].Item3[strategyNameInd2..strategyNameInd3];
                                 if (strategyName == p_triggeredTaskSchemaName)
                                 {
                                     expectedMessage = m_VbReport[i];

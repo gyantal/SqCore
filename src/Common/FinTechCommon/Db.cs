@@ -175,13 +175,13 @@ namespace FinTechCommon
             }
             else if (p_expectedHistorySpan.EndsWith("y"))
             {
-                if (!Int32.TryParse(p_expectedHistorySpan.Substring(0, p_expectedHistorySpan.Length - 1), out int nYears))
+                if (!Int32.TryParse(p_expectedHistorySpan[0..^1], out int nYears))
                     throw new SqException($"ReloadHistoricalDataAndSetTimer(): wrong ExpectedHistorySpan for ticker {p_ticker}");
                 startDateET = DateTime.UtcNow.FromUtcToEt().AddYears(-1 * nYears).Date;
             }
             else if (p_expectedHistorySpan.EndsWith("m")) // RenewedUber requires only the last 2-3 days. Last 1year is unnecessary, so do only last 2 months
             {
-                if (!Int32.TryParse(p_expectedHistorySpan.Substring(0, p_expectedHistorySpan.Length - 1), out int nMonths))
+                if (!Int32.TryParse(p_expectedHistorySpan[0..^1], out int nMonths))
                     throw new SqException($"ReloadHistoricalDataAndSetTimer(): wrong ExpectedHistorySpan for ticker {p_ticker}");
                 startDateET = DateTime.UtcNow.FromUtcToEt().AddMonths(-1 * nMonths).Date;
             }

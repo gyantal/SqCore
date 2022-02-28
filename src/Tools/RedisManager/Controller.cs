@@ -244,16 +244,16 @@ namespace RedisManager
             // for 3069 days.
             // 1. Text data: with fractional NAV values: 70K, with integer NAV values: 47.5K (brotlied: 9.578K), with integer NAV + DateStr-1900years: 44.4K  (brotlied: 9.557K, difference is 0.2%, not even 1%. Just forget the -1900). (Wow. 4x compression)
             string outputCsv = "D/C," + String.Join(",", dailyNavData.Select(r => {
-                int year = Int32.Parse(r.DateStr.Substring(0, 4)); // - 1900; // subtracting -1900years only helps about 1/1000. It is not worth it.
+                int year = Int32.Parse(r.DateStr[..4]); // - 1900; // subtracting -1900years only helps about 1/1000. It is not worth it.
                 // casting Double to Int will just remove the fractionals, but not round it to the nearest integer.
                 int nearestIntValue = (int)Math.Round(Double.Parse(r.ValueStr), MidpointRounding.AwayFromZero); // 0.5 is rounded to 1, -0.5 is rounded to -1. Good.
-                return year.ToString("D3") + r.DateStr.Substring(4) + "/" + nearestIntValue.ToString();
+                return year.ToString("D3") + r.DateStr[4..] + "/" + nearestIntValue.ToString();
             }));
             var outputCsvBrotli = Utils.Str2BrotliBin(outputCsv);
 
             // 2.1 Bin data: 3069*6=18.4K. Brotlied: 15.268K (less compression if date + float are mixed)
             var dailyStructsBin = dailyNavData.Select(r => {
-                SqDateOnly dateOnly = new(Int32.Parse(r.DateStr.Substring(0, 4)), Int32.Parse(r.DateStr.Substring(4, 2)), Int32.Parse(r.DateStr.Substring(6, 2)));
+                SqDateOnly dateOnly = new(Int32.Parse(r.DateStr[..4]), Int32.Parse(r.DateStr.Substring(4, 2)), Int32.Parse(r.DateStr.Substring(6, 2)));
                 float navValue = (float)Double.Parse(r.ValueStr);
                 return new DailyNavDataBin() { dateOnly = dateOnly, floatValue = navValue  };
             }).ToArray();
@@ -269,7 +269,7 @@ namespace RedisManager
             var outputBin2 = new byte[dailyNavData.Count * 6];
             var dateOnlyArr = dailyNavData.Select(r =>
             {
-                SqDateOnly dateOnly = new(Int32.Parse(r.DateStr.Substring(0, 4)), Int32.Parse(r.DateStr.Substring(4, 2)), Int32.Parse(r.DateStr.Substring(6, 2)));
+                SqDateOnly dateOnly = new(Int32.Parse(r.DateStr[..4]), Int32.Parse(r.DateStr.Substring(4, 2)), Int32.Parse(r.DateStr.Substring(6, 2)));
                 return dateOnly.ToBinary();
             }).ToArray();
             Buffer.BlockCopy(dateOnlyArr, 0, outputBin2, 0, dateOnlyArr.Length * 2);     // 'Object must be an array of primitives.'

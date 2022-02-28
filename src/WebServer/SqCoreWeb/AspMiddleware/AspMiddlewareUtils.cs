@@ -40,7 +40,7 @@ namespace SqCoreWeb
                     {
                         throw new Exception("The requested file has incorrect casing and will fail on Linux servers." +
                             Environment.NewLine + "Requested:" + requested + Environment.NewLine +
-                            "On disk: " + onDisk.Substring(onDisk.Length - requested.Length));
+                            "On disk: " + onDisk[^requested.Length..]);
                     }
                 }
             };

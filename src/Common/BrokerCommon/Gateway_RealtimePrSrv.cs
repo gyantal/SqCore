@@ -69,7 +69,7 @@ namespace BrokerCommon
                 {
                     if (inputParam.StartsWith("S=", StringComparison.CurrentCultureIgnoreCase))    // symbols
                     {
-                        string[] tickerArray = inputParam.Substring("S=".Length).Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                        string[] tickerArray = inputParam["S=".Length..].Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                         foreach (var symbol in tickerArray)
                         {
                             string sqTicker = symbol.ToUpper().Replace("^^", "#");  // Robert's suggestion all Futures tickers #+Underlying, therefore #^VIX, because the underlying is ^VIX

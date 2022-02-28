@@ -149,11 +149,11 @@ namespace SqCommon
                 // 2019: holiday table appears only once in the HTML.
                 int iTHead = webPage.IndexOf(@"<table class=""table table-layout-fixed"">");
                 int iTBody = webPage.IndexOf(@"</table>", iTHead);
-                string holidayTable = webPage.Substring(iTHead, iTBody - iTHead);
+                string holidayTable = webPage[iTHead..iTBody];
 
                 int iFootnoteStart = webPage.IndexOf("<div", iTBody, StringComparison.CurrentCultureIgnoreCase);   // 2017-02-08: a ">*Each" got a space as ">* Each"
                 int iFootnoteEnd = webPage.IndexOf(@"</div>", iFootnoteStart); // in 2017: Footnote section is was Before the second-holiday-table in the html source, in 2018: no
-                string footnote = webPage.Substring(iFootnoteStart, iFootnoteEnd - iFootnoteStart);
+                string footnote = webPage[iFootnoteStart..iFootnoteEnd];
 
                 int year1 = -1, year2 = -1;
                 var trs = holidayTable.Split(new string[] { "<tr>\n  ", "<tr>", "<tr style=", "</tr>\n  ", "</tr>" }, StringSplitOptions.RemoveEmptyEntries);
@@ -226,7 +226,7 @@ namespace SqCommon
                 }
 
                 int indExplanationEnd = p_footnote.IndexOf("</p>", indExplanation);    // go to the end of the sentence only.
-                string explanation = p_footnote.Substring(indExplanation, indExplanationEnd - indExplanation);
+                string explanation = p_footnote[indExplanation..indExplanationEnd];
 
                 int indTimeET = explanation.IndexOf("Each market will close early at ");
                 if (indTimeET != -1) // 2022-01-01: footnote is "* No holiday observed, pursuant to NYSE Rule 7.2, NYSE American Rule 7.2E, NYSE Arca Rules 7.2-O and 7.2-E, NYSE Chicago Rule 7.2, and NYSE National Rule 7.2."
@@ -234,7 +234,7 @@ namespace SqCommon
                     int indTimeET1 = indTimeET + "Each market will close early at ".Length;
                     int indTimeET2 = explanation.IndexOf(':', indTimeET1);
                     int indTimeET3 = explanation.IndexOf("p.m.", indTimeET2);
-                    string earlyCloseHourStr = explanation.Substring(indTimeET1, indTimeET2 - indTimeET1);
+                    string earlyCloseHourStr = explanation[indTimeET1..indTimeET2];
                     string earlyCloseMinStr = explanation.Substring(indTimeET2 + 1, indTimeET3 - indTimeET2 - 1);
                     int earlyCloseHour = Int32.Parse(earlyCloseHourStr) + 12; // "1 p.m." means you have to add 12 hours to the recognized digit
                     int earlyCloseMin = Int32.Parse(earlyCloseMinStr);
@@ -259,7 +259,7 @@ namespace SqCommon
             {
                 int observedDateStartInd = indObserved + "(Observed".Length;
                 int indObservedEnd = p_td.IndexOf(')', observedDateStartInd);
-                dateHoliday = DateTime.Parse(p_td.Substring(observedDateStartInd, indObservedEnd - observedDateStartInd) + ", " + p_year.ToString());
+                dateHoliday = DateTime.Parse(p_td[observedDateStartInd..indObservedEnd] + ", " + p_year.ToString());
             }
             else
             {
@@ -267,7 +267,7 @@ namespace SqCommon
                 if (indObserved != -1)
                 {
                     int indObservedStart = p_td.LastIndexOf('(', indObserved - 1, indObserved);
-                    dateHoliday = DateTime.Parse(p_td.Substring(0, indObservedStart) + ", " + p_year.ToString());
+                    dateHoliday = DateTime.Parse(p_td[..indObservedStart] + ", " + p_year.ToString());
                 }
                 else
                 {

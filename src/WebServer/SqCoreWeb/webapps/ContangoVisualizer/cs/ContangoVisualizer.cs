@@ -112,7 +112,7 @@ namespace SqCoreWeb.Controllers
             // liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 8);
             // liveFuturesNextExp = webpageLive.Substring(nextExpLiveMonth, 3);
             // liveFuturesData = webpageLive.Substring(startPosLive, endPosLive - startPosLive);
-            prevFuturesData = webpageLive.Substring(startPosPrev, endPosPrev - startPosPrev);
+            prevFuturesData = webpageLive[startPosPrev..endPosPrev];
             // spotVixData = webpageLive.Substring(startSpotVix, endSpotVix - startSpotVix);
 
             // liveFuturesDataDate = liveFuturesDataDT.Substring(0,10);
@@ -243,7 +243,7 @@ namespace SqCoreWeb.Controllers
             int[] liveFuturesDataVecInd = new int[8];
             int startPosLiveB0 = webpageLive.IndexOf("\"last\":\"", 0) + "\"last\":\"".Length;
             int endPosLiveB0 = webpageLive.IndexOf("\",\"change\":", startPosLiveB0);
-            string liveFuturesDataB0 = webpageLive.Substring(startPosLiveB0, endPosLiveB0 - startPosLiveB0);
+            string liveFuturesDataB0 = webpageLive[startPosLiveB0..endPosLiveB0];
 
             liveFuturesDataVec[0] = liveFuturesDataB0;
             liveFuturesDataVecInd[0] = endPosLiveB0;
@@ -252,7 +252,7 @@ namespace SqCoreWeb.Controllers
             {
                 int startPosLiveB = webpageLive.IndexOf("\"last\":\"", liveFuturesDataVecInd[iRows-1]) + "\"last\":\"".Length;
                 int endPosLiveB = webpageLive.IndexOf("\",\"change\":", startPosLiveB);
-                string liveFuturesDataB = webpageLive.Substring(startPosLiveB, endPosLiveB - startPosLiveB);
+                string liveFuturesDataB = webpageLive[startPosLiveB..endPosLiveB];
 
                 liveFuturesDataVec[iRows] = liveFuturesDataB;
                 liveFuturesDataVecInd[iRows] = endPosLiveB;
@@ -261,7 +261,7 @@ namespace SqCoreWeb.Controllers
             string[] prevFuturesDataVec = new string[8];
             int startPosPrevB0 = webpageLive.IndexOf("\"priorSettle\":\"", liveFuturesDataVecInd[0]) + "\"priorSettle\":\"".Length;
             int endPosPrevB0 = webpageLive.IndexOf("\",\"open\":\"", startPosPrevB0);
-            string prevFuturesDataB0 = webpageLive.Substring(startPosPrevB0, endPosPrevB0 - startPosPrevB0);
+            string prevFuturesDataB0 = webpageLive[startPosPrevB0..endPosPrevB0];
 
             prevFuturesDataVec[0] = prevFuturesDataB0;
             
@@ -269,7 +269,7 @@ namespace SqCoreWeb.Controllers
             {
                 int startPosPrevB = webpageLive.IndexOf("\"priorSettle\":\"", liveFuturesDataVecInd[iRows]) + "\"priorSettle\":\"".Length;
                 int endPosPrevB = webpageLive.IndexOf("\",\"open\":\"", startPosPrevB);
-                string prevFuturesDataB = webpageLive.Substring(startPosPrevB, endPosPrevB - startPosPrevB);
+                string prevFuturesDataB = webpageLive[startPosPrevB..endPosPrevB];
 
                 prevFuturesDataVec[iRows] = prevFuturesDataB;
             }
@@ -416,7 +416,7 @@ namespace SqCoreWeb.Controllers
             int[] liveFuturesDataVecInd = new int[8];
             int startPosLiveB0 = webpageLive.IndexOf("\"last\":\"", 0) + "\"last\":\"".Length;
             int endPosLiveB0 = webpageLive.IndexOf("\",\"change\":", startPosLiveB0);
-            string liveFuturesDataB0 = webpageLive.Substring(startPosLiveB0, endPosLiveB0 - startPosLiveB0);
+            string liveFuturesDataB0 = webpageLive[startPosLiveB0..endPosLiveB0];
 
             liveFuturesDataVec[0] = liveFuturesDataB0;
             liveFuturesDataVecInd[0] = endPosLiveB0;
@@ -425,7 +425,7 @@ namespace SqCoreWeb.Controllers
             {
                 int startPosLiveB = webpageLive.IndexOf("\"last\":\"", liveFuturesDataVecInd[iRows - 1]) + "\"last\":\"".Length;
                 int endPosLiveB = webpageLive.IndexOf("\",\"change\":", startPosLiveB);
-                string liveFuturesDataB = webpageLive.Substring(startPosLiveB, endPosLiveB - startPosLiveB);
+                string liveFuturesDataB = webpageLive[startPosLiveB..endPosLiveB];
 
                 liveFuturesDataVec[iRows] = liveFuturesDataB;
                 liveFuturesDataVecInd[iRows] = endPosLiveB;
@@ -434,7 +434,7 @@ namespace SqCoreWeb.Controllers
             string[] prevFuturesDataVec = new string[8];
             int startPosPrevB0 = webpageLive.IndexOf("\"priorSettle\":\"", liveFuturesDataVecInd[0]) + "\"priorSettle\":\"".Length;
             int endPosPrevB0 = webpageLive.IndexOf("\",\"open\":\"", startPosPrevB0);
-            string prevFuturesDataB0 = webpageLive.Substring(startPosPrevB0, endPosPrevB0 - startPosPrevB0);
+            string prevFuturesDataB0 = webpageLive[startPosPrevB0..endPosPrevB0];
 
             prevFuturesDataVec[0] = prevFuturesDataB0;
 
@@ -442,7 +442,7 @@ namespace SqCoreWeb.Controllers
             {
                 int startPosPrevB = webpageLive.IndexOf("\"priorSettle\":\"", liveFuturesDataVecInd[iRows]) + "\"priorSettle\":\"".Length;
                 int endPosPrevB = webpageLive.IndexOf("\",\"open\":\"", startPosPrevB);
-                string prevFuturesDataB = webpageLive.Substring(startPosPrevB, endPosPrevB - startPosPrevB);
+                string prevFuturesDataB = webpageLive[startPosPrevB..endPosPrevB];
 
                 prevFuturesDataVec[iRows] = prevFuturesDataB;
             }

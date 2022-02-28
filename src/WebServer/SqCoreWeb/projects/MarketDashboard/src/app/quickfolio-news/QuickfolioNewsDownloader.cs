@@ -92,17 +92,17 @@ namespace SqCoreWeb
             // AddFoundNews(0, foundNewsItems);
             // return NewsToString(m_newsMemory[0]);
 
-            byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(foundNewsItems));
-            if (p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)
-            {
-                // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
-                // OnConnectedWsAsync() sleeps for a while if not active tool.
-                TimeSpan timeSinceConnect = DateTime.UtcNow - p_client.ConnectionTime;
-                if (p_client.ActivePage != ActivePage.QuickfolioNews && timeSinceConnect < DashboardClient.c_initialSleepIfNotActiveToolQn.Add(TimeSpan.FromMilliseconds(100)))
-                    return;
+            // byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(foundNewsItems));
+            // if (p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)
+            // {
+            //     // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
+            //     // OnConnectedWsAsync() sleeps for a while if not active tool.
+            //     TimeSpan timeSinceConnect = DateTime.UtcNow - p_client.ConnectionTime;
+            //     if (p_client.ActivePage != ActivePage.QuickfolioNews && timeSinceConnect < DashboardClient.c_initialSleepIfNotActiveToolQn.Add(TimeSpan.FromMilliseconds(100)))
+            //         return;
 
-                await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-            }
+            //     await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+            // }
 
             // foreach (var client in p_clients)        // List<DashboardClient> p_clients
             // {

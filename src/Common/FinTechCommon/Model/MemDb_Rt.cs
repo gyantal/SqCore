@@ -411,7 +411,7 @@ namespace FinTechCommon
                 int eSymbol = p_responseStr.IndexOf("\"", bSymbol);
                 if (eSymbol == -1)
                     break;
-                string iexTicker = p_responseStr.Substring(bSymbol, eSymbol - bSymbol);
+                string iexTicker = p_responseStr[bSymbol..eSymbol];
                 int bAttribute = p_responseStr.IndexOf(p_attribute + "\":", eSymbol);
                 if (bAttribute == -1)
                     break;
@@ -419,7 +419,7 @@ namespace FinTechCommon
                 int eAttribute = p_responseStr.IndexOf(",\"", bAttribute);
                 if (eAttribute == -1)
                     break;
-                string attributeStr = p_responseStr.Substring(bAttribute, eAttribute - bAttribute);
+                string attributeStr = p_responseStr[bAttribute..eAttribute];
                 // only search ticker among the stocks p_assetIds. Because duplicate tickers are possible in the MemDb.Assets, but not expected in p_assetIds
                 Stock? stock = null;
                 foreach (var sec in p_assets)

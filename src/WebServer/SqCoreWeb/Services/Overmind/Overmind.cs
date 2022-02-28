@@ -273,7 +273,7 @@ namespace SqCoreWeb
                 int iLastPriceEnd = priceHtml.IndexOf("\"", iLastPriceStart);
                 if (iLastPriceEnd != -1)
                 {
-                    var lastPriceStr = priceHtml.Substring(iLastPriceStart, iLastPriceEnd - iLastPriceStart);
+                    var lastPriceStr = priceHtml[iLastPriceStart..iLastPriceEnd];
                     realTimePrice = Double.Parse(lastPriceStr);
 
                     int iChangePriceStart = priceHtml.IndexOf($"\"change\":\"", iLastPriceEnd);
@@ -283,7 +283,7 @@ namespace SqCoreWeb
                         int iChangePriceEnd = priceHtml.IndexOf("\"", iChangePriceStart);
                         if (iChangePriceEnd != -1)
                         {
-                            var changePriceStr = priceHtml.Substring(iChangePriceStart, iChangePriceEnd - iChangePriceStart);
+                            var changePriceStr = priceHtml[iChangePriceStart..iChangePriceEnd];
                             Utils.Logger.Info($"GetTodayPctChange().changePriceStr: '{changePriceStr}' ");  // TEMP: uncomment when it is fixed: 2021-06-08, System.FormatException: Input string was not in a correct format.
                             dailyChange = Double.Parse(changePriceStr);
 
@@ -369,7 +369,7 @@ namespace SqCoreWeb
                 Utils.Logger.Info($"'<' after searchString '{searchStr}' was not found.");
                 return null;
             }
-            string priceStr = webpage.Substring(startInd + searchStr.Length + 1, endInd - (startInd + searchStr.Length + 1));
+            string priceStr = webpage[(startInd + searchStr.Length + 1)..endInd];
             if (!Double.TryParse(priceStr, out double price))
             {
                 Utils.Logger.Info($"{priceStr} cannot be parsed to Double.");

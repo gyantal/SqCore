@@ -65,7 +65,7 @@ namespace SqCoreWeb
                 // TODO Daya:
                 // in the future, we might store news in memory and feed the users from that, and we don't download news multiple times.
                 // m_newsDownloader.GetCommonNewsAndSendToClient(DashboardClient.g_clients);
-                m_newsDownloader.GetCommonNewsAndSendToClient(this);
+                // m_newsDownloader.GetCommonNewsAndSendToClient(this);
 
                 // m_newsDownloader.GetStockNewsAndSendToClient(this);   // with 13 tickers, it can take 13 * 2 = 26seconds
                 nExceptionsTriggerQuickfolioNewsDownloader = 0;

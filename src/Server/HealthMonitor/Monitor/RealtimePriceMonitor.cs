@@ -47,7 +47,7 @@ namespace HealthMonitor
                 string url = "https://www.snifferquant.net/rtp?s=VXX,^VIX,^GSPC,SVXY&f=l"; // 2018-10-10: thinking about removing ^VIX,^GSPC so less strain on VBroker. But the point of HealthMonitor is to see if there is a problem (no index data subscription). So, keep them.
                 string? rtpsReply = Utils.DownloadStringWithRetryAsync(url, 5, TimeSpan.FromSeconds(5), false).TurnAsyncToSyncTask();
                 if (rtpsReply != null)
-                    Utils.Logger.Info(url + " returned: " + (rtpsReply.Substring(0, (rtpsReply.Length > 45) ? 45 : rtpsReply.Length)).Replace("\r\n", "").Replace("\n", ""));   // it is better to see it as one line in the log file
+                    Utils.Logger.Info(url + " returned: " + (rtpsReply[..((rtpsReply.Length > 45) ? 45 : rtpsReply.Length)]).Replace("\r\n", "").Replace("\n", ""));   // it is better to see it as one line in the log file
                 else
                 {
                     Utils.Logger.Error("Failed download multiple (5x) times :" + url);

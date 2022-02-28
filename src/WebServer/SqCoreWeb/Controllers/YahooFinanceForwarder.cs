@@ -98,12 +98,12 @@ namespace SqCoreWeb.Controllers
                         if (Char.IsLetter(yffColumns[k]))
                         {
                             // process previous command
-                            previousCommand = yffColumns.Substring(columnsFormatStartIdx, k - columnsFormatStartIdx);
+                            previousCommand = yffColumns[columnsFormatStartIdx..k];
                             yffColumnsList.Add(previousCommand);
                             columnsFormatStartIdx = k;
                         }
                     }
-                    previousCommand = yffColumns.Substring(columnsFormatStartIdx, yffColumns.Length - columnsFormatStartIdx);
+                    previousCommand = yffColumns[columnsFormatStartIdx..];
                     yffColumnsList.Add(previousCommand);
                 }
                 else
@@ -140,7 +140,7 @@ namespace SqCoreWeb.Controllers
                     targetUriWithoutHttp = queryStrVal[0];
                     int indSlash = targetUriWithoutHttp.LastIndexOf('/');
                     if (indSlash != -1)
-                        ticker = targetUriWithoutHttp.Substring(indSlash + 1);
+                        ticker = targetUriWithoutHttp[(indSlash + 1)..];
                 }
 
 

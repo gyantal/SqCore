@@ -40,6 +40,7 @@ export class AppComponent implements OnInit {
   isUserSelectionVisible = false;
   isDshbrdOpenManyTimes: boolean = false;
   isDshbrdOpenManyTimesDialogVisible: boolean = false;
+  isSrvConnectionAlive: boolean = false;
   toolSelectionMsg = 'Click red arrow in toolbar! isToolSelectionVisible is set to ' + this.isToolSelectionVisible;
   public activeTool = 'MarketHealth';
   theme = '';
@@ -86,7 +87,7 @@ export class AppComponent implements OnInit {
       }
       this.lastTimeOpSysSleepWakeupChecked = currentTimeNum;
 
-      // isSrvConnectionAlive = this._socket != null && this._socket.readyState === WebSocket.OPEN;
+      this.isSrvConnectionAlive = this._socket != null && this._socket.readyState === WebSocket.OPEN;
     }, 5 * 1000); // refresh at every 5 secs
   }
 

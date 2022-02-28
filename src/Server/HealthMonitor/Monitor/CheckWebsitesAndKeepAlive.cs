@@ -43,7 +43,7 @@ namespace HealthMonitor
                     if (hmWebsiteStr != null)
                     {
                         cWebsitesToCheckAndnFail[i].nFail = 0;
-                        Utils.Logger.Info(cWebsitesToCheckAndnFail[i].url + " returned: " + (hmWebsiteStr.Substring(0, (hmWebsiteStr.Length > 45) ? 45 : hmWebsiteStr.Length)).Replace("\r\n", "").Replace("\n", "")); // it is better to see it as one line in the log file
+                        Utils.Logger.Info(cWebsitesToCheckAndnFail[i].url + " returned: " + (hmWebsiteStr[..((hmWebsiteStr.Length > 45) ? 45 : hmWebsiteStr.Length)]).Replace("\r\n", "").Replace("\n", "")); // it is better to see it as one line in the log file
                     }
                     else
                     {

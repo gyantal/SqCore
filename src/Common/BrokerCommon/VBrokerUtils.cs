@@ -183,9 +183,9 @@ namespace BrokerCommon
             else if (p_yfTicker[0] == '#')    // ?s=^^VIX201404 was converted to ?s=#^VIX201404
             {
                 // assume last YYYYMM 6 characters is the expiry
-                string symbol = p_yfTicker.Substring(1, p_yfTicker.Length - 6 - 1);
+                string symbol = p_yfTicker[1..^6];
                 if (symbol[0] == '^')
-                    symbol = symbol.Substring(1, symbol.Length - 1);
+                    symbol = symbol[1..];
 
                 string expiry = p_yfTicker[^6..];        // expiry = "201610", however in real life expire = "20161019" as last day can be also specified for LastTradeDateOrContractMonth
                 string exchange = "CFE";    // works for VIX futures
