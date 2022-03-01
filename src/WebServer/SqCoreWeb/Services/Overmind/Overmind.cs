@@ -312,7 +312,7 @@ namespace SqCoreWeb
 
             // Check that 1.2*SMA(VIX, 50) < VIX_last_close:  (this is used by the VIX spikes document)
             // this is used in the Balazs's VIX spikes gDoc: https://docs.google.com/document/d/1YA8uBscP1WbxEFIHXDaqR50KIxLw9FBnD7qqCW1z794
-            double priorClose = adjCloses[adjCloses.Length - 1];
+            double priorClose = adjCloses[^1];
             int nSmaDays = 50;
             double sma = 0;
             for (int i = 0; i < nSmaDays; i++)

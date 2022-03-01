@@ -133,7 +133,7 @@ namespace SqCoreWeb
                 string rssFeedUrl = string.Format(@"https://feeds.finance.yahoo.com/rss/2.0/headline?s={0}&region=US&lang=en-US", ticker);
                 var rss = await ReadRSSAsync(rssFeedUrl, NewsSource.YahooRSS, ticker);
                 if (rss.Count > 0)
-                    encodedMsgRss = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(rss));
+                    encodedMsgRss = Encoding.UTF8.GetBytes("QckfNews.StockNews2:" + Utils.CamelCaseSerialize(rss));
 
                 // >2021-10-01: benzinga banned  the IP of the server. Disabled this code.
                 // var benzinga = ReadBenzingaNews(ticker);

@@ -2,7 +2,6 @@
 import {NgxLoggerLevel} from '../types/logger-level.enum.js';
 
 export class NGXLoggerUtils {
-
   static prepareMetaString(timestamp: string, logLevel: string, fileName: string, lineNumber: string) {
     const fileDetails = fileName ? ` [${fileName}:${lineNumber}]` : '';
 
@@ -29,9 +28,7 @@ export class NGXLoggerUtils {
   }
 
 
-  /**
-   *  This allows us to see who called the logger
-   */
+  /* This allows us to see who called the logger */
   static getCallerDetails(): { lineNumber: string, fileName: string } {
     const err = (new Error(''));
 
@@ -52,14 +49,12 @@ export class NGXLoggerUtils {
         lineNumber: null
       };
     }
-
   }
 
   static prepareMessage(message) {
     try {
-      if (typeof message !== 'string' && !(message instanceof Error)) {
+      if (typeof message !== 'string' && !(message instanceof Error))
         message = JSON.stringify(message, null, 2);
-      }
     } catch (e) {
       // additional = [message, ...additional];
       message = 'The provided "message" value could not be parsed with JSON.stringify().';
@@ -69,16 +64,14 @@ export class NGXLoggerUtils {
   }
 
   static prepareAdditionalParameters(additional: any[]) : any[] {
-    if (additional === null || additional === undefined) {
+    if (additional === null || additional === undefined)
       return null;
-    }
 
     return additional.map((next, idx) => {
       try {
         // We just want to make sure the JSON can be parsed, we do not want to actually change the type
-        if (typeof next === 'object') {
+        if (typeof next === 'object')
           JSON.stringify(next);
-        }
 
         return next;
       } catch (e) {
@@ -86,5 +79,4 @@ export class NGXLoggerUtils {
       }
     });
   }
-
 }

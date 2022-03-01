@@ -274,7 +274,7 @@ namespace HealthMonitor
             var rtpsLastDownloadsSnapshot = m_rtpsLastDownloads.ToArray(); // we have to make a snapshot anyway, so the Timer thread can write it while we itarate
             if (rtpsLastDownloadsSnapshot.Length > 0)  // we need the last element
             {
-                rtpsLastDownloadAccepted = rtpsLastDownloadsSnapshot[rtpsLastDownloadsSnapshot.Length - 1].Item2;
+                rtpsLastDownloadAccepted = rtpsLastDownloadsSnapshot[^1].Item2;
             }
 
             if (rtpsLastDownloadAccepted == null)

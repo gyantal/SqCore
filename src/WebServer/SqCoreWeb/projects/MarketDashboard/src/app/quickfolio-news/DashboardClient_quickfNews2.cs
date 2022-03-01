@@ -143,18 +143,19 @@ namespace SqCoreWeb
                 return new List<NewsItem>();
             }
         }
-        // public void GetQckflStockNews() // with 13 tickers, it can take 13 * 2 = 26seconds
-        // {
-        //     foreach (string ticker in m_stockTickers2)
-        //     {
-        //         byte[]? encodedMsgRss = null;
-        //         string rssFeedUrl = string.Format(@"https://feeds.finance.yahoo.com/rss/2.0/headline?s={0}&region=US&lang=en-US", ticker);
-        //         var rss = ReadRSSAsync2(rssFeedUrl, NewsSource.YahooRSS, ticker);
-        //         if (rss.Count > 0)
-        //             encodedMsgRss = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(rss));
-        //             Console.WriteLine("The stocknews items are :" + encodedMsgRss);
-        //     }
-        // }
+        public void GetQckflStockNews2() // with 13 tickers, it can take 13 * 2 = 26seconds
+        {
+            foreach (string ticker in m_stockTickers2)
+            {
+                byte[]? encodedMsgRss = null;
+                string rssFeedUrl = string.Format(@"https://feeds.finance.yahoo.com/rss/2.0/headline?s={0}&region=US&lang=en-US", ticker);
+                var rss = ReadRSSAsync2(rssFeedUrl, NewsSource.YahooRSS, ticker);
+                if (rss.Count > 0)
+                    encodedMsgRss = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(rss));
+                if (encodedMsgRss != null && WsWebSocket!.State == WebSocketState.Open)
+                    WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgRss, 0, encodedMsgRss.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+            }
+        }
         public static void QckflNewsTimer_Elapsed(object? state)    // Timer is coming on a ThreadPool thread
         {
             try
@@ -179,10 +180,12 @@ namespace SqCoreWeb
                             return;
 
                         client.GetQckflCommonNews2();
+                        client.GetQckflStockNews2();
                     });
-                } else
+                } 
+                else
                 {
-                    isQckflNewsTimerRunning = false;
+                    // isQckflNewsTimerRunning = false;
                     lock (m_qckflNewsTimerLock)
                     {
                         if (isQckflNewsTimerRunning)

@@ -11,8 +11,8 @@ import { Component, OnInit, OnChanges, SimpleChanges, Input } from '@angular/cor
   templateUrl: './docs-what-is-new.html',
   styleUrls: ['./docs.component.scss']
 })
-export class DocsWhatIsNewComponent implements OnInit, OnChanges  {
-  @Input() _parentActiveTool?: string = undefined;    // this property will be input from above parent container
+export class DocsWhatIsNewComponent implements OnInit, OnChanges {
+  @Input() _parentActiveTool?: string = undefined; // this property will be input from above parent container
 
   constructor() { }
 
@@ -20,10 +20,9 @@ export class DocsWhatIsNewComponent implements OnInit, OnChanges  {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    console.log('DocsComponent:ngOnChanges(): ' + changes._parentActiveTool.currentValue);  // or previousValue
+    console.log('DocsComponent:ngOnChanges(): ' + changes._parentActiveTool.currentValue); // or previousValue
   }
 }
-
 
 
 @Component({
@@ -31,8 +30,8 @@ export class DocsWhatIsNewComponent implements OnInit, OnChanges  {
   templateUrl: './docs-get-started.html',
   styleUrls: ['./docs.component.scss']
 })
-export class DocsGetStartedComponent implements OnInit, OnChanges  {
-  @Input() _parentActiveTool?: string = undefined;    // this property will be input from above parent container
+export class DocsGetStartedComponent implements OnInit, OnChanges {
+  @Input() _parentActiveTool?: string = undefined; // this property will be input from above parent container
 
   constructor() { }
 
@@ -40,10 +39,9 @@ export class DocsGetStartedComponent implements OnInit, OnChanges  {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    console.log('DocsComponent:ngOnChanges(): ' + changes._parentActiveTool.currentValue);  // or previousValue
+    console.log('DocsComponent:ngOnChanges(): ' + changes._parentActiveTool.currentValue); // or previousValue
   }
 }
-
 
 
 @Component({
@@ -51,8 +49,8 @@ export class DocsGetStartedComponent implements OnInit, OnChanges  {
   templateUrl: './docs-tutorial.html',
   styleUrls: ['./docs.component.scss']
 })
-export class DocsTutorialComponent implements OnInit, OnChanges  {
-  @Input() _parentActiveTool?: string = undefined;    // this property will be input from above parent container
+export class DocsTutorialComponent implements OnInit, OnChanges {
+  @Input() _parentActiveTool?: string = undefined; // this property will be input from above parent container
 
   constructor() { }
 
@@ -60,6 +58,6 @@ export class DocsTutorialComponent implements OnInit, OnChanges  {
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    console.log('DocsComponent:ngOnChanges(): ' + changes._parentActiveTool.currentValue);  // or previousValue
+    console.log('DocsComponent:ngOnChanges(): ' + changes._parentActiveTool.currentValue); // or previousValue
   }
 }

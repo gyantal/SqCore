@@ -125,12 +125,10 @@ namespace YahooCrawler
 
         public void ReadTickerUniverse()
         {
-            using (var reader = new StreamReader("D:\\Temp\\YFHist\\Tickers.csv"))
-            using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
-            {
-                List<TickerMembers> tickerMembers = csv.GetRecords<TickerMembers>().ToList();
-                m_universeTickers = tickerMembers.Select(r => r.Ticker).ToArray();
-            }
+            using var reader = new StreamReader("D:\\Temp\\YFHist\\Tickers.csv");
+            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+            List<TickerMembers> tickerMembers = csv.GetRecords<TickerMembers>().ToList();
+            m_universeTickers = tickerMembers.Select(r => r.Ticker).ToArray();
         }
 
         public async void DownloadYFtoCsv()
@@ -143,21 +141,17 @@ namespace YahooCrawler
 
                 YFRecord[] yfRecords = history.Select(r => new YFRecord() { Date = Utils.Date2hYYYYMMDD(r!.DateTime), AdjClose = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4), Close = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.Close, 4) }).ToArray();
 
-                using (var writer = new StreamWriter("D:\\Temp\\YFHist\\" + ticker + ".csv"))
-                using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
-                {
-                    csv.WriteRecords(yfRecords);
-                }
+                using var writer = new StreamWriter("D:\\Temp\\YFHist\\" + ticker + ".csv");
+                using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+                csv.WriteRecords(yfRecords);
             }
         }
 
         public void ReadRecommendationsCsv()
         {
-            using (var reader = new StreamReader("D:\\Temp\\All_20210330.csv"))
-            using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
-            {
-                m_recommRecords = csv.GetRecords<OrigRecomm>().ToList().ToArray();
-            }
+            using var reader = new StreamReader("D:\\Temp\\All_20210330.csv");
+            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+            m_recommRecords = csv.GetRecords<OrigRecomm>().ToList().ToArray();
         }
 
         public void TransformRecommendationsCsv()
@@ -227,21 +221,17 @@ namespace YahooCrawler
         {
             foreach (var ticker in m_universeTickers)
             {
-                using (var reader = new StreamReader("D:\\Temp\\YFHist\\" + ticker + ".csv"))
-                using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
-                {
-                    var records = csv.GetRecords<YFRecord>().ToList();
-                    m_yfDataFromCsv.Add(ticker, records);
-                }
+                using var reader = new StreamReader("D:\\Temp\\YFHist\\" + ticker + ".csv");
+                using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+                var records = csv.GetRecords<YFRecord>().ToList();
+                m_yfDataFromCsv.Add(ticker, records);
             }
         }
         private void WriteOutputRecommToCsv()
         {
-            using (var writer = new StreamWriter("D:\\Temp\\YFHist\\outputRecommendations.csv"))
-            using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
-            {
-                csv.WriteRecords(m_outputRec);
-            }
+            using var writer = new StreamWriter("D:\\Temp\\YFHist\\outputRecommendations.csv");
+            using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
+            csv.WriteRecords(m_outputRec);
         }
     }
 }

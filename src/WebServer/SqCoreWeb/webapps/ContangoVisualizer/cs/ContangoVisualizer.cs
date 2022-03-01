@@ -679,27 +679,27 @@ namespace SqCoreWeb.Controllers
             sb.Append(@"""," + Environment.NewLine + @"""currDataVec"": """);
             for (int i = 0; i < currData.Length - 1; i++)
                 sb.Append(Math.Round(currData[i], 4).ToString() + ", ");
-            sb.Append(Math.Round(currData[currData.Length - 1], 4).ToString());
+            sb.Append(Math.Round(currData[^1], 4).ToString());
 
             sb.Append(@"""," + Environment.NewLine + @"""currDataDaysVec"": """);
             for (int i = 0; i < currDataDays.Length - 1; i++)
                 sb.Append(currDataDays[i].ToString() + ", ");
-            sb.Append(currDataDays[currDataDays.Length - 1].ToString());
+            sb.Append(currDataDays[^1].ToString());
 
             sb.Append(@"""," + Environment.NewLine + @"""prevDataVec"": """);
             for (int i = 0; i < prevData.Length - 1; i++)
                 sb.Append(Math.Round(prevData[i], 4).ToString() + ", ");
-            sb.Append(Math.Round(prevData[prevData.Length - 1], 4).ToString());
+            sb.Append(Math.Round(prevData[^1], 4).ToString());
 
             sb.Append(@"""," + Environment.NewLine + @"""currDataDiffVec"": """);
             for (int i = 0; i < currDataDiff.Length - 1; i++)
                 sb.Append(Math.Round(currDataDiff[i], 4).ToString() + ", ");
-            sb.Append(Math.Round(currDataDiff[currDataDiff.Length - 1], 4).ToString());
+            sb.Append(Math.Round(currDataDiff[^1], 4).ToString());
 
             sb.Append(@"""," + Environment.NewLine + @"""currDataPercChVec"": """);
             for (int i = 0; i < currDataPercCh.Length - 1; i++)
                 sb.Append(Math.Round(currDataPercCh[i], 4).ToString() + ", ");
-            sb.Append(Math.Round(currDataPercCh[currDataPercCh.Length - 1], 4).ToString());
+            sb.Append(Math.Round(currDataPercCh[^1], 4).ToString());
 
             sb.Append(@"""," + Environment.NewLine + @"""spotVixVec"": """);
             for (int i = 0; i < currData.Length - 1; i++)

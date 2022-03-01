@@ -147,8 +147,8 @@ namespace SqCoreWeb
                         } while (!result.EndOfMessage);
 
                         ms.Seek(0, SeekOrigin.Begin);
-                        using (var reader = new StreamReader(ms, Encoding.UTF8))
-                            bufferStr = reader.ReadToEnd();
+                        using var reader = new StreamReader(ms, Encoding.UTF8);
+                        bufferStr = reader.ReadToEnd();
                     }
                     // gLogger.Trace($"WebSocketLoopKeptAlive(). received msg: '{bufferStr}'"); // logging takes 1ms
 

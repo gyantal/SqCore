@@ -160,17 +160,18 @@ namespace RedisManager
             {
                 Console.WriteLine($"Converting table {tableName}...");
 
-                using (var cmd = new NpgsqlCommand($"SELECT to_jsonb(array_agg({tableName})) FROM {tableName};", conn))     // this gives back the whole table in one JSON string.
-                using (var reader = cmd.ExecuteReader())
-                    while (reader.Read()) {
-                        var tableInJson = reader.GetString(0);
-                        Console.WriteLine(tableInJson);
-                        redisDb.StringSet($"{tableName}", tableInJson);
+                using var cmd = new NpgsqlCommand($"SELECT to_jsonb(array_agg({tableName})) FROM {tableName};", conn);     // this gives back the whole table in one JSON string.
+                using var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    var tableInJson = reader.GetString(0);
+                    Console.WriteLine(tableInJson);
+                    redisDb.StringSet($"{tableName}", tableInJson);
 
-                        break;  // there should be only one result per table.
-                    }
+                    break;  // there should be only one result per table.
+                }
 
-                
+
             }
         }
 

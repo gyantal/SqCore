@@ -106,7 +106,7 @@ namespace HealthMonitor
             p_hmData.RtpsDownloads = new List<string>(nDownloadsToReport);
             for (int i = nDownloadsToReport; i > 0; i--)    // we need the last elements
             {
-                var download = rtpsLastDownloadsSnapshot[rtpsLastDownloadsSnapshot.Length - i];
+                var download = rtpsLastDownloadsSnapshot[^i];
                 p_hmData.RtpsDownloads.Add(download.Item1.ToString("yyyy -MM-dd HH:mm:ss", CultureInfo.InvariantCulture) + " : " + (download.Item2 ? "OK" : "ERROR"));
             }
 
@@ -119,7 +119,7 @@ namespace HealthMonitor
                 int nReportsToReport = (m_VbReport.Count > 10) ? 10 : m_VbReport.Count;
                 for (int i = nReportsToReport; i > 0; i--)
                 {
-                    var report = m_VbReport[m_VbReport.Count - i];    // Item3 is the whole message, but don't report it; the Dashboard should be brief
+                    var report = m_VbReport[^i];    // Item3 is the whole message, but don't report it; the Dashboard should be brief
                     p_hmData.VBrokerReports.Add(report.Item1.ToString("yyyy -MM-dd HH:mm:ss", CultureInfo.InvariantCulture) + " : " + (report.Item2 ? "OK" : "ERROR"));
                     p_hmData.VBrokerDetailedReports.Add(report.Item4);
                 }

@@ -301,7 +301,7 @@ export class QuickfolioNewsComponent implements OnInit {
             this.SetCommonPreviewIfEmpty();
           }, 1000); // after 1 sec
         return true;
-      case 'QckfNews.Tickers':  // this is the least frequent case. Should come last.
+      case 'QckfNews.Tickers': // this is the least frequent case. Should come last.
         console.log('Quickfolio News: WS: QckfNews.Tickers arrived');
         const jsonObj3 = JSON.parse(msgObjStr);
         this.stockTickers = jsonObj3;
@@ -309,11 +309,6 @@ export class QuickfolioNewsComponent implements OnInit {
         this.menuClick(null, 'All assets');
         this.removeUnreferencedNews();
         return true;
-      case 'QckfNews.Tickers2':
-        console.log('Quickfolio News: WS: QckfNews.Tickers arrived2');
-        this.qckflNewsStockTickers2 = JSON.parse(msgObjStr);
-        console.log('The Quickfolio News stockTickers are', this.qckflNewsStockTickers2);
-        console.log('Init menu');
       default:
         return false;
     }
