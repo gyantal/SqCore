@@ -124,16 +124,18 @@ namespace SqCoreWeb
             Timer pingTimer = new(new TimerCallback(PingTimer_Elapsed), pingTimerData, TimeSpan.FromSeconds(10), TimeSpan.FromMilliseconds(-1.0));
             pingTimerData.PingTimer = pingTimer;
 
+
             ArraySegment<Byte> buffer = new(new Byte[8192]);
             string bufferStr = string.Empty;
             WebSocketReceiveResult? result = null;
-            // loop until the client closes the connection. The server receives a disconnect message only if the client sends it, which can't be done if the internet connection is lost.
-            // If the client isn't always sending messages and you don't want to timeout just because the connection goes idle, have the client use a timer to send a ping message every X seconds. 
-            // On the server, if a message hasn't arrived within 2*X seconds after the previous one, terminate the connection and report that the client disconnected.
-            while (webSocket.State == WebSocketState.Open && !pingCancelToken.IsCancellationRequested && (result?.CloseStatus == null || !result.CloseStatus.HasValue))
+            try
             {
-                try
+                // loop until the client closes the connection. The server receives a disconnect message only if the client sends it, which can't be done if the internet connection is lost.
+                // If the client isn't always sending messages and you don't want to timeout just because the connection goes idle, have the client use a timer to send a ping message every X seconds. 
+                // On the server, if a message hasn't arrived within 2*X seconds after the previous one, terminate the connection and report that the client disconnected.
+                while (webSocket.State == WebSocketState.Open && !pingCancelToken.IsCancellationRequested && (result?.CloseStatus == null || !result.CloseStatus.HasValue))
                 {
+
                     // convert binary array to string message: https://stackoverflow.com/questions/24450109/how-to-send-receive-messages-through-a-web-socket-on-windows-phone-8-using-the-c
                     bufferStr = string.Empty;
                     using (var ms = new MemoryStream())
@@ -156,48 +158,52 @@ namespace SqCoreWeb
                     bool isGoodNonClientClosedConnection = webSocket.State == WebSocketState.Open && !pingCancelToken.IsCancellationRequested && result != null && (result.CloseStatus == null || !result.CloseStatus.HasValue);
                     if (isGoodNonClientClosedConnection && result != null)
                     {
-                        if (bufferStr.StartsWith("Pong:"))
-                            pingTimerData.LastPongReceived = DateTime.UtcNow;
-                        else
-                            switch (p_requestRemainigPath)
-                            {
-                                case "/dashboard":
-                                    DashboardWs.OnWsReceiveAsync(context, webSocket, result, bufferStr);  // no await. There is no need to Wait until all of its async inner methods are completed
-                                    break;
-                                case "/example-ws1":
-                                    ExampleWs.OnWsReceiveAsync(context, webSocket, result, bufferStr);
-                                    break;
-                                case "/ExSvPush":
-                                    ExSvPushWs.OnWsReceiveAsync(context, webSocket, result, bufferStr);
-                                    break;
-                                default:
-                                    throw new Exception($"Unexpected websocket connection '{p_requestRemainigPath}' in WebSocketLoopKeptAlive()");
-                            }
+                        try // processing of the message should not crash the websocket message receiving loop. Even if it throws an exception.
+                        {
+                            if (bufferStr.StartsWith("Pong:"))
+                                pingTimerData.LastPongReceived = DateTime.UtcNow;
+                            else
+                                switch (p_requestRemainigPath)
+                                {
+                                    case "/dashboard":
+                                        DashboardWs.OnWsReceiveAsync(context, webSocket, result, bufferStr);  // no await. There is no need to Wait until all of its async inner methods are completed
+                                        break;
+                                    case "/example-ws1":
+                                        ExampleWs.OnWsReceiveAsync(context, webSocket, result, bufferStr);
+                                        break;
+                                    case "/ExSvPush":
+                                        ExSvPushWs.OnWsReceiveAsync(context, webSocket, result, bufferStr);
+                                        break;
+                                    default:
+                                        throw new Exception($"Unexpected websocket connection '{p_requestRemainigPath}' in WebSocketLoopKeptAlive()");
+                                }
+                        }
+                        catch (System.Exception e)
+                        {
+                            Utils.Logger.Error(e, "WebSocketLoopKeptAlive() Exception");
+                            HealthMonitorMessage.SendAsync($"Exception in WebSocketLoopKeptAlive() in processing msg. Exception: '{e.ToStringWithShortenedStackTrace(1600)}'", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
+                        }
                     }
-
                     // If Client never sent any proper data, and closes browser tabpage, ReceiveAsync() returns without Exception and result.CloseStatus = EndpointUnavailable
                     // If Client sent any proper data, and closes browser tabpage, ReceiveAsync() returns with Exception WebSocketError.ConnectionClosedPrematurely
-                }
-                catch (WebSocketException e)
-                {
-                    if (e.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) // 'The remote party closed the WebSocket connection without completing the close handshake.'
-                        gLogger.Trace($"WebSocketLoopKeptAlive(). Expected exception: '{e.Message}'");
-                    else
-                        throw;
-                }
-                catch (OperationCanceledException e)
-                {
-                    if (e.CancellationToken == pingCancelToken.Token)
-                        gLogger.Trace($"WebSocketLoopKeptAlive(). Expected exception because not receiving the PONG, we cancelled the webSocket.ReceiveAsync(): '{e.Message}'");
-                }
-                catch (Exception) 
-                {
-                    throw;
-                }
+                } //  While
+            } // try
+            catch (Exception e)
+            {
+                if (e is OperationCanceledException oce && oce.CancellationToken == pingCancelToken.Token)
+                    gLogger.Trace($"WebSocketLoopKeptAlive(). Expected exception because not receiving the PONG, we cancelled the webSocket.ReceiveAsync(): '{e.Message}'");
+                else if (e is WebSocketException wse && wse.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely) // 'The remote party closed the WebSocket connection without completing the close handshake.'
+                    gLogger.Info($"WebSocketLoopKeptAlive(). Expected exception: '{e.Message}'");
+                else
+                    gLogger.Error(e, $"WebSocketLoopKeptAlive(). Unexpected exception.");
             }
-            if ((webSocket.State == WebSocketState.Open || webSocket.State == WebSocketState.CloseReceived || webSocket.State == WebSocketState.CloseSent) && result?.CloseStatus != null)    // if client sends Close request then result.CloseStatus = NormalClosure and websocket.State == CloseReceived. In that case, we just answer back that we are closing.
-                await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None); // The graceful way is CloseAsync which when initiated sends a message to the connected party, and waits for acknowledgement
-            pingTimer.Dispose();
+            finally // webSocket.Close() should be called in Finally. Otherwise: "A Task's exception(s) were not observed either by Waiting on the Task or accessing its Exception property. As a result, the unobserved exception was rethrown by the finalizer thread. ---> System.Net.WebSockets.WebSocketException: The remote party closed the WebSocket connection without completing the close handshake.
+            {
+                if ((webSocket.State == WebSocketState.Open || webSocket.State == WebSocketState.CloseReceived || webSocket.State == WebSocketState.CloseSent) && result?.CloseStatus != null)    // if client sends Close request then result.CloseStatus = NormalClosure and websocket.State == CloseReceived. In that case, we just answer back that we are closing.
+                    await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None); // The graceful way is CloseAsync which when initiated sends a message to the connected party, and waits for acknowledgement
+                webSocket.Dispose();
+                pingTimer.Dispose();
+            }
 
             switch (p_requestRemainigPath)
             {

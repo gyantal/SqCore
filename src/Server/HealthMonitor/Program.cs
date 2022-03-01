@@ -109,7 +109,7 @@ namespace HealthMonitor
         {
             gLogger.Error(p_e.Exception, $"TaskScheduler_UnobservedTaskException()");
 
-            string msg = $"Exception in SqCore.Website.C#.TaskScheduler_UnobservedTaskException. Exception: '{ p_e.Exception.ToStringWithShortenedStackTrace(1600)}'. ";
+            string msg = $"Exception in SqCore.Server.HealthMonitor.C#.TaskScheduler_UnobservedTaskException. Exception: '{ p_e.Exception.ToStringWithShortenedStackTrace(1600)}'. ";
             msg += Utils.TaskScheduler_UnobservedTaskExceptionMsg(p_sender, p_e);
             gLogger.Warn(msg);
             p_e.SetObserved();        //  preventing it from triggering exception escalation policy which, by default, terminates the process.
