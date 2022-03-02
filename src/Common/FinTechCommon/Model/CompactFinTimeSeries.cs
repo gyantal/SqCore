@@ -161,7 +161,7 @@ namespace FinTechCommon
     {
         TsDateData<TKey, TAssetId, TValue1, TValue2> m_data;      // this m_data pointer can be swapped in an atomic instruction after update
 
-        static void HowToUseThisClassExamples()
+        public static void HowToUseThisClassExamples()
         {
             SqDateOnly[] dates = new SqDateOnly[2] { new SqDateOnly(2020, 05, 05), new SqDateOnly(2020, 05, 06)};
             var dict1 = new Dictionary<TickType, float[]>() { { TickType.SplitDivAdjClose, new float[2] { 10.1f, 12.1f } } };

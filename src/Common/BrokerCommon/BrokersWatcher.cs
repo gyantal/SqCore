@@ -42,15 +42,6 @@ namespace BrokerCommon
             }
         }
 
-        private List<Gateway> Gateways  // maybe it is safer to NOT expose this internal list. Clients can query using GatewayId.
-        {
-            get
-            {
-                return m_gateways;
-            }
-        }
-
-
         public void Init()
         {
             Utils.Logger.Info("***GatewaysWatcher:Init()");

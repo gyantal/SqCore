@@ -347,36 +347,36 @@ namespace SqCoreWeb
         }
 
         // Amazon UK price history can be checked in uk.camelcamelcamel.com, for example: http://uk.camelcamelcamel.com/Sennheiser-Professional-blocking-gaming-headset-Black/product/B00JQDOANK
-        private static double? GetAmazonProductPrice(string p_amazonProductUrl)
-        {
-            string errorMessage = string.Empty;
-            string? webpage = Utils.DownloadStringWithRetryAsync(p_amazonProductUrl).TurnAsyncToSyncTask();
-            if (webpage == null)
-                return null;
-            Utils.Logger.Info("HttpClient().GetStringAsync returned: " + ((webpage.Length > 100) ? webpage[..100] : webpage));
+        // private static double? GetAmazonProductPrice(string p_amazonProductUrl)
+        // {
+        //     string errorMessage = string.Empty;
+        //     string? webpage = Utils.DownloadStringWithRetryAsync(p_amazonProductUrl).TurnAsyncToSyncTask();
+        //     if (webpage == null)
+        //         return null;
+        //     Utils.Logger.Info("HttpClient().GetStringAsync returned: " + ((webpage.Length > 100) ? webpage[..100] : webpage));
 
-            // <span id="priceblock_ourprice" class="a-size-medium a-color-price">£199.95</span>
-            string searchStr = @"id=""priceblock_ourprice"" class=""a-size-medium a-color-price"">";
-            int startInd = webpage.IndexOf(searchStr);
-            if (startInd == -1)
-            {   // it is expected (not an exception), that sometimes Amazon changes its website, so we will fail. User will be notified.
-                Utils.Logger.Info($"searchString '{searchStr}' was not found.");
-                return null;
-            }
-            int endInd = webpage.IndexOf('<', startInd + searchStr.Length);
-            if (endInd == -1)
-            {   // it is expected (not an exception), that sometimes Amazon changes its website, so we will fail. User will be notified.
-                Utils.Logger.Info($"'<' after searchString '{searchStr}' was not found.");
-                return null;
-            }
-            string priceStr = webpage[(startInd + searchStr.Length + 1)..endInd];
-            if (!Double.TryParse(priceStr, out double price))
-            {
-                Utils.Logger.Info($"{priceStr} cannot be parsed to Double.");
-                return null;
-            }
-            return price;
-        }
+        //     // <span id="priceblock_ourprice" class="a-size-medium a-color-price">£199.95</span>
+        //     string searchStr = @"id=""priceblock_ourprice"" class=""a-size-medium a-color-price"">";
+        //     int startInd = webpage.IndexOf(searchStr);
+        //     if (startInd == -1)
+        //     {   // it is expected (not an exception), that sometimes Amazon changes its website, so we will fail. User will be notified.
+        //         Utils.Logger.Info($"searchString '{searchStr}' was not found.");
+        //         return null;
+        //     }
+        //     int endInd = webpage.IndexOf('<', startInd + searchStr.Length);
+        //     if (endInd == -1)
+        //     {   // it is expected (not an exception), that sometimes Amazon changes its website, so we will fail. User will be notified.
+        //         Utils.Logger.Info($"'<' after searchString '{searchStr}' was not found.");
+        //         return null;
+        //     }
+        //     string priceStr = webpage[(startInd + searchStr.Length + 1)..endInd];
+        //     if (!Double.TryParse(priceStr, out double price))
+        //     {
+        //         Utils.Logger.Info($"{priceStr} cannot be parsed to Double.");
+        //         return null;
+        //     }
+        //     return price;
+        // }
 
 
     }

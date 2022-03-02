@@ -195,14 +195,14 @@ namespace SqCoreWeb
             });
         }
 
-        private IEnumerable<AssetLastJs> GetMidPriorityRtStat()
-        {
-            // TODO: <when BrAcc Snapshot needs RT data for positions> Realtime price sending should be prioritized.
-            // HighRtPriorityAssets list (QQQ,SPY,VXX) maybe sent in evere 5 seconds. MarketHealth.MarketSummary + BrAccViewer.MktBar
-            // MidPriority: every 30 seconds. GameChanger1s in BrAccViewer.SnapshotPos
-            // LowPriority: everything else (BrAccViewer.SnapshotPos). (2 minutes or randomly 20 in every 1 minute. DC has 300 stocks, so those belong to that.)
-            throw new NotImplementedException();
-        }
+        // TODO: <when BrAcc Snapshot needs RT data for positions> Realtime price sending should be prioritized.
+        // HighRtPriorityAssets list (QQQ,SPY,VXX) maybe sent in evere 5 seconds. MarketHealth.MarketSummary + BrAccViewer.MktBar
+        // MidPriority: every 30 seconds. GameChanger1s in BrAccViewer.SnapshotPos
+        // LowPriority: everything else (BrAccViewer.SnapshotPos). (2 minutes or randomly 20 in every 1 minute. DC has 300 stocks, so those belong to that.)
+        // private IEnumerable<AssetLastJs> GetMidPriorityRtStat()
+        // {
+        //     throw new NotImplementedException();
+        // }
 
 
     }

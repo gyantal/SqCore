@@ -135,7 +135,7 @@ namespace FinTechCommon
 
         private const int DefaultCapacity = 4;
 
-        static void HowToUseThisClassExamples()
+        public static void HowToUseThisClassExamples()
         {
             // 1. set up timeSeries
             var ts2 = new FinTimeSeries<SqDateOnly, float, uint>(new TickType[] { TickType.SplitDivAdjClose }, new TickType[] { TickType.Volume });
@@ -487,13 +487,7 @@ namespace FinTechCommon
             return vl1;
         }
 
-        bool IsSynchronized
-        {
-            get { return false; }
-        }
-
-
-        bool ICollection.IsSynchronized
+        bool ICollection.IsSynchronized // indicating whether access to the System.Collections.ICollection is synchronized (thread safe)
         {
             get { return false; }
         }
@@ -522,7 +516,7 @@ namespace FinTechCommon
         }
 
 
-        bool Contains(object key)
+        public bool Contains(object key)
         {
             if (IsCompatibleKey(key))
             {

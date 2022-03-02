@@ -160,157 +160,157 @@ namespace SqCoreWeb
             }
         }
 
-        private List<NewsItem> ReadTipranksNews(string p_ticker)
-        {
-            List<NewsItem> foundNewsItems = new();
-            if (foundNewsItems == null)
-                foundNewsItems = new List<NewsItem>();
-            //MakeRequests();
-            string url = string.Format(@"https://www.tipranks.com/api/stocks/getNews/?ticker={0}", p_ticker);
-            string? webpageData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
-            System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));  // to avoid that server bans our IP
-            if (webpageData != null)
-            {
-                ReadTipranksNewsItems(foundNewsItems, p_ticker, webpageData);
-            }
-            return foundNewsItems;
-        }
-        private void ReadTipranksNewsItems(List<NewsItem> p_foundNewsItems, string p_ticker, string webpageData)
-        {
-            try
-            {
-                // var jsonOptions = new System.Text.Json.JsonSerializerOptions
-                // {
-                //     AllowTrailingCommas = true
-                // };
-                // NewsItem jsonObject =  System.Text.Json.JsonSerializer.Deserialize<NewsItem>(webpageData, jsonOptions);
+        // private List<NewsItem> ReadTipranksNews(string p_ticker)
+        // {
+        //     List<NewsItem> foundNewsItems = new();
+        //     if (foundNewsItems == null)
+        //         foundNewsItems = new List<NewsItem>();
+        //     //MakeRequests();
+        //     string url = string.Format(@"https://www.tipranks.com/api/stocks/getNews/?ticker={0}", p_ticker);
+        //     string? webpageData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
+        //     System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));  // to avoid that server bans our IP
+        //     if (webpageData != null)
+        //     {
+        //         ReadTipranksNewsItems(foundNewsItems, p_ticker, webpageData);
+        //     }
+        //     return foundNewsItems;
+        // }
+        // private void ReadTipranksNewsItems(List<NewsItem> p_foundNewsItems, string p_ticker, string webpageData)
+        // {
+        //     try
+        //     {
+        //         // var jsonOptions = new System.Text.Json.JsonSerializerOptions
+        //         // {
+        //         //     AllowTrailingCommas = true
+        //         // };
+        //         // NewsItem jsonObject =  System.Text.Json.JsonSerializer.Deserialize<NewsItem>(webpageData, jsonOptions);
 
-                System.Text.Json.JsonDocument document = System.Text.Json.JsonDocument.Parse(webpageData);
-                JsonElement root = document.RootElement;
-                JsonElement newssElement = root.GetProperty("news");
-                foreach (JsonElement news in newssElement.EnumerateArray())
-                {
-                    NewsItem newsItem = new();
-                    newsItem.Ticker = p_ticker;
-                    newsItem.LinkUrl = news.GetProperty("url").GetRawText().Trim('"');
-                    newsItem.Title = news.GetProperty("title").GetRawText().Trim('"'); 
-                    newsItem.Summary = "  ";
-                    newsItem.Sentiment = news.GetProperty("sentiment").GetRawText().Trim('"');
-                    if (DateTime.TryParse(news.GetProperty("articleTimestamp").GetRawText().Trim('"'), out DateTime date))
-                        newsItem.PublishDate = date;
-                    newsItem.DownloadTime = DateTime.Now;
-                    newsItem.Source = NewsSource.TipRanks.ToString();
+        //         System.Text.Json.JsonDocument document = System.Text.Json.JsonDocument.Parse(webpageData);
+        //         JsonElement root = document.RootElement;
+        //         JsonElement newssElement = root.GetProperty("news");
+        //         foreach (JsonElement news in newssElement.EnumerateArray())
+        //         {
+        //             NewsItem newsItem = new();
+        //             newsItem.Ticker = p_ticker;
+        //             newsItem.LinkUrl = news.GetProperty("url").GetRawText().Trim('"');
+        //             newsItem.Title = news.GetProperty("title").GetRawText().Trim('"'); 
+        //             newsItem.Summary = "  ";
+        //             newsItem.Sentiment = news.GetProperty("sentiment").GetRawText().Trim('"');
+        //             if (DateTime.TryParse(news.GetProperty("articleTimestamp").GetRawText().Trim('"'), out DateTime date))
+        //                 newsItem.PublishDate = date;
+        //             newsItem.DownloadTime = DateTime.Now;
+        //             newsItem.Source = NewsSource.TipRanks.ToString();
 
-                    if (AddNewsToMemory(p_ticker, newsItem))
-                        p_foundNewsItems.Add(newsItem);
-                }
-            }
-            catch (Exception)
-            {
-                DateTime.Today.AddDays(1);
-            }
-        }
-        private List<NewsItem> ReadBenzingaNews(string p_ticker)
-        {
-            List<NewsItem> foundNewsItems = new();
-            // >2021-10-01: benzinga banned  the IP of the server. Even in Chrome, even the simple www.benzinga.com doesn't work. They have a Varnish cache server, that refuses to give the page.
-            // There is nothing to do. They didn't ban all AWS servers, because it works from our other Linux servers.
-            // They only banned the SqCore server, because they noticed that there were too many queries. This is why we have to be cautious.
-            // Laszlo's crawler only queries Benzinga once per day. And they didn't ban him. However, we queried Benzinga at every NewClientConnection. About 20-30x per day. (No timer was set), so it wasn't excessive.
-            // However, in the future (after they release the ban) we might implement that it only crawles Benzinga news max 1-2x per day.
+        //             if (AddNewsToMemory(p_ticker, newsItem))
+        //                 p_foundNewsItems.Add(newsItem);
+        //         }
+        //     }
+        //     catch (Exception)
+        //     {
+        //         DateTime.Today.AddDays(1);
+        //     }
+        // }
+        // private List<NewsItem> ReadBenzingaNews(string p_ticker)
+        // {
+        //     List<NewsItem> foundNewsItems = new();
+        //     // >2021-10-01: benzinga banned  the IP of the server. Even in Chrome, even the simple www.benzinga.com doesn't work. They have a Varnish cache server, that refuses to give the page.
+        //     // There is nothing to do. They didn't ban all AWS servers, because it works from our other Linux servers.
+        //     // They only banned the SqCore server, because they noticed that there were too many queries. This is why we have to be cautious.
+        //     // Laszlo's crawler only queries Benzinga once per day. And they didn't ban him. However, we queried Benzinga at every NewClientConnection. About 20-30x per day. (No timer was set), so it wasn't excessive.
+        //     // However, in the future (after they release the ban) we might implement that it only crawles Benzinga news max 1-2x per day.
 
-            // string url = string.Format(@"https://www.benzinga.com/stock/{0}", p_ticker);
-            // string? webpageData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
-            // System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));  // to avoid that server bans our IP
-            // if (webpageData != null)
-            // {
-            //     ReadBenzingaSection(foundNewsItems, p_ticker, webpageData, "headlines");
-            //     ReadBenzingaSection(foundNewsItems, p_ticker, webpageData, "press");
-            // }
-            return foundNewsItems;
-        }
+        //     // string url = string.Format(@"https://www.benzinga.com/stock/{0}", p_ticker);
+        //     // string? webpageData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
+        //     // System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));  // to avoid that server bans our IP
+        //     // if (webpageData != null)
+        //     // {
+        //     //     ReadBenzingaSection(foundNewsItems, p_ticker, webpageData, "headlines");
+        //     //     ReadBenzingaSection(foundNewsItems, p_ticker, webpageData, "press");
+        //     // }
+        //     return foundNewsItems;
+        // }
 
-        private void ReadBenzingaSection(List<NewsItem> p_foundNewsItems, string p_ticker, string p_webpageData, string p_keyWord)
-        {
-            Regex regexBenzingaLists = new(@"<div[^>]*?class=""stories""[^>]*?" + p_keyWord + @"(?<CONTENT>(\s|\S)*?)</div>"
-                , RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
-            Regex regexBenzingaNews = new(@"<li(\s|\S)*?class=""story""(\s|\S)*?<a href=""(?<LINK>[^""]*)"">(?<TITLE>[^<]*)<(\s|\S)*?<span class=""date"">(?<DATE>[^<]*)"
-                , RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
-            MatchCollection matches = regexBenzingaLists.Matches(p_webpageData);
-            if (matches == null)
-                return;
-            for (int index = 0; index < matches.Count; index++)
-            {
-                Match match = matches[index];
-                MatchCollection matchesNews = regexBenzingaNews.Matches(match.Groups["CONTENT"].Value);
-                for (int indexNews = 0; indexNews < matchesNews.Count; indexNews++)
-                {
-                    Match matchNews = matchesNews[indexNews];
-                    NewsItem newsItem = new();
-                    newsItem.Ticker = p_ticker;
-                    newsItem.LinkUrl = matchNews.Groups["LINK"].Value;
-                    newsItem.Title = WebUtility.HtmlDecode(matchNews.Groups["TITLE"].Value);
-                    newsItem.Summary = "  ";
-                    newsItem.PublishDate = GetNewsDate(matchNews.Groups["DATE"].Value);
-                    newsItem.DownloadTime = DateTime.Now;
-                    newsItem.Source = NewsSource.Benzinga.ToString();
+        // private void ReadBenzingaSection(List<NewsItem> p_foundNewsItems, string p_ticker, string p_webpageData, string p_keyWord)
+        // {
+        //     Regex regexBenzingaLists = new(@"<div[^>]*?class=""stories""[^>]*?" + p_keyWord + @"(?<CONTENT>(\s|\S)*?)</div>"
+        //         , RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        //     Regex regexBenzingaNews = new(@"<li(\s|\S)*?class=""story""(\s|\S)*?<a href=""(?<LINK>[^""]*)"">(?<TITLE>[^<]*)<(\s|\S)*?<span class=""date"">(?<DATE>[^<]*)"
+        //         , RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+        //     MatchCollection matches = regexBenzingaLists.Matches(p_webpageData);
+        //     if (matches == null)
+        //         return;
+        //     for (int index = 0; index < matches.Count; index++)
+        //     {
+        //         Match match = matches[index];
+        //         MatchCollection matchesNews = regexBenzingaNews.Matches(match.Groups["CONTENT"].Value);
+        //         for (int indexNews = 0; indexNews < matchesNews.Count; indexNews++)
+        //         {
+        //             Match matchNews = matchesNews[indexNews];
+        //             NewsItem newsItem = new();
+        //             newsItem.Ticker = p_ticker;
+        //             newsItem.LinkUrl = matchNews.Groups["LINK"].Value;
+        //             newsItem.Title = WebUtility.HtmlDecode(matchNews.Groups["TITLE"].Value);
+        //             newsItem.Summary = "  ";
+        //             newsItem.PublishDate = GetNewsDate(matchNews.Groups["DATE"].Value);
+        //             newsItem.DownloadTime = DateTime.Now;
+        //             newsItem.Source = NewsSource.Benzinga.ToString();
 
-                    if (AddNewsToMemory(p_ticker, newsItem))
-                        p_foundNewsItems.Add(newsItem);
-                }
-            }
-        }
-        private DateTime GetNewsDate(string p_dateString)
-        {
-            if (DateTime.TryParse(p_dateString, out DateTime date))
-                return date;
-            p_dateString = p_dateString.ToUpper();
-            if (p_dateString.Contains("AGO"))
-            {
-                p_dateString = p_dateString.Replace("AGO", string.Empty).Trim();
-                if (p_dateString.Contains("HOUR"))
-                {
-                    p_dateString = p_dateString.Replace("HOURS", string.Empty).Replace("HOUR", string.Empty).Trim();
-                    if (int.TryParse(p_dateString, out int hours))
-                        return DateTime.Now.AddHours(-hours);
-                }
-                else if (p_dateString.Contains("DAY"))
-                {
-                    p_dateString = p_dateString.Replace("DAYS", string.Empty).Replace("DAY", string.Empty).Trim();
-                    if (int.TryParse(p_dateString, out int days))
-                        return DateTime.Now.AddDays(-days);
-                }
-                else if (p_dateString.Contains("MIN"))
-                {
-                    p_dateString = p_dateString.Replace("MINUTES", string.Empty).Replace("MIN", string.Empty).Replace("MINS", string.Empty).Trim();
-                    if (int.TryParse(p_dateString, out int days))
-                        return DateTime.Now.AddDays(-days);
-                }
-            }
-            return DateTime.Now;
-        }
-        private string NewsToString(List<NewsItem> newsList)
-        {
-            string finalString = string.Empty;
-            foreach (NewsItem news in newsList.OrderBy(x => x.PublishDate))
-                finalString += string.Format(@"news_ticker{0}news_title{1}news_summary{2}news_link{3}news_downloadTime{4:yyyy-MM-dd hh:mm}news_publishDate{5:yyyy-MM-dd hh:mm}news_source{6}news_end",
-                    news.Ticker, news.Title, news.Summary, news.LinkUrl, news.DownloadTime, news.PublishDate, news.Source);
-            return finalString;
-        }
+        //             if (AddNewsToMemory(p_ticker, newsItem))
+        //                 p_foundNewsItems.Add(newsItem);
+        //         }
+        //     }
+        // }
+        // private DateTime GetNewsDate(string p_dateString)
+        // {
+        //     if (DateTime.TryParse(p_dateString, out DateTime date))
+        //         return date;
+        //     p_dateString = p_dateString.ToUpper();
+        //     if (p_dateString.Contains("AGO"))
+        //     {
+        //         p_dateString = p_dateString.Replace("AGO", string.Empty).Trim();
+        //         if (p_dateString.Contains("HOUR"))
+        //         {
+        //             p_dateString = p_dateString.Replace("HOURS", string.Empty).Replace("HOUR", string.Empty).Trim();
+        //             if (int.TryParse(p_dateString, out int hours))
+        //                 return DateTime.Now.AddHours(-hours);
+        //         }
+        //         else if (p_dateString.Contains("DAY"))
+        //         {
+        //             p_dateString = p_dateString.Replace("DAYS", string.Empty).Replace("DAY", string.Empty).Trim();
+        //             if (int.TryParse(p_dateString, out int days))
+        //                 return DateTime.Now.AddDays(-days);
+        //         }
+        //         else if (p_dateString.Contains("MIN"))
+        //         {
+        //             p_dateString = p_dateString.Replace("MINUTES", string.Empty).Replace("MIN", string.Empty).Replace("MINS", string.Empty).Trim();
+        //             if (int.TryParse(p_dateString, out int days))
+        //                 return DateTime.Now.AddDays(-days);
+        //         }
+        //     }
+        //     return DateTime.Now;
+        // }
+        // private string NewsToString(List<NewsItem> newsList)
+        // {
+        //     string finalString = string.Empty;
+        //     foreach (NewsItem news in newsList.OrderBy(x => x.PublishDate))
+        //         finalString += string.Format(@"news_ticker{0}news_title{1}news_summary{2}news_link{3}news_downloadTime{4:yyyy-MM-dd hh:mm}news_publishDate{5:yyyy-MM-dd hh:mm}news_source{6}news_end",
+        //             news.Ticker, news.Title, news.Summary, news.LinkUrl, news.DownloadTime, news.PublishDate, news.Source);
+        //     return finalString;
+        // }
 
 
-        private void AddFoundNews(int p_stockID, List<NewsItem> p_foundNewsItems)
-        {
-            // List<NewsItem> notYetKnownNews = new List<NewsItem>();
-            // if (!m_newsMemory.ContainsKey(p_stockID))
-            //     m_newsMemory.Add(p_stockID, new List<NewsItem>());
-            // foreach (NewsItem newsItem in p_foundNewsItems)
-            //     if (m_newsMemory[p_stockID].Where(x => x.LinkUrl.Equals(newsItem.LinkUrl)).Count() == 0)    // not yet known
-            //     {
-            //         m_newsMemory[p_stockID].Add(newsItem);
-            //         notYetKnownNews.Add(newsItem);
-            //     }
-        }
+        // private void AddFoundNews(int p_stockID, List<NewsItem> p_foundNewsItems)
+        // {
+        //     // List<NewsItem> notYetKnownNews = new List<NewsItem>();
+        //     // if (!m_newsMemory.ContainsKey(p_stockID))
+        //     //     m_newsMemory.Add(p_stockID, new List<NewsItem>());
+        //     // foreach (NewsItem newsItem in p_foundNewsItems)
+        //     //     if (m_newsMemory[p_stockID].Where(x => x.LinkUrl.Equals(newsItem.LinkUrl)).Count() == 0)    // not yet known
+        //     //     {
+        //     //         m_newsMemory[p_stockID].Add(newsItem);
+        //     //         notYetKnownNews.Add(newsItem);
+        //     //     }
+        // }
 
         private async Task<List<NewsItem>> ReadRSSAsync(string p_url, NewsSource p_newsSource, string p_ticker)
         {

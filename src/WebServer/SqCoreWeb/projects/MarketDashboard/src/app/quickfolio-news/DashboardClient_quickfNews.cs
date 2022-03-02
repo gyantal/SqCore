@@ -11,7 +11,7 @@ namespace SqCoreWeb
     
     public partial class DashboardClient
     {
-        const int m_newsReloadInterval = 15 * 60 * 1000; // 15 minutes in milliseconds
+        // const int m_newsReloadInterval = 15 * 60 * 1000; // 15 minutes in milliseconds
         // Timer? m_newsReloadTimer = null;    // separate Timer is needed for each client  (that is a waste of resources, but fine temporarily)
         QuickfolioNewsDownloader m_newsDownloader = new(); // separate downloader for each client.
 
