@@ -17,7 +17,7 @@ namespace HealthMonitor
 
         //# Key derivation functions. See: 
         //# http://docs.aws.amazon.com/general/latest/gr/signature-v4-examples.html#signature-v4-examples-python
-        internal byte[] sign(byte[] key, string msg)
+        internal byte[] Sign(byte[] key, string msg)
         {
             HMACSHA256 hmac = new(key);
             var computedDigest = hmac.ComputeHash(Encoding.UTF8.GetBytes(msg));
@@ -25,12 +25,12 @@ namespace HealthMonitor
             //return hmac.new(key, msg.encode('utf-8'), hashlib.sha256).digest();
         }
 
-        internal byte[] getSignatureKey(string key, string dateStamp, string regionName, string serviceName)
+        internal byte[] GetSignatureKey(string key, string dateStamp, string regionName, string serviceName)
         {
-            byte[] kDate = sign(Encoding.UTF8.GetBytes("AWS4" + key), dateStamp);
-            byte[] kRegion = sign(kDate, regionName);
-            byte[] kService = sign(kRegion, serviceName);
-            byte[] kSigning = sign(kService, "aws4_request");
+            byte[] kDate = Sign(Encoding.UTF8.GetBytes("AWS4" + key), dateStamp);
+            byte[] kRegion = Sign(kDate, regionName);
+            byte[] kService = Sign(kRegion, serviceName);
+            byte[] kSigning = Sign(kService, "aws4_request");
             return kSigning;
         }
 
@@ -115,7 +115,7 @@ namespace HealthMonitor
 
             // ************* TASK 3: CALCULATE THE SIGNATURE *************
             // Create the signing key
-            byte[] signing_key = getSignatureKey(secret_key, datestamp, region, service);
+            byte[] signing_key = GetSignatureKey(secret_key, datestamp, region, service);
 
             // Sign the string_to_sign using the signing_key
             HMACSHA256 hmac = new(signing_key);

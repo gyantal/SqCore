@@ -24,12 +24,12 @@ namespace SqCoreWeb.Controllers
 
     public class NGXLogInterface
     {
-        public NgxLoggerLevel level { get; set; }
-        public string timestamp { get; set; } = string.Empty;
-        public string fileName { get; set; }  = string.Empty;
-        public string lineNumber { get; set; }  = string.Empty;
-        public string message { get; set; }  = string.Empty;
-        public object[] additional { get; set; } = Array.Empty<object>();
+        public NgxLoggerLevel Level { get; set; }
+        public string Timestamp { get; set; } = string.Empty;
+        public string FileName { get; set; }  = string.Empty;
+        public string LineNumber { get; set; }  = string.Empty;
+        public string Message { get; set; }  = string.Empty;
+        public object[] Additional { get; set; } = Array.Empty<object>();
     }
 
     // Logger for Javascript code. This can notify Healthmonitor if Crash occurs in HTML JS in the client side.
@@ -58,8 +58,8 @@ namespace SqCoreWeb.Controllers
             // 2. interpret the log and if it is an error, notify HealthMonitor
             try
             {
-                var jsLogObj = JsonSerializer.Deserialize<NGXLogInterface>(jsLogMessage);
-                if (jsLogObj == null || jsLogObj.level == NgxLoggerLevel.ERROR || jsLogObj.level == NgxLoggerLevel.FATAL)
+                var jsLogObj = JsonSerializer.Deserialize<NGXLogInterface>(jsLogMessage, new JsonSerializerOptions { PropertyNameCaseInsensitive = true});
+                if (jsLogObj == null || jsLogObj.Level == NgxLoggerLevel.ERROR || jsLogObj.Level == NgxLoggerLevel.FATAL)
                 {   // notify HealthMonitor to send an email
                     await HealthMonitorMessage.SendAsync(jsLogMsgWithOrigin, HealthMonitorMessageID.SqCoreWebJsError);
                 }

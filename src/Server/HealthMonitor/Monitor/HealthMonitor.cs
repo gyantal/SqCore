@@ -39,7 +39,7 @@ namespace HealthMonitor
 
         public bool IsSendErrorEmailAtGracefulShutdown { get; set; } = true;   // switch this off before deployment, and switch it on after deployment; make functionality on the WebSite
 
-        public int nFailedDownload_YahooFinanceMain { get; set; } = 0;
+        public int NumFailedDownload_YahooFinanceMain { get; set; } = 0;
     }
 
     public partial class HealthMonitor

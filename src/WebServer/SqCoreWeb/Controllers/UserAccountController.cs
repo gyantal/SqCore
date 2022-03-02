@@ -38,7 +38,7 @@ namespace SqCoreWeb.Controllers
             {
                 // RedirectUri = Url.Action("Index", "Home")
                 // subdomain https://healthmonitor.sqcore.net/UserAccount/logout should NOT redirect back to https://healthmonitor.sqcore.net/  because that requires user login and will automatically login back auto on Edge Browser.
-                RedirectUri = (Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") ? "https://localhost:5001/" : "//sqcore.net"
+                RedirectUri = (Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") ? "https://localhost:5001/" : "//sqcore.net"
             });
         }
 

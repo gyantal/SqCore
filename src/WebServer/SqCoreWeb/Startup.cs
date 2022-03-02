@@ -42,7 +42,7 @@ namespace SqCoreWeb
             // Scoped objects are the same within a request, but different across different requests
             // Singleton objects are the same for every object and every request(regardless of whether an instance is provided in ConfigureServices)
             services.AddSingleton(_ => Utils.Configuration);  // this is the proper DependenciInjection (DI) way of pushing it as a service to Controllers. So you don't have to manage the creation or disposal of instances.
-            services.AddSingleton(_ => Program.g_webAppGlobals);
+            services.AddSingleton(_ => Program.WebAppGlobals);
 
             services.AddHttpsRedirection(options =>
             {
@@ -249,7 +249,7 @@ namespace SqCoreWeb
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            Program.g_webAppGlobals.KestrelEnv = env;
+            Program.WebAppGlobals.KestrelEnv = env;
 
             if (env.IsDevelopment())
             {
@@ -328,7 +328,7 @@ namespace SqCoreWeb
             app.Use(async (context, next) =>    // this fills up the Response header Cache-Control for everything else, like static files.
             {
                 // main Index.html cache is controlled in SqFirewallMiddlewarePostAuth(), because to differentiate based on Login/Logout
-                if (((Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") || context.Request.Host.Host.StartsWith("sqcore.net")) 
+                if (((Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") || context.Request.Host.Host.StartsWith("sqcore.net")) 
                     && (context.Request.Path.Value?.Equals("/index.html", StringComparison.OrdinalIgnoreCase) ?? false))
                 {
                     await next();

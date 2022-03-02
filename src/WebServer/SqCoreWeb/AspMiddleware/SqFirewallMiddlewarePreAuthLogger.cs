@@ -116,11 +116,11 @@ namespace SqCoreWeb
                     TotalMilliseconds = sw.Elapsed.TotalMilliseconds, 
                     IsError = exception != null || (level == Microsoft.Extensions.Logging.LogLevel.Error), 
                     Exception = exception };
-                lock (Program.g_webAppGlobals.HttpRequestLogs)  // prepare for multiple threads
+                lock (Program.WebAppGlobals.HttpRequestLogs)  // prepare for multiple threads
                 {
-                    Program.g_webAppGlobals.HttpRequestLogs.Enqueue(requestLog);
-                    while (Program.g_webAppGlobals.HttpRequestLogs.Count > 50 * 10)  // 2018-02-19: MaxHttpRequestLogs was 50, but changed to 500, because RTP (RealTimePrice) rolls 50 items out after 2 hours otherwise. 500 items will last for 20 hours.
-                        Program.g_webAppGlobals.HttpRequestLogs.Dequeue();
+                    Program.WebAppGlobals.HttpRequestLogs.Enqueue(requestLog);
+                    while (Program.WebAppGlobals.HttpRequestLogs.Count > 50 * 10)  // 2018-02-19: MaxHttpRequestLogs was 50, but changed to 500, because RTP (RealTimePrice) rolls 50 items out after 2 hours otherwise. 500 items will last for 20 hours.
+                        Program.WebAppGlobals.HttpRequestLogs.Dequeue();
                 }
 
                 // $"{DateTime.UtcNow.ToString("MMdd'T'HH':'mm':'ss.fff")}#
@@ -158,7 +158,7 @@ namespace SqCoreWeb
             List<string> whitelistPrefix = new(10);
             whitelistPrefix.AddRange(new string[] { "ws/", "signin-google" });   // Add WebSocket prefixes; and "/signin-google"
 
-            DirectoryInfo di = new(Program.g_webAppGlobals.KestrelEnv!.WebRootPath);
+            DirectoryInfo di = new(Program.WebAppGlobals.KestrelEnv!.WebRootPath);
             AddFileToListRecursive(di, string.Empty, ref whitelistExact);
 
             // https://stackoverflow.com/questions/21583278/getting-all-controllers-and-actions-names-in-c-sharp

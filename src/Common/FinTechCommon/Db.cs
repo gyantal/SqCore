@@ -208,7 +208,7 @@ namespace FinTechCommon
 
         public User[] GetUsers(string p_sqUserDataStr)
         {
-            var usersInDb = JsonSerializer.Deserialize<List<UserInDb>>(p_sqUserDataStr);
+            var usersInDb = JsonSerializer.Deserialize<List<UserInDb>>(p_sqUserDataStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true});
             if (usersInDb == null)
                 throw new SqException($"Deserialize failed on '{p_sqUserDataStr}'");
 
@@ -217,14 +217,14 @@ namespace FinTechCommon
             {
                 users.Add(new User()
                 {
-                    Id = usrDb.id,
-                    Username = usrDb.name,
-                    Password = usrDb.pwd,
-                    Email = usrDb.email,
-                    Title = usrDb.title,
-                    Firstname = usrDb.firstname,
-                    Lastname = usrDb.lastname,
-                    IsAdmin = usrDb.isadmin == "1"
+                    Id = usrDb.Id,
+                    Username = usrDb.Name,
+                    Password = usrDb.Pwd,
+                    Email = usrDb.Email,
+                    Title = usrDb.Title,
+                    Firstname = usrDb.Firstname,
+                    Lastname = usrDb.Lastname,
+                    IsAdmin = usrDb.Isadmin == "1"
                     
                 });
             }
@@ -233,7 +233,7 @@ namespace FinTechCommon
             for (int i = 0; i < users.Count; i++)
             {
                 visibleUsers[i] = new List<User>();
-                string visibleUsersStrt = usersInDb[i].visibleusers;    // reach back to the usersInDb list
+                string visibleUsersStrt = usersInDb[i].Visibleusers;    // reach back to the usersInDb list
                 if (String.IsNullOrEmpty(visibleUsersStrt))
                     continue;
                 string[] usernames = visibleUsersStrt.Split(',', StringSplitOptions.RemoveEmptyEntries);

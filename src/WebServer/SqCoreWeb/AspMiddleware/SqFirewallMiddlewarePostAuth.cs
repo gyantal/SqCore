@@ -23,7 +23,7 @@ namespace SqCoreWeb
         {
             _next = next ?? throw new ArgumentNullException(nameof(next));
 
-            var mainIndexHtml = System.IO.File.ReadAllText(Program.g_webAppGlobals.KestrelEnv?.WebRootPath + "/index.html");
+            var mainIndexHtml = System.IO.File.ReadAllText(Program.WebAppGlobals.KestrelEnv?.WebRootPath + "/index.html");
             var mainIndexHtmlArray = mainIndexHtml.Split(@"<a href=""/UserAccount/login"">Login</a>", StringSplitOptions.RemoveEmptyEntries);  // has only 2 items. Searched string is not included.
             mainIndexHtmlCached = new string[mainIndexHtmlArray.Length + 1];
             mainIndexHtmlCached[0] = mainIndexHtmlArray[0];
@@ -55,7 +55,7 @@ namespace SqCoreWeb
                 {
                     // Allow without user login only for the main domain's index.html ("sqcore.net/index.html"),  
                     // For subdomains, like "dashboard.sqcore.net/index.html" require UserLogin
-                    if (((Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") || httpContext.Request.Host.Host.StartsWith("sqcore.net")) &&
+                    if (((Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") || httpContext.Request.Host.Host.StartsWith("sqcore.net")) &&
                         (httpContext.Request.Path.Value?.Equals("/index.html", StringComparison.OrdinalIgnoreCase) ?? false))
                     { // if it is HTML only allow '/index.html' through
                         isAllowedRequest = true;    // don't replace raw main index.html file by in-memory. Let it through. A brotli version will be delivered, which is better then in-memory non-compressed.
@@ -80,15 +80,15 @@ namespace SqCoreWeb
                         isAllowedRequest = true;
                     if (httpContext.Request.Path.Value?.Equals("/WebServer/ping", StringComparison.OrdinalIgnoreCase) ?? false)   // HealthMonitor checks https://sqcore.net/WebServer/ping every 9 minutes, so let's allow it without GoogleAuth
                         isAllowedRequest = true;
-                    if ((Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") && (httpContext.Request.Path.Value?.StartsWith("/hub/", StringComparison.OrdinalIgnoreCase) ?? false))
+                    if ((Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") && (httpContext.Request.Path.Value?.StartsWith("/hub/", StringComparison.OrdinalIgnoreCase) ?? false))
                         isAllowedRequest = true;    // in Development, when 'ng served'-d with proxy redirection from http://localhost:4202 to https://localhost:5001 , Don't force Google Auth, because 
-                    if ((Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") && (httpContext.Request.Path.Value?.StartsWith("/ws/", StringComparison.OrdinalIgnoreCase) ?? false))
+                    if ((Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") && (httpContext.Request.Path.Value?.StartsWith("/ws/", StringComparison.OrdinalIgnoreCase) ?? false))
                         isAllowedRequest = true;
                 }
                 else 
                     isAllowedRequest = true;    // 3. allow jpeg files and other resources, like favicon.ico
 
-                if ((Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") && httpContext.Request.Host.Host.StartsWith("127.0.0.1"))
+                if ((Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") && httpContext.Request.Host.Host.StartsWith("127.0.0.1"))
                     isAllowedRequest = true;    // vscode-chrome-debug runs Chrome with --remote-debugging-port=9222. On that Gmail login is not possible. Result "This browser or app may not be secure.". So, don't require user logins if Chrome-Debug is used
 
                 string ipStr = WsUtils.GetRequestIPv6(httpContext, false);
@@ -130,7 +130,7 @@ namespace SqCoreWeb
             {
                 // if user is accepted, index.html should be rewritten to change 'Login' link to username/logout link
                 // in Development, Host = "127.0.0.1"
-                if (((Program.g_webAppGlobals.KestrelEnv?.EnvironmentName == "Development") || httpContext.Request.Host.Host.StartsWith("sqcore.net")) 
+                if (((Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") || httpContext.Request.Host.Host.StartsWith("sqcore.net")) 
                     && (httpContext.Request.Path.Value?.Equals("/index.html", StringComparison.OrdinalIgnoreCase) ?? false))
                 {
                     //await _next(httpContext);

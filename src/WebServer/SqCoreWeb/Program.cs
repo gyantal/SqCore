@@ -32,7 +32,7 @@ namespace SqCoreWeb
 
     public partial class Program
     {
-        public static IWebAppGlobals g_webAppGlobals { get; set; } = new WebAppGlobals();
+        public static IWebAppGlobals WebAppGlobals { get; set; } = new WebAppGlobals();
         private static readonly NLog.Logger gLogger = NLog.LogManager.GetLogger("Program");   // the name of the logger will be not the "Namespace.Class", but whatever you prefer: "Program"
 
         static Timer? gHeartbeatTimer = null; // If timer object goes out of scope and gets erased by Garbage Collector after some time, which stops callbacks from firing. Save reference to it in a member of class.
@@ -282,8 +282,8 @@ namespace SqCoreWeb
         public static void ServerDiagnostic(StringBuilder p_sb)
         {
             p_sb.Append("<H2>Program.exe</H2>");
-            var timeSinceAppStart = DateTime.UtcNow - g_webAppGlobals.WebAppStartTime;
-            p_sb.Append($"WebAppStartTimeUtc: {g_webAppGlobals.WebAppStartTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}({timeSinceAppStart:dd} days {timeSinceAppStart:hh\\:mm} hours ago)<br>");
+            var timeSinceAppStart = DateTime.UtcNow - WebAppGlobals.WebAppStartTime;
+            p_sb.Append($"WebAppStartTimeUtc: {WebAppGlobals.WebAppStartTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}({timeSinceAppStart:dd} days {timeSinceAppStart:hh\\:mm} hours ago)<br>");
             ThreadPool.GetMinThreads(out int minWorkerTh, out int minIoThread);
             ThreadPool.GetMinThreads(out int maxWorkerTh, out int maxIoThread);
             p_sb.Append($"ThId-{Thread.CurrentThread.ManagedThreadId}, ThreadPool#:{ThreadPool.ThreadCount}, WorkerTh: [{minWorkerTh}...{maxWorkerTh}], IoTh: [{minIoThread}...{maxIoThread}] <br>");

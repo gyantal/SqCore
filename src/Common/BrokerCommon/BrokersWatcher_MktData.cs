@@ -43,12 +43,12 @@ namespace BrokerCommon
         struct MktDataProgress
         {
             internal string Name;
-            internal int nQueried { get; set; } = 0;
-            internal int nArrived { get; set; } = 0;
-            internal int nError { get; set; } = 0;
-            internal int nMissing { get { return nQueried - nArrived - nError; } }   // nMissing = nQueried - nArrived - nError(arrived)
+            internal int NumQueried { get; set; } = 0;
+            internal int NumArrived { get; set; } = 0;
+            internal int NumError { get; set; } = 0;
+            internal int NumMissing { get { return NumQueried - NumArrived - NumError; } }   // nMissing = nQueried - nArrived - nError(arrived)
 
-            internal bool IsAllReceived { get { return (nArrived + nError) >= nQueried; } }
+            internal bool IsAllReceived { get { return (NumArrived + NumError) >= NumQueried; } }
 
             internal List<string> NotArrivedTickers;
             internal List<string> ErrorArrivedTickers;
@@ -62,7 +62,7 @@ namespace BrokerCommon
 
             internal void RegisterTicker(string p_localSymbol)
             {
-                nQueried++;
+                NumQueried++;
                 NotArrivedTickers.Add(p_localSymbol);
             }
 
@@ -70,7 +70,7 @@ namespace BrokerCommon
             {
                 bool wasInListAndRemoved = NotArrivedTickers.Remove(p_localSymbol);
                 if (wasInListAndRemoved)
-                    nArrived++;
+                    NumArrived++;
             }
 
             internal void ErrorArrived(string p_localSymbol)
@@ -78,7 +78,7 @@ namespace BrokerCommon
                 if (ErrorArrivedTickers.Contains(p_localSymbol))
                     return;
                 ErrorArrivedTickers.Add(p_localSymbol);
-                nError++;
+                NumError++;
             }
 
             internal void LogIfMissing()
@@ -423,7 +423,7 @@ namespace BrokerCommon
                     Utils.Logger.Trace($"GetAccountsInfo(). RT prices {iTimeoutCount}/{cMaxTimeout}x Timeout after {(DateTime.UtcNow - startTime).TotalMilliseconds} ms. nMissingEsttPrice:{nMissingEstPrice}");
                 }
             }
-            string logMsg = $"IB.ReqMktData. #OkEstPr: {progressEstPrice.nArrived} in {progressEstPrice.nQueried}, #OkPriorCls: {progressPriorClose.nArrived} in {progressPriorClose.nQueried}, #OkDelta: {progressDelta.nArrived} in {progressDelta.nQueried} in {(DateTime.UtcNow - startTime).TotalSeconds:0.000}sec";
+            string logMsg = $"IB.ReqMktData. #OkEstPr: {progressEstPrice.NumArrived} in {progressEstPrice.NumQueried}, #OkPriorCls: {progressPriorClose.NumArrived} in {progressPriorClose.NumQueried}, #OkDelta: {progressDelta.NumArrived} in {progressDelta.NumQueried} in {(DateTime.UtcNow - startTime).TotalSeconds:0.000}sec";
             Utils.Logger.Trace(logMsg);  // RT prices: After MOC:185.5ms, during Market:FirstTime:900-1100ms,Next times:450-600ms, Local development all 58 stocks + options, Queried: 58, ReceivedOk: 57, ReceivedErr: 1, Missing: 0,  
             Console.WriteLine(logMsg);
             progressEstPrice.LogIfMissing();

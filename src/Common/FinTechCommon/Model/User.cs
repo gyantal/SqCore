@@ -94,16 +94,16 @@ namespace FinTechCommon
 
     public class UserInDb	// for quick JSON deserialization. In DB the fields has short names, and not all Asset fields are in the DB anyway
     {
-        public int id { get; set; } = -1;
-        public string name { get; set; } = string.Empty;
-        public string pwd { get; set; } = string.Empty;
+        public int Id { get; set; } = -1;
+        public string Name { get; set; } = string.Empty;
+        public string Pwd { get; set; } = string.Empty;
 
-        public string email { get; set; } = string.Empty;
-        public string title { get; set; } = string.Empty;
-        public string firstname { get; set; } = string.Empty;
-        public string lastname { get; set; } = string.Empty;
-        public string isadmin { get; set; } = string.Empty;
-        public string visibleusers { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public string Firstname { get; set; } = string.Empty;
+        public string Lastname { get; set; } = string.Empty;
+        public string Isadmin { get; set; } = string.Empty;
+        public string Visibleusers { get; set; } = string.Empty;
 
     }
 
