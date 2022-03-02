@@ -17,15 +17,8 @@ namespace SqCoreWeb.Controllers
 {
     public class DbAdminController : Microsoft.AspNetCore.Mvc.Controller
     {
-        private readonly ILogger<Program> m_loggerKestrelStyleDontUse; // Kestrel sends the logs to AspLogger, which will send it back to NLog. It can be used, but practially never use it. Even though this is the official ASP practice. It saves execution resource to not use it. Also, it is more consistent to use Utils.Logger global everywhere in our code.
-        private readonly IConfigurationRoot m_configKestrelStyleDontUse; // use the global Utils.Configuration instead. That way you don't have to pass down further in the call stack later
-        private readonly IWebAppGlobals m_webAppGlobals;
-
-        public DbAdminController(ILogger<Program> p_logger, IConfigurationRoot p_config, IWebAppGlobals p_webAppGlobals)
+       public DbAdminController()
         {
-            m_loggerKestrelStyleDontUse = p_logger;
-            m_configKestrelStyleDontUse = p_config;
-            m_webAppGlobals = p_webAppGlobals;
         }
 
         [HttpGet]

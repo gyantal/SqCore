@@ -21,7 +21,7 @@ namespace SqCoreWeb
         static bool isQckflNewsTimerRunning = false;
         static object m_qckflNewsTimerLock = new();
         static int m_qckflNewsTimerFrequencyMs = 15 * 60 * 1000; // timer for 15 minutes
-        public static TimeSpan c_initialSleepIfNotActiveToolQn2 = TimeSpan.FromMilliseconds(10 * 1000); // 10sec
+        static TimeSpan c_initialSleepIfNotActiveToolQn2 = TimeSpan.FromMilliseconds(10 * 1000); // 10sec
         Dictionary<string, List<NewsItem>> m_newsMemory = new();
         static Random g_random = new(DateTime.Now.Millisecond);
         static KeyValuePair<int, int> g_sleepBetweenDnsMs = new(2000, 1000); // <fix, random>

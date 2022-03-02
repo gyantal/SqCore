@@ -158,7 +158,7 @@ namespace FinTechCommon
         // https://stackoverflow.com/questions/16100/convert-a-string-to-an-enum-in-c-sharp
         // performance of Enum.Parse() is awful, because it is implemented via reflection. 
         // I've measured 3ms to convert a string to an Enum on the first run, on a desktop computer. (Just to illustrate the level of awfullness).
-        public static Dictionary<string, CurrencyId> gStrToCurrency = new() {
+        public static readonly Dictionary<string, CurrencyId> gStrToCurrency = new() {
             { "NaN", CurrencyId.Unknown},
             { "USD", CurrencyId.USD},
             { "EUR", CurrencyId.EUR},
@@ -170,14 +170,14 @@ namespace FinTechCommon
             { "CAD", CurrencyId.CAD},
             { "CHF", CurrencyId.CHF}};
 
-        public static Dictionary<string, StockType> gStrToStockType = new() {
+        public static readonly Dictionary<string, StockType> gStrToStockType = new() {
             { "NaN", StockType.Unknown},
             { "", StockType.Common},
             { "ADR", StockType.ADR},
             { "ETF", StockType.ETF},
             { "VIR", StockType.Virtual}};
 
-        public static Dictionary<AssetType, char> gAssetTypeCode = new() {
+        public static readonly Dictionary<AssetType, char> gAssetTypeCode = new() {
             { AssetType.Unknown, '?' },
             { AssetType.CurrencyCash, 'C' },
             { AssetType.CurrencyPair, 'D' },    // P is for Portfolio, so I don't want P as Pair. Just use D, that is the next letter after C in the ABC.

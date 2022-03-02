@@ -44,7 +44,7 @@ namespace HealthMonitor
 
     public partial class HealthMonitor
     {
-        static public HealthMonitor g_healthMonitor = new();
+        public static readonly HealthMonitor g_healthMonitor = new();
         DateTime m_startTime;
 
         SavedState? m_persistedState = null;
@@ -114,6 +114,12 @@ namespace HealthMonitor
         public void Exit()      // in general exit should happen in the opposite order as Init()
         {
             //PersistedState.Save();
+            if (m_checkWebsitesAndKeepAliveTimer != null)
+                m_checkWebsitesAndKeepAliveTimer.Dispose();
+            if (m_checkAmazonAwsInstancesTimer != null)
+                m_checkAmazonAwsInstancesTimer.Dispose();
+            if (m_rtpsTimer != null)
+                m_rtpsTimer.Dispose();
             if (m_tcpListener != null)
                 m_tcpListener.StopTcpMessageListener();
         }

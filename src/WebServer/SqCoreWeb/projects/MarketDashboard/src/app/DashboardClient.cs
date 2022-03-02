@@ -117,6 +117,22 @@ namespace SqCoreWeb
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
         }
 
+        public static DashboardClient? FindClient(WebSocket? p_webSocket)
+        {
+            return DashboardClient.g_clients.Find(r => r.WsWebSocket == p_webSocket);
+        }
+
+        public static void AddToClients(DashboardClient p_client)
+        {
+            // !Warning: Multithreaded Warning: The Modifier (Writer) thread should be careful, and Copy and Pointer-Swap when Edit/Remove is done.
+            lock (DashboardClient.g_clients)    // lock assures that there are no 2 threads that is Adding at the same time on Cloned g_glients.
+            {
+                List<DashboardClient> clonedClients = new(DashboardClient.g_clients); // adding new item to clone assures that no enumerating reader threads will throw exception.
+                clonedClients.Add(p_client);
+                DashboardClient.g_clients = clonedClients;
+            }
+        }
+
         public static void RemoveFromClients(DashboardClient p_client)
         {
             // 'beforeunload' will be fired if the user submits a form, clicks a link, closes the window (or tab), or goes to a new page using the address bar, search box, or a bookmark.

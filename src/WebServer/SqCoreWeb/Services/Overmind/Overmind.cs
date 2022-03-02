@@ -15,7 +15,7 @@ namespace SqCoreWeb
 
     public class Overmind
     {
-        public static Overmind gOvermind = new();
+        public static readonly Overmind gOvermind = new();
 
         public void Init()
         {

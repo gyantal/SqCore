@@ -122,6 +122,8 @@ namespace SqCoreWeb
             }
 
             Utils.MainThreadIsExiting.Set(); // broadcast main thread shutdown
+            gHeartbeatTimer.Dispose();
+
             // 4. Try to gracefully stop services.
             KestrelWebServer_Stop();
 

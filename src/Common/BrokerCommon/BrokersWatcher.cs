@@ -20,7 +20,7 @@ namespace BrokerCommon
     // this is the Trading Risk Manager Agent. The gateway for trading.
     public partial class BrokersWatcher
     {
-        public static BrokersWatcher gWatcher = new();   // Singleton pattern
+        public static readonly BrokersWatcher gWatcher = new();   // Singleton pattern
         const double cReconnectTimerFrequencyMinutes = 15; 
         System.Threading.Timer? m_reconnectTimer = null;
         SavedState m_persistedState = new();
@@ -217,6 +217,8 @@ namespace BrokerCommon
         // at graceful shutdown, it is called
         public void Exit()
         {
+            if (m_reconnectTimer != null)
+                m_reconnectTimer.Dispose();
             foreach (var gateway in m_gateways)
             {
                 gateway.Disconnect();

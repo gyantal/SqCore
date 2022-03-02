@@ -78,8 +78,8 @@ namespace FinTechCommon
         RtFreqParam m_lowFreqParam = new() { RtFreq = RtFreq.LowFreq, Name="LowFreq", FreqRthSec = 30 * 60, FreqOthSec = 1 * 60 * 60 }; // with low frequency (30 RTH, 1h otherwise) we almost all stocks. Even if nobody access them.
 
         // In general: higFreq: probably the traded stocks + what was RT queried by users. Mid: some special tickers (e.g. on MarketDashboard), LowFreq: ALL alive stocks.
-        string[] m_ibRtStreamedTickrs = Array.Empty<string>();   // /* VBroker */ no need for frequency Timer. IB prices will be streamed. So, in the future, we might delete m_highFreqParam. But maybe we need 10seconds ticker prices for non VBroker tasks. So, probably keep the streamed tickers very low. And this can be about 6-20seconds frequency.
-        string[] m_highFreqTickrs = Array.Empty<string>(); /* VBroker */ 
+        // string[] m_ibRtStreamedTickrs = Array.Empty<string>();   // /* VBroker */ no need for frequency Timer. IB prices will be streamed. So, in the future, we might delete m_highFreqParam. But maybe we need 10seconds ticker prices for non VBroker tasks. So, probably keep the streamed tickers very low. And this can be about 6-20seconds frequency.
+        string[] m_highFreqTickrs = Array.Empty<string>(); /* VBroker */
         string[] m_midFreqTickrs = new string[] {"S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO" /* DashboardClient_mktHealth.cs */ };
 
         Dictionary<Asset, DateTime> m_lastRtPriceQueryTime = new();

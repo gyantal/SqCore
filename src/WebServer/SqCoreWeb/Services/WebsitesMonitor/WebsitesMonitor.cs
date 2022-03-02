@@ -13,7 +13,7 @@ namespace SqCoreWeb
     }
     public class WebsitesMonitor
     {
-        public static WebsitesMonitor gWebsitesMonitor = new();
+        public static readonly WebsitesMonitor gWebsitesMonitor = new();
 
         public void Init()
         {

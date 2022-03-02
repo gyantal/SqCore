@@ -47,7 +47,7 @@ namespace FinTechCommon
 
     public class UpdateNavsService
     {
-        public static Timer? g_updateTimer = null;
+        static Timer? g_updateTimer = null;
 
         public static void Timer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
         {

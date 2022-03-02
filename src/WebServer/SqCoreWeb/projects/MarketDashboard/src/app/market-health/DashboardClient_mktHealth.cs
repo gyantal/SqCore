@@ -23,7 +23,7 @@ namespace SqCoreWeb
     // Clients should be slim programmed. They should only care, that IF they receive a new data, then Refresh.
     public partial class DashboardClient
     {
-        public static TimeSpan c_initialSleepIfNotActiveToolMh = TimeSpan.FromMilliseconds(5000);
+        public static readonly TimeSpan c_initialSleepIfNotActiveToolMh = TimeSpan.FromMilliseconds(5000);
         string m_lastLookbackPeriodStrMh = "YTD";
 
 

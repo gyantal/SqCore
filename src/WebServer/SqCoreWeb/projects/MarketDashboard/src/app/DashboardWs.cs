@@ -77,18 +77,12 @@ namespace SqCoreWeb
 
             Utils.Logger.Info("OnConnectedAsync() 6");
             // RtTimer runs in every 3-5 seconds and uses g_clients, so don't add client to g_clients too early, because RT would be sent there even before OnConnection is not ready.
-            lock (DashboardClient.g_clients)    // lock assures that there are no 2 threads that is Adding at the same time on Cloned g_glients.
-            {
-                // !Warning: Multithreaded Warning: The Modifier (Writer) thread should be careful, and Copy and Pointer-Swap when Edit/Remove is done.
-                List<DashboardClient> clonedClients = new(DashboardClient.g_clients); // adding new item to clone assures that no enumerating reader threads will throw exception.
-                clonedClients.Add(client);
-                DashboardClient.g_clients = clonedClients;
-            }
+            DashboardClient.AddToClients(client);
         }
 
         public static void OnWsReceiveAsync(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? wsResult, string bufferStr)
         {
-            DashboardClient? client = DashboardClient.g_clients.Find(r => r.WsWebSocket == webSocket);
+            DashboardClient? client = DashboardClient.FindClient(webSocket);
             if (client == null)
                 return;
 
@@ -119,7 +113,7 @@ namespace SqCoreWeb
 
         public static void OnWsClose(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? wsResult)
         {
-            DashboardClient? client = DashboardClient.g_clients.Find(r => r.WsWebSocket == webSocket);
+            DashboardClient? client = DashboardClient.FindClient(webSocket);
             DisposeClient(client);
         }
 

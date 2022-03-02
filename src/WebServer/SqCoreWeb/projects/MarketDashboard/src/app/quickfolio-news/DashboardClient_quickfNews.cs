@@ -12,14 +12,14 @@ namespace SqCoreWeb
     public partial class DashboardClient
     {
         const int m_newsReloadInterval = 15 * 60 * 1000; // 15 minutes in milliseconds
-        Timer? m_newsReloadTimer = null;    // separate Timer is needed for each client  (that is a waste of resources, but fine temporarily)
+        // Timer? m_newsReloadTimer = null;    // separate Timer is needed for each client  (that is a waste of resources, but fine temporarily)
         QuickfolioNewsDownloader m_newsDownloader = new(); // separate downloader for each client.
 
-        public static TimeSpan c_initialSleepIfNotActiveToolQn = TimeSpan.FromMilliseconds(10 * 1000); // 10sec
+        public static readonly TimeSpan c_initialSleepIfNotActiveToolQn = TimeSpan.FromMilliseconds(10 * 1000); // 10sec
 
         void Ctor_QuickfNews()
         {
-            m_newsReloadTimer = new Timer(NewsReloadTimerElapsed, null, m_newsReloadInterval, m_newsReloadInterval);
+            // m_newsReloadTimer = new Timer(NewsReloadTimerElapsed, null, m_newsReloadInterval, m_newsReloadInterval);
         }
 
         public void OnConnectedWsAsync_QckflNews(bool p_isThisActiveToolAtConnectionInit)
@@ -86,13 +86,13 @@ namespace SqCoreWeb
             }
         }
 
-        private void NewsReloadTimerElapsed(object? state)
-        {
-            if (DashboardClient.g_clients.Count > 0) 
-            {
-                TriggerQuickfolioNewsDownloader();
-            }
-        }
+        // private void NewsReloadTimerElapsed(object? state)
+        // {
+        //     if (DashboardClient.g_clients.Count > 0) 
+        //     {
+        //         TriggerQuickfolioNewsDownloader();
+        //     }
+        // }
 
         public void ReloadQuickfolioMsgArrived() {
             // m_newsDownloader.UpdateStockTickers();

@@ -18,8 +18,6 @@ namespace DbCommon
 
     public static partial class RedisManager
     {
-        private static readonly NLog.Logger gLogger = NLog.LogManager.GetCurrentClassLogger();   // the name of the logger will be the "Namespace.Class"
-
 
         // sometimes we keep open connections to different Redis servers (local vs. server1 vs. server2). We need support for multiple connections.
         private static ConcurrentDictionary<string, ConnectionMultiplexer> m_conns = new();

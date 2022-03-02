@@ -23,11 +23,9 @@ namespace SqCoreWeb.Controllers
 
             public int IntDataFunction => 32 + (int)(IntData / 0.5556);
         }
-        private readonly ILogger<WeatherForecastController> _logger;
 
-        public ExampleJsClientGetController(ILogger<WeatherForecastController> logger)
+        public ExampleJsClientGetController()
         {
-            _logger = logger;
         }
 
         [HttpGet]

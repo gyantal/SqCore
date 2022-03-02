@@ -38,8 +38,8 @@ namespace FinTechCommon
     public partial class MemDb
     {
         Timer m_historicalDataReloadTimer; // forced reload In ET time zone: 4:00ET, 9:00ET, 16:30ET.
-        static DateTime g_lastHistoricalDataReload = DateTime.MinValue; // UTC
-        static TimeSpan g_lastHistoricalDataReloadTs;  // YF downloads. For 12 stocks, it is 3sec. so for 120 stocks 30sec, for 600 stocks 2.5min, for 1200 stocks 5min
+        DateTime m_lastHistoricalDataReload = DateTime.MinValue; // UTC
+        TimeSpan m_lastHistoricalDataReloadTs;  // YF downloads. For 12 stocks, it is 3sec. so for 120 stocks 30sec, for 600 stocks 2.5min, for 1200 stocks 5min
  
         void InitAndScheduleHistoricalTimer()
         {
@@ -77,7 +77,7 @@ namespace FinTechCommon
             SetNextReloadHistDataTriggerTime();
         }
 
-        static internal async Task<CompactFinTimeSeries<SqDateOnly, uint, float, uint>?> CreateDailyHist(MemData p_memData, Db p_db)  // Create hist, but don't yet overwrite m_memData.DailyHist
+        internal async Task<CompactFinTimeSeries<SqDateOnly, uint, float, uint>?> CreateDailyHist(MemData p_memData, Db p_db)  // Create hist, but don't yet overwrite m_memData.DailyHist
         {
             DateTime startTime = DateTime.UtcNow;
 
@@ -87,9 +87,9 @@ namespace FinTechCommon
 
             var newDailyHist = await CreateDailyHistImpl(assetsNeedDailyHist, p_db, potentialMissingYfSplits);
 
-            g_lastHistoricalDataReload = DateTime.UtcNow;
-            g_lastHistoricalDataReloadTs = DateTime.UtcNow - startTime;
-            Console.WriteLine($"CreateDailyHist() finished (#Assets: {p_memData.AssetsCache.Assets.Count}, #HistoricalAssets: {newDailyHist?.GetDataDirect().Data.Count ?? 0}) in {g_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
+            m_lastHistoricalDataReload = DateTime.UtcNow;
+            m_lastHistoricalDataReloadTs = m_lastHistoricalDataReload - startTime;
+            Console.WriteLine($"CreateDailyHist() finished (#Assets: {p_memData.AssetsCache.Assets.Count}, #HistoricalAssets: {newDailyHist?.GetDataDirect().Data.Count ?? 0}) in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
             return newDailyHist;
         }
 

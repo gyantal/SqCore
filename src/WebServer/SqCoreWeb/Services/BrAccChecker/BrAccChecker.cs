@@ -16,7 +16,7 @@ namespace SqCoreWeb
     // Secondly, every 1h RTH, it stores the portfolio positions in MemDb, and Dashboard can quickly show it in the webpage
     public class BrAccChecker // shortened BrokerAccountPositionsChecker
     {
-        public static BrAccChecker gBrAccChecker = new();
+        public static readonly BrAccChecker gBrAccChecker = new();
 
         public void Init()
         {

@@ -59,6 +59,9 @@ namespace HealthMonitor
             } while (userInput != "UserChosenExit" && userInput != "ConsoleIsForcedToShutDown");
 
             Utils.MainThreadIsExiting.Set(); // broadcast main thread shutdown
+            gHeartbeatTimer.Dispose();
+
+            // Try to gracefully stop services.
             int timeBeforeExitingSec = 2;
             Console.WriteLine($"Exiting in {timeBeforeExitingSec}sec...");
             Thread.Sleep(TimeSpan.FromSeconds(timeBeforeExitingSec)); // give some seconds for long running background threads to quit

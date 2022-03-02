@@ -1,166 +1,172 @@
-// https://github.com/AnderssonPeter/CompressedStaticFiles
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.StaticFiles;
-using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace SqCoreWeb
-{
-    public class CompressedStaticFileMiddleware
-    {
-        private static Dictionary<string, string> compressionTypes = new()
-            {
-                { "gzip", ".gz" }, {"br", ".br" }
-            };
-
-        private readonly IOptions<StaticFileOptions> _staticFileOptions;
-        private readonly StaticFileMiddleware _base;
-        private readonly ILogger _logger;
-
-        public CompressedStaticFileMiddleware(RequestDelegate next, IWebHostEnvironment hostingEnv, IOptions<StaticFileOptions> staticFileOptions, ILoggerFactory loggerFactory)
-        {
-            if (next == null)
-            {
-                throw new ArgumentNullException(nameof(next));
-            }
-
-            if (loggerFactory == null)
-            {
-                throw new ArgumentNullException(nameof(loggerFactory));
-            }
-
-            if (hostingEnv == null)
-            {
-                throw new ArgumentNullException(nameof(hostingEnv));
-            }
-
-            _logger = loggerFactory.CreateLogger<CompressedStaticFileMiddleware>();
+// TODO: 2020-03-01: 
+// Currently the on-the-fly BrotliCompressionProvider is used with normal StaticFiles. 
+// (Probably we changed it when we moved from an old ASP framework to a newer one). 
+// Start to use CompressedStaticMiddleWare.cs again that replaces StaticFiles . 
+// That compresses the 80K SqStudiesList.html to 12K, instead of the on-the-fly compression of 20K. 
+// And it would also save Disk-reading time and CPU-compression time if we use the preCompiled brotli files.
 
 
-            this._staticFileOptions = staticFileOptions ?? throw new ArgumentNullException(nameof(staticFileOptions));
-            InitializeStaticFileOptions(hostingEnv, staticFileOptions);
+// // https://github.com/AnderssonPeter/CompressedStaticFiles
+// using Microsoft.AspNetCore.Builder;
+// using Microsoft.AspNetCore.Hosting;
+// using Microsoft.AspNetCore.Http;
+// using Microsoft.AspNetCore.StaticFiles;
+// using Microsoft.Extensions.FileProviders;
+// using Microsoft.Extensions.Logging;
+// using Microsoft.Extensions.Options;
+// using System;
+// using System.Collections.Generic;
+// using System.IO;
+// using System.Linq;
+// using System.Threading.Tasks;
 
-            _base = new StaticFileMiddleware(next, hostingEnv, staticFileOptions, loggerFactory);
-        }
+// namespace SqCoreWeb
+// {
+//     public class CompressedStaticFileMiddleware
+//     {
+//         private static Dictionary<string, string> compressionTypes = new()
+//             {
+//                 { "gzip", ".gz" }, {"br", ".br" }
+//             };
 
-        private static void InitializeStaticFileOptions(IWebHostEnvironment hostingEnv, IOptions<StaticFileOptions> staticFileOptions)
-        {
-            staticFileOptions.Value.FileProvider = staticFileOptions.Value.FileProvider ?? hostingEnv.WebRootFileProvider;
-            var contentTypeProvider = staticFileOptions.Value.ContentTypeProvider ?? new FileExtensionContentTypeProvider();
-            if (contentTypeProvider is FileExtensionContentTypeProvider fileExtensionContentTypeProvider)
-            {
-                // the StaticFileProvider would not serve the file if it does not know the content-type
-                fileExtensionContentTypeProvider.Mappings[".br"] = "application/brotli";
-            }
-            staticFileOptions.Value.ContentTypeProvider = contentTypeProvider;
+//         private readonly IOptions<StaticFileOptions> _staticFileOptions;
+//         private readonly StaticFileMiddleware _base;
+//         private readonly ILogger _logger;
 
-            var originalPrepareResponse = staticFileOptions.Value.OnPrepareResponse;
-            // Called after the status code and headers have been set, but before the body has been written. This can be used to add or change the response headers.
-            staticFileOptions.Value.OnPrepareResponse = ctx =>
-            {
-                originalPrepareResponse(ctx);   // we let StaticFileMiddleware create finalize the header, then we rewrite it.
-                foreach (var compressionType in compressionTypes.Keys)
-                {
-                    var fileExtension = compressionTypes[compressionType];
-                    if (ctx.File.Name.EndsWith(fileExtension, StringComparison.OrdinalIgnoreCase))
-                    {
-                        // we need to restore the original content type, otherwise it would be based on the compression type
-                        // (for example "application/brotli" instead of "text/html")
-                        if (contentTypeProvider.TryGetContentType(ctx.File.PhysicalPath.Remove(ctx.File.PhysicalPath.Length - fileExtension.Length, fileExtension.Length), out string? contentType))
-                            ctx.Context.Response.ContentType = contentType;
-                        ctx.Context.Response.Headers.Add("Content-Encoding", new[] { compressionType });
-                    }
-                }
-            };
-        }
+//         public CompressedStaticFileMiddleware(RequestDelegate next, IWebHostEnvironment hostingEnv, IOptions<StaticFileOptions> staticFileOptions, ILoggerFactory loggerFactory)
+//         {
+//             if (next == null)
+//             {
+//                 throw new ArgumentNullException(nameof(next));
+//             }
 
-        public Task Invoke(HttpContext context)
-        {
-            if (context.Request.Path.HasValue)
-            {
-                ProcessRequest(context);
-            }
-            return _base.Invoke(context);   // first, we preprocess the request (change context.Request.Path), and then we let StaticFileMiddleware load it from disk
-        }
+//             if (loggerFactory == null)
+//             {
+//                 throw new ArgumentNullException(nameof(loggerFactory));
+//             }
 
-        private void ProcessRequest(HttpContext context)
-        {
-            var fileSystem = _staticFileOptions.Value.FileProvider;
-            if (fileSystem == null)
-                return;
-            var originalFile = fileSystem.GetFileInfo(context.Request.Path);
+//             if (hostingEnv == null)
+//             {
+//                 throw new ArgumentNullException(nameof(hostingEnv));
+//             }
 
-            if (!originalFile.Exists)
-                return;
+//             _logger = loggerFactory.CreateLogger<CompressedStaticFileMiddleware>();
 
-            var supportedEncodings = GetSupportedEncodings(context);
 
-            // try to find a compressed version of the file and ensure that it is smaller than the uncompressed version
-            IFileInfo matchedFile = originalFile;
-            foreach (var compressionType in supportedEncodings)
-            {
-                var fileExtension = compressionTypes[compressionType];
-                var file = fileSystem.GetFileInfo(context.Request.Path + fileExtension);
-                if (file.Exists && file.Length < matchedFile.Length)
-                {
-                    matchedFile = file;
-                }
-            }
+//             this._staticFileOptions = staticFileOptions ?? throw new ArgumentNullException(nameof(staticFileOptions));
+//             InitializeStaticFileOptions(hostingEnv, staticFileOptions);
 
-            if (matchedFile != originalFile)
-            {
-                // a compressed version exists and is smaller, change the path to serve the compressed file
-                var matchedPath = context.Request.Path.Value + Path.GetExtension(matchedFile.Name);
+//             _base = new StaticFileMiddleware(next, hostingEnv, staticFileOptions, loggerFactory);
+//         }
+
+//         private static void InitializeStaticFileOptions(IWebHostEnvironment hostingEnv, IOptions<StaticFileOptions> staticFileOptions)
+//         {
+//             staticFileOptions.Value.FileProvider = staticFileOptions.Value.FileProvider ?? hostingEnv.WebRootFileProvider;
+//             var contentTypeProvider = staticFileOptions.Value.ContentTypeProvider ?? new FileExtensionContentTypeProvider();
+//             if (contentTypeProvider is FileExtensionContentTypeProvider fileExtensionContentTypeProvider)
+//             {
+//                 // the StaticFileProvider would not serve the file if it does not know the content-type
+//                 fileExtensionContentTypeProvider.Mappings[".br"] = "application/brotli";
+//             }
+//             staticFileOptions.Value.ContentTypeProvider = contentTypeProvider;
+
+//             var originalPrepareResponse = staticFileOptions.Value.OnPrepareResponse;
+//             // Called after the status code and headers have been set, but before the body has been written. This can be used to add or change the response headers.
+//             staticFileOptions.Value.OnPrepareResponse = ctx =>
+//             {
+//                 originalPrepareResponse(ctx);   // we let StaticFileMiddleware create finalize the header, then we rewrite it.
+//                 foreach (var compressionType in compressionTypes.Keys)
+//                 {
+//                     var fileExtension = compressionTypes[compressionType];
+//                     if (ctx.File.Name.EndsWith(fileExtension, StringComparison.OrdinalIgnoreCase))
+//                     {
+//                         // we need to restore the original content type, otherwise it would be based on the compression type
+//                         // (for example "application/brotli" instead of "text/html")
+//                         if (contentTypeProvider.TryGetContentType(ctx.File.PhysicalPath.Remove(ctx.File.PhysicalPath.Length - fileExtension.Length, fileExtension.Length), out string? contentType))
+//                             ctx.Context.Response.ContentType = contentType;
+//                         ctx.Context.Response.Headers.Add("Content-Encoding", new[] { compressionType });
+//                     }
+//                 }
+//             };
+//         }
+
+//         public Task Invoke(HttpContext context)
+//         {
+//             if (context.Request.Path.HasValue)
+//             {
+//                 ProcessRequest(context);
+//             }
+//             return _base.Invoke(context);   // first, we preprocess the request (change context.Request.Path), and then we let StaticFileMiddleware load it from disk
+//         }
+
+//         private void ProcessRequest(HttpContext context)
+//         {
+//             var fileSystem = _staticFileOptions.Value.FileProvider;
+//             if (fileSystem == null)
+//                 return;
+//             var originalFile = fileSystem.GetFileInfo(context.Request.Path);
+
+//             if (!originalFile.Exists)
+//                 return;
+
+//             var supportedEncodings = GetSupportedEncodings(context);
+
+//             // try to find a compressed version of the file and ensure that it is smaller than the uncompressed version
+//             IFileInfo matchedFile = originalFile;
+//             foreach (var compressionType in supportedEncodings)
+//             {
+//                 var fileExtension = compressionTypes[compressionType];
+//                 var file = fileSystem.GetFileInfo(context.Request.Path + fileExtension);
+//                 if (file.Exists && file.Length < matchedFile.Length)
+//                     matchedFile = file;
+//             }
+
+//             if (matchedFile != originalFile)
+//             {
+//                 // a compressed version exists and is smaller, change the path to serve the compressed file
+//                 var matchedPath = context.Request.Path.Value + Path.GetExtension(matchedFile.Name);
                 
-                //_logger.LogFileServed(context.Request.Path.Value, matchedPath, originalFile.Length, matchedFile.Length);
-                string logStr = $"Sending file. Request file: '{context.Request.Path.Value}'. Served file: '{matchedPath}'. Original file size: {originalFile.Length}. Served file size: {matchedFile.Length}";
-                Console.WriteLine(logStr);
+//                 // _logger.LogFileServed(context.Request.Path.Value, matchedPath, originalFile.Length, matchedFile.Length);
+//                 string logStr = $"Sending file. Request file: '{context.Request.Path.Value}'. Served file: '{matchedPath}'. Original file size: {originalFile.Length}. Served file size: {matchedFile.Length}";
+//                 Console.WriteLine(logStr);
                 
-                context.Request.Path = new PathString(matchedPath);
-            }
-        }
+//                 context.Request.Path = new PathString(matchedPath);
+//             }
+//         }
 
-        /// <summary>
-        /// Find the encodings that are supported by the browser and by this middleware
-        /// </summary>
-        private static IEnumerable<string> GetSupportedEncodings(HttpContext context)
-        {
-            var browserSupportedCompressionTypes = context.Request.Headers["Accept-Encoding"].ToString().Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            var validCompressionTypes = compressionTypes.Keys.Intersect(browserSupportedCompressionTypes, StringComparer.OrdinalIgnoreCase);
-            return validCompressionTypes;
-        }
-    }
-
-
-    public static class CompressedStaticFileExtensions
-    {
-        public static IApplicationBuilder UseCompressedStaticFiles(this IApplicationBuilder app)
-        {
-            if (app == null)
-            {
-                throw new ArgumentNullException(nameof(app));
-            }
-
-            return app.UseMiddleware<CompressedStaticFileMiddleware>();
-        }
+//         /// <summary>
+//         /// Find the encodings that are supported by the browser and by this middleware
+//         /// </summary>
+//         private static IEnumerable<string> GetSupportedEncodings(HttpContext context)
+//         {
+//             var browserSupportedCompressionTypes = context.Request.Headers["Accept-Encoding"].ToString().Split(new[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+//             var validCompressionTypes = compressionTypes.Keys.Intersect(browserSupportedCompressionTypes, StringComparer.OrdinalIgnoreCase);
+//             return validCompressionTypes;
+//         }
+//     }
 
 
-        public static IApplicationBuilder UseCompressedStaticFiles(this IApplicationBuilder app, StaticFileOptions options)
-        {
-            if (app == null)
-            {
-                throw new ArgumentNullException(nameof(app));
-            }
+//     public static class CompressedStaticFileExtensions
+//     {
+//         public static IApplicationBuilder UseCompressedStaticFiles(this IApplicationBuilder app)
+//         {
+//             if (app == null)
+//             {
+//                 throw new ArgumentNullException(nameof(app));
+//             }
 
-            return app.UseMiddleware<CompressedStaticFileMiddleware>(Options.Create(options));
-        }
-    }
-}
+//             return app.UseMiddleware<CompressedStaticFileMiddleware>();
+//         }
+
+
+//         public static IApplicationBuilder UseCompressedStaticFiles(this IApplicationBuilder app, StaticFileOptions options)
+//         {
+//             if (app == null)
+//             {
+//                 throw new ArgumentNullException(nameof(app));
+//             }
+
+//             return app.UseMiddleware<CompressedStaticFileMiddleware>(Options.Create(options));
+//         }
+//     }
+// }

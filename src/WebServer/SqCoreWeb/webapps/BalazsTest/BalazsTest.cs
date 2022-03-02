@@ -23,11 +23,9 @@ namespace SqCoreWeb.Controllers
 
             public int IntDataFunction => 32 + (int)(IntData / 0.5556);
         }
-        private readonly ILogger<WeatherForecastController> _logger;
 
-        public BalazsTestController(ILogger<WeatherForecastController> logger)
+        public BalazsTestController()
         {
-            _logger = logger;
         }
 
         [HttpGet]

@@ -81,8 +81,6 @@ namespace SqCoreWeb
         List<string> c_marketBarSqTickersDc = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/GLD"};
         List<Asset> m_brAccMktBrAssets = new();      // remember, so we can send RT data
 
-        List<Asset> m_navChartBenchmarkAssets = new();
-
         void Ctor_BrAccViewer()
         {
             // InitAssetData();

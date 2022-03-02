@@ -14,7 +14,7 @@ namespace FinTechCommon
 {
     public partial class MemDb
     {
-        public static MemDb gMemDb = new();   // Singleton pattern
+        public static readonly MemDb gMemDb = new();   // Singleton pattern
         // public object gMemDbUpdateLock = new object();  // the rare clients who care about inter-table consintency (VBroker) should obtain the lock before getting pointers to subtables
         Db m_Db;
 
@@ -33,10 +33,10 @@ namespace FinTechCommon
 
         Timer m_dbReloadTimer;  // checks every 1 hour, but reloads RAM only if Db data change is detected.
 
-        DateTime m_lastRedisReload = DateTime.MinValue; // UTC
-        TimeSpan m_lastRedisReloadTs;  // RedisDb reload: 2-3 tables: 0.2sec, It is about 100ms per table.
+        DateTime m_lastRedisReload = DateTime.MinValue; // UTC, // RedisDb reload: 2-3 tables takes: 0.2sec, It is about 100ms per table.
+        TimeSpan m_lastRedisReloadTs = TimeSpan.Zero;
         DateTime m_lastFullMemDbReload = DateTime.MinValue; // UTC
-        TimeSpan m_lastFullMemDbReloadTs;
+        TimeSpan m_lastFullMemDbReloadTs =  TimeSpan.Zero;
 
         public List<BrAccount> BrAccounts{ get; set; } = new List<BrAccount>();   // only Broker dependent data. When AssetCache is reloaded from RedisDb, this should not be wiped or reloaded
 
@@ -76,7 +76,7 @@ namespace FinTechCommon
                 var newAssetCache = new AssetsCache(newAssets!);               // TODO: var newPortfolios = GeneratePortfolios();
                 m_memData = new MemData(newUsers!, newAssetCache, new CompactFinTimeSeries<SqDateOnly, uint, float, uint>());
                 m_lastRedisReload = DateTime.UtcNow;
-                m_lastRedisReloadTs = DateTime.UtcNow - startTime;
+                m_lastRedisReloadTs = m_lastRedisReload - startTime;
                 // can inform Observers that MemDb is 1/4th ready: Users, Assets OK
                 Console.WriteLine($"*MemDb is 1/4-ready! RedisAssets (#Assets:{AssetsCache.Assets.Count},#Brokers:0,#HistAssets:0) in {m_lastRedisReloadTs.TotalSeconds:0.000}sec");
                 // spawn threads for Broker Connections and ReloadHistData
@@ -135,7 +135,7 @@ namespace FinTechCommon
 
                 await histTask;
                 m_lastFullMemDbReload = DateTime.UtcNow;
-                m_lastFullMemDbReloadTs = DateTime.UtcNow - startTime;
+                m_lastFullMemDbReloadTs = m_lastFullMemDbReload - startTime;
                 Console.WriteLine($"*MemDb is full-ready! Hist (#Assets:{AssetsCache.Assets.Count},#Brokers:{nConnectedBrokers},#HistAssets:{m_memData.DailyHist.GetDataDirect().Data.Count }) in {m_lastFullMemDbReloadTs.TotalSeconds:0.000}sec");
                 // Benchmarking: EvMemDbInitNoHistoryYet: 1.2sec (when MemDb is usable for clients), because Broker.Connections is 800ms each, but it is parallelized, while 20 YF history is extra 5sec, 
                 // so altogether if single-threaded it would be 0.2(Redis)+1+1+1(Brokers)+5 = 8.3sec, 
@@ -185,8 +185,7 @@ namespace FinTechCommon
             var hist = DailyHist.GetDataDirect();
             int memUsedKb = hist.MemUsed() / 1024;
             p_sb.Append($"#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {hist.Data.Count}, Used RAM: {memUsedKb:N0}KB<br>");  // hist.Data.Count = Srv.LoadPrHist + DC Aggregated NAV 
-            var lastDbReloadWithoutHist = m_lastFullMemDbReloadTs - g_lastHistoricalDataReloadTs;
-            p_sb.Append($"m_lastHistoricalDataReloadTimeUtc: '{g_lastHistoricalDataReload}', lastDbReloadWithoutHist: {lastDbReloadWithoutHist.TotalSeconds:0.000}sec, m_lastHistoricalDataReloadTs: {g_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec.<br>");
+            p_sb.Append($"m_lastHistoricalDataReloadTimeUtc: '{m_lastHistoricalDataReload}', m_lastRedisReloadTs: {m_lastRedisReloadTs.TotalSeconds:0.000}sec, m_lastFullMemDbReloadTs: {m_lastFullMemDbReloadTs.TotalSeconds:0.000}sec, m_lastHistoricalDataReloadTs: {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec.<br>");
 
             var yfTickers = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).Select(r => ((Stock)r).YfTicker).ToArray();
             p_sb.Append($"StockAssets (#{yfTickers.Length}): ");
@@ -250,7 +249,9 @@ namespace FinTechCommon
             // to minimize the time memDb is not consintent we create everything into new pointers first, then update them quickly
             var newAssetCache = new AssetsCache(sqCoreAssets!);
             var newMemData = new MemData(newUsers!, newAssetCache, new CompactFinTimeSeries<SqDateOnly, uint, float, uint>());
-            
+            m_lastRedisReload = DateTime.UtcNow;
+            m_lastRedisReloadTs = m_lastRedisReload - startTime;
+
             var newDailyHist = await CreateDailyHist(newMemData, m_Db); // downloads historical prices from YF. Assume it takes 20min
             // If reload HistData fails AND if it is a forced ReloadRedisDb, because assets changed Assets => we throw away old history, even if download fails.
             if (newDailyHist != null)
@@ -259,10 +260,10 @@ namespace FinTechCommon
             InitAllStockAssetsPriorCloseAndLastPrice(newAssetCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
             
             m_memData = newMemData; // swap pointer in atomic operation. After this, m_memData is now the new Data
-            Console.WriteLine($"*MemDb is ready! (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {DailyHist.GetDataDirect().Data.Count}) in {g_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
+            Console.WriteLine($"*MemDb is ready! (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {DailyHist.GetDataDirect().Data.Count}) in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
 
             m_lastFullMemDbReload = DateTime.UtcNow;
-            m_lastFullMemDbReloadTs = DateTime.UtcNow - startTime;
+            m_lastFullMemDbReloadTs = m_lastFullMemDbReload - startTime;
 
             // at ReloadDbData(), we can decide to fully reload the BrokerNav, Poss from Brokers (maybe safer). But at the moment, we decided just to update the in-memory BrAccounts array with the new AssetIds
             foreach (var brAccount in BrAccounts)
