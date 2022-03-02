@@ -30,7 +30,7 @@ namespace SqCoreWeb
         public static readonly Dictionary<string, ActivePage> c_urlParam2ActivePage = new() { 
             {"mh", ActivePage.MarketHealth}, {"bav", ActivePage.BrAccViewer}, {"cs", ActivePage.CatalystSniffer}, {"qn", ActivePage.QuickfolioNews}};
 
-        public static List<DashboardClient> g_clients = new();
+        public static List<DashboardClient> g_clients = new(); // Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
         public static void PreInit()
         {
             MemDb.gMemDb.EvMemDbInitNoHistoryYet += new MemDb.MemDbEventHandler(OnEvMemDbInitNoHistoryYet);
@@ -63,8 +63,9 @@ namespace SqCoreWeb
         public static void ServerDiagnostic(StringBuilder p_sb)
         {
             p_sb.Append("<H2>Dashboard Clients</H2>");
-            p_sb.Append($"DashboardClient.g_clients (#{DashboardClient.g_clients.Count}): ");
-            p_sb.AppendLongListByLine(DashboardClient.g_clients.Select(r => $"'{r.UserEmail}/{r.ConnectionId}'").ToArray(), ",", 3, "<br>");
+            var g_clientsPtrCpy = DashboardClient.g_clients;    // Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
+            p_sb.Append($"DashboardClient.g_clients (#{g_clientsPtrCpy.Count}): ");
+            p_sb.AppendLongListByLine(g_clientsPtrCpy.Select(r => $"'{r.UserEmail}/{r.ConnectionId}'").ToArray(), ",", 3, "<br>");
             p_sb.Append($"<br>rtDashboardTimerRunning: {m_rtDashboardTimerRunning}<br>");
         }
 
@@ -102,7 +103,8 @@ namespace SqCoreWeb
         public void SendIsDashboardOpenManyTimes()    // If Dashboard is open in more than one tab or browser.
         {
             int nClientsWitSameUserAndIp = 0;
-            foreach (var client in DashboardClient.g_clients)   // !Warning: Multithreaded Warning: This Reader code is fine. But potential problem if another thread removes clients from the List. The Modifier (Writer) thread should be careful, and Copy and Pointer-Swap when that Edit is taken.
+            var g_clientsPtrCpy = DashboardClient.g_clients;    // Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
+            foreach (var client in g_clientsPtrCpy)   // !Warning: Multithreaded Warning: This Reader code is fine. But potential problem if another thread removes clients from the List. The Modifier (Writer) thread should be careful, and Copy and Pointer-Swap when that Edit is taken.
             {
                 if (client.UserEmail == UserEmail && client.ClientIP == ClientIP)
                     nClientsWitSameUserAndIp++;
@@ -121,9 +123,13 @@ namespace SqCoreWeb
             // server removes this client from DashboardClient.g_clients list
 
             // !Warning: Multithreaded Warning: The Modifier (Writer) thread should be careful, and Copy and Pointer-Swap when Edit/Remove is done.
-            List<DashboardClient> clonedClients = new(DashboardClient.g_clients);
-            clonedClients.Remove(p_client);
-            DashboardClient.g_clients = clonedClients;
+            lock (DashboardClient.g_clients)
+            {
+                List<DashboardClient> clonedClients = new(DashboardClient.g_clients);
+                clonedClients.Remove(p_client);
+                DashboardClient.g_clients = clonedClients;
+            }
+
         }
     }
 }

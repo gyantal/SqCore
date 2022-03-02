@@ -136,11 +136,8 @@ namespace SqCoreWeb
                 if (!m_rtDashboardTimerRunning)
                     return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
 
-                List<DashboardClient>? g_clientsCpy = null;  // Clone the list, because .Add() can increase its size in another thread
-                lock (DashboardClient.g_clients)
-                    g_clientsCpy = new List<DashboardClient>(DashboardClient.g_clients);
-
-                g_clientsCpy.ForEach(client =>
+                var g_clientsPtrCpy = DashboardClient.g_clients;    // Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
+                foreach (DashboardClient client in g_clientsPtrCpy) // RT timer should be fast, don't use LINQ.ForEach(), but use foreach()
                 {
                     // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
                     // OnConnectedWsAsync() sleeps for a while if not active tool.
@@ -149,7 +146,7 @@ namespace SqCoreWeb
                         return;
 
                     client.SendRealtimeWs();
-                });
+                }
 
                 lock (m_rtDashboardTimerLock)
                 {
