@@ -45,38 +45,19 @@ namespace SqCoreWeb
             // create a connectionID based on client IP + connectionTime; the userID is the email as each user must be authenticated by an email.
             var clientIP = WsUtils.GetRequestIPv6(context!);    // takes 0.346ms
             Utils.Logger.Info($"DashboardWs.OnConnectedAsync(), Connection from IP: {clientIP} with email '{email}'");  // takes 1.433ms
-            DashboardClient? client = new(clientIP, email, DateTime.UtcNow);
-            client.WsWebSocket = webSocket;
-            client.WsHttpContext = context;
-            client.ActivePage = activePage;
-
-            User? user = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == client!.UserEmail);
+            User? user = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == email);
             if (user == null)
             {
-                Utils.Logger.Error($"Error. UserEmail is not found among MemDb users '{client!.UserEmail}'.");
+                Utils.Logger.Error($"Error. UserEmail is not found among MemDb users '{email}'.");
                 return;
             }
 
-            ManualResetEvent waitHandleMkthConnect = new(false);
-            ManualResetEvent waitHandleBrAccConnect = new(false);
+            DashboardClient client = new(clientIP, email, user, DateTime.UtcNow);
+            client.WsWebSocket = webSocket;
+            client.WsHttpContext = context;
+            client.ActivePage = activePage;
+            client.OnConnectedWsAsync_DshbrdClient();
 
-            client!.OnConnectedWsAsync_DshbrdClient(); // the code inside should run in a separate thread to return fast, so all Tools can work parallel
-
-            client!.OnConnectedWsAsync_MktHealth(activePage == ActivePage.MarketHealth, user, waitHandleMkthConnect); // the code inside should run in a separate thread to return fast, so all Tools can work parallel
-            client!.OnConnectedWsAsync_BrAccViewer(activePage == ActivePage.BrAccViewer, user, waitHandleBrAccConnect); // the code inside should run in a separate thread to return fast, so all Tools can work parallel
-            client!.OnConnectedWsAsync_QckflNews(activePage == ActivePage.QuickfolioNews);
-            client!.OnConnectedWsAsync_QckflNews2(activePage == ActivePage.QuickfolioNews);
-            Utils.Logger.Info("OnConnectedAsync() 4");
-
-            // have to wait until the tools initialize themselves to know what assets need RT prices
-            bool sucessfullWait = ManualResetEvent.WaitAll(new WaitHandle[] { waitHandleMkthConnect }, 10 * 1000);
-            Utils.Logger.Info("OnConnectedAsync() 5");
-            if (!sucessfullWait)
-                Utils.Logger.Warn("OnConnectedAsync():ManualResetEvent.WaitAll() timeout.");
-
-            client!.OnConnectedWsAsync_Rt();    // immediately send SPY realtime price. It can be used in 3+2 places: BrAccViewer:MarketBar, HistoricalChart, UserAssetList, MktHlth, CatalystSniffer (so, don't send it 5 times. Client will decide what to do with RT price)
-
-            Utils.Logger.Info("OnConnectedAsync() 6");
             // RtTimer runs in every 3-5 seconds and uses g_clients, so don't add client to g_clients too early, because RT would be sent there even before OnConnection is not ready.
             DashboardClient.AddToClients(client);
         }
@@ -97,14 +78,6 @@ namespace SqCoreWeb
             }
 
             bool isHandled = client.OnReceiveWsAsync_DshbrdClient(msgCode, msgObjStr);
-            if (!isHandled)
-                isHandled = client.OnReceiveWsAsync_MktHealth(msgCode, msgObjStr);
-            if (!isHandled)
-                isHandled = client.OnReceiveWsAsync_BrAccViewer(msgCode, msgObjStr);
-            if (!isHandled)
-                isHandled = client.OnReceiveWsAsync_QckflNews(msgCode, msgObjStr);
-            if (!isHandled)
-                isHandled = client.OnReceiveWsAsync_QckflNews2(msgCode, msgObjStr);
             if (!isHandled)
             {
                 // throw new Exception($"Unexpected websocket received msgCode '{msgCode}'");

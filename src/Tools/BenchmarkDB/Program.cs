@@ -40,7 +40,7 @@ namespace BenchmarkDB
 
 
             //Test_Csharp80_Features();
-            Controller.g_controller.Start();
+            Controller.Start();
 
             string userInput;
             do
@@ -49,7 +49,7 @@ namespace BenchmarkDB
             } while (userInput != "UserChosenExit" && userInput != "ConsoleIsForcedToShutDown");
 
             gLogger.Info("********** Main() END");
-            Controller.g_controller.Exit();
+            Controller.Exit();
             NLog.LogManager.Shutdown();
         }
 
@@ -89,17 +89,17 @@ namespace BenchmarkDB
                     gLogger.Info("Hello. I am not crashed yet! :)");
                     break;
                 case "2":
-                    Controller.g_controller.TestPing();
+                    Controller.TestPing();
                     break;
                 case "3":
-                    Controller.g_controller.TestPostgreSql();
+                    Controller.TestPostgreSql();
                     break;
                 case "4":
-                    Controller.g_controller.TestRedisCache();
+                    Controller.TestRedisCache();
                     break;
                 case "5":
                     // Console.WriteLine("5. Benchmark all and make conclusions (target: remote, execute: PC, Linux)");
-                    Controller.g_controller.BenchmarkAllAndConclusions(
+                    Controller.BenchmarkAllAndConclusions(
                         Program.gConfiguration.GetConnectionString("PingDefault"),
                         Program.gConfiguration.GetConnectionString("PostgreSqlDefault"),
                         Program.gConfiguration.GetConnectionString("RedisDefault"));
@@ -107,14 +107,14 @@ namespace BenchmarkDB
                 case "6":
                     // Console.WriteLine("6. Benchmark all and make conclusions (target: localhost, execute: PC)");
                     // start redis on WSL: in "ubuntu@gyantal-PC:~/redis/redis-stable$" type 'redis-server'     (check if it works in another terminal: 'redis-cli ping')
-                    Controller.g_controller.BenchmarkAllAndConclusions(
+                    Controller.BenchmarkAllAndConclusions(
                         "localhost",
                         Program.gConfiguration.GetConnectionString("PostgreSqlWinLocalhost"),
                         Program.gConfiguration.GetConnectionString("RedisWinLocalhost"));
                     break;
                 case "7":
                     // Console.WriteLine("7. Benchmark all and make conclusions (target: localhost, execute: Linux)");
-                    Controller.g_controller.BenchmarkAllAndConclusions(
+                    Controller.BenchmarkAllAndConclusions(
                         "localhost",
                         Program.gConfiguration.GetConnectionString("PostgreSqlLinuxLocalhost"),
                         Program.gConfiguration.GetConnectionString("RedisLinuxLocalhost"));

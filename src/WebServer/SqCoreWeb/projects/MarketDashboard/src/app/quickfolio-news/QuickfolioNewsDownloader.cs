@@ -357,7 +357,7 @@ namespace SqCoreWeb
         {
             if (!m_newsMemory.ContainsKey(p_ticker))
                 m_newsMemory.Add(p_ticker, new List<NewsItem>());
-            if (m_newsMemory[p_ticker].Where(x => x.LinkUrl.Equals(p_newsItem.LinkUrl)).Count() > 0)    // already known
+            if (m_newsMemory[p_ticker].Where(x => x.LinkUrl.Equals(p_newsItem.LinkUrl)).Any())    // already known
                 return false;
             if (SkipNewsItem(p_newsItem.Title))
                 return false;
@@ -365,7 +365,7 @@ namespace SqCoreWeb
             return true;
         }
 
-        private bool SkipNewsItem(string p_title)
+        private static bool SkipNewsItem(string p_title)
         {
             // skip news item if title is like NVIDIA rises 3.1%
             string upperCaseTitle = p_title.ToUpper();

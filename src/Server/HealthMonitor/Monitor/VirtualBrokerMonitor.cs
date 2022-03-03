@@ -134,7 +134,7 @@ namespace HealthMonitor
         //- currently, there are 2 extra simulations intraday. If VbServer is down, the simulation that is 30min before marketClose would be spotted by HealthMon.
         //- this feature can be mimicked: buy doing UberVXX task Simulation every hour.In that case VBrokerMonitorScheduler will notice that OK message didn't come in the last hour. 
         //- Sum: this feauture is not necessary, and takes time to implement.Don't do it now.
-        private void AddVbTasksToScheduler()
+        private static void AddVbTasksToScheduler()
         {
             try
             {

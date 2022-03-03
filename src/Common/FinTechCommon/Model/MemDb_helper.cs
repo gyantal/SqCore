@@ -112,7 +112,7 @@ namespace FinTechCommon
         }
 
         // Not really necessary function, because PriorClose can be queried directly from Asset
-        public IEnumerable<AssetPriorClose> GetSdaPriorCloses(IEnumerable<Asset> p_assets)
+        public static IEnumerable<AssetPriorClose> GetSdaPriorCloses(IEnumerable<Asset> p_assets)
         {
             DateTime mockupPriorDate = DateTime.UtcNow.Date.AddDays(-1); // we get PriorClose from Asset directly. That comes from YF, which don't tell us the date of PriorClose
             var priorCloses = p_assets.Select(r =>

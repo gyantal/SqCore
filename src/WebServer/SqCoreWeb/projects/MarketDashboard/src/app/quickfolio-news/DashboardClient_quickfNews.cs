@@ -17,11 +17,6 @@ namespace SqCoreWeb
 
         public static readonly TimeSpan c_initialSleepIfNotActiveToolQn = TimeSpan.FromMilliseconds(10 * 1000); // 10sec
 
-        void Ctor_QuickfNews()
-        {
-            // m_newsReloadTimer = new Timer(NewsReloadTimerElapsed, null, m_newsReloadInterval, m_newsReloadInterval);
-        }
-
         public void OnConnectedWsAsync_QckflNews(bool p_isThisActiveToolAtConnectionInit)
         {
             Utils.RunInNewThread(ignored => // running parallel on a ThreadPool thread, FireAndForget: QueueUserWorkItem [26microsec] is 25% faster than Task.Run [35microsec]

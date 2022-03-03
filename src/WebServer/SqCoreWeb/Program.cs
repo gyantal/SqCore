@@ -136,9 +136,9 @@ namespace SqCoreWeb
             KestrelWebServer_Exit();
             Services_Exit();
 
-            SqTaskScheduler.gTaskScheduler.Exit();
+            SqTaskScheduler.Exit();
             Caretaker.g_caretaker.Exit();
-            MemDb.gMemDb.Exit();
+            MemDb.Exit();
             BrokersWatcher.gWatcher.Exit();
 
             gLogger.Info("****** Main() END");
@@ -189,7 +189,7 @@ namespace SqCoreWeb
                     } while (userInputSub != "UserChosenExit" && userInputSub != "ConsoleIsForcedToShutDown");
                     break;
                 case "3":
-                    Console.WriteLine(SqTaskScheduler.gTaskScheduler.PrintNextScheduleTimes(false).ToString());
+                    Console.WriteLine(SqTaskScheduler.PrintNextScheduleTimes(false).ToString());
                     break;
                 case "4":
                     SqTaskScheduler.TestElapseTrigger("Overmind", 0);
@@ -240,10 +240,10 @@ namespace SqCoreWeb
                     Console.WriteLine($"MemDb.gMemDb.RedisDbInd: {MemDb.gMemDb.RedisDbIdx}. Active database is db{MemDb.gMemDb.RedisDbIdx}");
                     break;
                 case "3":
-                    Controller.g_controller.RedisMirrorDb();
+                    Controller.RedisMirrorDb();
                     break;
                 case "4":
-                    Controller.g_controller.UpsertgSheetAssets();
+                    Controller.UpsertgSheetAssets();
                     break;
                 case "9":
                     return "UserChosenExit";

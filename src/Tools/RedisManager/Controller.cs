@@ -16,19 +16,19 @@ namespace RedisManager
     {
         static public Controller g_controller = new();
 
-        internal void Start()
+        internal static void Start()
         {
             // gMainThreadExitsResetEvent = new ManualResetEventSlim(false);
             // ScheduleDailyTimers();
         }
 
-        internal void Exit()
+        internal static void Exit()
         {
             //gMainThreadExitsResetEvent.Set();
         }
 
 
-        public void TestPing()
+        public static void TestPing()
         {
             string address = Program.gConfiguration.GetConnectionString("PingDefault");
             int nTries = Utils.InvariantConvert<int>(Program.gConfiguration["AppSettings:TestPingNTries"]);
@@ -55,7 +55,7 @@ namespace RedisManager
         }
 
         //https://www.npgsql.org/doc/index.html
-        public void TestPostgreSql()
+        public static void TestPostgreSql()
         {
             var pSqlConnString = Program.gConfiguration.GetConnectionString("PostgreSqlDefault");
             using var conn = new NpgsqlConnection(pSqlConnString);
@@ -102,7 +102,7 @@ namespace RedisManager
         }
 
 
-        public void TestRedisCache()
+        public static void TestRedisCache()
         {
             var redisConnString = Program.gConfiguration.GetConnectionString("RedisDefault");   // read from file
      
@@ -146,7 +146,7 @@ namespace RedisManager
 	    // https://redislabs.com/ebook/part-2-core-concepts/chapter-4-keeping-data-safe-and-ensuring-performance/4-5-non-transactional-pipelines/ there is no transactional pipeline, only non-transactional pipeline. So, just do pipeline.
 	    // https://stackoverflow.com/questions/32149626/how-to-insert-billion-of-data-to-redis-efficiently
         // But note that reading SQL will be the bottleneck, not the insertion to the fast Redis. So, it is not very important to work on it now.
-        public void ConvertTableDataToRedis(string[] p_tables)
+        public static void ConvertTableDataToRedis(string[] p_tables)
         {
             Console.WriteLine($"Converting tables...{string.Join(",", p_tables)}");
             var pSqlConnString = Program.gConfiguration.GetConnectionString("PostgreSqlDefault");
@@ -191,7 +191,7 @@ namespace RedisManager
         // IB: PortfolioAnalyst/Reports/CreateCustomReport (SinceInception, Daily, Detailed + AccountOverview/Allocation by Financial Instrument/Deposits). Create in PDF + CSV.
         // 2021-09-09: both IbMain, IbDbl worked without timeout. If it timeouts, run a Custom date for the last 2-5 years. It can be merged together manually as a last resort.
         // >DC-IB-MAIN, it seems: 2011-02-02 is the inception date. 2011-02-02, 2011-03-01: didn't work. Timeout. But 2014-12-31 worked. Try at another time.
-        public void InsertNavAssetFromCsvFile(string p_redisKeyPrefix, string p_csvFullpath)
+        public static void InsertNavAssetFromCsvFile(string p_redisKeyPrefix, string p_csvFullpath)
         {
             List<DailyNavData> dailyNavData = new();
             List<DailyNavData> dailyDepositData = new();
@@ -300,7 +300,7 @@ namespace RedisManager
             Console.WriteLine("InsertNavAssetFromCsvFile() Ended. Conclusion: For 11 years of daily Date/float data. Without compression binary (18.4K) is smaller then CSV text (47.5K). But with Brotli binary (13.4K) is 41% bigger then brotli CSV text (9.5K). Because there is not much repeatable pattern in Float data, while a lot of repeatable comma and digits in text data. And Brotli is attacking the limits of theoretical compression possibilites. Conclusion: USE CSV text data with Brotli. Tested: Brotlied CSV is 30% smaller than brotlied binary.");
         }
 
-        public void ExportNavAssetToTxt(string p_redisKeyPrefix, string p_filename)
+        public static void ExportNavAssetToTxt(string p_redisKeyPrefix, string p_filename)
         {
             IDatabase db = DbCommon.RedisManager.GetDb(Program.gConfiguration.GetConnectionString("RedisDefault"), 0);
 
@@ -316,7 +316,7 @@ namespace RedisManager
             Console.WriteLine($"Created file in CWD:'{fullPath}' from Redis/assetQuoteRaw/'{redisKey}'");
         }
 
-        public void ImportNavAssetFromTxt(string p_redisKeyPrefix, string p_filename)
+        public static void ImportNavAssetFromTxt(string p_redisKeyPrefix, string p_filename)
         {
             IDatabase db = DbCommon.RedisManager.GetDb(Program.gConfiguration.GetConnectionString("RedisDefault"), 0);
 

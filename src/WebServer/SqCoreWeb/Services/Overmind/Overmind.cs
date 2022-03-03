@@ -76,7 +76,7 @@ namespace SqCoreWeb
             else if (action == OvermindTaskSettingAction.MiddayCheck)
                 MiddayCheck();
         }
-        async void CheckHealthMonitorAlive()
+        static async void CheckHealthMonitorAlive()
         {
             bool isHealthMonitorAlive = false;
             Task<string?> tcpMsgTask = TcpMessage.Send(string.Empty, (int)HealthMonitorMessageID.Ping, ServerIp.HealthMonitorPublicIp, ServerIp.DefaultHealthMonitorServerPort);
@@ -101,7 +101,7 @@ namespace SqCoreWeb
         }
 
         
-        async void MorningCheck()
+        static async void MorningCheck()
         {
             string todayMonthAndDayStr = DateTime.UtcNow.ToString("MM-dd");
             if (todayMonthAndDayStr == "10-05")        // Orsi's birthday
@@ -137,7 +137,7 @@ namespace SqCoreWeb
             //}
         }
 
-        void MiddayCheck()
+        static void MiddayCheck()
         {
             // TODO: if market holiday: it shouldn't process anything either
             if (DateTime.UtcNow.DayOfWeek == DayOfWeek.Saturday || DateTime.UtcNow.DayOfWeek == DayOfWeek.Sunday)
@@ -151,7 +151,7 @@ namespace SqCoreWeb
             CheckPriorClosePrices();
         }
 
-        void CheckIfTomorrowIsMonthlyOptionExpirationDay()
+        static void CheckIfTomorrowIsMonthlyOptionExpirationDay()
         {
             // Expiration date: USA: 3rd Friday of the month. When that Friday falls on a holiday, the expiration date is on the Thursday immediately before.
             DateTime tomorrowDateUtc = DateTime.UtcNow.AddDays(1);
@@ -185,7 +185,7 @@ namespace SqCoreWeb
             new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();
         }
 
-        void CheckIntradayStockPctChanges()
+        static void CheckIntradayStockPctChanges()
         {
             string gyantalEmailInnerlStr = string.Empty;
             string gyantalPhoneCallInnerStr = string.Empty;
@@ -296,7 +296,7 @@ namespace SqCoreWeb
             return Double.NaN;
         }
 
-        void CheckPriorClosePrices()
+        static void CheckPriorClosePrices()
         {
             // Data sources. Sometimes YF, sometimes GF is not good. We could try to use our Database then, but we don't have ^VIX futures historical price data in it yet.
             DateTime endDateET = DateTime.UtcNow.AddDays(0);    // include today, which is a realtime price, but more accurate estimation

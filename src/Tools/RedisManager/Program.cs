@@ -39,7 +39,7 @@ namespace RedisManager
 
            
 
-            Controller.g_controller.Start();
+            Controller.Start();
 
             string userInput;
             do
@@ -48,7 +48,7 @@ namespace RedisManager
             } while (userInput != "UserChosenExit" && userInput != "ConsoleIsForcedToShutDown");
 
             gLogger.Info("****** Main() END");
-            Controller.g_controller.Exit();
+            Controller.Exit();
             NLog.LogManager.Shutdown();
         }
 
@@ -89,22 +89,22 @@ namespace RedisManager
                     gLogger.Info("Hello. I am not crashed yet! :)");
                     break;
                 case "2":
-                    Controller.g_controller.TestPing();
+                    Controller.TestPing();
                     break;
                 case "3":
-                    Controller.g_controller.TestPostgreSql();
+                    Controller.TestPostgreSql();
                     break;
                 case "4":
-                    Controller.g_controller.TestRedisCache();
+                    Controller.TestRedisCache();
                     break;
                 case "5":
-                    Controller.g_controller.ConvertTableDataToRedis(new string[] { "sq_user" });
+                    Controller.ConvertTableDataToRedis(new string[] { "sq_user" });
                     break;
                 case "6":
-                    Controller.g_controller.ConvertTableDataToRedis(new string[] { "sq_user", "sq_user" });
+                    Controller.ConvertTableDataToRedis(new string[] { "sq_user", "sq_user" });
                     break;
                 case "7":
-                    Controller.g_controller.ConvertTableDataToRedis(new string[] { "sq_user", "sq_user", "sq_user" });
+                    Controller.ConvertTableDataToRedis(new string[] { "sq_user", "sq_user", "sq_user" });
                     break;
                 case "8":
                     string userInputSub;
@@ -146,27 +146,27 @@ namespace RedisManager
             {
                 case "1":
                     Console.WriteLine("Warning! Commented lines. Doing nothing at the moment. Be very careful! Create a RedisDb backup (see RedisBackup.txt), before uncommenting lines, because it will overwrite RedisDb and the daily NAV updates will be lost.");
-                    //Controller.g_controller.InsertNavAssetFromCsvFile("11:1", @"g:\agy\money\Investment\IB\Reports\PortfolioAnalyst\2021-09-09\Gyorgy_Antal_Inception_September_08_2021.csv");
-                    //Controller.g_controller.InsertNavAssetFromCsvFile("11:2", @"g:\work\Archi-data\Projects\IB-PortfolioAnalyst\2021-09-09\Didier_Charmat_and_Jean-Marc_Charmat_Inception_September_08_2021.csv");
-                    //Controller.g_controller.InsertNavAssetFromCsvFile("11:3", @"g:\work\Archi-data\Projects\IB-PortfolioAnalyst\2021-09-09\DE_BLANZAC_LTD_Inception_September_08_2021.csv");
+                    //Controller.InsertNavAssetFromCsvFile("11:1", @"g:\agy\money\Investment\IB\Reports\PortfolioAnalyst\2021-09-09\Gyorgy_Antal_Inception_September_08_2021.csv");
+                    //Controller.InsertNavAssetFromCsvFile("11:2", @"g:\work\Archi-data\Projects\IB-PortfolioAnalyst\2021-09-09\Didier_Charmat_and_Jean-Marc_Charmat_Inception_September_08_2021.csv");
+                    //Controller.InsertNavAssetFromCsvFile("11:3", @"g:\work\Archi-data\Projects\IB-PortfolioAnalyst\2021-09-09\DE_BLANZAC_LTD_Inception_September_08_2021.csv");
                     break;
                 case "2":
-                    Controller.g_controller.ExportNavAssetToTxt("11:1", @"assetQuoteRaw-unbrotlied-11-1.txt");
+                    Controller.ExportNavAssetToTxt("11:1", @"assetQuoteRaw-unbrotlied-11-1.txt");
                     break;
                 case "3":
-                    Controller.g_controller.ExportNavAssetToTxt("11:2", @"assetQuoteRaw-unbrotlied-11-2.txt");
+                    Controller.ExportNavAssetToTxt("11:2", @"assetQuoteRaw-unbrotlied-11-2.txt");
                     break;
                 case "4":
-                    Controller.g_controller.ExportNavAssetToTxt("11:3", @"assetQuoteRaw-unbrotlied-11-3.txt");
+                    Controller.ExportNavAssetToTxt("11:3", @"assetQuoteRaw-unbrotlied-11-3.txt");
                     break;
                 case "5":
-                    Controller.g_controller.ImportNavAssetFromTxt("11:1", @"assetQuoteRaw-unbrotlied-11-1.txt");
+                    Controller.ImportNavAssetFromTxt("11:1", @"assetQuoteRaw-unbrotlied-11-1.txt");
                     break;
                 case "6":
-                    Controller.g_controller.ImportNavAssetFromTxt("11:2", @"assetQuoteRaw-unbrotlied-11-2.txt");
+                    Controller.ImportNavAssetFromTxt("11:2", @"assetQuoteRaw-unbrotlied-11-2.txt");
                     break;
                 case "7":
-                    Controller.g_controller.ImportNavAssetFromTxt("11:3", @"assetQuoteRaw-unbrotlied-11-3.txt");
+                    Controller.ImportNavAssetFromTxt("11:3", @"assetQuoteRaw-unbrotlied-11-3.txt");
                     break;
                 case "9":
                     return "UserChosenExit";

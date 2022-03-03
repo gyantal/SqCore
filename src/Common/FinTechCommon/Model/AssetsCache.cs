@@ -71,7 +71,7 @@ namespace FinTechCommon
             throw new NotImplementedException();    //at the moment, we only create new Options run-time
         }
 
-        public void AddAsset(Asset _)
+        public static void AddAsset(Asset _)
         {
             throw new SqException("MemData.AssetsCache Readers will have inconsistent for(), foreach() enumerations. Use MemData.AddToAssetCacheIfMissing() instead.");
             // Assets.Add(p_asset);

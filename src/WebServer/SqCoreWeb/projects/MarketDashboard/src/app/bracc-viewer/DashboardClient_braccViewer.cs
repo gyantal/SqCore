@@ -81,20 +81,15 @@ namespace SqCoreWeb
         readonly List<string> c_marketBarSqTickersDc = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/GLD"};
         List<Asset> m_brAccMktBrAssets = new();      // remember, so we can send RT data
 
-        void Ctor_BrAccViewer()
-        {
-            // InitAssetData();
-        }
+        // void EvMemDbAssetDataReloaded_BrAccViewer()
+        // {
+        //     //InitAssetData();
+        // }
 
-        void EvMemDbAssetDataReloaded_BrAccViewer()
-        {
-            //InitAssetData();
-        }
-
-        void EvMemDbHistoricalDataReloaded_BrAccViewer()
-        {
-            // see EvMemDbHistoricalDataReloaded_MktHealth()()
-        }
+        // void EvMemDbHistoricalDataReloaded_BrAccViewer()
+        // {
+        //     // see EvMemDbHistoricalDataReloaded_MktHealth()()
+        // }
 
         // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
         public void OnConnectedWsAsync_BrAccViewer(bool p_isThisActiveToolAtConnectionInit, User p_user, ManualResetEvent p_waitHandleRtPriceSending)
@@ -300,7 +295,7 @@ namespace SqCoreWeb
             return result;
         }
 
-        private List<BrAccViewerPosJs> GetBrAccViewerPos(List<BrAccPos> p_accPoss, string p_gwIdStr)
+        private static List<BrAccViewerPosJs> GetBrAccViewerPos(List<BrAccPos> p_accPoss, string p_gwIdStr)
         {
             // One option is to only send those positions that have both valid AssetId (260 stocks) AND valid HistoricalPrice (only 20 stocks subset)
             // Because in general PriorClose is needed in the UI calculations.

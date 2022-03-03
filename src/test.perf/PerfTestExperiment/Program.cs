@@ -7,6 +7,7 @@ using BenchmarkDotNet.Configs;
 
 namespace SqBenchmarks
 {
+#pragma warning disable CA1822 // CA1822: Member X does not access instance data and can be marked as static. But "Benchmarks MUST be instance methods, static methods are not supported."
 
     [MemoryDiagnoser] // we need to enable it in explicit way to get Columns for ' Gen X collections per 1 000 Operations' and MemAlloc
     public class SqBenchmarks1
@@ -93,7 +94,7 @@ namespace SqBenchmarks
             //var summarySplitString = BenchmarkRunner.Run<BnchSplitStringByStrVsRegex>();
             //var summaryLinqToArray = BenchmarkRunner.Run<BnchLinqToArrayVsToList>();
             //var summaryLinqSelectVsFor = BenchmarkRunner.Run<BnchLinqSelectVsFor>();
-            BenchmarkRunner.Run<BnchLinqSelectVsFor>();
+            BenchmarkRunner.Run<SqBenchmarks1>();
 
             Console.WriteLine("Press any key and ENTER to end the program and close the terminal...");
             Console.ReadLine();   // this can prevent closing if it is running by the Debugger. But it should be commented out if it is run as a Task in the internal terminal.

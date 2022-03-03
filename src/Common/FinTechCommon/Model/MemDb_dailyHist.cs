@@ -47,7 +47,7 @@ namespace FinTechCommon
             SetNextReloadHistDataTriggerTime();
         }
 
-        public async void ReloadHistoricalDataTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
+        public static async void ReloadHistoricalDataTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
         {
             if (p_state == null)
                 throw new Exception("ReloadHistoricalDataTimer_Elapsed() received null object.");

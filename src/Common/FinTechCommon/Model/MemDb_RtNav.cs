@@ -92,7 +92,7 @@ namespace FinTechCommon
             DownloadLastPriceNav(downloadAssets.ToList());
         }
         
-        (float LastValue, DateTime LastValueUtc) GetLastNavRtPrice(BrokerNav p_navAsset)
+        static (float LastValue, DateTime LastValueUtc) GetLastNavRtPrice(BrokerNav p_navAsset)
         {
             float lastValue;
             DateTime lastValueUtc;  // if there are 2 subNavs, we want the Minimum of the UTCs. To be conservative how old the aggregated Time is.

@@ -67,7 +67,7 @@ namespace HealthMonitor
             Thread.Sleep(TimeSpan.FromSeconds(timeBeforeExitingSec)); // give some seconds for long running background threads to quit
 
             HealthMonitor.g_healthMonitor.Exit();
-            SqTaskScheduler.gTaskScheduler.Exit();
+            SqTaskScheduler.Exit();
             Caretaker.g_caretaker.Exit();
 
             gLogger.Info("****** Main() END");

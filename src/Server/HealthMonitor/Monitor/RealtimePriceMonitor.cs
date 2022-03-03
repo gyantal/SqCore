@@ -121,7 +121,7 @@ namespace HealthMonitor
         //>>>On Sunday: [{"Symbol":"VXX"},{"Symbol":"^VIX"},{"Symbol":"^VXV"},{"Symbol":"^GSPC"},{"Symbol":"XIV"}]
         //But this return without prices at least it shows that the Service is not crashed, it returns data
         //>>>Monday night: [{"Symbol":"VXX","LastUtc":"2015-12-15T00:56:09","Last":21.97,"BidUtc":"2015-12-15T00:59:58","Bid":21.88,"AskUtc":"2015-12-15T00:58:33","Ask":22,"UtcTimeType":"LastChangedTime"},{"Symbol":"^VIX","LastUtc":"2015-12-14T21:14:47","Last":22.73,"UtcTimeType":"LastChangedTime"},{"Symbol":"^VXV","LastUtc":"2015-12-14T21:14:47","Last":23.3,"UtcTimeType":"LastChangedTime"},{"Symbol":"^GSPC","LastUtc":"2015-12-15T00:13:07","Last":2022.52,"UtcTimeType":"LastChangedTime"},{"Symbol":"XIV","LastUtc":"2015-12-15T00:59:34","Last":24.23,"BidUtc":"2015-12-15T00:59:58","Bid":24.17,"AskUtc":"2015-12-15T00:59:03","Ask":24.23,"UtcTimeType":"LastChangedTime"}]
-        private bool IsRtpsReplyOk(string rtpsReply)
+        private static bool IsRtpsReplyOk(string rtpsReply)
         {
             Utils.Logger.Info("IsRtpsReplyOk() BEGIN");
             // implement check logic here.

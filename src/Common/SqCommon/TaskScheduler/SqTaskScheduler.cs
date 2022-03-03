@@ -139,7 +139,7 @@ namespace SqCommon
             return null;
         }
 
-        public StringBuilder PrintNextScheduleTimes(bool p_isHtml) // Get is better word for getting DateTimes[], Print shows it receives a string
+        public static StringBuilder PrintNextScheduleTimes(bool p_isHtml) // Get is better word for getting DateTimes[], Print shows it receives a string
         {
             List<(DateTime NextTimeUtc, string Name)> nextTimes = new(); // named tuples
             foreach (var sqTask in gSqTasks)
@@ -173,7 +173,7 @@ namespace SqCommon
                 sqTask.Triggers[p_triggerInd].Timer_Elapsed(null);
         }
 
-        public void Exit()
+        public static void Exit()
         {
         }
     }

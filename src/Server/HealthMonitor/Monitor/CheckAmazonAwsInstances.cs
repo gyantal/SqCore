@@ -17,7 +17,7 @@ namespace HealthMonitor
 
         //# Key derivation functions. See: 
         //# http://docs.aws.amazon.com/general/latest/gr/signature-v4-examples.html#signature-v4-examples-python
-        internal byte[] Sign(byte[] key, string msg)
+        internal static byte[] Sign(byte[] key, string msg)
         {
             HMACSHA256 hmac = new(key);
             var computedDigest = hmac.ComputeHash(Encoding.UTF8.GetBytes(msg));
@@ -25,7 +25,7 @@ namespace HealthMonitor
             //return hmac.new(key, msg.encode('utf-8'), hashlib.sha256).digest();
         }
 
-        internal byte[] GetSignatureKey(string key, string dateStamp, string regionName, string serviceName)
+        internal static byte[] GetSignatureKey(string key, string dateStamp, string regionName, string serviceName)
         {
             byte[] kDate = Sign(Encoding.UTF8.GetBytes("AWS4" + key), dateStamp);
             byte[] kRegion = Sign(kDate, regionName);
@@ -34,7 +34,7 @@ namespace HealthMonitor
             return kSigning;
         }
 
-        internal string? GetAmazonApiResponse(string p_actionWithParams)    // converted from Python code
+        internal static string? GetAmazonApiResponse(string p_actionWithParams)    // converted from Python code
         {
             string method = "GET";
             string service = "ec2";

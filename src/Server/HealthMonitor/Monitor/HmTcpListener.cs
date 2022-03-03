@@ -98,7 +98,7 @@ namespace HealthMonitor
         }
 
 
-        internal void ServePingRequest(TcpClient p_tcpClient, TcpMessage p_message)
+        internal static void ServePingRequest(TcpClient p_tcpClient, TcpMessage p_message)
         {
             if (p_message.ResponseFormat == TcpMessageResponseFormat.String)
             {

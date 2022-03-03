@@ -30,11 +30,6 @@ namespace SqCoreWeb
         // string[] m_stockTickers2 = { };
         string[] m_stockTickers2 = Array.Empty<string>();
 
-        void Ctor_QuickfNews2()
-        {
-
-        }
-
         public void OnConnectedWsAsync_QckflNews2(bool p_isThisActiveToolAtConnectionInit)
         {
             Utils.RunInNewThread(ignored => // running parallel on a ThreadPool thread, FireAndForget: QueueUserWorkItem [26microsec] is 25% faster than Task.Run [35microsec]

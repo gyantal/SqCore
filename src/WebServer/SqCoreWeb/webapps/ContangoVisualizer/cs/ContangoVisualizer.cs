@@ -552,7 +552,7 @@ namespace SqCoreWeb.Controllers
 
         }
 
-        private string Processing(VixCentralRec2[] p_vixCentralRec, DateTime[] _, string p_liveDate, string p_liveFuturesDataTime, double p_spotVixValue, string p_titleF, string p_dataSource)
+        private static string Processing(VixCentralRec2[] p_vixCentralRec, DateTime[] _, string p_liveDate, string p_liveFuturesDataTime, double p_spotVixValue, string p_titleF, string p_dataSource)
         {
             //Calculating dates to html.           
             DateTime timeNowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);

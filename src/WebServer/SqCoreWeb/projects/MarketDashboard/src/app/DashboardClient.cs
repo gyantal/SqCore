@@ -16,6 +16,7 @@ namespace SqCoreWeb
     {
         public string ClientIP { get; set; } = string.Empty;    // Remote Client IP for WebSocket
         public string UserEmail { get; set; } = string.Empty;
+        public User User { get; set; }
         public DateTime ConnectionTime { get; set; } = DateTime.MinValue;
         public ActivePage ActivePage = ActivePage.Unknown; // knowing which Tool is active can be useful. We might not send data to tools which never becomes active
 
@@ -30,7 +31,8 @@ namespace SqCoreWeb
         public static readonly Dictionary<string, ActivePage> c_urlParam2ActivePage = new() { 
             {"mh", ActivePage.MarketHealth}, {"bav", ActivePage.BrAccViewer}, {"cs", ActivePage.CatalystSniffer}, {"qn", ActivePage.QuickfolioNews}};
 
-        public static List<DashboardClient> g_clients = new(); // Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
+        internal static List<DashboardClient> g_clients = new(); // Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
+
         public static void PreInit()
         {
             MemDb.gMemDb.EvMemDbInitNoHistoryYet += new MemDb.MemDbEventHandler(OnEvMemDbInitNoHistoryYet);
@@ -46,8 +48,8 @@ namespace SqCoreWeb
         {
             DashboardClient.g_clients.ForEach(client =>   // Notify all the connected clients.
             {
-                client.EvMemDbAssetDataReloaded_MktHealth();
-                client.EvMemDbAssetDataReloaded_BrAccViewer();
+                // client.EvMemDbAssetDataReloaded_MktHealth();
+                // client.EvMemDbAssetDataReloaded_BrAccViewer();
             });
         }
 
@@ -56,7 +58,7 @@ namespace SqCoreWeb
             DashboardClient.g_clients.ForEach(client =>   // Notify all the connected clients.
             {
                 client.EvMemDbHistoricalDataReloaded_MktHealth();
-                client.EvMemDbHistoricalDataReloaded_BrAccViewer();
+                // client.EvMemDbHistoricalDataReloaded_BrAccViewer();
             });
         }
 
@@ -69,22 +71,32 @@ namespace SqCoreWeb
             p_sb.Append($"<br>rtDashboardTimerRunning: {m_rtDashboardTimerRunning}<br>");
         }
 
-        public DashboardClient(string p_clientIP, string p_userEmail, DateTime p_connectionTime)
+        public DashboardClient(string p_clientIP, string p_userEmail, User p_user, DateTime p_connectionTime)
         {
             ClientIP = p_clientIP;
             UserEmail = p_userEmail;
+            User = p_user;
             ConnectionTime = p_connectionTime;
-
-            Ctor_MktHealth();
-            Ctor_BrAccViewer();
-            Ctor_QuickfNews();
-            Ctor_QuickfNews2();
         }
 
         // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
         public void OnConnectedWsAsync_DshbrdClient()
         {
             // Note: as client is not fully initialized yet, 'this.client' is not yet in DashboardClient.g_clients list.
+            ManualResetEvent waitHandleMkthConnect = new(false);
+            ManualResetEvent waitHandleBrAccConnect = new(false);
+            OnConnectedWsAsync_MktHealth(ActivePage == ActivePage.MarketHealth, User, waitHandleMkthConnect); // the code inside should run in a separate thread to return fast, so all Tools can work parallel
+            OnConnectedWsAsync_BrAccViewer(ActivePage == ActivePage.BrAccViewer, User, waitHandleBrAccConnect); // the code inside should run in a separate thread to return fast, so all Tools can work parallel
+            OnConnectedWsAsync_QckflNews(ActivePage == ActivePage.QuickfolioNews);
+            OnConnectedWsAsync_QckflNews2(ActivePage == ActivePage.QuickfolioNews);
+
+            // have to wait until the tools initialize themselves to know what assets need RT prices
+            bool sucessfullWait = ManualResetEvent.WaitAll(new WaitHandle[] { waitHandleMkthConnect }, 10 * 1000);
+            if (!sucessfullWait)
+                Utils.Logger.Warn("OnConnectedAsync():ManualResetEvent.WaitAll() timeout.");
+
+            OnConnectedWsAsync_Rt();    // immediately send SPY realtime price. It can be used in 3+2 places: BrAccViewer:MarketBar, HistoricalChart, UserAssetList, MktHlth, CatalystSniffer (so, don't send it 5 times. Client will decide what to do with RT price)
+
         }
 
         public bool OnReceiveWsAsync_DshbrdClient(string msgCode, string msgObjStr)
@@ -96,7 +108,14 @@ namespace SqCoreWeb
                     SendIsDashboardOpenManyTimes();
                     return true;
                 default:
-                    return false;
+                    bool isHandled = OnReceiveWsAsync_MktHealth(msgCode, msgObjStr);
+                    if (!isHandled)
+                        isHandled = OnReceiveWsAsync_BrAccViewer(msgCode, msgObjStr);
+                    if (!isHandled)
+                        isHandled = OnReceiveWsAsync_QckflNews(msgCode, msgObjStr);
+                    if (!isHandled)
+                        isHandled = OnReceiveWsAsync_QckflNews2(msgCode, msgObjStr);
+                    return isHandled;
             }
         }
 

@@ -113,11 +113,11 @@ namespace YahooCrawler
         List<OutputRecomm> m_outputRec = new();
         readonly IDictionary<string, List<YFRecord>> m_yfDataFromCsv = new Dictionary<string, List<YFRecord>>();
 
-        internal void Init()
+        internal static void Init()
         {
         }
 
-        internal void Exit()
+        internal static void Exit()
         {
         }
 

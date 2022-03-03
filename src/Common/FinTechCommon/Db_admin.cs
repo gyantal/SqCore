@@ -17,7 +17,7 @@ namespace FinTechCommon
             return "RedisDb response: " + m_redisDb.Execute(command).ToString();
         }
 
-        public void DbCopy(int sourceDbIdx, int destDbIdx)    // copy DB-copyFromIdx to DB-copyToIdx
+        public static void DbCopy(int sourceDbIdx, int destDbIdx)    // copy DB-copyFromIdx to DB-copyToIdx
         {
             // KeyMove() from db0 to db1 is possible, but that will delete the key from source  // https://redis.io/commands/move
             // KeyMigrate() copy possible, but that is designed between 2 Servers, so it timeouts and never executes  // https://redis.io/commands/MIGRATE
@@ -62,7 +62,7 @@ namespace FinTechCommon
         }
 
         // "Redis Desktop Manager 0.9.3.817" is error prone when copying binary. Or when coping big text to Clipboard. Try to not use it.
-        public void UpsertAssets(int destDbIdx) // DB0 or DB1.  Developer is supposed to change the MemDb.ActiveDb to DB1, restart SqCore webserver. Change DB on this secondary DB1 first, and test if it works.
+        public static void UpsertAssets(int destDbIdx) // DB0 or DB1.  Developer is supposed to change the MemDb.ActiveDb to DB1, restart SqCore webserver. Change DB on this secondary DB1 first, and test if it works.
         {
             // AllAssets gSheet location: https://docs.google.com/spreadsheets/d/1gkZlvD5epmBV8zi-l0BbLaEtwScvhHvHOYFZ4Ah_MA4/edit#gid=898941432
             string gApiKey = Utils.Configuration["Google:GoogleApiKeyKey"];
@@ -225,7 +225,7 @@ namespace FinTechCommon
 
         }
 
-        string Get(JsonElement[] p_arr, int p_i)
+        static string Get(JsonElement[] p_arr, int p_i)
         {
             if (p_i < p_arr.Length)
                 return p_arr[p_i].ToString() ?? string.Empty;

@@ -15,19 +15,19 @@ namespace BenchmarkDB
         static public Controller g_controller = new();
 
 
-        internal void Start()
+        internal static void Start()
         {
             // gMainThreadExitsResetEvent = new ManualResetEventSlim(false);
             // ScheduleDailyTimers();
         }
 
-        internal void Exit()
+        internal static void Exit()
         {
             //gMainThreadExitsResetEvent.Set();
         }
 
 
-        public void TestPing()
+        public static void TestPing()
         {
             string address = Program.gConfiguration.GetConnectionString("PingDefault");
             Console.WriteLine($"Program.gConfiguration.GetConnectionString(PingDefault): '{address}'");
@@ -56,7 +56,7 @@ namespace BenchmarkDB
         }
 
         //https://www.npgsql.org/doc/index.html
-        public void TestPostgreSql()
+        public static void TestPostgreSql()
         {
             var pSqlConnString = Program.gConfiguration.GetConnectionString("PostgreSqlDefault");
 
@@ -112,7 +112,7 @@ namespace BenchmarkDB
         }
 
 
-        public void TestRedisCache()
+        public static void TestRedisCache()
         {
             var redisConnString = Program.gConfiguration.GetConnectionString("RedisDefault");   // read from file
      
@@ -145,7 +145,7 @@ namespace BenchmarkDB
             // pSql Insert (30ms)/select (45ms) is longer than Redis  Insert (19ms)/select (21ms). So, Redis cost basically 0ms CPU time, all is latency, while pSql is not.
         }
 
-        public void BenchmarkAllAndConclusions(string p_pingConnStr, string p_pSqlConnStr, string p_redisConnStr)
+        public static void BenchmarkAllAndConclusions(string p_pingConnStr, string p_pSqlConnStr, string p_redisConnStr)
         {
             // What to expect? : https://www.youtube.com/watch?v=sWh97AP1rB0  "Redis Query vs the PostgreSQL Query", 
             // Local server: Redis: 0.3msec, pSql: 3-4ms, on his slower web server: Redis: 1.6-2msec, pSql: 12-32ms

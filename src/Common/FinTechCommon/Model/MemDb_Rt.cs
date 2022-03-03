@@ -203,7 +203,7 @@ namespace FinTechCommon
                 DownloadLastPriceOptionsIb(MemDb.gMemDb.AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Option).ToArray());
         }
 
-        private void ScheduleTimerRt(RtFreqParam p_freqParam)
+        private static void ScheduleTimerRt(RtFreqParam p_freqParam)
         {
             // lock (m_rtTimerLock)
             var tradingHoursNow = Utils.UsaTradingHoursExNow_withoutHolidays();
@@ -433,9 +433,9 @@ namespace FinTechCommon
 
                 if (stock != null)
                 {
-                    float.TryParse(attributeStr, out float attribute);
+                    bool isConvertedOK = float.TryParse(attributeStr, out float attribute);
 
-                    if (attribute == 0.0f)
+                    if (!isConvertedOK || attribute == 0.0f)
                         zeroValueSymbols.Add(stock.Symbol);
                     else // don't overwrite the MemDb data with false 0.0 values.
                     {

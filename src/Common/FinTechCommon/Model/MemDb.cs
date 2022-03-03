@@ -202,7 +202,7 @@ namespace FinTechCommon
             }
         }
 
-        public async void ReloadDbDataTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
+        public static async void ReloadDbDataTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
         {
             if (p_state == null)
                 throw new Exception("ReloadDbDataTimer_Elapsed() received null object.");
@@ -418,7 +418,7 @@ namespace FinTechCommon
             Utils.Logger.Warn(sb.ToString());
         }
 
-        public void Exit()
+        public static void Exit()
         {
         }
     }

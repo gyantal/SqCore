@@ -35,15 +35,11 @@ namespace SqCoreWeb
         List<Asset> m_mkthAssets = new();      // remember, so we can send RT data
         BrokerNav? m_mkthSelectedNavAsset = null;   // remember which NAV is selected, so we can send RT data
 
-        void Ctor_MktHealth()
-        {
-        }
-
-        void EvMemDbAssetDataReloaded_MktHealth()
-        {
-            // have to refresh Asset pointers in memory, such as m_marketSummaryAssets, m_mkthSelectedNavAsset
-            // have to resend the HandShake message Asset Id to SqTicker associations. Have to resend everything.
-        }
+        // void EvMemDbAssetDataReloaded_MktHealth()
+        // {
+        //     // have to refresh Asset pointers in memory, such as m_marketSummaryAssets, m_mkthSelectedNavAsset
+        //     // have to resend the HandShake message Asset Id to SqTicker associations. Have to resend everything.
+        // }
 
 
         void EvMemDbHistoricalDataReloaded_MktHealth()

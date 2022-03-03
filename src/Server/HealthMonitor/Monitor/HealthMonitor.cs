@@ -496,7 +496,7 @@ namespace HealthMonitor
             }
         }
 
-        private void InformSupervisors(InformSuperVisorsUrgency p_urgency, string p_emailSubject, string p_emailBody, string p_phonecallText, ref Object p_informSupervisorLock, ref DateTime p_lastEmailTime, ref DateTime p_lastPhoneCallTime)
+        private static void InformSupervisors(InformSuperVisorsUrgency p_urgency, string p_emailSubject, string p_emailBody, string p_phonecallText, ref Object p_informSupervisorLock, ref DateTime p_lastEmailTime, ref DateTime p_lastPhoneCallTime)
         {
             bool doInformSupervisors = false;
             if (p_urgency.HasFlag(InformSuperVisorsUrgency.UrgentInfoSendEmail_OnlyUseIfCannotBeSpammedBySource) || p_urgency.HasFlag(InformSuperVisorsUrgency.UrgentInfoMakePhonecall_OnlyUseIfCannotBeSpammedBySource))

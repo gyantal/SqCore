@@ -97,7 +97,7 @@ namespace SqCoreWeb.Controllers
         public ActionResult TaskSchedulerNextTimes()
         {
             StringBuilder sb = new(@"<HTML><body><h1>TaskScheduler Next Times</h1>");
-            StringBuilder scheduleTimesSb = SqTaskScheduler.gTaskScheduler.PrintNextScheduleTimes(true);
+            StringBuilder scheduleTimesSb = SqTaskScheduler.PrintNextScheduleTimes(true);
             return Content(sb.Append(scheduleTimesSb).Append("</body></HTML>").ToString(), "text/html");
         }
 
@@ -213,7 +213,7 @@ namespace SqCoreWeb.Controllers
             Utils.Logger.Info("TestCaretakerCleanLogfiles() BEGIN");
 
             StringBuilder noteToClient = new();
-            bool success = Caretaker.g_caretaker.CleanLogfiles(noteToClient);
+            bool success = Caretaker.CleanLogfiles(noteToClient);
 
             Utils.Logger.Info("TestCaretakerCleanLogfiles() END");
             return Content($"<HTML><body>TestCaretakerCleanLogfiles() finished with { (success ? "OK" : "Error") }. <br> Note To Client '{noteToClient}'</body></HTML>", "text/html");

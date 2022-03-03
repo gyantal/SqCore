@@ -98,7 +98,7 @@ namespace FinTechCommon
         }
 
 
-        List<Asset> GetAssetsFromJson(string p_json, User[] users)
+        static List<Asset> GetAssetsFromJson(string p_json, User[] users)
         {
             List<Asset> assets = new();
             using (JsonDocument doc = JsonDocument.Parse(p_json))
@@ -145,7 +145,7 @@ namespace FinTechCommon
             return assets;
         }
 
-        private void AddLoadPrHistToAssets(string p_json, List<Asset> assets)
+        private static void AddLoadPrHistToAssets(string p_json, List<Asset> assets)
         {
             var srvLoadPrHist = JsonSerializer.Deserialize<Dictionary<string, SrvLoadPrHistInDb>>(p_json);
             if (srvLoadPrHist == null)
@@ -167,7 +167,7 @@ namespace FinTechCommon
             }
         }
 
-        public DateTime GetExpectedHistoryStartDate(string p_expectedHistorySpan, string p_ticker)
+        public static DateTime GetExpectedHistoryStartDate(string p_expectedHistorySpan, string p_ticker)
         {
             DateTime startDateET = new(2018, 02, 01, 0, 0, 0);
             if (p_expectedHistorySpan.StartsWith("Date:"))
@@ -208,7 +208,7 @@ namespace FinTechCommon
             return GetUsers(sqUserDataStr);
         }
 
-        public User[] GetUsers(string p_sqUserDataStr)
+        public static User[] GetUsers(string p_sqUserDataStr)
         {
             var usersInDb = JsonSerializer.Deserialize<List<UserInDb>>(p_sqUserDataStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true});
             if (usersInDb == null)
@@ -299,7 +299,7 @@ namespace FinTechCommon
             return deposits;
         }
 
-        public bool UpdateBrotlisIfNeeded()
+        public static bool UpdateBrotlisIfNeeded()
         {
             // For assets, and small tables, it is too much of a hassle and not much RAM saving. And it is better that we are able to change text data manually in RedisDesktop
             // We only use brotli compression for big price data in the future.

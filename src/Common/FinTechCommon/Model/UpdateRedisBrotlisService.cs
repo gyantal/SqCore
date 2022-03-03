@@ -46,7 +46,7 @@ namespace FinTechCommon
             }
         }
 
-        public static void Update(UpdateBrotliParam p_state)
+        public static void Update(UpdateBrotliParam _)
         {
             // 1. Check if binary BrotliRecords in RedisDb is Consistent With the text Json source (Json in either in RedisDb, but more likely in PostgreSql)
             // start using Redis:'allAssets.brotli' (520bytes instead of 1.52KB) immediately. User only modifies the JSON version Redis:'allAssets'.
@@ -54,9 +54,9 @@ namespace FinTechCommon
             // it updates Redis:'allAssets.brotli' and re-call HistoricalDataReloadAndSetTimer()
 
             Utils.Logger.Info($"UpdateRedisBrotlisService.Update()");
-            bool wasAnyBrotliUpdated = p_state.Db!.UpdateBrotlisIfNeeded();
-            if (wasAnyBrotliUpdated)
-                Utils.Logger.Info($"Some Brotlis were updated in RedisDb.");
+            // bool wasAnyBrotliUpdated = p_state.Db!.UpdateBrotlisIfNeeded();  // not used. See comment in the method.
+            // if (wasAnyBrotliUpdated)
+            //     Utils.Logger.Info($"Some Brotlis were updated in RedisDb.");
 
             // if any brotli was updated, do NOT invoke Reload. It is not the task of this service.
             // ReloadDbDataIfChangedAndSetTimer();

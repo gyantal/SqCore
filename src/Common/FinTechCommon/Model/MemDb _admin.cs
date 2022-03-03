@@ -16,16 +16,6 @@ namespace FinTechCommon
         {
             return m_Db.TestRedisExecutePing();
         }
-        public void DbCopy(int sourceDbIdx, int destDbIdx)
-        {
-            m_Db.DbCopy(sourceDbIdx, destDbIdx);
-        }
-
-        public void UpsertAssets(int destDbIdx)
-        {
-            m_Db.UpsertAssets(destDbIdx);
-        }
-
     }
 
 }

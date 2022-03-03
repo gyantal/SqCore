@@ -61,7 +61,7 @@ namespace SqCoreWeb
                 CheckSpIndexChanges();
         }
 
-        private void CheckSpIndexChanges()
+        private static void CheckSpIndexChanges()
         {
             string url = "https://www.spglobal.com/spdji/en/indices/equity/sp-500/#news-research";
             string? webpage = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();

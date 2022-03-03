@@ -5,9 +5,9 @@ namespace SqCoreWeb
 {
     class Controller
     {
-        static public Controller g_controller = new();
+        public static Controller g_controller = new();
 
-        internal void RedisMirrorDb()   // Mirror DB-i to DB-j
+        internal static void RedisMirrorDb()   // Mirror DB-i to DB-j
         {
             Console.Write("SourceDb index [0..15] (or 'q' to quit): ");
             string sourceDbIdxStr = Console.ReadLine() ?? string.Empty;
@@ -52,7 +52,7 @@ namespace SqCoreWeb
                     return;
             }
 
-            MemDb.gMemDb.DbCopy(sourceDbIdx, destDbIdx);
+            Db.DbCopy(sourceDbIdx, destDbIdx);
         }
 
         // When we find a new Stock that is not in RedisDb, we have to insert it, but try to avoid that we override the production DB-0 with wrong data 
@@ -69,7 +69,7 @@ namespace SqCoreWeb
         // 9. If everything works: 'Mirror DB-1 to DB-0 (Production)' (in the Console menu: DbAdmin)
         // 10. In Program.cs , change "int redisDbIndex = 1;" back to "int redisDbIndex = 0;"
         // 11. Restart the local webserver. Now, the local webserver uses DB-0 again.
-        internal void UpsertgSheetAssets()   // Upsert gSheet Assets
+        public static void UpsertgSheetAssets()   // Upsert gSheet Assets
         {
             Console.Write("DestinationDb index [0..15] (or 'q' to quit): ");
             string destDbIdxStr = Console.ReadLine() ?? string.Empty;
@@ -98,7 +98,7 @@ namespace SqCoreWeb
                 if (confirmSecondStr.ToLower() != "y")
                     return;
             }
-            MemDb.gMemDb.UpsertAssets(destDbIdx);
+            Db.UpsertAssets(destDbIdx);
         }
     }
 }

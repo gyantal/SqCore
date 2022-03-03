@@ -150,7 +150,7 @@ namespace SqCommon
         // NLog names the log files as "logs/SqCoreWeb.${date:format=yyyy-MM-dd}.sqlog".
         // Even without restarting the app, a new file with a new date is created the first time any log happens after midnight. The yesterday log file is closed.
         // That assures that one log file is not too big and it contains only log for that day, no matter when was the app restarted the last time.
-        public bool CleanLogfiles(StringBuilder? p_noteToClient)
+        public static bool CleanLogfiles(StringBuilder? p_noteToClient)
         {
             Utils.Logger.Info("Caretaker.CleanLogfiles() BEGIN");
 
