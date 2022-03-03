@@ -111,8 +111,7 @@ namespace YahooCrawler
 
         OrigRecomm[] m_slimmedRecommRecords = Array.Empty<OrigRecomm>();
         List<OutputRecomm> m_outputRec = new();
-
-        IDictionary<string, List<YFRecord>> m_yfDataFromCsv = new Dictionary<string, List<YFRecord>>();
+        readonly IDictionary<string, List<YFRecord>> m_yfDataFromCsv = new Dictionary<string, List<YFRecord>>();
 
         internal void Init()
         {

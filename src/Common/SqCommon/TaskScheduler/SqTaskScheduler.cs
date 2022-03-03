@@ -153,10 +153,10 @@ namespace SqCommon
 
             DateTime utcNow = DateTime.UtcNow;
             StringBuilder sb = new();
-            foreach (var nextTime in nextTimes)
+            foreach (var (nextTimeUtc, name) in nextTimes)
             {
-                string nextTimeUtcStr = (nextTime.NextTimeUtc != DateTime.MaxValue && nextTime.NextTimeUtc > utcNow) ? nextTime.NextTimeUtc.TohMMDDHHMMSS() + " (UTC)" : "---";
-                sb.AppendLine($"{nextTimeUtcStr}: {nextTime.Name}{(p_isHtml ? "<br>" : string.Empty)}");
+                string nextTimeUtcStr = (nextTimeUtc != DateTime.MaxValue && nextTimeUtc > utcNow) ? nextTimeUtc.TohMMDDHHMMSS() + " (UTC)" : "---";
+                sb.AppendLine($"{nextTimeUtcStr}: {name}{(p_isHtml ? "<br>" : string.Empty)}");
             }
             return sb;
         }

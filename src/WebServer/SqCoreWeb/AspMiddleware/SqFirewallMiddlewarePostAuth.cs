@@ -16,8 +16,7 @@ namespace SqCoreWeb
         private static readonly NLog.Logger gLogger = NLog.LogManager.GetCurrentClassLogger();   // the name of the logger will be the "Namespace.Class"
 
         readonly RequestDelegate _next;
-
-        string[] mainIndexHtmlCached = Array.Empty<string>();   // faster if it is pre-split into parts. Pattern matching search doesn't take real-time at every query to the main index.html.
+        readonly string[] mainIndexHtmlCached;   // faster if it is pre-split into parts. Pattern matching search doesn't take real-time at every query to the main index.html.
 
         public SqFirewallMiddlewarePostAuth(RequestDelegate next)
         {

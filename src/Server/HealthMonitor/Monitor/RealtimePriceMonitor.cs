@@ -10,7 +10,7 @@ namespace HealthMonitor
         const int c_maxAllowedFail = 1;     // when Linux restarts every day, one query can be a failed one. That is OK. Don't send warning email.
         int m_nFail = 0;
         bool m_isThisServiceOutageWarningEmailWasSent = false;  // to avoid sending the same warning email every 10 minutes; send only once
-        ConcurrentQueue<Tuple<DateTime, bool>> m_rtpsLastDownloads = new();
+        readonly ConcurrentQueue<Tuple<DateTime, bool>> m_rtpsLastDownloads = new();
 
         // imagine how and when a human user would check that the service is still OK. He wouldn't check it on the weekends e.g.
         private void RtpsTimer_Elapsed(object? p_stateObj)   // Real Time Price Service, // Timer is coming on a ThreadPool thread

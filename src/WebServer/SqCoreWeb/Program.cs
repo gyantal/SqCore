@@ -42,7 +42,7 @@ namespace SqCoreWeb
         public static void Main(string[] args)   // entry point Main cannot be flagged as async, because at first await, Main thread would go back to Threadpool, but that terminates the Console app
         {
             string appName = System.Reflection.MethodBase.GetCurrentMethod()?.ReflectedType?.Namespace ?? "UnknownNamespace";
-            string systemEnvStr = $"(v1.0.15,{Utils.RuntimeConfig() /* Debug | Release */},CLR:{System.Environment.Version},{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},OS:{System.Environment.OSVersion},usr:{System.Environment.UserName},CPU:{System.Environment.ProcessorCount},ThId-{Thread.CurrentThread.ManagedThreadId})";
+            string systemEnvStr = $"(v1.0.15,{Utils.RuntimeConfig() /* Debug | Release */},CLR:{System.Environment.Version},{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},OS:{System.Environment.OSVersion},usr:{System.Environment.UserName},CPU:{System.Environment.ProcessorCount},ThId-{Environment.CurrentManagedThreadId})";
             Console.WriteLine($"Hi {appName}.{systemEnvStr}");
             gLogger.Info($"********** Main() START {systemEnvStr}");
             // Setting Console.Title
@@ -100,6 +100,7 @@ namespace SqCoreWeb
                 SqTaskScheduler.gTaskScheduler.Init();
 
                 Services_Init();
+                KestrelWebServer_Init();
 
                 // 3. Run services.
                 // Create a dedicated thread for a single task that is running for the lifetime of my application.
@@ -163,7 +164,7 @@ namespace SqCoreWeb
             Console.WriteLine("X. Elapse Task: VBroker-Sobek (First Simulation)");
             Console.WriteLine("X. Elapse Task: VBroker-UberVxx (First Simulation)");
             Console.WriteLine("9. Exit gracefully (Avoid Ctrl-^C).");
-            string userInput = string.Empty;
+            string userInput;
             try
             {
                 userInput = Console.ReadLine() ?? string.Empty;
@@ -181,7 +182,7 @@ namespace SqCoreWeb
                     gLogger.Info("Hello. I am not crashed yet! :)");
                     break;
                 case "2":
-                    string userInputSub = string.Empty;
+                    string userInputSub;
                     do
                     {
                         userInputSub = DisplaySubMenuAndExecute_DbAdmin();
@@ -219,7 +220,7 @@ namespace SqCoreWeb
             Console.WriteLine("3. RedisDb: Mirror DB-i to DB-j");
             Console.WriteLine("4. RedisDb: Upsert gSheet Assets to DB-?.(!!! See steps as comments in Controller.cs))");
             Console.WriteLine("9. Exit to main menu.");
-            string userInput = string.Empty;
+            string userInput;
             try
             {
                 userInput = Console.ReadLine() ?? string.Empty;
@@ -288,7 +289,7 @@ namespace SqCoreWeb
             p_sb.Append($"WebAppStartTimeUtc: {WebAppGlobals.WebAppStartTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}({timeSinceAppStart:dd} days {timeSinceAppStart:hh\\:mm} hours ago)<br>");
             ThreadPool.GetMinThreads(out int minWorkerTh, out int minIoThread);
             ThreadPool.GetMinThreads(out int maxWorkerTh, out int maxIoThread);
-            p_sb.Append($"ThId-{Thread.CurrentThread.ManagedThreadId}, ThreadPool#:{ThreadPool.ThreadCount}, WorkerTh: [{minWorkerTh}...{maxWorkerTh}], IoTh: [{minIoThread}...{maxIoThread}] <br>");
+            p_sb.Append($"ThId-{Environment.CurrentManagedThreadId}, ThreadPool#:{ThreadPool.ThreadCount}, WorkerTh: [{minWorkerTh}...{maxWorkerTh}], IoTh: [{minIoThread}...{maxIoThread}] <br>");
         }
 
     }

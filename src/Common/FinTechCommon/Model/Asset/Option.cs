@@ -70,9 +70,9 @@ namespace FinTechCommon
             return  $"O/{p_underlyingSymbol}*{p_lastTradeDateOrContractMonth}{p_right}{p_strike}";
         }
 
-        public Option(JsonElement row, List<Asset> assets) : base(AssetType.Option, row)
+        public Option(JsonElement row, List<Asset> _) : base(AssetType.Option, row)
         {
-
+            // var stocks = assets.FindAll(r => r.AssetId.AssetTypeID == AssetType.Stock && r.SqTicker == seekedSqTicker);
         }
 
         public override IBApi.Contract? MakeIbContract()

@@ -11,7 +11,7 @@ namespace SqCommon
 
     public static partial class Utils
     {
-        private static ConcurrentDictionary<TimeZoneId, TimeZoneInfo> g_tzi = new();
+        private static readonly ConcurrentDictionary<TimeZoneId, TimeZoneInfo> g_tzi = new();
 
         // http://www.mcnearney.net/blog/windows-timezoneinfo-olson-mapping/
         // http://unicode.org/repos/cldr/trunk/common/supplemental/windowsZones.xml

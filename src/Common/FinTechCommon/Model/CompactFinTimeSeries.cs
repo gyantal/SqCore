@@ -92,7 +92,7 @@ namespace FinTechCommon
     }
     public class TsDateData<TKey, TAssetId, TValue1, TValue2>  where TKey : notnull where TAssetId : notnull
     {
-        private int _size;
+        private readonly int _size;
         public TKey[] Dates;    // dates are in reverse order. Dates[0] is today or yesterday
 
         public Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>> Data; // for every assetId there is a list of float[] and uint[]

@@ -243,14 +243,18 @@ namespace BenchmarkDB
 
                 // Retrieve
                 Stopwatch watch2 = Stopwatch.StartNew();
-                string value2 = db.StringGet("SqCoreBenchmarkDbKey");
+                string valueGet = db.StringGet("SqCoreBenchmarkDbKey");
                 watch2.Stop();
+                if (valueGet != value)
+                    Console.WriteLine("Error in getting value.");
                 Console.WriteLine($"SELECT 1 keys takes {watch2.Elapsed.TotalMilliseconds :0.00}ms");    // "SELECT takes 30(first)/20/23/20/20/24 ms"
 
                 // Delete
                 Stopwatch watch3 = Stopwatch.StartNew();
                 bool wasRemoved = db.KeyDelete("SqCoreBenchmarkDbKey");
                 watch3.Stop();
+                if (!wasRemoved)
+                    Console.WriteLine("Error in KeyDelete().");
                 //Console.WriteLine("Key was removed: " + wasRemoved);
                 //Console.WriteLine($"DELETE takes {watch3.Elapsed.TotalMilliseconds:0.00}ms");     // "SELECT takes 30(first)/20/23/20/20/24 ms"
             }

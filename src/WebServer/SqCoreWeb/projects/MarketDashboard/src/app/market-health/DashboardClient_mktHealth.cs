@@ -30,8 +30,8 @@ namespace SqCoreWeb
         // try to convert to use these fields. At least on the server side.
         // If we store asset pointers (Stock, Nav) if the MemDb reloads, we should reload these pointers from the new MemDb. That adds extra code complexity.
         // However, for fast execution, it is still better to keep asset pointers, instead of keeping the asset's SqTicker and always find them again and again in MemDb.
-        List<string> c_marketSummarySqTickersDefault = new() { "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO"};
-        List<string> c_marketSummarySqTickersDc = new() { "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO"};   // at the moment DC uses the same as default
+        readonly List<string> c_marketSummarySqTickersDefault = new() { "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO"};
+        readonly List<string> c_marketSummarySqTickersDc = new() { "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO"};   // at the moment DC uses the same as default
         List<Asset> m_mkthAssets = new();      // remember, so we can send RT data
         BrokerNav? m_mkthSelectedNavAsset = null;   // remember which NAV is selected, so we can send RT data
 
@@ -95,7 +95,7 @@ namespace SqCoreWeb
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
         }
 
-        public bool OnReceiveWsAsync_MktHealth(WebSocketReceiveResult? wsResult, string msgCode, string msgObjStr)
+        public bool OnReceiveWsAsync_MktHealth(string msgCode, string msgObjStr)
         {
             switch (msgCode)
             {

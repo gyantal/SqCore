@@ -156,47 +156,45 @@ namespace HealthMonitor
                         sbWarning.AppendLine("GetAmazonApiResponse() returned null");
                     else
                     {
-                        using (XmlReader reader = XmlReader.Create(new StringReader(awsInstancesXml)))
-                        {
-                            XmlWriterSettings ws = new();
-                            ws.Indent = true;
+                        using XmlReader reader = XmlReader.Create(new StringReader(awsInstancesXml));
+                        XmlWriterSettings ws = new();
+                        ws.Indent = true;
 
-                            string instanceName = string.Empty, instanceState = string.Empty, instancePublicIp = string.Empty;
-                            while (reader.Read())
+                        string instanceName = string.Empty, instanceState = string.Empty, instancePublicIp = string.Empty;
+                        while (reader.Read())
+                        {
+                            switch (reader.NodeType)
                             {
-                                switch (reader.NodeType)
-                                {
-                                    case XmlNodeType.Element:
-                                        if (reader.Name == "instanceState")
-                                        {
-                                            while (reader.Name != "name" && reader.Read()) ;
-                                            reader.Read();
-                                            instanceState = reader.Value;
-                                        }
-                                        if (reader.Name == "tagSet")
-                                        {
-                                            while (reader.Value != "Name" && reader.Read()) ;
-                                            reader.Read();  // </key>
-                                            reader.Read();  // whitespace, Value = "\n"
-                                            reader.Read();  // <value>
-                                            reader.Read();  // "HQaVirtualBrokerDev"
-                                            instanceName = reader.Value;
-                                        }
-                                        if (reader.Name == "association")
-                                        {
-                                            while (reader.Name != "publicIp" && reader.Read()) ;        // stopped instances doesn't have publicIp
-                                            reader.Read();
-                                            instancePublicIp = reader.Value;
-                                        }
-                                        break;
-                                    case XmlNodeType.EndElement:
-                                        if (reader.Name == "instancesSet")  // "</instancesSet>"
-                                        {
-                                            awsInstances.Add(new Tuple<string, string, string>(instanceName, instancePublicIp, instanceState));
-                                            instanceName = string.Empty; instanceState = string.Empty; instancePublicIp = string.Empty;
-                                        }
-                                        break;
-                                }
+                                case XmlNodeType.Element:
+                                    if (reader.Name == "instanceState")
+                                    {
+                                        while (reader.Name != "name" && reader.Read()) ;
+                                        reader.Read();
+                                        instanceState = reader.Value;
+                                    }
+                                    if (reader.Name == "tagSet")
+                                    {
+                                        while (reader.Value != "Name" && reader.Read()) ;
+                                        reader.Read();  // </key>
+                                        reader.Read();  // whitespace, Value = "\n"
+                                        reader.Read();  // <value>
+                                        reader.Read();  // "HQaVirtualBrokerDev"
+                                        instanceName = reader.Value;
+                                    }
+                                    if (reader.Name == "association")
+                                    {
+                                        while (reader.Name != "publicIp" && reader.Read()) ;        // stopped instances doesn't have publicIp
+                                        reader.Read();
+                                        instancePublicIp = reader.Value;
+                                    }
+                                    break;
+                                case XmlNodeType.EndElement:
+                                    if (reader.Name == "instancesSet")  // "</instancesSet>"
+                                    {
+                                        awsInstances.Add(new Tuple<string, string, string>(instanceName, instancePublicIp, instanceState));
+                                        instanceName = string.Empty; instanceState = string.Empty; instancePublicIp = string.Empty;
+                                    }
+                                    break;
                             }
                         }
                     }

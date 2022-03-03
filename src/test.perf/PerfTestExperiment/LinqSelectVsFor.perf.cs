@@ -103,7 +103,7 @@ namespace SqBenchmarks
 // LINQ takes +48% more than for on class-array
 // LINQ takes +8x-10x more than for on struct-array
 
-// So, use Array if possible. Furthermore, use Struct with arrays. That is the fastest.
+// So, 1. Use 25% faster For instead of ForEach. 2. use Array if possible. Furthermore, use Struct with arrays. That is the fastest.
 
 // 4. Case study of 1000 long list:
 // If you write LINQ like : resultList = inputList.Select(r => new ClassB() { Data = r.Data + 10 }).ToList();
@@ -273,7 +273,7 @@ namespace SqBenchmarks
 
 
 
-        public static void RenameThisToMain_StopwatchBenchmark(string[] args)
+        public static void RenameThisToMain_StopwatchBenchmark(string[] _)
         {
             Random r = new();
 

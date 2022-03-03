@@ -15,16 +15,16 @@ namespace SqCoreWeb
 {
     public partial class DashboardClient
     {
-        static QuickfolioNewsDownloader g_newsDownloader = new(); // only 1 global downloader for all clients
+        static readonly QuickfolioNewsDownloader g_newsDownloader = new(); // only 1 global downloader for all clients
         // one global static quickfolio News Timer serves all clients. For efficiency.
-        static Timer m_qckflNewsTimer = new(new TimerCallback(QckflNewsTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
+        static readonly Timer m_qckflNewsTimer = new(new TimerCallback(QckflNewsTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
         static bool isQckflNewsTimerRunning = false;
-        static object m_qckflNewsTimerLock = new();
-        static int m_qckflNewsTimerFrequencyMs = 15 * 60 * 1000; // timer for 15 minutes
-        static TimeSpan c_initialSleepIfNotActiveToolQn2 = TimeSpan.FromMilliseconds(10 * 1000); // 10sec
-        Dictionary<string, List<NewsItem>> m_newsMemory = new();
-        static Random g_random = new(DateTime.Now.Millisecond);
-        static KeyValuePair<int, int> g_sleepBetweenDnsMs = new(2000, 1000); // <fix, random>
+        static readonly object m_qckflNewsTimerLock = new();
+        static readonly int m_qckflNewsTimerFrequencyMs = 15 * 60 * 1000; // timer for 15 minutes
+        static readonly TimeSpan c_initialSleepIfNotActiveToolQn2 = TimeSpan.FromMilliseconds(10 * 1000); // 10sec
+        readonly Dictionary<string, List<NewsItem>> m_newsMemory = new();
+        static readonly Random g_random = new(DateTime.Now.Millisecond);
+        static readonly KeyValuePair<int, int> g_sleepBetweenDnsMs = new(2000, 1000); // <fix, random>
 
 
         // string[] m_stockTickers2 = { };
@@ -214,12 +214,12 @@ namespace SqCoreWeb
                 throw;
             }
         }
-        public bool OnReceiveWsAsync_QckflNews2(WebSocketReceiveResult? wsResult, string msgCode, string msgObjStr)
+        public bool OnReceiveWsAsync_QckflNews2(string msgCode, string msgObjStr)
         {
             switch (msgCode)
             {
                 case "QckflNews.ReloadQuickfolio":
-                    Utils.Logger.Info("OnReceiveWsAsync_QckflNews(): QckflNews.ReloadQuickfolio");
+                    Utils.Logger.Info($"OnReceiveWsAsync_QckflNews(): QckflNews.ReloadQuickfolio:{msgObjStr}");
                     // ReloadQuickfolioMsgArrived();
                     return true;
                 default:

@@ -65,7 +65,7 @@ namespace HealthMonitor
         DateTime m_lastHealthMonErrorEmailTime = DateTime.MinValue;    // don't email if it was made in the last 10 minutes
         DateTime m_lastHealthMonErrorPhoneCallTime = DateTime.MinValue;    // don't call if it was made in the last 30 minutes
 
-        ConcurrentDictionary<DataSource, DelayedMessage> m_delayedMessages = new();
+        readonly ConcurrentDictionary<DataSource, DelayedMessage> m_delayedMessages = new();
 
         public SavedState? PersistedState
         {
@@ -176,7 +176,7 @@ namespace HealthMonitor
 
         private void SetupNotRepeatingDailyReportTimer()
         {
-            bool isTradingHoursOK = Utils.DetermineUsaMarketTradingHours(DateTime.UtcNow, out bool isMarketTradingDay, out DateTime openTimeUtc, out DateTime closeTimeUtc, TimeSpan.FromDays(3));
+            bool isTradingHoursOK = Utils.DetermineUsaMarketTradingHours(DateTime.UtcNow, out bool isMarketTradingDay, out _, out DateTime closeTimeUtc, TimeSpan.FromDays(3));
             if (!isTradingHoursOK)
             {
                 Utils.Logger.Warn("DetermineUsaMarketTradingHours() was not ok.");
@@ -241,7 +241,7 @@ namespace HealthMonitor
             Utils.Logger.Info("DailyReportTimer_Elapsed() END");
         }
 
-        string m_dailyReportEmailStr1 =
+        readonly string m_dailyReportEmailStr1 =
 @"<!DOCTYPE html><html><head><style>
 .sqNormalText {
     font-size: 125%;
@@ -263,7 +263,7 @@ namespace HealthMonitor
 <body class=""sqNormalText"">
     <strong>Realtime Price</strong> Service: ";
 
-        string m_dailyReportEmailStr2 =
+        readonly string m_dailyReportEmailStr2 =
 @"</body>
 </html>";
 

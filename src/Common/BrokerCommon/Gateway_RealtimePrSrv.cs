@@ -310,7 +310,7 @@ namespace BrokerCommon
                                     jsonResultBuilder.AppendFormat(@",""UtcTimeType"":""{0}""", (isTemporaryTicker) ? "SnapshotTime" : "LastChangedTime");
                                 }
 
-                                jsonResultBuilder.Append(@"}");
+                                jsonResultBuilder.Append('}');
                             }
                         }   // last data is not too old
                     }

@@ -265,7 +265,6 @@ namespace SqCoreWeb
             string firstCharsWithSubString = !String.IsNullOrWhiteSpace(priceHtml!) && priceHtml.Length >= 300 ? priceHtml[..300] : priceHtml;
             Utils.Logger.Trace("HttpClient().GetStringAsync returned: " + firstCharsWithSubString);
 
-            double? realTimePrice = null, dailyChange = null;
             int iLastPriceStart = priceHtml.IndexOf($"\"last\":\"");
             if (iLastPriceStart != -1)
             {
@@ -274,7 +273,7 @@ namespace SqCoreWeb
                 if (iLastPriceEnd != -1)
                 {
                     var lastPriceStr = priceHtml[iLastPriceStart..iLastPriceEnd];
-                    realTimePrice = Double.Parse(lastPriceStr);
+                    double realTimePrice = Double.Parse(lastPriceStr);
 
                     int iChangePriceStart = priceHtml.IndexOf($"\"change\":\"", iLastPriceEnd);
                     if (iChangePriceStart != -1)
@@ -285,7 +284,7 @@ namespace SqCoreWeb
                         {
                             var changePriceStr = priceHtml[iChangePriceStart..iChangePriceEnd];
                             Utils.Logger.Info($"GetTodayPctChange().changePriceStr: '{changePriceStr}' ");  // TEMP: uncomment when it is fixed: 2021-06-08, System.FormatException: Input string was not in a correct format.
-                            dailyChange = Double.Parse(changePriceStr);
+                            double dailyChange = Double.Parse(changePriceStr);
 
                             double yesterdayClose = (double)realTimePrice - (double)dailyChange;
                             double todayPercentChange = (double)realTimePrice / yesterdayClose - 1;

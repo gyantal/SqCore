@@ -16,11 +16,11 @@ namespace BenchmarkDB
 
         public static IConfigurationRoot gConfiguration = new ConfigurationBuilder().Build();
 
-        static void Main(string[] args)
+        static void Main(string[] _)
         {
             string appName = System.Reflection.MethodBase.GetCurrentMethod()?.ReflectedType?.Namespace ?? "UnknownNamespace";
             Console.Title = $"{appName} v1.0.14";
-            string systemEnvStr = $"(v1.0.14, {Utils.RuntimeConfig() /* Debug | Release */}, CLR: {System.Environment.Version}, {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},  OS: {System.Environment.OSVersion}, user: {System.Environment.UserName}, CPU: {System.Environment.ProcessorCount}, ThId-{Thread.CurrentThread.ManagedThreadId})";
+            string systemEnvStr = $"(v1.0.14, {Utils.RuntimeConfig() /* Debug | Release */}, CLR: {System.Environment.Version}, {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},  OS: {System.Environment.OSVersion}, user: {System.Environment.UserName}, CPU: {System.Environment.ProcessorCount}, ThId-{Environment.CurrentManagedThreadId})";
             Console.WriteLine($"Hello {appName}. {systemEnvStr}");
             gLogger.Info($"********** Main() START {systemEnvStr}");
 
@@ -42,7 +42,7 @@ namespace BenchmarkDB
             //Test_Csharp80_Features();
             Controller.g_controller.Start();
 
-            string userInput = string.Empty;
+            string userInput;
             do
             {
                 userInput = DisplayMenuAndExecute();
@@ -72,7 +72,7 @@ namespace BenchmarkDB
             Console.WriteLine("7. Benchmark all and make conclusions (target: localhost, execute: Linux)");
             Console.WriteLine("8. Test downloading api.nasdaq.com (tricky HttpHeaders).");
             Console.WriteLine("9. Exit gracefully (Avoid Ctrl-^C).");
-            string userInput = string.Empty;
+            string userInput;
             try
             {
                 userInput = Console.ReadLine() ?? string.Empty;

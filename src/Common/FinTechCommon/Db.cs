@@ -24,11 +24,10 @@ namespace FinTechCommon
     {
         // public static Db gDb = new Db();
 
-#pragma warning disable CS8618 // Non-nullable field 'm_redisDb' is uninitialized.
-        IDatabase m_redisDb;
-         //public IDatabase? SqlDb { get; set; } = null;
-#pragma warning restore CS8618
-        int m_redisDbIdx;
+        readonly IDatabase m_redisDb;
+
+        public IDatabase? m_sqlDb;
+        readonly int m_redisDbIdx;
         public int RedisDbIdx { get { return m_redisDbIdx; } }
         string m_lastUsersStr = string.Empty;
         string m_lastAssetsStr = string.Empty;
@@ -37,12 +36,15 @@ namespace FinTechCommon
         public Db(IDatabase p_redisDb, IDatabase? p_sqlDb)
         {
             m_redisDb = p_redisDb;
+            m_redisDbIdx = 0;
+            m_sqlDb = p_sqlDb;
         }
 
         public Db(string p_redisConnString, int p_redisDbIdx, IDatabase? p_sqlDb)
         {
-            m_redisDbIdx = p_redisDbIdx;
             m_redisDb = RedisManager.GetDb(p_redisConnString, m_redisDbIdx);   // lowest level DB module
+            m_redisDbIdx = p_redisDbIdx;
+            m_sqlDb = p_sqlDb;
         }
 
 

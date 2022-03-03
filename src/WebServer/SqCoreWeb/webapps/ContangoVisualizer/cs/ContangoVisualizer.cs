@@ -274,25 +274,19 @@ namespace SqCoreWeb.Controllers
                 prevFuturesDataVec[iRows] = prevFuturesDataB;
             }
 
-            string liveFuturesDataDT = string.Empty;
-            string liveFuturesDataDate = string.Empty;
-            string liveFuturesDataTime = string.Empty;
-            string liveFuturesNextExp = string.Empty;
-            string futCodeNext = string.Empty;
-            string spotVixData = string.Empty;
             string titleOIL = "OIL Futures Term Structure";
             string dataSourceOIL = "https://www.cmegroup.com/trading/energy/crude-oil/light-sweet-crude.html";
 
             int startPosLiveDate = webpageLive.IndexOf("\"updated\":\"",liveFuturesDataVecInd[0]) + "\"updated\":\"".Length;
-            liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 29);
-            liveFuturesDataDate = liveFuturesDataDT.Substring(18, 11);
-            liveFuturesDataTime = liveFuturesDataDT[..8] + " CT";
+            string liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 29);
+            string liveFuturesDataDate = liveFuturesDataDT.Substring(18, 11);
+            string liveFuturesDataTime = liveFuturesDataDT[..8] + " CT";
 
             int nextExpLiveMonth = webpageLive.IndexOf("\"expirationMonth\":\"", 0) + "\"expirationMonth\":\"".Length;
-            liveFuturesNextExp = webpageLive.Substring(nextExpLiveMonth, 3);
+            string liveFuturesNextExp = webpageLive.Substring(nextExpLiveMonth, 3);
 
             int futCodeInd = webpageLive.IndexOf("\"escapedQuoteCode\":\"", endPosPrevB0) + "\"escapedQuoteCode\":\"".Length;
-            futCodeNext = webpageLive.Substring(futCodeInd, 3);
+            string futCodeNext = webpageLive.Substring(futCodeInd, 3);
 
             //Downloading expiration dates from cmegroup.com.
             string? webpageLiveExp = Utils.DownloadStringWithRetryAsync("https://www.cmegroup.com/CmeWS/mvc/ProductCalendar/Future/425", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
@@ -344,13 +338,8 @@ namespace SqCoreWeb.Controllers
 
             double spotVixValue = 0;/*Double.Parse(spotVixPrices[0]);*/
 
-            
-
-
-            DateTime liveDateTime;
-            string liveDate = string.Empty;
-            liveDateTime = DateTime.Parse(liveFuturesDataDate);
-            liveDate = liveDateTime.ToString("yyyy-MM-dd");
+            DateTime liveDateTime = DateTime.Parse(liveFuturesDataDate);
+            string liveDate = liveDateTime.ToString("yyyy-MM-dd");
 
             //Sorting historical data.
             VixCentralRec2[] vixCentralRec = new VixCentralRec2[2];
@@ -447,25 +436,19 @@ namespace SqCoreWeb.Controllers
                 prevFuturesDataVec[iRows] = prevFuturesDataB;
             }
 
-            string liveFuturesDataDT = string.Empty;
-            string liveFuturesDataDate = string.Empty;
-            string liveFuturesDataTime = string.Empty;
-            string liveFuturesNextExp = string.Empty;
-            string futCodeNext = string.Empty;
-            string spotVixData = string.Empty;                
             string titleGAS = "GAS Futures Term Structure";
             string dataSourceGAS = "https://www.cmegroup.com/trading/energy/natural-gas/natural-gas.html";
 
             int startPosLiveDate = webpageLive.IndexOf("\"updated\":\"", liveFuturesDataVecInd[0]) + "\"updated\":\"".Length;
-            liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 29);
-            liveFuturesDataDate = liveFuturesDataDT.Substring(18, 11);
-            liveFuturesDataTime = liveFuturesDataDT[..8] + " CT";
+            string liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 29);
+            string liveFuturesDataDate = liveFuturesDataDT.Substring(18, 11);
+            string liveFuturesDataTime = liveFuturesDataDT[..8] + " CT";
 
             int nextExpLiveMonth = webpageLive.IndexOf("\"expirationMonth\":\"", 0) + "\"expirationMonth\":\"".Length;
-            liveFuturesNextExp = webpageLive.Substring(nextExpLiveMonth, 3);
+            string liveFuturesNextExp = webpageLive.Substring(nextExpLiveMonth, 3);
 
             int futCodeInd = webpageLive.IndexOf("\"escapedQuoteCode\":\"", endPosPrevB0) + "\"escapedQuoteCode\":\"".Length;
-            futCodeNext = webpageLive.Substring(futCodeInd, 3);
+            string futCodeNext = webpageLive.Substring(futCodeInd, 3);
 
             //Downloading expiration dates from cmegroup.com.
             string? webpageLiveExp = Utils.DownloadStringWithRetryAsync("https://www.cmegroup.com/CmeWS/mvc/ProductCalendar/Future/444", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
@@ -516,11 +499,8 @@ namespace SqCoreWeb.Controllers
                 }
             }
 
-
-            DateTime liveDateTime;
-            string liveDate = string.Empty;
-            liveDateTime = DateTime.Parse(liveFuturesDataDate);
-            liveDate = liveDateTime.ToString("yyyy-MM-dd");
+            DateTime liveDateTime = DateTime.Parse(liveFuturesDataDate);
+            string liveDate = liveDateTime.ToString("yyyy-MM-dd");
 
             //Sorting historical data.
             VixCentralRec2[] vixCentralRec = new VixCentralRec2[2];
@@ -572,7 +552,7 @@ namespace SqCoreWeb.Controllers
 
         }
 
-        private string Processing(VixCentralRec2[] p_vixCentralRec, DateTime[] p_expDates, string p_liveDate, string p_liveFuturesDataTime, double p_spotVixValue, string p_titleF, string p_dataSource)
+        private string Processing(VixCentralRec2[] p_vixCentralRec, DateTime[] _, string p_liveDate, string p_liveFuturesDataTime, double p_spotVixValue, string p_titleF, string p_dataSource)
         {
             //Calculating dates to html.           
             DateTime timeNowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
@@ -678,33 +658,33 @@ namespace SqCoreWeb.Controllers
 
             sb.Append(@"""," + Environment.NewLine + @"""currDataVec"": """);
             for (int i = 0; i < currData.Length - 1; i++)
-                sb.Append(Math.Round(currData[i], 4).ToString() + ", ");
-            sb.Append(Math.Round(currData[^1], 4).ToString());
+                sb.Append($"{Math.Round(currData[i], 4)}, ");
+            sb.Append(Math.Round(currData[^1], 4));
 
             sb.Append(@"""," + Environment.NewLine + @"""currDataDaysVec"": """);
             for (int i = 0; i < currDataDays.Length - 1; i++)
-                sb.Append(currDataDays[i].ToString() + ", ");
-            sb.Append(currDataDays[^1].ToString());
+                sb.Append($"{currDataDays[i]}, ");
+            sb.Append(currDataDays[^1]);
 
             sb.Append(@"""," + Environment.NewLine + @"""prevDataVec"": """);
             for (int i = 0; i < prevData.Length - 1; i++)
-                sb.Append(Math.Round(prevData[i], 4).ToString() + ", ");
-            sb.Append(Math.Round(prevData[^1], 4).ToString());
+                sb.Append($"{Math.Round(prevData[i], 4)}, ");
+            sb.Append(Math.Round(prevData[^1], 4));
 
             sb.Append(@"""," + Environment.NewLine + @"""currDataDiffVec"": """);
             for (int i = 0; i < currDataDiff.Length - 1; i++)
-                sb.Append(Math.Round(currDataDiff[i], 4).ToString() + ", ");
-            sb.Append(Math.Round(currDataDiff[^1], 4).ToString());
+                sb.Append( $"{Math.Round(currDataDiff[i], 4)}, ");
+            sb.Append(Math.Round(currDataDiff[^1], 4));
 
             sb.Append(@"""," + Environment.NewLine + @"""currDataPercChVec"": """);
             for (int i = 0; i < currDataPercCh.Length - 1; i++)
-                sb.Append(Math.Round(currDataPercCh[i], 4).ToString() + ", ");
-            sb.Append(Math.Round(currDataPercCh[^1], 4).ToString());
+                sb.Append($"{Math.Round(currDataPercCh[i], 4)}, ");
+            sb.Append(Math.Round(currDataPercCh[^1], 4));
 
             sb.Append(@"""," + Environment.NewLine + @"""spotVixVec"": """);
             for (int i = 0; i < currData.Length - 1; i++)
-                sb.Append(Math.Round(p_spotVixValue, 4).ToString() + ", ");
-            sb.Append(Math.Round(p_spotVixValue, 4).ToString());
+                sb.Append($"{Math.Round(p_spotVixValue, 4)}, ");
+            sb.Append(Math.Round(p_spotVixValue, 4));
 
             sb.AppendLine(@"]"""+ Environment.NewLine + @"}");
            

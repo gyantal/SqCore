@@ -106,10 +106,10 @@ namespace SqCoreWeb
                     await DashboardWs.OnWsConnectedAsync(context, webSocket);
                     break;
                 case "/example-ws1":  // client sets this URL: connectionUrl.value = scheme + "://" + document.location.hostname + port + "/ws/example-ws1" ;
-                    await ExampleWs.OnWsConnectedAsync(context, webSocket);
+                    await ExampleWs.OnWsConnectedAsync(webSocket);
                     break;
                 case "/ExSvPush":
-                    await ExSvPushWs.OnWsConnectedAsync(context, webSocket);
+                    await ExSvPushWs.OnWsConnectedAsync(webSocket);
                     break;
                 default:
                     throw new Exception($"Unexpected websocket connection '{p_requestRemainigPath}' in WebSocketLoopKeptAlive()");
@@ -169,10 +169,10 @@ namespace SqCoreWeb
                                         DashboardWs.OnWsReceiveAsync(context, webSocket, result, bufferStr);  // no await. There is no need to Wait until all of its async inner methods are completed
                                         break;
                                     case "/example-ws1":
-                                        ExampleWs.OnWsReceiveAsync(context, webSocket, result, bufferStr);
+                                        ExampleWs.OnWsReceiveAsync(webSocket, bufferStr);
                                         break;
                                     case "/ExSvPush":
-                                        ExSvPushWs.OnWsReceiveAsync(context, webSocket, result, bufferStr);
+                                        ExSvPushWs.OnWsReceiveAsync(webSocket, bufferStr);
                                         break;
                                     default:
                                         throw new Exception($"Unexpected websocket connection '{p_requestRemainigPath}' in WebSocketLoopKeptAlive()");
@@ -208,13 +208,13 @@ namespace SqCoreWeb
             switch (p_requestRemainigPath)
             {
                 case "/dashboard":
-                    DashboardWs.OnWsClose(context, webSocket, result);
+                    DashboardWs.OnWsClose(webSocket);
                     break;
                 case "/example-ws1":
-                    ExampleWs.OnWsClose(context, webSocket, result);
+                    ExampleWs.OnWsClose();
                     break;
                 case "/ExSvPush":
-                    ExSvPushWs.OnWsClose(context, webSocket, result);
+                    ExSvPushWs.OnWsClose();
                     break;
                 default:
                     throw new Exception($"Unexpected websocket connection '{p_requestRemainigPath}' in WebSocketLoopKeptAlive()");

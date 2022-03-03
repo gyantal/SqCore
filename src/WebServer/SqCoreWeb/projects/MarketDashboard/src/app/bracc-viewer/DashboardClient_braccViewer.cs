@@ -77,8 +77,8 @@ namespace SqCoreWeb
         // If we store asset pointers (Stock, Nav) if the MemDb reloads, we should reload these pointers from the new MemDb. That adds extra code complexity.
         // However, for fast execution, it is still better to keep asset pointers, instead of keeping the asset's SqTicker and always find them again and again in MemDb.
         BrokerNav? m_braccSelectedNavAsset = null;   // remember which NAV is selected, so we can send RT data
-        List<string> c_marketBarSqTickersDefault = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/AMZN"};    // TEMP: AMZN is here to test that realtime price is sent to client properly
-        List<string> c_marketBarSqTickersDc = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/GLD"};
+        readonly List<string> c_marketBarSqTickersDefault = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/AMZN"};    // TEMP: AMZN is here to test that realtime price is sent to client properly
+        readonly List<string> c_marketBarSqTickersDc = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/GLD"};
         List<Asset> m_brAccMktBrAssets = new();      // remember, so we can send RT data
 
         void Ctor_BrAccViewer()
@@ -155,22 +155,20 @@ namespace SqCoreWeb
 
         private void BrAccViewerSendSnapshot()
         {
-            byte[]? encodedMsg = null;
             var brAcc = GetBrAccViewerAccountSnapshot();
             if (brAcc != null)
             {
-                encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.BrAccSnapshot:" + Utils.CamelCaseSerialize(brAcc));
+                byte[]? encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.BrAccSnapshot:" + Utils.CamelCaseSerialize(brAcc));
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
             }
         }
         private void BrAccViewerSendNavHist(string p_lookbackStr, string p_bnchmrkTicker)
         {
-            byte[]? encodedMsg = null;
             IEnumerable<AssetHistJs>? brAccViewerHist = GetBrAccViewerNavHist(p_lookbackStr, p_bnchmrkTicker);
             if (brAccViewerHist != null)
             {
-                encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.NavHist:" + Utils.CamelCaseSerialize(brAccViewerHist));
+                byte[]? encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.NavHist:" + Utils.CamelCaseSerialize(brAccViewerHist));
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
             }
@@ -392,7 +390,7 @@ namespace SqCoreWeb
             return histToClient;
         }
 
-        public bool OnReceiveWsAsync_BrAccViewer(WebSocketReceiveResult? wsResult, string msgCode, string msgObjStr)
+        public bool OnReceiveWsAsync_BrAccViewer(string msgCode, string msgObjStr)
         {
             switch (msgCode)
             {
@@ -420,7 +418,7 @@ namespace SqCoreWeb
                     int periodStartIdx = msgObjStr.IndexOf(",", bnchmkStartIdx);
                     if (periodStartIdx == -1)
                       return false;
-                    string selectedSqTicker = "S/" + msgObjStr.Substring(bnchmkStartIdx + 1, (periodStartIdx - bnchmkStartIdx - 1));
+                    string selectedSqTicker = string.Concat("S/", msgObjStr.AsSpan(bnchmkStartIdx + 1, (periodStartIdx - bnchmkStartIdx - 1)));
                     string periodSelected = msgObjStr[(periodStartIdx + 1)..];
                     BrAccViewerSendNavHist(periodSelected, selectedSqTicker);
                     return true;

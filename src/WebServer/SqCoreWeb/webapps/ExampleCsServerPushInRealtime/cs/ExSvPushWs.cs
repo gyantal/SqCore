@@ -10,7 +10,7 @@ namespace SqCoreWeb
     public partial class ExSvPushWs
     {
         // static WebSocket m_webSocket;
-        public static Task OnWsConnectedAsync(HttpContext context, WebSocket webSocket)
+        public static Task OnWsConnectedAsync(WebSocket webSocket)
         {
             // m_webSocket = webSocket;
 
@@ -34,7 +34,7 @@ namespace SqCoreWeb
             return Task.CompletedTask;
         }
 
-        public static void OnWsReceiveAsync(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? wsResult, string bufferStr)
+        public static void OnWsReceiveAsync(WebSocket webSocket, string bufferStr)
         {
             var semicolonInd = bufferStr.IndexOf(':');
             string msgCode = bufferStr[..semicolonInd];
@@ -64,7 +64,7 @@ namespace SqCoreWeb
             }
         }
 
-        public static void OnWsClose(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? wsResult)
+        public static void OnWsClose()
         {
         }
 

@@ -18,7 +18,7 @@ namespace BrokerCommon.tests
         {
             Console.WriteLine("TestGatewayConnectToGA()");
             Gateway gw = new(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) 
-                { VbAccountsList = "U407941", Host = ServerIp.AtsVirtualBrokerServerPublicIpForClients, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, 
+                { VbAccountsList = "U407941", Host = ServerIp.AtsVirtualBrokerServerPublicIpForClients, SocketPort = (int)GatewayPort.GyantalMain, 
                 SuggestedIbConnectionClientID = (int)GatewayClientID.SqCoreToGaTest1 };
             gw.Reconnect();
             Assert.True(gw.IsConnected);
@@ -44,7 +44,7 @@ namespace BrokerCommon.tests
             Console.WriteLine("TestGatewayConnectToGA()");
             Gateway gw = new(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) 
                 //{ VbAccountsList = "U407941", Host = ServerIp.AtsVirtualBrokerServerPublicIpForClients, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, 
-                { VbAccountsList = "U407941", Host = ServerIp.LocalhostLoopbackWithIP, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, 
+                { VbAccountsList = "U407941", Host = ServerIp.LocalhostLoopbackWithIP, SocketPort = (int)GatewayPort.GyantalMain, 
                 SuggestedIbConnectionClientID = (int)GatewayClientID.SqCoreToGaTest1 };
             gw.Reconnect();
             Assert.True(gw.IsConnected);

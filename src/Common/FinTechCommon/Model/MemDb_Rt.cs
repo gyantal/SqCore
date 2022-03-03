@@ -73,14 +73,14 @@ namespace FinTechCommon
         // IEX: free account: 50000/30/8/60/60= 3.5. We can do max 3 queries per minute with 1 user-token. But we can use 2 tokens. Just to be on the safe side:
         // For RT highFreq: use 30 seconds, but alternade the 2 tokens we use. That will be about 1 query per minute per token = 60*8*30 = 15K queries per token per month. Although Developers also use some of the quota while developing.
         // Is there a need for 2 IEX timers? (High/Mid Freq) MidFreq timer can be deleted. Questionable, but keep this logic! In the future, we might use a 3rd RT service.
-        RtFreqParam m_highFreqParam = new() { RtFreq = RtFreq.HighFreq, Name="HighFreq", FreqRthSec = 30, FreqOthSec = 5 * 60 }; // high frequency (30sec RTH, 5min otherwise-OTH) refresh for a known fixed stocks (used by VBroker) and those which were queried in the last 5 minutes (by a VBroker-test)
-        RtFreqParam m_midFreqParam = new() { RtFreq = RtFreq.MidFreq, Name="MidFreq", FreqRthSec =  15 * 60, FreqOthSec = 40 * 60 }; // mid frequency (15min RTH, 40min otherwise) refresh for a know fixed stocks (DashboardClient_mktHealth)
-        RtFreqParam m_lowFreqParam = new() { RtFreq = RtFreq.LowFreq, Name="LowFreq", FreqRthSec = 30 * 60, FreqOthSec = 1 * 60 * 60 }; // with low frequency (30 RTH, 1h otherwise) we almost all stocks. Even if nobody access them.
+        readonly RtFreqParam m_highFreqParam = new() { RtFreq = RtFreq.HighFreq, Name="HighFreq", FreqRthSec = 30, FreqOthSec = 5 * 60 }; // high frequency (30sec RTH, 5min otherwise-OTH) refresh for a known fixed stocks (used by VBroker) and those which were queried in the last 5 minutes (by a VBroker-test)
+        readonly RtFreqParam m_midFreqParam = new() { RtFreq = RtFreq.MidFreq, Name="MidFreq", FreqRthSec =  15 * 60, FreqOthSec = 40 * 60 }; // mid frequency (15min RTH, 40min otherwise) refresh for a know fixed stocks (DashboardClient_mktHealth)
+        readonly RtFreqParam m_lowFreqParam = new() { RtFreq = RtFreq.LowFreq, Name="LowFreq", FreqRthSec = 30 * 60, FreqOthSec = 1 * 60 * 60 }; // with low frequency (30 RTH, 1h otherwise) we almost all stocks. Even if nobody access them.
 
         // In general: higFreq: probably the traded stocks + what was RT queried by users. Mid: some special tickers (e.g. on MarketDashboard), LowFreq: ALL alive stocks.
         // string[] m_ibRtStreamedTickrs = Array.Empty<string>();   // /* VBroker */ no need for frequency Timer. IB prices will be streamed. So, in the future, we might delete m_highFreqParam. But maybe we need 10seconds ticker prices for non VBroker tasks. So, probably keep the streamed tickers very low. And this can be about 6-20seconds frequency.
-        string[] m_highFreqTickrs = Array.Empty<string>(); /* VBroker */
-        string[] m_midFreqTickrs = new string[] {"S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO" /* DashboardClient_mktHealth.cs */ };
+        readonly string[] m_highFreqTickrs = Array.Empty<string>(); /* VBroker */
+        readonly string[] m_midFreqTickrs = new string[] {"S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO" /* DashboardClient_mktHealth.cs */ };
 
         Dictionary<Asset, DateTime> m_lastRtPriceQueryTime = new();
 
@@ -273,8 +273,6 @@ namespace FinTechCommon
         {
 
             m_lastRtPriceQueryTime[p_asset] = DateTime.UtcNow;
-            DateTime lastDateTime = DateTime.MinValue;
-            // DateTime lastDateTime = DateTime.MinValue;
             float lastValue;
             if (p_asset.AssetId.AssetTypeID == AssetType.BrokerNAV)
                 lastValue = GetLastNavRtPrice((p_asset as BrokerNav)!).LastValue;

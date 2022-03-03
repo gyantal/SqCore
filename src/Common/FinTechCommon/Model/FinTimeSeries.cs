@@ -130,16 +130,19 @@ namespace FinTechCommon
         private int version; // Do not rename (binary serialization)
         private readonly IComparer<TKey> comparer; // Do not rename (binary serialization)
         private KeyList? keyList; // Do not rename (binary serialization)
-        private Dictionary<TickType, ValueList1?> valueList1; // Do not rename (binary serialization)
-        private Dictionary<TickType, ValueList2?> valueList2; // Do not rename (binary serialization)
+        private readonly Dictionary<TickType, ValueList1?> valueList1; // Do not rename (binary serialization)
+        private readonly Dictionary<TickType, ValueList2?> valueList2; // Do not rename (binary serialization)
 
         private const int DefaultCapacity = 4;
 
         public static void HowToUseThisClassExamples()
         {
+#pragma warning disable IDE0059 // IDE0059: Unnecessary assignment of a value
+#pragma warning disable IDE0017 // IDE0017: Object initialization can be simplified
             // 1. set up timeSeries
             var ts2 = new FinTimeSeries<SqDateOnly, float, uint>(new TickType[] { TickType.SplitDivAdjClose }, new TickType[] { TickType.Volume });
             ts2.Capacity = 10;  // set capacity will increase all TickType arrays
+#pragma warning disable IDE0017
 
             // Arrays are refence types. Just create the arrays and pass it to the constructor
             var kvpar1 = new KeyValuePair<TickType, float[]>(TickType.SplitDivAdjClose, Array.Empty<float>());
@@ -166,7 +169,7 @@ namespace FinTechCommon
             // 4. The most efficient, faster usage is the direct usage of the array. Better than (linked-) List, and there is no indirection.
             SqDateOnly[] dates = ts1.GetKeyArrayDirect();
             float[] sdaClose = ts1.GetValue1ArrayDirect(TickType.SplitDivAdjClose);
-
+#pragma warning restore IDE0059
             // Example usage from MemDb:
             // Security sec = MemDb.gMemDb.GetFirstMatchingSecurity(r.Ticker);
             // SqDateOnly[] dates = sec.DailyHistory.GetKeyArrayDirect();
@@ -850,8 +853,7 @@ namespace FinTechCommon
         private sealed class FinTimeSeriesValueEnumerator1 : IEnumerator<TValue1>, IEnumerator
         {
             private readonly FinTimeSeries<TKey, TValue1, TValue2> _sortedList;
-
-            TickType _tickType;
+            readonly TickType _tickType;
             private int _index;
             private readonly int _version;
             [AllowNull] private TValue1 _currentValue = default!;
@@ -923,8 +925,7 @@ namespace FinTechCommon
         private sealed class FinTimeSeriesValueEnumerator2 : IEnumerator<TValue2>, IEnumerator
         {
             private readonly FinTimeSeries<TKey, TValue1, TValue2> _sortedList;
-
-            TickType _tickType;
+            readonly TickType _tickType;
             private int _index;
             private readonly int _version;
             [AllowNull] private TValue2 _currentValue = default!;
@@ -1121,7 +1122,7 @@ namespace FinTechCommon
         public sealed class ValueList1 : IList<TValue1>, ICollection
         {
             private readonly FinTimeSeries<TKey, TValue1, TValue2> _dict; // Do not rename (binary serialization)
-            private TickType _tickType;
+            private readonly TickType _tickType;
 
             internal ValueList1(FinTimeSeries<TKey, TValue1, TValue2> dictionary, TickType tickType)
             {
@@ -1235,7 +1236,7 @@ namespace FinTechCommon
         public sealed class ValueList2 : IList<TValue2>, ICollection
         {
             private readonly FinTimeSeries<TKey, TValue1, TValue2> _dict; // Do not rename (binary serialization)
-            private TickType _tickType;
+            private readonly TickType _tickType;
 
             internal ValueList2(FinTimeSeries<TKey, TValue1, TValue2> dictionary, TickType tickType)
             {

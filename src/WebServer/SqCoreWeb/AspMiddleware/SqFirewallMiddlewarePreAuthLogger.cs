@@ -245,7 +245,7 @@ namespace SqCoreWeb
 
         // "/robots.txt", "/ads.txt": just don't want to handle search engines. Consume resources.
         // static string[] m_blacklistPrefix = {"/private/", "/local/","/git/", "/app/", "/core/", "/rest/", "/.env","/robots.txt", "/ads.txt", "//", "/index.php", "/user/register", "/latest/dynamic", "/ws/stats", "/corporate/", "/imeges", "/remote"};
-        static string[] m_blacklistPrefix = {"/ws/stats"};  // is whitelist is operational with Exact matches, that filters most of the bad. However, we accept '/ws' as a prefix for many, but we can ban this specific one.
+        static readonly string[] m_blacklistPrefix = {"/ws/stats"};  // is whitelist is operational with Exact matches, that filters most of the bad. However, we accept '/ws' as a prefix for many, but we can ban this specific one.
         // hackers always try to break the server by typical vulnerability queries. It is pointless to process them. Most of the time it raises an exception.
         static bool IsClientIpOrPathOnBlacklist(HttpContext p_httpContext)
         {

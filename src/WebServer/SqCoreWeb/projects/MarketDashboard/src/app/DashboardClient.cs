@@ -82,17 +82,17 @@ namespace SqCoreWeb
         }
 
         // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
-        public void OnConnectedWsAsync_DshbrdClient(bool p_isThisActiveToolAtConnectionInit, User p_user, ManualResetEvent p_waitHandleRtPriceSending)
+        public void OnConnectedWsAsync_DshbrdClient()
         {
             // Note: as client is not fully initialized yet, 'this.client' is not yet in DashboardClient.g_clients list.
         }
 
-        public bool OnReceiveWsAsync_DshbrdClient(WebSocketReceiveResult? wsResult, string msgCode, string msgObjStr)
+        public bool OnReceiveWsAsync_DshbrdClient(string msgCode, string msgObjStr)
         {
             switch (msgCode)
             {
                 case "Dshbrd.IsDshbrdOpenManyTimes":
-                    Utils.Logger.Info("OnReceiveWsAsync__DshbrdClient(): IsDashboardOpenManyTimes");
+                    Utils.Logger.Info($"OnReceiveWsAsync__DshbrdClient(): IsDashboardOpenManyTimes:{msgObjStr}");
                     SendIsDashboardOpenManyTimes();
                     return true;
                 default:

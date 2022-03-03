@@ -16,11 +16,11 @@ namespace RedisManager
 
          public static IConfigurationRoot gConfiguration = new ConfigurationBuilder().Build();
 
-        static void Main(string[] args)
+        static void Main(string[] _)
         {
             string appName = System.Reflection.MethodBase.GetCurrentMethod()?.ReflectedType?.Namespace ?? "UnknownNamespace";
             Console.Title = $"{appName} v1.0.14";
-            string systemEnvStr = $"(v1.0.14, {Utils.RuntimeConfig() /* Debug | Release */}, CLR: {System.Environment.Version}, {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},  OS: {System.Environment.OSVersion}, user: {System.Environment.UserName}, CPU: {System.Environment.ProcessorCount}, ThId-{Thread.CurrentThread.ManagedThreadId})";
+            string systemEnvStr = $"(v1.0.14, {Utils.RuntimeConfig() /* Debug | Release */}, CLR: {System.Environment.Version}, {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},  OS: {System.Environment.OSVersion}, user: {System.Environment.UserName}, CPU: {System.Environment.ProcessorCount}, ThId-{Environment.CurrentManagedThreadId})";
             Console.WriteLine($"Hello {appName}. {systemEnvStr}");
             gLogger.Info($"********** Main() START {systemEnvStr}");
 
@@ -41,7 +41,7 @@ namespace RedisManager
 
             Controller.g_controller.Start();
 
-            string userInput = string.Empty;
+            string userInput;
             do
             {
                 userInput = DisplayMenuAndExecute();
@@ -71,7 +71,7 @@ namespace RedisManager
             Console.WriteLine("7. Convert [all] tables from PostgreSql to Redis data (Full)");
             Console.WriteLine("8. Manage NAV assets...");
             Console.WriteLine("9. Exit gracefully (Avoid Ctrl-^C).");
-            string userInput = string.Empty;
+            string userInput;
             try
             {
                 userInput = Console.ReadLine() ?? string.Empty;
@@ -107,7 +107,7 @@ namespace RedisManager
                     Controller.g_controller.ConvertTableDataToRedis(new string[] { "sq_user", "sq_user", "sq_user" });
                     break;
                 case "8":
-                    string userInputSub = string.Empty;
+                    string userInputSub;
                     do
                     {
                         userInputSub = DisplaySubMenuAndExecute_ManageNavs();
@@ -131,7 +131,7 @@ namespace RedisManager
             Console.WriteLine("7. Import Nav Asset From Txt file: 11:3");
             
             Console.WriteLine("9. Exit to main menu.");
-            string userInput = string.Empty;
+            string userInput;
             try
             {
                 userInput = Console.ReadLine() ?? string.Empty;

@@ -30,7 +30,7 @@ namespace HealthMonitor
     {
         internal void CurrentStateToHealthMonitorWebsite(TcpClient p_tcpClient, TcpMessage p_message)
         {
-            HMtoDashboardData? hmDataOut = null;
+            HMtoDashboardData? hmDataOut;
             var hmDataIn = Utils.LoadFromJSON<HMtoDashboardData>(p_message.ParamStr);
             if (hmDataIn == null)
             {

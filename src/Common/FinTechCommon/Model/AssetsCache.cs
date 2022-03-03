@@ -5,7 +5,7 @@ using SqCommon;
 
 namespace FinTechCommon
 {
-public class AssetsCache    // the whole asset data should be hidden behind a single pointer, so the whole structure can be updated in an atomic operation in a multithread environment
+    public class AssetsCache    // the whole asset data should be hidden behind a single pointer, so the whole structure can be updated in an atomic operation in a multithread environment
     {
         // MemDb should mirror persistent data in RedisDb. For Trades in Portfolios. The AssetId in MemDb should be the same AssetId as in Redis.
         // Alphabetical order of tickers for faster search is not realistic without Index tables or Hashtable/Dictionary.
@@ -13,10 +13,10 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
         // In Redis, AssetId will be permanent. Starting from 1...increasing by 1. Redis 'tables' will be ordered by AssetId, because of faster JOIN operations.
         // The top bits of AssetId is the Type=Stock, Options, so there can be gaps in the AssetId ordered list. But at least, we can aim to order this array by AssetId. (as in Redis)
         public List<Asset> Assets { get; set; } = new List<Asset>();    // it is loaded from RedisDb by filtering 'memDb.allAssets' by 'memDb.SqCoreWebAssets'
-        
-        uint m_stocksSubTableIdMax = 0;   // for generating new AssetID for NonPersistent Stocks, Options that might come from IB-TWS
-        uint m_optionsSubTableIdMax = 0;  // for generating new AssetID for NonPersistent Stocks, Options that might come from IB-TWS
-        uint m_navSubTableIdMax = 0;    // for generating new AssetID for Aggregated BrokerNav assets
+
+        readonly uint m_stocksSubTableIdMax = 0;   // for generating new AssetID for NonPersistent Stocks, Options that might come from IB-TWS
+        readonly uint m_optionsSubTableIdMax = 0;  // for generating new AssetID for NonPersistent Stocks, Options that might come from IB-TWS
+        readonly uint m_navSubTableIdMax = 0;    // for generating new AssetID for Aggregated BrokerNav assets
 
         public uint NextUnusedOptionsSubTableId = 0;
         
@@ -71,7 +71,7 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
             throw new NotImplementedException();    //at the moment, we only create new Options run-time
         }
 
-        public void AddAsset(Asset p_asset)
+        public void AddAsset(Asset _)
         {
             throw new SqException("MemData.AssetsCache Readers will have inconsistent for(), foreach() enumerations. Use MemData.AddToAssetCacheIfMissing() instead.");
             // Assets.Add(p_asset);

@@ -78,7 +78,7 @@ namespace BrokerCommon
                     result = m_accSums; // save it before releasing the lock, so other threads will not overwrite the result
                 }
                 sw1.Stop();
-                Utils.Logger.Info($"ReqAccountSummary() ends in {sw1.ElapsedMilliseconds}ms GatewayId: '{this.GatewayId}', Thread Id= {Thread.CurrentThread.ManagedThreadId}");
+                Utils.Logger.Info($"ReqAccountSummary() ends in {sw1.ElapsedMilliseconds}ms GatewayId: '{this.GatewayId}', Thread Id= {Environment.CurrentManagedThreadId}");
             }
             catch (Exception e)
             {
@@ -116,7 +116,7 @@ namespace BrokerCommon
                     result = m_accPoss; // save it before releasing the lock, so other threads will not overwrite the result
                 }
                 sw2.Stop(); // London local DEV client to servers: US-East: 180ms, Dublin: 51-64ms. This is 2x ping time. Linux server will be 5-10ms.
-                Utils.Logger.Info($"ReqPositions() ends in {sw2.ElapsedMilliseconds}ms GatewayId: '{this.GatewayId}', Thread Id= {Thread.CurrentThread.ManagedThreadId}");
+                Utils.Logger.Info($"ReqPositions() ends in {sw2.ElapsedMilliseconds}ms GatewayId: '{this.GatewayId}', Thread Id= {Environment.CurrentManagedThreadId}");
             }
             catch (Exception e)
             {

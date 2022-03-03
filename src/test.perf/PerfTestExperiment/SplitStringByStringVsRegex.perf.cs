@@ -5,7 +5,7 @@ namespace SqBenchmarks
     [MemoryDiagnoser] // we need to enable it in explicit way to get Columns for ' Gen X collections per 1 000 Operations' and MemAlloc
     public class BnchSplitStringByStrVsRegex
     {
-        string splitThisStr = "bla, bla, bla, this will, benchmark, this.";
+        readonly string splitThisStr = "bla, bla, bla, this will, benchmark, this.";
 
         [Benchmark]
         public void SplitStringByString()

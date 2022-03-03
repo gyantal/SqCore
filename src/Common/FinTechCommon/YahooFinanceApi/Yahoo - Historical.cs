@@ -53,7 +53,8 @@ namespace YahooFinanceApi
             DateTime? endTime,
             Period period,
             ShowOption showOption,
-            Func<string[], ITick> instanceFunction,
+            // Func<string[], ITick> instanceFunction,
+            Func<string[], ITick> _,
             Func<ITick, ITick> postprocessFunction,
             CancellationToken token
             )

@@ -7,7 +7,7 @@ namespace OpenUrlsAtOnce
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main(string[] _)
         {
             int sleepInMsec = 300;       // 50 was not enough for digg.com and channel9, 100msec was not enough on 2012-07-18, 150mset was not enough on 2012-07-19
 

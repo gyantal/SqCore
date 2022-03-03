@@ -60,9 +60,10 @@ namespace SqCoreWeb
             ManualResetEvent waitHandleMkthConnect = new(false);
             ManualResetEvent waitHandleBrAccConnect = new(false);
 
-            client!.OnConnectedWsAsync_DshbrdClient(activePage == ActivePage.MarketHealth, user, waitHandleMkthConnect);  // runs in a separate thread for being faster
-            client!.OnConnectedWsAsync_MktHealth(activePage == ActivePage.MarketHealth, user, waitHandleMkthConnect);  // runs in a separate thread for being faster
-            client!.OnConnectedWsAsync_BrAccViewer(activePage == ActivePage.BrAccViewer, user, waitHandleBrAccConnect); // runs in a separate thread for being faster
+            client!.OnConnectedWsAsync_DshbrdClient(); // the code inside should run in a separate thread to return fast, so all Tools can work parallel
+
+            client!.OnConnectedWsAsync_MktHealth(activePage == ActivePage.MarketHealth, user, waitHandleMkthConnect); // the code inside should run in a separate thread to return fast, so all Tools can work parallel
+            client!.OnConnectedWsAsync_BrAccViewer(activePage == ActivePage.BrAccViewer, user, waitHandleBrAccConnect); // the code inside should run in a separate thread to return fast, so all Tools can work parallel
             client!.OnConnectedWsAsync_QckflNews(activePage == ActivePage.QuickfolioNews);
             client!.OnConnectedWsAsync_QckflNews2(activePage == ActivePage.QuickfolioNews);
             Utils.Logger.Info("OnConnectedAsync() 4");
@@ -80,7 +81,7 @@ namespace SqCoreWeb
             DashboardClient.AddToClients(client);
         }
 
-        public static void OnWsReceiveAsync(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? wsResult, string bufferStr)
+        public static void OnWsReceiveAsync(HttpContext _, WebSocket webSocket, WebSocketReceiveResult? _1, string bufferStr)
         {
             DashboardClient? client = DashboardClient.FindClient(webSocket);
             if (client == null)
@@ -95,15 +96,15 @@ namespace SqCoreWeb
                 return;
             }
 
-            bool isHandled = client.OnReceiveWsAsync_DshbrdClient(wsResult, msgCode, msgObjStr);
+            bool isHandled = client.OnReceiveWsAsync_DshbrdClient(msgCode, msgObjStr);
             if (!isHandled)
-                isHandled = client.OnReceiveWsAsync_MktHealth(wsResult, msgCode, msgObjStr);
+                isHandled = client.OnReceiveWsAsync_MktHealth(msgCode, msgObjStr);
             if (!isHandled)
-                isHandled = client.OnReceiveWsAsync_BrAccViewer(wsResult, msgCode, msgObjStr);
+                isHandled = client.OnReceiveWsAsync_BrAccViewer(msgCode, msgObjStr);
             if (!isHandled)
-                isHandled = client.OnReceiveWsAsync_QckflNews(wsResult, msgCode, msgObjStr);
+                isHandled = client.OnReceiveWsAsync_QckflNews(msgCode, msgObjStr);
             if (!isHandled)
-                isHandled = client.OnReceiveWsAsync_QckflNews2(wsResult, msgCode, msgObjStr);
+                isHandled = client.OnReceiveWsAsync_QckflNews2(msgCode, msgObjStr);
             if (!isHandled)
             {
                 // throw new Exception($"Unexpected websocket received msgCode '{msgCode}'");
@@ -111,7 +112,7 @@ namespace SqCoreWeb
             }
         }
 
-        public static void OnWsClose(HttpContext context, WebSocket webSocket, WebSocketReceiveResult? wsResult)
+        public static void OnWsClose(WebSocket webSocket)
         {
             DashboardClient? client = DashboardClient.FindClient(webSocket);
             DisposeClient(client);

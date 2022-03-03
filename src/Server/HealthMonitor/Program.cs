@@ -13,10 +13,10 @@ namespace HealthMonitor
         static Timer? gHeartbeatTimer = null; // If timer object goes out of scope and gets erased by Garbage Collector after some time, which stops callbacks from firing. Save reference to it in a member of class.
         static long gNheartbeat = 0;
         const int cHeartbeatTimerFrequencyMinutes = 5;
-        static void Main(string[] args)
+        static void Main(string[] _)
         {
             string appName = System.Reflection.MethodBase.GetCurrentMethod()?.ReflectedType?.Namespace ?? "UnknownNamespace";
-            string systemEnvStr = $"(v1.0.14,{Utils.RuntimeConfig() /* Debug | Release */},CLR:{System.Environment.Version},{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},OS:{System.Environment.OSVersion},usr:{System.Environment.UserName},CPU:{System.Environment.ProcessorCount},ThId-{Thread.CurrentThread.ManagedThreadId})";
+            string systemEnvStr = $"(v1.0.14,{Utils.RuntimeConfig() /* Debug | Release */},CLR:{System.Environment.Version},{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},OS:{System.Environment.OSVersion},usr:{System.Environment.UserName},CPU:{System.Environment.ProcessorCount},ThId-{Environment.CurrentManagedThreadId})";
             Console.WriteLine($"Hi {appName}.{systemEnvStr}");
             gLogger.Info($"********** Main() START {systemEnvStr}");
             if (Utils.RunningPlatform() != Platform.Linux) // https://stackoverflow.com/questions/47059468/get-or-set-the-console-title-in-linux-and-macosx-with-net-core
@@ -145,7 +145,7 @@ namespace HealthMonitor
             Console.WriteLine("5. VirtualBroker Report: show on Console.");
             Console.WriteLine("6. VirtualBroker Report: send Html email.");
             Console.WriteLine("7. Exit gracefully (Avoid Ctrl-^C).");
-            string userInput = string.Empty;
+            string userInput;
             try
             {
                 userInput = Console.ReadLine() ?? string.Empty;

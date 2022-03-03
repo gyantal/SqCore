@@ -41,7 +41,7 @@ namespace FinTechCommon
         GBX = 4,
         HUF = 5,
         JPY = 6,
-        CNY = 8,
+        CNY = 7,
         CAD = 8,
         CHF = 9,
         ILS = 10

@@ -14,8 +14,8 @@ namespace FinTechCommon
 {
     public partial class MemDb
     {
-        RtFreqParam m_highNavFreqParam = new() { RtFreq = RtFreq.HighFreq, FreqRthSec = 60, FreqOthSec = 10 * 60 }; // 1min RTH, 10 min OTH
-        RtFreqParam m_lowNavFreqParam = new() { RtFreq = RtFreq.LowFreq, FreqRthSec = 1 * 60 * 60, FreqOthSec = 3 * 60 * 60 }; // 1h RTH, 3h OTH
+        readonly RtFreqParam m_highNavFreqParam = new() { RtFreq = RtFreq.HighFreq, FreqRthSec = 60, FreqOthSec = 10 * 60 }; // 1min RTH, 10 min OTH
+        readonly RtFreqParam m_lowNavFreqParam = new() { RtFreq = RtFreq.LowFreq, FreqRthSec = 1 * 60 * 60, FreqOthSec = 3 * 60 * 60 }; // 1h RTH, 3h OTH
 
         uint m_nNavDownload = 0;
 

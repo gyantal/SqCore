@@ -180,23 +180,25 @@ namespace FinTechCommon
 
         private void ServerDiagnosticMemDb(StringBuilder p_sb, bool p_isHtml)
         {
-            p_sb.Append($"#Users: {Users.Length}: <br>");
+            string newLine = p_isHtml ? "<br>" : Environment.NewLine;
+            p_sb.Append($"#Users: {Users.Length}:{newLine}");
 
             var hist = DailyHist.GetDataDirect();
             int memUsedKb = hist.MemUsed() / 1024;
-            p_sb.Append($"#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {hist.Data.Count}, Used RAM: {memUsedKb:N0}KB<br>");  // hist.Data.Count = Srv.LoadPrHist + DC Aggregated NAV 
-            p_sb.Append($"m_lastHistoricalDataReloadTimeUtc: '{m_lastHistoricalDataReload}', m_lastRedisReloadTs: {m_lastRedisReloadTs.TotalSeconds:0.000}sec, m_lastFullMemDbReloadTs: {m_lastFullMemDbReloadTs.TotalSeconds:0.000}sec, m_lastHistoricalDataReloadTs: {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec.<br>");
+            p_sb.Append($"#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {hist.Data.Count}, Used RAM: {memUsedKb:N0}KB{newLine}");  // hist.Data.Count = Srv.LoadPrHist + DC Aggregated NAV 
+            p_sb.Append($"m_lastHistoricalDataReloadTimeUtc: '{m_lastHistoricalDataReload}', m_lastRedisReloadTs: {m_lastRedisReloadTs.TotalSeconds:0.000}sec, m_lastFullMemDbReloadTs: {m_lastFullMemDbReloadTs.TotalSeconds:0.000}sec, m_lastHistoricalDataReloadTs: {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec.{newLine}");
 
             var yfTickers = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).Select(r => ((Stock)r).YfTicker).ToArray();
             p_sb.Append($"StockAssets (#{yfTickers.Length}): ");
-            p_sb.AppendLongListByLine(yfTickers, ",", 30, "<br>");
+            p_sb.AppendLongListByLine(yfTickers, ",", 30, newLine);
         }
 
         private void ServerDiagnosticBrAccount(StringBuilder p_sb, bool p_isHtml)
         {
+            string newLine = p_isHtml ? "<br>" : Environment.NewLine;
             foreach (var brAccount in BrAccounts)
             {
-                p_sb.Append($"BrAccount GatewayId: {brAccount.GatewayId}, LastUpdateUtc: {brAccount.LastUpdate.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}, NAV: {brAccount.NetLiquidation}, #Pos: {brAccount.AccPoss.Count}<br>");
+                p_sb.Append($"BrAccount GatewayId: {brAccount.GatewayId}, LastUpdateUtc: {brAccount.LastUpdate.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}, NAV: {brAccount.NetLiquidation}, #Pos: {brAccount.AccPoss.Count}{newLine}");
             }
         }
 

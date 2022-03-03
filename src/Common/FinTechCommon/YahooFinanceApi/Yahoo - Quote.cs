@@ -20,7 +20,7 @@ namespace YahooFinanceApi
         public static Yahoo Symbols(params string[] symbols)
         {
             if (symbols == null || symbols.Length == 0 || symbols.Any(x => x == null))
-                throw new ArgumentException(nameof(symbols));
+                throw new ArgumentException("Argument problem", nameof(symbols));
 
             return new Yahoo { symbols = symbols };
         }
@@ -28,7 +28,7 @@ namespace YahooFinanceApi
         public Yahoo Fields(params string[] fields)
         {
             if (fields == null || fields.Length == 0 || fields.Any(x => x == null))
-                throw new ArgumentException(nameof(fields));
+                throw new ArgumentException("Argument problem", nameof(fields));
 
             this.fields.AddRange(fields);
 
@@ -38,7 +38,7 @@ namespace YahooFinanceApi
         public Yahoo Fields(params Field[] fields)
         {
             if (fields == null || fields.Length == 0)
-                throw new ArgumentException(nameof(fields));
+                throw new ArgumentException("Argument problem", nameof(fields));
 
             this.fields.AddRange(fields.Select(f => f.ToString()));
 

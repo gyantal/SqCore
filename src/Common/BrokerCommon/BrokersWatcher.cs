@@ -67,12 +67,12 @@ namespace BrokerCommon
             // m_mainGateway = gateway1;
 
             //  Option3: all gateways are attached to remote or local servers. To Debug vBroker trading 
-            var hgwidCM = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.CharmatMain);
-            var hgwidDM = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.DeBlanzacMain);
-            var hgwidGA = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.GyantalMain);
-            Gateway gateway1 = new(GatewayId.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", Host = hgwidCM.HostIp, SocketPort = (int)GatewayPort.SqCoreSrvCharmatMain, SuggestedIbConnectionClientID = (int)hgwidCM.GwClientID };
-            Gateway gateway2 = new(GatewayId.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", Host = hgwidDM.HostIp, SocketPort = (int)GatewayPort.SqCoreSrvDeBlanzacMain, SuggestedIbConnectionClientID = (int)hgwidDM.GwClientID };
-            Gateway gateway3 = new(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = hgwidGA.HostIp, SocketPort = (int)GatewayPort.VbSrvGyantalSecondary, SuggestedIbConnectionClientID = (int)hgwidGA.GwClientID };
+            var (CmHostIp, CmGwClientID) = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.CharmatMain);
+            var (DmHostIp, DmGwClientID) = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.DeBlanzacMain);
+            var (GmHostIp, GmGwClientID) = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.GyantalMain);
+            Gateway gateway1 = new(GatewayId.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", Host = CmHostIp, SocketPort = (int)GatewayPort.CharmatMain, SuggestedIbConnectionClientID = (int)CmGwClientID };
+            Gateway gateway2 = new(GatewayId.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", Host = DmHostIp, SocketPort = (int)GatewayPort.DeBlanzacMain, SuggestedIbConnectionClientID = (int)DmGwClientID };
+            Gateway gateway3 = new(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = GmHostIp, SocketPort = (int)GatewayPort.GyantalMain, SuggestedIbConnectionClientID = (int)GmGwClientID };
             m_gateways = new List<Gateway>() { gateway1, gateway2, gateway3 };
             m_mainGateway = gateway1;
         }

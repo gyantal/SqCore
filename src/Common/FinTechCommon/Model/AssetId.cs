@@ -75,6 +75,26 @@ namespace FinTechCommon
             return m_value == other.m_value;
         }
 
+        public override bool Equals(object? obj)
+        {
+            return obj is AssetId32Bits bits && ((IEquatable<AssetId32Bits>)this).Equals(bits);
+        }
+
+        public static bool operator ==(AssetId32Bits left, AssetId32Bits right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(AssetId32Bits left, AssetId32Bits right)
+        {
+            return !(left == right);
+        }
+
+        public override int GetHashCode()
+        {
+            return m_value.GetHashCode();
+        }
+
         public override string ToString()
         {
             return $"{((int)AssetTypeID)}:{SubTableID}";

@@ -13,7 +13,7 @@ namespace SqCoreWeb
     {
         // const int m_newsReloadInterval = 15 * 60 * 1000; // 15 minutes in milliseconds
         // Timer? m_newsReloadTimer = null;    // separate Timer is needed for each client  (that is a waste of resources, but fine temporarily)
-        QuickfolioNewsDownloader m_newsDownloader = new(); // separate downloader for each client.
+        readonly QuickfolioNewsDownloader m_newsDownloader = new(); // separate downloader for each client.
 
         public static readonly TimeSpan c_initialSleepIfNotActiveToolQn = TimeSpan.FromMilliseconds(10 * 1000); // 10sec
 
@@ -41,12 +41,12 @@ namespace SqCoreWeb
             });
         }
 
-        public bool OnReceiveWsAsync_QckflNews(WebSocketReceiveResult? wsResult, string msgCode, string msgObjStr)
+        public bool OnReceiveWsAsync_QckflNews(string msgCode, string msgObjStr)
         {
             switch (msgCode)
             {
                 case "ReloadQuickfolio":
-                    Utils.Logger.Info("OnReceiveWsAsync_QckflNews(): ReloadQuickfolio");
+                    Utils.Logger.Info($"OnReceiveWsAsync_QckflNews(): ReloadQuickfolio: {msgObjStr}");
                     ReloadQuickfolioMsgArrived();
                     return true;
                 default:

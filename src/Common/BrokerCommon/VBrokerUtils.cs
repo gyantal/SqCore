@@ -101,45 +101,44 @@ namespace BrokerCommon
         }
 
 
-        public static bool IsCSVAcceptable(List<QuoteData> p_quoteCSV, bool p_oldestFirst, DateTime p_startDateInclusive, DateTime p_endDateInclusive)  //p_vxxCSV : oldest data is first in the list
-        {
-            // Robi says don't use Linq2SQL; use SQL query or MemTables. I want lightweight without Cache-ing, so I query it directly. ExecuteSqlCommand() retries 4 times.
-            //DataTable marketHolidays = (DataTable)VBroker.g_dbManager.ExecuteSqlCommand(DBType.Remote,
-            //    String.Format("SELECT Date from MarketHoliday WHERE CountryID = 1 AND (Date >= '{0:yyyy'-'MM'-'dd}' AND Date <= '{1:yyyy'-'MM'-'dd}') ORDER By Date", p_startDateInclusive, p_endDateInclusive),
-            //    CommandType.Text, null, SqlCommandReturn.Table, 10);  // it retries 4 times, which is OK.
-            //List<DateTime> marketHolidayDates = marketHolidays.Rows.OfType<DataRow>().Select(r => (DateTime)r.ItemArray[0]).ToList();
+        // public static bool IsCSVAcceptable(List<QuoteData> p_quoteCSV, bool p_oldestFirst, DateTime p_startDateInclusive, DateTime p_endDateInclusive)  //p_vxxCSV : oldest data is first in the list
+        // {
+        //     // Robi says don't use Linq2SQL; use SQL query or MemTables. I want lightweight without Cache-ing, so I query it directly. ExecuteSqlCommand() retries 4 times.
+        //     DataTable marketHolidays = (DataTable)VBroker.g_dbManager.ExecuteSqlCommand(DBType.Remote,
+        //        String.Format("SELECT Date from MarketHoliday WHERE CountryID = 1 AND (Date >= '{0:yyyy'-'MM'-'dd}' AND Date <= '{1:yyyy'-'MM'-'dd}') ORDER By Date", p_startDateInclusive, p_endDateInclusive),
+        //        CommandType.Text, null, SqlCommandReturn.Table, 10);  // it retries 4 times, which is OK.
+        //     List<DateTime> marketHolidayDates = marketHolidays.Rows.OfType<DataRow>().Select(r => (DateTime)r.ItemArray[0]).ToList();
 
-            //int indCsv = p_oldestFirst ? 0 : p_quoteCSV.Count - 1;
-            //DateTime date = p_startDateInclusive;
-            //while (date <= p_endDateInclusive)
-            //{
-            //    bool isDateMarketOffday = (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday);
-            //    if (!isDateMarketOffday)
-            //    {
-            //        isDateMarketOffday = marketHolidayDates.Contains(date);
-            //    }
+        //     int indCsv = p_oldestFirst ? 0 : p_quoteCSV.Count - 1;
+        //     DateTime date = p_startDateInclusive;
+        //     while (date <= p_endDateInclusive)
+        //     {
+        //        bool isDateMarketOffday = (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday);
+        //        if (!isDateMarketOffday)
+        //        {
+        //            isDateMarketOffday = marketHolidayDates.Contains(date);
+        //        }
 
-            //    if (isDateMarketOffday)
-            //    {
-            //        date = date.AddDays(1);
-            //        continue;
-            //    }
+        //        if (isDateMarketOffday)
+        //        {
+        //            date = date.AddDays(1);
+        //            continue;
+        //        }
 
-            //    // if it is not an off day, we expect to find it in the CSV file
-            //    if (p_quoteCSV[indCsv].Date != date)
-            //    {
-            //        return false;       // so it is not acceptable
-            //    }
+        //        // if it is not an off day, we expect to find it in the CSV file
+        //        if (p_quoteCSV[indCsv].Date != date)
+        //        {
+        //            return false;       // so it is not acceptable
+        //        }
 
-            //    if (p_oldestFirst)
-            //        indCsv++;
-            //    else
-            //        indCsv--;
-            //    date = date.AddDays(1);
-            //}
-
-            return true;    // so it is acceptable
-        }
+        //        if (p_oldestFirst)
+        //            indCsv++;
+        //        else
+        //            indCsv--;
+        //        date = date.AddDays(1);
+        //     }
+        //     return true;    // so it is acceptable
+        // }
 
         public static Contract MakeStockContract(string p_symbol)
         {

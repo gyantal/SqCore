@@ -22,7 +22,7 @@ namespace HealthMonitor
             }
         };
 
-        DownloadFailStruct[] cWebsitesToCheckAndnFail = {
+        readonly DownloadFailStruct[] cWebsitesToCheckAndnFail = {
             new DownloadFailStruct("https://sqcore.net/WebServer/ping", 0, 0),
             new DownloadFailStruct("http://www.snifferquant.com/dac/", 0, 0),
             new DownloadFailStruct("https://www.snifferquant.net/WebServer/ping", 1, 0)         // 1 fail is fine. If it fails second time, send Email. The reason is that while we develop SQWebpage, and start/stop/deploy website, this error triggers too many times. (in DEVELOPMENT, it is better to give some leeway)

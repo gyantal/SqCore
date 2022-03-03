@@ -37,9 +37,9 @@ namespace SqCoreWeb
 
     public class QuickfolioNewsDownloader
     {
-        Dictionary<string, List<NewsItem>> m_newsMemory = new();
-        Random m_random = new(DateTime.Now.Millisecond);
-        KeyValuePair<int, int> m_sleepBetweenDnsMs = new(2000, 1000);     // <fix, random>
+        readonly Dictionary<string, List<NewsItem>> m_newsMemory = new();
+        // readonly Random m_random = new(DateTime.Now.Millisecond);
+        // readonly KeyValuePair<int, int> m_sleepBetweenDnsMs = new(2000, 1000);     // <fix, random>
         string[] m_stockTickers = { "AAPL", "ADBE", "AMZN", "BABA", "CRM", "FB", "GOOGL", "MA", "MSFT", "NVDA", "PYPL", "QCOM", "V" };
 
         public QuickfolioNewsDownloader()
@@ -75,49 +75,49 @@ namespace SqCoreWeb
             return cellValue.Split(',').Select(x => x.Trim()).ToArray();
         }
 
-        internal async void GetCommonNewsAndSendToClient(DashboardClient p_client)
-        {
-            string rssFeedUrl = string.Format(@"https://www.cnbc.com/id/100003114/device/rss/rss.html");
+        // internal async void GetCommonNewsAndSendToClient(DashboardClient p_client)
+        // {
+        //     string rssFeedUrl = string.Format(@"https://www.cnbc.com/id/100003114/device/rss/rss.html");
 
-            List<NewsItem> foundNewsItems = new();
-            // try max 5 downloads to leave the tread for sure (call this method repeats continuosly)
-            int retryCount = 0;
-            while ((foundNewsItems.Count < 1) && (retryCount < 5))
-            {
-                foundNewsItems = await ReadRSSAsync(rssFeedUrl, NewsSource.CnbcRss, string.Empty);
-                if (foundNewsItems.Count == 0)
-                    System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));
-                retryCount++;
-            }
-            // AddFoundNews(0, foundNewsItems);
-            // return NewsToString(m_newsMemory[0]);
+        //     List<NewsItem> foundNewsItems = new();
+        //     // try max 5 downloads to leave the tread for sure (call this method repeats continuosly)
+        //     int retryCount = 0;
+        //     while ((foundNewsItems.Count < 1) && (retryCount < 5))
+        //     {
+        //         foundNewsItems = await ReadRSSAsync(rssFeedUrl, NewsSource.CnbcRss, string.Empty);
+        //         if (foundNewsItems.Count == 0)
+        //             System.Threading.Thread.Sleep(m_sleepBetweenDnsMs.Key + m_random.Next(m_sleepBetweenDnsMs.Value));
+        //         retryCount++;
+        //     }
+        //     // AddFoundNews(0, foundNewsItems);
+        //     // return NewsToString(m_newsMemory[0]);
 
-            // byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(foundNewsItems));
-            // if (p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)
-            // {
-            //     // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
-            //     // OnConnectedWsAsync() sleeps for a while if not active tool.
-            //     TimeSpan timeSinceConnect = DateTime.UtcNow - p_client.ConnectionTime;
-            //     if (p_client.ActivePage != ActivePage.QuickfolioNews && timeSinceConnect < DashboardClient.c_initialSleepIfNotActiveToolQn.Add(TimeSpan.FromMilliseconds(100)))
-            //         return;
+        //     // byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(foundNewsItems));
+        //     // if (p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)
+        //     // {
+        //     //     // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
+        //     //     // OnConnectedWsAsync() sleeps for a while if not active tool.
+        //     //     TimeSpan timeSinceConnect = DateTime.UtcNow - p_client.ConnectionTime;
+        //     //     if (p_client.ActivePage != ActivePage.QuickfolioNews && timeSinceConnect < DashboardClient.c_initialSleepIfNotActiveToolQn.Add(TimeSpan.FromMilliseconds(100)))
+        //     //         return;
 
-            //     await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-            // }
+        //     //     await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        //     // }
 
-            // foreach (var client in p_clients)        // List<DashboardClient> p_clients
-            // {
-            //     if (client.WsWebSocket != null && client.WsWebSocket!.State == WebSocketState.Open)
-            //     {
-            //         // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
-            //         // OnConnectedWsAsync() sleeps for a while if not active tool.
-            //         TimeSpan timeSinceConnect = DateTime.UtcNow - client.WsConnectionTime;
-            //         if (client.ActivePage != ActivePage.QuickfolioNews && timeSinceConnect < DashboardClient.c_initialSleepIfNotActiveToolQn.Add(TimeSpan.FromMilliseconds(100)))
-            //             continue;
+        //     // foreach (var client in p_clients)        // List<DashboardClient> p_clients
+        //     // {
+        //     //     if (client.WsWebSocket != null && client.WsWebSocket!.State == WebSocketState.Open)
+        //     //     {
+        //     //         // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
+        //     //         // OnConnectedWsAsync() sleeps for a while if not active tool.
+        //     //         TimeSpan timeSinceConnect = DateTime.UtcNow - client.WsConnectionTime;
+        //     //         if (client.ActivePage != ActivePage.QuickfolioNews && timeSinceConnect < DashboardClient.c_initialSleepIfNotActiveToolQn.Add(TimeSpan.FromMilliseconds(100)))
+        //     //             continue;
 
-            //         client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-            //     }
-            // }
-        }
+        //     //         client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        //     //     }
+        //     // }
+        // }
 
         internal List<string> GetStockTickers()
         {

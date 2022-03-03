@@ -81,7 +81,7 @@ namespace SqBenchmarks
 
     public class Program
     {
-        public static void Main(string[] args)  // !!! RUN WITHOUT Debugger Attached (Ctrl-F5, not F5)
+        public static void Main(string[] _)  // !!! RUN WITHOUT Debugger Attached (Ctrl-F5, not F5)
         {
             // https://benchmarkdotnet.org/articles/guides/troubleshooting.html#debugging-benchmarks
             // BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args, new DebugInProcessConfig());     // if you want to debug. Select "PerfTest (DEBUG)" as launch task
@@ -92,7 +92,8 @@ namespace SqBenchmarks
 
             //var summarySplitString = BenchmarkRunner.Run<BnchSplitStringByStrVsRegex>();
             //var summaryLinqToArray = BenchmarkRunner.Run<BnchLinqToArrayVsToList>();
-            var summaryLinqSelectVsFor = BenchmarkRunner.Run<BnchLinqSelectVsFor>();
+            //var summaryLinqSelectVsFor = BenchmarkRunner.Run<BnchLinqSelectVsFor>();
+            BenchmarkRunner.Run<BnchLinqSelectVsFor>();
 
             Console.WriteLine("Press any key and ENTER to end the program and close the terminal...");
             Console.ReadLine();   // this can prevent closing if it is running by the Debugger. But it should be commented out if it is run as a Task in the internal terminal.

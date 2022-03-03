@@ -27,7 +27,7 @@ namespace FinTechCommon
             // Also, don't do the Dump/Restore way, because that downloads and uploads all data to between RedisClient and RedisServer. "COPY sq_user sq_user DB 1 REPLACE" works fully on the server.
 
             if (sourceDbIdx < 0 || sourceDbIdx > 15 || destDbIdx < 0 || destDbIdx > 15 || sourceDbIdx == destDbIdx)
-                throw new ArgumentOutOfRangeException("MirrorDb() expects idx from [0..15], and they should be different.");
+                throw new ArgumentOutOfRangeException(nameof(sourceDbIdx), "MirrorDb() expects idx from [0..15], and they should be different.");
 
             // 1. Create a new connection. Don't use the MemDb main connection, because we might want to switch to a non-default DB, like DB-1. It is safer this way. Don't tinker with the MemDb main connection
             var redisConnString = (Utils.RunningPlatform() == Platform.Windows) ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
@@ -43,6 +43,8 @@ namespace FinTechCommon
             // 2. Delete all keys from target DB
             Console.WriteLine($"Deleting all keys in db{destDbIdx}...by FLUSHDB");
             RedisResult result = destDb.Execute("FLUSHDB");  // clears currently active database
+            if (result.IsNull)
+                Console.WriteLine($"Error in executing FLUSHDB");
 
             // 3. Iterate keys over source DB
             RedisKey[] keys = server.Keys(sourceDbIdx, pattern: "*").ToArray();   // it automatically do KEYS or the more efficient SCAN commands in the background
@@ -94,12 +96,66 @@ namespace FinTechCommon
 
 
             // https://marcroussy.com/2020/08/17/deserialization-with-system-text-json/     // POCO: Plain Old Class Object
-            using (JsonDocument baseDoc = JsonDocument.Parse(baseAssetsJson))
-            // using (JsonDocument baseDoc = JsonDocument.Parse(baseAssetsJson))
+            using JsonDocument baseDoc = JsonDocument.Parse(baseAssetsJson);
+            JsonElement baseValues = baseDoc.RootElement.GetProperty("values");
+            bool wasHeaderParsed = false;
+            foreach (JsonElement row in baseValues.EnumerateArray())
             {
-                JsonElement baseValues = baseDoc.RootElement.GetProperty("values");
-                bool wasHeaderParsed = false;
-                foreach (JsonElement row in baseValues.EnumerateArray())
+                if (!wasHeaderParsed)
+                    wasHeaderParsed = true;
+                else
+                {
+                    JsonElement[] rowArr = row.EnumerateArray().ToArray();
+                    if (rowArr.Length == 0)
+                        continue;   // skip empty gSheet rows in JSON: "[],"
+
+                    if (rowArr[0].ToString() == "C")    // CurrencyCash
+                    {
+                        if (isFirstCash)
+                            isFirstCash = false;
+                        else
+                            sbCash.Append(',');
+                        sbCash.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\"]");
+                    }
+                    if (rowArr[0].ToString() == "D")    // CurrencyPair
+                    {
+                        if (isFirstCpair)
+                            isFirstCpair = false;
+                        else
+                            sbCpair.Append(',');
+                        sbCpair.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\",\"{rowArr[7]}\"]");
+                    }
+                    if (rowArr[0].ToString() == "R")    // RealEstate
+                    {
+                        if (isFirstReEst)
+                            isFirstReEst = false;
+                        else
+                            sbReEst.Append(',');
+                        sbReEst.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\",\"{rowArr[8]}\"]");
+                    }
+                    if (rowArr[0].ToString() == "N")    // BrokerNav
+                    {
+                        if (isFirstNav)
+                            isFirstNav = false;
+                        else
+                            sbNav.Append(',');
+                        sbNav.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\",\"{rowArr[8]}\"]");
+                    }
+                    if (rowArr[0].ToString() == "P")    // Portfolio
+                    {
+                        if (isFirstPortf)
+                            isFirstPortf = false;
+                        else
+                            sbPortf.Append(',');
+                        sbPortf.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\",\"{rowArr[8]}\"]");
+                    }
+                }
+            }
+
+            using (JsonDocument companyDoc = JsonDocument.Parse(companyAssetsJson))
+            {
+                wasHeaderParsed = false;
+                foreach (JsonElement row in companyDoc.RootElement.GetProperty("values").EnumerateArray())
                 {
                     if (!wasHeaderParsed)
                         wasHeaderParsed = true;
@@ -109,120 +165,63 @@ namespace FinTechCommon
                         if (rowArr.Length == 0)
                             continue;   // skip empty gSheet rows in JSON: "[],"
 
-                        if (rowArr[0].ToString() == "C")    // CurrencyCash
+                        if (rowArr[0].ToString() == "A")    // Company
                         {
-                            if (isFirstCash)
-                                isFirstCash = false;
+                            if (isFirstComp)
+                                isFirstComp = false;
                             else
-                                sbCash.Append(',');
-                            sbCash.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\"]");
-                        }
-                        if (rowArr[0].ToString() == "D")    // CurrencyPair
-                        {
-                            if (isFirstCpair)
-                                isFirstCpair = false;
-                            else
-                                sbCpair.Append(',');
-                            sbCpair.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\",\"{rowArr[7]}\"]");
-                        }
-                        if (rowArr[0].ToString() == "R")    // RealEstate
-                        {
-                            if (isFirstReEst)
-                                isFirstReEst = false;
-                            else
-                                sbReEst.Append(',');
-                            sbReEst.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\",\"{rowArr[8]}\"]");
-                        }
-                        if (rowArr[0].ToString() == "N")    // BrokerNav
-                        {
-                            if (isFirstNav)
-                                isFirstNav = false;
-                            else
-                                sbNav.Append(',');
-                            sbNav.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\",\"{rowArr[8]}\"]");
-                        }
-                        if (rowArr[0].ToString() == "P")    // Portfolio
-                        {
-                            if (isFirstPortf)
-                                isFirstPortf = false;
-                            else
-                                sbPortf.Append(',');
-                            sbPortf.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\",\"{rowArr[8]}\"]");
+                                sbComp.Append(',');
+                            sbComp.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{Get(rowArr, 4)}\",\"{Get(rowArr, 5)}\",\"{Get(rowArr, 7)}\",\"{Get(rowArr, 8)}\",\"{Get(rowArr, 9)}\",\"{Get(rowArr, 10)}\",\"{Get(rowArr, 11)}\"]");
                         }
                     }
                 }
-
-                using (JsonDocument companyDoc = JsonDocument.Parse(companyAssetsJson))
-                {
-                    wasHeaderParsed = false;
-                    foreach (JsonElement row in companyDoc.RootElement.GetProperty("values").EnumerateArray())
-                    {
-                        if (!wasHeaderParsed)
-                            wasHeaderParsed = true;
-                        else
-                        {
-                            JsonElement[] rowArr = row.EnumerateArray().ToArray();
-                            if (rowArr.Length == 0)
-                                continue;   // skip empty gSheet rows in JSON: "[],"
-
-                            if (rowArr[0].ToString() == "A")    // Company
-                            {
-                                if (isFirstComp)
-                                    isFirstComp = false;
-                                else
-                                    sbComp.Append(',');
-                                sbComp.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{Get(rowArr, 4)}\",\"{Get(rowArr, 5)}\",\"{Get(rowArr, 7)}\",\"{Get(rowArr, 8)}\",\"{Get(rowArr, 9)}\",\"{Get(rowArr, 10)}\",\"{Get(rowArr, 11)}\"]");
-                            }
-                        }
-                    }
-                }
-
-                using (JsonDocument stockDoc = JsonDocument.Parse(stockAssetsJson))
-                {
-                    wasHeaderParsed = false;
-                    foreach (JsonElement row in stockDoc.RootElement.GetProperty("values").EnumerateArray())
-                    {
-                        if (!wasHeaderParsed)
-                            wasHeaderParsed = true;
-                        else
-                        {
-                            JsonElement[] rowArr = row.EnumerateArray().ToArray();
-                            if (rowArr.Length == 0)
-                                continue;   // skip empty gSheet rows in JSON: "[],"
-
-                            if (rowArr[0].ToString() == "S")    // Stock
-                            {
-                                if (isFirstStock)
-                                    isFirstStock = false;
-                                else
-                                    sbStock.Append(',');
-                                sbStock.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{Get(rowArr, 4)}\",\"{Get(rowArr, 5)}\",\"{Get(rowArr, 7)}\",\"{Get(rowArr, 8)}\",\"{Get(rowArr, 9)}\",\"{Get(rowArr, 10)}\",\"{Get(rowArr, 11)}\",\"{Get(rowArr, 12)}\",\"{Get(rowArr, 13)}\",\"{Get(rowArr, 14)}\",\"{Get(rowArr, 15)}\",\"{Get(rowArr, 16)}\"]");
-                            }
-                        }
-                    }
-                }
-
-                sbCash.Append("],\n");
-                sbCpair.Append("],\n");
-                sbReEst.Append("],\n");
-                sbNav.Append("],\n");
-                sbPortf.Append("],\n");
-                sbComp.Append("],\n");
-                sbStock.Append(']');
-                StringBuilder sb = new("{");
-                sb.Append(sbCash).Append(sbCpair).Append(sbReEst).Append(sbNav).Append(sbPortf).Append(sbComp).Append(sbStock).Append('}');
-
-                // Create a new connection. Don't use the MemDb main connection, because we might want to switch to a non-default DB, like DB-1. It is safer this way. Don't tinker with the MemDb main connection
-                var redisConnString = (Utils.RunningPlatform() == Platform.Windows) ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
-                ConnectionMultiplexer newConn = ConnectionMultiplexer.Connect(redisConnString);
-                var destDb = newConn.GetDatabase(destDbIdx);
-
-                destDb.HashSet("memDb", "Assets", new RedisValue(sb.ToString()));
-                Console.WriteLine($"Hash 'memDb.Assets' was created in db{destDbIdx}.");
-
-                // At the moment, the NAV's and StockAsset table's "Srv.LoadPrHist(Span)" column is not mirrored from gSheet to RedisDb automatically.
-                // We add these manually to RedisDb now. Not bad, because adding them manually forces us to think about whether we really need that extra stock consuming RAM and YF downloads.
             }
+
+            using (JsonDocument stockDoc = JsonDocument.Parse(stockAssetsJson))
+            {
+                wasHeaderParsed = false;
+                foreach (JsonElement row in stockDoc.RootElement.GetProperty("values").EnumerateArray())
+                {
+                    if (!wasHeaderParsed)
+                        wasHeaderParsed = true;
+                    else
+                    {
+                        JsonElement[] rowArr = row.EnumerateArray().ToArray();
+                        if (rowArr.Length == 0)
+                            continue;   // skip empty gSheet rows in JSON: "[],"
+
+                        if (rowArr[0].ToString() == "S")    // Stock
+                        {
+                            if (isFirstStock)
+                                isFirstStock = false;
+                            else
+                                sbStock.Append(',');
+                            sbStock.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{Get(rowArr, 4)}\",\"{Get(rowArr, 5)}\",\"{Get(rowArr, 7)}\",\"{Get(rowArr, 8)}\",\"{Get(rowArr, 9)}\",\"{Get(rowArr, 10)}\",\"{Get(rowArr, 11)}\",\"{Get(rowArr, 12)}\",\"{Get(rowArr, 13)}\",\"{Get(rowArr, 14)}\",\"{Get(rowArr, 15)}\",\"{Get(rowArr, 16)}\"]");
+                        }
+                    }
+                }
+            }
+
+            sbCash.Append("],\n");
+            sbCpair.Append("],\n");
+            sbReEst.Append("],\n");
+            sbNav.Append("],\n");
+            sbPortf.Append("],\n");
+            sbComp.Append("],\n");
+            sbStock.Append(']');
+            StringBuilder sb = new("{");
+            sb.Append(sbCash).Append(sbCpair).Append(sbReEst).Append(sbNav).Append(sbPortf).Append(sbComp).Append(sbStock).Append('}');
+
+            // Create a new connection. Don't use the MemDb main connection, because we might want to switch to a non-default DB, like DB-1. It is safer this way. Don't tinker with the MemDb main connection
+            var redisConnString = (Utils.RunningPlatform() == Platform.Windows) ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
+            ConnectionMultiplexer newConn = ConnectionMultiplexer.Connect(redisConnString);
+            var destDb = newConn.GetDatabase(destDbIdx);
+
+            destDb.HashSet("memDb", "Assets", new RedisValue(sb.ToString()));
+            Console.WriteLine($"Hash 'memDb.Assets' was created in db{destDbIdx}.");
+
+            // At the moment, the NAV's and StockAsset table's "Srv.LoadPrHist(Span)" column is not mirrored from gSheet to RedisDb automatically.
+            // We add these manually to RedisDb now. Not bad, because adding them manually forces us to think about whether we really need that extra stock consuming RAM and YF downloads.
 
         }
 

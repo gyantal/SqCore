@@ -317,8 +317,7 @@ namespace FinTechCommon
                 }
                 else
                 {
-                    var newSplits = new List<Split>(1);
-                    newSplits.Add(ndqSplitRec.Split);
+                    var newSplits = new List<Split>(1) { ndqSplitRec.Split };
                     potentialMissingYfSplits.Add(ndqSplitRec!.Asset!.AssetId, newSplits);
                 }
             }

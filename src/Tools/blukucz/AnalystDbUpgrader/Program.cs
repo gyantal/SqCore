@@ -7,9 +7,9 @@ namespace YahooCrawler
 
     class Program
     {
-        static void Main(string[] args)
+        static void Main(string[] _)
         {
-            string userInput = string.Empty;
+            string userInput;
             do
             {
                 userInput = DisplayMenuAndExecute();
@@ -25,7 +25,7 @@ namespace YahooCrawler
             Console.WriteLine("3. Read recommendations from CSV.");
             Console.WriteLine("4. Transform recommendations.");
             Console.WriteLine("5. Exit gracefully (Avoid Ctrl-^C).");
-            string userInput = string.Empty;
+            string userInput;
             try
             {
                 userInput = Console.ReadLine() ?? string.Empty;

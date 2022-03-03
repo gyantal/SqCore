@@ -1008,43 +1008,27 @@ namespace BrokerCommon
         {
 
             Order order = new();
-            switch (p_transactionType)
+            order.Action = p_transactionType switch
             {
-                case TransactionType.BuyAsset:
-                    order.Action = "BUY";
-                    break;
-                case TransactionType.SellAsset:
-                    order.Action = "SELL";
-                    break;
-                default:
-                    throw new Exception($"Unexpected transactionType: {p_transactionType}");
-            }
-
+                TransactionType.BuyAsset => "BUY",
+                TransactionType.SellAsset => "SELL",
+                _ => throw new Exception($"Unexpected transactionType: {p_transactionType}"),
+            };
             order.TotalQuantity = p_volume;
             if (p_limitPrice != null)
                 order.LmtPrice = (double)p_limitPrice;
 
-            switch (p_orderExecution)
+            order.OrderType = p_orderExecution switch
             {
-                case OrderExecution.Market:
-                    order.OrderType = "MKT";
-                    break;
-                case OrderExecution.MarketOnClose:
-                    order.OrderType = "MOC";
-                    break;
-                default:
-                    throw new Exception($"Unexpected OrderExecution: {p_orderExecution}");
-            }
-
-            switch (p_orderTif)
+                OrderExecution.Market => "MKT",
+                OrderExecution.MarketOnClose => "MOC",
+                _ => throw new Exception($"Unexpected OrderExecution: {p_orderExecution}"),
+            };
+            order.Tif = p_orderTif switch
             {
-                case OrderTimeInForce.Day:  // Day is the default, so don't do anything
-                    order.Tif = "DAY";
-                    break;
-                default:
-                    throw new Exception($"Unexpected OrderTimeInForce: {p_orderTif}");
-            }
-
+                OrderTimeInForce.Day => "DAY", // Day is the default
+                _ => throw new Exception($"Unexpected OrderTimeInForce: {p_orderTif}"),
+            };
             int p_realOrderId = NextOrderId++;
             OrderSubscriptions.TryAdd(p_realOrderId, new OrderSubscription(p_contract, order));
             if (!p_isSimulatedTrades)
@@ -1099,7 +1083,7 @@ namespace BrokerCommon
             } else if (orderType == "MOC")
             {
                 // calculate times until MarketClose and wait max 2 minutes after that
-                bool isTradingHoursOK = Utils.DetermineUsaMarketTradingHours(DateTime.UtcNow, out bool isMarketTradingDay, out DateTime marketOpenTimeUtc, out DateTime marketCloseTimeUtc, TimeSpan.FromDays(3));
+                bool isTradingHoursOK = Utils.DetermineUsaMarketTradingHours(DateTime.UtcNow, out bool isMarketTradingDay, out _, out DateTime marketCloseTimeUtc, TimeSpan.FromDays(3));
                 if (!isTradingHoursOK)
                 {
                     Utils.Logger.Error("WaitOrder().DetermineUsaMarketTradingHours() was not ok.");
@@ -1313,7 +1297,7 @@ namespace BrokerCommon
             // clean up resources after data arrived
             ClientSocket.cancelHistoricalData(histDataId);
 
-            HistDataSubscriptions.TryRemove(histDataId, out HistDataSubscription? histDataToRemove);
+            HistDataSubscriptions.TryRemove(histDataId, out _);
             histDataSubsc.AutoResetEvent.Dispose();     // ! AutoResetEvent has a Dispose
 
             if (!signalReceived)

@@ -226,7 +226,7 @@ namespace SqCoreWeb.Controllers
             Utils.Logger.Info("ReportHealthMonitorCurrentStateToDashboardInJSON() BEGIN");
             // TODO: we should check here if it is a HttpGet (or a message without data package) and return gracefully
 
-            string response = string.Empty;
+            string response;
             try
             {
                 if (Request.Body.CanSeek)

@@ -13,7 +13,7 @@ namespace BrokerCommon
 {
     // GateWayId is not User. DC user has 2 Gateways: Main, DeBlanzac. But same user.
     public enum GatewayId { Unknown, Demo, GyantalMain, GyantalSecondary, GyantalPaper, CharmatMain, CharmatSecondary, CharmatPaper, CharmatWifeMain, CharmatWifeSecondary, CharmatWifePaper, DeBlanzacMain, DeBlanzacSecondary, TuMain, TuSecondary }
-    public enum GatewayPort : int { None, Demo, GyantalMain = 7301, VbSrvGyantalSecondary = 7301, GyantalPaper, SqCoreSrvCharmatMain = 7303, CharmatSecondary = 7303, CharmatPaper, CharmatWifeMain, CharmatWifeSecondary, CharmatWifePaper, SqCoreSrvDeBlanzacMain = 7308, DeBlanzacSecondary, TuMain = 7304, TuSecondary = 7304 }
+    public enum GatewayPort : int { None, Demo, GyantalMain = 7301, VbSrvGyantalSecondary = 7401, GyantalPaper, CharmatMain = 7303, CharmatSecondary = 7403, CharmatPaper, CharmatWifeMain, CharmatWifeSecondary, CharmatWifePaper, DeBlanzacMain = 7308, DeBlanzacSecondary = 7408, TuMain = 7304, TuSecondary }
     public enum GatewayClientID : int
     {
         None,
@@ -72,8 +72,10 @@ namespace BrokerCommon
         // Need different IP for different platforms, and different GwClientID for different developers (if they happen to code and connect to IbGateways at the same time)
         public static (string HostIp, GatewayClientID GwClientID) GetHostIpAndGatewayClientID(GatewayId p_gatewayId)
         {
+#pragma warning disable IDE0066 // IDE0066: Use 'switch' expression
             switch (Utils.RunningPlatform())
             {
+#pragma warning restore IDE0066
                 case Platform.Linux:
                     return p_gatewayId switch
                     {
@@ -85,44 +87,38 @@ namespace BrokerCommon
 
                 case Platform.Windows:
                     // find out which user from the team and determine it accordingly. Or just check whether folders exists (but that takes HDD read, which is slow)
-                    switch (Environment.UserName)   // Windows user name
+                    return Environment.UserName switch   // Windows user name
                     {
-                        case "gyantal":
-                        case "gyant":
-                            return p_gatewayId switch
-                            {
-                                GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev1),
-                                GatewayId.DeBlanzacMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDbDev1),
-                                GatewayId.GyantalMain => (ServerIp.AtsVirtualBrokerServerPublicIpForClients, GatewayClientID.SqCoreToGaDev1),
-                                _ => throw new NotImplementedException()
-                            };
-                        case "Balazs":
-                            return p_gatewayId switch
-                            {
-                                GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev2),
-                                GatewayId.DeBlanzacMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDbDev2),
-                                GatewayId.GyantalMain => (ServerIp.AtsVirtualBrokerServerPublicIpForClients, GatewayClientID.SqCoreToGaDev2),
-                                _ => throw new NotImplementedException()
-                            };
-                        case "Laci":
-                            return p_gatewayId switch
-                            {
-                                GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev3),
-                                GatewayId.DeBlanzacMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDbDev3),
-                                GatewayId.GyantalMain => (ServerIp.AtsVirtualBrokerServerPublicIpForClients, GatewayClientID.SqCoreToGaDev3),
-                                _ => throw new NotImplementedException()
-                            };
-                        case "vinci":
-                            return p_gatewayId switch
-                            {
-                                GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev4),
-                                GatewayId.DeBlanzacMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDbDev4),
-                                GatewayId.GyantalMain => (ServerIp.AtsVirtualBrokerServerPublicIpForClients, GatewayClientID.SqCoreToGaDev4),
-                                _ => throw new NotImplementedException()
-                            };
-                        default:
-                            throw new Exception("Windows user name is not recognized. Add your username and folder here!");
-                    }
+                        "gyantal" or "gyant" => p_gatewayId switch
+                        {
+                            GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev1),
+                            GatewayId.DeBlanzacMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDbDev1),
+                            GatewayId.GyantalMain => (ServerIp.AtsVirtualBrokerServerPublicIpForClients, GatewayClientID.SqCoreToGaDev1),
+                            _ => throw new NotImplementedException()
+                        },
+                        "Balazs" => p_gatewayId switch
+                        {
+                            GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev2),
+                            GatewayId.DeBlanzacMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDbDev2),
+                            GatewayId.GyantalMain => (ServerIp.AtsVirtualBrokerServerPublicIpForClients, GatewayClientID.SqCoreToGaDev2),
+                            _ => throw new NotImplementedException()
+                        },
+                        "Laci" => p_gatewayId switch
+                        {
+                            GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev3),
+                            GatewayId.DeBlanzacMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDbDev3),
+                            GatewayId.GyantalMain => (ServerIp.AtsVirtualBrokerServerPublicIpForClients, GatewayClientID.SqCoreToGaDev3),
+                            _ => throw new NotImplementedException()
+                        },
+                        "vinci" => p_gatewayId switch
+                        {
+                            GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev4),
+                            GatewayId.DeBlanzacMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDbDev4),
+                            GatewayId.GyantalMain => (ServerIp.AtsVirtualBrokerServerPublicIpForClients, GatewayClientID.SqCoreToGaDev4),
+                            _ => throw new NotImplementedException()
+                        },
+                        _ => throw new Exception("Windows user name is not recognized. Add your username and folder here!"),
+                    };
                 default:
                     throw new Exception("RunningPlatform() is not recognized");
             }
@@ -155,25 +151,15 @@ namespace BrokerCommon
 
         public static string ToShortFriendlyString(this GatewayId me)
         {
-            switch (me)
+            return me switch
             {
-                case GatewayId.Unknown:
-                    return "None";
-                case GatewayId.GyantalMain:
-                case GatewayId.GyantalSecondary:
-                    return "G";
-                case GatewayId.CharmatMain:
-                case GatewayId.CharmatSecondary:
-                    return "DC";
-                case GatewayId.TuMain:
-                case GatewayId.TuSecondary:
-                    return "T";
-                case GatewayId.DeBlanzacMain:
-                case GatewayId.DeBlanzacSecondary:
-                    return "DB";
-                default:
-                    return "ERR";
-            }
+                GatewayId.Unknown => "None",
+                GatewayId.GyantalMain or GatewayId.GyantalSecondary => "G",
+                GatewayId.CharmatMain or GatewayId.CharmatSecondary => "DC",
+                GatewayId.TuMain or GatewayId.TuSecondary => "T",
+                GatewayId.DeBlanzacMain or GatewayId.DeBlanzacSecondary => "DB",
+                _ => "ERR",
+            };
         }
     }
 

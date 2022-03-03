@@ -88,8 +88,8 @@ namespace SqCoreWeb
             int pos2 = webpage.IndexOf("</li>\n", pos1);
             int pos3 = webpage.IndexOf("<li class=\"meta-data-date\">", pos2 + "</li>\n".Length) + "<li class=\"meta-data-date\">".Length;
             int pos4 = webpage.IndexOf("</li>\n", pos3);
-            ReadOnlySpan<char> pageSpan1 = webpage.AsSpan().Slice(pos1, pos2 - pos1); // 'ReadOnlySpan<char>' cannot be declared in async methods or lambda expressions.
-            ReadOnlySpan<char> pageSpan2 = webpage.AsSpan().Slice(pos3, pos4 - pos3);
+            ReadOnlySpan<char> pageSpan1 = webpage.AsSpan()[pos1..pos2]; // 'ReadOnlySpan<char>' cannot be declared in async methods or lambda expressions.
+            ReadOnlySpan<char> pageSpan2 = webpage.AsSpan()[pos3..pos4];
             string firstDateTimeStr = String.Concat(pageSpan1, " ", pageSpan2);
 
             Utils.Logger.Info($"CheckSpIndexChanges() firstDateTime: '{firstDateTimeStr}'");
