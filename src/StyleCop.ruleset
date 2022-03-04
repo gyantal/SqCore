@@ -72,7 +72,7 @@ https://github.com/DotNetAnalyzers/StyleCopAnalyzers/blob/master/StyleCop.Analyz
     <Rule Id="CA2242" Action="Warning" />
   </Rules>
   <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers.SpecialRules">
-    <Rule Id="SA0001"  Action="Warning" />          <!-- XML comment analysis disabled -->
+    <Rule Id="SA0001"  Action="None" />             <!-- XML comment analysis disabled -->
     <Rule Id="SA0002"  Action="Warning" />          <!-- Invalid settings file -->
   </Rules>
   <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers.SpacingRules">

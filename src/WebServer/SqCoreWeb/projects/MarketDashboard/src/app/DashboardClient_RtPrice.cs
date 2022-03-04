@@ -132,18 +132,20 @@ namespace SqCoreWeb
         {
             try
             {
-                Utils.Logger.Debug("RtDashboardTimer_Elapsed(). BEGIN");
+                Utils.Logger.Info("RtDashboardTimer_Elapsed(). BEGIN");
                 if (!m_rtDashboardTimerRunning)
                     return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
 
                 var g_clientsPtrCpy = DashboardClient.g_clients;    // Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
                 foreach (DashboardClient client in g_clientsPtrCpy) // RT timer should be fast, don't use LINQ.ForEach(), but use foreach()
                 {
-                    // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
-                    // OnConnectedWsAsync() sleeps for a while if not active tool.
+                    // To free up resources, send data only if active tool really uses RT prices. HealthMonitor and BrAccViewer
+                    if (!c_activePagesUsingRtPrices.Contains(client.ActivePage))
+                        break;
+                    // Also don't send RT prices too early, only if some seconds has been passed. OnConnectedWsAsync() sleeps for a while if not active tool.
                     TimeSpan timeSinceConnect = DateTime.UtcNow - client.ConnectionTime;
-                    if (client.ActivePage != ActivePage.MarketHealth && timeSinceConnect < c_initialSleepIfNotActiveToolMh.Add(TimeSpan.FromMilliseconds(100)))
-                        return;
+                    if (timeSinceConnect < c_initialSleepIfNotActiveToolMh.Add(TimeSpan.FromMilliseconds(100)))
+                        break;
 
                     client.SendRealtimeWs();
                 }

@@ -30,6 +30,7 @@ namespace SqCoreWeb
 
         public static readonly Dictionary<string, ActivePage> c_urlParam2ActivePage = new() { 
             {"mh", ActivePage.MarketHealth}, {"bav", ActivePage.BrAccViewer}, {"cs", ActivePage.CatalystSniffer}, {"qn", ActivePage.QuickfolioNews}};
+        public static readonly HashSet<ActivePage> c_activePagesUsingRtPrices = new() { ActivePage.MarketHealth, ActivePage.BrAccViewer };
 
         internal static List<DashboardClient> g_clients = new(); // Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
 
