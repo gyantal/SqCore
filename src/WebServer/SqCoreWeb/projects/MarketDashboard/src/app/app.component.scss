@@ -392,33 +392,3 @@ svg.material-icons2 path {
   display: inline-block;
   width: 22%;
 }
-
-.tooltipWifiNotConn {
-    position: relative;
-    cursor: help;
-  }
-  .tooltipWifiNotConn .tooltipwifi {
-    padding:0.3rem;
-    font-size: 0.8rem;
-    font-weight: normal;
-    display: none;
-    background:rgb(210, 252, 176);
-    border: 0.1rem solid rgb(19, 7, 177);
-    color: rgb(6, 8, 153);
-    text-align: left;
-    border-radius: 1rem;
-    position: absolute;
-    z-index: 1;
-    bottom: 100%;
-    left: 50%;
-    margin-left: -12rem;
-    margin-bottom: -6rem;
-    white-space: pre;
-    opacity: 0.87;
-  }
-  .tooltipWifiNotConn .tooltipwifi .wifiNC {
-    font-weight: bold;
-  }
-  .tooltipWifiNotConn:hover .tooltipwifi {
-    display: inline-block;
-  }

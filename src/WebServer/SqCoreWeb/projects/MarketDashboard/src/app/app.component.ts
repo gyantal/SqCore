@@ -268,8 +268,9 @@ export class AppComponent implements OnInit {
 
   mouseEnter(div: string) {
     if (div === 'sqDiagnostics') {
-      this.sqDiagnosticsMsg = `App constructor: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.mainAngComponentConstructorTime)}\n` +
-        `DOM loaded: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.dOMContentLoadedTime)}\n` +
+      if (this.isSrvConnectionAlive) {
+        this.sqDiagnosticsMsg = `App constructor: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.mainAngComponentConstructorTime)}\n` +
+          `DOM loaded: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.dOMContentLoadedTime)}\n` +
         `Window loaded: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.windowOnLoadTime)}\n` +
         '-----\n' +
         `WS connection start in OnInit: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsConnectionStartTime)}\n` +
@@ -283,6 +284,8 @@ export class AppComponent implements OnInit {
         '-----\n' +
         `WS First BrAccVw.MktBrLstCls: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsOnFirstBrAccVwMktBrLstCls)}\n` +
         `WS Last  BrAccVw.RfrSnapshot latency: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.wsOnLastBrAccVwRefreshSnapshotStart, gDiag.wsOnLastBrAccVwSnapshot)}\n`;
+      } else
+        this.sqDiagnosticsMsg = 'Connection to server is broken.\n Try page reload (F5).';
     }
   }
 

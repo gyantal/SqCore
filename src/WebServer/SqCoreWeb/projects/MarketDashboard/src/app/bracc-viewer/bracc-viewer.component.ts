@@ -225,7 +225,7 @@ export class BrAccViewerComponent implements OnInit {
   tabPageVisibleIdx = 1;
   sortColumn: string = 'plTod';
   isSortingDirectionAscending: boolean = true;
-  histPeriodSelection = ['YTD', '1M', '1Y', '3Y', '5Y', 'Date'];
+  histPeriodSelection = ['YTD', '1M', '1Y', '3Y', '5Y'];
   histPeriodSelectionSelected: string = 'YTD';
   bnchmkTickerSelection = ['SPY', 'QQQ', 'TLT', 'VXX', 'SVXY', 'UNG', 'USO'];
   bnchmkTickerSelectionSelected: string = 'SPY';
@@ -628,10 +628,6 @@ export class BrAccViewerComponent implements OnInit {
         .attr('class', 'y4')
         .attr('dx', 8)
         .attr('dy', '1em');
-    focus.append('text')
-        .attr('class', 'y4')
-        .attr('dx', 8)
-        .attr('dy', '1em');
 
     // append the rectangle to capture mouse
     navChrtSvg.append('rect')
@@ -893,10 +889,6 @@ export class BrAccViewerComponent implements OnInit {
         .style('stroke', 'rgb(210, 252, 176)')
         .style('stroke-width', '3.5px')
         .style('opacity', 0.8)
-        .attr('dx', 8)
-        .attr('dy', '1em');
-    focus.append('text')
-        .attr('class', 'y4')
         .attr('dx', 8)
         .attr('dy', '1em');
     focus.append('text')

@@ -15,17 +15,15 @@ namespace SqCoreWeb
 {
     public partial class DashboardClient
     {
-        static readonly QuickfolioNewsDownloader g_newsDownloader = new(); // only 1 global downloader for all clients
+        // static readonly QuickfolioNewsDownloader g_newsDownloader = new(); // only 1 global downloader for all clients
         // one global static quickfolio News Timer serves all clients. For efficiency.
         static readonly Timer m_qckflNewsTimer = new(new TimerCallback(QckflNewsTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
         static bool isQckflNewsTimerRunning = false;
         static readonly object m_qckflNewsTimerLock = new();
         static readonly int m_qckflNewsTimerFrequencyMs = 15 * 60 * 1000; // timer for 15 minutes
         static readonly TimeSpan c_initialSleepIfNotActiveToolQn2 = TimeSpan.FromMilliseconds(10 * 1000); // 10sec
-        readonly Dictionary<string, List<NewsItem>> m_newsMemory = new();
-        static readonly Random g_random = new(DateTime.Now.Millisecond);
-        static readonly KeyValuePair<int, int> g_sleepBetweenDnsMs = new(2000, 1000); // <fix, random>
-
+        // readonly Dictionary<string, List<NewsItem>> m_newsMemory = new();
+        static readonly List<NewsItem> g_commonNews = new();
 
         // string[] m_stockTickers2 = { };
         string[] m_stockTickers2 = Array.Empty<string>();
@@ -47,6 +45,14 @@ namespace SqCoreWeb
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
 
+                if (DashboardClient.g_clients.Count > 1 && DashboardClient.g_commonNews.Count > 0)
+                {
+                    Utils.Logger.Info("OnConnectedAsync_QckflNews(). common news already downloaded.");
+                    // List<NewsItem> g_commonNews = GetQckflCommonNews2();
+                    byte[] encodedMsgCommonNews = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(DashboardClient.g_commonNews));
+                    if (WsWebSocket!.State == WebSocketState.Open)
+                        WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgCommonNews, 0, encodedMsgCommonNews.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                }
                 lock (m_qckflNewsTimerLock)
                 {
                     if (!isQckflNewsTimerRunning)
@@ -89,15 +95,13 @@ namespace SqCoreWeb
             else
                 return null;
         }
-        public void GetQckflCommonNews2()
+        public static List<NewsItem> GetQckflCommonNews2()
         {
             string rssFeedUrl = string.Format(@"https://www.cnbc.com/id/100003114/device/rss/rss.html");
 
-            // List<NewsItem> foundNewsItems = new();
-            List<NewsItem> foundNewsItems = new (ReadRSSAsync2(rssFeedUrl, NewsSource.CnbcRss, string.Empty));
-            byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(foundNewsItems));
-            if (WsWebSocket!.State == WebSocketState.Open)
-                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+            List<NewsItem> foundNewsItems = new(ReadRSSAsync2(rssFeedUrl, NewsSource.CnbcRss, string.Empty));
+            return foundNewsItems;
+           
         }
         public static List<NewsItem> ReadRSSAsync2(string p_url, NewsSource p_newsSource, string p_ticker)
         {
@@ -138,19 +142,19 @@ namespace SqCoreWeb
                 return new List<NewsItem>();
             }
         }
-        public void GetQckflStockNews2() // with 13 tickers, it can take 13 * 2 = 26seconds
-        {
-            foreach (string ticker in m_stockTickers2)
-            {
-                byte[]? encodedMsgRss = null;
-                string rssFeedUrl = string.Format(@"https://feeds.finance.yahoo.com/rss/2.0/headline?s={0}&region=US&lang=en-US", ticker);
-                var rss = ReadRSSAsync2(rssFeedUrl, NewsSource.YahooRSS, ticker);
-                if (rss.Count > 0)
-                    encodedMsgRss = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(rss));
-                if (encodedMsgRss != null && WsWebSocket!.State == WebSocketState.Open)
-                    WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgRss, 0, encodedMsgRss.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-            }
-        }
+        // public void GetQckflStockNews2() // with 13 tickers, it can take 13 * 2 = 26seconds
+        // {
+        //     foreach (string ticker in m_stockTickers2)
+        //     {
+        //         byte[]? encodedMsgRss = null;
+        //         string rssFeedUrl = string.Format(@"https://feeds.finance.yahoo.com/rss/2.0/headline?s={0}&region=US&lang=en-US", ticker);
+        //         var rss = ReadRSSAsync2(rssFeedUrl, NewsSource.YahooRSS, ticker);
+        //         if (rss.Count > 0)
+        //             encodedMsgRss = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(rss));
+        //         if (encodedMsgRss != null && WsWebSocket!.State == WebSocketState.Open)
+        //             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgRss, 0, encodedMsgRss.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        //     }
+        // }
         public static void QckflNewsTimer_Elapsed(object? state)    // Timer is coming on a ThreadPool thread
         {
             try
@@ -162,22 +166,19 @@ namespace SqCoreWeb
                 // Check if the number of Clients > 0. If not => don't do processing and set isQckflNewsTimerRunning = false and don't restart the timer
                 if (DashboardClient.g_clients.Count > 0)
                 {
+                    List<NewsItem> g_commonNews = GetQckflCommonNews2();
+
                     List<DashboardClient>? g_clientsCpy = null;  // Clone the list, because .Add() can increase its size in another thread
                     lock (DashboardClient.g_clients)
                         g_clientsCpy = new List<DashboardClient>(DashboardClient.g_clients);
 
                     g_clientsCpy.ForEach(client =>
                     {
-                        // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
-                        // OnConnectedWsAsync() sleeps for a while if not active tool.
-                        TimeSpan timeSinceConnect = DateTime.UtcNow - client.ConnectionTime;
-                        if (client.ActivePage != ActivePage.QuickfolioNews && timeSinceConnect < c_initialSleepIfNotActiveToolQn2.Add(TimeSpan.FromMilliseconds(100)))
-                            return;
-
-                        client.GetQckflCommonNews2();
-                        client.GetQckflStockNews2();
+                        byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(g_commonNews));
+                        if (client.WsWebSocket!.State == WebSocketState.Open)
+                            client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
                     });
-                } 
+                }
                 else
                 {
                     // isQckflNewsTimerRunning = false;
@@ -190,7 +191,6 @@ namespace SqCoreWeb
                         }
                     }
                 }
-               
                 // do processing...
                 // Download common news
                 // g_newsDownloader.

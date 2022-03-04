@@ -60,17 +60,9 @@
       </div>
     </div>
   </div>
-  <div class="sqDiagnostics" *ngIf="isSrvConnectionAlive" (mouseenter) ="mouseEnter('sqDiagnostics')">
+  <div class="sqDiagnostics" (mouseenter) ="mouseEnter('sqDiagnostics')">
     <!-- Wifi image *.WebP (but ICO is not) blinks in DEV, when data from server (email) arrives. Ignore it. In deployed PROD there is no blinking, the DOM tree is not rebuilt. -->
-        <img id="wifiImage" width="30" alt="Wifi" title="{{sqDiagnosticsMsg}}" src="../assets/images/wifi.webp"/>
-  </div>
-  <div class="tooltipWifiNotConn" *ngIf="!isSrvConnectionAlive">
-    <img id="wifiNotConnectedImage" width="30" alt="WifiNC" src="../assets/images/wifiNotConnected.webp"/>
-    <div class="tooltipwifi">
-        <div class="wifiNC">
-            “Connection to server is broken.<br>Try page reload (F5).”
-        </div>
-    </div>
+        <img id="wifiImage" width="30" alt="Wifi" title="{{sqDiagnosticsMsg}}" [src]="isSrvConnectionAlive ? '../assets/images/wifi.webp' : '../assets/images/wifiNotConnected.webp'"/>
   </div>
 </div>
 
