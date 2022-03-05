@@ -609,12 +609,12 @@ export class BrAccViewerComponent implements OnInit {
         .style('stroke', 'white')
         .style('stroke-width', '3.5px')
         .style('opacity', 0.8)
-        .attr('dx', 8)
-        .attr('dy', '-.3em');
+        .attr('dx', -30)
+        .attr('dy', '-2em');
     focus.append('text')
         .attr('class', 'y2')
-        .attr('dx', 8)
-        .attr('dy', '-.3em');
+        .attr('dx', -30)
+        .attr('dy', '-2em');
 
     // place the date at the intersection
     focus.append('text')
@@ -622,12 +622,12 @@ export class BrAccViewerComponent implements OnInit {
         .style('stroke', 'white')
         .style('stroke-width', '3.5px')
         .style('opacity', 0.8)
-        .attr('dx', 8)
-        .attr('dy', '1em');
+        .attr('dx', -35)
+        .attr('dy', '-1em');
     focus.append('text')
         .attr('class', 'y4')
-        .attr('dx', 8)
-        .attr('dy', '1em');
+        .attr('dx', -35)
+        .attr('dy', '-1em');
 
     // append the rectangle to capture mouse
     navChrtSvg.append('rect')
@@ -876,12 +876,12 @@ export class BrAccViewerComponent implements OnInit {
         .style('stroke', 'rgb(210, 252, 176)')
         .style('stroke-width', '3.5px')
         .style('opacity', 0.8)
-        .attr('dx', 8)
-        .attr('dy', '-.3em');
+        .attr('dx', -30)
+        .attr('dy', '-2em');
     focus.append('text')
         .attr('class', 'y2')
-        .attr('dx', 8)
-        .attr('dy', '-.3em');
+        .attr('dx', -30)
+        .attr('dy', '-2em');
 
     // place the date at the intersection
     focus.append('text')
@@ -889,12 +889,12 @@ export class BrAccViewerComponent implements OnInit {
         .style('stroke', 'rgb(210, 252, 176)')
         .style('stroke-width', '3.5px')
         .style('opacity', 0.8)
-        .attr('dx', 8)
-        .attr('dy', '1em');
+        .attr('dx', -35)
+        .attr('dy', '-1em');
     focus.append('text')
         .attr('class', 'y4')
-        .attr('dx', 8)
-        .attr('dy', '1em');
+        .attr('dx', -35)
+        .attr('dy', '-1em');
 
     // append the rectangle to capture mouse
     stckChrtSvg.append('rect')

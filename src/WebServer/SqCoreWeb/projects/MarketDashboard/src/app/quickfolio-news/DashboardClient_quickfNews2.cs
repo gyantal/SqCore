@@ -22,17 +22,15 @@ namespace SqCoreWeb
         static readonly object m_qckflNewsTimerLock = new();
         static readonly int m_qckflNewsTimerFrequencyMs = 15 * 60 * 1000; // timer for 15 minutes
         static readonly TimeSpan c_initialSleepIfNotActiveToolQn2 = TimeSpan.FromMilliseconds(10 * 1000); // 10sec
-        // readonly Dictionary<string, List<NewsItem>> m_newsMemory = new();
-        static readonly List<NewsItem> g_commonNews = new();
+        static List<NewsItem> g_commonNews = new();
 
-        // string[] m_stockTickers2 = { };
         string[] m_stockTickers2 = Array.Empty<string>();
 
         public void OnConnectedWsAsync_QckflNews2(bool p_isThisActiveToolAtConnectionInit)
         {
             Utils.RunInNewThread(ignored => // running parallel on a ThreadPool thread, FireAndForget: QueueUserWorkItem [26microsec] is 25% faster than Task.Run [35microsec]
             {
-                Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
+                Thread.CurrentThread.IsBackground = true; //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
 
                 // Assuming this tool is not the main Tab page on the client, we delay sending all the data, to avoid making the network and client too busy an unresponsive
                 if (!p_isThisActiveToolAtConnectionInit)
@@ -45,10 +43,10 @@ namespace SqCoreWeb
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
 
-                if (DashboardClient.g_clients.Count > 1 && DashboardClient.g_commonNews.Count > 0)
+                if (DashboardClient.g_commonNews.Count > 0)
                 {
                     Utils.Logger.Info("OnConnectedAsync_QckflNews(). common news already downloaded.");
-                    // List<NewsItem> g_commonNews = GetQckflCommonNews2();
+
                     byte[] encodedMsgCommonNews = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(DashboardClient.g_commonNews));
                     if (WsWebSocket!.State == WebSocketState.Open)
                         WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgCommonNews, 0, encodedMsgCommonNews.Length), WebSocketMessageType.Text, true, CancellationToken.None);
@@ -62,10 +60,6 @@ namespace SqCoreWeb
                         m_qckflNewsTimer.Change(System.TimeSpan.Zero, TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
                     }
                 }
-                // first client connects, we start the timer immediately. helper: bool isQckflNewsTimerRunning = false;
-                // after that... this timer should be run every 15min
-                // in that timer function... we have do download CommonNews + Stock news.
-                // in that timer, when the downloading of news are done => send it to All open Clients.
             });
         }
         public static string[]? GetQckflStockTickers2()
@@ -125,7 +119,7 @@ namespace SqCoreWeb
                     newsItem.Ticker = p_ticker;
                     newsItem.LinkUrl = item.Links[0].Uri.AbsoluteUri;
                     newsItem.Title = WebUtility.HtmlDecode(item.Title.Text);
-                    newsItem.Summary = WebUtility.HtmlDecode(item.Summary?.Text ?? string.Empty);   // <description> is missing sometimes, so Summary = null
+                    newsItem.Summary = WebUtility.HtmlDecode(item.Summary?.Text ?? string.Empty); // <description> is missing sometimes, so Summary = null
                     newsItem.PublishDate = item.PublishDate.LocalDateTime;
                     newsItem.DownloadTime = DateTime.UtcNow;
                     newsItem.Source = p_newsSource.ToString();
@@ -155,7 +149,7 @@ namespace SqCoreWeb
         //             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgRss, 0, encodedMsgRss.Length), WebSocketMessageType.Text, true, CancellationToken.None);
         //     }
         // }
-        public static void QckflNewsTimer_Elapsed(object? state)    // Timer is coming on a ThreadPool thread
+        public static void QckflNewsTimer_Elapsed(object? state) // Timer is coming on a ThreadPool thread
         {
             try
             {
@@ -163,45 +157,29 @@ namespace SqCoreWeb
                 if (!isQckflNewsTimerRunning)
                     return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
 
-                // Check if the number of Clients > 0. If not => don't do processing and set isQckflNewsTimerRunning = false and don't restart the timer
-                if (DashboardClient.g_clients.Count > 0)
+                var g_clientsPtrCpy = DashboardClient.g_clients; // Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
+                if (g_clientsPtrCpy.Count > 0)
                 {
-                    List<NewsItem> g_commonNews = GetQckflCommonNews2();
-
-                    List<DashboardClient>? g_clientsCpy = null;  // Clone the list, because .Add() can increase its size in another thread
-                    lock (DashboardClient.g_clients)
-                        g_clientsCpy = new List<DashboardClient>(DashboardClient.g_clients);
-
-                    g_clientsCpy.ForEach(client =>
+                    DashboardClient.g_commonNews = GetQckflCommonNews2();
+                    for (int i = 0; i < g_clientsPtrCpy.Count; i++) // don't use LINQ.ForEach(), but use foreach(), or the 25% faster for
                     {
-                        byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(g_commonNews));
+                        DashboardClient client = g_clientsPtrCpy[i];
+                        byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(DashboardClient.g_commonNews));
                         if (client.WsWebSocket!.State == WebSocketState.Open)
                             client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                    });
+                     }
                 }
                 else
+                    isQckflNewsTimerRunning = false;
+
+                lock (m_qckflNewsTimerLock)
                 {
-                    // isQckflNewsTimerRunning = false;
-                    lock (m_qckflNewsTimerLock)
+                    if (isQckflNewsTimerRunning)
                     {
-                        if (isQckflNewsTimerRunning)
-                        {
-                            Utils.Logger.Info("QckflNewsTimer_Elapsed(). We restart timer.");
-                            m_qckflNewsTimer.Change(TimeSpan.FromMilliseconds(m_qckflNewsTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0));    // runs only once. To avoid that it runs parallel, if first one doesn't finish
-                        }
+                        Utils.Logger.Info("QckflNewsTimer_Elapsed(). We restart timer.");
+                        m_qckflNewsTimer.Change(TimeSpan.FromMilliseconds(m_qckflNewsTimerFrequencyMs), TimeSpan.FromMilliseconds(-1.0)); // runs only once. To avoid that it runs parallel, if first one doesn't finish
                     }
                 }
-                // do processing...
-                // Download common news
-                // g_newsDownloader.
-                // List<NewsItem> commonNews = GetQckflCommonNews2();
-                // company specific news.
-
-                // Sending only commonNews to All clients
-                // byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(commonNews));
-
-                // Setting the timer if it is needed
-                
             }
             catch (Exception e)
             {
