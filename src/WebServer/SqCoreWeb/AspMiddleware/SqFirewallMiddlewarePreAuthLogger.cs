@@ -52,7 +52,8 @@ namespace SqCoreWeb
                 throw new ArgumentNullException(nameof(httpContext));
 
             // 1. Do whitelist check first. That will sort out the most number of bad requests. Always do that filter First that results the most refusing. Try to consume less resources, so don't log it to file.
-            if (!IsHttpRequestOnWhitelist(httpContext))
+            // if (!IsHttpRequestOnWhitelist(httpContext))
+            if (!Utils.IsDebugRuntimeConfig() && !IsHttpRequestOnWhitelist(httpContext))    // maybe check whitelist only in Production, not in Development. In Dev, we constantly add new web images for example, and don't want to restart C# server all the time
             {
                 // Console.WriteLine($"SqFirewall: request '{httpContext.Request.Host}' '{httpContext.Request.Path}' is not on whitelist.");
                 // return Unauthorized();  // can only be used in Controller. https://github.com/aspnet/Mvc/blob/rel/1.1.1/src/Microsoft.AspNetCore.Mvc.Core/ControllerBase.cs
