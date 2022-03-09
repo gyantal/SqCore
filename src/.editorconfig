@@ -14,6 +14,10 @@ charset = utf-8
 trim_trailing_whitespace = false
 insert_final_newline = false
 
+[*.{html,css,ts,js}]
+indent_size = 2
+
+
 # Temporarily disable code analysis for the bulk of the files. How?
 # Option 1: Emulate that it is generated code for All (*), files or *.cs files. (Compiler (dotnet build) CS warnings remains)
 # treating all *.cs or all (*) files as generated code disables codecheck totally under this folder.

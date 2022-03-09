@@ -1,226 +1,238 @@
 <html style="background: linear-gradient(to right, #3080c7, #3080c7 4%, #75e0e1 45%, #73e5e1 55%, #91d73a 97%); background-repeat: repeat-y; overflow: visible; /* avoid scrollbars */height: 100%;">
 
 <head>
-    <meta charset="utf-8" />
-    <title>Systematic Withdrawal Simulator v1.0</title>
+  <meta charset="utf-8" />
+  <title>Systematic Withdrawal Simulator v1.0</title>
 </head>
+
 <body>
-    <h1>Systematic Withdrawal Simulator v1.0 &emsp;&emsp;&emsp;&emsp; <button class="buttonHelp" onclick="window.open('/WithdrawalSimulatorHelp')" target=""></button></h1>
+  <h1>Systematic Withdrawal Simulator v1.0 &emsp;&emsp;&emsp;&emsp; <button class="buttonHelp" onclick="window.open('/WithdrawalSimulatorHelp')" target=""></button></h1>
 
 
-    <h2>INPUTS</h2>
-    <table>
-        <tr>
-            <td>Length of simulation in years: </td>
-            <td>
-                <input id="idSimLength" type="text" size="3" maxlength="2" value="10"> &nbsp; <div class="tooltip">
-                    <div  class="tooltipImg"></div>
-                    <span class="tooltiptext">Maximum 50 years</span>
-                </div>
-            </td>
-        </tr>
-        <tr>
-            <td>CAGR of the investment:</td>
-            <td>
-                <input id="idCAGR" type="text" size="3" maxlength="3" value="50"> %&nbsp; <div class="tooltip">
-                    <div  class="tooltipImg"></div>
-                    <span class="tooltiptext">UberVXX expected CAGR: 50% <br> SPX historical CAGR: 7.5% </span>
-                </div>
-            </td>
-        <tr>
-            <td>StdDev annualized:<br></td>
-            <td>
-                <input id="idStdDev" type="text" size="3" maxlength="2" value="40"> %&nbsp; <div class="tooltip">
-                    <div  class="tooltipImg"></div>
-                    <span class="tooltiptext">UberVXX historical StdDev: 41.5% <br> SPX historical StdDev: 15.5% </span>
-                </div>
-            </td>
-        <tr>
-            <td>Number of simulations:<br></td>
-            <td><input id="idnSimulations" type="text" size="3" maxlength="5" value="100"></td>
-        </tr>
-    </table>
-    <br>
-    <table>
-        <tr>
-            <td>Initial deposit $:</td>
-            <td><input id="idIniDep" type="text" size="3" maxlength="6" value="1000"> $</td>
-        </tr>
-        <tr>
-            <td>Additional deposit frequency in months:</td>
-            <td><input id="idAddDepFreq" type="text" size="3" maxlength="2" value=""></td>
-        </tr>
-        <tr>
-            <td>Additional deposit $:</td>
-            <td><input id="idAddDepVal" type="text" size="3" maxlength="6" value=""> $</td>
-        </tr>
-        <tr>
-            <td>Additional deposit end month:</td>
-            <td><input id="idAddDepEnd" type="text" size="3" maxlength="3" value=""></td>
-        </tr>
-    </table>
+  <h2>INPUTS</h2>
+  <table>
+    <tr>
+      <td>Length of simulation in years: </td>
+      <td>
+        <input id="idSimLength" type="text" size="3" maxlength="2" value="10"> &nbsp; <div class="tooltip">
+          <div class="tooltipImg"></div>
+          <span class="tooltiptext">Maximum 50 years</span>
+        </div>
+      </td>
+    </tr>
+    <tr>
+      <td>CAGR of the investment:</td>
+      <td>
+        <input id="idCAGR" type="text" size="3" maxlength="3" value="50"> %&nbsp; <div class="tooltip">
+          <div class="tooltipImg"></div>
+          <span class="tooltiptext">UberVXX expected CAGR: 50% <br> SPX historical CAGR: 7.5% </span>
+        </div>
+      </td>
+    <tr>
+      <td>StdDev annualized:<br></td>
+      <td>
+        <input id="idStdDev" type="text" size="3" maxlength="2" value="40"> %&nbsp; <div class="tooltip">
+          <div class="tooltipImg"></div>
+          <span class="tooltiptext">UberVXX historical StdDev: 41.5% <br> SPX historical StdDev: 15.5% </span>
+        </div>
+      </td>
+    <tr>
+      <td>Number of simulations:<br></td>
+      <td><input id="idnSimulations" type="text" size="3" maxlength="5" value="100"></td>
+    </tr>
+  </table>
+  <br>
+  <table>
+    <tr>
+      <td>Initial deposit $:</td>
+      <td><input id="idIniDep" type="text" size="3" maxlength="6" value="1000"> $</td>
+    </tr>
+    <tr>
+      <td>Additional deposit frequency in months:</td>
+      <td><input id="idAddDepFreq" type="text" size="3" maxlength="2" value=""></td>
+    </tr>
+    <tr>
+      <td>Additional deposit $:</td>
+      <td><input id="idAddDepVal" type="text" size="3" maxlength="6" value=""> $</td>
+    </tr>
+    <tr>
+      <td>Additional deposit end month:</td>
+      <td><input id="idAddDepEnd" type="text" size="3" maxlength="3" value=""></td>
+    </tr>
+  </table>
 
 
-    <br>
+  <br>
 
-    <table>
-        <tr>
-            <td>Withdrawal start month:</td>
-            <td><input id="idWithDrawStart" type="text" size="3" maxlength="3" value="12"></td>
-        </tr>
-        <tr>
-            <td> Withdrawal frequency in months:</td>
-            <td><input id="idWithDrawFreq" type="text" size="3" maxlength="2" value="12"></td>
-        </tr>
-        <tr>
-            <td>Withdrawal %:</td>
-            <td><input id="idWithDrawPerc" type="text" size="3" maxlength="2" value="10"> %</td>
-        </tr>
-    </table>
-    <br>
-    <button class="buttonSim" onclick="simulationDriverFunction()">SIMULATE</button>
+  <table>
+    <tr>
+      <td>Withdrawal start month:</td>
+      <td><input id="idWithDrawStart" type="text" size="3" maxlength="3" value="12"></td>
+    </tr>
+    <tr>
+      <td> Withdrawal frequency in months:</td>
+      <td><input id="idWithDrawFreq" type="text" size="3" maxlength="2" value="12"></td>
+    </tr>
+    <tr>
+      <td>Withdrawal %:</td>
+      <td><input id="idWithDrawPerc" type="text" size="3" maxlength="2" value="10"> %</td>
+    </tr>
+  </table>
+  <br>
+  <button class="buttonSim" onclick="simulationDriverFunction()">SIMULATE</button>
 
 
-    <span id="idUserError"></span>
+  <span id="idUserError"></span>
 
-    <br>
-    <br>
-    <h2>OUTPUTS</h2>
-    <table>
-        <tr>
-            <td><strong>Total deposit: </strong></td>
-            <td><span id="idTotalDeposit"></span>  </td>
-        </tr>
-        <tr><td><br></td></tr>
-        <tr>
-            <td width="40%"><strong>Strategy without withdrawal</strong></td>
-            <td width="20%" align="center"><i>Average</i></td>
-            <td width="20%" align="center"><i>Median</i></td>
-            <td width="20%" align="center"><i>Random Example</i></td>
-        </tr>
-        <tr>
-            <td>&emsp;&emsp;&emsp;&emsp;Profit $:</td>
-            <td align="center"><span id="idProfitDollAvgWoWith"></span></td>
-            <td align="center"><span id="idProfitDollMedWoWith"></span></td>
-            <td align="center"><span id="idProfitDollRndWoWith"></span></td>
-        </tr>
-        <tr>
-            <td>&emsp;&emsp;&emsp;&emsp;Profit %:</td>
-            <td align="center"><span id="idProfitPercAvgWoWith"></span></td>
-            <td align="center"><span id="idProfitPercMedWoWith"></span></td>
-            <td align="center"><span id="idProfitPercRndWoWith"></span></td>
-        </tr>
-        <tr>
-            <td>&emsp;&emsp;&emsp;&emsp;CAGR:</td>
-            <td align="center"><span id="idCAGRAvgWoWith"></span></td>
-            <td align="center"><span id="idCAGRMedWoWith"></span></td>
-            <td align="center"><span id="idCAGRRndWoWith"></span></td>
-        </tr>
-        <!--<tr>
+  <br>
+  <br>
+  <h2>OUTPUTS</h2>
+  <table>
+    <tr>
+      <td><strong>Total deposit: </strong></td>
+      <td><span id="idTotalDeposit"></span> </td>
+    </tr>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td width="40%"><strong>Strategy without withdrawal</strong></td>
+      <td width="20%" align="center"><i>Average</i></td>
+      <td width="20%" align="center"><i>Median</i></td>
+      <td width="20%" align="center"><i>Random Example</i></td>
+    </tr>
+    <tr>
+      <td>&emsp;&emsp;&emsp;&emsp;Profit $:</td>
+      <td align="center"><span id="idProfitDollAvgWoWith"></span></td>
+      <td align="center"><span id="idProfitDollMedWoWith"></span></td>
+      <td align="center"><span id="idProfitDollRndWoWith"></span></td>
+    </tr>
+    <tr>
+      <td>&emsp;&emsp;&emsp;&emsp;Profit %:</td>
+      <td align="center"><span id="idProfitPercAvgWoWith"></span></td>
+      <td align="center"><span id="idProfitPercMedWoWith"></span></td>
+      <td align="center"><span id="idProfitPercRndWoWith"></span></td>
+    </tr>
+    <tr>
+      <td>&emsp;&emsp;&emsp;&emsp;CAGR:</td>
+      <td align="center"><span id="idCAGRAvgWoWith"></span></td>
+      <td align="center"><span id="idCAGRMedWoWith"></span></td>
+      <td align="center"><span id="idCAGRRndWoWith"></span></td>
+    </tr>
+    <!--<tr>
             <td>&emsp;&emsp;&emsp;&emsp;Sharpe:</td>
             <td align="center"><span id="idSharpeAvgWoWith"></span></td>
             <td align="center"><span id="idSharpeMedWoWith"></span></td>
             <td align="center"><span id="idSharpeRndWoWith"></span></td>
         </tr>-->
-        <tr><td><br></td></tr>
-        <tr>
-            <td width="40%"><strong>Strategy with withdrawal</strong></td>
-            <td width="20%" align="center"><i>Average</i></td>
-            <td width="20%" align="center"><i>Median</i></td>
-            <td width="20%" align="center"><i>Random Example</i></td>
-        </tr>
-        <tr><td></td></tr>
-        <tr>
-            <td>&emsp;&emsp;<u>Withdrawed</u></td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>&emsp;&emsp;&emsp;&emsp;Profit $:</td>
-            <td align="center"><span id="idProfitDollAvgWithDrawed"></span></td>
-            <td align="center"><span id="idProfitDollMedWithDrawed"></span></td>
-            <td align="center"><span id="idProfitDollRndWithDrawed"></span></td>
-        </tr>
-        <tr>
-            <td>&emsp;&emsp;&emsp;&emsp;Profit %:</td>
-            <td align="center"><span id="idProfitPercAvgWithDrawed"></span></td>
-            <td align="center"><span id="idProfitPercMedWithDrawed"></span></td>
-            <td align="center"><span id="idProfitPercRndWithDrawed"></span></td>
-        </tr>
-        <tr>
-            <td>&emsp;&emsp;&emsp;&emsp;CAGR:</td>
-            <td align="center"><span id="idCAGRAvgWithDrawed"></span></td>
-            <td align="center"><span id="idCAGRMedWithDrawed"></span></td>
-            <td align="center"><span id="idCAGRRndWithDrawed"></span></td>
-        </tr>
-        <!--<tr>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td width="40%"><strong>Strategy with withdrawal</strong></td>
+      <td width="20%" align="center"><i>Average</i></td>
+      <td width="20%" align="center"><i>Median</i></td>
+      <td width="20%" align="center"><i>Random Example</i></td>
+    </tr>
+    <tr>
+      <td></td>
+    </tr>
+    <tr>
+      <td>&emsp;&emsp;<u>Withdrawed</u></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>&emsp;&emsp;&emsp;&emsp;Profit $:</td>
+      <td align="center"><span id="idProfitDollAvgWithDrawed"></span></td>
+      <td align="center"><span id="idProfitDollMedWithDrawed"></span></td>
+      <td align="center"><span id="idProfitDollRndWithDrawed"></span></td>
+    </tr>
+    <tr>
+      <td>&emsp;&emsp;&emsp;&emsp;Profit %:</td>
+      <td align="center"><span id="idProfitPercAvgWithDrawed"></span></td>
+      <td align="center"><span id="idProfitPercMedWithDrawed"></span></td>
+      <td align="center"><span id="idProfitPercRndWithDrawed"></span></td>
+    </tr>
+    <tr>
+      <td>&emsp;&emsp;&emsp;&emsp;CAGR:</td>
+      <td align="center"><span id="idCAGRAvgWithDrawed"></span></td>
+      <td align="center"><span id="idCAGRMedWithDrawed"></span></td>
+      <td align="center"><span id="idCAGRRndWithDrawed"></span></td>
+    </tr>
+    <!--<tr>
             <td>&emsp;&emsp;&emsp;&emsp;Sharpe:</td>
             <td align="center"><span id="idSharpeAvgWithDrawed"></span></td>
             <td align="center"><span id="idSharpeMedWithDrawed"></span></td>
             <td align="center"><span id="idSharpeRndWithDrawed"></span></td>
         </tr>-->
-        <tr><td></td></tr>
-        <tr>
-            <td>&emsp;&emsp;<u>Still invested</u></td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>&emsp;&emsp;&emsp;&emsp;Profit $:</td>
-            <td align="center"><span id="idProfitDollAvgStillInv"></span></td>
-            <td align="center"><span id="idProfitDollMedStillInv"></span></td>
-            <td align="center"><span id="idProfitDollRndStillInv"></span></td>
-        </tr>
-        <tr>
-            <td>&emsp;&emsp;&emsp;&emsp;Profit %:</td>
-            <td align="center"><span id="idProfitPercAvgStillInv"></span></td>
-            <td align="center"><span id="idProfitPercMedStillInv"></span></td>
-            <td align="center"><span id="idProfitPercRndStillInv"></span></td>
-        </tr>
-        <tr>
-            <td>&emsp;&emsp;&emsp;&emsp;CAGR:</td>
-            <td align="center"><span id="idCAGRAvgStillInv"></span></td>
-            <td align="center"><span id="idCAGRMedStillInv"></span></td>
-            <td align="center"><span id="idCAGRRndStillInv"></span></td>
-        </tr>
-        <!--<tr>
+    <tr>
+      <td></td>
+    </tr>
+    <tr>
+      <td>&emsp;&emsp;<u>Still invested</u></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>&emsp;&emsp;&emsp;&emsp;Profit $:</td>
+      <td align="center"><span id="idProfitDollAvgStillInv"></span></td>
+      <td align="center"><span id="idProfitDollMedStillInv"></span></td>
+      <td align="center"><span id="idProfitDollRndStillInv"></span></td>
+    </tr>
+    <tr>
+      <td>&emsp;&emsp;&emsp;&emsp;Profit %:</td>
+      <td align="center"><span id="idProfitPercAvgStillInv"></span></td>
+      <td align="center"><span id="idProfitPercMedStillInv"></span></td>
+      <td align="center"><span id="idProfitPercRndStillInv"></span></td>
+    </tr>
+    <tr>
+      <td>&emsp;&emsp;&emsp;&emsp;CAGR:</td>
+      <td align="center"><span id="idCAGRAvgStillInv"></span></td>
+      <td align="center"><span id="idCAGRMedStillInv"></span></td>
+      <td align="center"><span id="idCAGRRndStillInv"></span></td>
+    </tr>
+    <!--<tr>
             <td>&emsp;&emsp;&emsp;&emsp;Sharpe:</td>
             <td align="center"><span id="idSharpeAvgStillInv"></span></td>
             <td align="center"><span id="idSharpeMedStillInv"></span></td>
             <td align="center"><span id="idSharpeRndStillInv"></span></td>
         </tr>-->
-        <tr><td></td></tr>
-        <tr>
-            <td>&emsp;&emsp;<u>Total</u></td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>&emsp;&emsp;&emsp;&emsp;Profit $:</td>
-            <td align="center"><span id="idProfitDollAvgTotal"></span></td>
-            <td align="center"><span id="idProfitDollMedTotal"></span></td>
-            <td align="center"><span id="idProfitDollRndTotal"></span></td>
-        </tr>
-        <tr>
-            <td>&emsp;&emsp;&emsp;&emsp;Profit %:</td>
-            <td align="center"><span id="idProfitPercAvgTotal"></span></td>
-            <td align="center"><span id="idProfitPercMedTotal"></span></td>
-            <td align="center"><span id="idProfitPercRndTotal"></span></td>
-        </tr>
-        <tr>
-            <td>&emsp;&emsp;&emsp;&emsp;CAGR:</td>
-            <td align="center"><span id="idCAGRAvgTotal"></span></td>
-            <td align="center"><span id="idCAGRMedTotal"></span></td>
-            <td align="center"><span id="idCAGRRndTotal"></span></td>
-        </tr>
-        <!--<tr>
+    <tr>
+      <td></td>
+    </tr>
+    <tr>
+      <td>&emsp;&emsp;<u>Total</u></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>&emsp;&emsp;&emsp;&emsp;Profit $:</td>
+      <td align="center"><span id="idProfitDollAvgTotal"></span></td>
+      <td align="center"><span id="idProfitDollMedTotal"></span></td>
+      <td align="center"><span id="idProfitDollRndTotal"></span></td>
+    </tr>
+    <tr>
+      <td>&emsp;&emsp;&emsp;&emsp;Profit %:</td>
+      <td align="center"><span id="idProfitPercAvgTotal"></span></td>
+      <td align="center"><span id="idProfitPercMedTotal"></span></td>
+      <td align="center"><span id="idProfitPercRndTotal"></span></td>
+    </tr>
+    <tr>
+      <td>&emsp;&emsp;&emsp;&emsp;CAGR:</td>
+      <td align="center"><span id="idCAGRAvgTotal"></span></td>
+      <td align="center"><span id="idCAGRMedTotal"></span></td>
+      <td align="center"><span id="idCAGRRndTotal"></span></td>
+    </tr>
+    <!--<tr>
             <td>&emsp;&emsp;&emsp;&emsp;Sharpe:</td>
             <td align="center"><span id="idSharpeAvgTotal"></span></td>
             <td align="center"><span id="idSharpeMedTotal"></span></td>
             <td align="center"><span id="idSharpeRndTotal"></span></td>
         </tr>-->
-    </table>
+  </table>
 
 
-    <!-- TODO: MaxDD -->
-    <hr>
-    <span id="idDeveloperInfo"></span>
+  <!-- TODO: MaxDD -->
+  <hr>
+  <span id="idDeveloperInfo"></span>
 </body>
+
 </html>
