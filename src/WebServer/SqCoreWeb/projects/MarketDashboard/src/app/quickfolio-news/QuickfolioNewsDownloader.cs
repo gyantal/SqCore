@@ -147,9 +147,9 @@ namespace SqCoreWeb
 
                 // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
                 // OnConnectedWsAsync() sleeps for a while if not active tool.
-                TimeSpan timeSinceConnect = DateTime.UtcNow - p_client.ConnectionTime;
-                if (p_client.ActivePage != ActivePage.QuickfolioNews && timeSinceConnect < DashboardClient.c_initialSleepIfNotActiveToolQn.Add(TimeSpan.FromMilliseconds(100)))
-                    continue;
+                // TimeSpan timeSinceConnect = DateTime.UtcNow - p_client.ConnectionTime;
+                // if (p_client.ActivePage != ActivePage.QuickfolioNews && timeSinceConnect < DashboardClient.c_initialSleepIfNotActiveToolQn.Add(TimeSpan.FromMilliseconds(100)))
+                //     continue;
 
                 if (encodedMsgRss != null && p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)    // to avoid The remote party closed the WebSocket connection without completing the close handshake.
                     await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgRss, 0, encodedMsgRss.Length), WebSocketMessageType.Text, true, CancellationToken.None);

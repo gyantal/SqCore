@@ -790,8 +790,16 @@ export class BrAccViewerComponent implements OnInit {
   }
   // under development Daya
   onMouseOverHistPeriodComboBox() {
-    this.isMouseInHistPeriodCombox = true;
-    console.log('The hist period selection is ', this.histPeriodSelection);
+    const myInputId = (document.getElementById('histPeriod') as HTMLElement);
+    const dataList = document.createElement('datalist');
+    dataList.setAttribute('id', 'selectedPeriod');
+    myInputId.appendChild(dataList);
+    for (let i = 0; i < this.histPeriodSelection.length; i++) {
+      const option = document.createElement('option') as HTMLOptionElement;
+      option.setAttribute('value', this.histPeriodSelection[i]);
+      option.text = this.histPeriodSelection[i];
+      dataList.appendChild(option);
+    }
   }
 
   static shortMonthFormat(date: any) : string {
