@@ -88,8 +88,8 @@ namespace SqCoreWeb
             ManualResetEvent waitHandleBrAccConnect = new(false);
             OnConnectedWsAsync_MktHealth(ActivePage == ActivePage.MarketHealth, User, waitHandleMkthConnect); // the code inside should run in a separate thread to return fast, so all Tools can work parallel
             OnConnectedWsAsync_BrAccViewer(ActivePage == ActivePage.BrAccViewer, User, waitHandleBrAccConnect); // the code inside should run in a separate thread to return fast, so all Tools can work parallel
-            // OnConnectedWsAsync_QckflNews(ActivePage == ActivePage.QuickfolioNews);
-            OnConnectedWsAsync_QckflNews2(ActivePage == ActivePage.QuickfolioNews);
+            OnConnectedWsAsync_QckflNews(ActivePage == ActivePage.QuickfolioNews);
+            // OnConnectedWsAsync_QckflNews2(ActivePage == ActivePage.QuickfolioNews);
 
             // have to wait until the tools initialize themselves to know what assets need RT prices
             bool sucessfullWait = ManualResetEvent.WaitAll(new WaitHandle[] { waitHandleMkthConnect }, 10 * 1000);
@@ -112,10 +112,8 @@ namespace SqCoreWeb
                     bool isHandled = OnReceiveWsAsync_MktHealth(msgCode, msgObjStr);
                     if (!isHandled)
                         isHandled = OnReceiveWsAsync_BrAccViewer(msgCode, msgObjStr);
-                    // if (!isHandled)
-                    //     isHandled = OnReceiveWsAsync_QckflNews(msgCode, msgObjStr);
                     if (!isHandled)
-                        isHandled = OnReceiveWsAsync_QckflNews2(msgCode, msgObjStr);
+                        isHandled = OnReceiveWsAsync_QckflNews(msgCode, msgObjStr);
                     return isHandled;
             }
         }

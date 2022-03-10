@@ -42,8 +42,8 @@ namespace FinTechCommon
 
         public Db(string p_redisConnString, int p_redisDbIdx, IDatabase? p_sqlDb)
         {
-            m_redisDb = RedisManager.GetDb(p_redisConnString, m_redisDbIdx);   // lowest level DB module
             m_redisDbIdx = p_redisDbIdx;
+            m_redisDb = RedisManager.GetDb(p_redisConnString, m_redisDbIdx);   // lowest level DB module
             m_sqlDb = p_sqlDb;
         }
 

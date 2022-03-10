@@ -15,25 +15,25 @@ using System.Threading.Tasks;
 
 namespace SqCoreWeb
 {
-    public enum NewsSource
-    {
-        YahooRSS,
-        CnbcRss,
-        Benzinga,
-        TipRanks
-    }
-    public class NewsItem
-    {
-        public string Ticker { get; set; } = string.Empty;
-        public string Title { get; set; } = string.Empty;
-        public string Summary { get; set; } = string.Empty;
-        public string LinkUrl { get; set; } = string.Empty;
-        public DateTime DownloadTime { get; set; }
-        public DateTime PublishDate { get; set; }
-        public string Source { get; set; } = string.Empty;
-        public string DisplayText { get; set; } = string.Empty;
-        public string Sentiment { get; set; } = string.Empty;
-    }
+    // public enum NewsSource
+    // {
+    //     YahooRSS,
+    //     CnbcRss,
+    //     Benzinga,
+    //     TipRanks
+    // }
+    // public class NewsItem
+    // {
+    //     public string Ticker { get; set; } = string.Empty;
+    //     public string Title { get; set; } = string.Empty;
+    //     public string Summary { get; set; } = string.Empty;
+    //     public string LinkUrl { get; set; } = string.Empty;
+    //     public DateTime DownloadTime { get; set; }
+    //     public DateTime PublishDate { get; set; }
+    //     public string Source { get; set; } = string.Empty;
+    //     public string DisplayText { get; set; } = string.Empty;
+    //     public string Sentiment { get; set; } = string.Empty;
+    // }
 
     public class QuickfolioNewsDownloader
     {

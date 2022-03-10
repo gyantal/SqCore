@@ -187,15 +187,15 @@ namespace SqCoreWeb
             byte[]? encodedMsg = null;
             DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;
             SqDateOnly lookbackStart = new(todayET.Year - 1, todayET.Month, todayET.Day);  // gets the 1 year data starting from yesterday to back 1 year
-            SqDateOnly lookbackEnd = todayET.AddDays(-1);
-            (SqDateOnly[] dates, float[] adjCloses) = MemDb.GetSelectedStockTickerHistData(lookbackStart, lookbackEnd, yfTicker);
+            SqDateOnly lookbackEndExcl = todayET;
+            (SqDateOnly[] dates, float[] adjCloses) = MemDb.GetSelectedStockTickerHistData(lookbackStart, lookbackEndExcl, yfTicker);
 
             AssetHistValuesJs stockHistValues = new()
             {
                 AssetId = AssetId32Bits.Invalid,
                 SqTicker = sqTicker,
                 PeriodStartDate = lookbackStart.Date,
-                PeriodEndDate = lookbackEnd.Date,
+                PeriodEndDate = lookbackEndExcl.Date.AddDays(-1),
             };
             if (adjCloses.Length != 0)
             {
@@ -341,14 +341,14 @@ namespace SqCoreWeb
 
             DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
             SqDateOnly lookbackStart = new(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
-            SqDateOnly lookbackEnd = todayET.AddDays(-1);
+            SqDateOnly lookbackEndExcl = todayET;
             if (p_lookbackStr.StartsWith("Date:"))  // Browser client never send anything, but "Date:" inputs. Format: "Date:2019-11-11...2020-11-10"
             {
                 lookbackStart = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length, 10));
-                lookbackEnd = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length + 13, 10));
+                lookbackEndExcl = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length + 13, 10));
             }
 
-            IEnumerable<AssetHist> assetHists = MemDb.gMemDb.GetSdaHistCloses(assets, lookbackStart, lookbackEnd, true, true);
+            IEnumerable<AssetHist> assetHists = MemDb.gMemDb.GetSdaHistCloses(assets, lookbackStart, lookbackEndExcl, true, true);
 
             IEnumerable<AssetHistJs> histToClient = assetHists.Select(r =>
             {
