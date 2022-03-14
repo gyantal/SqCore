@@ -687,31 +687,30 @@ export class BrAccViewerComponent implements OnInit {
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('BrAccViewer.ChangeNav:' + this.navSelectionSelected);
   }
+  // under development Daya
+  onBnchmrkSelectionClicked(bnchmkTickerSelectionSelected: string ) {
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+      this._parentWsConnection.send('BrAccViewer.GetNavChrtData:Bnchmrk:' + bnchmkTickerSelectionSelected.toUpperCase() + ',Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
+    (document.getElementById('bnchmrkInput') as HTMLInputElement).value = bnchmkTickerSelectionSelected;
+  }
 
-  onLookbackSelectChange() {
+  onHistPeriodSelectionClicked(histPeriodSelectionSelected: string) {
     const currDateET: Date = new Date(); // gets today's date
-    if (this.histPeriodSelectionSelected.toUpperCase() === 'YTD')
+    if (histPeriodSelectionSelected.toUpperCase() === 'YTD')
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 1, 11, 31)).toString();
-    else if (this.histPeriodSelectionSelected.toLowerCase().endsWith('y')) {
-      const lbYears = parseInt(this.histPeriodSelectionSelected.substr(0, this.histPeriodSelectionSelected.length - 1), 10);
+    else if (histPeriodSelectionSelected.toLowerCase().endsWith('y')) {
+      const lbYears = parseInt(histPeriodSelectionSelected.substr(0, histPeriodSelectionSelected.length - 1), 10);
       this.histPeriodStartETstr = (new Date(currDateET.setFullYear(currDateET.getFullYear() - lbYears)).toString());
-    } else if (this.histPeriodSelectionSelected.toLowerCase().endsWith('m')) {
-      const lbMonths = parseInt(this.histPeriodSelectionSelected.substr(0, this.histPeriodSelectionSelected.length - 1), 10);
+    } else if (histPeriodSelectionSelected.toLowerCase().endsWith('m')) {
+      const lbMonths = parseInt(histPeriodSelectionSelected.substr(0, histPeriodSelectionSelected.length - 1), 10);
       this.histPeriodStartETstr = (new Date(currDateET.setMonth(currDateET.getMonth() - lbMonths)).toString());
-    } else if (this.histPeriodSelectionSelected === 'Date')
-      this.histPeriodStartETstr = SqNgCommonUtilsTime.PaddedIsoStr3Date(this.histPeriodSelectionSelected).toString();
+    }
 
     this.histPeriodStartETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(this.histPeriodStartETstr));
-
-    if (!(this.histPeriodSelectionSelected === 'Date')) { // change back the end date to yesterday, except if it is in CustomDate mode
-      const todayET = new Date();
-      todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds )and milliseconds
-      const yesterDayET = new Date(todayET);
-      yesterDayET.setDate(yesterDayET.getDate() - 1);
-      this.histPeriodEndETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(yesterDayET.getFullYear(), yesterDayET.getMonth(), yesterDayET.getDate())); // set yesterdayET as default
-      this.onHistPeriodChangeClicked();
-    }
+    this.onHistPeriodChangeClicked();
+    (document.getElementById('histPeriodInput') as HTMLInputElement).value = histPeriodSelectionSelected;
   }
+
   onHistPeriodChangeClicked() {
     this.histPeriodChange();
   }
@@ -788,19 +787,7 @@ export class BrAccViewerComponent implements OnInit {
     this.isMouseInTooltip = false;
     this.isShowStockTooltip = this.isMouseInSnapSymbolCell || this.isMouseInTooltip;
   }
-  // under development Daya
-  onMouseOverHistPeriodComboBox() {
-    const myInputId = (document.getElementById('histPeriod') as HTMLElement);
-    const dataList = document.createElement('datalist');
-    dataList.setAttribute('id', 'selectedPeriod');
-    myInputId.appendChild(dataList);
-    for (let i = 0; i < this.histPeriodSelection.length; i++) {
-      const option = document.createElement('option') as HTMLOptionElement;
-      option.setAttribute('value', this.histPeriodSelection[i]);
-      option.text = this.histPeriodSelection[i];
-      dataList.appendChild(option);
-    }
-  }
+
 
   static shortMonthFormat(date: any) : string {
     const formatMillisec = d3.timeFormat('.%L');

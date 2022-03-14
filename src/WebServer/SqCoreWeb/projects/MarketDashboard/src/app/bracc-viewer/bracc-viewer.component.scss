@@ -346,34 +346,41 @@ tr:nth-child(even) {
   font-weight: bold;
 }
 
-.tooltipHistPeriodAndBnchMrkSelection {
+.histPeriodBnchmrk {
+  padding: 0.5rem;
+  font-size: 1.2rem;
+  width: 15rem;
+  border: 0.1rem solid black;
+}
+
+.histPeriodAndBnchMrkSelectionDropDown {
   position: relative;
-  cursor: help;
-}
-.tooltipHistPeriodAndBnchMrkSelection .tooltipHistPeriodAndBnchMrk {
-  padding:0.3rem;
-  font-size: 0.8rem;
-  font-weight: normal;
-  display: none;
-  background:rgb(210, 252, 176);
-  border: 0.1rem solid rgb(19, 7, 177);
-  color: rgb(6, 8, 153);
-  text-align: left;
-  border-radius: 1rem;
-  position: absolute;
-  z-index: 1;
-  bottom: 100%;
-  left: 10%;
-  margin-left: -9rem;
-  white-space: pre;
-  opacity: 0.87;
-}
-.tooltipHistPeriodAndBnchMrkSelection .tooltipHistPeriodAndBnchMrk .histPerAndBnchMrk {
-  font-weight: bold;
-}
-.tooltipHistPeriodAndBnchMrkSelection .tooltipHistPeriodAndBnchMrk .smallTT {
-  font-size: 0.2rem;
-}
-.tooltipHistPeriodAndBnchMrkSelection:hover .tooltipHistPeriodAndBnchMrk {
   display: inline-block;
+}
+
+.histPeriodAndBnchMrkSelectionDropDownList {
+  display: none;
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 8rem;
+  z-index: 1;
+}
+
+.histPeriodAndBnchMrkSelectionDropDownList {
+  color: black;
+  padding: 1rem 1rem;
+  text-decoration: none;
+  display: block;
+}
+
+.histPeriodAndBnchMrkSelectionDropDownList option:hover {
+  background-color: #ddd;
+}
+
+.histPeriodAndBnchMrkSelectionDropDown:hover .histPeriodAndBnchMrkSelectionDropDownList {
+  display: block;
+}
+
+.histPeriodAndBnchMrkSelectionDropDown:hover .histPeriodBnchmrk {
+  background-color: #3e8e41;
 }

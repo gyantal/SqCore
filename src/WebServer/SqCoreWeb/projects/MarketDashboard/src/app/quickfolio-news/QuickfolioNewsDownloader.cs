@@ -1,20 +1,20 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.ServiceModel.Syndication;
-using System.Text.RegularExpressions;
-using System.Xml.Linq;
-using SqCommon;
-using System.Text.Json;
-using System.Text;
-using System.Net.WebSockets;
-using System.Threading;
-using System.Threading.Tasks;
+// using System;
+// using System.Collections.Generic;
+// using System.IO;
+// using System.Linq;
+// using System.Net;
+// using System.ServiceModel.Syndication;
+// using System.Text.RegularExpressions;
+// using System.Xml.Linq;
+// using SqCommon;
+// using System.Text.Json;
+// using System.Text;
+// using System.Net.WebSockets;
+// using System.Threading;
+// using System.Threading.Tasks;
 
-namespace SqCoreWeb
-{
+// namespace SqCoreWeb
+// {
     // public enum NewsSource
     // {
     //     YahooRSS,
@@ -35,45 +35,45 @@ namespace SqCoreWeb
     //     public string Sentiment { get; set; } = string.Empty;
     // }
 
-    public class QuickfolioNewsDownloader
-    {
-        readonly Dictionary<string, List<NewsItem>> m_newsMemory = new();
+    // public class QuickfolioNewsDownloader
+    // {
+        // readonly Dictionary<string, List<NewsItem>> m_newsMemory = new();
         // readonly Random m_random = new(DateTime.Now.Millisecond);
         // readonly KeyValuePair<int, int> m_sleepBetweenDnsMs = new(2000, 1000);     // <fix, random>
-        string[] m_stockTickers = { "AAPL", "ADBE", "AMZN", "BABA", "CRM", "FB", "GOOGL", "MA", "MSFT", "NVDA", "PYPL", "QCOM", "V" };
+        // string[] m_stockTickers = { "AAPL", "ADBE", "AMZN", "BABA", "CRM", "FB", "GOOGL", "MA", "MSFT", "NVDA", "PYPL", "QCOM", "V" };
 
-        public QuickfolioNewsDownloader()
-        {
-        }
+        // public QuickfolioNewsDownloader()
+        // {
+        // }
 
-        public void UpdateStockTickers()
-        {
-            string? valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
-            if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
-            {
-                valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync("https://sheets.googleapis.com/v4/spreadsheets/1c5ER22sXDEVzW3uKthclpArlZvYuZd6xUffXhs6rRsM/values/A1%3AA1?key=" + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
-                if (valuesFromGSheetStr == null)
-                    valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
-            }
-            if (!valuesFromGSheetStr.StartsWith("Error"))
-                m_stockTickers = ExtractTickers(valuesFromGSheetStr) ?? Array.Empty<string>();
-        }
+        // public void UpdateStockTickers()
+        // {
+        //     string? valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
+        //     if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
+        //     {
+        //         valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync("https://sheets.googleapis.com/v4/spreadsheets/1c5ER22sXDEVzW3uKthclpArlZvYuZd6xUffXhs6rRsM/values/A1%3AA1?key=" + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
+        //         if (valuesFromGSheetStr == null)
+        //             valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
+        //     }
+        //     if (!valuesFromGSheetStr.StartsWith("Error"))
+        //         m_stockTickers = ExtractTickers(valuesFromGSheetStr) ?? Array.Empty<string>();
+        // }
 
-        private static string[]? ExtractTickers(string p_spreadsheetString)
-        {
-            int pos = p_spreadsheetString.IndexOf(@"""values"":");
-            if (pos < 0)
-                return null;
-            p_spreadsheetString = p_spreadsheetString[(pos + 9)..]; // cut off until the end of "values":
-            int posStart = p_spreadsheetString.IndexOf(@"""");
-            if (posStart < 0)
-                return null;
-            int posEnd = p_spreadsheetString.IndexOf(@"""", posStart + 1);
-            if (posEnd < 0)
-                return null;
-            string cellValue = p_spreadsheetString.Substring(posStart + 1, posEnd - posStart - 1);
-            return cellValue.Split(',').Select(x => x.Trim()).ToArray();
-        }
+        // private static string[]? ExtractTickers(string p_spreadsheetString)
+        // {
+        //     int pos = p_spreadsheetString.IndexOf(@"""values"":");
+        //     if (pos < 0)
+        //         return null;
+        //     p_spreadsheetString = p_spreadsheetString[(pos + 9)..]; // cut off until the end of "values":
+        //     int posStart = p_spreadsheetString.IndexOf(@"""");
+        //     if (posStart < 0)
+        //         return null;
+        //     int posEnd = p_spreadsheetString.IndexOf(@"""", posStart + 1);
+        //     if (posEnd < 0)
+        //         return null;
+        //     string cellValue = p_spreadsheetString.Substring(posStart + 1, posEnd - posStart - 1);
+        //     return cellValue.Split(',').Select(x => x.Trim()).ToArray();
+        // }
 
         // internal async void GetCommonNewsAndSendToClient(DashboardClient p_client)
         // {
@@ -119,46 +119,46 @@ namespace SqCoreWeb
         //     // }
         // }
 
-        internal List<string> GetStockTickers()
-        {
-            return new List<string> { "All assets" }.Union(m_stockTickers).ToList();
-        }
-        internal async void GetStockNewsAndSendToClient(DashboardClient p_client) // with 13 tickers, it can take 13 * 2 = 26seconds
-        {
-            foreach (string ticker in m_stockTickers)
-            {
-                byte[]? encodedMsgRss = null;
-                // byte[]? encodedMsgBenzinga = null;
-                // byte[]? encodedMsgTipranks = null;
-                string rssFeedUrl = string.Format(@"https://feeds.finance.yahoo.com/rss/2.0/headline?s={0}&region=US&lang=en-US", ticker);
-                var rss = await ReadRSSAsync(rssFeedUrl, NewsSource.YahooRSS, ticker);
-                if (rss.Count > 0)
-                    encodedMsgRss = Encoding.UTF8.GetBytes("QckfNews.StockNews2:" + Utils.CamelCaseSerialize(rss));
+        // internal List<string> GetStockTickers()
+        // {
+        //     return new List<string> { "All assets" }.Union(m_stockTickers).ToList();
+        // }
+        // internal async void GetStockNewsAndSendToClient(DashboardClient p_client) // with 13 tickers, it can take 13 * 2 = 26seconds
+        // {
+        //     foreach (string ticker in m_stockTickers)
+        //     {
+        //         byte[]? encodedMsgRss = null;
+        //         // byte[]? encodedMsgBenzinga = null;
+        //         // byte[]? encodedMsgTipranks = null;
+        //         string rssFeedUrl = string.Format(@"https://feeds.finance.yahoo.com/rss/2.0/headline?s={0}&region=US&lang=en-US", ticker);
+        //         var rss = await ReadRSSAsync(rssFeedUrl, NewsSource.YahooRSS, ticker);
+        //         if (rss.Count > 0)
+        //             encodedMsgRss = Encoding.UTF8.GetBytes("QckfNews.StockNews2:" + Utils.CamelCaseSerialize(rss));
 
-                // >2021-10-01: benzinga banned  the IP of the server. Disabled this code.
-                // var benzinga = ReadBenzingaNews(ticker);
-                // if (benzinga.Count > 0)
-                //     encodedMsgBenzinga = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(benzinga));
+        //         // >2021-10-01: benzinga banned  the IP of the server. Disabled this code.
+        //         // var benzinga = ReadBenzingaNews(ticker);
+        //         // if (benzinga.Count > 0)
+        //         //     encodedMsgBenzinga = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(benzinga));
 
-                // Fix later. Disabled it temporarily. https://www.tipranks.com/api/stocks/getNews/?ticker=ISRG returns a <HTML> in C# (first char: '<'), while it returns a proper JSON in Chrome (first char: '{')
-                // var tipranks = ReadTipranksNews(ticker);
-                // if (tipranks.Count > 0)
-                //     encodedMsgTipranks = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(tipranks));
+        //         // Fix later. Disabled it temporarily. https://www.tipranks.com/api/stocks/getNews/?ticker=ISRG returns a <HTML> in C# (first char: '<'), while it returns a proper JSON in Chrome (first char: '{')
+        //         // var tipranks = ReadTipranksNews(ticker);
+        //         // if (tipranks.Count > 0)
+        //         //     encodedMsgTipranks = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(tipranks));
 
-                // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
-                // OnConnectedWsAsync() sleeps for a while if not active tool.
-                // TimeSpan timeSinceConnect = DateTime.UtcNow - p_client.ConnectionTime;
-                // if (p_client.ActivePage != ActivePage.QuickfolioNews && timeSinceConnect < DashboardClient.c_initialSleepIfNotActiveToolQn.Add(TimeSpan.FromMilliseconds(100)))
-                //     continue;
+        //         // to free up resources, send data only if either this is the active tool is this tool or if some seconds has been passed
+        //         // OnConnectedWsAsync() sleeps for a while if not active tool.
+        //         // TimeSpan timeSinceConnect = DateTime.UtcNow - p_client.ConnectionTime;
+        //         // if (p_client.ActivePage != ActivePage.QuickfolioNews && timeSinceConnect < DashboardClient.c_initialSleepIfNotActiveToolQn.Add(TimeSpan.FromMilliseconds(100)))
+        //         //     continue;
 
-                if (encodedMsgRss != null && p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)    // to avoid The remote party closed the WebSocket connection without completing the close handshake.
-                    await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgRss, 0, encodedMsgRss.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                // if (encodedMsgBenzinga != null && p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)
-                //     await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgBenzinga, 0, encodedMsgBenzinga.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                // if (encodedMsgTipranks != null && p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)
-                //     await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgTipranks, 0, encodedMsgTipranks.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-            }
-        }
+        //         if (encodedMsgRss != null && p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)    // to avoid The remote party closed the WebSocket connection without completing the close handshake.
+        //             await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgRss, 0, encodedMsgRss.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        //         // if (encodedMsgBenzinga != null && p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)
+        //         //     await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgBenzinga, 0, encodedMsgBenzinga.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        //         // if (encodedMsgTipranks != null && p_client.WsWebSocket != null && p_client.WsWebSocket!.State == WebSocketState.Open)
+        //         //     await p_client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgTipranks, 0, encodedMsgTipranks.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        //     }
+        // }
 
         // private List<NewsItem> ReadTipranksNews(string p_ticker)
         // {
@@ -312,84 +312,84 @@ namespace SqCoreWeb
         //     //     }
         // }
 
-        private async Task<List<NewsItem>> ReadRSSAsync(string p_url, NewsSource p_newsSource, string p_ticker)
-        {
-            try
-            {
-                string? rssFeedAsString = await Utils.DownloadStringWithRetryAsync(p_url, 3, TimeSpan.FromSeconds(5), true);
-                if (String.IsNullOrEmpty(rssFeedAsString))
-                {
-                    Console.WriteLine($"QuickfolioNewsDownloader.ReadRSS() url download failed.");
-                    return new List<NewsItem>();
-                }
+    //     private async Task<List<NewsItem>> ReadRSSAsync(string p_url, NewsSource p_newsSource, string p_ticker)
+    //     {
+    //         try
+    //         {
+    //             string? rssFeedAsString = await Utils.DownloadStringWithRetryAsync(p_url, 3, TimeSpan.FromSeconds(5), true);
+    //             if (String.IsNullOrEmpty(rssFeedAsString))
+    //             {
+    //                 Console.WriteLine($"QuickfolioNewsDownloader.ReadRSS() url download failed.");
+    //                 return new List<NewsItem>();
+    //             }
 
-                // convert feed to XML using LINQ to XML and finally create new XmlReader object
-                var feed = System.ServiceModel.Syndication.SyndicationFeed.Load(XDocument.Parse(rssFeedAsString).CreateReader());
+    //             // convert feed to XML using LINQ to XML and finally create new XmlReader object
+    //             var feed = System.ServiceModel.Syndication.SyndicationFeed.Load(XDocument.Parse(rssFeedAsString).CreateReader());
 
-                List<NewsItem> foundNewNews = new();
+    //             List<NewsItem> foundNewNews = new();
 
-                foreach (SyndicationItem item in feed.Items)
-                {
-                    NewsItem newsItem = new();
-                    newsItem.Ticker = p_ticker;
-                    newsItem.LinkUrl = item.Links[0].Uri.AbsoluteUri;
-                    newsItem.Title = WebUtility.HtmlDecode(item.Title.Text);
-                    newsItem.Summary = WebUtility.HtmlDecode(item.Summary?.Text ?? string.Empty);   // <description> is missing sometimes, so Summary = null
-                    newsItem.PublishDate = item.PublishDate.LocalDateTime;
-                    newsItem.DownloadTime = DateTime.Now;
-                    newsItem.Source = p_newsSource.ToString();
-                    newsItem.DisplayText = string.Empty;
-                    //newsItem.setFiltered();
+    //             foreach (SyndicationItem item in feed.Items)
+    //             {
+    //                 NewsItem newsItem = new();
+    //                 newsItem.Ticker = p_ticker;
+    //                 newsItem.LinkUrl = item.Links[0].Uri.AbsoluteUri;
+    //                 newsItem.Title = WebUtility.HtmlDecode(item.Title.Text);
+    //                 newsItem.Summary = WebUtility.HtmlDecode(item.Summary?.Text ?? string.Empty);   // <description> is missing sometimes, so Summary = null
+    //                 newsItem.PublishDate = item.PublishDate.LocalDateTime;
+    //                 newsItem.DownloadTime = DateTime.Now;
+    //                 newsItem.Source = p_newsSource.ToString();
+    //                 newsItem.DisplayText = string.Empty;
+    //                 //newsItem.setFiltered();
 
-                    if (AddNewsToMemory(p_ticker, newsItem))
-                        foundNewNews.Add(newsItem);
-                }
-                return foundNewNews;
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine($"QuickfolioNewsDownloader.ReadRSS() exception: '{exception.Message}'");
-                return new List<NewsItem>();
-            }
-        }
+    //                 if (AddNewsToMemory(p_ticker, newsItem))
+    //                     foundNewNews.Add(newsItem);
+    //             }
+    //             return foundNewNews;
+    //         }
+    //         catch (Exception exception)
+    //         {
+    //             Console.WriteLine($"QuickfolioNewsDownloader.ReadRSS() exception: '{exception.Message}'");
+    //             return new List<NewsItem>();
+    //         }
+    //     }
 
-        private bool AddNewsToMemory(string p_ticker, NewsItem p_newsItem)
-        {
-            if (!m_newsMemory.ContainsKey(p_ticker))
-                m_newsMemory.Add(p_ticker, new List<NewsItem>());
-            if (m_newsMemory[p_ticker].Where(x => x.LinkUrl.Equals(p_newsItem.LinkUrl)).Any())    // already known
-                return false;
-            if (SkipNewsItem(p_newsItem.Title))
-                return false;
-            m_newsMemory[p_ticker].Add(p_newsItem);
-            return true;
-        }
+    //     private bool AddNewsToMemory(string p_ticker, NewsItem p_newsItem)
+    //     {
+    //         if (!m_newsMemory.ContainsKey(p_ticker))
+    //             m_newsMemory.Add(p_ticker, new List<NewsItem>());
+    //         if (m_newsMemory[p_ticker].Where(x => x.LinkUrl.Equals(p_newsItem.LinkUrl)).Any())    // already known
+    //             return false;
+    //         if (SkipNewsItem(p_newsItem.Title))
+    //             return false;
+    //         m_newsMemory[p_ticker].Add(p_newsItem);
+    //         return true;
+    //     }
 
-        private static bool SkipNewsItem(string p_title)
-        {
-            // skip news item if title is like NVIDIA rises 3.1%
-            string upperCaseTitle = p_title.ToUpper();
-            int indexInTitle = upperCaseTitle.LastIndexOf("RISES");
-            if (indexInTitle == -1)
-                indexInTitle = upperCaseTitle.LastIndexOf("FALLS");
-            if (indexInTitle == -1)
-                return false;
+    //     private static bool SkipNewsItem(string p_title)
+    //     {
+    //         // skip news item if title is like NVIDIA rises 3.1%
+    //         string upperCaseTitle = p_title.ToUpper();
+    //         int indexInTitle = upperCaseTitle.LastIndexOf("RISES");
+    //         if (indexInTitle == -1)
+    //             indexInTitle = upperCaseTitle.LastIndexOf("FALLS");
+    //         if (indexInTitle == -1)
+    //             return false;
 
-            indexInTitle += 5; // the length of "rises" or "falls". They have equal length, no need to separate the cases
-            while (indexInTitle < p_title.Length)
-            {
-                char currentChar = p_title[indexInTitle];
-                if ((currentChar >= '0' && currentChar <= '9') || (currentChar == '.') || (currentChar == ' '))
-                    indexInTitle++;
-                else if ((currentChar == '%') && (indexInTitle == p_title.Length - 1))
-                    return true;
-                else
-                    return false;
-            }
-            return false;
-            // Regex regexRisesFalls = new Regex(@"(rises|falls)([0-9]|.|\s)*%$"
-            //    , RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
-            // return regexRisesFalls.IsMatch(p_title);
-        }
-    }
-}
+    //         indexInTitle += 5; // the length of "rises" or "falls". They have equal length, no need to separate the cases
+    //         while (indexInTitle < p_title.Length)
+    //         {
+    //             char currentChar = p_title[indexInTitle];
+    //             if ((currentChar >= '0' && currentChar <= '9') || (currentChar == '.') || (currentChar == ' '))
+    //                 indexInTitle++;
+    //             else if ((currentChar == '%') && (indexInTitle == p_title.Length - 1))
+    //                 return true;
+    //             else
+    //                 return false;
+    //         }
+    //         return false;
+    //         // Regex regexRisesFalls = new Regex(@"(rises|falls)([0-9]|.|\s)*%$"
+    //         //    , RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+    //         // return regexRisesFalls.IsMatch(p_title);
+    //     }
+//     }
+// }

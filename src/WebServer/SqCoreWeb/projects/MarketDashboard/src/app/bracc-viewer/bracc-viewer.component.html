@@ -148,42 +148,32 @@ MarketBar
                 <div >
                    <span>
                     <div class="chrtTimeFrameSelection">
-                        <div class="tooltipHistPeriodAndBnchMrkSelection">
-                        <input id="histPeriod" type="text" list="selectedPeriod" [(ngModel)] ="histPeriodSelectionSelected" (change)="onLookbackSelectChange()" (mouseover)="onMouseOverHistPeriodComboBox()">
-                                <datalist id="selectedPeriod">
-                                    <option *ngFor="let item of histPeriodSelection" [value]="item">{{item}}</option>YTD
-                                </datalist>
-                            <div class="tooltipHistPeriodAndBnchMrk">
-                                <div class="histPerAndBnchMrk">
-                                Hist periods for selection [{{histPeriodSelection}}]
-                                </div>
-                            </div>
+                      <div class="histPeriodAndBnchMrkSelectionDropDown">
+                        <input id="histPeriodInput" class="histPeriodBnchmrk" type="text" [(ngModel)] ="histPeriodSelectionSelected" (change)="onHistPeriodSelectionClicked(histPeriodSelectionSelected)">
+                        <div class="histPeriodAndBnchMrkSelectionDropDownList">
+                          <option *ngFor="let item of histPeriodSelection" [value]="item" (click)="onHistPeriodSelectionClicked(item)">{{item}}</option>
                         </div>
-                        <div>StartDate: <input class = "histPeriodDateCl" type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr" (change)="onHistPeriodChangeClicked()"></div>
-                        <div>EndDate: <input class = "histPeriodDateCl" type="date" id="EndDate" name="EndDate" min="01-01-1975" max="01-01-2040" [(ngModel)]="histPeriodEndETstr" (change)="onHistPeriodChangeClicked()"></div>
-                        <div class="tooltipHistPeriodAndBnchMrkSelection">BenchMark:
-                            <input id="sqTicker" type="text" list="selectedSqTicker" [(ngModel)] = "bnchmkTickerSelectionSelected" (change)="onHistPeriodChangeClicked()" >
-                                <datalist id="selectedSqTicker">
-                                    <option *ngFor="let item of bnchmkTickerSelection" [value]="item">{{item}}</option>
-                                </datalist>
-                            <div class="tooltipHistPeriodAndBnchMrk">
-                                <div class="histPerAndBnchMrk">
-                                Tickers for selection [{{bnchmkTickerSelection}}]
-                                </div>
-                            </div>
+                      </div>
+                      <div>StartDate: <input class = "histPeriodDateCl" type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr" (change)="onHistPeriodChangeClicked()"></div>
+                      <div>EndDate: <input class = "histPeriodDateCl" type="date" id="EndDate" name="EndDate" min="01-01-1975" max="01-01-2040" [(ngModel)]="histPeriodEndETstr" (change)="onHistPeriodChangeClicked()"></div>
+                      <div class="histPeriodAndBnchMrkSelectionDropDown">BenchMark:
+                        <input id="bnchmrkInput" class="histPeriodBnchmrk" type="text" [(ngModel)] = "bnchmkTickerSelectionSelected" (change)="onHistPeriodChangeClicked()">
+                        <div class="histPeriodAndBnchMrkSelectionDropDownList">
+                          <option *ngFor="let item of bnchmkTickerSelection" [value]="item" (click)="onBnchmrkSelectionClicked(item)">{{item}}</option>
                         </div>
-                        <div>MaxDD<span class="notImpInfo">(NAV/BnchMrk):</span>
-                            <span class="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
-                              {{item.periodMaxDD | percent:'1.2'}}
-                              <ng-container *ngIf="!isLast">/</ng-container>
-                            </span>
-                        </div>
-                        <div>Return<span class="notImpInfo">(NAV/BnchMrk):</span>
-                            <span class="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
-                              {{item.periodReturn | percent:'1.2'}}
-                              <ng-container *ngIf="!isLast">/</ng-container>
-                            </span>
-                        </div>
+                      </div>
+                      <div>MaxDD<span class="notImpInfo">(NAV/BnchMrk):</span>
+                          <span class="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
+                            {{item.periodMaxDD | percent:'1.2'}}
+                            <ng-container *ngIf="!isLast">/</ng-container>
+                          </span>
+                      </div>
+                      <div>Return<span class="notImpInfo">(NAV/BnchMrk):</span>
+                          <span class="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
+                            {{item.periodReturn | percent:'1.2'}}
+                            <ng-container *ngIf="!isLast">/</ng-container>
+                          </span>
+                      </div>
                     </div>
                    </span>
                 </div>
