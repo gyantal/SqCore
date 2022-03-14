@@ -366,9 +366,9 @@ tr:nth-child(even) {
   z-index: 1;
 }
 
-.histPeriodAndBnchMrkSelectionDropDownList {
+.histPeriodAndBnchMrkSelectionDropDownList option {
   color: black;
-  padding: 1rem 1rem;
+  padding: 0.5rem 0.5rem;
   text-decoration: none;
   display: block;
 }
