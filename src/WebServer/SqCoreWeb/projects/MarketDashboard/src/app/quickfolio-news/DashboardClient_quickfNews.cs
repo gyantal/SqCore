@@ -122,10 +122,8 @@ namespace SqCoreWeb
         public static List<NewsItem> GetQckflCommonNews()
         {
             string rssFeedUrl = string.Format(@"https://www.cnbc.com/id/100003114/device/rss/rss.html");
-
             List<NewsItem> foundNewsItems = new(ReadRSSAsync(rssFeedUrl, NewsSource.CnbcRss, string.Empty));
             return foundNewsItems;
-           
         }
 
         public static List<NewsItem> ReadRSSAsync(string p_url, NewsSource p_newsSource, string p_ticker)
@@ -141,9 +139,7 @@ namespace SqCoreWeb
 
                 // convert feed to XML using LINQ to XML and finally create new XmlReader object
                 var feed = System.ServiceModel.Syndication.SyndicationFeed.Load(XDocument.Parse(rssFeedAsString).CreateReader());
-
                 List<NewsItem> foundNews = new();
-
                 foreach (SyndicationItem item in feed.Items)
                 {
                     NewsItem newsItem = new();
@@ -167,7 +163,7 @@ namespace SqCoreWeb
                 return new List<NewsItem>();
             }
         }
-        public static List<NewsItem> GetQckflStockNews() // with 13 tickers, it can take 13 * 2 = 26seconds
+        public static List<NewsItem> GetQckflStockNews()
         {
             List<NewsItem> foundStockNews = new();
             foreach (string ticker in m_stockTickers)
@@ -178,6 +174,14 @@ namespace SqCoreWeb
                 {
                     foundStockNews.Add(stockNews[i]);
                 }
+
+                // Tipranks news: 2021-12: Disabled it temporarily. https://www.tipranks.com/api/stocks/getNews/?ticker=ISRG returns a <HTML> in C# (first char: '<'), while it returns a proper JSON in Chrome (first char: '{')
+
+                // Benzinga news: 2021-10-01: Benzinga banned  the IP of the server. Even in Chrome, even the simple www.benzinga.com doesn't work. They have a Varnish cache server, that refuses to give the page.
+                // There is nothing to do. They didn't ban all AWS servers, because it works from our other Linux servers.
+                // They only banned the SqCore server, because they noticed that there were too many queries. This is why we have to be cautious.
+                // Laszlo's crawler only queries Benzinga once per day. And they didn't ban him. However, we queried Benzinga at every NewClientConnection. About 20-30x per day. (No timer was set), so it wasn't excessive.
+                // However, in the future (after they release the ban) we might implement that it only crawles Benzinga news max 1-2x per day.
             }
             return foundStockNews;
         }
@@ -204,13 +208,6 @@ namespace SqCoreWeb
                         byte[] encodedMsgRss = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(g_stockNews));
                         if (encodedMsgRss != null && client.WsWebSocket!.State == WebSocketState.Open)
                             client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgRss, 0, encodedMsgRss.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                        
-                        // byte[] encodedMsgBenzinga = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(g_stockNews));
-                        // if (encodedMsgBenzinga != null && client.WsWebSocket != null &&  client.WsWebSocket!.State == WebSocketState.Open)
-                        //      client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgBenzinga, 0, encodedMsgBenzinga.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                        // byte[] encodedMsgTipranks = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(g_stockNews));
-                        // if (encodedMsgTipranks != null &&  client.WsWebSocket != null &&  client.WsWebSocket!.State == WebSocketState.Open)
-                        //       client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgTipranks, 0, encodedMsgTipranks.Length), WebSocketMessageType.Text, true, CancellationToken.None);
                      }
                 }
                 else
@@ -243,7 +240,7 @@ namespace SqCoreWeb
                     return false;
             }
         }
-// Under development for Benzinga and Tipranks - Daya
+
         // private List<NewsItem> GetQckflStockNewsTipranks()
         // {
         // static readonly Random g_random = new(DateTime.Now.Millisecond);
@@ -302,11 +299,6 @@ namespace SqCoreWeb
         //  private List<NewsItem> GetQckflStockNewsBenzinga()
         // {
         //     List<NewsItem> foundNewsItems = new();
-        //     // >2021-10-01: benzinga banned  the IP of the server. Even in Chrome, even the simple www.benzinga.com doesn't work. They have a Varnish cache server, that refuses to give the page.
-        //     // There is nothing to do. They didn't ban all AWS servers, because it works from our other Linux servers.
-        //     // They only banned the SqCore server, because they noticed that there were too many queries. This is why we have to be cautious.
-        //     // Laszlo's crawler only queries Benzinga once per day. And they didn't ban him. However, we queried Benzinga at every NewClientConnection. About 20-30x per day. (No timer was set), so it wasn't excessive.
-        //     // However, in the future (after they release the ban) we might implement that it only crawles Benzinga news max 1-2x per day.
         //     foreach (string ticker in m_stockTickers)
         //     {
         //         string url = string.Format(@"https://www.benzinga.com/stock/{0}", ticker);
@@ -388,7 +380,6 @@ namespace SqCoreWeb
         //             news.Ticker, news.Title, news.Summary, news.LinkUrl, news.DownloadTime, news.PublishDate, news.Source);
         //     return finalString;
         // }
-
 
         // private void AddFoundNews(int p_stockID, List<NewsItem> p_foundNewsItems)
         // {
