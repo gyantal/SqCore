@@ -73,9 +73,14 @@ namespace BrokerCommon
 
                     bool wasLightSet = m_getAccountSummaryMres.Wait(5000);     // timeout at 5sec
                     if (!wasLightSet)
+                    {
                         Utils.Logger.Error("ReqAccountSummary() ended with timeout error.");
+                        // it is dangerous to give back half-ready AccSums (where some fields are missing), so in this case if there was no proper end of it, return null, not the empty or the half-ready list
+                        result = null;
+                    }
+                    else
+                        result = m_accSums; // save it before releasing the lock, so other threads will not overwrite the result
                     //m_getAccountSummaryMres.Dispose();    // not necessary. We keep it for the next sessions for faster execution.
-                    result = m_accSums; // save it before releasing the lock, so other threads will not overwrite the result
                 }
                 sw1.Stop();
                 Utils.Logger.Info($"ReqAccountSummary() ends in {sw1.ElapsedMilliseconds}ms GatewayId: '{this.GatewayId}', Thread Id= {Environment.CurrentManagedThreadId}");
