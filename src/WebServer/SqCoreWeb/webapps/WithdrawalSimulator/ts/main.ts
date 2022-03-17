@@ -1,5 +1,5 @@
 import './../css/main.css';
-import { lbgaussian, lbmedian, lbaverage, lbstdDev } from './lbMathTools';
+import { lbgaussian, lbmedian, lbaverage, lbstdDev } from '../../../TsLib/sq-common/utils_math';
 
 // export {}; // TS convention: To avoid top level duplicate variables, functions. This file should be treated as a module (and have its own scope). A file without any top-level import or export declarations is treated as a script whose contents are available in the global scope.
 
@@ -29,18 +29,15 @@ function withdrawalSimulationDriver() {
   if (addDepFreq == 0) {
     if (addDepVal > 0)
       addDepFreq = 12;
-      // idAddDepFreq.value = 12;
     else
       addDepFreq = 12;
   }
 
   if (addDepFreq > 60)
     addDepFreq = 60;
-    // idAddDepFreq.value = 60;
 
   if (withDrawStart > 600)
     withDrawStart = 600;
-    // idWithDrawStart.value = 600;
 
   const userErrorHtmlElement = document.getElementById('idUserError') as HTMLElement;
   const isError = ((withDrawFreq + withDrawPerc + withDrawStart > 0 && withDrawFreq * withDrawPerc * withDrawStart == 0) || withDrawPerc < 0 || withDrawFreq % 1 !== 0 || withDrawFreq < 0 || withDrawStart % 1 !== 0 || withDrawStart < 0 || addDepEnd > simLength * 12 || addDepEnd % 1 !== 0 || addDepEnd < 0 || addDepVal < 0 || addDepFreq % 1 !== 0 || addDepFreq < 0 || iniDep < 0 || stdDev <= 0 || nSimulations < 1 || nSimulations % 1 !== 0 || simLength % 1 !== 0 || isNaN(simLength) || isNaN(cagr) || isNaN(stdDev) || isNaN(nSimulations) || isNaN(iniDep) || isNaN(addDepFreq) || isNaN(addDepVal) || isNaN(addDepEnd) || isNaN(withDrawStart) || isNaN(withDrawFreq) || isNaN(withDrawPerc)) ? true : false;
@@ -257,35 +254,35 @@ function withdrawalSimulationResult(simLength, nDays, nSimulations, dailyPVs, da
 }
 
 function withdrawalSimulatorOutput(totalDeposit, developerInfo, averagePVWoWith, profitDollAvgWoWith, profitPercAvgWoWith, profitDollMedWoWith, profitPercMedWoWith, profitDollRndWoWith, profitPercRndWoWith, cagrAvgWoWith, cagrMedWoWith, cagrRndWoWith, profitDollAvgWith, profitPercAvgWith, profitDollMedWith, profitPercMedWith, profitDollRndWith, profitPercRndWith, cagrAvgWith, cagrMedWith, cagrRndWith, profitDollAvgWithDrawed, profitPercAvgWithDrawed, profitDollMedWithDrawed, profitPercMedWithDrawed, profitDollRndWithDrawed, profitPercRndWithDrawed, cagrAvgWithDrawed, cagrMedWithDrawed, cagrRndWithDrawed, profitDollAvgTotal, profitPercAvgTotal, profitDollMedTotal, profitPercMedTotal, profitDollRndTotal, profitPercRndTotal, cagrAvgTotal, cagrMedTotal, cagrRndTotal) {
-  const totalDepositHtmlElement = document.getElementById('idTotalDeposit') as HTMLElement;
-  totalDepositHtmlElement.innerText = totalDeposit.toLocaleString('en-US') + ' $';
+  const totalDepositElem = document.getElementById('idTotalDeposit') as HTMLElement;
+  totalDepositElem.innerText = totalDeposit.toLocaleString('en-US') + ' $';
 
-  const profitDollAvgWoWithHtmlElement = document.getElementById('idProfitDollAvgWoWith') as HTMLElement;
-  profitDollAvgWoWithHtmlElement.innerText = Math.floor(profitDollAvgWoWith).toLocaleString('en-US') + ' $';
+  const profitDollAvgWoWithElem = document.getElementById('idProfitDollAvgWoWith') as HTMLElement;
+  profitDollAvgWoWithElem.innerText = Math.floor(profitDollAvgWoWith).toLocaleString('en-US') + ' $';
 
-  const profitDollMedWoWithHtmlElement = document.getElementById('idProfitDollMedWoWith') as HTMLElement;
-  profitDollMedWoWithHtmlElement.innerText = Math.floor(profitDollMedWoWith).toLocaleString('en-US') + ' $';
+  const profitDollMedWoWithElem = document.getElementById('idProfitDollMedWoWith') as HTMLElement;
+  profitDollMedWoWithElem.innerText = Math.floor(profitDollMedWoWith).toLocaleString('en-US') + ' $';
 
-  const profitDollRndWoWithHtmlElement = document.getElementById('idProfitDollRndWoWith') as HTMLElement;
-  profitDollRndWoWithHtmlElement.innerText = Math.floor(profitDollRndWoWith).toLocaleString('en-US') + ' $';
+  const profitDollRndWoWithElem = document.getElementById('idProfitDollRndWoWith') as HTMLElement;
+  profitDollRndWoWithElem.innerText = Math.floor(profitDollRndWoWith).toLocaleString('en-US') + ' $';
 
-  const profitPercAvgWoWithHtmlElement = document.getElementById('idProfitPercAvgWoWith') as HTMLElement;
-  profitPercAvgWoWithHtmlElement.innerText = (Math.floor(profitPercAvgWoWith * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitPercAvgWoWithElem = document.getElementById('idProfitPercAvgWoWith') as HTMLElement;
+  profitPercAvgWoWithElem.innerText = (Math.floor(profitPercAvgWoWith * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitPercMedWoWithHtmlElement = document.getElementById('idProfitPercMedWoWith') as HTMLElement;
-  profitPercMedWoWithHtmlElement.innerText = (Math.floor(profitPercMedWoWith * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitPercMedWoWithElem = document.getElementById('idProfitPercMedWoWith') as HTMLElement;
+  profitPercMedWoWithElem.innerText = (Math.floor(profitPercMedWoWith * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitPercRndWoWithHtmlElement = document.getElementById('idProfitPercRndWoWith') as HTMLElement;
-  profitPercRndWoWithHtmlElement.innerText = (Math.floor(profitPercRndWoWith * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitPercRndWoWithElem = document.getElementById('idProfitPercRndWoWith') as HTMLElement;
+  profitPercRndWoWithElem.innerText = (Math.floor(profitPercRndWoWith * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitCAGRAvgWoWithHtmlElement = document.getElementById('idCAGRAvgWoWith') as HTMLElement;
-  profitCAGRAvgWoWithHtmlElement.innerText = (Math.floor(cagrAvgWoWith * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitCAGRAvgWoWithElem = document.getElementById('idCAGRAvgWoWith') as HTMLElement;
+  profitCAGRAvgWoWithElem.innerText = (Math.floor(cagrAvgWoWith * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitCAGRMedWoWithHtmlElement = document.getElementById('idCAGRMedWoWith') as HTMLElement;
-  profitCAGRMedWoWithHtmlElement.innerText = (Math.floor(cagrMedWoWith * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitCAGRMedWoWithElem = document.getElementById('idCAGRMedWoWith') as HTMLElement;
+  profitCAGRMedWoWithElem.innerText = (Math.floor(cagrMedWoWith * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitCAGRRndWoWithHtmlElement = document.getElementById('idCAGRRndWoWith') as HTMLElement;
-  profitCAGRRndWoWithHtmlElement.innerText = (Math.floor(cagrRndWoWith * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitCAGRRndWoWithElem = document.getElementById('idCAGRRndWoWith') as HTMLElement;
+  profitCAGRRndWoWithElem.innerText = (Math.floor(cagrRndWoWith * 1000) / 10).toLocaleString('en-US') + ' %';
 
   // var profitSharpeAvgWoWithHtmlElement = document.getElementById("idSharpeAvgWoWith");
   // profitSharpeAvgWoWithHtmlElement.innerText = Math.floor(averagePVWoWith * 100) / 100;
@@ -297,32 +294,32 @@ function withdrawalSimulatorOutput(totalDeposit, developerInfo, averagePVWoWith,
   // profitSharpeRndWoWithHtmlElement.innerText = Math.floor(averagePVWoWith * 100) / 100;
 
 
-  const profitDollAvgWithDrawedHtmlElement = document.getElementById('idProfitDollAvgWithDrawed') as HTMLElement;
-  profitDollAvgWithDrawedHtmlElement.innerText = Math.floor(profitDollAvgWithDrawed).toLocaleString('en-US') + ' $';
+  const profitDollAvgWithDrawedElem = document.getElementById('idProfitDollAvgWithDrawed') as HTMLElement;
+  profitDollAvgWithDrawedElem.innerText = Math.floor(profitDollAvgWithDrawed).toLocaleString('en-US') + ' $';
 
-  const profitDollMedWithDrawedHtmlElement = document.getElementById('idProfitDollMedWithDrawed') as HTMLElement;
-  profitDollMedWithDrawedHtmlElement.innerText = Math.floor(profitDollMedWithDrawed).toLocaleString('en-US') + ' $';
+  const profitDollMedWithDrawedElem = document.getElementById('idProfitDollMedWithDrawed') as HTMLElement;
+  profitDollMedWithDrawedElem.innerText = Math.floor(profitDollMedWithDrawed).toLocaleString('en-US') + ' $';
 
-  const profitDollRndWithDrawedHtmlElement = document.getElementById('idProfitDollRndWithDrawed') as HTMLElement;
-  profitDollRndWithDrawedHtmlElement.innerText = Math.floor(profitDollRndWithDrawed).toLocaleString('en-US') + ' $';
+  const profitDollRndWithDrawedElem = document.getElementById('idProfitDollRndWithDrawed') as HTMLElement;
+  profitDollRndWithDrawedElem.innerText = Math.floor(profitDollRndWithDrawed).toLocaleString('en-US') + ' $';
 
-  const profitPercAvgWithDrawedHtmlElement = document.getElementById('idProfitPercAvgWithDrawed') as HTMLElement;
-  profitPercAvgWithDrawedHtmlElement.innerText = (Math.floor(profitPercAvgWithDrawed * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitPercAvgWithDrawedElem = document.getElementById('idProfitPercAvgWithDrawed') as HTMLElement;
+  profitPercAvgWithDrawedElem.innerText = (Math.floor(profitPercAvgWithDrawed * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitPercMedWithDrawedHtmlElement = document.getElementById('idProfitPercMedWithDrawed') as HTMLElement;
-  profitPercMedWithDrawedHtmlElement.innerText = (Math.floor(profitPercMedWithDrawed * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitPercMedWithDrawedElem = document.getElementById('idProfitPercMedWithDrawed') as HTMLElement;
+  profitPercMedWithDrawedElem.innerText = (Math.floor(profitPercMedWithDrawed * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitPercRndWithDrawedHtmlElement = document.getElementById('idProfitPercRndWithDrawed') as HTMLElement;
-  profitPercRndWithDrawedHtmlElement.innerText = (Math.floor(profitPercRndWithDrawed * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitPercRndWithDrawedElem = document.getElementById('idProfitPercRndWithDrawed') as HTMLElement;
+  profitPercRndWithDrawedElem.innerText = (Math.floor(profitPercRndWithDrawed * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitCAGRAvgWithDrawedHtmlElement = document.getElementById('idCAGRAvgWithDrawed') as HTMLElement;
-  profitCAGRAvgWithDrawedHtmlElement.innerText = (Math.floor(cagrAvgWithDrawed * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitCAGRAvgWithDrawedElem = document.getElementById('idCAGRAvgWithDrawed') as HTMLElement;
+  profitCAGRAvgWithDrawedElem.innerText = (Math.floor(cagrAvgWithDrawed * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitCAGRMedWithDrawedHtmlElement = document.getElementById('idCAGRMedWithDrawed') as HTMLElement;
-  profitCAGRMedWithDrawedHtmlElement.innerText = (Math.floor(cagrMedWithDrawed * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitCAGRMedWithDrawedElem = document.getElementById('idCAGRMedWithDrawed') as HTMLElement;
+  profitCAGRMedWithDrawedElem.innerText = (Math.floor(cagrMedWithDrawed * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitCAGRRndWithDrawedHtmlElement = document.getElementById('idCAGRRndWithDrawed') as HTMLElement;
-  profitCAGRRndWithDrawedHtmlElement.innerText = (Math.floor(cagrRndWithDrawed * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitCAGRRndWithDrawedElem = document.getElementById('idCAGRRndWithDrawed') as HTMLElement;
+  profitCAGRRndWithDrawedElem.innerText = (Math.floor(cagrRndWithDrawed * 1000) / 10).toLocaleString('en-US') + ' %';
 
   // var profitSharpeAvgWithDrawedHtmlElement = document.getElementById("idSharpeAvgWithDrawed");
   // profitSharpeAvgWithDrawedHtmlElement.innerText = Math.floor(averagePVWoWith * 100) / 100;
@@ -333,32 +330,32 @@ function withdrawalSimulatorOutput(totalDeposit, developerInfo, averagePVWoWith,
   // var profitSharpeRndWithDrawedHtmlElement = document.getElementById("idSharpeRndWithDrawed");
   // profitSharpeRndWithDrawedHtmlElement.innerText = Math.floor(averagePVWoWith * 100) / 100;
 
-  const profitDollAvgStillInvHtmlElement = document.getElementById('idProfitDollAvgStillInv') as HTMLElement;
-  profitDollAvgStillInvHtmlElement.innerText = Math.floor(profitDollAvgWith).toLocaleString('en-US') + ' $';
+  const profitDollAvgStillInvElem = document.getElementById('idProfitDollAvgStillInv') as HTMLElement;
+  profitDollAvgStillInvElem.innerText = Math.floor(profitDollAvgWith).toLocaleString('en-US') + ' $';
 
-  const profitDollMedStillInvHtmlElement = document.getElementById('idProfitDollMedStillInv') as HTMLElement;
-  profitDollMedStillInvHtmlElement.innerText = Math.floor(profitDollMedWith).toLocaleString('en-US') + ' $';
+  const profitDollMedStillInvElem = document.getElementById('idProfitDollMedStillInv') as HTMLElement;
+  profitDollMedStillInvElem.innerText = Math.floor(profitDollMedWith).toLocaleString('en-US') + ' $';
 
-  const profitDollRndStillInvHtmlElement = document.getElementById('idProfitDollRndStillInv') as HTMLElement;
-  profitDollRndStillInvHtmlElement.innerText = Math.floor(profitDollRndWith).toLocaleString('en-US') + ' $';
+  const profitDollRndStillInvElem = document.getElementById('idProfitDollRndStillInv') as HTMLElement;
+  profitDollRndStillInvElem.innerText = Math.floor(profitDollRndWith).toLocaleString('en-US') + ' $';
 
-  const profitPercAvgStillInvHtmlElement = document.getElementById('idProfitPercAvgStillInv') as HTMLElement;
-  profitPercAvgStillInvHtmlElement.innerText = (Math.floor(profitPercAvgWith * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitPercAvgStillInvElem = document.getElementById('idProfitPercAvgStillInv') as HTMLElement;
+  profitPercAvgStillInvElem.innerText = (Math.floor(profitPercAvgWith * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitPercMedStillInvHtmlElement = document.getElementById('idProfitPercMedStillInv') as HTMLElement;
-  profitPercMedStillInvHtmlElement.innerText = (Math.floor(profitPercMedWith * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitPercMedStillInvElem = document.getElementById('idProfitPercMedStillInv') as HTMLElement;
+  profitPercMedStillInvElem.innerText = (Math.floor(profitPercMedWith * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitPercRndStillInvHtmlElement = document.getElementById('idProfitPercRndStillInv') as HTMLElement;
-  profitPercRndStillInvHtmlElement.innerText = (Math.floor(profitPercRndWith * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitPercRndStillInvElem = document.getElementById('idProfitPercRndStillInv') as HTMLElement;
+  profitPercRndStillInvElem.innerText = (Math.floor(profitPercRndWith * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitCAGRAvgStillInvHtmlElement = document.getElementById('idCAGRAvgStillInv') as HTMLElement;
-  profitCAGRAvgStillInvHtmlElement.innerText = (Math.floor(cagrAvgWith * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitCAGRAvgStillInvElem = document.getElementById('idCAGRAvgStillInv') as HTMLElement;
+  profitCAGRAvgStillInvElem.innerText = (Math.floor(cagrAvgWith * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitCAGRMedStillInvHtmlElement = document.getElementById('idCAGRMedStillInv') as HTMLElement;
-  profitCAGRMedStillInvHtmlElement.innerText = (Math.floor(cagrMedWith * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitCAGRMedStillInvElem = document.getElementById('idCAGRMedStillInv') as HTMLElement;
+  profitCAGRMedStillInvElem.innerText = (Math.floor(cagrMedWith * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitCAGRRndStillInvHtmlElement = document.getElementById('idCAGRRndStillInv') as HTMLElement;
-  profitCAGRRndStillInvHtmlElement.innerText = (Math.floor(cagrRndWith * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitCAGRRndStillInvElem = document.getElementById('idCAGRRndStillInv') as HTMLElement;
+  profitCAGRRndStillInvElem.innerText = (Math.floor(cagrRndWith * 1000) / 10).toLocaleString('en-US') + ' %';
 
   // var profitSharpeAvgStillInvHtmlElement = document.getElementById("idSharpeAvgStillInv");
   // profitSharpeAvgStillInvHtmlElement.innerText = Math.floor(averagePVWoWith * 100) / 100;
@@ -369,32 +366,32 @@ function withdrawalSimulatorOutput(totalDeposit, developerInfo, averagePVWoWith,
   // var profitSharpeRndStillInvHtmlElement = document.getElementById("idSharpeRndStillInv");
   // profitSharpeRndStillInvHtmlElement.innerText = Math.floor(averagePVWoWith * 100) / 100;
 
-  const profitDollAvgTotalHtmlElement = document.getElementById('idProfitDollAvgTotal') as HTMLElement;
-  profitDollAvgTotalHtmlElement.innerText = Math.floor(profitDollAvgTotal).toLocaleString('en-US') + ' $';
+  const profitDollAvgTotalElem = document.getElementById('idProfitDollAvgTotal') as HTMLElement;
+  profitDollAvgTotalElem.innerText = Math.floor(profitDollAvgTotal).toLocaleString('en-US') + ' $';
 
-  const profitDollMedTotalHtmlElement = document.getElementById('idProfitDollMedTotal') as HTMLElement;
-  profitDollMedTotalHtmlElement.innerText = Math.floor(profitDollMedTotal).toLocaleString('en-US') + ' $';
+  const profitDollMedTotalElem = document.getElementById('idProfitDollMedTotal') as HTMLElement;
+  profitDollMedTotalElem.innerText = Math.floor(profitDollMedTotal).toLocaleString('en-US') + ' $';
 
-  const profitDollRndTotalHtmlElement = document.getElementById('idProfitDollRndTotal') as HTMLElement;
-  profitDollRndTotalHtmlElement.innerText = Math.floor(profitDollRndTotal).toLocaleString('en-US') + ' $';
+  const profitDollRndTotalElem = document.getElementById('idProfitDollRndTotal') as HTMLElement;
+  profitDollRndTotalElem.innerText = Math.floor(profitDollRndTotal).toLocaleString('en-US') + ' $';
 
-  const profitPercAvgTotalHtmlElement = document.getElementById('idProfitPercAvgTotal') as HTMLElement;
-  profitPercAvgTotalHtmlElement.innerText = (Math.floor(profitPercAvgTotal * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitPercAvgTotalElem = document.getElementById('idProfitPercAvgTotal') as HTMLElement;
+  profitPercAvgTotalElem.innerText = (Math.floor(profitPercAvgTotal * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitPercMedTotalHtmlElement = document.getElementById('idProfitPercMedTotal') as HTMLElement;
-  profitPercMedTotalHtmlElement.innerText = (Math.floor(profitPercMedTotal * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitPercMedTotalElem = document.getElementById('idProfitPercMedTotal') as HTMLElement;
+  profitPercMedTotalElem.innerText = (Math.floor(profitPercMedTotal * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitPercRndTotalHtmlElement = document.getElementById('idProfitPercRndTotal') as HTMLElement;
-  profitPercRndTotalHtmlElement.innerText = (Math.floor(profitPercRndTotal * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitPercRndTotalElem = document.getElementById('idProfitPercRndTotal') as HTMLElement;
+  profitPercRndTotalElem.innerText = (Math.floor(profitPercRndTotal * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitCAGRAvgTotalHtmlElement = document.getElementById('idCAGRAvgTotal') as HTMLElement;
-  profitCAGRAvgTotalHtmlElement.innerText = (Math.floor(cagrAvgTotal * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitCAGRAvgTotalElem = document.getElementById('idCAGRAvgTotal') as HTMLElement;
+  profitCAGRAvgTotalElem.innerText = (Math.floor(cagrAvgTotal * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitCAGRMedTotalHtmlElement = document.getElementById('idCAGRMedTotal') as HTMLElement;
-  profitCAGRMedTotalHtmlElement.innerText = (Math.floor(cagrMedTotal * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitCAGRMedTotalElem = document.getElementById('idCAGRMedTotal') as HTMLElement;
+  profitCAGRMedTotalElem.innerText = (Math.floor(cagrMedTotal * 1000) / 10).toLocaleString('en-US') + ' %';
 
-  const profitCAGRRndTotalHtmlElement = document.getElementById('idCAGRRndTotal') as HTMLElement;
-  profitCAGRRndTotalHtmlElement.innerText = (Math.floor(cagrRndTotal * 1000) / 10).toLocaleString('en-US') + ' %';
+  const profitCAGRRndTotalElem = document.getElementById('idCAGRRndTotal') as HTMLElement;
+  profitCAGRRndTotalElem.innerText = (Math.floor(cagrRndTotal * 1000) / 10).toLocaleString('en-US') + ' %';
 
   // var profitSharpeAvgTotalHtmlElement = document.getElementById("idSharpeAvgTotal");
   // profitSharpeAvgTotalHtmlElement.innerText = Math.floor(averagePVWoWith * 100) / 100;
@@ -406,8 +403,8 @@ function withdrawalSimulatorOutput(totalDeposit, developerInfo, averagePVWoWith,
   // profitSharpeRndTotalHtmlElement.innerText = Math.floor(averagePVWoWith * 100) / 100;
 
 
-  const developerInfoHtmlElement = document.getElementById('idDeveloperInfo') as HTMLElement;
-  developerInfoHtmlElement.innerText = developerInfo;
+  const developerInfoElem = document.getElementById('idDeveloperInfo') as HTMLElement;
+  developerInfoElem.innerText = developerInfo;
 }
 
 const simulateBtn = document.getElementById('simulate') as HTMLElement;

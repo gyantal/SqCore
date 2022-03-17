@@ -368,7 +368,7 @@ tr:nth-child(even) {
 
 .histPeriodAndBnchMrkSelectionDropDownList option {
   color: black;
-  padding: 0.5rem 0.5rem;
+  padding: 0.25rem 0.25rem;
   text-decoration: none;
   display: block;
 }
@@ -382,5 +382,10 @@ tr:nth-child(even) {
 }
 
 .histPeriodAndBnchMrkSelectionDropDown:hover .histPeriodBnchmrk {
-  background-color: #3e8e41;
+  background-color: rgba(255, 255, 128, .5);;
+}
+
+.histPeriodAndBnchMrkOption {
+  border: 0.05rem lightblue;
+  box-shadow: 0.1rem 0.1rem 0.1rem 0.1rem lightblue;
 }

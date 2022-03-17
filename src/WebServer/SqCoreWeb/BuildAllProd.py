@@ -43,7 +43,7 @@ os.system("tsc")    # works like normal, loads ./tsconfig.json, which contains "
 print("\nSqBuild: Executing 'npx webpack --mode=production'")
 os.system("npx webpack --config webapps/ExampleCsServerPushInRealtime/webpack.config.js --mode=production")
 os.system("npx webpack --config webapps/ContangoVisualizer/webpack.config.js --mode=production")
-# os.system("npx webpack --config webapps/WithdrawalSimulator/webpack.config.js --mode=production")
+os.system("npx webpack --config webapps/WithdrawalSimulator/webpack.config.js --mode=production")
 
 # 2.3. Angular webapps in  ./Angular should be built
 print("\nSqBuild: Executing Angular 'ng build...'")
