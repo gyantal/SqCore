@@ -19,7 +19,7 @@ class NewsItem {
   styleUrls: ['./quickfolio-news.component.scss']
 })
 export class QuickfolioNewsComponent implements OnInit {
-  @Input() _parentWsConnection?: WebSocket = undefined;    // this property will be input from above parent container
+  @Input() _parentWsConnection?: WebSocket = undefined; // this property will be input from above parent container
 
   public request: XMLHttpRequest = new XMLHttpRequest();
   interval: number;
@@ -31,13 +31,9 @@ export class QuickfolioNewsComponent implements OnInit {
   filteredNewsCount = 0;
   filterDuplicateNewsItems = true;
   previewedCommonNews: NewsItem = new NewsItem();
-  previewCommonInterval: number = setInterval(
-    () => {
-    }, 10 * 60 * 1000); // every 10 minutes do nothing (just avoid compiler error (uninitialised))
+  previewCommonInterval: number = setInterval(() => { }, 10 * 60 * 1000); // every 10 minutes do nothing (just avoid compiler error (uninitialised))
   previewedStockNews: NewsItem = new NewsItem();
-  previewStockInterval: number = setInterval(
-    () => {
-    }, 10 * 60 * 1000); // every 10 minutes do nothing (just avoid compiler error (uninitialised))
+  previewStockInterval: number = setInterval(() => { }, 10 * 60 * 1000); // every 10 minutes do nothing (just avoid compiler error (uninitialised))
   stockTickers: string[] = [];
   qckflNewsStockTickers2: string[] = []; // temporary - for new code development DAYA
   stockNews: NewsItem[] = [];
@@ -84,11 +80,10 @@ export class QuickfolioNewsComponent implements OnInit {
 
 
   constructor() {
-    this.interval = setInterval(
-      () => {
-        this.updateNewsDownloadTextValues();
-        this.UpdatePreviewHighlightCommon();
-      }, 15000); // every 15 sec
+    this.interval = setInterval(() => {
+      this.updateNewsDownloadTextValues();
+      this.UpdatePreviewHighlightCommon();
+    }, 15000); // every 15 sec
   }
 
   public mouseEnterCommon(news: NewsItem): void {
@@ -100,24 +95,17 @@ export class QuickfolioNewsComponent implements OnInit {
 
   UpdatePreviewHighlightCommon() {
     const newsElements = document.querySelectorAll('.newsItemCommon');
-    // console.log('newsItems count = ' + newsElements.length);
     for (const newsElement of newsElements) {
-      // console.log('news ' + newsElement);
       const hyperLink = newsElement.getElementsByClassName('newsHyperlink')[0];
-      // console.log('news ticker count = ' + tickerSpan.innerHTML);
-      if (hyperLink.getAttribute('href') === this.previewedCommonNews.linkUrl) {
+      if (hyperLink.getAttribute('href') === this.previewedCommonNews.linkUrl)
         newsElement.className = newsElement.className.replace(' previewed', '') + ' previewed';
-        // console.log('setting to previewed');
-      } else {
+      else
         newsElement.className = newsElement.className.replace(' previewed', '');
-      }
     }
     clearInterval(this.previewCommonInterval);
-    // this.previewCommonInterval = null;
   }
 
   public mouseEnter(news: NewsItem): void {
-    // console.log('mouse Enter ' + news.linkUrl);
     this.previewText = news.summary;
     this.previewedStockNews = news;
     this.UpdatePreviewHighlightStock();
@@ -125,17 +113,12 @@ export class QuickfolioNewsComponent implements OnInit {
 
   UpdatePreviewHighlightStock() {
     const newsElements = document.querySelectorAll('.newsItemStock');
-    // console.log('newsItems count = ' + newsElements.length);
     for (const newsElement of newsElements) {
-      // console.log('news ' + newsElement);
       const hyperLink = newsElement.getElementsByClassName('newsHyperlink')[0];
-      // console.log('news ticker count = ' + tickerSpan.innerHTML);
-      if (hyperLink.getAttribute('href') === this.previewedStockNews.linkUrl) {
+      if (hyperLink.getAttribute('href') === this.previewedStockNews.linkUrl)
         newsElement.className = newsElement.className.replace(' previewed', '') + ' previewed';
-        // console.log('setting to previewed ' + hyperLink.getAttribute('href'));
-      } else {
+      else
         newsElement.className = newsElement.className.replace(' previewed', '');
-      }
     }
   }
 
@@ -151,127 +134,95 @@ export class QuickfolioNewsComponent implements OnInit {
 
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) {
       console.log('reload clicked WS');
-      this._parentWsConnection.send('ReloadQuickfolio:');
+      this._parentWsConnection.send('QckflNews.ReloadQuickfolio:');
     }
   }
 
   public menuClick(event, ticker: string): void {
-    // console.log('menu clicked xx' + ticker + 'xx');
-    if (ticker === 'All assets') {
+    if (ticker === 'All assets')
       this.selectedTicker = '';
-    } else {
+    else
       this.selectedTicker = ticker;
-    }
     this.UpdateNewsVisibility();
   }
 
   public menuSourceClick(event, ticker: string): void {
-    // console.log('menu source clicked xx' + ticker + 'xx');
-    if (ticker === 'All sources') {
+    if (ticker === 'All sources')
       this.selectedSource = '';
-    } else {
+    else
       this.selectedSource = ticker;
-    }
     this.UpdateNewsVisibility();
   }
 
   UpdateNewsVisibility() {
     const menuElements = document.querySelectorAll('.menuElement');
     for (const menuElement of menuElements) {
-      // console.log('menu element found xx' + menuElement.innerHTML + 'xx');
-      // menuElement.className += ' active';
       let ticker = this.selectedTicker;
-      if (ticker === '') {
+      if (ticker === '')
         ticker = 'All assets';
-      }
       menuElement.className = 'menuElement';
-      if (menuElement.innerHTML === ticker) {
-        // console.log('menu element found ' + ticker);
+      if (menuElement.innerHTML === ticker)
         menuElement.className += ' active';
-      }
     }
 
     const sourceElements = document.querySelectorAll('.source');
     for (const sourceElement of sourceElements) {
-      // console.log('source element found xx' + sourceElement.innerHTML + 'xx');
-      // menuElement.className += ' active';
       let source = this.selectedSource;
-      if (source === '') {
+      if (source === '')
         source = 'All sources';
-      }
       sourceElement.className = 'source';
-      if (sourceElement.innerHTML === source) {
-        // console.log('menu element found ' + ticker);
+      if (sourceElement.innerHTML === source)
         sourceElement.className += ' active';
-      }
     }
 
     const newsElements = document.querySelectorAll('.newsItemStock');
     let visibleCount = 0;
-    // console.log('newsItems count = ' + newsElements.length);
     for (const newsElement of newsElements) {
-      // console.log('news ' + newsElement);
       const tickerSpan = newsElement.getElementsByClassName('newsTicker')[0];
       const sourceSpan = newsElement.getElementsByClassName('newsSource')[0];
       const sentimentSpan = newsElement.getElementsByClassName('newsSentiment')[0];
-      // console.log('news ticker count = ' + tickerSpan.innerHTML);
       const isVisibleDueTicker = this.TickerIsPresent(tickerSpan.innerHTML, this.selectedTicker);
       const isVisibleDueSource = this.SourceIsSelected(sourceSpan.innerHTML, sentimentSpan.innerHTML, this.selectedSource);
-      // news duplicate filtering: check if there is other news item with the same title and older (show only the newest one)
       const newsIsDuplicateSpan = newsElement.getElementsByClassName('newsIsDuplicate')[0];
       const newsIsDuplicate = newsIsDuplicateSpan.innerHTML;
       const isVisibleDueDuplicate = newsIsDuplicate === 'false';
-      // console.log('newsIsDuplicate = ' + newsIsDuplicate + ', bool = ' + isVisibleDueDuplicate);
       if (isVisibleDueTicker && isVisibleDueSource && (isVisibleDueDuplicate || !this.filterDuplicateNewsItems)) {
         newsElement.className = newsElement.className.replace(' inVisible', '');
         visibleCount++;
-      } else {
+      } else
         newsElement.className = newsElement.className.replace(' inVisible', '') + ' inVisible';
-      }
     }
     this.filteredNewsCount = visibleCount;
   }
 
   SourceIsSelected(source: string, sentiment: string, selectedSource: string): boolean {
-    // console.log('source is XX' + source + 'XX, sentiment is XX' + sentiment + 'XX');
-    if (selectedSource === '') {
+    if (selectedSource === '')
       return true;
-    }
-    if (source === 'YahooRSS' && selectedSource === 'Yahoo') {
+    if (source === 'YahooRSS' && selectedSource === 'Yahoo')
       return true;
-    }
-    if (source === 'Benzinga' && selectedSource === 'Benzinga') {
+    if (source === 'Benzinga' && selectedSource === 'Benzinga')
       return true;
-    }
-    // all, yahoo and benzinga handled. Tipranks needs special handling
-    if (source !== 'TipRanks' || !selectedSource.startsWith('TipRanks')) {
+    if (source !== 'TipRanks' || !selectedSource.startsWith('TipRanks'))
       return false;
-    }
-    if (selectedSource === 'TipRanks all') {
+    if (selectedSource === 'TipRanks all')
       return true;
-    }
-    if (selectedSource === 'TipRanks bullish' && sentiment === 'positive') {
+    if (selectedSource === 'TipRanks bullish' && sentiment === 'positive')
       return true;
-    }
-    if (selectedSource === 'TipRanks neutral' && sentiment === 'neutral') {
+    if (selectedSource === 'TipRanks neutral' && sentiment === 'neutral')
       return true;
-    }
-    if (selectedSource === 'TipRanks bearish' && sentiment === 'negative') {
+    if (selectedSource === 'TipRanks bearish' && sentiment === 'negative')
       return true;
-    }
     return false;
   }
 
   TickerIsPresent(tickersConcatenated: string, selectedTicker: string): boolean {
-    if (selectedTicker === '') {
+    if (selectedTicker === '')
       return true;
-    }
     const tickers = tickersConcatenated.split(',');
     let foundSame = false;
-    tickers.forEach(existingTicker => {
-      if (existingTicker.trim() === selectedTicker) {
+    tickers.forEach((existingTicker) => {
+      if (existingTicker.trim() === selectedTicker)
         foundSame = true;
-      }
     });
     return foundSame;
   }
@@ -281,25 +232,24 @@ export class QuickfolioNewsComponent implements OnInit {
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
-      case 'QckfNews.StockNews':  // this is the most frequent case. Should come first.
-        // console.log('Quickfolio News: WS: QckfNews.StockNews arrived');
+      case 'QckfNews.StockNews': // this is the most frequent case. Should come first.
         const jsonObj1 = JSON.parse(msgObjStr);
         this.extractNewsList(jsonObj1, this.stockNews);
         this.UpdateNewsVisibility();
         this.totalnewsCount = this.stockNews.length;
         this.previewStockInterval = setInterval(
-          () => {
-            this.SetStockPreviewIfEmpty();
-          }, 1000); // after 1 sec
+            () => {
+              this.SetStockPreviewIfEmpty();
+            }, 1000); // after 1 sec
         return true;
       case 'QckfNews.CommonNews':
         console.log('Quickfolio News: WS: QckfNews.CommonNews arrived');
         const jsonObj2 = JSON.parse(msgObjStr);
         this.extractNewsList(jsonObj2, this.generalNews);
         this.previewCommonInterval = setInterval(
-          () => {
-            this.SetCommonPreviewIfEmpty();
-          }, 1000); // after 1 sec
+            () => {
+              this.SetCommonPreviewIfEmpty();
+            }, 1000); // after 1 sec
         return true;
       case 'QckfNews.Tickers': // this is the least frequent case. Should come last.
         console.log('Quickfolio News: WS: QckfNews.Tickers arrived');
@@ -316,38 +266,33 @@ export class QuickfolioNewsComponent implements OnInit {
 
   SetStockPreviewIfEmpty() {
     if (this.previewText === '') {
-      if (this.stockNews.length > 0) {
+      if (this.stockNews.length > 0)
         this.mouseEnter(this.stockNews[0]);
-      }
     }
   }
 
   SetCommonPreviewIfEmpty() {
     if (this.previewTextCommon === '') {
-      if (this.generalNews.length > 0) {
+      if (this.generalNews.length > 0)
         this.mouseEnterCommon(this.generalNews[0]);
-        // console.log('SetCommonPreviewIfEmpty ' + this.generalNews[0].linkUrl);
-      }
     }
   }
 
   removeUnreferencedNews() {
-    this.stockNews = this.stockNews.filter(news => this.NewsItemHasTicker(news));
+    this.stockNews = this.stockNews.filter((news) => this.NewsItemHasTicker(news));
   }
 
   NewsItemHasTicker(news: NewsItem): boolean {
     let tickers = news.ticker.split(',');
-    tickers = tickers.filter(existingTicker => this.stockTickers.includes(existingTicker));
+    tickers = tickers.filter((existingTicker) => this.stockTickers.includes(existingTicker));
     news.ticker = tickers.join(', ');
     return tickers.length > 0;
   }
 
 
   extractNewsList(message: NewsItem[], newsList: NewsItem[]): void {
-    // console.log('new common message list ' + message.length);
     for (const newNews of message) {
       newNews.isDuplicate = 'false';
-      // console.log('new message ' + newNews.linkUrl);
       this.insertMessage(newsList, newNews);
     }
   }
@@ -362,40 +307,29 @@ export class QuickfolioNewsComponent implements OnInit {
       }
       foundOlder = newItem.publishDate > messages[index].publishDate;
       if (messages[index].title.toUpperCase() === newItem.title.toUpperCase()) {
-        if (!foundOlder) {
+        if (!foundOlder)
           newItem.isDuplicate = 'true1';
-          // console.log('1 FOUND duplicate quickfolio news ' + newItem.ticker + ': ' + newItem.title + '; ' + newItem.linkUrl );
-          // console.log('1 FOUND the other news ' + messages[index].ticker + ': ' + messages[index].title + '; ' + messages[index].linkUrl);
-        } else {
+        else
           messages[index].isDuplicate = 'true2';
-          // console.log('2 FOUND duplicate quickfolio news ' + messages[index].ticker + ': ' + messages[index].title + '; ' + messages[index].linkUrl);
-          // console.log('2 FOUND the other news ' + newItem.ticker + ': ' + newItem.title + '; ' + newItem.linkUrl);
-        }
       }
-      if (!foundOlder) {
+      if (!foundOlder)
         index++;
-      }
     }
     this.updateNewsDownloadText(newItem);
     messages.splice(index, 0, newItem);
     index += 2;
     while (index < messages.length) {
-      if (messages[index].title.toUpperCase() === newItem.title.toUpperCase()) {
+      if (messages[index].title.toUpperCase() === newItem.title.toUpperCase())
         messages[index].isDuplicate = 'true3';
-        // console.log('3 FOUND duplicate quickfolio news ' + messages[index].ticker + ': ' + messages[index].title + '; ' + messages[index].linkUrl);
-        // console.log('3 FOUND the other news ' + newItem.ticker + ': ' + newItem.title + '; ' + newItem.linkUrl);
-      }
       index++;
     }
   }
 
   updateNewsDownloadTextValues() {
-    for (const news of this.generalNews) {
+    for (const news of this.generalNews)
       this.updateNewsDownloadText(news);
-    }
-    for (const news of this.stockNews) {
+    for (const news of this.stockNews)
       this.updateNewsDownloadText(news);
-    }
   }
 
   updateNewsDownloadText(newsItem: NewsItem) {
@@ -405,33 +339,26 @@ export class QuickfolioNewsComponent implements OnInit {
   extendTickerSection(news: NewsItem, newTicker: string) {
     const tickers = news.ticker.split(',');
     let foundSame = false;
-    tickers.forEach(existingTicker => {
-      if (existingTicker.trim() === newTicker) {
+    tickers.forEach((existingTicker) => {
+      if (existingTicker.trim() === newTicker)
         foundSame = true;
-      }
     });
-    if (!foundSame) {
+    if (!foundSame)
       news.ticker += ', ' + newTicker;
-    }
   }
 
   getpublishedString(date: Date) {
-    // console.log('since ' + date + '  ...  ' + new Date());
     const downloadDate = new Date(date);
     const timeDiffInSecs = Math.floor((new Date().getTime() - downloadDate.getTime()) / 1000);
-    // console.log('since ' + timeDiffInSecs);
-    if (timeDiffInSecs < 60) {
+    if (timeDiffInSecs < 60)
       return timeDiffInSecs.toString() + 'sec ago';
-    }
     let timeDiffMinutes = Math.floor(timeDiffInSecs / 60);
-    if (timeDiffMinutes < 60) {
+    if (timeDiffMinutes < 60)
       return timeDiffMinutes.toString() + 'min ago';
-    }
     const timeDiffHours = Math.floor(timeDiffMinutes / 60);
     timeDiffMinutes = timeDiffMinutes - 60 * timeDiffHours;
-    if (timeDiffHours < 24) {
+    if (timeDiffHours < 24)
       return timeDiffHours.toString() + 'h ' + timeDiffMinutes.toString() + 'm ago';
-    }
     const timediffDays = Math.floor(timeDiffHours / 24);
     return timediffDays.toString() + ' days ago';
   }

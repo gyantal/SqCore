@@ -4,12 +4,10 @@ using SqCommon;
 using System.Collections.Generic;
 using System.Text;
 using System.Net.WebSockets;
-using System.Threading.Tasks;
 using System.Linq;
 using System.Xml.Linq;
 using System.ServiceModel.Syndication;
 using System.Net;
-using System.Diagnostics;
 
 namespace SqCoreWeb
 {
@@ -38,12 +36,11 @@ namespace SqCoreWeb
         // static readonly QuickfolioNewsDownloader g_newsDownloader = new(); // only 1 global downloader for all clients
         // one global static quickfolio News Timer serves all clients. For efficiency.
         static readonly Timer m_qckflNewsTimer = new(new TimerCallback(QckflNewsTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
-        static bool isQckflNewsTimerRunning = false;
         static readonly object m_qckflNewsTimerLock = new();
+        static bool isQckflNewsTimerRunning = false;
         static readonly int m_qckflNewsTimerFrequencyMs = 15 * 60 * 1000; // timer for 15 minutes
-        static readonly TimeSpan c_initialSleepIfNotActiveToolQn2 = TimeSpan.FromMilliseconds(10 * 1000); // 10sec
+        static readonly TimeSpan c_initialSleepIfNotActiveToolQn = TimeSpan.FromMilliseconds(10 * 1000); // 10sec
         static List<NewsItem> g_commonNews = new();
-
         static List<NewsItem> g_stockNews = new();
         // string[] m_stockTickers = { "AAPL", "ADBE", "AMZN", "BABA", "CRM", "FB", "GOOGL", "MA", "MSFT", "NVDA", "PYPL", "QCOM", "V" };
         static string[] m_stockTickers = Array.Empty<string>();
@@ -56,7 +53,7 @@ namespace SqCoreWeb
 
                 // Assuming this tool is not the main Tab page on the client, we delay sending all the data, to avoid making the network and client too busy an unresponsive
                 if (!p_isThisActiveToolAtConnectionInit)
-                    Thread.Sleep(DashboardClient.c_initialSleepIfNotActiveToolQn2); // 10 sec is quite a long waiting, but we rarely use this tool.
+                    Thread.Sleep(DashboardClient.c_initialSleepIfNotActiveToolQn); // 10 sec is quite a long waiting, but we rarely use this tool.
                 
                 if (m_stockTickers.Length == 0)
                     m_stockTickers = GetQckflStockTickers() ?? Array.Empty<string>();
@@ -122,8 +119,7 @@ namespace SqCoreWeb
         public static List<NewsItem> GetQckflCommonNews()
         {
             string rssFeedUrl = string.Format(@"https://www.cnbc.com/id/100003114/device/rss/rss.html");
-            List<NewsItem> foundNewsItems = new(ReadRSSAsync(rssFeedUrl, NewsSource.CnbcRss, string.Empty));
-            return foundNewsItems;
+            return ReadRSSAsync(rssFeedUrl, NewsSource.CnbcRss, string.Empty);
         }
 
         public static List<NewsItem> ReadRSSAsync(string p_url, NewsSource p_newsSource, string p_ticker)
@@ -151,7 +147,7 @@ namespace SqCoreWeb
                     newsItem.DownloadTime = DateTime.UtcNow;
                     newsItem.Source = p_newsSource.ToString();
                     newsItem.DisplayText = string.Empty;
-                    //newsItem.setFiltered();
+                    // newsItem.setFiltered();
                     // we might filter news and bring Laszlo's bool SkipNewsItem(string p_title) here. Later. Not now.
                     foundNews.Add(newsItem);
                 }
@@ -234,7 +230,7 @@ namespace SqCoreWeb
             {
                 case "QckflNews.ReloadQuickfolio":
                     Utils.Logger.Info($"OnReceiveWsAsync_QckflNews(): QckflNews.ReloadQuickfolio:{msgObjStr}");
-                    // ReloadQuickfolioMsgArrived();
+                    m_stockTickers = GetQckflStockTickers() ?? Array.Empty<string>();
                     return true;
                 default:
                     return false;

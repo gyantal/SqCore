@@ -609,11 +609,11 @@ export class BrAccViewerComponent implements OnInit {
         .style('stroke', 'white')
         .style('stroke-width', '3.5px')
         .style('opacity', 0.8)
-        .attr('dx', -30)
+        .attr('dx', -10)
         .attr('dy', '-2em');
     focus.append('text')
         .attr('class', 'y2')
-        .attr('dx', -30)
+        .attr('dx', -10)
         .attr('dy', '-2em');
 
     // place the date at the intersection
@@ -622,11 +622,11 @@ export class BrAccViewerComponent implements OnInit {
         .style('stroke', 'white')
         .style('stroke-width', '3.5px')
         .style('opacity', 0.8)
-        .attr('dx', -35)
+        .attr('dx', -30)
         .attr('dy', '-1em');
     focus.append('text')
         .attr('class', 'y4')
-        .attr('dx', -35)
+        .attr('dx', -30)
         .attr('dy', '-1em');
 
     // append the rectangle to capture mouse
@@ -645,12 +645,14 @@ export class BrAccViewerComponent implements OnInit {
     function mousemove(event: any) {
       const x0 = navChrtScaleX.invert(d3.pointer(event)[0]);
       const i = bisectDate(navChrtData1, x0, 1);
-      const r = navChrtData1[i];
+      const d0 = navChrtData1[i - 1];
+      const d1 = navChrtData1[i];
+      const r = (x0.getTime() - d0.date.getTime()) > (d1.date.getTime() - x0.getTime()) ? d1 : d0;
       focus.select('circle.y')
           .attr('transform', 'translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')');
       focus.select('text.y1')
           .attr('transform', 'translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')')
-          .text(r.sdaClose);
+          .text(Math.round((r.sdaClose*firstEleOfHistDataArr1/100)));
       focus.select('text.y2')
           .attr('transform', 'translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')')
           .text(d3.format(',')(Math.round((r.sdaClose*firstEleOfHistDataArr1/100))) + 'K');
@@ -686,29 +688,34 @@ export class BrAccViewerComponent implements OnInit {
   onNavSelectedChange(pEvent: any) {
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('BrAccViewer.ChangeNav:' + this.navSelectionSelected);
-  }
-  // under development Daya
-  onBnchmrkSelectionClicked(bnchmkTickerSelectionSelected: string ) {
+
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('BrAccViewer.GetNavChrtData:Bnchmrk:' + bnchmkTickerSelectionSelected.toUpperCase() + ',Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
-    (document.getElementById('bnchmrkInput') as HTMLInputElement).value = bnchmkTickerSelectionSelected;
+      this._parentWsConnection.send('BrAccViewer.GetNavChrtData:Bnchmrk:' + this.bnchmkTickerSelectionSelected.toUpperCase() + ',Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
+  }
+
+  onBnchmrkSelectionClicked(bnchmkTickerSelectionSelected: string ) {
+    this.bnchmkTickerSelectionSelected = bnchmkTickerSelectionSelected;
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+      this._parentWsConnection.send('BrAccViewer.GetNavChrtData:Bnchmrk:' + this.bnchmkTickerSelectionSelected.toUpperCase() + ',Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
+    (document.getElementById('bnchmrkInput') as HTMLInputElement).value = this.bnchmkTickerSelectionSelected;
   }
 
   onHistPeriodSelectionClicked(histPeriodSelectionSelected: string) {
+    this.histPeriodSelectionSelected = histPeriodSelectionSelected;
     const currDateET: Date = new Date(); // gets today's date
-    if (histPeriodSelectionSelected.toUpperCase() === 'YTD')
+    if (this.histPeriodSelectionSelected.toUpperCase() === 'YTD')
       this.histPeriodStartETstr = (new Date(currDateET.getFullYear() - 1, 11, 31)).toString();
-    else if (histPeriodSelectionSelected.toLowerCase().endsWith('y')) {
-      const lbYears = parseInt(histPeriodSelectionSelected.substr(0, histPeriodSelectionSelected.length - 1), 10);
+    else if (this.histPeriodSelectionSelected.toLowerCase().endsWith('y')) {
+      const lbYears = parseInt(this.histPeriodSelectionSelected.substr(0, this.histPeriodSelectionSelected.length - 1), 10);
       this.histPeriodStartETstr = (new Date(currDateET.setFullYear(currDateET.getFullYear() - lbYears)).toString());
-    } else if (histPeriodSelectionSelected.toLowerCase().endsWith('m')) {
-      const lbMonths = parseInt(histPeriodSelectionSelected.substr(0, histPeriodSelectionSelected.length - 1), 10);
+    } else if (this.histPeriodSelectionSelected.toLowerCase().endsWith('m')) {
+      const lbMonths = parseInt(this.histPeriodSelectionSelected.substr(0, this.histPeriodSelectionSelected.length - 1), 10);
       this.histPeriodStartETstr = (new Date(currDateET.setMonth(currDateET.getMonth() - lbMonths)).toString());
     }
 
     this.histPeriodStartETstr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(this.histPeriodStartETstr));
     this.onHistPeriodChangeClicked();
-    (document.getElementById('histPeriodInput') as HTMLInputElement).value = histPeriodSelectionSelected;
+    (document.getElementById('histPeriodInput') as HTMLInputElement).value = this.histPeriodSelectionSelected;
   }
 
   onHistPeriodChangeClicked() {
@@ -907,7 +914,9 @@ export class BrAccViewerComponent implements OnInit {
     function mousemove(event: any) {
       const x0 = stckChrtScaleX.invert(d3.pointer(event)[0]);
       const i = bisectDate(stckChrtData, x0, 1);
-      const r = stckChrtData[i];
+      const d0 = stckChrtData[i - 1];
+      const d1 = stckChrtData[i];
+      const r = (x0.getTime() - d0.date.getTime()) > (d1.date.getTime() - x0.getTime()) ? d1 : d0;
       focus.select('circle.y')
           .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')');
       focus.select('text.y1')

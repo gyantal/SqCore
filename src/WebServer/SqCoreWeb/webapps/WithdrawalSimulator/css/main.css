@@ -267,13 +267,13 @@ table.resData {
 /* Tooltip text */
 .tooltip .tooltiptext {
   visibility: hidden;
-  min-width: 20rem;
-  max-width: 200rem;
-  font-size: 1.2rem;
+  min-width: 12.5rem;
+  max-width: 100rem;
+  font-size: 0.8rem;
   background-color: dodgerblue;
   color: gainsboro;
   text-align: center;
-  padding: 0.5rem 0;
+  padding: 0.25rem 0;
   border-radius: 0.6rem;
 
   position: absolute;
@@ -288,8 +288,8 @@ table.resData {
 }
 
 .tooltipImg {
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 1rem;
+  height: 1rem;
   background: url("../assets/images/tooltip_s.webp");
   background-size: contain;
 }
@@ -407,7 +407,7 @@ tr.header {
   box-shadow: 0rem .8rem 1.6rem 0rem rgba(0,0,0,0.2);
   z-index: 1;
   overflow: scroll;
-  top: 2rem;
+  top: 1rem;
   right: 2rem;
 }
 
@@ -427,15 +427,19 @@ tr.header {
 
 .marginInput {
   margin: 2.3rem;
-  position: absolute;
   top: 1rem;
   left: 5rem;
+  position: absolute;
+  color: #FFAC1C;
+  font-size: 1.2rem;
 }
 .marginOutput {
   margin: 2.3rem;
-  position: absolute;
   top: 1rem;
   left: 45rem;
+  position: absolute;
+  color: #FFAC1C;
+  font-size: 1.2rem;
 }
 .withoutMargin {
   margin: 0rem;
