@@ -9,7 +9,7 @@ namespace SqCoreWeb.Controllers
 {    
     [ApiController]
     [Route("[controller]")]
-    [ResponseCache(CacheProfileName = "DefaultMidDuration")]
+    [ResponseCache(CacheProfileName = "NoCache")]
     public class StrategySinController : ControllerBase
     {
         public class ExampleMessage
