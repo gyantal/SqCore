@@ -1,10 +1,10 @@
-import { NGXLogger } from '../../../ts/sq-ngx-logger/logger.service.js';
-import { NgxLoggerLevel } from '../../../ts/sq-ngx-logger/types/logger-level.enum.js';
+import './../css/main.css';
 
 // export {}; // TS convention: To avoid top level duplicate variables, functions. This file should be treated as a module (and have its own scope). A file without any top-level import or export declarations is treated as a script whose contents are available in the global scope.
 
 // 1. Declare some global variables and hook on DOMContentLoaded() and window.onload()
-console.log('SqCore: Script BEGIN4');
+console.log('SqCore: Script BEGIN');
+
 
 async function AsyncStartDownloadAndExecuteCbLater(url: string, callback: (json: any) => any) {
   fetch(url)
@@ -25,7 +25,7 @@ async function AsyncStartDownloadAndExecuteCbLater(url: string, callback: (json:
 }
 
 function getDocElementById(id: string): HTMLElement {
-  return (document.getElementById(id) as HTMLElement);  // type casting assures it is not null for the TS compiler. (it can be null during runtime)
+  return (document.getElementById(id) as HTMLElement); // type casting assures it is not null for the TS compiler. (it can be null during runtime)
 }
 
 
@@ -36,25 +36,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
 window.onload = function onLoadWindow() {
   console.log('SqCore: window.onload() BEGIN. All CSS, and images were downloaded.'); // images are loaded at this time, so their sizes are known
 
-  getDocElementById('testLoggerErrorId').onclick = raiseClientLoggerError;
-
-  const logger: NGXLogger = new NGXLogger({ level: NgxLoggerLevel.INFO, serverLogLevel: NgxLoggerLevel.ERROR, serverLoggingUrl: '/JsLog' });
-  logger.trace('A simple trace() test message to NGXLogger');
-  logger.log('A simple log() test message to NGXLogger');
-
-  AsyncStartDownloadAndExecuteCbLater('/ExampleJsClientGetNoWebpack', (json: any) => {
+  AsyncStartDownloadAndExecuteCbLater('/ExampleJsClientGet', (json: any) => {
     // const jsonToStr = JSON.stringify(json).substr(0, 60) + '...';
     getDocElementById('DebugDataArrivesHere').innerText = '***"' + json[0].stringData + '"***';
   });
 
   console.log('SqCore: window.onload() END.');
 };
-
-function raiseClientLoggerError() {
-  getDocElementById('testLoggerErrorId').style.backgroundColor = 'red';
-
-  const logger: NGXLogger = new NGXLogger({ level: NgxLoggerLevel.INFO, serverLogLevel: NgxLoggerLevel.ERROR, serverLoggingUrl: '/JsLog' });
-  logger.error('A simple error() test message to NGXLogger');
-}
 
 console.log('SqCore: Script END');

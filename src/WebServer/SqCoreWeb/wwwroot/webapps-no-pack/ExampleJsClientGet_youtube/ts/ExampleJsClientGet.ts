@@ -48,7 +48,7 @@ window.onload = function onLoadWindow() {
         getDocElementById('MainDivOverVidBkg').style.color = '#0000FF'; // on black background, font is blue, so something is visible in the black video
     }
 
-    AsyncStartDownloadAndExecuteCbLater('/ExampleJsClientGet', (json: any) => {
+    AsyncStartDownloadAndExecuteCbLater('/ExampleJsClientGetNoWebpack', (json: any) => {
         // const jsonToStr = JSON.stringify(json).substr(0, 60) + '...';
         getDocElementById('DebugDataArrivesHere').innerText = '***"' + json[0].stringData + '"***';
     });

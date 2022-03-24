@@ -5,11 +5,11 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 var HtmlWebpackInlineSourcePlugin = require('html-webpack-inline-source-plugin');
 
 module.exports = {
-    entry: "./webapps/ExampleCsServerPushInRealtime/ts/index.ts",
+    entry: "./webapps/Example/ExampleCsServerPushInRealtime/ts/main.ts",
     output: {
-        path: path.resolve(__dirname, "./../../wwwroot/webapps/ExampleCsServerPushInRealtime"),
+        path: path.resolve(__dirname, "./../../../wwwroot/webapps/Example/ExampleCsServerPushInRealtime"),
         filename: "[name].[chunkhash].js",
-        publicPath: "/webapps/ExampleCsServerPushInRealtime/"
+        publicPath: "/webapps/Example/ExampleCsServerPushInRealtime/"
     },
     resolve: {
         extensions: [".js", ".ts"]
@@ -42,7 +42,7 @@ module.exports = {
             cleanOnceBeforeBuildPatterns: ['**/*', '!static-files*']
         }),
         new HtmlWebpackPlugin({
-            template: "webapps/ExampleCsServerPushInRealtime/index.html",
+            template: "webapps/Example/ExampleCsServerPushInRealtime/index.html",
             inlineSource: '.(js|css)$' // embed all javascript and css inline
         }),
         new HtmlWebpackInlineSourcePlugin(HtmlWebpackPlugin),
