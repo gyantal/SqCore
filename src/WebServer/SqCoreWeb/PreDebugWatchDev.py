@@ -54,10 +54,10 @@ startShellCallingThread("tsc --watch --preserveWatchOutput")
 # thread2.setDaemon(True)
 # thread2.start()  #thread2.join()
 startShellCallingThread("npx webpack --config webapps/Example/ExampleCsServerPushInRealtime/webpack.config.js --mode=development --watch")  # leave this, so we are aware of compiling errors in development
-#startShellCallingThread("npx webpack --config webapps/Example/ExampleJsClientGet/webpack.config.js --mode=development --watch")
+# startShellCallingThread("npx webpack --config webapps/Example/ExampleJsClientGet/webpack.config.js --mode=development --watch")
 # startShellCallingThread("npx webpack --config webapps/ContangoVisualizer/webpack.config.js --mode=development --watch")   # commented out, so less resources is used in Development
 # startShellCallingThread("npx webpack --config webapps/WithdrawalSimulator/webpack.config.js --mode=development --watch") # <AFTER DEVELOPMENT IS FINISHED> commented out, so less resources is used in Development
-#startShellCallingThread("npx webpack --config webapps/LiveStrategy/Sin/webpack.config.js --mode=development --watch")
+# startShellCallingThread("npx webpack --config webapps/LiveStrategy/Sin/webpack.config.js --mode=development --watch")
 
 # 2.3 Angular webapps in the project folder should be served on different ports. If an Angular app is not developed any more, comment it out to save resources
 # ng serve doesn't create anything into --output-path=wwwroot/webapps/ (it keeps its files temp, maybe in RAM)
