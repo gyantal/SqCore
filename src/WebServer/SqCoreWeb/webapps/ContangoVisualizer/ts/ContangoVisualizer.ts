@@ -359,7 +359,7 @@ function creatingChart(data, titleCont, minPrice, maxPrice, maxDays) {
   }
 
   function drawTooltip(event: any) {
-    const daysArray = [];
+    const daysArray = new Array();
     series.history.forEach((element) => {
       daysArray.push(element.days);
     });
@@ -378,7 +378,7 @@ function creatingChart(data, titleCont, minPrice, maxPrice, maxDays) {
     const ttX = xCCL - mousePos[0] + closestInvX;
     const ttY = yCCL - yCoord + y(closestYCoord);
 
-    const ttTextArray = [];
+    const ttTextArray = new Array();
     ttTextArray.push(
         '<i>Number of days till expiration: ' + closestXCoord + '</i><br>'
     );

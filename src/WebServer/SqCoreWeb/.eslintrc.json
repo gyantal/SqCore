@@ -26,6 +26,7 @@
         "new-cap": ["error", { "capIsNew": false }],
         "curly": ["error", "multi-or-nest"],
         "brace-style": ["error", "1tbs", { "allowSingleLine": true }],
-        "block-spacing": ["error", "always"]
+        "block-spacing": ["error", "always"],
+        "no-array-constructor": ["error", "never"]
     }
 }
