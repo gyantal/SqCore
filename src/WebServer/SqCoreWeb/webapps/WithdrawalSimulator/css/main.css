@@ -352,11 +352,11 @@ tr.header {
 .years {
   cursor: pointer;
   text-decoration: underline;
-  color: blue;
+  color: #0000ff;
 }
 .total {
   font-weight: bold;
-  color: blue;
+  color: #0000ff;
 }
 
 /*#placeholder2 .button {
@@ -430,7 +430,7 @@ tr.header {
   top: 1rem;
   left: 5rem;
   position: absolute;
-  color: #FFAC1C;
+  color: #0000ff;
   font-size: 1.2rem;
 }
 .marginOutput {
@@ -438,7 +438,7 @@ tr.header {
   top: 1rem;
   left: 45rem;
   position: absolute;
-  color: #FFAC1C;
+  color: #0000ff;
   font-size: 1.2rem;
 }
 .withoutMargin {
@@ -450,4 +450,8 @@ tr.header {
   margin: 1.5rem;
   font-size: 1.4rem;
   padding-left: 0.5rem;
+}
+
+.commonHeadingSimHelp {
+  color: #0000ff;
 }

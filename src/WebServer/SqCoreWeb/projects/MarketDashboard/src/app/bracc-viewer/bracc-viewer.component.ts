@@ -652,10 +652,10 @@ export class BrAccViewerComponent implements OnInit {
           .attr('transform', 'translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')');
       focus.select('text.y1')
           .attr('transform', 'translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')')
-          .text(Math.round((r.sdaClose*firstEleOfHistDataArr1/100)));
+          .text(Math.round(r.sdaClose * firstEleOfHistDataArr1 / 100));
       focus.select('text.y2')
           .attr('transform', 'translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')')
-          .text(d3.format(',')(Math.round((r.sdaClose*firstEleOfHistDataArr1/100))) + 'K');
+          .text(d3.format(',')(Math.round(r.sdaClose * firstEleOfHistDataArr1 / 100)) + 'K');
       focus.select('text.y3')
           .attr('transform', 'translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')')
           .text(formatMonth(r.date));

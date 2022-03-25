@@ -14,13 +14,13 @@
     <h1>Systematic Withdrawal Simulator Help v0.2</h1>
     This is our Systematic Withdrawal Simulator. In fact, it is a combination of a <a href="http://www.investopedia.com/terms/d/dollarcostaveraging.asp" target="_blank">Dollar-cost Averaging</a> Calculator and a <a href="http://www.investopedia.com/terms/s/systematicwithdrawalschedule.asp" target="_blank">Systematic Withdrawal</a> Calculator.<br>
     This can be used for high profit, high volatility strategies (UberVxx, HarryLong, Earnings shorts that target 40%+ CAGR) to lock in some profit gradually. Thus it preserves some gains in case of later portfolio crash. Furthermore, it decreases the portfolio value gradually, so it doesn't become too big compared to other assets.
-    <h2>Description</h2>
+    <h2 class="commonHeadingSimHelp">Description</h2>
 
     The simulator has two main parts: deposits and withdrawals.<br> After an initial deposit, further additional recurring deposits can be done, optionally. It should be decided, how often, how long and how much additional money to invest.<br>
     Besides that, scheduled systematic withdrawals can also be done. It should be decided, from when, how often and what percentage of the total portfolio value to withdraw.<br><br>
     This simulator uses normally distributed random daily percentage changes during calculations. Expected value and standard deviation of daily percentage changes can be set up in input parameters part (in annualized terms).
    
-    <h2>Inputs</h2>
+    <h2 class="commonHeadingSimHelp">Inputs</h2>
     <h3>Base parameters</h3>
     <ul>
         <li><u>Length of simulation in years:</u> Can be chosen between 1 and 50 years.</li>
@@ -41,7 +41,7 @@
         <li><u>Withdrawal frequency in months (optional):</u> Can be chosen between 1 and 600 months (50 years). It should be left empty if there is no withdrawal. Withdrawals will be made at the end of every period.</li>
         <li><u>Withdrawal % (optional):</u> The percentage of systematic withdrawal, which ratio of portfolio value will be withdrawed at the end of every withdrawal period. Can be chosen between 1% and 99%. It should be left empty if there is no withdrawal.</li>
     </ul>
-    <h2>Outputs</h2>
+    <h2 class="commonHeadingSimHelp">Outputs</h2>
     <ul>
         <li><u>Total deposit:</u> The sum of the initial and additional deposits.</li>
         <li><u>Types of portfolios:</u> <ul>
@@ -59,7 +59,7 @@
         
     </ul>
     <hr>
-    <h2>Example</h2>
+    <h2 class="commonHeadingSimHelp">Example</h2>
     We would like to simulate our UberVXX strategy for 10 years. Our expected CAGR is 50%, while annualized standard deviation is 40% (Thus, Sharpe ratio is around 1.25.). We are using 100 different yield curves.<br><br>
     Our initial deposit is $1,000 and we are adding further $100 every half a year in the first 5 years. Furthermore, we are withdrawing the 10% of total portfolio value at the end of each year (including the first year).
     <table>
@@ -242,7 +242,7 @@
             </td>
         </tr>
     </table>
-    <h3>Interpretation of results   </h3>
+    <h2 class="commonHeadingSimHelp">Interpretation of results   </h2>
     During the simulation, $2,000 was deposited in total. <br><br>
     <strong>If withdrawals had not been applied, average profit would have been $170,187 or 8,509.3% during the 10 years, which is 56.1% CAGR. </strong>
     Median values would have been $71,914; 3,595.7% and 43.4%, respectively. Using a randomly selected yield curve from the 100 simulations, average profit would be $84,426 or 4,221.3%, which is 45.7% CAGR. <br><br>

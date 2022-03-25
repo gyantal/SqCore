@@ -392,3 +392,18 @@ svg.material-icons2 path {
   display: inline-block;
   width: 22%;
 }
+
+#dshbrdClientDialogAnimation {
+  animation-name: dialogFadein;
+  animation-duration: 4s;
+  animation-timing-function: ease;
+  animation-delay: 2s;
+  animation-direction: normal;
+  animation-fill-mode: forwards;
+}
+
+@keyframes dialogFadein {
+  0% { opacity:0; }
+  66% { opacity:0.7; }
+  100% { opacity:1; }
+}

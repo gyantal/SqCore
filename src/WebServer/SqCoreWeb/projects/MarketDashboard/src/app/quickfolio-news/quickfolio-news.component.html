@@ -37,32 +37,32 @@
 <div>
   <ul class="horizontal-menu">
     <li class="active">
-      <a class="source active" href="#" (click)="menuSourceClick($event, 'All sources')">All sources</a>
+      <div class="source active" (click)="menuSourceClick($event, 'All sources')">All sources</div>
     </li>
     <li>
-      <a class="source" href="#" (click)="menuSourceClick($event, 'Yahoo')">Yahoo</a>
+      <div class="source" (click)="menuSourceClick($event, 'Yahoo')">Yahoo</div>
     </li>
     <li>
-      <a class="source" href="#" (click)="menuSourceClick($event, 'Benzinga')">Benzinga</a>
+      <div class="source" (click)="menuSourceClick($event, 'Benzinga')">Benzinga</div>
     </li>
     <li>
-      <a class="source" href="#" (click)="menuSourceClick($event, 'TipRanks all')">TipRanks all</a>
+      <div class="source" (click)="menuSourceClick($event, 'TipRanks all')">TipRanks all</div>
     </li>
     <li>
-      <a class="source" href="#" (click)="menuSourceClick($event, 'TipRanks bullish')">TipRanks bullish</a>
+      <div class="source" (click)="menuSourceClick($event, 'TipRanks bullish')">TipRanks bullish</div>
     </li>
     <li>
-      <a class="source" href="#" (click)="menuSourceClick($event, 'TipRanks neutral')">TipRanks neutral</a>
+      <div class="source" (click)="menuSourceClick($event, 'TipRanks neutral')">TipRanks neutral</div>
     </li>
     <li>
-      <a class="source" href="#" (click)="menuSourceClick($event, 'TipRanks bearish')">TipRanks bearish</a>
+      <div class="source" (click)="menuSourceClick($event, 'TipRanks bearish')">TipRanks bearish</div>
     </li>
   </ul>
 </div>
 <div>
   <div style="width: 100px; height: 602px; float:left; overflow-y: auto;">
     <div class="vertical-menu" *ngFor="let ticker of stockTickers">
-      <a class="menuElement" href="#" (click)="menuClick($event, ticker)">{{ ticker }}</a>
+      <div class="menuElement" (click)="menuClick($event, ticker)">{{ ticker }}</div>
     </div>
   </div>
 

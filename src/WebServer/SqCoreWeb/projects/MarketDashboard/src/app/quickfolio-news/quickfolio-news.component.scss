@@ -2,19 +2,20 @@
   width: 100px;
 }
 
-.vertical-menu a {
+.vertical-menu div {
   background-color: #eee;
   color: black;
   display: block;
   padding: 12px;
   text-decoration: none;
+  cursor: pointer;
 }
 
-.vertical-menu a:hover {
+.vertical-menu div:hover {
   background-color: #ccc;
 }
 
-.vertical-menu a.active {
+.vertical-menu div.active {
   background-color: #4CAF50;
   color: white;
 }
@@ -30,7 +31,7 @@
 .horizontal-menu li {
   float: left;
 }
-.horizontal-menu a {
+.horizontal-menu div {
   background-color: #eee;
   color: black;
   display: block;
@@ -38,11 +39,11 @@
   text-decoration: none;
 }
 
-.horizontal-menu a:hover {
+.horizontal-menu div:hover {
   background-color: #ccc;
 }
 
-.horizontal-menu a.active {
+.horizontal-menu div.active {
   background-color: #4CAF50;
   color: white;
 }

@@ -40,7 +40,7 @@ export class AppComponent implements OnInit {
   isUserSelectionVisible = false;
   isDshbrdOpenManyTimes: boolean = false;
   isDshbrdOpenManyTimesDialogVisible: boolean = false;
-  isSrvConnectionAlive: boolean = false;
+  isSrvConnectionAlive: boolean = true;
   toolSelectionMsg = 'Click red arrow in toolbar! isToolSelectionVisible is set to ' + this.isToolSelectionVisible;
   public activeTool = 'MarketHealth';
   theme = '';
