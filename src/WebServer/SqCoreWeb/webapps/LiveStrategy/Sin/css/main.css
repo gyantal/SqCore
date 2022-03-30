@@ -1,3 +1,97 @@
+html * {
+  font-family: "Comic Sans MS", cursive, sans-serif;
+  overflow: auto;
+}
 body {
   text-align: center;
+}
+
+h1 {
+  font-family: "Comic Sans MS", cursive, sans-serif;
+  text-align: center;
+  color: blue;
+  font-size: 150%;
+}
+#titleCont {
+  font-family: "Comic Sans MS", cursive, sans-serif;
+  color: mediumblue;
+  font-size: 110%;
+  text-align: center;
+}
+.marginCommon {
+  margin: 0.5rem;
+}
+
+.pv {
+  font-weight: bold;
+  color: royalblue;
+}
+
+.posDaily {
+  font-weight: bold;
+  color: green;
+}
+
+.negDaily {
+  font-weight: bold;
+  color: red;
+}
+
+.notDaily {
+  color: blue;
+}
+
+.posMonthly {
+  font-weight: bold;
+  color: green;
+}
+
+.negMonthly {
+  font-weight: bold;
+  color: red;
+}
+
+.notMonthly {
+  font-weight: bold;
+  color: blue;
+}
+
+.posYearly {
+  font-weight: bold;
+  color: green;
+}
+
+.negYearly {
+  font-weight: bold;
+  color: red;
+}
+
+.notYearly {
+  font-weight: bold;
+  color: blue;
+}
+
+/* hidden div for diagnostics  */
+.sinDiagnostics {
+  position: absolute;
+  color: blue;
+  top: 5;
+  right: 60;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+table.currData {
+  width: 80%;
+  margin-left: 10%;
+  margin-right: 10%;
+  margin-bottom: 0;
+  font-size: 0.8rem;
+  border-collapse: collapse;
+  border: 0.1rem solid black;
+}
+
+.currData td {
+  width: 5%;
+  border: .1rem solid black;
 }
