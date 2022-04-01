@@ -1,5 +1,5 @@
 import './../css/main.css';
-
+// import * as d3 from 'd3';
 // export {}; // TS convention: To avoid top level duplicate variables, functions. This file should be treated as a module (and have its own scope). A file without any top-level import or export declarations is treated as a script whose contents are available in the global scope.
 
 // 1. Declare some global variables and hook on DOMContentLoaded() and window.onload()
@@ -37,6 +37,8 @@ window.onload = function onLoadWindow() {
   AsyncStartDownloadAndExecuteCbLater('/StrategySin', (json: any) => {
     // const jsonToStr = JSON.stringify(json).substr(0, 60) + '...';
     onReceiveSinAddiction(json);
+    // processChartWithMockup();
+    // processPctChngStckPriceChrt();
   });
   console.log('SqCore: window.onload() END.');
 };
@@ -64,6 +66,17 @@ function pctgToColor(perc, min, max) {
 }
 
 function onReceiveSinAddiction(json: any) {
+  if (json == 'Error') {
+    const divErrorCont = getDocElementById('idErrorCont');
+    divErrorCont.innerHTML = 'Error during downloading data. Please, try again later!';
+    getDocElementById('errorMessage').style.visibility='visible';
+    // getDocElementById('inviCharts').style.visibility = 'hidden';
+
+    return;
+  }
+
+  getDocElementById('errorMessage').style.display = 'none';
+
   // getDocElementById('DebugDataArrivesHere').innerText = json.titleCont + ' <sup><small><a href="' + json.gDocRef + '" target="_blank">(Study)</a></small></sup>';
   // Creating first rows of webpage.
   getDocElementById('titleCont').innerHTML = json.titleCont + ' <sup><small><a href="' + json.gDocRef + '" target="_blank">(Study)</a></small></sup>';
@@ -79,6 +92,7 @@ function onReceiveSinAddiction(json: any) {
   getDocElementById('bondPerc').innerHTML = '<span class="notDaily">Current / Required Bond Percentage: ' + json.currBondPerc + ' / ' + json.nextBondPerc + '.&emsp;&emsp; Used Leverage: ' + json.leverage +'.&emsp;Used Maximum Bond Percentage: '+json.maxBondPerc+'.</span>';
 
   sinAddictionInfoTbls(json);
+  // getDocElementById('inviCharts').style.visibility = 'visible';
 }
 
 function sinAddictionInfoTbls(json) {
@@ -159,5 +173,85 @@ function sinAddictionInfoTbls(json) {
   currTableMtx2.innerHTML = chngInPosTbl;
   const currTableMtx4 = getDocElementById('percentageChange');
   currTableMtx4.innerHTML = pctChngStckPriceTbl;
+
+  // Declaring data sets to charts.
+  // const retHistLBPeriods = json.pastPerfDaysName.split(', ');
+  const retHistLBPeriodsNoS = json.pastPerfDaysNum.split(', ');
+  const retHistLBPeriodsNo: any[] = [];
+  for (let i = 0; i < retHistLBPeriodsNoS.length; i++)
+    retHistLBPeriodsNo[i] = parseInt(retHistLBPeriodsNoS[i]);
+
+  const lengthOfChart = 21;
+  const indOfLength = retHistLBPeriodsNo.indexOf(lengthOfChart);
+  // const divChartLength = document.getElementById('idChartLength');
+  // divChartLength.innerHTML = '<div class="DDM"><strong>in the Last &emsp;<select class="DDM" id="limit2"><option value="1">1 Day</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="21" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[indOfLength] + '</select></strong ></div>';
+  // chart data preparation
+  const nCurrData = 1;
+  const noAssets = assetNames2Array.length - 1;
+
+  const yTicksH = new Array(noAssets);
+  for (let i = 0; i < noAssets; i++) {
+    const yTicksHRows = new Array(2);
+    yTicksHRows[0] = i;
+    yTicksHRows[1] = assetNames2Array[i];
+    yTicksH[i] = yTicksHRows;
+  }
+
+
+  const listH: any[] = [];
+  for (let j = 0; j < noAssets; j++) {
+    const assChartPerc1 = new Array(nCurrData);
+    for (let i = 0; i < nCurrData; i++) {
+      const assChartPerc1Rows = new Array(2);
+      assChartPerc1Rows[1] = j;
+      assChartPerc1Rows[0] = parseFloat(assChartMtx[j][indOfLength]);
+      assChartPerc1[i] = assChartPerc1Rows;
+    }
+    listH.push({ label: assetNames2Array[j], data: assChartPerc1, bars: { show: true } });
+  }
+  // const datasets1 = listH;
+  // processPctChngStckPriceChrt(datasets1, noAssets, yTicksH, nCurrData, retHistLBPeriods[indOfLength]);
 }
+
+// Bar chart with mockup data - under development Daya.
+// function processChartWithMockup() {
+//   const margin = {top: 30, right: 10, bottom: 50, left: 50};
+//   const width = 900 - margin.left - margin.right;
+//   const height = 600 - margin.top - margin.bottom;
+
+//   const svg = d3.select('#chart');
+//   const data: any[] = [{name: 'A', value: 10},
+//     {name: 'B', value: 40},
+//     {name: 'C', value: 10},
+//     {name: 'D', value: 50},
+//     {name: 'E', value: 30},
+//     {name: 'F', value: 20},
+//     {name: 'G', value: 70}];
+
+//   svg.append('g')
+//       .attr('width', width + margin.left + margin.right)
+//       .attr('height', height + margin.top + margin.bottom)
+//       .append('g').attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+//   // // set the ranges
+//   const y = d3.scaleBand()
+//       .range([0, height])
+//       .domain(data.map((d) => d.dataset))
+//       .padding(0.1);
+//   const max = d3.max(data, (d)=> d.value);
+//   const x = d3.scaleLinear()
+//       .range([0, width])
+//       .domain([0, max]);
+//   console.log('The x and y values are ', x, y, data, margin, svg);
+
+//   const chrt = svg.selectAll('rect')
+//       .data(data);
+
+//   // append the rectangles for the bar chart
+//   chrt.enter()
+//       .append('rect')
+//       .attr('fill', 'blue')
+//       .attr('width', (d) => x(d.value) - x(0))
+//       .attr('height', y.bandwidth());
+// }
 console.log('SqCore: Script END');

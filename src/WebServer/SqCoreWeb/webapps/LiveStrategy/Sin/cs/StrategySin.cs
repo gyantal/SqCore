@@ -2,8 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using FinTechCommon;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using SqCommon;
+using System.Net.Http;
+using System.Text;
 
 namespace SqCoreWeb.Controllers
 {    
@@ -60,6 +64,20 @@ namespace SqCoreWeb.Controllers
         {
             Thread.Sleep(3000);     // intentional delay to simulate a longer process to crunch data. This can be removed.
 
+            // string titleString = "Monthly rebalance, <b>The Charmat Rebalancing Method</b> (Trend following with Percentile Channel weights), Cash to TLT";
+            string usedGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1JXMbEMAP5AOqB1FjdM8jpptXfpuOno2VaFVYK8A1eLo/values/A1:Z2000?key=";
+            string usedGSheet2Ref = "https://docs.google.com/spreadsheets/d/1JXMbEMAP5AOqB1FjdM8jpptXfpuOno2VaFVYK8A1eLo/edit?usp=sharing";
+            string usedGDocRef = "https://docs.google.com/document/d/1dBHg3-McaHeCtxCTZdJhTKF5NPaixXYjEngZ4F2_ZBE/edit?usp=sharing";
+            // Utils.Logger.Info("The title string",titleString);
+            
+            //Get, split and convert GSheet data
+            var gSheetReadResult = SINGoogleApiGsheet(usedGSheetRef);
+            string? content = ((ContentResult)gSheetReadResult).Content;
+            string? gSheetString = content;
+            Tuple<int[], string[], int[], bool[], int[], double[]> gSheetResToFinCalc = GSheetConverter(gSheetString);
+            string[] allAssetList = gSheetResToFinCalc.Item2;
+            // for debugging purpose
+            Utils.Logger.Info(usedGSheet2Ref, usedGDocRef, allAssetList);
             // multiline verbatim string literal format in C#
             string mockupTestResponse = @"{
 ""titleCont"": ""Monthly rebalance, <b>The Charmat Rebalancing Method</b> (Trend following with Percentile Channel weights), Cash to TLT"",
@@ -102,5 +120,115 @@ namespace SqCoreWeb.Controllers
 }";
             return mockupTestResponse;
         }
+
+        public static Tuple<int[], string[], int[], bool[], int[], double[]> GSheetConverter(string? p_gSheetString)
+        {
+            if (p_gSheetString != null)
+            {
+                string[] gSheetTableRows = p_gSheetString.Split(new string[] { "[" }, StringSplitOptions.RemoveEmptyEntries);
+                int assNum = gSheetTableRows.Length - 9;
+                string[] assNameString = new string[assNum];
+                string[] currPosAssString = new string[assNum];
+                string[] currAssIndString = new string[assNum];
+                for (int iRows = 4; iRows < gSheetTableRows.Length - 5; iRows++)
+                {
+                    string currPosRaw = gSheetTableRows[iRows];
+                    currPosRaw = currPosRaw.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
+                    string[] currPos = currPosRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
+                    assNameString[iRows - 4] = currPos[0];
+                    currPosAssString[iRows - 4] = currPos[1];
+                    currAssIndString[iRows - 4] = currPos[2];
+                }
+
+                string currDateRaw = gSheetTableRows[2];
+                currDateRaw = currDateRaw.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
+                string[] currDateVec = currDateRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
+
+                string currDateRaw2 = gSheetTableRows[3];
+                currDateRaw2 = currDateRaw2.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
+                string[] currDateVec2 = currDateRaw2.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
+
+                string currCashRaw = gSheetTableRows[^5];
+                currCashRaw = currCashRaw.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
+                string[] currCashVec = currCashRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
+
+                string[] prevPVString = new string[4];
+                for (int iRows = 0; iRows < prevPVString.Length; iRows++)
+                {
+                    string currPosRaw = gSheetTableRows[gSheetTableRows.Length - 4 + iRows];
+                    currPosRaw = currPosRaw.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
+                    string[] currPos = currPosRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
+                    prevPVString[iRows] = currPos[1];
+                }
+
+                int currPosDate = Int32.Parse(currDateVec[1]);
+                int currPosCash = Int32.Parse(currCashVec[1]);
+                int[] currPosDateCash = new int[] { currPosDate, currPosCash };
+                double leverage = Double.Parse(currDateVec[2]);
+                double maxBondPerc = Double.Parse(currDateVec2[2]);
+                double[] levMaxBondPerc = new double[] { leverage, maxBondPerc };
+
+                int[] currPosAssets = Array.ConvertAll(currPosAssString, int.Parse);
+                bool[] currAssInd = currAssIndString.Select(chr => chr == "1").ToArray();
+                int[] prevPV = Array.ConvertAll(prevPVString, int.Parse);
+
+
+                Tuple<int[], string[], int[], bool[], int[], double[]> gSheetResFinal = Tuple.Create(currPosDateCash, assNameString, currPosAssets, currAssInd, prevPV, levMaxBondPerc);
+
+                return gSheetResFinal;
+            }
+            throw new NotImplementedException();
+        }
+
+        public object SINGoogleApiGsheet(string p_usedGSheetRef)
+        {
+            Utils.Logger.Info("SINGoogleApiGsheet() BEGIN");
+
+            string valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
+            if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
+            {
+                if (DownloadStringWithRetry(out valuesFromGSheetStr, p_usedGSheetRef + Utils.Configuration["Google:GoogleApiKeyKey"], 3, TimeSpan.FromSeconds(2), true))
+                    if (valuesFromGSheetStr == null)
+                        valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
+            }
+            
+            Utils.Logger.Info("SINGoogleApiGsheet() END");
+            return Content($"<HTML><body>SINGoogleApiGsheet() finished OK. <br> Received data: '{valuesFromGSheetStr}'</body></HTML>", "text/html");
+        }
+        public static bool DownloadStringWithRetry(out string p_webpage, string p_url, int p_nRetry, TimeSpan p_sleepBetweenRetries, bool p_throwExceptionIfUnsuccesfull)
+        {
+            p_webpage = String.Empty;
+            int nDownload = 0;
+            do
+            {
+
+                try
+                {
+                    nDownload++;
+                    p_webpage = new HttpClient().GetStringAsync(p_url).Result;
+                    Utils.Logger.Debug(String.Format("DownloadStringWithRetry() OK:{0}, nDownload-{1}, Length of reply:{2}", p_url, nDownload, p_webpage.Length));
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    // it is quite expected that sometimes (once per month), there is a problem:
+                    // "The operation has timed out " or "Unable to connect to the remote server" exceptions
+                    // Don't raise Logger.Error() after the first attempt, because it is not really Exceptional, and an Error email will be sent
+                    Utils.Logger.Info(ex, "Exception in DownloadStringWithRetry()" + p_url + ":" + nDownload + ": " + ex.Message);
+                    Thread.Sleep(p_sleepBetweenRetries);
+                    if ((nDownload >= p_nRetry) && p_throwExceptionIfUnsuccesfull)
+                        throw;  // if exception still persist after many tries, rethrow it to caller
+                }
+            } while (nDownload < p_nRetry);
+
+            return false;
+        }
     }
+        
+        //     public static Tuple<IList<List<SQLab.Controllers.QuickTester.Strategies.DailyData>>, List<SQLab.Controllers.QuickTester.Strategies.DailyData>> DataSQDBG(string[] p_allAssetList)
+        // {
+        //     return null;
+        //     MemDb.gMemDb.GetSdaPriorClosesFromHist();
+        //     throw new NotImplementedException();
+        // }
 }

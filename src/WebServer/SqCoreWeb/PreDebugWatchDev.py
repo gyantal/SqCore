@@ -53,7 +53,7 @@ startShellCallingThread("tsc --watch --preserveWatchOutput")
 # thread2 = Thread(target = threaded_function, args = ("npx webpack --config webapps/Example/ExampleCsServerPushInRealtime/webpack.config.js --mode=development --watch",))
 # thread2.setDaemon(True)
 # thread2.start()  #thread2.join()
-startShellCallingThread("npx webpack --config webapps/Example/ExampleCsServerPushInRealtime/webpack.config.js --mode=development --watch")  # leave this, so we are aware of compiling errors in development
+# startShellCallingThread("npx webpack --config webapps/Example/ExampleCsServerPushInRealtime/webpack.config.js --mode=development --watch")  # leave this, so we are aware of compiling errors in development
 # startShellCallingThread("npx webpack --config webapps/Example/ExampleJsClientGet/webpack.config.js --mode=development --watch")
 # startShellCallingThread("npx webpack --config webapps/ContangoVisualizer/webpack.config.js --mode=development --watch")   # commented out, so less resources is used in Development
 # startShellCallingThread("npx webpack --config webapps/WithdrawalSimulator/webpack.config.js --mode=development --watch") # <AFTER DEVELOPMENT IS FINISHED> commented out, so less resources is used in Development

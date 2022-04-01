@@ -95,3 +95,9 @@ table.currData {
   width: 5%;
   border: .1rem solid black;
 }
+
+#chart {
+  border: .1rem solid black;
+  width: 900;
+  height: 600;
+}
