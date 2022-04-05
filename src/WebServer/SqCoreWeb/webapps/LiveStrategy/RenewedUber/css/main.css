@@ -1,0 +1,13 @@
+html * {
+  font-family: "Comic Sans MS", cursive, sans-serif;
+  overflow: auto;
+}
+body {
+  text-align: center;
+}
+
+h1 {
+  text-align: center;
+  color: blue;
+  font-size: 150%;
+}

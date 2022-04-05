@@ -216,10 +216,11 @@ function sinAddictionInfoTbls(json) {
 // Bar chart with mockup data - under development Daya.
 // function processChartWithMockup() {
 //   const margin = {top: 30, right: 10, bottom: 50, left: 50};
-//   const width = 900 - margin.left - margin.right;
-//   const height = 600 - margin.top - margin.bottom;
+//   const width = 460 - margin.left - margin.right;
+//   const height = 400 - margin.top - margin.bottom;
 
-//   const svg = d3.select('#chart');
+//   const svg = d3.select('#SinAddictionChart')
+//       .append('svg');
 //   const data: any[] = [{name: 'A', value: 10},
 //     {name: 'B', value: 40},
 //     {name: 'C', value: 10},
@@ -229,29 +230,63 @@ function sinAddictionInfoTbls(json) {
 //     {name: 'G', value: 70}];
 
 //   svg.append('g')
-//       .attr('width', width + margin.left + margin.right)
-//       .attr('height', height + margin.top + margin.bottom)
+//       .attr('width', width - margin.left - margin.right)
+//       .attr('height', height - margin.top - margin.bottom)
 //       .append('g').attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
 //   // // set the ranges
-//   const y = d3.scaleBand()
-//       .range([0, height])
-//       .domain(data.map((d) => d.dataset))
-//       .padding(0.1);
-//   const max = d3.max(data, (d)=> d.value);
-//   const x = d3.scaleLinear()
+//   // const max = d3.max(data, (d)=> d.value);
+//   const x = d3.scaleBand()
 //       .range([0, width])
-//       .domain([0, max]);
+//       .padding(0.2);
+//   const xAxis = svg.append('g')
+//       .attr('transform', 'translate(' + 0 + ',' + height + ')');
+
+//   const y = d3.scaleLinear()
+//       .range([height, 0]);
+//   const yAxis = svg.append('g')
+//       .attr('class', 'myYaxis');
+
+//   // Update the X axis
+//   x.domain(data.map((d) => d.group));
+//   xAxis.call(d3.axisBottom(x));
+
+//   // Update the Y axis
+//   y.domain([0, d3.max(data, (d) => d.value)]);
+//   yAxis.transition().duration(1000).call(d3.axisLeft(y));
+//   // const x = d3.scaleLinear()
+//   //     .range([0, width])
+//   //     .domain([0, max]);
+//   // svg.append('g')
+//   //     .attr('transform', 'translate(' + 0 + ',' + height + ')')
+//   //     .call(d3.axisBottom(x));
+
+//   // const y = d3.scaleBand()
+//   //     .range([height, 0])
+//   //     .domain(data.map((d) => d.name))
+//   //     .padding(0.1);
+//   // svg.append('g')
+//   //     .call(d3.axisLeft(y));
+
 //   console.log('The x and y values are ', x, y, data, margin, svg);
 
 //   const chrt = svg.selectAll('rect')
 //       .data(data);
+//   // .join('rect')
+//   // .attr('fill', 'blue')
+//   // // .attr('x', (d) => x(d.name))
+//   // // .attr('y', (d) => y(d.value))
+//   // .attr('width', (d) => y(d.value))
+//   // .attr('height', x.bandwidth());
 
 //   // append the rectangles for the bar chart
-//   chrt.enter()
-//       .append('rect')
+//   chrt.join('rect') // Add a new rect for each new elements
+//       .transition()
+//       .duration(1000)
 //       .attr('fill', 'blue')
-//       .attr('width', (d) => x(d.value) - x(0))
-//       .attr('height', y.bandwidth());
+//       // .attr('x', (d: any) => x(d.name))
+//       // .attr('y', (d) => y(d.name))
+//       .attr('width', (d) => y(d.value))
+//       .attr('height', x.bandwidth());
 // }
 console.log('SqCore: Script END');

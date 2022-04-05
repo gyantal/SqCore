@@ -7,13 +7,11 @@ body {
 }
 
 h1 {
-  font-family: "Comic Sans MS", cursive, sans-serif;
   text-align: center;
   color: blue;
   font-size: 150%;
 }
 #titleCont {
-  font-family: "Comic Sans MS", cursive, sans-serif;
   color: mediumblue;
   font-size: 110%;
   text-align: center;
@@ -96,8 +94,8 @@ table.currData {
   border: .1rem solid black;
 }
 
-#chart {
+/* #SinAddictionChart {
   border: .1rem solid black;
   width: 900;
   height: 600;
-}
+} */

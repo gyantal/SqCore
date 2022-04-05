@@ -46,6 +46,7 @@ os.system("npx webpack --config webapps/Example/ExampleCsServerPushInRealtime/we
 os.system("npx webpack --config webapps/ContangoVisualizer/webpack.config.js --mode=production")
 os.system("npx webpack --config webapps/WithdrawalSimulator/webpack.config.js --mode=production")
 os.system("npx webpack --config webapps/LiveStrategy/Sin/webpack.config.js --mode=production")
+os.system("npx webpack --config webapps/LiveStrategy/RenewedUber/webpack.config.js --mode=production")
 
 # 2.3. Angular webapps in  ./Angular should be built
 print("\nSqBuild: Executing Angular 'ng build...'")
