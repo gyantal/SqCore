@@ -34,8 +34,8 @@ namespace SqCoreWeb.Controllers
 
         public class DailyData
         {
-            public DateTime Date { get; set; }
-            public double AdjClosePrice { get; set; }
+            public List<string> Date { get; set; } = new List<string>();
+            public List<float> AdjClosePrice { get; set; } = new List<float>();
         }
 
         // [HttpGet] // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
@@ -82,7 +82,9 @@ namespace SqCoreWeb.Controllers
             string? gSheetString = content;
             Tuple<int[], string[], int[], bool[], int[], double[]> gSheetResToFinCalc = GSheetConverter(gSheetString);
             string[] allAssetList = gSheetResToFinCalc.Item2;
-            
+
+            // GetSinStockHistData(allAssetList);
+
             // for debugging purpose - DAYA
             Utils.Logger.Info(usedGSheet2Ref, usedGDocRef, allAssetList);
             //Parameters to be used
@@ -148,7 +150,7 @@ namespace SqCoreWeb.Controllers
             // nextPosValue[^1] = currPV - nextPosValue.Take(nextPosValue.Length - 1).ToArray().Sum();
 
             // double currBondPerc = currPosValue[^2] / currPV;
-            // double nextBondPerc = nextPosValue[^2] / (currPV*leverage);
+            // double nextBondPerc = nextPosValue[^2] / (currPV * leverage);
 
             // double[] nextPosInt = new double[nextPosValue.Length];
             // for (int jCols = 0; jCols < nextPosInt.Length - 2; jCols++)
@@ -295,7 +297,7 @@ namespace SqCoreWeb.Controllers
             //     assetScoresMtx[iRows, 1] = Math.Round(taaWeightResultsTuple.Item2[taaWeightResultsTuple.Item2.GetLength(0)-1,iRows] * 100.0, 2).ToString() + "%";
             // }
             // assetScoresMtx[assetScoresMtx.GetLength(0) - 1, 0] = "---";
-            // assetScoresMtx[assetScoresMtx.GetLength(0) - 1, 1] = Math.Round(nextBondPerc*100,2).ToString() +"%";
+            // assetScoresMtx[assetScoresMtx.GetLength(0) - 1, 1] = Math.Round(nextBondPerc*100, 2).ToString() +"%";
 
             // //Creating input string for JavaScript.
             // StringBuilder sb = new("{" + Environment.NewLine);
@@ -410,9 +412,8 @@ namespace SqCoreWeb.Controllers
             // }
             // sb.AppendLine(@"""" + Environment.NewLine + @"}");
 
-            // var asdfa = sb.ToString(); //testing created string to JS
-
-            // Utils.Logger.Info(asdfa);
+            // return sb.ToString();
+            
             // multiline verbatim string literal format in C#
             string mockupTestResponse = @"{
 ""titleCont"": ""Monthly rebalance, <b>The Charmat Rebalancing Method</b> (Trend following with Percentile Channel weights), Cash to TLT"",
@@ -530,20 +531,30 @@ namespace SqCoreWeb.Controllers
             Utils.Logger.Info("SINGoogleApiGsheet() END");
             return Content($"<HTML><body>SINGoogleApiGsheet() finished OK. <br> Received data: '{valuesFromGSheetStr}'</body></HTML>", "text/html");
         }
-        
+
         // private Tuple<double[], double[,], double[]> TaaWeights(IList<List<DailyData>> quotesData, int[] lookbackDays, int volDays, int thresholdLower)
         // {
         //     throw new NotImplementedException();
         // }
 
-        // public static Tuple<IList<List<DailyData>>, List<DailyData>> DataSQDBG(string[] p_allAssetList)
+        // public static DailyData? GetSinStockHistData(string[] p_allAssetList)
         // {
-        //     throw new NotImplementedException();
+        //     List<string> tickersNeeded1 = p_allAssetList.ToList();
+        //     string tickersNeeded = "S/SPY";
+        //     // DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;
+        //     DateTime endTimeUtc = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).AddDays(10);
+        //     DateTime endTimeUtc2 = endTimeUtc.AddDays(-11);
+        //     DateTime endTimeUtc3 = endTimeUtc.AddDays(-12);
+        //     DateTime startTimeUtc = endTimeUtc.AddDays(-420);
+        //     (SqDateOnly[] dates, float[] adjCloses) = MemDb.GetSelectedStockTickerHistData(startTimeUtc, endTimeUtc, tickersNeeded);
+        //     DailyData histValues = new();
+        //     if (adjCloses.Length != 0)
+        //     {
+        //         histValues.Date = dates.Select(r => r.Date.ToYYYYMMDD()).ToList();
+        //         histValues.AdjClosePrice = adjCloses.ToList();
+        //     }
+        //     return histValues;
         // }
 
-        // public static object GetSdaPriorClosesFromHistSin(List<string> tickersNeeded, DateTime endTimeUtc)
-        // {
-        //     throw new NotImplementedException();
-        // }
     }
 }
