@@ -167,13 +167,13 @@ namespace FinTechCommon
                 int iStockEndDay = Int32.MinValue, iStockFirstDay = Int32.MinValue;
                 for (int i = iiStartDay; i >= iEndDay; i--)   // iEndDay is index 0 or 1. Reverse marching from yesterday iEndDay to deeper into the past. Until startdate iStartDay or until history beginning reached
                 {
-                    if (Single.IsNaN(sdaCloses[i]))
+                    float val = sdaCloses[i];
+                    if (Single.IsNaN(val))
                         continue;   // if that date in the global MemDb was an USA stock market holiday (e.g. President days is on monday), price is NaN for stocks, but valid value for NAV
                     if (iStockFirstDay == Int32.MinValue)
                         iStockFirstDay = i;
                     iStockEndDay = i;
 
-                    float val = sdaCloses[i];
                     if (p_valuesNeeded && values != null)
                         values.Add(new AssetHistValue() { Date = dates[i], SdaValue = val  });
 
@@ -212,6 +212,57 @@ namespace FinTechCommon
             });
 
             return assetHists;
+        }
+
+        public IEnumerable<(Asset asset, List<AssetHistValue> values)> GetSdaHistClosesAndLastEstValue(IEnumerable<Asset> p_assets, DateTime p_startIncLoc)
+        {
+            TsDateData<SqDateOnly, uint, float, uint> histData = DailyHist.GetDataDirect();
+            SqDateOnly[] dates = histData.Dates;
+
+            // At 16:00, or even intraday: YF gives even the today last-realtime price with a today-date. We have to find any date backwards, which is NOT today. That is the PreviousClose.
+            int iEndDay = 0;
+
+            int iStartDay = histData.IndexOfKeyOrAfter(new SqDateOnly(p_startIncLoc));      // the valid price at the weekend is the one on the previous Friday. After.
+            if (iStartDay == -1 || iStartDay >= dates.Length) // If not found then fix the startDate as the first available date of history.
+            {
+                iStartDay = dates.Length - 1;
+            }
+            Debug.WriteLine($"MemDb.GetSdaHistCloses().StartDate: {dates[iStartDay]}");
+
+            IEnumerable<(Asset asset, List<AssetHistValue> values)> assetHistsAndLastEstValue = p_assets.Select(r =>
+            {
+
+                float[] sdaCloses = histData.Data[r.AssetId].Item1[TickType.SplitDivAdjClose];
+                // if startDate is not found, because e.g. we want to go back 3 years, while stock has only 2 years history
+                int iiStartDay = (iStartDay < sdaCloses.Length) ? iStartDay : sdaCloses.Length - 1;
+                if (Single.IsNaN(sdaCloses[iiStartDay]) // if that date in the global MemDb was an USA stock market holiday (e.g. President days is on monday), price is NaN for stocks, but valid value for NAV
+                    && ((iiStartDay + 1) <= sdaCloses.Length))
+                    iiStartDay++;   // that start 1 day earlier. It is better to give back more data, then less. Besides on that holiday day, the previous day price is valid.
+
+                List<AssetHistValue> vals = new();
+
+                // reverse marching from yesterday into past is not good, because we have to calculate running maxDD, maxDU.
+                int iStockEndDay = Int32.MinValue, iStockFirstDay = Int32.MinValue;
+                for (int i = iiStartDay; i >= iEndDay; i--)   // iEndDay is index 0 or 1. Reverse marching from yesterday iEndDay to deeper into the past. Until startdate iStartDay or until history beginning reached
+                {
+                    float val = sdaCloses[i];
+                    if (Single.IsNaN(val))
+                        continue;   // if that date in the global MemDb was an USA stock market holiday (e.g. President days is on monday), price is NaN for stocks, but valid value for NAV
+                    if (iStockFirstDay == Int32.MinValue)
+                        iStockFirstDay = i;
+                    iStockEndDay = i;
+                    
+                    vals.Add(new AssetHistValue() { Date = dates[i], SdaValue = val  });
+                }
+
+                vals.Add(new AssetHistValue() { Date = new SqDateOnly(r.EstValueUtc), SdaValue = r.EstValue  });
+
+                // client probably doesn't need exact startdate
+                // var periodStartDateInc = (iStockFirstDay >= 0) ? (DateTime)dates[iStockFirstDay] : DateTime.MaxValue;    // it may be not the 'asked' start date if asset has less price history
+                return (r, vals);
+            });
+
+            return assetHistsAndLastEstValue;
         }
 
     }

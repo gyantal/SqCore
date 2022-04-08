@@ -32,10 +32,10 @@ namespace SqCoreWeb.Controllers
         {
         }
 
-        public class DailyData
+         public class DailyData
         {
-            public List<string> Date { get; set; } = new List<string>();
-            public List<float> AdjClosePrice { get; set; } = new List<float>();
+            public DateTime Date { get; set; }
+            public double AdjClosePrice { get; set; }
         }
 
         // [HttpGet] // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
@@ -536,26 +536,42 @@ namespace SqCoreWeb.Controllers
         // {
         //     throw new NotImplementedException();
         // }
-// Under Development - Daya.
-        public static DailyData? GetSinStockHistData(string[] p_allAssetList)
+
+        public static (IList<List<DailyData>>, List<DailyData>) GetSinStockHistData(string[] p_allAssetList)
         {
-            List<string> tickersNeeded1 = p_allAssetList.ToList();
-            // string tickersNeeded = "SPY";
-            // DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;
-            DateTime endTimeUtc = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).AddDays(10);
-            DateTime endTimeUtc2 = endTimeUtc.AddDays(-11);
-            DateTime endTimeUtc3 = endTimeUtc.AddDays(-12);
-            DateTime startTimeUtc = endTimeUtc.AddDays(-420);
-            DailyData histValues = new();
-            for (var i = 0; i < tickersNeeded1.Count; i++) {
-            (SqDateOnly[] dates, float[] adjCloses) = MemDb.GetSelectedStockTickerHistData(startTimeUtc, endTimeUtc, tickersNeeded1[i]);
-                if (adjCloses.Length != 0)
-                {
-                    histValues.Date = dates.Select(r => r.Date.ToYYYYMMDD()).ToList();
-                    histValues.AdjClosePrice = adjCloses.ToList();
-                }
+            List<Asset> assets = new();
+            for (int i = 0; i < p_allAssetList.Length; i++)
+            {
+                Asset? asset = MemDb.gMemDb.AssetsCache.TryGetAsset("S/" + p_allAssetList[i]);
+                if (asset != null)
+                    assets.Add(asset);
             }
-            return histValues;
+
+             DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
+             DateTime startIncLoc = nowET.AddYears(-1).AddDays(-3);
+
+            
+            List<List<DailyData>> sinTickersData = new();
+            List<DailyData> cashSubstituteData = new();
+
+            List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc).ToList();
+            for (int i = 0; i < assetHistsAndEst.Count - 1; i++)
+            {
+                var vals = assetHistsAndEst[i].values;
+                List<DailyData> sinValsData = new();
+                for (int j = 0; j < vals.Count; j++)
+                {
+                    sinValsData.Add(new DailyData() { Date = vals[j].Date, AdjClosePrice = vals[j].SdaValue });
+                }
+                sinTickersData.Add(sinValsData);
+            }
+
+            // last ticker is TLT, which is used as a cash substitute. Special rola.
+            var cashVals = assetHistsAndEst[^1].values;
+            for (int j = 0; j < cashVals.Count; j++)
+                cashSubstituteData.Add(new DailyData() { Date = cashVals[j].Date, AdjClosePrice = cashVals[j].SdaValue });
+
+            return (sinTickersData, cashSubstituteData);
         }
 
     }
