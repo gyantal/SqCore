@@ -1,5 +1,5 @@
 import './../css/main.css';
-
+import * as d3 from 'd3';
 // export {}; // TS convention: To avoid top level duplicate variables, functions. This file should be treated as a module (and have its own scope). A file without any top-level import or export declarations is treated as a script whose contents are available in the global scope.
 
 // 1. Declare some global variables and hook on DOMContentLoaded() and window.onload()
@@ -52,8 +52,11 @@ function onReceiveRenewedUber(json: any) {
   // if (json.dailyProfSig !== 'N/A')
   //   getDocElementById('dailyProfit').innerHTML = '<b>Daily Profit/Loss: <span class="' + json.dailyProfString + '">' + json.dailyProfSig + json.dailyProfAbs + '</span></b>';
   getDocElementById('idCurrentEvent').innerHTML = 'Next trading day will be <span class="stci"> ' + json.currentEventName + '</span>, <div class="tooltip">used STCI is <span class="stci">' + json.currentSTCI + '</span><span class="tooltiptext">Second (third) month VIX futures divided by front (second) month VIX futures minus 1, with more (less) than 5-days until expiration.</span></div > and used VIX is <span class="stci">' + json.currentVIX + '</span>, thus leverage will be <span class="stci">' + json.currentFinalWeightMultiplier + '.</span >';
+  getDocElementById('idRules').innerHTML = '<u>Current trading rules:</u> <ul align="left"><li>Play with 100% of PV on FOMC days (as this is the strongest part of the strategy), with 85% on Holiday days, with 70% on VIXFUTEX, OPEX, TotM and TotMM days, while with only 50% of PV on pure bullish STCI days. These deleveraging percentages have to be played both on bullish and bearish days.</li><li><ul><li>All of the FOMC and Holiday signals have to be played, regardless the STCI;</li><li>on weaker bullish days (OPEX, VIXFUTEX, TotM and TotMM) play the UberMix basket if and only if the STCI closed above +2% contango (25th percentile) on previous day (so, stay in cash if contango is not big enough);</li><li>on weaker bearish days (OPEX, VIXFUTEX, TotM and TotMM) play long VXX if and only if the STCI closed below +9% contango (75th percentile) on previous day (so, stay in cash if the contango is too deep).</li></ul></li><li>Bullish STCI threshold on non-event days is +7.5%, which is the 67th percentile of historical value of the STCI.</li><li>VIX Based Leverage Indicator: <ul align="left"><li>If VIX<21:&emsp; leverage = 100%;</li><li>If 21<=VIX<30:&emsp; leverage = 100%-(VIX-21)*10%;</li><li>If 30<=VIX:&emsp; leverage = 10%.</li></ul></li></ul>';
 
   renewedUberInfoTbls(json);
+  // Setting charts visible after getting data.
+  getDocElementById('renewedUberchart').style.visibility = 'visible';
 }
 
 function renewedUberInfoTbls(json) {
@@ -144,6 +147,315 @@ function renewedUberInfoTbls(json) {
 
   const currTableMtx8 = getDocElementById('idCurrTableMtx7');
   currTableMtx8.innerHTML = currTableMtx7;
+
+  // const monthList = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  const currDataVixArray = json.currDataVixVec.split(',');
+  const currDataDaysVixArray = json.currDataDaysVixVec.split(',');
+  const prevDataVixArray = json.prevDataVixVec.split(',');
+  const currDataDiffVixArray = json.currDataDiffVixVec.split(',');
+  const currDataPercChVixArray = json.currDataPercChVixVec.split(',');
+  const spotVixArray = json.spotVixVec.split(',');
+
+  // Creating the HTML code of current table.
+  let futurePricesTbl = '<table class="currData"><tr align="center"><td>Future Prices</td><td>F1</td><td>F2</td><td>F3</td><td>F4</td><td>F5</td><td>F6</td><td>F7</td><td>F8</td></tr><tr align="center"><td align="left">Current</td>';
+  for (let i = 0; i < 8; i++) {
+    if (currDataVixArray[i] == 0)
+      futurePricesTbl += '<td>' + '---' + '</td>';
+    else
+      futurePricesTbl += '<td>' + currDataVixArray[i] + '</td>';
+  }
+
+  futurePricesTbl += '</tr><tr align="center"><td align="left">Previous Close</td>';
+  for (let i = 0; i < 8; i++) {
+    if (currDataVixArray[i] == 0)
+      futurePricesTbl += '<td>' + '---' + '</td>';
+    else
+      futurePricesTbl += '<td>' + prevDataVixArray[i] + '</td>';
+  }
+  futurePricesTbl += '</tr><tr align="center"><td align="left">Daily Abs. Change</td>';
+  for (let i = 0; i < 8; i++) {
+    if (currDataVixArray[i] == 0)
+      futurePricesTbl += '<td>' + '---' + '</td>';
+    else
+      futurePricesTbl += '<td>' + currDataDiffVixArray[i] + '</td>';
+  }
+  futurePricesTbl += '</tr><tr align="center"><td align="left">Daily % Change</td>';
+  for (let i = 0; i < 8; i++) {
+    if (currDataVixArray[i] == 0)
+      futurePricesTbl += '<td>' + '---' + '</td>';
+    else
+      futurePricesTbl += '<td>' + (currDataPercChVixArray[i] * 100).toFixed(2) + '%</td>';
+  }
+  futurePricesTbl += '</tr><tr align="center"><td align="left">Cal. Days to Expiration</td>';
+  for (let i = 0; i < 8; i++) {
+    if (currDataVixArray[i] == 0)
+      futurePricesTbl += '<td>' + '---' + '</td>';
+    else
+      futurePricesTbl += '<td>' + currDataDaysVixArray[i] + '</td>';
+  }
+  futurePricesTbl += '</tr></table>';
+
+  let contangoTbl = '<table class="currData"><tr align="center"><td>Contango</td><td>F2-F1</td><td>F3-F2</td><td>F4-F3</td><td>F5-F4</td><td>F6-F5</td><td>F7-F6</td><td>F8-F7</td><td>F7-F4</td><td>(F7-F4)/3</td></tr><tr align="center"><td align="left">Monthly Contango %</td><td><strong>' + (currDataVixArray[8] * 100).toFixed(2) + '%</strong></td>';
+  for (let i = 20; i < 27; i++) {
+    if (currDataVixArray[i] == 0)
+      contangoTbl += '<td>' + 0 + '</td>';
+    else
+      contangoTbl += '<td>' + (currDataVixArray[i] * 100).toFixed(2) + '%</td>';
+  }
+  contangoTbl += '<td><strong>' + (currDataVixArray[27] * 100).toFixed(2) + '%</strong></td>';
+  contangoTbl += '</tr><tr align="center"><td align="left">Difference</td>';
+  for (let i = 10; i < 19; i++) {
+    if (currDataVixArray[i] == 0)
+      contangoTbl += '<td>' + '0%' + '</td>';
+    else
+      contangoTbl += '<td>' + (currDataVixArray[i] * 100 / 100).toFixed(2) + '</td>';
+  }
+  contangoTbl += '</tr></table>';
+
+  // "Sending" data to HTML file.
+  const futurePricesMtx = getDocElementById('idfuturePricesMtx');
+  futurePricesMtx.innerHTML = futurePricesTbl;
+  const contangoMtx = getDocElementById('idcontangoMtx');
+  contangoMtx.innerHTML = contangoTbl;
+
+  interface PriceData {
+    days: number;
+    price: number;
+  }
+  const nCurrData = 7;
+  const currDataPrices: PriceData[] = [];
+  for (let i = 0; i < nCurrData; i++) {
+    const currDataPricesRows: PriceData = {
+      days: currDataDaysVixArray[i],
+      price: currDataVixArray[i],
+    };
+    currDataPrices.push(currDataPricesRows);
+  }
+
+  const prevDataPrices: PriceData[] = [];
+  for (let i = 0; i < nCurrData; i++) {
+    const prevDataPricesRows: PriceData = {
+      days: currDataDaysVixArray[i],
+      price: prevDataVixArray[i],
+    };
+    prevDataPrices.push(prevDataPricesRows);
+  }
+
+  const spotVixValues: PriceData[] = [];
+  for (let i = 0; i < nCurrData; i++) {
+    const spotVixValuesRows: PriceData = {
+      days: currDataDaysVixArray[i],
+      price: spotVixArray[i],
+    };
+    spotVixValues.push(spotVixValuesRows);
+  }
+
+  // Declaring data sets to charts.
+
+  interface DataSet {
+    name: string;
+    history: PriceData[];
+    show: boolean;
+    color: string;
+  }
+
+  const current: DataSet = {
+    name: 'Current',
+    history: currDataPrices,
+    show: true,
+    color: 'blue',
+  };
+
+  const previous: DataSet = {
+    name: 'Last Close',
+    history: prevDataPrices,
+    show: true,
+    color: 'green',
+  };
+
+  const dataset: DataSet[] = [];
+  dataset.push(current);
+  dataset.push(previous);
+
+  if (spotVixArray[0] > 0) {
+    const spot: DataSet = {
+      name: 'Spot VIX',
+      history: spotVixValues,
+      show: true,
+      color: 'red',
+    };
+    dataset.push(spot);
+  }
+
+  let minPrice = 1000;
+  let maxPrice = 0;
+  dataset.forEach((series) => {
+    const minPriceI = d3.min(series.history, (d) => d.price) ?? 1000;
+    const maxPriceI = d3.max(series.history, (d) => d.price) ?? 0;
+    if (minPriceI < minPrice)
+      minPrice = minPriceI;
+    if (maxPriceI > maxPrice)
+      maxPrice = maxPriceI;
+  });
+  const maxDays = currDataDaysVixArray[nCurrData - 1];
+
+  renewedUberChart(dataset, json.titleCont, minPrice, maxPrice, maxDays);
 }
 
+function renewedUberChart(dataset: any, titleCont: any, minPrice: number, maxPrice: number, maxDays: any) {
+  d3.selectAll('#renewedUberchart > *').remove();
+  const svg = d3.select('#renewedUberchart')
+      .append('svg');
+
+  // Define margins, dimensions, and some line colors
+  const margin = { top: 40, right: 50, bottom: 35, left: 100 };
+  const width = 660 - margin.left - margin.right;
+  const height = 400 - margin.top - margin.bottom;
+
+  // Define the scales and tell D3 how to draw the line
+  const x = d3
+      .scaleLinear()
+      .domain([0, 240])
+      .range([0, width]);
+  const y = d3
+      .scaleLinear()
+      .domain([minPrice * 0.8, maxPrice * 1.5])
+      .range([height, 0]);
+  const line = d3
+      .line()
+      .x((d : any) => x(d.days))
+      .y((d : any) => y(d.price));
+  svg.selectAll('*').remove();
+  const chart = d3
+      .select('svg')
+      .append('g')
+      .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+  const tooltip = d3.select('#tooltipChart');
+  const tooltipLine = chart.append('line');
+
+  // Add the axes and a title
+  const xAxis = d3.axisBottom(x).tickFormat(d3.format('.4'));
+  const yAxis = d3.axisLeft(y).tickFormat(d3.format('$.4'));
+  chart.append('g').call(yAxis);
+  chart
+      .append('g')
+      .attr('transform', 'translate(0,' + height + ')')
+      .call(xAxis);
+  chart.append('text').html(titleCont).attr('x', 200);
+
+  // text label for the x axis
+  chart
+      .append('text')
+      .attr('transform', 'translate(' + width / 2 + ' ,' + (height + 30) + ')')
+      .style('text-anchor', 'middle')
+      .style('font-size', '1.2rem')
+      .text('Days until expiration');
+
+  // Load the data and draw a chart
+  let numSeries = 0;
+  let series;
+  dataset.forEach((d) => {
+    series = d;
+
+    chart
+        .append('path')
+        .attr('fill', 'none')
+        .attr('stroke', d.color)
+        .attr('stroke-width', 2)
+        .datum(d.history)
+        .attr('d', line);
+
+    chart
+        .append('text')
+        .html(d.name)
+        .style('font-size', '1.4rem')
+        .attr('fill', d.color)
+        .attr('alignment-baseline', 'middle')
+        .attr('x', width - 100)
+        .attr('dx', '.5em')
+        .attr('y', 30 + 20 * numSeries);
+
+    chart
+        .selectAll('myCircles')
+        .data(d.history)
+        .enter()
+        .append('circle')
+        .attr('fill', d.color)
+        .attr('stroke', 'none')
+        .attr('cx', (e: any) => x(e.days))
+        .attr('cy', (e: any) => y(e.price))
+        .attr('r', 4);
+
+    numSeries = numSeries + 1;
+  });
+
+  chart
+      .append('rect')
+      .attr('width', width)
+      .attr('height', height)
+      .attr('opacity', 0)
+      .on('mousemove', drawTooltip)
+      .on('mouseout', removeTooltip);
+
+  function removeTooltip() {
+    if (tooltip)
+      tooltip.style('display', 'none');
+    if (tooltipLine)
+      tooltipLine.attr('stroke', 'none');
+  }
+
+  function drawTooltip(event: any) {
+    const daysArray: any[] = [];
+    series.history.forEach((element) => {
+      daysArray.push(element.days);
+    });
+    const mousePos = d3.pointer(event);
+    const xCCL = event.clientX;
+    const yCCL = event.clientY;
+    const xCoord = x.invert(mousePos[0]);
+    const yCoord = mousePos[1];
+
+    const closestXCoord = daysArray.sort(
+        (a, b) => Math.abs(xCoord - a) - Math.abs(xCoord - b)
+    )[0];
+    const closestYCoord = dataset[0].history.find((h) => h.days === closestXCoord)
+        .price;
+    const closestInvX = (closestXCoord / (maxDays + 10)) * width;
+    const ttX = xCCL - mousePos[0] + closestInvX;
+    const ttY = yCCL - yCoord + y(closestYCoord);
+
+    const ttTextArray: any[] = [];
+    ttTextArray.push(
+        '<i>Number of days till expiration: ' + closestXCoord + '</i><br>'
+    );
+    dataset.forEach((d) => {
+      const seriesText =
+        d.name +
+        ': $' +
+        d.history.find((h) => h.days === closestXCoord).price +
+        '<br>';
+      ttTextArray.push(seriesText);
+    });
+
+    tooltipLine
+        .attr('stroke', 'black')
+        .attr('x1', x(closestXCoord))
+        .attr('x2', x(closestXCoord))
+        .attr('y1', 0 + 10)
+        .attr('y2', height);
+
+    tooltip
+        .html(ttTextArray.join(''))
+        .style('display', 'block')
+        .style('left', ttX + 10)
+        .style('top', ttY + 25)
+        .selectAll()
+        .data(series)
+        .enter()
+        .append('div')
+        .style('color', (d : any) => d.color);
+  }
+}
 console.log('SqCore: Script END');

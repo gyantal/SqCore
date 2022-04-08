@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using SqCommon;
 
 namespace SqCoreWeb.Controllers
 {    
@@ -59,6 +60,33 @@ namespace SqCoreWeb.Controllers
         public string Get()
         {
             Thread.Sleep(1000);     // intentional delay to simulate a longer process to crunch data. This can be removed.
+    // Under Development - Daya.
+    //Defining asset lists.
+            // //string[] allAssetList = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
+            // //string[] allAssetListVIX = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };
+            // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
+            // // string[] allAssetListVIX = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };
+
+            // // double[] bullishWeights = new double[] { -0.1, 0.3, 0.3, 0.2, -0.1, -0.075, -0.15 };
+            // // double[] bearishWeights = new double[] { 1, 0, 0, 0, 0, 0, 0 };
+            // // double[] eventMultiplicator = new double[] { 0.5, 1, 1, 0.85, 0.85, 0.7, 0.7 };
+            // // double[] stciThresholds = new double[] { 0.02, 0.09, 0.075 };
+
+
+            // string gchGSheetRefPos = "https://sheets.googleapis.com/v4/spreadsheets/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/values/A1:Z2000?key=";
+            // // string gchGSheet2RefPos = "https://docs.google.com/spreadsheets/d/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/edit?usp=sharing";
+            // // string gchGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1QjGsXw6YxPT0He5kE4YJ5o52ZCnX7cLA5N-V3Ng1juA/values/A1:Z2000?key=";
+            // // string gchGSheet2Ref = "https://docs.google.com/spreadsheets/d/1QjGsXw6YxPT0He5kE4YJ5o52ZCnX7cLA5N-V3Ng1juA/edit#gid=0";
+            // // string gchGDocRef = "https://docs.google.com/document/d/1q2nSfQUos93q4-dd0ILjTrlvtiQKnwlsg3zN1_0_lyI/edit?usp=sharing";
+            // string usedGSheetRefPos = gchGSheetRefPos;
+            // //Get, split and convert GSheet data
+            // var gSheetReadResultPos = RenewedUberGoogleApiGsheet(usedGSheetRefPos);
+            // string? content = ((ContentResult)gSheetReadResultPos).Content;
+            // string? gSheetString = content;
+
+            // Tuple<double[], DateTime[], string[,], int[], int[], int[], string[]> gSheetResToFinCalc = GSheetConverter(gSheetString, allAssetList);
+            // // for debugging purpose - DAYA
+            // Utils.Logger.Info(gSheetResToFinCalc);
 
             // multiline verbatim string literal format in C#
             string mockupTestResponse = @"{
@@ -105,5 +133,95 @@ namespace SqCoreWeb.Controllers
 }";
             return mockupTestResponse;
         }
+// Under Development - Daya.
+        // public object RenewedUberGoogleApiGsheet(string p_usedGSheetRef)
+        // {
+        //     Utils.Logger.Info("SINGoogleApiGsheet() BEGIN");
+
+        //      string? valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
+        //     if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
+        //     {
+        //         valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync(p_usedGSheetRef + Utils.Configuration["Google:GoogleApiKeyKey"], 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+        //         if (valuesFromGSheetStr == null)
+        //             valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
+        //     }
+            
+        //     Utils.Logger.Info("SINGoogleApiGsheet() END");
+        //     return Content($"<HTML><body>SINGoogleApiGsheet() finished OK. <br> Received data: '{valuesFromGSheetStr}'</body></HTML>", "text/html");
+        // }
+
+        //     //Selecting, splitting data got from GSheet
+        // public static Tuple<double[], DateTime[], string[,], int[], int[], int[], string[]> GSheetConverter(string? p_gSheetString, string[] p_allAssetList)
+        // {
+        // if (p_gSheetString != null)
+        //     {
+        //     string[] gSheetTableRows = p_gSheetString.Split(new string[] { "[" }, StringSplitOptions.RemoveEmptyEntries);
+        //     string currPosRaw = gSheetTableRows[3];
+        //     currPosRaw = currPosRaw.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
+        //     string[] currPos = currPosRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
+        //     string[] currPosAP = new string[p_allAssetList.Length];
+        //     Array.Copy(currPos, 2, currPosAP, 0, p_allAssetList.Length);
+        //     int currPosDate = Int32.Parse(currPos[0]);
+        //     int currPosCash = Int32.Parse(currPos[^3]);
+        //     int[] currPosDateCash = new int[] { currPosDate, currPosCash };
+        //     int[] currPosAssets = Array.ConvertAll(currPosAP, int.Parse);
+
+
+        //     p_gSheetString = p_gSheetString.Replace("\n", "").Replace("]", "").Replace("\"", "").Replace(" ", "").Replace(",,", ",0,").Replace(",,", ",0,");
+        //     gSheetTableRows = p_gSheetString.Split(new string[] { "[" }, StringSplitOptions.RemoveEmptyEntries);
+
+        //     string[,] gSheetCodes = new string[gSheetTableRows.Length - 4, currPos.Length];
+        //     string[] gSheetCodesH = new string[currPos.Length];
+        //     for (int iRows = 0; iRows < gSheetCodes.GetLength(0); iRows++)
+        //     {
+        //         gSheetCodesH = gSheetTableRows[iRows + 4].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
+        //         for (int jCols = 0; jCols < gSheetCodes.GetLength(1); jCols++)
+        //         {
+        //             gSheetCodes[iRows, jCols] = gSheetCodesH[jCols];
+        //         }
+        //     }
+
+        //     gSheetCodes[gSheetCodes.GetLength(0) - 1, gSheetCodes.GetLength(1) - 1] = gSheetCodesH[^1][..gSheetCodesH[^1].IndexOf('}')];
+
+        //     double[] gSheetDateVec = new double[gSheetCodes.GetLength(0)];
+        //     for (int iRows = 0; iRows < gSheetDateVec.Length; iRows++)
+        //     {
+        //         gSheetDateVec[iRows] = Double.Parse(gSheetCodes[iRows, 0]);
+        //     }
+
+        //     DateTime[] gSheetRealDateVec = new DateTime[gSheetCodes.GetLength(0)];
+        //     for (int iRows = 0; iRows < gSheetRealDateVec.Length; iRows++)
+        //     {
+        //         gSheetRealDateVec[iRows] = DateTime.Parse(gSheetCodes[iRows, 1]);
+        //     }
+
+        //     string[,] gSheetCodesAssets = new string[gSheetCodes.GetLength(0), p_allAssetList.Length + 1];
+        //     for (int iRows = 0; iRows < gSheetCodesAssets.GetLength(0); iRows++)
+        //     {
+        //         for (int jCols = 0; jCols < gSheetCodesAssets.GetLength(1); jCols++)
+        //         {
+        //             gSheetCodesAssets[iRows, jCols] = gSheetCodes[iRows, jCols + 3];
+        //         }
+        //     }
+
+        //     string[] gSheetEventFinalSignal = new string[gSheetCodes.GetLength(0)];
+        //     for (int iRows = 0; iRows < gSheetEventFinalSignal.Length; iRows++)
+        //     {
+        //         gSheetEventFinalSignal[iRows] = gSheetCodes[iRows, 2];
+        //     }
+
+        //     int[] gSheetEventCodes = new int[gSheetCodes.GetLength(0)];
+        //     for (int iRows = 0; iRows < gSheetEventCodes.Length; iRows++)
+        //     {
+        //         gSheetEventCodes[iRows] = Int32.Parse(gSheetCodes[iRows, gSheetCodes.GetLength(1) - 1]);
+        //     }
+
+
+        //     Tuple<double[], DateTime[], string[,], int[], int[], int[], string[]> gSheetResFinal = Tuple.Create(gSheetDateVec, gSheetRealDateVec, gSheetCodesAssets, gSheetEventCodes, currPosDateCash, currPosAssets, gSheetEventFinalSignal);
+
+        //     return gSheetResFinal;
+        // }
+        // throw new NotImplementedException();
+        // }
     }
 }

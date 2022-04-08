@@ -86,16 +86,16 @@ table.currData {
   margin-bottom: 0;
   font-size: 0.8rem;
   border-collapse: collapse;
-  border: 0.1rem solid black;
+  border: 0.05rem solid black;
 }
 
 .currData td {
   width: 5%;
-  border: .1rem solid black;
+  border: 0.05rem solid black;
 }
 
 /* #SinAddictionChart {
   border: .1rem solid black;
-  width: 900;
-  height: 600;
+  width: 400;
+  height: 400;
 } */

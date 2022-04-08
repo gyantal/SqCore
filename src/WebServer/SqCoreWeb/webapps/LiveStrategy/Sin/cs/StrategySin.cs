@@ -83,7 +83,7 @@ namespace SqCoreWeb.Controllers
             Tuple<int[], string[], int[], bool[], int[], double[]> gSheetResToFinCalc = GSheetConverter(gSheetString);
             string[] allAssetList = gSheetResToFinCalc.Item2;
 
-            // GetSinStockHistData(allAssetList);
+            GetSinStockHistData(allAssetList);
 
             // for debugging purpose - DAYA
             Utils.Logger.Info(usedGSheet2Ref, usedGDocRef, allAssetList);
@@ -536,25 +536,27 @@ namespace SqCoreWeb.Controllers
         // {
         //     throw new NotImplementedException();
         // }
-
-        // public static DailyData? GetSinStockHistData(string[] p_allAssetList)
-        // {
-        //     List<string> tickersNeeded1 = p_allAssetList.ToList();
-        //     string tickersNeeded = "S/SPY";
-        //     // DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;
-        //     DateTime endTimeUtc = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).AddDays(10);
-        //     DateTime endTimeUtc2 = endTimeUtc.AddDays(-11);
-        //     DateTime endTimeUtc3 = endTimeUtc.AddDays(-12);
-        //     DateTime startTimeUtc = endTimeUtc.AddDays(-420);
-        //     (SqDateOnly[] dates, float[] adjCloses) = MemDb.GetSelectedStockTickerHistData(startTimeUtc, endTimeUtc, tickersNeeded);
-        //     DailyData histValues = new();
-        //     if (adjCloses.Length != 0)
-        //     {
-        //         histValues.Date = dates.Select(r => r.Date.ToYYYYMMDD()).ToList();
-        //         histValues.AdjClosePrice = adjCloses.ToList();
-        //     }
-        //     return histValues;
-        // }
+// Under Development - Daya.
+        public static DailyData? GetSinStockHistData(string[] p_allAssetList)
+        {
+            List<string> tickersNeeded1 = p_allAssetList.ToList();
+            // string tickersNeeded = "SPY";
+            // DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;
+            DateTime endTimeUtc = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).AddDays(10);
+            DateTime endTimeUtc2 = endTimeUtc.AddDays(-11);
+            DateTime endTimeUtc3 = endTimeUtc.AddDays(-12);
+            DateTime startTimeUtc = endTimeUtc.AddDays(-420);
+            DailyData histValues = new();
+            for (var i = 0; i < tickersNeeded1.Count; i++) {
+            (SqDateOnly[] dates, float[] adjCloses) = MemDb.GetSelectedStockTickerHistData(startTimeUtc, endTimeUtc, tickersNeeded1[i]);
+                if (adjCloses.Length != 0)
+                {
+                    histValues.Date = dates.Select(r => r.Date.ToYYYYMMDD()).ToList();
+                    histValues.AdjClosePrice = adjCloses.ToList();
+                }
+            }
+            return histValues;
+        }
 
     }
 }
