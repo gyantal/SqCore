@@ -32,14 +32,25 @@ namespace FinTechCommon
         // EstPrice can be calculated from Ask/Bid, even if there is no Last Trade price (as Options may not trade even 1 contracts for days, so there is no Last Trade, but we estimate the price from RT Ask/Bid)
         // EstValue is a similar concept to IB's MarkPrice. An estimated price (Mark-to-Mark) that is used for margin calculations. It has a discretionary calculation, and can based on Ask/Bid/LastTrade (if happened recently)
         private float m_estValue = float.NaN; // field
-        public DateTime EstValueUtc { get; set; } = DateTime.MinValue;
+        public DateTime EstValueTimeUtc { get; set; } = DateTime.MinValue;
+
+        public DateTime EstValueTimeLoc
+        {
+            get
+            {
+                if (EstValueTimeUtc == DateTime.MinValue)
+                    return DateTime.MinValue;
+                // future work: this can be implemented more sophisticated. Now, we assume all assets are USA assets, but if asset is traded in EU countries, we have to convert to EU timezone.
+                return Utils.ConvertTimeFromUtcToEt(EstValueTimeUtc);
+            }
+        }
         public float EstValue // real-time last price. Value is better than Price, because NAV, and ^VIX index has value, but it is not a price.
         {
             get { return m_estValue; }
             set
             {
                 m_estValue = value;
-                EstValueUtc = DateTime.UtcNow;
+                EstValueTimeUtc = DateTime.UtcNow;
             }
         }
 

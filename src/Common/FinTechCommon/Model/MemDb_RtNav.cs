@@ -108,8 +108,8 @@ namespace FinTechCommon
                         break;
                     }
                     lastValue += asset.EstValue;
-                    if (lastValueUtc > asset.EstValueUtc)
-                        lastValueUtc = asset.EstValueUtc;
+                    if (lastValueUtc > asset.EstValueTimeUtc)
+                        lastValueUtc = asset.EstValueTimeUtc;
                 }
                 if (lastValueUtc == DateTime.MaxValue)  // we failed to find any good value => indicate error as MinValue. To show data is too old.
                     lastValueUtc = DateTime.MinValue;
@@ -117,7 +117,7 @@ namespace FinTechCommon
             else
             {
                 lastValue = p_navAsset.EstValue;
-                lastValueUtc = p_navAsset.EstValueUtc;
+                lastValueUtc = p_navAsset.EstValueTimeUtc;
             }
             
             return (lastValue, lastValueUtc);

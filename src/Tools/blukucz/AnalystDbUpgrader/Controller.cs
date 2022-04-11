@@ -188,28 +188,30 @@ namespace YahooCrawler
                 int iDay126a = iDay + 126 >= yfPrices.Count ? yfPrices.Count - 1 : iDay + 126;
                 int iDay252a = iDay + 252 >= yfPrices.Count ? yfPrices.Count - 1 : iDay + 252;
 
-                OutputRecomm newRec = new(item);
-                newRec.AdjClose126db = yfPrices[iDay126b].AdjClose;
-                newRec.AdjClose63db = yfPrices[iDay63b].AdjClose;
-                newRec.AdjClose21db = yfPrices[iDay21b].AdjClose;
-                newRec.AdjClose10db = yfPrices[iDay10b].AdjClose;
-                newRec.AdjClose5db = yfPrices[iDay5b].AdjClose;
-                newRec.AdjClose3db = yfPrices[iDay3b].AdjClose;
-                newRec.AdjClose1db = yfPrices[iDay1b].AdjClose;
-                newRec.AdjClose0db = yfPrices[iDay0b].AdjClose;
-                newRec.AdjClose0da = yfPrices[iDay0a].AdjClose;
-                newRec.AdjClose1da = yfPrices[iDay1a].AdjClose;
-                newRec.AdjClose2da = yfPrices[iDay2a].AdjClose;
-                newRec.AdjClose3da = yfPrices[iDay3a].AdjClose;
-                newRec.AdjClose4da = yfPrices[iDay4a].AdjClose;
-                newRec.AdjClose5da = yfPrices[iDay5a].AdjClose;
-                newRec.AdjClose10da = yfPrices[iDay10a].AdjClose;
-                newRec.AdjClose15da = yfPrices[iDay15a].AdjClose;
-                newRec.AdjClose21da = yfPrices[iDay21a].AdjClose;
-                newRec.AdjClose63da = yfPrices[iDay63a].AdjClose;
-                newRec.AdjClose126da = yfPrices[iDay126a].AdjClose;
-                newRec.AdjClose252da = yfPrices[iDay252a].AdjClose;
-                newRec.Close = yfPrices[iDay0b].Close;
+                OutputRecomm newRec = new(item)
+                {
+                    AdjClose126db = yfPrices[iDay126b].AdjClose,
+                    AdjClose63db = yfPrices[iDay63b].AdjClose,
+                    AdjClose21db = yfPrices[iDay21b].AdjClose,
+                    AdjClose10db = yfPrices[iDay10b].AdjClose,
+                    AdjClose5db = yfPrices[iDay5b].AdjClose,
+                    AdjClose3db = yfPrices[iDay3b].AdjClose,
+                    AdjClose1db = yfPrices[iDay1b].AdjClose,
+                    AdjClose0db = yfPrices[iDay0b].AdjClose,
+                    AdjClose0da = yfPrices[iDay0a].AdjClose,
+                    AdjClose1da = yfPrices[iDay1a].AdjClose,
+                    AdjClose2da = yfPrices[iDay2a].AdjClose,
+                    AdjClose3da = yfPrices[iDay3a].AdjClose,
+                    AdjClose4da = yfPrices[iDay4a].AdjClose,
+                    AdjClose5da = yfPrices[iDay5a].AdjClose,
+                    AdjClose10da = yfPrices[iDay10a].AdjClose,
+                    AdjClose15da = yfPrices[iDay15a].AdjClose,
+                    AdjClose21da = yfPrices[iDay21a].AdjClose,
+                    AdjClose63da = yfPrices[iDay63a].AdjClose,
+                    AdjClose126da = yfPrices[iDay126a].AdjClose,
+                    AdjClose252da = yfPrices[iDay252a].AdjClose,
+                    Close = yfPrices[iDay0b].Close
+                };
 
                 m_outputRec.Add(newRec);
             }

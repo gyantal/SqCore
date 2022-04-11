@@ -239,7 +239,7 @@ namespace FinTechCommon
                     && ((iiStartDay + 1) <= sdaCloses.Length))
                     iiStartDay++;   // that start 1 day earlier. It is better to give back more data, then less. Besides on that holiday day, the previous day price is valid.
 
-                List<AssetHistValue> vals = new();
+                List<AssetHistValue> result = new();
 
                 // reverse marching from yesterday into past is not good, because we have to calculate running maxDD, maxDU.
                 int iStockEndDay = Int32.MinValue, iStockFirstDay = Int32.MinValue;
@@ -251,20 +251,27 @@ namespace FinTechCommon
                     if (iStockFirstDay == Int32.MinValue)
                         iStockFirstDay = i;
                     iStockEndDay = i;
-                    
-                    vals.Add(new AssetHistValue() { Date = dates[i], SdaValue = val  });
+
+                    result.Add(new AssetHistValue() { Date = dates[i], SdaValue = val });
                 }
 
-                vals.Add(new AssetHistValue() { Date = new SqDateOnly(r.EstValueUtc), SdaValue = r.EstValue  });
-
-                // client probably doesn't need exact startdate
-                // var periodStartDateInc = (iStockFirstDay >= 0) ? (DateTime)dates[iStockFirstDay] : DateTime.MaxValue;    // it may be not the 'asked' start date if asset has less price history
-                return (r, vals);
+                DateTime estValueTimeLoc = r.EstValueTimeLoc;   // the priceHistory is in Local time zone. We have to convert real time DateTime UTC to local too
+                if (r.EstValueTimeLoc != DateTime.MinValue) // DateTime.MinValue indicates that it never had real-time price
+                {
+                    SqDateOnly estValueDateLoc = new(estValueTimeLoc.Date);
+                    // Premarket and regular market hours: adds a new date into the result list
+                    // After-market hours: avoid duplication. Don't add a new record, but overwrite the last one in history (if date matches). (check this whether the last Date in the list is the same as the realtime date)
+                    bool isOverwriteLastValue = (result.Count > 0) && (result[^1].Date == estValueDateLoc);
+                    if (isOverwriteLastValue)
+                        result[^1].SdaValue = r.EstValue;
+                    else
+                        result.Add(new AssetHistValue() { Date = estValueDateLoc, SdaValue = r.EstValue });
+                }
+                return (r, result);
             });
 
             return assetHistsAndLastEstValue;
         }
 
     }
-
 }

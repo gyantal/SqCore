@@ -243,7 +243,7 @@ namespace FinTechCommon
                     else
                     {
                         lastValue = sec.EstValue;
-                        lastDateTime = sec.EstValueUtc;
+                        lastDateTime = sec.EstValueTimeUtc;
                     }
                     return (sec.AssetId, lastValue, lastDateTime);
                 });
@@ -262,7 +262,7 @@ namespace FinTechCommon
                     else
                     {
                         lastValue = r.EstValue;
-                        lastDateTime = r.EstValueUtc;
+                        lastDateTime = r.EstValueTimeUtc;
                     }
                     return (r.AssetId, lastValue, lastDateTime);
                 });
