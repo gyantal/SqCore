@@ -94,8 +94,8 @@ table.currData {
   border: 0.05rem solid black;
 }
 
-/* #SinAddictionChart {
+#SinAddictionChart {
   border: .1rem solid black;
-  width: 400;
+  width: 600;
   height: 400;
-} */
+}

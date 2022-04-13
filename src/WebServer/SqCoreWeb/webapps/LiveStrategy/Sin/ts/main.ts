@@ -1,5 +1,5 @@
 import './../css/main.css';
-// import * as d3 from 'd3';
+import * as d3 from 'd3';
 // export {}; // TS convention: To avoid top level duplicate variables, functions. This file should be treated as a module (and have its own scope). A file without any top-level import or export declarations is treated as a script whose contents are available in the global scope.
 
 // 1. Declare some global variables and hook on DOMContentLoaded() and window.onload()
@@ -35,9 +35,8 @@ window.onload = function onLoadWindow() {
   console.log('SqCore: window.onload() BEGIN. All CSS, and images were downloaded.'); // images are loaded at this time, so their sizes are known
 
   AsyncStartDownloadAndExecuteCbLater('/StrategySin', (json: any) => {
-    // const jsonToStr = JSON.stringify(json).substr(0, 60) + '...';
-    onReceiveSinAddiction(json);
-    // processChartWithMockup();
+    onReceiveData(json);
+    processChartWithMockup();
     // processPctChngStckPriceChrt();
   });
   console.log('SqCore: window.onload() END.');
@@ -65,7 +64,7 @@ function pctgToColor(perc, min, max) {
   return '#' + ('000000' + h.toString(16)).slice(-6);
 }
 
-function onReceiveSinAddiction(json: any) {
+function onReceiveData(json: any) {
   if (json == 'Error') {
     const divErrorCont = getDocElementById('idErrorCont');
     divErrorCont.innerHTML = 'Error during downloading data. Please, try again later!';
@@ -214,79 +213,59 @@ function sinAddictionInfoTbls(json) {
 }
 
 // Bar chart with mockup data - under development Daya.
-// function processChartWithMockup() {
-//   const margin = {top: 30, right: 10, bottom: 50, left: 50};
-//   const width = 460 - margin.left - margin.right;
-//   const height = 400 - margin.top - margin.bottom;
 
-//   const svg = d3.select('#SinAddictionChart')
-//       .append('svg');
-//   const data: any[] = [{name: 'A', value: 10},
-//     {name: 'B', value: 40},
-//     {name: 'C', value: 10},
-//     {name: 'D', value: 50},
-//     {name: 'E', value: 30},
-//     {name: 'F', value: 20},
-//     {name: 'G', value: 70}];
+function processChartWithMockup() {
+  // set the dimensions and margins of the graph
+  const margin = {top: 30, right: 30, bottom: 70, left: 60};
+  const width = 460 - margin.left - margin.right;
+  const height = 400 - margin.top - margin.bottom;
 
-//   svg.append('g')
-//       .attr('width', width - margin.left - margin.right)
-//       .attr('height', height - margin.top - margin.bottom)
-//       .append('g').attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+  // append the svg object to the body of the page
+  const svg = d3.select('#SinAddictionChart')
+      .append('svg')
+      .attr('width', width + margin.left + margin.right)
+      .attr('height', height + margin.top + margin.bottom)
+      .append('g')
+      .attr('transform',
+          'translate(' + margin.left + ',' + margin.top + ')');
+  const data: any[] = [{name: 'A', value: 90},
+    {name: 'B', value: 40},
+    {name: 'C', value: 10},
+    {name: 'D', value: 50},
+    {name: 'E', value: 30},
+    {name: 'F', value: 20},
+    {name: 'G', value: 70}];
 
-//   // // set the ranges
-//   // const max = d3.max(data, (d)=> d.value);
-//   const x = d3.scaleBand()
-//       .range([0, width])
-//       .padding(0.2);
-//   const xAxis = svg.append('g')
-//       .attr('transform', 'translate(' + 0 + ',' + height + ')');
+  // X axis
+  const x = d3.scaleBand()
+      .range([0, width])
+      .domain(data.map((d) => d.name))
+      .padding(0.5);
+  svg.append('g')
+      .attr('transform', 'translate(0,' + height + ')')
+      .call(d3.axisBottom(x))
+      .selectAll('text')
+      .attr('transform', 'translate(-10,0)rotate(-45)')
+      .style('text-anchor', 'end');
 
-//   const y = d3.scaleLinear()
-//       .range([height, 0]);
-//   const yAxis = svg.append('g')
-//       .attr('class', 'myYaxis');
+  // Add Y axis
+  const y = d3.scaleLinear()
+      .domain([0, 100])
+      .range([height, 0]);
+  svg.append('g')
+      .call(d3.axisLeft(y));
 
-//   // Update the X axis
-//   x.domain(data.map((d) => d.group));
-//   xAxis.call(d3.axisBottom(x));
+  const chrt = svg.selectAll('rect')
+      .data(data)
+      // .enter()
+      .join('rect')
+      // .attr('y', (d) => y(d.value))
+      .attr('x', (d) => y(d.value))
+      .attr('fill', 'blue');
 
-//   // Update the Y axis
-//   y.domain([0, d3.max(data, (d) => d.value)]);
-//   yAxis.transition().duration(1000).call(d3.axisLeft(y));
-//   // const x = d3.scaleLinear()
-//   //     .range([0, width])
-//   //     .domain([0, max]);
-//   // svg.append('g')
-//   //     .attr('transform', 'translate(' + 0 + ',' + height + ')')
-//   //     .call(d3.axisBottom(x));
-
-//   // const y = d3.scaleBand()
-//   //     .range([height, 0])
-//   //     .domain(data.map((d) => d.name))
-//   //     .padding(0.1);
-//   // svg.append('g')
-//   //     .call(d3.axisLeft(y));
-
-//   console.log('The x and y values are ', x, y, data, margin, svg);
-
-//   const chrt = svg.selectAll('rect')
-//       .data(data);
-//   // .join('rect')
-//   // .attr('fill', 'blue')
-//   // // .attr('x', (d) => x(d.name))
-//   // // .attr('y', (d) => y(d.value))
-//   // .attr('width', (d) => y(d.value))
-//   // .attr('height', x.bandwidth());
-
-//   // append the rectangles for the bar chart
-//   chrt.join('rect') // Add a new rect for each new elements
-//       .transition()
-//       .duration(1000)
-//       .attr('fill', 'blue')
-//       // .attr('x', (d: any) => x(d.name))
-//       // .attr('y', (d) => y(d.name))
-//       .attr('width', (d) => y(d.value))
-//       .attr('height', x.bandwidth());
-// }
+  chrt.join('rect')
+      .attr('y', (d) => y(d.value))
+      .attr('width', x.bandwidth())
+      .attr('height', (d) => (height - y(d.value)));
+}
 console.log('SqCore: Script END');

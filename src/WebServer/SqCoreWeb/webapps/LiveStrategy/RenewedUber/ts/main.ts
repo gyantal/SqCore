@@ -36,15 +36,13 @@ window.onload = function onLoadWindow() {
   console.log('SqCore: window.onload() BEGIN. All CSS, and images were downloaded.'); // images are loaded at this time, so their sizes are known
 
   AsyncStartDownloadAndExecuteCbLater('/StrategyRenewedUber', (json: any) => {
-    // const jsonToStr = JSON.stringify(json).substr(0, 60) + '...';
-    // getDocElementById('DebugDataArrivesHere').innerText = '***"' + json[0].stringData + '"***';
-    onReceiveRenewedUber(json);
+    onReceiveData(json);
   });
 
   console.log('SqCore: window.onload() END.');
 };
 
-function onReceiveRenewedUber(json: any) {
+function onReceiveData(json: any) {
   getDocElementById('titleCont').innerHTML = '<small><a href="' + json.gDocRef + '" target="_blank">(Study)</a></small>';
   getDocElementById('requestTime').innerText = json.requestTime;
   getDocElementById('lastDataTime').innerText = json.lastDataTime;

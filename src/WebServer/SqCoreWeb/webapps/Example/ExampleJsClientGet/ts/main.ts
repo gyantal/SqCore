@@ -8,20 +8,20 @@ console.log('SqCore: Script BEGIN');
 
 async function AsyncStartDownloadAndExecuteCbLater(url: string, callback: (json: any) => any) {
   fetch(url)
-    .then(response => { // asynch long running task finishes. Resolves to get the Response object (http header, info), but not the full body (that might be streaming and arriving later)
-      console.log('SqCore.AsyncStartDownloadAndExecuteCbLater(): Response object arrived:');
-      if (!response.ok) {
-        return Promise.reject(new Error('Invalid response status'));
-      }
-      response.json().then(json => {  // asynch long running task finishes. Resolves to the body, converted to json() object or text()
+      .then((response) => { // asynch long running task finishes. Resolves to get the Response object (http header, info), but not the full body (that might be streaming and arriving later)
+        console.log('SqCore.AsyncStartDownloadAndExecuteCbLater(): Response object arrived:');
+        if (!response.ok)
+          return Promise.reject(new Error('Invalid response status'));
+
+        response.json().then((json) => { // asynch long running task finishes. Resolves to the body, converted to json() object or text()
         // const jsonToStr = JSON.stringify(json).substr(0, 60) + '...';
         // console.log('SqCore.AsyncStartDownloadAndExecuteCbLater():: data body arrived:' + jsonToStr);
-        callback(json);
+          callback(json);
+        });
+      })
+      .catch((err) => {
+        console.log('SqCore: Download error.');
       });
-    })
-    .catch((err) => {
-      console.log('SqCore: Download error.');
-    });
 }
 
 function getDocElementById(id: string): HTMLElement {
@@ -37,10 +37,13 @@ window.onload = function onLoadWindow() {
   console.log('SqCore: window.onload() BEGIN. All CSS, and images were downloaded.'); // images are loaded at this time, so their sizes are known
 
   AsyncStartDownloadAndExecuteCbLater('/ExampleJsClientGet', (json: any) => {
-    // const jsonToStr = JSON.stringify(json).substr(0, 60) + '...';
-    getDocElementById('DebugDataArrivesHere').innerText = '***"' + json[0].stringData + '"***';
+    onReceive(json);
   });
 
+  function onReceive(json: any) {
+    // const jsonToStr = JSON.stringify(json).substr(0, 60) + '...';
+    getDocElementById('DebugDataArrivesHere').innerText = '***"' + json[0].stringData + '"***';
+  }
   console.log('SqCore: window.onload() END.');
 };
 
