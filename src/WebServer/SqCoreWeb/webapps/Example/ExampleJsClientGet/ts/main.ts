@@ -37,10 +37,10 @@ window.onload = function onLoadWindow() {
   console.log('SqCore: window.onload() BEGIN. All CSS, and images were downloaded.'); // images are loaded at this time, so their sizes are known
 
   AsyncStartDownloadAndExecuteCbLater('/ExampleJsClientGet', (json: any) => {
-    onReceive(json);
+    onReceiveData(json);
   });
 
-  function onReceive(json: any) {
+  function onReceiveData(json: any) {
     // const jsonToStr = JSON.stringify(json).substr(0, 60) + '...';
     getDocElementById('DebugDataArrivesHere').innerText = '***"' + json[0].stringData + '"***';
   }

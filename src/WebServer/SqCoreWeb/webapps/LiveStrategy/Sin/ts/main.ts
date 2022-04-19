@@ -38,6 +38,11 @@ window.onload = function onLoadWindow() {
     onReceiveData(json);
     processChartWithMockup();
     // processPctChngStckPriceChrt();
+    // Server Diagnostics message when mouseenter the wifi image
+    getDocElementById('sinDiagnostics').onmouseenter = function sqDiagnosticsModal() {
+      const dialog = getDocElementById('sinDiagnosticsDialog');
+      dialog.style.display = 'block';
+    };
   });
   console.log('SqCore: window.onload() END.');
 };
@@ -196,7 +201,6 @@ function sinAddictionInfoTbls(json) {
     yTicksH[i] = yTicksHRows;
   }
 
-
   const listH: any[] = [];
   for (let j = 0; j < noAssets; j++) {
     const assChartPerc1 = new Array(nCurrData);
@@ -236,36 +240,39 @@ function processChartWithMockup() {
     {name: 'F', value: 20},
     {name: 'G', value: 70}];
 
-  // X axis
-  const x = d3.scaleBand()
+  // Add X axis
+  const xScale = d3.scaleBand()
       .range([0, width])
       .domain(data.map((d) => d.name))
       .padding(0.5);
   svg.append('g')
       .attr('transform', 'translate(0,' + height + ')')
-      .call(d3.axisBottom(x))
+      .call(d3.axisBottom(xScale))
       .selectAll('text')
       .attr('transform', 'translate(-10,0)rotate(-45)')
       .style('text-anchor', 'end');
 
   // Add Y axis
-  const y = d3.scaleLinear()
+  const yScale = d3.scaleLinear()
       .domain([0, 100])
       .range([height, 0]);
   svg.append('g')
-      .call(d3.axisLeft(y));
+      .call(d3.axisLeft(yScale));
+
 
   const chrt = svg.selectAll('rect')
       .data(data)
       // .enter()
       .join('rect')
-      // .attr('y', (d) => y(d.value))
-      .attr('x', (d) => y(d.value))
+      .attr('x', (d) => yScale(d.value))
+      .attr('y', (d) => yScale(d.value))
+      // .attr('width', xScale.bandwidth())
+      // .attr('height', (d) => (height - yScale(d.value)))
       .attr('fill', 'blue');
-
   chrt.join('rect')
-      .attr('y', (d) => y(d.value))
-      .attr('width', x.bandwidth())
-      .attr('height', (d) => (height - y(d.value)));
+      .attr('y', (d) => yScale(d.value))
+      .attr('width', xScale.bandwidth())
+      .attr('height', (d) => (height - yScale(d.value)));
 }
+
 console.log('SqCore: Script END');

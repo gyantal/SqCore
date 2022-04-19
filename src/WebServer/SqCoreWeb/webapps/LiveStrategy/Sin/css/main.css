@@ -99,3 +99,22 @@ table.currData {
   width: 600;
   height: 400;
 }
+
+#sinDiagnosticsDialog {
+  display: none;
+  position: absolute;
+  z-index: 1;
+  text-align: center;
+  top: 2rem;
+  right: 2rem;
+  bottom: 20rem;
+  width: 15rem;
+  height: 10rem;
+  overflow: auto;
+}
+
+.sinDiagnosticsDialogContent {
+  background-color: #fefefe;
+  border: 0.1rem solid #888;
+  font-size: 0.5rem;
+}
