@@ -5,11 +5,11 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const HtmlWebpackInlineSourcePlugin = require('html-webpack-inline-source-plugin');
 
 module.exports = {
-  entry: './webapps/ContangoVisualizer/ts/ContangoVisualizer.ts',
+  entry: './webapps/LiveStrategy/UberTaa/ts/main.ts',
   output: {
-    path: path.resolve(__dirname, './../../wwwroot/webapps/ContangoVisualizer'),
+    path: path.resolve(__dirname, './../../../wwwroot/webapps/LiveStrategy/UberTaa'),
     filename: '[name].[chunkhash].js',
-    publicPath: '/webapps/ContangoVisualizer/'
+    publicPath: '/webapps/LiveStrategy/UberTaa/'
   },
   resolve: {
     extensions: ['.js', '.ts']
@@ -42,7 +42,7 @@ module.exports = {
       cleanOnceBeforeBuildPatterns: ['**/*', '!static-files*']
     }),
     new HtmlWebpackPlugin({
-      template: 'webapps/ContangoVisualizer/index.html',
+      template: 'webapps/LiveStrategy/UberTaa/index.html',
       inlineSource: '.(js|css)$' // embed all javascript and css inline
     }),
     new HtmlWebpackInlineSourcePlugin(HtmlWebpackPlugin),

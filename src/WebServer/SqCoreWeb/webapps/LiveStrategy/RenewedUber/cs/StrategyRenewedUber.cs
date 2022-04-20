@@ -823,7 +823,7 @@ namespace SqCoreWeb.Controllers
 // Under Development - Daya.
         public object RenewedUberGoogleApiGsheet(string p_usedGSheetRef)
         {
-            Utils.Logger.Info("SINGoogleApiGsheet() BEGIN");
+            Utils.Logger.Info("RenewedUberGoogleApiGsheet() BEGIN");
 
              string? valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
             if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
@@ -833,11 +833,11 @@ namespace SqCoreWeb.Controllers
                     valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
             }
             
-            Utils.Logger.Info("SINGoogleApiGsheet() END");
-            return Content($"<HTML><body>SINGoogleApiGsheet() finished OK. <br> Received data: '{valuesFromGSheetStr}'</body></HTML>", "text/html");
+            Utils.Logger.Info("RenewedUberGoogleApiGsheet() END");
+            return Content($"<HTML><body>RenewedUberGoogleApiGsheet() finished OK. <br> Received data: '{valuesFromGSheetStr}'</body></HTML>", "text/html");
         }
 
-            //Selecting, splitting data got from GSheet
+        //Selecting, splitting data got from GSheet
         public static Tuple<double[], DateTime[], string[,], int[], int[], int[], string[]> GSheetConverter(string? p_gSheetString, string[] p_allAssetList)
         {
         if (p_gSheetString != null)
@@ -965,11 +965,11 @@ namespace SqCoreWeb.Controllers
                     webpageHist = "Error in DownloadStringWithRetry().";
             }
             //Downloading live data from vixcentral.com.
-            string urlVixLive = "http://vixcentral.com/ajax_update";
+            string urlVixLive = "http://vixcentral.com";
             string? webpageLive = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
             if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
             {
-                webpageLive = Utils.DownloadStringWithRetryAsync(urlVixLive + Utils.Configuration["Google:GoogleApiKeyKey"], 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+                webpageLive = Utils.DownloadStringWithRetryAsync(urlVixLive, 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
                 if (webpageLive == null)
                     webpageLive = "Error in DownloadStringWithRetry().";
             }

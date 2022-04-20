@@ -1,0 +1,42 @@
+body {
+  text-align: center;
+}
+
+h1 {
+  font-family: "Comic Sans MS", cursive, sans-serif;
+  text-align: center;
+  color: blue;
+  font-size: 150%;
+}
+
+.button {
+  display: inline-block;
+  border: none;
+  border-radius: 1.2rem;
+  cursor: pointer;
+  height: 6rem;
+  width: 10rem;
+  background-size: cover;
+  background-repeat: no-repeat;
+  max-width: 100%;
+  max-height: 100%;
+  outline: none;
+}
+.button:hover {
+  box-shadow: 0 1.2rem 1.6rem 0 rgba(0, 0, 0, 0.24),
+    0 1.7rem 5rem 0 rgba(0, 0, 0, 0.19);
+}
+
+.button:active {
+  transform: translateY(0.4rem);
+}
+
+#gameChanger {
+  background: url("../assets/images/game_changer.webp");
+  background-size: cover;
+}
+
+#globalAssets {
+  background: url("../assets/images/global_assets.webp");
+  background-size: cover;
+}
