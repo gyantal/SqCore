@@ -14,3 +14,4 @@ The following commands are available for path data:
   Z = closepath
 Note: All of the commands above can also be expressed with lower letters. Capital letters means absolutely positioned, lower cases means relatively positioned.
 url to play with coordinates : https://mavo.io/demos/svgpath/. This tool provides interactive visual interface to develop the path we desire using the above commands.
+SVG Path Editor - https://aydos.com/svgedit/ , lets you edit and optimize SVG's path element.

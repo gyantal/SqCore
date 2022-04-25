@@ -337,7 +337,7 @@ namespace SqCoreWeb.Controllers
             sb.Append(@"""," + Environment.NewLine + @"""pastPerfDaysNum"": """);
             for (int i = 0; i < pastPerfDays.Length - 1; i++)
                 sb.Append(pastPerfDays[i].ToString() + ", ");
-            sb.Append(pastPerfDays[^1].ToString());
+            sb.Append(pastPerfDays[^1]);
 
             sb.Append(@"""," + Environment.NewLine + @"""pastPerfDaysName"": """);
             for (int i = 0; i < pastPerfDaysString.Length - 1; i++)

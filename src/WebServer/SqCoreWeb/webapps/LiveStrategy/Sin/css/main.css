@@ -93,11 +93,21 @@ table.currData {
   width: 5%;
   border: 0.05rem solid black;
 }
+rect.positive {
+  fill: steelblue;
+}
 
-#SinAddictionChart {
-  border: .1rem solid black;
-  width: 600;
-  height: 400;
+rect.negative {
+  fill: darkorange;
+}
+
+.axis text {
+  font: 10px sans-serif;
+  fill: black;
+}
+
+.axis.y text {
+  text-anchor: end;
 }
 
 #sinDiagnosticsDialog {
@@ -113,7 +123,7 @@ table.currData {
   overflow: auto;
 }
 
-.sinDiagnosticsDialogContent {
+#sinDiagnosticsDialogContent {
   background-color: #fefefe;
   border: 0.1rem solid #888;
   font-size: 0.5rem;

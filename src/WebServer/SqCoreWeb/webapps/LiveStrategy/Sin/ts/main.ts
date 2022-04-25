@@ -36,8 +36,6 @@ window.onload = function onLoadWindow() {
 
   AsyncStartDownloadAndExecuteCbLater('/StrategySin', (json: any) => {
     onReceiveData(json);
-    processChartWithMockup();
-    // processPctChngStckPriceChrt();
     // Server Diagnostics message when mouseenter the wifi image
     getDocElementById('sinDiagnostics').onmouseenter = function sqDiagnosticsModal() {
       const dialog = getDocElementById('sinDiagnosticsDialog');
@@ -190,7 +188,7 @@ function sinAddictionInfoTbls(json) {
   // const divChartLength = document.getElementById('idChartLength');
   // divChartLength.innerHTML = '<div class="DDM"><strong>in the Last &emsp;<select class="DDM" id="limit2"><option value="1">1 Day</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="21" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[indOfLength] + '</select></strong ></div>';
   // chart data preparation
-  const nCurrData = 1;
+  // const nCurrData = 1;
   const noAssets = assetNames2Array.length - 1;
 
   const yTicksH = new Array(noAssets);
@@ -201,78 +199,75 @@ function sinAddictionInfoTbls(json) {
     yTicksH[i] = yTicksHRows;
   }
 
-  const listH: any[] = [];
-  for (let j = 0; j < noAssets; j++) {
-    const assChartPerc1 = new Array(nCurrData);
-    for (let i = 0; i < nCurrData; i++) {
-      const assChartPerc1Rows = new Array(2);
-      assChartPerc1Rows[1] = j;
-      assChartPerc1Rows[0] = parseFloat(assChartMtx[j][indOfLength]);
-      assChartPerc1[i] = assChartPerc1Rows;
-    }
-    listH.push({ label: assetNames2Array[j], data: assChartPerc1, bars: { show: true } });
+
+  // Declaring data sets to charts.
+
+  interface DataSet {
+    StckName: string;
+    pctChgStckPrice: number;
   }
-  // const datasets1 = listH;
+
+  const sinStckChrtData: DataSet[] = [];
+  for (let j = 0; j < noAssets; j++) {
+    const chrtData: DataSet = {
+      StckName: assetNames2Array[j],
+      pctChgStckPrice: parseFloat(assChartMtx[j][indOfLength]),
+    };
+    sinStckChrtData.push(chrtData);
+  }
+
+  processPctChngStckPriceChrt(sinStckChrtData);
+
   // processPctChngStckPriceChrt(datasets1, noAssets, yTicksH, nCurrData, retHistLBPeriods[indOfLength]);
 }
 
 // Bar chart with mockup data - under development Daya.
-
-function processChartWithMockup() {
-  // set the dimensions and margins of the graph
+function processPctChngStckPriceChrt(sinStckChrtData) {
+  d3.selectAll('#sinAddictionChart > *').remove();
   const margin = {top: 30, right: 30, bottom: 70, left: 60};
   const width = 460 - margin.left - margin.right;
   const height = 400 - margin.top - margin.bottom;
 
-  // append the svg object to the body of the page
-  const svg = d3.select('#SinAddictionChart')
+  // find data range
+  const xMin = d3.min(sinStckChrtData, (r:{ pctChgStckPrice: any; }) => r.pctChgStckPrice as number);
+  const xMax = d3.max(sinStckChrtData, (r:{ pctChgStckPrice: any; }) => r.pctChgStckPrice as number);
+
+  const xScale = d3.scaleLinear()
+      .domain([(xMin as number) - 5, (xMax as number) + 5])
+      .range([0, width]);
+
+  const yScale = d3.scaleBand()
+      .domain(sinStckChrtData.map((r: any) => r.StckName))
+      .rangeRound([0, height])
+      .padding(0.2);
+
+  const chrtSvg = d3.select('#sinAddictionChart')
       .append('svg')
       .attr('width', width + margin.left + margin.right)
       .attr('height', height + margin.top + margin.bottom)
       .append('g')
       .attr('transform',
           'translate(' + margin.left + ',' + margin.top + ')');
-  const data: any[] = [{name: 'A', value: 90},
-    {name: 'B', value: 40},
-    {name: 'C', value: 10},
-    {name: 'D', value: 50},
-    {name: 'E', value: 30},
-    {name: 'F', value: 20},
-    {name: 'G', value: 70}];
 
-  // Add X axis
-  const xScale = d3.scaleBand()
-      .range([0, width])
-      .domain(data.map((d) => d.name))
-      .padding(0.5);
-  svg.append('g')
-      .attr('transform', 'translate(0,' + height + ')')
-      .call(d3.axisBottom(xScale))
-      .selectAll('text')
-      .attr('transform', 'translate(-10,0)rotate(-45)')
-      .style('text-anchor', 'end');
-
-  // Add Y axis
-  const yScale = d3.scaleLinear()
-      .domain([0, 100])
-      .range([height, 0]);
-  svg.append('g')
-      .call(d3.axisLeft(yScale));
-
-
-  const chrt = svg.selectAll('rect')
-      .data(data)
-      // .enter()
-      .join('rect')
-      .attr('x', (d) => yScale(d.value))
-      .attr('y', (d) => yScale(d.value))
-      // .attr('width', xScale.bandwidth())
-      // .attr('height', (d) => (height - yScale(d.value)))
+  chrtSvg.selectAll('.bar')
+      .data(sinStckChrtData)
+      .enter().append('rect')
+      .attr('class', (r: any) => `bar ${ r.pctChgStckPrice < 0 ? 'negative': 'positive' }`)
+      .attr('x', (r: any) => xScale(Math.min(0, r.pctChgStckPrice)))
+      .attr('y', (r: any) => yScale(r.StckName) as number)
+      .attr('width', (r: any) => Math.abs( xScale(r.pctChgStckPrice) - xScale(0)))
+      .attr('height', yScale.bandwidth())
       .attr('fill', 'blue');
-  chrt.join('rect')
-      .attr('y', (d) => yScale(d.value))
-      .attr('width', xScale.bandwidth())
-      .attr('height', (d) => (height - yScale(d.value)));
+
+  chrtSvg.append('g')
+      .attr('transform', `translate(0, ${ height })`)
+      .attr('class', 'axis x')
+      .call(d3.axisBottom(xScale).tickFormat((d: any) => d + '%'));
+
+  chrtSvg.append('g')
+      .attr('class', 'axis y')
+      .attr('transform', `translate(${ xScale(0) }, 0)`)
+      .call(d3.axisLeft(yScale));
 }
 
 console.log('SqCore: Script END');
