@@ -24,14 +24,14 @@ namespace FinTechCommon
 		Option = 7, 
 		Commodity = 8,
 		RealEstate = 9,
-		Index = 10, // SPX, VIX
+		FinIndex = 10, // SPX, VIX, FTSE
         BrokerNAV = 11,
         Portfolio = 12,      // for Metaportfolios that contain SubPortfolios as assets. AllAsset can contain 2 RealEstate + 2 ISA portfolios + 1 IB BrokerNAV, + 1 Bank (broker) account, and can aggregate all-wealth.
         GeneralTimeSeries = 13,
         Company = 14,   // Fake asset, so SqTicker can use 'A' for companySqTicker unique identification
 	}
 
-// CashAsset.SubTableID as defined in the BaseAssets tabpage should match this enum
+    // CashAsset.SubTableID as defined in the BaseAssets tabpage should match this enum
     public enum CurrencyId : byte   // there are 192 countries in the world, and less than 192 currencies
     {                               // PortfolioEvaluator.BulkPreparer.Plan() exploits that all values are in 1..62
         Unknown = 0,
@@ -189,7 +189,7 @@ namespace FinTechCommon
             { AssetType.Option, 'O' },
             { AssetType.Commodity, 'M' },
             { AssetType.RealEstate, 'R' },
-            { AssetType.Index, 'I' },
+            { AssetType.FinIndex, 'I' },
             { AssetType.BrokerNAV, 'N' },
             { AssetType.Portfolio, 'P' },   // Portfolio is like a virtual separated BrokerNAV. One BrokerNAV can contain many smaller portfolios.
             { AssetType.GeneralTimeSeries, 'T' },

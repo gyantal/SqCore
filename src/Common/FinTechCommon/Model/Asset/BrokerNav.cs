@@ -11,8 +11,6 @@ namespace FinTechCommon
     {
         public User? User { get; set; } = null;
 
-        public DateTime ExpectedHistoryStartDateLoc { get; set; } = DateTime.MaxValue;  // not necessarily ET. Depends on the asset.
-
         public BrokerNav? AggregateNavParent { get; set; } = null;
         public List<BrokerNav> AggregateNavChildren { get; set; } = new List<BrokerNav>();
 

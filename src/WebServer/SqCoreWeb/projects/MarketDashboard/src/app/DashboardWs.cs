@@ -52,10 +52,12 @@ namespace SqCoreWeb
                 return;
             }
 
-            DashboardClient client = new(clientIP, email, user, DateTime.UtcNow);
-            client.WsWebSocket = webSocket;
-            client.WsHttpContext = context;
-            client.ActivePage = activePage;
+            DashboardClient client = new(clientIP, email, user, DateTime.UtcNow)
+            {
+                WsWebSocket = webSocket,
+                WsHttpContext = context,
+                ActivePage = activePage
+            };
             client.OnConnectedWsAsync_DshbrdClient();
 
             // RtTimer runs in every 3-5 seconds and uses g_clients, so don't add client to g_clients too early, because RT would be sent there even before OnConnection is not ready.

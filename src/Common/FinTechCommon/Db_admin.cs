@@ -82,6 +82,8 @@ namespace FinTechCommon
             bool isFirstCash = true;
             StringBuilder sbCpair = new("\"D\":[\n");
             bool isFirstCpair = true;
+            StringBuilder sbIndex = new("\"I\":[\n");
+            bool isFirstIndex = true;
             StringBuilder sbReEst = new("\"R\":[\n");
             bool isFirstReEst = true;
             StringBuilder sbNav = new("\"N\":[\n");
@@ -124,6 +126,14 @@ namespace FinTechCommon
                         else
                             sbCpair.Append(',');
                         sbCpair.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\",\"{rowArr[7]}\"]");
+                    }
+                    if (rowArr[0].ToString()[0] == AssetHelper.gAssetTypeCode[AssetType.FinIndex])    // Index, such as ^VIX
+                    {
+                        if (isFirstIndex)
+                            isFirstIndex = false;
+                        else
+                            sbIndex.Append(',');
+                        sbIndex.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\"]");
                     }
                     if (rowArr[0].ToString() == "R")    // RealEstate
                     {
@@ -204,13 +214,14 @@ namespace FinTechCommon
 
             sbCash.Append("],\n");
             sbCpair.Append("],\n");
+            sbIndex.Append("],\n");
             sbReEst.Append("],\n");
             sbNav.Append("],\n");
             sbPortf.Append("],\n");
             sbComp.Append("],\n");
             sbStock.Append(']');
             StringBuilder sb = new("{");
-            sb.Append(sbCash).Append(sbCpair).Append(sbReEst).Append(sbNav).Append(sbPortf).Append(sbComp).Append(sbStock).Append('}');
+            sb.Append(sbCash).Append(sbCpair).Append(sbIndex).Append(sbReEst).Append(sbNav).Append(sbPortf).Append(sbComp).Append(sbStock).Append('}');
 
             // Create a new connection. Don't use the MemDb main connection, because we might want to switch to a non-default DB, like DB-1. It is safer this way. Don't tinker with the MemDb main connection
             var redisConnString = (Utils.RunningPlatform() == Platform.Windows) ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];

@@ -9,6 +9,7 @@ using FinTechCommon;
 using System.Net.Http;
 using System.Text;
 using System.Globalization;
+using System.Diagnostics;
 
 namespace SqCoreWeb.Controllers
 {    
@@ -103,7 +104,7 @@ namespace SqCoreWeb.Controllers
             // // string[] allAssetList = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
             // // string[] allAssetListVIX = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };            // // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
             // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };
-            // string[] allAssetListVIX = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };
+            string[] allAssetListVIX = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };
             // double[] bullishWeights = new double[] { -0.1, 0.3, 0.3, 0.2, -0.1, -0.075, -0.15 };
             // double[] bearishWeights = new double[] { 1, 0, 0, 0, 0, 0, 0 };
             // double[] eventMultiplicator = new double[] { 0.5, 1, 1, 0.85, 0.85, 0.7, 0.7 };
@@ -125,7 +126,8 @@ namespace SqCoreWeb.Controllers
 
 
             // //Collecting and splitting price data got from SQL Server
-            // (IList<List<DailyData>>, List<DailyData>) quotesDataAll = GetUberStockHistData(allAssetListVIX);
+            List<List<DailyData>> quotesDataAll = GetUberStockHistData(allAssetListVIX);
+            Debug.WriteLine("quotesDataAll.Count: " + quotesDataAll.Count);
             // IList<List<DailyData>>? quotesData = quotesDataAll.Item1;
             // List<DailyData>? VIXQuotes = quotesDataAll.Item2;
 
@@ -916,25 +918,24 @@ namespace SqCoreWeb.Controllers
         }
         throw new NotImplementedException();
         }
-        public static (IList<List<DailyData>>, List<DailyData>) GetUberStockHistData(string[] p_allAssetList)
+        public static List<List<DailyData>> GetUberStockHistData(string[] p_allAssetList)   // { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" }
         {
             List<Asset> assets = new();
             for (int i = 0; i < p_allAssetList.Length; i++)
             {
-                Asset? asset = MemDb.gMemDb.AssetsCache.TryGetAsset("S/" + p_allAssetList[i]);
+                string symbol = p_allAssetList[i];
+                string sqTicker = (symbol[0] == '^') ? $"I/{symbol[1..]}" : $"S/{symbol}";   // ^ prefix in symbol means, it is in index, such as "^VIX".
+                Asset? asset = MemDb.gMemDb.AssetsCache.TryGetAsset(sqTicker);
                 if (asset != null)
                     assets.Add(asset);
             }
 
              DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
              DateTime startIncLoc = nowET.AddDays(-50);
+             List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc).ToList();
 
-            
             List<List<DailyData>> uberTickersData = new();
-            List<DailyData> VIXDailyquotes = new();
-
-            List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc).ToList();
-            for (int i = 0; i < assetHistsAndEst.Count - 1; i++)
+            for (int i = 0; i < assetHistsAndEst.Count; i++)
             {
                 var vals = assetHistsAndEst[i].values;
                 List<DailyData> uberValsData = new();
@@ -945,17 +946,7 @@ namespace SqCoreWeb.Controllers
                 uberTickersData.Add(uberValsData);
             }
 
-            // last ticker is TLT, which is used as a cash substitute. Special rola.
-            var cashVals = assetHistsAndEst[^1].values;
-            for (int j = 0; j < cashVals.Count; j++)
-                VIXDailyquotes.Add(new DailyData() { Date = cashVals[j].Date, AdjClosePrice = cashVals[j].SdaValue });
-
-            return (uberTickersData, VIXDailyquotes);
-
-            // uberTickersData = getAllQuotesData.Item1.ToList().GetRange(0, p_allAssetList.Length - 1);
-            // VIXDailyquotes = getAllQuotesData.Item1[p_allAssetList.Length - 1];
-
-            // return (uberTickersData, VIXDailyquotes);
+            return uberTickersData;
         }
 
         public Tuple<DateTime[], double[], Tuple<double[], double[], double[], double[], double[], double>> STCIdata(DateTime[] p_usedDateVec)

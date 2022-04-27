@@ -82,7 +82,7 @@ namespace FinTechCommon
             DateTime startTime = DateTime.UtcNow;
 
             List<Asset> assetsNeedDailyHist = p_memData.AssetsCache.Assets.Where(r => (r.AssetId.AssetTypeID == AssetType.BrokerNAV) || 
-                ((r.AssetId.AssetTypeID == AssetType.Stock) && (((Stock)r).ExpectedHistoryStartDateLoc != DateTime.MaxValue))).ToList();   // out of 800 stocks, we only keep 20 history in MemDb
+                ((r.AssetId.AssetTypeID == AssetType.Stock || r.AssetId.AssetTypeID == AssetType.FinIndex) && (r.ExpectedHistoryStartDateLoc != DateTime.MaxValue))).ToList();   // out of 800 stocks, we only keep 20 history in MemDb
             Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits = await GetPotentialMissingYfSplits(p_db, p_memData.AssetsCache);
 
             var newDailyHist = await CreateDailyHistImpl(assetsNeedDailyHist, p_db, potentialMissingYfSplits);
@@ -103,15 +103,15 @@ namespace FinTechCommon
             {
                 var assetsDates = new Dictionary<uint, SqDateOnly[]>();
                 var assetsAdjustedCloses = new Dictionary<uint, float[]>();
-                foreach (var stock in p_assetsNeedDailyHist.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).Select(r => (Stock)r))
+                foreach (var asset in p_assetsNeedDailyHist.Where(r => r.AssetId.AssetTypeID == AssetType.Stock || r.AssetId.AssetTypeID == AssetType.FinIndex))
                 {
-                    (SqDateOnly[] dates, float[] adjCloses) = await CreateDailyHist_Stock(stock as Stock, potentialMissingYfSplits);
+                    (SqDateOnly[] dates, float[] adjCloses) = await CreateDailyHist_YF(asset, potentialMissingYfSplits);
                     if (adjCloses.Length != 0)
                     {
-                        assetsDates[stock.AssetId] = dates;
-                        assetsAdjustedCloses[stock.AssetId] = adjCloses;
-                        Console.Write($"{stock.Symbol}, ");
-                        Debug.Write($"{stock.SqTicker}, first: DateTime: {dates.First()}, Close: {adjCloses.First()}, last: DateTime: {dates.Last()}, Close: {adjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
+                        assetsDates[asset.AssetId] = dates;
+                        assetsAdjustedCloses[asset.AssetId] = adjCloses;
+                        Console.Write($"{asset.Symbol}, ");
+                        Debug.Write($"{asset.SqTicker}, first: DateTime: {dates.First()}, Close: {adjCloses.First()}, last: DateTime: {dates.Last()}, Close: {adjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
                     }
                 }
                 Console.WriteLine();    // after the last ticker, write an Enter.
@@ -326,13 +326,21 @@ namespace FinTechCommon
             return potentialMissingYfSplits;
         }
 
-        private static async Task<(SqDateOnly[], float[])> CreateDailyHist_Stock(Stock stock, Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits)
+        private static async Task<(SqDateOnly[], float[])> CreateDailyHist_YF(Asset asset, Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits)
         {
             SqDateOnly[] dates = Array.Empty<SqDateOnly>();  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards
             float[] adjCloses = Array.Empty<float>();
 
-            if (stock.ExpectedHistoryStartDateLoc == DateTime.MaxValue) // if Initial value was not overwritten. For Dead stocks, like "S/VXX*20190130"
+            if (asset.ExpectedHistoryStartDateLoc == DateTime.MaxValue) // if Initial value was not overwritten. For Dead stocks, like "S/VXX*20190130"
                 return (dates, adjCloses);
+            
+            string yfTicker = string.Empty;
+            if (asset is Stock stock)
+                yfTicker = stock.YfTicker;
+            else if (asset is FinIndex finIndex)
+                yfTicker = finIndex.YfTicker;
+            if (String.IsNullOrEmpty(yfTicker))
+                throw new SqException($"CreateDailyHist_YF() exception. Cannot download YF data (ticker:{asset.SqTicker}) has no yfTicker.");
             // https://github.com/lppkarl/YahooFinanceApi
             // YF: all the Open/High/Low/Close are always already adjusted for Splits (so, we don't have to adjust it manually);  In addition: AdjClose also adjusted for Divididends.
             // YF gives back both the onlySplit(butNotDividend)-adjusted row.Close, and SplitAndDividendAdjusted row.AdjustedClose (checked with MO dividend and USO split).
@@ -340,9 +348,9 @@ namespace FinTechCommon
             // https://finance.yahoo.com/quote/USO/history?p=USO The YF website queries the splits separately when it inserts in-between the rows.
             // Therefore, we have to query the splits separately from YF.
             // The startTime & endTime here defaults to EST timezone
-            IReadOnlyList<Candle?>? history = await Yahoo.GetHistoricalAsync(stock.YfTicker, stock.ExpectedHistoryStartDateLoc, DateTime.Now, Period.Daily); // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
+            IReadOnlyList<Candle?>? history = await Yahoo.GetHistoricalAsync(yfTicker, asset.ExpectedHistoryStartDateLoc, DateTime.Now, Period.Daily); // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
             if (history == null)
-                throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{stock.SqTicker}) after many tries.");
+                throw new SqException($"CreateDailyHist_YF() exception. Cannot download YF data (ticker:{asset.SqTicker}) after many tries.");
             // 2021-02-26T16:30 Exception: https://finance.yahoo.com/quote/SPY/history?p=SPY returns for yesterday: "Feb 25, 2021	-	-	-	-	-	-" , other days are correct, this is probably temporary
             // YahooFinanceApi\Yahoo - Historical.cs:line 80 receives: "2021-02-25,null,null,null,null,null,null" and crashes on StringToDecimal conversion
             // TODO: We don't have a plan for those case when YF historical quote fails. What should we do?
@@ -363,49 +371,52 @@ namespace FinTechCommon
             // sec.AdjCloseHistory = history.Select(r => (double)Math.Round(r.AdjustedClose, 4)).ToList();
             adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
 
-            // 2020-04-29: USO split: Split-adjustment was not done in YF. For these exceptional cases, so we need an additional data-source for double check
-            // First just add the manual data source from Redis/Sql database, and let’s see how unreliable YF is in the future. 
-            // If it fails frequently, then we can implement query-ing another website, like https://www.nasdaq.com/market-activity/stock-splits
-            var splitHistoryYF = await Yahoo.GetSplitsAsync(stock.YfTicker, stock.ExpectedHistoryStartDateLoc, DateTime.Now);
-
-            DateTime etNow = DateTime.UtcNow.FromUtcToEt();  // refresh etNow
-            // var missingYfSplitDb = new SplitTick[1] { new SplitTick() { DateTime = new DateTime(2020, 06, 08), BeforeSplit = 8, AfterSplit = 1 }};
-            potentialMissingYfSplits!.TryGetValue(stock.AssetId, out List<Split>? missingYfSplitDb);
-
-            // if any missingYfSplitDb record is not found in splitHistoryYF, we assume YF is wrong (and our DB is right (probably custom made)), 
-            // so we do this extra split-adjustment assuming it is not in the YF quote history
-            // This can fixes YF data errors. For example ProShares UltraPro QQQ (TQQQ), https://finance.yahoo.com/quote/TQQQ/history?p=TQQQ on 2022-01-13 (whole day from 0:0 to 24:0 it was)
-            // Date	Open	High	Low	Close*	Adj Close**
-            // Jan 13, 2022	77.13	77.55	70.02	70.80	70.80
-            // Jan 12, 2022	153.97	155.93	149.88	152.68	152.68  // obviously these required the Multiplier: 0.5, but YF didn't have the Split in their Database. We have it from Nasdaq however.
-            // Jan 11, 2022	143.43	151.03	141.04	150.96	150.96
-            // This automatic Nasdaq Split data fixes the YF missing split problem for that given day. Good.
-            // But note that stock has a Stock.PriorClose value directly in the Stock object.
-            // And clients (like MarketDashboard.BrokerAccountViewer uses Stock.PriorClose, instead of the historical closeprice of yesterday).
-            // That Stock.PriorClose comes from YF realtime API. That was fixed at 9:30 ET, at market open. So, the Stock.PriorClose was properly split-adjusted at 14:30
-            // And this historical Close values was also properly split-adjusted (because we got the missing split from Nasdaq)
-            // So, in SqCore: TQQQ historical prices was good immediately at 0:00 in the morning. And Stock.PriorClose was good at 9:30ET (when YF fixed the YF real-time API)
-            // This is good. We don't need more development here. What is important that after market open, it should be OK. And it is OK. Both historical and Stock.PriorClose. After 9:30 ET.
-            for (int i = 0; missingYfSplitDb != null && i < missingYfSplitDb.Count; i++)
+            if (asset.AssetId.AssetTypeID == AssetType.Stock) // FinIndex like VIX, FTSE, SP500 don't have splits, so no costly YF download is necessary
             {
-                var missingSplitDb = missingYfSplitDb[i];
+                // 2020-04-29: USO split: Split-adjustment was not done in YF. For these exceptional cases, so we need an additional data-source for double check
+                // First just add the manual data source from Redis/Sql database, and let’s see how unreliable YF is in the future. 
+                // If it fails frequently, then we can implement query-ing another website, like https://www.nasdaq.com/market-activity/stock-splits
+                var splitHistoryYF = await Yahoo.GetSplitsAsync(yfTicker, asset.ExpectedHistoryStartDateLoc, DateTime.Now);
 
-                // ignore future data of https://api.nasdaq.com/api/calendar/splits?date=2021-04-14
-                if (missingSplitDb.Date > etNow)    // interpret missingSplitDb.Date in in ET time zone.
-                    continue;
-                if (splitHistoryYF.FirstOrDefault(r => r!.DateTime == missingSplitDb.Date) != null)    // if that date exists in YF already, do nothing; assume YF uses it
-                    continue;
+                DateTime etNow = DateTime.UtcNow.FromUtcToEt();  // refresh etNow
+                                                                 // var missingYfSplitDb = new SplitTick[1] { new SplitTick() { DateTime = new DateTime(2020, 06, 08), BeforeSplit = 8, AfterSplit = 1 }};
+                potentialMissingYfSplits!.TryGetValue(asset.AssetId, out List<Split>? missingYfSplitDb);
 
-                double multiplier = (double)missingSplitDb.Before / (double)missingSplitDb.After;
-                // USO split date from YF: "Apr 29, 2020" Time: 00:00. Means that very early morning, 9:30 hours before market open. That is the inflection point.
-                // Split adjust (multiply) everything before that time, but do NOT split adjust that exact date.
-                SqDateOnly missingSplitDbDate = new(missingSplitDb.Date);
-                for (int j = 0; j < dates.Length; j++)
+                // if any missingYfSplitDb record is not found in splitHistoryYF, we assume YF is wrong (and our DB is right (probably custom made)), 
+                // so we do this extra split-adjustment assuming it is not in the YF quote history
+                // This can fixes YF data errors. For example ProShares UltraPro QQQ (TQQQ), https://finance.yahoo.com/quote/TQQQ/history?p=TQQQ on 2022-01-13 (whole day from 0:0 to 24:0 it was)
+                // Date	Open	High	Low	Close*	Adj Close**
+                // Jan 13, 2022	77.13	77.55	70.02	70.80	70.80
+                // Jan 12, 2022	153.97	155.93	149.88	152.68	152.68  // obviously these required the Multiplier: 0.5, but YF didn't have the Split in their Database. We have it from Nasdaq however.
+                // Jan 11, 2022	143.43	151.03	141.04	150.96	150.96
+                // This automatic Nasdaq Split data fixes the YF missing split problem for that given day. Good.
+                // But note that stock has a Stock.PriorClose value directly in the Stock object.
+                // And clients (like MarketDashboard.BrokerAccountViewer uses Stock.PriorClose, instead of the historical closeprice of yesterday).
+                // That Stock.PriorClose comes from YF realtime API. That was fixed at 9:30 ET, at market open. So, the Stock.PriorClose was properly split-adjusted at 14:30
+                // And this historical Close values was also properly split-adjusted (because we got the missing split from Nasdaq)
+                // So, in SqCore: TQQQ historical prices was good immediately at 0:00 in the morning. And Stock.PriorClose was good at 9:30ET (when YF fixed the YF real-time API)
+                // This is good. We don't need more development here. What is important that after market open, it should be OK. And it is OK. Both historical and Stock.PriorClose. After 9:30 ET.
+                for (int i = 0; missingYfSplitDb != null && i < missingYfSplitDb.Count; i++)
                 {
-                    if (dates[j] < missingSplitDbDate)
-                        adjCloses[j] = (float)((double)adjCloses[j] * multiplier);
-                    else
-                        break;  // dates are in increasing order. So, once we passed the critical date, we can safely exit
+                    var missingSplitDb = missingYfSplitDb[i];
+
+                    // ignore future data of https://api.nasdaq.com/api/calendar/splits?date=2021-04-14
+                    if (missingSplitDb.Date > etNow)    // interpret missingSplitDb.Date in in ET time zone.
+                        continue;
+                    if (splitHistoryYF.FirstOrDefault(r => r!.DateTime == missingSplitDb.Date) != null)    // if that date exists in YF already, do nothing; assume YF uses it
+                        continue;
+
+                    double multiplier = (double)missingSplitDb.Before / (double)missingSplitDb.After;
+                    // USO split date from YF: "Apr 29, 2020" Time: 00:00. Means that very early morning, 9:30 hours before market open. That is the inflection point.
+                    // Split adjust (multiply) everything before that time, but do NOT split adjust that exact date.
+                    SqDateOnly missingSplitDbDate = new(missingSplitDb.Date);
+                    for (int j = 0; j < dates.Length; j++)
+                    {
+                        if (dates[j] < missingSplitDbDate)
+                            adjCloses[j] = (float)((double)adjCloses[j] * multiplier);
+                        else
+                            break;  // dates are in increasing order. So, once we passed the critical date, we can safely exit
+                    }
                 }
             }
             return (dates, adjCloses);

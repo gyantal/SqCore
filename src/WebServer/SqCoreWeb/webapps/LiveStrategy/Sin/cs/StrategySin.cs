@@ -515,7 +515,7 @@ namespace SqCoreWeb.Controllers
                 sinTickersData.Add(sinValsData);
             }
 
-            // last ticker is TLT, which is used as a cash substitute. Special rola.
+            // last ticker is TLT, which is used as a cash substitute. Special role.
             var cashVals = assetHistsAndEst[^1].values;
             for (int j = 0; j < cashVals.Count; j++)
                 cashSubstituteData.Add(new DailyData() { Date = cashVals[j].Date, AdjClosePrice = cashVals[j].SdaValue });

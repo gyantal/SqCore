@@ -111,6 +111,10 @@ namespace FinTechCommon
                 {
                     assets.Add(new CurrPair(row));
                 }
+                foreach (JsonElement row in doc.RootElement.GetProperty(AssetHelper.gAssetTypeCode[AssetType.FinIndex].ToString()).EnumerateArray())
+                {
+                    assets.Add(new FinIndex(row));
+                }
                 foreach (JsonElement row in doc.RootElement.GetProperty("R").EnumerateArray())
                 {
                     assets.Add(new RealEstate(row, users));
@@ -156,14 +160,7 @@ namespace FinTechCommon
                 string sqTicker = item.Key;
                 DateTime startDate =  GetExpectedHistoryStartDate(item.Value.LoadPrHist, sqTicker);
                 Asset asset = assets.Find(r => r.SqTicker == sqTicker)!;
-                if (asset is Stock stock)
-                    stock.ExpectedHistoryStartDateLoc = startDate;
-                else if (asset is BrokerNav nav)
-                    nav.ExpectedHistoryStartDateLoc = startDate;
-                else if (asset is CurrPair pair)
-                    pair.ExpectedHistoryStartDateLoc = startDate;
-                else
-                    throw new NotImplementedException();
+                asset.ExpectedHistoryStartDateLoc = startDate;
             }
         }
 

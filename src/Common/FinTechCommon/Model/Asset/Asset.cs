@@ -8,7 +8,7 @@ using SqCommon;
 
 namespace FinTechCommon
 {
-    // All Assets gSheet: https://docs.google.com/spreadsheets/d/1gkZlvD5epmBV8zi-l0BbLaEtwScvhHvHOYFZ4Ah_MA4/edit#gid=898941432
+    // All Assets gSheet: https://docs.google.com/spreadsheets/d/1gkZlvD5epmBV8zi-l0BbLaEtwScvhHvHOYFZ4Ah_MA4/edit#gid=1251256843
 
     [DebuggerDisplay("SqTicker = {SqTicker}, AssetId({AssetId})")]
     public class Asset
@@ -26,6 +26,8 @@ namespace FinTechCommon
         public string SqTicker { get; set; } = string.Empty;    // Unique assetId for humans to read. Better to store it as static field then recalculating at every request in derived classes
 
         public bool IsDbPersisted { get; set; } = true;   // There are special adHoc temporary, runtime-only Stocks, Options coming from IB-TWS. They don't exist in the RedisDb. They cannot be part of a Buy transaction in a Portfolio.
+
+        public DateTime ExpectedHistoryStartDateLoc { get; set; } = DateTime.MaxValue; // Local date, not necessarily ET. Depends on the asset. Too many assets have valueHistory: properties. Stock obviusly have price history. But even public Companies can be valued historically based on MarketCap.
 
         // The Last (realtime price) and the PriorClose values are too frequently used (for daily %Chg calculation) in many Asset classes: Stocks, Futures, Options. Although it is not necessary in other classes, but let them have here in the parent class
         // Don't name it LastPrice. Because it might refer to LastTrade Price. 
@@ -114,8 +116,6 @@ namespace FinTechCommon
         public CurrencyId TargetCurrency { get; set; } = CurrencyId.Unknown;
         public string TradingSymbol { get; set; } = string.Empty;
 
-        public DateTime ExpectedHistoryStartDateLoc { get; set; } = DateTime.MaxValue; // not necessarily ET. Depends on the asset.
-
         public CurrPair(JsonElement row) : base(AssetType.CurrencyPair, row)
         {
             string symbol = row[1].ToString()!;
@@ -129,6 +129,15 @@ namespace FinTechCommon
             if (String.IsNullOrEmpty(baseCurrencyStr))
                 baseCurrencyStr = "USD";
             SqTicker = SqTicker + "." + baseCurrencyStr;	// The default SqTicker just add the "D/HUF", the target currency. But we have to add the base currency as for the pair to be unique.
+        }
+    }
+
+    public class FinIndex : Asset   // C# 8.0 has System.Index and System.Range for the new Array notation. Instead of Index, FinIndex is a better name: FinancialIndex
+    {
+        public string YfTicker { get; set; } = string.Empty;
+        public FinIndex(JsonElement row) : base(AssetType.FinIndex, row)
+        {
+            YfTicker = "^" + Symbol; // use Symbol by default
         }
     }
 
@@ -189,9 +198,6 @@ namespace FinTechCommon
         public string ISIN { get; set; } = string.Empty; // International Securities Identification Number would be a unique identifier. Not used for now.
 
         public Asset? Company { get; set; } = null; // if not StockType.ETF
-
-        public DateTime ExpectedHistoryStartDateLoc { get; set; } = DateTime.MaxValue; // not necessarily ET. Depends on the asset.
-
         public Stock(JsonElement row, List<Asset> assets) : base(AssetType.Stock, row)
         {
             StockType = AssetHelper.gStrToStockType[row[5].ToString()!];
