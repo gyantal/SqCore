@@ -37,7 +37,7 @@
   </div>
   <br>
 </body>
-<div class="sinDiagnostics" id="sinDiagnostics">
+<div id="sinDiagnostics">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 494.45 494.45" stroke="red" xml:space="preserve">
   <path d="M395.225 277.325c-6.8 0-13.5-2.6-18.7-7.8-71.4-71.3-187.4-71.3-258.8 0-10.3 10.3-27.1 10.3-37.4 0s-10.3-27.1 0-37.4c92-92 241.6-92 333.6 0 10.3 10.3 10.3 27.1 0 37.4-5.2 5.2-12 7.8-18.7 7.8z"/>
   <path d="M323.625 348.825c-6.8 0-13.5-2.6-18.7-7.8-15.4-15.4-36-23.9-57.8-23.9s-42.4 8.5-57.8 23.9c-10.3 10.3-27.1 10.3-37.4 0-10.3-10.3-10.3-27.1 0-37.4 25.4-25.4 59.2-39.4 95.2-39.4s69.8 14 95.2 39.5c10.3 10.3 10.3 27.1 0 37.4-5.1 5.1-11.9 7.7-18.7 7.7z"/>
@@ -46,9 +46,11 @@
 </svg>
 </div>
 <div id="sinDiagnosticsDialog">
-  <div id="sinDiagnosticsDialogContent">
-    <p>Example: Diag.ServerProcessingTimeMs: 300</p>
-  </div>
+  <div id="sinDiagnosticsDialogContent"></div>
 </div>
-<div id="sinAddictionChart"></div>
+<div id="inviCharts" class="chartContainer">
+  <p id="chartTitle">Percentage Changes of Prices</p>
+  <span id="idChartLength" class="lookbackDropdown"></span>
+  <div id="sinAddictionChart"></div>
+</div>
 </html>

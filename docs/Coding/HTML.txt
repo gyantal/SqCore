@@ -15,3 +15,8 @@ The following commands are available for path data:
 Note: All of the commands above can also be expressed with lower letters. Capital letters means absolutely positioned, lower cases means relatively positioned.
 url to play with coordinates : https://mavo.io/demos/svgpath/. This tool provides interactive visual interface to develop the path we desire using the above commands.
 SVG Path Editor - https://aydos.com/svgedit/ , lets you edit and optimize SVG's path element.
+** Tips play with SVG path Editor **
+  1. once you open the link - Click on "Import SVG Path" and enter the path (either by typing the path or copy paste the path) you wish to try for and again click on "Import SVG Path".
+  2. The path gets dispalyed on the top box.
+  3. The path get arranged nicely by segregating the path provided in the bottom box.
+Refer "How to Use " section for better understanding of the terminologies 

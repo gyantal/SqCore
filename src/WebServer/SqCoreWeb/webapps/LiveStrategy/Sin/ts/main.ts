@@ -33,13 +33,23 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
 window.onload = function onLoadWindow() {
   console.log('SqCore: window.onload() BEGIN. All CSS, and images were downloaded.'); // images are loaded at this time, so their sizes are known
-
+  // start timer.
+  const startTime = (new Date()).getTime();
   AsyncStartDownloadAndExecuteCbLater('/StrategySin', (json: any) => {
+    const endTime = (new Date()).getTime();
+    const queryTime = endTime - startTime;
+
     onReceiveData(json);
     // Server Diagnostics message when mouseenter the wifi image
     getDocElementById('sinDiagnostics').onmouseenter = function sqDiagnosticsModal() {
       const dialog = getDocElementById('sinDiagnosticsDialog');
       dialog.style.display = 'block';
+      const diagMsg = getDocElementById('sinDiagnosticsDialogContent');
+      diagMsg.innerHTML = '<p>Client data query: ' + queryTime + 'ms</p>';
+    };
+    getDocElementById('sinDiagnostics').onmouseleave = function sqDiagnosticsModal() {
+      const dialog = getDocElementById('sinDiagnosticsDialog');
+      dialog.style.display = '';
     };
   });
   console.log('SqCore: window.onload() END.');
@@ -72,7 +82,7 @@ function onReceiveData(json: any) {
     const divErrorCont = getDocElementById('idErrorCont');
     divErrorCont.innerHTML = 'Error during downloading data. Please, try again later!';
     getDocElementById('errorMessage').style.visibility='visible';
-    // getDocElementById('inviCharts').style.visibility = 'hidden';
+    getDocElementById('inviCharts').style.visibility = 'hidden';
 
     return;
   }
@@ -94,7 +104,7 @@ function onReceiveData(json: any) {
   getDocElementById('bondPerc').innerHTML = '<span class="notDaily">Current / Required Bond Percentage: ' + json.currBondPerc + ' / ' + json.nextBondPerc + '.&emsp;&emsp; Used Leverage: ' + json.leverage +'.&emsp;Used Maximum Bond Percentage: '+json.maxBondPerc+'.</span>';
 
   sinAddictionInfoTbls(json);
-  // getDocElementById('inviCharts').style.visibility = 'visible';
+  getDocElementById('inviCharts').style.visibility = 'visible';
 }
 
 function sinAddictionInfoTbls(json) {
@@ -177,7 +187,7 @@ function sinAddictionInfoTbls(json) {
   currTableMtx4.innerHTML = pctChngStckPriceTbl;
 
   // Declaring data sets to charts.
-  // const retHistLBPeriods = json.pastPerfDaysName.split(', ');
+  const retHistLBPeriods = json.pastPerfDaysName.split(', ');
   const retHistLBPeriodsNoS = json.pastPerfDaysNum.split(', ');
   const retHistLBPeriodsNo: any[] = [];
   for (let i = 0; i < retHistLBPeriodsNoS.length; i++)
@@ -185,8 +195,8 @@ function sinAddictionInfoTbls(json) {
 
   const lengthOfChart = 21;
   const indOfLength = retHistLBPeriodsNo.indexOf(lengthOfChart);
-  // const divChartLength = document.getElementById('idChartLength');
-  // divChartLength.innerHTML = '<div class="DDM"><strong>in the Last &emsp;<select class="DDM" id="limit2"><option value="1">1 Day</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="21" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[indOfLength] + '</select></strong ></div>';
+  getDocElementById('idChartLength').innerHTML = '<div class="DDM"><strong>in the Last &emsp;<select class="DDM" id="limit2"><option value="1">1 Day</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="21" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[indOfLength] + '</select></strong ></div>';
+
   // chart data preparation
   // const nCurrData = 1;
   const noAssets = assetNames2Array.length - 1;
@@ -224,8 +234,8 @@ function sinAddictionInfoTbls(json) {
 // Bar chart with mockup data - under development Daya.
 function processPctChngStckPriceChrt(sinStckChrtData) {
   d3.selectAll('#sinAddictionChart > *').remove();
-  const margin = {top: 30, right: 30, bottom: 70, left: 60};
-  const width = 460 - margin.left - margin.right;
+  const margin = {top: 30, right: 30, bottom: 40, left: 40};
+  const width = 500 - margin.left - margin.right;
   const height = 400 - margin.top - margin.bottom;
 
   // find data range
@@ -243,6 +253,7 @@ function processPctChngStckPriceChrt(sinStckChrtData) {
 
   const chrtSvg = d3.select('#sinAddictionChart')
       .append('svg')
+      .style('background', 'beige')
       .attr('width', width + margin.left + margin.right)
       .attr('height', height + margin.top + margin.bottom)
       .append('g')
@@ -256,18 +267,29 @@ function processPctChngStckPriceChrt(sinStckChrtData) {
       .attr('x', (r: any) => xScale(Math.min(0, r.pctChgStckPrice)))
       .attr('y', (r: any) => yScale(r.StckName) as number)
       .attr('width', (r: any) => Math.abs( xScale(r.pctChgStckPrice) - xScale(0)))
-      .attr('height', yScale.bandwidth())
-      .attr('fill', 'blue');
+      .attr('height', yScale.bandwidth());
 
+  // add the X gridlines
   chrtSvg.append('g')
-      .attr('transform', `translate(0, ${ height })`)
-      .attr('class', 'axis x')
-      .call(d3.axisBottom(xScale).tickFormat((d: any) => d + '%'));
+      .attr('class', 'grid')
+      .attr('transform', 'translate(0,' + height + ')')
+      .call(d3.axisBottom(xScale)
+          .tickSize(-height)
+          .tickFormat((d: any) => d + '%'));
 
+  // add the Y gridlines
   chrtSvg.append('g')
-      .attr('class', 'axis y')
-      .attr('transform', `translate(${ xScale(0) }, 0)`)
-      .call(d3.axisLeft(yScale));
+      .attr('class', 'grid')
+      .call(d3.axisLeft(yScale)
+          .tickSize(-width));
+
+  // text label for the x axis
+  chrtSvg
+      .append('text')
+      .attr('transform', 'translate(' + width / 2 + ' ,' + (height + 30) + ')')
+      .style('text-anchor', 'middle')
+      .style('font-size', '0.8rem')
+      .text('Percentage Change');
 }
 
 console.log('SqCore: Script END');
