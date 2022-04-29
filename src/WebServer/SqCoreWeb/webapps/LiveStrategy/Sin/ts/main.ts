@@ -196,43 +196,48 @@ function sinAddictionInfoTbls(json) {
   const lengthOfChart = 21;
   const indOfLength = retHistLBPeriodsNo.indexOf(lengthOfChart);
   getDocElementById('idChartLength').innerHTML = '<div class="DDM"><strong>in the Last &emsp;<select class="DDM" id="limit2"><option value="1">1 Day</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="21" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[indOfLength] + '</select></strong ></div>';
+  creatingChartData(indOfLength);
 
+  getDocElementById('limit2').onchange = function() {
+    const lengthOfChart = parseInt((document.getElementById('limit2') as HTMLSelectElement).value);
+    const indOfLength = retHistLBPeriodsNo.indexOf(lengthOfChart);
+    creatingChartData(indOfLength);
+  };
   // chart data preparation
-  // const nCurrData = 1;
-  const noAssets = assetNames2Array.length - 1;
+  function creatingChartData(indOfLength) {
+    // const nCurrData = 1;
+    const noAssets = assetNames2Array.length - 1;
 
-  const yTicksH = new Array(noAssets);
-  for (let i = 0; i < noAssets; i++) {
-    const yTicksHRows = new Array(2);
-    yTicksHRows[0] = i;
-    yTicksHRows[1] = assetNames2Array[i];
-    yTicksH[i] = yTicksHRows;
+    const yTicksH = new Array(noAssets);
+    for (let i = 0; i < noAssets; i++) {
+      const yTicksHRows = new Array(2);
+      yTicksHRows[0] = i;
+      yTicksHRows[1] = assetNames2Array[i];
+      yTicksH[i] = yTicksHRows;
+    }
+
+    // Declaring data sets to charts.
+    interface DataSet {
+      StckName: string;
+      pctChgStckPrice: number;
+    }
+
+    const sinStckChrtData: DataSet[] = [];
+    for (let j = 0; j < noAssets; j++) {
+      const chrtData: DataSet = {
+        StckName: assetNames2Array[j],
+        pctChgStckPrice: parseFloat(assChartMtx[j][indOfLength]),
+      };
+      sinStckChrtData.push(chrtData);
+    }
+
+    processPctChngStckPriceChrt(sinStckChrtData);
   }
-
-
-  // Declaring data sets to charts.
-
-  interface DataSet {
-    StckName: string;
-    pctChgStckPrice: number;
-  }
-
-  const sinStckChrtData: DataSet[] = [];
-  for (let j = 0; j < noAssets; j++) {
-    const chrtData: DataSet = {
-      StckName: assetNames2Array[j],
-      pctChgStckPrice: parseFloat(assChartMtx[j][indOfLength]),
-    };
-    sinStckChrtData.push(chrtData);
-  }
-
-  processPctChngStckPriceChrt(sinStckChrtData);
-
   // processPctChngStckPriceChrt(datasets1, noAssets, yTicksH, nCurrData, retHistLBPeriods[indOfLength]);
 }
 
 // Bar chart with mockup data - under development Daya.
-function processPctChngStckPriceChrt(sinStckChrtData) {
+function processPctChngStckPriceChrt(sinStckChrtData: any[]) {
   d3.selectAll('#sinAddictionChart > *').remove();
   const margin = {top: 30, right: 30, bottom: 40, left: 40};
   const width = 500 - margin.left - margin.right;

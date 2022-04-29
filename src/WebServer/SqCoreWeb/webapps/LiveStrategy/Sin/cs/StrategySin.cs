@@ -9,6 +9,7 @@ using SqCommon;
 using System.Net.Http;
 using System.Text;
 using System.Globalization;
+using System.Diagnostics;
 
 namespace SqCoreWeb.Controllers
 {    
@@ -69,7 +70,6 @@ namespace SqCoreWeb.Controllers
         [HttpGet] // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
         public string Get()
         {
-            Thread.Sleep(3000);     // intentional delay to simulate a longer process to crunch data. This can be removed.
 
             string titleString = "Monthly rebalance, <b>The Charmat Rebalancing Method</b> (Trend following with Percentile Channel weights), Cash to TLT";
             string usedGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1JXMbEMAP5AOqB1FjdM8jpptXfpuOno2VaFVYK8A1eLo/values/A1:Z2000?key=";
@@ -94,6 +94,20 @@ namespace SqCoreWeb.Controllers
 
             // Collecting and splitting price data got from SQL Server
             (IList<List<DailyData>>, List<DailyData>) dataListTupleFromSQServer = GetSinStockHistData(allAssetList);
+
+            // below commented code is for validation purpose Sin SqCore vs SqLab
+            // StringBuilder sbDebugData = new();
+            // for (int i = 0; i < allAssetList.Length - 1; i++)
+            // {
+            //     sbDebugData.Append(allAssetList[i] + ": " + Environment.NewLine);
+            //     List<DailyData> prices = dataListTupleFromSQServer.Item1[i];
+            //     string priceStr = String.Join('\t', prices.Select(r => r.Date.ToString() + ", " + r.AdjClosePrice.ToString() + Environment.NewLine));
+            //     sbDebugData.Append(priceStr + Environment.NewLine);
+            // }
+
+            ///....
+
+            // Debug.WriteLine(sbDebugData.ToString());
 
             IList<List<DailyData>> quotesData = dataListTupleFromSQServer.Item1;
             List<DailyData> cashEquivalentQuotesData = dataListTupleFromSQServer.Item2;
@@ -486,7 +500,7 @@ namespace SqCoreWeb.Controllers
             return Content($"<HTML><body>SINGoogleApiGsheet() finished OK. <br> Received data: '{valuesFromGSheetStr}'</body></HTML>", "text/html");
         }
 
-        public static (IList<List<DailyData>>, List<DailyData>) GetSinStockHistData(string[] p_allAssetList)
+        public static (List<List<DailyData>>, List<DailyData>) GetSinStockHistData(string[] p_allAssetList)
         {
             List<Asset> assets = new();
             for (int i = 0; i < p_allAssetList.Length; i++)

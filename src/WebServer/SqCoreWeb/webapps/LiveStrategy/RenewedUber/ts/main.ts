@@ -318,7 +318,7 @@ function renewedUberChart(dataset: any, titleCont: any, minPrice: number, maxPri
       .range([0, width]);
   const y = d3
       .scaleLinear()
-      .domain([minPrice * 0.8, maxPrice * 1.5])
+      .domain([minPrice * 0.9, maxPrice * 1.1])
       .range([height, 0]);
   const line = d3
       .line()

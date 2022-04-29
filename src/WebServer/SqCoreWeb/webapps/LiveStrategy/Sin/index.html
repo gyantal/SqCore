@@ -7,14 +7,11 @@
 
 <body>
   <h1>SIN, Addiction Live Portfolio</h1>
-  <strong>Data will arrive </strong> here after (simulated)<em> <strong> 3 seconds </strong>  delay to test user experience: </em>
-    <!-- <div id="DebugDataArrivesHere"></div><br /><br /><br /> -->
     <div id="errorMessage" style="visibility: hidden">
       <br>
       <br>
       <div class="herror" id="idErrorCont"></div>
   </div>
-  <!-- <div id="inviCharts" style="visibility: hidden"> -->
     <div class="h3" id="titleCont"></div>
     <div class="marginCommon">
       <span id="requestTime"></span>&nbsp;&nbsp;&nbsp;
@@ -32,6 +29,11 @@
       <span id="changeInPos"></span>
       <br>
     </div>
+  <div id="inviCharts" class="chartContainer">
+    <p id="chartTitle">Percentage Changes of Prices</p>
+    <span id="idChartLength" class="lookbackDropdown"></span>
+    <div id="sinAddictionChart"></div>
+  </div>
   <div class="center">
       <span id="percentageChange"></span>
   </div>
@@ -47,10 +49,5 @@
 </div>
 <div id="sinDiagnosticsDialog">
   <div id="sinDiagnosticsDialogContent"></div>
-</div>
-<div id="inviCharts" class="chartContainer">
-  <p id="chartTitle">Percentage Changes of Prices</p>
-  <span id="idChartLength" class="lookbackDropdown"></span>
-  <div id="sinAddictionChart"></div>
 </div>
 </html>

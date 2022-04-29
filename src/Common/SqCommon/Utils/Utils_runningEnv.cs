@@ -112,7 +112,7 @@ namespace SqCommon
                     "gyant" => "c:/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/",
                     "Balazs" => "d:/GDrive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/",
                     "Laci" => "d:\\ArchiData\\GoogleDrive\\GDriveHedgeQuant\\shared\\GitHubRepos\\NonCommitedSensitiveData\\",
-                    "vinci" => "c:\\Google Drive\\GDriveHedgeQuant\\shared\\GitHubRepos\\NonCommitedSensitiveData\\",
+                    "vinci" => "g:\\.shortcut-targets-by-id\\0BzxkV1ug5ZxvVmtic1FsNTM5bHM\\GDriveHedgeQuant\\shared\\GitHubRepos\\NonCommitedSensitiveData\\",
                     _ => throw new Exception("Windows user name is not recognized. Add your username and folder here!"),
                 }, // find out which user from the team and determine it accordingly. Or just check whether folders exists (but that takes HDD read, which is slow)
                 _ => throw new Exception("RunningPlatform() is not recognized"),

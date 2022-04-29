@@ -101,734 +101,682 @@ namespace SqCoreWeb.Controllers
         {
             Thread.Sleep(1000);     // intentional delay to simulate a longer process to crunch data. This can be removed.
     // Under Development - Daya.
-            // // string[] allAssetList = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
-            // // string[] allAssetListVIX = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };            // // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
-            // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };
+            // string[] allAssetList = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
+            // string[] allAssetListVIX = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };            // // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
+            string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
             string[] allAssetListVIX = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };
-            // double[] bullishWeights = new double[] { -0.1, 0.3, 0.3, 0.2, -0.1, -0.075, -0.15 };
-            // double[] bearishWeights = new double[] { 1, 0, 0, 0, 0, 0, 0 };
-            // double[] eventMultiplicator = new double[] { 0.5, 1, 1, 0.85, 0.85, 0.7, 0.7 };
-            // double[] stciThresholds = new double[] { 0.02, 0.09, 0.075 };
+            double[] bullishWeights = new double[] { -0.1, 0.3, 0.3, 0.2, -0.1, -0.075, -0.15 };
+            double[] bearishWeights = new double[] { 1, 0, 0, 0, 0, 0, 0 };
+            double[] eventMultiplicator = new double[] { 0.5, 1, 1, 0.85, 0.85, 0.7, 0.7 };
+            double[] stciThresholds = new double[] { 0.02, 0.09, 0.075 };
 
 
-            // string gchGSheetRefPos = "https://sheets.googleapis.com/v4/spreadsheets/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/values/A1:Z2000?key=";
-            // string gchGSheet2RefPos = "https://docs.google.com/spreadsheets/d/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/edit?usp=sharing";
-            // string gchGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1QjGsXw6YxPT0He5kE4YJ5o52ZCnX7cLA5N-V3Ng1juA/values/A1:Z2000?key=";
-            // string gchGSheet2Ref = "https://docs.google.com/spreadsheets/d/1QjGsXw6YxPT0He5kE4YJ5o52ZCnX7cLA5N-V3Ng1juA/edit#gid=0";
-            // string gchGDocRef = "https://docs.google.com/document/d/1q2nSfQUos93q4-dd0ILjTrlvtiQKnwlsg3zN1_0_lyI/edit?usp=sharing";
+            string gchGSheetRefPos = "https://sheets.googleapis.com/v4/spreadsheets/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/values/A1:Z2000?key=";
+            string gchGSheet2RefPos = "https://docs.google.com/spreadsheets/d/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/edit?usp=sharing";
+            string gchGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1QjGsXw6YxPT0He5kE4YJ5o52ZCnX7cLA5N-V3Ng1juA/values/A1:Z2000?key=";
+            string gchGSheet2Ref = "https://docs.google.com/spreadsheets/d/1QjGsXw6YxPT0He5kE4YJ5o52ZCnX7cLA5N-V3Ng1juA/edit#gid=0";
+            string gchGDocRef = "https://docs.google.com/document/d/1q2nSfQUos93q4-dd0ILjTrlvtiQKnwlsg3zN1_0_lyI/edit?usp=sharing";
 
 
-            // string usedGSheetRef = gchGSheetRef;
-            // string usedGSheet2Ref = gchGSheet2Ref;
-            // string usedGDocRef = gchGDocRef;
-            // string usedGSheetRefPos = gchGSheetRefPos;
-            // string usedGSheet2RefPos = gchGSheet2RefPos;
+            string usedGSheetRef = gchGSheetRef;
+            string usedGSheet2Ref = gchGSheet2Ref;
+            string usedGDocRef = gchGDocRef;
+            string usedGSheetRefPos = gchGSheetRefPos;
+            string usedGSheet2RefPos = gchGSheet2RefPos;
 
 
-            // //Collecting and splitting price data got from SQL Server
-            List<List<DailyData>> quotesDataAll = GetUberStockHistData(allAssetListVIX);
-            Debug.WriteLine("quotesDataAll.Count: " + quotesDataAll.Count);
-            // IList<List<DailyData>>? quotesData = quotesDataAll.Item1;
-            // List<DailyData>? VIXQuotes = quotesDataAll.Item2;
+            // // Collecting and splitting price data got from SQL Server
+            (IList<List<DailyData>>, List<DailyData>) quotesDataAll = GetUberStockHistData(allAssetListVIX);
+            // Debug.WriteLine("quotesDataAll.Count: " + quotesDataAll.Count);
+            IList<List<DailyData>>? quotesData = quotesDataAll.Item1;
+            List<DailyData>? VIXQuotes = quotesDataAll.Item2;
 
-            // //Get, split and convert GSheet data
-            // var gSheetReadResultPos = RenewedUberGoogleApiGsheet(usedGSheetRefPos);
-            // string? content = ((ContentResult)gSheetReadResultPos).Content;
-            // string? gSheetStringPos = content;
+            //Get, split and convert GSheet data
+            var gSheetReadResultPos = RenewedUberGoogleApiGsheet(usedGSheetRefPos);
+            string? content = ((ContentResult)gSheetReadResultPos).Content;
+            string? gSheetStringPos = content;
 
-            // Tuple<double[], DateTime[], string[,], int[], int[], int[], string[]> gSheetResToFinCalc = GSheetConverter(gSheetStringPos, allAssetList);
-
-
-            // //Request time (UTC)
-            // DateTime liveDateTime = DateTime.UtcNow;
-            // string liveDate = System.String.Empty;
-            // liveDate = liveDateTime.ToString("yyyy-MM-dd HH:mm:ss");
-            // DateTime timeNowET = Utils.ConvertTimeFromUtcToEt(liveDateTime);
-            // string liveDateString = "Request time (UTC): " + liveDate;
-
-            // //Last data time (UTC)
-            // string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000, 1, 1, 16, 15, 0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on " + quotesData[0][^1].Date.ToString("yyyy-MM-dd");
-            // string lastDataTimeString = "Last data time (UTC): " + lastDataTime;
-            // DateTime[] usedDateVec = new DateTime[15];
-            // for (int iRows = 0; iRows < usedDateVec.Length; iRows++)
-            // {
-            //     usedDateVec[iRows] = quotesData[0][quotesData[0].Count - iRows - 1].Date.Date;
-            // }
-            // double usedMDate = (usedDateVec[0] - new DateTime(1900, 1, 1)).TotalDays + 693962;
+            Tuple<double[], DateTime[], string[,], int[], int[], int[], string[]> gSheetResToFinCalc = GSheetConverter(gSheetStringPos, allAssetList);
 
 
-            // Tuple<DateTime[], double[], Tuple<double[], double[], double[], double[], double[], double>> STCId = STCIdata(usedDateVec);
-            // Tuple<double[], double[], double[], double[], double[], double> vixCont = STCId.Item3;
-            // double[] currDataVix = vixCont.Item1;
-            // double[] currDataDaysVix = vixCont.Item2;
-            // double[] prevDataVix = vixCont.Item3;
-            // double[] currDataDiffVix = vixCont.Item4;
-            // double[] currDataPercChVix = vixCont.Item5;
-            // double spotVixValue = vixCont.Item6;
+            //Request time (UTC)
+            DateTime liveDateTime = DateTime.UtcNow;
+            string liveDate = System.String.Empty;
+            liveDate = liveDateTime.ToString("yyyy-MM-dd HH:mm:ss");
+            DateTime timeNowET = Utils.ConvertTimeFromUtcToEt(liveDateTime);
+            string liveDateString = "Request time (UTC): " + liveDate;
 
-            // double[] spotVixValueDb = new double[STCId.Item1.Length];
-            // for (int iRows = 0; iRows < spotVixValueDb.Length; iRows++)
-            // {
-            //     spotVixValueDb[iRows]= VIXQuotes[VIXQuotes.Count - iRows - 1].AdjClosePrice;
-            // }
-
-            // double[] vixLeverage = new double[STCId.Item1.Length];
-            // for (int iRows = 0; iRows < vixLeverage.Length; iRows++)
-            // {
-            //     if (spotVixValueDb[iRows] >= 30)
-            //     {
-            //         vixLeverage[iRows] = 0.1;
-            //     }
-            //     else if (spotVixValueDb[iRows] >= 21)
-            //     {
-            //         vixLeverage[iRows] = 1 - (spotVixValueDb[iRows] - 21) * 0.1;
-            //     }
-            //     else
-            //     {
-            //         vixLeverage[iRows] = 1;
-            //     }
-            // }
-
-            // int[] pastDataResIndexVec = new int[STCId.Item1.Length];
-            // for (int iRows = 0; iRows < pastDataResIndexVec.Length; iRows++)
-            // {
-            //     pastDataResIndexVec[iRows] = Array.FindIndex(gSheetResToFinCalc.Item2, item => item >= STCId.Item1[iRows]);
-            // }
+            //Last data time (UTC)
+            string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000, 1, 1, 16, 15, 0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on " + quotesData[0][^1].Date.ToString("yyyy-MM-dd");
+            string lastDataTimeString = "Last data time (UTC): " + lastDataTime;
+            DateTime[] usedDateVec = new DateTime[15];
+            for (int iRows = 0; iRows < usedDateVec.Length; iRows++)
+            {
+                usedDateVec[iRows] = quotesData[0][quotesData[0].Count - iRows - 1].Date.Date;
+            }
+            double usedMDate = (usedDateVec[0] - new DateTime(1900, 1, 1)).TotalDays + 693962;
 
 
-            // int[] nextDataResIndexVec = new int[15];
-            // nextDataResIndexVec[0] = pastDataResIndexVec[0] + 1;
-            // for (int iRows = 1; iRows < nextDataResIndexVec.Length; iRows++)
-            // {
-            //     nextDataResIndexVec[iRows] = nextDataResIndexVec[iRows - 1] + 1;
-            // }
+            Tuple<DateTime[], double[], Tuple<double[], double[], double[], double[], double[], double>> STCId = STCIdata(usedDateVec);
+            Tuple<double[], double[], double[], double[], double[], double> vixCont = STCId.Item3;
+            double[] currDataVix = vixCont.Item1;
+            double[] currDataDaysVix = vixCont.Item2;
+            double[] prevDataVix = vixCont.Item3;
+            double[] currDataDiffVix = vixCont.Item4;
+            double[] currDataPercChVix = vixCont.Item5;
+            double spotVixValue = vixCont.Item6;
 
-            // DateTime[] prevDateVec = new DateTime[pastDataResIndexVec.Length];
-            // for (int iRows = 0; iRows < prevDateVec.Length; iRows++)
-            // {
-            //     prevDateVec[iRows] = gSheetResToFinCalc.Item2[pastDataResIndexVec[iRows] + 1];
-            // }
+            double[] spotVixValueDb = new double[STCId.Item1.Length];
+            for (int iRows = 0; iRows < spotVixValueDb.Length; iRows++)
+            {
+                spotVixValueDb[iRows]= VIXQuotes[VIXQuotes.Count - iRows - 1].AdjClosePrice;
+            }
 
-            // DateTime[] nextDateVec = new DateTime[nextDataResIndexVec.Length];
-            // for (int iRows = 0; iRows < nextDateVec.Length; iRows++)
-            // {
-            //     nextDateVec[iRows] = gSheetResToFinCalc.Item2[nextDataResIndexVec[iRows] + 1];
-            // }
+            double[] vixLeverage = new double[STCId.Item1.Length];
+            for (int iRows = 0; iRows < vixLeverage.Length; iRows++)
+            {
+                if (spotVixValueDb[iRows] >= 30)
+                {
+                    vixLeverage[iRows] = 0.1;
+                }
+                else if (spotVixValueDb[iRows] >= 21)
+                {
+                    vixLeverage[iRows] = 1 - (spotVixValueDb[iRows] - 21) * 0.1;
+                }
+                else
+                {
+                    vixLeverage[iRows] = 1;
+                }
+            }
 
-
-            // int[] eventFinalSignal = new int[pastDataResIndexVec.Length];
-            // for (int iRows = 0; iRows < eventFinalSignal.Length; iRows++)
-            // {
-            //     eventFinalSignal[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item7[pastDataResIndexVec[iRows] + 1]);
-            // }
-
-            // int[] nextEventFinalSignal = new int[nextDataResIndexVec.Length];
-            // for (int iRows = 0; iRows < nextEventFinalSignal.Length; iRows++)
-            // {
-            //     nextEventFinalSignal[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item7[nextDataResIndexVec[iRows] + 1]);
-            // }
-
-            // int[] eventCode = new int[pastDataResIndexVec.Length];
-            // for (int iRows = 0; iRows < eventCode.Length; iRows++)
-            // {
-            //     eventCode[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item4[pastDataResIndexVec[iRows] + 1]);
-            // }
-
-            // int[] nextEventCode = new int[nextDataResIndexVec.Length];
-            // for (int iRows = 0; iRows < nextEventCode.Length; iRows++)
-            // {
-            //     nextEventCode[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item4[nextDataResIndexVec[iRows] + 1]);
-            // }
-
-            // double[] eventFinalWeightedSignal = new double[pastDataResIndexVec.Length];
-            // for (int iRows = 0; iRows < eventFinalWeightedSignal.Length; iRows++)
-            // {
-            //     eventFinalWeightedSignal[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item7[pastDataResIndexVec[iRows] + 1]) * eventMultiplicator[eventCode[iRows]];
-            // }
-
-            // double[] nextEventFinalWeightedSignal = new double[nextDataResIndexVec.Length];
-            // for (int iRows = 0; iRows < nextEventFinalWeightedSignal.Length; iRows++)
-            // {
-            //     nextEventFinalWeightedSignal[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item7[nextDataResIndexVec[iRows] + 1]) * eventMultiplicator[nextEventCode[iRows]];
-            // }
-
-            // double[] finalWeightMultiplier = new double[pastDataResIndexVec.Length];
-            // double[] finalWeightMultiplierVIX = new double[pastDataResIndexVec.Length];
-            // int[] eventCodeFinal = new int[pastDataResIndexVec.Length];
-            // for (int iRows = 0; iRows < finalWeightMultiplier.Length; iRows++)
-            // {
-            //     if ((eventCode[iRows] <= 4 && eventCode[iRows] > 0) || (eventCode[iRows] == 5 && STCId.Item2[iRows] >= stciThresholds[0]) || (eventCode[iRows] == 6 && STCId.Item2[iRows] <= stciThresholds[1]))
-            //     {
-            //         finalWeightMultiplier[iRows] = eventFinalWeightedSignal[iRows];
-            //         finalWeightMultiplierVIX[iRows] = finalWeightMultiplier[iRows] *vixLeverage[iRows];
-            //         eventCodeFinal[iRows] = eventCode[iRows];
-            //     }
-            //     else if (eventCode[iRows] == 0 && STCId.Item2[iRows] >= stciThresholds[2])
-            //     {
-            //         finalWeightMultiplier[iRows] = eventMultiplicator[0];
-            //         finalWeightMultiplierVIX[iRows] = finalWeightMultiplier[iRows] * vixLeverage[iRows];
-            //         eventCodeFinal[iRows] = 7;
-            //     }
-            //     else if ((eventCode[iRows] == 5 && STCId.Item2[iRows] < stciThresholds[0]) || (eventCode[iRows] == 6 && STCId.Item2[iRows] > stciThresholds[1]))
-            //     {
-            //         finalWeightMultiplier[iRows] = 0;
-            //         finalWeightMultiplierVIX[iRows] = finalWeightMultiplier[iRows] * vixLeverage[iRows];
-            //         eventCodeFinal[iRows] = 9;
-            //     }
-            //     else
-            //     {
-            //         finalWeightMultiplier[iRows] = 0;
-            //         finalWeightMultiplierVIX[iRows] = finalWeightMultiplier[iRows] * vixLeverage[iRows];
-            //         eventCodeFinal[iRows] = 8;
-            //     }
-            // }
+            int[] pastDataResIndexVec = new int[STCId.Item1.Length];
+            for (int iRows = 0; iRows < pastDataResIndexVec.Length; iRows++)
+            {
+                pastDataResIndexVec[iRows] = Array.FindIndex(gSheetResToFinCalc.Item2, item => item >= STCId.Item1[iRows]);
+            }
 
 
-            // int currEventSignal = eventFinalSignal[0];
-            // int currEventCodeOriginal = eventCode[0];
-            // int currEventCode = 0;
-            // if (eventCode[0] <= 6 && eventCode[0] > 0)
-            // {
-            //     currEventCode = eventCode[0];
-            // }
-            // else if (STCId.Item2[0] >= stciThresholds[2])
-            // {
-            //     currEventCode = 7;
-            // }
-            // else
-            // {
-            //     currEventCode = 8;
-            // }
+            int[] nextDataResIndexVec = new int[15];
+            nextDataResIndexVec[0] = pastDataResIndexVec[0] + 1;
+            for (int iRows = 1; iRows < nextDataResIndexVec.Length; iRows++)
+            {
+                nextDataResIndexVec[iRows] = nextDataResIndexVec[iRows - 1] + 1;
+            }
+
+            DateTime[] prevDateVec = new DateTime[pastDataResIndexVec.Length];
+            for (int iRows = 0; iRows < prevDateVec.Length; iRows++)
+            {
+                prevDateVec[iRows] = gSheetResToFinCalc.Item2[pastDataResIndexVec[iRows] + 1];
+            }
+
+            DateTime[] nextDateVec = new DateTime[nextDataResIndexVec.Length];
+            for (int iRows = 0; iRows < nextDateVec.Length; iRows++)
+            {
+                nextDateVec[iRows] = gSheetResToFinCalc.Item2[nextDataResIndexVec[iRows] + 1];
+            }
 
 
+            int[] eventFinalSignal = new int[pastDataResIndexVec.Length];
+            for (int iRows = 0; iRows < eventFinalSignal.Length; iRows++)
+            {
+                eventFinalSignal[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item7[pastDataResIndexVec[iRows] + 1]);
+            }
+
+            int[] nextEventFinalSignal = new int[nextDataResIndexVec.Length];
+            for (int iRows = 0; iRows < nextEventFinalSignal.Length; iRows++)
+            {
+                nextEventFinalSignal[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item7[nextDataResIndexVec[iRows] + 1]);
+            }
+
+            int[] eventCode = new int[pastDataResIndexVec.Length];
+            for (int iRows = 0; iRows < eventCode.Length; iRows++)
+            {
+                eventCode[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item4[pastDataResIndexVec[iRows] + 1]);
+            }
+
+            int[] nextEventCode = new int[nextDataResIndexVec.Length];
+            for (int iRows = 0; iRows < nextEventCode.Length; iRows++)
+            {
+                nextEventCode[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item4[nextDataResIndexVec[iRows] + 1]);
+            }
+
+            double[] eventFinalWeightedSignal = new double[pastDataResIndexVec.Length];
+            for (int iRows = 0; iRows < eventFinalWeightedSignal.Length; iRows++)
+            {
+                eventFinalWeightedSignal[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item7[pastDataResIndexVec[iRows] + 1]) * eventMultiplicator[eventCode[iRows]];
+            }
+
+            double[] nextEventFinalWeightedSignal = new double[nextDataResIndexVec.Length];
+            for (int iRows = 0; iRows < nextEventFinalWeightedSignal.Length; iRows++)
+            {
+                nextEventFinalWeightedSignal[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item7[nextDataResIndexVec[iRows] + 1]) * eventMultiplicator[nextEventCode[iRows]];
+            }
+
+            double[] finalWeightMultiplier = new double[pastDataResIndexVec.Length];
+            double[] finalWeightMultiplierVIX = new double[pastDataResIndexVec.Length];
+            int[] eventCodeFinal = new int[pastDataResIndexVec.Length];
+            for (int iRows = 0; iRows < finalWeightMultiplier.Length; iRows++)
+            {
+                if ((eventCode[iRows] <= 4 && eventCode[iRows] > 0) || (eventCode[iRows] == 5 && STCId.Item2[iRows] >= stciThresholds[0]) || (eventCode[iRows] == 6 && STCId.Item2[iRows] <= stciThresholds[1]))
+                {
+                    finalWeightMultiplier[iRows] = eventFinalWeightedSignal[iRows];
+                    finalWeightMultiplierVIX[iRows] = finalWeightMultiplier[iRows] *vixLeverage[iRows];
+                    eventCodeFinal[iRows] = eventCode[iRows];
+                }
+                else if (eventCode[iRows] == 0 && STCId.Item2[iRows] >= stciThresholds[2])
+                {
+                    finalWeightMultiplier[iRows] = eventMultiplicator[0];
+                    finalWeightMultiplierVIX[iRows] = finalWeightMultiplier[iRows] * vixLeverage[iRows];
+                    eventCodeFinal[iRows] = 7;
+                }
+                else if ((eventCode[iRows] == 5 && STCId.Item2[iRows] < stciThresholds[0]) || (eventCode[iRows] == 6 && STCId.Item2[iRows] > stciThresholds[1]))
+                {
+                    finalWeightMultiplier[iRows] = 0;
+                    finalWeightMultiplierVIX[iRows] = finalWeightMultiplier[iRows] * vixLeverage[iRows];
+                    eventCodeFinal[iRows] = 9;
+                }
+                else
+                {
+                    finalWeightMultiplier[iRows] = 0;
+                    finalWeightMultiplierVIX[iRows] = finalWeightMultiplier[iRows] * vixLeverage[iRows];
+                    eventCodeFinal[iRows] = 8;
+                }
+            }
 
 
-            // int[] prevEventCodeMod = new int[usedDateVec.Length];
-            // for (int iRows = 0; iRows < prevEventCodeMod.Length; iRows++)
-            // {
-            //     if (eventCode[iRows] <= 6 && eventCode[iRows] > 0)
-            //     {
-            //         prevEventCodeMod[iRows] = eventCode[iRows];
-            //     }
-            //     else if (STCId.Item2[iRows] >= stciThresholds[2])
-            //     {
-            //         prevEventCodeMod[iRows] = 7;
-            //     }
-            //     else
-            //     {
-            //         prevEventCodeMod[iRows] = 8;
-            //     }
-            // }
-
-            // string[] prevEventNamesMod = new string[prevEventCodeMod.Length];
-            // for (int iRows = 0; iRows < prevEventCodeMod.Length; iRows++)
-            // {
-            //     switch (prevEventCodeMod[iRows])
-            //     {
-            //         case 1:
-            //             prevEventNamesMod[iRows] = "FOMC Bullish Day";
-            //             break;
-            //         case 2:
-            //             prevEventNamesMod[iRows] = "FOMC Bearish Day";
-            //             break;
-            //         case 3:
-            //             prevEventNamesMod[iRows] = "Holiday Bullish Day";
-            //             break;
-            //         case 4:
-            //             prevEventNamesMod[iRows] = "Holiday Bearish Day";
-            //             break;
-            //         case 5:
-            //             prevEventNamesMod[iRows] = "Other Bullish Event Day";
-            //             break;
-            //         case 6:
-            //             prevEventNamesMod[iRows] = "Other Bearish Event Day";
-            //             break;
-            //         case 7:
-            //             prevEventNamesMod[iRows] = "Non-Event Day";
-            //             break;
-            //         case 8:
-            //             prevEventNamesMod[iRows] = "Non-Event Day";
-            //             break;
-            //     }
-            // }
-
-            // string[] nextEventNames = new string[nextEventCode.Length];
-            // string[] nextEventColors = new string[nextEventCode.Length];
-            // for (int iRows = 0; iRows < nextEventCode.Length; iRows++)
-            // {
-            //     switch (nextEventCode[iRows])
-            //     {
-            //         case 1:
-            //             nextEventNames[iRows] = "FOMC Bullish Day";
-            //             nextEventColors[iRows] = "32CD32";
-            //             break;
-            //         case 2:
-            //             nextEventNames[iRows] = "FOMC Bearish Day";
-            //             nextEventColors[iRows] = "c24f4f";
-            //             break;
-            //         case 3:
-            //             nextEventNames[iRows] = "Holiday Bullish Day";
-            //             nextEventColors[iRows] = "7CFC00";
-            //             break;
-            //         case 4:
-            //             nextEventNames[iRows] = "Holiday Bearish Day";
-            //             nextEventColors[iRows] = "d46a6a";
-            //             break;
-            //         case 5:
-            //             nextEventNames[iRows] = "Other Bullish Event Day";
-            //             nextEventColors[iRows] = "00FA9A";
-            //             break;
-            //         case 6:
-            //             nextEventNames[iRows] = "Other Bearish Event Day";
-            //             nextEventColors[iRows] = "ed8c8c";
-            //             break;
-            //         case 0:
-            //             nextEventNames[iRows] = "Non-Event Day";
-            //             nextEventColors[iRows] = "FFFF00";
-            //             break;
-            //     }
-            // }
-
-
-            // double currWeightedSignal = eventFinalWeightedSignal[0];
-            // double currSTCI = STCId.Item2[0];
-            // double currFinalWeightMultiplier = finalWeightMultiplierVIX[0];
-
-            // string currEventName = "";
-            // switch (currEventCode)
-            // {
-            //     case 1:
-            //         currEventName = "FOMC Bullish Day";
-            //         break;
-            //     case 2:
-            //         currEventName = "FOMC Bearish Day";
-            //         break;
-            //     case 3:
-            //         currEventName = "Holiday Bullish Day";
-            //         break;
-            //     case 4:
-            //         currEventName = "Holiday Bearish Day";
-            //         break;
-            //     case 5:
-            //         currEventName = "Other Bullish Event Day";
-            //         break;
-            //     case 6:
-            //         currEventName = "Other Bearish Event Day";
-            //         break;
-            //     case 7:
-            //         currEventName = "STCI Bullish Day";
-            //         break;
-            //     case 8:
-            //         currEventName = "STCI Neutral Day";
-            //         break;
-
-            // }
+            int currEventSignal = eventFinalSignal[0];
+            int currEventCodeOriginal = eventCode[0];
+            int currEventCode = 0;
+            if (eventCode[0] <= 6 && eventCode[0] > 0)
+            {
+                currEventCode = eventCode[0];
+            }
+            else if (STCId.Item2[0] >= stciThresholds[2])
+            {
+                currEventCode = 7;
+            }
+            else
+            {
+                currEventCode = 8;
+            }
 
 
 
-            // //Current PV, Number of current and required shares
-            // DateTime startMatlabDate = DateTime.ParseExact("1900/01/01", "yyyy/MM/dd", CultureInfo.InvariantCulture);
 
-            // DateTime nextTradingDay = startMatlabDate.AddDays(gSheetResToFinCalc.Item1[pastDataResIndexVec[0] + 1] - 693962);
-            // string nextTradingDayString = System.String.Empty;
-            // nextTradingDayString = nextTradingDay.ToString("yyyy-MM-dd");
+            int[] prevEventCodeMod = new int[usedDateVec.Length];
+            for (int iRows = 0; iRows < prevEventCodeMod.Length; iRows++)
+            {
+                if (eventCode[iRows] <= 6 && eventCode[iRows] > 0)
+                {
+                    prevEventCodeMod[iRows] = eventCode[iRows];
+                }
+                else if (STCId.Item2[iRows] >= stciThresholds[2])
+                {
+                    prevEventCodeMod[iRows] = 7;
+                }
+                else
+                {
+                    prevEventCodeMod[iRows] = 8;
+                }
+            }
 
-            // DateTime currPosDate = startMatlabDate.AddDays(gSheetResToFinCalc.Item5[0] - 693962);
-            // string currPosDateString = System.String.Empty;
-            // currPosDateString = currPosDate.ToString("yyyy-MM-dd");
+            string[] prevEventNamesMod = new string[prevEventCodeMod.Length];
+            for (int iRows = 0; iRows < prevEventCodeMod.Length; iRows++)
+            {
+                switch (prevEventCodeMod[iRows])
+                {
+                    case 1:
+                        prevEventNamesMod[iRows] = "FOMC Bullish Day";
+                        break;
+                    case 2:
+                        prevEventNamesMod[iRows] = "FOMC Bearish Day";
+                        break;
+                    case 3:
+                        prevEventNamesMod[iRows] = "Holiday Bullish Day";
+                        break;
+                    case 4:
+                        prevEventNamesMod[iRows] = "Holiday Bearish Day";
+                        break;
+                    case 5:
+                        prevEventNamesMod[iRows] = "Other Bullish Event Day";
+                        break;
+                    case 6:
+                        prevEventNamesMod[iRows] = "Other Bearish Event Day";
+                        break;
+                    case 7:
+                        prevEventNamesMod[iRows] = "Non-Event Day";
+                        break;
+                    case 8:
+                        prevEventNamesMod[iRows] = "Non-Event Day";
+                        break;
+                }
+            }
 
-            // double currPV;
-            // double prevPV;
-            // int[] currPosInt = new int[allAssetList.Length + 1];
+            string[] nextEventNames = new string[nextEventCode.Length];
+            string[] nextEventColors = new string[nextEventCode.Length];
+            for (int iRows = 0; iRows < nextEventCode.Length; iRows++)
+            {
+                switch (nextEventCode[iRows])
+                {
+                    case 1:
+                        nextEventNames[iRows] = "FOMC Bullish Day";
+                        nextEventColors[iRows] = "32CD32";
+                        break;
+                    case 2:
+                        nextEventNames[iRows] = "FOMC Bearish Day";
+                        nextEventColors[iRows] = "c24f4f";
+                        break;
+                    case 3:
+                        nextEventNames[iRows] = "Holiday Bullish Day";
+                        nextEventColors[iRows] = "7CFC00";
+                        break;
+                    case 4:
+                        nextEventNames[iRows] = "Holiday Bearish Day";
+                        nextEventColors[iRows] = "d46a6a";
+                        break;
+                    case 5:
+                        nextEventNames[iRows] = "Other Bullish Event Day";
+                        nextEventColors[iRows] = "00FA9A";
+                        break;
+                    case 6:
+                        nextEventNames[iRows] = "Other Bearish Event Day";
+                        nextEventColors[iRows] = "ed8c8c";
+                        break;
+                    case 0:
+                        nextEventNames[iRows] = "Non-Event Day";
+                        nextEventColors[iRows] = "FFFF00";
+                        break;
+                }
+            }
+
+
+            double currWeightedSignal = eventFinalWeightedSignal[0];
+            double currSTCI = STCId.Item2[0];
+            double currFinalWeightMultiplier = finalWeightMultiplierVIX[0];
+
+            string currEventName = "";
+            switch (currEventCode)
+            {
+                case 1:
+                    currEventName = "FOMC Bullish Day";
+                    break;
+                case 2:
+                    currEventName = "FOMC Bearish Day";
+                    break;
+                case 3:
+                    currEventName = "Holiday Bullish Day";
+                    break;
+                case 4:
+                    currEventName = "Holiday Bearish Day";
+                    break;
+                case 5:
+                    currEventName = "Other Bullish Event Day";
+                    break;
+                case 6:
+                    currEventName = "Other Bearish Event Day";
+                    break;
+                case 7:
+                    currEventName = "STCI Bullish Day";
+                    break;
+                case 8:
+                    currEventName = "STCI Neutral Day";
+                    break;
+
+            }
+
+            //Current PV, Number of current and required shares
+            DateTime startMatlabDate = DateTime.ParseExact("1900/01/01", "yyyy/MM/dd", CultureInfo.InvariantCulture);
+
+            DateTime nextTradingDay = startMatlabDate.AddDays(gSheetResToFinCalc.Item1[pastDataResIndexVec[0] + 1] - 693962);
+            string nextTradingDayString = System.String.Empty;
+            nextTradingDayString = nextTradingDay.ToString("yyyy-MM-dd");
+
+            DateTime currPosDate = startMatlabDate.AddDays(gSheetResToFinCalc.Item5[0] - 693962);
+            string currPosDateString = System.String.Empty;
+            currPosDateString = currPosDate.ToString("yyyy-MM-dd");
+
+            double currPV;
+            double prevPV;
+            int[] currPosInt = new int[allAssetList.Length + 1];
             
 
 
-            // double[] currPosValue = new double[allAssetList.Length + 1];
-            // double[] prevPosValue = new double[allAssetList.Length + 1];
-            // for (int jCols = 0; jCols < currPosValue.Length - 1; jCols++)
-            // {
-            //     currPosInt[jCols] = gSheetResToFinCalc.Item6[jCols];
-            //     currPosValue[jCols] = quotesData[jCols][quotesData[0].Count - 1].AdjClosePrice * currPosInt[jCols];
-            //     prevPosValue[jCols] = quotesData[jCols][quotesData[0].Count - 2].AdjClosePrice * currPosInt[jCols];
-            // }
+            double[] currPosValue = new double[allAssetList.Length + 1];
+            double[] prevPosValue = new double[allAssetList.Length + 1];
+            for (int jCols = 0; jCols < currPosValue.Length - 1; jCols++)
+            {
+                currPosInt[jCols] = gSheetResToFinCalc.Item6[jCols];
+                currPosValue[jCols] = quotesData[jCols][quotesData[0].Count - 1].AdjClosePrice * currPosInt[jCols];
+                prevPosValue[jCols] = quotesData[jCols][quotesData[0].Count - 2].AdjClosePrice * currPosInt[jCols];
+            }
 
-            // currPosInt[^1] = gSheetResToFinCalc.Item5[1];
-            // currPosValue[^1] = gSheetResToFinCalc.Item5[1];
-            // prevPosValue[currPosValue.Length - 1] = gSheetResToFinCalc.Item5[1];
-            // currPV = Math.Round(currPosValue.Sum());
-            // prevPV = Math.Round(prevPosValue.Sum());
-            // double dailyProf = currPV - prevPV;
-            // string dailyProfValString = "";
+            currPosInt[^1] = gSheetResToFinCalc.Item5[1];
+            currPosValue[^1] = gSheetResToFinCalc.Item5[1];
+            prevPosValue[currPosValue.Length - 1] = gSheetResToFinCalc.Item5[1];
+            currPV = Math.Round(currPosValue.Sum());
+            prevPV = Math.Round(prevPosValue.Sum());
+            double dailyProf = currPV - prevPV;
+            string dailyProfValString = "";
             
 
-            // string dailyProfString = "";
-            // string dailyProfSign = "";
-            // if (currPosDateString == liveDateTime.ToString("yyyy-MM-dd") && currPosDateString== quotesData[0][^1].Date.ToString("yyyy-MM-dd") && dailyProf >= 0)
-            // {
-            //     dailyProfString = "posDaily";
-            //     dailyProfSign = "+$";
-            //     dailyProfValString = dailyProf.ToString("#,##0");
+            string dailyProfString = "";
+            string dailyProfSign = "";
+            if (currPosDateString == liveDateTime.ToString("yyyy-MM-dd") && currPosDateString== quotesData[0][^1].Date.ToString("yyyy-MM-dd") && dailyProf >= 0)
+            {
+                dailyProfString = "posDaily";
+                dailyProfSign = "+$";
+                dailyProfValString = dailyProf.ToString("#,##0");
 
-            // }
-            // else if (currPosDateString == liveDateTime.ToString("yyyy-MM-dd") && currPosDateString == quotesData[0][^1].Date.ToString("yyyy-MM-dd") && dailyProf < 0)
-            // {
-            //     dailyProfString = "negDaily";
-            //     dailyProfSign = "-$";
-            //     dailyProfValString = (-dailyProf).ToString("#,##0");
-            // }
-            // else
-            // {
-            //     dailyProfString = "notDaily";
-            //     dailyProfSign = "N/A";
-            //     dailyProfValString = "";
-            // }
+            }
+            else if (currPosDateString == liveDateTime.ToString("yyyy-MM-dd") && currPosDateString == quotesData[0][^1].Date.ToString("yyyy-MM-dd") && dailyProf < 0)
+            {
+                dailyProfString = "negDaily";
+                dailyProfSign = "-$";
+                dailyProfValString = (-dailyProf).ToString("#,##0");
+            }
+            else
+            {
+                dailyProfString = "notDaily";
+                dailyProfSign = "N/A";
+                dailyProfValString = "";
+            }
              
 
-            // double[] nextPosValue = new double[allAssetList.Length + 1];
-            // for (int jCols = 0; jCols < nextPosValue.Length - 1; jCols++)
-            // {
-            //     if (finalWeightMultiplierVIX[0] > 0)
-            //     {
-            //         nextPosValue[jCols] = currPV * finalWeightMultiplierVIX[0] * bullishWeights[jCols];
-            //     }
-            //     else if (finalWeightMultiplierVIX[0] < 0)
-            //     {
-            //         nextPosValue[jCols] = currPV * finalWeightMultiplierVIX[0] * bearishWeights[jCols] * (-1);
-            //     }
-            // }
+            double[] nextPosValue = new double[allAssetList.Length + 1];
+            for (int jCols = 0; jCols < nextPosValue.Length - 1; jCols++)
+            {
+                if (finalWeightMultiplierVIX[0] > 0)
+                {
+                    nextPosValue[jCols] = currPV * finalWeightMultiplierVIX[0] * bullishWeights[jCols];
+                }
+                else if (finalWeightMultiplierVIX[0] < 0)
+                {
+                    nextPosValue[jCols] = currPV * finalWeightMultiplierVIX[0] * bearishWeights[jCols] * (-1);
+                }
+            }
 
-            // nextPosValue[^1] = currPV - nextPosValue.Take(nextPosValue.Length - 1).ToArray().Sum();
+            nextPosValue[^1] = currPV - nextPosValue.Take(nextPosValue.Length - 1).ToArray().Sum();
 
-            // double[] nextPosInt = new double[nextPosValue.Length];
-            // for (int jCols = 0; jCols < nextPosInt.Length - 1; jCols++)
-            // {
-            //     nextPosInt[jCols] = nextPosValue[jCols] / quotesData[jCols][quotesData[0].Count - 1].AdjClosePrice;
-            // }
-            // nextPosInt[^1] = nextPosValue[nextPosInt.Length - 1];
+            double[] nextPosInt = new double[nextPosValue.Length];
+            for (int jCols = 0; jCols < nextPosInt.Length - 1; jCols++)
+            {
+                nextPosInt[jCols] = nextPosValue[jCols] / quotesData[jCols][quotesData[0].Count - 1].AdjClosePrice;
+            }
+            nextPosInt[^1] = nextPosValue[nextPosInt.Length - 1];
 
-            // double[] posValueDiff = new double[allAssetList.Length + 1];
-            // for (int jCols = 0; jCols < posValueDiff.Length; jCols++)
-            // {
-            //     posValueDiff[jCols] = nextPosValue[jCols] - currPosValue[jCols];
-            // }
+            double[] posValueDiff = new double[allAssetList.Length + 1];
+            for (int jCols = 0; jCols < posValueDiff.Length; jCols++)
+            {
+                posValueDiff[jCols] = nextPosValue[jCols] - currPosValue[jCols];
+            }
 
-            // double[] posIntDiff = new double[allAssetList.Length + 1];
-            // for (int jCols = 0; jCols < posIntDiff.Length; jCols++)
-            // {
-            //     posIntDiff[jCols] = nextPosInt[jCols] - currPosInt[jCols];
-            // }
-
-
-            // //Previous event and color arrays
-            // string[] prevEventNames = new string[pastDataResIndexVec.Length];
-            // string[] prevEventColors = new string[pastDataResIndexVec.Length];
-            // for (int iRows = 0; iRows < prevEventNames.Length; iRows++)
-            // {
-            //     switch (eventCodeFinal[iRows])
-            //     {
-            //         case 1:
-            //             prevEventNames[iRows] = "FOMC Bullish Day";
-            //             prevEventColors[iRows] = "32CD32";
-            //             break;
-            //         case 2:
-            //             prevEventNames[iRows] = "FOMC Bearish Day";
-            //             prevEventColors[iRows] = "c24f4f";
-            //             break;
-            //         case 3:
-            //             prevEventNames[iRows] = "Holiday Bullish Day";
-            //             prevEventColors[iRows] = "7CFC00";
-            //             break;
-            //         case 4:
-            //             prevEventNames[iRows] = "Holiday Bearish Day";
-            //             prevEventColors[iRows] = "d46a6a";
-            //             break;
-            //         case 5:
-            //             prevEventNames[iRows] = "Other Bullish Event Day";
-            //             prevEventColors[iRows] = "00FA9A";
-            //             break;
-            //         case 6:
-            //             prevEventNames[iRows] = "Other Bearish Event Day";
-            //             prevEventColors[iRows] = "ed8c8c";
-            //             break;
-            //         case 7:
-            //             prevEventNames[iRows] = "STCI Bullish Day";
-            //             prevEventColors[iRows] = "00FFFF";
-            //             break;
-            //         case 8:
-            //             prevEventNames[iRows] = "STCI Neutral Day";
-            //             prevEventColors[iRows] = "FFFACD";
-            //             break;
-            //         case 9:
-            //             prevEventNames[iRows] = "Non-Playable Other Event Day";
-            //             prevEventColors[iRows] = "C0C0C0";
-            //             break;
-
-            //     }
-            // }
+            double[] posIntDiff = new double[allAssetList.Length + 1];
+            for (int jCols = 0; jCols < posIntDiff.Length; jCols++)
+            {
+                posIntDiff[jCols] = nextPosInt[jCols] - currPosInt[jCols];
+            }
 
 
-            // string[,] pastDataMtxToJS = new string[usedDateVec.Length, 16];
-            // for (int iRows = 0; iRows < pastDataMtxToJS.GetLength(0); iRows++)
-            // {
-            //     pastDataMtxToJS[iRows, 0] = prevDateVec[iRows].ToString("yyyy-MM-dd");
-            //     for (int jCols = 0; jCols < 8; jCols++)
-            //     {
-            //         pastDataMtxToJS[iRows, jCols + 1] = (gSheetResToFinCalc.Item3[pastDataResIndexVec[iRows] + 1, jCols] == "0") ? "---" : gSheetResToFinCalc.Item3[pastDataResIndexVec[iRows] + 1, jCols];
-            //     }
-            //     pastDataMtxToJS[iRows, 9] = prevEventNamesMod[iRows];
-            //     pastDataMtxToJS[iRows, 10] = eventFinalSignal[iRows].ToString();
-            //     pastDataMtxToJS[iRows, 11] = Math.Round(eventFinalWeightedSignal[iRows] * 100, 2).ToString() + "%";
-            //     pastDataMtxToJS[iRows, 12] = Math.Round(STCId.Item2[iRows] * 100, 2).ToString() + "%";
-            //     pastDataMtxToJS[iRows, 13] = Math.Round(spotVixValueDb[iRows], 2).ToString();
-            //     pastDataMtxToJS[iRows, 14] = prevEventNames[iRows];
-            //     pastDataMtxToJS[iRows, 15] = Math.Round(finalWeightMultiplierVIX[iRows] * 100, 2).ToString() + "%";
+            //Previous event and color arrays
+            string[] prevEventNames = new string[pastDataResIndexVec.Length];
+            string[] prevEventColors = new string[pastDataResIndexVec.Length];
+            for (int iRows = 0; iRows < prevEventNames.Length; iRows++)
+            {
+                switch (eventCodeFinal[iRows])
+                {
+                    case 1:
+                        prevEventNames[iRows] = "FOMC Bullish Day";
+                        prevEventColors[iRows] = "32CD32";
+                        break;
+                    case 2:
+                        prevEventNames[iRows] = "FOMC Bearish Day";
+                        prevEventColors[iRows] = "c24f4f";
+                        break;
+                    case 3:
+                        prevEventNames[iRows] = "Holiday Bullish Day";
+                        prevEventColors[iRows] = "7CFC00";
+                        break;
+                    case 4:
+                        prevEventNames[iRows] = "Holiday Bearish Day";
+                        prevEventColors[iRows] = "d46a6a";
+                        break;
+                    case 5:
+                        prevEventNames[iRows] = "Other Bullish Event Day";
+                        prevEventColors[iRows] = "00FA9A";
+                        break;
+                    case 6:
+                        prevEventNames[iRows] = "Other Bearish Event Day";
+                        prevEventColors[iRows] = "ed8c8c";
+                        break;
+                    case 7:
+                        prevEventNames[iRows] = "STCI Bullish Day";
+                        prevEventColors[iRows] = "00FFFF";
+                        break;
+                    case 8:
+                        prevEventNames[iRows] = "STCI Neutral Day";
+                        prevEventColors[iRows] = "FFFACD";
+                        break;
+                    case 9:
+                        prevEventNames[iRows] = "Non-Playable Other Event Day";
+                        prevEventColors[iRows] = "C0C0C0";
+                        break;
 
-            // }
-
-            // string[,] nextDataMtxToJS = new string[nextDateVec.Length, 12];
-            // for (int iRows = 0; iRows < nextDataMtxToJS.GetLength(0); iRows++)
-            // {
-            //     nextDataMtxToJS[iRows, 0] = nextDateVec[iRows].ToString("yyyy-MM-dd");
-            //     for (int jCols = 0; jCols < 8; jCols++)
-            //     {
-            //         nextDataMtxToJS[iRows, jCols + 1] = (gSheetResToFinCalc.Item3[nextDataResIndexVec[iRows] + 1, jCols] == "0") ? "---" : gSheetResToFinCalc.Item3[nextDataResIndexVec[iRows] + 1, jCols];
-            //     }
-            //     nextDataMtxToJS[iRows, 9] = nextEventNames[iRows];
-            //     nextDataMtxToJS[iRows, 10] = nextEventFinalSignal[iRows].ToString();
-            //     nextDataMtxToJS[iRows, 11] = Math.Round(nextEventFinalWeightedSignal[iRows] * 100, 2).ToString() + "%";
-
-            // }
+                }
+            }
 
 
+            string[,] pastDataMtxToJS = new string[usedDateVec.Length, 16];
+            for (int iRows = 0; iRows < pastDataMtxToJS.GetLength(0); iRows++)
+            {
+                pastDataMtxToJS[iRows, 0] = prevDateVec[iRows].ToString("yyyy-MM-dd");
+                for (int jCols = 0; jCols < 8; jCols++)
+                {
+                    pastDataMtxToJS[iRows, jCols + 1] = (gSheetResToFinCalc.Item3[pastDataResIndexVec[iRows] + 1, jCols] == "0") ? "---" : gSheetResToFinCalc.Item3[pastDataResIndexVec[iRows] + 1, jCols];
+                }
+                pastDataMtxToJS[iRows, 9] = prevEventNamesMod[iRows];
+                pastDataMtxToJS[iRows, 10] = eventFinalSignal[iRows].ToString();
+                pastDataMtxToJS[iRows, 11] = Math.Round(eventFinalWeightedSignal[iRows] * 100, 2).ToString() + "%";
+                pastDataMtxToJS[iRows, 12] = Math.Round(STCId.Item2[iRows] * 100, 2).ToString() + "%";
+                pastDataMtxToJS[iRows, 13] = Math.Round(spotVixValueDb[iRows], 2).ToString();
+                pastDataMtxToJS[iRows, 14] = prevEventNames[iRows];
+                pastDataMtxToJS[iRows, 15] = Math.Round(finalWeightMultiplierVIX[iRows] * 100, 2).ToString() + "%";
 
-            // //AssetPrice Changes in last 20 days to chart
-            // int assetChartLength = 20;
-            // string[,] assetChangesMtx = new string[assetChartLength + 1, allAssetList.Length+1];
-            // for (int iRows = 0; iRows < assetChangesMtx.GetLength(0); iRows++)
-            // {
-            //     assetChangesMtx[iRows, 0] = quotesData[0][quotesData[0].Count - 1 - assetChartLength + iRows].Date.ToString("yyyy-MM-dd");
-            //     for (int jCols = 0; jCols < assetChangesMtx.GetLength(1) - 1; jCols++)
-            //     {
-            //         assetChangesMtx[iRows, jCols + 1] = Math.Round((quotesData[jCols][quotesData[jCols].Count - 1 - assetChartLength + iRows].AdjClosePrice / quotesData[jCols][quotesData[jCols].Count - 1 - assetChartLength].AdjClosePrice - 1) * 100.0, 2).ToString() + "%";
-            //     }
-            // }
+            }
+
+            string[,] nextDataMtxToJS = new string[nextDateVec.Length, 12];
+            for (int iRows = 0; iRows < nextDataMtxToJS.GetLength(0); iRows++)
+            {
+                nextDataMtxToJS[iRows, 0] = nextDateVec[iRows].ToString("yyyy-MM-dd");
+                for (int jCols = 0; jCols < 8; jCols++)
+                {
+                    nextDataMtxToJS[iRows, jCols + 1] = (gSheetResToFinCalc.Item3[nextDataResIndexVec[iRows] + 1, jCols] == "0") ? "---" : gSheetResToFinCalc.Item3[nextDataResIndexVec[iRows] + 1, jCols];
+                }
+                nextDataMtxToJS[iRows, 9] = nextEventNames[iRows];
+                nextDataMtxToJS[iRows, 10] = nextEventFinalSignal[iRows].ToString();
+                nextDataMtxToJS[iRows, 11] = Math.Round(nextEventFinalWeightedSignal[iRows] * 100, 2).ToString() + "%";
+
+            }
 
 
 
-            // //Creating input string for JavaScript.
-            // StringBuilder sb = new("{" + Environment.NewLine);
-            // sb.Append(@"""requestTime"": """ + liveDateString);
-            // sb.Append(@"""," + Environment.NewLine + @"""lastDataTime"": """ + lastDataTimeString);
-            // sb.Append(@"""," + Environment.NewLine + @"""currentPV"": """ + currPV.ToString("#,##0"));
-            // sb.Append(@"""," + Environment.NewLine + @"""dailyProfSig"": """ + dailyProfSign);
-            // sb.Append(@"""," + Environment.NewLine + @"""dailyProfAbs"": """ + dailyProfValString);
-            // sb.Append(@"""," + Environment.NewLine + @"""dailyProfString"": """ + dailyProfString);
-            // sb.Append(@"""," + Environment.NewLine + @"""currentPVDate"": """ + currPosDateString);
-            // sb.Append(@"""," + Environment.NewLine + @"""gDocRef"": """ + usedGDocRef);
-            // sb.Append(@"""," + Environment.NewLine + @"""gSheetRef"": """ + usedGSheet2RefPos);
-
-            // sb.Append(@"""," + Environment.NewLine + @"""currentEventSignal"": """ + currEventSignal.ToString());
-            // sb.Append(@"""," + Environment.NewLine + @"""currentEventCode"": """ + currEventCode.ToString());
-            // sb.Append(@"""," + Environment.NewLine + @"""currentEventCodeOriginal"": """ + currEventCodeOriginal.ToString());
-            // sb.Append(@"""," + Environment.NewLine + @"""currentEventName"": """ + currEventName);
-            // sb.Append(@"""," + Environment.NewLine + @"""currentWeightedSignal"": """ + currWeightedSignal.ToString());
-            // sb.Append(@"""," + Environment.NewLine + @"""currentSTCI"": """ + Math.Round(currSTCI * 100, 2).ToString() + "%");
-            // sb.Append(@"""," + Environment.NewLine + @"""currentVIX"": """ + Math.Round(spotVixValueDb[0], 2).ToString());
-            // sb.Append(@"""," + Environment.NewLine + @"""currentFinalWeightMultiplier"": """ + Math.Abs(Math.Round(currFinalWeightMultiplier * 100, 2)).ToString() + "%");
+            //AssetPrice Changes in last 20 days to chart
+            int assetChartLength = 20;
+            string[,] assetChangesMtx = new string[assetChartLength + 1, allAssetList.Length+1];
+            for (int iRows = 0; iRows < assetChangesMtx.GetLength(0); iRows++)
+            {
+                assetChangesMtx[iRows, 0] = quotesData[0][quotesData[0].Count - 1 - assetChartLength + iRows].Date.ToString("yyyy-MM-dd");
+                for (int jCols = 0; jCols < assetChangesMtx.GetLength(1) - 1; jCols++)
+                {
+                    assetChangesMtx[iRows, jCols + 1] = Math.Round((quotesData[jCols][quotesData[jCols].Count - 1 - assetChartLength + iRows].AdjClosePrice / quotesData[jCols][quotesData[jCols].Count - 1 - assetChartLength].AdjClosePrice - 1) * 100.0, 2).ToString() + "%";
+                }
+            }
 
 
 
-            // sb.Append(@"""," + Environment.NewLine + @"""assetNames"": """);
-            // for (int i = 0; i < allAssetList.Length - 1; i++)
-            //     sb.Append(allAssetList[i] + ", ");
-            // sb.Append(allAssetList[^1]);
+            //Creating input string for JavaScript.
+            StringBuilder sb = new("{" + Environment.NewLine);
+            sb.Append(@"""requestTime"": """ + liveDateString);
+            sb.Append(@"""," + Environment.NewLine + @"""lastDataTime"": """ + lastDataTimeString);
+            sb.Append(@"""," + Environment.NewLine + @"""currentPV"": """ + currPV.ToString("#,##0"));
+            sb.Append(@"""," + Environment.NewLine + @"""dailyProfSig"": """ + dailyProfSign);
+            sb.Append(@"""," + Environment.NewLine + @"""dailyProfAbs"": """ + dailyProfValString);
+            sb.Append(@"""," + Environment.NewLine + @"""dailyProfString"": """ + dailyProfString);
+            sb.Append(@"""," + Environment.NewLine + @"""currentPVDate"": """ + currPosDateString);
+            sb.Append(@"""," + Environment.NewLine + @"""gDocRef"": """ + usedGDocRef);
+            sb.Append(@"""," + Environment.NewLine + @"""gSheetRef"": """ + usedGSheet2RefPos);
 
-            // sb.Append(@"""," + Environment.NewLine + @"""assetNames2"": """);
-            // for (int i = 0; i < allAssetList.Length; i++)
-            //     sb.Append(allAssetList[i] + ", ");
-            // sb.Append("Cash");
-
-            // sb.Append(@"""," + Environment.NewLine + @"""currPosNum"": """);
-            // for (int i = 0; i < currPosInt.Length - 1; i++)
-            //     sb.Append(currPosInt[i].ToString() + ", ");
-            // sb.Append("$" + Math.Round(currPosInt[^1] / 1000.0).ToString() + "K");
-
-            // sb.Append(@"""," + Environment.NewLine + @"""currPosVal"": """);
-            // for (int i = 0; i < currPosValue.Length - 1; i++)
-            //     sb.Append("$" + Math.Round(currPosValue[i] / 1000).ToString() + "K, ");
-            // sb.Append("$" + Math.Round(currPosValue[^1] / 1000).ToString() + "K");
-
-            // sb.Append(@"""," + Environment.NewLine + @"""nextPosNum"": """);
-            // for (int i = 0; i < nextPosInt.Length - 1; i++)
-            //     sb.Append(Math.Round(nextPosInt[i]).ToString() + ", ");
-            // sb.Append("$" + Math.Round(nextPosInt[^1] / 1000).ToString() + "K");
-
-            // sb.Append(@"""," + Environment.NewLine + @"""nextPosVal"": """);
-            // for (int i = 0; i < nextPosValue.Length - 1; i++)
-            //     sb.Append("$" + Math.Round(nextPosValue[i] / 1000).ToString() + "K, ");
-            // sb.Append("$" + Math.Round(nextPosValue[^1] / 1000).ToString() + "K");
-
-            // sb.Append(@"""," + Environment.NewLine + @"""posNumDiff"": """);
-            // for (int i = 0; i < posIntDiff.Length - 1; i++)
-            //     sb.Append(Math.Round(posIntDiff[i]).ToString() + ", ");
-            // sb.Append("$" + Math.Round(posIntDiff[^1] / 1000).ToString() + "K");
-
-            // sb.Append(@"""," + Environment.NewLine + @"""posValDiff"": """);
-            // for (int i = 0; i < posValueDiff.Length - 1; i++)
-            //     sb.Append("$" + Math.Round(posValueDiff[i] / 1000).ToString() + "K, ");
-            // sb.Append("$" + Math.Round(posValueDiff[^1] / 1000).ToString() + "K");
-
-            // sb.Append(@"""," + Environment.NewLine + @"""nextTradingDay"": """ + nextTradingDayString);
-            // sb.Append(@"""," + Environment.NewLine + @"""currPosDate"": """ + currPosDateString);
-
-            // sb.Append(@"""," + Environment.NewLine + @"""prevEventNames"": """);
-            // for (int i = 0; i < prevEventNames.Length - 1; i++)
-            //     sb.Append(prevEventNames[i] + ", ");
-            // sb.Append(prevEventNames[^1]);
-
-            // sb.Append(@"""," + Environment.NewLine + @"""prevEventColors"": """);
-            // for (int i = 0; i < prevEventColors.Length - 1; i++)
-            //     sb.Append(prevEventColors[i] + ", ");
-            // sb.Append(prevEventColors[^1]);
-
-            // sb.Append(@"""," + Environment.NewLine + @"""nextEventColors"": """);
-            // for (int i = 0; i < nextEventColors.Length - 1; i++)
-            //     sb.Append(nextEventColors[i] + ", ");
-            // sb.Append(nextEventColors[^1]);
-
-            // sb.Append(@"""," + Environment.NewLine + @"""pastDataMtxToJS"": """);
-            // for (int i = 0; i < pastDataMtxToJS.GetLength(0); i++)
-            // {
-            //     sb.Append("");
-            //     for (int j = 0; j < pastDataMtxToJS.GetLength(1) - 1; j++)
-            //     {
-            //         sb.Append(pastDataMtxToJS[i, j] + ", ");
-            //     }
-            //     sb.Append(pastDataMtxToJS[i, pastDataMtxToJS.GetLength(1) - 1]);
-            //     if (i < pastDataMtxToJS.GetLength(0) - 1)
-            //     {
-            //         sb.Append("ß ");
-            //     }
-            // }
-
-            // sb.Append(@"""," + Environment.NewLine + @"""nextDataMtxToJS"": """);
-            // for (int i = 0; i < nextDataMtxToJS.GetLength(0); i++)
-            // {
-            //     sb.Append("");
-            //     for (int j = 0; j < nextDataMtxToJS.GetLength(1) - 1; j++)
-            //     {
-            //         sb.Append(nextDataMtxToJS[i, j] + ", ");
-            //     }
-            //     sb.Append(nextDataMtxToJS[i, nextDataMtxToJS.GetLength(1) - 1]);
-            //     if (i < nextDataMtxToJS.GetLength(0) - 1)
-            //     {
-            //         sb.Append("ß ");
-            //     }
-            // }
-
-            // sb.Append(@"""," + Environment.NewLine + @"""chartLength"": """ + assetChartLength);
+            sb.Append(@"""," + Environment.NewLine + @"""currentEventSignal"": """ + currEventSignal.ToString());
+            sb.Append(@"""," + Environment.NewLine + @"""currentEventCode"": """ + currEventCode.ToString());
+            sb.Append(@"""," + Environment.NewLine + @"""currentEventCodeOriginal"": """ + currEventCodeOriginal.ToString());
+            sb.Append(@"""," + Environment.NewLine + @"""currentEventName"": """ + currEventName);
+            sb.Append(@"""," + Environment.NewLine + @"""currentWeightedSignal"": """ + currWeightedSignal.ToString());
+            sb.Append(@"""," + Environment.NewLine + @"""currentSTCI"": """ + Math.Round(currSTCI * 100, 2).ToString() + "%");
+            sb.Append(@"""," + Environment.NewLine + @"""currentVIX"": """ + Math.Round(spotVixValueDb[0], 2).ToString());
+            sb.Append(@"""," + Environment.NewLine + @"""currentFinalWeightMultiplier"": """ + Math.Abs(Math.Round(currFinalWeightMultiplier * 100, 2)).ToString() + "%");
 
 
-            // sb.Append(@"""," + Environment.NewLine + @"""assetChangesToChartMtx"": """);
-            // for (int i = 0; i < assetChangesMtx.GetLength(0); i++)
-            // {
-            //     sb.Append("");
-            //     for (int j = 0; j < assetChangesMtx.GetLength(1) - 1; j++)
-            //     {
-            //         sb.Append(assetChangesMtx[i, j] + ", ");
-            //     }
-            //     sb.Append(assetChangesMtx[i, assetChangesMtx.GetLength(1) - 1]);
-            //     if (i < assetChangesMtx.GetLength(0) - 1)
-            //     {
-            //         sb.Append("ß ");
-            //     }
-            // }
 
-            // sb.Append(@"""," + Environment.NewLine + @"""currDataVixVec"": """);
-            // for (int i = 0; i < currDataVix.Length - 1; i++)
-            //     sb.Append(Math.Round(currDataVix[i], 4).ToString() + ", ");
-            // sb.Append(Math.Round(currDataVix[^1], 4));
+            sb.Append(@"""," + Environment.NewLine + @"""assetNames"": """);
+            for (int i = 0; i < allAssetList.Length - 1; i++)
+                sb.Append(allAssetList[i] + ", ");
+            sb.Append(allAssetList[^1]);
 
-            // sb.Append(@"""," + Environment.NewLine + @"""currDataDaysVixVec"": """);
-            // for (int i = 0; i < currDataDaysVix.Length - 1; i++)
-            //     sb.Append(currDataDaysVix[i].ToString() + ", ");
-            // sb.Append(currDataDaysVix[^1]);
+            sb.Append(@"""," + Environment.NewLine + @"""assetNames2"": """);
+            for (int i = 0; i < allAssetList.Length; i++)
+                sb.Append(allAssetList[i] + ", ");
+            sb.Append("Cash");
 
-            // sb.Append(@"""," + Environment.NewLine + @"""prevDataVixVec"": """);
-            // for (int i = 0; i < prevDataVix.Length - 1; i++)
-            //     sb.Append(Math.Round(prevDataVix[i], 4).ToString() + ", ");
-            // sb.Append(Math.Round(prevDataVix[^1], 4));
+            sb.Append(@"""," + Environment.NewLine + @"""currPosNum"": """);
+            for (int i = 0; i < currPosInt.Length - 1; i++)
+                sb.Append(currPosInt[i].ToString() + ", ");
+            sb.Append("$" + Math.Round(currPosInt[^1] / 1000.0).ToString() + "K");
 
-            // sb.Append(@"""," + Environment.NewLine + @"""currDataDiffVixVec"": """);
-            // for (int i = 0; i < currDataDiffVix.Length - 1; i++)
-            //     sb.Append(Math.Round(currDataDiffVix[i], 4).ToString() + ", ");
-            // sb.Append(Math.Round(currDataDiffVix[^1], 4));
+            sb.Append(@"""," + Environment.NewLine + @"""currPosVal"": """);
+            for (int i = 0; i < currPosValue.Length - 1; i++)
+                sb.Append("$" + Math.Round(currPosValue[i] / 1000).ToString() + "K, ");
+            sb.Append("$" + Math.Round(currPosValue[^1] / 1000).ToString() + "K");
 
-            // sb.Append(@"""," + Environment.NewLine + @"""currDataPercChVixVec"": """);
-            // for (int i = 0; i < currDataPercChVix.Length - 1; i++)
-            //     sb.Append(Math.Round(currDataPercChVix[i], 4).ToString() + ", ");
-            // sb.Append(Math.Round(currDataPercChVix[^1], 4));
+            sb.Append(@"""," + Environment.NewLine + @"""nextPosNum"": """);
+            for (int i = 0; i < nextPosInt.Length - 1; i++)
+                sb.Append(Math.Round(nextPosInt[i]).ToString() + ", ");
+            sb.Append("$" + Math.Round(nextPosInt[^1] / 1000).ToString() + "K");
 
-            // sb.Append(@"""," + Environment.NewLine + @"""spotVixVec"": """);
-            // for (int i = 0; i < currDataVix.Length - 1; i++)
-            //     sb.Append(Math.Round(spotVixValue, 4).ToString() + ", ");
-            // sb.Append(Math.Round(spotVixValue, 4));
+            sb.Append(@"""," + Environment.NewLine + @"""nextPosVal"": """);
+            for (int i = 0; i < nextPosValue.Length - 1; i++)
+                sb.Append("$" + Math.Round(nextPosValue[i] / 1000).ToString() + "K, ");
+            sb.Append("$" + Math.Round(nextPosValue[^1] / 1000).ToString() + "K");
 
-            // sb.AppendLine(@"""" + Environment.NewLine + @"}");
+            sb.Append(@"""," + Environment.NewLine + @"""posNumDiff"": """);
+            for (int i = 0; i < posIntDiff.Length - 1; i++)
+                sb.Append(Math.Round(posIntDiff[i]).ToString() + ", ");
+            sb.Append("$" + Math.Round(posIntDiff[^1] / 1000).ToString() + "K");
 
-            // // var asdfa = sb.ToString(); //testing created string to JS
+            sb.Append(@"""," + Environment.NewLine + @"""posValDiff"": """);
+            for (int i = 0; i < posValueDiff.Length - 1; i++)
+                sb.Append("$" + Math.Round(posValueDiff[i] / 1000).ToString() + "K, ");
+            sb.Append("$" + Math.Round(posValueDiff[^1] / 1000).ToString() + "K");
 
-            // return sb.ToString();
+            sb.Append(@"""," + Environment.NewLine + @"""nextTradingDay"": """ + nextTradingDayString);
+            sb.Append(@"""," + Environment.NewLine + @"""currPosDate"": """ + currPosDateString);
 
-            // for debugging purpose - DAYA
-            // Utils.Logger.Info(gSheetResToFinCalc);
+            sb.Append(@"""," + Environment.NewLine + @"""prevEventNames"": """);
+            for (int i = 0; i < prevEventNames.Length - 1; i++)
+                sb.Append(prevEventNames[i] + ", ");
+            sb.Append(prevEventNames[^1]);
 
-            // multiline verbatim string literal format in C#
-            string mockupTestResponse = @"{
-""requestTime"": ""Request time (UTC): 2022-03-30 12:09:54"",
-""lastDataTime"": ""Last data time (UTC): Live data at 2022-03-30 12:09:54"",
-""currentPV"": ""1,919,059"",
-""dailyProfSig"": ""+$"",
-""dailyProfAbs"": ""10,850"",
-""dailyProfString"": ""posDaily"",
-""currentPVDate"": ""2022-03-30"",
-""gDocRef"": ""https://docs.google.com/document/d/1q2nSfQUos93q4-dd0ILjTrlvtiQKnwlsg3zN1_0_lyI/edit?usp=sharing"",
-""gSheetRef"": ""https://docs.google.com/spreadsheets/d/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/edit?usp=sharing"",
-""currentEventSignal"": ""-1"",
-""currentEventCode"": ""6"",
-""currentEventCodeOriginal"": ""6"",
-""currentEventName"": ""Other Bearish Event Day"",
-""currentWeightedSignal"": ""-0.7"",
-""currentSTCI"": ""8.6%"",
-""currentVIX"": ""19.55"",
-""currentFinalWeightMultiplier"": ""70%"",
-""assetNames"": ""VXX, TQQQ, UPRO, SVXY, TMV, UCO, UNG"",
-""assetNames2"": ""VXX, TQQQ, UPRO, SVXY, TMV, UCO, UNG, Cash"",
-""currPosNum"": ""35000, 0, 0, 0, 0, 0, 0, $1038K"",
-""currPosVal"": ""$881K, $0K, $0K, $0K, $0K, $0K, $0K, $1038K"",
-""nextPosNum"": ""53392, 0, 0, 0, 0, 0, 0, $576K"",
-""nextPosVal"": ""$1343K, $0K, $0K, $0K, $0K, $0K, $0K, $576K"",
-""posNumDiff"": ""18392, 0, 0, 0, 0, 0, 0, $-463K"",
-""posValDiff"": ""$463K, $0K, $0K, $0K, $0K, $0K, $0K, $-463K"",
-""nextTradingDay"": ""2022-03-31"",
-""currPosDate"": ""2022-03-30"",
-""prevEventNames"": ""Other Bearish Event Day, Non-Playable Other Event Day, FOMC Bearish Day, FOMC Bearish Day, FOMC Bearish Day, FOMC Bearish Day, FOMC Bearish Day, FOMC Bearish Day, FOMC Bearish Day, FOMC Bearish Day, FOMC Bearish Day, FOMC Bearish Day, FOMC Bearish Day, FOMC Bearish Day, FOMC Bearish Day"",
-""prevEventColors"": ""ed8c8c, C0C0C0, c24f4f, c24f4f, c24f4f, c24f4f, c24f4f, c24f4f, c24f4f, c24f4f, c24f4f, c24f4f, c24f4f, c24f4f, c24f4f"",
-""nextEventColors"": ""00FA9A, FFFF00, FFFF00, FFFF00, FFFF00, FFFF00, FFFF00, FFFF00, FFFF00, 7CFC00, 7CFC00, 7CFC00, 7CFC00, 7CFC00, FFFF00"",
-""pastDataMtxToJS"": ""2022-03-31, ToM-1, -1, ---, ---, ---, ---, ---, ---, Other Bearish Event Day, -1, -70%, 8.6%, 19.55, Other Bearish Event Day, -70%ß 2022-03-31, ToM-1, -1, ---, ---, ---, ---, ---, ---, Other Bearish Event Day, -1, -70%, 9.02%, 18.9, Non-Playable Other Event Day, 0%ß 2019-07-26, FOMC-3, -1, ToM-4, 1, ---, ---, ---, ---, FOMC Bearish Day, -1, -100%, 0%, 20.8, FOMC Bearish Day, -100%ß 2019-07-26, FOMC-3, -1, ToM-4, 1, ---, ---, ---, ---, FOMC Bearish Day, -1, -100%, 0%, 20.81, FOMC Bearish Day, -100%ß 2019-07-26, FOMC-3, -1, ToM-4, 1, ---, ---, ---, ---, FOMC Bearish Day, -1, -100%, 0%, 21.67, FOMC Bearish Day, -93.3%ß 2019-07-26, FOMC-3, -1, ToM-4, 1, ---, ---, ---, ---, FOMC Bearish Day, -1, -100%, 0%, 23.57, FOMC Bearish Day, -74.3%ß 2019-07-26, FOMC-3, -1, ToM-4, 1, ---, ---, ---, ---, FOMC Bearish Day, -1, -100%, 0%, 22.94, FOMC Bearish Day, -80.6%ß 2019-07-26, FOMC-3, -1, ToM-4, 1, ---, ---, ---, ---, FOMC Bearish Day, -1, -100%, 0%, 23.53, FOMC Bearish Day, -74.7%ß 2019-07-26, FOMC-3, -1, ToM-4, 1, ---, ---, ---, ---, FOMC Bearish Day, -1, -100%, 0%, 23.87, FOMC Bearish Day, -71.3%ß 2019-07-26, FOMC-3, -1, ToM-4, 1, ---, ---, ---, ---, FOMC Bearish Day, -1, -100%, 0%, 25.67, FOMC Bearish Day, -53.3%ß 2019-07-26, FOMC-3, -1, ToM-4, 1, ---, ---, ---, ---, FOMC Bearish Day, -1, -100%, 0%, 26.67, FOMC Bearish Day, -43.3%ß 2019-07-26, FOMC-3, -1, ToM-4, 1, ---, ---, ---, ---, FOMC Bearish Day, -1, -100%, 0%, 29.83, FOMC Bearish Day, -11.7%ß 2019-07-26, FOMC-3, -1, ToM-4, 1, ---, ---, ---, ---, FOMC Bearish Day, -1, -100%, 0%, 31.77, FOMC Bearish Day, -10%ß 2019-07-26, FOMC-3, -1, ToM-4, 1, ---, ---, ---, ---, FOMC Bearish Day, -1, -100%, 0%, 30.75, FOMC Bearish Day, -10%ß 2019-07-26, FOMC-3, -1, ToM-4, 1, ---, ---, ---, ---, FOMC Bearish Day, -1, -100%, 0%, 30.23, FOMC Bearish Day, -10%"",
-""nextDataMtxToJS"": ""2022-04-01, ToM+1, +1, ---, ---, ---, ---, ---, ---, Other Bullish Event Day, 1, 70%ß 2022-04-04, ---, ---, ---, ---, ---, ---, ---, ---, Non-Event Day, 0, 0%ß 2022-04-05, ---, ---, ---, ---, ---, ---, ---, ---, Non-Event Day, 0, 0%ß 2022-04-06, ---, ---, ---, ---, ---, ---, ---, ---, Non-Event Day, 0, 0%ß 2022-04-07, ---, ---, ---, ---, ---, ---, ---, ---, Non-Event Day, 0, 0%ß 2022-04-08, ---, ---, ---, ---, ---, ---, ---, ---, Non-Event Day, 0, 0%ß 2022-04-11, ---, ---, ---, ---, ---, ---, ---, ---, Non-Event Day, 0, 0%ß 2022-04-12, ---, ---, ---, ---, ---, ---, ---, ---, Non-Event Day, 0, 0%ß 2022-04-13, ---, ---, ---, ---, ---, ---, ---, ---, Non-Event Day, 0, 0%ß 2022-04-14, GF-1, +1, ---, ---, ---, ---, ---, ---, Holiday Bullish Day, 1, 85%ß 2022-04-18, GF+1, +1, ---, ---, ---, ---, ---, ---, Holiday Bullish Day, 1, 85%ß 2022-04-19, GF+2, +1, OPEX+2, +1, ToMM+2, +1, VIXFUTEX-1, +1, Holiday Bullish Day, 1, 85%ß 2022-04-20, GF+3, +1, OPEX+3, +1, VIXFUTEX+1, +1, ---, ---, Holiday Bullish Day, 1, 85%ß 2022-04-21, GF+4, +1, OPEX+4, +1, ---, ---, ---, ---, Holiday Bullish Day, 1, 85%ß 2022-04-22, ---, ---, ---, ---, ---, ---, ---, ---, Non-Event Day, 0, 0%"",
-""chartLength"": ""20"",
-""assetChangesToChartMtx"": ""2022-03-02, 0%, 0%, 0%, 0%, 0%, 0%, 0%ß 2022-03-03, 0.6%, -4.18%, -1.46%, -0.28%, -3.21%, -0.62%, -2.23%ß 2022-03-04, 4.97%, -8.28%, -3.84%, -2.56%, -8.09%, 11.64%, 1.88%ß 2022-03-07, 14.14%, -18.52%, -12.39%, -6.03%, -6.11%, 17.71%, -0.41%ß 2022-03-08, 12.78%, -19.65%, -14.46%, -6.13%, -3.32%, 21.99%, -5.58%ß 2022-03-09, 8.29%, -11.04%, -7.52%, -4.31%, -0.05%, -3.57%, -6.52%ß 2022-03-10, 3.49%, -13.9%, -8.84%, -2.18%, 4.1%, -5.17%, -4.11%ß 2022-03-11, 5.53%, -19.24%, -12.25%, -3.19%, 2.88%, 0.41%, -1.35%ß 2022-03-14, 15.42%, -23.97%, -14.21%, -4.79%, 10.14%, -7.82%, -3.23%ß 2022-03-15, 14.98%, -16.94%, -8.54%, -3.15%, 10.59%, -15.91%, -4.76%ß 2022-03-16, 3.97%, -7.61%, -2.57%, 1.68%, 7.4%, -17.11%, -1.94%ß 2022-03-17, 4.77%, -4.52%, 1.08%, 2.52%, 9.98%, -5.58%, 2.06%ß 2022-03-18, 0.16%, 1.41%, 4.41%, 5.37%, 6%, -3.34%, 1.18%ß 2022-03-21, 4.21%, 0.69%, 4.41%, 5.47%, 13.5%, 7.07%, 2.47%ß 2022-03-22, 1.94%, 6.64%, 7.98%, 6.27%, 17.36%, 4.81%, 6.29%ß 2022-03-23, 2.12%, 2.14%, 3.81%, 6.45%, 9.65%, 11.72%, 5.93%ß 2022-03-24, 0.96%, 8.75%, 8.41%, 7.77%, 12.51%, 6.15%, 11.46%ß 2022-03-25, 0.96%, 8.58%, 10.04%, 9.29%, 17.07%, 7.92%, 14.51%ß 2022-03-28, 3.08%, 13.52%, 12.37%, 10.08%, 13.95%, -6.1%, 12.93%ß 2022-03-29, -0.44%, 19.34%, 16.63%, 12.68%, 11.39%, -1.16%, 9.28%ß 2022-03-30, 0.8%, 17.93%, 15.49%, 11.9%, 12.33%, 1.4%, 10.16%"",
-""currDataVixVec"": ""22.1, 24, 24.81, 25.55, 25.8, 26.15, 26.43, 25.85, 0.086, 0.0344, 1.9, 0.81, 0.74, 0.25, 0.35, 0.28, -0.58, 0.88, 0.2933, 0.086, 0.0337, 0.0298, 0.0098, 0.0136, 0.0107, -0.0219, 0.0344, 0.0115"",
-""currDataDaysVixVec"": ""21, 49, 77, 112, 140, 175, 203, 231, 21, 112, 21, 49, 77, 112, 140, 175, 203"",
-""prevDataVixVec"": ""21.7532, 23.7145, 24.6018, 25.3995, 25.5995, 26.0173, 26.3708, 25.825, 0.0902, 0.0382, 1.9613, 0.8873, 0.7977, 0.2, 0.4178, 0.3535, -0.5458"",
-""currDataDiffVixVec"": ""0.3468, 0.2855, 0.2082, 0.1505, 0.2005, 0.1327, 0.0592, 0.025, -0.0042, -0.0038, -0.0613, -0.0773, -0.0577, 0.05, -0.0678, -0.0735, -0.0342"",
-""currDataPercChVixVec"": ""0.0159, 0.012, 0.0085, 0.0059, 0.0078, 0.0051, 0.0022, 0.001, -0.0465, -0.0993, -0.0313, -0.0871, -0.0723, 0.25, -0.1623, -0.2079, 0.0627"",
-""spotVixVec"": ""19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56, 19.56""
-}";
-            return mockupTestResponse;
+            sb.Append(@"""," + Environment.NewLine + @"""prevEventColors"": """);
+            for (int i = 0; i < prevEventColors.Length - 1; i++)
+                sb.Append(prevEventColors[i] + ", ");
+            sb.Append(prevEventColors[^1]);
+
+            sb.Append(@"""," + Environment.NewLine + @"""nextEventColors"": """);
+            for (int i = 0; i < nextEventColors.Length - 1; i++)
+                sb.Append(nextEventColors[i] + ", ");
+            sb.Append(nextEventColors[^1]);
+
+            sb.Append(@"""," + Environment.NewLine + @"""pastDataMtxToJS"": """);
+            for (int i = 0; i < pastDataMtxToJS.GetLength(0); i++)
+            {
+                sb.Append("");
+                for (int j = 0; j < pastDataMtxToJS.GetLength(1) - 1; j++)
+                {
+                    sb.Append(pastDataMtxToJS[i, j] + ", ");
+                }
+                sb.Append(pastDataMtxToJS[i, pastDataMtxToJS.GetLength(1) - 1]);
+                if (i < pastDataMtxToJS.GetLength(0) - 1)
+                {
+                    sb.Append("ß ");
+                }
+            }
+
+            sb.Append(@"""," + Environment.NewLine + @"""nextDataMtxToJS"": """);
+            for (int i = 0; i < nextDataMtxToJS.GetLength(0); i++)
+            {
+                sb.Append("");
+                for (int j = 0; j < nextDataMtxToJS.GetLength(1) - 1; j++)
+                {
+                    sb.Append(nextDataMtxToJS[i, j] + ", ");
+                }
+                sb.Append(nextDataMtxToJS[i, nextDataMtxToJS.GetLength(1) - 1]);
+                if (i < nextDataMtxToJS.GetLength(0) - 1)
+                {
+                    sb.Append("ß ");
+                }
+            }
+
+            sb.Append(@"""," + Environment.NewLine + @"""chartLength"": """ + assetChartLength);
+
+
+            sb.Append(@"""," + Environment.NewLine + @"""assetChangesToChartMtx"": """);
+            for (int i = 0; i < assetChangesMtx.GetLength(0); i++)
+            {
+                sb.Append("");
+                for (int j = 0; j < assetChangesMtx.GetLength(1) - 1; j++)
+                {
+                    sb.Append(assetChangesMtx[i, j] + ", ");
+                }
+                sb.Append(assetChangesMtx[i, assetChangesMtx.GetLength(1) - 1]);
+                if (i < assetChangesMtx.GetLength(0) - 1)
+                {
+                    sb.Append("ß ");
+                }
+            }
+
+            sb.Append(@"""," + Environment.NewLine + @"""currDataVixVec"": """);
+            for (int i = 0; i < currDataVix.Length - 1; i++)
+                sb.Append(Math.Round(currDataVix[i], 4).ToString() + ", ");
+            sb.Append(Math.Round(currDataVix[^1], 4));
+
+            sb.Append(@"""," + Environment.NewLine + @"""currDataDaysVixVec"": """);
+            for (int i = 0; i < currDataDaysVix.Length - 1; i++)
+                sb.Append(currDataDaysVix[i].ToString() + ", ");
+            sb.Append(currDataDaysVix[^1]);
+
+            sb.Append(@"""," + Environment.NewLine + @"""prevDataVixVec"": """);
+            for (int i = 0; i < prevDataVix.Length - 1; i++)
+                sb.Append(Math.Round(prevDataVix[i], 4).ToString() + ", ");
+            sb.Append(Math.Round(prevDataVix[^1], 4));
+
+            sb.Append(@"""," + Environment.NewLine + @"""currDataDiffVixVec"": """);
+            for (int i = 0; i < currDataDiffVix.Length - 1; i++)
+                sb.Append(Math.Round(currDataDiffVix[i], 4).ToString() + ", ");
+            sb.Append(Math.Round(currDataDiffVix[^1], 4));
+
+            sb.Append(@"""," + Environment.NewLine + @"""currDataPercChVixVec"": """);
+            for (int i = 0; i < currDataPercChVix.Length - 1; i++)
+                sb.Append(Math.Round(currDataPercChVix[i], 4).ToString() + ", ");
+            sb.Append(Math.Round(currDataPercChVix[^1], 4));
+
+            sb.Append(@"""," + Environment.NewLine + @"""spotVixVec"": """);
+            for (int i = 0; i < currDataVix.Length - 1; i++)
+                sb.Append(Math.Round(spotVixValue, 4).ToString() + ", ");
+            sb.Append(Math.Round(spotVixValue, 4));
+
+            sb.AppendLine(@"""" + Environment.NewLine + @"}");
+
+            return sb.ToString();
+
         }
-// Under Development - Daya.
         public object RenewedUberGoogleApiGsheet(string p_usedGSheetRef)
         {
             Utils.Logger.Info("RenewedUberGoogleApiGsheet() BEGIN");
@@ -918,7 +866,7 @@ namespace SqCoreWeb.Controllers
         }
         throw new NotImplementedException();
         }
-        public static List<List<DailyData>> GetUberStockHistData(string[] p_allAssetList)   // { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" }
+        public static (IList<List<DailyData>>, List<DailyData>) GetUberStockHistData(string[] p_allAssetList)   // { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" }
         {
             List<Asset> assets = new();
             for (int i = 0; i < p_allAssetList.Length; i++)
@@ -932,10 +880,12 @@ namespace SqCoreWeb.Controllers
 
              DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
              DateTime startIncLoc = nowET.AddDays(-50);
-             List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc).ToList();
-
+          
             List<List<DailyData>> uberTickersData = new();
-            for (int i = 0; i < assetHistsAndEst.Count; i++)
+            List<DailyData> VIXDailyquotes = new();
+
+            List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc).ToList();
+            for (int i = 0; i < assetHistsAndEst.Count - 1; i++)
             {
                 var vals = assetHistsAndEst[i].values;
                 List<DailyData> uberValsData = new();
@@ -946,7 +896,12 @@ namespace SqCoreWeb.Controllers
                 uberTickersData.Add(uberValsData);
             }
 
-            return uberTickersData;
+            // last ticker is ^VIX which is used as a cash substitute. Special rola.
+            var cashVals = assetHistsAndEst[^1].values;
+            for (int j = 0; j < cashVals.Count; j++)
+                VIXDailyquotes.Add(new DailyData() { Date = cashVals[j].Date, AdjClosePrice = cashVals[j].SdaValue });
+
+            return (uberTickersData, VIXDailyquotes);
         }
 
         public Tuple<DateTime[], double[], Tuple<double[], double[], double[], double[], double[], double>> STCIdata(DateTime[] p_usedDateVec)
