@@ -179,7 +179,7 @@ function renewedUberInfoTbls(json) {
       uberStckChrtData.push(chrtData);
     }
   }
-  renewedUberMultilineChart(uberStckChrtData);
+  renewedUberPctChgChart(uberStckChrtData);
   // const monthList = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   const currDataVixArray = json.currDataVixVec.split(',');
@@ -344,7 +344,7 @@ function shortMonthFormat(date: any) : string {
     formatYear)(date);
 }
 
-function renewedUberMultilineChart(uberStckChrtData) {
+function renewedUberPctChgChart(uberStckChrtData) { // renewedUberPctChgChart
   const margin = {top: 10, right: 30, bottom: 40, left: 60};
   const width = 760 - margin.left - margin.right;
   const height = 450 - margin.top - margin.bottom;
@@ -367,7 +367,7 @@ function renewedUberMultilineChart(uberStckChrtData) {
       .domain([(yMin as number) - 5, (yMax as number) + 5])
       .range([height, 0]);
 
-  const chrtSvg = d3.select('#pctChgChrt')
+  const pctChgSvg = d3.select('#pctChgChrt')
       .append('svg')
       .style('background', 'white')
       .attr('width', width + margin.left + margin.right)
@@ -376,7 +376,7 @@ function renewedUberMultilineChart(uberStckChrtData) {
       .attr('transform',
           'translate(' + margin.left + ',' + margin.top + ')');
 
-  chrtSvg.append('g')
+  pctChgSvg.append('g')
       .attr('class', 'grid')
       .attr('transform', 'translate(0,' + height +')')
       .call(d3.axisBottom(xScale).tickSize(-height).tickFormat(shortMonthFormat))
@@ -384,7 +384,7 @@ function renewedUberMultilineChart(uberStckChrtData) {
       .style('text-anchor', 'end')
       .attr('transform', 'rotate(-25)');
 
-  chrtSvg.append('g')
+  pctChgSvg.append('g')
       .attr('class', 'grid')
       .call(d3.axisLeft(yScale)
           .tickSize(-width)
@@ -408,7 +408,7 @@ function renewedUberMultilineChart(uberStckChrtData) {
       .range(['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999']);
 
   // Draw the line
-  chrtSvg.selectAll('.line')
+  pctChgSvg.selectAll('.line')
       .data(stckDataGroups)
       .enter()
       .append('path')
@@ -418,7 +418,7 @@ function renewedUberMultilineChart(uberStckChrtData) {
       .attr('d', (d:any) => (d3.line()
           .x((d: any) => xScale(d.date) as number)
           .y((d: any) => yScale(d.price) as number))(d.values) as any);
-  chrtSvg
+  pctChgSvg
       .selectAll('myCircles')
       .data(stckChrtData)
       .enter()

@@ -127,7 +127,7 @@ namespace FinTechCommon
         public IEnumerable<AssetHist> GetSdaHistCloses(IEnumerable<Asset> p_assets, DateTime p_startIncLoc, DateTime p_endExclLoc /* usually given as current time today */,
             bool p_valuesNeeded, bool p_statNeeded)
         {
-            SqDateOnly lookbackEnd = p_endExclLoc.Date.AddDays(-1); // if (p_dateExclLoc is Monday), -1 days is Sunday, but we have to find Friday before
+            SqDateOnly lookbackEnd = p_endExclLoc.Date; //.AddDays(-1); // if (p_dateExclLoc is Monday), -1 days is Sunday, but we have to find Friday before
 
             TsDateData<SqDateOnly, uint, float, uint> histData = DailyHist.GetDataDirect();
             SqDateOnly[] dates = histData.Dates;

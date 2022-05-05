@@ -97,10 +97,10 @@ namespace SqCoreWeb.Controllers
             (IList<List<DailyData>>, List<DailyData>) dataListTupleFromSQServer = GetSinStockHistData(allAssetList);
 
             // below commented code is for validation purpose Sin SqCore vs SqLab
-            // StringBuilder sbDebugData = new();
+            // // StringBuilder sbDebugData = new();
             // try
             // {
-            //     StreamWriter sw = new("C:\\temp\\quotesData.txt", true, Encoding.ASCII);
+            //     StreamWriter sw = new("C:\\temp\\quotesData.csv");
             //     for (int i = 0; i < allAssetList.Length - 1; i++)
             //     {
             //         sw.Write(allAssetList[i] + ": " + Environment.NewLine);
@@ -115,7 +115,7 @@ namespace SqCoreWeb.Controllers
             //     Console.WriteLine("Exception: " + e.Message);
             // }
             
-            // StreamWriter sw1 = new("C:\\temp\\cashEquivalentQuotesData.txt", true, Encoding.ASCII);
+            // StreamWriter sw1 = new("C:\\temp\\cashEquivalentQuotesData.csv");
             // sw1.Write(allAssetList[^1] + ": " + Environment.NewLine);
             //  List<DailyData> prices1 = dataListTupleFromSQServer.Item2;
             // string priceStr1 = String.Join('\t', prices1.Select(r => r.Date.ToString() + ", " + r.AdjClosePrice.ToString() + Environment.NewLine));
