@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using SqCommon;
 using System.Net.Http;
+using System.IO;
 using System.Text;
 using System.Globalization;
 using System.Diagnostics;
@@ -97,17 +98,29 @@ namespace SqCoreWeb.Controllers
 
             // below commented code is for validation purpose Sin SqCore vs SqLab
             // StringBuilder sbDebugData = new();
-            // for (int i = 0; i < allAssetList.Length - 1; i++)
+            // try
             // {
-            //     sbDebugData.Append(allAssetList[i] + ": " + Environment.NewLine);
-            //     List<DailyData> prices = dataListTupleFromSQServer.Item1[i];
-            //     string priceStr = String.Join('\t', prices.Select(r => r.Date.ToString() + ", " + r.AdjClosePrice.ToString() + Environment.NewLine));
-            //     sbDebugData.Append(priceStr + Environment.NewLine);
+            //     StreamWriter sw = new("C:\\temp\\quotesData.txt", true, Encoding.ASCII);
+            //     for (int i = 0; i < allAssetList.Length - 1; i++)
+            //     {
+            //         sw.Write(allAssetList[i] + ": " + Environment.NewLine);
+            //         List<DailyData> prices = dataListTupleFromSQServer.Item1[i];
+            //         string priceStr = String.Join('\t', prices.Select(r => r.Date.ToString() + ", " + r.AdjClosePrice.ToString() + Environment.NewLine));
+            //         sw.Write(priceStr + Environment.NewLine);
+            //     }
+            //     sw.Close();
             // }
-
-            ///....
-
-            // Debug.WriteLine(sbDebugData.ToString());
+            // catch(Exception e)
+            // {
+            //     Console.WriteLine("Exception: " + e.Message);
+            // }
+            
+            // StreamWriter sw1 = new("C:\\temp\\cashEquivalentQuotesData.txt", true, Encoding.ASCII);
+            // sw1.Write(allAssetList[^1] + ": " + Environment.NewLine);
+            //  List<DailyData> prices1 = dataListTupleFromSQServer.Item2;
+            // string priceStr1 = String.Join('\t', prices1.Select(r => r.Date.ToString() + ", " + r.AdjClosePrice.ToString() + Environment.NewLine));
+            // sw1.Write(priceStr1 + Environment.NewLine);
+            // // Debug.WriteLine(sbDebugData.ToString());
 
             IList<List<DailyData>> quotesData = dataListTupleFromSQServer.Item1;
             List<DailyData> cashEquivalentQuotesData = dataListTupleFromSQServer.Item2;

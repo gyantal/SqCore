@@ -71,6 +71,11 @@ table.currData2 {
   text-align: center
 }
 
+.commonHeadings {
+  font-size: 1rem;
+  color: blue;
+}
+
 .currData2 td {
   width: 5%;
   text-align: center;
@@ -95,7 +100,6 @@ table.currData2 {
   text-align: center;
   padding: 0.5rem 0;
   border-radius: 0.6rem;
-
   position: absolute;
   z-index: 1;
   top: -0.5rem;
@@ -105,11 +109,6 @@ table.currData2 {
 /* Show the tooltip text when you mouse over the tooltip container */
 .tooltip:hover .tooltiptext {
   visibility: visible;
-}
-
-#renewedUberchart {
-  width: 50rem;
-  height: 30rem;
 }
 
 #tooltipChart {
@@ -131,4 +130,26 @@ table.currData2 {
   margin-top: 1.5rem;
   text-align: left;
   font-size: 1rem;
+}
+
+.chartsContainer {
+  box-sizing: border-box;
+  width: 52rem;
+  height: 32rem;
+  padding: 1rem 1rem 1rem 1rem;
+  margin: 1rem auto 1rem 22rem;
+  border: 0.1rem solid #ddd;
+  /*background: #0094ff;*/
+  font-size: 1rem;
+  background: #F4F6F6; /* For browsers that do not support gradients */
+  background: linear-gradient(90deg, #D6EAF8, #D1F2EB); /* Standard syntax */
+}
+
+.grid line {
+  stroke: lightgrey;
+  stroke-opacity: 0.7;
+}
+
+.grid path {
+  border: 0.05rem solid black;
 }

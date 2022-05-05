@@ -43,6 +43,15 @@ window.onload = function onLoadWindow() {
 };
 
 function onReceiveData(json: any) {
+  if (json == 'Error') {
+    const divErrorCont = getDocElementById('idErrorCont');
+    divErrorCont.innerHTML = 'Error during downloading data. Please, try again later!';
+    getDocElementById('errorMessage').style.visibility='visible';
+    getDocElementById('pctChgCharts').style.visibility = 'hidden';
+    getDocElementById('inviCharts').style.visibility = 'visible';
+
+    return;
+  }
   getDocElementById('titleCont').innerHTML = '<small><a href="' + json.gDocRef + '" target="_blank">(Study)</a></small>';
   getDocElementById('requestTime').innerText = json.requestTime;
   getDocElementById('lastDataTime').innerText = json.lastDataTime;
@@ -50,11 +59,14 @@ function onReceiveData(json: any) {
   // if (json.dailyProfSig !== 'N/A')
   //   getDocElementById('dailyProfit').innerHTML = '<b>Daily Profit/Loss: <span class="' + json.dailyProfString + '">' + json.dailyProfSig + json.dailyProfAbs + '</span></b>';
   getDocElementById('idCurrentEvent').innerHTML = 'Next trading day will be <span class="stci"> ' + json.currentEventName + '</span>, <div class="tooltip">used STCI is <span class="stci">' + json.currentSTCI + '</span><span class="tooltiptext">Second (third) month VIX futures divided by front (second) month VIX futures minus 1, with more (less) than 5-days until expiration.</span></div > and used VIX is <span class="stci">' + json.currentVIX + '</span>, thus leverage will be <span class="stci">' + json.currentFinalWeightMultiplier + '.</span >';
+  getDocElementById('idPosFut').innerHTML = 'Upcoming Events';
+  getDocElementById('idVixCont').innerHTML = 'VIX Futures Term Structure';
   getDocElementById('idRules').innerHTML = '<u>Current trading rules:</u> <ul align="left"><li>Play with 100% of PV on FOMC days (as this is the strongest part of the strategy), with 85% on Holiday days, with 70% on VIXFUTEX, OPEX, TotM and TotMM days, while with only 50% of PV on pure bullish STCI days. These deleveraging percentages have to be played both on bullish and bearish days.</li><li><ul><li>All of the FOMC and Holiday signals have to be played, regardless the STCI;</li><li>on weaker bullish days (OPEX, VIXFUTEX, TotM and TotMM) play the UberMix basket if and only if the STCI closed above +2% contango (25th percentile) on previous day (so, stay in cash if contango is not big enough);</li><li>on weaker bearish days (OPEX, VIXFUTEX, TotM and TotMM) play long VXX if and only if the STCI closed below +9% contango (75th percentile) on previous day (so, stay in cash if the contango is too deep).</li></ul></li><li>Bullish STCI threshold on non-event days is +7.5%, which is the 67th percentile of historical value of the STCI.</li><li>VIX Based Leverage Indicator: <ul align="left"><li>If VIX<21:&emsp; leverage = 100%;</li><li>If 21<=VIX<30:&emsp; leverage = 100%-(VIX-21)*10%;</li><li>If 30<=VIX:&emsp; leverage = 10%.</li></ul></li></ul>';
 
   renewedUberInfoTbls(json);
   // Setting charts visible after getting data.
-  getDocElementById('renewedUberchart').style.visibility = 'visible';
+  getDocElementById('pctChgCharts').style.visibility = 'visible';
+  getDocElementById('inviCharts').style.visibility = 'visible';
 }
 
 function renewedUberInfoTbls(json) {
@@ -134,7 +146,7 @@ function renewedUberInfoTbls(json) {
   }
   upcomingEventsTbl += '</table>';
 
-  const currTableMtx7 = '<table class="currData2"><tr><td bgcolor="#32CD32">FOMC Bullish Day</td><td bgcolor="#7CFC00">Holiday Bullish Day</td><td bgcolor="#00FA9A">Other Bullish Event Day</td></tr><tr><td bgcolor="#c24f4f">FOMC Bearish Day</td><td bgcolor="#d46a6a">Holiday Bearish Day</td><td bgcolor="#ed8c8c">Other Bearish Event Day</td></tr><tr><td bgcolor="#C0C0C0">Non-Playable Other Event Day</td><td bgcolor="#00FFFF">STCI Bullish Day</td><td bgcolor="#FFFACD">STCI Neutral Day</td></tr></table > ';
+  const subStrategiesTbl = '<table class="currData2"><tr><td bgcolor="#32CD32">FOMC Bullish Day</td><td bgcolor="#7CFC00">Holiday Bullish Day</td><td bgcolor="#00FA9A">Other Bullish Event Day</td></tr><tr><td bgcolor="#c24f4f">FOMC Bearish Day</td><td bgcolor="#d46a6a">Holiday Bearish Day</td><td bgcolor="#ed8c8c">Other Bearish Event Day</td></tr><tr><td bgcolor="#C0C0C0">Non-Playable Other Event Day</td><td bgcolor="#00FFFF">STCI Bullish Day</td><td bgcolor="#FFFACD">STCI Neutral Day</td></tr></table > ';
 
   // "Sending" data to HTML file.
   const chngInPosMtx = getDocElementById('changeInPos');
@@ -143,9 +155,31 @@ function renewedUberInfoTbls(json) {
   const upcomingEventsMtx = getDocElementById('upcomingEvents');
   upcomingEventsMtx.innerHTML = upcomingEventsTbl;
 
-  const currTableMtx8 = getDocElementById('idCurrTableMtx7');
-  currTableMtx8.innerHTML = currTableMtx7;
+  const subStrategiesMtx = getDocElementById('subStrategies');
+  subStrategiesMtx.innerHTML = subStrategiesTbl;
 
+  const nCurrData = parseInt(json.chartLength) + 1;
+  const noAssets = assetNames2Array.length - 1;
+  // Declaring data sets to charts.
+
+  interface pctChngStckPriceData {
+    stckName: string;
+    date: Date;
+    price: number;
+  }
+
+  const uberStckChrtData: pctChngStckPriceData[] = [];
+  for (let j = 0; j < noAssets; j++) {
+    for (let i = 0; i < nCurrData; i++) {
+      const chrtData: pctChngStckPriceData = {
+        stckName: assetNames2Array[j],
+        date: assChartMtx[i][0],
+        price: parseFloat(assChartMtx[i][j + 1]),
+      };
+      uberStckChrtData.push(chrtData);
+    }
+  }
+  renewedUberMultilineChart(uberStckChrtData);
   // const monthList = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   const currDataVixArray = json.currDataVixVec.split(',');
@@ -221,9 +255,9 @@ function renewedUberInfoTbls(json) {
     days: number;
     price: number;
   }
-  const nCurrData = 7;
+  const nCurrDataVix = 7;
   const currDataPrices: PriceData[] = [];
-  for (let i = 0; i < nCurrData; i++) {
+  for (let i = 0; i < nCurrDataVix; i++) {
     const currDataPricesRows: PriceData = {
       days: currDataDaysVixArray[i],
       price: currDataVixArray[i],
@@ -232,7 +266,7 @@ function renewedUberInfoTbls(json) {
   }
 
   const prevDataPrices: PriceData[] = [];
-  for (let i = 0; i < nCurrData; i++) {
+  for (let i = 0; i < nCurrDataVix; i++) {
     const prevDataPricesRows: PriceData = {
       days: currDataDaysVixArray[i],
       price: prevDataVixArray[i],
@@ -241,7 +275,7 @@ function renewedUberInfoTbls(json) {
   }
 
   const spotVixValues: PriceData[] = [];
-  for (let i = 0; i < nCurrData; i++) {
+  for (let i = 0; i < nCurrDataVix; i++) {
     const spotVixValuesRows: PriceData = {
       days: currDataDaysVixArray[i],
       price: spotVixArray[i],
@@ -296,20 +330,112 @@ function renewedUberInfoTbls(json) {
     if (maxPriceI > maxPrice)
       maxPrice = maxPriceI;
   });
-  const maxDays = currDataDaysVixArray[nCurrData - 1];
+  const maxDays = currDataDaysVixArray[nCurrDataVix - 1];
 
   renewedUberChart(dataset, json.titleCont, minPrice, maxPrice, maxDays);
 }
 
+function shortMonthFormat(date: any) : string {
+  const formatMillisec = d3.timeFormat('.%L');
+  const formatShortMonth = d3.timeFormat('%x');
+  const formatYear = d3.timeFormat('%Y');
+  return (d3.timeSecond(date) < date ? formatMillisec :
+    d3.timeYear(date) < date ? formatShortMonth :
+    formatYear)(date);
+}
+
+function renewedUberMultilineChart(uberStckChrtData) {
+  const margin = {top: 10, right: 30, bottom: 40, left: 60};
+  const width = 760 - margin.left - margin.right;
+  const height = 450 - margin.top - margin.bottom;
+
+  const stckChrtData = uberStckChrtData.map((r:{stckName: string, date: Date; price: number; }) =>
+    ({stckName: (r.stckName), date: new Date(r.date), price: (r.price)}));
+
+  const xMin = d3.min(stckChrtData, (r:{ date: any; }) => r.date as Date);
+  const xMax = d3.max(stckChrtData, (r:{ date: any; }) => r.date as Date);
+  const yMin = d3.min(stckChrtData, (r:{ price: any; }) => r.price as number);
+  const yMax = d3.max(stckChrtData, (r:{ price: any; }) => r.price as number);
+
+  // Add X axis --> it is a date format
+  const xScale = d3.scaleTime()
+      .domain([xMin as Date, xMax as Date])
+      .range([0, width]);
+
+  // Add Y axis
+  const yScale = d3.scaleLinear()
+      .domain([(yMin as number) - 5, (yMax as number) + 5])
+      .range([height, 0]);
+
+  const chrtSvg = d3.select('#pctChgChrt')
+      .append('svg')
+      .style('background', 'white')
+      .attr('width', width + margin.left + margin.right)
+      .attr('height', height + margin.top + margin.bottom)
+      .append('g')
+      .attr('transform',
+          'translate(' + margin.left + ',' + margin.top + ')');
+
+  chrtSvg.append('g')
+      .attr('class', 'grid')
+      .attr('transform', 'translate(0,' + height +')')
+      .call(d3.axisBottom(xScale).tickSize(-height).tickFormat(shortMonthFormat))
+      .selectAll('text')
+      .style('text-anchor', 'end')
+      .attr('transform', 'rotate(-25)');
+
+  chrtSvg.append('g')
+      .attr('class', 'grid')
+      .call(d3.axisLeft(yScale)
+          .tickSize(-width)
+          .tickFormat((d: any) => d + '%'));
+
+  // grouping the data
+  const stckDataGroups: any[] = [];
+  stckChrtData.forEach(function(this: any, a) {
+    if (!this[a.stckName]) {
+      this[a.stckName] = { key: a.stckName, values: [] };
+      stckDataGroups.push(this[a.stckName]);
+    }
+    this[a.stckName].values.push({ date: a.date, price: a.price });
+  }, Object.create(null));
+  console.log(stckDataGroups);
+
+  const stckKey = stckDataGroups.map(function(d: any) { return d.key; }); // list of group names
+  // adding colors for keys
+  const color = d3.scaleOrdinal()
+      .domain(stckKey)
+      .range(['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999']);
+
+  // Draw the line
+  chrtSvg.selectAll('.line')
+      .data(stckDataGroups)
+      .enter()
+      .append('path')
+      .attr('fill', 'none')
+      .attr('stroke', (d: any) => color(d.key) as any)
+      .attr('stroke-width', 1.5)
+      .attr('d', (d:any) => (d3.line()
+          .x((d: any) => xScale(d.date) as number)
+          .y((d: any) => yScale(d.price) as number))(d.values) as any);
+  chrtSvg
+      .selectAll('myCircles')
+      .data(stckChrtData)
+      .enter()
+      .append('circle')
+      .attr('stroke', 'none')
+      .attr('cx', (d: any) => xScale(d.date) as number)
+      .attr('cy', (d: any) => yScale(d.price) as number)
+      .attr('r', 4);
+}
+
 function renewedUberChart(dataset: any, titleCont: any, minPrice: number, maxPrice: number, maxDays: any) {
   d3.selectAll('#renewedUberchart > *').remove();
-  const svg = d3.select('#renewedUberchart')
-      .append('svg');
 
   // Define margins, dimensions, and some line colors
-  const margin = { top: 40, right: 50, bottom: 35, left: 100 };
-  const width = 660 - margin.left - margin.right;
-  const height = 400 - margin.top - margin.bottom;
+  const margin = { top: 10, right: 30, bottom: 40, left: 60 };
+  const width = 720 - margin.left - margin.right;
+  const height = 450 - margin.top - margin.bottom;
 
   // Define the scales and tell D3 how to draw the line
   const x = d3
@@ -320,35 +446,38 @@ function renewedUberChart(dataset: any, titleCont: any, minPrice: number, maxPri
       .scaleLinear()
       .domain([minPrice * 0.9, maxPrice * 1.1])
       .range([height, 0]);
-  const line = d3
-      .line()
+  const line = d3.line()
       .x((d : any) => x(d.days))
       .y((d : any) => y(d.price));
-  svg.selectAll('*').remove();
-  const chart = d3
-      .select('svg')
+
+  const uberChrtSvg = d3.select('#renewedUberchart')
+      .append('svg')
+      .style('background', 'white')
+      .attr('width', width + margin.left + margin.right)
+      .attr('height', height + margin.top + margin.bottom)
       .append('g')
       .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
   const tooltip = d3.select('#tooltipChart');
-  const tooltipLine = chart.append('line');
+  const tooltipLine = uberChrtSvg.append('line');
 
   // Add the axes and a title
-  const xAxis = d3.axisBottom(x).tickFormat(d3.format('.4'));
-  const yAxis = d3.axisLeft(y).tickFormat(d3.format('$.4'));
-  chart.append('g').call(yAxis);
-  chart
+  const xAxis = d3.axisBottom(x).tickSize(-height).tickFormat(d3.format('.4'));
+  const yAxis = d3.axisLeft(y).tickSize(-width).tickFormat(d3.format('$.4'));
+  uberChrtSvg.append('g').attr('class', 'grid').call(yAxis);
+  uberChrtSvg
       .append('g')
+      .attr('class', 'grid')
       .attr('transform', 'translate(0,' + height + ')')
       .call(xAxis);
-  chart.append('text').html(titleCont).attr('x', 200);
+  uberChrtSvg.append('text').html(titleCont).attr('x', 200);
 
   // text label for the x axis
-  chart
+  uberChrtSvg
       .append('text')
       .attr('transform', 'translate(' + width / 2 + ' ,' + (height + 30) + ')')
       .style('text-anchor', 'middle')
-      .style('font-size', '1.2rem')
+      .style('font-size', '1rem')
       .text('Days until expiration');
 
   // Load the data and draw a chart
@@ -357,7 +486,7 @@ function renewedUberChart(dataset: any, titleCont: any, minPrice: number, maxPri
   dataset.forEach((d) => {
     series = d;
 
-    chart
+    uberChrtSvg
         .append('path')
         .attr('fill', 'none')
         .attr('stroke', d.color)
@@ -365,7 +494,7 @@ function renewedUberChart(dataset: any, titleCont: any, minPrice: number, maxPri
         .datum(d.history)
         .attr('d', line);
 
-    chart
+    uberChrtSvg
         .append('text')
         .html(d.name)
         .style('font-size', '1.4rem')
@@ -375,7 +504,7 @@ function renewedUberChart(dataset: any, titleCont: any, minPrice: number, maxPri
         .attr('dx', '.5em')
         .attr('y', 30 + 20 * numSeries);
 
-    chart
+    uberChrtSvg
         .selectAll('myCircles')
         .data(d.history)
         .enter()
@@ -389,7 +518,7 @@ function renewedUberChart(dataset: any, titleCont: any, minPrice: number, maxPri
     numSeries = numSeries + 1;
   });
 
-  chart
+  uberChrtSvg
       .append('rect')
       .attr('width', width)
       .attr('height', height)
