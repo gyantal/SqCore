@@ -402,7 +402,8 @@ namespace SqCoreWeb
                     string braccSelectedBnchmkSqTicker = string.Concat("S/", msgObjStr.AsSpan(bnchmkStartIdx + 1, (periodStartIdx - bnchmkStartIdx - 1)));
                     string periodSelected = msgObjStr[(periodStartIdx + 1)..];
                     SqDateOnly lookbackStart = Utils.FastParseYYYYMMDD(new StringSegment(periodSelected, "Date:".Length, 10));
-                    SqDateOnly lookbackEndExcl = Utils.FastParseYYYYMMDD(new StringSegment(periodSelected, "Date:".Length + 13, 10));
+                    DateTime lookbackEndIncl = Utils.FastParseYYYYMMDD(new StringSegment(periodSelected, "Date:".Length + 13, 10)); // the web UI is written that 'EndDate' is yesterday, which should be included in returned data (if it is not a weekend or holiday, so complicated).
+                    SqDateOnly lookbackEndExcl = lookbackEndIncl.AddDays(1);   // convert it to excludedEndDate, which converts it to Today. Because that is what MemDb_helper.cs/GetSdaHistCloses() expects
                     BrAccViewerSendNavHist(lookbackStart, lookbackEndExcl, braccSelectedBnchmkSqTicker);
                     return true;
                 case "BrAccViewer.GetStockChrtData":

@@ -123,11 +123,13 @@ namespace FinTechCommon
             return priorCloses;
         }
 
-        // Backtests don't need the Statistical data (maxDD), just the prices. Dashboard.MarketHealth only needs the Statistical data, no historical prices
-        public IEnumerable<AssetHist> GetSdaHistCloses(IEnumerable<Asset> p_assets, DateTime p_startIncLoc, DateTime p_endExclLoc /* usually given as current time today */,
+        // Backtests don't need the Statistical data (maxDD), just the prices. Dashboard.MarketHealth only needs the Statistical data, no historical prices. Dashboard.BrAccViewer needs both.
+        public IEnumerable<AssetHist> GetSdaHistCloses(IEnumerable<Asset> p_assets, DateTime p_startIncLoc, DateTime p_endExclLoc /* usually given as current time today, and that today should not be included in the returned data */,
             bool p_valuesNeeded, bool p_statNeeded)
         {
-            SqDateOnly lookbackEnd = p_endExclLoc.Date; //.AddDays(-1); // if (p_dateExclLoc is Monday), -1 days is Sunday, but we have to find Friday before
+            // p_endExclLoc is usually Today. It should NOT be in the returned result. E.g. if (p_dateExclLoc is Monday), -1 days is Sunday, but we have to find Friday before, or even Thursday if Friday was a holiday. 
+            // The caller code usually have no idea about these weekend or holiday days. The caller just gives Today as an EndDate. It would be too difficult to calculate the proper EndDate in the caller code.
+            SqDateOnly lookbackEnd = p_endExclLoc.Date.AddDays(-1); // Double checked. Don't change this. See comment above.
 
             TsDateData<SqDateOnly, uint, float, uint> histData = DailyHist.GetDataDirect();
             SqDateOnly[] dates = histData.Dates;
