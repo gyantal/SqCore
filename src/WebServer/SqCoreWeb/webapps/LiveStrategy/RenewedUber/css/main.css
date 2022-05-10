@@ -111,27 +111,6 @@ table.currData2 {
   visibility: visible;
 }
 
-#tooltipChart {
-  display: none;
-  position: absolute;
-  background-color: lightgray;
-  min-width: 2rem;
-  max-width: 10rem;
-  font-size: 1.2rem;
-  background-color: dodgerblue;
-  color: gainsboro;
-  text-align: center;
-  opacity: 0.92;
-  padding: 0.5rem 0;
-  border-radius: 0.6rem;
-}
-
-#idRules {
-  margin-top: 1.5rem;
-  text-align: left;
-  font-size: 1rem;
-}
-
 .chartsContainer {
   box-sizing: border-box;
   width: 52rem;
@@ -152,4 +131,30 @@ table.currData2 {
 
 .grid path {
   border: 0.05rem solid black;
+}
+
+.pctChgLabel {
+  font-size: 0.8rem;
+  text-anchor: middle;
+}
+
+#tooltipChart {
+  display: none;
+  position: absolute;
+  min-width: 2rem;
+  max-width: 10rem;
+  font-size: 0.8rem;
+  background-color: #F4F6F6;
+  /* color: gainsboro; */
+  text-align: center;
+  opacity: 0.92;
+  padding: 0.5rem 0;
+  border: 0.05rem solid orange;
+  border-radius: 0.6rem;
+}
+
+#idRules {
+  margin-top: 1.5rem;
+  text-align: left;
+  font-size: 1rem;
 }

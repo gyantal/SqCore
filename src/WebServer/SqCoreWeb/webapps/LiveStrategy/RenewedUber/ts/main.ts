@@ -168,7 +168,7 @@ function renewedUberInfoTbls(json) {
     price: number;
   }
 
-  const uberStckChrtData: pctChngStckPriceData[] = [];
+  const pctChngChrtData: pctChngStckPriceData[] = [];
   for (let j = 0; j < noAssets; j++) {
     for (let i = 0; i < nCurrData; i++) {
       const chrtData: pctChngStckPriceData = {
@@ -176,11 +176,10 @@ function renewedUberInfoTbls(json) {
         date: assChartMtx[i][0],
         price: parseFloat(assChartMtx[i][j + 1]),
       };
-      uberStckChrtData.push(chrtData);
+      pctChngChrtData.push(chrtData);
     }
   }
-  renewedUberPctChgChart(uberStckChrtData);
-  // const monthList = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  renewedUberPctChgChart(pctChngChrtData);
 
   const currDataVixArray = json.currDataVixVec.split(',');
   const currDataDaysVixArray = json.currDataDaysVixVec.split(',');
@@ -332,12 +331,12 @@ function renewedUberInfoTbls(json) {
   });
   const maxDays = currDataDaysVixArray[nCurrDataVix - 1];
 
-  renewedUberChart(dataset, json.titleCont, minPrice, maxPrice, maxDays);
+  renewedUberFuturePricesChrt(dataset, json.titleCont, minPrice, maxPrice, maxDays);
 }
 
 function shortMonthFormat(date: any) : string {
   const formatMillisec = d3.timeFormat('.%L');
-  const formatShortMonth = d3.timeFormat('%x');
+  const formatShortMonth = d3.timeFormat('%Y-%m-%d');
   const formatYear = d3.timeFormat('%Y');
   return (d3.timeSecond(date) < date ? formatMillisec :
     d3.timeYear(date) < date ? formatShortMonth :
@@ -367,7 +366,7 @@ function renewedUberPctChgChart(uberStckChrtData) { // renewedUberPctChgChart
       .domain([(yMin as number) - 5, (yMax as number) + 5])
       .range([height, 0]);
 
-  const pctChgSvg = d3.select('#pctChgChrt')
+  const pctChgChrtSvg = d3.select('#pctChgChrt')
       .append('svg')
       .style('background', 'white')
       .attr('width', width + margin.left + margin.right)
@@ -376,7 +375,7 @@ function renewedUberPctChgChart(uberStckChrtData) { // renewedUberPctChgChart
       .attr('transform',
           'translate(' + margin.left + ',' + margin.top + ')');
 
-  pctChgSvg.append('g')
+  pctChgChrtSvg.append('g')
       .attr('class', 'grid')
       .attr('transform', 'translate(0,' + height +')')
       .call(d3.axisBottom(xScale).tickSize(-height).tickFormat(shortMonthFormat))
@@ -384,7 +383,7 @@ function renewedUberPctChgChart(uberStckChrtData) { // renewedUberPctChgChart
       .style('text-anchor', 'end')
       .attr('transform', 'rotate(-25)');
 
-  pctChgSvg.append('g')
+  pctChgChrtSvg.append('g')
       .attr('class', 'grid')
       .call(d3.axisLeft(yScale)
           .tickSize(-width)
@@ -405,10 +404,10 @@ function renewedUberPctChgChart(uberStckChrtData) { // renewedUberPctChgChart
   // adding colors for keys
   const color = d3.scaleOrdinal()
       .domain(stckKey)
-      .range(['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf', '#999999']);
+      .range(['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#f781bf', '#999999', '#ffff33', '#a65628']);
 
   // Draw the line
-  pctChgSvg.selectAll('.line')
+  pctChgChrtSvg.selectAll('.line')
       .data(stckDataGroups)
       .enter()
       .append('path')
@@ -418,23 +417,101 @@ function renewedUberPctChgChart(uberStckChrtData) { // renewedUberPctChgChart
       .attr('d', (d:any) => (d3.line()
           .x((d: any) => xScale(d.date) as number)
           .y((d: any) => yScale(d.price) as number))(d.values) as any);
-  pctChgSvg
+
+  // // Add the Legend
+  pctChgChrtSvg.selectAll('rect')
+      .data(stckDataGroups)
+      .enter().append('text')
+      .attr('x', (d: any, i: any) => ( 25 + i * 60))
+      .attr('y', 30)
+      .attr('class', 'pctChgLabel') // style the legend
+      .style('fill', (d: any) => color(d.key) as any)
+      .text((d: any) => (d.key));
+  // x axis label
+  pctChgChrtSvg
+      .append('text')
+      .attr('class', 'pctChgLabel')
+      .attr('transform', 'translate(' + width / 2 + ' ,' + (height + 42) + ')')
+      .text('Date');
+  // y axis label
+  pctChgChrtSvg
+      .append('text')
+      .attr('class', 'pctChgLabel')
+      .attr('transform', 'rotate(-90)')
+      .attr('y', 0 - (margin.left))
+      .attr('x', 0 - (height / 2))
+      .attr('dy', '2em')
+      .text('Percentage Change');
+
+  pctChgChrtSvg
       .selectAll('myCircles')
       .data(stckChrtData)
       .enter()
       .append('circle')
-      .attr('stroke', 'none')
-      .attr('cx', (d: any) => xScale(d.date) as number)
+      .style('fill', 'none')
+      .attr('stroke', (d: any) => color(d.stckName) as any)
+      .attr('stroke-width', 0.8)
+      .attr('cx', ((d: any) => xScale(d.date) as number))
       .attr('cy', (d: any) => yScale(d.price) as number)
-      .attr('r', 4);
+      .attr('r', 2.5);
+
+  const tooltipPctChg = d3.select('#tooltipChart');
+  const tooltipLine = pctChgChrtSvg.append('line');
+  pctChgChrtSvg.append('rect')
+      .attr('width', width)
+      .attr('height', height)
+      .attr('opacity', 0)
+      .on('mousemove', onMouseMove)
+      .on('mouseout', onMouseOut);
+
+  function onMouseOut() {
+    if (tooltipPctChg)
+      tooltipPctChg.style('display', 'none');
+    if (tooltipLine)
+      tooltipLine.attr('stroke', 'none');
+  }
+
+  function onMouseMove(event: any) {
+    const daysArray: any[] = [];
+    stckChrtData.forEach((element) => {
+      daysArray.push(element.date);
+    });
+
+    const xCoord = xScale.invert(d3.pointer(event)[0]);
+    const yCoord = d3.pointer(event)[1];
+    const closestXCoord = daysArray.sort(
+        (a, b) => Math.abs(xCoord.getTime() as any - a.getTime()) - Math.abs(xCoord.getTime() as any- b.getTime()))[0];
+    const closestYCoord = stckDataGroups[0].values.find((h: any) => h.date as any === closestXCoord).price;
+
+    // console.log(ttTextArray1.length);
+    tooltipLine
+        .attr('stroke', 'black')
+        .attr('x1', xScale(closestXCoord))
+        .attr('x2', xScale(closestXCoord))
+        .attr('y1', 0 + 10)
+        .attr('y2', height);
+
+    tooltipPctChg
+        .html('Percentage Changes :' + '<br>')
+        .style('display', 'block')
+        .style('left', event.pageX + 10)
+        .style('top', (event.pageY - yCoord + yScale(closestYCoord)) + 15)
+        .selectAll()
+        .data(stckDataGroups)
+        .enter()
+        .append('div')
+        .style('color', (d: any) => color(d.key) as any)
+        .html((d: any) => d.key + ': ' + d.values.find((h: any) => h.date.getTime() as any === closestXCoord.getTime() as any).price + '%');
+  }
 }
 
-function renewedUberChart(dataset: any, titleCont: any, minPrice: number, maxPrice: number, maxDays: any) {
+
+function renewedUberFuturePricesChrt(dataset: any, titleCont: any, minPrice: number, maxPrice: number, maxDays: any) {
   d3.selectAll('#renewedUberchart > *').remove();
 
   // Define margins, dimensions, and some line colors
   const margin = { top: 10, right: 30, bottom: 40, left: 60 };
-  const width = 720 - margin.left - margin.right;
+  const width = 760 - margin.left - margin.right;
   const height = 450 - margin.top - margin.bottom;
 
   // Define the scales and tell D3 how to draw the line
@@ -450,7 +527,7 @@ function renewedUberChart(dataset: any, titleCont: any, minPrice: number, maxPri
       .x((d : any) => x(d.days))
       .y((d : any) => y(d.price));
 
-  const uberChrtSvg = d3.select('#renewedUberchart')
+  const futPrcChrtSvg = d3.select('#renewedUberchart')
       .append('svg')
       .style('background', 'white')
       .attr('width', width + margin.left + margin.right)
@@ -459,26 +536,34 @@ function renewedUberChart(dataset: any, titleCont: any, minPrice: number, maxPri
       .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
   const tooltip = d3.select('#tooltipChart');
-  const tooltipLine = uberChrtSvg.append('line');
+  const tooltipLine = futPrcChrtSvg.append('line');
 
   // Add the axes and a title
   const xAxis = d3.axisBottom(x).tickSize(-height).tickFormat(d3.format('.4'));
   const yAxis = d3.axisLeft(y).tickSize(-width).tickFormat(d3.format('$.4'));
-  uberChrtSvg.append('g').attr('class', 'grid').call(yAxis);
-  uberChrtSvg
+  futPrcChrtSvg.append('g').attr('class', 'grid').call(yAxis);
+  futPrcChrtSvg
       .append('g')
       .attr('class', 'grid')
       .attr('transform', 'translate(0,' + height + ')')
       .call(xAxis);
-  uberChrtSvg.append('text').html(titleCont).attr('x', 200);
 
   // text label for the x axis
-  uberChrtSvg
+  futPrcChrtSvg
       .append('text')
       .attr('transform', 'translate(' + width / 2 + ' ,' + (height + 30) + ')')
       .style('text-anchor', 'middle')
-      .style('font-size', '1rem')
+      .style('font-size', '0.8rem')
       .text('Days until expiration');
+  futPrcChrtSvg
+      .append('text')
+      .style('text-anchor', 'middle')
+      .style('font-size', '0.8rem')
+      .attr('transform', 'rotate(-90)')
+      .attr('y', 0 - (margin.left))
+      .attr('x', 0 - (height / 2))
+      .attr('dy', '2em')
+      .text('Future Price(USD)');
 
   // Load the data and draw a chart
   let numSeries = 0;
@@ -486,7 +571,7 @@ function renewedUberChart(dataset: any, titleCont: any, minPrice: number, maxPri
   dataset.forEach((d) => {
     series = d;
 
-    uberChrtSvg
+    futPrcChrtSvg
         .append('path')
         .attr('fill', 'none')
         .attr('stroke', d.color)
@@ -494,77 +579,56 @@ function renewedUberChart(dataset: any, titleCont: any, minPrice: number, maxPri
         .datum(d.history)
         .attr('d', line);
 
-    uberChrtSvg
+    futPrcChrtSvg
         .append('text')
         .html(d.name)
-        .style('font-size', '1.4rem')
+        .style('font-size', '0.8rem')
         .attr('fill', d.color)
         .attr('alignment-baseline', 'middle')
         .attr('x', width - 100)
         .attr('dx', '.5em')
         .attr('y', 30 + 20 * numSeries);
 
-    uberChrtSvg
+    futPrcChrtSvg
         .selectAll('myCircles')
         .data(d.history)
         .enter()
         .append('circle')
-        .attr('fill', d.color)
-        .attr('stroke', 'none')
+        .attr('fill', 'none')
+        .attr('stroke', d.color)
+        .attr('stroke-width', 0.8)
         .attr('cx', (e: any) => x(e.days))
         .attr('cy', (e: any) => y(e.price))
-        .attr('r', 4);
+        .attr('r', 2.5);
 
     numSeries = numSeries + 1;
   });
 
-  uberChrtSvg
+  futPrcChrtSvg
       .append('rect')
       .attr('width', width)
       .attr('height', height)
       .attr('opacity', 0)
-      .on('mousemove', drawTooltip)
-      .on('mouseout', removeTooltip);
+      .on('mousemove', onMouseMove)
+      .on('mouseout', onMouseOut);
 
-  function removeTooltip() {
+  function onMouseOut() {
     if (tooltip)
       tooltip.style('display', 'none');
     if (tooltipLine)
       tooltipLine.attr('stroke', 'none');
   }
 
-  function drawTooltip(event: any) {
+  function onMouseMove(event: any) {
     const daysArray: any[] = [];
     series.history.forEach((element) => {
       daysArray.push(element.days);
     });
-    const mousePos = d3.pointer(event);
-    const xCCL = event.clientX;
-    const yCCL = event.clientY;
-    const xCoord = x.invert(mousePos[0]);
-    const yCoord = mousePos[1];
 
-    const closestXCoord = daysArray.sort(
-        (a, b) => Math.abs(xCoord - a) - Math.abs(xCoord - b)
-    )[0];
-    const closestYCoord = dataset[0].history.find((h) => h.days === closestXCoord)
-        .price;
-    const closestInvX = (closestXCoord / (maxDays + 10)) * width;
-    const ttX = xCCL - mousePos[0] + closestInvX;
-    const ttY = yCCL - yCoord + y(closestYCoord);
-
-    const ttTextArray: any[] = [];
-    ttTextArray.push(
-        '<i>Number of days till expiration: ' + closestXCoord + '</i><br>'
-    );
-    dataset.forEach((d) => {
-      const seriesText =
-        d.name +
-        ': $' +
-        d.history.find((h) => h.days === closestXCoord).price +
-        '<br>';
-      ttTextArray.push(seriesText);
-    });
+    const xCoord = x.invert(d3.pointer(event)[0]);
+    const yCoord = d3.pointer(event)[1];
+    const closestXCoord = daysArray.sort((a, b) => Math.abs(xCoord - a) - Math.abs(xCoord - b))[0];
+    const closestYCoord = dataset[0].history.find((h) => h.days === closestXCoord).price;
 
     tooltipLine
         .attr('stroke', 'black')
@@ -574,15 +638,16 @@ function renewedUberChart(dataset: any, titleCont: any, minPrice: number, maxPri
         .attr('y2', height);
 
     tooltip
-        .html(ttTextArray.join(''))
+        .html('Number of days till expiration:' + closestXCoord)
         .style('display', 'block')
-        .style('left', ttX + 10)
-        .style('top', ttY + 25)
+        .style('left', event.pageX + 10)
+        .style('top', (event.pageY - yCoord + y(closestYCoord)) + 15)
         .selectAll()
-        .data(series)
+        .data(dataset)
         .enter()
         .append('div')
-        .style('color', (d : any) => d.color);
+        .style('color', (d : any) => d.color)
+        .html((d : any) => d.name + ': $' + d.history.find((h) => h.days === closestXCoord).price + '<br>');
   }
 }
 console.log('SqCore: Script END');
