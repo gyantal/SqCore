@@ -344,7 +344,7 @@ function shortMonthFormat(date: any) : string {
 }
 
 function renewedUberPctChgChart(uberStckChrtData) { // renewedUberPctChgChart
-  const margin = {top: 10, right: 30, bottom: 40, left: 60};
+  const margin = {top: 10, right: 30, bottom: 50, left: 60};
   const width = 760 - margin.left - margin.right;
   const height = 450 - margin.top - margin.bottom;
 

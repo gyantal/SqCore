@@ -369,7 +369,11 @@ namespace FinTechCommon
 
             // for penny stocks, IB and YF considers them for max. 4 digits. UWT price (both in IB ask-bid, YF history) 2020-03-19: 0.3160, 2020-03-23: 2302
             // sec.AdjCloseHistory = history.Select(r => (double)Math.Round(r.AdjustedClose, 4)).ToList();
-            adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
+            // YF API gives 6 digits precision. ATVI 2021-06-29: 95.045044
+            // YF CSV download gives 5 digits precision.  ATVI 2021-06-29: 95.04504
+            // YF HTML UI gives only 2 digits precision.  ATVI 2021-06-29: 95.05
+            // We don't want to lose valuable precision data, so keep the best precision, which is 6 digits. Especiall with penny stocks, where prices can be 0.0003, 0.0004.
+            adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 6)).ToArray();
 
             if (asset.AssetId.AssetTypeID == AssetType.Stock) // FinIndex like VIX, FTSE, SP500 don't have splits, so no costly YF download is necessary
             {
