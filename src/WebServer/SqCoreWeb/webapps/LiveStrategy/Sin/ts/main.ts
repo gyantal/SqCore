@@ -246,7 +246,7 @@ function processPctChngStckPriceChrt(sinStckChrtData: any[]) {
       .rangeRound([0, height])
       .padding(0.2);
 
-  const sinChrtSvg = d3.select('#sinAddictionChart')
+  const pctChrt = d3.select('#sinAddictionChart')
       .append('svg')
       .style('background', 'beige')
       .attr('width', width + margin.left + margin.right)
@@ -256,7 +256,7 @@ function processPctChngStckPriceChrt(sinStckChrtData: any[]) {
           'translate(' + margin.left + ',' + margin.top + ')');
 
   // add the X gridlines
-  sinChrtSvg.append('g')
+  pctChrt.append('g')
       .attr('class', 'grid')
       .attr('transform', 'translate(0,' + height + ')')
       .call(d3.axisBottom(xScale)
@@ -264,13 +264,13 @@ function processPctChngStckPriceChrt(sinStckChrtData: any[]) {
           .tickFormat((d: any) => d + '%'));
 
   // add the Y gridlines
-  sinChrtSvg.append('g')
+  pctChrt.append('g')
       .attr('class', 'grid')
       .call(d3.axisLeft(yScale)
           .tickSize(-width));
 
   // text label for the x axis
-  sinChrtSvg
+  pctChrt
       .append('text')
       .attr('transform', 'translate(' + width / 2 + ' ,' + (height + 30) + ')')
       .style('text-anchor', 'middle')
@@ -278,7 +278,7 @@ function processPctChngStckPriceChrt(sinStckChrtData: any[]) {
       .text('Percentage Change');
 
   const tooltipSinChart = d3.select('body').append('div').attr('id', 'toolTipSinChart');
-  sinChrtSvg.selectAll('.bar')
+  pctChrt.selectAll('.bar')
       .data(sinStckChrtData)
       .enter().append('rect')
       .attr('class', (r: any) => `bar ${ r.pctChgStckPrice < 0 ? 'negative': 'positive' }`)

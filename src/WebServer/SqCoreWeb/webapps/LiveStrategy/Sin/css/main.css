@@ -190,11 +190,11 @@ rect.negative {
 #toolTipSinChart {
   position: absolute;
   display: none;
-  min-width: 8rem;
+  min-width: 10rem;
   height: auto;
   background: #ffffff;
   border: 0.05rem solid orange;
   border-radius: 0.6rem;
   text-align: center;
-  font-size: 0.5rem;
+  font-size: 0.8rem;
 }
