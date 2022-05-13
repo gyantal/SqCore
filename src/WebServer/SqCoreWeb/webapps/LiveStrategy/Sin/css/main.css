@@ -2,6 +2,7 @@ html * {
   font-family: "Comic Sans MS", cursive, sans-serif;
   overflow: auto;
 }
+
 body {
   text-align: center;
 }
@@ -11,11 +12,13 @@ h1 {
   color: blue;
   font-size: 150%;
 }
+
 #titleCont {
   color: mediumblue;
   font-size: 110%;
   text-align: center;
 }
+
 .marginCommon {
   margin: 0.5rem;
 }
@@ -182,4 +185,16 @@ rect.negative {
   font-size: 0.5rem;
   color: blue;
   width: 10rem;
+}
+
+#toolTipSinChart {
+  position: absolute;
+  display: none;
+  min-width: 8rem;
+  height: auto;
+  background: #ffffff;
+  border: 0.05rem solid orange;
+  border-radius: 0.6rem;
+  text-align: center;
+  font-size: 0.5rem;
 }

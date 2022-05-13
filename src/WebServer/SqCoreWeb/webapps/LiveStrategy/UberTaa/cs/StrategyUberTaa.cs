@@ -2,8 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
+using SqCommon;
+using FinTechCommon;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
+using System.Diagnostics;
 
 namespace SqCoreWeb.Controllers
 {    
@@ -12,141 +17,721 @@ namespace SqCoreWeb.Controllers
     [ResponseCache(CacheProfileName = "NoCache")]
     public class StrategyUberTaaController : ControllerBase
     {
-        public class ExampleMessage
-        {
-            public string MsgType { get; set; } = string.Empty;
-
-            public string StringData { get; set; } = string.Empty;
-            public DateTime DateOrTime { get; set; }
-
-            public int IntData { get; set; }
-
-            public int IntDataFunction => 32 + (int)(IntData / 0.5556);
-        }
 
         public StrategyUberTaaController()
         {
         }
 
-        [HttpGet]
-        public IEnumerable<ExampleMessage> Get()
+        public class DailyData
         {
-            Thread.Sleep(5000);     // intentional delay to simulate a longer process to crunch data. This can be removed.
-
-            var userEmailClaim = HttpContext?.User?.Claims?.FirstOrDefault(p => p.Type == @"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
-            string email = userEmailClaim?.Value  ?? "Unknown email";
-
-            var firstMsgToSend = new ExampleMessage
-            {
-                MsgType = "AdminMsg",
-                StringData = $"Cookies says your email is '{email}'.",
-                DateOrTime = DateTime.Now,
-                IntData = 0,                
-            };
-
-            string[] RandomStringDataToSend = new[]  { "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching" };
-            var rng = new Random();
-            return (new ExampleMessage[] { firstMsgToSend }.Concat(Enumerable.Range(1, 5).Select(index => new ExampleMessage
-            {
-                MsgType = "Msg-type",
-                StringData = RandomStringDataToSend[rng.Next(RandomStringDataToSend.Length)],
-                DateOrTime = DateTime.Now.AddDays(index),
-                IntData = rng.Next(-20, 55)                
-            }))).ToArray();
+            public DateTime Date { get; set; }
+            public double AdjClosePrice { get; set; }
         }
+
+        [HttpGet]
+
         public ActionResult Index(int commo)
         {
-            try
-            {
-                switch (commo)
+            switch (commo)
                 {
                     case 1: //GameChanger
-                        return Content(GetStr(1), "text/html");
+                        return Content(GetStrGameChng(), "text/html");
                     case 2: //Global Asset
-                        return Content(GetStr(2), "text/html");
+                        return Content(GetStrGlobalAssets(), "text/html");
                     default:
                         break;
                 }
                 return Content(GetStr2(), "text/html");
-            }
-            catch
-            {
-                return Content(GetStr2(), "text/html");
-            }
         }
 
         public string GetStr2()
         {
             return "Error";
         }
-        public string GetStr(int p_basketSelector)
+        // Under development - Daya
+        public string GetStrGameChng()
         {
-            // throw new NotImplementedException();
-             //Defining asset lists.
-            // string[] clmtAssetList = new string[]{ "^GSPC", "XLU", "VTI" };
-            // string[] gchAssetList = new string[]{ "AAPL", "ADBE", "AMZN", "BABA", "CRM", "CRWD", "ETSY", "FB", "GOOGL", "ISRG", "MA", "MELI", "MSFT", "NFLX", "NOW", "NVDA", "PYPL", "QCOM", "ROKU", "SE", "SHOP", "SQ", "TDOC", "TWLO", "V", "ZM", "TLT"}; //TLT is used as a cashEquivalent
-            // string[] gmrAssetList = new string[] { "MDY", "ILF", "FEZ", "EEM", "EPP", "VNQ", "TLT" }; //TLT is used as a cashEquivalent
-            // string[] usedAssetList = Array.Empty<string>();
-            // string titleString;
-            // switch (p_basketSelector)
-            // {
-            //     case 1:
-            //         usedAssetList = gchAssetList;
-            //         titleString = "GameChangers";
-            //         break;
-            //     case 2:
-            //         usedAssetList = gmrAssetList;
-            //         titleString = "Global Assets";
-            //         break;
-            // }
-            // string[] allAssetList = new string[clmtAssetList.Length+usedAssetList.Length];
-            // clmtAssetList.CopyTo(allAssetList, 0);
-            // usedAssetList.CopyTo(allAssetList, clmtAssetList.Length);
+        //     // throw new NotImplementedException();
+        //     //  Defining asset lists.
+        //     string[] clmtAssetList = new string[]{ "^GSPC", "XLU", "VTI" };
+        //     string[] gchAssetList = new string[]{ "AAPL", "ADBE", "AMZN", "BABA", "CRM", "CRWD", "ETSY", "FB", "GOOGL", "ISRG", "MA", "MELI", "MSFT", "NFLX", "NOW", "NVDA", "PYPL", "QCOM", "ROKU", "SE", "SHOP", "SQ", "TDOC", "TWLO", "V", "ZM", "TLT"}; //TLT is used as a cashEquivalent
+        //     string[] gmrAssetList = new string[] { "MDY", "ILF", "FEZ", "EEM", "EPP", "VNQ", "TLT" }; //TLT is used as a cashEquivalent
+        //     string[] usedAssetList = Array.Empty<string>();
 
-            // string gchGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/values/A1:AF2000?key=";
-            // string gmrGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/values/A1:Z2000?key=";
-            // string gchGSheet2Ref = "https://docs.google.com/spreadsheets/d/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/edit?usp=sharing";
-            // string gmrGSheet2Ref = "https://docs.google.com/spreadsheets/d/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/edit?usp=sharing";
-            // string gchGDocRef = "https://docs.google.com/document/d/1JPyRJY7VrW7hQMagYLtB_ruTzEKEd8POHQy6sZ_Nnyk/edit?usp=sharing";
-            // string gmrGDocRef = "https://docs.google.com/document/d/1-hDoFu1buI1XHvJZyt6Cq813Hw1TQWGl0jE7mwwS3l0/edit?usp=sharing";
 
-            // string usedGSheetRef = (p_basketSelector==1) ? gchGSheetRef : gmrGSheetRef;
-            // string usedGSheet2Ref = (p_basketSelector == 1) ? gchGSheet2Ref : gmrGSheet2Ref;
-            // string usedGDocRef = (p_basketSelector == 1) ? gchGDocRef : gmrGDocRef;
+
+        //     string[] allAssetList = new string[clmtAssetList.Length+usedAssetList.Length];
+        //     clmtAssetList.CopyTo(allAssetList, 0);
+        //     usedAssetList.CopyTo(allAssetList, clmtAssetList.Length);
+
+        //     string gchGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/values/A1:AF2000?key=";
+        //     string gmrGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/values/A1:Z2000?key=";
+        //     string gchGSheet2Ref = "https://docs.google.com/spreadsheets/d/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/edit?usp=sharing";
+        //     string gmrGSheet2Ref = "https://docs.google.com/spreadsheets/d/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/edit?usp=sharing";
+        //     string gchGDocRef = "https://docs.google.com/document/d/1JPyRJY7VrW7hQMagYLtB_ruTzEKEd8POHQy6sZ_Nnyk/edit?usp=sharing";
+        //     string gmrGDocRef = "https://docs.google.com/document/d/1-hDoFu1buI1XHvJZyt6Cq813Hw1TQWGl0jE7mwwS3l0/edit?usp=sharing";
+
+        //     //Get, split and convert GSheet data
+        //     var gSheetReadResult = UberTAAGChGoogleApiGsheet(gchGSheetRef);
+        //     string? content = ((ContentResult)gSheetReadResult).Content;
+        //     string? gSheetString = content;
+        //     Tuple<double[], int[,], int[], int[], string[], int[], int[]> gSheetResToFinCalc = GSheetConverter(gSheetString, allAssetList);
+        //     Debug.WriteLine("The Data from gSheet is :", gSheetResToFinCalc);
+
+        //     int thresholdLower = 25; //Upper threshold is 100-thresholdLower.
+        //     int[] lookbackDays = new int[] { 60, 120, 180, 252 };
+        //     int volDays = 20;
+
+        //    //Collecting and splitting price data got from SQL Server
+        //     (IList<List<DailyData>>, List<List<DailyData>>, List<DailyData>) dataListTupleFromSQServer = GetSinStockHistData(allAssetList);
+
+        //     IList<List<DailyData>> quotesData = dataListTupleFromSQServer.Item1;
+        //     IList<List<DailyData>> quotesForClmtData = dataListTupleFromSQServer.Item2;
+        //     List<DailyData> cashEquivalentQuotesData = dataListTupleFromSQServer.Item3;
+
+        //     //Calculating basic weights based on percentile channels - base Varadi TAA
+        //     Tuple<double[], double[,]> taaWeightResultsTuple = TaaWeights(quotesData, lookbackDays, volDays, thresholdLower);
+        //     Debug.WriteLine("The Data from gSheet is :", taaWeightResultsTuple);
+            // //Calculating CLMT data
+            // var clmtRes = CLMTCalc(quotesForClmtData);
+
+            // //Setting last data date
+            // double lastDataDate = (clmtRes[0][^1] == taaWeightResultsTuple.Item1[^1]) ? clmtRes[0][^1] : 0;
+
+            Thread.Sleep(1000);     // intentional delay to simulate a longer process to crunch data. This can be removed.
+            string mockupTestResponse = @"{
+                ""titleCont"": ""Game Changer"",
+                ""warningCont"": """",
+                ""requestTime"": ""Request time (UTC): 2022-03-30 11:14:23"",
+                ""lastDataTime"": ""Last data time (UTC): Close price on 2022-03-29"",
+                ""currentPV"": ""516,395"",
+                ""currentPVDate"": ""2022-02-15"",
+                ""clmtSign"": ""bearish"",
+                ""xluVtiSign"": ""bearish"",
+                ""spxMASign"": ""bearish"",
+                ""gDocRef"": ""https://docs.google.com/document/d/1-hDoFu1buI1XHvJZyt6Cq813Hw1TQWGl0jE7mwwS3l0/edit?usp=sharing"",
+                ""gSheetRef"": ""https://docs.google.com/spreadsheets/d/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/edit?usp=sharing"",
+                ""assetNames"": ""MDY, ILF, FEZ, EEM, EPP, VNQ, TLT"",
+                ""assetNames2"": ""MDY, ILF, FEZ, EEM, EPP, VNQ, TLT, Cash"",
+                ""currPosNum"": ""0, 0, 0, 0, 0, 0, 3950, $0K"",
+                ""currPosVal"": ""$0K, $0K, $0K, $0K, $0K, $0K, $516K, $0K"",
+                ""nextPosNum"": ""0, 2370, 0, 0, 852, 935, 2285, $0K"",
+                ""nextPosVal"": ""$0K, $72K, $0K, $0K, $43K, $103K, $299K, $0K"",
+                ""posNumDiff"": ""0, 2370, 0, 0, 852, 935, -1665, $0K"",
+                ""posValDiff"": ""$0K, $72K, $0K, $0K, $43K, $103K, $-218K, $0K"",
+                ""nextTradingDay"": ""2022-03-30"",
+                ""currPosDate"": ""2022-02-15"",
+                ""prevPositionsMtx"": "", MDY, ILF, FEZ, EEM, EPP, VNQ, TLT, Cash, Eventß 2022-03-30, 0%, 13.91%, 0%, 0%, 8.24%, 20%, 57.85%, 0%, ---ß 2022-03-29, 0%, 21.6%, 0%, 0%, 0%, 0%, 78.4%, 0%, ---ß 2022-03-28, 0%, 14.95%, 0%, 0%, 0%, 0%, 85.05%, 0%, ---ß 2022-03-25, 0%, 15.29%, 0%, 0%, 0%, 0%, 84.71%, 0%, ---ß 2022-03-24, 0%, 15.01%, 0%, 0%, 0%, 0%, 84.99%, 0%, ---ß 2022-03-23, 0%, 14.97%, 0%, 0%, 0%, 0%, 85.03%, 0%, ---ß 2022-03-22, 0%, 15.03%, 0%, 0%, 0%, 0%, 84.97%, 0%, ---ß 2022-03-21, 0%, 15.25%, 0%, 0%, 0%, 0%, 84.75%, 0%, ---ß 2022-03-18, 0%, 13.1%, 0%, 0%, 0%, 0%, 86.9%, 0%, ---ß 2022-03-17, 0%, 0%, 0%, 0%, 0%, 0%, 100%, 0%, FOMC+1ß 2022-03-16, 0%, 31.23%, 0%, 0%, 0%, 0%, 68.77%, 0%, FOMC0ß 2022-03-15, 0%, 31.37%, 0%, 0%, 0%, 0%, 68.63%, 0%, FOMC-1ß 2022-03-14, 0%, 0%, 0%, 0%, 0%, 0%, 100%, 0%, FOMC-2ß 2022-03-11, 0%, 0%, 0%, 0%, 0%, 0%, 100%, 0%, FOMC-3ß 2022-03-10, 0%, 34.56%, 0%, 0%, 0%, 0%, 65.44%, 0%, FOMC-4ß 2022-03-09, 0%, 19.51%, 0%, 0%, 0%, 0%, 80.49%, 0%, ---ß 2022-03-08, 0%, 19.31%, 0%, 0%, 0%, 0%, 80.69%, 0%, ---ß 2022-03-07, 0%, 21.09%, 0%, 0%, 0%, 0%, 78.91%, 0%, ---ß 2022-03-04, 0%, 20.09%, 0%, 0%, 0%, 0%, 79.91%, 0%, ---ß 2022-03-03, 0%, 0%, 0%, 0%, 0%, 0%, 100%, 0%, ---"",
+                ""prevAssEventMtx"": ""66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFFß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF0000,FF0000,FF0000,FF0000,FF0000,FF0000,FFE4C4,FFE4C4,FFFF00ß FF6633,228B22,228B22,228B22,228B22,228B22,228B22,FFE4C4,FFE4C4,FFFF00ß FF6633,228B22,228B22,228B22,228B22,228B22,228B22,FFE4C4,FFE4C4,FFFF00ß FF6633,FF0000,FF0000,FF0000,FF0000,FF0000,FF0000,FFE4C4,FFE4C4,FFFF00ß FF6633,FF0000,FF0000,FF0000,FF0000,FF0000,FF0000,FFE4C4,FFE4C4,FFFF00ß FF6633,228B22,228B22,228B22,228B22,228B22,228B22,FFE4C4,FFE4C4,FFFF00ß FF6633,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,FFE4C4,FFE4C4,FFFF00ß FF6633,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,FFE4C4,FFE4C4,FFFF00ß FF6633,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,FFE4C4,FFE4C4,FFFF00ß FF6633,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,FFE4C4,FFE4C4,FFFF00ß FF6633,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,FFE4C4,FFE4C4,FFFF00"",
+                ""futPositionsMtx"": "", MDY, ILF, FEZ, EEM, EPP, VNQ, Eventß 2022-03-31, ---, ---, ---, ---, ---, ---, ---ß 2022-04-01, ---, ---, ---, ---, ---, ---, ---ß 2022-04-04, ---, ---, ---, ---, ---, ---, ---ß 2022-04-05, ---, ---, ---, ---, ---, ---, ---ß 2022-04-06, ---, ---, ---, ---, ---, ---, ---ß 2022-04-07, ---, ---, ---, ---, ---, ---, ---ß 2022-04-08, ---, ---, ---, ---, ---, ---, ---ß 2022-04-11, ---, ---, ---, ---, ---, ---, ---ß 2022-04-12, ---, ---, ---, ---, ---, ---, ---ß 2022-04-13, ---, ---, ---, ---, ---, ---, ---"",
+                ""futAssEventMtx"": ""66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFFß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00"",
+                ""chartLength"": ""20"",
+                ""assetChangesToChartMtx"": ""2022-03-01, 0%, 0%, 0%, 0%, 0%, 0%ß 2022-03-02, 2.65%, 1.3%, 2.02%, 0.17%, 1.67%, 1.87%ß 2022-03-03, 1.78%, 3.12%, -0.87%, -1.24%, 0.72%, 2.71%ß 2022-03-04, 0.21%, 2.23%, -6.05%, -3.23%, 1.06%, 3.18%ß 2022-03-07, -3.56%, -1.19%, -9.55%, -6.85%, -1.11%, 1.14%ß 2022-03-08, -3.25%, -0.22%, -6.9%, -6.55%, -2.32%, 0.65%ß 2022-03-09, -0.5%, 2.41%, -0.37%, -3.9%, -0.41%, 2.2%ß 2022-03-10, -0.48%, 2.15%, -3.35%, -5.7%, 0.35%, 2.45%ß 2022-03-11, -1.51%, 0.63%, -4.17%, -7.68%, -0.48%, 1.64%ß 2022-03-14, -2.33%, -1.71%, -2.12%, -9.91%, -1.5%, 0.84%ß 2022-03-15, -0.87%, -2.9%, -1.17%, -9.78%, -1.11%, 1.52%ß 2022-03-16, 1.95%, -0.48%, 3.55%, -2.52%, 3.3%, 2.73%ß 2022-03-17, 2.94%, 2.19%, 3.67%, -3.01%, 4.06%, 4.31%ß 2022-03-18, 3.45%, 4.53%, 4.02%, -1.63%, 5.95%, 4.31%ß 2022-03-21, 3.17%, 6.76%, 2.35%, -3.14%, 5.47%, 3.68%ß 2022-03-22, 3.81%, 7.91%, 3.85%, -1.39%, 6.45%, 3.94%ß 2022-03-23, 1.88%, 9.06%, 1.45%, -2.04%, 6%, 2.22%ß 2022-03-24, 3.06%, 10.95%, 2.35%, -1.52%, 7.39%, 2.86%ß 2022-03-25, 3.79%, 11.66%, 2.45%, -2.3%, 7.47%, 4.15%ß 2022-03-28, 3.94%, 10.95%, 3.25%, -1.97%, 7.1%, 5.25%ß 2022-03-29, 6.16%, 12.55%, 6.65%, -0.3%, 8.52%, 8.34%"",
+                ""assetDailyChangesToChartMtx"": ""2022-03-01, -1.91%, 0.11%, -4.12%, -1.33%, -1.31%, -0.53%ß 2022-03-02, 2.65%, 1.3%, 2.02%, 0.17%, 1.67%, 1.87%ß 2022-03-03, -0.85%, 1.8%, -2.84%, -1.41%, -0.94%, 0.82%ß 2022-03-04, -1.54%, -0.86%, -5.22%, -2.02%, 0.35%, 0.46%ß 2022-03-07, -3.76%, -3.34%, -3.72%, -3.74%, -2.15%, -1.98%ß 2022-03-08, 0.32%, 0.98%, 2.93%, 0.33%, -1.23%, -0.48%ß 2022-03-09, 2.85%, 2.64%, 7%, 2.83%, 1.96%, 1.54%ß 2022-03-10, 0.02%, -0.25%, -2.98%, -1.87%, 0.76%, 0.25%ß 2022-03-11, -1.04%, -1.49%, -0.85%, -2.09%, -0.82%, -0.79%ß 2022-03-14, -0.83%, -2.32%, 2.14%, -2.42%, -1.03%, -0.78%ß 2022-03-15, 1.5%, -1.21%, 0.97%, 0.14%, 0.4%, 0.67%ß 2022-03-16, 2.84%, 2.49%, 4.78%, 8.05%, 4.46%, 1.19%ß 2022-03-17, 0.97%, 2.69%, 0.12%, -0.51%, 0.74%, 1.55%ß 2022-03-18, 0.49%, 2.29%, 0.34%, 1.43%, 1.82%, 0%ß 2022-03-21, -0.27%, 2.13%, -1.61%, -1.54%, -0.45%, -0.61%ß 2022-03-22, 0.62%, 1.08%, 1.46%, 1.81%, 0.93%, 0.26%ß 2022-03-23, -1.86%, 1.07%, -2.31%, -0.66%, -0.43%, -1.66%ß 2022-03-24, 1.15%, 1.74%, 0.89%, 0.53%, 1.31%, 0.63%ß 2022-03-25, 0.71%, 0.64%, 0.1%, -0.79%, 0.08%, 1.25%ß 2022-03-28, 0.15%, -0.63%, 0.78%, 0.33%, -0.34%, 1.06%ß 2022-03-29, 2.14%, 1.44%, 3.29%, 1.7%, 1.32%, 2.93%"",
+                ""spxMAToChartMtx"": ""2022-03-01, 4306, 4545, 4463ß 2022-03-02, 4387, 4540, 4464ß 2022-03-03, 4363, 4536, 4465ß 2022-03-04, 4329, 4530, 4466ß 2022-03-07, 4201, 4520, 4466ß 2022-03-08, 4171, 4509, 4466ß 2022-03-09, 4278, 4498, 4467ß 2022-03-10, 4260, 4488, 4467ß 2022-03-11, 4204, 4476, 4467ß 2022-03-14, 4173, 4464, 4467ß 2022-03-15, 4262, 4454, 4467ß 2022-03-16, 4358, 4445, 4468ß 2022-03-17, 4412, 4437, 4469ß 2022-03-18, 4463, 4433, 4470ß 2022-03-21, 4461, 4428, 4472ß 2022-03-22, 4512, 4425, 4473ß 2022-03-23, 4456, 4420, 4474ß 2022-03-24, 4520, 4417, 4476ß 2022-03-25, 4543, 4413, 4477ß 2022-03-28, 4541, 4411, 4479ß 2022-03-29, 4632, 4410, 4481"",
+                ""xluVtiPercToChartMtx"": ""2022-03-01, 41, 42ß 2022-03-02, 49, 44ß 2022-03-03, 50, 41ß 2022-03-04, 58, 44ß 2022-03-07, 63, 38ß 2022-03-08, 59, 37ß 2022-03-09, 56, 41ß 2022-03-10, 57, 37ß 2022-03-11, 64, 37ß 2022-03-14, 63, 39ß 2022-03-15, 68, 44ß 2022-03-16, 69, 45ß 2022-03-17, 70, 47ß 2022-03-18, 66, 53ß 2022-03-21, 67, 55ß 2022-03-22, 68, 59ß 2022-03-23, 74, 59ß 2022-03-24, 74, 59ß 2022-03-25, 72, 56ß 2022-03-28, 72, 57ß 2022-03-29, 78, 63""
+                }";
+            return mockupTestResponse;
+        }
+        public string GetStrGlobalAssets()
+        {
             Thread.Sleep(1000);     // intentional delay to simulate a longer process to crunch data. This can be removed.
             string mockupTestResponse = @"{
                 ""titleCont"": ""Global Assets"",
-""warningCont"": """",
-""requestTime"": ""Request time (UTC): 2022-03-30 11:14:23"",
-""lastDataTime"": ""Last data time (UTC): Close price on 2022-03-29"",
-""currentPV"": ""516,395"",
-""currentPVDate"": ""2022-02-15"",
-""clmtSign"": ""bearish"",
-""xluVtiSign"": ""bearish"",
-""spxMASign"": ""bearish"",
-""gDocRef"": ""https://docs.google.com/document/d/1-hDoFu1buI1XHvJZyt6Cq813Hw1TQWGl0jE7mwwS3l0/edit?usp=sharing"",
-""gSheetRef"": ""https://docs.google.com/spreadsheets/d/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/edit?usp=sharing"",
-""assetNames"": ""MDY, ILF, FEZ, EEM, EPP, VNQ, TLT"",
-""assetNames2"": ""MDY, ILF, FEZ, EEM, EPP, VNQ, TLT, Cash"",
-""currPosNum"": ""0, 0, 0, 0, 0, 0, 3950, $0K"",
-""currPosVal"": ""$0K, $0K, $0K, $0K, $0K, $0K, $516K, $0K"",
-""nextPosNum"": ""0, 2370, 0, 0, 852, 935, 2285, $0K"",
-""nextPosVal"": ""$0K, $72K, $0K, $0K, $43K, $103K, $299K, $0K"",
-""posNumDiff"": ""0, 2370, 0, 0, 852, 935, -1665, $0K"",
-""posValDiff"": ""$0K, $72K, $0K, $0K, $43K, $103K, $-218K, $0K"",
-""nextTradingDay"": ""2022-03-30"",
-""currPosDate"": ""2022-02-15"",
-""prevPositionsMtx"": "", MDY, ILF, FEZ, EEM, EPP, VNQ, TLT, Cash, Eventß 2022-03-30, 0%, 13.91%, 0%, 0%, 8.24%, 20%, 57.85%, 0%, ---ß 2022-03-29, 0%, 21.6%, 0%, 0%, 0%, 0%, 78.4%, 0%, ---ß 2022-03-28, 0%, 14.95%, 0%, 0%, 0%, 0%, 85.05%, 0%, ---ß 2022-03-25, 0%, 15.29%, 0%, 0%, 0%, 0%, 84.71%, 0%, ---ß 2022-03-24, 0%, 15.01%, 0%, 0%, 0%, 0%, 84.99%, 0%, ---ß 2022-03-23, 0%, 14.97%, 0%, 0%, 0%, 0%, 85.03%, 0%, ---ß 2022-03-22, 0%, 15.03%, 0%, 0%, 0%, 0%, 84.97%, 0%, ---ß 2022-03-21, 0%, 15.25%, 0%, 0%, 0%, 0%, 84.75%, 0%, ---ß 2022-03-18, 0%, 13.1%, 0%, 0%, 0%, 0%, 86.9%, 0%, ---ß 2022-03-17, 0%, 0%, 0%, 0%, 0%, 0%, 100%, 0%, FOMC+1ß 2022-03-16, 0%, 31.23%, 0%, 0%, 0%, 0%, 68.77%, 0%, FOMC0ß 2022-03-15, 0%, 31.37%, 0%, 0%, 0%, 0%, 68.63%, 0%, FOMC-1ß 2022-03-14, 0%, 0%, 0%, 0%, 0%, 0%, 100%, 0%, FOMC-2ß 2022-03-11, 0%, 0%, 0%, 0%, 0%, 0%, 100%, 0%, FOMC-3ß 2022-03-10, 0%, 34.56%, 0%, 0%, 0%, 0%, 65.44%, 0%, FOMC-4ß 2022-03-09, 0%, 19.51%, 0%, 0%, 0%, 0%, 80.49%, 0%, ---ß 2022-03-08, 0%, 19.31%, 0%, 0%, 0%, 0%, 80.69%, 0%, ---ß 2022-03-07, 0%, 21.09%, 0%, 0%, 0%, 0%, 78.91%, 0%, ---ß 2022-03-04, 0%, 20.09%, 0%, 0%, 0%, 0%, 79.91%, 0%, ---ß 2022-03-03, 0%, 0%, 0%, 0%, 0%, 0%, 100%, 0%, ---"",
-""prevAssEventMtx"": ""66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFFß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF0000,FF0000,FF0000,FF0000,FF0000,FF0000,FFE4C4,FFE4C4,FFFF00ß FF6633,228B22,228B22,228B22,228B22,228B22,228B22,FFE4C4,FFE4C4,FFFF00ß FF6633,228B22,228B22,228B22,228B22,228B22,228B22,FFE4C4,FFE4C4,FFFF00ß FF6633,FF0000,FF0000,FF0000,FF0000,FF0000,FF0000,FFE4C4,FFE4C4,FFFF00ß FF6633,FF0000,FF0000,FF0000,FF0000,FF0000,FF0000,FFE4C4,FFE4C4,FFFF00ß FF6633,228B22,228B22,228B22,228B22,228B22,228B22,FFE4C4,FFE4C4,FFFF00ß FF6633,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,FFE4C4,FFE4C4,FFFF00ß FF6633,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,FFE4C4,FFE4C4,FFFF00ß FF6633,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,FFE4C4,FFE4C4,FFFF00ß FF6633,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,FFE4C4,FFE4C4,FFFF00ß FF6633,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,FFE4C4,FFE4C4,FFFF00"",
-""futPositionsMtx"": "", MDY, ILF, FEZ, EEM, EPP, VNQ, Eventß 2022-03-31, ---, ---, ---, ---, ---, ---, ---ß 2022-04-01, ---, ---, ---, ---, ---, ---, ---ß 2022-04-04, ---, ---, ---, ---, ---, ---, ---ß 2022-04-05, ---, ---, ---, ---, ---, ---, ---ß 2022-04-06, ---, ---, ---, ---, ---, ---, ---ß 2022-04-07, ---, ---, ---, ---, ---, ---, ---ß 2022-04-08, ---, ---, ---, ---, ---, ---, ---ß 2022-04-11, ---, ---, ---, ---, ---, ---, ---ß 2022-04-12, ---, ---, ---, ---, ---, ---, ---ß 2022-04-13, ---, ---, ---, ---, ---, ---, ---"",
-""futAssEventMtx"": ""66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFFß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00"",
-""chartLength"": ""20"",
-""assetChangesToChartMtx"": ""2022-03-01, 0%, 0%, 0%, 0%, 0%, 0%ß 2022-03-02, 2.65%, 1.3%, 2.02%, 0.17%, 1.67%, 1.87%ß 2022-03-03, 1.78%, 3.12%, -0.87%, -1.24%, 0.72%, 2.71%ß 2022-03-04, 0.21%, 2.23%, -6.05%, -3.23%, 1.06%, 3.18%ß 2022-03-07, -3.56%, -1.19%, -9.55%, -6.85%, -1.11%, 1.14%ß 2022-03-08, -3.25%, -0.22%, -6.9%, -6.55%, -2.32%, 0.65%ß 2022-03-09, -0.5%, 2.41%, -0.37%, -3.9%, -0.41%, 2.2%ß 2022-03-10, -0.48%, 2.15%, -3.35%, -5.7%, 0.35%, 2.45%ß 2022-03-11, -1.51%, 0.63%, -4.17%, -7.68%, -0.48%, 1.64%ß 2022-03-14, -2.33%, -1.71%, -2.12%, -9.91%, -1.5%, 0.84%ß 2022-03-15, -0.87%, -2.9%, -1.17%, -9.78%, -1.11%, 1.52%ß 2022-03-16, 1.95%, -0.48%, 3.55%, -2.52%, 3.3%, 2.73%ß 2022-03-17, 2.94%, 2.19%, 3.67%, -3.01%, 4.06%, 4.31%ß 2022-03-18, 3.45%, 4.53%, 4.02%, -1.63%, 5.95%, 4.31%ß 2022-03-21, 3.17%, 6.76%, 2.35%, -3.14%, 5.47%, 3.68%ß 2022-03-22, 3.81%, 7.91%, 3.85%, -1.39%, 6.45%, 3.94%ß 2022-03-23, 1.88%, 9.06%, 1.45%, -2.04%, 6%, 2.22%ß 2022-03-24, 3.06%, 10.95%, 2.35%, -1.52%, 7.39%, 2.86%ß 2022-03-25, 3.79%, 11.66%, 2.45%, -2.3%, 7.47%, 4.15%ß 2022-03-28, 3.94%, 10.95%, 3.25%, -1.97%, 7.1%, 5.25%ß 2022-03-29, 6.16%, 12.55%, 6.65%, -0.3%, 8.52%, 8.34%"",
-""assetDailyChangesToChartMtx"": ""2022-03-01, -1.91%, 0.11%, -4.12%, -1.33%, -1.31%, -0.53%ß 2022-03-02, 2.65%, 1.3%, 2.02%, 0.17%, 1.67%, 1.87%ß 2022-03-03, -0.85%, 1.8%, -2.84%, -1.41%, -0.94%, 0.82%ß 2022-03-04, -1.54%, -0.86%, -5.22%, -2.02%, 0.35%, 0.46%ß 2022-03-07, -3.76%, -3.34%, -3.72%, -3.74%, -2.15%, -1.98%ß 2022-03-08, 0.32%, 0.98%, 2.93%, 0.33%, -1.23%, -0.48%ß 2022-03-09, 2.85%, 2.64%, 7%, 2.83%, 1.96%, 1.54%ß 2022-03-10, 0.02%, -0.25%, -2.98%, -1.87%, 0.76%, 0.25%ß 2022-03-11, -1.04%, -1.49%, -0.85%, -2.09%, -0.82%, -0.79%ß 2022-03-14, -0.83%, -2.32%, 2.14%, -2.42%, -1.03%, -0.78%ß 2022-03-15, 1.5%, -1.21%, 0.97%, 0.14%, 0.4%, 0.67%ß 2022-03-16, 2.84%, 2.49%, 4.78%, 8.05%, 4.46%, 1.19%ß 2022-03-17, 0.97%, 2.69%, 0.12%, -0.51%, 0.74%, 1.55%ß 2022-03-18, 0.49%, 2.29%, 0.34%, 1.43%, 1.82%, 0%ß 2022-03-21, -0.27%, 2.13%, -1.61%, -1.54%, -0.45%, -0.61%ß 2022-03-22, 0.62%, 1.08%, 1.46%, 1.81%, 0.93%, 0.26%ß 2022-03-23, -1.86%, 1.07%, -2.31%, -0.66%, -0.43%, -1.66%ß 2022-03-24, 1.15%, 1.74%, 0.89%, 0.53%, 1.31%, 0.63%ß 2022-03-25, 0.71%, 0.64%, 0.1%, -0.79%, 0.08%, 1.25%ß 2022-03-28, 0.15%, -0.63%, 0.78%, 0.33%, -0.34%, 1.06%ß 2022-03-29, 2.14%, 1.44%, 3.29%, 1.7%, 1.32%, 2.93%"",
-""spxMAToChartMtx"": ""2022-03-01, 4306, 4545, 4463ß 2022-03-02, 4387, 4540, 4464ß 2022-03-03, 4363, 4536, 4465ß 2022-03-04, 4329, 4530, 4466ß 2022-03-07, 4201, 4520, 4466ß 2022-03-08, 4171, 4509, 4466ß 2022-03-09, 4278, 4498, 4467ß 2022-03-10, 4260, 4488, 4467ß 2022-03-11, 4204, 4476, 4467ß 2022-03-14, 4173, 4464, 4467ß 2022-03-15, 4262, 4454, 4467ß 2022-03-16, 4358, 4445, 4468ß 2022-03-17, 4412, 4437, 4469ß 2022-03-18, 4463, 4433, 4470ß 2022-03-21, 4461, 4428, 4472ß 2022-03-22, 4512, 4425, 4473ß 2022-03-23, 4456, 4420, 4474ß 2022-03-24, 4520, 4417, 4476ß 2022-03-25, 4543, 4413, 4477ß 2022-03-28, 4541, 4411, 4479ß 2022-03-29, 4632, 4410, 4481"",
-""xluVtiPercToChartMtx"": ""2022-03-01, 41, 42ß 2022-03-02, 49, 44ß 2022-03-03, 50, 41ß 2022-03-04, 58, 44ß 2022-03-07, 63, 38ß 2022-03-08, 59, 37ß 2022-03-09, 56, 41ß 2022-03-10, 57, 37ß 2022-03-11, 64, 37ß 2022-03-14, 63, 39ß 2022-03-15, 68, 44ß 2022-03-16, 69, 45ß 2022-03-17, 70, 47ß 2022-03-18, 66, 53ß 2022-03-21, 67, 55ß 2022-03-22, 68, 59ß 2022-03-23, 74, 59ß 2022-03-24, 74, 59ß 2022-03-25, 72, 56ß 2022-03-28, 72, 57ß 2022-03-29, 78, 63""
-}";
+                ""warningCont"": """",
+                ""requestTime"": ""Request time (UTC): 2022-03-30 11:14:23"",
+                ""lastDataTime"": ""Last data time (UTC): Close price on 2022-03-29"",
+                ""currentPV"": ""516,395"",
+                ""currentPVDate"": ""2022-02-15"",
+                ""clmtSign"": ""bearish"",
+                ""xluVtiSign"": ""bearish"",
+                ""spxMASign"": ""bearish"",
+                ""gDocRef"": ""https://docs.google.com/document/d/1-hDoFu1buI1XHvJZyt6Cq813Hw1TQWGl0jE7mwwS3l0/edit?usp=sharing"",
+                ""gSheetRef"": ""https://docs.google.com/spreadsheets/d/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/edit?usp=sharing"",
+                ""assetNames"": ""MDY, ILF, FEZ, EEM, EPP, VNQ, TLT"",
+                ""assetNames2"": ""MDY, ILF, FEZ, EEM, EPP, VNQ, TLT, Cash"",
+                ""currPosNum"": ""0, 0, 0, 0, 0, 0, 3950, $0K"",
+                ""currPosVal"": ""$0K, $0K, $0K, $0K, $0K, $0K, $516K, $0K"",
+                ""nextPosNum"": ""0, 2370, 0, 0, 852, 935, 2285, $0K"",
+                ""nextPosVal"": ""$0K, $72K, $0K, $0K, $43K, $103K, $299K, $0K"",
+                ""posNumDiff"": ""0, 2370, 0, 0, 852, 935, -1665, $0K"",
+                ""posValDiff"": ""$0K, $72K, $0K, $0K, $43K, $103K, $-218K, $0K"",
+                ""nextTradingDay"": ""2022-03-30"",
+                ""currPosDate"": ""2022-02-15"",
+                ""prevPositionsMtx"": "", MDY, ILF, FEZ, EEM, EPP, VNQ, TLT, Cash, Eventß 2022-03-30, 0%, 13.91%, 0%, 0%, 8.24%, 20%, 57.85%, 0%, ---ß 2022-03-29, 0%, 21.6%, 0%, 0%, 0%, 0%, 78.4%, 0%, ---ß 2022-03-28, 0%, 14.95%, 0%, 0%, 0%, 0%, 85.05%, 0%, ---ß 2022-03-25, 0%, 15.29%, 0%, 0%, 0%, 0%, 84.71%, 0%, ---ß 2022-03-24, 0%, 15.01%, 0%, 0%, 0%, 0%, 84.99%, 0%, ---ß 2022-03-23, 0%, 14.97%, 0%, 0%, 0%, 0%, 85.03%, 0%, ---ß 2022-03-22, 0%, 15.03%, 0%, 0%, 0%, 0%, 84.97%, 0%, ---ß 2022-03-21, 0%, 15.25%, 0%, 0%, 0%, 0%, 84.75%, 0%, ---ß 2022-03-18, 0%, 13.1%, 0%, 0%, 0%, 0%, 86.9%, 0%, ---ß 2022-03-17, 0%, 0%, 0%, 0%, 0%, 0%, 100%, 0%, FOMC+1ß 2022-03-16, 0%, 31.23%, 0%, 0%, 0%, 0%, 68.77%, 0%, FOMC0ß 2022-03-15, 0%, 31.37%, 0%, 0%, 0%, 0%, 68.63%, 0%, FOMC-1ß 2022-03-14, 0%, 0%, 0%, 0%, 0%, 0%, 100%, 0%, FOMC-2ß 2022-03-11, 0%, 0%, 0%, 0%, 0%, 0%, 100%, 0%, FOMC-3ß 2022-03-10, 0%, 34.56%, 0%, 0%, 0%, 0%, 65.44%, 0%, FOMC-4ß 2022-03-09, 0%, 19.51%, 0%, 0%, 0%, 0%, 80.49%, 0%, ---ß 2022-03-08, 0%, 19.31%, 0%, 0%, 0%, 0%, 80.69%, 0%, ---ß 2022-03-07, 0%, 21.09%, 0%, 0%, 0%, 0%, 78.91%, 0%, ---ß 2022-03-04, 0%, 20.09%, 0%, 0%, 0%, 0%, 79.91%, 0%, ---ß 2022-03-03, 0%, 0%, 0%, 0%, 0%, 0%, 100%, 0%, ---"",
+                ""prevAssEventMtx"": ""66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFFß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FF8C00,FFE4C4,FFE4C4,FFFF00ß FF6633,FF0000,FF0000,FF0000,FF0000,FF0000,FF0000,FFE4C4,FFE4C4,FFFF00ß FF6633,228B22,228B22,228B22,228B22,228B22,228B22,FFE4C4,FFE4C4,FFFF00ß FF6633,228B22,228B22,228B22,228B22,228B22,228B22,FFE4C4,FFE4C4,FFFF00ß FF6633,FF0000,FF0000,FF0000,FF0000,FF0000,FF0000,FFE4C4,FFE4C4,FFFF00ß FF6633,FF0000,FF0000,FF0000,FF0000,FF0000,FF0000,FFE4C4,FFE4C4,FFFF00ß FF6633,228B22,228B22,228B22,228B22,228B22,228B22,FFE4C4,FFE4C4,FFFF00ß FF6633,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,FFE4C4,FFE4C4,FFFF00ß FF6633,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,FFE4C4,FFE4C4,FFFF00ß FF6633,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,FFE4C4,FFE4C4,FFFF00ß FF6633,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,FFE4C4,FFE4C4,FFFF00ß FF6633,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,A9A9A9,FFE4C4,FFE4C4,FFFF00"",
+                ""futPositionsMtx"": "", MDY, ILF, FEZ, EEM, EPP, VNQ, Eventß 2022-03-31, ---, ---, ---, ---, ---, ---, ---ß 2022-04-01, ---, ---, ---, ---, ---, ---, ---ß 2022-04-04, ---, ---, ---, ---, ---, ---, ---ß 2022-04-05, ---, ---, ---, ---, ---, ---, ---ß 2022-04-06, ---, ---, ---, ---, ---, ---, ---ß 2022-04-07, ---, ---, ---, ---, ---, ---, ---ß 2022-04-08, ---, ---, ---, ---, ---, ---, ---ß 2022-04-11, ---, ---, ---, ---, ---, ---, ---ß 2022-04-12, ---, ---, ---, ---, ---, ---, ---ß 2022-04-13, ---, ---, ---, ---, ---, ---, ---"",
+                ""futAssEventMtx"": ""66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFF,66CCFFß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00ß FF6633,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,F0E68C,FFFF00"",
+                ""chartLength"": ""20"",
+                ""assetChangesToChartMtx"": ""2022-03-01, 0%, 0%, 0%, 0%, 0%, 0%ß 2022-03-02, 2.65%, 1.3%, 2.02%, 0.17%, 1.67%, 1.87%ß 2022-03-03, 1.78%, 3.12%, -0.87%, -1.24%, 0.72%, 2.71%ß 2022-03-04, 0.21%, 2.23%, -6.05%, -3.23%, 1.06%, 3.18%ß 2022-03-07, -3.56%, -1.19%, -9.55%, -6.85%, -1.11%, 1.14%ß 2022-03-08, -3.25%, -0.22%, -6.9%, -6.55%, -2.32%, 0.65%ß 2022-03-09, -0.5%, 2.41%, -0.37%, -3.9%, -0.41%, 2.2%ß 2022-03-10, -0.48%, 2.15%, -3.35%, -5.7%, 0.35%, 2.45%ß 2022-03-11, -1.51%, 0.63%, -4.17%, -7.68%, -0.48%, 1.64%ß 2022-03-14, -2.33%, -1.71%, -2.12%, -9.91%, -1.5%, 0.84%ß 2022-03-15, -0.87%, -2.9%, -1.17%, -9.78%, -1.11%, 1.52%ß 2022-03-16, 1.95%, -0.48%, 3.55%, -2.52%, 3.3%, 2.73%ß 2022-03-17, 2.94%, 2.19%, 3.67%, -3.01%, 4.06%, 4.31%ß 2022-03-18, 3.45%, 4.53%, 4.02%, -1.63%, 5.95%, 4.31%ß 2022-03-21, 3.17%, 6.76%, 2.35%, -3.14%, 5.47%, 3.68%ß 2022-03-22, 3.81%, 7.91%, 3.85%, -1.39%, 6.45%, 3.94%ß 2022-03-23, 1.88%, 9.06%, 1.45%, -2.04%, 6%, 2.22%ß 2022-03-24, 3.06%, 10.95%, 2.35%, -1.52%, 7.39%, 2.86%ß 2022-03-25, 3.79%, 11.66%, 2.45%, -2.3%, 7.47%, 4.15%ß 2022-03-28, 3.94%, 10.95%, 3.25%, -1.97%, 7.1%, 5.25%ß 2022-03-29, 6.16%, 12.55%, 6.65%, -0.3%, 8.52%, 8.34%"",
+                ""assetDailyChangesToChartMtx"": ""2022-03-01, -1.91%, 0.11%, -4.12%, -1.33%, -1.31%, -0.53%ß 2022-03-02, 2.65%, 1.3%, 2.02%, 0.17%, 1.67%, 1.87%ß 2022-03-03, -0.85%, 1.8%, -2.84%, -1.41%, -0.94%, 0.82%ß 2022-03-04, -1.54%, -0.86%, -5.22%, -2.02%, 0.35%, 0.46%ß 2022-03-07, -3.76%, -3.34%, -3.72%, -3.74%, -2.15%, -1.98%ß 2022-03-08, 0.32%, 0.98%, 2.93%, 0.33%, -1.23%, -0.48%ß 2022-03-09, 2.85%, 2.64%, 7%, 2.83%, 1.96%, 1.54%ß 2022-03-10, 0.02%, -0.25%, -2.98%, -1.87%, 0.76%, 0.25%ß 2022-03-11, -1.04%, -1.49%, -0.85%, -2.09%, -0.82%, -0.79%ß 2022-03-14, -0.83%, -2.32%, 2.14%, -2.42%, -1.03%, -0.78%ß 2022-03-15, 1.5%, -1.21%, 0.97%, 0.14%, 0.4%, 0.67%ß 2022-03-16, 2.84%, 2.49%, 4.78%, 8.05%, 4.46%, 1.19%ß 2022-03-17, 0.97%, 2.69%, 0.12%, -0.51%, 0.74%, 1.55%ß 2022-03-18, 0.49%, 2.29%, 0.34%, 1.43%, 1.82%, 0%ß 2022-03-21, -0.27%, 2.13%, -1.61%, -1.54%, -0.45%, -0.61%ß 2022-03-22, 0.62%, 1.08%, 1.46%, 1.81%, 0.93%, 0.26%ß 2022-03-23, -1.86%, 1.07%, -2.31%, -0.66%, -0.43%, -1.66%ß 2022-03-24, 1.15%, 1.74%, 0.89%, 0.53%, 1.31%, 0.63%ß 2022-03-25, 0.71%, 0.64%, 0.1%, -0.79%, 0.08%, 1.25%ß 2022-03-28, 0.15%, -0.63%, 0.78%, 0.33%, -0.34%, 1.06%ß 2022-03-29, 2.14%, 1.44%, 3.29%, 1.7%, 1.32%, 2.93%"",
+                ""spxMAToChartMtx"": ""2022-03-01, 4306, 4545, 4463ß 2022-03-02, 4387, 4540, 4464ß 2022-03-03, 4363, 4536, 4465ß 2022-03-04, 4329, 4530, 4466ß 2022-03-07, 4201, 4520, 4466ß 2022-03-08, 4171, 4509, 4466ß 2022-03-09, 4278, 4498, 4467ß 2022-03-10, 4260, 4488, 4467ß 2022-03-11, 4204, 4476, 4467ß 2022-03-14, 4173, 4464, 4467ß 2022-03-15, 4262, 4454, 4467ß 2022-03-16, 4358, 4445, 4468ß 2022-03-17, 4412, 4437, 4469ß 2022-03-18, 4463, 4433, 4470ß 2022-03-21, 4461, 4428, 4472ß 2022-03-22, 4512, 4425, 4473ß 2022-03-23, 4456, 4420, 4474ß 2022-03-24, 4520, 4417, 4476ß 2022-03-25, 4543, 4413, 4477ß 2022-03-28, 4541, 4411, 4479ß 2022-03-29, 4632, 4410, 4481"",
+                ""xluVtiPercToChartMtx"": ""2022-03-01, 41, 42ß 2022-03-02, 49, 44ß 2022-03-03, 50, 41ß 2022-03-04, 58, 44ß 2022-03-07, 63, 38ß 2022-03-08, 59, 37ß 2022-03-09, 56, 41ß 2022-03-10, 57, 37ß 2022-03-11, 64, 37ß 2022-03-14, 63, 39ß 2022-03-15, 68, 44ß 2022-03-16, 69, 45ß 2022-03-17, 70, 47ß 2022-03-18, 66, 53ß 2022-03-21, 67, 55ß 2022-03-22, 68, 59ß 2022-03-23, 74, 59ß 2022-03-24, 74, 59ß 2022-03-25, 72, 56ß 2022-03-28, 72, 57ß 2022-03-29, 78, 63""
+                }";
             return mockupTestResponse;
         }
+        public object UberTAAGChGoogleApiGsheet(string p_usedGSheetRef)
+        {
+            Utils.Logger.Info("UberTAAGChGoogleApiGsheet() BEGIN");
+
+            string? valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
+            if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
+            {
+                valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync(p_usedGSheetRef + Utils.Configuration["Google:GoogleApiKeyKey"], 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+                if (valuesFromGSheetStr == null)
+                    valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
+            }
+            
+            Utils.Logger.Info("UberTAAGChGoogleApiGsheet() END");
+            return Content($"<HTML><body>UberTAAGChGoogleApiGsheet() finished OK. <br> Received data: '{valuesFromGSheetStr}'</body></HTML>", "text/html");
+        }
+        public static Tuple< double[], int[,], int[], int[], string[], int[], int[]> GSheetConverter(string p_gSheetString, string[] p_allAssetList)
+        {
+            if (p_gSheetString != null)
+            {
+                string[] gSheetTableRows = p_gSheetString.Split(new string[] { "[" }, StringSplitOptions.RemoveEmptyEntries);
+                string currPosRaw = gSheetTableRows[3];
+                currPosRaw = currPosRaw.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
+                string[] currPos = currPosRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
+                string[] currPosAP = new string[p_allAssetList.Length - 3];
+                Array.Copy(currPos, 2, currPosAP, 0, p_allAssetList.Length - 3);
+                int currPosDate = Int32.Parse(currPos[0]);
+                int currPosCash = Int32.Parse(currPos[^3]);
+                int[] currPosDateCash = new int[] {currPosDate,currPosCash };
+                int[] currPosAssets = Array.ConvertAll(currPosAP, int.Parse);
+                            
+
+                p_gSheetString = p_gSheetString.Replace("\n", "").Replace("]", "").Replace("\"", "").Replace(" ", "").Replace(",,", ",0,");
+                gSheetTableRows = p_gSheetString.Split(new string[] { "[" }, StringSplitOptions.RemoveEmptyEntries);
+
+                string[,] gSheetCodes = new string[gSheetTableRows.Length - 4, currPos.Length];
+                string[] gSheetCodesH = new string[currPos.Length];
+                for (int iRows = 0; iRows < gSheetCodes.GetLength(0); iRows++)
+                {
+                    gSheetCodesH = gSheetTableRows[iRows + 4].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
+                    for (int jCols = 0; jCols < gSheetCodes.GetLength(1); jCols++)
+                    {
+                        gSheetCodes[iRows, jCols] = gSheetCodesH[jCols];
+                    }
+                }
+
+                gSheetCodes[gSheetCodes.GetLength(0) - 1, gSheetCodes.GetLength(1) - 1] = gSheetCodesH[^1][..gSheetCodesH[^1].IndexOf('}')];
+
+                double[] gSheetDateVec = new double[gSheetCodes.GetLength(0)];
+                for (int iRows = 0; iRows < gSheetDateVec.Length; iRows++)
+                {
+                    gSheetDateVec[iRows] = Double.Parse(gSheetCodes[iRows, 0]);
+                }
+
+                int[,] gSheetCodesAssets = new int[gSheetCodes.GetLength(0), p_allAssetList.Length - 3];
+                for (int iRows = 0; iRows < gSheetCodesAssets.GetLength(0); iRows++)
+                {
+                    for (int jCols = 0; jCols < gSheetCodesAssets.GetLength(1); jCols++)
+                    {
+                        gSheetCodesAssets[iRows, jCols] = Int32.Parse(gSheetCodes[iRows, jCols + 2]);
+                    }
+                }
+
+                int[] gSheetEventCodes = new int[gSheetCodes.GetLength(0)];
+                for (int iRows = 0; iRows < gSheetEventCodes.Length; iRows++)
+                {
+                    gSheetEventCodes[iRows] = Int32.Parse(gSheetCodes[iRows, gSheetCodes.GetLength(1) - 3]);
+                }
+
+                int[] gSheetEventMultipl = new int[gSheetCodes.GetLength(0)];
+                for (int iRows = 0; iRows < gSheetEventMultipl.Length; iRows++)
+                {
+                    gSheetEventMultipl[iRows] = Int32.Parse(gSheetCodes[iRows, gSheetCodes.GetLength(1) - 1]);
+                }
+
+                string[] gSheetEventNames = new string[gSheetCodes.GetLength(0)];
+                for (int iRows = 0; iRows < gSheetEventNames.Length; iRows++)
+                {
+                    gSheetEventNames[iRows] = gSheetCodes[iRows, gSheetCodes.GetLength(1) - 2];
+                }
+                Tuple< double[], int[,], int[], int[], string[], int[], int[]> gSheetResFinal = Tuple.Create(gSheetDateVec, gSheetCodesAssets, gSheetEventCodes, gSheetEventMultipl, gSheetEventNames, currPosDateCash, currPosAssets);
+
+                return gSheetResFinal;
+            }
+            throw new NotImplementedException();
+        }
+        public static (IList<List<DailyData>>, List<List<DailyData>>, List<DailyData>) GetSinStockHistData(string[] p_allAssetList)
+        {
+            List<Asset> assets = new();
+            for (int i = 0; i < p_allAssetList.Length; i++)
+            {
+                Asset? asset = MemDb.gMemDb.AssetsCache.TryGetAsset("S/" + p_allAssetList[i]);
+                if (asset != null)
+                    assets.Add(asset);
+            }
+
+             DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
+             DateTime startIncLoc = nowET.AddYears(-1).AddDays(-3);
+
+            
+            List<List<DailyData>> sinTickersData = new();
+            List<List<DailyData>> cashSubstituteData = new();
+            List<DailyData> cashSubstituteData1 = new();
+
+            List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc).ToList();
+            for (int i = 0; i < assetHistsAndEst.Count - 1; i++)
+            {
+                var vals = assetHistsAndEst[i].values;
+                List<DailyData> sinValsData = new();
+                for (int j = 0; j < vals.Count; j++)
+                {
+                    sinValsData.Add(new DailyData() { Date = vals[j].Date, AdjClosePrice = vals[j].SdaValue });
+                }
+                sinTickersData.Add(sinValsData);
+            }
+
+            for (int i = 0; i < assetHistsAndEst.Count - 1; i++)
+            {
+                var vals = assetHistsAndEst[i].values;
+                List<DailyData> sinValsData1 = new();
+                for (int j = 0; j < vals.Count; j++)
+                {
+                    sinValsData1.Add(new DailyData() { Date = vals[j].Date, AdjClosePrice = vals[j].SdaValue });
+                }
+                cashSubstituteData.Add(sinValsData1);
+            }
+            // last ticker is TLT, which is used as a cash substitute. Special role.
+            var cashVals = assetHistsAndEst[^1].values;
+            for (int j = 0; j < cashVals.Count; j++)
+                cashSubstituteData1.Add(new DailyData() { Date = cashVals[j].Date, AdjClosePrice = cashVals[j].SdaValue });
+
+            return (sinTickersData, cashSubstituteData, cashSubstituteData1);
+        }
+
+        public static Tuple<double[], double[,]> TaaWeights(IList<List<DailyData>> p_taaWeightsData, int[] p_pctChannelLookbackDays, int p_histVolLookbackDays, int p_thresholdLower)
+        {
+            var dshd = p_taaWeightsData;
+            int nAssets = p_taaWeightsData.Count;
+
+            double[] assetScores = new double[nAssets];
+            double[] assetScoresMod = new double[nAssets];
+            double[] assetHV = new double[nAssets];
+            double[] assetWeights = new double[nAssets];
+            double[] assetWeights2 = new double[nAssets];
+            double[,] assetPctChannelsUpper = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each 
+            double[,] assetPctChannelsLower = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each
+            sbyte[,] assetPctChannelsSignal = new sbyte[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each
+            int startNumDay = p_pctChannelLookbackDays.Max()-1;
+            double thresholdLower = p_thresholdLower / 100.0;
+            double thresholdUpper = 1-thresholdLower;
+
+            int nDays = p_taaWeightsData[0].Count - startNumDay;
+            double[,] dailyAssetWeights = new double[nDays,nAssets];
+            double[,] dailyAssetScores = new double[nDays, nAssets];
+            double[,] dailyAssetScoresMod = new double[nDays, nAssets];
+            double[,] dailyAssetHv = new double[nDays, nAssets];
+            for (int iDay = 0; iDay < nDays; iDay++)
+            {
+                for (int iAsset = 0; iAsset < nAssets; iAsset++)
+                {
+                    double assetPrice = p_taaWeightsData[iAsset][startNumDay + iDay].AdjClosePrice;
+                    for (int iChannel = 0; iChannel < p_pctChannelLookbackDays.Length; iChannel++)
+                    {
+                        // A long position would be initiated if the price exceeds the 75th percentile of prices over the last “n” days.The position would be closed if the price falls below the 25th percentile of prices over the last “n” days.
+                        var usedQuotes = p_taaWeightsData[iAsset].GetRange(startNumDay + iDay - (p_pctChannelLookbackDays[iChannel] - 1), p_pctChannelLookbackDays[iChannel]).Select(r => r.AdjClosePrice);
+                        assetPctChannelsLower[iAsset, iChannel] = Utils.Quantile(usedQuotes, thresholdLower);
+                        assetPctChannelsUpper[iAsset, iChannel] = Utils.Quantile(usedQuotes, thresholdUpper);
+                        if (assetPrice < assetPctChannelsLower[iAsset, iChannel])
+                        assetPctChannelsSignal[iAsset, iChannel] = -1;
+                        else if (assetPrice > assetPctChannelsUpper[iAsset, iChannel])
+                        assetPctChannelsSignal[iAsset, iChannel] = 1;
+                        else if (iDay==0)
+                        assetPctChannelsSignal[iAsset, iChannel] = 1;
+                    }
+                }
+
+                // Calculate assetWeights
+                double totalWeight = 0.0;
+                
+                for (int iAsset = 0; iAsset < nAssets; iAsset++)
+                {
+                    sbyte compositeSignal = 0;    // For every stocks, sum up the four signals every day. This sum will be -4, -2, 0, +2 or +4.
+                    for (int iChannel = 0; iChannel < p_pctChannelLookbackDays.Length; iChannel++)
+                    {
+                        compositeSignal += assetPctChannelsSignal[iAsset, iChannel];
+                    }
+                    assetScores[iAsset] = compositeSignal / 4.0;    // Divide it by 4 to get a signal between -1 and +1 (this will be the “score”).
+                    assetScoresMod[iAsset] = compositeSignal / 8.0 + 0.5;    // Divide it by 4 to get a signal between -1 and +1 (this will be the “score”).
+
+                    double[] hvPctChg = new double[p_histVolLookbackDays];
+                    for (int iHv = 0; iHv < p_histVolLookbackDays; iHv++)
+                    {
+                        hvPctChg[p_histVolLookbackDays - iHv - 1] = p_taaWeightsData[iAsset][startNumDay + iDay - iHv].AdjClosePrice / p_taaWeightsData[iAsset][startNumDay + iDay - iHv - 1].AdjClosePrice - 1;
+                    }
+                    // Balazs: uses "corrected sample standard deviation"; corrected: dividing by 19, not 20; He doesn't annualize. He uses daily StDev
+                    assetHV[iAsset] = Utils.StandardDeviation(hvPctChg);  // Calculate the 20-day historical volatility of daily percentage changes for every stock.
+                    assetWeights[iAsset] = assetScores[iAsset] / assetHV[iAsset];   // “Score/Vol” quotients will define the weights of the stocks. They can be 0 or negative as well. 
+                                                                                    // there is an interesting observation here. Actually, it is a good behavour.
+                                                                                    // If assetScores[i]=0, assetWeights[i] becomes 0, so we don't use its weight when p_isCashAllocatedForNonActives => TLT will not fill its Cash-place; NO TLT will be invested (if this is the only stock with 0 score), the portfolio will be 100% in other stocks. We are more Brave.
+                                                                                    // However, if assetScores[i]<0 (negative), assetWeights[i] becoumes a proper negative number. It will be used in TotalWeight calculation => TLT will fill its's space. (if this is the only stock with negative score), TLT will be invested in its place; consequently the portfolio will NOT be 100% in other stocks. We are more defensive.
+                    totalWeight += Math.Abs(assetWeights[iAsset]);      // Sum up the absolute values of the “Score/Vol” quotients. TotalWeight contains even the non-active assets so have have some cash.
+                    assetWeights2[iAsset] = (assetWeights[iAsset]>=0) ?assetWeights[iAsset]:0.0;
+
+                }
+                for (int iAsset = 0; iAsset < nAssets; iAsset++)
+                {
+                    dailyAssetWeights[iDay, iAsset] = assetWeights2[iAsset]/totalWeight;
+                    dailyAssetScores[iDay, iAsset] = assetScores[iAsset];
+                    dailyAssetHv[iDay, iAsset] = assetHV[iAsset];
+                    dailyAssetScoresMod[iDay, iAsset] = assetScoresMod[iAsset];
+                }
+
+            }
+
+            IEnumerable<DateTime> taaWeightDateVec = p_taaWeightsData[0].GetRange(p_taaWeightsData[0].Count-nDays ,nDays).Select(r => r.Date);
+            DateTime[] taaWeightDateArray = taaWeightDateVec.ToArray();
+            DateTime startMatlabDate = DateTime.ParseExact("1900/01/01", "yyyy/MM/dd", CultureInfo.InvariantCulture);
+
+            double[] taaWeightMatlabDateVec = new double[taaWeightDateVec.Count()];
+            for (int i = 0; i < taaWeightMatlabDateVec.Length; i++)
+            {
+                taaWeightMatlabDateVec[i] = (taaWeightDateArray[i] - startMatlabDate).TotalDays + 693962;
+            }
+
+            Tuple<double[],double[,]> taaWeightResults = Tuple.Create(taaWeightMatlabDateVec, dailyAssetWeights);
+            //Tuple<double[],double[,]> taaWeightResults = Tuple.Create(taaWeightMatlabDateVec, dailyAssetScoresMod);
+            return taaWeightResults;
+        }
+
+        // public static double[][] CLMTCalc(IList<List<DailyData>> p_quotesForClmtData)
+        // {
+        //     double[,] p_clmtData = new double[p_quotesForClmtData[0].Count,4];
+
+        //     IEnumerable<DateTime> clmtDateVec = p_quotesForClmtData[0].Select(r => r.Date);
+        //     DateTime[] clmtDateArray = clmtDateVec.ToArray();
+        //     DateTime startMatlabDate = DateTime.ParseExact("1900/01/01", "yyyy/MM/dd", CultureInfo.InvariantCulture);
+
+        //     double[] clmtMatlabDateVec = new double[clmtDateVec.Count()];
+        //     for (int i = 0; i < clmtMatlabDateVec.Length; i++)
+        //     {
+        //         clmtMatlabDateVec[i] = (clmtDateArray[i] - startMatlabDate).TotalDays + 693962;
+        //     }
+
+        //     for (int iRows = 0; iRows < p_clmtData.GetLength(0); iRows++)
+        //     {
+        //         p_clmtData[iRows, 0] = clmtMatlabDateVec[iRows];
+        //         for (int jCols = 0; jCols < p_clmtData.GetLength(1)-1; jCols++)
+        //         {
+        //             p_clmtData[iRows,jCols+1]=p_quotesForClmtData[jCols][iRows].AdjClosePrice;
+        //         }
+        //     }
+
+
+        //     double[] xluRSI =new double[p_clmtData.GetLength(0)-200];
+        //     for (int iRows = 0; iRows < xluRSI.Length; iRows++)
+        //     {
+        //         double losses = new();
+        //         double gains = new();
+        //         int lossNum = 0;
+        //         int gainNum = 0;
+        //         for (int kRows = 0; kRows < 20; kRows++)
+        //         {
+        //             if (p_clmtData[iRows + kRows + 181, 2] - p_clmtData[iRows + kRows+180, 2] >= 0)
+        //             {
+        //                 gains = gains + p_clmtData[iRows + kRows + 181, 2] - p_clmtData[iRows + kRows+180, 2];
+        //                 gainNum += 1; 
+        //             }
+        //             else
+        //             {
+        //                 losses = losses + p_clmtData[iRows + kRows + 181, 2] - p_clmtData[iRows + kRows+180, 2];
+        //                 lossNum += 1;
+        //             }
+        //         }
+        //         xluRSI[iRows] = 100 - 100 * (-losses / (-losses + gains));
+
+        //     }
+
+        //     double[] vtiRSI = new double[p_clmtData.GetLength(0) - 200];
+        //     for (int iRows = 0; iRows < vtiRSI.Length; iRows++)
+        //     {
+        //         double losses = new();
+        //         double gains = new();
+        //         for (int kRows = 0; kRows < 20; kRows++)
+        //         {
+        //             if (p_clmtData[iRows + kRows + 181, 3] - p_clmtData[iRows + kRows+180, 3] >= 0)
+        //             {
+        //                 gains = gains + p_clmtData[iRows + kRows + 181, 3] - p_clmtData[iRows + kRows+180, 3];
+        //             }
+        //             else
+        //             {
+        //                 losses = losses + p_clmtData[iRows + kRows + 181, 3] - p_clmtData[iRows + kRows+180, 3];
+        //             }
+        //         }
+        //         vtiRSI[iRows] = 100 - 100 * (-losses / (-losses + gains));
+
+        //     }
+
+        //     double[] xluVtiIndi = new double[xluRSI.Length];
+        //     for (int iRows = 0; iRows < xluVtiIndi.Length; iRows++)
+        //     {
+        //         xluVtiIndi[iRows] = (xluRSI[iRows]>=vtiRSI[iRows]) ?2:1;
+        //     }
+
+        //     double[] spxMA50 = new double[p_clmtData.GetLength(0) - 200];
+        //     double[] spxPrice = new double[p_clmtData.GetLength(0) - 200];
+        //     for (int iRows = 0; iRows < spxMA50.Length; iRows++)
+        //     {
+        //         spxPrice[iRows] = p_clmtData[iRows+200,1];
+        //         double sumsSPX50 = new();
+                
+        //         for (int kRows = 0; kRows < 50; kRows++)
+        //         {
+        //             sumsSPX50 += p_clmtData[iRows + kRows+151,1];
+        //         }
+        //         spxMA50[iRows] = sumsSPX50 / 50;
+
+        //     }
+
+        //     double[] spxMA200 = new double[p_clmtData.GetLength(0) - 200];
+        //     for (int iRows = 0; iRows < spxMA200.Length; iRows++)
+        //     {
+        //         double sumsSPX200 = new();
+
+        //         for (int kRows = 0; kRows < 200; kRows++)
+        //         {
+        //             sumsSPX200 += p_clmtData[iRows + kRows+1, 1];
+        //         }
+        //         spxMA200[iRows] = sumsSPX200 / 200;
+
+        //     }
+
+        //     double[] spxMAIndi = new double[spxMA50.Length];
+        //     for (int iRows = 0; iRows < spxMAIndi.Length; iRows++)
+        //     {
+        //         spxMAIndi[iRows] = (spxMA50[iRows] >= spxMA200[iRows]) ? 1 : 0;
+        //     }
+
+        //     double[] clmtIndi = new double[spxMAIndi.Length];
+        //     for (int iRows = 0; iRows < clmtIndi.Length; iRows++)
+        //     {
+        //         if (spxMAIndi[iRows]==1 & xluVtiIndi[iRows]==1)
+        //         {
+        //             clmtIndi[iRows] = 1;
+        //         }
+        //         else if (spxMAIndi[iRows] == 0 & xluVtiIndi[iRows] == 2)
+        //         {
+        //             clmtIndi[iRows] = 3;
+        //         }
+        //         else
+        //         {
+        //             clmtIndi[iRows] = 2;
+        //         }
+        //     }
+
+        //     double[] clmtDateVec2 = new double[clmtIndi.Length];
+        //     for (int iRows = 0; iRows < clmtDateVec2.Length; iRows++)
+        //     {
+        //         clmtDateVec2[iRows] = p_clmtData[iRows+200,0];
+        //     }
+            
+        //     double[][] clmtTotalResu = new double[9][];
+        //     clmtTotalResu[0] = clmtDateVec2;
+        //     clmtTotalResu[1] = xluRSI;
+        //     clmtTotalResu[2] = vtiRSI;
+        //     clmtTotalResu[3] = xluVtiIndi;
+        //     clmtTotalResu[4] = spxMA50;
+        //     clmtTotalResu[5] = spxMA200;
+        //     clmtTotalResu[6] = spxMAIndi;
+        //     clmtTotalResu[7] = clmtIndi;
+        //     clmtTotalResu[8] = spxPrice;
+
+        // //     StringBuilder stringBuilder=new StringBuilder();
+        // //     foreach (var item in clmtTotalResu)
+        // //     {
+        // //         foreach (var item2 in item)
+        // //         {
+        // //             stringBuilder.Append(item2 + ",");
+        // //         }
+        // //         stringBuilder.AppendLine("ß" + Environment.NewLine + Environment.NewLine);
+        // //     }
+
+        // //     System.IO.File.WriteAllText(@"D:\xxx.csv", stringBuilder.ToString());
+
+        //     return clmtTotalResu;
+        // }
+        //         public Tuple<double[,], double[,], double[,], string[], string[]> MultiplFinCalc(double[][] p_clmtRes, Tuple<double[], int[,], int[], int[], string[], int[], int[]>  p_gSheetResToFinCalc, string[] p_allAssetList, double p_lastDataDate, Tuple<double[], double[,]>  p_taaWeightResultsTuple)
+        // {
+
+        //     int pastDataLength = 20;
+        //     int futDataLength = 10;
+        //     int indClmtRes = Array.IndexOf(p_clmtRes[0], p_lastDataDate);
+        //     int indGSheetRes = Array.IndexOf(p_gSheetResToFinCalc.Item1, p_lastDataDate);
+        //     int indWeightsRes = Array.IndexOf(p_taaWeightResultsTuple.Item1, p_lastDataDate);
+
+        //     double[,] pastCodes = new double[pastDataLength ,p_allAssetList.Length - 3];
+        //     double[,] futCodes = new double[futDataLength, p_allAssetList.Length - 3];
+        //     string[] pastEvents = new string[pastDataLength];
+        //     string[] futEvents = new string[futDataLength];
+
+
+        //     for (int iRows = 0; iRows < pastCodes.GetLength(0); iRows++)
+        //     {
+        //         pastEvents[iRows] = p_gSheetResToFinCalc.Item5[indGSheetRes - pastDataLength + iRows + 2];
+        //         pastCodes[iRows, 0] = p_gSheetResToFinCalc.Item1[indGSheetRes - pastDataLength + iRows + 2];
+        //         for (int jCols = 1; jCols < pastCodes.GetLength(1); jCols++)
+        //         {
+        //             if (p_gSheetResToFinCalc.Item2[indGSheetRes - pastDataLength + iRows+2, jCols - 1] == 9)
+        //             {
+        //                 pastCodes[iRows, jCols] = 7;
+        //             }
+        //             else if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows+2] == 1)
+        //             {
+        //                 pastCodes[iRows, jCols] = 1;
+        //             }
+        //             else if (p_gSheetResToFinCalc.Item2[indGSheetRes - pastDataLength + iRows+2, jCols - 1] == 3)
+        //             {
+        //                 pastCodes[iRows, jCols] = 5;
+        //             }
+        //             else if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows+2] == 2)
+        //             {
+        //                 pastCodes[iRows, jCols] = 2;
+        //             }
+        //             else if (p_gSheetResToFinCalc.Item2[indGSheetRes - pastDataLength + iRows+2, jCols - 1] == 1)
+        //             {
+        //                 if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows+2] == 3)
+        //                 {
+        //                     pastCodes[iRows, jCols] = 3;
+        //                 }
+        //                 else
+        //                 {
+        //                     pastCodes[iRows, jCols] = 6;
+        //                 }
+        //             }
+        //             else if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows+2] == 3)
+        //             {
+        //                 pastCodes[iRows, jCols] = 3;
+        //             }
+        //             else if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows+2] == 4)
+        //             {
+        //                 pastCodes[iRows, jCols] = 4;
+        //             }
+        //             else if (p_clmtRes[7][indClmtRes - pastDataLength + iRows+1]==1)
+        //             {
+        //                 pastCodes[iRows, jCols] = 8;
+        //             }
+        //             else if (p_clmtRes[7][indClmtRes - pastDataLength + iRows+1] == 2)
+        //             {
+        //                 pastCodes[iRows, jCols] = 9;
+        //             }
+        //             else if (p_clmtRes[7][indClmtRes - pastDataLength + iRows+1] == 3)
+        //             {
+        //                 pastCodes[iRows, jCols] = 10;
+        //             }
+
+        //         }
+        //     }
+
+        //     for (int iRows = 0; iRows < futCodes.GetLength(0); iRows++)
+        //     {
+        //         futEvents[iRows] = p_gSheetResToFinCalc.Item5[indGSheetRes + iRows + 2];
+        //         futCodes[iRows, 0] = p_gSheetResToFinCalc.Item1[indGSheetRes + iRows + 2];
+        //         for (int jCols = 1; jCols < futCodes.GetLength(1); jCols++)
+        //         {
+        //             if (p_gSheetResToFinCalc.Item2[indGSheetRes + iRows+2, jCols - 1] == 9)
+        //             {
+        //                 futCodes[iRows, jCols] = 7;
+        //             }
+        //             else if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows+2] == 1)
+        //             {
+        //                 futCodes[iRows, jCols] = 1;
+        //             }
+        //             else if (p_gSheetResToFinCalc.Item2[indGSheetRes + iRows+2, jCols - 1] == 3)
+        //             {
+        //                 futCodes[iRows, jCols] = 5;
+        //             }
+        //             else if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows+2] == 2)
+        //             {
+        //                 futCodes[iRows, jCols] = 2;
+        //             }
+        //             else if (p_gSheetResToFinCalc.Item2[indGSheetRes + iRows+2, jCols - 1] == 1)
+        //             {
+        //                 if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows+2] == 3)
+        //                 {
+        //                     futCodes[iRows, jCols] = 3;
+        //                 }
+        //                 else
+        //                 {
+        //                     futCodes[iRows, jCols] = 6;
+        //                 }
+        //             }
+        //             else if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows+2] == 3)
+        //             {
+        //                 futCodes[iRows, jCols] = 3;
+        //             }
+        //             else if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows+2] == 4)
+        //             {
+        //                 futCodes[iRows, jCols] = 4;
+        //             }
+        //             else
+        //             {
+        //                 futCodes[iRows, jCols] = 11;
+        //             }
+
+        //         }
+        //     }
+
+        //     double[,] pastWeightsFinal = new double[pastCodes.GetLength(0), p_allAssetList.Length - 3];
+        //     double numAss = Convert.ToDouble(p_allAssetList.Length-4);
+        //     for (int iRows = 0; iRows < pastWeightsFinal.GetLength(0); iRows++)
+        //     {
+        //         pastWeightsFinal[iRows, 0] = pastCodes[iRows, 0];
+        //         for (int jCols = 1; jCols < pastWeightsFinal.GetLength(1); jCols++)
+        //         {
+        //             if (pastCodes[iRows, jCols] == 7)
+        //             {
+        //                 pastWeightsFinal[iRows, jCols] = 0;
+        //             }
+        //             else if (pastCodes[iRows, jCols] == 1)
+        //             {
+        //                 pastWeightsFinal[iRows, jCols] = 1.75*p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1,jCols-1];
+        //             }
+        //             else if (pastCodes[iRows, jCols] == 5)
+        //             {
+        //                 pastWeightsFinal[iRows, jCols] = Math.Max(1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1 / numAss);
+        //             }
+        //             else if (pastCodes[iRows, jCols] == 2)
+        //             {
+        //                 pastWeightsFinal[iRows, jCols] = 0;
+        //             }
+        //             else if (pastCodes[iRows, jCols] == 3)
+        //             {
+        //                 pastWeightsFinal[iRows, jCols] = 1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1];
+        //             }
+        //             else if (pastCodes[iRows, jCols] == 6)
+        //             {
+        //                 pastWeightsFinal[iRows, jCols] = Math.Max(1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1 / numAss);
+        //                 // pastWeightsFinal[iRows, jCols] = Math.Max(1.25 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1 / numAss); #Mr.C. decided to increase leverage to 50% on bullish days
+        //             }
+        //             else if (pastCodes[iRows, jCols] == 4)
+        //             {
+        //                 pastWeightsFinal[iRows, jCols] = 0;
+        //             }
+        //             else if (pastCodes[iRows, jCols] == 8)
+        //             {
+        //                 pastWeightsFinal[iRows, jCols] = 1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1];
+        //                 // pastWeightsFinal[iRows, jCols] = 1.2 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1]; #Mr.C. decided to increase leverage to 50% on bullish days
+        //             }
+        //             else if (pastCodes[iRows, jCols] == 9)
+        //             {
+        //                 pastWeightsFinal[iRows, jCols] = 1 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1];
+        //                 // pastWeightsFinal[iRows, jCols] = 0.8 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1];
+        //             }
+        //             else if (pastCodes[iRows, jCols] == 10)
+        //             {
+        //                 pastWeightsFinal[iRows, jCols] = 0.6 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1];
+        //                 // pastWeightsFinal[iRows, jCols] = 0.4 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1];
+        //             }
+        //         }
+        //     }
+
+        //             Tuple<double[,], double[,], double[,], string[], string[]> multiplFinResults = Tuple.Create(pastCodes, futCodes, pastWeightsFinal, pastEvents, futEvents);
+
+        //     return multiplFinResults;
+        // }
     }
 }

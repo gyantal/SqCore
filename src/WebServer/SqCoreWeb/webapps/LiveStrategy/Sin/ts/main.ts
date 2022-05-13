@@ -246,7 +246,7 @@ function processPctChngStckPriceChrt(sinStckChrtData: any[]) {
       .rangeRound([0, height])
       .padding(0.2);
 
-  const chrtSvg = d3.select('#sinAddictionChart')
+  const sinChrtSvg = d3.select('#sinAddictionChart')
       .append('svg')
       .style('background', 'beige')
       .attr('width', width + margin.left + margin.right)
@@ -256,7 +256,7 @@ function processPctChngStckPriceChrt(sinStckChrtData: any[]) {
           'translate(' + margin.left + ',' + margin.top + ')');
 
   // add the X gridlines
-  chrtSvg.append('g')
+  sinChrtSvg.append('g')
       .attr('class', 'grid')
       .attr('transform', 'translate(0,' + height + ')')
       .call(d3.axisBottom(xScale)
@@ -264,27 +264,36 @@ function processPctChngStckPriceChrt(sinStckChrtData: any[]) {
           .tickFormat((d: any) => d + '%'));
 
   // add the Y gridlines
-  chrtSvg.append('g')
+  sinChrtSvg.append('g')
       .attr('class', 'grid')
       .call(d3.axisLeft(yScale)
           .tickSize(-width));
 
   // text label for the x axis
-  chrtSvg
+  sinChrtSvg
       .append('text')
       .attr('transform', 'translate(' + width / 2 + ' ,' + (height + 30) + ')')
       .style('text-anchor', 'middle')
       .style('font-size', '0.8rem')
       .text('Percentage Change');
 
-  chrtSvg.selectAll('.bar')
+  const tooltipSinChart = d3.select('body').append('div').attr('id', 'toolTipSinChart');
+  sinChrtSvg.selectAll('.bar')
       .data(sinStckChrtData)
       .enter().append('rect')
       .attr('class', (r: any) => `bar ${ r.pctChgStckPrice < 0 ? 'negative': 'positive' }`)
       .attr('x', (r: any) => xScale(Math.min(0, r.pctChgStckPrice)))
       .attr('y', (r: any) => yScale(r.StckName) as number)
       .attr('width', (r: any) => Math.abs( xScale(r.pctChgStckPrice) - xScale(0)))
-      .attr('height', yScale.bandwidth());
+      .attr('height', yScale.bandwidth())
+      .on('mousemove', function(event: any, r: any) {
+        tooltipSinChart
+            .style('left', event.pageX )
+            .style('top', event.pageY )
+            .style('display', 'inline-block')
+            .html('Percentage Changes :' + '<br>' + r.StckName + ': ' + r.pctChgStckPrice + '%');
+      })
+      .on('mouseout', function(r: any) { tooltipSinChart.style('display', 'none'); });
 }
 
 console.log('SqCore: Script END');

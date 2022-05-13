@@ -1,12 +1,40 @@
 body {
   text-align: center;
+  font-family: "Comic Sans MS", cursive, sans-serif;
 }
 
 h1 {
-  font-family: "Comic Sans MS", cursive, sans-serif;
-  text-align: center;
   color: blue;
-  font-size: 150%;
+  font-size: 1.5rem;
+}
+
+#idTitleCont {
+  color: mediumblue;
+  font-size: 1.1rem;
+}
+
+#idWarningCont {
+  color: red;
+  font-size: 1rem;
+}
+
+.marginCommon {
+  margin: 0.5rem;
+  font-size: 1rem;
+}
+
+.center {
+  text-align: center;
+  border:0;
+  font-size: 1.1rem;
+}
+
+.centerMatrix {
+  margin: auto;
+  width: 25%;
+  text-align: center;
+  border: 0;
+  font-size: 1.1rem;
 }
 
 .button {
@@ -29,6 +57,39 @@ h1 {
 
 .button:active {
   transform: translateY(0.4rem);
+}
+
+table.currData {
+  width: 80%;
+  margin-left: 10%;
+  margin-right: 10%;
+  margin-bottom: 0;
+  font-size: 0.8rem;
+  border-collapse: collapse;
+  border: 0.05rem solid black;
+  text-align: center
+}
+
+.currData td {
+  width: 5%;
+  border: 0.05rem solid black;
+}
+
+table.currData2 {
+  width: 100%;
+  margin-left: 0%;
+  margin-right: 0%;
+  margin-bottom: 0;
+  font-size: 0.8rem;
+  border-collapse: collapse;
+  border: 0.05rem solid black;
+  text-align: center
+}
+
+.currData2 td {
+  width: 5%;
+  text-align: center;
+  border: 0.05rem solid black;
 }
 
 #gameChanger {

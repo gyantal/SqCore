@@ -1,6 +1,7 @@
 html * {
   font-family: "Comic Sans MS", cursive, sans-serif;
 }
+
 body {
   text-align: center;
 }
@@ -44,7 +45,6 @@ table.currData {
 
 .currData td {
   width: 5%;
-  /*text-align: left;*/
   border: 0.05rem solid black;
 }
 
@@ -53,6 +53,7 @@ table.currData {
   border:0;
   font-size: 0.8rem;
 }
+
 .centerMatrix {
   margin: auto;
   width: 25%;
@@ -60,6 +61,7 @@ table.currData {
   border: 0;
   font-size: 0.8rem;
 }
+
 table.currData2 {
   width: 100%;
   margin-left: 0%;
@@ -86,7 +88,6 @@ table.currData2 {
 .tooltip {
   position: relative;
   display: inline-block;
-
 }
 
 /* Tooltip text */
@@ -118,7 +119,6 @@ table.currData2 {
   padding: 1rem 1rem 1rem 1rem;
   margin: 1rem auto 1rem 22rem;
   border: 0.1rem solid #ddd;
-  /*background: #0094ff;*/
   font-size: 1rem;
   background: #F4F6F6; /* For browsers that do not support gradients */
   background: linear-gradient(90deg, #D6EAF8, #D1F2EB); /* Standard syntax */
@@ -145,7 +145,6 @@ table.currData2 {
   max-width: 10rem;
   font-size: 0.8rem;
   background-color: #F4F6F6;
-  /* color: gainsboro; */
   text-align: center;
   opacity: 0.92;
   padding: 0.5rem 0;
