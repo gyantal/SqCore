@@ -94,11 +94,25 @@ namespace FinTechCommon
                         // Task.Run() uses threads from the thread pool, so it executes those connections parallel in the background. Then wait for them.
                         bool isConnected = BrokersWatcher.gWatcher.GatewayReconnect(brAccount.GatewayId);
                         if (!isConnected)
+                        {
+                            Console.WriteLine("!IB conn err. Check AWS firewall. Ping. (PowerShell) Test-NetConnection <IP> -Port 7308. IB TWS:Configure/API/TrustedIPs");
                             return;
+                        }
                         MemDb.gMemDb.UpdateBrAccount_AddAssetsToMemData(brAccount, brAccount.GatewayId);  // brAccount.Poss. LockFree Option addition. Clone&Replace. Replaces m_memData.AssetCache pointer with a new AssetCache
                         brAccount.NavAsset!.EstValue = (float)brAccount.NetLiquidation;    // fill RT price
                     });
                     brTasks.Add(brTask);
+
+                    _ = Task.Run(() =>    // Task.Run() runs it immediately. Checks that after a timeout whether Brokers are connected.
+                    {
+                        Thread.Sleep(TimeSpan.FromSeconds(15));
+                        if (!BrokersWatcher.gWatcher.IsGatewayConnected(brAccount.GatewayId))
+                        {
+                            Console.WriteLine($"{Environment.NewLine}!!! IB conn err. {brAccount.GatewayId} Timeout! Check AWS firewall. Ping. (PowerShell) Test-NetConnection <IP> -Port 7308. IB TWS:Configure/API/TrustedIPs");
+                            Console.WriteLine("!!! Timeout usually occurs if local IP is not set in IB TWS's TrustedIPs. Then the Connection thread stays in forever pending state. At firewall problems, there is no timeout, but connection thread crashes earlier.");
+                            return;
+                        }
+                    }).LogUnobservedTaskExceptions("!IB conn err. See console.");
                 }
 
                 // Step 3: Assets history in separate thread

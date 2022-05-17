@@ -97,9 +97,9 @@ namespace BrokerCommon
             return connectedNow;
         }
 
-        public bool IsGatewayConnected(GatewayId p_ibGatewayIdToTrade)
+        public bool IsGatewayConnected(GatewayId p_gatewayId)
         {
-            var gateway = m_gateways.FirstOrDefault(r => r.GatewayId == p_ibGatewayIdToTrade);
+            var gateway = m_gateways.FirstOrDefault(r => r.GatewayId == p_gatewayId);
             if (gateway == null)
                 return false;
             return gateway.IsConnected;
