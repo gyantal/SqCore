@@ -524,9 +524,15 @@ namespace SqCoreWeb.Controllers
             }
 
              DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
-             DateTime startIncLoc = nowET.AddYears(-1).AddDays(-3);
+             // PctChannel needs 252 days and we need another extra 30 trading days rolling window to calculate PctChannels during the previous lookback window
+             // PctChannel Signal cannot be calculated just having the last day data, because it has to be rolled further. As it can exit/enter into bullish signals along the way of the simulation.
+             // Estimated needed 252 trading days = 365 calendar days. 
+             // And an additional rolling window of 30 trading days (at least). That is another 45 calendar days.
+             // As minimal, we need 365 + 45 = 410 calendar days.
+             // For more robust calculations, we can use a 6 month rolling window. That is 120 trading days = 185 calendar days. Altogether: 365+185 = 550
+             // DateTime startIncLoc = nowET.AddDays(-408); // This can reproduce the old SqLab implementation with 33 days rolling simulation window
+             DateTime startIncLoc = nowET.AddDays(-550);    // This uses a 6-months, 120 trading days rolling simulation window for PctChannels 
 
-            
             List<List<DailyData>> sinTickersData = new();
             List<DailyData> cashSubstituteData = new();
 
@@ -562,16 +568,18 @@ namespace SqCoreWeb.Controllers
             double[] assetWeights2 = new double[nAssets];
             double[,] assetPctChannelsUpper = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each 
             double[,] assetPctChannelsLower = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each
-            sbyte[,] assetPctChannelsSignal = new sbyte[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each
-            int startNumDay = p_pctChannelLookbackDays.Max()-1;
+            sbyte[,] assetPctChannelsSignal = new sbyte[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each. It can be only 1 (bullish), -1 (bearish). Cannot be 0.
+            int startNumDay = p_pctChannelLookbackDays.Max() - 1;
             double thresholdLower = p_thresholdLower / 100.0;
-            double thresholdUpper = 1-thresholdLower;
+            double thresholdUpper = 1 - thresholdLower;
 
-            int nDays = p_taaWeightsData[0].Count - startNumDay;
-            double[,] dailyAssetWeights = new double[nDays,nAssets];
-            double[,] dailyAssetScores = new double[nDays, nAssets];
-            double[,] dailyAssetHv = new double[nDays, nAssets];
-            for (int iDay = 0; iDay < nDays; iDay++)
+            int nDaysSimulated = p_taaWeightsData[0].Count - startNumDay;    // nDays of the rolling window where we start calculating the pctChannel Signals. Eg. nDays = 33 or 120 (for 6 months window precalculation)
+            if (nDaysSimulated < 10)
+                Console.WriteLine("StrategySin warning! Simulated rolling window is too short. It is not enough to calculate TaaWeights properly.");
+            double[,] dailyAssetWeights = new double[nDaysSimulated,nAssets];
+            double[,] dailyAssetScores = new double[nDaysSimulated, nAssets];
+            double[,] dailyAssetHv = new double[nDaysSimulated, nAssets];
+            for (int iDay = 0; iDay < nDaysSimulated; iDay++)    // rolling window loop for previous 30/120 trading days. It ends with today.
             {
                 for (int iAsset = 0; iAsset < nAssets; iAsset++)
                 {
@@ -583,11 +591,11 @@ namespace SqCoreWeb.Controllers
                         assetPctChannelsLower[iAsset, iChannel] = Utils.Quantile(usedQuotes, thresholdLower);
                         assetPctChannelsUpper[iAsset, iChannel] = Utils.Quantile(usedQuotes, thresholdUpper);
                         if (assetPrice < assetPctChannelsLower[iAsset, iChannel])
-                        assetPctChannelsSignal[iAsset, iChannel] = -1;
+                            assetPctChannelsSignal[iAsset, iChannel] = -1;  // fully overwrite the signal for iAsset and for this channel. We don't keep signal values historically, just keep the actual signal as we march forward in the simulated window. 
                         else if (assetPrice > assetPctChannelsUpper[iAsset, iChannel])
-                        assetPctChannelsSignal[iAsset, iChannel] = 1;
+                            assetPctChannelsSignal[iAsset, iChannel] = 1;
                         else if (iDay==0)
-                        assetPctChannelsSignal[iAsset, iChannel] = 1;
+                            assetPctChannelsSignal[iAsset, iChannel] = 1;   // initially at the start of the rolling window, we assume it had bullish signal.
                     }
                 }
 
@@ -615,25 +623,24 @@ namespace SqCoreWeb.Controllers
                                                                                     // If assetScores[i]=0, assetWeights[i] becomes 0, so we don't use its weight when p_isCashAllocatedForNonActives => TLT will not fill its Cash-place; NO TLT will be invested (if this is the only stock with 0 score), the portfolio will be 100% in other stocks. We are more Brave.
                                                                                     // However, if assetScores[i]<0 (negative), assetWeights[i] becoumes a proper negative number. It will be used in TotalWeight calculation => TLT will fill its's space. (if this is the only stock with negative score), TLT will be invested in its place; consequently the portfolio will NOT be 100% in other stocks. We are more defensive.
                     totalWeight += Math.Abs(assetWeights[iAsset]);      // Sum up the absolute values of the “Score/Vol” quotients. TotalWeight contains even the non-active assets so have have some cash.
-                    assetWeights2[iAsset] = (assetWeights[iAsset]>=0) ?assetWeights[iAsset]:0.0;
+                    assetWeights2[iAsset] = (assetWeights[iAsset]>=0) ? assetWeights[iAsset] : 0.0;
 
                 }
                 for (int iAsset = 0; iAsset < nAssets; iAsset++)
                 {
-                    dailyAssetWeights[iDay, iAsset] = assetWeights2[iAsset]/totalWeight;
+                    dailyAssetWeights[iDay, iAsset] = assetWeights2[iAsset] / totalWeight;
                     dailyAssetScores[iDay, iAsset] = assetScores[iAsset];
                     dailyAssetHv[iDay, iAsset] = assetHV[iAsset];
                 }
-
             }
 
             double[] lastDayScores = new double[nAssets];
             for (int iAsset = 0; iAsset < nAssets; iAsset++)
             {
-                lastDayScores[iAsset] = dailyAssetScores[dailyAssetScores.GetLength(0)-1,iAsset]; ;
+                lastDayScores[iAsset] = dailyAssetScores[dailyAssetScores.GetLength(0) - 1,iAsset]; ;
             }
 
-            IEnumerable<DateTime> taaWeightDateVec = p_taaWeightsData[0].GetRange(p_taaWeightsData[0].Count-nDays ,nDays).Select(r => r.Date);
+            IEnumerable<DateTime> taaWeightDateVec = p_taaWeightsData[0].GetRange(p_taaWeightsData[0].Count-nDaysSimulated ,nDaysSimulated).Select(r => r.Date);
             DateTime[] taaWeightDateArray = taaWeightDateVec.ToArray();
             DateTime startMatlabDate = DateTime.ParseExact("1900/01/01", "yyyy/MM/dd", CultureInfo.InvariantCulture);
 
