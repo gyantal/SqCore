@@ -105,7 +105,7 @@ namespace SqCoreWeb.Controllers
             //     {
             //         sw.Write(allAssetList[i] + ": " + Environment.NewLine);
             //         List<DailyData> prices = dataListTupleFromSQServer.Item1[i];
-            //         string priceStr = String.Join('\t', prices.Select(r => r.Date.ToString() + ", " + r.AdjClosePrice.ToString() + Environment.NewLine));
+            //         string priceStr = String.Join('\t', (prices.Select(r => r.Date.ToString() + ", " + r.AdjClosePrice.ToString()).Last() + Environment.NewLine));
             //         sw.Write(priceStr + Environment.NewLine);
             //     }
             //     sw.Close();
@@ -349,7 +349,16 @@ namespace SqCoreWeb.Controllers
             sb.Append(@"""," + Environment.NewLine + @"""leverage"": """ + Math.Round(leverage * 100, 2).ToString() + "%");
             sb.Append(@"""," + Environment.NewLine + @"""maxBondPerc"": """ + Math.Round(maxBondPerc * 100, 2).ToString() + "%");
 
-
+            sb.Append(@"""," + Environment.NewLine + @"""lastPriceRealTime"": """);
+            for (int i = 0; i < quotesData.Count; i++)
+            {
+                sb.Append(allAssetList[i] + ": ");
+                var prices = quotesData[i];
+                string priceStr = String.Join('\t', (prices.Select(r => r.Date.ToString() + ", " + Math.Round(r.AdjClosePrice, 2).ToString())).Last() + "ß ");
+                sb.Append(priceStr);
+            }
+            string priceTlt = string.Join('\t', "TLT:" + (cashEquivalentQuotesData.Select(r => r.Date.ToString() + ", " + Math.Round(r.AdjClosePrice, 2).ToString())).Last() + "ß ");
+            sb.Append(priceTlt);
 
             sb.Append(@"""," + Environment.NewLine + @"""assetNames"": """);
             for (int i = 0; i < allAssetList.Length - 1; i++)

@@ -127,6 +127,11 @@ function sinAddictionInfoTbls(json) {
   for (let i = 0; i < assScoresMtxTemp.length; i++)
     assScoresMtx[i] = assScoresMtxTemp[i].split(',');
 
+  const lastPriceMtxTemp = json.lastPriceRealTime.split('ß ');
+  const lastPriceMtx: any[] = [];
+  for (let i = 0; i < lastPriceMtxTemp.length; i++)
+    lastPriceMtx[i] = lastPriceMtxTemp[i].split(',');
+
   // Creating the HTML code of tables.
   let chngInPosTbl = '<table class="currData"><tr align="center"><td bgcolor="#66CCFF"></td>';
   for (let i = 0; i < assetNames2Array.length - 1; i++)
@@ -160,10 +165,11 @@ function sinAddictionInfoTbls(json) {
 
   chngInPosTbl += '</tr></table>';
 
-  let pctChngStckPriceTbl = '<table class="currData"><tr align="center"  bgcolor="#1E90FF"><td rowspan="2"></td><td rowspan="2">TAA Percentile Channel Score</td><td rowspan="2">Required Asset Weight</td><td colspan="7">Percentage Change of Stock Price</td></tr><tr align="center" bgcolor="#6EB5FF"><td>1-Day</td><td>1-Week</td><td>2-Weeks</td><td>1-Month</td><td>3-Months</td><td>6-Months</td><td>1-Year</td></tr>';
+  let pctChngStckPriceTbl = '<table class="currData"><tr align="center"  bgcolor="#1E90FF"><td rowspan="2"></td><td rowspan="2">LastPrice(RT)</td><td rowspan="2">TAA Percentile Channel Score</td><td rowspan="2">Required Asset Weight</td><td colspan="7">Percentage Change of Stock Price</td></tr><tr align="center" bgcolor="#6EB5FF"><td>1-Day</td><td>1-Week</td><td>2-Weeks</td><td>1-Month</td><td>3-Months</td><td>6-Months</td><td>1-Year</td></tr>';
   for (let i = 0; i < assetNames2Array.length-2; i++) {
     pctChngStckPriceTbl += '<tr align="center">';
     pctChngStckPriceTbl += '<td bgcolor="#66CCFF"><a href=https://finance.yahoo.com/quote/' + assetNames2Array[i] + ' target="_blank">' + assetNames2Array[i] + '</a></td>';
+    pctChngStckPriceTbl += '<td bgcolor="#FFF5BA">' + lastPriceMtx[i][1] + '</td>';
     pctChngStckPriceTbl += '<td bgcolor="' + pctgToColor(parseFloat(assScoresMtx[i][0]), -100, 100) + '">' + assScoresMtx[i][0] + '</td>';
     pctChngStckPriceTbl += '<td bgcolor="' + pctgToColor(parseFloat(assScoresMtx[i][1]), -20, 20) + '">' + assScoresMtx[i][1] + '</td>';
     for (let j = 0; j < 7; j++)
@@ -173,6 +179,7 @@ function sinAddictionInfoTbls(json) {
   }
   pctChngStckPriceTbl += '<tr align="center">';
   pctChngStckPriceTbl += '<td bgcolor="#66CCFF"><a href=https://finance.yahoo.com/quote/' + assetNames2Array[assetNames2Array.length - 2] + ' target="_blank">' + assetNames2Array[assetNames2Array.length - 2] + '</a></td>';
+  pctChngStckPriceTbl += '<td bgcolor="#FFF5BA">' + lastPriceMtx[assetNames2Array.length - 2][1] + '</td>';
   pctChngStckPriceTbl += '<td bgcolor="#FFF5BA">' + assScoresMtx[assetNames2Array.length - 2][0] + '</td>';
   pctChngStckPriceTbl += '<td bgcolor="' + pctgToColor(parseFloat(assScoresMtx[assetNames2Array.length - 2][1]), -20, 20) + '">' + assScoresMtx[assetNames2Array.length - 2][1] + '</td>';
   for (let j = 0; j < 7; j++)
@@ -181,10 +188,10 @@ function sinAddictionInfoTbls(json) {
   pctChngStckPriceTbl += '</tr>';
   pctChngStckPriceTbl += '</table>';
   // "Sending" data to HTML file.
-  const currTableMtx2 = getDocElementById('changeInPos');
-  currTableMtx2.innerHTML = chngInPosTbl;
-  const currTableMtx4 = getDocElementById('percentageChange');
-  currTableMtx4.innerHTML = pctChngStckPriceTbl;
+  const chngInPosMtx = getDocElementById('changeInPos');
+  chngInPosMtx.innerHTML = chngInPosTbl;
+  const pctChngStckPriceMtx = getDocElementById('percentageChange');
+  pctChngStckPriceMtx.innerHTML = pctChngStckPriceTbl;
 
   // Declaring data sets to charts.
   const retHistLBPeriods = json.pastPerfDaysName.split(', ');
