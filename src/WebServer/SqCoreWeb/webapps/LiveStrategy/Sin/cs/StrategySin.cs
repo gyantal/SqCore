@@ -542,15 +542,7 @@ namespace SqCoreWeb.Controllers
              // DateTime startIncLoc = nowET.AddDays(-408); // This can reproduce the old SqLab implementation with 33 days rolling simulation window
              DateTime startIncLoc = nowET.AddDays(-550);    // This uses a 6-months, 120 trading days rolling simulation window for PctChannels 
 
-            // Before getting historical and RT prices from MemDb, we force to update RT prices in MemDb.
-            // Reason: LowFrequency RT update happens only in every 30 minutes. That is too old data, because this SIN page can be used for manual trading instruction.
-            // But we don't want to update the RT prices for all of these 30 assets every time with 5 seconds frequency.
-            // It would be unnecessary. The SIN page is used only once per month. At the end of the month rebalancing trading.
-            // Therefore, we force the RT price update for only these 30 assets on Demand. When this page is accessed. It requires another 45msec, so the page answer is slower, but it would be unnecessary to refresh these ticker Rt prices all the time.
-            // Update the RT prices of only those 30 stocks (45ms) that are in the SIN portfolio. Don't need to update all the 700 (later 2000) stocks in MemDb, that is done automatically by RtTimer in every 30min
-            MemDb.DownloadPriorCloseAndLastPriceYF(assets.ToArray()).TurnAsyncToSyncTask();
-
-            List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc).ToList();
+            List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc, true).ToList();
             List<List<DailyData>> sinTickersData = new();
             for (int i = 0; i < assetHistsAndEst.Count - 1; i++)
             {

@@ -916,7 +916,7 @@ namespace SqCoreWeb.Controllers
             List<List<DailyData>> uberTickersData = new();
             List<DailyData> VIXDailyquotes = new();
 
-            List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc).ToList();
+            List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc, true).ToList();
             for (int i = 0; i < assetHistsAndEst.Count - 1; i++)
             {
                 var vals = assetHistsAndEst[i].values;

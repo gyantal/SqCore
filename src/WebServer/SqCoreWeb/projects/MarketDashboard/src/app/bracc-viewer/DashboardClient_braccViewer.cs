@@ -334,9 +334,11 @@ namespace SqCoreWeb
         {
             if (m_braccSelectedNavAsset == null)
                 return null;
-            List<Asset> assets = new();
-            assets.Add(m_braccSelectedNavAsset);
-            assets.Add(MemDb.gMemDb.AssetsCache.GetAsset(p_bnchmrkTicker)); // add it to BrokerNav for benchmark for the chart
+            List<Asset> assets = new()
+            {
+                m_braccSelectedNavAsset,
+                MemDb.gMemDb.AssetsCache.GetAsset(p_bnchmrkTicker) // add it to BrokerNav for benchmark for the chart
+            };
 
             IEnumerable<AssetHist> assetHists = MemDb.gMemDb.GetSdaHistCloses(assets, lookbackStart, lookbackEndExcl, true, true);
 

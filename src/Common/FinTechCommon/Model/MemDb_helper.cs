@@ -216,8 +216,19 @@ namespace FinTechCommon
             return assetHists;
         }
 
-        public IEnumerable<(Asset asset, List<AssetHistValue> values)> GetSdaHistClosesAndLastEstValue(IEnumerable<Asset> p_assets, DateTime p_startIncLoc)
+        public IEnumerable<(Asset asset, List<AssetHistValue> values)> GetSdaHistClosesAndLastEstValue(IEnumerable<Asset> p_assets, DateTime p_startIncLoc, bool p_makeRtLastValueUptodate = false)
         {
+            if (p_makeRtLastValueUptodate)  // if older than 30minutes realtime prices are sufficient, or if caller is sure that RT prices are sufficiently up-to-date (for example handled in HighFrequencyTimer) then don't need to spend another 45msec here.
+            {
+                // Before getting historical and RT prices from MemDb, we can force to update RT prices in MemDb.
+                // Reason: LowFrequency RT update happens only in every 30 minutes. That is too old data, because this SIN page can be used for manual trading instruction.
+                // But we don't want to update the RT prices for all of these 5-30 assets every time with 5 seconds frequency.
+                // It would be unnecessary if a webapp report is used only once per month. At the end of the month rebalancing trading.
+                // Therefore, we force the RT price update for only these 30 assets on Demand. When this page is accessed. It requires another 45msec, so it is slower, but it would be unnecessary to refresh all the universe ticker Rt prices all the time.
+                // Update the RT prices of only those 30 stocks (45ms) that are in the SIN portfolio. Don't need to update all the 700 (later 2000) stocks in MemDb, that is done automatically by RtTimer in every 30min
+                MemDb.DownloadPriorCloseAndLastPriceYF(p_assets.ToArray()).TurnAsyncToSyncTask();
+            }
+
             TsDateData<SqDateOnly, uint, float, uint> histData = DailyHist.GetDataDirect();
             SqDateOnly[] dates = histData.Dates;
 
