@@ -59,7 +59,7 @@ function onReceiveData(json: any) {
   // if (json.dailyProfSig !== 'N/A')
   //   getDocElementById('dailyProfit').innerHTML = '<b>Daily Profit/Loss: <span class="' + json.dailyProfString + '">' + json.dailyProfSig + json.dailyProfAbs + '</span></b>';
   getDocElementById('idCurrentEvent').innerHTML = 'Next trading day will be <span class="stci"> ' + json.currentEventName + '</span>, <div class="tooltip">used STCI is <span class="stci">' + json.currentSTCI + '</span><span class="tooltiptext">Second (third) month VIX futures divided by front (second) month VIX futures minus 1, with more (less) than 5-days until expiration.</span></div > and used VIX is <span class="stci">' + json.currentVIX + '</span>, thus leverage will be <span class="stci">' + json.currentFinalWeightMultiplier + '.</span >';
-  getDocElementById('idPosFut').innerHTML = 'Upcoming Events';
+  getDocElementById('idPosFut').innerHTML = '<a href=' + json.gSheetRef + '" target="_blank" >Upcoming Events</a>';
   getDocElementById('idVixCont').innerHTML = 'VIX Futures Term Structure';
   getDocElementById('idRules').innerHTML = '<u>Current trading rules:</u> <ul align="left"><li>Play with 100% of PV on FOMC days (as this is the strongest part of the strategy), with 85% on Holiday days, with 70% on VIXFUTEX, OPEX, TotM and TotMM days, while with only 50% of PV on pure bullish STCI days. These deleveraging percentages have to be played both on bullish and bearish days.</li><li><ul><li>All of the FOMC and Holiday signals have to be played, regardless the STCI;</li><li>on weaker bullish days (OPEX, VIXFUTEX, TotM and TotMM) play the UberMix basket if and only if the STCI closed above +2% contango (25th percentile) on previous day (so, stay in cash if contango is not big enough);</li><li>on weaker bearish days (OPEX, VIXFUTEX, TotM and TotMM) play long VXX if and only if the STCI closed below +9% contango (75th percentile) on previous day (so, stay in cash if the contango is too deep).</li></ul></li><li>Bullish STCI threshold on non-event days is +7.5%, which is the 67th percentile of historical value of the STCI.</li><li>VIX Based Leverage Indicator: <ul align="left"><li>If VIX<21:&emsp; leverage = 100%;</li><li>If 21<=VIX<30:&emsp; leverage = 100%-(VIX-21)*10%;</li><li>If 30<=VIX:&emsp; leverage = 10%.</li></ul></li></ul>';
 
@@ -106,7 +106,7 @@ function renewedUberInfoTbls(json) {
 
   chngInPosTbl += '<td bgcolor="#66CCFF">' + assetNames2Array[assetNames2Array.length - 1] + '</td>';
 
-  chngInPosTbl += '</tr > <tr align="center"><td align="center" rowspan="2" bgcolor="#FF6633">' + json.nextTradingDay + '</td>';
+  chngInPosTbl += '</tr > <tr align="center"><td align="center" rowspan="2" bgcolor="#FF6633">Tomorrow target:<br>' + json.nextTradingDay + '</td>';
   for (let i = 0; i < assetNames2Array.length; i++)
     chngInPosTbl += '<td bgcolor="#' + prevEventColors[0] + '">' + nextPosValArray[i] + '</td>';
 
@@ -116,7 +116,7 @@ function renewedUberInfoTbls(json) {
     chngInPosTbl += '<td bgcolor="#' + prevEventColors[0] + '">' + nextPosNumArray[i] + '</td>';
 
 
-  chngInPosTbl += '</tr > <tr align="center"><td align="center" rowspan="2" bgcolor="#FF6633">' + json.currPosDate + '</td>';
+  chngInPosTbl += '</tr > <tr align="center"><td align="center" rowspan="2" bgcolor="#FF6633">Last rebalance:<br>' + json.currPosDate + '</td>';
   for (let i = 0; i < assetNames2Array.length; i++)
     chngInPosTbl += '<td bgcolor="#' + prevEventColors[1] + '">' + currPosValArray[i] + '</td>';
 
