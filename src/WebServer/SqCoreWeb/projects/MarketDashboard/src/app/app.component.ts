@@ -148,8 +148,16 @@ export class AppComponent implements OnInit {
         case 'Dshbrd.IsDshbrdOpenManyTimes':
           console.log('The Dashboard opened many times string:', msgObjStr);
           this.isDshbrdOpenManyTimes = String(msgObjStr).toLowerCase() === 'true';
-          if (this.isDshbrdOpenManyTimes)
+          if (this.isDshbrdOpenManyTimes) {
             this.isDshbrdOpenManyTimesDialogVisible = true;
+            // fading into appear.
+            const dialogAnimate = document.getElementById('manyDshbrdClientsDialog') as HTMLElement;
+            dialogAnimate.style.animationName = 'dialogFadein';
+            dialogAnimate.style.animationDuration = '13s';
+            dialogAnimate.style.animationTimingFunction = 'linear';
+            dialogAnimate.style.animationDelay = '1s';
+            dialogAnimate.style.animationIterationCount = 'infinite';
+          }
           break;
         default:
           let isHandled = this.childMktHealthComponent.webSocketOnMessage(msgCode, msgObjStr);

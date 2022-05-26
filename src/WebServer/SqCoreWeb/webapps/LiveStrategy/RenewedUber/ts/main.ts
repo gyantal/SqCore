@@ -251,6 +251,7 @@ function renewedUberInfoTbls(json) {
   contangoMtx.innerHTML = contangoTbl;
 
   interface PriceData {
+    name: string;
     days: number;
     price: number;
   }
@@ -258,8 +259,9 @@ function renewedUberInfoTbls(json) {
   const currDataPrices: PriceData[] = [];
   for (let i = 0; i < nCurrDataVix; i++) {
     const currDataPricesRows: PriceData = {
-      days: currDataDaysVixArray[i],
-      price: currDataVixArray[i],
+      name: 'Current',
+      days: parseFloat(currDataDaysVixArray[i]),
+      price: parseFloat(currDataVixArray[i]),
     };
     currDataPrices.push(currDataPricesRows);
   }
@@ -267,8 +269,9 @@ function renewedUberInfoTbls(json) {
   const prevDataPrices: PriceData[] = [];
   for (let i = 0; i < nCurrDataVix; i++) {
     const prevDataPricesRows: PriceData = {
-      days: currDataDaysVixArray[i],
-      price: prevDataVixArray[i],
+      name: 'LastClose',
+      days: parseFloat(currDataDaysVixArray[i]),
+      price: parseFloat(prevDataVixArray[i]),
     };
     prevDataPrices.push(prevDataPricesRows);
   }
@@ -276,12 +279,20 @@ function renewedUberInfoTbls(json) {
   const spotVixValues: PriceData[] = [];
   for (let i = 0; i < nCurrDataVix; i++) {
     const spotVixValuesRows: PriceData = {
-      days: currDataDaysVixArray[i],
-      price: spotVixArray[i],
+      name: 'SpotVix',
+      days: parseFloat(currDataDaysVixArray[i]),
+      price: parseFloat(spotVixArray[i]),
     };
     spotVixValues.push(spotVixValuesRows);
   }
 
+  // Development for common chart function that can be used for all multiple charts - Daya
+  const futprice = currDataPrices.concat(prevDataPrices);
+  const futPrcData = futprice.concat(spotVixValues);
+  // const xLabel: string = 'Days';
+  // const yLabel: string = 'FuturePrice';
+  // renewedUberPctChgChartFut(futPrcData, xLabel, yLabel);
+  console.log('length of futprc', futPrcData.length);
   // Declaring data sets to charts.
 
   interface DataSet {
@@ -366,7 +377,7 @@ function renewedUberPctChgChart(uberStckChrtData) { // renewedUberPctChgChart
       .domain([(yMin as number) - 5, (yMax as number) + 5])
       .range([height, 0]);
 
-  const pctChgChrtSvg = d3.select('#pctChgChrt')
+  const pctChrt = d3.select('#pctChgChrt')
       .append('svg')
       .style('background', 'white')
       .attr('width', width + margin.left + margin.right)
@@ -375,7 +386,7 @@ function renewedUberPctChgChart(uberStckChrtData) { // renewedUberPctChgChart
       .attr('transform',
           'translate(' + margin.left + ',' + margin.top + ')');
 
-  pctChgChrtSvg.append('g')
+  pctChrt.append('g')
       .attr('class', 'grid')
       .attr('transform', 'translate(0,' + height +')')
       .call(d3.axisBottom(xScale).tickSize(-height).tickFormat(shortMonthFormat))
@@ -383,7 +394,7 @@ function renewedUberPctChgChart(uberStckChrtData) { // renewedUberPctChgChart
       .style('text-anchor', 'end')
       .attr('transform', 'rotate(-25)');
 
-  pctChgChrtSvg.append('g')
+  pctChrt.append('g')
       .attr('class', 'grid')
       .call(d3.axisLeft(yScale)
           .tickSize(-width)
@@ -407,7 +418,7 @@ function renewedUberPctChgChart(uberStckChrtData) { // renewedUberPctChgChart
       .range(['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#f781bf', '#999999', '#ffff33', '#a65628']);
 
   // Draw the line
-  pctChgChrtSvg.selectAll('.line')
+  pctChrt.selectAll('.line')
       .data(stckDataGroups)
       .enter()
       .append('path')
@@ -419,7 +430,7 @@ function renewedUberPctChgChart(uberStckChrtData) { // renewedUberPctChgChart
           .y((d: any) => yScale(d.price) as number))(d.values) as any);
 
   // // Add the Legend
-  pctChgChrtSvg.selectAll('rect')
+  pctChrt.selectAll('rect')
       .data(stckDataGroups)
       .enter().append('text')
       .attr('x', (d: any, i: any) => ( 25 + i * 60))
@@ -428,13 +439,13 @@ function renewedUberPctChgChart(uberStckChrtData) { // renewedUberPctChgChart
       .style('fill', (d: any) => color(d.key) as any)
       .text((d: any) => (d.key));
   // x axis label
-  pctChgChrtSvg
+  pctChrt
       .append('text')
       .attr('class', 'pctChgLabel')
       .attr('transform', 'translate(' + width / 2 + ' ,' + (height + 42) + ')')
       .text('Date');
   // y axis label
-  pctChgChrtSvg
+  pctChrt
       .append('text')
       .attr('class', 'pctChgLabel')
       .attr('transform', 'rotate(-90)')
@@ -443,7 +454,7 @@ function renewedUberPctChgChart(uberStckChrtData) { // renewedUberPctChgChart
       .attr('dy', '2em')
       .text('Percentage Change');
 
-  pctChgChrtSvg
+  pctChrt
       .selectAll('myCircles')
       .data(stckChrtData)
       .enter()
@@ -456,8 +467,8 @@ function renewedUberPctChgChart(uberStckChrtData) { // renewedUberPctChgChart
       .attr('r', 2.5);
 
   const tooltipPctChg = d3.select('#tooltipChart');
-  const tooltipLine = pctChgChrtSvg.append('line');
-  pctChgChrtSvg.append('rect')
+  const tooltipLine = pctChrt.append('line');
+  pctChrt.append('rect')
       .attr('width', width)
       .attr('height', height)
       .attr('opacity', 0)
@@ -527,7 +538,7 @@ function renewedUberFuturePricesChrt(dataset: any, titleCont: any, minPrice: num
       .x((d : any) => x(d.days))
       .y((d : any) => y(d.price));
 
-  const futPrcChrtSvg = d3.select('#renewedUberchart')
+  const vixChrt = d3.select('#renewedUberchart')
       .append('svg')
       .style('background', 'white')
       .attr('width', width + margin.left + margin.right)
@@ -536,26 +547,26 @@ function renewedUberFuturePricesChrt(dataset: any, titleCont: any, minPrice: num
       .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
   const tooltip = d3.select('#tooltipChart');
-  const tooltipLine = futPrcChrtSvg.append('line');
+  const tooltipLine = vixChrt.append('line');
 
   // Add the axes and a title
   const xAxis = d3.axisBottom(x).tickSize(-height).tickFormat(d3.format('.4'));
   const yAxis = d3.axisLeft(y).tickSize(-width).tickFormat(d3.format('$.4'));
-  futPrcChrtSvg.append('g').attr('class', 'grid').call(yAxis);
-  futPrcChrtSvg
+  vixChrt.append('g').attr('class', 'grid').call(yAxis);
+  vixChrt
       .append('g')
       .attr('class', 'grid')
       .attr('transform', 'translate(0,' + height + ')')
       .call(xAxis);
 
   // text label for the x axis
-  futPrcChrtSvg
+  vixChrt
       .append('text')
       .attr('transform', 'translate(' + width / 2 + ' ,' + (height + 30) + ')')
       .style('text-anchor', 'middle')
       .style('font-size', '0.8rem')
       .text('Days until expiration');
-  futPrcChrtSvg
+  vixChrt
       .append('text')
       .style('text-anchor', 'middle')
       .style('font-size', '0.8rem')
@@ -571,7 +582,7 @@ function renewedUberFuturePricesChrt(dataset: any, titleCont: any, minPrice: num
   dataset.forEach((d) => {
     series = d;
 
-    futPrcChrtSvg
+    vixChrt
         .append('path')
         .attr('fill', 'none')
         .attr('stroke', d.color)
@@ -579,7 +590,7 @@ function renewedUberFuturePricesChrt(dataset: any, titleCont: any, minPrice: num
         .datum(d.history)
         .attr('d', line);
 
-    futPrcChrtSvg
+    vixChrt
         .append('text')
         .html(d.name)
         .style('font-size', '0.8rem')
@@ -589,7 +600,7 @@ function renewedUberFuturePricesChrt(dataset: any, titleCont: any, minPrice: num
         .attr('dx', '.5em')
         .attr('y', 30 + 20 * numSeries);
 
-    futPrcChrtSvg
+    vixChrt
         .selectAll('myCircles')
         .data(d.history)
         .enter()
@@ -604,7 +615,7 @@ function renewedUberFuturePricesChrt(dataset: any, titleCont: any, minPrice: num
     numSeries = numSeries + 1;
   });
 
-  futPrcChrtSvg
+  vixChrt
       .append('rect')
       .attr('width', width)
       .attr('height', height)

@@ -342,7 +342,6 @@ svg.material-icons2 path {
   align-items: center;
 }
 
-
 #manyDshbrdClientsDialog {
   display: block;
   position: fixed;
@@ -359,19 +358,13 @@ svg.material-icons2 path {
   border: .3rem solid #FF5F1F;
   border-radius: 1rem;
   opacity: 0;
-  animation-name: dialogFadein;
-  animation-duration: 13s;
-  animation-timing-function: ease;
-  animation-delay: 6s;
-  animation-direction: normal;
-  animation-fill-mode: forwards;
 }
 
 @keyframes dialogFadein {
-    0% { opacity: 0; }
-    100% { opacity: 0.95; }
-  }
-  
+  0%, 100% { opacity: 0; }
+  50% { opacity: 0.95; }
+}
+
 .manyDshbrdClientsDialog-content {
   margin: auto;
   padding: 1rem 2rem 2rem 2rem;
@@ -405,5 +398,3 @@ svg.material-icons2 path {
   display: inline-block;
   width: 22%;
 }
-
-
