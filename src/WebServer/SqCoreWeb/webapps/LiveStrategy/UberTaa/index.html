@@ -14,6 +14,9 @@
 <br>
   <br /><strong>Data will arrive </strong> here after (simulated)<em> <strong> 5 seconds </strong>  delay to test user experience: </em> <br /><br /><br />
     <div id="DebugDataArrivesHere"></div>
+    <div id="errorMessage" style="visibility: hidden">
+      <div class="herror" id="idErrorCont"></div>
+  </div>
     <div id="idTitleCont"></div>
     <div id="idWarningCont"></div>
     <p class="marginCommon">
@@ -46,6 +49,11 @@
         <span id="futPositions"></span>
     </div>
     <br>
+    <div id="pctChgCharts" class="chartsContainer" style="visibility: hidden">
+      <strong>Percentage Changes in the Last 20 Days</strong>
+      <div id="pctChgChrt"></div>
+      <div id='tooltipChart'></div>
+    </div>
     <!-- <div class="demo-container">
         <strong>SPX 50/200-MA Timer</strong>
         <div id="placeholder2" class="demo-placeholder"></div>

@@ -100,8 +100,6 @@ namespace SqCoreWeb.Controllers
         [HttpGet]   // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
         public string Get()
         {
-            Thread.Sleep(1000);     // intentional delay to simulate a longer process to crunch data. This can be removed.
-    // Under Development - Daya.
             // string[] allAssetList = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
             // string[] allAssetListVIX = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };            // // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
             string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
@@ -131,29 +129,6 @@ namespace SqCoreWeb.Controllers
             // // Collecting and splitting price data got from SQL Server
             (IList<List<DailyData>>, List<DailyData>) quotesDataAll = GetUberStockHistData(allAssetListVIX);
             Console.WriteLine("RenewedUber.Get() 1a");
-            // // Debug.WriteLine("quotesDataAll.Count: " + quotesDataAll.Count);
-            // try
-            // {
-            //     StreamWriter sw = new("C:\\temp\\quotesDataRenew.csv");
-            //     for (int i = 0; i < allAssetListVIX.Length - 1; i++)
-            //     {
-            //         sw.Write(allAssetListVIX[i] + ": " + Environment.NewLine);
-            //         List<DailyData> prices = quotesDataAll.Item1[i];
-            //         string priceStr = String.Join('\t', prices.Select(r => r.Date.ToString() + ", " + r.AdjClosePrice.ToString() + Environment.NewLine));
-            //         sw.Write(priceStr + Environment.NewLine);
-            //     }
-            //     sw.Close();
-            // }
-            // catch(Exception e)
-            // {
-            //     Console.WriteLine("Exception: " + e.Message);
-            // }
-            // StreamWriter sw1 = new("C:\\temp\\cashEquivalentQuotesData.csv");
-            // sw1.Write(allAssetList[^1] + ": " + Environment.NewLine);
-            //  List<DailyData> prices1 = quotesDataAll.Item2;
-            // string priceStr1 = String.Join('\t', prices1.Select(r => r.Date.ToString() + ", " + r.AdjClosePrice.ToString() + Environment.NewLine));
-            // sw1.Write(priceStr1 + Environment.NewLine);
-            // // Debug.WriteLine(sbDebugData.ToString());
 
             IList<List<DailyData>>? quotesData = quotesDataAll.Item1;
             List<DailyData>? VIXQuotes = quotesDataAll.Item2;
@@ -332,8 +307,6 @@ namespace SqCoreWeb.Controllers
             {
                 currEventCode = 8;
             }
-
-
 
 
             int[] prevEventCodeMod = new int[usedDateVec.Length];
@@ -629,7 +602,6 @@ namespace SqCoreWeb.Controllers
                 nextDataMtxToJS[iRows, 11] = Math.Round(nextEventFinalWeightedSignal[iRows] * 100, 2).ToString() + "%";
 
             }
-
 
 
             //AssetPrice Changes in last 20 days to chart

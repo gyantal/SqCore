@@ -150,13 +150,13 @@ export class AppComponent implements OnInit {
           this.isDshbrdOpenManyTimes = String(msgObjStr).toLowerCase() === 'true';
           if (this.isDshbrdOpenManyTimes) {
             this.isDshbrdOpenManyTimesDialogVisible = true;
-            // fading into appear.
             const dialogAnimate = document.getElementById('manyDshbrdClientsDialog') as HTMLElement;
             dialogAnimate.style.animationName = 'dialogFadein';
-            dialogAnimate.style.animationDuration = '13s';
-            dialogAnimate.style.animationTimingFunction = 'linear';
-            dialogAnimate.style.animationDelay = '1s';
-            dialogAnimate.style.animationIterationCount = 'infinite';
+            dialogAnimate.style.animationDuration = '3s';
+            dialogAnimate.style.animationTimingFunction = 'linear'; // default would be ‘ease’, which is a slow start, then fast, before it ends slowly. We prefer the linear.
+            // dialogAnimate.style.animationDelay = '0s';
+            dialogAnimate.style.animationIterationCount = '1'; // only once
+            dialogAnimate.style.animationFillMode = 'forwards';
           }
           break;
         default:

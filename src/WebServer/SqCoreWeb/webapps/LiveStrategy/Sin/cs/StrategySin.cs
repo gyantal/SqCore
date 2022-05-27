@@ -96,31 +96,6 @@ namespace SqCoreWeb.Controllers
             // Collecting and splitting price data got from SQL Server
             (IList<List<DailyData>>, List<DailyData>) dataListTupleFromSQServer = GetSinStockHistData(allAssetList);
 
-            // below commented code is for validation purpose Sin SqCore vs SqLab
-            // // StringBuilder sbDebugData = new();
-            // try
-            // {
-            //     StreamWriter sw = new("C:\\temp\\quotesData.csv");
-            //     for (int i = 0; i < allAssetList.Length - 1; i++)
-            //     {
-            //         sw.Write(allAssetList[i] + ": " + Environment.NewLine);
-            //         List<DailyData> prices = dataListTupleFromSQServer.Item1[i];
-            //         string priceStr = String.Join('\t', (prices.Select(r => r.Date.ToString() + ", " + r.AdjClosePrice.ToString()).Last() + Environment.NewLine));
-            //         sw.Write(priceStr + Environment.NewLine);
-            //     }
-            //     sw.Close();
-            // }
-            // catch(Exception e)
-            // {
-            //     Console.WriteLine("Exception: " + e.Message);
-            // }
-            
-            // StreamWriter sw1 = new("C:\\temp\\cashEquivalentQuotesData.csv");
-            // sw1.Write(allAssetList[^1] + ": " + Environment.NewLine);
-            //  List<DailyData> prices1 = dataListTupleFromSQServer.Item2;
-            // string priceStr1 = String.Join('\t', prices1.Select(r => r.Date.ToString() + ", " + r.AdjClosePrice.ToString() + Environment.NewLine));
-            // sw1.Write(priceStr1 + Environment.NewLine);
-            // // Debug.WriteLine(sbDebugData.ToString());
 
             IList<List<DailyData>> quotesData = dataListTupleFromSQServer.Item1;
             List<DailyData> cashEquivalentQuotesData = dataListTupleFromSQServer.Item2;

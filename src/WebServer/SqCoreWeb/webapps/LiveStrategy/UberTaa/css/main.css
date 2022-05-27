@@ -101,3 +101,43 @@ table.currData2 {
   background: url("../assets/images/global_assets.webp");
   background-size: cover;
 }
+
+.chartsContainer {
+  box-sizing: border-box;
+  width: 52rem;
+  height: 32rem;
+  padding: 1rem 1rem 1rem 1rem;
+  margin: 1rem auto 1rem 22rem;
+  border: 0.1rem solid #ddd;
+  font-size: 1rem;
+  background: #F4F6F6; /* For browsers that do not support gradients */
+  background: linear-gradient(90deg, #D6EAF8, #D1F2EB); /* Standard syntax */
+}
+
+.grid line {
+  stroke: lightgrey;
+  stroke-opacity: 0.7;
+}
+
+.grid path {
+  border: 0.05rem solid black;
+}
+
+.pctChgLabel {
+  font-size: 0.8rem;
+  text-anchor: middle;
+}
+
+#tooltipChart {
+  display: none;
+  position: absolute;
+  min-width: 2rem;
+  max-width: 10rem;
+  font-size: 0.8rem;
+  background-color: #F4F6F6;
+  text-align: center;
+  opacity: 0.92;
+  padding: 0.5rem 0;
+  border: 0.05rem solid orange;
+  border-radius: 0.6rem;
+}

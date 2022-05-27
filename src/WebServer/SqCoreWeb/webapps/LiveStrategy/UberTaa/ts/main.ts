@@ -1,5 +1,5 @@
 import './../css/main.css';
-
+import * as d3 from 'd3';
 // export {}; // TS convention: To avoid top level duplicate variables, functions. This file should be treated as a module (and have its own scope). A file without any top-level import or export declarations is treated as a script whose contents are available in the global scope.
 
 // 1. Declare some global variables and hook on DOMContentLoaded() and window.onload()
@@ -44,6 +44,15 @@ function onImageClick(index: number) {
 }
 
 function onReceiveData(json: any) {
+  if (json == 'Error') {
+    const divErrorCont = getDocElementById('idErrorCont');
+    divErrorCont.innerHTML = 'Error during downloading data. Please, try again later!';
+    getDocElementById('errorMessage').style.visibility='visible';
+    getDocElementById('pctChgCharts').style.visibility = 'hidden';
+    getDocElementById('inviCharts').style.visibility = 'visible';
+
+    return;
+  }
   getDocElementById('idTitleCont').innerHTML = json.titleCont + ' <sup><small><a href="' + json.gDocRef + '" target="_blank">(Study)</a></small></sup>';
   getDocElementById('idWarningCont').innerHTML = json.warningCont;
   getDocElementById('idTimeNow').innerHTML = json.requestTime;
@@ -57,6 +66,8 @@ function onReceiveData(json: any) {
   // if (warnLength>0)
   //   getDocElementById('idWarningCont').innerHTML = json.warningCont + '<br> <a href="https://docs.google.com/spreadsheets/d/1fmvGBi2Q6MxnB_8AjUedy1QVTOlWE7Ck1rICjYSSxyY" target="_blank">Google sheet with current positions</a> and <a href="https://docs.google.com/document/d/1_m3MMGag7uBZSdvc4IgXKMvj3d4kzLxwvnW14RkCyco" target="_blank">the latest study in connection with the strategy</a>';
   uberTaaTbls(json);
+  // Setting charts visible after getting data.
+  getDocElementById('pctChgCharts').style.visibility = 'visible';
 }
 
 function uberTaaTbls(json: any) {
@@ -205,7 +216,27 @@ function uberTaaTbls(json: any) {
     }
     listH.push({ label: assetNames2Array[j], data: assChartPerc1, points: { show: true }, lines: { show: true } });
   }
+  const datasets1 = listH;
 
+  interface pctChngStckPriceData {
+    stckName: string;
+    date: Date;
+    price: number;
+  }
+
+  const pctChngChrtData: pctChngStckPriceData[] = [];
+  for (let j = 0; j < noAssets; j++) {
+    for (let i = 0; i < nCurrData; i++) {
+      const chrtData: pctChngStckPriceData = {
+        stckName: assetNames2Array[j],
+        date: assChartMtx[i][0],
+        price: parseFloat(assChartMtx[i][j + 1]),
+      };
+      pctChngChrtData.push(chrtData);
+    }
+  }
+
+  renewedUberPctChgChart(pctChngChrtData);
 
   const rsiXlu = new Array(nCurrData);
   const rsiVti = new Array(nCurrData);
@@ -237,9 +268,6 @@ function uberTaaTbls(json: any) {
     spx200MARows[1] = parseFloat(spxChartMtx[i][3]);
     spx200MA[i] = spx200MARows;
   }
-
-
-  const datasets1 = listH;
 
   const datasets2 = {
     'spotSPX': {
@@ -286,5 +314,174 @@ document.addEventListener('DOMContentLoaded', (event) => {
   console.log('DOMContentLoaded(). All JS were downloaded. DOM fully loaded and parsed.');
 });
 
+function shortMonthFormat(date: any) : string {
+  const formatMillisec = d3.timeFormat('.%L');
+  const formatShortMonth = d3.timeFormat('%Y-%m-%d');
+  const formatYear = d3.timeFormat('%Y');
+  return (d3.timeSecond(date) < date ? formatMillisec :
+    d3.timeYear(date) < date ? formatShortMonth :
+    formatYear)(date);
+}
 
+function renewedUberPctChgChart(uberStckChrtData) { // renewedUberPctChgChart
+  const margin = {top: 10, right: 30, bottom: 50, left: 60};
+  const width = 760 - margin.left - margin.right;
+  const height = 450 - margin.top - margin.bottom;
+
+  const stckChrtData = uberStckChrtData.map((r:{stckName: string, date: Date; price: number; }) =>
+    ({stckName: (r.stckName), date: new Date(r.date), price: (r.price)}));
+
+  const xMin = d3.min(stckChrtData, (r:{ date: any; }) => r.date as Date);
+  const xMax = d3.max(stckChrtData, (r:{ date: any; }) => r.date as Date);
+  const yMin = d3.min(stckChrtData, (r:{ price: any; }) => r.price as number);
+  const yMax = d3.max(stckChrtData, (r:{ price: any; }) => r.price as number);
+
+  // Add X axis --> it is a date format
+  const xScale = d3.scaleTime()
+      .domain([xMin as Date, xMax as Date])
+      .range([0, width]);
+
+  // Add Y axis
+  const yScale = d3.scaleLinear()
+      .domain([(yMin as number) - 5, (yMax as number) + 5])
+      .range([height, 0]);
+
+  const pctChrt = d3.select('#pctChgChrt')
+      .append('svg')
+      .style('background', 'white')
+      .attr('width', width + margin.left + margin.right)
+      .attr('height', height + margin.top + margin.bottom)
+      .append('g')
+      .attr('transform',
+          'translate(' + margin.left + ',' + margin.top + ')');
+
+  pctChrt.append('g')
+      .attr('class', 'grid')
+      .attr('transform', 'translate(0,' + height +')')
+      .call(d3.axisBottom(xScale).tickSize(-height).tickFormat(shortMonthFormat))
+      .selectAll('text')
+      .style('text-anchor', 'end')
+      .attr('transform', 'rotate(-25)');
+
+  pctChrt.append('g')
+      .attr('class', 'grid')
+      .call(d3.axisLeft(yScale)
+          .tickSize(-width)
+          .tickFormat((d: any) => d + '%'));
+
+  // grouping the data
+  const stckDataGroups: any[] = [];
+  stckChrtData.forEach(function(this: any, a) {
+    if (!this[a.stckName]) {
+      this[a.stckName] = { key: a.stckName, values: [] };
+      stckDataGroups.push(this[a.stckName]);
+    }
+    this[a.stckName].values.push({ date: a.date, price: a.price });
+  }, Object.create(null));
+  console.log(stckDataGroups);
+
+  const stckKey = stckDataGroups.map(function(d: any) { return d.key; }); // list of group names
+  // adding colors for keys
+  const color = d3.scaleOrdinal()
+      .domain(stckKey)
+      .range(['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#f781bf', '#999999', '#ffff33', '#a65628']);
+
+  // Draw the line
+  pctChrt.selectAll('.line')
+      .data(stckDataGroups)
+      .enter()
+      .append('path')
+      .attr('fill', 'none')
+      .attr('stroke', (d: any) => color(d.key) as any)
+      .attr('stroke-width', 1.5)
+      .attr('d', (d:any) => (d3.line()
+          .x((d: any) => xScale(d.date) as number)
+          .y((d: any) => yScale(d.price) as number))(d.values) as any);
+
+  // // Add the Legend
+  pctChrt.selectAll('rect')
+      .data(stckDataGroups)
+      .enter().append('text')
+      .attr('x', (d: any, i: any) => ( 25 + i * 60))
+      .attr('y', 30)
+      .attr('class', 'pctChgLabel') // style the legend
+      .style('fill', (d: any) => color(d.key) as any)
+      .text((d: any) => (d.key));
+  // x axis label
+  pctChrt
+      .append('text')
+      .attr('class', 'pctChgLabel')
+      .attr('transform', 'translate(' + width / 2 + ' ,' + (height + 42) + ')')
+      .text('Date');
+  // y axis label
+  pctChrt
+      .append('text')
+      .attr('class', 'pctChgLabel')
+      .attr('transform', 'rotate(-90)')
+      .attr('y', 0 - (margin.left))
+      .attr('x', 0 - (height / 2))
+      .attr('dy', '2em')
+      .text('Percentage Change');
+
+  pctChrt
+      .selectAll('myCircles')
+      .data(stckChrtData)
+      .enter()
+      .append('circle')
+      .style('fill', 'none')
+      .attr('stroke', (d: any) => color(d.stckName) as any)
+      .attr('stroke-width', 0.8)
+      .attr('cx', ((d: any) => xScale(d.date) as number))
+      .attr('cy', (d: any) => yScale(d.price) as number)
+      .attr('r', 2.5);
+
+  const tooltipPctChg = d3.select('#tooltipChart');
+  const tooltipLine = pctChrt.append('line');
+  pctChrt.append('rect')
+      .attr('width', width)
+      .attr('height', height)
+      .attr('opacity', 0)
+      .on('mousemove', onMouseMove)
+      .on('mouseout', onMouseOut);
+
+  function onMouseOut() {
+    if (tooltipPctChg)
+      tooltipPctChg.style('display', 'none');
+    if (tooltipLine)
+      tooltipLine.attr('stroke', 'none');
+  }
+
+  function onMouseMove(event: any) {
+    const daysArray: any[] = [];
+    stckChrtData.forEach((element) => {
+      daysArray.push(element.date);
+    });
+
+    const xCoord = xScale.invert(d3.pointer(event)[0]);
+    const yCoord = d3.pointer(event)[1];
+    const closestXCoord = daysArray.sort(
+        (a, b) => Math.abs(xCoord.getTime() as any - a.getTime()) - Math.abs(xCoord.getTime() as any- b.getTime()))[0];
+    const closestYCoord = stckDataGroups[0].values.find((h: any) => h.date as any === closestXCoord).price;
+
+    // console.log(ttTextArray1.length);
+    tooltipLine
+        .attr('stroke', 'black')
+        .attr('x1', xScale(closestXCoord))
+        .attr('x2', xScale(closestXCoord))
+        .attr('y1', 0 + 10)
+        .attr('y2', height);
+
+    tooltipPctChg
+        .html('Percentage Changes :' + '<br>')
+        .style('display', 'block')
+        .style('left', event.pageX + 10)
+        .style('top', (event.pageY - yCoord + yScale(closestYCoord)) + 15)
+        .selectAll()
+        .data(stckDataGroups)
+        .enter()
+        .append('div')
+        .style('color', (d: any) => color(d.key) as any)
+        .html((d: any) => d.key + ': ' + d.values.find((h: any) => h.date.getTime() as any === closestXCoord.getTime() as any).price + '%');
+  }
+}
 console.log('SqCore: Script END');

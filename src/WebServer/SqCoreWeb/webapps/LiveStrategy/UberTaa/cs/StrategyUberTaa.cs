@@ -646,7 +646,6 @@ namespace SqCoreWeb.Controllers
             // return sb.ToString();
             
 
-            Thread.Sleep(1000);     // intentional delay to simulate a longer process to crunch data. This can be removed.
             string mockupTestResponse = @"{
                 ""titleCont"": ""Game Changer"",
                 ""warningCont"": """",
