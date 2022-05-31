@@ -12,7 +12,6 @@
     <button class="button" id="globalAssets"></button>&emsp;&emsp;
   </div>
 <br>
-  <br /><strong>Data will arrive </strong> here after (simulated)<em> <strong> 5 seconds </strong>  delay to test user experience: </em> <br /><br /><br />
     <div id="DebugDataArrivesHere"></div>
     <div id="errorMessage" style="visibility: hidden">
       <div class="herror" id="idErrorCont"></div>
@@ -34,10 +33,11 @@
         <span id="subStrategies"></span>
     </div>
     <br>
-    <!-- <div class="demo-container">
-        <strong>Percentage Changes in the Last 20 Days</strong>
-        <div id="placeholder1" class="demo-placeholder"></div>
-    </div> -->
+    <div id="pctChgCharts" class="chartsContainer" style="visibility: hidden">
+      <strong>Percentage Changes in the Last 20 Days</strong>
+      <div id="pctChgChrt"></div>
+      <div id='tooltipChart'></div>
+    </div>
     <div class="center">
         <p class="bottom-three">
             <span class="clmt" id="idPosLast"></span>
@@ -49,20 +49,14 @@
         <span id="futPositions"></span>
     </div>
     <br>
-    <div id="pctChgCharts" class="chartsContainer" style="visibility: hidden">
-      <strong>Percentage Changes in the Last 20 Days</strong>
-      <div id="pctChgChrt"></div>
-      <div id='tooltipChart'></div>
+    <div id="spxChart" class="chartsContainer" style="visibility: hidden">
+      <strong>SPX 50/200-MA Timer</strong>
+    <div id="spxChrt"></div>
     </div>
-    <!-- <div class="demo-container">
-        <strong>SPX 50/200-MA Timer</strong>
-        <div id="placeholder2" class="demo-placeholder"></div>
+    <div id="xluChart" class="chartsContainer" style="visibility: hidden">
+      <strong>XLU/VTI RSI Timer</strong>
+    <div id="xluChrt"></div>
     </div>
-    <br>
-    <div class="demo-container">
-        <strong>XLU/VTI RSI Timer</strong>
-        <div id="placeholder3" class="demo-placeholder"></div>
-    </div> -->
 </body>
 
 </html>

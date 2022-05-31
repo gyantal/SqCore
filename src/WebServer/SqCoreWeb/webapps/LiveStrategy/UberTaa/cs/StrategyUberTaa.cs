@@ -48,13 +48,13 @@ namespace SqCoreWeb.Controllers
         {
             return "Error";
         }
-        // Under development - Daya
+        // Under development - Daya 31-05-2022
         public string GetStrGameChng()
         {
         //     // throw new NotImplementedException();
         //     //  Defining asset lists.
             // // string[] clmtAssetList = new string[]{ "^GSPC", "XLU", "VTI" };
-            // string[] clmtAssetList = new string[]{ "^SPX", "XLU", "VTI" };    // Balazs: We can use SPY instead of ^GSPC
+            // string[] clmtAssetList = new string[]{ "SPY", "XLU", "VTI" };    // Balazs: We can use SPY instead of ^GSPC
             // string[] gchAssetList = new string[]{ "AAPL", "ADBE", "AMZN", "CRM", "CRWD", "ETSY", "FB", "GOOGL", "MA", "MSFT", "NOW", "NVDA", "PYPL", "QCOM", "SE", "SHOP", "SQ", "V", "TLT"}; //TLT is used as a cashEquivalent
             // // string[] gchAssetList = new string[]{ "AAPL", "ADBE", "AMZN", "BABA", "CRM", "CRWD", "ETSY", "FB", "GOOGL", "ISRG", "MA", "MELI", "MSFT", "NFLX", "NOW", "NVDA", "PYPL", "QCOM", "ROKU", "SE", "SHOP", "SQ", "TDOC", "TWLO", "V", "ZM", "TLT"}; //TLT is used as a cashEquivalent
             // string[] gmrAssetList = new string[] { "MDY", "ILF", "FEZ", "EEM", "EPP", "VNQ", "TLT" }; //TLT is used as a cashEquivalent
@@ -105,7 +105,7 @@ namespace SqCoreWeb.Controllers
             // // Calculating basic weights based on percentile channels - base Varadi TAA
             // Tuple<double[], double[,]> taaWeightResultsTuple = TaaWeights(quotesData, lookbackDays, volDays, thresholdLower);
             // Debug.WriteLine("The Data from gSheet is :", taaWeightResultsTuple);
-            //Calculating CLMT data
+            // // // Calculating CLMT data
             // var clmtRes = CLMTCalc(quotesForClmtData);
 
             // //Setting last data date
@@ -119,7 +119,7 @@ namespace SqCoreWeb.Controllers
             // Debug.WriteLine("The Data from gSheet is :", gSheetResToFinCalc);
 
             // // Calculating final weights - Advanced UberTAA
-            // Tuple<double[,], double[,], double[,], string[], string[]> weightsFinal = MultiplFinCalc(clmtRes, gSheetResToFinCalc, allAssetList, lastDataDate,taaWeightResultsTuple);
+            // var weightsFinal = MultiplFinCalc(clmtRes, gSheetResToFinCalc, allAssetList, lastDataDate, taaWeightResultsTuple);
 
             // //Request time (UTC)
             // DateTime liveDateTime = DateTime.UtcNow;
@@ -335,8 +335,7 @@ namespace SqCoreWeb.Controllers
             // for (int iRows = 0; iRows < futPosMtx.GetLength(0) - 1; iRows++)
             // {
             //     DateTime assFDate = startMatlabDate.AddDays(weightsFinal.Item2[iRows, 0] - 693962);
-            //     string assFDateString = System.String.Empty;
-            //     assFDateString = assFDate.ToString("yyyy-MM-dd");
+            //     string assFDateString = assFDate.ToString("yyyy-MM-dd");
             //     futPosMtx[iRows+1, 0] = assFDateString;
             //     futAssEventCodes[iRows + 1, 0] = "FF6633";
 
@@ -641,7 +640,7 @@ namespace SqCoreWeb.Controllers
 
             // sb.AppendLine(@"""" + Environment.NewLine + @"}");
 
-            // //var asdfa = sb.ToString(); //testing created string to JS
+            // // //var asdfa = sb.ToString(); //testing created string to JS
 
             // return sb.ToString();
             
@@ -815,13 +814,17 @@ namespace SqCoreWeb.Controllers
             }
 
              DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
-             DateTime startIncLoc = nowET.AddYears(-1).AddDays(-160);
+             // PctChannel needs 252 days and we need another extra 30 trading days rolling window to calculate PctChannels during the previous lookback window
+             // PctChannel Signal cannot be calculated just having the last day data, because it has to be rolled further. As it can exit/enter into bullish signals along the way of the simulation.
+             // Estimated needed 252 trading days = 365 calendar days. 
+             // And an additional rolling window of 30 trading days (at least). That is another 45 calendar days.
+             // As minimal, we need 365 + 45 = 410 calendar days.
+             // For more robust calculations, we can use a 6 month rolling window. That is 120 trading days = 185 calendar days. Altogether: 365+185 = 550
+             // DateTime startIncLoc = nowET.AddDays(-408); // This can reproduce the old SqLab implementation with 33 days rolling simulation window
+             DateTime startIncLoc = nowET.AddDays(-492);    // This uses a 6-months, 120 trading days rolling simulation window for PctChannels 
 
+            List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc, true).ToList();
             List<List<DailyData>> quotesData = new();
-            List<List<DailyData>> quotesForClmtData = new();
-            List<DailyData> cashEquivalentQuotesData = new();
-
-            List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc).ToList();
             for (int i = 3; i < assetHistsAndEst.Count - 1; i++)
             {
                 var vals = assetHistsAndEst[i].values;
@@ -833,6 +836,7 @@ namespace SqCoreWeb.Controllers
                 quotesData.Add(uberValsData);
             }
 
+            List<List<DailyData>> quotesForClmtData = new();
             for (int i = 0; i < 3; i++)
             {
                 var vals = assetHistsAndEst[i].values;
@@ -844,6 +848,7 @@ namespace SqCoreWeb.Controllers
                 quotesForClmtData.Add(clmtData);
             }
             // last ticker is TLT, which is used as a cash substitute. Special role.
+            List<DailyData> cashEquivalentQuotesData = new();
             var cashVals = assetHistsAndEst[^1].values;
             for (int j = 0; j < cashVals.Count; j++)
                 cashEquivalentQuotesData.Add(new DailyData() { Date = cashVals[j].Date, AdjClosePrice = cashVals[j].SdaValue });
@@ -851,257 +856,257 @@ namespace SqCoreWeb.Controllers
             return (quotesData, quotesForClmtData, cashEquivalentQuotesData);
         }
 
-        // public static Tuple<double[], double[,]> TaaWeights(IList<List<DailyData>> p_taaWeightsData, int[] p_pctChannelLookbackDays, int p_histVolLookbackDays, int p_thresholdLower)
-        // {
-        //     var dshd = p_taaWeightsData;
-        //     int nAssets = p_taaWeightsData.Count;
+        public static Tuple<double[], double[,]> TaaWeights(IList<List<DailyData>> p_taaWeightsData, int[] p_pctChannelLookbackDays, int p_histVolLookbackDays, int p_thresholdLower)
+        {
+            var dshd = p_taaWeightsData;
+            int nAssets = p_taaWeightsData.Count;
 
-        //     double[] assetScores = new double[nAssets];
-        //     double[] assetScoresMod = new double[nAssets];
-        //     double[] assetHV = new double[nAssets];
-        //     double[] assetWeights = new double[nAssets];
-        //     double[] assetWeights2 = new double[nAssets];
-        //     double[,] assetPctChannelsUpper = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each 
-        //     double[,] assetPctChannelsLower = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each
-        //     sbyte[,] assetPctChannelsSignal = new sbyte[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each
-        //     int startNumDay = p_pctChannelLookbackDays.Max()-1;
-        //     double thresholdLower = p_thresholdLower / 100.0;
-        //     double thresholdUpper = 1-thresholdLower;
+            double[] assetScores = new double[nAssets];
+            double[] assetScoresMod = new double[nAssets];
+            double[] assetHV = new double[nAssets];
+            double[] assetWeights = new double[nAssets];
+            double[] assetWeights2 = new double[nAssets];
+            double[,] assetPctChannelsUpper = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each 
+            double[,] assetPctChannelsLower = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each
+            sbyte[,] assetPctChannelsSignal = new sbyte[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each
+            int startNumDay = p_pctChannelLookbackDays.Max()-1;
+            double thresholdLower = p_thresholdLower / 100.0;
+            double thresholdUpper = 1-thresholdLower;
 
-        //     int nDays = p_taaWeightsData[0].Count - startNumDay;
-        //     double[,] dailyAssetWeights = new double[nDays,nAssets];
-        //     double[,] dailyAssetScores = new double[nDays, nAssets];
-        //     double[,] dailyAssetScoresMod = new double[nDays, nAssets];
-        //     double[,] dailyAssetHv = new double[nDays, nAssets];
-        //     for (int iDay = 0; iDay < nDays; iDay++)
-        //     {
-        //         for (int iAsset = 0; iAsset < nAssets; iAsset++)
-        //         {
-        //             double assetPrice = p_taaWeightsData[iAsset][startNumDay + iDay].AdjClosePrice;
-        //             for (int iChannel = 0; iChannel < p_pctChannelLookbackDays.Length; iChannel++)
-        //             {
-        //                 // A long position would be initiated if the price exceeds the 75th percentile of prices over the last “n” days.The position would be closed if the price falls below the 25th percentile of prices over the last “n” days.
-        //                 var usedQuotes = p_taaWeightsData[iAsset].GetRange(startNumDay + iDay - (p_pctChannelLookbackDays[iChannel] - 1), p_pctChannelLookbackDays[iChannel]).Select(r => r.AdjClosePrice);
-        //                 assetPctChannelsLower[iAsset, iChannel] = Utils.Quantile(usedQuotes, thresholdLower);
-        //                 assetPctChannelsUpper[iAsset, iChannel] = Utils.Quantile(usedQuotes, thresholdUpper);
-        //                 if (assetPrice < assetPctChannelsLower[iAsset, iChannel])
-        //                 assetPctChannelsSignal[iAsset, iChannel] = -1;
-        //                 else if (assetPrice > assetPctChannelsUpper[iAsset, iChannel])
-        //                 assetPctChannelsSignal[iAsset, iChannel] = 1;
-        //                 else if (iDay==0)
-        //                 assetPctChannelsSignal[iAsset, iChannel] = 1;
-        //             }
-        //         }
+            int nDays = p_taaWeightsData[0].Count - startNumDay;
+            double[,] dailyAssetWeights = new double[nDays, nAssets];
+            double[,] dailyAssetScores = new double[nDays, nAssets];
+            double[,] dailyAssetScoresMod = new double[nDays, nAssets];
+            double[,] dailyAssetHv = new double[nDays, nAssets];
+            for (int iDay = 0; iDay < nDays; iDay++)
+            {
+                for (int iAsset = 0; iAsset < nAssets; iAsset++)
+                {
+                    double assetPrice = p_taaWeightsData[iAsset][startNumDay + iDay].AdjClosePrice;
+                    for (int iChannel = 0; iChannel < p_pctChannelLookbackDays.Length; iChannel++)
+                    {
+                        // A long position would be initiated if the price exceeds the 75th percentile of prices over the last “n” days.The position would be closed if the price falls below the 25th percentile of prices over the last “n” days.
+                        var usedQuotes = p_taaWeightsData[iAsset].GetRange(startNumDay + iDay - (p_pctChannelLookbackDays[iChannel] - 1), p_pctChannelLookbackDays[iChannel]).Select(r => r.AdjClosePrice);
+                        assetPctChannelsLower[iAsset, iChannel] = Utils.Quantile(usedQuotes, thresholdLower);
+                        assetPctChannelsUpper[iAsset, iChannel] = Utils.Quantile(usedQuotes, thresholdUpper);
+                        if (assetPrice < assetPctChannelsLower[iAsset, iChannel])
+                        assetPctChannelsSignal[iAsset, iChannel] = -1;
+                        else if (assetPrice > assetPctChannelsUpper[iAsset, iChannel])
+                        assetPctChannelsSignal[iAsset, iChannel] = 1;
+                        else if (iDay==0)
+                        assetPctChannelsSignal[iAsset, iChannel] = 1;
+                    }
+                }
 
-        //         // Calculate assetWeights
-        //         double totalWeight = 0.0;
+                // Calculate assetWeights
+                double totalWeight = 0.0;
                 
-        //         for (int iAsset = 0; iAsset < nAssets; iAsset++)
-        //         {
-        //             sbyte compositeSignal = 0;    // For every stocks, sum up the four signals every day. This sum will be -4, -2, 0, +2 or +4.
-        //             for (int iChannel = 0; iChannel < p_pctChannelLookbackDays.Length; iChannel++)
-        //             {
-        //                 compositeSignal += assetPctChannelsSignal[iAsset, iChannel];
-        //             }
-        //             assetScores[iAsset] = compositeSignal / 4.0;    // Divide it by 4 to get a signal between -1 and +1 (this will be the “score”).
-        //             assetScoresMod[iAsset] = compositeSignal / 8.0 + 0.5;    // Divide it by 4 to get a signal between -1 and +1 (this will be the “score”).
+                for (int iAsset = 0; iAsset < nAssets; iAsset++)
+                {
+                    sbyte compositeSignal = 0;    // For every stocks, sum up the four signals every day. This sum will be -4, -2, 0, +2 or +4.
+                    for (int iChannel = 0; iChannel < p_pctChannelLookbackDays.Length; iChannel++)
+                    {
+                        compositeSignal += assetPctChannelsSignal[iAsset, iChannel];
+                    }
+                    assetScores[iAsset] = compositeSignal / 4.0;    // Divide it by 4 to get a signal between -1 and +1 (this will be the “score”).
+                    assetScoresMod[iAsset] = compositeSignal / 8.0 + 0.5;    // Divide it by 4 to get a signal between -1 and +1 (this will be the “score”).
 
-        //             double[] hvPctChg = new double[p_histVolLookbackDays];
-        //             for (int iHv = 0; iHv < p_histVolLookbackDays; iHv++)
-        //             {
-        //                 hvPctChg[p_histVolLookbackDays - iHv - 1] = p_taaWeightsData[iAsset][startNumDay + iDay - iHv].AdjClosePrice / p_taaWeightsData[iAsset][startNumDay + iDay - iHv - 1].AdjClosePrice - 1;
-        //             }
-        //             // Balazs: uses "corrected sample standard deviation"; corrected: dividing by 19, not 20; He doesn't annualize. He uses daily StDev
-        //             assetHV[iAsset] = Utils.StandardDeviation(hvPctChg);  // Calculate the 20-day historical volatility of daily percentage changes for every stock.
-        //             assetWeights[iAsset] = assetScores[iAsset] / assetHV[iAsset];   // “Score/Vol” quotients will define the weights of the stocks. They can be 0 or negative as well. 
-        //                                                                             // there is an interesting observation here. Actually, it is a good behavour.
-        //                                                                             // If assetScores[i]=0, assetWeights[i] becomes 0, so we don't use its weight when p_isCashAllocatedForNonActives => TLT will not fill its Cash-place; NO TLT will be invested (if this is the only stock with 0 score), the portfolio will be 100% in other stocks. We are more Brave.
-        //                                                                             // However, if assetScores[i]<0 (negative), assetWeights[i] becoumes a proper negative number. It will be used in TotalWeight calculation => TLT will fill its's space. (if this is the only stock with negative score), TLT will be invested in its place; consequently the portfolio will NOT be 100% in other stocks. We are more defensive.
-        //             totalWeight += Math.Abs(assetWeights[iAsset]);      // Sum up the absolute values of the “Score/Vol” quotients. TotalWeight contains even the non-active assets so have have some cash.
-        //             assetWeights2[iAsset] = (assetWeights[iAsset]>=0) ?assetWeights[iAsset]:0.0;
+                    double[] hvPctChg = new double[p_histVolLookbackDays];
+                    for (int iHv = 0; iHv < p_histVolLookbackDays; iHv++)
+                    {
+                        hvPctChg[p_histVolLookbackDays - iHv - 1] = p_taaWeightsData[iAsset][startNumDay + iDay - iHv].AdjClosePrice / p_taaWeightsData[iAsset][startNumDay + iDay - iHv - 1].AdjClosePrice - 1;
+                    }
+                    // Balazs: uses "corrected sample standard deviation"; corrected: dividing by 19, not 20; He doesn't annualize. He uses daily StDev
+                    assetHV[iAsset] = Utils.StandardDeviation(hvPctChg);  // Calculate the 20-day historical volatility of daily percentage changes for every stock.
+                    assetWeights[iAsset] = assetScores[iAsset] / assetHV[iAsset];   // “Score/Vol” quotients will define the weights of the stocks. They can be 0 or negative as well. 
+                                                                                    // there is an interesting observation here. Actually, it is a good behavour.
+                                                                                    // If assetScores[i]=0, assetWeights[i] becomes 0, so we don't use its weight when p_isCashAllocatedForNonActives => TLT will not fill its Cash-place; NO TLT will be invested (if this is the only stock with 0 score), the portfolio will be 100% in other stocks. We are more Brave.
+                                                                                    // However, if assetScores[i]<0 (negative), assetWeights[i] becoumes a proper negative number. It will be used in TotalWeight calculation => TLT will fill its's space. (if this is the only stock with negative score), TLT will be invested in its place; consequently the portfolio will NOT be 100% in other stocks. We are more defensive.
+                    totalWeight += Math.Abs(assetWeights[iAsset]);      // Sum up the absolute values of the “Score/Vol” quotients. TotalWeight contains even the non-active assets so have have some cash.
+                    assetWeights2[iAsset] = (assetWeights[iAsset] >= 0) ? assetWeights[iAsset]: 0.0;
 
-        //         }
-        //         for (int iAsset = 0; iAsset < nAssets; iAsset++)
-        //         {
-        //             dailyAssetWeights[iDay, iAsset] = assetWeights2[iAsset]/totalWeight;
-        //             dailyAssetScores[iDay, iAsset] = assetScores[iAsset];
-        //             dailyAssetHv[iDay, iAsset] = assetHV[iAsset];
-        //             dailyAssetScoresMod[iDay, iAsset] = assetScoresMod[iAsset];
-        //         }
+                }
+                for (int iAsset = 0; iAsset < nAssets; iAsset++)
+                {
+                    dailyAssetWeights[iDay, iAsset] = assetWeights2[iAsset]/totalWeight;
+                    dailyAssetScores[iDay, iAsset] = assetScores[iAsset];
+                    dailyAssetHv[iDay, iAsset] = assetHV[iAsset];
+                    dailyAssetScoresMod[iDay, iAsset] = assetScoresMod[iAsset];
+                }
 
-        //     }
+            }
 
-        //     IEnumerable<DateTime> taaWeightDateVec = p_taaWeightsData[0].GetRange(p_taaWeightsData[0].Count-nDays ,nDays).Select(r => r.Date);
-        //     DateTime[] taaWeightDateArray = taaWeightDateVec.ToArray();
-        //     DateTime startMatlabDate = DateTime.ParseExact("1900/01/01", "yyyy/MM/dd", CultureInfo.InvariantCulture);
+            IEnumerable<DateTime> taaWeightDateVec = p_taaWeightsData[0].GetRange(p_taaWeightsData[0].Count-nDays ,nDays).Select(r => r.Date);
+            DateTime[] taaWeightDateArray = taaWeightDateVec.ToArray();
+            DateTime startMatlabDate = DateTime.ParseExact("1900/01/01", "yyyy/MM/dd", CultureInfo.InvariantCulture);
 
-        //     double[] taaWeightMatlabDateVec = new double[taaWeightDateVec.Count()];
-        //     for (int i = 0; i < taaWeightMatlabDateVec.Length; i++)
-        //     {
-        //         taaWeightMatlabDateVec[i] = (taaWeightDateArray[i] - startMatlabDate).TotalDays + 693962;
-        //     }
+            double[] taaWeightMatlabDateVec = new double[taaWeightDateVec.Count()];
+            for (int i = 0; i < taaWeightMatlabDateVec.Length; i++)
+            {
+                taaWeightMatlabDateVec[i] = (taaWeightDateArray[i] - startMatlabDate).TotalDays + 693962;
+            }
 
-        //     Tuple<double[],double[,]> taaWeightResults = Tuple.Create(taaWeightMatlabDateVec, dailyAssetWeights);
-        //     //Tuple<double[],double[,]> taaWeightResults = Tuple.Create(taaWeightMatlabDateVec, dailyAssetScoresMod);
-        //     return taaWeightResults;
-        // }
+            Tuple<double[],double[,]> taaWeightResults = Tuple.Create(taaWeightMatlabDateVec, dailyAssetWeights);
+            //Tuple<double[],double[,]> taaWeightResults = Tuple.Create(taaWeightMatlabDateVec, dailyAssetScoresMod);
+            return taaWeightResults;
+        }
 
-        // public static double[][] CLMTCalc(IList<List<DailyData>> p_quotesForClmtData)
-        // {
-        //     double[,] p_clmtData = new double[p_quotesForClmtData[0].Count, 4];
+        public static double[][] CLMTCalc(IList<List<DailyData>> p_quotesForClmtData)
+        {
+            double[,] p_clmtData = new double[p_quotesForClmtData[0].Count, 4];
 
-        //     IEnumerable<DateTime> clmtDateVec = p_quotesForClmtData[0].Select(r => r.Date);
-        //     DateTime[] clmtDateArray = clmtDateVec.ToArray();
-        //     DateTime startMatlabDate = DateTime.ParseExact("1900/01/01", "yyyy/MM/dd", CultureInfo.InvariantCulture);
+            IEnumerable<DateTime> clmtDateVec = p_quotesForClmtData[0].Select(r => r.Date);
+            DateTime[] clmtDateArray = clmtDateVec.ToArray();
+            DateTime startMatlabDate = DateTime.ParseExact("1900/01/01", "yyyy/MM/dd", CultureInfo.InvariantCulture);
 
-        //     double[] clmtMatlabDateVec = new double[clmtDateVec.Count()];
-        //     for (int i = 0; i < clmtMatlabDateVec.Length; i++)
-        //     {
-        //         clmtMatlabDateVec[i] = (clmtDateArray[i] - startMatlabDate).TotalDays + 693962;
-        //     }
+            double[] clmtMatlabDateVec = new double[clmtDateVec.Count()];
+            for (int i = 0; i < clmtMatlabDateVec.Length; i++)
+            {
+                clmtMatlabDateVec[i] = (clmtDateArray[i] - startMatlabDate).TotalDays + 693962;
+            }
 
-        //     for (int iRows = 0; iRows < p_clmtData.GetLength(0); iRows++)
-        //     {
-        //         p_clmtData[iRows, 0] = clmtMatlabDateVec[iRows];
-        //         for (int jCols = 0; jCols < p_clmtData.GetLength(1)-1; jCols++)
-        //         {
-        //             p_clmtData[iRows,jCols+1]=p_quotesForClmtData[jCols][iRows].AdjClosePrice;
-        //         }
-        //     }
+            for (int iRows = 0; iRows < p_clmtData.GetLength(0); iRows++)
+            {
+                p_clmtData[iRows, 0] = clmtMatlabDateVec[iRows];
+                for (int jCols = 0; jCols < p_clmtData.GetLength(1)-1; jCols++)
+                {
+                    p_clmtData[iRows, jCols + 1]=p_quotesForClmtData[jCols][iRows].AdjClosePrice;
+                }
+            }
 
 
-        //     double[] xluRSI =new double[p_clmtData.GetLength(0)-200];
-        //     for (int iRows = 0; iRows < xluRSI.Length; iRows++)
-        //     {
-        //         double losses = new();
-        //         double gains = new();
-        //         int lossNum = 0;
-        //         int gainNum = 0;
-        //         for (int kRows = 0; kRows < 20; kRows++)
-        //         {
-        //             if (p_clmtData[iRows + kRows + 181, 2] - p_clmtData[iRows + kRows+180, 2] >= 0)
-        //             {
-        //                 gains = gains + p_clmtData[iRows + kRows + 181, 2] - p_clmtData[iRows + kRows+180, 2];
-        //                 gainNum += 1; 
-        //             }
-        //             else
-        //             {
-        //                 losses = losses + p_clmtData[iRows + kRows + 181, 2] - p_clmtData[iRows + kRows+180, 2];
-        //                 lossNum += 1;
-        //             }
-        //         }
-        //         xluRSI[iRows] = 100 - 100 * (-losses / (-losses + gains));
+            double[] xluRSI =new double[p_clmtData.GetLength(0) - 200];
+            for (int iRows = 0; iRows < xluRSI.Length; iRows++)
+            {
+                double losses = new();
+                double gains = new();
+                int lossNum = 0;
+                int gainNum = 0;
+                for (int kRows = 0; kRows < 20; kRows++)
+                {
+                    if (p_clmtData[iRows + kRows + 181, 2] - p_clmtData[iRows + kRows + 180, 2] >= 0)
+                    {
+                        gains = gains + p_clmtData[iRows + kRows + 181, 2] - p_clmtData[iRows + kRows + 180, 2];
+                        gainNum += 1; 
+                    }
+                    else
+                    {
+                        losses = losses + p_clmtData[iRows + kRows + 181, 2] - p_clmtData[iRows + kRows + 180, 2];
+                        lossNum += 1;
+                    }
+                }
+                xluRSI[iRows] = 100 - 100 * (-losses / (-losses + gains));
 
-        //     }
+            }
 
-        //     double[] vtiRSI = new double[p_clmtData.GetLength(0) - 200];
-        //     for (int iRows = 0; iRows < vtiRSI.Length; iRows++)
-        //     {
-        //         double losses = new();
-        //         double gains = new();
-        //         for (int kRows = 0; kRows < 20; kRows++)
-        //         {
-        //             if (p_clmtData[iRows + kRows + 181, 3] - p_clmtData[iRows + kRows+180, 3] >= 0)
-        //             {
-        //                 gains = gains + p_clmtData[iRows + kRows + 181, 3] - p_clmtData[iRows + kRows+180, 3];
-        //             }
-        //             else
-        //             {
-        //                 losses = losses + p_clmtData[iRows + kRows + 181, 3] - p_clmtData[iRows + kRows+180, 3];
-        //             }
-        //         }
-        //         vtiRSI[iRows] = 100 - 100 * (-losses / (-losses + gains));
+            double[] vtiRSI = new double[p_clmtData.GetLength(0) - 200];
+            for (int iRows = 0; iRows < vtiRSI.Length; iRows++)
+            {
+                double losses = new();
+                double gains = new();
+                for (int kRows = 0; kRows < 20; kRows++)
+                {
+                    if (p_clmtData[iRows + kRows + 181, 3] - p_clmtData[iRows + kRows + 180, 3] >= 0)
+                    {
+                        gains = gains + p_clmtData[iRows + kRows + 181, 3] - p_clmtData[iRows + kRows + 180, 3];
+                    }
+                    else
+                    {
+                        losses = losses + p_clmtData[iRows + kRows + 181, 3] - p_clmtData[iRows + kRows + 180, 3];
+                    }
+                }
+                vtiRSI[iRows] = 100 - 100 * (-losses / (-losses + gains));
 
-        //     }
+            }
 
-        //     double[] xluVtiIndi = new double[xluRSI.Length];
-        //     for (int iRows = 0; iRows < xluVtiIndi.Length; iRows++)
-        //     {
-        //         xluVtiIndi[iRows] = (xluRSI[iRows]>=vtiRSI[iRows]) ?2:1;
-        //     }
+            double[] xluVtiIndi = new double[xluRSI.Length];
+            for (int iRows = 0; iRows < xluVtiIndi.Length; iRows++)
+            {
+                xluVtiIndi[iRows] = (xluRSI[iRows] >= vtiRSI[iRows]) ? 2 : 1;
+            }
 
-        //     double[] spxMA50 = new double[p_clmtData.GetLength(0) - 200];
-        //     double[] spxPrice = new double[p_clmtData.GetLength(0) - 200];
-        //     for (int iRows = 0; iRows < spxMA50.Length; iRows++)
-        //     {
-        //         spxPrice[iRows] = p_clmtData[iRows+200,1];
-        //         double sumsSPX50 = new();
+            double[] spxMA50 = new double[p_clmtData.GetLength(0) - 200];
+            double[] spxPrice = new double[p_clmtData.GetLength(0) - 200];
+            for (int iRows = 0; iRows < spxMA50.Length; iRows++)
+            {
+                spxPrice[iRows] = p_clmtData[iRows + 200, 1];
+                double sumsSPX50 = new();
                 
-        //         for (int kRows = 0; kRows < 50; kRows++)
-        //         {
-        //             sumsSPX50 += p_clmtData[iRows + kRows+151,1];
-        //         }
-        //         spxMA50[iRows] = sumsSPX50 / 50;
+                for (int kRows = 0; kRows < 50; kRows++)
+                {
+                    sumsSPX50 += p_clmtData[iRows + kRows + 151, 1];
+                }
+                spxMA50[iRows] = sumsSPX50 / 50;
 
-        //     }
+            }
 
-        //     double[] spxMA200 = new double[p_clmtData.GetLength(0) - 200];
-        //     for (int iRows = 0; iRows < spxMA200.Length; iRows++)
-        //     {
-        //         double sumsSPX200 = new();
+            double[] spxMA200 = new double[p_clmtData.GetLength(0) - 200];
+            for (int iRows = 0; iRows < spxMA200.Length; iRows++)
+            {
+                double sumsSPX200 = new();
 
-        //         for (int kRows = 0; kRows < 200; kRows++)
-        //         {
-        //             sumsSPX200 += p_clmtData[iRows + kRows+1, 1];
-        //         }
-        //         spxMA200[iRows] = sumsSPX200 / 200;
+                for (int kRows = 0; kRows < 200; kRows++)
+                {
+                    sumsSPX200 += p_clmtData[iRows + kRows + 1, 1];
+                }
+                spxMA200[iRows] = sumsSPX200 / 200;
 
-        //     }
+            }
 
-        //     double[] spxMAIndi = new double[spxMA50.Length];
-        //     for (int iRows = 0; iRows < spxMAIndi.Length; iRows++)
-        //     {
-        //         spxMAIndi[iRows] = (spxMA50[iRows] >= spxMA200[iRows]) ? 1 : 0;
-        //     }
+            double[] spxMAIndi = new double[spxMA50.Length];
+            for (int iRows = 0; iRows < spxMAIndi.Length; iRows++)
+            {
+                spxMAIndi[iRows] = (spxMA50[iRows] >= spxMA200[iRows]) ? 1 : 0;
+            }
 
-        //     double[] clmtIndi = new double[spxMAIndi.Length];
-        //     for (int iRows = 0; iRows < clmtIndi.Length; iRows++)
-        //     {
-        //         if (spxMAIndi[iRows]==1 & xluVtiIndi[iRows]==1)
-        //         {
-        //             clmtIndi[iRows] = 1;
-        //         }
-        //         else if (spxMAIndi[iRows] == 0 & xluVtiIndi[iRows] == 2)
-        //         {
-        //             clmtIndi[iRows] = 3;
-        //         }
-        //         else
-        //         {
-        //             clmtIndi[iRows] = 2;
-        //         }
-        //     }
+            double[] clmtIndi = new double[spxMAIndi.Length];
+            for (int iRows = 0; iRows < clmtIndi.Length; iRows++)
+            {
+                if (spxMAIndi[iRows] == 1 & xluVtiIndi[iRows] == 1)
+                {
+                    clmtIndi[iRows] = 1;
+                }
+                else if (spxMAIndi[iRows] == 0 & xluVtiIndi[iRows] == 2)
+                {
+                    clmtIndi[iRows] = 3;
+                }
+                else
+                {
+                    clmtIndi[iRows] = 2;
+                }
+            }
 
-        //     double[] clmtDateVec2 = new double[clmtIndi.Length];
-        //     for (int iRows = 0; iRows < clmtDateVec2.Length; iRows++)
-        //     {
-        //         clmtDateVec2[iRows] = p_clmtData[iRows+200,0];
-        //     }
+            double[] clmtDateVec2 = new double[clmtIndi.Length];
+            for (int iRows = 0; iRows < clmtDateVec2.Length; iRows++)
+            {
+                clmtDateVec2[iRows] = p_clmtData[iRows + 200, 0];
+            }
             
-        //     double[][] clmtTotalResu = new double[9][];
-        //     clmtTotalResu[0] = clmtDateVec2;
-        //     clmtTotalResu[1] = xluRSI;
-        //     clmtTotalResu[2] = vtiRSI;
-        //     clmtTotalResu[3] = xluVtiIndi;
-        //     clmtTotalResu[4] = spxMA50;
-        //     clmtTotalResu[5] = spxMA200;
-        //     clmtTotalResu[6] = spxMAIndi;
-        //     clmtTotalResu[7] = clmtIndi;
-        //     clmtTotalResu[8] = spxPrice;
+            double[][] clmtTotalResu = new double[9][];
+            clmtTotalResu[0] = clmtDateVec2;
+            clmtTotalResu[1] = xluRSI;
+            clmtTotalResu[2] = vtiRSI;
+            clmtTotalResu[3] = xluVtiIndi;
+            clmtTotalResu[4] = spxMA50;
+            clmtTotalResu[5] = spxMA200;
+            clmtTotalResu[6] = spxMAIndi;
+            clmtTotalResu[7] = clmtIndi;
+            clmtTotalResu[8] = spxPrice;
 
-        // //     StringBuilder stringBuilder=new StringBuilder();
-        // //     foreach (var item in clmtTotalResu)
-        // //     {
-        // //         foreach (var item2 in item)
-        // //         {
-        // //             stringBuilder.Append(item2 + ",");
-        // //         }
-        // //         stringBuilder.AppendLine("ß" + Environment.NewLine + Environment.NewLine);
-        // //     }
+        //     StringBuilder stringBuilder=new StringBuilder();
+        //     foreach (var item in clmtTotalResu)
+        //     {
+        //         foreach (var item2 in item)
+        //         {
+        //             stringBuilder.Append(item2 + ",");
+        //         }
+        //         stringBuilder.AppendLine("ß" + Environment.NewLine + Environment.NewLine);
+        //     }
 
-        // //     System.IO.File.WriteAllText(@"D:\xxx.csv", stringBuilder.ToString());
+        //     System.IO.File.WriteAllText(@"D:\xxx.csv", stringBuilder.ToString());
 
-        //     return clmtTotalResu;
-        // }
+            return clmtTotalResu;
+        }
 
         // public Tuple<double[,], double[,], double[,], string[], string[]> MultiplFinCalc(double[][] p_clmtRes, Tuple<double[], int[,], int[], int[], string[], int[], int[]>  p_gSheetResToFinCalc, string[] p_allAssetList, double p_lastDataDate, Tuple<double[], double[,]>  p_taaWeightResultsTuple)
         // {
@@ -1278,7 +1283,7 @@ namespace SqCoreWeb.Controllers
         //         }
         //     }
 
-        //             Tuple<double[,], double[,], double[,], string[], string[]> multiplFinResults = Tuple.Create(pastCodes, futCodes, pastWeightsFinal, pastEvents, futEvents);
+        //             var multiplFinResults = Tuple.Create(pastCodes, futCodes, pastWeightsFinal, pastEvents, futEvents);
 
         //     return multiplFinResults;
         // }
