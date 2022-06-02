@@ -1,5 +1,6 @@
 import './../css/main.css';
 import { sqLineChartGenerator } from '../../../../TsLib/sq-common/sqlineChrt';
+import * as d3 from 'd3';
 
 // export {}; // TS convention: To avoid top level duplicate variables, functions. This file should be treated as a module (and have its own scope). A file without any top-level import or export declarations is treated as a script whose contents are available in the global scope.
 
@@ -64,9 +65,9 @@ function onReceiveData(json: any) {
   getDocElementById('idPosLast').innerHTML = 'Position weights in the last 20 days:';
   getDocElementById('idPosFut').innerHTML = 'Future events:';
 
-  // const warnLength = json.warningCont.length;
-  // if (warnLength>0)
-  //   getDocElementById('idWarningCont').innerHTML = json.warningCont + '<br> <a href="https://docs.google.com/spreadsheets/d/1fmvGBi2Q6MxnB_8AjUedy1QVTOlWE7Ck1rICjYSSxyY" target="_blank">Google sheet with current positions</a> and <a href="https://docs.google.com/document/d/1_m3MMGag7uBZSdvc4IgXKMvj3d4kzLxwvnW14RkCyco" target="_blank">the latest study in connection with the strategy</a>';
+  const warnLength = json.warningCont.length;
+  if (warnLength>0)
+    getDocElementById('idWarningCont').innerHTML = json.warningCont + '<br> <a href="https://docs.google.com/spreadsheets/d/1fmvGBi2Q6MxnB_8AjUedy1QVTOlWE7Ck1rICjYSSxyY" target="_blank">Google sheet with current positions</a> and <a href="https://docs.google.com/document/d/1_m3MMGag7uBZSdvc4IgXKMvj3d4kzLxwvnW14RkCyco" target="_blank">the latest study in connection with the strategy</a>';
   uberTaaTbls(json);
   // Setting charts visible after getting data.
   getDocElementById('pctChgCharts').style.visibility = 'visible';
@@ -200,66 +201,33 @@ function uberTaaTbls(json: any) {
 
   const nCurrData = parseInt(json.chartLength) + 1;
   const noAssets = assetNames2Array.length - 2;
-
-  interface pctChngStckPriceData {
-    date: Date;
-    price: number;
-  }
-
-  const pctChngChrtData: pctChngStckPriceData[] = [];
-  for (let j = 0; j < noAssets; j++) {
-    for (let i = 0; i < nCurrData; i++) {
-      const chrtData: pctChngStckPriceData = {
-        date: assChartMtx[i][0],
-        price: parseFloat(assChartMtx[i][j + 1]),
-      };
-      pctChngChrtData.push(chrtData);
-    }
-  }
-
   const xLabel: string = 'Dates';
   const yLabel: string = 'Percentage Change';
+  const yScaleTickFormat: string = '%';
+  d3.selectAll('#pctChgChrt > *').remove();
   const lineChrtDiv = getDocElementById('pctChgChrt');
   const lineChrtTooltip = getDocElementById('tooltipChart');
-  sqLineChartGenerator(noAssets, nCurrData, assetNames2Array, pctChngChrtData, xLabel, yLabel, lineChrtDiv, lineChrtTooltip);
+  sqLineChartGenerator(noAssets, nCurrData, assetNames2Array, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip);
 
   // Xlu Timer Chart
   const noAssetsXlu = 2;
-  const assetNames2ArrayXlu: any[] = ['XLU', ' VTI'];
-  const pctChngChrtDataXlu: pctChngStckPriceData[] = [];
-  for (let j = 0; j < noAssetsXlu; j++) {
-    for (let i = 0; i < nCurrData; i++) {
-      const chrtData: pctChngStckPriceData = {
-        date: rsiChartMtx[i][0],
-        price: parseFloat(rsiChartMtx[i][j + 1]),
-      };
-      pctChngChrtDataXlu.push(chrtData);
-    }
-  }
-
+  const assetNames2ArrayXlu: string[] = ['XLU', ' VTI'];
   const xLabelXlu: string = 'Dates';
   const yLabelXlu: string = 'RSI';
+  const yScaleTickFormatXlu: string = '';
+  d3.selectAll('#xluChrt > *').remove();
   const lineChrtDivXlu = getDocElementById('xluChrt');
-  sqLineChartGenerator(noAssetsXlu, nCurrData, assetNames2ArrayXlu, pctChngChrtDataXlu, xLabelXlu, yLabelXlu, lineChrtDivXlu, lineChrtTooltip);
+  sqLineChartGenerator(noAssetsXlu, nCurrData, assetNames2ArrayXlu, rsiChartMtx, xLabelXlu, yLabelXlu, yScaleTickFormatXlu, lineChrtDivXlu, lineChrtTooltip);
 
   // Spx Timer Chart
   const noAssetsSpx = 3;
-  const assetNames2ArraySpx: any[] = ['spotSPX', ' ma50SPX', ' ma200SPX'];
-  const pctChngChrtDataSpx: pctChngStckPriceData[] = [];
-  for (let j = 0; j < noAssetsSpx; j++) {
-    for (let i = 0; i < nCurrData; i++) {
-      const chrtData: pctChngStckPriceData = {
-        date: spxChartMtx[i][0],
-        price: parseFloat(spxChartMtx[i][j + 1]),
-      };
-      pctChngChrtDataSpx.push(chrtData);
-    }
-  }
-
+  const assetNames2ArraySpx: string[] = ['spotSPX', 'ma50SPX', 'ma200SPX'];
   const xLabelSpx: string = 'Dates';
   const yLabelSpx: string = 'Index Value';
+  const yScaleTickFormatSpx: string = '';
+  d3.selectAll('#spxChrt > *').remove();
   const lineChrtDivSpx = getDocElementById('spxChrt');
-  sqLineChartGenerator(noAssetsSpx, nCurrData, assetNames2ArraySpx, pctChngChrtDataSpx, xLabelSpx, yLabelSpx, lineChrtDivSpx, lineChrtTooltip);
+  sqLineChartGenerator(noAssetsSpx, nCurrData, assetNames2ArraySpx, spxChartMtx, xLabelSpx, yLabelSpx, yScaleTickFormatSpx, lineChrtDivSpx, lineChrtTooltip);
 }
 
 getDocElementById('gameChanger').onclick = onClickGameChanger;
