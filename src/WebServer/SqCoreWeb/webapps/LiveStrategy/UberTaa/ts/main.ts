@@ -52,7 +52,7 @@ function onReceiveData(json: any) {
     getDocElementById('errorMessage').style.visibility='visible';
     getDocElementById('pctChgCharts').style.visibility = 'hidden';
     getDocElementById('xluChart').style.visibility = 'hidden';
-    getDocElementById('spxChart').style.visibility = 'hidden';
+    getDocElementById('spyChart').style.visibility = 'hidden';
 
     return;
   }
@@ -72,7 +72,7 @@ function onReceiveData(json: any) {
   // Setting charts visible after getting data.
   getDocElementById('pctChgCharts').style.visibility = 'visible';
   getDocElementById('xluChart').style.visibility = 'visible';
-  getDocElementById('spxChart').style.visibility = 'visible';
+  getDocElementById('spyChart').style.visibility = 'visible';
 }
 
 function uberTaaTbls(json: any) {
@@ -221,12 +221,12 @@ function uberTaaTbls(json: any) {
 
   // Spx Timer Chart
   const noAssetsSpx = 3;
-  const assetNames2ArraySpx: string[] = ['spotSPX', 'ma50SPX', 'ma200SPX'];
+  const assetNames2ArraySpx: string[] = ['spotSPY', 'ma50SPY', 'ma200SPY'];
   const xLabelSpx: string = 'Dates';
   const yLabelSpx: string = 'Index Value';
   const yScaleTickFormatSpx: string = '';
-  d3.selectAll('#spxChrt > *').remove();
-  const lineChrtDivSpx = getDocElementById('spxChrt');
+  d3.selectAll('#spyChrt > *').remove();
+  const lineChrtDivSpx = getDocElementById('spyChrt');
   sqLineChartGenerator(noAssetsSpx, nCurrData, assetNames2ArraySpx, spxChartMtx, xLabelSpx, yLabelSpx, yScaleTickFormatSpx, lineChrtDivSpx, lineChrtTooltip);
 }
 

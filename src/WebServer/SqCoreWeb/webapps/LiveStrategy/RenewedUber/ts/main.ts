@@ -1,6 +1,6 @@
 import './../css/main.css';
 import * as d3 from 'd3';
-import { sqLineChartGenerator } from '../../../../TsLib/sq-common/sqlineChrt';
+import { sqLineChartGenerator, sqLineChartGenerator1 } from '../../../../TsLib/sq-common/sqlineChrt';
 // export {}; // TS convention: To avoid top level duplicate variables, functions. This file should be treated as a module (and have its own scope). A file without any top-level import or export declarations is treated as a script whose contents are available in the global scope.
 
 // 1. Declare some global variables and hook on DOMContentLoaded() and window.onload()
@@ -239,7 +239,6 @@ function renewedUberInfoTbls(json) {
   contangoMtx.innerHTML = contangoTbl;
 
   interface PriceData {
-    name: string;
     days: number;
     price: number;
   }
@@ -247,7 +246,6 @@ function renewedUberInfoTbls(json) {
   const currDataPrices: PriceData[] = [];
   for (let i = 0; i < nCurrDataVix; i++) {
     const currDataPricesRows: PriceData = {
-      name: 'Current',
       days: parseFloat(currDataDaysVixArray[i]),
       price: parseFloat(currDataVixArray[i]),
     };
@@ -257,7 +255,6 @@ function renewedUberInfoTbls(json) {
   const prevDataPrices: PriceData[] = [];
   for (let i = 0; i < nCurrDataVix; i++) {
     const prevDataPricesRows: PriceData = {
-      name: 'LastClose',
       days: parseFloat(currDataDaysVixArray[i]),
       price: parseFloat(prevDataVixArray[i]),
     };
@@ -267,7 +264,6 @@ function renewedUberInfoTbls(json) {
   const spotVixValues: PriceData[] = [];
   for (let i = 0; i < nCurrDataVix; i++) {
     const spotVixValuesRows: PriceData = {
-      name: 'SpotVix',
       days: parseFloat(currDataDaysVixArray[i]),
       price: parseFloat(spotVixArray[i]),
     };
@@ -275,207 +271,16 @@ function renewedUberInfoTbls(json) {
   }
 
   // Development for common chart function that can be used for all multiple charts - Daya
-  const futprice = currDataPrices.concat(prevDataPrices);
-  const futPrcData = futprice.concat(spotVixValues);
-  // const xLabel: string = 'Days';
-  // const yLabel: string = 'FuturePrice';
-  // renewedUberPctChgChartFut(futPrcData, xLabel, yLabel);
-  console.log('length of futprc', futPrcData.length);
-  // Declaring data sets to charts.
-
-  interface DataSet {
-    name: string;
-    history: PriceData[];
-    show: boolean;
-    color: string;
-  }
-
-  const current: DataSet = {
-    name: 'Current',
-    history: currDataPrices,
-    show: true,
-    color: 'blue',
-  };
-
-  const previous: DataSet = {
-    name: 'Last Close',
-    history: prevDataPrices,
-    show: true,
-    color: 'green',
-  };
-
-  const dataset: DataSet[] = [];
-  dataset.push(current);
-  dataset.push(previous);
-
-  if (spotVixArray[0] > 0) {
-    const spot: DataSet = {
-      name: 'Spot VIX',
-      history: spotVixValues,
-      show: true,
-      color: 'red',
-    };
-    dataset.push(spot);
-  }
-
-  let minPrice = 1000;
-  let maxPrice = 0;
-  dataset.forEach((series) => {
-    const minPriceI = d3.min(series.history, (d) => d.price) ?? 1000;
-    const maxPriceI = d3.max(series.history, (d) => d.price) ?? 0;
-    if (minPriceI < minPrice)
-      minPrice = minPriceI;
-    if (maxPriceI > maxPrice)
-      maxPrice = maxPriceI;
-  });
-  const maxDays = currDataDaysVixArray[nCurrDataVix - 1];
-
-  vixFuturePricesChrt(dataset, json.titleCont, minPrice, maxPrice, maxDays);
-}
-
-
-function vixFuturePricesChrt(dataset: any, titleCont: any, minPrice: number, maxPrice: number, maxDays: any) {
+  const vixFutprice = currDataPrices.concat(prevDataPrices);
+  const vixFutPriceData = vixFutprice.concat(spotVixValues);
+  const noAssetsVix = 3;
+  const assetNames2ArrayVix: string[] = ['Current', 'LastClose', 'SpotVix'];
+  // const tickerColor: string[] = ['blue', 'green', 'red'];
+  const xLabelVix: string = 'Days until expiration';
+  const yLabelVix: string = 'Future Price(USD)';
+  const yScaleTickFormatVix: string = '$';
   d3.selectAll('#vixChart > *').remove();
-
-  // Define margins, dimensions, and some line colors
-  const margin = { top: 10, right: 30, bottom: 40, left: 60 };
-  const width = 760 - margin.left - margin.right;
-  const height = 450 - margin.top - margin.bottom;
-
-  // Define the scales and tell D3 how to draw the line
-  const x = d3
-      .scaleLinear()
-      .domain([0, 240])
-      .range([0, width]);
-  const y = d3
-      .scaleLinear()
-      .domain([minPrice * 0.9, maxPrice * 1.1])
-      .range([height, 0]);
-  const line = d3.line()
-      .x((d : any) => x(d.days))
-      .y((d : any) => y(d.price));
-
-  const vixChrt = d3.select('#vixChart')
-      .append('svg')
-      .style('background', 'white')
-      .attr('width', width + margin.left + margin.right)
-      .attr('height', height + margin.top + margin.bottom)
-      .append('g')
-      .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-
-  const tooltip = d3.select('#tooltipChart');
-  const tooltipLine = vixChrt.append('line');
-
-  // Add the axes and a title
-  const xAxis = d3.axisBottom(x).tickSize(-height).tickFormat(d3.format('.4'));
-  const yAxis = d3.axisLeft(y).tickSize(-width).tickFormat(d3.format('$.4'));
-  vixChrt.append('g').attr('class', 'grid').call(yAxis);
-  vixChrt
-      .append('g')
-      .attr('class', 'grid')
-      .attr('transform', 'translate(0,' + height + ')')
-      .call(xAxis);
-
-  // text label for the x axis
-  vixChrt
-      .append('text')
-      .attr('transform', 'translate(' + width / 2 + ' ,' + (height + 30) + ')')
-      .style('text-anchor', 'middle')
-      .style('font-size', '0.8rem')
-      .text('Days until expiration');
-  vixChrt
-      .append('text')
-      .style('text-anchor', 'middle')
-      .style('font-size', '0.8rem')
-      .attr('transform', 'rotate(-90)')
-      .attr('y', 0 - (margin.left))
-      .attr('x', 0 - (height / 2))
-      .attr('dy', '2em')
-      .text('Future Price(USD)');
-
-  // Load the data and draw a chart
-  let numSeries = 0;
-  let series;
-  dataset.forEach((d) => {
-    series = d;
-
-    vixChrt
-        .append('path')
-        .attr('fill', 'none')
-        .attr('stroke', d.color)
-        .attr('stroke-width', 2)
-        .datum(d.history)
-        .attr('d', line);
-
-    vixChrt
-        .append('text')
-        .html(d.name)
-        .style('font-size', '0.8rem')
-        .attr('fill', d.color)
-        .attr('alignment-baseline', 'middle')
-        .attr('x', width - 100)
-        .attr('dx', '.5em')
-        .attr('y', 30 + 20 * numSeries);
-
-    vixChrt
-        .selectAll('myCircles')
-        .data(d.history)
-        .enter()
-        .append('circle')
-        .attr('fill', 'none')
-        .attr('stroke', d.color)
-        .attr('stroke-width', 0.8)
-        .attr('cx', (e: any) => x(e.days))
-        .attr('cy', (e: any) => y(e.price))
-        .attr('r', 2.5);
-
-    numSeries = numSeries + 1;
-  });
-
-  vixChrt
-      .append('rect')
-      .attr('width', width)
-      .attr('height', height)
-      .attr('opacity', 0)
-      .on('mousemove', onMouseMove)
-      .on('mouseout', onMouseOut);
-
-  function onMouseOut() {
-    if (tooltip)
-      tooltip.style('display', 'none');
-    if (tooltipLine)
-      tooltipLine.attr('stroke', 'none');
-  }
-
-  function onMouseMove(event: any) {
-    const daysArray: any[] = [];
-    series.history.forEach((element) => {
-      daysArray.push(element.days);
-    });
-
-    const xCoord = x.invert(d3.pointer(event)[0]);
-    const yCoord = d3.pointer(event)[1];
-    const closestXCoord = daysArray.sort((a, b) => Math.abs(xCoord - a) - Math.abs(xCoord - b))[0];
-    const closestYCoord = dataset[0].history.find((h) => h.days === closestXCoord).price;
-
-    tooltipLine
-        .attr('stroke', 'black')
-        .attr('x1', x(closestXCoord))
-        .attr('x2', x(closestXCoord))
-        .attr('y1', 0 + 10)
-        .attr('y2', height);
-
-    tooltip
-        .html('Number of days till expiration:' + closestXCoord)
-        .style('display', 'block')
-        .style('left', event.pageX + 10)
-        .style('top', (event.pageY - yCoord + y(closestYCoord)) + 15)
-        .selectAll()
-        .data(dataset)
-        .enter()
-        .append('div')
-        .style('color', (d : any) => d.color)
-        .html((d : any) => d.name + ': $' + d.history.find((h) => h.days === closestXCoord).price + '<br>');
-  }
+  const lineChrtDivVix = getDocElementById('vixChart');
+  sqLineChartGenerator1(noAssetsVix, nCurrDataVix, assetNames2ArrayVix, vixFutPriceData, xLabelVix, yLabelVix, yScaleTickFormatVix, lineChrtDivVix, lineChrtTooltip);
 }
 console.log('SqCore: Script END');
