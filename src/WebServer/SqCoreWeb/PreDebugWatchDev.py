@@ -60,6 +60,7 @@ startShellCallingThread("tsc --watch --preserveWatchOutput")
 # startShellCallingThread("npx webpack --config webapps/LiveStrategy/Sin/webpack.config.js --mode=development --watch")
 # startShellCallingThread("npx webpack --config webapps/LiveStrategy/RenewedUber/webpack.config.js --mode=development --watch")
 # startShellCallingThread("npx webpack --config webapps/LiveStrategy/UberTaa/webpack.config.js --mode=development --watch")
+# startShellCallingThread("npx webpack --config webapps/VolatilityVisualizer/webpack.config.js --mode=development --watch")
 
 # 2.3 Angular webapps in the project folder should be served on different ports. If an Angular app is not developed any more, comment it out to save resources
 # ng serve doesn't create anything into --output-path=wwwroot/webapps/ (it keeps its files temp, maybe in RAM)
