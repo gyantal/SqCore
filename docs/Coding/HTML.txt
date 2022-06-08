@@ -1,3 +1,8 @@
+
+- HTML 5: Is it <br>, <br/>, or <br />?
+https://stackoverflow.com/questions/1946426/html-5-is-it-br-br-or-br
+Agreed. the shortest "<br>" is the preferred one. Less bytes to send, faster download of HTML.
+
 ******* SVG coordinates understanding *******
 SVG Path - <path>
 The <path> element is used to define a path.

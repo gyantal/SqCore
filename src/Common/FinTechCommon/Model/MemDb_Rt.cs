@@ -287,7 +287,7 @@ namespace FinTechCommon
             return lastValue;
         }
 
-        public static Task DownloadPriorCloseAndLastPriceYF(Asset[] p_assets)  // faster execution if instead of Stock[] and casting, we allow Asset[], because we don't have to cast it runtime all the time
+        public static Task DownloadPriorCloseAndLastPriceYF(Asset[] p_assets)  // takes 45 ms from WinPC. Can handle Stock and Index assets as "^VIX"
         {
             if (p_assets.Length == 0)
                 return Task.CompletedTask;
@@ -295,7 +295,7 @@ namespace FinTechCommon
             return DownloadPriorCloseAndLastPriceYF(p_assets, tradingHoursNow);
         }
 
-        async static Task DownloadPriorCloseAndLastPriceYF(Asset[] p_assets, TradingHoursEx p_tradingHoursNow)  // takes 45 ms from WinPC
+        async static Task DownloadPriorCloseAndLastPriceYF(Asset[] p_assets, TradingHoursEx p_tradingHoursNow)  // takes 45 ms from WinPC. Can handle Stock and Index assets as "^VIX"
         {
             Utils.Logger.Debug("DownloadPriorCloseAndLastPriceYF() START");
             try
@@ -371,8 +371,8 @@ namespace FinTechCommon
                         if (quote.Value.Fields.TryGetValue(priorCloseFieldStr, out dynamic? priorClose))
                             sec.PriorClose = (float)priorClose;
 
-                        if (sec.SqTicker == "I/VIX")
-                            Utils.Logger.Info($"VIX priorClose: {sec.PriorClose}, lastVal:{sec.EstValue}");  // TEMP
+                        // if (sec.SqTicker == "I/VIX")
+                        //     Utils.Logger.Info($"VIX priorClose: {sec.PriorClose}, lastVal:{sec.EstValue}");  // TEMP
                     }
                 }
 
