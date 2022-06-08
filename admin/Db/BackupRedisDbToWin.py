@@ -12,7 +12,7 @@ rootRemoteDir = "/home/ubuntu/redis-backup/"
 # Parameters to change:
 runningEnvironmentComputerName = platform.node()    # 'gyantal-PC' or Balazs
 if runningEnvironmentComputerName == "gyantal-PC":
-    serverRsaKeyFile = "c:/agy/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore.pem"
+    serverRsaKeyFile = "h:/.shortcut-targets-by-id/0BzxkV1ug5ZxvVmtic1FsNTM5bHM/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore.pem"
     backupLocalDir = "g:/work/_archive/SqCoreWeb_RedisDb/"
 else:   # TODO: Laci, Balazs, you have to add your IF here (based on the 'name' of your PC)
     serverRsaKeyFile = "d:/<fill it to user>/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore.pem"

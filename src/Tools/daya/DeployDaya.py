@@ -24,7 +24,7 @@ start_time = time.time()
 runningEnvironmentComputerName = platform.node()    # 'gyantal-PC' or Balazs
 if runningEnvironmentComputerName == 'gyantal-PC':
     rootLocalDir = "c:/agy/GitHub/SqCore/src/WebServer/SqCoreWeb/bin/Release/net6.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
-    serverRsaKeyFile = "c:/agy/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
+    serverRsaKeyFile = "h:/.shortcut-targets-by-id/0BzxkV1ug5ZxvVmtic1FsNTM5bHM/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
 elif runningEnvironmentComputerName == 'daya-PC':
     rootLocalDir = "c:/GitHubRepos/SqCore/src/WebServer/SqCoreWeb/bin/Release/net6.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
     serverRsaKeyFile = "c:/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
