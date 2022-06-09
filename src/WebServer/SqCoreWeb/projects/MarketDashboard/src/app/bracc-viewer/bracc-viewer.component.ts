@@ -509,166 +509,28 @@ export class BrAccViewerComponent implements OnInit {
       }
       uiHistData.push(uiHistItem);
     }
-    BrAccViewerComponent.processUiWithNavChrt(uiHistData);
-  }
+    // processing the navChart
 
-  static processUiWithNavChrt(uiHistData: UiHistData[]) {
     d3.selectAll('#navChrt > *').remove();
-    const margin = {top: 10, right: 30, bottom: 30, left: 60 };
-    const width = 660 - margin.left - margin.right;
-    const height = 400 - margin.top - margin.bottom;
-
     const firstEleOfHistDataArr1 = uiHistData[0].navChrtVals[0].sdaClose; // used to convert the data into percentage values
     const firstEleOfHistDataArr2 = uiHistData[1].navChrtVals[0].sdaClose; // used to convert the data into percentage values
-
+    const lineChrtDiv = document.getElementById('navChrt') as HTMLElement;
+    const margin = {top: 10, right: 30, bottom: 30, left: 60 };
+    const inputWidth = 660 - margin.left - margin.right;
+    const inputHeight = 400 - margin.top - margin.bottom;
+    const yAxisTickformat: string = '%';
     const navChrtData1 = uiHistData[0].navChrtVals.map((r:{ date: Date; sdaClose: number; }) =>
       ({date: new Date(r.date), sdaClose: (100 * r.sdaClose / firstEleOfHistDataArr1)}));
     const navChrtData2 = uiHistData[1].navChrtVals.map((r:{ date: Date; sdaClose: number; }) =>
       ({date: new Date(r.date), sdaClose: (100 * r.sdaClose / firstEleOfHistDataArr2)}));
-
     // find data range
     const xMin = d3.min(navChrtData1, (r:{ date: any; }) => r.date);
     const xMax = d3.max(navChrtData1, (r:{ date: any; }) => r.date);
     const yMinAxis = Math.min(d3.min(navChrtData1, (r:{ sdaClose: any; }) => r.sdaClose), d3.min(navChrtData2, (r:{ sdaClose: any; }) => r.sdaClose ));
     const yMaxAxis = Math.max(d3.max(navChrtData1, (r:{ sdaClose: any; }) => r.sdaClose), d3.max(navChrtData2, (r:{ sdaClose: any; }) => r.sdaClose ));
-    // range of data configuring
-    const navChrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, width]);
-    const navChrtScaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([height, 0]);
-
-    const navChrtSvg = d3.select('#navChrt').append('svg')
-        .attr('width', width + margin.left + margin.right)
-        .attr('height', height + margin.top + margin.bottom)
-        .append('g')
-        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-    const navChrtScaleYAxis = d3.axisLeft(navChrtScaleY).tickFormat((r: any) => Math.round(r) + '%');
-
-    navChrtSvg.append('g')
-        .attr('transform', 'translate(0,' + height + ')')
-        .call(d3.axisBottom(navChrtScaleX));
-    navChrtSvg.append('g').call(navChrtScaleYAxis);
-
-    // Define the line
-    const line = d3.line()
-        .x((r: any) => navChrtScaleX(r.date))
-        .y((r: any) => navChrtScaleY(r.sdaClose))
-        .curve(d3.curveCardinal);
-    const line2 = d3.line()
-        .x((r: any) => navChrtScaleX(r.date))
-        .y((r: any) => navChrtScaleY(r.sdaClose))
-        .curve(d3.curveCardinal);
-
-    const navChrtlineSvg = navChrtSvg.append('g');
-    const focus = navChrtSvg.append('g').style('display', 'none');
-    // Add the valueline path.
-    navChrtlineSvg.append('path')
-        .attr('class', 'line')
-        .datum(navChrtData1) // Binds data to the line
-        .attr('d', line as any);
-
-    navChrtlineSvg.append('path')
-        .attr('class', 'line2')
-        .style('stroke-dasharray', ('3, 3'))
-        .datum(navChrtData2) // Binds data to the line
-        .attr('d', line2 as any);
-
-    // append the x line
-    focus.append('line')
-        .attr('class', 'x')
-        .style('stroke', 'blue')
-        .style('stroke-dasharray', '3,3')
-        .style('opacity', 0.5)
-        .attr('y1', 0)
-        .attr('y2', height);
-
-    // append the y line
-    focus.append('line')
-        .attr('class', 'y')
-        .style('stroke', 'blue')
-        .style('stroke-dasharray', '3,3')
-        .style('opacity', 0.5)
-        .attr('x1', width)
-        .attr('x2', width);
-    focus.append('line2')
-        .attr('class', 'y')
-        .style('stroke', 'blue')
-        .style('stroke-dasharray', '3,3')
-        .style('opacity', 0.5)
-        .attr('x1', width)
-        .attr('x2', width);
-
-    // append the circle at the intersection
-    focus.append('circle')
-        .attr('class', 'y')
-        .style('fill', 'none')
-        .style('stroke', 'blue')
-        .attr('r', 4);
-
-    // place the value at the intersection
-    focus.append('text')
-        .attr('class', 'y1')
-        .style('stroke', 'white')
-        .style('stroke-width', '3.5px')
-        .style('opacity', 0.8)
-        .attr('dx', -10)
-        .attr('dy', '-2em');
-    focus.append('text')
-        .attr('class', 'y2')
-        .attr('dx', -10)
-        .attr('dy', '-2em');
-
-    // place the date at the intersection
-    focus.append('text')
-        .attr('class', 'y3')
-        .style('stroke', 'white')
-        .style('stroke-width', '3.5px')
-        .style('opacity', 0.8)
-        .attr('dx', -30)
-        .attr('dy', '-1em');
-    focus.append('text')
-        .attr('class', 'y4')
-        .attr('dx', -30)
-        .attr('dy', '-1em');
-
-    // append the rectangle to capture mouse
-    navChrtSvg.append('rect')
-        .attr('width', width)
-        .attr('height', height)
-        .style('fill', 'none')
-        .style('pointer-events', 'all')
-        .on('mouseover', function() { focus.style('display', null); })
-        .on('mouseout', function() { focus.style('display', 'none'); })
-        .on('mousemove', mousemove);
-
-    const formatMonth = d3.timeFormat('%Y%m%d');
-    const bisectDate = d3.bisector((r: any) => r.date).left;
-
-    function mousemove(event: any) {
-      const x0 = navChrtScaleX.invert(d3.pointer(event)[0]);
-      const i = bisectDate(navChrtData1, x0, 1);
-      const d0 = navChrtData1[i - 1];
-      const d1 = navChrtData1[i];
-      const r = (x0.getTime() - d0.date.getTime()) > (d1.date.getTime() - x0.getTime()) ? d1 : d0;
-      focus.select('circle.y')
-          .attr('transform', 'translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')');
-      focus.select('text.y1')
-          .attr('transform', 'translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')')
-          .text(Math.round(r.sdaClose * firstEleOfHistDataArr1 / 100));
-      focus.select('text.y2')
-          .attr('transform', 'translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')')
-          .text(d3.format(',')(Math.round(r.sdaClose * firstEleOfHistDataArr1 / 100)) + 'K');
-      focus.select('text.y3')
-          .attr('transform', 'translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')')
-          .text(formatMonth(r.date));
-      focus.select('text.y4')
-          .attr('transform', 'translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')')
-          .text(formatMonth(r.date));
-      focus.select('.x')
-          .attr('transform', 'translate(' + navChrtScaleX(r.date) + ',' + navChrtScaleY(r.sdaClose) + ')')
-          .attr('y2', height - navChrtScaleY(r.sdaClose));
-      focus.select('.y')
-          .attr('transform', 'translate(' + width * -1 + ',' + navChrtScaleY(r.sdaClose) + ')')
-          .attr('x2', width + width);
-    }
+    const isNavChrt: boolean = true;
+    // BrAccViewerComponent.processUiWithNavChrt(uiHistData);
+    BrAccViewerComponent.processUiWithNavAndStockChrt(navChrtData1, navChrtData2, lineChrtDiv, inputWidth, inputHeight, margin, xMin, xMax, yMinAxis, yMaxAxis, yAxisTickformat, firstEleOfHistDataArr1, isNavChrt);
   }
 
   static updateStockHistData(stockObj: Nullable<BrAccHistValuesJs>, uiSnapTable: UiSnapTable) {
@@ -682,7 +544,25 @@ export class BrAccViewerComponent implements OnInit {
       stockVal.sdaClose = stockObj.histSdaCloses[i];
       uiSnapTable.stockChartVals.push(stockVal);
     }
-    BrAccViewerComponent.processUiWithStockChrt(uiSnapTable);
+    // BrAccViewerComponent.processUiWithStockChrt(uiSnapTable);
+
+    // processing Ui With StockChrt
+    d3.selectAll('#stockChrt > *').remove();
+    const firstEleOfHistDataArr1 = 100; // used to convert the data into percentage values
+    const lineChrtDiv = document.getElementById('stockChrt') as HTMLElement;
+    const yAxisTickformat: string = '';
+    const margin = {top: 10, right: 30, bottom: 30, left: 40 };
+    const inputWidth = 460 - margin.left - margin.right;
+    const inputHeight = 200 - margin.top - margin.bottom;
+    const stckChrtData = uiSnapTable.stockChartVals.map((r:{ date: Date; sdaClose: number; }) =>
+      ({date: new Date(r.date), sdaClose: (r.sdaClose)}));
+    // find data range
+    const xMin = d3.min(stckChrtData, (r:{ date: any; }) => r.date);
+    const xMax = d3.max(stckChrtData, (r:{ date: any; }) => r.date);
+    const yMinAxis = d3.min(stckChrtData, (r:{ sdaClose: any; }) => r.sdaClose);
+    const yMaxAxis = d3.max(stckChrtData, (r:{ sdaClose: any; }) => r.sdaClose);
+    const isNavChrt: boolean = false;
+    BrAccViewerComponent.processUiWithNavAndStockChrt(stckChrtData, stckChrtData, lineChrtDiv, inputWidth, inputHeight, margin, xMin, xMax, yMinAxis, yMaxAxis, yAxisTickformat, firstEleOfHistDataArr1, isNavChrt);
   }
 
   onNavSelectedChange(pEvent: any) {
@@ -805,48 +685,47 @@ export class BrAccViewerComponent implements OnInit {
       formatYear)(date);
   }
 
-  static processUiWithStockChrt(uiSnapTable: UiSnapTable) {
-    d3.selectAll('#stockChrt > *').remove();
-    const margin = {top: 10, right: 30, bottom: 30, left: 40 };
-    const width = 460 - margin.left - margin.right;
-    const height = 200 - margin.top - margin.bottom;
-    const stckVals = uiSnapTable.stockChartVals;
-    const stckChrtData = stckVals.map((r:{ date: Date; sdaClose: number; }) =>
-      ({date: new Date(r.date), sdaClose: (r.sdaClose)}));
-
-    // find data range
-    const xMin = d3.min(stckChrtData, (r:{ date: any; }) => r.date);
-    const xMax = d3.max(stckChrtData, (r:{ date: any; }) => r.date);
-    const yMinAxis = d3.min(stckChrtData, (r:{ sdaClose: any; }) => r.sdaClose);
-    const yMaxAxis = d3.max(stckChrtData, (r:{ sdaClose: any; }) => r.sdaClose);
+  static processUiWithNavAndStockChrt(navChrtData1: any, navChrtData2: any, lineChrtDiv: HTMLElement, inputWidth: number, inputHeight: number, margin: any, xMin: number, xMax: number, yMinAxis: number, yMaxAxis: number, yAxisTickformat: string, firstEleOfHistDataArr1: any, isNavChrt: boolean) {
     // range of data configuring
-    const stckChrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, width]);
-    const stckChrtScaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([height, 0]);
+    const brAccChrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, inputWidth]);
+    const brAccChrtScaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([inputHeight, 0]);
 
-    const stckChrtScaleXAxis = d3.axisBottom(stckChrtScaleX).tickFormat(BrAccViewerComponent.shortMonthFormat);
-    const stckChrtSvg = d3.select('#stockChrt').append('svg')
-        .attr('width', width + margin.left + margin.right)
-        .attr('height', height + margin.top + margin.bottom)
+    const brAccChrt = d3.select(lineChrtDiv).append('svg')
+        .attr('width', inputWidth + margin.left + margin.right)
+        .attr('height', inputHeight + margin.top + margin.bottom)
         .append('g')
         .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-    stckChrtSvg.append('g')
-        .attr('transform', 'translate(0,' + height + ')')
-        .call(stckChrtScaleXAxis);
-    stckChrtSvg.append('g').call(d3.axisLeft(stckChrtScaleY));
+    const brAccChrtScaleYAxis = d3.axisLeft(brAccChrtScaleY).tickFormat((r: any) => Math.round(r) + yAxisTickformat);
+
+    brAccChrt.append('g')
+        .attr('transform', 'translate(0,' + inputHeight + ')')
+        .call(d3.axisBottom(brAccChrtScaleX).tickFormat(BrAccViewerComponent.shortMonthFormat));
+    brAccChrt.append('g').call(brAccChrtScaleYAxis);
 
     // Define the line
     const line = d3.line()
-        .x((r: any) => stckChrtScaleX(r.date))
-        .y((r: any) => stckChrtScaleY(r.sdaClose))
+        .x((r: any) => brAccChrtScaleX(r.date))
+        .y((r: any) => brAccChrtScaleY(r.sdaClose))
+        .curve(d3.curveCardinal);
+    const line2 = d3.line()
+        .x((r: any) => brAccChrtScaleX(r.date))
+        .y((r: any) => brAccChrtScaleY(r.sdaClose))
         .curve(d3.curveCardinal);
 
-    const stckChrtlineSvg = stckChrtSvg.append('g');
-    const focus = stckChrtSvg.append('g').style('display', 'none');
+    const brAccChrtline = brAccChrt.append('g');
+    const focus = brAccChrt.append('g').style('display', 'none');
     // Add the valueline path.
-    stckChrtlineSvg.append('path')
+    brAccChrtline.append('path')
         .attr('class', 'line')
-        .datum(stckChrtData) // Binds data to the line
+        .datum(navChrtData1) // Binds data to the line
         .attr('d', line as any);
+
+    brAccChrtline.append('path')
+        .attr('class', 'line2')
+        .style('stroke-dasharray', ('3, 3'))
+        .datum(navChrtData2) // Binds data to the line
+        .attr('d', line2 as any);
+
     // append the x line
     focus.append('line')
         .attr('class', 'x')
@@ -854,7 +733,7 @@ export class BrAccViewerComponent implements OnInit {
         .style('stroke-dasharray', '3,3')
         .style('opacity', 0.5)
         .attr('y1', 0)
-        .attr('y2', height);
+        .attr('y2', inputHeight);
 
     // append the y line
     focus.append('line')
@@ -862,8 +741,15 @@ export class BrAccViewerComponent implements OnInit {
         .style('stroke', 'blue')
         .style('stroke-dasharray', '3,3')
         .style('opacity', 0.5)
-        .attr('x1', width)
-        .attr('x2', width);
+        .attr('x1', inputWidth)
+        .attr('x2', inputWidth);
+    focus.append('line2')
+        .attr('class', 'y')
+        .style('stroke', 'blue')
+        .style('stroke-dasharray', '3,3')
+        .style('opacity', 0.5)
+        .attr('x1', inputWidth)
+        .attr('x2', inputWidth);
 
     // append the circle at the intersection
     focus.append('circle')
@@ -875,68 +761,74 @@ export class BrAccViewerComponent implements OnInit {
     // place the value at the intersection
     focus.append('text')
         .attr('class', 'y1')
-        .style('stroke', 'rgb(210, 252, 176)')
+        .style('stroke', 'white')
         .style('stroke-width', '3.5px')
         .style('opacity', 0.8)
-        .attr('dx', -30)
+        .attr('dx', -10)
         .attr('dy', '-2em');
     focus.append('text')
         .attr('class', 'y2')
-        .attr('dx', -30)
+        .attr('dx', -10)
         .attr('dy', '-2em');
 
     // place the date at the intersection
     focus.append('text')
         .attr('class', 'y3')
-        .style('stroke', 'rgb(210, 252, 176)')
+        .style('stroke', 'white')
         .style('stroke-width', '3.5px')
         .style('opacity', 0.8)
-        .attr('dx', -35)
+        .attr('dx', -30)
         .attr('dy', '-1em');
     focus.append('text')
         .attr('class', 'y4')
-        .attr('dx', -35)
+        .attr('dx', -30)
         .attr('dy', '-1em');
 
     // append the rectangle to capture mouse
-    stckChrtSvg.append('rect')
-        .attr('width', width)
-        .attr('height', height)
+    brAccChrt.append('rect')
+        .attr('width', inputWidth)
+        .attr('height', inputHeight)
         .style('fill', 'none')
         .style('pointer-events', 'all')
         .on('mouseover', function() { focus.style('display', null); })
         .on('mouseout', function() { focus.style('display', 'none'); })
         .on('mousemove', mousemove);
 
-    const formatDate = d3.timeFormat('%Y%m%d');
+    const formatMonth = d3.timeFormat('%Y%m%d');
     const bisectDate = d3.bisector((r: any) => r.date).left;
 
     function mousemove(event: any) {
-      const x0 = stckChrtScaleX.invert(d3.pointer(event)[0]);
-      const i = bisectDate(stckChrtData, x0, 1);
-      const d0 = stckChrtData[i - 1];
-      const d1 = stckChrtData[i];
+      const x0 = brAccChrtScaleX.invert(d3.pointer(event)[0]);
+      const i = bisectDate(navChrtData1, x0, 1);
+      const d0 = navChrtData1[i - 1];
+      const d1 = navChrtData1[i];
       const r = (x0.getTime() - d0.date.getTime()) > (d1.date.getTime() - x0.getTime()) ? d1 : d0;
       focus.select('circle.y')
-          .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')');
+          .attr('transform', 'translate(' + brAccChrtScaleX(r.date) + ',' + brAccChrtScaleY(r.sdaClose) + ')');
       focus.select('text.y1')
-          .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')')
-          .text(r.sdaClose);
-      focus.select('text.y2')
-          .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')')
-          .text(d3.format(',')(Math.round((r.sdaClose))) + 'K');
+          .attr('transform', 'translate(' + brAccChrtScaleX(r.date) + ',' + brAccChrtScaleY(r.sdaClose) + ')')
+          .text(Math.round(r.sdaClose * firstEleOfHistDataArr1 / 100));
+      if (isNavChrt) {
+        focus.select('text.y2')
+            .attr('transform', 'translate(' + brAccChrtScaleX(r.date) + ',' + brAccChrtScaleY(r.sdaClose) + ')')
+            .text(d3.format(',')(Math.round(r.sdaClose * firstEleOfHistDataArr1 / 100)) + 'K');
+      } else {
+        focus.select('text.y2')
+            .attr('transform', 'translate(' + brAccChrtScaleX(r.date) + ',' + brAccChrtScaleY(r.sdaClose) + ')')
+            .text(d3.format(',')(Math.round(r.sdaClose * firstEleOfHistDataArr1 / 100)));
+      }
       focus.select('text.y3')
-          .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')')
-          .text(formatDate(r.date));
+          .attr('transform', 'translate(' + brAccChrtScaleX(r.date) + ',' + brAccChrtScaleY(r.sdaClose) + ')')
+          .text(formatMonth(r.date));
       focus.select('text.y4')
-          .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')')
-          .text(formatDate(r.date));
+          .attr('transform', 'translate(' + brAccChrtScaleX(r.date) + ',' + brAccChrtScaleY(r.sdaClose) + ')')
+          .text(formatMonth(r.date));
       focus.select('.x')
-          .attr('transform', 'translate(' + stckChrtScaleX(r.date) + ',' + stckChrtScaleY(r.sdaClose) + ')')
-          .attr('y2', height - stckChrtScaleY(r.sdaClose));
+          .attr('transform', 'translate(' + brAccChrtScaleX(r.date) + ',' + brAccChrtScaleY(r.sdaClose) + ')')
+          .attr('y2', inputHeight - brAccChrtScaleY(r.sdaClose));
       focus.select('.y')
-          .attr('transform', 'translate(' + width * -1 + ',' + stckChrtScaleY(r.sdaClose) + ')')
-          .attr('x2', width + width);
+          .attr('transform', 'translate(' + inputWidth * -1 + ',' + brAccChrtScaleY(r.sdaClose) + ')')
+          .attr('x2', inputWidth + inputWidth);
     }
   }
 }
