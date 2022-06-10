@@ -204,8 +204,9 @@ namespace SqCoreWeb.Controllers
 
 
             int[] nextDataResIndexVec = new int[15];
-            // nextDataResIndexVec[0] = pastDataResIndexVec[0] + 1; // exclude today from the nextEvents table
-            nextDataResIndexVec[0] = pastDataResIndexVec[0];    // include today in the nextEvents table
+            // nextDataResIndexVec[0] = pastDataResIndexVec[0] + 1; // exclude tomorrow from the nextEvents table
+            // nextDataResIndexVec[0] = pastDataResIndexVec[0];    // include tomorrow in the nextEvents table
+            nextDataResIndexVec[0] = pastDataResIndexVec[0] - 1;    // include today in the nextEvents table
             for (int iRows = 1; iRows < nextDataResIndexVec.Length; iRows++)
             {
                 nextDataResIndexVec[iRows] = nextDataResIndexVec[iRows - 1] + 1;
