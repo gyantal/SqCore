@@ -1,6 +1,6 @@
 import './../css/main.css';
 import * as d3 from 'd3';
-import { sqLineChartGenerator, sqLineChartGenerator1 } from '../../../../TsLib/sq-common/sqlineChrt';
+import { sqLineChartGenerator } from '../../../../TsLib/sq-common/sqlineChrt';
 // export {}; // TS convention: To avoid top level duplicate variables, functions. This file should be treated as a module (and have its own scope). A file without any top-level import or export declarations is treated as a script whose contents are available in the global scope.
 
 // 1. Declare some global variables and hook on DOMContentLoaded() and window.onload()
@@ -165,9 +165,10 @@ function renewedUberInfoTbls(json) {
   const xLabel: string = 'Dates';
   const yLabel: string = 'Percentage Change';
   const yScaleTickFormat = '%';
+  const isXvalueDate: boolean = true;
   const lineChrtDiv = getDocElementById('pctChgChrt');
   const lineChrtTooltip = getDocElementById('tooltipChart');
-  sqLineChartGenerator(noAssets, nCurrData, assetNames2Array, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip);
+  sqLineChartGenerator(noAssets, nCurrData, assetNames2Array, isXvalueDate, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip);
 
   const currDataVixArray = json.currDataVixVec.split(',');
   const currDataDaysVixArray = json.currDataDaysVixVec.split(',');
@@ -271,16 +272,23 @@ function renewedUberInfoTbls(json) {
   }
 
   // Development for common chart function that can be used for all multiple charts - Daya
-  const vixFutprice = currDataPrices.concat(prevDataPrices);
-  const vixFutPriceData = vixFutprice.concat(spotVixValues);
+
+  const vixFutPriceData : any[] = [];
+  for (let i = 0; i < nCurrDataVix; i++) {
+    vixFutPriceData.push([currDataDaysVixArray[i],
+      currDataPrices[i].price,
+      prevDataPrices[i].price,
+      spotVixValues[i].price]);
+  }
+
   const noAssetsVix = 3;
   const assetNames2ArrayVix: string[] = ['Current', 'LastClose', 'SpotVix'];
-  // const tickerColor: string[] = ['blue', 'green', 'red'];
   const xLabelVix: string = 'Days until expiration';
   const yLabelVix: string = 'Future Price(USD)';
   const yScaleTickFormatVix: string = '$';
+  const isXvalueDate1: boolean = false;
   d3.selectAll('#vixChart > *').remove();
   const lineChrtDivVix = getDocElementById('vixChart');
-  sqLineChartGenerator1(noAssetsVix, nCurrDataVix, assetNames2ArrayVix, vixFutPriceData, xLabelVix, yLabelVix, yScaleTickFormatVix, lineChrtDivVix, lineChrtTooltip);
+  sqLineChartGenerator(noAssetsVix, nCurrDataVix, assetNames2ArrayVix, isXvalueDate1, vixFutPriceData, xLabelVix, yLabelVix, yScaleTickFormatVix, lineChrtDivVix, lineChrtTooltip);
 }
 console.log('SqCore: Script END');

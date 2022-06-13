@@ -7,18 +7,23 @@
 
 <body>
   <h1>Volatility Drag Visualizer</h1>
+  <div id="DebugDataArrivesHere"></div>
+  <div id="errorMessage" style="visibility: hidden">
+    <div class="herror" id="idErrorCont"></div>
+</div>
   <div id="titleCont"></div>
     <div class="marginCommon">
       <span id="requestTime"></span>&nbsp;&nbsp;&nbsp;
       <span id="lastDataTime"></span>
     </div>
     <span id="idChBxs"></span>
-
-    <!-- <div class="demo-container">
+    <!-- <div id="pctChgCharts" class="chartsContainer">
       <strong>Monthly Volatility Drag</strong>
-      <div id="placeholder2" class="demo-placeholder"></div>
-    </div> -->
-  <!-- <button class="button4" style="background: url(assets/images/zoomout.webp); background-size: cover;" title="Zoom Out" id="clearSelection"></button> -->
+      <div id="pctChgChrt"></div>
+      <div id='tooltipChart'></div>
+    </div>
+
+  <button class="button4" style="background-size: cover;" title="Zoom Out" id="clearSelection"></button> -->
   <br>
   <br>
   <span id="idCurrMonthly"></span>
@@ -29,10 +34,6 @@
   <br>
   <!-- <div class="demo-container">
       <span id="idChartLength"></span>
-
-      <div id="placeholder1" class="demo-placeholder"></div>
-      <div id="pctChgChrt"></div>
-      <div id='tooltipChart'></div>
   </div> -->
   <br>
   <span id="idVolatilityHistory"></span>

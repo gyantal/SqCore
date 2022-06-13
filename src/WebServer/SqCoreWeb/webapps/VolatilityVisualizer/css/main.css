@@ -22,7 +22,7 @@ h1 {
   margin: 0.5rem;
 }
 
-h2   {
+h2 {
   font-family: "Comic Sans MS", cursive, sans-serif;
   color: gainsboro;
   font-size: 125%;
@@ -88,6 +88,76 @@ margin:0;
   transform: translateY(4px);
 }
 
+#vixBtn {
+  background: url("../assets/images/vix.webp");
+  background-size: cover;
+}
+
+#impEtpBtn {
+  background: url("../assets/images/importantEtps.webp");
+  background-size: cover;
+}
+
+#gameChngBtn {
+  background: url("../assets/images/game_changer.webp");
+  background-size: cover;
+}
+
+#globalAssetsBtn{
+  background: url("../assets/images/global_assets.webp");
+  background-size: cover;
+}
+
+#selectAllBtn {
+  background: url("../assets/images/selectall.webp");
+  background-size: cover;
+}
+
+#updateAllBtn{
+  background: url("../assets/images/updateall.webp");
+  background-size: cover;
+}
+
+.chartsContainer {
+  box-sizing: border-box;
+  width: 52rem;
+  height: 32rem;
+  padding: 1rem 1rem 1rem 1rem;
+  margin: 1rem auto 1rem 22rem;
+  border: 0.1rem solid #ddd;
+  font-size: 1rem;
+  background: #F4F6F6; /* For browsers that do not support gradients */
+  background: linear-gradient(90deg, #D6EAF8, #D1F2EB); /* Standard syntax */
+}
+
+.grid line {
+  stroke: lightgrey;
+  stroke-opacity: 0.7;
+}
+
+.grid path {
+  border: 0.05rem solid black;
+}
+
+.pctChgLabel {
+  font-size: 0.8rem;
+  text-anchor: middle;
+}
+
+#tooltipChart {
+  display: none;
+  position: absolute;
+  min-width: 2rem;
+  max-width: 10rem;
+  font-size: 0.8rem;
+  background-color: #F4F6F6;
+  text-align: center;
+  opacity: 0.92;
+  padding: 0.5rem 0;
+  border: 0.05rem solid orange;
+  border-radius: 0.6rem;
+}
+
 .button2 {
   display: inline-block;
   border: none;
@@ -121,7 +191,7 @@ margin:0;
   background-repeat: no-repeat;
   max-width: 100%;
   max-height: 100%;
-  
+
 }
 
 .button3:hover {
@@ -139,6 +209,7 @@ margin:0;
   cursor: pointer;
   height: 40px;
   width: 120px;
+  background: url("../assets/images/zoomout.webp");
   background-size: cover;
   background-repeat: no-repeat;
   max-width: 100%;
