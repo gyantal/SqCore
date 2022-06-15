@@ -11,6 +11,7 @@ using System.IO;
 using System.Text;
 using System.Globalization;
 using System.Diagnostics;
+using MathCommon.MathNet;
 
 namespace SqCoreWeb.Controllers
 {    
@@ -571,8 +572,8 @@ namespace SqCoreWeb.Controllers
                     {
                         // A long position would be initiated if the price exceeds the 75th percentile of prices over the last “n” days.The position would be closed if the price falls below the 25th percentile of prices over the last “n” days.
                         var usedQuotes = p_taaWeightsData[iAsset].GetRange(startNumDay + iDay - (p_pctChannelLookbackDays[iChannel] - 1), p_pctChannelLookbackDays[iChannel]).Select(r => r.AdjClosePrice);
-                        assetPctChannelsLower[iAsset, iChannel] = Utils.Quantile(usedQuotes, thresholdLower);
-                        assetPctChannelsUpper[iAsset, iChannel] = Utils.Quantile(usedQuotes, thresholdUpper);
+                        assetPctChannelsLower[iAsset, iChannel] = Statistics.Quantile(usedQuotes, thresholdLower);
+                        assetPctChannelsUpper[iAsset, iChannel] = Statistics.Quantile(usedQuotes, thresholdUpper);
                         if (assetPrice < assetPctChannelsLower[iAsset, iChannel])
                             assetPctChannelsSignal[iAsset, iChannel] = -1;  // fully overwrite the signal for iAsset and for this channel. We don't keep signal values historically, just keep the actual signal as we march forward in the simulated window. 
                         else if (assetPrice > assetPctChannelsUpper[iAsset, iChannel])
@@ -600,7 +601,7 @@ namespace SqCoreWeb.Controllers
                         hvPctChg[p_histVolLookbackDays - iHv - 1] = p_taaWeightsData[iAsset][startNumDay + iDay - iHv].AdjClosePrice / p_taaWeightsData[iAsset][startNumDay + iDay - iHv - 1].AdjClosePrice - 1;
                     }
                     // Balazs: uses "corrected sample standard deviation"; corrected: dividing by 19, not 20; He doesn't annualize. He uses daily StDev
-                    assetHV[iAsset] = Utils.StandardDeviation(hvPctChg);  // Calculate the 20-day historical volatility of daily percentage changes for every stock.
+                    assetHV[iAsset] = ArrayStatistics.StandardDeviation(hvPctChg);  // Calculate the 20-day historical volatility of daily percentage changes for every stock.
                     assetWeights[iAsset] = assetScores[iAsset] / assetHV[iAsset];   // “Score/Vol” quotients will define the weights of the stocks. They can be 0 or negative as well. 
                                                                                     // there is an interesting observation here. Actually, it is a good behavour.
                                                                                     // If assetScores[i]=0, assetWeights[i] becomes 0, so we don't use its weight when p_isCashAllocatedForNonActives => TLT will not fill its Cash-place; NO TLT will be invested (if this is the only stock with 0 score), the portfolio will be 100% in other stocks. We are more Brave.

@@ -19,6 +19,7 @@
     <ProjectReference Include="..\..\Common\BrokerCommon\BrokerCommon.csproj" />
     <ProjectReference Include="..\..\Common\SqCommon\SqCommon.csproj" />
     <ProjectReference Include="..\..\Common\DbCommon\DbCommon.csproj" />
+    <ProjectReference Include="..\..\Common\MathCommon\MathCommon.csproj" />
     <None Update="NLog.config" CopyToOutputDirectory="PreserveNewest" />
     <PackageReference Include="Microsoft.AspNetCore.SpaServices.Extensions" Version="6.0.0" />
     <PackageReference Include="System.ServiceModel.Syndication" Version="6.0.0" />

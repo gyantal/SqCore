@@ -92,8 +92,7 @@ namespace SqCommon
 
                 // string p_str = System.IO.File.ReadAllText(p_filePath);
                 MemoryStream ms = new(Encoding.UTF8.GetBytes(p_str));
-                DataContractJsonSerializerSettings settings = new() { DateTimeFormat = new DateTimeFormat("yyyy-MM-dd'T'HH:mm:ssZ") };    // the 'T' is used by Javascript in HealthMonitor website. 'Z' shows that it is UTC (Zero TimeZone).  That is the reason of the format.
-                settings.UseSimpleDictionaryFormat = true;
+                DataContractJsonSerializerSettings settings = new() { DateTimeFormat = new DateTimeFormat("yyyy-MM-dd'T'HH:mm:ssZ"), UseSimpleDictionaryFormat = true };    // the 'T' is used by Javascript in HealthMonitor website. 'Z' shows that it is UTC (Zero TimeZone).  That is the reason of the format.
                 DataContractJsonSerializer serializer = new(typeof(T), settings);
                 T? contract = (T?)serializer.ReadObject(ms);
                 return contract;
@@ -109,8 +108,7 @@ namespace SqCommon
         {
             try
             {
-                DataContractJsonSerializerSettings settings = new() { DateTimeFormat = new DateTimeFormat("yyyy-MM-dd'T'HH:mm:ssZ") };
-                settings.UseSimpleDictionaryFormat = true;
+                DataContractJsonSerializerSettings settings = new() { DateTimeFormat = new DateTimeFormat("yyyy-MM-dd'T'HH:mm:ssZ"), UseSimpleDictionaryFormat = true };
                 DataContractJsonSerializer serializer = new(typeof(T), settings);
 
                 using MemoryStream ms = new();

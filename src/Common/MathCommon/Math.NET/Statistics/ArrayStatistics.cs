@@ -1,8 +1,19 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
-namespace SqCommon
+// https://github.com/mathnet/mathnet-numerics/blob/8291d7b619310a34cb17f30c428706a295dc11de/src/Numerics/Statistics/ArrayStatistics.cs
+namespace MathCommon.MathNet
 {
-    public static partial class Utils
+    /// <summary>
+    /// Statistics operating on arrays assumed to be unsorted.
+    /// WARNING: Methods with the Inplace-suffix may modify the data array by reordering its entries.
+    /// </summary>
+    /// <seealso cref="SortedArrayStatistics"/>
+    /// <seealso cref="StreamingStatistics"/>
+    /// <seealso cref="Statistics"/>
+    public static partial class ArrayStatistics
     {
         // TODO: Benchmark various options to find out the best approach (-> branch prediction)
         // TODO: consider leveraging MKL
@@ -12,7 +23,6 @@ namespace SqCommon
         /// Returns NaN if data is empty or any entry is NaN.
         /// </summary>
         /// <param name="data">Sample array, no sorting is assumed.</param>
-        /// <returns>The Minimum.</returns>
         public static double Minimum(double[] data)
         {
             if (data.Length == 0)
@@ -37,7 +47,6 @@ namespace SqCommon
         /// Returns NaN if data is empty or any entry is NaN.
         /// </summary>
         /// <param name="data">Sample array, no sorting is assumed.</param>
-        /// <returns>The Maximum.</returns>
         public static double Maximum(double[] data)
         {
             if (data.Length == 0)
@@ -62,7 +71,6 @@ namespace SqCommon
         /// Returns NaN if data is empty or any entry is NaN.
         /// </summary>
         /// <param name="data">Sample array, no sorting is assumed.</param>
-        /// <returns>The MinimumAbsolute.</returns>
         public static double MinimumAbsolute(double[] data)
         {
             if (data.Length == 0)
@@ -87,7 +95,6 @@ namespace SqCommon
         /// Returns NaN if data is empty or any entry is NaN.
         /// </summary>
         /// <param name="data">Sample array, no sorting is assumed.</param>
-        /// <returns>The MaximumAbsolute.</returns>
         public static double MaximumAbsolute(double[] data)
         {
             if (data.Length == 0)
@@ -112,7 +119,6 @@ namespace SqCommon
         /// Returns NaN if data is empty or any entry is NaN.
         /// </summary>
         /// <param name="data">Sample array, no sorting is assumed.</param>
-        /// <returns>The Mean.</returns>
         public static double Mean(double[] data)
         {
             if (data.Length == 0)
@@ -135,7 +141,6 @@ namespace SqCommon
         /// Returns NaN if data is empty or any entry is NaN.
         /// </summary>
         /// <param name="data">Sample array, no sorting is assumed.</param>
-        /// <returns>The GeometricMean.</returns>
         public static double GeometricMean(double[] data)
         {
             if (data.Length == 0)
@@ -157,7 +162,6 @@ namespace SqCommon
         /// Returns NaN if data is empty or any entry is NaN.
         /// </summary>
         /// <param name="data">Sample array, no sorting is assumed.</param>
-        /// <returns>The HarmonicMean.</returns>
         public static double HarmonicMean(double[] data)
         {
             if (data.Length == 0)
@@ -180,7 +184,6 @@ namespace SqCommon
         /// Returns NaN if data has less than two entries or if any entry is NaN.
         /// </summary>
         /// <param name="samples">Sample array, no sorting is assumed.</param>
-        /// <returns>The Variance.</returns>
         public static double Variance(double[] samples)
         {
             if (samples.Length <= 1)
@@ -206,7 +209,6 @@ namespace SqCommon
         /// Returns NaN if data is empty or if any entry is NaN.
         /// </summary>
         /// <param name="population">Sample array, no sorting is assumed.</param>
-        /// <returns>The PopulationVariance.</returns>
         public static double PopulationVariance(double[] population)
         {
             if (population.Length == 0)
@@ -232,7 +234,6 @@ namespace SqCommon
         /// Returns NaN if data has less than two entries or if any entry is NaN.
         /// </summary>
         /// <param name="samples">Sample array, no sorting is assumed.</param>
-        /// <returns>The StandardDeviation.</returns>
         public static double StandardDeviation(double[] samples)
         {
             return Math.Sqrt(Variance(samples));
@@ -244,7 +245,6 @@ namespace SqCommon
         /// Returns NaN if data is empty or if any entry is NaN.
         /// </summary>
         /// <param name="population">Sample array, no sorting is assumed.</param>
-        /// <returns>The PopulationStandardDeviation.</returns>
         public static double PopulationStandardDeviation(double[] population)
         {
             return Math.Sqrt(PopulationVariance(population));
@@ -256,7 +256,6 @@ namespace SqCommon
         /// Returns NaN for mean if data is empty or any entry is NaN and NaN for variance if data has less than two entries or if any entry is NaN.
         /// </summary>
         /// <param name="samples">Sample array, no sorting is assumed.</param>
-        /// <returns>The MeanVariance.</returns>
         public static Tuple<double, double> MeanVariance(double[] samples)
         {
             return new Tuple<double, double>(Mean(samples), Variance(samples));
@@ -268,7 +267,6 @@ namespace SqCommon
         /// Returns NaN for mean if data is empty or any entry is NaN and NaN for standard deviation if data has less than two entries or if any entry is NaN.
         /// </summary>
         /// <param name="samples">Sample array, no sorting is assumed.</param>
-        /// <returns>The MeanStandardDeviation.</returns>
         public static Tuple<double, double> MeanStandardDeviation(double[] samples)
         {
             return new Tuple<double, double>(Mean(samples), StandardDeviation(samples));
@@ -281,7 +279,6 @@ namespace SqCommon
         /// </summary>
         /// <param name="samples1">First sample array.</param>
         /// <param name="samples2">Second sample array.</param>
-        /// <returns>The Covariance.</returns>
         public static double Covariance(double[] samples1, double[] samples2)
         {
             if (samples1.Length != samples2.Length)
@@ -313,7 +310,6 @@ namespace SqCommon
         /// </summary>
         /// <param name="population1">First population array.</param>
         /// <param name="population2">Second population array.</param>
-        /// <returns>The PopulationCovariance.</returns>
         public static double PopulationCovariance(double[] population1, double[] population2)
         {
             if (population1.Length != population2.Length)
@@ -343,7 +339,6 @@ namespace SqCommon
         /// Returns NaN if data is empty or any entry is NaN.
         /// </summary>
         /// <param name="data">Sample array, no sorting is assumed.</param>
-        /// <returns>The RootMeanSquare.</returns>
         public static double RootMeanSquare(double[] data)
         {
             if (data.Length == 0)
@@ -355,7 +350,7 @@ namespace SqCommon
             ulong m = 0;
             for (int i = 0; i < data.Length; i++)
             {
-                mean += ((data[i] * data[i]) - mean) / ++m;
+                mean += (data[i] * data[i] - mean) / ++m;
             }
 
             return Math.Sqrt(mean);
@@ -367,7 +362,6 @@ namespace SqCommon
         /// </summary>
         /// <param name="data">Sample array, no sorting is assumed. Will be reordered.</param>
         /// <param name="order">One-based order of the statistic, must be between 1 and N (inclusive).</param>
-        /// <returns>The OrderStatisticsInplace.</returns>
         public static double OrderStatisticInplace(double[] data, int order)
         {
             if (order < 1 || order > data.Length)
@@ -393,7 +387,6 @@ namespace SqCommon
         /// WARNING: Works inplace and can thus causes the data array to be reordered.
         /// </summary>
         /// <param name="data">Sample array, no sorting is assumed. Will be reordered.</param>
-        /// <returns>The MedianInplace.</returns>
         public static double MedianInplace(double[] data)
         {
             var k = data.Length / 2;
@@ -411,7 +404,6 @@ namespace SqCommon
         /// </summary>
         /// <param name="data">Sample array, no sorting is assumed. Will be reordered.</param>
         /// <param name="p">Percentile selector, between 0 and 100 (inclusive).</param>
-        /// <returns>The PercentileInplace.</returns>
         public static double PercentileInplace(double[] data, int p)
         {
             return QuantileInplace(data, p / 100d);
@@ -423,7 +415,6 @@ namespace SqCommon
         /// WARNING: Works inplace and can thus causes the data array to be reordered.
         /// </summary>
         /// <param name="data">Sample array, no sorting is assumed. Will be reordered.</param>
-        /// <returns>The LowerQuartileInplace.</returns>
         public static double LowerQuartileInplace(double[] data)
         {
             return QuantileInplace(data, 0.25d);
@@ -435,7 +426,6 @@ namespace SqCommon
         /// WARNING: Works inplace and can thus causes the data array to be reordered.
         /// </summary>
         /// <param name="data">Sample array, no sorting is assumed. Will be reordered.</param>
-        /// <returns>The UpperQuartileInplace.</returns>
         public static double UpperQuartileInplace(double[] data)
         {
             return QuantileInplace(data, 0.75d);
@@ -447,7 +437,6 @@ namespace SqCommon
         /// WARNING: Works inplace and can thus causes the data array to be reordered.
         /// </summary>
         /// <param name="data">Sample array, no sorting is assumed. Will be reordered.</param>
-        /// <returns>The InterquartileRangeInplace.</returns>
         public static double InterquartileRangeInplace(double[] data)
         {
             return QuantileInplace(data, 0.75d) - QuantileInplace(data, 0.25d);
@@ -459,7 +448,6 @@ namespace SqCommon
         /// WARNING: Works inplace and can thus causes the data array to be reordered.
         /// </summary>
         /// <param name="data">Sample array, no sorting is assumed. Will be reordered.</param>
-        /// <returns>The FiveNumberSummaryInplace.</returns>
         public static double[] FiveNumberSummaryInplace(double[] data)
         {
             if (data.Length == 0)
@@ -485,7 +473,6 @@ namespace SqCommon
         /// Linear interpolation of the approximate medians for order statistics.
         /// When tau &lt; (2/3) / (N + 1/3), use x1. When tau &gt;= (N - 1/3) / (N + 1/3), use xN.
         /// </remarks>
-        /// <returns>The QuantileInplace.</returns>
         public static double QuantileInplace(double[] data, double tau)
         {
             // https://en.wikipedia.org/wiki/Percentile
@@ -497,7 +484,7 @@ namespace SqCommon
                 return double.NaN;
             }
 
-            double h = ((data.Length + (1d / 3d)) * tau) + (1d / 3d);
+            double h = (data.Length + 1d / 3d) * tau + 1d / 3d;
             var hf = (int)h;
 
             if (hf <= 0 || tau == 0d)
@@ -512,7 +499,7 @@ namespace SqCommon
 
             var a = SelectInplace(data, hf - 1);
             var b = SelectInplace(data, hf);
-            return a + ((h - hf) * (b - a));
+            return a + (h - hf) * (b - a);
         }
 
         /// <summary>
@@ -523,12 +510,11 @@ namespace SqCommon
         /// WARNING: Works inplace and can thus causes the data array to be reordered.
         /// </summary>
         /// <param name="data">Sample array, no sorting is assumed. Will be reordered.</param>
-        /// <param name="tau">Quantile selector, between 0.0 and 1.0 (inclusive).</param>
-        /// <param name="a">a-parameter.</param>
-        /// <param name="b">b-parameter.</param>
-        /// <param name="c">c-parameter.</param>
-        /// <param name="d">d-parameter.</param>
-        /// <returns>The QuantileCustomInplace.</returns>
+        /// <param name="tau">Quantile selector, between 0.0 and 1.0 (inclusive)</param>
+        /// <param name="a">a-parameter</param>
+        /// <param name="b">b-parameter</param>
+        /// <param name="c">c-parameter</param>
+        /// <param name="d">d-parameter</param>
         public static double QuantileCustomInplace(double[] data, double tau, double a, double b, double c, double d)
         {
             if (tau < 0d || tau > 1d || data.Length == 0)
@@ -536,7 +522,7 @@ namespace SqCommon
                 return double.NaN;
             }
 
-            var x = a + ((data.Length + b) * tau) - 1;
+            var x = a + (data.Length + b) * tau - 1;
 #if PORTABLE
             var ip = (int)x;
 #else
@@ -551,8 +537,102 @@ namespace SqCommon
 
             var lower = SelectInplace(data, (int)Math.Floor(x));
             var upper = SelectInplace(data, (int)Math.Ceiling(x));
-            return lower + ((upper - lower) * (c + (d * fp)));
+            return lower + (upper - lower) * (c + d * fp);
         }
+
+        // /// <summary>
+        // /// Estimates the tau-th quantile from the unsorted data array.
+        // /// The tau-th quantile is the data value where the cumulative distribution
+        // /// function crosses tau. The quantile definition can be specified to be compatible
+        // /// with an existing system.
+        // /// WARNING: Works inplace and can thus causes the data array to be reordered.
+        // /// </summary>
+        // /// <param name="data">Sample array, no sorting is assumed. Will be reordered.</param>
+        // /// <param name="tau">Quantile selector, between 0.0 and 1.0 (inclusive)</param>
+        // /// <param name="definition">Quantile definition, to choose what product/definition it should be consistent with</param>
+        // // public static double QuantileCustomInplace(double[] data, double tau, QuantileDefinition definition)
+        // {
+        //    if (tau < 0d || tau > 1d || data.Length == 0)
+        //    {
+        //        return double.NaN;
+        //    }
+        //    if (tau == 0d || data.Length == 1)
+        //    {
+        //        return Minimum(data);
+        //    }
+        //    if (tau == 1d)
+        //    {
+        //        return Maximum(data);
+        //    }
+        //    switch (definition)
+        //    {
+        //        case QuantileDefinition.R1:
+        //            {
+        //                double h = data.Length * tau + 0.5d;
+        //                return SelectInplace(data, (int)Math.Ceiling(h - 0.5d) - 1);
+        //            }
+        //        case QuantileDefinition.R2:
+        //            {
+        //                double h = data.Length * tau + 0.5d;
+        //                return (SelectInplace(data, (int)Math.Ceiling(h - 0.5d) - 1) + SelectInplace(data, (int)(h + 0.5d) - 1)) * 0.5d;
+        //            }
+        //        case QuantileDefinition.R3:
+        //            {
+        //                double h = data.Length * tau;
+        //                return SelectInplace(data, (int)Math.Round(h) - 1);
+        //            }
+        //        case QuantileDefinition.R4:
+        //            {
+        //                double h = data.Length * tau;
+        //                var hf = (int)h;
+        //                var lower = SelectInplace(data, hf - 1);
+        //                var upper = SelectInplace(data, hf);
+        //                return lower + (h - hf) * (upper - lower);
+        //            }
+        //        case QuantileDefinition.R5:
+        //            {
+        //                double h = data.Length * tau + 0.5d;
+        //                var hf = (int)h;
+        //                var lower = SelectInplace(data, hf - 1);
+        //                var upper = SelectInplace(data, hf);
+        //                return lower + (h - hf) * (upper - lower);
+        //            }
+        //        case QuantileDefinition.R6:
+        //            {
+        //                double h = (data.Length + 1) * tau;
+        //                var hf = (int)h;
+        //                var lower = SelectInplace(data, hf - 1);
+        //                var upper = SelectInplace(data, hf);
+        //                return lower + (h - hf) * (upper - lower);
+        //            }
+        //        case QuantileDefinition.R7:
+        //            {
+        //                double h = (data.Length - 1) * tau + 1d;
+        //                var hf = (int)h;
+        //                var lower = SelectInplace(data, hf - 1);
+        //                var upper = SelectInplace(data, hf);
+        //                return lower + (h - hf) * (upper - lower);
+        //            }
+        //        case QuantileDefinition.R8:
+        //            {
+        //                double h = (data.Length + 1 / 3d) * tau + 1 / 3d;
+        //                var hf = (int)h;
+        //                var lower = SelectInplace(data, hf - 1);
+        //                var upper = SelectInplace(data, hf);
+        //                return lower + (h - hf) * (upper - lower);
+        //            }
+        //        case QuantileDefinition.R9:
+        //            {
+        //                double h = (data.Length + 0.25d) * tau + 0.375d;
+        //                var hf = (int)h;
+        //                var lower = SelectInplace(data, hf - 1);
+        //                var upper = SelectInplace(data, hf);
+        //                return lower + (h - hf) * (upper - lower);
+        //            }
+        //        default:
+        //            throw new NotSupportedException();
+        //    }
+        // }
 
         static double SelectInplace(double[] workingData, int rank)
         {
@@ -578,7 +658,9 @@ namespace SqCommon
                 {
                     if (high == low + 1 && a[high] < a[low])
                     {
-                        (a[high], a[low]) = (a[low], a[high]);
+                        var tmp = a[low];
+                        a[low] = a[high];
+                        a[high] = tmp;
                     }
 
                     return a[rank];
@@ -586,20 +668,29 @@ namespace SqCommon
 
                 int middle = (low + high) >> 1;
 
-                (a[low + 1], a[middle]) = (a[middle], a[low + 1]);
+                var tmp1 = a[middle];
+                a[middle] = a[low + 1];
+                a[low + 1] = tmp1;
+
                 if (a[low] > a[high])
                 {
-                    (a[high], a[low]) = (a[low], a[high]);
+                    var tmp = a[low];
+                    a[low] = a[high];
+                    a[high] = tmp;
                 }
 
                 if (a[low + 1] > a[high])
                 {
-                    (a[high], a[low + 1]) = (a[low + 1], a[high]);
+                    var tmp = a[low + 1];
+                    a[low + 1] = a[high];
+                    a[high] = tmp;
                 }
 
                 if (a[low] > a[low + 1])
                 {
-                    (a[low + 1], a[low]) = (a[low], a[low + 1]);
+                    var tmp = a[low];
+                    a[low] = a[low + 1];
+                    a[low + 1] = tmp;
                 }
 
                 int begin = low + 1;
@@ -625,7 +716,9 @@ namespace SqCommon
                         break;
                     }
 
-                    (a[end], a[begin]) = (a[begin], a[end]);
+                    var tmp = a[begin];
+                    a[begin] = a[end];
+                    a[end] = tmp;
                 }
 
                 a[low + 1] = a[end];
@@ -642,5 +735,80 @@ namespace SqCommon
                 }
             }
         }
+
+        /// <summary>
+        /// Evaluates the rank of each entry of the unsorted data array.
+        /// The rank definition can be specified to be compatible
+        /// with an existing system.
+        /// WARNING: Works inplace and can thus causes the data array to be reordered.
+        /// </summary>
+        // public static double[] RanksInplace(double[] data, RankDefinition definition = RankDefinition.Default)
+        // {
+        //    var ranks = new double[data.Length];
+        //    var index = new int[data.Length];
+        //    for (int i = 0; i < index.Length; i++)
+        //    {
+        //        index[i] = i;
+        //    }
+        //    if (definition == RankDefinition.First)
+        //    {
+        //        Sorting.SortAll(data, index);
+        //        for (int i = 0; i < ranks.Length; i++)
+        //        {
+        //            ranks[index[i]] = i + 1;
+        //        }
+        //        return ranks;
+        //    }
+        //    Sorting.Sort(data, index);
+        //    int previousIndex = 0;
+        //    for (int i = 1; i < data.Length; i++)
+        //    {
+        //        if (Math.Abs(data[i] - data[previousIndex]) <= 0d)
+        //        {
+        //            continue;
+        //        }
+        //        if (i == previousIndex + 1)
+        //        {
+        //            ranks[index[previousIndex]] = i;
+        //        }
+        //        else
+        //        {
+        //            RanksTies(ranks, index, previousIndex, i, definition);
+        //        }
+        //        previousIndex = i;
+        //    }
+        //    RanksTies(ranks, index, previousIndex, data.Length, definition);
+        //    return ranks;
+        // }
+
+        // static void RanksTies(double[] ranks, int[] index, int a, int b, RankDefinition definition)
+        // {
+        //    // TODO: potential for PERF optimization
+        //    double rank;
+        //    switch (definition)
+        //    {
+        //        case RankDefinition.Average:
+        //            {
+        //                rank = (b + a - 1) / 2d + 1;
+        //                break;
+        //            }
+        //        case RankDefinition.Min:
+        //            {
+        //                rank = a + 1;
+        //                break;
+        //            }
+        //        case RankDefinition.Max:
+        //            {
+        //                rank = b;
+        //                break;
+        //            }
+        //        default:
+        //            throw new NotSupportedException();
+        //    }
+        //    for (int k = a; k < b; k++)
+        //    {
+        //        ranks[index[k]] = rank;
+        //    }
+        // }
     }
 }
