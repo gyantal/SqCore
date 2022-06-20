@@ -165,10 +165,9 @@ function renewedUberInfoTbls(json) {
   const xLabel: string = 'Dates';
   const yLabel: string = 'Percentage Change';
   const yScaleTickFormat = '%';
-  const isXvalueDate: boolean = true;
   const lineChrtDiv = getDocElementById('pctChgChrt');
   const lineChrtTooltip = getDocElementById('tooltipChart');
-  sqLineChartGenerator(noAssets, nCurrData, assetNames2Array, isXvalueDate, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip);
+  sqLineChartGenerator(noAssets, nCurrData, assetNames2Array, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip);
 
   const currDataVixArray = json.currDataVixVec.split(',');
   const currDataDaysVixArray = json.currDataDaysVixVec.split(',');
@@ -284,11 +283,10 @@ function renewedUberInfoTbls(json) {
   const noAssetsVix = 3;
   const assetNames2ArrayVix: string[] = ['Current', 'LastClose', 'SpotVix'];
   const xLabelVix: string = 'Days until expiration';
-  const yLabelVix: string = 'Future Price(USD)';
+  const yLabelVix: string = 'Futures Price (USD)';
   const yScaleTickFormatVix: string = '$';
-  const isXvalueDate1: boolean = false;
   d3.selectAll('#vixChart > *').remove();
   const lineChrtDivVix = getDocElementById('vixChart');
-  sqLineChartGenerator(noAssetsVix, nCurrDataVix, assetNames2ArrayVix, isXvalueDate1, vixFutPriceData, xLabelVix, yLabelVix, yScaleTickFormatVix, lineChrtDivVix, lineChrtTooltip);
+  sqLineChartGenerator(noAssetsVix, nCurrDataVix, assetNames2ArrayVix, vixFutPriceData, xLabelVix, yLabelVix, yScaleTickFormatVix, lineChrtDivVix, lineChrtTooltip);
 }
 console.log('SqCore: Script END');

@@ -204,11 +204,10 @@ function uberTaaTbls(json: any) {
   const xLabel: string = 'Dates';
   const yLabel: string = 'Percentage Change';
   const yScaleTickFormat: string = '%';
-  const isXvalueDate: boolean = true;
   d3.selectAll('#pctChgChrt > *').remove();
   const lineChrtDiv = getDocElementById('pctChgChrt');
   const lineChrtTooltip = getDocElementById('tooltipChart');
-  sqLineChartGenerator(noAssets, nCurrData, assetNames2Array, isXvalueDate, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip);
+  sqLineChartGenerator(noAssets, nCurrData, assetNames2Array, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip);
 
   // Xlu Timer Chart
   const noAssetsXlu = 2;
@@ -218,7 +217,7 @@ function uberTaaTbls(json: any) {
   const yScaleTickFormatXlu: string = '';
   d3.selectAll('#xluChrt > *').remove();
   const lineChrtDivXlu = getDocElementById('xluChrt');
-  sqLineChartGenerator(noAssetsXlu, nCurrData, assetNames2ArrayXlu, isXvalueDate, rsiChartMtx, xLabelXlu, yLabelXlu, yScaleTickFormatXlu, lineChrtDivXlu, lineChrtTooltip);
+  sqLineChartGenerator(noAssetsXlu, nCurrData, assetNames2ArrayXlu, rsiChartMtx, xLabelXlu, yLabelXlu, yScaleTickFormatXlu, lineChrtDivXlu, lineChrtTooltip);
 
   // Spx Timer Chart
   const noAssetsSpx = 3;
@@ -228,7 +227,7 @@ function uberTaaTbls(json: any) {
   const yScaleTickFormatSpx: string = '';
   d3.selectAll('#spyChrt > *').remove();
   const lineChrtDivSpx = getDocElementById('spyChrt');
-  sqLineChartGenerator(noAssetsSpx, nCurrData, assetNames2ArraySpx, isXvalueDate, spxChartMtx, xLabelSpx, yLabelSpx, yScaleTickFormatSpx, lineChrtDivSpx, lineChrtTooltip);
+  sqLineChartGenerator(noAssetsSpx, nCurrData, assetNames2ArraySpx, spxChartMtx, xLabelSpx, yLabelSpx, yScaleTickFormatSpx, lineChrtDivSpx, lineChrtTooltip);
 }
 
 getDocElementById('gameChanger').onclick = onClickGameChanger;

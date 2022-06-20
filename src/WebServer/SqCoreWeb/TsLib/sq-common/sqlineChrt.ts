@@ -368,8 +368,8 @@ export function sqLineChartGenerator3(noAssets: number, nCurrData: number, asset
 
 // Under Development - Daya
 // version v.2 - version to work for both date and number as xAxis
-export function sqLineChartGenerator(noAssets: number, nCurrData: number, assetNames2Array: string[], isXvalueDate: boolean,
-    assChartMtx1: any, xLabel: string, yLabel: string, yScaleTickFormat: string,
+export function sqLineChartGenerator(noAssets: number, nCurrData: number, assetNames2Array: string[],
+    assChartMtx: any, xLabel: string, yLabel: string, yScaleTickFormat: string,
     lineChrtDiv: HTMLElement, lineChrtTooltip: HTMLElement) {
   const margin = {top: 10, right: 30, bottom: 50, left: 60};
   const width = 760 - margin.left - margin.right;
@@ -377,17 +377,20 @@ export function sqLineChartGenerator(noAssets: number, nCurrData: number, assetN
 
     interface pctChngStckPriceData {
     ticker: string;
-    date: any;
+    date: Date | number;
     price: number;
     }
+    let isXvalueDate: boolean = true;
+    if ( assChartMtx.length > 0 && assChartMtx[0].length > 0 && !isNaN(assChartMtx[0][0]))
+      isXvalueDate = false;
     const stckChrtData: pctChngStckPriceData[] = [];
     // if (isXvalueDate) {
     for (let j = 0; j < noAssets; j++) {
       for (let i = 0; i < nCurrData; i++) {
         const chrtData: pctChngStckPriceData = {
           ticker: assetNames2Array[j],
-          date: isXvalueDate ? new Date(assChartMtx1[i][0]) : parseFloat(assChartMtx1[i][0]), // Date()
-          price: parseFloat(assChartMtx1[i][j + 1]),
+          date: isXvalueDate ? new Date(assChartMtx[i][0]) : parseFloat(assChartMtx[i][0]), // Date()
+          price: parseFloat(assChartMtx[i][j + 1]),
         };
         stckChrtData.push(chrtData);
       }
@@ -561,6 +564,6 @@ export function sqLineChartGenerator(noAssets: number, nCurrData: number, assetN
           .enter()
           .append('div')
           .style('color', (d: any) => color(d.ticker) as any)
-          .html((d: any) => d.ticker + ': ' + (d.priceData.find((h: any) => isXvalueDate ? h.date.getTime() as any === closestXCoord.getTime() as any : h.date as any === closestXCoord as any).price + yScaleTickFormat));
+          .html((d: any) => d.ticker + ': '+ (isXvalueDate ? ((d.priceData.find((h: any) => h.date.getTime() as any === closestXCoord.getTime() as any).price) + yScaleTickFormat) : (yScaleTickFormat + (d.priceData.find((h: any) =>h.date as any === closestXCoord as any)).price)));
     }
 }
