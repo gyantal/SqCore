@@ -95,28 +95,43 @@ MarketBar
                 <div class="moreDetailsPartitions">
                     <div>Number Of Visible Positions: <span class="moreDetailsSum">{{uiSnapTable.numOfVisiblePoss}}</span></div>
                     <div>Number Of All Positions: <span class="moreDetailsSum">{{uiSnapTable.numOfAllPoss}}</span></div>
-                    <div>Long Stock MktValue: 
-                        <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.longStockValue | number}}*
-                            <div class="tooltipSnap">
-                                <div class="snapshot">
-                                    !! Long VXX is here, although it is market bearish.<br>
-                                     'Short VXX', 'short SH' are market bullish, but not here.
-                                </div>
-                            </div>
-                        </span>
+                    <div>Long Stock MktValue:
+                      <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.longStockValue | number}}*
+                        <div class="tooltipSnap">
+                          <div class="snapshot">
+                            !! Long VXX is here, although it is market bearish.<br>
+                            'Short VXX', 'short SH' are market bullish, but not here.
+                          </div>
                         </div>
+                      </span>
+                    </div>
                     <div>Short Stock MktValue: <span class="moreDetailsSum">{{uiSnapTable.shortStockValue | number}}</span></div>
-                    <div>Call Option Delta Adjusted DelivValue: <span class="moreDetailsSum"></span></div>
-                    <div>Put Option Delta Adjusted DelivValue: <span class="moreDetailsSum"></span></div>
+                    <div>LC+SP Optn DeltaAdj DelivVal:
+                      <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.longOptionDeltaAdjValue | number :'1.0-0'}}*
+                        <div class="tooltipSnap">
+                          <div class="snapshot">
+                            Long Call options and Short Put options have positive market exposure.
+                          </div>
+                        </div>
+                      </span>
+                    </div>
+                    <div>LP+SC Optn DeltaAdj DelivVal: 
+                      <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.shortOptionDeltaAdjValue | number :'1.0-0'}}*
+                        <div class="tooltipSnap">
+                          <div class="snapshot">
+                            Long Put options and Short Call options have negative market exposure.
+                          </div>
+                        </div>
+                      </span>
+                    </div>
                 </div>
                 <div class="moreDetailsPartitions" id="borderRemove">
-                    <div class="tooltipGeneral">Max Risked estimate:
-                        <span class="moreDetailsSum"
-                        [ngClass]="{'green' : uiSnapTable.totalMaxRiskedLeverage < 1.3,
-                                    'orange': uiSnapTable.totalMaxRiskedLeverage <= 1.5,
-                                    'red' : uiSnapTable.totalMaxRiskedLeverage > 1.5}"> 
-                            (Leverage - {{uiSnapTable.totalMaxRiskedLeverage | number :'1.2-2'}})*
-                         </span>
+                    <div class="tooltipGeneral">Max Risked estimate:<br><span class="moreDetailsSum">{{uiSnapTable.totalMaxRiskedN | number}}</span>
+                        <span class="moreDetailsSum" [ngClass]="{'green' : uiSnapTable.totalMaxRiskedLeverage < 1.3,
+                                                            'orange': uiSnapTable.totalMaxRiskedLeverage <= 1.5,
+                                                            'red' : uiSnapTable.totalMaxRiskedLeverage > 1.5}">
+                          (Leverage: {{uiSnapTable.totalMaxRiskedLeverage | number :'1.2-2'}})*
+                        </span>
                         <div class="tooltipSnap">
                             <div class="snapshot">
                                 LongStk + ShortStk (incorrect! Infinite) <br>
@@ -127,7 +142,7 @@ MarketBar
                             </div>
                         </div>
                     </div>
-                    <div class="tooltipGeneral">Delta Adjusted Bullish/<br>Bearish Market Orientation:
+                    <div class="tooltipGeneral">Delta Adjusted Bullish/Bearish<br>Market Orientation:<span class="moreDetailsSum">{{uiSnapTable.deltaAdjTotalMarketOrientation | number}}</span>
                         <div class="tooltipSnap">
                             <div class="snapshot">
                                 LongStock - ShortStock + dAdj.CallOption <br>
@@ -135,12 +150,18 @@ MarketBar
                             </div>
                         </div>
                     </div>
-                    <div class="tooltipGeneral">Beta Delta Adjusted Bullish/<br>Bearish Market Orientation :
-                        <div class="tooltipSnap">
-                            <div class="snapshot">
-                                approx. mkt exposure sum
-                            </div>
+                    <div class="tooltipGeneral accSummaryImportantInfo">BetaDeltaAdj Bullish/Bearish Mkt Orient:
+                      <span class="moreDetailsSum">{{uiSnapTable.betaDeltaAdjTotalMarketOrientation | number :'1.0-0'}}*</span>
+                      <div class="tooltipSnap">
+                        <div class="snapshot">
+                          Approx. mkt exposure sum
                         </div>
+                      </div>
+                      <span class="moreDetailsSum" [ngClass]="{'green' : uiSnapTable.totalMaxRiskedLeverage < 1.3,
+                                            'orange': uiSnapTable.totalMaxRiskedLeverage <= 1.5,
+                                            'red' : uiSnapTable.totalMaxRiskedLeverage > 1.5}">
+                        (Leverage: {{uiSnapTable.betaDeltaAdjTotalMarketOrientationLeverage | number :'1.2-2'}})*
+                      </span>
                     </div>
                 </div>
             </div>
@@ -233,7 +254,7 @@ MarketBar
         <td>{{item.estUndPrice | number}}</td>
         <td>{{item.delivValue | number}}</td>
         <td>{{item.ibCompDelta | number}}</td>
-        <td>{{item.dltAdjDelivVal | number}}</td>
+        <td>{{item.dltAdjDelivVal | number:'1.0-0'}}</td>
         <td>{{item.gBeta | number:'1.1-2'}}</td>
         <td>{{item.betaDltAdj | number}}</td>
         <td>{{item.accIdStr}}</td>
