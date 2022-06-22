@@ -110,7 +110,7 @@ namespace SqCommon
                     "gyantal" => "h:/.shortcut-targets-by-id/0BzxkV1ug5ZxvVmtic1FsNTM5bHM/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/",
                     // gyantal-Laptop
                     "gyant" => "h:/.shortcut-targets-by-id/0BzxkV1ug5ZxvVmtic1FsNTM5bHM/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/",
-                    "Balazs" => "d:/GDrive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/",
+                    "Balazs" => "h:/.shortcut-targets-by-id/0BzxkV1ug5ZxvVmtic1FsNTM5bHM/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/",
                     "Laci" => "d:\\ArchiData\\GoogleDrive\\GDriveHedgeQuant\\shared\\GitHubRepos\\NonCommitedSensitiveData\\",
                     "vinci" => "g:\\.shortcut-targets-by-id\\0BzxkV1ug5ZxvVmtic1FsNTM5bHM\\GDriveHedgeQuant\\shared\\GitHubRepos\\NonCommitedSensitiveData\\",
                     _ => throw new Exception("Windows user name is not recognized. Add your username and folder here!"),
