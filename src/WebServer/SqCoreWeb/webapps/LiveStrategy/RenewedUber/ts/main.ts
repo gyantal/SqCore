@@ -283,7 +283,7 @@ function renewedUberInfoTbls(json) {
   const noAssetsVix = 3;
   const assetNames2ArrayVix: string[] = ['Current', 'LastClose', 'SpotVix'];
   const xLabelVix: string = 'Days until expiration';
-  const yLabelVix: string = 'Futures Price (USD)';
+  const yLabelVix: string = 'Futures Prices (USD)';
   const yScaleTickFormatVix: string = '$';
   d3.selectAll('#vixChart > *').remove();
   const lineChrtDivVix = getDocElementById('vixChart');

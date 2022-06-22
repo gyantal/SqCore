@@ -1,5 +1,5 @@
 import './../css/main.css';
-import { sqLineChartGenerator3 } from '../../../TsLib/sq-common/sqlineChrt';
+import { sqLineChartGenerator } from '../../../TsLib/sq-common/sqlineChrt';
 import * as d3 from 'd3';
 // export {}; // TS convention: To avoid top level duplicate variables, functions. This file should be treated as a module (and have its own scope). A file without any top-level import or export declarations is treated as a script whose contents are available in the global scope.
 
@@ -346,8 +346,8 @@ window.onload = function onLoadWindow() {
       console.log(indOfLength);
     // creatingChartData(indOfLength);
     };
+
     // Declaring data sets to charts.
-    // function creatingChartData(indOfLength) {
     const lengthSubSums: any[] = [];
     lengthSubSums[0] = 0;
     lengthSubSums[1] = retHistLBPeriodsNo[0];
@@ -356,54 +356,14 @@ window.onload = function onLoadWindow() {
 
 
     const chartStart = lengthSubSums[indOfLength];
-    // const chartEnd = lengthSubSums[indOfLength + 1] - 1;
     const nCurrData = lengthOfChart + 1;
-
-    const xTicksH = new Array(nCurrData);
-    for (let i = 0; i < nCurrData; i++) {
-      const xTicksHRows = new Array(2);
-      xTicksHRows[0] = i;
-      xTicksHRows[1] = dailyDatesArray[dailyDatesArray.length - nCurrData + i];
-      xTicksH[i] = xTicksHRows;
-    }
-
     const noAssets = assetNamesArray.length;
-    const listH: any[] = [];
-    for (let j = 0; j < noAssets; j++) {
-      const assChartPerc1 = new Array(nCurrData);
-      const assChartPerc1Rows0 = new Array(2);
-      assChartPerc1Rows0[0] = 0;
-      assChartPerc1Rows0[1] = 0;
-      assChartPerc1[0] = assChartPerc1Rows0;
-      for (let i = 1; i < nCurrData; i++) {
-        const assChartPerc1Rows = new Array(2);
-        assChartPerc1Rows[0] = i;
-        assChartPerc1Rows[1] = parseFloat(histRets2ChartsMtx[chartStart - 1 + i][j]);
-        assChartPerc1[i] = assChartPerc1Rows;
-      }
-      listH.push({ label: assetNamesArray[j], data: assChartPerc1, points: { show: true, radius: Math.min(40 / nCurrData, 2) }, lines: { show: true } });
-    }
 
-    // const nCurrData = 1;
-    //  const noAssets = assetNames2Array.length - 1;
-
-    // Declaring data sets to charts.
-    interface DataSet {
-      ticker: string;
-      Date: Date;
-      pctChgStckPrice: number;
-    }
-
-    const sinStckChrtData: DataSet[] = [];
-    for (let i = 1; i < noAssets; i++) {
-      for (let j = 0; j < nCurrData; j++) {
-        const chrtData: DataSet = {
-          ticker: assetNamesArray[i],
-          Date: new Date(dailyDatesArray[dailyDatesArray.length - nCurrData + j]),
-          pctChgStckPrice: parseFloat(histRets2ChartsMtx[chartStart - 1 + j]),
-        };
-        sinStckChrtData.push(chrtData);
-      };
+    const assChartMtx: any[] = [];
+    for (let i = 0; i < nCurrData; i++) {
+      const dateArray = dailyDatesArray[dailyDatesArray.length - nCurrData + i];
+      const histReturnsArray = histRets2ChartsMtx[chartStart - 1 + i];
+      assChartMtx.push([dateArray, ...histReturnsArray]);
     }
 
     const xLabel: string = 'Dates';
@@ -412,9 +372,8 @@ window.onload = function onLoadWindow() {
     d3.selectAll('#pctChgChrt > *').remove();
     const lineChrtDiv = getDocElementById('pctChgChrt');
     const lineChrtTooltip = getDocElementById('tooltipChart');
-    sqLineChartGenerator3(noAssets, nCurrData, assetNamesArray, sinStckChrtData, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip);
-    // const datasets1 = listH;
-    console.log('SqCore:');
+    // preprocess
+    sqLineChartGenerator(noAssets, nCurrData, assetNamesArray, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip);
 
     getDocElementById('vixBtn').onclick = () => choseall('volA');
     getDocElementById('impEtpBtn').onclick = () => choseall('etpA');
