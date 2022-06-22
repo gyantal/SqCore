@@ -5,8 +5,8 @@
     <div class="mainHmDiv2">
         <h4>1. Main HealthMonitor App</h4>
 
-        <span class="sqImportantError"> &nbsp; <span *ngIf="m_data" [class.sqImportantOK]="m_data.AppOk === 'OK'">{{m_data.AppOk}}</span></span><br />
-        Response to FrontEnd:&nbsp; <span *ngIf="m_data">{{m_data.ResponseToFrontEnd}}</span> <br />
+        <span class="sqImportantError"> &nbsp; <span *ngIf="m_data" [class.sqImportantOK]="m_data.AppOk === 'OK'">{{m_data.AppOk}}</span></span><br>
+        Response to FrontEnd:&nbsp; <span *ngIf="m_data">{{m_data.ResponseToFrontEnd}}</span> <br>
         Started on <span *ngIf="m_data">{{m_data.StartDate}} &nbsp;&nbsp; {{m_data.StartDateTimeSpanStr}} </span>
         <div>
             <label>
@@ -21,7 +21,7 @@
                 Realtime Price Service check timer active: <span *ngIf="m_data"><input #chkRtps type="checkbox" [checked]="m_data.RtpsTimerEnabled" (change)="setControlValue('chkRtps', chkRtps.checked)" /></span>
             </label>
         </div>
-        Timer frequency: every <span *ngIf="m_data">{{m_data.RtpsTimerFrequencyMinutes}} </span>minutes. Last checks:<br />
+        Timer frequency: every <span *ngIf="m_data">{{m_data.RtpsTimerFrequencyMinutes}} </span>minutes. Last checks:<br>
         <div class="lastChecksReportsDiv" *ngIf="m_data">
             <ul class="lastChecksReportsUl">
                 <li *ngFor="let rtps of m_data.RtpsDownloads">
@@ -36,7 +36,7 @@
                 Processing VBroker messages active: <span *ngIf="m_data"><input #chkVBroker type="checkbox" [checked]="m_data.ProcessingVBrokerMessagesEnabled" (change)="setControlValue('chkVBroker', chkVBroker.checked)" /></span>
             </label>
         </div>
-        No timer for active polling. Last received messages:<br />
+        No timer for active polling. Last received messages:<br>
         <div class="lastChecksReportsDiv" *ngIf="m_data">
             <ul class="lastChecksReportsUl">
                 <li *ngFor="let report of m_data.VBrokerReports">
@@ -45,12 +45,12 @@
             </ul>
         </div>
 
-        <br />
-        <button class="sqhm-button" (click)="refreshDataClicked()">Refresh Data</button><br />
+        <br>
+        <button class="sqhm-button" (click)="refreshDataClicked()">Refresh Data</button><br>
         <span class="loginUserDiv">Logged in as {{m_userEmail}};</span>
         <hr>
         <div class="detailedReportsSection">
-            <strong>VBroker Detailed</strong><br />
+            <strong>VBroker Detailed</strong><br>
             <div class="lastChecksDetailedReportsDiv" *ngIf="m_data">
                 <ul class="lastChecksDetailedReportsUl">
                     <li *ngFor="let report of m_data.VBrokerDetailedReports">
@@ -59,7 +59,7 @@
                 </ul>
             </div>
         </div>
-        <br /><br /><br />
-        Click <a href="https://sqcore.net/index_dev.html">here for Developer Dashboard</a> (Or for more VBroker details Developers can peek the Linux terminal.)<br /><br />
+        <br><br><br>
+        Click <a href="https://sqcore.net/index_dev.html">here for Developer Dashboard</a> (Or for more VBroker details Developers can peek the Linux terminal.)<br><br>
     </div>
 </div>
