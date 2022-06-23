@@ -1,11 +1,11 @@
 // How to cath the earlies execution possibilities?
-// 2020-07-02T15:53:12.007Z: main.ts						        // earliest things to catch execution. Before even Angular starts. Put some global diagnostic here. So, we can monitor how many ms Angular takes.
-// 2020-07-02T15:53:12.024Z: app.component.ts/construct // 17ms after previous.
-// 2020-07-02T15:53:12.045Z: app.component.ts/ngOnInit()// 21ms after previous. Angular mechanism takes about 30ms, this is near the end of Angular pipeline. Before that Angular is not ready, therefore we cannot execute anything meaningful which is specific to this Angular component.
-// 2020-07-02T15:53:12.063Z: dOMContentLoadedReady() 		// 18ms after previous. After Angular pipeline finished initializing all components,then DOMready is triggered.
-// 2020-07-02T15:53:12.380Z: windowOnLoad()             // 220ms after previous (images should be downloaded with Disabled Cache)
-// 2020-07-02T15:53:12.880Z: wsConnectionStartTime()				// = ngOnInit() time
-// 2020-07-02T15:53:12.880Z: wsConnectionReadyTime()				// 380ms after wsConnectionStartTime()
+// 2020-07-02T15:53:12.007Z: main.ts                        // earliest things to catch execution. Before even Angular starts. Put some global diagnostic here. So, we can monitor how many ms Angular takes.
+// 2020-07-02T15:53:12.024Z: app.component.ts/construct     // 17ms after previous.
+// 2020-07-02T15:53:12.045Z: app.component.ts/ngOnInit()    // 21ms after previous. Angular mechanism takes about 30ms, this is near the end of Angular pipeline. Before that Angular is not ready, therefore we cannot execute anything meaningful which is specific to this Angular component.
+// 2020-07-02T15:53:12.063Z: dOMContentLoadedReady()        // 18ms after previous. After Angular pipeline finished initializing all components,then DOMready is triggered.
+// 2020-07-02T15:53:12.380Z: windowOnLoad()                 // 220ms after previous (images should be downloaded with Disabled Cache)
+// 2020-07-02T15:53:12.880Z: wsConnectionStartTime()        // = ngOnInit() time
+// 2020-07-02T15:53:12.880Z: wsConnectionReadyTime()        // 380ms after wsConnectionStartTime()
 // 2020-07-02T15:53:12.880Z: wsOnConnectedMsgArrivedTime()  // 400ms after wsConnectionReadyTime()
 
 
@@ -34,10 +34,10 @@
 // Websocket connection ready: 318ms
 // Websocket Email arrived: 823ms
 // Websocket First NonRtStat: 839ms
-// Websocket First RtStat: 1382ms	// 550ms after NonRtStat, because the server needs that time to download RT data.
+// Websocket First RtStat: 1382ms // 550ms after NonRtStat, because the server needs that time to download RT data.
 
 // //Release. On Server. Hot start: Fast example. Best run time.
-// App constructor: 3ms		// this was one of the best time. only 190ms for websocket connection ready. It depends on how busy the server with IB TWS.
+// App constructor: 3ms // this was one of the best time. only 190ms for websocket connection ready. It depends on how busy the server with IB TWS.
 // Websocket connection start in OnInit: 11ms
 // Websocket connection ready: 190ms
 // Websocket Email arrived: 451ms
@@ -53,7 +53,7 @@
 // Websocket First RtStat: 795ms
 
 // //Release. On Server. Hot start: // slow sometimes
-// App constructor: 12ms	// this was one of the worst time. 740ms for websocket connection ready. After not using it for 10min, the SqCoreWeb.dll drops out of the server CPU cache, and a bit sleeping.
+// App constructor: 12ms // this was one of the worst time. 740ms for websocket connection ready. After not using it for 10min, the SqCoreWeb.dll drops out of the server CPU cache, and a bit sleeping.
 // Websocket connection start in OnInit: 41ms
 // Websocket connection ready: 739ms
 // Websocket Email arrived: 1145ms
@@ -71,6 +71,8 @@
 // Websocket First RtStat: -864159....ms (wrong somehow, maybe it was MinTime). When the tooltip was created RT was not called yet.
 
 import { minDate } from './../../sq-ng-common/src/lib/sq-ng-common.utils_time';
+
+type BrAccVwSnapshotReceiveReason = 'Unknown' | 'NavSelectChange' | 'RefreshSnapshot';
 
 export class SqDiagnostics {
   public mainTsTime: Date = new Date();
@@ -90,9 +92,14 @@ export class SqDiagnostics {
   public wsNumRtMktSumRtStat = 0;
   public wsOnLastRtMktSumLookbackChgStart: Date = minDate;
 
-  public wsOnFirstBrAccVwMktBrLstCls: Date = minDate;
-  public wsOnLastBrAccVwRefreshSnapshotStart: Date = minDate;
-  public wsOnLastBrAccVwSnapshot: Date = minDate;
+  public wsBrAccVwOnFirstMktBrLstCls: Date = minDate;
+
+  public wsBrAccVwOnLastSnapshot: Date = minDate;
+  public wsBrAccVwSnapshotReceiveReason: BrAccVwSnapshotReceiveReason = 'Unknown';
+  public wsBrAccVwOnLastNavSelectChangeStart: Date = minDate;
+  public wsBrAccVwOnLastNavSelectChangeEnd: Date = minDate;
+  public wsBrAccVwOnLastRefreshSnapshotStart: Date = minDate;
+  public wsBrAccVwOnLastRefreshSnapshotEnd: Date = minDate;
 }
 
 export const gDiag: SqDiagnostics = new SqDiagnostics();

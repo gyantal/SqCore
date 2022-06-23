@@ -145,8 +145,10 @@ namespace SqCoreWeb
             // !Warning: Multithreaded Warning: The Modifier (Writer) thread should be careful, and Copy and Pointer-Swap when Edit/Remove is done.
             lock (DashboardClient.g_clients)    // lock assures that there are no 2 threads that is Adding at the same time on Cloned g_glients.
             {
-                List<DashboardClient> clonedClients = new(DashboardClient.g_clients); // adding new item to clone assures that no enumerating reader threads will throw exception.
-                clonedClients.Add(p_client);
+                List<DashboardClient> clonedClients = new(DashboardClient.g_clients)
+                {
+                    p_client  // equivalent to clonedClients.Add(p_client);
+                }; // adding new item to clone assures that no enumerating reader threads will throw exception.
                 DashboardClient.g_clients = clonedClients;
             }
         }

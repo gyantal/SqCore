@@ -278,8 +278,14 @@ export class BrAccViewerComponent implements OnInit {
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
-      case 'BrAccViewer.BrAccSnapshot': // this is the most frequent message after LstVal (realtime price). Should come first.
-        gDiag.wsOnLastBrAccVwSnapshot = new Date();
+      case 'BrAccViewer.BrAccSnapshot': // this is the most frequent message after LstVal (realtime price), but that is handled in a unified way. This should come first.
+        gDiag.wsBrAccVwOnLastSnapshot = new Date();
+        if (gDiag.wsBrAccVwSnapshotReceiveReason == 'NavSelectChange')
+          gDiag.wsBrAccVwOnLastNavSelectChangeEnd = gDiag.wsBrAccVwOnLastSnapshot;
+        else if (gDiag.wsBrAccVwSnapshotReceiveReason == 'RefreshSnapshot')
+          gDiag.wsBrAccVwOnLastRefreshSnapshotEnd = gDiag.wsBrAccVwOnLastSnapshot;
+
+        gDiag.wsBrAccVwSnapshotReceiveReason = 'Unknown'; // reset the Reason flag, otherwise the last value will stuck in it
         console.log('BrAccViewer.BrAccSnapshot:' + msgObjStr);
         this.brAccountSnapshotStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.brAccountSnapshotObj = JSON.parse(msgObjStr);
@@ -292,8 +298,8 @@ export class BrAccViewerComponent implements OnInit {
         BrAccViewerComponent.updateUiWithHist(this.navHistObj, this.uiHistData);
         return true;
       case 'BrAccViewer.MktBrLstCls':
-        if (gDiag.wsOnFirstBrAccVwMktBrLstCls === minDate)
-          gDiag.wsOnFirstBrAccVwMktBrLstCls = new Date();
+        if (gDiag.wsBrAccVwOnFirstMktBrLstCls === minDate)
+          gDiag.wsBrAccVwOnFirstMktBrLstCls = new Date();
         console.log('BrAccViewer.MktBrLstCls:' + msgObjStr);
         this.mktBrLstClsStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.mktBrLstClsObj = JSON.parse(msgObjStr);
@@ -591,11 +597,10 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   onNavSelectedChange(pEvent: any) {
-    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('BrAccViewer.ChangeNav:' + this.navSelectionSelected);
-
-    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('BrAccViewer.GetNavChrtData:Bnchmrk:' + this.bnchmkTickerSelectionSelected.toUpperCase() + ',Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
+    gDiag.wsBrAccVwOnLastNavSelectChangeStart = new Date();
+    gDiag.wsBrAccVwSnapshotReceiveReason = 'NavSelectChange';
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) //  if user already selected a different DateRange or different Benchmark then we tell the server to send that in historical data
+      this._parentWsConnection.send('BrAccViewer.ChangeNav:' + this.navSelectionSelected + ',Bnchmrk:' + this.bnchmkTickerSelectionSelected.toUpperCase() + ',Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
   }
 
   onBnchmrkSelectionClicked(bnchmkTickerSelectionSelected: string ) {
@@ -647,7 +652,8 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   snapshotRefresh() {
-    gDiag.wsOnLastBrAccVwRefreshSnapshotStart = new Date();
+    gDiag.wsBrAccVwOnLastRefreshSnapshotStart = new Date();
+    gDiag.wsBrAccVwSnapshotReceiveReason = 'RefreshSnapshot';
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('BrAccViewer.RefreshSnapshot:' + this.navSelectionSelected);
   }

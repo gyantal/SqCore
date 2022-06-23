@@ -182,18 +182,20 @@ namespace SqCoreWeb.Controllers
             double[] vixLeverage = new double[STCId.Item1.Length];
             for (int iRows = 0; iRows < vixLeverage.Length; iRows++)
             {
-                if (spotVixValueDb[iRows] >= 30)
-                {
-                    vixLeverage[iRows] = 0.1;
-                }
-                else if (spotVixValueDb[iRows] >= 21)
-                {
-                    vixLeverage[iRows] = 1 - (spotVixValueDb[iRows] - 21) * 0.1;
-                }
-                else
-                {
+                // 2022-06-20: Rework in UberRenewed strategy. We reduced the PV, and simultaneously we drop the VIX deleverage. We always trade 100% leverage, no matter the VIX level.
+
+                // if (spotVixValueDb[iRows] >= 30)
+                // {
+                //     vixLeverage[iRows] = 0.1;
+                // }
+                // else if (spotVixValueDb[iRows] >= 21)
+                // {
+                //     vixLeverage[iRows] = 1 - (spotVixValueDb[iRows] - 21) * 0.1;
+                // }
+                // else
+                // {
                     vixLeverage[iRows] = 1;
-                }
+                // }
             }
 
             int[] pastDataResIndexVec = new int[STCId.Item1.Length];

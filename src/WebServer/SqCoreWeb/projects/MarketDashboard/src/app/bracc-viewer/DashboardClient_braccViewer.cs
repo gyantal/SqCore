@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 using System.Net.WebSockets;
 using Microsoft.Extensions.Primitives;
 using BrokerCommon;
+using System.Diagnostics;
 
 namespace SqCoreWeb
 {
@@ -119,7 +120,10 @@ namespace SqCoreWeb
                 BrAccViewerSendMarketBarPriorCloses();
 
                 Utils.Logger.Debug($"OnConnectedWsAsync_BrAccViewer.SendSnapshotAndHist() BEGIN, Connection from IP: {this.ClientIP} with email '{this.UserEmail}'");
-                BrAccViewerSendSnapshotAndHist();
+                DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
+                SqDateOnly lookbackStart = new(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
+                SqDateOnly lookbackEndExcl = todayET;
+                BrAccViewerSendSnapshotAndHist(lookbackStart, lookbackEndExcl, "S/SPY");
                 Utils.Logger.Debug($"OnConnectedWsAsync_BrAccViewer END, Connection from IP: {this.ClientIP} with email '{this.UserEmail}'");
             });
         }
@@ -138,19 +142,22 @@ namespace SqCoreWeb
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
-        private void BrAccViewerSendSnapshotAndHist()
+        private void BrAccViewerSendSnapshotAndHist(SqDateOnly p_lookbackStart, SqDateOnly p_lookbackEndExcl, string p_bnchmrkTicker)
         {
+            Stopwatch sw1 = Stopwatch.StartNew();
             if (m_braccSelectedNavAsset == null)
                 return;
+
             BrAccViewerSendSnapshot();
-            DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
-            SqDateOnly lookbackStart = new(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
-            SqDateOnly lookbackEndExcl = todayET;
-            BrAccViewerSendNavHist(lookbackStart, lookbackEndExcl, "S/SPY");
+            BrAccViewerSendNavHist(p_lookbackStart, p_lookbackEndExcl, p_bnchmrkTicker);
+
+            sw1.Stop();
+            Utils.Logger.Info($"BrAccViewerSendSnapshotAndHist() ends in {sw1.ElapsedMilliseconds}ms p_bnchmrkTicker: '{p_bnchmrkTicker}'");
         }
 
         private void BrAccViewerSendSnapshot()
         {
+            Stopwatch sw1 = Stopwatch.StartNew();
             var brAcc = GetBrAccViewerAccountSnapshot();
             if (brAcc != null)
             {
@@ -158,10 +165,12 @@ namespace SqCoreWeb
                 if (WsWebSocket!.State == WebSocketState.Open)
                     WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
             }
+            sw1.Stop();
+            Utils.Logger.Info($"BrAccViewerSendSnapshot() ends in {sw1.ElapsedMilliseconds}ms SqTicker: '{m_braccSelectedNavAsset?.SqTicker ?? string.Empty}'");
         }
-        private void BrAccViewerSendNavHist(SqDateOnly lookbackStart, SqDateOnly lookbackEndExcl, string p_bnchmrkTicker)
+        private void BrAccViewerSendNavHist(SqDateOnly p_lookbackStart, SqDateOnly p_lookbackEndExcl, string p_bnchmrkTicker)
         {
-            IEnumerable<AssetHistJs>? brAccViewerHist = GetBrAccViewerNavHist(lookbackStart, lookbackEndExcl, p_bnchmrkTicker);
+            IEnumerable<AssetHistJs>? brAccViewerHist = GetBrAccViewerNavHist(p_lookbackStart, p_lookbackEndExcl, p_bnchmrkTicker);
             if (brAccViewerHist != null)
             {
                 byte[]? encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.NavHist:" + Utils.CamelCaseSerialize(brAccViewerHist));
@@ -381,11 +390,17 @@ namespace SqCoreWeb
         {
             switch (msgCode)
             {
-                case "BrAccViewer.ChangeNav":
+                case "BrAccViewer.ChangeNav": // msg: "DC.IM,Bnchmrk:SPY,Date:2021-01-02...2021-12-12"
                     Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): changeNav to '{msgObjStr}'"); // DC.IM
-                    string sqTicker = "N/" + msgObjStr; // turn DC.IM to N/DC.IM
+
+                    int navAssetEndIdx = msgObjStr.IndexOf(",");
+                    if (navAssetEndIdx == -1)
+                        return true;    // processed, but there was a problem
+                    string sqTicker = string.Concat("N/", msgObjStr.AsSpan(0, navAssetEndIdx)); // turn DC.IM to N/DC.IM
                     m_braccSelectedNavAsset = MemDb.gMemDb.AssetsCache.GetAsset(sqTicker) as BrokerNav;
-                    BrAccViewerSendSnapshotAndHist();
+
+                    (SqDateOnly lookbackStart, SqDateOnly lookbackEndExcl, string braccSelectedBnchmkSqTicker) = ExtractHistDataParams(msgObjStr, navAssetEndIdx + 1);
+                    BrAccViewerSendSnapshotAndHist(lookbackStart, lookbackEndExcl, braccSelectedBnchmkSqTicker);
                     return true;
                 case "BrAccViewer.RefreshSnapshot":
                     BrAccViewerRefreshSnapshot();
@@ -395,18 +410,8 @@ namespace SqCoreWeb
                     return true;
                 case "BrAccViewer.GetNavChrtData": // msg: "Bnchmrk:SPY,Date:2021-01-02...2021-12-12"
                     Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): GetNavChrtData to '{msgObjStr}'");
-                    int bnchmkStartIdx = msgObjStr.IndexOf(":");
-                    if (bnchmkStartIdx == -1)
-                      return false;
-                    int periodStartIdx = msgObjStr.IndexOf(",", bnchmkStartIdx);
-                    if (periodStartIdx == -1)
-                      return false;
-                    string braccSelectedBnchmkSqTicker = string.Concat("S/", msgObjStr.AsSpan(bnchmkStartIdx + 1, (periodStartIdx - bnchmkStartIdx - 1)));
-                    string periodSelected = msgObjStr[(periodStartIdx + 1)..];
-                    SqDateOnly lookbackStart = Utils.FastParseYYYYMMDD(new StringSegment(periodSelected, "Date:".Length, 10));
-                    DateTime lookbackEndIncl = Utils.FastParseYYYYMMDD(new StringSegment(periodSelected, "Date:".Length + 13, 10)); // the web UI is written that 'EndDate' is yesterday, which should be included in returned data (if it is not a weekend or holiday, so complicated).
-                    SqDateOnly lookbackEndExcl = lookbackEndIncl.AddDays(1);   // convert it to excludedEndDate, which converts it to Today. Because that is what MemDb_helper.cs/GetSdaHistCloses() expects
-                    BrAccViewerSendNavHist(lookbackStart, lookbackEndExcl, braccSelectedBnchmkSqTicker);
+                    (SqDateOnly lookbackStartH, SqDateOnly lookbackEndExclH, string braccSelectedBnchmkSqTickerH) = ExtractHistDataParams(msgObjStr, 0);
+                    BrAccViewerSendNavHist(lookbackStartH, lookbackEndExclH, braccSelectedBnchmkSqTickerH);
                     return true;
                 case "BrAccViewer.GetStockChrtData":
                     Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): GetStockChrtData to '{msgObjStr}'");
@@ -419,6 +424,30 @@ namespace SqCoreWeb
                 default:
                     return false;
             }
+        }
+
+        static (SqDateOnly lookbackStart, SqDateOnly lookbackEndExcl, string braccSelectedBnchmkSqTicker) ExtractHistDataParams(string p_msg, int startIdx) // msg: "Bnchmrk:SPY,Date:2021-01-02...2021-12-12"
+        {
+            int bnchmkStartIdx = p_msg.IndexOf(":", startIdx);
+            int periodStartIdx = (bnchmkStartIdx == -1) ? -1 : p_msg.IndexOf(",", bnchmkStartIdx);
+            string braccSelectedBnchmkSqTicker = (bnchmkStartIdx == -1 || periodStartIdx == -1) ? "S/SPY" : string.Concat("S/", p_msg.AsSpan(bnchmkStartIdx + 1, periodStartIdx - bnchmkStartIdx - 1));
+            
+            SqDateOnly lookbackStart, lookbackEndExcl;
+            if (periodStartIdx == -1)
+            {
+                DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
+                lookbackStart = new(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
+                lookbackEndExcl = todayET;
+            }
+            else
+            {
+                string periodSelected = p_msg[(periodStartIdx + 1)..];
+                lookbackStart = Utils.FastParseYYYYMMDD(new StringSegment(periodSelected, "Date:".Length, 10));
+                DateTime lookbackEndIncl = Utils.FastParseYYYYMMDD(new StringSegment(periodSelected, "Date:".Length + 13, 10)); // the web UI is written that 'EndDate' is yesterday, which should be included in returned data (if it is not a weekend or holiday, so complicated).
+                lookbackEndExcl = lookbackEndIncl.AddDays(1);   // convert it to excludedEndDate, which converts it to Today. Because that is what MemDb_helper.cs/GetSdaHistCloses() expects
+            }
+
+            return (lookbackStart, lookbackEndExcl, braccSelectedBnchmkSqTicker);
         }
 
         // On the SqCore Linux server, the London user browser RefreshSnapshot-latency: only 380ms. That includes getting message at server + 2 IbUpdateBrAccount() for DC.IM, DC.DB, +  RT price from YF for 120 stocks + And sending back data to client. Pretty fast with all the cleverness.

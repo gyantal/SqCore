@@ -284,14 +284,15 @@ export class AppComponent implements OnInit {
         `WS connection start in OnInit: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsConnectionStartTime)}\n` +
         `WS connection ready: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsConnectionReadyTime)}\n` +
         `WS userdata(email) arrived: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsOnConnectedMsgArrivedTime)}\n` +
-        `WS First NonRtStat: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsOnFirstRtMktSumNonRtStatTime)}\n` +
-        `WS First RtStat: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsOnFirstRtMktSumRtStatTime)}\n` + // if wsOnFirstRtMktSumRtStatTime == minTime, it can be negative
+        `WS first NonRtStat: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsOnFirstRtMktSumNonRtStatTime)}\n` +
+        `WS first RtStat: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsOnFirstRtMktSumRtStatTime)}\n` + // if wsOnFirstRtMktSumRtStatTime == minTime, it can be negative
         `WS #RtStat: ${gDiag.wsNumRtMktSumRtStat}\n` +
-        `WS Last RtStat: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.wsOnLastRtMktSumRtStatTime, new Date())} ago\n` +
-        `WS Last Lookback Chg latency: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.wsOnLastRtMktSumLookbackChgStart, gDiag.wsOnLastRtMktSumNonRtStatTime)}\n` + // 14-20ms LocalDev, 27-33ms London to Dublin, thanks to the open WS connection. If a new connection has to be opened, it would be 80-130ms; 120ms Bahamas to Dublin (with a new connection it would be 500ms)
+        `WS last RtStat: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.wsOnLastRtMktSumRtStatTime, new Date())} ago\n` +
+        `WS last Lookback Chg latency: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.wsOnLastRtMktSumLookbackChgStart, gDiag.wsOnLastRtMktSumNonRtStatTime)}\n` + // 14-20ms LocalDev, 27-33ms London to Dublin, thanks to the open WS connection. If a new connection has to be opened, it would be 80-130ms; 120ms Bahamas to Dublin (with a new connection it would be 500ms)
         '-----\n' +
-        `WS First BrAccVw.MktBrLstCls: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsOnFirstBrAccVwMktBrLstCls)}\n` +
-        `WS Last  BrAccVw.RfrSnapshot latency: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.wsOnLastBrAccVwRefreshSnapshotStart, gDiag.wsOnLastBrAccVwSnapshot)}\n`;
+        `WS BrAccVw first MktBrLstCls: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsBrAccVwOnFirstMktBrLstCls)}\n` +
+        `WS BrAccVw last NavSelChg latency: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.wsBrAccVwOnLastNavSelectChangeStart, gDiag.wsBrAccVwOnLastNavSelectChangeEnd)}\n` +
+        `WS BrAccVw last RfrSnpsht latency: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.wsBrAccVwOnLastRefreshSnapshotStart, gDiag.wsBrAccVwOnLastRefreshSnapshotEnd)}\n`;
       } else
         this.sqDiagnosticsMsg = 'Connection to server is broken.\n Try page reload (F5).';
     }

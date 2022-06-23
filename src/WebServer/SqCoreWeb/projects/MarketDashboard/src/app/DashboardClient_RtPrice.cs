@@ -132,7 +132,7 @@ namespace SqCoreWeb
         {
             try
             {
-                Utils.Logger.Info("RtDashboardTimer_Elapsed(). BEGIN");
+                // Utils.Logger.Info("RtDashboardTimer_Elapsed(). BEGIN");  // too frequent to log it out in every 5 seconds. Just use it when debugging is needed.
                 if (!m_rtDashboardTimerRunning)
                     return; // if it was disabled by another thread in the meantime, we should not waste resources to execute this.
 
