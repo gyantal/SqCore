@@ -155,18 +155,29 @@ namespace SqCoreWeb
             Utils.Logger.Info($"BrAccViewerSendSnapshotAndHist() ends in {sw1.ElapsedMilliseconds}ms p_bnchmrkTicker: '{p_bnchmrkTicker}'");
         }
 
-        private void BrAccViewerSendSnapshot()
+        private async void BrAccViewerSendSnapshot()
         {
+            // TEMP: 2022-06-23: temporary benchmarking with Stopwatch. Will be removed after we found the occasional lag problem.
+            Stopwatch sw = Stopwatch.StartNew();
             Stopwatch sw1 = Stopwatch.StartNew();
             var brAcc = GetBrAccViewerAccountSnapshot();
+            sw1.Stop();
+
+            Stopwatch sw2 = new(), sw3 = new();
             if (brAcc != null)
             {
+                sw2.Start();
                 byte[]? encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.BrAccSnapshot:" + Utils.CamelCaseSerialize(brAcc));
+                sw2.Stop();
                 if (WsWebSocket!.State == WebSocketState.Open)
-                    WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                {
+                    sw3.Start();
+                    await WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                    sw3.Stop();
+                }
             }
-            sw1.Stop();
-            Utils.Logger.Info($"BrAccViewerSendSnapshot() ends in {sw1.ElapsedMilliseconds}ms SqTicker: '{m_braccSelectedNavAsset?.SqTicker ?? string.Empty}'");
+            sw.Stop();
+            Utils.Logger.Info($"BrAccViewerSendSnapshot() ends in {sw.ElapsedMilliseconds}ms ({sw1.ElapsedMilliseconds}/{sw2.ElapsedMilliseconds}/{sw3.ElapsedMilliseconds}) SqTicker: '{m_braccSelectedNavAsset?.SqTicker ?? string.Empty}'");
         }
         private void BrAccViewerSendNavHist(SqDateOnly p_lookbackStart, SqDateOnly p_lookbackEndExcl, string p_bnchmrkTicker)
         {
