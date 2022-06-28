@@ -53,7 +53,15 @@ namespace SqCoreWeb
             // https://docs.microsoft.com/en-us/aspnet/core/performance/caching/response?view=aspnetcore-3.0
             services.AddResponseCaching(); // DI: these services could be used in MVC control/Razor pages (either as [Attributes], or in code)
             services.AddMvc(options =>     // AddMvc() equals AddControllersWithViews() + AddRazorPages()
-            { // this CashProfile is given once here, and if it changes, we only have to change here, not in all Controllers.
+            {
+                // For server-side caching that follows the HTTP 1.1 Caching specification, use this Response Caching Middleware. 
+                // Note that even though the browser loads data from (disk cache), the client ask the ServerSideMiddleware, so there is a 1msec time delay for these server-side cached queries. 
+                // But there is no server side processing. The Controllers are not called for any 900 msec processing. The AspMiddleware instructs the browser to use the disk cache.
+                // https://docs.microsoft.com/en-us/aspnet/core/performance/caching/response?view=aspnetcore-6.0#responsecache-attribute
+                // "There isn't a corresponding HTTP header (sent to client) for the VaryByQueryKeys property. (only the "cache-control: public,max-age=30" is sent in the header) The property is an HTTP feature handled by Response Caching Middleware. 
+                // VaryByQueryKeys: For the middleware to serve a cached response, the query string and query string value must match a previous request. " 
+
+                // These CashProfiles are given only once here, and if they change, we only have to change here, not in all Controllers.
                 options.CacheProfiles.Add("NoCache",
                     new CacheProfile()
                     {
@@ -61,16 +69,19 @@ namespace SqCoreWeb
                         Location = ResponseCacheLocation.None,
                         NoStore = true
                     });
+                // by default, without VaryByQueryKeys, the querystring is not used by the browser's Cache Policy, only the URL. The queryString https://sqcore.net/ContangoVisualizerData?commo=1 returned from cache the last received https://sqcore.net/ContangoVisualizerData?commo=3
                 options.CacheProfiles.Add("DefaultShortDuration",
                     new CacheProfile()
                     {
-                        Duration = 60 * 1   // 1 min for real-time price data
+                        Duration = 60 * 1,   // 1 min for real-time price data
+                        VaryByQueryKeys = new string[] { "*" } //a specific query string key or * can be used if all query string keys should be matched
                     });
                 options.CacheProfiles.Add("DefaultMidDuration",
                     new CacheProfile()
                     {
                         //Duration = (int)TimeSpan.FromHours(12).TotalSeconds
-                        Duration = 100000   // 100,000 seconds = 27 hours
+                        Duration = 100000,   // 100,000 seconds = 27 hours
+                        VaryByQueryKeys = new string[] { "*" } //a specific query string key or * can be used if all query string keys should be matched
                     });
             }); //.SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
             //services.AddControllersWithViews();        // AddMvc() equals AddControllersWithViews() + AddRazorPages(), so we don't use Razor pages now.
