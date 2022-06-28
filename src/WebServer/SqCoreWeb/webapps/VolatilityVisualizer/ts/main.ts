@@ -50,7 +50,6 @@ function choseall(nameS) {
       if ((document.getElementsByName(nameS) as any)[i].checked != true) {
         (document.getElementsByName(nameS) as any)[i].checked = false;
         (document.getElementsByName(nameS) as any)[i].click();
-        console.log(' the ticker is else', nameS);
       }
     }
   }
@@ -75,14 +74,28 @@ function checkAll(ele) {
     }
   }
 }
+
 // Under development - Daya
-// function onImageClick() {
-//   // console.log('OnClick received.' + index);
-//   const commo = getQueryVariable('lbp');
-//   AsyncStartDownloadAndExecuteCbLater('/VolatilityDragVisualizer?commo=' + commo, (json: any) => {
-//     onReceiveData(json);
-//   });
-// }
+function onImageClick() {
+  // console.log('OnClick received.' + index);
+  getDocElementById('vixBtn').onclick = () => choseall('volA');
+  getDocElementById('impEtpBtn').onclick = () => choseall('etpA');
+  getDocElementById('gameChngBtn').onclick = () => choseall('gchA');
+  getDocElementById('globalAssetsBtn').onclick = () => choseall('gmA');
+  getDocElementById('selectAllBtn').onclick = checkAll;
+  getDocElementById('updateAllBtn').onclick = function() {
+    const checkBoxes = document.getElementsByTagName('input') as HTMLCollectionOf<HTMLInputElement>;
+    // const checkboxesChecked: any[] = [];
+    // for (let i = 0; i < checkboxes.length; i++) {
+    //   if (checkboxes[i].checked)
+    //   // const nameCheck = checkboxes[i].name;
+    //     choseall(checkboxes[i].name);
+    //     // console.log('checkbox values', checkboxes[i].name);
+    //     // checkboxesChecked.push(checkboxes[i]);
+    console.log('the length of ', checkBoxes.length);
+    // }
+  };
+}
 
 function getDocElementById(id: string): HTMLElement {
   return (document.getElementById(id) as HTMLElement); // type casting assures it is not null for the TS compiler. (it can be null during runtime)
@@ -99,38 +112,34 @@ window.onload = function onLoadWindow() {
   const commo = getQueryVariable('lbp');
   AsyncStartDownloadAndExecuteCbLater('/VolatilityDragVisualizer?commo=' + commo, (json: any) => {
     onReceiveData(json);
+    onImageClick();
   });
 
   function onReceiveData(json: any) {
-  // const jsonToStr = JSON.stringify(json).substr(0, 60) + '...';
-  // getDocElementById('DebugDataArrivesHere').innerText = '***"' + json[0].stringData + '"***';
-
     if (json == 'Error') {
       const divErrorCont = getDocElementById('idErrorCont');
       divErrorCont.innerHTML = 'Error during downloading data. Please, try again later!';
       getDocElementById('errorMessage').style.visibility='visible';
-      // getDocElementById('pctChgCharts').style.visibility = 'hidden';
-      // getDocElementById('xluChart').style.visibility = 'hidden';
-      // getDocElementById('spyChart').style.visibility = 'hidden';
+      getDocElementById('pctChgCharts').style.visibility = 'hidden';
+      getDocElementById('lookbackCharts').style.visibility = 'hidden';
       return;
     }
     getDocElementById('titleCont').innerHTML = '<small><a href="' + json.gDocRef + '" target="_blank">(Study)</a></small>';
     getDocElementById('requestTime').innerText = json.requestTime;
     getDocElementById('lastDataTime').innerText = json.lastDataTime;
 
-    volatilityVisualizerTbls(json);
+    processingVolDragData(json);
     // Setting charts visible after getting data.
-    // getDocElementById('pctChgCharts').style.visibility = 'visible';
-    // getDocElementById('xluChart').style.visibility = 'visible';
-    // getDocElementById('spyChart').style.visibility = 'visible';
+    getDocElementById('pctChgCharts').style.visibility = 'visible';
+    getDocElementById('lookbackCharts').style.visibility = 'visible';
   }
 
-  function volatilityVisualizerTbls(json: any) {
+  function processingVolDragData(json: any) {
     const volAssetNamesArray = json.volAssetNames.split(', ');
     const etpAssetNamesArray = json.etpAssetNames.split(', ');
     const gchAssetNamesArray = json.gchAssetNames.split(', ');
     const gmAssetNamesArray = json.gmAssetNames.split(', ');
-    // const defCheckedListArray = json.defCheckedList.split(', ');
+    const defCheckedListArray = json.defCheckedList.split(', ');
 
     let chBxs = '<p class="left"><button id="vixBtn" class="button2" title="Volatility ETPs"/></button>&emsp;&emsp;';
     for (let iAssets = 0; iAssets < volAssetNamesArray.length; iAssets++)
@@ -150,20 +159,38 @@ window.onload = function onLoadWindow() {
 
     chBxs += '</p ><p class="center"><button id="selectAllBtn" class="button3" title="Select/Deselect All"/></button>&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;<button id="updateAllBtn" class="button3" title="Update Charts and Tables" id=\'update_all\'></button></p> ';
 
-    console.log('check box', chBxs);
+    // console.log('check box', chBxs);
     const checkBoxes = getDocElementById('idChBxs');
     checkBoxes.innerHTML = chBxs;
 
-    // const vixButtton = getDocElementById('vixBtn') as any;
-    // Array.from(vixButtton).forEach((el) => {});
+    // default checkbox method
+    const inputCheck = document.getElementsByTagName('input') as HTMLCollectionOf<HTMLInputElement>;
+    for (let i = 0; i < inputCheck.length; i++) {
+      if (inputCheck[i].id == defCheckedListArray[i])
+        inputCheck[i].checked = true;
+      inputCheck[i].checked;
+    }
 
-    const inputCheck = document.getElementsByTagName('input:checkbox:not(:checked)') as HTMLCollection;
-    console.log('collection', inputCheck.length);
-    // .each(function() {
-    //   const column = 'table .' + ().attr('id');
-    //   (column).hide();
-    // });
+    volVisualizerTbls(json);
 
+    // Under development - Daya
+    function show(min, max) {
+      const tab = (getDocElementById('mytable') as HTMLTableElement);
+      const tab2 = tab.querySelectorAll('tbody tr');
+      console.log(tab2.length);
+      // min = min ? min - 1 : 0;
+      // max = max ? max : tab2.length;
+      // // // tab2.slice(min, max).show();
+      // // console.log('min and max are ', min, max);
+      // // const priceDatagrps: any[] = [];
+      // // for (let i = 0; i < tab2.length; i++)
+      // //   priceDatagrps.push(tab2.slice(i, max));
+      // show(min, max);
+      return false;
+    }
+    show(0, 21);
+  }
+  function volVisualizerTbls(json) {
     //  Creating data for tables
     const assetNamesArray = json.assetNames.split(', ');
     const dailyDatesArray = json.quotesDateVector.split(', ');
@@ -184,7 +211,6 @@ window.onload = function onLoadWindow() {
     for (let i = 0; i < yearlyAvgsTemp.length; i++)
       yearlyAvgsMtx[i] = yearlyAvgsTemp[i].split(',');
 
-
     for (let i = 0; i < yearlyAvgsTemp.length; i++) {
       for (let j = 0; j < yearlyAvgsMtx[0].length; j++) {
         if (yearlyAvgsMtx[i][j] == ' 0%')
@@ -196,7 +222,6 @@ window.onload = function onLoadWindow() {
     const monthlyAvgsMtx: any[] = [];
     for (let i = 0; i < monthlyAvgsTemp.length; i++)
       monthlyAvgsMtx[i] = monthlyAvgsTemp[i].split(',');
-
 
     for (let i = 0; i < monthlyAvgsTemp.length; i++) {
       for (let j = 0; j < monthlyAvgsMtx[0].length; j++) {
@@ -336,24 +361,12 @@ window.onload = function onLoadWindow() {
 
     const lengthOfChart = 20;
     const indOfLength = retHistLBPeriodsNo.indexOf(lengthOfChart);
-    const divChartLength = getDocElementById('idChartLength');
-    divChartLength.innerHTML = '<strong>Percentage Changes of Prices in the Last &emsp;<select id="limit2"><option value="1">1 Day</option><option value="3">3 Days</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="20" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[indOfLength] + '</strong >';
-    // creatingChartData(indOfLength);
 
-    getDocElementById('limit2').onchange = function() {
-      const lengthOfChart = parseInt((document.getElementById('limit2') as HTMLSelectElement).value);
-      const indOfLength = retHistLBPeriodsNo.indexOf(lengthOfChart);
-      console.log(indOfLength);
-    // creatingChartData(indOfLength);
-    };
-
-    // Declaring data sets to charts.
     const lengthSubSums: any[] = [];
     lengthSubSums[0] = 0;
     lengthSubSums[1] = retHistLBPeriodsNo[0];
     for (let i = 2; i < retHistLBPeriodsNo.length + 1; i++)
       lengthSubSums[i] = lengthSubSums[i - 1] + retHistLBPeriodsNo[i - 1];
-
 
     const chartStart = lengthSubSums[indOfLength];
     const nCurrData = lengthOfChart + 1;
@@ -362,8 +375,8 @@ window.onload = function onLoadWindow() {
     const assChartMtx: any[] = [];
     for (let i = 0; i < nCurrData; i++) {
       const dateArray = dailyDatesArray[dailyDatesArray.length - nCurrData + i];
-      const histReturnsArray = histRets2ChartsMtx[chartStart - 1 + i];
-      assChartMtx.push([dateArray, ...histReturnsArray]);
+      const dailyVolDragsArray = dailyVolDragsMtx[chartStart - 1 + i];
+      assChartMtx.push([dateArray, ...dailyVolDragsArray]);
     }
 
     const xLabel: string = 'Dates';
@@ -372,14 +385,48 @@ window.onload = function onLoadWindow() {
     d3.selectAll('#pctChgChrt > *').remove();
     const lineChrtDiv = getDocElementById('pctChgChrt');
     const lineChrtTooltip = getDocElementById('tooltipChart');
-    // preprocess
     sqLineChartGenerator(noAssets, nCurrData, assetNamesArray, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip);
 
-    getDocElementById('vixBtn').onclick = () => choseall('volA');
-    getDocElementById('impEtpBtn').onclick = () => choseall('etpA');
-    getDocElementById('gameChngBtn').onclick = () => choseall('gchA');
-    getDocElementById('globalAssetsBtn').onclick = () => choseall('gmA');
-    getDocElementById('selectAllBtn').onclick = checkAll;
+    getDocElementById('idChartLength').innerHTML = '<strong>Percentage Changes of Prices in the Last &emsp;<select id="limit2"><option value="1">1 Day</option><option value="3">3 Days</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="20" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[indOfLength] + '</strong >';
+    pctMonthlyVolChrt(indOfLength);
+    // pctChrt(indOfLength);
+
+    getDocElementById('limit2').onchange = function() {
+      const lengthOfChart = parseInt((document.getElementById('limit2') as HTMLSelectElement).value);
+      const indOfLength = retHistLBPeriodsNo.indexOf(lengthOfChart);
+      pctMonthlyVolChrt(indOfLength);
+    };
+
+    // Under development - Daya
+    getDocElementById('limit').onchange = function() {
+      const volLBPeriod = parseInt((document.getElementById('limit') as HTMLSelectElement).value);
+      const tab = (getDocElementById('mytable') as HTMLTableElement);
+      // const tab2 = tab.querySelectorAll('tbody tr');
+      // tab.style.display = 'none';
+      // const tblArr: any[] = [];
+      const tabRows = tab.rows;
+      for (let i = 0; i < volLBPeriod; i ++) {
+        if (i < tabRows.length)
+          tabRows[i].style.display = 'block';
+        else
+          tabRows[i].style.display = 'none';
+      }
+      // tabRows[i].style.display = 'block';
+    };
+
+    // Declaring data sets to charts.
+    function pctMonthlyVolChrt(indOfLength) {
+      const chartStart = lengthSubSums[indOfLength];
+      const lookbackChartMtx: any[] = [];
+      for (let i = 0; i < nCurrData; i++) {
+        const dateArray = dailyDatesArray[dailyDatesArray.length - nCurrData + i];
+        const histReturnsArray = histRets2ChartsMtx[chartStart - 1 + i];
+        lookbackChartMtx.push([dateArray, ...histReturnsArray]);
+      }
+      d3.selectAll('#pctChgLookbackChrt > *').remove();
+      const lineChrtDiv1 = getDocElementById('pctChgLookbackChrt');
+      sqLineChartGenerator(noAssets, nCurrData, assetNamesArray, lookbackChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv1, lineChrtTooltip);
+    }
   }
   console.log('SqCore: window.onload() END.');
 };

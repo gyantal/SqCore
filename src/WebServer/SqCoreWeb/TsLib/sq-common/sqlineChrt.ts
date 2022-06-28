@@ -19,7 +19,8 @@ export function shortMonthFormat(date: any) : string {
 // Under Development - Daya
 // version v.2 - version to work for both date and number as xAxis
 export function sqLineChartGenerator(noAssets: number, nCurrData: number, assetNames2Array: string[],
-    assChartMtx: Array<Array<any>>, xLabel: string, yLabel: string, yScaleTickFormat: string,
+    assChartMtx: Array<Array<any>>, // Array of DailyData. DailyData is also an array, starting with the Date|number and followed by that daily price for all assets
+    xLabel: string, yLabel: string, yScaleTickFormat: string,
     lineChrtDiv: HTMLElement, lineChrtTooltip: HTMLElement) {
   const margin = {top: 10, right: 30, bottom: 50, left: 60};
   const width = 760 - margin.left - margin.right;

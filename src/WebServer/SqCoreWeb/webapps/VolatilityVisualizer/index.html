@@ -17,13 +17,13 @@
       <span id="lastDataTime"></span>
     </div>
     <span id="idChBxs"></span>
-    <div id="pctChgCharts" class="chartsContainer">
+    <div id="pctChgCharts" class="chartsContainer" style="visibility: hidden">
       <strong>Monthly Volatility Drag</strong>
       <div id="pctChgChrt"></div>
       <div id='tooltipChart'></div>
     </div>
 
-  <button class="button4" style="background-size: cover;" title="Zoom Out" id="clearSelection"></button>
+  <!-- <button class="button4" style="background-size: cover;" title="Zoom Out" id="clearSelection"></button> -->
   <br>
   <br>
   <span id="idCurrMonthly"></span>
@@ -32,8 +32,9 @@
   <br>
   <span id="idRecentPerformance"></span>
   <br>
-  <div class="demo-container">
+  <div id="lookbackCharts" class="chartsContainer" style="visibility: hidden">
       <span id="idChartLength"></span>
+      <div id="pctChgLookbackChrt"></div>
   </div>
   <br>
   <span id="idVolatilityHistory"></span>

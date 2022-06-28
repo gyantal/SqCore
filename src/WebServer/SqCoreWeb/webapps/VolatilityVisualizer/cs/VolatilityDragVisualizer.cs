@@ -70,7 +70,7 @@ namespace SqCoreWeb.Controllers
             }
         }
 
-        public string GetStr2()
+        public static string GetStr2()
         {
             return "Error";
         }
@@ -112,7 +112,7 @@ namespace SqCoreWeb.Controllers
             return volatilityTickersData;
         }
 
-        public string Get(int p_lbP)
+        public static string Get(int p_lbP)
         {
             // //Defining asset lists.
             // string[] volAssetList = new string[] { "SVXY!Light0.5x.SQ", "VXX.SQ", "VXZ.SQ"};
@@ -141,23 +141,23 @@ namespace SqCoreWeb.Controllers
             // string[] vixAssetList = new string[] { "^VIX" };
 
             // string[] defaultCheckedList = new string[] { "SPY", "QQQ", "TQQQ", "VXX", "TMV", "UCO", "UNG" };
-            string[] volAssetList = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD"};
-            string[] volAssetListNN = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD"};
-            string[] etpAssetList = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD"};
-            string[] etpAssetListNN = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD"}; 
+            string[] volAssetList = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD" };
+            string[] volAssetListNN = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD" };
+            string[] etpAssetList = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD" };
+            string[] etpAssetListNN = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD" }; 
 
             string[] gchAssetList = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD" };
             string[] gchAssetListNN = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD" };
 
-            string[] gmAssetList = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD"};
+            string[] gmAssetList = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD" };
             string[] gmAssetListNN = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD" };
 
-            string[] vixAssetList = new string[] { "SPY" };
+            string[] vixAssetList = new string[] { "^VIX" };
 
             // var allAssetList = etpAssetList.Union(volAssetList).Union(gchAssetList).Union(gmAssetList).Union(vixAssetList).ToArray();
             // var usedAssetList = etpAssetListNN.Union(volAssetListNN).Union(gchAssetListNN).Union(gmAssetListNN).ToArray();
-            var allAssetList = etpAssetList.ToArray();
-            var usedAssetList = etpAssetList.ToArray();
+            var allAssetList = etpAssetList.Union(vixAssetList).ToArray();
+            var usedAssetList = etpAssetListNN.ToArray();
             // string[] allAssetList = new string[]{ "SPY", "QQQ", "SVXY!Light0.5x.SQ", "VXX.SQ", "VXZ.SQ", "UVXY!Light1.5x.SQ", "TQQQ.SQ", "^VIX" };
             // string[] usedAssetList = new string[] { "SPY", "QQQ", "SVXY_Light", "VXX", "VXZ", "UVXY_Light", "TQQQ"};
             // string[] defaultCheckedList = new string[] { "SPY", "QQQ", "VXX"};
@@ -176,7 +176,7 @@ namespace SqCoreWeb.Controllers
             List<DailyData> quotesData2 = quotesData[allAssetList.Length-1];
 
 
-            int noAssets = allAssetList.Length-1;
+            int noAssets = allAssetList.Length - 1;
             int noBtDays = quotesData1[0].Count;
             DateTime[] quotesDateVec = new DateTime[noBtDays];
 

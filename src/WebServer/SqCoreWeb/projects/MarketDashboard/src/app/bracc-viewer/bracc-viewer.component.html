@@ -24,10 +24,8 @@ MarketBar
         <div>
             <span class="plSum tooltipGeneral">NAV :
                 <span id="liqVal">{{uiSnapTable.netLiquidation | currency:'USD':'symbol':'1.0'}}</span>
-                <div class="tooltipSnap">
-                    <div class="snapshot">
-                        Total NetLiquidation<br>(with cash) 
-                    </div>
+                <div class="tooltipText">
+                    Total NetLiquidation<br>(with cash) 
                 </div>
             </span>
             <span class="timeInfoNav"> ({{uiSnapTable.navLastUpdateTimeAgoStr}})</span>
@@ -44,10 +42,8 @@ MarketBar
                 'mktbarNegativePerf' : uiSnapTable.pctChgTodPrNav < 0
                 }"> ({{uiSnapTable.pctChgTodPrNav | percent:'1.2'}})
             </span>
-            <div class="tooltipSnap">
-                <div class="snapshot">
-                    Profit is calculated from<br> current  and previous day NAV 
-                </div>
+            <div class="tooltipText">
+                Profit is calculated from<br> current  and previous day NAV 
             </div>
             <span class="timeInfoNav"> ({{uiSnapTable.navLastUpdateTimeAgoStr}})</span>
         </div>
@@ -63,17 +59,13 @@ MarketBar
                 'mktbarNegativePerf' : uiSnapTable.sumPlTodPct < 0
                 }">({{uiSnapTable.sumPlTodPct | percent:'1.2'}})
             </span> 
-            <div class="tooltipSnap">
-                <div class="snapshot">
-                    Profit is calculated as <br>a sum of the table cells 
-                </div>
+            <div class="tooltipText">
+                Profit is calculated as <br>a sum of the table cells 
             </div>
         </span>
         <span class="tooltipGeneral plSum">
-            <div class="tooltipSnap">
-                <div class="snapshot">
-                    Force reload snapshot table<br> (Realtime: NAV, #Pos, EstPrice)
-                </div>
+            <div class="tooltipText">
+                Force reload snapshot table<br> (Realtime: NAV, #Pos, EstPrice)
             </div>
             <span class="refresh"><img class="refresh" src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked()"></span>
         </span>
@@ -97,30 +89,23 @@ MarketBar
                     <div>Number Of All Positions: <span class="moreDetailsSum">{{uiSnapTable.numOfAllPoss}}</span></div>
                     <div>Long Stock MktValue:
                       <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.longStockValue | number}}*
-                        <div class="tooltipSnap">
-                          <div class="snapshot">
+                        <div class="tooltipText">
                             !! Long VXX is here, although it is market bearish.<br>
-                            'Short VXX', 'short SH' are market bullish, but not here.
-                          </div>
                         </div>
                       </span>
                     </div>
                     <div>Short Stock MktValue: <span class="moreDetailsSum">{{uiSnapTable.shortStockValue | number}}</span></div>
                     <div>LC+SP Optn DeltaAdj DelivVal:
                       <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.longOptionDeltaAdjValue | number :'1.0-0'}}*
-                        <div class="tooltipSnap">
-                          <div class="snapshot">
+                        <div class="tooltipText">
                             Long Call options and Short Put options have positive market exposure.
-                          </div>
                         </div>
                       </span>
                     </div>
                     <div>LP+SC Optn DeltaAdj DelivVal: 
                       <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.shortOptionDeltaAdjValue | number :'1.0-0'}}*
-                        <div class="tooltipSnap">
-                          <div class="snapshot">
+                        <div class="tooltipText">
                             Long Put options and Short Call options have negative market exposure.
-                          </div>
                         </div>
                       </span>
                     </div>
@@ -132,30 +117,23 @@ MarketBar
                                                             'red' : uiSnapTable.totalMaxRiskedLeverage > 1.5}">
                           (Leverage: {{uiSnapTable.totalMaxRiskedLeverage | number :'1.2-2'}})*
                         </span>
-                        <div class="tooltipSnap">
-                            <div class="snapshot">
-                                LongStk + ShortStk (incorrect! Infinite) <br>
-                                + LongOptMktValue + ShortOptMktValue (incorrect! Infinite) <br>
-                                Leverage greater than 1.5 -> red <br>
-                                Leverage between 1.3 - 1.5 -> orange <br>
-                                Leverage less than 1.3 -> green
-                            </div>
+                        <div class="tooltipText">
+                            LongStk + ShortStk (incorrect! Infinite) <br>
+                            + LongOptMktValue + ShortOptMktValue (incorrect! Infinite) <br>
+                            Leverage greater than 1.5 -> red <br>
+                            Leverage between 1.3 - 1.5 -> orange <br>
+                            Leverage less than 1.3 -> green
                         </div>
                     </div>
                     <div class="tooltipGeneral">Delta Adjusted Bullish/Bearish<br>Market Orientation:<span class="moreDetailsSum">{{uiSnapTable.deltaAdjTotalMarketOrientation | number}}</span>
-                        <div class="tooltipSnap">
-                            <div class="snapshot">
-                                LongStock - ShortStock + dAdj.CallOption <br>
-                                 - dAdj.PutOption
-                            </div>
+                        <div class="tooltipText">
+                          ongStock - ShortStock + dAdj.CallOption <br>- dAdj.PutOption
                         </div>
                     </div>
                     <div class="tooltipGeneral accSummaryImportantInfo">BetaDeltaAdj Bullish/Bearish Mkt Orient:
                       <span class="moreDetailsSum">{{uiSnapTable.betaDeltaAdjTotalMarketOrientation | number :'1.0-0'}}*</span>
-                      <div class="tooltipSnap">
-                        <div class="snapshot">
+                      <div class="tooltipText">
                           Approx. mkt exposure sum
-                        </div>
                       </div>
                       <span class="moreDetailsSum" [ngClass]="{'green' : uiSnapTable.totalMaxRiskedLeverage < 1.3,
                                             'orange': uiSnapTable.totalMaxRiskedLeverage <= 1.5,
@@ -263,7 +241,7 @@ MarketBar
 </table>
 </div>
 <!-- <hr> -->
-<div id="stckTooltip" class="tooltipSnap" (mouseenter)="onMouseEnterStockTooltip()" (mouseleave)="onMouseLeaveStockTooltip()" *ngIf="isShowStockTooltip">
+<div id="stckTooltip" class="tooltipText" (mouseenter)="onMouseEnterStockTooltip()" (mouseleave)="onMouseLeaveStockTooltip()" *ngIf="isShowStockTooltip">
     <span id="stckTooltipName">Name: {{stockTooltipName}}<br></span> 
     <a href="https://uk.tradingview.com/chart/?symbol={{stockTooltipSymbol}}" target="_blank">
         <svg width="28" height="22" viewBox="0 0 28 22" xmlns="http://www.w3.org/2000/svg" >
@@ -286,38 +264,28 @@ MarketBar
 <div class="selectedTempDebug">
 <br><br>Temporary Debug Info:<br>
 <div class="tooltipTempDebug">HandshakeMsgStr:
-    <div class="tooltipSnap">
-        <div class="snapshot">
-            {{handshakeStrFormatted}}
-        </div>
+    <div class="tooltipText">
+      {{handshakeStrFormatted}}
     </div>
 </div>
 <div class="tooltipTempDebug">MarketBarLastClosesStr:
-    <div class="tooltipSnap">
-        <div class="snapshot">
-            {{mktBrLstClsStrFormatted}}
-        </div>
+    <div class="tooltipText">
+      {{mktBrLstClsStrFormatted}}
     </div>
 </div>
 <div class="tooltipTempDebug">HistStr:
-    <div class="tooltipSnap">
-        <div class="snapshot">
-            {{navHistStrFormatted}}
-        </div>
+    <div class="tooltipText">
+      {{navHistStrFormatted}}
     </div>
 </div>
 <div class="tooltipTempDebug">BrAccountSnapshot:
-    <div class="tooltipSnap">
-        <div class="snapshot">
-            {{brAccountSnapshotStrFormatted}}
-        </div>
+    <div class="tooltipText">
+      {{brAccountSnapshotStrFormatted}}
     </div>
 </div>
 <div class="tooltipTempDebug">StockHistData:
-    <div class="tooltipSnap">
-        <div class="snapshot">
-            {{stockHistStrFormatted}}
-        </div>
+    <div class="tooltipText">
+      {{stockHistStrFormatted}}
     </div>
 </div>
 </div>
