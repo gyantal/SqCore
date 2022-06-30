@@ -165,6 +165,7 @@ namespace SqCoreWeb
                             else
                                 switch (p_requestRemainigPath)
                                 {
+                                    // Run any long process (1+ sec) in separate than the WebSocket-processing thread. Otherwise any later message the client sends is queued on the server for seconds and not processed immediately. Resulting in UI unresponsiveness at the client.
                                     case "/dashboard":
                                         DashboardWs.OnWsReceiveAsync(context, webSocket, result, bufferStr);  // no await. There is no need to Wait until all of its async inner methods are completed
                                         break;

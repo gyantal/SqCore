@@ -10,6 +10,7 @@ using System.Net.WebSockets;
 using Microsoft.Extensions.Primitives;
 using BrokerCommon;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace SqCoreWeb
 {
@@ -152,7 +153,7 @@ namespace SqCoreWeb
             BrAccViewerSendNavHist(p_lookbackStart, p_lookbackEndExcl, p_bnchmrkTicker);
 
             sw1.Stop();
-            Utils.Logger.Info($"BrAccViewerSendSnapshotAndHist() ends in {sw1.ElapsedMilliseconds}ms p_bnchmrkTicker: '{p_bnchmrkTicker}'");
+            Utils.Logger.Info($"BrAccViewerSendSnapshotAndHist() ends in {sw1.ElapsedMilliseconds}ms, p_bnchmrkTicker: '{p_bnchmrkTicker}'");
         }
 
         private async void BrAccViewerSendSnapshot()
@@ -414,7 +415,7 @@ namespace SqCoreWeb
                     BrAccViewerSendSnapshotAndHist(lookbackStart, lookbackEndExcl, braccSelectedBnchmkSqTicker);
                     return true;
                 case "BrAccViewer.RefreshSnapshot":
-                    BrAccViewerRefreshSnapshot();
+                    BrAccViewerUpdateStOptPricesAndSendSnapshotTwice();
                     return true;
                 case "BrAccViewer.RefreshMktBrPriorCloses":
                     BrAccViewerSendMarketBarPriorCloses();
@@ -462,7 +463,7 @@ namespace SqCoreWeb
         }
 
         // On the SqCore Linux server, the London user browser RefreshSnapshot-latency: only 380ms. That includes getting message at server + 2 IbUpdateBrAccount() for DC.IM, DC.DB, +  RT price from YF for 120 stocks + And sending back data to client. Pretty fast with all the cleverness.
-        private void BrAccViewerRefreshSnapshot()
+        private void BrAccViewerUpdateStOptPricesAndSendSnapshotTwice()
         {
             // Step 1: Force reload of poss from IB Gateways.
             if (m_braccSelectedNavAsset == null)
@@ -485,12 +486,18 @@ namespace SqCoreWeb
             // Step 2: update the RT prices of only those 30-120 stocks (150ms) that is in the IbPortfolio. Don't need to update all the 700 (later 2000) stocks in MemDb, that is done automatically by RtTimer in every 30min
             // validBrPossAssets is a mix of stocks, options, futures.
             MemDb.DownloadPriorCloseAndLastPriceYF(validBrPossAssets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).ToArray()).TurnAsyncToSyncTask();
+            BrAccViewerSendSnapshot();  // Report to the user immediately after the YF returned the realtime stock prices. YF doesn't have RT option prices.
 
-            // Step 3: send Snapshot to Client.
-            BrAccViewerSendSnapshot();  // Report to the user immediately after the YF returned the realtime stock prices.
-
-            MemDb.DownloadLastPriceOptionsIb(validBrPossAssets.Where(r => r.AssetId.AssetTypeID == AssetType.Option).ToArray());    // can take 7-20 seconds, don't wait it. Report to the user earlier.
-            BrAccViewerSendSnapshot();  // Report to the user 6..16 seconds later again. With the updated option prices.
+            // Step 3: update the RT prices of only those options (7-10sec) that is in the IbPortfolio. If there are no options in the portfolio then it takes only 0 sec.
+            var validBrPossOptions = validBrPossAssets.Where(r => r.AssetId.AssetTypeID == AssetType.Option).ToArray();
+            if (validBrPossOptions.Length == 0) // Dc DeBlan account doesn't have options. No need to run anything in a separate thread.
+                return;
+            // Run any long process (1+ sec) in separate than the WebSocket-processing thread. Otherwise any later message the client sends is queued on the server for seconds and not processed immediately. Resulting in UI unresponsiveness at the client.
+            _ = Task.Run(() =>    // Task.Run() runs it immediately in a separate threod on the ThreadPool
+            {
+                MemDb.DownloadLastPriceOptionsIb(validBrPossOptions);    // can take 7-20 seconds, don't wait it. Report to the user earlier the stock price data.
+                BrAccViewerSendSnapshot();  // Report to the user 6..16 seconds later again. With the updated option prices.
+            }).LogUnobservedTaskExceptions("!Error in BrAccViewerUpdateStOptPricesAndSendSnapshotTwice() sub-thread.");
         }
     }
 }
