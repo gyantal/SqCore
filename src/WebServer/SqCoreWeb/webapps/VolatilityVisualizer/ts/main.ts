@@ -75,8 +75,9 @@ function checkAll(ele) {
   }
 }
 
+const selectedTickers : string[] = ['SPY', 'QQQ', 'TLT'];
 // Under development - Daya
-function onImageClick() {
+function onImageClick(json: any) {
   // console.log('OnClick received.' + index);
   getDocElementById('vixBtn').onclick = () => choseall('volA');
   getDocElementById('impEtpBtn').onclick = () => choseall('etpA');
@@ -84,16 +85,13 @@ function onImageClick() {
   getDocElementById('globalAssetsBtn').onclick = () => choseall('gmA');
   getDocElementById('selectAllBtn').onclick = checkAll;
   getDocElementById('updateAllBtn').onclick = function() {
-    const checkBoxes = document.getElementsByTagName('input') as HTMLCollectionOf<HTMLInputElement>;
-    // const checkboxesChecked: any[] = [];
-    // for (let i = 0; i < checkboxes.length; i++) {
-    //   if (checkboxes[i].checked)
-    //   // const nameCheck = checkboxes[i].name;
-    //     choseall(checkboxes[i].name);
-    //     // console.log('checkbox values', checkboxes[i].name);
-    //     // checkboxesChecked.push(checkboxes[i]);
-    console.log('the length of ', checkBoxes.length);
-    // }
+    const checkBoxes = document.querySelectorAll('input[type=checkbox]:checked') as NodeListOf<Element>;
+    const selectedTickers: string[] =[];
+    for (let i = 0; i < checkBoxes.length; i++) {
+      if ((checkBoxes[i]) && (selectedTickers[i] != checkBoxes[i].id))
+        selectedTickers.push(checkBoxes[i].id);
+    }
+    processingTables(json, selectedTickers);
   };
 }
 
@@ -112,7 +110,8 @@ window.onload = function onLoadWindow() {
   const commo = getQueryVariable('lbp');
   AsyncStartDownloadAndExecuteCbLater('/VolatilityDragVisualizer?commo=' + commo, (json: any) => {
     onReceiveData(json);
-    onImageClick();
+    onImageClick(json);
+    processingTables(json, selectedTickers);
   });
 
   function onReceiveData(json: any) {
@@ -128,13 +127,15 @@ window.onload = function onLoadWindow() {
     getDocElementById('requestTime').innerText = json.requestTime;
     getDocElementById('lastDataTime').innerText = json.lastDataTime;
 
+    // processingVolDragData(json);
     processingVolDragData(json);
     // Setting charts visible after getting data.
     getDocElementById('pctChgCharts').style.visibility = 'visible';
     getDocElementById('lookbackCharts').style.visibility = 'visible';
   }
 
-  function processingVolDragData(json: any) {
+
+  function processingVolDragData(json: any): void {
     const volAssetNamesArray = json.volAssetNames.split(', ');
     const etpAssetNamesArray = json.etpAssetNames.split(', ');
     const gchAssetNamesArray = json.gchAssetNames.split(', ');
@@ -159,7 +160,6 @@ window.onload = function onLoadWindow() {
 
     chBxs += '</p ><p class="center"><button id="selectAllBtn" class="button3" title="Select/Deselect All"/></button>&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;<button id="updateAllBtn" class="button3" title="Update Charts and Tables" id=\'update_all\'></button></p> ';
 
-    // console.log('check box', chBxs);
     const checkBoxes = getDocElementById('idChBxs');
     checkBoxes.innerHTML = chBxs;
 
@@ -171,264 +171,264 @@ window.onload = function onLoadWindow() {
       inputCheck[i].checked;
     }
 
-    volVisualizerTbls(json);
+    // Step 1: make the tickerSelection area work
+    // to keep this selectedTickers varibale current.
 
-    // Under development - Daya
-    function show(min, max) {
-      const tab = (getDocElementById('mytable') as HTMLTableElement);
-      const tab2 = tab.querySelectorAll('tbody tr');
-      console.log(tab2.length);
-      // min = min ? min - 1 : 0;
-      // max = max ? max : tab2.length;
-      // // // tab2.slice(min, max).show();
-      // // console.log('min and max are ', min, max);
-      // // const priceDatagrps: any[] = [];
-      // // for (let i = 0; i < tab2.length; i++)
-      // //   priceDatagrps.push(tab2.slice(i, max));
-      // show(min, max);
-      return false;
-    }
-    show(0, 21);
-  }
-  function volVisualizerTbls(json) {
-    //  Creating data for tables
-    const assetNamesArray = json.assetNames.split(', ');
-    const dailyDatesArray = json.quotesDateVector.split(', ');
+    // Step 2:  Chart 1 // draw it based on selectedTickers
 
-    const volLBPeriod = json.volLBPeri;
+    // Chart 2
 
-    const dailyVolDragsTemp = json.dailyVolDrags.split('ß ');
-    const dailyVolDragsMtx: any[] = [];
-    for (let i = 0; i < dailyVolDragsTemp.length; i++)
-      dailyVolDragsMtx[i] = dailyVolDragsTemp[i].split(',');
+    // table 1
 
-    const dailyVIXMasArray = json.dailyVIXMas.split(', ');
-    const yearListArray = json.yearList.split(', ');
-    const yearMonthListArray = json.yearMonthList.split(', ');
-
-    const yearlyAvgsTemp = json.yearlyAvgs.split('ß ');
-    const yearlyAvgsMtx: any[] = [];
-    for (let i = 0; i < yearlyAvgsTemp.length; i++)
-      yearlyAvgsMtx[i] = yearlyAvgsTemp[i].split(',');
-
-    for (let i = 0; i < yearlyAvgsTemp.length; i++) {
-      for (let j = 0; j < yearlyAvgsMtx[0].length; j++) {
-        if (yearlyAvgsMtx[i][j] == ' 0%')
-          yearlyAvgsMtx[i][j] = '---';
-      }
-    }
-
-    const monthlyAvgsTemp = json.monthlyAvgs.split('ß ');
-    const monthlyAvgsMtx: any[] = [];
-    for (let i = 0; i < monthlyAvgsTemp.length; i++)
-      monthlyAvgsMtx[i] = monthlyAvgsTemp[i].split(',');
-
-    for (let i = 0; i < monthlyAvgsTemp.length; i++) {
-      for (let j = 0; j < monthlyAvgsMtx[0].length; j++) {
-        if (monthlyAvgsMtx[i][j] == ' 0%')
-          monthlyAvgsMtx[i][j] = '---';
-      }
-    }
-
-    const yearlyVIXAvgsArray = json.yearlyVIXAvgs.split(', ');
-    const monthlyVIXAvgsArray = json.monthlyVIXAvgs.split(', ');
-    const yearlyCountsArray = json.yearlyCounts.split(', ');
-    const monthlyCountsArray = json.monthlyCounts.split(', ');
-    const totDays = json.noTotalDays;
-    const vixAvgTot = json.vixAvgTotal;
-    const volDragsAvgsTotalArray = json.volDragsAvgsTotalVec.split(', ');
-    const noColumns = assetNamesArray.length + 3;
-
-    const noInnerYears = yearListArray.length - 2;
-    const noLastYearMonths = yearMonthListArray.length - 10 - noInnerYears * 12;
-
-    const retHistLBPeriods = json.retLBPeris.split(', ');
-    const retHistLBPeriodsNoS = json.retLBPerisNo.split(', ');
-    const retHistLBPeriodsNo: any[] = [];
-    for (let i = 0; i < retHistLBPeriodsNoS.length; i++) retHistLBPeriodsNo[i] = parseInt(retHistLBPeriodsNoS[i]);
-    // const retHistChartLength = json.retHistLBPeri;
-
-    const histRetsTemp = json.histRetMtx.split('ß ');
-    const histRetsMtx: any[] = [];
-    for (let i = 0; i < histRetsTemp.length; i++)
-      histRetsMtx[i] = histRetsTemp[i].split(',');
-
-    const histRets2ChartsTemp = json.histRet2Chart.split('ß ');
-    const histRets2ChartsMtx: any[] = [];
-    for (let i = 0; i < histRets2ChartsTemp.length; i++)
-      histRets2ChartsMtx[i] = histRets2ChartsTemp[i].split(',');
-
-    // Creating the HTML code of tables.
-
-    let currMonthlyVolatilityTbl = '<table class="currDataB"><tr align="center"><td colspan="' + (noColumns - 1) + '" bgcolor="#66CCFF"><b>Current Monthly Volatility Drag</b></td></tr><tr align="center"><td bgcolor="#66CCFF">Date</td><td class="first_name" bgcolor="#66CCFF">VIX MA(' + volLBPeriod + ')</td>';
-    for (let i = 0; i < assetNamesArray.length - 1; i++)
-      currMonthlyVolatilityTbl += '<td class="' + assetNamesArray[i] + '" bgcolor="#66CCFF">' + assetNamesArray[i] + '</td>';
-
-    currMonthlyVolatilityTbl += '<td class="' + assetNamesArray[assetNamesArray.length - 1] + '" bgcolor="#66CCFF">' + assetNamesArray[assetNamesArray.length - 1] + '</td></tr>';
-    currMonthlyVolatilityTbl += '<tr align="center"><td>' + dailyDatesArray[dailyDatesArray.length - 1] + '</td>';
-    currMonthlyVolatilityTbl += '<td class="first_name">' + dailyVIXMasArray[dailyVIXMasArray.length - 1] + '</td>';
-    for (let i = 0; i < assetNamesArray.length; i++)
-      currMonthlyVolatilityTbl += '<td class="' + assetNamesArray[i] + '">' + dailyVolDragsMtx[dailyVolDragsMtx.length - 1][i] + '</td>';
-
-    currMonthlyVolatilityTbl += '</tr></table>';
-
-    let monthlyVolatilityTbl = '<table class="currData"><thead><tr align="center" ><td colspan="' + noColumns + '" bgcolor="#66CCFF"><b>Monthly Volatility Drag by Years and Months</b></td></tr><tr align="center"><td bgcolor="#66CCFF"><span class="years">Only Years</span> / <span class="years">Years+Months</span></td><td bgcolor="#66CCFF">No. Days</td><td bgcolor="#66CCFF">VIX MA(' + volLBPeriod + ')</td>';
-    for (let i = 0; i < assetNamesArray.length - 1; i++)
-      monthlyVolatilityTbl += '<td class="' + assetNamesArray[i] + '" bgcolor="#66CCFF">' + assetNamesArray[i] + '</td>';
-
-    monthlyVolatilityTbl += '<td class="' + assetNamesArray[assetNamesArray.length - 1] + '" bgcolor="#66CCFF">' + assetNamesArray[assetNamesArray.length - 1] + '</td></tr></thead>';
-    monthlyVolatilityTbl += '<tbody><tr class="parent"><td><span class="years">' + yearListArray[0] + '</span></td><td>' + yearlyCountsArray[0] + '</td><td>' + yearlyVIXAvgsArray[0] + '</td>';
-    for (let i = 0; i < assetNamesArray.length; i++)
-      monthlyVolatilityTbl += '<td class="' + assetNamesArray[i] + '">' + yearlyAvgsMtx[0][i] + '</td>';
-
-    for (let i = 1; i < 10; i++) {
-      monthlyVolatilityTbl += '<tr class="child"><td align="right"><i>' + yearMonthListArray[i] + '&emsp;</i></td><td><i>' + monthlyCountsArray[i] + '</i></td><td><i>' + monthlyVIXAvgsArray[i] + '</i></td>';
-      for (let j = 0; j < assetNamesArray.length; j++)
-        monthlyVolatilityTbl += '<td class="' + assetNamesArray[j] + '"><i>' + monthlyAvgsMtx[i][j] + '</i></td>';
-
-      monthlyVolatilityTbl += '</tr>';
-    }
-    for (let k = 0; k < noInnerYears; k++) {
-      monthlyVolatilityTbl += '<tr class="parent"><td><span class="years">' + yearListArray[k + 1] + '</span></td><td>' + yearlyCountsArray[k + 1] + '</td><td>' + yearlyVIXAvgsArray[k + 1] + '</td>';
-      for (let i = 0; i < assetNamesArray.length; i++)
-        monthlyVolatilityTbl += '<td class="' + assetNamesArray[i] + '">' + yearlyAvgsMtx[k + 1][i] + '</td>';
-
-      for (let i = 0; i < 12; i++) {
-        monthlyVolatilityTbl += '<tr class="child"><td align="right"><i>' + yearMonthListArray[10 + k * 12 + i] + '&emsp;</i></td><td><i>' + monthlyCountsArray[10 + k * 12 + i] + '</i></td><td><i>' + monthlyVIXAvgsArray[10 + k * 12 + i] + '</i></td>';
-        for (let j = 0; j < assetNamesArray.length; j++)
-          monthlyVolatilityTbl += '<td class="' + assetNamesArray[j] + '"><i>' + monthlyAvgsMtx[10 + k * 12 + i][j] + '</i></td>';
-
-        monthlyVolatilityTbl += '</tr>';
-      }
-    }
-    monthlyVolatilityTbl += '<tr class="parent" id="lastYearT"><td><span class="years">' + yearListArray[yearListArray.length - 1] + '</span></td><td>' + yearlyCountsArray[yearListArray.length - 1] + '</td><td>' + yearlyVIXAvgsArray[yearListArray.length - 1] + '</td>';
-    for (let i = 0; i < assetNamesArray.length; i++)
-      monthlyVolatilityTbl += '<td class="' + assetNamesArray[i] + '">' + yearlyAvgsMtx[yearListArray.length - 1][i] + '</td>';
-
-    for (let i = 0; i < noLastYearMonths; i++) {
-      monthlyVolatilityTbl += '<tr class="child"><td align="right"><i>' + yearMonthListArray[10 + noInnerYears * 12 + i] + '&emsp;</i></td><td><i>' + monthlyCountsArray[10 + noInnerYears * 12 + i] + '</i></td><td><i>' + monthlyVIXAvgsArray[10 + noInnerYears * 12 + i] + '</i></td>';
-      for (let j = 0; j < assetNamesArray.length; j++)
-        monthlyVolatilityTbl += '<td class="' + assetNamesArray[j] + '"><i>' + monthlyAvgsMtx[10 + noInnerYears * 12 + i][j] + '</i></td>';
-
-      monthlyVolatilityTbl += '</tr>';
-    }
-    monthlyVolatilityTbl += '<tr class="parent" style="cursor: text"><td><span class="total">Total 2004-' + yearListArray[yearListArray.length - 1] + '</span></td><td>' + totDays + '</td><td>' + vixAvgTot + '</td>';
-    for (let i = 0; i < assetNamesArray.length; i++)
-      monthlyVolatilityTbl += '<td class="' + assetNamesArray[i] + '">' + volDragsAvgsTotalArray[i] + '</td>';
-
-    monthlyVolatilityTbl += '</tr></tbody></table>';
-
-    let recentperformanceTbl = '<table class="currDataB"><tr align="center"><td colspan="' + (noColumns - 2) + '" bgcolor="#66CCFF"><b>Recent Performance of Stocks - Percent Changes of Prices</b></td></tr><tr align="center"><td bgcolor="#66CCFF"></td>';
-    for (let i = 0; i < assetNamesArray.length - 1; i++)
-      recentperformanceTbl += '<td class="' + assetNamesArray[i] + '" bgcolor="#66CCFF">' + assetNamesArray[i] + '</td>';
-
-    recentperformanceTbl += '<td class="' + assetNamesArray[assetNamesArray.length - 1] + '" bgcolor="#66CCFF">' + assetNamesArray[assetNamesArray.length - 1] + '</td></tr>';
-    for (let j = 0; j < retHistLBPeriods.length; j++) {
-      recentperformanceTbl += '<tr align="center"><td>' + retHistLBPeriods[j] + '</td>';
-      for (let i = 0; i < assetNamesArray.length; i++)
-        recentperformanceTbl += '<td class="' + assetNamesArray[i] + '">' + histRetsMtx[j][i] + '</td>';
-
-      recentperformanceTbl += '</tr>';
-    }
-    recentperformanceTbl += '</table>';
-
-
-    let volatilityHistoryTbl = '<table id="mytable" class="currDataB2"><thead><tr align="center"><td colspan="' + (noColumns - 1) + '" bgcolor="#66CCFF"><b>Monthly Volatility Drag History</b></td></tr><tr align="center"><td bgcolor="#66CCFF"><select id="limit"><option value="5">1-Week</option><option value="21" selected>1-Month</option><option value="63">3-Month</option><option value="126">6-Month</option><option value="252">1-Year</option><option value="' + dailyDatesArray.length + '">All</option></select ></td><td bgcolor="#66CCFF">VIX MA(' + volLBPeriod + ')</td>';
-    for (let i = 0; i < assetNamesArray.length - 1; i++)
-      volatilityHistoryTbl += '<td class="' + assetNamesArray[i] + '" bgcolor="#66CCFF">' + assetNamesArray[i] + '</td>';
-
-    volatilityHistoryTbl += '<td class="' + assetNamesArray[assetNamesArray.length - 1] + '" bgcolor="#66CCFF">' + assetNamesArray[assetNamesArray.length - 1] + '</td></tr></thead><tbody>';
-    for (let j = dailyVolDragsMtx.length - 1; j >= 0; j--) {
-      volatilityHistoryTbl += '<tr align="center"><td>' + dailyDatesArray[j] + '</td>';
-      volatilityHistoryTbl += '<td>' + dailyVIXMasArray[j] + '</td>';
-
-      for (let i = 0; i < assetNamesArray.length; i++)
-        volatilityHistoryTbl += '<td class="' + assetNamesArray[i] + '">' + dailyVolDragsMtx[j][i] + '</td>';
-
-      volatilityHistoryTbl += '</tr>';
-    }
-    volatilityHistoryTbl += '</tbody></table>';
-
-    // "Sending" data to HTML file.
-    const CurrentMonthlyMtx = getDocElementById('idCurrMonthly');
-    CurrentMonthlyMtx.innerHTML = currMonthlyVolatilityTbl;
-    const monthlyVolatilityMtx = getDocElementById('idMonthlyVolatility');
-    monthlyVolatilityMtx.innerHTML = monthlyVolatilityTbl;
-    const recentPerformanceMtx = getDocElementById('idRecentPerformance');
-    recentPerformanceMtx.innerHTML = recentperformanceTbl;
-    const volatilityHistoryMtx = getDocElementById('idVolatilityHistory');
-    volatilityHistoryMtx.innerHTML = volatilityHistoryTbl;
-
-    const lengthOfChart = 20;
-    const indOfLength = retHistLBPeriodsNo.indexOf(lengthOfChart);
-
-    const lengthSubSums: any[] = [];
-    lengthSubSums[0] = 0;
-    lengthSubSums[1] = retHistLBPeriodsNo[0];
-    for (let i = 2; i < retHistLBPeriodsNo.length + 1; i++)
-      lengthSubSums[i] = lengthSubSums[i - 1] + retHistLBPeriodsNo[i - 1];
-
-    const chartStart = lengthSubSums[indOfLength];
-    const nCurrData = lengthOfChart + 1;
-    const noAssets = assetNamesArray.length;
-
-    const assChartMtx: any[] = [];
-    for (let i = 0; i < nCurrData; i++) {
-      const dateArray = dailyDatesArray[dailyDatesArray.length - nCurrData + i];
-      const dailyVolDragsArray = dailyVolDragsMtx[chartStart - 1 + i];
-      assChartMtx.push([dateArray, ...dailyVolDragsArray]);
-    }
-
-    const xLabel: string = 'Dates';
-    const yLabel: string = 'Percentage Change';
-    const yScaleTickFormat: string = '%';
-    d3.selectAll('#pctChgChrt > *').remove();
-    const lineChrtDiv = getDocElementById('pctChgChrt');
-    const lineChrtTooltip = getDocElementById('tooltipChart');
-    sqLineChartGenerator(noAssets, nCurrData, assetNamesArray, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip);
-
-    getDocElementById('idChartLength').innerHTML = '<strong>Percentage Changes of Prices in the Last &emsp;<select id="limit2"><option value="1">1 Day</option><option value="3">3 Days</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="20" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[indOfLength] + '</strong >';
-    pctMonthlyVolChrt(indOfLength);
-    // pctChrt(indOfLength);
-
-    getDocElementById('limit2').onchange = function() {
-      const lengthOfChart = parseInt((document.getElementById('limit2') as HTMLSelectElement).value);
-      const indOfLength = retHistLBPeriodsNo.indexOf(lengthOfChart);
-      pctMonthlyVolChrt(indOfLength);
-    };
-
-    // Under development - Daya
-    getDocElementById('limit').onchange = function() {
-      const volLBPeriod = parseInt((document.getElementById('limit') as HTMLSelectElement).value);
-      const tab = (getDocElementById('mytable') as HTMLTableElement);
-      // const tab2 = tab.querySelectorAll('tbody tr');
-      // tab.style.display = 'none';
-      // const tblArr: any[] = [];
-      const tabRows = tab.rows;
-      for (let i = 0; i < volLBPeriod; i ++) {
-        if (i < tabRows.length)
-          tabRows[i].style.display = 'block';
-        else
-          tabRows[i].style.display = 'none';
-      }
-      // tabRows[i].style.display = 'block';
-    };
-
-    // Declaring data sets to charts.
-    function pctMonthlyVolChrt(indOfLength) {
-      const chartStart = lengthSubSums[indOfLength];
-      const lookbackChartMtx: any[] = [];
-      for (let i = 0; i < nCurrData; i++) {
-        const dateArray = dailyDatesArray[dailyDatesArray.length - nCurrData + i];
-        const histReturnsArray = histRets2ChartsMtx[chartStart - 1 + i];
-        lookbackChartMtx.push([dateArray, ...histReturnsArray]);
-      }
-      d3.selectAll('#pctChgLookbackChrt > *').remove();
-      const lineChrtDiv1 = getDocElementById('pctChgLookbackChrt');
-      sqLineChartGenerator(noAssets, nCurrData, assetNamesArray, lookbackChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv1, lineChrtTooltip);
-    }
+    // Table 2
   }
   console.log('SqCore: window.onload() END.');
 };
+
+
+function processingTables(json: any, selectedTickers: string[]) {
+  //  Creating data for tables
+  const assetNamesArray = json.assetNames.split(', ');
+  console.log(assetNamesArray.length);
+  const dailyDatesArray = json.quotesDateVector.split(', ');
+
+  const volLBPeriod = json.volLBPeri;
+
+  const dailyVolDragsTemp = json.dailyVolDrags.split('ß ');
+  const dailyVolDragsMtx: any[] = [];
+  for (let i = 0; i < dailyVolDragsTemp.length; i++)
+    dailyVolDragsMtx[i] = dailyVolDragsTemp[i].split(',');
+
+  const dailyVIXMasArray = json.dailyVIXMas.split(', ');
+  const yearListArray = json.yearList.split(', ');
+  const yearMonthListArray = json.yearMonthList.split(', ');
+
+  const yearlyAvgsTemp = json.yearlyAvgs.split('ß ');
+  const yearlyAvgsMtx: any[] = [];
+  for (let i = 0; i < yearlyAvgsTemp.length; i++)
+    yearlyAvgsMtx[i] = yearlyAvgsTemp[i].split(',');
+
+  for (let i = 0; i < yearlyAvgsTemp.length; i++) {
+    for (let j = 0; j < yearlyAvgsMtx[0].length; j++) {
+      if (yearlyAvgsMtx[i][j] == ' 0%')
+        yearlyAvgsMtx[i][j] = '---';
+    }
+  }
+
+  const monthlyAvgsTemp = json.monthlyAvgs.split('ß ');
+  const monthlyAvgsMtx: any[] = [];
+  for (let i = 0; i < monthlyAvgsTemp.length; i++)
+    monthlyAvgsMtx[i] = monthlyAvgsTemp[i].split(',');
+
+  for (let i = 0; i < monthlyAvgsTemp.length; i++) {
+    for (let j = 0; j < monthlyAvgsMtx[0].length; j++) {
+      if (monthlyAvgsMtx[i][j] == ' 0%')
+        monthlyAvgsMtx[i][j] = '---';
+    }
+  }
+
+  const yearlyVIXAvgsArray = json.yearlyVIXAvgs.split(', ');
+  const monthlyVIXAvgsArray = json.monthlyVIXAvgs.split(', ');
+  const yearlyCountsArray = json.yearlyCounts.split(', ');
+  const monthlyCountsArray = json.monthlyCounts.split(', ');
+  const totDays = json.noTotalDays;
+  const vixAvgTot = json.vixAvgTotal;
+  const volDragsAvgsTotalArray = json.volDragsAvgsTotalVec.split(', ');
+  const noColumns = selectedTickers.length + 3;
+
+  const noInnerYears = yearListArray.length - 2;
+  const noLastYearMonths = yearMonthListArray.length - 10 - noInnerYears * 12;
+
+  const retHistLBPeriods = json.retLBPeris.split(', ');
+  const retHistLBPeriodsNoS = json.retLBPerisNo.split(', ');
+  const retHistLBPeriodsNo: any[] = [];
+  for (let i = 0; i < retHistLBPeriodsNoS.length; i++) retHistLBPeriodsNo[i] = parseInt(retHistLBPeriodsNoS[i]);
+  // const retHistChartLength = json.retHistLBPeri;
+
+  const histRetsTemp = json.histRetMtx.split('ß ');
+  const histRetsMtx: any[] = [];
+  for (let i = 0; i < histRetsTemp.length; i++)
+    histRetsMtx[i] = histRetsTemp[i].split(',');
+
+  const histRets2ChartsTemp = json.histRet2Chart.split('ß ');
+  const histRets2ChartsMtx: any[] = [];
+  for (let i = 0; i < histRets2ChartsTemp.length; i++)
+    histRets2ChartsMtx[i] = histRets2ChartsTemp[i].split(',');
+
+  // Creating the HTML code of tables.
+
+  let currMonthlyVolatilityTbl = '<table class="currDataB"><tr align="center"><td colspan="' + (noColumns - 1) + '" bgcolor="#66CCFF"><b>Current Monthly Volatility Drag</b></td></tr><tr align="center"><td bgcolor="#66CCFF">Date</td><td class="first_name" bgcolor="#66CCFF">VIX MA(' + volLBPeriod + ')</td>';
+  for (let i = 0; i < selectedTickers.length - 1; i++)
+    currMonthlyVolatilityTbl += '<td class="' + selectedTickers[i] + '" bgcolor="#66CCFF">' + selectedTickers[i] + '</td>';
+
+  currMonthlyVolatilityTbl += '<td class="' + selectedTickers[selectedTickers.length - 1] + '" bgcolor="#66CCFF">' + selectedTickers[selectedTickers.length - 1] + '</td></tr>';
+  currMonthlyVolatilityTbl += '<tr align="center"><td>' + dailyDatesArray[dailyDatesArray.length - 1] + '</td>';
+  currMonthlyVolatilityTbl += '<td class="first_name">' + dailyVIXMasArray[dailyVIXMasArray.length - 1] + '</td>';
+  for (let i = 0; i < selectedTickers.length; i++)
+    currMonthlyVolatilityTbl += '<td class="' + selectedTickers[i] + '">' + dailyVolDragsMtx[dailyVolDragsMtx.length - 1][i] + '</td>';
+
+  currMonthlyVolatilityTbl += '</tr></table>';
+
+  let monthlyVolatilityTbl = '<table class="currData"><thead><tr align="center" ><td colspan="' + noColumns + '" bgcolor="#66CCFF"><b>Monthly Volatility Drag by Years and Months</b></td></tr><tr align="center"><td bgcolor="#66CCFF"><span class="years">Only Years</span> / <span class="years">Years+Months</span></td><td bgcolor="#66CCFF">No. Days</td><td bgcolor="#66CCFF">VIX MA(' + volLBPeriod + ')</td>';
+  for (let i = 0; i < selectedTickers.length - 1; i++)
+    monthlyVolatilityTbl += '<td class="' + selectedTickers[i] + '" bgcolor="#66CCFF">' + selectedTickers[i] + '</td>';
+
+  monthlyVolatilityTbl += '<td class="' + selectedTickers[selectedTickers.length - 1] + '" bgcolor="#66CCFF">' + selectedTickers[selectedTickers.length - 1] + '</td></tr></thead>';
+  monthlyVolatilityTbl += '<tbody><tr class="parent"><td><span class="years">' + yearListArray[0] + '</span></td><td>' + yearlyCountsArray[0] + '</td><td>' + yearlyVIXAvgsArray[0] + '</td>';
+  for (let i = 0; i < selectedTickers.length; i++)
+    monthlyVolatilityTbl += '<td class="' + selectedTickers[i] + '">' + yearlyAvgsMtx[0][i] + '</td>';
+
+  for (let i = 1; i < 10; i++) {
+    monthlyVolatilityTbl += '<tr class="child"><td align="right"><i>' + yearMonthListArray[i] + '&emsp;</i></td><td><i>' + monthlyCountsArray[i] + '</i></td><td><i>' + monthlyVIXAvgsArray[i] + '</i></td>';
+    for (let j = 0; j < selectedTickers.length; j++)
+      monthlyVolatilityTbl += '<td class="' + selectedTickers[j] + '"><i>' + monthlyAvgsMtx[i][j] + '</i></td>';
+
+    monthlyVolatilityTbl += '</tr>';
+  }
+  for (let k = 0; k < noInnerYears; k++) {
+    monthlyVolatilityTbl += '<tr class="parent"><td><span class="years">' + yearListArray[k + 1] + '</span></td><td>' + yearlyCountsArray[k + 1] + '</td><td>' + yearlyVIXAvgsArray[k + 1] + '</td>';
+    for (let i = 0; i < selectedTickers.length; i++)
+      monthlyVolatilityTbl += '<td class="' + selectedTickers[i] + '">' + yearlyAvgsMtx[k + 1][i] + '</td>';
+
+    for (let i = 0; i < 12; i++) {
+      monthlyVolatilityTbl += '<tr class="child"><td align="right"><i>' + yearMonthListArray[10 + k * 12 + i] + '&emsp;</i></td><td><i>' + monthlyCountsArray[10 + k * 12 + i] + '</i></td><td><i>' + monthlyVIXAvgsArray[10 + k * 12 + i] + '</i></td>';
+      for (let j = 0; j < selectedTickers.length; j++)
+        monthlyVolatilityTbl += '<td class="' + selectedTickers[j] + '"><i>' + monthlyAvgsMtx[10 + k * 12 + i][j] + '</i></td>';
+
+      monthlyVolatilityTbl += '</tr>';
+    }
+  }
+  monthlyVolatilityTbl += '<tr class="parent" id="lastYearT"><td><span class="years">' + yearListArray[yearListArray.length - 1] + '</span></td><td>' + yearlyCountsArray[yearListArray.length - 1] + '</td><td>' + yearlyVIXAvgsArray[yearListArray.length - 1] + '</td>';
+  for (let i = 0; i < selectedTickers.length; i++)
+    monthlyVolatilityTbl += '<td class="' + selectedTickers[i] + '">' + yearlyAvgsMtx[yearListArray.length - 1][i] + '</td>';
+
+  for (let i = 0; i < noLastYearMonths; i++) {
+    monthlyVolatilityTbl += '<tr class="child"><td align="right"><i>' + yearMonthListArray[10 + noInnerYears * 12 + i] + '&emsp;</i></td><td><i>' + monthlyCountsArray[10 + noInnerYears * 12 + i] + '</i></td><td><i>' + monthlyVIXAvgsArray[10 + noInnerYears * 12 + i] + '</i></td>';
+    for (let j = 0; j < selectedTickers.length; j++)
+      monthlyVolatilityTbl += '<td class="' + selectedTickers[j] + '"><i>' + monthlyAvgsMtx[10 + noInnerYears * 12 + i][j] + '</i></td>';
+
+    monthlyVolatilityTbl += '</tr>';
+  }
+  monthlyVolatilityTbl += '<tr class="parent" style="cursor: text"><td><span class="total">Total 2004-' + yearListArray[yearListArray.length - 1] + '</span></td><td>' + totDays + '</td><td>' + vixAvgTot + '</td>';
+  for (let i = 0; i < selectedTickers.length; i++)
+    monthlyVolatilityTbl += '<td class="' + selectedTickers[i] + '">' + volDragsAvgsTotalArray[i] + '</td>';
+
+  monthlyVolatilityTbl += '</tr></tbody></table>';
+
+  let recentperformanceTbl = '<table class="currDataB"><tr align="center"><td colspan="' + (noColumns - 2) + '" bgcolor="#66CCFF"><b>Recent Performance of Stocks - Percent Changes of Prices</b></td></tr><tr align="center"><td bgcolor="#66CCFF"></td>';
+  for (let i = 0; i < selectedTickers.length - 1; i++)
+    recentperformanceTbl += '<td class="' + selectedTickers[i] + '" bgcolor="#66CCFF">' + selectedTickers[i] + '</td>';
+
+  recentperformanceTbl += '<td class="' + selectedTickers[selectedTickers.length - 1] + '" bgcolor="#66CCFF">' + selectedTickers[selectedTickers.length - 1] + '</td></tr>';
+  for (let j = 0; j < retHistLBPeriods.length; j++) {
+    recentperformanceTbl += '<tr align="center"><td>' + retHistLBPeriods[j] + '</td>';
+    for (let i = 0; i < selectedTickers.length; i++)
+      recentperformanceTbl += '<td class="' + selectedTickers[i] + '">' + histRetsMtx[j][i] + '</td>';
+
+    recentperformanceTbl += '</tr>';
+  }
+  recentperformanceTbl += '</table>';
+
+
+  let volatilityHistoryTbl = '<table id="mytable" class="currDataB2"><thead><tr align="center"><td colspan="' + (noColumns - 1) + '" bgcolor="#66CCFF"><b>Monthly Volatility Drag History</b></td></tr><tr align="center"><td bgcolor="#66CCFF"><select id="limit"><option value="5">1-Week</option><option value="21" selected>1-Month</option><option value="63">3-Month</option><option value="126">6-Month</option><option value="252">1-Year</option><option value="' + dailyDatesArray.length + '">All</option></select ></td><td bgcolor="#66CCFF">VIX MA(' + volLBPeriod + ')</td>';
+  for (let i = 0; i < selectedTickers.length - 1; i++)
+    volatilityHistoryTbl += '<td class="' + selectedTickers[i] + '" bgcolor="#66CCFF">' + selectedTickers[i] + '</td>';
+
+  volatilityHistoryTbl += '<td class="' + selectedTickers[selectedTickers.length - 1] + '" bgcolor="#66CCFF">' + selectedTickers[selectedTickers.length - 1] + '</td></tr></thead><tbody>';
+  for (let j = dailyVolDragsMtx.length - 1; j >= 0; j--) {
+    volatilityHistoryTbl += '<tr align="center"><td>' + dailyDatesArray[j] + '</td>';
+    volatilityHistoryTbl += '<td>' + dailyVIXMasArray[j] + '</td>';
+
+    for (let i = 0; i < selectedTickers.length; i++)
+      volatilityHistoryTbl += '<td class="' + selectedTickers[i] + '">' + dailyVolDragsMtx[j][i] + '</td>';
+
+    volatilityHistoryTbl += '</tr>';
+  }
+  volatilityHistoryTbl += '</tbody></table>';
+
+  // "Sending" data to HTML file.
+  const CurrentMonthlyMtx = getDocElementById('idCurrMonthly');
+  CurrentMonthlyMtx.innerHTML = currMonthlyVolatilityTbl;
+  const monthlyVolatilityMtx = getDocElementById('idMonthlyVolatility');
+  monthlyVolatilityMtx.innerHTML = monthlyVolatilityTbl;
+  const recentPerformanceMtx = getDocElementById('idRecentPerformance');
+  recentPerformanceMtx.innerHTML = recentperformanceTbl;
+  const volatilityHistoryMtx = getDocElementById('idVolatilityHistory');
+  volatilityHistoryMtx.innerHTML = volatilityHistoryTbl;
+
+  const lengthOfChart = 20;
+  const indOfLength = retHistLBPeriodsNo.indexOf(lengthOfChart);
+
+  const lengthSubSums: any[] = [];
+  lengthSubSums[0] = 0;
+  lengthSubSums[1] = retHistLBPeriodsNo[0];
+  for (let i = 2; i < retHistLBPeriodsNo.length + 1; i++)
+    lengthSubSums[i] = lengthSubSums[i - 1] + retHistLBPeriodsNo[i - 1];
+
+  const chartStart = lengthSubSums[indOfLength];
+  const nCurrData = lengthOfChart + 1;
+  const noAssets = selectedTickers.length;
+
+  const assChartMtx: any[] = [];
+  for (let i = 0; i < nCurrData; i++) {
+    const dateArray = dailyDatesArray[dailyDatesArray.length - nCurrData + i];
+    const dailyVolDragsArray = dailyVolDragsMtx[chartStart - 1 + i];
+    assChartMtx.push([dateArray, ...dailyVolDragsArray]);
+  }
+
+  const xLabel: string = 'Dates';
+  const yLabel: string = 'Percentage Change';
+  const yScaleTickFormat: string = '%';
+  d3.selectAll('#pctChgChrt > *').remove();
+  const lineChrtDiv = getDocElementById('pctChgChrt');
+  const lineChrtTooltip = getDocElementById('tooltipChart');
+  sqLineChartGenerator(noAssets, nCurrData, selectedTickers, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip);
+
+  getDocElementById('idChartLength').innerHTML = '<strong>Percentage Changes of Prices in the Last &emsp;<select id="limit2"><option value="1">1 Day</option><option value="3">3 Days</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="20" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[indOfLength] + '</strong >';
+  pctMonthlyVolChrt(indOfLength);
+  // pctChrt(indOfLength);
+
+  getDocElementById('limit2').onchange = function() {
+    const lengthOfChart = parseInt((document.getElementById('limit2') as HTMLSelectElement).value);
+    const indOfLength = retHistLBPeriodsNo.indexOf(lengthOfChart);
+    pctMonthlyVolChrt(indOfLength);
+  };
+
+  // Declaring data sets to charts.
+  function pctMonthlyVolChrt(indOfLength) {
+    const chartStart = lengthSubSums[indOfLength];
+    const lookbackChartMtx: any[] = [];
+    for (let i = 0; i < nCurrData; i++) {
+      const dateArray = dailyDatesArray[dailyDatesArray.length - nCurrData + i];
+      const histReturnsArray = histRets2ChartsMtx[chartStart - 1 + i];
+      lookbackChartMtx.push([dateArray, ...histReturnsArray]);
+    }
+    d3.selectAll('#pctChgLookbackChrt > *').remove();
+    const lineChrtLookback = getDocElementById('pctChgLookbackChrt');
+    sqLineChartGenerator(noAssets, nCurrData, selectedTickers, lookbackChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtLookback, lineChrtTooltip);
+  }
+
+  // under development - Daya
+  getDocElementById('limit').onchange = function() {
+    const volLBPeriod = parseInt((document.getElementById('limit') as HTMLSelectElement).value);
+    const volatilityHistoryTbl: any[] = [];
+    const tab = (getDocElementById('mytable') as HTMLTableElement);
+    const tabRows = tab.rows;
+    for (let i = 0; i < volLBPeriod; i ++) {
+      volatilityHistoryTbl.push(tabRows[i]);
+      volatilityHistoryTbl[i].style.display = 'block';
+    }
+  };
+
+  const collapseTbl = document.getElementsByClassName('parent') as HTMLCollectionOf<Element>;
+  // const toggleClick: boolean = true;
+  for (let i = 0; i < collapseTbl.length; i++) {
+    collapseTbl[i].addEventListener('click', function() {
+      const childToggle = document.getElementsByClassName('child') as HTMLCollectionOf<Element>;
+      for (let j = 0; j < childToggle.length; j++)
+        childToggle[j].classList.toggle('child');
+    }, false);
+  };
+}
 
 console.log('SqCore: Script END');

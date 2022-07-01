@@ -337,81 +337,6 @@ table.resData{
   font-size: 16px;
 }
 
-/* 
-.buttonHelp {
-  background: url("../images/help.png");
-  background-size: contain;
-  border: none;
-  color: white;
-  padding: 10px 10px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 5px;
-  vertical-align: top;
-  cursor: pointer;
-} */
-
-/* Tooltip container */
-.tooltip {
-  position: relative;
-  display: inline-block;
-
-}
-
-/* Tooltip text */
-.tooltip .tooltiptext {
-  visibility: hidden;
-  min-width: 200px;
-  max-width: 2000px;
-  font-size: 12px;
-  background-color: dodgerblue;
-  color: gainsboro;
-  text-align: center;
-  padding: 5px 0;
-  border-radius: 6px;
-
-  position: absolute;
-  z-index: 1;
-  top: -5px;
-  left: 105%;
-}
-
-/* Show the tooltip text when you mouse over the tooltip container */
-.tooltip:hover .tooltiptext {
-  visibility: visible;
-}
-
-.demo-container {
-  box-sizing: border-box;
-  width: 800px;
-  height: 400px;
-  padding: 20px 15px 15px 15px;
-  margin: 5px auto 10px auto;
-  border: 1px solid #ddd;
-  /*background: #0094ff;*/
-  font-size: 10px;
-  background: #F4F6F6; /* For browsers that do not support gradients */
-  background: linear-gradient(90deg, #D6EAF8, #D1F2EB); /* Standard syntax */
-  /*background: linear-gradient(#f6f6f6 0, #fff 50px);
-  background: -o-linear-gradient(#f6f6f6 0, #fff 50px);
-  background: -ms-linear-gradient(#f6f6f6 0, #fff 50px);
-  background: -moz-linear-gradient(#f6f6f6 0, #fff 50px);
-  background: -webkit-linear-gradient(#f6f6f6 0, #fff 50px);
-  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
-  -o-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-  -ms-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-  -moz-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-  -webkit-box-shadow: 0 3px 10px rgba(0,0,0,0.1);*/
-}
-
-.demo-placeholder {
-width: 100%;
-height: 100%;
-font-size: 12px;
-line-height: 1.2em;
-}
-
 .legend table {
 border-spacing: 5px;
 }
@@ -426,6 +351,9 @@ tr.header {
 }
 .parent {
   cursor: pointer
+}
+.child {
+  display: none;
 }
 .hide {
   cursor: pointer;
