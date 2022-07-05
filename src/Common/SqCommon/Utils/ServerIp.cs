@@ -34,6 +34,14 @@ namespace SqCommon
             }
         }
 
+        public static string HealthMonitorPublicIpv6 // using Ipv6 internally is future proof when all the internet will run on IPv6
+        {
+            get
+            {
+                return "::ffff:" + HealthMonitorPublicIp;
+            }
+        }
+
         public static string AtsVirtualBrokerServerPublicIpForClients // AutoTraderServer
         {
             get

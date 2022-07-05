@@ -140,7 +140,7 @@ namespace HealthMonitor
             ColorConsole.WriteLine(ConsoleColor.Magenta, "----  (type and press Enter)  ----");
             Console.WriteLine("1. Say Hello. Don't do anything. Check responsivenes.");
             Console.WriteLine("2. Crash App intentionaly (for simulation purposes).");
-            Console.WriteLine("3. Test Twilio phone call service.");
+            Console.WriteLine("3. Test Email & Twilio phone call service.");
             Console.WriteLine("4. Test AmazonAWS API:DescribeInstances()");
             Console.WriteLine("5. VirtualBroker Report: show on Console.");
             Console.WriteLine("6. VirtualBroker Report: send Html email.");
@@ -165,7 +165,7 @@ namespace HealthMonitor
                     TestIntentionalCrash();
                     break;
                 case "3":
-                    TestPhoneCall();
+                    TestEmailAndPhoneCall();
                     break;
                 case "4":
                     HealthMonitor.g_healthMonitor.CheckAmazonAwsInstances_Elapsed("ConsoleMenu");
@@ -183,13 +183,21 @@ namespace HealthMonitor
             return string.Empty;
         }
 
-        public static async void TestPhoneCall()
+        public static async void TestEmailAndPhoneCall()
         {
             Console.WriteLine("Calling phone number via Twilio. It should ring out.");
             Utils.Logger.Info("Calling phone number via Twilio. It should ring out.");
 
             try
             {
+                new Email
+                {
+                    ToAddresses = Utils.Configuration["Emails:Gyant"],
+                    Subject = "SqHealthMonitor: Test Email",
+                    Body = "This is a test email from Health Monitor.",
+                    IsBodyHtml = false
+                }.Send();
+
                 var call = new PhoneCall
                 {
                     FromNumber = Caller.Gyantal,
@@ -208,7 +216,7 @@ namespace HealthMonitor
             }
             catch (Exception e)
             {
-                Utils.Logger.Error(e, "TestPhoneCall(): Exception in TestPhoneCall().");
+                Utils.Logger.Error(e, "TestEmailAndPhoneCall(): Exception in TestEmailAndPhoneCall().");
             }
         }
 

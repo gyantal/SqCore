@@ -45,66 +45,53 @@ namespace SqCoreWeb
                 // Otherwise, we redirect user to https://sqcore.net/UserAccount/login
 
                 // if user is unknown or not allowed: log it but allow some files (jpeg) through, but not html or APIs
-                
 
-                string ext = Path.GetExtension(httpContext.Request.Path.Value) ?? string.Empty;
-                bool isAllowedRequest = false;
-                
-                if (ext.Equals(".html", StringComparison.OrdinalIgnoreCase) || ext.Equals(".htm", StringComparison.OrdinalIgnoreCase))   // 1. HTML requests
-                {
-                    // Allow without user login only for the main domain's index.html ("sqcore.net/index.html"),  
-                    // For subdomains, like "dashboard.sqcore.net/index.html" require UserLogin
-                    if (((Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") || httpContext.Request.Host.Host.StartsWith("sqcore.net")) &&
-                        (httpContext.Request.Path.Value?.Equals("/index.html", StringComparison.OrdinalIgnoreCase) ?? false))
-                    { // if it is HTML only allow '/index.html' through
-                        isAllowedRequest = true;    // don't replace raw main index.html file by in-memory. Let it through. A brotli version will be delivered, which is better then in-memory non-compressed.
-                        
-                        // Problem: after Logout/Login Chrome takes index(Logout version).html from disk-cache, instead of reload.
-                        // Because when it is read from 'index.html.br' brottli, it adds etag, and last-modified headers.
-                        // So, the index(Logout version).html should NOT be cached, while the index(Login version).html should be cached.
-                        // Console.WriteLine($"Adding CacheControl NoCache to header '{httpContext.Request.Host} {httpContext.Request.Path}'");
-                        Utils.Logger.Info($"Adding CacheControl NoCache to header '{httpContext.Request.Host} {httpContext.Request.Path}'");
-                        httpContext.Response.GetTypedHeaders().CacheControl =
-                            new Microsoft.Net.Http.Headers.CacheControlHeaderValue()
-                            {
-                                NoCache = true,
-                                NoStore = true,
-                                MustRevalidate = true
-                            };
-                    }
-                }
-                else if (String.IsNullOrEmpty(ext))  // 2. API requests
-                {
-                    if (httpContext.Request.Path.Value?.Equals("/UserAccount/login", StringComparison.OrdinalIgnoreCase) ?? false)   // if it is an API call only allow '/UserAccount/login' through. 
-                        isAllowedRequest = true;
-                    if (httpContext.Request.Path.Value?.Equals("/WebServer/ping", StringComparison.OrdinalIgnoreCase) ?? false)   // HealthMonitor checks https://sqcore.net/WebServer/ping every 9 minutes, so let's allow it without GoogleAuth
-                        isAllowedRequest = true;
-                    if ((Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") && (httpContext.Request.Path.Value?.StartsWith("/hub/", StringComparison.OrdinalIgnoreCase) ?? false))
-                        isAllowedRequest = true;    // in Development, when 'ng served'-d with proxy redirection from http://localhost:4202 to https://localhost:5001 , Don't force Google Auth, because 
-                    if ((Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") && (httpContext.Request.Path.Value?.StartsWith("/ws/", StringComparison.OrdinalIgnoreCase) ?? false))
-                        isAllowedRequest = true;
-                }
-                else 
-                    isAllowedRequest = true;    // 3. allow jpeg files and other resources, like favicon.ico
+                string ipv6Str = WsUtils.GetRequestIPv6(httpContext, false);
+                bool isAllowedRequest = ((Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") && httpContext.Request.Host.Host.StartsWith("127.0.0.1")) || 
+                    (ipv6Str == ServerIp.HealthMonitorPublicIpv6);  // HealthMonitor checks https://sqcore.net/WebServer/ping every 9 minutes, so let's allow it (and all others) without GoogleAuth
 
-                if ((Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") && httpContext.Request.Host.Host.StartsWith("127.0.0.1"))
-                    isAllowedRequest = true;    // vscode-chrome-debug runs Chrome with --remote-debugging-port=9222. On that Gmail login is not possible. Result "This browser or app may not be secure.". So, don't require user logins if Chrome-Debug is used
-
-                string ipStr = WsUtils.GetRequestIPv6(httpContext, false);
-                if (isAllowedRequest)
+                if (!isAllowedRequest)
                 {
-                    // allow the requests. Let it through to the other handlers in the pipeline.
-                    bool isExpectedAllowed = (ipStr == ServerIp.HealthMonitorPublicIp); // Request.Path = "/WebServer/ping". if it comes from a known IP, don't write error message out to console/log.
-                    if (!isExpectedAllowed)
+                    string ext = Path.GetExtension(httpContext.Request.Path.Value) ?? string.Empty;
+                    if (ext.Equals(".html", StringComparison.OrdinalIgnoreCase) || ext.Equals(".htm", StringComparison.OrdinalIgnoreCase))   // 1. HTML requests
                     {
-                        string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow:HH':'mm':'ss.f}#Uknown user, but we allow request: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {ipStr}. Falling through to further Kestrel middleware without redirecting to '/UserAccount/login'.");
-                        Console.WriteLine(msg);
-                        gLogger.Info(msg);
+                        // Allow without user login only for the main domain's index.html ("sqcore.net/index.html"),  
+                        // For subdomains, like "dashboard.sqcore.net/index.html" require UserLogin
+                        if ((httpContext.Request.Path.Value?.Equals("/index.html", StringComparison.OrdinalIgnoreCase) ?? false) && // if it is HTML only allow '/index.html' through
+                            ((Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") 
+                            || httpContext.Request.Host.Host.StartsWith("sqcore.net"))) // only allow 'sqcore.net/index.html', but not raw IP addressing '66.66.66.66/index.html' that usually comes from bots
+                        {
+                            isAllowedRequest = true;    // don't replace raw main index.html file by in-memory. Let it through. A brotli version will be delivered, which is better then in-memory non-compressed.
+                            // Problem: after Logout/Login Chrome takes index(Logout version).html from disk-cache, instead of reload.
+                            // Because when it is read from 'index.html.br' brottli, it adds etag, and last-modified headers.
+                            // So, the index(Logout version).html should NOT be cached, while the index(Login version).html should be cached.
+                            // Console.WriteLine($"Adding CacheControl NoCache to header '{httpContext.Request.Host} {httpContext.Request.Path}'");
+                            Utils.Logger.Info($"Adding CacheControl NoCache to header '{httpContext.Request.Host} {httpContext.Request.Path}'");
+                            httpContext.Response.GetTypedHeaders().CacheControl =
+                                new Microsoft.Net.Http.Headers.CacheControlHeaderValue()
+                                {
+                                    NoCache = true,
+                                    NoStore = true,
+                                    MustRevalidate = true
+                                };
+                        }
                     }
+                    else if (String.IsNullOrEmpty(ext))  // 2. API requests
+                    {
+                        if (httpContext.Request.Path.Value?.Equals("/UserAccount/login", StringComparison.OrdinalIgnoreCase) ?? false)   // if it is an API call only allow '/UserAccount/login' through. 
+                            isAllowedRequest = true;
+                        if ((Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") && (httpContext.Request.Path.Value?.StartsWith("/hub/", StringComparison.OrdinalIgnoreCase) ?? false))
+                            isAllowedRequest = true;    // in Development, when 'ng served'-d with proxy redirection from http://localhost:4202 to https://localhost:5001 , Don't force Google Auth, because 
+                        if ((Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") && (httpContext.Request.Path.Value?.StartsWith("/ws/", StringComparison.OrdinalIgnoreCase) ?? false))
+                            isAllowedRequest = true;
+                    }
+                    else // 3. when there is any extension (jpeg, txt, etc.)
+                        isAllowedRequest = true;    // 3. allow jpeg files and other resources, like favicon.ico
                 }
-                else
+
+                if (!isAllowedRequest)
                 {
-                    string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow:HH':'mm':'ss.f}#Uknown or not allowed user request: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {ipStr}. Redirecting to '/UserAccount/login'.");
+                    string msg = String.Format($"PostAuth.PreProcess: {DateTime.UtcNow:HH':'mm':'ss.f}#Uknown or not allowed user request or raw IP number was used by bots for index.html: {httpContext.Request.Method} '{httpContext.Request.Host} {httpContext.Request.Path}' from {ipv6Str}. Redirecting to '/UserAccount/login'.");
                     Console.WriteLine(msg);
                     gLogger.Info(msg);
 

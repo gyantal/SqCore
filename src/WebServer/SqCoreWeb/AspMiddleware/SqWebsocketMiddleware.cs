@@ -165,7 +165,12 @@ namespace SqCoreWeb
                             else
                                 switch (p_requestRemainigPath)
                                 {
-                                    // Run any long process (1+ sec) in separate than the WebSocket-processing thread. Otherwise any later message the client sends is queued on the server for seconds and not processed immediately. Resulting in UI unresponsiveness at the client.
+                                    // Run any long process (1+ sec) in separate than the WebSocket-processing thread. Otherwise any later message the client sends is queued 
+                                    // on the server for seconds and not processed immediately. Resulting in UI unresponsiveness at the client.
+                                    // The other option would be to force all messages to be run in side-thread by the WebSocketMiddleware controller, but 
+                                    // 1. that would be inefficient, to initiate a new Threadpool thread for 'Every' little things as most of these messages only takes 1ms processing time. 
+                                    // 2. that might sometimes create problems of multithreading order. The processing order of different messages is not sequential any more,
+                                    // they could run totally parallel, which could cause chaos in the execution logic if the algorithms assumes there is an order.
                                     case "/dashboard":
                                         DashboardWs.OnWsReceiveAsync(context, webSocket, result, bufferStr);  // no await. There is no need to Wait until all of its async inner methods are completed
                                         break;
