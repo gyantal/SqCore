@@ -509,7 +509,15 @@ namespace FinTechCommon
 
                 // Do not want to see ugly "NaN" values on the UI, because that catches the eye too quickly. Better to send the client "-1". That is known that it is impossible value for PriorClose, EstPrice
                 // Treat EstPrice = "-1.00" as error, as NaN. Not available data. Then, we can use the PriorClose as EstPrice. That solves everything. (On the UI the P&L Today will be 0 at these lines. Fine.)
-                option.EstValue = (double.IsNaN(mktData.EstPrice) || mktData.EstPrice == -1.0) ? (float)mktData.PriorClosePrice * option.Multiplier : (float)mktData.EstPrice * option.Multiplier;
+                float proposedEstValue;
+                if (double.IsNaN(mktData.EstPrice) || mktData.EstPrice == -1.0)   // If EstValue is not given by IB, use the PriorClose, but that can also be NaN
+                    proposedEstValue = (float)mktData.PriorClosePrice * option.Multiplier;
+                else
+                   proposedEstValue = (float)mktData.EstPrice * option.Multiplier;
+                
+                if (!float.IsNaN(proposedEstValue))   // If it is not given by IB (either by PriorClose or EstPrice), don't overwrite current value by NaN.
+                    option.EstValue = proposedEstValue;
+
                 option.IbCompDelta = mktData.IbComputedDelta;
             }
         }

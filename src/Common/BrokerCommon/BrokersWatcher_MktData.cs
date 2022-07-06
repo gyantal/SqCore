@@ -99,15 +99,13 @@ namespace BrokerCommon
         // >If we do streaming price (instead of snapshot) we could have IbMarkPrice. But for better resource management, this is not that important. 
         // These exceptional penny-options are marginal positions. The situation exists because its values are close to 0, so there is no Bid. Nobody wants to buy it, only sell.
         // >If EstPrice is missing, in theory we can estimate it with the Average = Ask/Bid = 0+1.0= 0.50, but that would be a grossly overestimate, as IbMark = 0.11, and PriorClose = 0.12. 
-        // So, if we estimate from Ask/Bid that would be less accurate. 
-        // >Better to just admid that there is no EstPrice at the moment. Higher level functions should use PriorClose if the EstPrice is NaN.
-        // This is actually fine as an Estimation.
+        // In this special case (When there is no buying Bid (-1)) fake an EstPrice as Ask/4 that is quite close to IbMark. Even in this cases IB estimates an IbMark and uses that for further calculations
 
         // 2021-12-07: Case Study 2: Missing priorClose: 'QQQ   220121P00100000' and many others. 
         // [with Snapshot]  IB.ReqMktData() #OkEstPrice: 11 in 14,  #OkPriorClose: 6 in 14, #OkDelta: 14 in 14 in 13.184sec.
         // [with Streaming] IB.ReqMktData() #OkEstPrice: 13 in 14,  #OkPriorClose: 14 in 14, #OkDelta: 14 in 14 in 60.723sec.
         // So, streaming and snapshot: no difference. (stick to Snapshot if possible)
-        // Only on when IbClient is the Linux server. No missing priorClose from WinClient.
+        // Only when IbClient is the Linux server. No missing priorClose from IB WinClient.
         // Windows Client: Note: Close and Last comes first.
         // ReqMktData(1010) CB: 1032.34 ms. close: 0
         // ReqMktData(1010) CB: 1035.48 ms. lastPrice: 0.01
@@ -120,6 +118,32 @@ namespace BrokerCommon
         // after reboot the Linux machine, the same Linux code works as on Windows.
         // Next time try to restart only TWS, not the whole VM. So, the problem is probably in IbTWS, we might have to restart TWS before RTH daily. Or we have to upgrade TWS version too, hope that they solved it in the new TWS version.
         // But next time it happens: quick solution: restart TWS or the Linux server.
+
+        // 2022-07-06: 
+        // >Upgrading IB TWS to the latest. Maybe that solves the missing ClosePrice problem?
+        // The live running release is IB TWS version: 10.12.2e, 2021-12-29. Only 6 month old.
+        // The current stable release is almost the same: Stable: "Version 10.12.2o"
+        // So, there is no point to upgrade the Stable.
+        // I cannot install the "Latest" "Version 10.16.1k - May 27, 2022", because in 10.15 they redesigned the login, so that will break our automatic login.
+
+        // >Trying to restart only WebServer, or TWS or Linux
+        // IB.ReqMktData. #OkEstPr: 8 in 8, #OkPriorCls: 7 in 8, #OkDelta: 8 in 8 
+        // >1. Restarting TWS
+        //  "IB.ReqMktData. #OkEstPr: 8 in 8, #OkPriorCls: 7 in 8, #OkDelta: 8 in 8
+        // >2. Restarting Linux , 
+        // >First runnig of webserver. "IB.ReqMktData. #OkEstPr: 8 in 8, #OkPriorCls: 7 in 8, #OkDelta: 5 in 8
+        // Made it worse. Now, Deltas are missing too.
+        // >Second running of the webserver: " #OkEstPr: 8 in 8, #OkPriorCls: 8 in 8, #OkDelta: 8 in 8 in 1.959sec"
+        // Hmm. So, it seems to be OK. It means it only took TWS a little bit more time to get those Deltas, but it could get them.
+        // >Third run: " IB.ReqMktData. #OkEstPr: 8 in 8, #OkPriorCls: 7 in 8, #OkDelta: 8 in 8
+        // Eh. So, the closeprice can be missing, even if we restart Linux. It is random whether we receive it or not from IbTWS.
+
+        // >Conclusion: 
+        // - the missing closePrice cannot be solved by upgrading IbTWS
+        // - the missing closePrice cannot be solved by restarting TWS or restarting Linux.
+        // - the SqCore code should be ready for missing closePrice data. Using NaN in MemDb can signal that the number is missing. Don't use 0 or -1.
+        // - UI clients should be able to handle missing NaN data. For instance, IbTWS shows an empty cell ("") if Ask, Bid or %Chg data is NaN.
+
         public bool CollectIbMarketData(MktData[] p_mktDatas, bool p_isNeedOptDelta)
         {
             if (p_mktDatas.Length == 0)
@@ -180,6 +204,10 @@ namespace BrokerCommon
                 if (contract.SecType == "OPT")
                     progressDelta.RegisterTicker(mktData.Contract.LocalSymbol);
 
+                // TEMP for Debug
+                // if (contract.LocalSymbol != "QQQ   230120C00565000") // to skip everything else, but this option
+                //     continue;
+
                 Gateway? ibGateway = m_mainGateway;
                 // ibGateway = m_gateways.FirstOrDefault(r => r.GatewayId == GatewayId.GyantalMain);    // DEBUG
                 if (ibGateway == null)
@@ -190,7 +218,7 @@ namespace BrokerCommon
                     {
                         Utils.Logger.Trace($"{cb_mktDataSubscr.Contract.Symbol} : {TickType.getField(cb_tickType)}: {cb_price}");
                         // if (cb_mktDataSubscr.Contract.SecType == "OPT" && cb_mktDataSubscr.Contract.Symbol == "SVXY" && cb_mktDataSubscr.Contract.Strike == 15.00)    // for DEBUGGING
-                        if (cb_mktDataSubscr.Contract.SecType == "OPT" && cb_mktDataSubscr.Contract.LocalSymbol == "QQQ   220121P00100000")    // for DEBUGGING
+                        if (cb_mktDataSubscr.Contract.SecType == "OPT" && cb_mktDataSubscr.Contract.LocalSymbol == "QQQ   230120C00565000")    // for DEBUGGING
                             Console.WriteLine($"ReqMktData({cb_mktDataSubscr.MarketDataId}) CB: {(DateTime.UtcNow - startTime).TotalMilliseconds:0.00} ms. {TickType.getField(cb_tickType)}: {cb_price}");
 
                         if (cb_tickType == TickType.CLOSE)  // Prior Close, Previous day Close price.
@@ -265,7 +293,10 @@ namespace BrokerCommon
                             bool isAskBidAcceptable = (!Double.IsNaN(mktData.AskPrice)) && (!Double.IsNaN(mktData.BidPrice));
                             if (isAskBidAcceptable)
                             {
-                                isAskBidAcceptable = (mktData.AskPrice != -1.0) && (mktData.BidPrice != -1.0);
+                                // QQQ   230120C00565000: IbTWS shows: there is no Bid: None (-1 arrives), Ask: 0.04. Mark: 0.01
+                                // In the case when one of the AskBid is -1, but the other one is a proper value, let's accept it, and create an estimate by using -1 => 0.
+                                // so NOT acceptable = when (Ask = -1 && Bid == -1) at the same time
+                                isAskBidAcceptable = !((mktData.AskPrice == -1.0) && (mktData.BidPrice == -1.0));
                                 if (isAskBidAcceptable && !isInRegularUsaTradingHoursNow)
                                 {   // sometimes before premarket: ask: 8.0 Bid: 100,000.01. In that case, don't accept it as a correct AskBid
                                     // but BRK.A is "340,045" and legit. So, big values should be accepted if both Ask, Bid is big.
@@ -276,7 +307,7 @@ namespace BrokerCommon
                             }
                             if (isAskBidAcceptable)
                             {
-                                double pAsk = (mktData.AskPrice < 0.0) ? 0.0 : mktData.AskPrice;
+                                double pAsk = (mktData.AskPrice < 0.0) ? 0.0 : mktData.AskPrice;    // convert -1 => 0
                                 double pBid = (mktData.BidPrice < 0.0) ? 0.0 : mktData.BidPrice;
                                 double proposedPrice = (pAsk + pBid) / 2.0;
                                 if (Double.IsNaN(mktData.EstPrice))    // only increase the nKnownConIdsPrReadyOk counter once when we turn from NaN to a proper number.
@@ -311,7 +342,14 @@ namespace BrokerCommon
                             {
                                 double pAsk = (Double.IsNaN(mktData.AskPrice)) ? 0.0 : mktData.AskPrice;
                                 double pBid = (Double.IsNaN(mktData.BidPrice)) ? 0.0 : mktData.BidPrice;
-                                double proposedPrice = (pAsk + pBid) / 2.0;
+
+                                // If Bid is missing (-1), and Ask = 1.0, in theory we can estimate it with the Average = Ask/Bid = 0+1.0= 0.50, 
+                                // but that would be a grossly overestimate, as IbMark = 0.11, and PriorClose = 0.12.
+                                double proposedPrice;
+                                if (mktData.BidPrice < 0.0) // == -1, If there is no Bid, only Ask (so nobody wants to buy)
+                                    proposedPrice = pAsk / 4;   //  in this special case fake an EstPrice as Ask/4 that is quite close to IbMark.
+                                else
+                                    proposedPrice = (pAsk + pBid) / 2.0;
                                 if (Double.IsNaN(mktData.EstPrice))    // only increase the nKnownConIdsPrReadyOk counter once when we turn from NaN to a proper number.
                                 {
                                     mktData.EstPrice = proposedPrice;

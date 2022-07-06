@@ -341,8 +341,8 @@ namespace SqCoreWeb
                     Name = asset.Name,
                     Pos = posBr.Position,
                     AvgCost = posBr.AvgCost,
-                    PriorClose = (float.IsNaN(asset.PriorClose)) ? 1.234f : asset.PriorClose,
-                    EstPrice = (float.IsNaN(asset.EstValue)) ? 1.234f : asset.EstValue,
+                    PriorClose = asset.PriorClose,  // can be NaN if not given by IB. Sending "priorClose":"NaN". Client should be able to handle it. IB UI shows empty cell. Otherwise, we create fake data.
+                    EstPrice = asset.EstValue,  // can be NaN if not given by IB. Sending "estPrice":"NaN". Client should handle it. IB UI shows empty cell. Otherwise, we create fake data.
                     EstUndPrice = (float.IsNaN(estUndValue)) ? 0.0f : estUndValue,
                     IbCompDelta = (double.IsNaN(ibCompDelta)) ? 0.0 : ibCompDelta,
                     AccId = p_gwIdStr

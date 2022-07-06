@@ -289,6 +289,14 @@ export class BrAccViewerComponent implements OnInit {
         console.log('BrAccViewer.BrAccSnapshot:' + msgObjStr);
         this.brAccountSnapshotStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.brAccountSnapshotObj = JSON.parse(msgObjStr);
+        if (this.brAccountSnapshotObj != null && this.brAccountSnapshotObj.poss != null) { //  Change string "NaN" to native JS number NaN
+          for (const pos of this.brAccountSnapshotObj.poss) {
+            if (pos.priorClose.toString() == 'NaN') // even though pos.priorClose is defined in TS as number, it will be a string "NaN" runtime in browser.
+              pos.priorClose = NaN;
+            if (pos.estPrice.toString() == 'NaN')
+              pos.estPrice = NaN;
+          }
+        }
         BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
         return true;
       case 'BrAccViewer.NavHist':
@@ -441,7 +449,8 @@ export class BrAccViewerComponent implements OnInit {
 
       // 2. Aggregating fields, creating sums
       uiSnapTable.sumPlTodVal += uiPosItem.plTod;
-      uiSnapTable.totalMaxRiskedN += Math.abs(uiPosItem.mktVal);
+      if (!isNaN(uiPosItem.mktVal))
+        uiSnapTable.totalMaxRiskedN += Math.abs(uiPosItem.mktVal);
       uiSnapTable.betaDeltaAdjTotalMarketOrientation += uiPosItem.betaDltAdj;
 
       if (possItem.sqTicker.startsWith('S')) { // Stocks
