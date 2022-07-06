@@ -130,7 +130,7 @@ export function sqLineChartGenerator(noAssets: number, nCurrData: number, assetN
     // adding colors for keys
     const color = d3.scaleOrdinal()
         .domain(stckKey)
-        .range(['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#f781bf', '#999999', '#ffff33', '#a65628']);
+        .range(['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#f781bf', '#808000', '#008000', '#a65628', '#333397', '#800080', '#000000']);
 
     // Draw the line
     lineChrt.selectAll('.line')

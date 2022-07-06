@@ -365,14 +365,13 @@ function processingTables(json: any, selectedTickers: string[]) {
   for (let i = 2; i < retHistLBPeriodsNo.length + 1; i++)
     lengthSubSums[i] = lengthSubSums[i - 1] + retHistLBPeriodsNo[i - 1];
 
-  const chartStart = lengthSubSums[indOfLength];
-  const nCurrData = lengthOfChart + 1;
+  const nCurrDataVD = dailyDatesArray.length;
   const noAssets = selectedTickers.length;
 
   const assChartMtx: any[] = [];
-  for (let i = 0; i < nCurrData; i++) {
-    const dateArray = dailyDatesArray[dailyDatesArray.length - nCurrData + i];
-    const dailyVolDragsArray = dailyVolDragsMtx[chartStart - 1 + i];
+  for (let i = 0; i < nCurrDataVD; i++) {
+    const dateArray = dailyDatesArray[i];
+    const dailyVolDragsArray = dailyVolDragsMtx[i];
     assChartMtx.push([dateArray, ...dailyVolDragsArray]);
   }
 
@@ -382,7 +381,7 @@ function processingTables(json: any, selectedTickers: string[]) {
   d3.selectAll('#pctChgChrt > *').remove();
   const lineChrtDiv = getDocElementById('pctChgChrt');
   const lineChrtTooltip = getDocElementById('tooltipChart');
-  sqLineChartGenerator(noAssets, nCurrData, selectedTickers, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip);
+  sqLineChartGenerator(noAssets, nCurrDataVD, selectedTickers, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip);
 
   getDocElementById('idChartLength').innerHTML = '<strong>Percentage Changes of Prices in the Last &emsp;<select id="limit2"><option value="1">1 Day</option><option value="3">3 Days</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="20" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[indOfLength] + '</strong >';
   pctMonthlyVolChrt(indOfLength);
@@ -397,6 +396,7 @@ function processingTables(json: any, selectedTickers: string[]) {
   // Declaring data sets to charts.
   function pctMonthlyVolChrt(indOfLength) {
     const chartStart = lengthSubSums[indOfLength];
+    const nCurrData = chartStart + 1;
     const lookbackChartMtx: any[] = [];
     for (let i = 0; i < nCurrData; i++) {
       const dateArray = dailyDatesArray[dailyDatesArray.length - nCurrData + i];
@@ -411,24 +411,34 @@ function processingTables(json: any, selectedTickers: string[]) {
   // under development - Daya
   getDocElementById('limit').onchange = function() {
     const volLBPeriod = parseInt((document.getElementById('limit') as HTMLSelectElement).value);
-    const volatilityHistoryTbl: any[] = [];
-    const tab = (getDocElementById('mytable') as HTMLTableElement);
-    const tabRows = tab.rows;
-    for (let i = 0; i < volLBPeriod; i ++) {
-      volatilityHistoryTbl.push(tabRows[i]);
-      volatilityHistoryTbl[i].style.display = 'block';
+    const volHistTbl = (getDocElementById('mytable') as HTMLTableElement).rows;
+    const min = 0; let max = 20; // (or 7)
+    for (let i = 0; i < volHistTbl.length; i ++) {
+      max = volLBPeriod + 2;
+      if (i >= min && i < max)
+        volHistTbl[i].style.display = 'block';
+      else
+        volHistTbl[i].style.display = 'none'; // style.display = 'hidden
     }
   };
 
-  const collapseTbl = document.getElementsByClassName('parent') as HTMLCollectionOf<Element>;
-  // const toggleClick: boolean = true;
-  for (let i = 0; i < collapseTbl.length; i++) {
-    collapseTbl[i].addEventListener('click', function() {
-      const childToggle = document.getElementsByClassName('child') as HTMLCollectionOf<Element>;
-      for (let j = 0; j < childToggle.length; j++)
-        childToggle[j].classList.toggle('child');
-    }, false);
+  // monthly volDrag visualizer ToggleTable feature
+  const monthlyVolTblParent = document.getElementsByClassName('parent');
+
+  const toggleTbl = function(event) {
+    const childNodes = event.currentTarget.parentElement.querySelectorAll('.currData tr');
+    childNodes.forEach((child) => {
+      if (!(child.className === 'parent')) {
+        if (child.style.display == 'block')
+          child.style.display = 'none';
+        else
+          child.style.display = 'block';
+      }
+    });
   };
+
+  for (let i = 0; i < monthlyVolTblParent.length; i++)
+    monthlyVolTblParent[i].addEventListener('click', toggleTbl, false);
 }
 
 console.log('SqCore: Script END');

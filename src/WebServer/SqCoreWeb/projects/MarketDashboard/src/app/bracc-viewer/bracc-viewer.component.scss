@@ -264,7 +264,7 @@ tr:nth-child(even) {
 .tooltipGeneral .tooltipText {
   padding:0.3rem;
   font-size: 0.8rem;
-  font-weight: normal;
+  font-weight: bold;
   display: none;
   background:rgb(210, 252, 176);
   border: 0.1rem solid rgb(19, 7, 177);
@@ -282,7 +282,6 @@ tr:nth-child(even) {
 
 .tooltipGeneral:hover .tooltipText {
   display: inline-block;
-  font-weight: bold;
 }
 // Tooltip posotioning for the stock postions 
 .tooltipStck {
@@ -291,32 +290,32 @@ tr:nth-child(even) {
   font-weight: bold;
 }
 
-// Tooltip posotioning for the Tempdebug 
-.tooltipTempDebug {
-  position: relative;
-  cursor: help;
-}
-.tooltipTempDebug .tooltipText {
-  padding:0.3rem;
-  font-size: 0.8rem;
-  display: none;
-  background:rgb(210, 252, 176);
-  border: 0.1rem solid rgb(19, 7, 177);
-  color: rgb(6, 8, 153);
-  text-align: left;
-  border-radius: 1rem;
-  position: absolute;
-  z-index: 100;
-  white-space: pre;
-  opacity: 0.87;
-}
+// // Tooltip posotioning for the Tempdebug 
+// .tooltipTempDebug {
+//   position: relative;
+//   cursor: help;
+// }
+// .tooltipTempDebug .tooltipText {
+//   padding:0.3rem;
+//   font-size: 0.8rem;
+//   display: none;
+//   background:rgb(210, 252, 176);
+//   border: 0.1rem solid rgb(19, 7, 177);
+//   color: rgb(6, 8, 153);
+//   text-align: left;
+//   border-radius: 1rem;
+//   position: absolute;
+//   z-index: 100;
+//   white-space: pre;
+//   opacity: 0.87;
+// }
 
-.tooltipTempDebug:hover .tooltipText {
-  display: inline-block;
-  font-weight: bold;
-  top: -50%;
-  left: 10%;
-}
+// .tooltipTempDebug:hover .tooltipText {
+//   display: inline-block;
+//   font-weight: bold;
+//   top: -50%;
+//   left: 10%;
+// }
 
 #stckTooltip {
   position: fixed;
