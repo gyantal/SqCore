@@ -309,7 +309,11 @@ namespace BrokerCommon
                             {
                                 double pAsk = (mktData.AskPrice < 0.0) ? 0.0 : mktData.AskPrice;    // convert -1 => 0
                                 double pBid = (mktData.BidPrice < 0.0) ? 0.0 : mktData.BidPrice;
-                                double proposedPrice = (pAsk + pBid) / 2.0;
+                                double proposedPrice;
+                                if (mktData.BidPrice < 0.0) // == -1, If there is no Bid, only Ask (so nobody wants to buy)
+                                    proposedPrice = pAsk / 4;   //  in this special case fake an EstPrice as Ask/4 that is quite close to IbMark.
+                                else
+                                    proposedPrice = (pAsk + pBid) / 2.0;
                                 if (Double.IsNaN(mktData.EstPrice))    // only increase the nKnownConIdsPrReadyOk counter once when we turn from NaN to a proper number.
                                 {
                                     mktData.EstPrice = proposedPrice;
@@ -332,7 +336,11 @@ namespace BrokerCommon
                     },
                     (cb_mktDataId, cb_mktDataSubscr, cb_field, cb_value) => // MktDataTickGeneric callback. (e.g. MarkPrice) Assume this is the last callback for snapshot data. (!Not true for OTC stocks, but we only use this for options) Note sometimes it is not called, only Ask,Bid is coming.
                     {  // Tick Id:1222, Field: halted, Value: 0
+                        // HALTED means the trading is halted. It happens around midnight. OTH.
                         Utils.Logger.Trace($"TickGeneric in ReqMktDataStream(). {cb_mktDataSubscr.Contract.Symbol} : {TickType.getField(cb_field)}: {cb_value}");
+                        if (cb_mktDataSubscr.Contract.SecType == "OPT" && cb_mktDataSubscr.Contract.LocalSymbol == "QQQ   230120C00565000")    // for DEBUGGING
+                            Console.WriteLine($"ReqMktData({cb_mktDataSubscr.MarketDataId}) CB: {(DateTime.UtcNow - startTime).TotalMilliseconds:0.00} ms. {TickType.getField(cb_field)}: {cb_value}");
+
                         if ((cb_mktDataSubscr.Contract.SecType == "IND") || (cb_mktDataSubscr.Contract.SecType == "STK"))
                         { // do nothing. LastPrice is already filled
                         }
@@ -346,7 +354,7 @@ namespace BrokerCommon
                                 // If Bid is missing (-1), and Ask = 1.0, in theory we can estimate it with the Average = Ask/Bid = 0+1.0= 0.50, 
                                 // but that would be a grossly overestimate, as IbMark = 0.11, and PriorClose = 0.12.
                                 double proposedPrice;
-                                if (mktData.BidPrice < 0.0) // == -1, If there is no Bid, only Ask (so nobody wants to buy)
+                                if (Double.IsNaN(mktData.BidPrice) || mktData.BidPrice < 0.0) // == -1, If there is no Bid, only Ask (so nobody wants to buy)
                                     proposedPrice = pAsk / 4;   //  in this special case fake an EstPrice as Ask/4 that is quite close to IbMark.
                                 else
                                     proposedPrice = (pAsk + pBid) / 2.0;
