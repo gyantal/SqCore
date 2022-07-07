@@ -58,7 +58,7 @@ namespace SqCoreWeb
                 // Console.WriteLine($"SqFirewall: request '{httpContext.Request.Host}' '{httpContext.Request.Path}' is not on whitelist.");
                 // return Unauthorized();  // can only be used in Controller. https://github.com/aspnet/Mvc/blob/rel/1.1.1/src/Microsoft.AspNetCore.Mvc.Core/ControllerBase.cs
                 httpContext.Response.StatusCode = StatusCodes.Status410Gone;  // '410 Gone' is better than '404 Not Found'. Client will not request it later. See https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
-                await httpContext.Response.WriteAsync($"SqFirewall: request '{httpContext.Request.Host}' '{httpContext.Request.Path}' is not on whitelist.", Encoding.UTF8);
+                await httpContext.Response.WriteAsync($"SqFirewall: request '{httpContext.Request.Host}' '{httpContext.Request.Path}' is not on whitelist (maybe nonexistent).", Encoding.UTF8);
                 return;
             }
 

@@ -291,9 +291,9 @@ export class BrAccViewerComponent implements OnInit {
         this.brAccountSnapshotObj = JSON.parse(msgObjStr);
         if (this.brAccountSnapshotObj != null && this.brAccountSnapshotObj.poss != null) { //  Change string "NaN" to native JS number NaN
           for (const pos of this.brAccountSnapshotObj.poss) {
-            if (pos.priorClose.toString() == 'NaN') // even though pos.priorClose is defined in TS as number, it will be a string "NaN" runtime in browser.
+            if (pos.priorClose.toString() === 'NaN') // even though pos.priorClose is defined in TS as number, it will be a string "NaN" runtime in browser.
               pos.priorClose = NaN;
-            if (pos.estPrice.toString() == 'NaN')
+            if (pos.estPrice.toString() === 'NaN')
               pos.estPrice = NaN;
           }
         }
@@ -431,7 +431,10 @@ export class BrAccViewerComponent implements OnInit {
       uiPosItem.avgCost = possItem.avgCost;
       uiPosItem.priorClose = possItem.priorClose;
       uiPosItem.estPrice = possItem.estPrice;
-      uiPosItem.pctChgTod = (possItem.estPrice - possItem.priorClose) / possItem.priorClose;
+      if (possItem.priorClose === 0)
+        uiPosItem.pctChgTod = NaN; // better than the positive infinity character (∞%) on the UI. If there is a ∞%, then that will be the winner of the day by PctChange, but that is fluke. IB UI: in this case the cell is blank. We follow that by using NaN. Then our call will be empty.
+      else
+        uiPosItem.pctChgTod = (possItem.estPrice - possItem.priorClose) / possItem.priorClose;
       uiPosItem.plTod = Math.round(possItem.pos * (possItem.estPrice - possItem.priorClose));
       uiPosItem.pl = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost));
       uiPosItem.mktVal = Math.round(possItem.pos * possItem.estPrice);
@@ -448,7 +451,8 @@ export class BrAccViewerComponent implements OnInit {
         uiPosItem.betaDltAdj = Math.round(uiPosItem.gBeta * uiPosItem.mktVal);
 
       // 2. Aggregating fields, creating sums
-      uiSnapTable.sumPlTodVal += uiPosItem.plTod;
+      if (!isNaN(uiPosItem.plTod)) // P&L Today can be NaN if PriorClose of an option is NaN
+        uiSnapTable.sumPlTodVal += uiPosItem.plTod;
       if (!isNaN(uiPosItem.mktVal))
         uiSnapTable.totalMaxRiskedN += Math.abs(uiPosItem.mktVal);
       uiSnapTable.betaDeltaAdjTotalMarketOrientation += uiPosItem.betaDltAdj;
