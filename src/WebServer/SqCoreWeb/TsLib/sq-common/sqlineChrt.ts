@@ -21,7 +21,7 @@ export function shortMonthFormat(date: any) : string {
 export function sqLineChartGenerator(noAssets: number, nCurrData: number, assetNames2Array: string[],
     assChartMtx: Array<Array<any>>, // Array of DailyData. DailyData is also an array, starting with the Date|number and followed by that daily price for all assets
     xLabel: string, yLabel: string, yScaleTickFormat: string,
-    lineChrtDiv: HTMLElement, lineChrtTooltip: HTMLElement) {
+    lineChrtDiv: HTMLElement, lineChrtTooltip: HTMLElement, isDrawCricles: boolean) {
   const margin = {top: 10, right: 30, bottom: 50, left: 60};
   const width = 760 - margin.left - margin.right;
   const height = 450 - margin.top - margin.bottom;
@@ -33,7 +33,7 @@ export function sqLineChartGenerator(noAssets: number, nCurrData: number, assetN
     }
 
     let isXvalueDate: boolean = true;
-    if ( assChartMtx.length > 0 && assChartMtx[0].length > 0 && !isNaN(assChartMtx[0][0]))
+    if (assChartMtx.length > 0 && assChartMtx[0].length > 0 && !isNaN(assChartMtx[0][0]))
       isXvalueDate = false;
 
     const stckChrtData: pctChngStckPriceData[] = [];
@@ -65,7 +65,7 @@ export function sqLineChartGenerator(noAssets: number, nCurrData: number, assetN
 
     // Add Y axis
     const yScale = d3.scaleLinear()
-        .domain([(yMin as number) - 5, (yMax as number) + 5])
+        .domain([(yMin as number), (yMax as number) * 1.1]) // *. increase by 10%. *1.1, $50 $200, +5, fine. 0.5 ... 0.8 + 5?
         .range([height, 0]);
 
     const lineChrt = d3.select(lineChrtDiv)
@@ -139,22 +139,23 @@ export function sqLineChartGenerator(noAssets: number, nCurrData: number, assetN
         .append('path')
         .attr('fill', 'none')
         .attr('stroke', (d: any) => color(d.ticker) as any)
-        .attr('stroke-width', 1.5)
+        .attr('stroke-width', .8)
         .attr('d', (d:any) => (d3.line()
             .x((d: any) => xScale(d.date) as number)
             .y((d: any) => yScale(d.price) as number))(d.priceData) as any);
-
-    lineChrt
-        .selectAll('myCircles')
-        .data(stckChrtData)
-        .enter()
-        .append('circle')
-        .style('fill', 'none')
-        .attr('stroke', (d: any) => color(d.ticker) as any)
-        .attr('stroke-width', 0.8)
-        .attr('cx', (d: any) => xScale(d.date) as number)
-        .attr('cy', (d: any) => yScale(d.price) as number)
-        .attr('r', 2.5);
+    if (isDrawCricles) {
+      lineChrt
+          .selectAll('myCircles')
+          .data(stckChrtData)
+          .enter()
+          .append('circle')
+          .style('fill', 'none')
+          .attr('stroke', (d: any) => color(d.ticker) as any)
+          .attr('stroke-width', 0.8)
+          .attr('cx', (d: any) => xScale(d.date) as number)
+          .attr('cy', (d: any) => yScale(d.price) as number)
+          .attr('r', 2.5);
+    }
 
     const legendSpace = width/stckDataGroups.length; // spacing for legend
     // // Add the Legend

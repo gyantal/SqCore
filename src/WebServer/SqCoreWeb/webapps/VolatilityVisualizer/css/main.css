@@ -27,37 +27,35 @@ h2 {
   color: gainsboro;
   font-size: 125%;
 }
+
 .h3 {
   font-family: "Comic Sans MS", cursive, sans-serif;
   color: mediumblue;
   font-size: 110%;
   text-align: center;
 }
+
 .herror {
   font-family: "Comic Sans MS", cursive, sans-serif;
   color: red;
   font-size: 150%;
   text-align: center;
 }
+
 .wshelp li {
-          margin: 10px 0;
-      }
+  margin: 10px 0;
+}
 
 .center {
   text-align: center;
   border:0;
-  font-size: 13px;
+  font-size: 1rem;
 }
-.centerMatrix {
-  margin: auto;
-  width: 25%;
-  text-align: center;
-  border: 0;
-  font-size: 13px;
-}
+
 p.center {
-margin-top:0;
+  margin-top:0;
 }
+
 p.left {
   margin-left: 10%;
   text-align: left;
@@ -65,27 +63,31 @@ p.left {
   padding: 0;
   line-height: 43px;
 }
+
 span.center {
-margin:0;
+  margin:0;
 }
-.button {
+
+.volBtn {
   display: inline-block;
   border: none;
-  border-radius: 12px;
+  border-radius: 0.8rem;
   cursor: pointer;
-  height: 100px;
-  width: 160px;
-  background-size: cover; 
+  height: 2.5rem;
+  width: 4.5rem;
+  background-size: cover;
   background-repeat: no-repeat;
   max-width: 100%;
   max-height: 100%;
-}
-.button:hover {
-  box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
+  vertical-align: -0.8rem;
 }
 
-.button:active {
-  transform: translateY(4px);
+.volBtn:hover {
+  box-shadow: 0 0.8rem 1rem 0 rgba(0,0,0,0.24), 0 1rem 4rem 0 rgba(0,0,0,0.19);
+}
+
+.volBtn:active {
+  transform: translateY(0.01rem);
 }
 
 #vixBtn {
@@ -103,7 +105,7 @@ margin:0;
   background-size: cover;
 }
 
-#globalAssetsBtn{
+#globalAssetsBtn {
   background: url("../assets/images/global_assets.webp");
   background-size: cover;
 }
@@ -111,11 +113,15 @@ margin:0;
 #selectAllBtn {
   background: url("../assets/images/selectall.webp");
   background-size: cover;
+  height: 4rem;
+  width: 9rem;
 }
 
-#updateAllBtn{
+#updateAllBtn {
   background: url("../assets/images/updateall.webp");
   background-size: cover;
+  height: 4rem;
+  width: 9rem;
 }
 
 .chartsContainer {
@@ -158,51 +164,7 @@ margin:0;
   border-radius: 0.6rem;
 }
 
-.button2 {
-  display: inline-block;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  height: 40px;
-  width: 64px;
-  background-size: cover;
-  background-repeat: no-repeat;
-  max-width: 100%;
-  max-height: 100%;
-  vertical-align: -15px;
-}
-
-.button2:hover {
-      box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
-  }
-
-.button2:active {
-      transform: translateY(4px);
-  }
-
-.button3 {
-  display: inline-block;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  height: 60px;
-  width: 135px;
-  background-size: cover;
-  background-repeat: no-repeat;
-  max-width: 100%;
-  max-height: 100%;
-
-}
-
-.button3:hover {
-      box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
-  }
-
-.button3:active {
-      transform: translateY(4px);
-  }
-
-.button4 {
+/* .button4 {
   display: inline-block;
   border: none;
   border-radius: 12px;
@@ -219,157 +181,45 @@ margin:0;
 .button4:hover {
   box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
 }
+
 .button4:active {
   transform: translateY(4px);
-}
+} */
 
-table.currData {
+table.volDataYearsNMonths, table.volHistData {
   width: 80%;
   margin-left: 10%;
   margin-right: 10%;
   margin-bottom: 0;
-  font-size: 13px;
+  font-size: 0.8rem;
   border-collapse: collapse;
-  border: 1px solid black;
+  border: 0.05rem solid black;
+  text-align: center
 }
 
-.currData td {
+.volDataYearsNMonths td, .volHistData td {
   width: 5%;
-  /*text-align: left;*/
-  border: 1px solid black;
+  border: 0.05rem solid black;
 }
 
-table.currDataB {
-  width: 80%;
-  margin-left: 10%;
-  margin-right: 10%;
-  margin-bottom: 0;
-  font-size: 13px;
-  border-collapse: collapse;
-  border: 1px solid black;
-}
-
-.currDataB td {
-  width: 5%;
-  /*text-align: left;*/
-  border: 1px solid black;
-}
-
-table.currDataB2 {
-  width: 80%;
-  margin-left: 10%;
-  margin-right: 10%;
-  margin-bottom: 0;
-  font-size: 13px;
-  border-collapse: collapse;
-  border: 1px solid black;
-}
-
-
-.currDataB2 td {
-  width: 5%;
-  /*text-align: left;*/
-  border: 1px solid black;
-}
-
-/*.currData td:first-child {
-  min-width: 180px;
-  max-width: 180px;
-  overflow: hidden;
-}*/
-
-table.currData2 {
-  width: 100%;
-  margin-left: 0%;
-  margin-right: 0%;
-  margin-bottom: 0;
-  font-size: 13px;
-  border-collapse: collapse;
-  border: 1px solid black;
-}
-
-.currData2 td {
-  width: 5%;
-  text-align: center;
-  border: 1px solid black;
-}
-
-.pv{
-  font-weight: bold;
-  color: red;
-}
-.clmt{
-  font-weight: bold;
-  color: blue;
-}
-
-.histData{
-  width: 95%;
-  margin: 0 auto;
-  border-collapse:collapse;
-  border: none;
-  }
-/*.histData td {
-  width: 50%;
-  }*/
-
-table.resData{
-  width: 95%;
-  margin: 0 auto;
-  border-collapse:collapse;
-  border: 1px solid black;
-  }
-.resData td {
-  width: 10%;
-  /*text-align: left;*/
-  border: 1px solid black;
-}
-
-.buttonSim {
-  background-color: dodgerblue; /* Green */
-  /*border: none;*/
-  color: white;
-  font-family: "Comic Sans MS", cursive, sans-serif;
-  padding: 8px 15px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 16px;
-}
-
-.legend table {
-border-spacing: 5px;
-}
-
-.bottom-three {
-  margin-bottom: 8px;
-  /*margin-top: 10px;*/
-  font-size: 14px;
-}
 tr.header {
   cursor: pointer;
 }
+
 .parent {
-  cursor: pointer
+  cursor: pointer;
 }
+
 .child {
   display: none;
 }
-.hide {
-  cursor: pointer;
-  text-decoration: underline;
-  color: red
-}
-.show {
-  cursor: pointer;
-  text-decoration: underline;
-  color: darkgreen;
-}
+
 .years {
   cursor: pointer;
   text-decoration: underline;
   color: blue
 }
+
 .total {
   font-weight: bold;
   color: blue

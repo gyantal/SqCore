@@ -78,7 +78,6 @@ function checkAll(ele) {
 const selectedTickers : string[] = ['SPY', 'QQQ', 'TLT'];
 // Under development - Daya
 function onImageClick(json: any) {
-  // console.log('OnClick received.' + index);
   getDocElementById('vixBtn').onclick = () => choseall('volA');
   getDocElementById('impEtpBtn').onclick = () => choseall('etpA');
   getDocElementById('gameChngBtn').onclick = () => choseall('gchA');
@@ -142,23 +141,23 @@ window.onload = function onLoadWindow() {
     const gmAssetNamesArray = json.gmAssetNames.split(', ');
     const defCheckedListArray = json.defCheckedList.split(', ');
 
-    let chBxs = '<p class="left"><button id="vixBtn" class="button2" title="Volatility ETPs"/></button>&emsp;&emsp;';
+    let chBxs = '<p class="left"><button id="vixBtn" class="volBtn" title="Volatility ETPs"/></button>&emsp;&emsp;';
     for (let iAssets = 0; iAssets < volAssetNamesArray.length; iAssets++)
       chBxs += '<input class= "szpari" type="checkbox" name="volA" id="' + volAssetNamesArray[iAssets] + '"/><a target="_blank" href="https://finance.yahoo.com/quote/' + volAssetNamesArray[iAssets].split('_')[0] + '">' + volAssetNamesArray[iAssets] + '</a> &emsp;';
 
-    chBxs += '<br><button id="impEtpBtn" class="button2" title="Important ETPs"></button>&emsp;&emsp;';
+    chBxs += '<br><button id="impEtpBtn" class="volBtn" title="Important ETPs"></button>&emsp;&emsp;';
     for (let iAssets = 0; iAssets < etpAssetNamesArray.length; iAssets++)
       chBxs += '<input class= "szpari" type="checkbox" name="etpA" id="' + etpAssetNamesArray[iAssets] + '"/><a target="_blank" href="https://finance.yahoo.com/quote/' + etpAssetNamesArray[iAssets].split('_')[0] + '">' + etpAssetNamesArray[iAssets] + '</a> &emsp;';
 
-    chBxs += '<br><button id="gameChngBtn" class="button2" title="GameChanger Stocks"></button>&emsp;&emsp;';
+    chBxs += '<br><button id="gameChngBtn" class="volBtn" title="GameChanger Stocks"></button>&emsp;&emsp;';
     for (let iAssets = 0; iAssets < gchAssetNamesArray.length; iAssets++)
       chBxs += '<input class= "szpari" type="checkbox" name="gchA" id="' + gchAssetNamesArray[iAssets] + '"/><a target="_blank" href="https://finance.yahoo.com/quote/' + gchAssetNamesArray[iAssets].split('_')[0] + '">' + gchAssetNamesArray[iAssets] + '</a> &emsp;';
 
-    chBxs += '<br><button id="globalAssetsBtn" class="button2" title="Global Assets"></button>&emsp;&emsp;';
+    chBxs += '<br><button id="globalAssetsBtn" class="volBtn" title="Global Assets"></button>&emsp;&emsp;';
     for (let iAssets = 0; iAssets < gmAssetNamesArray.length; iAssets++)
       chBxs += '<input class= "szpari" type="checkbox" name="gmA" id="' + gmAssetNamesArray[iAssets] + '" /><a target="_blank" href="https://finance.yahoo.com/quote/' + gmAssetNamesArray[iAssets].split('_')[0] + '">' + gmAssetNamesArray[iAssets] + '</a> &emsp;';
 
-    chBxs += '</p ><p class="center"><button id="selectAllBtn" class="button3" title="Select/Deselect All"/></button>&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;<button id="updateAllBtn" class="button3" title="Update Charts and Tables" id=\'update_all\'></button></p> ';
+    chBxs += '</p ><p class="center"><button id="selectAllBtn" class="volBtn" title="Select/Deselect All"/></button>&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;<button id="updateAllBtn" class="volBtn" title="Update Charts and Tables" id=\'update_all\'></button></p> ';
 
     const checkBoxes = getDocElementById('idChBxs');
     checkBoxes.innerHTML = chBxs;
@@ -257,7 +256,7 @@ function processingTables(json: any, selectedTickers: string[]) {
 
   // Creating the HTML code of tables.
 
-  let currMonthlyVolatilityTbl = '<table class="currDataB"><tr align="center"><td colspan="' + (noColumns - 1) + '" bgcolor="#66CCFF"><b>Current Monthly Volatility Drag</b></td></tr><tr align="center"><td bgcolor="#66CCFF">Date</td><td class="first_name" bgcolor="#66CCFF">VIX MA(' + volLBPeriod + ')</td>';
+  let currMonthlyVolatilityTbl = '<table class="volHistData"><tr align="center"><td colspan="' + (noColumns - 1) + '" bgcolor="#66CCFF"><b>Current Monthly Volatility Drag</b></td></tr><tr align="center"><td bgcolor="#66CCFF">Date</td><td class="first_name" bgcolor="#66CCFF">VIX MA(' + volLBPeriod + ')</td>';
   for (let i = 0; i < selectedTickers.length - 1; i++)
     currMonthlyVolatilityTbl += '<td class="' + selectedTickers[i] + '" bgcolor="#66CCFF">' + selectedTickers[i] + '</td>';
 
@@ -269,7 +268,7 @@ function processingTables(json: any, selectedTickers: string[]) {
 
   currMonthlyVolatilityTbl += '</tr></table>';
 
-  let monthlyVolatilityTbl = '<table class="currData"><thead><tr align="center" ><td colspan="' + noColumns + '" bgcolor="#66CCFF"><b>Monthly Volatility Drag by Years and Months</b></td></tr><tr align="center"><td bgcolor="#66CCFF"><span class="years">Only Years</span> / <span class="years">Years+Months</span></td><td bgcolor="#66CCFF">No. Days</td><td bgcolor="#66CCFF">VIX MA(' + volLBPeriod + ')</td>';
+  let monthlyVolatilityTbl = '<table class="volDataYearsNMonths"><thead><tr align="center" ><td colspan="' + noColumns + '" bgcolor="#66CCFF"><b>Monthly Volatility Drag by Years and Months</b></td></tr><tr align="center"><td bgcolor="#66CCFF"><span class="years">Only Years</span> / <span class="years">Years+Months</span></td><td bgcolor="#66CCFF">No. Days</td><td bgcolor="#66CCFF">VIX MA(' + volLBPeriod + ')</td>';
   for (let i = 0; i < selectedTickers.length - 1; i++)
     monthlyVolatilityTbl += '<td class="' + selectedTickers[i] + '" bgcolor="#66CCFF">' + selectedTickers[i] + '</td>';
 
@@ -315,7 +314,7 @@ function processingTables(json: any, selectedTickers: string[]) {
 
   monthlyVolatilityTbl += '</tr></tbody></table>';
 
-  let recentperformanceTbl = '<table class="currDataB"><tr align="center"><td colspan="' + (noColumns - 2) + '" bgcolor="#66CCFF"><b>Recent Performance of Stocks - Percent Changes of Prices</b></td></tr><tr align="center"><td bgcolor="#66CCFF"></td>';
+  let recentperformanceTbl = '<table class="volHistData"><tr align="center"><td colspan="' + (noColumns - 2) + '" bgcolor="#66CCFF"><b>Recent Performance of Stocks - Percent Changes of Prices</b></td></tr><tr align="center"><td bgcolor="#66CCFF"></td>';
   for (let i = 0; i < selectedTickers.length - 1; i++)
     recentperformanceTbl += '<td class="' + selectedTickers[i] + '" bgcolor="#66CCFF">' + selectedTickers[i] + '</td>';
 
@@ -330,7 +329,7 @@ function processingTables(json: any, selectedTickers: string[]) {
   recentperformanceTbl += '</table>';
 
 
-  let volatilityHistoryTbl = '<table id="mytable" class="currDataB2"><thead><tr align="center"><td colspan="' + (noColumns - 1) + '" bgcolor="#66CCFF"><b>Monthly Volatility Drag History</b></td></tr><tr align="center"><td bgcolor="#66CCFF"><select id="limit"><option value="5">1-Week</option><option value="21" selected>1-Month</option><option value="63">3-Month</option><option value="126">6-Month</option><option value="252">1-Year</option><option value="' + dailyDatesArray.length + '">All</option></select ></td><td bgcolor="#66CCFF">VIX MA(' + volLBPeriod + ')</td>';
+  let volatilityHistoryTbl = '<table id="volHistTbl" class="volHistData"><thead><tr align="center"><td colspan="' + (noColumns - 1) + '" bgcolor="#66CCFF"><b>Monthly Volatility Drag History</b></td></tr><tr align="center"><td bgcolor="#66CCFF"><select id="lookbackHistTbl"><option value="5">1-Week</option><option value="21" selected>1-Month</option><option value="63">3-Month</option><option value="126">6-Month</option><option value="252">1-Year</option><option value="' + dailyDatesArray.length + '">All</option></select ></td><td bgcolor="#66CCFF">VIX MA(' + volLBPeriod + ')</td>';
   for (let i = 0; i < selectedTickers.length - 1; i++)
     volatilityHistoryTbl += '<td class="' + selectedTickers[i] + '" bgcolor="#66CCFF">' + selectedTickers[i] + '</td>';
 
@@ -356,9 +355,48 @@ function processingTables(json: any, selectedTickers: string[]) {
   const volatilityHistoryMtx = getDocElementById('idVolatilityHistory');
   volatilityHistoryMtx.innerHTML = volatilityHistoryTbl;
 
+  // under development - Daya
+  function SetVisibilityOfDailyHistory() {
+    const volLBPeriod = parseInt((document.getElementById('lookbackHistTbl') as HTMLSelectElement).value);
+    const volHistTbl = (getDocElementById('volHistTbl') as HTMLTableElement).rows;
+    const min = 0; const max = volLBPeriod + 2;
+    for (let i = 0; i < volHistTbl.length; i ++) {
+      if (i >= min && i < max)
+        volHistTbl[i].style.display = 'block';
+      else
+        volHistTbl[i].style.display = 'none'; // style.display = 'hidden
+    }
+  };
+
+  getDocElementById('lookbackHistTbl').onchange = SetVisibilityOfDailyHistory;
+  SetVisibilityOfDailyHistory();
+
+  const monthlyVolTblParent = document.querySelectorAll('.volDataYearsNMonths tr');
+  function toggleVolDataYearsNMonths(event) {
+    const volDragMonthlyHistTblRws = document.querySelectorAll('.volDataYearsNMonths tr');
+    const clickedParentRow = event.currentTarget.rowIndex;
+    // const clickedParentRow = get the clicked row from the click event.
+    for (let i = 0; i < volDragMonthlyHistTblRws.length; i++) {
+      if (event.currentTarget.className === 'child' || event.currentTarget.className == '')
+        break;
+      if (i == clickedParentRow ) {
+        for (let j = i + 1; j < i + 12; j++) {
+          if (volDragMonthlyHistTblRws[j].className === 'child')
+            volDragMonthlyHistTblRws[j].classList.toggle('child');
+          else // we found the next parent
+            volDragMonthlyHistTblRws[j].classList.toggle('child');
+        }
+        break;
+      }
+    }
+  };
+
+  for (let i = 0; i < monthlyVolTblParent.length; i++)
+    monthlyVolTblParent[i].addEventListener('click', toggleVolDataYearsNMonths);
+
+  // Generating teh Charts
   const lengthOfChart = 20;
   const indOfLength = retHistLBPeriodsNo.indexOf(lengthOfChart);
-
   const lengthSubSums: any[] = [];
   lengthSubSums[0] = 0;
   lengthSubSums[1] = retHistLBPeriodsNo[0];
@@ -370,25 +408,26 @@ function processingTables(json: any, selectedTickers: string[]) {
 
   const assChartMtx: any[] = [];
   for (let i = 0; i < nCurrDataVD; i++) {
-    const dateArray = dailyDatesArray[i];
+    const date = dailyDatesArray[i];
     const dailyVolDragsArray = dailyVolDragsMtx[i];
-    assChartMtx.push([dateArray, ...dailyVolDragsArray]);
+    assChartMtx.push([date, ...dailyVolDragsArray]);
   }
 
   const xLabel: string = 'Dates';
   const yLabel: string = 'Percentage Change';
   const yScaleTickFormat: string = '%';
+  const isDrawCricles: boolean = false;
   d3.selectAll('#pctChgChrt > *').remove();
   const lineChrtDiv = getDocElementById('pctChgChrt');
   const lineChrtTooltip = getDocElementById('tooltipChart');
-  sqLineChartGenerator(noAssets, nCurrDataVD, selectedTickers, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip);
+  sqLineChartGenerator(noAssets, nCurrDataVD, selectedTickers, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip, isDrawCricles);
 
-  getDocElementById('idChartLength').innerHTML = '<strong>Percentage Changes of Prices in the Last &emsp;<select id="limit2"><option value="1">1 Day</option><option value="3">3 Days</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="20" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[indOfLength] + '</strong >';
+  getDocElementById('idChartLength').innerHTML = '<strong>Percentage Changes of Prices in the Last &emsp;<select id="lookbackHistChrt"><option value="1">1 Day</option><option value="3">3 Days</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="20" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[indOfLength] + '</strong >';
   pctMonthlyVolChrt(indOfLength);
   // pctChrt(indOfLength);
 
-  getDocElementById('limit2').onchange = function() {
-    const lengthOfChart = parseInt((document.getElementById('limit2') as HTMLSelectElement).value);
+  getDocElementById('lookbackHistChrt').onchange = function() {
+    const lengthOfChart = parseInt((document.getElementById('lookbackHistChrt') as HTMLSelectElement).value);
     const indOfLength = retHistLBPeriodsNo.indexOf(lengthOfChart);
     pctMonthlyVolChrt(indOfLength);
   };
@@ -405,40 +444,9 @@ function processingTables(json: any, selectedTickers: string[]) {
     }
     d3.selectAll('#pctChgLookbackChrt > *').remove();
     const lineChrtLookback = getDocElementById('pctChgLookbackChrt');
-    sqLineChartGenerator(noAssets, nCurrData, selectedTickers, lookbackChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtLookback, lineChrtTooltip);
+    const isDrawCricles1: boolean = true;
+    sqLineChartGenerator(noAssets, nCurrData, selectedTickers, lookbackChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtLookback, lineChrtTooltip, isDrawCricles1);
   }
-
-  // under development - Daya
-  getDocElementById('limit').onchange = function() {
-    const volLBPeriod = parseInt((document.getElementById('limit') as HTMLSelectElement).value);
-    const volHistTbl = (getDocElementById('mytable') as HTMLTableElement).rows;
-    const min = 0; let max = 20; // (or 7)
-    for (let i = 0; i < volHistTbl.length; i ++) {
-      max = volLBPeriod + 2;
-      if (i >= min && i < max)
-        volHistTbl[i].style.display = 'block';
-      else
-        volHistTbl[i].style.display = 'none'; // style.display = 'hidden
-    }
-  };
-
-  // monthly volDrag visualizer ToggleTable feature
-  const monthlyVolTblParent = document.getElementsByClassName('parent');
-
-  const toggleTbl = function(event) {
-    const childNodes = event.currentTarget.parentElement.querySelectorAll('.currData tr');
-    childNodes.forEach((child) => {
-      if (!(child.className === 'parent')) {
-        if (child.style.display == 'block')
-          child.style.display = 'none';
-        else
-          child.style.display = 'block';
-      }
-    });
-  };
-
-  for (let i = 0; i < monthlyVolTblParent.length; i++)
-    monthlyVolTblParent[i].addEventListener('click', toggleTbl, false);
 }
 
 console.log('SqCore: Script END');

@@ -167,7 +167,8 @@ function renewedUberInfoTbls(json) {
   const yScaleTickFormat = '%';
   const lineChrtDiv = getDocElementById('pctChgChrt');
   const lineChrtTooltip = getDocElementById('tooltipChart');
-  sqLineChartGenerator(noAssets, nCurrData, assetNames2Array, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip);
+  const isDrawCricles: boolean = true;
+  sqLineChartGenerator(noAssets, nCurrData, assetNames2Array, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip, isDrawCricles);
 
   const currDataVixArray = json.currDataVixVec.split(',');
   const currDataDaysVixArray = json.currDataDaysVixVec.split(',');
@@ -287,6 +288,6 @@ function renewedUberInfoTbls(json) {
   const yScaleTickFormatVix: string = '$';
   d3.selectAll('#vixChart > *').remove();
   const lineChrtDivVix = getDocElementById('vixChart');
-  sqLineChartGenerator(noAssetsVix, nCurrDataVix, assetNames2ArrayVix, vixFutPriceData, xLabelVix, yLabelVix, yScaleTickFormatVix, lineChrtDivVix, lineChrtTooltip);
+  sqLineChartGenerator(noAssetsVix, nCurrDataVix, assetNames2ArrayVix, vixFutPriceData, xLabelVix, yLabelVix, yScaleTickFormatVix, lineChrtDivVix, lineChrtTooltip, isDrawCricles);
 }
 console.log('SqCore: Script END');
