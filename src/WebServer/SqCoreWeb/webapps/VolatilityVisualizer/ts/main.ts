@@ -169,17 +169,6 @@ window.onload = function onLoadWindow() {
         inputCheck[i].checked = true;
       inputCheck[i].checked;
     }
-
-    // Step 1: make the tickerSelection area work
-    // to keep this selectedTickers varibale current.
-
-    // Step 2:  Chart 1 // draw it based on selectedTickers
-
-    // Chart 2
-
-    // table 1
-
-    // Table 2
   }
   console.log('SqCore: window.onload() END.');
 };
@@ -374,23 +363,16 @@ function processingTables(json: any, selectedTickers: string[]) {
   const monthlyVolTblParent = document.querySelectorAll('.volDataYearsNMonths tr');
   function toggleVolDataYearsNMonths(event) {
     const volDragMonthlyHistTblRws = document.querySelectorAll('.volDataYearsNMonths tr');
-    const clickedParentRow = event.currentTarget.rowIndex;
-    // const clickedParentRow = get the clicked row from the click event.
-    for (let i = 0; i < volDragMonthlyHistTblRws.length; i++) {
-      if (event.currentTarget.className === 'child' || event.currentTarget.className == '')
+    const clickedParentRowIdx = event.currentTarget.rowIndex;
+    for (let j = clickedParentRowIdx + 1; j < clickedParentRowIdx + 13; j++) {
+      if (event.currentTarget.className === 'child' || event.currentTarget.className === '')
         break;
-      if (i == clickedParentRow ) {
-        for (let j = i + 1; j < i + 12; j++) {
-          if (volDragMonthlyHistTblRws[j].className === 'child')
-            volDragMonthlyHistTblRws[j].classList.toggle('child');
-          else // we found the next parent
-            volDragMonthlyHistTblRws[j].classList.toggle('child');
-        }
-        break;
-      }
+      if (volDragMonthlyHistTblRws[j].className !== 'parent')
+        volDragMonthlyHistTblRws[j].classList.toggle('child');
+      else
+        break; // no further processing is required once we reach the next parent
     }
   };
-
   for (let i = 0; i < monthlyVolTblParent.length; i++)
     monthlyVolTblParent[i].addEventListener('click', toggleVolDataYearsNMonths);
 

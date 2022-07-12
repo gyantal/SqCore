@@ -9,6 +9,7 @@ using FinTechCommon;
 using System.Text;
 using System.Globalization;
 using MathCommon.MathNet;
+using System.IO;
 
 namespace SqCoreWeb.Controllers
 {    
@@ -114,29 +115,19 @@ namespace SqCoreWeb.Controllers
 
         public static string Get(int p_lbP)
         {
-            // //Defining asset lists.
-            // string[] volAssetList = new string[] { "SVXY!Light0.5x.SQ", "VXX.SQ", "VXZ.SQ"};
+            // //Defining asset lists.    
+
+            // string[] volAssetList = new string[] { "SVXY", "VXX", "VXZ" };
+            // string[] volAssetListNN = new string[] { "SVXY", "VXX", "VXZ" };
         
-            // string[] volAssetListNN = new string[] { "SVXY", "VXX", "VXZ"};
-        
+            // string[] etpAssetList = new string[] { "SPY", "UPRO", "QQQ", "TQQQ", "TLT", "TMV", "USO", "UNG" };
+            // string[] etpAssetListNN = new string[] { "SPY", "UPRO", "QQQ", "TQQQ", "TLT", "TMV", "USO", "UNG" };
 
-            // //string[] volAssetList = new string[] { "SVXY!Light0.5x.SQ", "VXX.SQ", "VXZ.SQ", "UVXY!Light1.5x.SQ", "TVIX!Better1.SQ" };
-            // //string[] volAssetListNN = new string[] { "SVXY_Light", "VXX", "VXZ", "UVXY_Light", "TVIX_Better" };
-        
-            // string[] etpAssetList = new string[] { "SPY", "UPRO.SQ", "QQQ", "TQQQ.SQ", "TLT", "TMV", "USO", "UCO", "UNG"};
-            // string[] etpAssetListNN = new string[] { "SPY", "UPRO", "QQQ", "TQQQ", "TLT", "TMV", "USO", "UCO", "UNG"};
+            // string[] gchAssetList = new string[] { "AAPL", "AMZN", "GOOGL" };
+            // string[] gchAssetListNN = new string[] { "AAPL", "AMZN", "GOOGL" };
 
-            // //string[] etpAssetList = new string[] { "SPY", "UPRO.SQ", "QQQ", "TQQQ.SQ", "FAS.SQ", "TMV", "UGAZ", "UWT", "UGLD" };
-            // //string[] etpAssetListNN = new string[] { "SPY", "UPRO", "QQQ", "TQQQ", "FAS", "TMV", "UGAZ", "UWT", "UGLD" };
-
-            // // 2022-05: BABA has 2 days less prices then everything else. Just ignore BABA
-            // // string[] gchAssetList = new string[] { "AAPL", "ADBE", "AMZN", "BABA", "CRM", "FB", "GOOGL", "MA", "MSFT", "NOW", "NVDA", "PYPL", "QCOM", "SQ", "V" };
-            // // string[] gchAssetListNN = new string[] { "AAPL", "ADBE", "AMZN", "BABA", "CRM", "FB", "GOOGL", "MA", "MSFT", "NOW", "NVDA", "PYPL", "QCOM", "SQ", "V" };
-            // string[] gchAssetList = new string[] { "AAPL", "AMZN", "FB", "GOOGL", "MSFT", "NVDA" };
-            // string[] gchAssetListNN = new string[] { "AAPL", "AMZN", "FB", "GOOGL", "MSFT", "NVDA" };
-
-            // string[] gmAssetList = new string[] { "MDY", "ILF", "FEZ", "EEM", "EPP", "VNQ"};
-            // string[] gmAssetListNN = new string[] { "MDY", "ILF", "FEZ", "EEM", "EPP", "VNQ" };
+            // string[] gmAssetList = new string[] { "EEM", "VNQ"};
+            // string[] gmAssetListNN = new string[] { "EEM", "VNQ" };
 
             // string[] vixAssetList = new string[] { "^VIX" };
 
@@ -175,6 +166,29 @@ namespace SqCoreWeb.Controllers
             
             List<DailyData> quotesData2 = quotesData[allAssetList.Length-1];
 
+            // // Debug.WriteLine("quotesDataAll.Count: " + quotesDataAll.Count);
+            try
+            {
+                StreamWriter sw = new("C:\\temp\\quotesDataVol.csv");
+                for (int i = 0; i < allAssetList.Length - 1; i++)
+                {
+                    sw.Write(allAssetList[i] + ": " + Environment.NewLine);
+                    List<DailyData> prices = quotesData[i];
+                    string priceStr = String.Join('\t', prices.Select(r => r.Date.ToString() + ", " + r.AdjClosePrice.ToString() + Environment.NewLine));
+                    sw.Write(priceStr + Environment.NewLine);
+                }
+                sw.Close();
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Exception: " + e.Message);
+            }
+            // StreamWriter sw1 = new("C:\\temp\\cashEquivalentQuotesData.csv");
+            // sw1.Write(allAssetList[^1] + ": " + Environment.NewLine);
+            //  List<DailyData> prices1 = quotesData.Item2;
+            // string priceStr1 = String.Join('\t', prices1.Select(r => r.Date.ToString() + ", " + r.AdjClosePrice.ToString() + Environment.NewLine));
+            // sw1.Write(priceStr1 + Environment.NewLine);
+            // // Debug.WriteLine(sbDebugData.ToString());
 
             int noAssets = allAssetList.Length - 1;
             int noBtDays = quotesData1[0].Count;

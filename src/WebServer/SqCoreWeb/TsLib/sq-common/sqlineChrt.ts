@@ -65,7 +65,7 @@ export function sqLineChartGenerator(noAssets: number, nCurrData: number, assetN
 
     // Add Y axis
     const yScale = d3.scaleLinear()
-        .domain([(yMin as number), (yMax as number) * 1.1]) // *. increase by 10%. *1.1, $50 $200, +5, fine. 0.5 ... 0.8 + 5?
+        .domain([(yMin as number) - ((yMax as number) - (yMin as number)) * 0.1, (yMax as number) * 1.1]) // *. increase by 10%. *1.1, $50 $200, +5, fine. 0.5 ... 0.8 + 5?
         .range([height, 0]);
 
     const lineChrt = d3.select(lineChrtDiv)
