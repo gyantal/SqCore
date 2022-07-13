@@ -65,7 +65,7 @@ namespace SqCoreWeb
             // HealthMonitor.Exe is running on VBrokerDev server. It will stay there, so it can report if SqCore server is down.
             // However, it is too much work to set up its firewall port filter for all developers every time when a developer IP changes. 
             // So, in local development, we only run the HealthMonitorCheck for 1 developer. So, we don't receive "HealthMonitor is NOT Alive." warning emails all the time.
-            if (Utils.RunningPlatform() == Platform.Linux || (Utils.RunningPlatform() == Platform.Windows && Environment.UserName == "gyantal"))
+            if (OperatingSystem.IsLinux() || (OperatingSystem.IsWindows() && Environment.UserName == "gyantal"))
                 CheckHealthMonitorAlive();
 
             OvermindTaskSettingAction action = OvermindTaskSettingAction.Unknown;

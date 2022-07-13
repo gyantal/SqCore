@@ -30,7 +30,7 @@ namespace FinTechCommon
                 throw new ArgumentOutOfRangeException(nameof(sourceDbIdx), "MirrorDb() expects idx from [0..15], and they should be different.");
 
             // 1. Create a new connection. Don't use the MemDb main connection, because we might want to switch to a non-default DB, like DB-1. It is safer this way. Don't tinker with the MemDb main connection
-            var redisConnString = (Utils.RunningPlatform() == Platform.Windows) ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
+            var redisConnString = OperatingSystem.IsWindows() ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
             ConnectionMultiplexer newConn = ConnectionMultiplexer.Connect(redisConnString);
             EndPoint endPoint = newConn.GetEndPoints().First();
             var server = newConn.GetServer(endPoint);
@@ -224,7 +224,7 @@ namespace FinTechCommon
             sb.Append(sbCash).Append(sbCpair).Append(sbIndex).Append(sbReEst).Append(sbNav).Append(sbPortf).Append(sbComp).Append(sbStock).Append('}');
 
             // Create a new connection. Don't use the MemDb main connection, because we might want to switch to a non-default DB, like DB-1. It is safer this way. Don't tinker with the MemDb main connection
-            var redisConnString = (Utils.RunningPlatform() == Platform.Windows) ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
+            var redisConnString = OperatingSystem.IsWindows() ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
             ConnectionMultiplexer newConn = ConnectionMultiplexer.Connect(redisConnString);
             var destDb = newConn.GetDatabase(destDbIdx);
 

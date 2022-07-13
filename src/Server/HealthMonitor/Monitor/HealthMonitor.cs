@@ -97,7 +97,7 @@ namespace HealthMonitor
 
         public static bool IsRunningAsLocalDevelopment()
         {
-            if (Utils.RunningPlatform() == Platform.Linux)    // assuming production environment on Linux, Other ways to customize: ifdef DEBUG/RELEASE  ifdef PRODUCTION/DEVELOPMENT, etc. this Linux/Windows is fine for now
+            if (OperatingSystem.IsLinux())    // assuming production environment on Linux, Other ways to customize: ifdef DEBUG/RELEASE  ifdef PRODUCTION/DEVELOPMENT, etc. this Linux/Windows is fine for now
             {
                 return false;
             }

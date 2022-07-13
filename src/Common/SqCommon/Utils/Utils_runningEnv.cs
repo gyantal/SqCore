@@ -1,19 +1,10 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 
 namespace SqCommon
 {
-    public enum Platform
-    {
-        Windows,
-        Linux,
-        Mac
-    }
-
     public static partial class Utils
     {
         public static readonly System.Globalization.CultureInfo InvCult = System.Globalization.CultureInfo.InvariantCulture;
@@ -22,17 +13,6 @@ namespace SqCommon
         public static NLog.Logger Logger = NLog.LogManager.GetLogger("Sq");   // the name of the logger will be not the "Namespace.Class", but whatever you prefer: "App"
         public static IConfigurationRoot Configuration = new ConfigurationBuilder().Build();    // even small Tools have configs for sensitive data like passwords.
         public static ManualResetEventSlim? MainThreadIsExiting = null;  // broadcast main thread shutdown and give 2 seconds for long running background threads to quit. Some Tools, Apps do not require this, so don't initiate this for them automatically
-
-        // see discussion here in CoreCLR (they are not ready) https://github.com/dotnet/corefx/issues/1017
-        public static Platform RunningPlatform()
-        {
-            return Environment.NewLine switch
-            {
-                "\n" => Platform.Linux,
-                "\r\n" => Platform.Windows,
-                _ => throw new Exception("RunningPlatform() not recognized"),
-            };
-        }
 
         public static string RuntimeConfig()
         {
@@ -56,55 +36,17 @@ namespace SqCommon
 #endif
         }
 
-        // public enum RunningEnvStrType
-        // {
-        //     Unknown,
-        //     NonCommitedSensitiveDataFullPath,
-        //     HttpsCertificateFullPath
-        // }
-
-        // static Dictionary<RunningEnvStrType, Dictionary<string, string>> RunningEnvStrDict = new Dictionary<RunningEnvStrType, Dictionary<string, string>>()
-        // {
-        //      { RunningEnvStrType.NonCommitedSensitiveDataFullPath,
-        //         new Dictionary<string, string>()
-        //         {
-        //             { "Lin.*", "/home/ubuntu/SQ/WebServer/SQLab/SQLab.WebServer.SQLab.NoGitHub.json" },
-        //             { "Win.gyantal", "c:/agy/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/" }
-        //         }
-        //     },
-        //     { RunningEnvStrType.HttpsCertificateFullPath,
-        //         new Dictionary<string, string>()
-        //         {
-        //             { "Lin.*", "/home/sq-vnc-client/SQ/WebServer/SqCoreWeb/merged_pubCert_privKey_pwd_haha.pfx" },
-        //             { "Win.gyantal", @"g:\agy\myknowledge\programming\_ASP.NET\https cert\letsencrypt Folder from Ubuntu\letsencrypt\live\sqcore.net\merged_pubCert_privKey_pwd_haha.pfx" }
-        //         }
-        //     }
-        // };
-        // public static string RunningEnvStr(RunningEnvStrType p_runningEnvStrType)
-        // {
-        //     string os_username = (RunningPlatform() == Platform.Linux) ? "Lin.*" : "Win." + Environment.UserName);
-        //     if (RunningEnvStrDict.TryGetValue(p_runningEnvStrType, out Dictionary<string, string> dictRe))
-        //     {
-        //         if (dictRe.TryGetValue(os_username, out string str))
-        //         {
-        //             return str;
-        //         }
-        //     }
-        //     Utils.Logger.Error("Error in RunningEnvStr(). Couldn't find: " + os_username + ". Returning null.");
-        //     return string.Empty;
-        // }
-
         public static string SensitiveConfigFolderPath()
         {
-            return RunningPlatform() switch
+            return Environment.OSVersion.Platform switch
             {
                 // return "/home/ubuntu/SQ/Tools/BenchmarkDB/";  // on Linux, sometimes it is not the 'ubuntu' superuser, but something else.
                 // GetCurrentDirectory() is the current working directory of the app. Most likely it is the folder of the '*.csproj'.
                 // but deployment rm -rf everything until the src folder.
                 // return Directory.GetCurrentDirectory() + "/../../.." + "/";
                 // return "/home/sq-vnc-client/SQ/NonCommitedSensitiveData/";
-                Platform.Linux => $"/home/{Environment.UserName}/SQ/NonCommitedSensitiveData/",
-                Platform.Windows => Environment.UserName switch // Windows user name
+                PlatformID.Unix => $"/home/{Environment.UserName}/SQ/NonCommitedSensitiveData/",
+                PlatformID.Win32NT => Environment.UserName switch // Windows user name
                 {
                     // gyantal-PC
                     "gyantal" => "h:/.shortcut-targets-by-id/0BzxkV1ug5ZxvVmtic1FsNTM5bHM/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/",

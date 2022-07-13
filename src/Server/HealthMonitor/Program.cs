@@ -19,7 +19,7 @@ namespace HealthMonitor
             string systemEnvStr = $"(v1.0.14,{Utils.RuntimeConfig() /* Debug | Release */},CLR:{System.Environment.Version},{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},OS:{System.Environment.OSVersion},usr:{System.Environment.UserName},CPU:{System.Environment.ProcessorCount},ThId-{Environment.CurrentManagedThreadId})";
             Console.WriteLine($"Hi {appName}.{systemEnvStr}");
             gLogger.Info($"********** Main() START {systemEnvStr}");
-            if (Utils.RunningPlatform() != Platform.Linux) // https://stackoverflow.com/questions/47059468/get-or-set-the-console-title-in-linux-and-macosx-with-net-core
+            if (!OperatingSystem.IsLinux()) // https://stackoverflow.com/questions/47059468/get-or-set-the-console-title-in-linux-and-macosx-with-net-core
                 Console.Title = $"{appName} v1.0.15"; // "SqCoreWeb v1.0.15", but on Linux use it only in GUI mode. It works with graphical Xterm in VNC, but with 'screen' or with Putty it is buggy and after this, the next 200 characters are not written to console. T
 
             gHeartbeatTimer = new System.Threading.Timer((e) =>    // Heartbeat log is useful to find out when VM was shut down, or when the App crashed

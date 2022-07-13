@@ -73,10 +73,10 @@ namespace BrokerCommon
         public static (string HostIp, GatewayClientID GwClientID) GetHostIpAndGatewayClientID(GatewayId p_gatewayId)
         {
 #pragma warning disable IDE0066 // IDE0066: Use 'switch' expression
-            switch (Utils.RunningPlatform())
+            switch (Environment.OSVersion.Platform)
             {
 #pragma warning restore IDE0066
-                case Platform.Linux:
+                case PlatformID.Unix:
                     return p_gatewayId switch
                     {
                         GatewayId.CharmatMain => (ServerIp.LocalhostLoopbackWithIP, GatewayClientID.SqCoreToDcProd),
@@ -85,7 +85,7 @@ namespace BrokerCommon
                         _ => throw new NotImplementedException()
                     };
 
-                case Platform.Windows:
+                case PlatformID.Win32NT:
                     // find out which user from the team and determine it accordingly. Or just check whether folders exists (but that takes HDD read, which is slow)
                     return Environment.UserName switch   // Windows user name
                     {
@@ -270,7 +270,7 @@ namespace BrokerCommon
                     nConnectionRetry++;
                     Console.WriteLine($"Connecting to IB {GatewayId} on {Host}:{SocketPort} with ClientID:{(int)RealIbConnectionClientID}...");
                     IBrokerWrapper ibWrapper;
-                    if (Utils.RunningPlatform() == Platform.Linux)
+                    if (OperatingSystem.IsLinux())
                     {
                         ibWrapper = new BrokerWrapperIb(AccSumArrived, AccSumEnd, AccPosArrived, AccPosEnd);      // recreate IB wrapper at every reConnection. Safer this way.
                     }

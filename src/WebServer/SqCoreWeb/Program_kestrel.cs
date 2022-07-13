@@ -127,7 +127,7 @@ namespace SqCoreWeb
                     // set set this ASP logging.SetMinimumLevel to Trace, 
                     // set minlevel="Trace" in NLog.config
                     logging.ClearProviders();   // this deletes the Console logger which is a default in ASP.net
-                    if (String.Equals(Utils.RuntimeConfig(), "DEBUG", StringComparison.OrdinalIgnoreCase))
+                    if (Utils.IsDebugRuntimeConfig())
                     {
                         // logging.AddConsole();   // in VsCode at F5: ASP.NET Core logs appears in normal console.
                         logging.AddDebug();  // in VsCode at F5: ASP.NET Core logs appears in Debug console. 

@@ -220,7 +220,7 @@ namespace BrokerCommon
             {
                 // If it is not Expected exception => this thread will terminate, which will terminate the whole App. Send HealthMonitorMessage, if it is an active.
                 Utils.Logger.Error("Unexpected BrokerWrapperIb.error(). Exception thrown: " + e);
-                if (Utils.RunningPlatform() == Platform.Linux)
+                if (OperatingSystem.IsLinux())
                     HealthMonitorMessage.SendAsync($"Exception in Unexpected  SqCore.BrokerWrapperIb.error(). Client code C# runtime Exception: '{ e.ToStringWithShortenedStackTrace(400)}'", HealthMonitorMessageID.ReportErrorFromVirtualBroker).TurnAsyncToSyncTask();
                 throw e;
             }
@@ -483,7 +483,7 @@ namespace BrokerCommon
             string errMsg = "BrokerWrapper.error(str). IbGateway sent error. " + p_str;
             Console.WriteLine(errMsg);
             Utils.Logger.Error(errMsg);
-            if (Utils.RunningPlatform() == Platform.Linux)
+            if (OperatingSystem.IsLinux())
                 HealthMonitorMessage.SendAsync($"Msg from SqCore.BrokerWrapperIb.error(). {errMsg}", HealthMonitorMessageID.ReportErrorFromVirtualBroker).TurnAsyncToSyncTask();
             //If there is a single trading error, we may want to continue, so don't terminate the thread or the App, just inform HealthMonitor.
             //throw e;    // this thread will terminate. Because we don't expect this exception. Safer to terminate thread, which will terminate App. The user probably has to restart IBGateways manually anyway.

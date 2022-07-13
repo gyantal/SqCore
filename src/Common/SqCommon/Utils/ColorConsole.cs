@@ -71,7 +71,7 @@ namespace SqCommon
             {
                 previousForeColor = Console.ForegroundColor;
 
-                if (Utils.RunningPlatform() == Platform.Linux)
+                if (OperatingSystem.IsLinux())
                 {
                     Console.Write(GetLinuxVT100ForeColorCodes((ConsoleColor)p_foregroundColor));
                 }
@@ -83,7 +83,7 @@ namespace SqCommon
 
             if (p_backgroundColor != null)
             {
-                if (Utils.RunningPlatform() == Platform.Linux)
+                if (OperatingSystem.IsLinux())
                 {
                     g_logger.Trace("Linux background colour is not yet implemented. The whole Linux implementation is temporary anyway, until DotNetCore is fixed on Linux.");
                 }
@@ -98,7 +98,7 @@ namespace SqCommon
             // Console.ResetColor(); is one option, but it is not that good than going back to previous
             if (p_previousColors.Item1 != null)
             {
-                if (Utils.RunningPlatform() == Platform.Linux)
+                if (OperatingSystem.IsLinux())
                 {
                     Console.Write(GetLinuxVT100ForeColorCodes((ConsoleColor)p_previousColors.Item1));
                 }

@@ -47,19 +47,19 @@ namespace SqCommon
                     switch (p_tzType)
                     {
                         case TimeZoneId.London:
-                            if (Utils.RunningPlatform() == Platform.Windows)
+                            if (OperatingSystem.IsWindows())
                                 zoneId = "GMT Standard Time";
                             else
                                 zoneId = "Europe/London";
                             break;
                         case TimeZoneId.EST:
-                            if (Utils.RunningPlatform() == Platform.Windows)
+                            if (OperatingSystem.IsWindows())
                                 zoneId = "Eastern Standard Time";
                             else
                                 zoneId = "America/New_York";        // or "US/Eastern". We have to test it.
                             break;
                         case TimeZoneId.CET:
-                            if (Utils.RunningPlatform() == Platform.Windows)
+                            if (OperatingSystem.IsWindows())
                                 zoneId = "Central Europe Standard Time";
                             else
                                 zoneId = "Europe/Budapest";

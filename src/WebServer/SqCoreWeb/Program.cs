@@ -48,7 +48,7 @@ namespace SqCoreWeb
             // Setting Console.Title
             // on Linux use it only in GUI mode. It works with graphical Xterm in VNC, but with 'screen' or with Putty it is buggy and after this, the next 200 characters are not written to console.
             // Future work if needed: bring a flag to use it in string[] args, but by default, don't set Title on Linux 
-            if (Utils.RunningPlatform() != Platform.Linux) // https://stackoverflow.com/questions/47059468/get-or-set-the-console-title-in-linux-and-macosx-with-net-core
+            if (!OperatingSystem.IsLinux()) // https://stackoverflow.com/questions/47059468/get-or-set-the-console-title-in-linux-and-macosx-with-net-core
                 Console.Title = $"{appName} v1.0.15"; // "SqCoreWeb v1.0.15"
 
             gHeartbeatTimer = new System.Threading.Timer((e) =>    // Heartbeat log is useful to find out when VM was shut down, or when the App crashed
@@ -90,7 +90,7 @@ namespace SqCoreWeb
                 DashboardClient.PreInit();    // services add handlers to the MemDb.EvMemDbInitialized event.
 
                 // 2. Init services
-                var redisConnString = (Utils.RunningPlatform() == Platform.Windows) ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
+                var redisConnString = OperatingSystem.IsWindows() ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
                 int redisDbIndex = 0;  // DB-0 is ProductionDB. DB-1+ can be used for Development when changing database schema, so the Production system can still work on the ProductionDB
                 var db = new Db(redisConnString, redisDbIndex, null);   // mid-level DB wrapper above low-level DB
                 BrokersWatcher.gWatcher.Init(); // Returns quickly, because Broker connections happen in a separate ThreadPool threads. FintechCommon's MemDb is built on BrokerCommon's BrokerWatcher. So, it makes sense to initialize Brokers asap. Before MemDb uses it for RtNavTimer_Elapsed.ownloadLastPriceNav() very early
