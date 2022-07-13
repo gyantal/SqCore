@@ -82,7 +82,7 @@ namespace FinTechCommon
         readonly string[] m_highFreqTickrs = Array.Empty<string>(); /* VBroker */
         readonly string[] m_midFreqTickrs = new string[] {
             "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO", /* DashboardClient_mktHealth.cs */
-            "S/VIXY", "S/TQQQ", "S/UPRO", "S/SVXY", "S/TMV", "S/UCO", "S/UNG" /* , "I/VIX" /* /* StrategyRenewedUber.cs */
+            "S/VIXY", "S/TQQQ", "S/UPRO", "S/SVXY", "S/TMV", "S/UCO" /*, "S/UNG" already present in DashboardClient */ /* , "I/VIX" */ /* StrategyRenewedUber.cs */
              /* StrategySin.cs */ // future when we trade Sin based on SqCore: add these tickers from here https://docs.google.com/spreadsheets/d/1JXMbEMAP5AOqB1FjdM8jpptXfpuOno2VaFVYK8A1eLo/edit#gid=0
         };
 
@@ -389,7 +389,7 @@ namespace FinTechCommon
             }
             catch (Exception e)
             {
-                Utils.Logger.Error(e, "DownloadLastPriceYF()");
+                Utils.Logger.Error(e, "DownloadLastPriceYF() crash");
             }
         }
 
