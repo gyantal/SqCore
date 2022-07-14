@@ -166,24 +166,6 @@ namespace SqCoreWeb.Controllers
             
             List<DailyData> quotesData2 = quotesData[allAssetList.Length-1];
 
-            // // Debug.WriteLine("quotesDataAll.Count: " + quotesDataAll.Count);
-            try
-            {
-                StreamWriter sw = new("C:\\temp\\quotesDataVol.csv");
-                for (int i = 0; i < allAssetList.Length - 1; i++)
-                {
-                    sw.Write(allAssetList[i] + ": " + Environment.NewLine);
-                    List<DailyData> prices = quotesData[i];
-                    string priceStr = String.Join('\t', prices.Select(r => r.Date.ToString() + ", " + r.AdjClosePrice.ToString() + Environment.NewLine));
-                    sw.Write(priceStr + Environment.NewLine);
-                }
-                sw.Close();
-            }
-            catch(Exception e)
-            {
-                Console.WriteLine("Exception: " + e.Message);
-            }
-
             int noAssets = allAssetList.Length - 1;
             int noBtDays = quotesData1[0].Count;
             DateTime[] quotesDateVec = new DateTime[noBtDays];

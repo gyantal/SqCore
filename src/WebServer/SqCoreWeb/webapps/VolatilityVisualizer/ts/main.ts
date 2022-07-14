@@ -436,10 +436,18 @@ function processingTables(json: any, selectedTickers: string[]) {
   const noAssets = selectedTickers.length;
 
   const assChartMtx: any[] = [];
-  for (let i = 0; i < nCurrDataVD; i++) {
-    const date = dailyDatesArray[i];
-    const dailyVolDragsArray = dailyVolDragsMtx[i];
-    assChartMtx.push([date, ...dailyVolDragsArray]);
+  const pctChrtAssets: any[] = [];
+  for (let i = 0; i < assetNamesArray.length; i++) {
+    for (let j = 0; j < selectedTickers.length; j++) {
+      if (assetNamesArray[i] === selectedTickers[j]) {
+        pctChrtAssets.push(assetNamesArray[i]);
+        for (let k = 0; k < nCurrDataVD; k++) {
+          const date = dailyDatesArray[k];
+          const dailyVolDragsArray = dailyVolDragsMtx[k];
+          assChartMtx.push([date, ...dailyVolDragsArray]);
+        }
+      }
+    }
   }
 
   const xLabel: string = 'Dates';
@@ -449,7 +457,7 @@ function processingTables(json: any, selectedTickers: string[]) {
   d3.selectAll('#pctChgChrt > *').remove();
   const lineChrtDiv = getDocElementById('pctChgChrt');
   const lineChrtTooltip = getDocElementById('tooltipChart');
-  sqLineChartGenerator(noAssets, nCurrDataVD, selectedTickers, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip, isDrawCricles);
+  sqLineChartGenerator(noAssets, nCurrDataVD, pctChrtAssets, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip, isDrawCricles);
 
   getDocElementById('idChartLength').innerHTML = '<strong>Percentage Changes of Prices in the Last &emsp;<select id="lookbackHistChrt"><option value="1">1 Day</option><option value="3">3 Days</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="20" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[indOfLength] + '</strong >';
   pctMonthlyVolChrt(indOfLength);
@@ -466,15 +474,23 @@ function processingTables(json: any, selectedTickers: string[]) {
     const chartStart = lengthSubSums[indOfLength];
     const nCurrData = chartStart + 1;
     const lookbackChartMtx: any[] = [];
-    for (let i = 0; i < nCurrData; i++) {
-      const dateArray = dailyDatesArray[dailyDatesArray.length - nCurrData + i];
-      const histReturnsArray = histRets2ChartsMtx[chartStart - 1 + i];
-      lookbackChartMtx.push([dateArray, ...histReturnsArray]);
+    const pctMonthlyChrtAssets: any[] = [];
+    for (let i = 0; i < assetNamesArray.length; i++) {
+      for (let j = 0; j < selectedTickers.length; j++) {
+        if (assetNamesArray[i] === selectedTickers[j]) {
+          pctMonthlyChrtAssets.push(assetNamesArray[i]);
+          for (let k = 0; k < nCurrData; k++) {
+            const dateArray = dailyDatesArray[dailyDatesArray.length - nCurrData + k];
+            const histReturnsArray = histRets2ChartsMtx[chartStart - 1 + k];
+            lookbackChartMtx.push([dateArray, ...histReturnsArray]);
+          }
+        }
+      }
     }
     d3.selectAll('#pctChgLookbackChrt > *').remove();
     const lineChrtLookback = getDocElementById('pctChgLookbackChrt');
     const isDrawCricles1: boolean = true;
-    sqLineChartGenerator(noAssets, nCurrData, selectedTickers, lookbackChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtLookback, lineChrtTooltip, isDrawCricles1);
+    sqLineChartGenerator(noAssets, nCurrData, pctMonthlyChrtAssets, lookbackChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtLookback, lineChrtTooltip, isDrawCricles1);
   }
 }
 
