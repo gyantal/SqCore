@@ -263,7 +263,7 @@ namespace SqCoreWeb
                 return double.NaN;
 
             string firstCharsWithSubString = !String.IsNullOrWhiteSpace(priceHtml!) && priceHtml.Length >= 300 ? priceHtml[..300] : priceHtml;
-            Utils.Logger.Trace("HttpClient().GetStringAsync returned: " + firstCharsWithSubString);
+            Utils.Logger.Trace("Utils.DownloadString() returned: " + firstCharsWithSubString);
 
             int iLastPriceStart = priceHtml.IndexOf($"\"last\":\"");
             if (iLastPriceStart != -1)

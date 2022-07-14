@@ -14,7 +14,7 @@ namespace SqCommon
         };
 
         // HttpWebRequest vs. HttpClient. Never use HttpWebRequest. HttpClient is preferred over HttpWebRequest. https://www.diogonunes.com/blog/webclient-vs-httpclient-vs-httpwebrequest/
-        static readonly HttpClient g_httpClient = new(g_httpHandler); // for efficiency, we can make it global, because it can handle multiple queries in multithread
+        static HttpClient? g_httpClient = null; // Lazy eval is better for Apps that don't use it at all. For efficiency, we can make it global, because it can handle multiple queries in multithread
 
         public static async Task<string?> DownloadStringWithRetryAsync(string p_url)
         {
@@ -23,6 +23,14 @@ namespace SqCommon
 
         public static async Task<string?> DownloadStringWithRetryAsync(string p_url, int p_nRetry, TimeSpan p_sleepBetweenRetries, bool p_throwExceptionIfUnsuccesful = true)
         {
+            if (g_httpClient == null)
+            {
+                // TODO: this can be removed in .NET 7, when Http3 will be no longer Preview feature
+                // This has to be called before any HttpClient creation.
+                System.AppContext.SetSwitch("System.Net.SocketsHttpHandler.Http3Support", true);    // enable HTTP/3 support for HttpClient: which is only an experimental feature in .NET 6
+                g_httpClient = new(g_httpHandler);
+            }
+
             string webpage = string.Empty;
             int nDownload = 0;
             var request = CreateRequest(p_url);
@@ -168,11 +176,23 @@ namespace SqCommon
                 };
             }
 
+            // 2022-07. .Net 6, Trying HTTP/3 protocol.
+            // 1. Using HTTP3 in HttpClient
+            // https://www.nyse.com/markets/hours-calendars only Http1.1
+            // https://api.nasdaq.com/api/calendar/splits Http2
+            // https://docs.google.com/spreadsheets uses Http3 in Chrome, but response is only Http2 here. Maybe it is only experimental and they will fix it in .NET 7.
+            // So, we set it up to use Http3 if possible, but very few websites use it. Whatever, try to use it if server supports.
+
+            // 2. Using HTTP3 in Server (Kestrel):
+            // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel/http3?view=aspnetcore-6.0  Many problems.
+            // It can only work via HTTPS, not HTTP. "You first need to enable the preview function in csproj:"
+            // That will enable ALL .NET 6 preview features. With ALL potential bugs and Linux problems. Better to delay HTTP3 in Kestrel server until it becomes final, not Preview.
             return new HttpRequestMessage
             {
                 RequestUri = new Uri(p_url),
                 Method = HttpMethod.Get,
-                Version = HttpVersion.Version20,    // The default is Version11 (Silly: "In .NET Core 3.0+, the default value was reverted back from 2.0 to 1.1.")
+                Version = HttpVersion.Version30,    // The default is Version11 (Silly: "In .NET Core 3.0+, the default value was reverted back from 2.0 to 1.1.")
+                VersionPolicy = HttpVersionPolicy.RequestVersionOrLower
             };
         }
 

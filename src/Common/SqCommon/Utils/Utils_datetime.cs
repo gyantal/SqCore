@@ -448,6 +448,14 @@ namespace SqCommon
     // stores DateOnly in 2 bytes. Number of days since epoch, 1900-01-01. The max nDays is 65535, which is 178 years from 1900, being valid until 2078.
     // This implementation is better than an experimental CoreFxLab Date(only).cs, which stores it in 4-byte int. However, there might be good implementation ideas in that source code
     // https://github.com/dotnet/corefxlab/blob/master/src/System.Time/System/Date.cs
+    // System.DateOnly note:
+    // In C# 10.0 (November 2021), DateOnly was introduced which internally stores its data as a 4-byte int. Range is [0001-01-01...9999-12-31]
+    // This is to replace the old (8-byte) DateTime for cases when a 4-byte SQL Date arrives. System.DateOnly is much memory efficient than the System.DateTime.
+    // However, this SqDateOnly implementation uses only a 2-byte uint. Any historical price data contains a lot of dates.
+    // Although it would be practical to follow the community convention and use System.DateOnly, we ignore that class. Never use it in code. Once we start to use sporadically, we have to convert all the time. Better to stay away.
+    // Our special software uses a lot of Date data. By using SqDateOnly, we can reduce the RAM allocation requirement to half size.
+    // We try to squeeze all data in RAM. Also, the CPU Cache coherence is a big speed advantage.
+    // SqDateOnly range: [1900..2078]. But if it is a problem in the far 50 years future, we can move the g_epoch, and shift the range to [1950..2128]
     public struct SqDateOnly : IComparable<SqDateOnly>, IEquatable<SqDateOnly>, IEquatable<DateTime>
     {
         const long g_epoch = 599265216000000000L;   // new DateTime(1899, 12, 31).Ticks
