@@ -33,7 +33,6 @@ namespace SqCoreWeb
             }
             finally
             {
-
             }
         }
 
@@ -54,13 +53,13 @@ namespace SqCoreWeb
             {
                 webBuilder.ConfigureKestrel(serverOptions =>
                 {
-                    // Because of Google Auth cookie usage and Chrome SameSite policy, use only the HTTPS protocol (no HTTP), even in local development. See explanation at Google Auth code.
+                    // Because of Google Auth cookie usage and Chrome SameSite policy, use only the HTTPS protocol (no HTTP), even in local development. See explanation at Google Auth code. Also HTTP/3 requires only HTTPS
                     // Safe to leave ports 5000, 5001 on IPAddress.Loopback (localhost), because localhost can be accessed only from local machine. From the public web, the ports 5000, 5001 is not accessable.
                     // See cookies: Facebook and Google logins only work in HTTPS (even locally), and because we want in Local development the same experience (user email info) as is production, we eliminate HTTP in local development
                     // serverOptions.Listen(IPAddress.Loopback, 5000); // 2020-10: HTTP still works for basic things // In IPv4, 127.0.0.1 is the most commonly used loopback address, in IP6, it is [::1],  "localhost" means either 127.0.0.1 or  [::1] 
 
-                    string sensitiveConfigFullPath = Utils.SensitiveConfigFolderPath() + $"sqcore.net.merged_pubCert_privKey.pfx";
-                    Utils.Logger.Info($"Pfx file: " + sensitiveConfigFullPath);
+                    string pfxFullPath = Utils.SensitiveConfigFolderPath() + $"sqcore.net.merged_pubCert_privKey.pfx";
+                    Utils.Logger.Info($"Pfx file: " + pfxFullPath);
                     serverOptions.Listen(IPAddress.Loopback /* '127.0.0.1' (it is not 'localhost') */, 5001, listenOptions =>  // On Linux server: only 'localhost:5001' is opened, but '<PublicIP>:5001>' is not. We would need PublicAny for that. But for security, it is fine.
                     {
                             // On Linux, "default developer certificate could not be found or is out of date. ". Uncommenting this solved the problem temporarily.
@@ -77,46 +76,41 @@ namespace SqCoreWeb
                             // Better once and for all solution to use the live certificate of SqCore.net even in localhost in Development.
 
                             // listenOptions.UseHttps();   // Configure Kestrel to use HTTPS with the default certificate for the domain (certmgr.msc/Trusted Root Certification Authorities/Certificates). This is usually the .NET Core SDK includes an HTTPS development certificate, which expires in every 6 months. Throws an exception if no default certificate is configured.
-                            listenOptions.UseHttps(sensitiveConfigFullPath, @"haha");
+                            listenOptions.UseHttps(pfxFullPath, @"haha");
                     });
 
                     // from the public web only port 443 is accessable. However, on that port, both HTTP and HTTPS traffic is allowed. Although we redirect HTTP to HTTPS later.
                     serverOptions.ListenAnyIP(443, listenOptions =>    // Both 'localhost:443' and '<PublicIP>:443>' is listened on Linux server.
                     {
-                        listenOptions.UseHttps(sensitiveConfigFullPath, @"haha");
-
-                            // I don't actually need all of these. Because the wildcart cert is both root and subdomain 'checked by 'certbot certificates''. So, don't need branching here based on context.
-                            // from here https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel?view=aspnetcore-3.0#endpoint-configuration  (find: SNI)
-                            // listenOptions.UseHttps(httpsOptions =>
-                            // {
-
-                            //     // see 'certmgr.msc'
-                            //     // https://localhost:5005/ with this turns out to be 'valid' in Chrome. Cert is issued by 'localhost', issued to 'localhost'. 
-                            //     // https://127.0.0.1:5005/ will say: invalid. (as the 'name' param is null in the callback down)
-                            //     var localhostCert = CertificateLoader.LoadFromStoreCert("localhost", "My", StoreLocation.CurrentUser, allowInvalid: true);  // that is the local machine certificate store
-
-                            //     X509Certificate2 letsEncryptCert = new X509Certificate2(@"g:\agy\myknowledge\programming\_ASP.NET\https cert\letsencrypt Folder from Ubuntu\letsencrypt\live\sqcore.net\merged_pubCert_privKey_pwd_haha.pfx", @"haha", X509KeyStorageFlags.Exportable);
-                            //     //var exampleCert = CertificateLoader.LoadFromStoreCert("example.com", "My", StoreLocation.CurrentUser, allowInvalid: true);
-                            //     //var subExampleCert = CertificateLoader.LoadFromStoreCert("sub.example.com", "My", StoreLocation.CurrentUser, allowInvalid: true);
-
-                            //     var certs = new Dictionary<string, X509Certificate2>(StringComparer.OrdinalIgnoreCase);
-                            //     certs["localhost"] = localhostCert;
-                            //     certs["sqcore.net"] = letsEncryptCert;
-                            //     certs["dashboard.sqcore.net"] = letsEncryptCert;  // it seems the same certificate is used for the root and the sub-domain.
-                            //     //certs["example.com"] = exampleCert;
-                            //     //certs["sub.example.com"] = subExampleCert;
-
-                            //     httpsOptions.ServerCertificateSelector = (connectionContext, name) =>
-                            //     {
-                            //         if (name != null && certs.TryGetValue(name, out var cert))
-                            //         {
-                            //             return cert;
-                            //         }
-
-                            //         return localhostCert;
-                            //         //return exampleCert;
-                            //     };
-                            // }); // UseHttps()
+                        listenOptions.UseHttps(pfxFullPath, @"haha");
+                        // Future: One Kestrel server can support many domains (sqcore.net, www.snifferquant.net, xyz.com). In that case, different certs are needed based on connectionContext
+                        // We don't actually need all of these. Because the wildcart cert is both root and subdomain 'checked by 'certbot certificates''. So, don't need branching here based on context.
+                        // from here https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel?view=aspnetcore-3.0#endpoint-configuration  (find: SNI)
+                        // listenOptions.UseHttps(httpsOptions =>
+                        // {
+                        //     // see 'certmgr.msc'
+                        //     // https://localhost:5005/ with this turns out to be 'valid' in Chrome. Cert is issued by 'localhost', issued to 'localhost'. 
+                        //     // https://127.0.0.1:5005/ will say: invalid. (as the 'name' param is null in the callback down)
+                        //     var localhostCert = CertificateLoader.LoadFromStoreCert("localhost", "My", StoreLocation.CurrentUser, allowInvalid: true);  // that is the local machine certificate store
+                        //     X509Certificate2 letsEncryptCert = new X509Certificate2(@"g:\agy\myknowledge\programming\_ASP.NET\https cert\letsencrypt Folder from Ubuntu\letsencrypt\live\sqcore.net\merged_pubCert_privKey_pwd_haha.pfx", @"haha", X509KeyStorageFlags.Exportable);
+                        //     //var exampleCert = CertificateLoader.LoadFromStoreCert("example.com", "My", StoreLocation.CurrentUser, allowInvalid: true);
+                        //     //var subExampleCert = CertificateLoader.LoadFromStoreCert("sub.example.com", "My", StoreLocation.CurrentUser, allowInvalid: true);
+                        //     var certs = new Dictionary<string, X509Certificate2>(StringComparer.OrdinalIgnoreCase);
+                        //     certs["localhost"] = localhostCert;
+                        //     certs["sqcore.net"] = letsEncryptCert;
+                        //     certs["dashboard.sqcore.net"] = letsEncryptCert;  // it seems the same certificate is used for the root and the sub-domain.
+                        //     //certs["example.com"] = exampleCert;
+                        //     //certs["sub.example.com"] = subExampleCert;
+                        //     httpsOptions.ServerCertificateSelector = (connectionContext, name) =>
+                        //     {
+                        //         if (name != null && certs.TryGetValue(name, out var cert))
+                        //         {
+                        //             return cert;
+                        //         }
+                        //         return localhostCert;
+                        //         //return exampleCert;
+                        //     };
+                        // }); // UseHttps()
                     });
                 })
                 .UseStartup<Startup>()

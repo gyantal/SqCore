@@ -2,13 +2,10 @@ using System;
 using System.IO;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.SpaServices.AngularCli;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.Rewrite;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.OAuth;
@@ -35,9 +32,9 @@ namespace SqCoreWeb
         public void ConfigureServices(IServiceCollection services)
         {
             // Asp.Net DependenciInjection (DI) of Kestrel policy for separating the creation of dependencies (IWebHostEnvironment, Options, Logger) from its actual usage in Controllers.
-            // That way Controllers are light. And if there is 100 Controller classes, repeating the creation of Dependent objects (IWebHostEnvironment) is not in their source code. So, the source code of Controllers are light.
+            // That way Controllers are light. And if there are 100 Controller classes, repeating the creation of Dependent objects (IWebHostEnvironment) is not in their source code. So, the source code of Controllers are light.
             // DI is not necessary. DotNet core bases classes doesn't use that for logging or anything. However, Kestrel uses it, which we can honour. It also helps in unit-test. 
-            // But it is perfectly fine to do the Creation of dependencies (Logger, like nLog) to do it in the Controller.
+            // But it is perfectly fine to do the Creation of dependencies (Logger, like nLog) in the Controller.
             // Transient objects are always different; a new instance is provided to every controller and every service.
             // Scoped objects are the same within a request, but different across different requests
             // Singleton objects are the same for every object and every request(regardless of whether an instance is provided in ConfigureServices)
@@ -51,7 +48,7 @@ namespace SqCoreWeb
             });
 
             // https://docs.microsoft.com/en-us/aspnet/core/performance/caching/response?view=aspnetcore-3.0
-            services.AddResponseCaching(); // DI: these services could be used in MVC control/Razor pages (either as [Attributes], or in code)
+            services.AddResponseCaching(); // DI: these services could be used in MVC Control/Razor pages (either as [Attributes], or in code)
             services.AddMvc(options =>     // AddMvc() equals AddControllersWithViews() + AddRazorPages()
             {
                 // For server-side caching that follows the HTTP 1.1 Caching specification, use this Response Caching Middleware. 
@@ -83,8 +80,8 @@ namespace SqCoreWeb
                         Duration = 100000,   // 100,000 seconds = 27 hours
                         VaryByQueryKeys = new string[] { "*" } //a specific query string key or * can be used if all query string keys should be matched
                     });
-            }); //.SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
-            //services.AddControllersWithViews();        // AddMvc() equals AddControllersWithViews() + AddRazorPages(), so we don't use Razor pages now.
+            });
+
             // In production, the Angular files (index.html) will be served from this directory, but actually we don't use UseSpaStaticFiles(), so we don't need this here.
             services.AddSpaStaticFiles(configuration =>
             {
@@ -110,7 +107,7 @@ namespace SqCoreWeb
             
             if (!String.IsNullOrEmpty(googleClientId) && !String.IsNullOrEmpty(googleClientSecret))
             {
-                // The reason you have BOTH google and cookies Auth is because you're using google for identity information but using cookies for storage of the identity for only asking Google once.
+                // The reason you have BOTH google and cookies Auth is because you're using Google for identity information but using cookies for storage of the identity for only asking Google once.
                 //So AddIdentity() is not required, but Cookies Yes.
                 services.AddAuthentication(options =>
                 {
@@ -133,7 +130,7 @@ namespace SqCoreWeb
                     // "AspNetCore as a rule does not implement browser sniffing for you because User-Agents values are highly unstable"
                     // However, if updating browser of the user to the latest Chrome doesn't solve it, we may implement these changes:
                     // https://github.com/dotnet/aspnetcore/issues/14996
-                    // https://docs.microsoft.com/en-us/aspnet/core/security/samesite?view=aspnetcore-3.1
+                    // https://docs.microsoft.com/en-us/aspnet/core/security/samesite
                     // "Cookies without SameSite header are treated as SameSite=Lax by default.
                     // SameSite=None must be used to allow cross-site cookie use.
                     // Cookies that assert SameSite=None must also be marked as Secure. (requires HTTPS)"
@@ -157,7 +154,6 @@ namespace SqCoreWeb
 
                     // Cookies are shared between ports. So, https://localhost:5001/ and https://localhost:443 share the same cookie (login info), but http://localhost:5000/ cannot overwrite that cookie in Chrome
 
-                    // https://docs.microsoft.com/en-us/aspnet/core/security/samesite?view=aspnetcore-3.1
                     o.Cookie.SameSite = SameSiteMode.Lax;    // sets the cookie ".AspNetCore.Cookies"
                     o.Cookie.SecurePolicy = CookieSecurePolicy.Always;      // Note this will also require you to be running on HTTPS. Local development will also need to be done with HTTPS urls.
                     // o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;   // this is the default BTW, so no need to set.
@@ -262,14 +258,11 @@ namespace SqCoreWeb
         {
             Program.WebAppGlobals.KestrelEnv = env;
 
-            if (env.IsDevelopment())
+            if (!env.IsDevelopment())
             {
-                app.UseDeveloperExceptionPage();        // in DEBUG it returns a nice webpage that shows the stack trace and everything of the crash.
-            }
-            else
-            {
-                app.UseDeveloperExceptionPage();     // it is more useful in the first years of development. A very detailed Exception page can be used even in Production to catch the error quicker.
-                //app.UseExceptionHandler("/error.html"); // it hides the crash totally. There is no browser redirection. It returns 'error.html' with status: 200 (OK). Maybe 500 (Error) would be better to return, but then the Browser might not display that page to the user.
+                // In .NET 6, app.UseDeveloperExceptionPage(); is added by default when env.IsDevelopment(). But we also want it in Production for the first years of  development.
+                app.UseDeveloperExceptionPage(); // returns a nice webpage that shows the stack trace and everything of the crash. Can be used even in Production to catch the error quicker.
+                //app.UseExceptionHandler("/error.html"); // Usually used in Production. It hides the crash details totally from the user. There is no browser redirection. It returns 'error.html' with status: 200 (OK). Maybe 500 (Error) would be better to return, but then the Browser might not display that page to the user.
                 
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
@@ -290,13 +283,13 @@ namespace SqCoreWeb
             //app.UseDefaultFiles();      // "UseDefaultFiles is a URL rewriter (default.htm, default.html, index.htm, index.html whichever first, 4 file queries to find the file) that doesn't actually serve the file. "
             app.UseRewriter(new RewriteOptions()
             .AddRewrite(@"^$", "index.html", skipRemainingRules: true)              // empty string converted to index.html. Only 1 query to find the index.html file. Better than UseDefaultFiles()
-            .AddRewrite(@"^(.*)/$", "$1/index.html", skipRemainingRules: true)      // converts "/" to "/index.html", e.g. .AddRewrite(@"^HealthMonitor/$", @"HealthMonitor/index.html" and all Angular projects.     
+            .AddRewrite(@"^(.*)/$", "$1/index.html", skipRemainingRules: true)      // converts "/" to "/index.html", e.g. .AddRewrite(@"^HealthMonitor/$", @"HealthMonitor/index.html" and all Angular projects.
             );
 
             app.UseMiddleware<SqFirewallMiddlewarePreAuthLogger>();
 
             // place UseAuthentication() AFTER UseRouting(),  https://docs.microsoft.com/en-us/aspnet/core/migration/22-to-30?view=aspnetcore-2.2&tabs=visual-studio
-            app.UseAuthentication();    // // If execution reaches here and user is not logged in, this will redirect to Google-login. It is needed for filling httpContext?.User?.Claims. StaticFiles are served Before the user is login is assured. This is fast, but httpContext?.User?.Claims is null in this case.
+            app.UseAuthentication();    // If execution reaches here and user is not logged in, this will redirect to Google-login. It is needed for filling httpContext?.User?.Claims. StaticFiles are served Before the user is login is assured. This is fast, but httpContext?.User?.Claims is null in this case.
 
             app.UseMiddleware<SqFirewallMiddlewarePostAuth>();  // For this to catch Exceptions, it should come after UseExceptionHadlers(), because those will swallow exceptions and generates nice ErrPage.
 
@@ -365,7 +358,7 @@ namespace SqCoreWeb
                         {
                             // UseResponseCaching() will fill up headers, if MVC controllers or Razor pages, we don't want to use this caching, because the Controller will specify it in an attribute.
                             // probably no cache for API calls like "https://localhost:5001/WeatherForecast"  (they probably get RT data), Controllers will handle it.
-                            maxBrowserCacheAge = (ext) switch
+                            maxBrowserCacheAge = ext switch
                             {
                                 ".html" => TimeSpan.FromDays(8),
                                 var xt when xt == ".html" || xt == ".htm" => TimeSpan.FromHours(8),    // short cache time for html files (like index.html or when no  that contains the URL links for other JS, CSS files)                            

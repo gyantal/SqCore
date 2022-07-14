@@ -38,6 +38,46 @@
             }
         },
         {
+            "name": "WbSrv/SqCoreWeb (C#-NoBreakpoints, watch HotReload)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "SqCoreWeb-PreDebugBuildWatchDev",
+            "postDebugTask": "SqCoreWeb-PostDebugWatchDev.py",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "dotnet",
+            "args": [
+                // dotnet watch supports Hot Reload and Test, but Omnisharp debugger cannot attach properly to see Symbols.
+                // Still, useable. See more in "g:\agy\myknowledge\programming\C#\DotNetCore\Hot Reload (Edit and Continue).txt" 
+                "watch",
+                "--project",
+                ".",
+                "--verbose" // Let's us confirm browser connects with hot reload capabilities
+            ],
+            "cwd": "${workspaceFolder}/src/WebServer/SqCoreWeb",
+            "console": "externalTerminal",
+            "stopAtEntry": false,
+            // Enable launching a web browser when ASP.NET Core starts. For more information: https://aka.ms/VSCode-CS-LaunchJson-WebBrowser
+            "serverReadyAction": {
+                "action": "openExternally", // open externally in normal Chrome
+                // "action": "debugWithChrome", // VS Code starts a Chrome debug session for the URI (which requires that the Debugger for Chrome extension is installed).
+                // "webRoot": "${workspaceFolder}/src/WebServer/SqCoreWeb/wwwroot", // debugWithChrome needs this
+
+                //"pattern": "^\\s*Now listening on:\\s+(https?://\\S+)"
+                "pattern": "^\\s*Now listening on:\\s+(https://\\S+)"  // This pattern maching doesn't work if "console": "externalTerminal"
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "sourceFileMap": {
+                "/Views": "${workspaceFolder}/src/WebServer/SqCoreWeb/Views"
+            },
+            "presentation": {
+                "group": "1_SqCoreWeb",
+                "order": 1,
+                "hidden": false
+            }
+        },
+        {
             "name": "WbSrv/SqCoreWeb (PUBLISHED), Use Ctrl-F5 to NOT attach the debugger",
             "type": "coreclr",
             "request": "launch",

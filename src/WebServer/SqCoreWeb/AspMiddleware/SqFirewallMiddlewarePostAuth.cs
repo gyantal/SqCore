@@ -146,6 +146,5 @@ namespace SqCoreWeb
 
             await _next(httpContext);
         }
-
     }
 }

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Text;
 using System.Globalization;
 using System.Threading;
@@ -95,8 +94,6 @@ namespace SqCoreWeb
                 var db = new Db(redisConnString, redisDbIndex, null);   // mid-level DB wrapper above low-level DB
                 BrokersWatcher.gWatcher.Init(); // Returns quickly, because Broker connections happen in a separate ThreadPool threads. FintechCommon's MemDb is built on BrokerCommon's BrokerWatcher. So, it makes sense to initialize Brokers asap. Before MemDb uses it for RtNavTimer_Elapsed.ownloadLastPriceNav() very early
                 MemDb.gMemDb.Init(db); // high level DB used by functionalities
-
-                Caretaker.g_caretaker.Init("SqCoreServer", Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
                 SqTaskScheduler.gTaskScheduler.Init();
 
                 Services_Init();
@@ -137,7 +134,6 @@ namespace SqCoreWeb
             Services_Exit();
 
             SqTaskScheduler.Exit();
-            Caretaker.g_caretaker.Exit();
             MemDb.Exit();
             BrokersWatcher.gWatcher.Exit();
 
@@ -145,12 +141,12 @@ namespace SqCoreWeb
             NLog.LogManager.Shutdown();
         }
 
-        static bool gIsFirstCall = true;
+        static bool gIsMenuFirstCall = true;
         static public async Task<string> DisplayMenuAndExecute()
         {
-            if (!gIsFirstCall)
+            if (!gIsMenuFirstCall)
                 Console.WriteLine();
-            gIsFirstCall = false;
+            gIsMenuFirstCall = false;
 
             ColorConsole.WriteLine(ConsoleColor.Magenta, "----  (type and press Enter)  ----");
             Console.WriteLine("1. Say Hello. Don't do anything. Check responsivenes.");
