@@ -139,7 +139,7 @@ window.onload = function onLoadWindow() {
     const etpAssetNamesArray = json.etpAssetNames.split(', ');
     const gchAssetNamesArray = json.gchAssetNames.split(', ');
     const gmAssetNamesArray = json.gmAssetNames.split(', ');
-    const defCheckedListArray = json.defCheckedList.split(', ');
+    // const defCheckedListArray = json.defCheckedList.split(', ');
 
     let chBxs = '<p class="left"><button id="vixBtn" class="volBtn" title="Volatility ETPs"/></button>&emsp;&emsp;';
     for (let iAssets = 0; iAssets < volAssetNamesArray.length; iAssets++)
@@ -165,8 +165,10 @@ window.onload = function onLoadWindow() {
     // default checkbox method
     const inputCheck = document.getElementsByTagName('input') as HTMLCollectionOf<HTMLInputElement>;
     for (let i = 0; i < inputCheck.length; i++) {
-      if (inputCheck[i].id == defCheckedListArray[i])
-        inputCheck[i].checked = true;
+      for (let j = 0; j < selectedTickers.length; j++) {
+        if (inputCheck[i].id === selectedTickers[j])
+          inputCheck[i].checked = true;
+      }
       inputCheck[i].checked;
     }
   }
@@ -177,7 +179,6 @@ window.onload = function onLoadWindow() {
 function processingTables(json: any, selectedTickers: string[]) {
   //  Creating data for tables
   const assetNamesArray = json.assetNames.split(', ');
-  console.log(assetNamesArray.length);
   const dailyDatesArray = json.quotesDateVector.split(', ');
 
   const volLBPeriod = json.volLBPeri;
@@ -222,7 +223,7 @@ function processingTables(json: any, selectedTickers: string[]) {
   const totDays = json.noTotalDays;
   const vixAvgTot = json.vixAvgTotal;
   const volDragsAvgsTotalArray = json.volDragsAvgsTotalVec.split(', ');
-  const noColumns = selectedTickers.length + 3;
+  const noColumns = assetNamesArray.length + 3;
 
   const noInnerYears = yearListArray.length - 2;
   const noLastYearMonths = yearMonthListArray.length - 10 - noInnerYears * 12;
@@ -246,90 +247,136 @@ function processingTables(json: any, selectedTickers: string[]) {
   // Creating the HTML code of tables.
 
   let currMonthlyVolatilityTbl = '<table class="volHistData"><tr align="center"><td colspan="' + (noColumns - 1) + '" bgcolor="#66CCFF"><b>Current Monthly Volatility Drag</b></td></tr><tr align="center"><td bgcolor="#66CCFF">Date</td><td class="first_name" bgcolor="#66CCFF">VIX MA(' + volLBPeriod + ')</td>';
-  for (let i = 0; i < selectedTickers.length - 1; i++)
-    currMonthlyVolatilityTbl += '<td class="' + selectedTickers[i] + '" bgcolor="#66CCFF">' + selectedTickers[i] + '</td>';
+  for (let i = 0; i < assetNamesArray.length; i++) {
+    for (let j = 0; j < selectedTickers.length; j++) {
+      if (assetNamesArray[i] === selectedTickers[j])
+        currMonthlyVolatilityTbl += '<td class="' + assetNamesArray[i] + '" bgcolor="#66CCFF">' + assetNamesArray[i] + '</td>';
+    }
+  }
 
-  currMonthlyVolatilityTbl += '<td class="' + selectedTickers[selectedTickers.length - 1] + '" bgcolor="#66CCFF">' + selectedTickers[selectedTickers.length - 1] + '</td></tr>';
+  currMonthlyVolatilityTbl += '</tr>';
   currMonthlyVolatilityTbl += '<tr align="center"><td>' + dailyDatesArray[dailyDatesArray.length - 1] + '</td>';
   currMonthlyVolatilityTbl += '<td class="first_name">' + dailyVIXMasArray[dailyVIXMasArray.length - 1] + '</td>';
-  for (let i = 0; i < selectedTickers.length; i++)
-    currMonthlyVolatilityTbl += '<td class="' + selectedTickers[i] + '">' + dailyVolDragsMtx[dailyVolDragsMtx.length - 1][i] + '</td>';
+  for (let i = 0; i < assetNamesArray.length; i++) {
+    for (let j = 0; j < selectedTickers.length; j++) {
+      if (assetNamesArray[i] === selectedTickers[j])
+        currMonthlyVolatilityTbl += '<td class="' + assetNamesArray[i] + '">' + dailyVolDragsMtx[dailyVolDragsMtx.length - 1][i] + '</td>';
+    }
+  }
 
   currMonthlyVolatilityTbl += '</tr></table>';
 
   let monthlyVolatilityTbl = '<table class="volDataYearsNMonths"><thead><tr align="center" ><td colspan="' + noColumns + '" bgcolor="#66CCFF"><b>Monthly Volatility Drag by Years and Months</b></td></tr><tr align="center"><td bgcolor="#66CCFF"><span class="years">Only Years</span> / <span class="years">Years+Months</span></td><td bgcolor="#66CCFF">No. Days</td><td bgcolor="#66CCFF">VIX MA(' + volLBPeriod + ')</td>';
-  for (let i = 0; i < selectedTickers.length - 1; i++)
-    monthlyVolatilityTbl += '<td class="' + selectedTickers[i] + '" bgcolor="#66CCFF">' + selectedTickers[i] + '</td>';
-
-  monthlyVolatilityTbl += '<td class="' + selectedTickers[selectedTickers.length - 1] + '" bgcolor="#66CCFF">' + selectedTickers[selectedTickers.length - 1] + '</td></tr></thead>';
+  for (let i = 0; i < assetNamesArray.length; i++) {
+    for (let j = 0; j < selectedTickers.length; j++) {
+      if (assetNamesArray[i] === selectedTickers[j])
+        monthlyVolatilityTbl += '<td class="' + assetNamesArray[i] + '" bgcolor="#66CCFF">' + assetNamesArray[i] + '</td>';
+    }
+  }
+  monthlyVolatilityTbl += '</tr></thead>';
   monthlyVolatilityTbl += '<tbody><tr class="parent"><td><span class="years">' + yearListArray[0] + '</span></td><td>' + yearlyCountsArray[0] + '</td><td>' + yearlyVIXAvgsArray[0] + '</td>';
-  for (let i = 0; i < selectedTickers.length; i++)
-    monthlyVolatilityTbl += '<td class="' + selectedTickers[i] + '">' + yearlyAvgsMtx[0][i] + '</td>';
-
+  for (let i = 0; i < assetNamesArray.length; i++) {
+    for (let j = 0; j < selectedTickers.length; j++) {
+      if (assetNamesArray[i] === selectedTickers[j])
+        monthlyVolatilityTbl += '<td class="' + assetNamesArray[i] + '">' + yearlyAvgsMtx[0][i] + '</td>';
+    }
+  }
   for (let i = 1; i < 10; i++) {
     monthlyVolatilityTbl += '<tr class="child"><td align="right"><i>' + yearMonthListArray[i] + '&emsp;</i></td><td><i>' + monthlyCountsArray[i] + '</i></td><td><i>' + monthlyVIXAvgsArray[i] + '</i></td>';
-    for (let j = 0; j < selectedTickers.length; j++)
-      monthlyVolatilityTbl += '<td class="' + selectedTickers[j] + '"><i>' + monthlyAvgsMtx[i][j] + '</i></td>';
+    for (let j = 0; j < assetNamesArray.length; j++) {
+      for (let k = 0; k < selectedTickers.length; k++) {
+        if (assetNamesArray[j] === selectedTickers[k])
+          monthlyVolatilityTbl += '<td class="' + assetNamesArray[j] + '"><i>' + monthlyAvgsMtx[i][j] + '</i></td>';
+      }
+    }
 
     monthlyVolatilityTbl += '</tr>';
   }
   for (let k = 0; k < noInnerYears; k++) {
     monthlyVolatilityTbl += '<tr class="parent"><td><span class="years">' + yearListArray[k + 1] + '</span></td><td>' + yearlyCountsArray[k + 1] + '</td><td>' + yearlyVIXAvgsArray[k + 1] + '</td>';
-    for (let i = 0; i < selectedTickers.length; i++)
-      monthlyVolatilityTbl += '<td class="' + selectedTickers[i] + '">' + yearlyAvgsMtx[k + 1][i] + '</td>';
-
+    for (let i = 0; i < assetNamesArray.length; i++) {
+      for (let j = 0; j < selectedTickers.length; j++) {
+        if (assetNamesArray[i] === selectedTickers[j])
+          monthlyVolatilityTbl += '<td class="' + assetNamesArray[i] + '">' + yearlyAvgsMtx[k + 1][i] + '</td>';
+      }
+    }
     for (let i = 0; i < 12; i++) {
       monthlyVolatilityTbl += '<tr class="child"><td align="right"><i>' + yearMonthListArray[10 + k * 12 + i] + '&emsp;</i></td><td><i>' + monthlyCountsArray[10 + k * 12 + i] + '</i></td><td><i>' + monthlyVIXAvgsArray[10 + k * 12 + i] + '</i></td>';
-      for (let j = 0; j < selectedTickers.length; j++)
-        monthlyVolatilityTbl += '<td class="' + selectedTickers[j] + '"><i>' + monthlyAvgsMtx[10 + k * 12 + i][j] + '</i></td>';
-
+      for (let j = 0; j < assetNamesArray.length; j++) {
+        for (let l = 0; l < selectedTickers.length; l++) {
+          if (assetNamesArray[j] === selectedTickers[l])
+            monthlyVolatilityTbl += '<td class="' + assetNamesArray[j] + '"><i>' + monthlyAvgsMtx[10 + k * 12 + i][j] + '</i></td>';
+        }
+      }
       monthlyVolatilityTbl += '</tr>';
     }
   }
   monthlyVolatilityTbl += '<tr class="parent" id="lastYearT"><td><span class="years">' + yearListArray[yearListArray.length - 1] + '</span></td><td>' + yearlyCountsArray[yearListArray.length - 1] + '</td><td>' + yearlyVIXAvgsArray[yearListArray.length - 1] + '</td>';
-  for (let i = 0; i < selectedTickers.length; i++)
-    monthlyVolatilityTbl += '<td class="' + selectedTickers[i] + '">' + yearlyAvgsMtx[yearListArray.length - 1][i] + '</td>';
-
+  for (let i = 0; i < assetNamesArray.length; i++) {
+    for (let j = 0; j < selectedTickers.length; j++) {
+      if (assetNamesArray[i] === selectedTickers[j])
+        monthlyVolatilityTbl += '<td class="' + assetNamesArray[i] + '">' + yearlyAvgsMtx[yearListArray.length - 1][i] + '</td>';
+    }
+  }
   for (let i = 0; i < noLastYearMonths; i++) {
     monthlyVolatilityTbl += '<tr class="child"><td align="right"><i>' + yearMonthListArray[10 + noInnerYears * 12 + i] + '&emsp;</i></td><td><i>' + monthlyCountsArray[10 + noInnerYears * 12 + i] + '</i></td><td><i>' + monthlyVIXAvgsArray[10 + noInnerYears * 12 + i] + '</i></td>';
-    for (let j = 0; j < selectedTickers.length; j++)
-      monthlyVolatilityTbl += '<td class="' + selectedTickers[j] + '"><i>' + monthlyAvgsMtx[10 + noInnerYears * 12 + i][j] + '</i></td>';
-
+    for (let j = 0; j < assetNamesArray.length; j++) {
+      for (let k = 0; k < selectedTickers.length; k++) {
+        if (assetNamesArray[j] === selectedTickers[k])
+          monthlyVolatilityTbl += '<td class="' + assetNamesArray[j] + '"><i>' + monthlyAvgsMtx[10 + noInnerYears * 12 + i][j] + '</i></td>';
+      }
+    }
     monthlyVolatilityTbl += '</tr>';
   }
   monthlyVolatilityTbl += '<tr class="parent" style="cursor: text"><td><span class="total">Total 2004-' + yearListArray[yearListArray.length - 1] + '</span></td><td>' + totDays + '</td><td>' + vixAvgTot + '</td>';
-  for (let i = 0; i < selectedTickers.length; i++)
-    monthlyVolatilityTbl += '<td class="' + selectedTickers[i] + '">' + volDragsAvgsTotalArray[i] + '</td>';
-
+  for (let i = 0; i < assetNamesArray.length; i++) {
+    for (let j = 0; j < selectedTickers.length; j++) {
+      if (assetNamesArray[i] === selectedTickers[j])
+        monthlyVolatilityTbl += '<td class="' + assetNamesArray[i] + '">' + volDragsAvgsTotalArray[i] + '</td>';
+    }
+  }
   monthlyVolatilityTbl += '</tr></tbody></table>';
 
   let recentperformanceTbl = '<table class="volHistData"><tr align="center"><td colspan="' + (noColumns - 2) + '" bgcolor="#66CCFF"><b>Recent Performance of Stocks - Percent Changes of Prices</b></td></tr><tr align="center"><td bgcolor="#66CCFF"></td>';
-  for (let i = 0; i < selectedTickers.length - 1; i++)
-    recentperformanceTbl += '<td class="' + selectedTickers[i] + '" bgcolor="#66CCFF">' + selectedTickers[i] + '</td>';
-
-  recentperformanceTbl += '<td class="' + selectedTickers[selectedTickers.length - 1] + '" bgcolor="#66CCFF">' + selectedTickers[selectedTickers.length - 1] + '</td></tr>';
+  for (let i = 0; i < assetNamesArray.length; i++) {
+    for (let j = 0; j < selectedTickers.length; j++) {
+      if (assetNamesArray[i] === selectedTickers[j])
+        recentperformanceTbl += '<td class="' + assetNamesArray[i] + '" bgcolor="#66CCFF">' + assetNamesArray[i] + '</td>';
+    }
+  }
+  recentperformanceTbl += '</tr>';
   for (let j = 0; j < retHistLBPeriods.length; j++) {
     recentperformanceTbl += '<tr align="center"><td>' + retHistLBPeriods[j] + '</td>';
-    for (let i = 0; i < selectedTickers.length; i++)
-      recentperformanceTbl += '<td class="' + selectedTickers[i] + '">' + histRetsMtx[j][i] + '</td>';
-
+    for (let i = 0; i < assetNamesArray.length; i++) {
+      for (let k = 0; k < selectedTickers.length; k++) {
+        if (assetNamesArray[i] === selectedTickers[k])
+          recentperformanceTbl += '<td class="' + assetNamesArray[i] + '">' + histRetsMtx[j][i] + '</td>';
+      }
+    }
     recentperformanceTbl += '</tr>';
   }
   recentperformanceTbl += '</table>';
 
 
   let volatilityHistoryTbl = '<table id="volHistTbl" class="volHistData"><thead><tr align="center"><td colspan="' + (noColumns - 1) + '" bgcolor="#66CCFF"><b>Monthly Volatility Drag History</b></td></tr><tr align="center"><td bgcolor="#66CCFF"><select id="lookbackHistTbl"><option value="5">1-Week</option><option value="21" selected>1-Month</option><option value="63">3-Month</option><option value="126">6-Month</option><option value="252">1-Year</option><option value="' + dailyDatesArray.length + '">All</option></select ></td><td bgcolor="#66CCFF">VIX MA(' + volLBPeriod + ')</td>';
-  for (let i = 0; i < selectedTickers.length - 1; i++)
-    volatilityHistoryTbl += '<td class="' + selectedTickers[i] + '" bgcolor="#66CCFF">' + selectedTickers[i] + '</td>';
+  for (let i = 0; i < assetNamesArray.length; i++) {
+    for (let j = 0; j < selectedTickers.length; j++) {
+      if (assetNamesArray[i] === selectedTickers[j])
+        volatilityHistoryTbl += '<td class="' + assetNamesArray[i] + '" bgcolor="#66CCFF">' + assetNamesArray[i] + '</td>';
+    }
+  }
 
-  volatilityHistoryTbl += '<td class="' + selectedTickers[selectedTickers.length - 1] + '" bgcolor="#66CCFF">' + selectedTickers[selectedTickers.length - 1] + '</td></tr></thead><tbody>';
+  volatilityHistoryTbl += '</tr></thead><tbody>';
   for (let j = dailyVolDragsMtx.length - 1; j >= 0; j--) {
     volatilityHistoryTbl += '<tr align="center"><td>' + dailyDatesArray[j] + '</td>';
     volatilityHistoryTbl += '<td>' + dailyVIXMasArray[j] + '</td>';
 
-    for (let i = 0; i < selectedTickers.length; i++)
-      volatilityHistoryTbl += '<td class="' + selectedTickers[i] + '">' + dailyVolDragsMtx[j][i] + '</td>';
-
+    for (let i = 0; i < assetNamesArray.length; i++) {
+      for (let k = 0; k < selectedTickers.length; k++) {
+        if (assetNamesArray[i] === selectedTickers[k])
+          volatilityHistoryTbl += '<td class="' + assetNamesArray[i] + '">' + dailyVolDragsMtx[j][i] + '</td>';
+      }
+    }
     volatilityHistoryTbl += '</tr>';
   }
   volatilityHistoryTbl += '</tbody></table>';
