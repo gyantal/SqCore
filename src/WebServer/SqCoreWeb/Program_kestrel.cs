@@ -20,6 +20,13 @@ namespace SqCoreWeb
 
         public static void KestrelWebServer_Run(string[] args)
         {
+            // ASP .NET 6 new minimal hosting model: merging Program.cs and Startup.cs : NO, We don't have to use it.
+            // https://stackoverflow.com/questions/71895364/why-migrate-to-the-asp-net-core-6-minimal-hosting-model "Why migrate to the ASP.NET Core 6 minimal hosting model?"
+            // https://docs.microsoft.com/en-us/aspnet/core/migration/50-to-60-samples?view=aspnetcore-6.0
+            // "Unifies Startup.cs and Program.cs into a single Program.cs file., that's a disadvantage. "
+            // In SqCore the server Program.cs should not be unified with the Kestrel code. SqCoreServer does many things. HealthMonitor, VBroker, Database functionalities.
+            // The WebServer functionality is only 1 function. We should not unify it.
+            // Maybe we will migrate in the future, but in 2022 we keep the .NET 5 version and let's see which will be more popular by the community
             try
             {
                 IHost host = CreateHostBuilder(args).Build();
