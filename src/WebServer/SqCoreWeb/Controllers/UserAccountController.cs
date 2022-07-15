@@ -9,8 +9,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SqCoreWeb.Controllers
-{
+namespace SqCoreWeb.Controllers;
+
     [ApiController]
     [Route("[controller]")]
     public class UserAccountController : Microsoft.AspNetCore.Mvc.Controller
@@ -109,4 +109,3 @@ namespace SqCoreWeb.Controllers
 
 
     }
-}

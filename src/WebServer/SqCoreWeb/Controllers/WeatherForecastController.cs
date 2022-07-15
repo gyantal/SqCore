@@ -5,49 +5,47 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace SqCoreWeb.Controllers
+namespace SqCoreWeb.Controllers;
+
+public class WeatherForecast
 {
+    public DateTime Date { get; set; }
 
-    public class WeatherForecast
+    public int TemperatureC { get; set; }
+
+    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+
+    public string Summary { get; set; } = string.Empty;
+}
+
+[ApiController]
+[Route("[controller]")]
+[ResponseCache(CacheProfileName = "DefaultMidDuration")]
+public class WeatherForecastController : ControllerBase
+{
+    private static readonly string[] Summaries = new[]
     {
-        public DateTime Date { get; set; }
+        "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+    };
 
-        public int TemperatureC { get; set; }
+    private readonly ILogger<WeatherForecastController> _logger;
 
-        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-
-        public string Summary { get; set; } = string.Empty;
+    public WeatherForecastController(ILogger<WeatherForecastController> logger)
+    {
+        _logger = logger;
     }
 
-    [ApiController]
-    [Route("[controller]")]
-    [ResponseCache(CacheProfileName = "DefaultMidDuration")]
-    public class WeatherForecastController : ControllerBase
+    [HttpGet]
+    public IEnumerable<WeatherForecast> Get()
     {
-        private static readonly string[] Summaries = new[]
+        _logger.LogInformation("WeatherForecast.Get()");
+        var rng = new Random();
+        return Enumerable.Range(1, 5).Select(index => new WeatherForecast
         {
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-        };
-
-        private readonly ILogger<WeatherForecastController> _logger;
-
-        public WeatherForecastController(ILogger<WeatherForecastController> logger)
-        {
-            _logger = logger;
-        }
-
-        [HttpGet]
-        public IEnumerable<WeatherForecast> Get()
-        {
-            _logger.LogInformation("WeatherForecast.Get()");
-            var rng = new Random();
-            return Enumerable.Range(1, 5).Select(index => new WeatherForecast
-            {
-                Date = DateTime.Now.AddDays(index),
-                TemperatureC = rng.Next(-20, 55),
-                Summary = Summaries[rng.Next(Summaries.Length)]
-            })
-            .ToArray();
-        }
+            Date = DateTime.Now.AddDays(index),
+            TemperatureC = rng.Next(-20, 55),
+            Summary = Summaries[rng.Next(Summaries.Length)]
+        })
+        .ToArray();
     }
 }

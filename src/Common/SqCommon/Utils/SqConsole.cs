@@ -1,12 +1,11 @@
 using System;
 
-namespace SqCommon
+namespace SqCommon;
+
+public class SqConsole // Console helper functions
 {
-    public class SqConsole // Console helper functions
+    public static void WriteLine(string? value)
     {
-        public static void WriteLine(string? value)
-        {
-            Console.WriteLine($"~{DateTime.UtcNow:dd'T'HH':'mm':'ss}: {value}");
-        }
+        Console.WriteLine($"~{DateTime.UtcNow:dd'T'HH':'mm':'ss}: {value}");
     }
 }

@@ -81,124 +81,122 @@ using SqCommon;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace FinTechCommon
+namespace FinTechCommon;
+
+public class ReverseComparer<TKey> : IComparer<TKey>
 {
-    public class ReverseComparer<TKey> : IComparer<TKey>
+    public int Compare(TKey? x, TKey? y)
     {
-        public int Compare(TKey? x, TKey? y)
+        return Comparer<TKey>.Default.Compare(y, x);    // (x,y ) is reversed to (y,x)
+    }
+}
+public class TsDateData<TKey, TAssetId, TValue1, TValue2>  where TKey : notnull where TAssetId : notnull
+{
+    private readonly int _size;
+    public TKey[] Dates;    // dates are in reverse order. Dates[0] is today or yesterday
+
+    public Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>> Data; // for every assetId there is a list of float[] and uint[]
+
+    private readonly IComparer<TKey> comparer;
+
+    public TsDateData(TKey[] p_dates, Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>> p_data)
+    {
+        Dates= p_dates;
+        Data = p_data;
+        _size = Dates.Length;
+
+        comparer = new ReverseComparer<TKey>(); // Array.BinarySearch() requires array is sorted in ascending order according to the specified comparator. Our specific comparator is the ReverseComparer.
+    }
+    public int Count
+    {
+        get
         {
-            return Comparer<TKey>.Default.Compare(y, x);    // (x,y ) is reversed to (y,x)
+            return _size;
         }
     }
-    public class TsDateData<TKey, TAssetId, TValue1, TValue2>  where TKey : notnull where TAssetId : notnull
+
+    public int IndexOfKey(TKey key)     // if there is an exact match. If date is not found (because it was weekend), it returns -1.
     {
-        private readonly int _size;
-        public TKey[] Dates;    // dates are in reverse order. Dates[0] is today or yesterday
+        if (key == null)
+            throw new ArgumentNullException(nameof(key));
+        int ret = Array.BinarySearch<TKey>(Dates, 0, _size, key, comparer);
+        return ret >= 0 ? ret : -1;
+    }
 
-        public Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>> Data; // for every assetId there is a list of float[] and uint[]
+    public int IndexOfKeyOrAfter(TKey key)  // If date is not found, because it is a weekend, it gives back the previous index, which is less.
+    {
+        if (key == null)
+            throw new ArgumentNullException(nameof(key));
+        int ret = Array.BinarySearch<TKey>(Dates, 0, _size, key, comparer);
+        // You can use the '~' to take the bitwise complement which will give you the index of the first item larger than the search item.
+        if (ret < 0)
+            ret = ~ret; // this is the item which is smaller (older Date); it comes After the key.
+        return ret;
+    }
 
-        private readonly IComparer<TKey> comparer;
-
-        public TsDateData(TKey[] p_dates, Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>> p_data)
+    public int MemUsed()
+    {
+        int memUsedData = Dates.Length * Marshal.SizeOf(typeof(TKey));  // Tkey = DateTime (8 byte), DateTimeAsInt (4 byte), DateOnly (2 byte)
+        int tickTypeSize = Marshal.SizeOf(Enum.GetUnderlyingType(typeof(TickType)));    // Enum is implemented as int, so its size is 4
+        foreach (var data in Data)
         {
-            Dates= p_dates;
-            Data = p_data;
-            _size = Dates.Length;
-
-            comparer = new ReverseComparer<TKey>(); // Array.BinarySearch() requires array is sorted in ascending order according to the specified comparator. Our specific comparator is the ReverseComparer.
-        }
-        public int Count
-        {
-            get
+            memUsedData += Marshal.SizeOf(typeof(TAssetId));
+            foreach (var ts in data.Value.Item1)
             {
-                return _size;
+                memUsedData += tickTypeSize + ts.Value.Length * Marshal.SizeOf(typeof(TValue1));
+            }
+            foreach (var ts in data.Value.Item2)
+            {
+                memUsedData += tickTypeSize + ts.Value.Length * Marshal.SizeOf(typeof(TValue2));
             }
         }
-
-        public int IndexOfKey(TKey key)     // if there is an exact match. If date is not found (because it was weekend), it returns -1.
-        {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-            int ret = Array.BinarySearch<TKey>(Dates, 0, _size, key, comparer);
-            return ret >= 0 ? ret : -1;
-        }
-
-        public int IndexOfKeyOrAfter(TKey key)  // If date is not found, because it is a weekend, it gives back the previous index, which is less.
-        {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-            int ret = Array.BinarySearch<TKey>(Dates, 0, _size, key, comparer);
-            // You can use the '~' to take the bitwise complement which will give you the index of the first item larger than the search item.
-            if (ret < 0)
-                ret = ~ret; // this is the item which is smaller (older Date); it comes After the key.
-            return ret;
-        }
-
-        public int MemUsed()
-        {
-            int memUsedData = Dates.Length * Marshal.SizeOf(typeof(TKey));  // Tkey = DateTime (8 byte), DateTimeAsInt (4 byte), DateOnly (2 byte)
-            int tickTypeSize = Marshal.SizeOf(Enum.GetUnderlyingType(typeof(TickType)));    // Enum is implemented as int, so its size is 4
-            foreach (var data in Data)
-            {
-                memUsedData += Marshal.SizeOf(typeof(TAssetId));
-                foreach (var ts in data.Value.Item1)
-                {
-                    memUsedData += tickTypeSize + ts.Value.Length * Marshal.SizeOf(typeof(TValue1));
-                }
-                foreach (var ts in data.Value.Item2)
-                {
-                    memUsedData += tickTypeSize + ts.Value.Length * Marshal.SizeOf(typeof(TValue2));
-                }
-            }
-            return memUsedData;
-        }
+        return memUsedData;
     }
+}
 
-    // see SortedList<TKey,TValue> as template https://github.com/dotnet/corefx/blob/master/src/System.Collections/src/System/Collections/Generic/SortedList.cs
-    [DebuggerDisplay("Count = {m_data.Count}")]
-    [Serializable]
-    public class CompactFinTimeSeries<TKey, TAssetId, TValue1, TValue2> where TKey : notnull where TAssetId : notnull   // Tkey = DateTime (8 byte), DateTimeAsInt (4 byte), DateOnly (2 byte), or any int, byte (1 byte), or even string (that can be ordered)
+// see SortedList<TKey,TValue> as template https://github.com/dotnet/corefx/blob/master/src/System.Collections/src/System/Collections/Generic/SortedList.cs
+[DebuggerDisplay("Count = {m_data.Count}")]
+[Serializable]
+public class CompactFinTimeSeries<TKey, TAssetId, TValue1, TValue2> where TKey : notnull where TAssetId : notnull   // Tkey = DateTime (8 byte), DateTimeAsInt (4 byte), DateOnly (2 byte), or any int, byte (1 byte), or even string (that can be ordered)
+{
+    TsDateData<TKey, TAssetId, TValue1, TValue2> m_data;      // this m_data pointer can be swapped in an atomic instruction after update
+
+    public static void HowToUseThisClassExamples()
     {
-        TsDateData<TKey, TAssetId, TValue1, TValue2> m_data;      // this m_data pointer can be swapped in an atomic instruction after update
+        SqDateOnly[] dates = new SqDateOnly[2] { new SqDateOnly(2020, 05, 05), new SqDateOnly(2020, 05, 06)};
+        var dict1 = new Dictionary<TickType, float[]>() { { TickType.SplitDivAdjClose, new float[2] { 10.1f, 12.1f } } };
+        var dict2 = new Dictionary<TickType, uint[]>();
+        uint assetId = 1;
+        var data = new Dictionary<uint, Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>>()
+                { { assetId, new Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>(dict1, dict2)}};
 
-        public static void HowToUseThisClassExamples()
-        {
-            SqDateOnly[] dates = new SqDateOnly[2] { new SqDateOnly(2020, 05, 05), new SqDateOnly(2020, 05, 06)};
-            var dict1 = new Dictionary<TickType, float[]>() { { TickType.SplitDivAdjClose, new float[2] { 10.1f, 12.1f } } };
-            var dict2 = new Dictionary<TickType, uint[]>();
-            uint assetId = 1;
-            var data = new Dictionary<uint, Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>>()
-                    { { assetId, new Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>(dict1, dict2)}};
-
-            var ts1 = new CompactFinTimeSeries<SqDateOnly, uint, float, uint>();
-            ts1.ChangeData(dates, data);
-        }
-
-        public CompactFinTimeSeries()
-        {
-            var values = new Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>>();
-            TsDateData<TKey, TAssetId, TValue1, TValue2> data = new(Array.Empty<TKey>(), values);
-            m_data = data;  // 64 bit values are atomic on x64
-        }
-
-        public CompactFinTimeSeries(TKey[] p_dates, Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>> p_data)
-        {
-            m_data = new TsDateData<TKey, TAssetId, TValue1, TValue2>(p_dates, p_data);
-        }
-
-        // ChangeData() will replace a pointer in an atomic way
-        public void ChangeData(TKey[] p_dates, Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>> p_data)
-        {
-            TsDateData<TKey, TAssetId, TValue1, TValue2> data = new(p_dates, p_data);
-            m_data = data;  // 64 bit values are atomic on x64
-        }
-
-        // Faster and more memory efficient if clients can get direct access to data pointer, instead of duplicating data.
-        // Daily ChangeData() can update pointer to new data, but that is not a problem. Clients got the old pointer, but that data is consistent.
-        public TsDateData<TKey, TAssetId, TValue1, TValue2> GetDataDirect()
-        {
-            return m_data;
-        }
+        var ts1 = new CompactFinTimeSeries<SqDateOnly, uint, float, uint>();
+        ts1.ChangeData(dates, data);
     }
 
+    public CompactFinTimeSeries()
+    {
+        var values = new Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>>();
+        TsDateData<TKey, TAssetId, TValue1, TValue2> data = new(Array.Empty<TKey>(), values);
+        m_data = data;  // 64 bit values are atomic on x64
+    }
+
+    public CompactFinTimeSeries(TKey[] p_dates, Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>> p_data)
+    {
+        m_data = new TsDateData<TKey, TAssetId, TValue1, TValue2>(p_dates, p_data);
+    }
+
+    // ChangeData() will replace a pointer in an atomic way
+    public void ChangeData(TKey[] p_dates, Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>> p_data)
+    {
+        TsDateData<TKey, TAssetId, TValue1, TValue2> data = new(p_dates, p_data);
+        m_data = data;  // 64 bit values are atomic on x64
+    }
+
+    // Faster and more memory efficient if clients can get direct access to data pointer, instead of duplicating data.
+    // Daily ChangeData() can update pointer to new data, but that is not a problem. Clients got the old pointer, but that data is consistent.
+    public TsDateData<TKey, TAssetId, TValue1, TValue2> GetDataDirect()
+    {
+        return m_data;
+    }
 }

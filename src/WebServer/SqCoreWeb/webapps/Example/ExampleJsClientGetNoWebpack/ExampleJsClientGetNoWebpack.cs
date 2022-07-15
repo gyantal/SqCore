@@ -5,8 +5,8 @@ using System.Threading;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
-namespace SqCoreWeb.Controllers
-{    
+namespace SqCoreWeb.Controllers;
+
     [ApiController]
     [Route("[controller]")]
     [ResponseCache(CacheProfileName = "NoCache")]
@@ -55,4 +55,3 @@ namespace SqCoreWeb.Controllers
             }))).ToArray();
         }
     }
-}

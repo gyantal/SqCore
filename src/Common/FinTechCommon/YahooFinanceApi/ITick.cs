@@ -1,8 +1,7 @@
 ﻿using System;
-namespace YahooFinanceApi
+namespace YahooFinanceApi;
+
+public interface ITick
 {
-    public interface ITick
-    {
-        DateTime DateTime { get; }
-    }
+    DateTime DateTime { get; }
 }

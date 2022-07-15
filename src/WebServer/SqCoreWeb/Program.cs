@@ -11,8 +11,8 @@ using SqCommon;
 using FinTechCommon;
 using BrokerCommon;
 
-namespace SqCoreWeb
-{
+namespace SqCoreWeb;
+
     public interface IWebAppGlobals
     {
         DateTime WebAppStartTime { get; set; }
@@ -289,4 +289,3 @@ namespace SqCoreWeb
         }
 
     }
-}

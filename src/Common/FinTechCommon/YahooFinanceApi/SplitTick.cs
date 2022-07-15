@@ -1,17 +1,16 @@
 ﻿using System;
 using CsvHelper.Configuration.Attributes;
 
-namespace YahooFinanceApi
+namespace YahooFinanceApi;
+
+public sealed class SplitTick : ITick
 {
-    public sealed class SplitTick : ITick
-    {
-        [Name("Date")]
-        public DateTime DateTime { get; set; }
-        [Name("Stock Splits")]
-        public string StockSplits { get; set; } = string.Empty;
+    [Name("Date")]
+    public DateTime DateTime { get; set; }
+    [Name("Stock Splits")]
+    public string StockSplits { get; set; } = string.Empty;
 
-        public decimal BeforeSplit { get; set; }
+    public decimal BeforeSplit { get; set; }
 
-        public decimal AfterSplit { get; set; }
-    }
+    public decimal AfterSplit { get; set; }
 }

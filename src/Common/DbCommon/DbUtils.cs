@@ -1,8 +1,7 @@
-namespace DbCommon
+namespace DbCommon;
+
+public static partial class DbUtils
 {
-    public static partial class DbUtils
-    {
 
 
-    }
 }
