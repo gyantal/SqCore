@@ -84,11 +84,11 @@ function onImageClick(json: any) {
   getDocElementById('globalAssetsBtn').onclick = () => choseall('gmA');
   getDocElementById('selectAllBtn').onclick = checkAll;
   getDocElementById('updateAllBtn').onclick = function() {
-    const checkBoxes = document.querySelectorAll('input[type=checkbox]:checked') as NodeListOf<Element>;
+    const tickersChecked = document.querySelectorAll('input[type=checkbox]:checked') as NodeListOf<Element>;
     const selectedTickers: string[] =[];
-    for (let i = 0; i < checkBoxes.length; i++) {
-      if ((checkBoxes[i]) && (selectedTickers[i] != checkBoxes[i].id))
-        selectedTickers.push(checkBoxes[i].id);
+    for (let i = 0; i < tickersChecked.length; i++) {
+      if ((tickersChecked[i]) && (selectedTickers[i] != tickersChecked[i].id))
+        selectedTickers.push(tickersChecked[i].id);
     }
     processingTables(json, selectedTickers);
   };
@@ -436,18 +436,16 @@ function processingTables(json: any, selectedTickers: string[]) {
   const noAssets = selectedTickers.length;
 
   const assChartMtx: any[] = [];
-  const pctChrtAssets: any[] = [];
-  for (let i = 0; i < assetNamesArray.length; i++) {
-    for (let j = 0; j < selectedTickers.length; j++) {
-      if (assetNamesArray[i] === selectedTickers[j]) {
-        pctChrtAssets.push(assetNamesArray[i]);
-        for (let k = 0; k < nCurrDataVD; k++) {
-          const date = dailyDatesArray[k];
-          const dailyVolDragsArray = dailyVolDragsMtx[k];
-          assChartMtx.push([date, ...dailyVolDragsArray]);
-        }
-      }
+  const tickersChecked = document.querySelectorAll('input[type=checkbox]:checked') as NodeListOf<Element>;
+
+  for (let dayInd = 0; dayInd < nCurrDataVD; dayInd++) {
+    const date = dailyDatesArray[dayInd];
+    const dayDataArr = [date];
+    for (let i = 0; i < tickersChecked.length; i++) {
+      const tickerInd = assetNamesArray.indexOf(tickersChecked[i].id);
+      dayDataArr.push(dailyVolDragsMtx[dayInd][tickerInd]);
     }
+    assChartMtx.push(dayDataArr);
   }
 
   const xLabel: string = 'Dates';
@@ -457,40 +455,40 @@ function processingTables(json: any, selectedTickers: string[]) {
   d3.selectAll('#pctChgChrt > *').remove();
   const lineChrtDiv = getDocElementById('pctChgChrt');
   const lineChrtTooltip = getDocElementById('tooltipChart');
-  sqLineChartGenerator(noAssets, nCurrDataVD, pctChrtAssets, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip, isDrawCricles);
+  sqLineChartGenerator(noAssets, nCurrDataVD, selectedTickers, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip, isDrawCricles);
 
   getDocElementById('idChartLength').innerHTML = '<strong>Percentage Changes of Prices in the Last &emsp;<select id="lookbackHistChrt"><option value="1">1 Day</option><option value="3">3 Days</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="20" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[indOfLength] + '</strong >';
-  pctMonthlyVolChrt(indOfLength);
-  // pctChrt(indOfLength);
+  pctMonthlyVolChrt(indOfLength, lengthOfChart);
 
   getDocElementById('lookbackHistChrt').onchange = function() {
     const lengthOfChart = parseInt((document.getElementById('lookbackHistChrt') as HTMLSelectElement).value);
     const indOfLength = retHistLBPeriodsNo.indexOf(lengthOfChart);
-    pctMonthlyVolChrt(indOfLength);
+    pctMonthlyVolChrt(indOfLength, lengthOfChart);
   };
 
   // Declaring data sets to charts.
-  function pctMonthlyVolChrt(indOfLength) {
-    const chartStart = lengthSubSums[indOfLength];
-    const nCurrData = chartStart + 1;
+  function pctMonthlyVolChrt(indOfLength: number, lengthOfChart: number) {
+    let chartStart: number;
+    if (indOfLength == 0)
+      chartStart = lengthSubSums[indOfLength] + 1;
+    else
+      chartStart = lengthSubSums[indOfLength];
+
+    const nCurrData = lengthOfChart + 1;
     const lookbackChartMtx: any[] = [];
-    const pctMonthlyChrtAssets: any[] = [];
-    for (let i = 0; i < assetNamesArray.length; i++) {
-      for (let j = 0; j < selectedTickers.length; j++) {
-        if (assetNamesArray[i] === selectedTickers[j]) {
-          pctMonthlyChrtAssets.push(assetNamesArray[i]);
-          for (let k = 0; k < nCurrData; k++) {
-            const dateArray = dailyDatesArray[dailyDatesArray.length - nCurrData + k];
-            const histReturnsArray = histRets2ChartsMtx[chartStart - 1 + k];
-            lookbackChartMtx.push([dateArray, ...histReturnsArray]);
-          }
-        }
+    for (let dayInd = 0; dayInd < nCurrData; dayInd++) {
+      const date = dailyDatesArray[dailyDatesArray.length - nCurrData + dayInd];
+      const dayDataArr = [date];
+      for (let i = 0; i < tickersChecked.length; i++) {
+        const tickerInd = assetNamesArray.indexOf(tickersChecked[i].id);
+        dayDataArr.push(histRets2ChartsMtx[chartStart - 1 + dayInd][tickerInd]);
       }
+      lookbackChartMtx.push(dayDataArr);
     }
     d3.selectAll('#pctChgLookbackChrt > *').remove();
     const lineChrtLookback = getDocElementById('pctChgLookbackChrt');
     const isDrawCricles1: boolean = true;
-    sqLineChartGenerator(noAssets, nCurrData, pctMonthlyChrtAssets, lookbackChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtLookback, lineChrtTooltip, isDrawCricles1);
+    sqLineChartGenerator(noAssets, nCurrData, selectedTickers, lookbackChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtLookback, lineChrtTooltip, isDrawCricles1);
   }
 }
 

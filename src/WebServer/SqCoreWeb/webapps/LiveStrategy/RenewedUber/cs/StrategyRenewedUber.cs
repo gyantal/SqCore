@@ -915,15 +915,13 @@ public class StrategyRenewedUberController : ControllerBase
     public Tuple<DateTime[], double[], Tuple<double[], double[], double[], double[], double[], double>> STCIdata(DateTime[] p_usedDateVec)
     {
         var client = new HttpClient();
-        client.DefaultRequestHeaders.Add("Accept","application/json");
-        client.DefaultRequestHeaders.Add("Accept","text/javascript");
-        client.DefaultRequestHeaders.Add("Accept","*/*");
-        client.DefaultRequestHeaders.Add("AcceptEncoding","gzip deflate");
-        client.DefaultRequestHeaders.Add("Host","vixcentral.com");
-        client.DefaultRequestHeaders.Add("Connection","keep-alive");
-        client.DefaultRequestHeaders.Add("X-Requested-With","XMLHttpRequest");
-        var resu = client.GetStringAsync("http://vixcentral.com/ajax_update").Result;
-        string[] resuRows = resu.Split(new string[] { "[", "]" }, StringSplitOptions.RemoveEmptyEntries);
+
+        //Downloading historical data from vixcentral.com.
+        string? webpageAjax = Utils.DownloadStringWithRetryAsync("http://vixcentral.com/ajax_update", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+        if (webpageAjax == null)
+            webpageAjax = "Error in DownloadStringWithRetry().";
+
+        string[] resuRows = webpageAjax.Split(new string[] { "[", "]" }, StringSplitOptions.RemoveEmptyEntries);
         string[] liveFuturesPrices = resuRows[4].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
         string[] spotVixPrices = resuRows[16].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
         double spotVixValue = Double.Parse(spotVixPrices[0]);
@@ -931,23 +929,14 @@ public class StrategyRenewedUberController : ControllerBase
         string liveFuturesNextExp = futuresNextExps[0].Substring(1,3);
 
         //Downloading historical data from vixcentral.com.
-        string urlVixHist = "http://vixcentral.com/historical/?days=100";
-        string? webpageHist = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
-        if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
-        {
-            webpageHist = Utils.DownloadStringWithRetryAsync(urlVixHist + Utils.Configuration["Google:GoogleApiKeyKey"], 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
-            if (webpageHist == null)
-                webpageHist = "Error in DownloadStringWithRetry().";
-        }
+        string? webpageHist = Utils.DownloadStringWithRetryAsync("http://vixcentral.com/historical/?days=100", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+        if (webpageHist == null)
+            webpageHist = "Error in DownloadStringWithRetry().";
+
         //Downloading live data from vixcentral.com.
-        string urlVixLive = "http://vixcentral.com";
-        string? webpageLive = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
-        if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
-        {
-            webpageLive = Utils.DownloadStringWithRetryAsync(urlVixLive, 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
-            if (webpageLive == null)
-                webpageLive = "Error in DownloadStringWithRetry().";
-        }
+        string? webpageLive = Utils.DownloadStringWithRetryAsync("http://vixcentral.com", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
+        if (webpageLive == null)
+            webpageLive = "Error in DownloadStringWithRetry().";
 
         // Selecting data from live data string.
         string[] tableRows = webpageHist.Split(new string[] { "<tr>", "</tr>" }, StringSplitOptions.RemoveEmptyEntries);
