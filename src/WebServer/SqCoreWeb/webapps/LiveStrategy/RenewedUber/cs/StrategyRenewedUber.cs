@@ -109,7 +109,6 @@ public class StrategyRenewedUberController : ControllerBase
         double[] eventMultiplicator = new double[] { 0.5, 1, 1, 0.85, 0.85, 0.7, 0.7 };
         double[] stciThresholds = new double[] { 0.02, 0.09, 0.075 };
 
-        Console.WriteLine("RenewedUber.Get() 1");
 
 
         string gchGSheetRefPos = "https://sheets.googleapis.com/v4/spreadsheets/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/values/A1:Z2000?key=";
@@ -128,7 +127,6 @@ public class StrategyRenewedUberController : ControllerBase
 
         // // Collecting and splitting price data got from SQL Server
         (IList<List<DailyData>>, List<DailyData>) quotesDataAll = GetUberStockHistData(allAssetListVIX);
-        Console.WriteLine("RenewedUber.Get() 1a");
 
         IList<List<DailyData>>? quotesData = quotesDataAll.Item1;
         List<DailyData>? VIXQuotes = quotesDataAll.Item2;
@@ -152,15 +150,12 @@ public class StrategyRenewedUberController : ControllerBase
         string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000, 1, 1, 16, 15, 0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on " + quotesData[0][^1].Date.ToString("yyyy-MM-dd");
         string lastDataTimeString = "Last data time (UTC): " + lastDataTime;
         DateTime[] usedDateVec = new DateTime[15];
-        Console.WriteLine("RenewedUber.Get() 1b");
         for (int iRows = 0; iRows < usedDateVec.Length; iRows++)
         {
             usedDateVec[iRows] = quotesData[0][quotesData[0].Count - iRows - 1].Date.Date;
         }
-        Console.WriteLine("RenewedUber.Get() 1c");
         double usedMDate = (usedDateVec[0] - new DateTime(1900, 1, 1)).TotalDays + 693962;
 
-        Console.WriteLine("RenewedUber.Get() 2");
 
         Tuple<DateTime[], double[], Tuple<double[], double[], double[], double[], double[], double>> STCId = STCIdata(usedDateVec);
         Tuple<double[], double[], double[], double[], double[], double> vixCont = STCId.Item3;
@@ -177,7 +172,6 @@ public class StrategyRenewedUberController : ControllerBase
             spotVixValueDb[iRows]= VIXQuotes[VIXQuotes.Count - iRows - 1].AdjClosePrice;
         }
 
-        Console.WriteLine("RenewedUber.Get() 3");
 
         double[] vixLeverage = new double[STCId.Item1.Length];
         for (int iRows = 0; iRows < vixLeverage.Length; iRows++)

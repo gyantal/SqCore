@@ -110,7 +110,7 @@ public static class GatewayExtensions
                         GatewayId.GyantalMain => (ServerIp.AtsVirtualBrokerServerPublicIpForClients, GatewayClientID.SqCoreToGaDev3),
                         _ => throw new NotImplementedException()
                     },
-                    "vinci" => p_gatewayId switch
+                    "vinci" or "Gigabyte" => p_gatewayId switch
                     {
                         GatewayId.CharmatMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDcDev4),
                         GatewayId.DeBlanzacMain => (ServerIp.SqCoreServerPublicIpForClients, GatewayClientID.SqCoreToDbDev4),

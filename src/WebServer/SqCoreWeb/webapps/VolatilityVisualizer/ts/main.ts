@@ -84,12 +84,7 @@ function onImageClick(json: any) {
   getDocElementById('globalAssetsBtn').onclick = () => choseall('gmA');
   getDocElementById('selectAllBtn').onclick = checkAll;
   getDocElementById('updateAllBtn').onclick = function() {
-    const tickersChecked = document.querySelectorAll('input[type=checkbox]:checked') as NodeListOf<Element>;
-    const selectedTickers: string[] =[];
-    for (let i = 0; i < tickersChecked.length; i++) {
-      if ((tickersChecked[i]) && (selectedTickers[i] != tickersChecked[i].id))
-        selectedTickers.push(tickersChecked[i].id);
-    }
+    const selectedTickers: string[] = Array.from(document.querySelectorAll('input[type=checkbox]:checked') as NodeListOf<Element>).map((r: any) => r.id);
     processingTables(json, selectedTickers);
   };
 }
