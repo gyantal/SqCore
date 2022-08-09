@@ -147,18 +147,18 @@ MarketBar
                 <div >
                    <span>
                     <div class="chrtTimeFrameSelection">
-                      <div class="histPeriodAndBnchMrkSelectionDropDown">
-                        <input id="histPeriodInput" class="histPeriodBnchmrk" type="text" [(ngModel)] ="histPeriodSelectionSelected" (change)="onHistPeriodSelectionClicked(histPeriodSelectionSelected)">
-                        <div class="histPeriodAndBnchMrkSelectionDropDownList">
-                          <option class="histPeriodAndBnchMrkOption" *ngFor="let item of histPeriodSelection" [value]="item" (click)="onHistPeriodSelectionClicked(item)">{{item}}</option>
+                      <div class="selectionDropDown">
+                        <input id="histPeriodInput" class="highlightInputDropDown" type="text" [(ngModel)] ="histPeriodSelectionSelected" (change)="onHistPeriodSelectionClicked(histPeriodSelectionSelected)">
+                        <div class="listDropDown">
+                          <option class="optionDropDown" *ngFor="let item of histPeriodSelection" [value]="item" (click)="onHistPeriodSelectionClicked(item)">{{item}}</option>
                         </div>
                       </div>
                       <div>StartDate: <input class = "histPeriodDateCl" type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr" (change)="onHistPeriodChangeClicked()"></div>
                       <div>EndDate: <input class = "histPeriodDateCl" type="date" id="EndDate" name="EndDate" min="01-01-1975" max="01-01-2040" [(ngModel)]="histPeriodEndETstr" (change)="onHistPeriodChangeClicked()"></div>
-                      <div class="histPeriodAndBnchMrkSelectionDropDown">BenchMark:
-                        <input id="bnchmrkInput" class="histPeriodBnchmrk" type="text" [(ngModel)] = "bnchmkTickerSelectionSelected" (change)="onHistPeriodChangeClicked()">
-                        <div class="histPeriodAndBnchMrkSelectionDropDownList">
-                          <option class="histPeriodAndBnchMrkOption" *ngFor="let item of bnchmkTickerSelection" [value]="item" (click)="onBnchmrkSelectionClicked(item)">{{item}}</option>
+                      <div class="selectionDropDown">BenchMark:
+                        <input id="bnchmrkInput" class="highlightInputDropDown" type="text" [(ngModel)] = "bnchmkTickerSelectionSelected" (change)="onHistPeriodChangeClicked()">
+                        <div class="listDropDown">
+                          <option class="optionDropDown" *ngFor="let item of bnchmkTickerSelection" [value]="item" (click)="onBnchmrkSelectionClicked(item)">{{item}}</option>
                         </div>
                       </div>
                       <div>MaxDD<span class="notImpInfo">(NAV/BnchMrk):</span>
@@ -186,6 +186,14 @@ MarketBar
     <input type="checkbox" [checked]="isFilteringBasedonMktVal" (click)="onSnapTableSmallMktValClicked()">HideSmallMktVal
     <input type="checkbox" [checked]="isFilteringBasedonPlDaily" (click)="onSnapTableSmallPlDailyClicked()">HideSmallPLt
     <input type="checkbox" [checked]="isFilteringBasedonOptions" (click)="onSnapTableOptionsClicked()">HideOptions
+    <!-- <span>AssetCategory:
+    <span class="selectionDropDown">
+      <input id="assetCategoryInput" class="highlightInputDropDown" type="text" [(ngModel)] = "assetCategorySelectionSelected" (change)="onHistPeriodChangeClicked()">
+      <span class="listDropDown">
+        <option class="optionDropDown" *ngFor="let item of assetCategorySelection" [value]="item" (click)="onAssetCategorySelectionClicked(item)">{{item}}</option>
+      </span>
+    </span>
+  </span> -->
 </span>
 <div class="brAccSnapTbl">
 <table class = "selectedBrcAccSnapShotTbl">

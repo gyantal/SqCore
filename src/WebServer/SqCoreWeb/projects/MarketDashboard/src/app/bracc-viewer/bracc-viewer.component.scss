@@ -340,19 +340,19 @@ tr:nth-child(even) {
   font-weight: bold;
 }
 
-.histPeriodBnchmrk {
+.highlightInputDropDown {
   padding: 0.5rem;
   font-size: 1.2rem;
   width: 15rem;
   border: 0.1rem solid black;
 }
 
-.histPeriodAndBnchMrkSelectionDropDown {
+.selectionDropDown {
   position: relative;
   display: inline-block;
 }
 
-.histPeriodAndBnchMrkSelectionDropDownList {
+.listDropDown {
   display: none;
   position: absolute;
   background-color: #f1f1f1;
@@ -360,25 +360,25 @@ tr:nth-child(even) {
   z-index: 1;
 }
 
-.histPeriodAndBnchMrkSelectionDropDownList option {
+.listDropDown option {
   color: black;
   padding: 0.25rem 0.25rem;
   text-decoration: none;
   display: block;
 }
 
-.histPeriodAndBnchMrkSelectionDropDownList option:hover {
+.listDropDown option:hover {
   background-color: #ddd;
 }
 
-.histPeriodAndBnchMrkSelectionDropDown:hover .histPeriodAndBnchMrkSelectionDropDownList {
+.selectionDropDown:hover .listDropDown {
   display: block;
 }
 
-.histPeriodAndBnchMrkSelectionDropDown:hover .histPeriodBnchmrk {
+.selectionDropDown:hover .highlightInputDropDown {
   background-color: rgba(255, 255, 128, .5);;
 }
 
-.histPeriodAndBnchMrkOption {
+.optionDropDown {
   border: 0.1rem solid lightblue;
 }

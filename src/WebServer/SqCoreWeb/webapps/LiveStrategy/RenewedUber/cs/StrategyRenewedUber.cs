@@ -100,9 +100,13 @@ public class StrategyRenewedUberController : ControllerBase
     [HttpGet]   // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
     public string Get()
     {
+                // Testing the Gsheet Data 
+        // string[]? allAssetList = GetTickersFromGSheet();
         // string[] allAssetList = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
         // string[] allAssetListVIX = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };            // // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
         string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
+        // string[] vixAssetList = new string[] { "^VIX" };
+        // string[]? allAssetListVIX = allAssetList.Append("^VIX").ToArray();
         string[] allAssetListVIX = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };
         double[] bullishWeights = new double[] { -0.1, 0.3, 0.3, 0.2, -0.1, -0.075, -0.15 };
         double[] bearishWeights = new double[] { 1, 0, 0, 0, 0, 0, 0 };
@@ -1235,5 +1239,34 @@ public class StrategyRenewedUberController : ControllerBase
 
         Tuple<DateTime[], double[], Tuple<double[], double[], double[], double[], double[], double>> stciResults = Tuple.Create(stciDateVec, stciValue, vixCont);
         return stciResults;
+    }
+
+    public static string[]? GetTickersFromGSheet() {
+
+        string? valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
+        if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
+        {
+            valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync("https://docs.google.com/spreadsheets/d/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/edit#gid=0" + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
+            if (valuesFromGSheetStr == null)
+                valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
+        }
+        Debug.WriteLine("The values from gSheet Ticker for RenewedUber are ", valuesFromGSheetStr.Length);
+        if (!valuesFromGSheetStr.StartsWith("Error")) 
+        {
+            int pos = valuesFromGSheetStr.IndexOf("Munkalap1\n");
+            if (pos < 0)
+                return null;
+            valuesFromGSheetStr = valuesFromGSheetStr[(pos + 9)..]; // cut off until the end of "values":
+            int posStart = valuesFromGSheetStr.IndexOf("CDate,");
+            if (posStart < 0)
+                return null;
+            int posEnd = valuesFromGSheetStr.IndexOf("UNG,", posStart + 1);
+            if (posEnd < 0)
+                return null;
+            string tickers = valuesFromGSheetStr.Substring(posStart + 6, posEnd - posStart - 3);
+            return tickers.Split(',').Select(x => x.Trim()).ToArray();
+        }
+        else
+            return null;
     }
 }

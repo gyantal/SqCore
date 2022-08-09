@@ -234,6 +234,8 @@ export class BrAccViewerComponent implements OnInit {
   histPeriodSelectionSelected: string = 'YTD';
   bnchmkTickerSelection = ['SPY', 'QQQ', 'TLT', 'VXX', 'SVXY', 'UNG', 'USO'];
   bnchmkTickerSelectionSelected: string = 'SPY';
+  assetCategorySelection = ['Food', 'PreciousMetal', 'IndustrialMetal', 'EnergyCommodity'];
+  assetCategorySelectionSelected: string = 'EnergyCommodity';
   histPeriodStartET: Date; // set in ctor. We need this in JS client to check that the received data is long enough or not (Expected Date)
   histPeriodStartETstr: string; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
   histPeriodEndET: Date;
@@ -621,6 +623,14 @@ export class BrAccViewerComponent implements OnInit {
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('BrAccViewer.GetNavChrtData:Bnchmrk:' + this.bnchmkTickerSelectionSelected.toUpperCase() + ',Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
     (document.getElementById('bnchmrkInput') as HTMLInputElement).value = this.bnchmkTickerSelectionSelected;
+  }
+
+  // under development - Daya
+  onAssetCategorySelectionClicked(assetCategorySelectionSelected: string ) {
+    this.assetCategorySelectionSelected = assetCategorySelectionSelected;
+    // if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+    //   this._parentWsConnection.send('BrAccViewer.GetNavChrtData:Bnchmrk:' + this.assetCategorySelectionSelected.toUpperCase() + ',Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
+    (document.getElementById('assetCategoryInput') as HTMLInputElement).value = this.assetCategorySelectionSelected;
   }
 
   onHistPeriodSelectionClicked(histPeriodSelectionSelected: string) {
