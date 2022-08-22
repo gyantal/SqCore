@@ -23,6 +23,8 @@ class HandshakeBrAccViewer
     // However, there will be a text input for CSV values of tickers, like "SPY,QQQ". If user types that and click then server should answer and send the BenchMarkAsset
     // But it should not be in the intial Handshake.
 
+    public List<AssetJs> CommoditiesAssets { get; set; } =  new List<AssetJs>();
+
     // public List<AssetJs> ChartBenchmarkPossibleAssets { get; set; } = new List<AssetJs>();
 }
 
@@ -80,6 +82,7 @@ public partial class DashboardClient
     readonly List<string> c_marketBarSqTickersDefault = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/AMZN"};    // TEMP: AMZN is here to test that realtime price is sent to client properly
     readonly List<string> c_marketBarSqTickersDc = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/GLD"};
     List<Asset> m_brAccMktBrAssets = new();      // remember, so we can send RT data
+    List<Asset> m_commodityAssets = new();
 
     // void EvMemDbAssetDataReloaded_BrAccViewer()
     // {
@@ -233,8 +236,9 @@ public partial class DashboardClient
     {
         List<AssetJs> marketBarAssets = m_brAccMktBrAssets.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
         List<AssetJs> selectableNavAssets = p_selectableNavs.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
+        List<AssetJs> commoditiesAssets = m_commodityAssets.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
 
-        return new HandshakeBrAccViewer() { MarketBarAssets = marketBarAssets, SelectableNavAssets = selectableNavAssets };
+        return new HandshakeBrAccViewer() { MarketBarAssets = marketBarAssets, SelectableNavAssets = selectableNavAssets, CommoditiesAssets = commoditiesAssets };
     }
 
     private BrAccViewerAccountSnapshotJs? GetBrAccViewerAccountSnapshot() // "N/GA.IM, N/DC, N/DC.IM, N/DC.IB"
@@ -433,6 +437,10 @@ public partial class DashboardClient
                 SqDateOnly stckChrtLookbackEndExcl = todayET;
                 BrAccViewerSendStockHist(stckChrtLookbackStart, stckChrtLookbackEndExcl, stockSqTicker);
                 return true;
+            case "BrAccViewer.GetAssetCategory":
+                Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): GetAssetCategory to '{msgObjStr}'");
+                // BrAccViewerSendAssetCategoryTickers();
+                return true;
             default:
                 return false;
         }
@@ -499,4 +507,13 @@ public partial class DashboardClient
             BrAccViewerSendSnapshot();  // Report to the user 6..16 seconds later again. With the updated option prices.
         }).LogUnobservedTaskExceptions("!Error in BrAccViewerUpdateStOptPricesAndSendSnapshotTwice() sub-thread.");
     }
+    // under development - Daya's
+    // private void BrAccViewerSendAssetCategoryTickers() {
+    // if (assetCategoryStockHistValues != null)
+    //    {
+    //        encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.AssetCategoryStockHist:" + Utils.CamelCaseSerialize(assetCategoryStockHistValues));
+    //        if (WsWebSocket!.State == WebSocketState.Open)
+    //            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+    //     }
+    // }
 }

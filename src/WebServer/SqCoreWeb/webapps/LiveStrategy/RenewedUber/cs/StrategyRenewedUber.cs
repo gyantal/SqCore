@@ -100,14 +100,16 @@ public class StrategyRenewedUberController : ControllerBase
     [HttpGet]   // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
     public string Get()
     {
-                // Testing the Gsheet Data 
-        // string[]? allAssetList = GetTickersFromGSheet();
+        // Testing the Gsheet Data
+        string[]? allAssetList = GetTickersFromGSheet() ?? new string[] {" "};
         // string[] allAssetList = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
         // string[] allAssetListVIX = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };            // // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
-        string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
+        // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
         // string[] vixAssetList = new string[] { "^VIX" };
-        // string[]? allAssetListVIX = allAssetList.Append("^VIX").ToArray();
-        string[] allAssetListVIX = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };
+       
+        string[]? allAssetListVIX = allAssetList?.Append("^VIX").ToArray() ?? new string[] {"^VIX"};
+
+        // string[] allAssetListVIX = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };
         double[] bullishWeights = new double[] { -0.1, 0.3, 0.3, 0.2, -0.1, -0.075, -0.15 };
         double[] bearishWeights = new double[] { 1, 0, 0, 0, 0, 0, 0 };
         double[] eventMultiplicator = new double[] { 0.5, 1, 1, 0.85, 0.85, 0.7, 0.7 };
@@ -395,7 +397,6 @@ public class StrategyRenewedUberController : ControllerBase
                     break;
             }
         }
-
 
         double currWeightedSignal = eventFinalWeightedSignal[0];
         double currSTCI = STCId.Item2[0];

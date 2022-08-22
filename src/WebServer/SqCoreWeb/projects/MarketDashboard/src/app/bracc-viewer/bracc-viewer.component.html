@@ -186,14 +186,14 @@ MarketBar
     <input type="checkbox" [checked]="isFilteringBasedonMktVal" (click)="onSnapTableSmallMktValClicked()">HideSmallMktVal
     <input type="checkbox" [checked]="isFilteringBasedonPlDaily" (click)="onSnapTableSmallPlDailyClicked()">HideSmallPLt
     <input type="checkbox" [checked]="isFilteringBasedonOptions" (click)="onSnapTableOptionsClicked()">HideOptions
-    <!-- <span>AssetCategory:
+    <span>AssetCategory:
     <span class="selectionDropDown">
       <input id="assetCategoryInput" class="highlightInputDropDown" type="text" [(ngModel)] = "assetCategorySelectionSelected" (change)="onHistPeriodChangeClicked()">
       <span class="listDropDown">
         <option class="optionDropDown" *ngFor="let item of assetCategorySelection" [value]="item" (click)="onAssetCategorySelectionClicked(item)">{{item}}</option>
       </span>
     </span>
-  </span> -->
+  </span>
 </span>
 <div class="brAccSnapTbl">
 <table class = "selectedBrcAccSnapShotTbl">

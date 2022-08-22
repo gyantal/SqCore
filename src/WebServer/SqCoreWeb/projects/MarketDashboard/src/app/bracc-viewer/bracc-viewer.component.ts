@@ -10,6 +10,7 @@ type Nullable<T> = T | null;
 class BrAccVwrHandShk {
   marketBarAssets: Nullable<AssetJs[]> = null;
   selectableNavAssets: Nullable<AssetJs[]> = null;
+  commodityAssets: Nullable<AssetJs[]> = null;
 }
 
 class AssetJs {
@@ -320,6 +321,7 @@ export class BrAccViewerComponent implements OnInit {
         this.handshakeStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.handshakeObj = JSON.parse(msgObjStr);
         console.log(`BrAccViewer.Handshake.SelectableBrAccs: '${(this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets}'`);
+        console.log(`BrAccViewer.Handshake.CommoditiesAssets: '${(this.handshakeObj == null) ? null : this.handshakeObj.commodityAssets}'`);
         this.updateUiSelectableNavs((this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets);
         return true;
       case 'BrAccViewer.StockHist':
@@ -328,6 +330,9 @@ export class BrAccViewerComponent implements OnInit {
         this.stockHistObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateStockHistData(this.stockHistObj, this.uiSnapTable);
         return true;
+      // case 'BrAccViewer.AssetCategoryStockHist':
+      //   console.log('BrAccViewer.AssetCategoryStockHist:' + msgObjStr);
+      //   return true;
       default:
         return false;
     }
@@ -628,8 +633,9 @@ export class BrAccViewerComponent implements OnInit {
   // under development - Daya
   onAssetCategorySelectionClicked(assetCategorySelectionSelected: string ) {
     this.assetCategorySelectionSelected = assetCategorySelectionSelected;
+    console.log('The asset category selected is :', this.assetCategorySelectionSelected);
     // if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-    //   this._parentWsConnection.send('BrAccViewer.GetNavChrtData:Bnchmrk:' + this.assetCategorySelectionSelected.toUpperCase() + ',Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
+    //   this._parentWsConnection.send('BrAccViewer.GetAssetCategory:' + this.assetCategorySelectionSelected.toUpperCase());
     (document.getElementById('assetCategoryInput') as HTMLInputElement).value = this.assetCategorySelectionSelected;
   }
 
