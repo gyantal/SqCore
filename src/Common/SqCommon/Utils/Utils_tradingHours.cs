@@ -147,7 +147,8 @@ public static partial class Utils
             // 2. Get section from ">*", ">**", ">***" to </p> to get the 3 footnotes
             // 2018: holiday table appears twice in the HTML. One in the middle, but one at the end is shorter, cleaner, get that.
             // 2019: holiday table appears only once in the HTML.
-            int iTHead = webPage.IndexOf(@"<table class=""table table-layout-fixed"">");
+            // 2022: table class is changed from 'table table-layout-fixed' to 'table-data table-fixed table-border-rows'
+            int iTHead = webPage.IndexOf(@"<table class=""table-data table-fixed table-border-rows"">");
             int iTBody = webPage.IndexOf(@"</table>", iTHead);
             string holidayTable = webPage[iTHead..iTBody];
 
