@@ -82,26 +82,24 @@ public class Startup
                 });
         });
 
-        // In production, the Angular files (index.html) will be served from this directory, but actually we don't use UseSpaStaticFiles(), so we don't need this here.
-        services.AddSpaStaticFiles(configuration =>
-        {
-            configuration.RootPath = "Angular/dist";
-        });
+
+        services.AddCompressedStaticFiles();
 
         // https://docs.microsoft.com/en-us/aspnet/core/performance/response-compression
-        services.AddResponseCompression(options =>
-        {
-            options.Providers.Add<BrotliCompressionProvider>();
-            options.Providers.Add<GzipCompressionProvider>();
-            // Default Mime types: application/javascript, application/json, application/xml, text/css, text/html, text/json, text/plain, text/xml
-            options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat( new[] { "image/svg+xml" });
-        });
-        services.Configure<BrotliCompressionProviderOptions>(options =>
-        {
-            options.Level = CompressionLevel.Fastest;
-        });
+        // this is on the fly, just-in-time (JIT) compression. CompressionLevel.Optimal takes 250ms, but CompressionLevel.Fastest takes 4ms time on CPU, but still worth it.
+        // 2022-08: keep in code, but it was commented out when CompressedStaticFileMiddleware started to work. Ahead of time is better than on the fly
+        // services.AddResponseCompression(options =>
+        // {
+        //     options.Providers.Add<BrotliCompressionProvider>();
+        //     options.Providers.Add<GzipCompressionProvider>();
+        //     // Default Mime types: application/javascript, application/json, application/xml, text/css, text/html, text/json, text/plain, text/xml
+        //     options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat( new[] { "image/svg+xml" });
+        // });
+        // services.Configure<BrotliCompressionProviderOptions>(options =>
+        // {
+        //     options.Level = CompressionLevel.Fastest;
+        // });
 
-        
         string googleClientId = Utils.Configuration["Google:ClientId"];
         string googleClientSecret = Utils.Configuration["Google:ClientSecret"];
         
@@ -390,116 +388,17 @@ public class Startup
             await next();
         });
 
-
-        // AddAngularSpaHandlingMiddleware(app, env, "HealthMonitor");     // it doesn't do anything useful now, but might do in the future
-        // AddAngularSpaHandlingMiddleware(app, env, "MarketDashboard");   // it doesn't do anything useful now, but might do in the future
-
-        app.UseResponseCompression();       // this is on the fly, just-in-time (JIT) compression. CompressionLevel.Optimal takes 250ms, but CompressionLevel.Fastest takes 4ms time on CPU, but still worth it.
-
-
-        // var rwOptions = new RewriteOptions();
-        // if (env.IsDevelopment())
-        // {
-        //     rwOptions
-        //     .AddRedirect(@"^HealthMonitor", @"dev/DeveloperWarningForServingAngularSPA.html")  // Redirect() forces client to query again.
-        //     .AddRedirect(@"^MarketDashboard", @"dev/DeveloperWarningForServingAngularSPA.html");  // Redirect() forces client to query again.
-        // }
-        // else
-        // {
-        //     rwOptions
-        //     .AddRedirect(@"^HealthMonitor$", @"HealthMonitor/")  // Redirect() forces client to query again (needed for base URL to be the SPA folder)
-        //     .AddRewrite(@"^HealthMonitor/$", @"HealthMonitor/index.html", skipRemainingRules: true)   // Rewrite() is hidden from the Client. Helps to find it by UseStaticFiles()
-        //     .AddRedirect(@"^MarketDashboard$", @"MarketDashboard/")  // Redirect() forces client to query again (needed for base URL to be the SPA folder)
-        //     .AddRewrite(@"^MarketDashboard/$", @"MarketDashboard/index.html", skipRemainingRules: true);   // Rewrite() is hidden from the Client. Helps to find it by UseStaticFiles()
-        // }
-
-        // app.UseRewriter(rwOptions);
-
-        // string angularSpaStr = string.Empty;
-
-        // app.Use(async (context, next) =>
-        // {
-        //     Console.WriteLine($"After UseRewriter():  Request.Path: '{context.Request.Path.Value}'");
-
-        //     if (context.Request.Path.Value.StartsWith("/HealthMonitor/", StringComparison.OrdinalIgnoreCase))
-        //         angularSpaStr = "HealthMonitor";
-        //     else if (context.Request.Path.Value.StartsWith("/MarketDashboard/", StringComparison.OrdinalIgnoreCase))
-        //         angularSpaStr = "MarketDashboard";
-
-        //     if (!String.IsNullOrEmpty(angularSpaStr)) {
-        //     Problem, this app.UseStaticFiles() never worked here. It didn't file the files, because it is not in the middleware chain.
-        //         context.Request.Path = context.Request.Path.Value.Replace("/" + angularSpaStr, string.Empty);
-        //         // "Serving UseStaticFiles():  Request.Path: '/HealthMonitor/index.html' in folder:'Angular\dist\HealthMonitor'"
-        //         Console.WriteLine($"Serving UseStaticFiles():  Request.Path: '{context.Request.Path.Value}' in folder:'{@"Angular\dist\" + angularSpaStr}'");
-        //         app.UseStaticFiles(new StaticFileOptions() { FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Angular\dist\" + angularSpaStr))});
-        //     }
-
-        //     await next();
-        // });
-
-
-        // app.Map(new PathString("/HealthMonitor"), client =>
-        // {
-        //     // In Development, when we do 'ng serve' the 'index.hml' should be in the root folder, and all other files (main, pollyfill) should be in the root too. So, only <base href=""> is possible
-        //     // Therefor, in Production, index.html should be in the HealthMonitor folder, so browser should ask 'https://localhost:5001/HealthMonitor/' and NOT 'https://localhost:5001/HealthMonitor'
-        //     // If browser asks 'https://localhost:5001/HealthMonitor', we should redirect to 'https://localhost:5001/HealthMonitor/'
-        //     client.Use(async (context, next) =>
-        //     {
-        //         Console.WriteLine($"Map.Use: context.Request.Path.Value: '{context.Request.Path.Value}'");
-
-        //         // if (String.IsNullOrEmpty(context.Request.Path.Value))    // turn https://localhost:5001/HealthMonitor   to // turn https://localhost:5001/HealthMonitor/index.html
-        //         // {
-        //         //     context.Request.Path = "/index.html";
-        //         // }
-        //         // else if (String.Equals(context.Request.Path.Value, "/index.html", StringComparison.OrdinalIgnoreCase))
-        //         //     context.Request.Path = string.Empty;
-
-        //         await next();
-        //     });
-
-        //     StaticFileOptions clientAppDist = new StaticFileOptions()
-        //     {
-        //         FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Angular\dist\HealthMonitor"))
-        //     };
-        //     client.UseStaticFiles(clientAppDist);
-        // });
-
-        // app.Map(new PathString("/MarketDashboard"), client =>
-        // {
-        //     StaticFileOptions clientAppDist = new StaticFileOptions()
-        //     {
-        //         FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Angular\dist\MarketDashboard"))
-        //     };
-        //     client.UseStaticFiles(clientAppDist);
-        // });
-
-        // if (!env.IsDevelopment())   // this is not used now.
-        // {
-        //     app.UseSpaStaticFiles();    // RootPath = "Angular/dist";, this serves https://localhost:5001/HealthMonitor/styles.3ff695c00d717f2d2a11.css , however, it doesn't serve https://localhost:5001/HealthMonitor/index.html
-        // }
-
-
-        // Serve the files Default.htm, default.html, Index.htm, Index.html
-        // by default (in that order), i.e., without having to explicitly qualify the URL.
-        // For example, if your endpoint is http://localhost:3012/ and wwwroot directory
-        // has Index.html, then Index.html will be served when someone hits
-        // http://localhost:3012/
-
-
-        // Enable static files to be served. This would allow html, images, etc. in wwwroot directory to be served. 
-        // The URLs of files exposed using UseDirectoryBrowser and UseStaticFiles are case sensitive and character constrained, subject to the underlying file system.
-        // For example, Windows is not case sensitive, but MACOS and Linux are case sensitive.
-        // for jpeg files, place UseStaticFiles BEFORE UseRouting
-        if (env.IsDevelopment())
-            app.UseStaticFilesCaseSensitive();
-        else 
-            app.UseStaticFiles();
+        // this is on the fly, just-in-time (JIT) compression. CompressionLevel.Optimal takes 250ms, but CompressionLevel.Fastest takes 4ms time on CPU, but still worth it.
+        // app.UseResponseCompression(); // 2022-08: keep in code, but it was commented out when CompressedStaticFileMiddleware started to work. Ahead of time is better than on the fly
 
         app.UseRouting();
 
-        app.UseAuthorization();     // If execution reaches here and user is not logged in, this will redirect to Google-login. It is needed for [Authorize] attributes protection, "If the app uses authentication/authorization features such as AuthorizePage or [Authorize], place the call to UseAuthentication and UseAuthorization after UseRouting"
+        // UseAuthorization: If execution reaches here and user is not logged in, this will redirect to Google-login (only for [Authorize] attribute Controllers. 
+        // For normal static files, images, the SqFirewallMiddlewarePostAuth let it pass to the end, because we want to give the user Jpeg files even though it is not logged in.)
+        // It is needed for [Authorize] attributes protection, "If the app uses authentication/authorization features such as AuthorizePage or [Authorize], 
+        // place the call to UseAuthentication and UseAuthorization after UseRouting"
+        app.UseAuthorization();
 
-        app.UseMiddleware<SqWebsocketMiddleware>();
         app.UseEndpoints(endpoints =>
         {
             endpoints.MapControllerRoute(
@@ -507,174 +406,28 @@ public class Startup
                 pattern: "{controller}/{action=Index}/{id?}");  // controllers should listen on "/api/" so SubdomainRewriteOptionsRule() can differentiate what to leave as from root and what path to extend
         });
 
+        app.UseMiddleware<SqWebsocketMiddleware>();
+
+        // Enable static files to be served. This would allow html, images, etc. in wwwroot directory to be served. 
+        // The URLs of files exposed using UseDirectoryBrowser and UseStaticFiles are case sensitive and character constrained, subject to the underlying file system.
+        // For example, Windows is not case sensitive, but MacOS and Linux are case sensitive.
+        // for jpeg files, place UseStaticFiles BEFORE UseRouting
+        // Angular apps: in Production they are static files in wwwroot/webapps, served by a brotli capable StaticFiles middleware. 
+        // In Development Angular apps are 'ng serve'-d in a separate process on a separate port. For 'watch' style Hot Reload development.
+        // if (env.IsDevelopment())
+        //     app.UseStaticFilesCaseSensitive();  // Force case sensitivity even on Windows
+        // else 
+        //     app.UseStaticFiles(); // on Linux StaticFiles serving is case sensitive, which is good. But not case sensitive on Windows.
+        // CompressedStaticFileMiddleware replaces StaticFilesMiddleware. Can serve "*.html" from "*.html.br"
+        if (env.IsDevelopment())
+            app.UseCompressedStaticFiles(AspMiddlewareUtils.GetCaseSensitiveStaticFileOptions());  // Force case sensitivity on Windows only. Avoid the CPU overhead on Linux.
+        else 
+            app.UseCompressedStaticFiles(); // on Linux StaticFiles serving is case sensitive by default, which is good. No need for specific path-checking code overhead.
+
         app.Use(async (context, next) =>
         {
             Console.WriteLine($"Problem. End of the serving line. Request.Path: '{context.Request.Path.Value}'");
             await next();
         });
-
-        // https://stackoverflow.com/questions/54582037/asp-net-core-iapplicationbuilder-map-spa-and-static-files
-        // the query is: "https://localhost:5001/HealthMonitor/styles.3ff695c00d717f2d2a11.css"
-        // this should serve only  https://localhost:5001/HealthMonitor/index.html when client ask  https://localhost:5001/HealthMonitor
-        // app.Map(new PathString("/HealthMonitor"), client =>
-        // {
-        //     Console.WriteLine("app.Map('/HealthMonitor'");
-
-        //     client.Use(async (context, next) =>
-        //     {
-        //         Console.WriteLine($"Map.Use: context.Request.Path.Value: {context.Request.Path.Value}");
-
-        //         if (context.Request.Path.Value.Equals("/HealthMonitor", StringComparison.OrdinalIgnoreCase))
-        //         {
-        //             context.Request.Path = "/HealthMonitor/index.html";
-
-        //         }
-
-        //         await next();
-
-        //         // if (context.Response.StatusCode == 404 &&
-        //         //     !Path.HasExtension(context.Request.Path.Value) &&
-        //         //     !context.Request.Path.Value.StartsWith("/api/"))
-        //         // {
-        //         //     context.Request.Path = "/angulardev.html";
-
-        //         //     await next();
-        //         // }
-        //     });
-
-        //     // Each map gets its own physical path for it to map the static files to. 
-        //     // StaticFileOptions clientAppDist = new StaticFileOptions()
-        //     // {
-        //     //     //FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Angular\dist\HealthMonitor"))
-        //     //     FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Angular\dist"))
-        //     // };
-
-        //     DefaultFilesOptions clientAppDist2 = new DefaultFilesOptions()
-        //     {
-        //         //FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Angular\dist\HealthMonitor"))
-        //         FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Angular\dist"))
-        //     };
-
-
-        //     app.UseDefaultFiles(clientAppDist2);        // this is doing Redirects. We don't like the extra query.
-
-
-
-        //     //app.UseStaticFiles(clientAppDist);
-
-        //     // Each map its own static files otherwise, it will only ever serve index.html no matter the filename 
-        //     //client.UseSpaStaticFiles(clientAppDist); // allowFallbackOnServingWebRootFiles: false //  if only index.html served, check in index.html the relative path: <base href="MarketDashboard/">
-
-        //     // // Each map will call its own UseSpa where we give its own sourcepath
-        //     // client.UseSpa(spa =>   // allowFallbackOnServingWebRootFiles: true     // Strange. Without this, it doesn't work !!!.
-        //     // {
-        //     //     spa.Options.SourcePath = @"Angular\projects\HealthMonitor";
-        //     //     spa.Options.DefaultPageStaticFileOptions = clientAppDist;
-        //     // });
-        // });
-
-
-
-        // // https://stackoverflow.com/questions/54582037/asp-net-core-iapplicationbuilder-map-spa-and-static-files
-        // // the query is: "https://localhost:5001/HealthMonitor/styles.3ff695c00d717f2d2a11.css"
-        // app.Map(new PathString("/HealthMonitor"), client =>
-        // {
-        //     Console.WriteLine("app.Map('/HealthMonitor'");
-        //     // Each map gets its own physical path for it to map the static files to. 
-        //     StaticFileOptions clientAppDist = new StaticFileOptions()
-        //     {
-        //         //FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Angular\dist\HealthMonitor"))
-        //         FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Angular\dist"))
-        //     };
-
-        //     // Each map its own static files otherwise, it will only ever serve index.html no matter the filename 
-        //     client.UseSpaStaticFiles(clientAppDist); // allowFallbackOnServingWebRootFiles: false //  if only index.html served, check in index.html the relative path: <base href="MarketDashboard/">
-
-        //     // // Each map will call its own UseSpa where we give its own sourcepath
-        //     // client.UseSpa(spa =>   // allowFallbackOnServingWebRootFiles: true     // Strange. Without this, it doesn't work !!!.
-        //     // {
-        //     //     spa.Options.SourcePath = @"Angular\projects\HealthMonitor";
-        //     //     spa.Options.DefaultPageStaticFileOptions = clientAppDist;
-        //     // });
-        // });
-
-        // app.Map("/HealthMonitor", app1 =>
-        // {
-        //     Console.WriteLine("app.Map('/HealthMonitor', app1 ");
-        //     app1.UseSpaStaticFiles(new StaticFileOptions
-        //     {
-        //         RequestPath = "/HealthMonitor"
-        //     });
-            
-
-        //     app1.UseSpa(spa =>
-        //     {
-        //         // To learn more about options for serving an Angular SPA from ASP.NET Core,
-        //         // see https://go.microsoft.com/fwlink/?linkid=864501
-
-        //         spa.Options.SourcePath = "Angular";     // "Gets or sets the path, relative to the application working directory, of the directory that contains the SPA source files during development. The directory may not exist in published applications."
-
-        //     });
-        // });
-
-        // app.UseSpa(spa =>
-        // {
-        //     // To learn more about options for serving an Angular SPA from ASP.NET Core,
-        //     // see https://go.microsoft.com/fwlink/?linkid=864501
-
-        //     spa.Options.SourcePath = "Angular";     // "Gets or sets the path, relative to the application working directory, of the directory that contains the SPA source files during development. The directory may not exist in published applications."
-
-        //     if (env.IsDevelopment())
-        //     {
-        //         spa.UseAngularCliServer(npmScript: "start");
-        //     }
-        // });
     }
-
-
-    // it doesn't do anything useful now, but might do in the future
-    // private void AddAngularSpaHandlingMiddleware(IApplicationBuilder app, IWebHostEnvironment env, string spaName)
-    // {
-    //     var rwOptions = new RewriteOptions();
-    //     if (env.IsDevelopment())
-    //     {
-    //         // rwOptions
-    //         // .AddRedirect(@"^webapps/"+spaName, @"dev/DeveloperWarningForServingAngularSPA.html")  // Redirect() forces client to query again.
-    //         // .AddRewrite(@"^webapps/forced/"+spaName, "webapps/" + spaName + @"/index.html", skipRemainingRules: true);  // just in case Developer in Debug wants to access the Prod version of the Angular app
-    //     }
-    //     else
-    //     {
-    //         rwOptions
-    //         .AddRedirect(@"^" + spaName +"$", "webapps/" + spaName + @"/");  // Redirect("HealthMonitor" to "webapps/HealthMonitor/") forces client to query again (needed for base URL to be the SPA folder)
-    //         //.AddRewrite(@"^" + spaName + "/$", spaName + @"/index.html", skipRemainingRules: true);   // Rewrite("HealthMonitor/" to "HealthMonitor/index.html") is hidden from the Client. Helps to find it by UseStaticFiles()
-    //     }
-    //     app.UseRewriter(rwOptions);
-
-    //     // app.Map(new PathString("/" + spaName), client =>
-    //     // {
-    //     //     // In Development, when we do 'ng serve' the 'index.hml' should be in the root folder, and all other files (main, pollyfill) should be in the root too. So, only <base href=""> is possible
-    //     //     // Therefor, in Production, index.html should be in the HealthMonitor folder, so browser should ask 'https://localhost:5001/HealthMonitor/' and NOT 'https://localhost:5001/HealthMonitor'
-    //     //     // If browser asks 'https://localhost:5001/HealthMonitor', we should redirect to 'https://localhost:5001/HealthMonitor/'
-    //     //     client.Use(async (context, next) =>
-    //     //     {
-    //     //         Console.WriteLine($"Map.Use({"/" + spaName}): context.Request.Path.Value: '{context.Request.Path.Value}'");
-
-    //     //         // if (String.IsNullOrEmpty(context.Request.Path.Value))    // turn https://localhost:5001/HealthMonitor   to // turn https://localhost:5001/HealthMonitor/index.html
-    //     //         // {
-    //     //         //     context.Request.Path = "/index.html";
-    //     //         // }
-    //     //         // else if (String.Equals(context.Request.Path.Value, "/index.html", StringComparison.OrdinalIgnoreCase))
-    //     //         //     context.Request.Path = string.Empty;
-
-    //     //         await next();
-    //     //     });
-
-    //     //     StaticFileOptions clientAppDist = new StaticFileOptions()
-    //     //     {
-    //     //         FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Angular/dist/" + spaName))   // "Angular\dist\" is Windows like, not good. Use forward slash for Linux.
-    //     //     };
-    //     //     //client.UseStaticFiles(clientAppDist);
-    //     //     client.UseCompressedStaticFiles(clientAppDist);
-    //     // });
-    // }
 }

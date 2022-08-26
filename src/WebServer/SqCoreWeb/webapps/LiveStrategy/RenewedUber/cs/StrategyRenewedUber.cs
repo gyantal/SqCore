@@ -101,13 +101,13 @@ public class StrategyRenewedUberController : ControllerBase
     public string Get()
     {
         // Testing the Gsheet Data
-        string[]? allAssetList = GetTickersFromGSheet() ?? new string[] {" "};
+        string[] allAssetList = GetTickersFromGSheet() ?? new string[] {" "};
         // string[] allAssetList = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
         // string[] allAssetListVIX = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };            // // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
         // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
         // string[] vixAssetList = new string[] { "^VIX" };
        
-        string[]? allAssetListVIX = allAssetList?.Append("^VIX").ToArray() ?? new string[] {"^VIX"};
+        string[]? allAssetListVIX = allAssetList.Append("^VIX").ToArray() ?? new string[] {"^VIX"};
 
         // string[] allAssetListVIX = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };
         double[] bullishWeights = new double[] { -0.1, 0.3, 0.3, 0.2, -0.1, -0.075, -0.15 };
@@ -143,7 +143,6 @@ public class StrategyRenewedUberController : ControllerBase
         string? gSheetStringPos = content;
 
         Tuple<double[], DateTime[], string[,], int[], int[], int[], string[]> gSheetResToFinCalc = GSheetConverter(gSheetStringPos, allAssetList);
-
 
         //Request time (UTC)
         DateTime liveDateTime = DateTime.UtcNow;
