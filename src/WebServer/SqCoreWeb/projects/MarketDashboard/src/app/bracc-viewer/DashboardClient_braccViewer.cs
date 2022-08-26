@@ -14,16 +14,23 @@ using System.Threading.Tasks;
 
 namespace SqCoreWeb;
 
+
+class AssetCategoryJs
+{
+    public string Tag { get; set; } = string.Empty;
+    public List<string> SqTickers { get; set; } = new List<string>();
+}
+
 class HandshakeBrAccViewer
 {    //Initial params
-    public List<AssetJs> MarketBarAssets { get; set; } = new List<AssetJs>();
-    public List<AssetJs> SelectableNavAssets { get; set; } = new List<AssetJs>();
+    public List<AssetJs> MarketBarAssets { get; set; } = new();
+    public List<AssetJs> SelectableNavAssets { get; set; } = new();
+    public List<AssetCategoryJs> AssetCategories { get; set; } = new();
 
     // Don't send ChartBenchmarkPossibleAssets at the beginning. By default, we don't want to compare with anything. Keep the connection fast. It is not needed usually.
     // However, there will be a text input for CSV values of tickers, like "SPY,QQQ". If user types that and click then server should answer and send the BenchMarkAsset
     // But it should not be in the intial Handshake.
 
-    public List<AssetJs> CommoditiesAssets { get; set; } =  new List<AssetJs>();
 
     // public List<AssetJs> ChartBenchmarkPossibleAssets { get; set; } = new List<AssetJs>();
 }
@@ -82,7 +89,8 @@ public partial class DashboardClient
     readonly List<string> c_marketBarSqTickersDefault = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/AMZN"};    // TEMP: AMZN is here to test that realtime price is sent to client properly
     readonly List<string> c_marketBarSqTickersDc = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/GLD"};
     List<Asset> m_brAccMktBrAssets = new();      // remember, so we can send RT data
-    List<Asset> m_commodityAssets = new();
+
+    List<AssetCategoryJs> m_assetCategory = new();
 
     // void EvMemDbAssetDataReloaded_BrAccViewer()
     // {
@@ -236,9 +244,16 @@ public partial class DashboardClient
     {
         List<AssetJs> marketBarAssets = m_brAccMktBrAssets.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
         List<AssetJs> selectableNavAssets = p_selectableNavs.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
-        List<AssetJs> commoditiesAssets = m_commodityAssets.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
 
-        return new HandshakeBrAccViewer() { MarketBarAssets = marketBarAssets, SelectableNavAssets = selectableNavAssets, CommoditiesAssets = commoditiesAssets };
+        if (m_assetCategory.Count == 0)
+        {
+            // get from gSheet - Under Development Daya
+            GetAssetCategoriesFromGSheet();
+            m_assetCategory.Add(new AssetCategoryJs() { Tag="Food", SqTickers = new() { "S/WHEAT", "S/CORN", "S/COW"} });
+            m_assetCategory.Add(new AssetCategoryJs() { Tag="Energy", SqTickers = new() { "S/XOM", "S/XLE", "S/XOP", "S/CRAK", "S/XES", "S/UNG", "S/USO"} });
+        }
+
+        return new HandshakeBrAccViewer() { MarketBarAssets = marketBarAssets, SelectableNavAssets = selectableNavAssets, AssetCategories = m_assetCategory };
     }
 
     private BrAccViewerAccountSnapshotJs? GetBrAccViewerAccountSnapshot() // "N/GA.IM, N/DC, N/DC.IM, N/DC.IB"
@@ -437,10 +452,6 @@ public partial class DashboardClient
                 SqDateOnly stckChrtLookbackEndExcl = todayET;
                 BrAccViewerSendStockHist(stckChrtLookbackStart, stckChrtLookbackEndExcl, stockSqTicker);
                 return true;
-            case "BrAccViewer.GetAssetCategory":
-                Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): GetAssetCategory to '{msgObjStr}'");
-                // BrAccViewerSendAssetCategoryTickers();
-                return true;
             default:
                 return false;
         }
@@ -507,13 +518,38 @@ public partial class DashboardClient
             BrAccViewerSendSnapshot();  // Report to the user 6..16 seconds later again. With the updated option prices.
         }).LogUnobservedTaskExceptions("!Error in BrAccViewerUpdateStOptPricesAndSendSnapshotTwice() sub-thread.");
     }
-    // under development - Daya's
-    // private void BrAccViewerSendAssetCategoryTickers() {
-    // if (assetCategoryStockHistValues != null)
-    //    {
-    //        encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.AssetCategoryStockHist:" + Utils.CamelCaseSerialize(assetCategoryStockHistValues));
-    //        if (WsWebSocket!.State == WebSocketState.Open)
-    //            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+
+//  Under Development...Daya
+    public static string[]? GetAssetCategoriesFromGSheet() {
+
+        string? valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
+        if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
+        {
+            valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync("https://docs.google.com/spreadsheets/d/1NP8Tg08MqSoqd6wXSCus0rLXYG4TGPejzsGIP8r9YOk/values/A1%3AA1?key=" + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
+            if (valuesFromGSheetStr == null)
+                valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
+        }
+        Debug.WriteLine("The values from gSheet Ticker for RenewedUber are ", valuesFromGSheetStr.Length);
+
+    //     if (!valuesFromGSheetStr.StartsWith("Error")) 
+    //     {
+    //         int pos = valuesFromGSheetStr.IndexOf("Sheet1\n");
+    //             return null;
+    //         if (pos < 0)
+    //             return null;
+    //         valuesFromGSheetStr = valuesFromGSheetStr[(pos + 9)..]; // cut off until the end of "values":
+    //         int posStart = valuesFromGSheetStr.IndexOf("Food,");
+    //         if (posStart < 0)
+    //             return null;
+    //         int posEnd = valuesFromGSheetStr.IndexOf("UNG,", posStart + 1);
+    //         if (posEnd < 0)
+    //             return null;
+    //         string tickers = valuesFromGSheetStr.Substring(posStart + 6, posEnd - posStart - 3);
+    //         return tickers.Split(',').Select(x => x.Trim()).ToArray();
     //     }
-    // }
+    //     else
+    //         return null;
+        return null;
+    }
+   
 }

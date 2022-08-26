@@ -188,9 +188,9 @@ MarketBar
     <input type="checkbox" [checked]="isFilteringBasedonOptions" (click)="onSnapTableOptionsClicked()">HideOptions
     <span>AssetCategory:
     <span class="selectionDropDown">
-      <input id="assetCategoryInput" class="highlightInputDropDown" type="text" [(ngModel)] = "assetCategorySelectionSelected" (change)="onHistPeriodChangeClicked()">
+      <input id="assetCategoryInput" class="highlightInputDropDown" type="text" [(ngModel)] = "assetCategorySelectionSelected" placeholder="No Filter">
       <span class="listDropDown">
-        <option class="optionDropDown" *ngFor="let item of assetCategorySelection" [value]="item" (click)="onAssetCategorySelectionClicked(item)">{{item}}</option>
+        <option class="optionDropDown" *ngFor="let item of uiAssetCategories" [value]="item" (click)="onAssetCategorySelectionClicked(item.tag)">{{item.tag}}</option>
       </span>
     </span>
   </span>

@@ -10,7 +10,7 @@ type Nullable<T> = T | null;
 class BrAccVwrHandShk {
   marketBarAssets: Nullable<AssetJs[]> = null;
   selectableNavAssets: Nullable<AssetJs[]> = null;
-  commodityAssets: Nullable<AssetJs[]> = null;
+  assetCategories: Nullable<AssetCategoryJs[]> = null;
 }
 
 class AssetJs {
@@ -18,6 +18,11 @@ class AssetJs {
   public sqTicker = '';
   public symbol = '';
   public name = '';
+}
+
+class AssetCategoryJs {
+  public tag = '';
+  public sqTickers: Nullable<string[]> = null;
 }
 
 class BrAccSnapshotJs {
@@ -235,8 +240,10 @@ export class BrAccViewerComponent implements OnInit {
   histPeriodSelectionSelected: string = 'YTD';
   bnchmkTickerSelection = ['SPY', 'QQQ', 'TLT', 'VXX', 'SVXY', 'UNG', 'USO'];
   bnchmkTickerSelectionSelected: string = 'SPY';
-  assetCategorySelection = ['Food', 'PreciousMetal', 'IndustrialMetal', 'EnergyCommodity'];
-  assetCategorySelectionSelected: string = 'EnergyCommodity';
+  assetCategories: Nullable<AssetCategoryJs[]> = null;
+  assetCategorySelection: string[] = [];
+  assetCategorySelectionSelected: string = '';
+  uiAssetCategories: AssetCategoryJs[] = [];
   histPeriodStartET: Date; // set in ctor. We need this in JS client to check that the received data is long enough or not (Expected Date)
   histPeriodStartETstr: string; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
   histPeriodEndET: Date;
@@ -320,9 +327,24 @@ export class BrAccViewerComponent implements OnInit {
         console.log('BrAccViewer.Handshake:' + msgObjStr);
         this.handshakeStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.handshakeObj = JSON.parse(msgObjStr);
+        // create a local assetCategories variable.
+        // Push <"No Filter", []> first
+        // push the data from handshakeObj.AssetCategories after
+        // create assetCategoriesSelection from assetCategories
+        // Use assetCategories in the Angular UI.
+        const assetCategories: Nullable<AssetCategoryJs[]> = (this.handshakeObj == null) ? null : this.handshakeObj.assetCategories;
+        if (assetCategories == null)
+          return true;
+        this.uiAssetCategories.push({ tag: 'No Filter', sqTickers: []});
+        const uiAsset = new AssetCategoryJs();
+        for (const item of assetCategories) {
+          uiAsset.tag = item.tag;
+          uiAsset.sqTickers = item.sqTickers;
+          this.uiAssetCategories.push(uiAsset);
+        }
         console.log(`BrAccViewer.Handshake.SelectableBrAccs: '${(this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets}'`);
-        console.log(`BrAccViewer.Handshake.CommoditiesAssets: '${(this.handshakeObj == null) ? null : this.handshakeObj.commodityAssets}'`);
         this.updateUiSelectableNavs((this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets);
+        // this.updateUiAssetCategory(this.handshakeObj);
         return true;
       case 'BrAccViewer.StockHist':
         console.log('BrAccViewer.StockHist:' + msgObjStr);
@@ -330,9 +352,6 @@ export class BrAccViewerComponent implements OnInit {
         this.stockHistObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateStockHistData(this.stockHistObj, this.uiSnapTable);
         return true;
-      // case 'BrAccViewer.AssetCategoryStockHist':
-      //   console.log('BrAccViewer.AssetCategoryStockHist:' + msgObjStr);
-      //   return true;
       default:
         return false;
     }
@@ -631,11 +650,9 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   // under development - Daya
-  onAssetCategorySelectionClicked(assetCategorySelectionSelected: string ) {
-    this.assetCategorySelectionSelected = assetCategorySelectionSelected;
+  onAssetCategorySelectionClicked(uiAssetCategories: any) {
+    this.assetCategorySelectionSelected = uiAssetCategories.tag;
     console.log('The asset category selected is :', this.assetCategorySelectionSelected);
-    // if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-    //   this._parentWsConnection.send('BrAccViewer.GetAssetCategory:' + this.assetCategorySelectionSelected.toUpperCase());
     (document.getElementById('assetCategoryInput') as HTMLInputElement).value = this.assetCategorySelectionSelected;
   }
 
