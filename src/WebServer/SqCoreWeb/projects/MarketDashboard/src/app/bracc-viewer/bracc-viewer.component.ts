@@ -240,10 +240,9 @@ export class BrAccViewerComponent implements OnInit {
   histPeriodSelectionSelected: string = 'YTD';
   bnchmkTickerSelection = ['SPY', 'QQQ', 'TLT', 'VXX', 'SVXY', 'UNG', 'USO'];
   bnchmkTickerSelectionSelected: string = 'SPY';
-  assetCategories: Nullable<AssetCategoryJs[]> = null;
-  assetCategorySelection: string[] = [];
-  assetCategorySelectionSelected: string = '';
   uiAssetCategories: AssetCategoryJs[] = [];
+  assetCategorySelectionSelected: string = 'No Filter';
+  assetCategorySelectionSelectedSqtickers: string[] = [];
   histPeriodStartET: Date; // set in ctor. We need this in JS client to check that the received data is long enough or not (Expected Date)
   histPeriodStartETstr: string; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
   histPeriodEndET: Date;
@@ -327,24 +326,9 @@ export class BrAccViewerComponent implements OnInit {
         console.log('BrAccViewer.Handshake:' + msgObjStr);
         this.handshakeStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.handshakeObj = JSON.parse(msgObjStr);
-        // create a local assetCategories variable.
-        // Push <"No Filter", []> first
-        // push the data from handshakeObj.AssetCategories after
-        // create assetCategoriesSelection from assetCategories
-        // Use assetCategories in the Angular UI.
-        const assetCategories: Nullable<AssetCategoryJs[]> = (this.handshakeObj == null) ? null : this.handshakeObj.assetCategories;
-        if (assetCategories == null)
-          return true;
-        this.uiAssetCategories.push({ tag: 'No Filter', sqTickers: []});
-        const uiAsset = new AssetCategoryJs();
-        for (const item of assetCategories) {
-          uiAsset.tag = item.tag;
-          uiAsset.sqTickers = item.sqTickers;
-          this.uiAssetCategories.push(uiAsset);
-        }
         console.log(`BrAccViewer.Handshake.SelectableBrAccs: '${(this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets}'`);
         this.updateUiSelectableNavs((this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets);
-        // this.updateUiAssetCategory(this.handshakeObj);
+        this.updateUiAssetCategories(this.handshakeObj);
         return true;
       case 'BrAccViewer.StockHist':
         console.log('BrAccViewer.StockHist:' + msgObjStr);
@@ -373,6 +357,27 @@ export class BrAccViewerComponent implements OnInit {
       if (this.navSelectionSelected == '') // by default, the selected Nav is the first from the list
         this.navSelectionSelected = nav.symbol;
       this.navSelection.push(nav.symbol);
+    }
+  }
+
+  // under Development -- Daya
+  updateUiAssetCategories(handshakeObj: Nullable<BrAccVwrHandShk>) {
+    const assetCategories: Nullable<AssetCategoryJs[]> = (handshakeObj == null) ? null : handshakeObj.assetCategories;
+    if (!(Array.isArray(assetCategories) && assetCategories.length > 0 ))
+      return;
+
+    // create a local assetCategories variable.
+    // Push <"No Filter", []> first  , Push <"No Filter", ["*"]>
+    // push the data from handshakeObj.AssetCategories after
+    // create assetCategoriesSelection from assetCategories
+    // Use assetCategories in the Angular UI.
+
+    this.uiAssetCategories.push({ tag: 'No Filter', sqTickers: []});
+    for (let i = 0; i < assetCategories.length; i++) {
+      const uiAsset = new AssetCategoryJs();
+      uiAsset.tag = assetCategories[i].tag;
+      uiAsset.sqTickers = assetCategories[i].sqTickers;
+      this.uiAssetCategories.push(uiAsset);
     }
   }
 
@@ -652,7 +657,12 @@ export class BrAccViewerComponent implements OnInit {
   // under development - Daya
   onAssetCategorySelectionClicked(uiAssetCategories: any) {
     this.assetCategorySelectionSelected = uiAssetCategories.tag;
+    this.assetCategorySelectionSelectedSqtickers = uiAssetCategories.sqTickers;
     console.log('The asset category selected is :', this.assetCategorySelectionSelected);
+    console.log('The asset category selected tickers are :', this.assetCategorySelectionSelectedSqtickers);
+    // sqTickers = uiAssetCategories.sqTickers;
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+      this._parentWsConnection.send('BrAccViewer.ChangeAssetCat:' + this.navSelectionSelected + ',AssetCat-' + this.assetCategorySelectionSelected + ',Catgrs;' + this.assetCategorySelectionSelectedSqtickers + '-Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
     (document.getElementById('assetCategoryInput') as HTMLInputElement).value = this.assetCategorySelectionSelected;
   }
 
