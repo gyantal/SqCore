@@ -89,8 +89,6 @@ public partial class DashboardClient
     readonly List<string> c_marketBarSqTickersDefault = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/AMZN"};    // TEMP: AMZN is here to test that realtime price is sent to client properly
     readonly List<string> c_marketBarSqTickersDc = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/GLD"};
     List<Asset> m_brAccMktBrAssets = new();      // remember, so we can send RT data
-    List<Asset> m_brAccAssetCatergoriesAssets = new();
-
     List<AssetCategoryJs> m_assetCategories = new();
 
     // void EvMemDbAssetDataReloaded_BrAccViewer()
@@ -248,9 +246,7 @@ public partial class DashboardClient
 
         if (m_assetCategories.Count == 0)
         {
-            // get from gSheet - Under Development Daya
-            GetAssetCategoriesFromGSheet();
-            // m_assetCategories = GetAssetCategoriesFromGSheet();
+            m_assetCategories = GetAssetCategoriesFromGSheet();
             if (m_assetCategories.Count == 0)
             {
                 m_assetCategories.Add(new() { Tag = "Food", SqTickers = new() { "S/WHEAT", "S/CORN", "S/COW" } });
@@ -457,31 +453,6 @@ public partial class DashboardClient
                 SqDateOnly stckChrtLookbackEndExcl = todayET;
                 BrAccViewerSendStockHist(stckChrtLookbackStart, stckChrtLookbackEndExcl, stockSqTicker);
                 return true;
-            case "BrAccViewer.ChangeAssetCat": // msg: "GA.IM,AssetCat:Food,Bnchmrk:S/WHEAT,S/CORN,S/COW,-Date:2021-12-31...2022-08-28"
-                Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): ChangeAssetCat to '{msgObjStr}'"); // DC.IM
-
-                // send the snapshot only for the tickers in asset category requested?
-                //  if assetcategory tag == No Filter , then there shoud be no change in BrAccViewerPoss
-                int assetCatgrsStartIdx = msgObjStr.IndexOf(";");
-                int periodStartIdx = (assetCatgrsStartIdx == -1) ? -1 : msgObjStr.IndexOf("-", assetCatgrsStartIdx);
-                string assetCatTickers = (assetCatgrsStartIdx == -1 || periodStartIdx == -1) ? " " : msgObjStr.Substring(assetCatgrsStartIdx + 1, periodStartIdx - assetCatgrsStartIdx - 1);
-                List<string> assetCategoriesSqTickers = assetCatTickers.Split(',').Select(x => x.Trim()).ToList();
-                // List<string> assetCategoriesSqTickers = new() { "S/WHEAT", "S/CORN", "S/COW" };
-                m_brAccAssetCatergoriesAssets = assetCategoriesSqTickers.Select(r => MemDb.gMemDb.AssetsCache.GetAsset(r)).ToList();
-                var assetCategoriesSnapshot = m_brAccAssetCatergoriesAssets.Select(r =>
-                {
-                    return new BrAccViewerPosJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, SymbolEx = r.SymbolEx, Name = r.Name, PriorClose = r.PriorClose, EstPrice = r.EstValue};
-                });
-                if (assetCategoriesSnapshot != null)
-                {
-                    byte[]? encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.BrAccSnapshot:" + Utils.CamelCaseSerialize(assetCategoriesSnapshot));
-                    if (WsWebSocket!.State == WebSocketState.Open)
-                    {
-                        WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                    }
-                }
-                // BrAccViewerSendSnapshot();
-                return true;
             default:
                 return false;
         }
@@ -550,38 +521,38 @@ public partial class DashboardClient
     }
 
 //  Under Development...Daya
-    public static string[]? GetAssetCategoriesFromGSheet() {
+    static List<AssetCategoryJs> GetAssetCategoriesFromGSheet() {
 
-        string? valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
-        if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
+        if (String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) || String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
+            return new List<AssetCategoryJs>();
+
+        string? valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync("https://sheets.googleapis.com/v4/spreadsheets/1NP8Tg08MqSoqd6wXSCus0rLXYG4TGPejzsGIP8r9YOk/values/A1:Z2000?key=" + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
+        if (valuesFromGSheetStr == null)
+             return new List<AssetCategoryJs>();
+
+        Debug.WriteLine("The length of data from gSheet for AssetCategory is ", valuesFromGSheetStr.Length);
+
+        string[] rows = valuesFromGSheetStr.Split(new string[] { "],\n" }, StringSplitOptions.RemoveEmptyEntries);
+        List<AssetCategoryJs> result = new(rows.Length);
+        for (int i = 0; i < rows.Length; i++)
         {
-            valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync("https://sheets.googleapis.com/v4/spreadsheets/1NP8Tg08MqSoqd6wXSCus0rLXYG4TGPejzsGIP8r9YOk/values/A1:Z2000?key=" + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
-
-            if (valuesFromGSheetStr == null)
-                valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
+            string[] cells = rows[i].Split(new string[] { "\",\n" }, StringSplitOptions.RemoveEmptyEntries);
+            if (cells.Length != 2)  // The lengths: first line: 3, Line with ony 1 comment cell: 1, empty lines: 1, only accept if it has 2 cells
+                continue;
+            string cellFirst = cells[0];
+            int tagStartIdx = cellFirst.IndexOf('\"');
+            if (tagStartIdx == -1)
+                continue;
+            string tag = cellFirst.Substring(tagStartIdx + 1);
+            string cellSecond = cells[1];
+            int tickersStartIdx = cellSecond.IndexOf('\"');
+            int tickersEndIdx = (tickersStartIdx == -1) ? -1 : cellSecond.IndexOf('\"', tickersStartIdx + 1);
+            if (tickersEndIdx == -1)
+                continue;
+            List<string> sqTickers = cellSecond.Substring(tickersStartIdx + 1, tickersEndIdx - tickersStartIdx - 1).Split(',').Select(r => string.Concat("S/", r.Trim())).ToList();
+            result.Add(new AssetCategoryJs() { Tag = tag, SqTickers = sqTickers });
         }
-        Debug.WriteLine("The values from gSheet Ticker for AssetCategory are ", valuesFromGSheetStr.Length);
-
-//  i think better to create another method for converting this data in a seperate function - Daya
-        string[] gSheetTableRows = valuesFromGSheetStr.Split(new string[] { "[", "],\n" }, StringSplitOptions.RemoveEmptyEntries);
-        int assNum = gSheetTableRows.Length - 6;
-        string[] assetCategoryTag = new string[assNum];
-        string[] assetCategoryTickers = new string[assNum];
-         for (int iRows = 5; iRows < gSheetTableRows.Length - 5; iRows++)
-            {
-                string currPosRaw = gSheetTableRows[iRows];
-                if((currPosRaw != "    ") && (currPosRaw != null))
-                {
-                    currPosRaw = currPosRaw.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace("],", string.Empty).Replace(" ", "").Replace("\"\n", "BRB");
-                    string[] currPos = currPosRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
-                    assetCategoryTag[iRows - 5] = currPos[0];
-                    assetCategoryTickers[iRows - 5] = currPos[1];
-                    // Console.WriteLine(currPos.Length);
-                }
-            }
-
-        return null;
-        // return new List<AssetCategoryJs>();
+        return result;
     }
    
 }

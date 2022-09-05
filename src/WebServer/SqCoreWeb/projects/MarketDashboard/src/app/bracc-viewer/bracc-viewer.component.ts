@@ -242,7 +242,7 @@ export class BrAccViewerComponent implements OnInit {
   bnchmkTickerSelectionSelected: string = 'SPY';
   uiAssetCategories: AssetCategoryJs[] = [];
   assetCategorySelectionSelected: string = 'No Filter';
-  assetCategorySelectionSelectedSqtickers: string[] = [];
+  assetCategorySelectedSqtickers: string[] = [];
   histPeriodStartET: Date; // set in ctor. We need this in JS client to check that the received data is long enough or not (Expected Date)
   histPeriodStartETstr: string; // set in ctor; We need this for sending String instruction to Server. Anyway, a  HTML <input date> is always a A DOMString representing a date in YYYY-MM-DD format, or empty. https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/date
   histPeriodEndET: Date;
@@ -250,6 +250,7 @@ export class BrAccViewerComponent implements OnInit {
   isFilteringBasedonMktVal: boolean = true;
   isFilteringBasedonPlDaily: boolean = false;
   isFilteringBasedonOptions: boolean = false;
+  // isFilteringBasedonAssetCat: boolean = false;
   stockTooltipSymbol: string = '';
   stockTooltipName: string = '';
   isShowStockTooltip: boolean = false;
@@ -306,7 +307,7 @@ export class BrAccViewerComponent implements OnInit {
               pos.estPrice = NaN;
           }
         }
-        BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
+        BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
         return true;
       case 'BrAccViewer.NavHist':
         console.log('BrAccViewer.NavHist:' + msgObjStr);
@@ -418,7 +419,8 @@ export class BrAccViewerComponent implements OnInit {
     }
   }
 
-  static updateSnapshotTable(brAccSnap: Nullable<BrAccSnapshotJs>, isSortingDirectionAscending: boolean, sortColumn: string, isFilteringBasedonMktVal: boolean, isFilteringBasedonPlDaily: boolean, isFilteringBasedonOptions: boolean, uiSnapTable: UiSnapTable) {
+  static updateSnapshotTable(brAccSnap: Nullable<BrAccSnapshotJs>, isSortingDirectionAscending: boolean, sortColumn: string,
+      assetCategorySelectionSelectedSqtickers : string[], isFilteringBasedonMktVal: boolean, isFilteringBasedonPlDaily: boolean, isFilteringBasedonOptions: boolean, uiSnapTable: UiSnapTable) {
     if (brAccSnap === null || brAccSnap.poss === null)
       return;
     uiSnapTable.navAssetId = brAccSnap.assetId;
@@ -447,6 +449,14 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.deltaAdjTotalMarketOrientation = 0;
     uiSnapTable.betaDeltaAdjTotalMarketOrientation = 0;
     const smallMktValThreshold = uiSnapTable.priorCloseNetLiquidation * 0.01; // 1% of NAV. For a 400K NAV, it is 4K. For a 8M NAV it is 80K.
+
+    // under development -Daya  Cheking whether we are able to find the tickers or not
+    for (let i = 0; i < assetCategorySelectionSelectedSqtickers.length; i++) {
+      for (let j = 0; j < brAccSnap.poss.length; j++) {
+        if (assetCategorySelectionSelectedSqtickers[i] == brAccSnap.poss[j].sqTicker)
+          console.log('the ticker is :', brAccSnap.poss[j].sqTicker);
+      }
+    }
 
     for (const possItem of brAccSnap.poss) {
       // 1. Filling uiPosItem fields
@@ -504,7 +514,22 @@ export class BrAccViewerComponent implements OnInit {
       uiSnapTable.deltaAdjTotalMarketOrientation = Math.round(uiSnapTable.longStockValue + uiSnapTable.shortStockValue + uiSnapTable.longOptionDeltaAdjValue + uiSnapTable.shortOptionDeltaAdjValue);
 
       // 3. Determine visible rows based on filters
+      // const cols = assetCategorySelectionSelectedSqtickers.filter((r) => r == possItem.sqTicker);
+      // console.log('The len of assetCat :', cols.length);
+      // when you Loop through the Snapshot tickers, you have to check each tickers one by one with this assetCategorySqTickers.
+      // 1. If filterSqTicker is empty => snapshot ticker is accepted.
+      // 2. If filterSqTicker is not empty => check that the current snapshot SqTicker is in the list or not.
       let isShowPos = true;
+      // assetCategorySelectionSelectedSqtickers.map((r: any) => r.id);
+      // under development -Daya
+      for (const item of assetCategorySelectionSelectedSqtickers) {
+        if (item.length == 0)
+          isShowPos = false;
+        if (item != uiPosItem.sqTicker) {
+          isShowPos = false;
+          console.log('the ticker is using foreach:', uiPosItem.sqTicker);
+        }
+      }
       if (isFilteringBasedonMktVal && Math.abs(uiPosItem.mktVal) < smallMktValThreshold)
         isShowPos = false;
       if (isFilteringBasedonPlDaily && Math.abs(uiPosItem.plTod) < 500) // can be made as % of NAV, but $500 nominal value is fine now
@@ -657,13 +682,9 @@ export class BrAccViewerComponent implements OnInit {
   // under development - Daya
   onAssetCategorySelectionClicked(uiAssetCategories: any) {
     this.assetCategorySelectionSelected = uiAssetCategories.tag;
-    this.assetCategorySelectionSelectedSqtickers = uiAssetCategories.sqTickers;
-    console.log('The asset category selected is :', this.assetCategorySelectionSelected);
-    console.log('The asset category selected tickers are :', this.assetCategorySelectionSelectedSqtickers);
-    // sqTickers = uiAssetCategories.sqTickers;
-    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('BrAccViewer.ChangeAssetCat:' + this.navSelectionSelected + ',AssetCat-' + this.assetCategorySelectionSelected + ',Catgrs;' + this.assetCategorySelectionSelectedSqtickers + '-Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
-    (document.getElementById('assetCategoryInput') as HTMLInputElement).value = this.assetCategorySelectionSelected;
+    this.assetCategorySelectedSqtickers = uiAssetCategories.sqTickers;
+    // this.isFilteringBasedonAssetCat = !this.isFilteringBasedonAssetCat;
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
   onHistPeriodSelectionClicked(histPeriodSelectionSelected: string) {
@@ -696,7 +717,7 @@ export class BrAccViewerComponent implements OnInit {
   onSortingClicked(sortColumn: string) {
     this.isSortingDirectionAscending = !this.isSortingDirectionAscending;
     this.sortColumn = sortColumn;
-    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
   onTabHeaderClicked(tabIdx: number) {
@@ -716,17 +737,17 @@ export class BrAccViewerComponent implements OnInit {
 
   onSnapTableSmallMktValClicked() {
     this.isFilteringBasedonMktVal = !this.isFilteringBasedonMktVal;
-    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
   onSnapTableSmallPlDailyClicked() {
     this.isFilteringBasedonPlDaily = !this.isFilteringBasedonPlDaily;
-    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
   onSnapTableOptionsClicked() {
     this.isFilteringBasedonOptions = !this.isFilteringBasedonOptions;
-    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
   onMouseEnterSnapTableSymbol(event: any, snapPos: UiAssetSnapPossPos) {
