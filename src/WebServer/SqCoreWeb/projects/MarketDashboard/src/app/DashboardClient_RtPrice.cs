@@ -29,9 +29,14 @@ class AssetJs   // the class Asset converted to the the JS client. Usually it is
 // Don't call it Price, because NAV or other time series (^VIX) has Values, not Price. So, LastValue is the best terminology.
 class AssetLastJs   // struct sent to browser clients every 2-4 seconds
 {
+    // property names are transformed to a shorter ones for decreasing internet traffic. 700bytes => 570bytes (-20%) per 5sec. Per hour: 500KB => 400KB
+    [JsonPropertyName("id")]
     public uint AssetId { get; set; } = 0;
-    
+
+    [JsonPropertyName("t")]
     public DateTime LastUtc { get; set; } = DateTime.MinValue;
+
+    [JsonPropertyName("l")]
     [JsonConverter(typeof(FloatJsonConverterToNumber4D))]
     public float Last { get; set; } = -100.0f;     // real-time last price
 }

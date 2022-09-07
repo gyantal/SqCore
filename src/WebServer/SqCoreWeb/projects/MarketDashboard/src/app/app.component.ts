@@ -120,14 +120,29 @@ export class AppComponent implements OnInit {
           gDiag.wsOnLastRtMktSumRtStatTime = new Date();
           gDiag.wsNumRtMktSumRtStat++;
           this.nLstValArrived++;
-          const jsonArrayObjRt = JSON.parse(msgObjStr);
-          // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
-          jsonArrayObjRt.forEach((r) => {
-            r.last = ChangeNaNstringToNaNnumber(r.last);
+
+          const jsonArrayObjRt = JSON.parse(msgObjStr, function(this: any, key, value) {
+            // 'this' is the object containing the property being processed (not the embedding class) as this is a function(), not a '=>', and the property name as a string, the property value as arguments of this function.
+            // property names are transformed to a shorter ones for decreasing internet traffic. 700bytes => 570bytes (-20%) per 5sec. Per hour: 500KB => 400KB. Transform them back to normal for better code reading.
+            // eslint-disable-next-line no-invalid-this
+            const that: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' all the time when it is used
+            if (key === 'id') {
+              that.assetId = value;
+              return; // if return undefined, orignal property will be removed
+            }
+            if (key === 't') {
+              that.lastUtc = value;
+              return; // if return undefined, orignal property will be removed
+            }
+            if (key === 'l') {
+              that.last = ChangeNaNstringToNaNnumber(value); // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
+              return; // if return undefined, orignal property will be removed
+            }
+            return value;
           });
 
-          this.lstValStr = jsonArrayObjRt.map((r) => r.assetId + '=>' + r.last.toFixed(2).toString()).join(', ');
-          // console.log('ws: RtMktSumRtStat arrived: ' + this.lstValStr);
+          // this.lstValStr = jsonArrayObjRt.map((r) => r.assetId + '=>' + r.last.toFixed(2).toString()).join(', '); // It is not shown on HTML UI for quicker execution. Enable only for debugging if needed
+          // console.log('ws: RtMktSumRtStat arrived: ' + this.lstValStr);  // enable only for debugging if needed
           this.lstValObj = jsonArrayObjRt;
 
           this.childMktHealthComponent.webSocketLstValArrived(this.lstValObj);
