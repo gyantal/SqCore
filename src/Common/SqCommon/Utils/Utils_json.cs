@@ -12,16 +12,16 @@ namespace SqCommon;
 public class DoubleJsonConverterToStr : JsonConverter<double> // the number is written as a string, with quotes: "previousClose":"272.48"
 {
     public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
-            Double.Parse(reader.GetString() ?? string.Empty);
+        Double.Parse(reader.GetString() ?? string.Empty);
 
     public override void Write(Utf8JsonWriter writer, double p_value, JsonSerializerOptions options) =>
-            writer.WriteStringValue(p_value.ToString("0.####")); // use 4 decimals instead of 2, because of penny stocks and MaxDD of "-0.2855" means -28.55%. ToString(): 24.00155 is rounded up to 24.0016
+        writer.WriteStringValue(p_value.ToString("0.####")); // use 4 decimals instead of 2, because of penny stocks and MaxDD of "-0.2855" means -28.55%. ToString(): 24.00155 is rounded up to 24.0016
 }
 
 public class DoubleJsonConverterToNumber4D : JsonConverter<double> // the number is written as a number, without quotes: ("previousClose":"272.4800109863281") should be ("previousClose":272.48)
 {
     public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
-            Double.Parse(reader.GetString() ?? string.Empty);
+        Double.Parse(reader.GetString() ?? string.Empty);
 
     public override void Write(Utf8JsonWriter writer, double p_value, JsonSerializerOptions options)
     {
@@ -42,10 +42,10 @@ public class DoubleJsonConverterToNumber4D : JsonConverter<double> // the number
     }
 }
 
-public class FloatJsonConverterToNumber4D : JsonConverter<float> // the number is written as a number, without quotes: ("previousClose":"272.4800109863281") should be ("previousClose":272.48)
+public class FloatJsonConverterToNumber4D : JsonConverter<float> // the number is written as a number, without quotes: ("previousClose":"272.4800109863281") => ("previousClose":272.48)
 {
     public override float Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
-            Single.Parse(reader.GetString() ?? string.Empty);
+        Single.Parse(reader.GetString() ?? string.Empty);
 
     public override void Write(Utf8JsonWriter writer, float p_value, JsonSerializerOptions options)
     {
@@ -63,6 +63,25 @@ public class FloatJsonConverterToNumber4D : JsonConverter<float> // the number i
         {
             writer.WriteStringValue(p_value.ToString());
         }
+    }
+}
+
+public class DateTimeJsonConverterToUnixEpochSeconds : JsonConverter<DateTime> // the DateTime is written as a number, without quotes: ("lastUtc":"2022-09-08T07:15:08.2191122Z")  => ("lastUtc":1662635321)
+{
+    public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        DateTime.UnixEpoch.AddSeconds(reader.GetInt64());
+
+    public override void Write(Utf8JsonWriter writer, DateTime p_value, JsonSerializerOptions options)
+    {
+        // https://stackoverflow.com/questions/7966559/how-to-convert-javascript-date-object-to-ticks
+        // "The JavaScript Date type's origin is the Unix epoch: midnight on 1 January 1970.
+        // The .NET DateTime type's origin is midnight on 1 January 0001."
+
+        // .Net Ticks: number of 100-nanosecond intervals that have elapsed since 12:00:00 midnight, January 1, 0001. It does not include the number of ticks that are attributable to leap seconds.
+        // Ticks is very long (e.g. 633896886277130000). Not needed.
+        // Furthermore, convert it to Unix epoct (from 1970) for having even a smaller number to send.
+        long nSecondsSinceUnixEpoch = (long)(p_value - DateTime.UnixEpoch).TotalSeconds;
+        writer.WriteNumberValue(nSecondsSinceUnixEpoch);
     }
 }
 

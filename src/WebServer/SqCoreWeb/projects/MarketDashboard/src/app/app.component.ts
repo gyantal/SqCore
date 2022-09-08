@@ -122,20 +122,23 @@ export class AppComponent implements OnInit {
           this.nLstValArrived++;
 
           const jsonArrayObjRt = JSON.parse(msgObjStr, function(this: any, key, value) {
+            // property names and values are transformed to a shorter ones for decreasing internet traffic. 700bytes => 395bytes (-45%) per 5sec. Per hour: 500KB => 280KB Transform them back to normal for better code reading.
+
             // 'this' is the object containing the property being processed (not the embedding class) as this is a function(), not a '=>', and the property name as a string, the property value as arguments of this function.
-            // property names are transformed to a shorter ones for decreasing internet traffic. 700bytes => 570bytes (-20%) per 5sec. Per hour: 500KB => 400KB. Transform them back to normal for better code reading.
             // eslint-disable-next-line no-invalid-this
-            const that: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' all the time when it is used
+            const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
+
             if (key === 'id') {
-              that.assetId = value;
+              _this.assetId = value;
               return; // if return undefined, orignal property will be removed
             }
             if (key === 't') {
-              that.lastUtc = value;
+              const mSecSinceUnixEpoch : number = value * 1000; // data comes a seconds. JS uses milliseconds since Epoch.
+              _this.lastUtc = new Date(mSecSinceUnixEpoch); // the Date object is nothing but a number.  That number is the number of milliseconds since 1970 jan 1 UTC, to now (now being in UTC also).
               return; // if return undefined, orignal property will be removed
             }
             if (key === 'l') {
-              that.last = ChangeNaNstringToNaNnumber(value); // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
+              _this.last = ChangeNaNstringToNaNnumber(value); // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
               return; // if return undefined, orignal property will be removed
             }
             return value;
