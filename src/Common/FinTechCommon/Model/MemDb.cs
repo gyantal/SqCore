@@ -95,7 +95,7 @@ public partial class MemDb
                     bool isConnected = BrokersWatcher.gWatcher.GatewayReconnect(brAccount.GatewayId);
                     if (!isConnected)
                     {
-                        Console.WriteLine("!IB conn err. Check AWS firewall. Ping. (PowerShell) Test-NetConnection <IP> -Port 7308. IB TWS:Configure/API/TrustedIPs");
+                        Console.WriteLine("!IB conn err. Check AWS firewall. Linux firewall (ufw status). Ping. (PowerShell) Test-NetConnection <IP> -Port 7308. IB TWS:Configure/API/TrustedIPs");
                         return;
                     }
                     MemDb.gMemDb.UpdateBrAccount_AddAssetsToMemData(brAccount, brAccount.GatewayId);  // brAccount.Poss. LockFree Option addition. Clone&Replace. Replaces m_memData.AssetCache pointer with a new AssetCache
@@ -108,8 +108,8 @@ public partial class MemDb
                     Thread.Sleep(TimeSpan.FromSeconds(15));
                     if (!BrokersWatcher.gWatcher.IsGatewayConnected(brAccount.GatewayId))
                     {
-                        Console.WriteLine($"{Environment.NewLine}!!! IB conn err. {brAccount.GatewayId} Timeout! Check AWS firewall. Ping. (PowerShell) Test-NetConnection <IP> -Port 7308. IB TWS:Configure/API/TrustedIPs");
-                        Console.WriteLine("!!! Timeout usually occurs if local IP is not set in IB TWS's TrustedIPs. Then the Connection thread stays in forever pending state. At firewall problems, there is no timeout, but connection thread crashes earlier.");
+                        Console.WriteLine($"{Environment.NewLine}!!! IB conn err. {brAccount.GatewayId} Timeout! Check AWS firewall. Linux firewall (ufw status). Ping. (PowerShell) Test-NetConnection <IP> -Port 7308. IB TWS:Configure/API/TrustedIPs");
+                        Console.WriteLine("!!! Timeout usually occurs if Ubuntu firewall disallows or if local IP is not set in IB TWS's TrustedIPs. Then the Connection thread stays in forever pending state. At AWS firewall problems, there is no timeout, but connection thread crashes earlier.");
                         return;
                     }
                 }).LogUnobservedTaskExceptions("!IB conn err. See console.");
