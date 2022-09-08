@@ -522,20 +522,25 @@ export class BrAccViewerComponent implements OnInit {
       let isShowPos = true;
       // assetCategorySelectionSelectedSqtickers.map((r: any) => r.id);
       // under development -Daya
-      for (const item of assetCategorySelectionSelectedSqtickers) {
-        if (item.length == 0)
-          isShowPos = false;
-        if (item != uiPosItem.sqTicker) {
-          isShowPos = false;
-          console.log('the ticker is using foreach:', uiPosItem.sqTicker);
-        }
-      }
       if (isFilteringBasedonMktVal && Math.abs(uiPosItem.mktVal) < smallMktValThreshold)
         isShowPos = false;
       if (isFilteringBasedonPlDaily && Math.abs(uiPosItem.plTod) < 500) // can be made as % of NAV, but $500 nominal value is fine now
         isShowPos = false;
       if (isFilteringBasedonOptions && possItem.sqTicker.startsWith('O'))
         isShowPos = false;
+
+      if (assetCategorySelectionSelectedSqtickers.length != 0)
+        isShowPos = false;
+      let isCatFilterAccepts = true;
+      for (const item of assetCategorySelectionSelectedSqtickers) {
+        if (item == uiPosItem.sqTicker) {
+          isCatFilterAccepts = false;
+          console.log('the ticker is found in the category list:', uiPosItem.sqTicker);
+          break;
+        }
+      }
+      if (!isCatFilterAccepts)
+        isShowPos = true;
       if (isShowPos)
         uiSnapTable.poss.push(uiPosItem);
     }

@@ -534,6 +534,7 @@ public partial class DashboardClient
 
         string[] rows = valuesFromGSheetStr.Split(new string[] { "],\n" }, StringSplitOptions.RemoveEmptyEntries);
         List<AssetCategoryJs> result = new(rows.Length);
+        List<AssetCategoryJs> nestedTags = new();
         for (int i = 0; i < rows.Length; i++)
         {
             string[] cells = rows[i].Split(new string[] { "\",\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -549,8 +550,34 @@ public partial class DashboardClient
             int tickersEndIdx = (tickersStartIdx == -1) ? -1 : cellSecond.IndexOf('\"', tickersStartIdx + 1);
             if (tickersEndIdx == -1)
                 continue;
-            List<string> sqTickers = cellSecond.Substring(tickersStartIdx + 1, tickersEndIdx - tickersStartIdx - 1).Split(',').Select(r => string.Concat("S/", r.Trim())).ToList();
+            string cellSecondStr = cellSecond.Substring(tickersStartIdx + 1, tickersEndIdx - tickersStartIdx - 1);
+            string[] cellSecondStrArr = cellSecondStr.Split(',');
+            if (cellSecondStr.StartsWith("Tag:", StringComparison.InvariantCultureIgnoreCase))
+            {
+                nestedTags.Add(new AssetCategoryJs() { Tag = tag, SqTickers = cellSecondStrArr.ToList() });
+                continue;
+            }
+            List<string> sqTickers = cellSecondStrArr.Select(r => string.Concat("S/", r.Trim())).ToList();
             result.Add(new AssetCategoryJs() { Tag = tag, SqTickers = sqTickers });
+        }
+
+        // need another loop for nested tags and find them in the 'result'
+        // Step2: when you add new sqTickers to the list, don't add if it is already in the list
+        List<AssetCategoryJs> nestedCategory = new();
+        for (int i = 0; i < nestedTags.Count; i++)
+        {
+            for (int j = 0; j < nestedTags[i].SqTickers.Count; j++)
+            {
+                int tagStartIndx = nestedTags[i].SqTickers[j].IndexOf(':');
+                if (tagStartIndx == -1)
+                    continue;
+                string tagStr = nestedTags[i].SqTickers[j].Substring(tagStartIndx + 1);
+                foreach(AssetCategoryJs res in result)
+                {
+                    if (tagStr == res.Tag)
+                        nestedCategory.Add(new AssetCategoryJs() { Tag = res.Tag, SqTickers = res.SqTickers });
+                }
+            }
         }
         return result;
     }

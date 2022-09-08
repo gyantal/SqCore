@@ -183,12 +183,11 @@ MarketBar
 </div>
 <hr>
 <span>
-  <span>AssetCategory:
+  <span><a href="https://docs.google.com/spreadsheets/d/1NP8Tg08MqSoqd6wXSCus0rLXYG4TGPejzsGIP8r9YOk" target="_blank">AssetCategory</a>:
     <span class="selectionDropDown">
       <input id="assetCategoryInput" class="highlightInputDropDown" type="text" [(ngModel)] = "assetCategorySelectionSelected" placeholder="No Filter">
       <span class="listDropDown">
         <option class="optionDropDown" *ngFor="let item of uiAssetCategories"  [value]="item" (click)="onAssetCategorySelectionClicked(item)">{{item.tag}}</option>
-        <!-- : {{item.sqTickers}} -->
       </span>
     </span>
   </span>
