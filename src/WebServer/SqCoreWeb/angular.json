@@ -38,7 +38,7 @@
             ],
             "scripts": [],
             "vendorChunk": true,
-            "extractLicenses": false,
+            "extractLicenses": true,
             "buildOptimizer": false,
             "sourceMap": true,
             "optimization": false,
@@ -53,7 +53,7 @@
                 }
               ],
               "optimization": true,
-              "outputHashing": "all",
+              "outputHashing": "bundles",
               "sourceMap": false,
               "namedChunks": false,
               "extractLicenses": true,
@@ -143,7 +143,6 @@
             "polyfills": "projects/HealthMonitor/src/polyfills.ts",
             "tsConfig": "projects/HealthMonitor/tsconfig.app.json",
             "assets": [
-              "projects/HealthMonitor/src/favicon.ico",
               "projects/HealthMonitor/src/assets"
             ],
             "styles": [
@@ -151,7 +150,7 @@
             ],
             "scripts": [],
             "vendorChunk": true,
-            "extractLicenses": false,
+            "extractLicenses": true,
             "buildOptimizer": false,
             "sourceMap": true,
             "optimization": false,
@@ -166,10 +165,10 @@
                 }
               ],
               "optimization": true,
-              "outputHashing": "all",
+              "outputHashing": "bundles",   // cache-busting hashing number in filenames is not required for media (images)
               "sourceMap": false,
               "namedChunks": false,
-              "extractLicenses": true,
+              "extractLicenses": true,  // To keep main.js 40KB smaller, we extract license into a separate 12KB 3rdpartylicenses.txt.
               "vendorChunk": false,
               "buildOptimizer": true,
               "budgets": [
@@ -264,7 +263,7 @@
             ],
             "scripts": [],
             "vendorChunk": true,
-            "extractLicenses": false,
+            "extractLicenses": true,
             "buildOptimizer": false,
             "sourceMap": true,
             "optimization": false,
@@ -279,7 +278,7 @@
                 }
               ],
               "optimization": true,
-              "outputHashing": "all",
+              "outputHashing": "bundles",
               "sourceMap": false,
               "namedChunks": false,
               "extractLicenses": true,

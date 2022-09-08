@@ -1,3 +1,9 @@
+// Angular: in CSS anything that is referenced with url() with a relative '.' path is copied by Angular from whatever folder it is to the angular dist folder next to main.js
+// This results duplicates. Keep global, non-angular assets in the 'asset' folder. That is just copied as it is to target. And put angular assets into the 'assets.angular' folder.
+// Our solution most of the time: put url()-s into the *.html file, not into the *.css file, and then Angular will not duplicate those files. See examples.
+// Angular does this copying, so it can do cache-busting filename hashing renames per deployment. (to turn x.jpg to x.3423434.jpg)
+// see https://stackoverflow.com/questions/44405403/angular-cli-production-build-placing-duplicates-of-all-my-fonts-in-the-root-of-m
+
 // html { } // global styles are in styles.scss, because they don't work from here, from the component
 // body { }  // global styles are in styles.scss, because they don't work from here, from the component
 // Source: https://code.tutsplus.com/tutorials/how-to-build-a-kick-butt-css3-mega-drop-down-menu--net-15129
@@ -40,7 +46,7 @@ p {
   color: white;
   font-weight: 600;
   font-size: 1.6rem;
-  background-image: url('./../assets/images/glass.theme.brightness-80.qlt95.webp');
+  background-image: url('./../assets.angular/images/glass.theme.brightness-80.qlt95.webp');
   background-color: #232f3e; /* Used if the image is unavailable */
   background-position: center; /* Center the image */
   background-repeat: no-repeat; /* Do not repeat the image */
