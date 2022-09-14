@@ -450,13 +450,6 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.betaDeltaAdjTotalMarketOrientation = 0;
     const smallMktValThreshold = uiSnapTable.priorCloseNetLiquidation * 0.01; // 1% of NAV. For a 400K NAV, it is 4K. For a 8M NAV it is 80K.
 
-    // under development -Daya  Cheking whether we are able to find the tickers or not
-    for (let i = 0; i < assetCategorySelectionSelectedSqtickers.length; i++) {
-      for (let j = 0; j < brAccSnap.poss.length; j++) {
-        if (assetCategorySelectionSelectedSqtickers[i] == brAccSnap.poss[j].sqTicker)
-          console.log('the ticker is :', brAccSnap.poss[j].sqTicker);
-      }
-    }
 
     for (const possItem of brAccSnap.poss) {
       // 1. Filling uiPosItem fields
@@ -520,8 +513,19 @@ export class BrAccViewerComponent implements OnInit {
       // 1. If filterSqTicker is empty => snapshot ticker is accepted.
       // 2. If filterSqTicker is not empty => check that the current snapshot SqTicker is in the list or not.
       let isShowPos = true;
-      // assetCategorySelectionSelectedSqtickers.map((r: any) => r.id);
-      // under development -Daya
+      if (assetCategorySelectionSelectedSqtickers.length != 0) // empty category list means 'No Filter'
+        isShowPos = false;
+      let isCatFilterAccepts = false;
+      for (const item of assetCategorySelectionSelectedSqtickers) {
+        if (item == uiPosItem.sqTicker) { // checking if cat tickers exists
+          isCatFilterAccepts = true;
+          console.log('the ticker is found in the category list:', uiPosItem.sqTicker);
+          break;
+        }
+      }
+      if (isCatFilterAccepts) // if category filter accepted then SHOW, make it visible
+        isShowPos = true;
+
       if (isFilteringBasedonMktVal && Math.abs(uiPosItem.mktVal) < smallMktValThreshold)
         isShowPos = false;
       if (isFilteringBasedonPlDaily && Math.abs(uiPosItem.plTod) < 500) // can be made as % of NAV, but $500 nominal value is fine now
@@ -529,18 +533,6 @@ export class BrAccViewerComponent implements OnInit {
       if (isFilteringBasedonOptions && possItem.sqTicker.startsWith('O'))
         isShowPos = false;
 
-      if (assetCategorySelectionSelectedSqtickers.length != 0)
-        isShowPos = false;
-      let isCatFilterAccepts = true;
-      for (const item of assetCategorySelectionSelectedSqtickers) {
-        if (item == uiPosItem.sqTicker) {
-          isCatFilterAccepts = false;
-          console.log('the ticker is found in the category list:', uiPosItem.sqTicker);
-          break;
-        }
-      }
-      if (!isCatFilterAccepts)
-        isShowPos = true;
       if (isShowPos)
         uiSnapTable.poss.push(uiPosItem);
     }
@@ -688,7 +680,6 @@ export class BrAccViewerComponent implements OnInit {
   onAssetCategorySelectionClicked(uiAssetCategories: any) {
     this.assetCategorySelectionSelected = uiAssetCategories.tag;
     this.assetCategorySelectedSqtickers = uiAssetCategories.sqTickers;
-    // this.isFilteringBasedonAssetCat = !this.isFilteringBasedonAssetCat;
     BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 

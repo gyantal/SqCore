@@ -382,3 +382,14 @@ tr:nth-child(even) {
 .optionDropDown {
   border: 0.1rem solid lightblue;
 }
+
+.transparentBackground {
+  background: rgba(147, 112, 219, 0.5);
+  font-weight: bold;
+  border-radius: 0.5rem;
+  width: 5rem;
+}
+
+.transparentBackground .notImpInfo {
+  font-size: 1.5rem;
+}

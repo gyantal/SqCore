@@ -7,12 +7,14 @@ BrAcc:
 MarketBar
 <span>
     <span *ngFor="let item of uiMktBar.poss"> 
-        <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">{{item.symbol}}</a>: 
+        <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">{{item.symbol}}</a>:
+        <span [ngClass]="{'transparentBackground' : item.symbol == 'SPY'}">
         <span [ngClass]="{
             'mktBarPositivePerf' : item.pctChg > 0,
             'mktbarNegativePerf' : item.pctChg < 0
          }">{{item.pctChg | percent:'1.2'}},
         </span>
+      </span>
     </span>
     <span>{{uiMktBar.lstValLastRefreshTimeStr}}</span>
 </span>
@@ -37,10 +39,12 @@ MarketBar
                 'mktbarNegativePerf' : uiSnapTable.plTodPrNav < 0
                 }"> {{uiSnapTable.plTodPrNav | currency:'USD':'symbol':'1.0'}}
             </span>
-            <span class="notImpInfo" [ngClass]="{
-                'mktBarPositivePerf' : uiSnapTable.pctChgTodPrNav > 0,
-                'mktbarNegativePerf' : uiSnapTable.pctChgTodPrNav < 0
-                }"> ({{uiSnapTable.pctChgTodPrNav | percent:'1.2'}})
+            <span class="transparentBackground">
+                <span class="notImpInfo" [ngClass]="{
+                    'mktBarPositivePerf' : uiSnapTable.pctChgTodPrNav > 0,
+                    'mktbarNegativePerf' : uiSnapTable.pctChgTodPrNav < 0
+                    }"> ({{uiSnapTable.pctChgTodPrNav | percent:'1.2'}})
+                </span>
             </span>
             <div class="tooltipText">
                 Profit is calculated from<br> current  and previous day NAV 

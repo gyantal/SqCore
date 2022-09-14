@@ -563,23 +563,38 @@ public partial class DashboardClient
 
         // need another loop for nested tags and find them in the 'result'
         // Step2: when you add new sqTickers to the list, don't add if it is already in the list
-        List<AssetCategoryJs> nestedCategory = new();
         for (int i = 0; i < nestedTags.Count; i++)
         {
+            List<string> allSqTickers = new();
             for (int j = 0; j < nestedTags[i].SqTickers.Count; j++)
             {
-                int tagStartIndx = nestedTags[i].SqTickers[j].IndexOf(':');
-                if (tagStartIndx == -1)
+                int nestedTagStartIndx = nestedTags[i].SqTickers[j].IndexOf(':');
+                if (nestedTagStartIndx == -1)
                     continue;
-                string tagStr = nestedTags[i].SqTickers[j].Substring(tagStartIndx + 1);
-                foreach(AssetCategoryJs res in result)
+                string nestedTagStr = nestedTags[i].SqTickers[j].Substring(nestedTagStartIndx + 1);
+
+                // find nestedTagStr in results
+                List<string> nestedTickers = FindTickers(result, nestedTagStr);
+                // add them one by one to allSqTickers
+                foreach (var sqTicker in nestedTickers)
                 {
-                    if (tagStr == res.Tag)
-                        nestedCategory.Add(new AssetCategoryJs() { Tag = res.Tag, SqTickers = res.SqTickers });
+                    if (!allSqTickers.Contains(sqTicker))
+                        allSqTickers.Add(sqTicker);
                 }
             }
+
+            result.Add(new AssetCategoryJs() { Tag = nestedTags[i].Tag, SqTickers = allSqTickers });
         }
         return result;
     }
-   
+
+    private static List<string> FindTickers(List<AssetCategoryJs> result, string tag)
+    {
+        foreach(AssetCategoryJs res in result)
+        {
+            if (tag == res.Tag)
+                return res.SqTickers;
+        }
+        return new();
+    }
 }
