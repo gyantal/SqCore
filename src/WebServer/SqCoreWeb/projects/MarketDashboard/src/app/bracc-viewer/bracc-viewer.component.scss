@@ -133,12 +133,12 @@
 
 .moreDetailsPartitions {
   float: left;
-  width: 33.3%;
+  width: 25%;
   padding: 0.004rem;
   font-size: 1.4rem;
   height: 12rem;
   border-right: 0.005rem solid #0000ff;
-  padding-left: 4rem;
+  padding-left: 0.5rem;
 }
 
 .hrWithoutMargin {
@@ -383,13 +383,13 @@ tr:nth-child(even) {
   border: 0.1rem solid lightblue;
 }
 
-.transparentBackground {
-  background: rgba(147, 112, 219, 0.5);
+.importantToHighlight {
+  background: rgba(255, 255, 0);
   font-weight: bold;
   border-radius: 0.5rem;
-  width: 5rem;
+  padding: 0 0 0 0.5rem;
 }
 
-.transparentBackground .notImpInfo {
+.importantToHighlight .notImpInfo {
   font-size: 1.5rem;
 }

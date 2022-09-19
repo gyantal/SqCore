@@ -122,6 +122,8 @@ class UiSnapTable {
   public sumPlTodPct = 0;
   public longStockValue = 0;
   public shortStockValue = 0;
+  public longStockAssetCatValue = 0;
+  public shortStockAssetCatValue = 0;
   public longOptionDeltaAdjValue = 0; // long Call or short Put options
   public shortOptionDeltaAdjValue = 0; // long Put or short Call options
   public totalMaxRiskedN = 0;
@@ -443,6 +445,8 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.sumPlTodVal = 0;
     uiSnapTable.longStockValue = 0;
     uiSnapTable.shortStockValue = 0;
+    uiSnapTable.longStockAssetCatValue = 0;
+    uiSnapTable.shortStockAssetCatValue = 0;
     uiSnapTable.longOptionDeltaAdjValue = 0;
     uiSnapTable.shortOptionDeltaAdjValue = 0;
     uiSnapTable.totalMaxRiskedN = 0;
@@ -513,12 +517,18 @@ export class BrAccViewerComponent implements OnInit {
       // 1. If filterSqTicker is empty => snapshot ticker is accepted.
       // 2. If filterSqTicker is not empty => check that the current snapshot SqTicker is in the list or not.
       let isShowPos = true;
-      if (assetCategorySelectionSelectedSqtickers.length != 0) // empty category list means 'No Filter'
+      // empty category list means 'No Filter'. So, if there is any filter, we set the visibilty to 'hide' at first, then later let isCatFilterAccepts do its job.
+      if (assetCategorySelectionSelectedSqtickers.length != 0)
         isShowPos = false;
       let isCatFilterAccepts = false;
       for (const item of assetCategorySelectionSelectedSqtickers) {
         if (item == uiPosItem.sqTicker) { // checking if cat tickers exists
           isCatFilterAccepts = true;
+          // Long and Short stock values for the selected asset Category
+          if (uiPosItem.mktVal > 0)
+            uiSnapTable.longStockAssetCatValue += uiPosItem.mktVal;
+          else if (uiPosItem.mktVal < 0)
+            uiSnapTable.shortStockAssetCatValue += uiPosItem.mktVal;
           console.log('the ticker is found in the category list:', uiPosItem.sqTicker);
           break;
         }

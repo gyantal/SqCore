@@ -8,7 +8,7 @@ MarketBar
 <span>
     <span *ngFor="let item of uiMktBar.poss"> 
         <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">{{item.symbol}}</a>:
-        <span [ngClass]="{'transparentBackground' : item.symbol == 'SPY'}">
+        <span [ngClass]="{'importantToHighlight' : item.symbol == 'SPY'}">
         <span [ngClass]="{
             'mktBarPositivePerf' : item.pctChg > 0,
             'mktbarNegativePerf' : item.pctChg < 0
@@ -39,7 +39,7 @@ MarketBar
                 'mktbarNegativePerf' : uiSnapTable.plTodPrNav < 0
                 }"> {{uiSnapTable.plTodPrNav | currency:'USD':'symbol':'1.0'}}
             </span>
-            <span class="transparentBackground">
+            <span class="importantToHighlight">
                 <span class="notImpInfo" [ngClass]="{
                     'mktBarPositivePerf' : uiSnapTable.pctChgTodPrNav > 0,
                     'mktbarNegativePerf' : uiSnapTable.pctChgTodPrNav < 0
@@ -85,11 +85,15 @@ MarketBar
                     <div>PriorNAV: <span class="moreDetailsSum">{{uiSnapTable.priorCloseNetLiquidation | number}}</span></div>
                     <div>IB Total Cash: <span class="moreDetailsSum">{{uiSnapTable.totalCashValue | number}}</span></div>
                     <div>IB Initial MarginReq: <span class="moreDetailsSum">{{uiSnapTable.initialMarginReq | number}}</span></div>
-                    <div>IB Maintenance MarginReq: <span class="moreDetailsSum">{{uiSnapTable.maintMarginReq | number}}</span></div>
+                    <div>IB Mntnc MarginReq: <span class="moreDetailsSum">{{uiSnapTable.maintMarginReq | number}}</span></div>
                     <div>IB Gross Position Value: <span class="moreDetailsSum">{{uiSnapTable.grossPositionValue | number}}</span></div>
                 </div>
                 <div class="moreDetailsPartitions">
-                    <div>Number Of Visible Positions: <span class="moreDetailsSum">{{uiSnapTable.numOfVisiblePoss}}</span></div>
+                  <div>Number Of Visible Positions: <span class="moreDetailsSum">{{uiSnapTable.numOfVisiblePoss | number}}</span></div>
+                  <div>Long Stock MktValue(AstCat): <span class="moreDetailsSum">{{uiSnapTable.longStockAssetCatValue | number}}</span></div>
+                  <div>Short Stock MktValue(AstCat): <span class="moreDetailsSum">{{uiSnapTable.shortStockAssetCatValue | number}}</span></div>
+              </div>
+                <div class="moreDetailsPartitions">
                     <div>Number Of All Positions: <span class="moreDetailsSum">{{uiSnapTable.numOfAllPoss}}</span></div>
                     <div>Long Stock MktValue:
                       <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.longStockValue | number}}*

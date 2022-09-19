@@ -574,9 +574,11 @@ public partial class DashboardClient
                 string nestedTagStr = nestedTags[i].SqTickers[j].Substring(nestedTagStartIndx + 1);
 
                 // find nestedTagStr in results
-                List<string> nestedTickers = FindTickers(result, nestedTagStr);
+                int nestedTickersIdx = result.FindIndex(r => r.Tag == nestedTagStr);
+                if (nestedTickersIdx == -1)
+                    continue;
                 // add them one by one to allSqTickers
-                foreach (var sqTicker in nestedTickers)
+                foreach (var sqTicker in result[nestedTickersIdx].SqTickers)
                 {
                     if (!allSqTickers.Contains(sqTicker))
                         allSqTickers.Add(sqTicker);
@@ -586,15 +588,5 @@ public partial class DashboardClient
             result.Add(new AssetCategoryJs() { Tag = nestedTags[i].Tag, SqTickers = allSqTickers });
         }
         return result;
-    }
-
-    private static List<string> FindTickers(List<AssetCategoryJs> result, string tag)
-    {
-        foreach(AssetCategoryJs res in result)
-        {
-            if (tag == res.Tag)
-                return res.SqTickers;
-        }
-        return new();
     }
 }
