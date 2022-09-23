@@ -122,19 +122,22 @@ class UiSnapTable {
   public sumPlTodPct = 0;
   public longStockValue = 0;
   public shortStockValue = 0;
-  public longStockAssetCatValue = 0;
-  public shortStockAssetCatValue = 0;
+  public visibleLongStockValue = 0;
+  public visibleShortStockValue = 0;
   public longOptionDeltaAdjValue = 0; // long Call or short Put options
   public shortOptionDeltaAdjValue = 0; // long Put or short Call options
+  public visibleLongOptionDeltaAdjValue = 0; // visible long Call or short Put options
+  public visibleShortOptionDeltaAdjValue = 0; // visible long Put or short Call options
   public totalMaxRiskedN = 0;
   public totalMaxRiskedLeverage = 0;
   public deltaAdjTotalMarketOrientation = 0;
+  public visibleDeltaAdjTotalMarketOrientation = 0;
   public betaDeltaAdjTotalMarketOrientation = 0;
   public betaDeltaAdjTotalMarketOrientationLeverage = 0;
   public plTodPrNav = NaN;
   public pctChgTodPrNav = NaN;
-  public numOfVisiblePoss = 0;
-  public numOfAllPoss = 0;
+  public numOfPoss = 0;
+  public visibleNumOfPoss = 0;
   public poss: UiAssetSnapPossPos[] = [];
   public clientMsg = '';
   public stockChartVals: UiChrtval[] = [];
@@ -440,13 +443,13 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.plTodPrNav = Math.round(brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation);
     uiSnapTable.pctChgTodPrNav = (brAccSnap.netLiquidation - brAccSnap.priorCloseNetLiquidation) / brAccSnap.priorCloseNetLiquidation;
     uiSnapTable.clientMsg = brAccSnap.clientMsg.replace(';', '\n');
-    uiSnapTable.numOfAllPoss = brAccSnap.poss.length;
+    uiSnapTable.numOfPoss = brAccSnap.poss.length;
     uiSnapTable.poss.length = 0;
     uiSnapTable.sumPlTodVal = 0;
     uiSnapTable.longStockValue = 0;
     uiSnapTable.shortStockValue = 0;
-    uiSnapTable.longStockAssetCatValue = 0;
-    uiSnapTable.shortStockAssetCatValue = 0;
+    uiSnapTable.visibleLongStockValue = 0;
+    uiSnapTable.visibleShortStockValue = 0;
     uiSnapTable.longOptionDeltaAdjValue = 0;
     uiSnapTable.shortOptionDeltaAdjValue = 0;
     uiSnapTable.totalMaxRiskedN = 0;
@@ -524,12 +527,14 @@ export class BrAccViewerComponent implements OnInit {
       for (const item of assetCategorySelectionSelectedSqtickers) {
         if (item == uiPosItem.sqTicker) { // checking if cat tickers exists
           isCatFilterAccepts = true;
-          // Long and Short stock values for the selected asset Category
-          if (uiPosItem.mktVal > 0)
-            uiSnapTable.longStockAssetCatValue += uiPosItem.mktVal;
-          else if (uiPosItem.mktVal < 0)
-            uiSnapTable.shortStockAssetCatValue += uiPosItem.mktVal;
           console.log('the ticker is found in the category list:', uiPosItem.sqTicker);
+          // // Options
+          // if (isCatFilterAccepts && possItem.sqTicker.startsWith('O')) {
+          //   if (uiPosItem.dltAdjDelivVal > 0) // Call options has positive dltAdjDelivVal all the time, because delivery value is positive
+          //     uiSnapTable.visibleLongOptionDeltaAdjValue += uiPosItem.dltAdjDelivVal; // long Call or short Put options
+          //   else if (uiPosItem.dltAdjDelivVal < 0) // Put options has negative dltAdjDelivVal. NaN or 0.0 are not added to any of them.
+          //     uiSnapTable.visibleShortOptionDeltaAdjValue += uiPosItem.dltAdjDelivVal; // long Put or short Call options
+          // }
           break;
         }
       }
@@ -543,13 +548,23 @@ export class BrAccViewerComponent implements OnInit {
       if (isFilteringBasedonOptions && possItem.sqTicker.startsWith('O'))
         isShowPos = false;
 
-      if (isShowPos)
+
+      if (isShowPos) {
         uiSnapTable.poss.push(uiPosItem);
+        // Long and Short stock values for all the visible tickers
+        if (possItem.sqTicker.startsWith('S')) {
+          if (uiPosItem.mktVal > 0)
+            uiSnapTable.visibleLongStockValue += uiPosItem.mktVal;
+          else if (uiPosItem.mktVal < 0)
+            uiSnapTable.visibleShortStockValue += uiPosItem.mktVal;
+        }
+      }
     }
+    uiSnapTable.visibleDeltaAdjTotalMarketOrientation = Math.round(uiSnapTable.visibleLongStockValue + uiSnapTable.visibleShortStockValue + uiSnapTable.visibleLongOptionDeltaAdjValue + uiSnapTable.visibleShortOptionDeltaAdjValue);
     uiSnapTable.sumPlTodPct = uiSnapTable.sumPlTodVal / uiSnapTable.priorCloseNetLiquidation; // profit & Loss total percent change
     uiSnapTable.totalMaxRiskedLeverage = (uiSnapTable.totalMaxRiskedN / uiSnapTable.netLiquidation);
     uiSnapTable.betaDeltaAdjTotalMarketOrientationLeverage = (uiSnapTable.betaDeltaAdjTotalMarketOrientation / uiSnapTable.netLiquidation);
-    uiSnapTable.numOfVisiblePoss = uiSnapTable.poss.length;
+    uiSnapTable.visibleNumOfPoss = uiSnapTable.poss.length;
 
     uiSnapTable.poss = uiSnapTable.poss.sort((n1: UiAssetSnapPossPos, n2: UiAssetSnapPossPos) => {
       if (isSortingDirectionAscending)

@@ -100,8 +100,15 @@ public class StrategyRenewedUberController : ControllerBase
     [HttpGet]   // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
     public string Get()
     {
-        // Testing the Gsheet Data
-        string[] allAssetList = GetTickersFromGSheet() ?? new string[] {" "};
+
+        string gchGSheetRefPos = "https://sheets.googleapis.com/v4/spreadsheets/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/values/A1:Z2000?key=";
+        string gchGSheet2RefPos = "https://docs.google.com/spreadsheets/d/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/edit?usp=sharing";
+        // string gchGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1QjGsXw6YxPT0He5kE4YJ5o52ZCnX7cLA5N-V3Ng1juA/values/A1:Z2000?key=";
+        // string gchGSheet2Ref = "https://docs.google.com/spreadsheets/d/1QjGsXw6YxPT0He5kE4YJ5o52ZCnX7cLA5N-V3Ng1juA/edit#gid=0";
+        string gchGDocRef = "https://docs.google.com/document/d/1q2nSfQUos93q4-dd0ILjTrlvtiQKnwlsg3zN1_0_lyI/edit?usp=sharing";
+
+        string? googleSheetStr = RenewedUberGoogleApiGsheet(gchGSheetRefPos);
+        string[] allAssetList = GetTickersFromGSheet(googleSheetStr) ?? new string[] {" "};
         // string[] allAssetList = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
         // string[] allAssetListVIX = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };            // // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
         // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
@@ -115,22 +122,6 @@ public class StrategyRenewedUberController : ControllerBase
         double[] eventMultiplicator = new double[] { 0.5, 1, 1, 0.85, 0.85, 0.7, 0.7 };
         double[] stciThresholds = new double[] { 0.02, 0.09, 0.075 };
 
-
-
-        string gchGSheetRefPos = "https://sheets.googleapis.com/v4/spreadsheets/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/values/A1:Z2000?key=";
-        string gchGSheet2RefPos = "https://docs.google.com/spreadsheets/d/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/edit?usp=sharing";
-        string gchGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1QjGsXw6YxPT0He5kE4YJ5o52ZCnX7cLA5N-V3Ng1juA/values/A1:Z2000?key=";
-        string gchGSheet2Ref = "https://docs.google.com/spreadsheets/d/1QjGsXw6YxPT0He5kE4YJ5o52ZCnX7cLA5N-V3Ng1juA/edit#gid=0";
-        string gchGDocRef = "https://docs.google.com/document/d/1q2nSfQUos93q4-dd0ILjTrlvtiQKnwlsg3zN1_0_lyI/edit?usp=sharing";
-
-
-        string usedGSheetRef = gchGSheetRef;
-        string usedGSheet2Ref = gchGSheet2Ref;
-        string usedGDocRef = gchGDocRef;
-        string usedGSheetRefPos = gchGSheetRefPos;
-        string usedGSheet2RefPos = gchGSheet2RefPos;
-
-
         // // Collecting and splitting price data got from SQL Server
         (IList<List<DailyData>>, List<DailyData>) quotesDataAll = GetUberStockHistData(allAssetListVIX);
 
@@ -138,11 +129,9 @@ public class StrategyRenewedUberController : ControllerBase
         List<DailyData>? VIXQuotes = quotesDataAll.Item2;
 
         //Get, split and convert GSheet data
-        var gSheetReadResultPos = RenewedUberGoogleApiGsheet(usedGSheetRefPos);
-        string? content = ((ContentResult)gSheetReadResultPos).Content;
-        string? gSheetStringPos = content;
+        
 
-        Tuple<double[], DateTime[], string[,], int[], int[], int[], string[]> gSheetResToFinCalc = GSheetConverter(gSheetStringPos, allAssetList);
+        Tuple<double[], DateTime[], string[,], int[], int[], int[], string[]> gSheetResToFinCalc = GSheetConverter(googleSheetStr, allAssetList);
 
         //Request time (UTC)
         DateTime liveDateTime = DateTime.UtcNow;
@@ -628,8 +617,8 @@ public class StrategyRenewedUberController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""dailyProfAbs"": """ + dailyProfValString);
         sb.Append(@"""," + Environment.NewLine + @"""dailyProfString"": """ + dailyProfString);
         sb.Append(@"""," + Environment.NewLine + @"""currentPVDate"": """ + currPosDateString);
-        sb.Append(@"""," + Environment.NewLine + @"""gDocRef"": """ + usedGDocRef);
-        sb.Append(@"""," + Environment.NewLine + @"""gSheetRef"": """ + usedGSheet2RefPos);
+        sb.Append(@"""," + Environment.NewLine + @"""gDocRef"": """ + gchGDocRef);
+        sb.Append(@"""," + Environment.NewLine + @"""gSheetRef"": """ + gchGSheet2RefPos);
 
         sb.Append(@"""," + Environment.NewLine + @"""currentEventSignal"": """ + currEventSignal.ToString());
         sb.Append(@"""," + Environment.NewLine + @"""currentEventCode"": """ + currEventCode.ToString());
@@ -783,20 +772,16 @@ public class StrategyRenewedUberController : ControllerBase
         return sb.ToString();
 
     }
-    public object RenewedUberGoogleApiGsheet(string p_usedGSheetRef)
+    public string? RenewedUberGoogleApiGsheet(string p_usedGSheetRef)
     {
-        Utils.Logger.Info("RenewedUberGoogleApiGsheet() BEGIN");
+        if (String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) || String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
+            return null;
 
-            string? valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
-        if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
-        {
-            valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync(p_usedGSheetRef + Utils.Configuration["Google:GoogleApiKeyKey"], 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
-            if (valuesFromGSheetStr == null)
-                valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
-        }
-        
-        Utils.Logger.Info("RenewedUberGoogleApiGsheet() END");
-        return Content($"<HTML><body>RenewedUberGoogleApiGsheet() finished OK. <br> Received data: '{valuesFromGSheetStr}'</body></HTML>", "text/html");
+        string? valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync(p_usedGSheetRef + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
+        if (valuesFromGSheetStr == null)
+             return null;
+
+        return valuesFromGSheetStr;
     }
 
     //Selecting, splitting data got from GSheet
@@ -1241,30 +1226,22 @@ public class StrategyRenewedUberController : ControllerBase
         return stciResults;
     }
 
-    public static string[]? GetTickersFromGSheet() {
+    public static string[]? GetTickersFromGSheet(string? p_gSheetStr) 
+    {
+        if (p_gSheetStr == null)
+            return null;
 
-        string? valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
-        if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
+        Debug.WriteLine("The values from gSheet Ticker for RenewedUber are ", p_gSheetStr.Length);
+        if (!p_gSheetStr.StartsWith("Error")) 
         {
-            valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync("https://docs.google.com/spreadsheets/d/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/edit#gid=0" + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
-            if (valuesFromGSheetStr == null)
-                valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
-        }
-        Debug.WriteLine("The values from gSheet Ticker for RenewedUber are ", valuesFromGSheetStr.Length);
-        if (!valuesFromGSheetStr.StartsWith("Error")) 
-        {
-            int pos = valuesFromGSheetStr.IndexOf("Munkalap1\n");
-            if (pos < 0)
+            int tickerStartIdx = p_gSheetStr.IndexOf("CDate\",");
+            if (tickerStartIdx < 0)
                 return null;
-            valuesFromGSheetStr = valuesFromGSheetStr[(pos + 9)..]; // cut off until the end of "values":
-            int posStart = valuesFromGSheetStr.IndexOf("CDate,");
-            if (posStart < 0)
+            int tickerEndIdx = p_gSheetStr.IndexOf("Cash\",", tickerStartIdx + 1);
+            if (tickerEndIdx < 0)
                 return null;
-            int posEnd = valuesFromGSheetStr.IndexOf("UNG,", posStart + 1);
-            if (posEnd < 0)
-                return null;
-            string tickers = valuesFromGSheetStr.Substring(posStart + 6, posEnd - posStart - 3);
-            return tickers.Split(',').Select(x => x.Trim()).ToArray();
+            string tickers = p_gSheetStr.Substring(tickerStartIdx + 5, tickerEndIdx - tickerStartIdx - 6);
+            return tickers.Split(new string[] { ",\n", "\"" }, StringSplitOptions.RemoveEmptyEntries).Where(x => !string.IsNullOrWhiteSpace(x.Trim())).ToArray();
         }
         else
             return null;

@@ -544,7 +544,7 @@ public partial class DashboardClient
             int tagStartIdx = cellFirst.IndexOf('\"');
             if (tagStartIdx == -1)
                 continue;
-            string tag = cellFirst.Substring(tagStartIdx + 1);
+            string tag = cellFirst[(tagStartIdx + 1)..];
             string cellSecond = cells[1];
             int tickersStartIdx = cellSecond.IndexOf('\"');
             int tickersEndIdx = (tickersStartIdx == -1) ? -1 : cellSecond.IndexOf('\"', tickersStartIdx + 1);
@@ -571,7 +571,7 @@ public partial class DashboardClient
                 int nestedTagStartIndx = nestedTags[i].SqTickers[j].IndexOf(':');
                 if (nestedTagStartIndx == -1)
                     continue;
-                string nestedTagStr = nestedTags[i].SqTickers[j].Substring(nestedTagStartIndx + 1);
+                string nestedTagStr = nestedTags[i].SqTickers[j][(nestedTagStartIndx + 1)..];
 
                 // find nestedTagStr in results
                 int nestedTickersIdx = result.FindIndex(r => r.Tag == nestedTagStr);

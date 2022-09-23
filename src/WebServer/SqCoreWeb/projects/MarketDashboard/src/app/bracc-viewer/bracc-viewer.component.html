@@ -81,36 +81,39 @@ MarketBar
     </div>
     <div class="ChartSumm">
             <div [hidden]="tabPageVisibleIdx!= 1" id="tab1">
-                <div class="moreDetailsPartitions">
+                <div class="moreDetailsPartitionsPrNav">
                     <div>PriorNAV: <span class="moreDetailsSum">{{uiSnapTable.priorCloseNetLiquidation | number}}</span></div>
                     <div>IB Total Cash: <span class="moreDetailsSum">{{uiSnapTable.totalCashValue | number}}</span></div>
                     <div>IB Initial MarginReq: <span class="moreDetailsSum">{{uiSnapTable.initialMarginReq | number}}</span></div>
                     <div>IB Mntnc MarginReq: <span class="moreDetailsSum">{{uiSnapTable.maintMarginReq | number}}</span></div>
-                    <div>IB Gross Position Value: <span class="moreDetailsSum">{{uiSnapTable.grossPositionValue | number}}</span></div>
+                    <div>IB Gross Pos Value: <span class="moreDetailsSum">{{uiSnapTable.grossPositionValue | number}}</span></div>
                 </div>
-                <div class="moreDetailsPartitions">
-                  <div>Number Of Visible Positions: <span class="moreDetailsSum">{{uiSnapTable.numOfVisiblePoss | number}}</span></div>
-                  <div>Long Stock MktValue(AstCat): <span class="moreDetailsSum">{{uiSnapTable.longStockAssetCatValue | number}}</span></div>
-                  <div>Short Stock MktValue(AstCat): <span class="moreDetailsSum">{{uiSnapTable.shortStockAssetCatValue | number}}</span></div>
+                <div class="moreDetailsPartitions"><span class="moreDetailsSum">Visible:</span>
+                  <div>Number Of Positions: <span class="moreDetailsSum">{{uiSnapTable.visibleNumOfPoss | number}}</span></div>
+                  <div>Long Stock MktVal: <span class="moreDetailsSum">{{uiSnapTable.visibleLongStockValue | number}}</span></div>
+                  <div>Short Stock MktVal: <span class="moreDetailsSum">{{uiSnapTable.visibleShortStockValue | number}}</span></div>
+                  <div>LC+SP Optn DeltaAdj DelVal: <span class="moreDetailsSum">{{uiSnapTable.visibleLongOptionDeltaAdjValue | number :'1.0-0'}}</span></div>
+                  <div>LP+SC Optn DeltaAdj DelVal: <span class="moreDetailsSum">{{uiSnapTable.visibleShortOptionDeltaAdjValue | number :'1.0-0'}}</span></div>
+                  <div>DeltaAdj Bull/Bear <br> Mkt Orient: <span class="moreDetailsSum">{{uiSnapTable.visibleDeltaAdjTotalMarketOrientation | number}}</span></div>
               </div>
                 <div class="moreDetailsPartitions">
-                    <div>Number Of All Positions: <span class="moreDetailsSum">{{uiSnapTable.numOfAllPoss}}</span></div>
-                    <div>Long Stock MktValue:
+                    <div>Number Of All Positions: <span class="moreDetailsSum">{{uiSnapTable.numOfPoss}}</span></div>
+                    <div>Long Stock MktVal:
                       <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.longStockValue | number}}*
                         <div class="tooltipText">
                             !! Long VXX is here, although it is market bearish.<br>
                         </div>
                       </span>
                     </div>
-                    <div>Short Stock MktValue: <span class="moreDetailsSum">{{uiSnapTable.shortStockValue | number}}</span></div>
-                    <div>LC+SP Optn DeltaAdj DelivVal:
+                    <div>Short Stock MktVal: <span class="moreDetailsSum">{{uiSnapTable.shortStockValue | number}}</span></div>
+                    <div>LC+SP Optn DeltaAdj DelVal:
                       <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.longOptionDeltaAdjValue | number :'1.0-0'}}*
                         <div class="tooltipText">
                             Long Call options and Short Put options have positive market exposure.
                         </div>
                       </span>
                     </div>
-                    <div>LP+SC Optn DeltaAdj DelivVal: 
+                    <div>LP+SC Optn DeltaAdj DelVal: 
                       <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.shortOptionDeltaAdjValue | number :'1.0-0'}}*
                         <div class="tooltipText">
                             Long Put options and Short Call options have negative market exposure.
@@ -133,15 +136,15 @@ MarketBar
                             Leverage less than 1.3 -> green
                         </div>
                     </div>
-                    <div class="tooltipGeneral">Delta Adjusted Bullish/Bearish<br>Market Orientation:<span class="moreDetailsSum">{{uiSnapTable.deltaAdjTotalMarketOrientation | number}}</span>
+                    <div class="tooltipGeneral">Delta Adjusted Bullish/Bearish<br>Market Orientation: <span class="moreDetailsSum">{{uiSnapTable.deltaAdjTotalMarketOrientation | number}}</span>
                         <div class="tooltipText">
-                          ongStock - ShortStock + dAdj.CallOption <br>- dAdj.PutOption
+                          LongStock - ShortStock + dAdj.CallOption <br>- dAdj.PutOption
                         </div>
                     </div>
                     <div class="tooltipGeneral accSummaryImportantInfo">BetaDeltaAdj Bullish/Bearish Mkt Orient:
                       <span class="moreDetailsSum">{{uiSnapTable.betaDeltaAdjTotalMarketOrientation | number :'1.0-0'}}*</span>
                       <div class="tooltipText">
-                          Approx. mkt exposure sum
+                           Approx. mkt exposure sum
                       </div>
                       <span class="moreDetailsSum" [ngClass]="{'green' : uiSnapTable.totalMaxRiskedLeverage < 1.3,
                                             'orange': uiSnapTable.totalMaxRiskedLeverage <= 1.5,
@@ -189,7 +192,7 @@ MarketBar
     </div>
 </span>
 </div>
-<hr>
+<hr class="hrWithoutMargin">
 <span>
   <span><a href="https://docs.google.com/spreadsheets/d/1NP8Tg08MqSoqd6wXSCus0rLXYG4TGPejzsGIP8r9YOk" target="_blank">AssetCategory</a>:
     <span class="selectionDropDown">
