@@ -452,8 +452,11 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.visibleShortStockValue = 0;
     uiSnapTable.longOptionDeltaAdjValue = 0;
     uiSnapTable.shortOptionDeltaAdjValue = 0;
+    uiSnapTable.visibleLongOptionDeltaAdjValue = 0;
+    uiSnapTable.visibleShortOptionDeltaAdjValue = 0;
     uiSnapTable.totalMaxRiskedN = 0;
     uiSnapTable.deltaAdjTotalMarketOrientation = 0;
+    uiSnapTable.visibleLongOptionDeltaAdjValue = 0;
     uiSnapTable.betaDeltaAdjTotalMarketOrientation = 0;
     const smallMktValThreshold = uiSnapTable.priorCloseNetLiquidation * 0.01; // 1% of NAV. For a 400K NAV, it is 4K. For a 8M NAV it is 80K.
 
@@ -528,13 +531,6 @@ export class BrAccViewerComponent implements OnInit {
         if (item == uiPosItem.sqTicker) { // checking if cat tickers exists
           isCatFilterAccepts = true;
           console.log('the ticker is found in the category list:', uiPosItem.sqTicker);
-          // // Options
-          // if (isCatFilterAccepts && possItem.sqTicker.startsWith('O')) {
-          //   if (uiPosItem.dltAdjDelivVal > 0) // Call options has positive dltAdjDelivVal all the time, because delivery value is positive
-          //     uiSnapTable.visibleLongOptionDeltaAdjValue += uiPosItem.dltAdjDelivVal; // long Call or short Put options
-          //   else if (uiPosItem.dltAdjDelivVal < 0) // Put options has negative dltAdjDelivVal. NaN or 0.0 are not added to any of them.
-          //     uiSnapTable.visibleShortOptionDeltaAdjValue += uiPosItem.dltAdjDelivVal; // long Put or short Call options
-          // }
           break;
         }
       }
@@ -557,6 +553,12 @@ export class BrAccViewerComponent implements OnInit {
             uiSnapTable.visibleLongStockValue += uiPosItem.mktVal;
           else if (uiPosItem.mktVal < 0)
             uiSnapTable.visibleShortStockValue += uiPosItem.mktVal;
+        }
+        if (possItem.sqTicker.startsWith('O')) {
+          if (uiPosItem.dltAdjDelivVal > 0) // Call options has positive dltAdjDelivVal all the time, because delivery value is positive
+            uiSnapTable.visibleLongOptionDeltaAdjValue += uiPosItem.dltAdjDelivVal; // long Call or short Put options
+          else if (uiPosItem.dltAdjDelivVal < 0) // Put options has negative dltAdjDelivVal. NaN or 0.0 are not added to any of them.
+            uiSnapTable.visibleShortOptionDeltaAdjValue += uiPosItem.dltAdjDelivVal; // long Put or short Call options
         }
       }
     }

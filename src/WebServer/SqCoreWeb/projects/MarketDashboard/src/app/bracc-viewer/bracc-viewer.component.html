@@ -1,311 +1,310 @@
 BrAcc:
-<span >
-    <select class="selectedNavBraccCl" [(ngModel)] = "navSelectionSelected" (change)="onNavSelectedChange($event)">
-        <option *ngFor="let item of navSelection" [value]="item">{{item}}</option>
-    </select>
+<span>
+  <select class="selectedNavBraccCl" [(ngModel)]="navSelectionSelected" (change)="onNavSelectedChange($event)">
+    <option *ngFor="let item of navSelection" [value]="item">{{item}}</option>
+  </select>
 </span>
 MarketBar
 <span>
-    <span *ngFor="let item of uiMktBar.poss"> 
-        <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">{{item.symbol}}</a>:
-        <span [ngClass]="{'importantToHighlight' : item.symbol == 'SPY'}">
-        <span [ngClass]="{
+  <span *ngFor="let item of uiMktBar.poss">
+    <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">{{item.symbol}}</a>:
+    <span [ngClass]="{'importantToHighlight' : item.symbol == 'SPY'}">
+      <span [ngClass]="{
             'mktBarPositivePerf' : item.pctChg > 0,
             'mktbarNegativePerf' : item.pctChg < 0
          }">{{item.pctChg | percent:'1.2'}},
-        </span>
       </span>
     </span>
-    <span>{{uiMktBar.lstValLastRefreshTimeStr}}</span>
+  </span>
+  <span>{{uiMktBar.lstValLastRefreshTimeStr}}</span>
 </span>
 <hr class="hrWithoutMargin">
 <div>
-    <span>
+  <span>
     <div class="AccSumm">
-        <div class="plSum">Account Summary</div>
-        <div>
-            <span class="plSum tooltipGeneral">NAV :
-                <span id="liqVal">{{uiSnapTable.netLiquidation | currency:'USD':'symbol':'1.0'}}</span>
-                <div class="tooltipText">
-                    Total NetLiquidation<br>(with cash) 
-                </div>
-            </span>
-            <span class="timeInfoNav"> ({{uiSnapTable.navLastUpdateTimeAgoStr}})</span>
-        </div>
-        <div class="plSum tooltipGeneral">P&L Today
-            <span class="notImpInfo"> (PriorNAV)</span> : 
-            <span [ngClass]="{
+      <div class="plSum">Account Summary</div>
+      <div>
+        <span class="plSum tooltipGeneral">NAV :
+          <span id="liqVal">{{uiSnapTable.netLiquidation | currency:'USD':'symbol':'1.0'}}</span>
+          <div class="tooltipText">
+            Total NetLiquidation<br>(with cash)
+          </div>
+        </span>
+        <span class="timeInfoNav"> ({{uiSnapTable.navLastUpdateTimeAgoStr}})</span>
+      </div>
+      <div class="plSum tooltipGeneral">P&L Today
+        <span class="notImpInfo"> (PriorNAV)</span> :
+        <span [ngClass]="{
                 'mktBarPositivePerf' : uiSnapTable.plTodPrNav > 0,
                 'mktbarNegativePerf' : uiSnapTable.plTodPrNav < 0
                 }"> {{uiSnapTable.plTodPrNav | currency:'USD':'symbol':'1.0'}}
-            </span>
-            <span class="importantToHighlight">
-                <span class="notImpInfo" [ngClass]="{
+        </span>
+        <span class="importantToHighlight">
+          <span class="notImpInfo" [ngClass]="{
                     'mktBarPositivePerf' : uiSnapTable.pctChgTodPrNav > 0,
                     'mktbarNegativePerf' : uiSnapTable.pctChgTodPrNav < 0
                     }"> ({{uiSnapTable.pctChgTodPrNav | percent:'1.2'}})
-                </span>
-            </span>
-            <div class="tooltipText">
-                Profit is calculated from<br> current  and previous day NAV 
-            </div>
-            <span class="timeInfoNav"> ({{uiSnapTable.navLastUpdateTimeAgoStr}})</span>
+          </span>
+        </span>
+        <div class="tooltipText">
+          Profit is calculated from<br> current and previous day NAV
         </div>
-        <span class="tooltipGeneral plSum">P&L Today
-            <span class="notImpInfo">(Positions)</span> : 
-            <span [ngClass]="{
+        <span class="timeInfoNav"> ({{uiSnapTable.navLastUpdateTimeAgoStr}})</span>
+      </div>
+      <span class="tooltipGeneral plSum">P&L Today
+        <span class="notImpInfo">(Positions)</span> :
+        <span [ngClass]="{
                 'mktBarPositivePerf' : uiSnapTable.sumPlTodVal > 0,
                 'mktbarNegativePerf' : uiSnapTable.sumPlTodVal < 0
                 }">{{uiSnapTable.sumPlTodVal | currency:'USD':'symbol':'1.0' }}
-            </span>
-            <span class="notImpInfo" [ngClass]="{
+        </span>
+        <span class="notImpInfo" [ngClass]="{
                 'mktBarPositivePerf' : uiSnapTable.sumPlTodPct > 0,
                 'mktbarNegativePerf' : uiSnapTable.sumPlTodPct < 0
                 }">({{uiSnapTable.sumPlTodPct | percent:'1.2'}})
-            </span> 
-            <div class="tooltipText">
-                Profit is calculated as <br>a sum of the table cells 
-            </div>
         </span>
-        <span class="tooltipGeneral plSum">
-            <div class="tooltipText">
-                Force reload snapshot table<br>(Realtime: NAV, #Pos, EstPrice)<br>Returns snapshot 2x.<br>Once in 0.6sec with RT stock YF prices.<br>Secondly, in 9 sec with RT option IB prices.
-            </div>
-            <span class="refresh"><img class="refresh" src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked()"></span>
-        </span>
-        <span class="notImpInfo">{{uiSnapTable.snapLastUpateTimeLoc | date:'H:mm'}} ({{uiSnapTable.snapLastUpdateTimeAgoStr}})</span>
-        <div>
-            <div class="brAccViewerMoreDetailsAndHistChartButtons"><button [ngStyle]="{'background-color':tabPageVisibleIdx == 1 ? 'aqua':''}"(click)="onTabHeaderClicked(1)"> MoreDetails </button></div>
-            <div class="brAccViewerMoreDetailsAndHistChartButtons"><button [ngStyle]="{'background-color':tabPageVisibleIdx == 2 ? 'aqua':''}"(click)="onTabHeaderClicked(2)"> HistoricalChart </button></div>
+        <div class="tooltipText">
+          Profit is calculated as <br>a sum of the table cells
         </div>
+      </span>
+      <span class="tooltipGeneral plSum">
+        <div class="tooltipText">
+          Force reload snapshot table<br>(Realtime: NAV, #Pos, EstPrice)<br>Returns snapshot 2x.<br>Once in 0.6sec with RT stock YF prices.<br>Secondly, in 9 sec with RT option IB prices.
+        </div>
+        <span class="refresh"><img class="refresh" src='../assets/images/refresh64.webp' (click)="onSnapshotRefreshClicked()"></span>
+      </span>
+      <span class="notImpInfo">{{uiSnapTable.snapLastUpateTimeLoc | date:'H:mm'}} ({{uiSnapTable.snapLastUpdateTimeAgoStr}})</span>
+      <div>
+        <div class="brAccViewerMoreDetailsAndHistChartButtons"><button [ngStyle]="{'background-color':tabPageVisibleIdx == 1 ? 'aqua':''}" (click)="onTabHeaderClicked(1)"> MoreDetails </button></div>
+        <div class="brAccViewerMoreDetailsAndHistChartButtons"><button [ngStyle]="{'background-color':tabPageVisibleIdx == 2 ? 'aqua':''}" (click)="onTabHeaderClicked(2)"> HistoricalChart </button></div>
+      </div>
     </div>
     <div class="ChartSumm">
-            <div [hidden]="tabPageVisibleIdx!= 1" id="tab1">
-                <div class="moreDetailsPartitionsPrNav">
-                    <div>PriorNAV: <span class="moreDetailsSum">{{uiSnapTable.priorCloseNetLiquidation | number}}</span></div>
-                    <div>IB Total Cash: <span class="moreDetailsSum">{{uiSnapTable.totalCashValue | number}}</span></div>
-                    <div>IB Initial MarginReq: <span class="moreDetailsSum">{{uiSnapTable.initialMarginReq | number}}</span></div>
-                    <div>IB Mntnc MarginReq: <span class="moreDetailsSum">{{uiSnapTable.maintMarginReq | number}}</span></div>
-                    <div>IB Gross Pos Value: <span class="moreDetailsSum">{{uiSnapTable.grossPositionValue | number}}</span></div>
-                </div>
-                <div class="moreDetailsPartitions"><span class="moreDetailsSum">Visible:</span>
-                  <div>Number Of Positions: <span class="moreDetailsSum">{{uiSnapTable.visibleNumOfPoss | number}}</span></div>
-                  <div>Long Stock MktVal: <span class="moreDetailsSum">{{uiSnapTable.visibleLongStockValue | number}}</span></div>
-                  <div>Short Stock MktVal: <span class="moreDetailsSum">{{uiSnapTable.visibleShortStockValue | number}}</span></div>
-                  <div>LC+SP Optn DeltaAdj DelVal: <span class="moreDetailsSum">{{uiSnapTable.visibleLongOptionDeltaAdjValue | number :'1.0-0'}}</span></div>
-                  <div>LP+SC Optn DeltaAdj DelVal: <span class="moreDetailsSum">{{uiSnapTable.visibleShortOptionDeltaAdjValue | number :'1.0-0'}}</span></div>
-                  <div>DeltaAdj Bull/Bear <br> Mkt Orient: <span class="moreDetailsSum">{{uiSnapTable.visibleDeltaAdjTotalMarketOrientation | number}}</span></div>
+      <div [hidden]="tabPageVisibleIdx!= 1" id="tab1">
+        <div class="moreDetailsPartitionsPrNav">
+          <div>PriorNAV: <span class="moreDetailsSum">{{uiSnapTable.priorCloseNetLiquidation | number}}</span></div>
+          <div>IB Total Cash: <span class="moreDetailsSum">{{uiSnapTable.totalCashValue | number}}</span></div>
+          <div>IB Initial MarginReq: <span class="moreDetailsSum">{{uiSnapTable.initialMarginReq | number}}</span></div>
+          <div>IB Mntnc MarginReq: <span class="moreDetailsSum">{{uiSnapTable.maintMarginReq | number}}</span></div>
+          <div>IB Gross Pos Value: <span class="moreDetailsSum">{{uiSnapTable.grossPositionValue | number}}</span></div>
+        </div>
+        <div class="moreDetailsPartitions"><span class="moreDetailsSum">Visible:</span>
+          <div>Number Of Positions: <span class="moreDetailsSum">{{uiSnapTable.visibleNumOfPoss | number}}</span></div>
+          <div>Long Stock MktVal: <span class="moreDetailsSum">{{uiSnapTable.visibleLongStockValue | number}}</span></div>
+          <div>Short Stock MktVal: <span class="moreDetailsSum">{{uiSnapTable.visibleShortStockValue | number}}</span></div>
+          <!-- <div>LC+SP Optn DeltaAdj DelVal: <span class="moreDetailsSum">{{uiSnapTable.visibleLongOptionDeltaAdjValue | number :'1.0-0'}}</span></div>
+          <div>LP+SC Optn DeltaAdj DelVal: <span class="moreDetailsSum">{{uiSnapTable.visibleShortOptionDeltaAdjValue | number :'1.0-0'}}</span></div> -->
+          <div>Delta Adjusted Bullish/Bearish<br>Market Orientation: <span class="moreDetailsSum">{{uiSnapTable.visibleDeltaAdjTotalMarketOrientation | number}}</span></div>
+        </div>
+        <div class="moreDetailsPartitions">
+          <div>Number Of All Positions: <span class="moreDetailsSum">{{uiSnapTable.numOfPoss}}</span></div>
+          <div>Long Stock MktVal:
+            <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.longStockValue | number}}*
+              <div class="tooltipText">
+                !! Long VXX is here, although it is market bearish.<br>
               </div>
-                <div class="moreDetailsPartitions">
-                    <div>Number Of All Positions: <span class="moreDetailsSum">{{uiSnapTable.numOfPoss}}</span></div>
-                    <div>Long Stock MktVal:
-                      <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.longStockValue | number}}*
-                        <div class="tooltipText">
-                            !! Long VXX is here, although it is market bearish.<br>
-                        </div>
-                      </span>
-                    </div>
-                    <div>Short Stock MktVal: <span class="moreDetailsSum">{{uiSnapTable.shortStockValue | number}}</span></div>
-                    <div>LC+SP Optn DeltaAdj DelVal:
-                      <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.longOptionDeltaAdjValue | number :'1.0-0'}}*
-                        <div class="tooltipText">
-                            Long Call options and Short Put options have positive market exposure.
-                        </div>
-                      </span>
-                    </div>
-                    <div>LP+SC Optn DeltaAdj DelVal: 
-                      <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.shortOptionDeltaAdjValue | number :'1.0-0'}}*
-                        <div class="tooltipText">
-                            Long Put options and Short Call options have negative market exposure.
-                        </div>
-                      </span>
-                    </div>
-                </div>
-                <div class="moreDetailsPartitions" id="borderRemove">
-                    <div class="tooltipGeneral">Max Risked estimate:<br><span class="moreDetailsSum">{{uiSnapTable.totalMaxRiskedN | number}}</span>
-                        <span class="moreDetailsSum" [ngClass]="{'green' : uiSnapTable.totalMaxRiskedLeverage < 1.3,
-                                                            'orange': uiSnapTable.totalMaxRiskedLeverage <= 1.5,
-                                                            'red' : uiSnapTable.totalMaxRiskedLeverage > 1.5}">
-                          (Leverage: {{uiSnapTable.totalMaxRiskedLeverage | number :'1.2-2'}})*
-                        </span>
-                        <div class="tooltipText">
-                            LongStk + ShortStk (incorrect! Infinite) <br>
-                            + LongOptMktValue + ShortOptMktValue (incorrect! Infinite) <br>
-                            Leverage greater than 1.5 -> red <br>
-                            Leverage between 1.3 - 1.5 -> orange <br>
-                            Leverage less than 1.3 -> green
-                        </div>
-                    </div>
-                    <div class="tooltipGeneral">Delta Adjusted Bullish/Bearish<br>Market Orientation: <span class="moreDetailsSum">{{uiSnapTable.deltaAdjTotalMarketOrientation | number}}</span>
-                        <div class="tooltipText">
-                          LongStock - ShortStock + dAdj.CallOption <br>- dAdj.PutOption
-                        </div>
-                    </div>
-                    <div class="tooltipGeneral accSummaryImportantInfo">BetaDeltaAdj Bullish/Bearish Mkt Orient:
-                      <span class="moreDetailsSum">{{uiSnapTable.betaDeltaAdjTotalMarketOrientation | number :'1.0-0'}}*</span>
-                      <div class="tooltipText">
-                           Approx. mkt exposure sum
-                      </div>
-                      <span class="moreDetailsSum" [ngClass]="{'green' : uiSnapTable.totalMaxRiskedLeverage < 1.3,
-                                            'orange': uiSnapTable.totalMaxRiskedLeverage <= 1.5,
-                                            'red' : uiSnapTable.totalMaxRiskedLeverage > 1.5}">
-                        (Leverage: {{uiSnapTable.betaDeltaAdjTotalMarketOrientationLeverage | number :'1.2-2'}})*
-                      </span>
-                    </div>
-                </div>
+            </span>
+          </div>
+          <div>Short Stock MktVal: <span class="moreDetailsSum">{{uiSnapTable.shortStockValue | number}}</span></div>
+          <div>LC+SP Optn DeltaAdj DelVal:
+            <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.longOptionDeltaAdjValue | number :'1.0-0'}}*
+              <div class="tooltipText">
+                Long Call options and Short Put options have positive market exposure.
+              </div>
+            </span>
+          </div>
+          <div>LP+SC Optn DeltaAdj DelVal:
+            <span class="tooltipGeneral moreDetailsSum">{{uiSnapTable.shortOptionDeltaAdjValue | number :'1.0-0'}}*
+              <div class="tooltipText">
+                Long Put options and Short Call options have negative market exposure.
+              </div>
+            </span>
+          </div>
+        </div>
+        <div class="moreDetailsPartitions" id="borderRemove">
+          <div class="tooltipGeneral">Max Risked estimate:<br><span class="moreDetailsSum">{{uiSnapTable.totalMaxRiskedN | number}}</span>
+            <span class="moreDetailsSum" [ngClass]="{'green' : uiSnapTable.totalMaxRiskedLeverage < 1.3,
+                                                      'orange': uiSnapTable.totalMaxRiskedLeverage <= 1.5,
+                                                      'red' : uiSnapTable.totalMaxRiskedLeverage > 1.5}"> (Leverage: {{uiSnapTable.totalMaxRiskedLeverage | number :'1.2-2'}})*
+            </span>
+            <div class="tooltipText">
+              LongStk + ShortStk (incorrect! Infinite) <br>
+              + LongOptMktValue + ShortOptMktValue (incorrect! Infinite) <br>
+              Leverage greater than 1.5 -> red <br>
+              Leverage between 1.3 - 1.5 -> orange <br>
+              Leverage less than 1.3 -> green
             </div>
-            <div [hidden]="tabPageVisibleIdx == 1" id="tab2">
-                <div >
-                   <span>
-                    <div class="chrtTimeFrameSelection">
-                      <div class="selectionDropDown">
-                        <input id="histPeriodInput" class="highlightInputDropDown" type="text" [(ngModel)] ="histPeriodSelectionSelected" (change)="onHistPeriodSelectionClicked(histPeriodSelectionSelected)">
-                        <div class="listDropDown">
-                          <option class="optionDropDown" *ngFor="let item of histPeriodSelection" [value]="item" (click)="onHistPeriodSelectionClicked(item)">{{item}}</option>
-                        </div>
-                      </div>
-                      <div>StartDate: <input class = "histPeriodDateCl" type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr" (change)="onHistPeriodChangeClicked()"></div>
-                      <div>EndDate: <input class = "histPeriodDateCl" type="date" id="EndDate" name="EndDate" min="01-01-1975" max="01-01-2040" [(ngModel)]="histPeriodEndETstr" (change)="onHistPeriodChangeClicked()"></div>
-                      <div class="selectionDropDown">BenchMark:
-                        <input id="bnchmrkInput" class="highlightInputDropDown" type="text" [(ngModel)] = "bnchmkTickerSelectionSelected" (change)="onHistPeriodChangeClicked()">
-                        <div class="listDropDown">
-                          <option class="optionDropDown" *ngFor="let item of bnchmkTickerSelection" [value]="item" (click)="onBnchmrkSelectionClicked(item)">{{item}}</option>
-                        </div>
-                      </div>
-                      <div>MaxDD<span class="notImpInfo">(NAV/BnchMrk):</span>
-                          <span class="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
-                            {{item.periodMaxDD | percent:'1.2'}}
-                            <ng-container *ngIf="!isLast">/</ng-container>
-                          </span>
-                      </div>
-                      <div>Return<span class="notImpInfo">(NAV/BnchMrk):</span>
-                          <span class="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
-                            {{item.periodReturn | percent:'1.2'}}
-                            <ng-container *ngIf="!isLast">/</ng-container>
-                          </span>
-                      </div>
-                    </div>
-                   </span>
-                </div>
-                <div id="navChrt"></div>
+          </div>
+          <div class="tooltipGeneral">Delta Adjusted Bullish/Bearish<br>Market Orientation: <span class="moreDetailsSum">{{uiSnapTable.deltaAdjTotalMarketOrientation | number}}</span>
+            <div class="tooltipText">
+              LongStock - ShortStock + dAdj.CallOption <br>- dAdj.PutOption
             </div>
+          </div>
+          <div class="tooltipGeneral accSummaryImportantInfo">BetaDeltaAdj Bullish/Bearish Mkt Orient:
+            <span class="moreDetailsSum">{{uiSnapTable.betaDeltaAdjTotalMarketOrientation | number :'1.0-0'}}*</span>
+            <div class="tooltipText">
+              Approx. mkt exposure sum
+            </div>
+            <span class="moreDetailsSum" [ngClass]="{'green' : uiSnapTable.totalMaxRiskedLeverage < 1.3,
+                                                      'orange': uiSnapTable.totalMaxRiskedLeverage <= 1.5,
+                                                      'red' : uiSnapTable.totalMaxRiskedLeverage > 1.5}">
+              (Leverage: {{uiSnapTable.betaDeltaAdjTotalMarketOrientationLeverage | number :'1.2-2'}})*
+            </span>
+          </div>
+        </div>
+      </div>
+      <div [hidden]="tabPageVisibleIdx == 1" id="tab2">
+        <div>
+          <span>
+            <div class="chrtTimeFrameSelection">
+              <div class="selectionDropDown">
+                <input id="histPeriodInput" class="highlightInputDropDown" type="text" [(ngModel)]="histPeriodSelectionSelected" (change)="onHistPeriodSelectionClicked(histPeriodSelectionSelected)">
+                <div class="listDropDown">
+                  <option class="optionDropDown" *ngFor="let item of histPeriodSelection" [value]="item" (click)="onHistPeriodSelectionClicked(item)">{{item}}</option>
+                </div>
+              </div>
+              <div>StartDate: <input class="histPeriodDateCl" type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="histPeriodStartETstr" (change)="onHistPeriodChangeClicked()"></div>
+              <div>EndDate: <input class="histPeriodDateCl" type="date" id="EndDate" name="EndDate" min="01-01-1975" max="01-01-2040" [(ngModel)]="histPeriodEndETstr" (change)="onHistPeriodChangeClicked()"></div>
+              <div class="selectionDropDown">BenchMark:
+                <input id="bnchmrkInput" class="highlightInputDropDown" type="text" [(ngModel)]="bnchmkTickerSelectionSelected" (change)="onHistPeriodChangeClicked()">
+                <div class="listDropDown">
+                  <option class="optionDropDown" *ngFor="let item of bnchmkTickerSelection" [value]="item" (click)="onBnchmrkSelectionClicked(item)">{{item}}</option>
+                </div>
+              </div>
+              <div>MaxDD<span class="notImpInfo">(NAV/BnchMrk):</span>
+                <span class="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
+                  {{item.periodMaxDD | percent:'1.2'}}
+                  <ng-container *ngIf="!isLast">/</ng-container>
+                </span>
+              </div>
+              <div>Return<span class="notImpInfo">(NAV/BnchMrk):</span>
+                <span class="histBchMrkDetails" *ngFor="let item of uiHistData; last as isLast">
+                  {{item.periodReturn | percent:'1.2'}}
+                  <ng-container *ngIf="!isLast">/</ng-container>
+                </span>
+              </div>
+            </div>
+          </span>
+        </div>
+        <div id="navChrt"></div>
+      </div>
     </div>
-</span>
+  </span>
 </div>
 <hr class="hrWithoutMargin">
 <span>
   <span><a href="https://docs.google.com/spreadsheets/d/1NP8Tg08MqSoqd6wXSCus0rLXYG4TGPejzsGIP8r9YOk" target="_blank">AssetCategory</a>:
     <span class="selectionDropDown">
-      <input id="assetCategoryInput" class="highlightInputDropDown" type="text" [(ngModel)] = "assetCategorySelectionSelected" placeholder="No Filter">
+      <input id="assetCategoryInput" class="highlightInputDropDown" type="text" [(ngModel)]="assetCategorySelectionSelected" placeholder="No Filter">
       <span class="listDropDown">
-        <option class="optionDropDown" *ngFor="let item of uiAssetCategories"  [value]="item" (click)="onAssetCategorySelectionClicked(item)">{{item.tag}}</option>
+        <option class="optionDropDown" *ngFor="let item of uiAssetCategories" [value]="item" (click)="onAssetCategorySelectionClicked(item)">{{item.tag}}</option>
       </span>
     </span>
   </span>
-    <input type="checkbox" [checked]="isFilteringBasedonMktVal" (click)="onSnapTableSmallMktValClicked()">HideSmallMktVal
-    <input type="checkbox" [checked]="isFilteringBasedonPlDaily" (click)="onSnapTableSmallPlDailyClicked()">HideSmallPLt
-    <input type="checkbox" [checked]="isFilteringBasedonOptions" (click)="onSnapTableOptionsClicked()">HideOptions
+  <input type="checkbox" [checked]="isFilteringBasedonMktVal" (click)="onSnapTableSmallMktValClicked()">HideSmallMktVal
+  <input type="checkbox" [checked]="isFilteringBasedonPlDaily" (click)="onSnapTableSmallPlDailyClicked()">HideSmallPLt
+  <input type="checkbox" [checked]="isFilteringBasedonOptions" (click)="onSnapTableOptionsClicked()">HideOptions
 </span>
 <div class="brAccSnapTbl">
-<table class = "selectedBrcAccSnapShotTbl">
-    <thead class = "selectedBrcAccSnapShotTbl">
-        <tr class="tableHeader">
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='symbol'}" (click)="onSortingClicked('symbol')">Symbol</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='symbolEx'}" (click)="onSortingClicked('symbolEx')">SymbolEx</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='pos'}" (click)="onSortingClicked('pos')">Pos</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='avgCost'}" (click)="onSortingClicked('avgCost')">Cost</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='priorClose'}" (click)="onSortingClicked('priorClose')">Prior<br>Close</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='estPrice'}" (click)="onSortingClicked('estPrice')">Est<br>Price</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='pctChgTod'}" (click)="onSortingClicked('pctChgTod')">Chg%<br>Today</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='plTod'}" (click)="onSortingClicked('plTod')">P&L<br>Today</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='pl'}"(click)="onSortingClicked('pl')">P&L</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='mktVal'}"(click)="onSortingClicked('mktVal')">MktVal</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='estUndPrice'}"(click)="onSortingClicked('estUndPrice')">Est<br>UndPr</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='delivValue'}"(click)="onSortingClicked('delivValue')">Deliv<br>Value</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='ibCompDelta'}"(click)="onSortingClicked('ibCompDelta')">IbComp<br>Delta</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='dltAdjDelivVal'}"(click)="onSortingClicked('dltAdjDelivVal')">DltAdj<br>DelivVal</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='gBeta'}"(click)="onSortingClicked('gBeta')">gBeta</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='betaDltAdj'}"(click)="onSortingClicked('betaDltAdj')">BetaDltAdj<br>MktOriVal</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='accIdStr'}"(click)="onSortingClicked('accIdStr')">Acc</th>
-        </tr>
-    </thead>
-    <tbody class = "selectedBrcAccSnapShotTbl">
+<table class="selectedBrcAccSnapShotTbl">
+  <thead class="selectedBrcAccSnapShotTbl">
+    <tr class="tableHeader">
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='symbol'}" (click)="onSortingClicked('symbol')">Symbol</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='symbolEx'}" (click)="onSortingClicked('symbolEx')">SymbolEx</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='pos'}" (click)="onSortingClicked('pos')">Pos</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='avgCost'}" (click)="onSortingClicked('avgCost')">Cost</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='priorClose'}" (click)="onSortingClicked('priorClose')">Prior<br>Close</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='estPrice'}" (click)="onSortingClicked('estPrice')">Est<br>Price</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='pctChgTod'}" (click)="onSortingClicked('pctChgTod')">Chg%<br>Today</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='plTod'}" (click)="onSortingClicked('plTod')">P&L<br>Today</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='pl'}" (click)="onSortingClicked('pl')">P&L</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='mktVal'}" (click)="onSortingClicked('mktVal')">MktVal</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='estUndPrice'}" (click)="onSortingClicked('estUndPrice')">Est<br>UndPr</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='delivValue'}" (click)="onSortingClicked('delivValue')">Deliv<br>Value</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='ibCompDelta'}" (click)="onSortingClicked('ibCompDelta')">IbComp<br>Delta</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='dltAdjDelivVal'}" (click)="onSortingClicked('dltAdjDelivVal')">DltAdj<br>DelivVal</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='gBeta'}" (click)="onSortingClicked('gBeta')">gBeta</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='betaDltAdj'}" (click)="onSortingClicked('betaDltAdj')">BetaDltAdj<br>MktOriVal</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='accIdStr'}" (click)="onSortingClicked('accIdStr')">Acc</th>
+    </tr>
+  </thead>
+  <tbody class="selectedBrcAccSnapShotTbl">
     <tr *ngFor="let item of uiSnapTable.poss">
-        <td class="tooltipStck" (mouseenter)="onMouseEnterSnapTableSymbol($event, item)" (mouseover)="onMouseOverSnapTableSymbol()" (mouseleave)="onMouseLeaveSnapTableSymbol()">
-            <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">
-                {{item.symbol}}
-            </a>
-        </td>
-        <td>{{item.symbolEx}}</td>
-        <td>{{item.pos | number}}</td>
-        <td>{{item.avgCost | number:'1.2-2'}}</td>
-        <td>{{item.priorClose | number:'1.2-2'}}</td>
-        <td>{{item.estPrice | number:'1.2-2'}}</td>
-        <td [ngClass]="{
+      <td class="tooltipStck" (mouseenter)="onMouseEnterSnapTableSymbol($event, item)" (mouseover)="onMouseOverSnapTableSymbol()" (mouseleave)="onMouseLeaveSnapTableSymbol()">
+        <a href="https://uk.tradingview.com/chart/?symbol={{item.symbol}}" target="_blank">
+          {{item.symbol}}
+        </a>
+      </td>
+      <td>{{item.symbolEx}}</td>
+      <td>{{item.pos | number}}</td>
+      <td>{{item.avgCost | number:'1.2-2'}}</td>
+      <td>{{item.priorClose | number:'1.2-2'}}</td>
+      <td>{{item.estPrice | number:'1.2-2'}}</td>
+      <td [ngClass]="{
             'mktBarPositivePerf' : item.pctChgTod > 0,
             'mktbarNegativePerf' : item.pctChgTod < 0
          }">{{item.pctChgTod | percent:'1.2'}}</td>
-        <td >{{item.plTod | number}}</td>
-        <td>{{item.pl | number}}</td>
-        <td>{{item.mktVal | number}}</td>
-        <td>{{item.estUndPrice | number}}</td>
-        <td>{{item.delivValue | number}}</td>
-        <td>{{item.ibCompDelta | number}}</td>
-        <td>{{item.dltAdjDelivVal | number:'1.0-0'}}</td>
-        <td>{{item.gBeta | number:'1.1-2'}}</td>
-        <td>{{item.betaDltAdj | number}}</td>
-        <td>{{item.accIdStr}}</td>
+      <td>{{item.plTod | number}}</td>
+      <td>{{item.pl | number}}</td>
+      <td>{{item.mktVal | number}}</td>
+      <td>{{item.estUndPrice | number}}</td>
+      <td>{{item.delivValue | number}}</td>
+      <td>{{item.ibCompDelta | number}}</td>
+      <td>{{item.dltAdjDelivVal | number:'1.0-0'}}</td>
+      <td>{{item.gBeta | number:'1.1-2'}}</td>
+      <td>{{item.betaDltAdj | number}}</td>
+      <td>{{item.accIdStr}}</td>
     </tr>
-    </tbody>
+  </tbody>
 </table>
 </div>
 <!-- <hr> -->
 <div id="stckTooltip" class="tooltipText" (mouseenter)="onMouseEnterStockTooltip()" (mouseleave)="onMouseLeaveStockTooltip()" *ngIf="isShowStockTooltip">
-    <span id="stckTooltipName">Name: {{stockTooltipName}}<br></span> 
-    <a href="https://uk.tradingview.com/chart/?symbol={{stockTooltipSymbol}}" target="_blank">
-        <svg width="28" height="22" viewBox="0 0 28 22" xmlns="http://www.w3.org/2000/svg" >
-            <path d="M 12 20 H 7 V 11 H 0 V 4 h 12 v 16 z 
+  <span id="stckTooltipName">Name: {{stockTooltipName}}<br></span>
+  <a href="https://uk.tradingview.com/chart/?symbol={{stockTooltipSymbol}}" target="_blank">
+    <svg width="28" height="22" viewBox="0 0 28 22" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 12 20 H 7 V 11 H 0 V 4 h 12 v 16 z 
                         M 24 20 h-8 l 7.5-18 h 8 L 22 20 z" fill="currentColor">
-            </path>
-            <circle cx="16.5" cy="7" r="4" fill="currentColor"/>
-        </svg>
-    </a>,
-    <a href="https://finance.yahoo.com/quote/{{stockTooltipSymbol}}" target="_blank"><img alt='YF' src='../assets/images/YF.webp' width='20' height='20'></a>,
-    <a href="https://www.zacks.com/stock/quote/{{stockTooltipSymbol}}" target="_blank"><img alt='Zacks' src='../assets/images/Zacks.webp' width='20' height='20'></a>,
-    <a href="https://www.earningswhispers.com/tradeview/{{stockTooltipSymbol}}" target="_blank"><img alt='earningswhispers-BeforeEarnings' src='../assets/images/EW-BE.webp' width='20' height='20'></a>,
-    <a href="https://www.earningswhispers.com/epsdetails/{{stockTooltipSymbol}}" target="_blank"><img alt='earningswhispers-AfterEarnings' src='../assets/images/EW-AE.webp' width='20' height='20'></a>,
-    <a href="https://www.tipranks.com/stocks/{{stockTooltipSymbol}}/forecast" target="_blank"><img alt='TipRanks' src='../assets/images/TR.webp' width='20' height='20'></a>,
-    <a href="https://stockcharts.com/h-sc/ui?s={{stockTooltipSymbol}}" target="_blank"><img alt='stocksCharts' src='../assets/images/SC.webp' width='20' height='20'></a> <br>
-    <span id="stockChrt"></span>
+      </path>
+      <circle cx="16.5" cy="7" r="4" fill="currentColor" />
+    </svg>
+  </a>,
+  <a href="https://finance.yahoo.com/quote/{{stockTooltipSymbol}}" target="_blank"><img alt='YF' src='../assets/images/YF.webp' width='20' height='20'></a>,
+  <a href="https://www.zacks.com/stock/quote/{{stockTooltipSymbol}}" target="_blank"><img alt='Zacks' src='../assets/images/Zacks.webp' width='20' height='20'></a>,
+  <a href="https://www.earningswhispers.com/tradeview/{{stockTooltipSymbol}}" target="_blank"><img alt='earningswhispers-BeforeEarnings' src='../assets/images/EW-BE.webp' width='20' height='20'></a>,
+  <a href="https://www.earningswhispers.com/epsdetails/{{stockTooltipSymbol}}" target="_blank"><img alt='earningswhispers-AfterEarnings' src='../assets/images/EW-AE.webp' width='20' height='20'></a>,
+  <a href="https://www.tipranks.com/stocks/{{stockTooltipSymbol}}/forecast" target="_blank"><img alt='TipRanks' src='../assets/images/TR.webp' width='20' height='20'></a>,
+  <a href="https://stockcharts.com/h-sc/ui?s={{stockTooltipSymbol}}" target="_blank"><img alt='stocksCharts' src='../assets/images/SC.webp' width='20' height='20'></a> <br>
+  <span id="stockChrt"></span>
 </div>
 <!-- Addded class "selectedTempDebug" to limit the text output in the UI-->
 <div id="warning">{{uiSnapTable.clientMsg}}</div>
 <div class="selectedTempDebug">
 <br><br>Temporary Debug Info:<br>
 <div class="tooltipGeneral">HandshakeMsgStr:
-    <div class="tooltipText">
-      {{handshakeStrFormatted}}
-    </div>
+  <div class="tooltipText">
+    {{handshakeStrFormatted}}
+  </div>
 </div>
 <div class="tooltipGeneral">MarketBarLastClosesStr:
-    <div class="tooltipText">
-      {{mktBrLstClsStrFormatted}}
-    </div>
+  <div class="tooltipText">
+    {{mktBrLstClsStrFormatted}}
+  </div>
 </div>
 <div class="tooltipGeneral">HistStr:
-    <div class="tooltipText">
-      {{navHistStrFormatted}}
-    </div>
+  <div class="tooltipText">
+    {{navHistStrFormatted}}
+  </div>
 </div>
 <div class="tooltipGeneral">BrAccountSnapshot:
-    <div class="tooltipText">
-      {{brAccountSnapshotStrFormatted}}
-    </div>
+  <div class="tooltipText">
+    {{brAccountSnapshotStrFormatted}}
+  </div>
 </div>
 <div class="tooltipGeneral">StockHistData:
-    <div class="tooltipText">
-      {{stockHistStrFormatted}}
-    </div>
+  <div class="tooltipText">
+    {{stockHistStrFormatted}}
+  </div>
 </div>
 </div>
 <br><br><br>

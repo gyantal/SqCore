@@ -779,7 +779,7 @@ public class StrategyRenewedUberController : ControllerBase
 
         string? valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync(p_usedGSheetRef + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
         if (valuesFromGSheetStr == null)
-             return null;
+            return null;
 
         return valuesFromGSheetStr;
     }

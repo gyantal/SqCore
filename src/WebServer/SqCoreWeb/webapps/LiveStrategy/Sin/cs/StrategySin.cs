@@ -79,9 +79,7 @@ public class StrategySinController : ControllerBase
         string usedGDocRef = "https://docs.google.com/document/d/1dBHg3-McaHeCtxCTZdJhTKF5NPaixXYjEngZ4F2_ZBE/edit?usp=sharing";
         
         // Get, split and convert GSheet data
-        var gSheetReadResult = SINGoogleApiGsheet(usedGSheetRef);
-        string? content = ((ContentResult)gSheetReadResult).Content;
-        string? gSheetString = content;
+        string? gSheetString = SINGoogleApiGsheet(usedGSheetRef);
         Tuple<int[], string[], int[], bool[], int[], double[]> gSheetResToFinCalc = GSheetConverter(gSheetString);
         string[] allAssetList = gSheetResToFinCalc.Item2;
 
@@ -482,20 +480,21 @@ public class StrategySinController : ControllerBase
         throw new NotImplementedException();
     }
 
-    public object SINGoogleApiGsheet(string p_usedGSheetRef)
+    public string? SINGoogleApiGsheet(string p_usedGSheetRef)
     {
         Utils.Logger.Info("SINGoogleApiGsheet() BEGIN");
 
-        string? valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
-        if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
-        {
-            valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync(p_usedGSheetRef + Utils.Configuration["Google:GoogleApiKeyKey"], 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
-            if (valuesFromGSheetStr == null)
-                valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
-        }
-        
+       if (String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) || String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
+            return null;
+
+        string? valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync(p_usedGSheetRef + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
+        if (valuesFromGSheetStr == null)
+            return null;
         Utils.Logger.Info("SINGoogleApiGsheet() END");
-        return Content($"<HTML><body>SINGoogleApiGsheet() finished OK. <br> Received data: '{valuesFromGSheetStr}'</body></HTML>", "text/html");
+        return valuesFromGSheetStr;
+        
+        
+        // return Content($"<HTML><body>SINGoogleApiGsheet() finished OK. <br> Received data: '{valuesFromGSheetStr}'</body></HTML>", "text/html");
     }
 
     public static (List<List<DailyData>>, List<DailyData>) GetSinStockHistData(string[] p_allAssetList)
