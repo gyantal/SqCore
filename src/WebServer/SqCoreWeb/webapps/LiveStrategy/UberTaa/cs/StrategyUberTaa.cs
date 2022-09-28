@@ -41,6 +41,7 @@ public class StrategyUberTaaController : ControllerBase
     // Under development - Daya 31-05-2022
     public string GetResultStr(int p_basketSelector)
     {
+        int mode = 1; // 1: standard 2: let the winners run
         string[] clmtAssetList = new string[]{ "SPY", "XLU", "VTI" };    // We can use SPY instead of ^GSPC
         // string[] gchAssetList = new string[]{ "AAPL", "ADBE", "AMZN", "CRM", "CRWD", "ETSY", "META", "GOOGL", "MA", "MSFT", "NOW", "NVDA", "PYPL", "QCOM", "SE", "SHOP", "SQ", "V", "TLT"}; //TLT is used as a cashEquivalent
         // string[] gchAssetList = new string[]{ "AAPL", "ADBE", "AMZN", "BABA", "CRM", "CRWD", "ETSY", "FB", "GOOGL", "ISRG", "MA", "MELI", "MSFT", "NFLX", "NOW", "NVDA", "PYPL", "QCOM", "ROKU", "SE", "SHOP", "SQ", "TDOC", "TWLO", "V", "ZM", "TLT"}; //TLT is used as a cashEquivalent
@@ -85,7 +86,7 @@ public class StrategyUberTaaController : ControllerBase
         Debug.WriteLine("The Data from gSheet is :", quotesData, quotesForClmtData, cashEquivalentQuotesData);
 
         // Calculating basic weights based on percentile channels - base Varadi TAA
-        Tuple<double[], double[,]> taaWeightResultsTuple = TaaWeights(quotesData, lookbackDays, volDays, thresholdLower);
+        Tuple<double[], double[,]> taaWeightResultsTuple = TaaWeights(quotesData, lookbackDays, volDays, thresholdLower, mode);
         Debug.WriteLine("The Data from gSheet is :", taaWeightResultsTuple);
         // // Calculating CLMT data
         double[][] clmtRes = CLMTCalc(quotesForClmtData);
@@ -759,7 +760,7 @@ public class StrategyUberTaaController : ControllerBase
         return (quotesData, quotesForClmtData, cashEquivalentQuotesData);
     }
 
-    public static Tuple<double[], double[,]> TaaWeights(IList<List<DailyData>> p_taaWeightsData, int[] p_pctChannelLookbackDays, int p_histVolLookbackDays, int p_thresholdLower)
+    public static Tuple<double[], double[,]> TaaWeights(IList<List<DailyData>> p_taaWeightsData, int[] p_pctChannelLookbackDays, int p_histVolLookbackDays, int p_thresholdLower, int p_mode)
     {
         var dshd = p_taaWeightsData;
         int nAssets = p_taaWeightsData.Count;
@@ -848,9 +849,8 @@ public class StrategyUberTaaController : ControllerBase
         {
             taaWeightMatlabDateVec[i] = (taaWeightDateArray[i] - startMatlabDate).TotalDays + 693962;
         }
-
-        Tuple<double[],double[,]> taaWeightResults = Tuple.Create(taaWeightMatlabDateVec, dailyAssetWeights);
-        //Tuple<double[],double[,]> taaWeightResults = Tuple.Create(taaWeightMatlabDateVec, dailyAssetScoresMod);
+        
+        Tuple<double[],double[,]> taaWeightResults = (p_mode == 1) ? Tuple.Create(taaWeightMatlabDateVec, dailyAssetWeights) : Tuple.Create(taaWeightMatlabDateVec, dailyAssetScoresMod);
         return taaWeightResults;
     }
 
