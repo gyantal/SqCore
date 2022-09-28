@@ -103,8 +103,8 @@ public class StrategyUberTaaController : ControllerBase
         string liveDateString = "Request time (UTC): " + liveDate;
 
         //Last data time (UTC)
-        string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay<=new DateTime(2000,1,1,16,15,0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on "+ quotesData[0][^1].Date.ToString("yyyy-MM-dd");
-        string lastDataTimeString = "Last data time (UTC): "+lastDataTime;
+        string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000,1,1,16,15,0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on " + quotesData[0][^1].Date.ToString("yyyy-MM-dd");
+        string lastDataTimeString = "Last data time (UTC): " + lastDataTime;
 
         //Current PV, Number of current and required shares
         DateTime startMatlabDate = DateTime.ParseExact("1900/01/01", "yyyy/MM/dd", CultureInfo.InvariantCulture);
@@ -117,11 +117,11 @@ public class StrategyUberTaaController : ControllerBase
         int[] currPosInt = new int[usedAssetList.Length + 1];
         
 
-        double[] currPosValue = new double[usedAssetList.Length+1];
-        for (int jCols = 0; jCols < currPosValue.Length-2; jCols++)
+        double[] currPosValue = new double[usedAssetList.Length + 1];
+        for (int jCols = 0; jCols < currPosValue.Length - 2; jCols++)
         {
             currPosInt[jCols] = gSheetResToFinCalc.Item7[jCols];
-            currPosValue[jCols] =quotesData[jCols][quotesData[0].Count-1].AdjClosePrice*currPosInt[jCols];
+            currPosValue[jCols] = quotesData[jCols][quotesData[0].Count - 1].AdjClosePrice * currPosInt[jCols];
         }
         currPosInt[^2] = gSheetResToFinCalc.Item7[^1];
         currPosInt[^1] = gSheetResToFinCalc.Item6[1];
@@ -129,20 +129,20 @@ public class StrategyUberTaaController : ControllerBase
         currPosValue[^1] = gSheetResToFinCalc.Item6[1];
         currPV = Math.Round(currPosValue.Sum());
 
-        double[] nextPosValue = new double[usedAssetList.Length+1];
+        double[] nextPosValue = new double[usedAssetList.Length + 1];
         for (int jCols = 0; jCols < nextPosValue.Length - 2; jCols++)
         {
-            nextPosValue[jCols] = currPV*weightsFinal.Item3[weightsFinal.Item3.GetLength(0)-1,jCols+1];
+            nextPosValue[jCols] = currPV * weightsFinal.Item3[weightsFinal.Item3.GetLength(0) - 1 , jCols + 1];
         }
-        nextPosValue[^2] = Math.Max(0,currPV- nextPosValue.Take(nextPosValue.Length - 2).ToArray().Sum());
+        nextPosValue[^2] = Math.Max(0, currPV - nextPosValue.Take(nextPosValue.Length - 2).ToArray().Sum());
         nextPosValue[^1] = currPV - nextPosValue.Take(nextPosValue.Length - 1).ToArray().Sum();
 
         double[] nextPosInt = new double[nextPosValue.Length];
         for (int jCols = 0; jCols < nextPosInt.Length - 2; jCols++)
         {
-            nextPosInt[jCols] = nextPosValue[jCols]/ quotesData[jCols][quotesData[0].Count - 1].AdjClosePrice;
+            nextPosInt[jCols] = nextPosValue[jCols] / quotesData[jCols][quotesData[0].Count - 1].AdjClosePrice;
         }
-        nextPosInt[^2] = nextPosValue[nextPosInt.Length - 2]/cashEquivalentQuotesData[quotesData[0].Count - 1].AdjClosePrice;
+        nextPosInt[^2] = nextPosValue[nextPosInt.Length - 2] / cashEquivalentQuotesData[quotesData[0].Count - 1].AdjClosePrice;
         nextPosInt[^1] = nextPosValue[nextPosInt.Length - 1];
 
         double[] posValueDiff = new double[usedAssetList.Length + 1];
@@ -159,7 +159,7 @@ public class StrategyUberTaaController : ControllerBase
 
         //CLMT: Combined Leverage Market Timer
         string clmtSignal;
-        if (clmtRes[7][^1]==1)
+        if (clmtRes[7][^1] == 1)
         {
             clmtSignal = "bullish";
         }
@@ -194,27 +194,27 @@ public class StrategyUberTaaController : ControllerBase
 
 
         //Position weights in the last 20 days
-        string[,] prevPosMtx = new string[weightsFinal.Item3.GetLength(0)+1,usedAssetList.Length+3];
+        string[,] prevPosMtx = new string[weightsFinal.Item3.GetLength(0) + 1,usedAssetList.Length + 3];
         for (int iRows = 0; iRows < prevPosMtx.GetLength(0) - 1; iRows++)
         {
             DateTime assDate = startMatlabDate.AddDays(weightsFinal.Item3[iRows, 0] - 693962);
             string assDateString = assDate.ToString("yyyy-MM-dd");
-            prevPosMtx[iRows, 0] =assDateString;
+            prevPosMtx[iRows, 0] = assDateString;
 
             double assetWeightSum = 0;
             for (int jCols = 0; jCols < prevPosMtx.GetLength(1) - 4; jCols++)
             {
                 assetWeightSum += weightsFinal.Item3[iRows, jCols + 1];
-                prevPosMtx[iRows, jCols + 1] =Math.Round(weightsFinal.Item3[iRows,jCols+1]*100.0,2).ToString()+"%";
+                prevPosMtx[iRows, jCols + 1] = Math.Round(weightsFinal.Item3[iRows,jCols + 1] * 100.0, 2).ToString() + "%";
             }
-            prevPosMtx[iRows, prevPosMtx.GetLength(1) - 1] = (weightsFinal.Item4[iRows]=="0")?"---":weightsFinal.Item4[iRows];
-            prevPosMtx[iRows, prevPosMtx.GetLength(1)-3] = Math.Round(Math.Max((1.0-assetWeightSum),0)* 100.0, 2).ToString() + "%";
-            prevPosMtx[iRows, prevPosMtx.GetLength(1)-2] = Math.Round((1.0 - assetWeightSum- Math.Max((1.0 - assetWeightSum), 0)) * 100.0, 2).ToString() + "%";
+            prevPosMtx[iRows, prevPosMtx.GetLength(1) - 1] = (weightsFinal.Item4[iRows] == "0") ? "---" : weightsFinal.Item4[iRows];
+            prevPosMtx[iRows, prevPosMtx.GetLength(1) - 3] = Math.Round(Math.Max((1.0-assetWeightSum), 0) * 100.0, 2).ToString() + "%";
+            prevPosMtx[iRows, prevPosMtx.GetLength(1) - 2] = Math.Round((1.0 - assetWeightSum- Math.Max((1.0 - assetWeightSum), 0)) * 100.0, 2).ToString() + "%";
         }
-        prevPosMtx[prevPosMtx.GetLength(0)-1, 0] = "";
+        prevPosMtx[prevPosMtx.GetLength(0) - 1, 0] = "";
         for (int jCols = 0; jCols < prevPosMtx.GetLength(1) - 3; jCols++)
         {
-            prevPosMtx[prevPosMtx.GetLength(0) - 1, jCols+1]=usedAssetList[jCols];
+            prevPosMtx[prevPosMtx.GetLength(0) - 1, jCols + 1]=usedAssetList[jCols];
         }
         prevPosMtx[prevPosMtx.GetLength(0) - 1, prevPosMtx.GetLength(1) - 2] = "Cash";
         prevPosMtx[prevPosMtx.GetLength(0) - 1, prevPosMtx.GetLength(1) - 1] = "Event";
@@ -241,60 +241,60 @@ public class StrategyUberTaaController : ControllerBase
 
         //Color codes for last 20 days
         string[,] prevAssEventColorMtx = new string[weightsFinal.Item3.GetLength(0) + 1, usedAssetList.Length + 3];
-        for (int iRows = 0; iRows < prevAssEventColorMtx.GetLength(0)-1; iRows++)
+        for (int iRows = 0; iRows < prevAssEventColorMtx.GetLength(0) - 1; iRows++)
         {
             prevAssEventColorMtx[0, 0] = "66CCFF";
             prevAssEventColorMtx[0, prevAssEventColorMtx.GetLength(1) - 3] = "66CCFF";
             prevAssEventColorMtx[0, prevAssEventColorMtx.GetLength(1) - 2] = "66CCFF";
             prevAssEventColorMtx[0, prevAssEventColorMtx.GetLength(1) - 1] = "66CCFF";
             prevAssEventColorMtx[iRows + 1, 0] = "FF6633";
-            prevAssEventColorMtx[iRows + 1, prevAssEventColorMtx.GetLength(1)-3] = "FFE4C4";
-            prevAssEventColorMtx[iRows + 1, prevAssEventColorMtx.GetLength(1)-2] = "FFE4C4";
-            prevAssEventColorMtx[iRows + 1, prevAssEventColorMtx.GetLength(1)-1] = "FFFF00";
+            prevAssEventColorMtx[iRows + 1, prevAssEventColorMtx.GetLength(1) - 3] = "FFE4C4";
+            prevAssEventColorMtx[iRows + 1, prevAssEventColorMtx.GetLength(1) - 2] = "FFE4C4";
+            prevAssEventColorMtx[iRows + 1, prevAssEventColorMtx.GetLength(1) - 1] = "FFFF00";
             for (int jCols = 0; jCols < prevAssEventColorMtx.GetLength(1) - 4; jCols++)
             {
                 prevAssEventColorMtx[0, jCols + 1] = "66CCFF";
-                if (prevAssEventCodes[iRows, jCols+1] == 1)
+                if (prevAssEventCodes[iRows, jCols + 1] == 1)
                 {
                     prevAssEventColorMtx[iRows + 1, jCols + 1] = "228B22";
                 }
-                else if (prevAssEventCodes[iRows, jCols+1] == 2)
+                else if (prevAssEventCodes[iRows, jCols + 1] == 2)
                 {
                     prevAssEventColorMtx[iRows + 1, jCols + 1] = "FF0000";
                 }
-                else if (prevAssEventCodes[iRows, jCols+1] == 3)
+                else if (prevAssEventCodes[iRows, jCols + 1] == 3)
                 {
                     prevAssEventColorMtx[iRows + 1, jCols + 1] = "7CFC00";
                 }
-                else if (prevAssEventCodes[iRows, jCols+1] == 4)
+                else if (prevAssEventCodes[iRows, jCols + 1] == 4)
                 {
                     prevAssEventColorMtx[iRows + 1, jCols + 1] = "DC143C";
                 }
-                else if (prevAssEventCodes[iRows, jCols+1] == 5)
+                else if (prevAssEventCodes[iRows, jCols + 1] == 5)
                 {
                     prevAssEventColorMtx[iRows + 1, jCols + 1] = "1E90FF";
                 }
-                else if (prevAssEventCodes[iRows, jCols+1] == 6)
+                else if (prevAssEventCodes[iRows, jCols + 1] == 6)
                 {
                     prevAssEventColorMtx[iRows + 1, jCols + 1] = "7B68EE";
                 }
-                else if (prevAssEventCodes[iRows, jCols+1] == 7)
+                else if (prevAssEventCodes[iRows, jCols + 1] == 7)
                 {
                     prevAssEventColorMtx[iRows + 1, jCols + 1] = "FFFFFF";
                 }
-                else if (prevAssEventCodes[iRows, jCols+1] == 8)
+                else if (prevAssEventCodes[iRows, jCols + 1] == 8)
                 {
                     prevAssEventColorMtx[iRows + 1, jCols + 1] = "00FFFF";
                 }
-                else if (prevAssEventCodes[iRows, jCols+1] == 9)
+                else if (prevAssEventCodes[iRows, jCols + 1] == 9)
                 {
                     prevAssEventColorMtx[iRows + 1, jCols + 1] = "A9A9A9";
                 }
-                else if (prevAssEventCodes[iRows, jCols+1] == 10)
+                else if (prevAssEventCodes[iRows, jCols + 1] == 10)
                 {
                     prevAssEventColorMtx[iRows + 1, jCols + 1] = "FF8C00";
                 }
-                else if (prevAssEventCodes[iRows, jCols+1] == 11)
+                else if (prevAssEventCodes[iRows, jCols + 1] == 11)
                 {
                     prevAssEventColorMtx[iRows + 1, jCols + 1] = "F0E68C";
                 }
@@ -309,7 +309,7 @@ public class StrategyUberTaaController : ControllerBase
         {
             DateTime assFDate = startMatlabDate.AddDays(weightsFinal.Item2[iRows, 0] - 693962);
             string assFDateString = assFDate.ToString("yyyy-MM-dd");
-            futPosMtx[iRows+1, 0] = assFDateString;
+            futPosMtx[iRows + 1, 0] = assFDateString;
             futAssEventCodes[iRows + 1, 0] = "FF6633";
 
             for (int jCols = 0; jCols < futPosMtx.GetLength(1) - 2; jCols++)
@@ -317,7 +317,7 @@ public class StrategyUberTaaController : ControllerBase
                 if (weightsFinal.Item2[iRows, jCols + 1] == 1)
                 {
                     futPosMtx[iRows + 1, jCols + 1] = "FOMC Bullish Day";
-                    futAssEventCodes[iRows + 1, jCols+1] = "228B22";
+                    futAssEventCodes[iRows + 1, jCols + 1] = "228B22";
                 }
                 else if (weightsFinal.Item2[iRows, jCols + 1] == 2)
                 {
@@ -371,11 +371,11 @@ public class StrategyUberTaaController : ControllerBase
                 }
             }
 
-            futPosMtx[iRows + 1, futPosMtx.GetLength(1)-1] =  (weightsFinal.Item5[iRows]=="0")?"---": weightsFinal.Item5[iRows];
+            futPosMtx[iRows + 1, futPosMtx.GetLength(1) - 1] = (weightsFinal.Item5[iRows] == "0") ? "---" : weightsFinal.Item5[iRows];
             futAssEventCodes[iRows + 1, futPosMtx.GetLength(1) - 1] = "FFFF00";
         }
         futPosMtx[0, 0] = "";
-        futAssEventCodes[0,0] = "66CCFF";
+        futAssEventCodes[0, 0] = "66CCFF";
         for (int jCols = 0; jCols < futPosMtx.GetLength(1) - 2; jCols++)
         {
             futPosMtx[0, jCols + 1] = usedAssetList[jCols];
@@ -388,13 +388,13 @@ public class StrategyUberTaaController : ControllerBase
 
         //AssetPrice Changes in last 20 days to chart
         int assetChartLength = 20;
-        string[,] assetChangesMtx = new string[assetChartLength+1,usedAssetList.Length];
+        string[,] assetChangesMtx = new string[assetChartLength + 1,usedAssetList.Length];
         for (int iRows = 0; iRows < assetChangesMtx.GetLength(0); iRows++)
         {
             assetChangesMtx[iRows, 0] = quotesData[0][quotesData[0].Count - 1 - assetChartLength + iRows].Date.ToString("yyyy-MM-dd");
-            for (int jCols = 0; jCols < assetChangesMtx.GetLength(1)-1; jCols++)
+            for (int jCols = 0; jCols < assetChangesMtx.GetLength(1) - 1; jCols++)
             {
-                assetChangesMtx[iRows, jCols+1] = Math.Round((quotesData[jCols][quotesData[jCols].Count-1-assetChartLength+iRows].AdjClosePrice/quotesData[jCols][quotesData[jCols].Count-1-assetChartLength].AdjClosePrice-1) * 100.0,2).ToString()+"%";
+                assetChangesMtx[iRows, jCols + 1] = Math.Round((quotesData[jCols][quotesData[jCols].Count - 1 - assetChartLength + iRows].AdjClosePrice / quotesData[jCols][quotesData[jCols].Count - 1 - assetChartLength].AdjClosePrice - 1) * 100.0, 2).ToString() + "%";
             }
         }
 
@@ -414,9 +414,9 @@ public class StrategyUberTaaController : ControllerBase
         for (int iRows = 0; iRows < spxToChartMtx.GetLength(0); iRows++)
         {
             spxToChartMtx[iRows, 0] = quotesData[0][quotesData[0].Count - 1 - assetChartLength + iRows].Date.ToString("yyyy-MM-dd");
-            spxToChartMtx[iRows, 1] = Math.Round(clmtRes[8][clmtRes[8].GetLength(0)-assetChartLength-1+iRows],0).ToString();
-            spxToChartMtx[iRows, 2] = Math.Round(clmtRes[4][clmtRes[4].GetLength(0)-assetChartLength-1+iRows],0).ToString();
-            spxToChartMtx[iRows, 3] = Math.Round(clmtRes[5][clmtRes[5].GetLength(0)-assetChartLength-1+iRows],0).ToString();
+            spxToChartMtx[iRows, 1] = Math.Round(clmtRes[8][clmtRes[8].GetLength(0) - assetChartLength - 1 + iRows], 0).ToString();
+            spxToChartMtx[iRows, 2] = Math.Round(clmtRes[4][clmtRes[4].GetLength(0) - assetChartLength - 1 + iRows], 0).ToString();
+            spxToChartMtx[iRows, 3] = Math.Round(clmtRes[5][clmtRes[5].GetLength(0) - assetChartLength - 1 + iRows], 0).ToString();
         }
 
         //Data for XLU-VTi RSI chart
@@ -444,7 +444,7 @@ public class StrategyUberTaaController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""gSheetRef"": """ + usedGSheetUrl);
 
         sb.Append(@"""," + Environment.NewLine + @"""assetNames"": """);
-            for (int i=0; i<usedAssetList.Length-1; i++)
+            for (int i = 0; i<usedAssetList.Length - 1; i++)
                 sb.Append(usedAssetList[i] + ", ");
         sb.Append(usedAssetList[^1]);
 
@@ -456,22 +456,22 @@ public class StrategyUberTaaController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""currPosNum"": """);
         for (int i = 0; i < currPosInt.Length - 1; i++)
             sb.Append(currPosInt[i].ToString() + ", ");
-        sb.Append("$"+Math.Round(currPosInt[^1]/1000.0).ToString()+"K");
+        sb.Append("$"+Math.Round(currPosInt[^1]/1000.0).ToString() + "K");
 
         sb.Append(@"""," + Environment.NewLine + @"""currPosVal"": """);
         for (int i = 0; i < currPosValue.Length - 1; i++)
-            sb.Append("$"+Math.Round(currPosValue[i]/1000).ToString() + "K, ");
-        sb.Append("$"+Math.Round(currPosValue[^1]/1000).ToString()+"K");
+            sb.Append("$"+Math.Round(currPosValue[i] / 1000).ToString() + "K, ");
+        sb.Append("$"+Math.Round(currPosValue[^1] / 1000).ToString() + "K");
 
         sb.Append(@"""," + Environment.NewLine + @"""nextPosNum"": """);
         for (int i = 0; i < nextPosInt.Length - 1; i++)
             sb.Append(Math.Round(nextPosInt[i]).ToString() + ", ");
-        sb.Append("$"+Math.Round(nextPosInt[^1]/1000).ToString()+"K");
+        sb.Append("$"+Math.Round(nextPosInt[^1] / 1000).ToString() + "K");
 
         sb.Append(@"""," + Environment.NewLine + @"""nextPosVal"": """);
         for (int i = 0; i < nextPosValue.Length - 1; i++)
-            sb.Append("$"+Math.Round(nextPosValue[i]/1000).ToString() + "K, ");
-        sb.Append("$"+Math.Round(nextPosValue[^1]/1000).ToString()+"K");
+            sb.Append("$"+Math.Round(nextPosValue[i] / 1000).ToString() + "K, ");
+        sb.Append("$"+Math.Round(nextPosValue[^1] / 1000).ToString() + "K");
 
         sb.Append(@"""," + Environment.NewLine + @"""posNumDiff"": """);
         for (int i = 0; i < posIntDiff.Length - 1; i++)
@@ -490,11 +490,11 @@ public class StrategyUberTaaController : ControllerBase
         for (int i = 0; i < prevPosMtx.GetLength(0); i++)
         {
             sb.Append("");
-            for (int j = 0; j < prevPosMtx.GetLength(1)-1; j++)
+            for (int j = 0; j < prevPosMtx.GetLength(1) - 1; j++)
             {
                 sb.Append(prevPosMtx[i, j] + ", ");
             }
-            sb.Append(prevPosMtx[i, prevPosMtx.GetLength(1)-1]);
+            sb.Append(prevPosMtx[i, prevPosMtx.GetLength(1) - 1]);
             if (i < prevPosMtx.GetLength(0)-1)
             {
                 sb.Append("ß ");
@@ -767,9 +767,9 @@ public class StrategyUberTaaController : ControllerBase
         double[,] assetPctChannelsUpper = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each 
         double[,] assetPctChannelsLower = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each
         sbyte[,] assetPctChannelsSignal = new sbyte[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each
-        int startNumDay = p_pctChannelLookbackDays.Max()-1;
+        int startNumDay = p_pctChannelLookbackDays.Max() - 1;
         double thresholdLower = p_thresholdLower / 100.0;
-        double thresholdUpper = 1-thresholdLower;
+        double thresholdUpper = 1 - thresholdLower;
 
         int nDays = p_taaWeightsData[0].Count - startNumDay;
         double[,] dailyAssetWeights = new double[nDays, nAssets];
@@ -791,7 +791,7 @@ public class StrategyUberTaaController : ControllerBase
                     assetPctChannelsSignal[iAsset, iChannel] = -1;
                     else if (assetPrice > assetPctChannelsUpper[iAsset, iChannel])
                     assetPctChannelsSignal[iAsset, iChannel] = 1;
-                    else if (iDay==0)
+                    else if (iDay == 0)
                     assetPctChannelsSignal[iAsset, iChannel] = 1;
                 }
             }
@@ -821,12 +821,12 @@ public class StrategyUberTaaController : ControllerBase
                                                                                 // If assetScores[i]=0, assetWeights[i] becomes 0, so we don't use its weight when p_isCashAllocatedForNonActives => TLT will not fill its Cash-place; NO TLT will be invested (if this is the only stock with 0 score), the portfolio will be 100% in other stocks. We are more Brave.
                                                                                 // However, if assetScores[i]<0 (negative), assetWeights[i] becoumes a proper negative number. It will be used in TotalWeight calculation => TLT will fill its's space. (if this is the only stock with negative score), TLT will be invested in its place; consequently the portfolio will NOT be 100% in other stocks. We are more defensive.
                 totalWeight += Math.Abs(assetWeights[iAsset]);      // Sum up the absolute values of the “Score/Vol” quotients. TotalWeight contains even the non-active assets so have have some cash.
-                assetWeights2[iAsset] = (assetWeights[iAsset] >= 0) ? assetWeights[iAsset]: 0.0;
+                assetWeights2[iAsset] = (assetWeights[iAsset] >= 0) ? assetWeights[iAsset] : 0.0;
 
             }
             for (int iAsset = 0; iAsset < nAssets; iAsset++)
             {
-                dailyAssetWeights[iDay, iAsset] = assetWeights2[iAsset]/totalWeight;
+                dailyAssetWeights[iDay, iAsset] = assetWeights2[iAsset] / totalWeight;
                 dailyAssetScores[iDay, iAsset] = assetScores[iAsset];
                 dailyAssetHv[iDay, iAsset] = assetHV[iAsset];
                 dailyAssetScoresMod[iDay, iAsset] = assetScoresMod[iAsset];
@@ -834,7 +834,7 @@ public class StrategyUberTaaController : ControllerBase
 
         }
 
-        IEnumerable<DateTime> taaWeightDateVec = p_taaWeightsData[0].GetRange(p_taaWeightsData[0].Count-nDays ,nDays).Select(r => r.Date);
+        IEnumerable<DateTime> taaWeightDateVec = p_taaWeightsData[0].GetRange(p_taaWeightsData[0].Count - nDays, nDays).Select(r => r.Date);
         DateTime[] taaWeightDateArray = taaWeightDateVec.ToArray();
         DateTime startMatlabDate = DateTime.ParseExact("1900/01/01", "yyyy/MM/dd", CultureInfo.InvariantCulture);
 
@@ -865,14 +865,14 @@ public class StrategyUberTaaController : ControllerBase
         for (int iRows = 0; iRows < p_clmtData.GetLength(0); iRows++)
         {
             p_clmtData[iRows, 0] = clmtMatlabDateVec[iRows];
-            for (int jCols = 0; jCols < p_clmtData.GetLength(1)-1; jCols++)
+            for (int jCols = 0; jCols < p_clmtData.GetLength(1) - 1; jCols++)
             {
-                p_clmtData[iRows, jCols + 1]=p_quotesForClmtData[jCols][iRows].AdjClosePrice;
+                p_clmtData[iRows, jCols + 1] = p_quotesForClmtData[jCols][iRows].AdjClosePrice;
             }
         }
 
 
-        double[] xluRSI =new double[p_clmtData.GetLength(0) - 200];
+        double[] xluRSI = new double[p_clmtData.GetLength(0) - 200];
         for (int iRows = 0; iRows < xluRSI.Length; iRows++)
         {
             double losses = new();
@@ -1025,25 +1025,25 @@ public class StrategyUberTaaController : ControllerBase
             pastCodes[iRows, 0] = p_gSheetResToFinCalc.Item1[indGSheetRes - pastDataLength + iRows + 2];
             for (int jCols = 1; jCols < pastCodes.GetLength(1); jCols++)
             {
-                if (p_gSheetResToFinCalc.Item2[indGSheetRes - pastDataLength + iRows+2, jCols - 1] == 9)
+                if (p_gSheetResToFinCalc.Item2[indGSheetRes - pastDataLength + iRows + 2, jCols - 1] == 9)
                 {
                     pastCodes[iRows, jCols] = 7;
                 }
-                else if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows+2] == 1)
+                else if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows + 2] == 1)
                 {
                     pastCodes[iRows, jCols] = 1;
                 }
-                else if (p_gSheetResToFinCalc.Item2[indGSheetRes - pastDataLength + iRows+2, jCols - 1] == 3)
+                else if (p_gSheetResToFinCalc.Item2[indGSheetRes - pastDataLength + iRows + 2, jCols - 1] == 3)
                 {
                     pastCodes[iRows, jCols] = 5;
                 }
-                else if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows+2] == 2)
+                else if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows + 2] == 2)
                 {
                     pastCodes[iRows, jCols] = 2;
                 }
-                else if (p_gSheetResToFinCalc.Item2[indGSheetRes - pastDataLength + iRows+2, jCols - 1] == 1)
+                else if (p_gSheetResToFinCalc.Item2[indGSheetRes - pastDataLength + iRows + 2, jCols - 1] == 1)
                 {
-                    if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows+2] == 3)
+                    if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows + 2] == 3)
                     {
                         pastCodes[iRows, jCols] = 3;
                     }
@@ -1052,23 +1052,23 @@ public class StrategyUberTaaController : ControllerBase
                         pastCodes[iRows, jCols] = 6;
                     }
                 }
-                else if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows+2] == 3)
+                else if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows + 2] == 3)
                 {
                     pastCodes[iRows, jCols] = 3;
                 }
-                else if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows+2] == 4)
+                else if (p_gSheetResToFinCalc.Item3[indGSheetRes - pastDataLength + iRows + 2] == 4)
                 {
                     pastCodes[iRows, jCols] = 4;
                 }
-                else if (p_clmtRes[7][indClmtRes - pastDataLength + iRows+1]==1)
+                else if (p_clmtRes[7][indClmtRes - pastDataLength + iRows + 1]==1)
                 {
                     pastCodes[iRows, jCols] = 8;
                 }
-                else if (p_clmtRes[7][indClmtRes - pastDataLength + iRows+1] == 2)
+                else if (p_clmtRes[7][indClmtRes - pastDataLength + iRows + 1] == 2)
                 {
                     pastCodes[iRows, jCols] = 9;
                 }
-                else if (p_clmtRes[7][indClmtRes - pastDataLength + iRows+1] == 3)
+                else if (p_clmtRes[7][indClmtRes - pastDataLength + iRows + 1] == 3)
                 {
                     pastCodes[iRows, jCols] = 10;
                 }
@@ -1082,25 +1082,25 @@ public class StrategyUberTaaController : ControllerBase
             futCodes[iRows, 0] = p_gSheetResToFinCalc.Item1[indGSheetRes + iRows + 2];
             for (int jCols = 1; jCols < futCodes.GetLength(1); jCols++)
             {
-                if (p_gSheetResToFinCalc.Item2[indGSheetRes + iRows+2, jCols - 1] == 9)
+                if (p_gSheetResToFinCalc.Item2[indGSheetRes + iRows + 2, jCols - 1] == 9)
                 {
                     futCodes[iRows, jCols] = 7;
                 }
-                else if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows+2] == 1)
+                else if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows + 2] == 1)
                 {
                     futCodes[iRows, jCols] = 1;
                 }
-                else if (p_gSheetResToFinCalc.Item2[indGSheetRes + iRows+2, jCols - 1] == 3)
+                else if (p_gSheetResToFinCalc.Item2[indGSheetRes + iRows + 2, jCols - 1] == 3)
                 {
                     futCodes[iRows, jCols] = 5;
                 }
-                else if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows+2] == 2)
+                else if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows + 2] == 2)
                 {
                     futCodes[iRows, jCols] = 2;
                 }
-                else if (p_gSheetResToFinCalc.Item2[indGSheetRes + iRows+2, jCols - 1] == 1)
+                else if (p_gSheetResToFinCalc.Item2[indGSheetRes + iRows + 2, jCols - 1] == 1)
                 {
-                    if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows+2] == 3)
+                    if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows + 2] == 3)
                     {
                         futCodes[iRows, jCols] = 3;
                     }
@@ -1109,11 +1109,11 @@ public class StrategyUberTaaController : ControllerBase
                         futCodes[iRows, jCols] = 6;
                     }
                 }
-                else if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows+2] == 3)
+                else if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows + 2] == 3)
                 {
                     futCodes[iRows, jCols] = 3;
                 }
-                else if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows+2] == 4)
+                else if (p_gSheetResToFinCalc.Item3[indGSheetRes + iRows + 2] == 4)
                 {
                     futCodes[iRows, jCols] = 4;
                 }
@@ -1126,7 +1126,7 @@ public class StrategyUberTaaController : ControllerBase
         }
 
         double[,] pastWeightsFinal = new double[pastCodes.GetLength(0), p_allAssetList.Length - 3];
-        double numAss = Convert.ToDouble(p_allAssetList.Length-4);
+        double numAss = Convert.ToDouble(p_allAssetList.Length - 4);
         for (int iRows = 0; iRows < pastWeightsFinal.GetLength(0); iRows++)
         {
             pastWeightsFinal[iRows, 0] = pastCodes[iRows, 0];
@@ -1138,7 +1138,7 @@ public class StrategyUberTaaController : ControllerBase
                 }
                 else if (pastCodes[iRows, jCols] == 1)
                 {
-                    pastWeightsFinal[iRows, jCols] = 1.75*p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1,jCols-1];
+                    pastWeightsFinal[iRows, jCols] = 1.75 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1];
                 }
                 else if (pastCodes[iRows, jCols] == 5)
                 {
