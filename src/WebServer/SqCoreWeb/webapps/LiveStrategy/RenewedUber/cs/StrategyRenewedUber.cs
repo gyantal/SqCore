@@ -1226,24 +1226,21 @@ public class StrategyRenewedUberController : ControllerBase
         return stciResults;
     }
 
-    public static string[]? GetTickersFromGSheet(string? p_gSheetStr) 
+    public static string[]? GetTickersFromGSheet(string? p_gSheetStr)
     {
         if (p_gSheetStr == null)
             return null;
 
-        Debug.WriteLine("The values from gSheet Ticker for RenewedUber are ", p_gSheetStr.Length);
-        if (!p_gSheetStr.StartsWith("Error")) 
-        {
-            int tickerStartIdx = p_gSheetStr.IndexOf("CDate\",");
-            if (tickerStartIdx < 0)
-                return null;
-            int tickerEndIdx = p_gSheetStr.IndexOf("Cash\",", tickerStartIdx + 1);
-            if (tickerEndIdx < 0)
-                return null;
-            string tickers = p_gSheetStr.Substring(tickerStartIdx + 5, tickerEndIdx - tickerStartIdx - 6);
-            return tickers.Split(new string[] { ",\n", "\"" }, StringSplitOptions.RemoveEmptyEntries).Where(x => !string.IsNullOrWhiteSpace(x.Trim())).ToArray();
-        }
-        else
+        if (p_gSheetStr.StartsWith("Error"))
             return null;
+
+        int tickerStartIdx = p_gSheetStr.IndexOf("CDate\",");
+        if (tickerStartIdx < 0)
+            return null;
+        int tickerEndIdx = p_gSheetStr.IndexOf("Cash\",", tickerStartIdx + 1);
+        if (tickerEndIdx < 0)
+            return null;
+        string tickers = p_gSheetStr.Substring(tickerStartIdx + 5, tickerEndIdx - tickerStartIdx - 6);
+        return tickers.Split(new string[] { ",\n", "\"" }, StringSplitOptions.RemoveEmptyEntries).Where(x => !string.IsNullOrWhiteSpace(x.Trim())).ToArray();
     }
 }

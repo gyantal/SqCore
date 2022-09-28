@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using SqCommon;
 using FinTechCommon;
-using Microsoft.Extensions.Logging;
 using System.Globalization;
 using System.Diagnostics;
 using MathCommon.MathNet;
@@ -19,9 +17,9 @@ namespace SqCoreWeb.Controllers;
 public class StrategyUberTaaController : ControllerBase
 {
 
-    public StrategyUberTaaController()
-    {
-    }
+    // public StrategyUberTaaController()
+    // {
+    // }
 
     public class DailyData
     {
@@ -30,53 +28,41 @@ public class StrategyUberTaaController : ControllerBase
     }
 
     [HttpGet]
-
     public ActionResult Index(int commo)
     {
-        switch (commo)
-            {
-                case 1: //GameChanger
-                    return Content(GetStrGameChng(1), "text/html");
-                case 2: //Global Asset
-                    return Content(GetStrGameChng(2), "text/html");
-                default:
-                    break;
-            }
-            return Content(GetStr2(), "text/html");
+        return commo switch
+        {
+            //1: GameChanger, 2: Global Assets
+            1 or 2 => Content(GetResultStr(commo), "text/html"),
+            _ => Content("Error", "text/html"),
+        };
     }
 
-    public string GetStr2()
-    {
-        return "Error";
-    }
     // Under development - Daya 31-05-2022
-    public string GetStrGameChng(int p_basketSelector)
+    public string GetResultStr(int p_basketSelector)
     {
-    //     // throw new NotImplementedException();
-    //     //  Defining asset lists.
-        // string[] clmtAssetList = new string[]{ "^GSPC", "XLU", "VTI" };
-        string[] clmtAssetList = new string[]{ "SPY", "XLU", "VTI" };    // Balazs: We can use SPY instead of ^GSPC
+        string[] clmtAssetList = new string[]{ "SPY", "XLU", "VTI" };    // We can use SPY instead of ^GSPC
         // string[] gchAssetList = new string[]{ "AAPL", "ADBE", "AMZN", "CRM", "CRWD", "ETSY", "META", "GOOGL", "MA", "MSFT", "NOW", "NVDA", "PYPL", "QCOM", "SE", "SHOP", "SQ", "V", "TLT"}; //TLT is used as a cashEquivalent
-        string gchGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/values/A1:AF2000?key=";
-        string? gchGoogleSheetStr = UberTaaGoogleApiGsheet(gchGSheetRef);
-        string[] gchAssetList = GetTickersFromGSheet(gchGoogleSheetStr) ?? new string[] {" "};
         // string[] gchAssetList = new string[]{ "AAPL", "ADBE", "AMZN", "BABA", "CRM", "CRWD", "ETSY", "FB", "GOOGL", "ISRG", "MA", "MELI", "MSFT", "NFLX", "NOW", "NVDA", "PYPL", "QCOM", "ROKU", "SE", "SHOP", "SQ", "TDOC", "TWLO", "V", "ZM", "TLT"}; //TLT is used as a cashEquivalent
-        string gmrGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/values/A1:Z2000?key=";
-        string? gmrGoogleSheetStr = UberTaaGoogleApiGsheet(gmrGSheetRef);
-        string[] gmrAssetList = GetTickersFromGSheet(gmrGoogleSheetStr) ?? new string[] {" "};
         // string[] gmrAssetList = new string[] { "MDY", "ILF", "FEZ", "EEM", "EPP", "VNQ", "TLT" }; //TLT is used as a cashEquivalent
+        string titleString = string.Empty, warningGCh = string.Empty, usedGSheetUrl = string.Empty, usedGDocUrl = string.Empty;
+        string? usedGSheetStr = null;
         string[] usedAssetList = Array.Empty<string>();
-        string titleString = "0";
-        string warningGCh ="";
         switch (p_basketSelector)
         {
             case 1:
-                usedAssetList = gchAssetList;
+                usedGSheetUrl = "https://docs.google.com/spreadsheets/d/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/edit?usp=sharing";
+                usedGDocUrl = "https://docs.google.com/document/d/1JPyRJY7VrW7hQMagYLtB_ruTzEKEd8POHQy6sZ_Nnyk/edit?usp=sharing";
+                usedGSheetStr = UberTaaGoogleApiGsheet("https://sheets.googleapis.com/v4/spreadsheets/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/values/A1:AF2000?key=");
+                usedAssetList = GetTickersFromGSheet(usedGSheetStr) ?? Array.Empty<string>();
                 titleString = "GameChangers";
-                warningGCh ="WARNING! Trading rules have been changed! Only live positions are valid, required trades are not!";
+                warningGCh = "WARNING! Trading rules have been changed! Only live positions are valid, required trades are not!";
                 break;
             case 2:
-                usedAssetList = gmrAssetList;
+                usedGSheetUrl = "https://docs.google.com/spreadsheets/d/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/edit?usp=sharing";
+                usedGDocUrl = "https://docs.google.com/document/d/1-hDoFu1buI1XHvJZyt6Cq813Hw1TQWGl0jE7mwwS3l0/edit?usp=sharing";
+                usedGSheetStr = UberTaaGoogleApiGsheet("https://sheets.googleapis.com/v4/spreadsheets/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/values/A1:Z2000?key=");
+                usedAssetList = GetTickersFromGSheet(usedGSheetStr) ?? Array.Empty<string>();
                 titleString = "Global Assets";
                 break;
         }
@@ -84,17 +70,6 @@ public class StrategyUberTaaController : ControllerBase
         string[] allAssetList = new string[clmtAssetList.Length + usedAssetList.Length];
         clmtAssetList.CopyTo(allAssetList, 0);
         usedAssetList.CopyTo(allAssetList, clmtAssetList.Length);
-
-        // string gchGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/values/A1:AF2000?key=";
-        // string gmrGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/values/A1:Z2000?key=";
-        string gchGSheet2Ref = "https://docs.google.com/spreadsheets/d/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/edit?usp=sharing";
-        string gmrGSheet2Ref = "https://docs.google.com/spreadsheets/d/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/edit?usp=sharing";
-        string gchGDocRef = "https://docs.google.com/document/d/1JPyRJY7VrW7hQMagYLtB_ruTzEKEd8POHQy6sZ_Nnyk/edit?usp=sharing";
-        string gmrGDocRef = "https://docs.google.com/document/d/1-hDoFu1buI1XHvJZyt6Cq813Hw1TQWGl0jE7mwwS3l0/edit?usp=sharing";
-
-        string usedGSheetRef = (p_basketSelector == 1) ? gchGSheetRef : gmrGSheetRef;
-        string usedGSheet2Ref = (p_basketSelector == 1) ? gchGSheet2Ref : gmrGSheet2Ref;
-        string usedGDocRef = (p_basketSelector == 1) ? gchGDocRef : gmrGDocRef;
 
         int thresholdLower = 25; //Upper threshold is 100-thresholdLower.
         int[] lookbackDays = new int[] { 60, 120, 180, 252 };
@@ -119,8 +94,8 @@ public class StrategyUberTaaController : ControllerBase
         double lastDataDate = (clmtRes[0][^1] == taaWeightResultsTuple.Item1[^1]) ? clmtRes[0][^1] : 0;
 
         //Get, split and convert GSheet data
-        string? gSheetString = UberTaaGoogleApiGsheet(usedGSheetRef);
-        Tuple<double[], int[,], int[], int[], string[], int[], int[]> gSheetResToFinCalc = GSheetConverter(gSheetString, allAssetList);
+        // string? gSheetString = UberTaaGoogleApiGsheet(usedGSheetRef);
+        Tuple<double[], int[,], int[], int[], string[], int[], int[]> gSheetResToFinCalc = GSheetConverter(usedGSheetStr, allAssetList);
         Debug.WriteLine("The Data from gSheet is :", gSheetResToFinCalc);
 
         // Calculating final weights - Advanced UberTAA
@@ -470,8 +445,8 @@ public class StrategyUberTaaController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""clmtSign"": """ + clmtSignal);
         sb.Append(@"""," + Environment.NewLine + @"""xluVtiSign"": """ + xluVtiSignal);
         sb.Append(@"""," + Environment.NewLine + @"""spxMASign"": """ + spxMASignal);
-        sb.Append(@"""," + Environment.NewLine + @"""gDocRef"": """ + usedGDocRef);
-        sb.Append(@"""," + Environment.NewLine + @"""gSheetRef"": """ + usedGSheet2Ref);
+        sb.Append(@"""," + Environment.NewLine + @"""gDocRef"": """ + usedGDocUrl);
+        sb.Append(@"""," + Environment.NewLine + @"""gSheetRef"": """ + usedGSheetUrl);
 
         sb.Append(@"""," + Environment.NewLine + @"""assetNames"": """);
             for (int i=0; i<usedAssetList.Length-1; i++)
@@ -1221,20 +1196,17 @@ public class StrategyUberTaaController : ControllerBase
         if (p_gSheetStr == null)
             return null;
 
-        Debug.WriteLine("The values from gSheet Ticker for UberTaa are ", p_gSheetStr.Length);
-        if (!p_gSheetStr.StartsWith("Error"))
-        {
-            int tickerStartIdx = p_gSheetStr.IndexOf("CDate\",");
-            if (tickerStartIdx < 0)
-                return null;
-            int tickerEndIdx = p_gSheetStr.IndexOf("Cash\",", tickerStartIdx + 1);
-            if (tickerEndIdx < 0)
-                return null;
-            string tickers = p_gSheetStr.Substring(tickerStartIdx + 5, tickerEndIdx - tickerStartIdx - 6);
-            return tickers.Split(new string[] { ",\n", "\"" }, StringSplitOptions.RemoveEmptyEntries).Where(x => !string.IsNullOrWhiteSpace(x.Trim())).ToArray();
-        }
-        else
+        if (p_gSheetStr.StartsWith("Error"))
             return null;
+
+        int tickerStartIdx = p_gSheetStr.IndexOf("CDate\",");
+        if (tickerStartIdx < 0)
+            return null;
+        int tickerEndIdx = p_gSheetStr.IndexOf("Cash\",", tickerStartIdx + 1);
+        if (tickerEndIdx < 0)
+            return null;
+        string tickers = p_gSheetStr.Substring(tickerStartIdx + 5, tickerEndIdx - tickerStartIdx - 6);
+        return tickers.Split(new string[] { ",\n", "\"" }, StringSplitOptions.RemoveEmptyEntries).Where(x => !string.IsNullOrWhiteSpace(x.Trim())).ToArray();
     }
 
 }
