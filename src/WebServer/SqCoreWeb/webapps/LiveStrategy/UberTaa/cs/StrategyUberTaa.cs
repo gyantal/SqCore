@@ -56,9 +56,15 @@ public class StrategyUberTaaController : ControllerBase
     //     //  Defining asset lists.
         // string[] clmtAssetList = new string[]{ "^GSPC", "XLU", "VTI" };
         string[] clmtAssetList = new string[]{ "SPY", "XLU", "VTI" };    // Balazs: We can use SPY instead of ^GSPC
-        string[] gchAssetList = new string[]{ "AAPL", "ADBE", "AMZN", "CRM", "CRWD", "ETSY", "META", "GOOGL", "MA", "MSFT", "NOW", "NVDA", "PYPL", "QCOM", "SE", "SHOP", "SQ", "V", "TLT"}; //TLT is used as a cashEquivalent
+        // string[] gchAssetList = new string[]{ "AAPL", "ADBE", "AMZN", "CRM", "CRWD", "ETSY", "META", "GOOGL", "MA", "MSFT", "NOW", "NVDA", "PYPL", "QCOM", "SE", "SHOP", "SQ", "V", "TLT"}; //TLT is used as a cashEquivalent
+        string gchGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/values/A1:AF2000?key=";
+        string? gchGoogleSheetStr = UberTaaGoogleApiGsheet(gchGSheetRef);
+        string[] gchAssetList = GetTickersFromGSheet(gchGoogleSheetStr) ?? new string[] {" "};
         // string[] gchAssetList = new string[]{ "AAPL", "ADBE", "AMZN", "BABA", "CRM", "CRWD", "ETSY", "FB", "GOOGL", "ISRG", "MA", "MELI", "MSFT", "NFLX", "NOW", "NVDA", "PYPL", "QCOM", "ROKU", "SE", "SHOP", "SQ", "TDOC", "TWLO", "V", "ZM", "TLT"}; //TLT is used as a cashEquivalent
-        string[] gmrAssetList = new string[] { "MDY", "ILF", "FEZ", "EEM", "EPP", "VNQ", "TLT" }; //TLT is used as a cashEquivalent
+        string gmrGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/values/A1:Z2000?key=";
+        string? gmrGoogleSheetStr = UberTaaGoogleApiGsheet(gmrGSheetRef);
+        string[] gmrAssetList = GetTickersFromGSheet(gmrGoogleSheetStr) ?? new string[] {" "};
+        // string[] gmrAssetList = new string[] { "MDY", "ILF", "FEZ", "EEM", "EPP", "VNQ", "TLT" }; //TLT is used as a cashEquivalent
         string[] usedAssetList = Array.Empty<string>();
         string titleString = "0";
         string warningGCh ="";
@@ -79,8 +85,8 @@ public class StrategyUberTaaController : ControllerBase
         clmtAssetList.CopyTo(allAssetList, 0);
         usedAssetList.CopyTo(allAssetList, clmtAssetList.Length);
 
-        string gchGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/values/A1:AF2000?key=";
-        string gmrGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/values/A1:Z2000?key=";
+        // string gchGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/values/A1:AF2000?key=";
+        // string gmrGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/values/A1:Z2000?key=";
         string gchGSheet2Ref = "https://docs.google.com/spreadsheets/d/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/edit?usp=sharing";
         string gmrGSheet2Ref = "https://docs.google.com/spreadsheets/d/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/edit?usp=sharing";
         string gchGDocRef = "https://docs.google.com/document/d/1JPyRJY7VrW7hQMagYLtB_ruTzEKEd8POHQy6sZ_Nnyk/edit?usp=sharing";
@@ -113,9 +119,7 @@ public class StrategyUberTaaController : ControllerBase
         double lastDataDate = (clmtRes[0][^1] == taaWeightResultsTuple.Item1[^1]) ? clmtRes[0][^1] : 0;
 
         //Get, split and convert GSheet data
-        var gSheetReadResult = UberTAAGChGoogleApiGsheet(usedGSheetRef);
-        string? content = ((ContentResult)gSheetReadResult).Content;
-        string? gSheetString = content;
+        string? gSheetString = UberTaaGoogleApiGsheet(usedGSheetRef);
         Tuple<double[], int[,], int[], int[], string[], int[], int[]> gSheetResToFinCalc = GSheetConverter(gSheetString, allAssetList);
         Debug.WriteLine("The Data from gSheet is :", gSheetResToFinCalc);
 
@@ -642,21 +646,19 @@ public class StrategyUberTaaController : ControllerBase
         return sb.ToString();
 
     }
-    public object UberTAAGChGoogleApiGsheet(string p_usedGSheetRef)
-    {
-        Utils.Logger.Info("UberTAAGChGoogleApiGsheet() BEGIN");
 
-        string? valuesFromGSheetStr = "Error. Make sure GoogleApiKeyKey, GoogleApiKeyKey is in SQLab.WebServer.SQLab.NoGitHub.json !";
-        if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
-        {
-            valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync(p_usedGSheetRef + Utils.Configuration["Google:GoogleApiKeyKey"], 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
-            if (valuesFromGSheetStr == null)
-                valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
-        }
-        
-        Utils.Logger.Info("UberTAAGChGoogleApiGsheet() END");
-        return Content($"<HTML><body>UberTAAGChGoogleApiGsheet() finished OK. <br> Received data: '{valuesFromGSheetStr}'</body></HTML>", "text/html");
+    public string? UberTaaGoogleApiGsheet(string p_usedGSheetRef)
+    {
+        if (String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) || String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
+            return null;
+
+        string? valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync(p_usedGSheetRef + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
+        if (valuesFromGSheetStr == null)
+            return null;
+
+        return valuesFromGSheetStr;
     }
+
     public static Tuple< double[], int[,], int[], int[], string[], int[], int[]> GSheetConverter(string? p_gSheetString, string[] p_allAssetList)
     {
         if (p_gSheetString != null)
@@ -1213,4 +1215,26 @@ public class StrategyUberTaaController : ControllerBase
 
         return multiplFinResults;
     }
+
+    public static string[]? GetTickersFromGSheet(string? p_gSheetStr)
+    {
+        if (p_gSheetStr == null)
+            return null;
+
+        Debug.WriteLine("The values from gSheet Ticker for UberTaa are ", p_gSheetStr.Length);
+        if (!p_gSheetStr.StartsWith("Error"))
+        {
+            int tickerStartIdx = p_gSheetStr.IndexOf("CDate\",");
+            if (tickerStartIdx < 0)
+                return null;
+            int tickerEndIdx = p_gSheetStr.IndexOf("Cash\",", tickerStartIdx + 1);
+            if (tickerEndIdx < 0)
+                return null;
+            string tickers = p_gSheetStr.Substring(tickerStartIdx + 5, tickerEndIdx - tickerStartIdx - 6);
+            return tickers.Split(new string[] { ",\n", "\"" }, StringSplitOptions.RemoveEmptyEntries).Where(x => !string.IsNullOrWhiteSpace(x.Trim())).ToArray();
+        }
+        else
+            return null;
+    }
+
 }
