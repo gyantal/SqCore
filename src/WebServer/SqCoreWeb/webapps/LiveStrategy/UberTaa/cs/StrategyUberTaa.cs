@@ -16,10 +16,7 @@ namespace SqCoreWeb.Controllers;
 [ResponseCache(CacheProfileName = "NoCache")]
 public class StrategyUberTaaController : ControllerBase
 {
-
-    // public StrategyUberTaaController()
-    // {
-    // }
+    enum Universe : byte { GameChangers = 1, GlobalAssets = 2 };
 
     public class DailyData
     {
@@ -28,55 +25,52 @@ public class StrategyUberTaaController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult Index(int commo)
+    public ActionResult Index(int universe, int winnerRun)
     {
-        return commo switch
+        return universe switch
         {
             //1: GameChanger, 2: Global Assets
-            1 or 2 => Content(GetResultStr(commo), "text/html"),
+            1 or 2 => Content(GetResultStr((Universe)universe, winnerRun == 1), "text/html"),
             _ => Content("Error", "text/html"),
         };
     }
 
-    // Under development - Daya 31-05-2022
-    public string GetResultStr(int p_basketSelector)
+    string GetResultStr(Universe p_universe, bool p_winnerRun)
     {
-        int mode = 1; // 1: standard 2: let the winners run
-        string[] clmtAssetList = new string[]{ "SPY", "XLU", "VTI" };    // We can use SPY instead of ^GSPC
-        // string[] gchAssetList = new string[]{ "AAPL", "ADBE", "AMZN", "CRM", "CRWD", "ETSY", "META", "GOOGL", "MA", "MSFT", "NOW", "NVDA", "PYPL", "QCOM", "SE", "SHOP", "SQ", "V", "TLT"}; //TLT is used as a cashEquivalent
-        // string[] gchAssetList = new string[]{ "AAPL", "ADBE", "AMZN", "BABA", "CRM", "CRWD", "ETSY", "FB", "GOOGL", "ISRG", "MA", "MELI", "MSFT", "NFLX", "NOW", "NVDA", "PYPL", "QCOM", "ROKU", "SE", "SHOP", "SQ", "TDOC", "TWLO", "V", "ZM", "TLT"}; //TLT is used as a cashEquivalent
-        // string[] gmrAssetList = new string[] { "MDY", "ILF", "FEZ", "EEM", "EPP", "VNQ", "TLT" }; //TLT is used as a cashEquivalent
-        string titleString = string.Empty, warningGCh = string.Empty, usedGSheetUrl = string.Empty, usedGDocUrl = string.Empty;
-        string? usedGSheetStr = null;
-        string[] usedAssetList = Array.Empty<string>();
-        switch (p_basketSelector)
-        {
-            case 1:
-                usedGSheetUrl = "https://docs.google.com/spreadsheets/d/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/edit?usp=sharing";
-                usedGDocUrl = "https://docs.google.com/document/d/1JPyRJY7VrW7hQMagYLtB_ruTzEKEd8POHQy6sZ_Nnyk/edit?usp=sharing";
-                usedGSheetStr = UberTaaGoogleApiGsheet("https://sheets.googleapis.com/v4/spreadsheets/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/values/A1:AF2000?key=");
-                usedAssetList = GetTickersFromGSheet(usedGSheetStr) ?? Array.Empty<string>();
-                titleString = "GameChangers";
-                warningGCh = "WARNING! Trading rules have been changed! Only live positions are valid, required trades are not!";
-                break;
-            case 2:
-                usedGSheetUrl = "https://docs.google.com/spreadsheets/d/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/edit?usp=sharing";
-                usedGDocUrl = "https://docs.google.com/document/d/1-hDoFu1buI1XHvJZyt6Cq813Hw1TQWGl0jE7mwwS3l0/edit?usp=sharing";
-                usedGSheetStr = UberTaaGoogleApiGsheet("https://sheets.googleapis.com/v4/spreadsheets/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/values/A1:Z2000?key=");
-                usedAssetList = GetTickersFromGSheet(usedGSheetStr) ?? Array.Empty<string>();
-                titleString = "Global Assets";
-                break;
-        }
-
-        string[] allAssetList = new string[clmtAssetList.Length + usedAssetList.Length];
-        clmtAssetList.CopyTo(allAssetList, 0);
-        usedAssetList.CopyTo(allAssetList, clmtAssetList.Length);
-
         int thresholdLower = 25; //Upper threshold is 100-thresholdLower.
         int[] lookbackDays = new int[] { 60, 120, 180, 252 };
         int volDays = 20;
 
-            //Collecting and splitting price data got from SQL Server
+        // string[] gchAssetList = new string[]{ "AAPL", "ADBE", "AMZN", "CRM", "CRWD", "ETSY", "META", "GOOGL", "MA", "MSFT", "NOW", "NVDA", "PYPL", "QCOM", "SE", "SHOP", "SQ", "V", "TLT"}; //TLT is used as a cashEquivalent
+        // string[] gmrAssetList = new string[] { "MDY", "ILF", "FEZ", "EEM", "EPP", "VNQ", "TLT" }; //TLT is used as a cashEquivalent
+        string titleString = string.Empty, warningGCh = string.Empty, usedGSheetUrl = string.Empty, usedGDocUrl = string.Empty;
+        string? usedGSheetStr = null;
+        string[] usedAssetList = Array.Empty<string>();
+        switch (p_universe)
+        {
+            case Universe.GameChangers:
+                titleString = "GameChangers";
+                usedGDocUrl = "https://docs.google.com/document/d/1JPyRJY7VrW7hQMagYLtB_ruTzEKEd8POHQy6sZ_Nnyk";
+                usedGSheetUrl = "https://docs.google.com/spreadsheets/d/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE";
+                usedGSheetStr = UberTaaGoogleApiGsheet("https://sheets.googleapis.com/v4/spreadsheets/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/values/A1:AF2000?key=");
+                usedAssetList = GetTickersFromGSheet(usedGSheetStr) ?? Array.Empty<string>();
+                warningGCh = "WARNING! Trading rules have been changed! Only live positions are valid, required trades are not!";
+                break;
+            case Universe.GlobalAssets:
+                titleString = "Global Assets";
+                usedGDocUrl = "https://docs.google.com/document/d/1-hDoFu1buI1XHvJZyt6Cq813Hw1TQWGl0jE7mwwS3l0";
+                usedGSheetUrl = "https://docs.google.com/spreadsheets/d/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU";
+                usedGSheetStr = UberTaaGoogleApiGsheet("https://sheets.googleapis.com/v4/spreadsheets/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/values/A1:Z2000?key=");
+                usedAssetList = GetTickersFromGSheet(usedGSheetStr) ?? Array.Empty<string>();
+                break;
+        }
+
+        string[] clmtAssetList = new string[]{ "SPY", "XLU", "VTI" };    // CMLT: Combined Leverage Market Timer
+        string[] allAssetList = new string[clmtAssetList.Length + usedAssetList.Length]; // Joining 2 arrays[]: LINQ has Concat() for the enumerable, but this Array Copy is the fastest implementation
+        clmtAssetList.CopyTo(allAssetList, 0);
+        usedAssetList.CopyTo(allAssetList, clmtAssetList.Length);
+
+        //Collecting and splitting price data got from SQL Server
         (IList<List<DailyData>>, List<List<DailyData>>, List<DailyData>) dataListTupleFromSQServer = GetStockHistData(allAssetList);
 
         IList<List<DailyData>> quotesData = dataListTupleFromSQServer.Item1;
@@ -86,7 +80,7 @@ public class StrategyUberTaaController : ControllerBase
         Debug.WriteLine("The Data from gSheet is :", quotesData, quotesForClmtData, cashEquivalentQuotesData);
 
         // Calculating basic weights based on percentile channels - base Varadi TAA
-        Tuple<double[], double[,]> taaWeightResultsTuple = TaaWeights(quotesData, lookbackDays, volDays, thresholdLower, mode);
+        Tuple<double[], double[,]> taaWeightResultsTuple = TaaWeights(quotesData, lookbackDays, volDays, thresholdLower, p_winnerRun);
         Debug.WriteLine("The Data from gSheet is :", taaWeightResultsTuple);
         // // Calculating CLMT data
         double[][] clmtRes = CLMTCalc(quotesForClmtData);
@@ -163,7 +157,7 @@ public class StrategyUberTaaController : ControllerBase
             posIntDiff[jCols] = nextPosInt[jCols] - currPosInt[jCols];
         }
 
-        //CLMT
+        //CLMT: Combined Leverage Market Timer
         string clmtSignal;
         if (clmtRes[7][^1]==1)
         {
@@ -760,7 +754,7 @@ public class StrategyUberTaaController : ControllerBase
         return (quotesData, quotesForClmtData, cashEquivalentQuotesData);
     }
 
-    public static Tuple<double[], double[,]> TaaWeights(IList<List<DailyData>> p_taaWeightsData, int[] p_pctChannelLookbackDays, int p_histVolLookbackDays, int p_thresholdLower, int p_mode)
+    public static Tuple<double[], double[,]> TaaWeights(IList<List<DailyData>> p_taaWeightsData, int[] p_pctChannelLookbackDays, int p_histVolLookbackDays, int p_thresholdLower, bool p_winnerRun)
     {
         var dshd = p_taaWeightsData;
         int nAssets = p_taaWeightsData.Count;
@@ -849,8 +843,8 @@ public class StrategyUberTaaController : ControllerBase
         {
             taaWeightMatlabDateVec[i] = (taaWeightDateArray[i] - startMatlabDate).TotalDays + 693962;
         }
-        
-        Tuple<double[],double[,]> taaWeightResults = (p_mode == 1) ? Tuple.Create(taaWeightMatlabDateVec, dailyAssetWeights) : Tuple.Create(taaWeightMatlabDateVec, dailyAssetScoresMod);
+
+        Tuple<double[],double[,]> taaWeightResults = p_winnerRun ? Tuple.Create(taaWeightMatlabDateVec, dailyAssetScoresMod) : Tuple.Create(taaWeightMatlabDateVec, dailyAssetWeights);
         return taaWeightResults;
     }
 

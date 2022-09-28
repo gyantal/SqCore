@@ -1,0 +1,9 @@
+----------------------------
+
+The Dotnet source code can be found on GitHub here: https://github.com/dotnet
+For example: 
+    The System namespace is here that contains almost all the base classes:
+    https://github.com/dotnet/runtime/tree/7fc8fb56327e9696ce9baa80f997e3f50675af1f/src/libraries/System.Private.CoreLib/src/System
+    The 'class List<>' source code is in the runtime/System project:
+    https://github.com/dotnet/runtime/blob/7fc8fb56327e9696ce9baa80f997e3f50675af1f/src/libraries/System.Private.CoreLib/src/System/Collections/Generic/List.cs
+----------------------------

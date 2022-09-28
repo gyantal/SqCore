@@ -24,3 +24,11 @@ cd ../CS
 dotnet build
 copy ..\CPP\CppLib.dll .\bin\Debug\net6.0
 dotnet run
+
+----------------------- Install tools.
+
+1. https://youtu.be/0HD0pqVtsmw "How to Download and Install C Cpp Toolset ( gcc g++ gdb ) in Windows 10 using mingw-w64 and msys2"
+To have gc, gcc, gdb, the GNU Compilers.
+pacman is the PackageManager of msys2.
+
+2. https://youtu.be/77v-Poud_io "Set up Visual Studio Code for C and C++ Programming"

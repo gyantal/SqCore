@@ -8,6 +8,10 @@ import * as d3 from 'd3';
 // 1. Declare some global variables and hook on DOMContentLoaded() and window.onload()
 console.log('SqCore: Script BEGIN4');
 
+function getNonNullDocElementById(id: string): HTMLElement { // document.getElementById() can return null. This 'forced' type casting fakes that it is not null for the TS compiler. (it can be null during runtime)
+  return document.getElementById(id) as HTMLElement;
+}
+
 async function AsyncStartDownloadAndExecuteCbLater(
     url: string,
     callback: (json: any) => any
@@ -31,10 +35,6 @@ async function AsyncStartDownloadAndExecuteCbLater(
       .catch((err) => {
         console.log('SqCore: Download error.');
       });
-}
-
-function getDocElementById(id: string): HTMLElement {
-  return document.getElementById(id) as HTMLElement; // type casting assures it is not null for the TS compiler. (it can be null during runtime)
 }
 
 function onImageClickVIX() {
@@ -422,9 +422,9 @@ window.onload = function onLoadWindow() {
       'SqCore: window.onload() BEGIN. All CSS, and images were downloaded.'
   ); // images are loaded at this time, so their sizes are known
 
-  getDocElementById('VIXimage').onclick = onImageClickVIX;
-  getDocElementById('OILimage').onclick = onImageClickOIL;
-  getDocElementById('GASimage').onclick = onImageClickGAS;
+  getNonNullDocElementById('VIXimage').onclick = onImageClickVIX;
+  getNonNullDocElementById('OILimage').onclick = onImageClickOIL;
+  getNonNullDocElementById('GASimage').onclick = onImageClickGAS;
 
   // const logger: NGXLogger = new NGXLogger({
   //   level: NgxLoggerLevel.INFO,

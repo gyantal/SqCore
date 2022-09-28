@@ -7,6 +7,9 @@ import * as d3 from 'd3';
 // 1. Declare some global variables and hook on DOMContentLoaded() and window.onload()
 console.log('SqCore: Script BEGIN');
 
+function getNonNullDocElementById(id: string): HTMLElement { // document.getElementById() can return null. This 'forced' type casting fakes that it is not null for the TS compiler. (it can be null during runtime)
+  return document.getElementById(id) as HTMLElement;
+}
 
 async function AsyncStartDownloadAndExecuteCbLater(url: string, callback: (json: any) => any) {
   fetch(url)
@@ -26,53 +29,46 @@ async function AsyncStartDownloadAndExecuteCbLater(url: string, callback: (json:
       });
 }
 
-function getDocElementById(id: string): HTMLElement {
-  return document.getElementById(id) as HTMLElement; // type casting assures it is not null for the TS compiler. (it can be null during runtime)
-}
-
 function onClickGameChanger() {
-  onImageClick(1);
+  AsyncStartDownloadAndExecuteCbLater('/StrategyUberTaa?universe=1&winnerRun=1', (json: any) => {
+    onReceiveData(json);
+  });
 }
 
 function onClickGlobalAssets() {
-  onImageClick(2);
-}
-
-function onImageClick(index: number) {
-  console.log('OnClick received.' + index);
-  AsyncStartDownloadAndExecuteCbLater('/StrategyUberTaa?commo=' + index, (json: any) => {
+  AsyncStartDownloadAndExecuteCbLater('/StrategyUberTaa?universe=2&winnerRun=0', (json: any) => {
     onReceiveData(json);
   });
 }
 
 function onReceiveData(json: any) {
   if (json == 'Error') {
-    const divErrorCont = getDocElementById('idErrorCont');
+    const divErrorCont = getNonNullDocElementById('idErrorCont');
     divErrorCont.innerHTML = 'Error during downloading data. Please, try again later!';
-    getDocElementById('errorMessage').style.visibility='visible';
-    getDocElementById('pctChgCharts').style.visibility = 'hidden';
-    getDocElementById('xluChart').style.visibility = 'hidden';
-    getDocElementById('spyChart').style.visibility = 'hidden';
+    getNonNullDocElementById('errorMessage').style.visibility='visible';
+    getNonNullDocElementById('pctChgCharts').style.visibility = 'hidden';
+    getNonNullDocElementById('xluChart').style.visibility = 'hidden';
+    getNonNullDocElementById('spyChart').style.visibility = 'hidden';
 
     return;
   }
-  getDocElementById('idTitleCont').innerHTML = json.titleCont + ' <sup><small><a href="' + json.gDocRef + '" target="_blank">(Study)</a></small></sup>';
-  getDocElementById('idWarningCont').innerHTML = json.warningCont;
-  getDocElementById('idTimeNow').innerHTML = json.requestTime;
-  getDocElementById('idLiveDataTime').innerHTML = json.lastDataTime;
-  getDocElementById('idCurrentPV').innerHTML = 'Current PV: <span class="pv">$ ' + json.currentPV + '</span> (based on <a href=' + json.gSheetRef + '" target="_blank">these current positions</a> updated for ' + json.currentPVDate + ')';
-  getDocElementById('idCLMTString').innerHTML = 'Current Combined Leverage Market Timer signal is <span class="clmt">' + json.clmtSign + '</span> (SPX 50/200-day MA: ' + json.spxMASign + ', XLU/VTI: ' + json.xluVtiSign + ').';
-  getDocElementById('idPosLast').innerHTML = 'Position weights in the last 20 days:';
-  getDocElementById('idPosFut').innerHTML = 'Future events:';
+  getNonNullDocElementById('idTitleCont').innerHTML = json.titleCont + ' <sup><small><a href="' + json.gDocRef + '" target="_blank">(Study)</a></small></sup>';
+  getNonNullDocElementById('idWarningCont').innerHTML = json.warningCont;
+  getNonNullDocElementById('idTimeNow').innerHTML = json.requestTime;
+  getNonNullDocElementById('idLiveDataTime').innerHTML = json.lastDataTime;
+  getNonNullDocElementById('idCurrentPV').innerHTML = 'Current PV: <span class="pv">$ ' + json.currentPV + '</span> (based on <a href=' + json.gSheetRef + '" target="_blank">these current positions</a> updated for ' + json.currentPVDate + ')';
+  getNonNullDocElementById('idCLMTString').innerHTML = 'Current Combined Leverage Market Timer signal is <span class="clmt">' + json.clmtSign + '</span> (SPX 50/200-day MA: ' + json.spxMASign + ', XLU/VTI: ' + json.xluVtiSign + ').';
+  getNonNullDocElementById('idPosLast').innerHTML = 'Position weights in the last 20 days:';
+  getNonNullDocElementById('idPosFut').innerHTML = 'Future events:';
 
   const warnLength = json.warningCont.length;
   if (warnLength>0)
-    getDocElementById('idWarningCont').innerHTML = json.warningCont + '<br> <a href="https://docs.google.com/spreadsheets/d/1fmvGBi2Q6MxnB_8AjUedy1QVTOlWE7Ck1rICjYSSxyY" target="_blank">Google sheet with current positions</a> and <a href="https://docs.google.com/document/d/1_m3MMGag7uBZSdvc4IgXKMvj3d4kzLxwvnW14RkCyco" target="_blank">the latest study in connection with the strategy</a>';
+    getNonNullDocElementById('idWarningCont').innerHTML = json.warningCont + '<br> <a href="https://docs.google.com/spreadsheets/d/1fmvGBi2Q6MxnB_8AjUedy1QVTOlWE7Ck1rICjYSSxyY" target="_blank">Google sheet with current positions</a> and <a href="https://docs.google.com/document/d/1_m3MMGag7uBZSdvc4IgXKMvj3d4kzLxwvnW14RkCyco" target="_blank">the latest study in connection with the strategy</a>';
   uberTaaTbls(json);
   // Setting charts visible after getting data.
-  getDocElementById('pctChgCharts').style.visibility = 'visible';
-  getDocElementById('xluChart').style.visibility = 'visible';
-  getDocElementById('spyChart').style.visibility = 'visible';
+  getNonNullDocElementById('pctChgCharts').style.visibility = 'visible';
+  getNonNullDocElementById('xluChart').style.visibility = 'visible';
+  getNonNullDocElementById('spyChart').style.visibility = 'visible';
 }
 
 function uberTaaTbls(json: any) {
@@ -187,13 +183,13 @@ function uberTaaTbls(json: any) {
   const subStrategiesTbl = '<table class="currData2"><tr><td bgcolor="#1E90FF">Earnings Day</td><td bgcolor="#228B22">FOMC Bullish Day</td><td bgcolor="#FF0000">FOMC Bearish Day</td></tr><tr><td bgcolor="#7B68EE">Pre-Earnings Day</td><td bgcolor="#7CFC00">Holiday Bullish Day</td><td bgcolor="#DC143C">Holiday Bearish Day</td></tr><tr><td bgcolor="#00FFFF">CLMT Bullish Day</td><td bgcolor="#A9A9A9">CLMT Neutral Day</td><td bgcolor="#FF8C00">CLMT Bearish Day</td></tr></table > ';
 
   // "Sending" data to HTML file.
-  const chngInPosMtx = getDocElementById('changeInPos');
+  const chngInPosMtx = getNonNullDocElementById('changeInPos');
   chngInPosMtx.innerHTML = chngInPosTbl;
-  const prevPositionsMtx = getDocElementById('prevPositions');
+  const prevPositionsMtx = getNonNullDocElementById('prevPositions');
   prevPositionsMtx.innerHTML = prevPositionsTbl;
-  const futPositionsMtx = getDocElementById('futPositions');
+  const futPositionsMtx = getNonNullDocElementById('futPositions');
   futPositionsMtx.innerHTML = futPositionsTbl;
-  const subStrategiesMtx = getDocElementById('subStrategies');
+  const subStrategiesMtx = getNonNullDocElementById('subStrategies');
   subStrategiesMtx.innerHTML = subStrategiesTbl;
 
 
@@ -206,8 +202,8 @@ function uberTaaTbls(json: any) {
   const yScaleTickFormat: string = '%';
   const isDrawCricles: boolean = true;
   d3.selectAll('#pctChgChrt > *').remove();
-  const lineChrtDiv = getDocElementById('pctChgChrt');
-  const lineChrtTooltip = getDocElementById('tooltipChart');
+  const lineChrtDiv = getNonNullDocElementById('pctChgChrt');
+  const lineChrtTooltip = getNonNullDocElementById('tooltipChart');
   sqLineChartGenerator(noAssets, nCurrData, assetNames2Array, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip, isDrawCricles);
 
   // Xlu Timer Chart
@@ -217,7 +213,7 @@ function uberTaaTbls(json: any) {
   const yLabelXlu: string = 'RSI';
   const yScaleTickFormatXlu: string = '';
   d3.selectAll('#xluChrt > *').remove();
-  const lineChrtDivXlu = getDocElementById('xluChrt');
+  const lineChrtDivXlu = getNonNullDocElementById('xluChrt');
   sqLineChartGenerator(noAssetsXlu, nCurrData, assetNames2ArrayXlu, rsiChartMtx, xLabelXlu, yLabelXlu, yScaleTickFormatXlu, lineChrtDivXlu, lineChrtTooltip, isDrawCricles);
 
   // Spx Timer Chart
@@ -227,12 +223,12 @@ function uberTaaTbls(json: any) {
   const yLabelSpx: string = 'Index Value';
   const yScaleTickFormatSpx: string = '';
   d3.selectAll('#spyChrt > *').remove();
-  const lineChrtDivSpx = getDocElementById('spyChrt');
+  const lineChrtDivSpx = getNonNullDocElementById('spyChrt');
   sqLineChartGenerator(noAssetsSpx, nCurrData, assetNames2ArraySpx, spxChartMtx, xLabelSpx, yLabelSpx, yScaleTickFormatSpx, lineChrtDivSpx, lineChrtTooltip, isDrawCricles);
 }
 
-getDocElementById('gameChanger').onclick = onClickGameChanger;
-getDocElementById('globalAssets').onclick = onClickGlobalAssets;
+getNonNullDocElementById('gameChanger').onclick = onClickGameChanger;
+getNonNullDocElementById('globalAssets').onclick = onClickGlobalAssets;
 
 document.addEventListener('DOMContentLoaded', (event) => {
   console.log('DOMContentLoaded(). All JS were downloaded. DOM fully loaded and parsed.');

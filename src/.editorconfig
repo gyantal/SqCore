@@ -14,10 +14,6 @@ charset = utf-8
 trim_trailing_whitespace = false
 insert_final_newline = false
 
-[*.{html,css,scss,ts,js}]
-indent_size = 2
-
-
 # Temporarily disable code analysis for the bulk of the files. How?
 # Option 1: Emulate that it is generated code for All (*), files or *.cs files. (Compiler (dotnet build) CS warnings remains)
 # treating all *.cs or all (*) files as generated code disables codecheck totally under this folder.
@@ -38,6 +34,11 @@ indent_size = 2
 # dotnet_diagnostic.SA1025.severity = none
 # dotnet_diagnostic.CS0219.severity = none
 
+dotnet_diagnostic.IDE0180.severity = none # disable warning: 'Use tuple to swap values'. The tuple version is less efficient, because it allocates additional memory as it stores two items on the stack rather than 1 temp variable. https://stackoverflow.com/questions/48550397/is-a-c-sharp-7-tuple-based-variable-swap-thread-safe
 dotnet_diagnostic.CS8669.severity = none  # TODO: This is cryptic. Investigate later: "The annotation for nullable reference types should only be used in code within a '#nullable' annotations context."
 # reason: https://stackoverflow.com/questions/55492214/the-annotation-for-nullable-reference-types-should-only-be-used-in-code-within-a  
 # "Roslyn apparently always ignores the project-level <Nullable>enable</Nullable> setting for generated code.". " => "have #nullable enable added to them explicitly"
+
+
+[*.{html,css,scss,ts,js}] # everything under this line to the end of the file refers only to the specified file extensions
+indent_size = 2
