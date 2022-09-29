@@ -1,16 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using FinTechCommon;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using SqCommon;
-using System.Net.Http;
-using System.IO;
 using System.Text;
 using System.Globalization;
-using System.Diagnostics;
 using MathCommon.MathNet;
 
 namespace SqCoreWeb.Controllers;
@@ -20,53 +15,10 @@ namespace SqCoreWeb.Controllers;
 [ResponseCache(CacheProfileName = "NoCache")]
 public class StrategySinController : ControllerBase
 {
-    public class ExampleMessage
-    {
-        public string MsgType { get; set; } = string.Empty;
-
-        public string StringData { get; set; } = string.Empty;
-        public DateTime DateOrTime { get; set; }
-
-        public int IntData { get; set; }
-
-        public int IntDataFunction => 32 + (int)(IntData / 0.5556);
-    }
-
-    public StrategySinController()
-    {
-    }
-
     public class DailyData
     {
         public DateTime Date { get; set; }
         public double AdjClosePrice { get; set; }
-    }
-
-    // [HttpGet] // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
-    public IEnumerable<ExampleMessage> Get_old()
-    {
-        Thread.Sleep(5000);     // intentional delay to simulate a longer process to crunch data. This can be removed.
-
-        var userEmailClaim = HttpContext?.User?.Claims?.FirstOrDefault(p => p.Type == @"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
-        string email = userEmailClaim?.Value  ?? "Unknown email";
-
-        var firstMsgToSend = new ExampleMessage
-        {
-            MsgType = "AdminMsg",
-            StringData = $"Cookies says your email is '{email}'.",
-            DateOrTime = DateTime.Now,
-            IntData = 0,                
-        };
-
-        string[] RandomStringDataToSend = new[]  { "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching" };
-        var rng = new Random();
-        return (new ExampleMessage[] { firstMsgToSend }.Concat(Enumerable.Range(1, 5).Select(index => new ExampleMessage
-        {
-            MsgType = "Msg-type",
-            StringData = RandomStringDataToSend[rng.Next(RandomStringDataToSend.Length)],
-            DateOrTime = DateTime.Now.AddDays(index),
-            IntData = rng.Next(-20, 55)                
-        }))).ToArray();
     }
 
     [HttpGet] // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
@@ -110,7 +62,7 @@ public class StrategySinController : ControllerBase
         string liveDateString = "Request time (UTC): " + liveDate;
 
         // Last data time (UTC)
-        string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay<=new DateTime(2000,1,1,16,15,0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on "+ quotesData[0][^1].Date.ToString("yyyy-MM-dd");
+        string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000,1,1,16,15,0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on " + quotesData[0][^1].Date.ToString("yyyy-MM-dd");
         string lastDataTimeString = "Last data time (UTC): "+lastDataTime;
 
         DateTime nextWeekday = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000, 1, 1, 16, 15, 0).TimeOfDay) ? liveDateTime.Date.AddDays(1) : quotesData[0][^1].Date.AddDays(1);
@@ -141,9 +93,9 @@ public class StrategySinController : ControllerBase
         double[] nextPosValue = new double[allAssetList.Length + 1];
         for (int jCols = 0; jCols < nextPosValue.Length - 2; jCols++)
         {
-            nextPosValue[jCols] = (gSheetResToFinCalc.Item4[jCols])?currPV * taaWeightResultsTuple.Item2[taaWeightResultsTuple.Item2.GetLength(0) - 1, jCols]*leverage:0;
+            nextPosValue[jCols] = (gSheetResToFinCalc.Item4[jCols]) ? currPV * taaWeightResultsTuple.Item2[taaWeightResultsTuple.Item2.GetLength(0) - 1, jCols] * leverage : 0;
         }
-        nextPosValue[^2] = Math.Min(Math.Max(0, currPV - nextPosValue.Take(nextPosValue.Length - 2).ToArray().Sum()/leverage),currPV*maxBondPerc)*leverage;
+        nextPosValue[^2] = Math.Min(Math.Max(0, currPV - nextPosValue.Take(nextPosValue.Length - 2).ToArray().Sum() / leverage), currPV * maxBondPerc) * leverage;
         nextPosValue[^1] = currPV - nextPosValue.Take(nextPosValue.Length - 1).ToArray().Sum();
 
         double currBondPerc = currPosValue[^2] / currPV;
@@ -176,8 +128,8 @@ public class StrategySinController : ControllerBase
         int bomPV = prevPV[2] + prevPV[3];
         double ytdProfDoll = currPV - boyPV;
         double mtdProfDoll = currPV - bomPV;
-        double ytdProfPerc = currPV/boyPV-1;
-        double mtdProfPerc = currPV/bomPV-1;
+        double ytdProfPerc = currPV / boyPV - 1;
+        double mtdProfPerc = currPV / bomPV - 1;
 
         double[] prevDayPosValue = new double[allAssetList.Length + 1];
         for (int jCols = 0; jCols < prevDayPosValue.Length - 2; jCols++)
@@ -189,7 +141,7 @@ public class StrategySinController : ControllerBase
         double prevDayPV = Math.Round(prevDayPosValue.Sum());
 
         double dailyProfDoll = currPV - prevDayPV;
-        double dailyProfPerc = currPV/prevDayPV - 1;
+        double dailyProfPerc = currPV / prevDayPV - 1;
 
         string dailyProfDollString;
         string dailyProfPercString;
@@ -213,8 +165,8 @@ public class StrategySinController : ControllerBase
         {
             dailyProfString = "notDaily";
             dailyProfSign = "N/A";
-            dailyProfDollString = "";
-            dailyProfPercString = "";
+            dailyProfDollString = string.Empty;
+            dailyProfPercString = string.Empty;
         }
 
         string monthlyProfDollString;
@@ -239,8 +191,8 @@ public class StrategySinController : ControllerBase
         {
             monthlyProfString = "notMonthly";
             monthlyProfSign = "N/A";
-            monthlyProfDollString = "";
-            monthlyProfPercString = "";
+            monthlyProfDollString = string.Empty;
+            monthlyProfPercString = string.Empty;
         }
 
         string yearlyProfDollString;
@@ -266,23 +218,23 @@ public class StrategySinController : ControllerBase
         {
             yearlyProfString = "notYearly";
             yearlyProfSign = "N/A";
-            yearlyProfDollString = "";
-            yearlyProfPercString = "";
+            yearlyProfDollString = string.Empty;
+            yearlyProfPercString = string.Empty;
         }
 
         // AssetPrice Changes in last x days
 
         string[,] assetChangesMtx = new string[allAssetList.Length, pastPerfDays.Length];
-        for (int iRows = 0; iRows < assetChangesMtx.GetLength(0)-1; iRows++)
+        for (int iRows = 0; iRows < assetChangesMtx.GetLength(0) - 1; iRows++)
         {
             for (int jCols = 0; jCols < assetChangesMtx.GetLength(1); jCols++)
             {
-                assetChangesMtx[iRows, jCols] = Math.Round((quotesData[iRows][quotesData[0].Count-1].AdjClosePrice / quotesData[iRows][quotesData[0].Count - 1-pastPerfDays[jCols]].AdjClosePrice - 1) * 100.0, 2).ToString() + "%";
+                assetChangesMtx[iRows, jCols] = Math.Round((quotesData[iRows][quotesData[0].Count - 1].AdjClosePrice / quotesData[iRows][quotesData[0].Count - 1 - pastPerfDays[jCols]].AdjClosePrice - 1) * 100.0, 2).ToString() + "%";
             }
         }
         for (int jCols = 0; jCols < assetChangesMtx.GetLength(1); jCols++)
         {
-            assetChangesMtx[assetChangesMtx.GetLength(0)-1, jCols] = Math.Round((cashEquivalentQuotesData[^1].AdjClosePrice / cashEquivalentQuotesData[cashEquivalentQuotesData.Count - 1 - pastPerfDays[jCols]].AdjClosePrice - 1) * 100.0, 2).ToString() + "%";
+            assetChangesMtx[assetChangesMtx.GetLength(0) - 1, jCols] = Math.Round((cashEquivalentQuotesData[^1].AdjClosePrice / cashEquivalentQuotesData[cashEquivalentQuotesData.Count - 1 - pastPerfDays[jCols]].AdjClosePrice - 1) * 100.0, 2).ToString() + "%";
         }
 
             // Asset scores and weights on last day
@@ -291,10 +243,10 @@ public class StrategySinController : ControllerBase
         for (int iRows = 0; iRows < assetScoresMtx.GetLength(0) - 1; iRows++)
         {
             assetScoresMtx[iRows, 0] = Math.Round(taaWeightResultsTuple.Item3[iRows] * 100.0, 2).ToString() + "%";
-            assetScoresMtx[iRows, 1] = Math.Round(taaWeightResultsTuple.Item2[taaWeightResultsTuple.Item2.GetLength(0)-1,iRows] * 100.0, 2).ToString() + "%";
+            assetScoresMtx[iRows, 1] = Math.Round(taaWeightResultsTuple.Item2[taaWeightResultsTuple.Item2.GetLength(0) - 1, iRows] * 100.0, 2).ToString() + "%";
         }
         assetScoresMtx[assetScoresMtx.GetLength(0) - 1, 0] = "---";
-        assetScoresMtx[assetScoresMtx.GetLength(0) - 1, 1] = Math.Round(nextBondPerc*100, 2).ToString() +"%";
+        assetScoresMtx[assetScoresMtx.GetLength(0) - 1, 1] = Math.Round(nextBondPerc*100, 2).ToString() + "%";
 
         // Creating input string for JavaScript.
         StringBuilder sb = new("{" + Environment.NewLine);
@@ -318,7 +270,7 @@ public class StrategySinController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""yearlyProfAbs"": """ + yearlyProfDollString);
         sb.Append(@"""," + Environment.NewLine + @"""yearlyProfPerc"": """ + yearlyProfPercString);
         sb.Append(@"""," + Environment.NewLine + @"""yearlyProfString"": """ + yearlyProfString);
-        sb.Append(@"""," + Environment.NewLine + @"""currBondPerc"": """ + Math.Round(currBondPerc*100,2).ToString()+"%");
+        sb.Append(@"""," + Environment.NewLine + @"""currBondPerc"": """ + Math.Round(currBondPerc * 100, 2).ToString() + "%");
         sb.Append(@"""," + Environment.NewLine + @"""nextBondPerc"": """ + Math.Round(nextBondPerc * 100, 2).ToString() + "%");
         sb.Append(@"""," + Environment.NewLine + @"""leverage"": """ + Math.Round(leverage * 100, 2).ToString() + "%");
         sb.Append(@"""," + Environment.NewLine + @"""maxBondPerc"": """ + Math.Round(maxBondPerc * 100, 2).ToString() + "%");
@@ -492,9 +444,6 @@ public class StrategySinController : ControllerBase
             return null;
         Utils.Logger.Info("SINGoogleApiGsheet() END");
         return valuesFromGSheetStr;
-        
-        
-        // return Content($"<HTML><body>SINGoogleApiGsheet() finished OK. <br> Received data: '{valuesFromGSheetStr}'</body></HTML>", "text/html");
     }
 
     public static (List<List<DailyData>>, List<DailyData>) GetSinStockHistData(string[] p_allAssetList)
@@ -606,7 +555,7 @@ public class StrategySinController : ControllerBase
                                                                                 // If assetScores[i]=0, assetWeights[i] becomes 0, so we don't use its weight when p_isCashAllocatedForNonActives => TLT will not fill its Cash-place; NO TLT will be invested (if this is the only stock with 0 score), the portfolio will be 100% in other stocks. We are more Brave.
                                                                                 // However, if assetScores[i]<0 (negative), assetWeights[i] becoumes a proper negative number. It will be used in TotalWeight calculation => TLT will fill its's space. (if this is the only stock with negative score), TLT will be invested in its place; consequently the portfolio will NOT be 100% in other stocks. We are more defensive.
                 totalWeight += Math.Abs(assetWeights[iAsset]);      // Sum up the absolute values of the “Score/Vol” quotients. TotalWeight contains even the non-active assets so have have some cash.
-                assetWeights2[iAsset] = (assetWeights[iAsset]>=0) ? assetWeights[iAsset] : 0.0;
+                assetWeights2[iAsset] = (assetWeights[iAsset] >= 0) ? assetWeights[iAsset] : 0.0;
 
             }
             for (int iAsset = 0; iAsset < nAssets; iAsset++)
@@ -620,10 +569,10 @@ public class StrategySinController : ControllerBase
         double[] lastDayScores = new double[nAssets];
         for (int iAsset = 0; iAsset < nAssets; iAsset++)
         {
-            lastDayScores[iAsset] = dailyAssetScores[dailyAssetScores.GetLength(0) - 1,iAsset]; ;
+            lastDayScores[iAsset] = dailyAssetScores[dailyAssetScores.GetLength(0) - 1, iAsset]; ;
         }
 
-        IEnumerable<DateTime> taaWeightDateVec = p_taaWeightsData[0].GetRange(p_taaWeightsData[0].Count-nDaysSimulated ,nDaysSimulated).Select(r => r.Date);
+        IEnumerable<DateTime> taaWeightDateVec = p_taaWeightsData[0].GetRange(p_taaWeightsData[0].Count - nDaysSimulated , nDaysSimulated).Select(r => r.Date);
         DateTime[] taaWeightDateArray = taaWeightDateVec.ToArray();
         DateTime startMatlabDate = DateTime.ParseExact("1900/01/01", "yyyy/MM/dd", CultureInfo.InvariantCulture);
 

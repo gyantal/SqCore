@@ -1,16 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using SqCommon;
 using FinTechCommon;
 using System.Net.Http;
 using System.Text;
-using System.IO;
 using System.Globalization;
-using System.Diagnostics;
 
 namespace SqCoreWeb.Controllers;
 
@@ -19,17 +15,6 @@ namespace SqCoreWeb.Controllers;
 [ResponseCache(CacheProfileName = "NoCache")]
 public class StrategyRenewedUberController : ControllerBase
 {
-    public class ExampleMessage
-    {
-        public string MsgType { get; set; } = string.Empty;
-
-        public string StringData { get; set; } = string.Empty;
-        public DateTime DateOrTime { get; set; }
-
-        public int IntData { get; set; }
-
-        public int IntDataFunction => 32 + (int)(IntData / 0.5556);
-    }
     public class DailyData
     {
         public DateTime Date { get; set; }
@@ -66,37 +51,6 @@ public class StrategyRenewedUberController : ControllerBase
         }
     }
 
-    public StrategyRenewedUberController()
-    {
-    }
-
-    // [HttpGet] // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
-    public IEnumerable<ExampleMessage> Get_old()
-    {
-        Thread.Sleep(1000);     // intentional delay to simulate a longer process to crunch data. This can be removed.
-
-        var userEmailClaim = HttpContext?.User?.Claims?.FirstOrDefault(p => p.Type == @"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
-        string email = userEmailClaim?.Value  ?? "Unknown email";
-
-        var firstMsgToSend = new ExampleMessage
-        {
-            MsgType = "AdminMsg",
-            StringData = $"Cookies says your email is '{email}'.",
-            DateOrTime = DateTime.Now,
-            IntData = 0,                
-        };
-
-        string[] RandomStringDataToSend = new[]  { "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching" };
-        var rng = new Random();
-        return (new ExampleMessage[] { firstMsgToSend }.Concat(Enumerable.Range(1, 5).Select(index => new ExampleMessage
-        {
-            MsgType = "Msg-type",
-            StringData = RandomStringDataToSend[rng.Next(RandomStringDataToSend.Length)],
-            DateOrTime = DateTime.Now.AddDays(index),
-            IntData = rng.Next(-20, 55)                
-        }))).ToArray();
-    }
-
     [HttpGet]   // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
     public string Get()
     {
@@ -108,7 +62,7 @@ public class StrategyRenewedUberController : ControllerBase
         string gchGDocRef = "https://docs.google.com/document/d/1q2nSfQUos93q4-dd0ILjTrlvtiQKnwlsg3zN1_0_lyI/edit?usp=sharing";
 
         string? googleSheetStr = RenewedUberGoogleApiGsheet(gchGSheetRefPos);
-        string[] allAssetList = GetTickersFromGSheet(googleSheetStr) ?? new string[] {" "};
+        string[] allAssetList = GetTickersFromGSheet(googleSheetStr) ?? Array.Empty<string>();
         // string[] allAssetList = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
         // string[] allAssetListVIX = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };            // // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
         // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
@@ -452,12 +406,12 @@ public class StrategyRenewedUberController : ControllerBase
         currPV = Math.Round(currPosValue.Sum());
         prevPV = Math.Round(prevPosValue.Sum());
         double dailyProf = currPV - prevPV;
-        string dailyProfValString = "";
+        string dailyProfValString = string.Empty;
         
 
-        string dailyProfString = "";
-        string dailyProfSign = "";
-        if (currPosDateString == liveDateTime.ToString("yyyy-MM-dd") && currPosDateString== quotesData[0][^1].Date.ToString("yyyy-MM-dd") && dailyProf >= 0)
+        string dailyProfString = string.Empty;
+        string dailyProfSign = string.Empty;
+        if (currPosDateString == liveDateTime.ToString("yyyy-MM-dd") && currPosDateString == quotesData[0][^1].Date.ToString("yyyy-MM-dd") && dailyProf >= 0)
         {
             dailyProfString = "posDaily";
             dailyProfSign = "+$";
@@ -474,7 +428,7 @@ public class StrategyRenewedUberController : ControllerBase
         {
             dailyProfString = "notDaily";
             dailyProfSign = "N/A";
-            dailyProfValString = "";
+            dailyProfValString = string.Empty;
         }
             
 
@@ -596,7 +550,7 @@ public class StrategyRenewedUberController : ControllerBase
 
         //AssetPrice Changes in last 20 days to chart
         int assetChartLength = 20;
-        string[,] assetChangesMtx = new string[assetChartLength + 1, allAssetList.Length+1];
+        string[,] assetChangesMtx = new string[assetChartLength + 1, allAssetList.Length + 1];
         for (int iRows = 0; iRows < assetChangesMtx.GetLength(0); iRows++)
         {
             assetChangesMtx[iRows, 0] = quotesData[0][quotesData[0].Count - 1 - assetChartLength + iRows].Date.ToString("yyyy-MM-dd");

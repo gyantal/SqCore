@@ -1,15 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using SqCommon;
 using FinTechCommon;
 using System.Text;
 using System.Globalization;
 using MathCommon.MathNet;
-using System.IO;
 
 namespace SqCoreWeb.Controllers;
 
@@ -18,22 +15,6 @@ namespace SqCoreWeb.Controllers;
 [ResponseCache(CacheProfileName = "NoCache")]
 public class VolatilityDragVisualizerController : ControllerBase
 {
-    public class ExampleMessage
-    {
-        public string MsgType { get; set; } = string.Empty;
-
-        public string StringData { get; set; } = string.Empty;
-        public DateTime DateOrTime { get; set; }
-
-        public int IntData { get; set; }
-
-        public int IntDataFunction => 32 + (int)(IntData / 0.5556);
-    }
-
-    public VolatilityDragVisualizerController()
-    {
-    }
-
     public class DailyData
     {
         public DateTime Date { get; set; }
@@ -161,16 +142,16 @@ public class VolatilityDragVisualizerController : ControllerBase
 
         //Collecting and splitting price data got from SQL Server
         IList<List<DailyData>> quotesData = GetVolatilityStockHistData(allAssetList);
-        IList<List<DailyData>> quotesData1= new List<List<DailyData>>(quotesData);
-        quotesData1.RemoveAt(allAssetList.Length-1);
+        IList<List<DailyData>> quotesData1 = new List<List<DailyData>>(quotesData);
+        quotesData1.RemoveAt(allAssetList.Length - 1);
         
-        List<DailyData> quotesData2 = quotesData[allAssetList.Length-1];
+        List<DailyData> quotesData2 = quotesData[allAssetList.Length - 1];
 
         int noAssets = allAssetList.Length - 1;
         int noBtDays = quotesData1[0].Count;
         DateTime[] quotesDateVec = new DateTime[noBtDays];
 
-        for (int iRows=0; iRows<quotesDateVec.Length;iRows++)
+        for (int iRows = 0; iRows<quotesDateVec.Length; iRows++)
         {
             quotesDateVec[iRows] = quotesData1[0][iRows].Date;
         }
@@ -226,7 +207,7 @@ public class VolatilityDragVisualizerController : ControllerBase
                 {
                     assPriceSubList.Add(quotesData1[iAsset][jRows - shiftDays].AdjClosePrice);
                     jRows++;
-                    if (jRows >= quotesData1[iAsset].Count+shiftDays)
+                    if (jRows >= quotesData1[iAsset].Count + shiftDays)
                     {
                         break;
                     }
@@ -247,13 +228,13 @@ public class VolatilityDragVisualizerController : ControllerBase
             quotesPrices.Add(assPriceSubList);
         }
 
-        double[,] histRet = new double[retLB.Length,noAssets];
+        double[,] histRet = new double[retLB.Length, noAssets];
 
         for (int iAsset = 0; iAsset < noAssets; iAsset++)
         {
             for (int jRows = 0; jRows < retLB.Length; jRows++)
             {
-                histRet[jRows,iAsset]=quotesPrices[iAsset][quotesPrices[0].Count-1] / quotesPrices[iAsset][quotesPrices[0].Count - 1-retLB[jRows]] - 1;
+                histRet[jRows, iAsset] = quotesPrices[iAsset][quotesPrices[0].Count - 1] / quotesPrices[iAsset][quotesPrices[0].Count - 1 - retLB[jRows]] - 1;
             }
         }
 
@@ -267,7 +248,7 @@ public class VolatilityDragVisualizerController : ControllerBase
             {
                 for (int jRows = 0; jRows < retLB[kLen]; jRows++)
                 {
-                    histRet2[kShift+jRows, iAsset] = quotesPrices[iAsset][quotesPrices[0].Count - retLB[kLen] + jRows] / quotesPrices[iAsset][quotesPrices[0].Count - 1 - retLB[kLen]] - 1;
+                    histRet2[kShift + jRows, iAsset] = quotesPrices[iAsset][quotesPrices[0].Count - retLB[kLen] + jRows] / quotesPrices[iAsset][quotesPrices[0].Count - 1 - retLB[kLen]] - 1;
                 }
             }
             kShift += retLB[kLen];
@@ -281,7 +262,7 @@ public class VolatilityDragVisualizerController : ControllerBase
             assSubList.Add(0);
             for (int jRows = 1; jRows < noBtDays; jRows++)
             {
-                assSubList.Add(quotesPrices[iAsset][jRows]/quotesPrices[iAsset][jRows-1]-1);
+                assSubList.Add(quotesPrices[iAsset][jRows] / quotesPrices[iAsset][jRows - 1] - 1);
             }
             quotesRets.Add(assSubList);
         }
@@ -302,15 +283,15 @@ public class VolatilityDragVisualizerController : ControllerBase
         for (int iAsset = 0; iAsset < noAssets; iAsset++)
         {
             List<double> assVolDragSubList = new();
-            for (int jRows = 0; jRows < volLBPeriod-1; jRows++)
+            for (int jRows = 0; jRows < volLBPeriod - 1; jRows++)
             {
                 assVolDragSubList.Add(0);
-                vixLevel[jRows] = Math.Round(ArrayStatistics.Mean(vixQuotes.GetRange(0,jRows).ToArray()),3);
+                vixLevel[jRows] = Math.Round(ArrayStatistics.Mean(vixQuotes.GetRange(0, jRows).ToArray()), 3);
             }
-            for (int jRows = volLBPeriod-1; jRows < noBtDays; jRows++)
+            for (int jRows = volLBPeriod - 1; jRows < noBtDays; jRows++)
             {
-                assVolDragSubList.Add(ArrayStatistics.Variance(quotesRets[iAsset].GetRange(jRows - volLBPeriod + 1, volLBPeriod).ToArray())/2*21);
-                vixLevel[jRows] = Math.Round(ArrayStatistics.Mean(vixQuotes.GetRange(jRows - volLBPeriod + 1, volLBPeriod).ToArray()),3);
+                assVolDragSubList.Add(ArrayStatistics.Variance(quotesRets[iAsset].GetRange(jRows - volLBPeriod + 1, volLBPeriod).ToArray()) / 2 * 21);
+                vixLevel[jRows] = Math.Round(ArrayStatistics.Mean(vixQuotes.GetRange(jRows - volLBPeriod + 1, volLBPeriod).ToArray()), 3);
             }
             assVolDrags.Add(assVolDragSubList);
         }
@@ -337,11 +318,11 @@ public class VolatilityDragVisualizerController : ControllerBase
         {
             double[] subSumVec = new double[noAssets];
             double subSumVix = 0;
-            while (kElem<noBtDays && dateYearsVec[kElem]==dateYearsDist[iRows])
+            while (kElem<noBtDays && dateYearsVec[kElem] == dateYearsDist[iRows])
             {
                 for (int jAssets = 0; jAssets < noAssets; jAssets++)
                 {
-                    subSumVec[jAssets] = subSumVec[jAssets]+assVolDrags[jAssets][kElem];
+                    subSumVec[jAssets] = subSumVec[jAssets] + assVolDrags[jAssets][kElem];
                 }
                 subSumVix += vixLevel[kElem];
                 kElem++;
@@ -349,7 +330,7 @@ public class VolatilityDragVisualizerController : ControllerBase
             }
             for (int jAssets = 0; jAssets < noAssets; jAssets++)
             {
-                dateYearsAvgs[iRows, jAssets] = subSumVec[jAssets]/dateYearsCount[iRows];
+                dateYearsAvgs[iRows, jAssets] = subSumVec[jAssets] / dateYearsCount[iRows];
             }
             dateYearsVixAvgs[iRows] = subSumVix / dateYearsCount[iRows];
         }
@@ -393,7 +374,7 @@ public class VolatilityDragVisualizerController : ControllerBase
                     numEl += 1;
                 }
 
-            volDragsAvgsTotal[jAssets] = subSum/numEl;
+            volDragsAvgsTotal[jAssets] = subSum / numEl;
         }
 
         //Request time (UTC)
@@ -403,8 +384,8 @@ public class VolatilityDragVisualizerController : ControllerBase
         string liveDateString = "Request time (UTC): " + liveDate;
 
         //Last data time (UTC)
-        string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay<=new DateTime(2000,1,1,16,15,0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on "+ quotesData[0][^1].Date.ToString("yyyy-MM-dd");
-        string lastDataTimeString = "Last data time (UTC): "+lastDataTime;
+        string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000,1,1,16,15,0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on " + quotesData[0][^1].Date.ToString("yyyy-MM-dd");
+        string lastDataTimeString = "Last data time (UTC): " + lastDataTime;
 
 
 
@@ -469,9 +450,9 @@ public class VolatilityDragVisualizerController : ControllerBase
             sb.Append("");
             for (int j = 0; j < assVolDrags.Count - 1; j++)
             {
-                sb.Append(Math.Round(assVolDrags[j][i]*100,2).ToString() + "%, ");
+                sb.Append(Math.Round(assVolDrags[j][i] * 100, 2).ToString() + "%, ");
             }
-            sb.Append(Math.Round(assVolDrags[assVolDrags.Count - 1][i]*100,2).ToString() + "%");
+            sb.Append(Math.Round(assVolDrags[assVolDrags.Count - 1][i] * 100, 2).ToString() + "%");
             if (i < assVolDrags[0].Count - 1)
             {
                 sb.Append("ß ");
@@ -480,8 +461,8 @@ public class VolatilityDragVisualizerController : ControllerBase
 
         sb.Append(@"""," + Environment.NewLine + @"""dailyVIXMas"": """);
         for (int i = 0; i < vixLevel.Length - 1; i++)
-            sb.Append(Math.Round(vixLevel[i],2).ToString() + ", ");
-        sb.Append(Math.Round(vixLevel[^1],2));
+            sb.Append(Math.Round(vixLevel[i], 2).ToString() + ", ");
+        sb.Append(Math.Round(vixLevel[^1], 2));
 
         sb.Append(@"""," + Environment.NewLine + @"""yearList"": """);
         for (int i = 0; i < dateYearsDist.Length - 1; i++)
@@ -501,8 +482,8 @@ public class VolatilityDragVisualizerController : ControllerBase
             {
                 sb.Append(Math.Round(dateYearsAvgs[i,j] * 100, 2).ToString() + "%, ");
             }
-            sb.Append(Math.Round(dateYearsAvgs[i,dateYearsAvgs.GetLength(1)-1] * 100, 2).ToString() + "%");
-            if (i < dateYearsAvgs.GetLength(0)-1)
+            sb.Append(Math.Round(dateYearsAvgs[i,dateYearsAvgs.GetLength(1) - 1] * 100, 2).ToString() + "%");
+            if (i < dateYearsAvgs.GetLength(0) - 1)
             {
                 sb.Append("ß ");
             }
@@ -545,12 +526,12 @@ public class VolatilityDragVisualizerController : ControllerBase
             sb.Append(dateYearsMonthsCount[i].ToString() + ", ");
         sb.Append(dateYearsMonthsCount[^1]);
 
-        sb.Append(@"""," + Environment.NewLine + @"""vixAvgTotal"": """ + Math.Round(vixAvgTotal,2).ToString());
+        sb.Append(@"""," + Environment.NewLine + @"""vixAvgTotal"": """ + Math.Round(vixAvgTotal, 2).ToString());
 
         sb.Append(@"""," + Environment.NewLine + @"""volDragsAvgsTotalVec"": """);
         for (int i = 0; i < volDragsAvgsTotal.Length - 1; i++)
-            sb.Append(Math.Round(volDragsAvgsTotal[i]*100,2).ToString() + "%, ");
-        sb.Append(Math.Round(volDragsAvgsTotal[^1]*100,2).ToString() + "%");
+            sb.Append(Math.Round(volDragsAvgsTotal[i] * 100, 2).ToString() + "%, ");
+        sb.Append(Math.Round(volDragsAvgsTotal[^1] * 100, 2).ToString() + "%");
 
         sb.Append(@"""," + Environment.NewLine + @"""histRetMtx"": """);
         for (int i = 0; i < histRet.GetLength(0); i++)
@@ -584,9 +565,6 @@ public class VolatilityDragVisualizerController : ControllerBase
 
         sb.AppendLine(@"""" + Environment.NewLine + @"}");
 
-        // var asdfa = sb.ToString(); //testing created string to JS
-
         return sb.ToString();
-        
     }
 }

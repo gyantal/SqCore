@@ -119,7 +119,9 @@ class UiSnapTable {
   public initialMarginReq = NaN;
   public maintMarginReq = NaN;
   public sumPlTodVal = 0;
+  public visibleSumPlTodVal = 0;
   public sumPlTodPct = 0;
+  public visibleSumPlTodPct = 0;
   public longStockValue = 0;
   public shortStockValue = 0;
   public visibleLongStockValue = 0;
@@ -446,6 +448,7 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.numOfPoss = brAccSnap.poss.length;
     uiSnapTable.poss.length = 0;
     uiSnapTable.sumPlTodVal = 0;
+    uiSnapTable.visibleSumPlTodVal = 0;
     uiSnapTable.longStockValue = 0;
     uiSnapTable.shortStockValue = 0;
     uiSnapTable.visibleLongStockValue = 0;
@@ -456,7 +459,7 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.visibleShortOptionDeltaAdjValue = 0;
     uiSnapTable.totalMaxRiskedN = 0;
     uiSnapTable.deltaAdjTotalMarketOrientation = 0;
-    uiSnapTable.visibleLongOptionDeltaAdjValue = 0;
+    uiSnapTable.visibleDeltaAdjTotalMarketOrientation = 0;
     uiSnapTable.betaDeltaAdjTotalMarketOrientation = 0;
     const smallMktValThreshold = uiSnapTable.priorCloseNetLiquidation * 0.01; // 1% of NAV. For a 400K NAV, it is 4K. For a 8M NAV it is 80K.
 
@@ -560,10 +563,13 @@ export class BrAccViewerComponent implements OnInit {
           else if (uiPosItem.dltAdjDelivVal < 0) // Put options has negative dltAdjDelivVal. NaN or 0.0 are not added to any of them.
             uiSnapTable.visibleShortOptionDeltaAdjValue += uiPosItem.dltAdjDelivVal; // long Put or short Call options
         }
+        if (!isNaN(uiPosItem.plTod)) // P&L Today can be NaN if PriorClose of an option is NaN
+          uiSnapTable.visibleSumPlTodVal += uiPosItem.plTod;
       }
     }
     uiSnapTable.visibleDeltaAdjTotalMarketOrientation = Math.round(uiSnapTable.visibleLongStockValue + uiSnapTable.visibleShortStockValue + uiSnapTable.visibleLongOptionDeltaAdjValue + uiSnapTable.visibleShortOptionDeltaAdjValue);
     uiSnapTable.sumPlTodPct = uiSnapTable.sumPlTodVal / uiSnapTable.priorCloseNetLiquidation; // profit & Loss total percent change
+    uiSnapTable.visibleSumPlTodPct = uiSnapTable.visibleSumPlTodVal / uiSnapTable.priorCloseNetLiquidation; // visible - profit & Loss total percent change
     uiSnapTable.totalMaxRiskedLeverage = (uiSnapTable.totalMaxRiskedN / uiSnapTable.netLiquidation);
     uiSnapTable.betaDeltaAdjTotalMarketOrientationLeverage = (uiSnapTable.betaDeltaAdjTotalMarketOrientation / uiSnapTable.netLiquidation);
     uiSnapTable.visibleNumOfPoss = uiSnapTable.poss.length;

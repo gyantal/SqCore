@@ -95,6 +95,21 @@ MarketBar
           <!-- <div>LC+SP Optn DeltaAdj DelVal: <span class="moreDetailsSum">{{uiSnapTable.visibleLongOptionDeltaAdjValue | number :'1.0-0'}}</span></div>
           <div>LP+SC Optn DeltaAdj DelVal: <span class="moreDetailsSum">{{uiSnapTable.visibleShortOptionDeltaAdjValue | number :'1.0-0'}}</span></div> -->
           <div>Delta Adjusted Bullish/Bearish<br>Market Orientation: <span class="moreDetailsSum">{{uiSnapTable.visibleDeltaAdjTotalMarketOrientation | number}}</span></div>
+          <div class="tooltipGeneral plSum">P&L Today :
+            <span [ngClass]="{
+              'mktBarPositivePerf' : uiSnapTable.sumPlTodVal > 0,
+              'mktbarNegativePerf' : uiSnapTable.sumPlTodVal < 0
+              }">{{uiSnapTable.visibleSumPlTodVal | currency:'USD':'symbol':'1.0'}}
+            </span>
+            <span class="notImpInfo" [ngClass]="{
+              'mktBarPositivePerf' : uiSnapTable.sumPlTodPct > 0,
+              'mktbarNegativePerf' : uiSnapTable.sumPlTodPct < 0
+              }">({{uiSnapTable.visibleSumPlTodPct | percent:'1.2'}})
+            </span>
+            <div class="tooltipText">
+              Profit is calculated as <br>a sum of the visible table cells
+            </div>
+          </div>
         </div>
         <div class="moreDetailsPartitions">
           <div>Number Of All Positions: <span class="moreDetailsSum">{{uiSnapTable.numOfPoss}}</span></div>
