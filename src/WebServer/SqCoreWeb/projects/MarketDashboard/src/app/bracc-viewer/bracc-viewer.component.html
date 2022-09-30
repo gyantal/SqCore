@@ -97,13 +97,13 @@ MarketBar
           <div>Delta Adjusted Bullish/Bearish<br>Market Orientation: <span class="moreDetailsSum">{{uiSnapTable.visibleDeltaAdjTotalMarketOrientation | number}}</span></div>
           <div class="tooltipGeneral plSum">P&L Today :
             <span [ngClass]="{
-              'mktBarPositivePerf' : uiSnapTable.sumPlTodVal > 0,
-              'mktbarNegativePerf' : uiSnapTable.sumPlTodVal < 0
+              'mktBarPositivePerf' : uiSnapTable.visibleSumPlTodVal > 0,
+              'mktbarNegativePerf' : uiSnapTable.visibleSumPlTodVal < 0
               }">{{uiSnapTable.visibleSumPlTodVal | currency:'USD':'symbol':'1.0'}}
             </span>
             <span class="notImpInfo" [ngClass]="{
-              'mktBarPositivePerf' : uiSnapTable.sumPlTodPct > 0,
-              'mktbarNegativePerf' : uiSnapTable.sumPlTodPct < 0
+              'mktBarPositivePerf' : uiSnapTable.visibleSumPlTodPct > 0,
+              'mktbarNegativePerf' : uiSnapTable.visibleSumPlTodPct < 0
               }">({{uiSnapTable.visibleSumPlTodPct | percent:'1.2'}})
             </span>
             <div class="tooltipText">
