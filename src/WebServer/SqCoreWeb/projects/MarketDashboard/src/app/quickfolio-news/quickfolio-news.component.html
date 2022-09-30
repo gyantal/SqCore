@@ -29,8 +29,7 @@
   <p style="float:right">Showing {{filteredNewsCount}} news articles from {{totalnewsCount}} downloaded.</p>
 </div>
 <div>
-  <input type="checkbox" class ="filterSelector" id="filterSelector" name="filterSelector" 
-    checked=[filterDuplicateNewsItems] (change)="filterDuplicateNewsItems != filterDuplicateNewsItems" (click) = "filterDuplicateChanged()"/>
+  <input type="checkbox" class="filterSelector" id="filterSelector" name="filterSelector" checked=[filterDuplicateNewsItems] (change)="filterDuplicateNewsItems != filterDuplicateNewsItems" (click)="filterDuplicateChanged()" />
   <label for="filterSelector"> Filter out duplicate news items</label>
 </div>
 
@@ -69,24 +68,24 @@
 
   <div style="width: 490px; height: 602px; float:left; overflow-y: auto;">
     <!-- <div style=" height:602px;"> -->
-      <ul style="margin: 0px;">
-        <div class="newsItemStock inVisible" *ngFor="let news of stockNews">
-          <li (mouseenter)=mouseEnter(news)>
+    <ul style="margin: 0px;">
+      <div class="newsItemStock inVisible" *ngFor="let news of stockNews">
+        <li (mouseenter)=mouseEnter(news)>
           <!-- <span>{{getpublishedString(news.publishDate)}} </span> -->
-            <span>{{news.displayText}} </span>
-            <span class="newsTicker">{{ news.ticker}} </span>
-            <a class="newsHyperlink" [title]="news.summary" [href]="news.linkUrl" target="_blank">
-              {{news.title}}
-            </a>
-            <span class="newsSource" style="display: none;">{{news.source}}</span>
-            <!-- <span class="newsTitle" style="display: none;">{{news.title}}</span> -->
-            <span class="newsSentiment" style="display: none;">{{news.sentiment}}</span>
-            <span class="newsIsDuplicate" style="display: none;">{{news.isDuplicate}}</span>
-            <!-- <span>{{ news.DownloadTime}}</span> -->
-          </li>
-        </div>
-      </ul>
-    </div>
+          <span>{{news.displayText}} </span>
+          <span class="newsTicker">{{ news.ticker}} </span>
+          <a class="newsHyperlink" [title]="news.summary" [href]="news.linkUrl" target="_blank">
+            {{news.title}}
+          </a>
+          <span class="newsSource" style="display: none;">{{news.source}}</span>
+          <!-- <span class="newsTitle" style="display: none;">{{news.title}}</span> -->
+          <span class="newsSentiment" style="display: none;">{{news.sentiment}}</span>
+          <span class="newsIsDuplicate" style="display: none;">{{news.isDuplicate}}</span>
+          <!-- <span>{{ news.DownloadTime}}</span> -->
+        </li>
+      </div>
+    </ul>
+  </div>
   <!-- </div> -->
   <div style="width: 360px; float: right; height: 602px; overflow-y: auto;margin-top: 15px;">
     <span>

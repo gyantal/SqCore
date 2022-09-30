@@ -1,37 +1,38 @@
 <HTML>
 
 <head>
-    <meta charset="utf-8" />
-    <title>Contango Visualizer</title>
-    <link href="https://assets.bwbx.io/s3/fontservice/fonts/PublicoHeadline-Bold-Web-e816328678.woff2" type="font/woff2" rel="preload" as="font" crossorigin>
-    <link href="https://assets.bwbx.io/s3/fontservice/fonts/PublicoText-Bold-Web-3c5266a48e.woff2" type="font/woff2" rel="preload" as="font" crossorigin>
-    <link href="https://assets.bwbx.io/s3/fontservice/fonts/PublicoText-Italic-Web-b04a2274cf.woff2" type="font/woff2" rel="preload" as="font" crossorigin>
-    <link href="https://assets.bwbx.io/s3/fontservice/fonts/PublicoText-Roman-Web-bfa063ee27.woff2" type="font/woff2" rel="preload" as="font" crossorigin>
+  <meta charset="utf-8" />
+  <title>Contango Visualizer</title>
+  <link href="https://assets.bwbx.io/s3/fontservice/fonts/PublicoHeadline-Bold-Web-e816328678.woff2" type="font/woff2" rel="preload" as="font" crossorigin>
+  <link href="https://assets.bwbx.io/s3/fontservice/fonts/PublicoText-Bold-Web-3c5266a48e.woff2" type="font/woff2" rel="preload" as="font" crossorigin>
+  <link href="https://assets.bwbx.io/s3/fontservice/fonts/PublicoText-Italic-Web-b04a2274cf.woff2" type="font/woff2" rel="preload" as="font" crossorigin>
+  <link href="https://assets.bwbx.io/s3/fontservice/fonts/PublicoText-Roman-Web-bfa063ee27.woff2" type="font/woff2" rel="preload" as="font" crossorigin>
 </head>
 
 <body class="gradientBckgrnd">
-    <h1>Contango Visualizer</h1>
-    <div class="center">
-        <button class="button" id="VIXimage"></button>&emsp;&emsp;
-        <button class="button" id="OILimage"></button>&emsp;&emsp;
-        <button class="button" id="GASimage"></button></div>
-    <br>
+  <h1>Contango Visualizer</h1>
+  <div class="center">
+    <button class="button" id="VIXimage"></button>&emsp;&emsp;
+    <button class="button" id="OILimage"></button>&emsp;&emsp;
+    <button class="button" id="GASimage"></button>
+  </div>
+  <br>
 
-    <div id="inviCharts" style="visibility: hidden">
-        <div class="h3" id="idTitleCont"></div>
-        <span id="idCurrTableMtx3"></span>
-        <svg id="chart1"></svg>
-        <div id='tooltip'></div>
-    </div>
+  <div id="inviCharts" style="visibility: hidden">
+    <div class="h3" id="idTitleCont"></div>
+    <span id="idCurrTableMtx3"></span>
+    <svg id="chart1"></svg>
+    <div id='tooltip'></div>
+  </div>
+  <br>
+  <div class="center">
+    <span id="idTimeNow"></span>&emsp;&emsp;
+    <span id="idLiveDataDate"></span> <span id="idLiveDataTime"></span>
     <br>
-    <div class="center">
-        <span id="idTimeNow"></span>&emsp;&emsp;
-        <span id="idLiveDataDate"></span> <span id="idLiveDataTime"></span>
-        <br>
-        <br>
-        <span id="idCurrTableMtx"></span>
-        <p id="myLink"></p>
-    </div>
+    <br>
+    <span id="idCurrTableMtx"></span>
+    <p id="myLink"></p>
+  </div>
 
 </body>
 

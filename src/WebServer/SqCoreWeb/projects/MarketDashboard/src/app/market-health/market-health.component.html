@@ -1,90 +1,89 @@
 <div class="dashboardTopCont">
-    <div class="leftDiv" id="perfTable">
-        <table>
-            <tr class="tableHeader">
-                <th></th>
-                <th *ngFor="let item of uiTableColumns">
-                    <span *ngIf="!item.isNavColumn"><a href="{{item.referenceUrl}}" target="_blank">{{item.ticker}} </a></span>
-                    <span *ngIf="item.isNavColumn" >
-                        <span >
-                            <select class="selectedNavMktHlthCl" [(ngModel)] = "navSelectionSelected" (change)="onNavSelectedChange($event)">
-                                <option *ngFor="let item of navSelection" [value]="item">{{item}}</option>
-                            </select>
-                        </span>
-                        
-                    </span>
-                </th>
-            </tr>
-            <tr class="realtimeRow">
-                <td>Real-time return (from period-end)</td>
-                <td *ngFor="let item of uiTableColumns" class="tooltipCell {{item.rtReturnClass}}">{{item.rtReturnStr}}
-                    <div class="tooltipText">
-                        <div class="bold">{{item.rtTooltipStr1}}</div>
-                        <div>{{item.rtTooltipStr2}}</div>
-                    </div>
-                </td>
-            </tr>
-            <tr class="pastPerfRow">
-                <td class="lookbAndMarketIndSel">
-                    <!-- a Select wrapper DIV is needed, because even in 2020, the <select>::after doesn't work. https://stackoverflow.com/questions/3532649/problem-with-select-and-after-with-css-in-webkit -->
-                    <div class="lookbSelectWrapperCl">
-                        <select class="lookbSelectCl" id="lookBackPeriod" (change)=onLookbackSelectChange()>
-                            <option value="YTD" selected>YTD</option>
-                            <option value="2w">2W</option>
-                            <option value="1m">1M</option>
-                            <option value="6m">6M</option>
-                            <option value="1y">1Y</option>
-                            <option value="2y">2Y</option>
-                            <option value="3y">3Y</option>
-                            <option value="5y">5Y</option>
-                            <option value="10y">10Y</option>
-                            <option value="15y">15Y</option>
-                            <option value="20y">20Y</option>
-                            <option value="D'99">D'99</option>
-                            <option value="Date">Date</option>
-                        </select>
-                    </div>
-                    <div class="lookbDateWrapperCl">
-                        <input class="lookbDateCl" type="date" id="startDate" name="startDate" min="1975-01-02" [ngModel]="lookbackStartETstr" (change)="onLookbackDateChange($event)">
-                    </div>
-                    <div class="lookbDateWrapperCl">
-                        <input class="lookbDateCl" type="date" id="endDate" name="startDate" min="1975-01-02" [ngModel]="lookbackEndETstr" (change)="onLookbackDateChange($event)">
-                    </div>
-                    <div class="lookbSelectWrapperCl">
-                        <select class="lookbSelectCl" id="perfIndicator" (change)=perfIndicatorSelector()>
-                            <option value="TotRet" selected>Return</option>
-                            <option value="TotCagr">CAGR</option>
-                            <option value="CDD">CurrDrawDown</option>
-                            <option value="CDU">CurrDrawUp</option>
-                            <option value="MDD">MaxDrawDown</option>
-                            <option value="MDU">MaxDrawUp</option>
-                            <option value="PerRet">Pe.Return</option>
-                            <option value="PerMDD">Pe.MaxDD</option>
-                        </select>
-                    </div>
-                </td>
-                <td *ngFor="let item of uiTableColumns" class="tooltipCell {{item.selectedPerfIndClass}} {{item.lookbackErrorClass}}">{{item.selectedPerfIndStr}}
-                    <div class="tooltipText">
-                        <div>{{item.lookbackErrorStr}}</div>
-                        <div class="bold">{{item.mainTooltipStr1}}</div>
-                        <div>{{item.mainTooltipStr2}}</div>
-                        <div class="smallTT">{{item.mainTooltipStr3}}</div>
-                    </div>
-                </td>
-            </tr>
-        </table>
-    </div>
-    <div class="rightDiv" id="tradingHoursTimer">
-    </div>
+  <div class="leftDiv" id="perfTable">
+    <table>
+      <tr class="tableHeader">
+        <th></th>
+        <th *ngFor="let item of uiTableColumns">
+          <span *ngIf="!item.isNavColumn"><a href="{{item.referenceUrl}}" target="_blank">{{item.ticker}} </a></span>
+          <span *ngIf="item.isNavColumn">
+            <span>
+              <select class="selectedNavMktHlthCl" [(ngModel)]="navSelectionSelected" (change)="onNavSelectedChange($event)">
+                <option *ngFor="let item of navSelection" [value]="item">{{item}}</option>
+              </select>
+            </span>
+          </span>
+        </th>
+      </tr>
+      <tr class="realtimeRow">
+        <td>Real-time return (from period-end)</td>
+        <td *ngFor="let item of uiTableColumns" class="tooltipCell {{item.rtReturnClass}}">{{item.rtReturnStr}}
+          <div class="tooltipText">
+            <div class="bold">{{item.rtTooltipStr1}}</div>
+            <div>{{item.rtTooltipStr2}}</div>
+          </div>
+        </td>
+      </tr>
+      <tr class="pastPerfRow">
+        <td class="lookbAndMarketIndSel">
+          <!-- a Select wrapper DIV is needed, because even in 2020, the <select>::after doesn't work. https://stackoverflow.com/questions/3532649/problem-with-select-and-after-with-css-in-webkit -->
+          <div class="lookbSelectWrapperCl">
+            <select class="lookbSelectCl" id="lookBackPeriod" (change)=onLookbackSelectChange()>
+              <option value="YTD" selected>YTD</option>
+              <option value="2w">2W</option>
+              <option value="1m">1M</option>
+              <option value="6m">6M</option>
+              <option value="1y">1Y</option>
+              <option value="2y">2Y</option>
+              <option value="3y">3Y</option>
+              <option value="5y">5Y</option>
+              <option value="10y">10Y</option>
+              <option value="15y">15Y</option>
+              <option value="20y">20Y</option>
+              <option value="D'99">D'99</option>
+              <option value="Date">Date</option>
+            </select>
+          </div>
+          <div class="lookbDateWrapperCl">
+            <input class="lookbDateCl" type="date" id="startDate" name="startDate" min="1975-01-02" [ngModel]="lookbackStartETstr" (change)="onLookbackDateChange($event)">
+          </div>
+          <div class="lookbDateWrapperCl">
+            <input class="lookbDateCl" type="date" id="endDate" name="startDate" min="1975-01-02" [ngModel]="lookbackEndETstr" (change)="onLookbackDateChange($event)">
+          </div>
+          <div class="lookbSelectWrapperCl">
+            <select class="lookbSelectCl" id="perfIndicator" (change)=perfIndicatorSelector()>
+              <option value="TotRet" selected>Return</option>
+              <option value="TotCagr">CAGR</option>
+              <option value="CDD">CurrDrawDown</option>
+              <option value="CDU">CurrDrawUp</option>
+              <option value="MDD">MaxDrawDown</option>
+              <option value="MDU">MaxDrawUp</option>
+              <option value="PerRet">Pe.Return</option>
+              <option value="PerMDD">Pe.MaxDD</option>
+            </select>
+          </div>
+        </td>
+        <td *ngFor="let item of uiTableColumns" class="tooltipCell {{item.selectedPerfIndClass}} {{item.lookbackErrorClass}}">{{item.selectedPerfIndStr}}
+          <div class="tooltipText">
+            <div>{{item.lookbackErrorStr}}</div>
+            <div class="bold">{{item.mainTooltipStr1}}</div>
+            <div>{{item.mainTooltipStr2}}</div>
+            <div class="smallTT">{{item.mainTooltipStr3}}</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div class="rightDiv" id="tradingHoursTimer">
+  </div>
 </div>
 
 <br><br>Market-trend at the moment:
 <ul>
-    <li><a href="https://swingtrader.investors.com/" target="_blank">IBD's SwingTrader Market state (Uptrend/Uptrend Under Pressure...)</a></li>
-    <li><a href="https://app.chaikinanalytics.com" target="_blank">Chaikin (Click ETF comparison/Index ETF). Observe QQQ, SPY Bullishness</a></li>
-    <li><a href="https://www.chaikinanalytics.com/stock-market-today/" target="_blank">Chaikin: Stock Market Today. (Click into the video.)</a></li>
-    <li><a href="https://stockcharts.com/h-sc/ui?s=QQQ" target="_blank">StockCharts, QQQ, Observe SMA50 above SMA200.</a></li>
-    <li><a href="https://stockcharts.com/h-sc/ui?s=SPY" target="_blank">StockCharts, SPY, Observe SMA50 above SMA200.</a></li>
+  <li><a href="https://swingtrader.investors.com/" target="_blank">IBD's SwingTrader Market state (Uptrend/Uptrend Under Pressure...)</a></li>
+  <li><a href="https://app.chaikinanalytics.com" target="_blank">Chaikin (Click ETF comparison/Index ETF). Observe QQQ, SPY Bullishness</a></li>
+  <li><a href="https://www.chaikinanalytics.com/stock-market-today/" target="_blank">Chaikin: Stock Market Today. (Click into the video.)</a></li>
+  <li><a href="https://stockcharts.com/h-sc/ui?s=QQQ" target="_blank">StockCharts, QQQ, Observe SMA50 above SMA200.</a></li>
+  <li><a href="https://stockcharts.com/h-sc/ui?s=SPY" target="_blank">StockCharts, SPY, Observe SMA50 above SMA200.</a></li>
 </ul>
 <br>
 
