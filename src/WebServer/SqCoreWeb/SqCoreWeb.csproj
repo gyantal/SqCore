@@ -12,9 +12,16 @@
     <BuildServerSideRenderer>false</BuildServerSideRenderer>
     <!-- File with modifytime of last successful npm install -->
     <NpmInstallStampFile>node_modules/.install-stamp</NpmInstallStampFile>
+    <CodeAnalysisRuleSet>..\..\StyleCop.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.435">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <AdditionalFiles Include="..\..\stylecop.json" Link="stylecop.json" />
+
     <ProjectReference Include="..\..\Common\FinTechCommon\FinTechCommon.csproj" />
     <ProjectReference Include="..\..\Common\BrokerCommon\BrokerCommon.csproj" />
     <ProjectReference Include="..\..\Common\SqCommon\SqCommon.csproj" />

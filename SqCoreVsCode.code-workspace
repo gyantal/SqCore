@@ -36,6 +36,7 @@
 		"js/ts.implicitProjectConfig.experimentalDecorators": true,
 		"dotnet-test-explorer.testProjectPath": "**/*.tests.csproj",
 		"dotnet-test-explorer.runInParallel": true,
-		"omnisharp.enableRoslynAnalyzers": true
+		"omnisharp.enableRoslynAnalyzers": true,
+		"omnisharp.analyzeOpenDocumentsOnly": false
 	}
 }

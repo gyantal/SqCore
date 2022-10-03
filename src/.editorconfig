@@ -34,6 +34,9 @@ insert_final_newline = false
 # dotnet_diagnostic.SA1025.severity = none
 # dotnet_diagnostic.CS0219.severity = none
 
+dotnet_diagnostic.CS0219.severity = warning # The variable 'x' is assigned but its value is never used
+dotnet_diagnostic.SA1505.severity = warning  # An opening brace should not be followed by a blank line.
+
 dotnet_diagnostic.IDE0180.severity = none # disable warning: 'Use tuple to swap values'. The tuple version is less efficient, because it allocates additional memory as it stores two items on the stack rather than 1 temp variable. https://stackoverflow.com/questions/48550397/is-a-c-sharp-7-tuple-based-variable-swap-thread-safe
 dotnet_diagnostic.CS8669.severity = none  # TODO: This is cryptic. Investigate later: "The annotation for nullable reference types should only be used in code within a '#nullable' annotations context."
 # reason: https://stackoverflow.com/questions/55492214/the-annotation-for-nullable-reference-types-should-only-be-used-in-code-within-a  
