@@ -54,7 +54,7 @@ class BrAccViewerPosJs // sent to browser clients
     public double PriorClose { get; set; } = 0.0f;  // MktValue can be calculated
 
     [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
-    public double EstPrice { get; set; } = 0.0;  // MktValue can be calculated, 
+    public double EstPrice { get; set; } = 0.0;  // MktValue can be calculated,
 
     [JsonConverter(typeof(DoubleJsonConverterToNumber4D))]
     public double EstUndPrice { get; set; } = 0.0;   // In case of options DeliveryValue can be calculated
@@ -71,7 +71,7 @@ class BrAccViewerAccountSnapshotJs // this is sent to UI client
     public string Symbol { get; set; } = string.Empty;
     public DateTime LastUpdate { get; set; } = DateTime.MinValue;
     public long NetLiquidation { get; set; } = long.MinValue;    // prefer whole numbers. Max int32 is 2B.
-    public long PriorCloseNetLiquidation { get; set; } = 0; 
+    public long PriorCloseNetLiquidation { get; set; } = 0;
     public long GrossPositionValue { get; set; } = long.MinValue;
     public long TotalCashValue { get; set; } = long.MinValue;
     public long InitMarginReq { get; set; } = long.MinValue;
@@ -270,7 +270,7 @@ public partial class DashboardClient
 
         BrAccViewerAccountSnapshotJs? result = null;
         List<BrAccPos> unrecognizedAssets = new();
-        foreach (GatewayId gwId in gatewayIds)  // AggregateNav has 2 Gateways
+        foreach (GatewayId gwId in gatewayIds) // AggregateNav has 2 Gateways
         {
             BrAccount? brAccount = MemDb.gMemDb.BrAccounts.FirstOrDefault(r => r.GatewayId == gwId);
             if (brAccount == null)
@@ -316,7 +316,7 @@ public partial class DashboardClient
                 var unrecognizedNonStocks = unrecognizedAssets.Where(r => r.Contract.SecType != "STK").Select(r => r.Contract.SecType + "-" + r.Contract.Symbol).ToList();
                 if (unrecognizedNonStocks.Count > 0)
                 {
-                    if (unrecognizedStocks.Count > 0)   // if there is a previous warning in StringBuilder. (Note: we don't want to use StringBuilder.Length because that will collapse the StringBuilder, and there is no IsEmpty method)
+                    if (unrecognizedStocks.Count > 0) // if there is a previous warning in StringBuilder. (Note: we don't want to use StringBuilder.Length because that will collapse the StringBuilder, and there is no IsEmpty method)
                         sb.Append(';'); // separate many Warnings by ";"
                     sb.Append($"Warning: Unrecognised non-stocks: (#{unrecognizedNonStocks.Count}): ");
                     unrecognizedNonStocks.ForEach(r => sb.Append(r + ","));
@@ -330,7 +330,7 @@ public partial class DashboardClient
 
             DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;
             List<AssetPriorClose> navPriorCloses = MemDb.gMemDb.GetSdaPriorClosesFromHist(new List<Asset>() { m_braccSelectedNavAsset }, todayET).ToList();
-            result.PriorCloseNetLiquidation  = (long)navPriorCloses[0].SdaPriorClose;
+            result.PriorCloseNetLiquidation = (long)navPriorCloses[0].SdaPriorClose;
         }
         return result;
     }
@@ -351,7 +351,7 @@ public partial class DashboardClient
             BrAccPos posBr = validBrPoss[i];
             Asset asset = validBrPossAssets[i];
             float estUndValue = (asset as Option)?.UnderlyingAsset?.EstValue ?? float.NaN;
-            double ibCompDelta = (asset  as Option)?.IbCompDelta ?? double.NaN;
+            double ibCompDelta = (asset as Option)?.IbCompDelta ?? double.NaN;
             result.Add(new BrAccViewerPosJs()
             {
                 AssetId = posBr.AssetId,
@@ -463,7 +463,7 @@ public partial class DashboardClient
         int bnchmkStartIdx = p_msg.IndexOf(":", startIdx);
         int periodStartIdx = (bnchmkStartIdx == -1) ? -1 : p_msg.IndexOf(",", bnchmkStartIdx);
         string braccSelectedBnchmkSqTicker = (bnchmkStartIdx == -1 || periodStartIdx == -1) ? "S/SPY" : string.Concat("S/", p_msg.AsSpan(bnchmkStartIdx + 1, periodStartIdx - bnchmkStartIdx - 1));
-        
+
         SqDateOnly lookbackStart, lookbackEndExcl;
         if (periodStartIdx == -1)
         {
@@ -493,7 +493,7 @@ public partial class DashboardClient
         if (!GatewayExtensions.NavSqSymbol2GatewayIds.TryGetValue(navSqTicker, out List<GatewayId>? gatewayIds))
             return;
         HashSet<Asset> validBrPossAssets = new(ReferenceEqualityComparer.Instance);     // AggregatedNav can contain the same company stocks many times. We need it only once. Force ReferenceEquality, even if the Asset class later implements deep IEquality
-        foreach (GatewayId gwId in gatewayIds)  // AggregateNav has 2 Gateways
+        foreach (GatewayId gwId in gatewayIds) // AggregateNav has 2 Gateways
         {
             BrAccount? brAccount = MemDb.gMemDb.BrAccounts.FirstOrDefault(r => r.GatewayId == gwId);
             if (brAccount == null)
@@ -513,7 +513,7 @@ public partial class DashboardClient
         if (validBrPossOptions.Length == 0) // Dc DeBlan account doesn't have options. No need to run anything in a separate thread.
             return;
         // Run any long process (1+ sec) in separate than the WebSocket-processing thread. Otherwise any later message the client sends is queued on the server for seconds and not processed immediately. Resulting in UI unresponsiveness at the client.
-        _ = Task.Run(() =>    // Task.Run() runs it immediately in a separate threod on the ThreadPool
+        _ = Task.Run(() => // Task.Run() runs it immediately in a separate threod on the ThreadPool
         {
             MemDb.DownloadLastPriceOptionsIb(validBrPossOptions);    // can take 7-20 seconds, don't wait it. Report to the user earlier the stock price data.
             BrAccViewerSendSnapshot();  // Report to the user 6..16 seconds later again. With the updated option prices.
@@ -537,7 +537,7 @@ public partial class DashboardClient
         for (int i = 0; i < rows.Length; i++)
         {
             string[] cells = rows[i].Split(new string[] { "\",\n" }, StringSplitOptions.RemoveEmptyEntries);
-            if (cells.Length != 2)  // The lengths: first line: 3, Line with ony 1 comment cell: 1, empty lines: 1, only accept if it has 2 cells
+            if (cells.Length != 2) // The lengths: first line: 3, Line with ony 1 comment cell: 1, empty lines: 1, only accept if it has 2 cells
                 continue;
             string cellFirst = cells[0];
             int tagStartIdx = cellFirst.IndexOf('\"');

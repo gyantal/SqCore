@@ -51,7 +51,7 @@ public class StrategyRenewedUberController : ControllerBase
         }
     }
 
-    [HttpGet]   // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
+    [HttpGet] // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
     public string Get()
     {
 
@@ -67,7 +67,7 @@ public class StrategyRenewedUberController : ControllerBase
         // string[] allAssetListVIX = new string[] { "VXX", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };            // // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
         // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
         // string[] vixAssetList = new string[] { "^VIX" };
-       
+
         string[]? allAssetListVIX = allAssetList.Append("^VIX").ToArray() ?? new string[] {"^VIX"};
 
         // string[] allAssetListVIX = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };
@@ -83,7 +83,6 @@ public class StrategyRenewedUberController : ControllerBase
         List<DailyData>? VIXQuotes = quotesDataAll.Item2;
 
         // Get, split and convert GSheet data
-        
 
         Tuple<double[], DateTime[], string[,], int[], int[], int[], string[]> gSheetResToFinCalc = GSheetConverter(googleSheetStr, allAssetList);
 
@@ -117,7 +116,7 @@ public class StrategyRenewedUberController : ControllerBase
         double[] spotVixValueDb = new double[STCId.Item1.Length];
         for (int iRows = 0; iRows < spotVixValueDb.Length; iRows++)
         {
-            spotVixValueDb[iRows]= VIXQuotes[VIXQuotes.Count - iRows - 1].AdjClosePrice;
+            spotVixValueDb[iRows] = VIXQuotes[VIXQuotes.Count - iRows - 1].AdjClosePrice;
         }
 
 
@@ -213,7 +212,7 @@ public class StrategyRenewedUberController : ControllerBase
             if ((eventCode[iRows] <= 4 && eventCode[iRows] > 0) || (eventCode[iRows] == 5 && STCId.Item2[iRows] >= stciThresholds[0]) || (eventCode[iRows] == 6 && STCId.Item2[iRows] <= stciThresholds[1]))
             {
                 finalWeightMultiplier[iRows] = eventFinalWeightedSignal[iRows];
-                finalWeightMultiplierVIX[iRows] = finalWeightMultiplier[iRows] *vixLeverage[iRows];
+                finalWeightMultiplierVIX[iRows] = finalWeightMultiplier[iRows] * vixLeverage[iRows];
                 eventCodeFinal[iRows] = eventCode[iRows];
             }
             else if (eventCode[iRows] == 0 && STCId.Item2[iRows] >= stciThresholds[2])
@@ -388,8 +387,6 @@ public class StrategyRenewedUberController : ControllerBase
         double currPV;
         double prevPV;
         int[] currPosInt = new int[allAssetList.Length + 1];
-        
-
 
         double[] currPosValue = new double[allAssetList.Length + 1];
         double[] prevPosValue = new double[allAssetList.Length + 1];
@@ -407,7 +404,6 @@ public class StrategyRenewedUberController : ControllerBase
         prevPV = Math.Round(prevPosValue.Sum());
         double dailyProf = currPV - prevPV;
         string dailyProfValString = string.Empty;
-        
 
         string dailyProfString = string.Empty;
         string dailyProfSign = string.Empty;
@@ -430,7 +426,6 @@ public class StrategyRenewedUberController : ControllerBase
             dailyProfSign = "N/A";
             dailyProfValString = string.Empty;
         }
-            
 
         double[] nextPosValue = new double[allAssetList.Length + 1];
         for (int jCols = 0; jCols < nextPosValue.Length - 1; jCols++)
@@ -811,7 +806,7 @@ public class StrategyRenewedUberController : ControllerBase
     }
     throw new NotImplementedException();
     }
-    public static (IList<List<DailyData>>, List<DailyData>) GetUberStockHistData(string[] p_allAssetList)   // { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" }
+    public static (IList<List<DailyData>>, List<DailyData>) GetUberStockHistData(string[] p_allAssetList) // { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" }
     {
         List<Asset> assets = new();
         for (int i = 0; i < p_allAssetList.Length; i++)
@@ -825,7 +820,7 @@ public class StrategyRenewedUberController : ControllerBase
 
             DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
             DateTime startIncLoc = nowET.AddDays(-50);
-        
+
         List<List<DailyData>> uberTickersData = new();
         List<DailyData> VIXDailyquotes = new();
 
@@ -863,7 +858,7 @@ public class StrategyRenewedUberController : ControllerBase
         string[] spotVixPrices = resuRows[16].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
         double spotVixValue = Double.Parse(spotVixPrices[0]);
         string[] futuresNextExps = resuRows[0].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
-        string liveFuturesNextExp = futuresNextExps[0].Substring(1,3);
+        string liveFuturesNextExp = futuresNextExps[0].Substring(1, 3);
 
         // Downloading historical data from vixcentral.com.
         string? webpageHist = Utils.DownloadStringWithRetryAsync("http://vixcentral.com/historical/?days=100", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
@@ -1083,7 +1078,7 @@ public class StrategyRenewedUberController : ControllerBase
             }
             else
             {
-                stciValue[iRow] = vixCentralRec[iRow].F3/ vixCentralRec[iRow].F2-1;
+                stciValue[iRow] = vixCentralRec[iRow].F3 / vixCentralRec[iRow].F2 - 1;
             }
         }
 

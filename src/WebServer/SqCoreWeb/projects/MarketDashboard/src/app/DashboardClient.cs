@@ -28,7 +28,7 @@ public partial class DashboardClient
     public WebSocket? WsWebSocket { get; set; } = null; // this pointer uniquely identifies the WebSocket as it is not released until websocket is dead
     public HttpContext? WsHttpContext { get; set; } = null;
 
-    public static readonly Dictionary<string, ActivePage> c_urlParam2ActivePage = new() { 
+    public static readonly Dictionary<string, ActivePage> c_urlParam2ActivePage = new() {
         {"mh", ActivePage.MarketHealth}, {"bav", ActivePage.BrAccViewer}, {"cs", ActivePage.CatalystSniffer}, {"qn", ActivePage.QuickfolioNews}};
     public static readonly HashSet<ActivePage> c_activePagesUsingRtPrices = new() { ActivePage.MarketHealth, ActivePage.BrAccViewer };
 
@@ -47,7 +47,7 @@ public partial class DashboardClient
 
     static void OnEvFullMemDbDataReloaded()
     {
-        DashboardClient.g_clients.ForEach(client =>   // Notify all the connected clients.
+        DashboardClient.g_clients.ForEach(client => // Notify all the connected clients.
         {
             // client.EvMemDbAssetDataReloaded_MktHealth();
             // client.EvMemDbAssetDataReloaded_BrAccViewer();
@@ -56,7 +56,7 @@ public partial class DashboardClient
 
     static void OnEvMemDbHistoricalDataReloaded()
     {
-        DashboardClient.g_clients.ForEach(client =>   // Notify all the connected clients.
+        DashboardClient.g_clients.ForEach(client => // Notify all the connected clients.
         {
             client.EvMemDbHistoricalDataReloaded_MktHealth();
             // client.EvMemDbHistoricalDataReloaded_BrAccViewer();
@@ -118,11 +118,11 @@ public partial class DashboardClient
         }
     }
 
-    public void SendIsDashboardOpenManyTimes()    // If Dashboard is open in more than one tab or browser.
+    public void SendIsDashboardOpenManyTimes() // If Dashboard is open in more than one tab or browser.
     {
         int nClientsWitSameUserAndIp = 0;
         var g_clientsPtrCpy = DashboardClient.g_clients;    // Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
-        foreach (var client in g_clientsPtrCpy)   // !Warning: Multithreaded Warning: This Reader code is fine. But potential problem if another thread removes clients from the List. The Modifier (Writer) thread should be careful, and Copy and Pointer-Swap when that Edit is taken.
+        foreach (var client in g_clientsPtrCpy) // !Warning: Multithreaded Warning: This Reader code is fine. But potential problem if another thread removes clients from the List. The Modifier (Writer) thread should be careful, and Copy and Pointer-Swap when that Edit is taken.
         {
             if (client.UserEmail == UserEmail && client.ClientIP == ClientIP)
                 nClientsWitSameUserAndIp++;
@@ -143,11 +143,11 @@ public partial class DashboardClient
     public static void AddToClients(DashboardClient p_client)
     {
         // !Warning: Multithreaded Warning: The Modifier (Writer) thread should be careful, and Copy and Pointer-Swap when Edit/Remove is done.
-        lock (DashboardClient.g_clients)    // lock assures that there are no 2 threads that is Adding at the same time on Cloned g_glients.
+        lock (DashboardClient.g_clients) // lock assures that there are no 2 threads that is Adding at the same time on Cloned g_glients.
         {
             List<DashboardClient> clonedClients = new(DashboardClient.g_clients)
             {
-                p_client  // equivalent to clonedClients.Add(p_client);
+                p_client // equivalent to clonedClients.Add(p_client);
             }; // adding new item to clone assures that no enumerating reader threads will throw exception.
             DashboardClient.g_clients = clonedClients;
         }

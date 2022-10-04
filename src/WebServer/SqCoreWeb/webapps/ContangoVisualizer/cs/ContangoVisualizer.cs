@@ -70,7 +70,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
 
     public string GetStrVIX()
     {
-        
+
         // Downloading live data from vixcentral.com.
         string? webpageLive = Utils.DownloadStringWithRetryAsync("http://vixcentral.com", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
         if (webpageLive == null)
@@ -79,18 +79,18 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         string? webpageLiveAjax = Utils.DownloadStringWithRetryAsync("http://vixcentral.com/ajax_update", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
         if (webpageLiveAjax == null)
             return "Error in live data";
-        
+
         string[] resuRows = webpageLiveAjax.Split(new string[] { "[", "]" }, StringSplitOptions.RemoveEmptyEntries);
         string[] liveFuturesPrices = resuRows[4].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
         string[] spotVixPrices = resuRows[16].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
         double spotVixValue = Double.Parse(spotVixPrices[0]);
         string[] futuresNextExps = resuRows[0].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
-        string liveFuturesNextExp = futuresNextExps[0].Substring(1,3);
+        string liveFuturesNextExp = futuresNextExps[0].Substring(1, 3);
         string[] liveFuturesTime = resuRows[2].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
-        string liveFuturesDataTime = (liveFuturesTime[0].Length>3)?liveFuturesTime[0].Substring(1,8):"99:99:99";
+        string liveFuturesDataTime = (liveFuturesTime[0].Length > 3) ? liveFuturesTime[0].Substring(1, 8) : "99:99:99";
 
         // Selecting data from live data string.
-        
+
         // string liveFuturesDataDT = string.Empty;
         // string liveFuturesDataDate = string.Empty;
         // string liveFuturesDataTime = string.Empty;
@@ -118,16 +118,16 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
 
         // liveFuturesDataDate = liveFuturesDataDT.Substring(0,10);
         // liveFuturesDataTime = liveFuturesDataDT.Substring(12, 8) + " EST";
-        
+
         // string[] liveFuturesPrices = liveFuturesData.Split(new string[] { ","}, StringSplitOptions.RemoveEmptyEntries);
         int lengthLiveFuturesPrices = liveFuturesPrices.Length;
         string[] prevFuturesPrices = prevFuturesData.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
         // string[] spotVixPrices = spotVixData.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
         // double spotVixValue = Double.Parse(spotVixPrices[0]);
 
-        string[] monthsNumList = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
-        int monthsNum = Array.IndexOf(monthsNumList,liveFuturesNextExp)+1;
-        
+        string[] monthsNumList = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        int monthsNum = Array.IndexOf(monthsNumList, liveFuturesNextExp) + 1;
+
 
         // DateTime liveDateTime;
         DateTime timeNowETVIX = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
@@ -149,7 +149,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
 
         // Sorting historical data.
         VixCentralRec2[] vixCentralRec = new VixCentralRec2[2];
-        
+
             vixCentralRec[0].Date = DateTime.Parse(liveDate);
             vixCentralRec[0].FirstMonth = monthsNum;
             vixCentralRec[0].F1 = Double.Parse(liveFuturesPrices[0]);
@@ -183,28 +183,28 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         string lastData = lastDataDay.ToString("yyyy-MM-dd");
 
         var lengthExps = /*(lastDataYear - firstDataYear + 2)*/ 2 * 12;
-        int[,] expDatesDat = new int[lengthExps,2];
-        
-        expDatesDat[0,0] = lastDataYear + 1;
-        expDatesDat[0,1] = 12;
+        int[,] expDatesDat = new int[lengthExps, 2];
+
+        expDatesDat[0, 0] = lastDataYear + 1;
+        expDatesDat[0, 1] = 12;
 
         for (int iRows = 1; iRows < expDatesDat.GetLength(0); iRows++)
         {
             decimal f = iRows / 12;
-            expDatesDat[iRows,0] = lastDataYear - Decimal.ToInt32(Math.Floor(f))+1;
-            expDatesDat[iRows,1] = 12 - iRows % 12;
+            expDatesDat[iRows, 0] = lastDataYear - Decimal.ToInt32(Math.Floor(f)) + 1;
+            expDatesDat[iRows, 1] = 12 - iRows % 12;
         }
 
         DateTime[] expDates = new DateTime[expDatesDat.GetLength(0)];
         for (int iRows = 0; iRows < expDates.Length; iRows++)
         {
-            DateTime thirdFriday = new(expDatesDat[iRows,0], expDatesDat[iRows,1], 15);
+            DateTime thirdFriday = new(expDatesDat[iRows, 0], expDatesDat[iRows, 1], 15);
             while (thirdFriday.DayOfWeek != DayOfWeek.Friday)
             {
                 thirdFriday = thirdFriday.AddDays(1);
             }
             expDates[iRows] = thirdFriday.AddDays(-30);
-            if (expDates[iRows]==DateTime.Parse("2014-03-19"))
+            if (expDates[iRows] == DateTime.Parse("2014-03-19"))
             {
                 expDates[iRows] = DateTime.Parse("2014-03-18");
             }
@@ -214,7 +214,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         for (int iRec = 0; iRec < vixCentralRec.Length; iRec++)
         {
             int index1 = Array.FindIndex(expDates, item => item <= vixCentralRec[iRec].Date);
-            vixCentralRec[iRec].NextExpiryDate = expDates[index1-1];
+            vixCentralRec[iRec].NextExpiryDate = expDates[index1 - 1];
             vixCentralRec[iRec].F1expDays = (expDates[index1 - 1] - vixCentralRec[iRec].Date).Days;
             vixCentralRec[iRec].F2expDays = (expDates[index1 - 2] - vixCentralRec[iRec].Date).Days;
             vixCentralRec[iRec].F3expDays = (expDates[index1 - 3] - vixCentralRec[iRec].Date).Days;
@@ -222,9 +222,9 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
             vixCentralRec[iRec].F5expDays = (expDates[index1 - 5] - vixCentralRec[iRec].Date).Days;
             vixCentralRec[iRec].F6expDays = (expDates[index1 - 6] - vixCentralRec[iRec].Date).Days;
             vixCentralRec[iRec].F7expDays = (expDates[index1 - 7] - vixCentralRec[iRec].Date).Days;
-            vixCentralRec[iRec].F8expDays = (vixCentralRec[0].F8 > 0) ? (expDates[index1 - 8] - vixCentralRec[iRec].Date).Days:0;
+            vixCentralRec[iRec].F8expDays = (vixCentralRec[0].F8 > 0) ? (expDates[index1 - 8] - vixCentralRec[iRec].Date).Days : 0;
         }
-        
+
         string ret = Processing(vixCentralRec, expDates, liveDate, liveFuturesDataTime, spotVixValue, titleVIX, dataSourceVIX);
 
         return ret;
@@ -251,7 +251,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
 
         for (int iRows = 1; iRows < 8; iRows++)
         {
-            int startPosLiveB = webpageLive.IndexOf("\"last\":\"", liveFuturesDataVecInd[iRows-1]) + "\"last\":\"".Length;
+            int startPosLiveB = webpageLive.IndexOf("\"last\":\"", liveFuturesDataVecInd[iRows - 1]) + "\"last\":\"".Length;
             int endPosLiveB = webpageLive.IndexOf("\",\"change\":", startPosLiveB);
             string liveFuturesDataB = webpageLive[startPosLiveB..endPosLiveB];
 
@@ -265,7 +265,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         string prevFuturesDataB0 = webpageLive[startPosPrevB0..endPosPrevB0];
 
         prevFuturesDataVec[0] = prevFuturesDataB0;
-        
+
         for (int iRows = 1; iRows < 8; iRows++)
         {
             int startPosPrevB = webpageLive.IndexOf("\"priorSettle\":\"", liveFuturesDataVecInd[iRows]) + "\"priorSettle\":\"".Length;
@@ -278,7 +278,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         string titleOIL = "OIL Futures Term Structure";
         string dataSourceOIL = "https://www.cmegroup.com/trading/energy/crude-oil/light-sweet-crude.html";
 
-        int startPosLiveDate = webpageLive.IndexOf("\"updated\":\"",liveFuturesDataVecInd[0]) + "\"updated\":\"".Length;
+        int startPosLiveDate = webpageLive.IndexOf("\"updated\":\"", liveFuturesDataVecInd[0]) + "\"updated\":\"".Length;
         string liveFuturesDataDT = webpageLive.Substring(startPosLiveDate, 29);
         string liveFuturesDataDate = liveFuturesDataDT.Substring(18, 11);
         string liveFuturesDataTime = liveFuturesDataDT[..8] + " CT";
@@ -296,10 +296,10 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
 
         string[] liveFuturesDataExpVec = new string[8];
         int[] liveFuturesDataExpVecInd = new int[8];
-        int startPosLiveExpB0Ass= webpageLiveExp.IndexOf(futCodeNext, 0);
+        int startPosLiveExpB0Ass = webpageLiveExp.IndexOf(futCodeNext, 0);
         int startPosLiveExpB0 = webpageLiveExp.IndexOf("\"lastTrade\":\"", startPosLiveExpB0Ass) + "\"lastTrade\":\"".Length;
         int endPosLiveExpB0 = webpageLiveExp.IndexOf(",\"settlement", startPosLiveExpB0);
-        string liveFuturesDataExpB0 = webpageLiveExp.Substring(startPosLiveExpB0, endPosLiveExpB0 - startPosLiveExpB0-1);
+        string liveFuturesDataExpB0 = webpageLiveExp.Substring(startPosLiveExpB0, endPosLiveExpB0 - startPosLiveExpB0 - 1);
 
         liveFuturesDataExpVec[0] = liveFuturesDataExpB0;
         liveFuturesDataExpVecInd[0] = endPosLiveExpB0;
@@ -309,12 +309,11 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
             int startPosLiveExpBAss = webpageLiveExp.IndexOf("CL", liveFuturesDataExpVecInd[iRows - 1]);
             int startPosLiveExpB = webpageLiveExp.IndexOf("\"lastTrade\":\"", startPosLiveExpBAss) + "\"lastTrade\":\"".Length;
             int endPosLiveExpB = webpageLiveExp.IndexOf(",\"settlement", startPosLiveExpB);
-            string liveFuturesDataExpB = webpageLiveExp.Substring(startPosLiveExpB, endPosLiveExpB - startPosLiveExpB-1);
+            string liveFuturesDataExpB = webpageLiveExp.Substring(startPosLiveExpB, endPosLiveExpB - startPosLiveExpB - 1);
 
             liveFuturesDataExpVec[iRows] = liveFuturesDataExpB;
             liveFuturesDataExpVecInd[iRows] = endPosLiveExpB;
         }
-
 
         string[] monthsNumList = { "JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC" };
         int monthsNum = Array.IndexOf(monthsNumList, liveFuturesNextExp) + 1;
@@ -324,12 +323,12 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         {
             expDates[iRows] = DateTime.Parse(liveFuturesDataExpVec[iRows]);
         }
-                
+
         string[] liveFuturesPrices = liveFuturesDataVec;
         int lengthLiveFuturesPrices = liveFuturesPrices.Length;
         string[] prevFuturesPrices = prevFuturesDataVec;
 
-        for (int iRows=0; iRows<8; iRows++)
+        for (int iRows = 0; iRows < 8; iRows++)
         {
             if (String.Equals(liveFuturesPrices[iRows], "-"))
             {
@@ -337,7 +336,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
             }
         }
 
-        double spotVixValue = 0;/*Double.Parse(spotVixPrices[0]);*/
+        double spotVixValue = 0; /*Double.Parse(spotVixPrices[0]);*/
 
         DateTime liveDateTime = DateTime.Parse(liveFuturesDataDate);
         string liveDate = liveDateTime.ToString("yyyy-MM-dd");
@@ -371,19 +370,18 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         vixCentralRec[1].STCont = vixCentralRec[1].F2 / vixCentralRec[1].F1 - 1;
         vixCentralRec[1].LTCont = vixCentralRec[1].F7 / vixCentralRec[1].F4 - 1;
 
-        
         // Calculating number of calendar days until expirations.
         for (int iRec = 0; iRec < vixCentralRec.Length; iRec++)
         {
             vixCentralRec[iRec].NextExpiryDate = expDates[0];
-            vixCentralRec[iRec].F1expDays = (expDates[0] - vixCentralRec[iRec].Date).Days+1;
-            vixCentralRec[iRec].F2expDays = (expDates[1] - vixCentralRec[iRec].Date).Days+1;
-            vixCentralRec[iRec].F3expDays = (expDates[2] - vixCentralRec[iRec].Date).Days+1;
-            vixCentralRec[iRec].F4expDays = (expDates[3] - vixCentralRec[iRec].Date).Days+1;
-            vixCentralRec[iRec].F5expDays = (expDates[4] - vixCentralRec[iRec].Date).Days+1;
-            vixCentralRec[iRec].F6expDays = (expDates[5] - vixCentralRec[iRec].Date).Days+1;
-            vixCentralRec[iRec].F7expDays = (expDates[6] - vixCentralRec[iRec].Date).Days+1;
-            vixCentralRec[iRec].F8expDays = (vixCentralRec[0].F8 > 0) ? (expDates[7] - vixCentralRec[iRec].Date).Days+1 : 0;
+            vixCentralRec[iRec].F1expDays = (expDates[0] - vixCentralRec[iRec].Date).Days + 1;
+            vixCentralRec[iRec].F2expDays = (expDates[1] - vixCentralRec[iRec].Date).Days + 1;
+            vixCentralRec[iRec].F3expDays = (expDates[2] - vixCentralRec[iRec].Date).Days + 1;
+            vixCentralRec[iRec].F4expDays = (expDates[3] - vixCentralRec[iRec].Date).Days + 1;
+            vixCentralRec[iRec].F5expDays = (expDates[4] - vixCentralRec[iRec].Date).Days + 1;
+            vixCentralRec[iRec].F6expDays = (expDates[5] - vixCentralRec[iRec].Date).Days + 1;
+            vixCentralRec[iRec].F7expDays = (expDates[6] - vixCentralRec[iRec].Date).Days + 1;
+            vixCentralRec[iRec].F8expDays = (vixCentralRec[0].F8 > 0) ? (expDates[7] - vixCentralRec[iRec].Date).Days + 1 : 0;
         }
 
         string ret = Processing(vixCentralRec, expDates, liveDate, liveFuturesDataTime, spotVixValue, titleOIL, dataSourceOIL);
@@ -532,7 +530,6 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         vixCentralRec[1].STCont = vixCentralRec[1].F2 / vixCentralRec[1].F1 - 1;
         vixCentralRec[1].LTCont = vixCentralRec[1].F7 / vixCentralRec[1].F4 - 1;
 
-
         // Calculating number of calendar days until expirations.
         for (int iRec = 0; iRec < vixCentralRec.Length; iRec++)
         {
@@ -555,9 +552,9 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
 
     private static string Processing(VixCentralRec2[] p_vixCentralRec, DateTime[] _, string p_liveDate, string p_liveFuturesDataTime, double p_spotVixValue, string p_titleF, string p_dataSource)
     {
-        // Calculating dates to html.           
+        // Calculating dates to html.
         DateTime timeNowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
-        
+
         // Creating the current data array (prices and spreads).
         double[] currData = new double[28];
         currData[0] = p_vixCentralRec[0].F1;
@@ -576,18 +573,18 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         currData[13] = p_vixCentralRec[0].F5 - p_vixCentralRec[0].F4;
         currData[14] = p_vixCentralRec[0].F6 - p_vixCentralRec[0].F5;
         currData[15] = p_vixCentralRec[0].F7 - p_vixCentralRec[0].F6;
-        currData[16] = (p_vixCentralRec[0].F8 > 0) ? p_vixCentralRec[0].F8 - p_vixCentralRec[0].F7:0;
+        currData[16] = (p_vixCentralRec[0].F8 > 0) ? p_vixCentralRec[0].F8 - p_vixCentralRec[0].F7 : 0;
         currData[17] = p_vixCentralRec[0].F7 - p_vixCentralRec[0].F4;
-        currData[18] = (p_vixCentralRec[0].F7 - p_vixCentralRec[0].F4)/3;
-        currData[19] = p_vixCentralRec[0].F2 / p_vixCentralRec[0].F1 -1;
-        currData[20] = p_vixCentralRec[0].F3 / p_vixCentralRec[0].F2 -1;
-        currData[21] = p_vixCentralRec[0].F4 / p_vixCentralRec[0].F3 -1;
-        currData[22] = p_vixCentralRec[0].F5 / p_vixCentralRec[0].F4 -1;
-        currData[23] = p_vixCentralRec[0].F6 / p_vixCentralRec[0].F5 -1;
-        currData[24] = p_vixCentralRec[0].F7 / p_vixCentralRec[0].F6 -1;
-        currData[25] = (p_vixCentralRec[0].F8 > 0) ? p_vixCentralRec[0].F8 / p_vixCentralRec[0].F7 -1: 0;
-        currData[26] = p_vixCentralRec[0].F7 / p_vixCentralRec[0].F4 -1;
-        currData[27] = (p_vixCentralRec[0].F7 / p_vixCentralRec[0].F4 -1) / 3;
+        currData[18] = (p_vixCentralRec[0].F7 - p_vixCentralRec[0].F4) / 3;
+        currData[19] = p_vixCentralRec[0].F2 / p_vixCentralRec[0].F1 - 1;
+        currData[20] = p_vixCentralRec[0].F3 / p_vixCentralRec[0].F2 - 1;
+        currData[21] = p_vixCentralRec[0].F4 / p_vixCentralRec[0].F3 - 1;
+        currData[22] = p_vixCentralRec[0].F5 / p_vixCentralRec[0].F4 - 1;
+        currData[23] = p_vixCentralRec[0].F6 / p_vixCentralRec[0].F5 - 1;
+        currData[24] = p_vixCentralRec[0].F7 / p_vixCentralRec[0].F6 - 1;
+        currData[25] = (p_vixCentralRec[0].F8 > 0) ? p_vixCentralRec[0].F8 / p_vixCentralRec[0].F7 - 1 : 0;
+        currData[26] = p_vixCentralRec[0].F7 / p_vixCentralRec[0].F4 - 1;
+        currData[27] = (p_vixCentralRec[0].F7 / p_vixCentralRec[0].F4 - 1) / 3;
 
         // Creating the current days to expirations array.
         double[] currDataDays = new double[17];
@@ -598,7 +595,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         currDataDays[4] = p_vixCentralRec[0].F5expDays;
         currDataDays[5] = p_vixCentralRec[0].F6expDays;
         currDataDays[6] = p_vixCentralRec[0].F7expDays;
-        currDataDays[7] = (p_vixCentralRec[0].F8>0)? p_vixCentralRec[0].F8expDays:0;
+        currDataDays[7] = (p_vixCentralRec[0].F8 > 0) ? p_vixCentralRec[0].F8expDays : 0;
         currDataDays[8] = p_vixCentralRec[0].F1expDays;
         currDataDays[9] = p_vixCentralRec[0].F4expDays;
         currDataDays[10] = p_vixCentralRec[0].F1expDays;
@@ -607,27 +604,27 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         currDataDays[13] = p_vixCentralRec[0].F4expDays;
         currDataDays[14] = p_vixCentralRec[0].F5expDays;
         currDataDays[15] = p_vixCentralRec[0].F6expDays;
-        currDataDays[16] = (p_vixCentralRec[0].F8 > 0) ? p_vixCentralRec[0].F7expDays:0;
+        currDataDays[16] = (p_vixCentralRec[0].F8 > 0) ? p_vixCentralRec[0].F7expDays : 0;
 
         // Creating the data array of previous day (prices and spreads).
         double[] prevData = new double[17];
-        prevData[0] = (p_vixCentralRec[0].F1expDays- p_vixCentralRec[1].F1expDays <=0) ?p_vixCentralRec[1].F1: p_vixCentralRec[1].F2;
+        prevData[0] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].F1 : p_vixCentralRec[1].F2;
         prevData[1] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].F2 : p_vixCentralRec[1].F3;
         prevData[2] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].F3 : p_vixCentralRec[1].F4;
         prevData[3] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].F4 : p_vixCentralRec[1].F5;
         prevData[4] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].F5 : p_vixCentralRec[1].F6;
         prevData[5] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].F6 : p_vixCentralRec[1].F7;
         prevData[6] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].F7 : p_vixCentralRec[1].F8;
-        prevData[7] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? ((p_vixCentralRec[0].F8 > 0)? p_vixCentralRec[1].F8 :0 ): 0;
-        prevData[8] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].STCont : p_vixCentralRec[1].F3/p_vixCentralRec[1].F2-1; 
-        prevData[9] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].LTCont : p_vixCentralRec[1].F8 / p_vixCentralRec[1].F5 - 1; 
-        prevData[10] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].F2 - p_vixCentralRec[1].F1 : p_vixCentralRec[1].F3 - p_vixCentralRec[1].F2; 
+        prevData[7] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? ((p_vixCentralRec[0].F8 > 0) ? p_vixCentralRec[1].F8 : 0) : 0;
+        prevData[8] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].STCont : p_vixCentralRec[1].F3 / p_vixCentralRec[1].F2 - 1;
+        prevData[9] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].LTCont : p_vixCentralRec[1].F8 / p_vixCentralRec[1].F5 - 1;
+        prevData[10] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].F2 - p_vixCentralRec[1].F1 : p_vixCentralRec[1].F3 - p_vixCentralRec[1].F2;
         prevData[11] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].F3 - p_vixCentralRec[1].F2 : p_vixCentralRec[1].F4 - p_vixCentralRec[1].F3;
         prevData[12] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].F4 - p_vixCentralRec[1].F3 : p_vixCentralRec[1].F5 - p_vixCentralRec[1].F4;
         prevData[13] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].F5 - p_vixCentralRec[1].F4 : p_vixCentralRec[1].F6 - p_vixCentralRec[1].F5;
         prevData[14] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].F6 - p_vixCentralRec[1].F5 : p_vixCentralRec[1].F7 - p_vixCentralRec[1].F6;
         prevData[15] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? p_vixCentralRec[1].F7 - p_vixCentralRec[1].F6 : p_vixCentralRec[1].F8 - p_vixCentralRec[1].F7;
-        prevData[16] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? ((p_vixCentralRec[0].F8 > 0) ? p_vixCentralRec[1].F8 - p_vixCentralRec[1].F7 :0) : 0;
+        prevData[16] = (p_vixCentralRec[0].F1expDays - p_vixCentralRec[1].F1expDays <= 0) ? ((p_vixCentralRec[0].F8 > 0) ? p_vixCentralRec[1].F8 - p_vixCentralRec[1].F7 : 0) : 0;
 
         // Creating the difference of current and previous data array (prices and spreads).
         double[] currDataDiff = new double[17];
@@ -640,14 +637,14 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         double[] currDataPercCh = new double[17];
         for (int iRow = 0; iRow < currDataPercCh.Length; iRow++)
         {
-            currDataPercCh[iRow] = (prevData[iRow]==0)?0:(currData[iRow]/prevData[iRow]-1);
+            currDataPercCh[iRow] = (prevData[iRow] == 0) ? 0 : (currData[iRow] / prevData[iRow] - 1);
         }
 
 
         // Creating input string for JavaScript.
         StringBuilder sb = new("{" + Environment.NewLine);
 
-        sb.Append(@"""dataSource"": """+ p_dataSource);
+        sb.Append(@"""dataSource"": """ + p_dataSource);
 
         sb.Append(@"""," + Environment.NewLine + @"""titleCont"": """ + p_titleF);
 
@@ -687,9 +684,9 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
             sb.Append($"{Math.Round(p_spotVixValue, 4)}, ");
         sb.Append(Math.Round(p_spotVixValue, 4));
 
-        sb.AppendLine(@"]"""+ Environment.NewLine + @"}");
-        
+        sb.AppendLine(@"]""" + Environment.NewLine + @"}");
+
         return sb.ToString();
-                
+
     }
 }

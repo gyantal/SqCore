@@ -26,9 +26,9 @@ public class NGXLogInterface
 {
     public NgxLoggerLevel Level { get; set; }
     public string Timestamp { get; set; } = string.Empty;
-    public string FileName { get; set; }  = string.Empty;
-    public string LineNumber { get; set; }  = string.Empty;
-    public string Message { get; set; }  = string.Empty;
+    public string FileName { get; set; } = string.Empty;
+    public string LineNumber { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
     public object[] Additional { get; set; } = Array.Empty<object>();
 }
 
@@ -60,7 +60,7 @@ public class JsLogController : Microsoft.AspNetCore.Mvc.Controller
         {
             var jsLogObj = JsonSerializer.Deserialize<NGXLogInterface>(jsLogMessage, new JsonSerializerOptions { PropertyNameCaseInsensitive = true});
             if (jsLogObj == null || jsLogObj.Level == NgxLoggerLevel.ERROR || jsLogObj.Level == NgxLoggerLevel.FATAL)
-            {   // notify HealthMonitor to send an email
+            { // notify HealthMonitor to send an email
                 await HealthMonitorMessage.SendAsync(jsLogMsgWithOrigin, HealthMonitorMessageID.SqCoreWebJsError);
             }
         }

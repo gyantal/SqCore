@@ -36,4 +36,4 @@ public partial class ExampleWs
     public static void OnWsClose()
     {
     }
-}   // class
+} // class

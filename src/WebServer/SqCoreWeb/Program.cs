@@ -16,8 +16,8 @@ namespace SqCoreWeb;
 public interface IWebAppGlobals
 {
     DateTime WebAppStartTime { get; set; }
-    IWebHostEnvironment? KestrelEnv { get; set; }   // instead of the 3 member variables separately, store the container p_env
-    Queue<HttpRequestLog> HttpRequestLogs { get; set; }     // Fast Insert, limited size. Better that List
+    IWebHostEnvironment? KestrelEnv { get; set; } // instead of the 3 member variables separately, store the container p_env
+    Queue<HttpRequestLog> HttpRequestLogs { get; set; } // Fast Insert, limited size. Better that List
 }
 
 public class WebAppGlobals : IWebAppGlobals
@@ -38,7 +38,7 @@ public partial class Program
     static long gNheartbeat = 0;
     const int cHeartbeatTimerFrequencyMinutes = 10;
 
-    public static void Main(string[] args)   // entry point Main cannot be flagged as async, because at first await, Main thread would go back to Threadpool, but that terminates the Console app
+    public static void Main(string[] args) // entry point Main cannot be flagged as async, because at first await, Main thread would go back to Threadpool, but that terminates the Console app
     {
         string appName = System.Reflection.MethodBase.GetCurrentMethod()?.ReflectedType?.Namespace ?? "UnknownNamespace";
         string systemEnvStr = $"(v1.0.15,{Utils.RuntimeConfig() /* Debug | Release */},CLR:{System.Environment.Version},{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},OS:{System.Environment.OSVersion},usr:{System.Environment.UserName},CPU:{System.Environment.ProcessorCount},ThId-{Environment.CurrentManagedThreadId})";
@@ -46,11 +46,11 @@ public partial class Program
         gLogger.Info($"********** Main() START {systemEnvStr}");
         // Setting Console.Title
         // on Linux use it only in GUI mode. It works with graphical Xterm in VNC, but with 'screen' or with Putty it is buggy and after this, the next 200 characters are not written to console.
-        // Future work if needed: bring a flag to use it in string[] args, but by default, don't set Title on Linux 
+        // Future work if needed: bring a flag to use it in string[] args, but by default, don't set Title on Linux
         if (!OperatingSystem.IsLinux()) // https://stackoverflow.com/questions/47059468/get-or-set-the-console-title-in-linux-and-macosx-with-net-core
             Console.Title = $"{appName} v1.0.15"; // "SqCoreWeb v1.0.15"
 
-        gHeartbeatTimer = new System.Threading.Timer((e) =>    // Heartbeat log is useful to find out when VM was shut down, or when the App crashed
+        gHeartbeatTimer = new System.Threading.Timer((e) => // Heartbeat log is useful to find out when VM was shut down, or when the App crashed
         {
             Utils.Logger.Info($"**g_nHeartbeat: {gNheartbeat} (at every {cHeartbeatTimerFrequencyMinutes} minutes)");
             gNheartbeat++;
@@ -62,8 +62,8 @@ public partial class Program
         gLogger.Info(systemEnvStr2);
 
         var builder = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())        // GetCurrentDirectory() is the folder of the '*.csproj'.
-            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)      // no need to copy appsettings.json to the sub-directory of the EXE. 
+            .SetBasePath(Directory.GetCurrentDirectory()) // GetCurrentDirectory() is the folder of the '*.csproj'.
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true) // no need to copy appsettings.json to the sub-directory of the EXE.
             .AddJsonFile(sensitiveConfigFullPath, optional: true, reloadOnChange: true);
         // .AddUserSecrets<Program>()    // Used mostly in Development only, not in Production. Stored in a JSON configuration file in a system-protected user profile folder on the local machine. (e.g. user's %APPDATA%\Microsoft\UserSecrets\), the secret values aren't encrypted, but could be in the future.
         // do we need it?: No. Sensitive files are in separate folders, not up on GitHub. If server is not hacked, we don't care if somebody who runs the code can read the settings file. Also, scrambling secret file makes it more difficult to change it realtime.

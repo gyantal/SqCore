@@ -103,7 +103,7 @@ public class StrategyUberTaaController : ControllerBase
         string liveDateString = "Request time (UTC): " + liveDate;
 
         // Last data time (UTC)
-        string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000,1,1,16,15,0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on " + quotesData[0][^1].Date.ToString("yyyy-MM-dd");
+        string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000, 1, 1, 16, 15, 0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on " + quotesData[0][^1].Date.ToString("yyyy-MM-dd");
         string lastDataTimeString = "Last data time (UTC): " + lastDataTime;
 
         // Current PV, Number of current and required shares
@@ -115,7 +115,6 @@ public class StrategyUberTaaController : ControllerBase
 
         double currPV;
         int[] currPosInt = new int[usedAssetList.Length + 1];
-        
 
         double[] currPosValue = new double[usedAssetList.Length + 1];
         for (int jCols = 0; jCols < currPosValue.Length - 2; jCols++)
@@ -132,7 +131,7 @@ public class StrategyUberTaaController : ControllerBase
         double[] nextPosValue = new double[usedAssetList.Length + 1];
         for (int jCols = 0; jCols < nextPosValue.Length - 2; jCols++)
         {
-            nextPosValue[jCols] = currPV * weightsFinal.Item3[weightsFinal.Item3.GetLength(0) - 1 , jCols + 1];
+            nextPosValue[jCols] = currPV * weightsFinal.Item3[weightsFinal.Item3.GetLength(0) - 1, jCols + 1];
         }
         nextPosValue[^2] = Math.Max(0, currPV - nextPosValue.Take(nextPosValue.Length - 2).ToArray().Sum());
         nextPosValue[^1] = currPV - nextPosValue.Take(nextPosValue.Length - 1).ToArray().Sum();
@@ -177,7 +176,7 @@ public class StrategyUberTaaController : ControllerBase
         {
             xluVtiSignal = "bullish";
         }
-        else 
+        else
         {
             xluVtiSignal = "bearish";
         }
@@ -194,7 +193,7 @@ public class StrategyUberTaaController : ControllerBase
 
 
         // Position weights in the last 20 days
-        string[,] prevPosMtx = new string[weightsFinal.Item3.GetLength(0) + 1,usedAssetList.Length + 3];
+        string[,] prevPosMtx = new string[weightsFinal.Item3.GetLength(0) + 1, usedAssetList.Length + 3];
         for (int iRows = 0; iRows < prevPosMtx.GetLength(0) - 1; iRows++)
         {
             DateTime assDate = startMatlabDate.AddDays(weightsFinal.Item3[iRows, 0] - 693962);
@@ -205,16 +204,16 @@ public class StrategyUberTaaController : ControllerBase
             for (int jCols = 0; jCols < prevPosMtx.GetLength(1) - 4; jCols++)
             {
                 assetWeightSum += weightsFinal.Item3[iRows, jCols + 1];
-                prevPosMtx[iRows, jCols + 1] = Math.Round(weightsFinal.Item3[iRows,jCols + 1] * 100.0, 2).ToString() + "%";
+                prevPosMtx[iRows, jCols + 1] = Math.Round(weightsFinal.Item3[iRows, jCols + 1] * 100.0, 2).ToString() + "%";
             }
             prevPosMtx[iRows, prevPosMtx.GetLength(1) - 1] = (weightsFinal.Item4[iRows] == "0") ? "---" : weightsFinal.Item4[iRows];
-            prevPosMtx[iRows, prevPosMtx.GetLength(1) - 3] = Math.Round(Math.Max((1.0-assetWeightSum), 0) * 100.0, 2).ToString() + "%";
-            prevPosMtx[iRows, prevPosMtx.GetLength(1) - 2] = Math.Round((1.0 - assetWeightSum- Math.Max((1.0 - assetWeightSum), 0)) * 100.0, 2).ToString() + "%";
+            prevPosMtx[iRows, prevPosMtx.GetLength(1) - 3] = Math.Round(Math.Max((1.0 - assetWeightSum), 0) * 100.0, 2).ToString() + "%";
+            prevPosMtx[iRows, prevPosMtx.GetLength(1) - 2] = Math.Round((1.0 - assetWeightSum - Math.Max((1.0 - assetWeightSum), 0)) * 100.0, 2).ToString() + "%";
         }
         prevPosMtx[prevPosMtx.GetLength(0) - 1, 0] = "";
         for (int jCols = 0; jCols < prevPosMtx.GetLength(1) - 3; jCols++)
         {
-            prevPosMtx[prevPosMtx.GetLength(0) - 1, jCols + 1]=usedAssetList[jCols];
+            prevPosMtx[prevPosMtx.GetLength(0) - 1, jCols + 1] = usedAssetList[jCols];
         }
         prevPosMtx[prevPosMtx.GetLength(0) - 1, prevPosMtx.GetLength(1) - 2] = "Cash";
         prevPosMtx[prevPosMtx.GetLength(0) - 1, prevPosMtx.GetLength(1) - 1] = "Event";
@@ -229,7 +228,7 @@ public class StrategyUberTaaController : ControllerBase
             }
         }
 
-        // Codes for last 20 days to coloring 
+        // Codes for last 20 days to coloring
         double[,] prevAssEventCodes = weightsFinal.Item1;
         for (int iRows = 0; iRows < prevAssEventCodes.GetLength(0) / 2; iRows++)
         {
@@ -388,7 +387,7 @@ public class StrategyUberTaaController : ControllerBase
 
         // AssetPrice Changes in last 20 days to chart
         int assetChartLength = 20;
-        string[,] assetChangesMtx = new string[assetChartLength + 1,usedAssetList.Length];
+        string[,] assetChangesMtx = new string[assetChartLength + 1, usedAssetList.Length];
         for (int iRows = 0; iRows < assetChangesMtx.GetLength(0); iRows++)
         {
             assetChangesMtx[iRows, 0] = quotesData[0][quotesData[0].Count - 1 - assetChartLength + iRows].Date.ToString("yyyy-MM-dd");
@@ -444,7 +443,7 @@ public class StrategyUberTaaController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""gSheetRef"": """ + usedGSheetUrl);
 
         sb.Append(@"""," + Environment.NewLine + @"""assetNames"": """);
-            for (int i = 0; i<usedAssetList.Length - 1; i++)
+            for (int i = 0; i < usedAssetList.Length - 1; i++)
                 sb.Append(usedAssetList[i] + ", ");
         sb.Append(usedAssetList[^1]);
 
@@ -456,22 +455,22 @@ public class StrategyUberTaaController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""currPosNum"": """);
         for (int i = 0; i < currPosInt.Length - 1; i++)
             sb.Append(currPosInt[i].ToString() + ", ");
-        sb.Append("$"+Math.Round(currPosInt[^1]/1000.0).ToString() + "K");
+        sb.Append("$" + Math.Round(currPosInt[^1] / 1000.0).ToString() + "K");
 
         sb.Append(@"""," + Environment.NewLine + @"""currPosVal"": """);
         for (int i = 0; i < currPosValue.Length - 1; i++)
-            sb.Append("$"+Math.Round(currPosValue[i] / 1000).ToString() + "K, ");
-        sb.Append("$"+Math.Round(currPosValue[^1] / 1000).ToString() + "K");
+            sb.Append("$" + Math.Round(currPosValue[i] / 1000).ToString() + "K, ");
+        sb.Append("$" + Math.Round(currPosValue[^1] / 1000).ToString() + "K");
 
         sb.Append(@"""," + Environment.NewLine + @"""nextPosNum"": """);
         for (int i = 0; i < nextPosInt.Length - 1; i++)
             sb.Append(Math.Round(nextPosInt[i]).ToString() + ", ");
-        sb.Append("$"+Math.Round(nextPosInt[^1] / 1000).ToString() + "K");
+        sb.Append("$" + Math.Round(nextPosInt[^1] / 1000).ToString() + "K");
 
         sb.Append(@"""," + Environment.NewLine + @"""nextPosVal"": """);
         for (int i = 0; i < nextPosValue.Length - 1; i++)
-            sb.Append("$"+Math.Round(nextPosValue[i] / 1000).ToString() + "K, ");
-        sb.Append("$"+Math.Round(nextPosValue[^1] / 1000).ToString() + "K");
+            sb.Append("$" + Math.Round(nextPosValue[i] / 1000).ToString() + "K, ");
+        sb.Append("$" + Math.Round(nextPosValue[^1] / 1000).ToString() + "K");
 
         sb.Append(@"""," + Environment.NewLine + @"""posNumDiff"": """);
         for (int i = 0; i < posIntDiff.Length - 1; i++)
@@ -495,7 +494,7 @@ public class StrategyUberTaaController : ControllerBase
                 sb.Append(prevPosMtx[i, j] + ", ");
             }
             sb.Append(prevPosMtx[i, prevPosMtx.GetLength(1) - 1]);
-            if (i < prevPosMtx.GetLength(0)-1)
+            if (i < prevPosMtx.GetLength(0) - 1)
             {
                 sb.Append("ß ");
             }
@@ -547,8 +546,7 @@ public class StrategyUberTaaController : ControllerBase
             }
         }
 
-        sb.Append(@"""," + Environment.NewLine + @"""chartLength"": """ + assetChartLength); 
-
+        sb.Append(@"""," + Environment.NewLine + @"""chartLength"": """ + assetChartLength);
 
         sb.Append(@"""," + Environment.NewLine + @"""assetChangesToChartMtx"": """);
         for (int i = 0; i < assetChangesMtx.GetLength(0); i++)
@@ -641,9 +639,8 @@ public class StrategyUberTaaController : ControllerBase
             Array.Copy(currPos, 2, currPosAP, 0, p_allAssetList.Length - 3);
             int currPosDate = Int32.Parse(currPos[0]);
             int currPosCash = Int32.Parse(currPos[^3]);
-            int[] currPosDateCash = new int[] {currPosDate,currPosCash };
+            int[] currPosDateCash = new int[] {currPosDate, currPosCash };
             int[] currPosAssets = Array.ConvertAll(currPosAP, int.Parse);
-                        
 
             p_gSheetString = p_gSheetString.Replace("\n", "").Replace("]", "").Replace("\"", "").Replace(" ", "").Replace(",,", ",0,");
             gSheetTableRows = p_gSheetString.Split(new string[] { "[" }, StringSplitOptions.RemoveEmptyEntries);
@@ -714,12 +711,12 @@ public class StrategyUberTaaController : ControllerBase
             DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
             // PctChannel needs 252 days and we need another extra 30 trading days rolling window to calculate PctChannels during the previous lookback window
             // PctChannel Signal cannot be calculated just having the last day data, because it has to be rolled further. As it can exit/enter into bullish signals along the way of the simulation.
-            // Estimated needed 252 trading days = 365 calendar days. 
+            // Estimated needed 252 trading days = 365 calendar days.
             // And an additional rolling window of 30 trading days (at least). That is another 45 calendar days.
             // As minimal, we need 365 + 45 = 410 calendar days.
             // For more robust calculations, we can use a 6 month rolling window. That is 120 trading days = 185 calendar days. Altogether: 365+185 = 550
             // DateTime startIncLoc = nowET.AddDays(-408); // This can reproduce the old SqLab implementation with 33 days rolling simulation window
-            DateTime startIncLoc = nowET.AddDays(-490);    // This uses a 6-months, 120 trading days rolling simulation window for PctChannels 
+            DateTime startIncLoc = nowET.AddDays(-490);    // This uses a 6-months, 120 trading days rolling simulation window for PctChannels
 
         List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc, true).ToList();
         List<List<DailyData>> quotesData = new();
@@ -764,7 +761,7 @@ public class StrategyUberTaaController : ControllerBase
         double[] assetHV = new double[nAssets];
         double[] assetWeights = new double[nAssets];
         double[] assetWeights2 = new double[nAssets];
-        double[,] assetPctChannelsUpper = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each 
+        double[,] assetPctChannelsUpper = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each
         double[,] assetPctChannelsLower = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each
         sbyte[,] assetPctChannelsSignal = new sbyte[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each
         int startNumDay = p_pctChannelLookbackDays.Max() - 1;
@@ -798,7 +795,7 @@ public class StrategyUberTaaController : ControllerBase
 
             // Calculate assetWeights
             double totalWeight = 0.0;
-            
+
             for (int iAsset = 0; iAsset < nAssets; iAsset++)
             {
                 sbyte compositeSignal = 0;    // For every stocks, sum up the four signals every day. This sum will be -4, -2, 0, +2 or +4.
@@ -816,7 +813,7 @@ public class StrategyUberTaaController : ControllerBase
                 }
                 // Balazs: uses "corrected sample standard deviation"; corrected: dividing by 19, not 20; He doesn't annualize. He uses daily StDev
                 assetHV[iAsset] = ArrayStatistics.StandardDeviation(hvPctChg);  // Calculate the 20-day historical volatility of daily percentage changes for every stock.
-                assetWeights[iAsset] = assetScores[iAsset] / assetHV[iAsset];   // “Score/Vol” quotients will define the weights of the stocks. They can be 0 or negative as well. 
+                assetWeights[iAsset] = assetScores[iAsset] / assetHV[iAsset];   // “Score/Vol” quotients will define the weights of the stocks. They can be 0 or negative as well.
                                                                                 // there is an interesting observation here. Actually, it is a good behavour.
                                                                                 // If assetScores[i]=0, assetWeights[i] becomes 0, so we don't use its weight when p_isCashAllocatedForNonActives => TLT will not fill its Cash-place; NO TLT will be invested (if this is the only stock with 0 score), the portfolio will be 100% in other stocks. We are more Brave.
                                                                                 // However, if assetScores[i]<0 (negative), assetWeights[i] becoumes a proper negative number. It will be used in TotalWeight calculation => TLT will fill its's space. (if this is the only stock with negative score), TLT will be invested in its place; consequently the portfolio will NOT be 100% in other stocks. We are more defensive.
@@ -844,7 +841,7 @@ public class StrategyUberTaaController : ControllerBase
             taaWeightMatlabDateVec[i] = (taaWeightDateArray[i] - startMatlabDate).TotalDays + 693962;
         }
 
-        Tuple<double[],double[,]> taaWeightResults = p_winnerRun ? Tuple.Create(taaWeightMatlabDateVec, dailyAssetScoresMod) : Tuple.Create(taaWeightMatlabDateVec, dailyAssetWeights);
+        Tuple<double[], double[,]> taaWeightResults = p_winnerRun ? Tuple.Create(taaWeightMatlabDateVec, dailyAssetScoresMod) : Tuple.Create(taaWeightMatlabDateVec, dailyAssetWeights);
         return taaWeightResults;
     }
 
@@ -884,7 +881,7 @@ public class StrategyUberTaaController : ControllerBase
                 if (p_clmtData[iRows + kRows + 181, 2] - p_clmtData[iRows + kRows + 180, 2] >= 0)
                 {
                     gains = gains + p_clmtData[iRows + kRows + 181, 2] - p_clmtData[iRows + kRows + 180, 2];
-                    gainNum += 1; 
+                    gainNum += 1;
                 }
                 else
                 {
@@ -928,7 +925,7 @@ public class StrategyUberTaaController : ControllerBase
         {
             spxPrice[iRows] = p_clmtData[iRows + 200, 1];
             double sumsSPX50 = new();
-            
+
             for (int kRows = 0; kRows < 50; kRows++)
             {
                 sumsSPX50 += p_clmtData[iRows + kRows + 151, 1];
@@ -978,7 +975,7 @@ public class StrategyUberTaaController : ControllerBase
         {
             clmtDateVec2[iRows] = p_clmtData[iRows + 200, 0];
         }
-        
+
         double[][] clmtTotalResu = new double[9][];
         clmtTotalResu[0] = clmtDateVec2;
         clmtTotalResu[1] = xluRSI;
@@ -1005,7 +1002,7 @@ public class StrategyUberTaaController : ControllerBase
         return clmtTotalResu;
     }
 
-    public static Tuple<double[,], double[,], double[,], string[], string[]> MultiplFinCalc(double[][] p_clmtRes, Tuple<double[], int[,], int[], int[], string[], int[], int[]>  p_gSheetResToFinCalc, string[] p_allAssetList, double p_lastDataDate, Tuple<double[], double[,]>  p_taaWeightResultsTuple)
+    public static Tuple<double[,], double[,], double[,], string[], string[]> MultiplFinCalc(double[][] p_clmtRes, Tuple<double[], int[,], int[], int[], string[], int[], int[]> p_gSheetResToFinCalc, string[] p_allAssetList, double p_lastDataDate, Tuple<double[], double[,]> p_taaWeightResultsTuple)
     {
         int pastDataLength = 20;
         int futDataLength = 10;
@@ -1017,7 +1014,6 @@ public class StrategyUberTaaController : ControllerBase
         double[,] futCodes = new double[futDataLength, p_allAssetList.Length - 3];
         string[] pastEvents = new string[pastDataLength];
         string[] futEvents = new string[futDataLength];
-
 
         for (int iRows = 0; iRows < pastCodes.GetLength(0); iRows++)
         {
@@ -1060,7 +1056,7 @@ public class StrategyUberTaaController : ControllerBase
                 {
                     pastCodes[iRows, jCols] = 4;
                 }
-                else if (p_clmtRes[7][indClmtRes - pastDataLength + iRows + 1]==1)
+                else if (p_clmtRes[7][indClmtRes - pastDataLength + iRows + 1] == 1)
                 {
                     pastCodes[iRows, jCols] = 8;
                 }

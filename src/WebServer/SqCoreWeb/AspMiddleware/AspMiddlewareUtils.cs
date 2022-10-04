@@ -20,7 +20,7 @@ public static class AspMiddlewareUtils
     // ASP.NET Core apps running in Linux containers use a case sensitive file system, which means that the CSS and JS file references must be case-correct.
     // However, Windows file system is not case sensitive.
     // We recommend a convention for all filenames ("all lowercase" usually works best). We already do have standards to always use lower-case. So, we check that standard.
-    // This has to be switched on only on Windows (which is development) 
+    // This has to be switched on only on Windows (which is development)
     public static IApplicationBuilder UseStaticFilesCaseSensitive(this IApplicationBuilder app)
     {
         var caseSensitiveFileOptions = GetCaseSensitiveStaticFileOptions();

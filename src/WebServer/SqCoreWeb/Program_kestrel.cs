@@ -8,7 +8,7 @@ using NLog.Web;
 using SqCommon;
 using System.Diagnostics;
 
-// Kestrel is a cross-platform web server for ASP.NET Core. Kestrel is the web server that's included and enabled by default in ASP.NET Core 
+// Kestrel is a cross-platform web server for ASP.NET Core. Kestrel is the web server that's included and enabled by default in ASP.NET Core
 namespace SqCoreWeb;
 
 public partial class Program
@@ -63,11 +63,11 @@ public static IHostBuilder CreateHostBuilder(string[] args) =>
             // Because of Google Auth cookie usage and Chrome SameSite policy, use only the HTTPS protocol (no HTTP), even in local development. See explanation at Google Auth code. Also HTTP/3 requires only HTTPS
             // Safe to leave ports 5000, 5001 on IPAddress.Loopback (localhost), because localhost can be accessed only from local machine. From the public web, the ports 5000, 5001 is not accessable.
             // See cookies: Facebook and Google logins only work in HTTPS (even locally), and because we want in Local development the same experience (user email info) as is production, we eliminate HTTP in local development
-            // serverOptions.Listen(IPAddress.Loopback, 5000); // 2020-10: HTTP still works for basic things // In IPv4, 127.0.0.1 is the most commonly used loopback address, in IP6, it is [::1],  "localhost" means either 127.0.0.1 or  [::1] 
+            // serverOptions.Listen(IPAddress.Loopback, 5000); // 2020-10: HTTP still works for basic things // In IPv4, 127.0.0.1 is the most commonly used loopback address, in IP6, it is [::1],  "localhost" means either 127.0.0.1 or  [::1]
 
             string pfxFullPath = Utils.SensitiveConfigFolderPath() + $"sqcore.net.merged_pubCert_privKey.pfx";
             Utils.Logger.Info($"Pfx file: " + pfxFullPath);
-            serverOptions.Listen(IPAddress.Loopback /* '127.0.0.1' (it is not 'localhost') */, 5001, listenOptions =>  // On Linux server: only 'localhost:5001' is opened, but '<PublicIP>:5001>' is not. We would need PublicAny for that. But for security, it is fine.
+            serverOptions.Listen(IPAddress.Loopback /* '127.0.0.1' (it is not 'localhost') */, 5001, listenOptions => // On Linux server: only 'localhost:5001' is opened, but '<PublicIP>:5001>' is not. We would need PublicAny for that. But for security, it is fine.
             {
                     // On Linux, "default developer certificate could not be found or is out of date. ". Uncommenting this solved the problem temporarily.
                     // Exception: 'System.InvalidOperationException: Unable to configure HTTPS endpoint. No server certificate was specified, and the default developer certificate could not be found or is out of date.
@@ -77,7 +77,7 @@ public static IHostBuilder CreateHostBuilder(string[] args) =>
 
                     // https://go.microsoft.com/fwlink/?linkid=848054
                     // https://stackoverflow.com/questions/53300480/unable-to-configure-https-endpoint-no-server-certificate-was-specified-and-the
-                    // The .NET Core SDK includes an HTTPS development certificate. The certificate is installed as part of the first-run experience. 
+                    // The .NET Core SDK includes an HTTPS development certificate. The certificate is installed as part of the first-run experience.
                     // But that cert expires after about 6 month. Its expiration can be followed in certmgr.msc/Trusted Root Certification Authorities/Certificates/localhost/Expiration Date.
                     // Cleaning (dotnet dev-certs https --clean) and recreating (dotnet dev-certs https -t) it both on Win/Linux would work, but it has to be done every 6 months.
                     // Better once and for all solution to use the live certificate of SqCore.net even in localhost in Development.
@@ -87,7 +87,7 @@ public static IHostBuilder CreateHostBuilder(string[] args) =>
             });
 
             // from the public web only port 443 is accessable. However, on that port, both HTTP and HTTPS traffic is allowed. Although we redirect HTTP to HTTPS later.
-            serverOptions.ListenAnyIP(443, listenOptions =>    // Both 'localhost:443' and '<PublicIP>:443>' is listened on Linux server.
+            serverOptions.ListenAnyIP(443, listenOptions => // Both 'localhost:443' and '<PublicIP>:443>' is listened on Linux server.
             {
                 listenOptions.UseHttps(pfxFullPath, @"haha");
                 // Future: One Kestrel server can support many domains (sqcore.net, www.snifferquant.net, xyz.com). In that case, different certs are needed based on connectionContext
@@ -96,7 +96,7 @@ public static IHostBuilder CreateHostBuilder(string[] args) =>
                 // listenOptions.UseHttps(httpsOptions =>
                 // {
                 //     // see 'certmgr.msc'
-                //     // https://localhost:5005/ with this turns out to be 'valid' in Chrome. Cert is issued by 'localhost', issued to 'localhost'. 
+                //     // https://localhost:5005/ with this turns out to be 'valid' in Chrome. Cert is issued by 'localhost', issued to 'localhost'.
                 //     // https://127.0.0.1:5005/ will say: invalid. (as the 'name' param is null in the callback down)
                 //     var localhostCert = CertificateLoader.LoadFromStoreCert("localhost", "My", StoreLocation.CurrentUser, allowInvalid: true);  // that is the local machine certificate store
                 //     X509Certificate2 letsEncryptCert = new X509Certificate2(@"g:\agy\myknowledge\programming\_ASP.NET\https cert\letsencrypt Folder from Ubuntu\letsencrypt\live\sqcore.net\merged_pubCert_privKey_pwd_haha.pfx", @"haha", X509KeyStorageFlags.Exportable);
@@ -125,13 +125,13 @@ public static IHostBuilder CreateHostBuilder(string[] args) =>
         {
             // for very detailed logging:
             // set "Microsoft": "Trace" in appsettings.json or appsettings.dev.json
-            // set set this ASP logging.SetMinimumLevel to Trace, 
+            // set set this ASP logging.SetMinimumLevel to Trace,
             // set minlevel="Trace" in NLog.config
             logging.ClearProviders();   // this deletes the Console logger which is a default in ASP.net
             if (Utils.IsDebugRuntimeConfig())
             {
                 // logging.AddConsole();   // in VsCode at F5: ASP.NET Core logs appears in normal console.
-                logging.AddDebug();  // in VsCode at F5: ASP.NET Core logs appears in Debug console. 
+                logging.AddDebug();  // in VsCode at F5: ASP.NET Core logs appears in Debug console.
                 logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
             }
             else

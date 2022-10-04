@@ -30,7 +30,7 @@ public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
         m_webAppGlobals = p_webAppGlobals;
     }
 
-    [HttpGet]   // Ping is accessed by the HealthMonitor every 9 minutes (to keep it alive), no no GoogleAuth there
+    [HttpGet] // Ping is accessed by the HealthMonitor every 9 minutes (to keep it alive), no no GoogleAuth there
     public ActionResult Ping()
     {
         // pinging Index.html do IO file operation. Also currently it is a Redirection. There must be a quicker way to ping our Webserver. (for keeping it alive)
@@ -45,13 +45,13 @@ public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
     public ActionResult HttpRequestActivityLog()
     {
         HttpRequestLog[] logsPointerArr = Array.Empty<HttpRequestLog>();
-        lock (m_webAppGlobals.HttpRequestLogs)  // prepare for multiple threads
+        lock (m_webAppGlobals.HttpRequestLogs) // prepare for multiple threads
         {
             logsPointerArr = m_webAppGlobals.HttpRequestLogs.ToArray();     // it copies only max 50 pointers to Array. Quick.
         }
 
         StringBuilder sb = new();
-        for (int i = logsPointerArr.Length - 1; i >= 0; i--)        // foreach loop iterates over Queue starting from the oldest item and ending with newest.
+        for (int i = logsPointerArr.Length - 1; i >= 0; i--) // foreach loop iterates over Queue starting from the oldest item and ending with newest.
         {
             var requestLog = logsPointerArr[i];
             string msg = String.Format("{0}#{1}{2} {3} '{4}' from {5} (u: {6}) ret: {7} in {8:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : string.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Path + (String.IsNullOrEmpty(requestLog.QueryString) ? "" : requestLog.QueryString), requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds);
@@ -184,7 +184,7 @@ public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
             // https://developers.google.com/sheets/api/guides/concepts
             // This gives back text colour and formatting of each cell. Not needed in general: https://sheets.googleapis.com/v4/spreadsheets/<spreadsheetId>?ranges=A1:C10&fields=properties.title,sheets(properties,data.rowData.values(effectiveValue,effectiveFormat))&key=<key>
             // This gives back only the values: https://sheets.googleapis.com/v4/spreadsheets/<spreadsheetId>/values/General!A:A?key=<key>
-            
+
             // gSheet is public: https://docs.google.com/spreadsheets/d/1onwqrdxQIIUJytd_PMbdFKUXnBx3YSRYok0EmJF8ppM
             valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync("https://sheets.googleapis.com/v4/spreadsheets/1onwqrdxQIIUJytd_PMbdFKUXnBx3YSRYok0EmJF8ppM/values/A1%3AA3?key=" + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
             if (valuesFromGSheetStr == null)
@@ -220,7 +220,7 @@ public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
     }
 
     // just pass the HealthMonitorWebsite TS query to the HealthMonitor.EXE without further processing.
-    [HttpPost, HttpGet]     // message from HealthMonitor webApp arrives as a Post, not a Get
+    [HttpPost, HttpGet] // message from HealthMonitor webApp arrives as a Post, not a Get
     public async Task<ActionResult> ReportHealthMonitorCurrentStateToDashboardInJSON()
     {
         Utils.Logger.Info("ReportHealthMonitorCurrentStateToDashboardInJSON() BEGIN");

@@ -33,7 +33,7 @@ public class Startup
     {
         // Asp.Net DependenciInjection (DI) of Kestrel policy for separating the creation of dependencies (IWebHostEnvironment, Options, Logger) from its actual usage in Controllers.
         // That way Controllers are light. And if there are 100 Controller classes, repeating the creation of Dependent objects (IWebHostEnvironment) is not in their source code. So, the source code of Controllers are light.
-        // DI is not necessary. DotNet core bases classes doesn't use that for logging or anything. However, Kestrel uses it, which we can honour. It also helps in unit-test. 
+        // DI is not necessary. DotNet core bases classes doesn't use that for logging or anything. However, Kestrel uses it, which we can honour. It also helps in unit-test.
         // But it is perfectly fine to do the Creation of dependencies (Logger, like nLog) in the Controller.
         // Transient objects are always different; a new instance is provided to every controller and every service.
         // Scoped objects are the same within a request, but different across different requests
@@ -49,14 +49,14 @@ public class Startup
 
         // https://docs.microsoft.com/en-us/aspnet/core/performance/caching/response?view=aspnetcore-3.0
         services.AddResponseCaching(); // DI: these services could be used in MVC Control/Razor pages (either as [Attributes], or in code)
-        services.AddMvc(options =>     // AddMvc() equals AddControllersWithViews() + AddRazorPages()
+        services.AddMvc(options => // AddMvc() equals AddControllersWithViews() + AddRazorPages()
         {
-            // For server-side caching that follows the HTTP 1.1 Caching specification, use this Response Caching Middleware. 
-            // Note that even though the browser loads data from (disk cache), the client ask the ServerSideMiddleware, so there is a 1msec time delay for these server-side cached queries. 
+            // For server-side caching that follows the HTTP 1.1 Caching specification, use this Response Caching Middleware.
+            // Note that even though the browser loads data from (disk cache), the client ask the ServerSideMiddleware, so there is a 1msec time delay for these server-side cached queries.
             // But there is no server side processing. The Controllers are not called for any 900 msec processing. The AspMiddleware instructs the browser to use the disk cache.
             // https://docs.microsoft.com/en-us/aspnet/core/performance/caching/response?view=aspnetcore-6.0#responsecache-attribute
-            // "There isn't a corresponding HTTP header (sent to client) for the VaryByQueryKeys property. (only the "cache-control: public,max-age=30" is sent in the header) The property is an HTTP feature handled by Response Caching Middleware. 
-            // VaryByQueryKeys: For the middleware to serve a cached response, the query string and query string value must match a previous request. " 
+            // "There isn't a corresponding HTTP header (sent to client) for the VaryByQueryKeys property. (only the "cache-control: public,max-age=30" is sent in the header) The property is an HTTP feature handled by Response Caching Middleware.
+            // VaryByQueryKeys: For the middleware to serve a cached response, the query string and query string value must match a previous request. "
 
             // These CashProfiles are given only once here, and if they change, we only have to change here, not in all Controllers.
             options.CacheProfiles.Add("NoCache",
@@ -102,22 +102,22 @@ public class Startup
 
         string googleClientId = Utils.Configuration["Google:ClientId"];
         string googleClientSecret = Utils.Configuration["Google:ClientSecret"];
-        
+
         if (!String.IsNullOrEmpty(googleClientId) && !String.IsNullOrEmpty(googleClientSecret))
         {
             // The reason you have BOTH google and cookies Auth is because you're using Google for identity information but using cookies for storage of the identity for only asking Google once.
             // So AddIdentity() is not required, but Cookies Yes.
             services.AddAuthentication(options =>
             {
-                // If you don't want the cookie to be automatically authenticated and assigned to HttpContext.User, 
+                // If you don't want the cookie to be automatically authenticated and assigned to HttpContext.User,
                 // remove the CookieAuthenticationDefaults.AuthenticationScheme parameter passed to AddAuthentication.
-                options.DefaultScheme =  CookieAuthenticationDefaults.AuthenticationScheme;  // For anything else (sign in, sign out, authenticate, forbid), use the cookies scheme
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;  // For anything else (sign in, sign out, authenticate, forbid), use the cookies scheme
                 options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;   // For challenges, use the google scheme. If not, "InvalidOperationException: No authenticationScheme was specified"
 
                 options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
             })
-            .AddCookie(o => {  // CookieAuth will be the default from the two, GoogleAuth is used only for Challenge
+            .AddCookie(o => { // CookieAuth will be the default from the two, GoogleAuth is used only for Challenge
                 o.LoginPath = "/UserAccount/login";
                 o.LogoutPath = "/UserAccount/logout";
 
@@ -138,14 +138,14 @@ public class Startup
                 // without any intervention, http://localhost/login returns this to the browser: ""Set-Cookie: .AspNetCore.Correlation.Google._AcFoUd0-sbBMoGfefWKA2WlqpVJwD2bGYTYs6axoBU=N; expires=Fri, 14 Aug 2020 14:45:30 GMT; path=/signin-google; samesite=none; httponly"
                 // and Chrome throws an Error to JsConsole: "A cookie associated with a resource at http://localhost/ was set with `SameSite=None` but without `Secure`. It has been blocked"
                 // disable this feature by going to "chrome://flags" and disabling "Cookies without SameSite must be secure", but it is good for development only
-                // So, from now on, because we want to use Chrome84+, if we want login, we have to develop in HTTPS mode, not HTTP. We can completely forget HTTP. Just use HTTPS, even in DEV. 
+                // So, from now on, because we want to use Chrome84+, if we want login, we have to develop in HTTPS mode, not HTTP. We can completely forget HTTP. Just use HTTPS, even in DEV.
 
-                // >GoogleAuth Login system uses cookie (.AspNetCore.Correlation.Google). From 2020-08, Chrome blocks a SameSite=None, which is not Secure. 
+                // >GoogleAuth Login system uses cookie (.AspNetCore.Correlation.Google). From 2020-08, Chrome blocks a SameSite=None, which is not Secure.
                 // But Secure means it is running on HTTPS. So, local development will also need to be done with HTTPS urls.
                 // >Specify SameSite=None and Secure if the cookie should be sent in cross-site requests. This enables third-party use.
-                // Specify SameSite=Strict or SameSite=Lax if the cookie should not be sent in cross-site requests. 
+                // Specify SameSite=Strict or SameSite=Lax if the cookie should not be sent in cross-site requests.
                 // But even in this case, if we use Both HTTP, HTTPS at development, Login problems arise on HTTP.
-                // >Chrome debug: cookie HTTP://".AspNetCore.Cookies": "This set-cookie was blocked because it was not sent over a secure connection and would have overwritten a cookie with a secure attribute.", 
+                // >Chrome debug: cookie HTTP://".AspNetCore.Cookies": "This set-cookie was blocked because it was not sent over a secure connection and would have overwritten a cookie with a secure attribute.",
                 // but then that Secure HTTPS cookie with the same name is not sent to the non-secure HTTP request. (It is only sent to the HTTPS request).
                 // Therefore, we should use only the HTTPS protocol, even in local development.  (except if AWS CloudFront cannot handle HTTPS to HTTPS conversions)
                 // See cookies: Facebook and Google logins only work in HTTPS (even locally), and because we want in Local development the same experience as is production, we eliminate HTTP in local development
@@ -158,7 +158,7 @@ public class Startup
                 // problem: if Cookie storage works in https://localhost:5001/UserAccount/login  but not in HTTP: http://localhost:5000/UserAccount/login
                 // "Note that the http page cannot set an insecure cookie of the same name as the secure cookie."
                 // Solution: Manually delete the cookie from Chrome. see here.  https://bugs.chromium.org/p/chromium/issues/detail?id=843371
-                // in Production, only HTTPS is allowed anyway, so it will work. Best is not mix development in both HTTP/HTTPS (just stick to one of them). 
+                // in Production, only HTTPS is allowed anyway, so it will work. Best is not mix development in both HTTP/HTTPS (just stick to one of them).
                 // stick to HTTPS. Although Chrome browser-caching will not work in HTTPS (because of insecure cert), it is better to test HTTPS, because that will be the production.
 
                 // Controls how much time the authentication ticket stored in the cookie will remain valid
@@ -173,7 +173,7 @@ public class Startup
                 options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.Always;
                 // Note: Once logged in to Google Ecosystem (and once allowed Sqcore website), the Google login prompt (offering different users) does not even display.
                 // Do we want it displayed? Probably NOT. Because this is good and fast:
-                // "the Google login prompt does not even display. From the app I get redirected to Google, 
+                // "the Google login prompt does not even display. From the app I get redirected to Google,
                 // and because I am already signed in with a user with that domain, Google immediately returns that as the authenticated user to your app."
                 // If you really want to logout that Guser from SqCore: sign out of your Google account (in Gmail, GDrive or any G.app), or open an Incognito browser window.
                 // >e.g. go do GoogleDrive: log-out as user. After that SqCore will ask the user login user only once. But that login will login to ALL Google services.
@@ -220,7 +220,7 @@ public class Startup
                     {
                         Utils.Logger.Error("GoogleAuth.OnRemoteFailure()");
                         Console.WriteLine("Error! GoogleAuth.OnRemoteFailure(");
-                        // 2021-07-06: Daya had login problems on localhost:5001 only. 
+                        // 2021-07-06: Daya had login problems on localhost:5001 only.
                         // "/signin-google?...<signin-token>" crashed in SqFirewallMiddlewarePreAuthLogger: _await _next(httpContext);
                         // "Microsoft.AspNetCore.Authentication.Google.GoogleHandler: Information: Error from RemoteAuthentication: A task was canceled.."
                         // StackTrace:
@@ -261,7 +261,7 @@ public class Startup
             // In .NET 6, app.UseDeveloperExceptionPage(); is added by default when env.IsDevelopment(). But we also want it in Production for the first years of  development.
             app.UseDeveloperExceptionPage(); // returns a nice webpage that shows the stack trace and everything of the crash. Can be used even in Production to catch the error quicker.
             // app.UseExceptionHandler("/error.html"); // Usually used in Production. It hides the crash details totally from the user. There is no browser redirection. It returns 'error.html' with status: 200 (OK). Maybe 500 (Error) would be better to return, but then the Browser might not display that page to the user.
-            
+
             // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
             app.UseHsts();
             app.UseHttpsRedirection();     // Chrome Caching warning! If you are developing using a self-signed certificate over https and there is an issue with the certificate then google will not cache the response
@@ -280,8 +280,8 @@ public class Startup
 
         // app.UseDefaultFiles();      // "UseDefaultFiles is a URL rewriter (default.htm, default.html, index.htm, index.html whichever first, 4 file queries to find the file) that doesn't actually serve the file. "
         app.UseRewriter(new RewriteOptions()
-        .AddRewrite(@"^$", "index.html", skipRemainingRules: true)              // empty string converted to index.html. Only 1 query to find the index.html file. Better than UseDefaultFiles()
-        .AddRewrite(@"^(.*)/$", "$1/index.html", skipRemainingRules: true)      // converts "/" to "/index.html", e.g. .AddRewrite(@"^HealthMonitor/$", @"HealthMonitor/index.html" and all Angular projects.
+        .AddRewrite(@"^$", "index.html", skipRemainingRules: true) // empty string converted to index.html. Only 1 query to find the index.html file. Better than UseDefaultFiles()
+        .AddRewrite(@"^(.*)/$", "$1/index.html", skipRemainingRules: true) // converts "/" to "/index.html", e.g. .AddRewrite(@"^HealthMonitor/$", @"HealthMonitor/index.html" and all Angular projects.
         );
 
         app.UseMiddleware<SqFirewallMiddlewarePreAuthLogger>();
@@ -292,7 +292,7 @@ public class Startup
         app.UseMiddleware<SqFirewallMiddlewarePostAuth>();  // For this to catch Exceptions, it should come after UseExceptionHadlers(), because those will swallow exceptions and generates nice ErrPage.
 
         // Request "dashboard.sqcore.net/index.html" should be converted to "sqcore.net/webapps/MarketDashboard/index.html"
-        // But Authentication (and user check) should be done BEFORE that, because we will lose the subdomain 'dashboard' prefix from the host. 
+        // But Authentication (and user check) should be done BEFORE that, because we will lose the subdomain 'dashboard' prefix from the host.
         // And the browser keeps separate cookies for the subdomain and main domain. dashboard.sqcore.net has different cookies than sqcore.net
         var options = new RewriteOptions();
         options.Rules.Add(new SubdomainRewriteOptionsRule());
@@ -305,7 +305,7 @@ public class Startup
         });
 
         // WebSocket should come After authentication, After SubdomainRewrite, but Caching is not necessary.
-        var webSocketOptions = new WebSocketOptions() 
+        var webSocketOptions = new WebSocketOptions()
         {
             KeepAliveInterval = TimeSpan.FromSeconds(120),  // default is 2 minutes
         };
@@ -318,48 +318,48 @@ public class Startup
         // So, while developing browser caching on localhost: Either:
         // 1. Test HTTPS on port 5001 in Edge, https://localhost:5001/HealthMonitor/   OR
         // 2. Test HTTP on PORT 5000 in Chrome, http://localhost:5000/HealthMonitor/  (disable UseHttpsRedirection()) not HTTPS  (but note that Chrome can be slow on http://localhost)
-        
+
         // because when we do Ctrl-R in Chrome, the Request header contains: "cache-control: no-cache". Then ResponseCaching will not use entry, and places this log:
         // dbug: Microsoft.AspNetCore.ResponseCaching.ResponseCachingMiddleware[9]
         //     The age of the entry is 00:05:23.2291902 and has exceeded the maximum age of 00:00:00 specified by the 'max-age' cache directive.
         // So, if we want to test responseCaching, open the same '/WeatherForecast' in a different tab.
-        // GET '/WeatherForecast' from 127.0.0.1 (gyantal@gmail.com) in 63.35ms can decrease to 
+        // GET '/WeatherForecast' from 127.0.0.1 (gyantal@gmail.com) in 63.35ms can decrease to
         // GET '/WeatherForecast' from 127.0.0.1 (gyantal@gmail.com) in 4.21ms
         app.UseResponseCaching();       // this fills up the Response header Cache-Control, but only for MVC Controllers (classes, methods), Razor Page handlers (classes)
-        
-        app.Use(async (context, next) =>    // this fills up the Response header Cache-Control for everything else, like static files.
+
+        app.Use(async (context, next) => // this fills up the Response header Cache-Control for everything else, like static files.
         {
             // main Index.html cache is controlled in SqFirewallMiddlewarePostAuth(), because to differentiate based on Login/Logout
-            if (((Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") || context.Request.Host.Host.StartsWith("sqcore.net")) 
+            if (((Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") || context.Request.Host.Host.StartsWith("sqcore.net"))
                 && (context.Request.Path.Value?.Equals("/index.html", StringComparison.OrdinalIgnoreCase) ?? false))
             {
                 await next();
                 return;
             }
 
-            if (!env.IsDevelopment())   // in development, don't use browser caching at all.
+            if (!env.IsDevelopment()) // in development, don't use browser caching at all.
             {
-                // we have to add header Before filling up the response with 'await next();', otherwise 
+                // we have to add header Before filling up the response with 'await next();', otherwise
                 // if we try to add After StaticFiles(), we got exception: "System.InvalidOperationException: Headers are read-only, response has already started."
                 TimeSpan maxBrowserCacheAge = TimeSpan.Zero;
                 var path = context.Request.Path.Value;
                 if (path != null &&
-                    (path.Equals("/index.html", StringComparison.OrdinalIgnoreCase)   // main index.html has Login/username on it. After Login, the page should be refreshed. So, ignore CacheControl for that
-                    || path.StartsWith("/hub/") || path.StartsWith("/ws/")))   // WebSockets should not be cached
+                    (path.Equals("/index.html", StringComparison.OrdinalIgnoreCase) // main index.html has Login/username on it. After Login, the page should be refreshed. So, ignore CacheControl for that
+                    || path.StartsWith("/hub/") || path.StartsWith("/ws/"))) // WebSockets should not be cached
                 {
                     maxBrowserCacheAge = TimeSpan.Zero;
                 }
                 else
                 {
                     string ext = Path.GetExtension(context.Request.Path.Value) ?? string.Empty;
-                    if (ext != string.Empty)    // If has any extension, then it is not a Controller (but probably a StaticFile()). If it is "/", then it is already converted to "index.htmL". Controllers will handle its own cacheAge with attributes. 
+                    if (ext != string.Empty) // If has any extension, then it is not a Controller (but probably a StaticFile()). If it is "/", then it is already converted to "index.htmL". Controllers will handle its own cacheAge with attributes.
                     {
                         // UseResponseCaching() will fill up headers, if MVC controllers or Razor pages, we don't want to use this caching, because the Controller will specify it in an attribute.
                         // probably no cache for API calls like "https://localhost:5001/WeatherForecast"  (they probably get RT data), Controllers will handle it.
                         maxBrowserCacheAge = ext switch
                         {
                             ".html" => TimeSpan.FromDays(8),
-                            var xt when xt == ".html" || xt == ".htm" => TimeSpan.FromHours(8),    // short cache time for html files (like index.html or when no  that contains the URL links for other JS, CSS files)                            
+                            var xt when xt == ".html" || xt == ".htm" => TimeSpan.FromHours(8),    // short cache time for html files (like index.html or when no  that contains the URL links for other JS, CSS files)
                             var xt when xt == ".css" => TimeSpan.FromDays(7),   // median time frames for CSS and JS files. Angular only changes HTML files.
                             var xt when xt == ".js" => TimeSpan.FromDays(7),
                             var xt when xt == ".jpg" || xt == ".jpeg" || xt == ".ico" => TimeSpan.FromDays(300),      // images files are very long term, long cache time for *.jpg files. assume a year, 31536000 seconds, typically used. They will never change
@@ -367,7 +367,7 @@ public class Startup
                         };
                     }
                 }
-                if (maxBrowserCacheAge.TotalSeconds > 0)    // if Duration = 0, it will raise exception of "The relative expiration value must be positive. (Parameter 'AbsoluteExpirationRelativeToNow')"
+                if (maxBrowserCacheAge.TotalSeconds > 0) // if Duration = 0, it will raise exception of "The relative expiration value must be positive. (Parameter 'AbsoluteExpirationRelativeToNow')"
                 {
                     Console.WriteLine($"Adding Cache-control to header '{context.Request.Host} {context.Request.Path}'");
                     Utils.Logger.Info($"Adding Cache-control to header '{context.Request.Host} {context.Request.Path}'");
@@ -393,9 +393,9 @@ public class Startup
 
         app.UseRouting();
 
-        // UseAuthorization: If execution reaches here and user is not logged in, this will redirect to Google-login (only for [Authorize] attribute Controllers. 
+        // UseAuthorization: If execution reaches here and user is not logged in, this will redirect to Google-login (only for [Authorize] attribute Controllers.
         // For normal static files, images, the SqFirewallMiddlewarePostAuth let it pass to the end, because we want to give the user Jpeg files even though it is not logged in.)
-        // It is needed for [Authorize] attributes protection, "If the app uses authentication/authorization features such as AuthorizePage or [Authorize], 
+        // It is needed for [Authorize] attributes protection, "If the app uses authentication/authorization features such as AuthorizePage or [Authorize],
         // place the call to UseAuthentication and UseAuthorization after UseRouting"
         app.UseAuthorization();
 
@@ -408,20 +408,20 @@ public class Startup
 
         app.UseMiddleware<SqWebsocketMiddleware>();
 
-        // Enable static files to be served. This would allow html, images, etc. in wwwroot directory to be served. 
+        // Enable static files to be served. This would allow html, images, etc. in wwwroot directory to be served.
         // The URLs of files exposed using UseDirectoryBrowser and UseStaticFiles are case sensitive and character constrained, subject to the underlying file system.
         // For example, Windows is not case sensitive, but MacOS and Linux are case sensitive.
         // for jpeg files, place UseStaticFiles BEFORE UseRouting
-        // Angular apps: in Production they are static files in wwwroot/webapps, served by a brotli capable StaticFiles middleware. 
+        // Angular apps: in Production they are static files in wwwroot/webapps, served by a brotli capable StaticFiles middleware.
         // In Development Angular apps are 'ng serve'-d in a separate process on a separate port. For 'watch' style Hot Reload development.
         // if (env.IsDevelopment())
         //     app.UseStaticFilesCaseSensitive();  // Force case sensitivity even on Windows
-        // else 
+        // else
         //     app.UseStaticFiles(); // on Linux StaticFiles serving is case sensitive, which is good. But not case sensitive on Windows.
         // CompressedStaticFileMiddleware replaces StaticFilesMiddleware. Can serve "*.html" from "*.html.br"
         if (env.IsDevelopment())
             app.UseCompressedStaticFiles(AspMiddlewareUtils.GetCaseSensitiveStaticFileOptions());  // Force case sensitivity on Windows only. Avoid the CPU overhead on Linux.
-        else 
+        else
             app.UseCompressedStaticFiles(); // on Linux StaticFiles serving is case sensitive by default, which is good. No need for specific path-checking code overhead.
 
         app.Use(async (context, next) =>

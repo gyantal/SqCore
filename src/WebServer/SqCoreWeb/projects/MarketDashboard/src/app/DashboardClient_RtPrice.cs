@@ -9,15 +9,15 @@ using FinTechCommon;
 using Microsoft.AspNetCore.Http;
 using SqCommon;
 
-// RT QQQ/SPY or NAV price should be sent only once the Dashboard. And both MktHealth, BrAccInfo, CatalystSniffer should use it. 
-// Don't send RT data 2 or 3x to separate tools (it would slow down both C# code and JS). 
-// That is a big rework to unify MktHealth/BrAcc both on the server and client side. 	On the server side, there should be only 1 RT timer object. 
+// RT QQQ/SPY or NAV price should be sent only once the Dashboard. And both MktHealth, BrAccInfo, CatalystSniffer should use it.
+// Don't send RT data 2 or 3x to separate tools (it would slow down both C# code and JS).
+// That is a big rework to unify MktHealth/BrAcc both on the server and client side. 	On the server side, there should be only 1 RT timer object.
 // That should collect RT requirement of All tools. (created DashboardClient_RtPrice.cs)
-// It should however prioritize. HighRtPriorityAssets list (QQQ,SPY,VXX) maybe sent in evere 5 seconds. MidPriority (GameChanger1): every 30 seconds. 
+// It should however prioritize. HighRtPriorityAssets list (QQQ,SPY,VXX) maybe sent in evere 5 seconds. MidPriority (GameChanger1): every 30 seconds.
 // LowPriority: everything else. (2 minutes or randomly 20 in every 1 minute. DC has 300 stocks, so those belong to that.)
 namespace SqCoreWeb;
 
-class AssetJs   // the class Asset converted to the the JS client. Usually it is sent to client tool in the Handshake msg. It can be used later for AssetId to Asset connection.
+class AssetJs // the class Asset converted to the the JS client. Usually it is sent to client tool in the Handshake msg. It can be used later for AssetId to Asset connection.
 {
     public uint AssetId { get; set; } = 0; // invalid value is best to be 0. If it is Uint32.MaxValue is the invalid, then problems if extending to Uint64
     public string SqTicker { get; set; } = string.Empty;    // used for unique identification. "N/DC" (NavAsset) is different to "S/DC" (StockAsset)
@@ -27,7 +27,7 @@ class AssetJs   // the class Asset converted to the the JS client. Usually it is
 
 // Don't call it RT=Realtime. If it is the weekend, we don't have RT price, but we have Last Known price that we have to send.
 // Don't call it Price, because NAV or other time series (^VIX) has Values, not Price. So, LastValue is the best terminology.
-class AssetLastJs   // struct sent to browser clients every 2-4 seconds
+class AssetLastJs // struct sent to browser clients every 2-4 seconds
 {
     // property names and values are transformed to a shorter ones for decreasing internet traffic. 700bytes => 395bytes (-45%) per 5sec. Per hour: 500KB => 280KB
     [JsonPropertyName("id")]
@@ -42,7 +42,7 @@ class AssetLastJs   // struct sent to browser clients every 2-4 seconds
     public float Last { get; set; } = -100.0f;     // real-time last price
 }
 
-public class AssetPriorCloseJs   // this is sent to clients usually just once per day, OR when historical data changes
+public class AssetPriorCloseJs // this is sent to clients usually just once per day, OR when historical data changes
 {
     public uint AssetId { get; set; } = 0;        // set the Client know what is the assetId, because Rt will not send it.
     public DateTime Date { get; set; } = DateTime.MinValue;
@@ -51,7 +51,7 @@ public class AssetPriorCloseJs   // this is sent to clients usually just once pe
     public float PriorClose { get; set; } = 0;   // Split Dividend Adjusted. Should be called SdaPriorClose, but name goes to client, better to be short.
 }
 
-public class AssetHistJs    // duplicate that the AssetId is in both HistValues and HistStat, but sometimes client needs only values (a QuickTester), sometimes only stats
+public class AssetHistJs // duplicate that the AssetId is in both HistValues and HistStat, but sometimes client needs only values (a QuickTester), sometimes only stats
 {
         public AssetHistValuesJs? HistValues { get; set; } = null;
         public AssetHistStatJs? HistStat { get; set; } = null;
@@ -59,9 +59,9 @@ public class AssetHistJs    // duplicate that the AssetId is in both HistValues 
 }
 
 
-// Don't integrate this to BrAccViewerAccount. By default we sent YTD. But client might ask for last 10 years. 
+// Don't integrate this to BrAccViewerAccount. By default we sent YTD. But client might ask for last 10 years.
 // But we don't want to send 10 years data and the today positions snapshot all the time together.
-public class AssetHistValuesJs   // this is sent to clients usually just once per day, OR when historical data changes, OR when the Period changes at the client
+public class AssetHistValuesJs // this is sent to clients usually just once per day, OR when historical data changes, OR when the Period changes at the client
 {
     public uint AssetId { get; set; } = 0;        // set the Client know what is the assetId, because Rt will not send it.
     public String SqTicker { get; set; } = string.Empty;  // Not necessary to send as AssetJs contains the SqTicker, but we send it for Debug purposes
@@ -70,12 +70,12 @@ public class AssetHistValuesJs   // this is sent to clients usually just once pe
     public DateTime PeriodEndDate { get; set; } = DateTime.MinValue;
 
     public List<string> HistDates { get; set; } = new List<string>();   // we convert manually DateOnly to short string
-    public List<float> HistSdaCloses { get; set; } = new List<float>(); // float takes too much data, but 
+    public List<float> HistSdaCloses { get; set; } = new List<float>(); // float takes too much data, but
 }
 
 // When the user changes Period from YTD to 2y. It is a choice, but we will resend him the PeriodEnd data (and all data) again. Although it is not necessary. That way we only have one class, not 2.
 // When PeriodEnd (Date and Price) gradually changes (if user left browser open for a week), PeriodHigh, PeriodLow should be sent again (maybe we are at market high or low)
-public class AssetHistStatJs   // this is sent to clients usually just once per day, OR when historical data changes, OR when the Period changes at the client
+public class AssetHistStatJs // this is sent to clients usually just once per day, OR when historical data changes, OR when the Period changes at the client
 {
     public uint AssetId { get; set; } = 0;        // set the Client know what is the assetId, because RtStat will not send it.
     public String SqTicker { get; set; } = string.Empty; // Not necessary to send as AssetJs contains the SqTicker, but we send it for Debug purposes
@@ -189,7 +189,7 @@ public partial class DashboardClient
             highPriorityAssets.Add(m_braccSelectedNavAsset);
 
         var lastValues = MemDb.gMemDb.GetLastRtValueWithUtc(highPriorityAssets); // GetLastRtValue() is non-blocking, returns immediately (maybe with NaN values)
-        return lastValues.Where(r => float.IsFinite(r.LastValue)).Select(r =>   // there is no point of sending if LastValue is NaN
+        return lastValues.Where(r => float.IsFinite(r.LastValue)).Select(r => // there is no point of sending if LastValue is NaN
         {
             var rtStock = new AssetLastJs()
             {

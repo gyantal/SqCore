@@ -74,7 +74,7 @@ public class VolatilityDragVisualizerController : ControllerBase
         // DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
             DateTime startIncLoc = DateTime.ParseExact("2004/03/26", "yyyy/MM/dd", CultureInfo.InvariantCulture);
         // DateTime startIncLoc = nowET.AddDays(-550);
-        
+
         List<List<DailyData>> volatilityTickersData = new();
         // List<DailyData> VIXDailyquotes = new();
 
@@ -96,11 +96,11 @@ public class VolatilityDragVisualizerController : ControllerBase
 
     public static string Get(int p_lbP)
     {
-        // //Defining asset lists.    
+        // //Defining asset lists.
 
         string[] volAssetList = new string[] { "SVXY", "VXX", "VXZ" };
         string[] volAssetListNN = new string[] { "SVXY", "VXX", "VXZ" };
-    
+
         string[] etpAssetList = new string[] { "SPY", "UPRO", "QQQ", "TQQQ", "TLT", "TMV", "USO", "UNG" };
         string[] etpAssetListNN = new string[] { "SPY", "UPRO", "QQQ", "TQQQ", "TLT", "TMV", "USO", "UNG" };
 
@@ -116,7 +116,7 @@ public class VolatilityDragVisualizerController : ControllerBase
         // string[] volAssetList = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD" };
         // string[] volAssetListNN = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD" };
         // string[] etpAssetList = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD" };
-        // string[] etpAssetListNN = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD" }; 
+        // string[] etpAssetListNN = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD" };
 
         // string[] gchAssetList = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD" };
         // string[] gchAssetListNN = new string[] { "SPY", "QQQ", "TLT", "UNG", "USO", "GLD" };
@@ -144,14 +144,14 @@ public class VolatilityDragVisualizerController : ControllerBase
         IList<List<DailyData>> quotesData = GetVolatilityStockHistData(allAssetList);
         IList<List<DailyData>> quotesData1 = new List<List<DailyData>>(quotesData);
         quotesData1.RemoveAt(allAssetList.Length - 1);
-        
+
         List<DailyData> quotesData2 = quotesData[allAssetList.Length - 1];
 
         int noAssets = allAssetList.Length - 1;
         int noBtDays = quotesData1[0].Count;
         DateTime[] quotesDateVec = new DateTime[noBtDays];
 
-        for (int iRows = 0; iRows<quotesDateVec.Length; iRows++)
+        for (int iRows = 0; iRows < quotesDateVec.Length; iRows++)
         {
             quotesDateVec[iRows] = quotesData1[0][iRows].Date;
         }
@@ -254,7 +254,7 @@ public class VolatilityDragVisualizerController : ControllerBase
             kShift += retLB[kLen];
         }
 
-        IList<List<double>> quotesRets = new List<List<double>>(); 
+        IList<List<double>> quotesRets = new List<List<double>>();
 
         for (int iAsset = 0; iAsset < noAssets; iAsset++)
         {
@@ -318,7 +318,7 @@ public class VolatilityDragVisualizerController : ControllerBase
         {
             double[] subSumVec = new double[noAssets];
             double subSumVix = 0;
-            while (kElem<noBtDays && dateYearsVec[kElem] == dateYearsDist[iRows])
+            while (kElem < noBtDays && dateYearsVec[kElem] == dateYearsDist[iRows])
             {
                 for (int jAssets = 0; jAssets < noAssets; jAssets++)
                 {
@@ -382,21 +382,19 @@ public class VolatilityDragVisualizerController : ControllerBase
         string liveDate = liveDateTime.ToString("yyyy-MM-dd HH:mm:ss");
         DateTime timeNowET = Utils.ConvertTimeFromUtcToEt(liveDateTime);
         string liveDateString = "Request time (UTC): " + liveDate;
- 
+
         // Last data time (UTC)
-        string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000,1,1,16,15,0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on " + quotesData[0][^1].Date.ToString("yyyy-MM-dd");
+        string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000, 1, 1, 16, 15, 0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on " + quotesData[0][^1].Date.ToString("yyyy-MM-dd");
         string lastDataTimeString = "Last data time (UTC): " + lastDataTime;
 
-
-
-        ////Creating input string for JavaScript.
+        // Creating input string for JavaScript.
         StringBuilder sb = new ("{" + Environment.NewLine);
         sb.Append(@"""requestTime"": """ + liveDateString);
         sb.Append(@"""," + Environment.NewLine + @"""lastDataTime"": """ + lastDataTimeString);
 
         sb.Append(@"""," + Environment.NewLine + @"""volLBPeri"": """ + volLBPeriod);
         sb.Append(@"""," + Environment.NewLine + @"""retHistLBPeri"": """ + retHistLB);
-        
+
         sb.Append(@"""," + Environment.NewLine + @"""retLBPeris"": """);
         for (int i = 0; i < retLB.Length - 1; i++)
             sb.Append(retLBStr[i] + ", ");
@@ -417,8 +415,6 @@ public class VolatilityDragVisualizerController : ControllerBase
             sb.Append(defaultCheckedList[i] + ", ");
         sb.Append(defaultCheckedList[^1]);
 
-        
-
         sb.Append(@"""," + Environment.NewLine + @"""volAssetNames"": """);
         for (int i = 0; i < volAssetListNN.Length - 1; i++)
             sb.Append(volAssetListNN[i] + ", ");
@@ -438,7 +434,7 @@ public class VolatilityDragVisualizerController : ControllerBase
         for (int i = 0; i < gmAssetListNN.Length - 1; i++)
             sb.Append(gmAssetListNN[i] + ", ");
         sb.Append(gmAssetListNN[^1]);
-        
+
         sb.Append(@"""," + Environment.NewLine + @"""quotesDateVector"": """);
         for (int i = 0; i < quotesDateVec.Length - 1; i++)
             sb.Append(quotesDateVec[i].ToString("yyyy-MM-dd") + ", ");
@@ -480,9 +476,9 @@ public class VolatilityDragVisualizerController : ControllerBase
             sb.Append("");
             for (int j = 0; j < dateYearsAvgs.GetLength(1) - 1; j++)
             {
-                sb.Append(Math.Round(dateYearsAvgs[i,j] * 100, 2).ToString() + "%, ");
+                sb.Append(Math.Round(dateYearsAvgs[i, j] * 100, 2).ToString() + "%, ");
             }
-            sb.Append(Math.Round(dateYearsAvgs[i,dateYearsAvgs.GetLength(1) - 1] * 100, 2).ToString() + "%");
+            sb.Append(Math.Round(dateYearsAvgs[i, dateYearsAvgs.GetLength(1) - 1] * 100, 2).ToString() + "%");
             if (i < dateYearsAvgs.GetLength(0) - 1)
             {
                 sb.Append("ß ");
@@ -518,7 +514,7 @@ public class VolatilityDragVisualizerController : ControllerBase
         for (int i = 0; i < dateYearsCount.Length - 1; i++)
             sb.Append(dateYearsCount[i].ToString() + ", ");
         sb.Append(dateYearsCount[^1]);
-                    
+
         sb.Append(@"""," + Environment.NewLine + @"""noTotalDays"": """ + noTotalDays);
 
         sb.Append(@"""," + Environment.NewLine + @"""monthlyCounts"": """);

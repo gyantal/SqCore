@@ -18,8 +18,8 @@ class HandshakeMktHealth { // Initial params
 }
 
 
-// The knowledge 'WHEN to send what' should be programmed on the server. When server senses that there is an update, then it broadcast to clients. 
-// Do not implement the 'intelligence' of WHEN to change data on the client. It can be too complicated, like knowing if there was a holiday, a half-trading day, etc. 
+// The knowledge 'WHEN to send what' should be programmed on the server. When server senses that there is an update, then it broadcast to clients.
+// Do not implement the 'intelligence' of WHEN to change data on the client. It can be too complicated, like knowing if there was a holiday, a half-trading day, etc.
 // Clients should be slim programmed. They should only care, that IF they receive a new data, then Refresh.
 public partial class DashboardClient
 {
@@ -58,7 +58,7 @@ public partial class DashboardClient
     // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
     public void OnConnectedWsAsync_MktHealth(bool p_isThisActiveToolAtConnectionInit, User p_user, ManualResetEvent p_waitHandleRtPriceSending)
     {
-        Utils.RunInNewThread(ignored =>  // running parallel on a ThreadPool thread, FireAndForget: QueueUserWorkItem [26microsec] is 25% faster than Task.Run [35microsec]
+        Utils.RunInNewThread(ignored => // running parallel on a ThreadPool thread, FireAndForget: QueueUserWorkItem [26microsec] is 25% faster than Task.Run [35microsec]
         {
             Thread.CurrentThread.IsBackground = true;  // thread will be killed when all foreground threads have died, the thread will not keep the application alive.
 
@@ -123,7 +123,7 @@ public partial class DashboardClient
         DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
         SqDateOnly lookbackStartInc = new(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
         SqDateOnly lookbackEndExcl = todayET;
-        if (p_lookbackStr.StartsWith("Date:"))  // Browser client never send anything, but "Date:" inputs. Format: "Date:2019-11-11...2020-11-10"
+        if (p_lookbackStr.StartsWith("Date:")) // Browser client never send anything, but "Date:" inputs. Format: "Date:2019-11-11...2020-11-10"
         {
             lookbackStartInc = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length, 10));
             lookbackEndExcl = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length + 13, 10));

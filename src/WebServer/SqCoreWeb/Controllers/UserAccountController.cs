@@ -15,7 +15,7 @@ namespace SqCoreWeb.Controllers;
     [Route("[controller]")]
     public class UserAccountController : Microsoft.AspNetCore.Mvc.Controller
     {
-        [HttpGet("[action]")]       // from the Route template "template: "{controller=Home}/{action=Index}/{id?}");" only action is used.
+        [HttpGet("[action]")] // from the Route template "template: "{controller=Home}/{action=Index}/{id?}");" only action is used.
         public async Task Login(string? returnUrl) // (string returnUrl = "/")
         {
             await HttpContext.ChallengeAsync("Google",
@@ -25,7 +25,7 @@ namespace SqCoreWeb.Controllers;
                     // AllowRefresh = true,
                     // ExpiresUtc = ? Leave them as default.
                     // subdomain https://healthmonitor.sqcore.net/UserAccount/login should redirect back to https://healthmonitor.sqcore.net/
-                    RedirectUri = returnUrl ?? "/"      //  better in a short form, so don't do "/index.html" if http://localhost/api/UserAccount/login is called directly, there is no returnURL, which is null. However if we pass Null to GoogleAuth, it will come back to this "/login" which will cause an infinite loop. 
+                    RedirectUri = returnUrl ?? "/" //  better in a short form, so don't do "/index.html" if http://localhost/api/UserAccount/login is called directly, there is no returnURL, which is null. However if we pass Null to GoogleAuth, it will come back to this "/login" which will cause an infinite loop.
                 });
         }
 
@@ -85,7 +85,7 @@ namespace SqCoreWeb.Controllers;
             return "No authorization for this. For Testing purposes. Your email is: " + email;
         }
 
-        [Authorize]     // this attribute will direct user to GoogleLogin, but in its pure form, it would allow any google email users to log in, so we need more secure than this.
+        [Authorize] // this attribute will direct user to GoogleLogin, but in its pure form, it would allow any google email users to log in, so we need more secure than this.
         [HttpGet("[action]")]
         public IActionResult Profile()
         {

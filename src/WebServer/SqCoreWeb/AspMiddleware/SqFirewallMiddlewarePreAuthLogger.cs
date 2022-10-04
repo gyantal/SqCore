@@ -53,7 +53,7 @@ internal class SqFirewallMiddlewarePreAuthLogger
 
         // 1. Do whitelist check first. That will sort out the most number of bad requests. Always do that filter First that results the most refusing. Try to consume less resources, so don't log it to file.
         // if (!IsHttpRequestOnWhitelist(httpContext))
-        if (!Utils.IsDebugRuntimeConfig() && !IsHttpRequestOnWhitelist(httpContext))    // maybe check whitelist only in Production, not in Development. In Dev, we constantly add new web images for example, and don't want to restart C# server all the time
+        if (!Utils.IsDebugRuntimeConfig() && !IsHttpRequestOnWhitelist(httpContext)) // maybe check whitelist only in Production, not in Development. In Dev, we constantly add new web images for example, and don't want to restart C# server all the time
         {
             // Console.WriteLine($"SqFirewall: request '{httpContext.Request.Host}' '{httpContext.Request.Path}' is not on whitelist.");
             // return Unauthorized();  // can only be used in Controller. https://github.com/aspnet/Mvc/blob/rel/1.1.1/src/Microsoft.AspNetCore.Mvc.Core/ControllerBase.cs
@@ -86,7 +86,7 @@ internal class SqFirewallMiddlewarePreAuthLogger
         }
         catch (Exception e)
         {
-            // when NullReference exception was raised in TestHealthMonitorEmailByRaisingException(), The exception didn't fall to here. if 
+            // when NullReference exception was raised in TestHealthMonitorEmailByRaisingException(), The exception didn't fall to here. if
             // It was handled already and I got a nice Error page to the client. So, here, we don't have the exceptions and exception messages and the stack trace.
             exception = e;
 
@@ -104,23 +104,23 @@ internal class SqFirewallMiddlewarePreAuthLogger
             var clientIP = WsUtils.GetRequestIPv6(httpContext);
             var clientUserEmail = WsUtils.GetRequestUser(httpContext);
 
-            var requestLog = new HttpRequestLog() { 
-                StartTime = DateTime.UtcNow, 
-                IsHttps = httpContext.Request.IsHttps, 
+            var requestLog = new HttpRequestLog() {
+                StartTime = DateTime.UtcNow,
+                IsHttps = httpContext.Request.IsHttps,
                 Method = httpContext.Request.Method,
                 Host = httpContext.Request.Host,       // "sqcore.net" for main, "dashboard.sqcore.net" for sub-domain queries
-                Path = httpContext.Request.Path, 
-                QueryString = httpContext.Request.QueryString.ToString(), 
-                ClientIP = clientIP, 
-                ClientUserEmail = clientUserEmail, 
-                StatusCode = statusCode, 
-                TotalMilliseconds = sw.Elapsed.TotalMilliseconds, 
-                IsError = exception != null || (level == Microsoft.Extensions.Logging.LogLevel.Error), 
+                Path = httpContext.Request.Path,
+                QueryString = httpContext.Request.QueryString.ToString(),
+                ClientIP = clientIP,
+                ClientUserEmail = clientUserEmail,
+                StatusCode = statusCode,
+                TotalMilliseconds = sw.Elapsed.TotalMilliseconds,
+                IsError = exception != null || (level == Microsoft.Extensions.Logging.LogLevel.Error),
                 Exception = exception };
-            lock (Program.WebAppGlobals.HttpRequestLogs)  // prepare for multiple threads
+            lock (Program.WebAppGlobals.HttpRequestLogs) // prepare for multiple threads
             {
                 Program.WebAppGlobals.HttpRequestLogs.Enqueue(requestLog);
-                while (Program.WebAppGlobals.HttpRequestLogs.Count > 50 * 10)  // 2018-02-19: MaxHttpRequestLogs was 50, but changed to 500, because RTP (RealTimePrice) rolls 50 items out after 2 hours otherwise. 500 items will last for 20 hours.
+                while (Program.WebAppGlobals.HttpRequestLogs.Count > 50 * 10) // 2018-02-19: MaxHttpRequestLogs was 50, but changed to 500, because RTP (RealTimePrice) rolls 50 items out after 2 hours otherwise. 500 items will last for 20 hours.
                     Program.WebAppGlobals.HttpRequestLogs.Dequeue();
             }
 
@@ -187,7 +187,7 @@ internal class SqFirewallMiddlewarePreAuthLogger
                 if (fi.Name.EndsWith(".BR"))
                     throw new Exception("SqDev warning. Fix it.: The wwwroot folder should contain only lowercase extensions for Linux conformity.");
 #endif
-                if (!fi.Name.EndsWith(".br"))   // don't add Brotli files to the list.
+                if (!fi.Name.EndsWith(".br")) // don't add Brotli files to the list.
                     p_whitelistExact.Add(p_relPath + fi.Name);
             } else
             { // Folder
@@ -196,13 +196,13 @@ internal class SqFirewallMiddlewarePreAuthLogger
 
         }
     }
-    
+
     static bool IsHttpRequestOnWhitelist(HttpContext p_httpContext)
     {
         // "/" was already rewritten by app.UseRewriter() to '/index.html', so empty string check is not required.
 
         // 1. start with the most frequently good filter, which is the Prefix, not the Exact match. ("/hub/", "/ws/" or for Controller queries)
-        // currently, the m_whitelistPrefix.Length is around 5. For that sequential search is fine. 
+        // currently, the m_whitelistPrefix.Length is around 5. For that sequential search is fine.
         // If number increases, to speed things up, we can do BinarySearch(), which will return an index near. Then we can check +1, -1 around that candidate. It might work for Prefixes.
         string prefixSearch = p_httpContext.Request.Path;
         if (prefixSearch[0] == '/')
@@ -245,11 +245,11 @@ internal class SqFirewallMiddlewarePreAuthLogger
     // hackers always try to break the server by typical vulnerability queries. It is pointless to process them. Most of the time it raises an exception.
     static bool IsClientIpOrPathOnBlacklist(HttpContext p_httpContext)
     {
-        // 1. check that request path is allowed. 
-        // Leave this active, because whitelist checks may only checks the folder part of the path. With the blacklist, we can ban specific files inside an allowed folder. 
+        // 1. check that request path is allowed.
+        // Leave this active, because whitelist checks may only checks the folder part of the path. With the blacklist, we can ban specific files inside an allowed folder.
         foreach (var blacklistStr in m_blacklistPrefix)
         {
-            if (p_httpContext.Request.Path.StartsWithSegments(blacklistStr, StringComparison.OrdinalIgnoreCase))   
+            if (p_httpContext.Request.Path.StartsWithSegments(blacklistStr, StringComparison.OrdinalIgnoreCase))
                 return true;
         }
 

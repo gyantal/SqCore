@@ -210,7 +210,7 @@ public class CompressedStaticFileMiddleware
             throw new ArgumentNullException(nameof(loggerFactory));
         }
 
-        if (compressedStaticFileOptions == null)    // to remove Warning of: "Remove unused parameter 'compressedStaticFileOptions'
+        if (compressedStaticFileOptions == null) // to remove Warning of: "Remove unused parameter 'compressedStaticFileOptions'
         {
             throw new ArgumentNullException(nameof(compressedStaticFileOptions));
         }

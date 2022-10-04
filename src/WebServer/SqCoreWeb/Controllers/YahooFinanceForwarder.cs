@@ -73,7 +73,7 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
             // 1. Prepare input parameters
             string uriQuery = Request.QueryString.ToString();    // "?s=VXX,SVXY,^vix&f=ab&o=csv" from the URL http://localhost:58213/api/rtp?s=VXX,XIV,^vix&f=ab&o=csv
             if (uriQuery.Length > 8192)
-            {   // When you try to pass a string longer than 8192 charachters, a faultException will be thrown. There is a solution, but I don't want
+            { // When you try to pass a string longer than 8192 charachters, a faultException will be thrown. There is a solution, but I don't want
                 return new Tuple<string, string>(@"{ ""Message"":  ""Error caught by WebApi Get():: uriQuery is longer than 8192: we don't process that. Uri: " + uriQuery + @""" }", "application/json");
             }
 
@@ -135,7 +135,7 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
 
             string? targetUriWithoutHttp = null;
             string ticker = string.Empty;
-            if (allParamsDict.TryGetValue("yffUri", out queryStrVal))   // yffUri=query1.finance.yahoo.com/v7/finance/download/AAPL&period1=2017-02-02&period2=2017-05-22&interval=1d&events=history
+            if (allParamsDict.TryGetValue("yffUri", out queryStrVal)) // yffUri=query1.finance.yahoo.com/v7/finance/download/AAPL&period1=2017-02-02&period2=2017-05-22&interval=1d&events=history
             {
                 targetUriWithoutHttp = queryStrVal[0];
                 int indSlash = targetUriWithoutHttp.LastIndexOf('/');
@@ -161,7 +161,7 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
             string startTimeStr = allParamsDict["period1"];
             string endTimeStr = allParamsDict["period2"];
             DateTime startTime = SqDateOnly.MinValue, endTime = DateTime.UtcNow;
-            if (startTimeStr.IndexOf('-') != -1)    // format '2017-05-20' has hyphen in it; if it has hyphen, try to convert to Date.
+            if (startTimeStr.IndexOf('-') != -1) // format '2017-05-20' has hyphen in it; if it has hyphen, try to convert to Date.
             {
                 startTime = DateTime.ParseExact(startTimeStr, "yyyy-MM-dd", CultureInfo.InvariantCulture);
             }
@@ -170,18 +170,18 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
                 startTime = Utils.UnixTimeStampToDateTimeUtc(long.Parse(startTimeStr)); // it is in UnixTimestamp string, we have to convert to Date
             }
 
-            if (String.Equals(endTimeStr, "UtcNow", StringComparison.CurrentCultureIgnoreCase))    // format '2017-05-20' has hyphen in it; if it has hyphen, try to convert to Date.
+            if (String.Equals(endTimeStr, "UtcNow", StringComparison.CurrentCultureIgnoreCase)) // format '2017-05-20' has hyphen in it; if it has hyphen, try to convert to Date.
             {
                 endTime = DateTime.UtcNow;
             }
             else
             {
-                if (endTimeStr.IndexOf('-') != -1)    // format '2017-05-20' has hyphen in it; if it has hyphen, try to convert to Date.
+                if (endTimeStr.IndexOf('-') != -1) // format '2017-05-20' has hyphen in it; if it has hyphen, try to convert to Date.
                     endTime = DateTime.ParseExact(endTimeStr, "yyyy-MM-dd", CultureInfo.InvariantCulture);
                 else
                     endTime = Utils.UnixTimeStampToDateTimeUtc(long.Parse(endTimeStr));
 
-                if (endTime.Date == DateTime.UtcNow.Date)  // if today is included, we think the caller wants the real-time (latest) data; so change endTime to UtcNow
+                if (endTime.Date == DateTime.UtcNow.Date) // if today is included, we think the caller wants the real-time (latest) data; so change endTime to UtcNow
                     endTime = DateTime.UtcNow;
                 else
                     endTime = endTime.AddHours(12);    // endTimeStr Date is excluded from daily data, so Add a little bit more to the middle of the UTC day
@@ -211,7 +211,7 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
                 }
             }
             else
-            {   // output is CSV
+            { // output is CSV
                 WriteRow(isOutputJson, yffColumnsList, new string[] { "Date", "Open", "High", "Low", "Close", "Adj Close", "Volume" }, responseStrBldr, ref wasDataLineWritten);
             }
 

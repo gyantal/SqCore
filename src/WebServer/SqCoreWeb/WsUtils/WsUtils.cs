@@ -50,12 +50,12 @@ public static partial class WsUtils
             if (remoteIp != null && p_ipv6format)
                 remoteIp = remoteIp.MapToIPv6();
             remoteIpStr = remoteIp?.ToString() ?? string.Empty;
-        }  
+        }
 
         return String.IsNullOrWhiteSpace(remoteIpStr) ? "<Unknown IP>" : remoteIpStr;
     }
 
-    public static T? GetHeaderValueAsNullableReference<T>(HttpContext p_httpContext, string p_headerName) where T : class // string is class, not struct 
+    public static T? GetHeaderValueAsNullableReference<T>(HttpContext p_httpContext, string p_headerName) where T : class // string is class, not struct
     {
         StringValues values = string.Empty;
         if (p_httpContext?.Request?.Headers?.TryGetValue(p_headerName, out values) ?? false)

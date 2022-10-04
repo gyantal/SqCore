@@ -29,7 +29,7 @@ public class StrategySinController : ControllerBase
         string usedGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1JXMbEMAP5AOqB1FjdM8jpptXfpuOno2VaFVYK8A1eLo/values/A1:Z2000?key=";
         string usedGSheet2Ref = "https://docs.google.com/spreadsheets/d/1JXMbEMAP5AOqB1FjdM8jpptXfpuOno2VaFVYK8A1eLo/edit?usp=sharing";
         string usedGDocRef = "https://docs.google.com/document/d/1dBHg3-McaHeCtxCTZdJhTKF5NPaixXYjEngZ4F2_ZBE/edit?usp=sharing";
-        
+
         // Get, split and convert GSheet data
         string? gSheetString = SINGoogleApiGsheet(usedGSheetRef);
         Tuple<int[], string[], int[], bool[], int[], double[]> gSheetResToFinCalc = GSheetConverter(gSheetString);
@@ -53,8 +53,7 @@ public class StrategySinController : ControllerBase
 
         // Calculating basic weights based on percentile channels - base Varadi TAA
         Tuple<double[], double[,], double[]> taaWeightResultsTuple = TaaWeights(quotesData, lookbackDays, volDays, thresholdLower);
-        
-        
+
         // Request time (UTC)
         DateTime liveDateTime = DateTime.UtcNow;
         string liveDate = liveDateTime.ToString("yyyy-MM-dd HH:mm:ss");
@@ -62,8 +61,8 @@ public class StrategySinController : ControllerBase
         string liveDateString = "Request time (UTC): " + liveDate;
 
         // Last data time (UTC)
-        string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000,1,1,16,15,0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on " + quotesData[0][^1].Date.ToString("yyyy-MM-dd");
-        string lastDataTimeString = "Last data time (UTC): "+lastDataTime;
+        string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000, 1, 1, 16, 15, 0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on " + quotesData[0][^1].Date.ToString("yyyy-MM-dd");
+        string lastDataTimeString = "Last data time (UTC): " + lastDataTime;
 
         DateTime nextWeekday = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000, 1, 1, 16, 15, 0).TimeOfDay) ? liveDateTime.Date.AddDays(1) : quotesData[0][^1].Date.AddDays(1);
 
@@ -246,7 +245,7 @@ public class StrategySinController : ControllerBase
             assetScoresMtx[iRows, 1] = Math.Round(taaWeightResultsTuple.Item2[taaWeightResultsTuple.Item2.GetLength(0) - 1, iRows] * 100.0, 2).ToString() + "%";
         }
         assetScoresMtx[assetScoresMtx.GetLength(0) - 1, 0] = "---";
-        assetScoresMtx[assetScoresMtx.GetLength(0) - 1, 1] = Math.Round(nextBondPerc*100, 2).ToString() + "%";
+        assetScoresMtx[assetScoresMtx.GetLength(0) - 1, 1] = Math.Round(nextBondPerc * 100, 2).ToString() + "%";
 
         // Creating input string for JavaScript.
         StringBuilder sb = new("{" + Environment.NewLine);
@@ -459,12 +458,12 @@ public class StrategySinController : ControllerBase
             DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
             // PctChannel needs 252 days and we need another extra 30 trading days rolling window to calculate PctChannels during the previous lookback window
             // PctChannel Signal cannot be calculated just having the last day data, because it has to be rolled further. As it can exit/enter into bullish signals along the way of the simulation.
-            // Estimated needed 252 trading days = 365 calendar days. 
+            // Estimated needed 252 trading days = 365 calendar days.
             // And an additional rolling window of 30 trading days (at least). That is another 45 calendar days.
             // As minimal, we need 365 + 45 = 410 calendar days.
             // For more robust calculations, we can use a 6 month rolling window. That is 120 trading days = 185 calendar days. Altogether: 365+185 = 550
             // DateTime startIncLoc = nowET.AddDays(-408); // This can reproduce the old SqLab implementation with 33 days rolling simulation window
-            DateTime startIncLoc = nowET.AddDays(-550);    // This uses a 6-months, 120 trading days rolling simulation window for PctChannels 
+            DateTime startIncLoc = nowET.AddDays(-550);    // This uses a 6-months, 120 trading days rolling simulation window for PctChannels
 
         List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc, true).ToList();
         List<List<DailyData>> sinTickersData = new();
@@ -498,7 +497,7 @@ public class StrategySinController : ControllerBase
         double[] assetHV = new double[nAssets];
         double[] assetWeights = new double[nAssets];
         double[] assetWeights2 = new double[nAssets];
-        double[,] assetPctChannelsUpper = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each 
+        double[,] assetPctChannelsUpper = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each
         double[,] assetPctChannelsLower = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each
         sbyte[,] assetPctChannelsSignal = new sbyte[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each. It can be only 1 (bullish), -1 (bearish). Cannot be 0.
         int startNumDay = p_pctChannelLookbackDays.Max() - 1;
@@ -508,10 +507,10 @@ public class StrategySinController : ControllerBase
         int nDaysSimulated = p_taaWeightsData[0].Count - startNumDay;    // nDays of the rolling window where we start calculating the pctChannel Signals. Eg. nDays = 33 or 120 (for 6 months window precalculation)
         if (nDaysSimulated < 10)
             Console.WriteLine("StrategySin warning! Simulated rolling window is too short. It is not enough to calculate TaaWeights properly.");
-        double[,] dailyAssetWeights = new double[nDaysSimulated,nAssets];
+        double[,] dailyAssetWeights = new double[nDaysSimulated, nAssets];
         double[,] dailyAssetScores = new double[nDaysSimulated, nAssets];
         double[,] dailyAssetHv = new double[nDaysSimulated, nAssets];
-        for (int iDay = 0; iDay < nDaysSimulated; iDay++)    // rolling window loop for previous 30/120 trading days. It ends with today.
+        for (int iDay = 0; iDay < nDaysSimulated; iDay++) // rolling window loop for previous 30/120 trading days. It ends with today.
         {
             for (int iAsset = 0; iAsset < nAssets; iAsset++)
             {
@@ -523,17 +522,17 @@ public class StrategySinController : ControllerBase
                     assetPctChannelsLower[iAsset, iChannel] = Statistics.Quantile(usedQuotes, thresholdLower);
                     assetPctChannelsUpper[iAsset, iChannel] = Statistics.Quantile(usedQuotes, thresholdUpper);
                     if (assetPrice < assetPctChannelsLower[iAsset, iChannel])
-                        assetPctChannelsSignal[iAsset, iChannel] = -1;  // fully overwrite the signal for iAsset and for this channel. We don't keep signal values historically, just keep the actual signal as we march forward in the simulated window. 
+                        assetPctChannelsSignal[iAsset, iChannel] = -1;  // fully overwrite the signal for iAsset and for this channel. We don't keep signal values historically, just keep the actual signal as we march forward in the simulated window.
                     else if (assetPrice > assetPctChannelsUpper[iAsset, iChannel])
                         assetPctChannelsSignal[iAsset, iChannel] = 1;
-                    else if (iDay==0)
+                    else if (iDay == 0)
                         assetPctChannelsSignal[iAsset, iChannel] = 1;   // initially at the start of the rolling window, we assume it had bullish signal.
                 }
             }
 
             // Calculate assetWeights
             double totalWeight = 0.0;
-            
+
             for (int iAsset = 0; iAsset < nAssets; iAsset++)
             {
                 sbyte compositeSignal = 0;    // For every stocks, sum up the four signals every day. This sum will be -4, -2, 0, +2 or +4.
@@ -550,7 +549,7 @@ public class StrategySinController : ControllerBase
                 }
                 // Balazs: uses "corrected sample standard deviation"; corrected: dividing by 19, not 20; He doesn't annualize. He uses daily StDev
                 assetHV[iAsset] = ArrayStatistics.StandardDeviation(hvPctChg);  // Calculate the 20-day historical volatility of daily percentage changes for every stock.
-                assetWeights[iAsset] = assetScores[iAsset] / assetHV[iAsset];   // “Score/Vol” quotients will define the weights of the stocks. They can be 0 or negative as well. 
+                assetWeights[iAsset] = assetScores[iAsset] / assetHV[iAsset];   // “Score/Vol” quotients will define the weights of the stocks. They can be 0 or negative as well.
                                                                                 // there is an interesting observation here. Actually, it is a good behavour.
                                                                                 // If assetScores[i]=0, assetWeights[i] becomes 0, so we don't use its weight when p_isCashAllocatedForNonActives => TLT will not fill its Cash-place; NO TLT will be invested (if this is the only stock with 0 score), the portfolio will be 100% in other stocks. We are more Brave.
                                                                                 // However, if assetScores[i]<0 (negative), assetWeights[i] becoumes a proper negative number. It will be used in TotalWeight calculation => TLT will fill its's space. (if this is the only stock with negative score), TLT will be invested in its place; consequently the portfolio will NOT be 100% in other stocks. We are more defensive.
@@ -572,7 +571,7 @@ public class StrategySinController : ControllerBase
             lastDayScores[iAsset] = dailyAssetScores[dailyAssetScores.GetLength(0) - 1, iAsset]; ;
         }
 
-        IEnumerable<DateTime> taaWeightDateVec = p_taaWeightsData[0].GetRange(p_taaWeightsData[0].Count - nDaysSimulated , nDaysSimulated).Select(r => r.Date);
+        IEnumerable<DateTime> taaWeightDateVec = p_taaWeightsData[0].GetRange(p_taaWeightsData[0].Count - nDaysSimulated, nDaysSimulated).Select(r => r.Date);
         DateTime[] taaWeightDateArray = taaWeightDateVec.ToArray();
         DateTime startMatlabDate = DateTime.ParseExact("1900/01/01", "yyyy/MM/dd", CultureInfo.InvariantCulture);
 
