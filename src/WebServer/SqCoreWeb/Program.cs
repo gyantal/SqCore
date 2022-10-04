@@ -1,30 +1,30 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
-using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using BrokerCommon;
+using FinTechCommon;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using SqCommon;
-using FinTechCommon;
-using BrokerCommon;
 
 namespace SqCoreWeb;
 
 public interface IWebAppGlobals
 {
     DateTime WebAppStartTime { get; set; }
-    IWebHostEnvironment? KestrelEnv { get; set; }   // instead of the 3 member variables separately, store the container p_env
-    Queue<HttpRequestLog> HttpRequestLogs { get; set; }     // Fast Insert, limited size. Better that List
+    IWebHostEnvironment? KestrelEnv { get; set; } // instead of the 3 member variables separately, store the container p_env
+    Queue<HttpRequestLog> HttpRequestLogs { get; set; } // Fast Insert, limited size. Better that List
 }
 
 public class WebAppGlobals : IWebAppGlobals
 {
     DateTime IWebAppGlobals.WebAppStartTime { get; set; } = DateTime.UtcNow;
     // KestrelEnv.ContentRootPath: "...\SqCore\src\WebServer\SqCoreWeb"
-    // KestrelEnv.WebRootPath: 	 "...\SqCore\src\WebServer\SqCoreWeb\wwwroot"
+    // KestrelEnv.WebRootPath: "...\SqCore\src\WebServer\SqCoreWeb\wwwroot"
     IWebHostEnvironment? IWebAppGlobals.KestrelEnv { get; set; }
     Queue<HttpRequestLog> IWebAppGlobals.HttpRequestLogs { get; set; } = new Queue<HttpRequestLog>();
 }
@@ -38,7 +38,7 @@ public partial class Program
     static long gNheartbeat = 0;
     const int cHeartbeatTimerFrequencyMinutes = 10;
 
-    public static void Main(string[] args)   // entry point Main cannot be flagged as async, because at first await, Main thread would go back to Threadpool, but that terminates the Console app
+    public static void Main(string[] args) // entry point Main cannot be flagged as async, because at first await, Main thread would go back to Threadpool, but that terminates the Console app
     {
         string appName = System.Reflection.MethodBase.GetCurrentMethod()?.ReflectedType?.Namespace ?? "UnknownNamespace";
         string systemEnvStr = $"(v1.0.15,{Utils.RuntimeConfig() /* Debug | Release */},CLR:{System.Environment.Version},{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},OS:{System.Environment.OSVersion},usr:{System.Environment.UserName},CPU:{System.Environment.ProcessorCount},ThId-{Environment.CurrentManagedThreadId})";
@@ -46,28 +46,27 @@ public partial class Program
         gLogger.Info($"********** Main() START {systemEnvStr}");
         // Setting Console.Title
         // on Linux use it only in GUI mode. It works with graphical Xterm in VNC, but with 'screen' or with Putty it is buggy and after this, the next 200 characters are not written to console.
-        // Future work if needed: bring a flag to use it in string[] args, but by default, don't set Title on Linux 
+        // Future work if needed: bring a flag to use it in string[] args, but by default, don't set Title on Linux
         if (!OperatingSystem.IsLinux()) // https://stackoverflow.com/questions/47059468/get-or-set-the-console-title-in-linux-and-macosx-with-net-core
             Console.Title = $"{appName} v1.0.15"; // "SqCoreWeb v1.0.15"
 
-        gHeartbeatTimer = new System.Threading.Timer((e) =>    // Heartbeat log is useful to find out when VM was shut down, or when the App crashed
+        gHeartbeatTimer = new System.Threading.Timer((e) => // Heartbeat log is useful to find out when VM was shut down, or when the App crashed
         {
             Utils.Logger.Info($"**g_nHeartbeat: {gNheartbeat} (at every {cHeartbeatTimerFrequencyMinutes} minutes)");
             gNheartbeat++;
         }, null, TimeSpan.FromMinutes(0.5), TimeSpan.FromMinutes(cHeartbeatTimerFrequencyMinutes));
-
 
         string sensitiveConfigFullPath = Utils.SensitiveConfigFolderPath() + $"SqCore.WebServer.{appName}.NoGitHub.json";
         string systemEnvStr2 = $"Current working directory of the app: '{Directory.GetCurrentDirectory()}',{Environment.NewLine}SensitiveConfigFullPath: '{sensitiveConfigFullPath}'";
         gLogger.Info(systemEnvStr2);
 
         var builder = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())        // GetCurrentDirectory() is the folder of the '*.csproj'.
-            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)      // no need to copy appsettings.json to the sub-directory of the EXE. 
+            .SetBasePath(Directory.GetCurrentDirectory()) // GetCurrentDirectory() is the folder of the '*.csproj'.
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true) // no need to copy appsettings.json to the sub-directory of the EXE.
             .AddJsonFile(sensitiveConfigFullPath, optional: true, reloadOnChange: true);
-        //.AddUserSecrets<Program>()    // Used mostly in Development only, not in Production. Stored in a JSON configuration file in a system-protected user profile folder on the local machine. (e.g. user's %APPDATA%\Microsoft\UserSecrets\), the secret values aren't encrypted, but could be in the future.
+        // .AddUserSecrets<Program>()    // Used mostly in Development only, not in Production. Stored in a JSON configuration file in a system-protected user profile folder on the local machine. (e.g. user's %APPDATA%\Microsoft\UserSecrets\), the secret values aren't encrypted, but could be in the future.
         // do we need it?: No. Sensitive files are in separate folders, not up on GitHub. If server is not hacked, we don't care if somebody who runs the code can read the settings file. Also, scrambling secret file makes it more difficult to change it realtime.
-        //.AddEnvironmentVariables();   // not needed in general. We dont' want to clutter op.sys. environment variables with app specific values.
+        // .AddEnvironmentVariables();   // not needed in general. We dont' want to clutter op.sys. environment variables with app specific values.
         Utils.Configuration = builder.Build();
         Utils.MainThreadIsExiting = new ManualResetEventSlim(false);
         // HealthMonitorMessage.InitGlobals(ServerIp.HealthMonitorPublicIp, ServerIp.DefaultHealthMonitorServerPort);       // until HealthMonitor runs on the same Server, "localhost" is OK
@@ -107,7 +106,8 @@ public partial class Program
             do
             {
                 userInput = DisplayMenuAndExecute().Result;  // we cannot 'await' it, because Main thread would terminate, which would close the whole Console app.
-            } while (userInput != "UserChosenExit" && userInput != "ConsoleIsForcedToShutDown");
+            }
+            while (userInput != "UserChosenExit" && userInput != "ConsoleIsForcedToShutDown");
         }
         catch (Exception e)
         {
@@ -116,7 +116,7 @@ public partial class Program
             {
                 gLogger.Error("Linux. See 'Allow non-root process to bind to port under 1024.txt'. If Dotnet.exe was updated, it lost privilaged port. Try 'whereis dotnet','sudo setcap 'cap_net_bind_service=+ep' /usr/share/dotnet/dotnet'.");
             }
-            HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MainThread. Exception: '{ e.ToStringWithShortenedStackTrace(1600)}'", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
+            HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MainThread. Exception: '{e.ToStringWithShortenedStackTrace(1600)}'", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
         }
 
         Utils.MainThreadIsExiting.Set(); // broadcast main thread shutdown
@@ -142,7 +142,7 @@ public partial class Program
     }
 
     static bool gIsMenuFirstCall = true;
-    static public async Task<string> DisplayMenuAndExecute()
+    public static async Task<string> DisplayMenuAndExecute()
     {
         if (!gIsMenuFirstCall)
             Console.WriteLine();
@@ -182,7 +182,8 @@ public partial class Program
                 do
                 {
                     userInputSub = DisplaySubMenuAndExecute_DbAdmin();
-                } while (userInputSub != "UserChosenExit" && userInputSub != "ConsoleIsForcedToShutDown");
+                }
+                while (userInputSub != "UserChosenExit" && userInputSub != "ConsoleIsForcedToShutDown");
                 break;
             case "3":
                 Console.WriteLine(SqTaskScheduler.PrintNextScheduleTimes(false).ToString());
@@ -208,7 +209,7 @@ public partial class Program
         return string.Empty;
     }
 
-    static public string DisplaySubMenuAndExecute_DbAdmin()
+    public static string DisplaySubMenuAndExecute_DbAdmin()
     {
         ColorConsole.WriteLine(ConsoleColor.Magenta, "---- DbAdmin !!!  ----");
         Console.WriteLine("1. RedisDb: Ping");
@@ -250,13 +251,13 @@ public partial class Program
     internal static void StrongAssertMessageSendingEventHandler(StrongAssertMessage p_msg)
     {
         gLogger.Info("StrongAssertEmailSendingEventHandler()");
-        HealthMonitorMessage.SendAsync($"Msg from SqCore.Website.C#.StrongAssert. StrongAssert Warning (if Severity is NoException, it is just a mild Warning. If Severity is ThrowException, that exception triggers a separate message to HealthMonitor as an Error). Severity: {p_msg.Severity}, Message: { p_msg.Message}, StackTrace: { p_msg.StackTrace.ToStringWithShortenedStackTrace(1600)}", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
+        HealthMonitorMessage.SendAsync($"Msg from SqCore.Website.C#.StrongAssert. StrongAssert Warning (if Severity is NoException, it is just a mild Warning. If Severity is ThrowException, that exception triggers a separate message to HealthMonitor as an Error). Severity: {p_msg.Severity}, Message: {p_msg.Message}, StackTrace: {p_msg.StackTrace.ToStringWithShortenedStackTrace(1600)}", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
     }
 
     private static void AppDomain_BckgThrds_UnhandledException(object p_sender, UnhandledExceptionEventArgs p_e)
     {
         Exception exception = (p_e.ExceptionObject as Exception) ?? new SqException($"Unhandled exception doesn't derive from System.Exception: {p_e.ToString() ?? "Null ExceptionObject"}");
-        Utils.Logger.Error(exception, $"AppDomain_BckgThrds_UnhandledException(). Terminating '{p_e?.IsTerminating.ToString() ?? "Null ExceptionObject"}'. Exception: '{ exception.ToStringWithShortenedStackTrace(2000)}'");
+        Utils.Logger.Error(exception, $"AppDomain_BckgThrds_UnhandledException(). Terminating '{p_e?.IsTerminating.ToString() ?? "Null ExceptionObject"}'. Exception: '{exception.ToStringWithShortenedStackTrace(2000)}'");
 
         // isSendable check is not required. This background thread crash will terminate the main app. We should surely notify HealthMonitor.
         string msg = $"App 'SqCore.Website' is terminated because exception in background thread. C#.AppDomain_BckgThrds_UnhandledException(). See log files.";
@@ -268,10 +269,10 @@ public partial class Program
     {
         gLogger.Error(p_e.Exception, $"TaskScheduler_UnobservedTaskException()");
 
-        string msg = $"Exception in SqCore.WebServer.SqCoreWeb.C#.TaskScheduler_UnobservedTaskException. Exception: '{ p_e.Exception.ToStringWithShortenedStackTrace(1600)}'. ";
+        string msg = $"Exception in SqCore.WebServer.SqCoreWeb.C#.TaskScheduler_UnobservedTaskException. Exception: '{p_e.Exception.ToStringWithShortenedStackTrace(1600)}'. ";
         msg += Utils.TaskScheduler_UnobservedTaskExceptionMsg(p_sender, p_e);
         gLogger.Warn(msg);
-        p_e.SetObserved();        //  preventing it from triggering exception escalation policy which, by default, terminates the process.
+        p_e.SetObserved();        // preventing it from triggering exception escalation policy which, by default, terminates the process.
 
         bool isSendable = SqFirewallMiddlewarePreAuthLogger.IsSendableToHealthMonitorForEmailing(p_e.Exception);
         if (isSendable)
@@ -287,5 +288,4 @@ public partial class Program
         ThreadPool.GetMinThreads(out int maxWorkerTh, out int maxIoThread);
         p_sb.Append($"ThId-{Environment.CurrentManagedThreadId}, ThreadPool#:{ThreadPool.ThreadCount}, WorkerTh: [{minWorkerTh}...{maxWorkerTh}], IoTh: [{minIoThread}...{maxIoThread}] <br>");
     }
-
 }
