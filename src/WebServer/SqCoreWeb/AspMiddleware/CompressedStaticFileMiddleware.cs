@@ -23,9 +23,9 @@ namespace SqCoreWeb;
 public interface IFileAlternative
 {
     long Size { get; }
-    // <summary>
-    // Used to give some files a higher priority
-    // </summary>
+    /// <summary>
+    /// Used to give some files a higher priority
+    /// </summary>
     float Cost { get; }
     void Apply(HttpContext context);
     void Prepare(IContentTypeProvider contentTypeProvider, StaticFileResponseContext staticFileResponseContext);
@@ -210,7 +210,7 @@ public class CompressedStaticFileMiddleware
             throw new ArgumentNullException(nameof(loggerFactory));
         }
 
-        if (compressedStaticFileOptions == null) // to remove Warning of: "Remove unused parameter 'compressedStaticFileOptions'
+        if (compressedStaticFileOptions == null)    // to remove Warning of: "Remove unused parameter 'compressedStaticFileOptions'
         {
             throw new ArgumentNullException(nameof(compressedStaticFileOptions));
         }
@@ -223,6 +223,7 @@ public class CompressedStaticFileMiddleware
             throw new Exception("No IAlternativeFileProviders where found, did you forget to add AddCompressedStaticFiles() in ConfigureServices?");
         }
         // logger = loggerFactory.CreateLogger<CompressedStaticFileMiddleware>();
+
 
         this._staticFileOptions = staticFileOptions ?? throw new ArgumentNullException(nameof(staticFileOptions));
         this.alternativeFileProviders = alternativeFileProviders;
@@ -241,6 +242,7 @@ public class CompressedStaticFileMiddleware
             {
                 alternativeFileProvider.Initialize(fileExtensionContentTypeProvider);
             }
+
         }
         staticFileOptions.Value.ContentTypeProvider = contentTypeProvider;
 
@@ -253,6 +255,7 @@ public class CompressedStaticFileMiddleware
             {
                 alternativeFile.Prepare(contentTypeProvider, context);
             }
+
         };
     }
 
@@ -277,7 +280,7 @@ public class CompressedStaticFileMiddleware
             return;
         }
 
-        // Find the smallest file from all our alternative file providers
+        //Find the smallest file from all our alternative file providers
         var smallestAlternativeFile = alternativeFileProviders.Select(alternativeFileProvider => alternativeFileProvider.GetAlternative(context, fileSystem, originalFile))
                                                               .Where(af => af != null)
                                                               .OrderBy(alternativeFile => alternativeFile?.Cost)

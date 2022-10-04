@@ -50,6 +50,7 @@ public class Overmind
     }
 }
 
+
 public class OvermindExecution : SqExecution
 {
     public static SqExecution ExecutionFactoryCreate()
@@ -57,12 +58,12 @@ public class OvermindExecution : SqExecution
         return new OvermindExecution();
     }
 
-    public override void Run() // try/catch is only necessary if there is a non-awaited async that continues later in a different tPool thread. See comment in SqExecution.cs
+    public override void Run()  // try/catch is only necessary if there is a non-awaited async that continues later in a different tPool thread. See comment in SqExecution.cs
     {
         Utils.Logger.Info($"OvermindExecution.Run() BEGIN, Trigger: '{Trigger?.Name ?? string.Empty}'");
         Console.WriteLine($"OvermindExecution.Run() BEGIN, Trigger: '{Trigger?.Name ?? string.Empty}'");
         // HealthMonitor.Exe is running on VBrokerDev server. It will stay there, so it can report if SqCore server is down.
-        // However, it is too much work to set up its firewall port filter for all developers every time when a developer IP changes.
+        // However, it is too much work to set up its firewall port filter for all developers every time when a developer IP changes. 
         // So, in local development, we only run the HealthMonitorCheck for 1 developer. So, we don't receive "HealthMonitor is NOT Alive." warning emails all the time.
         if (OperatingSystem.IsLinux() || (OperatingSystem.IsWindows() && Environment.UserName == "gyantal"))
             CheckHealthMonitorAlive();
@@ -86,12 +87,10 @@ public class OvermindExecution : SqExecution
         {
             string errorMsg = $"Error. CheckHealthMonitorAlive() to {ServerIp.HealthMonitorPublicIp}:{ServerIp.DefaultHealthMonitorServerPort}";
             Utils.Logger.Error(errorMsg);
-        }
-        else
+        } else
             isHealthMonitorAlive = tcpMsgResponse.StartsWith("Ping. Healthmonitor UtcNow: ");
 
         if (!isHealthMonitorAlive)
-        {
             new Email
             {
                 ToAddresses = Utils.Configuration["Emails:Gyant"],
@@ -99,32 +98,33 @@ public class OvermindExecution : SqExecution
                 Body = $"SqCore Warning! : HealthMonitor is NOT Alive.",
                 IsBodyHtml = false
             }.SendAsync().RunInSameThreadButReturnAtFirstAwaitAndLogError();
-        }
     }
+
+    
     static async void MorningCheck()
     {
         string todayMonthAndDayStr = DateTime.UtcNow.ToString("MM-dd");
-        if (todayMonthAndDayStr == "10-05") // Orsi's birthday
+        if (todayMonthAndDayStr == "10-05")        // Orsi's birthday
             await new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore.Overmind: Orsi's birthday", Body = "Orsi's birthday is on 1976-10-09.", IsBodyHtml = false }.SendAsync();
 
         Utils.Logger.Info("Overmind.MorningCheck(): Checking first day of the month");
         if (DateTime.UtcNow.AddDays(0).Day == 1)
         {
-            // B. asked me to never send salaries on 30th or 31st of previous month.
-            // So I will report to accountant only on 1st day of every month, and maybe he will get it later.
+            // B. asked me to never send salaries on 30th or 31st of previous month. 
+            // So I will report to accountant only on 1st day of every month, and maybe he will get it later. 
             // And this has an advantage that as I don't send the holidays report earlier, if they forget to tell me their 'last minute' holiday day-offs, it is not reported to accountant too early.
             // So less headache overall.
             new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore.Overmind: send holidays, bank report to accountant", Body = "Send holidays, bank report to accountant. In 3 days, it is the 1st day of the month.", IsBodyHtml = false }.Send();
         }
-        if ((new int[] { 11, 12, 1, 2, 3 }).Contains(DateTime.UtcNow.Month) && (DateTime.UtcNow.Day == 1 || DateTime.UtcNow.Day == 16))
+        if ((new int[] { 11, 12, 1, 2, 3}).Contains(DateTime.UtcNow.Month) && (DateTime.UtcNow.Day == 1 || DateTime.UtcNow.Day == 16))
         {
             // every 2 weeks in winter, if I don't use the car, the battery is depleted. Charge it on Saturday.
             new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore.Overmind: Charge Car battery in winter", Body = "Warning in every 2 weeks in winter: Charge car battery on Saturdays, otherwise you have to buy a battery every 2 years. (a lot of time to disassemble battery)", IsBodyHtml = false }.Send();
         }
 
-        // double? price = GetAmazonProductPrice("https://www.amazon.co.uk/Electronics-Sennheiser-Professional-blocking-gaming-headset-Black/dp/B00JQDOANK/");
-        // if (price == null || price <= 150.0)
-        // {
+        //double? price = GetAmazonProductPrice("https://www.amazon.co.uk/Electronics-Sennheiser-Professional-blocking-gaming-headset-Black/dp/B00JQDOANK/");
+        //if (price == null || price <= 150.0)
+        //{
         //    new Email
         //    {
         //        ToAddresses = Utils.Configuration["Emails:Gyant"],
@@ -134,7 +134,7 @@ public class OvermindExecution : SqExecution
         //            $"Time to buy Sennheiser GAME ZERO now. Amazon price dropped from 199.99 to {price}. Go to https://www.amazon.co.uk/Electronics-Sennheiser-Professional-blocking-gaming-headset-Black/dp/B00JQDOANK/ and buy headset now. See '2016-05, Sennheiser buying.txt'.",
         //        IsBodyHtml = false
         //    }.Send();
-        // }
+        //}
     }
 
     static void MiddayCheck()
@@ -147,7 +147,7 @@ public class OvermindExecution : SqExecution
         }
 
         CheckIfTomorrowIsMonthlyOptionExpirationDay();
-        CheckIntradayStockPctChanges(); // if we don't wait the async method, it returns very quickly, but later it continues in a different threadpool bck thread, but then it loses stacktrace, and exception is not caught in try/catch, but it becomes an AppDomain_BckgThrds_UnhandledException()
+        CheckIntradayStockPctChanges(); // if we don't wait the async method, it returns very quickly, but later it continues in a different threadpool bck thread, but then it loses stacktrace, and exception is not caught in try/catch, but it becomes an AppDomain_BckgThrds_UnhandledException() 
         CheckPriorClosePrices();
     }
 
@@ -252,7 +252,7 @@ public class OvermindExecution : SqExecution
     // 2017-11-02: YF is discontinued (V7 API uses crumbs), GF uses cookies two (although it is fast, and it is real-time), decided to use CNBC for a while
     // We could do https://www.snifferquant.net/YahooFinanceForwarder?yffOutFormat=csv ..., but that depends on the web service and we don't want this Overmind to depend on a website
     // 2021-03-18: kept www.cnbc.com, because this way this code doesn't depend on MemDb (it can be outsourced later); And more Tickers can be checked, which are not in MemDb at all
-    private static double GetTodayPctChange(string p_exchangeWithTicker) // for GoogleFinance: TSE:VXX is the Toronto stock exchange, we need "NYSEARCA:VXX"
+    private static double GetTodayPctChange(string p_exchangeWithTicker)    // for GoogleFinance: TSE:VXX is the Toronto stock exchange, we need "NYSEARCA:VXX"
     {
         Utils.Logger.Info("GetTodayPctChange(): " + p_exchangeWithTicker);
         // https://finance.google.com/finance?q=BATS%3AVXX
@@ -320,13 +320,13 @@ public class OvermindExecution : SqExecution
 
         bool isVixSpike = 1.2 * sma < priorClose;
         // VIX spike can be detected with another formulation if wished
-        // Maybe I should use this(or Both) in the VIX checking email service
-        // "Marked on the chart are instances where the VIX has risen by at least 30% (from close to"
-        // the highest high) in a five-day period when a previous 30 +% advance had not occurred in the prior ten trading days.There have been 70 such occurrences of these spikes in the above-mentioned time period.
-        // > But Balazs showed it is not really useful.Still, it can be used. Read that article and email again.
-        // See "2017-Forecasting Volatility Tsunamy, Balazs-gmail.pdf"
+        //Maybe I should use this(or Both) in the VIX checking email service
+        //"Marked on the chart are instances where the VIX has risen by at least 30% (from close to"
+        //the highest high) in a five-day period when a previous 30 +% advance had not occurred in the prior ten trading days.There have been 70 such occurrences of these spikes in the above-mentioned time period.
+        //> But Balazs showed it is not really useful.Still, it can be used. Read that article and email again.
+        //See "2017-Forecasting Volatility Tsunamy, Balazs-gmail.pdf"
 
-        if (isVixSpike) // if  1.2*SMA(VIX, 50) < VIX_last_close, sends an email. So, we can trade VIX MR subjectively.
+        if (isVixSpike)  // if  1.2*SMA(VIX, 50) < VIX_last_close, sends an email. So, we can trade VIX MR subjectively.
         {
             string subject = "SqCore: VIX spike detected";
             StringBuilder sb = new(Email.g_htmlEmailStart);
@@ -354,7 +354,7 @@ public class OvermindExecution : SqExecution
     //         return null;
     //     Utils.Logger.Info("HttpClient().GetStringAsync returned: " + ((webpage.Length > 100) ? webpage[..100] : webpage));
 
-    // // <span id="priceblock_ourprice" class="a-size-medium a-color-price">£199.95</span>
+    //     // <span id="priceblock_ourprice" class="a-size-medium a-color-price">£199.95</span>
     //     string searchStr = @"id=""priceblock_ourprice"" class=""a-size-medium a-color-price"">";
     //     int startInd = webpage.IndexOf(searchStr);
     //     if (startInd == -1)
@@ -376,4 +376,6 @@ public class OvermindExecution : SqExecution
     //     }
     //     return price;
     // }
+
+
 }

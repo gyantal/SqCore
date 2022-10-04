@@ -8,8 +8,8 @@ namespace SqCoreWeb;
 
 public enum WsMonTaskSettingAction : byte
 {
-    Unknown = 0,
-    SpIndexChanges // Check S&P500 for index changes, addition, deletion for SP500, SP100, SP600, SP1500
+    Unknown = 0,         
+    SpIndexChanges     // Check S&P500 for index changes, addition, deletion for SP500, SP100, SP600, SP1500
 }
 public class WebsitesMonitor
 {
@@ -49,7 +49,7 @@ public class WebsitesMonitorExecution : SqExecution
         return new WebsitesMonitorExecution();
     }
 
-    public override void Run() // try/catch is only necessary if there is a non-awaited async that continues later in a different tPool thread. See comment in SqExecution.cs
+    public override void Run()  // try/catch is only necessary if there is a non-awaited async that continues later in a different tPool thread. See comment in SqExecution.cs
     {
         Utils.Logger.Info($"WebsitesMonitorExecution.Run() BEGIN, Trigger: '{Trigger!.Name}'");
 
@@ -57,7 +57,7 @@ public class WebsitesMonitorExecution : SqExecution
         if (Trigger!.TriggerSettings.TryGetValue(TaskSetting.ActionType, out object? actionObj))
             action = (WsMonTaskSettingAction)actionObj;
 
-        if (action == WsMonTaskSettingAction.SpIndexChanges)
+            if (action == WsMonTaskSettingAction.SpIndexChanges)
             CheckSpIndexChanges();
     }
 
@@ -67,8 +67,7 @@ public class WebsitesMonitorExecution : SqExecution
         string? webpage = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
 
         StrongAssert.True(!String.IsNullOrEmpty(webpage), Severity.ThrowException, "Error in Overmind.CheckSpIndexChanges(). DownloadStringWithRetry()");
-        if (webpage!.Length < 20000)
-        { // usually, it is 270K. If it is less than 50K, maybe an error message: "504 ERROR...The request could not be satisfied...CloudFront attempted to establish a connection with the origin"
+        if (webpage!.Length < 20000) { // usually, it is 270K. If it is less than 50K, maybe an error message: "504 ERROR...The request could not be satisfied...CloudFront attempted to establish a connection with the origin"
             // once per month rarely we receive "<head><title>502 Bad Gateway</title></head>"
             // they have to restart their server so for 5-10 minutes, it is not available even in Chrome clients.
             // in this case, sleep for 10 min, then retry

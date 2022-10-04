@@ -4,16 +4,17 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using BrokerCommon;
-using FinTechCommon;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using SqCommon;
+using FinTechCommon;
+using BrokerCommon;
+using Microsoft.AspNetCore.Authorization;   // needed in PROD, not in DBG
 
 namespace SqCoreWeb.Controllers;
 
-// [Route("WebServer")]
+//[Route("WebServer")]
 public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
 {
 #pragma warning disable IDE0052  // keep example in the code for future reference (IDE0052: 'Private member can be removed as the value assigned to it is never read')
@@ -29,7 +30,7 @@ public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
         m_webAppGlobals = p_webAppGlobals;
     }
 
-    [HttpGet] // Ping is accessed by the HealthMonitor every 9 minutes (to keep it alive), no no GoogleAuth there
+    [HttpGet]   // Ping is accessed by the HealthMonitor every 9 minutes (to keep it alive), no no GoogleAuth there
     public ActionResult Ping()
     {
         // pinging Index.html do IO file operation. Also currently it is a Redirection. There must be a quicker way to ping our Webserver. (for keeping it alive)
@@ -44,23 +45,23 @@ public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
     public ActionResult HttpRequestActivityLog()
     {
         HttpRequestLog[] logsPointerArr = Array.Empty<HttpRequestLog>();
-        lock (m_webAppGlobals.HttpRequestLogs) // prepare for multiple threads
+        lock (m_webAppGlobals.HttpRequestLogs)  // prepare for multiple threads
         {
             logsPointerArr = m_webAppGlobals.HttpRequestLogs.ToArray();     // it copies only max 50 pointers to Array. Quick.
         }
 
         StringBuilder sb = new();
-        for (int i = logsPointerArr.Length - 1; i >= 0; i--) // foreach loop iterates over Queue starting from the oldest item and ending with newest.
+        for (int i = logsPointerArr.Length - 1; i >= 0; i--)        // foreach loop iterates over Queue starting from the oldest item and ending with newest.
         {
             var requestLog = logsPointerArr[i];
-            string msg = String.Format("{0}#{1}{2} {3} '{4}' from {5} (u: {6}) ret: {7} in {8:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : string.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Path + (String.IsNullOrEmpty(requestLog.QueryString) ? string.Empty : requestLog.QueryString), requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds);
+            string msg = String.Format("{0}#{1}{2} {3} '{4}' from {5} (u: {6}) ret: {7} in {8:0.00}ms", requestLog.StartTime.ToString("HH':'mm':'ss.f"), requestLog.IsError ? "ERROR in " : string.Empty, requestLog.IsHttps ? "HTTPS" : "HTTP", requestLog.Method, requestLog.Path + (String.IsNullOrEmpty(requestLog.QueryString) ? "" : requestLog.QueryString), requestLog.ClientIP, requestLog.ClientUserEmail, requestLog.StatusCode, requestLog.TotalMilliseconds);
             sb.Append(msg + "<br />");
         }
 
         return Content(@"<HTML><body><h1>HttpRequests Activity Log</h1><br />" + sb.ToString() + "</body></HTML>", "text/html");
     }
 
-    [HttpGet]
+        [HttpGet]
 #if !DEBUG
     [Authorize]     // we can live without it, because ControllerCommon.CheckAuthorizedGoogleEmail() will redirect to /login anyway, but it is quicker that this automatically redirects without clicking another URL link.
 #endif
@@ -99,6 +100,7 @@ public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
         StringBuilder scheduleTimesSb = SqTaskScheduler.PrintNextScheduleTimes(true);
         return Content(sb.Append(scheduleTimesSb).Append("</body></HTML>").ToString(), "text/html");
     }
+
 
     [HttpGet]
     public ActionResult HttpRequestHeader()
@@ -182,7 +184,7 @@ public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
             // https://developers.google.com/sheets/api/guides/concepts
             // This gives back text colour and formatting of each cell. Not needed in general: https://sheets.googleapis.com/v4/spreadsheets/<spreadsheetId>?ranges=A1:C10&fields=properties.title,sheets(properties,data.rowData.values(effectiveValue,effectiveFormat))&key=<key>
             // This gives back only the values: https://sheets.googleapis.com/v4/spreadsheets/<spreadsheetId>/values/General!A:A?key=<key>
-
+            
             // gSheet is public: https://docs.google.com/spreadsheets/d/1onwqrdxQIIUJytd_PMbdFKUXnBx3YSRYok0EmJF8ppM
             valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync("https://sheets.googleapis.com/v4/spreadsheets/1onwqrdxQIIUJytd_PMbdFKUXnBx3YSRYok0EmJF8ppM/values/A1%3AA3?key=" + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
             if (valuesFromGSheetStr == null)
@@ -202,7 +204,7 @@ public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
         bool success = Caretaker.g_caretaker.CheckFreeDiskSpace(noteToClient);
 
         Utils.Logger.Info("TestCaretakerCheckFreeDiskSpace() END");
-        return Content($"<HTML><body>TestCaretakerCheckFreeDiskSpace() finished with {(success ? "OK" : "Error")}. <br> Note To Client '<br>{noteToClient.Replace(Environment.NewLine, "<br>").Replace("    ", "&nbsp;&nbsp;&nbsp;&nbsp;")}'</body></HTML>", "text/html");
+        return Content($"<HTML><body>TestCaretakerCheckFreeDiskSpace() finished with { (success ? "OK" : "Error") }. <br> Note To Client '<br>{noteToClient.Replace(Environment.NewLine, "<br>").Replace("    ", "&nbsp;&nbsp;&nbsp;&nbsp;")}'</body></HTML>", "text/html");
     }
 
     [HttpGet]
@@ -214,11 +216,11 @@ public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
         bool success = Caretaker.CleanLogfiles(noteToClient);
 
         Utils.Logger.Info("TestCaretakerCleanLogfiles() END");
-        return Content($"<HTML><body>TestCaretakerCleanLogfiles() finished with {(success ? "OK" : "Error")}. <br> Note To Client '{noteToClient}'</body></HTML>", "text/html");
+        return Content($"<HTML><body>TestCaretakerCleanLogfiles() finished with { (success ? "OK" : "Error") }. <br> Note To Client '{noteToClient}'</body></HTML>", "text/html");
     }
 
     // just pass the HealthMonitorWebsite TS query to the HealthMonitor.EXE without further processing.
-    [HttpPost, HttpGet] // message from HealthMonitor webApp arrives as a Post, not a Get
+    [HttpPost, HttpGet]     // message from HealthMonitor webApp arrives as a Post, not a Get
     public async Task<ActionResult> ReportHealthMonitorCurrentStateToDashboardInJSON()
     {
         Utils.Logger.Info("ReportHealthMonitorCurrentStateToDashboardInJSON() BEGIN");

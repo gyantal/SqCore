@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Text;
 using FinTechCommon;
-using MathCommon.MathNet;
 using Microsoft.AspNetCore.Mvc;
 using SqCommon;
+using System.Text;
+using System.Globalization;
+using MathCommon.MathNet;
 
 namespace SqCoreWeb.Controllers;
 
@@ -24,11 +24,12 @@ public class StrategySinController : ControllerBase
     [HttpGet] // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
     public string Get()
     {
+
         string titleString = "Monthly rebalance, <b>The Charmat Rebalancing Method</b> (Trend following with Percentile Channel weights), Cash to TLT";
         string usedGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1JXMbEMAP5AOqB1FjdM8jpptXfpuOno2VaFVYK8A1eLo/values/A1:Z2000?key=";
         string usedGSheet2Ref = "https://docs.google.com/spreadsheets/d/1JXMbEMAP5AOqB1FjdM8jpptXfpuOno2VaFVYK8A1eLo/edit?usp=sharing";
         string usedGDocRef = "https://docs.google.com/document/d/1dBHg3-McaHeCtxCTZdJhTKF5NPaixXYjEngZ4F2_ZBE/edit?usp=sharing";
-
+        
         // Get, split and convert GSheet data
         string? gSheetString = SINGoogleApiGsheet(usedGSheetRef);
         Tuple<int[], string[], int[], bool[], int[], double[]> gSheetResToFinCalc = GSheetConverter(gSheetString);
@@ -38,7 +39,7 @@ public class StrategySinController : ControllerBase
         int thresholdLower = 25; // Upper threshold is 100-thresholdLower.
         int[] lookbackDays = new int[] { 30, 60, 120, 252 };
         int volDays = 20;
-        int[] pastPerfDays = new int[] { 1, 5, 10, 21, 63, 126, 252 };
+        int[] pastPerfDays = new int[] { 1, 5, 10, 21, 63, 126, 252};
         string[] pastPerfDaysString = new string[] { "1-Day", "1-Week", "2-Weeks", "1-Month", "3-Months", "6-Months", "1-Year" };
         double leverage = gSheetResToFinCalc.Item6[0];
         double maxBondPerc = gSheetResToFinCalc.Item6[1];
@@ -46,12 +47,14 @@ public class StrategySinController : ControllerBase
         // Collecting and splitting price data got from SQL Server
         (IList<List<DailyData>>, List<DailyData>) dataListTupleFromSQServer = GetSinStockHistData(allAssetList);
 
+
         IList<List<DailyData>> quotesData = dataListTupleFromSQServer.Item1;
         List<DailyData> cashEquivalentQuotesData = dataListTupleFromSQServer.Item2;
 
         // Calculating basic weights based on percentile channels - base Varadi TAA
         Tuple<double[], double[,], double[]> taaWeightResultsTuple = TaaWeights(quotesData, lookbackDays, volDays, thresholdLower);
-
+        
+        
         // Request time (UTC)
         DateTime liveDateTime = DateTime.UtcNow;
         string liveDate = liveDateTime.ToString("yyyy-MM-dd HH:mm:ss");
@@ -59,8 +62,8 @@ public class StrategySinController : ControllerBase
         string liveDateString = "Request time (UTC): " + liveDate;
 
         // Last data time (UTC)
-        string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000, 1, 1, 16, 15, 0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on " + quotesData[0][^1].Date.ToString("yyyy-MM-dd");
-        string lastDataTimeString = "Last data time (UTC): " + lastDataTime;
+        string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000,1,1,16,15,0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on " + quotesData[0][^1].Date.ToString("yyyy-MM-dd");
+        string lastDataTimeString = "Last data time (UTC): "+lastDataTime;
 
         DateTime nextWeekday = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000, 1, 1, 16, 15, 0).TimeOfDay) ? liveDateTime.Date.AddDays(1) : quotesData[0][^1].Date.AddDays(1);
 
@@ -73,6 +76,7 @@ public class StrategySinController : ControllerBase
 
         double currPV;
         int[] currPosInt = new int[allAssetList.Length + 1];
+
 
         double[] currPosValue = new double[allAssetList.Length + 1];
         for (int jCols = 0; jCols < currPosValue.Length - 2; jCols++)
@@ -89,7 +93,7 @@ public class StrategySinController : ControllerBase
         double[] nextPosValue = new double[allAssetList.Length + 1];
         for (int jCols = 0; jCols < nextPosValue.Length - 2; jCols++)
         {
-            nextPosValue[jCols] = gSheetResToFinCalc.Item4[jCols] ? currPV * taaWeightResultsTuple.Item2[taaWeightResultsTuple.Item2.GetLength(0) - 1, jCols] * leverage : 0;
+            nextPosValue[jCols] = (gSheetResToFinCalc.Item4[jCols]) ? currPV * taaWeightResultsTuple.Item2[taaWeightResultsTuple.Item2.GetLength(0) - 1, jCols] * leverage : 0;
         }
         nextPosValue[^2] = Math.Min(Math.Max(0, currPV - nextPosValue.Take(nextPosValue.Length - 2).ToArray().Sum() / leverage), currPV * maxBondPerc) * leverage;
         nextPosValue[^1] = currPV - nextPosValue.Take(nextPosValue.Length - 1).ToArray().Sum();
@@ -117,7 +121,7 @@ public class StrategySinController : ControllerBase
             posIntDiff[jCols] = nextPosInt[jCols] - currPosInt[jCols];
         }
 
-            // Profits
+            //Profits
 
         int[] prevPV = gSheetResToFinCalc.Item5;
         int boyPV = prevPV[0] + prevPV[1];
@@ -242,7 +246,7 @@ public class StrategySinController : ControllerBase
             assetScoresMtx[iRows, 1] = Math.Round(taaWeightResultsTuple.Item2[taaWeightResultsTuple.Item2.GetLength(0) - 1, iRows] * 100.0, 2).ToString() + "%";
         }
         assetScoresMtx[assetScoresMtx.GetLength(0) - 1, 0] = "---";
-        assetScoresMtx[assetScoresMtx.GetLength(0) - 1, 1] = Math.Round(nextBondPerc * 100, 2).ToString() + "%";
+        assetScoresMtx[assetScoresMtx.GetLength(0) - 1, 1] = Math.Round(nextBondPerc*100, 2).ToString() + "%";
 
         // Creating input string for JavaScript.
         StringBuilder sb = new("{" + Environment.NewLine);
@@ -276,10 +280,10 @@ public class StrategySinController : ControllerBase
         {
             sb.Append(allAssetList[i] + ": ");
             var prices = quotesData[i];
-            string priceStr = String.Join('\t', prices.Select(r => r.Date.ToString() + ", " + Math.Round(r.AdjClosePrice, 2).ToString()).Last() + "ß ");
+            string priceStr = String.Join('\t', (prices.Select(r => r.Date.ToString() + ", " + Math.Round(r.AdjClosePrice, 2).ToString())).Last() + "ß ");
             sb.Append(priceStr);
         }
-        string priceTlt = string.Join('\t', "TLT:" + cashEquivalentQuotesData.Select(r => r.Date.ToString() + ", " + Math.Round(r.AdjClosePrice, 2).ToString()).Last() + "ß ");
+        string priceTlt = string.Join('\t', "TLT:" + (cashEquivalentQuotesData.Select(r => r.Date.ToString() + ", " + Math.Round(r.AdjClosePrice, 2).ToString())).Last() + "ß ");
         sb.Append(priceTlt);
 
         sb.Append(@"""," + Environment.NewLine + @"""assetNames"": """);
@@ -338,7 +342,7 @@ public class StrategySinController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""assetChangesToChartMtx"": """);
         for (int i = 0; i < assetChangesMtx.GetLength(0); i++)
         {
-            sb.Append(string.Empty);
+            sb.Append("");
             for (int j = 0; j < assetChangesMtx.GetLength(1) - 1; j++)
             {
                 sb.Append(assetChangesMtx[i, j] + ", ");
@@ -353,7 +357,7 @@ public class StrategySinController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""assetScoresMtx"": """);
         for (int i = 0; i < assetScoresMtx.GetLength(0); i++)
         {
-            sb.Append(string.Empty);
+            sb.Append("");
             for (int j = 0; j < assetScoresMtx.GetLength(1) - 1; j++)
             {
                 sb.Append(assetScoresMtx[i, j] + ", ");
@@ -381,7 +385,7 @@ public class StrategySinController : ControllerBase
             for (int iRows = 4; iRows < gSheetTableRows.Length - 5; iRows++)
             {
                 string currPosRaw = gSheetTableRows[iRows];
-                currPosRaw = currPosRaw.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\",", "BRB").Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",", string.Empty);
+                currPosRaw = currPosRaw.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
                 string[] currPos = currPosRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
                 assNameString[iRows - 4] = currPos[0];
                 currPosAssString[iRows - 4] = currPos[1];
@@ -389,22 +393,22 @@ public class StrategySinController : ControllerBase
             }
 
             string currDateRaw = gSheetTableRows[2];
-            currDateRaw = currDateRaw.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\",", "BRB").Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",", string.Empty);
+            currDateRaw = currDateRaw.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
             string[] currDateVec = currDateRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
 
             string currDateRaw2 = gSheetTableRows[3];
-            currDateRaw2 = currDateRaw2.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\",", "BRB").Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",", string.Empty);
+            currDateRaw2 = currDateRaw2.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
             string[] currDateVec2 = currDateRaw2.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
 
             string currCashRaw = gSheetTableRows[^5];
-            currCashRaw = currCashRaw.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\",", "BRB").Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",", string.Empty);
+            currCashRaw = currCashRaw.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
             string[] currCashVec = currCashRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
 
             string[] prevPVString = new string[4];
             for (int iRows = 0; iRows < prevPVString.Length; iRows++)
             {
                 string currPosRaw = gSheetTableRows[gSheetTableRows.Length - 4 + iRows];
-                currPosRaw = currPosRaw.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\",", "BRB").Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",", string.Empty);
+                currPosRaw = currPosRaw.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
                 string[] currPos = currPosRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
                 prevPVString[iRows] = currPos[1];
             }
@@ -420,6 +424,7 @@ public class StrategySinController : ControllerBase
             bool[] currAssInd = currAssIndString.Select(chr => chr == "1").ToArray();
             int[] prevPV = Array.ConvertAll(prevPVString, int.Parse);
 
+
             Tuple<int[], string[], int[], bool[], int[], double[]> gSheetResFinal = Tuple.Create(currPosDateCash, assNameString, currPosAssets, currAssInd, prevPV, levMaxBondPerc);
 
             return gSheetResFinal;
@@ -431,7 +436,7 @@ public class StrategySinController : ControllerBase
     {
         Utils.Logger.Info("SINGoogleApiGsheet() BEGIN");
 
-        if (String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) || String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
+       if (String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) || String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
             return null;
 
         string? valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync(p_usedGSheetRef + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
@@ -451,15 +456,15 @@ public class StrategySinController : ControllerBase
                 assets.Add(asset);
         }
 
-        DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
-        // PctChannel needs 252 days and we need another extra 30 trading days rolling window to calculate PctChannels during the previous lookback window
-        // PctChannel Signal cannot be calculated just having the last day data, because it has to be rolled further. As it can exit/enter into bullish signals along the way of the simulation.
-        // Estimated needed 252 trading days = 365 calendar days.
-        // And an additional rolling window of 30 trading days (at least). That is another 45 calendar days.
-        // As minimal, we need 365 + 45 = 410 calendar days.
-        // For more robust calculations, we can use a 6 month rolling window. That is 120 trading days = 185 calendar days. Altogether: 365+185 = 550
-        // DateTime startIncLoc = nowET.AddDays(-408); // This can reproduce the old SqLab implementation with 33 days rolling simulation window
-        DateTime startIncLoc = nowET.AddDays(-550);    // This uses a 6-months, 120 trading days rolling simulation window for PctChannels
+            DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
+            // PctChannel needs 252 days and we need another extra 30 trading days rolling window to calculate PctChannels during the previous lookback window
+            // PctChannel Signal cannot be calculated just having the last day data, because it has to be rolled further. As it can exit/enter into bullish signals along the way of the simulation.
+            // Estimated needed 252 trading days = 365 calendar days. 
+            // And an additional rolling window of 30 trading days (at least). That is another 45 calendar days.
+            // As minimal, we need 365 + 45 = 410 calendar days.
+            // For more robust calculations, we can use a 6 month rolling window. That is 120 trading days = 185 calendar days. Altogether: 365+185 = 550
+            // DateTime startIncLoc = nowET.AddDays(-408); // This can reproduce the old SqLab implementation with 33 days rolling simulation window
+            DateTime startIncLoc = nowET.AddDays(-550);    // This uses a 6-months, 120 trading days rolling simulation window for PctChannels 
 
         List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc, true).ToList();
         List<List<DailyData>> sinTickersData = new();
@@ -493,7 +498,7 @@ public class StrategySinController : ControllerBase
         double[] assetHV = new double[nAssets];
         double[] assetWeights = new double[nAssets];
         double[] assetWeights2 = new double[nAssets];
-        double[,] assetPctChannelsUpper = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each
+        double[,] assetPctChannelsUpper = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each 
         double[,] assetPctChannelsLower = new double[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each
         sbyte[,] assetPctChannelsSignal = new sbyte[nAssets, p_pctChannelLookbackDays.Length];  // for assets and for each. It can be only 1 (bullish), -1 (bearish). Cannot be 0.
         int startNumDay = p_pctChannelLookbackDays.Max() - 1;
@@ -503,10 +508,10 @@ public class StrategySinController : ControllerBase
         int nDaysSimulated = p_taaWeightsData[0].Count - startNumDay;    // nDays of the rolling window where we start calculating the pctChannel Signals. Eg. nDays = 33 or 120 (for 6 months window precalculation)
         if (nDaysSimulated < 10)
             Console.WriteLine("StrategySin warning! Simulated rolling window is too short. It is not enough to calculate TaaWeights properly.");
-        double[,] dailyAssetWeights = new double[nDaysSimulated, nAssets];
+        double[,] dailyAssetWeights = new double[nDaysSimulated,nAssets];
         double[,] dailyAssetScores = new double[nDaysSimulated, nAssets];
         double[,] dailyAssetHv = new double[nDaysSimulated, nAssets];
-        for (int iDay = 0; iDay < nDaysSimulated; iDay++) // rolling window loop for previous 30/120 trading days. It ends with today.
+        for (int iDay = 0; iDay < nDaysSimulated; iDay++)    // rolling window loop for previous 30/120 trading days. It ends with today.
         {
             for (int iAsset = 0; iAsset < nAssets; iAsset++)
             {
@@ -518,17 +523,17 @@ public class StrategySinController : ControllerBase
                     assetPctChannelsLower[iAsset, iChannel] = Statistics.Quantile(usedQuotes, thresholdLower);
                     assetPctChannelsUpper[iAsset, iChannel] = Statistics.Quantile(usedQuotes, thresholdUpper);
                     if (assetPrice < assetPctChannelsLower[iAsset, iChannel])
-                        assetPctChannelsSignal[iAsset, iChannel] = -1;  // fully overwrite the signal for iAsset and for this channel. We don't keep signal values historically, just keep the actual signal as we march forward in the simulated window.
+                        assetPctChannelsSignal[iAsset, iChannel] = -1;  // fully overwrite the signal for iAsset and for this channel. We don't keep signal values historically, just keep the actual signal as we march forward in the simulated window. 
                     else if (assetPrice > assetPctChannelsUpper[iAsset, iChannel])
                         assetPctChannelsSignal[iAsset, iChannel] = 1;
-                    else if (iDay == 0)
+                    else if (iDay==0)
                         assetPctChannelsSignal[iAsset, iChannel] = 1;   // initially at the start of the rolling window, we assume it had bullish signal.
                 }
             }
 
             // Calculate assetWeights
             double totalWeight = 0.0;
-
+            
             for (int iAsset = 0; iAsset < nAssets; iAsset++)
             {
                 sbyte compositeSignal = 0;    // For every stocks, sum up the four signals every day. This sum will be -4, -2, 0, +2 or +4.
@@ -545,12 +550,13 @@ public class StrategySinController : ControllerBase
                 }
                 // Balazs: uses "corrected sample standard deviation"; corrected: dividing by 19, not 20; He doesn't annualize. He uses daily StDev
                 assetHV[iAsset] = ArrayStatistics.StandardDeviation(hvPctChg);  // Calculate the 20-day historical volatility of daily percentage changes for every stock.
-                assetWeights[iAsset] = assetScores[iAsset] / assetHV[iAsset];   // “Score/Vol” quotients will define the weights of the stocks. They can be 0 or negative as well.
+                assetWeights[iAsset] = assetScores[iAsset] / assetHV[iAsset];   // “Score/Vol” quotients will define the weights of the stocks. They can be 0 or negative as well. 
                                                                                 // there is an interesting observation here. Actually, it is a good behavour.
                                                                                 // If assetScores[i]=0, assetWeights[i] becomes 0, so we don't use its weight when p_isCashAllocatedForNonActives => TLT will not fill its Cash-place; NO TLT will be invested (if this is the only stock with 0 score), the portfolio will be 100% in other stocks. We are more Brave.
                                                                                 // However, if assetScores[i]<0 (negative), assetWeights[i] becoumes a proper negative number. It will be used in TotalWeight calculation => TLT will fill its's space. (if this is the only stock with negative score), TLT will be invested in its place; consequently the portfolio will NOT be 100% in other stocks. We are more defensive.
                 totalWeight += Math.Abs(assetWeights[iAsset]);      // Sum up the absolute values of the “Score/Vol” quotients. TotalWeight contains even the non-active assets so have have some cash.
                 assetWeights2[iAsset] = (assetWeights[iAsset] >= 0) ? assetWeights[iAsset] : 0.0;
+
             }
             for (int iAsset = 0; iAsset < nAssets; iAsset++)
             {
@@ -563,10 +569,10 @@ public class StrategySinController : ControllerBase
         double[] lastDayScores = new double[nAssets];
         for (int iAsset = 0; iAsset < nAssets; iAsset++)
         {
-            lastDayScores[iAsset] = dailyAssetScores[dailyAssetScores.GetLength(0) - 1, iAsset];
+            lastDayScores[iAsset] = dailyAssetScores[dailyAssetScores.GetLength(0) - 1, iAsset]; ;
         }
 
-        IEnumerable<DateTime> taaWeightDateVec = p_taaWeightsData[0].GetRange(p_taaWeightsData[0].Count - nDaysSimulated, nDaysSimulated).Select(r => r.Date);
+        IEnumerable<DateTime> taaWeightDateVec = p_taaWeightsData[0].GetRange(p_taaWeightsData[0].Count - nDaysSimulated , nDaysSimulated).Select(r => r.Date);
         DateTime[] taaWeightDateArray = taaWeightDateVec.ToArray();
         DateTime startMatlabDate = DateTime.ParseExact("1900/01/01", "yyyy/MM/dd", CultureInfo.InvariantCulture);
 

@@ -1,9 +1,12 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using SqCommon;
 using System;
 using System.IO;
-using System.Text.Json;
+using System.Text;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using SqCommon;
+using System.Text.Json;
+using System.Collections.Generic;
 
 namespace SqCoreWeb.Controllers;
 
@@ -23,9 +26,9 @@ public class NGXLogInterface
 {
     public NgxLoggerLevel Level { get; set; }
     public string Timestamp { get; set; } = string.Empty;
-    public string FileName { get; set; } = string.Empty;
-    public string LineNumber { get; set; } = string.Empty;
-    public string Message { get; set; } = string.Empty;
+    public string FileName { get; set; }  = string.Empty;
+    public string LineNumber { get; set; }  = string.Empty;
+    public string Message { get; set; }  = string.Empty;
     public object[] Additional { get; set; } = Array.Empty<object>();
 }
 
@@ -55,9 +58,9 @@ public class JsLogController : Microsoft.AspNetCore.Mvc.Controller
         // 2. interpret the log and if it is an error, notify HealthMonitor
         try
         {
-            var jsLogObj = JsonSerializer.Deserialize<NGXLogInterface>(jsLogMessage, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var jsLogObj = JsonSerializer.Deserialize<NGXLogInterface>(jsLogMessage, new JsonSerializerOptions { PropertyNameCaseInsensitive = true});
             if (jsLogObj == null || jsLogObj.Level == NgxLoggerLevel.ERROR || jsLogObj.Level == NgxLoggerLevel.FATAL)
-            { // notify HealthMonitor to send an email
+            {   // notify HealthMonitor to send an email
                 await HealthMonitorMessage.SendAsync(jsLogMsgWithOrigin, HealthMonitorMessageID.SqCoreWebJsError);
             }
         }
