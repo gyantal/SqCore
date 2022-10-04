@@ -29,7 +29,7 @@ public class StrategyUberTaaController : ControllerBase
     {
         return universe switch
         {
-            //1: GameChanger, 2: Global Assets
+            // 1: GameChanger, 2: Global Assets
             1 or 2 => Content(GetResultStr((Universe)universe, winnerRun == 1), "text/html"),
             _ => Content("Error", "text/html"),
         };
@@ -37,7 +37,7 @@ public class StrategyUberTaaController : ControllerBase
 
     string GetResultStr(Universe p_universe, bool p_winnerRun)
     {
-        int thresholdLower = 25; //Upper threshold is 100-thresholdLower.
+        int thresholdLower = 25; // Upper threshold is 100-thresholdLower.
         int[] lookbackDays = new int[] { 60, 120, 180, 252 };
         int volDays = 20;
 
@@ -70,7 +70,7 @@ public class StrategyUberTaaController : ControllerBase
         clmtAssetList.CopyTo(allAssetList, 0);
         usedAssetList.CopyTo(allAssetList, clmtAssetList.Length);
 
-        //Collecting and splitting price data got from SQL Server
+        // Collecting and splitting price data got from SQL Server
         (IList<List<DailyData>>, List<List<DailyData>>, List<DailyData>) dataListTupleFromSQServer = GetStockHistData(allAssetList);
 
         IList<List<DailyData>> quotesData = dataListTupleFromSQServer.Item1;
@@ -85,10 +85,10 @@ public class StrategyUberTaaController : ControllerBase
         // // Calculating CLMT data
         double[][] clmtRes = CLMTCalc(quotesForClmtData);
 
-        //Setting last data date
+        // Setting last data date
         double lastDataDate = (clmtRes[0][^1] == taaWeightResultsTuple.Item1[^1]) ? clmtRes[0][^1] : 0;
 
-        //Get, split and convert GSheet data
+        // Get, split and convert GSheet data
         // string? gSheetString = UberTaaGoogleApiGsheet(usedGSheetRef);
         Tuple<double[], int[,], int[], int[], string[], int[], int[]> gSheetResToFinCalc = GSheetConverter(usedGSheetStr, allAssetList);
         Debug.WriteLine("The Data from gSheet is :", gSheetResToFinCalc);
@@ -96,17 +96,17 @@ public class StrategyUberTaaController : ControllerBase
         // Calculating final weights - Advanced UberTAA
         Tuple<double[,], double[,], double[,], string[], string[]> weightsFinal = MultiplFinCalc(clmtRes, gSheetResToFinCalc, allAssetList, lastDataDate, taaWeightResultsTuple);
 
-        //Request time (UTC)
+        // Request time (UTC)
         DateTime liveDateTime = DateTime.UtcNow;
         string liveDate = liveDateTime.ToString("yyyy-MM-dd HH:mm:ss");
         DateTime timeNowET = Utils.ConvertTimeFromUtcToEt(liveDateTime);
         string liveDateString = "Request time (UTC): " + liveDate;
 
-        //Last data time (UTC)
+        // Last data time (UTC)
         string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000,1,1,16,15,0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on " + quotesData[0][^1].Date.ToString("yyyy-MM-dd");
         string lastDataTimeString = "Last data time (UTC): " + lastDataTime;
 
-        //Current PV, Number of current and required shares
+        // Current PV, Number of current and required shares
         DateTime startMatlabDate = DateTime.ParseExact("1900/01/01", "yyyy/MM/dd", CultureInfo.InvariantCulture);
         DateTime nextTradingDay = startMatlabDate.AddDays(weightsFinal.Item1[weightsFinal.Item1.GetLength(0) - 1, 0] - 693962);
         string nextTradingDayString = nextTradingDay.ToString("yyyy-MM-dd");
@@ -157,7 +157,7 @@ public class StrategyUberTaaController : ControllerBase
             posIntDiff[jCols] = nextPosInt[jCols] - currPosInt[jCols];
         }
 
-        //CLMT: Combined Leverage Market Timer
+        // CLMT: Combined Leverage Market Timer
         string clmtSignal;
         if (clmtRes[7][^1] == 1)
         {
@@ -193,7 +193,7 @@ public class StrategyUberTaaController : ControllerBase
         }
 
 
-        //Position weights in the last 20 days
+        // Position weights in the last 20 days
         string[,] prevPosMtx = new string[weightsFinal.Item3.GetLength(0) + 1,usedAssetList.Length + 3];
         for (int iRows = 0; iRows < prevPosMtx.GetLength(0) - 1; iRows++)
         {
@@ -229,7 +229,7 @@ public class StrategyUberTaaController : ControllerBase
             }
         }
 
-        //Codes for last 20 days to coloring 
+        // Codes for last 20 days to coloring 
         double[,] prevAssEventCodes = weightsFinal.Item1;
         for (int iRows = 0; iRows < prevAssEventCodes.GetLength(0) / 2; iRows++)
         {
@@ -239,7 +239,7 @@ public class StrategyUberTaaController : ControllerBase
             }
         }
 
-        //Color codes for last 20 days
+        // Color codes for last 20 days
         string[,] prevAssEventColorMtx = new string[weightsFinal.Item3.GetLength(0) + 1, usedAssetList.Length + 3];
         for (int iRows = 0; iRows < prevAssEventColorMtx.GetLength(0) - 1; iRows++)
         {
@@ -302,7 +302,7 @@ public class StrategyUberTaaController : ControllerBase
         }
 
 
-        //Events in the next 10 days
+        // Events in the next 10 days
         string[,] futPosMtx = new string[weightsFinal.Item2.GetLength(0) + 1, usedAssetList.Length + 1];
         string[,] futAssEventCodes = new string[weightsFinal.Item2.GetLength(0) + 1, usedAssetList.Length + 1];
         for (int iRows = 0; iRows < futPosMtx.GetLength(0) - 1; iRows++)
@@ -366,7 +366,7 @@ public class StrategyUberTaaController : ControllerBase
                 }
                 else if (weightsFinal.Item2[iRows, jCols + 1] == 11)
                 {
-                    futPosMtx[iRows + 1, jCols + 1] = "---"; //Unknown CLMT Day
+                    futPosMtx[iRows + 1, jCols + 1] = "---"; // Unknown CLMT Day
                     futAssEventCodes[iRows + 1, jCols + 1] = "F0E68C";
                 }
             }
@@ -386,7 +386,7 @@ public class StrategyUberTaaController : ControllerBase
         futAssEventCodes[0, futPosMtx.GetLength(1) - 1] = "66CCFF";
 
 
-        //AssetPrice Changes in last 20 days to chart
+        // AssetPrice Changes in last 20 days to chart
         int assetChartLength = 20;
         string[,] assetChangesMtx = new string[assetChartLength + 1,usedAssetList.Length];
         for (int iRows = 0; iRows < assetChangesMtx.GetLength(0); iRows++)
@@ -398,7 +398,7 @@ public class StrategyUberTaaController : ControllerBase
             }
         }
 
-        //Daily changes, currently does not used.
+        // Daily changes, currently does not used.
         string[,] assetDailyChangesMtx = new string[assetChartLength + 1, usedAssetList.Length];
         for (int iRows = 0; iRows < assetDailyChangesMtx.GetLength(0); iRows++)
         {
@@ -409,7 +409,7 @@ public class StrategyUberTaaController : ControllerBase
             }
         }
 
-        //Data for SPX MA chart
+        // Data for SPX MA chart
         string[,] spxToChartMtx = new string[assetChartLength + 1, 4];
         for (int iRows = 0; iRows < spxToChartMtx.GetLength(0); iRows++)
         {
@@ -419,7 +419,7 @@ public class StrategyUberTaaController : ControllerBase
             spxToChartMtx[iRows, 3] = Math.Round(clmtRes[5][clmtRes[5].GetLength(0) - assetChartLength - 1 + iRows], 0).ToString();
         }
 
-        //Data for XLU-VTi RSI chart
+        // Data for XLU-VTi RSI chart
         string[,] xluVtiToChartMtx = new string[assetChartLength + 1, 3];
         for (int iRows = 0; iRows < spxToChartMtx.GetLength(0); iRows++)
         {
@@ -429,7 +429,7 @@ public class StrategyUberTaaController : ControllerBase
         }
 
 
-        //Creating input string for JavaScript.
+        // Creating input string for JavaScript.
         StringBuilder sb = new("{" + Environment.NewLine);
         sb.Append(@"""titleCont"": """ + titleString);
         sb.Append(@"""," + Environment.NewLine + @"""warningCont"": """ + warningGCh);
@@ -990,7 +990,7 @@ public class StrategyUberTaaController : ControllerBase
         clmtTotalResu[7] = clmtIndi;
         clmtTotalResu[8] = spxPrice;
 
-    //     StringBuilder stringBuilder=new StringBuilder();
+    // StringBuilder stringBuilder=new StringBuilder();
     //     foreach (var item in clmtTotalResu)
     //     {
     //         foreach (var item2 in item)
@@ -1000,7 +1000,7 @@ public class StrategyUberTaaController : ControllerBase
     //         stringBuilder.AppendLine("ß" + Environment.NewLine + Environment.NewLine);
     //     }
 
-    //     System.IO.File.WriteAllText(@"D:\xxx.csv", stringBuilder.ToString());
+    // System.IO.File.WriteAllText(@"D:\xxx.csv", stringBuilder.ToString());
 
         return clmtTotalResu;
     }

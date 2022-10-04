@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Authorization;   // needed in PROD, not in DBG
 
 namespace SqCoreWeb.Controllers;
 
-//[Route("WebServer")]
+// [Route("WebServer")]
 public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
 {
 #pragma warning disable IDE0052  // keep example in the code for future reference (IDE0052: 'Private member can be removed as the value assigned to it is never read')

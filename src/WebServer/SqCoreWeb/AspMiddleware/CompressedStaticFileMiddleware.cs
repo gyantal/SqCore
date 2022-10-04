@@ -280,7 +280,7 @@ public class CompressedStaticFileMiddleware
             return;
         }
 
-        //Find the smallest file from all our alternative file providers
+        // Find the smallest file from all our alternative file providers
         var smallestAlternativeFile = alternativeFileProviders.Select(alternativeFileProvider => alternativeFileProvider.GetAlternative(context, fileSystem, originalFile))
                                                               .Where(af => af != null)
                                                               .OrderBy(alternativeFile => alternativeFile?.Cost)

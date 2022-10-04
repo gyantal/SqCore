@@ -49,7 +49,7 @@ public partial class DashboardClient
     {
         Utils.RunInNewThread(ignored => // running parallel on a ThreadPool thread, FireAndForget: QueueUserWorkItem [26microsec] is 25% faster than Task.Run [35microsec]
         {
-            Thread.CurrentThread.IsBackground = true; //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
+            Thread.CurrentThread.IsBackground = true; // thread will be killed when all foreground threads have died, the thread will not keep the application alive.
 
             // Assuming this tool is not the main Tab page on the client, we delay sending all the data, to avoid making the network and client too busy an unresponsive
             if (!p_isThisActiveToolAtConnectionInit)
@@ -267,7 +267,7 @@ public partial class DashboardClient
     //         // };
     //         // NewsItem jsonObject =  System.Text.Json.JsonSerializer.Deserialize<NewsItem>(webpageData, jsonOptions);
 
-    //         System.Text.Json.JsonDocument document = System.Text.Json.JsonDocument.Parse(webpageData);
+    // System.Text.Json.JsonDocument document = System.Text.Json.JsonDocument.Parse(webpageData);
     //         JsonElement root = document.RootElement;
     //         JsonElement newssElement = root.GetProperty("news");
     //         foreach (JsonElement news in newssElement.EnumerateArray())
@@ -283,7 +283,7 @@ public partial class DashboardClient
     //             newsItem.DownloadTime = DateTime.Now;
     //             newsItem.Source = NewsSource.TipRanks.ToString();
 
-    //             // if (AddNewsToMemory(p_ticker, newsItem))
+    // // if (AddNewsToMemory(p_ticker, newsItem))
     //             p_foundNewsItems.Add(newsItem);
     //         }
     //     }
@@ -334,7 +334,7 @@ public partial class DashboardClient
     //             newsItem.DownloadTime = DateTime.Now;
     //             newsItem.Source = NewsSource.Benzinga.ToString();
 
-    //             if (AddNewsToMemory(p_ticker, newsItem))
+    // if (AddNewsToMemory(p_ticker, newsItem))
     //                 p_foundNewsItems.Add(newsItem);
     //         }
     //     }

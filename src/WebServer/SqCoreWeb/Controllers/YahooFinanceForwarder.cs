@@ -40,18 +40,18 @@ using System.Threading.Tasks;
 // only splits, and in this case this service works fine. But be warned. WARNING !!!! THIS SERVICE DOESN'T ADJUST FOR DIVIDENDS (ONLY FOR SPLITS) , BECAUSE YF DATA DOESN'T ADJUST FOR DIVIDEND.
 // We need to develop a separate service, getting data from SQL and supporting many tickers at once, that will be Dividend adjusted. We have C# code for that, so we don't need to implement this service for C# usage, only if we want to use it from JavaScript on the client side.
 
-//4. Future work: after Robert confirmed that v8 (without crumbs) gives same good data as v7 (with crumbs), we may change implementation to that  (maybe not, as it gives slightly different data)
+// 4. Future work: after Robert confirmed that v8 (without crumbs) gives same good data as v7 (with crumbs), we may change implementation to that  (maybe not, as it gives slightly different data)
 // Temporary comment here, remove it after Robert made his investigation:
-//"egy hasonló már le van implementálva a programban,  csak    query1.finance.yahoo.com/v7/finance/download/... helyett query2.finance.yahoo.com/v8/finance/chart/...  lásd itt:
-//https://incode.browse.cloudforge.com/cgi-bin/hedgequant/HedgeQuant/src/Server/YahooQuoteCrawler/Crawler.cs?revision=7881&view=markup#l1612
-//és ehhez nem kell se crumbs, se cookie a tapasztalatom szerint, és mint mondtam sok benne az adathiba.
-//Majd valamikor megnézem hogy a query1.finance.yahoo.com/v7/-es API jobb adatokat ad-e mint a query2.finance.yahoo.com/v8/-as,
-//de ez egy hosszabb nekigyűrkőzést igénylő munka/vizsgálódás."
+// "egy hasonló már le van implementálva a programban,  csak    query1.finance.yahoo.com/v7/finance/download/... helyett query2.finance.yahoo.com/v8/finance/chart/...  lásd itt:
+// https://incode.browse.cloudforge.com/cgi-bin/hedgequant/HedgeQuant/src/Server/YahooQuoteCrawler/Crawler.cs?revision=7881&view=markup#l1612
+// és ehhez nem kell se crumbs, se cookie a tapasztalatom szerint, és mint mondtam sok benne az adathiba.
+// Majd valamikor megnézem hogy a query1.finance.yahoo.com/v7/-es API jobb adatokat ad-e mint a query2.finance.yahoo.com/v8/-as,
+// de ez egy hosszabb nekigyűrkőzést igénylő munka/vizsgálódás."
 
 
 namespace SqCoreWeb.Controllers;
 
-//[Route("api/[controller]")]
+// [Route("api/[controller]")]
 public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
 {
     public YahooFinanceForwarder()
@@ -73,7 +73,7 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
             // 1. Prepare input parameters
             string uriQuery = Request.QueryString.ToString();    // "?s=VXX,SVXY,^vix&f=ab&o=csv" from the URL http://localhost:58213/api/rtp?s=VXX,XIV,^vix&f=ab&o=csv
             if (uriQuery.Length > 8192)
-            {   //When you try to pass a string longer than 8192 charachters, a faultException will be thrown. There is a solution, but I don't want
+            {   // When you try to pass a string longer than 8192 charachters, a faultException will be thrown. There is a solution, but I don't want
                 return new Tuple<string, string>(@"{ ""Message"":  ""Error caught by WebApi Get():: uriQuery is longer than 8192: we don't process that. Uri: " + uriQuery + @""" }", "application/json");
             }
 
@@ -246,7 +246,7 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
             //         return new Tuple<string, string>(@"{ ""Message"":  ""Error: yF row doesn't have 7 cells: " + lines[i] + @""" }", "application/json");
             //     }
 
-            //     DateTime date;
+            // DateTime date;
             //     if (!DateTime.TryParseExact(cells[0], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out date))
             //     {
             //         return new Tuple<string, string>(@"{ ""Message"":  ""Error: problem with date format: " + cells[0] + @""" }", "application/json");
@@ -256,18 +256,18 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
             //     else
             //         cells[0] = String.Format(@"{0}-{1}-{2}", date.Year, date.Month, date.Day);
 
-            //     // Prices in the given CSV as "15.830000" is pointless. Convert it to "15.8" if possible, 		"16.059999"	should be converted too
+            // // Prices in the given CSV as "15.830000" is pointless. Convert it to "15.8" if possible, 		"16.059999"	should be converted too
             //     for (int j = 1; j < 6; j++)
             //     {
             //         if (Double.TryParse(cells[j], out double price))
             //             cells[j] = price.ToString("0.###");
             //     }
 
-            //     //Volume is sometimes "000"; convert it to "0"
+            // //Volume is sometimes "000"; convert it to "0"
             //     if (Int64.TryParse(cells[6], out long volume))  // Volume was the 5th index, not it is the 6th index (the last item)
             //         cells[6] = volume.ToString();
 
-            //     WriteRow(isOutputJson, yffColumnsList, cells, responseStrBldr, ref wasDataLineWritten);
+            // WriteRow(isOutputJson, yffColumnsList, cells, responseStrBldr, ref wasDataLineWritten);
             // }
 
             // 4.3 Process YF CSV file either as JSON or as CSV: Footer and finalizing it

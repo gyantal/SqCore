@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace SqCoreWeb;
 
-class HandshakeMktHealth {    //Initial params
+class HandshakeMktHealth { // Initial params
     public List<AssetJs> MarketSummaryAssets { get; set; } = new List<AssetJs>();
     public List<AssetJs> SelectableNavAssets { get; set; } = new List<AssetJs>();
 
@@ -52,7 +52,7 @@ public partial class DashboardClient
         if (WsWebSocket == null)
             Utils.Logger.Info("Warning (TODO)!: Mystery how client.WsWebSocket can be null? Investigate!) ");
         if (WsWebSocket!.State == WebSocketState.Open)
-            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    // takes 0.635ms
     }
 
     // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
@@ -60,7 +60,7 @@ public partial class DashboardClient
     {
         Utils.RunInNewThread(ignored =>  // running parallel on a ThreadPool thread, FireAndForget: QueueUserWorkItem [26microsec] is 25% faster than Task.Run [35microsec]
         {
-            Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
+            Thread.CurrentThread.IsBackground = true;  // thread will be killed when all foreground threads have died, the thread will not keep the application alive.
 
             List<BrokerNav> selectableNavs = p_user.GetAllVisibleBrokerNavsOrdered();
             m_mkthSelectedNavAsset = selectableNavs.FirstOrDefault();
@@ -88,7 +88,7 @@ public partial class DashboardClient
         IEnumerable<AssetHistStatJs> periodStatToClient = GetLookbackStat(m_lastLookbackPeriodStrMh);
         byte[] encodedMsg = Encoding.UTF8.GetBytes("MktHlth.NonRtStat:" + Utils.CamelCaseSerialize(periodStatToClient));
         if (WsWebSocket!.State == WebSocketState.Open)
-            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    // takes 0.635ms
     }
 
     public bool OnReceiveWsAsync_MktHealth(string msgCode, string msgObjStr)
@@ -167,7 +167,7 @@ public partial class DashboardClient
 
     private HandshakeMktHealth GetHandshakeMktHlth(List<BrokerNav> p_selectableNavs)
     {
-        //string selectableNavs = "GA.IM, DC, DC.IM, DC.IB";
+        // string selectableNavs = "GA.IM, DC, DC.IM, DC.IB";
         List<AssetJs> marketSummaryAssets = m_mkthAssets.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
         List<AssetJs> selectableNavAssets = p_selectableNavs.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
         return new HandshakeMktHealth() { MarketSummaryAssets = marketSummaryAssets, SelectableNavAssets = selectableNavAssets };

@@ -119,9 +119,9 @@ internal class SqFirewallMiddlewarePostAuth
             if (((Program.WebAppGlobals.KestrelEnv?.EnvironmentName == "Development") || httpContext.Request.Host.Host.StartsWith("sqcore.net")) 
                 && (httpContext.Request.Path.Value?.Equals("/index.html", StringComparison.OrdinalIgnoreCase) ?? false))
             {
-                //await _next(httpContext);
-                //await context.Response.WriteAsync($"Hello {CultureInfo.CurrentCulture.DisplayName}");
-                //return Content(mainIndexHtmlCached, "text/html");
+                // await _next(httpContext);
+                // await context.Response.WriteAsync($"Hello {CultureInfo.CurrentCulture.DisplayName}");
+                // return Content(mainIndexHtmlCached, "text/html");
 
                 // This solution has some Non-refresh problems after Logout, which happens almost never. 
                 // After UserAccount/logout server redirect goes to => Index.html. Reloads, and it comes from the cach (shows userName), which is bad.

@@ -122,9 +122,9 @@ public class OvermindExecution : SqExecution
             new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore.Overmind: Charge Car battery in winter", Body = "Warning in every 2 weeks in winter: Charge car battery on Saturdays, otherwise you have to buy a battery every 2 years. (a lot of time to disassemble battery)", IsBodyHtml = false }.Send();
         }
 
-        //double? price = GetAmazonProductPrice("https://www.amazon.co.uk/Electronics-Sennheiser-Professional-blocking-gaming-headset-Black/dp/B00JQDOANK/");
-        //if (price == null || price <= 150.0)
-        //{
+        // double? price = GetAmazonProductPrice("https://www.amazon.co.uk/Electronics-Sennheiser-Professional-blocking-gaming-headset-Black/dp/B00JQDOANK/");
+        // if (price == null || price <= 150.0)
+        // {
         //    new Email
         //    {
         //        ToAddresses = Utils.Configuration["Emails:Gyant"],
@@ -134,7 +134,7 @@ public class OvermindExecution : SqExecution
         //            $"Time to buy Sennheiser GAME ZERO now. Amazon price dropped from 199.99 to {price}. Go to https://www.amazon.co.uk/Electronics-Sennheiser-Professional-blocking-gaming-headset-Black/dp/B00JQDOANK/ and buy headset now. See '2016-05, Sennheiser buying.txt'.",
         //        IsBodyHtml = false
         //    }.Send();
-        //}
+        // }
     }
 
     static void MiddayCheck()
@@ -320,11 +320,11 @@ public class OvermindExecution : SqExecution
 
         bool isVixSpike = 1.2 * sma < priorClose;
         // VIX spike can be detected with another formulation if wished
-        //Maybe I should use this(or Both) in the VIX checking email service
-        //"Marked on the chart are instances where the VIX has risen by at least 30% (from close to"
-        //the highest high) in a five-day period when a previous 30 +% advance had not occurred in the prior ten trading days.There have been 70 such occurrences of these spikes in the above-mentioned time period.
-        //> But Balazs showed it is not really useful.Still, it can be used. Read that article and email again.
-        //See "2017-Forecasting Volatility Tsunamy, Balazs-gmail.pdf"
+        // Maybe I should use this(or Both) in the VIX checking email service
+        // "Marked on the chart are instances where the VIX has risen by at least 30% (from close to"
+        // the highest high) in a five-day period when a previous 30 +% advance had not occurred in the prior ten trading days.There have been 70 such occurrences of these spikes in the above-mentioned time period.
+        // > But Balazs showed it is not really useful.Still, it can be used. Read that article and email again.
+        // See "2017-Forecasting Volatility Tsunamy, Balazs-gmail.pdf"
 
         if (isVixSpike)  // if  1.2*SMA(VIX, 50) < VIX_last_close, sends an email. So, we can trade VIX MR subjectively.
         {
@@ -354,7 +354,7 @@ public class OvermindExecution : SqExecution
     //         return null;
     //     Utils.Logger.Info("HttpClient().GetStringAsync returned: " + ((webpage.Length > 100) ? webpage[..100] : webpage));
 
-    //     // <span id="priceblock_ourprice" class="a-size-medium a-color-price">£199.95</span>
+    // // <span id="priceblock_ourprice" class="a-size-medium a-color-price">£199.95</span>
     //     string searchStr = @"id=""priceblock_ourprice"" class=""a-size-medium a-color-price"">";
     //     int startInd = webpage.IndexOf(searchStr);
     //     if (startInd == -1)

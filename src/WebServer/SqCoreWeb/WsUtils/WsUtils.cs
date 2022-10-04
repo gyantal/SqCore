@@ -34,14 +34,14 @@ public static partial class WsUtils
             // todo support new "Forwarded" header (2014) https://en.wikipedia.org/wiki/X-Forwarded-For
             if (String.IsNullOrWhiteSpace(remoteIpStr))
                 remoteIpStr = GetHeaderValueAsNullableReference<string>(p_httpContext, "Forwarded");     // new standard  (2014 RFC 7239)
-            //if (String.IsNullOrWhiteSpace(remoteIP))
+            // if (String.IsNullOrWhiteSpace(remoteIP))
             //     remoteIP = GetHeaderValueAs<string>(p_controller, "REMOTE_ADDR");     // there are 10 more, but we have to support only CloudFront for CPU saving. We don't need others. http://stackoverflow.com/questions/527638/getting-the-client-ip-address-remote-addr-http-x-forwarded-for-what-else-coul
 
         }
 
         // one way to get IP
-        //var connection = p_httpContext.Features.Get<IHttpConnectionFeature>();
-        //var clientIP = connection?.RemoteIpAddress?.ToString();
+        // var connection = p_httpContext.Features.Get<IHttpConnectionFeature>();
+        // var clientIP = connection?.RemoteIpAddress?.ToString();
 
         // another way to get it
         if (String.IsNullOrWhiteSpace(remoteIpStr))
@@ -81,7 +81,7 @@ public static partial class WsUtils
             return UserAuthCheckResult.UserKnownAuthOK;
         else
             return UserAuthCheckResult.UserKnownAuthNotEnugh;
-//#endif
+// #endif
     }
 
     static List<string>? g_authorizedGoogleUsers = null;

@@ -41,8 +41,8 @@ public static class AspMiddlewareUtils
 
                 var onDisk = GetExactFullName(new FileInfo(x.File.PhysicalPath)).Replace("\\", "/");
 
-                //var onDisk = x.File.PhysicalPath.AsFile().GetExactFullName().Replace("\\", "/");
-                if (!onDisk.EndsWith(requested))    // case sensitive match both on Windows and Linux
+                // var onDisk = x.File.PhysicalPath.AsFile().GetExactFullName().Replace("\\", "/");
+                if (!onDisk.EndsWith(requested)) // case sensitive match both on Windows and Linux
                 {
                     throw new Exception("The requested file has incorrect casing and will fail on Linux servers." +
                         Environment.NewLine + "Requested:" + requested + Environment.NewLine +

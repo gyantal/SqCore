@@ -130,11 +130,11 @@ public partial class DashboardClient
         if (WsWebSocket == null)
             Utils.Logger.Info("Warning (TODO)!: Mystery how client.WsWebSocket can be null? Investigate!) ");
         if (WsWebSocket != null && WsWebSocket!.State == WebSocketState.Open)
-            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    // takes 0.635ms
     }
 
 
-    public static void RtDashboardTimer_Elapsed(object? state)    // Timer is coming on a ThreadPool thread
+    public static void RtDashboardTimer_Elapsed(object? state) // Timer is coming on a ThreadPool thread
     {
         try
         {

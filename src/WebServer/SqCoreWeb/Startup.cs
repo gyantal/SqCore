@@ -71,14 +71,14 @@ public class Startup
                 new CacheProfile()
                 {
                     Duration = 60 * 1,   // 1 min for real-time price data
-                    VaryByQueryKeys = new string[] { "*" } //a specific query string key or * can be used if all query string keys should be matched
+                    VaryByQueryKeys = new string[] { "*" } // a specific query string key or * can be used if all query string keys should be matched
                 });
             options.CacheProfiles.Add("DefaultMidDuration",
                 new CacheProfile()
                 {
-                    //Duration = (int)TimeSpan.FromHours(12).TotalSeconds
+                    // Duration = (int)TimeSpan.FromHours(12).TotalSeconds
                     Duration = 100000,   // 100,000 seconds = 27 hours
-                    VaryByQueryKeys = new string[] { "*" } //a specific query string key or * can be used if all query string keys should be matched
+                    VaryByQueryKeys = new string[] { "*" } // a specific query string key or * can be used if all query string keys should be matched
                 });
         });
 
@@ -106,7 +106,7 @@ public class Startup
         if (!String.IsNullOrEmpty(googleClientId) && !String.IsNullOrEmpty(googleClientSecret))
         {
             // The reason you have BOTH google and cookies Auth is because you're using Google for identity information but using cookies for storage of the identity for only asking Google once.
-            //So AddIdentity() is not required, but Cookies Yes.
+            // So AddIdentity() is not required, but Cookies Yes.
             services.AddAuthentication(options =>
             {
                 // If you don't want the cookie to be automatically authenticated and assigned to HttpContext.User, 
@@ -185,7 +185,7 @@ public class Startup
                     OnRedirectToAuthorizationEndpoint = context =>
                     {
                         Utils.Logger.Info("GoogleAuth.OnRedirectToAuthorizationEndpoint()");
-                        //context.Response.Redirect(context.RedirectUri + "&hd=" + System.Net.WebUtility.UrlEncode("jerriepelser.com"));
+                        // context.Response.Redirect(context.RedirectUri + "&hd=" + System.Net.WebUtility.UrlEncode("jerriepelser.com"));
                         context.Response.Redirect(context.RedirectUri, false); //  Temporary redirect response (HTTP 302)
                         return Task.CompletedTask;
                     },
@@ -197,8 +197,8 @@ public class Startup
                         // if (!Utils.IsAuthorizedGoogleUsers(Utils.Configuration, email))
                         //     throw new Exception($"Google Authorization Is Required. Your Google account: '{ email }' is not accepted. Logout this Google user and login with another one.");
 
-                        //string domain = context.User.Value<string>("domain");
-                        //if (domain != "jerriepelser.com")
+                        // string domain = context.User.Value<string>("domain");
+                        // if (domain != "jerriepelser.com")
                         //    throw new GoogleAuthenticationException("You must sign in with a jerriepelser.com email address");
 
                         return Task.CompletedTask;
@@ -246,7 +246,7 @@ public class Startup
         else
         {
             Console.WriteLine("A_G_CId and A_G_CSe from Config has NOT been found. Cannot initialize GoogelAuthentication.");
-            //Utils.Logger.Warn("A_G_CId and A_G_CSe from Config has NOT been found. Cannot initialize GoogelAuthentication.");
+            // Utils.Logger.Warn("A_G_CId and A_G_CSe from Config has NOT been found. Cannot initialize GoogelAuthentication.");
         }
 
     }
@@ -260,7 +260,7 @@ public class Startup
         {
             // In .NET 6, app.UseDeveloperExceptionPage(); is added by default when env.IsDevelopment(). But we also want it in Production for the first years of  development.
             app.UseDeveloperExceptionPage(); // returns a nice webpage that shows the stack trace and everything of the crash. Can be used even in Production to catch the error quicker.
-            //app.UseExceptionHandler("/error.html"); // Usually used in Production. It hides the crash details totally from the user. There is no browser redirection. It returns 'error.html' with status: 200 (OK). Maybe 500 (Error) would be better to return, but then the Browser might not display that page to the user.
+            // app.UseExceptionHandler("/error.html"); // Usually used in Production. It hides the crash details totally from the user. There is no browser redirection. It returns 'error.html' with status: 200 (OK). Maybe 500 (Error) would be better to return, but then the Browser might not display that page to the user.
             
             // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
             app.UseHsts();
@@ -278,7 +278,7 @@ public class Startup
         // webSocketOptions.AllowedOrigins.Add("https://localhost:4202");
         // app.UseWebSockets(webSocketOptions);
 
-        //app.UseDefaultFiles();      // "UseDefaultFiles is a URL rewriter (default.htm, default.html, index.htm, index.html whichever first, 4 file queries to find the file) that doesn't actually serve the file. "
+        // app.UseDefaultFiles();      // "UseDefaultFiles is a URL rewriter (default.htm, default.html, index.htm, index.html whichever first, 4 file queries to find the file) that doesn't actually serve the file. "
         app.UseRewriter(new RewriteOptions()
         .AddRewrite(@"^$", "index.html", skipRemainingRules: true)              // empty string converted to index.html. Only 1 query to find the index.html file. Better than UseDefaultFiles()
         .AddRewrite(@"^(.*)/$", "$1/index.html", skipRemainingRules: true)      // converts "/" to "/index.html", e.g. .AddRewrite(@"^HealthMonitor/$", @"HealthMonitor/index.html" and all Angular projects.
@@ -383,7 +383,7 @@ public class Startup
             // so the CDN caches differentiate by user-agents or gzip/brotli/noCompressions.
             // StaticFiles(): index.html sets vary: Accept-Encoding, because html can be compressed. Ico/jpeg files are not compressed, so 'vary' is not set in HTTP header.
             // https://blog.stackpath.com/accept-encoding-vary-important/
-            //context.Response.Headers[Microsoft.Net.Http.Headers.HeaderNames.Vary] = new string[] { "Accept-Encoding" };
+            // context.Response.Headers[Microsoft.Net.Http.Headers.HeaderNames.Vary] = new string[] { "Accept-Encoding" };
 
             await next();
         });

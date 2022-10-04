@@ -57,7 +57,7 @@ public class VolatilityDragVisualizerController : ControllerBase
         return "Error";
     }
 
-        //Downloading price data from SQL Server
+        // Downloading price data from SQL Server
     public static IList<List<DailyData>> GetVolatilityStockHistData(string[] p_allAssetList)
     {
         Utils.Logger.Info("DataSQDBGmod() START");
@@ -71,9 +71,9 @@ public class VolatilityDragVisualizerController : ControllerBase
                 assets.Add(asset);
         }
 
-        //  DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
+        // DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
             DateTime startIncLoc = DateTime.ParseExact("2004/03/26", "yyyy/MM/dd", CultureInfo.InvariantCulture);
-        //  DateTime startIncLoc = nowET.AddDays(-550);
+        // DateTime startIncLoc = nowET.AddDays(-550);
         
         List<List<DailyData>> volatilityTickersData = new();
         // List<DailyData> VIXDailyquotes = new();
@@ -140,7 +140,7 @@ public class VolatilityDragVisualizerController : ControllerBase
         string[] retLBStr = new string[] { "1 Day", "3 Days", "1 Week", "2 Weeks", "1 Month", "3 Months", "6 Months", "1 Year" };
         int retHistLB = 20;
 
-        //Collecting and splitting price data got from SQL Server
+        // Collecting and splitting price data got from SQL Server
         IList<List<DailyData>> quotesData = GetVolatilityStockHistData(allAssetList);
         IList<List<DailyData>> quotesData1 = new List<List<DailyData>>(quotesData);
         quotesData1.RemoveAt(allAssetList.Length - 1);
@@ -190,8 +190,8 @@ public class VolatilityDragVisualizerController : ControllerBase
         {
             int shiftDays = 0;
             List<double> assPriceSubList = new();
-            //for (int jRows = 0; jRows < noBtDays; jRows++)
-            //{
+            // for (int jRows = 0; jRows < noBtDays; jRows++)
+            // {
             int jRows = 0;
                 while (quotesDateVec[jRows] < quotesFirstDates[iAsset])
                 {
@@ -224,7 +224,7 @@ public class VolatilityDragVisualizerController : ControllerBase
                         }
                     }
                 }
-            //}
+            // }
             quotesPrices.Add(assPriceSubList);
         }
 
@@ -305,7 +305,7 @@ public class VolatilityDragVisualizerController : ControllerBase
             dateYearsMonthsVec[iRows] = quotesDateVec[iRows].ToString("yyyy-MM");
         }
 
-        //Tuple<string[], string[], IList<List<double>>> dataToCumm = Tuple.Create(dateYearsVec, dateYearsMonthsVec, assVolDrags);
+        // Tuple<string[], string[], IList<List<double>>> dataToCumm = Tuple.Create(dateYearsVec, dateYearsMonthsVec, assVolDrags);
 
         string[] dateYearsDist = dateYearsVec.Distinct().ToArray();
         string[] dateYearsMonthsDist = dateYearsMonthsVec.Distinct().ToArray();
@@ -377,13 +377,13 @@ public class VolatilityDragVisualizerController : ControllerBase
             volDragsAvgsTotal[jAssets] = subSum / numEl;
         }
 
-        //Request time (UTC)
+        // Request time (UTC)
         DateTime liveDateTime = DateTime.UtcNow;
         string liveDate = liveDateTime.ToString("yyyy-MM-dd HH:mm:ss");
         DateTime timeNowET = Utils.ConvertTimeFromUtcToEt(liveDateTime);
         string liveDateString = "Request time (UTC): " + liveDate;
-
-        //Last data time (UTC)
+ 
+        // Last data time (UTC)
         string lastDataTime = (quotesData[0][^1].Date.Date == liveDateTime.Date & timeNowET.TimeOfDay <= new DateTime(2000,1,1,16,15,0).TimeOfDay) ? "Live data at " + liveDateTime.ToString("yyyy-MM-dd HH:mm:ss") : "Close price on " + quotesData[0][^1].Date.ToString("yyyy-MM-dd");
         string lastDataTimeString = "Last data time (UTC): " + lastDataTime;
 

@@ -40,7 +40,7 @@ public class DashboardWs
         var msgObj = new HandshakeMessage() { Email = email };
         byte[] encodedMsg = Encoding.UTF8.GetBytes("OnConnected:" + Utils.CamelCaseSerialize(msgObj));
         if (webSocket.State == WebSocketState.Open)
-            await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+            await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    // takes 0.635ms
 
         // create a connectionID based on client IP + connectionTime; the userID is the email as each user must be authenticated by an email.
         var clientIP = WsUtils.GetRequestIPv6(context!);    // takes 0.346ms

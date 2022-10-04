@@ -22,7 +22,7 @@ class AssetCategoryJs
 }
 
 class HandshakeBrAccViewer
-{    //Initial params
+{ // Initial params
     public List<AssetJs> MarketBarAssets { get; set; } = new();
     public List<AssetJs> SelectableNavAssets { get; set; } = new();
     public List<AssetCategoryJs> AssetCategories { get; set; } = new();
@@ -35,7 +35,7 @@ class HandshakeBrAccViewer
     // public List<AssetJs> ChartBenchmarkPossibleAssets { get; set; } = new List<AssetJs>();
 }
 
-class BrAccViewerPosJs  // sent to browser clients
+class BrAccViewerPosJs // sent to browser clients
 {
     public uint AssetId { get; set; } = 0;
     public string SqTicker { get; set; } = string.Empty;
@@ -108,7 +108,7 @@ public partial class DashboardClient
         {
             Utils.Logger.Debug($"OnConnectedWsAsync_BrAccViewer BEGIN, Connection from IP: {this.ClientIP} with email '{this.UserEmail}'");
 
-            Thread.CurrentThread.IsBackground = true;  //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
+            Thread.CurrentThread.IsBackground = true;  // thread will be killed when all foreground threads have died, the thread will not keep the application alive.
 
             List<BrokerNav> selectableNavs = p_user.GetAllVisibleBrokerNavsOrdered();
             m_braccSelectedNavAsset = selectableNavs.FirstOrDefault();
@@ -520,7 +520,6 @@ public partial class DashboardClient
         }).LogUnobservedTaskExceptions("!Error in BrAccViewerUpdateStOptPricesAndSendSnapshotTwice() sub-thread.");
     }
 
-//  Under Development...Daya
     static List<AssetCategoryJs> GetAssetCategoriesFromGSheet() {
 
         if (String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) || String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))

@@ -121,7 +121,7 @@ public class StrategySinController : ControllerBase
             posIntDiff[jCols] = nextPosInt[jCols] - currPosInt[jCols];
         }
 
-            //Profits
+            // Profits
 
         int[] prevPV = gSheetResToFinCalc.Item5;
         int boyPV = prevPV[0] + prevPV[1];
