@@ -1,16 +1,8 @@
 using System;
+using System.Net.WebSockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using SqCommon;
-using System.Linq;
-using System.Collections.Generic;
-using Microsoft.Extensions.Hosting;
-using System.Text;
-using System.Net;
-using FinTechCommon;
-using System.Diagnostics;
-using Microsoft.AspNetCore.Http;
-using System.Net.WebSockets;
 
 namespace SqCoreWeb;
 
@@ -36,4 +28,4 @@ public partial class ExampleWs
     public static void OnWsClose()
     {
     }
-}   // class
+} // class
