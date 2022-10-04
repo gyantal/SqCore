@@ -1,22 +1,18 @@
 using System;
+using System.Linq;
+using System.Net.WebSockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using SqCommon;
-using System.Linq;
-using System.Collections.Generic;
-using Microsoft.Extensions.Hosting;
-using System.Text;
-using System.Net;
 using FinTechCommon;
-using System.Diagnostics;
 using Microsoft.AspNetCore.Http;
-using System.Net.WebSockets;
-using System.Text.Json;
+using SqCommon;
 
 namespace SqCoreWeb;
 
 // these members has to be C# properties, not simple data member tags. Otherwise it will not serialize to client.
-class HandshakeMessage {    // General params for the aggregate Dashboard. These params should be not specific to smaller tools, like HealthMonitor, CatalystSniffer, QuickfolioNews
+class HandshakeMessage
+{ // General params for the aggregate Dashboard. These params should be not specific to smaller tools, like HealthMonitor, CatalystSniffer, QuickfolioNews
     public string Email { get; set; } = string.Empty;
     public int AnyParam { get; set; } = 55;
 }
@@ -40,7 +36,7 @@ public class DashboardWs
         var msgObj = new HandshakeMessage() { Email = email };
         byte[] encodedMsg = Encoding.UTF8.GetBytes("OnConnected:" + Utils.CamelCaseSerialize(msgObj));
         if (webSocket.State == WebSocketState.Open)
-            await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    //  takes 0.635ms
+            await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None); // takes 0.635ms
 
         // create a connectionID based on client IP + connectionTime; the userID is the email as each user must be authenticated by an email.
         var clientIP = WsUtils.GetRequestIPv6(context!);    // takes 0.346ms
@@ -100,5 +96,4 @@ public class DashboardWs
         if (client != null)
             DashboardClient.RemoveFromClients(client);
     }
-
-}   // class
+} // class

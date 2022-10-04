@@ -1,13 +1,13 @@
 using System;
-using System.Threading;
-using SqCommon;
 using System.Collections.Generic;
-using System.Text;
-using System.Net.WebSockets;
 using System.Linq;
-using System.Xml.Linq;
-using System.ServiceModel.Syndication;
 using System.Net;
+using System.Net.WebSockets;
+using System.ServiceModel.Syndication;
+using System.Text;
+using System.Threading;
+using System.Xml.Linq;
+using SqCommon;
 
 namespace SqCoreWeb;
 
@@ -49,15 +49,15 @@ public partial class DashboardClient
     {
         Utils.RunInNewThread(ignored => // running parallel on a ThreadPool thread, FireAndForget: QueueUserWorkItem [26microsec] is 25% faster than Task.Run [35microsec]
         {
-            Thread.CurrentThread.IsBackground = true; //  thread will be killed when all foreground threads have died, the thread will not keep the application alive.
+            Thread.CurrentThread.IsBackground = true; // thread will be killed when all foreground threads have died, the thread will not keep the application alive.
 
             // Assuming this tool is not the main Tab page on the client, we delay sending all the data, to avoid making the network and client too busy an unresponsive
             if (!p_isThisActiveToolAtConnectionInit)
                 Thread.Sleep(DashboardClient.c_initialSleepIfNotActiveToolQn); // 10 sec is quite a long waiting, but we rarely use this tool.
-            
+
             if (m_stockTickers.Length == 0)
                 m_stockTickers = GetQckflStockTickers() ?? Array.Empty<string>();
-            
+
             byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.Tickers:" + Utils.CamelCaseSerialize(new List<string> { "All assets" }.Union(m_stockTickers).ToList()));
             if (WsWebSocket!.State == WebSocketState.Open)
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
@@ -98,7 +98,7 @@ public partial class DashboardClient
             if (valuesFromGSheetStr == null)
                 valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
         }
-        if (!valuesFromGSheetStr.StartsWith("Error")) 
+        if (!valuesFromGSheetStr.StartsWith("Error"))
         {
             int pos = valuesFromGSheetStr.IndexOf(@"""values"":");
             if (pos < 0)
@@ -200,7 +200,7 @@ public partial class DashboardClient
                     byte[] encodedMsg = Encoding.UTF8.GetBytes("QckfNews.CommonNews:" + Utils.CamelCaseSerialize(g_commonNews));
                     if (client.WsWebSocket!.State == WebSocketState.Open)
                         client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                    
+
                     byte[] encodedMsgRss = Encoding.UTF8.GetBytes("QckfNews.StockNews:" + Utils.CamelCaseSerialize(g_stockNews));
                     if (encodedMsgRss != null && client.WsWebSocket!.State == WebSocketState.Open)
                         client.WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsgRss, 0, encodedMsgRss.Length), WebSocketMessageType.Text, true, CancellationToken.None);
@@ -267,7 +267,7 @@ public partial class DashboardClient
     //         // };
     //         // NewsItem jsonObject =  System.Text.Json.JsonSerializer.Deserialize<NewsItem>(webpageData, jsonOptions);
 
-    //         System.Text.Json.JsonDocument document = System.Text.Json.JsonDocument.Parse(webpageData);
+    // System.Text.Json.JsonDocument document = System.Text.Json.JsonDocument.Parse(webpageData);
     //         JsonElement root = document.RootElement;
     //         JsonElement newssElement = root.GetProperty("news");
     //         foreach (JsonElement news in newssElement.EnumerateArray())
@@ -275,7 +275,7 @@ public partial class DashboardClient
     //             NewsItem newsItem = new();
     //             newsItem.Ticker = p_ticker;
     //             newsItem.LinkUrl = news.GetProperty("url").GetRawText().Trim('"');
-    //             newsItem.Title = news.GetProperty("title").GetRawText().Trim('"'); 
+    //             newsItem.Title = news.GetProperty("title").GetRawText().Trim('"');
     //             newsItem.Summary = "  ";
     //             newsItem.Sentiment = news.GetProperty("sentiment").GetRawText().Trim('"');
     //             if (DateTime.TryParse(news.GetProperty("articleTimestamp").GetRawText().Trim('"'), out DateTime date))
@@ -283,7 +283,7 @@ public partial class DashboardClient
     //             newsItem.DownloadTime = DateTime.Now;
     //             newsItem.Source = NewsSource.TipRanks.ToString();
 
-    //             // if (AddNewsToMemory(p_ticker, newsItem))
+    // // if (AddNewsToMemory(p_ticker, newsItem))
     //             p_foundNewsItems.Add(newsItem);
     //         }
     //     }
@@ -334,7 +334,7 @@ public partial class DashboardClient
     //             newsItem.DownloadTime = DateTime.Now;
     //             newsItem.Source = NewsSource.Benzinga.ToString();
 
-    //             if (AddNewsToMemory(p_ticker, newsItem))
+    // if (AddNewsToMemory(p_ticker, newsItem))
     //                 p_foundNewsItems.Add(newsItem);
     //         }
     //     }

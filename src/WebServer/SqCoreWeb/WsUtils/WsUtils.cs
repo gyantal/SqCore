@@ -8,7 +8,7 @@ using SqCommon;
 
 namespace SqCoreWeb;
 
-public enum UserAuthCheckResult { UserKnownAuthOK, UserKnownAuthNotEnugh, UserUnknown };
+public enum UserAuthCheckResult { UserKnownAuthOK, UserKnownAuthNotEnugh, UserUnknown }
 
 public static partial class WsUtils
 {
@@ -34,14 +34,13 @@ public static partial class WsUtils
             // todo support new "Forwarded" header (2014) https://en.wikipedia.org/wiki/X-Forwarded-For
             if (String.IsNullOrWhiteSpace(remoteIpStr))
                 remoteIpStr = GetHeaderValueAsNullableReference<string>(p_httpContext, "Forwarded");     // new standard  (2014 RFC 7239)
-            //if (String.IsNullOrWhiteSpace(remoteIP))
+            // if (String.IsNullOrWhiteSpace(remoteIP))
             //     remoteIP = GetHeaderValueAs<string>(p_controller, "REMOTE_ADDR");     // there are 10 more, but we have to support only CloudFront for CPU saving. We don't need others. http://stackoverflow.com/questions/527638/getting-the-client-ip-address-remote-addr-http-x-forwarded-for-what-else-coul
-
         }
 
         // one way to get IP
-        //var connection = p_httpContext.Features.Get<IHttpConnectionFeature>();
-        //var clientIP = connection?.RemoteIpAddress?.ToString();
+        // var connection = p_httpContext.Features.Get<IHttpConnectionFeature>();
+        // var clientIP = connection?.RemoteIpAddress?.ToString();
 
         // another way to get it
         if (String.IsNullOrWhiteSpace(remoteIpStr))
@@ -50,12 +49,13 @@ public static partial class WsUtils
             if (remoteIp != null && p_ipv6format)
                 remoteIp = remoteIp.MapToIPv6();
             remoteIpStr = remoteIp?.ToString() ?? string.Empty;
-        }  
+        }
 
         return String.IsNullOrWhiteSpace(remoteIpStr) ? "<Unknown IP>" : remoteIpStr;
     }
 
-    public static T? GetHeaderValueAsNullableReference<T>(HttpContext p_httpContext, string p_headerName) where T : class // string is class, not struct 
+    public static T? GetHeaderValueAsNullableReference<T>(HttpContext p_httpContext, string p_headerName)
+        where T : class // string is class, not struct
     {
         StringValues values = string.Empty;
         if (p_httpContext?.Request?.Headers?.TryGetValue(p_headerName, out values) ?? false)
@@ -81,7 +81,7 @@ public static partial class WsUtils
             return UserAuthCheckResult.UserKnownAuthOK;
         else
             return UserAuthCheckResult.UserKnownAuthNotEnugh;
-//#endif
+// #endif
     }
 
     static List<string>? g_authorizedGoogleUsers = null;
@@ -91,7 +91,8 @@ public static partial class WsUtils
         // TODO: maybe we should get these emails data from Redis.sq_user , so when we introduce a new user we don't have to create them in 2 places: RedisDb, config.json
         if (g_authorizedGoogleUsers == null)
         {
-            g_authorizedGoogleUsers = new List<string>() {
+            g_authorizedGoogleUsers = new List<string>()
+            {
                 Utils.Configuration["Emails:Gyant"].ToLower(),
                 Utils.Configuration["Emails:Gyant2"].ToLower(),
                 Utils.Configuration["Emails:Laci"].ToLower(),
@@ -114,5 +115,4 @@ public static partial class WsUtils
         bool isUserOK = g_authorizedGoogleUsers.Contains(p_email.ToLower());
         return isUserOK;
     }
-
 }

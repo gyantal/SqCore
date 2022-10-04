@@ -262,7 +262,7 @@ public static partial class Utils
     {
         string result = RoundToMsec(p_value).ToString();
         int i = result.IndexOf('.', 8);
-        return (i < 0) ? result : result[.. (i + 4)].TrimEnd('0');
+        return (i < 0) ? result : result[..(i + 4)].TrimEnd('0');
     }
     public static TimeSpan Round(this TimeSpan p_value, long p_ticks)
     {

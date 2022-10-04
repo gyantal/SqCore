@@ -5,7 +5,7 @@ namespace SqCoreWeb;
 
 public partial class Program
 {
-    public static  void Services_Init()
+    public static void Services_Init()
     {
         Caretaker.g_caretaker.Init("SqCoreServer", Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
 
@@ -13,9 +13,8 @@ public partial class Program
         WebsitesMonitor.gWebsitesMonitor.Init();
         BrAccChecker.gBrAccChecker.Init();
     }
-    
 
-    public static  void Services_Exit()
+    public static void Services_Exit()
     {
         BrAccChecker.gBrAccChecker.Exit();
         WebsitesMonitor.gWebsitesMonitor.Exit();
@@ -23,5 +22,4 @@ public partial class Program
 
         Caretaker.g_caretaker.Exit();
     }
-
 }
