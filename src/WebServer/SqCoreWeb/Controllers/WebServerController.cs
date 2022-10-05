@@ -61,7 +61,7 @@ public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
         return Content(@"<HTML><body><h1>HttpRequests Activity Log</h1><br />" + sb.ToString() + "</body></HTML>", "text/html");
     }
 
-        [HttpGet]
+    [HttpGet]
 #if !DEBUG
     [Authorize]     // we can live without it, because ControllerCommon.CheckAuthorizedGoogleEmail() will redirect to /login anyway, but it is quicker that this automatically redirects without clicking another URL link.
 #endif

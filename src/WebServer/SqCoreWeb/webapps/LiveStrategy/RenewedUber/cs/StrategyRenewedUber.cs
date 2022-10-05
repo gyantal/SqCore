@@ -818,8 +818,8 @@ public class StrategyRenewedUberController : ControllerBase
                 assets.Add(asset);
         }
 
-            DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
-            DateTime startIncLoc = nowET.AddDays(-50);
+        DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
+        DateTime startIncLoc = nowET.AddDays(-50);
 
         List<List<DailyData>> uberTickersData = new();
         List<DailyData> VIXDailyquotes = new();

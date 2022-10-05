@@ -57,7 +57,7 @@ public class WebsitesMonitorExecution : SqExecution
         if (Trigger!.TriggerSettings.TryGetValue(TaskSetting.ActionType, out object? actionObj))
             action = (WsMonTaskSettingAction)actionObj;
 
-            if (action == WsMonTaskSettingAction.SpIndexChanges)
+        if (action == WsMonTaskSettingAction.SpIndexChanges)
             CheckSpIndexChanges();
     }
 

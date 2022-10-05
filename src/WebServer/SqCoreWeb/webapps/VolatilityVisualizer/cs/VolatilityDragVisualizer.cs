@@ -72,7 +72,7 @@ public class VolatilityDragVisualizerController : ControllerBase
         }
 
         // DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
-            DateTime startIncLoc = DateTime.ParseExact("2004/03/26", "yyyy/MM/dd", CultureInfo.InvariantCulture);
+        DateTime startIncLoc = DateTime.ParseExact("2004/03/26", "yyyy/MM/dd", CultureInfo.InvariantCulture);
         // DateTime startIncLoc = nowET.AddDays(-550);
 
         List<List<DailyData>> volatilityTickersData = new();
@@ -193,37 +193,37 @@ public class VolatilityDragVisualizerController : ControllerBase
             // for (int jRows = 0; jRows < noBtDays; jRows++)
             // {
             int jRows = 0;
-                while (quotesDateVec[jRows] < quotesFirstDates[iAsset])
+            while (quotesDateVec[jRows] < quotesFirstDates[iAsset])
+            {
+                assPriceSubList.Add(quotesFirstPrices[iAsset]);
+                shiftDays += 1;
+                jRows++;
+                if (jRows >= noBtDays)
                 {
-                    assPriceSubList.Add(quotesFirstPrices[iAsset]);
-                    shiftDays += 1;
+                    break;
+                }
+            }
+            while (quotesDateVec[jRows] == quotesData1[iAsset][jRows - shiftDays].Date)
+            {
+                assPriceSubList.Add(quotesData1[iAsset][jRows - shiftDays].AdjClosePrice);
+                jRows++;
+                if (jRows >= quotesData1[iAsset].Count + shiftDays)
+                {
+                    break;
+                }
+            }
+            if (jRows < noBtDays)
+            {
+                while (quotesDateVec[jRows] > quotesLastDates[iAsset])
+                {
+                    assPriceSubList.Add(quotesLastPrices[iAsset]);
                     jRows++;
                     if (jRows >= noBtDays)
                     {
                         break;
                     }
                 }
-                while (quotesDateVec[jRows] == quotesData1[iAsset][jRows - shiftDays].Date)
-                {
-                    assPriceSubList.Add(quotesData1[iAsset][jRows - shiftDays].AdjClosePrice);
-                    jRows++;
-                    if (jRows >= quotesData1[iAsset].Count + shiftDays)
-                    {
-                        break;
-                    }
-                }
-                if (jRows < noBtDays)
-                {
-                    while (quotesDateVec[jRows] > quotesLastDates[iAsset])
-                    {
-                        assPriceSubList.Add(quotesLastPrices[iAsset]);
-                        jRows++;
-                        if (jRows >= noBtDays)
-                        {
-                            break;
-                        }
-                    }
-                }
+            }
             // }
             quotesPrices.Add(assPriceSubList);
         }

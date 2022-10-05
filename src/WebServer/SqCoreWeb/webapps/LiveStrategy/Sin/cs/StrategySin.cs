@@ -435,7 +435,7 @@ public class StrategySinController : ControllerBase
     {
         Utils.Logger.Info("SINGoogleApiGsheet() BEGIN");
 
-       if (String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) || String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
+        if (String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) || String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
             return null;
 
         string? valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync(p_usedGSheetRef + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
@@ -455,15 +455,15 @@ public class StrategySinController : ControllerBase
                 assets.Add(asset);
         }
 
-            DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
-            // PctChannel needs 252 days and we need another extra 30 trading days rolling window to calculate PctChannels during the previous lookback window
-            // PctChannel Signal cannot be calculated just having the last day data, because it has to be rolled further. As it can exit/enter into bullish signals along the way of the simulation.
-            // Estimated needed 252 trading days = 365 calendar days.
-            // And an additional rolling window of 30 trading days (at least). That is another 45 calendar days.
-            // As minimal, we need 365 + 45 = 410 calendar days.
-            // For more robust calculations, we can use a 6 month rolling window. That is 120 trading days = 185 calendar days. Altogether: 365+185 = 550
-            // DateTime startIncLoc = nowET.AddDays(-408); // This can reproduce the old SqLab implementation with 33 days rolling simulation window
-            DateTime startIncLoc = nowET.AddDays(-550);    // This uses a 6-months, 120 trading days rolling simulation window for PctChannels
+        DateTime nowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
+        // PctChannel needs 252 days and we need another extra 30 trading days rolling window to calculate PctChannels during the previous lookback window
+        // PctChannel Signal cannot be calculated just having the last day data, because it has to be rolled further. As it can exit/enter into bullish signals along the way of the simulation.
+        // Estimated needed 252 trading days = 365 calendar days.
+        // And an additional rolling window of 30 trading days (at least). That is another 45 calendar days.
+        // As minimal, we need 365 + 45 = 410 calendar days.
+        // For more robust calculations, we can use a 6 month rolling window. That is 120 trading days = 185 calendar days. Altogether: 365+185 = 550
+        // DateTime startIncLoc = nowET.AddDays(-408); // This can reproduce the old SqLab implementation with 33 days rolling simulation window
+        DateTime startIncLoc = nowET.AddDays(-550);    // This uses a 6-months, 120 trading days rolling simulation window for PctChannels
 
         List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc, true).ToList();
         List<List<DailyData>> sinTickersData = new();

@@ -150,31 +150,31 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         // Sorting historical data.
         VixCentralRec2[] vixCentralRec = new VixCentralRec2[2];
 
-            vixCentralRec[0].Date = DateTime.Parse(liveDate);
-            vixCentralRec[0].FirstMonth = monthsNum;
-            vixCentralRec[0].F1 = Double.Parse(liveFuturesPrices[0]);
-            vixCentralRec[0].F2 = Double.Parse(liveFuturesPrices[1]);
-            vixCentralRec[0].F3 = Double.Parse(liveFuturesPrices[2]);
-            vixCentralRec[0].F4 = Double.Parse(liveFuturesPrices[3]);
-            vixCentralRec[0].F5 = Double.Parse(liveFuturesPrices[4]);
-            vixCentralRec[0].F6 = Double.Parse(liveFuturesPrices[5]);
-            vixCentralRec[0].F7 = Double.Parse(liveFuturesPrices[6]);
-            vixCentralRec[0].F8 = (lengthLiveFuturesPrices == 8 ) ? Double.Parse(liveFuturesPrices[7]) : 0;
-            vixCentralRec[0].STCont = vixCentralRec[0].F2 / vixCentralRec[0].F1 - 1;
-            vixCentralRec[0].LTCont = vixCentralRec[0].F7 / vixCentralRec[0].F4 - 1;
+        vixCentralRec[0].Date = DateTime.Parse(liveDate);
+        vixCentralRec[0].FirstMonth = monthsNum;
+        vixCentralRec[0].F1 = Double.Parse(liveFuturesPrices[0]);
+        vixCentralRec[0].F2 = Double.Parse(liveFuturesPrices[1]);
+        vixCentralRec[0].F3 = Double.Parse(liveFuturesPrices[2]);
+        vixCentralRec[0].F4 = Double.Parse(liveFuturesPrices[3]);
+        vixCentralRec[0].F5 = Double.Parse(liveFuturesPrices[4]);
+        vixCentralRec[0].F6 = Double.Parse(liveFuturesPrices[5]);
+        vixCentralRec[0].F7 = Double.Parse(liveFuturesPrices[6]);
+        vixCentralRec[0].F8 = (lengthLiveFuturesPrices == 8 ) ? Double.Parse(liveFuturesPrices[7]) : 0;
+        vixCentralRec[0].STCont = vixCentralRec[0].F2 / vixCentralRec[0].F1 - 1;
+        vixCentralRec[0].LTCont = vixCentralRec[0].F7 / vixCentralRec[0].F4 - 1;
 
-            vixCentralRec[1].Date = DateTime.Parse(liveDate);
-            vixCentralRec[1].FirstMonth = monthsNum;
-            vixCentralRec[1].F1 = Double.Parse(prevFuturesPrices[0]);
-            vixCentralRec[1].F2 = Double.Parse(prevFuturesPrices[1]);
-            vixCentralRec[1].F3 = Double.Parse(prevFuturesPrices[2]);
-            vixCentralRec[1].F4 = Double.Parse(prevFuturesPrices[3]);
-            vixCentralRec[1].F5 = Double.Parse(prevFuturesPrices[4]);
-            vixCentralRec[1].F6 = Double.Parse(prevFuturesPrices[5]);
-            vixCentralRec[1].F7 = Double.Parse(prevFuturesPrices[6]);
-            vixCentralRec[1].F8 = (lengthLiveFuturesPrices == 8) ? Double.Parse(prevFuturesPrices[7]) : 0;
-            vixCentralRec[1].STCont = vixCentralRec[1].F2 / vixCentralRec[1].F1 - 1;
-            vixCentralRec[1].LTCont = vixCentralRec[1].F7 / vixCentralRec[1].F4 - 1;
+        vixCentralRec[1].Date = DateTime.Parse(liveDate);
+        vixCentralRec[1].FirstMonth = monthsNum;
+        vixCentralRec[1].F1 = Double.Parse(prevFuturesPrices[0]);
+        vixCentralRec[1].F2 = Double.Parse(prevFuturesPrices[1]);
+        vixCentralRec[1].F3 = Double.Parse(prevFuturesPrices[2]);
+        vixCentralRec[1].F4 = Double.Parse(prevFuturesPrices[3]);
+        vixCentralRec[1].F5 = Double.Parse(prevFuturesPrices[4]);
+        vixCentralRec[1].F6 = Double.Parse(prevFuturesPrices[5]);
+        vixCentralRec[1].F7 = Double.Parse(prevFuturesPrices[6]);
+        vixCentralRec[1].F8 = (lengthLiveFuturesPrices == 8) ? Double.Parse(prevFuturesPrices[7]) : 0;
+        vixCentralRec[1].STCont = vixCentralRec[1].F2 / vixCentralRec[1].F1 - 1;
+        vixCentralRec[1].LTCont = vixCentralRec[1].F7 / vixCentralRec[1].F4 - 1;
 
         // Calculating futures expiration dates.
 
