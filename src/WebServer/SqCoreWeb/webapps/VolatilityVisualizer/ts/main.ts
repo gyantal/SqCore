@@ -476,7 +476,12 @@ function processingTables(json: any, selectedTickers: string[]) {
       const dayDataArr = [date];
       for (let i = 0; i < tickersChecked.length; i++) {
         const tickerInd = assetNamesArray.indexOf(tickersChecked[i].id);
-        dayDataArr.push(histRets2ChartsMtx[chartStart - 1 + dayInd][tickerInd]);
+        if (dayInd == 0)
+          dayDataArr.push(0); // option 1 as we want the chart to start from 0% , Please review
+          // dayDataArr.push((Math.fround(parseFloat(histRets2ChartsMtx[chartStart - 1 + dayInd][tickerInd]) / parseFloat(histRets2ChartsMtx[chartStart - 1 + 0][tickerInd])) - 1).toFixed(2).toString()); // option 2
+        else
+          dayDataArr.push((histRets2ChartsMtx[chartStart - 1 + dayInd][tickerInd]));
+        // dayInd == 0 ? dayDataArr.push(0) : dayDataArr.push((histRets2ChartsMtx[chartStart - 1 + dayInd][tickerInd]));
       }
       lookbackChartMtx.push(dayDataArr);
     }
