@@ -14,7 +14,6 @@ namespace SqCoreWeb;
 class HandshakeMktHealth { // Initial params
     public List<AssetJs> MarketSummaryAssets { get; set; } = new List<AssetJs>();
     public List<AssetJs> SelectableNavAssets { get; set; } = new List<AssetJs>();
-
 }
 
 
@@ -30,8 +29,8 @@ public partial class DashboardClient
     // try to convert to use these fields. At least on the server side.
     // If we store asset pointers (Stock, Nav) if the MemDb reloads, we should reload these pointers from the new MemDb. That adds extra code complexity.
     // However, for fast execution, it is still better to keep asset pointers, instead of keeping the asset's SqTicker and always find them again and again in MemDb.
-    readonly List<string> c_marketSummarySqTickersDefault = new() { "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO"};
-    readonly List<string> c_marketSummarySqTickersDc = new() { "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO"};   // at the moment DC uses the same as default
+    readonly List<string> c_marketSummarySqTickersDefault = new() { "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO" };
+    readonly List<string> c_marketSummarySqTickersDc = new() { "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO" };   // at the moment DC uses the same as default
     List<Asset> m_mkthAssets = new();      // remember, so we can send RT data
     BrokerNav? m_mkthSelectedNavAsset = null;   // remember which NAV is selected, so we can send RT data
 
@@ -172,5 +171,4 @@ public partial class DashboardClient
         List<AssetJs> selectableNavAssets = p_selectableNavs.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();
         return new HandshakeMktHealth() { MarketSummaryAssets = marketSummaryAssets, SelectableNavAssets = selectableNavAssets };
     }
-
 }

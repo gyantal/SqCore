@@ -144,8 +144,8 @@ internal class SqFirewallMiddlewarePreAuthLogger
         }
     }
 
-    static string[] m_whitelistExact = {"index.html"};    // just examples. Will be overriden. Don't store the initial "/" because that is an extra character check 100x times.
-    static string[] m_whitelistPrefix = {"ws/", "signin-google"};   //  just examples. Will be overriden.
+    static string[] m_whitelistExact = { "index.html" };    // just examples. Will be overriden. Don't store the initial "/" because that is an extra character check 100x times.
+    static string[] m_whitelistPrefix = { "ws/", "signin-google" };   //  just examples. Will be overriden.
 
     void InitializeWhitelist()
     {
@@ -193,7 +193,6 @@ internal class SqFirewallMiddlewarePreAuthLogger
             { // Folder
                 AddFileToListRecursive((DirectoryInfo)fi, p_relPath + fi.Name + "/", ref p_whitelistExact);
             }
-
         }
     }
 
@@ -241,7 +240,7 @@ internal class SqFirewallMiddlewarePreAuthLogger
 
     // "/robots.txt", "/ads.txt": just don't want to handle search engines. Consume resources.
     // static string[] m_blacklistPrefix = {"/private/", "/local/","/git/", "/app/", "/core/", "/rest/", "/.env","/robots.txt", "/ads.txt", "//", "/index.php", "/user/register", "/latest/dynamic", "/ws/stats", "/corporate/", "/imeges", "/remote"};
-    static readonly string[] m_blacklistPrefix = {"/ws/stats"};  // is whitelist is operational with Exact matches, that filters most of the bad. However, we accept '/ws' as a prefix for many, but we can ban this specific one.
+    static readonly string[] m_blacklistPrefix = { "/ws/stats" };  // is whitelist is operational with Exact matches, that filters most of the bad. However, we accept '/ws' as a prefix for many, but we can ban this specific one.
     // hackers always try to break the server by typical vulnerability queries. It is pointless to process them. Most of the time it raises an exception.
     static bool IsClientIpOrPathOnBlacklist(HttpContext p_httpContext)
     {
@@ -287,5 +286,4 @@ internal class SqFirewallMiddlewarePreAuthLogger
         gLogger.Debug($"IsSendableToHealthMonitorForEmailing().IsSendable:{isSendable}, FullExceptionStr:'{fullExceptionStr}'");
         return isSendable;
     }
-
 }

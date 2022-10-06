@@ -106,6 +106,4 @@ namespace SqCoreWeb.Controllers;
 
             return "You are one of our precious users. Cheers. Your email is: " + email;
         }
-
-
     }

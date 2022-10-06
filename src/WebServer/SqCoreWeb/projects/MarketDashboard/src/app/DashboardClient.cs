@@ -29,7 +29,7 @@ public partial class DashboardClient
     public HttpContext? WsHttpContext { get; set; } = null;
 
     public static readonly Dictionary<string, ActivePage> c_urlParam2ActivePage = new() {
-        {"mh", ActivePage.MarketHealth}, {"bav", ActivePage.BrAccViewer}, {"cs", ActivePage.CatalystSniffer}, {"qn", ActivePage.QuickfolioNews}};
+        { "mh", ActivePage.MarketHealth }, { "bav", ActivePage.BrAccViewer }, { "cs", ActivePage.CatalystSniffer }, { "qn", ActivePage.QuickfolioNews } };
     public static readonly HashSet<ActivePage> c_activePagesUsingRtPrices = new() { ActivePage.MarketHealth, ActivePage.BrAccViewer };
 
     internal static List<DashboardClient> g_clients = new(); // Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
@@ -97,7 +97,6 @@ public partial class DashboardClient
             Utils.Logger.Warn("OnConnectedAsync():ManualResetEvent.WaitAll() timeout.");
 
         OnConnectedWsAsync_Rt();    // immediately send SPY realtime price. It can be used in 3+2 places: BrAccViewer:MarketBar, HistoricalChart, UserAssetList, MktHlth, CatalystSniffer (so, don't send it 5 times. Client will decide what to do with RT price)
-
     }
 
     public bool OnReceiveWsAsync_DshbrdClient(string msgCode, string msgObjStr)
@@ -165,6 +164,5 @@ public partial class DashboardClient
             clonedClients.Remove(p_client);
             DashboardClient.g_clients = clonedClients;
         }
-
     }
 }

@@ -86,8 +86,8 @@ public partial class DashboardClient
     // If we store asset pointers (Stock, Nav) if the MemDb reloads, we should reload these pointers from the new MemDb. That adds extra code complexity.
     // However, for fast execution, it is still better to keep asset pointers, instead of keeping the asset's SqTicker and always find them again and again in MemDb.
     BrokerNav? m_braccSelectedNavAsset = null;   // remember which NAV is selected, so we can send RT data
-    readonly List<string> c_marketBarSqTickersDefault = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/AMZN"};    // TEMP: AMZN is here to test that realtime price is sent to client properly
-    readonly List<string> c_marketBarSqTickersDc = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/GLD"};
+    readonly List<string> c_marketBarSqTickersDefault = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/AMZN" };    // TEMP: AMZN is here to test that realtime price is sent to client properly
+    readonly List<string> c_marketBarSqTickersDc = new() { "S/QQQ", "S/SPY", "S/TLT", "S/VXX", "S/UNG", "S/USO", "S/GLD" };
     List<Asset> m_brAccMktBrAssets = new();      // remember, so we can send RT data
     List<AssetCategoryJs> m_assetCategories = new();
 
@@ -412,7 +412,7 @@ public partial class DashboardClient
                 HistSdaCloses = values
             };
 
-            return new AssetHistJs() {HistValues = histValues, HistStat = histStat};
+            return new AssetHistJs() { HistValues = histValues, HistStat = histStat };
         });
 
         return histToClient;
@@ -521,7 +521,6 @@ public partial class DashboardClient
     }
 
     static List<AssetCategoryJs> GetAssetCategoriesFromGSheet() {
-
         if (String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) || String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
             return new List<AssetCategoryJs>();
 

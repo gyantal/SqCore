@@ -65,7 +65,7 @@ public class StrategyUberTaaController : ControllerBase
                 break;
         }
 
-        string[] clmtAssetList = new string[]{ "SPY", "XLU", "VTI" };    // CMLT: Combined Leverage Market Timer
+        string[] clmtAssetList = new string[] { "SPY", "XLU", "VTI" };    // CMLT: Combined Leverage Market Timer
         string[] allAssetList = new string[clmtAssetList.Length + usedAssetList.Length]; // Joining 2 arrays[]: LINQ has Concat() for the enumerable, but this Array Copy is the fastest implementation
         clmtAssetList.CopyTo(allAssetList, 0);
         usedAssetList.CopyTo(allAssetList, clmtAssetList.Length);
@@ -612,7 +612,6 @@ public class StrategyUberTaaController : ControllerBase
         sb.AppendLine(@"""" + Environment.NewLine + @"}");
 
         return sb.ToString();
-
     }
 
     public string? UberTaaGoogleApiGsheet(string p_usedGSheetRef)
@@ -639,7 +638,7 @@ public class StrategyUberTaaController : ControllerBase
             Array.Copy(currPos, 2, currPosAP, 0, p_allAssetList.Length - 3);
             int currPosDate = Int32.Parse(currPos[0]);
             int currPosCash = Int32.Parse(currPos[^3]);
-            int[] currPosDateCash = new int[] {currPosDate, currPosCash };
+            int[] currPosDateCash = new int[] { currPosDate, currPosCash };
             int[] currPosAssets = Array.ConvertAll(currPosAP, int.Parse);
 
             p_gSheetString = p_gSheetString.Replace("\n", "").Replace("]", "").Replace("\"", "").Replace(" ", "").Replace(",,", ",0,");
@@ -819,7 +818,6 @@ public class StrategyUberTaaController : ControllerBase
                                                                                 // However, if assetScores[i]<0 (negative), assetWeights[i] becoumes a proper negative number. It will be used in TotalWeight calculation => TLT will fill its's space. (if this is the only stock with negative score), TLT will be invested in its place; consequently the portfolio will NOT be 100% in other stocks. We are more defensive.
                 totalWeight += Math.Abs(assetWeights[iAsset]);      // Sum up the absolute values of the “Score/Vol” quotients. TotalWeight contains even the non-active assets so have have some cash.
                 assetWeights2[iAsset] = (assetWeights[iAsset] >= 0) ? assetWeights[iAsset] : 0.0;
-
             }
             for (int iAsset = 0; iAsset < nAssets; iAsset++)
             {
@@ -828,7 +826,6 @@ public class StrategyUberTaaController : ControllerBase
                 dailyAssetHv[iDay, iAsset] = assetHV[iAsset];
                 dailyAssetScoresMod[iDay, iAsset] = assetScoresMod[iAsset];
             }
-
         }
 
         IEnumerable<DateTime> taaWeightDateVec = p_taaWeightsData[0].GetRange(p_taaWeightsData[0].Count - nDays, nDays).Select(r => r.Date);
@@ -910,7 +907,6 @@ public class StrategyUberTaaController : ControllerBase
                 }
             }
             vtiRSI[iRows] = 100 - 100 * (-losses / (-losses + gains));
-
         }
 
         double[] xluVtiIndi = new double[xluRSI.Length];
@@ -931,7 +927,6 @@ public class StrategyUberTaaController : ControllerBase
                 sumsSPX50 += p_clmtData[iRows + kRows + 151, 1];
             }
             spxMA50[iRows] = sumsSPX50 / 50;
-
         }
 
         double[] spxMA200 = new double[p_clmtData.GetLength(0) - 200];
@@ -944,7 +939,6 @@ public class StrategyUberTaaController : ControllerBase
                 sumsSPX200 += p_clmtData[iRows + kRows + 1, 1];
             }
             spxMA200[iRows] = sumsSPX200 / 200;
-
         }
 
         double[] spxMAIndi = new double[spxMA50.Length];
@@ -1068,7 +1062,6 @@ public class StrategyUberTaaController : ControllerBase
                 {
                     pastCodes[iRows, jCols] = 10;
                 }
-
             }
         }
 
@@ -1117,7 +1110,6 @@ public class StrategyUberTaaController : ControllerBase
                 {
                     futCodes[iRows, jCols] = 11;
                 }
-
             }
         }
 
@@ -1177,7 +1169,6 @@ public class StrategyUberTaaController : ControllerBase
 
         Tuple<double[,], double[,], double[,], string[], string[]> multiplFinResults = Tuple.Create(pastCodes, futCodes, pastWeightsFinal, pastEvents, futEvents);
 
-
         return multiplFinResults;
     }
 
@@ -1198,5 +1189,4 @@ public class StrategyUberTaaController : ControllerBase
         string tickers = p_gSheetStr.Substring(tickerStartIdx + 5, tickerEndIdx - tickerStartIdx - 6);
         return tickers.Split(new string[] { ",\n", "\"" }, StringSplitOptions.RemoveEmptyEntries).Where(x => !string.IsNullOrWhiteSpace(x.Trim())).ToArray();
     }
-
 }

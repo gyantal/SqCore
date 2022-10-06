@@ -23,5 +23,4 @@ public partial class Program
 
         Caretaker.g_caretaker.Exit();
     }
-
 }

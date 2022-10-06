@@ -106,5 +106,4 @@ public class BrAccCheckerExecution : SqExecution
             Console.WriteLine("*Broker data (accInfo, positions) is ready.");
         }
     }
-
 }

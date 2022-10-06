@@ -34,5 +34,4 @@ public class DbAdminController : Microsoft.AspNetCore.Mvc.Controller
         int result = MemDb.gMemDb.RedisDbIdx;
         return Content($"<HTML><body>Success! <br>MemDb.gMemDb.RedisDbInd has executed without exception.<br>Returned: '{result}', which means DB-{result} is used.</body></HTML>", "text/html");
     }
-
 }

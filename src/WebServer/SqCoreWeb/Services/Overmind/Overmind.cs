@@ -116,7 +116,7 @@ public class OvermindExecution : SqExecution
             // So less headache overall.
             new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore.Overmind: send holidays, bank report to accountant", Body = "Send holidays, bank report to accountant. In 3 days, it is the 1st day of the month.", IsBodyHtml = false }.Send();
         }
-        if ((new int[] { 11, 12, 1, 2, 3}).Contains(DateTime.UtcNow.Month) && (DateTime.UtcNow.Day == 1 || DateTime.UtcNow.Day == 16))
+        if ((new int[] { 11, 12, 1, 2, 3 }).Contains(DateTime.UtcNow.Month) && (DateTime.UtcNow.Day == 1 || DateTime.UtcNow.Day == 16))
         {
             // every 2 weeks in winter, if I don't use the car, the battery is depleted. Charge it on Saturday.
             new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore.Overmind: Charge Car battery in winter", Body = "Warning in every 2 weeks in winter: Charge car battery on Saturdays, otherwise you have to buy a battery every 2 years. (a lot of time to disassemble battery)", IsBodyHtml = false }.Send();
@@ -376,6 +376,4 @@ public class OvermindExecution : SqExecution
     //     }
     //     return price;
     // }
-
-
 }

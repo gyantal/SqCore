@@ -24,7 +24,6 @@ public class StrategySinController : ControllerBase
     [HttpGet] // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
     public string Get()
     {
-
         string titleString = "Monthly rebalance, <b>The Charmat Rebalancing Method</b> (Trend following with Percentile Channel weights), Cash to TLT";
         string usedGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1JXMbEMAP5AOqB1FjdM8jpptXfpuOno2VaFVYK8A1eLo/values/A1:Z2000?key=";
         string usedGSheet2Ref = "https://docs.google.com/spreadsheets/d/1JXMbEMAP5AOqB1FjdM8jpptXfpuOno2VaFVYK8A1eLo/edit?usp=sharing";
@@ -39,7 +38,7 @@ public class StrategySinController : ControllerBase
         int thresholdLower = 25; // Upper threshold is 100-thresholdLower.
         int[] lookbackDays = new int[] { 30, 60, 120, 252 };
         int volDays = 20;
-        int[] pastPerfDays = new int[] { 1, 5, 10, 21, 63, 126, 252};
+        int[] pastPerfDays = new int[] { 1, 5, 10, 21, 63, 126, 252 };
         string[] pastPerfDaysString = new string[] { "1-Day", "1-Week", "2-Weeks", "1-Month", "3-Months", "6-Months", "1-Year" };
         double leverage = gSheetResToFinCalc.Item6[0];
         double maxBondPerc = gSheetResToFinCalc.Item6[1];
@@ -555,7 +554,6 @@ public class StrategySinController : ControllerBase
                                                                                 // However, if assetScores[i]<0 (negative), assetWeights[i] becoumes a proper negative number. It will be used in TotalWeight calculation => TLT will fill its's space. (if this is the only stock with negative score), TLT will be invested in its place; consequently the portfolio will NOT be 100% in other stocks. We are more defensive.
                 totalWeight += Math.Abs(assetWeights[iAsset]);      // Sum up the absolute values of the “Score/Vol” quotients. TotalWeight contains even the non-active assets so have have some cash.
                 assetWeights2[iAsset] = (assetWeights[iAsset] >= 0) ? assetWeights[iAsset] : 0.0;
-
             }
             for (int iAsset = 0; iAsset < nAssets; iAsset++)
             {

@@ -142,5 +142,4 @@ public static IHostBuilder CreateHostBuilder(string[] args) =>
         })
         .UseNLog();  // NLog: Setup NLog for Dependency injection; LoggerProvider under the ASP.NET Core platform.
     });
-
 }

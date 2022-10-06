@@ -55,7 +55,6 @@ public class AssetHistJs // duplicate that the AssetId is in both HistValues and
 {
         public AssetHistValuesJs? HistValues { get; set; } = null;
         public AssetHistStatJs? HistStat { get; set; } = null;
-
 }
 
 
@@ -209,6 +208,4 @@ public partial class DashboardClient
     // {
     //     throw new NotImplementedException();
     // }
-
-
 }

@@ -70,7 +70,6 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
 
     public string GetStrVIX()
     {
-
         // Downloading live data from vixcentral.com.
         string? webpageLive = Utils.DownloadStringWithRetryAsync("http://vixcentral.com", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
         if (webpageLive == null)
@@ -125,7 +124,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         // string[] spotVixPrices = spotVixData.Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
         // double spotVixValue = Double.Parse(spotVixPrices[0]);
 
-        string[] monthsNumList = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+        string[] monthsNumList = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
         int monthsNum = Array.IndexOf(monthsNumList, liveFuturesNextExp) + 1;
 
 
@@ -228,11 +227,9 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         string ret = Processing(vixCentralRec, expDates, liveDate, liveFuturesDataTime, spotVixValue, titleVIX, dataSourceVIX);
 
         return ret;
-
     }
     public string GetStrOIL()
     {
-
         // Downloading live data from cmegroup.com.
         string? webpageLive = Utils.DownloadStringWithRetryAsync("https://www.cmegroup.com/CmeWS/mvc/Quotes/Future/425/G", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
         // bool isOkLive = Utils.DownloadStringWithRetry(out webpageLive, "http://www.cmegroup.com/trading/energy/crude-oil/light-sweet-crude.html", 3, TimeSpan.FromSeconds(2), true);
@@ -387,12 +384,10 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         string ret = Processing(vixCentralRec, expDates, liveDate, liveFuturesDataTime, spotVixValue, titleOIL, dataSourceOIL);
 
         return ret;
-
     }
 
     public string GetStrGAS()
     {
-
         // Downloading live data from cmegroup.com.
         string? webpageLive = Utils.DownloadStringWithRetryAsync("https://www.cmegroup.com/CmeWS/mvc/Quotes/Future/444/G", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
         // bool isOkLive = Utils.DownloadStringWithRetry("http://www.cmegroup.com/trading/energy/natural-gas/natural-gas.html", out webpageLive, 3, TimeSpan.FromSeconds(2), true);
@@ -547,7 +542,6 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         string ret = Processing(vixCentralRec, expDates, liveDate, liveFuturesDataTime, spotVixValue, titleGAS, dataSourceGAS);
 
         return ret;
-
     }
 
     private static string Processing(VixCentralRec2[] p_vixCentralRec, DateTime[] _, string p_liveDate, string p_liveFuturesDataTime, double p_spotVixValue, string p_titleF, string p_dataSource)
@@ -687,6 +681,5 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         sb.AppendLine(@"]""" + Environment.NewLine + @"}");
 
         return sb.ToString();
-
     }
 }

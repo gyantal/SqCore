@@ -63,7 +63,6 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
     {
         Tuple<string, string> contentAndType = await GenerateYffResponse();
         return Content(contentAndType.Item1, contentAndType.Item2);
-
     }
 
     private async Task<Tuple<string, string>> GenerateYffResponse()
@@ -295,7 +294,6 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
             responseStrBldr.AppendFormat(",");
         responseStrBldr.Append(cells[cCommandToIndDict[p_command]]);
         wasCellWritten = true;
-
     }
 
     private void WriteRow(bool p_isOutputJson, List<string> yffColumnsList, string[] cells, StringBuilder responseStrBldr, ref bool wasDataLineWritten)
@@ -320,5 +318,4 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
             responseStrBldr.AppendFormat("]");
         wasDataLineWritten = true;
     }
-
 }

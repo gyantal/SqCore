@@ -242,7 +242,6 @@ public class CompressedStaticFileMiddleware
             {
                 alternativeFileProvider.Initialize(fileExtensionContentTypeProvider);
             }
-
         }
         staticFileOptions.Value.ContentTypeProvider = contentTypeProvider;
 
@@ -255,7 +254,6 @@ public class CompressedStaticFileMiddleware
             {
                 alternativeFile.Prepare(contentTypeProvider, context);
             }
-
         };
     }
 

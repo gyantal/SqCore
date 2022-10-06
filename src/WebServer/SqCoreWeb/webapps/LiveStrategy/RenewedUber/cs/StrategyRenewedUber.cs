@@ -54,7 +54,6 @@ public class StrategyRenewedUberController : ControllerBase
     [HttpGet] // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
     public string Get()
     {
-
         string gchGSheetRefPos = "https://sheets.googleapis.com/v4/spreadsheets/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/values/A1:Z2000?key=";
         string gchGSheet2RefPos = "https://docs.google.com/spreadsheets/d/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/edit?usp=sharing";
         // string gchGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1QjGsXw6YxPT0He5kE4YJ5o52ZCnX7cLA5N-V3Ng1juA/values/A1:Z2000?key=";
@@ -68,7 +67,7 @@ public class StrategyRenewedUberController : ControllerBase
         // string[] allAssetList = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG" };
         // string[] vixAssetList = new string[] { "^VIX" };
 
-        string[]? allAssetListVIX = allAssetList.Append("^VIX").ToArray() ?? new string[] {"^VIX"};
+        string[]? allAssetListVIX = allAssetList.Append("^VIX").ToArray() ?? new string[] { "^VIX" };
 
         // string[] allAssetListVIX = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };
         double[] bullishWeights = new double[] { -0.1, 0.3, 0.3, 0.2, -0.1, -0.075, -0.15 };
@@ -370,7 +369,6 @@ public class StrategyRenewedUberController : ControllerBase
             case 8:
                 currEventName = "STCI Neutral Day";
                 break;
-
         }
 
         // Current PV, Number of current and required shares
@@ -412,7 +410,6 @@ public class StrategyRenewedUberController : ControllerBase
             dailyProfString = "posDaily";
             dailyProfSign = "+$";
             dailyProfValString = dailyProf.ToString("#,##0");
-
         }
         else if (currPosDateString == liveDateTime.ToString("yyyy-MM-dd") && currPosDateString == quotesData[0][^1].Date.ToString("yyyy-MM-dd") && dailyProf < 0)
         {
@@ -505,7 +502,6 @@ public class StrategyRenewedUberController : ControllerBase
                     prevEventNames[iRows] = "Non-Playable Other Event Day";
                     prevEventColors[iRows] = "C0C0C0";
                     break;
-
             }
         }
 
@@ -525,7 +521,6 @@ public class StrategyRenewedUberController : ControllerBase
             pastDataMtxToJS[iRows, 13] = Math.Round(spotVixValueDb[iRows], 2).ToString();
             pastDataMtxToJS[iRows, 14] = prevEventNames[iRows];
             pastDataMtxToJS[iRows, 15] = Math.Round(finalWeightMultiplierVIX[iRows] * 100, 2).ToString() + "%";
-
         }
 
         string[,] nextDataMtxToJS = new string[nextDateVec.Length, 12];
@@ -539,7 +534,6 @@ public class StrategyRenewedUberController : ControllerBase
             nextDataMtxToJS[iRows, 9] = nextEventNames[iRows];
             nextDataMtxToJS[iRows, 10] = nextEventFinalSignal[iRows].ToString();
             nextDataMtxToJS[iRows, 11] = Math.Round(nextEventFinalWeightedSignal[iRows] * 100, 2).ToString() + "%";
-
         }
 
 
@@ -719,7 +713,6 @@ public class StrategyRenewedUberController : ControllerBase
         sb.AppendLine(@"""" + Environment.NewLine + @"}");
 
         return sb.ToString();
-
     }
     public string? RenewedUberGoogleApiGsheet(string p_usedGSheetRef)
     {

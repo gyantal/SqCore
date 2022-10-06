@@ -204,7 +204,7 @@ public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
         bool success = Caretaker.g_caretaker.CheckFreeDiskSpace(noteToClient);
 
         Utils.Logger.Info("TestCaretakerCheckFreeDiskSpace() END");
-        return Content($"<HTML><body>TestCaretakerCheckFreeDiskSpace() finished with { (success ? "OK" : "Error") }. <br> Note To Client '<br>{noteToClient.Replace(Environment.NewLine, "<br>").Replace("    ", "&nbsp;&nbsp;&nbsp;&nbsp;")}'</body></HTML>", "text/html");
+        return Content($"<HTML><body>TestCaretakerCheckFreeDiskSpace() finished with {(success ? "OK" : "Error")}. <br> Note To Client '<br>{noteToClient.Replace(Environment.NewLine, "<br>").Replace("    ", "&nbsp;&nbsp;&nbsp;&nbsp;")}'</body></HTML>", "text/html");
     }
 
     [HttpGet]
@@ -216,7 +216,7 @@ public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
         bool success = Caretaker.CleanLogfiles(noteToClient);
 
         Utils.Logger.Info("TestCaretakerCleanLogfiles() END");
-        return Content($"<HTML><body>TestCaretakerCleanLogfiles() finished with { (success ? "OK" : "Error") }. <br> Note To Client '{noteToClient}'</body></HTML>", "text/html");
+        return Content($"<HTML><body>TestCaretakerCleanLogfiles() finished with {(success ? "OK" : "Error")}. <br> Note To Client '{noteToClient}'</body></HTML>", "text/html");
     }
 
     // just pass the HealthMonitorWebsite TS query to the HealthMonitor.EXE without further processing.

@@ -248,7 +248,6 @@ public class Startup
             Console.WriteLine("A_G_CId and A_G_CSe from Config has NOT been found. Cannot initialize GoogelAuthentication.");
             // Utils.Logger.Warn("A_G_CId and A_G_CSe from Config has NOT been found. Cannot initialize GoogelAuthentication.");
         }
-
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

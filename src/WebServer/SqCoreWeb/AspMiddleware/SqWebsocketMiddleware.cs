@@ -135,7 +135,6 @@ public class SqWebsocketMiddleware
             // On the server, if a message hasn't arrived within 2*X seconds after the previous one, terminate the connection and report that the client disconnected.
             while (webSocket.State == WebSocketState.Open && !pingCancelToken.IsCancellationRequested && (result?.CloseStatus == null || !result.CloseStatus.HasValue))
             {
-
                 // convert binary array to string message: https://stackoverflow.com/questions/24450109/how-to-send-receive-messages-through-a-web-socket-on-windows-phone-8-using-the-c
                 bufferStr = string.Empty;
                 using (var ms = new MemoryStream())
@@ -256,7 +255,6 @@ public class SqWebsocketMiddleware
         {
             throw;    // we can choose to swallow the exception or crash the app. If we swallow it, we might risk that error will go undetected forever.
         }
-
     }
 
     public static void ServerDiagnostic(StringBuilder p_sb)

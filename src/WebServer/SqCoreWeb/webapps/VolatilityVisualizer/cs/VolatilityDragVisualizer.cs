@@ -107,7 +107,7 @@ public class VolatilityDragVisualizerController : ControllerBase
         string[] gchAssetList = new string[] { "AAPL", "AMZN", "GOOGL" };
         string[] gchAssetListNN = new string[] { "AAPL", "AMZN", "GOOGL" };
 
-        string[] gmAssetList = new string[] { "EEM", "VNQ"};
+        string[] gmAssetList = new string[] { "EEM", "VNQ" };
         string[] gmAssetListNN = new string[] { "EEM", "VNQ" };
 
         string[] vixAssetList = new string[] { "^VIX" };
@@ -133,10 +133,10 @@ public class VolatilityDragVisualizerController : ControllerBase
         // string[] allAssetList = new string[]{ "SPY", "QQQ", "SVXY!Light0.5x.SQ", "VXX.SQ", "VXZ.SQ", "UVXY!Light1.5x.SQ", "TQQQ.SQ", "^VIX" };
         // string[] usedAssetList = new string[] { "SPY", "QQQ", "SVXY_Light", "VXX", "VXZ", "UVXY_Light", "TQQQ"};
         // string[] defaultCheckedList = new string[] { "SPY", "QQQ", "VXX"};
-        string[] defaultCheckedList = new string[] { "SPY", "QQQ", "TLT"};
+        string[] defaultCheckedList = new string[] { "SPY", "QQQ", "TLT" };
 
         int volLBPeriod = p_lbP;
-        int[] retLB = new int[] {1, 3, 5, 10, 20, 63, 126, 252};
+        int[] retLB = new int[] { 1, 3, 5, 10, 20, 63, 126, 252 };
         string[] retLBStr = new string[] { "1 Day", "3 Days", "1 Week", "2 Weeks", "1 Month", "3 Months", "6 Months", "1 Year" };
         int retHistLB = 20;
 

@@ -100,5 +100,4 @@ public class DashboardWs
         if (client != null)
             DashboardClient.RemoveFromClients(client);
     }
-
 } // class

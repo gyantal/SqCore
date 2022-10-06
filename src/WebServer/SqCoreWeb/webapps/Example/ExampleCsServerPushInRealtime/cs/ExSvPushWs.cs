@@ -73,5 +73,4 @@ public partial class ExSvPushWs
         if (p_webSocket!.State == WebSocketState.Open)
             p_webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
-
 } // class

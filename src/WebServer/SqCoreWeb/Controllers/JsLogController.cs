@@ -58,7 +58,7 @@ public class JsLogController : Microsoft.AspNetCore.Mvc.Controller
         // 2. interpret the log and if it is an error, notify HealthMonitor
         try
         {
-            var jsLogObj = JsonSerializer.Deserialize<NGXLogInterface>(jsLogMessage, new JsonSerializerOptions { PropertyNameCaseInsensitive = true});
+            var jsLogObj = JsonSerializer.Deserialize<NGXLogInterface>(jsLogMessage, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             if (jsLogObj == null || jsLogObj.Level == NgxLoggerLevel.ERROR || jsLogObj.Level == NgxLoggerLevel.FATAL)
             { // notify HealthMonitor to send an email
                 await HealthMonitorMessage.SendAsync(jsLogMsgWithOrigin, HealthMonitorMessageID.SqCoreWebJsError);
