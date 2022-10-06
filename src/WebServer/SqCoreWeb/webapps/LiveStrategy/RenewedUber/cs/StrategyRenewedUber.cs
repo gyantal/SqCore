@@ -342,7 +342,7 @@ public class StrategyRenewedUberController : ControllerBase
         double currSTCI = STCId.Item2[0];
         double currFinalWeightMultiplier = finalWeightMultiplierVIX[0];
 
-        string currEventName = "";
+        string currEventName = string.Empty;
         switch (currEventCode)
         {
             case 1:
@@ -635,7 +635,7 @@ public class StrategyRenewedUberController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""pastDataMtxToJS"": """);
         for (int i = 0; i < pastDataMtxToJS.GetLength(0); i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < pastDataMtxToJS.GetLength(1) - 1; j++)
             {
                 sb.Append(pastDataMtxToJS[i, j] + ", ");
@@ -650,7 +650,7 @@ public class StrategyRenewedUberController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""nextDataMtxToJS"": """);
         for (int i = 0; i < nextDataMtxToJS.GetLength(0); i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < nextDataMtxToJS.GetLength(1) - 1; j++)
             {
                 sb.Append(nextDataMtxToJS[i, j] + ", ");
@@ -668,7 +668,7 @@ public class StrategyRenewedUberController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""assetChangesToChartMtx"": """);
         for (int i = 0; i < assetChangesMtx.GetLength(0); i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < assetChangesMtx.GetLength(1) - 1; j++)
             {
                 sb.Append(assetChangesMtx[i, j] + ", ");
@@ -733,7 +733,7 @@ public class StrategyRenewedUberController : ControllerBase
         {
         string[] gSheetTableRows = p_gSheetString.Split(new string[] { "[" }, StringSplitOptions.RemoveEmptyEntries);
         string currPosRaw = gSheetTableRows[3];
-        currPosRaw = currPosRaw.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
+        currPosRaw = currPosRaw.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\",", "BRB").Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",", string.Empty);
         string[] currPos = currPosRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
         string[] currPosAP = new string[p_allAssetList.Length];
         Array.Copy(currPos, 2, currPosAP, 0, p_allAssetList.Length);
@@ -743,7 +743,7 @@ public class StrategyRenewedUberController : ControllerBase
         int[] currPosAssets = Array.ConvertAll(currPosAP, int.Parse);
 
 
-        p_gSheetString = p_gSheetString.Replace("\n", "").Replace("]", "").Replace("\"", "").Replace(" ", "").Replace(",,", ",0,").Replace(",,", ",0,");
+        p_gSheetString = p_gSheetString.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",,", ",0,").Replace(",,", ",0,");
         gSheetTableRows = p_gSheetString.Split(new string[] { "[" }, StringSplitOptions.RemoveEmptyEntries);
 
         string[,] gSheetCodes = new string[gSheetTableRows.Length - 4, currPos.Length];

@@ -443,7 +443,7 @@ public class VolatilityDragVisualizerController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""dailyVolDrags"": """);
         for (int i = 0; i < assVolDrags[0].Count; i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < assVolDrags.Count - 1; j++)
             {
                 sb.Append(Math.Round(assVolDrags[j][i] * 100, 2).ToString() + "%, ");
@@ -473,7 +473,7 @@ public class VolatilityDragVisualizerController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""yearlyAvgs"": """);
         for (int i = 0; i < dateYearsAvgs.GetLength(0); i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < dateYearsAvgs.GetLength(1) - 1; j++)
             {
                 sb.Append(Math.Round(dateYearsAvgs[i, j] * 100, 2).ToString() + "%, ");
@@ -488,7 +488,7 @@ public class VolatilityDragVisualizerController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""monthlyAvgs"": """);
         for (int i = 0; i < dateYearsMonthsAvgs.GetLength(0); i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < dateYearsMonthsAvgs.GetLength(1) - 1; j++)
             {
                 sb.Append(Math.Round(dateYearsMonthsAvgs[i, j] * 100, 2).ToString() + "%, ");
@@ -532,7 +532,7 @@ public class VolatilityDragVisualizerController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""histRetMtx"": """);
         for (int i = 0; i < histRet.GetLength(0); i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < histRet.GetLength(1) - 1; j++)
             {
                 sb.Append(Math.Round(histRet[i, j] * 100, 2).ToString() + "%, ");
@@ -547,7 +547,7 @@ public class VolatilityDragVisualizerController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""histRet2Chart"": """);
         for (int i = 0; i < histRet2.GetLength(0); i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < histRet2.GetLength(1) - 1; j++)
             {
                 sb.Append(Math.Round(histRet2[i, j] * 100, 2).ToString() + "%, ");

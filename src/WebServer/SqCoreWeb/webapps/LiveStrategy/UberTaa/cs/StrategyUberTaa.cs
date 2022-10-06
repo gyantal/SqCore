@@ -210,7 +210,7 @@ public class StrategyUberTaaController : ControllerBase
             prevPosMtx[iRows, prevPosMtx.GetLength(1) - 3] = Math.Round(Math.Max((1.0 - assetWeightSum), 0) * 100.0, 2).ToString() + "%";
             prevPosMtx[iRows, prevPosMtx.GetLength(1) - 2] = Math.Round((1.0 - assetWeightSum - Math.Max((1.0 - assetWeightSum), 0)) * 100.0, 2).ToString() + "%";
         }
-        prevPosMtx[prevPosMtx.GetLength(0) - 1, 0] = "";
+        prevPosMtx[prevPosMtx.GetLength(0) - 1, 0] = string.Empty;
         for (int jCols = 0; jCols < prevPosMtx.GetLength(1) - 3; jCols++)
         {
             prevPosMtx[prevPosMtx.GetLength(0) - 1, jCols + 1] = usedAssetList[jCols];
@@ -373,7 +373,7 @@ public class StrategyUberTaaController : ControllerBase
             futPosMtx[iRows + 1, futPosMtx.GetLength(1) - 1] = (weightsFinal.Item5[iRows] == "0") ? "---" : weightsFinal.Item5[iRows];
             futAssEventCodes[iRows + 1, futPosMtx.GetLength(1) - 1] = "FFFF00";
         }
-        futPosMtx[0, 0] = "";
+        futPosMtx[0, 0] = string.Empty;
         futAssEventCodes[0, 0] = "66CCFF";
         for (int jCols = 0; jCols < futPosMtx.GetLength(1) - 2; jCols++)
         {
@@ -488,7 +488,7 @@ public class StrategyUberTaaController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""prevPositionsMtx"": """);
         for (int i = 0; i < prevPosMtx.GetLength(0); i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < prevPosMtx.GetLength(1) - 1; j++)
             {
                 sb.Append(prevPosMtx[i, j] + ", ");
@@ -503,7 +503,7 @@ public class StrategyUberTaaController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""prevAssEventMtx"": """);
         for (int i = 0; i < prevAssEventColorMtx.GetLength(0); i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < prevAssEventColorMtx.GetLength(1) - 1; j++)
             {
                 sb.Append(prevAssEventColorMtx[i, j] + ",");
@@ -519,7 +519,7 @@ public class StrategyUberTaaController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""futPositionsMtx"": """);
         for (int i = 0; i < futPosMtx.GetLength(0); i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < futPosMtx.GetLength(1) - 1; j++)
             {
                 sb.Append(futPosMtx[i, j] + ", ");
@@ -534,7 +534,7 @@ public class StrategyUberTaaController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""futAssEventMtx"": """);
         for (int i = 0; i < futAssEventCodes.GetLength(0); i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < futAssEventCodes.GetLength(1) - 1; j++)
             {
                 sb.Append(futAssEventCodes[i, j] + ",");
@@ -551,7 +551,7 @@ public class StrategyUberTaaController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""assetChangesToChartMtx"": """);
         for (int i = 0; i < assetChangesMtx.GetLength(0); i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < assetChangesMtx.GetLength(1) - 1; j++)
             {
                 sb.Append(assetChangesMtx[i, j] + ", ");
@@ -566,7 +566,7 @@ public class StrategyUberTaaController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""assetDailyChangesToChartMtx"": """);
         for (int i = 0; i < assetDailyChangesMtx.GetLength(0); i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < assetDailyChangesMtx.GetLength(1) - 1; j++)
             {
                 sb.Append(assetDailyChangesMtx[i, j] + ", ");
@@ -581,7 +581,7 @@ public class StrategyUberTaaController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""spxMAToChartMtx"": """);
         for (int i = 0; i < spxToChartMtx.GetLength(0); i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < spxToChartMtx.GetLength(1) - 1; j++)
             {
                 sb.Append(spxToChartMtx[i, j] + ", ");
@@ -596,7 +596,7 @@ public class StrategyUberTaaController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""xluVtiPercToChartMtx"": """);
         for (int i = 0; i < xluVtiToChartMtx.GetLength(0); i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < xluVtiToChartMtx.GetLength(1) - 1; j++)
             {
                 sb.Append(xluVtiToChartMtx[i, j] + ", ");
@@ -632,7 +632,7 @@ public class StrategyUberTaaController : ControllerBase
         {
             string[] gSheetTableRows = p_gSheetString.Split(new string[] { "[" }, StringSplitOptions.RemoveEmptyEntries);
             string currPosRaw = gSheetTableRows[3];
-            currPosRaw = currPosRaw.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
+            currPosRaw = currPosRaw.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\",", "BRB").Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",", string.Empty);
             string[] currPos = currPosRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
             string[] currPosAP = new string[p_allAssetList.Length - 3];
             Array.Copy(currPos, 2, currPosAP, 0, p_allAssetList.Length - 3);
@@ -641,7 +641,7 @@ public class StrategyUberTaaController : ControllerBase
             int[] currPosDateCash = new int[] { currPosDate, currPosCash };
             int[] currPosAssets = Array.ConvertAll(currPosAP, int.Parse);
 
-            p_gSheetString = p_gSheetString.Replace("\n", "").Replace("]", "").Replace("\"", "").Replace(" ", "").Replace(",,", ",0,");
+            p_gSheetString = p_gSheetString.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",,", ",0,");
             gSheetTableRows = p_gSheetString.Split(new string[] { "[" }, StringSplitOptions.RemoveEmptyEntries);
 
             string[,] gSheetCodes = new string[gSheetTableRows.Length - 4, currPos.Length];

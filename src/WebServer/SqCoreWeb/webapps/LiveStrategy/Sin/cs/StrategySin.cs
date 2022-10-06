@@ -340,7 +340,7 @@ public class StrategySinController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""assetChangesToChartMtx"": """);
         for (int i = 0; i < assetChangesMtx.GetLength(0); i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < assetChangesMtx.GetLength(1) - 1; j++)
             {
                 sb.Append(assetChangesMtx[i, j] + ", ");
@@ -355,7 +355,7 @@ public class StrategySinController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""assetScoresMtx"": """);
         for (int i = 0; i < assetScoresMtx.GetLength(0); i++)
         {
-            sb.Append("");
+            sb.Append(string.Empty);
             for (int j = 0; j < assetScoresMtx.GetLength(1) - 1; j++)
             {
                 sb.Append(assetScoresMtx[i, j] + ", ");
@@ -383,7 +383,7 @@ public class StrategySinController : ControllerBase
             for (int iRows = 4; iRows < gSheetTableRows.Length - 5; iRows++)
             {
                 string currPosRaw = gSheetTableRows[iRows];
-                currPosRaw = currPosRaw.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
+                currPosRaw = currPosRaw.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\",", "BRB").Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",", string.Empty);
                 string[] currPos = currPosRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
                 assNameString[iRows - 4] = currPos[0];
                 currPosAssString[iRows - 4] = currPos[1];
@@ -391,22 +391,22 @@ public class StrategySinController : ControllerBase
             }
 
             string currDateRaw = gSheetTableRows[2];
-            currDateRaw = currDateRaw.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
+            currDateRaw = currDateRaw.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\",", "BRB").Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",", string.Empty);
             string[] currDateVec = currDateRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
 
             string currDateRaw2 = gSheetTableRows[3];
-            currDateRaw2 = currDateRaw2.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
+            currDateRaw2 = currDateRaw2.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\",", "BRB").Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",", string.Empty);
             string[] currDateVec2 = currDateRaw2.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
 
             string currCashRaw = gSheetTableRows[^5];
-            currCashRaw = currCashRaw.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
+            currCashRaw = currCashRaw.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\",", "BRB").Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",", string.Empty);
             string[] currCashVec = currCashRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
 
             string[] prevPVString = new string[4];
             for (int iRows = 0; iRows < prevPVString.Length; iRows++)
             {
                 string currPosRaw = gSheetTableRows[gSheetTableRows.Length - 4 + iRows];
-                currPosRaw = currPosRaw.Replace("\n", "").Replace("]", "").Replace("\",", "BRB").Replace("\"", "").Replace(" ", "").Replace(",", "");
+                currPosRaw = currPosRaw.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\",", "BRB").Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",", string.Empty);
                 string[] currPos = currPosRaw.Split(new string[] { "BRB" }, StringSplitOptions.RemoveEmptyEntries);
                 prevPVString[iRows] = currPos[1];
             }
