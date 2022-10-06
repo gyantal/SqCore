@@ -208,8 +208,7 @@ public partial class BrokersWatcher
     // at graceful shutdown, it is called
     public void Exit()
     {
-        if (m_reconnectTimer != null)
-            m_reconnectTimer.Dispose();
+        m_reconnectTimer?.Dispose();
         foreach (var gateway in m_gateways)
         {
             gateway.Disconnect();
@@ -312,8 +311,7 @@ public partial class BrokersWatcher
         }
 
         var rtPrices = new Dictionary<int, PriceAndTime>() { { TickType.MID, new PriceAndTime() } };   // MID is the most honest price. LAST may happened 1 hours ago
-        if (m_mainGateway != null)
-            m_mainGateway.BrokerWrapper.GetAlreadyStreamedPrice(p_contract, ref rtPrices);
+        m_mainGateway?.BrokerWrapper.GetAlreadyStreamedPrice(p_contract, ref rtPrices);
         int virtualOrderId = userGateway.PlaceOrder(p_portfolioMaxTradeValueInCurrency, p_portfolioMinTradeValueInCurrency, p_contract, p_transactionType, p_volume, p_orderExecution, p_orderTif, p_limitPrice, p_stopPrice, rtPrices[TickType.MID].Price, p_isSimulatedTrades, p_oldVolume, p_detailedReportSb);
         return virtualOrderId;
     }

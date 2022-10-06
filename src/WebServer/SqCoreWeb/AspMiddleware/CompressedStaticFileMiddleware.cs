@@ -250,10 +250,7 @@ public class CompressedStaticFileMiddleware
         {
             originalPrepareResponse(context);
             var alternativeFile = this.alternativeFile.Value;
-            if (alternativeFile != null)
-            {
-                alternativeFile.Prepare(contentTypeProvider, context);
-            }
+            alternativeFile?.Prepare(contentTypeProvider, context);
         };
     }
 

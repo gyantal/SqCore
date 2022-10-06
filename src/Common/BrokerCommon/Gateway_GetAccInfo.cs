@@ -27,8 +27,7 @@ public partial class Gateway
     ManualResetEventSlim? m_getAccountSummaryMres;
     public void AccSumEnd(int p_reqId)
     {
-        if (m_getAccountSummaryMres != null)
-            m_getAccountSummaryMres.Set();  // Sets the state of the event to signaled, which allows one or more threads waiting on the event to proceed.
+        m_getAccountSummaryMres?.Set();  // Sets the state of the event to signaled, which allows one or more threads waiting on the event to proceed.
 
         // if you don't cancel it, all the data update come every 1 minute, which might be good, because we can give it to user instantenously....
         // However, it would be an unnecessary traffic all the time... So, better to Cancel the data streaming.
@@ -48,8 +47,7 @@ public partial class Gateway
     ManualResetEventSlim? m_getAccountPosMres;
     public void AccPosEnd()
     {
-        if (m_getAccountPosMres != null)
-            m_getAccountPosMres.Set();  // Sets the state of the event to signaled, which allows one or more threads waiting on the event to proceed.
+        m_getAccountPosMres?.Set();  // Sets the state of the event to signaled, which allows one or more threads waiting on the event to proceed.
     }
 
     public List<BrAccSum>? GetAccountSums()

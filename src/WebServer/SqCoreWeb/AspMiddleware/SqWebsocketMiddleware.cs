@@ -248,8 +248,7 @@ public class SqWebsocketMiddleware
             if (pingTimerData.WebSocket.State == WebSocketState.Open)
                 pingTimerData.WebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
 
-            if (pingTimerData.PingTimer != null)
-                pingTimerData.PingTimer.Change(TimeSpan.FromSeconds(5 * 60), TimeSpan.FromMilliseconds(-1.0));     // runs every 5 minutes
+            pingTimerData.PingTimer?.Change(TimeSpan.FromSeconds(5 * 60), TimeSpan.FromMilliseconds(-1.0));     // runs every 5 minutes
         }
         catch (System.Exception)
         {

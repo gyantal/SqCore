@@ -1,7 +1,7 @@
 <html style="background: linear-gradient(to right, #3080c7, #3080c7 4%, #75e0e1 45%, #73e5e1 55%, #91d73a 97%); background-repeat: repeat-y; overflow: visible; /* avoid scrollbars */height: 100%;">
 
 <head>
-  <meta charset="utf-8" />
+  <!-- <meta charset="utf-8" /> -->
   <title>Volatility Drag Visualizer</title>
 </head>
 
@@ -17,9 +17,9 @@
     <span id="lastDataTime"></span>
   </div>
   <span id="idChBxs"></span>
-  <div id="pctChgCharts" class="chartsContainer" style="visibility: hidden">
+  <div id="volDragChrtVisibility" class="chartsContainer" style="visibility: hidden">
     <strong>Monthly Volatility Drag</strong>
-    <div id="pctChgChrt"></div>
+    <div id="volDragChrt"></div>
     <div id='tooltipChart'></div>
   </div>
 
@@ -32,7 +32,7 @@
   <br>
   <span id="idRecentPerformance"></span>
   <br>
-  <div id="lookbackCharts" class="chartsContainer" style="visibility: hidden">
+  <div id="pctChgLookbackChrtVisibility" class="chartsContainer" style="visibility: hidden">
     <span id="idChartLength"></span>
     <div id="pctChgLookbackChrt"></div>
   </div>

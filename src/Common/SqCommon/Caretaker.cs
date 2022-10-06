@@ -103,16 +103,14 @@ public sealed class Caretaker : IDisposable
         Utils.Logger.Info($"Caretaker.GetCurrentDirectory(): '{currentWorkingDir}'");   // this can throw System.IO.FileNotFoundException if we redeploy the App, and overwrite (delete) folders under the app, without stopping/restarting the app.
         string foundIssues = string.Empty;
         int requiredFreeSpaceGb = 2;
-        if (p_noteToClient != null)
-            p_noteToClient.AppendLine($"Checking required safe free disk space of {requiredFreeSpaceGb}GB on drive containing the working dir {currentWorkingDir}");
+        p_noteToClient?.AppendLine($"Checking required safe free disk space of {requiredFreeSpaceGb}GB on drive containing the working dir {currentWorkingDir}");
         foreach (DriveInfo drive in DriveInfo.GetDrives().OrderBy(r => r.DriveType))
         {
             // Type: Fixed (C:\ on Windows, '/', '/sys/fs/pstore' (persistent storage of Kernel errors) on Linux)
             // Type: Ram, Unknown, Network (many different virtual drives on Linux)
             string noteToClient = $"Drive Name:'{drive.Name}', Type:{drive.DriveType}, RoodDirName:{drive.RootDirectory.Name}";    // name such as 'C:\'
             Utils.Logger.Info(noteToClient);
-            if (p_noteToClient != null)
-                p_noteToClient.AppendLine(noteToClient);
+            p_noteToClient?.AppendLine(noteToClient);
 
             // We have to be selective and check only the drive from which the app runs, because drive.TotalFreeSpace raises exceptions for specific drives.
             // On Windows: DVD drives has no free space. Exception:'The device is not ready.
@@ -126,8 +124,7 @@ public sealed class Caretaker : IDisposable
 
             noteToClient = $"    Drive '{drive.Name}'. Free disk space:{freeDiskSpaceMB}MB, Available user quota:{availableUserQuotaSpaceMB}MB";
             Utils.Logger.Info(noteToClient);
-            if (p_noteToClient != null)
-                p_noteToClient.AppendLine(noteToClient);
+            p_noteToClient?.AppendLine(noteToClient);
             if (availableUserQuotaSpaceMB < requiredFreeSpaceGb * 1024) // the free space is less than 2 GB
                 foundIssues += $"! Low free space (<{requiredFreeSpaceGb}GB): " + noteToClient + Environment.NewLine;
         }
@@ -156,8 +153,7 @@ public sealed class Caretaker : IDisposable
 
         string currentWorkingDir = Directory.GetCurrentDirectory();
 
-        if (p_noteToClient != null)
-            p_noteToClient.AppendLine($"Current working directory of the app: {currentWorkingDir}");
+        p_noteToClient?.AppendLine($"Current working directory of the app: {currentWorkingDir}");
 
         // TODO: probably you need not the WorkingDir, but the directory of the running application (EXE), although Caretaker.cs is in the SqCommon.dll. Which would be in the same folder as the EXE.
         // see and extend Utils_runningEnv.cs with utility functions if needed
@@ -180,7 +176,6 @@ public sealed class Caretaker : IDisposable
 
     public void Dispose()
     {
-        if (m_timer != null)
-            m_timer.Dispose();
+        m_timer?.Dispose();
     }
 }

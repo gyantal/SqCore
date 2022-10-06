@@ -114,14 +114,10 @@ public partial class HealthMonitor
     public void Exit()      // in general exit should happen in the opposite order as Init()
     {
         //PersistedState.Save();
-        if (m_checkWebsitesAndKeepAliveTimer != null)
-            m_checkWebsitesAndKeepAliveTimer.Dispose();
-        if (m_checkAmazonAwsInstancesTimer != null)
-            m_checkAmazonAwsInstancesTimer.Dispose();
-        if (m_rtpsTimer != null)
-            m_rtpsTimer.Dispose();
-        if (m_tcpListener != null)
-            m_tcpListener.StopTcpMessageListener();
+        m_checkWebsitesAndKeepAliveTimer?.Dispose();
+        m_checkAmazonAwsInstancesTimer?.Dispose();
+        m_rtpsTimer?.Dispose();
+        m_tcpListener?.StopTcpMessageListener();
     }
 
     private void ScheduleTimers()
@@ -170,8 +166,7 @@ public partial class HealthMonitor
 
         // first parameter is the start time Interval and the second parameter is the interval
         // Timeout.Infinite means do not repeat the interval, only start the timer
-        if (m_dailyMarketOpenTimer != null)
-            m_dailyMarketOpenTimer.Change(requiredUtcTime - utcNow, Timeout.InfiniteTimeSpan);
+        m_dailyMarketOpenTimer?.Change(requiredUtcTime - utcNow, Timeout.InfiniteTimeSpan);
     }
 
     private void SetupNotRepeatingDailyReportTimer()
@@ -189,8 +184,7 @@ public partial class HealthMonitor
             if (isMarketTradingDay && (DateTime.UtcNow.AddSeconds(10) < dailyReportStartTime)) // if it is only 10 seconds or less until close, don't start it.
             {
                 Utils.Logger.Info("SetupNotRepeatingDailyReportTimer for UTC time as: " + (DateTime)dailyReportStartTime);
-                if (m_dailyReportTimer != null)
-                    m_dailyReportTimer.Change((DateTime)dailyReportStartTime - DateTime.UtcNow, Timeout.InfiniteTimeSpan);
+                m_dailyReportTimer?.Change((DateTime)dailyReportStartTime - DateTime.UtcNow, Timeout.InfiniteTimeSpan);
             }
             else
             {

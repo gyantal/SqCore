@@ -113,8 +113,8 @@ window.onload = function onLoadWindow() {
       const divErrorCont = getDocElementById('idErrorCont');
       divErrorCont.innerHTML = 'Error during downloading data. Please, try again later!';
       getDocElementById('errorMessage').style.visibility='visible';
-      getDocElementById('pctChgCharts').style.visibility = 'hidden';
-      getDocElementById('lookbackCharts').style.visibility = 'hidden';
+      getDocElementById('volDragChrtVisibility').style.visibility = 'hidden';
+      getDocElementById('pctChgLookbackChrtVisibility').style.visibility = 'hidden';
       return;
     }
     getDocElementById('titleCont').innerHTML = '<small><a href="' + json.gDocRef + '" target="_blank">(Study)</a></small>';
@@ -124,8 +124,8 @@ window.onload = function onLoadWindow() {
     // processingVolDragData(json);
     processingVolDragData(json);
     // Setting charts visible after getting data.
-    getDocElementById('pctChgCharts').style.visibility = 'visible';
-    getDocElementById('lookbackCharts').style.visibility = 'visible';
+    getDocElementById('volDragChrtVisibility').style.visibility = 'visible';
+    getDocElementById('pctChgLookbackChrtVisibility').style.visibility = 'visible';
   }
 
 
@@ -419,8 +419,8 @@ function processingTables(json: any, selectedTickers: string[]) {
     monthlyVolTblParent[i].addEventListener('click', toggleVolDataYearsNMonths);
 
   // Generating teh Charts
-  const lengthOfChart = 20;
-  const indOfLength = retHistLBPeriodsNo.indexOf(lengthOfChart);
+  const lookbackValue = 20;
+  const lookbackPeriod = retHistLBPeriodsNo.indexOf(lookbackValue);
   const lengthSubSums: any[] = [];
   lengthSubSums[0] = 0;
   lengthSubSums[1] = retHistLBPeriodsNo[0];
@@ -447,49 +447,40 @@ function processingTables(json: any, selectedTickers: string[]) {
   const yLabel: string = 'Percentage Change';
   const yScaleTickFormat: string = '%';
   const isDrawCricles: boolean = false;
-  d3.selectAll('#pctChgChrt > *').remove();
-  const lineChrtDiv = getDocElementById('pctChgChrt');
+  d3.selectAll('#volDragChrt > *').remove();
+  const volDragChrt = getDocElementById('volDragChrt');
   const lineChrtTooltip = getDocElementById('tooltipChart');
-  sqLineChartGenerator(noAssets, nCurrDataVD, selectedTickers, assChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtDiv, lineChrtTooltip, isDrawCricles);
+  sqLineChartGenerator(noAssets, nCurrDataVD, selectedTickers, assChartMtx, xLabel, yLabel, yScaleTickFormat, volDragChrt, lineChrtTooltip, isDrawCricles);
 
-  getDocElementById('idChartLength').innerHTML = '<strong>Percentage Changes of Prices in the Last &emsp;<select id="lookbackHistChrt"><option value="1">1 Day</option><option value="3">3 Days</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="20" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[indOfLength] + '</strong >';
-  pctMonthlyVolChrt(indOfLength, lengthOfChart);
+  getDocElementById('idChartLength').innerHTML = '<strong>Percentage Changes of Prices in the Last &emsp;<select id="lookbackHistChrt"><option value="1">1 Day</option><option value="3">3 Days</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="20" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[lookbackPeriod] + '</strong >';
+  showPctChgChrt(lookbackPeriod, lookbackValue);
 
   getDocElementById('lookbackHistChrt').onchange = function() {
-    const lengthOfChart = parseInt((document.getElementById('lookbackHistChrt') as HTMLSelectElement).value);
-    const indOfLength = retHistLBPeriodsNo.indexOf(lengthOfChart);
-    pctMonthlyVolChrt(indOfLength, lengthOfChart);
+    const lookbackValue = parseInt((document.getElementById('lookbackHistChrt') as HTMLSelectElement).value);
+    const lookbackPeriod = retHistLBPeriodsNo.indexOf(lookbackValue);
+    showPctChgChrt(lookbackPeriod, lookbackValue);
   };
 
   // Declaring data sets to charts.
-  function pctMonthlyVolChrt(indOfLength: number, lengthOfChart: number) {
+  function showPctChgChrt(lookbackPeriod: number, lookbackValue: number) {
     let chartStart: number;
-    if (indOfLength == 0)
-      chartStart = lengthSubSums[indOfLength] + 1;
-    else
-      chartStart = lengthSubSums[indOfLength];
+    lookbackPeriod == 0 ? chartStart = lengthSubSums[lookbackPeriod] + 1 : chartStart = lengthSubSums[lookbackPeriod];
 
-    const nCurrData = lengthOfChart + 1;
+    const nCurrData = lookbackValue + 1;
     const lookbackChartMtx: any[] = [];
-    for (let dayInd = 0; dayInd < nCurrData; dayInd++) {
+    for (let dayInd = 0; dayInd < nCurrData; dayInd++) { // when '3 days' selected, we show 4 days (data points) on the chart
       const date = dailyDatesArray[dailyDatesArray.length - nCurrData + dayInd];
       const dayDataArr = [date];
       for (let i = 0; i < tickersChecked.length; i++) {
         const tickerInd = assetNamesArray.indexOf(tickersChecked[i].id);
-        if (dayInd == 0)
-          dayDataArr.push(0); // option 1 as we want the chart to start from 0% , Please review
-          // dayDataArr.push((Math.fround(parseFloat(histRets2ChartsMtx[chartStart - 1 + dayInd][tickerInd]) / parseFloat(histRets2ChartsMtx[chartStart - 1 + 0][tickerInd])) - 1).toFixed(2).toString()); // option 2
-        else
-          dayDataArr.push((histRets2ChartsMtx[chartStart - 1 + dayInd][tickerInd]));
-        // dayInd == 0 ? dayDataArr.push(0) : dayDataArr.push((histRets2ChartsMtx[chartStart - 1 + dayInd][tickerInd]));
+        dayInd == 0 ? dayDataArr.push(0) : dayDataArr.push((histRets2ChartsMtx[chartStart - 1 + dayInd][tickerInd])); // As the Day0 data (which is always 0%) is not in the received data from the server, insert 0%, 0%, ... 0% as the first item
       }
       lookbackChartMtx.push(dayDataArr);
     }
     d3.selectAll('#pctChgLookbackChrt > *').remove();
-    const lineChrtLookback = getDocElementById('pctChgLookbackChrt');
+    const pctChgChrt = getDocElementById('pctChgLookbackChrt');
     const isDrawCricles1: boolean = true;
-    sqLineChartGenerator(noAssets, nCurrData, selectedTickers, lookbackChartMtx, xLabel, yLabel, yScaleTickFormat, lineChrtLookback, lineChrtTooltip, isDrawCricles1);
+    sqLineChartGenerator(noAssets, nCurrData, selectedTickers, lookbackChartMtx, xLabel, yLabel, yScaleTickFormat, pctChgChrt, lineChrtTooltip, isDrawCricles1);
   }
 }
-
 console.log('SqCore: Script END');

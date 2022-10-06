@@ -598,8 +598,7 @@ public class BrokerWrapperIb : IBrokerWrapper
         CancelledMktDataSubscriptions.TryAdd(p_marketDataId, mktDataSubscription);        // store it for logging purposes. For error message "Requested market data is not subscribed."
         if (MktDataSubscriptions.TryRemove(p_marketDataId, out mktDataSubscription))
         {
-            if (mktDataSubscription.CheckDataIsAliveTimer != null)
-                mktDataSubscription.CheckDataIsAliveTimer.Dispose();
+            mktDataSubscription.CheckDataIsAliveTimer?.Dispose();
         }
 
         //Utils.Logger.Debug($"CancelMktData() { p_marketDataId} END");

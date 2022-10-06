@@ -243,13 +243,13 @@ public class VolatilityDragVisualizerController : ControllerBase
         double[,] histRet2 = new double[histRetLengthSum, noAssets];
 
         int kShift = 0;
-        for (int kLen = 0; kLen < retLB.Length; kLen++)
+        for (int kLen = 0; kLen < retLB.Length; kLen++) // it calculates All possible range selection for %Chart: 1-day, 3-days, 1-week...
         {
             for (int iAsset = 0; iAsset < noAssets; iAsset++)
             {
-                for (int jRows = 0; jRows < retLB[kLen]; jRows++)
+                for (int iDate = 0; iDate < retLB[kLen]; iDate++)
                 {
-                    histRet2[kShift + jRows, iAsset] = quotesPrices[iAsset][quotesPrices[0].Count - retLB[kLen] + jRows] / quotesPrices[iAsset][quotesPrices[0].Count - 1 - retLB[kLen]] - 1;
+                    histRet2[kShift + iDate, iAsset] = quotesPrices[iAsset][quotesPrices[0].Count - retLB[kLen] + iDate] / quotesPrices[iAsset][quotesPrices[0].Count - 1 - retLB[kLen]] - 1;
                 }
             }
             kShift += retLB[kLen];

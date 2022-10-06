@@ -117,8 +117,7 @@ public sealed partial class ParallelTcpListener : IDisposable // listening happe
         Utils.TcpClientDispose(dummyClient);
 
         Console.WriteLine("StopTcpMessageListener() exiting..");
-        if (m_tcpListener != null)
-            m_tcpListener.Stop();   // there is no Dispose() method
+        m_tcpListener?.Stop();   // there is no Dispose() method
         Console.WriteLine("StopTcpMessageListener() exiting.");
 
         // Tasks create Background Threads always, so the TcpListenerLoop() is a Background thread, it will exits when main thread exits, which is OK.
