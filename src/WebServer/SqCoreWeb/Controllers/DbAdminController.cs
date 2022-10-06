@@ -1,17 +1,5 @@
-using System;
-using System.Globalization;
-using System.IO;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
-using SqCommon;
 using FinTechCommon;
+using Microsoft.AspNetCore.Mvc;
 
 namespace SqCoreWeb.Controllers;
 

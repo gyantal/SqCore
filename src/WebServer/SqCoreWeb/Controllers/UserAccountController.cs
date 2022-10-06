@@ -1,17 +1,14 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SqCoreWeb.Controllers;
 
-    [ApiController]
+[ApiController]
     [Route("[controller]")]
     public class UserAccountController : Microsoft.AspNetCore.Mvc.Controller
     {

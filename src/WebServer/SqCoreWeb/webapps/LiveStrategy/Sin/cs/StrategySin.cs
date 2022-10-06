@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 using FinTechCommon;
+using MathCommon.MathNet;
 using Microsoft.AspNetCore.Mvc;
 using SqCommon;
-using System.Text;
-using System.Globalization;
-using MathCommon.MathNet;
 
 namespace SqCoreWeb.Controllers;
 

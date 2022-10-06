@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Threading;
 using Microsoft.AspNetCore.Hosting;
@@ -6,7 +7,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NLog.Web;
 using SqCommon;
-using System.Diagnostics;
 
 // Kestrel is a cross-platform web server for ASP.NET Core. Kestrel is the web server that's included and enabled by default in ASP.NET Core
 namespace SqCoreWeb;
