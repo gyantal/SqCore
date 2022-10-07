@@ -42,7 +42,7 @@ public class SubdomainRewriteOptionsRule : IRule
 
             if (isRedirect)
             {
-                string newHost = currentHost.Host[p_subdomain.Length..] + ((currentHost.Port != null) ? ((int)(currentHost.Port)).ToString() : string.Empty);
+                string newHost = currentHost.Host[p_subdomain.Length..] + ((currentHost.Port != null) ? ((int)currentHost.Port).ToString() : string.Empty);
                 var newUrl = new StringBuilder().Append(req.IsHttps ? "https://" : "http://").Append(newHost).Append(req.PathBase).Append(p_pathPrefixReplacement).Append(req.Path).Append(req.QueryString);
 
                 Utils.Logger.Info("SubdomainRewriteOptionsRule(): Doing Redirection. NewUrl: " + newUrl);
@@ -52,7 +52,7 @@ public class SubdomainRewriteOptionsRule : IRule
             else // silent Rewrite URL (user will not even notice it)
             {
                 req.Host = (currentHost.Port != null) ?
-                    new HostString(currentHost.Host[p_subdomain.Length..], (int)(currentHost.Port)) :
+                    new HostString(currentHost.Host[p_subdomain.Length..], (int)currentHost.Port) :
                     new HostString(currentHost.Host[p_subdomain.Length..]);
                 req.Path = p_pathPrefixReplacement + req.Path;
 

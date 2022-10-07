@@ -361,8 +361,8 @@ public partial class DashboardClient
                 AvgCost = posBr.AvgCost,
                 PriorClose = asset.PriorClose,  // can be NaN if not given by IB. Sending "priorClose":"NaN". Client should be able to handle it. IB UI shows empty cell. Otherwise, we create fake data.
                 EstPrice = asset.EstValue,  // can be NaN if not given by IB. Sending "estPrice":"NaN". Client should handle it. IB UI shows empty cell. Otherwise, we create fake data.
-                EstUndPrice = (float.IsNaN(estUndValue)) ? 0.0f : estUndValue,
-                IbCompDelta = (double.IsNaN(ibCompDelta)) ? 0.0 : ibCompDelta,
+                EstUndPrice = float.IsNaN(estUndValue) ? 0.0f : estUndValue,
+                IbCompDelta = double.IsNaN(ibCompDelta) ? 0.0 : ibCompDelta,
                 AccId = p_gwIdStr
             });
         }
@@ -518,7 +518,8 @@ public partial class DashboardClient
         }).LogUnobservedTaskExceptions("!Error in BrAccViewerUpdateStOptPricesAndSendSnapshotTwice() sub-thread.");
     }
 
-    static List<AssetCategoryJs> GetAssetCategoriesFromGSheet() {
+    static List<AssetCategoryJs> GetAssetCategoriesFromGSheet()
+    {
         if (String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) || String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
             return new List<AssetCategoryJs>();
 

@@ -67,7 +67,8 @@ public partial class ExSvPushWs
     {
     }
 
-    public static void SendToClient(WebSocket p_webSocket, string p_message) {
+    public static void SendToClient(WebSocket p_webSocket, string p_message)
+    {
         byte[] encodedMsg = Encoding.UTF8.GetBytes(p_message);
         if (p_webSocket!.State == WebSocketState.Open)
             p_webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);

@@ -206,8 +206,8 @@ public class StrategyUberTaaController : ControllerBase
                 prevPosMtx[iRows, jCols + 1] = Math.Round(weightsFinal.Item3[iRows, jCols + 1] * 100.0, 2).ToString() + "%";
             }
             prevPosMtx[iRows, prevPosMtx.GetLength(1) - 1] = (weightsFinal.Item4[iRows] == "0") ? "---" : weightsFinal.Item4[iRows];
-            prevPosMtx[iRows, prevPosMtx.GetLength(1) - 3] = Math.Round(Math.Max((1.0 - assetWeightSum), 0) * 100.0, 2).ToString() + "%";
-            prevPosMtx[iRows, prevPosMtx.GetLength(1) - 2] = Math.Round((1.0 - assetWeightSum - Math.Max((1.0 - assetWeightSum), 0)) * 100.0, 2).ToString() + "%";
+            prevPosMtx[iRows, prevPosMtx.GetLength(1) - 3] = Math.Round(Math.Max(1.0 - assetWeightSum, 0) * 100.0, 2).ToString() + "%";
+            prevPosMtx[iRows, prevPosMtx.GetLength(1) - 2] = Math.Round((1.0 - assetWeightSum - Math.Max(1.0 - assetWeightSum, 0)) * 100.0, 2).ToString() + "%";
         }
         prevPosMtx[prevPosMtx.GetLength(0) - 1, 0] = string.Empty;
         for (int jCols = 0; jCols < prevPosMtx.GetLength(1) - 3; jCols++)
@@ -880,7 +880,6 @@ public class StrategyUberTaaController : ControllerBase
                 }
             }
             xluRSI[iRows] = 100 - 100 * (-losses / (-losses + gains));
-
         }
 
         double[] vtiRSI = new double[p_clmtData.GetLength(0) - 200];

@@ -46,12 +46,12 @@ public class BalazsTestController : ControllerBase
 
         string[] RandomStringDataToSend = new[] { "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching" };
         var rng = new Random();
-        return (new ExampleMessage[] { firstMsgToSend }.Concat(Enumerable.Range(1, 5).Select(index => new ExampleMessage
+        return new ExampleMessage[] { firstMsgToSend }.Concat(Enumerable.Range(1, 5).Select(index => new ExampleMessage
         {
             MsgType = "Msg-type",
             StringData = RandomStringDataToSend[rng.Next(RandomStringDataToSend.Length)],
             DateOrTime = DateTime.Now.AddDays(index),
             IntData = rng.Next(-20, 55)
-        }))).ToArray();
+        })).ToArray();
     }
 }

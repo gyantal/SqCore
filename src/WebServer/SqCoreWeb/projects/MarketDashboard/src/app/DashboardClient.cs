@@ -28,8 +28,10 @@ public partial class DashboardClient
     public WebSocket? WsWebSocket { get; set; } = null; // this pointer uniquely identifies the WebSocket as it is not released until websocket is dead
     public HttpContext? WsHttpContext { get; set; } = null;
 
-    public static readonly Dictionary<string, ActivePage> c_urlParam2ActivePage = new() {
-        { "mh", ActivePage.MarketHealth }, { "bav", ActivePage.BrAccViewer }, { "cs", ActivePage.CatalystSniffer }, { "qn", ActivePage.QuickfolioNews } };
+    public static readonly Dictionary<string, ActivePage> c_urlParam2ActivePage = new()
+    {
+        { "mh", ActivePage.MarketHealth }, { "bav", ActivePage.BrAccViewer }, { "cs", ActivePage.CatalystSniffer }, { "qn", ActivePage.QuickfolioNews }
+    };
     public static readonly HashSet<ActivePage> c_activePagesUsingRtPrices = new() { ActivePage.MarketHealth, ActivePage.BrAccViewer };
 
     internal static List<DashboardClient> g_clients = new(); // Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern

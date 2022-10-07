@@ -100,7 +100,8 @@ internal class SqFirewallMiddlewarePreAuthLogger
             var clientIP = WsUtils.GetRequestIPv6(httpContext);
             var clientUserEmail = WsUtils.GetRequestUser(httpContext);
 
-            var requestLog = new HttpRequestLog() {
+            var requestLog = new HttpRequestLog()
+            {
                 StartTime = DateTime.UtcNow,
                 IsHttps = httpContext.Request.IsHttps,
                 Method = httpContext.Request.Method,
@@ -112,7 +113,8 @@ internal class SqFirewallMiddlewarePreAuthLogger
                 StatusCode = statusCode,
                 TotalMilliseconds = sw.Elapsed.TotalMilliseconds,
                 IsError = exception != null || (level == Microsoft.Extensions.Logging.LogLevel.Error),
-                Exception = exception };
+                Exception = exception
+            };
             lock (Program.WebAppGlobals.HttpRequestLogs) // prepare for multiple threads
             {
                 Program.WebAppGlobals.HttpRequestLogs.Enqueue(requestLog);
@@ -185,7 +187,8 @@ internal class SqFirewallMiddlewarePreAuthLogger
 #endif
                 if (!fi.Name.EndsWith(".br")) // don't add Brotli files to the list.
                     p_whitelistExact.Add(p_relPath + fi.Name);
-            } else
+            }
+            else
             { // Folder
                 AddFileToListRecursive((DirectoryInfo)fi, p_relPath + fi.Name + "/", ref p_whitelistExact);
             }

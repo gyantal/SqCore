@@ -144,7 +144,8 @@ public class SqWebsocketMiddleware
                         // Then when we try to call webSocket.ReceiveAsync() in the next loop, it returns immediately with webSocket.State = CloseReceived, because in TS we called _socket.close()
                         result = await webSocket.ReceiveAsync(buffer, pingCancelToken.Token);  // client can send CloseStatus = NormalClosure for initiating close
                         ms.Write(buffer.Array!, buffer.Offset, result.Count);
-                    } while (!result.EndOfMessage);
+                    }
+                    while (!result.EndOfMessage);
 
                     ms.Seek(0, SeekOrigin.Begin);
                     using var reader = new StreamReader(ms, Encoding.UTF8);

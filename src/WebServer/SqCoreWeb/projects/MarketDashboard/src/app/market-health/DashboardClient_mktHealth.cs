@@ -10,7 +10,8 @@ using SqCommon;
 
 namespace SqCoreWeb;
 
-class HandshakeMktHealth { // Initial params
+class HandshakeMktHealth
+{ // Initial params
     public List<AssetJs> MarketSummaryAssets { get; set; } = new List<AssetJs>();
     public List<AssetJs> SelectableNavAssets { get; set; } = new List<AssetJs>();
 }

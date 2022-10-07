@@ -106,7 +106,8 @@ public partial class Program
             do
             {
                 userInput = DisplayMenuAndExecute().Result;  // we cannot 'await' it, because Main thread would terminate, which would close the whole Console app.
-            } while (userInput != "UserChosenExit" && userInput != "ConsoleIsForcedToShutDown");
+            }
+            while (userInput != "UserChosenExit" && userInput != "ConsoleIsForcedToShutDown");
         }
         catch (Exception e)
         {
@@ -181,7 +182,8 @@ public partial class Program
                 do
                 {
                     userInputSub = DisplaySubMenuAndExecute_DbAdmin();
-                } while (userInputSub != "UserChosenExit" && userInputSub != "ConsoleIsForcedToShutDown");
+                }
+                while (userInputSub != "UserChosenExit" && userInputSub != "ConsoleIsForcedToShutDown");
                 break;
             case "3":
                 Console.WriteLine(SqTaskScheduler.PrintNextScheduleTimes(false).ToString());

@@ -113,7 +113,8 @@ public class Startup
                 options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
                 options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
             })
-            .AddCookie(o => { // CookieAuth will be the default from the two, GoogleAuth is used only for Challenge
+            .AddCookie(o =>
+            { // CookieAuth will be the default from the two, GoogleAuth is used only for Challenge
                 o.LoginPath = "/UserAccount/login";
                 o.LogoutPath = "/UserAccount/logout";
 

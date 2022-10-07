@@ -6,7 +6,6 @@ namespace SqCoreWeb;
 
 public static class AspMiddlewareUtils
 {
-
     // https://stackoverflow.com/questions/50096995/make-asp-net-core-server-kestrel-case-sensitive-on-windows
     // ASP.NET Core apps running in Linux containers use a case sensitive file system, which means that the CSS and JS file references must be case-correct.
     // However, Windows file system is not case sensitive.
@@ -57,5 +56,4 @@ public static class AspMiddlewareUtils
 
         return Path.Combine(parent.GetExactFullName(), parent.GetFileSystemInfos(asDirectory.Name)[0].Name);
     }
-
 }

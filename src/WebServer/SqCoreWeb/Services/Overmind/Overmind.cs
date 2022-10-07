@@ -86,7 +86,8 @@ public class OvermindExecution : SqExecution
         {
             string errorMsg = $"Error. CheckHealthMonitorAlive() to {ServerIp.HealthMonitorPublicIp}:{ServerIp.DefaultHealthMonitorServerPort}";
             Utils.Logger.Error(errorMsg);
-        } else
+        }
+        else
             isHealthMonitorAlive = tcpMsgResponse.StartsWith("Ping. Healthmonitor UtcNow: ");
 
         if (!isHealthMonitorAlive)

@@ -90,7 +90,8 @@ public static partial class WsUtils
         // TODO: maybe we should get these emails data from Redis.sq_user , so when we introduce a new user we don't have to create them in 2 places: RedisDb, config.json
         if (g_authorizedGoogleUsers == null)
         {
-            g_authorizedGoogleUsers = new List<string>() {
+            g_authorizedGoogleUsers = new List<string>()
+            {
                 Utils.Configuration["Emails:Gyant"].ToLower(),
                 Utils.Configuration["Emails:Gyant2"].ToLower(),
                 Utils.Configuration["Emails:Laci"].ToLower(),

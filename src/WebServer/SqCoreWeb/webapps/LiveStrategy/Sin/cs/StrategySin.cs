@@ -89,7 +89,7 @@ public class StrategySinController : ControllerBase
         double[] nextPosValue = new double[allAssetList.Length + 1];
         for (int jCols = 0; jCols < nextPosValue.Length - 2; jCols++)
         {
-            nextPosValue[jCols] = (gSheetResToFinCalc.Item4[jCols]) ? currPV * taaWeightResultsTuple.Item2[taaWeightResultsTuple.Item2.GetLength(0) - 1, jCols] * leverage : 0;
+            nextPosValue[jCols] = gSheetResToFinCalc.Item4[jCols] ? currPV * taaWeightResultsTuple.Item2[taaWeightResultsTuple.Item2.GetLength(0) - 1, jCols] * leverage : 0;
         }
         nextPosValue[^2] = Math.Min(Math.Max(0, currPV - nextPosValue.Take(nextPosValue.Length - 2).ToArray().Sum() / leverage), currPV * maxBondPerc) * leverage;
         nextPosValue[^1] = currPV - nextPosValue.Take(nextPosValue.Length - 1).ToArray().Sum();
@@ -276,10 +276,10 @@ public class StrategySinController : ControllerBase
         {
             sb.Append(allAssetList[i] + ": ");
             var prices = quotesData[i];
-            string priceStr = String.Join('\t', (prices.Select(r => r.Date.ToString() + ", " + Math.Round(r.AdjClosePrice, 2).ToString())).Last() + "ß ");
+            string priceStr = String.Join('\t', prices.Select(r => r.Date.ToString() + ", " + Math.Round(r.AdjClosePrice, 2).ToString()).Last() + "ß ");
             sb.Append(priceStr);
         }
-        string priceTlt = string.Join('\t', "TLT:" + (cashEquivalentQuotesData.Select(r => r.Date.ToString() + ", " + Math.Round(r.AdjClosePrice, 2).ToString())).Last() + "ß ");
+        string priceTlt = string.Join('\t', "TLT:" + cashEquivalentQuotesData.Select(r => r.Date.ToString() + ", " + Math.Round(r.AdjClosePrice, 2).ToString()).Last() + "ß ");
         sb.Append(priceTlt);
 
         sb.Append(@"""," + Environment.NewLine + @"""assetNames"": """);
