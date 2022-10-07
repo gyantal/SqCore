@@ -419,8 +419,8 @@ function processingTables(json: any, selectedTickers: string[]) {
     monthlyVolTblParent[i].addEventListener('click', toggleVolDataYearsNMonths);
 
   // Generating teh Charts
-  const lookbackValue = 20;
-  const lookbackPeriod = retHistLBPeriodsNo.indexOf(lookbackValue);
+  const lookbackPeriod = 20;
+  const lookbackPeriodIdx = retHistLBPeriodsNo.indexOf(lookbackPeriod);
   const lengthSubSums: any[] = [];
   lengthSubSums[0] = 0;
   lengthSubSums[1] = retHistLBPeriodsNo[0];
@@ -430,7 +430,7 @@ function processingTables(json: any, selectedTickers: string[]) {
   const nCurrDataVD = dailyDatesArray.length;
   const noAssets = selectedTickers.length;
 
-  const assChartMtx: any[] = [];
+  const volDragChrtData: any[] = [];
   const tickersChecked = document.querySelectorAll('input[type=checkbox]:checked') as NodeListOf<Element>;
 
   for (let dayInd = 0; dayInd < nCurrDataVD; dayInd++) {
@@ -440,7 +440,7 @@ function processingTables(json: any, selectedTickers: string[]) {
       const tickerInd = assetNamesArray.indexOf(tickersChecked[i].id);
       dayDataArr.push(dailyVolDragsMtx[dayInd][tickerInd]);
     }
-    assChartMtx.push(dayDataArr);
+    volDragChrtData.push(dayDataArr);
   }
 
   const xLabel: string = 'Dates';
@@ -450,37 +450,37 @@ function processingTables(json: any, selectedTickers: string[]) {
   d3.selectAll('#volDragChrt > *').remove();
   const volDragChrt = getDocElementById('volDragChrt');
   const lineChrtTooltip = getDocElementById('tooltipChart');
-  sqLineChartGenerator(noAssets, nCurrDataVD, selectedTickers, assChartMtx, xLabel, yLabel, yScaleTickFormat, volDragChrt, lineChrtTooltip, isDrawCricles);
+  sqLineChartGenerator(noAssets, nCurrDataVD, selectedTickers, volDragChrtData, xLabel, yLabel, yScaleTickFormat, volDragChrt, lineChrtTooltip, isDrawCricles);
 
-  getDocElementById('idChartLength').innerHTML = '<strong>Percentage Changes of Prices in the Last &emsp;<select id="lookbackHistChrt"><option value="1">1 Day</option><option value="3">3 Days</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="20" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[lookbackPeriod] + '</strong >';
-  showPctChgChrt(lookbackPeriod, lookbackValue);
+  getDocElementById('idChartLength').innerHTML = '<strong>Percentage Changes of Prices in the Last &emsp;<select id="lookbackHistChrt"><option value="1">1 Day</option><option value="3">3 Days</option><option value="5">1 Week</option><option value="10">2 Weeks</option><option value="20" selected>1 Month</option><option value="63">3 Months</option><option value="126">6 Months</option><option value="252">1 Year</option>' + retHistLBPeriods[lookbackPeriodIdx] + '</strong >';
+  showPctChgChrt(lookbackPeriodIdx, lookbackPeriod);
 
   getDocElementById('lookbackHistChrt').onchange = function() {
-    const lookbackValue = parseInt((document.getElementById('lookbackHistChrt') as HTMLSelectElement).value);
-    const lookbackPeriod = retHistLBPeriodsNo.indexOf(lookbackValue);
-    showPctChgChrt(lookbackPeriod, lookbackValue);
+    const lookbackPeriod = parseInt((document.getElementById('lookbackHistChrt') as HTMLSelectElement).value);
+    const lookbackPeriodIdx = retHistLBPeriodsNo.indexOf(lookbackPeriod);
+    showPctChgChrt(lookbackPeriodIdx, lookbackPeriod);
   };
 
   // Declaring data sets to charts.
-  function showPctChgChrt(lookbackPeriod: number, lookbackValue: number) {
+  function showPctChgChrt(lookbackPeriodIdx: number, lookbackPeriod: number) {
     let chartStart: number;
-    lookbackPeriod == 0 ? chartStart = lengthSubSums[lookbackPeriod] + 1 : chartStart = lengthSubSums[lookbackPeriod];
+    lookbackPeriodIdx == 0 ? chartStart = lengthSubSums[lookbackPeriodIdx] + 1 : chartStart = lengthSubSums[lookbackPeriodIdx];
 
-    const nCurrData = lookbackValue + 1;
-    const lookbackChartMtx: any[] = [];
-    for (let dayInd = 0; dayInd < nCurrData; dayInd++) { // when '3 days' selected, we show 4 days (data points) on the chart
+    const nCurrData = lookbackPeriod + 1;
+    const pctChgChrtData: any[] = [];
+    for (let dayInd = 0; dayInd < nCurrData; dayInd++) {
       const date = dailyDatesArray[dailyDatesArray.length - nCurrData + dayInd];
       const dayDataArr = [date];
       for (let i = 0; i < tickersChecked.length; i++) {
         const tickerInd = assetNamesArray.indexOf(tickersChecked[i].id);
         dayInd == 0 ? dayDataArr.push(0) : dayDataArr.push((histRets2ChartsMtx[chartStart - 1 + dayInd][tickerInd])); // As the Day0 data (which is always 0%) is not in the received data from the server, insert 0%, 0%, ... 0% as the first item
       }
-      lookbackChartMtx.push(dayDataArr);
+      pctChgChrtData.push(dayDataArr);
     }
     d3.selectAll('#pctChgLookbackChrt > *').remove();
     const pctChgChrt = getDocElementById('pctChgLookbackChrt');
     const isDrawCricles1: boolean = true;
-    sqLineChartGenerator(noAssets, nCurrData, selectedTickers, lookbackChartMtx, xLabel, yLabel, yScaleTickFormat, pctChgChrt, lineChrtTooltip, isDrawCricles1);
+    sqLineChartGenerator(noAssets, nCurrData, selectedTickers, pctChgChrtData, xLabel, yLabel, yScaleTickFormat, pctChgChrt, lineChrtTooltip, isDrawCricles1);
   }
 }
 console.log('SqCore: Script END');

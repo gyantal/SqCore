@@ -124,7 +124,6 @@ public class SqWebsocketMiddleware
         Timer pingTimer = new(new TimerCallback(PingTimer_Elapsed), pingTimerData, TimeSpan.FromSeconds(10), TimeSpan.FromMilliseconds(-1.0));
         pingTimerData.PingTimer = pingTimer;
 
-
         ArraySegment<Byte> buffer = new(new Byte[8192]);
         string bufferStr = string.Empty;
         WebSocketReceiveResult? result = null;

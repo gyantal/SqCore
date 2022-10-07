@@ -11,7 +11,7 @@ using SqCommon;
 
 // RT QQQ/SPY or NAV price should be sent only once the Dashboard. And both MktHealth, BrAccInfo, CatalystSniffer should use it.
 // Don't send RT data 2 or 3x to separate tools (it would slow down both C# code and JS).
-// That is a big rework to unify MktHealth/BrAcc both on the server and client side. 	On the server side, there should be only 1 RT timer object.
+// That is a big rework to unify MktHealth/BrAcc both on the server and client side.    On the server side, there should be only 1 RT timer object.
 // That should collect RT requirement of All tools. (created DashboardClient_RtPrice.cs)
 // It should however prioritize. HighRtPriorityAssets list (QQQ,SPY,VXX) maybe sent in evere 5 seconds. MidPriority (GameChanger1): every 30 seconds.
 // LowPriority: everything else. (2 minutes or randomly 20 in every 1 minute. DC has 300 stocks, so those belong to that.)
@@ -56,7 +56,6 @@ public class AssetHistJs // duplicate that the AssetId is in both HistValues and
         public AssetHistValuesJs? HistValues { get; set; } = null;
         public AssetHistStatJs? HistStat { get; set; } = null;
 }
-
 
 // Don't integrate this to BrAccViewerAccount. By default we sent YTD. But client might ask for last 10 years.
 // But we don't want to send 10 years data and the today positions snapshot all the time together.
@@ -105,7 +104,6 @@ public partial class DashboardClient
     static readonly object m_rtDashboardTimerLock = new();
     static readonly int m_rtDashboardTimerFrequencyMs = 6 * 1000;    // similar to the m_highFreqParam in MemDb_RT.
 
-
     public void OnConnectedWsAsync_Rt()
     {
         // 2. Send RT price (after ClosePrices are sent to Tools)
@@ -131,7 +129,6 @@ public partial class DashboardClient
         if (WsWebSocket != null && WsWebSocket!.State == WebSocketState.Open)
             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    // takes 0.635ms
     }
-
 
     public static void RtDashboardTimer_Elapsed(object? state) // Timer is coming on a ThreadPool thread
     {
@@ -168,7 +165,6 @@ public partial class DashboardClient
             throw;
         }
     }
-
 
     private IEnumerable<AssetLastJs> GetHighPriorityRtStat()
     {

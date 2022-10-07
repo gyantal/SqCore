@@ -14,7 +14,6 @@ using SqCommon;
 
 namespace SqCoreWeb;
 
-
 class AssetCategoryJs
 {
     public string Tag { get; set; } = string.Empty;
@@ -30,7 +29,6 @@ class HandshakeBrAccViewer
     // Don't send ChartBenchmarkPossibleAssets at the beginning. By default, we don't want to compare with anything. Keep the connection fast. It is not needed usually.
     // However, there will be a text input for CSV values of tickers, like "SPY,QQQ". If user types that and click then server should answer and send the BenchMarkAsset
     // But it should not be in the intial Handshake.
-
 
     // public List<AssetJs> ChartBenchmarkPossibleAssets { get; set; } = new List<AssetJs>();
 }

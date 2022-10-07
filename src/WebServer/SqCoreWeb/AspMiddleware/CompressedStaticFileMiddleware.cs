@@ -224,7 +224,6 @@ public class CompressedStaticFileMiddleware
         }
         // logger = loggerFactory.CreateLogger<CompressedStaticFileMiddleware>();
 
-
         this._staticFileOptions = staticFileOptions ?? throw new ArgumentNullException(nameof(staticFileOptions));
         this.alternativeFileProviders = alternativeFileProviders;
         InitializeStaticFileOptions(hostingEnv, staticFileOptions);

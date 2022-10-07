@@ -79,7 +79,6 @@ public class Startup
                 });
         });
 
-
         services.AddCompressedStaticFiles();
 
         // https://docs.microsoft.com/en-us/aspnet/core/performance/response-compression

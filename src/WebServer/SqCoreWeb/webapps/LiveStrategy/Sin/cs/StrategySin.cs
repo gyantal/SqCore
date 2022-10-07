@@ -46,7 +46,6 @@ public class StrategySinController : ControllerBase
         // Collecting and splitting price data got from SQL Server
         (IList<List<DailyData>>, List<DailyData>) dataListTupleFromSQServer = GetSinStockHistData(allAssetList);
 
-
         IList<List<DailyData>> quotesData = dataListTupleFromSQServer.Item1;
         List<DailyData> cashEquivalentQuotesData = dataListTupleFromSQServer.Item2;
 
@@ -74,7 +73,6 @@ public class StrategySinController : ControllerBase
 
         double currPV;
         int[] currPosInt = new int[allAssetList.Length + 1];
-
 
         double[] currPosValue = new double[allAssetList.Length + 1];
         for (int jCols = 0; jCols < currPosValue.Length - 2; jCols++)
@@ -421,7 +419,6 @@ public class StrategySinController : ControllerBase
             int[] currPosAssets = Array.ConvertAll(currPosAssString, int.Parse);
             bool[] currAssInd = currAssIndString.Select(chr => chr == "1").ToArray();
             int[] prevPV = Array.ConvertAll(prevPVString, int.Parse);
-
 
             Tuple<int[], string[], int[], bool[], int[], double[]> gSheetResFinal = Tuple.Create(currPosDateCash, assNameString, currPosAssets, currAssInd, prevPV, levMaxBondPerc);
 

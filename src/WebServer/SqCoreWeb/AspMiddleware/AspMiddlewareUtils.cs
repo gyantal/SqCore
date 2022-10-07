@@ -43,7 +43,6 @@ public static class AspMiddlewareUtils
         };
     }
 
-
     public static string GetExactFullName(this FileSystemInfo p_fsi)
     {
         var path = p_fsi.FullName;

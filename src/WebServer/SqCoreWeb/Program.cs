@@ -24,7 +24,7 @@ public class WebAppGlobals : IWebAppGlobals
 {
     DateTime IWebAppGlobals.WebAppStartTime { get; set; } = DateTime.UtcNow;
     // KestrelEnv.ContentRootPath: "...\SqCore\src\WebServer\SqCoreWeb"
-    // KestrelEnv.WebRootPath: 	 "...\SqCore\src\WebServer\SqCoreWeb\wwwroot"
+    // KestrelEnv.WebRootPath:   "...\SqCore\src\WebServer\SqCoreWeb\wwwroot"
     IWebHostEnvironment? IWebAppGlobals.KestrelEnv { get; set; }
     Queue<HttpRequestLog> IWebAppGlobals.HttpRequestLogs { get; set; } = new Queue<HttpRequestLog>();
 }
@@ -55,7 +55,6 @@ public partial class Program
             Utils.Logger.Info($"**g_nHeartbeat: {gNheartbeat} (at every {cHeartbeatTimerFrequencyMinutes} minutes)");
             gNheartbeat++;
         }, null, TimeSpan.FromMinutes(0.5), TimeSpan.FromMinutes(cHeartbeatTimerFrequencyMinutes));
-
 
         string sensitiveConfigFullPath = Utils.SensitiveConfigFolderPath() + $"SqCore.WebServer.{appName}.NoGitHub.json";
         string systemEnvStr2 = $"Current working directory of the app: '{Directory.GetCurrentDirectory()}',{Environment.NewLine}SensitiveConfigFullPath: '{sensitiveConfigFullPath}'";

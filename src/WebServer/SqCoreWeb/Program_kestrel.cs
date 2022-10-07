@@ -48,11 +48,9 @@ public static void KestrelWebServer_Stop()
     gKestrelCancelTs.Cancel();
 }
 
-
 public static void KestrelWebServer_Exit()
 {
 }
-
 
 public static IHostBuilder CreateHostBuilder(string[] args) =>
     Host.CreateDefaultBuilder(args)

@@ -13,23 +13,21 @@ using YahooFinanceApi;
 // WARNING !!!! THIS SERVICE DOESN'T ADJUST FOR DIVIDENDS (ONLY FOR SPLITS) , BECAUSE YF DATA DOESN'T ADJUST FOR DIVIDEND.
 // *********************************************************************************************************************
 
-
-
 // 1. Example to use it.
 // https://www.snifferquant.net/YahooFinanceForwarder?yffOutFormat=json&yffColumns=dc1&jsonp=JsonpCallbackFunc&yffUri=query1.finance.yahoo.com/v7/finance/download/%5EVIX&period1=1990-01-02&period2=UtcNow&interval=1d&events=history
 
 // 2. YF has non-adjusted data, dividend is not adjusted at all, splits are adjusted, but weirdly
 // 2.1 dividend is not adjusted at all
 // https://finance.yahoo.com/quote/AAPL/history?p=AAPL
-// "May 11, 2017	152.45	154.07	152.31	153.95	153.95	27,255,100
-// May 11, 2017	0.63 Dividend"
+// "May 11, 2017    152.45  154.07  152.31  153.95  153.95  27,255,100
+// May 11, 2017 0.63 Dividend"
 // https://www.snifferquant.net/YahooFinanceForwarder?yffOutFormat=json&jsonp=JsonpCallbackFunc&yffUri=query1.finance.yahoo.com/v7/finance/download/AAPL&period1=2017-02-02&period2=2017-05-22&interval=1d&events=history
 // 2.2 VXX 4:1 spilts are adjusted, but weirdo
 // based on VXX 2016-08-09 1:4 split: Open/High/Low is adjusted, Close is not adjusted, AdjClose is adjusted again.
 // https://www.snifferquant.net/YahooFinanceForwarder?yffOutFormat=json&jsonp=JsonpCallbackFunc&yffUri=query1.finance.yahoo.com/v7/finance/download/VXX&period1=2016-08-01&period2=2017-05-22&interval=1d&events=history
 // Date         Open        High        Low         Close       Adj Close   Volume
-// 08/08/2016	37.599998	37.799999	37.200001	9.3	        37.200001	46298800
-// 09/08/2016	36.709999	37.200001	35.880001	36.560001	36.560001	13481100
+// 08/08/2016   37.599998   37.799999   37.200001   9.3         37.200001   46298800
+// 09/08/2016   36.709999   37.200001   35.880001   36.560001   36.560001   13481100
 // 2.3 Luckily, yffColumns=dc1 which is c1=adjustedClose, it works well, because it uses the last column = AdjClose, which is adjusted.
 // https://www.snifferquant.net/YahooFinanceForwarder?yffOutFormat=json&yffColumns=dc1&jsonp=JsonpCallbackFunc&yffUri=query1.finance.yahoo.com/v7/finance/download/VXX&period1=2016-08-01&period2=2017-05-22&interval=1d&events=history
 
@@ -44,7 +42,6 @@ using YahooFinanceApi;
 // és ehhez nem kell se crumbs, se cookie a tapasztalatom szerint, és mint mondtam sok benne az adathiba.
 // Majd valamikor megnézem hogy a query1.finance.yahoo.com/v7/-es API jobb adatokat ad-e mint a query2.finance.yahoo.com/v8/-as,
 // de ez egy hosszabb nekigyűrkőzést igénylő munka/vizsgálódás."
-
 
 namespace SqCoreWeb.Controllers;
 
@@ -107,7 +104,6 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
                 yffColumnsList = new List<string>() { "d", "o", "h", "l", "c", "c1", "v" };
             }
 
-
             string? jsonpCallback = null, outputVariable = null;
             if (isOutputJson)
             {
@@ -138,7 +134,6 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
                 if (indSlash != -1)
                     ticker = targetUriWithoutHttp[(indSlash + 1)..];
             }
-
 
             // 2. Obtain Token.Cookie and Crumb (maybe from cache until 12 hours) that is needed for Y!F API from 2017-05
             // after 2017-05: https://query1.finance.yahoo.com/v7/finance/download/VXX?period1=1492941064&period2=1495533064&interval=1d&events=history&crumb=VBSMphmA5gp
@@ -191,7 +186,6 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
 
             var history = await Yahoo.GetHistoricalAsync(ticker, startTime, endTime, period);
 
-
             // 4.1 Process YF CSV file either as JSON or as CSV: Header
             StringBuilder responseStrBldr = new();
             bool wasDataLineWritten = false;        // real data line, not header line
@@ -219,7 +213,7 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
                 else
                     cells[0] = String.Format(@"{0}-{1}-{2}", candle!.DateTime.Year, candle!.DateTime.Month, candle!.DateTime.Day);
 
-                // Prices in the given CSV as "15.830000" is pointless. Convert it to "15.8" if possible, 		"16.059999"	should be converted too
+                // Prices in the given CSV as "15.830000" is pointless. Convert it to "15.8" if possible,       "16.059999" should be converted too
                 cells[1] = candle!.Open.ToString("0.###");
                 cells[2] = candle!.High.ToString("0.###");
                 cells[3] = candle!.Low.ToString("0.###");
@@ -229,7 +223,6 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
 
                 WriteRow(isOutputJson, yffColumnsList, cells, responseStrBldr, ref wasDataLineWritten);
             }
-
 
             // // 4.2 Process YF CSV file either as JSON or as CSV: Data lines
             // // First is the header, so skip it. Previously, it was upside down, so the latest was the first, but from 2017-05, the oldest is the first. Fine. Leave it like that.
@@ -252,7 +245,7 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
             //     else
             //         cells[0] = String.Format(@"{0}-{1}-{2}", date.Year, date.Month, date.Day);
 
-            // // Prices in the given CSV as "15.830000" is pointless. Convert it to "15.8" if possible, 		"16.059999"	should be converted too
+            // // Prices in the given CSV as "15.830000" is pointless. Convert it to "15.8" if possible,        "16.059999" should be converted too
             //     for (int j = 1; j < 6; j++)
             //     {
             //         if (Double.TryParse(cells[j], out double price))

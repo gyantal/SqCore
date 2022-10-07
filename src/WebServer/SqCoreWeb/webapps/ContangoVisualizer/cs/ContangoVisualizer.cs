@@ -123,7 +123,6 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         string[] monthsNumList = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
         int monthsNum = Array.IndexOf(monthsNumList, liveFuturesNextExp) + 1;
 
-
         // DateTime liveDateTime;
         DateTime timeNowETVIX = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
         int dayOfWeekVIX;
@@ -629,7 +628,6 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         {
             currDataPercCh[iRow] = (prevData[iRow] == 0) ? 0 : (currData[iRow] / prevData[iRow] - 1);
         }
-
 
         // Creating input string for JavaScript.
         StringBuilder sb = new("{" + Environment.NewLine);

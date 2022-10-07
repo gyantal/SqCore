@@ -103,7 +103,6 @@ public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
         return Content(sb.Append(scheduleTimesSb).Append("</body></HTML>").ToString(), "text/html");
     }
 
-
     [HttpGet]
     public ActionResult HttpRequestHeader()
     {

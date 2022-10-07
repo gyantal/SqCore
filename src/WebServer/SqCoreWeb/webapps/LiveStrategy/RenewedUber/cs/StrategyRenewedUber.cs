@@ -102,7 +102,6 @@ public class StrategyRenewedUberController : ControllerBase
         }
         double usedMDate = (usedDateVec[0] - new DateTime(1900, 1, 1)).TotalDays + 693962;
 
-
         Tuple<DateTime[], double[], Tuple<double[], double[], double[], double[], double[], double>> STCId = STCIdata(usedDateVec);
         Tuple<double[], double[], double[], double[], double[], double> vixCont = STCId.Item3;
         double[] currDataVix = vixCont.Item1;
@@ -117,7 +116,6 @@ public class StrategyRenewedUberController : ControllerBase
         {
             spotVixValueDb[iRows] = VIXQuotes[VIXQuotes.Count - iRows - 1].AdjClosePrice;
         }
-
 
         double[] vixLeverage = new double[STCId.Item1.Length];
         for (int iRows = 0; iRows < vixLeverage.Length; iRows++)
@@ -144,7 +142,6 @@ public class StrategyRenewedUberController : ControllerBase
             pastDataResIndexVec[iRows] = Array.FindIndex(gSheetResToFinCalc.Item2, item => item >= STCId.Item1[iRows]);
         }
 
-
         int[] nextDataResIndexVec = new int[15];
         // nextDataResIndexVec[0] = pastDataResIndexVec[0] + 1; // exclude tomorrow from the nextEvents table
         // nextDataResIndexVec[0] = pastDataResIndexVec[0];    // include tomorrow in the nextEvents table
@@ -165,7 +162,6 @@ public class StrategyRenewedUberController : ControllerBase
         {
             nextDateVec[iRows] = gSheetResToFinCalc.Item2[nextDataResIndexVec[iRows] + 1];
         }
-
 
         int[] eventFinalSignal = new int[pastDataResIndexVec.Length];
         for (int iRows = 0; iRows < eventFinalSignal.Length; iRows++)
@@ -234,7 +230,6 @@ public class StrategyRenewedUberController : ControllerBase
             }
         }
 
-
         int currEventSignal = eventFinalSignal[0];
         int currEventCodeOriginal = eventCode[0];
         int currEventCode = 0;
@@ -250,7 +245,6 @@ public class StrategyRenewedUberController : ControllerBase
         {
             currEventCode = 8;
         }
-
 
         int[] prevEventCodeMod = new int[usedDateVec.Length];
         for (int iRows = 0; iRows < prevEventCodeMod.Length; iRows++)
@@ -458,7 +452,6 @@ public class StrategyRenewedUberController : ControllerBase
             posIntDiff[jCols] = nextPosInt[jCols] - currPosInt[jCols];
         }
 
-
         // Previous event and color arrays
         string[] prevEventNames = new string[pastDataResIndexVec.Length];
         string[] prevEventColors = new string[pastDataResIndexVec.Length];
@@ -505,7 +498,6 @@ public class StrategyRenewedUberController : ControllerBase
             }
         }
 
-
         string[,] pastDataMtxToJS = new string[usedDateVec.Length, 16];
         for (int iRows = 0; iRows < pastDataMtxToJS.GetLength(0); iRows++)
         {
@@ -536,7 +528,6 @@ public class StrategyRenewedUberController : ControllerBase
             nextDataMtxToJS[iRows, 11] = Math.Round(nextEventFinalWeightedSignal[iRows] * 100, 2).ToString() + "%";
         }
 
-
         // AssetPrice Changes in last 20 days to chart
         int assetChartLength = 20;
         string[,] assetChangesMtx = new string[assetChartLength + 1, allAssetList.Length + 1];
@@ -548,8 +539,6 @@ public class StrategyRenewedUberController : ControllerBase
                 assetChangesMtx[iRows, jCols + 1] = Math.Round((quotesData[jCols][quotesData[jCols].Count - 1 - assetChartLength + iRows].AdjClosePrice / quotesData[jCols][quotesData[jCols].Count - 1 - assetChartLength].AdjClosePrice - 1) * 100.0, 2).ToString() + "%";
             }
         }
-
-
 
         // Creating input string for JavaScript.
         StringBuilder sb = new("{" + Environment.NewLine);
@@ -571,8 +560,6 @@ public class StrategyRenewedUberController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""currentSTCI"": """ + Math.Round(currSTCI * 100, 2).ToString() + "%");
         sb.Append(@"""," + Environment.NewLine + @"""currentVIX"": """ + Math.Round(spotVixValueDb[0], 2).ToString());
         sb.Append(@"""," + Environment.NewLine + @"""currentFinalWeightMultiplier"": """ + Math.Abs(Math.Round(currFinalWeightMultiplier * 100, 2)).ToString() + "%");
-
-
 
         sb.Append(@"""," + Environment.NewLine + @"""assetNames"": """);
         for (int i = 0; i < allAssetList.Length - 1; i++)
@@ -664,7 +651,6 @@ public class StrategyRenewedUberController : ControllerBase
 
         sb.Append(@"""," + Environment.NewLine + @"""chartLength"": """ + assetChartLength);
 
-
         sb.Append(@"""," + Environment.NewLine + @"""assetChangesToChartMtx"": """);
         for (int i = 0; i < assetChangesMtx.GetLength(0); i++)
         {
@@ -742,7 +728,6 @@ public class StrategyRenewedUberController : ControllerBase
         int[] currPosDateCash = new int[] { currPosDate, currPosCash };
         int[] currPosAssets = Array.ConvertAll(currPosAP, int.Parse);
 
-
         p_gSheetString = p_gSheetString.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",,", ",0,").Replace(",,", ",0,");
         gSheetTableRows = p_gSheetString.Split(new string[] { "[" }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -791,7 +776,6 @@ public class StrategyRenewedUberController : ControllerBase
         {
             gSheetEventCodes[iRows] = Int32.Parse(gSheetCodes[iRows, gSheetCodes.GetLength(1) - 1]);
         }
-
 
         Tuple<double[], DateTime[], string[,], int[], int[], int[], string[]> gSheetResFinal = Tuple.Create(gSheetDateVec, gSheetRealDateVec, gSheetCodesAssets, gSheetEventCodes, currPosDateCash, currPosAssets, gSheetEventFinalSignal);
 
@@ -904,7 +888,6 @@ public class StrategyRenewedUberController : ControllerBase
         string[] monthsNumList = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
         int monthsNum = Array.IndexOf(monthsNumList, liveFuturesNextExp) + 1;
 
-
         DateTime liveDateTime;
         string liveDate = System.String.Empty;
         liveDateTime = p_usedDateVec[0];
@@ -938,8 +921,6 @@ public class StrategyRenewedUberController : ControllerBase
         vixCentralRec[1].STCont = vixCentralRec[1].F2 / vixCentralRec[1].F1 - 1;
         vixCentralRec[1].LTCont = vixCentralRec[1].F7 / vixCentralRec[1].F4 - 1;
 
-
-
         // string[] firstTableCells = tableRows[2].Split(new string[] { "<td>", "</td>" }, StringSplitOptions.RemoveEmptyEntries);
         // DateTime histStartDay;
         // string histStartDate = System.String.Empty;
@@ -950,7 +931,6 @@ public class StrategyRenewedUberController : ControllerBase
         // //Sorting historical data.
         // int nRec = (isExtraDay) ? nHistoricalRec + 1 : nHistoricalRec;
         // VixCentralRec[] vixCentralRec = new VixCentralRec[nRec - 2];
-
 
         // for (int iRows = 2; iRows < tableRows.Length - 2; iRows++)
         // {

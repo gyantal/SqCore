@@ -14,7 +14,6 @@ public partial class Program
         BrAccChecker.gBrAccChecker.Init();
     }
 
-
     public static void Services_Exit()
     {
         BrAccChecker.gBrAccChecker.Exit();

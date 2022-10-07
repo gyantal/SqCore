@@ -191,7 +191,6 @@ public class StrategyUberTaaController : ControllerBase
             spxMASignal = "bearish";
         }
 
-
         // Position weights in the last 20 days
         string[,] prevPosMtx = new string[weightsFinal.Item3.GetLength(0) + 1, usedAssetList.Length + 3];
         for (int iRows = 0; iRows < prevPosMtx.GetLength(0) - 1; iRows++)
@@ -300,7 +299,6 @@ public class StrategyUberTaaController : ControllerBase
             }
         }
 
-
         // Events in the next 10 days
         string[,] futPosMtx = new string[weightsFinal.Item2.GetLength(0) + 1, usedAssetList.Length + 1];
         string[,] futAssEventCodes = new string[weightsFinal.Item2.GetLength(0) + 1, usedAssetList.Length + 1];
@@ -384,7 +382,6 @@ public class StrategyUberTaaController : ControllerBase
         futPosMtx[0, futPosMtx.GetLength(1) - 1] = "Event";
         futAssEventCodes[0, futPosMtx.GetLength(1) - 1] = "66CCFF";
 
-
         // AssetPrice Changes in last 20 days to chart
         int assetChartLength = 20;
         string[,] assetChangesMtx = new string[assetChartLength + 1, usedAssetList.Length];
@@ -426,7 +423,6 @@ public class StrategyUberTaaController : ControllerBase
             xluVtiToChartMtx[iRows, 1] = Math.Round(clmtRes[1][clmtRes[1].GetLength(0) - assetChartLength - 1 + iRows], 0).ToString();
             xluVtiToChartMtx[iRows, 2] = Math.Round(clmtRes[2][clmtRes[2].GetLength(0) - assetChartLength - 1 + iRows], 0).ToString();
         }
-
 
         // Creating input string for JavaScript.
         StringBuilder sb = new("{" + Environment.NewLine);
@@ -514,7 +510,6 @@ public class StrategyUberTaaController : ControllerBase
                 sb.Append("ß ");
             }
         }
-
 
         sb.Append(@"""," + Environment.NewLine + @"""futPositionsMtx"": """);
         for (int i = 0; i < futPosMtx.GetLength(0); i++)
@@ -607,7 +602,6 @@ public class StrategyUberTaaController : ControllerBase
                 sb.Append("ß ");
             }
         }
-
 
         sb.AppendLine(@"""" + Environment.NewLine + @"}");
 
@@ -864,7 +858,6 @@ public class StrategyUberTaaController : ControllerBase
                 p_clmtData[iRows, jCols + 1] = p_quotesForClmtData[jCols][iRows].AdjClosePrice;
             }
         }
-
 
         double[] xluRSI = new double[p_clmtData.GetLength(0) - 200];
         for (int iRows = 0; iRows < xluRSI.Length; iRows++)

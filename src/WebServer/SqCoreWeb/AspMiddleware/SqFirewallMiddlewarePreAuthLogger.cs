@@ -27,7 +27,6 @@ public class HttpRequestLog
     public Exception? Exception;
 }
 
-
 // we can call it SqFirewallMiddleware because it is used as a firewall too, not only logging request
 internal class SqFirewallMiddlewarePreAuthLogger
 {
@@ -264,7 +263,6 @@ internal class SqFirewallMiddlewarePreAuthLogger
         Console.WriteLine(msg);
         gLogger.Error(msg);    // all the details (IP, Path) go the the Error output, because if the Info level messages are ignored by the Logger totally, this will inform the user. We need all the info in the Error Log. Even though, if Info and Error levels both logged, it results duplicates
     }
-
 
     public static bool IsSendableToHealthMonitorForEmailing(Exception p_exception)
     {

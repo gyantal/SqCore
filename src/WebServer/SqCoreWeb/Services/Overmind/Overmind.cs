@@ -50,7 +50,6 @@ public class Overmind
     }
 }
 
-
 public class OvermindExecution : SqExecution
 {
     public static SqExecution ExecutionFactoryCreate()
@@ -99,7 +98,6 @@ public class OvermindExecution : SqExecution
                 IsBodyHtml = false
             }.SendAsync().RunInSameThreadButReturnAtFirstAwaitAndLogError();
     }
-
 
     static async void MorningCheck()
     {

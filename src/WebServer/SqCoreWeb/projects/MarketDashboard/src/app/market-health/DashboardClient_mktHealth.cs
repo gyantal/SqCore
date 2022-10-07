@@ -15,7 +15,6 @@ class HandshakeMktHealth { // Initial params
     public List<AssetJs> SelectableNavAssets { get; set; } = new List<AssetJs>();
 }
 
-
 // The knowledge 'WHEN to send what' should be programmed on the server. When server senses that there is an update, then it broadcast to clients.
 // Do not implement the 'intelligence' of WHEN to change data on the client. It can be too complicated, like knowing if there was a holiday, a half-trading day, etc.
 // Clients should be slim programmed. They should only care, that IF they receive a new data, then Refresh.
@@ -23,7 +22,6 @@ public partial class DashboardClient
 {
     public static readonly TimeSpan c_initialSleepIfNotActiveToolMh = TimeSpan.FromMilliseconds(5000);
     string m_lastLookbackPeriodStrMh = "YTD";
-
 
     // try to convert to use these fields. At least on the server side.
     // If we store asset pointers (Stock, Nav) if the MemDb reloads, we should reload these pointers from the new MemDb. That adds extra code complexity.
@@ -38,7 +36,6 @@ public partial class DashboardClient
     //     // have to refresh Asset pointers in memory, such as m_marketSummaryAssets, m_mkthSelectedNavAsset
     //     // have to resend the HandShake message Asset Id to SqTicker associations. Have to resend everything.
     // }
-
 
     void EvMemDbHistoricalDataReloaded_MktHealth()
     {
