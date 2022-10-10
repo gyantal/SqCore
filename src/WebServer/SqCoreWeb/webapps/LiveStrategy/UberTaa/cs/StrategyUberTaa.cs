@@ -620,7 +620,7 @@ public class StrategyUberTaaController : ControllerBase
         return valuesFromGSheetStr;
     }
 
-    public static Tuple< double[], int[,], int[], int[], string[], int[], int[]> GSheetConverter(string? p_gSheetString, string[] p_allAssetList)
+    public static Tuple<double[], int[,], int[], int[], string[], int[], int[]> GSheetConverter(string? p_gSheetString, string[] p_allAssetList)
     {
         if (p_gSheetString != null)
         {
@@ -683,13 +683,13 @@ public class StrategyUberTaaController : ControllerBase
             {
                 gSheetEventNames[iRows] = gSheetCodes[iRows, gSheetCodes.GetLength(1) - 2];
             }
-            Tuple< double[], int[,], int[], int[], string[], int[], int[]> gSheetResFinal = Tuple.Create(gSheetDateVec, gSheetCodesAssets, gSheetEventCodes, gSheetEventMultipl, gSheetEventNames, currPosDateCash, currPosAssets);
+            Tuple<double[], int[,], int[], int[], string[], int[], int[]> gSheetResFinal = Tuple.Create(gSheetDateVec, gSheetCodesAssets, gSheetEventCodes, gSheetEventMultipl, gSheetEventNames, currPosDateCash, currPosAssets);
 
             return gSheetResFinal;
         }
         throw new NotImplementedException();
     }
-    public static (IList<List<DailyData>>, List<List<DailyData>>, List<DailyData>) GetStockHistData(string[] p_allAssetList)
+    public static (IList<List<DailyData>> QuotesData, List<List<DailyData>> QuotesForClmtData, List<DailyData> CashEquivalentQuotesData) GetStockHistData(string[] p_allAssetList)
     {
         List<Asset> assets = new();
         for (int i = 0; i < p_allAssetList.Length; i++)
@@ -711,11 +711,11 @@ public class StrategyUberTaaController : ControllerBase
         // DateTime startIncLoc = nowET.AddDays(-408); // This can reproduce the old SqLab implementation with 33 days rolling simulation window
         DateTime startIncLoc = nowET.AddDays(-490);    // This uses a 6-months, 120 trading days rolling simulation window for PctChannels
 
-        List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc, true).ToList();
+        List<(Asset Asset, List<AssetHistValue> Values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc, true).ToList();
         List<List<DailyData>> quotesData = new();
         for (int i = 3; i < assetHistsAndEst.Count - 1; i++)
         {
-            var vals = assetHistsAndEst[i].values;
+            var vals = assetHistsAndEst[i].Values;
             List<DailyData> uberValsData = new();
             for (int j = 0; j < vals.Count; j++)
             {
@@ -727,7 +727,7 @@ public class StrategyUberTaaController : ControllerBase
         List<List<DailyData>> quotesForClmtData = new();
         for (int i = 0; i < 3; i++)
         {
-            var vals = assetHistsAndEst[i].values;
+            var vals = assetHistsAndEst[i].Values;
             List<DailyData> clmtData = new();
             for (int j = 0; j < vals.Count; j++)
             {
@@ -737,7 +737,7 @@ public class StrategyUberTaaController : ControllerBase
         }
         // last ticker is TLT, which is used as a cash substitute. Special role.
         List<DailyData> cashEquivalentQuotesData = new();
-        var cashVals = assetHistsAndEst[^1].values;
+        var cashVals = assetHistsAndEst[^1].Values;
         for (int j = 0; j < cashVals.Count; j++)
             cashEquivalentQuotesData.Add(new DailyData() { Date = cashVals[j].Date, AdjClosePrice = cashVals[j].SdaValue });
 

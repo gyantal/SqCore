@@ -27,8 +27,7 @@ public class DashboardWs
         var email = userEmailClaim?.Value ?? "unknown@gmail.com";
 
         string? activeToolAtConnectionInit = context!.Request.Query["t"];   // if "t" is not found, the empty StringValues casted to string as null
-        if (activeToolAtConnectionInit == null)
-            activeToolAtConnectionInit = "mh";
+        activeToolAtConnectionInit ??= "mh";
         if (!DashboardClient.c_urlParam2ActivePage.TryGetValue(activeToolAtConnectionInit, out ActivePage activePage))
             activePage = ActivePage.Unknown;
 

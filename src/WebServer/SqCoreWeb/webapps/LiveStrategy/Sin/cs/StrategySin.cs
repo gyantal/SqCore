@@ -441,7 +441,7 @@ public class StrategySinController : ControllerBase
         return valuesFromGSheetStr;
     }
 
-    public static (List<List<DailyData>>, List<DailyData>) GetSinStockHistData(string[] p_allAssetList)
+    public static (List<List<DailyData>> SinTickersData, List<DailyData> CashSubstituteData) GetSinStockHistData(string[] p_allAssetList)
     {
         List<Asset> assets = new();
         for (int i = 0; i < p_allAssetList.Length; i++)
@@ -461,11 +461,11 @@ public class StrategySinController : ControllerBase
         // DateTime startIncLoc = nowET.AddDays(-408); // This can reproduce the old SqLab implementation with 33 days rolling simulation window
         DateTime startIncLoc = nowET.AddDays(-550);    // This uses a 6-months, 120 trading days rolling simulation window for PctChannels
 
-        List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc, true).ToList();
+        List<(Asset Asset, List<AssetHistValue> Values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc, true).ToList();
         List<List<DailyData>> sinTickersData = new();
         for (int i = 0; i < assetHistsAndEst.Count - 1; i++)
         {
-            var vals = assetHistsAndEst[i].values;
+            var vals = assetHistsAndEst[i].Values;
             List<DailyData> sinValsData = new();
             for (int j = 0; j < vals.Count; j++)
             {
@@ -476,7 +476,7 @@ public class StrategySinController : ControllerBase
 
         // last ticker is TLT, which is used as a cash substitute. Special role.
         List<DailyData> cashSubstituteData = new();
-        var cashVals = assetHistsAndEst[^1].values;
+        var cashVals = assetHistsAndEst[^1].Values;
         for (int j = 0; j < cashVals.Count; j++)
             cashSubstituteData.Add(new DailyData() { Date = cashVals[j].Date, AdjClosePrice = cashVals[j].SdaValue });
 

@@ -95,8 +95,7 @@ public partial class DashboardClient
         if (!String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) && !String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
         {
             valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync("https://sheets.googleapis.com/v4/spreadsheets/1c5ER22sXDEVzW3uKthclpArlZvYuZd6xUffXhs6rRsM/values/A1%3AA1?key=" + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
-            if (valuesFromGSheetStr == null)
-                valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
+            valuesFromGSheetStr ??= "Error in DownloadStringWithRetry().";
         }
         if (!valuesFromGSheetStr.StartsWith("Error"))
         {

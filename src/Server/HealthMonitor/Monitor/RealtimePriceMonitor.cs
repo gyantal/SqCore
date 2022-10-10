@@ -65,8 +65,7 @@ public partial class HealthMonitor
                 }
             }
 
-            if (isRtpsReplyOk == null)
-                isRtpsReplyOk = IsRtpsReplyOk(rtpsReply);
+            isRtpsReplyOk ??= IsRtpsReplyOk(rtpsReply);
 
             m_rtpsLastDownloads.Enqueue(new Tuple<DateTime, bool>(DateTime.UtcNow, ((bool)isRtpsReplyOk)));
             while (m_rtpsLastDownloads.Count > 2 * 24 * 6)     // to avoid increasing memory forever, trim the records after 2 days

@@ -474,8 +474,7 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
 
     private KeyList GetKeyListHelper()
     {
-        if (keyList == null)
-            keyList = new KeyList(this);
+        keyList ??= new KeyList(this);
         return keyList;
     }
 

@@ -456,7 +456,7 @@ public partial class DashboardClient
         }
     }
 
-    static (SqDateOnly lookbackStart, SqDateOnly lookbackEndExcl, string braccSelectedBnchmkSqTicker) ExtractHistDataParams(string p_msg, int startIdx) // msg: "Bnchmrk:SPY,Date:2021-01-02...2021-12-12"
+    static (SqDateOnly LookbackStart, SqDateOnly LookbackEndExcl, string BraccSelectedBnchmkSqTicker) ExtractHistDataParams(string p_msg, int startIdx) // msg: "Bnchmrk:SPY,Date:2021-01-02...2021-12-12"
     {
         int bnchmkStartIdx = p_msg.IndexOf(":", startIdx);
         int periodStartIdx = (bnchmkStartIdx == -1) ? -1 : p_msg.IndexOf(",", bnchmkStartIdx);

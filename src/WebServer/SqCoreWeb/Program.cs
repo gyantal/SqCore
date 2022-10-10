@@ -142,7 +142,7 @@ public partial class Program
     }
 
     static bool gIsMenuFirstCall = true;
-    static public async Task<string> DisplayMenuAndExecute()
+    public static async Task<string> DisplayMenuAndExecute()
     {
         if (!gIsMenuFirstCall)
             Console.WriteLine();
@@ -209,7 +209,7 @@ public partial class Program
         return string.Empty;
     }
 
-    static public string DisplaySubMenuAndExecute_DbAdmin()
+    public static string DisplaySubMenuAndExecute_DbAdmin()
     {
         ColorConsole.WriteLine(ConsoleColor.Magenta, "---- DbAdmin !!!  ----");
         Console.WriteLine("1. RedisDb: Ping");

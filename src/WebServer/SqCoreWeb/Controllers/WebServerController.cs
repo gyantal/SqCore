@@ -188,8 +188,7 @@ public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
 
             // gSheet is public: https://docs.google.com/spreadsheets/d/1onwqrdxQIIUJytd_PMbdFKUXnBx3YSRYok0EmJF8ppM
             valuesFromGSheetStr = Utils.DownloadStringWithRetryAsync("https://sheets.googleapis.com/v4/spreadsheets/1onwqrdxQIIUJytd_PMbdFKUXnBx3YSRYok0EmJF8ppM/values/A1%3AA3?key=" + Utils.Configuration["Google:GoogleApiKeyKey"]).TurnAsyncToSyncTask();
-            if (valuesFromGSheetStr == null)
-                valuesFromGSheetStr = "Error in DownloadStringWithRetry().";
+            valuesFromGSheetStr ??= "Error in DownloadStringWithRetry().";
         }
 
         Utils.Logger.Info("TestGoogleApiGsheet1() END");

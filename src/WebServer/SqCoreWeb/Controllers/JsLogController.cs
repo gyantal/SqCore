@@ -46,8 +46,7 @@ public class JsLogController : Microsoft.AspNetCore.Mvc.Controller
         // 1. just log the event to our file log
         var clientIP = WsUtils.GetRequestIPv6(this.HttpContext);
         var clientUserEmail = WsUtils.GetRequestUser(this.HttpContext);
-        if (clientUserEmail == null)
-            clientUserEmail = "UnknownUser@gmail.com";
+        clientUserEmail ??= "UnknownUser@gmail.com";
 
         string jsLogMsgWithOrigin = $"Javascript Logger /JsLogController was called by '{clientUserEmail}' from '{clientIP}'. Received JS log: '{jsLogMessage}'";
         Utils.Logger.Info(jsLogMsgWithOrigin);

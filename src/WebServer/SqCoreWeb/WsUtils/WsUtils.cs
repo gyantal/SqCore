@@ -88,9 +88,7 @@ public static partial class WsUtils
     public static bool IsAuthorizedGoogleUsers(string p_email)
     {
         // TODO: maybe we should get these emails data from Redis.sq_user , so when we introduce a new user we don't have to create them in 2 places: RedisDb, config.json
-        if (g_authorizedGoogleUsers == null)
-        {
-            g_authorizedGoogleUsers = new List<string>()
+        g_authorizedGoogleUsers ??= new List<string>()
             {
                 Utils.Configuration["Emails:Gyant"].ToLower(),
                 Utils.Configuration["Emails:Gyant2"].ToLower(),
@@ -110,7 +108,6 @@ public static partial class WsUtils
                 Utils.Configuration["Emails:Daya1"].ToLower(),
                 Utils.Configuration["Emails:Kamal1"].ToLower(),
             };
-        }
         bool isUserOK = g_authorizedGoogleUsers.Contains(p_email.ToLower());
         return isUserOK;
     }

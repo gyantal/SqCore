@@ -79,10 +79,10 @@ public class VolatilityDragVisualizerController : ControllerBase
         List<List<DailyData>> volatilityTickersData = new();
         // List<DailyData> VIXDailyquotes = new();
 
-        List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc, true).ToList();
+        List<(Asset Asset, List<AssetHistValue> Values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc, true).ToList();
         for (int i = 0; i < assetHistsAndEst.Count; i++)
         {
-            var vals = assetHistsAndEst[i].values;
+            var vals = assetHistsAndEst[i].Values;
             List<DailyData> uberValsData = new();
             for (int j = 0; j < vals.Count; j++)
             {
@@ -369,11 +369,13 @@ public class VolatilityDragVisualizerController : ControllerBase
             int numEl = 0;
             double subSum = 0;
             for (int iRows = 0; iRows < noBtDays; iRows++)
+            {
                 if (assVolDrags[jAssets][iRows] > 0)
                 {
                     subSum += assVolDrags[jAssets][iRows];
                     numEl += 1;
                 }
+            }
 
             volDragsAvgsTotal[jAssets] = subSum / numEl;
         }

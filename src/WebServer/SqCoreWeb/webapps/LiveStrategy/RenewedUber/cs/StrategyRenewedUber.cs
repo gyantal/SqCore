@@ -783,7 +783,7 @@ public class StrategyRenewedUberController : ControllerBase
     }
     throw new NotImplementedException();
     }
-    public static (IList<List<DailyData>>, List<DailyData>) GetUberStockHistData(string[] p_allAssetList) // { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" }
+    public static (IList<List<DailyData>> UberTickersData, List<DailyData> VIXDailyquotes) GetUberStockHistData(string[] p_allAssetList) // { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" }
     {
         List<Asset> assets = new();
         for (int i = 0; i < p_allAssetList.Length; i++)
@@ -799,12 +799,12 @@ public class StrategyRenewedUberController : ControllerBase
         DateTime startIncLoc = nowET.AddDays(-50);
 
         List<List<DailyData>> uberTickersData = new();
-        List<DailyData> VIXDailyquotes = new();
+        List<DailyData> vixDailyquotes = new();
 
-        List<(Asset asset, List<AssetHistValue> values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc, true).ToList();
+        List<(Asset Asset, List<AssetHistValue> Values)> assetHistsAndEst = MemDb.gMemDb.GetSdaHistClosesAndLastEstValue(assets, startIncLoc, true).ToList();
         for (int i = 0; i < assetHistsAndEst.Count - 1; i++)
         {
-            var vals = assetHistsAndEst[i].values;
+            var vals = assetHistsAndEst[i].Values;
             List<DailyData> uberValsData = new();
             for (int j = 0; j < vals.Count; j++)
             {
@@ -814,11 +814,11 @@ public class StrategyRenewedUberController : ControllerBase
         }
 
         // last ticker is ^VIX which is used as a cash substitute. Special rola.
-        var cashVals = assetHistsAndEst[^1].values;
+        var cashVals = assetHistsAndEst[^1].Values;
         for (int j = 0; j < cashVals.Count; j++)
-            VIXDailyquotes.Add(new DailyData() { Date = cashVals[j].Date, AdjClosePrice = cashVals[j].SdaValue });
+            vixDailyquotes.Add(new DailyData() { Date = cashVals[j].Date, AdjClosePrice = cashVals[j].SdaValue });
 
-        return (uberTickersData, VIXDailyquotes);
+        return (uberTickersData, vixDailyquotes);
     }
 
     public Tuple<DateTime[], double[], Tuple<double[], double[], double[], double[], double[], double>> STCIdata(DateTime[] p_usedDateVec)
@@ -827,8 +827,7 @@ public class StrategyRenewedUberController : ControllerBase
 
         // Downloading historical data from vixcentral.com.
         string? webpageAjax = Utils.DownloadStringWithRetryAsync("http://vixcentral.com/ajax_update", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
-        if (webpageAjax == null)
-            webpageAjax = "Error in DownloadStringWithRetry().";
+        webpageAjax ??= "Error in DownloadStringWithRetry().";
 
         string[] resuRows = webpageAjax.Split(new string[] { "[", "]" }, StringSplitOptions.RemoveEmptyEntries);
         string[] liveFuturesPrices = resuRows[4].Split(new string[] { "," }, StringSplitOptions.RemoveEmptyEntries);
@@ -839,13 +838,11 @@ public class StrategyRenewedUberController : ControllerBase
 
         // Downloading historical data from vixcentral.com.
         string? webpageHist = Utils.DownloadStringWithRetryAsync("http://vixcentral.com/historical/?days=100", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
-        if (webpageHist == null)
-            webpageHist = "Error in DownloadStringWithRetry().";
+        webpageHist ??= "Error in DownloadStringWithRetry().";
 
         // Downloading live data from vixcentral.com.
         string? webpageLive = Utils.DownloadStringWithRetryAsync("http://vixcentral.com", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
-        if (webpageLive == null)
-            webpageLive = "Error in DownloadStringWithRetry().";
+        webpageLive ??= "Error in DownloadStringWithRetry().";
 
         // Selecting data from live data string.
         string[] tableRows = webpageHist.Split(new string[] { "<tr>", "</tr>" }, StringSplitOptions.RemoveEmptyEntries);
