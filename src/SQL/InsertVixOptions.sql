@@ -7,7 +7,7 @@ SELECT * FROM [dbo].[Option] WHERE UnderlyingSubTableID = 2 AND UnderlyingAssetT
 
 >2. Insert new options.
 DECLARE @NewExpirationDate AS VARCHAR(100)
-SELECT @NewExpirationDate = '2022-06-15' -- IB shows last trading day (Tuesday), we have to put here ExpiratinDate = Wednesday. Increase IB's date by 1
+SELECT @NewExpirationDate = '2022-06-15' -- IB shows last trading day (Tuesday), we have to put here ExpirationDate = Wednesday. Increase IB's date by 1
 
 INSERT INTO [dbo].[Option] ([UnderlyingAssetType],[UnderlyingSubTableID],[Flags],[ExpirationDate],[StrikePrice],[StockExchangeID],[CurrencyID])
 VALUES(8,2
