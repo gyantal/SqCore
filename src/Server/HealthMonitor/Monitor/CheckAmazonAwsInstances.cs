@@ -157,8 +157,7 @@ public partial class HealthMonitor
                 else
                 {
                     using XmlReader reader = XmlReader.Create(new StringReader(awsInstancesXml));
-                    XmlWriterSettings ws = new();
-                    ws.Indent = true;
+                    XmlWriterSettings ws = new() { Indent = true };
 
                     string instanceName = string.Empty, instanceState = string.Empty, instancePublicIp = string.Empty;
                     while (reader.Read())

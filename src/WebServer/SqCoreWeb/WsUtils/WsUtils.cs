@@ -8,7 +8,7 @@ using SqCommon;
 
 namespace SqCoreWeb;
 
-public enum UserAuthCheckResult { UserKnownAuthOK, UserKnownAuthNotEnugh, UserUnknown };
+public enum UserAuthCheckResult { UserKnownAuthOK, UserKnownAuthNotEnugh, UserUnknown }
 
 public static partial class WsUtils
 {

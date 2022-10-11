@@ -16,8 +16,7 @@ namespace SqCoreWeb.Controllers;
 [ResponseCache(CacheProfileName = "NoCache")]
 public class StrategyUberTaaController : ControllerBase
 {
-    enum Universe : byte { GameChangers = 1, GlobalAssets = 2 };
-
+    enum Universe : byte { GameChangers = 1, GlobalAssets = 2 }
     public class DailyData
     {
         public DateTime Date { get; set; }
@@ -862,8 +861,8 @@ public class StrategyUberTaaController : ControllerBase
         double[] xluRSI = new double[p_clmtData.GetLength(0) - 200];
         for (int iRows = 0; iRows < xluRSI.Length; iRows++)
         {
-            double losses = new();
-            double gains = new();
+            double losses = 0.0;
+            double gains = 0.0;
             int lossNum = 0;
             int gainNum = 0;
             for (int kRows = 0; kRows < 20; kRows++)
@@ -885,8 +884,8 @@ public class StrategyUberTaaController : ControllerBase
         double[] vtiRSI = new double[p_clmtData.GetLength(0) - 200];
         for (int iRows = 0; iRows < vtiRSI.Length; iRows++)
         {
-            double losses = new();
-            double gains = new();
+            double losses = 0.0;
+            double gains = 0.0;
             for (int kRows = 0; kRows < 20; kRows++)
             {
                 if (p_clmtData[iRows + kRows + 181, 3] - p_clmtData[iRows + kRows + 180, 3] >= 0)
@@ -912,7 +911,7 @@ public class StrategyUberTaaController : ControllerBase
         for (int iRows = 0; iRows < spxMA50.Length; iRows++)
         {
             spxPrice[iRows] = p_clmtData[iRows + 200, 1];
-            double sumsSPX50 = new();
+            double sumsSPX50 = 0.0;
 
             for (int kRows = 0; kRows < 50; kRows++)
             {
@@ -924,7 +923,7 @@ public class StrategyUberTaaController : ControllerBase
         double[] spxMA200 = new double[p_clmtData.GetLength(0) - 200];
         for (int iRows = 0; iRows < spxMA200.Length; iRows++)
         {
-            double sumsSPX200 = new();
+            double sumsSPX200 = 0.0;
 
             for (int kRows = 0; kRows < 200; kRows++)
             {

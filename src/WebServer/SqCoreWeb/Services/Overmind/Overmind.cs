@@ -91,6 +91,7 @@ public class OvermindExecution : SqExecution
             isHealthMonitorAlive = tcpMsgResponse.StartsWith("Ping. Healthmonitor UtcNow: ");
 
         if (!isHealthMonitorAlive)
+        {
             new Email
             {
                 ToAddresses = Utils.Configuration["Emails:Gyant"],
@@ -98,6 +99,7 @@ public class OvermindExecution : SqExecution
                 Body = $"SqCore Warning! : HealthMonitor is NOT Alive.",
                 IsBodyHtml = false
             }.SendAsync().RunInSameThreadButReturnAtFirstAwaitAndLogError();
+        }
     }
 
     static async void MorningCheck()

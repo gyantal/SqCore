@@ -23,9 +23,9 @@ namespace SqCoreWeb;
 public interface IFileAlternative
 {
     long Size { get; }
-    /// <summary>
-    /// Used to give some files a higher priority
-    /// </summary>
+    // <summary>
+    // Used to give some files a higher priority
+    // </summary>
     float Cost { get; }
     void Apply(HttpContext context);
     void Prepare(IContentTypeProvider contentTypeProvider, StaticFileResponseContext staticFileResponseContext);
@@ -96,8 +96,7 @@ public class CompressedAlternativeFile : IFileAlternative
             {
                 // we need to restore the original content type, otherwise it would be based on the compression type
                 // (for example "application/brotli" instead of "text/html")
-                if (contentTypeProvider.TryGetContentType(staticFileResponseContext.File.PhysicalPath.Remove(
-                    staticFileResponseContext.File.PhysicalPath.Length - fileExtension.Length, fileExtension.Length), out var contentType))
+                if (contentTypeProvider.TryGetContentType(staticFileResponseContext.File.PhysicalPath.Remove(staticFileResponseContext.File.PhysicalPath.Length - fileExtension.Length, fileExtension.Length), out string? contentType))
                     staticFileResponseContext.Context.Response.ContentType = contentType;
                 staticFileResponseContext.Context.Response.Headers.Add("Content-Encoding", new[] { compressionType });
             }
@@ -172,9 +171,7 @@ public class CompressedStaticFileOptions
     public bool EnablePrecompressedFiles { get; set; } = true;
     public bool EnableImageSubstitution { get; set; } = true;
 
-    /// <summary>
-    /// Used to prioritize image formats that contain higher quality per byte, if only size should be considered remove all entries.
-    /// </summary>
+    // Used to prioritize image formats that contain higher quality per byte, if only size should be considered remove all entries.
     public Dictionary<string, float> ImageSubstitutionCostRatio { get; set; } = new Dictionary<string, float>()
         {
             { "image/bmp", 2 },

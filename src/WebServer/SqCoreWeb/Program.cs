@@ -31,12 +31,12 @@ public class WebAppGlobals : IWebAppGlobals
 
 public partial class Program
 {
+    const int cHeartbeatTimerFrequencyMinutes = 10;
     public static IWebAppGlobals WebAppGlobals { get; set; } = new WebAppGlobals();
     private static readonly NLog.Logger gLogger = NLog.LogManager.GetLogger("Program");   // the name of the logger will be not the "Namespace.Class", but whatever you prefer: "Program"
 
     static Timer? gHeartbeatTimer = null; // If timer object goes out of scope and gets erased by Garbage Collector after some time, which stops callbacks from firing. Save reference to it in a member of class.
     static long gNheartbeat = 0;
-    const int cHeartbeatTimerFrequencyMinutes = 10;
 
     public static void Main(string[] args) // entry point Main cannot be flagged as async, because at first await, Main thread would go back to Threadpool, but that terminates the Console app
     {
@@ -50,11 +50,12 @@ public partial class Program
         if (!OperatingSystem.IsLinux()) // https://stackoverflow.com/questions/47059468/get-or-set-the-console-title-in-linux-and-macosx-with-net-core
             Console.Title = $"{appName} v1.0.15"; // "SqCoreWeb v1.0.15"
 
-        gHeartbeatTimer = new System.Threading.Timer((e) => // Heartbeat log is useful to find out when VM was shut down, or when the App crashed
-        {
-            Utils.Logger.Info($"**g_nHeartbeat: {gNheartbeat} (at every {cHeartbeatTimerFrequencyMinutes} minutes)");
-            gNheartbeat++;
-        }, null, TimeSpan.FromMinutes(0.5), TimeSpan.FromMinutes(cHeartbeatTimerFrequencyMinutes));
+        gHeartbeatTimer = new System.Threading.Timer(
+            (e) => // Heartbeat log is useful to find out when VM was shut down, or when the App crashed
+            {
+                Utils.Logger.Info($"**g_nHeartbeat: {gNheartbeat} (at every {cHeartbeatTimerFrequencyMinutes} minutes)");
+                gNheartbeat++;
+            }, null, TimeSpan.FromMinutes(0.5), TimeSpan.FromMinutes(cHeartbeatTimerFrequencyMinutes));
 
         string sensitiveConfigFullPath = Utils.SensitiveConfigFolderPath() + $"SqCore.WebServer.{appName}.NoGitHub.json";
         string systemEnvStr2 = $"Current working directory of the app: '{Directory.GetCurrentDirectory()}',{Environment.NewLine}SensitiveConfigFullPath: '{sensitiveConfigFullPath}'";

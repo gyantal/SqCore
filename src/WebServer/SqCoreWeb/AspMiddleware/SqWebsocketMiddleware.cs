@@ -162,6 +162,7 @@ public class SqWebsocketMiddleware
                         if (bufferStr.StartsWith("Pong:"))
                             pingTimerData.LastPongReceived = DateTime.UtcNow;
                         else
+                        {
                             switch (p_requestRemainigPath)
                             {
                                 // Run any long process (1+ sec) in separate than the WebSocket-processing thread. Otherwise any later message the client sends is queued
@@ -182,6 +183,7 @@ public class SqWebsocketMiddleware
                                 default:
                                     throw new Exception($"Unexpected websocket connection '{p_requestRemainigPath}' in WebSocketLoopKeptAlive()");
                             }
+                        }
                     }
                     catch (System.Exception e)
                     {

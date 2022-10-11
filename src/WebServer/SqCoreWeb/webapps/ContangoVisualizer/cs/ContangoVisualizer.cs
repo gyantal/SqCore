@@ -153,7 +153,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         vixCentralRec[0].F5 = Double.Parse(liveFuturesPrices[4]);
         vixCentralRec[0].F6 = Double.Parse(liveFuturesPrices[5]);
         vixCentralRec[0].F7 = Double.Parse(liveFuturesPrices[6]);
-        vixCentralRec[0].F8 = (lengthLiveFuturesPrices == 8 ) ? Double.Parse(liveFuturesPrices[7]) : 0;
+        vixCentralRec[0].F8 = (lengthLiveFuturesPrices == 8) ? Double.Parse(liveFuturesPrices[7]) : 0;
         vixCentralRec[0].STCont = vixCentralRec[0].F2 / vixCentralRec[0].F1 - 1;
         vixCentralRec[0].LTCont = vixCentralRec[0].F7 / vixCentralRec[0].F4 - 1;
 
@@ -478,7 +478,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         int lengthLiveFuturesPrices = liveFuturesPrices.Length;
         string[] prevFuturesPrices = prevFuturesDataVec;
 
-        double spotVixValue = 0;/*Double.Parse(spotVixPrices[0]);*/
+        double spotVixValue = 0; /*Double.Parse(spotVixPrices[0]);*/
 
         for (int iRows = 0; iRows < 8; iRows++)
         {
@@ -659,7 +659,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
 
         sb.Append(@"""," + Environment.NewLine + @"""currDataDiffVec"": """);
         for (int i = 0; i < currDataDiff.Length - 1; i++)
-            sb.Append( $"{Math.Round(currDataDiff[i], 4)}, ");
+            sb.Append($"{Math.Round(currDataDiff[i], 4)}, ");
         sb.Append(Math.Round(currDataDiff[^1], 4));
 
         sb.Append(@"""," + Environment.NewLine + @"""currDataPercChVec"": """);

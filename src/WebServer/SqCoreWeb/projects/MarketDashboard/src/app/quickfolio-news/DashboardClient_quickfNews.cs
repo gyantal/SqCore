@@ -37,9 +37,9 @@ public partial class DashboardClient
     // one global static quickfolio News Timer serves all clients. For efficiency.
     static readonly Timer m_qckflNewsTimer = new(new TimerCallback(QckflNewsTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
     static readonly object m_qckflNewsTimerLock = new();
-    static bool isQckflNewsTimerRunning = false;
     static readonly int m_qckflNewsTimerFrequencyMs = 15 * 60 * 1000; // timer for 15 minutes
     static readonly TimeSpan c_initialSleepIfNotActiveToolQn = TimeSpan.FromMilliseconds(10 * 1000); // 10sec
+    static bool isQckflNewsTimerRunning = false;
     static List<NewsItem> g_commonNews = new();
     static List<NewsItem> g_stockNews = new();
     // string[] m_stockTickers = { "AAPL", "ADBE", "AMZN", "BABA", "CRM", "FB", "GOOGL", "MA", "MSFT", "NVDA", "PYPL", "QCOM", "V" };
@@ -137,15 +137,17 @@ public partial class DashboardClient
             List<NewsItem> foundNews = new();
             foreach (SyndicationItem item in feed.Items)
             {
-                NewsItem newsItem = new();
-                newsItem.Ticker = p_ticker;
-                newsItem.LinkUrl = item.Links[0].Uri.AbsoluteUri;
-                newsItem.Title = WebUtility.HtmlDecode(item.Title.Text);
-                newsItem.Summary = WebUtility.HtmlDecode(item.Summary?.Text ?? string.Empty); // <description> is missing sometimes, so Summary = null
-                newsItem.PublishDate = item.PublishDate.LocalDateTime;
-                newsItem.DownloadTime = DateTime.UtcNow;
-                newsItem.Source = p_newsSource.ToString();
-                newsItem.DisplayText = string.Empty;
+                NewsItem newsItem = new()
+                {
+                    Ticker = p_ticker,
+                    LinkUrl = item.Links[0].Uri.AbsoluteUri,
+                    Title = WebUtility.HtmlDecode(item.Title.Text),
+                    Summary = WebUtility.HtmlDecode(item.Summary?.Text ?? string.Empty), // <description> is missing sometimes, so Summary = null
+                    PublishDate = item.PublishDate.LocalDateTime,
+                    DownloadTime = DateTime.UtcNow,
+                    Source = p_newsSource.ToString(),
+                    DisplayText = string.Empty
+                };
                 // newsItem.setFiltered();
                 // we might filter news and bring Laszlo's bool SkipNewsItem(string p_title) here. Later. Not now.
                 foundNews.Add(newsItem);

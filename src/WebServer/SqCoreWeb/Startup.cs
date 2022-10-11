@@ -56,7 +56,8 @@ public class Startup
             // VaryByQueryKeys: For the middleware to serve a cached response, the query string and query string value must match a previous request. "
 
             // These CashProfiles are given only once here, and if they change, we only have to change here, not in all Controllers.
-            options.CacheProfiles.Add("NoCache",
+            options.CacheProfiles.Add(
+                "NoCache",
                 new CacheProfile()
                 {
                     Duration = 0,
@@ -64,13 +65,15 @@ public class Startup
                     NoStore = true
                 });
             // by default, without VaryByQueryKeys, the querystring is not used by the browser's Cache Policy, only the URL. The queryString https://sqcore.net/ContangoVisualizerData?commo=1 returned from cache the last received https://sqcore.net/ContangoVisualizerData?commo=3
-            options.CacheProfiles.Add("DefaultShortDuration",
+            options.CacheProfiles.Add(
+                "DefaultShortDuration",
                 new CacheProfile()
                 {
                     Duration = 60 * 1,   // 1 min for real-time price data
                     VaryByQueryKeys = new string[] { "*" } // a specific query string key or * can be used if all query string keys should be matched
                 });
-            options.CacheProfiles.Add("DefaultMidDuration",
+            options.CacheProfiles.Add(
+                "DefaultMidDuration",
                 new CacheProfile()
                 {
                     // Duration = (int)TimeSpan.FromHours(12).TotalSeconds
@@ -277,8 +280,7 @@ public class Startup
         // app.UseDefaultFiles();      // "UseDefaultFiles is a URL rewriter (default.htm, default.html, index.htm, index.html whichever first, 4 file queries to find the file) that doesn't actually serve the file. "
         app.UseRewriter(new RewriteOptions()
         .AddRewrite(@"^$", "index.html", skipRemainingRules: true) // empty string converted to index.html. Only 1 query to find the index.html file. Better than UseDefaultFiles()
-        .AddRewrite(@"^(.*)/$", "$1/index.html", skipRemainingRules: true) // converts "/" to "/index.html", e.g. .AddRewrite(@"^HealthMonitor/$", @"HealthMonitor/index.html" and all Angular projects.
-        );
+        .AddRewrite(@"^(.*)/$", "$1/index.html", skipRemainingRules: true)); // converts "/" to "/index.html", e.g. .AddRewrite(@"^HealthMonitor/$", @"HealthMonitor/index.html" and all Angular projects.
 
         app.UseMiddleware<SqFirewallMiddlewarePreAuthLogger>();
 

@@ -100,9 +100,9 @@ public partial class DashboardClient
 {
     // one global static real-time price Timer serves all clients. For efficiency.
     static readonly Timer m_rtDashboardTimer = new(new TimerCallback(RtDashboardTimer_Elapsed), null, TimeSpan.FromMilliseconds(-1.0), TimeSpan.FromMilliseconds(-1.0));
-    static bool m_rtDashboardTimerRunning = false;
     static readonly object m_rtDashboardTimerLock = new();
     static readonly int m_rtDashboardTimerFrequencyMs = 6 * 1000;    // similar to the m_highFreqParam in MemDb_RT.
+    static bool m_rtDashboardTimerRunning = false;
 
     public void OnConnectedWsAsync_Rt()
     {

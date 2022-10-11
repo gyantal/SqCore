@@ -259,8 +259,7 @@ public class VolatilityDragVisualizerController : ControllerBase
 
         for (int iAsset = 0; iAsset < noAssets; iAsset++)
         {
-            List<double> assSubList = new();
-            assSubList.Add(0);
+            List<double> assSubList = new() { 0 };
             for (int jRows = 1; jRows < noBtDays; jRows++)
             {
                 assSubList.Add(quotesPrices[iAsset][jRows] / quotesPrices[iAsset][jRows - 1] - 1);

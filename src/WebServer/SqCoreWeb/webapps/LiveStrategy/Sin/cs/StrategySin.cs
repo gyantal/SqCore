@@ -563,7 +563,7 @@ public class StrategySinController : ControllerBase
         double[] lastDayScores = new double[nAssets];
         for (int iAsset = 0; iAsset < nAssets; iAsset++)
         {
-            lastDayScores[iAsset] = dailyAssetScores[dailyAssetScores.GetLength(0) - 1, iAsset]; ;
+            lastDayScores[iAsset] = dailyAssetScores[dailyAssetScores.GetLength(0) - 1, iAsset];
         }
 
         IEnumerable<DateTime> taaWeightDateVec = p_taaWeightsData[0].GetRange(p_taaWeightsData[0].Count - nDaysSimulated, nDaysSimulated).Select(r => r.Date);

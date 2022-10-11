@@ -79,7 +79,7 @@ public class StrategyRenewedUberController : ControllerBase
         (IList<List<DailyData>>, List<DailyData>) quotesDataAll = GetUberStockHistData(allAssetListVIX);
 
         IList<List<DailyData>>? quotesData = quotesDataAll.Item1;
-        List<DailyData>? VIXQuotes = quotesDataAll.Item2;
+        List<DailyData>? vixQuotes = quotesDataAll.Item2;
 
         // Get, split and convert GSheet data
 
@@ -102,8 +102,8 @@ public class StrategyRenewedUberController : ControllerBase
         }
         double usedMDate = (usedDateVec[0] - new DateTime(1900, 1, 1)).TotalDays + 693962;
 
-        Tuple<DateTime[], double[], Tuple<double[], double[], double[], double[], double[], double>> STCId = STCIdata(usedDateVec);
-        Tuple<double[], double[], double[], double[], double[], double> vixCont = STCId.Item3;
+        Tuple<DateTime[], double[], Tuple<double[], double[], double[], double[], double[], double>> stciData = STCIdata(usedDateVec);
+        Tuple<double[], double[], double[], double[], double[], double> vixCont = stciData.Item3;
         double[] currDataVix = vixCont.Item1;
         double[] currDataDaysVix = vixCont.Item2;
         double[] prevDataVix = vixCont.Item3;
@@ -111,13 +111,13 @@ public class StrategyRenewedUberController : ControllerBase
         double[] currDataPercChVix = vixCont.Item5;
         double spotVixValue = vixCont.Item6;
 
-        double[] spotVixValueDb = new double[STCId.Item1.Length];
+        double[] spotVixValueDb = new double[stciData.Item1.Length];
         for (int iRows = 0; iRows < spotVixValueDb.Length; iRows++)
         {
-            spotVixValueDb[iRows] = VIXQuotes[VIXQuotes.Count - iRows - 1].AdjClosePrice;
+            spotVixValueDb[iRows] = vixQuotes[vixQuotes.Count - iRows - 1].AdjClosePrice;
         }
 
-        double[] vixLeverage = new double[STCId.Item1.Length];
+        double[] vixLeverage = new double[stciData.Item1.Length];
         for (int iRows = 0; iRows < vixLeverage.Length; iRows++)
         {
             // 2022-06-20: Rework in UberRenewed strategy. We reduced the PV, and simultaneously we drop the VIX deleverage. We always trade 100% leverage, no matter the VIX level.
@@ -136,10 +136,10 @@ public class StrategyRenewedUberController : ControllerBase
             // }
         }
 
-        int[] pastDataResIndexVec = new int[STCId.Item1.Length];
+        int[] pastDataResIndexVec = new int[stciData.Item1.Length];
         for (int iRows = 0; iRows < pastDataResIndexVec.Length; iRows++)
         {
-            pastDataResIndexVec[iRows] = Array.FindIndex(gSheetResToFinCalc.Item2, item => item >= STCId.Item1[iRows]);
+            pastDataResIndexVec[iRows] = Array.FindIndex(gSheetResToFinCalc.Item2, item => item >= stciData.Item1[iRows]);
         }
 
         int[] nextDataResIndexVec = new int[15];
@@ -204,19 +204,19 @@ public class StrategyRenewedUberController : ControllerBase
         int[] eventCodeFinal = new int[pastDataResIndexVec.Length];
         for (int iRows = 0; iRows < finalWeightMultiplier.Length; iRows++)
         {
-            if ((eventCode[iRows] <= 4 && eventCode[iRows] > 0) || (eventCode[iRows] == 5 && STCId.Item2[iRows] >= stciThresholds[0]) || (eventCode[iRows] == 6 && STCId.Item2[iRows] <= stciThresholds[1]))
+            if ((eventCode[iRows] <= 4 && eventCode[iRows] > 0) || (eventCode[iRows] == 5 && stciData.Item2[iRows] >= stciThresholds[0]) || (eventCode[iRows] == 6 && stciData.Item2[iRows] <= stciThresholds[1]))
             {
                 finalWeightMultiplier[iRows] = eventFinalWeightedSignal[iRows];
                 finalWeightMultiplierVIX[iRows] = finalWeightMultiplier[iRows] * vixLeverage[iRows];
                 eventCodeFinal[iRows] = eventCode[iRows];
             }
-            else if (eventCode[iRows] == 0 && STCId.Item2[iRows] >= stciThresholds[2])
+            else if (eventCode[iRows] == 0 && stciData.Item2[iRows] >= stciThresholds[2])
             {
                 finalWeightMultiplier[iRows] = eventMultiplicator[0];
                 finalWeightMultiplierVIX[iRows] = finalWeightMultiplier[iRows] * vixLeverage[iRows];
                 eventCodeFinal[iRows] = 7;
             }
-            else if ((eventCode[iRows] == 5 && STCId.Item2[iRows] < stciThresholds[0]) || (eventCode[iRows] == 6 && STCId.Item2[iRows] > stciThresholds[1]))
+            else if ((eventCode[iRows] == 5 && stciData.Item2[iRows] < stciThresholds[0]) || (eventCode[iRows] == 6 && stciData.Item2[iRows] > stciThresholds[1]))
             {
                 finalWeightMultiplier[iRows] = 0;
                 finalWeightMultiplierVIX[iRows] = finalWeightMultiplier[iRows] * vixLeverage[iRows];
@@ -237,7 +237,7 @@ public class StrategyRenewedUberController : ControllerBase
         {
             currEventCode = eventCode[0];
         }
-        else if (STCId.Item2[0] >= stciThresholds[2])
+        else if (stciData.Item2[0] >= stciThresholds[2])
         {
             currEventCode = 7;
         }
@@ -253,7 +253,7 @@ public class StrategyRenewedUberController : ControllerBase
             {
                 prevEventCodeMod[iRows] = eventCode[iRows];
             }
-            else if (STCId.Item2[iRows] >= stciThresholds[2])
+            else if (stciData.Item2[iRows] >= stciThresholds[2])
             {
                 prevEventCodeMod[iRows] = 7;
             }
@@ -333,7 +333,7 @@ public class StrategyRenewedUberController : ControllerBase
         }
 
         double currWeightedSignal = eventFinalWeightedSignal[0];
-        double currSTCI = STCId.Item2[0];
+        double currSTCI = stciData.Item2[0];
         double currFinalWeightMultiplier = finalWeightMultiplierVIX[0];
 
         string currEventName = string.Empty;
@@ -509,7 +509,7 @@ public class StrategyRenewedUberController : ControllerBase
             pastDataMtxToJS[iRows, 9] = prevEventNamesMod[iRows];
             pastDataMtxToJS[iRows, 10] = eventFinalSignal[iRows].ToString();
             pastDataMtxToJS[iRows, 11] = Math.Round(eventFinalWeightedSignal[iRows] * 100, 2).ToString() + "%";
-            pastDataMtxToJS[iRows, 12] = Math.Round(STCId.Item2[iRows] * 100, 2).ToString() + "%";
+            pastDataMtxToJS[iRows, 12] = Math.Round(stciData.Item2[iRows] * 100, 2).ToString() + "%";
             pastDataMtxToJS[iRows, 13] = Math.Round(spotVixValueDb[iRows], 2).ToString();
             pastDataMtxToJS[iRows, 14] = prevEventNames[iRows];
             pastDataMtxToJS[iRows, 15] = Math.Round(finalWeightMultiplierVIX[iRows] * 100, 2).ToString() + "%";
