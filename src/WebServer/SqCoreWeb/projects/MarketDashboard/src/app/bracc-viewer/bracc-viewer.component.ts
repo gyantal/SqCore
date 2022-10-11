@@ -295,7 +295,7 @@ export class BrAccViewerComponent implements OnInit {
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
-      case 'BrAccViewer.BrAccSnapshot': // this is the most frequent message after LstVal (realtime price), but that is handled in a unified way. This should come first.
+      case 'BrAccViewer.BrAccSnapshot': // The most frequent message should come first. Note: LstVal (realtime price) is handled earlier in a unified way.
         gDiag.wsBrAccVwOnLastSnapshot = new Date();
         if (gDiag.wsBrAccVwSnapshotReceiveReason == 'NavSelectChange')
           gDiag.wsBrAccVwOnLastNavSelectChangeEnd = gDiag.wsBrAccVwOnLastSnapshot;
@@ -330,19 +330,19 @@ export class BrAccViewerComponent implements OnInit {
         this.mktBrLstClsObj = JSON.parse(msgObjStr);
         BrAccViewerComponent.updateMktBarUi(this.handshakeObj, this.mktBrLstClsObj, this.lstValObj, this.lstValLastUiRefreshTimeLoc, this.uiMktBar);
         return true;
-      case 'BrAccViewer.Handshake': // this is the least frequent message. Should come last.
+      case 'BrAccViewer.StockHist':
+        console.log('BrAccViewer.StockHist:' + msgObjStr);
+        this.stockHistStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
+        this.stockHistObj = JSON.parse(msgObjStr);
+        BrAccViewerComponent.updateStockHistData(this.stockHistObj, this.uiSnapTable);
+        return true;
+      case 'BrAccViewer.Handshake': // The least frequent message should come last.
         console.log('BrAccViewer.Handshake:' + msgObjStr);
         this.handshakeStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.handshakeObj = JSON.parse(msgObjStr);
         console.log(`BrAccViewer.Handshake.SelectableBrAccs: '${(this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets}'`);
         this.updateUiSelectableNavs((this.handshakeObj == null) ? null : this.handshakeObj.selectableNavAssets);
         this.updateUiAssetCategories(this.handshakeObj);
-        return true;
-      case 'BrAccViewer.StockHist':
-        console.log('BrAccViewer.StockHist:' + msgObjStr);
-        this.stockHistStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
-        this.stockHistObj = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateStockHistData(this.stockHistObj, this.uiSnapTable);
         return true;
       default:
         return false;

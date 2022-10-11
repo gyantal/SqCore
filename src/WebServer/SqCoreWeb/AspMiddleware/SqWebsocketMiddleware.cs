@@ -172,7 +172,7 @@ public class SqWebsocketMiddleware
                                 // 2. that might sometimes create problems of multithreading order. The processing order of different messages is not sequential any more,
                                 // they could run totally parallel, which could cause chaos in the execution logic if the algorithms assumes there is an order.
                                 case "/dashboard":
-                                    DashboardWs.OnWsReceiveAsync(context, webSocket, result, bufferStr);  // no await. There is no need to Wait until all of its async inner methods are completed
+                                    DashboardWs.OnWsReceiveAsync(/* context, result, */ webSocket, bufferStr);  // no await. There is no need to Wait until all of its async inner methods are completed
                                     break;
                                 case "/example-ws1":
                                     ExampleWs.OnWsReceiveAsync(webSocket, bufferStr);

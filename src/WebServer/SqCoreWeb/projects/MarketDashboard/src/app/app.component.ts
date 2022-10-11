@@ -1,9 +1,10 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { SettingsDialogComponent } from './settings-dialog/settings-dialog.component';
 import { gDiag, AssetLastJs } from './../sq-globals';
+import { BrAccViewerComponent } from './bracc-viewer/bracc-viewer.component';
+import { PortfolioManagerComponent } from './portfolio-manager/portfolio-manager.component';
 import { MarketHealthComponent } from './market-health/market-health.component';
 import { QuickfolioNewsComponent } from './quickfolio-news/quickfolio-news.component';
-import { BrAccViewerComponent } from './bracc-viewer/bracc-viewer.component';
 import { ChangeNaNstringToNaNnumber, SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils'; // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
 import { SqNgCommonUtilsTime, minDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 
@@ -21,9 +22,10 @@ class HandshakeMessage {
 })
 export class AppComponent implements OnInit {
   @ViewChild(SettingsDialogComponent) private settingsDialogComponent!: SettingsDialogComponent;
+  @ViewChild(BrAccViewerComponent) private childBrAccViewerComponent!: BrAccViewerComponent;
+  @ViewChild(PortfolioManagerComponent) private childPortfolioManagerComponent!: PortfolioManagerComponent;
   @ViewChild(MarketHealthComponent) private childMktHealthComponent!: MarketHealthComponent;
   @ViewChild(QuickfolioNewsComponent) private childQckflNewsComponent!: QuickfolioNewsComponent;
-  @ViewChild(BrAccViewerComponent) private childBrAccViewerComponent!: BrAccViewerComponent;
 
   title = 'MarketDashboard';
   version = '0.1.1';
@@ -50,8 +52,9 @@ export class AppComponent implements OnInit {
   public _socket: WebSocket; // initialize later in ctor, becuse we have to send back the activeTool from urlQueryParams
 
   public urlParamActiveTool2UiActiveTool = {
-    'mh': 'MarketHealth',
     'bav': 'BrAccViewer',
+    'pm': 'PortfolioManager',
+    'mh': 'MarketHealth',
     'cs': 'CatalystSniffer',
     'qn': 'QuickfolioNews'
   };
@@ -178,9 +181,11 @@ export class AppComponent implements OnInit {
           }
           break;
         default:
-          let isHandled = this.childMktHealthComponent.webSocketOnMessage(msgCode, msgObjStr);
+          let isHandled = this.childBrAccViewerComponent.webSocketOnMessage(msgCode, msgObjStr);
           if (!isHandled)
-            isHandled = this.childBrAccViewerComponent.webSocketOnMessage(msgCode, msgObjStr);
+            isHandled = this.childPortfolioManagerComponent.webSocketOnMessage(msgCode, msgObjStr);
+          if (!isHandled)
+            isHandled = this.childMktHealthComponent.webSocketOnMessage(msgCode, msgObjStr);
           if (!isHandled)
             isHandled = this.childQckflNewsComponent.webSocketOnMessage(msgCode, msgObjStr);
 

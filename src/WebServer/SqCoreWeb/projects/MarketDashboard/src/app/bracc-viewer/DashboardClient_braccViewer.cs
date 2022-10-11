@@ -20,8 +20,8 @@ class AssetCategoryJs
     public List<string> SqTickers { get; set; } = new List<string>();
 }
 
-class HandshakeBrAccViewer
-{ // Initial params
+class HandshakeBrAccViewer // Initial params: keep it very small
+{
     public List<AssetJs> MarketBarAssets { get; set; } = new();
     public List<AssetJs> SelectableNavAssets { get; set; } = new();
     public List<AssetCategoryJs> AssetCategories { get; set; } = new();
@@ -102,18 +102,17 @@ public partial class DashboardClient
     // }
 
     // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
-    public void OnConnectedWsAsync_BrAccViewer(bool p_isThisActiveToolAtConnectionInit, User p_user, ManualResetEvent p_waitHandleRtPriceSending)
+    public void OnConnectedWsAsync_BrAccViewer(bool p_isThisActiveToolAtConnectionInit, ManualResetEvent p_whRtPriceAssetsDetermined)
     {
         Utils.RunInNewThread(ignored => // running parallel on a ThreadPool thread, FireAndForget: QueueUserWorkItem [26microsec] is 25% faster than Task.Run [35microsec]
         {
             Utils.Logger.Debug($"OnConnectedWsAsync_BrAccViewer BEGIN, Connection from IP: {this.ClientIP} with email '{this.UserEmail}'");
-
             Thread.CurrentThread.IsBackground = true;  // thread will be killed when all foreground threads have died, the thread will not keep the application alive.
 
-            List<BrokerNav> selectableNavs = p_user.GetAllVisibleBrokerNavsOrdered();
+            List<BrokerNav> selectableNavs = User.GetAllVisibleBrokerNavsOrdered();
             m_braccSelectedNavAsset = selectableNavs.FirstOrDefault();
 
-            List<string> marketBarSqTickers = (p_user.Username == "drcharmat") ? c_marketBarSqTickersDc : c_marketBarSqTickersDefault;
+            List<string> marketBarSqTickers = (User.Username == "drcharmat") ? c_marketBarSqTickersDc : c_marketBarSqTickersDefault;
             m_brAccMktBrAssets = marketBarSqTickers.Select(r => MemDb.gMemDb.AssetsCache.GetAsset(r)).ToList();
 
             HandshakeBrAccViewer handshake = GetHandshakeBrAccViewer(selectableNavs);
@@ -121,7 +120,7 @@ public partial class DashboardClient
             if (WsWebSocket!.State == WebSocketState.Open)
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
 
-            p_waitHandleRtPriceSending.Set();   // after handshake was sent to this Tool, assume tool can handle if RtPrice arrives.
+            p_whRtPriceAssetsDetermined.Set();   // after m_brAccMktBrAssets is determined and handshake was sent to client, assume the client can handle if RtPrice arrives.
 
             // Assuming this tool is not the main Tab page on the client, we delay sending all the data, to avoid making the network and client too busy an unresponsive
             if (!p_isThisActiveToolAtConnectionInit)

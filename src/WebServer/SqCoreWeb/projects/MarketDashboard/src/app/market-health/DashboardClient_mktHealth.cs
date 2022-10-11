@@ -52,16 +52,16 @@ public partial class DashboardClient
     }
 
     // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
-    public void OnConnectedWsAsync_MktHealth(bool p_isThisActiveToolAtConnectionInit, User p_user, ManualResetEvent p_waitHandleRtPriceSending)
+    public void OnConnectedWsAsync_MktHealth(bool p_isThisActiveToolAtConnectionInit, ManualResetEvent p_whRtPriceAssetsDetermined)
     {
         Utils.RunInNewThread(ignored => // running parallel on a ThreadPool thread, FireAndForget: QueueUserWorkItem [26microsec] is 25% faster than Task.Run [35microsec]
         {
             Thread.CurrentThread.IsBackground = true;  // thread will be killed when all foreground threads have died, the thread will not keep the application alive.
 
-            List<BrokerNav> selectableNavs = p_user.GetAllVisibleBrokerNavsOrdered();
+            List<BrokerNav> selectableNavs = User.GetAllVisibleBrokerNavsOrdered();
             m_mkthSelectedNavAsset = selectableNavs.FirstOrDefault();
 
-            List<string> marketSummarySqTickers = (p_user.Username == "drcharmat") ? c_marketSummarySqTickersDc : c_marketSummarySqTickersDefault;
+            List<string> marketSummarySqTickers = (User.Username == "drcharmat") ? c_marketSummarySqTickersDc : c_marketSummarySqTickersDefault;
             m_mkthAssets = marketSummarySqTickers.Select(r => MemDb.gMemDb.AssetsCache.GetAsset(r)).ToList();
 
             HandshakeMktHealth handshake = GetHandshakeMktHlth(selectableNavs);
@@ -69,7 +69,7 @@ public partial class DashboardClient
             if (WsWebSocket!.State == WebSocketState.Open)
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
 
-            p_waitHandleRtPriceSending.Set();   // after handshake was sent to this Tool, assume tool can handle if RtPrice arrives.
+            p_whRtPriceAssetsDetermined.Set();   // after m_mkthAssets is determined and handshake was sent to client, assume the client can handle if RtPrice arrives.
 
             // Assuming this tool is not the main Tab page on the client, we delay sending all the data, to avoid making the network and client too busy an unresponsive
             if (!p_isThisActiveToolAtConnectionInit)
@@ -103,7 +103,7 @@ public partial class DashboardClient
                 this.m_mkthSelectedNavAsset = navAsset as BrokerNav;
 
                 SendHistoricalWs();
-                SendRealtimeWs();
+                SendRtStat();
                 return true;
             default:
                 return false;

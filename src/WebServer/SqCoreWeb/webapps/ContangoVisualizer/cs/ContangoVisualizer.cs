@@ -219,7 +219,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
             vixCentralRec[iRec].F8expDays = (vixCentralRec[0].F8 > 0) ? (expDates[index1 - 8] - vixCentralRec[iRec].Date).Days : 0;
         }
 
-        string ret = Processing(vixCentralRec, expDates, liveDate, liveFuturesDataTime, spotVixValue, titleVIX, dataSourceVIX);
+        string ret = Processing(vixCentralRec, /* expDates, */ liveDate, liveFuturesDataTime, spotVixValue, titleVIX, dataSourceVIX);
 
         return ret;
     }
@@ -376,7 +376,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
             vixCentralRec[iRec].F8expDays = (vixCentralRec[0].F8 > 0) ? (expDates[7] - vixCentralRec[iRec].Date).Days + 1 : 0;
         }
 
-        string ret = Processing(vixCentralRec, expDates, liveDate, liveFuturesDataTime, spotVixValue, titleOIL, dataSourceOIL);
+        string ret = Processing(vixCentralRec, /* expDates, */ liveDate, liveFuturesDataTime, spotVixValue, titleOIL, dataSourceOIL);
 
         return ret;
     }
@@ -534,12 +534,12 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
             vixCentralRec[iRec].F8expDays = (vixCentralRec[0].F8 > 0) ? (expDates[7] - vixCentralRec[iRec].Date).Days + 1 : 0;
         }
 
-        string ret = Processing(vixCentralRec, expDates, liveDate, liveFuturesDataTime, spotVixValue, titleGAS, dataSourceGAS);
+        string ret = Processing(vixCentralRec, /* expDates, */ liveDate, liveFuturesDataTime, spotVixValue, titleGAS, dataSourceGAS);
 
         return ret;
     }
 
-    private static string Processing(VixCentralRec2[] p_vixCentralRec, DateTime[] _, string p_liveDate, string p_liveFuturesDataTime, double p_spotVixValue, string p_titleF, string p_dataSource)
+    private static string Processing(VixCentralRec2[] p_vixCentralRec, /* DateTime[] dates, */ string p_liveDate, string p_liveFuturesDataTime, double p_spotVixValue, string p_titleF, string p_dataSource)
     {
         // Calculating dates to html.
         DateTime timeNowET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);

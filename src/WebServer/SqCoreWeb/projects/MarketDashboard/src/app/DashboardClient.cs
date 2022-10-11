@@ -10,7 +10,7 @@ using SqCommon;
 
 namespace SqCoreWeb;
 
-public enum ActivePage { Unknown, MarketHealth, BrAccViewer, CatalystSniffer, QuickfolioNews, TooltipSandpit, Docs }
+public enum ActivePage { Unknown, BrAccViewer, PortfolioManager, MarketHealth, CatalystSniffer, QuickfolioNews, TooltipSandpit, Docs }
 
 public partial class DashboardClient
 {
@@ -30,9 +30,9 @@ public partial class DashboardClient
 
     public static readonly Dictionary<string, ActivePage> c_urlParam2ActivePage = new()
     {
-        { "mh", ActivePage.MarketHealth }, { "bav", ActivePage.BrAccViewer }, { "cs", ActivePage.CatalystSniffer }, { "qn", ActivePage.QuickfolioNews }
+        { "bav", ActivePage.BrAccViewer }, { "pm", ActivePage.PortfolioManager }, { "mh", ActivePage.MarketHealth },  { "cs", ActivePage.CatalystSniffer }, { "qn", ActivePage.QuickfolioNews }
     };
-    public static readonly HashSet<ActivePage> c_activePagesUsingRtPrices = new() { ActivePage.MarketHealth, ActivePage.BrAccViewer };
+    public static readonly HashSet<ActivePage> c_activePagesUsingRtPrices = new() { ActivePage.BrAccViewer, ActivePage.PortfolioManager, ActivePage.MarketHealth };
 
     internal static List<DashboardClient> g_clients = new(); // Multithread warning! Lockfree Read | Copy-Modify-Swap Write Pattern
 
@@ -86,16 +86,17 @@ public partial class DashboardClient
     public void OnConnectedWsAsync_DshbrdClient()
     {
         // Note: as client is not fully initialized yet, 'this.client' is not yet in DashboardClient.g_clients list.
-        ManualResetEvent waitHandleMkthConnect = new(false);
-        ManualResetEvent waitHandleBrAccConnect = new(false);
-        OnConnectedWsAsync_MktHealth(ActivePage == ActivePage.MarketHealth, User, waitHandleMkthConnect); // the code inside should run in a separate thread to return fast, so all Tools can work parallel
-        OnConnectedWsAsync_BrAccViewer(ActivePage == ActivePage.BrAccViewer, User, waitHandleBrAccConnect); // the code inside should run in a separate thread to return fast, so all Tools can work parallel
+        ManualResetEvent whBrAccRtAssetsDetermined = new(false);    // wait handles
+        ManualResetEvent whMktHlthRtAssetsDetermined = new(false);
+        OnConnectedWsAsync_BrAccViewer(ActivePage == ActivePage.BrAccViewer, whBrAccRtAssetsDetermined); // the code inside should run in a separate thread to return fast, so all Tools can work parallel
+        OnConnectedWsAsync_MktHealth(ActivePage == ActivePage.MarketHealth, whMktHlthRtAssetsDetermined); // the code inside should run in a separate thread to return fast, so all Tools can work parallel
+        OnConnectedWsAsync_PortfMgr(ActivePage == ActivePage.PortfolioManager); // the code inside should run in a separate thread to return fast, so all Tools can work parallel
         OnConnectedWsAsync_QckflNews(ActivePage == ActivePage.QuickfolioNews);
-        // OnConnectedWsAsync_QckflNews2(ActivePage == ActivePage.QuickfolioNews);
 
-        // have to wait until the tools initialize themselves to know what assets need RT prices
-        bool sucessfullWait = ManualResetEvent.WaitAll(new WaitHandle[] { waitHandleMkthConnect }, 10 * 1000);
-        if (!sucessfullWait)
+        // Have to wait until the tools initialize themselves to know what assets need RT prices
+        // The RT asset list is user (connection) specific. Combination of the Tools assets. MarketHealh's m_mkthAssets and BrAccViewer's m_brAccMktBrAssets should be combined. The Tools calculate these at OnConnection()
+        bool sucessfullWaitRtAssetsDetermined = ManualResetEvent.WaitAll(new WaitHandle[] { whBrAccRtAssetsDetermined, whMktHlthRtAssetsDetermined }, 10 * 1000);   // with 10 seconds timeout
+        if (!sucessfullWaitRtAssetsDetermined)
             Utils.Logger.Warn("OnConnectedAsync():ManualResetEvent.WaitAll() timeout.");
 
         OnConnectedWsAsync_Rt();    // immediately send SPY realtime price. It can be used in 3+2 places: BrAccViewer:MarketBar, HistoricalChart, UserAssetList, MktHlth, CatalystSniffer (so, don't send it 5 times. Client will decide what to do with RT price)
@@ -110,9 +111,11 @@ public partial class DashboardClient
                 SendIsDashboardOpenManyTimes();
                 return true;
             default:
-                bool isHandled = OnReceiveWsAsync_MktHealth(msgCode, msgObjStr);
+                bool isHandled = OnReceiveWsAsync_BrAccViewer(msgCode, msgObjStr);
                 if (!isHandled)
-                    isHandled = OnReceiveWsAsync_BrAccViewer(msgCode, msgObjStr);
+                    isHandled = OnReceiveWsAsync_PortfMgr(msgCode, msgObjStr);
+                if (!isHandled)
+                    isHandled = OnReceiveWsAsync_MktHealth(msgCode, msgObjStr);
                 if (!isHandled)
                     isHandled = OnReceiveWsAsync_QckflNews(msgCode, msgObjStr);
                 return isHandled;

@@ -59,7 +59,7 @@ public class DashboardWs
         DashboardClient.AddToClients(client);
     }
 
-    public static void OnWsReceiveAsync(HttpContext _, WebSocket webSocket, WebSocketReceiveResult? _1, string bufferStr)
+    public static void OnWsReceiveAsync(/* HttpContext context, WebSocketReceiveResult? result, */ WebSocket webSocket,  string bufferStr)
     {
         DashboardClient? client = DashboardClient.FindClient(webSocket);
         if (client == null)

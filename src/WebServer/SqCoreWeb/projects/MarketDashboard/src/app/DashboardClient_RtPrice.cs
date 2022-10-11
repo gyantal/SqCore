@@ -106,8 +106,8 @@ public partial class DashboardClient
 
     public void OnConnectedWsAsync_Rt()
     {
-        // 2. Send RT price (after ClosePrices are sent to Tools)
-        SendRealtimeWs();
+        // Send RT price (after Tools determine their Rt Assets)
+        SendRtStat();
 
         lock (m_rtDashboardTimerLock)
         {
@@ -119,17 +119,6 @@ public partial class DashboardClient
             }
         }
     }
-
-    private void SendRealtimeWs()
-    {
-        IEnumerable<AssetLastJs> rtDataToClient = GetHighPriorityRtStat();
-        byte[] encodedMsg = Encoding.UTF8.GetBytes("All.LstVal:" + Utils.CamelCaseSerialize(rtDataToClient));
-        if (WsWebSocket == null)
-            Utils.Logger.Info("Warning (TODO)!: Mystery how client.WsWebSocket can be null? Investigate!) ");
-        if (WsWebSocket != null && WsWebSocket!.State == WebSocketState.Open)
-            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    // takes 0.635ms
-    }
-
     public static void RtDashboardTimer_Elapsed(object? state) // Timer is coming on a ThreadPool thread
     {
         try
@@ -149,7 +138,7 @@ public partial class DashboardClient
                 if (timeSinceConnect < c_initialSleepIfNotActiveToolMh.Add(TimeSpan.FromMilliseconds(100)))
                     break;
 
-                client.SendRealtimeWs();
+                client.SendRtStat();
             }
 
             lock (m_rtDashboardTimerLock)
@@ -166,11 +155,23 @@ public partial class DashboardClient
         }
     }
 
+    private void SendRtStat()
+    {
+        IEnumerable<AssetLastJs> rtDataToClient = GetHighPriorityRtStat();
+
+        byte[] encodedMsg = Encoding.UTF8.GetBytes("All.LstVal:" + Utils.CamelCaseSerialize(rtDataToClient));
+        if (WsWebSocket == null)
+            Utils.Logger.Info("Warning (TODO)!: Mystery how client.WsWebSocket can be null? Investigate!) ");
+        if (WsWebSocket != null && WsWebSocket!.State == WebSocketState.Open)
+            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    // takes 0.635ms
+    }
+
     private IEnumerable<AssetLastJs> GetHighPriorityRtStat()
     {
         // sent SPY realtime price can be used in 3+2 places: BrAccViewer:MarketBar, HistoricalChart, UserAssetList, MktHlth, CatalystSniffer (so, don't send it 5 times. Client will decide what to do with RT price)
         // sent NAV realtime price can be used in 3 places: BrAccViewer.HistoricalChart, AccountSummary, MktHlth (if that is the viewed NAV)
 
+        // The RT asset list is user (connection) specific. Combination of the Tools assets. MarketHealh's m_mkthAssets and BrAccViewer's m_brAccMktBrAssets should be combined. The Tools calculate these at OnConnection()
         List<Asset> highPriorityAssets = new(m_mkthAssets);
         foreach (Asset mktBrAsset in m_brAccMktBrAssets)
         {

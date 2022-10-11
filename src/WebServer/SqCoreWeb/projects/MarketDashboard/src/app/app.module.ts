@@ -4,8 +4,9 @@ import { FormsModule } from '@angular/forms';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { MarketHealthComponent } from './market-health/market-health.component';
 import { BrAccViewerComponent } from './bracc-viewer/bracc-viewer.component';
+import { PortfolioManagerComponent } from './portfolio-manager/portfolio-manager.component';
+import { MarketHealthComponent } from './market-health/market-health.component';
 import { CatalystSnifferComponent } from './catalyst-sniffer/catalyst-sniffer.component';
 import { QuickfolioNewsComponent } from './quickfolio-news/quickfolio-news.component';
 import { TooltipSandpitComponent } from './tooltip-sandpit/tooltip-sandpit.component';
@@ -19,8 +20,9 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 @NgModule({
   declarations: [
     AppComponent,
-    MarketHealthComponent,
     BrAccViewerComponent,
+    PortfolioManagerComponent,
+    MarketHealthComponent,
     CatalystSnifferComponent,
     QuickfolioNewsComponent,
     TooltipSandpitComponent,
