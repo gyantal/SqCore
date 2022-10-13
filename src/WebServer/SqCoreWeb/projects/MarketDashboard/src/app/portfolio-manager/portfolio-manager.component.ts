@@ -8,10 +8,15 @@ import { Component, OnInit, Input } from '@angular/core';
 export class PortfolioManagerComponent implements OnInit {
   @Input() _parentWsConnection?: WebSocket = undefined; // this property will be input from above parent container
 
+  // isShowPortfolioView: boolean = true;
+  portfolioSelection: string[] = ['Dr. Gyorgy, Antal', 'Didier Charmat'];
+  portfolioSelectionSelected: string = 'Dr. Gyorgy, Antal';
+
   constructor() { }
 
   ngOnInit(): void {
   }
+
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
     switch (msgCode) {
@@ -23,6 +28,28 @@ export class PortfolioManagerComponent implements OnInit {
         return true;
       default:
         return false;
+    }
+  }
+
+  // Under development - Daya
+  onClickPortfolio(portfolioSelected: string) {
+    this.portfolioSelectionSelected = portfolioSelected;
+    const portfolioView = document.getElementsByClassName('portfolioNestedView');
+    console.log('The length of tree view is :', portfolioView.length);
+    console.log('The portfolioSelected is :', portfolioSelected);
+    for (const portfolio of portfolioView) {
+      if (this.portfolioSelectionSelected == portfolio.previousElementSibling?.innerHTML) {
+        // toggling between plus and minus signs for nested view
+        if (portfolio.previousElementSibling?.classList.contains('portfolioManager')) {
+          portfolio.previousElementSibling?.classList.remove('portfolioManager');
+          portfolio.previousElementSibling?.classList.add('portfolioManagerMinus');
+        } else {
+          portfolio.previousElementSibling?.classList.remove('portfolioManagerMinus');
+          portfolio.previousElementSibling?.classList.add('portfolioManager');
+        }
+        portfolio.classList.toggle('active');
+        break;
+      }
     }
   }
 }

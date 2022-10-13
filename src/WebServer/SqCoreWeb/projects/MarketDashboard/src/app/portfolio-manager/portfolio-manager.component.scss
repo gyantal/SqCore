@@ -1,0 +1,76 @@
+/* Remove default bullets */
+ul, #portfolios {
+  list-style-type: none;
+}
+
+#portfolios {
+  margin: 0;
+  float: left;
+  width: 50%;
+  font-size: 1.4rem;
+  padding: 0.1rem 0.05rem 0.1rem;
+  resize: both;
+  overflow: auto;
+  background: orange;
+}
+
+.portfolioDetails {
+  float: right;
+  width: 48%;
+  font-size: 1.4rem;
+  padding: 0.1rem 0.05rem 0.1rem;
+  resize: both;
+  overflow: auto;
+}
+
+#portfolioChart {
+  width: 100%;
+  background: yellow;
+  resize: both;
+  overflow: auto;
+}
+
+#portfolioLookbackSelection {
+  float: left;
+  width: 50%;
+  background: skyblue;
+  resize: both;
+  overflow: auto;
+}
+
+#portfolioPreview {
+  float: right;
+  width: 50%;
+  background: green;
+  resize: both;
+  overflow: auto;
+}
+
+.portfolioManager {
+  cursor: pointer;
+  user-select: none;
+}
+
+.portfolioManager::before {
+  content: "\2795"; // Heavy plus sign code
+  size: 2rem;
+  color: black;
+  display: inline-block;
+  margin-right: 0.6rem;
+}
+
+.portfolioNestedView {
+  display: none;
+}
+
+.active {
+  display: block;
+}
+
+.portfolioManagerMinus::before {
+  content: "\2796"; // Heavy Minus sign code
+  color: black;
+  display: inline-block;
+  margin-right: 0.6rem;
+  cursor: pointer;
+}
