@@ -11,6 +11,7 @@ export class PortfolioManagerComponent implements OnInit {
   // isShowPortfolioView: boolean = true;
   portfolioSelection: string[] = ['Dr. Gyorgy, Antal', 'Didier Charmat'];
   portfolioSelectionSelected: string = 'Dr. Gyorgy, Antal';
+  tabPageVisibleIdx = 1;
 
   constructor() { }
 
@@ -51,5 +52,9 @@ export class PortfolioManagerComponent implements OnInit {
         break;
       }
     }
+  }
+
+  onClickPortfolioPreview(tabIdx: number) {
+    this.tabPageVisibleIdx = tabIdx;
   }
 }

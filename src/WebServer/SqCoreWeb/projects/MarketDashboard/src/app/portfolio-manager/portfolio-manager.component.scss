@@ -1,3 +1,14 @@
+:host {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-size: 1.4rem;
+  color: rgb(32, 34, 148);
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  width: 100%;
+}
+
 /* Remove default bullets */
 ul, #portfolios {
   list-style-type: none;
@@ -6,7 +17,7 @@ ul, #portfolios {
 #portfolios {
   margin: 0;
   float: left;
-  width: 50%;
+  width: 30%;
   font-size: 1.4rem;
   padding: 0.1rem 0.05rem 0.1rem;
   resize: both;
@@ -16,7 +27,7 @@ ul, #portfolios {
 
 .portfolioDetails {
   float: right;
-  width: 48%;
+  width: 68%;
   font-size: 1.4rem;
   padding: 0.1rem 0.05rem 0.1rem;
   resize: both;
@@ -72,5 +83,29 @@ ul, #portfolios {
   color: black;
   display: inline-block;
   margin-right: 0.6rem;
+  cursor: pointer;
+}
+
+.portfolioPreviewButtons {
+  display: inline-block;
+  width: 25%;
+  height: 2rem;
+}
+
+/* Change background color of buttons on hover */
+.portfolioPreviewButtons :hover {
+  border: .1rem solid #228B22;
+  backdrop-filter: blur(1rem);
+  transform: skewX(-10deg);
+  height: 2.1rem;
+  width: 13rem;
+  border-radius: 0.75rem .5rem 0.75rem 0;
+  position: relative;
+  justify-content: center;
+  transition: all .2s ease;
+  font: 0.5rem;
+  font-weight: 200;
+  text-shadow: 0 0 1rem #fff;
+  animation: breath2 2s .5s infinite alternate;
   cursor: pointer;
 }
