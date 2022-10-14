@@ -32,6 +32,7 @@ public partial class Db
     string m_lastUsersStr = string.Empty;
     string m_lastAssetsStr = string.Empty;
     string m_lastSrvLoadPrHistStr = string.Empty;
+    HashEntry[]? m_lastPortfolioFoldersRds = null;
 
     public Db(IDatabase p_redisDb, IDatabase? p_sqlDb)
     {
@@ -47,8 +48,7 @@ public partial class Db
         m_sqlDb = p_sqlDb;
     }
 
-
-    public (bool, User[]?, List<Asset>?) GetDataIfReloadNeeded()
+    public (bool, User[]?, List<Asset>?, List<PortfolioFolder>?) GetDataIfReloadNeeded()
     {
         // Although 'Assets.brotli' would be 520bytes instead of 1.52KB, we don't not use binary brotli data for Assets, only for historical data.
         // Reason is that it is difficult to maintain, append new Stocks into Redis.Assets if it is binary brotli. Just a lot of headache.
@@ -60,17 +60,24 @@ public partial class Db
         bool isAllAssetsChangedInDb = m_lastAssetsStr != assetsStr;
         string srvLoadPrHistStr = m_redisDb.HashGet("memDb", "Srv.LoadPrHist");
         bool isSqCoreWebAssetsChanged = m_lastSrvLoadPrHistStr != srvLoadPrHistStr;
+        HashEntry[]? portfolioFoldersRds = m_redisDb.HashGetAll("portfolioFolder");
+        bool isPortfFoldersChangedInDb = !DbUtils.IsRedisAllHashEqual(portfolioFoldersRds, m_lastPortfolioFoldersRds);
 
-        bool isReloadNeeded = isUsersChangedInDb || isAllAssetsChangedInDb || isSqCoreWebAssetsChanged;
+        // ToDo: Refactoring in the future: if RedisDb is down now, and it is null => don't overwrite our MemDb data (we should keep our old data)
+        bool isReloadNeeded = isUsersChangedInDb || isAllAssetsChangedInDb || isSqCoreWebAssetsChanged || isPortfFoldersChangedInDb;
         if (!isReloadNeeded)
-            return (false, null, null);
+            return (false, null, null, null);
 
         m_lastUsersStr = sqUserDataStr;
-        m_lastAssetsStr = assetsStr;
-        m_lastSrvLoadPrHistStr = srvLoadPrHistStr;
-
         User[] users = GetUsers(m_lastUsersStr);
+
+        m_lastPortfolioFoldersRds = portfolioFoldersRds;
+        List<PortfolioFolder> portfolioFolders = GetPortfolioFolders(portfolioFoldersRds);
+
+        m_lastAssetsStr = assetsStr;
         List<Asset> assets = GetAssetsFromJson(m_lastAssetsStr, users);
+
+
 
         // Add the user's AggNavAsset into assets very early, so we don't have to Add items to AssetCache later, because that is problematic in multithreaded app (of something iterates over AssetCache)
         // Imitate that the Db already has the AggNavAsset (other option is to move this addition up to MemDb, instead of this Db class)
@@ -93,10 +100,10 @@ public partial class Db
             }
         } // NAVs per user
 
+        m_lastSrvLoadPrHistStr = srvLoadPrHistStr;
         AddLoadPrHistToAssets(m_lastSrvLoadPrHistStr, assets);
-        return (isReloadNeeded, users, assets);
+        return (isReloadNeeded, users, assets, portfolioFolders);
     }
-
 
     static List<Asset> GetAssetsFromJson(string p_json, User[] users)
     {
@@ -294,6 +301,18 @@ public partial class Db
             return new KeyValuePair<SqDateOnly, double>(new SqDateOnly(date), deposit);
         }).ToArray();
         return deposits;
+    }
+
+    private static List<PortfolioFolder> GetPortfolioFolders(HashEntry[]? portfolioFoldersRds)
+    {
+        List<PortfolioFolder> result = new();
+        if (portfolioFoldersRds == null)
+            return result;
+        for (int i = 0; i < portfolioFoldersRds.Length; i++)
+        {
+            result.Add(new PortfolioFolder());
+        }
+        return result;
     }
 
     public static bool UpdateBrotlisIfNeeded()

@@ -42,7 +42,7 @@ public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
 
     [HttpGet]
 #if !DEBUG
-    [Authorize]     // we can live without it, because ControllerCommon.CheckAuthorizedGoogleEmail() will redirect to /login anyway, but it is quicker that this automatically redirects without clicking another URL link.
+    [Authorize] // we can live without it, because ControllerCommon.CheckAuthorizedGoogleEmail() will redirect to /login anyway, but it is quicker that this automatically redirects without clicking another URL link.
 #endif
     public ActionResult HttpRequestActivityLog()
     {
@@ -65,7 +65,7 @@ public class WebServerController : Microsoft.AspNetCore.Mvc.Controller
 
     [HttpGet]
 #if !DEBUG
-    [Authorize]     // we can live without it, because ControllerCommon.CheckAuthorizedGoogleEmail() will redirect to /login anyway, but it is quicker that this automatically redirects without clicking another URL link.
+    [Authorize] // we can live without it, because ControllerCommon.CheckAuthorizedGoogleEmail() will redirect to /login anyway, but it is quicker that this automatically redirects without clicking another URL link.
 #endif
     public ActionResult ServerDiagnostics()
     {

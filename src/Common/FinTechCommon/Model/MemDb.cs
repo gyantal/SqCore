@@ -21,13 +21,13 @@ public partial class MemDb
     MemData m_memData = new();  // strictly private. Don't allow clients to store separate MemData pointers. Clients should use GetAssuredConsistentTables() in general.
 
     public User[] Users { get { return m_memData.Users; } }
+    public List<PortfolioFolder> PortfolioFolders { get { return m_memData.PortfolioFolders; } }
 
     // Because Writers use the 'Non-locking copy-and-swap-on-write' pattern, before iterating on AssetCache, Readers using foreach() should get a local pointer and iterate on that. Readers can use Linq.Select() or Where() without local pointer though.
     // AssetsCache localAssetCache = MemDb.AssetCache;
     // foreach (Asset item in localAssetCache)
     public AssetsCache AssetsCache { get { return m_memData.AssetsCache; } }
     public CompactFinTimeSeries<SqDateOnly, uint, float, uint> DailyHist { get { return m_memData.DailyHist; } }
-    public List<string> Portfolios { get { throw new NotImplementedException(); } } // Portfolios are Assets as well, so they can go to AssetsCache
 
     public bool IsInitialized { get; set; } = false;
 
@@ -72,9 +72,9 @@ public partial class MemDb
         {
             // Step 1: Redis Assets, Users
             // GA.IM.NAV assets have user_id data, so User data has to be reloaded too before Assets
-            (bool isDbReloadNeeded, User[]? newUsers, List<Asset>? newAssets) = m_Db.GetDataIfReloadNeeded();    // isDbReloadNeeded can be ignored as it is surely true at Init()
+            (bool isDbReloadNeeded, User[]? newUsers, List<Asset>? newAssets, List<PortfolioFolder>? portfolioFolders) = m_Db.GetDataIfReloadNeeded();    // isDbReloadNeeded can be ignored as it is surely true at Init()
             var newAssetCache = new AssetsCache(newAssets!);               // TODO: var newPortfolios = GeneratePortfolios();
-            m_memData = new MemData(newUsers!, newAssetCache, new CompactFinTimeSeries<SqDateOnly, uint, float, uint>());
+            m_memData = new MemData(newUsers!, portfolioFolders!, newAssetCache, new CompactFinTimeSeries<SqDateOnly, uint, float, uint>());
             m_lastRedisReload = DateTime.UtcNow;
             m_lastRedisReloadTs = m_lastRedisReload - startTime;
             // can inform Observers that MemDb is 1/4th ready: Users, Assets OK
@@ -253,18 +253,18 @@ public partial class MemDb
         m_dbReloadTimer.Change(targetDateEt - etNow, TimeSpan.FromMilliseconds(-1.0));     // runs only once
     }
 
-    async Task ReloadDbDataIfChangedImpl()   // if necessary it reloads Historical and Realtime data
+    public async Task ReloadDbDataIfChangedImpl()   // if necessary it reloads Historical and Realtime data
     {
         Console.WriteLine("*ReloadDbDataIfChangedImpl() is in progress...");
         DateTime startTime = DateTime.UtcNow;
         // GA.IM.NAV assets have user_id data, so User data has to be reloaded too before Assets
-        (bool isDbReloadNeeded, User[]? newUsers, List<Asset>? sqCoreAssets) = m_Db.GetDataIfReloadNeeded();
+        (bool isDbReloadNeeded, User[]? newUsers, List<Asset>? sqCoreAssets, List<PortfolioFolder>? portfolioFolders) = m_Db.GetDataIfReloadNeeded();
         if (!isDbReloadNeeded)
             return;
 
         // to minimize the time memDb is not consintent we create everything into new pointers first, then update them quickly
         var newAssetCache = new AssetsCache(sqCoreAssets!);
-        var newMemData = new MemData(newUsers!, newAssetCache, new CompactFinTimeSeries<SqDateOnly, uint, float, uint>());
+        var newMemData = new MemData(newUsers!, portfolioFolders!, newAssetCache, new CompactFinTimeSeries<SqDateOnly, uint, float, uint>());
         m_lastRedisReload = DateTime.UtcNow;
         m_lastRedisReloadTs = m_lastRedisReload - startTime;
 

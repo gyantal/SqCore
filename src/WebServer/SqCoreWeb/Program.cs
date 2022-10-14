@@ -217,6 +217,7 @@ public partial class Program
         Console.WriteLine("2. RedisDb: Get Active DB index (Production: DB-0)");
         Console.WriteLine("3. RedisDb: Mirror DB-i to DB-j");
         Console.WriteLine("4. RedisDb: Upsert gSheet Assets to DB-?.(!!! See steps as comments in Controller.cs))");
+        Console.WriteLine("5. MemDb: Reload data from RedisDb (DB-ActiveIndex) to MemDb");
         Console.WriteLine("9. Exit to main menu.");
         string userInput;
         try
@@ -242,6 +243,9 @@ public partial class Program
                 break;
             case "4":
                 Controller.UpsertgSheetAssets();
+                break;
+            case "5":
+                MemDb.gMemDb.ReloadDbDataIfChangedImpl().TurnAsyncToSyncTask();
                 break;
             case "9":
                 return "UserChosenExit";

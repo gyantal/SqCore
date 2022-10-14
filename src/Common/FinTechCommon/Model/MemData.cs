@@ -34,6 +34,8 @@ internal class MemData  // don't expose to clients.
     public volatile AssetsCache AssetsCache = new();  // writable: user might insert a new asset from HTML UI (although this is dangerous, how to propagate it the gSheet Asset replica)
     public volatile CompactFinTimeSeries<SqDateOnly, uint, float, uint> DailyHist = new();
 
+    public volatile List<PortfolioFolder> PortfolioFolders = new(); // List, not Array, becuse users can create/delete portfolio folders
+
     // As Portfolios are assets (nesting), we might store portfolios in AssetCache, not separately
     public volatile List<string> Portfolios = new(); // temporary illustration of a data that will be not only read, but written by SqCore. Portfolios are not necessary here, because they are Assets as well, so they can go to AssetsCache
 
@@ -58,9 +60,10 @@ internal class MemData  // don't expose to clients.
     {
     }
 
-    public MemData(User[] newUsers, AssetsCache newAssetsCache, CompactFinTimeSeries<SqDateOnly, uint, float, uint> newDailyHist)
+    public MemData(User[] newUsers, List<PortfolioFolder> portfolioFolders, AssetsCache newAssetsCache, CompactFinTimeSeries<SqDateOnly, uint, float, uint> newDailyHist)
     {
         Users = newUsers;
+        PortfolioFolders = portfolioFolders;
         AssetsCache = newAssetsCache;
         DailyHist = newDailyHist;
     }
