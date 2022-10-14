@@ -21,7 +21,7 @@ public partial class MemDb
     MemData m_memData = new();  // strictly private. Don't allow clients to store separate MemData pointers. Clients should use GetAssuredConsistentTables() in general.
 
     public User[] Users { get { return m_memData.Users; } }
-    public List<PortfolioFolder> PortfolioFolders { get { return m_memData.PortfolioFolders; } }
+    public Dictionary<int, PortfolioFolder> PortfolioFolders { get { return m_memData.PortfolioFolders; } }
 
     // Because Writers use the 'Non-locking copy-and-swap-on-write' pattern, before iterating on AssetCache, Readers using foreach() should get a local pointer and iterate on that. Readers can use Linq.Select() or Where() without local pointer though.
     // AssetsCache localAssetCache = MemDb.AssetCache;
@@ -72,7 +72,7 @@ public partial class MemDb
         {
             // Step 1: Redis Assets, Users
             // GA.IM.NAV assets have user_id data, so User data has to be reloaded too before Assets
-            (bool isDbReloadNeeded, User[]? newUsers, List<Asset>? newAssets, List<PortfolioFolder>? portfolioFolders) = m_Db.GetDataIfReloadNeeded();    // isDbReloadNeeded can be ignored as it is surely true at Init()
+            (bool isDbReloadNeeded, User[]? newUsers, List<Asset>? newAssets, Dictionary<int, PortfolioFolder>? portfolioFolders) = m_Db.GetDataIfReloadNeeded();    // isDbReloadNeeded can be ignored as it is surely true at Init()
             var newAssetCache = new AssetsCache(newAssets!);               // TODO: var newPortfolios = GeneratePortfolios();
             m_memData = new MemData(newUsers!, portfolioFolders!, newAssetCache, new CompactFinTimeSeries<SqDateOnly, uint, float, uint>());
             m_lastRedisReload = DateTime.UtcNow;
@@ -258,7 +258,7 @@ public partial class MemDb
         Console.WriteLine("*ReloadDbDataIfChangedImpl() is in progress...");
         DateTime startTime = DateTime.UtcNow;
         // GA.IM.NAV assets have user_id data, so User data has to be reloaded too before Assets
-        (bool isDbReloadNeeded, User[]? newUsers, List<Asset>? sqCoreAssets, List<PortfolioFolder>? portfolioFolders) = m_Db.GetDataIfReloadNeeded();
+        (bool isDbReloadNeeded, User[]? newUsers, List<Asset>? sqCoreAssets, Dictionary<int, PortfolioFolder>? portfolioFolders) = m_Db.GetDataIfReloadNeeded();
         if (!isDbReloadNeeded)
             return;
 

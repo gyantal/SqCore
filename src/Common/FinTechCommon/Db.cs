@@ -48,7 +48,7 @@ public partial class Db
         m_sqlDb = p_sqlDb;
     }
 
-    public (bool, User[]?, List<Asset>?, List<PortfolioFolder>?) GetDataIfReloadNeeded()
+    public (bool, User[]?, List<Asset>?, Dictionary<int, PortfolioFolder>?) GetDataIfReloadNeeded()
     {
         // Although 'Assets.brotli' would be 520bytes instead of 1.52KB, we don't not use binary brotli data for Assets, only for historical data.
         // Reason is that it is difficult to maintain, append new Stocks into Redis.Assets if it is binary brotli. Just a lot of headache.
@@ -72,7 +72,7 @@ public partial class Db
         User[] users = GetUsers(m_lastUsersStr);
 
         m_lastPortfolioFoldersRds = portfolioFoldersRds;
-        List<PortfolioFolder> portfolioFolders = GetPortfolioFolders(portfolioFoldersRds);
+        Dictionary<int, PortfolioFolder> portfolioFolders = GetPortfolioFolders(portfolioFoldersRds);
 
         m_lastAssetsStr = assetsStr;
         List<Asset> assets = GetAssetsFromJson(m_lastAssetsStr, users);
@@ -303,14 +303,23 @@ public partial class Db
         return deposits;
     }
 
-    private static List<PortfolioFolder> GetPortfolioFolders(HashEntry[]? portfolioFoldersRds)
+    private static Dictionary<int, PortfolioFolder> GetPortfolioFolders(HashEntry[]? portfolioFoldersRds)
     {
-        List<PortfolioFolder> result = new();
+        Dictionary<int, PortfolioFolder> result = new();
         if (portfolioFoldersRds == null)
             return result;
         for (int i = 0; i < portfolioFoldersRds.Length; i++)
         {
-            result.Add(new PortfolioFolder());
+            HashEntry pFolder = portfolioFoldersRds[i];
+            if (!pFolder.Name.TryParse(out int id))
+                continue;   // Sometimes, there is an extra line 'New field'. But it can be deleted from Redis Manager. It is a kind of expected.
+
+            var prtfFolder = JsonSerializer.Deserialize<PortfolioFolder>(pFolder.Value, new JsonSerializerOptions { PropertyNameCaseInsensitive = true});
+            if (prtfFolder == null)
+                throw new SqException($"Deserialize failed on '{pFolder.Value}'"); // Not expected error. DB has to be fixed
+
+            prtfFolder.Id = id;    // PortfolioFolderId is not in the JSON. It comes from the HashEntry.Key (= Name)
+            result[id] = prtfFolder;
         }
         return result;
     }
