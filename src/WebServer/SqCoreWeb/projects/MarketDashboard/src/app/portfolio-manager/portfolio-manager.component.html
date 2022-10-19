@@ -1,9 +1,50 @@
-<p>portfolio-manager works!</p>
-<hr>
-<img src="assets/images/refresh64.webp" />
-<br>
-<div>
-  <div id="portfolios">
+<div id="panelPrtfMgr">
+  <div id="panelPrtfTree">panelPrtfTree
+    <!-- Lorem ipsum dolor sit amet consectetur, adipisicing elit. Sit, odit natus voluptates totam deleniti ducimus alias repellat a numquam debitis veniam perferendis assumenda qui! Doloremque, dignissimos ipsam. Beatae, earum perspiciatis. -->
+    Width: {{panelPrtfTreeWidth}}
+    Height: {{panelPrtfTreeHeight}}
+    <li><span class="portfolioManager" (click)="onClickPortfolio('Dr. Gyorgy, Antal')">Dr. Gyorgy, Antal</span>
+      <ul class="portfolioNestedView">
+        <li>B T.</li>
+        <li>Old Agy Live</li>
+        <li>Old gyantal Live</li>
+        <li>Power Event Quickfolios</li>
+      </ul>
+    </li>
+    <li><span class="portfolioManager" (click)="onClickPortfolio('Didier Charmat')">Didier Charmat</span>
+      <ul class="portfolioNestedView">
+        <li>3rdParty Live</li>
+        <li>Earnings Live</li>
+        <li>Our Sq and Dc Live</li>
+        <li>Quickfolios</li>
+      </ul>
+    </li>
+  </div>
+  <div id="panelPrtfDetails">
+    <div id="panelChart">Panel Chart
+      <!-- Lorem ipsum dolor, sit amet consectetur adipisicing elit. Hic odit veniam neque officia harum ex dicta accusantium et voluptatem quam, repudiandae in porro ea incidunt. Reiciendis porro excepturi nam minus! -->
+      Width: {{panelPrtfChrtWidth}}
+      Height: {{panelPrtfChrtHeight}}
+    </div>
+    <div id="panelStatsAndPerfSpec">
+      <div id="panelStats">Panel Stats
+        <!-- Lorem ipsum dolor, sit amet consectetur adipisicing elit. Hic odit veniam neque officia harum ex dicta accusantium et voluptatem quam, repudiandae in porro ea incidunt. Reiciendis porro excepturi nam minus! -->
+        Width: {{panelStatsWidth}}
+        Height: {{panelStatsHeight}}
+      </div>
+      <div id="panelPrtfSpec">Panel PrtfSpec
+        <!-- Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ab placeat amet, neque porro saepe tempore ad omnis. Beatae rerum voluptas provident est explicabo aspernatur laudantium incidunt, consequatur labore a placeat! -->
+        Width: {{panelPrtfSpecWidth}}
+        Height: {{panelPrtfSpecHeight}}
+      </div>
+    </div>
+  </div>
+  <div id="toolArea">whole Tool area without Dashboard header
+    <!-- Lorem ipsum dolor sit amet consectetur, adipisicing elit. Sit, odit natus voluptates totam deleniti ducimus alias repellat a numquam debitis veniam perferendis assumenda qui! Doloremque, dignissimos ipsam. Beatae, earum perspiciatis. -->
+    Width: {{prtfMgrToolWidth}}
+    Height: {{prtfMgrToolHeight}}
+  </div>
+  <!-- <div id="portfolios">
     <li><span class="portfolioManager" (click)="onClickPortfolio('Dr. Gyorgy, Antal')">Dr. Gyorgy, Antal</span>
       <ul class="portfolioNestedView">
         <li>B T.</li>
@@ -32,5 +73,5 @@
       <div [hidden]="tabPageVisibleIdx != 1" id="positions">This is always Visible</div>
       <div [hidden]="tabPageVisibleIdx == 1" id="StrategyParameters">Only for backtest</div>
     </div>
-  </div>
+  </div> -->
 </div>
