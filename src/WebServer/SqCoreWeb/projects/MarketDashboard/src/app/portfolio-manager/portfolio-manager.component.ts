@@ -96,6 +96,8 @@ export class PortfolioManagerComponent implements OnInit {
 
     this.prtfMgrToolWidth = this.prtfMgrToolWidth;
     this.prtfMgrToolHeight = this.prtfMgrToolHeight - this.dashboardHeaderHeight;
+
+    this.makeResizableDiv('.resizable');
   }
 
   public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
@@ -152,5 +154,85 @@ export class PortfolioManagerComponent implements OnInit {
 
   static getNonNullDocElementById(id: string): HTMLElement { // document.getElementById() can return null. This 'forced' type casting fakes that it is not null for the TS compiler. (it can be null during runtime)
     return document.getElementById(id) as HTMLElement;
+  }
+
+  // Experimental purpose to have a feature with resizable div - Will demo it during our call
+  makeResizableDiv(div: any) {
+    const element = document.querySelector(div);
+    const resizers = document.querySelectorAll('.resizer');
+    const resizableWidthHeight = window.document.getElementById('demo') as HTMLElement;
+    const minSize = 20;
+    let originalWidth = 0;
+    let originalHeight = 0;
+    let originalX = 0;
+    let originalY = 0;
+    let originalMouseX = 0;
+    let originalMouseY = 0;
+
+    for (let i = 0; i < resizers.length; i++) {
+      const currentResizer = resizers[i];
+      currentResizer.addEventListener('mousedown', function(event: any) {
+        event.preventDefault();
+        originalWidth = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
+        originalHeight = parseFloat(getComputedStyle(element, null).getPropertyValue('height').replace('px', ''));
+        originalX = element.getBoundingClientRect().left;
+        originalY = element.getBoundingClientRect().top;
+        originalMouseX = event.pageX;
+        originalMouseY = event.pageY;
+        window.addEventListener('mousemove', resizeDiv);
+        window.addEventListener('mouseup', stopResize);
+      });
+
+      function resizeDiv(event: any) {
+        if (currentResizer.classList.contains('bottom-right')) {
+          const width = originalWidth + (event.pageX - originalMouseX);
+          const height = originalHeight + (event.pageY - originalMouseY);
+          resizableWidthHeight.innerHTML = 'Browser inner window width : ' + width + ', height : ' + height;
+          if (width > minSize)
+            element.style.width = width + 'px';
+          if (height > minSize)
+            element.style.height = height + 'px';
+        } else if (currentResizer.classList.contains('bottom-left')) {
+          const width = originalWidth - (event.pageX - originalMouseX);
+          const height = originalHeight + (event.pageY - originalMouseY);
+          resizableWidthHeight.innerHTML = 'Browser inner window width : ' + width + ', height : ' + height;
+
+          if (height > minSize)
+            element.style.height = height + 'px';
+          if (width > minSize) {
+            element.style.width = width + 'px';
+            element.style.left = originalX + (event.pageX - originalMouseX) + 'px';
+          }
+        } else if (currentResizer.classList.contains('top-right')) {
+          const width = originalWidth + (event.pageX - originalMouseX);
+          const height = originalHeight - (event.pageY - originalMouseY);
+          resizableWidthHeight.innerHTML = 'Browser inner window width : ' + width + ', height : ' + height;
+
+          if (width > minSize)
+            element.style.width = width + 'px';
+          if (height > minSize) {
+            element.style.height = height + 'px';
+            element.style.top = originalY + (event.pageY - originalMouseY) + 'px';
+          }
+        } else {
+          const width = originalWidth - (event.pageX - originalMouseX);
+          const height = originalHeight - (event.pageY - originalMouseY);
+          resizableWidthHeight.innerHTML = 'Browser inner window width : ' + width + ', height : ' + height;
+
+          if (width > minSize) {
+            element.style.width = width + 'px';
+            element.style.left = originalX + (event.pageX - originalMouseX) + 'px';
+          }
+          if (height > minSize) {
+            element.style.height = height + 'px';
+            element.style.top = originalY + (event.pageY - originalMouseY) + 'px';
+          }
+        }
+      }
+
+      function stopResize() {
+        window.removeEventListener('mousemove', resizeDiv);
+      }
+    }
   }
 }
