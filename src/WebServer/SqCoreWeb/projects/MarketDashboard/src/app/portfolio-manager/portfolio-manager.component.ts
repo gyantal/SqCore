@@ -38,57 +38,37 @@ export class PortfolioManagerComponent implements OnInit {
     this.panelPrtfTreeWidth = panelPrtfTreeId.clientWidth as number;
     this.panelPrtfTreeHeight = panelPrtfTreeId.clientHeight as number;
 
-    // For displaying the width and height - Dynamic values
-    window.addEventListener('resize', (resizeBy) => {
-      this.panelPrtfTreeWidth = panelPrtfTreeId.clientWidth as number;
-      this.panelPrtfTreeHeight = panelPrtfTreeId.clientHeight as number;
-      return resizeBy;
-    });
-
     const panelChartId = PortfolioManagerComponent.getNonNullDocElementById('panelChart');
     this.panelPrtfChrtWidth = panelChartId.clientWidth as number;
     this.panelPrtfChrtHeight = panelChartId.clientHeight as number;
-
-    window.addEventListener('resize', (resizeBy) => {
-      this.panelPrtfChrtWidth = panelChartId.clientWidth as number;
-      this.panelPrtfChrtHeight = panelChartId.clientHeight as number;
-      return resizeBy;
-    });
 
     const panelStatsId = PortfolioManagerComponent.getNonNullDocElementById('panelStats');
     this.panelStatsWidth = panelStatsId.clientWidth as number;
     this.panelStatsHeight = panelStatsId.clientHeight as number;
 
-    window.addEventListener('resize', (resizeBy) => {
-      this.panelStatsWidth = panelStatsId.clientWidth as number;
-      this.panelStatsHeight = panelStatsId.clientHeight as number;
-      return resizeBy;
-    });
-
     const panelPrtfSpecId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfSpec');
     this.panelPrtfSpecWidth = panelPrtfSpecId.clientWidth as number;
     this.panelPrtfSpecHeight = panelPrtfSpecId.clientHeight as number;
-
-    window.addEventListener('resize', (resizeBy) => {
-      this.panelPrtfSpecWidth = panelPrtfSpecId.clientWidth as number;
-      this.panelPrtfSpecHeight = panelPrtfSpecId.clientHeight as number;
-      return resizeBy;
-    });
 
     const approotToolbar = PortfolioManagerComponent.getNonNullDocElementById('toolbarId');
     this.dashboardHeaderWidth = approotToolbar.clientWidth;
     this.dashboardHeaderHeight = approotToolbar.clientHeight;
 
-    window.addEventListener('resize', (resizeBy) => {
-      this.dashboardHeaderWidth = approotToolbar.clientWidth;
-      this.dashboardHeaderHeight = approotToolbar.clientHeight;
-      return resizeBy;
-    });
-
     this.prtfMgrToolWidth = window.innerWidth as number;
     this.prtfMgrToolHeight = window.innerHeight as number;
 
+    // For displaying the width and height - Dynamic values
     window.addEventListener('resize', (resizeBy) => {
+      this.panelPrtfTreeWidth = panelPrtfTreeId.clientWidth as number;
+      this.panelPrtfTreeHeight = panelPrtfTreeId.clientHeight as number;
+      this.panelPrtfChrtWidth = panelChartId.clientWidth as number;
+      this.panelPrtfChrtHeight = panelChartId.clientHeight as number;
+      this.panelStatsWidth = panelStatsId.clientWidth as number;
+      this.panelStatsHeight = panelStatsId.clientHeight as number;
+      this.panelPrtfSpecWidth = panelPrtfSpecId.clientWidth as number;
+      this.panelPrtfSpecHeight = panelPrtfSpecId.clientHeight as number;
+      this.dashboardHeaderWidth = approotToolbar.clientWidth;
+      this.dashboardHeaderHeight = approotToolbar.clientHeight;
       this.prtfMgrToolWidth = window.innerWidth as number;
       this.prtfMgrToolHeight = window.innerHeight as number;
       return resizeBy;

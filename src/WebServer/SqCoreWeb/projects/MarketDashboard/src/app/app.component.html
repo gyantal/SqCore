@@ -67,7 +67,7 @@
   </div>
 </div>
 
-<div class="content">
+<div id="toolContainerId" class="toolContainer">
   <app-bracc-viewer [hidden]="!(activeTool=='BrAccViewer')" [_parentWsConnection]="_socket"></app-bracc-viewer>
   <app-portfolio-manager [hidden]="!(activeTool=='PortfolioManager')" [_parentWsConnection]="_socket"></app-portfolio-manager>
   <app-market-health [hidden]="!(activeTool=='MarketHealth')" [_parentWsConnection]="_socket"></app-market-health>
