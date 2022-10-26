@@ -1,6 +1,6 @@
 <div id="panelPrtfMgr">
-  <div id="panelPrtfTree">panelPrtfTree
-    <!-- Lorem ipsum dolor sit amet consectetur, adipisicing elit. Sit, odit natus voluptates totam deleniti ducimus alias repellat a numquam debitis veniam perferendis assumenda qui! Doloremque, dignissimos ipsam. Beatae, earum perspiciatis. -->
+  <div id="panelPrtfTree" (mouseover)="onMouseOver('panelPrtfTree')" (mouseenter)="onMouseEnterPrtfTree('invisbleDiv')" (mouseout)="onMouseOutPrtfTree('invisbleDiv')">panelPrtfTree
+    <p id="demo"></p>
     Width: {{panelPrtfTreeWidth}}
     Height: {{panelPrtfTreeHeight}}
     <li><span class="portfolioManager" (click)="onClickPortfolio('Dr. Gyorgy, Antal')">Dr. Gyorgy, Antal</span>
@@ -20,27 +20,25 @@
       </ul>
     </li>
   </div>
+  <div id="invisbleDiv"></div>
+  <!-- <div id="invisbleDiv" *ngIf="isShowResizableDiv" (mouseenter)="onMouseEnterReziableDiv()" (mouseenter)="onMouseLeaveReziableDiv()">Daya make it visible</div> -->
   <div id="panelPrtfDetails">
-    <div id="panelChart">Panel Chart
-      <!-- Lorem ipsum dolor, sit amet consectetur adipisicing elit. Hic odit veniam neque officia harum ex dicta accusantium et voluptatem quam, repudiandae in porro ea incidunt. Reiciendis porro excepturi nam minus! -->
+    <div id="panelChart" (mouseover)="onMouseOver('panelChart')">Panel Chart
       Width: {{panelPrtfChrtWidth}}
       Height: {{panelPrtfChrtHeight}}
     </div>
     <div id="panelStatsAndPerfSpec">
-      <div id="panelStats">Panel Stats
-        <!-- Lorem ipsum dolor, sit amet consectetur adipisicing elit. Hic odit veniam neque officia harum ex dicta accusantium et voluptatem quam, repudiandae in porro ea incidunt. Reiciendis porro excepturi nam minus! -->
+      <div id="panelStats" (mouseover)="onMouseOver('panelStats')">Panel Stats
         Width: {{panelStatsWidth}}
         Height: {{panelStatsHeight}}
       </div>
-      <div id="panelPrtfSpec">Panel PrtfSpec
-        <!-- Lorem ipsum dolor sit, amet consectetur adipisicing elit. Ab placeat amet, neque porro saepe tempore ad omnis. Beatae rerum voluptas provident est explicabo aspernatur laudantium incidunt, consequatur labore a placeat! -->
+      <div id="panelPrtfSpec" (mouseover)="onMouseOver('panelPrtfSpec')">Panel PrtfSpec
         Width: {{panelPrtfSpecWidth}}
         Height: {{panelPrtfSpecHeight}}
       </div>
     </div>
   </div>
   <div id="toolArea">whole Tool area without Dashboard header
-    <!-- Lorem ipsum dolor sit amet consectetur, adipisicing elit. Sit, odit natus voluptates totam deleniti ducimus alias repellat a numquam debitis veniam perferendis assumenda qui! Doloremque, dignissimos ipsam. Beatae, earum perspiciatis. -->
     Width: {{prtfMgrToolWidth}}
     Height: {{prtfMgrToolHeight}}
   </div>
@@ -74,14 +72,4 @@
       <div [hidden]="tabPageVisibleIdx == 1" id="StrategyParameters">Only for backtest</div>
     </div>
   </div> -->
-</div>
-<!-- The below demo id is just displaying the dynamically resizing data - pls don't review -->
-<div class='resizable'>
-  <div class='resizers'>
-    <p id="demo"></p>
-    <div class='resizer top-left'></div>
-    <div class='resizer top-right'></div>
-    <div class='resizer bottom-left'></div>
-    <div class='resizer bottom-right'></div>
-  </div>
 </div>
