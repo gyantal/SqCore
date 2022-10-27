@@ -8,7 +8,6 @@ import { Component, OnInit, Input } from '@angular/core';
 export class PortfolioManagerComponent implements OnInit {
   @Input() _parentWsConnection?: WebSocket = undefined; // this property will be input from above parent container
 
-  // isShowPortfolioView: boolean = true;
   portfolioSelection: string[] = ['Dr. Gyorgy, Antal', 'Didier Charmat']; // PrtFldrs
   portfolioSelectionSelected: string = 'Dr. Gyorgy, Antal';
   tabPageVisibleIdx = 1;
@@ -25,9 +24,6 @@ export class PortfolioManagerComponent implements OnInit {
   panelStatsHeight = 0;
   panelPrtfSpecWidth = 0;
   panelPrtfSpecHeight = 0;
-  isMouseEnterReziableDiv: boolean = false;
-  isMouseOverPrtfTree: boolean = false;
-  isShowResizableDiv: boolean = false;
 
   constructor() { }
 
@@ -49,7 +45,7 @@ export class PortfolioManagerComponent implements OnInit {
     this.panelStatsWidth = panelStatsId.clientWidth as number;
     this.panelStatsHeight = panelStatsId.clientHeight as number;
 
-    const panelPrtfSpecId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfSpec');
+    const panelPrtfSpecId = PortfolioManagerComponent.getNonNullDocElementById('panelPerfSpec');
     this.panelPrtfSpecWidth = panelPrtfSpecId.clientWidth as number;
     this.panelPrtfSpecHeight = panelPrtfSpecId.clientHeight as number;
 
@@ -94,10 +90,6 @@ export class PortfolioManagerComponent implements OnInit {
     }
   }
 
-  // onClickPrtfTree(id: string) {
-  //   this.makeResizablePrtfTree(id);
-  // }
-
   // Under development - Daya
   onClickPortfolio(portfolioSelected: string) {
     this.portfolioSelectionSelected = portfolioSelected;
@@ -141,69 +133,106 @@ export class PortfolioManagerComponent implements OnInit {
     return document.getElementById(id) as HTMLElement;
   }
 
-  onMouseEnterPrtfTree(id: string) {
-    // This is used to make the hidden div visible
-    const reziableHiddenDiv: any = document.getElementById(id);
-    if (getComputedStyle(reziableHiddenDiv, null).visibility === 'hidden')
-      reziableHiddenDiv.style.visibility = 'visible';
+  onMouseOver(resizer: string) {
+    if (resizer == 'resizer')
+      this.makeResizablePrtfTree(resizer);
+    if (resizer == 'resizer2')
+      this.makeResizablePrtfDetails(resizer);
   }
 
-  onMouseOutPrtfTree(id: string) {
-    const reziableHiddenDiv: any = document.getElementById(id);
-    reziableHiddenDiv.style.visibility = 'hidden';
-  }
+  makeResizablePrtfTree(resizer: string) {
+    const panelPrtfTreeId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfTree');
+    const panelPrtfDetailsId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfDetails');
 
-  onMouseOver(selectedPanel: string) {
-    this.isShowResizableDiv = true;
-    this.resizeSelectedPanel(selectedPanel);
-  }
-
-  resizeSelectedPanel(selectedPanel: string) {
-    const element = PortfolioManagerComponent.getNonNullDocElementById(selectedPanel);
+    const resizerDiv = PortfolioManagerComponent.getNonNullDocElementById(resizer);
     const resizableWidthHeight = window.document.getElementById('demo') as HTMLElement;
+
     const minSize = 20;
-    let originalWidth = 0;
-    let originalHeight = 0;
-    // let originalX = 0;
-    // let originalY = 0;
+    let prtfTreeWidth = 0;
+    let prtfTreeHeight = 0;
+    let prtfDetailsWidth = 0;
     let originalMouseX = 0;
     let originalMouseY = 0;
-    element.addEventListener('mousedown', function(event: any) {
+
+    resizerDiv.addEventListener('mousedown', function(event: any) {
       event.preventDefault();
-      originalWidth = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
-      originalHeight = parseFloat(getComputedStyle(element, null).getPropertyValue('height').replace('px', ''));
-      // originalX = element.getBoundingClientRect().left;
-      // originalY = element.getBoundingClientRect().top;
+      prtfTreeWidth = parseFloat(getComputedStyle(panelPrtfTreeId, null).getPropertyValue('width').replace('px', ''));
+      prtfTreeHeight = parseFloat(getComputedStyle(panelPrtfTreeId, null).getPropertyValue('height').replace('px', ''));
+      prtfDetailsWidth = parseFloat(getComputedStyle(panelPrtfDetailsId, null).getPropertyValue('width').replace('px', ''));
       originalMouseX = event.pageX;
       originalMouseY = event.pageY;
-      window.addEventListener('mousemove', resizeDiv);
+      window.addEventListener('mousemove', resizePrtfTree);
       window.addEventListener('mouseup', stopResize);
     });
 
-    function resizeDiv(event: any) {
-      const width = originalWidth + (event.pageX - originalMouseX);
-      const height = originalHeight + (event.pageY - originalMouseY);
-      resizableWidthHeight.innerText = 'Browser inner window width : ' + width + ', height : ' + height;
-      if (width > minSize)
-        element.style.width = width + 'px';
-      if (height > minSize)
-        element.style.height = height + 'px';
+    function resizePrtfTree(event: any) {
+      const treeWidth = prtfTreeWidth + (event.pageX - originalMouseX);
+      const detailsWidth = prtfDetailsWidth - (event.pageX - originalMouseX);
+      const treeHeight = prtfTreeHeight + (event.pageY - originalMouseY);
+      resizableWidthHeight.innerHTML = 'Browser inner window width : ' + treeWidth + ', height : ' + treeHeight;
+      if (treeWidth > minSize) {
+        panelPrtfTreeId.style.width = treeWidth + 'px';
+        panelPrtfDetailsId.style.width = detailsWidth + 'px';
+      }
+      if (treeHeight > minSize) {
+        panelPrtfTreeId.style.height = treeHeight + 'px';
+        panelPrtfDetailsId.style.height = treeHeight + 'px';
+      }
     }
 
     function stopResize() {
-      window.removeEventListener('mousemove', resizeDiv);
+      window.removeEventListener('mousemove', resizePrtfTree);
     }
   }
 
-  // Under Development - Daya
-  // onMouseEnterReziableDiv() {
-  //   this.isMouseEnterReziableDiv = true;
-  //   this.isShowResizableDiv = this.isMouseEnterReziableDiv || this.isMouseOverPrtfTree;
-  // }
+  makeResizablePrtfDetails(resizer2: string) {
+    const panelChartId = PortfolioManagerComponent.getNonNullDocElementById('panelChart');
+    const panelStatsAndPerfSpecId = PortfolioManagerComponent.getNonNullDocElementById('panelStatsAndPerfSpec');
+    const panelStatsId = PortfolioManagerComponent.getNonNullDocElementById('panelStats');
+    const panelPerfSpecId = PortfolioManagerComponent.getNonNullDocElementById('panelPerfSpec');
 
-  // onMouseLeaveReziableDiv() {
-  //   this.isMouseEnterReziableDiv = false;
-  //   this.isMouseOverPrtfTree = false;
-  //   this.isShowResizableDiv = this.isMouseEnterReziableDiv || this.isMouseOverPrtfTree;
-  // }
+    const resizerDiv = PortfolioManagerComponent.getNonNullDocElementById(resizer2);
+    const resizableWidthHeight = window.document.getElementById('demo') as HTMLElement;
+    const minSize = 20;
+    let panelChartWidth = 0;
+    let panelChartHeight = 0;
+    let panelStatsAndPerfSpecHeight = 0;
+    let panelStatsHeight = 0;
+    let panelPerfSpecHeight = 0;
+    let originalMouseX = 0;
+    let originalMouseY = 0;
+
+    resizerDiv.addEventListener('mousedown', function(event: any) {
+      event.preventDefault();
+      panelChartWidth = parseFloat(getComputedStyle(panelChartId, null).getPropertyValue('width').replace('px', ''));
+      panelChartHeight = parseFloat(getComputedStyle(panelChartId, null).getPropertyValue('height').replace('px', ''));
+      panelStatsAndPerfSpecHeight = parseFloat(getComputedStyle(panelStatsAndPerfSpecId, null).getPropertyValue('height').replace('px', ''));
+      panelStatsHeight = parseFloat(getComputedStyle(panelStatsId, null).getPropertyValue('height').replace('px', ''));
+      panelPerfSpecHeight = parseFloat(getComputedStyle(panelPerfSpecId, null).getPropertyValue('height').replace('px', ''));
+      originalMouseX = event.pageX;
+      originalMouseY = event.pageY;
+      window.addEventListener('mousemove', resizePrtfDetails);
+      window.addEventListener('mouseup', stopResize);
+    });
+
+    function resizePrtfDetails(event: any) {
+      const width = panelChartWidth + (event.pageX - originalMouseX);
+      const height = panelChartHeight + (event.pageY - originalMouseY);
+      const statsAndPerfHeight = panelStatsAndPerfSpecHeight - (event.pageY - originalMouseY);
+      const statsHeight = panelStatsHeight - (event.pageY - originalMouseY);
+      const perfSpecHeight = panelPerfSpecHeight - (event.pageY - originalMouseY);
+
+      resizableWidthHeight.innerHTML = 'Browser inner window width : ' + width + ', height : ' + height;
+      if (height > minSize) {
+        panelChartId.style.height = height + 'px';
+        panelStatsAndPerfSpecId.style.height = statsAndPerfHeight + 'px';
+        panelStatsId.style.height = statsHeight + 'px';
+        panelPerfSpecId.style.height = perfSpecHeight + 'px';
+      }
+    }
+
+    function stopResize() {
+      window.removeEventListener('mousemove', resizePrtfDetails);
+    }
+  }
 }
