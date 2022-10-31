@@ -143,45 +143,28 @@ export class PortfolioManagerComponent implements OnInit {
   makeResizablePrtfTree(resizer: string) {
     const panelPrtfTreeId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfTree');
     const panelPrtfDetailsId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfDetails');
-
+    const panelPrtfMgrId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfMgr');
     const resizerDiv = PortfolioManagerComponent.getNonNullDocElementById(resizer);
     const resizableWidthHeight = window.document.getElementById('demo') as HTMLElement;
 
-    const minSize = 20;
-    let prtfTreeWidth = 0;
-    let prtfTreeHeight = 0;
-    let prtfDetailsWidth = 0;
-    let originalMouseX = 0;
-    let originalMouseY = 0;
-
-    resizerDiv.addEventListener('mousedown', function(event: any) {
-      event.preventDefault();
-      prtfTreeWidth = parseFloat(getComputedStyle(panelPrtfTreeId, null).getPropertyValue('width').replace('px', ''));
-      prtfTreeHeight = parseFloat(getComputedStyle(panelPrtfTreeId, null).getPropertyValue('height').replace('px', ''));
-      prtfDetailsWidth = parseFloat(getComputedStyle(panelPrtfDetailsId, null).getPropertyValue('width').replace('px', ''));
-      originalMouseX = event.pageX;
-      originalMouseY = event.pageY;
-      window.addEventListener('mousemove', resizePrtfTree);
+    resizerDiv.addEventListener('mousedown', resizingDiv);
+    function resizingDiv(event: any) {
+      window.addEventListener('mousemove', mousemove);
       window.addEventListener('mouseup', stopResize);
-    });
+      const originalMouseX = event.pageX;
+      const panelPrtfTree = panelPrtfTreeId.getBoundingClientRect();
+      const panelPrtfDetails = panelPrtfDetailsId.getBoundingClientRect();
 
-    function resizePrtfTree(event: any) {
-      const treeWidth = prtfTreeWidth + (event.pageX - originalMouseX);
-      const detailsWidth = prtfDetailsWidth - (event.pageX - originalMouseX);
-      const treeHeight = prtfTreeHeight + (event.pageY - originalMouseY);
-      resizableWidthHeight.innerHTML = 'Browser inner window width : ' + treeWidth + ', height : ' + treeHeight;
-      if (treeWidth > minSize) {
-        panelPrtfTreeId.style.width = treeWidth + 'px';
-        panelPrtfDetailsId.style.width = detailsWidth + 'px';
+      function mousemove(event: any) {
+        panelPrtfTreeId.style.width = panelPrtfTree.width - (originalMouseX - event.pageX) + 'px';
+        panelPrtfDetailsId.style.width = panelPrtfDetails.width + (originalMouseX - event.pageX) + 'px';
+        panelPrtfMgrId.style.width = panelPrtfTreeId.style.width + panelPrtfDetailsId.style.width;
+        resizableWidthHeight.innerHTML = 'Browser inner window width : ' + panelPrtfMgrId.offsetWidth + ', height : ' + panelPrtfMgrId.offsetHeight;
       }
-      if (treeHeight > minSize) {
-        panelPrtfTreeId.style.height = treeHeight + 'px';
-        panelPrtfDetailsId.style.height = treeHeight + 'px';
-      }
-    }
 
-    function stopResize() {
-      window.removeEventListener('mousemove', resizePrtfTree);
+      function stopResize() {
+        window.removeEventListener('mousemove', mousemove);
+      }
     }
   }
 
@@ -192,47 +175,27 @@ export class PortfolioManagerComponent implements OnInit {
     const panelPerfSpecId = PortfolioManagerComponent.getNonNullDocElementById('panelPerfSpec');
 
     const resizerDiv = PortfolioManagerComponent.getNonNullDocElementById(resizer2);
-    const resizableWidthHeight = window.document.getElementById('demo') as HTMLElement;
-    const minSize = 20;
-    let panelChartWidth = 0;
-    let panelChartHeight = 0;
-    let panelStatsAndPerfSpecHeight = 0;
-    let panelStatsHeight = 0;
-    let panelPerfSpecHeight = 0;
-    let originalMouseX = 0;
-    let originalMouseY = 0;
 
-    resizerDiv.addEventListener('mousedown', function(event: any) {
-      event.preventDefault();
-      panelChartWidth = parseFloat(getComputedStyle(panelChartId, null).getPropertyValue('width').replace('px', ''));
-      panelChartHeight = parseFloat(getComputedStyle(panelChartId, null).getPropertyValue('height').replace('px', ''));
-      panelStatsAndPerfSpecHeight = parseFloat(getComputedStyle(panelStatsAndPerfSpecId, null).getPropertyValue('height').replace('px', ''));
-      panelStatsHeight = parseFloat(getComputedStyle(panelStatsId, null).getPropertyValue('height').replace('px', ''));
-      panelPerfSpecHeight = parseFloat(getComputedStyle(panelPerfSpecId, null).getPropertyValue('height').replace('px', ''));
-      originalMouseX = event.pageX;
-      originalMouseY = event.pageY;
-      window.addEventListener('mousemove', resizePrtfDetails);
+    resizerDiv.addEventListener('mousedown', resizingDiv);
+    function resizingDiv(event: any) {
+      window.addEventListener('mousemove', mousemove);
       window.addEventListener('mouseup', stopResize);
-    });
+      const originalMouseY = event.pageY;
+      const panelChart = panelChartId.getBoundingClientRect();
+      const panelStatsAndPerfSpec = panelStatsAndPerfSpecId.getBoundingClientRect();
+      const panelStats = panelStatsId.getBoundingClientRect();
+      const panelPerfSpec = panelPerfSpecId.getBoundingClientRect();
 
-    function resizePrtfDetails(event: any) {
-      const width = panelChartWidth + (event.pageX - originalMouseX);
-      const height = panelChartHeight + (event.pageY - originalMouseY);
-      const statsAndPerfHeight = panelStatsAndPerfSpecHeight - (event.pageY - originalMouseY);
-      const statsHeight = panelStatsHeight - (event.pageY - originalMouseY);
-      const perfSpecHeight = panelPerfSpecHeight - (event.pageY - originalMouseY);
-
-      resizableWidthHeight.innerHTML = 'Browser inner window width : ' + width + ', height : ' + height;
-      if (height > minSize) {
-        panelChartId.style.height = height + 'px';
-        panelStatsAndPerfSpecId.style.height = statsAndPerfHeight + 'px';
-        panelStatsId.style.height = statsHeight + 'px';
-        panelPerfSpecId.style.height = perfSpecHeight + 'px';
+      function mousemove(event: any) {
+        panelChartId.style.height = panelChart.height - (originalMouseY - event.pageY) + 'px';
+        panelStatsAndPerfSpecId.style.height = panelStatsAndPerfSpec.height + (originalMouseY - event.pageY) + 'px';
+        panelStatsId.style.height = panelStats.height + (originalMouseY - event.pageY) + 'px';
+        panelPerfSpecId.style.height = panelPerfSpec.height + (originalMouseY - event.pageY) + 'px';
       }
-    }
 
-    function stopResize() {
-      window.removeEventListener('mousemove', resizePrtfDetails);
+      function stopResize() {
+        window.removeEventListener('mousemove', mousemove);
+      }
     }
   }
 }

@@ -228,6 +228,10 @@
   width: 10.8rem;
 }
 
+#filtering {
+  position: relative;
+  left: 42rem;
+}
 
 // Table stylings
 .brAccSnapTbl {
@@ -276,6 +280,11 @@ thead tr :hover {
 
 tr:nth-child(even) {
   background-color: #9dcef8;
+}
+
+.selectedBrcAccSnapShotTbl {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Graph -  Style the lines by removing the fill and applying a stroke */
