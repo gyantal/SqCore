@@ -11,7 +11,7 @@
 
 #panelPrtfMgr {
   width: 100%;
-  height: 95vh;
+  height: 95.6vh;
   margin-left: auto;
   margin-right: auto;
   display: flex;
@@ -20,14 +20,14 @@
 #panelPrtfTree { // Section 1
   float: left;
   width: 30.25%;
-  height: 95vh;
+  height: 95.6vh;
   background: yellow;
 }
 
 #resizer {
   float: left;
   width: .5%;
-  height: 95vh;
+  height: 95.6vh;
   background-color: #9c9fa3;
   cursor: col-resize;
 }
@@ -36,21 +36,21 @@
   position: relative;
   float: right;
   width: 69.25%;
-  height: 95vh;
+  height: 95.6vh;
   background-color: skyblue;
 }
 
 #panelChart {
   float: left;
   width: 100%;
-  height: 44.2vh;
+  height: 48vh;
   background-color: #228B22;
 }
 
 #resizer2 {
   float: left;
   width: 100%;
-  height: 0.8vh;
+  height: 0.6vh;
   background-color: #9c9fa3;
   cursor: row-resize;
 }
@@ -58,14 +58,14 @@
 #panelStatsAndPerfSpec {
   // float: right;
   width: 100%;
-  height: 50vh;
+  height: 47vh;
   display: flex;
 }
 
 #panelStats {
   float: left;
   width: 50%;
-  height: 50vh;
+  height: 47vh;
   background-color: antiquewhite;
   overflow: auto;
 }
@@ -73,7 +73,7 @@
 #panelPerfSpec {
   float: right;
   width: 50%;
-  height: 50vh;
+  height: 47vh;
   background-color: lightpink;
   overflow: auto;
 }
@@ -144,4 +144,15 @@ ul, #panelPrtfTree {
 //   background: #000 !important;
 //   color: #0f0 !important;
 //   outline: solid #f00 1px !important;
+// }
+
+// @media screen and (max-width: 900px) {
+//   #panelPrtfTree {
+//     width: 32.5%;
+//     background-color: #228B22;
+//   }
+
+//   #panelPrtfDetails {
+//     width: 69.5%;
+//   }
 // }

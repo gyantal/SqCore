@@ -38,7 +38,7 @@ p {
 }
 
 .toolbar {
-  height: 4rem;
+  height: 4vh;
   margin: 0rem; // margin is outer space of an element
   padding: 0rem; // padding is inner space of an element
   display: flex;
@@ -341,7 +341,7 @@ svg.material-icons2 path {
 
 .toolContainer {
   display: flex;
-  margin: 0.4rem auto;
+  margin: 0.4vh auto;
   padding: 0 0rem;
   width: 100%;
   flex-direction: column;
