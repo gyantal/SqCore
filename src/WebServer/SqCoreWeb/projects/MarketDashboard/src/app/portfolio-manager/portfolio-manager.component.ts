@@ -93,7 +93,6 @@ export class PortfolioManagerComponent implements OnInit {
   // Under development - Daya
   onClickPortfolio(portfolioSelected: string) {
     this.portfolioSelectionSelected = portfolioSelected;
-    const panelPrtfTreeId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfTree') as HTMLElement;
     const portfolioView = document.getElementsByClassName('portfolioNestedView');
     console.log('The length of tree view is :', portfolioView.length);
     console.log('The portfolioSelected is :', portfolioSelected);
@@ -111,22 +110,10 @@ export class PortfolioManagerComponent implements OnInit {
         break;
       }
     }
-    this.displayPanelWidthAndHieght(panelPrtfTreeId.id);
   }
 
   onClickPortfolioPreview(tabIdx: number) {
     this.tabPageVisibleIdx = tabIdx;
-  }
-
-  displayPanelWidthAndHieght(id: string) {
-    this.panelPrtfTreeWidth = PortfolioManagerComponent.getNonNullDocElementById(id).clientWidth as number;
-    this.panelPrtfTreeHeight = PortfolioManagerComponent.getNonNullDocElementById(id).clientHeight as number;
-
-    window.addEventListener('resize', (resizeBy) => {
-      this.panelPrtfTreeWidth = PortfolioManagerComponent.getNonNullDocElementById(id).clientWidth as number;
-      this.panelPrtfTreeHeight = PortfolioManagerComponent.getNonNullDocElementById(id).clientHeight as number;
-      return resizeBy;
-    });
   }
 
   static getNonNullDocElementById(id: string): HTMLElement { // document.getElementById() can return null. This 'forced' type casting fakes that it is not null for the TS compiler. (it can be null during runtime)
@@ -143,9 +130,7 @@ export class PortfolioManagerComponent implements OnInit {
   makeResizablePrtfTree(resizer: string) {
     const panelPrtfTreeId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfTree');
     const panelPrtfDetailsId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfDetails');
-    const panelPrtfMgrId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfMgr');
     const resizerDiv = PortfolioManagerComponent.getNonNullDocElementById(resizer);
-    const resizableWidthHeight = window.document.getElementById('demo') as HTMLElement;
 
     resizerDiv.addEventListener('mousedown', resizingDiv);
     function resizingDiv(event: any) {
@@ -153,13 +138,12 @@ export class PortfolioManagerComponent implements OnInit {
       window.addEventListener('mouseup', stopResize);
       const originalMouseX = event.pageX;
       const panelPrtfTree = panelPrtfTreeId.getBoundingClientRect();
-      const panelPrtfDetails = panelPrtfDetailsId.getBoundingClientRect();
 
       function mousemove(event: any) {
-        panelPrtfTreeId.style.width = panelPrtfTree.width - (originalMouseX - event.pageX) + 'px';
-        panelPrtfDetailsId.style.width = panelPrtfDetails.width + (originalMouseX - event.pageX) + 'px';
-        panelPrtfMgrId.style.width = panelPrtfTreeId.style.width + panelPrtfDetailsId.style.width;
-        resizableWidthHeight.innerHTML = 'Browser inner window width : ' + panelPrtfMgrId.offsetWidth + ', height : ' + panelPrtfMgrId.offsetHeight;
+        const width = window.innerWidth || document.documentElement.clientWidth || document.documentElement.getElementsByTagName('body')[0].clientWidth; // required for pixels to viewport width conversion.
+        const calculatedWidth = 100 * (panelPrtfTree.width - (originalMouseX - event.pageX)) / width;
+        panelPrtfTreeId.style.width = calculatedWidth + 'vw';
+        panelPrtfDetailsId.style.width = (100 - calculatedWidth) + 'vw'; // 100vw is the whole window width as we know the prtfTree width, based on that we are calculating the prtfDetails width in vw
       }
 
       function stopResize() {
@@ -182,15 +166,14 @@ export class PortfolioManagerComponent implements OnInit {
       window.addEventListener('mouseup', stopResize);
       const originalMouseY = event.pageY;
       const panelChart = panelChartId.getBoundingClientRect();
-      const panelStatsAndPerfSpec = panelStatsAndPerfSpecId.getBoundingClientRect();
-      const panelStats = panelStatsId.getBoundingClientRect();
-      const panelPerfSpec = panelPerfSpecId.getBoundingClientRect();
 
       function mousemove(event: any) {
-        panelChartId.style.height = panelChart.height - (originalMouseY - event.pageY) + 'px';
-        panelStatsAndPerfSpecId.style.height = panelStatsAndPerfSpec.height + (originalMouseY - event.pageY) + 'px';
-        panelStatsId.style.height = panelStats.height + (originalMouseY - event.pageY) + 'px';
-        panelPerfSpecId.style.height = panelPerfSpec.height + (originalMouseY - event.pageY) + 'px';
+        const height = window.innerHeight || document.documentElement.clientHeight || document.documentElement.getElementsByTagName('body')[0].clientHeight; // required for pixels to viewport height conversion.
+        const calculatedHeight = 100 * (panelChart.height - (originalMouseY - event.pageY)) / height;
+        panelChartId.style.height = calculatedHeight + 'vh';
+        panelStatsAndPerfSpecId.style.height = (95 - calculatedHeight) + 'vh'; // 95vh is the total veiwport heigh of pancelchart and panelStatsAndPerfSpecId
+        panelStatsId.style.height = (95 - calculatedHeight) + 'vh';
+        panelPerfSpecId.style.height = (95 - calculatedHeight) + 'vh';
       }
 
       function stopResize() {

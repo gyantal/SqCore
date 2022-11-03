@@ -12,8 +12,6 @@
 #panelPrtfMgr {
   width: 100%;
   height: 95.6vh;
-  margin-left: auto;
-  margin-right: auto;
   display: flex;
 }
 
@@ -56,7 +54,6 @@
 }
 
 #panelStatsAndPerfSpec {
-  // float: right;
   width: 100%;
   height: 47vh;
   display: flex;
@@ -116,43 +113,26 @@ ul, #panelPrtfTree {
   list-style: disc;
 }
 
-// .portfolioPreviewButtons {
-//   display: inline-block;
-//   width: 25%;
-//   height: 2rem;
-// }
+.portfolioPreviewButtons {
+  display: inline-block;
+  width: 25%;
+  height: 2rem;
+}
 
-// /* Change background color of buttons on hover */
-// .portfolioPreviewButtons :hover {
-//   border: .1rem solid #228B22;
-//   backdrop-filter: blur(1rem);
-//   transform: skewX(-10deg);
-//   height: 2.1rem;
-//   width: 13rem;
-//   border-radius: 0.75rem .5rem 0.75rem 0;
-//   position: relative;
-//   justify-content: center;
-//   transition: all .2s ease;
-//   font: 0.5rem;
-//   font-weight: 200;
-//   text-shadow: 0 0 1rem #fff;
-//   animation: breath2 2s .5s infinite alternate;
-//   cursor: pointer;
-// }
-
-// * {
-//   background: #000 !important;
-//   color: #0f0 !important;
-//   outline: solid #f00 1px !important;
-// }
-
-// @media screen and (max-width: 900px) {
-//   #panelPrtfTree {
-//     width: 32.5%;
-//     background-color: #228B22;
-//   }
-
-//   #panelPrtfDetails {
-//     width: 69.5%;
-//   }
-// }
+/* Change background color of buttons on hover */
+.portfolioPreviewButtons :hover {
+  border: .1rem solid #228B22;
+  backdrop-filter: blur(1rem);
+  transform: skewX(-10deg);
+  height: 2.1rem;
+  width: 13rem;
+  border-radius: 0.75rem .5rem 0.75rem 0;
+  position: relative;
+  justify-content: center;
+  transition: all .2s ease;
+  font: 0.5rem;
+  font-weight: 200;
+  text-shadow: 0 0 1rem #fff;
+  animation: breath2 2s .5s infinite alternate;
+  cursor: pointer;
+}
