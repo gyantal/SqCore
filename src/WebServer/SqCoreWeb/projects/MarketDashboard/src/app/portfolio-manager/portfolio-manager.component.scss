@@ -11,21 +11,21 @@
 
 #panelPrtfMgr {
   width: 100%;
-  height: 95.6vh;
+  height: 96vh;
   display: flex;
 }
 
 #panelPrtfTree { // Section 1
   float: left;
   width: 30.25%;
-  height: 95.6vh;
+  height: 96vh;
   background: yellow;
 }
 
 #resizer {
   float: left;
   width: .5%;
-  height: 95.6vh;
+  height: 96vh;
   background-color: #9c9fa3;
   cursor: col-resize;
 }
@@ -34,21 +34,21 @@
   position: relative;
   float: right;
   width: 69.25%;
-  height: 95.6vh;
+  height: 96vh;
   background-color: skyblue;
 }
 
 #panelChart {
   float: left;
   width: 100%;
-  height: 48vh;
+  height: 48.5vh;
   background-color: #228B22;
 }
 
 #resizer2 {
   float: left;
   width: 100%;
-  height: 0.6vh;
+  height: 0.5vh;
   background-color: #9c9fa3;
   cursor: row-resize;
 }
@@ -67,7 +67,7 @@
   overflow: auto;
 }
 
-#panelPerfSpec {
+#panelPrtfSpec {
   float: right;
   width: 50%;
   height: 47vh;

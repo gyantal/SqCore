@@ -2,7 +2,7 @@
 
 html {
     font-size: 62.5%;   // revert to root font size of 10px. it allows to set font-size in rem, that corresponds to px
-    height: 100vh;
+    height: 100vh; // we need to specify height 100vh as this is the whole tool height otherwise we will get scroll bar on the rightside
   }
 
 body {

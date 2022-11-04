@@ -45,7 +45,7 @@ export class PortfolioManagerComponent implements OnInit {
     this.panelStatsWidth = panelStatsId.clientWidth as number;
     this.panelStatsHeight = panelStatsId.clientHeight as number;
 
-    const panelPrtfSpecId = PortfolioManagerComponent.getNonNullDocElementById('panelPerfSpec');
+    const panelPrtfSpecId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfSpec');
     this.panelPrtfSpecWidth = panelPrtfSpecId.clientWidth as number;
     this.panelPrtfSpecHeight = panelPrtfSpecId.clientHeight as number;
 
@@ -156,7 +156,7 @@ export class PortfolioManagerComponent implements OnInit {
     const panelChartId = PortfolioManagerComponent.getNonNullDocElementById('panelChart');
     const panelStatsAndPerfSpecId = PortfolioManagerComponent.getNonNullDocElementById('panelStatsAndPerfSpec');
     const panelStatsId = PortfolioManagerComponent.getNonNullDocElementById('panelStats');
-    const panelPerfSpecId = PortfolioManagerComponent.getNonNullDocElementById('panelPerfSpec');
+    const panelPrtfSpecId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfSpec');
 
     const resizerDiv = PortfolioManagerComponent.getNonNullDocElementById(resizer2);
 
@@ -171,9 +171,9 @@ export class PortfolioManagerComponent implements OnInit {
         const height = window.innerHeight || document.documentElement.clientHeight || document.documentElement.getElementsByTagName('body')[0].clientHeight; // required for pixels to viewport height conversion.
         const calculatedHeight = 100 * (panelChart.height - (originalMouseY - event.pageY)) / height;
         panelChartId.style.height = calculatedHeight + 'vh';
-        panelStatsAndPerfSpecId.style.height = (95 - calculatedHeight) + 'vh'; // 95vh is the total veiwport heigh of pancelchart and panelStatsAndPerfSpecId
-        panelStatsId.style.height = (95 - calculatedHeight) + 'vh';
-        panelPerfSpecId.style.height = (95 - calculatedHeight) + 'vh';
+        panelStatsAndPerfSpecId.style.height = (95.5 - calculatedHeight) + 'vh'; // 95.5vh is the total veiwport heigh of pancelchart and panelStatsAndPerfSpecId
+        panelStatsId.style.height = (95.5 - calculatedHeight) + 'vh';
+        panelPrtfSpecId.style.height = (95.5 - calculatedHeight) + 'vh';
       }
 
       function stopResize() {
