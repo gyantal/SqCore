@@ -11,6 +11,15 @@ namespace SqCoreWeb;
 class HandshakePortfMgr // Initial params: keept it small
 {
     public string UserName { get; set; } = string.Empty;
+    public List<PortfolioMgrJs> PortfolioMgrJs { get; set; } = new();
+}
+
+class PortfolioMgrJs
+{
+    public int Id { get; set; } = -1;
+    public string Name { get; set; } = string.Empty;
+    public int UserId { get; set; } = -1;
+    public int ParentFolderId { get; set; } = -1;
 }
 
 public partial class DashboardClient
@@ -39,7 +48,21 @@ public partial class DashboardClient
 
     private HandshakePortfMgr GetHandshakePortfMgr()
     {
-        return new HandshakePortfMgr() { UserName = User.Username };
+        Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
+        List<PortfolioMgrJs> portfolios = new(prtfFldrs.Count);
+        foreach(PortfolioFolder prtf in prtfFldrs)
+        {
+            PortfolioMgrJs res = new()
+            {
+                Id = prtf.Id,
+                Name = prtf.Name,
+                ParentFolderId = prtf.ParentFolderId,
+                UserId = prtf.UserId
+            };
+            portfolios.Add(res);
+        }
+
+        return new HandshakePortfMgr() { UserName = User.Username, PortfolioMgrJs = portfolios };
     }
 
     private void PortfMgrSendPortfolios()

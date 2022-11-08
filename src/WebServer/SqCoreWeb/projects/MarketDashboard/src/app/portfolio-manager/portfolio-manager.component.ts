@@ -1,5 +1,19 @@
 import { Component, OnInit, Input } from '@angular/core';
 
+type Nullable<T> = T | null;
+
+// Input data classes
+class PrtfMgrVwrHandShk {
+  portfolioMgrJs: Nullable<PortfolioMgrJs[]> = null;
+}
+
+class PortfolioMgrJs {
+  public id = -1;
+  public name = '';
+  public userId = -1;
+  public parentFolderId = -1;
+}
+
 @Component({
   selector: 'app-portfolio-manager',
   templateUrl: './portfolio-manager.component.html',
@@ -8,6 +22,8 @@ import { Component, OnInit, Input } from '@angular/core';
 export class PortfolioManagerComponent implements OnInit {
   @Input() _parentWsConnection?: WebSocket = undefined; // this property will be input from above parent container
 
+  handshakeObj: Nullable<PrtfMgrVwrHandShk> = null;
+  uiPortfolioMgrs: PortfolioMgrJs[] = [];
   portfolioSelection: string[] = ['Dr. Gyorgy, Antal', 'Didier Charmat']; // PrtFldrs
   portfolioSelectionSelected: string = 'Dr. Gyorgy, Antal';
   tabPageVisibleIdx = 1;
@@ -84,6 +100,8 @@ export class PortfolioManagerComponent implements OnInit {
         return true;
       case 'PortfMgr.Handshake': // The least frequent message should come last.
         console.log('PortfMgr.Handshake:' + msgObjStr);
+        this.handshakeObj = JSON.parse(msgObjStr);
+        PortfolioManagerComponent.updateUiPortfolioMgrs(this.handshakeObj, this.uiPortfolioMgrs);
         return true;
       default:
         return false;
@@ -179,6 +197,69 @@ export class PortfolioManagerComponent implements OnInit {
       function stopResize() {
         window.removeEventListener('mousemove', mousemove);
       }
+    }
+  }
+
+  // under Development -- Daya
+  static updateUiPortfolioMgrs(handshakeObj: Nullable<PrtfMgrVwrHandShk>, uiPortfolioMgrs: PortfolioMgrJs[]) {
+    const prtfMgrs: Nullable<PortfolioMgrJs[]> = (handshakeObj == null) ? null : handshakeObj.portfolioMgrJs;
+    if (!(Array.isArray(prtfMgrs) && prtfMgrs.length > 0 ))
+      return;
+
+    for (const prtfMgr of prtfMgrs) {
+      const uiProtfolios = new PortfolioMgrJs();
+      uiProtfolios.id = prtfMgr.id;
+      uiProtfolios.name = prtfMgr.name;
+      uiProtfolios.parentFolderId = prtfMgr.parentFolderId;
+      uiProtfolios.userId = prtfMgr.userId;
+      uiPortfolioMgrs.push(uiProtfolios);
+    }
+
+    const portfolios = PortfolioManagerComponent.createTreeViewData(uiPortfolioMgrs);
+    const containerPrtfTree = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfTree');
+    PortfolioManagerComponent.uiNestedTreeView(portfolios, containerPrtfTree);
+  }
+
+  static createTreeViewData(portfolios: any) {
+    const tree = [];
+    const object = {};
+    let parent: any;
+    let child: any;
+
+    for (let i = 0; i < portfolios.length; i++) {
+      parent = portfolios[i];
+      object[parent.id] = parent;
+      object[parent.id]['children'] = [];
+    }
+
+    for (const id in object) {
+      if (object.hasOwnProperty(id)) {
+        child = object[id];
+        if (child.parentFolderId && object[child['parentFolderId']])
+          object[child['parentFolderId']]['children'].push(child);
+        else
+          tree.push(child as never);
+      }
+    }
+    return tree;
+  };
+
+  // creating a nested structure view on HTMl dynamically
+  static uiNestedTreeView(portoflios: any, parent: HTMLElement) {
+    const ul = document.createElement('ul');
+    if (parent) {
+      parent.appendChild(ul);
+      portoflios.forEach(function(portfolio: any) {
+        const li = document.createElement('li');
+        li.innerHTML = portfolio.name;
+        if (portfolio.children && portfolio.children.length > 0) {
+          li.classList.add('portfolioNestedView');
+          PortfolioManagerComponent.uiNestedTreeView(portfolio.children, li);
+        }
+        ul.classList.add('portfolioManager');
+        ul.append(li);
+      });
+      return ul;
     }
   }
 }
