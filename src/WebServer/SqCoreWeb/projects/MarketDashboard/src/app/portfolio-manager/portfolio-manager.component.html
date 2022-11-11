@@ -1,12 +1,12 @@
 <div id="panelPrtfMgr">
   <div id="panelPrtfTree">panelPrtfTree
-    whole Tool area without Dashboard header
-    Width: {{prtfMgrToolWidth}}
-    Height: {{prtfMgrToolHeight}}
-    <br>
-    Width: {{panelPrtfTreeWidth}}
-    Height: {{panelPrtfTreeHeight}}
-    <li><span class="portfolioManager" (click)="onClickPortfolio('Dr. Gyorgy, Antal')">Dr. Gyorgy, Antal</span>
+    <span class="tooltipGeneral">
+      <div class="tooltipText">
+        Force reload Protfolio folders.
+      </div>
+      <span class="refresh"><img class="refresh" src='../assets/images/refresh64.webp' (click)="onPortfoliosRefreshClicked()"></span>
+    </span>
+    <!-- <li><span class="portfolioManager" (click)="onClickPortfolio('Dr. Gyorgy, Antal')">Dr. Gyorgy, Antal</span>
       <ul class="portfolioNestedView">
         <li>B T.</li>
         <li>Old Agy Live</li>
@@ -21,7 +21,14 @@
         <li>Our Sq and Dc Live</li>
         <li>Quickfolios</li>
       </ul>
-    </li>
+    </li> -->
+     whole Tool area without Dashboard header
+    Width: {{prtfMgrToolWidth}}
+    Height: {{prtfMgrToolHeight}}
+    <br>
+    Width: {{panelPrtfTreeWidth}}
+    Height: {{panelPrtfTreeHeight}}
+   
   </div>
   <div id="resizer" (mouseover)="onMouseOver('resizer')"></div>
   <div id="panelPrtfDetails">

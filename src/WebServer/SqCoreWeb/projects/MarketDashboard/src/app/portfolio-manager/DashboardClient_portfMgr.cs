@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading;
 using FinTechCommon;
 using SqCommon;
@@ -11,14 +12,16 @@ namespace SqCoreWeb;
 class HandshakePortfMgr // Initial params: keept it small
 {
     public string UserName { get; set; } = string.Empty;
-    public List<PortfolioMgrJs> PortfolioMgrJs { get; set; } = new();
 }
 
-class PortfolioMgrJs
+class PortfolioFolderJs
 {
     public int Id { get; set; } = -1;
+    [JsonPropertyName("n")]
     public string Name { get; set; } = string.Empty;
+    [JsonPropertyName("u")]
     public int UserId { get; set; } = -1;
+    [JsonPropertyName("p")]
     public int ParentFolderId { get; set; } = -1;
 }
 
@@ -48,28 +51,34 @@ public partial class DashboardClient
 
     private HandshakePortfMgr GetHandshakePortfMgr()
     {
+        return new HandshakePortfMgr() { UserName = User.Username };
+    }
+
+    // private void PortfMgrSendPortfolios()
+    // {
+    //     List<string> portfolios = User.IsAdmin ? new List<string>() { "PorfolioName1", "PortfolioName2" } : new List<string>() { "PorfolioName3", "PortfolioName4" };
+
+    // byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Portfolios:" + Utils.CamelCaseSerialize(portfolios));
+    //     if (WsWebSocket!.State == WebSocketState.Open)
+    //         WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+    // }
+    private void PortfMgrSendPortfolios()
+    {
         Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
-        List<PortfolioMgrJs> portfolios = new(prtfFldrs.Count);
+        List<PortfolioFolderJs> portfolioFldrs = new(prtfFldrs.Count);
         foreach(PortfolioFolder prtf in prtfFldrs)
         {
-            PortfolioMgrJs res = new()
+            PortfolioFolderJs res = new()
             {
                 Id = prtf.Id,
                 Name = prtf.Name,
                 ParentFolderId = prtf.ParentFolderId,
                 UserId = prtf.UserId
             };
-            portfolios.Add(res);
+            portfolioFldrs.Add(res);
         }
 
-        return new HandshakePortfMgr() { UserName = User.Username, PortfolioMgrJs = portfolios };
-    }
-
-    private void PortfMgrSendPortfolios()
-    {
-        List<string> portfolios = User.IsAdmin ? new List<string>() { "PorfolioName1", "PortfolioName2" } : new List<string>() { "PorfolioName3", "PortfolioName4" };
-
-        byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Portfolios:" + Utils.CamelCaseSerialize(portfolios));
+        byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Portfolios:" + Utils.CamelCaseSerialize(portfolioFldrs));
         if (WsWebSocket!.State == WebSocketState.Open)
             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
@@ -82,7 +91,11 @@ public partial class DashboardClient
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortf '{msgObjStr}'");
                 return true;
             case "PortfMgr.DeletePortf":
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortf '{msgObjStr}'");
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): DeletePortf '{msgObjStr}'");
+                return true;
+            case "PortfMgr.RefreshPortfolios":
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): RefreshPortfolios '{msgObjStr}'");
+                PortfMgrSendPortfolios();
                 return true;
             default:
                 return false;
