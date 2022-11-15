@@ -66,16 +66,16 @@ public partial class DashboardClient
     {
         Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
         List<PortfolioFolderJs> portfolioFldrs = new(prtfFldrs.Count);
-        foreach(PortfolioFolder prtf in prtfFldrs)
+        foreach(PortfolioFolder pf in prtfFldrs)
         {
-            PortfolioFolderJs res = new()
+            PortfolioFolderJs pfJs = new()
             {
-                Id = prtf.Id,
-                Name = prtf.Name,
-                ParentFolderId = prtf.ParentFolderId,
-                UserId = prtf.UserId
+                Id = pf.Id,
+                Name = pf.Name,
+                ParentFolderId = pf.ParentFolderId,
+                UserId = pf.UserId
             };
-            portfolioFldrs.Add(res);
+            portfolioFldrs.Add(pfJs);
         }
 
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Portfolios:" + Utils.CamelCaseSerialize(portfolioFldrs));

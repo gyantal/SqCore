@@ -16,7 +16,7 @@ public partial class MemDb
 {
     public static readonly MemDb gMemDb = new();   // Singleton pattern
     // public object gMemDbUpdateLock = new object();  // the rare clients who care about inter-table consintency (VBroker) should obtain the lock before getting pointers to subtables
-    Db m_Db;
+    Db m_Db; // Persistent database store, like Redis or Sql
 
     MemData m_memData = new();  // strictly private. Don't allow clients to store separate MemData pointers. Clients should use GetAssuredConsistentTables() in general.
 

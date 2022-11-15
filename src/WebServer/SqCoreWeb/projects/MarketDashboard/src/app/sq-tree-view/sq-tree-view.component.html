@@ -1,0 +1,8 @@
+<ul>
+  <li *ngFor="let item of items">
+    <div class="portfolioFolder" (click)="onPortfoioFolderClicked(item)">{{item.name}}</div>
+    <ul *ngIf="item.children && item.isExpanded">
+      <app-sq-tree-view [items]="item.children"></app-sq-tree-view>
+    </ul>
+  </li>
+</ul>

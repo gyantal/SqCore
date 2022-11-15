@@ -2,33 +2,17 @@
   <div id="panelPrtfTree">panelPrtfTree
     <span class="tooltipGeneral">
       <div class="tooltipText">
-        Force reload Protfolio folders.
+        Force reload Portfolios Tree
       </div>
-      <span class="refresh"><img class="refresh" src='../assets/images/refresh64.webp' (click)="onPortfoliosRefreshClicked()"></span>
+      <span class="refreshIcon"><img class="refreshIcon" src='../assets/images/refresh64.webp' (click)="onPortfoliosRefreshClicked()"></span>
     </span>
-    <!-- <li><span class="portfolioManager" (click)="onClickPortfolio('Dr. Gyorgy, Antal')">Dr. Gyorgy, Antal</span>
-      <ul class="portfolioNestedView">
-        <li>B T.</li>
-        <li>Old Agy Live</li>
-        <li>Old gyantal Live</li>
-        <li>Power Event Quickfolios</li>
-      </ul>
-    </li>
-    <li><span class="portfolioManager" (click)="onClickPortfolio('Didier Charmat')">Didier Charmat</span>
-      <ul class="portfolioNestedView">
-        <li>3rdParty Live</li>
-        <li>Earnings Live</li>
-        <li>Our Sq and Dc Live</li>
-        <li>Quickfolios</li>
-      </ul>
-    </li> -->
-     whole Tool area without Dashboard header
+    <app-sq-tree-view [items]="uiPortfolioFoldersNested"></app-sq-tree-view>
+    whole Tool area without Dashboard header
     Width: {{prtfMgrToolWidth}}
     Height: {{prtfMgrToolHeight}}
     <br>
     Width: {{panelPrtfTreeWidth}}
     Height: {{panelPrtfTreeHeight}}
-   
   </div>
   <div id="resizer" (mouseover)="onMouseOver('resizer')"></div>
   <div id="panelPrtfDetails">
