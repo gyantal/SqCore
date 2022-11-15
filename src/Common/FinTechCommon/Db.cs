@@ -230,7 +230,8 @@ public partial class Db
                 Title = usrDb.Title,
                 Firstname = usrDb.Firstname,
                 Lastname = usrDb.Lastname,
-                IsAdmin = usrDb.Isadmin == "1"
+                IsHuman = usrDb.Id > 30,    // IDs smaller than 30 are reserved for parts of the system.
+                IsAdmin = usrDb.Isadmin == 1
                 
             });
         }

@@ -33,14 +33,14 @@ public enum GatewayClientID : int
     SqCoreToGaProd = 60,
     SqCoreToGaDev1 = 63,    // Agy
     SqCoreToGaDev2 = 66,    // Balazs
-    SqCoreToGaDev3 = 69,   // Laci
+    SqCoreToGaDev3 = 69,    // Laci
     SqCoreToGaDev4 = 72,    // Daya
-    SqCoreToGaTest1 = 75,    // it can clash if many developers run the tests at the same time, but that is not likely.
+    SqCoreToGaTest1 = 75,   // it can clash if many developers run the tests at the same time, but that is not likely.
 
     SqCoreToDcProd = 80,
     SqCoreToDcDev1 = 83,
     SqCoreToDcDev2 = 86,
-    SqCoreToDcDev3 = 89,
+    SqCoreToDcDev3 = 89,    // Laci, but in 2022-23, we use it temporarily for SqLab.Vbroker to connect to TWS (rather than using its own IbGateway)
     SqCoreToDcDev4 = 92,
     SqCoreToDcTest1 = 95,
 

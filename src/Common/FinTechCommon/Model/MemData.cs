@@ -34,9 +34,23 @@ internal class MemData  // don't expose to clients.
     public volatile AssetsCache AssetsCache = new();  // writable: user might insert a new asset from HTML UI (although this is dangerous, how to propagate it the gSheet Asset replica)
     public volatile CompactFinTimeSeries<SqDateOnly, uint, float, uint> DailyHist = new();
 
+    // Visibility rules for PortfolioFolders:
+    // - Normal users don't see other user's PortfolioFolders. They see a virtual folder with their username ('dkodirekka'), 
+    // a virtual folder 'Shared with me', and a virtual folder called 'AllUsers'
+    // - Admin users (developers) see all PortfolioFolders of all human users. Each human user (IsHuman) in a virtual folder with their username. 
+    // And the 'Shared with me', and 'AllUsers" virtual folders are there too.
     public volatile Dictionary<int, PortfolioFolder> PortfolioFolders = new(); // Not Array, becuse users can create/delete portfolio folders
 
     // As Portfolios are assets (nesting), we might store portfolios in AssetCache, not separately
+    // ---
+    // Visibility rules for Portfolios:
+    // A portfolio has a 'SharedWith' field. It can be:
+    // "Anyone": totally public. All users can see that
+    // "Restricted": the default: means owner and admins can see it
+    // "drcharmat,jmcharmat,bstanford": a CSV line listing the user.names that the portfolio is shared with.
+    // "OwnerOnly": hidden even from admin users.
+    // Normal users don't see other user's Portfolios. They see the shared portfolios in a virtual 'Shared with me' folder.
+    // Admin users (developers) see all Portfolios of all users except those that are 'OwnerOnly'.
     public volatile List<string> Portfolios = new(); // temporary illustration of a data that will be not only read, but written by SqCore. Portfolios are not necessary here, because they are Assets as well, so they can go to AssetsCache
 
     // Clients can add new Assets to AssetCache, like NonPersinted Options, or new Portfolios. Other clients enumerate all AssetCache (e.g. reloading HistData in every 2 hours). 

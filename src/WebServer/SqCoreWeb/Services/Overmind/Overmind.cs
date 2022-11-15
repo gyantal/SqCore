@@ -80,7 +80,7 @@ public class OvermindExecution : SqExecution
         bool isHealthMonitorAlive = false;
         Task<string?> tcpMsgTask = TcpMessage.Send(string.Empty, (int)HealthMonitorMessageID.Ping, ServerIp.HealthMonitorPublicIp, ServerIp.DefaultHealthMonitorServerPort);
         string? tcpMsgResponse = await tcpMsgTask;
-        Utils.Logger.Debug("CheckHealthMonitorAlive() returned answer: " + tcpMsgResponse ?? string.Empty);
+        Utils.Logger.Info("CheckHealthMonitorAlive() returned answer: " + tcpMsgResponse ?? string.Empty);
         Console.WriteLine($"HealthMonitor Ping return: '{tcpMsgResponse ?? string.Empty}'");
         if (tcpMsgTask.Exception != null || String.IsNullOrEmpty(tcpMsgResponse))
         {
@@ -96,7 +96,7 @@ public class OvermindExecution : SqExecution
             {
                 ToAddresses = Utils.Configuration["Emails:Gyant"],
                 Subject = "SqCore Warning! : HealthMonitor is NOT Alive.",
-                Body = $"SqCore Warning! : HealthMonitor is NOT Alive.",
+                Body = $"SqCore Warning! : HealthMonitor is NOT Alive. MachineName: {Environment.MachineName}, UserName: {Environment.UserName}.",
                 IsBodyHtml = false
             }.SendAsync().RunInSameThreadButReturnAtFirstAwaitAndLogError();
         }

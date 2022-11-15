@@ -19,6 +19,7 @@ public class User
     public string Title { get; set; } = string.Empty;
     public string Firstname { get; set; } = string.Empty;
     public string Lastname { get; set; } = string.Empty;
+    public bool IsHuman { get; set; } = false; // AllUser, SqBacktester... users are not humans.
     public bool IsAdmin { get; set; } = false;
     public User[] VisibleUsers { get; set; } = Array.Empty<User>(); // array is faster than List, https://stackoverflow.com/questions/454916/performance-of-arrays-vs-lists
 
@@ -102,7 +103,7 @@ public class UserInDb	// for quick JSON deserialization. In DB the fields has sh
     public string Title { get; set; } = string.Empty;
     public string Firstname { get; set; } = string.Empty;
     public string Lastname { get; set; } = string.Empty;
-    public string Isadmin { get; set; } = string.Empty;
+    public int Isadmin { get; set; } = 0;
     public string Visibleusers { get; set; } = string.Empty;
 
 }
