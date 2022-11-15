@@ -6,6 +6,20 @@ using SqCommon;
 
 namespace FinTechCommon;
 
+public class UserInDb	// for quick JSON deserialization. In DB the fields has short names, and not all Asset fields are in the DB anyway
+{
+    public int Id { get; set; } = -1;
+    public string Name { get; set; } = string.Empty;
+    public string Pwd { get; set; } = string.Empty;
+
+    public string Email { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Firstname { get; set; } = string.Empty;
+    public string Lastname { get; set; } = string.Empty;
+    public int Isadmin { get; set; } = 0;
+    public string Visibleusers { get; set; } = string.Empty;
+}
+
 // All Users in gSheet: https://docs.google.com/spreadsheets/d/10fc451YcdIQxtAHI_clCzYmZxdbGzzd5xZq67oKj0H8/edit#gid=0
 // Initially, data came from PostgresSql table, but we don't use PostgresSql now.
 // There is no programmed mechanism to crawl that to Redis.sq_user, so changes has to be manually added both in gSheet + Redis
@@ -104,19 +118,4 @@ public class User
 
         return visibleNavs;
     }
-}
-
-public class UserInDb	// for quick JSON deserialization. In DB the fields has short names, and not all Asset fields are in the DB anyway
-{
-    public int Id { get; set; } = -1;
-    public string Name { get; set; } = string.Empty;
-    public string Pwd { get; set; } = string.Empty;
-
-    public string Email { get; set; } = string.Empty;
-    public string Title { get; set; } = string.Empty;
-    public string Firstname { get; set; } = string.Empty;
-    public string Lastname { get; set; } = string.Empty;
-    public int Isadmin { get; set; } = 0;
-    public string Visibleusers { get; set; } = string.Empty;
-
 }

@@ -51,7 +51,7 @@ internal class MemData  // don't expose to clients.
     // "OwnerOnly": hidden even from admin users.
     // Normal users don't see other user's Portfolios. They see the shared portfolios in a virtual 'Shared with me' folder.
     // Admin users (developers) see all Portfolios of all users except those that are 'OwnerOnly'.
-    public volatile List<string> Portfolios = new(); // temporary illustration of a data that will be not only read, but written by SqCore. Portfolios are not necessary here, because they are Assets as well, so they can go to AssetsCache
+    public volatile Dictionary<int, Portfolio> Portfolios = new(); // temporary illustration of a data that will be not only read, but written by SqCore. Portfolios are not necessary here, because they are Assets as well, so they can go to AssetsCache
 
     // Clients can add new Assets to AssetCache, like NonPersinted Options, or new Portfolios. Other clients enumerate all AssetCache (e.g. reloading HistData in every 2 hours). 
     // So a ReaderWriterLock is needed or 'Non-locking copy-and-swap-on-write' is needed.
@@ -74,10 +74,11 @@ internal class MemData  // don't expose to clients.
     {
     }
 
-    public MemData(User[] newUsers, Dictionary<int, PortfolioFolder> portfolioFolders, AssetsCache newAssetsCache, CompactFinTimeSeries<SqDateOnly, uint, float, uint> newDailyHist)
+    public MemData(User[] newUsers, AssetsCache newAssetsCache, CompactFinTimeSeries<SqDateOnly, uint, float, uint> newDailyHist, Dictionary<int, PortfolioFolder> portfolioFolders, Dictionary<int, Portfolio> portfolios)
     {
         Users = newUsers;
         PortfolioFolders = portfolioFolders;
+        Portfolios = portfolios;
         AssetsCache = newAssetsCache;
         DailyHist = newDailyHist;
     }

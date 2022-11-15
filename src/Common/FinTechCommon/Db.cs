@@ -33,6 +33,7 @@ public partial class Db
     string m_lastAssetsStr = string.Empty;
     string m_lastSrvLoadPrHistStr = string.Empty;
     HashEntry[]? m_lastPortfolioFoldersRds = null;
+    HashEntry[]? m_lastPortfoliosRds = null;
 
     public Db(IDatabase p_redisDb, IDatabase? p_sqlDb)
     {
@@ -48,7 +49,7 @@ public partial class Db
         m_sqlDb = p_sqlDb;
     }
 
-    public (bool, User[]?, List<Asset>?, Dictionary<int, PortfolioFolder>?) GetDataIfReloadNeeded()
+    public (bool, User[]?, List<Asset>?, Dictionary<int, PortfolioFolder>?, Dictionary<int, Portfolio>?) GetDataIfReloadNeeded()
     {
         // Although 'Assets.brotli' would be 520bytes instead of 1.52KB, we don't not use binary brotli data for Assets, only for historical data.
         // Reason is that it is difficult to maintain, append new Stocks into Redis.Assets if it is binary brotli. Just a lot of headache.
@@ -62,22 +63,25 @@ public partial class Db
         bool isSqCoreWebAssetsChanged = m_lastSrvLoadPrHistStr != srvLoadPrHistStr;
         HashEntry[]? portfolioFoldersRds = m_redisDb.HashGetAll("portfolioFolder");
         bool isPortfFoldersChangedInDb = !DbUtils.IsRedisAllHashEqual(portfolioFoldersRds, m_lastPortfolioFoldersRds);
+        HashEntry[]? portfoliosRds = m_redisDb.HashGetAll("portfolio");
+        bool isPortfoliosChangedInDb = !DbUtils.IsRedisAllHashEqual(portfoliosRds, m_lastPortfoliosRds);
 
         // ToDo: Refactoring in the future: if RedisDb is down now, and it is null => don't overwrite our MemDb data (we should keep our old data)
-        bool isReloadNeeded = isUsersChangedInDb || isAllAssetsChangedInDb || isSqCoreWebAssetsChanged || isPortfFoldersChangedInDb;
+        bool isReloadNeeded = isUsersChangedInDb || isAllAssetsChangedInDb || isSqCoreWebAssetsChanged || isPortfFoldersChangedInDb || isPortfoliosChangedInDb;
         if (!isReloadNeeded)
-            return (false, null, null, null);
+            return (false, null, null, null, null);
 
         m_lastUsersStr = sqUserDataStr;
         User[] users = GetUsers(m_lastUsersStr);
 
-        m_lastPortfolioFoldersRds = portfolioFoldersRds;
-        Dictionary<int, PortfolioFolder> portfolioFolders = GetPortfolioFolders(portfolioFoldersRds, users);
-
         m_lastAssetsStr = assetsStr;
         List<Asset> assets = GetAssetsFromJson(m_lastAssetsStr, users);
 
+        m_lastPortfolioFoldersRds = portfolioFoldersRds;
+        Dictionary<int, PortfolioFolder> portfolioFolders = GetPortfolioFolders(portfolioFoldersRds, users);
 
+        m_lastPortfoliosRds = portfoliosRds;
+        Dictionary<int, Portfolio> portfolios = GetPortfolios(portfoliosRds, users, assets);
 
         // Add the user's AggNavAsset into assets very early, so we don't have to Add items to AssetCache later, because that is problematic in multithreaded app (of something iterates over AssetCache)
         // Imitate that the Db already has the AggNavAsset (other option is to move this addition up to MemDb, instead of this Db class)
@@ -102,7 +106,7 @@ public partial class Db
 
         m_lastSrvLoadPrHistStr = srvLoadPrHistStr;
         AddLoadPrHistToAssets(m_lastSrvLoadPrHistStr, assets);
-        return (isReloadNeeded, users, assets, portfolioFolders);
+        return (isReloadNeeded, users, assets, portfolioFolders, portfolios);
     }
 
     static List<Asset> GetAssetsFromJson(string p_json, User[] users)
@@ -110,6 +114,8 @@ public partial class Db
         List<Asset> assets = new();
         using (JsonDocument doc = JsonDocument.Parse(p_json))
         {
+            StrongAssert.True(doc.RootElement.GetProperty("P").GetArrayLength() == 0, Severity.ThrowException, "Portfolios  should come from RedisDb, because they can have many parameters");
+
             foreach (JsonElement row in doc.RootElement.GetProperty("C").EnumerateArray())
             {
                 assets.Add(new Cash(row));
@@ -129,10 +135,6 @@ public partial class Db
             foreach (JsonElement row in doc.RootElement.GetProperty("N").EnumerateArray())
             {
                 assets.Add(new BrokerNav(row, users));
-            }
-            foreach (JsonElement row in doc.RootElement.GetProperty("P").EnumerateArray())
-            {
-                assets.Add(new Portfolio(row, users));
             }
             foreach (JsonElement row in doc.RootElement.GetProperty("A").EnumerateArray())
             {
@@ -299,16 +301,37 @@ public partial class Db
             return result;
         for (int i = 0; i < portfolioFoldersRds.Length; i++)
         {
-            HashEntry pFolder = portfolioFoldersRds[i];
-            if (!pFolder.Name.TryParse(out int id))
+            HashEntry hashRow = portfolioFoldersRds[i];
+            if (!hashRow.Name.TryParse(out int id)) // Name is the 'Key' that contains the Id
                 continue;   // Sometimes, there is an extra line 'New field'. But it can be deleted from Redis Manager. It is a kind of expected.
 
-            var prtfFolderInDb = JsonSerializer.Deserialize<PortfolioFolderInDb>(pFolder.Value, new JsonSerializerOptions { PropertyNameCaseInsensitive = true});
+            var prtfFolderInDb = JsonSerializer.Deserialize<PortfolioFolderInDb>(hashRow.Value, new JsonSerializerOptions { PropertyNameCaseInsensitive = true});
             if (prtfFolderInDb == null)
-                throw new SqException($"Deserialize failed on '{pFolder.Value}'"); // Not expected error. DB has to be fixed
+                throw new SqException($"Deserialize failed on '{hashRow.Value}'"); // Not expected error. DB has to be fixed
 
-            PortfolioFolder pf = new(id, prtfFolderInDb, users); // PortfolioFolderId is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
+            PortfolioFolder pf = new(id, prtfFolderInDb, users); // PortfolioFolder.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
             result[id] = pf;
+        }
+        return result;
+    }
+
+    private static Dictionary<int, Portfolio> GetPortfolios(HashEntry[] portfoliosRds, User[] users, List<Asset> _1)    // Portfolio will require Assets in the future
+    {
+        Dictionary<int, Portfolio> result = new();
+        if (portfoliosRds == null)
+            return result;
+        for (int i = 0; i < portfoliosRds.Length; i++)
+        {
+            HashEntry hashRow = portfoliosRds[i];
+            if (!hashRow.Name.TryParse(out int id)) // Name is the 'Key' that contains the Id
+                continue;   // Sometimes, there is an extra line 'New field'. But it can be deleted from Redis Manager. It is a kind of expected.
+
+            var portfInDb = JsonSerializer.Deserialize<PortfolioInDb>(hashRow.Value, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (portfInDb == null)
+                throw new SqException($"Deserialize failed on '{hashRow.Value}'"); // Not expected error. DB has to be fixed
+
+            Portfolio portfolio = new(id, portfInDb, users); // Portfolio.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
+            result[id] = portfolio;
         }
         return result;
     }

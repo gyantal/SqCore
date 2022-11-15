@@ -136,6 +136,14 @@ public enum ExchangeId : sbyte // differs from dbo.StockExchange, which is 'int'
                     // TickerProvider.OldStockTickers exploits that values fit in a byte
 }
 
+public enum PortfolioType : byte
+{
+    Unknown = 0,
+    Trades = 1,
+    Simulation = 2
+}
+
+
 // Not used. Copied from HqFramework for getting ideas; if we need an in-memory data structure for TickerHistory
 // public interface ITickerProvider
 // {
@@ -195,6 +203,10 @@ public static class AssetHelper
         { AssetType.Company, 'A' },
             };
 
+    public static readonly Dictionary<string, PortfolioType> gStrToPortfolioType = new() {
+        { "", PortfolioType.Trades},
+        { "Trades", PortfolioType.Trades},
+        { "Simulation", PortfolioType.Simulation}};
 
     // This can find both "VOD" (Vodafone) ticker in LSE (in GBP), NYSE (in USD).
     public static List<Stock> GetAllMatchingStocksBySymbol(this List<Asset> p_assets, string p_symbol, ExchangeId p_primExchangeID = ExchangeId.Unknown, DateTime? p_timeUtc = null)
