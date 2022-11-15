@@ -26,6 +26,19 @@ public class User
     public string Fullname { get { return $"{Title} {Firstname} {Lastname}"; } }
     public string Initials { get { return $"{Firstname[0]}{Lastname[0]}"; } }
 
+    public User(UserInDb usrInDb)
+    {
+        Id = usrInDb.Id;
+        Username = usrInDb.Name;
+        Password = usrInDb.Pwd;
+        Email = usrInDb.Email;
+        Title = usrInDb.Title;
+        Firstname = usrInDb.Firstname;
+        Lastname = usrInDb.Lastname;
+        IsHuman = usrInDb.Id > 30;    // IDs smaller than 30 are reserved for parts of the system.
+        IsAdmin = usrInDb.Isadmin == 1;
+    }
+
     // The == Operator compares the reference identity while the Equals() method compares only contents.
     // The default implementation of Equals supports reference equality for reference types, and bitwise equality for value types. 
     // So, for classes, it checks for reference unless you override equals.

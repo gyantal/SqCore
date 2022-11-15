@@ -72,7 +72,7 @@ public partial class Db
         User[] users = GetUsers(m_lastUsersStr);
 
         m_lastPortfolioFoldersRds = portfolioFoldersRds;
-        Dictionary<int, PortfolioFolder> portfolioFolders = GetPortfolioFolders(portfolioFoldersRds);
+        Dictionary<int, PortfolioFolder> portfolioFolders = GetPortfolioFolders(portfolioFoldersRds, users);
 
         m_lastAssetsStr = assetsStr;
         List<Asset> assets = GetAssetsFromJson(m_lastAssetsStr, users);
@@ -221,19 +221,7 @@ public partial class Db
         var users = new List<User>(usersInDb.Count);
         foreach (var usrDb in usersInDb)
         {
-            users.Add(new User()
-            {
-                Id = usrDb.Id,
-                Username = usrDb.Name,
-                Password = usrDb.Pwd,
-                Email = usrDb.Email,
-                Title = usrDb.Title,
-                Firstname = usrDb.Firstname,
-                Lastname = usrDb.Lastname,
-                IsHuman = usrDb.Id > 30,    // IDs smaller than 30 are reserved for parts of the system.
-                IsAdmin = usrDb.Isadmin == 1
-                
-            });
+            users.Add(new User(usrDb));
         }
         // after all users are created, process visibleUsers list.
         var visibleUsers = new List<User>[usersInDb.Count];
@@ -304,7 +292,7 @@ public partial class Db
         return deposits;
     }
 
-    private static Dictionary<int, PortfolioFolder> GetPortfolioFolders(HashEntry[]? portfolioFoldersRds)
+    private static Dictionary<int, PortfolioFolder> GetPortfolioFolders(HashEntry[]? portfolioFoldersRds, User[] users)
     {
         Dictionary<int, PortfolioFolder> result = new();
         if (portfolioFoldersRds == null)
@@ -315,12 +303,12 @@ public partial class Db
             if (!pFolder.Name.TryParse(out int id))
                 continue;   // Sometimes, there is an extra line 'New field'. But it can be deleted from Redis Manager. It is a kind of expected.
 
-            var prtfFolder = JsonSerializer.Deserialize<PortfolioFolder>(pFolder.Value, new JsonSerializerOptions { PropertyNameCaseInsensitive = true});
-            if (prtfFolder == null)
+            var prtfFolderInDb = JsonSerializer.Deserialize<PortfolioFolderInDb>(pFolder.Value, new JsonSerializerOptions { PropertyNameCaseInsensitive = true});
+            if (prtfFolderInDb == null)
                 throw new SqException($"Deserialize failed on '{pFolder.Value}'"); // Not expected error. DB has to be fixed
 
-            prtfFolder.Id = id;    // PortfolioFolderId is not in the JSON. It comes from the HashEntry.Key (= Name)
-            result[id] = prtfFolder;
+            PortfolioFolder pf = new(id, prtfFolderInDb, users); // PortfolioFolderId is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
+            result[id] = pf;
         }
         return result;
     }

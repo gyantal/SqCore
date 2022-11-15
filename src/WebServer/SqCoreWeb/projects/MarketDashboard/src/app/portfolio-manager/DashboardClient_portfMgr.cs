@@ -73,7 +73,7 @@ public partial class DashboardClient
                 Id = pf.Id,
                 Name = pf.Name,
                 ParentFolderId = pf.ParentFolderId,
-                UserId = pf.UserId
+                UserId = pf.User?.Id ?? -1
             };
             portfolioFldrs.Add(pfJs);
         }

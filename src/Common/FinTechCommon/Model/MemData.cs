@@ -39,7 +39,7 @@ internal class MemData  // don't expose to clients.
     // a virtual folder 'Shared with me', and a virtual folder called 'AllUsers'
     // - Admin users (developers) see all PortfolioFolders of all human users. Each human user (IsHuman) in a virtual folder with their username. 
     // And the 'Shared with me', and 'AllUsers" virtual folders are there too.
-    public volatile Dictionary<int, PortfolioFolder> PortfolioFolders = new(); // Not Array, becuse users can create/delete portfolio folders
+    public volatile Dictionary<int, PortfolioFolder> PortfolioFolders = new(); // Not Array, because users can create/delete portfolio folders
 
     // As Portfolios are assets (nesting), we might store portfolios in AssetCache, not separately
     // ---
