@@ -1,5 +1,3 @@
-
-
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -27,10 +25,11 @@ public class Option : Asset
 
     public string IbLocalSymbol { get; set; } = string.Empty;   // used only for Debug purposes.
     public IBApi.Contract? IbContract { get; set; } = null;     // used only for Debug purposes.
-    
+
     public Option(AssetId32Bits assetId, string symbol, string name, string shortName, CurrencyId currency, bool isDbPersisted,
-        OptionType optionType, string optionSymbol, string underlyingSymbol, string lastTradeDateOrContractMonth, OptionRight optionRight, double strike, 
-        int multiplier, string ibLocalSymbol, IBApi.Contract ibContract) : base(assetId, symbol, name, shortName, currency, isDbPersisted)
+        OptionType optionType, string optionSymbol, string underlyingSymbol, string lastTradeDateOrContractMonth, OptionRight optionRight, double strike,
+        int multiplier, string ibLocalSymbol, IBApi.Contract ibContract)
+        : base(assetId, symbol, name, shortName, currency, isDbPersisted)
     {
         // an IB example
         // IB-Symbol [string]:"SVXY"
@@ -56,28 +55,30 @@ public class Option : Asset
     public static string GenerateOptionSymbol(string p_underlyingSymbol, string p_lastTradeDateOrContractMonth, OptionRight p_optionRight, double p_strike)
     {
         char right = (p_optionRight == OptionRight.Call) ? 'C' : ((p_optionRight == OptionRight.Put) ? 'P' : '?');
-        return  $"{p_underlyingSymbol} {p_lastTradeDateOrContractMonth}{right}{p_strike}";
+        return $"{p_underlyingSymbol} {p_lastTradeDateOrContractMonth}{right}{p_strike}";
     }
     public static string GenerateOptionName(string p_underlyingSymbol, string p_lastTradeDateOrContractMonth, OptionRight p_optionRight, double p_strike)
     {
         string rightStr = (p_optionRight == OptionRight.Call) ? "Call" : ((p_optionRight == OptionRight.Put) ? "Put" : "?");
-        return  $"{p_underlyingSymbol} {rightStr} option. Exp:{p_lastTradeDateOrContractMonth},  Strike:{p_strike}";
+        return $"{p_underlyingSymbol} {rightStr} option. Exp:{p_lastTradeDateOrContractMonth},  Strike:{p_strike}";
     }
 
     // generate "O/ARKK*20230120C77.96", "O/VXX*220617P16"
     public static string GenerateSqTicker(string p_underlyingSymbol, string p_lastTradeDateOrContractMonth, char p_right, double p_strike)
     {
-        return  $"O/{p_underlyingSymbol}*{p_lastTradeDateOrContractMonth}{p_right}{p_strike}";
+        return $"O/{p_underlyingSymbol}*{p_lastTradeDateOrContractMonth}{p_right}{p_strike}";
     }
 
-    public Option(JsonElement row, List<Asset> _) : base(AssetType.Option, row)
+    public Option(JsonElement row, List<Asset> asset)
+        : base(AssetType.Option, row)
     {
+        _ = asset; // StyleCop SA1313 ParameterNamesMustBeginWithLowerCaseLetter. They won't fix. Recommended solution for unused parameters, instead of the discard (_1) parameters
         // var stocks = assets.FindAll(r => r.AssetId.AssetTypeID == AssetType.Stock && r.SqTicker == seekedSqTicker);
     }
 
     public override IBApi.Contract? MakeIbContract()
     {
-        //return IbContract;    // Maybe don't use,  coz IbContract contains the ContractID that might be IbGateway specific
+        // return IbContract;    // Maybe don't use,  coz IbContract contains the ContractID that might be IbGateway specific
         var rightStr = (OptionRight == OptionRight.Call) ? "C" : ((OptionRight == OptionRight.Put) ? "P" : "?");
         return VBrokerUtils.MakeOptionContract(Symbol, rightStr, Strike, Multiplier, LastTradeDateOrContractMonthStr, IbLocalSymbol);
     }

@@ -1,14 +1,14 @@
-﻿using CsvHelper;
-using Flurl;
-using Flurl.Http;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Net;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
+using CsvHelper;
+using Flurl;
+using Flurl.Http;
 using SqCommon;
 
 namespace YahooFinanceApi;
@@ -18,55 +18,56 @@ public sealed partial class Yahoo
     public static bool IgnoreEmptyRows { set { RowExtension.IgnoreEmptyRows = value; } }
 
     public static async Task<IReadOnlyList<Candle?>> GetHistoricalAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, Period period = Period.Daily, CancellationToken token = default)
-        => await GetTicksAsync(symbol, 
-                                startTime, 
-                                endTime, 
-                                period, 
-                                ShowOption.History,
-                                RowExtension.ToCandle,
-                                RowExtension.PostprocessCandle,
-                                token).ConfigureAwait(false);
+        => await GetTicksAsync<Candle?>(
+            symbol,
+            startTime,
+            endTime,
+            period,
+            ShowOption.History,
+            // RowExtension.ToCandle,
+            RowExtension.PostprocessCandle,
+            token).ConfigureAwait(false);
 
     public static async Task<IReadOnlyList<DividendTick?>> GetDividendsAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, CancellationToken token = default)
-        => await GetTicksAsync(symbol, 
-                                startTime, 
-                                endTime, 
-                                Period.Daily, 
-                                ShowOption.Dividend,
-                                RowExtension.ToDividendTick,
-                                RowExtension.PostprocessDividendTick,
-                                token).ConfigureAwait(false);
+        => await GetTicksAsync<DividendTick?>(
+            symbol,
+            startTime,
+            endTime,
+            Period.Daily,
+            ShowOption.Dividend,
+            // RowExtension.ToDividendTick,
+            RowExtension.PostprocessDividendTick,
+            token).ConfigureAwait(false);
 
     public static async Task<IReadOnlyList<SplitTick?>> GetSplitsAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, CancellationToken token = default)
-        => await GetTicksAsync(symbol,
-                                startTime,
-                                endTime,
-                                Period.Daily,
-                                ShowOption.Split,
-                                RowExtension.ToSplitTick,
-                                RowExtension.PostprocessSplitTick,
-                                token).ConfigureAwait(false);
+        => await GetTicksAsync<SplitTick?>(
+            symbol,
+            startTime,
+            endTime,
+            Period.Daily,
+            ShowOption.Split,
+            // RowExtension.ToSplitTick,
+            RowExtension.PostprocessSplitTick,
+            token).ConfigureAwait(false);
 
-    private static async Task<List<ITick>> GetTicksAsync<ITick>(
+    private static async Task<List<TTick>> GetTicksAsync<TTick>(
         string symbol,
         DateTime? startTime,
         DateTime? endTime,
         Period period,
         ShowOption showOption,
-        // Func<string[], ITick> instanceFunction,
-        Func<string[], ITick> _,
-        Func<ITick, ITick> postprocessFunction,
-        CancellationToken token
-        )
+        // Func<string[], TTick> instanceFunction,
+        Func<TTick, TTick> postprocessFunction,
+        CancellationToken token)
     {
         var csvConfig = new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
         {
             NewLine = "\n",     // instead of the default Environment.NewLine
             Delimiter = ",",
             Quote = '\'',
-            MissingFieldFound = null  // ignore CsvHelper.MissingFieldException, because SplitTick 2 computed fields will be missing.
+            MissingFieldFound = null // ignore CsvHelper.MissingFieldException, because SplitTick 2 computed fields will be missing.
         };
-        var ticks = new List<ITick>();
+        var ticks = new List<TTick>();
 
         const int nMaxTries = 3;    // YF server is unreliable, as all web queries. It is worth repeating the download at least 3 times.
         int nTries = 0;
@@ -92,10 +93,10 @@ public sealed partial class Yahoo
                     // or IbGateway in cases when YF doesn't give data.
                     // 2021-08-20: YF gives ^VIX history badly for this date for the last 2 weeks. "2021-08-09,null,null,null,null,null,null"
                     // They don't fix it. CBOE, WSJ has proper data for that day.
-                    ITick? record = default;
+                    TTick? record = default;
                     try
                     {
-                        record = csvReader.GetRecord<ITick>();
+                        record = csvReader.GetRecord<TTick>();
                     }
                     catch (Exception e) // "The conversion cannot be performed."  RawRecord:\r\n2021-08-09,null,null,null,null,null,null\n\r\n"
                     {
@@ -119,26 +120,26 @@ public sealed partial class Yahoo
                             ticks.Add(recordPostprocessed);
                     }
                 }
-                //                 while (csvReader.Read())
-                //                 {
-                //                     //var tick = instanceFunction(csvReader.Context.Record);
-                //                     var record = csvReader.GetRecord<string>();
-                //                     var tick = instanceFunction(new string [0]);
-                //                     //var tick = instanceFunction(Enumerable.ToArray(records));
+                // while (csvReader.Read())
+                // {
+                //     //var tick = instanceFunction(csvReader.Context.Record);
+                //     var record = csvReader.GetRecord<string>();
+                //     var tick = instanceFunction(new string[0]);
+                //     //var tick = instanceFunction(Enumerable.ToArray(records));
                 // #pragma warning disable RECS0017 // Possible compare of value type with 'null'
-                //                     if (tick != null)
+                //     if (tick != null)
                 // #pragma warning restore RECS0017 // Possible compare of value type with 'null'
-                //                         ticks.Add(tick);
-                //                 }
+                //         ticks.Add(tick);
+                // }
                 return ticks;
-
             }
             catch (Exception e)
             {
                 Utils.Logger.Info(e, $"Exception in Yahoo.GetTicksAsync(): Stock:'{symbol}', {e.Message}");
                 Thread.Sleep(3000); // sleep for 3 seconds before trying again.
             }
-        } while (nTries <= nMaxTries);
+        }
+        while (nTries <= nMaxTries);
 
         throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{symbol}) after {nMaxTries} tries.");
     }
@@ -167,13 +168,11 @@ public sealed partial class Yahoo
             }
         }
 
-        #region Local Functions
-
-        Task<Stream> _GetResponseStreamAsync(IFlurlClient? _client, string? _crumb, CancellationToken _token)
+        Task<Stream> _GetResponseStreamAsync(IFlurlClient? p_client, string? p_crumb, CancellationToken p_token)
         {
             // Yahoo expects dates to be "Eastern Standard Time"
             startTime = startTime?.FromEstToUtc() ?? new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            endTime =   endTime?  .FromEstToUtc() ?? DateTime.UtcNow;
+            endTime = endTime?.FromEstToUtc() ?? DateTime.UtcNow;
 
             var url = "https://query1.finance.yahoo.com/v7/finance/download"
                 .AppendPathSegment(symbol)
@@ -181,16 +180,14 @@ public sealed partial class Yahoo
                 .SetQueryParam("period2", endTime.Value.ToUnixTimestamp())
                 .SetQueryParam("interval", $"1{period.Name()}")
                 .SetQueryParam("events", events)
-                .SetQueryParam("crumb", _crumb);
+                .SetQueryParam("crumb", p_crumb);
 
             Debug.WriteLine(url);
 
             return url
-                .WithClient(_client)
-                .GetAsync(_token)
+                .WithClient(p_client)
+                .GetAsync(p_token)
                 .ReceiveStream();
         }
-
-        #endregion
     }
 }

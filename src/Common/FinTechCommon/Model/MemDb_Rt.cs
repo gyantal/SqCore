@@ -1,20 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
-using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Globalization;
+using BrokerCommon;
 using SqCommon;
 using YahooFinanceApi;
-using BrokerCommon;
 
 namespace FinTechCommon;
 
-enum RtFreq { HighFreq, MidFreq, LowFreq };
-class RtFreqParam {
+enum RtFreq { HighFreq, MidFreq, LowFreq }
+class RtFreqParam
+{
     public RtFreq RtFreq { get; set; }
     public string Name { get; set; } = string.Empty;
     public int FreqRthSec { get; set; } // RTH: Regular Trading Hours
@@ -38,11 +37,11 @@ public partial class MemDb
     // YF, IB, IEX preMarket, postMarket behaviour
     // >UTC-7:50: YF:  no pre-market price. IB: there is no ask-bid, but there is an indicative value somehow, because Dashboard bar shows QQQ: 216.13 (+0.25%). I checked, that is the 'Mark price'. IB estimates that (probably for pre-market margin calls). YF and others will never have that, because it is sophisticated.
     // >UTC-8:50: YF:  no pre-market price. IB: there is no ask-bid, but previously good indicative value went back to PreviousClose, so ChgPct = 0%, so in PreMarket that far away from Open, this MarkPrice is not very useful. IB did reset the price, because preparing for pre-market open in 10min.
-    // >UTC-9:10: YF (started at 9:00, there is premarket price: "Pre-Market: 4:03AM EST"), IB: There is Ask-bid spread. This is 5.5h before market open. That should be enough. 
-    // So, I don't need IB indicative MarkPrice. IB AccInfo website is also good, showing QQQ change. IEX: IEX shows some false data, which is not yesterday close, 
-    // but probably last day postMarket lastPrice sometime, which is not useful. 
+    // >UTC-9:10: YF (started at 9:00, there is premarket price: "Pre-Market: 4:03AM EST"), IB: There is Ask-bid spread. This is 5.5h before market open. That should be enough.
+    // So, I don't need IB indicative MarkPrice. IB AccInfo website is also good, showing QQQ change. IEX: IEX shows some false data, which is not yesterday close,
+    // but probably last day postMarket lastPrice sometime, which is not useful.
     // So, in pre-market this IEX 'top' cannot be used. Investigated. Even IEX cloud can be used in pre-market. ("lastSalePrice":0)
-    // It is important here, because of summer/winter time zones that IB/YF all are relative to ET time zone 4:00AM EST. This is usually 9:00 in London, 
+    // It is important here, because of summer/winter time zones that IB/YF all are relative to ET time zone 4:00AM EST. This is usually 9:00 in London,
     // but in 2020-03-12, when USA set summer time zone 2 weeks early, the 4:00AM cutoff time was 8:00AM in London. And IB/YF measured itself to EST time, not UTC time. Implement this behaviour.
     // >UTC-0:50: (at night).
 
@@ -73,14 +72,15 @@ public partial class MemDb
     // IEX: free account: 50000/30/8/60/60= 3.5. We can do max 3 queries per minute with 1 user-token. But we can use 2 tokens. Just to be on the safe side:
     // For RT highFreq: use 30 seconds, but alternade the 2 tokens we use. That will be about 1 query per minute per token = 60*8*30 = 15K queries per token per month. Although Developers also use some of the quota while developing.
     // Is there a need for 2 IEX timers? (High/Mid Freq) MidFreq timer can be deleted. Questionable, but keep this logic! In the future, we might use a 3rd RT service.
-    readonly RtFreqParam m_highFreqParam = new() { RtFreq = RtFreq.HighFreq, Name="HighFreq", FreqRthSec = 30, FreqOthSec = 5 * 60 }; // high frequency (30sec RTH, 5min otherwise-OTH) refresh for a known fixed stocks (used by VBroker) and those which were queried in the last 5 minutes (by a VBroker-test)
-    readonly RtFreqParam m_midFreqParam = new() { RtFreq = RtFreq.MidFreq, Name="MidFreq", FreqRthSec = 15 * 60, FreqOthSec = 40 * 60 }; // mid frequency (15min RTH, 40min otherwise) refresh for a know fixed stocks (DashboardClient_mktHealth)
-    readonly RtFreqParam m_lowFreqParam = new() { RtFreq = RtFreq.LowFreq, Name="LowFreq", FreqRthSec = 30 * 60, FreqOthSec = 1 * 60 * 60 }; // with low frequency (30 RTH, 1h otherwise). Almost all stocks. Even if nobody access them.
+    readonly RtFreqParam m_highFreqParam = new() { RtFreq = RtFreq.HighFreq, Name = "HighFreq", FreqRthSec = 30, FreqOthSec = 5 * 60 }; // high frequency (30sec RTH, 5min otherwise-OTH) refresh for a known fixed stocks (used by VBroker) and those which were queried in the last 5 minutes (by a VBroker-test)
+    readonly RtFreqParam m_midFreqParam = new() { RtFreq = RtFreq.MidFreq, Name = "MidFreq", FreqRthSec = 15 * 60, FreqOthSec = 40 * 60 }; // mid frequency (15min RTH, 40min otherwise) refresh for a know fixed stocks (DashboardClient_mktHealth)
+    readonly RtFreqParam m_lowFreqParam = new() { RtFreq = RtFreq.LowFreq, Name = "LowFreq", FreqRthSec = 30 * 60, FreqOthSec = 1 * 60 * 60 }; // with low frequency (30 RTH, 1h otherwise). Almost all stocks. Even if nobody access them.
 
     // In general: higFreq: probably the traded stocks + what was RT queried by users. Mid: some special tickers (e.g. on MarketDashboard), LowFreq: ALL alive stocks.
     // string[] m_ibRtStreamedTickrs = Array.Empty<string>();   // /* VBroker */ no need for frequency Timer. IB prices will be streamed. So, in the future, we might delete m_highFreqParam. But maybe we need 10seconds ticker prices for non VBroker tasks. So, probably keep the streamed tickers very low. And this can be about 6-20seconds frequency.
     readonly string[] m_highFreqTickrs = Array.Empty<string>(); /* VBroker */
-    readonly string[] m_midFreqTickrs = new string[] {
+    readonly string[] m_midFreqTickrs = new string[]
+    {
         "S/QQQ", "S/SPY", "S/GLD", "S/TLT", "S/VXX", "S/UNG", "S/USO", /* DashboardClient_mktHealth.cs */
         "S/VIXY", "S/TQQQ", "S/UPRO", "S/SVXY", "S/TMV", "S/UCO" /*, "S/UNG" already present in DashboardClient */ /* , "I/VIX" */ /* StrategyRenewedUber.cs */
             /* StrategySin.cs */ // future when we trade Sin based on SqCore: add these tickers from here https://docs.google.com/spreadsheets/d/1JXMbEMAP5AOqB1FjdM8jpptXfpuOno2VaFVYK8A1eLo/edit#gid=0
@@ -92,25 +92,25 @@ public partial class MemDb
     byte m_lastIexApiTokenInd = 1; // possible values: { 1, 2}. Alternate 2 API tokens to stay bellow the 50K quota. Token1 is the hedgequantserver, Token2 is the UnknownUser.
     uint m_nYfDownload = 0;
 
-    static void InitAllStockAssetsPriorCloseAndLastPrice(AssetsCache p_newAssetCache)    // this is called at Program.Init() and at ReloadDbDataIfChangedImpl()
+    static void InitAllStockAssetsPriorCloseAndLastPrice(AssetsCache p_newAssetCache) // this is called at Program.Init() and at ReloadDbDataIfChangedImpl()
     {
-        Asset[] assetsWithRtValue = p_newAssetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.FinIndex || (r.AssetId.AssetTypeID == AssetType.Stock  && (r as Stock)!.ExpirationDate == string.Empty)).ToArray();
+        Asset[] assetsWithRtValue = p_newAssetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.FinIndex || (r.AssetId.AssetTypeID == AssetType.Stock && (r as Stock)!.ExpirationDate == string.Empty)).ToArray();
         DownloadPriorCloseAndLastPriceYF(assetsWithRtValue).TurnAsyncToSyncTask();
     }
 
-    static void InitAllOptionAssetsPriorCloseAndLastPrice(AssetsCache p_newAssetCache)    // this is called at Program.Init() and at ReloadDbDataIfChangedImpl()
+    static void InitAllOptionAssetsPriorCloseAndLastPrice(AssetsCache p_newAssetCache) // this is called at Program.Init() and at ReloadDbDataIfChangedImpl()
     {
         // var options = p_newAssetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Option).Take(1).Select(r => (Option)r).ToArray();
         var options = p_newAssetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Option).ToArray();
         DownloadLastPriceOptionsIb(options);
     }
 
-    void OnReloadAssetData_InitAndScheduleRtTimers()  // this is called at Program.Init() and at ReloadDbDataIfChangedImpl()
+    void OnReloadAssetData_InitAndScheduleRtTimers() // this is called at Program.Init() and at ReloadDbDataIfChangedImpl()
     {
         m_lastRtPriceQueryTime = new Dictionary<Asset, DateTime>(); // purge out history after AssetData reload
         m_highFreqParam.Assets = m_highFreqTickrs.Select(r => AssetsCache.GetAsset(r)!).ToArray();
         m_midFreqParam.Assets = m_midFreqTickrs.Select(r => AssetsCache.GetAsset(r)!).ToArray();
-        m_lowFreqParam.Assets = AssetsCache.Assets.Where(r => 
+        m_lowFreqParam.Assets = AssetsCache.Assets.Where(r =>
             (r.AssetId.AssetTypeID == AssetType.FinIndex || (r.AssetId.AssetTypeID == AssetType.Stock && (r as Stock)!.ExpirationDate == string.Empty))
             && !m_highFreqTickrs.Contains(r.SqTicker) && !m_midFreqTickrs.Contains(r.SqTicker)).ToArray()!;
 
@@ -129,7 +129,7 @@ public partial class MemDb
     public void ServerDiagnosticRealtime(StringBuilder p_sb)
     {
         var recentlyAskedAssets = m_lastRtPriceQueryTime.Where(r => (DateTime.UtcNow - r.Value) <= TimeSpan.FromSeconds(5 * 60));
-        p_sb.Append($"Realtime: actual non-empty m_nYfDownload: {m_nYfDownload}, actual non-empty m_nIexDownload:{m_nIexDownload}, all recentlyAskedAssets:'{String.Join(',', recentlyAskedAssets.Select(r => r.Key.SqTicker + "(" + ((int)((DateTime.UtcNow - r.Value).TotalSeconds)).ToString() + "sec)"))}' <br>");
+        p_sb.Append($"Realtime: actual non-empty m_nYfDownload: {m_nYfDownload}, actual non-empty m_nIexDownload:{m_nIexDownload}, all recentlyAskedAssets:'{String.Join(',', recentlyAskedAssets.Select(r => r.Key.SqTicker + "(" + ((int)(DateTime.UtcNow - r.Value).TotalSeconds).ToString() + "sec)"))}' <br>");
 
         ServerDiagnosticRealtime(p_sb, m_highFreqParam);
         ServerDiagnosticRealtime(p_sb, m_midFreqParam);
@@ -143,7 +143,7 @@ public partial class MemDb
         p_sb.Append($"'<br>");
     }
 
-    public void RtTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
+    public void RtTimer_Elapsed(object? p_state) // Timer is coming on a ThreadPool thread
     {
         if (p_state == null)
             throw new Exception("RtTimer_Elapsed() received null object.");
@@ -155,7 +155,7 @@ public partial class MemDb
         {
             UpdateRtAndPriorClose(freqParam);
         }
-        catch (System.Exception e)  // Exceptions in timers crash the app.
+        catch (System.Exception e) // Exceptions in timers crash the app.
         {
             Utils.Logger.Error(e, $"MemDbRt.RtTimer_Elapsed({freqParam.RtFreq}) exception.");
         }
@@ -168,7 +168,7 @@ public partial class MemDb
         Asset[] downloadAssets = p_freqParam.Assets;
         if (p_freqParam.RtFreq == RtFreq.HighFreq) // if it is highFreq timer, then add the recently asked assets.
         {
-            var recentlyAskedNonNavAssets = m_lastRtPriceQueryTime.Where(r => r.Key.AssetId.AssetTypeID != AssetType.BrokerNAV && ((DateTime.UtcNow - r.Value) <= TimeSpan.FromSeconds(5 * 60))).Select(r => r.Key); //  if there was a function call in the last 5 minutes
+            var recentlyAskedNonNavAssets = m_lastRtPriceQueryTime.Where(r => r.Key.AssetId.AssetTypeID != AssetType.BrokerNAV && ((DateTime.UtcNow - r.Value) <= TimeSpan.FromSeconds(5 * 60))).Select(r => r.Key); // if there was a function call in the last 5 minutes
             downloadAssets = p_freqParam.Assets.Concat(recentlyAskedNonNavAssets).ToArray();
         }
         if (downloadAssets.Length == 0)
@@ -213,9 +213,8 @@ public partial class MemDb
         p_freqParam.Timer!.Change(TimeSpan.FromSeconds((tradingHoursNow == TradingHoursEx.RegularTrading) ? p_freqParam.FreqRthSec : p_freqParam.FreqOthSec), TimeSpan.FromMilliseconds(-1.0));
     }
 
-
     // GetLastRtValue() always return data without blocking. Data might be 1 hour old or 3sec (RTH) or in 60sec (non-RTH) for m_assetIds only if there was a function call in the last 5 minutes (busyMode), but it is OK.
-    public IEnumerable<(AssetId32Bits SecdID, float LastValue)> GetLastRtValue(uint[] p_assetIds)     // C# 7.0 adds tuple types and named tuple literals. uint[] is faster to create and more RAM efficient than linked-list<uint>
+    public IEnumerable<(AssetId32Bits SecdID, float LastValue)> GetLastRtValue(uint[] p_assetIds) // C# 7.0 adds tuple types and named tuple literals. uint[] is faster to create and more RAM efficient than linked-list<uint>
     {
         IEnumerable<(AssetId32Bits SecdID, float LastValue)> rtPrices = p_assetIds.Select(r =>
         {
@@ -233,7 +232,7 @@ public partial class MemDb
         });
         return rtPrices;
     }
-    public IEnumerable<(AssetId32Bits SecdID, float LastValue, DateTime LastValueUtc)> GetLastRtValueWithUtc(uint[] p_assetIds)     // C# 7.0 adds tuple types and named tuple literals. uint[] is faster to create and more RAM efficient than List<uint>
+    public IEnumerable<(AssetId32Bits SecdID, float LastValue, DateTime LastValueUtc)> GetLastRtValueWithUtc(uint[] p_assetIds) // C# 7.0 adds tuple types and named tuple literals. uint[] is faster to create and more RAM efficient than List<uint>
     {
         IEnumerable<(AssetId32Bits SecdID, float LastValue, DateTime LastValueUtc)> rtPrices = p_assetIds.Select(r =>
         {
@@ -253,7 +252,7 @@ public partial class MemDb
         return rtPrices;
     }
 
-    public IEnumerable<(AssetId32Bits SecdID, float LastValue, DateTime LastValueUtc)> GetLastRtValueWithUtc(List<Asset> p_assets)     // C# 7.0 adds tuple types and named tuple literals. uint[] is faster to create and more RAM efficient than List<uint>
+    public IEnumerable<(AssetId32Bits SecdID, float LastValue, DateTime LastValueUtc)> GetLastRtValueWithUtc(List<Asset> p_assets) // C# 7.0 adds tuple types and named tuple literals. uint[] is faster to create and more RAM efficient than List<uint>
     {
         IEnumerable<(AssetId32Bits SecdID, float LastValue, DateTime LastValueUtc)> rtPrices = p_assets.Select(r =>
             {
@@ -274,7 +273,6 @@ public partial class MemDb
 
     public float GetLastRtValue(Asset p_asset)
     {
-
         m_lastRtPriceQueryTime[p_asset] = DateTime.UtcNow;
         float lastValue;
         if (p_asset.AssetId.AssetTypeID == AssetType.BrokerNAV)
@@ -284,7 +282,7 @@ public partial class MemDb
         return lastValue;
     }
 
-    public static Task DownloadPriorCloseAndLastPriceYF(Asset[] p_assets)  // takes 45 ms from WinPC. Can handle Stock and Index assets as "^VIX"
+    public static Task DownloadPriorCloseAndLastPriceYF(Asset[] p_assets) // takes 45 ms from WinPC. Can handle Stock and Index assets as "^VIX"
     {
         if (p_assets.Length == 0)
             return Task.CompletedTask;
@@ -292,7 +290,7 @@ public partial class MemDb
         return DownloadPriorCloseAndLastPriceYF(p_assets, tradingHoursNow);
     }
 
-    async static Task DownloadPriorCloseAndLastPriceYF(Asset[] p_assets, TradingHoursEx p_tradingHoursNow)  // takes 45 ms from WinPC. Can handle Stock and Index assets as "^VIX"
+    static async Task DownloadPriorCloseAndLastPriceYF(Asset[] p_assets, TradingHoursEx p_tradingHoursNow) // takes 45 ms from WinPC. Can handle Stock and Index assets as "^VIX"
     {
         Utils.Logger.Debug("DownloadPriorCloseAndLastPriceYF() START");
         try
@@ -325,7 +323,7 @@ public partial class MemDb
             // https://query1.finance.yahoo.com/v7/finance/quote?symbols=AAPL,AMZN  returns all the fields.
             // https://query1.finance.yahoo.com/v7/finance/quote?symbols=QQQ%2CSPY%2CGLD%2CTLT%2CVXX%2CUNG%2CUSO&fields=symbol%2CregularMarketPreviousClose%2CregularMarketPrice%2CmarketState%2CpostMarketPrice%2CpreMarketPrice  // returns just the specified fields.
             // "marketState":"PRE" or "marketState":"POST", In PreMarket both "preMarketPrice" and "postMarketPrice" are returned.
-            string[] yfTickers = p_assets.Select(r => 
+            string[] yfTickers = p_assets.Select(r =>
             {
                 if (r is Stock stock)
                     return stock.YfTicker;
@@ -348,11 +346,12 @@ public partial class MemDb
                     {
                         sec = a;
                         break;
-                    } else if (a is FinIndex finIndex && finIndex.YfTicker == yfTicker)
+                    }
+                    else if (a is FinIndex finIndex && finIndex.YfTicker == yfTicker)
                     {
                         sec = a;
                         break;
-                    } 
+                    }
                 }
 
                 if (sec != null)
@@ -373,8 +372,7 @@ public partial class MemDb
                 }
             }
 
-
-            if (p_assets.Length > 100)  // only called in LowFreq timer.
+            if (p_assets.Length > 100) // only called in LowFreq timer.
                 Utils.Logger.Info($"DownloadPriorCloseAndLastPriceYF: #queried:{yfTickers.Length}, #received:{nReceivedAndRecognized}");  // TEMP
 
             if (nReceivedAndRecognized != yfTickers.Length)
@@ -392,11 +390,11 @@ public partial class MemDb
 
     // compared to IB data stream, IEX is sometimes 5-10 sec late. But sometimes it is not totally accurate. It is like IB updates its price every second. IEX updates randomly. Sometimes it updates every 1 second, sometime after 10seconds. In general this is fine.
     // "We limit requests to 100 per second per IP measured in milliseconds, so no more than 1 request per 10 milliseconds."
-    // https://iexcloud.io/pricing/ 
-    // Free account: 50,000 core messages/mo, That is 50000/30/20/60 = 1.4 message per minute. 
+    // https://iexcloud.io/pricing/
+    // Free account: 50,000 core messages/mo, That is 50000/30/20/60 = 1.4 message per minute.
     // Paid account: $9 per 5 million messages/mo: 5000000/30/20/60 = 134 messages per minute.
     // PreviousClose data: https://cloud.iexapis.com/stable/stock/market/batch?symbols=AAPL,FB&types=quote&token=<get it from sensitive-data file>
-    static async Task DownloadLastPriceIex(Asset[] p_assets, byte p_iexApiTokenInd)  // takes 450-540ms from WinPC
+    static async Task DownloadLastPriceIex(Asset[] p_assets, byte p_iexApiTokenInd) // takes 450-540ms from WinPC
     {
         Utils.Logger.Debug("DownloadLastPriceIex() START");
         try
@@ -417,7 +415,7 @@ public partial class MemDb
         }
     }
 
-    static private void ExtractAttributeIex(string p_responseStr, string p_attribute, Asset[] p_assets)
+    private static void ExtractAttributeIex(string p_responseStr, string p_attribute, Asset[] p_assets)
     {
         List<string> zeroValueSymbols = new();
         List<string> properlyArrivedSymbols = new();
@@ -488,12 +486,10 @@ public partial class MemDb
             Utils.Logger.Warn($"ExtractAttributeIex() zero lastPrice values: {String.Join(',', zeroValueSymbols)}");
     }
 
-
-
-    public static void DownloadLastPriceOptionsIb(Asset[] p_options)   // faster execution if instead of Option[] and casting, we allow Asset[], because we don't have to cast it runtime all the time
+    public static void DownloadLastPriceOptionsIb(Asset[] p_options) // faster execution if instead of Option[] and casting, we allow Asset[], because we don't have to cast it runtime all the time
     {
         // MktData[] mktDatas = p_options.Select(r => new MktData(r.MakeIbContract()!) { AssetObj = r}).Take(1).ToArray();  // For Debug.
-        MktData[] mktDatas = p_options.Select(r => new MktData(r.MakeIbContract()!) { AssetObj = r}).ToArray();
+        MktData[] mktDatas = p_options.Select(r => new MktData(r.MakeIbContract()!) { AssetObj = r }).ToArray();
         BrokersWatcher.gWatcher.CollectIbMarketData(mktDatas, true);
 
         foreach (var mktData in mktDatas)
@@ -501,18 +497,18 @@ public partial class MemDb
             Option option = (Option)mktData.AssetObj!;  // throws exception if asset is not an option. OK. We want to catch those cases. Monitor log files.
 
             double newPriorClose = mktData.PriorClosePrice * option.Multiplier; // it will be NaN if mktData.PriorClosePrice is NaN
-            if (!double.IsNaN(newPriorClose))   // If it is not given by IB, don't overwrite current value by NaN. QQQ 20220121Put100: its value is very low. Bid=None, Ask = 0.02. No wonder its PriorClose = 0.0. But Ib gives proper 0.0 value 80% of the time, with snapshot data 20% of the time it is not filled and left as NaN.
+            if (!double.IsNaN(newPriorClose)) // If it is not given by IB, don't overwrite current value by NaN. QQQ 20220121Put100: its value is very low. Bid=None, Ask = 0.02. No wonder its PriorClose = 0.0. But Ib gives proper 0.0 value 80% of the time, with snapshot data 20% of the time it is not filled and left as NaN.
                 option.PriorClose = (float)newPriorClose;
 
             // Do not want to see ugly "NaN" values on the UI, because that catches the eye too quickly. Better to send the client "-1". That is known that it is impossible value for PriorClose, EstPrice
             // Treat EstPrice = "-1.00" as error, as NaN. Not available data. Then, we can use the PriorClose as EstPrice. That solves everything. (On the UI the P&L Today will be 0 at these lines. Fine.)
             float proposedEstValue;
-            if (double.IsNaN(mktData.EstPrice) || mktData.EstPrice == -1.0)   // If EstValue is not given by IB, use the PriorClose, but that can also be NaN
+            if (double.IsNaN(mktData.EstPrice) || mktData.EstPrice == -1.0) // If EstValue is not given by IB, use the PriorClose, but that can also be NaN
                 proposedEstValue = (float)mktData.PriorClosePrice * option.Multiplier;
             else
                 proposedEstValue = (float)mktData.EstPrice * option.Multiplier;
-            
-            if (!float.IsNaN(proposedEstValue))   // If it is not given by IB (either by PriorClose or EstPrice), don't overwrite current value by NaN.
+
+            if (!float.IsNaN(proposedEstValue)) // If it is not given by IB (either by PriorClose or EstPrice), don't overwrite current value by NaN.
                 option.EstValue = proposedEstValue;
 
             option.IbCompDelta = mktData.IbComputedDelta;

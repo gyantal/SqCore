@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 
 namespace FinTechCommon;
 
-public class PortfolioInDb   // Portfolio.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
+public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
 {
     [JsonPropertyName("User")]
     public int UserId { get; set; } = -1;   // Some folders: SqExperiments, Backtest has UserId = -1, indicating there is no proper user
@@ -23,7 +23,7 @@ public class PortfolioInDb   // Portfolio.Id is not in the JSON, which is the Ha
 }
 
 [DebuggerDisplay("{Id}, Name:{Name}, User:{User?.Username??\"-NoUser-\"}")]
-public class Portfolio : Asset  // this inheritance makes it possible that a Portfolio can be part of an Uber-portfolio
+public class Portfolio : Asset // this inheritance makes it possible that a Portfolio can be part of an Uber-portfolio
 {
     public int Id { get; set; } = -1;
     public User? User { get; set; } = null; // Some portfolios in SqExperiments, Backtest UserId = -1, so no user.

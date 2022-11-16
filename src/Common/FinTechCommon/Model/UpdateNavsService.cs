@@ -1,21 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using SqCommon;
-using StackExchange.Redis;
-using Microsoft.Extensions.Primitives;
-using System.Threading.Tasks;
 using BrokerCommon;
-using System.Linq;
 using IBApi;
+using Microsoft.Extensions.Primitives;
+using SqCommon;
 
 namespace FinTechCommon;
 
 // - Created a Google Calendar item (Annually on January 5):
 // Subject: SqCore Maintenance: Update deposit/withdrawal & daily NAV history annually in RedisDb
 // Text: "
-// SqCore saves daily NAV values that it tries to query every day at 16:00 ET (but it is not accurate)  
-// SqCore RedisDb is not updated automatically with Deposit/Withdrawal data. If there is a deposit into the account, the NAV value will go up, and it is stored in RedisDb. Without knowing that it came from Deposit, SqCore will think it come from trading profit. Giving a false impression of the real profit. 
+// SqCore saves daily NAV values that it tries to query every day at 16:00 ET (but it is not accurate)
+// SqCore RedisDb is not updated automatically with Deposit/Withdrawal data. If there is a deposit into the account, the NAV value will go up, and it is stored in RedisDb. Without knowing that it came from Deposit, SqCore will think it come from trading profit. Giving a false impression of the real profit.
 // In theory, we should update the RedisDb with Deposit data every time there was a deposit into the account. (Otherwise, it is seen as a trading profit.) If the deposit is small, this can be neglected or just done once per year.
 // If there is no deposit during the year, we don't have to do anything. The NAV values were derived from the real-time NAV at 16:00 ET, which are slightly inaccurate, but not important.
 // ----------------------------------
@@ -36,7 +33,6 @@ public class UpdateNavsParam
     public Db? Db { get; set; } = null;
 }
 
-
 public class BrAccJsonHelper
 {
     public string? BrAcc;
@@ -49,7 +45,7 @@ public class UpdateNavsService
 {
     static Timer? g_updateTimer = null;
 
-    public static void Timer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
+    public static void Timer_Elapsed(object? p_state) // Timer is coming on a ThreadPool thread
     {
         if (p_state == null)
             throw new Exception("Timer_Elapsed() received null object.");
@@ -59,7 +55,7 @@ public class UpdateNavsService
             Update((UpdateNavsParam)p_state);
 #endif
         }
-        catch (System.Exception e)  // Exceptions in timers crash the app.
+        catch (System.Exception e) // Exceptions in timers crash the app.
         {
             Utils.Logger.Error(e, "UpdateNavsService.Timer_Elapsed() exception.");
         }
@@ -71,7 +67,7 @@ public class UpdateNavsService
         DateTime etNow = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
         DateTime targetTimeEt = new(etNow.Year, etNow.Month, etNow.Day, 16, 1, 0); // 1 minute after market close to avoid too busy periods when VirtualBroker trades happen or when IB is busy
         TimeSpan tsTillTarget = targetTimeEt - etNow;
-        if (tsTillTarget < TimeSpan.FromSeconds(10))   // if negative timespan or too close to targetTime, it means etNow is after target time. Then target next day.
+        if (tsTillTarget < TimeSpan.FromSeconds(10)) // if negative timespan or too close to targetTime, it means etNow is after target time. Then target next day.
         {
             targetTimeEt = targetTimeEt.AddDays(1);
             targetTimeEt = new DateTime(targetTimeEt.Year, targetTimeEt.Month, targetTimeEt.Day, 16, 1, 0);
@@ -93,10 +89,9 @@ public class UpdateNavsService
         if (etNow.IsWeekend())
             return;
 
-        Dictionary<GatewayId, uint> GatewayId2SubTableId = new() {
-                {GatewayId.GyantalMain, 1}, {GatewayId.CharmatMain, 2}, {GatewayId.DeBlanzacMain, 3}};
+        Dictionary<GatewayId, uint> gatewayId2SubTableId = new() { { GatewayId.GyantalMain, 1 }, { GatewayId.CharmatMain, 2 }, { GatewayId.DeBlanzacMain, 3 } };
 
-        foreach (var gw2SubTableId in GatewayId2SubTableId)
+        foreach (var gw2SubTableId in gatewayId2SubTableId)
         {
             GatewayId gatewayId = gw2SubTableId.Key;
             List<BrAccSum>? accSums = BrokersWatcher.gWatcher.GetAccountSums(gatewayId);
@@ -108,11 +103,10 @@ public class UpdateNavsService
         }
     }
 
-
     private static void UpdateAssetInDb(UpdateNavsParam p_updateParam, AssetId32Bits p_assetId, double p_todayNav)
     {
         var dailyNavStr = p_updateParam.Db!.GetAssetQuoteRaw(p_assetId); // "D/C" for Date/Closes: "D/C,20090102/16461,20090105/16827,..."
-        
+
         int iFirstComma = dailyNavStr!.IndexOf(',');
         string formatString = dailyNavStr[..iFirstComma];  // "D/C" for Date/Closes
         if (formatString != "D/C")
@@ -123,16 +117,16 @@ public class UpdateNavsService
         // var dailyNavStrSplit = dailyNavStr.Substring(iFirstComma + 1, dailyNavStr.Length - (iFirstComma + 1)).Split(',', StringSplitOptions.RemoveEmptyEntries);
         // DateOnly[] dates = dailyNavStrSplit.Select(r => new DateOnly(Int32.Parse(r.Substring(0, 4)), Int32.Parse(r.Substring(4, 2)), Int32.Parse(r.Substring(6, 2)))).ToArray();
         // double[] unadjustedClosesNav = dailyNavStrSplit.Select(r => Double.Parse(r.Substring(9))).ToArray();
-        //unadjustedClosesNav[dates.Length - 1] = todayNav;   // update the last item.
+        // unadjustedClosesNav[dates.Length - 1] = todayNav;   // update the last item.
         int iLastComma = dailyNavStr.LastIndexOf(',');
         string lastRecord = dailyNavStr[(iLastComma + 1)..];
         DateTime lastDate = Utils.FastParseYYYYMMDD(lastRecord[..8]);
 
         DateTime todayEt = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;
         int lengthToUseFromOld = dailyNavStr.Length;
-        if (lastDate == todayEt)  // if updater runs twice a day, last item is the today already. Remove the last item from the old string.
+        if (lastDate == todayEt) // if updater runs twice a day, last item is the today already. Remove the last item from the old string.
             lengthToUseFromOld = iLastComma;
-            
+
         // dailyNavStr = dailyNavStr.Substring(0, lengthToUseFromOld);
         var useFromOldSg = new StringSegment(dailyNavStr, 0, lengthToUseFromOld);   // StringSegment doesn't duplicate the long string
         string newDailyNavStr = useFromOldSg + $",{todayEt:yyyyMMdd}/{nearestIntValue}";    // append last record at end

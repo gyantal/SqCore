@@ -1,19 +1,18 @@
-﻿using Flurl;
-using Flurl.Http;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Flurl;
+using Flurl.Http;
 
 namespace YahooFinanceApi;
 
 public sealed partial class Yahoo
 {
-    private string[] symbols = Array.Empty<string>();
     private readonly List<string> fields = new();
-
+    private string[] symbols = Array.Empty<string>();
     private Yahoo() { }
 
     // static!
@@ -82,10 +81,11 @@ public sealed partial class Yahoo
                 .ConfigureAwait(false);
         }
         catch (FlurlHttpException ex)
-        {   
+        {
             if (ex.Call.Response.StatusCode == (int)System.Net.HttpStatusCode.NotFound)
                 return new Dictionary<string, Security>(); // When there are no valid symbols
-            else throw;
+            else
+                throw;
         }
 
         var quoteExpando = expando.quoteResponse;
@@ -105,5 +105,4 @@ public sealed partial class Yahoo
 
         return assets;
     }
-
 }

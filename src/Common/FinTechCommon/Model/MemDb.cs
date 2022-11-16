@@ -1,18 +1,18 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using SqCommon;
 using System.Threading.Tasks;
-using System.Globalization;
 using BrokerCommon;
 using IBApi;
+using SqCommon;
 
 // MemDb.Init() Flowchart: https://docs.google.com/document/d/1fwW7u4IvMIFNwx_l1YI8vop0bJ1Cl0bAPETGC-FIvxs
 namespace FinTechCommon;
 
-public partial class MemDb
+public partial class MemDb : IDisposable
 {
     public static readonly MemDb gMemDb = new();   // Singleton pattern
     // public object gMemDbUpdateLock = new object();  // the rare clients who care about inter-table consintency (VBroker) should obtain the lock before getting pointers to subtables
@@ -32,27 +32,28 @@ public partial class MemDb
 
     public bool IsInitialized { get; set; } = false;
 
-    Timer m_dbReloadTimer;  // checks every 1 hour, but reloads RAM only if Db data change is detected.
+    Timer? m_dbReloadTimer;  // checks every 1 hour, but reloads RAM only if Db data change is detected.
 
     DateTime m_lastRedisReload = DateTime.MinValue; // UTC, // RedisDb reload: 2-3 tables takes: 0.2sec, It is about 100ms per table.
     TimeSpan m_lastRedisReloadTs = TimeSpan.Zero;
     DateTime m_lastFullMemDbReload = DateTime.MinValue; // UTC
-    TimeSpan m_lastFullMemDbReloadTs =  TimeSpan.Zero;
+    TimeSpan m_lastFullMemDbReloadTs = TimeSpan.Zero;
 
-    public List<BrAccount> BrAccounts{ get; set; } = new List<BrAccount>();   // only Broker dependent data. When AssetCache is reloaded from RedisDb, this should not be wiped or reloaded
+    public List<BrAccount> BrAccounts { get; set; } = new List<BrAccount>();   // only Broker dependent data. When AssetCache is reloaded from RedisDb, this should not be wiped or reloaded
 
     public delegate void MemDbEventHandler();
     // Don't send too granual (separate EvAssetReloaded, EvBrokerDataReloaded) events to observers, because they will be confused.
     // These 2 broad categories are enough: Full MemDbReload (happened because Assets changed in RedisDb), and 3-4 times a day HistoricalData reload, which should be periodic as clients should know when PreviousClose prices change.
-    // Observers will be confused to receive many messages. 
+    // Observers will be confused to receive many messages.
     // Just use 3 events: EvMemDbDataReloadedNoHistoryYet, EvFullMemDbDataReloaded, and EvOnlyHistoricalDataReloaded
     public event MemDbEventHandler? EvMemDbInitNoHistoryYet = null;
     public event MemDbEventHandler? EvFullMemDbDataReloaded = null;
     public event MemDbEventHandler? EvOnlyHistoricalDataReloaded = null;
 
+    private bool disposedValue;
 
 #pragma warning disable CS8618 // Non-nullable field 'm_assetDataReloadTimer' is uninitialized.
-    public MemDb()  // constructor runs in main thread
+    public MemDb() // constructor runs in main thread
     {
     }
 #pragma warning restore CS8618
@@ -64,7 +65,7 @@ public partial class MemDb
     }
 
     // MemDb.Init() Flowchart: https://docs.google.com/document/d/1fwW7u4IvMIFNwx_l1YI8vop0bJ1Cl0bAPETGC-FIvxs
-    async void Init_WT()    // WT : WorkThread
+    async void Init_WT() // WT : WorkThread
     {
         Thread.CurrentThread.Name = "MemDb.Init_WT Thread";
         Console.WriteLine("*MemDb is not yet ready! ReloadDbData is in progress...");
@@ -73,9 +74,9 @@ public partial class MemDb
         {
             // Step 1: Redis Assets, Users
             // GA.IM.NAV assets have user_id data, so User data has to be reloaded too before Assets
-            (bool isDbReloadNeeded, User[]? newUsers, List<Asset>? newAssets, Dictionary<int, PortfolioFolder>? portfolioFolders, Dictionary<int, Portfolio>? portfolios) = m_Db.GetDataIfReloadNeeded();    // isDbReloadNeeded can be ignored as it is surely true at Init()
-            var newAssetCache = new AssetsCache(newAssets!);               // TODO: var newPortfolios = GeneratePortfolios();
-            m_memData = new MemData(newUsers!, newAssetCache, new CompactFinTimeSeries<SqDateOnly, uint, float, uint>(), portfolioFolders!, portfolios!);
+            (bool isDbReloadNeeded, User[]? users, List<Asset>? assets, Dictionary<int, PortfolioFolder>? portfolioFolders, Dictionary<int, Portfolio>? portfolios) = m_Db.GetDataIfReloadNeeded();    // isDbReloadNeeded can be ignored as it is surely true at Init()
+            var newAssetCache = new AssetsCache(assets!);               // TODO: var newPortfolios = GeneratePortfolios();
+            m_memData = new MemData(users!, newAssetCache, new CompactFinTimeSeries<SqDateOnly, uint, float, uint>(), portfolioFolders!, portfolios!);
             m_lastRedisReload = DateTime.UtcNow;
             m_lastRedisReloadTs = m_lastRedisReload - startTime;
             // can inform Observers that MemDb is 1/4th ready: Users, Assets OK
@@ -89,7 +90,7 @@ public partial class MemDb
             List<Task> brTasks = new();
             foreach (var brAccount in BrAccounts)
             {
-                Task brTask = Task.Run(() =>    // Task.Run() runs it immediately
+                Task brTask = Task.Run(() => // Task.Run() runs it immediately
                 {
                     // IB API is not async. Thread waits until the connection is established.
                     // Task.Run() uses threads from the thread pool, so it executes those connections parallel in the background. Then wait for them.
@@ -104,7 +105,7 @@ public partial class MemDb
                 });
                 brTasks.Add(brTask);
 
-                _ = Task.Run(() =>    // Task.Run() runs it immediately. Checks that after a timeout whether Brokers are connected.
+                _ = Task.Run(() => // Task.Run() runs it immediately. Checks that after a timeout whether Brokers are connected.
                 {
                     Thread.Sleep(TimeSpan.FromSeconds(15));
                     if (!BrokersWatcher.gWatcher.IsGatewayConnected(brAccount.GatewayId))
@@ -117,10 +118,10 @@ public partial class MemDb
             }
 
             // Step 3: Assets history in separate thread
-            Task histTask = Task.Run(async () =>    // Task.Run() runs it 'immediately'
+            Task histTask = Task.Run(async () => // Task.Run() runs it 'immediately'
             {
                 var newDailyHist = await CreateDailyHist(m_memData, m_Db);
-                if (newDailyHist != null)   // if it fails, keep the empty DailyHist that was just created at the start
+                if (newDailyHist != null) // if it fails, keep the empty DailyHist that was just created at the start
                     m_memData.DailyHist = newDailyHist;  // swap pointer in atomic operation
                 // Here don't call EvOnlyHistoricalDataReloaded.Invoke(), because we will call later the EvFullMemDbDataReloaded?.Invoke();
             });
@@ -138,7 +139,7 @@ public partial class MemDb
             EvMemDbInitNoHistoryYet?.Invoke();
 
             // inform Observers that MemDb is 3/4rd ready: Assets, PriorAndRtPrices, BrokerNavAndPoss.
-            // However, don't go too many gradual events, because observers will be confused to receive many messages. 
+            // However, don't go too many gradual events, because observers will be confused to receive many messages.
             // Just use these 3 events: EvMemDbInitNoHistoryYet, EvFullMemDbDataReloaded, and EvOnlyHistoricalDataReloaded
 
             // When this is the first time to load DB from Redis, then we don't demand HistData. Assume HistData crawling for 700 stocks takes 20min
@@ -151,9 +152,9 @@ public partial class MemDb
             await histTask;
             m_lastFullMemDbReload = DateTime.UtcNow;
             m_lastFullMemDbReloadTs = m_lastFullMemDbReload - startTime;
-            Console.WriteLine($"*MemDb is full-ready! Hist (#Assets:{AssetsCache.Assets.Count},#Brokers:{nConnectedBrokers},#HistAssets:{m_memData.DailyHist.GetDataDirect().Data.Count }) in {m_lastFullMemDbReloadTs.TotalSeconds:0.000}sec");
-            // Benchmarking: EvMemDbInitNoHistoryYet: 1.2sec (when MemDb is usable for clients), because Broker.Connections is 800ms each, but it is parallelized, while 20 YF history is extra 5sec, 
-            // so altogether if single-threaded it would be 0.2(Redis)+1+1+1(Brokers)+5 = 8.3sec, 
+            Console.WriteLine($"*MemDb is full-ready! Hist (#Assets:{AssetsCache.Assets.Count},#Brokers:{nConnectedBrokers},#HistAssets:{m_memData.DailyHist.GetDataDirect().Data.Count}) in {m_lastFullMemDbReloadTs.TotalSeconds:0.000}sec");
+            // Benchmarking: EvMemDbInitNoHistoryYet: 1.2sec (when MemDb is usable for clients), because Broker.Connections is 800ms each, but it is parallelized, while 20 YF history is extra 5sec,
+            // so altogether if single-threaded it would be 0.2(Redis)+1+1+1(Brokers)+5 = 8.3sec,
             // but because it is massively multithreaded it finishes in 5.3sec, which is the necessery Redis + the longest task the YfHistory. A saving of 3seconds
 
             // inform Observers that MemDb is full ready: Assets, PriorAndRtPrices, BrokerNavAndPoss, AssetHist
@@ -200,7 +201,7 @@ public partial class MemDb
 
         var hist = DailyHist.GetDataDirect();
         int memUsedKb = hist.MemUsed() / 1024;
-        p_sb.Append($"#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {hist.Data.Count}, Used RAM: {memUsedKb:N0}KB{newLine}");  // hist.Data.Count = Srv.LoadPrHist + DC Aggregated NAV 
+        p_sb.Append($"#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {hist.Data.Count}, Used RAM: {memUsedKb:N0}KB{newLine}");  // hist.Data.Count = Srv.LoadPrHist + DC Aggregated NAV
         p_sb.Append($"m_lastHistoricalDataReloadTimeUtc: '{m_lastHistoricalDataReload}', m_lastRedisReloadTs: {m_lastRedisReloadTs.TotalSeconds:0.000}sec, m_lastFullMemDbReloadTs: {m_lastFullMemDbReloadTs.TotalSeconds:0.000}sec, m_lastHistoricalDataReloadTs: {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec.{newLine}");
 
         var yfTickers = AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).Select(r => ((Stock)r).YfTicker).ToArray();
@@ -217,14 +218,14 @@ public partial class MemDb
         }
     }
 
-    public static async void ReloadDbDataTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
+    public static async void ReloadDbDataTimer_Elapsed(object? p_state) // Timer is coming on a ThreadPool thread
     {
         if (p_state == null)
             throw new Exception("ReloadDbDataTimer_Elapsed() received null object.");
         await ((MemDb)p_state).ReloadDbDataIfChangedAndSetNewTimer();
     }
 
-    public async Task<StringBuilder> ReloadDbDataIfChanged(bool p_isHtml)  // print log to Console or HTML
+    public async Task<StringBuilder> ReloadDbDataIfChanged(bool p_isHtml) // print log to Console or HTML
     {
         StringBuilder sb = new();
         await ReloadDbDataIfChangedAndSetNewTimer();
@@ -251,21 +252,21 @@ public partial class MemDb
         DateTime etNow = DateTime.UtcNow.FromUtcToEt();
         DateTime targetDateEt = etNow.AddHours(1);  // Polling for change in every 1 hour
         Utils.Logger.Info($"ReloadDbDataIfChangedAndSetTimer() END. m_reloadAssetsDataTimer set next targetdate: {targetDateEt.ToSqDateTimeStr()} ET");
-        m_dbReloadTimer.Change(targetDateEt - etNow, TimeSpan.FromMilliseconds(-1.0));     // runs only once
+        m_dbReloadTimer?.Change(targetDateEt - etNow, TimeSpan.FromMilliseconds(-1.0));     // runs only once
     }
 
-    public async Task ReloadDbDataIfChangedImpl()   // if necessary it reloads Historical and Realtime data
+    public async Task ReloadDbDataIfChangedImpl() // if necessary it reloads Historical and Realtime data
     {
         Console.WriteLine("*ReloadDbDataIfChangedImpl() is in progress...");
         DateTime startTime = DateTime.UtcNow;
         // GA.IM.NAV assets have user_id data, so User data has to be reloaded too before Assets
-        (bool isDbReloadNeeded, User[]? newUsers, List<Asset>? sqCoreAssets, Dictionary<int, PortfolioFolder>? portfolioFolders, Dictionary<int, Portfolio>? portfolios) = m_Db.GetDataIfReloadNeeded();
+        (bool isDbReloadNeeded, User[]? users, List<Asset>? assets, Dictionary<int, PortfolioFolder>? portfolioFolders, Dictionary<int, Portfolio>? portfolios) = m_Db.GetDataIfReloadNeeded();
         if (!isDbReloadNeeded)
             return;
 
         // to minimize the time memDb is not consintent we create everything into new pointers first, then update them quickly
-        var newAssetCache = new AssetsCache(sqCoreAssets!);
-        var newMemData = new MemData(newUsers!, newAssetCache, new CompactFinTimeSeries<SqDateOnly, uint, float, uint>(), portfolioFolders!, portfolios!);
+        var newAssetCache = new AssetsCache(assets!);
+        var newMemData = new MemData(users!, newAssetCache, new CompactFinTimeSeries<SqDateOnly, uint, float, uint>(), portfolioFolders!, portfolios!);
         m_lastRedisReload = DateTime.UtcNow;
         m_lastRedisReloadTs = m_lastRedisReload - startTime;
 
@@ -275,7 +276,7 @@ public partial class MemDb
             newMemData.DailyHist = newDailyHist;
 
         InitAllStockAssetsPriorCloseAndLastPrice(newAssetCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
-        
+
         m_memData = newMemData; // swap pointer in atomic operation. After this, m_memData is now the new Data
         Console.WriteLine($"*MemDb is ready! (#Assets: {AssetsCache.Assets.Count}, #HistoricalAssets: {DailyHist.GetDataDirect().Data.Count}) in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
 
@@ -294,7 +295,7 @@ public partial class MemDb
         EvFullMemDbDataReloaded?.Invoke();
     }
 
-    public (User[], AssetsCache, CompactFinTimeSeries<SqDateOnly, uint, float, uint>) GetAssuredConsistentTables()
+    public (User[] Users, AssetsCache Assets, CompactFinTimeSeries<SqDateOnly, uint, float, uint> DailyHist) GetAssuredConsistentTables()
     {
         // if client wants to be totally secure and consistent when getting subtables
         MemData localMemData = m_memData; // if m_memData swap occurs, that will not ruin our consistency
@@ -390,7 +391,7 @@ public partial class MemDb
                         newAssetsToMemData.Add(asset);
                     }
                     break;
-                case "CASH":    // Ignore Virtual Forex positions. "Cash contract" is virtual (to follow the AvgPrice). 
+                case "CASH": // Ignore Virtual Forex positions. "Cash contract" is virtual (to follow the AvgPrice).
                     // Cash position is real, but that is part of the Account, not the contracts. For the BrAccViewer UI, the cash positions are not important. They don't change intraday, and they would just clutter the datatable.
                     // You can remove Virtual Forex positions in IB: Account/VirtualFx positions/RightClick/Change Virtual price or position/Set position = 0 / Restart IB.
                     Utils.Logger.Info($"UpdateBrAccPosAssetIds(): Skip Virtual Forex contracts, which is not the real cash. It is only the VirtualFX position in the Account dialog. Set Pos=0 in TWS and it will disappear. Pos: {pos.Position}, Currency: {contract.Currency}, LocalSymbol: {contract.LocalSymbol}. Something weird. Seemingly wrong position, and only one Cash arrived.");
@@ -413,7 +414,7 @@ public partial class MemDb
             else
             {
                 pos.AssetId = asset.AssetId;
-                if (asset.AssetId.AssetTypeID == AssetType.Option)  // for option assets, we require that the UnderlyingAsset should be in RedisDb (don't create a NonPersisted Stock here). Just inform user, and we should add it to RedisDb.
+                if (asset.AssetId.AssetTypeID == AssetType.Option) // for option assets, we require that the UnderlyingAsset should be in RedisDb (don't create a NonPersisted Stock here). Just inform user, and we should add it to RedisDb.
                 {
                     var underlyingAsset = AssetsCache.TryGetAsset("S/" + asset.Symbol);
                     if (underlyingAsset == null)
@@ -429,11 +430,45 @@ public partial class MemDb
 
         StringBuilder sb = new($"MemDb.UpdateBrAccPosAssetIds(). Unrecognised IB contracts as valid SqCore assets (#{p_brAccount.AccPossUnrecognizedAssets.Count}): ");
         var unrecognizedExtendedSymbols = p_brAccount.AccPossUnrecognizedAssets.Select(r => r.Contract.SecType + ":" + r.Contract.Symbol);
-        sb.AppendLongListByLine(unrecognizedExtendedSymbols, ",", 1000, "");
+        sb.AppendLongListByLine(unrecognizedExtendedSymbols, ",", 1000, string.Empty);
         Utils.Logger.Warn(sb.ToString());
     }
 
     public static void Exit()
     {
+        gMemDb.Dispose(disposing: true);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposedValue)
+        {
+            if (disposing)
+            {
+                // TODO: dispose managed state (managed objects)
+                m_dbReloadTimer?.Dispose();
+                m_dbReloadTimer = null;
+                m_historicalDataReloadTimer?.Dispose();
+                m_historicalDataReloadTimer = null;
+            }
+
+            // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+            // TODO: set large fields to null
+            disposedValue = true;
+        }
+    }
+
+    // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+    // ~Gateway()
+    // {
+    //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+    //     Dispose(disposing: false);
+    // }
+
+    public void Dispose()
+    {
+        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
     }
 }

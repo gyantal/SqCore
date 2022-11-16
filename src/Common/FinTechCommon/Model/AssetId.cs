@@ -7,20 +7,18 @@ namespace FinTechCommon;
 // ID (SubTableId): uses the bottom 27 bits. 134M different values.
 // If smaller memory footprint is needed, we can use 16bit uint: 3bits for AssetType=8, 13 bits ID would give 8K values, which would be enough for the 5K USA stocks.
 [DebuggerDisplay("AssetTypeID = {AssetTypeID}, SubTableID = {SubTableID} [{((int)AssetTypeID)}:{SubTableID}]")]
-public struct AssetId32Bits  : IEquatable<AssetId32Bits>
+public struct AssetId32Bits : IEquatable<AssetId32Bits>
 {
+    public const AssetType AssetTypeMin = (AssetType)0;
+    public const AssetType AssetTypeMax = (AssetType)31;
+    public const uint SubTableIdMin = 0;
+    public const uint SubTableIdMax = 134217727;
+    public const uint Invalid = 0; // invalid value is best to be 0, because it is easy to malloc an array of Invalid (0) objects
+
     // signed int would use negative values, and it is represented as binary complement. It complicates things. Less error prone to use unsigned.
     // https://stackoverflow.com/questions/42548277/how-can-i-convert-a-signed-integer-into-an-unsigned-integer
     // In general SQL primary keys are better as unsigned int. Therefore uint is preferable over int.
     public uint m_value;
-
-    public const AssetType AssetTypeMin = (AssetType)(0);
-    public const AssetType AssetTypeMax = (AssetType)31;
-    public const uint SubTableIdMin = 0;
-    public const uint SubTableIdMax =  134217727;
-
-    public const uint Invalid =  0; // invalid value is best to be 0, because it is easy to malloc an array of Invalid (0) objects
-
     public AssetId32Bits(uint p_value) { m_value = p_value; }
     public AssetId32Bits(IAssetID p_assetID)
     {
@@ -31,7 +29,7 @@ public struct AssetId32Bits  : IEquatable<AssetId32Bits>
         m_value = IntValue(p_type, p_subTableId);
     }
 
-    public AssetId32Bits(string p_typeSubTableStr)  // "2:6" is Type: 2 (stock), StockID: 6 (USO)
+    public AssetId32Bits(string p_typeSubTableStr) // "2:6" is Type: 2 (stock), StockID: 6 (USO)
     {
         int iColon = p_typeSubTableStr.IndexOf(':');
         if (iColon == -1)
@@ -39,8 +37,8 @@ public struct AssetId32Bits  : IEquatable<AssetId32Bits>
 
         m_value = IntValue((AssetType)byte.Parse(p_typeSubTableStr[..iColon]), uint.Parse(p_typeSubTableStr.Substring(iColon + 1, p_typeSubTableStr.Length - iColon - 1)));
     }
-    public AssetType AssetTypeID        { get { return (AssetType)(m_value >> 27); } }
-    public uint SubTableID               { get { return (m_value << 5) >> 5; } }
+    public AssetType AssetTypeID { get { return (AssetType)(m_value >> 27); } }
+    public uint SubTableID { get { return (m_value << 5) >> 5; } }
 
     // public IAssetID AssetID
     // {
@@ -59,7 +57,7 @@ public struct AssetId32Bits  : IEquatable<AssetId32Bits>
     // }
     public static implicit operator uint(AssetId32Bits p_this) { return p_this.m_value; }
     public static implicit operator AssetId32Bits(uint p_value) { return new AssetId32Bits(p_value); }
-    
+
     public static uint IntValue(AssetType p_type, uint p_subTableId)
     {
         // checking that input is in the valid range or not. The code was valid for signed int, not for this uint implementation.
@@ -97,23 +95,22 @@ public struct AssetId32Bits  : IEquatable<AssetId32Bits>
 
     public override string ToString()
     {
-        return $"{((int)AssetTypeID)}:{SubTableID}";
+        return $"{(int)AssetTypeID}:{SubTableID}";
     }
 }
 
-
 // Not used at the moment; but it might be a good idea to have different classes StockID/OptionID/FuturesID
-/// <summary> IMPORTANT:
-/// - GetHashCode() must be equivalent to DBUtils.GetHashCodeOfIAssetID(this);
-/// - Equals(obj) must be equivalent to 0==CompareTo(this,obj as IAssetID);
-/// - Do NOT use reference-equality (e.g. assetID1 == assetID2)!
-/// Although IAssetIDs are pooled, other classes may also implement 
-/// this interface (e.g. IAssetWeight, PortfolioItemSpec). </summary>
+// <summary> IMPORTANT:
+// - GetHashCode() must be equivalent to DBUtils.GetHashCodeOfIAssetID(this);
+// - Equals(obj) must be equivalent to 0==CompareTo(this,obj as IAssetID);
+// - Do NOT use reference-equality (e.g. assetID1 == assetID2)!
+// Although IAssetIDs are pooled, other classes may also implement
+// this interface (e.g. IAssetWeight, PortfolioItemSpec). </summary>
 // in this way we can have different classes for Stock/Options/Indexes. All deriving from IAssetID. Or we can just use AssetId32Bits in code, without differentiating them.
 public interface IAssetID : IComparable<IAssetID>
 {
     AssetType AssetTypeID { get; }
-    uint ID { get; }                     // AssetSubTableID
+    uint ID { get; } // AssetSubTableID
 }
 
 // internal interface IMinimalAssetID : IAssetID // used as marker for minimal IAssetID implementations
@@ -128,7 +125,6 @@ public interface IAssetID : IComparable<IAssetID>
 //     public AssetType AssetTypeID        { get { return AssetType.Stock; } }
 //     public override int GetHashCode()   { return m_id.GetHashCode(); }    // equivalent to DBUtils.GetHashCodeOfIAssetID()
 //     // public override string ToString()   { return DBUtils.DefaultAssetIDString(AssetType.Stock, m_id); }
-
 //     public int CompareTo(IAssetID p_other)
 //     {
 //         throw new NotImplementedException();

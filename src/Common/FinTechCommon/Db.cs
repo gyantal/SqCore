@@ -10,13 +10,13 @@ using StackExchange.Redis;
 
 namespace FinTechCommon;
 
-public class SrvLoadPrHistInDb	// for quick JSON deserialization. In DB the fields has short names, and not all Asset fields are in the DB anyway
+public class SrvLoadPrHistInDb // for quick JSON deserialization. In DB the fields has short names, and not all Asset fields are in the DB anyway
 {
     public string LoadPrHist { get; set; } = string.Empty;
 }
 
 // Abstract class representing pshysical DBs (Sql, Redis as an aggregate)
-// Decouple the concrete databases from the using code. 
+// Decouple the concrete databases from the using code.
 // This front end wraps Redis and Sql Database, so a user doesn't even know whether data comes from Sql or Redis.
 // The user of the DB receives only higher level data (User), but never actual database implementation (UserInDb)
 // Later, Redis can be changed to other noSql memory database, or PostgreSql can be changed to MySql
@@ -49,7 +49,7 @@ public partial class Db
         m_sqlDb = p_sqlDb;
     }
 
-    public (bool, User[]?, List<Asset>?, Dictionary<int, PortfolioFolder>?, Dictionary<int, Portfolio>?) GetDataIfReloadNeeded()
+    public (bool IsDbReloadNeeded, User[]? Users, List<Asset>? Assets, Dictionary<int, PortfolioFolder>? PortfolioFolders, Dictionary<int, Portfolio>? Portfolios) GetDataIfReloadNeeded()
     {
         // Although 'Assets.brotli' would be 520bytes instead of 1.52KB, we don't not use binary brotli data for Assets, only for historical data.
         // Reason is that it is difficult to maintain, append new Stocks into Redis.Assets if it is binary brotli. Just a lot of headache.
@@ -93,12 +93,12 @@ public partial class Db
         {
             // only aggregate IB assets, not TradeStation assets, because we only have histQuotes for IB. So "DC.IM", "DC.ID" is considered, but "DC.TM" is not. Trader code starts with letter "I"
             List<BrokerNav> subNavAssets = navAssetsOfUser.Where(r => r.Symbol[3] == 'I').ToList();    // it adds all BrokerNav for DC: IbMain+IbDeBlan+TradeStation  (if problem, just code in that TradeStation Navs are not considered: "DC.TM","TS Main NAV, DC","DC.TM.NAV")
-            if (subNavAssets.Count >= 2)   // if more than 2 NAVs for the user has valid history, a virtual synthetic aggregatedNAV and a virtual AssetID should be generated
+            if (subNavAssets.Count >= 2) // if more than 2 NAVs for the user has valid history, a virtual synthetic aggregatedNAV and a virtual AssetID should be generated
             {
                 User user = navAssetsOfUser.Key!;
                 string aggAssetSqTicker = "N/" + user.Initials; // e.g. "N/DC";
                 var aggAssetId = new AssetId32Bits(AssetType.BrokerNAV, (uint)(10000 + nVirtualAggNavAssets++));
-                var aggNavAsset = new BrokerNav(aggAssetId, user.Initials, "Aggregated NAV, " + user.Initials, "", CurrencyId.USD, false, user, GetExpectedHistoryStartDate("1y", aggAssetSqTicker), subNavAssets);
+                var aggNavAsset = new BrokerNav(aggAssetId, user.Initials, "Aggregated NAV, " + user.Initials, string.Empty, CurrencyId.USD, false, user, GetExpectedHistoryStartDate("1y", aggAssetSqTicker), subNavAssets);
                 subNavAssets.ForEach(r => r.AggregateNavParent = aggNavAsset);
                 assets.Add(aggNavAsset);
             }
@@ -167,7 +167,7 @@ public partial class Db
         foreach (var item in srvLoadPrHist)
         {
             string sqTicker = item.Key;
-            DateTime startDate =  GetExpectedHistoryStartDate(item.Value.LoadPrHist, sqTicker);
+            DateTime startDate = GetExpectedHistoryStartDate(item.Value.LoadPrHist, sqTicker);
             Asset asset = assets.Find(r => r.SqTicker == sqTicker)!;
             asset.ExpectedHistoryStartDateLoc = startDate;
         }
@@ -216,7 +216,7 @@ public partial class Db
 
     public static User[] GetUsers(string p_sqUserDataStr)
     {
-        var usersInDb = JsonSerializer.Deserialize<List<UserInDb>>(p_sqUserDataStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true});
+        var usersInDb = JsonSerializer.Deserialize<List<UserInDb>>(p_sqUserDataStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         if (usersInDb == null)
             throw new SqException($"Deserialize failed on '{p_sqUserDataStr}'");
 
@@ -248,7 +248,6 @@ public partial class Db
             users[i].VisibleUsers = visibleUsers[i].ToArray();
         }
 
-        
         return users.ToArray();
     }
 
@@ -305,7 +304,7 @@ public partial class Db
             if (!hashRow.Name.TryParse(out int id)) // Name is the 'Key' that contains the Id
                 continue;   // Sometimes, there is an extra line 'New field'. But it can be deleted from Redis Manager. It is a kind of expected.
 
-            var prtfFolderInDb = JsonSerializer.Deserialize<PortfolioFolderInDb>(hashRow.Value, new JsonSerializerOptions { PropertyNameCaseInsensitive = true});
+            var prtfFolderInDb = JsonSerializer.Deserialize<PortfolioFolderInDb>(hashRow.Value, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             if (prtfFolderInDb == null)
                 throw new SqException($"Deserialize failed on '{hashRow.Value}'"); // Not expected error. DB has to be fixed
 
@@ -315,8 +314,10 @@ public partial class Db
         return result;
     }
 
-    private static Dictionary<int, Portfolio> GetPortfolios(HashEntry[] portfoliosRds, User[] users, List<Asset> _1)    // Portfolio will require Assets in the future
+    private static Dictionary<int, Portfolio> GetPortfolios(HashEntry[] portfoliosRds, User[] users, List<Asset> assets) // Portfolio will require Assets in the future
     {
+        _ = assets; // StyleCop SA1313 ParameterNamesMustBeginWithLowerCaseLetter. They won't fix. Recommended solution for unused parameters, instead of the discard (_1) parameters
+
         Dictionary<int, Portfolio> result = new();
         if (portfoliosRds == null)
             return result;

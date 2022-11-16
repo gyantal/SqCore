@@ -49,5 +49,4 @@ internal static class Helper
         var hashSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         return items.Where(item => !hashSet.Add(item));
     }
-
 }

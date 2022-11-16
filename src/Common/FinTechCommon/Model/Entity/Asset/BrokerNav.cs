@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using SqCommon;
 using BrokerCommon;
+using SqCommon;
 
 namespace FinTechCommon;
 
@@ -16,7 +16,8 @@ public class BrokerNav : Asset
 
     public GatewayId GatewayId { get; set; } = GatewayId.Unknown;
 
-    public BrokerNav(JsonElement row, User[] users) : base(AssetType.BrokerNAV, row)
+    public BrokerNav(JsonElement row, User[] users)
+        : base(AssetType.BrokerNAV, row)
     {
         User = users.FirstOrDefault(r => r.Username == row[5].ToString()!);
         if (User == null)
@@ -39,6 +40,6 @@ public class BrokerNav : Asset
 
     public bool IsAggregatedNav
     {
-        get { return (AggregateNavChildren.Count > 0); }   // N/GA.IM, N/DC.IM, N/DC.ID, N/DC , AggregatedNav has no '.'.
+        get { return AggregateNavChildren.Count > 0; } // N/GA.IM, N/DC.IM, N/DC.ID, N/DC , AggregatedNav has no '.'.
     }
 }

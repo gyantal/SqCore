@@ -3,7 +3,7 @@ using CsvHelper.Configuration.Attributes;
 
 namespace YahooFinanceApi;
 
-public sealed class Candle: ITick
+public sealed class Candle : ITick
 {
     [Name("Date")]
     public DateTime DateTime { get; set; }
@@ -19,5 +19,4 @@ public sealed class Candle: ITick
     public decimal AdjustedClose { get; set; }
     [Name("Volume")]
     public long Volume { get; set; }
-
 }

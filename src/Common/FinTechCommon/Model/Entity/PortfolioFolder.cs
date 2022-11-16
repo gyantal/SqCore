@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace FinTechCommon;
 
-public class PortfolioFolderInDb   // PortfolioFolder.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
+public class PortfolioFolderInDb // PortfolioFolder.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
 {
     [JsonPropertyName("User")]
     public int UserId { get; set; } = -1;   // Some folders: SqExperiments, Backtest has UserId = -1, indicating there is no proper user
@@ -36,5 +36,4 @@ public class PortfolioFolder
         CreationTime = folderInDb.CreationTime;
         Note = folderInDb.Note;
     }
-
 }

@@ -6,7 +6,7 @@ using SqCommon;
 
 namespace FinTechCommon;
 
-public class UserInDb	// for quick JSON deserialization. In DB the fields has short names, and not all Asset fields are in the DB anyway
+public class UserInDb // for quick JSON deserialization. In DB the fields has short names, and not all Asset fields are in the DB anyway
 {
     public int Id { get; set; } = -1;
     public string Name { get; set; } = string.Empty;
@@ -54,13 +54,13 @@ public class User
     }
 
     // The == Operator compares the reference identity while the Equals() method compares only contents.
-    // The default implementation of Equals supports reference equality for reference types, and bitwise equality for value types. 
+    // The default implementation of Equals supports reference equality for reference types, and bitwise equality for value types.
     // So, for classes, it checks for reference unless you override equals.
     // .ToLookup(r => r.User); // ToLookup() uses User.Equals()
     // but userPointer1 == userPointer2 doesn't use Equals()
     public override bool Equals(object? obj)
     {
-        if (obj == null || GetType() != obj.GetType()) 
+        if (obj == null || GetType() != obj.GetType())
             return false;
         else
             return DeepEquals((User)obj);
@@ -68,17 +68,17 @@ public class User
 
     public bool DeepEquals(User user)
     {
-        return Id.Equals(user.Id)   // we have the option to say it is equal if ID matches. But probably, even if Id is unique, better to compare all content
+        return Id.Equals(user.Id) // we have the option to say it is equal if ID matches. But probably, even if Id is unique, better to compare all content
                 && Username.Equals(user.Username)
                 && Password == user.Password
                 && Title == user.Title
                 && Firstname == user.Firstname
                 && Lastname == user.Lastname
-                && ((Email == null) ? user.Email == null: Email.Equals(user.Email));  // email can be null
+                && ((Email == null) ? user.Email == null : Email.Equals(user.Email));  // email can be null
     }
 
     // https://stackoverflow.com/questions/6470059/warning-overrides-object-equalsobject-o-but-does-not-override-object-get
-    public override int GetHashCode()   // if overrides Object.Equals(object o), you are supposed to override Object.GetHashCode()
+    public override int GetHashCode() // if overrides Object.Equals(object o), you are supposed to override Object.GetHashCode()
     {
         return Id.GetHashCode();
     }
@@ -87,9 +87,9 @@ public class User
     {
         // Add AggNav first, so it is the first in the list.
         var userNavs = allNavs.Where(r => r.User == this).ToList();
-        for (int i = 1; i < userNavs.Count; i++)    // if index 0 is the AggregatedNav, then we don't have to do anythin
+        for (int i = 1; i < userNavs.Count; i++) // if index 0 is the AggregatedNav, then we don't have to do anythin
         {
-            if (userNavs[i].IsAggregatedNav)    // if aggNav is not the first one
+            if (userNavs[i].IsAggregatedNav) // if aggNav is not the first one
             {
                 userNavs.MoveItemAtIndexToFront(i);
                 break;
@@ -98,7 +98,7 @@ public class User
         return userNavs;
     }
 
-    public List<BrokerNav> GetAllVisibleBrokerNavsOrdered()    // ordered, so the user's own BrokerNavs are the first. If there is aggregatedNav, that is the first.
+    public List<BrokerNav> GetAllVisibleBrokerNavsOrdered() // ordered, so the user's own BrokerNavs are the first. If there is aggregatedNav, that is the first.
     {
         // SelectableNavs is an ordered list of tickers. The first item is user specific. User should be able to select between the NAVs. DB, Main, Aggregate.
         // bool isAdmin = UserEmail == Utils.Configuration["Emails:Gyant"].ToLower();
@@ -109,10 +109,10 @@ public class User
         List<BrokerNav> visibleNavs = new();
         visibleNavs.AddRange(GetBrokerNavsOrdered(allNavsWithHistory));    // First add the current user NAVs. Virtual Aggregated should come first.
 
-        User[] addUsers = (IsAdmin) ? MemDb.gMemDb.Users : VisibleUsers;             // then the NAVs of other users
+        User[] addUsers = IsAdmin ? MemDb.gMemDb.Users : VisibleUsers;             // then the NAVs of other users
         foreach (var user in addUsers)
         {
-            if (user != this)  // was already added in case of IsAdmin
+            if (user != this) // was already added in case of IsAdmin
                 visibleNavs.AddRange(user.GetBrokerNavsOrdered(allNavsWithHistory));
         }
 

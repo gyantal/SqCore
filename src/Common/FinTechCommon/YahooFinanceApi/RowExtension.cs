@@ -7,29 +7,29 @@ public static class RowExtension
 {
     internal static bool IgnoreEmptyRows;
 
-    // 2020-04-08: ET: 10-12, YF-website gives empty row ("Apr 07, 2020	-	-	-	-	-	") for yesterday, although today is good. And yesterday was good at 9:30. They do maintenance...
+    // 2020-04-08: ET: 10-12, YF-website gives empty row ("Apr 07, 2020") for yesterday, although today is good. And yesterday was good at 9:30. They do maintenance...
     public static bool IsEmptyRow(Candle candle)
     {
         return candle.Open == 0 && candle.High == 0 && candle.Low == 0 && candle.Close == 0 &&
-            candle.AdjustedClose == 0 &&  candle.Volume == 0; 
+            candle.AdjustedClose == 0 && candle.Volume == 0;
     }
 
     internal static Candle? ToCandle(string[] row)
     {
         var candle = new Candle
         {
-            DateTime      = row[0].ToDateTime(),
-            Open          = row[1].ToDecimal(),
-            High          = row[2].ToDecimal(),
-            Low           = row[3].ToDecimal(),
-            Close         = row[4].ToDecimal(),
+            DateTime = row[0].ToDateTime(),
+            Open = row[1].ToDecimal(),
+            High = row[2].ToDecimal(),
+            Low = row[3].ToDecimal(),
+            Close = row[4].ToDecimal(),
             AdjustedClose = row[5].ToDecimal(),
-            Volume        = row[6].ToInt64()
+            Volume = row[6].ToInt64()
         };
 
         if (IgnoreEmptyRows &&
             candle.Open == 0 && candle.High == 0 && candle.Low == 0 && candle.Close == 0 &&
-            candle.AdjustedClose == 0 &&  candle.Volume == 0)
+            candle.AdjustedClose == 0 && candle.Volume == 0)
             return null;
 
         return candle;
@@ -39,7 +39,7 @@ public static class RowExtension
     {
         if (IgnoreEmptyRows &&
             candle!.Open == 0 && candle!.High == 0 && candle.Low == 0 && candle.Close == 0 &&
-            candle.AdjustedClose == 0 &&  candle.Volume == 0)
+            candle.AdjustedClose == 0 && candle.Volume == 0)
             return null;
 
         return candle;
@@ -75,7 +75,7 @@ public static class RowExtension
         var split = row[1].Split(':');  // 2020-06-09 fix. It looks like "1:8" instead of "1/8"
         if (split.Length == 2)
         {
-            tick.AfterSplit  = split[0].ToDecimal();
+            tick.AfterSplit = split[0].ToDecimal();
             tick.BeforeSplit = split[1].ToDecimal();
         }
 
@@ -87,12 +87,11 @@ public static class RowExtension
 
     internal static SplitTick? PostprocessSplitTick(SplitTick? tick)
     {
-
         // var split = row[1].Split('/');   // original source code fails
         var split = tick!.StockSplits.Split(':');  // 2020-06-09 fix. It looks like "1:8" instead of "1/8"
         if (split.Length == 2)
         {
-            tick.AfterSplit  = split[0].ToDecimal();
+            tick.AfterSplit = split[0].ToDecimal();
             tick.BeforeSplit = split[1].ToDecimal();
         }
 

@@ -1,18 +1,18 @@
-﻿﻿using System;
+using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
 using Flurl.Http;
 
 namespace YahooFinanceApi;
 
 internal static class YahooClientFactory
 {
+    private static readonly SemaphoreSlim _semaphore = new(1, 1);
     private static IFlurlClient? _client;
     private static string? _crumb;
-    private static readonly SemaphoreSlim _semaphore = new(1, 1);
 
-    internal static async Task<(IFlurlClient?,string?)> GetClientAndCrumbAsync(bool reset, CancellationToken token)
+    internal static async Task<(IFlurlClient? Client, string? Crumb)> GetClientAndCrumbAsync(bool reset, CancellationToken token)
     {
         await _semaphore.WaitAsync(token).ConfigureAwait(false);
         try
@@ -41,7 +41,7 @@ internal static class YahooClientFactory
             // random query to avoid cached response
             var client = new FlurlClient($"https://finance.yahoo.com?{Helper.GetRandomString(8)}")
                 .WithHeader(userAgentKey, userAgentValue);
-                //.EnableCookies();
+                // .EnableCookies();
 
             try
             {
@@ -52,7 +52,7 @@ internal static class YahooClientFactory
             {
                 Debug.WriteLine("Failure to create client." + e.Message);
             }
-            //if (client.Cookies?.Count > 0)
+            // if (client.Cookies?.Count > 0)
             // Debug.WriteLine("Failure to create client.");
             // await Task.Delay(100, token).ConfigureAwait(false);
         }

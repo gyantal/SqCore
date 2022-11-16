@@ -1,14 +1,13 @@
-
 // Minimize memory footprint: cache coherence for fast backtests and small memory requirement on Linux server, because Amazon cloud AWS RAM is expensive.
 // We researched how others implement the TimeSeries structure on GitHub. But they all used basic things like for each Stock in a List<Stocks>, there is a List<DailyData>, where DailyData = (Date, OpenPrice, ClosePrice, Volume)
-// Those too simple methods doesn't use cache coherence, therefore they are slow. And store Date 5000 times if there are 5000 stocks in database, so not memory efficient either. 
+// Those too simple methods doesn't use cache coherence, therefore they are slow. And store Date 5000 times if there are 5000 stocks in database, so not memory efficient either.
 // They don't use QuickSort for getting Stock data quickly (so, if Db has 5000 stocks, it is O(N) to find the good one). Furthermore, List<> is a linked list, which is a disaster to walk, and consumes huge memory.
 // Using Arrays are preferred instead of List<>. Not only because smaller memory requirement, but because ArrayCopy can be used instead of walking the List<> linked list.
 // We try to address each of the points mentioned here.
 
 // We create separate TimeSeries for 5minutes, daily, weekly, monthly time frequency.
 
-// If Date is stored with ClosePrice, and then Date is stored with OpenPrice, High-LowPrice, Volume it is better to factor out the Date field. 
+// If Date is stored with ClosePrice, and then Date is stored with OpenPrice, High-LowPrice, Volume it is better to factor out the Date field.
 // Generalize it further. All the stocks contains more or less the same Date[]. It should be factored out, and stored only once into a shared Date field.
 // Some dates could be missing in the middle for some specific stocks. No problem. Store NaN there.
 // FinTimeSeries SumMem:  With 5000 stocks, 30years: 5000*260*30*(2+4)= 235MB
@@ -19,7 +18,7 @@
 
 // The huge adventage of the shared Date[] is that clients don't have to bother about synchronyzing the different stock.dates.
 // It happens frequently that there are missing dates in the data. Some ETFs have holes in them.
-// In the QuickTester it was a problem that when we queried the last 2 years data, some ETF had 520 data days, other had only 519. 
+// In the QuickTester it was a problem that when we queried the last 2 years data, some ETF had 520 data days, other had only 519.
 // The client had to screen this and synch those dates and correct it. Which is cumbersome. Now, it is done in a global level. Clients are happier and their execution is faster.
 
 // To summarize. The adventage of the single shared date[]:
@@ -38,18 +37,18 @@
 // https://github.com/dotnet/corefx/blob/master/src/System.Collections/src/System/Collections/Generic/SortedList.cs
 // https://github.com/dotnet/runtime/blob/master/src/libraries/System.Collections/src/System/Collections/Generic/SortedList.cs
 
-// This is better smaller RAM storage as well than the alternative simplest List<Stock>(List<Date, DailyRecord>), 
+// This is better smaller RAM storage as well than the alternative simplest List<Stock>(List<Date, DailyRecord>),
 // because DailyRecord would contain All potential TickType fields that is EVER used, consuming huge RAM
 // Also Date, ClosePrice values are stored in Array, which is much faster than List
 
-// Keep the TKey as parameter as: DateTime (a DateTime is a 8 byte struct, per millisecond data), DateTimeAsInt (4 byte, per minute data), DateOnly (2 byte) 
+// Keep the TKey as parameter as: DateTime (a DateTime is a 8 byte struct, per millisecond data), DateTimeAsInt (4 byte, per minute data), DateOnly (2 byte)
 
-// When new date comes in, we increase the size, it should be multithread safe. 
-// Either big locks (which is not effective, and error prone), or better, it clones the old Dict to a new pointer. And only when it is finally ready, it will swap the two pointers at the end. 
-// The other processes, like GetData(), work inside not on an m_memberVariablePointer, but on the pointer that the got at the beginning as a parameter. 
-// That way, they are consistent to their caller. They can use the old data, while the MemDb already has the new data. 
-// Also, callers should assume that MemDb can swap internal data, so better call ALL the data in one function that is consistent and thread safe. 
-// If they call different ticker-data in different calls, it might be possible that they get different dates. 
+// When new date comes in, we increase the size, it should be multithread safe.
+// Either big locks (which is not effective, and error prone), or better, it clones the old Dict to a new pointer. And only when it is finally ready, it will swap the two pointers at the end.
+// The other processes, like GetData(), work inside not on an m_memberVariablePointer, but on the pointer that the got at the beginning as a parameter.
+// That way, they are consistent to their caller. They can use the old data, while the MemDb already has the new data.
+// Also, callers should assume that MemDb can swap internal data, so better call ALL the data in one function that is consistent and thread safe.
+// If they call different ticker-data in different calls, it might be possible that they get different dates.
 // Although if they specify exactly what date-range they want, then whatever, many different calls can be consistent as well.
 
 // Dictionary is 1x..5x faster than ConcurrentDictionary, because it is do internal locks and also a lot of GC allocation.
@@ -58,7 +57,7 @@
 // https://www.tabsoverspaces.com/233590-concurrentdictionary-is-slow-or-is-it
 
 // Design choice: give clients direct access to data via GetDataDirect(), instead of strict encapsulation and cloning data in client queries.
-// An interface can be developed to Clone() data to clients. This is usually necessary in Databases (Sql), 
+// An interface can be developed to Clone() data to clients. This is usually necessary in Databases (Sql),
 // because in SQL atomicity cannot be guaranteed any other way, as duplicate database is impossible, because of so much data on disk
 // But it is much faster and less RAM if we let clients access data pointer directly with GetDataDirect()
 // Data is not strictly encapsulated. There are no guards against clients changing internal data. But it was our design choice for giving the fastest access posible.
@@ -73,13 +72,10 @@
 // var histData = MemDb.gMemDb.DailyHist.GetData(tsQuery);
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using SqCommon;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using SqCommon;
 
 namespace FinTechCommon;
 
@@ -90,7 +86,9 @@ public class ReverseComparer<TKey> : IComparer<TKey>
         return Comparer<TKey>.Default.Compare(y, x);    // (x,y ) is reversed to (y,x)
     }
 }
-public class TsDateData<TKey, TAssetId, TValue1, TValue2>  where TKey : notnull where TAssetId : notnull
+
+[Serializable]
+public class TsDateData<TKey, TAssetId, TValue1, TValue2> where TKey : notnull where TAssetId : notnull
 {
     private readonly int _size;
     public TKey[] Dates;    // dates are in reverse order. Dates[0] is today or yesterday
@@ -101,7 +99,7 @@ public class TsDateData<TKey, TAssetId, TValue1, TValue2>  where TKey : notnull 
 
     public TsDateData(TKey[] p_dates, Dictionary<TAssetId, Tuple<Dictionary<TickType, TValue1[]>, Dictionary<TickType, TValue2[]>>> p_data)
     {
-        Dates= p_dates;
+        Dates = p_dates;
         Data = p_data;
         _size = Dates.Length;
 
@@ -115,7 +113,7 @@ public class TsDateData<TKey, TAssetId, TValue1, TValue2>  where TKey : notnull 
         }
     }
 
-    public int IndexOfKey(TKey key)     // if there is an exact match. If date is not found (because it was weekend), it returns -1.
+    public int IndexOfKey(TKey key) // if there is an exact match. If date is not found (because it was weekend), it returns -1.
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
@@ -123,7 +121,7 @@ public class TsDateData<TKey, TAssetId, TValue1, TValue2>  where TKey : notnull 
         return ret >= 0 ? ret : -1;
     }
 
-    public int IndexOfKeyOrAfter(TKey key)  // If date is not found, because it is a weekend, it gives back the previous index, which is less.
+    public int IndexOfKeyOrAfter(TKey key) // If date is not found, because it is a weekend, it gives back the previous index, which is less.
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
@@ -157,18 +155,18 @@ public class TsDateData<TKey, TAssetId, TValue1, TValue2>  where TKey : notnull 
 // see SortedList<TKey,TValue> as template https://github.com/dotnet/corefx/blob/master/src/System.Collections/src/System/Collections/Generic/SortedList.cs
 [DebuggerDisplay("Count = {m_data.Count}")]
 [Serializable]
-public class CompactFinTimeSeries<TKey, TAssetId, TValue1, TValue2> where TKey : notnull where TAssetId : notnull   // Tkey = DateTime (8 byte), DateTimeAsInt (4 byte), DateOnly (2 byte), or any int, byte (1 byte), or even string (that can be ordered)
+public class CompactFinTimeSeries<TKey, TAssetId, TValue1, TValue2> where TKey : notnull where TAssetId : notnull // Tkey = DateTime (8 byte), DateTimeAsInt (4 byte), DateOnly (2 byte), or any int, byte (1 byte), or even string (that can be ordered)
 {
     TsDateData<TKey, TAssetId, TValue1, TValue2> m_data;      // this m_data pointer can be swapped in an atomic instruction after update
 
     public static void HowToUseThisClassExamples()
     {
-        SqDateOnly[] dates = new SqDateOnly[2] { new SqDateOnly(2020, 05, 05), new SqDateOnly(2020, 05, 06)};
+        SqDateOnly[] dates = new SqDateOnly[2] { new SqDateOnly(2020, 05, 05), new SqDateOnly(2020, 05, 06) };
         var dict1 = new Dictionary<TickType, float[]>() { { TickType.SplitDivAdjClose, new float[2] { 10.1f, 12.1f } } };
         var dict2 = new Dictionary<TickType, uint[]>();
         uint assetId = 1;
         var data = new Dictionary<uint, Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>>()
-                { { assetId, new Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>(dict1, dict2)}};
+                { { assetId, new Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>(dict1, dict2) } };
 
         var ts1 = new CompactFinTimeSeries<SqDateOnly, uint, float, uint>();
         ts1.ChangeData(dates, data);

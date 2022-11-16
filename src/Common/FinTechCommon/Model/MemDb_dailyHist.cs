@@ -2,14 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using SqCommon;
 using StackExchange.Redis;
 using YahooFinanceApi;
-using System.Text.Json;
-using System.Threading.Tasks;
-using System.Text;
-using System.Threading;
-using Microsoft.Extensions.Primitives;
 
 namespace FinTechCommon;
 
@@ -19,7 +18,7 @@ namespace FinTechCommon;
 // 2020-01 FinTimeSeries SumMem: 2+10+10+4*5 = 42 years. 42*260*(2+4)= 66KB.                                With 5000 stocks, 30years: 5000*260*30*(2+4)= 235MB
 // 2020-05 CompactFinTimeSeries SumMem: 2+10+10+4*5 = 42 years. Date + data: 2*260*10+42*260*(4)= 48KB.     With 5000 stocks, 30years: 2*260*30+5000*260*30*(4)= 156MB (a saving of 90MB)
 // { // to minimize mem footprint, only load the necessary dates (not all history). Because we would like to have 2008-09 market crash in history, start from 2005-01
-//     new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 1), PrimaryExchange = ExchangeId.NYSE, LastTicker = "SPY", ExpectedHistorySpan="Date: 2004-12-31"},    // history starts on 1993-01-29. Full history would be: 44KB, 
+//     new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 1), PrimaryExchange = ExchangeId.NYSE, LastTicker = "SPY", ExpectedHistorySpan="Date: 2004-12-31"},    // history starts on 1993-01-29. Full history would be: 44KB,
 //     new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 2), PrimaryExchange = ExchangeId.NYSE, LastTicker = "QQQ", ExpectedHistorySpan="Date: 2004-12-31"},    // history starts on 1999-03-10. Full history would be: 32KB.       // 2010-01-01 Friday is NewYear holiday, first trading day is 2010-01-04
 //     new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 3), PrimaryExchange = ExchangeId.NYSE, LastTicker = "TLT", ExpectedHistorySpan="15y"},                 // history starts on 2002-07-30
 //     new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 4), PrimaryExchange = ExchangeId.NYSE, LastTicker = "VXX", ExpectedHistorySpan="Date: 2018-01-25"},    // history starts on 2018-01-25 on YF, because VXX was restarted. The previously existed VXX.B shares are not on YF.
@@ -28,16 +27,16 @@ namespace FinTechCommon;
 //     new Asset() { AssetId = new AssetId32Bits(AssetType.Stock, 7), PrimaryExchange = ExchangeId.NYSE, LastTicker = "GLD", ExpectedHistorySpan="15y"}                  // history starts on 2004-11-18
 //     };
 
-// 2021-04-22: DailyHist is reloaded 3 times per day. For 20 stocks it takes 4secs. That is fine. 
-// Even 100x that (2000 stocks), would take only 400sec = 6min. That still would be fine, because it only runs 3 times per day and 
+// 2021-04-22: DailyHist is reloaded 3 times per day. For 20 stocks it takes 4secs. That is fine.
+// Even 100x that (2000 stocks), would take only 400sec = 6min. That still would be fine, because it only runs 3 times per day and
 // it runs in a background thread, so main functionality is not effected.
 // If 3 minutes of YF price downloading is slow, we can parallelize it on 3 threads. (YF probably will not ban us with 3 parallel downloads), that can decrease loading time by 1/3rd. But don't parallelize too much, to not risk IP banning.
 // If we want to persist data (for cases when YF is unavailable): full YF crawls are backup up to SQL file (at least, we start to use the fileDb. We can keep there for 30 days, and do backup from that).
-// If we have persisted SQL (or Redis) data, we can do similar to SnifferQuant: One fullCrawl before marketOpen + quick last-date query after market-close. 
+// If we have persisted SQL (or Redis) data, we can do similar to SnifferQuant: One fullCrawl before marketOpen + quick last-date query after market-close.
 // But until the whole YF data download takes 5 minutes, this separation of the last day is not necessary.
 public partial class MemDb
 {
-    Timer m_historicalDataReloadTimer; // forced reload In ET time zone: 4:00ET, 9:00ET, 16:30ET.
+    Timer? m_historicalDataReloadTimer; // forced reload In ET time zone: 4:00ET, 9:00ET, 16:30ET.
     DateTime m_lastHistoricalDataReload = DateTime.MinValue; // UTC
     TimeSpan m_lastHistoricalDataReloadTs;  // YF downloads. For 12 stocks, it is 3sec. so for 120 stocks 30sec, for 600 stocks 2.5min, for 1200 stocks 5min
 
@@ -47,7 +46,7 @@ public partial class MemDb
         SetNextReloadHistDataTriggerTime();
     }
 
-    public static async void ReloadHistoricalDataTimer_Elapsed(object? p_state)    // Timer is coming on a ThreadPool thread
+    public static async void ReloadHistoricalDataTimer_Elapsed(object? p_state) // Timer is coming on a ThreadPool thread
     {
         if (p_state == null)
             throw new Exception("ReloadHistoricalDataTimer_Elapsed() received null object.");
@@ -55,7 +54,7 @@ public partial class MemDb
         await ((MemDb)p_state).ReloadHistDataAndSetNewTimer();
     }
 
-    public async Task<StringBuilder> ForceReloadHistData(bool p_isHtml)  // print log to Console or HTML
+    public async Task<StringBuilder> ForceReloadHistData(bool p_isHtml) // print log to Console or HTML
     {
         StringBuilder sb = new();
         await ReloadHistDataAndSetNewTimer();
@@ -68,7 +67,7 @@ public partial class MemDb
     {
         MemData memDataLocal = m_memData;   // copy pointer, so if it changes, we will not ruin the new memData
         var newDailyHist = await CreateDailyHist(memDataLocal, m_Db);  // if whole DbReload is happening at the same time and creates newMemData, then we just change the old memData. Pointless, but fine, it happens once per year
-                                                                        // If reload HistData fails AND if we reloadHist routinely in every 2 hours => we keep the currently good history in MemDb. 
+                                                                        // If reload HistData fails AND if we reloadHist routinely in every 2 hours => we keep the currently good history in MemDb.
         if (newDailyHist != null)
         {
             memDataLocal.DailyHist = newDailyHist;  // swap pointer in atomic operation
@@ -77,11 +76,11 @@ public partial class MemDb
         SetNextReloadHistDataTriggerTime();
     }
 
-    internal async Task<CompactFinTimeSeries<SqDateOnly, uint, float, uint>?> CreateDailyHist(MemData p_memData, Db p_db)  // Create hist, but don't yet overwrite m_memData.DailyHist
+    internal async Task<CompactFinTimeSeries<SqDateOnly, uint, float, uint>?> CreateDailyHist(MemData p_memData, Db p_db) // Create hist, but don't yet overwrite m_memData.DailyHist
     {
         DateTime startTime = DateTime.UtcNow;
 
-        List<Asset> assetsNeedDailyHist = p_memData.AssetsCache.Assets.Where(r => (r.AssetId.AssetTypeID == AssetType.BrokerNAV) || 
+        List<Asset> assetsNeedDailyHist = p_memData.AssetsCache.Assets.Where(r => (r.AssetId.AssetTypeID == AssetType.BrokerNAV) ||
             ((r.AssetId.AssetTypeID == AssetType.Stock || r.AssetId.AssetTypeID == AssetType.FinIndex) && (r.ExpectedHistoryStartDateLoc != DateTime.MaxValue))).ToList();   // out of 800 stocks, we only keep 20 history in MemDb
         Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits = await GetPotentialMissingYfSplits(p_db, p_memData.AssetsCache);
 
@@ -122,7 +121,7 @@ public partial class MemDb
 
             foreach (IGrouping<User?, BrokerNav>? navAssetsOfUser in navAssetsByUser)
             {
-                BrokerNav? aggNavAsset = navAssetsOfUser.First().AggregateNavParent;    // The first BrokerNav can contain it. 
+                BrokerNav? aggNavAsset = navAssetsOfUser.First().AggregateNavParent;    // The first BrokerNav can contain it.
                 CreateDailyHist_UserNavs(navAssetsOfUser, aggNavAsset, p_db, assetsDates, assetsAdjustedCloses);
             } // NAVs per user
 
@@ -135,7 +134,7 @@ public partial class MemDb
         catch (Exception e)
         {
             Utils.Logger.Error(e, "Exception in CreateDailyHist()");
-            await HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MemDb. Exception: '{ e.ToStringWithShortenedStackTrace(1600)}'", HealthMonitorMessageID.SqCoreWebCsError);
+            await HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MemDb. Exception: '{e.ToStringWithShortenedStackTrace(1600)}'", HealthMonitorMessageID.SqCoreWebCsError);
         }
         return null;
     }
@@ -155,16 +154,16 @@ public partial class MemDb
                 if (secDatesArr[iSecDates] == mergedDatesArr[i])
                 {
                     closesArr.Add(closes.Value[iSecDates]);
-                    if (iSecDates <= 0) // if first (oldest) item is already used, thatis the last item. 
+                    if (iSecDates <= 0) // if first (oldest) item is already used, thatis the last item.
                         break;
                     iSecDates--;
                 }
                 else
                 {
-                    // There is no USA stock price data on specific USA stock market holidays (e.g. 2020-09-07: Labour day). 
-                    // However, brokerNAV values, Forex, commodity futures, London-based stocks can have data on that day. 
-                    // We most certainly have to contain that date in the global MemDb.Data. 
-                    // We have a choice, however: leave the USA-stock value Float.NaN or flow the last-day price into this non-existent date. 
+                    // There is no USA stock price data on specific USA stock market holidays (e.g. 2020-09-07: Labour day).
+                    // However, brokerNAV values, Forex, commodity futures, London-based stocks can have data on that day.
+                    // We most certainly have to contain that date in the global MemDb.Data.
+                    // We have a choice, however: leave the USA-stock value Float.NaN or flow the last-day price into this non-existent date.
                     // We choose the Float.NaN, because otherwise users of MemDb would have no chance to know that this was a day with a non-existent price.
                     closesArr.Add(float.NaN);   // in a very rare cases prices might be missing from the front, or from the middle (if stock didn't trade on that day)
                 }
@@ -185,7 +184,7 @@ public partial class MemDb
         // walk backward, because the first item will be the latest, the yesterday.
         Dictionary<uint, int> idx = new();  // AssetId => to index of the walking where we are
         SqDateOnly minDate = SqDateOnly.MaxValue, maxDate = SqDateOnly.MinValue;
-        foreach (var dates in assetsDates)  // assume first date is the oldest, last day is yesterday
+        foreach (var dates in assetsDates) // assume first date is the oldest, last day is yesterday
         {
             if (minDate > dates.Value.First())
                 minDate = dates.Value.First();
@@ -211,7 +210,7 @@ public partial class MemDb
                 if (idx[dates.Key] >= 0 && dates.Value[idx[dates.Key]] > largestPrevDate)
                     largestPrevDate = dates.Value[idx[dates.Key]];
             }
-            if (largestPrevDate == SqDateOnly.MinValue)  // it was not updated, so all idx reached 0
+            if (largestPrevDate == SqDateOnly.MinValue) // it was not updated, so all idx reached 0
                 break;
             currDate = largestPrevDate;
         }
@@ -238,12 +237,12 @@ public partial class MemDb
         // https://eresearch.fidelity.com/eresearch/conferenceCalls.jhtml?tab=splits
         // I don't want to reimplement the source, because Nasdaq "should" be a reliable data source.
         // Let's monitor it. If next time there is a real split in an important stock, like VXX, SVXY, UNG,
-        // and if Nasdaq misses that, then introducing a secondary data source is justified. 
+        // and if Nasdaq misses that, then introducing a secondary data source is justified.
         // Until that, I am not sure we need the complications of another data source maintenance.
         var url = $"https://api.nasdaq.com/api/calendar/splits?date={Utils.Date2hYYYYMMDD(etNow.AddDays(-7))}"; // go back 7 days before to include yesterdays splits
         string? nasdaqSplitsJson = await Utils.DownloadStringWithRetryAsync(url, 3, TimeSpan.FromSeconds(5), true);
         if (String.IsNullOrEmpty(nasdaqSplitsJson))
-        {   // Treat it as an unexpected error.
+        { // Treat it as an unexpected error.
             StrongAssert.Fail(Severity.NoException, $"Error in Downloading '{url}'. Supervisors should be notified.");
             return potentialMissingYfSplits;
         }
@@ -252,7 +251,7 @@ public partial class MemDb
         using JsonDocument doc = JsonDocument.Parse(nasdaqSplitsJson);
         JsonElement ndqData = doc.RootElement.GetProperty("data");
         if (ndqData.ToString() == string.Empty)
-        {   // Treat it as an expected warning. Maybe it is not an error, but genuine that data: "0 RESULTS", there are no splits in the next 2 weeks.
+        { // Treat it as an expected warning. Maybe it is not an error, but genuine that data: "0 RESULTS", there are no splits in the next 2 weeks.
             string msg = $"Warning. NasdaqSplits file: data is missing('0 RESULTS'). '{url}'. Monitor splits in important stocks.Implement secondary data source only if necessary.";
             Console.WriteLine(msg);
             Utils.Logger.Warn(msg);
@@ -278,17 +277,17 @@ public partial class MemDb
         }).Select(r =>
         {
             string executionDateStr = r.Row.GetProperty("executionDate").ToString() ?? string.Empty; // "executionDate":"01/21/2021"
-                DateTime executionDate = Utils.FastParseMMDDYYYY(executionDateStr);
+            DateTime executionDate = Utils.FastParseMMDDYYYY(executionDateStr);
 
             string ratioStr = r.Row.GetProperty("ratio").ToString() ?? string.Empty;
             var splitArr = ratioStr.Split(':');  // "ratio":"2 : 1" or "ratio":"5.000%" while YF "2:1", which is the same order.
-                double beforeSplit = Double.MinValue, afterSplit = Double.MinValue;
-            if (splitArr.Length == 2)   // "ratio":"2 : 1"
+            double beforeSplit = Double.MinValue, afterSplit = Double.MinValue;
+            if (splitArr.Length == 2) // "ratio":"2 : 1"
                 {
                 afterSplit = Utils.InvariantConvert<double>(splitArr[0]);
                 beforeSplit = Utils.InvariantConvert<double>(splitArr[1]);
             }
-            else    // "ratio":"5.000%", we can ignore it.
+            else // "ratio":"5.000%", we can ignore it.
                 {
                     // {"symbol":"GNTY","name":"Guaranty Bancshares, Inc.","ratio":"10.000%","payableDate":"02/12/2021","executionDate":"02/04/2021","announcedDate":"01/20/2021"}
                     // "...has declared a 10% stock dividend for shareholders of record as of February 5, 2021. As an example, each shareholder will receive one additional share of stock for every ten shares owned on the effective date of February 12, 2021.
@@ -307,7 +306,7 @@ public partial class MemDb
         });
 
         int nUsedNdqSplits = 0;
-        foreach (var ndqSplitRec in ndqSplits)   // iterate over Nasdaq splits and add it to potentialMissingYfSplits if that date doesn't exist
+        foreach (var ndqSplitRec in ndqSplits) // iterate over Nasdaq splits and add it to potentialMissingYfSplits if that date doesn't exist
         {
             nUsedNdqSplits++;
             if (potentialMissingYfSplits.TryGetValue(ndqSplitRec!.Asset!.AssetId, out List<Split>? splitArr))
@@ -326,14 +325,14 @@ public partial class MemDb
         return potentialMissingYfSplits;
     }
 
-    private static async Task<(SqDateOnly[], float[])> CreateDailyHist_YF(Asset asset, Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits)
+    private static async Task<(SqDateOnly[] Dates, float[] AdjCloses)> CreateDailyHist_YF(Asset asset, Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits)
     {
         SqDateOnly[] dates = Array.Empty<SqDateOnly>();  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards
         float[] adjCloses = Array.Empty<float>();
 
         if (asset.ExpectedHistoryStartDateLoc == DateTime.MaxValue) // if Initial value was not overwritten. For Dead stocks, like "S/VXX*20190130"
             return (dates, adjCloses);
-        
+
         string yfTicker = string.Empty;
         if (asset is Stock stock)
             yfTicker = stock.YfTicker;
@@ -344,14 +343,14 @@ public partial class MemDb
         // https://github.com/lppkarl/YahooFinanceApi
         // YF: all the Open/High/Low/Close are always already adjusted for Splits (so, we don't have to adjust it manually);  In addition: AdjClose also adjusted for Divididends.
         // YF gives back both the onlySplit(butNotDividend)-adjusted row.Close, and SplitAndDividendAdjusted row.AdjustedClose (checked with MO dividend and USO split).
-        // checked the YF returned data by stream.ReadToEnd(): it is a CSV structure, with columns. The line "Apr 29, 2020	1:8 Stock Split" is Not in the data. 
+        // checked the YF returned data by stream.ReadToEnd(): it is a CSV structure, with columns. The line "Apr 29, 2020  1:8 Stock Split" is Not in the data.
         // https://finance.yahoo.com/quote/USO/history?p=USO The YF website queries the splits separately when it inserts in-between the rows.
         // Therefore, we have to query the splits separately from YF.
         // The startTime & endTime here defaults to EST timezone
         IReadOnlyList<Candle?>? history = await Yahoo.GetHistoricalAsync(yfTicker, asset.ExpectedHistoryStartDateLoc, DateTime.Now, Period.Daily); // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
         if (history == null)
             throw new SqException($"CreateDailyHist_YF() exception. Cannot download YF data (ticker:{asset.SqTicker}) after many tries.");
-        // 2021-02-26T16:30 Exception: https://finance.yahoo.com/quote/SPY/history?p=SPY returns for yesterday: "Feb 25, 2021	-	-	-	-	-	-" , other days are correct, this is probably temporary
+        // 2021-02-26T16:30 Exception: https://finance.yahoo.com/quote/SPY/history?p=SPY returns for yesterday: "Feb 25, 2021" , other days are correct, this is probably temporary
         // YahooFinanceApi\Yahoo - Historical.cs:line 80 receives: "2021-02-25,null,null,null,null,null,null" and crashes on StringToDecimal conversion
         // TODO: We don't have a plan for those case when YF historical quote fails. What should we do?
         // Option 1: crash the whole SqCore app: not good, because other services: website, VBroker, Timers, ContangoVisualizer can run
@@ -378,7 +377,7 @@ public partial class MemDb
         if (asset.AssetId.AssetTypeID == AssetType.Stock) // FinIndex like VIX, FTSE, SP500 don't have splits, so no costly YF download is necessary
         {
             // 2020-04-29: USO split: Split-adjustment was not done in YF. For these exceptional cases, so we need an additional data-source for double check
-            // First just add the manual data source from Redis/Sql database, and let’s see how unreliable YF is in the future. 
+            // First just add the manual data source from Redis/Sql database, and let’s see how unreliable YF is in the future.
             // If it fails frequently, then we can implement query-ing another website, like https://www.nasdaq.com/market-activity/stock-splits
             var splitHistoryYF = await Yahoo.GetSplitsAsync(yfTicker, asset.ExpectedHistoryStartDateLoc, DateTime.Now);
 
@@ -386,13 +385,13 @@ public partial class MemDb
                                                                 // var missingYfSplitDb = new SplitTick[1] { new SplitTick() { DateTime = new DateTime(2020, 06, 08), BeforeSplit = 8, AfterSplit = 1 }};
             potentialMissingYfSplits!.TryGetValue(asset.AssetId, out List<Split>? missingYfSplitDb);
 
-            // if any missingYfSplitDb record is not found in splitHistoryYF, we assume YF is wrong (and our DB is right (probably custom made)), 
+            // if any missingYfSplitDb record is not found in splitHistoryYF, we assume YF is wrong (and our DB is right (probably custom made)),
             // so we do this extra split-adjustment assuming it is not in the YF quote history
             // This can fixes YF data errors. For example ProShares UltraPro QQQ (TQQQ), https://finance.yahoo.com/quote/TQQQ/history?p=TQQQ on 2022-01-13 (whole day from 0:0 to 24:0 it was)
-            // Date	Open	High	Low	Close*	Adj Close**
-            // Jan 13, 2022	77.13	77.55	70.02	70.80	70.80
-            // Jan 12, 2022	153.97	155.93	149.88	152.68	152.68  // obviously these required the Multiplier: 0.5, but YF didn't have the Split in their Database. We have it from Nasdaq however.
-            // Jan 11, 2022	143.43	151.03	141.04	150.96	150.96
+            // Date         Open    High    Low     Close*  Adj Close**
+            // Jan 13, 2022 77.13   77.55   0.02    70.80   70.80
+            // Jan 12, 2022 153.97  155.93  149.88  152.68  152.68  // obviously these required the Multiplier: 0.5, but YF didn't have the Split in their Database. We have it from Nasdaq however.
+            // Jan 11, 2022 143.43  151.03  141.04  150.96  150.96
             // This automatic Nasdaq Split data fixes the YF missing split problem for that given day. Good.
             // But note that stock has a Stock.PriorClose value directly in the Stock object.
             // And clients (like MarketDashboard.BrokerAccountViewer uses Stock.PriorClose, instead of the historical closeprice of yesterday).
@@ -405,9 +404,9 @@ public partial class MemDb
                 var missingSplitDb = missingYfSplitDb[i];
 
                 // ignore future data of https://api.nasdaq.com/api/calendar/splits?date=2021-04-14
-                if (missingSplitDb.Date > etNow)    // interpret missingSplitDb.Date in in ET time zone.
+                if (missingSplitDb.Date > etNow) // interpret missingSplitDb.Date in in ET time zone.
                     continue;
-                if (splitHistoryYF.FirstOrDefault(r => r!.DateTime == missingSplitDb.Date) != null)    // if that date exists in YF already, do nothing; assume YF uses it
+                if (splitHistoryYF.FirstOrDefault(r => r!.DateTime == missingSplitDb.Date) != null) // if that date exists in YF already, do nothing; assume YF uses it
                     continue;
 
                 double multiplier = (double)missingSplitDb.Before / (double)missingSplitDb.After;
@@ -460,7 +459,7 @@ public partial class MemDb
             navsDates.Add(dates);
             navsUnadjustedCloses.Add(unadjustedClosesNav);
             navsDeposits.Add(deposits);
-        }   // All NAVs of the user
+        } // All NAVs of the user
 
         // if more than 2 NAVs for the user has valid history, then there is a virtual synthetic aggregatedNAV that has to be updated
         if (aggNavAsset == null || navAssetsWithHistQuotes.Count < 2)
@@ -500,9 +499,7 @@ public partial class MemDb
         Debug.WriteLine($"{aggNavAsset.SqTicker}, first: DateTime: {aggDates.First()}, Close: {aggAdjCloses.First()}, last: DateTime: {aggDates.Last()}, Close: {aggAdjCloses.Last()}");  // only writes to Console in Debug mode in vscode 'Debug Console'
     }
 
-
-
-    static private float[] CalcAdjNavUsingDeposits(SqDateOnly[] dates, double[] unadjustedClosesNav, KeyValuePair<SqDateOnly, double>[] deposits)
+    private static float[] CalcAdjNavUsingDeposits(SqDateOnly[] dates, double[] unadjustedClosesNav, KeyValuePair<SqDateOnly, double>[] deposits)
     {
         // ************************ Stock dividend ajustment and NAV deposit adjustment
         // https://www.investopedia.com/ask/answers/06/adjustedclosingprice.asp
@@ -530,7 +527,7 @@ public partial class MemDb
         // That gives that every daily %return is the same as before.
         // Same can be said for positive Deposits. If we add deposit, NAV is increased, but we don't want to see that as a performance measure %return.
 
-        // >It is like doing a Time-Weighted-Return per day. Basically, we calculate the synthetic daily%returns that every day gives back the daily %return. 
+        // >It is like doing a Time-Weighted-Return per day. Basically, we calculate the synthetic daily%returns that every day gives back the daily %return.
         // Then we aggregate these in a way that the final price is the current NAV.
 
         // >For example, if we had a NAV value of 4.4M, then added a deposit of 4M, then the first multiplier = 1.9, almost 2.
@@ -538,12 +535,12 @@ public partial class MemDb
         // Virtually we create a synthetic virtual NAV, that was not properly as it was in real life. However, if we calculate daily %Chg on
         // virtual synthetic NAV, then that daily %Chg will give back exactly the daily %changes how it happened in real life.
         // So, the virtualNAV values will not be real life, but the %Chg-es will be real life.
-        // If we don't do this NAV adjustments, then the NAV values will be real and correct and how it happened in real life, but then 
-        // the calculated daily %Changes will not be how it happend. (because there will be a daily doubling on a given day. 
+        // If we don't do this NAV adjustments, then the NAV values will be real and correct and how it happened in real life, but then
+        // the calculated daily %Changes will not be how it happend. (because there will be a daily doubling on a given day.
         // That would be a 200% daily performance, which is what happened, but that would be not a good measure to evaluate the performance of this fund manager.)
 
-        // >2021-09-09 experience with DeBlanzad deposit adjustements: Success, but it didn't help in return (only in minValue, maxDD changed). 
-        // The TWR calculation more or less stayed the same. The TWR calculation is multiplicative, DeBlan lost too much in percentage -30% when it was at NAV 5M. 
+        // >2021-09-09 experience with DeBlanzad deposit adjustements: Success, but it didn't help in return (only in minValue, maxDD changed).
+        // The TWR calculation more or less stayed the same. The TWR calculation is multiplicative, DeBlan lost too much in percentage -30% when it was at NAV 5M.
         // That -30% return is multiplicative in final TWR calculation.
         // >First understand that the TWR is the right calculation for long-term return. There is no other way mathematically.
         // I would like to evaluate a virtual Fund manager based on TWR, the aggregation of monthly return.
@@ -551,23 +548,23 @@ public partial class MemDb
         // Then extra 10M NAV cash deposit comes in on 1st December, so now he has 10.1M NAV. He does 50% on that during that single 1 month December.
         // How should we evaluate his performance?
         // TWR-return: 0.9*0.9*....0.9*1.5. Should we say he did That Yes. That would be correct to evaluate his performance.
-        // How to do in an additive way? start: 1M, end:15M. 
+        // How to do in an additive way? start: 1M, end:15M.
         // But we cannot just subtract 10M from the previous months, because they become negative.
         // Similarly we cannot just add 10M to the previous months, because then the January NAV would become from 11M to 10.9M, but that is not exual to his poort -10% performance in January.
         // So, there is no way that the additional or subtractional method would work. The only option is multiplicative on the periods. That is exactly the TWR.
         // >See what happened with the DeBlanzac account in 2021.
         // 2021-01-01 NAV: 10M.  Then we removed -5M in February, and added +4M in July. On 2021-09-09 we have NAV of 8.3M.
-        // A. The naive thinking is that we removed -1M net, but we had 10M in January, so we should have 9M now for breakeven. But because we have 8.3M now, it means we are in a -7.8% loss this year. 
+        // A. The naive thinking is that we removed -1M net, but we had 10M in January, so we should have 9M now for breakeven. But because we have 8.3M now, it means we are in a -7.8% loss this year.
         // B. However, TWR calculates this year performance as -16%. Rightly. But why?
-        // 10M becomes => 5M => then came a -30% loss (-1.5M) and NAV become 3.5M => +4M deposit increased NAV to 7.5M. Currently the NAV is 8.3M (11%). So, how would you evaluate it? 
-        // I would say we had a -30% performance in the first period on NAV value 5M, then we had a +11% performance on NAV value 7.5M. 
+        // 10M becomes => 5M => then came a -30% loss (-1.5M) and NAV become 3.5M => +4M deposit increased NAV to 7.5M. Currently the NAV is 8.3M (11%). So, how would you evaluate it?
+        // I would say we had a -30% performance in the first period on NAV value 5M, then we had a +11% performance on NAV value 7.5M.
         // TWR calculation for the periods : 0.7*1.11 = current -16% shown in SqCore.
         // >The NAV values should be adjusted by deposits/withdrawal, otherwise the minValue, MaxDD will be wrong.
 
         double multiplier = 1.0;    // cummulative multiplier
         float[] adjCloses = new float[dates.Length];
         int iDeposits = deposits.Length - 1;
-        for (int i = dates.Length - 1; i >= 0; i--)    // go from yesterday backwards, because adjustment is a multiplier.
+        for (int i = dates.Length - 1; i >= 0; i--) // go from yesterday backwards, because adjustment is a multiplier.
         {
             SqDateOnly date = dates[i];
             adjCloses[i] = (float)(unadjustedClosesNav![i] * multiplier);
@@ -578,7 +575,7 @@ public partial class MemDb
                 // >NAV: Date/Value
                 // 20200319/10270249
                 // 20200320/10522203
-                // 20200323/9630437	// decreased, don't change that day. But add the withdrawal to it, as if that would have been the correct price.
+                // 20200323/9630437 // decreased, don't change that day. But add the withdrawal to it, as if that would have been the correct price.
                 // 20200324/9590033
                 // >Then OriginalNAV_on_20200323 = (9630437 + 1000000)
                 // multiplier = (OriginalNAV-dividend)/OriginalNAV = 9630437 / (9630437 + 1000000) =  0.90593048997 = 90.5%.
@@ -611,28 +608,28 @@ public partial class MemDb
         int targetTimeOnlySec;
         if (nowTimeOnlySec < 4 * 60 * 60)
             targetTimeOnlySec = 4 * 60 * 60;
-        else if (nowTimeOnlySec < 9 * 60 * 60)  // Market opens 9:30ET, but reload data 30min before
+        else if (nowTimeOnlySec < 9 * 60 * 60) // Market opens 9:30ET, but reload data 30min before
             targetTimeOnlySec = 9 * 60 * 60;
-        else if (nowTimeOnlySec < 16 * 60 * 60 + 30 * 60)   // Market closes at 16:00ET, but reload data 30min after
+        else if (nowTimeOnlySec < 16 * 60 * 60 + 30 * 60) // Market closes at 16:00ET, but reload data 30min after
             targetTimeOnlySec = 16 * 60 * 60 + 30 * 60;
         else
             targetTimeOnlySec = 24 * 60 * 60 + 4 * 60 * 60; // next day 4:00
 
         DateTime targetDateEt = etNow.Date.AddSeconds(targetTimeOnlySec);
         Utils.Logger.Info($"m_reloadHistoricalDataTimer set next targetdate: {targetDateEt.ToSqDateTimeStr()} ET");
-        m_historicalDataReloadTimer.Change(targetDateEt - etNow, TimeSpan.FromMilliseconds(-1.0));     // runs only once.
+        m_historicalDataReloadTimer?.Change(targetDateEt - etNow, TimeSpan.FromMilliseconds(-1.0));     // runs only once.
     }
-    public static (SqDateOnly[], float[]) GetSelectedStockTickerHistData(SqDateOnly lookbackStart, SqDateOnly lookbackEnd, string yfTicker) // send startdate and end date
+    public static (SqDateOnly[] Dates, float[] AdjCloses) GetSelectedStockTickerHistData(SqDateOnly lookbackStart, SqDateOnly lookbackEnd, string yfTicker) // send startdate and end date
     {
         SqDateOnly[] dates = Array.Empty<SqDateOnly>();  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards
         float[] adjCloses = Array.Empty<float>();
-        
+
         IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(yfTicker, lookbackStart, lookbackEnd, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
         if (history == null)
             throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{yfTicker}) after many tries.");
 
         dates = history.Select(r => new SqDateOnly(r!.DateTime)).ToArray();
         adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
-        return (dates, adjCloses); 
+        return (dates, adjCloses);
     }
 }

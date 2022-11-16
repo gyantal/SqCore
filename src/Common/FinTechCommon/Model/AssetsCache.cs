@@ -5,7 +5,7 @@ using SqCommon;
 
 namespace FinTechCommon;
 
-public class AssetsCache    // the whole asset data should be hidden behind a single pointer, so the whole structure can be updated in an atomic operation in a multithread environment
+public class AssetsCache // the whole asset data should be hidden behind a single pointer, so the whole structure can be updated in an atomic operation in a multithread environment
 {
     // MemDb should mirror persistent data in RedisDb. For Trades in Portfolios. The AssetId in MemDb should be the same AssetId as in Redis.
     // Alphabetical order of tickers for faster search is not realistic without Index tables or Hashtable/Dictionary.
@@ -19,7 +19,7 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
     readonly uint m_navSubTableIdMax = 0;    // for generating new AssetID for Aggregated BrokerNav assets
 
     public uint NextUnusedOptionsSubTableId = 0;
-    
+
     // O(1) search for Dictionaries. Tradeoff between CPU-usage and RAM-usage. Use excess memory in order to search as fast as possible.
     // Another alternative is to implement a virtual ordering in an index table: int[] m_idxByTicker (used by Sql DBs), but that also uses RAM and the access would be only O(logN). Hashtable uses more memory, but it is faster.
     // BinarySearch is a good idea for 10,000 Dates in time series, but not for this, when we have a small number of discrete values of AssetID or Tickers
@@ -47,7 +47,7 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
         AssetsBySymbol = p_assets.ToLookup(r => r.Symbol); // if it contains duplicates, ToLookup() allows for multiple values per key.
 
         // actualize m_stocksSubTableIdMax, m_navSubTableIdMax, m_optionsSubTableIdMax
-        for (int i = 0; i < Assets.Count; i++)  // Fast code for about 2-3000 assets
+        for (int i = 0; i < Assets.Count; i++) // Fast code for about 2-3000 assets
         {
             var asset = Assets[i];
             var assetTypeId = asset.AssetId.AssetTypeID;
@@ -68,11 +68,12 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
         if (newAsset is Option)
             return new AssetId32Bits(AssetType.Option, NextUnusedOptionsSubTableId++);
 
-        throw new NotImplementedException();    //at the moment, we only create new Options run-time
+        throw new NotImplementedException();    // at the moment, we only create new Options run-time
     }
 
-    public static void AddAsset(Asset _)
+    public static void AddAsset(Asset asset)
     {
+        _ = asset; // StyleCop SA1313 ParameterNamesMustBeginWithLowerCaseLetter. They won't fix. Recommended solution for unused parameters, instead of the discard (_1) parameters
         throw new SqException("MemData.AssetsCache Readers will have inconsistent for(), foreach() enumerations. Use MemData.AddToAssetCacheIfMissing() instead.");
         // Assets.Add(p_asset);
         // AssetsByAssetID = Assets.ToDictionary(r => r.AssetId);
@@ -87,25 +88,22 @@ public class AssetsCache    // the whole asset data should be hidden behind a si
         throw new Exception($"AssetID '{p_assetID}' is missing from MemDb.Assets.");
     }
 
-    public Asset GetAsset(string p_sqTicker)    // if it is required that asset is found, then we throw exception as error
+    public Asset GetAsset(string p_sqTicker) // if it is required that asset is found, then we throw exception as error
     {
         if (AssetsBySqTicker.TryGetValue(p_sqTicker, out Asset? value))
             return value;
         throw new Exception($"SqTicker '{p_sqTicker}' is missing from MemDb.Assets.");
     }
 
-
-
-    public Asset? TryGetAsset(string p_sqTicker)    // sometimes, it is expected that asset is not found. Just return null.
+    public Asset? TryGetAsset(string p_sqTicker) // sometimes, it is expected that asset is not found. Just return null.
     {
         if (AssetsBySqTicker.TryGetValue(p_sqTicker, out Asset? value))
             return value;
         return null;
     }
 
-
     // Also can be historical using Assets.TickerChanges
-    public Stock[] GetAllMatchingStocksBySymbol(string p_symbol, ExchangeId p_primExchangeID =  ExchangeId.Unknown, DateTime? p_timeUtc = null)
+    public Stock[] GetAllMatchingStocksBySymbol(string p_symbol, ExchangeId p_primExchangeID = ExchangeId.Unknown, DateTime? p_timeUtc = null)
     {
         return Assets.GetAllMatchingStocksBySymbol(p_symbol, p_primExchangeID, p_timeUtc).ToArray();
     }

@@ -8,7 +8,7 @@ namespace FinTechCommon;
 // However, we prefer to store Assets in our DB. Irrespective of which contract produced that asset.
 // But in general our AssetType and IB's ContractType are interchangeable
 // It is possible many different contracts lead to the same Asset.
-// E.g. all 3 'BRK B' IbContracts (USA, Swiss, EUR) leads to the same AssetID, same ISIN of the same issuer country. 
+// E.g. all 3 'BRK B' IbContracts (USA, Swiss, EUR) leads to the same AssetID, same ISIN of the same issuer country.
 // Although the currency is different, therefore prices are different. But if I buy any of those contracts, I will get the same Asset.
 public enum AssetType : byte
 {
@@ -20,7 +20,7 @@ public enum AssetType : byte
     Bond = 4,
     Fund = 5,           // real fund, not ETF. ETFs are stocks
     Futures = 6,
-    Option = 7, 
+    Option = 7,
     Commodity = 8,
     RealEstate = 9,
     FinIndex = 10, // SPX, VIX, FTSE
@@ -31,8 +31,8 @@ public enum AssetType : byte
 }
 
 // CashAsset.SubTableID as defined in the BaseAssets tabpage should match this enum
-public enum CurrencyId : byte   // there are 192 countries in the world, and less than 192 currencies
-{                               // PortfolioEvaluator.BulkPreparer.Plan() exploits that all values are in 1..62
+public enum CurrencyId : byte // there are 192 countries in the world, and less than 192 currencies
+{ // PortfolioEvaluator.BulkPreparer.Plan() exploits that all values are in 1..62
     Unknown = 0,
     USD = 1,
     EUR = 2,
@@ -47,8 +47,7 @@ public enum CurrencyId : byte   // there are 192 countries in the world, and les
     // Some routines use ~GBX == 252 to indicate GBP, e.g. DBUtils.ConvertToUsd(),ConvertFromUsd(),YQCrawler.CurrencyConverter etc.
 }
 
-
-public enum CountryId : byte    // there are 192 countries in the world. warning: 2009-06: the Company.BaseCountryID is in reality CountryCode
+public enum CountryId : byte // there are 192 countries in the world. warning: 2009-06: the Company.BaseCountryID is in reality CountryCode
 {
     UnitedStates = 1,
     UnitedKingdom = 2,
@@ -67,8 +66,7 @@ public enum CountryId : byte    // there are 192 countries in the world. warning
     Unknown = 255
 }
 
-
-public enum StockIndexId : short    // According to dbo.StockIndex
+public enum StockIndexId : short // According to dbo.StockIndex
 {
     SP500 = 1,
     VIX,
@@ -89,14 +87,13 @@ public class Split
     public double After { get; set; }
 }
 
-
 public enum StockType : byte
 {
     Unknown = 0,
     Common = 1,
     ADR = 2,
     ETF = 3,
-    Virtual = 4  // VXX.SQ is a virtual stock
+    Virtual = 4 // VXX.SQ is a virtual stock
 }
 
 public enum OptionType : byte
@@ -106,7 +103,7 @@ public enum OptionType : byte
     IndexOption = 2 // in IB for VIX options, the underlying is "VIX index", because "VIX index" is also the underlying of VIX futures. This is better. Don't introduce a chain that "VIX options" => "VIX futures" => "VIX index"
 }
 
-public enum OptionRight : byte  // Put or Call: right to buy or sell
+public enum OptionRight : byte // Put or Call: right to buy or sell
 {
     Unknown = 0,
     Call = 1,
@@ -132,8 +129,8 @@ public enum ExchangeId : sbyte // differs from dbo.StockExchange, which is 'int'
     [Description("OTC Bulletin Boards")]
     OTCBB = 11,
 
-    Unknown = -1    // BooleanFilterWith1CacheEntryPerAssetID.CacheRec.StockExchangeID exploits that values fit in an sbyte
-                    // TickerProvider.OldStockTickers exploits that values fit in a byte
+    Unknown = -1 // BooleanFilterWith1CacheEntryPerAssetID.CacheRec.StockExchangeID exploits that values fit in an sbyte
+                // TickerProvider.OldStockTickers exploits that values fit in a byte
 }
 
 public enum PortfolioType : byte
@@ -143,7 +140,6 @@ public enum PortfolioType : byte
     Simulation = 2
 }
 
-
 // Not used. Copied from HqFramework for getting ideas; if we need an in-memory data structure for TickerHistory
 // public interface ITickerProvider
 // {
@@ -151,40 +147,42 @@ public enum PortfolioType : byte
 //     /// and prepares the answer for those that do belong to it.
 //     /// See ITickerProvider.Prepare&lt;&gt;() extension for more. </summary>
 //     IEnumerable<AssetId32Bits> Prepare(IEnumerable<AssetId32Bits> p_assets);
-
 //     /// <summary> Returns null if does not know the answer </summary>
 //     string GetTicker(AssetType p_at, int p_subTableId, DateTime p_timeUtc);
-
 //     /// <summary> Returns 0 (=default(AssetId32Bits)) if does not know the answer, or p_ticker is empty </summary>
 //     AssetId32Bits ParseTicker(string p_ticker, DateTime p_timeUtc, AssetType p_requested = AssetType.Unknown);
 // }
 
 public static class AssetHelper
 {
-
     // https://stackoverflow.com/questions/16100/convert-a-string-to-an-enum-in-c-sharp
-    // performance of Enum.Parse() is awful, because it is implemented via reflection. 
+    // performance of Enum.Parse() is awful, because it is implemented via reflection.
     // I've measured 3ms to convert a string to an Enum on the first run, on a desktop computer. (Just to illustrate the level of awfullness).
-    public static readonly Dictionary<string, CurrencyId> gStrToCurrency = new() {
-        { "NaN", CurrencyId.Unknown},
-        { "USD", CurrencyId.USD},
-        { "EUR", CurrencyId.EUR},
-        { "GBP", CurrencyId.GBP},
-        { "GBX", CurrencyId.GBX},
-        { "HUF", CurrencyId.HUF},
-        { "JPY", CurrencyId.JPY},
-        { "CNY", CurrencyId.CNY},
-        { "CAD", CurrencyId.CAD},
-        { "CHF", CurrencyId.CHF}};
+    public static readonly Dictionary<string, CurrencyId> gStrToCurrency = new()
+    {
+        { "NaN", CurrencyId.Unknown },
+        { "USD", CurrencyId.USD },
+        { "EUR", CurrencyId.EUR },
+        { "GBP", CurrencyId.GBP },
+        { "GBX", CurrencyId.GBX },
+        { "HUF", CurrencyId.HUF },
+        { "JPY", CurrencyId.JPY },
+        { "CNY", CurrencyId.CNY },
+        { "CAD", CurrencyId.CAD },
+        { "CHF", CurrencyId.CHF }
+    };
 
-    public static readonly Dictionary<string, StockType> gStrToStockType = new() {
-        { "NaN", StockType.Unknown},
-        { "", StockType.Common},
-        { "ADR", StockType.ADR},
-        { "ETF", StockType.ETF},
-        { "VIR", StockType.Virtual}};
+    public static readonly Dictionary<string, StockType> gStrToStockType = new()
+    {
+        { "NaN", StockType.Unknown },
+        { string.Empty, StockType.Common },
+        { "ADR", StockType.ADR },
+        { "ETF", StockType.ETF },
+        { "VIR", StockType.Virtual }
+    };
 
-    public static readonly Dictionary<AssetType, char> gAssetTypeCode = new() {
+    public static readonly Dictionary<AssetType, char> gAssetTypeCode = new()
+    {
         { AssetType.Unknown, '?' },
         { AssetType.CurrencyCash, 'C' },
         { AssetType.CurrencyPair, 'D' },    // P is for Portfolio, so I don't want P as Pair. Just use D, that is the next letter after C in the ABC.
@@ -201,12 +199,14 @@ public static class AssetHelper
         { AssetType.Portfolio, 'P' },   // Portfolio is like a virtual separated BrokerNAV. One BrokerNAV can contain many smaller portfolios.
         { AssetType.GeneralTimeSeries, 'T' },
         { AssetType.Company, 'A' },
-            };
+    };
 
-    public static readonly Dictionary<string, PortfolioType> gStrToPortfolioType = new() {
-        { "", PortfolioType.Trades},
-        { "Trades", PortfolioType.Trades},
-        { "Simulation", PortfolioType.Simulation}};
+    public static readonly Dictionary<string, PortfolioType> gStrToPortfolioType = new()
+    {
+        { string.Empty, PortfolioType.Trades },
+        { "Trades", PortfolioType.Trades },
+        { "Simulation", PortfolioType.Simulation }
+    };
 
     // This can find both "VOD" (Vodafone) ticker in LSE (in GBP), NYSE (in USD).
     public static List<Stock> GetAllMatchingStocksBySymbol(this List<Asset> p_assets, string p_symbol, ExchangeId p_primExchangeID = ExchangeId.Unknown, DateTime? p_timeUtc = null)

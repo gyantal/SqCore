@@ -1,13 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using SqCommon;
-using System.Threading.Tasks;
-using System.Globalization;
-using BrokerCommon;
 using System.Diagnostics;
+using System.Linq;
+using SqCommon;
 
 namespace FinTechCommon;
 
@@ -49,7 +44,7 @@ public class AssetHistValue
     public float SdaValue { get; set; }
 }
 
-public class AssetHistStat   // this is sent to clients usually just once per day, OR when historical data changes, OR when the Period changes at the client
+public class AssetHistStat // this is sent to clients usually just once per day, OR when historical data changes, OR when the Period changes at the client
 {
     public double PeriodStart { get; set; } = -100.0;
     public double PeriodEnd { get; set; } = -100.0;
@@ -63,7 +58,7 @@ public class AssetHistStat   // this is sent to clients usually just once per da
 public partial class MemDb
 {
     // ************** Helper methods for functions that are used frequently in the code-base
-    // p_dateExclLoc: not UTC, but ET (in USA stocks), CET (in EU stocks) or whatever is the local time at the exchange of the stock. 
+    // p_dateExclLoc: not UTC, but ET (in USA stocks), CET (in EU stocks) or whatever is the local time at the exchange of the stock.
     // The date of the query. If p_dateExclLoc = Monday, then PriorCloseDate will be previous Friday.
     // Imagine we want to find the PriorClose price which was valid on day p_dateExclLoc
     // Different assets can have different PriorCloseDates. If there was an EU holiday on Friday, then the EU stock's PriorClose is Thursday, while an USA stock PriorClose is Friday
@@ -99,13 +94,13 @@ public partial class MemDb
             do
             {
                 float priorClose = sdaCloses[j];
-                if (!float.IsNaN(priorClose)) {
+                if (!float.IsNaN(priorClose))
                     return new AssetPriorClose(r, dates[j], priorClose);
-                }
-                j++;
-            } while (j < dates.Length);
-            return new AssetPriorClose(r, DateTime.MinValue, float.NaN);
 
+                j++;
+            }
+            while (j < dates.Length);
+            return new AssetPriorClose(r, DateTime.MinValue, float.NaN);
         });
 
         return priorCloses;
@@ -127,7 +122,7 @@ public partial class MemDb
     public IEnumerable<AssetHist> GetSdaHistCloses(IEnumerable<Asset> p_assets, DateTime p_startIncLoc, DateTime p_endExclLoc /* usually given as current time today, and that today should not be included in the returned data */,
         bool p_valuesNeeded, bool p_statNeeded)
     {
-        // p_endExclLoc is usually Today. It should NOT be in the returned result. E.g. if (p_dateExclLoc is Monday), -1 days is Sunday, but we have to find Friday before, or even Thursday if Friday was a holiday. 
+        // p_endExclLoc is usually Today. It should NOT be in the returned result. E.g. if (p_dateExclLoc is Monday), -1 days is Sunday, but we have to find Friday before, or even Thursday if Friday was a holiday.
         // The caller code usually have no idea about these weekend or holiday days. The caller just gives Today as an EndDate. It would be too difficult to calculate the proper EndDate in the caller code.
         SqDateOnly lookbackEnd = p_endExclLoc.Date.AddDays(-1); // Double checked. Don't change this. See comment above.
 
@@ -162,12 +157,12 @@ public partial class MemDb
                 && ((iiStartDay + 1) <= sdaCloses.Length))
                 iiStartDay++;   // that start 1 day earlier. It is better to give back more data, then less. Besides on that holiday day, the previous day price is valid.
 
-            List<AssetHistValue>? values = (p_valuesNeeded) ? new List<AssetHistValue>() : null;
+            List<AssetHistValue>? values = p_valuesNeeded ? new List<AssetHistValue>() : null;
 
             // reverse marching from yesterday into past is not good, because we have to calculate running maxDD, maxDU.
             float max = float.MinValue, min = float.MaxValue, maxDD = float.MaxValue, maxDU = float.MinValue;
             int iStockEndDay = Int32.MinValue, iStockFirstDay = Int32.MinValue;
-            for (int i = iiStartDay; i >= iEndDay; i--)   // iEndDay is index 0 or 1. Reverse marching from yesterday iEndDay to deeper into the past. Until startdate iStartDay or until history beginning reached
+            for (int i = iiStartDay; i >= iEndDay; i--) // iEndDay is index 0 or 1. Reverse marching from yesterday iEndDay to deeper into the past. Until startdate iStartDay or until history beginning reached
             {
                 float val = sdaCloses[i];
                 if (Single.IsNaN(val))
@@ -177,14 +172,14 @@ public partial class MemDb
                 iStockEndDay = i;
 
                 if (p_valuesNeeded && values != null)
-                    values.Add(new AssetHistValue() { Date = dates[i], SdaValue = val  });
+                    values.Add(new AssetHistValue() { Date = dates[i], SdaValue = val });
 
                 if (val > max)
                     max = val;
                 if (val < min)
                     min = val;
                 float dailyDD = val / max - 1;     // -0.1 = -10%. daily Drawdown = how far from High = loss felt compared to Highest
-                if (dailyDD < maxDD)                        // dailyDD are a negative values, so we should do MIN-search to find the Maximum negative value
+                if (dailyDD < maxDD) // dailyDD are a negative values, so we should do MIN-search to find the Maximum negative value
                     maxDD = dailyDD;                        // maxDD = maximum loss, pain felt over the period
                 float dailyDU = val / min - 1;     // daily DrawUp = how far from Low = profit felt compared to Lowest
                 if (dailyDU > maxDU)
@@ -204,7 +199,6 @@ public partial class MemDb
                     PeriodMaxDD = (maxDD == float.MaxValue) ? float.NaN : maxDD,
                     PeriodMaxDU = (maxDU == float.MinValue) ? float.NaN : maxDU
                 };
-
             }
 
             var periodStartDateInc = (iStockFirstDay >= 0) ? (DateTime)dates[iStockFirstDay] : DateTime.MaxValue;    // it may be not the 'asked' start date if asset has less price history
@@ -216,9 +210,9 @@ public partial class MemDb
         return assetHists;
     }
 
-    public IEnumerable<(Asset asset, List<AssetHistValue> values)> GetSdaHistClosesAndLastEstValue(IEnumerable<Asset> p_assets, DateTime p_startIncLoc, bool p_makeRtLastValueUptodate = false)
+    public IEnumerable<(Asset Asset, List<AssetHistValue> Values)> GetSdaHistClosesAndLastEstValue(IEnumerable<Asset> p_assets, DateTime p_startIncLoc, bool p_makeRtLastValueUptodate = false)
     {
-        if (p_makeRtLastValueUptodate)  // if older than 30minutes realtime prices are sufficient, or if caller is sure that RT prices are sufficiently up-to-date (for example handled in HighFrequencyTimer) then don't need to spend another 45msec here.
+        if (p_makeRtLastValueUptodate) // if older than 30minutes realtime prices are sufficient, or if caller is sure that RT prices are sufficiently up-to-date (for example handled in HighFrequencyTimer) then don't need to spend another 45msec here.
         {
             // Before getting historical and RT prices from MemDb, we can force to update RT prices in MemDb.
             // Reason: LowFrequency RT update happens only in every 30 minutes. That is too old data, because this SIN page can be used for manual trading instruction.
@@ -242,9 +236,8 @@ public partial class MemDb
         }
         Debug.WriteLine($"MemDb.GetSdaHistCloses().StartDate: {dates[iStartDay]}");
 
-        IEnumerable<(Asset asset, List<AssetHistValue> values)> assetHistsAndLastEstValue = p_assets.Select(r =>
+        IEnumerable<(Asset Asset, List<AssetHistValue> Values)> assetHistsAndLastEstValue = p_assets.Select(r =>
         {
-
             float[] sdaCloses = histData.Data[r.AssetId].Item1[TickType.SplitDivAdjClose];
             // if startDate is not found, because e.g. we want to go back 3 years, while stock has only 2 years history
             int iiStartDay = (iStartDay < sdaCloses.Length) ? iStartDay : sdaCloses.Length - 1;
@@ -256,7 +249,7 @@ public partial class MemDb
 
             // reverse marching from yesterday into past is not good, because we have to calculate running maxDD, maxDU.
             int iStockEndDay = Int32.MinValue, iStockFirstDay = Int32.MinValue;
-            for (int i = iiStartDay; i >= iEndDay; i--)   // iEndDay is index 0 or 1. Reverse marching from yesterday iEndDay to deeper into the past. Until startdate iStartDay or until history beginning reached
+            for (int i = iiStartDay; i >= iEndDay; i--) // iEndDay is index 0 or 1. Reverse marching from yesterday iEndDay to deeper into the past. Until startdate iStartDay or until history beginning reached
             {
                 float val = sdaCloses[i];
                 if (Single.IsNaN(val))
@@ -285,5 +278,4 @@ public partial class MemDb
 
         return assetHistsAndLastEstValue;
     }
-
 }

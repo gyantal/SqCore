@@ -1,13 +1,11 @@
-
 // StockID itself doesn't identify a TimeSeries. A time series can be on AAPL, but one can be monthy, weekly, daily, 15min time series. Each belong to the same StockID.
 // Learn how others implement the TimeSeries structure on GitHub.
 
 // Do we have to store Date field? Probably yes, because some dates could be missing in the middle
-// If Date is stored with ClosePrice, and then Date is stored with OpenPrice, High-LowPrice, it is better to factor out the Date field. 
+// If Date is stored with ClosePrice, and then Date is stored with OpenPrice, High-LowPrice, it is better to factor out the Date field.
 // So, we have a big struct for each date. That is not exactly a fast Time-series I imagined.
 
 // try to minimize memory footprint for fast backtests and that small memory footprint on Server. AWS RAM is expensive.
-
 
 // **************** MemDb to QuickTester: What is the fastest access of prices for QuickTester. That wants to get the only ClosePrice data between StartDate and EndDate
 // >Time series usage example: 'g_MemDb["MSFT"].Dates'. Dates is naturally increasing. So, it should be an OrderedList, so finding an item is O(LogN), not O(N). Same for indEndDate.
@@ -18,26 +16,25 @@
 // The fastest access is very similar to Dotnet SortedList, but instead of 1 value array, we have separate.
 // https://github.com/dotnet/corefx/blob/master/src/System.Collections/src/System/Collections/Generic/SortedList.cs
 
-// This is better smaller RAM storage as well than the alternative simplest List<Date, DailyRecord>, 
+// This is better smaller RAM storage as well than the alternative simplest List<Date, DailyRecord>,
 // because DailyRecord would contain All potential TickType fields that is EVER used, consuming huge RAM
 // Also Date, ClosePrice values are stored in Array, which is much faster than List
 
-// Keep the TKey as parameter as: DateTime (A DateTime is a 8 byte struct, per millisecond data), DateTimeAsInt (4 byte, per minute data), SqDateOnly (2 byte) 
+// Keep the TKey as parameter as: DateTime (A DateTime is a 8 byte struct, per millisecond data), DateTimeAsInt (4 byte, per minute data), SqDateOnly (2 byte)
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using SqCommon;
 using System.Runtime.CompilerServices;
+using SqCommon;
 
 namespace FinTechCommon;
 
 // https://sourcelens.com.au/Consulting/Brw/Ru/z_dir_zcrez_dir_zsrcz_dir_zcoreclrz_dir_zbinz_dir_zobjz_dir_zWindows_NTq_dot_qx64q_dot_qDebugz_dir_zSystemq_dot_qPrivateq_dot_qCoreLibz_dir_zSRq_dot_qcs
-internal static partial class SR    // auto-generated during the build based on the .resx file
+internal static partial class SR // auto-generated during the build based on the .resx file
 {
-
     public static string Format(string format, params object[] args)
     {
         return String.Format(format, args);
@@ -106,14 +103,10 @@ internal static partial class SR    // auto-generated during the build based on 
         get { return @"Mutating a key collection derived from a dictionary is not allowed."; }
     }
 
-
-
-
     internal static string NotSupported_SortedListNestedWrite
     {
         get { return string.Empty; }
     }
-
 }
 
 public enum TickType { /* StockQuote */ Open, Close, High, Low, Volume, Dividend, SplitRatio, SplitAdjClose, SplitDivAdjClose, /* Options */ Ask, Bid, Last, OpenInterest, /* Futures */ Settle, EFP, /* Stock other */ SHIR, SharesOutstanding }
@@ -121,19 +114,21 @@ public enum TickType { /* StockQuote */ Open, Close, High, Low, Volume, Dividend
 // see SortedList<TKey,TValue> as template https://github.com/dotnet/corefx/blob/master/src/System.Collections/src/System/Collections/Generic/SortedList.cs
 [DebuggerDisplay("Count = {Count}")]
 [Serializable]
-public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : notnull   // Tkey = DateTime (8 byte), DateTimeAsInt (4 byte), SqDateOnly (2 byte), or any int, byte (1 byte), or even string (that can be ordered)
+public sealed class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : notnull // Tkey = DateTime (8 byte), DateTimeAsInt (4 byte), SqDateOnly (2 byte), or any int, byte (1 byte), or even string (that can be ordered)
 {
+    private const int DefaultCapacity = 4;
+    private const int MaxArrayLength = 0X7FEFFFFF;
+
+    private readonly IComparer<TKey> comparer; // Do not rename (binary serialization)
+    private readonly Dictionary<TickType, ValueList1?> valueList1; // Do not rename (binary serialization)
+    private readonly Dictionary<TickType, ValueList2?> valueList2; // Do not rename (binary serialization)
+
     private TKey[] keys;  // Key which is used for OrderBy the other arrays. This array should be ordered from smallest to largest
     public Dictionary<TickType, TValue1[]> values1;
     public Dictionary<TickType, TValue2[]> values2;
     private int _size; // Do not rename (binary serialization)
     private int version; // Do not rename (binary serialization)
-    private readonly IComparer<TKey> comparer; // Do not rename (binary serialization)
     private KeyList? keyList; // Do not rename (binary serialization)
-    private readonly Dictionary<TickType, ValueList1?> valueList1; // Do not rename (binary serialization)
-    private readonly Dictionary<TickType, ValueList2?> valueList2; // Do not rename (binary serialization)
-
-    private const int DefaultCapacity = 4;
 
     public static void HowToUseThisClassExamples()
     {
@@ -150,13 +145,11 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
         var ts1 = new FinTimeSeries<SqDateOnly, float, uint>(
             Array.Empty<SqDateOnly>(),
             new KeyValuePair<TickType, float[]>[] { kvpar1 },
-            new KeyValuePair<TickType, uint[]>[] { kvpar2 }
-        );
-
+            new KeyValuePair<TickType, uint[]>[] { kvpar2 });
 
         // 2. consume timeSeries via public methods
-        float ts1YesterdayClose3 = ts1.GetValues1(new SqDateOnly(), TickType.Close);  // neat if data is accessed via methods
-        bool isOkTs1YesterdayClose3 = ts1.TryGetValue1(new SqDateOnly(), TickType.Close, out float value);
+        float ts1YesterdayClose3 = ts1.GetValues1(default, TickType.Close);  // neat if data is accessed via methods
+        bool isOkTs1YesterdayClose3 = ts1.TryGetValue1(default, TickType.Close, out float value);
 
         // access array via a List, indirectly. There is no memory consumption. Direct reference to the private array.
         // supports only: [] indexer as one by one direct access, and CopyTo() into destination TValue1[] arrays.
@@ -164,7 +157,7 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
 
         // 3. access timeSeries via private members (can be accessed only from inside the class)
         float[] array1 = ts1.values1[TickType.Close];       // access array directly, although it should be private
-        float ts1YesterdayClose2 = ts1.values1[TickType.Close][ts1.IndexOfKey(new SqDateOnly())];   // possible to access inner members and manipulate if needed
+        float ts1YesterdayClose2 = ts1.values1[TickType.Close][ts1.IndexOfKey(default)];   // possible to access inner members and manipulate if needed
 
         // 4. The most efficient, faster usage is the direct usage of the array. Better than (linked-) List, and there is no indirection.
         SqDateOnly[] dates = ts1.GetKeyArrayDirect();
@@ -201,7 +194,6 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
         return values2[p_tickType][i];
     }
 
-
     public TKey[] GetKeyArrayDirect()
     {
         return keys;
@@ -218,7 +210,6 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
         return values2[p_tickType];
     }
 
-
     public FinTimeSeries()
     {
         keys = Array.Empty<TKey>();
@@ -232,7 +223,8 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
         valueList2 = new Dictionary<TickType, ValueList2?>();
     }
 
-    public FinTimeSeries(TickType[] tickTypes1, TickType[] tickTypes2) : this()
+    public FinTimeSeries(TickType[] tickTypes1, TickType[] tickTypes2)
+        : this()
     {
         foreach (var tickType in tickTypes1)
         {
@@ -245,24 +237,25 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
     }
 
     // This should be ordered, otherwise, there will be problems if we want to extend it.
-    public FinTimeSeries(TKey[] p_key, KeyValuePair<TickType, TValue1[]>[] p_values1, KeyValuePair<TickType, TValue2[]>[] p_values2) : this()
+    public FinTimeSeries(TKey[] p_key, KeyValuePair<TickType, TValue1[]>[] p_values1, KeyValuePair<TickType, TValue2[]>[] p_values2)
+        : this()
     {
         for (int i = 0; i < p_key.Length - 1; i++)
         {
-            Debug.Assert(comparer.Compare(p_key[i], p_key[i + 1]) <= 0); // previous Key should be less than next key
+            Debug.Assert(comparer.Compare(p_key[i], p_key[i + 1]) <= 0, "FinTimeSeries ctor error"); // previous Key should be less than next key
         }
         _size = p_key.Length;
         keys = p_key;
 
         foreach (var p_value1 in p_values1)
         {
-            Debug.Assert(p_value1.Value.Length == _size);
+            Debug.Assert(p_value1.Value.Length == _size, "FinTimeSeries ctor error");
             values1.Add(p_value1.Key, p_value1.Value);
             valueList1.Add(p_value1.Key, null);
         }
         foreach (var p_value2 in p_values2)
         {
-            Debug.Assert(p_value2.Value.Length == _size);
+            Debug.Assert(p_value2.Value.Length == _size, "FinTimeSeries ctor error");
             values2.Add(p_value2.Key, p_value2.Value);
             valueList2.Add(p_value2.Key, null);
         }
@@ -302,7 +295,6 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
     // {
     //     if (dictionary == null)
     //         throw new ArgumentNullException(nameof(dictionary));
-
     //     int count = dictionary.Count;
     //     if (count != 0)
     //     {
@@ -323,13 +315,13 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
     //             }
     //         }
     //     }
-
     //     _size = count;
     // }
 
     public void Add1(TKey key, TickType tickType, TValue1 value)
     {
-        if (key == null) throw new ArgumentNullException(nameof(key));
+        if (key == null)
+            throw new ArgumentNullException(nameof(key));
         int i = Array.BinarySearch<TKey>(keys, 0, _size, key, comparer);
         if (i >= 0)
             throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key), nameof(key));
@@ -338,13 +330,13 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
 
     public void Add2(TKey key, TickType tickType, TValue2 value)
     {
-        if (key == null) throw new ArgumentNullException(nameof(key));
+        if (key == null)
+            throw new ArgumentNullException(nameof(key));
         int i = Array.BinarySearch<TKey>(keys, 0, _size, key, comparer);
         if (i >= 0)
             throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key), nameof(key));
         Insert2(~i, key, tickType, value);
     }
-
 
     // void ICollection<KeyValuePair<TKey, TValue>>.Add(KeyValuePair<TKey, TValue> keyValuePair)
     // {
@@ -396,7 +388,6 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
                     }
                     keys = newKeys;
 
-
                     foreach (var kvPair in values1)
                     {
                         TValue1[] newValues1 = new TValue1[value];
@@ -438,16 +429,12 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
     // {
     //     if (key == null)
     //         throw new ArgumentNullException(nameof(key));
-
     //     if (value == null && !(default(TValue1)! == null))    // null is an invalid value for Value types  // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
     //         throw new ArgumentNullException(nameof(value));
-
     //     if (!(key is TKey))
     //         throw new ArgumentException(SR.Format(SR.Arg_WrongType, key, typeof(TKey)), nameof(key));
-
     //     if (!(value is TValue1) && value != null)            // null is a valid value for Reference Types
     //         throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(TValue1)), nameof(value));
-
     //     Add1((TKey)key, (TValue1)value!);
     // }
 
@@ -496,7 +483,6 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
     // Synchronization root for this object.
     object ICollection.SyncRoot => this;
 
-
     public void Clear()
     {
         // clear does not change the capacity
@@ -512,11 +498,9 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
             {
                 Array.Clear(kvPair.Value, 0, _size);
             }
-
         }
         _size = 0;
     }
-
 
     public bool Contains(object key)
     {
@@ -547,19 +531,17 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
         throw new NotImplementedException();    // see SortedList.cs template
     }
 
-
-    private const int MaxArrayLength = 0X7FEFFFFF;
-
     private void EnsureCapacity(int min)
     {
         int newCapacity = keys.Length == 0 ? DefaultCapacity : keys.Length * 2;
         // Allow the list to grow to maximum possible capacity (~2G elements) before encountering overflow.
         // Note that this check works even when _items.Length overflowed thanks to the (uint) cast
-        if ((uint)newCapacity > MaxArrayLength) newCapacity = MaxArrayLength;
-        if (newCapacity < min) newCapacity = min;
+        if ((uint)newCapacity > MaxArrayLength)
+            newCapacity = MaxArrayLength;
+        if (newCapacity < min)
+            newCapacity = min;
         Capacity = newCapacity;
     }
-
 
     private TValue1 GetByIndex1(TickType tickType, int index)
     {
@@ -578,9 +560,8 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
     IEnumerator IEnumerable.GetEnumerator()
     {
         throw new NotImplementedException();
-        //return new Enumerator(this, Enumerator.KeyValuePair);
+        // return new Enumerator(this, Enumerator.KeyValuePair);
     }
-
 
     private TKey GetKey(int index)
     {
@@ -588,7 +569,6 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
             throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
         return keys[index];
     }
-
 
     // This indexer cannot be applied to both value1, and value2. So, we use it for value1 only, which should be the most important to the caller.
     public TValue1 this[TKey key, TickType tickType]
@@ -603,7 +583,8 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
         }
         set
         {
-            if (((object)key) == null) throw new ArgumentNullException(nameof(key));
+            if (((object)key) == null)
+                throw new ArgumentNullException(nameof(key));
             int i = Array.BinarySearch<TKey>(keys, 0, _size, key, comparer);
             if (i >= 0)
             {
@@ -615,7 +596,7 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
         }
     }
 
-    public int IndexOfKey(TKey key)     // if there is an exact match. If date is not found (because it was weekend), it returns -1.
+    public int IndexOfKey(TKey key) // if there is an exact match. If date is not found (because it was weekend), it returns -1.
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
@@ -623,14 +604,14 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
         return ret >= 0 ? ret : -1;
     }
 
-    public int IndexOfKeyOrBeforeKey(TKey key)  // If date is not found, because it is a weekend, it gives back the previous index, which is less.
+    public int IndexOfKeyOrBeforeKey(TKey key) // If date is not found, because it is a weekend, it gives back the previous index, which is less.
     {
         if (key == null)
             throw new ArgumentNullException(nameof(key));
         int ret = Array.BinarySearch<TKey>(keys, 0, _size, key, comparer);
         // You can use the '~' to take the bitwise complement which will give you the index of the first item larger than the search item.
         if (ret < 0)
-            ret = ~ret -1; // this is the item which is larger, so we have to take away -1 to get the item which is smaller (older Date)
+            ret = ~ret - 1; // this is the item which is larger, so we have to take away -1 to get the item which is smaller (older Date)
         return ret;
     }
 
@@ -646,7 +627,8 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
 
     private void Insert1(int index, TKey key, TickType tickType, TValue1 value)
     {
-        if (_size == keys.Length) EnsureCapacity(_size + 1);
+        if (_size == keys.Length)
+            EnsureCapacity(_size + 1);
         if (index < _size)
         {
             Array.Copy(keys, index, keys, index + 1, _size - index);
@@ -660,7 +642,8 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
 
     private void Insert2(int index, TKey key, TickType tickType, TValue2 value)
     {
-        if (_size == keys.Length) EnsureCapacity(_size + 1);
+        if (_size == keys.Length)
+            EnsureCapacity(_size + 1);
         if (index < _size)
         {
             Array.Copy(keys, index, keys, index + 1, _size - index);
@@ -671,7 +654,6 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
         _size++;
         version++;
     }
-
 
     public bool TryGetValue1(TKey key, TickType tickType, [MaybeNullWhen(false)] out TValue1 value)
     {
@@ -699,7 +681,6 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
         return false;
     }
 
-
     public void RemoveAt(int index)
     {
         if (index < 0 || index >= _size)
@@ -717,7 +698,6 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
             {
                 Array.Copy(values2[kvPair.Key], index + 1, values2[kvPair.Key], index, _size - index);
             }
-
         }
         if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
         {
@@ -740,7 +720,6 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
         version++;
     }
 
-
     public bool Remove(TKey key)
     {
         int i = IndexOfKey(key);
@@ -748,7 +727,6 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
             RemoveAt(i);
         return i >= 0;
     }
-
 
     // Sets the capacity of this sorted list to the size of the sorted list.
     // This method can be used to minimize a sorted list's memory overhead once
@@ -774,16 +752,16 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
             throw new ArgumentNullException(nameof(key));
         }
 
-        return (key is TKey);
+        return key is TKey;
     }
-
 
     private sealed class FinTimeSeriesKeyEnumerator : IEnumerator<TKey>, IEnumerator
     {
         private readonly FinTimeSeries<TKey, TValue1, TValue2> _sortedList;
-        private int _index;
         private readonly int _version;
-        [AllowNull] private TKey _currentKey = default!;
+        private int _index;
+        [AllowNull]
+        private TKey _currentKey = default!;
 
         internal FinTimeSeriesKeyEnumerator(FinTimeSeries<TKey, TValue1, TValue2> sortedList)
         {
@@ -848,14 +826,14 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
         }
     }
 
-
     private sealed class FinTimeSeriesValueEnumerator1 : IEnumerator<TValue1>, IEnumerator
     {
         private readonly FinTimeSeries<TKey, TValue1, TValue2> _sortedList;
         readonly TickType _tickType;
-        private int _index;
         private readonly int _version;
-        [AllowNull] private TValue1 _currentValue = default!;
+        private int _index;
+        [AllowNull]
+        private TValue1 _currentValue = default!;
 
         internal FinTimeSeriesValueEnumerator1(FinTimeSeries<TKey, TValue1, TValue2> sortedList, TickType tickType)
         {
@@ -925,9 +903,11 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
     {
         private readonly FinTimeSeries<TKey, TValue1, TValue2> _sortedList;
         readonly TickType _tickType;
-        private int _index;
         private readonly int _version;
-        [AllowNull] private TValue2 _currentValue = default!;
+        private int _index;
+
+        [AllowNull]
+        private TValue2 _currentValue = default!;
 
         internal FinTimeSeriesValueEnumerator2(FinTimeSeries<TKey, TValue1, TValue2> sortedList, TickType tickType)
         {
@@ -992,11 +972,6 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
             _currentValue = default;
         }
     }
-
-
-
-
-
 
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
@@ -1100,7 +1075,8 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
 
             int i = Array.BinarySearch<TKey>(_dict.keys, 0,
                                         _dict.Count, key, _dict.comparer);
-            if (i >= 0) return i;
+            if (i >= 0)
+                return i;
             return -1;
         }
 
@@ -1343,5 +1319,4 @@ public class FinTimeSeries<TKey, TValue1, TValue2> : ICollection where TKey : no
             throw new NotSupportedException(SR.NotSupported_SortedListNestedWrite);
         }
     }
-
 }

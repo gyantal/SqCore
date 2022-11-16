@@ -17,7 +17,7 @@ public partial class Db
         return "RedisDb response: " + m_redisDb.Execute(command).ToString();
     }
 
-    public static void DbCopy(int sourceDbIdx, int destDbIdx)    // copy DB-copyFromIdx to DB-copyToIdx
+    public static void DbCopy(int sourceDbIdx, int destDbIdx) // copy DB-copyFromIdx to DB-copyToIdx
     {
         // KeyMove() from db0 to db1 is possible, but that will delete the key from source  // https://redis.io/commands/move
         // KeyMigrate() copy possible, but that is designed between 2 Servers, so it timeouts and never executes  // https://redis.io/commands/MIGRATE
@@ -96,7 +96,6 @@ public partial class Db
         StringBuilder sbStock = new("\"S\":[\n");
         bool isFirstStock = true;
 
-
         // https://marcroussy.com/2020/08/17/deserialization-with-system-text-json/     // POCO: Plain Old Class Object
         using JsonDocument baseDoc = JsonDocument.Parse(baseAssetsJson);
         JsonElement baseValues = baseDoc.RootElement.GetProperty("values");
@@ -111,7 +110,7 @@ public partial class Db
                 if (rowArr.Length == 0)
                     continue;   // skip empty gSheet rows in JSON: "[],"
 
-                if (rowArr[0].ToString() == "C")    // CurrencyCash
+                if (rowArr[0].ToString() == "C") // CurrencyCash
                 {
                     if (isFirstCash)
                         isFirstCash = false;
@@ -119,7 +118,7 @@ public partial class Db
                         sbCash.Append(',');
                     sbCash.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\"]");
                 }
-                if (rowArr[0].ToString() == "D")    // CurrencyPair
+                if (rowArr[0].ToString() == "D") // CurrencyPair
                 {
                     if (isFirstCpair)
                         isFirstCpair = false;
@@ -127,7 +126,7 @@ public partial class Db
                         sbCpair.Append(',');
                     sbCpair.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\",\"{rowArr[7]}\"]");
                 }
-                if (rowArr[0].ToString()[0] == AssetHelper.gAssetTypeCode[AssetType.FinIndex])    // Index, such as ^VIX
+                if (rowArr[0].ToString()[0] == AssetHelper.gAssetTypeCode[AssetType.FinIndex]) // Index, such as ^VIX
                 {
                     if (isFirstIndex)
                         isFirstIndex = false;
@@ -135,7 +134,7 @@ public partial class Db
                         sbIndex.Append(',');
                     sbIndex.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\"]");
                 }
-                if (rowArr[0].ToString() == "R")    // RealEstate
+                if (rowArr[0].ToString() == "R") // RealEstate
                 {
                     if (isFirstReEst)
                         isFirstReEst = false;
@@ -143,7 +142,7 @@ public partial class Db
                         sbReEst.Append(',');
                     sbReEst.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\",\"{rowArr[8]}\"]");
                 }
-                if (rowArr[0].ToString() == "N")    // BrokerNav
+                if (rowArr[0].ToString() == "N") // BrokerNav
                 {
                     if (isFirstNav)
                         isFirstNav = false;
@@ -151,7 +150,7 @@ public partial class Db
                         sbNav.Append(',');
                     sbNav.Append($"[{rowArr[1]},\"{rowArr[2]}\",\"{rowArr[3]}\",\"{rowArr[4]}\",\"{rowArr[5]}\",\"{rowArr[8]}\"]");
                 }
-                if (rowArr[0].ToString() == "P")    // Portfolio
+                if (rowArr[0].ToString() == "P") // Portfolio
                 {
                     if (isFirstPortf)
                         isFirstPortf = false;
@@ -175,7 +174,7 @@ public partial class Db
                     if (rowArr.Length == 0)
                         continue;   // skip empty gSheet rows in JSON: "[],"
 
-                    if (rowArr[0].ToString() == "A")    // Company
+                    if (rowArr[0].ToString() == "A") // Company
                     {
                         if (isFirstComp)
                             isFirstComp = false;
@@ -200,7 +199,7 @@ public partial class Db
                     if (rowArr.Length == 0)
                         continue;   // skip empty gSheet rows in JSON: "[],"
 
-                    if (rowArr[0].ToString() == "S")    // Stock
+                    if (rowArr[0].ToString() == "S") // Stock
                     {
                         if (isFirstStock)
                             isFirstStock = false;
@@ -233,7 +232,6 @@ public partial class Db
 
         // At the moment, the NAV's and StockAsset table's "Srv.LoadPrHist(Span)" column is not mirrored from gSheet to RedisDb automatically.
         // We add these manually to RedisDb now. Not bad, because adding them manually forces us to think about whether we really need that extra stock consuming RAM and YF downloads.
-
     }
 
     static string Get(JsonElement[] p_arr, int p_i)

@@ -10,7 +10,7 @@ namespace FinTechCommon;
 // While Writer is swapping users/assets/HistData pointers client can get NewUserData and OldAssetData.
 // Without reader locking even careful clients - who don't store pointers - can get inconsistent pointers.
 // It can be solved with a global gMemDbUpdateLock, but then clients should use that, and they will forget it.
-// This way it is still possible for a client to get m_memData.OldUserData and 1ms later m_memData.NewAssetData (if write happened between them), but 
+// This way it is still possible for a client to get m_memData.OldUserData and 1ms later m_memData.NewAssetData (if write happened between them), but
 //   - it is less likely, because pointer swap happened much quicker
 //   - if reader clients ask GetAssuredConsistentTables() that doesn't require waiting in a Lock, but very fast, just a pointer local copy. Clients should use that.
 // Still better to not expose MemData to the outside world, because clients could store its pointers, and GC will not collect old data
@@ -21,10 +21,10 @@ namespace FinTechCommon;
 // the lock is a WriterLock only. No need for ReaderLock. For high concurrency.
 // Readers of the Users, Assets, DailyHist, Portfolios should keep the pointer locally as the pointer may get swapped out any time
 
-// lock(object) is banned in async function (because lock is intended for very short time.) 
+// lock(object) is banned in async function (because lock is intended for very short time.)
 // The official way is SemaphoreSlim (although slower, but writing happens very rarely). Or just turn every async function to sync
 // if same thread calls SemaphoreSlim.Wait() second time, it will block. It uses a counter mechanism, and it doesn't store which thread acquired the lock already. So, reentry is not possible.
-internal class MemData  // don't expose to clients.
+internal class MemData // don't expose to clients.
 {
     public volatile User[] Users = Array.Empty<User>();   // writable: admin might insert a new user from HTML UI
 
@@ -35,9 +35,9 @@ internal class MemData  // don't expose to clients.
     public volatile CompactFinTimeSeries<SqDateOnly, uint, float, uint> DailyHist = new();
 
     // Visibility rules for PortfolioFolders:
-    // - Normal users don't see other user's PortfolioFolders. They see a virtual folder with their username ('dkodirekka'), 
+    // - Normal users don't see other user's PortfolioFolders. They see a virtual folder with their username ('dkodirekka'),
     // a virtual folder 'Shared with me', and a virtual folder called 'AllUsers'
-    // - Admin users (developers) see all PortfolioFolders of all human users. Each human user (IsHuman) in a virtual folder with their username. 
+    // - Admin users (developers) see all PortfolioFolders of all human users. Each human user (IsHuman) in a virtual folder with their username.
     // And the 'Shared with me', and 'AllUsers" virtual folders are there too.
     public volatile Dictionary<int, PortfolioFolder> PortfolioFolders = new(); // Not Array, because users can create/delete portfolio folders
 
@@ -53,7 +53,7 @@ internal class MemData  // don't expose to clients.
     // Admin users (developers) see all Portfolios of all users except those that are 'OwnerOnly'.
     public volatile Dictionary<int, Portfolio> Portfolios = new(); // temporary illustration of a data that will be not only read, but written by SqCore. Portfolios are not necessary here, because they are Assets as well, so they can go to AssetsCache
 
-    // Clients can add new Assets to AssetCache, like NonPersinted Options, or new Portfolios. Other clients enumerate all AssetCache (e.g. reloading HistData in every 2 hours). 
+    // Clients can add new Assets to AssetCache, like NonPersinted Options, or new Portfolios. Other clients enumerate all AssetCache (e.g. reloading HistData in every 2 hours).
     // So a ReaderWriterLock is needed or 'Non-locking copy-and-swap-on-write' is needed.
     // see "C#\Multithread\SharedData, ReaderWriterLock or LockFreeRead.txt"
     // Option 1: ReaderWriterLocks: exactly designed for shared resources (like Database). This is the way if Writing is frequent or RAM is scarce. But I don't like it.
@@ -84,7 +84,7 @@ internal class MemData  // don't expose to clients.
     }
 
     // best 'Non-locking copy-and-swap-on-write' implementation:  https://stackoverflow.com/questions/10556806/make-a-linked-list-thread-safe/10557130#10557130
-    public void AddToAssetCacheIfMissing(List<Asset> p_newAssets)   // Do NOT implement adding single Asset objects. To encourage that callers call in batches. For CPU/RAM efficiency.
+    public void AddToAssetCacheIfMissing(List<Asset> p_newAssets) // Do NOT implement adding single Asset objects. To encourage that callers call in batches. For CPU/RAM efficiency.
     {
         if (p_newAssets.Count == 0)
             return;

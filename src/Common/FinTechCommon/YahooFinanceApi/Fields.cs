@@ -1,5 +1,4 @@
-﻿
-namespace YahooFinanceApi;
+﻿namespace YahooFinanceApi;
 
 public enum Field
 {
@@ -68,6 +67,6 @@ public enum Field
     TrailingPE,
     TwoHundredDayAverage,
     TwoHundredDayAverageChange,
-    TwoHundredDayAverageChangePercent, 
+    TwoHundredDayAverageChangePercent,
     PreMarketPrice
 }
