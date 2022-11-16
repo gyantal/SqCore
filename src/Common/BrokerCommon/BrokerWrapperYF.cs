@@ -7,7 +7,11 @@ namespace BrokerCommon;
 public class BrokerWrapperYF : IBrokerWrapper
 {
     bool m_isConnected = false;
-    public string IbAccountsList { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+    public string IbAccountsList
+    {
+        get { return string.Empty; }
+        set { }
+    }
 
     public void accountDownloadEnd(string account)
     {
@@ -305,7 +309,7 @@ public class BrokerWrapperYF : IBrokerWrapper
         throw new NotImplementedException();
     }
 
-    public void realtimeBar(int reqId, long date, double open, double high, double low, double close, long volume, double WAP, int count)
+    public void realtimeBar(int reqId, long date, double open, double high, double low, double close, long volume, double wap, int count)
     {
         throw new NotImplementedException();
     }

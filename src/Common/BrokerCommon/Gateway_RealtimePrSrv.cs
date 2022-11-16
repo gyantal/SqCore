@@ -1,34 +1,30 @@
-﻿using SqCommon;
-using IBApi;
-using System;
-using System.Collections.Concurrent;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Utils = SqCommon.Utils;
 using System.Text;
+using System.Threading;
+using IBApi;
+using Utils = SqCommon.Utils;
 
 namespace BrokerCommon;
 
-// 1. one idea was that if there is no LastPrice, give back the ClosePrice, so we always give back something. 
+// 1. one idea was that if there is no LastPrice, give back the ClosePrice, so we always give back something.
 // However it doesn't work, as for Indices, even ClosePrice is not received. Nothing.
 // so for Indices, it is ALWAYS possible that we have no data at all, so we have to give back nothing.
-//02-21 08:19:52.459: ***** InitRTP().
-//02-21 08:19:56.738: ^VIX tickID:2
-//02-21 08:19:56.769: ^VXV tickID:3
-//02-21 08:19:56.769: VXX tickID:4
-//02-21 08:19:56.769: XIV tickID:5
-//02-21 08:19:56.769: SPY tickID:6
-//02-21 08:19:56.879: TickPriceCB(): 5/ClosePrice/32.23/False 
-//02-21 08:19:56.879: TickPriceCB(): 4/ClosePrice/42.54/False 
-//02-21 08:19:56.879: TickPriceCB(): 6/ClosePrice/184.10/False 
-//02-21 08:19:56.879: WCF is listening for IIS messages.
-//02-21 08:20:19.796: ***** ExitRTP().
+// 02-21 08:19:52.459: ***** InitRTP().
+// 02-21 08:19:56.738: ^VIX tickID:2
+// 02-21 08:19:56.769: ^VXV tickID:3
+// 02-21 08:19:56.769: VXX tickID:4
+// 02-21 08:19:56.769: XIV tickID:5
+// 02-21 08:19:56.769: SPY tickID:6
+// 02-21 08:19:56.879: TickPriceCB(): 5/ClosePrice/32.23/False
+// 02-21 08:19:56.879: TickPriceCB(): 4/ClosePrice/42.54/False
+// 02-21 08:19:56.879: TickPriceCB(): 6/ClosePrice/184.10/False
+// 02-21 08:19:56.879: WCF is listening for IIS messages.
+// 02-21 08:20:19.796: ***** ExitRTP().
 
 // 2. Another problem is that the LastChangeTime is simetimes 5 minutes late, because the LastPrice or the LastCalculated Index value didn't change for 5 minutes, but that is still valid
 // However, if a Matlab client shows the Time of the LastChanged, that is 5 minutes late, so users will be puzzled. (how real time is the data). However, the value is still valid, just it didn't change.
-//Decision: Balazs should write both Times to the UI: up-to-dateTime (=queryTime) and LastPriceChangedTime too (so the user can decide if it is good or bad.)
+// Decision: Balazs should write both Times to the UI: up-to-dateTime (=queryTime) and LastPriceChangedTime too (so the user can decide if it is good or bad.)
 // >Up-to-dateTime is not required in the output, because it is the queryTime (assuming the service Works properly); if not, service should monitor itself and Give: Error: service doesn't work.
 // >put Ask,Bid too into the output, for later usage, and for safety. AskChangedTimeUtc
 
@@ -37,10 +33,10 @@ namespace BrokerCommon;
 // You can write javascript without semicolon, you only need to insert them if you start a line with a parantesis ( or a bracket [.
 // (In JavaScript semicolon says the line end, and they are immediately flowed by a newline that says the same)
 
-// the input is the queryString of this 
-//http://hqacompute.cloudapp.net/q/rtp?s=VXX,^VIX,^GSPC,SVXY&f=l 
-//http://hqacompute.cloudapp.net/q/rtp?s=VXX,^VIX,^GSPC,SVXY&f=l&jsonp=MyCallBackFunction
-//string s = @"?s=VXX,^VIX,^GSPC,SVXY,^^^VIX201404,GOOG&f=l&jsonp=MyCallBackFunction";
+// the input is the queryString of this
+// http://hqacompute.cloudapp.net/q/rtp?s=VXX,^VIX,^GSPC,SVXY&f=l
+// http://hqacompute.cloudapp.net/q/rtp?s=VXX,^VIX,^GSPC,SVXY&f=l&jsonp=MyCallBackFunction
+// string s = @"?s=VXX,^VIX,^GSPC,SVXY,^^^VIX201404,GOOG&f=l&jsonp=MyCallBackFunction";
 
 public partial class Gateway
 {
@@ -48,15 +44,14 @@ public partial class Gateway
     // this will be called multiple times in parallel. So, be careful when to use Shared resources, we need locking
     public string GetRealtimePriceService(string p_input)
     {
-        string resultPrefix = "", resultPostfix = "";
+        string resultPrefix = string.Empty, resultPostfix = string.Empty;
 
         try
         {
             // !!! HACK, temporary: from 2019-01-31 - 2019-05-02, when VXXB was alive. After that VXX is the active again.
             // http://www.snifferquant.com/dac/VixTimer asks for VXX every 20 minutes, which is wrong. VBroker will fail on that. If VXX is asked, we change it to VXXB.
             // TEMPorary. Remove these after Laszlo fixed the query in VixTimer quote
-            //p_input = p_input.Replace(",VXX,", ",VXXB");
-
+            // p_input = p_input.Replace(",VXX,", ",VXXB");
 
             // caret(^) is not a valid URL character, so it is encoded to %5E; skip the first '?'  , convert everything to Uppercase, because '%5e', and '%5E' is the same for us
             string input = Uri.UnescapeDataString(p_input[1..]);    // change %20 to ' ', and %5E to '^'  , "^VIX" is encoded in the URI as "^%5EVIX"
@@ -67,7 +62,7 @@ public partial class Gateway
             int nTempTickers = 0;
             foreach (var inputParam in inputParams)
             {
-                if (inputParam.StartsWith("S=", StringComparison.CurrentCultureIgnoreCase))    // symbols
+                if (inputParam.StartsWith("S=", StringComparison.CurrentCultureIgnoreCase)) // symbols
                 {
                     string[] tickerArray = inputParam["S=".Length..].Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                     foreach (var symbol in tickerArray)
@@ -78,16 +73,11 @@ public partial class Gateway
                         Dictionary<int, PriceAndTime> rtPrices;
                         if (sqTicker[0] == '^') // if Index, not stock. Index has only LastPrice and TickType.ClosePrice
                         {
-                            rtPrices = new Dictionary<int, PriceAndTime>() {    // we are interested in the following Prices
-                                    { TickType.LAST, new PriceAndTime() } };
+                            rtPrices = new Dictionary<int, PriceAndTime>() { { TickType.LAST, new PriceAndTime() } }; // we are interested in the following Prices
                         }
                         else
                         {
-                            rtPrices = new Dictionary<int, PriceAndTime>() {    // we are interested in the following Prices
-                                    { TickType.ASK, new PriceAndTime() },
-                                    { TickType.BID, new PriceAndTime() },
-                                    //{ TickType.CLOSE, new PriceAndTime() },
-                                    { TickType.LAST, new PriceAndTime() } };
+                            rtPrices = new Dictionary<int, PriceAndTime>() { { TickType.ASK, new PriceAndTime() }, { TickType.BID, new PriceAndTime() }, { TickType.LAST, new PriceAndTime() } }; // we are interested in the following Prices
                         }
                         if (BrokerWrapper.GetAlreadyStreamedPrice(contract, ref rtPrices))
                         {
@@ -101,7 +91,7 @@ public partial class Gateway
                     }
                 }
 
-                if (inputParam.StartsWith("JSONP=", StringComparison.CurrentCultureIgnoreCase))    // symbols
+                if (inputParam.StartsWith("JSONP=", StringComparison.CurrentCultureIgnoreCase)) // symbols
                 {
                     string jsonpPrefix = inputParam[6..];
                     resultPrefix = jsonpPrefix + "(";
@@ -109,47 +99,45 @@ public partial class Gateway
                 }
             }
 
-
-
             // 1. if there are tickers without data, subscribe to them, wait for them, get the data
-            if (nTempTickers > 0)   // try to enter the Critical section ONLY if it is necessary. Try to not LOCK threads unnecessarily
+            if (nTempTickers > 0) // try to enter the Critical section ONLY if it is necessary. Try to not LOCK threads unnecessarily
             {
-                lock (BrokerWrapper)  // RequestMarketData will use gBrokerApi; so Synch it as a Critical section
+                lock (BrokerWrapper) // RequestMarketData will use gBrokerApi; so Synch it as a Critical section
                 {
                     try
                     {
                         AutoResetEvent priceTickARE = new(false);    // set it to non-signaled => which means Block
-                        //priceTickARE.Reset();       // set it to non-signaled => which means Block
+                        // priceTickARE.Reset();       // set it to non-signaled => which means Block
 
                         for (int i = 0; i < tickerList.Count; i++)
                         {
                             if (tickerList[i].Item2 == null) // if it is temporary ticker  (it should be -2, at this point)
                             {
                                 int mktDataId = BrokerWrapper.ReqMktDataStream(VBrokerUtils.ParseYfTickerToContract(tickerList[i].Item1), string.Empty, true,
-                                    (cb_mktDataId, cb_mktDataSubscr, cb_tickType, cb_price) => {
+                                    (cb_mktDataId, cb_mktDataSubscr, cb_tickType, cb_price) =>
+                                    {
                                         Utils.Logger.Trace($"{cb_mktDataSubscr.Contract.Symbol} : {cb_tickType}: {cb_price}");
-                                        //Console.WriteLine($"{cb_mktDataSubscr.Contract.Symbol} : {cb_tickType}: {cb_price}");  // better not clutter the console
-                                        if ((cb_tickType == TickType.LAST) || 
+                                        // Console.WriteLine($"{cb_mktDataSubscr.Contract.Symbol} : {cb_tickType}: {cb_price}");  // better not clutter the console
+                                        if ((cb_tickType == TickType.LAST) ||
                                             (((cb_tickType == TickType.ASK) || (cb_tickType == TickType.BID)) && (cb_mktDataSubscr.Contract.SecType != "IND"))) // for stocks or for Futures
-                                        priceTickARE.Set();
+                                            priceTickARE.Set();
                                     });    // as Snapshot, not streaming data
                                 tickerList[i] = new Tuple<string, Dictionary<int, PriceAndTime>?, int>(tickerList[i].Item1, null, mktDataId);
                             }
                         }
 
                         // instead of Thread.Sleep(2000);  // wait until data is here; TODO: make it sophisticated later
-                        //Thread.Sleep(2000);
+                        // Thread.Sleep(2000);
                         int iTimeoutCount = 0;
                         DateTime waitStartTime = DateTime.UtcNow;
-                        while (iTimeoutCount < 5)    // all these checks usually takes 0.1 seconds = 100msec, so do it every time after connection 
+                        while (iTimeoutCount < 5) // all these checks usually takes 0.1 seconds = 100msec, so do it every time after connection
                         {
                             bool isOneSignalReceived = priceTickARE.WaitOne(400);  // 400ms wait, max 5 times.
-                            if (isOneSignalReceived)   // so, it was not a timeout, but a real signal
+                            if (isOneSignalReceived) // so, it was not a timeout, but a real signal
                             {
                                 var waitingDuration = DateTime.UtcNow - waitStartTime;
                                 if (waitingDuration.TotalMilliseconds > 2000.0)
                                     break;  // if we wait more than 2 seconds, break the While loop
-
 
                                 bool isAllInfoReceived = true;
                                 for (int i = 0; i < tickerList.Count; i++)
@@ -162,16 +150,11 @@ public partial class Gateway
                                         Dictionary<int, PriceAndTime> rtPrices;
                                         if (sqTicker[0] == '^') // if Index, not stock. Index has only LastPrice and TickType.ClosePrice
                                         {
-                                            rtPrices = new Dictionary<int, PriceAndTime>() {    // we are interested in the following Prices
-                                                { TickType.LAST, new PriceAndTime() } };
+                                            rtPrices = new Dictionary<int, PriceAndTime>() { { TickType.LAST, new PriceAndTime() } }; // we are interested in the following Prices
                                         }
                                         else
                                         {
-                                            rtPrices = new Dictionary<int, PriceAndTime>() {    // we are interested in the following Prices
-                                                { TickType.ASK, new PriceAndTime() },
-                                                { TickType.BID, new PriceAndTime() },
-                                                //{ TickType.CLOSE, new PriceAndTime() },
-                                                { TickType.LAST, new PriceAndTime() } };
+                                            rtPrices = new Dictionary<int, PriceAndTime>() { { TickType.ASK, new PriceAndTime() }, { TickType.BID, new PriceAndTime() }, { TickType.LAST, new PriceAndTime() } }; // we are interested in the following Prices
                                         }
                                         if (BrokerWrapper.GetAlreadyStreamedPrice(contract, ref rtPrices))
                                         {
@@ -194,10 +177,8 @@ public partial class Gateway
                                 iTimeoutCount++;
                         }
 
-                        //Console.WriteLine($"Waiting for RT prices: {(DateTime.UtcNow - waitStartTime).TotalMilliseconds} ms.");  // don't clutter Console
+                        // Console.WriteLine($"Waiting for RT prices: {(DateTime.UtcNow - waitStartTime).TotalMilliseconds} ms.");  // don't clutter Console
                         Utils.Logger.Trace($"Waiting for RT prices: {(DateTime.UtcNow - waitStartTime).TotalMilliseconds} ms.");
-
-
                     }
                     catch (Exception e)
                     {
@@ -227,30 +208,29 @@ public partial class Gateway
 
                 string sqTicker = tickerItem.Item1;
                 var rtPrices = tickerItem.Item2;
-                bool isTemporaryTicker = (tickerItem.Item3 != -1); // if it is temporary ticker
+                bool isTemporaryTicker = tickerItem.Item3 != -1; // if it is temporary ticker
                 if (rtPrices == null)
                 {
                     jsonResultBuilder.AppendFormat(@"{{""Symbol"":""{0}""}}", sqTicker);  // Data is not given
                 }
                 else
                 {
-
                     // I wanted to return only Ask/Bid, but because Indices has only LastPrice (no Ask, Bid), I gave up: let's return LastPrice for stocks too
-                    //PriceAndTime ask, bid;
-                    //isFound = priceInfo.TryGetValue(TickType.AskPrice, out ask);
-                    //if (!isFound)
+                    // PriceAndTime ask, bid;
+                    // isFound = priceInfo.TryGetValue(TickType.AskPrice, out ask);
+                    // if (!isFound)
                     //    return @"{ ""Message"":  ""No askprice yet. Maybe later."" }";
-                    //isFound = priceInfo.TryGetValue(TickType.BidPrice, out bid);
-                    //if (!isFound)
+                    // isFound = priceInfo.TryGetValue(TickType.BidPrice, out bid);
+                    // if (!isFound)
                     //    return @"{ ""Message"":  ""No bidprice yet. Maybe later."" }";
-                    //jsonResultBuilder.AppendFormat(@"{{""Symbol"": ""{0}"", ""Ask"": {1}, ""Bid"", {2} }}", ticker, ask.Price, bid.Price);
+                    // jsonResultBuilder.AppendFormat(@"{{""Symbol"": ""{0}"", ""Ask"": {1}, ""Bid"", {2} }}", ticker, ask.Price, bid.Price);
 
                     // Warning. I am not sure why this return "" things is here inside the for loop. We may have to eliminate it. or change it to continue.
                     PriceAndTime? ask = null, bid = null;
                     bool isFound = rtPrices.TryGetValue(TickType.LAST, out PriceAndTime? last);
                     if (!isFound)
                         return resultPrefix + @"{ ""Message"":  ""No last price yet. Maybe later."" }" + resultPostfix;    // this didn't happen with the Fixed tickers, as the records are already in the Array at Program start
-                    
+
                     if (sqTicker[0] != '^')
                     {
                         isFound = rtPrices.TryGetValue(TickType.ASK, out ask);
@@ -271,21 +251,23 @@ public partial class Gateway
                         highestOfAllTime = ask.Time;
                     if (bid != null && bid.Time > highestOfAllTime)
                         highestOfAllTime = bid.Time;
-                    if (highestOfAllTime.AddHours(11) < DateTime.UtcNow)    // it was 10 hours at the beginning, but Robert wanted 17 hours; I still disagree, but increased from 10 to 11. It doesn't help with Snapshot prices, because IBGateway doesn't give price for them 10 hours after market close
+                    if (highestOfAllTime.AddHours(11) < DateTime.UtcNow) // it was 10 hours at the beginning, but Robert wanted 17 hours; I still disagree, but increased from 10 to 11. It doesn't help with Snapshot prices, because IBGateway doesn't give price for them 10 hours after market close
                     {
                         jsonResultBuilder.AppendFormat(@"{{""Symbol"":""{0}""}}", sqTicker);  // Data is too old.
                     }
                     else
-                    {   // last Data is not too old (we could have checked the Ask or Bid data, but Indices have only Last data
+                    {
+                        // last Data is not too old (we could have checked the Ask or Bid data, but Indices have only Last data
                         if (sqTicker[0] == '^') // if Index, not stock. Index has only LastPrice and TickType.ClosePrice
                         {
                             if (last == null || Double.IsNaN(last.Price))
                                 jsonResultBuilder.AppendFormat(@"{{""Symbol"":""{0}""}}", sqTicker);
                             else
-                                jsonResultBuilder.AppendFormat(@"{{""Symbol"":""{0}"",""LastUtc"":""{1:yyyy'-'MM'-'dd'T'HH:mm:ss}"",""Last"":{2},""UtcTimeType"":""{3}""}}", sqTicker, last.Time, last.Price, (isTemporaryTicker) ? "SnapshotTime" : "LastChangedTime");
+                                jsonResultBuilder.AppendFormat(@"{{""Symbol"":""{0}"",""LastUtc"":""{1:yyyy'-'MM'-'dd'T'HH:mm:ss}"",""Last"":{2},""UtcTimeType"":""{3}""}}", sqTicker, last.Time, last.Price, isTemporaryTicker ? "SnapshotTime" : "LastChangedTime");
                         }
                         else
-                        {   // stock or Futures, not Index
+                        {
+                            // stock or Futures, not Index
                             jsonResultBuilder.AppendFormat(@"{{""Symbol"":""{0}""", sqTicker);
 
                             bool isWrittenAnythingToOutput = false;
@@ -305,14 +287,14 @@ public partial class Gateway
                                 isWrittenAnythingToOutput = true;
                             }
 
-                            if (isWrittenAnythingToOutput)  // if we had no data, there is no point of writing the TimeType
+                            if (isWrittenAnythingToOutput) // if we had no data, there is no point of writing the TimeType
                             {
-                                jsonResultBuilder.AppendFormat(@",""UtcTimeType"":""{0}""", (isTemporaryTicker) ? "SnapshotTime" : "LastChangedTime");
+                                jsonResultBuilder.AppendFormat(@",""UtcTimeType"":""{0}""", isTemporaryTicker ? "SnapshotTime" : "LastChangedTime");
                             }
 
                             jsonResultBuilder.Append('}');
                         }
-                    }   // last data is not too old
+                    } // last data is not too old
                 }
 
                 isFirstTickerWrittenToOutput = true;
@@ -321,7 +303,6 @@ public partial class Gateway
             jsonResultBuilder.Append(@"]" + resultPostfix);
             Utils.Logger.Info("GetRealtimePriceService() ended properly: " + jsonResultBuilder.ToString());
             return jsonResultBuilder.ToString();
-
         }
         catch (Exception e)
         {

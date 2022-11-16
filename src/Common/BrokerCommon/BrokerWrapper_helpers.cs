@@ -1,14 +1,12 @@
-using IBApi;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
+using IBApi;
 
 namespace BrokerCommon;
 
-public class PriceAndTime      // it makes sense to store Time, because values older than X hours cannot be used, even if they are stored in the RAM
+public class PriceAndTime // it makes sense to store Time, because values older than X hours cannot be used, even if they are stored in the RAM
 {
     public double Price = Double.NaN;
     public DateTime Time = new(1950, 1, 1);    // a very old date
@@ -43,15 +41,15 @@ public class MktDataSubscription
     public int PreviousMktDataType { get; set; } = -1;
     public Timer? CheckDataIsAliveTimer { get; set; }
 
-    //public AutoResetEvent m_priceTickARE = new AutoResetEvent(false);
+    // public AutoResetEvent m_priceTickARE = new AutoResetEvent(false);
 
-    //public int MktDataTickerID { get; set; }
+    // public int MktDataTickerID { get; set; }
 
     public ConcurrentDictionary<int, PriceAndTime> Prices { get; set; }
     // Do we get this value every second really?, even if no new Ask or Bid Price has changed? If that is true, it is a good validator that we have the current price data or not.
     // If we don't get TimeStamp every second, we can use the Time value in the PriceAndTime() to know when did we received the data.
     // This tick represents "timestamp of the last Last tick" value in seconds (counted from 00:00:00 1 Jan 1970 UTC).  Value: 1457126686, which is a UNIX timestamp epoch: https://www.epochconverter.com/  seconds since Jan 01 1970. (UTC)
-    public string LastTimestampStr { get; set; } = "0";   // store it quickly in i String, it arrives in a string. Do not process it unnecessarily.  
+    public string LastTimestampStr { get; set; } = "0";   // store it quickly in i String, it arrives in a string. Do not process it unnecessarily.
 
     public MktDataSubscription(Contract p_contract)
     {
@@ -80,7 +78,6 @@ public class HistDataSubscription
     }
 }
 
-
 public enum OrderStatus
 {
     /// <summary>
@@ -89,59 +86,59 @@ public enum OrderStatus
     /// This order status is not sent by TWS and should be explicitly set by the API developer when an order is submitted.
     /// </summary>
     PendingSubmit,
-    /// <summary>
-    /// PendingCancel - indicates that you have sent a request to cancel the order
-    /// but have not yet received cancel confirmation from the order destination.
-    /// At this point, your order is not confirmed canceled. You may still receive
-    /// an execution while your cancellation request is pending.
-    /// This order status is not sent by TWS and should be explicitly set by the API developer when an order is canceled.
-    /// </summary>
+    // <summary>
+    // PendingCancel - indicates that you have sent a request to cancel the order
+    // but have not yet received cancel confirmation from the order destination.
+    // At this point, your order is not confirmed canceled. You may still receive
+    // an execution while your cancellation request is pending.
+    // This order status is not sent by TWS and should be explicitly set by the API developer when an order is canceled.
+    // </summary>
     PendingCancel,
-    /// <summary>
-    /// indicates that a simulated order type has been accepted by the IB system and
-    /// that this order has yet to be elected. The order is held in the IB system
-    /// (and the status remains DARK BLUE) until the election criteria are met.
-    /// At that time the order is transmitted to the order destination as specified
-    /// (and the order status color will change).
-    /// </summary>
+    // <summary>
+    // indicates that a simulated order type has been accepted by the IB system and
+    // that this order has yet to be elected. The order is held in the IB system
+    // (and the status remains DARK BLUE) until the election criteria are met.
+    // At that time the order is transmitted to the order destination as specified
+    // (and the order status color will change).
+    // </summary>
     PreSubmitted,
-    /// <summary>
-    /// indicates that your order has been accepted at the order destination and is working.
-    /// </summary>
+    // <summary>
+    // indicates that your order has been accepted at the order destination and is working.
+    // </summary>
     Submitted,
-    /// <summary>
-    /// indicates that the balance of your order has been confirmed canceled by the IB system.
-    /// This could occur unexpectedly when IB or the destination has rejected your order.
-    /// </summary>
+    // <summary>
+    // indicates that the balance of your order has been confirmed canceled by the IB system.
+    // This could occur unexpectedly when IB or the destination has rejected your order.
+    // </summary>
     Canceled,
-    /// <summary>
-    /// The order has been completely filled.
-    /// </summary>
+    // <summary>
+    // The order has been completely filled.
+    // </summary>
     Filled,
-    /// <summary>
-    /// The Order is inactive
-    /// </summary>
+    // <summary>
+    // The Order is inactive
+    // </summary>
     Inactive,
-    /// <summary>
-    /// The order is Partially Filled
-    /// </summary>
+    // <summary>
+    // The order is Partially Filled
+    // </summary>
     PartiallyFilled,
-    /// <summary>
-    /// Api Pending
-    /// </summary>
+    // <summary>
+    // Api Pending
+    // </summary>
     ApiPending,
-    /// <summary>
-    /// Api Cancelled
-    /// </summary>
+    // <summary>
+    // Api Cancelled
+    // </summary>
     ApiCancelled,
-    /// <summary>
-    /// Indicates that there is an error with this order
-    /// This order status is not sent by TWS and should be explicitly set by the API developer when an error has occured.
-    /// </summary>
+    // <summary>
+    // Indicates that there is an error with this order
+    // This order status is not sent by TWS and should be explicitly set by the API developer when an error has occured.
+    // </summary>
     Error,
-    /// <summary>
-    /// No Order Status
-    /// </summary>
+    // <summary>
+    // No Order Status
+    // </summary>
     MinFilterSkipped,
     MaxFilterSkipped,
     Unrecognized,
@@ -171,7 +168,6 @@ public class OrderSubscription
         Order = order;
     }
 }
-
 
 public interface IBrokerWrapper : EWrapper
 {

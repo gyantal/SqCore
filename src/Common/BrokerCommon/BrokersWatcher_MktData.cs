@@ -1,7 +1,7 @@
-﻿using IBApi;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using IBApi;
 using Utils = SqCommon.Utils;
 
 namespace BrokerCommon;
@@ -30,7 +30,6 @@ public class MktData
     }
 }
 
-
 public partial class BrokersWatcher
 {
     struct MktDataProgress
@@ -39,7 +38,7 @@ public partial class BrokersWatcher
         internal int NumQueried { get; set; } = 0;
         internal int NumArrived { get; set; } = 0;
         internal int NumError { get; set; } = 0;
-        internal int NumMissing { get { return NumQueried - NumArrived - NumError; } }   // nMissing = nQueried - nArrived - nError(arrived)
+        internal int NumMissing { get { return NumQueried - NumArrived - NumError; } } // nMissing = nQueried - nArrived - nError(arrived)
 
         internal bool IsAllReceived { get { return (NumArrived + NumError) >= NumQueried; } }
 
@@ -89,12 +88,12 @@ public partial class BrokersWatcher
     // ReqMktData(1006) CB: 930.08 ms. bidPrice: -1
     // ReqMktData(1006) CB: 931.57 ms. askPrice: 1
     // Received PriorClose = 0.12. Good. In IB TWS: Bid = NaN, Ask= 1.0, from this, we cannot have EstPrice. IbMarkPrice is 0.11, but snapshot-data has no Mark price, which is fine.
-    // >If we do streaming price (instead of snapshot) we could have IbMarkPrice. But for better resource management, this is not that important. 
+    // >If we do streaming price (instead of snapshot) we could have IbMarkPrice. But for better resource management, this is not that important.
     // These exceptional penny-options are marginal positions. The situation exists because its values are close to 0, so there is no Bid. Nobody wants to buy it, only sell.
-    // >If EstPrice is missing, in theory we can estimate it with the Average = Ask/Bid = 0+1.0= 0.50, but that would be a grossly overestimate, as IbMark = 0.11, and PriorClose = 0.12. 
+    // >If EstPrice is missing, in theory we can estimate it with the Average = Ask/Bid = 0+1.0= 0.50, but that would be a grossly overestimate, as IbMark = 0.11, and PriorClose = 0.12.
     // In this special case (When there is no buying Bid (-1)) fake an EstPrice as Ask/4 that is quite close to IbMark. Even in this cases IB estimates an IbMark and uses that for further calculations
 
-    // 2021-12-07: Case Study 2: Missing priorClose: 'QQQ   220121P00100000' and many others. 
+    // 2021-12-07: Case Study 2: Missing priorClose: 'QQQ   220121P00100000' and many others.
     // [with Snapshot]  IB.ReqMktData() #OkEstPrice: 11 in 14,  #OkPriorClose: 6 in 14, #OkDelta: 14 in 14 in 13.184sec.
     // [with Streaming] IB.ReqMktData() #OkEstPrice: 13 in 14,  #OkPriorClose: 14 in 14, #OkDelta: 14 in 14 in 60.723sec.
     // So, streaming and snapshot: no difference. (stick to Snapshot if possible)
@@ -112,7 +111,7 @@ public partial class BrokersWatcher
     // Next time try to restart only TWS, not the whole VM. So, the problem is probably in IbTWS, we might have to restart TWS before RTH daily. Or we have to upgrade TWS version too, hope that they solved it in the new TWS version.
     // But next time it happens: quick solution: restart TWS or the Linux server.
 
-    // 2022-07-06: 
+    // 2022-07-06:
     // >Upgrading IB TWS to the latest. Maybe that solves the missing ClosePrice problem?
     // The live running release is IB TWS version: 10.12.2e, 2021-12-29. Only 6 month old.
     // The current stable release is almost the same: Stable: "Version 10.12.2o"
@@ -120,10 +119,10 @@ public partial class BrokersWatcher
     // I cannot install the "Latest" "Version 10.16.1k - May 27, 2022", because in 10.15 they redesigned the login, so that will break our automatic login.
 
     // >Trying to restart only WebServer, or TWS or Linux
-    // IB.ReqMktData. #OkEstPr: 8 in 8, #OkPriorCls: 7 in 8, #OkDelta: 8 in 8 
+    // IB.ReqMktData. #OkEstPr: 8 in 8, #OkPriorCls: 7 in 8, #OkDelta: 8 in 8
     // >1. Restarting TWS
     //  "IB.ReqMktData. #OkEstPr: 8 in 8, #OkPriorCls: 7 in 8, #OkDelta: 8 in 8
-    // >2. Restarting Linux , 
+    // >2. Restarting Linux ,
     // >First runnig of webserver. "IB.ReqMktData. #OkEstPr: 8 in 8, #OkPriorCls: 7 in 8, #OkDelta: 5 in 8
     // Made it worse. Now, Deltas are missing too.
     // >Second running of the webserver: " #OkEstPr: 8 in 8, #OkPriorCls: 8 in 8, #OkDelta: 8 in 8 in 1.959sec"
@@ -131,7 +130,7 @@ public partial class BrokersWatcher
     // >Third run: " IB.ReqMktData. #OkEstPr: 8 in 8, #OkPriorCls: 7 in 8, #OkDelta: 8 in 8
     // Eh. So, the closeprice can be missing, even if we restart Linux. It is random whether we receive it or not from IbTWS.
 
-    // >Conclusion: 
+    // >Conclusion:
     // - the missing closePrice cannot be solved by upgrading IbTWS
     // - the missing closePrice cannot be solved by restarting TWS or restarting Linux.
     // - the SqCore code should be ready for missing closePrice data. Using NaN in MemDb can signal that the number is missing. Don't use 0 or -1.
@@ -151,14 +150,14 @@ public partial class BrokersWatcher
         // If Sleep every time, we can query 20 tickers per sec, 100 needs 5 sec. However, if we do a burst of 50 once, second burst of 50 can bring 100 in 2 seconds.
 
         // try to avoid pacing violation at TWS", the above lousy "sleep" is in milliseconds assures the ReqMktDataStream() happens only 50 times per second
-        //int c_IbPacingViolationSleepMs = 1000 / 1000;  // MTS.TWS: first time OK, second time: "Max rate of messages per second has been exceeded:max=50 rec=161", so target 120
-        //int c_IbPacingViolationSleepMs = 1000 / 120; // MTS.TWS: first time OK, second time: "Max rate of messages per second has been exceeded:max=50 rec=134", so target 90
-        //int c_IbPacingViolationSleepMs = 1000 / 90; // MTS.TWS: first,second,third time OK, fourth time: "Max rate of messages per second has been exceeded:max=50 rec=58", so target 60
-        //int c_IbPacingViolationSleepMs = 1000 / 60; // MTS.TWS: first,second,third time OK, fourth time: "Max rate of messages per second has been exceeded:max=50 rec=51", so target 50
-        //int c_IbPacingViolationSleepMs = 1000 / 50;     // " Warning: Approaching max rate of 50 messages per second (48)". But if I query it quickly, even with this it can give an exceeded rec=71. So, don't start the next query too quickly.
+        // int c_IbPacingViolationSleepMs = 1000 / 1000;  // MTS.TWS: first time OK, second time: "Max rate of messages per second has been exceeded:max=50 rec=161", so target 120
+        // int c_IbPacingViolationSleepMs = 1000 / 120; // MTS.TWS: first time OK, second time: "Max rate of messages per second has been exceeded:max=50 rec=134", so target 90
+        // int c_IbPacingViolationSleepMs = 1000 / 90; // MTS.TWS: first,second,third time OK, fourth time: "Max rate of messages per second has been exceeded:max=50 rec=58", so target 60
+        // int c_IbPacingViolationSleepMs = 1000 / 60; // MTS.TWS: first,second,third time OK, fourth time: "Max rate of messages per second has been exceeded:max=50 rec=51", so target 50
+        // int c_IbPacingViolationSleepMs = 1000 / 50;     // " Warning: Approaching max rate of 50 messages per second (48)". But if I query it quickly, even with this it can give an exceeded rec=71. So, don't start the next query too quickly.
         int c_IbPacingViolationSleepMs = 1000 / 40; // " Warning: Approaching max rate of 50 messages per second (48)", and I tried to be very quick, but I couldn't do error. Good. Keep this.   Queried: 96; sending time for Est prices and CancelMktData: 2*2380 ms
 
-        // Option QQQ 20220121Put100: its value is very low. Bid=None, Ask = 0.02. No wonder its PriorClose (in TWS) = 0.0. But Ib gives proper 0.0 value 80% of the time, with snapshot data 20% of the time it is not filled and left as NaN. 
+        // Option QQQ 20220121Put100: its value is very low. Bid=None, Ask = 0.02. No wonder its PriorClose (in TWS) = 0.0. But Ib gives proper 0.0 value 80% of the time, with snapshot data 20% of the time it is not filled and left as NaN.
         // But changing snapshot to streaming and waiting 26sec didn't solve it. Still have: IB.MktData: Missing priorClose: 'ARKG  211217C00094210' (even with streaming). Same problem there. Bid=None, PriorClose in TWS is 0.0.
         // Maybe we should do the same here as TWS. If PriorClose doesn't come, assume it as 0.0. (although do it at higher level of code, not here)
         bool isStreamMktData = false;       // Stream or Snapshot. Prefer snapshot mode if possible because less resources. Although IbMarkPrice works only in stream mode, not in snapshot.
@@ -169,7 +168,7 @@ public partial class BrokersWatcher
         foreach (var mktData in p_mktDatas)
         {
             Contract contract = mktData.Contract;
-            if ((contract.Currency != "USD") || (contract.SecType == "WAR") || 
+            if ((contract.Currency != "USD") || (contract.SecType == "WAR") ||
                 (!String.IsNullOrEmpty(contract.Exchange) && (contract.Exchange == "CORPACT" || contract.Exchange == "VALUE" || contract.Exchange == "PINK")))
             {
                 // 2018-12:  Instead of about 150 positions, we decrease it to 96.  Helps in IB pacing restriction (50 msg per sec).
@@ -205,22 +204,22 @@ public partial class BrokersWatcher
             // ibGateway = m_gateways.FirstOrDefault(r => r.GatewayId == GatewayId.GyantalMain);    // DEBUG
             if (ibGateway == null)
                 return false;
-            Thread.Sleep(c_IbPacingViolationSleepMs);    // OK.  "Waiting for RT prices: 396.23 ms. Queried: 96; AllUser_AccPos_WithEstPrices ends in 5277ms". 
+            Thread.Sleep(c_IbPacingViolationSleepMs);    // OK.  "Waiting for RT prices: 396.23 ms. Queried: 96; AllUser_AccPos_WithEstPrices ends in 5277ms".
             int mktDataId = ibGateway.BrokerWrapper.ReqMktDataStream(contract, isStreamMktData ? "221" : string.Empty, !isStreamMktData,  // "221" is the code for MarkPrice. If data is streamed continously and then we ask one snapshot of the same contract, snapshot returns currently, and stream also correctly continues later. As expected.
-                (cb_mktDataId, cb_mktDataSubscr, cb_tickType, cb_price) =>  // MktDataArrived callback
+                (cb_mktDataId, cb_mktDataSubscr, cb_tickType, cb_price) => // MktDataArrived callback
                 {
                     Utils.Logger.Trace($"{cb_mktDataSubscr.Contract.Symbol} : {TickType.getField(cb_tickType)}: {cb_price}");
                     // if (cb_mktDataSubscr.Contract.SecType == "OPT" && cb_mktDataSubscr.Contract.Symbol == "SVXY" && cb_mktDataSubscr.Contract.Strike == 15.00)    // for DEBUGGING
-                    if (cb_mktDataSubscr.Contract.SecType == "OPT" && cb_mktDataSubscr.Contract.LocalSymbol == "QQQ   230120C00565000")    // for DEBUGGING
+                    if (cb_mktDataSubscr.Contract.SecType == "OPT" && cb_mktDataSubscr.Contract.LocalSymbol == "QQQ   230120C00565000") // for DEBUGGING
                         Console.WriteLine($"ReqMktData({cb_mktDataSubscr.MarketDataId}) CB: {(DateTime.UtcNow - startTime).TotalMilliseconds:0.00} ms. {TickType.getField(cb_tickType)}: {cb_price}");
 
-                    if (cb_tickType == TickType.CLOSE)  // Prior Close, Previous day Close price.
+                    if (cb_tickType == TickType.CLOSE) // Prior Close, Previous day Close price.
                     {
                         mktData.PriorClosePrice = cb_price; // should we do priceOrDeltaTickARE.Set(); and wait for all PriorClose as well? Probably.
                         progressPriorClose.TickerDataArrived(mktData.Contract.LocalSymbol);
                     }
                     // 2021-12-01: OTH: ASK = BID = -1, but LAST is given.
-                    // Store both IbMarkPrice and LastPrice too. And any of them is fine. Sometimes both are given, but at the weekend only LastPrice is given no IbMarkPrice. So, we cannot rely on that. 
+                    // Store both IbMarkPrice and LastPrice too. And any of them is fine. Sometimes both are given, but at the weekend only LastPrice is given no IbMarkPrice. So, we cannot rely on that.
                     // However, until we wait for other prices, maybe we got the better MarkPrice. If it is given, use the MarkPrice, otherwise the LastPrice. Store both temporarily.
                     if ((cb_tickType == TickType.MARK_PRICE) || (cb_tickType == TickType.LAST))
                     {
@@ -228,7 +227,7 @@ public partial class BrokersWatcher
                             mktData.IbMarkPrice = cb_price;
                         if (cb_tickType == TickType.LAST)
                             mktData.LastTradePrice = cb_price;
-                        if (Double.IsNaN(mktData.EstPrice))    // only increase the nKnownConIdsPrReadyOk counter once when we turn from NaN to a proper number.
+                        if (Double.IsNaN(mktData.EstPrice)) // only increase the nKnownConIdsPrReadyOk counter once when we turn from NaN to a proper number.
                         {
                             mktData.EstPrice = cb_price;
                             progressEstPrice.TickerDataArrived(mktData.Contract.LocalSymbol);
@@ -253,23 +252,23 @@ public partial class BrokersWatcher
                     //      Ask < Last - the mark price is equal to the ASK price.
                     //      Bid > Last - the mark price is equal to the BID price.
                     // !!Using IbMarkPrice: query of 58 contracts returns in 130msec, so it is twice as fast as getting LastPrice
-                    // For IbMarkPrice. Snapshot gives error. I have to do Stream to get IBMarkPrice. Fine. 
+                    // For IbMarkPrice. Snapshot gives error. I have to do Stream to get IBMarkPrice. Fine.
                     //      But with stream, we have to CancelMktData, which is a problem if we do 93 queries, because  IB pacing restriction (TWS: 50 requests/sec)
                     // However, at the weekends or on holidays, IBservers are down, and they don't give IbMarkPrice. So, we have to use LastPrice anyway.
                     // Indices only have LastPrice, no Ask,Bid
-                    // Decision: 
-                    // 1. for stocks: Don't waith for AskBid, because it may never given or comes only at TickSnapshotEnd after 5 sec. 
+                    // Decision:
+                    // 1. for stocks: Don't waith for AskBid, because it may never given or comes only at TickSnapshotEnd after 5 sec.
                     // one option is to use LastPrice, which is there always. However, it may be too far from a realistic ask-bid MidPrice after Market close.
                     // The best is use IbMarkPrice estimate, because I checked and it is reliably given for all stocks. And it is more honest than LastPrice.
                     // However, because of IB pacing restriction, we should prefer Snapshot, which doesn't allow IbMarkPrice. Let's do this for now.
                     // Note that at the weekend, even liquid stocks (IDX,AFK,PM,IBKR,VBR) in snapshot mode or stream returns nothing. (Just MarketDataType(2first,1later), not even LastPrice, or IbMarkPrice).
-                    // In that case, there is nothing to do but return 0. But the question is how can TWS estimate the MktVal then? 
+                    // In that case, there is nothing to do but return 0. But the question is how can TWS estimate the MktVal then?
                     // TODO: Maybe TWS uses historicalData (not realtime) then when we don't have RT data, but it would delay the query again. So, skip it for now.
                     // During market hours, which is important we can return the correct data.
                     // 2. for options: IbMarkPrice is not available, LastPrice can be too old, so the only way to use AskBid
 
                     // AskBid is good for both options and stocks if it is given.
-                    // we have to use it even for stocks. TMF stock, even in regular trading hours, on AutoTraderServer: only askBid comes, no LastPr. 
+                    // we have to use it even for stocks. TMF stock, even in regular trading hours, on AutoTraderServer: only askBid comes, no LastPr.
                     // However, on ManualTradingServer (Ireland), it is not a problem. So, we have to use AskBid for stocks for Agy account.
                     // TODO: if both Ask,Bid = -1 (no data), use PrClose price, which is given many times.
                     if ((cb_tickType == TickType.ASK) || (cb_tickType == TickType.BID))
@@ -280,7 +279,7 @@ public partial class BrokersWatcher
                             mktData.BidPrice = cb_price;
 
                         // some stocks have proper LastPrice and MarkPrice, but later ask/bid comes as -1/-1 meaning no ask-bid. And because we round that -1 to 0 properly, we have a proposedPrice = 0.
-                        // assure that a '0' proposedPrice will not overwrite a previously correct lastPrice 
+                        // assure that a '0' proposedPrice will not overwrite a previously correct lastPrice
                         // sometimes Ask or Bid that comes is -1 (even for stock MVV), which shows that Bid is missing (nobody is willing to buy). For non-liquid options, this is acceptable. Round them to 0, or use LastTradedPrice in that case
                         // But if both ask and bid is -1, then don't accept the price, but wait for more data
                         bool isAskBidAcceptable = (!Double.IsNaN(mktData.AskPrice)) && (!Double.IsNaN(mktData.BidPrice));
@@ -291,11 +290,12 @@ public partial class BrokersWatcher
                             // so NOT acceptable = when (Ask = -1 && Bid == -1) at the same time
                             isAskBidAcceptable = !((mktData.AskPrice == -1.0) && (mktData.BidPrice == -1.0));
                             if (isAskBidAcceptable && !isInRegularUsaTradingHoursNow)
-                            {   // sometimes before premarket: ask: 8.0 Bid: 100,000.01. In that case, don't accept it as a correct AskBid
+                            {
+                                // sometimes before premarket: ask: 8.0 Bid: 100,000.01. In that case, don't accept it as a correct AskBid
                                 // but BRK.A is "340,045" and legit. So, big values should be accepted if both Ask, Bid is big.
                                 // if it is premarket, check that their difference, the AskBid spread is also small. If not, ignore them (and later LastClose will be given back)
                                 // NOTE: maybe this should be considered an error, no matter if it is isInRegularUsaTradingHoursNow or not.
-                                isAskBidAcceptable = (Math.Abs(Math.Abs(mktData.AskPrice) - Math.Abs(mktData.BidPrice)) < 90000);
+                                isAskBidAcceptable = Math.Abs(Math.Abs(mktData.AskPrice) - Math.Abs(mktData.BidPrice)) < 90000;
                             }
                         }
                         if (isAskBidAcceptable)
@@ -307,7 +307,7 @@ public partial class BrokersWatcher
                                 proposedPrice = pAsk / 4;   //  in this special case fake an EstPrice as Ask/4 that is quite close to IbMark.
                             else
                                 proposedPrice = (pAsk + pBid) / 2.0;
-                            if (Double.IsNaN(mktData.EstPrice))    // only increase the nKnownConIdsPrReadyOk counter once when we turn from NaN to a proper number.
+                            if (Double.IsNaN(mktData.EstPrice)) // only increase the nKnownConIdsPrReadyOk counter once when we turn from NaN to a proper number.
                             {
                                 mktData.EstPrice = proposedPrice;
                                 progressEstPrice.TickerDataArrived(mktData.Contract.LocalSymbol);
@@ -320,7 +320,7 @@ public partial class BrokersWatcher
                         }
                     }
                 },
-                (cb_mktDataId, cb_mktDataSubscr, cb_errorCode, cb_errorMsg) =>  // MktDataError callback
+                (cb_mktDataId, cb_mktDataSubscr, cb_errorCode, cb_errorMsg) => // MktDataError callback
                 {
                     Utils.Logger.Trace($"Error in ReqMktDataStream(). {cb_mktDataSubscr.Contract.Symbol} : {cb_errorCode}: {cb_errorMsg}");
                     mktData.EstPrice = 0;
@@ -328,30 +328,32 @@ public partial class BrokersWatcher
                     priceOrDeltaTickARE.Set();
                 },
                 (cb_mktDataId, cb_mktDataSubscr, cb_field, cb_value) => // MktDataTickGeneric callback. (e.g. MarkPrice) Assume this is the last callback for snapshot data. (!Not true for OTC stocks, but we only use this for options) Note sometimes it is not called, only Ask,Bid is coming.
-                {  // Tick Id:1222, Field: halted, Value: 0
+                {
+                    // Tick Id:1222, Field: halted, Value: 0
                     // HALTED means the trading is halted. It happens around midnight. OTH.
                     Utils.Logger.Trace($"TickGeneric in ReqMktDataStream(). {cb_mktDataSubscr.Contract.Symbol} : {TickType.getField(cb_field)}: {cb_value}");
-                    if (cb_mktDataSubscr.Contract.SecType == "OPT" && cb_mktDataSubscr.Contract.LocalSymbol == "QQQ   230120C00565000")    // for DEBUGGING
+                    if (cb_mktDataSubscr.Contract.SecType == "OPT" && cb_mktDataSubscr.Contract.LocalSymbol == "QQQ   230120C00565000") // for DEBUGGING
                         Console.WriteLine($"ReqMktData({cb_mktDataSubscr.MarketDataId}) CB: {(DateTime.UtcNow - startTime).TotalMilliseconds:0.00} ms. {TickType.getField(cb_field)}: {cb_value}");
 
                     if ((cb_mktDataSubscr.Contract.SecType == "IND") || (cb_mktDataSubscr.Contract.SecType == "STK"))
                     { // do nothing. LastPrice is already filled
                     }
                     else // SecType == "OPT"
-                    {   // maybe only Ask or only Bid was given (correctly, because they don't exist at all for far OTM options)
+                    {
+                        // maybe only Ask or only Bid was given (correctly, because they don't exist at all for far OTM options)
                         if (Double.IsNaN(mktData.EstPrice))
                         {
-                            double pAsk = (Double.IsNaN(mktData.AskPrice)) ? 0.0 : mktData.AskPrice;
-                            double pBid = (Double.IsNaN(mktData.BidPrice)) ? 0.0 : mktData.BidPrice;
+                            double pAsk = Double.IsNaN(mktData.AskPrice) ? 0.0 : mktData.AskPrice;
+                            double pBid = Double.IsNaN(mktData.BidPrice) ? 0.0 : mktData.BidPrice;
 
-                            // If Bid is missing (-1), and Ask = 1.0, in theory we can estimate it with the Average = Ask/Bid = 0+1.0= 0.50, 
+                            // If Bid is missing (-1), and Ask = 1.0, in theory we can estimate it with the Average = Ask/Bid = 0+1.0= 0.50,
                             // but that would be a grossly overestimate, as IbMark = 0.11, and PriorClose = 0.12.
                             double proposedPrice;
                             if (Double.IsNaN(mktData.BidPrice) || mktData.BidPrice < 0.0) // == -1, If there is no Bid, only Ask (so nobody wants to buy)
                                 proposedPrice = pAsk / 4;   //  in this special case fake an EstPrice as Ask/4 that is quite close to IbMark.
                             else
                                 proposedPrice = (pAsk + pBid) / 2.0;
-                            if (Double.IsNaN(mktData.EstPrice))    // only increase the nKnownConIdsPrReadyOk counter once when we turn from NaN to a proper number.
+                            if (Double.IsNaN(mktData.EstPrice)) // only increase the nKnownConIdsPrReadyOk counter once when we turn from NaN to a proper number.
                             {
                                 mktData.EstPrice = proposedPrice;
                                 progressEstPrice.TickerDataArrived(mktData.Contract.LocalSymbol);
@@ -362,7 +364,7 @@ public partial class BrokersWatcher
                         }
                     }
                 },
-                (cb_mktDataId, cb_mktDataSubscr, cb_type) =>    // MktDataType callback
+                (cb_mktDataId, cb_mktDataSubscr, cb_type) => // MktDataType callback
                 {
                     Utils.Logger.Trace($"MarketDataType in ReqMktDataStream(). {cb_mktDataSubscr.Contract.Symbol} : {cb_type}");
                     // TMF, VXX can be Frozen(2) too after market close, or at weekend. It means that sometimes there is no more price data. So, we should signal to clients that don't expect more data. Don't wait.
@@ -372,9 +374,9 @@ public partial class BrokersWatcher
                     if (cb_mktDataSubscr.PreviousMktDataType == 2 && cb_type == 1)
                     {
                         // Note that at the weekend, even liquid stocks (IDX,AFK,PM,IBKR,VBR) in snapshot mode or stream returns nothing. (Just MarketDataType(2first,1later), not even LastPrice, or IbMarkPrice).
-                        // In that case, there is nothing to do but return 0. But the question is how can TWS estimate the MktVal then? 
+                        // In that case, there is nothing to do but return 0. But the question is how can TWS estimate the MktVal then?
                         // TODO: Maybe TWS uses historicalData then.
-                        if (Double.IsNaN(mktData.EstPrice))    // only increase the nKnownConIdsPrReadyOk counter once when we turn from NaN to a proper number.
+                        if (Double.IsNaN(mktData.EstPrice)) // only increase the nKnownConIdsPrReadyOk counter once when we turn from NaN to a proper number.
                         {
                             Utils.Logger.Trace($"MarketDataType in ReqMktDataStream(). Filling zero estimation for {cb_mktDataSubscr.Contract.Symbol}");
                             mktData.EstPrice = 0;
@@ -384,7 +386,8 @@ public partial class BrokersWatcher
                     }
                 },
                 (cb_mktDataId, cb_mktDataSubscr, cb_field, cd_impVol, cb_delta, cb_undPrice) => // MktDataTickOptionComputation callback.
-                {   // Tick Id:1222, Field: halted, Value: 0
+                {
+                    // Tick Id:1222, Field: halted, Value: 0
                     // 2021-12-01: OTH: ARKK option. MktDataTickOptionComputation callback is not called at all. Even after waiting for 16 seconds. Maybe it is only called in RTH.
                     Utils.Logger.Trace($"TickOptionComputation in ReqMktDataStream(). {cb_mktDataSubscr.Contract.Symbol} : {TickType.getField(cb_field)}: {cb_delta}, {cb_undPrice}");
                     // Console.WriteLine($"MktDataTickOptionCompu({cb_mktDataSubscr.MarketDataId}) CB: {(DateTime.UtcNow - waitEstPrStartTime).TotalMilliseconds:0.00} ms. {TickType.getField(cb_field)}: Delta: {cb_delta:0.##}");
@@ -392,7 +395,8 @@ public partial class BrokersWatcher
                     { // do nothing. LastPrice is already filled
                     }
                     else // SecType == "OPT"
-                    {  // TickOptionComputation() comes 4 times with 4 different IV; the lastly reported Delta seems to be the best.
+                    {
+                        // TickOptionComputation() comes 4 times with 4 different IV; the lastly reported Delta seems to be the best.
                         // if (cd_impVol != "1.79769313486232E+308")  = Double.MaxValue, but if that comes, then don't replace the last Delta values
                         // if cb_undPrice = 0.0, then every Greek value is computed wrongly, Gamma =0, Vega = 0, Delta = -1. That is a faulty data given after MOC.
                         if (cb_delta != Double.MaxValue && cb_undPrice != 0.0)
@@ -427,24 +431,24 @@ public partial class BrokersWatcher
         // ReqMktData() CB: 7652 ms. close: 9.7
         int iTimeoutCount = 0;
         // "a snapshot request will only return available data over the 11 second span; ",  https://interactivebrokers.github.io/tws-api/top_data.html#md_snapshot
-        int cMaxTimeout = ((isStreamMktData) ? 60 : 12) * 4;   // 6*4*250 = 6sec was not enough. Needed another 5sec for option Delta calculation. So, now do 16*4*250=16sec.
-        while (iTimeoutCount < cMaxTimeout)    // all these checks usually takes 0.1 seconds = 100msec, so do it every time after connection 
+        int cMaxTimeout = (isStreamMktData ? 60 : 12) * 4;   // 6*4*250 = 6sec was not enough. Needed another 5sec for option Delta calculation. So, now do 16*4*250=16sec.
+        while (iTimeoutCount < cMaxTimeout) // all these checks usually takes 0.1 seconds = 100msec, so do it every time after connection
         {
             bool isOneSignalReceived = priceOrDeltaTickARE.WaitOne(250);  // 250ms wait, max 4 * 12 times.
-            if (isOneSignalReceived)   // so, it was not a timeout, but a real signal
+            if (isOneSignalReceived) // so, it was not a timeout, but a real signal
             {
                 var waitingDuration = DateTime.UtcNow - startTime;
-                if (waitingDuration.TotalMilliseconds > cMaxTimeout * 250)    // OTH: waiting for 8 seconds is not enough to get Option.PriorClose price.
+                if (waitingDuration.TotalMilliseconds > cMaxTimeout * 250) // OTH: waiting for 8 seconds is not enough to get Option.PriorClose price.
                     break;  // if we wait more than 16 seconds, break the While loop
 
-                if (progressEstPrice.IsAllReceived)    // break from while if all is received
+                if (progressEstPrice.IsAllReceived) // break from while if all is received
                 {
                     // local Windoms TWS: "Time until having all EstPrices (and Deltas): "
                     // Only 37 prices: 1409.78 ms,  37 prices + 12 option deltas: 1762.84 ms, so we have to wait extra 300msec if we wait for option Deltas too. Fine. However, after MOC, on TWS Main, it took 11 seconds more to get all the Deltas.
                     if (!p_isNeedOptDelta)
                         break;
                     if (progressDelta.IsAllReceived)
-                        break; 
+                        break;
                 }
             }
             else
@@ -453,7 +457,7 @@ public partial class BrokersWatcher
                 int nMissingEstPrice = 0;
                 foreach (var mktData in p_mktDatas)
                 {
-                    if (Double.IsNaN(mktData.EstPrice))     // These shouldn't be here. These are the Totally Unexpected missing ones or the errors. Estimate missing numbers with zero.
+                    if (Double.IsNaN(mktData.EstPrice)) // These shouldn't be here. These are the Totally Unexpected missing ones or the errors. Estimate missing numbers with zero.
                     {
                         nMissingEstPrice++;
                         Utils.Logger.Trace($"Missing: '{mktData.Contract.LocalSymbol}', {mktData.MktDataID}");
@@ -463,7 +467,7 @@ public partial class BrokersWatcher
             }
         }
         string logMsg = $"IB.ReqMktData. #OkEstPr: {progressEstPrice.NumArrived} in {progressEstPrice.NumQueried}, #OkPriorCls: {progressPriorClose.NumArrived} in {progressPriorClose.NumQueried}, #OkDelta: {progressDelta.NumArrived} in {progressDelta.NumQueried} in {(DateTime.UtcNow - startTime).TotalSeconds:0.000}sec";
-        Utils.Logger.Trace(logMsg);  // RT prices: After MOC:185.5ms, during Market:FirstTime:900-1100ms,Next times:450-600ms, Local development all 58 stocks + options, Queried: 58, ReceivedOk: 57, ReceivedErr: 1, Missing: 0,  
+        Utils.Logger.Trace(logMsg);  // RT prices: After MOC:185.5ms, during Market:FirstTime:900-1100ms,Next times:450-600ms, Local development all 58 stocks + options, Queried: 58, ReceivedOk: 57, ReceivedErr: 1, Missing: 0,
         Console.WriteLine(logMsg);
         progressEstPrice.LogIfMissing();
         progressPriorClose.LogIfMissing();
@@ -475,14 +479,13 @@ public partial class BrokersWatcher
         {
             if (mktData.MktDataID != -1)
             {
-                if (isStreamMktData)    // if snapshot data, then no msg is sent to IB at Cancellation.
+                if (isStreamMktData) // if snapshot data, then no msg is sent to IB at Cancellation.
                     Thread.Sleep(c_IbPacingViolationSleepMs);
                 m_mainGateway.BrokerWrapper.CancelMktData(mktData.MktDataID);
             }
         }
         // string msg3 = $"CancelMktData (!we can do it later) in {(DateTime.UtcNow - cancelDataStartTime).TotalMilliseconds:0.00} ms";
-        // Utils.Logger.Trace(msg3);  // RT prices: After MOC:185.5ms, during Market:FirstTime:900-1100ms,Next times:450-600ms, Local development all 58 stocks + options, Queried: 58, ReceivedOk: 57, ReceivedErr: 1, Missing: 0,  
+        // Utils.Logger.Trace(msg3);  // RT prices: After MOC:185.5ms, during Market:FirstTime:900-1100ms,Next times:450-600ms, Local development all 58 stocks + options, Queried: 58, ReceivedOk: 57, ReceivedErr: 1, Missing: 0,
         return true;
     }
-
 }

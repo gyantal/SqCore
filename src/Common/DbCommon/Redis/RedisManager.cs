@@ -4,10 +4,10 @@ using StackExchange.Redis;
 
 namespace DbCommon;
 
-//https://redis.io/clients#c
-//https://stackoverflow.com/questions/33103441/difference-between-stackexchange-redis-and-servicestack-redis ServiceStack is fee based, so the free version has limitations
-//https://stackexchange.github.io/StackExchange.Redis/  free, under MIT licence, and it is the engine under StackOverflow (very high performance needs), so it is fast. Use that.
-//https://github.com/thepirat000/CachingFramework.Redis built on  StackExchange.Redis, extra features: tagging, serialization on a cluster of Redis servers (not needed now)
+// https://redis.io/clients#c
+// https://stackoverflow.com/questions/33103441/difference-between-stackexchange-redis-and-servicestack-redis ServiceStack is fee based, so the free version has limitations
+// https://stackexchange.github.io/StackExchange.Redis/  free, under MIT licence, and it is the engine under StackOverflow (very high performance needs), so it is fast. Use that.
+// https://github.com/thepirat000/CachingFramework.Redis built on  StackExchange.Redis, extra features: tagging, serialization on a cluster of Redis servers (not needed now)
 
 // Unlike Sql, ConnectionMultiplexer.Connect() is not caching connections, but rebuilt it again every time which takes 90ms. We have to handle connection caching.
 // Because Connect takes 80ms, in an app, we have to keep it somewhere globally, so we don't Connect to Redis every time.
@@ -15,14 +15,12 @@ namespace DbCommon;
 
 // Proper Lazy initialization: https://gigi.nullneuron.net/gigilabs/setting-up-a-connection-with-stackexchange-redis/
 
-
 public static partial class RedisManager
 {
-
     // sometimes we keep open connections to different Redis servers (local vs. server1 vs. server2). We need support for multiple connections.
     private static readonly ConcurrentDictionary<string, ConnectionMultiplexer> m_conns = new();
 
-    // "The point of ConnectionMultiplexer is to have just one ConnectionMultiplexer which is shared between all requests (which is why you want a static singleton); 
+    // "The point of ConnectionMultiplexer is to have just one ConnectionMultiplexer which is shared between all requests (which is why you want a static singleton);
     // that’s how it pipelines things to make them really efficient. If the connection dies you want it to automatically recover."
     // 1 ConnectionMultiplexer in general handles 2 physical connections and distribute the load between them.
     private static ConnectionMultiplexer? m_defaultMultiConns = null;

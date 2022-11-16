@@ -43,5 +43,5 @@ dotnet_diagnostic.CS8669.severity = none  # TODO: This is cryptic. Investigate l
 # "Roslyn apparently always ignores the project-level <Nullable>enable</Nullable> setting for generated code.". " => "have #nullable enable added to them explicitly"
 
 
-[*.{html,css,scss,ts,js}] # everything under this line to the end of the file refers only to the specified file extensions
+[*.{html,css,scss,ts,js,csproj}] # everything under this line to the end of the file refers only to the specified file extensions
 indent_size = 2

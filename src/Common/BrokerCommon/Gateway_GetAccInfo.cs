@@ -1,23 +1,19 @@
-﻿using SqCommon;
-using IBApi;
-using System;
-using System.Collections.Concurrent;
+﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
+using IBApi;
 using Utils = SqCommon.Utils;
-using System.Text;
-using System.Diagnostics;
 
 namespace BrokerCommon;
 
 public partial class Gateway
 {
+    private readonly object m_getAccountSummaryLock = new();
     List<BrAccSum> m_accSums = new();
     List<BrAccPos> m_accPoss = new();
     string[] m_exclSymbolsArr = Array.Empty<string>();
-    private readonly object m_getAccountSummaryLock = new();
 
     public void AccSumArrived(int p_reqId, string p_tag, string p_value, string p_currency)
     {
@@ -40,7 +36,7 @@ public partial class Gateway
         // 2018-11: EUR cash is coming ONLY on DeBlanzac account, not Main account, neither Agy, which also has many other currencies. Maybe it is only a 'virtual' cash FX position. Assume it is virtual, so ignore it.
         // if (p_contract.SecType == "CASH")
         //     return;
-        if (p_pos != 0.0 && !m_exclSymbolsArr.Contains(p_contract.Symbol))   // If a position is 0, it means we just sold it, but IB reports it during that day, because of Realized P&L. However, we don't need that position any more.
+        if (p_pos != 0.0 && !m_exclSymbolsArr.Contains(p_contract.Symbol)) // If a position is 0, it means we just sold it, but IB reports it during that day, because of Realized P&L. However, we don't need that position any more.
             m_accPoss.Add(new BrAccPos(p_contract) { Position = p_pos, AvgCost = p_avgCost });
     }
 
@@ -57,7 +53,7 @@ public partial class Gateway
         try
         {
             Stopwatch sw1 = Stopwatch.StartNew();
-            lock (m_getAccountSummaryLock)          // IB only allows one query at a time, so next client has to wait
+            lock (m_getAccountSummaryLock) // IB only allows one query at a time, so next client has to wait
             {
                 m_accSums = new List<BrAccSum>(); // delete old values
                 if (m_getAccountSummaryMres == null)
@@ -76,7 +72,7 @@ public partial class Gateway
                 }
                 else
                     result = m_accSums; // save it before releasing the lock, so other threads will not overwrite the result
-                //m_getAccountSummaryMres.Dispose();    // not necessary. We keep it for the next sessions for faster execution.
+                // m_getAccountSummaryMres.Dispose();    // not necessary. We keep it for the next sessions for faster execution.
             }
             sw1.Stop();
             Utils.Logger.Info($"ReqAccountSummary() ends in {sw1.ElapsedMilliseconds}ms GatewayId: '{this.GatewayId}', Thread Id= {Environment.CurrentManagedThreadId}");
@@ -100,7 +96,7 @@ public partial class Gateway
         try
         {
             Stopwatch sw2 = Stopwatch.StartNew();
-            lock (m_getAccountPositionsLock)          //ReqPositions() doesn't have a reqID, so if we allow multiple threads to do it at the same time, we cannot sort out the output
+            lock (m_getAccountPositionsLock) // ReqPositions() doesn't have a reqID, so if we allow multiple threads to do it at the same time, we cannot sort out the output
             {
                 m_accPoss = new List<BrAccPos>();  // delete old values
                 m_exclSymbolsArr = p_exclSymbolsArr;

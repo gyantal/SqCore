@@ -1,27 +1,25 @@
-﻿using IBApi;
-using SqCommon;
-using System;
-using System.Collections.Concurrent;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using IBApi;
+using SqCommon;
 using Utils = SqCommon.Utils;
 
 namespace BrokerCommon;
 
-public class SavedState : PersistedState   // data to persist between restarts of the vBroker process: settings that was set up by client, or OptionCrawler tickerList left to crawl
+public class SavedState : PersistedState // data to persist between restarts of the vBroker process: settings that was set up by client, or OptionCrawler tickerList left to crawl
 {
     public bool IsSendErrorEmailAtGracefulShutdown { get; set; } = true;   // switch this off before deployment, and switch it on after deployment; make functionality on the WebSite
 }
 
-
 // this is the Trading Risk Manager Agent. The gateway for trading.
-public partial class BrokersWatcher
+public partial class BrokersWatcher : IDisposable
 {
     public static readonly BrokersWatcher gWatcher = new();   // Singleton pattern
-    const double cReconnectTimerFrequencyMinutes = 15; 
+    const double cReconnectTimerFrequencyMinutes = 15;
     System.Threading.Timer? m_reconnectTimer = null;
     SavedState m_persistedState = new();
     List<Gateway> m_gateways = new();
@@ -29,6 +27,8 @@ public partial class BrokersWatcher
     Gateway? m_mainGateway = null;  // m_mainGateway can be null, if we Debug WebSite code and no gateway is attached at all
 
     bool m_isSupportPreStreamRealtimePrices;
+    private bool disposedValue;
+
     public SavedState PersistedState
     {
         get
@@ -51,33 +51,30 @@ public partial class BrokersWatcher
         m_isSupportPreStreamRealtimePrices = isSupportPreStreamRealtimePricesStr != null && isSupportPreStreamRealtimePricesStr.ToUpper() == "TRUE";
 
         // For succesful remote connection, check the following:
-        // 1. Remote SqCore connection: "sudo ufw allow 7303/7308/7301"  (check "sudo ufw status") 
+        // 1. Remote SqCore connection: "sudo ufw allow 7303/7308/7301"  (check "sudo ufw status")
         // 2. in Amazon AWS: allow All TCP traffic to the developer machine IP only. (Don't allow 7303 port in general to the public. Unsafe, because there is no username/pwd check at connection to port 7303)
         // 3. in IB TWS: Configure/Api/Settings/Trusted IPs: insert public IP of Windows machine (Google: what is my IP)
         // <optional> 4. in Windows PowerShell: Test-NetConnection 34.251.1.119 -Port 7303  (it should say Success). Then you might have to restart the Linux server, because IB TWS started the connection and is confused
-
 
         // Option1: m_mainGateway can be null, if we Debug "WebSite"-related code and no gateway is attached at all (for speed)
         // m_gateways = new List<Gateway>();
         // m_mainGateway = null;
 
-        //  Option2: only 1 gateway1 is attached to local TWS
+        // Option2: only 1 gateway1 is attached to local TWS
         // Gateway gateway1 = new Gateway(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = ServerIp.LocalhostLoopbackWithIP, SocketPort = (int)GatewayPort.GyantalMain, BrokerConnectionClientID = GatewayClientID.LocalTws1 };
         // m_gateways = new List<Gateway>() {gateway1};
         // m_mainGateway = gateway1;
 
-        //  Option3: all gateways are attached to remote or local servers. To Debug vBroker trading 
-        var (CmHostIp, CmGwClientID) = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.CharmatMain);
-        var (DmHostIp, DmGwClientID) = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.DeBlanzacMain);
-        var (GmHostIp, GmGwClientID) = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.GyantalMain);
-        Gateway gateway1 = new(GatewayId.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", Host = CmHostIp, SocketPort = (int)GatewayPort.CharmatMain, SuggestedIbConnectionClientID = (int)CmGwClientID };
-        Gateway gateway2 = new(GatewayId.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", Host = DmHostIp, SocketPort = (int)GatewayPort.DeBlanzacMain, SuggestedIbConnectionClientID = (int)DmGwClientID };
-        Gateway gateway3 = new(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = GmHostIp, SocketPort = (int)GatewayPort.GyantalMain, SuggestedIbConnectionClientID = (int)GmGwClientID };
+        // Option3: all gateways are attached to remote or local servers. To Debug vBroker trading
+        var (hostIpCm, gwClientIdCm) = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.CharmatMain);
+        var (hostIpDm, gwClientIdDm) = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.DeBlanzacMain);
+        var (hostIpGm, gwClientIdGm) = GatewayExtensions.GetHostIpAndGatewayClientID(GatewayId.GyantalMain);
+        Gateway gateway1 = new(GatewayId.CharmatMain, p_accountMaxTradeValueInCurrency: 600000, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U988767", Host = hostIpCm, SocketPort = (int)GatewayPort.CharmatMain, SuggestedIbConnectionClientID = (int)gwClientIdCm };
+        Gateway gateway2 = new(GatewayId.DeBlanzacMain, p_accountMaxTradeValueInCurrency: 1.0 /* don't trade here */, p_accountMaxEstimatedValueSumRecentlyAllowed: 10) { VbAccountsList = "U1146158", Host = hostIpDm, SocketPort = (int)GatewayPort.DeBlanzacMain, SuggestedIbConnectionClientID = (int)gwClientIdDm };
+        Gateway gateway3 = new(GatewayId.GyantalMain, p_accountMaxTradeValueInCurrency: 100000 /* UberVXX is 12K, 2xleveraged=24K, double=48K*/, p_accountMaxEstimatedValueSumRecentlyAllowed: 160000) { VbAccountsList = "U407941", Host = hostIpGm, SocketPort = (int)GatewayPort.GyantalMain, SuggestedIbConnectionClientID = (int)gwClientIdGm };
         m_gateways = new List<Gateway>() { gateway1, gateway2, gateway3 };
         m_mainGateway = gateway1;
     }
-
-
 
     public bool GatewayReconnect(GatewayId p_gatewayId)
     {
@@ -88,10 +85,10 @@ public partial class BrokersWatcher
             return true;
 
         bool isOK = gateway.Reconnect();
-        bool connectedNow = gateway.IsConnected;    // better to double check this way. It will call the IbWrapper.IsConnected again to double check.
+        bool connectedNow = gateway.IsConnected; // better to double check this way. It will call the IbWrapper.IsConnected again to double check.
         Utils.Logger.Info($"GatewayId: '{gateway.GatewayId}' IsConnected: {connectedNow}");
-        
-        if (gateway == m_mainGateway && connectedNow)   // if this is the first time mainGateway connected after being dead
+
+        if (gateway == m_mainGateway && connectedNow) // if this is the first time mainGateway connected after being dead
             MainGatewayJustConnected();
 
         return connectedNow;
@@ -110,8 +107,7 @@ public partial class BrokersWatcher
         m_reconnectTimer = new System.Threading.Timer(new TimerCallback(ReconnectToGatewaysTimer_Elapsed), null, TimeSpan.FromMinutes(cReconnectTimerFrequencyMinutes), TimeSpan.FromMinutes(cReconnectTimerFrequencyMinutes));
     }
 
-
-    private void ReconnectToGatewaysTimer_Elapsed(object? p_stateObj)   // Timer is coming on a ThreadPool thread
+    private void ReconnectToGatewaysTimer_Elapsed(object? p_stateObj) // Timer is coming on a ThreadPool thread
     {
         Utils.Logger.Info("GatewaysWatcher:ReconnectToGatewaysTimer_Elapsed() BEGIN");
         try
@@ -130,7 +126,7 @@ public partial class BrokersWatcher
             }
 
             bool isMainGatewayConnectedNow = m_mainGateway != null && m_mainGateway.IsConnected;
-            if (!isMainGatewayConnectedBefore && isMainGatewayConnectedNow)   // if this is the first time mainGateway connected after being dead
+            if (!isMainGatewayConnectedBefore && isMainGatewayConnectedNow) // if this is the first time mainGateway connected after being dead
                 MainGatewayJustConnected();
         }
         catch (Exception e)
@@ -138,16 +134,15 @@ public partial class BrokersWatcher
             Utils.Logger.Info("GatewaysWatcher:TryReconnectToGateways() in catching exception (it is expected on MTS that TWS is not running, so it cannot connect): " + e.ToStringWithShortenedStackTrace(400));
         }
 
-
-        // Without all the IB connections (isAllConnected), we can choose to crash the App, but we do NOT do that, because we may be able to recover them later. 
+        // Without all the IB connections (isAllConnected), we can choose to crash the App, but we do NOT do that, because we may be able to recover them later.
         // It is a strategic (safety vs. conveniency) decision: in that case if not all IBGW is connected, (it can be an 'expected error'), VBroker runs further and try connecting every 10 min.
         // on ManualTrader server failed connection is expected. Don't send Error. However, on AutoTraderServer, it is unexpected (at the moment), because IBGateways and VBrokers restarts every day.
         var notConnectedGateways = String.Join(",", m_gateways.Where(l => !l.IsConnected).Select(r => r.GatewayId + "/"));
         if (!String.IsNullOrEmpty(notConnectedGateways))
         {
-            if (IgnoreErrorsBasedOnMarketTradingTime(offsetToOpenMin: -60))  // ignore errors only before 8:30, instead of 9:30 OpenTime
+            if (IgnoreErrorsBasedOnMarketTradingTime(offsetToOpenMin: -60)) // ignore errors only before 8:30, instead of 9:30 OpenTime
                 return; // skip processing the error further. Don't send it to HealthMonitor.
-            
+
             // It can happen if somebody manually closed TWS on MTS and restarted it.
             // But don't ignore for all gateways. It can be important for 'some' gateways, because SqCore server can do live trading.
 
@@ -164,7 +159,7 @@ public partial class BrokersWatcher
         if (m_isSupportPreStreamRealtimePrices && m_mainGateway != null)
         {
             // getting prices of SPY (has dividend, but liquid) or VXX (no dividend, but less liquids) is always a must. An Agent would always look that price. So, subscribe to that on the MainGateway
-            // see what is possible to call: "g:\temp\_programmingTemp\TWS API_972.12(2016-02-26)\samples\CSharp\IBSamples\IBSamples.sln" 
+            // see what is possible to call: "g:\temp\_programmingTemp\TWS API_972.12(2016-02-26)\samples\CSharp\IBSamples\IBSamples.sln"
 
             // for NeuralSniffer
             // 2020-06: NeuralSniffer is not traded at the moment.
@@ -175,7 +170,7 @@ public partial class BrokersWatcher
             // for UberVXX
             m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.MakeStockContract("VXX"));
             m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.MakeStockContract("SVXY"));
-            //m_mainGateway.BrokerWrapper.ReqMktDataStream(new Contract() { Symbol = "SPY", SecType = "STK", Currency = "USD", Exchange = "SMART" }); // for TotM forecast, but it is not needed just yet
+            // m_mainGateway.BrokerWrapper.ReqMktDataStream(new Contract() { Symbol = "SPY", SecType = "STK", Currency = "USD", Exchange = "SMART" }); // for TotM forecast, but it is not needed just yet
 
             // for HarryLong
             m_mainGateway.BrokerWrapper.ReqMktDataStream(VBrokerUtils.MakeStockContract("TQQQ"));
@@ -204,18 +199,16 @@ public partial class BrokersWatcher
         }
     }
 
-    
     // at graceful shutdown, it is called
     public void Exit()
     {
-        m_reconnectTimer?.Dispose();
+        Dispose(disposing: true);   // dispose m_reconnectTimer, so timer callback is not called any more
         foreach (var gateway in m_gateways)
         {
-            gateway.Disconnect();
+            gateway.Exit();
         }
-
-        //PersistedState.Save();
-        //StopTcpMessageListener();
+        // PersistedState.Save();
+        // StopTcpMessageListener();
     }
 
     public void ServerDiagnostic(StringBuilder p_sb)
@@ -232,16 +225,16 @@ public partial class BrokersWatcher
     {
         DateTime timeUtc = DateTime.UtcNow;
         DateTime timeEt = Utils.ConvertTimeFromUtcToEt(timeUtc);
-        if (timeEt.DayOfWeek == DayOfWeek.Saturday || timeEt.DayOfWeek == DayOfWeek.Sunday)   // if it is the weekend => no Error
+        if (timeEt.DayOfWeek == DayOfWeek.Saturday || timeEt.DayOfWeek == DayOfWeek.Sunday) // if it is the weekend => no Error
             return true;
 
         TimeSpan timeTodayEt = timeEt - timeEt.Date;
         // The NYSE and NYSE MKT are open from Monday through Friday 9:30 a.m. to 4:00 p.m. ET.
         // "Gateways are not connected" errors handled with more strictness. We expect that there is a connection to IBGateway at least 1 hour before open. At 8:30.
-        if (timeTodayEt.TotalMinutes < 9 * 60 + 29 + offsetToOpenMin) // ignore errors before 9:30. 
+        if (timeTodayEt.TotalMinutes < 9 * 60 + 29 + offsetToOpenMin) // ignore errors before 9:30.
             return true;   // if it is not Approximately around market hours => no Error
 
-        if (timeTodayEt.TotalMinutes > 16 * 60 + offsetToCloseMin)    // IB: not executed shorting trades are cancelled 30min after market close. Monitor errors only until that.
+        if (timeTodayEt.TotalMinutes > 16 * 60 + offsetToCloseMin) // IB: not executed shorting trades are cancelled 30min after market close. Monitor errors only until that.
             return true;   // if it is not Approximately around market hours => no Error
 
         // TODO: <not too important> you can skip holiday days too later; and use real trading hours, which sometimes are shortened, before or after holidays.
@@ -251,7 +244,7 @@ public partial class BrokersWatcher
     public static bool IsCriticalTradingTime(GatewayId p_gatewayId, DateTime p_timeUtc)
     {
         DateTime timeEt = Utils.ConvertTimeFromUtcToEt(p_timeUtc);
-        if (timeEt.DayOfWeek == DayOfWeek.Saturday || timeEt.DayOfWeek == DayOfWeek.Sunday)   // quick check: if it is the weekend => not critical time.
+        if (timeEt.DayOfWeek == DayOfWeek.Saturday || timeEt.DayOfWeek == DayOfWeek.Sunday) // quick check: if it is the weekend => not critical time.
             return false;
 
         bool isMarketHoursValid = Utils.DetermineUsaMarketTradingHours(p_timeUtc, out bool isMarketTradingDay, out DateTime marketOpenTimeUtc, out DateTime marketCloseTimeUtc, TimeSpan.FromDays(3));
@@ -266,7 +259,7 @@ public partial class BrokersWatcher
             if (!isMarketHoursValid)
                 return true;    // Caution: if DetermineUsaMarketTradingHours() failed, better to report that we are in a critical period.
 
-            DateTime critPeriodStartUtc = DateTime.MinValue; // Caution: 
+            DateTime critPeriodStartUtc = DateTime.MinValue; // Caution:
             if (critTradingRange.RelativeTimePeriod.Start.Base == RelativeTimeBase.BaseOnUsaMarketOpen)
                 critPeriodStartUtc = marketOpenTimeUtc + critTradingRange.RelativeTimePeriod.Start.TimeOffset;
             else if (critTradingRange.RelativeTimePeriod.Start.Base == RelativeTimeBase.BaseOnUsaMarketClose)
@@ -278,7 +271,7 @@ public partial class BrokersWatcher
             else if (critTradingRange.RelativeTimePeriod.End.Base == RelativeTimeBase.BaseOnUsaMarketClose)
                 critPeriodEndUtc = marketCloseTimeUtc + critTradingRange.RelativeTimePeriod.End.TimeOffset;
 
-            if (critPeriodStartUtc <= p_timeUtc && p_timeUtc <= critPeriodEndUtc)   // if p_timeUtc is between [Start, End]
+            if (critPeriodStartUtc <= p_timeUtc && p_timeUtc <= critPeriodEndUtc) // if p_timeUtc is between [Start, End]
                 return true;
         }
 
@@ -300,7 +293,7 @@ public partial class BrokersWatcher
         return m_mainGateway.BrokerWrapper.ReqHistoricalData(p_endDateTime, p_lookbackWindowSize, p_whatToShow, p_contract, out p_quotes);
     }
 
-    internal int PlaceOrder(GatewayId p_gatewayIdToTrade, double p_portfolioMaxTradeValueInCurrency, double p_portfolioMinTradeValueInCurrency, 
+    internal int PlaceOrder(GatewayId p_gatewayIdToTrade, double p_portfolioMaxTradeValueInCurrency, double p_portfolioMinTradeValueInCurrency,
         Contract p_contract, TransactionType p_transactionType, double p_volume, OrderExecution p_orderExecution, OrderTimeInForce p_orderTif, double? p_limitPrice, double? p_stopPrice, bool p_isSimulatedTrades, double p_oldVolume, StringBuilder p_detailedReportSb)
     {
         Gateway? userGateway = m_gateways.FirstOrDefault(r => r.GatewayId == p_gatewayIdToTrade);
@@ -327,7 +320,7 @@ public partial class BrokersWatcher
 
     internal bool GetVirtualOrderExecutionInfo(GatewayId p_gatewayIdToTrade, int p_virtualOrderId, ref OrderStatus orderStatus, ref double executedVolume, ref double executedAvgPrice, ref DateTime executionTime, bool p_isSimulatedTrades)
     {
-            Gateway? userGateway = m_gateways.FirstOrDefault(r => r.GatewayId == p_gatewayIdToTrade);
+        Gateway? userGateway = m_gateways.FirstOrDefault(r => r.GatewayId == p_gatewayIdToTrade);
         if (userGateway == null)
             return false;
 
@@ -341,5 +334,36 @@ public partial class BrokersWatcher
         return m_mainGateway.GetRealtimePriceService(p_query);
     }
 
-    
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposedValue)
+        {
+            if (disposing)
+            {
+                // TODO: dispose managed state (managed objects)
+                m_reconnectTimer?.Dispose();
+                m_reconnectTimer = null;
+                m_mainGateway?.Dispose();
+                m_mainGateway = null;
+            }
+
+            // TODO: free unmanaged resources (unmanaged objects) and override finalizer
+            // TODO: set large fields to null
+            disposedValue = true;
+        }
+    }
+
+    // // TODO: override finalizer only if 'Dispose(bool disposing)' has code to free unmanaged resources
+    // ~BrokersWatcher()
+    // {
+    //     // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+    //     Dispose(disposing: false);
+    // }
+
+    public void Dispose()
+    {
+        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
 }
