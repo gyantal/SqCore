@@ -36,7 +36,7 @@ internal class MemData // don't expose to clients.
 
     // Visibility rules for PortfolioFolders:
     // - Normal users don't see other user's PortfolioFolders. They see a virtual folder with their username ('dkodirekka'),
-    // a virtual folder 'Shared with me', and a virtual folder called 'AllUsers'
+    // a virtual folder 'Shared with me', 'Shared with Anyone', and a virtual folder called 'AllUsers'
     // - Admin users (developers) see all PortfolioFolders of all human users. Each human user (IsHuman) in a virtual folder with their username.
     // And the 'Shared with me', and 'AllUsers" virtual folders are there too.
     public volatile Dictionary<int, PortfolioFolder> PortfolioFolders = new(); // Not Array, because users can create/delete portfolio folders
@@ -45,12 +45,14 @@ internal class MemData // don't expose to clients.
     // ---
     // Visibility rules for Portfolios:
     // A portfolio has a 'SharedWith' field. It can be:
-    // "Anyone": totally public. All users can see that
-    // "Restricted": the default: means owner and admins can see it
-    // "drcharmat,jmcharmat,bstanford": a CSV line listing the user.names that the portfolio is shared with.
-    // "OwnerOnly": hidden even from admin users.
-    // Normal users don't see other user's Portfolios. They see the shared portfolios in a virtual 'Shared with me' folder.
-    // Admin users (developers) see all Portfolios of all users except those that are 'OwnerOnly'.
+    // - "Restricted": the default: means owner and admins can see it.
+    // - "OwnerOnly": hidden even from admin users.
+    // - "Anyone": totally public. All users can see that in their 'Shared with Anyone' folder.
+    // - "drcharmat,jmcharmat,bstanford": a CSV line listing the user.names that the portfolio is shared with. These appear in the 'Shared with me' virtual folder.
+
+    // Normal users don't see other user's Portfolios. They see the shared portfolios in a virtual 'Shared with me' and 'Shared with Anyone' folders.
+    // Admin users (developers) see all Portfolios of all users except those that are 'OwnerOnly'. Admin users also see the 'Shared with me' and 'Shared with Anyone' folders similar to regular users.
+    // It means that if a Portfolio is shared with them, they might see it in 2 places: in a 'Shared with *' folder and in the folder hierarchy of that user.
     public volatile Dictionary<int, Portfolio> Portfolios = new(); // temporary illustration of a data that will be not only read, but written by SqCore. Portfolios are not necessary here, because they are Assets as well, so they can go to AssetsCache
 
     // Clients can add new Assets to AssetCache, like NonPersinted Options, or new Portfolios. Other clients enumerate all AssetCache (e.g. reloading HistData in every 2 hours).

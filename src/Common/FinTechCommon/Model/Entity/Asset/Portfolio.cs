@@ -15,6 +15,8 @@ public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the Hash
 
     [JsonPropertyName("ParentFolder")]
     public int ParentFolderId { get; set; } = -1;
+    public string SharedAccess { get; set; } = string.Empty;
+    public string SharedUsersWith { get; set; } = string.Empty;
     [JsonPropertyName("CTime")]
     public string CreationTime { get; set; } = string.Empty;
     public string Note { get; set; } = string.Empty;
@@ -29,6 +31,9 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
     public User? User { get; set; } = null; // Some portfolios in SqExperiments, Backtest UserId = -1, so no user.
 
     public int ParentFolderId { get; set; } = -1;
+
+    public SharedAccess SharedAccess { get; set; } = SharedAccess.Unknown;
+    public List<User> SharedUsersWith { get; set; } = new();    // List is better than Array, because the user can add new users into it realtime
     public string CreationTime { get; set; } = string.Empty;
     public string Note { get; set; } = string.Empty;
     public CurrencyId BaseCurrency { get; set; } = CurrencyId.USD;
@@ -42,6 +47,23 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         User = users.FirstOrDefault(r => r.Id == portfolioInDb.UserId);
         Name = portfolioInDb.Name;
         ParentFolderId = portfolioInDb.ParentFolderId;
+
+        SharedAccess = AssetHelper.gStrToSharedAccess[portfolioInDb.SharedAccess];
+        if (!String.IsNullOrEmpty(portfolioInDb.SharedUsersWith))
+        {
+            string[] userIds = portfolioInDb.SharedUsersWith.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var userIdStr in userIds)
+            {
+                if (!Int32.TryParse(userIdStr, out int userId))
+                    continue;
+
+                User? user = Array.Find(users, r => r.Id == userId);
+                if (user == null)
+                    continue;
+                SharedUsersWith.Add(user);
+            }
+        }
+
         CreationTime = portfolioInDb.CreationTime;
         Note = portfolioInDb.Note;
 

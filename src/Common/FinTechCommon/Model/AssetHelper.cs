@@ -133,6 +133,14 @@ public enum ExchangeId : sbyte // differs from dbo.StockExchange, which is 'int'
                 // TickerProvider.OldStockTickers exploits that values fit in a byte
 }
 
+public enum SharedAccess : byte
+{
+    Unknown = 0,
+    Restricted = 1, // the default: means owner and admins can see it.
+    OwnerOnly = 2,  // hidden even from admin users.
+    Anyone = 3, // totally public. All users can see that in their 'Shared with Anyone' folder.
+}
+
 public enum PortfolioType : byte
 {
     Unknown = 0,
@@ -199,6 +207,14 @@ public static class AssetHelper
         { AssetType.Portfolio, 'P' },   // Portfolio is like a virtual separated BrokerNAV. One BrokerNAV can contain many smaller portfolios.
         { AssetType.GeneralTimeSeries, 'T' },
         { AssetType.Company, 'A' },
+    };
+
+    public static readonly Dictionary<string, SharedAccess> gStrToSharedAccess = new()
+    {
+        { string.Empty, SharedAccess.Restricted },
+        { "Restricted", SharedAccess.Restricted },
+        { "OwnerOnly", SharedAccess.OwnerOnly },
+        { "Anyone", SharedAccess.Anyone }
     };
 
     public static readonly Dictionary<string, PortfolioType> gStrToPortfolioType = new()
