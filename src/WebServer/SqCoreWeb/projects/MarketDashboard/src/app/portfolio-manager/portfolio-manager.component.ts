@@ -26,6 +26,8 @@ export class PortfolioManagerComponent implements OnInit {
   portfoliosFldrsObj: Nullable<PortfolioFldrJs> = null;
   portfolioFolders: PortfolioFldrJs[] = [];
   uiPortfolioFoldersNested: any[] = [];
+  isPortfolioDialogVisible: boolean = false;
+  pfName: string = ''; // common for both portfolio and portfolioFolder
   // portfolioSelection: string[] = ['Dr. Gyorgy, Antal', 'Didier Charmat']; // PrtFldrs
   // portfolioSelectionSelected: string = 'Dr. Gyorgy, Antal';
   tabPageVisibleIdx = 1;
@@ -99,6 +101,10 @@ export class PortfolioManagerComponent implements OnInit {
     switch (msgCode) {
       case 'PortfMgr.Portfolios': // The most frequent message should come first. Note: LstVal (realtime price) is handled earlier in a unified way.
         console.log('PortfMgr.Portfolios:' + msgObjStr);
+        // this.processPortfoliosTree(msgObjStr);
+        return true;
+      case 'PortfMgr.PortfoliosFldrs': // The most frequent message should come first. Note: LstVal (realtime price) is handled earlier in a unified way.
+        console.log('PortfMgr.PortfoliosFldrs:' + msgObjStr);
         this.processPortfoliosTree(msgObjStr);
         return true;
       case 'PortfMgr.Handshake': // The least frequent message should come last.
@@ -214,7 +220,6 @@ export class PortfolioManagerComponent implements OnInit {
   updateUiPortfolioFolders(portfoliosFldrsObj: Nullable<PortfolioFldrJs>, portfolioFolders: PortfolioFldrJs[]) {
     if (!(Array.isArray(portfoliosFldrsObj) && portfoliosFldrsObj.length > 0 ))
       return;
-    portfolioFolders.length = 0;
     for (const prtfFldr of portfoliosFldrsObj) {
       const portfolios = new PortfolioFldrJs();
       portfolios.id = prtfFldr.id;
@@ -227,24 +232,39 @@ export class PortfolioManagerComponent implements OnInit {
   }
 
   createTreeViewData(portfolioFolders: PortfolioFldrJs[]) {
-    const object = {};
+    this.uiPortfolioFoldersNested.length = 0;
+    const treeData = {};
     let parent: any;
     let child: any;
 
     for (let i = 0; i < portfolioFolders.length; i++) {
       parent = portfolioFolders[i];
-      object[parent.id] = parent;
-      object[parent.id]['children'] = [];
+      treeData[parent.id] = parent;
+      treeData[parent.id]['children'] = [];
     }
 
-    for (const id in object) {
-      if (object.hasOwnProperty(id)) {
-        child = object[id];
-        if (child.parentFolderId && object[child['parentFolderId']])
-          object[child['parentFolderId']]['children'].push(child);
+    for (const id in treeData) {
+      if (treeData.hasOwnProperty(id)) {
+        child = treeData[id];
+        if (child.parentFolderId && treeData[child['parentFolderId']])
+          treeData[child['parentFolderId']]['children'].push(child);
         else
           this.uiPortfolioFoldersNested.push(child);
       }
     }
   };
+
+  onCreateClicked() {
+    this.isPortfolioDialogVisible = true;
+  }
+
+  onCloseClicked() {
+    this.isPortfolioDialogVisible = false;
+  }
+
+  onCreatePortfolioClicked(pfName: string) {
+    // console.log(this.pfName);
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+      this._parentWsConnection.send('PortfMgr.CreatePortf:' + this.pfName);
+  }
 }

@@ -7,6 +7,16 @@
       <span class="refreshIcon"><img class="refreshIcon" src='../assets/images/refresh64.webp' (click)="onPortfoliosRefreshClicked()"></span>
     </span>
     <app-sq-tree-view [items]="uiPortfolioFoldersNested"></app-sq-tree-view>
+    <button type="button" (click)="onCreateClicked()">Create</button>
+    <div id="portfolioModal" [ngStyle]="{'display': isPortfolioDialogVisible ? 'block' : 'none'}">
+      <label><b>Name</b></label><br>
+      <input type="text" placeholder="portfolio" name="portfolio" [(ngModel)]="pfName"><br><br>
+      <span>
+        <button (click)="onCreatePortfolioClicked(pfName)"> Create Portfolio</button>
+        <button (click)="onCreatePortfolioClicked(pfName)"> Create Portfolio Folder</button>
+        <button (click)="onCloseClicked()" class="closePortfolioModal" [ngStyle]="{'display': isPortfolioDialogVisible ? 'block' : 'none'}">Dismiss</button>
+      </span>
+    </div>
     whole Tool area without Dashboard header
     Width: {{prtfMgrToolWidth}}
     Height: {{prtfMgrToolHeight}}
