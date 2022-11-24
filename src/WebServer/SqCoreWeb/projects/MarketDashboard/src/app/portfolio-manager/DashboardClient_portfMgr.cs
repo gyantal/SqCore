@@ -132,10 +132,12 @@ public partial class DashboardClient
 
     public void CreatePortfolioFolder(string pfName, string p_note)
     {
-        User ownerUser = User;  // That might not be true if an Admin user creates a prFolder in a virtual folder of another user.
         int parentFldId = -1;   // get it from the Client.
-        string creationTime = Utils.ToSqDateTimeStr(DateTime.UtcNow); // DateTime.Now.ToString() => "CTime":"2022-10-13T20:00:00"
-        MemDb.gMemDb.AddPortfolioFolder(ownerUser, pfName, parentFldId, creationTime, p_note);
+
+        // Whenever an Admin user on the UI selects a parent folder and creates a PortfolioFolder, it should inherit the User (owner) of that parent folder.
+        // Note that the parent folder can be the Virtual Folder (User), but that is not allowed to be written to the MemDb, of course.
+        User ownerUser = User;  // That might not be true if an Admin user creates a prFolder in a virtual folder of another user.
+        MemDb.gMemDb.AddNewPortfolioFolder(ownerUser, pfName, parentFldId, p_note);
     }
 
     public void ProcessPrtfFldrsBasedOnVisibilty() // naming it temporaryly for understanding purpose, will change once the function is finalized

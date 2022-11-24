@@ -26,7 +26,7 @@ namespace FinTechCommon;
 // if same thread calls SemaphoreSlim.Wait() second time, it will block. It uses a counter mechanism, and it doesn't store which thread acquired the lock already. So, reentry is not possible.
 internal class MemData // don't expose to clients.
 {
-    public volatile User[] Users = Array.Empty<User>();   // writable: admin might insert a new user from HTML UI
+    public volatile User[] Users = Array.Empty<User>();   // writeable: admin might insert a new user from HTML UI
 
     // Because Writers use the 'Non-locking copy-and-swap-on-write' pattern, before iterating on AssetCache, Readers using foreach() should get a local pointer and iterate on that. Readers can use Linq.Select() or Where() without local pointer though.
     // AssetsCache localAssetCache = MemDb.AssetCache;
@@ -118,10 +118,12 @@ internal class MemData // don't expose to clients.
         }
     }
 
-    public PortfolioFolder AddPortfolioFolder(User? p_user, string p_name, int p_parentFldId, string p_creationTime, string p_note)
+    public PortfolioFolder AddNewPortfolioFolder(User? p_user, string p_name, int p_parentFldId, string p_creationTime, string p_note)
     {
         lock (PrFldUpdateLock)
         {
+            // keep the newId calculation logic here, just right before the prFolder creation.
+            // Otherwise, we need new locks to prevent that 2 threads creates 2 new Folders with the same Id.
             int maxFldId = -1;
             foreach (var fldId in PortfolioFolders.Keys)
             {
@@ -129,9 +131,18 @@ internal class MemData // don't expose to clients.
                     maxFldId = fldId;
             }
             int newFldId = ++maxFldId;
+
             PortfolioFolder fld = new (newFldId, p_user, p_name, p_parentFldId, p_creationTime, p_note);
             PortfolioFolders[newFldId] = fld;
             return fld;
+        }
+    }
+
+    public bool RemovePortfolioFolder(PortfolioFolder p_prFolder)
+    {
+        lock (PrFldUpdateLock)
+        {
+            return PortfolioFolders.Remove(p_prFolder.Id);
         }
     }
 }
