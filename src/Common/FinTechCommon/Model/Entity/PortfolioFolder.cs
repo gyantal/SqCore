@@ -15,6 +15,19 @@ public class PortfolioFolderInDb // PortfolioFolder.Id is not in the JSON, which
     [JsonPropertyName("CTime")]
     public string CreationTime { get; set; } = string.Empty;
     public string Note { get; set; } = string.Empty;
+
+    public PortfolioFolderInDb()
+    {
+    }
+
+    public PortfolioFolderInDb(PortfolioFolder prtFld)
+    {
+        UserId = prtFld.User?.Id ?? -1;
+        Name = prtFld.Name;
+        ParentFolderId = prtFld.ParentFolderId;
+        CreationTime = prtFld.CreationTime;
+        Note = prtFld.Note;
+    }
 }
 
 [DebuggerDisplay("{Id}, Name:{Name}, User:{User?.Username??\"-NoUser-\"}")]
@@ -35,5 +48,15 @@ public class PortfolioFolder
         ParentFolderId = folderInDb.ParentFolderId;
         CreationTime = folderInDb.CreationTime;
         Note = folderInDb.Note;
+    }
+
+    public PortfolioFolder(int p_id, User? p_user, string p_name, int p_parentFldId, string p_creationTime, string p_note)
+    {
+        Id = p_id;
+        User = p_user;
+        Name = p_name;
+        ParentFolderId = p_parentFldId;
+        CreationTime = p_creationTime;
+        Note = p_note;
     }
 }

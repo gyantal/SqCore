@@ -313,6 +313,13 @@ public partial class Db
         }
         return result;
     }
+    internal void AddPortfolioFolder(PortfolioFolder fld)
+    {
+        string redisKey = fld.Id.ToString();
+        PortfolioFolderInDb prtfFolderInDb = new(fld);
+        string redisValue = JsonSerializer.Serialize<PortfolioFolderInDb>(prtfFolderInDb);
+        m_redisDb.HashSet("portfolioFolder", redisKey, redisValue);
+    }
 
     private static Dictionary<int, Portfolio> GetPortfolios(HashEntry[] portfoliosRds, User[] users, List<Asset> assets) // Portfolio will require Assets in the future
     {

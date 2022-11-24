@@ -111,7 +111,7 @@
   margin: 5% auto;
   padding: 2rem;
   border: 0.01rem solid #888;
-  // display: none;
+  border-radius: 1rem;
   position: fixed;
   z-index: 1;
   left: 15rem;
@@ -125,6 +125,13 @@
   padding: 0.02rem 0.01rem;
   background-color: #5cb85c;
   color: white;
+}
+
+#portfolioInput:hover {
+  background-color: rgba(173, 216, 230, 0.5);
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 0.5rem;
 }
 
 .closePortfolioModal {

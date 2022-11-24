@@ -70,6 +70,7 @@ internal class MemData // don't expose to clients.
     // disadvantage 2: without reader locking even careful clients - who don't store pointers - can get inconsistent pointers. while Writer is swapping users/assets/HistData pointers client can get NewUserData and OldAssetData.
     public object AssetsUpdateLock = new();    // Many Writers.
     public object UsersUpdateLock = new();
+    public object PrFldUpdateLock = new();
     // public object DailyHistUpdateLock = new Object();   // not needed, there is only 1 writer thread. We never change its items one by one. We always recreate the whole in every 2 hours and pointer swap, but there is only 1 writer
 
     public MemData()
@@ -112,8 +113,25 @@ internal class MemData // don't expose to clients.
             User[] result = new User[Users.Length + 1];
             Users.CopyTo(result, 0);
             result[Users.Length] = p_user;
-            Users = result;
+            Users = result; // switch pointer is atomic operation
             // ToDo: insert it into Redis or Sql DB (within this lock, so until it is stored in DB, no ReloadAllData() can run, which might not be able to find this new insertion)
+        }
+    }
+
+    public PortfolioFolder AddPortfolioFolder(User? p_user, string p_name, int p_parentFldId, string p_creationTime, string p_note)
+    {
+        lock (PrFldUpdateLock)
+        {
+            int maxFldId = -1;
+            foreach (var fldId in PortfolioFolders.Keys)
+            {
+                if (maxFldId < fldId)
+                    maxFldId = fldId;
+            }
+            int newFldId = ++maxFldId;
+            PortfolioFolder fld = new (newFldId, p_user, p_name, p_parentFldId, p_creationTime, p_note);
+            PortfolioFolders[newFldId] = fld;
+            return fld;
         }
     }
 }

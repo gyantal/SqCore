@@ -9,9 +9,12 @@ type Nullable<T> = T | null;
 
 class PortfolioFldrJs {
   public id = -1;
-  public name = '';
+  public pfName = '';
+  public usrName = '';
   public userId = -1;
   public parentFolderId = -1;
+  public isHuman = false;
+  public isAdmin = false;
 }
 
 @Component({
@@ -136,6 +139,10 @@ export class PortfolioManagerComponent implements OnInit {
         _this.userId = value;
         return; // if return undefined, orignal property will be removed
       }
+      if (key === 'uName') {
+        _this.usrName = value;
+        return; // if return undefined, orignal property will be removed
+      }
       return value;
     });
     this.updateUiPortfolioFolders(this.portfoliosFldrsObj, this.portfolioFolders);
@@ -223,9 +230,12 @@ export class PortfolioManagerComponent implements OnInit {
     for (const prtfFldr of portfoliosFldrsObj) {
       const portfolios = new PortfolioFldrJs();
       portfolios.id = prtfFldr.id;
-      portfolios.name = prtfFldr.name;
+      portfolios.pfName = prtfFldr.name;
       portfolios.parentFolderId = prtfFldr.parentFolderId;
       portfolios.userId = prtfFldr.userId;
+      portfolios.usrName = prtfFldr.usrName;
+      portfolios.isHuman = prtfFldr.isHuman;
+      portfolios.isAdmin = prtfFldr.isAdmin;
       portfolioFolders.push(portfolios);
     }
     this.createTreeViewData(portfolioFolders);
@@ -265,6 +275,6 @@ export class PortfolioManagerComponent implements OnInit {
   onCreatePortfolioClicked(pfName: string) {
     // console.log(this.pfName);
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.CreatePortf:' + this.pfName);
+      this._parentWsConnection.send('PortfMgr.CreatePortfFldr:' + this.pfName);
   }
 }

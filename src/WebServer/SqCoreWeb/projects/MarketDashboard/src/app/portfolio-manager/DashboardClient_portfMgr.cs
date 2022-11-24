@@ -2,12 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Text;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using FinTechCommon;
 using SqCommon;
-using StackExchange.Redis;
 
 namespace SqCoreWeb;
 
@@ -25,6 +23,10 @@ class PortfolioFolderJs
     public int UserId { get; set; } = -1;
     [JsonPropertyName("p")]
     public int ParentFolderId { get; set; } = -1;
+    [JsonPropertyName("uName")]
+    public string? UserName { get; set; } = string.Empty;
+    public bool? IsHuman { get; set; } = false; // AllUser, SqBacktester... users are not humans.
+    public bool? IsAdmin { get; set; } = false;
     [JsonPropertyName("cTime")]
     public string CreationTime { get; set; } = string.Empty;
     public string Note { get; set; } = string.Empty;
@@ -52,6 +54,7 @@ public partial class DashboardClient
             // Portfolio data is big. Don't send it in handshake. Send it 5 seconds later (if it is not the active tool)
             PortfMgrSendPortfolioFldrs();
             PortfMgrSendPortfolios();
+            // ProcessPrtfFldrsBasedOnVisibilty();
         });
     }
 
@@ -93,7 +96,10 @@ public partial class DashboardClient
                 Id = pf.Id,
                 Name = pf.Name,
                 ParentFolderId = pf.ParentFolderId,
-                UserId = pf.User?.Id ?? -1
+                UserId = pf.User?.Id ?? -1,
+                UserName = pf.User?.Username,
+                IsHuman = pf.User?.IsHuman,
+                IsAdmin = pf.User?.IsAdmin
             };
             portfolioFldrs.Add(pfJs);
         }
@@ -107,10 +113,10 @@ public partial class DashboardClient
     {
         switch (msgCode)
         {
-            case "PortfMgr.CreatePortf":
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortf '{msgObjStr}'");
+            case "PortfMgr.CreatePortfFldr":
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfFldr '{msgObjStr}'");
                 string pfName = msgObjStr;
-                PortfMgrSendPortfoliosToServer(pfName);
+                CreatePortfolioFolder(pfName, String.Empty);
                 return true;
             case "PortfMgr.DeletePortf":
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): DeletePortf '{msgObjStr}'");
@@ -124,43 +130,80 @@ public partial class DashboardClient
         }
     }
 
-    public void PortfMgrSendPortfoliosToServer(string portfolioname)
+    public void CreatePortfolioFolder(string pfName, string p_note)
     {
-        string cTime = Utils.ToSqDateTimeStr(DateTime.UtcNow); // adding the Creation Time
-        Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values; // getting the total portfolioFolders data to count the items
-        int key = prtfFldrs.Count + 1; // setting the Key item, reuired to push to server(redisDb)
-        User[] users = MemDb.gMemDb.Users;
-        // Gettting the logged in userId from Users
-        int id = 0;
-        foreach (User usr in users)
+        User ownerUser = User;  // That might not be true if an Admin user creates a prFolder in a virtual folder of another user.
+        int parentFldId = -1;   // get it from the Client.
+        string creationTime = Utils.ToSqDateTimeStr(DateTime.UtcNow); // DateTime.Now.ToString() => "CTime":"2022-10-13T20:00:00"
+        MemDb.gMemDb.AddPortfolioFolder(ownerUser, pfName, parentFldId, creationTime, p_note);
+    }
+
+    public void ProcessPrtfFldrsBasedOnVisibilty() // naming it temporaryly for understanding purpose, will change once the function is finalized
+    {
+        // Visibility rules for PortfolioFolders:
+        // - Normal users don't see other user's PortfolioFolders. They see a virtual folder with their username ('dkodirekka'),
+        // a virtual folder 'Shared with me', 'Shared with Anyone', and a virtual folder called 'AllUsers'
+        // - Admin users (developers) see all PortfolioFolders of all human users. Each human user (IsHuman) in a virtual folder with their username.
+        // And the 'Shared with me', and 'AllUsers" virtual folders are there too.
+
+        Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
+        List<PortfolioFolderJs> prtfFldrsToClient = new();
+        Dictionary<int, int> userIdToVirtualPrtfId = new();
+
+        // add the virtual folders to prtfFldrsToClient
+        int virtuarFolderId = -2;
+        if (User.IsAdmin)
         {
-            if(usr.Email == UserEmail)
-            {
-                id = usr.Id;
-                break;
-            }
+            // send a virtual folder for every other users (with different negative Ids)
         }
-        // taking the default value for parentFolder
-        int parentFolder = -1;
-        // setting the note data field as empty
-        string note = string.Empty;
-        PortfolioFolderInDb pf = new()
+        else
         {
-            UserId = id,
-            Name = portfolioname,
-            ParentFolderId = parentFolder,
-            CreationTime = cTime,
-            Note = note
+            // send only his virtual folder
+            // PortfolioFolderJs pfJs = new()
+            // {
+            //     Id = -2,
+            // };
+            // prtfFldrsToClient.Add(pfJs);
+        }
+
+        PortfolioFolderJs pfSharedWithMeJs = new()
+        {
+            Id = virtuarFolderId--
         };
-        // serializing the pf object
-        string pfStr = JsonSerializer.Serialize<PortfolioFolderInDb>(pf);
-        // Creating the connection and sending the data to server
-        // 1. Create a new connection. Don't use the MemDb main connection, because we might want to switch to a non-default DB, like DB-1. It is safer this way. Don't tinker with the MemDb main connection
-        var redisConnString = OperatingSystem.IsWindows() ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
-        ConnectionMultiplexer newConn = ConnectionMultiplexer.Connect(redisConnString);
-        // for testing purpose the DB value is provided as '1' once this method works we can push the data to current working db.
-        var destDb = newConn.GetDatabase(1);
-        destDb.HashSet("portfolioFolder", key, pfStr);
-        // throw new NotImplementedException();
+        prtfFldrsToClient.Add(pfSharedWithMeJs);
+
+        PortfolioFolderJs pfAllUsersJs = new()
+        {
+            Id = virtuarFolderId--
+        };
+        prtfFldrsToClient.Add(pfAllUsersJs);
+
+        foreach(PortfolioFolder pf in prtfFldrs)
+        {
+            bool isSendToUser = User.IsAdmin || (pf.User == User);
+            if (!isSendToUser)
+                break;
+
+            int parentFolderId = pf.ParentFolderId;
+            if (pf.ParentFolderId == -1)
+            {
+                if (pf.User == null)
+                    parentFolderId = pfAllUsersJs.Id;
+                else
+                    parentFolderId = userIdToVirtualPrtfId[pf.User.Id];
+            }
+
+            PortfolioFolderJs pfJs = new()
+            {
+                Id = pf.Id,
+                Name = pf.Name,
+                ParentFolderId = parentFolderId,
+                UserId = pf.User?.Id ?? -1
+            };
+            prtfFldrsToClient.Add(pfJs);
+        }
+        byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.PortfoliosFldrs:" + Utils.CamelCaseSerialize(prtfFldrsToClient));
+        if (WsWebSocket!.State == WebSocketState.Open)
+            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 }
