@@ -1,0 +1,6 @@
+see gDoc for more info: https://docs.google.com/document/d/1XXqSrqSoQm-RWgzbJfSw4V9No-1jcbCqDk26mL8GXhQ
+
+Brief Conclusion:
+
+- Use foreach()
+- If you only need the Values, don’t iterate over KeyValuePairs

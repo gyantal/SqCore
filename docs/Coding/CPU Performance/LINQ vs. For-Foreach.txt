@@ -1,0 +1,9 @@
+see gDoc for more info: https://docs.google.com/document/d/1T8vwk82VSumAqSxPgvRx3OyOyGS6ZpB_Q3maXZ45YaU
+
+Brief Conclusion:
+
+- as a basic rule of thumb when you hesitate whether to use For/LINQ/Foreach just use For.
+- as a basic rule of thumb when you hesitate about what to use with For, use the logical basic ordering. 
+If the size of the set will not change, use Array. If the size of the set will change, you have to use the slower List. 
+- Struct is more basic than classes. Use Struct if possible. But then it will be a value type, so it will be deep 
+copied every time when it is used as a parameter (except if it is a Ref). So, sometimes, it is not advised to use it as Struct.

@@ -1,0 +1,74 @@
+
+A. Class or Struct:
+Use class most of the time. Because in this case the pointer to User is only created once on the heap and not copied at every function parameter exchange
+https://stackoverflow.com/questions/85553/when-should-i-use-a-struct-instead-of-a-class
+
+If you need a special null value for the object => use Class
+If instance size bigger than 16 bytes => use Class (because struct is a value type so it would be copied as method parameters)
+
+If it acts like a primitive type (int, long, byte, etc.) and has mall memory footprint => use Struct
+
+For example, if PortfolioFolder is a Struct, then returning this here always creates a new copy.
+"PortfolioFolder fld = m_memData.AddNewPortfolioFolder(p_user, p_name, p_parentFldId, creationTime, p_note);"
+Or even if we access it from a List
+PortfolioFolders[] prFolders; // of if it is a list.
+When we access an item of it.
+myFolder = prFolders[i]; then we created a duplicate copy of the ojbect, a whole new Struct. Instead of just creating an 8 bytes pointer.
+
+So, the original PortfolioFolder object is duplicated when we access it from a collection, which is a memory overhead, especially if the Struct is big.
+In general, the size threshold of 16 bytes as decision is more or less right for deciding when to use Struct vs. Class.
+
+
+B. Array or List:
+- Array is the faster. Enumeration only moves the index. Array of struct is the fastest.
+- If Addition/Deletion is sparse, you can still use Array. Just implement the logic of memcpy(). 
+We use User[] in SqCore, where User is a class, because adding new users is very rare or non-existent.
+- When Addition/Deletion is too frequent you have to use the List
+
+C. Dictionary or Array/List:
+- Assuming a typical data table indexed by an int ItemId  (like Portfolios and PortfolioFolders)
+- When data is continous (in a long sequence, without gaps) use List<string>
+- However, in database tables in general, the primary key, the ItemId can have gaps.
+In theory we can implement it in a List<string> that is indexed by the ItemId. For that we have to determine the maximum value of the ItemId,
+and create a List of that size.
+This can be done, but it is dangerous. Somebody accidentally create a database record with an ItemId = 50,000.
+Not being aware that then we will create in memory a List with 50,000 capacity. Even though it has maybe only 10 items.
+Furthermore, even if we can control that (with a double check, like at datatable load we calculate the sparcity value of the table, 
+and give a warning if the sparcity is less than 50%), with time things can go gradually worse.
+Repeated additions of bigger and bigger ItemIds and deletions of smaller ItemIds will turn the table to be sparse.
+So, while at the beginning using List with gaps seemed a good idea, 4-5 years later, its memory and speed is worse than the continous Dictionary version.
+In brief, in general, if we know that the data table will contain ItemId gaps, then it is too risky to implement it as a List with null gaps.
+Use a Dictionary<int ItemId, string> instead, which will be a continous array of Entries anyway.
+
+C# Dictionary implements this:
+"private Entry[]? _entries;
+private struct Entry
+{
+	public uint hashCode;
+	public int next;
+	public TKey key;     // Key of entry: can be int
+	public TValue value; // Value of entry // TValue is a Pointer to our object.
+}"
+
+
+------------------- Appendix
+
+>https://social.msdn.microsoft.com/Forums/vstudio/en-US/d69b2209-382d-4786-8255-1864b54499be/list-vs-dictionary-vs-hashable-when-and-what-to-use
+"Semantically, a Dictionary<int, T> and List<T> are very similar, both are random access containers of the .NET framework. 
+To use a list as a replacement for a dictionary,  you need a special value in your type T (like null) to represent the empty slots in your list. 
+If T is not a nullable type like int, you could use int? instead, or if you are just expecting to store positive values, you could also use a special value like -1 to represent empty slots.
+
+More about ...  Dictionary Vs List
+
+Which one you will choose should depend on the range of the key values. If your keys in the Dictionary<int, T> are  within an integer interval,
+without many gaps between them (for example, 80 values out of [0,...100]),  
+then a List<T> will be more appropriate, since the accessing by index is  faster, 
+and there is less memory and time overhead compared to a dictionary in this case.
+
+If your key values are 100 int values from a range like [0,...,1000000], then a List<T> needs memory to hold 1000000 values of T, 
+where your dictionary will just need memory in an order of magnitude around 100 values of T, 100 values of int (plus some overhead, 
+in reality expect about 2 times the memory for storing those 100 keys and values). 
+So in the latter case a dictionary will be more appropriate."
+
+>https://prographers.com/blog/list-vs-dictionary-performance
+"whether use an Array or List or Dictionary (HashSet) as a data structure "
