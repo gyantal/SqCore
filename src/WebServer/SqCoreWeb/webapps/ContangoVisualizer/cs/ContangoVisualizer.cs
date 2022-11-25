@@ -59,7 +59,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         return Content(GetStr2(), "text/html");
     }
 
-    public string GetStr2()
+    public static string GetStr2()
     {
         return "Error";
     }

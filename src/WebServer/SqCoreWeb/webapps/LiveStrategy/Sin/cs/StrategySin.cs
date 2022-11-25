@@ -427,7 +427,7 @@ public class StrategySinController : ControllerBase
         throw new NotImplementedException();
     }
 
-    public string? SINGoogleApiGsheet(string p_usedGSheetRef)
+    public static string? SINGoogleApiGsheet(string p_usedGSheetRef)
     {
         Utils.Logger.Info("SINGoogleApiGsheet() BEGIN");
 

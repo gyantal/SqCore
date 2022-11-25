@@ -96,7 +96,7 @@ public class SqWebsocketMiddleware
 
     // When using a WebSocket, you must keep this middleware pipeline running for the duration of the connection.
     // The code receives a message and immediately sends back the same message. Messages are sent and received in a loop until the client closes the connection.
-    private async Task WebSocketLoopKeptAlive(HttpContext context, string p_requestRemainigPath)
+    private static async Task WebSocketLoopKeptAlive(HttpContext context, string p_requestRemainigPath)
     {
         WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();  // this accept immediately send back the client that connection is accepted.
 
@@ -228,7 +228,7 @@ public class SqWebsocketMiddleware
         }
     }
 
-    public void PingTimer_Elapsed(object? p_state) // Timer is coming on a ThreadPool thread
+    public static void PingTimer_Elapsed(object? p_state) // Timer is coming on a ThreadPool thread
     {
         try
         {

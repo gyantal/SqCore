@@ -17,7 +17,7 @@ public class BrAccChecker // shortened BrokerAccountPositionsChecker
 {
     public static readonly BrAccChecker gBrAccChecker = new();
 
-    public void Init()
+    public static void Init()
     {
         Utils.Logger.Info("****BrAccChecker:Init()");
         var sqTask = new SqTask()
@@ -67,7 +67,7 @@ public class BrAccChecker // shortened BrokerAccountPositionsChecker
         SqTaskScheduler.gSqTasks.Add(sqTask);
     }
 
-    public void Exit()
+    public static void Exit()
     {
         Utils.Logger.Info("****BrAccChecker:Exit()");
     }

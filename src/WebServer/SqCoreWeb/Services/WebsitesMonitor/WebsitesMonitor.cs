@@ -15,7 +15,7 @@ public class WebsitesMonitor
 {
     public static readonly WebsitesMonitor gWebsitesMonitor = new();
 
-    public void Init()
+    public static void Init()
     {
         Utils.Logger.Info("****WebsitesMonitor:Init()");
         var sqTask = new SqTask()
@@ -36,7 +36,7 @@ public class WebsitesMonitor
         SqTaskScheduler.gSqTasks.Add(sqTask);
     }
 
-    public void Exit()
+    public static void Exit()
     {
         Utils.Logger.Info("****WebsitesMonitor:Exit()");
     }

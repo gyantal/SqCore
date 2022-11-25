@@ -34,7 +34,7 @@ public class StrategyUberTaaController : ControllerBase
         };
     }
 
-    string GetResultStr(Universe p_universe, bool p_winnerRun)
+    static string GetResultStr(Universe p_universe, bool p_winnerRun)
     {
         int thresholdLower = 25; // Upper threshold is 100-thresholdLower.
         int[] lookbackDays = new int[] { 60, 120, 180, 252 };
@@ -607,7 +607,7 @@ public class StrategyUberTaaController : ControllerBase
         return sb.ToString();
     }
 
-    public string? UberTaaGoogleApiGsheet(string p_usedGSheetRef)
+    public static string? UberTaaGoogleApiGsheet(string p_usedGSheetRef)
     {
         if (String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) || String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
             return null;

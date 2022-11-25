@@ -1,4 +1,55 @@
-********************** SqCore framework on Github Folder structure
+
+
+********************** SqCore framework on Github Folder structure, version 2, 2023
+
+SqCore: 
+/3rdParty
+/logs  (do not commit to GitHub)
+/docs
+/src is this
+	/ThirdParty
+		/IB TWS 
+	/Matlab		(things that are not C#)
+	/R
+	/Python	(tools, apps, written in Python)
+	/Common
+		/SqCommon	(all programs, small tools)
+		/DbCommon	(programs that need database)
+		/WebAppCommon	(not small tools, but bigger webbapps that handle HTTP requests)
+		/DesktopUICommon (in case we write an app which has destkop UI, like SqDesktop for Windows)
+	/Fin (like Finance or Financial or FinTech)
+		/Common (namespace Fin.Common, nickname: FinCommon, QC.Common related)
+		/MemDb (namespace Fin.MemDb, nickname: FinMemDb)
+		/Algorithm (QC.Algorithm related)
+		/Engine
+		/Simulator
+		/Optimizer
+		/Brokerages (so, bring BrokerCommon to here as well. Ai doesn't need brokers)
+		/Brokerages.InteractiveBrokers
+		/BrokerCommon (it is here until it is replaced by QC's Brokerages module)
+	/Ai
+		/Common (namespace Ai.Common, nickname: AiCommon)
+		/MemDb (nickname: AiMemDb)
+	/Server	 (examples)
+		/HealthMonitor(Server)
+		/Overmind
+		/Crawlers
+			/XYCrawler
+		/VirtualBroker
+	/Tools  (not really resident, always running server apps, only small exe tools needed for something)
+	/WebServer  (all is Website based)
+		/SqCoreWeb (main website that contains MarketDashboard)
+		/HealthMonitorClientFrontEndWebsite (because this should be in another serverFarm)
+		/UserHelperWebsite (CurrentLeverageCalculator + VBrokerClient+all other Clients)
+
+Original idea for tests: (But it turned out that tests should be down deep in the hierarcy where their module to be tested is)
+/test	Tools for testing small things (HttpConnection, Rx, EmailSending), like HelloWorld
+	UnitTests  (all unit tests in one csproj)
+	PerformanceTests  (all benchmark tests in one csproj)
+	PerformanceTestExperiment (customizable to benchmark only 2 versions of a single function)
+
+
+********************** SqCore framework on Github Folder structure, version 1, 2022
 
 SqCore: 
 /3rdParty
