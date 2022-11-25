@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.Json.Serialization;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 public class PortfolioFolderInDb // PortfolioFolder.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
 {

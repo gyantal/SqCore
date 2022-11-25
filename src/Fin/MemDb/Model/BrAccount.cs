@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using BrokerCommon;
+using Fin.BrokerCommon;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
     // intially named: BrPortfolio. Was not a good terminology, because we have an other Portfolio as Asset. That Portfolio has historical price. This BrokerPortfolio is just a snapshot.
     // a better name: BrokerAccount, although we also have a Virtual Aggregated BrokerAccount, but still better.

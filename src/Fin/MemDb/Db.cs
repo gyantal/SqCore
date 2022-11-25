@@ -8,7 +8,7 @@ using Microsoft.Extensions.Primitives;
 using SqCommon;
 using StackExchange.Redis;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 public class SrvLoadPrHistInDb // for quick JSON deserialization. In DB the fields has short names, and not all Asset fields are in the DB anyway
 {

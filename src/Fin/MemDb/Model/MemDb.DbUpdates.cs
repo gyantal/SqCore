@@ -1,7 +1,7 @@
 using System;
 using SqCommon;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 public partial class MemDb
 {

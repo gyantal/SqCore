@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using FinTechCommon;
+using Fin.MemDb;
 using MathCommon.MathNet;
 using Microsoft.AspNetCore.Mvc;
 using SqCommon;

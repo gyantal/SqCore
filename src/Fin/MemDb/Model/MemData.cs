@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using SqCommon;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 // the pure data MemData class has 2 purposes:
 // 1. collect the Data part of MemDb into one smaller entity. Without the MemDb functionality like timers, or Sql/Redis update.

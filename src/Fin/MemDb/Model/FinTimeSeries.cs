@@ -30,7 +30,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using SqCommon;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 // https://sourcelens.com.au/Consulting/Brw/Ru/z_dir_zcrez_dir_zsrcz_dir_zcoreclrz_dir_zbinz_dir_zobjz_dir_zWindows_NTq_dot_qx64q_dot_qDebugz_dir_zSystemq_dot_qPrivateq_dot_qCoreLibz_dir_zSRq_dot_qcs
 internal static partial class SR // auto-generated during the build based on the .resx file

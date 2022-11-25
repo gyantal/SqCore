@@ -1,4 +1,4 @@
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 public partial class MemDb
 {

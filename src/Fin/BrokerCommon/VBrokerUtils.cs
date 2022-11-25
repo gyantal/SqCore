@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using IBApi;
 using SqCommon;
 
-namespace BrokerCommon;
+namespace Fin.BrokerCommon;
 
 public struct QuoteData
 {

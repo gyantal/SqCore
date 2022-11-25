@@ -8,7 +8,7 @@ using IBApi;
 using SqCommon;
 using Utils = SqCommon.Utils;
 
-namespace BrokerCommon;
+namespace Fin.BrokerCommon;
 
 public class SavedState : PersistedState // data to persist between restarts of the vBroker process: settings that was set up by client, or OptionCrawler tickerList left to crawl
 {

@@ -6,7 +6,7 @@ using Xunit;
 using IBApi;
 using System.Threading;
 
-namespace BrokerCommon.tests;
+namespace Fin.BrokerCommon.tests;
 
 public class UnitTestGateway
 {

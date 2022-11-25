@@ -1,7 +1,7 @@
 using System;
 using System.Diagnostics;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 // AssetType: uses the top 5 bits; 32 different values: 0..31
 // ID (SubTableId): uses the bottom 27 bits. 134M different values.

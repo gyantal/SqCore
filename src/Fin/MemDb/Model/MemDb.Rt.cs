@@ -5,11 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using BrokerCommon;
+using Fin.BrokerCommon;
 using SqCommon;
 using YahooFinanceApi;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 enum RtFreq { HighFreq, MidFreq, LowFreq }
 class RtFreqParam

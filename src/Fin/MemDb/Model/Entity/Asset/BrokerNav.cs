@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using BrokerCommon;
+using Fin.BrokerCommon;
 using SqCommon;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 public class BrokerNav : Asset
 {

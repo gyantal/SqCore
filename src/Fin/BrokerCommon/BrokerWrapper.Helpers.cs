@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Threading;
 using IBApi;
 
-namespace BrokerCommon;
+namespace Fin.BrokerCommon;
 
 public class PriceAndTime // it makes sense to store Time, because values older than X hours cannot be used, even if they are stored in the RAM
 {

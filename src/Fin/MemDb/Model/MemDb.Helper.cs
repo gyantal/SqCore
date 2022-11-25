@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using SqCommon;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 public class AssetPriorClose
 {

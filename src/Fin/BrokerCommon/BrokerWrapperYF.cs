@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using IBApi;
 
-namespace BrokerCommon;
+namespace Fin.BrokerCommon;
 
 public class BrokerWrapperYF : IBrokerWrapper
 {

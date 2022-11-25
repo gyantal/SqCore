@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using BrokerCommon;
+using Fin.BrokerCommon;
 using IBApi;
 using SqCommon;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 public partial class MemDb
 {

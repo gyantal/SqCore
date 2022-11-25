@@ -10,7 +10,7 @@ using SqCommon;
 using StackExchange.Redis;
 using YahooFinanceApi;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 // DailyHist RAM requirement: 1Year = 260*(2+4) = 1560B = 1.5KB,  5y data is: 5*260*(2+4) = 7.8K
 // Max RAM requirement if need only AdjClose: 20years for 5K stocks: 5000*20*260*(2+4) = 160MB (only one data per day: DivSplitAdjClose.)

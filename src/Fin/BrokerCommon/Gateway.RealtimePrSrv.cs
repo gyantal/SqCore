@@ -5,7 +5,7 @@ using System.Threading;
 using IBApi;
 using Utils = SqCommon.Utils;
 
-namespace BrokerCommon;
+namespace Fin.BrokerCommon;
 
 // 1. one idea was that if there is no LastPrice, give back the ClosePrice, so we always give back something.
 // However it doesn't work, as for Indices, even ClosePrice is not received. Nothing.

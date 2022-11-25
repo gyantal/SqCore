@@ -4,7 +4,7 @@ using System.Threading;
 using IBApi;
 using Utils = SqCommon.Utils;
 
-namespace BrokerCommon;
+namespace Fin.BrokerCommon;
 
 public class MktData
 {

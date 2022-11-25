@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using SqCommon;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 public class UserInDb // for quick JSON deserialization. In DB the fields has short names, and not all Asset fields are in the DB anyway
 {

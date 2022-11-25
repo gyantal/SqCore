@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SqCommon;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 public class AssetsCache // the whole asset data should be hidden behind a single pointer, so the whole structure can be updated in an atomic operation in a multithread environment
 {

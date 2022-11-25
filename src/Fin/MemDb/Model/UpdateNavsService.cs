@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using BrokerCommon;
+using Fin.BrokerCommon;
 using IBApi;
 using Microsoft.Extensions.Primitives;
 using SqCommon;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 // - Created a Google Calendar item (Annually on January 5):
 // Subject: SqCore Maintenance: Update deposit/withdrawal & daily NAV history annually in RedisDb

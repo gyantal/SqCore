@@ -5,12 +5,12 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using BrokerCommon;
+using Fin.BrokerCommon;
 using IBApi;
 using SqCommon;
 
 // MemDb.Init() Flowchart: https://docs.google.com/document/d/1fwW7u4IvMIFNwx_l1YI8vop0bJ1Cl0bAPETGC-FIvxs
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 public partial class MemDb : IDisposable
 {

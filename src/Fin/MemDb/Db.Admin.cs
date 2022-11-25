@@ -7,7 +7,7 @@ using DbCommon;
 using SqCommon;
 using StackExchange.Redis;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 public partial class Db
 {

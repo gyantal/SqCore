@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
-using BrokerCommon;
+using Fin.BrokerCommon;
 using SqCommon;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 // All Assets gSheet: https://docs.google.com/spreadsheets/d/1gkZlvD5epmBV8zi-l0BbLaEtwScvhHvHOYFZ4Ah_MA4/edit#gid=1251256843
 

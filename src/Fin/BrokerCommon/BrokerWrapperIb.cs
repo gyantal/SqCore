@@ -10,7 +10,7 @@ using IBApi;
 using SqCommon;
 using Utils = SqCommon.Utils;
 
-namespace BrokerCommon;
+namespace Fin.BrokerCommon;
 
 public class BrokerWrapperIb : IBrokerWrapper
 {

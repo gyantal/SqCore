@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using SqCommon;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 // This service can be outsourced to a 3rd App.
 // It can update data that is not even related to SqCoreWeb server: such as Option price crawler puts huge data into SqlDb,

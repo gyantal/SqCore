@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 // IB uses ContractType, not AssetType, because it handles contracts that produces assets. E.g. 1 CurrencyPair Forex contract can change 2 assets: both UsdAsset and EurAsset.
 // However, we prefer to store Assets in our DB. Irrespective of which contract produced that asset.

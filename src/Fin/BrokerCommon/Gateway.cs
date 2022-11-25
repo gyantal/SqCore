@@ -7,7 +7,7 @@ using IBApi;
 using SqCommon;
 using Utils = SqCommon.Utils;
 
-namespace BrokerCommon;
+namespace Fin.BrokerCommon;
 
 // GateWayId is not User. DC user has 2 Gateways: Main, DeBlanzac. But same user.
 public enum GatewayId { Unknown, Demo, GyantalMain, GyantalSecondary, GyantalPaper, CharmatMain, CharmatSecondary, CharmatPaper, CharmatWifeMain, CharmatWifeSecondary, CharmatWifePaper, DeBlanzacMain, DeBlanzacSecondary, TuMain, TuSecondary }

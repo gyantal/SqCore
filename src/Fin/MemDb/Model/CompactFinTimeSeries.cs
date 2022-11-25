@@ -77,7 +77,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using SqCommon;
 
-namespace FinTechCommon;
+namespace Fin.MemDb;
 
 public class ReverseComparer<TKey> : IComparer<TKey>
 {

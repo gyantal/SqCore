@@ -1,5 +1,5 @@
 using System;
-using FinTechCommon;
+using Fin.MemDb;
 
 namespace SqCoreWeb;
 
