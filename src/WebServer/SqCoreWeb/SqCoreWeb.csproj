@@ -22,8 +22,8 @@
     </PackageReference>
     <AdditionalFiles Include="..\..\stylecop.json" Link="stylecop.json" />
 
-    <ProjectReference Include="..\..\Common\FinTechCommon\FinTechCommon.csproj" />
-    <ProjectReference Include="..\..\Common\BrokerCommon\BrokerCommon.csproj" />
+    <ProjectReference Include="..\..\Fin\MemDb\MemDb.csproj" />
+    <ProjectReference Include="..\..\Fin\BrokerCommon\BrokerCommon.csproj" />
     <ProjectReference Include="..\..\Common\SqCommon\SqCommon.csproj" />
     <ProjectReference Include="..\..\Common\DbCommon\DbCommon.csproj" />
     <ProjectReference Include="..\..\Common\MathCommon\MathCommon.csproj" />

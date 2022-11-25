@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DbCommon\DbCommon.csproj" />
-    <ProjectReference Include="..\SqCommon\SqCommon.csproj" />
+    <ProjectReference Include="..\..\Common\DbCommon\DbCommon.csproj" />
+    <ProjectReference Include="..\..\Common\SqCommon\SqCommon.csproj" />
     <ProjectReference Include="..\BrokerCommon\BrokerCommon.csproj" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="CsvHelper" Version="27.2.1" />
