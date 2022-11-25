@@ -115,7 +115,7 @@ public partial class Program
             gLogger.Error(e, $"CreateHostBuilder(args).Build().Run() exception.");
             if (e is System.Net.Sockets.SocketException)
             {
-                gLogger.Error("Linux. See 'Allow non-root process to bind to port under 1024.txt'. If Dotnet.exe was updated, it lost privilaged port. Try 'whereis dotnet','sudo setcap 'cap_net_bind_service=+ep' /usr/share/dotnet/dotnet'.");
+                gLogger.Error("SocketException! Potential Error on Linux. Kestrel couldn't bind to port number. See 'Allow non-root process to bind to port under 1024.txt'. If Dotnet.exe was updated, it lost privilaged port. Try 'whereis dotnet','sudo setcap 'cap_net_bind_service=+ep' /usr/share/dotnet/dotnet'.");
             }
             HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MainThread. Exception: '{e.ToStringWithShortenedStackTrace(1600)}'", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
         }
@@ -275,6 +275,14 @@ public partial class Program
         gLogger.Error(p_e.Exception, $"TaskScheduler_UnobservedTaskException()");
 
         string msg = $"Exception in SqCore.WebServer.SqCoreWeb.C#.TaskScheduler_UnobservedTaskException. Exception: '{p_e.Exception.ToStringWithShortenedStackTrace(1600)}'. ";
+        Console.WriteLine((p_e.Exception as AggregateException)?.InnerException?.Message ?? "cannot get data from InnerException");
+        if (p_e.Exception is AggregateException aggrEx && aggrEx.InnerException is System.Net.Sockets.SocketException)
+        {
+            string msgConsole = "SocketException! Potential Error on Linux. Kestrel couldn't bind to port number. See 'Allow non-root process to bind to port under 1024.txt'. If Dotnet.exe was updated, it lost privilaged port. Try 'whereis dotnet','sudo setcap 'cap_net_bind_service=+ep' /usr/share/dotnet/dotnet'.";
+            Console.WriteLine(msgConsole);
+            msg = msgConsole + msg;
+        }
+
         msg += Utils.TaskScheduler_UnobservedTaskExceptionMsg(p_sender, p_e);
         gLogger.Warn(msg);
         p_e.SetObserved();        // preventing it from triggering exception escalation policy which, by default, terminates the process.

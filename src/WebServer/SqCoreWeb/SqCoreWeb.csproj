@@ -1,20 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
-
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
     <TypeScriptToolsVersion>Latest</TypeScriptToolsVersion>
     <IsPackable>false</IsPackable>
     <!-- <DefaultItemExcludes>$(DefaultItemExcludes);node_modules\**</DefaultItemExcludes>  it is not used now. -->
-
     <!-- Set this to true if you enable server-side prerendering -->
     <BuildServerSideRenderer>false</BuildServerSideRenderer>
     <!-- File with modifytime of last successful npm install -->
     <NpmInstallStampFile>node_modules/.install-stamp</NpmInstallStampFile>
     <CodeAnalysisRuleSet>..\..\StyleCop.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.435">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -28,14 +25,13 @@
     <ProjectReference Include="..\..\Common\DbCommon\DbCommon.csproj" />
     <ProjectReference Include="..\..\Common\MathCommon\MathCommon.csproj" />
     <None Update="NLog.config" CopyToOutputDirectory="PreserveNewest" />
-    <PackageReference Include="Microsoft.AspNetCore.SpaServices.Extensions" Version="6.0.0" />
-    <PackageReference Include="System.ServiceModel.Syndication" Version="6.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="6.0.0" />
-    <PackageReference Include="NLog.Web.AspNetCore" Version="4.14.0" />
-    <PackageReference Include="Npgsql" Version="6.0.0" />
-    <PackageReference Include="StackExchange.Redis" Version="2.2.88" />
+    <PackageReference Include="Microsoft.AspNetCore.SpaServices.Extensions" Version="7.0.0" />
+    <PackageReference Include="System.ServiceModel.Syndication" Version="7.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="7.0.0" />
+    <PackageReference Include="NLog.Web.AspNetCore" Version="5.0.0" />
+    <PackageReference Include="Npgsql" Version="7.0.0" />
+    <PackageReference Include="StackExchange.Redis" Version="2.6.80" />
   </ItemGroup>
-
   <ItemGroup>
     <!-- The Content item list contains files that are published in addition to the build outputs. 
     By default, files matching the patterns wwwroot\**, **\*.config, and **\*.json are included in the Content item list.
@@ -45,15 +41,12 @@
     <!-- <None Remove="$(SpaRoot)**" />
     <None Include="$(SpaRoot)**" Exclude="$(SpaRoot)node_modules\**" /> -->
   </ItemGroup>
-
   <!-- "If there are no initial targets, default targets, or command-line targets, then MSBuild runs the first target it encounters in the project file or any imported project files." 
   https://docs.microsoft.com/en-us/visualstudio/msbuild/target-build-order -->
   <!-- The "dotnet build" command is equivalent to "dotnet msbuild -restore -target:Build". The "dotnet msbuild" gives you more control.  -->
-
   <Target Name="PublishSqCoreWeb" AfterTargets="ComputeFilesToPublish" Condition=" '$(Configuration)' == 'Release'">
     <Message Importance="high" Text="SqBuild:PublishSqCoreWeb...(runs after Build+ComputeFilesToPublish targets finished, but before Publish). Do nothing." />
   </Target>
-
   <!-- https://stackoverflow.com/questions/35435041/run-npm-install-only-when-needed-and-or-partially -->
   <Target Name="NpmInstall" BeforeTargets="BeforeBuild" Inputs="package.json" Outputs="$(NpmInstallStampFile)">
     <Message Importance="high" Text="SqBuild: Restoring npm packages..." />
@@ -62,9 +55,7 @@
       <Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
     </Exec>
     <Error Condition="'$(ErrorCode)' != '0'" Text="Node.js is required to build and run this project. To continue, please install Node.js from https://nodejs.org/, and then restart your command prompt or IDE." />
-    
     <Exec Command="npm install" />
     <Touch Files="$(NpmInstallStampFile)" AlwaysCreate="true" />
   </Target>
-
 </Project>

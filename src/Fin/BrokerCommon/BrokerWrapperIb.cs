@@ -786,10 +786,10 @@ public class BrokerWrapperIb : IBrokerWrapper
         ConcurrentDictionary<int, PriceAndTime> tickData = mktDataSubscription.Prices;
         lock (tickData)
         {
-            if (tickData.ContainsKey(field)) // the Decimal is 20x slower than float, we don't use it: http://gregs-blog.com/2007/12/10/dot-net-decimal-type-vs-float-type/
+            if (tickData.TryGetValue(field, out PriceAndTime? priceAndTime)) // the Decimal is 20x slower than float, we don't use it: http://gregs-blog.com/2007/12/10/dot-net-decimal-type-vs-float-type/
             {
-                tickData[field].Price = price;
-                tickData[field].Time = DateTime.UtcNow;
+                priceAndTime.Price = price;
+                priceAndTime.Time = DateTime.UtcNow;
             }
             // else
             //    Console.WriteLine("Tick Price. Tick Id:" + tickId + ", Field: " + TickType.getField(field) + ", Price: " + price + ", CanAutoExecute: " + canAutoExecute);

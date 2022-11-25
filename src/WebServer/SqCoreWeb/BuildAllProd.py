@@ -69,15 +69,15 @@ for dir in os.walk("wwwroot"):
 
 # 4. DotNet (C#) build RELEASE and Publish
 print("\nSqBuild: Executing 'dotnet publish...'")
-if os.path.exists("bin/Release/net6.0/publish"):
-    shutil.rmtree("bin/Release/net6.0/publish")    # platform independent way of deleting a folder recursively
+if os.path.exists("bin/Release/net7.0/publish"):
+    shutil.rmtree("bin/Release/net7.0/publish")    # platform independent way of deleting a folder recursively
 os.system("dotnet publish --configuration Release SqCoreWeb.csproj /property:GenerateFullPaths=true")
 
 # 5. Postprocess the published folder. (before deploying to Linux)
 # NLog.config: fileName="${basedir}/../../../../../../logs/SqCoreWeb.${date:format=yyyy-MM-dd}.sqlog" should be changed to fileName="${basedir}/../logs/SqCoreWeb.${date:format=yyyy-MM-dd}.sqlog"
 # This should not be done in the local Debug or Release folders, only the Publish folder.
 print("\nSqBuild: Modifying NLog.config for Linux logs folder.")
-with fileinput.FileInput("bin/Release/net6.0/publish/NLog.config", inplace=True, backup='.bak') as file:
+with fileinput.FileInput("bin/Release/net7.0/publish/NLog.config", inplace=True, backup='.bak') as file:
     for line in file:
         print(line.replace("{basedir}/../../../../../../logs", "{basedir}/../logs"), end='')
 
