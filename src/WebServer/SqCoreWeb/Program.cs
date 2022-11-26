@@ -72,12 +72,12 @@ public partial class Program
         Utils.MainThreadIsExiting = new ManualResetEventSlim(false);
         // HealthMonitorMessage.InitGlobals(ServerIp.HealthMonitorPublicIp, ServerIp.DefaultHealthMonitorServerPort);       // until HealthMonitor runs on the same Server, "localhost" is OK
 
-        Email.SenderName = Utils.Configuration["Emails:HQServer"];
-        Email.SenderPwd = Utils.Configuration["Emails:HQServerPwd"];
-        PhoneCall.TwilioSid = Utils.Configuration["PhoneCall:TwilioSid"];
-        PhoneCall.TwilioToken = Utils.Configuration["PhoneCall:TwilioToken"];
-        PhoneCall.PhoneNumbers[Caller.Gyantal] = Utils.Configuration["PhoneCall:PhoneNumberGyantal"];
-        PhoneCall.PhoneNumbers[Caller.Charmat0] = Utils.Configuration["PhoneCall:PhoneNumberCharmat0"];
+        Email.SenderName = Utils.Configuration["Emails:HQServer"]!;
+        Email.SenderPwd = Utils.Configuration["Emails:HQServerPwd"]!;
+        PhoneCall.TwilioSid = Utils.Configuration["PhoneCall:TwilioSid"]!;
+        PhoneCall.TwilioToken = Utils.Configuration["PhoneCall:TwilioToken"]!;
+        PhoneCall.PhoneNumbers[Caller.Gyantal] = Utils.Configuration["PhoneCall:PhoneNumberGyantal"]!;
+        PhoneCall.PhoneNumbers[Caller.Charmat0] = Utils.Configuration["PhoneCall:PhoneNumberCharmat0"]!;
 
         StrongAssert.G_strongAssertEvent += StrongAssertMessageSendingEventHandler;
         AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(AppDomain_BckgThrds_UnhandledException);
@@ -90,6 +90,8 @@ public partial class Program
 
             // 2. Init services
             var redisConnString = OperatingSystem.IsWindows() ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
+            if (redisConnString == null)
+                throw new SqException("Redis ConnectionStrings is missing from Config");
             int redisDbIndex = 0;  // DB-0 is ProductionDB. DB-1+ can be used for Development when changing database schema, so the Production system can still work on the ProductionDB
             var db = new Db(redisConnString, redisDbIndex, null);   // mid-level DB wrapper above low-level DB
             BrokersWatcher.gWatcher.Init(); // Returns quickly, because Broker connections happen in a separate ThreadPool threads. FintechCommon's MemDb is built on BrokerCommon's BrokerWatcher. So, it makes sense to initialize Brokers asap. Before MemDb uses it for RtNavTimer_Elapsed.ownloadLastPriceNav() very early

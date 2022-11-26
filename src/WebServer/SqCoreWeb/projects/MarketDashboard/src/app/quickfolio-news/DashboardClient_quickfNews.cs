@@ -225,7 +225,7 @@ public partial class DashboardClient
             throw;
         }
     }
-    public bool OnReceiveWsAsync_QckflNews(string msgCode, string msgObjStr)
+    public static bool OnReceiveWsAsync_QckflNews(string msgCode, string msgObjStr)
     {
         switch (msgCode)
         {

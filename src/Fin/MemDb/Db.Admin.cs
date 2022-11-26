@@ -30,7 +30,9 @@ public partial class Db
             throw new ArgumentOutOfRangeException(nameof(sourceDbIdx), "MirrorDb() expects idx from [0..15], and they should be different.");
 
         // 1. Create a new connection. Don't use the MemDb main connection, because we might want to switch to a non-default DB, like DB-1. It is safer this way. Don't tinker with the MemDb main connection
-        var redisConnString = OperatingSystem.IsWindows() ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
+        string? redisConnString = OperatingSystem.IsWindows() ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
+        if (redisConnString == null)
+            throw new SqException("Redis ConnectionStrings is missing from Config");
         ConnectionMultiplexer newConn = ConnectionMultiplexer.Connect(redisConnString);
         EndPoint endPoint = newConn.GetEndPoints().First();
         var server = newConn.GetServer(endPoint);
@@ -65,7 +67,7 @@ public partial class Db
     public static void UpsertAssets(int destDbIdx) // DB0 or DB1.  Developer is supposed to change the MemDb.ActiveDb to DB1, restart SqCore webserver. Change DB on this secondary DB1 first, and test if it works.
     {
         // AllAssets gSheet location: https://docs.google.com/spreadsheets/d/1gkZlvD5epmBV8zi-l0BbLaEtwScvhHvHOYFZ4Ah_MA4/edit#gid=898941432
-        string gApiKey = Utils.Configuration["Google:GoogleApiKeyKey"];
+        string? gApiKey = Utils.Configuration["Google:GoogleApiKeyKey"];
         if (String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
             throw new SqException("GoogleApiKeyKey is missing.");
 
@@ -224,6 +226,8 @@ public partial class Db
 
         // Create a new connection. Don't use the MemDb main connection, because we might want to switch to a non-default DB, like DB-1. It is safer this way. Don't tinker with the MemDb main connection
         var redisConnString = OperatingSystem.IsWindows() ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
+        if (redisConnString == null)
+            throw new SqException("Redis ConnectionStrings is missing from Config");
         ConnectionMultiplexer newConn = ConnectionMultiplexer.Connect(redisConnString);
         var destDb = newConn.GetDatabase(destDbIdx);
 

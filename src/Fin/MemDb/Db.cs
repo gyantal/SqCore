@@ -29,9 +29,9 @@ public partial class Db
     public IDatabase? m_sqlDb;
     readonly int m_redisDbIdx;
     public int RedisDbIdx { get { return m_redisDbIdx; } }
-    string m_lastUsersStr = string.Empty;
-    string m_lastAssetsStr = string.Empty;
-    string m_lastSrvLoadPrHistStr = string.Empty;
+    string? m_lastUsersStr = null;
+    string? m_lastAssetsStr = null;
+    string? m_lastSrvLoadPrHistStr = string.Empty;
     HashEntry[]? m_lastPortfolioFoldersRds = null;
     HashEntry[]? m_lastPortfoliosRds = null;
 
@@ -55,11 +55,11 @@ public partial class Db
         // Reason is that it is difficult to maintain, append new Stocks into Redis.Assets if it is binary brotli. Just a lot of headache.
         // At the same time it is a small table (not historical), and it is only loaded at once at program start, when we can afford longer loading times.
 
-        string sqUserDataStr = m_redisDb.StringGet("sq_user");
+        string? sqUserDataStr = m_redisDb.StringGet("sq_user");
         bool isUsersChangedInDb = m_lastUsersStr != sqUserDataStr;
-        string assetsStr = m_redisDb.HashGet("memDb", "Assets");
+        string? assetsStr = m_redisDb.HashGet("memDb", "Assets");
         bool isAllAssetsChangedInDb = m_lastAssetsStr != assetsStr;
-        string srvLoadPrHistStr = m_redisDb.HashGet("memDb", "Srv.LoadPrHist");
+        string? srvLoadPrHistStr = m_redisDb.HashGet("memDb", "Srv.LoadPrHist");
         bool isSqCoreWebAssetsChanged = m_lastSrvLoadPrHistStr != srvLoadPrHistStr;
         HashEntry[]? portfolioFoldersRds = m_redisDb.HashGetAll("portfolioFolder");
         bool isPortfFoldersChangedInDb = !DbUtils.IsRedisAllHashEqual(portfolioFoldersRds, m_lastPortfolioFoldersRds);
@@ -109,8 +109,11 @@ public partial class Db
         return (isReloadNeeded, users, assets, portfolioFolders, portfolios);
     }
 
-    static List<Asset> GetAssetsFromJson(string p_json, User[] users)
+    static List<Asset> GetAssetsFromJson(string? p_json, User[] users)
     {
+        if (p_json == null)
+            return new List<Asset>();
+
         List<Asset> assets = new();
         using (JsonDocument doc = JsonDocument.Parse(p_json))
         {
@@ -158,8 +161,10 @@ public partial class Db
         return assets;
     }
 
-    private static void AddLoadPrHistToAssets(string p_json, List<Asset> assets)
+    private static void AddLoadPrHistToAssets(string? p_json, List<Asset> assets)
     {
+        if (p_json == null)
+            return;
         var srvLoadPrHist = JsonSerializer.Deserialize<Dictionary<string, SrvLoadPrHistInDb>>(p_json);
         if (srvLoadPrHist == null)
             throw new SqException($"Deserialize failed on '{p_json}'");
@@ -210,12 +215,14 @@ public partial class Db
 
     public User[] GetUsers()
     {
-        string sqUserDataStr = m_redisDb.StringGet("sq_user");
+        string? sqUserDataStr = m_redisDb.StringGet("sq_user");
         return GetUsers(sqUserDataStr);
     }
 
-    public static User[] GetUsers(string p_sqUserDataStr)
+    public static User[] GetUsers(string? p_sqUserDataStr)
     {
+        if (p_sqUserDataStr == null)
+            return Array.Empty<User>();
         var usersInDb = JsonSerializer.Deserialize<List<UserInDb>>(p_sqUserDataStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         if (usersInDb == null)
             throw new SqException($"Deserialize failed on '{p_sqUserDataStr}'");
@@ -253,7 +260,9 @@ public partial class Db
 
     public Dictionary<string, List<Split>> GetMissingYfSplits()
     {
-        string missingYfSplitsJson = m_redisDb.HashGet("memDb", "Hist.Splits.MissingYF");
+        string? missingYfSplitsJson = m_redisDb.HashGet("memDb", "Hist.Splits.MissingYF");
+        if (missingYfSplitsJson == null)
+            return new Dictionary<string, List<Split>>();
         Dictionary<string, List<Split>>? potentialMissingYfSplits = JsonSerializer.Deserialize<Dictionary<string, List<Split>>>(missingYfSplitsJson); // JsonSerializer: Dictionary key <int>,<uint> is not supported
         if (potentialMissingYfSplits == null)
             throw new SqException($"Deserialize failed on '{missingYfSplitsJson}'");
@@ -263,7 +272,7 @@ public partial class Db
     public string? GetAssetQuoteRaw(AssetId32Bits p_assetId)
     {
         string redisKey = p_assetId.ToString() + ".brotli"; // // key: "9:1.brotli"
-        byte[] dailyNavBrotli = m_redisDb.HashGet("assetQuoteRaw", redisKey);
+        byte[]? dailyNavBrotli = m_redisDb.HashGet("assetQuoteRaw", redisKey);
         if (dailyNavBrotli == null)
             return null;
         var dailyNavStr = Utils.BrotliBin2Str(dailyNavBrotli);  // "D/C" for Date/Closes: "D/C,20090102/16461,20090105/16827,..."
@@ -280,8 +289,10 @@ public partial class Db
     public KeyValuePair<SqDateOnly, double>[] GetAssetBrokerNavDeposit(AssetId32Bits p_assetId)
     {
         string redisKey = p_assetId.ToString() + ".brotli"; // key: "9:1.brotli"
-        byte[] dailyDepositBrotli = m_redisDb.HashGet("assetBrokerNavDeposit", redisKey);
-        var dailyDepositStr = Utils.BrotliBin2Str(dailyDepositBrotli);  // 479 byte text data from 179 byte brotli data, starts with FormatString: "20090310/1903,20100305/2043,..."
+        byte[]? dailyDepositBrotli = m_redisDb.HashGet("assetBrokerNavDeposit", redisKey);
+        string? dailyDepositStr = Utils.BrotliBin2Str(dailyDepositBrotli);  // 479 byte text data from 179 byte brotli data, starts with FormatString: "20090310/1903,20100305/2043,..."
+        if (dailyDepositStr == null)
+            return Array.Empty<KeyValuePair<SqDateOnly, double>>();
         KeyValuePair<SqDateOnly, double>[] deposits = dailyDepositStr.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(r =>
         {
             // format: "20200323/-1000000"
@@ -301,12 +312,13 @@ public partial class Db
         for (int i = 0; i < portfolioFoldersRds.Length; i++)
         {
             HashEntry hashRow = portfolioFoldersRds[i];
-            if (!hashRow.Name.TryParse(out int id)) // Name is the 'Key' that contains the Id
+            string? rowValue = hashRow.Value;
+            if (!hashRow.Name.TryParse(out int id) || rowValue == null) // Name is the 'Key' that contains the Id
                 continue;   // Sometimes, there is an extra line 'New field'. But it can be deleted from Redis Manager. It is a kind of expected.
 
-            var prtfFolderInDb = JsonSerializer.Deserialize<PortfolioFolderInDb>(hashRow.Value, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var prtfFolderInDb = JsonSerializer.Deserialize<PortfolioFolderInDb>(rowValue, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             if (prtfFolderInDb == null)
-                throw new SqException($"Deserialize failed on '{hashRow.Value}'"); // Not expected error. DB has to be fixed
+                throw new SqException($"Deserialize failed on '{rowValue}'"); // Not expected error. DB has to be fixed
 
             PortfolioFolder pf = new(id, prtfFolderInDb, users); // PortfolioFolder.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
             result[id] = pf;
@@ -331,12 +343,13 @@ public partial class Db
         for (int i = 0; i < portfoliosRds.Length; i++)
         {
             HashEntry hashRow = portfoliosRds[i];
-            if (!hashRow.Name.TryParse(out int id)) // Name is the 'Key' that contains the Id
+            string? rowValue = hashRow.Value;
+            if (!hashRow.Name.TryParse(out int id) || rowValue == null) // Name is the 'Key' that contains the Id
                 continue;   // Sometimes, there is an extra line 'New field'. But it can be deleted from Redis Manager. It is a kind of expected.
 
-            var portfInDb = JsonSerializer.Deserialize<PortfolioInDb>(hashRow.Value, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            var portfInDb = JsonSerializer.Deserialize<PortfolioInDb>(rowValue, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             if (portfInDb == null)
-                throw new SqException($"Deserialize failed on '{hashRow.Value}'"); // Not expected error. DB has to be fixed
+                throw new SqException($"Deserialize failed on '{rowValue}'"); // Not expected error. DB has to be fixed
 
             Portfolio portfolio = new(id, portfInDb, users); // Portfolio.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
             result[id] = portfolio;

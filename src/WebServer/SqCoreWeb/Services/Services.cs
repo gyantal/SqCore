@@ -7,9 +7,9 @@ public partial class Program
 {
     public static void Services_Init()
     {
-        Caretaker.g_caretaker.Init("SqCoreServer", Utils.Configuration["Emails:ServiceSupervisors"], p_needDailyMaintenance: true, TimeSpan.FromHours(2));
+        Caretaker.g_caretaker.Init("SqCoreServer", Utils.Configuration["Emails:ServiceSupervisors"]!, p_needDailyMaintenance: true, TimeSpan.FromHours(2));
 
-        Overmind.gOvermind.Init();
+        Overmind.Init();
         // WebsitesMonitor.gWebsitesMonitor.Init();
         WebsitesMonitor.Init();
         // BrAccChecker.gBrAccChecker.Init();
@@ -22,7 +22,7 @@ public partial class Program
         BrAccChecker.Exit();
         // WebsitesMonitor.gWebsitesMonitor.Exit();
         WebsitesMonitor.Exit();
-        Overmind.gOvermind.Exit();
+        Overmind.Exit();
 
         Caretaker.g_caretaker.Exit();
     }

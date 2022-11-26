@@ -75,18 +75,17 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
             {
                 return new Tuple<string, string>(@"{ ""Message"":  ""Error: yffOutFormat= was not found. Uri: " + uriQuery + @""" }", "application/json");
             }
-            string outputFormat = queryStrVal[0];
+            string? outputFormat = queryStrVal[0];
             bool isOutputJson = !String.Equals(outputFormat, "csv", StringComparison.CurrentCultureIgnoreCase);
 
-            string? yffColumns = null;
             List<string> yffColumnsList = new();
             if (allParamsDict.TryGetValue("yffColumns", out queryStrVal))
             {
-                yffColumns = queryStrVal[0];
+                string? yffColumns = queryStrVal[0];
                 yffColumnsList = new List<string>();
                 int columnsFormatStartIdx = 0;
                 string? previousCommand = null;
-                for (int k = 1; k < yffColumns.Length; k++)
+                for (int k = 1; k < yffColumns!.Length; k++)
                 {
                     if (Char.IsLetter(yffColumns[k]))
                     {
@@ -125,12 +124,11 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
                 }
             }
 
-            string? targetUriWithoutHttp = null;
             string ticker = string.Empty;
             if (allParamsDict.TryGetValue("yffUri", out queryStrVal)) // yffUri=query1.finance.yahoo.com/v7/finance/download/AAPL&period1=2017-02-02&period2=2017-05-22&interval=1d&events=history
             {
-                targetUriWithoutHttp = queryStrVal[0];
-                int indSlash = targetUriWithoutHttp.LastIndexOf('/');
+                string? targetUriWithoutHttp = queryStrVal[0];
+                int indSlash = targetUriWithoutHttp!.LastIndexOf('/');
                 if (indSlash != -1)
                     ticker = targetUriWithoutHttp[(indSlash + 1)..];
             }
@@ -149,8 +147,10 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
             // }
 
             // 3. With the Token.Cookie and Crumb download YF CSV file
-            string startTimeStr = allParamsDict["period1"];
-            string endTimeStr = allParamsDict["period2"];
+            string? startTimeStr = allParamsDict["period1"];
+            string? endTimeStr = allParamsDict["period2"];
+            if (startTimeStr == null || endTimeStr == null)
+                throw new SqException("period1 or period2 is not specified");
             DateTime startTime = SqDateOnly.MinValue, endTime = DateTime.UtcNow;
             if (startTimeStr.IndexOf('-') != -1) // format '2017-05-20' has hyphen in it; if it has hyphen, try to convert to Date.
             {

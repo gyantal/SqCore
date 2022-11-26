@@ -51,9 +51,11 @@ public class StrategyRenewedUberController : ControllerBase
         }
     }
 
+#pragma warning disable CA1822 // "Mark members as static". Kestrel Controller methods that is called as an URL has to be instance methods, not static.
     [HttpGet] // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
     public string Get()
     {
+#pragma warning restore CA1822
         string gchGSheetRefPos = "https://sheets.googleapis.com/v4/spreadsheets/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/values/A1:Z2000?key=";
         string gchGSheet2RefPos = "https://docs.google.com/spreadsheets/d/1OZV2MqNJAep9SV1p1YribbHYiYoI7Qz9OjQutV6qJt4/edit?usp=sharing";
         // string gchGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1QjGsXw6YxPT0He5kE4YJ5o52ZCnX7cLA5N-V3Ng1juA/values/A1:Z2000?key=";
@@ -700,7 +702,7 @@ public class StrategyRenewedUberController : ControllerBase
 
         return sb.ToString();
     }
-    public string? RenewedUberGoogleApiGsheet(string p_usedGSheetRef)
+    public static string? RenewedUberGoogleApiGsheet(string p_usedGSheetRef)
     {
         if (String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyName"]) || String.IsNullOrEmpty(Utils.Configuration["Google:GoogleApiKeyKey"]))
             return null;
@@ -821,7 +823,7 @@ public class StrategyRenewedUberController : ControllerBase
         return (uberTickersData, vixDailyquotes);
     }
 
-    public Tuple<DateTime[], double[], Tuple<double[], double[], double[], double[], double[], double>> STCIdata(DateTime[] p_usedDateVec)
+    public static Tuple<DateTime[], double[], Tuple<double[], double[], double[], double[], double[], double>> STCIdata(DateTime[] p_usedDateVec)
     {
         var client = new HttpClient();
 

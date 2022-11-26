@@ -64,7 +64,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         return "Error";
     }
 
-    public string GetStrVIX()
+    public static string GetStrVIX()
     {
         // Downloading live data from vixcentral.com.
         string? webpageLive = Utils.DownloadStringWithRetryAsync("http://vixcentral.com", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
@@ -223,7 +223,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
 
         return ret;
     }
-    public string GetStrOIL()
+    public static string GetStrOIL()
     {
         // Downloading live data from cmegroup.com.
         string? webpageLive = Utils.DownloadStringWithRetryAsync("https://www.cmegroup.com/CmeWS/mvc/Quotes/Future/425/G", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();
@@ -381,7 +381,7 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
         return ret;
     }
 
-    public string GetStrGAS()
+    public static string GetStrGAS()
     {
         // Downloading live data from cmegroup.com.
         string? webpageLive = Utils.DownloadStringWithRetryAsync("https://www.cmegroup.com/CmeWS/mvc/Quotes/Future/444/G", 3, TimeSpan.FromSeconds(2), true).TurnAsyncToSyncTask();

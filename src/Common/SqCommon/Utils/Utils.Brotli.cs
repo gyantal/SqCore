@@ -20,8 +20,10 @@ public static partial class Utils
         return msOutput.ToArray();
     }
 
-    public static string BrotliBin2Str(byte[] p_bin)
+    public static string? BrotliBin2Str(byte[]? p_bin)
     {
+        if (p_bin == null)
+            return null;
         using System.IO.MemoryStream msOutput = new(p_bin);
         using var bs = new BrotliStream(msOutput, CompressionMode.Decompress);
         int maxNbytesRead = p_bin.Length * 10;    // assume compression is max 10x, so we need 10x more byte array for uncompressed bytes

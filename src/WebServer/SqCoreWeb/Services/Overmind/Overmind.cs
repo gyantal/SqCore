@@ -17,7 +17,7 @@ public class Overmind
 {
     public static readonly Overmind gOvermind = new();
 
-    public void Init()
+    public static void Init()
     {
         Utils.Logger.Info("****Overmind:Init()");
         var sqTask = new SqTask()
@@ -44,7 +44,7 @@ public class Overmind
         SqTaskScheduler.gSqTasks.Add(sqTask);
     }
 
-    public void Exit()
+    public static void Exit()
     {
         Utils.Logger.Info("****Overmind:Exit()");
     }
@@ -94,7 +94,7 @@ public class OvermindExecution : SqExecution
         {
             new Email
             {
-                ToAddresses = Utils.Configuration["Emails:Gyant"],
+                ToAddresses = Utils.Configuration["Emails:Gyant"]!,
                 Subject = "SqCore Warning! : HealthMonitor is NOT Alive.",
                 Body = $"SqCore Warning! : HealthMonitor is NOT Alive. MachineName: {Environment.MachineName}, UserName: {Environment.UserName}.",
                 IsBodyHtml = false
@@ -106,7 +106,7 @@ public class OvermindExecution : SqExecution
     {
         string todayMonthAndDayStr = DateTime.UtcNow.ToString("MM-dd");
         if (todayMonthAndDayStr == "10-05") // Orsi's birthday
-            await new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore.Overmind: Orsi's birthday", Body = "Orsi's birthday is on 1976-10-09.", IsBodyHtml = false }.SendAsync();
+            await new Email { ToAddresses = Utils.Configuration["Emails:Gyant"]!, Subject = "SqCore.Overmind: Orsi's birthday", Body = "Orsi's birthday is on 1976-10-09.", IsBodyHtml = false }.SendAsync();
 
         Utils.Logger.Info("Overmind.MorningCheck(): Checking first day of the month");
         if (DateTime.UtcNow.AddDays(0).Day == 1)
@@ -115,12 +115,12 @@ public class OvermindExecution : SqExecution
             // So I will report to accountant only on 1st day of every month, and maybe he will get it later.
             // And this has an advantage that as I don't send the holidays report earlier, if they forget to tell me their 'last minute' holiday day-offs, it is not reported to accountant too early.
             // So less headache overall.
-            new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore.Overmind: send holidays, bank report to accountant", Body = "Send holidays, bank report to accountant. In 3 days, it is the 1st day of the month.", IsBodyHtml = false }.Send();
+            new Email { ToAddresses = Utils.Configuration["Emails:Gyant"]!, Subject = "SqCore.Overmind: send holidays, bank report to accountant", Body = "Send holidays, bank report to accountant. In 3 days, it is the 1st day of the month.", IsBodyHtml = false }.Send();
         }
         if ((new int[] { 11, 12, 1, 2, 3 }).Contains(DateTime.UtcNow.Month) && (DateTime.UtcNow.Day == 1 || DateTime.UtcNow.Day == 16))
         {
             // every 2 weeks in winter, if I don't use the car, the battery is depleted. Charge it on Saturday.
-            new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore.Overmind: Charge Car battery in winter", Body = "Warning in every 2 weeks in winter: Charge car battery on Saturdays, otherwise you have to buy a battery every 2 years. (a lot of time to disassemble battery)", IsBodyHtml = false }.Send();
+            new Email { ToAddresses = Utils.Configuration["Emails:Gyant"]!, Subject = "SqCore.Overmind: Charge Car battery in winter", Body = "Warning in every 2 weeks in winter: Charge car battery on Saturdays, otherwise you have to buy a battery every 2 years. (a lot of time to disassemble battery)", IsBodyHtml = false }.Send();
         }
 
         // double? price = GetAmazonProductPrice("https://www.amazon.co.uk/Electronics-Sennheiser-Professional-blocking-gaming-headset-Black/dp/B00JQDOANK/");
@@ -183,7 +183,7 @@ public class OvermindExecution : SqExecution
         sb.Append(Email.g_htmlEmailEnd);
 
         string emailHtmlBody = sb.ToString();
-        new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();
+        new Email { ToAddresses = Utils.Configuration["Emails:Gyant"]!, Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();
     }
 
     static void CheckIntradayStockPctChanges()
@@ -225,7 +225,7 @@ public class OvermindExecution : SqExecution
 
         if (!String.IsNullOrEmpty(gyantalEmailInnerlStr))
         {
-            new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = "SqCore: Price Warning", Body = gyantalEmailInnerlStr, IsBodyHtml = false }.Send();
+            new Email { ToAddresses = Utils.Configuration["Emails:Gyant"]!, Subject = "SqCore: Price Warning", Body = gyantalEmailInnerlStr, IsBodyHtml = false }.Send();
             var call = new PhoneCall
             {
                 FromNumber = Caller.Gyantal,
@@ -238,7 +238,7 @@ public class OvermindExecution : SqExecution
 
         if (!String.IsNullOrEmpty(charmatEmailInnerlStr))
         {
-            new Email { ToAddresses = Utils.Configuration["Emails:Charm0"], Subject = "SqCore: Price Warning", Body = charmatEmailInnerlStr, IsBodyHtml = false }.Send();
+            new Email { ToAddresses = Utils.Configuration["Emails:Charm0"]!, Subject = "SqCore: Price Warning", Body = charmatEmailInnerlStr, IsBodyHtml = false }.Send();
             var call = new PhoneCall
             {
                 FromNumber = Caller.Gyantal,
@@ -340,9 +340,9 @@ public class OvermindExecution : SqExecution
             sb.Append(Email.g_htmlEmailEnd);
 
             string emailHtmlBody = sb.ToString();
-            new Email { ToAddresses = Utils.Configuration["Emails:Gyant"], Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();
-            new Email { ToAddresses = Utils.Configuration["Emails:Charm0"], Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();
-            new Email { ToAddresses = Utils.Configuration["Emails:Balazs"], Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();
+            new Email { ToAddresses = Utils.Configuration["Emails:Gyant"]!, Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();
+            new Email { ToAddresses = Utils.Configuration["Emails:Charm0"]!, Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();
+            new Email { ToAddresses = Utils.Configuration["Emails:Balazs"]!, Subject = subject, Body = emailHtmlBody, IsBodyHtml = true }.Send();
         }
     }
 

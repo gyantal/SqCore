@@ -46,9 +46,9 @@ public partial class BrokersWatcher : IDisposable
     {
         Utils.Logger.Info("***GatewaysWatcher:Init()");
 
-        string isSupportPreStreamRealtimePricesStr = Utils.Configuration["SupportPreStreamRealtimePrices"];
-        Console.WriteLine($"SupportPreStreamRealtimePrices: {isSupportPreStreamRealtimePricesStr ?? "False"}");
-        m_isSupportPreStreamRealtimePrices = isSupportPreStreamRealtimePricesStr != null && isSupportPreStreamRealtimePricesStr.ToUpper() == "TRUE";
+        string isSupportPreStreamRealtimePricesStr = Utils.Configuration["SupportPreStreamRealtimePrices"] ?? "False";
+        Console.WriteLine($"IntBr:SupportPreStreamRealtimePrices: {isSupportPreStreamRealtimePricesStr}");
+        m_isSupportPreStreamRealtimePrices = isSupportPreStreamRealtimePricesStr.ToUpper() == "TRUE";
 
         // For succesful remote connection, check the following:
         // 1. Remote SqCore connection: "sudo ufw allow 7303/7308/7301"  (check "sudo ufw status")

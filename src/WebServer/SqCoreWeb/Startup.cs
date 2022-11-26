@@ -25,9 +25,11 @@ public class Startup
 
     public IConfiguration Configuration { get; }
 
+#pragma warning disable CA1822 // "Mark members as static". Kestrel assumes this is an instance method, not static.
     // This method gets called by the runtime. Use this method to add services to the container.
     public void ConfigureServices(IServiceCollection services)
     {
+#pragma warning restore CA1822
         // Asp.Net DependenciInjection (DI) of Kestrel policy for separating the creation of dependencies (IWebHostEnvironment, Options, Logger) from its actual usage in Controllers.
         // That way Controllers are light. And if there are 100 Controller classes, repeating the creation of Dependent objects (IWebHostEnvironment) is not in their source code. So, the source code of Controllers are light.
         // DI is not necessary. DotNet core bases classes doesn't use that for logging or anything. However, Kestrel uses it, which we can honour. It also helps in unit-test.
@@ -99,8 +101,8 @@ public class Startup
         //     options.Level = CompressionLevel.Fastest;
         // });
 
-        string googleClientId = Utils.Configuration["Google:ClientId"];
-        string googleClientSecret = Utils.Configuration["Google:ClientSecret"];
+        string? googleClientId = Utils.Configuration["Google:ClientId"];
+        string? googleClientSecret = Utils.Configuration["Google:ClientSecret"];
 
         if (!String.IsNullOrEmpty(googleClientId) && !String.IsNullOrEmpty(googleClientSecret))
         {
@@ -250,9 +252,11 @@ public class Startup
         }
     }
 
+#pragma warning disable CA1822 // "Mark members as static". Kestrel assumes this is an instance method, not static.
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
+#pragma warning restore CA1822
         Program.WebAppGlobals.KestrelEnv = env;
 
         if (!env.IsDevelopment())
