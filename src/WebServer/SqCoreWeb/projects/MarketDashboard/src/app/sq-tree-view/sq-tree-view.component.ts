@@ -7,15 +7,19 @@ import { Component, OnInit, Input } from '@angular/core';
 })
 export class SqTreeViewComponent implements OnInit {
   @Input() items: any; // data receive from other components
+  // @Input() _parentWsConnection?: WebSocket = undefined; // this property will be input from above parent container
 
   isExpanded: boolean = false;
-  // portfolioSelectionSelected: string = '';
+  portfolioSelectionSelected: string = '';
+  parentFolderId: number = -1;
+
+  // typeId: number = -1; // 1: PortfolioFolder, 2: Another treeview
   constructor() { }
 
   ngOnInit(): void {
   }
 
-  onPortfoioFolderClicked(item: any) {
+  onItemClicked(item: any) {
     if (item.isExpanded) {
       item.isExpanded = !item.isExpanded;
       return;
@@ -27,7 +31,16 @@ export class SqTreeViewComponent implements OnInit {
           item.isExpanded = false;
       }
     }
+
     // this.onClickPortfolio(item);
+    // Under development - Daya
+    this.portfolioSelectionSelected = item.name;
+    this.parentFolderId = item.parentFolderId;
+    // if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+    //   this._parentWsConnection.send('PortfMgr.CreatePortfFldr:' + this.parentFolderId);
+    console.log('nested protfolio ', this.portfolioSelectionSelected, this.parentFolderId);
+    const portfolioView = document.getElementsByClassName('treeView');
+    console.log('count of treeView is ', portfolioView.length);
   }
 
   // // Under development - Daya

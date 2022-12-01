@@ -25,8 +25,6 @@ class PortfolioFolderJs
     public int ParentFolderId { get; set; } = -1;
     [JsonPropertyName("uName")]
     public string? UserName { get; set; } = string.Empty;
-    public bool? IsHuman { get; set; } = false; // AllUser, SqBacktester... users are not humans.
-    public bool? IsAdmin { get; set; } = false;
     [JsonPropertyName("cTime")]
     public string CreationTime { get; set; } = string.Empty;
     public string Note { get; set; } = string.Empty;
@@ -54,7 +52,6 @@ public partial class DashboardClient
             // Portfolio data is big. Don't send it in handshake. Send it 5 seconds later (if it is not the active tool)
             PortfMgrSendPortfolioFldrs();
             PortfMgrSendPortfolios();
-            // ProcessPrtfFldrsBasedOnVisibilty();
         });
     }
 
@@ -82,29 +79,6 @@ public partial class DashboardClient
         // List<string> portfolios = User.IsAdmin ? new List<string>() { "PorfolioName1", "PortfolioName2" } : new List<string>() { "PorfolioName3", "PortfolioName4" };
 
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Portfolios:" + Utils.CamelCaseSerialize(portfolios));
-        if (WsWebSocket!.State == WebSocketState.Open)
-            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-    }
-    private void PortfMgrSendPortfolioFldrs()
-    {
-        Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
-        List<PortfolioFolderJs> portfolioFldrs = new(prtfFldrs.Count);
-        foreach(PortfolioFolder pf in prtfFldrs)
-        {
-            PortfolioFolderJs pfJs = new()
-            {
-                Id = pf.Id,
-                Name = pf.Name,
-                ParentFolderId = pf.ParentFolderId,
-                UserId = pf.User?.Id ?? -1,
-                UserName = pf.User?.Username,
-                IsHuman = pf.User?.IsHuman,
-                IsAdmin = pf.User?.IsAdmin
-            };
-            portfolioFldrs.Add(pfJs);
-        }
-
-        byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.PortfoliosFldrs:" + Utils.CamelCaseSerialize(portfolioFldrs));
         if (WsWebSocket!.State == WebSocketState.Open)
             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
@@ -140,7 +114,7 @@ public partial class DashboardClient
         MemDb.gMemDb.AddNewPortfolioFolder(ownerUser, pfName, parentFldId, p_note);
     }
 
-    public void ProcessPrtfFldrsBasedOnVisibilty() // naming it temporaryly for understanding purpose, will change once the function is finalized
+    private void PortfMgrSendPortfolioFldrs() // Processing the portfolioFolders based on the visiblity rules
     {
         // Visibility rules for PortfolioFolders:
         // - Normal users don't see other user's PortfolioFolders. They see a virtual folder with their username ('dkodirekka'),
@@ -154,37 +128,38 @@ public partial class DashboardClient
 
         // add the virtual folders to prtfFldrsToClient
         int virtuarFolderId = -2;
+        User[] users = MemDb.gMemDb.Users;
         if (User.IsAdmin)
         {
-            // send a virtual folder for every other users (with different negative Ids)
+            // assigning a virtual folder for every other users (with different negative Ids)
+            foreach (User usr in users)
+            {
+                userIdToVirtualPrtfId.Add(usr.Id, virtuarFolderId);
+                PortfolioFolderJs pfAdminUserJs = new() { Id = virtuarFolderId, Name = usr.Username };
+                virtuarFolderId--;
+                prtfFldrsToClient.Add(pfAdminUserJs);
+            }
         }
         else
         {
-            // send only his virtual folder
-            // PortfolioFolderJs pfJs = new()
-            // {
-            //     Id = -2,
-            // };
-            // prtfFldrsToClient.Add(pfJs);
+            // send only his(User) virtual folder
+            userIdToVirtualPrtfId.Add(User.Id, virtuarFolderId);
+            PortfolioFolderJs pfCurUserJs = new() { Id = virtuarFolderId, Name = User.Username };
+            virtuarFolderId--;
+            prtfFldrsToClient.Add(pfCurUserJs);
         }
 
-        PortfolioFolderJs pfSharedWithMeJs = new()
-        {
-            Id = virtuarFolderId--
-        };
+        PortfolioFolderJs pfSharedWithMeJs = new() { Id = virtuarFolderId-- };
         prtfFldrsToClient.Add(pfSharedWithMeJs);
 
-        PortfolioFolderJs pfAllUsersJs = new()
-        {
-            Id = virtuarFolderId--
-        };
+        PortfolioFolderJs pfAllUsersJs = new() { Id = virtuarFolderId-- };
         prtfFldrsToClient.Add(pfAllUsersJs);
 
         foreach(PortfolioFolder pf in prtfFldrs)
         {
-            bool isSendToUser = User.IsAdmin || (pf.User == User);
+            bool isSendToUser = User.IsAdmin || (pf.User == null) || (pf.User == User); // (pf.User == null) means UserId = -1, which means its intended for All users
             if (!isSendToUser)
-                break;
+                continue;
 
             int parentFolderId = pf.ParentFolderId;
             if (pf.ParentFolderId == -1)
@@ -195,13 +170,7 @@ public partial class DashboardClient
                     parentFolderId = userIdToVirtualPrtfId[pf.User.Id];
             }
 
-            PortfolioFolderJs pfJs = new()
-            {
-                Id = pf.Id,
-                Name = pf.Name,
-                ParentFolderId = parentFolderId,
-                UserId = pf.User?.Id ?? -1
-            };
+            PortfolioFolderJs pfJs = new() { Id = pf.Id, Name = pf.Name, ParentFolderId = parentFolderId, UserId = pf.User?.Id ?? -1, UserName = pf.User?.Username };
             prtfFldrsToClient.Add(pfJs);
         }
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.PortfoliosFldrs:" + Utils.CamelCaseSerialize(prtfFldrsToClient));

@@ -9,12 +9,10 @@ type Nullable<T> = T | null;
 
 class PortfolioFldrJs {
   public id = -1;
-  public pfName = '';
+  public name = '';
   public usrName = '';
   public userId = -1;
   public parentFolderId = -1;
-  public isHuman = false;
-  public isAdmin = false;
 }
 
 @Component({
@@ -228,15 +226,13 @@ export class PortfolioManagerComponent implements OnInit {
     if (!(Array.isArray(portfoliosFldrsObj) && portfoliosFldrsObj.length > 0 ))
       return;
     for (const prtfFldr of portfoliosFldrsObj) {
-      const portfolios = new PortfolioFldrJs();
-      portfolios.id = prtfFldr.id;
-      portfolios.pfName = prtfFldr.name;
-      portfolios.parentFolderId = prtfFldr.parentFolderId;
-      portfolios.userId = prtfFldr.userId;
-      portfolios.usrName = prtfFldr.usrName;
-      portfolios.isHuman = prtfFldr.isHuman;
-      portfolios.isAdmin = prtfFldr.isAdmin;
-      portfolioFolders.push(portfolios);
+      const prFld = new PortfolioFldrJs();
+      prFld.id = prtfFldr.id;
+      prFld.name = prtfFldr.name;
+      prFld.parentFolderId = prtfFldr.parentFolderId;
+      prFld.userId = prtfFldr.userId;
+      prFld.usrName = prtfFldr.usrName;
+      portfolioFolders.push(prFld);
     }
     this.createTreeViewData(portfolioFolders);
   }
@@ -270,6 +266,13 @@ export class PortfolioManagerComponent implements OnInit {
 
   onCloseClicked() {
     this.isPortfolioDialogVisible = false;
+  }
+
+  // Under Development - Daya
+  onClickPortfolioName(uiPortfolioFoldersNested: any) {
+    this.uiPortfolioFoldersNested = uiPortfolioFoldersNested;
+    console.log('nested protfolio ', uiPortfolioFoldersNested.pfName, uiPortfolioFoldersNested.parentFolderId);
+    // this.onCreatePortfolioClicked(uiPortfolioFoldersNested.pfName);
   }
 
   onCreatePortfolioClicked(pfName: string) {

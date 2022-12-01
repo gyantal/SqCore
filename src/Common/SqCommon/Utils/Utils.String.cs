@@ -26,6 +26,11 @@ public static partial class Utils
         return str.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
     }
 
+    public static string[] SplitStringByCommaWithRegex(this string str)
+    {
+        return Regex.Split(str, @"(,\s)+");
+    }
+
     public static string ToStringWithShortenedStackTrace(this string s, int p_maxLength)
     {
         if (s.Length <= p_maxLength)
@@ -33,6 +38,7 @@ public static partial class Utils
         else
             return string.Concat(s.AsSpan(0, p_maxLength), "...");
     }
+
     public static string ToStringWithShortenedStackTrace(this Exception e, int p_maxLength)
     {
         string s = e?.ToString() ?? string.Empty;
