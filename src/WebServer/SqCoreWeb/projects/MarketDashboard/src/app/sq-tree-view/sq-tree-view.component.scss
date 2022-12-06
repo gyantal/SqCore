@@ -1,6 +1,13 @@
-// ul {
-//   list-style-type: none;
-// }
+ul {
+  list-style-type: none;
+}
+
+.treeView::before {
+  content: "\2795"; // Heavy plus sign code
+  size: 2rem;
+  display: inline-block;
+  margin-right: 0.6rem;
+}
 
 .treeView {
   font-size: 1.5rem;
@@ -11,37 +18,14 @@
   user-select: none;
 }
 
-// .portfolioFolder::before {
-//   // content: "\2795"; // Heavy plus sign code
-//   size: 2rem;
-//   color: black;
-//   display: inline-block;
-// }
-
 .treeView:hover {
   background: #FFAE42;
   cursor: pointer;
 }
 
-// .portfolioFolder {
-//   cursor: pointer;
-//   user-select: none;
-// }
-
-
-
-// .portfolioNestedView {
-//   cursor: pointer;
-// }
-
-// .active {
-//   display: block;
-// }
-
-// .portfolioFolderMinus::before {
-//   content: "\2796"; // Heavy Minus sign code
-//   color: black;
-//   display: inline-block;
-//   margin-right: 0.6rem;
-//   cursor: pointer;
-// }
+.treeViewExpanded::before {
+  content: "\2796"; // Heavy Minus sign code
+  size: 2rem;
+  display: inline-block;
+  margin-right: 0.6rem;
+}

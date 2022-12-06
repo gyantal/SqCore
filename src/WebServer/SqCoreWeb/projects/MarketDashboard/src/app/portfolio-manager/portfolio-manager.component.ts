@@ -1,4 +1,5 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, OnInit, Input, ViewChild } from '@angular/core';
+import { SqTreeViewComponent } from '../sq-tree-view/sq-tree-view.component';
 
 type Nullable<T> = T | null;
 
@@ -22,13 +23,16 @@ class PortfolioFldrJs {
 })
 export class PortfolioManagerComponent implements OnInit {
   @Input() _parentWsConnection?: WebSocket = undefined; // this property will be input from above parent container
+  @ViewChild(SqTreeViewComponent) public sqTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
 
   // handshakeObj: Nullable<PrtfMgrVwrHandShk> = null;
   portfoliosFldrsObj: Nullable<PortfolioFldrJs> = null;
   portfolioFolders: PortfolioFldrJs[] = [];
   uiPortfolioFoldersNested: any[] = [];
   isPortfolioDialogVisible: boolean = false;
+  virtualUsrId: number = -1;
   pfName: string = ''; // common for both portfolio and portfolioFolder
+  parentFldrId: number = -1;
   // portfolioSelection: string[] = ['Dr. Gyorgy, Antal', 'Didier Charmat']; // PrtFldrs
   // portfolioSelectionSelected: string = 'Dr. Gyorgy, Antal';
   tabPageVisibleIdx = 1;
@@ -268,16 +272,10 @@ export class PortfolioManagerComponent implements OnInit {
     this.isPortfolioDialogVisible = false;
   }
 
-  // Under Development - Daya
-  onClickPortfolioName(uiPortfolioFoldersNested: any) {
-    this.uiPortfolioFoldersNested = uiPortfolioFoldersNested;
-    console.log('nested protfolio ', uiPortfolioFoldersNested.pfName, uiPortfolioFoldersNested.parentFolderId);
-    // this.onCreatePortfolioClicked(uiPortfolioFoldersNested.pfName);
-  }
-
   onCreatePortfolioClicked(pfName: string) {
-    // console.log(this.pfName);
+    this.virtualUsrId = this.sqTreeComponent.userId;
+    this.parentFldrId = this.sqTreeComponent.prntFldrId;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.CreatePortfFldr:' + this.pfName);
+      this._parentWsConnection.send('PortfMgr.CreatePortfFldr:' + this.pfName + ',vId:' + this.virtualUsrId + ',prntFId;' + this.parentFldrId);
   }
 }
