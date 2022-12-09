@@ -9,9 +9,7 @@ export class SqTreeViewComponent implements OnInit {
   @Input() items: any; // data receive from other components
 
   isExpanded: boolean = false;
-  portfolioSelectionSelected: string = '';
-  prntFldrId: number = -1;
-  userId: number = -1;
+  static gLastSelectedItem: any;
 
   constructor() { }
 
@@ -31,9 +29,6 @@ export class SqTreeViewComponent implements OnInit {
       }
     }
 
-    // Under development - Daya
-    this.portfolioSelectionSelected = item.name;
-    this.prntFldrId = item.parentFolderId;
-    this.userId = item.id;
+    SqTreeViewComponent.gLastSelectedItem = item;
   }
 }

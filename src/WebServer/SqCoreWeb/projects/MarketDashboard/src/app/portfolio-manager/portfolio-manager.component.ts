@@ -30,11 +30,10 @@ export class PortfolioManagerComponent implements OnInit {
   portfolioFolders: PortfolioFldrJs[] = [];
   uiPortfolioFoldersNested: any[] = [];
   isPortfolioDialogVisible: boolean = false;
-  virtualUsrId: number = -1;
+  // virtualUsrId: number = -1;
   pfName: string = ''; // common for both portfolio and portfolioFolder
-  parentFldrId: number = -1;
-  // portfolioSelection: string[] = ['Dr. Gyorgy, Antal', 'Didier Charmat']; // PrtFldrs
-  // portfolioSelectionSelected: string = 'Dr. Gyorgy, Antal';
+  // parentFldrId: number = -1;
+
   tabPageVisibleIdx = 1;
 
   dashboardHeaderWidth = 0;
@@ -273,9 +272,8 @@ export class PortfolioManagerComponent implements OnInit {
   }
 
   onCreatePortfolioClicked(pfName: string) {
-    this.virtualUsrId = this.sqTreeComponent.userId;
-    this.parentFldrId = this.sqTreeComponent.prntFldrId;
+    const lastSelectedTreeNode = SqTreeViewComponent.gLastSelectedItem as PortfolioFldrJs;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.CreatePortfFldr:' + this.pfName + ',vId:' + this.virtualUsrId + ',prntFId;' + this.parentFldrId);
+      this._parentWsConnection.send('PortfMgr.CreatePortfFldr:' + this.pfName + ',vId:' + lastSelectedTreeNode.userId + ',prntFId:' + lastSelectedTreeNode.id);
   }
 }

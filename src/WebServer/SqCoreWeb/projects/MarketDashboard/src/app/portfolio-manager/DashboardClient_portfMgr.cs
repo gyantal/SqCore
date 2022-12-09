@@ -20,7 +20,7 @@ class PortfolioFolderJs
     [JsonPropertyName("n")]
     public string Name { get; set; } = string.Empty;
     [JsonPropertyName("u")]
-    public int UserId { get; set; } = -1;
+    public int UserId { get; set; } = -1; // will remove after finalizing the code - Daya
     [JsonPropertyName("p")]
     public int ParentFolderId { get; set; } = -1;
     [JsonPropertyName("uName")]
@@ -32,7 +32,7 @@ class PortfolioFolderJs
 
 public partial class DashboardClient
 {
-    public Dictionary<int, int> userIdToVirtualPrtfId = new();
+    public Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
     // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
     public void OnConnectedWsAsync_PortfMgr(bool p_isThisActiveToolAtConnectionInit)
     {
@@ -90,8 +90,7 @@ public partial class DashboardClient
         {
             case "PortfMgr.CreatePortfFldr": // msg: "DayaTest,vId:-17,prntFId;-1"
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfFldr '{msgObjStr}'");
-                (string pfNameP, int usrIdP, int parentFldIdP, string p_noteP) = ExtractCreatePrtfFldrParams(msgObjStr);
-                CreatePortfolioFolder(pfNameP, usrIdP, parentFldIdP, p_noteP);
+                CreatePortfolioFolder(msgObjStr);
                 return true;
             case "PortfMgr.DeletePortf":
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): DeletePortf '{msgObjStr}'");
@@ -105,58 +104,56 @@ public partial class DashboardClient
         }
     }
 
-    static (string PfName, int UsrId, int ParentFldId, string P_note) ExtractCreatePrtfFldrParams(string p_msg)
+    public void CreatePortfolioFolder(string p_msg)
     {
         int pfNameIdx = p_msg.IndexOf(',');
         if (pfNameIdx == -1)
             pfNameIdx = -1;
         string pfName = p_msg[..pfNameIdx];
-        int usrIdStartIdx = p_msg.IndexOf(":", pfNameIdx);
-        int prntFldrIdx = (usrIdStartIdx == -1) ? -1 : p_msg.IndexOf(";", usrIdStartIdx);
+        int usrIdStartIdx = p_msg.IndexOf(":", pfNameIdx); // will remove after finalizing the code - Daya
+        int prntFldrIdx = (usrIdStartIdx == -1) ? -1 : p_msg.IndexOf(",", usrIdStartIdx);
         if (prntFldrIdx == -1)
             prntFldrIdx = -1;
-        int usrId = Convert.ToInt32(p_msg.Substring(usrIdStartIdx + 1, prntFldrIdx - usrIdStartIdx - 9));
-        int parentFldId = Convert.ToInt32(p_msg[(prntFldrIdx + 1)..]);
-        return (pfName, usrId, parentFldId, String.Empty);
-    }
+        // int usrId = Convert.ToInt32(p_msg.Substring(usrIdStartIdx + 1, prntFldrIdx - usrIdStartIdx - 9)); // will remove after finalizing the code - Daya
+        int parentFldId = Convert.ToInt32(p_msg[(prntFldrIdx + 9)..]);
 
-    public void CreatePortfolioFolder(string pfName, int usrId, int parentFldId, string p_note)
-    {
-        int prntFldId = -1;   // get it from the Client.
-        // in case of parentFldId == -1 , the folder is created below the virtualUser folder (ex: i.e dkodirekka) need to build complete logic - under development (Daya)
-        if(parentFldId == -1)
-            prntFldId = usrId;
-        // Whenever an Admin user on the UI selects a parent folder and creates a PortfolioFolder, it should inherit the User (owner) of that parent folder.
-        // Note that the parent folder can be the Virtual Folder (User), but that is not allowed to be written to the MemDb, of course.
-        // User ownerUser = User;  // That might not be true if an Admin user creates a prFolder in a virtual folder of another user.
-        User user = User;
+        string p_note = string.Empty; // if there is some note mentioned by client we need to take that not the empty
 
-        if (User.IsAdmin)
+        User? user = User;
+        int prntFldIdToSend = -1;
+        foreach (PortfolioFolder pf in prtfFldrs)
         {
-            // The below tackles the issue of Admin creating folder either in his folder or anyone else folder
-            int pfUsrId = -1; // getting the portfolio userId
-            foreach(var usr in userIdToVirtualPrtfId)
+            if (parentFldId >= -2)
             {
-                if (usr.Value == usrId)
+                if (parentFldId == 0) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
+                    return; // throw new Exception("Nobody can create folders in virtual Shared folder"); // can we send an exception here - Daya
+                else if (parentFldId >= 1) // it is a proper folderID, Create the new Folder under that
                 {
-                    pfUsrId = usr.Key;
+                    prntFldIdToSend = parentFldId;
+                    if (pf.Id == prntFldIdToSend)
+                    {
+                        user = pf.User;
+                        break;
+                    }
+                }
+                else if (parentFldId == -2) // parentFldId == -2  Create the new Folder with “"User":-1,"ParentFolder":-2,”
+                {
+                    prntFldIdToSend = parentFldId;
+                    user = null;
                     break;
                 }
             }
-            // based on the userId getting the user details
-            User[] users = MemDb.gMemDb.Users;
-            foreach (User usr in users)
+            else // parentFldId < -2 is a virtual UserRoot folder. create the new Folder with (User: -1 * thisUserId, ParentFolder = -1)
             {
-                if(usr.Id == pfUsrId)
+                if (pf.User?.Id == -1 * parentFldId)
                 {
-                    user = usr;
+                    user = pf.User;
+                    // prntFldIdToSend = -1;
                     break;
                 }
             }
         }
-        else
-            user = User;
-        MemDb.gMemDb.AddNewPortfolioFolder(user, pfName, prntFldId, p_note);
+        MemDb.gMemDb.AddNewPortfolioFolder(user, pfName, prntFldIdToSend, p_note);
     }
 
     private void PortfMgrSendPortfolioFldrs() // Processing the portfolioFolders based on the visiblity rules
@@ -167,36 +164,36 @@ public partial class DashboardClient
         // - Admin users (developers) see all PortfolioFolders of all human users. Each human user (IsHuman) in a virtual folder with their username.
         // And the 'Shared with me', and 'AllUsers" virtual folders are there too.
 
-        Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
-        List<PortfolioFolderJs> prtfFldrsToClient = new();
-
         // add the virtual folders to prtfFldrsToClient
-        int virtuarFolderId = -2;
-        User[] users = MemDb.gMemDb.Users;
+        List<PortfolioFolderJs> prtfFldrsToClient = new();
+        Dictionary<int, User> virtUsrFldsToSend = new();
+
         if (User.IsAdmin)
         {
-            // assigning a virtual folder for every other users (with different negative Ids)
-            foreach (User usr in users)
+            foreach (PortfolioFolder pf in prtfFldrs) // iterate over all Folders to filter out those users who don't have any folders at all
             {
-                userIdToVirtualPrtfId.Add(usr.Id, virtuarFolderId);
-                PortfolioFolderJs pfAdminUserJs = new() { Id = virtuarFolderId, Name = usr.Username };
-                virtuarFolderId--;
-                prtfFldrsToClient.Add(pfAdminUserJs);
+                if (pf.User != null)
+                    virtUsrFldsToSend[pf.User.Id] = pf.User;
             }
         }
         else
         {
             // send only his(User) virtual folder
-            userIdToVirtualPrtfId.Add(User.Id, virtuarFolderId);
-            PortfolioFolderJs pfCurUserJs = new() { Id = virtuarFolderId, Name = User.Username };
-            virtuarFolderId--;
-            prtfFldrsToClient.Add(pfCurUserJs);
+            virtUsrFldsToSend[User.Id] = User;  // we send the user his main virtual folder even if he has no sub folders at all
         }
 
-        PortfolioFolderJs pfSharedWithMeJs = new() { Id = virtuarFolderId--, Name = "Shared" }; // temporarily assigning the name
+        foreach (var kvp in virtUsrFldsToSend)
+        {
+            User user = kvp.Value;
+            PortfolioFolderJs pfAdminUserJs = new() { Id = -1 * user.Id, Name = user.Username };
+            prtfFldrsToClient.Add(pfAdminUserJs);
+        }
+
+        PortfolioFolderJs pfSharedWithMeJs = new() { Id = 0, Name = "Shared" };
         prtfFldrsToClient.Add(pfSharedWithMeJs);
 
-        PortfolioFolderJs pfAllUsersJs = new() { Id = virtuarFolderId--, Name = "AllUser" }; // temporarily assigning the name
+        const int noUserVirtPortfId = -2;
+        PortfolioFolderJs pfAllUsersJs = new() { Id = noUserVirtPortfId, Name = "NoUser" };
         prtfFldrsToClient.Add(pfAllUsersJs);
 
         foreach(PortfolioFolder pf in prtfFldrs)
@@ -209,9 +206,9 @@ public partial class DashboardClient
             if (pf.ParentFolderId == -1)
             {
                 if (pf.User == null)
-                    parentFolderId = pfAllUsersJs.Id;
+                    parentFolderId = noUserVirtPortfId;
                 else
-                    parentFolderId = userIdToVirtualPrtfId[pf.User.Id];
+                    parentFolderId = -1 * pf.User.Id;
             }
 
             PortfolioFolderJs pfJs = new() { Id = pf.Id, Name = pf.Name, ParentFolderId = parentFolderId, UserId = pf.User?.Id ?? -1, UserName = pf.User?.Username };
