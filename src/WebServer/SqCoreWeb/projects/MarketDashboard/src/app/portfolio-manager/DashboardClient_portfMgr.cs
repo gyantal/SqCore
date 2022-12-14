@@ -19,20 +19,26 @@ class PortfolioFolderJs
     public int Id { get; set; } = -1;
     [JsonPropertyName("n")]
     public string Name { get; set; } = string.Empty;
-    [JsonPropertyName("u")]
-    public int UserId { get; set; } = -1; // will remove after finalizing the code - Daya
     [JsonPropertyName("p")]
     public int ParentFolderId { get; set; } = -1;
-    [JsonPropertyName("uName")]
-    public string? UserName { get; set; } = string.Empty;
     [JsonPropertyName("cTime")]
     public string CreationTime { get; set; } = string.Empty;
     public string Note { get; set; } = string.Empty;
 }
 
+class PortfolioJs : PortfolioFolderJs
+{
+    [JsonPropertyName("sAcs")]
+    public SharedAccess SharedAccess { get; set; } = SharedAccess.Unknown;
+    [JsonPropertyName("sUsr")]
+    public List<User> SharedUsersWith { get; set; } = new();
+    [JsonPropertyName("bCur")]
+    public string BaseCurrency { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+}
+
 public partial class DashboardClient
 {
-    public Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
     // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
     public void OnConnectedWsAsync_PortfMgr(bool p_isThisActiveToolAtConnectionInit)
     {
@@ -63,23 +69,24 @@ public partial class DashboardClient
 
     private void PortfMgrSendPortfolios()
     {
-        Dictionary<int, Portfolio>.ValueCollection prtf = MemDb.gMemDb.Portfolios.Values;
-        List<PortfolioFolderJs> portfolios = new(prtf.Count);
-        foreach(Portfolio pf in prtf)
+        Dictionary<int, Portfolio>.ValueCollection prtfs = MemDb.gMemDb.Portfolios.Values;
+        List<PortfolioJs> prtfToClient = new();
+        foreach(Portfolio pf in prtfs)
         {
-            PortfolioFolderJs pfJs = new()
+            PortfolioJs pfJs = new()
             {
                 Id = pf.Id,
                 Name = pf.Name,
                 ParentFolderId = pf.ParentFolderId,
-                UserId = pf.User?.Id ?? -1
+                SharedAccess = pf.SharedAccess,
+                SharedUsersWith = pf.SharedUsersWith,
             };
-            portfolios.Add(pfJs);
+            prtfToClient.Add(pfJs);
         }
 
         // List<string> portfolios = User.IsAdmin ? new List<string>() { "PorfolioName1", "PortfolioName2" } : new List<string>() { "PorfolioName3", "PortfolioName4" };
 
-        byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Portfolios:" + Utils.CamelCaseSerialize(portfolios));
+        byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Portfolios:" + Utils.CamelCaseSerialize(prtfToClient));
         if (WsWebSocket!.State == WebSocketState.Open)
             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
@@ -88,7 +95,7 @@ public partial class DashboardClient
     {
         switch (msgCode)
         {
-            case "PortfMgr.CreatePortfFldr": // msg: "DayaTest,vId:-17,prntFId;-1"
+            case "PortfMgr.CreatePortfFldr": // msg: "DayaTest,prntFId:-1"
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfFldr '{msgObjStr}'");
                 CreatePortfolioFolder(msgObjStr);
                 return true;
@@ -107,18 +114,14 @@ public partial class DashboardClient
     public void CreatePortfolioFolder(string p_msg)
     {
         int pfNameIdx = p_msg.IndexOf(',');
-        if (pfNameIdx == -1)
-            pfNameIdx = -1;
-        string pfName = p_msg[..pfNameIdx];
-        int usrIdStartIdx = p_msg.IndexOf(":", pfNameIdx); // will remove after finalizing the code - Daya
-        int prntFldrIdx = (usrIdStartIdx == -1) ? -1 : p_msg.IndexOf(",", usrIdStartIdx);
+        int prntFldrIdx = (pfNameIdx == -1) ? -1 : p_msg.IndexOf(":", pfNameIdx);
         if (prntFldrIdx == -1)
             prntFldrIdx = -1;
-        // int usrId = Convert.ToInt32(p_msg.Substring(usrIdStartIdx + 1, prntFldrIdx - usrIdStartIdx - 9)); // will remove after finalizing the code - Daya
-        int parentFldId = Convert.ToInt32(p_msg[(prntFldrIdx + 9)..]);
+        string pfName = p_msg[..pfNameIdx];
+        int parentFldId = Convert.ToInt32(p_msg[(prntFldrIdx + 1)..]);
 
         string p_note = string.Empty; // if there is some note mentioned by client we need to take that not the empty
-
+        Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
         User? user = User;
         int prntFldIdToSend = -1;
         foreach (PortfolioFolder pf in prtfFldrs)
@@ -163,7 +166,7 @@ public partial class DashboardClient
         // a virtual folder 'Shared with me', 'Shared with Anyone', and a virtual folder called 'AllUsers'
         // - Admin users (developers) see all PortfolioFolders of all human users. Each human user (IsHuman) in a virtual folder with their username.
         // And the 'Shared with me', and 'AllUsers" virtual folders are there too.
-
+        Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
         // add the virtual folders to prtfFldrsToClient
         List<PortfolioFolderJs> prtfFldrsToClient = new();
         Dictionary<int, User> virtUsrFldsToSend = new();
@@ -211,7 +214,7 @@ public partial class DashboardClient
                     parentFolderId = -1 * pf.User.Id;
             }
 
-            PortfolioFolderJs pfJs = new() { Id = pf.Id, Name = pf.Name, ParentFolderId = parentFolderId, UserId = pf.User?.Id ?? -1, UserName = pf.User?.Username };
+            PortfolioFolderJs pfJs = new() { Id = pf.Id, Name = pf.Name, ParentFolderId = parentFolderId };
             prtfFldrsToClient.Add(pfJs);
         }
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.PortfoliosFldrs:" + Utils.CamelCaseSerialize(prtfFldrsToClient));

@@ -11,9 +11,14 @@ type Nullable<T> = T | null;
 class PortfolioFldrJs {
   public id = -1;
   public name = '';
-  public usrName = '';
-  public userId = -1;
   public parentFolderId = -1;
+}
+
+class PortfolioJs {
+  public portf: PortfolioFldrJs[] = [];
+  public sharedAccess = '';
+  public sharedUserWithMe = '';
+  public baseCurrency = '';
 }
 
 @Component({
@@ -28,6 +33,8 @@ export class PortfolioManagerComponent implements OnInit {
   // handshakeObj: Nullable<PrtfMgrVwrHandShk> = null;
   portfoliosFldrsObj: Nullable<PortfolioFldrJs> = null;
   portfolioFolders: PortfolioFldrJs[] = [];
+  portfoliosObj: Nullable<PortfolioJs> = null;
+  portfolios: PortfolioJs[] = [];
   uiPortfolioFoldersNested: any[] = [];
   isPortfolioDialogVisible: boolean = false;
   // virtualUsrId: number = -1;
@@ -105,11 +112,11 @@ export class PortfolioManagerComponent implements OnInit {
     switch (msgCode) {
       case 'PortfMgr.Portfolios': // The most frequent message should come first. Note: LstVal (realtime price) is handled earlier in a unified way.
         console.log('PortfMgr.Portfolios:' + msgObjStr);
-        // this.processPortfoliosTree(msgObjStr);
+        this.processPortfolios(msgObjStr);
         return true;
       case 'PortfMgr.PortfoliosFldrs': // The most frequent message should come first. Note: LstVal (realtime price) is handled earlier in a unified way.
         console.log('PortfMgr.PortfoliosFldrs:' + msgObjStr);
-        this.processPortfoliosTree(msgObjStr);
+        this.processPortfolioFldrsTree(msgObjStr);
         return true;
       case 'PortfMgr.Handshake': // The least frequent message should come last.
         console.log('PortfMgr.Handshake:' + msgObjStr);
@@ -120,7 +127,29 @@ export class PortfolioManagerComponent implements OnInit {
     }
   }
 
-  processPortfoliosTree(msgObjStr: string) {
+  processPortfolios(msgObjStr: string) {
+    this.portfoliosObj = JSON.parse(msgObjStr, function(this: any, key, value) {
+      // eslint-disable-next-line no-invalid-this
+      const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
+
+      if (key === 'sAcs') {
+        _this.sharedAccess = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      if (key === 'sUsr') {
+        _this.sharedUserWithMe = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      if (key === 'bCur') {
+        _this.baseCurrency = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      return value;
+    });
+    this.updateUiPortfolios(this.portfoliosObj, this.portfolios);
+  }
+
+  processPortfolioFldrsTree(msgObjStr: string) {
     this.portfoliosFldrsObj = JSON.parse(msgObjStr, function(this: any, key, value) {
       // property names and values are transformed to a shorter ones for decreasing internet traffic.Transform them back to normal for better code reading.
 
@@ -134,14 +163,6 @@ export class PortfolioManagerComponent implements OnInit {
       }
       if (key === 'p') {
         _this.parentFolderId = value;
-        return; // if return undefined, orignal property will be removed
-      }
-      if (key === 'u') {
-        _this.userId = value;
-        return; // if return undefined, orignal property will be removed
-      }
-      if (key === 'uName') {
-        _this.usrName = value;
         return; // if return undefined, orignal property will be removed
       }
       return value;
@@ -223,8 +244,23 @@ export class PortfolioManagerComponent implements OnInit {
       }
     }
   }
-
   // under Development -- Daya
+  updateUiPortfolios(portfoliosObj: Nullable<PortfolioJs>, portfolios: PortfolioJs[]) {
+    if (!(Array.isArray(portfoliosObj) && portfoliosObj.length > 0 ))
+      return;
+    for (const prtf of portfoliosObj) {
+      const pf = new PortfolioJs();
+      const prtfItem = new PortfolioFldrJs();
+      prtfItem.id = prtf.id;
+      prtfItem.name = prtf.name;
+      pf.portf.push(prtfItem);
+      pf.baseCurrency = prtf.baseCurrency,
+      pf.sharedAccess = prtf.sharedAccess,
+      pf.sharedUserWithMe = prtf.sharedUserWithMe,
+      portfolios.push(pf);
+    }
+  }
+
   updateUiPortfolioFolders(portfoliosFldrsObj: Nullable<PortfolioFldrJs>, portfolioFolders: PortfolioFldrJs[]) {
     if (!(Array.isArray(portfoliosFldrsObj) && portfoliosFldrsObj.length > 0 ))
       return;
@@ -233,8 +269,6 @@ export class PortfolioManagerComponent implements OnInit {
       prFld.id = prtfFldr.id;
       prFld.name = prtfFldr.name;
       prFld.parentFolderId = prtfFldr.parentFolderId;
-      prFld.userId = prtfFldr.userId;
-      prFld.usrName = prtfFldr.usrName;
       portfolioFolders.push(prFld);
     }
     this.createTreeViewData(portfolioFolders);
@@ -274,6 +308,6 @@ export class PortfolioManagerComponent implements OnInit {
   onCreatePortfolioClicked(pfName: string) {
     const lastSelectedTreeNode = SqTreeViewComponent.gLastSelectedItem as PortfolioFldrJs;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.CreatePortfFldr:' + this.pfName + ',vId:' + lastSelectedTreeNode.userId + ',prntFId:' + lastSelectedTreeNode.id);
+      this._parentWsConnection.send('PortfMgr.CreatePortfFldr:' + this.pfName + ',prntFId:' + lastSelectedTreeNode.id);
   }
 }
