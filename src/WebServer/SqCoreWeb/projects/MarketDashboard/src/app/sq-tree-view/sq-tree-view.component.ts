@@ -9,6 +9,7 @@ export class SqTreeViewComponent implements OnInit {
   @Input() items: any; // data receive from other components
 
   isExpanded: boolean = false;
+  isFolderHasChildren: boolean = false;
   static gLastSelectedItem: any;
 
   constructor() { }
@@ -22,13 +23,21 @@ export class SqTreeViewComponent implements OnInit {
       return;
     } else {
       if (item.children) {
-        if (item.children.length > 0)
+        if (item.children.length > 0) {
           item.isExpanded = true;
-        else
+          this.isFolderHasChildren = true;
+        } else
           item.isExpanded = false;
       }
     }
 
+    // holder.SelecetdId = item.id
+
     SqTreeViewComponent.gLastSelectedItem = item;
+  }
+
+  // Yet to develop
+  expendChildren(treeviewPortItemOpenPathIds: number[]) {
+
   }
 }

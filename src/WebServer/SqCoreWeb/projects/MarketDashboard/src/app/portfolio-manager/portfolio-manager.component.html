@@ -8,6 +8,7 @@
     </span>
     <app-sq-tree-view [items]="uiPortfolioFoldersNested"></app-sq-tree-view>
     <button type="button" (click)="onCreateClicked()">Create</button>
+    <button type="button" (click)="onDeletePortfolioClicked()">Delete</button>
     <div id="portfolioModal" [ngStyle]="{'display': isPortfolioDialogVisible ? 'block' : 'none'}">
       <label><b>Name</b></label><br>
       <input type="text" placeholder="portfolio" name="portfolio" [(ngModel)]="pfName"><br><br>
@@ -47,5 +48,18 @@
         <div [hidden]="tabPageVisibleIdx == 1" id="StrategyParameters">Only for backtest</div>
       </div>
     </div>
+  </div>
+</div>
+<div id="hasChildrenDialog" [ngStyle]="{'visibility': isFldrHasChildrenDialogVisible ? 'visible' : 'hidden'}">
+  <div class="hasChildrenDialog-content">
+    <p>ALERT! the folder contains the children <br>
+      <span class="dialogSuggestion">Delete is not possible"</span>
+    </p>
+  </div>
+  <div class="fldrChldrnDialogButtons">
+    <button type="button" (click)="onFldrHasChildrenContinueClicked()">Continue this tab</button>
+  </div>
+  <div class="fldrChldrnDialogButtons">
+    <button type="button" (click)="onFldrHasChildrenCloseClicked()">Close this tab</button>
   </div>
 </div>

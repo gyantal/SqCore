@@ -138,7 +138,15 @@ internal class MemData // don't expose to clients.
         }
     }
 
-    public bool RemovePortfolioFolder(PortfolioFolder p_prFolder)
+    public bool DeletePortfolioFolder(int p_fldKey) // method to delete the folder based on fld key
+    {
+        lock (PrFldUpdateLock)
+        {
+            return PortfolioFolders.Remove(p_fldKey);
+        }
+    }
+
+    public bool RemovePortfolioFolder(PortfolioFolder p_prFolder) // method to remove the folder based on prtfFolder - need to discuss with George
     {
         lock (PrFldUpdateLock)
         {

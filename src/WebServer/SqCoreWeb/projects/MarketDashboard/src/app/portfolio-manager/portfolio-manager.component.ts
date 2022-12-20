@@ -14,12 +14,16 @@ class PortfolioFldrJs {
   public parentFolderId = -1;
 }
 
-class PortfolioJs {
-  public portf: PortfolioFldrJs[] = [];
-  public sharedAccess = '';
-  public sharedUserWithMe = '';
-  public baseCurrency = '';
-}
+// class PortfolioJs {
+//   public sharedAccess = '';
+//   public sharedUserWithMe = '';
+//   public baseCurrency = '';
+// }
+
+// class TreeViewItemSelectionHolder {
+//   public selected : PortfolioFldrJs;
+//  public selectedId : number;
+// }
 
 @Component({
   selector: 'app-portfolio-manager',
@@ -33,10 +37,13 @@ export class PortfolioManagerComponent implements OnInit {
   // handshakeObj: Nullable<PrtfMgrVwrHandShk> = null;
   portfoliosFldrsObj: Nullable<PortfolioFldrJs> = null;
   portfolioFolders: PortfolioFldrJs[] = [];
-  portfoliosObj: Nullable<PortfolioJs> = null;
-  portfolios: PortfolioJs[] = [];
+  // portfoliosObj: Nullable<PortfolioJs> = null;
+  // portfolios: PortfolioJs[] = [];
   uiPortfolioFoldersNested: any[] = [];
+  treeviewPortItemOpenPathIds: number[] = []; // [-31, 1, 8]
   isPortfolioDialogVisible: boolean = false;
+  isFldrHasChildren: boolean = false;
+  isFldrHasChildrenDialogVisible: boolean = false;
   // virtualUsrId: number = -1;
   pfName: string = ''; // common for both portfolio and portfolioFolder
   // parentFldrId: number = -1;
@@ -112,7 +119,7 @@ export class PortfolioManagerComponent implements OnInit {
     switch (msgCode) {
       case 'PortfMgr.Portfolios': // The most frequent message should come first. Note: LstVal (realtime price) is handled earlier in a unified way.
         console.log('PortfMgr.Portfolios:' + msgObjStr);
-        this.processPortfolios(msgObjStr);
+        // this.processPortfolios(msgObjStr);
         return true;
       case 'PortfMgr.PortfoliosFldrs': // The most frequent message should come first. Note: LstVal (realtime price) is handled earlier in a unified way.
         console.log('PortfMgr.PortfoliosFldrs:' + msgObjStr);
@@ -122,32 +129,46 @@ export class PortfolioManagerComponent implements OnInit {
         console.log('PortfMgr.Handshake:' + msgObjStr);
         // this.handshakeObj = JSON.parse(msgObjStr);
         return true;
+      case 'PortfMgr.PortfoliosFldrsChldrn': // Folders has children
+        console.log('PortfMgr.PortfoliosFldrsChldrn:' + msgObjStr);
+        this.isFldrHasChildren = String(JSON.parse(msgObjStr)).toLowerCase() === 'true';
+        if (this.isFldrHasChildren) {
+          this.isFldrHasChildrenDialogVisible = true;
+          const dialogAnimate = document.getElementById('hasChildrenDialog') as HTMLElement;
+          dialogAnimate.style.animationName = 'dialogFadein';
+          dialogAnimate.style.animationDuration = '3s';
+          dialogAnimate.style.animationTimingFunction = 'linear'; // default would be ‘ease’, which is a slow start, then fast, before it ends slowly. We prefer the linear.
+          // dialogAnimate.style.animationDelay = '0s';
+          dialogAnimate.style.animationIterationCount = '1'; // only once
+          dialogAnimate.style.animationFillMode = 'forwards';
+        }
+        return true;
       default:
         return false;
     }
   }
 
-  processPortfolios(msgObjStr: string) {
-    this.portfoliosObj = JSON.parse(msgObjStr, function(this: any, key, value) {
-      // eslint-disable-next-line no-invalid-this
-      const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
+  // processPortfolios(msgObjStr: string) {
+  //   this.portfoliosObj = JSON.parse(msgObjStr, function(this: any, key, value) {
+  //     // eslint-disable-next-line no-invalid-this
+  //     const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
 
-      if (key === 'sAcs') {
-        _this.sharedAccess = value;
-        return; // if return undefined, orignal property will be removed
-      }
-      if (key === 'sUsr') {
-        _this.sharedUserWithMe = value;
-        return; // if return undefined, orignal property will be removed
-      }
-      if (key === 'bCur') {
-        _this.baseCurrency = value;
-        return; // if return undefined, orignal property will be removed
-      }
-      return value;
-    });
-    this.updateUiPortfolios(this.portfoliosObj, this.portfolios);
-  }
+  //     if (key === 'sAcs') {
+  //       _this.sharedAccess = value;
+  //       return; // if return undefined, orignal property will be removed
+  //     }
+  //     if (key === 'sUsr') {
+  //       _this.sharedUserWithMe = value;
+  //       return; // if return undefined, orignal property will be removed
+  //     }
+  //     if (key === 'bCur') {
+  //       _this.baseCurrency = value;
+  //       return; // if return undefined, orignal property will be removed
+  //     }
+  //     return value;
+  //   });
+  //   this.updateUiPortfolios(this.portfoliosObj, this.portfolios);
+  // }
 
   processPortfolioFldrsTree(msgObjStr: string) {
     this.portfoliosFldrsObj = JSON.parse(msgObjStr, function(this: any, key, value) {
@@ -172,7 +193,7 @@ export class PortfolioManagerComponent implements OnInit {
 
   onPortfoliosRefreshClicked() {
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.RefreshPortfolios:');
+      this._parentWsConnection.send('PortfMgr.RefreshPortfolioFldrs:');
   }
 
   onClickPortfolioPreview(tabIdx: number) {
@@ -245,21 +266,21 @@ export class PortfolioManagerComponent implements OnInit {
     }
   }
   // under Development -- Daya
-  updateUiPortfolios(portfoliosObj: Nullable<PortfolioJs>, portfolios: PortfolioJs[]) {
-    if (!(Array.isArray(portfoliosObj) && portfoliosObj.length > 0 ))
-      return;
-    for (const prtf of portfoliosObj) {
-      const pf = new PortfolioJs();
-      const prtfItem = new PortfolioFldrJs();
-      prtfItem.id = prtf.id;
-      prtfItem.name = prtf.name;
-      pf.portf.push(prtfItem);
-      pf.baseCurrency = prtf.baseCurrency,
-      pf.sharedAccess = prtf.sharedAccess,
-      pf.sharedUserWithMe = prtf.sharedUserWithMe,
-      portfolios.push(pf);
-    }
-  }
+  // updateUiPortfolios(portfoliosObj: Nullable<PortfolioJs>, portfolios: PortfolioJs[]) {
+  //   if (!(Array.isArray(portfoliosObj) && portfoliosObj.length > 0 ))
+  //     return;
+  //   for (const prtf of portfoliosObj) {
+  //     const pf = new PortfolioJs();
+  //     const prtfItem = new PortfolioFldrJs();
+  //     prtfItem.id = prtf.id;
+  //     prtfItem.name = prtf.name;
+  //     pf.portf.push(prtfItem);
+  //     pf.baseCurrency = prtf.baseCurrency,
+  //     pf.sharedAccess = prtf.sharedAccess,
+  //     pf.sharedUserWithMe = prtf.sharedUserWithMe,
+  //     portfolios.push(pf);
+  //   }
+  // }
 
   updateUiPortfolioFolders(portfoliosFldrsObj: Nullable<PortfolioFldrJs>, portfolioFolders: PortfolioFldrJs[]) {
     if (!(Array.isArray(portfoliosFldrsObj) && portfoliosFldrsObj.length > 0 ))
@@ -309,5 +330,20 @@ export class PortfolioManagerComponent implements OnInit {
     const lastSelectedTreeNode = SqTreeViewComponent.gLastSelectedItem as PortfolioFldrJs;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('PortfMgr.CreatePortfFldr:' + this.pfName + ',prntFId:' + lastSelectedTreeNode.id);
+    this.isPortfolioDialogVisible = false;
+  }
+
+  onDeletePortfolioClicked() {
+    const lastSelectedTreeNode = SqTreeViewComponent.gLastSelectedItem as PortfolioFldrJs;
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+      this._parentWsConnection.send('PortfMgr.DeletePortfFldr:' + lastSelectedTreeNode.name + ',prntFId:' + lastSelectedTreeNode.id + ',chldrn:' + this.sqTreeComponent.isFolderHasChildren);
+  }
+
+  onFldrHasChildrenContinueClicked() {
+    this.isFldrHasChildrenDialogVisible = false;
+  }
+
+  onFldrHasChildrenCloseClicked() {
+    window.close();
   }
 }

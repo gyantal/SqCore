@@ -333,6 +333,12 @@ public partial class Db
         m_redisDb.HashSet("portfolioFolder", redisKey, redisValue);
     }
 
+    internal void DeletePortfolioFolder(int fldKey)
+    {
+        string redisKey = fldKey.ToString();
+        m_redisDb.HashDelete("portfolioFolder", redisKey); // remove the folder based on the folder key
+    }
+
     private static Dictionary<int, Portfolio> GetPortfolios(HashEntry[] portfoliosRds, User[] users, List<Asset> assets) // Portfolio will require Assets in the future
     {
         _ = assets; // StyleCop SA1313 ParameterNamesMustBeginWithLowerCaseLetter. They won't fix. Recommended solution for unused parameters, instead of the discard (_1) parameters

@@ -14,6 +14,11 @@ class HandshakePortfMgr // Initial params: keept it small
     public string UserName { get; set; } = string.Empty;
 }
 
+// class PortfolioItemJs {
+// }
+// class PortfolioJs : PortfolioItemJs
+// class PortfolioFolderJs: PortfolioItemJs
+
 class PortfolioFolderJs
 {
     public int Id { get; set; } = -1;
@@ -26,16 +31,16 @@ class PortfolioFolderJs
     public string Note { get; set; } = string.Empty;
 }
 
-class PortfolioJs : PortfolioFolderJs
-{
-    [JsonPropertyName("sAcs")]
-    public SharedAccess SharedAccess { get; set; } = SharedAccess.Unknown;
-    [JsonPropertyName("sUsr")]
-    public List<User> SharedUsersWith { get; set; } = new();
-    [JsonPropertyName("bCur")]
-    public string BaseCurrency { get; set; } = string.Empty;
-    public string Type { get; set; } = string.Empty;
-}
+// class PortfolioJs : PortfolioFolderJs
+// {
+//     [JsonPropertyName("sAcs")]
+//     public SharedAccess SharedAccess { get; set; } = SharedAccess.Unknown;
+//     [JsonPropertyName("sUsr")]
+//     public List<User> SharedUsersWith { get; set; } = new();
+//     [JsonPropertyName("bCur")]
+//     public string BaseCurrency { get; set; } = string.Empty;
+//     public string Type { get; set; } = string.Empty;
+// }
 
 public partial class DashboardClient
 {
@@ -58,7 +63,7 @@ public partial class DashboardClient
 
             // Portfolio data is big. Don't send it in handshake. Send it 5 seconds later (if it is not the active tool)
             PortfMgrSendPortfolioFldrs();
-            PortfMgrSendPortfolios();
+            // PortfMgrSendPortfolios();
         });
     }
 
@@ -67,29 +72,29 @@ public partial class DashboardClient
         return new HandshakePortfMgr() { UserName = User.Username };
     }
 
-    private void PortfMgrSendPortfolios()
-    {
-        Dictionary<int, Portfolio>.ValueCollection prtfs = MemDb.gMemDb.Portfolios.Values;
-        List<PortfolioJs> prtfToClient = new();
-        foreach(Portfolio pf in prtfs)
-        {
-            PortfolioJs pfJs = new()
-            {
-                Id = pf.Id,
-                Name = pf.Name,
-                ParentFolderId = pf.ParentFolderId,
-                SharedAccess = pf.SharedAccess,
-                SharedUsersWith = pf.SharedUsersWith,
-            };
-            prtfToClient.Add(pfJs);
-        }
+    // private void PortfMgrSendPortfolios()
+    // {
+    //     Dictionary<int, Portfolio>.ValueCollection prtfs = MemDb.gMemDb.Portfolios.Values;
+    //     List<PortfolioJs> prtfToClient = new();
+    //     foreach(Portfolio pf in prtfs)
+    //     {
+    //         PortfolioJs pfJs = new()
+    //         {
+    //             Id = pf.Id,
+    //             Name = pf.Name,
+    //             ParentFolderId = pf.ParentFolderId,
+    //             SharedAccess = pf.SharedAccess,
+    //             SharedUsersWith = pf.SharedUsersWith,
+    //         };
+    //         prtfToClient.Add(pfJs);
+    //     }
 
-        // List<string> portfolios = User.IsAdmin ? new List<string>() { "PorfolioName1", "PortfolioName2" } : new List<string>() { "PorfolioName3", "PortfolioName4" };
+    // // List<string> portfolios = User.IsAdmin ? new List<string>() { "PorfolioName1", "PortfolioName2" } : new List<string>() { "PorfolioName3", "PortfolioName4" };
 
-        byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Portfolios:" + Utils.CamelCaseSerialize(prtfToClient));
-        if (WsWebSocket!.State == WebSocketState.Open)
-            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-    }
+    // byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Portfolios:" + Utils.CamelCaseSerialize(prtfToClient));
+    //     if (WsWebSocket!.State == WebSocketState.Open)
+    //         WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+    // }
 
     public bool OnReceiveWsAsync_PortfMgr(string msgCode, string msgObjStr)
     {
@@ -98,12 +103,15 @@ public partial class DashboardClient
             case "PortfMgr.CreatePortfFldr": // msg: "DayaTest,prntFId:-1"
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfFldr '{msgObjStr}'");
                 CreatePortfolioFolder(msgObjStr);
+                PortfMgrSendPortfolioFldrs();
                 return true;
-            case "PortfMgr.DeletePortf":
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): DeletePortf '{msgObjStr}'");
+            case "PortfMgr.DeletePortfFldr": // msg: "TestNesting11,prntFId:5,chldrn:true"
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): DeletePortfFldr '{msgObjStr}'");
+                DeletePortfolioFolder(msgObjStr);
+                PortfMgrSendPortfolioFldrs();
                 return true;
-            case "PortfMgr.RefreshPortfolios":
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): RefreshPortfolios '{msgObjStr}'");
+            case "PortfMgr.RefreshPortfolioFldrs":
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): RefreshPortfolioFldrs '{msgObjStr}'");
                 PortfMgrSendPortfolioFldrs();
                 return true;
             default:
@@ -157,6 +165,36 @@ public partial class DashboardClient
             }
         }
         MemDb.gMemDb.AddNewPortfolioFolder(user, pfName, prntFldIdToSend, p_note);
+    }
+
+    private void DeletePortfolioFolder(string p_msg)
+    {
+        Dictionary<int, PortfolioFolder> prtfFldrs = MemDb.gMemDb.PortfolioFolders;
+        int prntFldrIdx = p_msg.IndexOf(":");
+        if (prntFldrIdx == -1)
+            prntFldrIdx = -1;
+        int fldrHasChldrnIdx = p_msg.IndexOf(":", prntFldrIdx + 1);
+        if (fldrHasChldrnIdx == -1)
+            fldrHasChldrnIdx = -1;
+        int parentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, fldrHasChldrnIdx - prntFldrIdx - 8));
+
+        string isFldrHasChildren = p_msg[(fldrHasChldrnIdx + 1)..];
+        if(isFldrHasChildren == "true")
+        {
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.PortfoliosFldrsChldrn:" + Utils.CamelCaseSerialize(isFldrHasChildren));
+            if (WsWebSocket!.State == WebSocketState.Open)
+                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+        else
+        {
+            int fldKey = 1;
+            foreach (var pf in prtfFldrs)
+            {
+                if (pf.Value.Id == parentFldId)
+                    fldKey = pf.Key;
+            }
+            MemDb.gMemDb.DeletePortfolioFolder(fldKey);
+        }
     }
 
     private void PortfMgrSendPortfolioFldrs() // Processing the portfolioFolders based on the visiblity rules

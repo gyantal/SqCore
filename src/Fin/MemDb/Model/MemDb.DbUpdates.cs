@@ -31,4 +31,17 @@ public partial class MemDb
         }
         return fld;
     }
+
+    public void DeletePortfolioFolder(int p_fldKey) // will finalise after discussing with George - Daya
+    {
+        m_memData.DeletePortfolioFolder(p_fldKey);
+        try
+        {
+            m_Db.DeletePortfolioFolder(p_fldKey); // can raise System.TimeoutException or others if the RedisDb is offline
+        }
+        catch (System.Exception) // if error occured in DB writing, revert the transaction back to original state. Do not add the new Folder into MemDb.
+        {
+            m_memData.DeletePortfolioFolder(p_fldKey);
+        }
+    }
 }
