@@ -22,14 +22,16 @@ import os
 import common_aa_pv as com
 
 
+
 # print all outputs
 from IPython.core.interactiveshell import InteractiveShell
 InteractiveShell.ast_node_interactivity = "all"
 from scipy.stats import rankdata
+from functools import reduce
 
-from taa import taa
-from baa import baa
-from dualmom import dualmom
+from taa_lib import taa
+from baa_lib import baa
+from dualmom_lib import dualmom
 
 
 
@@ -59,6 +61,16 @@ def curr_ETF_weights(meta_curr_weights, curr_weights_substrat_dict_p):
     curr_cash = 1 - sum(curr_ETF_weights.values())
     curr_ETF_weights['cash'] += curr_cash
     return curr_ETF_weights
+
+def cum_ETF_weights(meta_weights, weights_substrat_dict_p):
+    ETF_weights_dm = (weights_substrat_dict_p['DoubleMom'].multiply(meta_weights.DoubleMom.to_numpy(), axis = 0))
+    ETF_weights_taa = (weights_substrat_dict_p['TAA'].multiply(meta_weights.TAA.to_numpy(), axis = 0))
+    ETF_weights_baa_aggdef = (weights_substrat_dict_p['BAA_AggDef'].multiply(meta_weights.BAA_AggDef.to_numpy(), axis = 0))
+    ETF_weights_baa_baldef = (weights_substrat_dict_p['BAA_BalDef'].multiply(meta_weights.BAA_BalDef.to_numpy(), axis = 0))
+    ETF_weights = reduce(lambda x, y: x.add(y, fill_value = 0), [ETF_weights_dm, ETF_weights_taa, ETF_weights_baa_aggdef, ETF_weights_baa_baldef])
+    cash = 1 - ETF_weights.sum(axis = 1)
+    ETF_weights['cash'] += cash
+    return ETF_weights
 
 def meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters):
 
@@ -110,7 +122,15 @@ def meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters):
     taa_pv, taa_strat_rets, taa_weights, taa_pos, taa_cash, taa_curr_weights, taa_pv_ew, taa_strat_rets_ew, taa_pos_ew, taa_cash_ew =taa(taa_ticker_list, taa_perc_ch_lb_list, taa_vol_lb, taa_perc_ch_up_thres, taa_perc_ch_low_thres, taa_rebalance_unit, taa_rebalance_freq, taa_rebalance_shift, meta_start_date, meta_end_date)
     baa_pv, baa_strat_rets, baa_weights, baa_pos, baa_cash, baa_curr_weights, baa_pv_ew, baa_strat_rets_ew, baa_pos_ew, baa_cash_ew = baa('agg_def', baa_ticker_list_canary, baa_ticker_list_defensive, baa_ticker_list_aggressive, baa_ticker_list_balanced, baa_rebalance_unit, baa_rebalance_freq, baa_rebalance_shift, baa_skipped_period, baa_no_played_ETFs, baa_abs_threshold, meta_start_date, meta_end_date)
     baa2_pv, baa2_strat_rets, baa2_weights, baa2_pos, baa2_cash, baa2_curr_weights, baa2_pv_ew, baa2_strat_rets_ew, baa2_pos_ew, baa2_cash_ew = baa('bal_def', baa_ticker_list_canary, baa_ticker_list_defensive, baa_ticker_list_aggressive, baa_ticker_list_balanced, baa_rebalance_unit, baa_rebalance_freq, baa_rebalance_shift, baa_skipped_period, baa_no_played_ETFs, baa_abs_threshold, meta_start_date, meta_end_date)
-    dm_pv, dm_strat_rets, dm_weights2, dm_pos, dm_cash, dm_curr_weights, dm_pv_ew, dm_strat_rets_ew, dm_pos_ew, dm_cash_ew = dualmom(dm_tickers_list, dm_rebalance_unit, dm_rebalance_freq, dm_rebalance_shift, dm_lb_period, dm_skipped_period, dm_no_played_ETFs, dm_sub_rank_weights, dm_abs_threshold, meta_start_date, meta_end_date)
+    dm_pv, dm_strat_rets, dm_weights, dm_pos, dm_cash, dm_curr_weights, dm_pv_ew, dm_strat_rets_ew, dm_pos_ew, dm_cash_ew = dualmom(dm_tickers_list, dm_rebalance_unit, dm_rebalance_freq, dm_rebalance_shift, dm_lb_period, dm_skipped_period, dm_no_played_ETFs, dm_sub_rank_weights, dm_abs_threshold, meta_start_date, meta_end_date)
+
+    taa_weights = taa_weights.groupby(taa_weights.columns, axis = 1).sum()
+    baa_weights = baa_weights.groupby(baa_weights.columns, axis = 1).sum()
+    baa2_weights = baa2_weights.groupby(baa2_weights.columns, axis = 1).sum()
+    dm_weights = dm_weights.groupby(dm_weights.columns, axis = 1).sum()
+
+    list_total = list(set(taa_ticker_list + baa_ticker_list_aggressive + baa_ticker_list_balanced + baa_ticker_list_defensive + dm_tickers_list))
+    adj_close_price = yf.download(list_total,start = pd.to_datetime(meta_start_date) + pd.DateOffset(years= -2),end = pd.to_datetime(meta_end_date) + pd.DateOffset(days= 1) )['Adj Close']
 
     meta_pvs = pd.concat([dm_pv, baa_pv, baa2_pv, taa_pv], axis = 1, keys = ['DoubleMom', 'BAA_AggDef', 'BAA_BalDef', 'TAA'])
     df = meta_pvs.copy()
@@ -197,6 +217,10 @@ def meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters):
     sortino_weights2 = meta_sortino_based_weights.copy()
     sortino_weights2['cash'] = meta_sortino_based_cash_weights
     
+    all_weights_substrat_dict = {'DoubleMom' : dm_weights[dm_weights.index >= ew_based_weights2.index[0]], 'TAA' : taa_weights[taa_weights.index >= ew_based_weights2.index[0]], 'BAA_AggDef' : baa_weights[baa_weights.index >= ew_based_weights2.index[0]], 'BAA_BalDef' : baa2_weights[baa2_weights.index >= ew_based_weights2.index[0]]}
+
+    cum_ew_based_weights = cum_ETF_weights(ew_based_weights2, all_weights_substrat_dict)  
+
     fixed_curr_weights = fixed_weights2.iloc[-1]
     ew_based_curr_weights = ew_based_weights2.iloc[-1]
     rel_mom_curr_weights = rel_mom_weights2.iloc[-1]
@@ -218,4 +242,4 @@ def meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters):
     curr_substrats_weights_dct = {'fixed_based' : fixed_curr_weights, 'ew_based' : ew_based_curr_weights, 'rel_mom_based' : rel_mom_curr_weights, 'sharpe_based' : sharpe_curr_weights, 'sortino_based' : sortino_curr_weights}
     curr_ETF_weights_dct = {'fixed_based' : fixed_curr_ETF_weights, 'ew_based' : ew_based_curr_ETF_weights, 'rel_mom_based' : rel_mom_curr_ETF_weights, 'sharpe_based' : sharpe_curr_ETF_weights, 'sortino_based' : sortino_curr_ETF_weights}
 
-    return pv_dct, rets_dct, weights_dct, pos_dct, cash_dct, curr_substrats_weights_dct, curr_ETF_weights_dct
+    return pv_dct, rets_dct, weights_dct, pos_dct, cash_dct, curr_substrats_weights_dct, curr_ETF_weights_dct, adj_close_price, cum_ew_based_weights
