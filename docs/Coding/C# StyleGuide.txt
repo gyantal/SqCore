@@ -10,10 +10,8 @@ Using underscores (_) is not forbidden, but please avoid it. It cannot be used i
     • 2.6. Constants (const, enum) : start with an uppercase letter
     • 2.7. Function names: every new word starts with an uppercase letter(SetPort())
     • 2.9. The language of variables, methods, comments, etc. is English.
-	
-	
-	
-	
+
+
 3. Curly Braces.
 This is the standard in DotNet core. Follow this.
 
@@ -25,12 +23,12 @@ else
 {
     //do something else
 }
-	
-	
+
+
 4.
 Try to use C# 8 declarative 'switch expressions', instead of procedural 'switch statements'.
 Shorter, less chance of making mistakes.
 
 
-	
+
 >as an example, see g:\work\Archi-data\WidgetWorld\Doc\CSharp_StyleGuide.odt 

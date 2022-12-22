@@ -1,5 +1,23 @@
 
 
+********************** Important Documents to read
+
+- "SqCore Intro, 2019-10"
+Slides (17) for showing the general building blocks.
+https://docs.google.com/presentation/d/1TMP-lZU-tXR1niMaKP2PUb5VUQ2dNR3556Pw8K2Zd5Q/
+
+- "Developer Guide: Getting Started"
+What to install for compiling code.
+https://docs.google.com/document/d/1pIM6sfzJkB33vb6aPw9vEcl4aOz_Agn7NmmH3k5XEdo
+
+- "Info-Pusher, The MarketDashboard"
+UI design of the MarketDashboard's Tools. MarketDashboard is one Angular app on the webserver.
+https://docs.google.com/document/d/16MrWd8_ZL7bjIYeeG8Y3xYm-DitxdMABgJK_cC-NsHw
+
+- "Generalized Portfolio Design"
+Feature specification and Implementation: QC integration, MetaPortfolio concept for Backtester, PortfolioViewer, ChartGenerator, VBroker.
+https://docs.google.com/document/d/1NszFlBreuFK-Xj48U4hk8WnMBArxOkNSAM2UhZF7PLI
+
 ********************** SqCore framework on Github Folder structure, version 2, 2023
 
 SqCore: 

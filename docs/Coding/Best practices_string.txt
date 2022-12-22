@@ -14,7 +14,8 @@ you have a lot of text that would be encoded with >= 2 UTF-8 code
 units."
 
 https://devblogs.microsoft.com/dotnet/announcing-net-core-3-0/
-"High performance JSON APIs have been added, for reader/writer, object model and serialization scenarios. These APIs were built from scratch on top of Span<T> and use UTF8 under the covers instead of UTF16 (like string)."
+"High performance JSON APIs have been added, for reader/writer, object model and serialization scenarios. These APIs were built from scratch on top of Span<T> 
+and use UTF8 under the covers instead of UTF16 (like string)."
 
 
 - For Json processing, use Utf8JsonReader /writer/document/serializer, System.Text.Json.JsonSerializer, etc.  2x faster than other JSon parsers.

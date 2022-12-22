@@ -15,7 +15,8 @@ trim_trailing_whitespace = false
 insert_final_newline = false
 
 # Temporarily disable code analysis for the bulk of the files. How?
-# Option 1: Emulate that it is generated code for All (*), files or *.cs files. (Compiler (dotnet build) CS warnings remains)
+# Option 1: Emulate that it is generated code for All (*), files or *.cs files. 
+# (Compiler (dotnet build) CS warnings remains which can be disabled in *.csproj as "<NoWarn>0612,0618,0672,8669,SYSLIB0014</NoWarn>")
 # treating all *.cs or all (*) files as generated code disables codecheck totally under this folder.
 # [*.cs]
 # generated_code = true

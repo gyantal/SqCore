@@ -18,7 +18,7 @@ public class SavedState : PersistedState // data to persist between restarts of 
 // this is the Trading Risk Manager Agent. The gateway for trading.
 public partial class BrokersWatcher : IDisposable
 {
-    public static readonly BrokersWatcher gWatcher = new();   // Singleton pattern
+    public static readonly BrokersWatcher gWatcher = new();   // Singleton pattern. The C# base class Lazy<T> is unnecessary overhead each time Instance => LazyComposer.Value; is accessed.
     const double cReconnectTimerFrequencyMinutes = 15;
     System.Threading.Timer? m_reconnectTimer = null;
     SavedState m_persistedState = new();

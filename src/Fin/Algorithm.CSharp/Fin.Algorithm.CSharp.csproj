@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <NoWarn>0114,0612,0618,0660,0661,0672,8669,SYSLIB0014,SYSLIB0024</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Common\SqCommon\SqCommon.csproj" />
+    <ProjectReference Include="..\Common\Fin.Common.csproj" />
+    <ProjectReference Include="..\EngineRequirements\Fin.EngineRequirements.csproj" />
+  </ItemGroup>
+</Project>

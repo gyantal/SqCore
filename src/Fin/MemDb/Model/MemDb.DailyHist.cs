@@ -214,7 +214,7 @@ public partial class MemDb
                 break;
             currDate = largestPrevDate;
         }
-        Debug.WriteLine($"first: DateTime: {mergedDates.First()}, last: DateTime: {mergedDates.Last()}");
+        Debug.WriteLine($"MemDb.DailyHist.UnionAllDates(): first: DateTime: {mergedDates.First()}, last: DateTime: {mergedDates.Last()}");
         return mergedDates;
     }
 

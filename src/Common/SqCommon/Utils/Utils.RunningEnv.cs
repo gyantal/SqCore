@@ -36,6 +36,11 @@ public static partial class Utils
 #endif
     }
 
+    public static bool DebuggingEnabled(this NLog.Logger p_logger) // QC integration needed it. There is not yet an Extension Property in C# in 2022, so we have to implement as an Extension method
+    {
+        return p_logger != null;    // return True always.
+    }
+
     public static string SensitiveConfigFolderPath()
     {
         return Environment.OSVersion.Platform switch

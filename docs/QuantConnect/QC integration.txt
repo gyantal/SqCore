@@ -1,0 +1,94 @@
+
+**************** QC integration history (useful for regular QC updates, bugfixes, features) ************
+
+2022-11-22 QC code base: It was used for initial integration.
+
+**************** QC integration: Fork the repo or copy (duplicate) the repo as a snapshot into internal code? ************
+
+Decision was made to rather copy than fork.
+
+https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/about-forks
+"If you want to create a new repository from the contents of an existing repository but don't want to merge your changes to the upstream in the future, you can duplicate the repository"
+
+https://www.reddit.com/r/learnprogramming/comments/9056k9/can_i_take_someones_project_from_github_edit_it/
+"check the license to see whether you're allowed to edit and/or reuse the library."
+https://www.apache.org/licenses/LICENSE-2.0
+"The Apache software license gives users permission to reuse code for nearly any purpose, including using the code as part of proprietary software"
+
+1. If we fork, it will result a bloated code, because we will have it in our code base parts that we don't require.
+It would mean more source code, longer compilations, and bigger RAM footprint on server (therefore slower execution)
+
+2. Because we will rewrite crucial parts, we have to change the codebase fundamentally.
+E.g. Multi-Strategy. We have to rewrite their code. But we cannot Commit that then to the Upstream repo.
+So we need a separate code base internally. That can be our Fork or our internal code base.
+
+2. Regular sync with upstream repository.
+With a fork, it would be easier to 'Sync a fork of a repository to keep it up-to-date with the upstream repository'.
+If we copy a snapshot internally, we will have no automatic QC updates later.
+But Manual Sync is also possible: Pull 2 versions of QC repo for different times, and Diff them (to get the changes).
+But for that, we should record the exact dates when we started or updated the source code.
+
+Also, try to not change their code too much, but 'extend' it with new classes, new Adapters, new Producers. For easier upgrades later.
+
+
+**************** QC integration: code size in SqCore vs. whole QC code base ************
+
+We don't need to integrate all QC files. We can selectively choose only the most necessary files. 
+We don't need many functionalities, such as Crypto. Also, we don't need 99% of the QcAlgorithms and Alphas.
+We can decrease the source code size significantly if we integrate QC one file by one file. Not taking what is not necessary.
+This assures that the source code is smaller, quicker to compile. Faster commit, faster deploy.
+Smaller *.dll files, and less RAM requirement, so faster execution.
+
+2022-12-01: Integration step 1. Integrate QC.Common to Fin.Common. Symbol.Create(), and HistoricalPriceproveder functionalities work, but no backtests.
+Number of files copied:     510 in 54 folders out of 823 in 65 folders (-39% reduction)
+Size:                       5.78MB of 7.25MB (a -21% reduction)
+
+2022-12-22: Integration step 2. Integrating QC.Engine, so we can do Engine.Run() for backtest simulation.
+Algorithm.CSharp: #files: 1 instead of 470, source code size: 100KB instead of 3,000KB
+Common: #files: 682 instead of 823, source code size: 6,160KB instead of 7,250KB
+Engine: #files: 121 instead of 272, source code size: 950KB instead of 1,240KB
+EngineRequirements: #files: 233 instead of 58+89+5+178+15=345, source code size: 1,670KB instead of 850+530+73+940+44 = 2,437KB
+>Altogether: #files: 1036 instead of 1440 (-29% reduction), source code size: 8880KB instead of 13,927KB (-37% reduction)
+
+
+**************** QC integration: how to copy QC code files to SqCore ************
+
+-  3rd party libraries: removing like Newtonsoft.Json or ProtoBuff is futile. It is used extensively, and it would be too much work to replace. 
+500 files, about 20% of them serialized. That is about 100 class serialization rewrite. Big pain, no gain. Keep them.
+
+- Warnings: There are 12K warnings. It would take weeks to fix them. And later, periodic bugfix updates would be more difficult. 
+Big pain, not too much gain. Leave them. Don't even apply StyleCop in those libraries.
+
+- but remove the license notes from each files, because it just bloats the code.
+
+- we could remove "/// <summary>" lines from the code, but probably doesn't worth it, and that change would compromise future Diff
+    remove "/// <summary>" and "/// </summary> lines could be done with this RegEx:
+    With RegEx replacement: ^(\s)+///\s<summary>$\n => "\n" and ^(\s)+///\s</summary>$\n => ""  (VsCode) 
+        or ^(\s)+///\s<(/)*summary>$\r\n (Notepad++)
+    Explanation: ^: beginning of the line, $: end of the line, \s: any whitespace
+    Then replace "/// " to "// " (without RegEx)
+
+- we could remove the Apache licence text from each of the files, because it consumes 15 lines. x 1000 files. Bloated code.
+    With RegEx replacement:
+    Version 1 (just checking /* */): "\/\*(.|\n)+\*\/\n\n"
+    Version 2 (/*...Licensed under the Apache License...*/): "\/\*(.|\n)+Licensed\sunder\sthe\sApache\sLicense(.|\n)+\*\/\n\n"
+    Then the same with only 1 "\n" at the end.
+    After that double check: search for "Copyright 2014 QuantConnect Corporation", "QUANTCONNECT.COM - Democratizing Finance" or anything that is in the comment.
+    Explanation: "(.|\n)+": any character or a newline
+
+- keep the namespace X { } logic as well (instead of the namespace X; and better indentation) For easier future Diff. (and StyleCop is not applied anyway)
+
+- namespace: keep the QuantConnect namespace for the first 1 year until the code stabilizes. Because it is easier to bring in new source code files. 
+After 1 year, we might use the Fin.Common, Fin.Securities namespaces.
+
+
+
+
+
+
+
+
+
+
+
+

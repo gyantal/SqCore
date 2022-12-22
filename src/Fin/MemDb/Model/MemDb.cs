@@ -14,9 +14,9 @@ namespace Fin.MemDb;
 
 public partial class MemDb : IDisposable
 {
-    public static readonly MemDb gMemDb = new();   // Singleton pattern
+    public static readonly MemDb gMemDb = new();   // Singleton pattern. The C# base class Lazy<T> is unnecessary overhead each time Instance => LazyComposer.Value; is accessed.
     // public object gMemDbUpdateLock = new object();  // the rare clients who care about inter-table consintency (VBroker) should obtain the lock before getting pointers to subtables
-    Db m_Db; // Persistent database store, like Redis or Sql
+    Db m_Db = null!; // ignore warning CS8618 Non-nullable property X must contain a non-null value when exiting constructor.; // Persistent database store, like Redis or Sql
 
     MemData m_memData = new();  // strictly private. Don't allow clients to store separate MemData pointers. Clients should use GetAssuredConsistentTables() in general.
 
@@ -52,11 +52,9 @@ public partial class MemDb : IDisposable
 
     private bool disposedValue;
 
-#pragma warning disable CS8618 // Non-nullable field 'm_assetDataReloadTimer' is uninitialized.
     public MemDb() // constructor runs in main thread
     {
     }
-#pragma warning restore CS8618
 
     public void Init(Db p_db)
     {

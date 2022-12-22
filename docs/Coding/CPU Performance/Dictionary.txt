@@ -3,4 +3,4 @@ see gDoc for more info: https://docs.google.com/document/d/1XXqSrqSoQm-RWgzbJfSw
 Brief Conclusion:
 
 - Use foreach()
-- If you only need the Values, don’t iterate over KeyValuePairs
+- If you need only the Values, don’t iterate over KeyValuePairs

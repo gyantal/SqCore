@@ -1,0 +1,44 @@
+
+****************  How correct is the QuantConnect Data folder data?
+
+https://www.quantconnect.com/datasets
+Historical price tradebar data comes from "AlgoSeek US equities"
+Didivend, splits come from "QuantConnect US Equity Security Master".
+
+>Comparing the spy.zip (from QuantConnect's GitHub Data folder) to YF.
+
+>20210331 00:00: 
+ClosePrice: 396.3300  // YF: 396.33	Hmm. That matches!
+LowPrice: 395.3300	// YF: 395.31	There is a 2 cents diff.
+Volume: 90,673,494 // YF: 112,734,200
+In general the ClosePrice seems to match, but in O/H/L sometimes has 5 cents diff. Whatever.
+
+>20080102 00:00:
+ClosePrice: 144.5600	// YF: 144.929993	// that is a 0.40 difference. That is a lot.
+Open: 146.5300	// YF: 146.529999. That is perfect. Hmmm. High/Low prices also a perfect match.
+Why is the big difference in ClosePrice?
+
+So, which data is correct: QC or YF?
+
+>The data usually perfectly matches after 2009-01-01. Then there is hardly any problem after 2014-01-01
+
+>Last significant difference: 
+2013-06-28:
+YF: 160.419998
+QC: 160.0100
+
+Nasdaq:
+https://www.nasdaq.com/market-activity/funds-and-etfs/spy/historical
+Date	Close/Last	Volume	Open	High	Low
+06/28/2013	160.42	156611200	160.63	161.4	159.86
+>The Nasdaq data matches exactly YF. So QC has wrong data here. :(
+This might be an old SPY database on GitHub. Maybe it is better if we buy a new one from QC's shop.
+But in general, it shows YF data = Nasdaq data is better.
+>In the long term, we will not use QC data, because we have to pay. Instead, we will write a SqCore service,
+that downloads this historical data from YF or Nasdaq, and it will create these *.Zip files for free.
+
+>The same data analysis should be done on SPY dividend, split in the factor-files. However, it is not that important if we will replace QC data anyway.
+Until than the QC data can be used for backtest. It is not perfect, but after 2013, it is almost a perfect match.
+And if it is not a perfect match, the difference is rare, and less than 0.3%
+
+------------------------------- 

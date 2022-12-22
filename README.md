@@ -8,8 +8,8 @@ This package enables:
  * [**Webservers**](#webservers) blabla
  * [**Tools**](#tools) blabla
 
-Behind the scenes, it uses
+Behind the scenes, it uses some code from QuantConnect.
 
 ### Requirements
 
-* [.NET Core](https://dot.net), version 3.0 or later
+* [.NET Core](https://dot.net), version 7.0 or later

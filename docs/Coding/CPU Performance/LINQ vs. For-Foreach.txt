@@ -4,6 +4,8 @@ Brief Conclusion:
 
 - as a basic rule of thumb when you hesitate whether to use For/LINQ/Foreach just use For.
 - as a basic rule of thumb when you hesitate about what to use with For, use the logical basic ordering. 
-If the size of the set will not change, use Array. If the size of the set will change, you have to use the slower List. 
+If the size of the set will not change, use Array. If the size of the set will change (frequently), you have to use the slower List. 
 - Struct is more basic than classes. Use Struct if possible. But then it will be a value type, so it will be deep 
-copied every time when it is used as a parameter (except if it is a Ref). So, sometimes, it is not advised to use it as Struct.
+copied every time when it is used as an output parameter and copied if it is used as an input parameter (except if it is a Ref). So, sometimes, it is not advised to use it as Struct.
+(A quick heuristic is: if an object is less than 16 bytes, use struct. If it is more than 16 bytes, use class.)
+https://stackoverflow.com/questions/85553/when-should-i-use-a-struct-instead-of-a-class

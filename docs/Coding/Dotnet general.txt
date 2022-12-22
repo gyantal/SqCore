@@ -7,3 +7,36 @@ For example:
     The 'class List<>' source code is in the runtime/System project:
     https://github.com/dotnet/runtime/blob/7fc8fb56327e9696ce9baa80f997e3f50675af1f/src/libraries/System.Private.CoreLib/src/System/Collections/Generic/List.cs
 ----------------------------
+
+-------------- NodaTime for replacing C# DateTime? Good, but 2-3x more data. Don't use it for big data. You can use it for sure way of converting between time-zones.
+
+"Since version 4.0 Npgsql (PostgreSql) supports and suggests it as recommended way of working with Date and Time."
+https://blog.nodatime.org/2011/08/what-wrong-with-datetime-anyway.html
+"neither DateTimeOffset nor DateTime are good types to use for genuinely local date and time values."
+"with DateTimeOffset you know what that particular time is in some unspecified time zone, but you don't know what the local time will be a minute later,
+as the offset for that time zone could change (usually due to daylight saving time changes)."
+"few issues around ambiguous or invalid local date and time values. These occur due to daylight saving changes: if the clock goes forward (e.g. from 1am to 2am)
+that introduces some invalid local date and time values (e.g. 1.30am doesn't occur on that day). 
+If the clock goes backward (e.g. from 2am to 1am) that introduces ambiguities: 1.30am occurs twice."
+"days which don't start at midnight due to daylight saving changes (for example, Sunday October 17th 2010 in Brazil started at 1am)."
+"Given all this complexity, you should at least have an API"
+https://www.reddit.com/r/csharp/comments/e6j6uu/what_are_the_long_term_costs_and_benefits_to/
+"Always use UTC. Always. You can convert it to local super easily then. I get heart palpitations now when I see a non UTC timestamp in a DB lol."
+"We used Noda time on a recent project along with another package that allowed us to do some really annoying date math easily. 
+If you're just doing normal date/time stuff like storing dates I wouldn't bother with it. 
+But if you're doing a lot of date related math I would lean on these packages. "
+"Whether you use DateTime + some time zone info, DateTimeOffset, NodaTime"
+"But System.DateTimeOffset (and even System.DateTime with new methods and extensions) has taken most of its common use-cases. 
+And proper time-zone discipline ("use UTC until display-time", basically) handles any small gaps in functionality that remain."
+"NodaTime is still useful, but not as useful as it once was"
+"Unless I am misunderstanding Noda Time (I've never used it), it sounds exactly like what DateTimeOffset accomplishes. 
+Why use Noda Time over the built-in alternative? Also, everyone should basically be defaulting to UTC unless there is an actual need for something less precise."
+"DateTimeOffset doesn't have time zones logic." Yet. It has.
+>There are cons of using NodaTime in our code: it is another extra dependency to maintain over time. Microsoft might make it obsolete.
+C# DateTime is 8 bytes. Noda Date is 4*4=16 bytes. And time is 2*4=8 bytes. Altogether Node is 16+8=24 bytes.
+Plus the Serialization overhead (if you want to be fast).
+
+>Conclusion (NodaTime): use standard C# DateTime or DateTimeOffset (for performance) most of the time (90%) in the code and keep it all in Utc.
+We can use NodaTime in 2 places: 1. When Broker simulation is needed (very few cases), then use Noda Time. 
+Because QuantConnect uses it anyway. So, use NodaTime only in QuantConnect. 2. Any other place we can use when there is no big DateTime data (so no Json, or no RAM problem.). 
+E.g. Simulator.CurrentTime. But also it can be used other places in the code when it is only a small 1-2 objects. But not when a DateTime array is stored in RAM.
