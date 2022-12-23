@@ -123,7 +123,7 @@ public static class Backtester
         // 1. Create the job.
         // var parametersConfigString = Config.Get("parameters");
         var parameters = (p_parameters == string.Empty) ? new Dictionary<string, string>() : JsonConvert.DeserializeObject<Dictionary<string, string>>(p_parameters);
-        var job = new BacktestNodePacket(0, 0, string.Empty, Array.Empty<byte>(), Config.Get("backtest-name", "local"))
+        var job = new BacktestNodePacket(0, 0, string.Empty, Array.Empty<byte>(), Config.Get("backtest-name"))
         {
             Type = PacketType.BacktestNode,
             Algorithm = gAlgorithmDllBinary,

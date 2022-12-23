@@ -337,6 +337,9 @@ public partial class MemDb : IDisposable
         brAccount.AccPoss = accPoss;
         brAccount.LastUpdate = DateTime.UtcNow;
 
+        // The realtime price service uses NavAsset.EstValue, and NavAsset.EstValueTimeUtc, so we have to update that, otherwise it is only updated later with m_highNavFreq, which is 1min RTH, 10 min OTH
+        brAccount.NavAsset!.EstValue = (float)brAccount.NetLiquidation;
+
         UpdateBrAccPosAssetIds_AddAssetsToMemData(brAccount);
     }
 

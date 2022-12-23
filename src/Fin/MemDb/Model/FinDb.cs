@@ -22,7 +22,9 @@ public partial class FinDb : IDisposable
 {
     public static readonly FinDb gFinDb = new();   // Singleton pattern. The C# base class Lazy<T> is unnecessary overhead each time Instance => LazyComposer.Value; is accessed.
 
-    public SubscriptionDataReaderHistoryProvider HistoryProvider { get; set; } = null!; // ignore warning CS8618 Non-nullable property X must contain a non-null value when exiting constructor.
+    // Try to have our own globals, which is easily accessible, rather than the Composer.Instance Globals. Much slower to access them.
+    public LocalDiskMapFileProvider MapFileProvider { get; set; } = null!; // ignore warning CS8618 Non-nullable property X must contain a non-null value when exiting constructor.
+    public SubscriptionDataReaderHistoryProvider HistoryProvider { get; set; } = null!;
     // public LeanEngineSystemHandlers EngineSystemHandlers { get; set; } = null!; // ignore warning CS8618 Non-nullable property X must contain a non-null value when exiting constructor.
     // public LeanEngineAlgorithmHandlers EngineAlgorithmHandlers { get; set; } = null!; // ignore warning CS8618 Non-nullable property X must contain a non-null value when exiting constructor.
 
@@ -55,12 +57,16 @@ public partial class FinDb : IDisposable
             // e.g. for historical data probably: var dataFeedHandlerTypeName = Config.Get("data-feed-handler", "FileSystemDataFeed");
 
             // class SecurityIdentifier.GenerateEquity() uses MapFileProvider as Composer.Instance.GetExportedValueByTypeName(), which is the global MapFileProvider.
+            // in the future we try to eliminate this slow Composer.Instance globals, but at the moment, maybe too many code parts in Backtesting uses it.
+            // However, in our code, we should use FinDb globals, and not the Composer.Instance globals which we will delete later.
             var dataProviderTypeName = Config.Get("data-provider", "DefaultDataProvider");
             var dataProv = Composer.Instance.GetExportedValueByTypeName<IDataProvider>(dataProviderTypeName);
 
             var mapFileProviderTypeName = Config.Get("map-file-provider", "LocalDiskMapFileProvider");
             var mapProv = Composer.Instance.GetExportedValueByTypeName<IMapFileProvider>(mapFileProviderTypeName);
             mapProv.Initialize(dataProv);
+
+            MapFileProvider = (LocalDiskMapFileProvider)mapProv;
 
             // At this stage, Symbol creation works
             // string tickerAsTradedToday = "SPY";

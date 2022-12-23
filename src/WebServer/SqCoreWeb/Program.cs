@@ -331,17 +331,20 @@ public partial class Program
                 // Symbol cashUsd1 = new Symbol(SecurityIdentifier.GenerateBase(null, "CASH", Market.USA), "CASH");
                 // Symbol cashUsd2 = Symbol.Create("CASH", SecurityType.Base, Market.USA); // same, but shorter. It will use sid = SecurityIdentifier.GenerateBase(baseDataType, ticker, market);
 
+                // Version1: Symbol.Create() uses MapFileProvider as Composer.Instance.GetExportedValueByTypeName(), which is the global MapFileProvider.
                 string tickerAsTradedTodayVxx = "VXX";
                 Symbol symbolVxx = Symbol.Create(tickerAsTradedTodayVxx, SecurityType.Equity, Market.USA);
                 Console.WriteLine($"QC: Test1: currentTradedSymbol:{symbolVxx.Value}, Unique SecurityID {symbolVxx.ID}, firstDate (of traded, first date in map file): {symbolVxx.ID.Date}, firstTradedSymbol: {symbolVxx.ID.Symbol}");
 
+                // Version2: SecurityIdentifier.GenerateEquity() uses our global MapFileProvider, without the Composer.Instance slow functionality.
                 string tickerAsTradedToday = "SPY";
-                Symbol symbolSpy = Symbol.Create(tickerAsTradedToday, SecurityType.Equity, Market.USA);
-                Console.WriteLine($"QC: Test1: , currentTradedSymbol:{symbolSpy.Value}, Unique SecurityID {symbolSpy.ID}, firstDate (of traded, first date in map file): {symbolSpy.ID.Date}, firstTradedSymbol: {symbolSpy.ID.Symbol}");
+                SecurityIdentifier sidSpy = SecurityIdentifier.GenerateEquity(tickerAsTradedToday, Market.USA, true, FinDb.gFinDb.MapFileProvider);
+                var symbolSpy = new Symbol(sidSpy, tickerAsTradedToday);
+                Console.WriteLine($"QC: Test2: currentTradedSymbol:{symbolSpy.Value}, Unique SecurityID {symbolSpy.ID}, firstDate (of traded, first date in map file): {symbolSpy.ID.Date}, firstTradedSymbol: {symbolSpy.ID.Symbol}");
                 break;
             case "2":
                 string tickerAsTradedToday2 = "SPY"; // if symbol.zip doesn't exist in Data folder, it will not download it (cost money, you have to download in their shop). It raises an exception.
-                Symbol symbol = Symbol.Create(tickerAsTradedToday2, SecurityType.Equity, Market.USA);
+                Symbol symbol = new(SecurityIdentifier.GenerateEquity(tickerAsTradedToday2, Market.USA, true, FinDb.gFinDb.MapFileProvider), tickerAsTradedToday2);
 
                 DateTime startTimeUtc = new(2008, 01, 01);
                 // If you want to get 20080104 day data too, it has to be specified like this:

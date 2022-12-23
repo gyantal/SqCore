@@ -441,8 +441,8 @@ public partial class DashboardClient
                 return true;
             case "BrAccViewer.GetNavChrtData": // msg: "Bnchmrk:SPY,Date:2021-01-02...2021-12-12"
                 Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): GetNavChrtData to '{msgObjStr}'");
-                (SqDateOnly lookbackStartH, SqDateOnly lookbackEndExclH, string braccSelectedBnchmkSqTickerH) = ExtractHistDataParams(msgObjStr, 0);
-                BrAccViewerSendNavHist(lookbackStartH, lookbackEndExclH, braccSelectedBnchmkSqTickerH);
+                (SqDateOnly lookbackStartNavChrt, SqDateOnly lookbackEndExclNavChrt, string braccSelectedBnchmkSqTickerNavChrt) = ExtractHistDataParams(msgObjStr, 0);
+                BrAccViewerSendNavHist(lookbackStartNavChrt, lookbackEndExclNavChrt, braccSelectedBnchmkSqTickerNavChrt);
                 return true;
             case "BrAccViewer.GetStockChrtData":
                 Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): GetStockChrtData to '{msgObjStr}'");
