@@ -100,27 +100,37 @@ export class SqNgCommonUtilsTime implements OnInit {
     return ((dateFrom === minDate || dateTo === minDate) ? 'NaN' : (dateTo.getTime() - dateFrom.getTime()) + 'ms');
   }
 
-  public static ConvertMilliSecToTimeStr(totalMilliSec: number): string {
+  public static ConvertMilliSecToTimeStr(totalMilliSec: number): string { // 5380 => '05s ago'
+    if (totalMilliSec < 0) { // if input is negative, output is -1 values. -1518 => '-1d-1h -1m -2s ago'
+      // totalMilliSec = 0; // don't fix negative values to 0, because this might hide unexpected errors. If input is negative, better to find the reason and fix that.
+      console.warn('ConvertMilliSecToTimeStr(), negative input ' + totalMilliSec + '. Check https://time.is/ . If your clock is behind, use timedate.cpl/InternetTime/Synch With time server');
+    }
+
     // let milliseconds = totalMilliSec % 1000;
     let seconds = Math.floor((totalMilliSec / 1000) % 60).toString();
-    let minutes = Math.floor((totalMilliSec / (60 * 1000)) % 60).toString();
-    let hours = Math.floor((totalMilliSec / (3600 * 1000)) % 60).toString();
-    let days = Math.floor((totalMilliSec/ (24 * 3600 * 1000)) % 60).toString();
+    let minutes = Math.floor((totalMilliSec / (60 * 1000)) % 60).toString(); // Math.floor() function always rounds down, so a small near zero negative number is converted to -1
+    let hours = Math.floor((totalMilliSec / (3600 * 1000)) % 24).toString();
+    let days = Math.floor(totalMilliSec / (24 * 3600 * 1000)).toString();
 
     if (days.length < 2) days = '0' + days;
     if (hours.length < 2) hours = '0' + hours;
     if (minutes.length < 2) minutes= '0' + minutes;
     if (seconds.length < 2) seconds = '0' + seconds;
 
+    let result = '';
     if (days == '00' && hours == '00' && minutes == '00' && seconds == '00')
-      return '0s ago';
+      result = '0s ago';
     else if (days == '00' && hours == '00' && minutes == '00')
-      return seconds + 's ago';
+      result = seconds + 's ago';
     else if (days == '00' && hours == '00')
-      return minutes + 'm' + ' ' + seconds + 's ago';
+      result = minutes + 'm' + ' ' + seconds + 's ago';
     else if (days == '00')
-      return hours + 'h' + ' ' + minutes + 'm' + ' ' + seconds + 's ago';
-    else return days + 'd' + hours + 'h' + ' ' + minutes + 'm' + ' ' + seconds + 's ago';
+      result = hours + 'h' + ' ' + minutes + 'm' + ' ' + seconds + 's ago';
+    else
+      result = days + 'd' + hours + 'h' + ' ' + minutes + 'm' + ' ' + seconds + 's ago';
+
+    // console.log('ConvertMilliSecToTimeStr(), input => output: ' + totalMilliSec + ' => ' + result);
+    return result;
   }
 
   public static CheckInputDateIsValidOrNot(date: string) {
