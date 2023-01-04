@@ -152,11 +152,11 @@
   position: fixed;
   z-index: 1;
   text-align: center;
-  left: 40rem;
-  top: 20rem;
+  left: 78rem;
+  top: 40rem;
   bottom: 20rem;
-  width: 40rem;
-  height: 12.5rem;
+  width: 50rem;
+  height: 10rem;
   overflow: auto;
   color: rgb(32, 34, 148);
   background-color: #FFA500;
@@ -174,7 +174,7 @@
   margin: auto;
   padding: 1rem 2rem 2rem 2rem;
   vertical-align: middle;
-  width: 55rem;
+  width: 45rem;
 }
 
 .dialogSuggestion {
@@ -201,5 +201,5 @@
 
 .fldrChldrnDialogButtons {
   display: inline-block;
-  width: 22%;
+  width: 25%;
 }

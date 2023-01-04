@@ -169,31 +169,16 @@ public partial class DashboardClient
 
     private void DeletePortfolioFolder(string p_msg)
     {
-        Dictionary<int, PortfolioFolder> prtfFldrs = MemDb.gMemDb.PortfolioFolders;
         int prntFldrIdx = p_msg.IndexOf(":");
         if (prntFldrIdx == -1)
             prntFldrIdx = -1;
-        int fldrHasChldrnIdx = p_msg.IndexOf(":", prntFldrIdx + 1);
-        if (fldrHasChldrnIdx == -1)
-            fldrHasChldrnIdx = -1;
-        int parentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, fldrHasChldrnIdx - prntFldrIdx - 8));
-
-        string isFldrHasChildren = p_msg[(fldrHasChldrnIdx + 1)..];
-        if(isFldrHasChildren == "true")
+        int fldId = Convert.ToInt32(p_msg[(prntFldrIdx + 1)..]);
+        string errMsg = MemDb.gMemDb.DeletePortfolioFolder(fldId);
+        if (!String.IsNullOrEmpty(errMsg))
         {
-            byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.PortfoliosFldrsChldrn:" + Utils.CamelCaseSerialize(isFldrHasChildren));
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.ErrorToUser:" + errMsg);
             if (WsWebSocket!.State == WebSocketState.Open)
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-        }
-        else
-        {
-            int fldKey = 1;
-            foreach (var pf in prtfFldrs)
-            {
-                if (pf.Value.Id == parentFldId)
-                    fldKey = pf.Key;
-            }
-            MemDb.gMemDb.DeletePortfolioFolder(fldKey);
         }
     }
 

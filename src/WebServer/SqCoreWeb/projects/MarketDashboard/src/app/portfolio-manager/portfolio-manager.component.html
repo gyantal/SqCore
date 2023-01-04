@@ -7,7 +7,8 @@
       <span class="refreshIcon"><img class="refreshIcon" src='../assets/images/refresh64.webp' (click)="onPortfoliosRefreshClicked()"></span>
     </span>
     <app-sq-tree-view [items]="uiPortfolioFoldersNested"></app-sq-tree-view>
-    <button type="button" (click)="onCreateClicked()">Create</button>
+    <!-- <app-sq-tree-view (treeviewEvent)="addItem($event)"></app-sq-tree-view> -->
+    <button type="button"(click)="onCreateClicked()">Create</button>
     <button type="button" (click)="onDeletePortfolioClicked()">Delete</button>
     <div id="portfolioModal" [ngStyle]="{'display': isPortfolioDialogVisible ? 'block' : 'none'}">
       <label><b>Name</b></label><br>
@@ -52,9 +53,7 @@
 </div>
 <div id="hasChildrenDialog" [ngStyle]="{'visibility': isFldrHasChildrenDialogVisible ? 'visible' : 'hidden'}">
   <div class="hasChildrenDialog-content">
-    <p>ALERT! the folder contains the children <br>
-      <span class="dialogSuggestion">Delete is not possible"</span>
-    </p>
+      <span class="dialogSuggestion">{{errorMsgToUser}}</span>
   </div>
   <div class="fldrChldrnDialogButtons">
     <button type="button" (click)="onFldrHasChildrenContinueClicked()">Continue this tab</button>

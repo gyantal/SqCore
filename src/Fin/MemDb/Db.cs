@@ -333,10 +333,60 @@ public partial class Db
         m_redisDb.HashSet("portfolioFolder", redisKey, redisValue);
     }
 
-    internal void DeletePortfolioFolder(int fldKey)
+    internal string DeletePortfolioFolder(int fldId)
     {
-        string redisKey = fldKey.ToString();
+        string redisKey = fldId.ToString();
+
+        int childFolderId = -1;
+        HashEntry[]? portfolioFoldersRds = m_redisDb.HashGetAll("portfolioFolder");
+        if (portfolioFoldersRds == null)
+            return "Error in DeletePortfolioFolder(): Redis DB is not available";
+        for (int i = 0; i < portfolioFoldersRds.Length; i++)
+        {
+            HashEntry hashRow = portfolioFoldersRds[i];
+            string? rowValue = hashRow.Value;
+            if (!hashRow.Name.TryParse(out int id) || rowValue == null) // Name is the 'Key' that contains the Id
+                continue;   // Sometimes, there is an extra line 'New field'. But it can be deleted from Redis Manager. It is a kind of expected.
+
+            var prtfFolderInDb = JsonSerializer.Deserialize<PortfolioFolderInDb>(rowValue, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (prtfFolderInDb == null)
+                return $"Error in DeletePortfolioFolder(): Deserialize failed on '{rowValue}'";
+
+            if (prtfFolderInDb.ParentFolderId == fldId)
+            {
+                childFolderId = id;
+                break;
+            }
+        }
+        if (childFolderId != -1)
+            return $"Error in DeletePortfolioFolder(): The Folder {fldId} has child folder '{childFolderId}'";
+
+        int childPortfolioId = -1;
+        HashEntry[]? portfoliosRds = m_redisDb.HashGetAll("portfolio");
+        if (portfoliosRds == null)
+            return "Error in DeletePortfolioFolder(): Redis DB is not available";
+        for (int i = 0; i < portfoliosRds.Length; i++)
+        {
+            HashEntry hashRow = portfoliosRds[i];
+            string? rowValue = hashRow.Value;
+            if (!hashRow.Name.TryParse(out int id) || rowValue == null) // Name is the 'Key' that contains the Id
+                continue;   // Sometimes, there is an extra line 'New field'. But it can be deleted from Redis Manager. It is a kind of expected.
+
+            var prtfInDb = JsonSerializer.Deserialize<PortfolioInDb>(rowValue, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (prtfInDb == null)
+                return $"Error in DeletePortfolioFolder(): Deserialize failed on '{rowValue}'";
+
+            if (prtfInDb.ParentFolderId == fldId)
+            {
+                childPortfolioId = id;
+                break;
+            }
+        }
+        if (childPortfolioId != -1)
+            return $"Error in DeletePortfolioFolder(): The Folder {fldId} has child folder '{childFolderId}'";
+
         m_redisDb.HashDelete("portfolioFolder", redisKey); // remove the folder based on the folder key
+        return string.Empty;
     }
 
     private static Dictionary<int, Portfolio> GetPortfolios(HashEntry[] portfoliosRds, User[] users, List<Asset> assets) // Portfolio will require Assets in the future

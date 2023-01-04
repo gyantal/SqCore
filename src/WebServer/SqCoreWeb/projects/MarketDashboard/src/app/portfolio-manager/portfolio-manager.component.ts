@@ -21,8 +21,9 @@ class PortfolioFldrJs {
 // }
 
 // class TreeViewItemSelectionHolder {
-//   public selected : PortfolioFldrJs;
-//  public selectedId : number;
+// public lastSelected : PortfolioFldrJs[] = [];
+// public lastSelectedId : number = NaN;
+// public selectedIdList: number[] = [];
 // }
 
 @Component({
@@ -44,9 +45,10 @@ export class PortfolioManagerComponent implements OnInit {
   isPortfolioDialogVisible: boolean = false;
   isFldrHasChildren: boolean = false;
   isFldrHasChildrenDialogVisible: boolean = false;
-  // virtualUsrId: number = -1;
+  errorMsgToUser: string = '';
   pfName: string = ''; // common for both portfolio and portfolioFolder
-  // parentFldrId: number = -1;
+  // treeviewSelection: TreeViewItemSelectionHolder[] = [];
+  // treeviewSelected: any[] = [];
 
   tabPageVisibleIdx = 1;
 
@@ -129,19 +131,16 @@ export class PortfolioManagerComponent implements OnInit {
         console.log('PortfMgr.Handshake:' + msgObjStr);
         // this.handshakeObj = JSON.parse(msgObjStr);
         return true;
-      case 'PortfMgr.PortfoliosFldrsChldrn': // Folders has children
-        console.log('PortfMgr.PortfoliosFldrsChldrn:' + msgObjStr);
-        this.isFldrHasChildren = String(JSON.parse(msgObjStr)).toLowerCase() === 'true';
-        if (this.isFldrHasChildren) {
-          this.isFldrHasChildrenDialogVisible = true;
-          const dialogAnimate = document.getElementById('hasChildrenDialog') as HTMLElement;
-          dialogAnimate.style.animationName = 'dialogFadein';
-          dialogAnimate.style.animationDuration = '3s';
-          dialogAnimate.style.animationTimingFunction = 'linear'; // default would be ‘ease’, which is a slow start, then fast, before it ends slowly. We prefer the linear.
-          // dialogAnimate.style.animationDelay = '0s';
-          dialogAnimate.style.animationIterationCount = '1'; // only once
-          dialogAnimate.style.animationFillMode = 'forwards';
-        }
+      case 'PortfMgr.ErrorToUser': // Folders has children
+        console.log('PortfMgr.ErrorToUser:' + msgObjStr);
+        this.errorMsgToUser = msgObjStr;
+        this.isFldrHasChildrenDialogVisible = true;
+        const dialogAnimate = document.getElementById('hasChildrenDialog') as HTMLElement;
+        dialogAnimate.style.animationName = 'dialogFadein';
+        dialogAnimate.style.animationDuration = '3s';
+        dialogAnimate.style.animationTimingFunction = 'linear'; // default would be ‘ease’, which is a slow start, then fast, before it ends slowly. We prefer the linear.
+        dialogAnimate.style.animationIterationCount = '1'; // only once
+        dialogAnimate.style.animationFillMode = 'forwards';
         return true;
       default:
         return false;
@@ -320,7 +319,24 @@ export class PortfolioManagerComponent implements OnInit {
 
   onCreateClicked() {
     this.isPortfolioDialogVisible = true;
+    // fill up the treeviewselected holder
+    // Under Development - Daya
+    // for (const item of this.uiPortfolioFoldersNested) {
+    //   if (this.pfName == item.name) {
+    //     const lastSelected = new TreeViewItemSelectionHolder();
+    //     lastSelected.lastSelected = item.name;
+    //     lastSelected.lastSelectedId = item.id;
+    //     this.treeviewSelection.push(lastSelected);
+    //   }
+    //   this.addItem(item);
+    // }
   }
+
+  // Under Development - Daya
+  // addTreeViewItem(treeViewItem) {
+  //   this.treeviewSelected = treeViewItem;
+  //   console.log('the new item is : ', treeViewItem);
+  // }
 
   onCloseClicked() {
     this.isPortfolioDialogVisible = false;
@@ -336,7 +352,7 @@ export class PortfolioManagerComponent implements OnInit {
   onDeletePortfolioClicked() {
     const lastSelectedTreeNode = SqTreeViewComponent.gLastSelectedItem as PortfolioFldrJs;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.DeletePortfFldr:' + lastSelectedTreeNode.name + ',prntFId:' + lastSelectedTreeNode.id + ',chldrn:' + this.sqTreeComponent.isFolderHasChildren);
+      this._parentWsConnection.send('PortfMgr.DeletePortfFldr:' + ',fldId:' + lastSelectedTreeNode.id);
   }
 
   onFldrHasChildrenContinueClicked() {

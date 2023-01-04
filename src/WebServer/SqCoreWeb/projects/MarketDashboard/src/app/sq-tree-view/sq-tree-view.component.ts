@@ -7,9 +7,10 @@ import { Component, OnInit, Input } from '@angular/core';
 })
 export class SqTreeViewComponent implements OnInit {
   @Input() items: any; // data receive from other components
+  // @Input() treeviewHolderItems: any; // data receive from other components
+  // @Output() treeviewEvent = new EventEmitter<any>();
 
   isExpanded: boolean = false;
-  isFolderHasChildren: boolean = false;
   static gLastSelectedItem: any;
 
   constructor() { }
@@ -23,21 +24,21 @@ export class SqTreeViewComponent implements OnInit {
       return;
     } else {
       if (item.children) {
-        if (item.children.length > 0) {
+        if (item.children.length > 0)
           item.isExpanded = true;
-          this.isFolderHasChildren = true;
-        } else
+        else
           item.isExpanded = false;
       }
     }
 
+    // this.treeviewEvent.emit(item);
     // holder.SelecetdId = item.id
 
     SqTreeViewComponent.gLastSelectedItem = item;
   }
 
   // Yet to develop
-  expendChildren(treeviewPortItemOpenPathIds: number[]) {
+  expandChildren(treeviewPortItemOpenPathIds: number[]) {
 
   }
 }

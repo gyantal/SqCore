@@ -32,16 +32,20 @@ public partial class MemDb
         return fld;
     }
 
-    public void DeletePortfolioFolder(int p_fldKey) // will finalise after discussing with George - Daya
+    public string DeletePortfolioFolder(int p_fldId) // will finalise after discussing with George - Daya
     {
-        m_memData.DeletePortfolioFolder(p_fldKey);
         try
         {
-            m_Db.DeletePortfolioFolder(p_fldKey); // can raise System.TimeoutException or others if the RedisDb is offline
+            string errMsg = m_Db.DeletePortfolioFolder(p_fldId); // gives back an error message or empty string if everything was OK.
+            if (!String.IsNullOrEmpty(errMsg))
+                return errMsg;
+
+            m_memData.DeletePortfolioFolder(p_fldId);
+            return string.Empty;
         }
-        catch (System.Exception) // if error occured in DB writing, revert the transaction back to original state. Do not add the new Folder into MemDb.
+        catch (System.Exception e)
         {
-            m_memData.DeletePortfolioFolder(p_fldKey);
+            return $"Error in MemDb.DeletePortfolioFolder(): Exception {e.Message}";
         }
     }
 }
