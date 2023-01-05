@@ -72,7 +72,9 @@ public class StrategyRenewedUberController : ControllerBase
         string[]? allAssetListVIX = allAssetList.Append("^VIX").ToArray() ?? new string[] { "^VIX" };
 
         // string[] allAssetListVIX = new string[] { "VIXY", "TQQQ", "UPRO", "SVXY", "TMV", "UCO", "UNG", "^VIX" };
-        double[] bullishWeights = new double[] { -0.1, 0.3, 0.3, 0.2, -0.1, -0.075, -0.15 };
+        // double[] bullishWeights = new double[] { -0.1, 0.3, 0.3, 0.2, -0.1, -0.075, -0.15 };  // temporary modification on 2023-01-05 by Balazs
+        // double[] bearishWeights = new double[] { 1, 0, 0, 0, 0, 0, 0 }; // temporary modification on 2023-01-05 by Balazs
+        double[] bullishWeights = new double[] { -0.2, 0.3, 0.3, 0, -0.1, -0.075, -0.15 };
         double[] bearishWeights = new double[] { 1, 0, 0, 0, 0, 0, 0 };
         double[] eventMultiplicator = new double[] { 0.5, 1, 1, 0.85, 0.85, 0.7, 0.7 };
         double[] stciThresholds = new double[] { 0.02, 0.09, 0.075 };
