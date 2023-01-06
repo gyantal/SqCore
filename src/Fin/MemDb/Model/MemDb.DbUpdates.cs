@@ -32,7 +32,7 @@ public partial class MemDb
         return fld;
     }
 
-    public string DeletePortfolioFolder(int p_fldId) // will finalise after discussing with George - Daya
+    public string DeletePortfolioFolder(int p_fldId)
     {
         try
         {

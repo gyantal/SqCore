@@ -7,7 +7,7 @@
       <span class="refreshIcon"><img class="refreshIcon" src='../assets/images/refresh64.webp' (click)="onPortfoliosRefreshClicked()"></span>
     </span>
     <app-sq-tree-view [items]="uiPortfolioFoldersNested"></app-sq-tree-view>
-    <!-- <app-sq-tree-view (treeviewEvent)="addItem($event)"></app-sq-tree-view> -->
+    <!-- <app-sq-tree-view [treeviewHolderItems]="treeviewSelection"></app-sq-tree-view> -->
     <button type="button"(click)="onCreateClicked()">Create</button>
     <button type="button" (click)="onDeletePortfolioClicked()">Delete</button>
     <div id="portfolioModal" [ngStyle]="{'display': isPortfolioDialogVisible ? 'block' : 'none'}">
@@ -51,14 +51,9 @@
     </div>
   </div>
 </div>
-<div id="hasChildrenDialog" [ngStyle]="{'visibility': isFldrHasChildrenDialogVisible ? 'visible' : 'hidden'}">
-  <div class="hasChildrenDialog-content">
-      <span class="dialogSuggestion">{{errorMsgToUser}}</span>
-  </div>
-  <div class="fldrChldrnDialogButtons">
-    <button type="button" (click)="onFldrHasChildrenContinueClicked()">Continue this tab</button>
-  </div>
-  <div class="fldrChldrnDialogButtons">
-    <button type="button" (click)="onFldrHasChildrenCloseClicked()">Close this tab</button>
+<div id="errorPopup" [ngStyle]="{'visibility': isErrorPopupVisible ? 'visible' : 'hidden'}">Message
+  <div id="errorPopup-content">
+      <span id="errorMsg">{{errorMsgToUser}}</span><br><br>
+      <button type="button" (click)="onMsgToUsrClicked()">Ok</button>
   </div>
 </div>

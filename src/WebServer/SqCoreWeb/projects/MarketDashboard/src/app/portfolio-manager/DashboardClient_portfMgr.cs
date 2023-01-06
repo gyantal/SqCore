@@ -105,7 +105,7 @@ public partial class DashboardClient
                 CreatePortfolioFolder(msgObjStr);
                 PortfMgrSendPortfolioFldrs();
                 return true;
-            case "PortfMgr.DeletePortfFldr": // msg: "TestNesting11,prntFId:5,chldrn:true"
+            case "PortfMgr.DeletePortfFldr": // msg: "fldId:5"
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): DeletePortfFldr '{msgObjStr}'");
                 DeletePortfolioFolder(msgObjStr);
                 PortfMgrSendPortfolioFldrs();

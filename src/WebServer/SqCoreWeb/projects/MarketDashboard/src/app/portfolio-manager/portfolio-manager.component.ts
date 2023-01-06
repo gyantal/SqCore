@@ -44,7 +44,7 @@ export class PortfolioManagerComponent implements OnInit {
   treeviewPortItemOpenPathIds: number[] = []; // [-31, 1, 8]
   isPortfolioDialogVisible: boolean = false;
   isFldrHasChildren: boolean = false;
-  isFldrHasChildrenDialogVisible: boolean = false;
+  isErrorPopupVisible: boolean = false;
   errorMsgToUser: string = '';
   pfName: string = ''; // common for both portfolio and portfolioFolder
   // treeviewSelection: TreeViewItemSelectionHolder[] = [];
@@ -134,13 +134,7 @@ export class PortfolioManagerComponent implements OnInit {
       case 'PortfMgr.ErrorToUser': // Folders has children
         console.log('PortfMgr.ErrorToUser:' + msgObjStr);
         this.errorMsgToUser = msgObjStr;
-        this.isFldrHasChildrenDialogVisible = true;
-        const dialogAnimate = document.getElementById('hasChildrenDialog') as HTMLElement;
-        dialogAnimate.style.animationName = 'dialogFadein';
-        dialogAnimate.style.animationDuration = '3s';
-        dialogAnimate.style.animationTimingFunction = 'linear'; // default would be ‘ease’, which is a slow start, then fast, before it ends slowly. We prefer the linear.
-        dialogAnimate.style.animationIterationCount = '1'; // only once
-        dialogAnimate.style.animationFillMode = 'forwards';
+        this.isErrorPopupVisible = true;
         return true;
       default:
         return false;
@@ -352,14 +346,10 @@ export class PortfolioManagerComponent implements OnInit {
   onDeletePortfolioClicked() {
     const lastSelectedTreeNode = SqTreeViewComponent.gLastSelectedItem as PortfolioFldrJs;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.DeletePortfFldr:' + ',fldId:' + lastSelectedTreeNode.id);
+      this._parentWsConnection.send('PortfMgr.DeletePortfFldr:' + 'fldId:' + lastSelectedTreeNode.id);
   }
 
-  onFldrHasChildrenContinueClicked() {
-    this.isFldrHasChildrenDialogVisible = false;
-  }
-
-  onFldrHasChildrenCloseClicked() {
-    window.close();
+  onMsgToUsrClicked() {
+    this.isErrorPopupVisible = false;
   }
 }
