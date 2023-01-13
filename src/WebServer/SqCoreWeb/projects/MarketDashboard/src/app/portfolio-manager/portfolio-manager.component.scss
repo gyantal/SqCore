@@ -17,6 +17,7 @@
 
 #panelPrtfTree { // Section 1
   float: left;
+  padding-left: 1rem;
   width: 30.25%;
   height: 96vh;
 }
@@ -146,40 +147,47 @@
   cursor: pointer;
 }
 
-#errorPopup {
+// the below popup styles are common for both error msg from server and delete confirmation 
+.popup {
   display: block;
   position: fixed;
   z-index: 1;
   text-align: center;
-  font-weight: bold;
   left: 78rem;
   top: 40rem;
   bottom: 20rem;
   width: 50rem;
   height: 11rem;
   overflow: auto;
-  color: rgb(230, 9, 9);
-  background-color: #8ac4ee;
-  border: .3rem solid #6aa2f5;
   border-radius: 1rem;
+}
+
+.popup-content {
+  margin: auto;
+  vertical-align: middle;
+  width: 45rem;
+  font-weight: bold;
+}
+
+.popupMsg {
+  font-weight: bold;
+  font-size: 1.3rem;
+}
+
+#deleteConfirmPopup {
+  color: rgb(38, 38, 247);
+  background-color: #e6eaec;
+  border: .3rem solid #231fff;
+}
+
+#errorPopup {
+  color: rgb(32, 34, 148);
+  background-color: #FFA500;
+  border: .3rem solid #FF5F1F;
   animation: popupFadein 5s linear 1 forwards;
 }
 
 @keyframes popupFadein {
   0% { opacity: 0; }
   100% { opacity: 0.95; }
-}
-
-#errorPopup-content {
-  margin: auto;
-  padding: 1rem 2rem 1.5rem 2rem;
-  vertical-align: middle;
-  width: 45rem;
-  background-color: #d6d8da;
-  color: rgb(60, 11, 238);
-}
-
-#errorMsg {
-  font-weight: bold;
-  font-size: 1.3rem;
 }

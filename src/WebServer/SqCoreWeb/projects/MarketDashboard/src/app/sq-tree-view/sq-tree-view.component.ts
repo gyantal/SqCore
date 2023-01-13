@@ -7,10 +7,10 @@ import { Component, OnInit, Input } from '@angular/core';
 })
 export class SqTreeViewComponent implements OnInit {
   @Input() items: any; // data receive from other components
-  // @Input() treeviewHolderItems: any; // data receive from other components
-  // @Output() treeviewEvent = new EventEmitter<any>();
+  @Input() treeviewHolderItems: any; // data receive from other components
 
   isExpanded: boolean = false;
+  // isItemSelected: boolean = false;
   static gLastSelectedItem: any;
 
   constructor() { }
@@ -19,6 +19,7 @@ export class SqTreeViewComponent implements OnInit {
   }
 
   onItemClicked(item: any) {
+    // item.isItemSelected = true;
     if (item.isExpanded) {
       item.isExpanded = !item.isExpanded;
       return;
@@ -31,14 +32,18 @@ export class SqTreeViewComponent implements OnInit {
       }
     }
 
-    // this.treeviewEvent.emit(item);
+    // Under Development - Daya
     // holder.SelecetdId = item.id
+    // const lastSelected = new TreeViewItemSelectionHolder();
+    // this.treeviewSelection.lastSelected = item;
+    // this.treeviewSelection.lastSelectedId = item.id;
+    // this.treeviewSelection.selectedIdList.push(item.id);
+    // this.treeviewSelection.lastSelected;
 
     SqTreeViewComponent.gLastSelectedItem = item;
   }
 
   // Yet to develop
   expandChildren(treeviewPortItemOpenPathIds: number[]) {
-
   }
 }

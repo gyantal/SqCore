@@ -20,11 +20,12 @@ class PortfolioFldrJs {
 //   public baseCurrency = '';
 // }
 
-// class TreeViewItemSelectionHolder {
-// public lastSelected : PortfolioFldrJs[] = [];
-// public lastSelectedId : number = NaN;
-// public selectedIdList: number[] = [];
-// }
+class TreeViewItemSelectionHolder {
+  public lastSelected : PortfolioFldrJs[] = [];
+  public lastSelectedId : number = NaN;
+  public selectedIdList: number[] = [];
+  public testStr = 'Hello';
+}
 
 @Component({
   selector: 'app-portfolio-manager',
@@ -36,19 +37,19 @@ export class PortfolioManagerComponent implements OnInit {
   @ViewChild(SqTreeViewComponent) public sqTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
 
   // handshakeObj: Nullable<PrtfMgrVwrHandShk> = null;
-  portfoliosFldrsObj: Nullable<PortfolioFldrJs> = null;
-  portfolioFolders: PortfolioFldrJs[] = [];
+  portfolioFldrs: Nullable<PortfolioFldrJs[]> = null;
+  // portfolioFolders: PortfolioFldrJs[] = [];
   // portfoliosObj: Nullable<PortfolioJs> = null;
   // portfolios: PortfolioJs[] = [];
-  uiPortfolioFoldersNested: any[] = [];
+  uiPortfolioItemsNested: any[] = [];
   treeviewPortItemOpenPathIds: number[] = []; // [-31, 1, 8]
   isPortfolioDialogVisible: boolean = false;
   isFldrHasChildren: boolean = false;
+  isDeleteConfirmPopupVisible: boolean = false;
   isErrorPopupVisible: boolean = false;
   errorMsgToUser: string = '';
   pfName: string = ''; // common for both portfolio and portfolioFolder
-  // treeviewSelection: TreeViewItemSelectionHolder[] = [];
-  // treeviewSelected: any[] = [];
+  treeviewSelection: TreeViewItemSelectionHolder[] = [];
 
   tabPageVisibleIdx = 1;
 
@@ -164,7 +165,7 @@ export class PortfolioManagerComponent implements OnInit {
   // }
 
   processPortfolioFldrsTree(msgObjStr: string) {
-    this.portfoliosFldrsObj = JSON.parse(msgObjStr, function(this: any, key, value) {
+    this.portfolioFldrs = JSON.parse(msgObjStr, function(this: any, key, value) {
       // property names and values are transformed to a shorter ones for decreasing internet traffic.Transform them back to normal for better code reading.
 
       // 'this' is the object containing the property being processed (not the embedding class) as this is a function(), not a '=>', and the property name as a string, the property value as arguments of this function.
@@ -181,7 +182,7 @@ export class PortfolioManagerComponent implements OnInit {
       }
       return value;
     });
-    this.updateUiPortfolioFolders(this.portfoliosFldrsObj, this.portfolioFolders);
+    this.createTreeViewData(this.portfolioFldrs);
   };
 
   onPortfoliosRefreshClicked() {
@@ -275,27 +276,17 @@ export class PortfolioManagerComponent implements OnInit {
   //   }
   // }
 
-  updateUiPortfolioFolders(portfoliosFldrsObj: Nullable<PortfolioFldrJs>, portfolioFolders: PortfolioFldrJs[]) {
-    if (!(Array.isArray(portfoliosFldrsObj) && portfoliosFldrsObj.length > 0 ))
+  createTreeViewData(pFolders: Nullable<PortfolioFldrJs[]>) {
+    if (!(Array.isArray(pFolders) && pFolders.length > 0 ))
       return;
-    for (const prtfFldr of portfoliosFldrsObj) {
-      const prFld = new PortfolioFldrJs();
-      prFld.id = prtfFldr.id;
-      prFld.name = prtfFldr.name;
-      prFld.parentFolderId = prtfFldr.parentFolderId;
-      portfolioFolders.push(prFld);
-    }
-    this.createTreeViewData(portfolioFolders);
-  }
 
-  createTreeViewData(portfolioFolders: PortfolioFldrJs[]) {
-    this.uiPortfolioFoldersNested.length = 0;
+    this.uiPortfolioItemsNested.length = 0;
     const treeData = {};
     let parent: any;
     let child: any;
 
-    for (let i = 0; i < portfolioFolders.length; i++) {
-      parent = portfolioFolders[i];
+    for (let i = 0; i < pFolders.length; i++) {
+      parent = pFolders[i];
       treeData[parent.id] = parent;
       treeData[parent.id]['children'] = [];
     }
@@ -306,31 +297,19 @@ export class PortfolioManagerComponent implements OnInit {
         if (child.parentFolderId && treeData[child['parentFolderId']])
           treeData[child['parentFolderId']]['children'].push(child);
         else
-          this.uiPortfolioFoldersNested.push(child);
+          this.uiPortfolioItemsNested.push(child);
       }
     }
+
+    // treeview Holder - under Development (Daya)
+    const treeviewItem = new TreeViewItemSelectionHolder();
+    treeviewItem.testStr = 'Hello user';
+    this.treeviewSelection.push(treeviewItem);
   };
 
   onCreateClicked() {
     this.isPortfolioDialogVisible = true;
-    // fill up the treeviewselected holder
-    // Under Development - Daya
-    // for (const item of this.uiPortfolioFoldersNested) {
-    //   if (this.pfName == item.name) {
-    //     const lastSelected = new TreeViewItemSelectionHolder();
-    //     lastSelected.lastSelected = item.name;
-    //     lastSelected.lastSelectedId = item.id;
-    //     this.treeviewSelection.push(lastSelected);
-    //   }
-    //   this.addItem(item);
-    // }
   }
-
-  // Under Development - Daya
-  // addTreeViewItem(treeViewItem) {
-  //   this.treeviewSelected = treeViewItem;
-  //   console.log('the new item is : ', treeViewItem);
-  // }
 
   onCloseClicked() {
     this.isPortfolioDialogVisible = false;
@@ -344,12 +323,23 @@ export class PortfolioManagerComponent implements OnInit {
   }
 
   onDeletePortfolioClicked() {
+    this.isDeleteConfirmPopupVisible = true;
+    const lastSelectedTreeNode = SqTreeViewComponent.gLastSelectedItem as PortfolioFldrJs;
+    this.pfName = lastSelectedTreeNode.name;
+  }
+
+  onErrorOkClicked() {
+    this.isErrorPopupVisible = false;
+  }
+
+  onConfirmDeleteYesClicked() {
     const lastSelectedTreeNode = SqTreeViewComponent.gLastSelectedItem as PortfolioFldrJs;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('PortfMgr.DeletePortfFldr:' + 'fldId:' + lastSelectedTreeNode.id);
+    this.isDeleteConfirmPopupVisible = false;
   }
 
-  onMsgToUsrClicked() {
-    this.isErrorPopupVisible = false;
+  onConfirmDeleteNoClicked() {
+    this.isDeleteConfirmPopupVisible = false;
   }
 }
