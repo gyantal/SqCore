@@ -103,7 +103,7 @@ def lev_by_monthly_perf(sharpe_rank, leverage_array, year_month_df, min_lb_years
     year_month_df_to_fill = year_month_df[['Year', 'Month']]
     lb_days = min_lb_years*252
 
-    last_day = year_month_df.index[-1]
+    last_day = year_month_df.index[-1].tz_convert('UTC')
     nyse = mcal.get_calendar('NYSE')
     upcom_trading_days = nyse.valid_days(start_date = last_day, end_date= last_day + dt.timedelta(days=10))
     next_trading_day = upcom_trading_days[1]
