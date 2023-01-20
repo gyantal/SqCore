@@ -20,11 +20,6 @@ ul {
   user-select: none;
 }
 
-.treeViewExpanded {
-  background: #FFAE42;
-  cursor: pointer;
-}
-
 .treeViewExpanded::before {
   content: "\002D";
   padding-right: 1rem;

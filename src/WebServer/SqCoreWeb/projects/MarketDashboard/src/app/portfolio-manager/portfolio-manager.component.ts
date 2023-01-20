@@ -4,9 +4,6 @@ import { SqTreeViewComponent } from '../sq-tree-view/sq-tree-view.component';
 type Nullable<T> = T | null;
 
 // Input data classes
-// class PrtfMgrVwrHandShk {
-//   portfolioFldrJs: Nullable<PortfolioFldrJs[]> = null;
-// }
 
 class PortfolioFldrJs {
   public id = -1;
@@ -20,11 +17,9 @@ class PortfolioFldrJs {
 //   public baseCurrency = '';
 // }
 
-class TreeViewItemSelectionHolder {
-  public lastSelected : PortfolioFldrJs[] = [];
-  public lastSelectedId : number = NaN;
-  public selectedIdList: number[] = [];
-  public testStr = 'Hello';
+export class TreeViewItemSelectionContainer {
+  public lastSelectedItem : Nullable<PortfolioFldrJs> = null;
+  public expandedPrtfFolderIds: number[] = [];
 }
 
 @Component({
@@ -36,23 +31,18 @@ export class PortfolioManagerComponent implements OnInit {
   @Input() _parentWsConnection?: WebSocket = undefined; // this property will be input from above parent container
   @ViewChild(SqTreeViewComponent) public sqTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
 
-  // handshakeObj: Nullable<PrtfMgrVwrHandShk> = null;
   portfolioFldrs: Nullable<PortfolioFldrJs[]> = null;
-  // portfolioFolders: PortfolioFldrJs[] = [];
-  // portfoliosObj: Nullable<PortfolioJs> = null;
-  // portfolios: PortfolioJs[] = [];
   uiPortfolioItemsNested: any[] = [];
-  treeviewPortItemOpenPathIds: number[] = []; // [-31, 1, 8]
-  isPortfolioDialogVisible: boolean = false;
-  isFldrHasChildren: boolean = false;
+  isCreatePortfolioPopupVisible: boolean = false;
   isDeleteConfirmPopupVisible: boolean = false;
   isErrorPopupVisible: boolean = false;
   errorMsgToUser: string = '';
-  pfName: string = ''; // common for both portfolio and portfolioFolder
-  treeviewSelection: TreeViewItemSelectionHolder[] = [];
+  prtfName: string = ''; // common for both portfolio and portfolioFolder
+  treeviewContainer: TreeViewItemSelectionContainer = new TreeViewItemSelectionContainer();
 
-  tabPageVisibleIdx = 1;
+  tabPrtfSpecVisibleIdx = 1; // tab buttons for portfolio specifaction preview of postions and strategy parameters
 
+  // the below vaiables are required for resizing the panels according to users
   dashboardHeaderWidth = 0;
   dashboardHeaderHeight = 0;
   prtfMgrToolWidth = 0;
@@ -69,11 +59,6 @@ export class PortfolioManagerComponent implements OnInit {
   constructor() { }
 
   ngOnInit(): void {
-    // Notes : Difference btw scrollHeight, clientHeight and offsetHeight
-    // ScrollHeight : Entire content & padding (visible & not)
-    // ClientHeight : Visible content & padding
-    // OffsetHeight : visible content & padding + border + scrollbar
-
     const panelPrtfTreeId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfTree');
     this.panelPrtfTreeWidth = panelPrtfTreeId.clientWidth as number;
     this.panelPrtfTreeHeight = panelPrtfTreeId.clientHeight as number;
@@ -90,7 +75,7 @@ export class PortfolioManagerComponent implements OnInit {
     this.panelPrtfSpecWidth = panelPrtfSpecId.clientWidth as number;
     this.panelPrtfSpecHeight = panelPrtfSpecId.clientHeight as number;
 
-    const approotToolbar = PortfolioManagerComponent.getNonNullDocElementById('toolbarId');
+    const approotToolbar = PortfolioManagerComponent.getNonNullDocElementById('toolbarId'); // toolbarId is cominng from app component
     this.dashboardHeaderWidth = approotToolbar.clientWidth;
     this.dashboardHeaderHeight = approotToolbar.clientHeight;
 
@@ -118,87 +103,11 @@ export class PortfolioManagerComponent implements OnInit {
     this.prtfMgrToolHeight = this.prtfMgrToolHeight - this.dashboardHeaderHeight;
   }
 
-  public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
-    switch (msgCode) {
-      case 'PortfMgr.Portfolios': // The most frequent message should come first. Note: LstVal (realtime price) is handled earlier in a unified way.
-        console.log('PortfMgr.Portfolios:' + msgObjStr);
-        // this.processPortfolios(msgObjStr);
-        return true;
-      case 'PortfMgr.PortfoliosFldrs': // The most frequent message should come first. Note: LstVal (realtime price) is handled earlier in a unified way.
-        console.log('PortfMgr.PortfoliosFldrs:' + msgObjStr);
-        this.processPortfolioFldrsTree(msgObjStr);
-        return true;
-      case 'PortfMgr.Handshake': // The least frequent message should come last.
-        console.log('PortfMgr.Handshake:' + msgObjStr);
-        // this.handshakeObj = JSON.parse(msgObjStr);
-        return true;
-      case 'PortfMgr.ErrorToUser': // Folders has children
-        console.log('PortfMgr.ErrorToUser:' + msgObjStr);
-        this.errorMsgToUser = msgObjStr;
-        this.isErrorPopupVisible = true;
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  // processPortfolios(msgObjStr: string) {
-  //   this.portfoliosObj = JSON.parse(msgObjStr, function(this: any, key, value) {
-  //     // eslint-disable-next-line no-invalid-this
-  //     const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
-
-  //     if (key === 'sAcs') {
-  //       _this.sharedAccess = value;
-  //       return; // if return undefined, orignal property will be removed
-  //     }
-  //     if (key === 'sUsr') {
-  //       _this.sharedUserWithMe = value;
-  //       return; // if return undefined, orignal property will be removed
-  //     }
-  //     if (key === 'bCur') {
-  //       _this.baseCurrency = value;
-  //       return; // if return undefined, orignal property will be removed
-  //     }
-  //     return value;
-  //   });
-  //   this.updateUiPortfolios(this.portfoliosObj, this.portfolios);
-  // }
-
-  processPortfolioFldrsTree(msgObjStr: string) {
-    this.portfolioFldrs = JSON.parse(msgObjStr, function(this: any, key, value) {
-      // property names and values are transformed to a shorter ones for decreasing internet traffic.Transform them back to normal for better code reading.
-
-      // 'this' is the object containing the property being processed (not the embedding class) as this is a function(), not a '=>', and the property name as a string, the property value as arguments of this function.
-      // eslint-disable-next-line no-invalid-this
-      const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
-
-      if (key === 'n') {
-        _this.name = value;
-        return; // if return undefined, orignal property will be removed
-      }
-      if (key === 'p') {
-        _this.parentFolderId = value;
-        return; // if return undefined, orignal property will be removed
-      }
-      return value;
-    });
-    this.createTreeViewData(this.portfolioFldrs);
-  };
-
-  onPortfoliosRefreshClicked() {
-    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.RefreshPortfolioFldrs:');
-  }
-
-  onClickPortfolioPreview(tabIdx: number) {
-    this.tabPageVisibleIdx = tabIdx;
-  }
-
   static getNonNullDocElementById(id: string): HTMLElement { // document.getElementById() can return null. This 'forced' type casting fakes that it is not null for the TS compiler. (it can be null during runtime)
     return document.getElementById(id) as HTMLElement;
   }
 
-  onMouseOver(resizer: string) {
+  onMouseOverResizer(resizer: string) {
     if (resizer == 'resizer')
       this.makeResizablePrtfTree(resizer);
     if (resizer == 'resizer2')
@@ -259,22 +168,73 @@ export class PortfolioManagerComponent implements OnInit {
       }
     }
   }
-  // under Development -- Daya
-  // updateUiPortfolios(portfoliosObj: Nullable<PortfolioJs>, portfolios: PortfolioJs[]) {
-  //   if (!(Array.isArray(portfoliosObj) && portfoliosObj.length > 0 ))
-  //     return;
-  //   for (const prtf of portfoliosObj) {
-  //     const pf = new PortfolioJs();
-  //     const prtfItem = new PortfolioFldrJs();
-  //     prtfItem.id = prtf.id;
-  //     prtfItem.name = prtf.name;
-  //     pf.portf.push(prtfItem);
-  //     pf.baseCurrency = prtf.baseCurrency,
-  //     pf.sharedAccess = prtf.sharedAccess,
-  //     pf.sharedUserWithMe = prtf.sharedUserWithMe,
-  //     portfolios.push(pf);
-  //   }
+
+  public webSocketOnMessage(msgCode: string, msgObjStr: string): boolean {
+    switch (msgCode) {
+      case 'PortfMgr.Portfolios': // The most frequent message should come first. Note: LstVal (realtime price) is handled earlier in a unified way.
+        console.log('PortfMgr.Portfolios:' + msgObjStr);
+        // this.processPortfolios(msgObjStr);
+        return true;
+      case 'PortfMgr.PortfoliosFldrs': // The most frequent message should come first. Note: LstVal (realtime price) is handled earlier in a unified way.
+        console.log('PortfMgr.PortfoliosFldrs:' + msgObjStr);
+        this.processPortfolioFldrs(msgObjStr);
+        return true;
+      case 'PortfMgr.Handshake': // The least frequent message should come last.
+        console.log('PortfMgr.Handshake:' + msgObjStr);
+        // this.handshakeObj = JSON.parse(msgObjStr);
+        return true;
+      case 'PortfMgr.ErrorToUser': // Folders has children
+        console.log('PortfMgr.ErrorToUser:' + msgObjStr);
+        this.errorMsgToUser = msgObjStr;
+        this.isErrorPopupVisible = true;
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  // processPortfolios(msgObjStr: string) {
+  //   this.portfoliosObj = JSON.parse(msgObjStr, function(this: any, key, value) {
+  //     // eslint-disable-next-line no-invalid-this
+  //     const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
+
+  //     if (key === 'sAcs') {
+  //       _this.sharedAccess = value;
+  //       return; // if return undefined, orignal property will be removed
+  //     }
+  //     if (key === 'sUsr') {
+  //       _this.sharedUserWithMe = value;
+  //       return; // if return undefined, orignal property will be removed
+  //     }
+  //     if (key === 'bCur') {
+  //       _this.baseCurrency = value;
+  //       return; // if return undefined, orignal property will be removed
+  //     }
+  //     return value;
+  //   });
+  //   this.updateUiPortfolios(this.portfoliosObj, this.portfolios);
   // }
+
+  processPortfolioFldrs(msgObjStr: string) {
+    this.portfolioFldrs = JSON.parse(msgObjStr, function(this: any, key, value) {
+      // property names and values are transformed to a shorter ones for decreasing internet traffic.Transform them back to normal for better code reading.
+
+      // 'this' is the object containing the property being processed (not the embedding class) as this is a function(), not a '=>', and the property name as a string, the property value as arguments of this function.
+      // eslint-disable-next-line no-invalid-this
+      const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
+
+      if (key === 'n') {
+        _this.name = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      if (key === 'p') {
+        _this.parentFolderId = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      return value;
+    });
+    this.createTreeViewData(this.portfolioFldrs);
+  };
 
   createTreeViewData(pFolders: Nullable<PortfolioFldrJs[]>) {
     if (!(Array.isArray(pFolders) && pFolders.length > 0 ))
@@ -300,46 +260,79 @@ export class PortfolioManagerComponent implements OnInit {
           this.uiPortfolioItemsNested.push(child);
       }
     }
-
-    // treeview Holder - under Development (Daya)
-    const treeviewItem = new TreeViewItemSelectionHolder();
-    treeviewItem.testStr = 'Hello user';
-    this.treeviewSelection.push(treeviewItem);
   };
 
-  onCreateClicked() {
-    this.isPortfolioDialogVisible = true;
-  }
-
-  onCloseClicked() {
-    this.isPortfolioDialogVisible = false;
-  }
-
-  onCreatePortfolioClicked(pfName: string) {
-    const lastSelectedTreeNode = SqTreeViewComponent.gLastSelectedItem as PortfolioFldrJs;
+  onPortfoliosRefreshClicked() {
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.CreatePortfFldr:' + this.pfName + ',prntFId:' + lastSelectedTreeNode.id);
-    this.isPortfolioDialogVisible = false;
+      this._parentWsConnection.send('PortfMgr.RefreshPortfolioFldrs:');
   }
 
-  onDeletePortfolioClicked() {
+  // under Development -- Daya
+  // updateUiPortfolios(portfoliosObj: Nullable<PortfolioJs>, portfolios: PortfolioJs[]) {
+  //   if (!(Array.isArray(portfoliosObj) && portfoliosObj.length > 0 ))
+  //     return;
+  //   for (const prtf of portfoliosObj) {
+  //     const pf = new PortfolioJs();
+  //     const prtfItem = new PortfolioFldrJs();
+  //     prtfItem.id = prtf.id;
+  //     prtfItem.name = prtf.name;
+  //     pf.portf.push(prtfItem);
+  //     pf.baseCurrency = prtf.baseCurrency,
+  //     pf.sharedAccess = prtf.sharedAccess,
+  //     pf.sharedUserWithMe = prtf.sharedUserWithMe,
+  //     portfolios.push(pf);
+  //   }
+  // }
+
+  onCreatePrtfItemClicked() { // this logic makes the Popup visible of creating a portfolio
+    this.isCreatePortfolioPopupVisible = true;
+  }
+
+  onClosePortfolioClicked() { // this logic makes the create portfolio Popup invisible
+    this.isCreatePortfolioPopupVisible = false;
+  }
+
+  onCreatePortfolioClicked(pfName: string) { // this logic create's a portfolio item if everything is passed
+    if (this.treeviewContainer.lastSelectedItem == null) {
+      console.log('Cannot Create, because no folder was selected.');
+      return;
+    }
+    const lastSelectedTreeNode = this.treeviewContainer.lastSelectedItem;
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+      this._parentWsConnection.send('PortfMgr.CreatePortfFldr:' + this.prtfName + ',prntFId:' + lastSelectedTreeNode.id);
+    this.isCreatePortfolioPopupVisible = false;
+  }
+
+  onDeletePrtfItemClicked() { // this logic makes the Delete Confirm Popup visible and displays the selected prtf name
+    if (this.treeviewContainer.lastSelectedItem == null) {
+      console.log('Cannot Delete, because no folder was selected.');
+      return;
+    }
+    const lastSelectedTreeNode = this.treeviewContainer.lastSelectedItem;
     this.isDeleteConfirmPopupVisible = true;
-    const lastSelectedTreeNode = SqTreeViewComponent.gLastSelectedItem as PortfolioFldrJs;
-    this.pfName = lastSelectedTreeNode.name;
+    this.prtfName = lastSelectedTreeNode.name;
   }
 
-  onErrorOkClicked() {
+  onErrorOkClicked() { // this is to close the ErrorPopup when there is a error message from server
     this.isErrorPopupVisible = false;
   }
 
-  onConfirmDeleteYesClicked() {
-    const lastSelectedTreeNode = SqTreeViewComponent.gLastSelectedItem as PortfolioFldrJs;
+  onConfirmDeleteYesClicked() { // this logic delete's a portfolio item if everything is passed
+    if (this.treeviewContainer.lastSelectedItem == null) {
+      console.log('Cannot Delete, because no folder was selected.');
+      return;
+    }
+    const lastSelectedTreeNode = this.treeviewContainer.lastSelectedItem;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('PortfMgr.DeletePortfFldr:' + 'fldId:' + lastSelectedTreeNode.id);
     this.isDeleteConfirmPopupVisible = false;
   }
 
-  onConfirmDeleteNoClicked() {
+  onConfirmDeleteNoClicked() { // this logic silently closes the deleteConfirm popup
     this.isDeleteConfirmPopupVisible = false;
+  }
+
+  onClickPrtfSpecPreview(tabIdx: number) {
+    this.tabPrtfSpecVisibleIdx = tabIdx;
   }
 }

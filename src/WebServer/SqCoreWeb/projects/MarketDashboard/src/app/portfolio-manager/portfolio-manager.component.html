@@ -1,37 +1,32 @@
 <div id="panelPrtfMgr">
-  <div id="panelPrtfTree">panelPrtfTree
+  <div id="panelPrtfTree">panelPrtfTree: 
+    RefreshPortfolios
     <span class="tooltipGeneral">
       <div class="tooltipText">
         Force reload Portfolios Tree
       </div>
-      <span class="refreshIcon"><img class="refreshIcon" src='../assets/images/refresh64.webp' (click)="onPortfoliosRefreshClicked()"></span>
+      <span class="refreshPortfolios"><img class="refreshPortfolios" src='../assets/images/refresh64.webp' (click)="onPortfoliosRefreshClicked()"></span>
     </span>
-    <app-sq-tree-view [items]="uiPortfolioItemsNested" [treeviewHolderItems]="treeviewSelection"></app-sq-tree-view>
-    <button type="button"(click)="onCreateClicked()">Create</button>&nbsp;
-    <button type="button" (click)="onDeletePortfolioClicked()">Delete</button>
-    <div id="portfolioModal" [ngStyle]="{'display': isPortfolioDialogVisible ? 'block' : 'none'}">
-      <label><b>Name</b></label><br>
-      <input type="text" placeholder="portfolio" name="portfolio" [(ngModel)]="pfName"><br><br>
+    <app-sq-tree-view [items]="uiPortfolioItemsNested" [treeviewContainerItems]="treeviewContainer"></app-sq-tree-view>
+    <button type="button"(click)="onCreatePrtfItemClicked()">Create</button>&nbsp;
+    <button type="button" (click)="onDeletePrtfItemClicked()">Delete</button>
+    <div id="createPortfolioPopup" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}">
+        <label id="prtfNameLabel"><b>Name:</b></label>
+        <input id="prtfNameInput" type="text" placeholder="Enter Portfolio Name" name="portfolio" [(ngModel)]="prtfName"><br><br>
       <span>
-        <button (click)="onCreatePortfolioClicked(pfName)"> Create Portfolio</button>
-        <button (click)="onCreatePortfolioClicked(pfName)"> Create Portfolio Folder</button>
-        <button (click)="onCloseClicked()" class="closePortfolioModal" [ngStyle]="{'display': isPortfolioDialogVisible ? 'block' : 'none'}">Dismiss</button>
+        <button (click)="onCreatePortfolioClicked(prtfName)"> Create New Portfolio</button>&nbsp;
+        <button (click)="onCreatePortfolioClicked(prtfName)"> Create New Folder</button>
+        <button id="closePortfolioPopup" (click)="onClosePortfolioClicked()" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}">Dismiss</button>
       </span>
     </div><br>
-    whole Tool area without Dashboard header
-    Width: {{prtfMgrToolWidth}}
-    Height: {{prtfMgrToolHeight}}
-    <br>
-    Width: {{panelPrtfTreeWidth}}
-    Height: {{panelPrtfTreeHeight}}
   </div>
-  <div id="resizer" (mouseover)="onMouseOver('resizer')"></div>
+  <div id="resizer" (mouseover)="onMouseOverResizer('resizer')"></div>
   <div id="panelPrtfDetails">
     <div id="panelChart">Panel Chart
       Width: {{panelPrtfChrtWidth}}
       Height: {{panelPrtfChrtHeight}}
     </div>
-    <div id="resizer2" (mouseover)="onMouseOver('resizer2')"></div>
+    <div id="resizer2" (mouseover)="onMouseOverResizer('resizer2')"></div>
     <div id="panelStatsAndPerfSpec">
       <div id="panelStats">Panel Stats
         Width: {{panelStatsWidth}}
@@ -41,23 +36,23 @@
         Width: {{panelPrtfSpecWidth}}
         Height: {{panelPrtfSpecHeight}}
         <div>
-          <div class="portfolioPreviewButtons"><button [ngStyle]="{'background-color':tabPageVisibleIdx == 1 ? 'aqua' : ''}" (click)="onClickPortfolioPreview(1)">Positions</button></div>
-          <div class="portfolioPreviewButtons"><button [ngStyle]="{'background-color':tabPageVisibleIdx == 2 ? 'aqua' : ''}" (click)="onClickPortfolioPreview(2)">StrategyParameters</button></div>
+          <div class="prtfSpecPreviewButtons"><button [ngStyle]="{'background-color': tabPrtfSpecVisibleIdx == 1 ? 'aqua' : ''}" (click)="onClickPrtfSpecPreview(1)">Positions</button></div>
+          <div class="prtfSpecPreviewButtons"><button [ngStyle]="{'background-color': tabPrtfSpecVisibleIdx == 2 ? 'aqua' : ''}" (click)="onClickPrtfSpecPreview(2)">StrategyParameters</button></div>
         </div>
-        <div [hidden]="tabPageVisibleIdx != 1" id="positions">This is always Visible</div>
-        <div [hidden]="tabPageVisibleIdx == 1" id="StrategyParameters">Only for backtest</div>
+        <div [hidden]="tabPrtfSpecVisibleIdx != 1" id="positions">This is always Visible</div>
+        <div [hidden]="tabPrtfSpecVisibleIdx == 1" id="StrategyParameters">Only for backtest</div>
       </div>
     </div>
   </div>
 </div>
-<div class="popup" id="deleteConfirmPopup" [ngStyle]="{'visibility': isDeleteConfirmPopupVisible ? 'visible' : 'hidden'}">Confirm Delete
+<div class="popup deleteConfirmPopup" [ngStyle]="{'visibility': isDeleteConfirmPopupVisible ? 'visible' : 'hidden'}">Confirm Delete
   <div class="popup-content">
-      <span class="popupMsg">Are you sure you want to permanently delete folder / portfolio "{{pfName}}"</span><br><br>
+      <span class="popupMsg">Are you sure you want to permanently delete folder / portfolio "{{prtfName}}"</span><br><br>
       <button type="button" (click)="onConfirmDeleteYesClicked()">Yes</button>&nbsp;
       <button type="button" (click)="onConfirmDeleteNoClicked()">No</button>
   </div>
 </div>
-<div class="popup" id="errorPopup" [ngStyle]="{'visibility': isErrorPopupVisible ? 'visible' : 'hidden'}">Error from the Server
+<div class="popup errorPopup" [ngStyle]="{'visibility': isErrorPopupVisible ? 'visible' : 'hidden'}">Error from the Server
   <div class="popup-content"><br>
       <span class="popupMsg">{{errorMsgToUser}}</span><br><br>
       <button type="button" (click)="onErrorOkClicked()">Ok</button>

@@ -1,4 +1,5 @@
 import { Component, OnInit, Input } from '@angular/core';
+import { TreeViewItemSelectionContainer } from '../portfolio-manager/portfolio-manager.component';
 
 @Component({
   selector: 'app-sq-tree-view',
@@ -6,12 +7,11 @@ import { Component, OnInit, Input } from '@angular/core';
   styleUrls: ['./sq-tree-view.component.scss']
 })
 export class SqTreeViewComponent implements OnInit {
-  @Input() items: any; // data receive from other components
-  @Input() treeviewHolderItems: any; // data receive from other components
+  @Input() items: any; // nested tree view data receive from portfolio manager component
+  @Input() treeviewContainerItems: TreeViewItemSelectionContainer | any; // treeview selected data processing
 
   isExpanded: boolean = false;
-  // isItemSelected: boolean = false;
-  static gLastSelectedItem: any;
+  isItemSelected: boolean = false;
 
   constructor() { }
 
@@ -19,9 +19,9 @@ export class SqTreeViewComponent implements OnInit {
   }
 
   onItemClicked(item: any) {
-    // item.isItemSelected = true;
     if (item.isExpanded) {
       item.isExpanded = !item.isExpanded;
+      item.isItemSelected = !item.isItemSelected;
       return;
     } else {
       if (item.children) {
@@ -32,15 +32,11 @@ export class SqTreeViewComponent implements OnInit {
       }
     }
 
-    // Under Development - Daya
-    // holder.SelecetdId = item.id
-    // const lastSelected = new TreeViewItemSelectionHolder();
-    // this.treeviewSelection.lastSelected = item;
-    // this.treeviewSelection.lastSelectedId = item.id;
-    // this.treeviewSelection.selectedIdList.push(item.id);
-    // this.treeviewSelection.lastSelected;
+    this.treeviewContainerItems.lastSelectedItem = item;
+    const expandedIds = item.id;
+    this.treeviewContainerItems.expandedPrtfFolderIds.push(expandedIds);
 
-    SqTreeViewComponent.gLastSelectedItem = item;
+    item.isItemSelected = !item.isItemSelected;
   }
 
   // Yet to develop

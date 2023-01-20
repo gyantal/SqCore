@@ -1,13 +1,8 @@
 <ul>
   <li *ngFor="let item of items">
-    <div class="treeView" (click)="onItemClicked(item)" [ngClass]="{'treeViewExpanded': item.isExpanded}">{{item.name}}</div>
+    <div class="treeView" (click)="onItemClicked(item)" [ngClass]="{'treeViewSelected': item.isItemSelected, 'treeViewExpanded': item.isExpanded}">{{item.name}}</div>
     <ul *ngIf="item.children && item.isExpanded">
-      <app-sq-tree-view [items]="item.children"></app-sq-tree-view>
+      <app-sq-tree-view [items]="item.children" [treeviewContainerItems]="treeviewContainerItems"></app-sq-tree-view>
     </ul>
-  </li>
-</ul>
-<ul>
-  <li *ngFor="let item of treeviewHolderItems">
-    <div class="treeviewSelected">{{item.testStr}}</div>
   </li>
 </ul>
