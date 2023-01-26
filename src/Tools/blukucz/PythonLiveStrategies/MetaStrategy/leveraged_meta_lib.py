@@ -73,7 +73,7 @@ def lev_by_rank(rank_df, leverage_array, min_lb_years, reb_df):
     return rank_based_leverages_df
 
 def yearly_sharpe(pv_p):
-    daily_profit_df = (pv_p.copy()).to_frame()
+    daily_profit_df = (pv_p.copy())
     daily_profit_df.columns = ['PV']
     daily_profit_df['Year'], daily_profit_df['Month'] = daily_profit_df.index.year, daily_profit_df.index.month
     daily_profit_df['Profit'] = daily_profit_df.PV / daily_profit_df.PV.shift(1) - 1
@@ -131,13 +131,17 @@ def lev_by_monthly_perf(sharpe_rank, leverage_array, year_month_df, min_lb_years
     
     return year_month_df_to_fill
 
-def leveraged_ew_meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters, meta_leverage_parameters):
-    pv_dct, rets_dct, weights_dct, pos_dct, cash_dct, curr_substrats_weights_dct, curr_ETF_weights_dct, adj_close_price, cum_ew_based_weights = meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters)
-    pv_df = pd.DataFrame.from_dict(pv_dct)
-    ew_pv = pv_df.ew_based
+def leveraged_meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters, keller_protmom_parameters, novell_tactbond_parameters, meta_leverage_parameters):
+    pv_dct, rets_dct, weights_dct, pos_dct, cash_dct, curr_substrats_weights_dct, curr_ETF_weights_dct, adj_close_price, cum_ETF_weigths_dict = meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters, keller_protmom_parameters, novell_tactbond_parameters)
+    used_substrat_weights = meta_parameters['used_substrat_weights']
+    used_substrat_pv = pv_dct[used_substrat_weights]
+    used_substrat_cum_ETF_weights = cum_ETF_weigths_dict[used_substrat_weights]
+    pv_df = pd.DataFrame(used_substrat_pv, index = pv_dct['ew_based'].index)
+    cum_ETF_weights_df = pd.DataFrame(used_substrat_cum_ETF_weights, index = cum_ETF_weigths_dict['ew_based'].index)
+    used_pv = pv_df
     tlt_prices = adj_close_price.TLT.to_frame()
 
-    adj_close_price = adj_close_price[adj_close_price.index >= ew_pv.index[0]]
+    adj_close_price = adj_close_price[adj_close_price.index >= used_pv.index[0]]
     adj_close_price_wo_cash = adj_close_price.copy()
     adj_close_price['cash'] = 1
 
@@ -169,7 +173,7 @@ def leveraged_ew_meta(meta_parameters, taa_parameters, bold_parameters, dual_mom
 
     dailyretsETFs = adj_close_price / adj_close_price.shift(1) - 1
 
-    cum_rebalance_adjusted_weights = weight_recalc(df, cum_ew_based_weights)
+    cum_rebalance_adjusted_weights = weight_recalc(df, cum_ETF_weights_df)
 
     dailyretsETFs_played = dailyretsETFs.where(cum_rebalance_adjusted_weights > 0, pd.NA)
 
@@ -198,7 +202,7 @@ def leveraged_ew_meta(meta_parameters, taa_parameters, bold_parameters, dual_mom
     leverages_ETFs_by_all = lev_by_rank(sharpe_ETFs_all_rank, perf_based_ETF_leverage_array, meta_leverage_lookback_years, df)
     leverages_ETFs_by_played = lev_by_rank(sharpe_ETFs_played_rank, perf_based_ETF_leverage_array, meta_leverage_lookback_years, df)
 
-    sharpe_by_years = yearly_sharpe(ew_pv)
+    sharpe_by_years = yearly_sharpe(used_pv)
     sharpe_by_years_rank = sharpe_by_years.rank(axis = 1, ascending = False).fillna(99).astype(int)
     levegare_by_month = lev_by_monthly_perf(sharpe_by_years_rank, meta_monthly_seas_based_leverage, df, meta_leverage_lookback_years)
 
@@ -207,7 +211,7 @@ def leveraged_ew_meta(meta_parameters, taa_parameters, bold_parameters, dual_mom
     tlt_prices.columns = ['TLT']
     tlt_prices['OneM'] = tlt_prices.TLT / tlt_prices.TLT.shift(21) - 1
     tlt_prices['ThreeM'] = tlt_prices.TLT / tlt_prices.TLT.shift(63) - 1
-    tlt_prices = tlt_prices[tlt_prices.index >= ew_pv.index[0]]
+    tlt_prices = tlt_prices[tlt_prices.index >= used_pv.index[0]]
     no_tlt_days = len(tlt_prices.index)
     tlt_leverage_by_days = np.ones(no_tlt_days)
     for days in range(no_tlt_days):
@@ -224,10 +228,10 @@ def leveraged_ew_meta(meta_parameters, taa_parameters, bold_parameters, dual_mom
     final_leverage_all = (leverages_ETFs_by_all * meta_overall_leverage).multiply(used_leverage_by_month, axis = 'index').multiply(tlt_prices.TLTLev, axis = 'index')
     final_leverage_played = (leverages_ETFs_by_played * meta_overall_leverage).multiply(used_leverage_by_month, axis = 'index').multiply(tlt_prices.TLTLev, axis = 'index')
 
-    final_weights_all = cum_ew_based_weights.mul(final_leverage_all)
+    final_weights_all = cum_ETF_weights_df.mul(final_leverage_all)
     final_weights_all['cash'] = 0
     cash_all = 1 - final_weights_all.sum(axis = 1)
-    final_weights_played = cum_ew_based_weights.mul(final_leverage_played)
+    final_weights_played = cum_ETF_weights_df.mul(final_leverage_played)
     final_weights_played['cash'] = 0
     cash_played = 1 - final_weights_played.sum(axis = 1)
 
@@ -245,4 +249,4 @@ def leveraged_ew_meta(meta_parameters, taa_parameters, bold_parameters, dual_mom
     strat_all_curr_weights = strat_all_weights.iloc[-1]
     strat_played_curr_weights = strat_played_weights.iloc[-1]
 
-    return pv_played_fin, strat_played_rets, strat_played_weights, pos_played_fin, cash_played_fin, strat_played_curr_weights, cum_ew_based_weights.iloc[-1], leverages_ETFs_by_played.iloc[-1], used_leverage_by_month.iloc[-1], tlt_prices.TLTLev.iloc[-1]
+    return pv_played_fin, strat_played_rets, strat_played_weights, pos_played_fin, cash_played_fin, strat_played_curr_weights, cum_ETF_weights_df.iloc[-1], leverages_ETFs_by_played.iloc[-1], used_leverage_by_month.iloc[-1], tlt_prices.TLTLev.iloc[-1]

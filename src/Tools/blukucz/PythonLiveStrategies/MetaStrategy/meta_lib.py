@@ -32,6 +32,8 @@ from functools import reduce
 from taa_lib import taa
 from baa_lib import baa
 from dualmom_lib import dualmom
+from kellerprotmom_lib import kellerprotmom
+from novelltactbond_lib import novelltactbond
 
 
 
@@ -53,26 +55,30 @@ def meta_perf_based_weights(substrat_rank_p, substrat_weights_p, performance_p, 
     return weights_df, cash_weights
 
 def curr_ETF_weights(meta_curr_weights, curr_weights_substrat_dict_p):
-    curr_ETF_weights_dm = (meta_curr_weights.DoubleMom * curr_weights_substrat_dict_p['DoubleMom']).to_dict()
+    curr_ETF_weights_dm = (meta_curr_weights.DualMom * curr_weights_substrat_dict_p['DualMom']).to_dict()
     curr_ETF_weights_taa = (meta_curr_weights.TAA * curr_weights_substrat_dict_p['TAA']).to_dict()
     curr_ETF_weights_baa_aggdef = (meta_curr_weights.BAA_AggDef * curr_weights_substrat_dict_p['BAA_AggDef']).to_dict()
     curr_ETF_weights_baa_baldef = (meta_curr_weights.BAA_BalDef * curr_weights_substrat_dict_p['BAA_BalDef']).to_dict()
-    curr_ETF_weights = {k: curr_ETF_weights_dm.get(k, 0) + curr_ETF_weights_taa.get(k, 0) + curr_ETF_weights_baa_aggdef.get(k, 0) + curr_ETF_weights_baa_baldef.get(k, 0) for k in set(curr_ETF_weights_dm) | set(curr_ETF_weights_taa) | set(curr_ETF_weights_baa_aggdef) | set(curr_ETF_weights_baa_baldef)}
+    curr_ETF_weights_pm = (meta_curr_weights.KellerProtMom * curr_weights_substrat_dict_p['KellerProtMom']).to_dict()
+    curr_ETF_weights_tb = (meta_curr_weights.NovellTactBond * curr_weights_substrat_dict_p['NovellTactBond']).to_dict()
+    curr_ETF_weights = {k: curr_ETF_weights_dm.get(k, 0) + curr_ETF_weights_taa.get(k, 0) + curr_ETF_weights_baa_aggdef.get(k, 0) + curr_ETF_weights_baa_baldef.get(k, 0) + curr_ETF_weights_pm.get(k, 0) +curr_ETF_weights_tb.get(k, 0) for k in set(curr_ETF_weights_dm) | set(curr_ETF_weights_taa) | set(curr_ETF_weights_baa_aggdef) | set(curr_ETF_weights_baa_baldef) | set(curr_ETF_weights_pm) | set(curr_ETF_weights_tb) }
     curr_cash = 1 - sum(curr_ETF_weights.values())
     curr_ETF_weights['cash'] += curr_cash
     return curr_ETF_weights
 
 def cum_ETF_weights(meta_weights, weights_substrat_dict_p):
-    ETF_weights_dm = (weights_substrat_dict_p['DoubleMom'].multiply(meta_weights.DoubleMom.to_numpy(), axis = 0))
+    ETF_weights_dm = (weights_substrat_dict_p['DualMom'].multiply(meta_weights.DualMom.to_numpy(), axis = 0))
     ETF_weights_taa = (weights_substrat_dict_p['TAA'].multiply(meta_weights.TAA.to_numpy(), axis = 0))
     ETF_weights_baa_aggdef = (weights_substrat_dict_p['BAA_AggDef'].multiply(meta_weights.BAA_AggDef.to_numpy(), axis = 0))
     ETF_weights_baa_baldef = (weights_substrat_dict_p['BAA_BalDef'].multiply(meta_weights.BAA_BalDef.to_numpy(), axis = 0))
-    ETF_weights = reduce(lambda x, y: x.add(y, fill_value = 0), [ETF_weights_dm, ETF_weights_taa, ETF_weights_baa_aggdef, ETF_weights_baa_baldef])
+    ETF_weights_pm = (weights_substrat_dict_p['KellerProtMom'].multiply(meta_weights.KellerProtMom.to_numpy(), axis = 0))
+    ETF_weights_tb = (weights_substrat_dict_p['NovellTactBond'].multiply(meta_weights.NovellTactBond.to_numpy(), axis = 0))
+    ETF_weights = reduce(lambda x, y: x.add(y, fill_value = 0), [ETF_weights_dm, ETF_weights_taa, ETF_weights_baa_aggdef, ETF_weights_baa_baldef, ETF_weights_pm, ETF_weights_tb])
     cash = 1 - ETF_weights.sum(axis = 1)
     ETF_weights['cash'] += cash
     return ETF_weights
 
-def meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters):
+def meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters, keller_protmom_parameters, novell_tactbond_parameters):
 
     meta_rebalance_unit = meta_parameters['meta_rebalance_unit']
     meta_rebalance_freq = meta_parameters['meta_rebalance_freq']
@@ -119,20 +125,44 @@ def meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters):
     dm_sub_rank_weights = dual_mom_parameters['dm_sub_rank_weights']
     dm_abs_threshold = dual_mom_parameters['dm_abs_threshold']
 
+    protmom_tickers_list = keller_protmom_parameters['protmom_tickers_list']
+    protmom_rebalance_unit = keller_protmom_parameters['protmom_rebalance_unit']
+    protmom_rebalance_freq = keller_protmom_parameters['protmom_rebalance_freq']
+    protmom_rebalance_shift = keller_protmom_parameters['protmom_rebalance_shift']
+    protmom_correl_lb_months = keller_protmom_parameters['protmom_correl_lb_months']
+    protmom_lb_periods = keller_protmom_parameters['protmom_lb_periods']
+    protmom_lb_weights = keller_protmom_parameters['protmom_lb_weights']
+    protmom_selected_ETFs = keller_protmom_parameters['protmom_selected_ETFs']
+
+    tactbond_tickers_list = novell_tactbond_parameters['tactbond_tickers_list']
+    tactbond_rebalance_unit = novell_tactbond_parameters['tactbond_rebalance_unit']
+    tactbond_rebalance_freq = novell_tactbond_parameters['tactbond_rebalance_freq']
+    tactbond_rebalance_shift = novell_tactbond_parameters['tactbond_rebalance_shift']
+    tactbond_absolute_threshold = novell_tactbond_parameters['tactbond_absolute_threshold']
+    tactbond_threshold_type = novell_tactbond_parameters['tactbond_threshold_type']
+    tactbond_cash_subs = novell_tactbond_parameters['tactbond_cash_subs']
+    tactbond_lb_periods = novell_tactbond_parameters['tactbond_lb_periods']
+    tactbond_lb_weights = novell_tactbond_parameters['tactbond_lb_weights']
+    tactbond_selected_ETFs = novell_tactbond_parameters['tactbond_selected_ETFs']
+
     taa_pv, taa_strat_rets, taa_weights, taa_pos, taa_cash, taa_curr_weights, taa_pv_ew, taa_strat_rets_ew, taa_pos_ew, taa_cash_ew =taa(taa_ticker_list, taa_perc_ch_lb_list, taa_vol_lb, taa_perc_ch_up_thres, taa_perc_ch_low_thres, taa_rebalance_unit, taa_rebalance_freq, taa_rebalance_shift, meta_start_date, meta_end_date)
     baa_pv, baa_strat_rets, baa_weights, baa_pos, baa_cash, baa_curr_weights, baa_pv_ew, baa_strat_rets_ew, baa_pos_ew, baa_cash_ew = baa('agg_def', baa_ticker_list_canary, baa_ticker_list_defensive, baa_ticker_list_aggressive, baa_ticker_list_balanced, baa_rebalance_unit, baa_rebalance_freq, baa_rebalance_shift, baa_skipped_period, baa_no_played_ETFs, baa_abs_threshold, meta_start_date, meta_end_date)
     baa2_pv, baa2_strat_rets, baa2_weights, baa2_pos, baa2_cash, baa2_curr_weights, baa2_pv_ew, baa2_strat_rets_ew, baa2_pos_ew, baa2_cash_ew = baa('bal_def', baa_ticker_list_canary, baa_ticker_list_defensive, baa_ticker_list_aggressive, baa_ticker_list_balanced, baa_rebalance_unit, baa_rebalance_freq, baa_rebalance_shift, baa_skipped_period, baa_no_played_ETFs, baa_abs_threshold, meta_start_date, meta_end_date)
     dm_pv, dm_strat_rets, dm_weights, dm_pos, dm_cash, dm_curr_weights, dm_pv_ew, dm_strat_rets_ew, dm_pos_ew, dm_cash_ew = dualmom(dm_tickers_list, dm_rebalance_unit, dm_rebalance_freq, dm_rebalance_shift, dm_lb_period, dm_skipped_period, dm_no_played_ETFs, dm_sub_rank_weights, dm_abs_threshold, meta_start_date, meta_end_date)
+    pm_pv, pm_strat_rets, pm_weights, pm_pos, pm_cash, pm_curr_weights, pm_pv_ew, pm_strat_rets_ew, pm_pos_ew, pm_cash_ew = kellerprotmom(protmom_tickers_list, protmom_rebalance_unit, protmom_rebalance_freq, protmom_rebalance_shift, protmom_correl_lb_months, protmom_lb_periods, protmom_lb_weights, protmom_selected_ETFs, meta_start_date, meta_end_date)
+    tb_pv, tb_strat_rets, tb_weights, tb_pos, tb_cash, tb_curr_weights, tb_pv_ew, tb_strat_rets_ew, tb_pos_ew, tb_cash_ew = novelltactbond(tactbond_tickers_list, tactbond_rebalance_unit, tactbond_rebalance_freq, tactbond_rebalance_shift, tactbond_absolute_threshold, tactbond_threshold_type, tactbond_cash_subs, tactbond_lb_periods, tactbond_lb_weights, tactbond_selected_ETFs, meta_start_date, meta_end_date)
 
     taa_weights = taa_weights.groupby(taa_weights.columns, axis = 1).sum()
     baa_weights = baa_weights.groupby(baa_weights.columns, axis = 1).sum()
     baa2_weights = baa2_weights.groupby(baa2_weights.columns, axis = 1).sum()
     dm_weights = dm_weights.groupby(dm_weights.columns, axis = 1).sum()
+    pm_weights = pm_weights.groupby(pm_weights.columns, axis = 1).sum()
+    tb_weights = tb_weights.groupby(tb_weights.columns, axis = 1).sum()
 
-    list_total = list(set(taa_ticker_list + baa_ticker_list_aggressive + baa_ticker_list_balanced + baa_ticker_list_defensive + dm_tickers_list))
+    list_total = list(set(taa_ticker_list + baa_ticker_list_aggressive + baa_ticker_list_balanced + baa_ticker_list_defensive + dm_tickers_list + protmom_tickers_list + tactbond_tickers_list))
     adj_close_price = yf.download(list_total,start = pd.to_datetime(meta_start_date) + pd.DateOffset(years= -2),end = pd.to_datetime(meta_end_date) + pd.DateOffset(days= 1) )['Adj Close']
 
-    meta_pvs = pd.concat([dm_pv, baa_pv, baa2_pv, taa_pv], axis = 1, keys = ['DoubleMom', 'BAA_AggDef', 'BAA_BalDef', 'TAA'])
+    meta_pvs = pd.concat([dm_pv, baa_pv, baa2_pv, taa_pv, pm_pv, tb_pv], axis = 1, keys = ['DualMom', 'BAA_AggDef', 'BAA_BalDef', 'TAA', 'KellerProtMom', 'NovellTactBond'])
     df = meta_pvs.copy()
     df['Year'], df['Month'], df['Week'] = df.index.year, df.index.month, df.index.week
     df['Monthly_Rb'] = df.Month != df.Month.shift(-1)
@@ -170,9 +200,9 @@ def meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters):
     meta_sharpe.fillna(0, inplace=True)
     meta_sortino.fillna(0, inplace=True)
     
-    meta_rel_mom_rets_rank_helper = meta_rel_mom_rets.rank(axis = 1, ascending = False) + [0.001, 0.002, 0.003, 0.004]
-    meta_sharpe_rank_helper = meta_sharpe.rank(axis = 1, ascending = False) + [0.001, 0.002, 0.003, 0.004]
-    meta_sortino_rank_helper = meta_sortino.rank(axis = 1, ascending = False) + [0.001, 0.002, 0.003, 0.004]
+    meta_rel_mom_rets_rank_helper = meta_rel_mom_rets.rank(axis = 1, ascending = False) + [0.001, 0.002, 0.003, 0.004, 0.005, 0.006]
+    meta_sharpe_rank_helper = meta_sharpe.rank(axis = 1, ascending = False) + [0.001, 0.002, 0.003, 0.004, 0.005, 0.006]
+    meta_sortino_rank_helper = meta_sortino.rank(axis = 1, ascending = False) + [0.001, 0.002, 0.003, 0.004, 0.005, 0.006]
 
     meta_rel_mom_rets_rank = meta_rel_mom_rets_rank_helper.rank(axis = 1, ascending = True)
     meta_sharpe_rank = meta_sharpe_rank_helper.rank(axis = 1, ascending = True)
@@ -217,9 +247,13 @@ def meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters):
     sortino_weights2 = meta_sortino_based_weights.copy()
     sortino_weights2['cash'] = meta_sortino_based_cash_weights
     
-    all_weights_substrat_dict = {'DoubleMom' : dm_weights[dm_weights.index >= ew_based_weights2.index[0]], 'TAA' : taa_weights[taa_weights.index >= ew_based_weights2.index[0]], 'BAA_AggDef' : baa_weights[baa_weights.index >= ew_based_weights2.index[0]], 'BAA_BalDef' : baa2_weights[baa2_weights.index >= ew_based_weights2.index[0]]}
+    all_weights_substrat_dict = {'DualMom' : dm_weights[dm_weights.index >= ew_based_weights2.index[0]], 'TAA' : taa_weights[taa_weights.index >= ew_based_weights2.index[0]], 'BAA_AggDef' : baa_weights[baa_weights.index >= ew_based_weights2.index[0]], 'BAA_BalDef' : baa2_weights[baa2_weights.index >= ew_based_weights2.index[0]], 'KellerProtMom' : pm_weights[pm_weights.index >= ew_based_weights2.index[0]], 'NovellTactBond' : tb_weights[tb_weights.index >= ew_based_weights2.index[0]]}
 
-    cum_ew_based_weights = cum_ETF_weights(ew_based_weights2, all_weights_substrat_dict)  
+    cum_ew_based_weights = cum_ETF_weights(ew_based_weights2, all_weights_substrat_dict)
+    cum_fixed_based_weights = cum_ETF_weights(fixed_weights2, all_weights_substrat_dict)
+    cum_rel_mom_based_weights = cum_ETF_weights(rel_mom_weights2, all_weights_substrat_dict)
+    cum_sharpe_based_weights = cum_ETF_weights(sharpe_weights2, all_weights_substrat_dict)
+    cum_sortino_based_weights = cum_ETF_weights(sortino_weights2, all_weights_substrat_dict)  
 
     fixed_curr_weights = fixed_weights2.iloc[-1]
     ew_based_curr_weights = ew_based_weights2.iloc[-1]
@@ -227,7 +261,7 @@ def meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters):
     sharpe_curr_weights = sharpe_weights2.iloc[-1]
     sortino_curr_weights = sortino_weights2.iloc[-1]
 
-    curr_weights_substrat_dict = {'DoubleMom' : dm_curr_weights, 'TAA' : taa_curr_weights, 'BAA_AggDef' : baa_curr_weights, 'BAA_BalDef' : baa2_curr_weights} 
+    curr_weights_substrat_dict = {'DualMom' : dm_curr_weights, 'TAA' : taa_curr_weights, 'BAA_AggDef' : baa_curr_weights, 'BAA_BalDef' : baa2_curr_weights, 'KellerProtMom' : pm_curr_weights, 'NovellTactBond' : tb_curr_weights} 
     fixed_curr_ETF_weights = curr_ETF_weights(fixed_curr_weights, curr_weights_substrat_dict)
     ew_based_curr_ETF_weights = curr_ETF_weights(ew_based_curr_weights, curr_weights_substrat_dict)
     rel_mom_curr_ETF_weights = curr_ETF_weights(rel_mom_curr_weights, curr_weights_substrat_dict)
@@ -241,5 +275,6 @@ def meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters):
     cash_dct = {'fixed_based' : cash_fixed, 'ew_based' : cash_ew_based, 'rel_mom_based' : cash_rel_mom, 'sharpe_based' : cash_sharpe, 'sortino_based' : cash_sortino, 'ew' : cash_ew}
     curr_substrats_weights_dct = {'fixed_based' : fixed_curr_weights, 'ew_based' : ew_based_curr_weights, 'rel_mom_based' : rel_mom_curr_weights, 'sharpe_based' : sharpe_curr_weights, 'sortino_based' : sortino_curr_weights}
     curr_ETF_weights_dct = {'fixed_based' : fixed_curr_ETF_weights, 'ew_based' : ew_based_curr_ETF_weights, 'rel_mom_based' : rel_mom_curr_ETF_weights, 'sharpe_based' : sharpe_curr_ETF_weights, 'sortino_based' : sortino_curr_ETF_weights}
+    cum_ETF_weights_dct = {'fixed_based' : cum_fixed_based_weights, 'ew_based' : cum_ew_based_weights, 'rel_mom_based' : cum_rel_mom_based_weights, 'sharpe_based' : cum_sharpe_based_weights, 'sortino_based' : cum_sortino_based_weights}
 
-    return pv_dct, rets_dct, weights_dct, pos_dct, cash_dct, curr_substrats_weights_dct, curr_ETF_weights_dct, adj_close_price, cum_ew_based_weights
+    return pv_dct, rets_dct, weights_dct, pos_dct, cash_dct, curr_substrats_weights_dct, curr_ETF_weights_dct, adj_close_price, cum_ETF_weights_dct
