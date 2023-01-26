@@ -67,8 +67,8 @@ def novelltactbond(ticker_list, rebalance_unit, rebalance_freq, rebalance_shift,
 
     etf_weights_abs_thres = (rel_mom_played_rank.divide(rel_mom_played_rank, axis = 0).divide(number_of_played_ETFs_abs_thres, axis = 0)).where(rel_mom_played_rank < number_of_played_ETFs_abs_thres + 1, 0)
     etf_weights_rel_thres = (rel_mom_played_rank.divide(rel_mom_played_rank, axis = 0).divide(number_of_played_ETFs_rel_thres, axis = 0)).where(rel_mom_played_rank < number_of_played_ETFs_rel_thres + 1, 0)
-    etf_weights_abs_thres['BIL'] = ((1 - etf_weights_abs_thres.sum(axis = 1))*cash_subs)
-    etf_weights_rel_thres['BIL'] = ((1 - etf_weights_rel_thres.sum(axis = 1))*cash_subs)
+    etf_weights_abs_thres['BIL'] = np.where(adj_close_price['BIL'] > 0, ((1 - etf_weights_abs_thres.sum(axis = 1))*cash_subs), 0)
+    etf_weights_rel_thres['BIL'] = np.where(adj_close_price['BIL'] > 0, ((1 - etf_weights_rel_thres.sum(axis = 1))*cash_subs), 0)
     etf_weights_abs_thres = etf_weights_abs_thres.sort_index(axis = 1)
     etf_weights_rel_thres = etf_weights_rel_thres.sort_index(axis = 1)
     cash_weight_abs_thres = 1 - etf_weights_abs_thres.sum(axis = 1)
