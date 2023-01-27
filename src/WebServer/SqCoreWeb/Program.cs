@@ -165,7 +165,7 @@ public partial class Program
         Console.WriteLine("1. Say Hello. Don't do anything. Check responsivenes.");
         Console.WriteLine("2. DB Admin (Redis, SQL) ...");
         Console.WriteLine("3. MemDb Admin (Reloads)...");
-        Console.WriteLine("4. Backtester Admin");
+        Console.WriteLine("4. Backtester Admin...");
         Console.WriteLine("5. Show next schedule times (only earliest trigger)");
         Console.WriteLine("6. Elapse Task: Overmind, Trigger1-MorningCheck");
         Console.WriteLine("7. Elapse Task: Overmind, Trigger2-MiddayCheck");

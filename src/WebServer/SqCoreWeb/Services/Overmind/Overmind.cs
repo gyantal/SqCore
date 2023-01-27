@@ -61,11 +61,15 @@ public class OvermindExecution : SqExecution
     {
         Utils.Logger.Info($"OvermindExecution.Run() BEGIN, Trigger: '{Trigger?.Name ?? string.Empty}'");
         Console.WriteLine($"OvermindExecution.Run() BEGIN, Trigger: '{Trigger?.Name ?? string.Empty}'");
-        // HealthMonitor.Exe is running on VBrokerDev server. It will stay there, so it can report if SqCore server is down.
-        // However, it is too much work to set up its firewall port filter for all developers every time when a developer IP changes.
-        // So, in local development, we only run the HealthMonitorCheck for 1 developer. So, we don't receive "HealthMonitor is NOT Alive." warning emails all the time.
-        if (OperatingSystem.IsLinux() || (OperatingSystem.IsWindows() && Environment.UserName == "gyantal"))
-            CheckHealthMonitorAlive();
+
+        // Run these check 'basically' only on the Linux server.
+        // SqCore server runs on Linux all the time. Developer machines run SqCore server locally too. However, we don't want to receive duplicate Warning emails or duplicate phonecalls.
+        bool isRunChecks = OperatingSystem.IsLinux() || (OperatingSystem.IsWindows() && Environment.UserName == "gyantal");
+        if (!isRunChecks)
+            return;
+
+        // HealthMonitor.Exe is running on VBrokerDev server. It will stay there, so it can report if SqCore web server is down. Here we check the opposite direction.
+        CheckHealthMonitorAlive();
 
         OvermindTaskSettingAction action = OvermindTaskSettingAction.Unknown;
         if (Trigger!.TriggerSettings.TryGetValue(TaskSetting.ActionType, out object? actionObj))
@@ -75,7 +79,7 @@ public class OvermindExecution : SqExecution
         else if (action == OvermindTaskSettingAction.MiddayCheck)
             MiddayCheck();
     }
-    static async void CheckHealthMonitorAlive()
+    static async void CheckHealthMonitorAlive() // Requires to set up its AWS firewall port filter properly. It is problem because developer PC IP changes all the time.
     {
         bool isHealthMonitorAlive = false;
         Task<string?> tcpMsgTask = TcpMessage.Send(string.Empty, (int)HealthMonitorMessageID.Ping, ServerIp.HealthMonitorPublicIp, ServerIp.DefaultHealthMonitorServerPort);

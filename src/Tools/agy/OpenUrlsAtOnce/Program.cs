@@ -32,7 +32,7 @@ namespace OpenUrlsAtOnce
             // OpenBrowser("http://stockcharts.com/h-sc/ui?s=$NYMO"); Thread.Sleep(sleepInMsec);  // McClellan Oscillator
             // OpenBrowser("http://stockcharts.com/h-sc/ui?s=QQQ:SPY&p=D&b=5&g=0&id=p60129699268"); Thread.Sleep(sleepInMsec);
             OpenBrowser("http://stockcharts.com/h-sc/ui?s=VXX"); Thread.Sleep(sleepInMsec);
-            OpenBrowser("http://stockcharts.com/h-sc/ui?s=SPX"); Thread.Sleep(sleepInMsec);
+            OpenBrowser("http://stockcharts.com/h-sc/ui?s=$SPX"); Thread.Sleep(sleepInMsec);
             // OpenBrowser("http://finance.yahoo.com/echarts?s=^VIX#symbol=%5Evix;range=5d;compare=;indicator=volume;charttype=line;crosshair=on;ohlcvalues=0;logscale=on;source=;"); Thread.Sleep(sleepInMsec);
 
             // OpenBrowser("https://www.dailyfx.com/eur-usd"); Thread.Sleep(sleepInMsec);
