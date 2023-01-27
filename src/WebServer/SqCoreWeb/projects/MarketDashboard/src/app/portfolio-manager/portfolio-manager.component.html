@@ -7,17 +7,19 @@
       </div>
       <span class="refreshPortfolios"><img class="refreshPortfolios" src='../assets/images/refresh64.webp' (click)="onPortfoliosRefreshClicked()"></span>
     </span>
-    <app-sq-tree-view [items]="uiPortfolioItemsNested" [treeviewContainerItems]="treeviewContainer"></app-sq-tree-view>
+    <app-sq-tree-view [items]="uiPortfolioItemsNested" [(itemSelected)]="itemSelected" [treeViewState]="treeViewState"></app-sq-tree-view>
     <button type="button"(click)="onCreatePrtfItemClicked()">Create</button>&nbsp;
     <button type="button" (click)="onDeletePrtfItemClicked()">Delete</button>
-    <div id="createPortfolioPopup" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}">
-        <label id="prtfNameLabel"><b>Name:</b></label>
-        <input id="prtfNameInput" type="text" placeholder="Enter Portfolio Name" name="portfolio" [(ngModel)]="prtfName"><br><br>
-      <span>
-        <button (click)="onCreatePortfolioClicked(prtfName)"> Create New Portfolio</button>&nbsp;
-        <button (click)="onCreatePortfolioClicked(prtfName)"> Create New Folder</button>
-        <button id="closePortfolioPopup" (click)="onClosePortfolioClicked()" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}">Dismiss</button>
-      </span>
+    <div class="popup" id="createPortfolioPopup" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}">
+      <div  class="popup-content"><br>
+        <label id="prtfNameLabel"><b>Name:</b>&nbsp;</label>
+        <input id="prtfNameInput" type="text" placeholder="Enter Portfolio Name" name="portfolio" [(ngModel)]="createPrtfName"><br><br>
+        <span>
+          <button (click)="onCreatePortfolioClicked(createPrtfName)"> Create New Portfolio</button>&nbsp;
+          <button (click)="onCreatePortfolioClicked(createPrtfName)"> Create New Folder</button>
+          <button id="closePortfolioPopup" (click)="onClosePortfolioClicked()" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}">Dismiss</button>
+        </span>
+      </div>
     </div><br>
   </div>
   <div id="resizer" (mouseover)="onMouseOverResizer('resizer')"></div>
@@ -47,7 +49,7 @@
 </div>
 <div class="popup deleteConfirmPopup" [ngStyle]="{'visibility': isDeleteConfirmPopupVisible ? 'visible' : 'hidden'}">Confirm Delete
   <div class="popup-content">
-      <span class="popupMsg">Are you sure you want to permanently delete folder / portfolio "{{prtfName}}"</span><br><br>
+      <span class="popupMsg">Are you sure you want to permanently delete folder / portfolio "{{deletePrtfName}}"</span><br><br>
       <button type="button" (click)="onConfirmDeleteYesClicked()">Yes</button>&nbsp;
       <button type="button" (click)="onConfirmDeleteNoClicked()">No</button>
   </div>

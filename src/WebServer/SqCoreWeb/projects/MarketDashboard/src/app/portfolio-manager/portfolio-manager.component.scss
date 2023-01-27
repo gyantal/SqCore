@@ -30,28 +30,9 @@
 }
 
 #createPortfolioPopup {
-  background-color: #fefefe;
-  margin: 5% auto;
-  padding: 2rem;
-  border: 0.01rem solid #888;
-  border-radius: 1rem;
-  position: fixed;
-  z-index: 1;
-  left: 15rem;
-  top: 0.5rem;
-  width: 50rem;
-  height: 6rem;
-}
-
-#prtfNameLabel {
-  position: relative;
-  left: 8rem;
-}
-
-#prtfNameInput {
-  position: relative;
-  width: 20rem;
-  left: 10rem;
+  color: rgb(38, 38, 247);
+  background-color: #e6eaec;
+  border: .3rem solid #231fff;
 }
 
 #prtfNameInput:focus {

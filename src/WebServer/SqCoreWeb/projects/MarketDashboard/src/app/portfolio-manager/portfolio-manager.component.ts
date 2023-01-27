@@ -17,9 +17,10 @@ class PortfolioFldrJs {
 //   public baseCurrency = '';
 // }
 
-export class TreeViewItemSelectionContainer {
+export class TreeViewState {
   public lastSelectedItem : Nullable<PortfolioFldrJs> = null;
   public expandedPrtfFolderIds: number[] = [];
+  // public nestedTree: any[] = [];
 }
 
 @Component({
@@ -37,10 +38,13 @@ export class PortfolioManagerComponent implements OnInit {
   isDeleteConfirmPopupVisible: boolean = false;
   isErrorPopupVisible: boolean = false;
   errorMsgToUser: string = '';
-  prtfName: string = ''; // common for both portfolio and portfolioFolder
-  treeviewContainer: TreeViewItemSelectionContainer = new TreeViewItemSelectionContainer();
+  // common for both portfolio and portfolioFolder
+  deletePrtfName: string = ''; // portfolio name to be deleted
+  createPrtfName: string = ''; // portfolio name to be created
+  itemSelected: any = null; // used to highlight the user selected item
+  treeViewState: TreeViewState = new TreeViewState();
 
-  tabPrtfSpecVisibleIdx = 1; // tab buttons for portfolio specifaction preview of postions and strategy parameters
+  tabPrtfSpecVisibleIdx = 1; // tab buttons for portfolio specification preview of positions and strategy parameters
 
   // the below vaiables are required for resizing the panels according to users
   dashboardHeaderWidth = 0;
@@ -75,7 +79,7 @@ export class PortfolioManagerComponent implements OnInit {
     this.panelPrtfSpecWidth = panelPrtfSpecId.clientWidth as number;
     this.panelPrtfSpecHeight = panelPrtfSpecId.clientHeight as number;
 
-    const approotToolbar = PortfolioManagerComponent.getNonNullDocElementById('toolbarId'); // toolbarId is cominng from app component
+    const approotToolbar = PortfolioManagerComponent.getNonNullDocElementById('toolbarId'); // toolbarId is coming from app component
     this.dashboardHeaderWidth = approotToolbar.clientWidth;
     this.dashboardHeaderHeight = approotToolbar.clientHeight;
 
@@ -254,6 +258,9 @@ export class PortfolioManagerComponent implements OnInit {
     for (const id in treeData) {
       if (treeData.hasOwnProperty(id)) {
         child = treeData[id];
+        // child.isExpanded = false;
+        // child.isSelected = false;
+        // maybe we use expandedPrtfFolderIds[] here to check that it has to be expended or not.
         if (child.parentFolderId && treeData[child['parentFolderId']])
           treeData[child['parentFolderId']]['children'].push(child);
         else
@@ -293,24 +300,24 @@ export class PortfolioManagerComponent implements OnInit {
   }
 
   onCreatePortfolioClicked(pfName: string) { // this logic create's a portfolio item if everything is passed
-    if (this.treeviewContainer.lastSelectedItem == null) {
+    if (this.itemSelected == null) {
       console.log('Cannot Create, because no folder was selected.');
       return;
     }
-    const lastSelectedTreeNode = this.treeviewContainer.lastSelectedItem;
+    const lastSelectedTreeNode = this.itemSelected;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.CreatePortfFldr:' + this.prtfName + ',prntFId:' + lastSelectedTreeNode.id);
+      this._parentWsConnection.send('PortfMgr.CreatePortfFldr:' + this.createPrtfName + ',prntFId:' + lastSelectedTreeNode.id);
     this.isCreatePortfolioPopupVisible = false;
   }
 
   onDeletePrtfItemClicked() { // this logic makes the Delete Confirm Popup visible and displays the selected prtf name
-    if (this.treeviewContainer.lastSelectedItem == null) {
+    if (this.itemSelected == null) {
       console.log('Cannot Delete, because no folder was selected.');
       return;
     }
-    const lastSelectedTreeNode = this.treeviewContainer.lastSelectedItem;
+    const lastSelectedTreeNode = this.itemSelected;
     this.isDeleteConfirmPopupVisible = true;
-    this.prtfName = lastSelectedTreeNode.name;
+    this.deletePrtfName = lastSelectedTreeNode.name;
   }
 
   onErrorOkClicked() { // this is to close the ErrorPopup when there is a error message from server
@@ -318,11 +325,11 @@ export class PortfolioManagerComponent implements OnInit {
   }
 
   onConfirmDeleteYesClicked() { // this logic delete's a portfolio item if everything is passed
-    if (this.treeviewContainer.lastSelectedItem == null) {
+    if (this.itemSelected == null) {
       console.log('Cannot Delete, because no folder was selected.');
       return;
     }
-    const lastSelectedTreeNode = this.treeviewContainer.lastSelectedItem;
+    const lastSelectedTreeNode = this.itemSelected;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('PortfMgr.DeletePortfFldr:' + 'fldId:' + lastSelectedTreeNode.id);
     this.isDeleteConfirmPopupVisible = false;
