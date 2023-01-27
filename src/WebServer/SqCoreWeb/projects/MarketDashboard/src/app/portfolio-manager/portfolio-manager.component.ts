@@ -1,4 +1,4 @@
-import { Component, OnInit, Input, ViewChild } from '@angular/core';
+import { Component, OnInit, AfterViewInit, Input, ViewChild } from '@angular/core';
 import { SqTreeViewComponent } from '../sq-tree-view/sq-tree-view.component';
 
 type Nullable<T> = T | null;
@@ -9,6 +9,8 @@ class PortfolioFldrJs {
   public id = -1;
   public name = '';
   public parentFolderId = -1;
+  public creationTime = '';
+  public note = '';
 }
 
 // class PortfolioJs {
@@ -17,10 +19,23 @@ class PortfolioFldrJs {
 //   public baseCurrency = '';
 // }
 
+export class TreeViewItem { // future work. At the moment, it copies PortfolioFldrJs[] and add the children field. With unnecessary field values. When Portfolios are introduced, this should be rethought.
+  public id = -1;
+  public name = '';
+  public parentFolderId = -1;
+
+  public creationTime = ''; // Folder only. not necessary
+  public note = ''; // Folder only. not necessary
+
+  public children : TreeViewItem[] = []; // children are other TreeViewItems
+  public isSelected = false;
+  public isExpanded = false;
+}
+
 export class TreeViewState {
-  public lastSelectedItem : Nullable<PortfolioFldrJs> = null;
+  public lastSelectedItem : Nullable<TreeViewItem> = null;
   public expandedPrtfFolderIds: number[] = [];
-  // public nestedTree: any[] = [];
+  public rootSqTreeViewComponent: Nullable<SqTreeViewComponent> = null;
 }
 
 @Component({
@@ -28,12 +43,12 @@ export class TreeViewState {
   templateUrl: './portfolio-manager.component.html',
   styleUrls: ['./portfolio-manager.component.scss']
 })
-export class PortfolioManagerComponent implements OnInit {
+export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   @Input() _parentWsConnection?: WebSocket = undefined; // this property will be input from above parent container
   @ViewChild(SqTreeViewComponent) public sqTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
 
   portfolioFldrs: Nullable<PortfolioFldrJs[]> = null;
-  uiPortfolioItemsNested: any[] = [];
+  uiNestedPrtfTreeViewItems: TreeViewItem[] = [];
   isCreatePortfolioPopupVisible: boolean = false;
   isDeleteConfirmPopupVisible: boolean = false;
   isErrorPopupVisible: boolean = false;
@@ -41,7 +56,6 @@ export class PortfolioManagerComponent implements OnInit {
   // common for both portfolio and portfolioFolder
   deletePrtfName: string = ''; // portfolio name to be deleted
   createPrtfName: string = ''; // portfolio name to be created
-  itemSelected: any = null; // used to highlight the user selected item
   treeViewState: TreeViewState = new TreeViewState();
 
   tabPrtfSpecVisibleIdx = 1; // tab buttons for portfolio specification preview of positions and strategy parameters
@@ -105,6 +119,10 @@ export class PortfolioManagerComponent implements OnInit {
 
     this.prtfMgrToolWidth = this.prtfMgrToolWidth;
     this.prtfMgrToolHeight = this.prtfMgrToolHeight - this.dashboardHeaderHeight;
+  }
+
+  public ngAfterViewInit(): void { // @ViewChild variables are undefined in ngOnInit(). Only ready in ngAfterViewInit
+    this.treeViewState.rootSqTreeViewComponent = this.sqTreeComponent;
   }
 
   static getNonNullDocElementById(id: string): HTMLElement { // document.getElementById() can return null. This 'forced' type casting fakes that it is not null for the TS compiler. (it can be null during runtime)
@@ -235,6 +253,10 @@ export class PortfolioManagerComponent implements OnInit {
         _this.parentFolderId = value;
         return; // if return undefined, orignal property will be removed
       }
+      if (key === 'cTime') {
+        _this.creationTime = value;
+        return; // if return undefined, orignal property will be removed
+      }
       return value;
     });
     this.createTreeViewData(this.portfolioFldrs);
@@ -244,7 +266,7 @@ export class PortfolioManagerComponent implements OnInit {
     if (!(Array.isArray(pFolders) && pFolders.length > 0 ))
       return;
 
-    this.uiPortfolioItemsNested.length = 0;
+    this.uiNestedPrtfTreeViewItems.length = 0;
     const treeData = {};
     let parent: any;
     let child: any;
@@ -263,8 +285,11 @@ export class PortfolioManagerComponent implements OnInit {
         // maybe we use expandedPrtfFolderIds[] here to check that it has to be expended or not.
         if (child.parentFolderId && treeData[child['parentFolderId']])
           treeData[child['parentFolderId']]['children'].push(child);
-        else
-          this.uiPortfolioItemsNested.push(child);
+        else {
+          child.isSelected = false; // we try to create a TreeViewItem from a general Object. So add the missing fields.
+          child.isExpanded = false;
+          this.uiNestedPrtfTreeViewItems.push(child);
+        }
       }
     }
   };
@@ -300,22 +325,22 @@ export class PortfolioManagerComponent implements OnInit {
   }
 
   onCreatePortfolioClicked(pfName: string) { // this logic create's a portfolio item if everything is passed
-    if (this.itemSelected == null) {
+    if (this.treeViewState.lastSelectedItem == null) {
       console.log('Cannot Create, because no folder was selected.');
       return;
     }
-    const lastSelectedTreeNode = this.itemSelected;
+    const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('PortfMgr.CreatePortfFldr:' + this.createPrtfName + ',prntFId:' + lastSelectedTreeNode.id);
     this.isCreatePortfolioPopupVisible = false;
   }
 
   onDeletePrtfItemClicked() { // this logic makes the Delete Confirm Popup visible and displays the selected prtf name
-    if (this.itemSelected == null) {
+    if (this.treeViewState.lastSelectedItem == null) {
       console.log('Cannot Delete, because no folder was selected.');
       return;
     }
-    const lastSelectedTreeNode = this.itemSelected;
+    const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
     this.isDeleteConfirmPopupVisible = true;
     this.deletePrtfName = lastSelectedTreeNode.name;
   }
@@ -325,11 +350,11 @@ export class PortfolioManagerComponent implements OnInit {
   }
 
   onConfirmDeleteYesClicked() { // this logic delete's a portfolio item if everything is passed
-    if (this.itemSelected == null) {
+    if (this.treeViewState.lastSelectedItem == null) {
       console.log('Cannot Delete, because no folder was selected.');
       return;
     }
-    const lastSelectedTreeNode = this.itemSelected;
+    const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('PortfMgr.DeletePortfFldr:' + 'fldId:' + lastSelectedTreeNode.id);
     this.isDeleteConfirmPopupVisible = false;

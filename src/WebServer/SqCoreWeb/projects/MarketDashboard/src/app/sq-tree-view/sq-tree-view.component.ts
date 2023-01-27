@@ -1,5 +1,5 @@
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
-import { TreeViewState } from '../portfolio-manager/portfolio-manager.component';
+import { Component, OnInit, Input, ViewChildren, QueryList } from '@angular/core';
+import { TreeViewState, TreeViewItem } from '../portfolio-manager/portfolio-manager.component';
 
 @Component({
   selector: 'app-sq-tree-view',
@@ -7,49 +7,37 @@ import { TreeViewState } from '../portfolio-manager/portfolio-manager.component'
   styleUrls: ['./sq-tree-view.component.scss']
 })
 export class SqTreeViewComponent implements OnInit {
-  @Input() items: any; // nested tree view data receive from portfolio manager component
-  @Input() treeViewState: TreeViewState | any; // treeview selected data processing
+  // @Input(), @ViewChildren variables: without "| any". Compile error: ' Property 'treeViewState' has no initializer and is not definitely assigned in the constructor.'
+  // use the ! after the variable name 'Definite Assignment Assertion' to tell typescript that this variable will have a value at runtime
+  @Input() items!: TreeViewItem[]; // nested tree view data receive from portfolio manager component
+  @Input() treeViewState!: TreeViewState; // treeview selected data processing
+  @ViewChildren(SqTreeViewComponent) public _children!: QueryList<SqTreeViewComponent>;
 
-  // the below itemSelected is used as a 2 way binding to highlight the only selected item using @input, @output and EventEmitter decorators
-  _itemSelected: any = null;
-  @Input('itemSelected') set _(value: any) {
-    this._itemSelected = value;
-  }
-  get itemSelected() {
-    return this._itemSelected;
-  }
-  set itemSelected(value: any) {
-    this._itemSelected = value;
-    this.itemSelectedChange.emit(value);
-  }
-  @Output() itemSelectedChange: EventEmitter<any> = new EventEmitter<any>();
-
+  isSelected: boolean = false;
   isExpanded: boolean = false;
-  isItemSelected: boolean = false;
-  treeviewSelectedNode: any = [];
 
   constructor() { }
 
   ngOnInit(): void {
   }
 
+  DeselectThisItemsAndAllChildren() {
+    for (const item of this.items) // at start, the root TreeViewComponent has no _children TreeviewComponents. But it has 3+ items[] for the root folders Shared, UserFolder, NoUser
+      item.isSelected = false;
 
-  // DeselectAllChildren(node) { // UnderDevelopment - Daya
-  //   // node.isItemSelected = false;
-  //   node.isItemSelected = false;
-  //   for (const child of this.treeViewState.nestedTree)
-  //     this.DeselectAllChildren(child);
-  //   this.treeviewSelectedNode.push(node);
-  //   // for all Children
-  //   //   this.DeselectAllChildren(child)
-  // }
+    for (const child of this._children) // for all Children
+      child.DeselectThisItemsAndAllChildren();
+  }
 
-  onItemClicked(item: any) {
-    this.itemSelectedChange.emit(item == this.itemSelected ? null : item);
+  onItemClicked(item: TreeViewItem) {
+    this.treeViewState.lastSelectedItem = item;
+    console.log('TreeView.onItemClicked(): ' + this.treeViewState.lastSelectedItem?.name);
+    this.treeViewState.rootSqTreeViewComponent!.DeselectThisItemsAndAllChildren();
+    item.isSelected = true;
 
     if (item.isExpanded) {
       item.isExpanded = !item.isExpanded;
-      return;
+      return; // ! George: this return is dangerous here. The code behind this IF might not execute
     } else {
       if (item.children) {
         if (item.children.length > 0)
@@ -58,8 +46,6 @@ export class SqTreeViewComponent implements OnInit {
           item.isExpanded = false;
       }
     }
-
-    // this.treeViewState.lastSelectedItem = item;
     // const expandedIds = item.id;
     // this.treeViewState.expandedPrtfFolderIds.push(expandedIds);
   }

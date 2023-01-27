@@ -7,7 +7,7 @@
       </div>
       <span class="refreshPortfolios"><img class="refreshPortfolios" src='../assets/images/refresh64.webp' (click)="onPortfoliosRefreshClicked()"></span>
     </span>
-    <app-sq-tree-view [items]="uiPortfolioItemsNested" [(itemSelected)]="itemSelected" [treeViewState]="treeViewState"></app-sq-tree-view>
+    <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState"></app-sq-tree-view>
     <button type="button"(click)="onCreatePrtfItemClicked()">Create</button>&nbsp;
     <button type="button" (click)="onDeletePrtfItemClicked()">Delete</button>
     <div class="popup" id="createPortfolioPopup" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}">
