@@ -54,8 +54,8 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   isErrorPopupVisible: boolean = false;
   errorMsgToUser: string = '';
   // common for both portfolio and portfolioFolder
-  deletePrtfName: string = ''; // portfolio name to be deleted
-  createPrtfName: string = ''; // portfolio name to be created
+  deletePrtfItemName: string = ''; // portfolio or folder name to be deleted
+  createPrtfItemName: string = ''; // portfolio or folder name to be created
   treeViewState: TreeViewState = new TreeViewState();
 
   tabPrtfSpecVisibleIdx = 1; // tab buttons for portfolio specification preview of positions and strategy parameters
@@ -331,7 +331,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     }
     const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.CreatePortfFldr:' + this.createPrtfName + ',prntFId:' + lastSelectedTreeNode.id);
+      this._parentWsConnection.send('PortfMgr.CreatePortfFldr:' + this.createPrtfItemName + ',prntFId:' + lastSelectedTreeNode.id);
     this.isCreatePortfolioPopupVisible = false;
   }
 
@@ -342,7 +342,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     }
     const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
     this.isDeleteConfirmPopupVisible = true;
-    this.deletePrtfName = lastSelectedTreeNode.name;
+    this.deletePrtfItemName = lastSelectedTreeNode.name;
   }
 
   onErrorOkClicked() { // this is to close the ErrorPopup when there is a error message from server

@@ -10,16 +10,14 @@
     <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState"></app-sq-tree-view>
     <button type="button"(click)="onCreatePrtfItemClicked()">Create</button>&nbsp;
     <button type="button" (click)="onDeletePrtfItemClicked()">Delete</button>
-    <div class="popup" id="createPortfolioPopup" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}">
-      <div  class="popup-content"><br>
-        <label id="prtfNameLabel"><b>Name:</b>&nbsp;</label>
-        <input id="prtfNameInput" type="text" placeholder="Enter Portfolio Name" name="portfolio" [(ngModel)]="createPrtfName"><br><br>
-        <span>
-          <button (click)="onCreatePortfolioClicked(createPrtfName)"> Create New Portfolio</button>&nbsp;
-          <button (click)="onCreatePortfolioClicked(createPrtfName)"> Create New Folder</button>
-          <button id="closePortfolioPopup" (click)="onClosePortfolioClicked()" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}">Dismiss</button>
-        </span>
-      </div>
+    <div class="popup infoPopup" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}"><br>
+      <label id="prtfNameLabel"><b>Name:</b>&nbsp;</label>
+      <input id="prtfNameInput" type="text" placeholder="Enter Portfolio Name" name="portfolio" [(ngModel)]="createPrtfItemName"><br><br>
+      <span>
+        <button (click)="onCreatePortfolioClicked(createPrtfItemName)"> Create New Portfolio</button>&nbsp;
+        <button (click)="onCreatePortfolioClicked(createPrtfItemName)"> Create New Folder</button>
+        <button id="closePortfolioPopup" (click)="onClosePortfolioClicked()" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}">Dismiss</button>
+      </span>
     </div><br>
   </div>
   <div id="resizer" (mouseover)="onMouseOverResizer('resizer')"></div>
@@ -47,16 +45,12 @@
     </div>
   </div>
 </div>
-<div class="popup deleteConfirmPopup" [ngStyle]="{'visibility': isDeleteConfirmPopupVisible ? 'visible' : 'hidden'}">Confirm Delete
-  <div class="popup-content">
-      <span class="popupMsg">Are you sure you want to permanently delete folder / portfolio "{{deletePrtfName}}"</span><br><br>
-      <button type="button" (click)="onConfirmDeleteYesClicked()">Yes</button>&nbsp;
-      <button type="button" (click)="onConfirmDeleteNoClicked()">No</button>
-  </div>
+<div class="popup infoPopup" [ngStyle]="{'visibility': isDeleteConfirmPopupVisible ? 'visible' : 'hidden'}">Confirm Delete<br><br>
+    <span class="popupMsg">Are you sure you want to permanently delete folder / portfolio "{{deletePrtfItemName}}"</span><br><br>
+    <button type="button" (click)="onConfirmDeleteYesClicked()">Yes</button>&nbsp;
+    <button type="button" (click)="onConfirmDeleteNoClicked()">No</button>
 </div>
-<div class="popup errorPopup" [ngStyle]="{'visibility': isErrorPopupVisible ? 'visible' : 'hidden'}">Error from the Server
-  <div class="popup-content"><br>
-      <span class="popupMsg">{{errorMsgToUser}}</span><br><br>
-      <button type="button" (click)="onErrorOkClicked()">Ok</button>
-  </div>
+<div class="popup warnPopup" [ngStyle]="{'visibility': isErrorPopupVisible ? 'visible' : 'hidden'}">Error from the Server<br><br>
+    <span class="popupMsg">{{errorMsgToUser}}</span><br><br>
+    <button type="button" (click)="onErrorOkClicked()">Ok</button>
 </div>

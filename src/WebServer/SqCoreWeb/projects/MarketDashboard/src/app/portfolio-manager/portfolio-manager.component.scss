@@ -29,19 +29,13 @@
   cursor: pointer;
 }
 
-#createPortfolioPopup {
-  color: rgb(38, 38, 247);
-  background-color: #e6eaec;
-  border: .3rem solid #231fff;
-}
-
 #prtfNameInput:focus {
   outline: none;
   box-shadow: 0 0 1rem #0314f5;
 }
 
 #closePortfolioPopup {
-  background-color: #FFA500;
+  background-color: #FFA500;                  
   float: right;
   font-size: 1rem;
   font-weight: bold;
@@ -142,25 +136,18 @@
   border-radius: 1rem;
 }
 
-.popup-content {
-  margin: auto;
-  vertical-align: middle;
-  width: 45rem;
-  font-weight: bold;
-}
-
 .popupMsg {
   font-weight: bold;
   font-size: 1.3rem;
 }
 
-.deleteConfirmPopup {
+.infoPopup { // providing information to the user on the popup window
   color: rgb(38, 38, 247);
   background-color: #e6eaec;
   border: .3rem solid #231fff;
 }
 
-.errorPopup {
+.errorPopup { // giving warning message to the user on the popup window
   color: rgb(32, 34, 148);
   background-color: #FFA500;
   border: .3rem solid #FF5F1F;
