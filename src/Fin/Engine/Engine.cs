@@ -64,7 +64,7 @@ namespace QuantConnect.Lean.Engine
         /// <param name="manager">The algorithm manager instance</param>
         /// <param name="assemblyPath">The path to the algorithm's assembly</param>
         /// <param name="workerThread">The worker thread instance</param>
-        public void Run(AlgorithmNodePacket job, AlgorithmManager manager, string assemblyPath, WorkerThread workerThread)
+        public void Run(AlgorithmNodePacket job, AlgorithmManager manager, string assemblyPath, WorkerThread workerThread, bool p_isUseIbFeeModelForEquities = true)
         {
             var marketHoursDatabaseTask = Task.Run(() => StaticInitializations());
 
@@ -99,6 +99,12 @@ namespace QuantConnect.Lean.Engine
 
                     // Save algorithm to cache, load algorithm instance:
                     algorithm = AlgorithmHandlers.Setup.CreateAlgorithmInstance(job, assemblyPath);
+
+                     if (algorithm.BrokerageModel as DefaultBrokerageModel != null)
+                        (algorithm.BrokerageModel as DefaultBrokerageModel).m_isUseIbFeeModelForEquities = false;
+
+                    if ((algorithm.SecurityInitializer as BrokerageModelSecurityInitializer) != null && (algorithm.SecurityInitializer as BrokerageModelSecurityInitializer).BrokerageModel as DefaultBrokerageModel != null)
+                        ((algorithm.SecurityInitializer as BrokerageModelSecurityInitializer).BrokerageModel as DefaultBrokerageModel).m_isUseIbFeeModelForEquities = false;
 
                     algorithm.ProjectId = job.ProjectId;
 

@@ -72,6 +72,8 @@ namespace QuantConnect.Brokerages
             get { return DefaultMarketMap; }
         }
 
+        public bool m_isUseIbFeeModelForEquities = true;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultBrokerageModel"/> class
         /// </summary>
@@ -265,7 +267,10 @@ namespace QuantConnect.Brokerages
                 case SecurityType.Option:
                 case SecurityType.Future:
                 case SecurityType.FutureOption:
-                    return new InteractiveBrokersFeeModel();
+                    if (m_isUseIbFeeModelForEquities)
+                        return new InteractiveBrokersFeeModel();
+                    else
+                        return new ConstantFeeModel(0m);
 
                 case SecurityType.Commodity:
                 default:

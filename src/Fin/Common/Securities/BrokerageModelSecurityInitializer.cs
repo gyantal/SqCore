@@ -12,6 +12,11 @@ namespace QuantConnect.Securities
         private readonly IBrokerageModel _brokerageModel;
         private readonly ISecuritySeeder _securitySeeder;
 
+        public IBrokerageModel BrokerageModel
+        {
+            get { return _brokerageModel; }
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="BrokerageModelSecurityInitializer"/> class
         /// for the specified algorithm

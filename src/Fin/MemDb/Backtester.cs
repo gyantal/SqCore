@@ -175,7 +175,7 @@ public static class Backtester
         // 2. In our WebServer, we want to run Engin.Run() parallel if many users doing backtest at the same time.
         // We don't do a single JobQueue if possible. (maybe in the future, but we have enough CPU cores to run these backtest parallel)
         // engine.Run(job, algorithmManager, algorithmDllRelPath, WorkerThread.Instance);
-        engine.Run(job, algorithmManager, gAlgorithmDllRelPath, new WorkerThread());
+        engine.Run(job, algorithmManager, gAlgorithmDllRelPath, new WorkerThread(), false);
 
         // Console.SetOut(savedConsoleOut);
         // Console.SetError(savedConsoleError);
