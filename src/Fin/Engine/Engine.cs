@@ -100,11 +100,11 @@ namespace QuantConnect.Lean.Engine
                     // Save algorithm to cache, load algorithm instance:
                     algorithm = AlgorithmHandlers.Setup.CreateAlgorithmInstance(job, assemblyPath);
 
-                     if (algorithm.BrokerageModel as DefaultBrokerageModel != null)
-                        (algorithm.BrokerageModel as DefaultBrokerageModel).m_isUseIbFeeModelForEquities = false;
-
-                    if ((algorithm.SecurityInitializer as BrokerageModelSecurityInitializer) != null && (algorithm.SecurityInitializer as BrokerageModelSecurityInitializer).BrokerageModel as DefaultBrokerageModel != null)
-                        ((algorithm.SecurityInitializer as BrokerageModelSecurityInitializer).BrokerageModel as DefaultBrokerageModel).m_isUseIbFeeModelForEquities = false;
+                    // if (algorithm.BrokerageModel as DefaultBrokerageModel != null) // IF works, but longer, and evaluates Cast twice.
+                    //     (algorithm.BrokerageModel as DefaultBrokerageModel).m_isUseIbFeeModelForEquities = false;
+                    // (algorithm.BrokerageModel as DefaultBrokerageModel)?.m_isUseIbFeeModelForEquities = p_isUseIbFeeModelForEquities; // in 2023, the null conditional (?.) operator on left hand side of assignment is not allowed yet
+                    (algorithm.BrokerageModel as DefaultBrokerageModel)?.SetIsUseIbFeeModelForEquities(p_isUseIbFeeModelForEquities);
+                    ((algorithm.SecurityInitializer as BrokerageModelSecurityInitializer)?.BrokerageModel as DefaultBrokerageModel)?.SetIsUseIbFeeModelForEquities(p_isUseIbFeeModelForEquities);
 
                     algorithm.ProjectId = job.ProjectId;
 

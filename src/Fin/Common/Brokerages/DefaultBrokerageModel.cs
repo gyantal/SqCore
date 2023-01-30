@@ -73,6 +73,12 @@ namespace QuantConnect.Brokerages
         }
 
         public bool m_isUseIbFeeModelForEquities = true;
+        public void SetIsUseIbFeeModelForEquities(bool p_isUseIbFeeModelForEquities)
+        {
+            // Introducing helper function, because this raises compiler error: foo?.Prop = 'val';
+            // Because in 2023, null conditional (?.) operator on left hand side of assignment is not allowed yet. Only allowed for function calls, but not for assignments ('=').
+            m_isUseIbFeeModelForEquities = p_isUseIbFeeModelForEquities;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultBrokerageModel"/> class
