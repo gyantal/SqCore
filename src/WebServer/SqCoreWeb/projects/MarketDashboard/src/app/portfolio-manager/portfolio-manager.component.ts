@@ -280,8 +280,6 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     for (const id in treeData) {
       if (treeData.hasOwnProperty(id)) {
         child = treeData[id];
-        // child.isExpanded = false;
-        // child.isSelected = false;
         // maybe we use expandedPrtfFolderIds[] here to check that it has to be expended or not.
         if (child.parentFolderId && treeData[child['parentFolderId']])
           treeData[child['parentFolderId']]['children'].push(child);
