@@ -7,7 +7,8 @@ import sys
 import random
 import socket
 
-print("SqBuild: Python ver: " + platform.python_version() + " (" + platform.architecture()[0] + "), CWD:'" + os. getcwd() + "'")
+print("SqBuild:PreDebugWatchDev.py Python ver: " + platform.python_version() + " (" + platform.architecture()[0] + "), CWD:'" + os. getcwd() + "'")
+print("In VsCode, this should run in a separate CMD window, not in VsCode.Terminal. If not, manually run once this PY") # That 'magically' fixed the VsCode in 2023-01.
 if (os.getcwd().endswith("SqCore")) : # VsCode's context menu 'Run Python file in Terminal' runs it from the workspace folder. VsCode F5 runs it from the project folder. We change it to the project folder
     os.chdir(os.getcwd() + "/src/WebServer/SqCoreWeb")
 
@@ -28,13 +29,17 @@ else:
 
 
 # 2. What can Debug user watch: wwwrootGeneral (NonWebpack), ExampleCsServerPushInRealtime (Webpack), HealthMonitor (Angular), MarketDashboard (Angular)
-def threaded_function(commandStr):
-     print("SqBuild: Executing in separate thread: " + commandStr)
-     os.system(commandStr)    # works like normal, loads ./tsconfig.json, which contains "include": ["wwwroot"]. 
-     #processObj = subprocess.run("tsc --watch", shell=True, stdout=subprocess.PIPE)  # This will run the command and return any output into process.output
+def runCommandThread(commandStr):
+     print("SqBuild: Executing in an in-process separate thread: " + commandStr)
+     # Don't run them in a separate process CMD window, because then it is more difficult to kill them. Just run in inprocess threads, which will PIPE their output StdOut to this the parent process.
+     os.system(commandStr) # run the command in-process, not as a separate process
+     # os.system("cmd /k " + commandStr)  # 2023-01: it seemed it was a fix, but didn't change a thing.
+     # os.system("start /wait cmd /k " + commandStr) # This would creates a separate CMD/WT window, the 'start' creates as a separate process, so when I kill this running process, that extra process is not terminated. Can be worked out that we kill those processes too, but not too easy.
+     # processObj = subprocess.run("tsc --watch", shell=True, stdout=subprocess.PIPE)  # An alternative to os.system(). This will run the command and return any output into process.output
 
-def startShellCallingThread(pCommandStr):
-    thread = Thread(target = threaded_function, daemon = True, args = (pCommandStr,))
+# we run os.system() commands 
+def startThreadForSubprocess(pCommandStr):
+    thread = Thread(target = runCommandThread, daemon = True, args = (pCommandStr,))
     thread.start()  #thread1.join()
 
 # 2.1 Non-Webpack webapps in ./wwwroot/webapps should be transpiled from TS to JS
@@ -42,15 +47,15 @@ def startShellCallingThread(pCommandStr):
 # subprocess.run(["tsc", "--watch"], stdout=subprocess.PIPE) # This will run the command and return any output
 # subprocess.run("tsc --watch", shell=True, stdout=subprocess.PIPE)
 # subprocess.run("tsc --watch", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)  # This will run the command and return any output
-# thread1 = Thread(target = threaded_function, args = ("tsc --watch",))
+# thread1 = Thread(target = runCommandThread, args = ("tsc --watch",))
 # thread1.setDaemon(True)  # daemon = true didn't help. Main thread exited, but watchers were left alive.
 # thread1.start()  #thread1.join()
-startShellCallingThread("tsc --watch --preserveWatchOutput")
+startThreadForSubprocess("tsc --watch --preserveWatchOutput")
 
 
 # 2.2 Webpack webapps in ./webapps should be packed (TS, CSS, HTML)
 # Webpack: 'Multiple output files' are not possible and out of scope of webpack. You can use a build system.
-# thread2 = Thread(target = threaded_function, args = ("npx webpack --config webapps/Example/ExampleCsServerPushInRealtime/webpack.config.js --mode=development --watch",))
+# thread2 = Thread(target = runCommandThread, args = ("npx webpack --config webapps/Example/ExampleCsServerPushInRealtime/webpack.config.js --mode=development --watch",))
 # thread2.setDaemon(True)
 # thread2.start()  #thread2.join()
 # startShellCallingThread("npx webpack --config webapps/Example/ExampleCsServerPushInRealtime/webpack.config.js --mode=development --watch")  # leave this, so we are aware of compiling errors in development
@@ -66,7 +71,7 @@ startShellCallingThread("tsc --watch --preserveWatchOutput")
 # ng serve doesn't create anything into --output-path=wwwroot/webapps/ (it keeps its files temp, maybe in RAM)
 # to create files into wwwroot/weapps, at publish run 'ng build HealthMonitor --prod --output-path=wwwroot/webapps/HealthMonitor --base-href ./'
 # startShellCallingThread("ng serve --ssl --ssl-key DevTools/AngularLocalServeHttpsCert/localhost.key  --ssl-cert DevTools/AngularLocalServeHttpsCert/localhost.crt --proxy-config angular.watch.proxy.conf.js HelloAngular --port 4201")
-startShellCallingThread("ng serve --ssl --ssl-key DevTools/AngularLocalServeHttpsCert/localhost.key  --ssl-cert DevTools/AngularLocalServeHttpsCert/localhost.crt --proxy-config angular.watch.proxy.conf.js MarketDashboard --host 127.0.0.1 --port 4202")
+startThreadForSubprocess("ng serve --ssl --ssl-key DevTools/AngularLocalServeHttpsCert/localhost.key  --ssl-cert DevTools/AngularLocalServeHttpsCert/localhost.crt --proxy-config angular.watch.proxy.conf.js MarketDashboard --host 127.0.0.1 --port 4202")
 # startShellCallingThread("ng serve --ssl --ssl-key DevTools/AngularLocalServeHttpsCert/localhost.key  --ssl-cert DevTools/AngularLocalServeHttpsCert/localhost.crt --proxy-config angular.watch.proxy.conf.js HealthMonitor --host 127.0.0.1 --port 4203")
 
 # 3. Wait for Python message to terminate all threads.

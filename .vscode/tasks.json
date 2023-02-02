@@ -28,7 +28,8 @@
         },
         {
             "label": "SqCoreWeb-PreDebugWatchDev.py",
-            "type": "shell",    // shell also runs in integrated terminal, but will not wait, but return immediately to the caller.
+            // If it runs in VsCode terminal (instead of separate CMD window what we want), manually run once this PY scripts in CMD. That 'magically' fixed the VsCode in 2023-01.
+            "type": "shell",    // shell also runs in integrated terminal (or sometimes not), but will not wait, but return immediately to the caller.
             "command": "Start-Process -FilePath \"${workspaceFolder}/src/WebServer/SqCoreWeb/PreDebugWatchDev.py\"",    // Force running in external terminal: https://stackoverflow.com/questions/47993595/launch-vscode-task-in-external-terminal-via-tasks-2-0-0
             "options": {
                 "cwd": "${workspaceFolder}/src/WebServer/SqCoreWeb"
