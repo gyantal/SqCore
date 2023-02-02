@@ -46,21 +46,8 @@ export class SqTreeViewComponent implements OnInit {
           item.isExpanded = false;
       }
     }
-    const expandedIds = item.id; // selecting the expanded item ids
-    if (!(this.treeViewState.expandedPrtfFolderIds.includes(expandedIds))) // check if the selected is already there in the list, if exist don't push it else add it
-      this.treeViewState.expandedPrtfFolderIds.push(expandedIds);
-
-    console.log('Expanded id length', this.treeViewState.expandedPrtfFolderIds.length); // just for checking the code....will be removed
-  }
-
-  // Yet to develop
-  expandChildren(treeviewPortItemOpenPathIds: number[]) {
-    // expanded folder ids are checked against the lsit and set the isSelected to true.
-    for (const item of this.items) {
-      for (let i = 0; i < this.treeViewState.expandedPrtfFolderIds.length; i++) {
-        if (this.treeViewState.expandedPrtfFolderIds[i] == item.id) // check the item id's in the treeviewstate and invert isSelected
-          item.isSelected = true;
-      }
-    }
+    const expandedId = item.id; // selecting the expanded item ids
+    if (!this.treeViewState.expandedPrtfFolderIds.includes(expandedId)) // check if the selected is already there in the list, if exist don't push it else add it
+      this.treeViewState.expandedPrtfFolderIds.push(expandedId);
   }
 }

@@ -280,12 +280,20 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     for (const id in treeData) {
       if (treeData.hasOwnProperty(id)) {
         child = treeData[id];
-        // maybe we use expandedPrtfFolderIds[] here to check that it has to be expended or not.
+        // the below gets executed, when the user clicks force reload/refresh or if there is an update in the data
+        if (this.treeViewState.expandedPrtfFolderIds.length > 0) {
+          for (let i = 0; i < this.treeViewState.expandedPrtfFolderIds.length; i++) {
+            if (this.treeViewState.expandedPrtfFolderIds[i] == child.id) { // check the item id's in the treeviewstate and invert isSelected
+              child.isExpanded = true;
+              break;
+            }
+          }
+        }
         if (child.parentFolderId && treeData[child['parentFolderId']])
           treeData[child['parentFolderId']]['children'].push(child);
         else {
           child.isSelected = false; // we try to create a TreeViewItem from a general Object. So add the missing fields.
-          child.isExpanded = false;
+          // child.isExpanded = false;
           this.uiNestedPrtfTreeViewItems.push(child);
         }
       }
