@@ -17,11 +17,12 @@ ul {
   display: inline-block;
   cursor: pointer;
   user-select: none;
+  margin-top: -1rem;
 }
 
 .treeViewExpanded::before {
   content: "\002D";
-  padding-right: 1rem;
+  // padding-right: 1rem;
   display: inline-block;
   margin-right: 0.6rem;
 }

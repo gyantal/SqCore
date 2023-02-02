@@ -1,5 +1,6 @@
 import { Component, OnInit, Input, ViewChildren, QueryList } from '@angular/core';
 import { TreeViewState, TreeViewItem } from '../portfolio-manager/portfolio-manager.component';
+import { RemoveItemOnce } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils';
 
 @Component({
   selector: 'app-sq-tree-view',
@@ -35,19 +36,23 @@ export class SqTreeViewComponent implements OnInit {
     this.treeViewState.rootSqTreeViewComponent!.DeselectThisItemsAndAllChildren();
     item.isSelected = true;
 
+    if (!item.isExpanded && item.children && item.children.length > 0) // set to expanded only if it was not expanded before and has children
+      item.isExpanded = true;
+    else
+      item.isExpanded = false;
+
+    console.log('TreeView.onItemClicked(): isExpanded: ' + item.isExpanded, 'children: ', (item.children) ? item.children.length : 0);
+
+    const expandedId = item.id;
+    const isIdIncluded = this.treeViewState.expandedPrtfFolderIds.includes(expandedId);
     if (item.isExpanded) {
-      item.isExpanded = !item.isExpanded;
-      return; // ! George: this return is dangerous here. The code behind this IF might not execute
+      if (!isIdIncluded)
+        this.treeViewState.expandedPrtfFolderIds.push(expandedId); // check if the selected is already there in the list, if exist don't push it else add it
     } else {
-      if (item.children) {
-        if (item.children.length > 0)
-          item.isExpanded = true;
-        else
-          item.isExpanded = false;
-      }
+      if (isIdIncluded)
+        RemoveItemOnce(this.treeViewState.expandedPrtfFolderIds, expandedId);
     }
-    const expandedId = item.id; // selecting the expanded item ids
-    if (!this.treeViewState.expandedPrtfFolderIds.includes(expandedId)) // check if the selected is already there in the list, if exist don't push it else add it
-      this.treeViewState.expandedPrtfFolderIds.push(expandedId);
+    console.log('TreeView.onItemClicked(): expandedPrtfFolderIds:');
+    console.log(this.treeViewState.expandedPrtfFolderIds);
   }
 }

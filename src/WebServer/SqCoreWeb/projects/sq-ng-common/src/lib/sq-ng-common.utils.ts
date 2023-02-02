@@ -26,3 +26,10 @@ export function ChangeNaNstringToNaNnumber(elementField: any): number {
   else
     return Number(elementField);
 }
+
+export function RemoveItemOnce(arr: number[], value: number) { // removes only the first occurrence from the array
+  const index = arr.indexOf(value);
+  if (index > -1)
+    arr.splice(index, 1);
+  return arr;
+}
