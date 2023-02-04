@@ -31,16 +31,16 @@ class PortfolioFolderJs
     public string Note { get; set; } = string.Empty;
 }
 
-// class PortfolioJs : PortfolioFolderJs
-// {
-//     [JsonPropertyName("sAcs")]
-//     public SharedAccess SharedAccess { get; set; } = SharedAccess.Unknown;
-//     [JsonPropertyName("sUsr")]
-//     public List<User> SharedUsersWith { get; set; } = new();
-//     [JsonPropertyName("bCur")]
-//     public string BaseCurrency { get; set; } = string.Empty;
-//     public string Type { get; set; } = string.Empty;
-// }
+class PortfolioJs : PortfolioFolderJs
+{
+    [JsonPropertyName("sAcs")]
+    public SharedAccess SharedAccess { get; set; } = SharedAccess.Unknown;
+    [JsonPropertyName("sUsr")]
+    public List<User> SharedUsersWith { get; set; } = new();
+    [JsonPropertyName("bCur")]
+    public string BaseCurrency { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+}
 
 public partial class DashboardClient
 {
@@ -62,8 +62,8 @@ public partial class DashboardClient
                 Thread.Sleep(TimeSpan.FromMilliseconds(5000));
 
             // Portfolio data is big. Don't send it in handshake. Send it 5 seconds later (if it is not the active tool)
+            PortfMgrSendPortfolios();
             PortfMgrSendPortfolioFldrs();
-            // PortfMgrSendPortfolios();
         });
     }
 
@@ -72,29 +72,29 @@ public partial class DashboardClient
         return new HandshakePortfMgr() { UserName = User.Username };
     }
 
-    // private void PortfMgrSendPortfolios()
-    // {
-    //     Dictionary<int, Portfolio>.ValueCollection prtfs = MemDb.gMemDb.Portfolios.Values;
-    //     List<PortfolioJs> prtfToClient = new();
-    //     foreach(Portfolio pf in prtfs)
-    //     {
-    //         PortfolioJs pfJs = new()
-    //         {
-    //             Id = pf.Id,
-    //             Name = pf.Name,
-    //             ParentFolderId = pf.ParentFolderId,
-    //             SharedAccess = pf.SharedAccess,
-    //             SharedUsersWith = pf.SharedUsersWith,
-    //         };
-    //         prtfToClient.Add(pfJs);
-    //     }
+    private void PortfMgrSendPortfolios()
+    {
+        Dictionary<int, Portfolio>.ValueCollection prtfs = MemDb.gMemDb.Portfolios.Values;
+        List<PortfolioJs> prtfToClient = new();
+        foreach(Portfolio pf in prtfs)
+        {
+            PortfolioJs pfJs = new()
+            {
+                Id = pf.Id,
+                Name = pf.Name,
+                ParentFolderId = pf.ParentFolderId,
+                SharedAccess = pf.SharedAccess,
+                SharedUsersWith = pf.SharedUsersWith,
+            };
+            prtfToClient.Add(pfJs);
+        }
 
-    // // List<string> portfolios = User.IsAdmin ? new List<string>() { "PorfolioName1", "PortfolioName2" } : new List<string>() { "PorfolioName3", "PortfolioName4" };
+    // List<string> portfolios = User.IsAdmin ? new List<string>() { "PorfolioName1", "PortfolioName2" } : new List<string>() { "PorfolioName3", "PortfolioName4" };
 
-    // byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Portfolios:" + Utils.CamelCaseSerialize(prtfToClient));
-    //     if (WsWebSocket!.State == WebSocketState.Open)
-    //         WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-    // }
+        byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Portfolios:" + Utils.CamelCaseSerialize(prtfToClient));
+        if (WsWebSocket!.State == WebSocketState.Open)
+            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+    }
 
     public bool OnReceiveWsAsync_PortfMgr(string msgCode, string msgObjStr)
     {

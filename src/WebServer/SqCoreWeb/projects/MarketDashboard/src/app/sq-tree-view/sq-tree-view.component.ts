@@ -46,8 +46,8 @@ export class SqTreeViewComponent implements OnInit {
     const expandedId = item.id;
     const isIdIncluded = this.treeViewState.expandedPrtfFolderIds.includes(expandedId);
     if (item.isExpanded) {
-      if (!isIdIncluded)
-        this.treeViewState.expandedPrtfFolderIds.push(expandedId); // check if the selected is already there in the list, if exist don't push it else add it
+      if (!isIdIncluded) // check if the expanded id is already there in the list, if exist don't push it else add it
+        this.treeViewState.expandedPrtfFolderIds.push(expandedId);
     } else {
       if (isIdIncluded)
         RemoveItemOnce(this.treeViewState.expandedPrtfFolderIds, expandedId);

@@ -13,11 +13,11 @@ class PortfolioFldrJs {
   public note = '';
 }
 
-// class PortfolioJs {
-//   public sharedAccess = '';
-//   public sharedUserWithMe = '';
-//   public baseCurrency = '';
-// }
+class PortfolioJs {
+  public sharedAccess = '';
+  public sharedUserWithMe = '';
+  public baseCurrency = '';
+}
 
 export class TreeViewItem { // future work. At the moment, it copies PortfolioFldrJs[] and add the children field. With unnecessary field values. When Portfolios are introduced, this should be rethought.
   public id = -1;
@@ -48,6 +48,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   @ViewChild(SqTreeViewComponent) public sqTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
 
   portfolioFldrs: Nullable<PortfolioFldrJs[]> = null;
+  portfolios: Nullable<PortfolioJs[]> = null;
   uiNestedPrtfTreeViewItems: TreeViewItem[] = [];
   isCreatePortfolioPopupVisible: boolean = false;
   isDeleteConfirmPopupVisible: boolean = false;
@@ -195,7 +196,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     switch (msgCode) {
       case 'PortfMgr.Portfolios': // The most frequent message should come first. Note: LstVal (realtime price) is handled earlier in a unified way.
         console.log('PortfMgr.Portfolios:' + msgObjStr);
-        // this.processPortfolios(msgObjStr);
+        this.processPortfolios(msgObjStr);
         return true;
       case 'PortfMgr.PortfoliosFldrs': // The most frequent message should come first. Note: LstVal (realtime price) is handled earlier in a unified way.
         console.log('PortfMgr.PortfoliosFldrs:' + msgObjStr);
@@ -215,27 +216,26 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     }
   }
 
-  // processPortfolios(msgObjStr: string) {
-  //   this.portfoliosObj = JSON.parse(msgObjStr, function(this: any, key, value) {
-  //     // eslint-disable-next-line no-invalid-this
-  //     const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
+  processPortfolios(msgObjStr: string) {
+    this.portfolios = JSON.parse(msgObjStr, function(this: any, key, value) {
+      // eslint-disable-next-line no-invalid-this
+      const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
 
-  //     if (key === 'sAcs') {
-  //       _this.sharedAccess = value;
-  //       return; // if return undefined, orignal property will be removed
-  //     }
-  //     if (key === 'sUsr') {
-  //       _this.sharedUserWithMe = value;
-  //       return; // if return undefined, orignal property will be removed
-  //     }
-  //     if (key === 'bCur') {
-  //       _this.baseCurrency = value;
-  //       return; // if return undefined, orignal property will be removed
-  //     }
-  //     return value;
-  //   });
-  //   this.updateUiPortfolios(this.portfoliosObj, this.portfolios);
-  // }
+      if (key === 'sAcs') {
+        _this.sharedAccess = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      if (key === 'sUsr') {
+        _this.sharedUserWithMe = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      if (key === 'bCur') {
+        _this.baseCurrency = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      return value;
+    });
+  }
 
   processPortfolioFldrs(msgObjStr: string) {
     this.portfolioFldrs = JSON.parse(msgObjStr, function(this: any, key, value) {
@@ -259,45 +259,46 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       }
       return value;
     });
-    this.createTreeViewData(this.portfolioFldrs);
+    this.createTreeViewData(this.portfolioFldrs, this.portfolios); // send both portfolio folders and portfolios
   };
 
-  createTreeViewData(pFolders: Nullable<PortfolioFldrJs[]>) {
+  createTreeViewData(pFolders: Nullable<PortfolioFldrJs[]>, pPrtfs: Nullable<PortfolioJs[]>) {
     if (!(Array.isArray(pFolders) && pFolders.length > 0 ))
       return;
 
     this.uiNestedPrtfTreeViewItems.length = 0;
-    const helper = {};
-    let parent: any;
-    let child: any;
+    const tempPrtfItemsObject = {}; // stores the portfolio items temporarly
+    let prtfItem: PortfolioFldrJs;
+    let child: TreeViewItem;
 
     for (let i = 0; i < pFolders.length; i++) {
-      parent = pFolders[i];
-      helper[parent.id] = parent;
-      helper[parent.id]['children'] = [];
+      prtfItem = pFolders[i];
+      tempPrtfItemsObject[prtfItem.id] = prtfItem;
+      tempPrtfItemsObject[prtfItem.id]['children'] = [];
     }
 
-    for (const id in helper) {
-      if (!helper.hasOwnProperty(id))
+    for (const id in tempPrtfItemsObject) {
+      if (!tempPrtfItemsObject.hasOwnProperty(id))
         continue;
 
-      child = helper[id];
+      child = tempPrtfItemsObject[id];
+      child.isSelected = false;
       // the below gets executed, when the user clicks force reload/refresh or if there is an update in the data
       for (let i = 0; i < this.treeViewState.expandedPrtfFolderIds.length; i++) {
-        if (this.treeViewState.expandedPrtfFolderIds[i] == child.id) { // check the item id's in the treeviewstate and invert isSelected
+        if (this.treeViewState.expandedPrtfFolderIds[i] == child.id) {
           child.isExpanded = true;
           break;
         }
       }
-      const something = helper[child['parentFolderId']]; // comment
-      if (child.parentFolderId && something)
-        something['children'].push(child);
-      else {
-        child.isSelected = false; // we try to create a TreeViewItem from a general Object. So add the missing fields.
-        // child.isExpanded = false;
+      const childTreeViewItem: TreeViewItem = tempPrtfItemsObject[child['parentFolderId']]; // assigning treeview item
+      if (child.parentFolderId && childTreeViewItem)
+        childTreeViewItem['children'].push(child);
+      else
         this.uiNestedPrtfTreeViewItems.push(child);
-      }
     }
+
+    // Yet to process the portfolios - Daya
+    console.log('portfolio items are:', pPrtfs?.length); // For debugging purpose
   };
 
   onPortfoliosRefreshClicked() {
