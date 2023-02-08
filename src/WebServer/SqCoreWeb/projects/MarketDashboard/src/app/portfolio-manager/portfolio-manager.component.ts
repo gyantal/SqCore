@@ -50,7 +50,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   @Input() _parentWsConnection?: WebSocket = undefined; // this property will be input from above parent container
   @ViewChild(SqTreeViewComponent) public sqTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
 
-  portfMgrFldrs: Nullable<FolderJs[]> = null;
+  folders: Nullable<FolderJs[]> = null;
   portfolios: Nullable<PortfolioJs[]> = null;
   uiNestedPrtfTreeViewItems: TreeViewItem[] = [];
   isCreatePortfolioPopupVisible: boolean = false;
@@ -203,7 +203,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
         return true;
       case 'PortfMgr.Folders': // The most frequent message should come first. Note: LstVal (realtime price) is handled earlier in a unified way.
         console.log('PortfMgr.Folders:' + msgObjStr);
-        this.processPortfMgrFldrs(msgObjStr);
+        this.processFolders(msgObjStr);
         return true;
       case 'PortfMgr.Handshake': // The least frequent message should come last.
         console.log('PortfMgr.Handshake:' + msgObjStr);
@@ -224,6 +224,19 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       // eslint-disable-next-line no-invalid-this
       const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
 
+      if (key === 'n') {
+        _this.name = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      if (key === 'p') {
+        _this.parentFolderId = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      if (key === 'cTime') {
+        _this.creationTime = value;
+        return; // if return undefined, orignal property will be removed
+      }
+
       if (key === 'sAcs') {
         _this.sharedAccess = value;
         return; // if return undefined, orignal property will be removed
@@ -238,10 +251,11 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       }
       return value;
     });
+    this.uiNestedPrtfTreeViewItems = PortfolioManagerComponent.createTreeViewData(this.folders, this.portfolios, this.treeViewState); // process folders and portfolios
   }
 
-  processPortfMgrFldrs(msgObjStr: string) {
-    this.portfMgrFldrs = JSON.parse(msgObjStr, function(this: any, key, value) {
+  processFolders(msgObjStr: string) {
+    this.folders = JSON.parse(msgObjStr, function(this: any, key, value) {
       // property names and values are transformed to a shorter ones for decreasing internet traffic.Transform them back to normal for better code reading.
 
       // 'this' is the object containing the property being processed (not the embedding class) as this is a function(), not a '=>', and the property name as a string, the property value as arguments of this function.
@@ -266,52 +280,52 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       // }
       return value;
     });
-    this.createTreeViewData(this.portfMgrFldrs, this.portfolios); // send both portfolio Manager folders and portfolios
+    this.uiNestedPrtfTreeViewItems = PortfolioManagerComponent.createTreeViewData(this.folders, this.portfolios, this.treeViewState); // process folders and portfolios
   };
 
-  createTreeViewData(pFolders: Nullable<FolderJs[]>, pPrtfs: Nullable<PortfolioJs[]>) {
-    if (!(Array.isArray(pFolders) && pFolders.length > 0 ) || !(Array.isArray(pPrtfs) && pPrtfs.length > 0 ))
-      return;
+  static createTreeViewData(pFolders: Nullable<FolderJs[]>, pPortfolios: Nullable<PortfolioJs[]>, pTreeViewState: TreeViewState) : TreeViewItem[] {
+    if (!(Array.isArray(pFolders) && pFolders.length > 0 ) || !(Array.isArray(pPortfolios) && pPortfolios.length > 0 ))
+      return [];
 
-    this.uiNestedPrtfTreeViewItems.length = 0;
-    const tempPrtfItemsObject = {}; // stores the portfolio items temporarly
+    const treeviewItemsHierarchyResult: TreeViewItem[] = [];
+    const tempPrtfItemsDict = {}; // stores the portfolio items temporarly
     let fldrItem: FolderJs;
     let child: TreeViewItem;
 
     for (let i = 0; i < pFolders.length; i++) {
       fldrItem = pFolders[i];
-      tempPrtfItemsObject[fldrItem.id] = fldrItem;
-      tempPrtfItemsObject[fldrItem.id]['children'] = [];
+      tempPrtfItemsDict[fldrItem.id] = fldrItem;
+      tempPrtfItemsDict[fldrItem.id]['children'] = [];
     }
-    for (const id in tempPrtfItemsObject) {
-      if (!tempPrtfItemsObject.hasOwnProperty(id))
+    for (const id in tempPrtfItemsDict) {
+      if (!tempPrtfItemsDict.hasOwnProperty(id))
         continue;
 
-      child = tempPrtfItemsObject[id];
+      child = tempPrtfItemsDict[id];
       child.isSelected = false;
       // the below gets executed, when the user clicks force reload/refresh or if there is an update in the data
-      for (let i = 0; i < this.treeViewState.expandedPrtfFolderIds.length; i++) {
-        if (this.treeViewState.expandedPrtfFolderIds[i] == child.id) {
+      for (let i = 0; i < pTreeViewState.expandedPrtfFolderIds.length; i++) {
+        if (pTreeViewState.expandedPrtfFolderIds[i] == child.id) {
           child.isExpanded = true;
           break;
         }
       }
       // processing the portfolios - Just for debugging purposes to see whether the data is processed or not? - Daya
-      for (let j = 0; j < pPrtfs.length; j++) {
-        if (pPrtfs[j].id == child.id) {
-          child.portfolio = pPrtfs[j];
+      for (let j = 0; j < pPortfolios.length; j++) {
+        if (pPortfolios[j].id == child.id) {
+          child.portfolio = pPortfolios[j];
           break;
         }
       }
-      const childTreeViewItem: TreeViewItem = tempPrtfItemsObject[child['parentFolderId']]; // assigning treeview item
+      const childTreeViewItem: TreeViewItem = tempPrtfItemsDict[child['parentFolderId']]; // assigning treeview item
       if (child.parentFolderId != undefined && childTreeViewItem != undefined)
         childTreeViewItem['children'].push(child);
       else
-        this.uiNestedPrtfTreeViewItems.push(child);
+        treeviewItemsHierarchyResult.push(child);
     }
-
     // Yet to process the portfolios - Daya
-    console.log('portfolio items are:', pPrtfs.length); // For debugging purpose
+    // console.log('portfolio items are:', pPrtfs.length); // For debugging purpose
+    return treeviewItemsHierarchyResult;
   };
 
   onPortfoliosRefreshClicked() {

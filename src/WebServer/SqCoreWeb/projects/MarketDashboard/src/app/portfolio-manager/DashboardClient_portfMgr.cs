@@ -45,6 +45,7 @@ class PortfolioJs : FolderJs
 
 public partial class DashboardClient
 {
+    const int gPortfolioIdOffset = 10000;
     // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
     public void OnConnectedWsAsync_PortfMgr(bool p_isThisActiveToolAtConnectionInit)
     {
@@ -63,8 +64,8 @@ public partial class DashboardClient
                 Thread.Sleep(TimeSpan.FromMilliseconds(5000));
 
             // Portfolio data is big. Don't send it in handshake. Send it 5 seconds later (if it is not the active tool)
-            PortfMgrSendPortfolios();
             PortfMgrSendFolders();
+            PortfMgrSendPortfolios();
         });
     }
 
@@ -81,9 +82,9 @@ public partial class DashboardClient
         {
             PortfolioJs pfJs = new()
             {
-                Id = pf.Id,
+                Id = pf.Id + gPortfolioIdOffset, // adding a constant so portfolio IDs not clash with folder IDs
                 Name = pf.Name,
-                ParentFolderId = pf.ParentFolderId,
+                ParentFolderId = pf.ParentFolderId, // if folderId == -1 of a normal user => convert it to the user virtual folder.
                 SharedAccess = pf.SharedAccess,
                 SharedUsersWith = pf.SharedUsersWith,
             };
