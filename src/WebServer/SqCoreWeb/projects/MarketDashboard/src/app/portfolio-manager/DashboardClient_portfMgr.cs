@@ -18,8 +18,7 @@ class HandshakePortfMgr // Initial params: keept it small
 // }
 // class PortfolioJs : PortfolioItemJs
 // class PortfolioFolderJs: PortfolioItemJs
-
-class PortfolioFolderJs
+class FolderJs
 {
     public int Id { get; set; } = -1;
     [JsonPropertyName("n")]
@@ -29,9 +28,11 @@ class PortfolioFolderJs
     [JsonPropertyName("cTime")]
     public string CreationTime { get; set; } = string.Empty;
     public string Note { get; set; } = string.Empty;
+    [JsonPropertyName("oUsr")]
+    public string OwnerUserName { get; set; } = string.Empty;
 }
 
-class PortfolioJs : PortfolioFolderJs
+class PortfolioJs : FolderJs
 {
     [JsonPropertyName("sAcs")]
     public SharedAccess SharedAccess { get; set; } = SharedAccess.Unknown;
@@ -63,7 +64,7 @@ public partial class DashboardClient
 
             // Portfolio data is big. Don't send it in handshake. Send it 5 seconds later (if it is not the active tool)
             PortfMgrSendPortfolios();
-            PortfMgrSendPortfolioFldrs();
+            PortfMgrSendFolders();
         });
     }
 
@@ -100,26 +101,26 @@ public partial class DashboardClient
     {
         switch (msgCode)
         {
-            case "PortfMgr.CreatePortfFldr": // msg: "DayaTest,prntFId:-1"
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfFldr '{msgObjStr}'");
-                CreatePortfolioFolder(msgObjStr);
-                PortfMgrSendPortfolioFldrs();
+            case "PortfMgr.CreateFolder": // msg: "DayaTest,prntFId:-1"
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreateFolder '{msgObjStr}'");
+                PortfMgrCreateFolder(msgObjStr);
+                PortfMgrSendFolders();
                 return true;
-            case "PortfMgr.DeletePortfFldr": // msg: "fldId:5"
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): DeletePortfFldr '{msgObjStr}'");
-                DeletePortfolioFolder(msgObjStr);
-                PortfMgrSendPortfolioFldrs();
+            case "PortfMgr.DeleteFolder": // msg: "fldId:5"
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): DeleteFolder '{msgObjStr}'");
+                PortfMgrDeleteFolder(msgObjStr);
+                PortfMgrSendFolders();
                 return true;
-            case "PortfMgr.RefreshPortfolioFldrs":
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): RefreshPortfolioFldrs '{msgObjStr}'");
-                PortfMgrSendPortfolioFldrs();
+            case "PortfMgr.RefreshFolders":
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): RefreshFolders '{msgObjStr}'");
+                PortfMgrSendFolders();
                 return true;
             default:
                 return false;
         }
     }
 
-    public void CreatePortfolioFolder(string p_msg)
+    public void PortfMgrCreateFolder(string p_msg)
     {
         int pfNameIdx = p_msg.IndexOf(',');
         int prntFldrIdx = (pfNameIdx == -1) ? -1 : p_msg.IndexOf(":", pfNameIdx);
@@ -167,7 +168,7 @@ public partial class DashboardClient
         MemDb.gMemDb.AddNewPortfolioFolder(user, pfName, prntFldIdToSend, p_note);
     }
 
-    private void DeletePortfolioFolder(string p_msg)
+    private void PortfMgrDeleteFolder(string p_msg)
     {
         int prntFldrIdx = p_msg.IndexOf(":");
         if (prntFldrIdx == -1)
@@ -182,7 +183,7 @@ public partial class DashboardClient
         }
     }
 
-    private void PortfMgrSendPortfolioFldrs() // Processing the portfolioFolders based on the visiblity rules
+    private void PortfMgrSendFolders() // Processing the portfolioFolders based on the visiblity rules
     {
         // Visibility rules for PortfolioFolders:
         // - Normal users don't see other user's PortfolioFolders. They see a virtual folder with their username ('dkodirekka'),
@@ -191,7 +192,7 @@ public partial class DashboardClient
         // And the 'Shared with me', and 'AllUsers" virtual folders are there too.
         Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
         // add the virtual folders to prtfFldrsToClient
-        List<PortfolioFolderJs> prtfFldrsToClient = new();
+        List<FolderJs> prtfFldrsToClient = new();
         Dictionary<int, User> virtUsrFldsToSend = new();
 
         if (User.IsAdmin)
@@ -211,15 +212,15 @@ public partial class DashboardClient
         foreach (var kvp in virtUsrFldsToSend)
         {
             User user = kvp.Value;
-            PortfolioFolderJs pfAdminUserJs = new() { Id = -1 * user.Id, Name = user.Username };
+            FolderJs pfAdminUserJs = new() { Id = -1 * user.Id, Name = user.Username };
             prtfFldrsToClient.Add(pfAdminUserJs);
         }
 
-        PortfolioFolderJs pfSharedWithMeJs = new() { Id = 0, Name = "Shared" };
+        FolderJs pfSharedWithMeJs = new() { Id = 0, Name = "Shared" };
         prtfFldrsToClient.Add(pfSharedWithMeJs);
 
         const int noUserVirtPortfId = -2;
-        PortfolioFolderJs pfAllUsersJs = new() { Id = noUserVirtPortfId, Name = "NoUser" };
+        FolderJs pfAllUsersJs = new() { Id = noUserVirtPortfId, Name = "NoUser" };
         prtfFldrsToClient.Add(pfAllUsersJs);
 
         foreach(PortfolioFolder pf in prtfFldrs)
@@ -237,10 +238,10 @@ public partial class DashboardClient
                     parentFolderId = -1 * pf.User.Id;
             }
 
-            PortfolioFolderJs pfJs = new() { Id = pf.Id, Name = pf.Name, ParentFolderId = parentFolderId };
+            FolderJs pfJs = new() { Id = pf.Id, Name = pf.Name, ParentFolderId = parentFolderId };
             prtfFldrsToClient.Add(pfJs);
         }
-        byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.PortfoliosFldrs:" + Utils.CamelCaseSerialize(prtfFldrsToClient));
+        byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Folders:" + Utils.CamelCaseSerialize(prtfFldrsToClient));
         if (WsWebSocket!.State == WebSocketState.Open)
             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }

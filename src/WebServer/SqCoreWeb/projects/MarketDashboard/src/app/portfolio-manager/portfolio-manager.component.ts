@@ -5,18 +5,20 @@ type Nullable<T> = T | null;
 
 // Input data classes
 
-class PortfolioFldrJs {
+class FolderJs {
   public id = -1;
   public name = '';
   public parentFolderId = -1;
   public creationTime = '';
   public note = '';
+  public ownerUserName = '';
 }
 
 class PortfolioJs {
   public sharedAccess = '';
   public sharedUserWithMe = '';
   public baseCurrency = '';
+  public id = -1;
 }
 
 export class TreeViewItem { // future work. At the moment, it copies PortfolioFldrJs[] and add the children field. With unnecessary field values. When Portfolios are introduced, this should be rethought.
@@ -30,6 +32,7 @@ export class TreeViewItem { // future work. At the moment, it copies PortfolioFl
   public children : TreeViewItem[] = []; // children are other TreeViewItems
   public isSelected = false;
   public isExpanded = false;
+  public portfolio : any;
 }
 
 export class TreeViewState {
@@ -47,7 +50,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   @Input() _parentWsConnection?: WebSocket = undefined; // this property will be input from above parent container
   @ViewChild(SqTreeViewComponent) public sqTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
 
-  portfolioFldrs: Nullable<PortfolioFldrJs[]> = null;
+  portfMgrFldrs: Nullable<FolderJs[]> = null;
   portfolios: Nullable<PortfolioJs[]> = null;
   uiNestedPrtfTreeViewItems: TreeViewItem[] = [];
   isCreatePortfolioPopupVisible: boolean = false;
@@ -198,9 +201,9 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
         console.log('PortfMgr.Portfolios:' + msgObjStr);
         this.processPortfolios(msgObjStr);
         return true;
-      case 'PortfMgr.PortfoliosFldrs': // The most frequent message should come first. Note: LstVal (realtime price) is handled earlier in a unified way.
-        console.log('PortfMgr.PortfoliosFldrs:' + msgObjStr);
-        this.processPortfolioFldrs(msgObjStr);
+      case 'PortfMgr.Folders': // The most frequent message should come first. Note: LstVal (realtime price) is handled earlier in a unified way.
+        console.log('PortfMgr.Folders:' + msgObjStr);
+        this.processPortfMgrFldrs(msgObjStr);
         return true;
       case 'PortfMgr.Handshake': // The least frequent message should come last.
         console.log('PortfMgr.Handshake:' + msgObjStr);
@@ -237,8 +240,8 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     });
   }
 
-  processPortfolioFldrs(msgObjStr: string) {
-    this.portfolioFldrs = JSON.parse(msgObjStr, function(this: any, key, value) {
+  processPortfMgrFldrs(msgObjStr: string) {
+    this.portfMgrFldrs = JSON.parse(msgObjStr, function(this: any, key, value) {
       // property names and values are transformed to a shorter ones for decreasing internet traffic.Transform them back to normal for better code reading.
 
       // 'this' is the object containing the property being processed (not the embedding class) as this is a function(), not a '=>', and the property name as a string, the property value as arguments of this function.
@@ -257,26 +260,29 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
         _this.creationTime = value;
         return; // if return undefined, orignal property will be removed
       }
+      // if (key === 'oUsr') {
+      //   _this.ownerUserName = value;
+      //   return; // if return undefined, orignal property will be removed
+      // }
       return value;
     });
-    this.createTreeViewData(this.portfolioFldrs, this.portfolios); // send both portfolio folders and portfolios
+    this.createTreeViewData(this.portfMgrFldrs, this.portfolios); // send both portfolio Manager folders and portfolios
   };
 
-  createTreeViewData(pFolders: Nullable<PortfolioFldrJs[]>, pPrtfs: Nullable<PortfolioJs[]>) {
-    if (!(Array.isArray(pFolders) && pFolders.length > 0 ))
+  createTreeViewData(pFolders: Nullable<FolderJs[]>, pPrtfs: Nullable<PortfolioJs[]>) {
+    if (!(Array.isArray(pFolders) && pFolders.length > 0 ) || !(Array.isArray(pPrtfs) && pPrtfs.length > 0 ))
       return;
 
     this.uiNestedPrtfTreeViewItems.length = 0;
     const tempPrtfItemsObject = {}; // stores the portfolio items temporarly
-    let prtfItem: PortfolioFldrJs;
+    let fldrItem: FolderJs;
     let child: TreeViewItem;
 
     for (let i = 0; i < pFolders.length; i++) {
-      prtfItem = pFolders[i];
-      tempPrtfItemsObject[prtfItem.id] = prtfItem;
-      tempPrtfItemsObject[prtfItem.id]['children'] = [];
+      fldrItem = pFolders[i];
+      tempPrtfItemsObject[fldrItem.id] = fldrItem;
+      tempPrtfItemsObject[fldrItem.id]['children'] = [];
     }
-
     for (const id in tempPrtfItemsObject) {
       if (!tempPrtfItemsObject.hasOwnProperty(id))
         continue;
@@ -290,20 +296,27 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
           break;
         }
       }
+      // processing the portfolios - Just for debugging purposes to see whether the data is processed or not? - Daya
+      for (let j = 0; j < pPrtfs.length; j++) {
+        if (pPrtfs[j].id == child.id) {
+          child.portfolio = pPrtfs[j];
+          break;
+        }
+      }
       const childTreeViewItem: TreeViewItem = tempPrtfItemsObject[child['parentFolderId']]; // assigning treeview item
-      if (child.parentFolderId && childTreeViewItem)
+      if (child.parentFolderId != undefined && childTreeViewItem != undefined)
         childTreeViewItem['children'].push(child);
       else
         this.uiNestedPrtfTreeViewItems.push(child);
     }
 
     // Yet to process the portfolios - Daya
-    console.log('portfolio items are:', pPrtfs?.length); // For debugging purpose
+    console.log('portfolio items are:', pPrtfs.length); // For debugging purpose
   };
 
   onPortfoliosRefreshClicked() {
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.RefreshPortfolioFldrs:');
+      this._parentWsConnection.send('PortfMgr.RefreshFolders:');
   }
 
   // under Development -- Daya
@@ -338,7 +351,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     }
     const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.CreatePortfFldr:' + this.createPrtfItemName + ',prntFId:' + lastSelectedTreeNode.id);
+      this._parentWsConnection.send('PortfMgr.CreateFolder:' + this.createPrtfItemName + ',prntFId:' + lastSelectedTreeNode.id);
     this.isCreatePortfolioPopupVisible = false;
   }
 
@@ -363,7 +376,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     }
     const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.DeletePortfFldr:' + 'fldId:' + lastSelectedTreeNode.id);
+      this._parentWsConnection.send('PortfMgr.DeleteFolder:' + 'fldId:' + lastSelectedTreeNode.id);
     this.isDeleteConfirmPopupVisible = false;
   }
 
