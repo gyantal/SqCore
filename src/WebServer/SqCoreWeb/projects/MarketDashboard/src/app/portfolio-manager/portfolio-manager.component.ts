@@ -14,11 +14,10 @@ class FolderJs {
   public ownerUserName = '';
 }
 
-class PortfolioJs {
+class PortfolioJs extends FolderJs {
   public sharedAccess = '';
   public sharedUserWithMe = '';
   public baseCurrency = '';
-  public id = -1;
 }
 
 export class TreeViewItem { // future work. At the moment, it copies PortfolioFldrJs[] and add the children field. With unnecessary field values. When Portfolios are introduced, this should be rethought.
@@ -32,7 +31,6 @@ export class TreeViewItem { // future work. At the moment, it copies PortfolioFl
   public children : TreeViewItem[] = []; // children are other TreeViewItems
   public isSelected = false;
   public isExpanded = false;
-  public portfolio : any;
 }
 
 export class TreeViewState {
@@ -291,40 +289,42 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     const tempPrtfItemsDict = {}; // stores the portfolio items temporarly
     let fldrItem: FolderJs;
     let child: TreeViewItem;
+    let prtfItem: PortfolioJs;
 
+    // adding folders data to tempPrtfItemsDict
     for (let i = 0; i < pFolders.length; i++) {
       fldrItem = pFolders[i];
       tempPrtfItemsDict[fldrItem.id] = fldrItem;
       tempPrtfItemsDict[fldrItem.id]['children'] = [];
     }
+
+    // adding portfolios data to tempPrtfItemsDict
+    for (let j = 0; j < pPortfolios.length; j++) {
+      prtfItem = pPortfolios[j];
+      tempPrtfItemsDict[prtfItem.id] = prtfItem;
+      tempPrtfItemsDict[prtfItem.id]['children'] = [];
+    }
+
     for (const id in tempPrtfItemsDict) {
       if (!tempPrtfItemsDict.hasOwnProperty(id))
         continue;
 
       child = tempPrtfItemsDict[id];
       child.isSelected = false;
-      // the below gets executed, when the user clicks force reload/refresh or if there is an update in the data
+      // expanded folder Id's check
       for (let i = 0; i < pTreeViewState.expandedPrtfFolderIds.length; i++) {
         if (pTreeViewState.expandedPrtfFolderIds[i] == child.id) {
           child.isExpanded = true;
           break;
         }
       }
-      // processing the portfolios - Just for debugging purposes to see whether the data is processed or not? - Daya
-      for (let j = 0; j < pPortfolios.length; j++) {
-        if (pPortfolios[j].id == child.id) {
-          child.portfolio = pPortfolios[j];
-          break;
-        }
-      }
+
       const childTreeViewItem: TreeViewItem = tempPrtfItemsDict[child['parentFolderId']]; // assigning treeview item
       if (child.parentFolderId != undefined && childTreeViewItem != undefined)
         childTreeViewItem['children'].push(child);
       else
         treeviewItemsHierarchyResult.push(child);
     }
-    // Yet to process the portfolios - Daya
-    // console.log('portfolio items are:', pPrtfs.length); // For debugging purpose
     return treeviewItemsHierarchyResult;
   };
 
@@ -332,23 +332,6 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('PortfMgr.RefreshFolders:');
   }
-
-  // under Development -- Daya
-  // updateUiPortfolios(portfoliosObj: Nullable<PortfolioJs>, portfolios: PortfolioJs[]) {
-  //   if (!(Array.isArray(portfoliosObj) && portfoliosObj.length > 0 ))
-  //     return;
-  //   for (const prtf of portfoliosObj) {
-  //     const pf = new PortfolioJs();
-  //     const prtfItem = new PortfolioFldrJs();
-  //     prtfItem.id = prtf.id;
-  //     prtfItem.name = prtf.name;
-  //     pf.portf.push(prtfItem);
-  //     pf.baseCurrency = prtf.baseCurrency,
-  //     pf.sharedAccess = prtf.sharedAccess,
-  //     pf.sharedUserWithMe = prtf.sharedUserWithMe,
-  //     portfolios.push(pf);
-  //   }
-  // }
 
   onCreatePrtfItemClicked() { // this logic makes the Popup visible of creating a portfolio
     this.isCreatePortfolioPopupVisible = true;
