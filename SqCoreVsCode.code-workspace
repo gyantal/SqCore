@@ -37,6 +37,7 @@
 		"dotnet-test-explorer.testProjectPath": "**/*.tests.csproj",
 		"dotnet-test-explorer.runInParallel": true,
 		"omnisharp.enableRoslynAnalyzers": true,
-		"omnisharp.analyzeOpenDocumentsOnly": false
+		"omnisharp.analyzeOpenDocumentsOnly": false,
+		"terminal.integrated.cursorBlinking": true
 	}
 }
