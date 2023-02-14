@@ -320,7 +320,9 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       }
 
       const childTreeViewItem: TreeViewItem = tempPrtfItemsDict[child['parentFolderId']]; // assigning treeview item
-      if (child.parentFolderId != undefined && childTreeViewItem != undefined)
+      // for each parentFolderId in tempPrtfItemsDict, the logic checks if the parentFolderId property is defined and if the parent folderId is also in tempPrtfItemsDict
+      const hasParent: boolean = child.parentFolderId != undefined && childTreeViewItem != undefined;
+      if (hasParent)
         childTreeViewItem['children'].push(child);
       else
         treeviewItemsHierarchyResult.push(child);

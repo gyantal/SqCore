@@ -74,30 +74,6 @@ public partial class DashboardClient
         return new HandshakePortfMgr() { UserName = User.Username };
     }
 
-    private void PortfMgrSendPortfolios()
-    {
-        Dictionary<int, Portfolio>.ValueCollection prtfs = MemDb.gMemDb.Portfolios.Values;
-        List<PortfolioJs> prtfToClient = new();
-        foreach(Portfolio pf in prtfs)
-        {
-            PortfolioJs pfJs = new()
-            {
-                Id = pf.Id + gPortfolioIdOffset, // adding a constant so portfolio IDs not clash with folder IDs
-                Name = pf.Name,
-                ParentFolderId = pf.ParentFolderId, // if folderId == -1 of a normal user => convert it to the user virtual folder.
-                SharedAccess = pf.SharedAccess,
-                SharedUsersWith = pf.SharedUsersWith,
-            };
-            prtfToClient.Add(pfJs);
-        }
-
-    // List<string> portfolios = User.IsAdmin ? new List<string>() { "PorfolioName1", "PortfolioName2" } : new List<string>() { "PorfolioName3", "PortfolioName4" };
-
-        byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Portfolios:" + Utils.CamelCaseSerialize(prtfToClient));
-        if (WsWebSocket!.State == WebSocketState.Open)
-            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-    }
-
     public bool OnReceiveWsAsync_PortfMgr(string msgCode, string msgObjStr)
     {
         switch (msgCode)
@@ -224,7 +200,7 @@ public partial class DashboardClient
         FolderJs pfAllUsersJs = new() { Id = noUserVirtPortfId, Name = "NoUser" };
         prtfFldrsToClient.Add(pfAllUsersJs);
 
-        foreach(PortfolioFolder pf in prtfFldrs)
+        foreach (PortfolioFolder pf in prtfFldrs)
         {
             bool isSendToUser = User.IsAdmin || (pf.User == null) || (pf.User == User); // (pf.User == null) means UserId = -1, which means its intended for All users
             if (!isSendToUser)
@@ -243,6 +219,64 @@ public partial class DashboardClient
             prtfFldrsToClient.Add(pfJs);
         }
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Folders:" + Utils.CamelCaseSerialize(prtfFldrsToClient));
+        if (WsWebSocket!.State == WebSocketState.Open)
+            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+    }
+
+    private void PortfMgrSendPortfolios()
+    {
+        Dictionary<int, Portfolio>.ValueCollection prtfs = MemDb.gMemDb.Portfolios.Values;
+        List<PortfolioJs> prtfToClient = new();
+        Dictionary<int, User> virtUsrFldsToSend = new();
+
+        if (User.IsAdmin)
+        {
+            foreach (Portfolio pf in prtfs) // iterate over all portfolios to filter out those users who don't have any portoflios at all
+            {
+                if (pf.User != null)
+                    virtUsrFldsToSend[pf.User.Id] = pf.User;
+            }
+        }
+        else
+        {
+            // send only his(User) virtual portfolio
+            virtUsrFldsToSend[User.Id] = User;  // we send the user his main virtual portfolio even if he has no sub portfolio at all
+        }
+
+        foreach (var kvp in virtUsrFldsToSend)
+        {
+            User user = kvp.Value;
+            PortfolioJs pfAdminUserJs = new() { Id = -1 * user.Id, Name = user.Username };
+            prtfToClient.Add(pfAdminUserJs);
+        }
+
+        PortfolioJs pfSharedWithMeJs = new() { Id = 0, Name = "Shared" };
+        prtfToClient.Add(pfSharedWithMeJs);
+
+        const int noUserVirtPortfId = -2;
+        PortfolioJs pfAllUsersJs = new() { Id = noUserVirtPortfId, Name = "NoUser" };
+        prtfToClient.Add(pfAllUsersJs);
+
+        foreach (Portfolio pf in prtfs)
+        {
+            bool isSendToUser = User.IsAdmin || (pf.User == null) || (pf.User == User); // (pf.User == null) means UserId = -1, which means its intended for All users
+            if (!isSendToUser)
+                continue;
+
+            int parentFolderId = pf.ParentFolderId;
+            if (pf.ParentFolderId == -1)
+            {
+                if (pf.User == null)
+                    parentFolderId = noUserVirtPortfId;
+                else
+                    parentFolderId = -1 * pf.User.Id;
+            }
+
+            PortfolioJs pfJs = new() { Id = pf.Id + gPortfolioIdOffset, Name = pf.Name, ParentFolderId = parentFolderId };
+            prtfToClient.Add(pfJs);
+        }
+
+        byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Portfolios:" + Utils.CamelCaseSerialize(prtfToClient));
         if (WsWebSocket!.State == WebSocketState.Open)
             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
