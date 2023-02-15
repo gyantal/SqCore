@@ -92,6 +92,11 @@ public partial class DashboardClient
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): RefreshFolders '{msgObjStr}'");
                 PortfMgrSendFolders();
                 return true;
+            case "PortfMgr.CreatePortfolio": // msg: "DayaTest,prntFId:-1"
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{msgObjStr}'");
+                // PortfMgrCreatePortfolio(msgObjStr);
+                // PortfMgrSendFolders();
+                return true;
             default:
                 return false;
         }
@@ -250,12 +255,7 @@ public partial class DashboardClient
             prtfToClient.Add(pfAdminUserJs);
         }
 
-        PortfolioJs pfSharedWithMeJs = new() { Id = 0, Name = "Shared" };
-        prtfToClient.Add(pfSharedWithMeJs);
-
         const int noUserVirtPortfId = -2;
-        PortfolioJs pfAllUsersJs = new() { Id = noUserVirtPortfId, Name = "NoUser" };
-        prtfToClient.Add(pfAllUsersJs);
 
         foreach (Portfolio pf in prtfs)
         {

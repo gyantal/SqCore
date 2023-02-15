@@ -33,3 +33,7 @@ ul {
   background: #90EE90;
   cursor: pointer;
 }
+
+.prtfItemType::before {
+  content: none;
+}

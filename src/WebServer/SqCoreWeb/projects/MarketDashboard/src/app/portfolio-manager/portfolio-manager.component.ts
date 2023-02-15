@@ -5,6 +5,12 @@ type Nullable<T> = T | null;
 
 // Input data classes
 
+// enum is throwing warnings- eslint(no-unused-vars)
+enum PrtfItemType { // for differenting the folder and portfolio
+  Folder,
+  Portfolio
+ }
+
 class FolderJs {
   public id = -1;
   public name = '';
@@ -28,9 +34,11 @@ export class TreeViewItem { // future work. At the moment, it copies PortfolioFl
   public creationTime = ''; // Folder only. not necessary
   public note = ''; // Folder only. not necessary
 
-  public children : TreeViewItem[] = []; // children are other TreeViewItems
-  public isSelected = false;
-  public isExpanded = false;
+  public children: TreeViewItem[] = []; // children are other TreeViewItems
+  public isSelected: boolean = false;
+  public isExpanded: boolean = false;
+  public isPrtfItemFolder: boolean = true;
+  public prtfItemType: PrtfItemType = PrtfItemType.Folder;
 }
 
 export class TreeViewState {
@@ -290,6 +298,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     let fldrItem: FolderJs;
     let child: TreeViewItem;
     let prtfItem: PortfolioJs;
+    const prtfItemId: number = 10000; // constant value is used to differentiating the folder vs portfolio
 
     // adding folders data to tempPrtfItemsDict
     for (let i = 0; i < pFolders.length; i++) {
@@ -311,6 +320,12 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
       child = tempPrtfItemsDict[id];
       child.isSelected = false;
+      if (parseInt(id) < prtfItemId) // portfolio id's are always greater than 10000
+        child.prtfItemType = PrtfItemType.Folder;
+        // child.isPrtfItemFolder = true;
+      else
+        child.prtfItemType = PrtfItemType.Portfolio;
+        // child.isPrtfItemFolder = false;
       // expanded folder Id's check
       for (let i = 0; i < pTreeViewState.expandedPrtfFolderIds.length; i++) {
         if (pTreeViewState.expandedPrtfFolderIds[i] == child.id) {
@@ -343,7 +358,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     this.isCreatePortfolioPopupVisible = false;
   }
 
-  onCreatePortfolioClicked(pfName: string) { // this logic create's a portfolio item if everything is passed
+  onCreateFolderClicked(pfName: string) { // this logic create's a folder item if everything is passed
     if (this.treeViewState.lastSelectedItem == null) {
       console.log('Cannot Create, because no folder was selected.');
       return;
@@ -368,7 +383,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     this.isErrorPopupVisible = false;
   }
 
-  onConfirmDeleteYesClicked() { // this logic delete's a portfolio item if everything is passed
+  onConfirmDeleteYesClicked() { // this logic delete's a folder item if everything is passed
     if (this.treeViewState.lastSelectedItem == null) {
       console.log('Cannot Delete, because no folder was selected.');
       return;
@@ -385,5 +400,16 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
   onClickPrtfSpecPreview(tabIdx: number) {
     this.tabPrtfSpecVisibleIdx = tabIdx;
+  }
+
+  onCreatePortfolioClicked(pfName: string) { // this logic create's a portfolio item if everything is passed
+    if (this.treeViewState.lastSelectedItem == null) {
+      console.log('Cannot Create, because no Portfolio was selected.');
+      return;
+    }
+    const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+      this._parentWsConnection.send('PortfMgr.CreatePortfolio:' + this.createPrtfItemName + ',prntFId:' + lastSelectedTreeNode.id);
+    this.isCreatePortfolioPopupVisible = false;
   }
 }
