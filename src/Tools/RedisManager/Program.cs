@@ -146,9 +146,9 @@ class Program
         {
             case "1":
                 Console.WriteLine("Warning! Commented lines. Doing nothing at the moment. Be very careful! Create a RedisDb backup (see RedisBackup.txt), before uncommenting lines, because it will overwrite RedisDb and the daily NAV updates will be lost.");
-                //Controller.InsertNavAssetFromCsvFile("11:1", @"g:\agy\money\Investment\IB\Reports\PortfolioAnalyst\2021-09-09\Gyorgy_Antal_Inception_September_08_2021.csv");
-                //Controller.InsertNavAssetFromCsvFile("11:2", @"g:\work\Archi-data\Projects\IB-PortfolioAnalyst\2021-09-09\Didier_Charmat_and_Jean-Marc_Charmat_Inception_September_08_2021.csv");
-                //Controller.InsertNavAssetFromCsvFile("11:3", @"g:\work\Archi-data\Projects\IB-PortfolioAnalyst\2021-09-09\DE_BLANZAC_LTD_Inception_September_08_2021.csv");
+                // Controller.InsertNavAssetFromCsvFile("11:1", @"g:\agy\money\Investment\IB\Reports\PortfolioAnalyst\2023-02-16\Gyorgy_Antal_Inception_February_15_2023.csv");
+                // Controller.InsertNavAssetFromCsvFile("11:2", @"g:\work\Projects\IB-PortfolioAnalyst\2023-02-16\Didier_Charmat_and_Jean-Marc_Charmat_Inception_February_15_2023.csv");
+                // Controller.InsertNavAssetFromCsvFile("11:3", @"g:\work\Projects\IB-PortfolioAnalyst\2023-02-16\DE_BLANZAC_LTD_Inception_February_15_2023.csv");
                 break;
             case "2":
                 Controller.ExportNavAssetToTxt("11:1", @"assetQuoteRaw-unbrotlied-11-1.txt");

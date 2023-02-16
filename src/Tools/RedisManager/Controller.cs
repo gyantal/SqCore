@@ -226,7 +226,8 @@ class Controller
                 if (currentLine.StartsWith(@"Deposits And Withdrawals,Data,"))
                 {
                     var currentLineParts = currentLine.Split(',', StringSplitOptions.RemoveEmptyEntries);   // date is in this format: "03/10/09" MM/DD/YY
-                    if (currentLineParts[3] == "Deposit" || currentLineParts[3] == "Incoming Account Transfer" || currentLineParts[3] == "Withdrawal" || currentLineParts[3] == "Outgoing Account Transfer")
+                    var typeStr = currentLineParts[3].ToLower();
+                    if (typeStr == "deposit" || typeStr == "incoming account transfer" || typeStr == "withdrawal" || typeStr == "outgoing account transfer")
                     {
                         var monthStr = currentLineParts[2][..2];
                         var dayStr = currentLineParts[2].Substring(3, 2);
@@ -241,6 +242,9 @@ class Controller
                 }
             }
         }
+
+        if (dailyNavData.Count == 0 || dailyDepositData.Count == 0)
+            throw new Exception("Error in processing CSV file. dailyNavData or dailyDepositData has no items.");
 
         // for 3069 days.
         // 1. Text data: with fractional NAV values: 70K, with integer NAV values: 47.5K (brotlied: 9.578K), with integer NAV + DateStr-1900years: 44.4K  (brotlied: 9.557K, difference is 0.2%, not even 1%. Just forget the -1900). (Wow. 4x compression)

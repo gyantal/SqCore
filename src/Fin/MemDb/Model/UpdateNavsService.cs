@@ -25,6 +25,7 @@ namespace Fin.MemDb;
 // (see G:\work\Archi-data\GitHubRepos\SqCore\src\Tools\RedisManager\Controller.cs)
 // // How to create the CVS containing NAV data + deposit?
 // // IB: PortfolioAnalyst/Reports/CreateCustomReport (SinceInception, Daily, Detailed + AccountOverview/Allocation by Financial Instrument/Deposits). Create in PDF + CSV.
+// // PreMade CustomReports for users: Agy:MainUser, DcMain:SecondUser, DeBlan:MainUser
 // Start SqCore/Tools/RedisManager.exe and run InsertNavAssetFromCsvFile()
 // While Debugging, put a breakpoint and check that outputCsv (NAVs) and depositCsv text are good, before RedisDb is written over with brotli version."
 
