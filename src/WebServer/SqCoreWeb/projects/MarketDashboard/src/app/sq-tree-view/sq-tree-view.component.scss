@@ -3,15 +3,7 @@ ul {
   padding-inline-start: 1.2rem;
 }
 
-.treeView::before {
-  content: "\002B";
-  font-size: 1.8rem;
-  font-weight: bold;
-  display: inline-block;
-  margin-right: 0.6rem;
-}
-
-.treeView {
+.treeViewRow {
   font-size: 1.5rem;
   padding: 0 0.5rem 0 0.5rem;
   display: inline-block;
@@ -20,20 +12,28 @@ ul {
   margin-top: -1rem;
 }
 
-.treeViewExpanded::before {
-  content: "\002D";
-  // padding-right: 1rem;
-  display: inline-block;
+.treeViewRow::before {
+  font-size: 1.8rem;  // the original Plus sign is too thin. Make it larger and bolder.
+  font-weight: bold;
+}
+
+.iconPlus::before {
+  content: "\002B";
   margin-right: 0.6rem;
 }
 
-.treeViewSelected {
+.iconMinus::before {
+  content: "\002D";
+  margin-right: 0.6rem;
+}
+
+.iconNone::before {
+  content: none;
+}
+
+.treeViewRowContainer {
   border-radius: 0.5rem;
   display: inline-block;
   background: #90EE90;
   cursor: pointer;
-}
-
-.prtfItemType::before {
-  content: none;
 }

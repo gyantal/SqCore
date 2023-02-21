@@ -14,11 +14,7 @@ class HandshakePortfMgr // Initial params: keept it small
     public string UserName { get; set; } = string.Empty;
 }
 
-// class PortfolioItemJs {
-// }
-// class PortfolioJs : PortfolioItemJs
-// class PortfolioFolderJs: PortfolioItemJs
-class FolderJs
+class PortfolioItemJs
 {
     public int Id { get; set; } = -1;
     [JsonPropertyName("n")]
@@ -32,7 +28,9 @@ class FolderJs
     public string OwnerUserName { get; set; } = string.Empty;
 }
 
-class PortfolioJs : FolderJs
+class FolderJs : PortfolioItemJs { }
+
+class PortfolioJs : PortfolioItemJs
 {
     [JsonPropertyName("sAcs")]
     public SharedAccess SharedAccess { get; set; } = SharedAccess.Unknown;
@@ -248,12 +246,12 @@ public partial class DashboardClient
             virtUsrFldsToSend[User.Id] = User;  // we send the user his main virtual portfolio even if he has no sub portfolio at all
         }
 
-        foreach (var kvp in virtUsrFldsToSend)
-        {
-            User user = kvp.Value;
-            PortfolioJs pfAdminUserJs = new() { Id = -1 * user.Id, Name = user.Username };
-            prtfToClient.Add(pfAdminUserJs);
-        }
+        // foreach (var kvp in virtUsrFldsToSend)
+        // {
+        //     User user = kvp.Value;
+        //     PortfolioJs pfAdminUserJs = new() { Id = -1 * user.Id, Name = user.Username };
+        //     prtfToClient.Add(pfAdminUserJs);
+        // }
 
         const int noUserVirtPortfId = -2;
 

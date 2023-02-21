@@ -1,7 +1,7 @@
 <ul>
   <li *ngFor="let item of items">
-    <div [ngClass]="{'treeViewSelected': item.isSelected}">
-      <div class="treeView" (click)="onItemClicked(item)" [ngClass]="{'treeViewExpanded': item.isExpanded, 'prtfItemType': item.prtfItemType == 1}">{{item.name}}</div>
+    <div [ngClass]="{'treeViewRowContainer': item.isSelected}">
+      <div class="treeViewRow" (click)="onItemClicked(item)" [ngClass]="item.prtfItemType == 'Folder' ? (item.isExpanded ? 'iconMinus' : 'iconPlus') : 'iconNone'" >{{item.name}}</div>
     </div>
     <ul *ngIf="item.children && item.isExpanded">
       <app-sq-tree-view [items]="item.children" [treeViewState]="treeViewState"></app-sq-tree-view>

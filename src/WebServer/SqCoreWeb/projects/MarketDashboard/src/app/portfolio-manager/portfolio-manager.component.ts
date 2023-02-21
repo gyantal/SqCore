@@ -5,22 +5,25 @@ type Nullable<T> = T | null;
 
 // Input data classes
 
-// enum is throwing warnings- eslint(no-unused-vars)
 enum PrtfItemType { // for differenting the folder and portfolio
-  Folder,
-  Portfolio
+  Folder = 'Folder',
+  Portfolio = 'Portfolio'
  }
 
-class FolderJs {
+class PortfolioItemJs {
   public id = -1;
   public name = '';
   public parentFolderId = -1;
   public creationTime = '';
   public note = '';
   public ownerUserName = '';
+  public prtfItemType: PrtfItemType = PrtfItemType.Folder; // need a default for compilation
 }
 
-class PortfolioJs extends FolderJs {
+class FolderJs extends PortfolioItemJs {
+}
+
+class PortfolioJs extends PortfolioItemJs {
   public sharedAccess = '';
   public sharedUserWithMe = '';
   public baseCurrency = '';
@@ -257,6 +260,8 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       }
       return value;
     });
+
+    this.portfolios?.forEach((r) => r.prtfItemType = PrtfItemType.Portfolio);
     this.uiNestedPrtfTreeViewItems = PortfolioManagerComponent.createTreeViewData(this.folders, this.portfolios, this.treeViewState); // process folders and portfolios
   }
 
@@ -286,6 +291,8 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       // }
       return value;
     });
+
+    this.folders?.forEach((r) => r.prtfItemType = PrtfItemType.Folder);
     this.uiNestedPrtfTreeViewItems = PortfolioManagerComponent.createTreeViewData(this.folders, this.portfolios, this.treeViewState); // process folders and portfolios
   };
 
@@ -295,53 +302,39 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
     const treeviewItemsHierarchyResult: TreeViewItem[] = [];
     const tempPrtfItemsDict = {}; // stores the portfolio items temporarly
-    let fldrItem: FolderJs;
-    let child: TreeViewItem;
-    let prtfItem: PortfolioJs;
-    const prtfItemId: number = 10000; // constant value is used to differentiating the folder vs portfolio
 
-    // adding folders data to tempPrtfItemsDict
-    for (let i = 0; i < pFolders.length; i++) {
-      fldrItem = pFolders[i];
+    for (let i = 0; i < pFolders.length; i++) { // adding folders data to tempPrtfItemsDict
+      const fldrItem : FolderJs = pFolders[i];
       tempPrtfItemsDict[fldrItem.id] = fldrItem;
-      tempPrtfItemsDict[fldrItem.id]['children'] = [];
     }
 
-    // adding portfolios data to tempPrtfItemsDict
-    for (let j = 0; j < pPortfolios.length; j++) {
-      prtfItem = pPortfolios[j];
+    for (let j = 0; j < pPortfolios.length; j++) { // adding portfolios data to tempPrtfItemsDict
+      const prtfItem : PortfolioJs = pPortfolios[j];
       tempPrtfItemsDict[prtfItem.id] = prtfItem;
-      tempPrtfItemsDict[prtfItem.id]['children'] = [];
     }
 
-    for (const id in tempPrtfItemsDict) {
-      if (!tempPrtfItemsDict.hasOwnProperty(id))
-        continue;
+    for (const id of Object.keys(tempPrtfItemsDict)) // empty the childen array of each item
+      tempPrtfItemsDict[id]['children'] = []; // we cannot put this into the main loop, because we should not delete the Children array of an item that comes later.
 
-      child = tempPrtfItemsDict[id];
-      child.isSelected = false;
-      if (parseInt(id) < prtfItemId) // portfolio id's are always greater than 10000
-        child.prtfItemType = PrtfItemType.Folder;
-        // child.isPrtfItemFolder = true;
-      else
-        child.prtfItemType = PrtfItemType.Portfolio;
-        // child.isPrtfItemFolder = false;
-      // expanded folder Id's check
-      for (let i = 0; i < pTreeViewState.expandedPrtfFolderIds.length; i++) {
-        if (pTreeViewState.expandedPrtfFolderIds[i] == child.id) {
-          child.isExpanded = true;
+    for (const id of Object.keys(tempPrtfItemsDict)) {
+      const item : TreeViewItem = tempPrtfItemsDict[id];
+      item.isSelected = false;
+
+      item.isExpanded = false;
+      for (let i = 0; i < pTreeViewState.expandedPrtfFolderIds.length; i++) { // expanded folder Id's check
+        if (pTreeViewState.expandedPrtfFolderIds[i] == item.id) {
+          item.isExpanded = true;
           break;
         }
       }
 
-      const childTreeViewItem: TreeViewItem = tempPrtfItemsDict[child['parentFolderId']]; // assigning treeview item
-      // for each parentFolderId in tempPrtfItemsDict, the logic checks if the parentFolderId property is defined and if the parent folderId is also in tempPrtfItemsDict
-      const hasParent: boolean = child.parentFolderId != undefined && childTreeViewItem != undefined;
-      if (hasParent)
-        childTreeViewItem['children'].push(child);
+      const parentItem: TreeViewItem = tempPrtfItemsDict[item.parentFolderId]; // No Folder has id of -1. If a ParentFolderID == -1, then that item is at the root level, and we say it has no parent, and parentItem is undefined
+      if (parentItem != undefined) // if item has a proper parent (so its parentFolderId is not -1)
+        parentItem.children.push(item); // add ourselves as a child to the parent object
       else
-        treeviewItemsHierarchyResult.push(child);
+        treeviewItemsHierarchyResult.push(item); // item is at root level. Add to the result list.
     }
+
     return treeviewItemsHierarchyResult;
   };
 
@@ -358,7 +351,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     this.isCreatePortfolioPopupVisible = false;
   }
 
-  onCreateFolderClicked(pfName: string) { // this logic create's a folder item if everything is passed
+  onCreateFolderClicked() { // this logic create's a folder item if everything is passed
     if (this.treeViewState.lastSelectedItem == null) {
       console.log('Cannot Create, because no folder was selected.');
       return;
@@ -402,7 +395,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     this.tabPrtfSpecVisibleIdx = tabIdx;
   }
 
-  onCreatePortfolioClicked(pfName: string) { // this logic create's a portfolio item if everything is passed
+  onCreatePortfolioClicked() { // this logic create's a portfolio item if everything is passed
     if (this.treeViewState.lastSelectedItem == null) {
       console.log('Cannot Create, because no Portfolio was selected.');
       return;

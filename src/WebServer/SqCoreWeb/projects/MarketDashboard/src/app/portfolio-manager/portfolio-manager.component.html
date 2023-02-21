@@ -14,8 +14,8 @@
       <label id="prtfNameLabel"><b>Name:</b>&nbsp;</label>
       <input id="prtfNameInput" type="text" placeholder="Enter Portfolio Name" name="portfolio" [(ngModel)]="createPrtfItemName"><br><br>
       <span>
-        <button (click)="onCreatePortfolioClicked(createPrtfItemName)"> Create New Portfolio</button>&nbsp;
-        <button (click)="onCreateFolderClicked(createPrtfItemName)"> Create New Folder</button>
+        <button (click)="onCreatePortfolioClicked()"> Create New Portfolio</button>&nbsp;
+        <button (click)="onCreateFolderClicked()"> Create New Folder</button>
         <button id="closePortfolioPopup" (click)="onClosePortfolioClicked()" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}">Dismiss</button>
       </span>
     </div><br>
