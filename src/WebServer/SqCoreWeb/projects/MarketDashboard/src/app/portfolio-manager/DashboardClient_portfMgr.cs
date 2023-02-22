@@ -92,7 +92,7 @@ public partial class DashboardClient
                 return true;
             case "PortfMgr.CreatePortfolio": // msg: "DayaTest,prntFId:-1"
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{msgObjStr}'");
-                // PortfMgrCreatePortfolio(msgObjStr);
+                PortfMgrCreatePortfolio(msgObjStr);
                 // PortfMgrSendFolders();
                 return true;
             default:
@@ -277,5 +277,54 @@ public partial class DashboardClient
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Portfolios:" + Utils.CamelCaseSerialize(prtfToClient));
         if (WsWebSocket!.State == WebSocketState.Open)
             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+    }
+
+    public void PortfMgrCreatePortfolio(string p_msg)
+    {
+        int pfNameIdx = p_msg.IndexOf(',');
+        int prntFldrIdx = (pfNameIdx == -1) ? -1 : p_msg.IndexOf(":", pfNameIdx);
+        if (prntFldrIdx == -1)
+            prntFldrIdx = -1;
+        string pfName = p_msg[..pfNameIdx];
+        int parentFldId = Convert.ToInt32(p_msg[(prntFldrIdx + 1)..]);
+
+        string p_note = string.Empty; // if there is some note mentioned by client we need to take that not the empty
+        Dictionary<int, Portfolio>.ValueCollection prtfFldrs = MemDb.gMemDb.Portfolios.Values;
+        User? user = User;
+        int prntFldIdToSend = -1;
+        foreach (Portfolio pf in prtfFldrs)
+        {
+            if (parentFldId >= -2)
+            {
+                if (parentFldId == 0) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
+                    return; // throw new Exception("Nobody can create folders in virtual Shared folder"); // can we send an exception here - Daya
+                else if (parentFldId >= 1) // it is a proper folderID, Create the new Folder under that
+                {
+                    prntFldIdToSend = parentFldId;
+                    if (pf.Id == prntFldIdToSend)
+                    {
+                        user = pf.User;
+                        break;
+                    }
+                }
+                else if (parentFldId == -2) // parentFldId == -2  Create the new Folder with “"User":-1,"ParentFolder":-2,”
+                {
+                    prntFldIdToSend = parentFldId;
+                    user = null;
+                    break;
+                }
+            }
+            else // parentFldId < -2 is a virtual UserRoot folder. create the new Folder with (User: -1 * thisUserId, ParentFolder = -1)
+            {
+                if (pf.User?.Id == -1 * parentFldId)
+                {
+                    user = pf.User;
+                    // prntFldIdToSend = -1;
+                    break;
+                }
+            }
+        }
+        Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{user}' '{pfName}' '{prntFldIdToSend}' '{p_note}'");
+        // MemDb.gMemDb.AddNewPortfolio(user, pfName, prntFldIdToSend, p_note);
     }
 }

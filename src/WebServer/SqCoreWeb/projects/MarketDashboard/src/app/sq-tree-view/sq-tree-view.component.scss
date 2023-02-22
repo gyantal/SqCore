@@ -5,6 +5,7 @@ ul {
 
 .treeViewRow {
   font-size: 1.5rem;
+  font-weight: bold;
   padding: 0 0.5rem 0 0.5rem;
   display: inline-block;
   cursor: pointer;
@@ -29,6 +30,12 @@ ul {
 
 .iconNone::before {
   content: none;
+}
+
+.iconNone { // adding the styles for portfolios to differntiate from Folders
+  font-style: italic;
+  font-weight: normal;
+  color: #0c0c0c;
 }
 
 .treeViewRowContainer {

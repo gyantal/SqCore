@@ -71,6 +71,7 @@ internal class MemData // don't expose to clients.
     public object AssetsUpdateLock = new();    // Many Writers.
     public object UsersUpdateLock = new();
     public object PrFldUpdateLock = new();
+    public object PrtfUpdateLock = new();
     // public object DailyHistUpdateLock = new Object();   // not needed, there is only 1 writer thread. We never change its items one by one. We always recreate the whole in every 2 hours and pointer swap, but there is only 1 writer
 
     public MemData()
@@ -151,6 +152,41 @@ internal class MemData // don't expose to clients.
         lock (PrFldUpdateLock)
         {
             return PortfolioFolders.Remove(p_prFolder.Id);
+        }
+    }
+
+    public Portfolio AddNewPortfolio(User? p_user, string p_name, int p_parentFldId, string p_creationTime, string p_note, CurrencyId p_currency, PortfolioType p_type, SharedAccess p_sharedAccess, List<User> p_sharedUsersWith)
+    {
+         lock (PrtfUpdateLock)
+        {
+            // keep the newId calculation logic here, just right before the portfolio creation.
+            // Otherwise, we need new locks to prevent that 2 threads creates 2 new portfolios with the same Id.
+            int maxFldId = -1;
+            foreach (var fldId in Portfolios.Keys)
+            {
+                if (maxFldId < fldId)
+                    maxFldId = fldId;
+            }
+            int newFldId = ++maxFldId;
+            Portfolio fld = new (newFldId, p_user, p_name, p_parentFldId, p_creationTime, p_note, p_currency, p_type, p_sharedAccess, p_sharedUsersWith);
+            Portfolios[newFldId] = fld;
+            return fld;
+        }
+    }
+
+    public bool DeletePortfolio(int p_prtfId) // method to delete the portfolio based on portoflio key
+    {
+        lock (PrtfUpdateLock)
+        {
+            return Portfolios.Remove(p_prtfId);
+        }
+    }
+
+    public bool RemovePortfolio(Portfolio p_prtf) // method to remove the portfolio based on portfolio key - need to discuss with George
+    {
+        lock (PrtfUpdateLock)
+        {
+            return Portfolios.Remove(p_prtf.Id);
         }
     }
 }

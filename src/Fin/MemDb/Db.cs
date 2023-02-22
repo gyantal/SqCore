@@ -413,6 +413,14 @@ public partial class Db
         return result;
     }
 
+    // internal void AddPortfolio(Portfolio fld)
+    // {
+    //     string redisKey = fld.Id.ToString();
+    //     PortfolioInDb prtfInDb = new(fld);
+    //     string redisValue = JsonSerializer.Serialize<PortfolioInDb>(prtfInDb);
+    //     m_redisDb.HashSet("portfolio", redisKey, redisValue);
+    // }
+
     public static bool UpdateBrotlisIfNeeded()
     {
         // For assets, and small tables, it is too much of a hassle and not much RAM saving. And it is better that we are able to change text data manually in RedisDesktop

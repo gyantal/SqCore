@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using SqCommon;
 
 namespace Fin.MemDb;
@@ -48,4 +49,27 @@ public partial class MemDb
             return $"Error in MemDb.DeletePortfolioFolder(): Exception {e.Message}";
         }
     }
+
+    // public Portfolio? AddNewPortfolio(User? p_user, string p_name, int p_parentFldId, string p_note)
+    // {
+    //     string creationTime = DateTime.UtcNow.TohYYYYMMDDHHMMSS(); // DateTime.Now.ToString() => "CTime":"2022-10-13T20:00:00"
+    //     CurrencyId baseCurrency = CurrencyId.USD; // default currency USD
+    //     PortfolioType type = PortfolioType.Trades;
+    //     SharedAccess sharedAccess = SharedAccess.Unknown;
+    //     List<User> sharedUsersWith = new();
+    //     Portfolio? fld = m_memData.AddNewPortfolio(p_user, p_name, p_parentFldId, creationTime, p_note, baseCurrency, type, sharedAccess, sharedUsersWith);
+    //     if (fld == null)
+    //         return null;
+    //     try
+    //     {
+    //         m_Db.AddPortfolio(fld); // can raise System.TimeoutException or others if the RedisDb is offline
+    //     }
+    //     catch (System.Exception) // if error occured in DB writing, revert the transaction back to original state. Do not add the new Folder into MemDb.
+    //     {
+    //         // m_memData.RemovePortfolio(fld); // yet to Develop - Daya
+    //         fld = null;
+    //     }
+    //     Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{creationTime}' '{baseCurrency}' '{type}' '{sharedAccess}' '{sharedUsersWith}' '{p_user}' '{p_name}' '{fld}'");
+    //     return fld;
+    // }
 }

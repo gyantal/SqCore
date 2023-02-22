@@ -22,6 +22,24 @@ public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the Hash
     public string Note { get; set; } = string.Empty;
     public string BaseCurrency { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
+
+    // public PortfolioInDb(Portfolio prtfId) // facing issues here Please help me - Daya
+    // {
+    //     UserId = prtfId.User?.Id ?? -1;
+    //     Name = prtfId.Name;
+    //     ParentFolderId = prtfId.ParentFolderId;
+    //     // How to convert an enum to string , SharedAccess, BaseCurrency and Type are enums and SharedUsersWith is a list - not understanding here how to process them?
+    //     // for the time being i gave empty values for sharedAccess and sharedUsersWirh , default values for BaseCurrency and Type.
+    //     SharedAccess = " ";
+    //     SharedUsersWith = " ";
+    //     CreationTime = prtfId.CreationTime;
+    //     Note = prtfId.Note;
+    //     BaseCurrency = "USD";
+    //     Type = "Trades";
+
+    // // BaseCurrency = prtfId.BaseCurrency.ToString();
+    // // Type = prtfId.Type.ToString();
+    // }
 }
 
 [DebuggerDisplay("{Id}, Name:{Name}, User:{User?.Username??\"-NoUser-\"}")]
@@ -74,5 +92,19 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         Currency = BaseCurrency;                                    // Currency is the base class Asset property. The runtime property. At runtime a user might decide to accumulate portfolio in USD terms, although BaseCurrency was GBP.
 
         Type = AssetHelper.gStrToPortfolioType[portfolioInDb.Type];
+    }
+
+    public Portfolio(int p_id, User? p_user, string p_name, int p_parentFldId, string p_creationTime, string p_note, CurrencyId p_currency, PortfolioType p_type, SharedAccess p_sharedAccess, List<User> p_sharedUsersWith)
+    {
+        Id = p_id;
+        User = p_user;
+        Name = p_name;
+        ParentFolderId = p_parentFldId;
+        CreationTime = p_creationTime;
+        Note = p_note;
+        BaseCurrency = p_currency;
+        Type = p_type;
+        SharedAccess = p_sharedAccess;
+        SharedUsersWith = p_sharedUsersWith;
     }
 }
