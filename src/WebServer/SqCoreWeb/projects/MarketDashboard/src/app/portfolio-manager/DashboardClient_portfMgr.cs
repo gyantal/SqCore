@@ -76,24 +76,24 @@ public partial class DashboardClient
     {
         switch (msgCode)
         {
+            case "PortfMgr.RefreshFolders":
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): RefreshFolders '{msgObjStr}'");
+                PortfMgrSendFolders();
+                return true;
             case "PortfMgr.CreateFolder": // msg: "DayaTest,prntFId:-1"
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreateFolder '{msgObjStr}'");
                 PortfMgrCreateFolder(msgObjStr);
                 PortfMgrSendFolders();
                 return true;
-            case "PortfMgr.DeleteFolder": // msg: "fldId:5"
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): DeleteFolder '{msgObjStr}'");
-                PortfMgrDeleteFolder(msgObjStr);
-                PortfMgrSendFolders();
-                return true;
-            case "PortfMgr.RefreshFolders":
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): RefreshFolders '{msgObjStr}'");
-                PortfMgrSendFolders();
-                return true;
+
             case "PortfMgr.CreatePortfolio": // msg: "DayaTest,prntFId:-1"
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{msgObjStr}'");
                 PortfMgrCreatePortfolio(msgObjStr);
                 PortfMgrSendPortfolios();
+                return true;
+            case "PortfMgr.DeletePortfolioItem": // msg: "id:5" // if id > 10,000 then it is a PortfolioID otherwise it is the FolderID
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): DeletePortfolioItem '{msgObjStr}'");
+                PortfMgrDeletePortfolioItem(msgObjStr);
                 return true;
             default:
                 return false;
@@ -148,20 +148,20 @@ public partial class DashboardClient
         MemDb.gMemDb.AddNewPortfolioFolder(user, pfName, prntFldIdToSend, p_note);
     }
 
-    private void PortfMgrDeleteFolder(string p_msg)
-    {
-        int prntFldrIdx = p_msg.IndexOf(":");
-        if (prntFldrIdx == -1)
-            prntFldrIdx = -1;
-        int fldId = Convert.ToInt32(p_msg[(prntFldrIdx + 1)..]);
-        string errMsg = MemDb.gMemDb.DeletePortfolioFolder(fldId);
-        if (!String.IsNullOrEmpty(errMsg))
-        {
-            byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.ErrorToUser:" + errMsg);
-            if (WsWebSocket!.State == WebSocketState.Open)
-                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-        }
-    }
+    // private void PortfMgrDeleteFolder(string p_msg)
+    // {
+    //     int prntFldrIdx = p_msg.IndexOf(":");
+    //     if (prntFldrIdx == -1)
+    //         prntFldrIdx = -1;
+    //     int fldId = Convert.ToInt32(p_msg[(prntFldrIdx + 1)..]);
+    //     string errMsg = MemDb.gMemDb.DeletePortfolioFolder(fldId);
+    //     if (!String.IsNullOrEmpty(errMsg))
+    //     {
+    //         byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.ErrorToUser:" + errMsg);
+    //         if (WsWebSocket!.State == WebSocketState.Open)
+    //             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+    //     }
+    // }
 
     private void PortfMgrSendFolders() // Processing the portfolioFolders based on the visiblity rules
     {
@@ -325,5 +325,32 @@ public partial class DashboardClient
         }
         // Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{user}' '{pfName}' '{prntFldIdToSend}' '{p_note}'");
         MemDb.gMemDb.AddNewPortfolio(user, pfName, prntFldIdToSend, p_note);
+    }
+
+    private void PortfMgrDeletePortfolioItem(string p_msg) // "id:5"
+    {
+        int idStartInd = p_msg.IndexOf(":");
+        if (idStartInd == -1)
+            return;
+        string idStr = p_msg[(idStartInd + 1)..];
+        int id = Convert.ToInt32(idStr);
+        bool isFolder = id < gPortfolioIdOffset;
+        string errMsg;
+        if (isFolder)
+            errMsg = MemDb.gMemDb.DeletePortfolioFolder(id);
+        else
+            errMsg = MemDb.gMemDb.DeletePortfolio(id - gPortfolioIdOffset);
+
+        if (!String.IsNullOrEmpty(errMsg))
+        {
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.ErrorToUser:" + errMsg);
+            if (WsWebSocket!.State == WebSocketState.Open)
+                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+
+        if (isFolder)
+            PortfMgrSendFolders();
+        else
+            PortfMgrSendPortfolios();
     }
 }

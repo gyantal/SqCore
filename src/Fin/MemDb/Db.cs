@@ -337,6 +337,7 @@ public partial class Db
     {
         string redisKey = fldId.ToString();
 
+        // Before deleting the Folder, we should check whether it has any Portolio or Folder child. Only Empty folders can be deleted.
         int childFolderId = -1;
         HashEntry[]? portfolioFoldersRds = m_redisDb.HashGetAll("portfolioFolder");
         if (portfolioFoldersRds == null)
@@ -383,12 +384,17 @@ public partial class Db
             }
         }
         if (childPortfolioId != -1)
-            return $"Error in DeletePortfolioFolder(): The Folder {fldId} has child folder '{childFolderId}'";
+            return $"Error in DeletePortfolioFolder(): The Folder {fldId} has child portfolio '{childPortfolioId}'";
 
         m_redisDb.HashDelete("portfolioFolder", redisKey); // remove the folder based on the folder key
         return string.Empty;
     }
-
+    internal string DeletePortfolio(int p_id)
+    {
+        string redisKey = p_id.ToString();
+        m_redisDb.HashDelete("portfolio", redisKey);
+        return string.Empty;
+    }
     private static Dictionary<int, Portfolio> GetPortfolios(HashEntry[] portfoliosRds, User[] users, List<Asset> assets) // Portfolio will require Assets in the future
     {
         _ = assets; // StyleCop SA1313 ParameterNamesMustBeginWithLowerCaseLetter. They won't fix. Recommended solution for unused parameters, instead of the discard (_1) parameters

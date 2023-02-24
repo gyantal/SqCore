@@ -7,13 +7,13 @@
       <span class="refreshPortfolios"><img class="refreshPortfolios" src='../assets/images/refresh64.webp' (click)="onPortfoliosRefreshClicked()"></span>
     </span>
     <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState"></app-sq-tree-view>
-    <button type="button"(click)="onCreatePrtfItemClicked()">Create</button>&nbsp;
+    <button type="button"(click)="onCreatePrtfItemClicked()">Create Folder</button>&nbsp;
+    <button type="button"(click)="onCreatePrtfItemClicked()">Create Portfolio</button>&nbsp;
     <button type="button" (click)="onDeletePrtfItemClicked()">Delete</button>
     <div class="popup infoPopup" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}"><br>
       <label id="prtfNameLabel"><b>Name:</b>&nbsp;</label>
       <input id="prtfNameInput" type="text" placeholder="Enter Portfolio Name" name="portfolio" [(ngModel)]="createPrtfItemName"><br><br>
       <span>
-        <button (click)="onCreatePortfolioClicked()"> Create New Portfolio</button>&nbsp;
         <button (click)="onCreateFolderClicked()"> Create New Folder</button>
         <button id="closePortfolioPopup" (click)="onClosePortfolioClicked()" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}">Dismiss</button>
       </span>

@@ -125,28 +125,27 @@ internal class MemData // don't expose to clients.
         {
             // keep the newId calculation logic here, just right before the prFolder creation.
             // Otherwise, we need new locks to prevent that 2 threads creates 2 new Folders with the same Id.
-            int maxFldId = -1;
-            foreach (var fldId in PortfolioFolders.Keys)
+            int maxId = -1;
+            foreach (var id in PortfolioFolders.Keys)
             {
-                if (maxFldId < fldId)
-                    maxFldId = fldId;
+                if (maxId < id)
+                    maxId = id;
             }
-            int newFldId = ++maxFldId;
+            int newId = ++maxId;
 
-            PortfolioFolder fld = new (newFldId, p_user, p_name, p_parentFldId, p_creationTime, p_note);
-            PortfolioFolders[newFldId] = fld;
+            PortfolioFolder fld = new (newId, p_user, p_name, p_parentFldId, p_creationTime, p_note);
+            PortfolioFolders[newId] = fld;
             return fld;
         }
     }
 
-    public bool DeletePortfolioFolder(int p_fldId) // method to delete the folder based on fld key
+    public bool DeletePortfolioFolder(int p_id) // method to delete the folder based on fld key
     {
         lock (PrFldUpdateLock)
         {
-            return PortfolioFolders.Remove(p_fldId);
+            return PortfolioFolders.Remove(p_id);
         }
     }
-
     public bool RemovePortfolioFolder(PortfolioFolder p_prFolder) // method to remove the folder based on prtfFolder - need to discuss with George
     {
         lock (PrFldUpdateLock)
@@ -161,24 +160,24 @@ internal class MemData // don't expose to clients.
         {
             // keep the newId calculation logic here, just right before the portfolio creation.
             // Otherwise, we need new locks to prevent that 2 threads creates 2 new portfolios with the same Id.
-            int maxPrtfId = -1;
-            foreach (var prtfId in Portfolios.Keys)
+            int maxId = -1;
+            foreach (var id in Portfolios.Keys)
             {
-                if (maxPrtfId < prtfId)
-                    maxPrtfId = prtfId;
+                if (maxId < id)
+                    maxId = id;
             }
-            int newPrtfId = ++maxPrtfId;
-            Portfolio prtf = new (newPrtfId, p_user, p_name, p_parentFldId, p_creationTime, p_note, p_currency, p_type, p_sharedAccess, p_sharedUsersWith);
-            Portfolios[newPrtfId] = prtf;
+            int newId = ++maxId;
+            Portfolio prtf = new (newId, p_user, p_name, p_parentFldId, p_creationTime, p_note, p_currency, p_type, p_sharedAccess, p_sharedUsersWith);
+            Portfolios[newId] = prtf;
             return prtf;
         }
     }
 
-    public bool DeletePortfolio(int p_prtfId) // method to delete the portfolio based on portoflio key
+    public bool DeletePortfolio(int p_id) // delete the portfolio based on portfolio key
     {
         lock (PrtfUpdateLock)
         {
-            return Portfolios.Remove(p_prtfId);
+            return Portfolios.Remove(p_id);
         }
     }
 

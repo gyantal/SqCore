@@ -33,15 +33,14 @@ public partial class MemDb
         return fld;
     }
 
-    public string DeletePortfolioFolder(int p_fldId)
+    public string DeletePortfolioFolder(int p_id)
     {
         try
         {
-            string errMsg = m_Db.DeletePortfolioFolder(p_fldId); // gives back an error message or empty string if everything was OK.
+            string errMsg = m_Db.DeletePortfolioFolder(p_id); // gives back an error message or empty string if everything was OK.
             if (!String.IsNullOrEmpty(errMsg))
                 return errMsg;
-
-            m_memData.DeletePortfolioFolder(p_fldId);
+            m_memData.DeletePortfolioFolder(p_id);
             return string.Empty;
         }
         catch (System.Exception e)
@@ -66,10 +65,27 @@ public partial class MemDb
         }
         catch (System.Exception) // if error occured in DB writing, revert the transaction back to original state. Do not add the new Folder into MemDb.
         {
-            // m_memData.RemovePortfolio(prtf); // yet to Develop - Daya
+            m_memData.RemovePortfolio(prtf);
             prtf = null;
         }
         Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{creationTime}' '{baseCurrency}' '{type}' '{sharedAccess}' '{sharedUsersWith}' '{p_user}' '{p_name}' '{prtf}'"); // for debugging purpose
         return prtf;
+    }
+
+    public string DeletePortfolio(int p_id)
+    {
+        try
+        {
+            string errMsg = m_Db.DeletePortfolio(p_id); // gives back an error message or empty string if everything was OK.
+            if (!String.IsNullOrEmpty(errMsg))
+                return errMsg;
+
+            m_memData.DeletePortfolio(p_id);
+            return string.Empty;
+        }
+        catch (System.Exception e)
+        {
+            return $"Error in MemDb.DeletePortfolio(): Exception {e.Message}";
+        }
     }
 }

@@ -40,7 +40,6 @@ export class TreeViewItem { // future work. At the moment, it copies PortfolioFl
   public children: TreeViewItem[] = []; // children are other TreeViewItems
   public isSelected: boolean = false;
   public isExpanded: boolean = false;
-  public isPrtfItemFolder: boolean = true;
   public prtfItemType: PrtfItemType = PrtfItemType.Folder;
 }
 
@@ -376,14 +375,14 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     this.isErrorPopupVisible = false;
   }
 
-  onConfirmDeleteYesClicked() { // this logic delete's a folder item if everything is passed
+  onConfirmDeleteYesClicked() { // this logic deletes a folder or portfolio if it was confirmed by the user
     if (this.treeViewState.lastSelectedItem == null) {
-      console.log('Cannot Delete, because no folder was selected.');
+      console.log('Cannot Delete, because no folder or portfolio was selected.');
       return;
     }
     const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.DeleteFolder:' + 'fldId:' + lastSelectedTreeNode.id);
+      this._parentWsConnection.send('PortfMgr.DeletePortfolioItem:id:' + lastSelectedTreeNode.id);
     this.isDeleteConfirmPopupVisible = false;
   }
 
