@@ -1,46 +1,29 @@
 ul {
-  list-style-type: none;
-  padding-inline-start: 1.2rem;
+  list-style-type: none;  // it removes the default point (circle) from the begining of the line
+  padding-inline-start: 1.2rem; // keeps the children TreeViews closer to the parent
 }
 
-.treeViewRow {
-  font-size: 1.5rem;
-  font-weight: bold;
-  padding: 0 0.5rem 0 0.5rem;
-  display: inline-block;
-  cursor: pointer;
-  user-select: none;
-  margin-top: -1rem;
+li {
+  font-family: 'Times New Roman'; // we should set the font type globally in the future
+  display: table; // to have width that equals to the text length (so it is not spreading too wide)
 }
 
-.treeViewRow::before {
-  font-size: 1.8rem;  // the original Plus sign is too thin. Make it larger and bolder.
-  font-weight: bold;
-}
-
-.iconPlus::before {
-  content: "\002B";
-  margin-right: 0.6rem;
-}
-
-.iconMinus::before {
-  content: "\002D";
-  margin-right: 0.6rem;
-}
-
-.iconNone::before {
-  content: none;
-}
-
-.iconNone { // adding the styles for portfolios to differntiate from Folders
-  font-style: italic;
-  font-weight: normal;
-  color: #0c0c0c;
-}
-
-.treeViewRowContainer {
+.treeViewRowBase {
+  display: inline-flex;
+  align-items: center; // to center the text vertially inside the box
+  padding: 0 0.5rem 0 0.5rem; // Top / Right / Bottom / Left
   border-radius: 0.5rem;
-  display: inline-block;
-  background: #90EE90;
   cursor: pointer;
+}
+
+.treeViewRowFolder {
+  font-weight: bold;
+}
+
+.treeViewRowSelected {
+  background: #90EE90;
+}
+
+.icon {
+  font-size: 1.6rem; // the Plus/Minus icons are too small by default
 }
