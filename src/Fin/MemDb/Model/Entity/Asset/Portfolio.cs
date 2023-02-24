@@ -23,23 +23,22 @@ public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the Hash
     public string BaseCurrency { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
 
-    // public PortfolioInDb(Portfolio prtfId) // facing issues here Please help me - Daya
-    // {
-    //     UserId = prtfId.User?.Id ?? -1;
-    //     Name = prtfId.Name;
-    //     ParentFolderId = prtfId.ParentFolderId;
-    //     // How to convert an enum to string , SharedAccess, BaseCurrency and Type are enums and SharedUsersWith is a list - not understanding here how to process them?
-    //     // for the time being i gave empty values for sharedAccess and sharedUsersWirh , default values for BaseCurrency and Type.
-    //     SharedAccess = " ";
-    //     SharedUsersWith = " ";
-    //     CreationTime = prtfId.CreationTime;
-    //     Note = prtfId.Note;
-    //     BaseCurrency = "USD";
-    //     Type = "Trades";
+    public PortfolioInDb()
+    {
+    }
 
-    // // BaseCurrency = prtfId.BaseCurrency.ToString();
-    // // Type = prtfId.Type.ToString();
-    // }
+    public PortfolioInDb(Portfolio prtfId)
+    {
+        UserId = prtfId.User?.Id ?? -1;
+        Name = prtfId.Name;
+        ParentFolderId = prtfId.ParentFolderId;
+        SharedAccess = prtfId.SharedAccess.ToString();
+        SharedUsersWith = string.Join(",", prtfId.SharedUsersWith);
+        CreationTime = prtfId.CreationTime;
+        Note = prtfId.Note;
+        BaseCurrency = prtfId.BaseCurrency.ToString();
+        Type = prtfId.Type.ToString();
+    }
 }
 
 [DebuggerDisplay("{Id}, Name:{Name}, User:{User?.Username??\"-NoUser-\"}")]

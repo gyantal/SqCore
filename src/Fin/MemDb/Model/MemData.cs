@@ -161,16 +161,16 @@ internal class MemData // don't expose to clients.
         {
             // keep the newId calculation logic here, just right before the portfolio creation.
             // Otherwise, we need new locks to prevent that 2 threads creates 2 new portfolios with the same Id.
-            int maxFldId = -1;
-            foreach (var fldId in Portfolios.Keys)
+            int maxPrtfId = -1;
+            foreach (var prtfId in Portfolios.Keys)
             {
-                if (maxFldId < fldId)
-                    maxFldId = fldId;
+                if (maxPrtfId < prtfId)
+                    maxPrtfId = prtfId;
             }
-            int newFldId = ++maxFldId;
-            Portfolio fld = new (newFldId, p_user, p_name, p_parentFldId, p_creationTime, p_note, p_currency, p_type, p_sharedAccess, p_sharedUsersWith);
-            Portfolios[newFldId] = fld;
-            return fld;
+            int newPrtfId = ++maxPrtfId;
+            Portfolio prtf = new (newPrtfId, p_user, p_name, p_parentFldId, p_creationTime, p_note, p_currency, p_type, p_sharedAccess, p_sharedUsersWith);
+            Portfolios[newPrtfId] = prtf;
+            return prtf;
         }
     }
 

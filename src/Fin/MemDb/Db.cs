@@ -413,13 +413,13 @@ public partial class Db
         return result;
     }
 
-    // internal void AddPortfolio(Portfolio fld)
-    // {
-    //     string redisKey = fld.Id.ToString();
-    //     PortfolioInDb prtfInDb = new(fld);
-    //     string redisValue = JsonSerializer.Serialize<PortfolioInDb>(prtfInDb);
-    //     m_redisDb.HashSet("portfolio", redisKey, redisValue);
-    // }
+    internal void AddPortfolio(Portfolio prtf)
+    {
+        string redisKey = prtf.Id.ToString();
+        PortfolioInDb prtfInDb = new(prtf);
+        string redisValue = JsonSerializer.Serialize<PortfolioInDb>(prtfInDb);
+        m_redisDb.HashSet("portfolio", redisKey, redisValue);
+    }
 
     public static bool UpdateBrotlisIfNeeded()
     {

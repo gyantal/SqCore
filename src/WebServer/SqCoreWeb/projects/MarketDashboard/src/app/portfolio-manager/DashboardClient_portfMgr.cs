@@ -93,7 +93,7 @@ public partial class DashboardClient
             case "PortfMgr.CreatePortfolio": // msg: "DayaTest,prntFId:-1"
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{msgObjStr}'");
                 PortfMgrCreatePortfolio(msgObjStr);
-                // PortfMgrSendFolders();
+                PortfMgrSendPortfolios();
                 return true;
             default:
                 return false;
@@ -279,7 +279,7 @@ public partial class DashboardClient
             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
-    public void PortfMgrCreatePortfolio(string p_msg)
+    public void PortfMgrCreatePortfolio(string p_msg) // CreateFolder and CreatePortfolio methods are more or like similar can we create a general method with different input parameters? - Daya
     {
         int pfNameIdx = p_msg.IndexOf(',');
         int prntFldrIdx = (pfNameIdx == -1) ? -1 : p_msg.IndexOf(":", pfNameIdx);
@@ -289,10 +289,10 @@ public partial class DashboardClient
         int parentFldId = Convert.ToInt32(p_msg[(prntFldrIdx + 1)..]);
 
         string p_note = string.Empty; // if there is some note mentioned by client we need to take that not the empty
-        Dictionary<int, Portfolio>.ValueCollection prtfFldrs = MemDb.gMemDb.Portfolios.Values;
+        Dictionary<int, Portfolio>.ValueCollection prtfs = MemDb.gMemDb.Portfolios.Values;
         User? user = User;
         int prntFldIdToSend = -1;
-        foreach (Portfolio pf in prtfFldrs)
+        foreach (Portfolio pf in prtfs)
         {
             if (parentFldId >= -2)
             {
@@ -314,17 +314,16 @@ public partial class DashboardClient
                     break;
                 }
             }
-            else // parentFldId < -2 is a virtual UserRoot folder. create the new Folder with (User: -1 * thisUserId, ParentFolder = -1)
+            else // parentFldId < -2 is a virtual UserRoot folder. create the new Portfolio with (User: -1 * thisUserId, ParentFolder = -1)
             {
                 if (pf.User?.Id == -1 * parentFldId)
                 {
                     user = pf.User;
-                    // prntFldIdToSend = -1;
                     break;
                 }
             }
         }
-        Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{user}' '{pfName}' '{prntFldIdToSend}' '{p_note}'");
-        // MemDb.gMemDb.AddNewPortfolio(user, pfName, prntFldIdToSend, p_note);
+        // Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{user}' '{pfName}' '{prntFldIdToSend}' '{p_note}'");
+        MemDb.gMemDb.AddNewPortfolio(user, pfName, prntFldIdToSend, p_note);
     }
 }
