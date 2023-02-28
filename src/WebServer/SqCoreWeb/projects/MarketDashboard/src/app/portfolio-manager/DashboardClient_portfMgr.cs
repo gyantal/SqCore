@@ -86,7 +86,7 @@ public partial class DashboardClient
                 PortfMgrSendFolders();
                 return true;
 
-            case "PortfMgr.CreatePortfolio": // msg: "DayaTest,prntFId:-1"
+            case "PortfMgr.CreatePortfolio": // msg: "DayaTest123,prntFId:15,currency:USD,access:Restricted,type:Trades,note:testing"
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{msgObjStr}'");
                 PortfMgrCreatePortfolio(msgObjStr);
                 PortfMgrSendPortfolios();
@@ -279,16 +279,21 @@ public partial class DashboardClient
             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
-    public void PortfMgrCreatePortfolio(string p_msg) // CreateFolder and CreatePortfolio methods are more or like similar can we create a general method with different input parameters? - Daya
+    public void PortfMgrCreatePortfolio(string p_msg) // "msg - DayaTest123,prntFId:15,currency:USD,access:Restricted,type:Trades"
     {
         int pfNameIdx = p_msg.IndexOf(',');
         int prntFldrIdx = (pfNameIdx == -1) ? -1 : p_msg.IndexOf(":", pfNameIdx);
-        if (prntFldrIdx == -1)
-            prntFldrIdx = -1;
+        int currencyIdx = prntFldrIdx == -1 ? -1 : p_msg.IndexOf(":", prntFldrIdx + 1);
+        int userAccessIdx = currencyIdx == -1 ? -1 : p_msg.IndexOf(":", currencyIdx + 1);
+        int prtfTypeIdx = userAccessIdx == -1 ? -1 : p_msg.IndexOf(":", userAccessIdx + 1);
+        int userNoteIdx = prtfTypeIdx == -1 ? -1 : p_msg.IndexOf(":", prtfTypeIdx + 1);
         string pfName = p_msg[..pfNameIdx];
-        int parentFldId = Convert.ToInt32(p_msg[(prntFldrIdx + 1)..]);
+        int parentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, currencyIdx - prntFldrIdx - 10));
+        string currency = p_msg.Substring(currencyIdx + 1, userAccessIdx - currencyIdx - 8);
+        string userAccess = p_msg.Substring(userAccessIdx + 1, prtfTypeIdx - userAccessIdx - 6);
+        string prtfType = p_msg.Substring(prtfTypeIdx + 1, userNoteIdx - prtfTypeIdx - 6);
+        string userNote = p_msg[(userNoteIdx + 1)..];
 
-        string p_note = string.Empty; // if there is some note mentioned by client we need to take that not the empty
         Dictionary<int, Portfolio>.ValueCollection prtfs = MemDb.gMemDb.Portfolios.Values;
         User? user = User;
         int prntFldIdToSend = -1;
@@ -323,8 +328,8 @@ public partial class DashboardClient
                 }
             }
         }
-        // Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{user}' '{pfName}' '{prntFldIdToSend}' '{p_note}'");
-        MemDb.gMemDb.AddNewPortfolio(user, pfName, prntFldIdToSend, p_note);
+        // Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{user}' '{pfName}' '{prntFldIdToSend}' '{userNote}' '{currency}' '{userAccess}' '{prtfType}'");
+        MemDb.gMemDb.AddNewPortfolio(user, pfName, prntFldIdToSend, userNote, currency, userAccess, prtfType);
     }
 
     private void PortfMgrDeletePortfolioItem(string p_msg) // "id:5"

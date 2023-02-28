@@ -181,7 +181,7 @@ internal class MemData // don't expose to clients.
         }
     }
 
-    public bool RemovePortfolio(Portfolio p_prtf) // method to remove the portfolio based on portfolio key - need to discuss with George
+    public bool RemovePortfolio(Portfolio p_prtf) // method to remove the portfolio based on portfolio key
     {
         lock (PrtfUpdateLock)
         {

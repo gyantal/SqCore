@@ -49,12 +49,12 @@ public partial class MemDb
         }
     }
 
-    public Portfolio? AddNewPortfolio(User? p_user, string p_name, int p_parentFldId, string p_note)
+    public Portfolio? AddNewPortfolio(User? p_user, string p_name, int p_parentFldId, string p_note, string p_currency, string p_userAccess, string p_prtfType)
     {
         string creationTime = DateTime.UtcNow.TohYYYYMMDDHHMMSS(); // DateTime.Now.ToString() => "CTime":"2022-10-13T20:00:00"
-        CurrencyId baseCurrency = CurrencyId.USD; // default currency USD
-        PortfolioType type = PortfolioType.Trades;
-        SharedAccess sharedAccess = SharedAccess.Restricted;
+        CurrencyId baseCurrency = AssetHelper.gStrToCurrency[p_currency];
+        SharedAccess sharedAccess = AssetHelper.gStrToSharedAccess[p_userAccess];
+        PortfolioType type = AssetHelper.gStrToPortfolioType[p_prtfType];
         List<User> sharedUsersWith = new();
         Portfolio? prtf = m_memData.AddNewPortfolio(p_user, p_name, p_parentFldId, creationTime, p_note, baseCurrency, type, sharedAccess, sharedUsersWith);
         if (prtf == null)
@@ -68,7 +68,7 @@ public partial class MemDb
             m_memData.RemovePortfolio(prtf);
             prtf = null;
         }
-        Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{creationTime}' '{baseCurrency}' '{type}' '{sharedAccess}' '{sharedUsersWith}' '{p_user}' '{p_name}' '{prtf}'"); // for debugging purpose
+        // Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{creationTime}' '{baseCurrency}' '{type}' '{sharedAccess}' '{sharedUsersWith}' '{p_user}' '{p_name}' '{prtf}'"); // for debugging purpose
         return prtf;
     }
 

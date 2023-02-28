@@ -61,6 +61,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   folders: Nullable<FolderJs[]> = null;
   portfolios: Nullable<PortfolioJs[]> = null;
   uiNestedPrtfTreeViewItems: TreeViewItem[] = [];
+  isCreateFolderPopupVisible: boolean = false;
   isCreatePortfolioPopupVisible: boolean = false;
   isDeleteConfirmPopupVisible: boolean = false;
   isErrorPopupVisible: boolean = false;
@@ -70,6 +71,10 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   createPrtfItemName: string = ''; // portfolio or folder name to be created
   treeViewState: TreeViewState = new TreeViewState();
 
+  currency: string = 'USD'; // default value is set to USD
+  userAccess: string = 'Restricted'; // default is set to Restricted
+  portfolioType: string = 'Trades'; // default is set to Trades
+  userNote: string = '';
   tabPrtfSpecVisibleIdx = 1; // tab buttons for portfolio specification preview of positions and strategy parameters
 
   // the below vaiables are required for resizing the panels according to users
@@ -284,10 +289,6 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
         _this.creationTime = value;
         return; // if return undefined, orignal property will be removed
       }
-      // if (key === 'oUsr') {
-      //   _this.ownerUserName = value;
-      //   return; // if return undefined, orignal property will be removed
-      // }
       return value;
     });
 
@@ -342,15 +343,16 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this._parentWsConnection.send('PortfMgr.RefreshFolders:');
   }
 
-  onCreatePrtfItemClicked() { // this logic makes the Popup visible of creating a portfolio
-    this.isCreatePortfolioPopupVisible = true;
+  // Create Folder
+  onCreateFolderPopupVisibleClicked() {
+    this.isCreateFolderPopupVisible = true;
   }
 
-  onClosePortfolioClicked() { // this logic makes the create portfolio Popup invisible
-    this.isCreatePortfolioPopupVisible = false;
+  onCloseFolderClicked() { // this logic makes the create Folder Popup invisible
+    this.isCreateFolderPopupVisible = false;
   }
 
-  onCreateFolderClicked() { // this logic create's a folder item if everything is passed
+  onCreateFolderClicked() {
     if (this.treeViewState.lastSelectedItem == null) {
       console.log('Cannot Create, because no folder was selected.');
       return;
@@ -358,9 +360,31 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('PortfMgr.CreateFolder:' + this.createPrtfItemName + ',prntFId:' + lastSelectedTreeNode.id);
+    this.isCreateFolderPopupVisible = false;
+  }
+
+  // Create Portfolio
+  onCreatePortfolioPopupVisibleClicked() {
+    this.isCreatePortfolioPopupVisible = true;
+  }
+
+  onClosePortfolioClicked() { // this logic makes the create portfolio Popup invisible
     this.isCreatePortfolioPopupVisible = false;
   }
 
+  onCreatePortfolioClicked() {
+    // console.log(`currency ${currencySelectionSelected}, access ${accessSelectionSelected}, portfolioType ${portfolioTypeSelectionSelected}`);
+    if (this.treeViewState.lastSelectedItem == null) {
+      console.log('Cannot Create, because no Portfolio was selected.');
+      return;
+    }
+    const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+      this._parentWsConnection.send('PortfMgr.CreatePortfolio:' + this.createPrtfItemName + ',prntFId:' + lastSelectedTreeNode.id + ',currency:' + this.currency + ',access:' + this.userAccess + ',type:' + this.portfolioType + ',note:' + this.userNote);
+    this.isCreatePortfolioPopupVisible = false;
+  }
+
+  // Delete portfolio Item(Folder/Portfolio)
   onDeletePrtfItemClicked() { // this logic makes the Delete Confirm Popup visible and displays the selected prtf name
     if (this.treeViewState.lastSelectedItem == null) {
       console.log('Cannot Delete, because no folder was selected.');
@@ -392,16 +416,5 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
   onClickPrtfSpecPreview(tabIdx: number) {
     this.tabPrtfSpecVisibleIdx = tabIdx;
-  }
-
-  onCreatePortfolioClicked() { // this logic create's a portfolio item if everything is passed
-    if (this.treeViewState.lastSelectedItem == null) {
-      console.log('Cannot Create, because no Portfolio was selected.');
-      return;
-    }
-    const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
-    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.CreatePortfolio:' + this.createPrtfItemName + ',prntFId:' + lastSelectedTreeNode.id);
-    this.isCreatePortfolioPopupVisible = false;
   }
 }

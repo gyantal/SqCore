@@ -42,6 +42,7 @@
   border: 0.01rem solid #888;
   border-radius: 1rem;
   cursor: pointer;
+  margin-right: 1rem;
 }
 
 #resizer { // resizing the portfolio panel treeveiew and charts, stats and spec sections
@@ -145,6 +146,35 @@
   color: rgb(38, 38, 247);
   background-color: #e6eaec;
   border: .3rem solid #231fff;
+}
+
+#portfolioPopup { // modifying the height & width properties as we have many items to fit in the window
+  height: 25rem;
+  width: 35rem;
+  text-align: left;
+}
+
+.prtfCommon {
+  float: left;
+  padding-left: 1rem;
+  margin-top: .6rem;
+}
+
+.prtfFields {
+  font-weight: bold;
+  width: 28%;
+}
+
+.prtfUserValues {
+  width: 58%;
+}
+
+#createPortfolioButton {
+  display: block;
+  position: relative;
+  z-index: 1;
+  left: 2rem;
+  top: 2rem;
 }
 
 .warnPopup { // giving warning message to the user on the popup window
