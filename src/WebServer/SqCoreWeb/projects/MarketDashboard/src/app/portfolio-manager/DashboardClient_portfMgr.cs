@@ -85,11 +85,14 @@ public partial class DashboardClient
                 PortfMgrCreateFolder(msgObjStr);
                 PortfMgrSendFolders();
                 return true;
-
             case "PortfMgr.CreatePortfolio": // msg: "DayaTest123,prntFId:15,currency:USD,access:Restricted,type:Trades,note:testing"
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{msgObjStr}'");
                 PortfMgrCreatePortfolio(msgObjStr);
                 PortfMgrSendPortfolios();
+                return true;
+            case "PortfMgr.UpdatePortfolioItem": // msg: "DayaTest,id:-1"
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): UpdatePortfolioItem '{msgObjStr}'");
+                PortfMgrUpdatePortfolioItem(msgObjStr);
                 return true;
             case "PortfMgr.DeletePortfolioItem": // msg: "id:5" // if id > 10,000 then it is a PortfolioID otherwise it is the FolderID
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): DeletePortfolioItem '{msgObjStr}'");
@@ -147,21 +150,6 @@ public partial class DashboardClient
         }
         MemDb.gMemDb.AddNewPortfolioFolder(user, pfName, prntFldIdToSend, p_note);
     }
-
-    // private void PortfMgrDeleteFolder(string p_msg)
-    // {
-    //     int prntFldrIdx = p_msg.IndexOf(":");
-    //     if (prntFldrIdx == -1)
-    //         prntFldrIdx = -1;
-    //     int fldId = Convert.ToInt32(p_msg[(prntFldrIdx + 1)..]);
-    //     string errMsg = MemDb.gMemDb.DeletePortfolioFolder(fldId);
-    //     if (!String.IsNullOrEmpty(errMsg))
-    //     {
-    //         byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.ErrorToUser:" + errMsg);
-    //         if (WsWebSocket!.State == WebSocketState.Open)
-    //             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-    //     }
-    // }
 
     private void PortfMgrSendFolders() // Processing the portfolioFolders based on the visiblity rules
     {
@@ -279,7 +267,7 @@ public partial class DashboardClient
             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
-    public void PortfMgrCreatePortfolio(string p_msg) // "msg - DayaTest123,prntFId:15,currency:USD,access:Restricted,type:Trades"
+    public void PortfMgrCreatePortfolio(string p_msg) // "msg - DayaTest123,prntFId:15,currency:USD,access:Restricted,type:Trades,note:testing"
     {
         int pfNameIdx = p_msg.IndexOf(',');
         int prntFldrIdx = (pfNameIdx == -1) ? -1 : p_msg.IndexOf(":", pfNameIdx);
@@ -288,10 +276,10 @@ public partial class DashboardClient
         int prtfTypeIdx = userAccessIdx == -1 ? -1 : p_msg.IndexOf(":", userAccessIdx + 1);
         int userNoteIdx = prtfTypeIdx == -1 ? -1 : p_msg.IndexOf(":", prtfTypeIdx + 1);
         string pfName = p_msg[..pfNameIdx];
-        int parentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, currencyIdx - prntFldrIdx - 10));
-        string currency = p_msg.Substring(currencyIdx + 1, userAccessIdx - currencyIdx - 8);
-        string userAccess = p_msg.Substring(userAccessIdx + 1, prtfTypeIdx - userAccessIdx - 6);
-        string prtfType = p_msg.Substring(prtfTypeIdx + 1, userNoteIdx - prtfTypeIdx - 6);
+        int parentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, currencyIdx - prntFldrIdx - ",currency:".Length));
+        string currency = p_msg.Substring(currencyIdx + 1, userAccessIdx - currencyIdx - ",access:".Length);
+        string userAccess = p_msg.Substring(userAccessIdx + 1, prtfTypeIdx - userAccessIdx - ",type:".Length);
+        string prtfType = p_msg.Substring(prtfTypeIdx + 1, userNoteIdx - prtfTypeIdx - ",note:".Length);
         string userNote = p_msg[(userNoteIdx + 1)..];
 
         Dictionary<int, Portfolio>.ValueCollection prtfs = MemDb.gMemDb.Portfolios.Values;
@@ -330,6 +318,35 @@ public partial class DashboardClient
         }
         // Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{user}' '{pfName}' '{prntFldIdToSend}' '{userNote}' '{currency}' '{userAccess}' '{prtfType}'");
         MemDb.gMemDb.AddNewPortfolio(user, pfName, prntFldIdToSend, userNote, currency, userAccess, prtfType);
+    }
+
+    private void PortfMgrUpdatePortfolioItem(string p_msg) // msg - "DayaTest,id:-1"
+    {
+        int pfNameIdx = p_msg.IndexOf(',');
+        int idStrIdx = (pfNameIdx == -1) ? -1 : p_msg.IndexOf(":", pfNameIdx);
+        if (idStrIdx == -1)
+            return;
+        string pfName = p_msg[..pfNameIdx];
+        int id = Convert.ToInt32(p_msg[(idStrIdx + 1)..]);
+        bool isFolder = id < gPortfolioIdOffset;
+        // string errMsg = string.Empty;
+        if (isFolder)
+            // errMsg = MemDb.gMemDb.UpdatePortfolioFolder(id, pfName);
+            MemDb.gMemDb.UpdatePortfolioFolder(id, pfName);
+        // else
+            // MemDb.gMemDb.DeletePortfolio(id - gPortfolioIdOffset); // Not completely implemented - Daya
+
+        // if (!String.IsNullOrEmpty(errMsg)) // probably we should send message to user saying the item got updated or so...
+        // {
+        //     byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.ErrorToUser:" + errMsg);
+        //     if (WsWebSocket!.State == WebSocketState.Open)
+        //         WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        // }
+
+        if (isFolder)
+            PortfMgrSendFolders();
+        // else
+            // PortfMgrSendPortfolios();
     }
 
     private void PortfMgrDeletePortfolioItem(string p_msg) // "id:5"

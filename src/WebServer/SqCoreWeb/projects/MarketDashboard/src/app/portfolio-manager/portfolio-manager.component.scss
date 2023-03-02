@@ -29,20 +29,9 @@
   cursor: pointer;
 }
 
-#prtfNameInput:focus {
+#folderNameInput:focus {
   outline: none;
   box-shadow: 0 0 1rem #0314f5;
-}
-
-#closePortfolioPopup {
-  background-color: #FFA500;
-  float: right;
-  font-size: 1rem;
-  font-weight: bold;
-  border: 0.01rem solid #888;
-  border-radius: 1rem;
-  cursor: pointer;
-  margin-right: 1rem;
 }
 
 #resizer { // resizing the portfolio panel treeveiew and charts, stats and spec sections
@@ -126,11 +115,11 @@
 .popup {
   display: block;
   position: fixed;
-  z-index: 1;
-  text-align: center;
   left: 78rem;
   top: 40rem;
   bottom: 20rem;
+  z-index: 1;
+  text-align: center;
   width: 50rem;
   height: 11rem;
   overflow: auto;
@@ -148,7 +137,7 @@
   border: .3rem solid #231fff;
 }
 
-#portfolioPopup { // modifying the height & width properties as we have many items to fit in the window
+#createPortfolioPopup { // modifying the height & width properties as we have many items to fit in the window
   height: 25rem;
   width: 35rem;
   text-align: left;
@@ -170,9 +159,7 @@
 }
 
 #createPortfolioButton {
-  display: block;
-  position: relative;
-  z-index: 1;
+  position: relative; // its positioned relative to normal position, it will be adjusted away from its normal position by setting top, left, right and bottom porperties.
   left: 2rem;
   top: 2rem;
 }
@@ -182,6 +169,19 @@
   background-color: #FFA500;
   border: .3rem solid #FF5F1F;
   animation: popupFadein 5s linear 1 forwards;
+}
+
+.closePopup { // common for all the popup's
+  background-color: #FFA500;
+  float: right;
+  position: relative;
+  top: 2rem;
+  font-size: 1rem;
+  font-weight: bold;
+  border: 0.01rem solid #888;
+  border-radius: 1rem;
+  cursor: pointer;
+  margin-right: 1rem;
 }
 
 @keyframes popupFadein {

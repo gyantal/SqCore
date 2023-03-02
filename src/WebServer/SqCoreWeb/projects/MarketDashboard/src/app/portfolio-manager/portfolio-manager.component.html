@@ -7,23 +7,24 @@
       <span class="refreshPortfolios"><img class="refreshPortfolios" src='../assets/images/refresh64.webp' (click)="onPortfoliosRefreshClicked()"></span>
     </span>
     <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState"></app-sq-tree-view>
-    <button type="button" (click)="onCreateFolderPopupVisibleClicked()">Create Folder</button>&nbsp;
-    <button type="button" (click)="onCreatePortfolioPopupVisibleClicked()">Create Portfolio</button>&nbsp;
-    <button type="button" (click)="onDeletePrtfItemClicked()">Delete</button>
+    <button (click)="showCreateFolderPopup()">Create Folder</button>&nbsp;
+    <button (click)="showCreatePortfolioPopup()">Create Portfolio</button>&nbsp;
+    <button (click)="showUpdatePortfolioItemPopup()">Update</button>&nbsp;
+    <button (click)="onDeletePrtfItemClicked()">Delete</button>
     <div class="popup infoPopup" [ngStyle]="{'display': isCreateFolderPopupVisible ? 'block' : 'none'}"><br>
-      <label id="folderNameLabel"><b>Name:</b>&nbsp;</label>
-      <input id="folderNameInput" type="text" placeholder="Enter Folder Name" name="portfolio" [(ngModel)]="createPrtfItemName"><br><br>
+      <label><b>Name:</b>&nbsp;</label>
+      <input id="folderNameInput" type="text" placeholder="Enter Folder Name" [(ngModel)]="createPrtfItemName"><br><br>
       <span>
-        <button (click)="onCreateFolderClicked()"> Create New Folder</button>
-        <button id="closePortfolioPopup" (click)="onCloseFolderClicked()" [ngStyle]="{'display': isCreateFolderPopupVisible ? 'block' : 'none'}">Dismiss</button>
+        <button (click)="onCreateFolderClicked()">Create New Folder</button>
+        <button class="closePopup" (click)="closeCreateFolderPopup()" [ngStyle]="{'display': isCreateFolderPopupVisible ? 'block' : 'none'}">Dismiss</button>
       </span>
     </div><br>
-    <div class="popup infoPopup" id="portfolioPopup" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}"><br>
+    <div class="popup infoPopup" id="createPortfolioPopup" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}"><br>
       <div>
         <div>
           <div class="prtfCommon prtfFields">Name:</div>
           <div class="prtfCommon prtfUserValues">
-            <input type="text" placeholder="Enter Portfolio Name" name="portfolio" [(ngModel)]="createPrtfItemName">
+            <input type="text" placeholder="Enter Portfolio Name" [(ngModel)]="createPrtfItemName">
           </div>
         </div>
         <div>
@@ -69,8 +70,16 @@
         </div>
       </div>
       <span>
-        <button id="createPortfolioButton" (click)="onCreatePortfolioClicked()"> Create Portfolio</button>
-        <button id="closePortfolioPopup" (click)="onClosePortfolioClicked()" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}">Dismiss</button>
+        <button id="createPortfolioButton" (click)="onCreatePortfolioClicked()"> Create New Portfolio</button>
+        <button class="closePopup" (click)="closeCreatePortfolioPopup()" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}">Dismiss</button>
+      </span>
+    </div><br>
+    <div class="popup infoPopup" [ngStyle]="{'display': isUpdatePopupVisible ? 'block' : 'none'}"><br>
+      <label><b>Name:</b>&nbsp;</label>
+      <input type="text" placeholder="update Folder/Prtf Name" [(ngModel)]="updatePrtfName" [value]="updatePrtfName"><br><br>
+      <span>
+        <button (click)="onUpdatePortfolioItemClicked()"> Update Folder/Portfolio</button>
+        <button class="closePopup" (click)="closeUpdatePortfolioItemPopup()" [ngStyle]="{'display': isUpdatePopupVisible ? 'block' : 'none'}">Dismiss</button>
       </span>
     </div><br>
   </div>

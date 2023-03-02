@@ -33,6 +33,22 @@ public partial class MemDb
         return fld;
     }
 
+    public string UpdatePortfolioFolder(int p_id, string p_pfName)
+    {
+        try
+        {
+            string errMsg = m_Db.UpdatePortfolioFolder(p_id, p_pfName); // gives back an error message or empty string if everything was OK.
+            if (!String.IsNullOrEmpty(errMsg))
+                return errMsg;
+            // m_memData.UpdatePortfolioFolder(p_id, p_pfName); // Daya - Yet to develop
+            return string.Empty;
+        }
+        catch (System.Exception e)
+        {
+            return $"Error in MemDb.UpdatePortfolioFolder(): Exception {e.Message}";
+        }
+    }
+
     public string DeletePortfolioFolder(int p_id)
     {
         try

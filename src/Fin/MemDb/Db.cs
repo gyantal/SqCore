@@ -427,6 +427,36 @@ public partial class Db
         m_redisDb.HashSet("portfolio", redisKey, redisValue);
     }
 
+    internal string UpdatePortfolioFolder(int p_id, string p_pfName)
+    {
+        string redisKey = p_id.ToString();
+        string redisValue = string.Empty;
+        HashEntry[]? portfolioFoldersRds = m_redisDb.HashGetAll("portfolioFolder");
+        if (portfolioFoldersRds == null)
+            return "Error in UpdatePortfolioFolder(): Redis DB is not available";
+        for (int i = 0; i < portfolioFoldersRds.Length; i++)
+        {
+            HashEntry hashRow = portfolioFoldersRds[i];
+            string? rowValue = hashRow.Value;
+            if (!hashRow.Name.TryParse(out int id) || rowValue == null) // Name is the 'Key' that contains the Id
+                continue;   // Sometimes, there is an extra line 'New field'. But it can be deleted from Redis Manager. It is a kind of expected.
+
+            var prtfFolderInDb = JsonSerializer.Deserialize<PortfolioFolderInDb>(rowValue, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (prtfFolderInDb == null)
+                return $"Error in UpdatePortfolioFolder(): Deserialize failed on '{rowValue}'";
+
+            if (id == p_id)
+            {
+                prtfFolderInDb.Name = p_pfName;
+                redisValue = JsonSerializer.Serialize<PortfolioFolderInDb>(prtfFolderInDb);
+                break;
+            }
+            // return $"Info - UpdatePortfolioFolder(): The Folder {p_id} has successfully updated";
+        }
+        // Utils.Logger.Info($"UpdatePortfolio '{redisKey}' '{redisValue}'"); // Debugging purpose only
+        m_redisDb.HashSet("portfolioFolder", redisKey, redisValue);
+        return string.Empty;
+    }
     public static bool UpdateBrotlisIfNeeded()
     {
         // For assets, and small tables, it is too much of a hassle and not much RAM saving. And it is better that we are able to change text data manually in RedisDesktop
