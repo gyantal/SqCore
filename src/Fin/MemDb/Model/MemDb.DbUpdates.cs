@@ -40,7 +40,7 @@ public partial class MemDb
             string errMsg = m_Db.UpdatePortfolioFolder(p_id, p_pfName); // gives back an error message or empty string if everything was OK.
             if (!String.IsNullOrEmpty(errMsg))
                 return errMsg;
-            // m_memData.UpdatePortfolioFolder(p_id, p_pfName); // Daya - Yet to develop
+            m_memData.UpdatePortfolioFolder(p_id, p_pfName);
             return string.Empty;
         }
         catch (System.Exception e)

@@ -14,10 +14,13 @@ li {
   padding: 0 0.5rem 0 0.5rem; // Top / Right / Bottom / Left
   border-radius: 0.5rem;
   cursor: pointer;
+  font-weight: bold;
 }
 
-.treeViewRowFolder {
-  font-weight: bold;
+.treeViewRowPortfolio {
+  font-weight: normal;
+  font-style: italic;
+  color: black;
 }
 
 .treeViewRowSelected {

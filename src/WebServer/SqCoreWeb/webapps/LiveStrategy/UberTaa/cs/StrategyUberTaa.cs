@@ -53,7 +53,7 @@ public class StrategyUberTaaController : ControllerBase
                 usedGSheetUrl = "https://docs.google.com/spreadsheets/d/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE";
                 usedGSheetStr = UberTaaGoogleApiGsheet("https://sheets.googleapis.com/v4/spreadsheets/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/values/A1:AF2000?key=");
                 usedAssetList = GetTickersFromGSheet(usedGSheetStr) ?? Array.Empty<string>();
-                warningGCh = "WARNING! Trading rules have been changed! Only live positions are valid, required trades are not!";
+                warningGCh = "WARNING! Trading rules have been changed for TaaGC! Let the Winners Run is used. The first table's first and third rows are removed because they are not valid. Trade this based on the second table's Percentage targets.";
                 break;
             case Universe.GlobalAssets:
                 titleString = "Global Assets";

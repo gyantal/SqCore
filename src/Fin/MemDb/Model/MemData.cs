@@ -153,6 +153,14 @@ internal class MemData // don't expose to clients.
             return PortfolioFolders.Remove(p_prFolder.Id);
         }
     }
+    public void UpdatePortfolioFolder(int p_id, string p_name) // method to update the folder based on fld key
+    {
+        lock (PrFldUpdateLock)
+        {
+            if (PortfolioFolders.TryGetValue(p_id, out PortfolioFolder? portfolioFolder))
+                portfolioFolder.Name = p_name;
+        }
+    }
 
     public Portfolio AddNewPortfolio(User? p_user, string p_name, int p_parentFldId, string p_creationTime, string p_note, CurrencyId p_currency, PortfolioType p_type, SharedAccess p_sharedAccess, List<User> p_sharedUsersWith)
     {

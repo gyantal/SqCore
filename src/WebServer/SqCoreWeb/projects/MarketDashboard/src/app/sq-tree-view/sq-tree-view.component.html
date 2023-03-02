@@ -1,6 +1,6 @@
 <ul>
   <li *ngFor="let item of items">
-    <div class="treeViewRowBase" [ngClass]="{'treeViewRowSelected': item.isSelected, 'treeViewRowFolder': item.prtfItemType == 'Folder'}">
+    <div class="treeViewRowBase" [ngClass]="{'treeViewRowSelected': item.isSelected, 'treeViewRowPortfolio': item.prtfItemType == 'Portfolio'}">
       <span class="icon" (click)="onItemClicked(item)">{{(item.prtfItemType == 'Folder') ? (item.isExpanded ? '&#45;' : '&#43;') : ''}}&nbsp;{{item.name}}</span>
     </div>
     <ul *ngIf="item.children && item.isExpanded">

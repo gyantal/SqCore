@@ -6,6 +6,7 @@ import * as d3 from 'd3';
 
 // 1. Declare some global variables and hook on DOMContentLoaded() and window.onload()
 console.log('SqCore: Script BEGIN');
+let lastSelectedUniverse : number = -1;
 
 function getNonNullDocElementById(id: string): HTMLElement { // document.getElementById() can return null. This 'forced' type casting fakes that it is not null for the TS compiler. (it can be null during runtime)
   return document.getElementById(id) as HTMLElement;
@@ -30,12 +31,14 @@ async function AsyncStartDownloadAndExecuteCbLater(url: string, callback: (json:
 }
 
 function onClickGameChanger() {
+  lastSelectedUniverse = 1;
   AsyncStartDownloadAndExecuteCbLater('/StrategyUberTaa?universe=1&winnerRun=1', (json: any) => {
     onReceiveData(json);
   });
 }
 
 function onClickGlobalAssets() {
+  lastSelectedUniverse = 2;
   AsyncStartDownloadAndExecuteCbLater('/StrategyUberTaa?universe=2&winnerRun=0', (json: any) => {
     onReceiveData(json);
   });
@@ -62,7 +65,7 @@ function onReceiveData(json: any) {
   getNonNullDocElementById('idPosFut').innerHTML = 'Future events:';
 
   const warnLength = json.warningCont.length;
-  if (warnLength>0)
+  if (warnLength > 0)
     getNonNullDocElementById('idWarningCont').innerHTML = json.warningCont + '<br> <a href="https://docs.google.com/spreadsheets/d/1fmvGBi2Q6MxnB_8AjUedy1QVTOlWE7Ck1rICjYSSxyY" target="_blank">Google sheet with current positions</a> and <a href="https://docs.google.com/document/d/1_m3MMGag7uBZSdvc4IgXKMvj3d4kzLxwvnW14RkCyco" target="_blank">the latest study in connection with the strategy</a>';
   uberTaaTbls(json);
   // Setting charts visible after getting data.
@@ -150,12 +153,15 @@ function uberTaaTbls(json: any) {
     chngInPosTbl += '<td bgcolor="#' + prevAssetEventMtx[2][i + 1] + '">' + currPosNumArray[i] + '</td>';
 
 
-  chngInPosTbl += '</tr > <tr align="center"><td align="center" rowspan="2" bgcolor="#FF6633">Change in Positions</td>';
+  chngInPosTbl += '</tr >';
+  // if (lastSelectedUniverse == ?) // Trading rules have been changed for TaaGC! Let the Winners Run is used. The first table's first and third rows are removed because they are not valid.
+  chngInPosTbl += ' <tr align="center"><td align="center" rowspan="2" bgcolor="#FF6633">Change in Positions</td>';
   for (let i = 0; i < assetNames2Array.length; i++)
     chngInPosTbl += '<td bgcolor="#FFFF00">' + diffPosValArray[i] + '</td>';
 
 
-  chngInPosTbl += '</tr > <tr>';
+  chngInPosTbl += '</tr >';
+  chngInPosTbl += '<tr>';
   for (let i = 0; i < assetNames2Array.length; i++)
     chngInPosTbl += '<td bgcolor="#FFFF00">' + diffPosNumArray[i] + '</td>';
 
