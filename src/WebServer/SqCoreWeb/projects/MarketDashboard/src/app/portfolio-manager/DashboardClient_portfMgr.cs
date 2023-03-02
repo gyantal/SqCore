@@ -44,6 +44,7 @@ class PortfolioJs : PortfolioItemJs
 public partial class DashboardClient
 {
     const int gPortfolioIdOffset = 10000;
+    const int gNoUserVirtPortfId = -2;
     // Return from this function very quickly. Do not call any Clients.Caller.SendAsync(), because client will not notice that connection is Connected, and therefore cannot send extra messages until we return here
     public void OnConnectedWsAsync_PortfMgr(bool p_isThisActiveToolAtConnectionInit)
     {
@@ -159,6 +160,7 @@ public partial class DashboardClient
         // - Admin users (developers) see all PortfolioFolders of all human users. Each human user (IsHuman) in a virtual folder with their username.
         // And the 'Shared with me', and 'AllUsers" virtual folders are there too.
         Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
+        Dictionary<int, Portfolio>.ValueCollection prtfs = MemDb.gMemDb.Portfolios.Values;
         // add the virtual folders to prtfFldrsToClient
         List<FolderJs> prtfFldrsToClient = new();
         Dictionary<int, User> virtUsrFldsToSend = new();
@@ -166,6 +168,12 @@ public partial class DashboardClient
         if (User.IsAdmin)
         {
             foreach (PortfolioFolder pf in prtfFldrs) // iterate over all Folders to filter out those users who don't have any folders at all
+            {
+                if (pf.User != null)
+                    virtUsrFldsToSend[pf.User.Id] = pf.User;
+            }
+
+            foreach (Portfolio pf in prtfs) // iterate over all Portfolios to filter out those users who don't have any portfolios at all
             {
                 if (pf.User != null)
                     virtUsrFldsToSend[pf.User.Id] = pf.User;
@@ -187,8 +195,7 @@ public partial class DashboardClient
         FolderJs pfSharedWithMeJs = new() { Id = 0, Name = "Shared" };
         prtfFldrsToClient.Add(pfSharedWithMeJs);
 
-        const int noUserVirtPortfId = -2;
-        FolderJs pfAllUsersJs = new() { Id = noUserVirtPortfId, Name = "NoUser" };
+        FolderJs pfAllUsersJs = new() { Id = gNoUserVirtPortfId, Name = "NoUser" };
         prtfFldrsToClient.Add(pfAllUsersJs);
 
         foreach (PortfolioFolder pf in prtfFldrs)
@@ -201,7 +208,7 @@ public partial class DashboardClient
             if (pf.ParentFolderId == -1)
             {
                 if (pf.User == null)
-                    parentFolderId = noUserVirtPortfId;
+                    parentFolderId = gNoUserVirtPortfId;
                 else
                     parentFolderId = -1 * pf.User.Id;
             }
@@ -218,30 +225,6 @@ public partial class DashboardClient
     {
         Dictionary<int, Portfolio>.ValueCollection prtfs = MemDb.gMemDb.Portfolios.Values;
         List<PortfolioJs> prtfToClient = new();
-        Dictionary<int, User> virtUsrFldsToSend = new();
-
-        if (User.IsAdmin)
-        {
-            foreach (Portfolio pf in prtfs) // iterate over all portfolios to filter out those users who don't have any portoflios at all
-            {
-                if (pf.User != null)
-                    virtUsrFldsToSend[pf.User.Id] = pf.User;
-            }
-        }
-        else
-        {
-            // send only his(User) virtual portfolio
-            virtUsrFldsToSend[User.Id] = User;  // we send the user his main virtual portfolio even if he has no sub portfolio at all
-        }
-
-        // foreach (var kvp in virtUsrFldsToSend)
-        // {
-        //     User user = kvp.Value;
-        //     PortfolioJs pfAdminUserJs = new() { Id = -1 * user.Id, Name = user.Username };
-        //     prtfToClient.Add(pfAdminUserJs);
-        // }
-
-        const int noUserVirtPortfId = -2;
 
         foreach (Portfolio pf in prtfs)
         {
@@ -250,12 +233,12 @@ public partial class DashboardClient
                 continue;
 
             int parentFolderId = pf.ParentFolderId;
-            if (pf.ParentFolderId == -1)
+            if (pf.ParentFolderId == -1) // if Portfolio doesn't have a parent folder, then it is in the Root (of either the NonUser or a concrete user)
             {
-                if (pf.User == null)
-                    parentFolderId = noUserVirtPortfId;
+                if (pf.User == null) // if the owner is the NoUser
+                    parentFolderId = gNoUserVirtPortfId;
                 else
-                    parentFolderId = -1 * pf.User.Id;
+                    parentFolderId = -1 * pf.User.Id; // If there is a proper user, the Virtual FolderID is the -1 * UserId by our convention.
             }
 
             PortfolioJs pfJs = new() { Id = pf.Id + gPortfolioIdOffset, Name = pf.Name, ParentFolderId = parentFolderId };

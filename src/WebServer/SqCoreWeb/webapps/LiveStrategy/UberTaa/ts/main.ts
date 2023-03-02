@@ -133,15 +133,15 @@ function uberTaaTbls(json: any) {
 
   chngInPosTbl += '<td bgcolor="#66CCFF">' + assetNames2Array[assetNames2Array.length - 1] + '</td>';
 
-  chngInPosTbl += '</tr > <tr align="center"><td align="center" rowspan="2" bgcolor="#FF6633">' + json.nextTradingDay + '</td>';
-  for (let i = 0; i < assetNames2Array.length; i++)
-    chngInPosTbl += '<td bgcolor="#' + prevAssetEventMtx[1][i + 1] + '">' + nextPosValArray[i] + '</td>';
-
-
-  chngInPosTbl += '</tr > <tr>';
-  for (let i = 0; i < assetNames2Array.length; i++)
-    chngInPosTbl += '<td bgcolor="#' + prevAssetEventMtx[1][i + 1] + '">' + nextPosNumArray[i] + '</td>';
-
+  chngInPosTbl += '</tr >'; // nextTrading day row
+  if (lastSelectedUniverse == 2) { // Trading rules have been changed for TaaGC! Let the Winners Run is used. The first table's first and third rows are removed because they are not valid.
+    chngInPosTbl += ' <tr align="center"><td align="center" rowspan="2" bgcolor="#FF6633">' + json.nextTradingDay + '</td>';
+    for (let i = 0; i < assetNames2Array.length; i++)
+      chngInPosTbl += '<td bgcolor="#' + prevAssetEventMtx[1][i + 1] + '">' + nextPosValArray[i] + '</td>';
+    chngInPosTbl += '</tr > <tr>';
+    for (let i = 0; i < assetNames2Array.length; i++)
+      chngInPosTbl += '<td bgcolor="#' + prevAssetEventMtx[1][i + 1] + '">' + nextPosNumArray[i] + '</td>';
+  }
 
   chngInPosTbl += '</tr > <tr align="center"><td align="center" rowspan="2" bgcolor="#FF6633">' + json.currPosDate + '</td>';
   for (let i = 0; i < assetNames2Array.length; i++)
@@ -153,18 +153,15 @@ function uberTaaTbls(json: any) {
     chngInPosTbl += '<td bgcolor="#' + prevAssetEventMtx[2][i + 1] + '">' + currPosNumArray[i] + '</td>';
 
 
-  chngInPosTbl += '</tr >';
-  // if (lastSelectedUniverse == ?) // Trading rules have been changed for TaaGC! Let the Winners Run is used. The first table's first and third rows are removed because they are not valid.
-  chngInPosTbl += ' <tr align="center"><td align="center" rowspan="2" bgcolor="#FF6633">Change in Positions</td>';
-  for (let i = 0; i < assetNames2Array.length; i++)
-    chngInPosTbl += '<td bgcolor="#FFFF00">' + diffPosValArray[i] + '</td>';
-
-
-  chngInPosTbl += '</tr >';
-  chngInPosTbl += '<tr>';
-  for (let i = 0; i < assetNames2Array.length; i++)
-    chngInPosTbl += '<td bgcolor="#FFFF00">' + diffPosNumArray[i] + '</td>';
-
+  chngInPosTbl += '</tr >'; // Change in posotions row
+  if (lastSelectedUniverse == 2) { // Trading rules have been changed for TaaGC! Let the Winners Run is used. The first table's first and third rows are removed because they are not valid.
+    chngInPosTbl += ' <tr align="center"><td align="center" rowspan="2" bgcolor="#FF6633">Change in Positions</td>';
+    for (let i = 0; i < assetNames2Array.length; i++)
+      chngInPosTbl += '<td bgcolor="#FFFF00">' + diffPosValArray[i] + '</td>';
+    chngInPosTbl += '</tr > <tr>';
+    for (let i = 0; i < assetNames2Array.length; i++)
+      chngInPosTbl += '<td bgcolor="#FFFF00">' + diffPosNumArray[i] + '</td>';
+  }
 
   chngInPosTbl += '</tr></table>';
 
