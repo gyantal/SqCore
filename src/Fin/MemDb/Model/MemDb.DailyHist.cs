@@ -276,8 +276,8 @@ public partial class MemDb
             return r.Asset != null;
         }).Select(r =>
         {
-            string executionDateStr = r.Row.GetProperty("executionDate").ToString() ?? string.Empty; // "executionDate":"01/21/2021"
-            DateTime executionDate = Utils.FastParseMMDDYYYY(executionDateStr);
+            string executionDateStr = r.Row.GetProperty("executionDate").ToString() ?? string.Empty; // "executionDate":"3/28/2023"
+            DateTime executionDate = DateTime.ParseExact(executionDateStr, "M/dd/yyyy", System.Globalization.CultureInfo.InvariantCulture);
 
             string ratioStr = r.Row.GetProperty("ratio").ToString() ?? string.Empty;
             var splitArr = ratioStr.Split(':');  // "ratio":"2 : 1" or "ratio":"5.000%" while YF "2:1", which is the same order.
