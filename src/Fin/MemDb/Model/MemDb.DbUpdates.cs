@@ -48,6 +48,21 @@ public partial class MemDb
             return $"Error in MemDb.UpdatePortfolioFolder(): Exception {e.Message}";
         }
     }
+    public string EditPortfolioFolder(int p_id, string p_pfName, int p_parentFldId, string p_note)
+    {
+        try
+        {
+            string errMsg = m_Db.EditPortfolioFolder(p_id, p_pfName, p_parentFldId, p_note); // gives back an error message or empty string if everything was OK.
+            if (!String.IsNullOrEmpty(errMsg))
+                return errMsg;
+            m_memData.EditPortfolioFolder(p_id, p_pfName, p_parentFldId, p_note);
+            return string.Empty;
+        }
+        catch (System.Exception e)
+        {
+            return $"Error in MemDb.EditPortfolioFolder(): Exception {e.Message}";
+        }
+    }
 
     public string DeletePortfolioFolder(int p_id)
     {

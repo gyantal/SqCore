@@ -86,6 +86,11 @@ public partial class DashboardClient
                 PortfMgrCreateFolder(msgObjStr);
                 PortfMgrSendFolders();
                 return true;
+            case "PortfMgr.CreateOrEditFolder": // msg: "id:-1,name:DayaTesting,prntFlrId:2,note:tesing"
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreateOrEditFolder '{msgObjStr}'");
+                PortfMgrCreateOrEditFolder(msgObjStr);
+                PortfMgrSendFolders();
+                return true;
             case "PortfMgr.CreatePortfolio": // msg: "DayaTest123,prntFId:15,currency:USD,access:Restricted,type:Trades,note:testing"
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{msgObjStr}'");
                 PortfMgrCreatePortfolio(msgObjStr);
@@ -150,6 +155,72 @@ public partial class DashboardClient
             }
         }
         MemDb.gMemDb.AddNewPortfolioFolder(user, pfName, prntFldIdToSend, p_note);
+    }
+
+    public void PortfMgrCreateOrEditFolder(string p_msg) // msg: id:-1,name:TestNesting12,p,p,prntFlrId:16,note:test
+    {
+        int idStartIdx = p_msg.IndexOf(":");
+        int pfNameIdx = (idStartIdx == -1) ? -1 : p_msg.IndexOf(':', idStartIdx + 1);
+        int prntFldrIdx = (pfNameIdx == -1) ? -1 : p_msg.IndexOf(":", pfNameIdx + 1);
+        int userNoteIdx = prntFldrIdx == -1 ? -1 : p_msg.IndexOf(":", prntFldrIdx + 1);
+
+        int id = Convert.ToInt32(p_msg.Substring(idStartIdx + 1, pfNameIdx - idStartIdx - ",name:".Length));
+        string pfName = p_msg.Substring(pfNameIdx + 1, prntFldrIdx - pfNameIdx - ",prntFId:".Length);
+        int parentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, userNoteIdx - prntFldrIdx - ",note:".Length));
+        string userNote = p_msg[(userNoteIdx + 1)..];
+
+        bool isCreateFolder = id == -1;
+        string errMsg = string.Empty;
+
+        if (isCreateFolder)
+        {
+            Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
+            User? user = User;
+            int prntFldIdToSend = -1;
+            foreach (PortfolioFolder pf in prtfFldrs)
+            {
+                if (parentFldId >= -2)
+                {
+                    if (parentFldId == 0) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
+                        return; // throw new Exception("Nobody can create folders in virtual Shared folder"); // can we send an exception here - Daya
+                    else if (parentFldId >= 1) // it is a proper folderID, Create the new Folder under that
+                    {
+                        prntFldIdToSend = parentFldId;
+                        if (pf.Id == prntFldIdToSend)
+                        {
+                            user = pf.User;
+                            break;
+                        }
+                    }
+                    else if (parentFldId == -2) // parentFldId == -2  Create the new Folder with “"User":-1,"ParentFolder":-2,”
+                    {
+                        prntFldIdToSend = parentFldId;
+                        user = null;
+                        break;
+                    }
+                }
+                else // parentFldId < -2 is a virtual UserRoot folder. create the new Folder with (User: -1 * thisUserId, ParentFolder = -1)
+                {
+                    if (pf.User?.Id == -1 * parentFldId)
+                    {
+                        user = pf.User;
+                        break;
+                    }
+                }
+            }
+            MemDb.gMemDb.AddNewPortfolioFolder(user, pfName, prntFldIdToSend, userNote);
+        }
+        else
+        {
+            errMsg = MemDb.gMemDb.EditPortfolioFolder(id, pfName, parentFldId, userNote);
+        }
+
+        if (!String.IsNullOrEmpty(errMsg))
+        {
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.ErrorToUser:" + errMsg);
+            if (WsWebSocket!.State == WebSocketState.Open)
+                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        }
     }
 
     private void PortfMgrSendFolders() // Processing the portfolioFolders based on the visiblity rules

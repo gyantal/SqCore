@@ -433,33 +433,37 @@ public partial class Db
         if (portfolioFoldersRds == null)
             return "Error in UpdatePortfolioFolder(): Redis DB is not available";
 
-        PortfolioFolderInDb? prtfFolderInDb = null;
-        for (int i = 0; i < portfolioFoldersRds.Length; i++)
-        {
-            HashEntry hashRow = portfolioFoldersRds[i];
-            string? rowValue = hashRow.Value;
-            if (!hashRow.Name.TryParse(out int id) || rowValue == null) // Name is the 'Key' that contains the Id
-                continue;   // Sometimes, there is an extra line 'New field'. But it can be deleted from Redis Manager. It is a kind of expected.
-
-            var prtfFolderInDbCandidate = JsonSerializer.Deserialize<PortfolioFolderInDb>(rowValue, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            if (prtfFolderInDb == null)
-                return $"Error in UpdatePortfolioFolder(): Deserialize failed on '{rowValue}'";
-
-            if (id == p_id)
-            {
-                prtfFolderInDb = prtfFolderInDbCandidate;
-                break;
-            }
-        }
-
         string redisKey = p_id.ToString();
-        // var prtfFolderInDb2 = m_redisDb.HashGet("portfolioFolder", redisKey);
-        if (prtfFolderInDb != null)
-        {
-            prtfFolderInDb.Name = p_name;
-            string redisValue = JsonSerializer.Serialize<PortfolioFolderInDb>(prtfFolderInDb);
-            m_redisDb.HashSet("portfolioFolder", redisKey, redisValue);
-        }
+        string? prtfFolderInDb = m_redisDb.HashGet("portfolioFolder", redisKey);
+        if (prtfFolderInDb == null)
+            return $"Error in UpdatePortfolioFolder(): {redisKey} doesnt exists";
+
+        PortfolioFolderInDb? prtfFolderInDbCandidate = JsonSerializer.Deserialize<PortfolioFolderInDb>(prtfFolderInDb, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        if (prtfFolderInDbCandidate == null)
+            return $"Error in UpdatePortfolioFolder(): Deserialize failed on '{prtfFolderInDb}";
+
+        prtfFolderInDbCandidate.Name = p_name;
+        string redisValue = JsonSerializer.Serialize<PortfolioFolderInDb>(prtfFolderInDbCandidate);
+        m_redisDb.HashSet("portfolioFolder", redisKey, redisValue);
+        return string.Empty;
+    }
+
+    internal string EditPortfolioFolder(int p_id, string p_name, int p_parentFldId, string p_note)
+    {
+        string redisKey = p_id.ToString();
+        string? prtfFolderInDb = m_redisDb.HashGet("portfolioFolder", redisKey);
+        if (prtfFolderInDb == null)
+            return $"Error in EditPortfolioFolder(): folder id '{redisKey}' doesnt exists";
+
+        PortfolioFolderInDb? prtfFolderInDbCandidate = JsonSerializer.Deserialize<PortfolioFolderInDb>(prtfFolderInDb, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        if (prtfFolderInDbCandidate == null)
+            return $"Error in EditPortfolioFolder(): Deserialize failed on '{prtfFolderInDb}'";
+
+        prtfFolderInDbCandidate.Name = p_name;
+        prtfFolderInDbCandidate.ParentFolderId = p_parentFldId;
+        prtfFolderInDbCandidate.Note = p_note;
+        string redisValue = JsonSerializer.Serialize<PortfolioFolderInDb>(prtfFolderInDbCandidate);
+        m_redisDb.HashSet("portfolioFolder", redisKey, redisValue);
         return string.Empty;
     }
     public static bool UpdateBrotlisIfNeeded()

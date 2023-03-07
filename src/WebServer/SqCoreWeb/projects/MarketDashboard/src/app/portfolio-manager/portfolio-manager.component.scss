@@ -137,7 +137,8 @@
   border: .3rem solid #231fff;
 }
 
-#createPortfolioPopup { // modifying the height & width properties as we have many items to fit in the window
+// we can generalize the naming convention, for the time being not disturbing the existing Portfolio feature styles and using the same for createOrEdit Feature
+#createPortfolioPopup, #createOrEditFolderPopup { // modifying the height & width properties as we have many items to fit in the window
   height: 25rem;
   width: 35rem;
   text-align: left;
@@ -158,7 +159,7 @@
   width: 58%;
 }
 
-#createPortfolioButton {
+#createPortfolioButton, #createOrEditFolderButton {
   position: relative; // its positioned relative to normal position, it will be adjusted away from its normal position by setting top, left, right and bottom porperties.
   left: 2rem;
   top: 2rem;

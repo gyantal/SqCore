@@ -66,6 +66,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   isDeleteConfirmPopupVisible: boolean = false;
   isErrorPopupVisible: boolean = false;
   isUpdatePopupVisible: boolean = false;
+  isCreateOrEditFolderPopupVisible: boolean = false;
   errorMsgToUser: string = '';
   // common for both portfolio and portfolioFolder
   deletePrtfItemName: string = ''; // portfolio or folder name to be deleted
@@ -77,6 +78,10 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   portfolioType: string = 'Trades'; // default is set to Trades
   userNote: string = '';
   updatePrtfName: string | undefined = ''; // portfolio or folder name to be updated
+  editPrtfItemName: string | undefined = ''; // used as an input value for updating the item name
+  editPrtfItemId: number | undefined = -1; // used as an input value for updating the item id
+  editPrtfItemParentFolderId: number | undefined = -1; // used as an input value for updating the item parentFolderId
+  editPrtfItemNote: string | undefined = ''; // used as an input value for updating the item note
   tabPrtfSpecVisibleIdx = 1; // tab buttons for portfolio specification preview of positions and strategy parameters
 
   // the below vaiables are required for resizing the panels according to users
@@ -439,5 +444,30 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
   onClickPrtfSpecPreview(tabIdx: number) {
     this.tabPrtfSpecVisibleIdx = tabIdx;
+  }
+
+  // Create or Edit Folder
+  showCreateOrEditFolderPopup() {
+    this.isCreateOrEditFolderPopupVisible = true;
+    const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
+    this.editPrtfItemName = lastSelectedTreeNode?.name;
+    this.editPrtfItemId = lastSelectedTreeNode?.id;
+    this.editPrtfItemParentFolderId = lastSelectedTreeNode?.parentFolderId;
+    this.editPrtfItemNote = lastSelectedTreeNode?.note;
+  }
+
+  closeCreateOrEditFolderPopup() {
+    this.isCreateOrEditFolderPopupVisible = false;
+  }
+
+  onCreateOrEditFolderClicked() {
+    if (this.treeViewState.lastSelectedItem == null) {
+      console.log('Cannot Create/Edit, because no folder or portfolio was selected.');
+      return;
+    }
+
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+      this._parentWsConnection.send('PortfMgr.CreateOrEditFolder:id:' + this.editPrtfItemId + ',name:' + this.editPrtfItemName + ',prntFId:' + this.editPrtfItemParentFolderId + ',note:' + this.editPrtfItemNote);
+    this.isCreateOrEditFolderPopupVisible = false;
   }
 }
