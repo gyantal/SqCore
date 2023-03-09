@@ -9,32 +9,31 @@
     <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState"></app-sq-tree-view>
     <button (click)="showCreatePortfolioPopup()">Create Portfolio</button>&nbsp;
     <button (click)="showCreateFolderPopup()">Create Folder</button>&nbsp;<br><br>
-    <button (click)="showUpdatePortfolioItemPopup()">Update</button>&nbsp;
     <button (click)="onDeletePrtfItemClicked()">Delete</button><br><br>
-    <button (click)="showCreateOrEditFolderPopup()">Create Or Edit</button>&nbsp;
+    <button (click)="showCreateOrEditFolderPopup()">Create Or Edit Folder</button>&nbsp;
     <div class="popup infoPopup" id="createOrEditFolderPopup"[ngStyle]="{'display': isCreateOrEditFolderPopupVisible ? 'block' : 'none'}"><br>
       <div>
         <div class="prtfCommon prtfFields">Name:</div>
         <div class="prtfCommon prtfUserValues">
-          <input type="text" placeholder="Enter Folder Name" [(ngModel)]="editPrtfItemName" [value]="editPrtfItemName">
+          <input type="text" placeholder="Enter Folder Name" [(ngModel)]="editedFolder.name" [value]="editedFolder.name">
         </div>
       </div>
       <div>
         <div class="prtfCommon prtfFields">Id:</div>
         <div class="prtfCommon prtfUserValues">
-          <input type="text" placeholder="Enter Item ID" [(ngModel)]="editPrtfItemId" [value]="editPrtfItemId">
+          <input type="text" placeholder="Enter Item ID" [(ngModel)]="editedFolder.id" [value]="editedFolder.id">
         </div>
       </div>
       <div>
         <div class="prtfCommon prtfFields">FolderId:</div>
         <div class="prtfCommon prtfUserValues">
-          <input type="text" placeholder="Enter ParentFolder ID" [(ngModel)]="editPrtfItemParentFolderId" [value]="editPrtfItemParentFolderId">
+          <input type="text" placeholder="Enter ParentFolder ID" [(ngModel)]="editedFolder.parentFolderId" [value]="editedFolder.parentFolderId">
         </div>
       </div>
       <div>
         <div class="prtfCommon prtfFields">Note:</div>
         <div class="prtfCommon prtfUserValues">
-          <input type="text" placeholder="Note" [(ngModel)]="editPrtfItemNote" [value]="editPrtfItemNote">
+          <input type="text" placeholder="Note" [(ngModel)]="editedFolder.note" [value]="editedFolder.note">
         </div>
       </div><br><br>
       <div>
@@ -104,14 +103,6 @@
       <span>
         <button id="createPortfolioButton" (click)="onCreatePortfolioClicked()"> Create New Portfolio</button>
         <button class="closePopup" (click)="closeCreatePortfolioPopup()" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}">Dismiss</button>
-      </span>
-    </div><br>
-    <div class="popup infoPopup" [ngStyle]="{'display': isUpdatePopupVisible ? 'block' : 'none'}"><br>
-      <label><b>Name:</b>&nbsp;</label>
-      <input type="text" placeholder="update Folder/Prtf Name" [(ngModel)]="updatePrtfName" [value]="updatePrtfName"><br><br>
-      <span>
-        <button (click)="onUpdatePortfolioItemClicked()"> Update Folder/Portfolio</button>
-        <button class="closePopup" (click)="closeUpdatePortfolioItemPopup()" [ngStyle]="{'display': isUpdatePopupVisible ? 'block' : 'none'}">Dismiss</button>
       </span>
     </div><br>
   </div>

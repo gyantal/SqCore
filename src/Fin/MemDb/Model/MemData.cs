@@ -146,19 +146,12 @@ internal class MemData // don't expose to clients.
             return PortfolioFolders.Remove(p_id);
         }
     }
+
     public bool RemovePortfolioFolder(PortfolioFolder p_prFolder) // method to remove the folder based on prtfFolder - need to discuss with George
     {
         lock (PrFldUpdateLock)
         {
             return PortfolioFolders.Remove(p_prFolder.Id);
-        }
-    }
-    public void UpdatePortfolioFolder(int p_id, string p_name) // method to update the folder based on fld key
-    {
-        lock (PrFldUpdateLock)
-        {
-            if (PortfolioFolders.TryGetValue(p_id, out PortfolioFolder? portfolioFolder))
-                portfolioFolder.Name = p_name;
         }
     }
 

@@ -427,27 +427,6 @@ public partial class Db
         m_redisDb.HashSet("portfolio", redisKey, redisValue);
     }
 
-    internal string UpdatePortfolioFolder(int p_id, string p_name)
-    {
-        HashEntry[]? portfolioFoldersRds = m_redisDb.HashGetAll("portfolioFolder");
-        if (portfolioFoldersRds == null)
-            return "Error in UpdatePortfolioFolder(): Redis DB is not available";
-
-        string redisKey = p_id.ToString();
-        string? prtfFolderInDb = m_redisDb.HashGet("portfolioFolder", redisKey);
-        if (prtfFolderInDb == null)
-            return $"Error in UpdatePortfolioFolder(): {redisKey} doesnt exists";
-
-        PortfolioFolderInDb? prtfFolderInDbCandidate = JsonSerializer.Deserialize<PortfolioFolderInDb>(prtfFolderInDb, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        if (prtfFolderInDbCandidate == null)
-            return $"Error in UpdatePortfolioFolder(): Deserialize failed on '{prtfFolderInDb}";
-
-        prtfFolderInDbCandidate.Name = p_name;
-        string redisValue = JsonSerializer.Serialize<PortfolioFolderInDb>(prtfFolderInDbCandidate);
-        m_redisDb.HashSet("portfolioFolder", redisKey, redisValue);
-        return string.Empty;
-    }
-
     internal string EditPortfolioFolder(int p_id, string p_name, int p_parentFldId, string p_note)
     {
         string redisKey = p_id.ToString();

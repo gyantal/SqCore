@@ -96,10 +96,6 @@ public partial class DashboardClient
                 PortfMgrCreatePortfolio(msgObjStr);
                 PortfMgrSendPortfolios();
                 return true;
-            case "PortfMgr.UpdatePortfolioItem": // msg: "DayaTest,id:-1"
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): UpdatePortfolioItem '{msgObjStr}'");
-                PortfMgrUpdatePortfolioItem(msgObjStr);
-                return true;
             case "PortfMgr.DeletePortfolioItem": // msg: "id:5" // if id > 10,000 then it is a PortfolioID otherwise it is the FolderID
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): DeletePortfolioItem '{msgObjStr}'");
                 PortfMgrDeletePortfolioItem(msgObjStr);
@@ -166,7 +162,7 @@ public partial class DashboardClient
 
         int id = Convert.ToInt32(p_msg.Substring(idStartIdx + 1, pfNameIdx - idStartIdx - ",name:".Length));
         string pfName = p_msg.Substring(pfNameIdx + 1, prntFldrIdx - pfNameIdx - ",prntFId:".Length);
-        int parentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, userNoteIdx - prntFldrIdx - ",note:".Length));
+        int virtualParentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, userNoteIdx - prntFldrIdx - ",note:".Length));
         string userNote = p_msg[(userNoteIdx + 1)..];
 
         bool isCreateFolder = id == -1;
@@ -176,43 +172,36 @@ public partial class DashboardClient
         {
             Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
             User? user = User;
-            int prntFldIdToSend = -1;
-            foreach (PortfolioFolder pf in prtfFldrs)
+            int realParentFldId = -1;
+            if (virtualParentFldId < -2) // parentFldId < -2 is a virtual UserRoot folder
             {
-                if (parentFldId >= -2)
+                if (user.Id == -1 * virtualParentFldId)
+                    user = User;
+            }
+            else if (virtualParentFldId == -2) // parentFldId == -2  Create the new Folder with “"User":-1,"ParentFolder":-2,”
+            {
+                realParentFldId = virtualParentFldId;
+                user = null;
+            }
+            else if (virtualParentFldId == -1 || virtualParentFldId == 0) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
+                return; // throw new Exception("Nobody can create folders in virtual Shared folder"); // can we send an exception here - Daya
+            else // it is a proper folderID, Create the new Folder under that
+            {
+                foreach (PortfolioFolder pf in prtfFldrs)
                 {
-                    if (parentFldId == 0) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
-                        return; // throw new Exception("Nobody can create folders in virtual Shared folder"); // can we send an exception here - Daya
-                    else if (parentFldId >= 1) // it is a proper folderID, Create the new Folder under that
-                    {
-                        prntFldIdToSend = parentFldId;
-                        if (pf.Id == prntFldIdToSend)
-                        {
-                            user = pf.User;
-                            break;
-                        }
-                    }
-                    else if (parentFldId == -2) // parentFldId == -2  Create the new Folder with “"User":-1,"ParentFolder":-2,”
-                    {
-                        prntFldIdToSend = parentFldId;
-                        user = null;
-                        break;
-                    }
-                }
-                else // parentFldId < -2 is a virtual UserRoot folder. create the new Folder with (User: -1 * thisUserId, ParentFolder = -1)
-                {
-                    if (pf.User?.Id == -1 * parentFldId)
+                    realParentFldId = virtualParentFldId;
+                    if (pf.Id == realParentFldId)
                     {
                         user = pf.User;
                         break;
                     }
                 }
             }
-            MemDb.gMemDb.AddNewPortfolioFolder(user, pfName, prntFldIdToSend, userNote);
+            MemDb.gMemDb.AddNewPortfolioFolder(user, pfName, realParentFldId, userNote);
         }
         else
         {
-            errMsg = MemDb.gMemDb.EditPortfolioFolder(id, pfName, parentFldId, userNote);
+            errMsg = MemDb.gMemDb.EditPortfolioFolder(id, pfName, virtualParentFldId, userNote);
         }
 
         if (!String.IsNullOrEmpty(errMsg))
@@ -372,35 +361,6 @@ public partial class DashboardClient
         }
         // Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{user}' '{pfName}' '{prntFldIdToSend}' '{userNote}' '{currency}' '{userAccess}' '{prtfType}'");
         MemDb.gMemDb.AddNewPortfolio(user, pfName, prntFldIdToSend, userNote, currency, userAccess, prtfType);
-    }
-
-    private void PortfMgrUpdatePortfolioItem(string p_msg) // msg - "DayaTest,id:-1"
-    {
-        int pfNameIdx = p_msg.IndexOf(',');
-        int idStrIdx = (pfNameIdx == -1) ? -1 : p_msg.IndexOf(":", pfNameIdx);
-        if (idStrIdx == -1)
-            return;
-        string pfName = p_msg[..pfNameIdx];
-        int id = Convert.ToInt32(p_msg[(idStrIdx + 1)..]);
-        bool isFolder = id < gPortfolioIdOffset;
-        // string errMsg = string.Empty;
-        if (isFolder)
-            // errMsg = MemDb.gMemDb.UpdatePortfolioFolder(id, pfName);
-            MemDb.gMemDb.UpdatePortfolioFolder(id, pfName);
-        // else
-            // MemDb.gMemDb.DeletePortfolio(id - gPortfolioIdOffset); // Not completely implemented - Daya
-
-        // if (!String.IsNullOrEmpty(errMsg)) // probably we should send message to user saying the item got updated or so...
-        // {
-        //     byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.ErrorToUser:" + errMsg);
-        //     if (WsWebSocket!.State == WebSocketState.Open)
-        //         WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-        // }
-
-        if (isFolder)
-            PortfMgrSendFolders();
-        // else
-            // PortfMgrSendPortfolios();
     }
 
     private void PortfMgrDeletePortfolioItem(string p_msg) // "id:5"
