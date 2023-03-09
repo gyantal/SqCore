@@ -20,14 +20,37 @@ import datetime as dt
 import pandas_datareader.data as web
 import os
 import common_aa_pv as com
+from scipy.stats.stats import pearsonr
 
+# !!! It doesn't work properly yet. Debugging and some modification is needed. ~ 1 day !!!
 
 # print all outputs
 from IPython.core.interactiveshell import InteractiveShell
 InteractiveShell.ast_node_interactivity = "all"
 from scipy.stats import rankdata
 
-def dualmom(ticker_list, rebalance_unit, rebalance_freq, rebalance_shift, lb_period, skipped_period, no_played_ETFs, sub_rank_weights, abs_threshold, start_date, end_date):
+def opt3corr(dailyret_p, total_rank_p, number_of_ETFs_p, lb_days_p):
+
+    dailyret_p_np = dailyret_p.to_numpy()
+    total_rank_p_np = total_rank_p.to_numpy()
+    number_of_ETFs_p_np = number_of_ETFs_p.to_numpy()
+    no_rows, no_cols = dailyret_p_np.shape
+    opt3corr = np.zeros((no_rows, no_cols)) + 99
+    for i in range(lb_days_p - 1, no_rows):
+        for j in range(no_cols):
+            sub_corrs = np.zeros(no_cols)
+            if (total_rank_p_np[i, j] < number_of_ETFs_p_np[i] + 1):
+                for j2 in range(no_cols):
+                    if (total_rank_p_np[i, j2] < number_of_ETFs_p_np[i] + 1):
+                        v1 = dailyret_p_np[i - lb_days_p + 1 : i, j]
+                        v2 = dailyret_p_np[i - lb_days_p + 1 : i, j2]
+                        sub_corrs[j2] = np.corrcoef(v1, v2)[1,0]
+                opt3corr[i, j] = np.mean(sub_corrs)
+
+    opt3corr_df = pd.DataFrame(opt3corr, index = dailyret_p.index, columns = dailyret_p.columns) 
+    return opt3corr_df
+
+def dualmom_opt3(ticker_list, rebalance_unit, rebalance_freq, rebalance_shift, lb_period, skipped_period, no_played_ETFs, sub_rank_weights, abs_threshold, start_date, end_date):
 
     adj_close_price = yf.download(ticker_list,start = pd.to_datetime(start_date) + pd.DateOffset(years= -2),end = pd.to_datetime(end_date) + pd.DateOffset(days= 1) )['Adj Close']
 
@@ -45,6 +68,8 @@ def dualmom(ticker_list, rebalance_unit, rebalance_freq, rebalance_shift, lb_per
     df['Rebalance'] = np.where((df.RebalanceUnit == True) & (df.NoPeriod.mod(rebalance_freq) == 0), True, False)
 
     dailyret = adj_close_price/adj_close_price.shift(1) - 1
+    number_of_available_ETFs = adj_close_price[adj_close_price > 0].count(axis = 1)
+    number_of_corr_calc_ETFs = (number_of_available_ETFs).where(number_of_available_ETFs < no_played_ETFs * 2, no_played_ETFs * 2)
 
     lb_days_base = {'Month' : 21, 'Week' : 5, 'Day' : 1}
     lb_days = lb_days_base[rebalance_unit] * lb_period
@@ -61,12 +86,19 @@ def dualmom(ticker_list, rebalance_unit, rebalance_freq, rebalance_shift, lb_per
     rel_mom_rets_rank = rel_mom_rets.rank(axis = 1, ascending = False)
     sd_rets_rank = sd_rets.rank(axis = 1, ascending = True)
     corr_rets_rank = corr_rets.rank(axis = 1, ascending = True)
-   
-    total_rank_helper = sub_rank_weights['relMom'] * rel_mom_rets_rank + sub_rank_weights['volatility'] * sd_rets_rank + sub_rank_weights['correlation'] * corr_rets_rank
+    
+    total_subrank_weight = sum(sub_rank_weights.values())
+    sub_rank_weights = {key: value / total_subrank_weight for key, value in sub_rank_weights.items()}
+
+    total_rank_helper = sub_rank_weights['relMom'] * rel_mom_rets_rank + sub_rank_weights['volatility'] * sd_rets_rank
     total_rank = total_rank_helper.rank(axis = 1, ascending = True)
-    no_selected_etfs = ((total_rank < no_played_ETFs + 1) & (rel_mom_rets > abs_threshold)).sum(1)
+
+    final_opt3corr_rank = opt3corr(dailyret, total_rank, number_of_corr_calc_ETFs, lb_days_with_skipped)
+    final_rank = final_opt3corr_rank.rank(axis = 1, ascending = True)
+
+    no_selected_etfs = ((final_rank < no_played_ETFs + 1) & (rel_mom_rets > abs_threshold)).sum(1)
     no_really_played_etfs = no_selected_etfs.where(no_selected_etfs > no_played_ETFs, no_played_ETFs)
-    etf_weights = (total_rank.divide(total_rank, axis = 0).divide(no_really_played_etfs, axis = 0)).where((total_rank < no_played_ETFs + 1) & (rel_mom_rets > abs_threshold), 0)
+    etf_weights = (final_rank.divide(final_rank, axis = 0).divide(no_really_played_etfs, axis = 0)).where((final_rank < no_played_ETFs + 1) & (rel_mom_rets > abs_threshold), 0)
     cash_weight = 1 - etf_weights.sum(axis = 1)
 
     pos, cash, pv = com.positions_pv(adj_close_price, df.Rebalance, etf_weights, cash_weight, start_date)

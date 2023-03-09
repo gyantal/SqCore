@@ -35,6 +35,7 @@ from taa_lib import taa
 from baa_lib import baa
 from dualmom_lib import dualmom
 from meta_lib import meta
+from haa_lib import haa
 
 
 def weight_recalc(reb_df, cum_weights_p):
@@ -131,8 +132,8 @@ def lev_by_monthly_perf(sharpe_rank, leverage_array, year_month_df, min_lb_years
     
     return year_month_df_to_fill
 
-def leveraged_meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters, keller_protmom_parameters, novell_tactbond_parameters, meta_leverage_parameters):
-    pv_dct, rets_dct, weights_dct, pos_dct, cash_dct, curr_substrats_weights_dct, curr_ETF_weights_dct, adj_close_price, cum_ETF_weigths_dict = meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters, keller_protmom_parameters, novell_tactbond_parameters)
+def leveraged_meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters, keller_protmom_parameters, novell_tactbond_parameters, meta_leverage_parameters, haa_parameters):
+    pv_dct, rets_dct, weights_dct, pos_dct, cash_dct, curr_substrats_weights_dct, curr_ETF_weights_dct, adj_close_price, cum_ETF_weigths_dict = meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters, keller_protmom_parameters, novell_tactbond_parameters, haa_parameters)
     used_substrat_weights = meta_parameters['used_substrat_weights']
     used_substrat_pv = pv_dct[used_substrat_weights]
     used_substrat_cum_ETF_weights = cum_ETF_weigths_dict[used_substrat_weights]
