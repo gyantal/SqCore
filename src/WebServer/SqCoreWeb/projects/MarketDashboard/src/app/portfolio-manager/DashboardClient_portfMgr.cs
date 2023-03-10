@@ -81,11 +81,6 @@ public partial class DashboardClient
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): RefreshFolders '{msgObjStr}'");
                 PortfMgrSendFolders();
                 return true;
-            case "PortfMgr.CreateFolder": // msg: "DayaTest,prntFId:-1"
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreateFolder '{msgObjStr}'");
-                PortfMgrCreateFolder(msgObjStr);
-                PortfMgrSendFolders();
-                return true;
             case "PortfMgr.CreateOrEditFolder": // msg: "id:-1,name:DayaTesting,prntFlrId:2,note:tesing"
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreateOrEditFolder '{msgObjStr}'");
                 PortfMgrCreateOrEditFolder(msgObjStr);
@@ -105,74 +100,26 @@ public partial class DashboardClient
         }
     }
 
-    public void PortfMgrCreateFolder(string p_msg)
-    {
-        int pfNameIdx = p_msg.IndexOf(',');
-        int prntFldrIdx = (pfNameIdx == -1) ? -1 : p_msg.IndexOf(":", pfNameIdx);
-        if (prntFldrIdx == -1)
-            prntFldrIdx = -1;
-        string pfName = p_msg[..pfNameIdx];
-        int parentFldId = Convert.ToInt32(p_msg[(prntFldrIdx + 1)..]);
-
-        string p_note = string.Empty; // if there is some note mentioned by client we need to take that not the empty
-        Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
-        User? user = User;
-        int prntFldIdToSend = -1;
-        foreach (PortfolioFolder pf in prtfFldrs)
-        {
-            if (parentFldId >= -2)
-            {
-                if (parentFldId == 0) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
-                    return; // throw new Exception("Nobody can create folders in virtual Shared folder"); // can we send an exception here - Daya
-                else if (parentFldId >= 1) // it is a proper folderID, Create the new Folder under that
-                {
-                    prntFldIdToSend = parentFldId;
-                    if (pf.Id == prntFldIdToSend)
-                    {
-                        user = pf.User;
-                        break;
-                    }
-                }
-                else if (parentFldId == -2) // parentFldId == -2  Create the new Folder with “"User":-1,"ParentFolder":-2,”
-                {
-                    prntFldIdToSend = parentFldId;
-                    user = null;
-                    break;
-                }
-            }
-            else // parentFldId < -2 is a virtual UserRoot folder. create the new Folder with (User: -1 * thisUserId, ParentFolder = -1)
-            {
-                if (pf.User?.Id == -1 * parentFldId)
-                {
-                    user = pf.User;
-                    // prntFldIdToSend = -1;
-                    break;
-                }
-            }
-        }
-        MemDb.gMemDb.AddNewPortfolioFolder(user, pfName, prntFldIdToSend, p_note);
-    }
-
     public void PortfMgrCreateOrEditFolder(string p_msg) // msg: id:-1,name:TestNesting12,p,p,prntFlrId:16,note:test
     {
         int idStartIdx = p_msg.IndexOf(":");
-        int pfNameIdx = (idStartIdx == -1) ? -1 : p_msg.IndexOf(':', idStartIdx + 1);
-        int prntFldrIdx = (pfNameIdx == -1) ? -1 : p_msg.IndexOf(":", pfNameIdx + 1);
+        int fldNameIdx = (idStartIdx == -1) ? -1 : p_msg.IndexOf(':', idStartIdx + 1);
+        int prntFldrIdx = (fldNameIdx == -1) ? -1 : p_msg.IndexOf(":", fldNameIdx + 1);
         int userNoteIdx = prntFldrIdx == -1 ? -1 : p_msg.IndexOf(":", prntFldrIdx + 1);
 
-        int id = Convert.ToInt32(p_msg.Substring(idStartIdx + 1, pfNameIdx - idStartIdx - ",name:".Length));
-        string pfName = p_msg.Substring(pfNameIdx + 1, prntFldrIdx - pfNameIdx - ",prntFId:".Length);
+        int id = Convert.ToInt32(p_msg.Substring(idStartIdx + 1, fldNameIdx - idStartIdx - ",name:".Length));
+        string fldName = p_msg.Substring(fldNameIdx + 1, prntFldrIdx - fldNameIdx - ",prntFId:".Length);
         int virtualParentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, userNoteIdx - prntFldrIdx - ",note:".Length));
         string userNote = p_msg[(userNoteIdx + 1)..];
 
         bool isCreateFolder = id == -1;
-        string errMsg = string.Empty;
+        User? user = User;
+        int realParentFldId = -1;
 
         if (isCreateFolder)
         {
             Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
-            User? user = User;
-            int realParentFldId = -1;
+
             if (virtualParentFldId < -2) // parentFldId < -2 is a virtual UserRoot folder
             {
                 if (user.Id == -1 * virtualParentFldId)
@@ -197,12 +144,15 @@ public partial class DashboardClient
                     }
                 }
             }
-            MemDb.gMemDb.AddNewPortfolioFolder(user, pfName, realParentFldId, userNote);
         }
         else
         {
-            errMsg = MemDb.gMemDb.EditPortfolioFolder(id, pfName, virtualParentFldId, userNote);
+            realParentFldId = virtualParentFldId;
         }
+
+        string errMsg = MemDb.gMemDb.AddOrEditPortfolioFolder(id, user, fldName, realParentFldId, userNote, out PortfolioFolder? p_newItem);
+        if (p_newItem == null)
+            errMsg = "Folder was not created";
 
         if (!String.IsNullOrEmpty(errMsg))
         {
@@ -211,6 +161,23 @@ public partial class DashboardClient
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
         }
     }
+
+    static int GetVirtualParentFldId(User? p_user, int p_realParentFldId)
+    {
+        int virtualParentFldId = p_realParentFldId;
+        if (p_realParentFldId == -1) // if Portfolio doesn't have a parent folder, then it is in the Root (of either the NonUser or a concrete user)
+        {
+            if (p_user == null) // if the owner is the NoUser
+                virtualParentFldId = gNoUserVirtPortfId;
+            else
+                virtualParentFldId = -1 * p_user.Id; // If there is a proper user, the Virtual FolderID is the -1 * UserId by our convention.
+        }
+        return virtualParentFldId;
+    }
+
+    // static (int RealParentFldId, User? User) GetRealParentFldId(p_virtualParentFldId) Yet to Develop - Daya
+    // {
+    // }
 
     private void PortfMgrSendFolders() // Processing the portfolioFolders based on the visiblity rules
     {
@@ -264,16 +231,9 @@ public partial class DashboardClient
             if (!isSendToUser)
                 continue;
 
-            int parentFolderId = pf.ParentFolderId;
-            if (pf.ParentFolderId == -1)
-            {
-                if (pf.User == null)
-                    parentFolderId = gNoUserVirtPortfId;
-                else
-                    parentFolderId = -1 * pf.User.Id;
-            }
+            int virtualParentFldId = GetVirtualParentFldId(pf.User, pf.ParentFolderId);
 
-            FolderJs pfJs = new() { Id = pf.Id, Name = pf.Name, ParentFolderId = parentFolderId };
+            FolderJs pfJs = new() { Id = pf.Id, Name = pf.Name, ParentFolderId = virtualParentFldId };
             prtfFldrsToClient.Add(pfJs);
         }
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Folders:" + Utils.CamelCaseSerialize(prtfFldrsToClient));
@@ -292,16 +252,9 @@ public partial class DashboardClient
             if (!isSendToUser)
                 continue;
 
-            int parentFolderId = pf.ParentFolderId;
-            if (pf.ParentFolderId == -1) // if Portfolio doesn't have a parent folder, then it is in the Root (of either the NonUser or a concrete user)
-            {
-                if (pf.User == null) // if the owner is the NoUser
-                    parentFolderId = gNoUserVirtPortfId;
-                else
-                    parentFolderId = -1 * pf.User.Id; // If there is a proper user, the Virtual FolderID is the -1 * UserId by our convention.
-            }
+            int virtualParentFldId = GetVirtualParentFldId(pf.User, pf.ParentFolderId);
 
-            PortfolioJs pfJs = new() { Id = pf.Id + gPortfolioIdOffset, Name = pf.Name, ParentFolderId = parentFolderId };
+            PortfolioJs pfJs = new() { Id = pf.Id + gPortfolioIdOffset, Name = pf.Name, ParentFolderId = virtualParentFldId };
             prtfToClient.Add(pfJs);
         }
 

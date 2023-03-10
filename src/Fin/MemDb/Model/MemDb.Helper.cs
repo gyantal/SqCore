@@ -139,14 +139,16 @@ public partial class MemDb
                 break;
             }
         }
-        Debug.WriteLine($"MemDb.GetSdaHistCloses().EndDate: {dates[iEndDay]}");
+        if (dates.Length != 0)
+            Debug.WriteLine($"MemDb.GetSdaHistCloses().EndDate: {dates[iEndDay]}");
 
         int iStartDay = histData.IndexOfKeyOrAfter(new SqDateOnly(p_startIncLoc));      // the valid price at the weekend is the one on the previous Friday. After.
         if (iStartDay == -1 || iStartDay >= dates.Length) // If not found then fix the startDate as the first available date of history.
         {
             iStartDay = dates.Length - 1;
         }
-        Debug.WriteLine($"MemDb.GetSdaHistCloses().StartDate: {dates[iStartDay]}");
+        if (dates.Length != 0)
+            Debug.WriteLine($"MemDb.GetSdaHistCloses().StartDate: {dates[iStartDay]}");
 
         IEnumerable<AssetHist> assetHists = p_assets.Select(r =>
         {

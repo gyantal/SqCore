@@ -6,47 +6,47 @@ namespace Fin.MemDb;
 
 public partial class MemDb
 {
-    public PortfolioFolder? AddNewPortfolioFolder(User? p_user, string p_name, int p_parentFldId, string p_note)
+    public string AddOrEditPortfolioFolder(int p_id, User? p_user, string p_name, int p_parentFldId, string p_note, out PortfolioFolder? p_newItem)
     {
-        string creationTime = DateTime.UtcNow.TohYYYYMMDDHHMMSS(); // DateTime.Now.ToString() => "CTime":"2022-10-13T20:00:00"
-
-        // it seems lock (ItemUpdateLock) is not required. True, many threads can create new items at the same time.
-        // But they will be locked and waiting in the memData.AddNewItem() function that is thread safe and has a lock inside.
-        // So, every new item has a unique ID. No problem. And writing the half-parallel created new items to the RedisDb can be done parallel.
-        // No need to serialize RedisDb writing. The RedisDb itself should be multithread-ready.
-
-        // the m_memData.AddNewPortfolioFolder() does the creation of new ID, the creation of Item and adding to Dictionary. If we separate those tasks to 3 functions, we need new locks
-        PortfolioFolder? fld = m_memData.AddNewPortfolioFolder(p_user, p_name, p_parentFldId, creationTime, p_note);
-        if (fld == null)
-            return null;
-
-        // insert new item into the persistent database (RedisDb, Sql)
-        try
+        PortfolioFolder? pf = null;
+        string errMsg = String.Empty;
+        if (p_id == -1) // if id == -1, which is an invalid key in the Db, we create a new Item
         {
-            m_Db.AddPortfolioFolder(fld); // can raise System.TimeoutException or others if the RedisDb is offline
-        }
-        catch (System.Exception) // if error occured in DB writing, revert the transaction back to original state. Do not add the new Folder into MemDb.
-        {
-            m_memData.RemovePortfolioFolder(fld);
-            fld = null;
-        }
-        return fld;
-    }
+            string creationTime = DateTime.UtcNow.TohYYYYMMDDHHMMSS(); // DateTime.Now.ToString() => "CTime":"2022-10-13T20:00:00"
 
-    public string EditPortfolioFolder(int p_id, string p_pfName, int p_parentFldId, string p_note)
-    {
-        try
-        {
-            string errMsg = m_Db.EditPortfolioFolder(p_id, p_pfName, p_parentFldId, p_note); // gives back an error message or empty string if everything was OK.
-            if (!String.IsNullOrEmpty(errMsg))
-                return errMsg;
-            m_memData.EditPortfolioFolder(p_id, p_pfName, p_parentFldId, p_note);
-            return string.Empty;
+            // it seems lock (ItemUpdateLock) is not required. True, many threads can create new items at the same time.
+            // But they will be locked and waiting in the memData.AddNewItem() function that is thread safe and has a lock inside.
+            // So, every new item has a unique ID. No problem. And writing the half-parallel created new items to the RedisDb can be done parallel.
+            // No need to serialize RedisDb writing. The RedisDb itself should be multithread-ready.
+
+            // the m_memData.AddNewPortfolioFolder() does the creation of new ID, the creation of Item and adding to Dictionary. If we separate those tasks to 3 functions, we need new locks
+            pf = m_memData.AddNewPortfolioFolder(p_user, p_name, p_parentFldId, p_note, creationTime);
+            if (pf == null)
+                errMsg = "Cannot create new item.";
+            else
+            {
+                // insert new item into the persistent database (RedisDb, Sql)
+                try
+                {
+                    m_Db.AddPortfolioFolder(pf); // can raise System.TimeoutException or others if the RedisDb is offline
+                }
+                catch (System.Exception) // if error occured in DB writing, revert the transaction back to original state. Do not add the new Folder into MemDb.
+                {
+                    m_memData.RemovePortfolioFolder(pf);
+                    errMsg = "Cannot create new item.";
+                    pf = null;
+                }
+            }
         }
-        catch (System.Exception e)
+        else // if id is valid, edit the Item
         {
-            return $"Error in MemDb.EditPortfolioFolder(): Exception {e.Message}";
+            errMsg = m_Db.EditPortfolioFolder(p_id, p_user, p_name, p_parentFldId, p_note); // gives back an error message or empty string if everything was OK.
+            if (String.IsNullOrEmpty(errMsg)) // if there is no error in RedisDb operation
+                pf = m_memData.EditPortfolioFolder(p_id, p_user, p_name, p_parentFldId, p_note);
         }
+
+        p_newItem = pf;
+        return errMsg;
     }
 
     public string DeletePortfolioFolder(int p_id)

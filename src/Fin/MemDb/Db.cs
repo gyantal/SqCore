@@ -427,7 +427,7 @@ public partial class Db
         m_redisDb.HashSet("portfolio", redisKey, redisValue);
     }
 
-    internal string EditPortfolioFolder(int p_id, string p_name, int p_parentFldId, string p_note)
+    internal string EditPortfolioFolder(int p_id, User? p_user, string p_name, int p_parentFldId, string p_note)
     {
         string redisKey = p_id.ToString();
         string? prtfFolderInDb = m_redisDb.HashGet("portfolioFolder", redisKey);
@@ -438,6 +438,7 @@ public partial class Db
         if (prtfFolderInDbCandidate == null)
             return $"Error in EditPortfolioFolder(): Deserialize failed on '{prtfFolderInDb}'";
 
+        prtfFolderInDbCandidate.UserId = p_user?.Id ?? -1;
         prtfFolderInDbCandidate.Name = p_name;
         prtfFolderInDbCandidate.ParentFolderId = p_parentFldId;
         prtfFolderInDbCandidate.Note = p_note;

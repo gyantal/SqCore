@@ -61,7 +61,6 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   folders: Nullable<FolderJs[]> = null;
   portfolios: Nullable<PortfolioJs[]> = null;
   uiNestedPrtfTreeViewItems: TreeViewItem[] = [];
-  isCreateFolderPopupVisible: boolean = false;
   isCreatePortfolioPopupVisible: boolean = false;
   isDeleteConfirmPopupVisible: boolean = false;
   isErrorPopupVisible: boolean = false;
@@ -345,34 +344,19 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this._parentWsConnection.send('PortfMgr.RefreshFolders:');
   }
 
-  // Create Folder
-  showCreateFolderPopup() {
-    this.isCreateFolderPopupVisible = true;
-  }
-
-  closeCreateFolderPopup() {
-    this.isCreateFolderPopupVisible = false;
-  }
-
-  onCreateFolderClicked() {
-    if (this.treeViewState.lastSelectedItem == null) {
-      console.log('Cannot Create, because no folder was selected.');
-      return;
-    }
-    const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
-    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.CreateFolder:' + this.createPrtfItemName + ',prntFId:' + lastSelectedTreeNode.id);
-    this.isCreateFolderPopupVisible = false;
-  }
-
   // Create or Edit Folder
-  showCreateOrEditFolderPopup() {
-    this.isCreateOrEditFolderPopupVisible = true;
+  showCreateOrEditFolderPopup(mode: string) { // mode is create or edit
+    console.log('showCreateOrEditFolderPopup(): Mode', mode);
     const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
-    this.editedFolder.name = lastSelectedTreeNode?.name!;
-    this.editedFolder.id = lastSelectedTreeNode?.id!;
+    this.isCreateOrEditFolderPopupVisible = true;
+    if (mode == 'create')
+      this.editedFolder = new FolderJs();
+    else {
+      this.editedFolder.name = lastSelectedTreeNode?.name!;
+      this.editedFolder.id = lastSelectedTreeNode?.id!;
+      this.editedFolder.note = lastSelectedTreeNode?.note!;
+    }
     this.editedFolder.parentFolderId = lastSelectedTreeNode?.parentFolderId!;
-    this.editedFolder.note = lastSelectedTreeNode?.note!;
   }
 
   closeCreateOrEditFolderPopup() {

@@ -119,7 +119,7 @@ internal class MemData // don't expose to clients.
         }
     }
 
-    public PortfolioFolder AddNewPortfolioFolder(User? p_user, string p_name, int p_parentFldId, string p_creationTime, string p_note)
+    public PortfolioFolder AddNewPortfolioFolder(User? p_user, string p_name, int p_parentFldId, string p_note, string p_creationTime)
     {
         lock (PrFldUpdateLock)
         {
@@ -155,16 +155,20 @@ internal class MemData // don't expose to clients.
         }
     }
 
-    public void EditPortfolioFolder(int p_id, string p_name, int p_parentFldId, string p_note) // method to Edit the folder based on fld key
+    public PortfolioFolder? EditPortfolioFolder(int p_id, User? p_user, string p_name, int p_parentFldId, string p_note) // method to Edit the folder based on fld key
     {
         lock (PrFldUpdateLock)
         {
             if (PortfolioFolders.TryGetValue(p_id, out PortfolioFolder? portfolioFolder))
             {
+                portfolioFolder.User = p_user;
                 portfolioFolder.Name = p_name;
                 portfolioFolder.ParentFolderId = p_parentFldId;
                 portfolioFolder.Note = p_note;
+                return portfolioFolder;
             }
+            else
+                return null;
         }
     }
 
