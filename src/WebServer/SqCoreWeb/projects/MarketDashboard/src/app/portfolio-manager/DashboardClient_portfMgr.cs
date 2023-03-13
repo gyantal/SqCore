@@ -113,46 +113,23 @@ public partial class DashboardClient
         string userNote = p_msg[(userNoteIdx + 1)..];
 
         bool isCreateFolder = id == -1;
-        User? user = User;
-        int realParentFldId = -1;
+        User? user = null;
+        int realParentFldId;
 
         if (isCreateFolder)
-        {
-            Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
+            (realParentFldId, user) = GetRealParentFldId(virtualParentFldId);
+        else
+            realParentFldId = virtualParentFldId;
 
-            if (virtualParentFldId < -2) // parentFldId < -2 is a virtual UserRoot folder
-            {
-                if (user.Id == -1 * virtualParentFldId)
-                    user = User;
-            }
-            else if (virtualParentFldId == -2) // parentFldId == -2  Create the new Folder with “"User":-1,"ParentFolder":-2,”
-            {
-                realParentFldId = virtualParentFldId;
-                user = null;
-            }
-            else if (virtualParentFldId == -1 || virtualParentFldId == 0) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
-                return; // throw new Exception("Nobody can create folders in virtual Shared folder"); // can we send an exception here - Daya
-            else // it is a proper folderID, Create the new Folder under that
-            {
-                foreach (PortfolioFolder pf in prtfFldrs)
-                {
-                    realParentFldId = virtualParentFldId;
-                    if (pf.Id == realParentFldId)
-                    {
-                        user = pf.User;
-                        break;
-                    }
-                }
-            }
-        }
+        string errMsg;
+        if (realParentFldId == -1 && user == null) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
+            errMsg = "Nobody can create folders in the virtual 'Shared' folders";
         else
         {
-            realParentFldId = virtualParentFldId;
-        }
-
-        string errMsg = MemDb.gMemDb.AddOrEditPortfolioFolder(id, user, fldName, realParentFldId, userNote, out PortfolioFolder? p_newItem);
-        if (p_newItem == null)
+            errMsg = MemDb.gMemDb.AddOrEditPortfolioFolder(id, user, fldName, realParentFldId, userNote, out PortfolioFolder? p_newItem);
+            if (p_newItem == null)
             errMsg = "Folder was not created";
+        }
 
         if (!String.IsNullOrEmpty(errMsg))
         {
@@ -175,9 +152,41 @@ public partial class DashboardClient
         return virtualParentFldId;
     }
 
-    // static (int RealParentFldId, User? User) GetRealParentFldId(p_virtualParentFldId) Yet to Develop - Daya
-    // {
-    // }
+    public (int RealParentFldId, User? User) GetRealParentFldId(int p_virtualParentFldId)
+    {
+        User? user = User;
+        int realParentFldId = -1;
+        Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
+
+        if (p_virtualParentFldId < -2) // parentFldId < -2 is a virtual UserRoot folder
+        {
+            if (user.Id == -1 * p_virtualParentFldId)
+                user = User;
+        }
+        else if (p_virtualParentFldId == -2) // parentFldId == -2  Create the new Folder with “"User":-1,"ParentFolder":-2,”
+        {
+            realParentFldId = p_virtualParentFldId;
+            user = null;
+        }
+        else if (p_virtualParentFldId == -1 || p_virtualParentFldId == 0) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
+        {
+            realParentFldId = -1;
+            user = null;
+        }
+        else // it is a proper folderID, Create the new Folder under that
+        {
+            foreach (PortfolioFolder pf in prtfFldrs)
+            {
+                realParentFldId = p_virtualParentFldId;
+                if (pf.Id == realParentFldId)
+                {
+                    user = pf.User;
+                    break;
+                }
+            }
+        }
+        return (realParentFldId, user);
+    }
 
     private void PortfMgrSendFolders() // Processing the portfolioFolders based on the visiblity rules
     {
