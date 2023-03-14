@@ -11,6 +11,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Importing necessary libraries
+import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -164,6 +165,13 @@ def meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters, 
     pm_pv, pm_strat_rets, pm_weights, pm_pos, pm_cash, pm_curr_weights, pm_pv_ew, pm_strat_rets_ew, pm_pos_ew, pm_cash_ew = kellerprotmom(protmom_tickers_list, protmom_rebalance_unit, protmom_rebalance_freq, protmom_rebalance_shift, protmom_correl_lb_months, protmom_lb_periods, protmom_lb_weights, protmom_selected_ETFs, meta_start_date, meta_end_date)
     tb_pv, tb_strat_rets, tb_weights, tb_pos, tb_cash, tb_curr_weights, tb_pv_ew, tb_strat_rets_ew, tb_pos_ew, tb_cash_ew = novelltactbond(tactbond_tickers_list, tactbond_rebalance_unit, tactbond_rebalance_freq, tactbond_rebalance_shift, tactbond_absolute_threshold, tactbond_threshold_type, tactbond_cash_subs, tactbond_lb_periods, tactbond_lb_weights, tactbond_selected_ETFs, meta_start_date, meta_end_date)
     haa_pv, haa_strat_rets, haa_weights, haa_pos, haa_cash, haa_curr_weights, haa_pv_ew, haa_strat_rets_ew, haa_pos_ew, haa_cash_ew = haa(haa_ticker_list_canary, haa_ticker_list_defensive, haa_ticker_list_offensive, haa_rebalance_unit, haa_rebalance_freq, haa_rebalance_shift, haa_skipped_period, haa_no_played_ETFs, haa_abs_threshold, meta_start_date, meta_end_date)
+
+    # If YF missing a day for all ETFs then it doesn't return that day, and that substrategy pv.Length is smaller. Usually if SPY is queried we have all days. But NovelTactBond doesn't query SPY.
+    isAllSubStrategyHasSameDays = (taa_pv.size == baa_pv.size) and (taa_pv.size == baa2_pv.size) and (taa_pv.size == dm_pv.size) and (taa_pv.size == pm_pv.size) and (taa_pv.size == tb_pv.size) and (taa_pv.size == haa_pv.size)
+    if not isAllSubStrategyHasSameDays:
+        errMsg = f'taa_pv.size: {taa_pv.size}, baa_pv.size: {baa_pv.size}, baa2_pv.size: {baa2_pv.size}, dm_pv.size: {dm_pv.size}, pm_pv.size: {pm_pv.size}, tb_pv.size: {tb_pv.size}, haa_pv.size: {haa_pv.size}'
+        print('SqError. Not all strategy has the same number of days. This usually happens if one (or almost all except SPY) ETF price is missing from YF. There is not much to do. Wait until YF has all the historical data for all ETFs. ' + errMsg)
+        sys.exit()
 
     taa_weights = taa_weights.groupby(taa_weights.columns, axis = 1).sum()
     baa_weights = baa_weights.groupby(baa_weights.columns, axis = 1).sum()
