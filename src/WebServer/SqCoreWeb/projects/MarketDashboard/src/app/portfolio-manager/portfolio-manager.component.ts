@@ -349,14 +349,15 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     console.log('showCreateOrEditFolderPopup(): Mode', mode);
     const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
     this.isCreateOrEditFolderPopupVisible = true;
-    if (mode == 'create')
+    if (mode == 'create') {
       this.editedFolder = new FolderJs();
-    else {
+      this.editedFolder.parentFolderId = lastSelectedTreeNode?.id!; // for creating new folder it needs the parentFolderId(i.e. lastSelectedId), so that it can create child folder inside the parent.
+    } else {
       this.editedFolder.name = lastSelectedTreeNode?.name!;
       this.editedFolder.id = lastSelectedTreeNode?.id!;
+      this.editedFolder.parentFolderId = lastSelectedTreeNode?.parentFolderId!;
       this.editedFolder.note = lastSelectedTreeNode?.note!;
     }
-    this.editedFolder.parentFolderId = lastSelectedTreeNode?.parentFolderId!;
   }
 
   closeCreateOrEditFolderPopup() {

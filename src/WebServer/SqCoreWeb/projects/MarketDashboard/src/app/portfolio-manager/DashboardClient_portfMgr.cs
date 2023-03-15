@@ -155,11 +155,11 @@ public partial class DashboardClient
     public (int RealParentFldId, User? User) GetRealParentFldId(int p_virtualParentFldId)
     {
         User? user = User;
-        int realParentFldId = -1;
-        Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
+        int realParentFldId;
 
         if (p_virtualParentFldId < -2) // parentFldId < -2 is a virtual UserRoot folder
         {
+            realParentFldId = -1;
             if (user.Id == -1 * p_virtualParentFldId)
                 user = User;
         }
@@ -175,14 +175,13 @@ public partial class DashboardClient
         }
         else // it is a proper folderID, Create the new Folder under that
         {
-            foreach (PortfolioFolder pf in prtfFldrs)
+            PortfolioFolder? fld = MemDb.gMemDb.PortfolioFolders[p_virtualParentFldId]; // it can throw exception if the folder doesnt exist - Daya
+            if (fld == null)
+                return (-1, null); // sending realParentFldId = -1 and user = null, this will similar to not allowed scenario
+            else
             {
                 realParentFldId = p_virtualParentFldId;
-                if (pf.Id == realParentFldId)
-                {
-                    user = pf.User;
-                    break;
-                }
+                user = fld.User;
             }
         }
         return (realParentFldId, user);
