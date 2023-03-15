@@ -80,4 +80,5 @@ public class Security
     public Double TwoHundredDayAverageChange => this["TwoHundredDayAverageChange"];
     public Double TwoHundredDayAverageChangePercent => this["TwoHundredDayAverageChangePercent"];
     public Double PreMarketPrice => this["PreMarketPrice"];
+    public Double PreMarketChange => this["PreMarketChange"];
 }

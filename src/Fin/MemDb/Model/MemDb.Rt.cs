@@ -333,7 +333,7 @@ public partial class MemDb
                     throw new SqException($"YfTicker doesn't exist for asset {r.SqTicker}");
             }).ToArray();
             Dictionary<string, bool> yfTickersReceived = yfTickers.ToDictionary(r => r, r => false);
-            var quotes = await Yahoo.Symbols(yfTickers).Fields(new Field[] { Field.Symbol, Field.RegularMarketPreviousClose, Field.RegularMarketPrice, Field.MarketState, Field.PostMarketPrice, Field.PreMarketPrice }).QueryAsync();  // takes 45 ms from WinPC (30 tickers)
+            var quotes = await Yahoo.Symbols(yfTickers).Fields(new Field[] { Field.Symbol, Field.RegularMarketPreviousClose, Field.RegularMarketPrice, Field.MarketState, Field.PostMarketPrice, Field.PreMarketPrice, Field.PreMarketChange }).QueryAsync();  // takes 45 ms from WinPC (30 tickers)
 
             int nReceivedAndRecognized = 0;
             foreach (var quote in quotes)
@@ -364,8 +364,22 @@ public partial class MemDb
                         lastVal = (float)quote.Value.RegularMarketPrice;  // fallback: the last regular-market Close price both in Post and next Pre-market
                     sec.EstValue = (float)lastVal;
 
-                    if (quote.Value.Fields.TryGetValue(priorCloseFieldStr, out dynamic? priorClose))
-                        sec.PriorClose = (float)priorClose;
+                    // If there was a VXX split today morning, YF doesn't show it for a while during the day and priorCloseFieldStr is non-adjusted. Bad.
+                    // in that case "regularMarketPrice" = "regularMarketPreviousClose" are the old values.
+                    // the only way to get it from the data YF gives is that there is a "preMarketChange":0.32999802, which is a $value. We can substract it from the "preMarketPrice" to calculate previous close
+                    // for many ETFs (thinly traded), there is no PreMarketPrice or PreMarketChange
+                    // Another option would be to not use this YF.PriorClose at all (which is buggy), but use the historical prices (last value), because that properly has the split adjustment for yesterday close
+                    dynamic? preMarketChange = null;
+                    bool isSplitSurePriorCloseCalculation = p_tradingHoursNow == TradingHoursEx.PreMarketTrading && quote.Value.Fields.TryGetValue("PreMarketChange", out preMarketChange);
+                    if (isSplitSurePriorCloseCalculation) // TODO: we might check here that we only do this IF there was a split event today morning.
+                    {
+                        sec.PriorClose = sec.EstValue - (float)preMarketChange!;
+                    }
+                    else
+                    {
+                        if (quote.Value.Fields.TryGetValue(priorCloseFieldStr, out dynamic? priorClose))
+                            sec.PriorClose = (float)priorClose;
+                    }
 
                     // if (sec.SqTicker == "I/VIX")
                     //     Utils.Logger.Info($"VIX priorClose: {sec.PriorClose}, lastVal:{sec.EstValue}");  // TEMP
