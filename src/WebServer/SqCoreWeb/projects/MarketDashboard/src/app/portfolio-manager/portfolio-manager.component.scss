@@ -140,13 +140,13 @@
 // we can generalize the naming convention, for the time being not disturbing the existing Portfolio feature styles and using the same for createOrEdit Feature
 #createPortfolioPopup, #createOrEditFolderPopup { // modifying the height & width properties as we have many items to fit in the window
   height: 25rem;
-  width: 35rem;
+  width: 45rem;
   text-align: left;
 }
 
 .prtfCommon {
   float: left;
-  padding-left: 1rem;
+  padding-left: .6rem;
   margin-top: .6rem;
 }
 
@@ -156,7 +156,7 @@
 }
 
 .prtfUserValues {
-  width: 58%;
+  width: 60%;
 }
 
 #createPortfolioButton, #createOrEditFolderButton {
@@ -172,6 +172,15 @@
   animation: popupFadein 5s linear 1 forwards;
 }
 
+@keyframes popupFadein {
+  0% { opacity: 0; }
+  100% { opacity: 0.95; }
+}
+
+#btnErrorOk {
+  margin-top: 1rem;
+}
+
 .closePopup { // common for all the popup's
   background-color: #FFA500;
   float: right;
@@ -185,7 +194,18 @@
   margin-right: 1rem;
 }
 
-@keyframes popupFadein {
-  0% { opacity: 0; }
-  100% { opacity: 0.95; }
+.btnDisabled { // create or edit folder/portfolio buttons are disabled
+  background-color: #888;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btnEnabled { // create or edit folder/portfolio buttons are enabled
+  background-color:#90EE90;
+  opacity: 1;
+  cursor: pointer;
+}
+
+.inputFldIdCommon { // resetting the width of the folder.id and folder.prntFolderId inputs
+  width: 20%;
 }

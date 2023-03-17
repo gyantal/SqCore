@@ -7,11 +7,13 @@
       <span class="refreshPortfolios"><img class="refreshPortfolios" src='../assets/images/refresh64.webp' (click)="onPortfoliosRefreshClicked()"></span>
     </span>
     <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState"></app-sq-tree-view>
-    <button (click)="showCreatePortfolioPopup()">Create Portfolio</button>&nbsp;
-    <button (click)="showCreateOrEditFolderPopup('create')">Create Folder</button>&nbsp;
-    <button (click)="showCreateOrEditFolderPopup('edit')">Edit Folder</button>&nbsp;
-    <button (click)="onDeletePrtfItemClicked()">Delete</button><br><br>
-    <div class="popup infoPopup" id="createOrEditFolderPopup"[ngStyle]="{'display': isCreateOrEditFolderPopupVisible ? 'block' : 'none'}"><br>
+    <button (click)="showCreateOrEditPortfolioPopup()" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' || treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio') ? 'btnEnabled' : 'btnDisabled'">Create Portfolio</button>&nbsp;
+    <button (click)="showCreateOrEditFolderPopup('create')" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Folder' ? 'btnEnabled': 'btnDisabled'">Create Folder</button>&nbsp;<br><br>
+    <button (click)="showCreateOrEditPortfolioPopup()" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled': 'btnDisabled'">Edit Portfolio</button>&nbsp;
+    <button (click)="showCreateOrEditFolderPopup('edit')" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Folder' ? 'btnEnabled': 'btnDisabled'">Edit Folder</button>&nbsp;<br><br>
+    <button id="openPortfolioViewer" (click)="onOpenPortfolioViewerClicked()" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled' : 'btnDisabled'">open in Portfolio Viewer</button>&nbsp;
+    <button (click)="onDeletePrtfItemClicked()" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' || treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio') ? 'btnEnabled' : 'btnDisabled'">Delete</button><br><br>
+    <div class="popup infoPopup" id="createOrEditFolderPopup" [ngStyle]="{'display': isCreateOrEditFolderPopupVisible ? 'block' : 'none'}"><br>
       <div>
         <div class="prtfCommon prtfFields">Name:</div>
         <div class="prtfCommon prtfUserValues">
@@ -19,15 +21,18 @@
         </div>
       </div>
       <div>
-        <div class="prtfCommon prtfFields">Id:</div>
+        <div class="prtfCommon prtfFields">Id(-1 for new):</div>
         <div class="prtfCommon prtfUserValues">
-          <input type="text" placeholder="Enter Item ID" [(ngModel)]="editedFolder.id" [value]="editedFolder.id">
+          <input class="inputFldIdCommon" type="text" placeholder="Enter Item Id" [(ngModel)]="editedFolder.id" [value]="editedFolder.id">
         </div>
       </div>
       <div>
         <div class="prtfCommon prtfFields">PrntFolderId:</div>
         <div class="prtfCommon prtfUserValues">
-          <input type="text" placeholder="Enter ParentFolder ID" [(ngModel)]="editedFolder.parentFolderId" [value]="editedFolder.parentFolderId">
+          <span>
+          <input class="inputFldIdCommon" type="text" placeholder="Enter PrntFld Id" (keyup)="onKeyupParentFolderId(editedFolder.parentFolderId)" [(ngModel)]="editedFolder.parentFolderId" [value]="editedFolder.parentFolderId">&nbsp;
+          <label><b>PrntFldName:</b>&nbsp;{{parentfolderName}}</label>
+        </span>
         </div>
       </div>
       <div>
@@ -129,5 +134,5 @@
 </div>
 <div class="popup warnPopup" [ngStyle]="{'visibility': isErrorPopupVisible ? 'visible' : 'hidden'}">Error from the Server<br><br>
   <span class="popupMsg">{{errorMsgToUser}}</span><br><br>
-  <button type="button" (click)="onErrorOkClicked()">Ok</button>
+  <button id="btnErrorOk" type="button" (click)="onErrorOkClicked()">Ok</button>
 </div>

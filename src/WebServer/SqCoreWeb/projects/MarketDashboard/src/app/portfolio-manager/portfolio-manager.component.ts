@@ -71,6 +71,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   createPrtfItemName: string = ''; // portfolio or folder name to be created
   treeViewState: TreeViewState = new TreeViewState();
   editedFolder: FolderJs = new FolderJs(); // create or edit folder
+  parentfolderName: string = '';
 
   currency: string = 'USD'; // default value is set to USD
   userAccess: string = 'Restricted'; // default is set to Restricted
@@ -346,6 +347,10 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
   // Create or Edit Folder
   showCreateOrEditFolderPopup(mode: string) { // mode is create or edit
+    if (this.treeViewState.lastSelectedItem == null || this.treeViewState.lastSelectedItem.prtfItemType != 'Folder') {
+      console.log('Cannot Create/Edit, because no folder or portfolio was selected.');
+      return;
+    }
     console.log('showCreateOrEditFolderPopup(): Mode', mode);
     const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
     this.isCreateOrEditFolderPopupVisible = true;
@@ -357,6 +362,21 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.editedFolder.id = lastSelectedTreeNode?.id!;
       this.editedFolder.parentFolderId = lastSelectedTreeNode?.parentFolderId!;
       this.editedFolder.note = lastSelectedTreeNode?.note!;
+    }
+
+    this.parentfolderName = lastSelectedTreeNode?.name!;
+  }
+
+  onKeyupParentFolderId(editedFolderParentFolderId: number) { // to get the parentfolder name dynamically based on user entered parentFolderId
+    if (!(Array.isArray(this.folders) && this.folders.length > 0 ))
+      return;
+
+    for (const fld of this.folders) {
+      if (fld.id == editedFolderParentFolderId) {
+        this.parentfolderName = fld.name;
+        break;
+      } else
+        this.parentfolderName = 'Not Found';
     }
   }
 
@@ -375,8 +395,12 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     this.isCreateOrEditFolderPopupVisible = false;
   }
 
-  // Create Portfolio
-  showCreatePortfolioPopup() {
+  // Create Portfolio/ Edit Portfolio - yet to develop
+  showCreateOrEditPortfolioPopup() {
+    if (this.treeViewState.lastSelectedItem == null) {
+      console.log('Cannot Create/Edit, because no Portfolio was selected.');
+      return;
+    }
     this.isCreatePortfolioPopupVisible = true;
   }
 
@@ -394,6 +418,16 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this._parentWsConnection.send('PortfMgr.CreatePortfolio:' + this.createPrtfItemName + ',prntFId:' + lastSelectedTreeNode.id + ',currency:' + this.currency + ',access:' + this.userAccess + ',type:' + this.portfolioType + ',note:' + this.userNote);
     this.isCreatePortfolioPopupVisible = false;
   }
+
+  onOpenPortfolioViewerClicked() {
+    if (this.treeViewState.lastSelectedItem == null || this.treeViewState.lastSelectedItem?.prtfItemType != 'Portfolio') {
+      console.log('Cannot OpenPortfolioViewer, because no Portfolio was selected.');
+      return;
+    }
+    const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
+    window.open('https://sqcore.net/PrtfViewer?p='+ lastSelectedTreeNode?.id, '_blank');
+  }
+
 
   // Delete portfolio Item(Folder/Portfolio)
   onDeletePrtfItemClicked() { // this logic makes the Delete Confirm Popup visible and displays the selected prtf name

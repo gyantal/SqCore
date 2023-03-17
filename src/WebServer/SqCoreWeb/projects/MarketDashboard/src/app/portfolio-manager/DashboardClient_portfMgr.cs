@@ -9,6 +9,8 @@ using SqCommon;
 
 namespace SqCoreWeb;
 
+enum PrtfItemType { Folder, Portfolio }
+
 class HandshakePortfMgr // Initial params: keept it small
 {
     public string UserName { get; set; } = string.Empty;
@@ -111,19 +113,18 @@ public partial class DashboardClient
         string fldName = p_msg.Substring(fldNameIdx + 1, prntFldrIdx - fldNameIdx - ",prntFId:".Length);
         int virtualParentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, userNoteIdx - prntFldrIdx - ",note:".Length));
         string userNote = p_msg[(userNoteIdx + 1)..];
-
         bool isCreateFolder = id == -1;
         User? user = null;
         int realParentFldId;
 
         if (isCreateFolder)
-            (realParentFldId, user) = GetRealParentFldId(virtualParentFldId);
+            (realParentFldId, user) = GetRealParentFldId(virtualParentFldId, PrtfItemType.Folder);
         else
             realParentFldId = virtualParentFldId;
 
         string errMsg;
         if (realParentFldId == -1 && user == null) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
-            errMsg = "Nobody can create folders in the virtual 'Shared' folders";
+            errMsg = "Nobody can create folders in the virtual user or virtual 'Shared' folders";
         else
         {
             errMsg = MemDb.gMemDb.AddOrEditPortfolioFolder(id, user, fldName, realParentFldId, userNote, out PortfolioFolder? p_newItem);
@@ -152,7 +153,7 @@ public partial class DashboardClient
         return virtualParentFldId;
     }
 
-    public (int RealParentFldId, User? User) GetRealParentFldId(int p_virtualParentFldId)
+    (int RealParentFldId, User? User) GetRealParentFldId(int p_virtualParentFldId, PrtfItemType p_prtfItemType)
     {
         User? user = User;
         int realParentFldId;
@@ -175,13 +176,27 @@ public partial class DashboardClient
         }
         else // it is a proper folderID, Create the new Folder under that
         {
-            PortfolioFolder? fld = MemDb.gMemDb.PortfolioFolders[p_virtualParentFldId]; // it can throw exception if the folder doesnt exist - Daya
-            if (fld == null)
-                return (-1, null); // sending realParentFldId = -1 and user = null, this will similar to not allowed scenario
+            if (p_prtfItemType == PrtfItemType.Folder)
+            {
+                bool isFldExists = MemDb.gMemDb.PortfolioFolders.TryGetValue(p_virtualParentFldId, out PortfolioFolder? fld);
+                if (!isFldExists) // need to check this otherwise it will create folder in the Db
+                    return (-1, null);
+                else
+                {
+                    realParentFldId = p_virtualParentFldId;
+                    user = fld?.User;
+                }
+            }
             else
             {
-                realParentFldId = p_virtualParentFldId;
-                user = fld.User;
+                bool isPfExists = MemDb.gMemDb.Portfolios.TryGetValue(p_virtualParentFldId, out Portfolio? pf);
+                if (!isPfExists) // need to check this otherwise it will create portfolio in the Db
+                    return (-1, null);
+                else
+                {
+                    realParentFldId = p_virtualParentFldId;
+                    user = pf?.User;
+                }
             }
         }
         return (realParentFldId, user);
