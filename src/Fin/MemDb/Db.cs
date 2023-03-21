@@ -446,6 +446,32 @@ public partial class Db
         m_redisDb.HashSet("portfolioFolder", redisKey, redisValue);
         return string.Empty;
     }
+
+    internal string EditPortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, CurrencyId p_currency, PortfolioType p_type, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith)
+    {
+        string redisKey = p_id.ToString();
+        string? pfInDb = m_redisDb.HashGet("portfolio", redisKey);
+        if (pfInDb == null)
+            return $"Error in EditPortfolio(): portfolio id '{redisKey}' doesnt exists";
+
+        PortfolioInDb? pfInDbCandidate = JsonSerializer.Deserialize<PortfolioInDb>(pfInDb, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        if (pfInDbCandidate == null)
+            return $"Error in EditPortfolio(): Deserialize failed on '{pfInDb}'";
+
+        pfInDbCandidate.UserId = p_user?.Id ?? -1;
+        pfInDbCandidate.Name = p_name;
+        pfInDbCandidate.ParentFolderId = p_parentFldId;
+        pfInDbCandidate.BaseCurrency = p_currency.ToString();
+        pfInDbCandidate.Type = p_type.ToString();
+        pfInDbCandidate.SharedAccess = p_sharedAccess.ToString();
+        pfInDbCandidate.Note = p_note;
+        Utils.Logger.Debug($"shareduserwith{p_sharedUsersWith}"); // need to develop this - Daya
+        // pfInDbCandidate.SharedUsersWith = p_sharedUsersWith.ToString();
+        string redisValue = JsonSerializer.Serialize<PortfolioInDb>(pfInDbCandidate);
+        m_redisDb.HashSet("portfolio", redisKey, redisValue);
+        return string.Empty;
+    }
+
     public static bool UpdateBrotlisIfNeeded()
     {
         // For assets, and small tables, it is too much of a hassle and not much RAM saving. And it is better that we are able to change text data manually in RedisDesktop

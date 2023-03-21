@@ -6,10 +6,10 @@
       </div>
       <span class="refreshPortfolios"><img class="refreshPortfolios" src='../assets/images/refresh64.webp' (click)="onPortfoliosRefreshClicked()"></span>
     </span>
-    <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState"></app-sq-tree-view>
-    <button (click)="showCreateOrEditPortfolioPopup()" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' || treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio') ? 'btnEnabled' : 'btnDisabled'">Create Portfolio</button>&nbsp;
+    <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState" (dblclick)="onOpenPortfolioViewerClicked()"></app-sq-tree-view>
+    <button (click)="showCreateOrEditPortfolioPopup('create')" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' || treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio') ? 'btnEnabled' : 'btnDisabled'">Create Portfolio</button>&nbsp;
     <button (click)="showCreateOrEditFolderPopup('create')" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Folder' ? 'btnEnabled': 'btnDisabled'">Create Folder</button>&nbsp;<br><br>
-    <button (click)="showCreateOrEditPortfolioPopup()" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled': 'btnDisabled'">Edit Portfolio</button>&nbsp;
+    <button (click)="showCreateOrEditPortfolioPopup('edit')" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled': 'btnDisabled'">Edit Portfolio</button>&nbsp;
     <button (click)="showCreateOrEditFolderPopup('edit')" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Folder' ? 'btnEnabled': 'btnDisabled'">Edit Folder</button>&nbsp;<br><br>
     <button id="openPortfolioViewer" (click)="onOpenPortfolioViewerClicked()" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled' : 'btnDisabled'">open in Portfolio Viewer</button>&nbsp;
     <button (click)="onDeletePrtfItemClicked()" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' || treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio') ? 'btnEnabled' : 'btnDisabled'">Delete</button><br><br>
@@ -23,14 +23,14 @@
       <div>
         <div class="prtfCommon prtfFields">Id(-1 for new):</div>
         <div class="prtfCommon prtfUserValues">
-          <input class="inputFldIdCommon" type="text" placeholder="Enter Item Id" [(ngModel)]="editedFolder.id" [value]="editedFolder.id">
+          <input class="inputItemIdCommon" type="text" placeholder="Enter Item Id" [(ngModel)]="editedFolder.id" [value]="editedFolder.id">
         </div>
       </div>
       <div>
         <div class="prtfCommon prtfFields">PrntFolderId:</div>
         <div class="prtfCommon prtfUserValues">
           <span>
-          <input class="inputFldIdCommon" type="text" placeholder="Enter PrntFld Id" (keyup)="onKeyupParentFolderId(editedFolder.parentFolderId)" [(ngModel)]="editedFolder.parentFolderId" [value]="editedFolder.parentFolderId">&nbsp;
+          <input class="inputItemIdCommon" type="text" placeholder="Enter PrntFld Id" (keyup)="onKeyupParentFolderId(editedFolder.parentFolderId)" [(ngModel)]="editedFolder.parentFolderId" [value]="editedFolder.parentFolderId">&nbsp;
           <label><b>PrntFldName:</b>&nbsp;{{parentfolderName}}</label>
         </span>
         </div>
@@ -51,53 +51,57 @@
         <div>
           <div class="prtfCommon prtfFields">Name:</div>
           <div class="prtfCommon prtfUserValues">
-            <input type="text" placeholder="Enter Portfolio Name" [(ngModel)]="createPrtfItemName">
+            <input type="text" placeholder="Enter Portfolio Name" [(ngModel)]="editedPortfolio.name">
+          </div>
+        </div>
+        <div>
+          <div class="prtfCommon prtfFields">Id(-1 for new):</div>
+          <div class="prtfCommon prtfUserValues">
+            <input class="inputItemIdCommon" type="text" placeholder="Enter Item Id" [(ngModel)]="editedPortfolio.id" [value]="editedPortfolio.id">
+          </div>
+        </div>
+        <div>
+          <div class="prtfCommon prtfFields">PrntFolderId:</div>
+          <div class="prtfCommon prtfUserValues">
+            <span>
+            <input class="inputItemIdCommon" type="text" placeholder="Enter PrntFld Id" (keyup)="onKeyupParentFolderId(editedPortfolio.parentFolderId)" [(ngModel)]="editedPortfolio.parentFolderId" [value]="editedPortfolio.parentFolderId">&nbsp;
+            <label><b>PrntFldName:</b>&nbsp;{{parentfolderName}}</label>
+          </span>
           </div>
         </div>
         <div>
           <div class="prtfCommon prtfFields">Currency:</div>
           <div class="prtfCommon prtfUserValues">
-            <select name="currency" [(ngModel)]="currency">
-              <option selected>USD</option>
-              <option>EUR</option>
-              <option>GBP</option>
-              <option>GBX</option>
-              <option>HUF</option>
-              <option>JPY</option>
-              <option>CAD</option>
-              <option>CNY</option>
-              <option>CHF</option>
+            <select name="currency" [(ngModel)]="editedPortfolio.baseCurrency">
+              <option *ngFor="let currency of currencyType" [ngValue]="currency">{{currency}}</option>
             </select>
           </div>
         </div>
         <div>
           <div class="prtfCommon prtfFields">PortfolioType:</div>
           <div class="prtfCommon prtfUserValues">
-            <select name="portfolioType" [(ngModel)]="portfolioType">
-              <option selected>Trades</option>
-              <option>Simulation</option>
+            <select name="portfolioType" [(ngModel)]="editedPortfolio.portfolioType">
+              <option *ngFor="let type of portfolioType" [ngValue]="type">{{type}}</option>
             </select>
           </div>
         </div>
         <div>
           <div class="prtfCommon prtfFields">SharedAccess:</div>
           <div class="prtfCommon prtfUserValues">
-            <select name="userAccess" [(ngModel)]="userAccess">
-              <option selected>Restricted</option>
-              <option>OwnerOnly</option>
-              <option>Anyone</option>
+            <select name="sharedAccess" [(ngModel)]="editedPortfolio.sharedAccess">
+              <option *ngFor="let accessType of sharedAccess" [ngValue]="accessType">{{accessType}}</option>
             </select>
           </div>
         </div>
         <div>
           <div class="prtfCommon prtfFields">User Note:</div>
           <div class="prtfCommon prtfUserValues">
-            <input type="text" placeholder="write some notes" name="userNote" [(ngModel)]="userNote">
+            <input type="text" placeholder="write some notes" name="userNote" [(ngModel)]="editedPortfolio.note">
           </div>
         </div>
       </div>
       <span>
-        <button id="createPortfolioButton" (click)="onCreatePortfolioClicked()"> Create New Portfolio</button>
+        <button id="createPortfolioButton" (click)="onCreateOrEditPortfolioClicked()"> Create/Edit Portfolio</button>
         <button class="closePopup" (click)="closeCreatePortfolioPopup()" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}">Dismiss</button>
       </span>
     </div><br>

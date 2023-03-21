@@ -35,7 +35,7 @@ class FolderJs : PortfolioItemJs { }
 class PortfolioJs : PortfolioItemJs
 {
     [JsonPropertyName("sAcs")]
-    public SharedAccess SharedAccess { get; set; } = SharedAccess.Unknown;
+    public string SharedAccess { get; set; } = string.Empty;
     [JsonPropertyName("sUsr")]
     public List<User> SharedUsersWith { get; set; } = new();
     [JsonPropertyName("bCur")]
@@ -88,9 +88,9 @@ public partial class DashboardClient
                 PortfMgrCreateOrEditFolder(msgObjStr);
                 PortfMgrSendFolders();
                 return true;
-            case "PortfMgr.CreatePortfolio": // msg: "DayaTest123,prntFId:15,currency:USD,access:Restricted,type:Trades,note:testing"
+            case "PortfMgr.CreateOrEditPortfolio": // msg: "id:-1,name:TestPrtf,prntFId:16,currency:USD,type:Simulation,access:Anyone,note:Testing"
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{msgObjStr}'");
-                PortfMgrCreatePortfolio(msgObjStr);
+                PortfMgrCreateOrEditPortfolio(msgObjStr);
                 PortfMgrSendPortfolios();
                 return true;
             case "PortfMgr.DeletePortfolioItem": // msg: "id:5" // if id > 10,000 then it is a PortfolioID otherwise it is the FolderID
@@ -176,9 +176,10 @@ public partial class DashboardClient
         }
         else // it is a proper folderID, Create the new Folder under that
         {
+            bool isFldExists = MemDb.gMemDb.PortfolioFolders.TryGetValue(p_virtualParentFldId, out PortfolioFolder? fld);
+            bool isPfExists = MemDb.gMemDb.Portfolios.TryGetValue(p_virtualParentFldId, out Portfolio? pf) || isFldExists; // need to check in both folders and portfolios
             if (p_prtfItemType == PrtfItemType.Folder)
             {
-                bool isFldExists = MemDb.gMemDb.PortfolioFolders.TryGetValue(p_virtualParentFldId, out PortfolioFolder? fld);
                 if (!isFldExists) // need to check this otherwise it will create folder in the Db
                     return (-1, null);
                 else
@@ -189,7 +190,6 @@ public partial class DashboardClient
             }
             else
             {
-                bool isPfExists = MemDb.gMemDb.Portfolios.TryGetValue(p_virtualParentFldId, out Portfolio? pf);
                 if (!isPfExists) // need to check this otherwise it will create portfolio in the Db
                     return (-1, null);
                 else
@@ -277,7 +277,7 @@ public partial class DashboardClient
 
             int virtualParentFldId = GetVirtualParentFldId(pf.User, pf.ParentFolderId);
 
-            PortfolioJs pfJs = new() { Id = pf.Id + gPortfolioIdOffset, Name = pf.Name, ParentFolderId = virtualParentFldId };
+            PortfolioJs pfJs = new() { Id = pf.Id + gPortfolioIdOffset, Name = pf.Name, ParentFolderId = virtualParentFldId, BaseCurrency = pf.BaseCurrency.ToString(), SharedAccess = pf.SharedAccess.ToString(), SharedUsersWith = pf.SharedUsersWith, Type = pf.Type.ToString() };
             prtfToClient.Add(pfJs);
         }
 
@@ -286,57 +286,49 @@ public partial class DashboardClient
             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
-    public void PortfMgrCreatePortfolio(string p_msg) // "msg - DayaTest123,prntFId:15,currency:USD,access:Restricted,type:Trades,note:testing"
+    public void PortfMgrCreateOrEditPortfolio(string p_msg) // "msg - id:-1,name:TestPrtf,prntFId:16,currency:USD,type:Simulation,access:Anyone,note:Testing"
     {
-        int pfNameIdx = p_msg.IndexOf(',');
-        int prntFldrIdx = (pfNameIdx == -1) ? -1 : p_msg.IndexOf(":", pfNameIdx);
+        int idStartIdx = p_msg.IndexOf(":");
+        int pfNameIdx = (idStartIdx == -1) ? -1 : p_msg.IndexOf(':', idStartIdx + 1);
+        int prntFldrIdx = (pfNameIdx == -1) ? -1 : p_msg.IndexOf(":", pfNameIdx + 1);
         int currencyIdx = prntFldrIdx == -1 ? -1 : p_msg.IndexOf(":", prntFldrIdx + 1);
-        int userAccessIdx = currencyIdx == -1 ? -1 : p_msg.IndexOf(":", currencyIdx + 1);
-        int prtfTypeIdx = userAccessIdx == -1 ? -1 : p_msg.IndexOf(":", userAccessIdx + 1);
-        int userNoteIdx = prtfTypeIdx == -1 ? -1 : p_msg.IndexOf(":", prtfTypeIdx + 1);
-        string pfName = p_msg[..pfNameIdx];
-        int parentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, currencyIdx - prntFldrIdx - ",currency:".Length));
-        string currency = p_msg.Substring(currencyIdx + 1, userAccessIdx - currencyIdx - ",access:".Length);
-        string userAccess = p_msg.Substring(userAccessIdx + 1, prtfTypeIdx - userAccessIdx - ",type:".Length);
-        string prtfType = p_msg.Substring(prtfTypeIdx + 1, userNoteIdx - prtfTypeIdx - ",note:".Length);
+        int prtfTypeIdx = currencyIdx == -1 ? -1 : p_msg.IndexOf(":", currencyIdx + 1);
+        int userAccessIdx = prtfTypeIdx == -1 ? -1 : p_msg.IndexOf(":", prtfTypeIdx + 1);
+        int userNoteIdx = userAccessIdx == -1 ? -1 : p_msg.IndexOf(":", userAccessIdx + 1);
+
+        int id = Convert.ToInt32(p_msg.Substring(idStartIdx + 1, pfNameIdx - idStartIdx - ",name:".Length));
+        string pfName = p_msg.Substring(pfNameIdx + 1, prntFldrIdx - pfNameIdx - ",prntFId:".Length);
+        int virtualParentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, currencyIdx - prntFldrIdx - ",currency:".Length));
+        string currency = p_msg.Substring(currencyIdx + 1, prtfTypeIdx - currencyIdx - ",type:".Length);
+        string prtfType = p_msg.Substring(prtfTypeIdx + 1, userAccessIdx - prtfTypeIdx - ",access:".Length);
+        string userAccess = p_msg.Substring(userAccessIdx + 1, userNoteIdx - userAccessIdx - ",note:".Length);
         string userNote = p_msg[(userNoteIdx + 1)..];
 
-        Dictionary<int, Portfolio>.ValueCollection prtfs = MemDb.gMemDb.Portfolios.Values;
-        User? user = User;
-        int prntFldIdToSend = -1;
-        foreach (Portfolio pf in prtfs)
+        bool isCreatePortfolio = id == -1;
+        User? user = null;
+        int realParentFldId;
+
+        if (isCreatePortfolio)
+            (realParentFldId, user) = GetRealParentFldId(virtualParentFldId, PrtfItemType.Portfolio);
+        else
+            realParentFldId = virtualParentFldId;
+
+        string errMsg;
+        if (realParentFldId == -1 && user == null) // not allowed. Nobody can create portfolios in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
+            errMsg = "Nobody can create portfolio in the virtual user or virtual 'Shared' folders";
+        else
         {
-            if (parentFldId >= -2)
-            {
-                if (parentFldId == 0) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
-                    return; // throw new Exception("Nobody can create folders in virtual Shared folder"); // can we send an exception here - Daya
-                else if (parentFldId >= 1) // it is a proper folderID, Create the new Folder under that
-                {
-                    prntFldIdToSend = parentFldId;
-                    if (pf.Id == prntFldIdToSend)
-                    {
-                        user = pf.User;
-                        break;
-                    }
-                }
-                else if (parentFldId == -2) // parentFldId == -2  Create the new Folder with “"User":-1,"ParentFolder":-2,”
-                {
-                    prntFldIdToSend = parentFldId;
-                    user = null;
-                    break;
-                }
-            }
-            else // parentFldId < -2 is a virtual UserRoot folder. create the new Portfolio with (User: -1 * thisUserId, ParentFolder = -1)
-            {
-                if (pf.User?.Id == -1 * parentFldId)
-                {
-                    user = pf.User;
-                    break;
-                }
-            }
+            errMsg = MemDb.gMemDb.AddOrEditPortfolio(id, user, pfName, realParentFldId, currency, prtfType, userAccess, userNote, out Portfolio? p_newItem);
+            if (p_newItem == null)
+            errMsg = "Portfolio was not created";
         }
-        // Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{user}' '{pfName}' '{prntFldIdToSend}' '{userNote}' '{currency}' '{userAccess}' '{prtfType}'");
-        MemDb.gMemDb.AddNewPortfolio(user, pfName, prntFldIdToSend, userNote, currency, userAccess, prtfType);
+
+        if (!String.IsNullOrEmpty(errMsg))
+        {
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.ErrorToUser:" + errMsg);
+            if (WsWebSocket!.State == WebSocketState.Open)
+                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        }
     }
 
     private void PortfMgrDeletePortfolioItem(string p_msg) // "id:5"

@@ -65,27 +65,40 @@ public partial class MemDb
         }
     }
 
-    public Portfolio? AddNewPortfolio(User? p_user, string p_name, int p_parentFldId, string p_note, string p_currency, string p_userAccess, string p_prtfType)
+    public string AddOrEditPortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, string p_currency, string p_prtfType, string p_userAccess, string p_note, out Portfolio? p_newItem)
     {
-        string creationTime = DateTime.UtcNow.TohYYYYMMDDHHMMSS(); // DateTime.Now.ToString() => "CTime":"2022-10-13T20:00:00"
-        CurrencyId baseCurrency = AssetHelper.gStrToCurrency[p_currency];
-        SharedAccess sharedAccess = AssetHelper.gStrToSharedAccess[p_userAccess];
-        PortfolioType type = AssetHelper.gStrToPortfolioType[p_prtfType];
-        List<User> sharedUsersWith = new();
-        Portfolio? prtf = m_memData.AddNewPortfolio(p_user, p_name, p_parentFldId, creationTime, p_note, baseCurrency, type, sharedAccess, sharedUsersWith);
-        if (prtf == null)
-            return null;
-        try
+        Portfolio? prtf = null;
+        string errMsg = String.Empty;
+        List<User> sharedUsersWith = new(); // need to develop (Daya)- capture the user input
+        if (p_id == -1) // if id == -1, which is an invalid key in the Db, we create a new Item
         {
-            m_Db.AddPortfolio(prtf); // can raise System.TimeoutException or others if the RedisDb is offline
+            string creationTime = DateTime.UtcNow.TohYYYYMMDDHHMMSS(); // DateTime.Now.ToString() => "CTime":"2022-10-13T20:00:00"
+            prtf = m_memData.AddNewPortfolio(p_user, p_name, p_parentFldId, creationTime, AssetHelper.gStrToCurrency[p_currency], AssetHelper.gStrToPortfolioType[p_prtfType], AssetHelper.gStrToSharedAccess[p_userAccess], p_note, sharedUsersWith);
+            if (prtf == null)
+                errMsg = "Cannot create new item.";
+            else
+            {
+                // insert new item into the persistent database (RedisDb, Sql)
+                try
+                {
+                    m_Db.AddPortfolio(prtf); // can raise System.TimeoutException or others if the RedisDb is offline
+                }
+                catch (System.Exception) // if error occured in DB writing, revert the transaction back to original state. Do not add the new Portfolio into MemDb.
+                {
+                    m_memData.RemovePortfolio(prtf);
+                    errMsg = "Cannot create new item.";
+                    prtf = null;
+                }
+            }
         }
-        catch (System.Exception) // if error occured in DB writing, revert the transaction back to original state. Do not add the new Folder into MemDb.
+        else // if id is valid, edit the Item
         {
-            m_memData.RemovePortfolio(prtf);
-            prtf = null;
+            errMsg = m_Db.EditPortfolio(p_id, p_user, p_name, p_parentFldId, AssetHelper.gStrToCurrency[p_currency], AssetHelper.gStrToPortfolioType[p_prtfType], AssetHelper.gStrToSharedAccess[p_userAccess], p_note, sharedUsersWith); // gives back an error message or empty string if everything was OK.
+            if (String.IsNullOrEmpty(errMsg)) // if there is no error in RedisDb operation
+                prtf = m_memData.EditPortfolio(p_id, p_user, p_name, p_parentFldId, AssetHelper.gStrToCurrency[p_currency], AssetHelper.gStrToPortfolioType[p_prtfType], AssetHelper.gStrToSharedAccess[p_userAccess], p_note, sharedUsersWith);
         }
-        // Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{creationTime}' '{baseCurrency}' '{type}' '{sharedAccess}' '{sharedUsersWith}' '{p_user}' '{p_name}' '{prtf}'"); // for debugging purpose
-        return prtf;
+        p_newItem = prtf;
+        return errMsg;
     }
 
     public string DeletePortfolio(int p_id)

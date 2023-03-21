@@ -93,7 +93,7 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         Type = AssetHelper.gStrToPortfolioType[portfolioInDb.Type];
     }
 
-    public Portfolio(int p_id, User? p_user, string p_name, int p_parentFldId, string p_creationTime, string p_note, CurrencyId p_currency, PortfolioType p_type, SharedAccess p_sharedAccess, List<User> p_sharedUsersWith)
+    public Portfolio(int p_id, User? p_user, string p_name, int p_parentFldId, string p_creationTime, CurrencyId p_currency, PortfolioType p_type, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith)
     {
         Id = p_id;
         User = p_user;
