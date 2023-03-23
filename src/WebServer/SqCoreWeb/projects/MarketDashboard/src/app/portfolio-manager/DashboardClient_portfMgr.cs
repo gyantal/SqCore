@@ -155,48 +155,40 @@ public partial class DashboardClient
 
     (int RealParentFldId, User? User) GetRealParentFldId(int p_virtualParentFldId, PrtfItemType p_prtfItemType)
     {
-        User? user = User;
+        User? user = null;
         int realParentFldId;
 
-        if (p_virtualParentFldId < -2) // parentFldId < -2 is a virtual UserRoot folder
+        if (p_virtualParentFldId < -2) // parentFldId < -2 is a virtual UserRoot folder, if parentFldId entered by user not found in users data it returns realParentFldId= -1, and user = null
         {
             realParentFldId = -1;
-            if (user.Id == -1 * p_virtualParentFldId)
+            if (user?.Id == -1 * p_virtualParentFldId)
                 user = User;
         }
-        else if (p_virtualParentFldId == -2) // parentFldId == -2  Create the new Folder with “"User":-1,"ParentFolder":-2,”
-        {
-            realParentFldId = p_virtualParentFldId;
-            user = null;
-        }
-        else if (p_virtualParentFldId == -1 || p_virtualParentFldId == 0) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
+        else if (p_virtualParentFldId >= -2 && p_virtualParentFldId <= 0) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
         {
             realParentFldId = -1;
             user = null;
         }
         else // it is a proper folderID, Create the new Folder under that
         {
-            bool isFldExists = MemDb.gMemDb.PortfolioFolders.TryGetValue(p_virtualParentFldId, out PortfolioFolder? fld);
-            bool isPfExists = MemDb.gMemDb.Portfolios.TryGetValue(p_virtualParentFldId, out Portfolio? pf) || isFldExists; // need to check in both folders and portfolios
+            User? pftItemUser = null;
             if (p_prtfItemType == PrtfItemType.Folder)
             {
-                if (!isFldExists) // need to check this otherwise it will create folder in the Db
-                    return (-1, null);
-                else
-                {
-                    realParentFldId = p_virtualParentFldId;
-                    user = fld?.User;
-                }
+                if (MemDb.gMemDb.PortfolioFolders.TryGetValue(p_virtualParentFldId, out PortfolioFolder? folder))
+                    pftItemUser = folder.User;
             }
             else
             {
-                if (!isPfExists) // need to check this otherwise it will create portfolio in the Db
-                    return (-1, null);
-                else
-                {
-                    realParentFldId = p_virtualParentFldId;
-                    user = pf?.User;
-                }
+                if (MemDb.gMemDb.Portfolios.TryGetValue(p_virtualParentFldId, out Portfolio? portfolio))
+                    pftItemUser = portfolio.User;
+            }
+
+            if (user == null)
+                return (-1, null);
+            else
+            {
+                realParentFldId = p_virtualParentFldId;
+                user = pftItemUser;
             }
         }
         return (realParentFldId, user);

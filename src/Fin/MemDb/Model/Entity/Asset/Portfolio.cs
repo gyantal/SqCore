@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace Fin.MemDb;
 
@@ -106,4 +107,10 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         SharedAccess = p_sharedAccess;
         SharedUsersWith = p_sharedUsersWith;
     }
+
+    // List<float> GetPortfolioValues()
+    // {
+    //     Thread.Sleep(500);
+    //     return new List<float>();
+    // }
 }

@@ -24,10 +24,10 @@ class FolderJs extends PortfolioItemJs {
 }
 
 class PortfolioJs extends PortfolioItemJs {
-  public sharedAccess = '';
+  public sharedAccess = 'Restricted'; // default access type
   public sharedUserWithMe = '';
-  public baseCurrency = '';
-  public portfolioType = '';
+  public baseCurrency = 'USD'; // default currrency
+  public portfolioType = 'Trades'; // default type
 }
 
 export class TreeViewItem { // future work. At the moment, it copies PortfolioFldrJs[] and add the children field. With unnecessary field values. When Portfolios are introduced, this should be rethought.
@@ -73,19 +73,19 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   errorMsgToUser: string = '';
   // common for both portfolio and portfolioFolder
   deletePrtfItemName: string = ''; // portfolio or folder name to be deleted
-  createPrtfItemName: string = ''; // portfolio or folder name to be created
   treeViewState: TreeViewState = new TreeViewState();
   editedFolder: FolderJs = new FolderJs(); // create or edit folder
-  parentfolderName: string = '';
+  parentfolderName: string = ''; // displaying next to the selected parent folder id on Ui
   editedPortfolio: PortfolioJs = new PortfolioJs(); // create or edit portfolio
-
-  currencyType: string[] = ['', 'USD', 'EUR', 'GBP', 'GBX', 'HUF', 'JPY', 'CAD', 'CNY', 'CHF'];
-  portfolioType: string[] = ['', 'Trades', 'Simulation'];
-  sharedAccess: string[] = ['', 'Restricted', 'OwnerOnly', 'Anyone'];
+  currencyType: string[] = ['USD', 'EUR', 'GBP', 'GBX', 'HUF', 'JPY', 'CAD', 'CNY', 'CHF'];
+  portfolioType: string[] = ['Trades', 'Simulation'];
+  sharedAccess: string[] = ['Restricted', 'OwnerOnly', 'Anyone'];
+  // sharedUsers: number[] = [31, 33, 38]; // ignore the feature for now. Leave this empty
   public gPortfolioIdOffset: number = 10000;
+
   tabPrtfSpecVisibleIdx = 1; // tab buttons for portfolio specification preview of positions and strategy parameters
 
-  // the below vaiables are required for resizing the panels according to users
+  // the below variables are required for resizing the panels according to users
   dashboardHeaderWidth = 0;
   dashboardHeaderHeight = 0;
   prtfMgrToolWidth = 0;
@@ -357,9 +357,11 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       console.log('Cannot Create/Edit, because no folder or portfolio was selected.');
       return;
     }
+
     console.log('showCreateOrEditFolderPopup(): Mode', mode);
     const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
     this.isCreateOrEditFolderPopupVisible = true;
+
     if (mode == 'create') {
       this.editedFolder = new FolderJs();
       this.editedFolder.parentFolderId = lastSelectedTreeNode?.id!; // for creating new folder it needs the parentFolderId(i.e. lastSelectedId), so that it can create child folder inside the parent.
@@ -374,23 +376,15 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   }
 
   onKeyupParentFolderId(editedFolderParentFolderId: number) { // to get the parentfolder name dynamically based on user entered parentFolderId
-    if (!(Array.isArray(this.folders) && this.folders.length > 0 ) || !(Array.isArray(this.portfolios) && this.portfolios.length > 0 ))
+    if (!(Array.isArray(this.folders) && this.folders.length > 0 ))
       return;
     console.log('Portfolio Type is:', this.treeViewState.lastSelectedItem?.prtfItemType!);
+
     this.parentfolderName = 'Not Found';
-    if (this.treeViewState.lastSelectedItem?.prtfItemType! == PrtfItemType.Folder) {
-      for (const fld of this.folders) {
-        if (fld.id == editedFolderParentFolderId) {
-          this.parentfolderName = fld.name;
-          break;
-        }
-      }
-    } else {
-      for (const pf of this.portfolios) {
-        if (pf.id == editedFolderParentFolderId) {
-          this.parentfolderName = pf.name;
-          break;
-        }
+    for (const fld of this.folders) {
+      if (fld.id == editedFolderParentFolderId) {
+        this.parentfolderName = fld.name;
+        break;
       }
     }
   }
@@ -405,19 +399,29 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.CreateOrEditFolder:id:' + this.editedFolder.id + ',name:' + this.editedFolder.name + ',prntFId:' + this.editedFolder.parentFolderId + ',note:' + this.editedFolder.note);
-    this.isCreateOrEditFolderPopupVisible = false;
+    if (!this.editedFolder.name) // the folder name feild shouldn't be left empty
+      this.isCreateOrEditFolderPopupVisible = true;
+    else {
+      if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+        this._parentWsConnection.send('PortfMgr.CreateOrEditFolder:id:' + this.editedFolder.id + ',name:' + this.editedFolder.name + ',prntFId:' + this.editedFolder.parentFolderId + ',note:' + this.editedFolder.note);
+      this.isCreateOrEditFolderPopupVisible = false;
+    }
   }
 
-  // Create Portfolio/ Edit Portfolio - yet to develop
+  // Create or Edit Portfolio
   showCreateOrEditPortfolioPopup(mode: string) {
-    if (this.treeViewState.lastSelectedItem == null) {
+    const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
+    if (lastSelectedTreeNode == null) {
       console.log('Cannot Create/Edit, because no Portfolio was selected.');
       return;
     }
+
     console.log('showCreateOrEditPortfolioPopup(): Mode', mode);
-    const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
+    if (mode == 'create' && lastSelectedTreeNode?.prtfItemType == PrtfItemType.Portfolio) {
+      console.log('Portfolio creation is not allowed under the portfolio');
+      return;
+    }
+
     this.isCreatePortfolioPopupVisible = true;
     if (mode == 'create') {
       this.editedPortfolio = new PortfolioJs();
@@ -446,9 +450,13 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('PortfMgr.CreateOrEditPortfolio:id:' + this.editedPortfolio.id + ',name:' + this.editedPortfolio.name + ',prntFId:' + this.editedPortfolio.parentFolderId + ',currency:' + this.editedPortfolio.baseCurrency + ',type:' + this.editedPortfolio.portfolioType + ',access:' + this.editedPortfolio.sharedAccess +',note:' + this.editedPortfolio.note);
-    this.isCreatePortfolioPopupVisible = false;
+    if (!this.editedPortfolio.name) // the portfolio name field shouldn't be left empty
+      this.isCreatePortfolioPopupVisible = true;
+    else {
+      if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+        this._parentWsConnection.send('PortfMgr.CreateOrEditPortfolio:id:' + this.editedPortfolio.id + ',name:' + this.editedPortfolio.name + ',prntFId:' + this.editedPortfolio.parentFolderId + ',currency:' + this.editedPortfolio.baseCurrency + ',type:' + this.editedPortfolio.portfolioType + ',access:' + this.editedPortfolio.sharedAccess +',note:' + this.editedPortfolio.note);
+      this.isCreatePortfolioPopupVisible = false;
+    }
   }
 
   onOpenPortfolioViewerClicked() {
@@ -456,8 +464,8 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       console.log('Cannot OpenPortfolioViewer, because no Portfolio was selected.');
       return;
     }
-    const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
-    window.open('//sqcore.net/PrtfViewer?p='+ lastSelectedTreeNode?.id, '_blank');
+    const prtfId = this.treeViewState.lastSelectedItem.id - this.gPortfolioIdOffset;
+    window.open('//sqcore.net/PrtfViewer?p='+ prtfId, '_blank');
   }
 
   // Delete portfolio Item(Folder/Portfolio)
