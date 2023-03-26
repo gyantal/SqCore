@@ -113,24 +113,33 @@ public partial class DashboardClient
         string fldName = p_msg.Substring(fldNameIdx + 1, prntFldrIdx - fldNameIdx - ",prntFId:".Length);
         int virtualParentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, userNoteIdx - prntFldrIdx - ",note:".Length));
         string userNote = p_msg[(userNoteIdx + 1)..];
-        bool isCreateFolder = id == -1;
-        User? user = null;
-        int realParentFldId;
 
-        if (isCreateFolder)
-            (realParentFldId, user) = GetRealParentFldId(virtualParentFldId, PrtfItemType.Folder);
-        else
-            realParentFldId = virtualParentFldId;
-
-        string errMsg;
-        if (realParentFldId == -1 && user == null) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
-            errMsg = "Nobody can create folders in the virtual user or virtual 'Shared' folders";
-        else
+        string errMsg = GetRealParentFldId(virtualParentFldId, out User? user, out int realParentFldId);
+        if (errMsg == String.Empty)
         {
             errMsg = MemDb.gMemDb.AddOrEditPortfolioFolder(id, user, fldName, realParentFldId, userNote, out PortfolioFolder? p_newItem);
-            if (p_newItem == null)
-            errMsg = "Folder was not created";
+            if (errMsg == String.Empty && p_newItem == null)
+                errMsg = "Error. Folder change was not done.";
         }
+
+        // bool isCreateFolder = id == -1;
+        // User? user = null;
+        // int realParentFldId;
+
+        // if (isCreateFolder)
+        //     (realParentFldId, user) = GetRealParentFldIdOld(virtualParentFldId, PrtfItemType.Folder);
+        // else
+        //     realParentFldId = virtualParentFldId;
+
+        // string errMsg;
+        // if (realParentFldId == -1 && user == null) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
+        //     errMsg = "Nobody can create folders in the virtual user or virtual 'Shared' folders";
+        // else
+        // {
+        //     errMsg = MemDb.gMemDb.AddOrEditPortfolioFolder(id, user, fldName, realParentFldId, userNote, out PortfolioFolder? p_newItem);
+        //     if (p_newItem == null)
+        //     errMsg = "Folder was not created";
+        // }
 
         if (!String.IsNullOrEmpty(errMsg))
         {
@@ -153,46 +162,82 @@ public partial class DashboardClient
         return virtualParentFldId;
     }
 
-    (int RealParentFldId, User? User) GetRealParentFldId(int p_virtualParentFldId, PrtfItemType p_prtfItemType)
+    static string GetRealParentFldId(int p_virtualParentFldId, out User? p_user, out int p_realParentFldId) // returns error string or empty if no error
     {
-        User? user = null;
-        int realParentFldId;
+        p_user = null;
+        p_realParentFldId = -1; // root of an existing user or the NoUser (if user = null)
 
-        if (p_virtualParentFldId < -2) // parentFldId < -2 is a virtual UserRoot folder, if parentFldId entered by user not found in users data it returns realParentFldId= -1, and user = null
+        if (p_virtualParentFldId < -2) // if virtualParentFldId < -2, then the -1*virtualParentFldId represents an existing user and we want the root folder of the user. If the user is not found returns error.
         {
-            realParentFldId = -1;
-            if (user?.Id == -1 * p_virtualParentFldId)
-                user = User;
+            int userId = -1 * p_virtualParentFldId; // try to find this userId among the users
+            User[] users = MemDb.gMemDb.Users;
+            for (int i = 0; i < users.Length; i++)
+            {
+                if (users[i].Id == userId)
+                {
+                    p_user = users[i];
+                    return String.Empty; // returns p_user = found user; p_realParentFldId = -1 (Root) of the found user.
+                }
+            }
+            return $"Error. No user found for userId {userId}";
         }
-        else if (p_virtualParentFldId >= -2 && p_virtualParentFldId <= 0) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
+        else if (p_virtualParentFldId == gNoUserVirtPortfId) // == -2
         {
-            realParentFldId = -1;
-            user = null;
+            return String.Empty; // returns p_user = null (the NoUser); p_realParentFldId = -1 (Root). This is fine. Admins should be able to create PortfolioItems in the Root folder of the NoUser
         }
-        else // it is a proper folderID, Create the new Folder under that
+        else if (p_virtualParentFldId == -1)
+            return $"Error. virtualParentFldId == -1 is the Root of the UI FolderTree. We cannot create anything in that virtual folder as that is non-existent in the DB.";
+        else // >=0, if virtualParentFldId is a proper folderID, just get its user and return that. Admin users can create a new PortfolioItem anywhere in the FolderTree. And the owner (user) of this new item will be the owner of the ParentFolder.
         {
-            User? pftItemUser = null;
-            if (p_prtfItemType == PrtfItemType.Folder)
+            if (MemDb.gMemDb.PortfolioFolders.TryGetValue(p_virtualParentFldId, out PortfolioFolder? folder))
             {
-                if (MemDb.gMemDb.PortfolioFolders.TryGetValue(p_virtualParentFldId, out PortfolioFolder? folder))
-                    pftItemUser = folder.User;
+                p_user = folder.User; // if the folder belongs to the NoUser, then folder.User == null, which is fine.
+                p_realParentFldId = p_virtualParentFldId;
+                return String.Empty; // returns p_user = found user; p_realParentFldId = -1 (Root) of the found user.
             }
-            else
-            {
-                if (MemDb.gMemDb.Portfolios.TryGetValue(p_virtualParentFldId, out Portfolio? portfolio))
-                    pftItemUser = portfolio.User;
-            }
-
-            if (user == null)
-                return (-1, null);
-            else
-            {
-                realParentFldId = p_virtualParentFldId;
-                user = pftItemUser;
-            }
+            return $"Error. A positive virtualParentFldId {p_virtualParentFldId} was received, but that that Folder is not found in DB.";
         }
-        return (realParentFldId, user);
     }
+
+    // (int RealParentFldId, User? User) GetRealParentFldIdOld(int p_virtualParentFldId, PrtfItemType p_prtfItemType)
+    // {
+    //     User? user = null;
+    //     int realParentFldId;
+    //     if (p_virtualParentFldId < -2) // parentFldId < -2 is a virtual UserRoot folder, if parentFldId entered by user not found in users data it returns realParentFldId= -1, and user = null
+    //     {
+    //         realParentFldId = -1;
+    //         if (user?.Id == -1 * p_virtualParentFldId)
+    //             user = User;
+    //     }
+    //     else if (p_virtualParentFldId >= -2 && p_virtualParentFldId <= 0) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
+    //     {
+    //         realParentFldId = -1;
+    //         user = null;
+    //     }
+    //     else // it is a proper folderID, Create the new Folder under that
+    //     {
+    //         User? pftItemUser = null;
+    //         if (p_prtfItemType == PrtfItemType.Folder)
+    //         {
+    //             if (MemDb.gMemDb.PortfolioFolders.TryGetValue(p_virtualParentFldId, out PortfolioFolder? folder))
+    //                 pftItemUser = folder.User;
+    //         }
+    //         else
+    //         {
+    //             if (MemDb.gMemDb.Portfolios.TryGetValue(p_virtualParentFldId, out Portfolio? portfolio))
+    //                 pftItemUser = portfolio.User;
+    //         }
+    //
+    //         if (user == null)
+    //             return (-1, null);
+    //         else
+    //         {
+    //             realParentFldId = p_virtualParentFldId;
+    //             user = pftItemUser;
+    //         }
+    //     }
+    //     return (realParentFldId, user);
+    // }
 
     private void PortfMgrSendFolders() // Processing the portfolioFolders based on the visiblity rules
     {
@@ -296,24 +341,32 @@ public partial class DashboardClient
         string userAccess = p_msg.Substring(userAccessIdx + 1, userNoteIdx - userAccessIdx - ",note:".Length);
         string userNote = p_msg[(userNoteIdx + 1)..];
 
-        bool isCreatePortfolio = id == -1;
-        User? user = null;
-        int realParentFldId;
-
-        if (isCreatePortfolio)
-            (realParentFldId, user) = GetRealParentFldId(virtualParentFldId, PrtfItemType.Portfolio);
-        else
-            realParentFldId = virtualParentFldId;
-
-        string errMsg;
-        if (realParentFldId == -1 && user == null) // not allowed. Nobody can create portfolios in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
-            errMsg = "Nobody can create portfolio in the virtual user or virtual 'Shared' folders";
-        else
+        string errMsg = GetRealParentFldId(virtualParentFldId, out User? user, out int realParentFldId);
+        if (errMsg == String.Empty)
         {
             errMsg = MemDb.gMemDb.AddOrEditPortfolio(id, user, pfName, realParentFldId, currency, prtfType, userAccess, userNote, out Portfolio? p_newItem);
-            if (p_newItem == null)
-            errMsg = "Portfolio was not created";
+            if (errMsg == String.Empty && p_newItem == null)
+                errMsg = "Error. Portfolio change was not done.";
         }
+
+        // bool isCreatePortfolio = id == -1;
+        // User? user = null;
+        // int realParentFldId;
+
+        // if (isCreatePortfolio)
+        //     (realParentFldId, user) = GetRealParentFldIdOld(virtualParentFldId, PrtfItemType.Portfolio);
+        // else
+        //     realParentFldId = virtualParentFldId;
+
+        // string errMsg;
+        // if (realParentFldId == -1 && user == null) // not allowed. Nobody can create portfolios in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
+        //     errMsg = "Nobody can create portfolio in the virtual user or virtual 'Shared' folders";
+        // else
+        // {
+        //     errMsg = MemDb.gMemDb.AddOrEditPortfolio(id, user, pfName, realParentFldId, currency, prtfType, userAccess, userNote, out Portfolio? p_newItem);
+        //     if (p_newItem == null)
+        //         errMsg = "Portfolio was not created";
+        // }
 
         if (!String.IsNullOrEmpty(errMsg))
         {

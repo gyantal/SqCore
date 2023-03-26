@@ -1,0 +1,28 @@
+>Which is the fastest collection for Time series data in C#?
+If we have time series data. Date - Price records. And you want to query it fast by Date.
+Answer: Dictionary<DateTime> is about 6x faster to query than List.BinarySearch()
+
+It is similar to the SQL data table vs. index table concept. A Dictionary is like an SQL Index table. If fastens queries based on that key.
+
+2 main options:
+    - List/Array and order it and BinarySearch (Ordo(LogN) time complexity)
+    - Dictionary and Hashcode based lookup (Ordo(constant) time complexity)
+
+see:
+https://cc.davelozinski.com/c-sharp/fastest-collection-for-string-lookups
+100,000 items in the List/Dictionary. For smaller values, the measured times were 00:00. But the relative numbers should be the same for 5,000 items list as well as this.
+List: Binary Search 00:00.1872003 => 187ms
+Sorted List 00:00.1716003
+Dictionary (by key) 00:00.0312000 => 31ms
+
+// Dictionary is fastest. 6x faster than List. Because it is Ordo(constant) step. While Binary search is O(LogN)
+This is probably true if the Key is not a string, but DateTime. DateTime has a fine quick Hash implementation.
+
+https://stackoverflow.com/questions/1989262/does-datetime-now-have-its-own-implementation-of-gethashcode-that-gives-unique-h
+"DateTime.GetHashCode:
+public override int GetHashCode() {
+    long internalTicks = this.InternalTicks;
+    return (((int) internalTicks) ^ ((int) (internalTicks >> 0x20)));
+}
+As you can see, it does some "folding" to squeeze 64 bit InternalTicks into a 32-bit integer.
+"
