@@ -211,8 +211,8 @@ public partial class DashboardClient
         int virtualParentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, userNoteIdx - prntFldrIdx - ",note:".Length));
         string userNote = p_msg[(userNoteIdx + 1)..];
 
-        string errMsg = GetRealParentFldId(virtualParentFldId, out User? user, out int realParentFldId);
-        if (errMsg == String.Empty)
+        string? errMsg = GetRealParentFldId(virtualParentFldId, out User? user, out int realParentFldId);
+        if (errMsg == null)
         {
             errMsg = MemDb.gMemDb.AddOrEditPortfolioFolder(id, user, fldName, realParentFldId, userNote, out PortfolioFolder? p_newItem);
             if (errMsg == String.Empty && p_newItem == null)
@@ -227,7 +227,7 @@ public partial class DashboardClient
         }
     }
 
-    static string GetRealParentFldId(int p_virtualParentFldId, out User? p_user, out int p_realParentFldId) // returns error string or empty if no error
+    static string? GetRealParentFldId(int p_virtualParentFldId, out User? p_user, out int p_realParentFldId) // returns error string or empty if no error
     {
         p_user = null;
         p_realParentFldId = -1; // root of an existing user or the NoUser (if user = null)
@@ -241,14 +241,14 @@ public partial class DashboardClient
                 if (users[i].Id == userId)
                 {
                     p_user = users[i];
-                    return String.Empty; // returns p_user = found user; p_realParentFldId = -1 (Root) of the found user.
+                    return null; // returns p_user = found user; p_realParentFldId = -1 (Root) of the found user.
                 }
             }
             return $"Error. No user found for userId {userId}";
         }
         else if (p_virtualParentFldId == gNoUserVirtPortfId) // == -2
         {
-            return String.Empty; // returns p_user = null (the NoUser); p_realParentFldId = -1 (Root). This is fine. Admins should be able to create PortfolioItems in the Root folder of the NoUser
+            return null; // returns p_user = null (the NoUser); p_realParentFldId = -1 (Root). This is fine. Admins should be able to create PortfolioItems in the Root folder of the NoUser
         }
         else if (p_virtualParentFldId == -1)
             return $"Error. virtualParentFldId == -1 is the Root of the UI FolderTree. We cannot create anything in that virtual folder as that is non-existent in the DB.";
@@ -258,50 +258,11 @@ public partial class DashboardClient
             {
                 p_user = folder.User; // if the folder belongs to the NoUser, then folder.User == null, which is fine.
                 p_realParentFldId = p_virtualParentFldId;
-                return String.Empty; // returns p_user = found user; p_realParentFldId = -1 (Root) of the found user.
+                return null; // returns p_user = found user; p_realParentFldId = -1 (Root) of the found user.
             }
             return $"Error. A positive virtualParentFldId {p_virtualParentFldId} was received, but that that Folder is not found in DB.";
         }
     }
-
-    // (int RealParentFldId, User? User) GetRealParentFldIdOld(int p_virtualParentFldId, PrtfItemType p_prtfItemType)
-    // {
-    //     User? user = null;
-    //     int realParentFldId;
-    //     if (p_virtualParentFldId < -2) // parentFldId < -2 is a virtual UserRoot folder, if parentFldId entered by user not found in users data it returns realParentFldId= -1, and user = null
-    //     {
-    //         realParentFldId = -1;
-    //         if (User.Id == -1 * p_virtualParentFldId)
-    //             user = User;
-    //     }
-    //     else if (p_virtualParentFldId >= -2 && p_virtualParentFldId <= 0) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
-    //     {
-    //         realParentFldId = -1;
-    //         user = null;
-    //     }
-    //     else // it is a proper folderID, Create the new Folder under that
-    //     {
-    //         User? pftItemUser = null;
-    //         if (p_prtfItemType == PrtfItemType.Folder)
-    //         {
-    //             if (MemDb.gMemDb.PortfolioFolders.TryGetValue(p_virtualParentFldId, out PortfolioFolder? folder))
-    //                 pftItemUser = folder.User;
-    //         }
-    //         else
-    //         {
-    //             if (MemDb.gMemDb.Portfolios.TryGetValue(p_virtualParentFldId, out Portfolio? portfolio))
-    //                 pftItemUser = portfolio.User;
-    //         }
-    //         if (pftItemUser == null)
-    //             return (-1, null);
-    //         else
-    //         {
-    //             realParentFldId = p_virtualParentFldId;
-    //             user = pftItemUser;
-    //         }
-    //     }
-    //     return (realParentFldId, user);
-    // }
 
     public void PortfMgrCreateOrEditPortfolio(string p_msg) // "msg - id:-1,name:TestPrtf,prntFId:16,currency:USD,type:Simulation,access:Anyone,note:Testing"
     {
@@ -321,8 +282,8 @@ public partial class DashboardClient
         string userAccess = p_msg.Substring(userAccessIdx + 1, userNoteIdx - userAccessIdx - ",note:".Length);
         string userNote = p_msg[(userNoteIdx + 1)..];
 
-        string errMsg = GetRealParentFldId(virtualParentFldId, out User? user, out int realParentFldId);
-        if (errMsg == String.Empty)
+        string? errMsg = GetRealParentFldId(virtualParentFldId, out User? user, out int realParentFldId);
+        if (errMsg == null)
         {
             errMsg = MemDb.gMemDb.AddOrEditPortfolio(id, user, pfName, realParentFldId, currency, prtfType, userAccess, userNote, out Portfolio? p_newItem);
             if (errMsg == String.Empty && p_newItem == null)

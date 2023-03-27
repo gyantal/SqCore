@@ -372,7 +372,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.editedFolder.id = lastSelectedTreeNode?.id!;
       this.editedFolder.parentFolderId = lastSelectedTreeNode?.parentFolderId!;
       this.editedFolder.note = lastSelectedTreeNode?.note!;
-      this.parentfolderName = lastSelectedTreeNode.parentFolderId == -1 ? 'Root Folder' : this.folders?.find((r) => r.id == lastSelectedTreeNode.parentFolderId!)?.name;
+      this.parentfolderName = this.folders?.find((r) => r.id == lastSelectedTreeNode.parentFolderId!)?.name;
     }
   }
 

@@ -10,20 +10,22 @@
     <button (click)="showCreateOrEditPortfolioPopup('create')" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder') ? 'btnEnabled' : 'btnDisabled'">Create Portfolio</button>&nbsp;
     <button (click)="showCreateOrEditFolderPopup('create')" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Folder' ? 'btnEnabled': 'btnDisabled'">Create Folder</button>&nbsp;<br><br>
     <button (click)="showCreateOrEditPortfolioPopup('edit')" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled': 'btnDisabled'">Edit Portfolio</button>&nbsp;
-    <button (click)="showCreateOrEditFolderPopup('edit')" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Folder' ? 'btnEnabled': 'btnDisabled'">Edit Folder</button>&nbsp;<br><br>
+    <!-- The user should not be able edit virtual top folders that have negative folder.Id (checked by this condition: treeViewState.lastSelectedItem?.id! >= 0) -->
+    <button (click)="showCreateOrEditFolderPopup('edit')" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' && treeViewState.lastSelectedItem?.id! >= 0) ? 'btnEnabled': 'btnDisabled'">Edit Folder</button>&nbsp;<br><br>
     <button id="openPortfolioViewer" (click)="onOpenPortfolioViewerClicked()" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled' : 'btnDisabled'">Open in Portfolio Viewer</button>&nbsp;
     <button (click)="onDeletePrtfItemClicked()" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' || treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio') ? 'btnEnabled' : 'btnDisabled'">Delete</button><br><br>
     <div class="popup infoPopup" id="createOrEditFolderPopup" [ngStyle]="{'display': isCreateOrEditFolderPopupVisible ? 'block' : 'none'}"><br>
       <div>
         <div class="prtfCommon prtfFields">Name:<span class="requiredAndNotFound" *ngIf="!editedFolder.name">*</span></div>
         <div class="prtfCommon prtfUserValues">
-          <input class="inputSize" type="text" placeholder="Enter Folder Name" [(ngModel)]="editedFolder.name" [value]="editedFolder.name">
+          <input class="pfItemLongInput" type="text" placeholder="Enter Folder Name" [(ngModel)]="editedFolder.name" [value]="editedFolder.name">
         </div>
       </div>
       <div>
         <div class="prtfCommon prtfFields">Id(-1 for new):</div>
         <div class="prtfCommon prtfUserValues">
-          <input class="inputItemIdCommon" type="text" placeholder="Enter Item Id" [(ngModel)]="editedFolder.id" [value]="editedFolder.id">
+          <!-- The user should  not be able to change the Id. If an item is created, Id is a fix -1 .If editing an item, the object is identified by the immutable Id. -->
+          <input class="inputItemIdCommon" type="text" placeholder="Enter Item Id" [(ngModel)]="editedFolder.id" [value]="editedFolder.id" disabled>
         </div>
       </div>
       <div>
@@ -31,14 +33,14 @@
         <div class="prtfCommon prtfUserValues">
           <span>
           <input class="inputItemIdCommon" type="text" placeholder="Enter PrntFld Id" (keyup)="onKeyupParentFolderId(editedFolder.parentFolderId)" [(ngModel)]="editedFolder.parentFolderId" [value]="editedFolder.parentFolderId">&nbsp;
-          <label><b>PrntFldName:</b>&nbsp;<span [ngClass]="{'requiredAndNotFound': (parentfolderName == 'Not Found' || parentfolderName == 'Root Folder')}">{{parentfolderName}}</span></label>
+          <label><b>PrntFldName:</b>&nbsp;<span [ngClass]="{'requiredAndNotFound': parentfolderName == 'Not Found'}">{{parentfolderName}}</span></label>
         </span>
         </div>
       </div>
       <div>
         <div class="prtfCommon prtfFields">Note:</div>
         <div class="prtfCommon prtfUserValues">
-          <input class="inputSize" type="text" placeholder="Note" [(ngModel)]="editedFolder.note" [value]="editedFolder.note">
+          <input class="pfItemLongInput" type="text" placeholder="Note" [(ngModel)]="editedFolder.note" [value]="editedFolder.note">
         </div>
       </div><br><br>
       <div>
@@ -51,13 +53,14 @@
         <div>
           <div class="prtfCommon prtfFields">Name:<span class="requiredAndNotFound" *ngIf="!editedPortfolio.name">*</span></div>
           <div class="prtfCommon prtfUserValues">
-            <input class="inputSize" type="text" placeholder="Enter Portfolio Name" [(ngModel)]="editedPortfolio.name">
+            <input class="pfItemLongInput" type="text" placeholder="Enter Portfolio Name" [(ngModel)]="editedPortfolio.name">
           </div>
         </div>
         <div>
           <div class="prtfCommon prtfFields">Id(-1 for new):</div>
           <div class="prtfCommon prtfUserValues">
-            <input class="inputItemIdCommon" type="text" placeholder="Enter Item Id" [(ngModel)]="editedPortfolio.id" [value]="editedPortfolio.id">
+            <!-- The user should  not be able to change the Id. If an item is created, Id is a fix -1 .If editing an item, the object is identified by the immutable Id. -->
+            <input class="inputItemIdCommon" type="text" placeholder="Enter Item Id" [(ngModel)]="editedPortfolio.id" [value]="editedPortfolio.id" disabled>
           </div>
         </div>
         <div>
@@ -65,7 +68,7 @@
           <div class="prtfCommon prtfUserValues">
             <span>
             <input class="inputItemIdCommon" type="text" placeholder="Enter PrntFld Id" (keyup)="onKeyupParentFolderId(editedPortfolio.parentFolderId)" [(ngModel)]="editedPortfolio.parentFolderId" [value]="editedPortfolio.parentFolderId">&nbsp;
-            <label><b>PrntFldName:</b>&nbsp;<span [ngClass]="{'requiredAndNotFound': (parentfolderName == 'Not Found' || parentfolderName == 'Root Folder')}">{{parentfolderName}}</span></label>
+            <label><b>PrntFldName:</b>&nbsp;<span [ngClass]="{'requiredAndNotFound': parentfolderName == 'Not Found'}">{{parentfolderName}}</span></label>
           </span>
           </div>
         </div>
@@ -96,7 +99,7 @@
         <div>
           <div class="prtfCommon prtfFields">User Note:</div>
           <div class="prtfCommon prtfUserValues">
-            <input class="inputSize" type="text" placeholder="write some notes" [(ngModel)]="editedPortfolio.note" [value]="editedPortfolio.note">
+            <input class="pfItemLongInput" type="text" placeholder="write some notes" [(ngModel)]="editedPortfolio.note" [value]="editedPortfolio.note">
           </div>
         </div>
       </div>
