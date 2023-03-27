@@ -75,170 +75,6 @@ public partial class DashboardClient
         return new HandshakePortfMgr() { UserName = User.Username };
     }
 
-    public bool OnReceiveWsAsync_PortfMgr(string msgCode, string msgObjStr)
-    {
-        switch (msgCode)
-        {
-            case "PortfMgr.RefreshFolders":
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): RefreshFolders '{msgObjStr}'");
-                PortfMgrSendFolders();
-                return true;
-            case "PortfMgr.CreateOrEditFolder": // msg: "id:-1,name:DayaTesting,prntFlrId:2,note:tesing"
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreateOrEditFolder '{msgObjStr}'");
-                PortfMgrCreateOrEditFolder(msgObjStr);
-                PortfMgrSendFolders();
-                return true;
-            case "PortfMgr.CreateOrEditPortfolio": // msg: "id:-1,name:TestPrtf,prntFId:16,currency:USD,type:Simulation,access:Anyone,note:Testing"
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{msgObjStr}'");
-                PortfMgrCreateOrEditPortfolio(msgObjStr);
-                PortfMgrSendPortfolios();
-                return true;
-            case "PortfMgr.DeletePortfolioItem": // msg: "id:5" // if id > 10,000 then it is a PortfolioID otherwise it is the FolderID
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): DeletePortfolioItem '{msgObjStr}'");
-                PortfMgrDeletePortfolioItem(msgObjStr);
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    public void PortfMgrCreateOrEditFolder(string p_msg) // msg: id:-1,name:TestNesting12,p,p,prntFlrId:16,note:test
-    {
-        int idStartIdx = p_msg.IndexOf(":");
-        int fldNameIdx = (idStartIdx == -1) ? -1 : p_msg.IndexOf(':', idStartIdx + 1);
-        int prntFldrIdx = (fldNameIdx == -1) ? -1 : p_msg.IndexOf(":", fldNameIdx + 1);
-        int userNoteIdx = prntFldrIdx == -1 ? -1 : p_msg.IndexOf(":", prntFldrIdx + 1);
-
-        int id = Convert.ToInt32(p_msg.Substring(idStartIdx + 1, fldNameIdx - idStartIdx - ",name:".Length));
-        string fldName = p_msg.Substring(fldNameIdx + 1, prntFldrIdx - fldNameIdx - ",prntFId:".Length);
-        int virtualParentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, userNoteIdx - prntFldrIdx - ",note:".Length));
-        string userNote = p_msg[(userNoteIdx + 1)..];
-
-        string errMsg = GetRealParentFldId(virtualParentFldId, out User? user, out int realParentFldId);
-        if (errMsg == String.Empty)
-        {
-            errMsg = MemDb.gMemDb.AddOrEditPortfolioFolder(id, user, fldName, realParentFldId, userNote, out PortfolioFolder? p_newItem);
-            if (errMsg == String.Empty && p_newItem == null)
-                errMsg = "Error. Folder change was not done.";
-        }
-
-        // bool isCreateFolder = id == -1;
-        // User? user = null;
-        // int realParentFldId;
-
-        // if (isCreateFolder)
-        //     (realParentFldId, user) = GetRealParentFldIdOld(virtualParentFldId, PrtfItemType.Folder);
-        // else
-        //     realParentFldId = virtualParentFldId;
-
-        // string errMsg;
-        // if (realParentFldId == -1 && user == null) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
-        //     errMsg = "Nobody can create folders in the virtual user or virtual 'Shared' folders";
-        // else
-        // {
-        //     errMsg = MemDb.gMemDb.AddOrEditPortfolioFolder(id, user, fldName, realParentFldId, userNote, out PortfolioFolder? p_newItem);
-        //     if (p_newItem == null)
-        //     errMsg = "Folder was not created";
-        // }
-
-        if (!String.IsNullOrEmpty(errMsg))
-        {
-            byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.ErrorToUser:" + errMsg);
-            if (WsWebSocket!.State == WebSocketState.Open)
-                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-        }
-    }
-
-    static int GetVirtualParentFldId(User? p_user, int p_realParentFldId)
-    {
-        int virtualParentFldId = p_realParentFldId;
-        if (p_realParentFldId == -1) // if Portfolio doesn't have a parent folder, then it is in the Root (of either the NonUser or a concrete user)
-        {
-            if (p_user == null) // if the owner is the NoUser
-                virtualParentFldId = gNoUserVirtPortfId;
-            else
-                virtualParentFldId = -1 * p_user.Id; // If there is a proper user, the Virtual FolderID is the -1 * UserId by our convention.
-        }
-        return virtualParentFldId;
-    }
-
-    static string GetRealParentFldId(int p_virtualParentFldId, out User? p_user, out int p_realParentFldId) // returns error string or empty if no error
-    {
-        p_user = null;
-        p_realParentFldId = -1; // root of an existing user or the NoUser (if user = null)
-
-        if (p_virtualParentFldId < -2) // if virtualParentFldId < -2, then the -1*virtualParentFldId represents an existing user and we want the root folder of the user. If the user is not found returns error.
-        {
-            int userId = -1 * p_virtualParentFldId; // try to find this userId among the users
-            User[] users = MemDb.gMemDb.Users;
-            for (int i = 0; i < users.Length; i++)
-            {
-                if (users[i].Id == userId)
-                {
-                    p_user = users[i];
-                    return String.Empty; // returns p_user = found user; p_realParentFldId = -1 (Root) of the found user.
-                }
-            }
-            return $"Error. No user found for userId {userId}";
-        }
-        else if (p_virtualParentFldId == gNoUserVirtPortfId) // == -2
-        {
-            return String.Empty; // returns p_user = null (the NoUser); p_realParentFldId = -1 (Root). This is fine. Admins should be able to create PortfolioItems in the Root folder of the NoUser
-        }
-        else if (p_virtualParentFldId == -1)
-            return $"Error. virtualParentFldId == -1 is the Root of the UI FolderTree. We cannot create anything in that virtual folder as that is non-existent in the DB.";
-        else // >=0, if virtualParentFldId is a proper folderID, just get its user and return that. Admin users can create a new PortfolioItem anywhere in the FolderTree. And the owner (user) of this new item will be the owner of the ParentFolder.
-        {
-            if (MemDb.gMemDb.PortfolioFolders.TryGetValue(p_virtualParentFldId, out PortfolioFolder? folder))
-            {
-                p_user = folder.User; // if the folder belongs to the NoUser, then folder.User == null, which is fine.
-                p_realParentFldId = p_virtualParentFldId;
-                return String.Empty; // returns p_user = found user; p_realParentFldId = -1 (Root) of the found user.
-            }
-            return $"Error. A positive virtualParentFldId {p_virtualParentFldId} was received, but that that Folder is not found in DB.";
-        }
-    }
-
-    // (int RealParentFldId, User? User) GetRealParentFldIdOld(int p_virtualParentFldId, PrtfItemType p_prtfItemType)
-    // {
-    //     User? user = null;
-    //     int realParentFldId;
-    //     if (p_virtualParentFldId < -2) // parentFldId < -2 is a virtual UserRoot folder, if parentFldId entered by user not found in users data it returns realParentFldId= -1, and user = null
-    //     {
-    //         realParentFldId = -1;
-    //         if (user?.Id == -1 * p_virtualParentFldId)
-    //             user = User;
-    //     }
-    //     else if (p_virtualParentFldId >= -2 && p_virtualParentFldId <= 0) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
-    //     {
-    //         realParentFldId = -1;
-    //         user = null;
-    //     }
-    //     else // it is a proper folderID, Create the new Folder under that
-    //     {
-    //         User? pftItemUser = null;
-    //         if (p_prtfItemType == PrtfItemType.Folder)
-    //         {
-    //             if (MemDb.gMemDb.PortfolioFolders.TryGetValue(p_virtualParentFldId, out PortfolioFolder? folder))
-    //                 pftItemUser = folder.User;
-    //         }
-    //         else
-    //         {
-    //             if (MemDb.gMemDb.Portfolios.TryGetValue(p_virtualParentFldId, out Portfolio? portfolio))
-    //                 pftItemUser = portfolio.User;
-    //         }
-    //
-    //         if (user == null)
-    //             return (-1, null);
-    //         else
-    //         {
-    //             realParentFldId = p_virtualParentFldId;
-    //             user = pftItemUser;
-    //         }
-    //     }
-    //     return (realParentFldId, user);
-    // }
-
     private void PortfMgrSendFolders() // Processing the portfolioFolders based on the visiblity rules
     {
         // Visibility rules for PortfolioFolders:
@@ -323,6 +159,150 @@ public partial class DashboardClient
             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
+    static int GetVirtualParentFldId(User? p_user, int p_realParentFldId)
+    {
+        int virtualParentFldId = p_realParentFldId;
+        if (p_realParentFldId == -1) // if Portfolio doesn't have a parent folder, then it is in the Root (of either the NonUser or a concrete user)
+        {
+            if (p_user == null) // if the owner is the NoUser
+                virtualParentFldId = gNoUserVirtPortfId;
+            else
+                virtualParentFldId = -1 * p_user.Id; // If there is a proper user, the Virtual FolderID is the -1 * UserId by our convention.
+        }
+        return virtualParentFldId;
+    }
+
+    public bool OnReceiveWsAsync_PortfMgr(string msgCode, string msgObjStr)
+    {
+        switch (msgCode)
+        {
+            case "PortfMgr.RefreshFolders":
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): RefreshFolders '{msgObjStr}'");
+                PortfMgrSendFolders();
+                return true;
+            case "PortfMgr.CreateOrEditFolder": // msg: "id:-1,name:DayaTesting,prntFlrId:2,note:tesing"
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreateOrEditFolder '{msgObjStr}'");
+                PortfMgrCreateOrEditFolder(msgObjStr);
+                PortfMgrSendFolders();
+                return true;
+            case "PortfMgr.CreateOrEditPortfolio": // msg: "id:-1,name:TestPrtf,prntFId:16,currency:USD,type:Simulation,access:Anyone,note:Testing"
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{msgObjStr}'");
+                PortfMgrCreateOrEditPortfolio(msgObjStr);
+                PortfMgrSendPortfolios();
+                return true;
+            case "PortfMgr.DeletePortfolioItem": // msg: "id:5" // if id > 10,000 then it is a PortfolioID otherwise it is the FolderID
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): DeletePortfolioItem '{msgObjStr}'");
+                PortfMgrDeletePortfolioItem(msgObjStr);
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public void PortfMgrCreateOrEditFolder(string p_msg) // msg: id:-1,name:DayaTesting,prntFlrId:2,note:testing
+    {
+        int idStartIdx = p_msg.IndexOf(":");
+        int fldNameIdx = (idStartIdx == -1) ? -1 : p_msg.IndexOf(':', idStartIdx + 1);
+        int prntFldrIdx = (fldNameIdx == -1) ? -1 : p_msg.IndexOf(":", fldNameIdx + 1);
+        int userNoteIdx = prntFldrIdx == -1 ? -1 : p_msg.IndexOf(":", prntFldrIdx + 1);
+
+        int id = Convert.ToInt32(p_msg.Substring(idStartIdx + 1, fldNameIdx - idStartIdx - ",name:".Length));
+        string fldName = p_msg.Substring(fldNameIdx + 1, prntFldrIdx - fldNameIdx - ",prntFId:".Length);
+        int virtualParentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, userNoteIdx - prntFldrIdx - ",note:".Length));
+        string userNote = p_msg[(userNoteIdx + 1)..];
+
+        string errMsg = GetRealParentFldId(virtualParentFldId, out User? user, out int realParentFldId);
+        if (errMsg == String.Empty)
+        {
+            errMsg = MemDb.gMemDb.AddOrEditPortfolioFolder(id, user, fldName, realParentFldId, userNote, out PortfolioFolder? p_newItem);
+            if (errMsg == String.Empty && p_newItem == null)
+                errMsg = "Error. Folder change was not done.";
+        }
+
+        if (!String.IsNullOrEmpty(errMsg))
+        {
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.ErrorToUser:" + errMsg);
+            if (WsWebSocket!.State == WebSocketState.Open)
+                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+    }
+
+    static string GetRealParentFldId(int p_virtualParentFldId, out User? p_user, out int p_realParentFldId) // returns error string or empty if no error
+    {
+        p_user = null;
+        p_realParentFldId = -1; // root of an existing user or the NoUser (if user = null)
+
+        if (p_virtualParentFldId < -2) // if virtualParentFldId < -2, then the -1*virtualParentFldId represents an existing user and we want the root folder of the user. If the user is not found returns error.
+        {
+            int userId = -1 * p_virtualParentFldId; // try to find this userId among the users
+            User[] users = MemDb.gMemDb.Users;
+            for (int i = 0; i < users.Length; i++)
+            {
+                if (users[i].Id == userId)
+                {
+                    p_user = users[i];
+                    return String.Empty; // returns p_user = found user; p_realParentFldId = -1 (Root) of the found user.
+                }
+            }
+            return $"Error. No user found for userId {userId}";
+        }
+        else if (p_virtualParentFldId == gNoUserVirtPortfId) // == -2
+        {
+            return String.Empty; // returns p_user = null (the NoUser); p_realParentFldId = -1 (Root). This is fine. Admins should be able to create PortfolioItems in the Root folder of the NoUser
+        }
+        else if (p_virtualParentFldId == -1)
+            return $"Error. virtualParentFldId == -1 is the Root of the UI FolderTree. We cannot create anything in that virtual folder as that is non-existent in the DB.";
+        else // >=0, if virtualParentFldId is a proper folderID, just get its user and return that. Admin users can create a new PortfolioItem anywhere in the FolderTree. And the owner (user) of this new item will be the owner of the ParentFolder.
+        {
+            if (MemDb.gMemDb.PortfolioFolders.TryGetValue(p_virtualParentFldId, out PortfolioFolder? folder))
+            {
+                p_user = folder.User; // if the folder belongs to the NoUser, then folder.User == null, which is fine.
+                p_realParentFldId = p_virtualParentFldId;
+                return String.Empty; // returns p_user = found user; p_realParentFldId = -1 (Root) of the found user.
+            }
+            return $"Error. A positive virtualParentFldId {p_virtualParentFldId} was received, but that that Folder is not found in DB.";
+        }
+    }
+
+    // (int RealParentFldId, User? User) GetRealParentFldIdOld(int p_virtualParentFldId, PrtfItemType p_prtfItemType)
+    // {
+    //     User? user = null;
+    //     int realParentFldId;
+    //     if (p_virtualParentFldId < -2) // parentFldId < -2 is a virtual UserRoot folder, if parentFldId entered by user not found in users data it returns realParentFldId= -1, and user = null
+    //     {
+    //         realParentFldId = -1;
+    //         if (User.Id == -1 * p_virtualParentFldId)
+    //             user = User;
+    //     }
+    //     else if (p_virtualParentFldId >= -2 && p_virtualParentFldId <= 0) // not allowed. Nobody can create folders in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
+    //     {
+    //         realParentFldId = -1;
+    //         user = null;
+    //     }
+    //     else // it is a proper folderID, Create the new Folder under that
+    //     {
+    //         User? pftItemUser = null;
+    //         if (p_prtfItemType == PrtfItemType.Folder)
+    //         {
+    //             if (MemDb.gMemDb.PortfolioFolders.TryGetValue(p_virtualParentFldId, out PortfolioFolder? folder))
+    //                 pftItemUser = folder.User;
+    //         }
+    //         else
+    //         {
+    //             if (MemDb.gMemDb.Portfolios.TryGetValue(p_virtualParentFldId, out Portfolio? portfolio))
+    //                 pftItemUser = portfolio.User;
+    //         }
+    //         if (pftItemUser == null)
+    //             return (-1, null);
+    //         else
+    //         {
+    //             realParentFldId = p_virtualParentFldId;
+    //             user = pftItemUser;
+    //         }
+    //     }
+    //     return (realParentFldId, user);
+    // }
+
     public void PortfMgrCreateOrEditPortfolio(string p_msg) // "msg - id:-1,name:TestPrtf,prntFId:16,currency:USD,type:Simulation,access:Anyone,note:Testing"
     {
         int idStartIdx = p_msg.IndexOf(":");
@@ -348,25 +328,6 @@ public partial class DashboardClient
             if (errMsg == String.Empty && p_newItem == null)
                 errMsg = "Error. Portfolio change was not done.";
         }
-
-        // bool isCreatePortfolio = id == -1;
-        // User? user = null;
-        // int realParentFldId;
-
-        // if (isCreatePortfolio)
-        //     (realParentFldId, user) = GetRealParentFldIdOld(virtualParentFldId, PrtfItemType.Portfolio);
-        // else
-        //     realParentFldId = virtualParentFldId;
-
-        // string errMsg;
-        // if (realParentFldId == -1 && user == null) // not allowed. Nobody can create portfolios in the virtual “Shared” folder. That is a flat virtual folder. No folder hierarchy there (like GoogleDrive)
-        //     errMsg = "Nobody can create portfolio in the virtual user or virtual 'Shared' folders";
-        // else
-        // {
-        //     errMsg = MemDb.gMemDb.AddOrEditPortfolio(id, user, pfName, realParentFldId, currency, prtfType, userAccess, userNote, out Portfolio? p_newItem);
-        //     if (p_newItem == null)
-        //         errMsg = "Portfolio was not created";
-        // }
 
         if (!String.IsNullOrEmpty(errMsg))
         {

@@ -15,9 +15,9 @@
     <button (click)="onDeletePrtfItemClicked()" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' || treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio') ? 'btnEnabled' : 'btnDisabled'">Delete</button><br><br>
     <div class="popup infoPopup" id="createOrEditFolderPopup" [ngStyle]="{'display': isCreateOrEditFolderPopupVisible ? 'block' : 'none'}"><br>
       <div>
-        <div class="prtfCommon prtfFields">Name:<span class="requiredOrNotFound" *ngIf="!editedFolder.name">*</span></div>
+        <div class="prtfCommon prtfFields">Name:<span class="requiredAndNotFound" *ngIf="!editedFolder.name">*</span></div>
         <div class="prtfCommon prtfUserValues">
-          <input type="text" placeholder="Enter Folder Name" [(ngModel)]="editedFolder.name" [value]="editedFolder.name">
+          <input class="inputSize" type="text" placeholder="Enter Folder Name" [(ngModel)]="editedFolder.name" [value]="editedFolder.name">
         </div>
       </div>
       <div>
@@ -31,14 +31,14 @@
         <div class="prtfCommon prtfUserValues">
           <span>
           <input class="inputItemIdCommon" type="text" placeholder="Enter PrntFld Id" (keyup)="onKeyupParentFolderId(editedFolder.parentFolderId)" [(ngModel)]="editedFolder.parentFolderId" [value]="editedFolder.parentFolderId">&nbsp;
-          <label><b>PrntFldName:</b>&nbsp;<span [ngClass]="{'requiredOrNotFound': parentfolderName == 'Not Found'}">{{parentfolderName}}</span></label>
+          <label><b>PrntFldName:</b>&nbsp;<span [ngClass]="{'requiredAndNotFound': (parentfolderName == 'Not Found' || parentfolderName == 'Root Folder')}">{{parentfolderName}}</span></label>
         </span>
         </div>
       </div>
       <div>
         <div class="prtfCommon prtfFields">Note:</div>
         <div class="prtfCommon prtfUserValues">
-          <input type="text" placeholder="Note" [(ngModel)]="editedFolder.note" [value]="editedFolder.note">
+          <input class="inputSize" type="text" placeholder="Note" [(ngModel)]="editedFolder.note" [value]="editedFolder.note">
         </div>
       </div><br><br>
       <div>
@@ -46,12 +46,12 @@
         <button class="closePopup" (click)="closeCreateOrEditFolderPopup()" [ngStyle]="{'display': isCreateOrEditFolderPopupVisible ? 'block' : 'none'}">Cancel</button>
       </div>
     </div><br>
-    <div class="popup infoPopup" id="createPortfolioPopup" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}"><br>
+    <div class="popup infoPopup" id="createPortfolioPopup" [ngStyle]="{'display': isCreateOrEditPortfolioPopupVisible ? 'block' : 'none'}"><br>
       <div>
         <div>
-          <div class="prtfCommon prtfFields">Name:<span class="requiredOrNotFound" *ngIf="!editedPortfolio.name">*</span></div>
+          <div class="prtfCommon prtfFields">Name:<span class="requiredAndNotFound" *ngIf="!editedPortfolio.name">*</span></div>
           <div class="prtfCommon prtfUserValues">
-            <input type="text" placeholder="Enter Portfolio Name" [(ngModel)]="editedPortfolio.name">
+            <input class="inputSize" type="text" placeholder="Enter Portfolio Name" [(ngModel)]="editedPortfolio.name">
           </div>
         </div>
         <div>
@@ -65,7 +65,7 @@
           <div class="prtfCommon prtfUserValues">
             <span>
             <input class="inputItemIdCommon" type="text" placeholder="Enter PrntFld Id" (keyup)="onKeyupParentFolderId(editedPortfolio.parentFolderId)" [(ngModel)]="editedPortfolio.parentFolderId" [value]="editedPortfolio.parentFolderId">&nbsp;
-            <label><b>PrntFldName:</b>&nbsp;<span [ngClass]="{'requiredOrNotFound': parentfolderName == 'Not Found'}">{{parentfolderName}}</span></label>
+            <label><b>PrntFldName:</b>&nbsp;<span [ngClass]="{'requiredAndNotFound': (parentfolderName == 'Not Found' || parentfolderName == 'Root Folder')}">{{parentfolderName}}</span></label>
           </span>
           </div>
         </div>
@@ -96,13 +96,13 @@
         <div>
           <div class="prtfCommon prtfFields">User Note:</div>
           <div class="prtfCommon prtfUserValues">
-            <input type="text" placeholder="write some notes" name="userNote" [(ngModel)]="editedPortfolio.note">
+            <input class="inputSize" type="text" placeholder="write some notes" [(ngModel)]="editedPortfolio.note" [value]="editedPortfolio.note">
           </div>
         </div>
       </div>
       <span>
         <button id="createPortfolioButton" (click)="onCreateOrEditPortfolioClicked()">{{(editedPortfolio.id == -1) ? 'Create Portfolio' : 'Save Portfolio'}}</button>
-        <button class="closePopup" (click)="closeCreatePortfolioPopup()" [ngStyle]="{'display': isCreatePortfolioPopupVisible ? 'block' : 'none'}">Cancel</button>
+        <button class="closePopup" (click)="closeCreatePortfolioPopup()" [ngStyle]="{'display': isCreateOrEditPortfolioPopupVisible ? 'block' : 'none'}">Cancel</button>
       </span>
     </div><br>
   </div>

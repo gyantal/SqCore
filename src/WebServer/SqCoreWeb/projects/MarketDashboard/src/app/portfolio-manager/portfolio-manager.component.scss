@@ -164,7 +164,7 @@
   top: 2rem;
 }
 
-.requiredOrNotFound { // user nneds to enter the folder/portfolio name otherwise it will show asterik(*) symbol in red color
+.requiredAndNotFound { // user needs to enter the folder/portfolio name otherwise it will show asterik(*) symbol in red color
   color: #ff0000;
 }
 
@@ -211,4 +211,8 @@
 
 .inputItemIdCommon { // resetting the width of the folder.id and folder.prntFolderId inputs
   width: 20%;
+}
+
+.inputSize { // using the full width of the popup to fit in the name and user notes inputs
+  width: 30rem;
 }

@@ -66,16 +66,16 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   folders: Nullable<FolderJs[]> = null;
   portfolios: Nullable<PortfolioJs[]> = null;
   uiNestedPrtfTreeViewItems: TreeViewItem[] = [];
-  isCreatePortfolioPopupVisible: boolean = false;
+  isCreateOrEditPortfolioPopupVisible: boolean = false;
+  isCreateOrEditFolderPopupVisible: boolean = false;
   isDeleteConfirmPopupVisible: boolean = false;
   isErrorPopupVisible: boolean = false;
-  isCreateOrEditFolderPopupVisible: boolean = false;
   errorMsgToUser: string = '';
   // common for both portfolio and portfolioFolder
   deletePrtfItemName: string = ''; // portfolio or folder name to be deleted
   treeViewState: TreeViewState = new TreeViewState();
   editedFolder: FolderJs = new FolderJs(); // create or edit folder
-  parentfolderName: string = ''; // displaying next to the selected parent folder id on Ui
+  parentfolderName: string | undefined = ''; // displaying next to the selected parent folder id on Ui
   editedPortfolio: PortfolioJs = new PortfolioJs(); // create or edit portfolio
   currencyType: string[] = ['USD', 'EUR', 'GBP', 'GBX', 'HUF', 'JPY', 'CAD', 'CNY', 'CHF'];
   portfolioType: string[] = ['Trades', 'Simulation'];
@@ -361,18 +361,19 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     console.log('showCreateOrEditFolderPopup(): Mode', mode);
     const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
     this.isCreateOrEditFolderPopupVisible = true;
+    this.isCreateOrEditPortfolioPopupVisible = false; // close the portfolio popup if it is left open by the user
 
     if (mode == 'create') {
       this.editedFolder = new FolderJs();
       this.editedFolder.parentFolderId = lastSelectedTreeNode?.id!; // for creating new folder it needs the parentFolderId(i.e. lastSelectedId), so that it can create child folder inside the parent.
+      this.parentfolderName = lastSelectedTreeNode?.name!;
     } else {
       this.editedFolder.name = lastSelectedTreeNode?.name!;
       this.editedFolder.id = lastSelectedTreeNode?.id!;
       this.editedFolder.parentFolderId = lastSelectedTreeNode?.parentFolderId!;
       this.editedFolder.note = lastSelectedTreeNode?.note!;
+      this.parentfolderName = lastSelectedTreeNode.parentFolderId == -1 ? 'Root Folder' : this.folders?.find((r) => r.id == lastSelectedTreeNode.parentFolderId!)?.name;
     }
-
-    this.parentfolderName = lastSelectedTreeNode?.name!;
   }
 
   onKeyupParentFolderId(editedFolderParentFolderId: number) { // to get the parentfolder name dynamically based on user entered parentFolderId
@@ -395,15 +396,15 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
   onCreateOrEditFolderClicked() {
     if (this.treeViewState.lastSelectedItem == null) {
-      console.log('Cannot Create/Edit, because no folder or portfolio was selected.');
+      console.log('Cannot Create/Edit, because no Treeitem was selected. Portfolio edit needs a selected Portfolio . Portfolio create needs a selected Folder.');
       return;
     }
 
-    if (!this.editedFolder.name) // the folder name feild shouldn't be left empty
+    if (!this.editedFolder.name) // the folder name field shouldn't be left empty
       this.isCreateOrEditFolderPopupVisible = true;
     else {
       if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-        this._parentWsConnection.send('PortfMgr.CreateOrEditFolder:id:' + this.editedFolder.id + ',name:' + this.editedFolder.name + ',prntFId:' + this.editedFolder.parentFolderId + ',note:' + this.editedFolder.note);
+        this._parentWsConnection.send(`PortfMgr.CreateOrEditFolder:id:${this.editedFolder.id},name:${this.editedFolder.name},prntFId:${this.editedFolder.parentFolderId},note:${this.editedFolder.note}`);
       this.isCreateOrEditFolderPopupVisible = false;
     }
   }
@@ -422,10 +423,12 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    this.isCreatePortfolioPopupVisible = true;
+    this.isCreateOrEditFolderPopupVisible = false; // close the folder popup if it is left open by the user
+    this.isCreateOrEditPortfolioPopupVisible = true;
     if (mode == 'create') {
       this.editedPortfolio = new PortfolioJs();
       this.editedPortfolio.parentFolderId = lastSelectedTreeNode?.id!;
+      this.parentfolderName = lastSelectedTreeNode?.name!;
     } else {
       this.editedPortfolio.name = lastSelectedTreeNode?.name!;
       this.editedPortfolio.id = lastSelectedTreeNode?.id! - this.gPortfolioIdOffset;
@@ -435,13 +438,12 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.editedPortfolio.sharedAccess = lastSelectedTreeNode?.sharedAccess!;
       this.editedPortfolio.sharedUserWithMe = lastSelectedTreeNode?.sharedUserWithMe!;
       this.editedPortfolio.note = lastSelectedTreeNode?.note!;
+      this.parentfolderName = this.folders?.find((r) => r.id == lastSelectedTreeNode.parentFolderId!)?.name;
     }
-
-    this.parentfolderName = lastSelectedTreeNode?.name!;
   }
 
   closeCreatePortfolioPopup() {
-    this.isCreatePortfolioPopupVisible = false;
+    this.isCreateOrEditPortfolioPopupVisible = false;
   }
 
   onCreateOrEditPortfolioClicked() {
@@ -451,11 +453,11 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     }
 
     if (!this.editedPortfolio.name) // the portfolio name field shouldn't be left empty
-      this.isCreatePortfolioPopupVisible = true;
+      this.isCreateOrEditPortfolioPopupVisible = true;
     else {
       if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-        this._parentWsConnection.send('PortfMgr.CreateOrEditPortfolio:id:' + this.editedPortfolio.id + ',name:' + this.editedPortfolio.name + ',prntFId:' + this.editedPortfolio.parentFolderId + ',currency:' + this.editedPortfolio.baseCurrency + ',type:' + this.editedPortfolio.portfolioType + ',access:' + this.editedPortfolio.sharedAccess +',note:' + this.editedPortfolio.note);
-      this.isCreatePortfolioPopupVisible = false;
+        this._parentWsConnection.send(`PortfMgr.CreateOrEditPortfolio:id:${this.editedPortfolio.id},name:${this.editedPortfolio.name},prntFId:${this.editedPortfolio.parentFolderId},currency:${this.editedPortfolio.baseCurrency},type:${this.editedPortfolio.portfolioType},access:${this.editedPortfolio.sharedAccess},note:${this.editedPortfolio.note}`);
+      this.isCreateOrEditPortfolioPopupVisible = false;
     }
   }
 
