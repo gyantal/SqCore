@@ -184,6 +184,13 @@ def meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters, 
     list_total = list(set(taa_ticker_list + baa_ticker_list_aggressive + baa_ticker_list_balanced + baa_ticker_list_defensive + dm_tickers_list + protmom_tickers_list + tactbond_tickers_list + haa_ticker_list_canary + haa_ticker_list_defensive + haa_ticker_list_offensive))
     adj_close_price = yf.download(list_total,start = pd.to_datetime(meta_start_date) + pd.DateOffset(years= -2),end = pd.to_datetime(meta_end_date) + pd.DateOffset(days= 1) )['Adj Close']
 
+    # get the last 63 rows of the dataframe and check for NaN values - last 3 months
+    last_63_rows = adj_close_price.tail(63)
+    if last_63_rows.isna().any(axis=0).any():
+        # get the names of the columns containing NaN values
+        columns_with_nan = last_63_rows.columns[last_63_rows.isna().any()].tolist()
+        print(f"The following ticker(s) has missing prices in the last 3 months: {columns_with_nan}")
+
     meta_pvs = pd.concat([dm_pv, baa_pv, baa2_pv, taa_pv, pm_pv, tb_pv, haa_pv], axis = 1, keys = ['DualMom', 'BAA_AggDef', 'BAA_BalDef', 'TAA', 'KellerProtMom', 'NovellTactBond', 'HAA'])
     df = meta_pvs.copy()
     df['Year'], df['Month'], df['Week'] = df.index.year, df.index.month, df.index.week
