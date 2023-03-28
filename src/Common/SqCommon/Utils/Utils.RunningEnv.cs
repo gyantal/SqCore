@@ -7,6 +7,8 @@ namespace SqCommon;
 
 public static partial class Utils
 {
+    // public static bool IsLinux() // use OperatingSystem.IsLinux() and IsWindows from the System namespace
+
     public static readonly System.Globalization.CultureInfo InvCult = System.Globalization.CultureInfo.InvariantCulture;
 
     // each class can create its own logger with GetCurrentClassLogger(). That is great for unit testing. However, in production, many small util classes exist. Better to not let them allocate separate loggers, but they have one big common Logger.

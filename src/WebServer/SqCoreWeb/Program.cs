@@ -279,6 +279,7 @@ public partial class Program
         ColorConsole.WriteLine(ConsoleColor.Magenta, "---- MemDbAdmin !!!  ----");
         Console.WriteLine("1. MemDb: Force Reload only HistData And SetNewTimer");
         Console.WriteLine("2. MemDb: Reload All DbData Only If Changed");
+        Console.WriteLine("3. FinDb: Crawl security histories");
         Console.WriteLine("9. Exit to main menu.");
         string userInput;
         try
@@ -298,6 +299,9 @@ public partial class Program
                 break;
             case "2":
                 Console.WriteLine(MemDb.gMemDb.ReloadDbDataIfChanged(false).TurnAsyncToSyncTask().ToString());
+                break;
+            case "3":
+                Console.WriteLine(FinDb.CrawlData(false).TurnAsyncToSyncTask().ToString());
                 break;
             case "9":
                 return "UserChosenExit";
