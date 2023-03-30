@@ -30,6 +30,13 @@ class PortfolioJs extends PortfolioItemJs {
   public portfolioType = 'Trades'; // default type
 }
 
+class PortfolioBacktestResultsJs {
+  public startingPortfolioValue: number = 0;
+  public endPortfolioValue: number = 0;
+  public sharpeRatio: number = 0;
+  public chartPv = [];
+}
+
 export class TreeViewItem { // future work. At the moment, it copies PortfolioFldrJs[] and add the children field. With unnecessary field values. When Portfolios are introduced, this should be rethought.
   public id = -1;
   public name = '';
@@ -84,6 +91,8 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   public gPortfolioIdOffset: number = 10000;
 
   tabPrtfSpecVisibleIdx = 1; // tab buttons for portfolio specification preview of positions and strategy parameters
+
+  backtestResults: Nullable<PortfolioBacktestResultsJs> = null;
 
   // the below variables are required for resizing the panels according to users
   dashboardHeaderWidth = 0;
@@ -230,6 +239,10 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
         console.log('PortfMgr.Handshake:' + msgObjStr);
         // this.handshakeObj = JSON.parse(msgObjStr);
         return true;
+      case 'PortfMgr.BacktestResults': // Receives backtest results when user requests
+        console.log('PortfMgr.BacktestResults:' + msgObjStr);
+        this.processPortfolioBacktestResults(msgObjStr);
+        return true;
       case 'PortfMgr.ErrorToUser': // Folders has children
         console.log('PortfMgr.ErrorToUser:' + msgObjStr);
         this.errorMsgToUser = msgObjStr;
@@ -304,6 +317,30 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     this.uiNestedPrtfTreeViewItems = PortfolioManagerComponent.createTreeViewData(this.folders, this.portfolios, this.treeViewState); // process folders and portfolios
   };
 
+  processPortfolioBacktestResults(msgObjStr: string) {
+    this.backtestResults = JSON.parse(msgObjStr, function(this: any, key, value) {
+      // property names and values are transformed to a shorter ones for decreasing internet traffic.Transform them back to normal for better code reading.
+
+      // 'this' is the object containing the property being processed (not the embedding class) as this is a function(), not a '=>', and the property name as a string, the property value as arguments of this function.
+      // eslint-disable-next-line no-invalid-this
+      const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
+
+      if (key === 'StartPv') {
+        _this.startingPortfolioValue = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      if (key === 'EndPv') {
+        _this.endPortfolioValue = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      if (key === 'SRatio') {
+        _this.sharpeRatio = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      return value;
+    });
+  }
+
   static createTreeViewData(pFolders: Nullable<FolderJs[]>, pPortfolios: Nullable<PortfolioJs[]>, pTreeViewState: TreeViewState) : TreeViewItem[] {
     if (!(Array.isArray(pFolders) && pFolders.length > 0 ) || !(Array.isArray(pPortfolios) && pPortfolios.length > 0 ))
       return [];
@@ -353,13 +390,14 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
   // Create or Edit Folder
   showCreateOrEditFolderPopup(mode: string) { // mode is create or edit
-    if (this.treeViewState.lastSelectedItem == null || this.treeViewState.lastSelectedItem.prtfItemType != 'Folder') {
+    const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
+    if (lastSelectedTreeNode == null || lastSelectedTreeNode.prtfItemType != 'Folder') {
       console.log('Cannot Create/Edit, because no folder or portfolio was selected.');
       return;
     }
 
     console.log('showCreateOrEditFolderPopup(): Mode', mode);
-    const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
+
     this.isCreateOrEditFolderPopupVisible = true;
     this.isCreateOrEditPortfolioPopupVisible = false; // close the portfolio popup if it is left open by the user
 
@@ -368,11 +406,15 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.editedFolder.parentFolderId = lastSelectedTreeNode?.id!; // for creating new folder it needs the parentFolderId(i.e. lastSelectedId), so that it can create child folder inside the parent.
       this.parentfolderName = lastSelectedTreeNode?.name!;
     } else {
-      this.editedFolder.name = lastSelectedTreeNode?.name!;
-      this.editedFolder.id = lastSelectedTreeNode?.id!;
-      this.editedFolder.parentFolderId = lastSelectedTreeNode?.parentFolderId!;
-      this.editedFolder.note = lastSelectedTreeNode?.note!;
-      this.parentfolderName = this.folders?.find((r) => r.id == lastSelectedTreeNode.parentFolderId!)?.name;
+      if (lastSelectedTreeNode?.id! <= -1) // The user should not be able edit virtual top folders that have negative folder.Id.
+        this.isCreateOrEditFolderPopupVisible = false;
+      else {
+        this.editedFolder.name = lastSelectedTreeNode?.name!;
+        this.editedFolder.id = lastSelectedTreeNode?.id!;
+        this.editedFolder.parentFolderId = lastSelectedTreeNode?.parentFolderId!;
+        this.editedFolder.note = lastSelectedTreeNode?.note!;
+        this.parentfolderName = this.folders?.find((r) => r.id == lastSelectedTreeNode?.parentFolderId!)?.name;
+      }
     }
   }
 
@@ -502,5 +544,16 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
   onClickPrtfSpecPreview(tabIdx: number) {
     this.tabPrtfSpecVisibleIdx = tabIdx;
+  }
+
+  showPortfolioStats() {
+    const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
+    if (lastSelectedTreeNode == null || lastSelectedTreeNode?.prtfItemType != 'Portfolio') {
+      console.log('Cannot OpenPortfolioViewer, because no Portfolio was selected.');
+      return;
+    }
+
+    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+      this._parentWsConnection.send(`PortfMgr.GetPortfolioBacktestResult:id:${lastSelectedTreeNode.id - this.gPortfolioIdOffset}`);
   }
 }

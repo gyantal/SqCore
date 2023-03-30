@@ -5,8 +5,17 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
+using QuantConnect;
 
 namespace Fin.MemDb;
+
+// Temporary here. Will be refactored to another file.
+public class BacktestResultsStatistics
+{
+    public float StartingPortfolioValue = 1000.0f;
+    public float EndPortfolioValue = 1400.0f;
+    public float SharpeRatio = 0.8f;
+}
 
 public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
 {
@@ -108,9 +117,37 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         SharedUsersWith = p_sharedUsersWith;
     }
 
-    // List<float> GetPortfolioValues()
-    // {
-    //     Thread.Sleep(500);
-    //     return new List<float>();
-    // }
+    public Portfolio()
+    {
+    }
+
+    public string? GetBacktestResults(out BacktestResultsStatistics p_stat, out List<ChartPoint> p_pv)
+    {
+        Thread.Sleep(500 + Id);
+        // we will run the backtest.
+        // List<ChartPoint> pvs = new List<ChartPoint>(); // Date + value pairs.
+        // create a fake PVs.
+        List<ChartPoint> pvs = new()
+        {
+            new ChartPoint(1641013200, 101665),
+            new ChartPoint(1641099600, 101487),
+            new ChartPoint(1641186000, 101380),
+            new ChartPoint(1641272400, 101451),
+            new ChartPoint(1641358800, 101469),
+            new ChartPoint(1641445200, 101481),
+            new ChartPoint(1641531600, 101535),
+            new ChartPoint(1641618000, 101416),
+            new ChartPoint(1641704400, 101392),
+            new ChartPoint(1641790800, 101386)
+        }; // 5 or 10 real values.
+
+        p_pv = pvs; // output
+        p_stat = new BacktestResultsStatistics
+        {
+            StartingPortfolioValue = 1000.0f,
+            EndPortfolioValue = 1400.0f,
+            SharpeRatio = 0.8f
+        }; // output
+        return null; // No Error
+    }
 }

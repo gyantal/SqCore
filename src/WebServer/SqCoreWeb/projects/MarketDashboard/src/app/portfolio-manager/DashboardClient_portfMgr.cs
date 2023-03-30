@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading;
 using Fin.MemDb;
+using QuantConnect;
 using SqCommon;
 
 namespace SqCoreWeb;
@@ -41,6 +42,23 @@ class PortfolioJs : PortfolioItemJs
     [JsonPropertyName("bCur")]
     public string BaseCurrency { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
+}
+
+class PortfolioBacktestJs
+{
+    [JsonPropertyName("StartPv")]
+    public float StartingPortfolioValue { get; set; } = 0.0f;
+    [JsonPropertyName("EndPv")]
+    public float EndPortfolioValue { get; set; } = 0.0f;
+    [JsonPropertyName("SRatio")]
+    public float SharpeRatio { get; set; } = 0.0f;
+    public List<ChartPointValues> ChrtPntVals { get; set; } = new();
+}
+
+class ChartPointValues
+{
+    public List<string> ChartDate { get; set; } = new List<string>();
+    public List<int> Value { get; set; } = new List<int>();
 }
 
 public partial class DashboardClient
@@ -194,6 +212,10 @@ public partial class DashboardClient
                 Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): DeletePortfolioItem '{msgObjStr}'");
                 PortfMgrDeletePortfolioItem(msgObjStr);
                 return true;
+            case "PortfMgr.GetPortfolioBacktestResult": // msg: "id:5"
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): GetPortfolioBacktestResult '{msgObjStr}'");
+                PortfMgrSendPortfolioBacktestResults(msgObjStr);
+                return true;
             default:
                 return false;
         }
@@ -324,4 +346,53 @@ public partial class DashboardClient
         else
             PortfMgrSendPortfolios();
     }
+
+    public void PortfMgrSendPortfolioBacktestResults(string p_msg)
+    {
+        // Step1: Processing the message to extract the Id
+        int idStartInd = p_msg.IndexOf(":");
+        if (idStartInd == -1)
+            return;
+        int id = Convert.ToInt32(p_msg[(idStartInd + 1)..]);
+        Console.WriteLine($"The Selected Portfolio id {id}");
+
+        // Step2: Getting the BackTestResults
+        string? errMsg = MemDb.gMemDb.Portfolio.GetBacktestResults(out BacktestResultsStatistics stat, out List<ChartPoint> pv);
+
+        if (errMsg == null)
+        {
+            // Step3: Filling the ChartPoint Dates and Values to a list
+            List<ChartPointValues> chartPvData = new();
+            ChartPointValues chartVal = new();
+            foreach (var item in pv)
+            {
+                chartVal.ChartDate.Add(Utils.UnixTimeStampToDateTimeUtc(item.x).ToYYYYMMDD());
+                chartVal.Value.Add((int)item.y);
+            }
+            chartPvData.Add(chartVal);
+
+            // Step4: Filling the Stats and ChartPoint vals in PfBackTest
+            PortfolioBacktestJs pfBacktest = new()
+            {
+                StartingPortfolioValue = stat.StartingPortfolioValue,
+                EndPortfolioValue = stat.EndPortfolioValue,
+                SharpeRatio = stat.SharpeRatio,
+                ChrtPntVals = chartPvData
+            };
+
+            // Step5: Sending the Backtest results data to client
+            if (pfBacktest != null)
+            {
+                byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.BacktestResults:" + Utils.CamelCaseSerialize(pfBacktest));
+                if (WsWebSocket!.State == WebSocketState.Open)
+                    WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+            }
+        }
+        else
+            Console.WriteLine(errMsg);
+
+        // Console.WriteLine($"length of backtest results are {pfBacktest?.SharpeRatio}");
+        // Console.WriteLine($"stat values are startPV:{stat.StartingPortfolioValue}, EndPV:{stat.EndPortfolioValue} and SharpeRatio:{stat.SharpeRatio}");
+        // Console.WriteLine(pv);
+     }
 }

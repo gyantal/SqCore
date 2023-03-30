@@ -29,7 +29,7 @@ public partial class MemDb : IDisposable
     public CompactFinTimeSeries<SqDateOnly, uint, float, uint> DailyHist { get { return m_memData.DailyHist; } }
     public Dictionary<int, PortfolioFolder> PortfolioFolders { get { return m_memData.PortfolioFolders; } }
     public Dictionary<int, Portfolio> Portfolios { get { return m_memData.Portfolios; } }
-
+    public Portfolio Portfolio { get { return m_memData.Portfolio; } } // Daya - Created this for accessing the GetBacktestResults
     public bool IsInitialized { get; set; } = false;
 
     Timer? m_dbReloadTimer;  // checks every 1 hour, but reloads RAM only if Db data change is detected.
