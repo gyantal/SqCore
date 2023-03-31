@@ -1,0 +1,97 @@
+Propagate an error message upwards in a C# function. Alternatives:
+
+1.
+throw new Exception("Here is the error message");
+But it is an awful lot of computation. Creating a new Exception object, throwing it on the stack upwards, checking which try{} will handle it.
+A lot of computation.
+
+2.
+Another idea is using a bool return parameter and a string as an output errMsg parameter. But it is not a great code of the Function(). 
+Because we signal error by filling up 2 variables at the same time all the time: errMsg + the returned bool.
+Although it is easier to use this in the caller code, as we don't have to create a separate errMsg string.
+bool Divide(int numerator, int denominator, out double result, out string? errMsg)
+{
+    if (denominator == 0)
+	{
+        errMsg = "Denominator cannot be zero.";
+		return false;
+	}
+	
+	result = numerator / denominator;
+	
+	errMsg = null;
+    return true;
+}
+
+In the caller, it is 1 line saved, as out string? errMsg can be declared in the same line:
+if (Divide(5, 6, out double result, out string? errMsg))
+	Console.WriteLine("It was completed OK.")
+else
+	Console.WriteLine("Error msg: " + errMsg);
+
+
+3.
+Using a string as a return parameter, and using string.Empty as NoError.
+string Divide(int numerator, int denominator, out double result)
+{
+	return string.Empty;
+}
+
+Much better, but 
+when we receive it in the caller we have to handle as string.
+string errMsg = Divide(5, 6, out double result);
+
+if (String.IsNullOrEmpty(errMsg))...  is not efficient as we know it cannot be null. It is a string, not a string?
+if (errMsg == string.Empty)... is better, but it still does a lot of things. It starts to execute the 'operator ==' function and goes deeper.
+
+"For reference types other than string, == returns true if its two operands refer to the same object. 
+For the string type, == compares the values of the strings."
+
+https://github.com/microsoft/referencesource/blob/master/mscorlib/system/string.cs
+public static bool operator == (String a, String b) {
+    return String.Equals(a, b);
+}
+"public override bool Equals(Object obj) {
+    if (this == null)                        //this is necessary to guard against reverse-pinvokes and
+        throw new NullReferenceException();  //other callers who do not use the callvirt instruction
+
+    String str = obj as String;
+    if (str == null)
+        return false;
+
+    if (Object.ReferenceEquals(this, obj))  // if both are string.Empty then it will return here. But if somebody uses "" instead, then it will go further.
+        return true;
+
+    if (this.Length != str.Length)
+        return false;
+
+    return EqualsHelper(this, str);
+}"
+
+
+4. Fastest option. Using string? pointer and return null for NoError. Fastest, but you have to get used to reading the code.
+If you want to propagate an error message upwards in a C# function using a nullable string and null signalling as no error, 
+you can return null when there is no error and return the error message as a string when there is an error.
+
+string? Divide(int numerator, int denominator, out double result)
+{
+    if (denominator == 0)
+        return "Denominator cannot be zero.";
+
+    result = numerator / denominator;
+    return null; // NoError
+}
+
+In the caller:
+string? errMsg = Divide(5, 6, out double result); // this returns only a pointer
+if (errMsg == null) // it is simple a pointer == null comparision. not going deeper into String's 'operator ==' function.
+    Console.WriteLine("It was completed OK.")
+else
+    Console.WriteLine("Error msg: " + errMsg);
+
+For 3rd party library codes, using 'if (String.IsNullOrEmpty(errMsg))' is also OK, because its implementation is quick. 
+public static bool IsNullOrEmpty([NotNullWhen(false)] string? value)
+{
+    return value == null || value.Length == 0;
+}
+But when using function we wrote, we don't have to bother. Null comparision is the fastest.

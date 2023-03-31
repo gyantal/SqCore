@@ -146,7 +146,7 @@ public enum PortfolioType : byte
     Unknown = 0,
     Trades = 1, // trades come from the SqCore RedisDB
     Simulation = 2,
-    SqClassicTrades = 3, // trades come from the SqDesktop SqlDB
+    TradesSqClassic = 3, // trades come from the SqDesktop SqlDB
 }
 
 // Not used. Copied from HqFramework for getting ideas; if we need an in-memory data structure for TickerHistory

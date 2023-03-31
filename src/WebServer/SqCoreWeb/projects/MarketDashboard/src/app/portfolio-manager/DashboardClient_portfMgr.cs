@@ -364,7 +364,7 @@ public partial class DashboardClient
 
         if (errMsg == null)
         {
-            errMsg = prtf!.GetPortfolioRunResults(out BacktestResultsStatistics stat, out List<ChartPoint> pv);
+            errMsg = prtf!.GetPortfolioRunResult(out PortfolioRunResultStatistics stat, out List<ChartPoint> pv);
             if (errMsg == null)
             {
                 // Step3: Filling the ChartPoint Dates and Values to a list

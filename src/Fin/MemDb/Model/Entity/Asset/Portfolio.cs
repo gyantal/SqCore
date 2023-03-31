@@ -11,7 +11,7 @@ using QuantConnect.Lean.Engine.Results;
 namespace Fin.MemDb;
 
 // Temporary here. Will be refactored to another file.
-public class BacktestResultsStatistics
+public class PortfolioRunResultStatistics
 {
     public float StartPortfolioValue = 1000.0f;
     public float EndPortfolioValue = 1400.0f;
@@ -39,18 +39,18 @@ public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the Hash
     {
     }
 
-    public PortfolioInDb(Portfolio prtfId)
+    public PortfolioInDb(Portfolio p_prtf)
     {
-        UserId = prtfId.User?.Id ?? -1;
-        Name = prtfId.Name;
-        ParentFolderId = prtfId.ParentFolderId;
-        SharedAccess = prtfId.SharedAccess.ToString();
-        SharedUsersWith = string.Join(",", prtfId.SharedUsersWith);
-        CreationTime = prtfId.CreationTime;
-        Note = prtfId.Note;
-        BaseCurrency = prtfId.BaseCurrency.ToString();
-        Type = prtfId.Type.ToString();
-        Algorithm = prtfId.Algorithm.ToString();
+        UserId = p_prtf.User?.Id ?? -1;
+        Name = p_prtf.Name;
+        ParentFolderId = p_prtf.ParentFolderId;
+        SharedAccess = p_prtf.SharedAccess.ToString();
+        SharedUsersWith = string.Join(",", p_prtf.SharedUsersWith);
+        CreationTime = p_prtf.CreationTime;
+        Note = p_prtf.Note;
+        BaseCurrency = p_prtf.BaseCurrency.ToString();
+        Type = p_prtf.Type.ToString();
+        Algorithm = p_prtf.Algorithm.ToString();
     }
 }
 
@@ -127,7 +127,13 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
     {
     }
 
-    public string? GetPortfolioRunResults(out BacktestResultsStatistics p_stat, out List<ChartPoint> p_pv)
+    // PortfolioValue chart data.
+    // We have the option to return Date fields in different formats in JSON string:
+    // '2021-01-27' is 10 chars, '20210127' is 8 chars. Resolution is only daily.
+    // Or number of seconds from Unix epoch: '1641013200' is 10 chars. Resolution can be 1 second.
+    // Although it is 2 chars more data, but we chose this, because QC uses it and also it will allow us to go intraday in the future. 
+    // Also it allows to show the user how up-to-date (real-time) the today value is.
+    public string? GetPortfolioRunResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv)
     {
         #pragma warning disable IDE0066 // disable the switch suggestion warning only locally
         switch (Type)
@@ -135,13 +141,14 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
             case PortfolioType.Simulation:
                 return GetBacktestResult(out p_stat, out p_pv);
             case PortfolioType.Trades:
-            case PortfolioType.SqClassicTrades:
+            case PortfolioType.TradesSqClassic:
             default:
-                return GetBacktestResultsDefault(out p_stat, out p_pv);
+                return GetPortfolioRunResultDefault(out p_stat, out p_pv);
         }
+        #pragma warning restore IDE0066
     }
 
-    public string? GetBacktestResultsDefault(out BacktestResultsStatistics p_stat, out List<ChartPoint> p_pv)
+    public string? GetPortfolioRunResultDefault(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv)
     {
         Thread.Sleep(500 + Id);
         // we will run the backtest.
@@ -162,7 +169,7 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         }; // 5 or 10 real values.
 
         p_pv = pvs; // output
-        p_stat = new BacktestResultsStatistics
+        p_stat = new PortfolioRunResultStatistics
         {
             StartPortfolioValue = 1000.0f,
             EndPortfolioValue = 1400.0f,
@@ -171,9 +178,9 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         return null; // No Error
     }
 
-    public string? GetBacktestResult(out BacktestResultsStatistics p_stat, out List<ChartPoint> p_pv)
+    public string? GetBacktestResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv)
     {
-        p_stat = new BacktestResultsStatistics();
+        p_stat = new PortfolioRunResultStatistics();
         p_pv = new List<ChartPoint>();
 
         Thread.Sleep(1 + Id);   // temporary here for simulation.
