@@ -120,9 +120,11 @@
       <div id="panelStats">Panel Stats
         Width: {{panelStatsWidth}}
         Height: {{panelStatsHeight}}<br>
-        <b>StartingPortfolioValue:</b> {{backtestResults?.startingPortfolioValue}}<br>
-        <b>EndPortfolioValue:</b> {{backtestResults?.endPortfolioValue}}<br>
-        <b>SharpeRatio:</b> {{backtestResults?.sharpeRatio}}<br>
+        <div *ngFor="let item of uiPrtfRunResults"> <!-- no data at this point of time -->
+          <b>StartingPortfolioValue:</b>{{item.startingPortfolioValue}}<br>
+          <b>EndPortfolioValue:</b> {{item.endPortfolioValue}}<br>
+          <b>SharpeRatio:</b> {{item.sharpeRatio}}<br>
+        </div>
       </div>
       <div id="panelPrtfSpec">Panel PrtfSpec
         Width: {{panelPrtfSpecWidth}}

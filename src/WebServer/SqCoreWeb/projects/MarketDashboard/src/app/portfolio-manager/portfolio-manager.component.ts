@@ -30,11 +30,24 @@ class PortfolioJs extends PortfolioItemJs {
   public portfolioType = 'Trades'; // default type
 }
 
-class PortfolioBacktestResultsJs {
+class PrtfRunResultJs {
   public startingPortfolioValue: number = 0;
   public endPortfolioValue: number = 0;
   public sharpeRatio: number = 0;
   public chartPv = [];
+}
+
+// Ui classes
+class UiPrtfRunResult {
+  public startingPortfolioValue: number = 0;
+  public endPortfolioValue: number = 0;
+  public sharpeRatio: number = 0;
+  public chrtValues: UiChartPointvalues[] = [];
+}
+// chart values
+class UiChartPointvalues {
+  public date = new Date('2021-01-01');
+  public value = NaN;
 }
 
 export class TreeViewItem { // future work. At the moment, it copies PortfolioFldrJs[] and add the children field. With unnecessary field values. When Portfolios are introduced, this should be rethought.
@@ -92,7 +105,8 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
   tabPrtfSpecVisibleIdx = 1; // tab buttons for portfolio specification preview of positions and strategy parameters
 
-  backtestResults: Nullable<PortfolioBacktestResultsJs> = null;
+  prtfRunResult: Nullable<PrtfRunResultJs> = null;
+  uiPrtfRunResults: UiPrtfRunResult[] = [];
 
   // the below variables are required for resizing the panels according to users
   dashboardHeaderWidth = 0;
@@ -239,9 +253,9 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
         console.log('PortfMgr.Handshake:' + msgObjStr);
         // this.handshakeObj = JSON.parse(msgObjStr);
         return true;
-      case 'PortfMgr.BacktestResults': // Receives backtest results when user requests
-        console.log('PortfMgr.BacktestResults:' + msgObjStr);
-        this.processPortfolioBacktestResults(msgObjStr);
+      case 'PortfMgr.PrtfRunResult': // Receives backtest results when user requests
+        console.log('PortfMgr.PrtfRunResult:' + msgObjStr);
+        this.processPortfolioRunResult(msgObjStr);
         return true;
       case 'PortfMgr.ErrorToUser': // Folders has children
         console.log('PortfMgr.ErrorToUser:' + msgObjStr);
@@ -317,28 +331,29 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     this.uiNestedPrtfTreeViewItems = PortfolioManagerComponent.createTreeViewData(this.folders, this.portfolios, this.treeViewState); // process folders and portfolios
   };
 
-  processPortfolioBacktestResults(msgObjStr: string) {
-    this.backtestResults = JSON.parse(msgObjStr, function(this: any, key, value) {
+  processPortfolioRunResult(msgObjStr: string) {
+    this.prtfRunResult = JSON.parse(msgObjStr, function(this: any, key, value) {
       // property names and values are transformed to a shorter ones for decreasing internet traffic.Transform them back to normal for better code reading.
 
       // 'this' is the object containing the property being processed (not the embedding class) as this is a function(), not a '=>', and the property name as a string, the property value as arguments of this function.
       // eslint-disable-next-line no-invalid-this
       const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
 
-      if (key === 'StartPv') {
+      if (key === 'startPv') {
         _this.startingPortfolioValue = value;
         return; // if return undefined, orignal property will be removed
       }
-      if (key === 'EndPv') {
+      if (key === 'endPv') {
         _this.endPortfolioValue = value;
         return; // if return undefined, orignal property will be removed
       }
-      if (key === 'SRatio') {
+      if (key === 'sRatio') {
         _this.sharpeRatio = value;
         return; // if return undefined, orignal property will be removed
       }
       return value;
     });
+    PortfolioManagerComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResults);
   }
 
   static createTreeViewData(pFolders: Nullable<FolderJs[]>, pPortfolios: Nullable<PortfolioJs[]>, pTreeViewState: TreeViewState) : TreeViewItem[] {
@@ -465,6 +480,9 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       return;
     }
 
+    if (mode == 'edit' && lastSelectedTreeNode?.prtfItemType == PrtfItemType.Folder) // simply return , if user clicks on EditPortfolio but the lastSelectedItem is a Folder.
+      return;
+
     this.isCreateOrEditFolderPopupVisible = false; // close the folder popup if it is left open by the user
     this.isCreateOrEditPortfolioPopupVisible = true;
     if (mode == 'create') {
@@ -548,12 +566,32 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
   showPortfolioStats() {
     const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
-    if (lastSelectedTreeNode == null || lastSelectedTreeNode?.prtfItemType != 'Portfolio') {
-      console.log('Cannot OpenPortfolioViewer, because no Portfolio was selected.');
+    if (lastSelectedTreeNode == null || lastSelectedTreeNode?.prtfItemType != 'Portfolio')
       return;
-    }
 
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send(`PortfMgr.GetPortfolioBacktestResult:id:${lastSelectedTreeNode.id - this.gPortfolioIdOffset}`);
+      this._parentWsConnection.send(`PortfMgr.GetPortfolioRunResult:id:${lastSelectedTreeNode.id - this.gPortfolioIdOffset}`);
+  }
+
+  static updateUiWithPrtfRunResult(prtfRunResult, uiPrtfRunResult: UiPrtfRunResult[]) {
+    if (prtfRunResult == null)
+      return;
+    uiPrtfRunResult.length = 0;
+    const pfRunResItem = new UiPrtfRunResult();
+    pfRunResItem.startingPortfolioValue = prtfRunResult.startingPortfolioValue;
+    pfRunResItem.endPortfolioValue = prtfRunResult.endPortfolioValue;
+    pfRunResItem.sharpeRatio = prtfRunResult.sharpeRatio;
+    for (const item of prtfRunResult.chrtPntVals) {
+      if (item == null)
+        continue;
+      for (let i = 0; i < item.chartDate.length; i++ ) {
+        const chartItem = new UiChartPointvalues();
+        const dateStr: string = item.chartDate[i];
+        chartItem.date = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(4, 6) + '-' + dateStr.substring(6, 8));
+        chartItem.value = (item.value[i]);
+        pfRunResItem.chrtValues.push(chartItem);
+      }
+      uiPrtfRunResult.push(pfRunResItem);
+    }
   }
 }

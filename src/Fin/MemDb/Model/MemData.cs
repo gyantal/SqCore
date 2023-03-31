@@ -55,8 +55,6 @@ internal class MemData // don't expose to clients.
     // It means that if a Portfolio is shared with them, they might see it in 2 places: in a 'Shared with *' folder and in the folder hierarchy of that user.
     public volatile Dictionary<int, Portfolio> Portfolios = new(); // temporary illustration of a data that will be not only read, but written by SqCore. Portfolios are not necessary here, because they are Assets as well, so they can go to AssetsCache
 
-    public volatile Portfolio Portfolio = new(); // Daya - Created this for accessing the GetBacktestResults
-
     // Clients can add new Assets to AssetCache, like NonPersinted Options, or new Portfolios. Other clients enumerate all AssetCache (e.g. reloading HistData in every 2 hours).
     // So a ReaderWriterLock is needed or 'Non-locking copy-and-swap-on-write' is needed.
     // see "C#\Multithread\SharedData, ReaderWriterLock or LockFreeRead.txt"
