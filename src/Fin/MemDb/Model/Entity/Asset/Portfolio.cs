@@ -6,13 +6,14 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using QuantConnect;
+using QuantConnect.Lean.Engine.Results;
 
 namespace Fin.MemDb;
 
 // Temporary here. Will be refactored to another file.
 public class BacktestResultsStatistics
 {
-    public float StartingPortfolioValue = 1000.0f;
+    public float StartPortfolioValue = 1000.0f;
     public float EndPortfolioValue = 1400.0f;
     public float SharpeRatio = 0.8f;
 }
@@ -32,6 +33,7 @@ public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the Hash
     public string Note { get; set; } = string.Empty;
     public string BaseCurrency { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
+    public string Algorithm { get; set; } = string.Empty;
 
     public PortfolioInDb()
     {
@@ -48,6 +50,7 @@ public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the Hash
         Note = prtfId.Note;
         BaseCurrency = prtfId.BaseCurrency.ToString();
         Type = prtfId.Type.ToString();
+        Algorithm = prtfId.Algorithm.ToString();
     }
 }
 
@@ -65,6 +68,7 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
     public string Note { get; set; } = string.Empty;
     public CurrencyId BaseCurrency { get; set; } = CurrencyId.USD;
     public PortfolioType Type { get; set; } = PortfolioType.Unknown;
+    public string Algorithm { get; set; } = string.Empty;
 
     // public List<Asset> Assets { get; set; } = new List<Asset>();    // TEMP. Delete this later when Portfolios are finalized.
 
@@ -101,9 +105,10 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         Currency = BaseCurrency;                                    // Currency is the base class Asset property. The runtime property. At runtime a user might decide to accumulate portfolio in USD terms, although BaseCurrency was GBP.
 
         Type = AssetHelper.gStrToPortfolioType[portfolioInDb.Type];
+        Algorithm = portfolioInDb.Algorithm;
     }
 
-    public Portfolio(int p_id, User? p_user, string p_name, int p_parentFldId, string p_creationTime, CurrencyId p_currency, PortfolioType p_type, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith)
+    public Portfolio(int p_id, User? p_user, string p_name, int p_parentFldId, string p_creationTime, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith)
     {
         Id = p_id;
         User = p_user;
@@ -113,6 +118,7 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         Note = p_note;
         BaseCurrency = p_currency;
         Type = p_type;
+        Algorithm = p_algorithm;
         SharedAccess = p_sharedAccess;
         SharedUsersWith = p_sharedUsersWith;
     }
@@ -121,7 +127,21 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
     {
     }
 
-    public string? GetBacktestResults(out BacktestResultsStatistics p_stat, out List<ChartPoint> p_pv)
+    public string? GetPortfolioRunResults(out BacktestResultsStatistics p_stat, out List<ChartPoint> p_pv)
+    {
+        #pragma warning disable IDE0066 // disable the switch suggestion warning only locally
+        switch (Type)
+        {
+            case PortfolioType.Simulation:
+                return GetBacktestResult(out p_stat, out p_pv);
+            case PortfolioType.Trades:
+            case PortfolioType.SqClassicTrades:
+            default:
+                return GetBacktestResultsDefault(out p_stat, out p_pv);
+        }
+    }
+
+    public string? GetBacktestResultsDefault(out BacktestResultsStatistics p_stat, out List<ChartPoint> p_pv)
     {
         Thread.Sleep(500 + Id);
         // we will run the backtest.
@@ -144,10 +164,44 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         p_pv = pvs; // output
         p_stat = new BacktestResultsStatistics
         {
-            StartingPortfolioValue = 1000.0f,
+            StartPortfolioValue = 1000.0f,
             EndPortfolioValue = 1400.0f,
             SharpeRatio = 0.8f
         }; // output
+        return null; // No Error
+    }
+
+    public string? GetBacktestResult(out BacktestResultsStatistics p_stat, out List<ChartPoint> p_pv)
+    {
+        p_stat = new BacktestResultsStatistics();
+        p_pv = new List<ChartPoint>();
+
+        Thread.Sleep(1 + Id);   // temporary here for simulation.
+
+        string algorithm = String.IsNullOrEmpty(Algorithm) ? "BasicTemplateFrameworkAlgorithm" : Algorithm;
+        BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(algorithm, @"{""ema-fast"":10,""ema-slow"":20}");
+        if (backtestResults == null)
+            return "Error in Backtest";
+
+        Console.WriteLine("BacktestResults.LogStore (from Algorithm)"); // we can force the Trade Logs into a text file. ("SaveListOfTrades(AlgorithmHandlers.Transactions, csvTransactionsFileName);"). But our Algo also can put it into the LogStore
+        backtestResults.LogStore.ForEach(r => Console.WriteLine(r.Message)); // Trade Logs. "Time: 10/07/2013 13:31:00 OrderID: 1 EventID: 2 Symbol: SPY Status: Filled Quantity: 688 FillQuantity: 688 FillPrice: 144.7817 USD OrderFee: 3.44 USD"
+
+        Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} ({(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
+
+        var equityChart = backtestResults.Charts["Strategy Equity"].Series["Equity"].Values;
+        Console.WriteLine($"#Charts:{backtestResults.Charts.Count}. The Equity (PV) chart: {equityChart[0].y:N0}, {equityChart[1].y:N0} ... {equityChart[^2].y:N0}, {equityChart[^1].y:N0}");
+
+        Dictionary<string, string> finalStat = backtestResults.FinalStatistics;
+        var statisticsStr = $"{Environment.NewLine}" + $"{string.Join(Environment.NewLine, finalStat.Select(x => $"STATISTICS:: {x.Key} {x.Value}"))}";
+        Console.WriteLine(statisticsStr);
+
+        p_stat.StartPortfolioValue = (float)backtestResults.StartingPortfolioValue;
+        p_stat.EndPortfolioValue = (float)backtestResults.DailyPortfolioValue;
+        if (!Single.TryParse(finalStat["Sharpe Ratio"], out p_stat.SharpeRatio))
+            p_stat.SharpeRatio = 0.0f;
+
+        // We need these in the Statistic: "Net Profit" => TotalReturn, "Compounding Annual Return" =>CAGR, {[Drawdown, 2.200%]} => MaxDD,  "Sharpe Ratio" =>Sharpe, "Win Rate" =>WinRate, "Annual Standard Deviation" =>StDev, "Sortino Ratio" => Sortino, "Portfolio Turnover" => Turnover, "Long/Short Ratio" =>LongShortRatio, "Total Fees" => Fees,
+
         return null; // No Error
     }
 }

@@ -185,7 +185,7 @@ internal class MemData // don't expose to clients.
                     maxId = id;
             }
             int newId = ++maxId;
-            Portfolio prtf = new (newId, p_user, p_name, p_parentFldId, p_creationTime, p_currency, p_type, p_sharedAccess, p_note, p_sharedUsersWith);
+            Portfolio prtf = new (newId, p_user, p_name, p_parentFldId, p_creationTime, p_currency, p_type, string.Empty, p_sharedAccess, p_note, p_sharedUsersWith);
             Portfolios[newId] = prtf;
             return prtf;
         }

@@ -47,7 +47,7 @@ class PortfolioJs : PortfolioItemJs
 class PrtfRunResultJs
 {
     [JsonPropertyName("startPv")]
-    public float StartingPortfolioValue { get; set; } = 0.0f;
+    public float StartPortfolioValue { get; set; } = 0.0f;
     [JsonPropertyName("endPv")]
     public float EndPortfolioValue { get; set; } = 0.0f;
     [JsonPropertyName("sRatio")]
@@ -91,6 +91,87 @@ public partial class DashboardClient
     private HandshakePortfMgr GetHandshakePortfMgr()
     {
         return new HandshakePortfMgr() { UserName = User.Username };
+    }
+
+    public bool OnReceiveWsAsync_PortfMgr(string msgCode, string msgObjStr)
+    {
+        switch (msgCode)
+        {
+            case "PortfMgr.RefreshFolders":
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): RefreshFolders '{msgObjStr}'");
+                PortfMgrSendFolders();
+                return true;
+            case "PortfMgr.CreateOrEditFolder": // msg: "id:-1,name:DayaTesting,prntFlrId:2,note:tesing"
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreateOrEditFolder '{msgObjStr}'");
+                PortfMgrCreateOrEditFolder(msgObjStr);
+                PortfMgrSendFolders();
+                return true;
+            case "PortfMgr.CreateOrEditPortfolio": // msg: "id:-1,name:TestPrtf,prntFId:16,currency:USD,type:Simulation,access:Anyone,note:Testing"
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{msgObjStr}'");
+                PortfMgrCreateOrEditPortfolio(msgObjStr);
+                PortfMgrSendPortfolios();
+                return true;
+            case "PortfMgr.DeletePortfolioItem": // msg: "id:5" // if id > 10,000 then it is a PortfolioID otherwise it is the FolderID
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): DeletePortfolioItem '{msgObjStr}'");
+                PortfMgrDeletePortfolioItem(msgObjStr);
+                return true;
+            case "PortfMgr.GetPortfolioRunResult": // msg: "id:5"
+                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): GetPortfolioRunResult '{msgObjStr}'");
+                PortfMgrSendPortfolioRunResults(msgObjStr);
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    static int GetVirtualParentFldId(User? p_user, int p_realParentFldId)
+    {
+        int virtualParentFldId = p_realParentFldId;
+        if (p_realParentFldId == -1) // if Portfolio doesn't have a parent folder, then it is in the Root (of either the NonUser or a concrete user)
+        {
+            if (p_user == null) // if the owner is the NoUser
+                virtualParentFldId = gNoUserVirtPortfId;
+            else
+                virtualParentFldId = -1 * p_user.Id; // If there is a proper user, the Virtual FolderID is the -1 * UserId by our convention.
+        }
+        return virtualParentFldId;
+    }
+
+    static string? GetRealParentFldId(int p_virtualParentFldId, out User? p_user, out int p_realParentFldId) // returns error string or empty if no error
+    {
+        p_user = null;
+        p_realParentFldId = -1; // root of an existing user or the NoUser (if user = null)
+
+        if (p_virtualParentFldId < -2) // if virtualParentFldId < -2, then the -1*virtualParentFldId represents an existing user and we want the root folder of the user. If the user is not found returns error.
+        {
+            int userId = -1 * p_virtualParentFldId; // try to find this userId among the users
+            User[] users = MemDb.gMemDb.Users;
+            for (int i = 0; i < users.Length; i++)
+            {
+                if (users[i].Id == userId)
+                {
+                    p_user = users[i];
+                    return null; // returns p_user = found user; p_realParentFldId = -1 (Root) of the found user.
+                }
+            }
+            return $"Error. No user found for userId {userId}";
+        }
+        else if (p_virtualParentFldId == gNoUserVirtPortfId) // == -2
+        {
+            return null; // returns p_user = null (the NoUser); p_realParentFldId = -1 (Root). This is fine. Admins should be able to create PortfolioItems in the Root folder of the NoUser
+        }
+        else if (p_virtualParentFldId == -1)
+            return $"Error. virtualParentFldId == -1 is the Root of the UI FolderTree. We cannot create anything in that virtual folder as that is non-existent in the DB.";
+        else // >=0, if virtualParentFldId is a proper folderID, just get its user and return that. Admin users can create a new PortfolioItem anywhere in the FolderTree. And the owner (user) of this new item will be the owner of the ParentFolder.
+        {
+            if (MemDb.gMemDb.PortfolioFolders.TryGetValue(p_virtualParentFldId, out PortfolioFolder? folder))
+            {
+                p_user = folder.User; // if the folder belongs to the NoUser, then folder.User == null, which is fine.
+                p_realParentFldId = p_virtualParentFldId;
+                return null; // returns p_user = found user; p_realParentFldId = -1 (Root) of the found user.
+            }
+            return $"Error. A positive virtualParentFldId {p_virtualParentFldId} was received, but that that Folder is not found in DB.";
+        }
     }
 
     private void PortfMgrSendFolders() // Processing the portfolioFolders based on the visiblity rules
@@ -177,51 +258,6 @@ public partial class DashboardClient
             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
-    static int GetVirtualParentFldId(User? p_user, int p_realParentFldId)
-    {
-        int virtualParentFldId = p_realParentFldId;
-        if (p_realParentFldId == -1) // if Portfolio doesn't have a parent folder, then it is in the Root (of either the NonUser or a concrete user)
-        {
-            if (p_user == null) // if the owner is the NoUser
-                virtualParentFldId = gNoUserVirtPortfId;
-            else
-                virtualParentFldId = -1 * p_user.Id; // If there is a proper user, the Virtual FolderID is the -1 * UserId by our convention.
-        }
-        return virtualParentFldId;
-    }
-
-    public bool OnReceiveWsAsync_PortfMgr(string msgCode, string msgObjStr)
-    {
-        switch (msgCode)
-        {
-            case "PortfMgr.RefreshFolders":
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): RefreshFolders '{msgObjStr}'");
-                PortfMgrSendFolders();
-                return true;
-            case "PortfMgr.CreateOrEditFolder": // msg: "id:-1,name:DayaTesting,prntFlrId:2,note:tesing"
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreateOrEditFolder '{msgObjStr}'");
-                PortfMgrCreateOrEditFolder(msgObjStr);
-                PortfMgrSendFolders();
-                return true;
-            case "PortfMgr.CreateOrEditPortfolio": // msg: "id:-1,name:TestPrtf,prntFId:16,currency:USD,type:Simulation,access:Anyone,note:Testing"
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): CreatePortfolio '{msgObjStr}'");
-                PortfMgrCreateOrEditPortfolio(msgObjStr);
-                PortfMgrSendPortfolios();
-                return true;
-            case "PortfMgr.DeletePortfolioItem": // msg: "id:5" // if id > 10,000 then it is a PortfolioID otherwise it is the FolderID
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): DeletePortfolioItem '{msgObjStr}'");
-                PortfMgrDeletePortfolioItem(msgObjStr);
-                return true;
-            case "PortfMgr.GetPortfolioRunResult": // msg: "id:5"
-                Utils.Logger.Info($"OnReceiveWsAsync_PortfMgr(): GetPortfolioRunResult '{msgObjStr}'");
-                PortfMgrGetPortfolioDetails(msgObjStr);
-                // PortfMgrSendPortfolioBacktestResults(msgObjStr);
-                return true;
-            default:
-                return false;
-        }
-    }
-
     public void PortfMgrCreateOrEditFolder(string p_msg) // msg: id:-1,name:DayaTesting,prntFlrId:2,note:testing
     {
         int idStartIdx = p_msg.IndexOf(":");
@@ -247,43 +283,6 @@ public partial class DashboardClient
             byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.ErrorToUser:" + errMsg);
             if (WsWebSocket!.State == WebSocketState.Open)
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-        }
-    }
-
-    static string? GetRealParentFldId(int p_virtualParentFldId, out User? p_user, out int p_realParentFldId) // returns error string or empty if no error
-    {
-        p_user = null;
-        p_realParentFldId = -1; // root of an existing user or the NoUser (if user = null)
-
-        if (p_virtualParentFldId < -2) // if virtualParentFldId < -2, then the -1*virtualParentFldId represents an existing user and we want the root folder of the user. If the user is not found returns error.
-        {
-            int userId = -1 * p_virtualParentFldId; // try to find this userId among the users
-            User[] users = MemDb.gMemDb.Users;
-            for (int i = 0; i < users.Length; i++)
-            {
-                if (users[i].Id == userId)
-                {
-                    p_user = users[i];
-                    return null; // returns p_user = found user; p_realParentFldId = -1 (Root) of the found user.
-                }
-            }
-            return $"Error. No user found for userId {userId}";
-        }
-        else if (p_virtualParentFldId == gNoUserVirtPortfId) // == -2
-        {
-            return null; // returns p_user = null (the NoUser); p_realParentFldId = -1 (Root). This is fine. Admins should be able to create PortfolioItems in the Root folder of the NoUser
-        }
-        else if (p_virtualParentFldId == -1)
-            return $"Error. virtualParentFldId == -1 is the Root of the UI FolderTree. We cannot create anything in that virtual folder as that is non-existent in the DB.";
-        else // >=0, if virtualParentFldId is a proper folderID, just get its user and return that. Admin users can create a new PortfolioItem anywhere in the FolderTree. And the owner (user) of this new item will be the owner of the ParentFolder.
-        {
-            if (MemDb.gMemDb.PortfolioFolders.TryGetValue(p_virtualParentFldId, out PortfolioFolder? folder))
-            {
-                p_user = folder.User; // if the folder belongs to the NoUser, then folder.User == null, which is fine.
-                p_realParentFldId = p_virtualParentFldId;
-                return null; // returns p_user = found user; p_realParentFldId = -1 (Root) of the found user.
-            }
-            return $"Error. A positive virtualParentFldId {p_virtualParentFldId} was received, but that that Folder is not found in DB.";
         }
     }
 
@@ -348,71 +347,58 @@ public partial class DashboardClient
             PortfMgrSendPortfolios();
     }
 
-    public void PortfMgrGetPortfolioDetails(string p_msg)
+    public void PortfMgrSendPortfolioRunResults(string p_msg)
     {
+        // Step1: Processing the message to extract the Id
         int idStartInd = p_msg.IndexOf(":");
         if (idStartInd == -1)
             return;
         int id = Convert.ToInt32(p_msg[(idStartInd + 1)..]);
+
+        // Step2: Getting the BackTestResults
         string? errMsg = null;
         if (MemDb.gMemDb.Portfolios.TryGetValue(id, out Portfolio? prtf))
             Console.WriteLine($"Portfolio Name: '{prtf.Name}'");
         else
             errMsg = $"Error. Portfolio id {id} not found in DB";
 
-        if (!String.IsNullOrEmpty(errMsg))
+        if (errMsg == null)
+        {
+            errMsg = prtf!.GetPortfolioRunResults(out BacktestResultsStatistics stat, out List<ChartPoint> pv);
+            if (errMsg == null)
+            {
+                // Step3: Filling the ChartPoint Dates and Values to a list
+                List<ChartPointValues> chartPvData = new();
+                ChartPointValues chartVal = new();
+                foreach (var item in pv)
+                {
+                    chartVal.ChartDate.Add(Utils.UnixTimeStampToDateTimeUtc(item.x).ToYYYYMMDD());
+                    chartVal.Value.Add((int)item.y);
+                }
+                chartPvData.Add(chartVal);
+                // Step4: Filling the Stats and ChartPoint vals in PfBackTest
+                PrtfRunResultJs pfRunResult = new()
+                {
+                    StartPortfolioValue = stat.StartPortfolioValue,
+                    EndPortfolioValue = stat.EndPortfolioValue,
+                    SharpeRatio = stat.SharpeRatio,
+                    ChrtPntVals = chartPvData
+                };
+                // Step5: Sending the Backtest results data to client
+                if (pfRunResult != null)
+                {
+                    byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.PrtfRunResult:" + Utils.CamelCaseSerialize(pfRunResult));
+                    if (WsWebSocket!.State == WebSocketState.Open)
+                        WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                }
+            }
+        }
+
+        if (errMsg != null)
         {
             byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.ErrorToUser:" + errMsg);
             if (WsWebSocket!.State == WebSocketState.Open)
                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
         }
     }
-
-    // public void PortfMgrSendPortfolioRunResults(string p_msg)
-    // {
-    //     // Step1: Processing the message to extract the Id
-    //     int idStartInd = p_msg.IndexOf(":");
-    //     if (idStartInd == -1)
-    //         return;
-    //     int id = Convert.ToInt32(p_msg[(idStartInd + 1)..]);
-    //     Console.WriteLine($"The Selected Portfolio id {id}");
-    //     // Step2: Getting the BackTestResults
-    //     string? errMsg = MemDb.gMemDb.Portfolio.GetBacktestResults(out BacktestResultsStatistics stat, out List<ChartPoint> pv);
-    //     if (errMsg == null)
-    //     {
-    //         // Step3: Filling the ChartPoint Dates and Values to a list
-    //         List<ChartPointValues> chartPvData = new();
-    //         ChartPointValues chartVal = new();
-    //         foreach (var item in pv)
-    //         {
-    //             chartVal.ChartDate.Add(Utils.UnixTimeStampToDateTimeUtc(item.x).ToYYYYMMDD());
-    //             chartVal.Value.Add((int)item.y);
-    //         }
-    //         chartPvData.Add(chartVal);
-    //         // Step4: Filling the Stats and ChartPoint vals in PfBackTest
-    //         PrtfRunResultJs pfBacktest = new()
-    //         {
-    //             StartingPortfolioValue = stat.StartingPortfolioValue,
-    //             EndPortfolioValue = stat.EndPortfolioValue,
-    //             SharpeRatio = stat.SharpeRatio,
-    //             ChrtPntVals = chartPvData
-    //         };
-    //         // Step5: Sending the Backtest results data to client
-    //         if (pfBacktest != null)
-    //         {
-    //             byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.PrtfRunResult:" + Utils.CamelCaseSerialize(pfBacktest));
-    //             if (WsWebSocket!.State == WebSocketState.Open)
-    //                 WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-    //         }
-    //     }
-    //     else
-    //     {
-    //         byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.ErrorToUser:" + errMsg);
-    //         if (WsWebSocket!.State == WebSocketState.Open)
-    //             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-    //     }
-    //     // Console.WriteLine($"length of backtest results are {pfBacktest?.SharpeRatio}");
-    //     // Console.WriteLine($"stat values are startPV:{stat.StartingPortfolioValue}, EndPV:{stat.EndPortfolioValue} and SharpeRatio:{stat.SharpeRatio}");
-    //     // Console.WriteLine(pv);
-    //  }
 }

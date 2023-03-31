@@ -106,7 +106,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   tabPrtfSpecVisibleIdx = 1; // tab buttons for portfolio specification preview of positions and strategy parameters
 
   prtfRunResult: Nullable<PrtfRunResultJs> = null;
-  uiPrtfRunResults: UiPrtfRunResult[] = [];
+  uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
 
   // the below variables are required for resizing the panels according to users
   dashboardHeaderWidth = 0;
@@ -353,7 +353,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       }
       return value;
     });
-    PortfolioManagerComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResults);
+    PortfolioManagerComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult);
   }
 
   static createTreeViewData(pFolders: Nullable<FolderJs[]>, pPortfolios: Nullable<PortfolioJs[]>, pTreeViewState: TreeViewState) : TreeViewItem[] {
@@ -573,14 +573,16 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this._parentWsConnection.send(`PortfMgr.GetPortfolioRunResult:id:${lastSelectedTreeNode.id - this.gPortfolioIdOffset}`);
   }
 
-  static updateUiWithPrtfRunResult(prtfRunResult, uiPrtfRunResult: UiPrtfRunResult[]) {
+  static updateUiWithPrtfRunResult(prtfRunResult, uiPrtfRunResult: UiPrtfRunResult) {
     if (prtfRunResult == null)
       return;
-    uiPrtfRunResult.length = 0;
-    const pfRunResItem = new UiPrtfRunResult();
-    pfRunResItem.startingPortfolioValue = prtfRunResult.startingPortfolioValue;
-    pfRunResItem.endPortfolioValue = prtfRunResult.endPortfolioValue;
-    pfRunResItem.sharpeRatio = prtfRunResult.sharpeRatio;
+
+    uiPrtfRunResult.startingPortfolioValue = prtfRunResult.startingPortfolioValue;
+    uiPrtfRunResult.endPortfolioValue = prtfRunResult.endPortfolioValue;
+    uiPrtfRunResult.sharpeRatio = prtfRunResult.sharpeRatio;
+
+    uiPrtfRunResult.chrtValues.length = 0;
+
     for (const item of prtfRunResult.chrtPntVals) {
       if (item == null)
         continue;
@@ -589,9 +591,8 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
         const dateStr: string = item.chartDate[i];
         chartItem.date = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(4, 6) + '-' + dateStr.substring(6, 8));
         chartItem.value = (item.value[i]);
-        pfRunResItem.chrtValues.push(chartItem);
+        uiPrtfRunResult.chrtValues.push(chartItem);
       }
-      uiPrtfRunResult.push(pfRunResItem);
     }
   }
 }
