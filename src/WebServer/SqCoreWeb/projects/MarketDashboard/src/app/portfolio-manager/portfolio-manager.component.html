@@ -121,9 +121,18 @@
         Width: {{panelStatsWidth}}
         Height: {{panelStatsHeight}}<br>
         <div>
-          <b>StartingPortfolioValue:</b>{{uiPrtfRunResult.startingPortfolioValue}}<br>
+          <b>StartPortfolioValue:</b> {{uiPrtfRunResult.startPortfolioValue}}<br>
           <b>EndPortfolioValue:</b> {{uiPrtfRunResult.endPortfolioValue}}<br>
-          <b>SharpeRatio:</b> {{uiPrtfRunResult.sharpeRatio}}<br>
+          <b>TotalReturn:</b> {{uiPrtfRunResult.totalReturn}}%<br>
+          <b>CAGR:</b> {{uiPrtfRunResult.cAGR}}%<br>
+          <b>MaxDD:</b> {{uiPrtfRunResult.maxDD}}%<br>
+          <b>SharpeRatio:</b> {{uiPrtfRunResult.sharpeRatio}}%<br>
+          <b>WinRate:</b> {{uiPrtfRunResult.winRate}}%<br>
+          <b>StDev:</b> {{uiPrtfRunResult.stDev}}<br>
+          <b>Sortino:</b> {{uiPrtfRunResult.sortino}}<br>
+          <b>Turnover:</b> {{uiPrtfRunResult.turnover}}<br>
+          <b>LongShortRatio:</b> {{uiPrtfRunResult.longShortRatio}}<br>
+          <b>Fees:</b> {{uiPrtfRunResult.fees | currency:'USD'}}<br>
         </div>
       </div>
       <div id="panelPrtfSpec">Panel PrtfSpec

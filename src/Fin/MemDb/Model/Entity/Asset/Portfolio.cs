@@ -15,7 +15,16 @@ public class PortfolioRunResultStatistics
 {
     public float StartPortfolioValue = 1000.0f;
     public float EndPortfolioValue = 1400.0f;
-    public float SharpeRatio = 0.8f;
+    public string TotalReturn = string.Empty;
+    public string CAGR = string.Empty;
+    public string MaxDD = string.Empty;
+    public string SharpeRatio = string.Empty;
+    public string WinRate = string.Empty;
+    public string StDev = string.Empty;
+    public string Sortino = string.Empty;
+    public string Turnover = string.Empty;
+    public string LongShortRatio = string.Empty;
+    public string Fees = string.Empty;
 }
 
 public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
@@ -131,7 +140,7 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
     // We have the option to return Date fields in different formats in JSON string:
     // '2021-01-27' is 10 chars, '20210127' is 8 chars. Resolution is only daily.
     // Or number of seconds from Unix epoch: '1641013200' is 10 chars. Resolution can be 1 second.
-    // Although it is 2 chars more data, but we chose this, because QC uses it and also it will allow us to go intraday in the future. 
+    // Although it is 2 chars more data, but we chose this, because QC uses it and also it will allow us to go intraday in the future.
     // Also it allows to show the user how up-to-date (real-time) the today value is.
     public string? GetPortfolioRunResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv)
     {
@@ -173,7 +182,7 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         {
             StartPortfolioValue = 1000.0f,
             EndPortfolioValue = 1400.0f,
-            SharpeRatio = 0.8f
+            SharpeRatio = "0.8f"
         }; // output
         return null; // No Error
     }
@@ -197,6 +206,10 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
 
         var equityChart = backtestResults.Charts["Strategy Equity"].Series["Equity"].Values;
         Console.WriteLine($"#Charts:{backtestResults.Charts.Count}. The Equity (PV) chart: {equityChart[0].y:N0}, {equityChart[1].y:N0} ... {equityChart[^2].y:N0}, {equityChart[^1].y:N0}");
+        foreach (var item in equityChart)
+        {
+            p_pv.Add(new ChartPoint { x = item.x, y = item.y });
+        }
 
         Dictionary<string, string> finalStat = backtestResults.FinalStatistics;
         var statisticsStr = $"{Environment.NewLine}" + $"{string.Join(Environment.NewLine, finalStat.Select(x => $"STATISTICS:: {x.Key} {x.Value}"))}";
@@ -204,10 +217,18 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
 
         p_stat.StartPortfolioValue = (float)backtestResults.StartingPortfolioValue;
         p_stat.EndPortfolioValue = (float)backtestResults.DailyPortfolioValue;
-        if (!Single.TryParse(finalStat["Sharpe Ratio"], out p_stat.SharpeRatio))
-            p_stat.SharpeRatio = 0.0f;
+        p_stat.TotalReturn = finalStat["Net Profit"];
+        p_stat.CAGR = finalStat["Compounding Annual Return"];
+        p_stat.MaxDD = finalStat["Drawdown"];
+        p_stat.SharpeRatio = finalStat["Sharpe Ratio"];
+        p_stat.WinRate = finalStat["Win Rate"];
+        p_stat.StDev = finalStat["Annual Standard Deviation"];
+        p_stat.Sortino = finalStat["Sortino Ratio"];
+        p_stat.Turnover = finalStat["Portfolio Turnover"];
+        p_stat.LongShortRatio = finalStat["Long/Short Ratio"];
+        p_stat.Fees = finalStat["Total Fees"];
 
-        // We need these in the Statistic: "Net Profit" => TotalReturn, "Compounding Annual Return" =>CAGR, {[Drawdown, 2.200%]} => MaxDD,  "Sharpe Ratio" =>Sharpe, "Win Rate" =>WinRate, "Annual Standard Deviation" =>StDev, "Sortino Ratio" => Sortino, "Portfolio Turnover" => Turnover, "Long/Short Ratio" =>LongShortRatio, "Total Fees" => Fees,
+        // We need these in the Statistic: "Net Profit" => TotalReturn, "Compounding Annual Return" =>CAGR, "Drawdown" => MaxDD,  "Sharpe Ratio" =>Sharpe, "Win Rate" =>WinRate, "Annual Standard Deviation" =>StDev, "Sortino Ratio" => Sortino, "Portfolio Turnover" => Turnover, "Long/Short Ratio" =>LongShortRatio, "Total Fees" => Fees,
 
         return null; // No Error
     }

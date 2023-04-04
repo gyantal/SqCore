@@ -50,8 +50,17 @@ class PrtfRunResultJs
     public float StartPortfolioValue { get; set; } = 0.0f;
     [JsonPropertyName("endPv")]
     public float EndPortfolioValue { get; set; } = 0.0f;
+    public string TotalReturn { get; set; } = string.Empty;
+    public string CAGR { get; set; } = string.Empty;
+    public string MaxDD { get; set; } = string.Empty;
     [JsonPropertyName("sRatio")]
-    public float SharpeRatio { get; set; } = 0.0f;
+    public string SharpeRatio { get; set; } = string.Empty;
+    public string WinRate { get; set; } = string.Empty;
+    public string StDev { get; set; } = string.Empty;
+    public string Sortino { get; set; } = string.Empty;
+    public string Turnover { get; set; } = string.Empty;
+    public string LongShortRatio { get; set; } = string.Empty;
+    public string Fees { get; set; } = string.Empty;
     public List<ChartPointValues> ChrtPntVals { get; set; } = new();
 }
 
@@ -372,19 +381,28 @@ public partial class DashboardClient
                 ChartPointValues chartVal = new();
                 foreach (var item in pv)
                 {
-                    chartVal.ChartDate.Add(Utils.UnixTimeStampToDateTimeUtc(item.x).ToYYYYMMDD());
+                    chartVal.ChartDate.Add(Utils.UnixTimeStampToDateTimeUtc(item.x).TohYYYYMMDDHHMMSS());
                     chartVal.Value.Add((int)item.y);
                 }
                 chartPvData.Add(chartVal);
-                // Step4: Filling the Stats and ChartPoint vals in PfBackTest
+                // Step4: Filling the Stats and ChartPoint vals in pfRunResults
                 PrtfRunResultJs pfRunResult = new()
                 {
                     StartPortfolioValue = stat.StartPortfolioValue,
                     EndPortfolioValue = stat.EndPortfolioValue,
+                    TotalReturn = stat.TotalReturn,
+                    CAGR = stat.CAGR,
+                    MaxDD = stat.MaxDD,
                     SharpeRatio = stat.SharpeRatio,
+                    WinRate = stat.WinRate,
+                    StDev = stat.StDev,
+                    Sortino = stat.Sortino,
+                    Turnover = stat.Turnover,
+                    LongShortRatio = stat.LongShortRatio,
+                    Fees = stat.Fees,
                     ChrtPntVals = chartPvData
                 };
-                // Step5: Sending the Backtest results data to client
+                // Step5: Sending the pfRunResults data to client
                 if (pfRunResult != null)
                 {
                     byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.PrtfRunResult:" + Utils.CamelCaseSerialize(pfRunResult));

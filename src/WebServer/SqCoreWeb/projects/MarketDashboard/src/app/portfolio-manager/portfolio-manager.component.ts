@@ -39,14 +39,23 @@ class PrtfRunResultJs {
 
 // Ui classes
 class UiPrtfRunResult {
-  public startingPortfolioValue: number = 0;
+  public startPortfolioValue: number = 0;
   public endPortfolioValue: number = 0;
+  public totalReturn: number = 0;
+  public cAGR: number = 0;
+  public maxDD: number = 0;
   public sharpeRatio: number = 0;
+  public winRate: number = 0;
+  public stDev: number = 0;
+  public sortino: number = 0;
+  public turnover: number = 0;
+  public longShortRatio: number = 0;
+  public fees: number = 0;
   public chrtValues: UiChartPointvalues[] = [];
 }
 // chart values
 class UiChartPointvalues {
-  public date = new Date('2021-01-01');
+  public date = new Date();
   public value = NaN;
 }
 
@@ -98,7 +107,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   parentfolderName: string | undefined = ''; // displaying next to the selected parent folder id on Ui
   editedPortfolio: PortfolioJs = new PortfolioJs(); // create or edit portfolio
   currencyType: string[] = ['USD', 'EUR', 'GBP', 'GBX', 'HUF', 'JPY', 'CAD', 'CNY', 'CHF'];
-  portfolioType: string[] = ['Trades', 'Simulation'];
+  portfolioType: string[] = ['Trades', 'Simulation', 'TradesSqClassic'];
   sharedAccess: string[] = ['Restricted', 'OwnerOnly', 'Anyone'];
   // sharedUsers: number[] = [31, 33, 38]; // ignore the feature for now. Leave this empty
   public gPortfolioIdOffset: number = 10000;
@@ -340,7 +349,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
 
       if (key === 'startPv') {
-        _this.startingPortfolioValue = value;
+        _this.startPortfolioValue = value;
         return; // if return undefined, orignal property will be removed
       }
       if (key === 'endPv') {
@@ -577,9 +586,18 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     if (prtfRunResult == null)
       return;
 
-    uiPrtfRunResult.startingPortfolioValue = prtfRunResult.startingPortfolioValue;
+    uiPrtfRunResult.startPortfolioValue = prtfRunResult.startPortfolioValue;
     uiPrtfRunResult.endPortfolioValue = prtfRunResult.endPortfolioValue;
-    uiPrtfRunResult.sharpeRatio = prtfRunResult.sharpeRatio;
+    uiPrtfRunResult.totalReturn = parseFloat(prtfRunResult.totalReturn);
+    uiPrtfRunResult.cAGR = parseFloat(prtfRunResult.cagr);
+    uiPrtfRunResult.maxDD = parseFloat(prtfRunResult.maxDD);
+    uiPrtfRunResult.sharpeRatio = parseFloat(prtfRunResult.sharpeRatio);
+    uiPrtfRunResult.winRate = parseFloat(prtfRunResult.winRate);
+    uiPrtfRunResult.stDev = parseFloat( prtfRunResult.stDev);
+    uiPrtfRunResult.sortino = parseFloat(prtfRunResult.sortino);
+    uiPrtfRunResult.turnover = parseFloat(prtfRunResult.turnover);
+    uiPrtfRunResult.longShortRatio = parseFloat(prtfRunResult.longShortRatio);
+    uiPrtfRunResult.fees = parseFloat((prtfRunResult.fees).replace('$', ''));
 
     uiPrtfRunResult.chrtValues.length = 0;
 
@@ -588,8 +606,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
         continue;
       for (let i = 0; i < item.chartDate.length; i++ ) {
         const chartItem = new UiChartPointvalues();
-        const dateStr: string = item.chartDate[i];
-        chartItem.date = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(4, 6) + '-' + dateStr.substring(6, 8));
+        chartItem.date = new Date(item.chartDate[i]);
         chartItem.value = (item.value[i]);
         uiPrtfRunResult.chrtValues.push(chartItem);
       }

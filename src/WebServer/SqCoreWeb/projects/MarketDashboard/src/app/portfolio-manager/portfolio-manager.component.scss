@@ -42,7 +42,6 @@
   float: right;
   width: 69.25%;
   height: 96vh;
-  background-color: skyblue;
 }
 
 #panelChart {
@@ -68,9 +67,9 @@
 
 #panelStats {
   float: left;
+  padding-left: 1rem;
   width: 50%;
   height: 47vh;
-  background-color: antiquewhite;
   overflow: auto;
 }
 
