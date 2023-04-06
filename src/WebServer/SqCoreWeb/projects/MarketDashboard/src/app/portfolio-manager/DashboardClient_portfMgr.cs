@@ -46,27 +46,13 @@ class PortfolioJs : PortfolioItemJs
 
 class PrtfRunResultJs
 {
-    [JsonPropertyName("startPv")]
-    public float StartPortfolioValue { get; set; } = 0.0f;
-    [JsonPropertyName("endPv")]
-    public float EndPortfolioValue { get; set; } = 0.0f;
-    public string TotalReturn { get; set; } = string.Empty;
-    public string CAGR { get; set; } = string.Empty;
-    public string MaxDD { get; set; } = string.Empty;
-    [JsonPropertyName("sRatio")]
-    public string SharpeRatio { get; set; } = string.Empty;
-    public string WinRate { get; set; } = string.Empty;
-    public string StDev { get; set; } = string.Empty;
-    public string Sortino { get; set; } = string.Empty;
-    public string Turnover { get; set; } = string.Empty;
-    public string LongShortRatio { get; set; } = string.Empty;
-    public string Fees { get; set; } = string.Empty;
+    public PortfolioRunResultStatistics Pstat { get; set; } = new();
     public List<ChartPointValues> ChrtPntVals { get; set; } = new();
 }
 
 class ChartPointValues
 {
-    public List<string> ChartDate { get; set; } = new List<string>();
+    public List<long> ChartDate { get; set; } = new List<long>();
     public List<int> Value { get; set; } = new List<int>();
 }
 
@@ -381,12 +367,13 @@ public partial class DashboardClient
                 ChartPointValues chartVal = new();
                 foreach (var item in pv)
                 {
-                    chartVal.ChartDate.Add(Utils.UnixTimeStampToDateTimeUtc(item.x).TohYYYYMMDDHHMMSS());
+                    chartVal.ChartDate.Add(item.x);
                     chartVal.Value.Add((int)item.y);
                 }
                 chartPvData.Add(chartVal);
-                // Step4: Filling the Stats and ChartPoint vals in pfRunResults
-                PrtfRunResultJs pfRunResult = new()
+
+                // Step4: Filling the Stats data
+                PortfolioRunResultStatistics pStat = new()
                 {
                     StartPortfolioValue = stat.StartPortfolioValue,
                     EndPortfolioValue = stat.EndPortfolioValue,
@@ -400,9 +387,14 @@ public partial class DashboardClient
                     Turnover = stat.Turnover,
                     LongShortRatio = stat.LongShortRatio,
                     Fees = stat.Fees,
+                };
+                // Step5: Filling the Stats and ChartPoint vals in pfRunResults
+                PrtfRunResultJs pfRunResult = new()
+                {
+                    Pstat = pStat,
                     ChrtPntVals = chartPvData
                 };
-                // Step5: Sending the pfRunResults data to client
+                // Step6: Sending the pfRunResults data to client
                 if (pfRunResult != null)
                 {
                     byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.PrtfRunResult:" + Utils.CamelCaseSerialize(pfRunResult));

@@ -13,18 +13,27 @@ namespace Fin.MemDb;
 // Temporary here. Will be refactored to another file.
 public class PortfolioRunResultStatistics
 {
-    public float StartPortfolioValue = 1000.0f;
-    public float EndPortfolioValue = 1400.0f;
-    public string TotalReturn = string.Empty;
-    public string CAGR = string.Empty;
-    public string MaxDD = string.Empty;
-    public string SharpeRatio = string.Empty;
-    public string WinRate = string.Empty;
-    public string StDev = string.Empty;
-    public string Sortino = string.Empty;
-    public string Turnover = string.Empty;
-    public string LongShortRatio = string.Empty;
-    public string Fees = string.Empty;
+    [JsonPropertyName("startPv")]
+    public float StartPortfolioValue { get; set; } = 0.0f;
+    [JsonPropertyName("endPv")]
+    public float EndPortfolioValue { get; set; } = 0.0f;
+    [JsonPropertyName("tr")]
+    public float TotalReturn { get; set; } = 0.0f;
+    public float CAGR { get; set; } = 0.0f;
+    public float MaxDD { get; set; } = 0.0f;
+    [JsonPropertyName("sRatio")]
+    public float SharpeRatio { get; set; } = 0.0f;
+    [JsonPropertyName("wr")]
+    public float WinRate { get; set; } = 0.0f;
+    public float StDev { get; set; } = 0.0f;
+    [JsonPropertyName("s")]
+    public decimal Sortino { get; set; } = 0;
+    [JsonPropertyName("t")]
+    public float Turnover { get; set; } = 0.0f;
+    [JsonPropertyName("ls")]
+    public float LongShortRatio { get; set; } = 0.0f;
+    [JsonPropertyName("f")]
+    public float Fees { get; set; } = 0.0f;
 }
 
 public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
@@ -182,7 +191,7 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         {
             StartPortfolioValue = 1000.0f,
             EndPortfolioValue = 1400.0f,
-            SharpeRatio = "0.8f"
+            SharpeRatio = 0.8f
         }; // output
         return null; // No Error
     }
@@ -217,16 +226,16 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
 
         p_stat.StartPortfolioValue = (float)backtestResults.StartingPortfolioValue;
         p_stat.EndPortfolioValue = (float)backtestResults.DailyPortfolioValue;
-        p_stat.TotalReturn = finalStat["Net Profit"];
-        p_stat.CAGR = finalStat["Compounding Annual Return"];
-        p_stat.MaxDD = finalStat["Drawdown"];
-        p_stat.SharpeRatio = finalStat["Sharpe Ratio"];
-        p_stat.WinRate = finalStat["Win Rate"];
-        p_stat.StDev = finalStat["Annual Standard Deviation"];
-        p_stat.Sortino = finalStat["Sortino Ratio"];
-        p_stat.Turnover = finalStat["Portfolio Turnover"];
-        p_stat.LongShortRatio = finalStat["Long/Short Ratio"];
-        p_stat.Fees = finalStat["Total Fees"];
+        p_stat.TotalReturn = float.Parse(finalStat["Net Profit"].Replace("%", string.Empty));
+        p_stat.CAGR = float.Parse(finalStat["Compounding Annual Return"].Replace("%", string.Empty));
+        p_stat.MaxDD = float.Parse(finalStat["Drawdown"].Replace("%", string.Empty));
+        p_stat.SharpeRatio = float.Parse(finalStat["Sharpe Ratio"]);
+        p_stat.WinRate = float.Parse(finalStat["Win Rate"].Replace("%", string.Empty));
+        p_stat.StDev = float.Parse(finalStat["Annual Standard Deviation"]);
+        p_stat.Sortino = decimal.Parse(finalStat["Sortino Ratio"].Replace("%", string.Empty));
+        p_stat.Turnover = float.Parse(finalStat["Portfolio Turnover"]);
+        p_stat.LongShortRatio = float.Parse(finalStat["Long/Short Ratio"].Replace("%", string.Empty));
+        p_stat.Fees = float.Parse(finalStat["Total Fees"].Replace("$", string.Empty));
 
         // We need these in the Statistic: "Net Profit" => TotalReturn, "Compounding Annual Return" =>CAGR, "Drawdown" => MaxDD,  "Sharpe Ratio" =>Sharpe, "Win Rate" =>WinRate, "Annual Standard Deviation" =>StDev, "Sortino Ratio" => Sortino, "Portfolio Turnover" => Turnover, "Long/Short Ratio" =>LongShortRatio, "Total Fees" => Fees,
 

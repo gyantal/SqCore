@@ -1,5 +1,6 @@
 import { Component, OnInit, AfterViewInit, Input, ViewChild } from '@angular/core';
 import { SqTreeViewComponent } from '../sq-tree-view/sq-tree-view.component';
+import * as d3 from 'd3';
 
 type Nullable<T> = T | null;
 
@@ -31,9 +32,7 @@ class PortfolioJs extends PortfolioItemJs {
 }
 
 class PrtfRunResultJs {
-  public startingPortfolioValue: number = 0;
-  public endPortfolioValue: number = 0;
-  public sharpeRatio: number = 0;
+  public pStat = [];
   public chartPv = [];
 }
 
@@ -360,6 +359,30 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
         _this.sharpeRatio = value;
         return; // if return undefined, orignal property will be removed
       }
+      if (key === 'tr') {
+        _this.totalReturn = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      if (key === 'wr') {
+        _this.winRate = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      if (key === 's') {
+        _this.sortino = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      if (key === 't') {
+        _this.turnover = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      if (key === 'ls') {
+        _this.longShortRatio = value;
+        return; // if return undefined, orignal property will be removed
+      }
+      if (key === 'f') {
+        _this.fees = value;
+        return; // if return undefined, orignal property will be removed
+      }
       return value;
     });
     PortfolioManagerComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult);
@@ -586,18 +609,18 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     if (prtfRunResult == null)
       return;
 
-    uiPrtfRunResult.startPortfolioValue = prtfRunResult.startPortfolioValue;
-    uiPrtfRunResult.endPortfolioValue = prtfRunResult.endPortfolioValue;
-    uiPrtfRunResult.totalReturn = parseFloat(prtfRunResult.totalReturn);
-    uiPrtfRunResult.cAGR = parseFloat(prtfRunResult.cagr);
-    uiPrtfRunResult.maxDD = parseFloat(prtfRunResult.maxDD);
-    uiPrtfRunResult.sharpeRatio = parseFloat(prtfRunResult.sharpeRatio);
-    uiPrtfRunResult.winRate = parseFloat(prtfRunResult.winRate);
-    uiPrtfRunResult.stDev = parseFloat( prtfRunResult.stDev);
-    uiPrtfRunResult.sortino = parseFloat(prtfRunResult.sortino);
-    uiPrtfRunResult.turnover = parseFloat(prtfRunResult.turnover);
-    uiPrtfRunResult.longShortRatio = parseFloat(prtfRunResult.longShortRatio);
-    uiPrtfRunResult.fees = parseFloat((prtfRunResult.fees).replace('$', ''));
+    uiPrtfRunResult.startPortfolioValue = prtfRunResult.pstat.startPortfolioValue;
+    uiPrtfRunResult.endPortfolioValue = prtfRunResult.pstat.endPortfolioValue;
+    uiPrtfRunResult.totalReturn = parseFloat(prtfRunResult.pstat.totalReturn);
+    uiPrtfRunResult.cAGR = parseFloat(prtfRunResult.pstat.cagr);
+    uiPrtfRunResult.maxDD = parseFloat(prtfRunResult.pstat.maxDD);
+    uiPrtfRunResult.sharpeRatio = parseFloat(prtfRunResult.pstat.sharpeRatio);
+    uiPrtfRunResult.winRate = parseFloat(prtfRunResult.pstat.winRate);
+    uiPrtfRunResult.stDev = parseFloat( prtfRunResult.pstat.stDev);
+    uiPrtfRunResult.sortino = parseFloat(prtfRunResult.pstat.sortino);
+    uiPrtfRunResult.turnover = parseFloat(prtfRunResult.pstat.turnover);
+    uiPrtfRunResult.longShortRatio = parseFloat(prtfRunResult.pstat.longShortRatio);
+    uiPrtfRunResult.fees = parseFloat(prtfRunResult.pstat.fees);
 
     uiPrtfRunResult.chrtValues.length = 0;
 
@@ -606,10 +629,150 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
         continue;
       for (let i = 0; i < item.chartDate.length; i++ ) {
         const chartItem = new UiChartPointvalues();
-        chartItem.date = new Date(item.chartDate[i]);
+        const mSecSinceUnixEpoch : number = item.chartDate[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
+        chartItem.date = new Date(mSecSinceUnixEpoch);
         chartItem.value = (item.value[i]);
         uiPrtfRunResult.chrtValues.push(chartItem);
       }
+    }
+
+    d3.selectAll('#pfRunResultChrt > *').remove();
+    const lineChrtDiv = document.getElementById('pfRunResultChrt') as HTMLElement;
+    const margin = {top: 10, right: 30, bottom: 30, left: 60 };
+    const inputWidth = 660 - margin.left - margin.right;
+    const inputHeight = 440 - margin.top - margin.bottom;
+    const chrtData = uiPrtfRunResult.chrtValues.map((r:{ date: Date; value: any; }) => ({date: new Date(r.date), value: r.value}));
+    const xMin = d3.min(chrtData, (r:{ date: any; }) => r.date);
+    const xMax = d3.max(chrtData, (r:{ date: any; }) => r.date);
+    const yMinAxis = d3.min(chrtData, (r:{ value: any; }) => r.value);
+    const yMaxAxis = d3.max(chrtData, (r:{ value: any; }) => r.value);
+
+    PortfolioManagerComponent.processUiWithPrtfRunResultChrt(chrtData, lineChrtDiv, inputWidth, inputHeight, margin, xMin, xMax, yMinAxis, yMaxAxis);
+  }
+
+  static processUiWithPrtfRunResultChrt(chrtData: { date: Date; value: any; }[], lineChrtDiv: HTMLElement, inputWidth: number, inputHeight: number, margin: any, xMin: any, xMax: any, yMinAxis: any, yMaxAxis: any) {
+    // range of data configuring
+    const scaleX = d3.scaleTime().domain([xMin, xMax]).range([0, inputWidth]);
+    const scaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([inputHeight, 0]);
+
+    const pfChrt = d3.select(lineChrtDiv).append('svg')
+        .attr('width', inputWidth + margin.left + margin.right)
+        .attr('height', inputHeight + margin.top + margin.bottom)
+        .append('g')
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+    pfChrt.append('g')
+        .attr('transform', 'translate(0,' + inputHeight + ')')
+        .call(d3.axisBottom(scaleX));
+    pfChrt.append('g').call(d3.axisLeft(scaleY));
+
+    // Define the line
+    const line = d3.line()
+        .x((r: any) => scaleX(r.date))
+        .y((r: any) => scaleY(r.value))
+        .curve(d3.curveCardinal);
+
+    const chrtline = pfChrt.append('g');
+    const focus = pfChrt.append('g').style('display', 'none');
+    // Add the valueline path.
+    chrtline.append('path')
+        .attr('class', 'line')
+        .datum(chrtData) // Binds data to the line
+        .attr('d', line as any);
+
+    // append the x line
+    focus.append('line')
+        .attr('class', 'x')
+        .style('stroke', 'blue')
+        .style('stroke-dasharray', '3,3')
+        .style('opacity', 0.5)
+        .attr('y1', 0)
+        .attr('y2', inputHeight);
+
+    // append the y line
+    focus.append('line')
+        .attr('class', 'y')
+        .style('stroke', 'blue')
+        .style('stroke-dasharray', '3,3')
+        .style('opacity', 0.5)
+        .attr('x1', inputWidth)
+        .attr('x2', inputWidth);
+
+    // append the circle at the intersection
+    focus.append('circle')
+        .attr('class', 'y')
+        .style('fill', 'none')
+        .style('stroke', 'blue')
+        .attr('r', 4);
+
+    // place the value at the intersection
+    focus.append('text')
+        .attr('class', 'y1')
+        .style('stroke', 'white')
+        .style('stroke-width', '3.5px')
+        .style('opacity', 0.8)
+        .attr('dx', -10)
+        .attr('dy', '-2em');
+    focus.append('text')
+        .attr('class', 'y2')
+        .attr('dx', -10)
+        .attr('dy', '-2em');
+
+    // place the date at the intersection
+    focus.append('text')
+        .attr('class', 'y3')
+        .style('stroke', 'white')
+        .style('stroke-width', '3.5px')
+        .style('opacity', 0.8)
+        .attr('dx', -30)
+        .attr('dy', '-1em');
+    focus.append('text')
+        .attr('class', 'y4')
+        .attr('dx', -30)
+        .attr('dy', '-1em');
+
+    // append the rectangle to capture mouse
+    pfChrt.append('rect')
+        .attr('width', inputWidth)
+        .attr('height', inputHeight)
+        .style('fill', 'none')
+        .style('pointer-events', 'all')
+        .on('mouseover', function() { focus.style('display', null); })
+        .on('mouseout', function() { focus.style('display', 'none'); })
+        .on('mousemove', mousemove);
+
+    const formatMonth = d3.timeFormat('%Y%m%dT%H:%M');
+    const bisectDate = d3.bisector((r: any) => r.date).left;
+
+    function mousemove(event: any) {
+      const x0 = scaleX.invert(d3.pointer(event)[0]);
+      const i = bisectDate(chrtData, x0, 1);
+      const d0 = chrtData[i - 1];
+      const d1 = chrtData[i];
+      const r = (x0.getTime() - d0.date.getTime()) > (d1.date.getTime() - x0.getTime()) ? d1 : d0;
+      focus.select('circle.y')
+          .attr('transform', 'translate(' + scaleX(r.date) + ',' + scaleY(r.value) + ')');
+      focus.select('text.y1')
+          .attr('transform', 'translate(' + scaleX(r.date) + ',' + scaleY(r.value) + ')')
+          .text(r.value);
+      focus.select('text.y2')
+          .attr('transform', 'translate(' + scaleX(r.date) + ',' + scaleY(r.value) + ')')
+          .text(d3.format(',')(r.value));
+      focus.select('text.y2')
+          .attr('transform', 'translate(' + scaleX(r.date) + ',' + scaleY(r.value) + ')')
+          .text(d3.format(',')((r.value)));
+      focus.select('text.y3')
+          .attr('transform', 'translate(' + scaleX(r.date) + ',' + scaleY(r.value) + ')')
+          .text(formatMonth(r.date));
+      focus.select('text.y4')
+          .attr('transform', 'translate(' + scaleX(r.date) + ',' + scaleY(r.value) + ')')
+          .text(formatMonth(r.date));
+      focus.select('.x')
+          .attr('transform', 'translate(' + scaleX(r.date) + ',' + scaleY(r.value) + ')')
+          .attr('y2', inputHeight - scaleY(r.value));
+      focus.select('.y')
+          .attr('transform', 'translate(' + inputWidth * -1 + ',' + scaleY(r.value) + ')')
+          .attr('x2', inputWidth + inputWidth);
     }
   }
 }
