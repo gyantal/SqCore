@@ -20,16 +20,25 @@ $scss-variable-color: #fbbcf4; // SCSS variable
     // --textColor: #{$scss-variable-color};  // this is how to put scss-variable to css-variable
 }
 
-:host {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-  // font-size: 1.4rem;
+:host { // this is the Shadow DOM root of the big main App component. The :hosts in the sub-components can overwrite this, but this still applies to them as default.
+  font-family: GeorgiaTimesNewRomanForLiningNumbers, "Times New Roman", Times, serif; // see TestFontsVerticalCentering.html
+  font-size: 1.6rem; // For Georgia font, 14px is too small. Use 16px as default.
   // color: #333;
   box-sizing: border-box;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+@font-face {
+  font-family: GeorgiaTimesNewRomanForLiningNumbers;
+  src: local("Georgia");
+}
 
+@font-face {
+  font-family: GeorgiaTimesNewRomanForLiningNumbers;
+  src: local("Times New Roman");
+  unicode-range: U+0030-0039;
+}
 
 // [hidden] { display: none !important;}
 
