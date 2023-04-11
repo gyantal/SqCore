@@ -120,20 +120,41 @@
     <div id="panelStatsAndPerfSpec">
       <div id="panelStats">Panel Stats
         Width: {{panelStatsWidth}}
-        Height: {{panelStatsHeight}}<br>
+        Height: {{panelStatsHeight}}<br><br>
         <div>
-          <b>StartPortfolioValue:</b> {{uiPrtfRunResult.startPortfolioValue}}<br>
-          <b>EndPortfolioValue:</b> {{uiPrtfRunResult.endPortfolioValue}}<br>
-          <b>TotalReturn:</b> {{uiPrtfRunResult.totalReturn}}%<br>
-          <b>CAGR:</b> {{uiPrtfRunResult.cAGR}}%<br>
-          <b>MaxDD:</b> {{uiPrtfRunResult.maxDD}}%<br>
-          <b>SharpeRatio:</b> {{uiPrtfRunResult.sharpeRatio}}%<br>
-          <b>WinRate:</b> {{uiPrtfRunResult.winRate}}%<br>
-          <b>StDev:</b> {{uiPrtfRunResult.stDev}}<br>
-          <b>Sortino:</b> {{uiPrtfRunResult.sortino}}<br>
-          <b>Turnover:</b> {{uiPrtfRunResult.turnover}}<br>
-          <b>LongShortRatio:</b> {{uiPrtfRunResult.longShortRatio}}<br>
-          <b>Fees:</b> {{uiPrtfRunResult.fees | currency:'USD'}}<br>
+          Statistics as of ({{todayDate | date : 'yyyy-MM-dd'}})
+          <table id="pfStatsTable">
+            <tr>
+              <td>PV Start Value:{{uiPrtfRunResult.startPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
+              <td>PV Final Value:{{uiPrtfRunResult.endPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
+              <td>TotalReturn:{{uiPrtfRunResult.totalReturn | number:'1.2-2'}}%</td>
+            </tr>
+            <tr>
+              <td><b>CAGR:</b> {{uiPrtfRunResult.cAGR | number:'1.2-2'}}%</td>
+              <td>MaxDD: {{uiPrtfRunResult.maxDD | number:'1.2-2'}}%</td>
+              <td><b>SharpeRatio:</b> {{uiPrtfRunResult.sharpeRatio | number:'1.2-2'}}%</td>
+            </tr>
+            <tr>
+              <td>StDev: {{uiPrtfRunResult.stDev | number:'1.2-2'}}</td>
+              <td><a href="http://en.wikipedia.org/wiki/Ulcer_index" target="_blank">Ulcer</a>: {{uiPrtfRunResult.ulcer}}</td>
+              <td>Max.TradingDays in DrawDown: {{uiPrtfRunResult.tradingDays}}</td>
+            </tr>
+            <tr>
+              <td>WinRate: {{uiPrtfRunResult.winRate | number:'1.2-2'}}%</td>
+              <td>LossRate: {{uiPrtfRunResult.lossingRate | number:'1.2-2'}}%</td>
+              <td>Annualized <a href="http://www.redrockcapital.com/Sortino__A__Sharper__Ratio_Red_Rock_Capital.pdf" target="_blank">Sortino</a>: {{uiPrtfRunResult.sortino}}</td>
+            </tr>
+            <tr>
+              <td>Turnover: {{uiPrtfRunResult.turnover}}</td>
+              <td>LongShortRatio: {{uiPrtfRunResult.longShortRatio}}</td>
+              <td>Fees: {{uiPrtfRunResult.fees | currency:'USD'}}</td>
+            </tr>
+            <tr>
+              <td>Benchmark CAGR: {{uiPrtfRunResult.benchmarkCAGR}}</td>
+              <td>Benchmark Max DrawDown: {{uiPrtfRunResult.benchmarkMaxDD}}</td>
+              <td>Correlation with Benchmark: {{uiPrtfRunResult.correlationWithBenchmark}}</td>
+            </tr>
+          </table>
         </div>
       </div>
       <div id="panelPrtfSpec">Panel PrtfSpec

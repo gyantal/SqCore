@@ -7,6 +7,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using QuantConnect;
 using QuantConnect.Lean.Engine.Results;
+using SqCommon;
 
 namespace Fin.MemDb;
 
@@ -22,18 +23,30 @@ public class PortfolioRunResultStatistics
     public float CAGR { get; set; } = 0.0f;
     public float MaxDD { get; set; } = 0.0f;
     [JsonPropertyName("sRatio")]
+    [JsonConverter(typeof(FloatJsonConverterToNumber4D))]
     public float SharpeRatio { get; set; } = 0.0f;
+    public float StDev { get; set; } = 0.0f;
+    public float Ulcer { get; set; } = 0.0f;
+    public int TradingDays { get; set; } = 0;
     [JsonPropertyName("wr")]
     public float WinRate { get; set; } = 0.0f;
-    public float StDev { get; set; } = 0.0f;
+    [JsonPropertyName("lr")]
+    public float LossingRate { get; set; } = 0.0f;
     [JsonPropertyName("s")]
-    public decimal Sortino { get; set; } = 0;
+    [JsonConverter(typeof(FloatJsonConverterToNumber4D))]
+    public float Sortino { get; set; } = 0;
     [JsonPropertyName("t")]
     public float Turnover { get; set; } = 0.0f;
     [JsonPropertyName("ls")]
     public float LongShortRatio { get; set; } = 0.0f;
     [JsonPropertyName("f")]
     public float Fees { get; set; } = 0.0f;
+    [JsonPropertyName("bCAGR")]
+    public float BenchmarkCAGR { get; set; } = 0.0f;
+    [JsonPropertyName("bMax")]
+    public float BenchmarkMaxDD { get; set; } = 0.0f;
+    [JsonPropertyName("cwb")]
+    public float CorrelationWithBenchmark { get; set; } = 0.0f;
 }
 
 public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
@@ -230,12 +243,22 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         p_stat.CAGR = float.Parse(finalStat["Compounding Annual Return"].Replace("%", string.Empty));
         p_stat.MaxDD = float.Parse(finalStat["Drawdown"].Replace("%", string.Empty));
         p_stat.SharpeRatio = float.Parse(finalStat["Sharpe Ratio"]);
-        p_stat.WinRate = float.Parse(finalStat["Win Rate"].Replace("%", string.Empty));
+        if (p_stat.SharpeRatio > 100f)
+            p_stat.SharpeRatio = float.NaN; // if value is obviously wrong, indicate that with NaN
         p_stat.StDev = float.Parse(finalStat["Annual Standard Deviation"]);
-        p_stat.Sortino = decimal.Parse(finalStat["Sortino Ratio"].Replace("%", string.Empty));
+        // Ulcer - To be added
+        p_stat.TradingDays = int.Parse(finalStat["Total Trades"]);
+        p_stat.WinRate = float.Parse(finalStat["Win Rate"].Replace("%", string.Empty));
+        p_stat.LossingRate = float.Parse(finalStat["Loss Rate"].Replace("%", string.Empty));
+        p_stat.Sortino = float.Parse(finalStat["Sortino Ratio"].Replace("%", string.Empty));
+        if (p_stat.Sortino > 100f)
+            p_stat.Sortino = float.NaN; // if value is obviously wrong, indicate that with NaN
         p_stat.Turnover = float.Parse(finalStat["Portfolio Turnover"]);
         p_stat.LongShortRatio = float.Parse(finalStat["Long/Short Ratio"].Replace("%", string.Empty));
         p_stat.Fees = float.Parse(finalStat["Total Fees"].Replace("$", string.Empty));
+        // BenchmarkCAGR - To be added
+        // BenchmarkMaxDrawDown - To be added
+        // CorrelationWithBenchmark - To be added
 
         // We need these in the Statistic: "Net Profit" => TotalReturn, "Compounding Annual Return" =>CAGR, "Drawdown" => MaxDD,  "Sharpe Ratio" =>Sharpe, "Win Rate" =>WinRate, "Annual Standard Deviation" =>StDev, "Sortino Ratio" => Sortino, "Portfolio Turnover" => Turnover, "Long/Short Ratio" =>LongShortRatio, "Total Fees" => Fees,
 

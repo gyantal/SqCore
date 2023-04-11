@@ -133,16 +133,16 @@ export class AppComponent implements OnInit {
 
             if (key === 'id') {
               _this.assetId = value;
-              return; // if return undefined, orignal property will be removed
+              return; // if return undefined, original property will be removed
             }
             if (key === 't') {
               const mSecSinceUnixEpoch : number = value * 1000; // data comes a seconds. JS uses milliseconds since Epoch.
               _this.lastUtc = new Date(mSecSinceUnixEpoch); // the Date object is nothing but a number.  That number is the number of milliseconds since 1970 jan 1 UTC, to now (now being in UTC also).
-              return; // if return undefined, orignal property will be removed
+              return; // if return undefined, original property will be removed
             }
             if (key === 'l') {
               _this.last = ChangeNaNstringToNaNnumber(value); // If serializer receives NaN string, it creates a "NaN" string here instead of NaN Number. Revert it immediately.
-              return; // if return undefined, orignal property will be removed
+              return; // if return undefined, original property will be removed
             }
             return value;
           });

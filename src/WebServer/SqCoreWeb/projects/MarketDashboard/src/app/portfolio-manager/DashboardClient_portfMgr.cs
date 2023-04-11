@@ -47,7 +47,7 @@ class PortfolioJs : PortfolioItemJs
 class PrtfRunResultJs
 {
     public PortfolioRunResultStatistics Pstat { get; set; } = new();
-    public List<ChartPointValues> ChrtPntVals { get; set; } = new();
+    public ChartPointValues ChrtPntVals { get; set; } = new();
 }
 
 class ChartPointValues
@@ -362,15 +362,15 @@ public partial class DashboardClient
             errMsg = prtf!.GetPortfolioRunResult(out PortfolioRunResultStatistics stat, out List<ChartPoint> pv);
             if (errMsg == null)
             {
-                // Step3: Filling the ChartPoint Dates and Values to a list
-                List<ChartPointValues> chartPvData = new();
+                // Step3: Filling the ChartPoint Dates and Values to a list. A very condensed format. Dates are separated into its ChartDate List.
+                // Instead of the longer [{"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}]
+                // we send a shorter: { ChartDate: [1641013200, 1641013200, 1641013200], Value: [101665, 101665, 101665] }
                 ChartPointValues chartVal = new();
                 foreach (var item in pv)
                 {
                     chartVal.ChartDate.Add(item.x);
                     chartVal.Value.Add((int)item.y);
                 }
-                chartPvData.Add(chartVal);
 
                 // Step4: Filling the Stats data
                 PortfolioRunResultStatistics pStat = new()
@@ -381,18 +381,24 @@ public partial class DashboardClient
                     CAGR = stat.CAGR,
                     MaxDD = stat.MaxDD,
                     SharpeRatio = stat.SharpeRatio,
-                    WinRate = stat.WinRate,
                     StDev = stat.StDev,
+                    Ulcer = stat.Ulcer,
+                    TradingDays = stat.TradingDays,
+                    WinRate = stat.WinRate,
+                    LossingRate = stat.LossingRate,
                     Sortino = stat.Sortino,
                     Turnover = stat.Turnover,
                     LongShortRatio = stat.LongShortRatio,
                     Fees = stat.Fees,
+                    BenchmarkCAGR = stat.BenchmarkCAGR,
+                    BenchmarkMaxDD = stat.BenchmarkMaxDD,
+                    CorrelationWithBenchmark = stat.CorrelationWithBenchmark
                 };
                 // Step5: Filling the Stats and ChartPoint vals in pfRunResults
                 PrtfRunResultJs pfRunResult = new()
                 {
                     Pstat = pStat,
-                    ChrtPntVals = chartPvData
+                    ChrtPntVals = chartVal
                 };
                 // Step6: Sending the pfRunResults data to client
                 if (pfRunResult != null)

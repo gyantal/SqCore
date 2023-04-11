@@ -211,3 +211,14 @@
 .pfItemLongInput { // using the full width of the popup to fit in the name and user notes inputs
   width: 30rem;
 }
+
+#pfStatsTable {
+  border-collapse: collapse;
+  border: solid black;
+  border-width: 1px 0px 1px 0;
+  width: 98%;
+}
+
+tr:nth-child(even) { // statsTable even rows to have alternate color
+  background-color: #FFFFE0;
+}
