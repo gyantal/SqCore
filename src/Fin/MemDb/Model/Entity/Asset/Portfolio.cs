@@ -22,24 +22,24 @@ public class PortfolioRunResultStatistics
     public float TotalReturn { get; set; } = 0.0f;
     public float CAGR { get; set; } = 0.0f;
     public float MaxDD { get; set; } = 0.0f;
-    [JsonPropertyName("sRatio")]
+    [JsonPropertyName("shrp")]
     [JsonConverter(typeof(FloatJsonConverterToNumber4D))]
     public float SharpeRatio { get; set; } = 0.0f;
     public float StDev { get; set; } = 0.0f;
     public float Ulcer { get; set; } = 0.0f;
     public int TradingDays { get; set; } = 0;
+    public int NTrades { get; set; } = 0; // number of trades
     [JsonPropertyName("wr")]
     public float WinRate { get; set; } = 0.0f;
     [JsonPropertyName("lr")]
-    public float LossingRate { get; set; } = 0.0f;
-    [JsonPropertyName("s")]
+    public float LossRate { get; set; } = 0.0f;
+    [JsonPropertyName("srtn")]
     [JsonConverter(typeof(FloatJsonConverterToNumber4D))]
     public float Sortino { get; set; } = 0;
-    [JsonPropertyName("t")]
+    [JsonPropertyName("to")]
     public float Turnover { get; set; } = 0.0f;
     [JsonPropertyName("ls")]
     public float LongShortRatio { get; set; } = 0.0f;
-    [JsonPropertyName("f")]
     public float Fees { get; set; } = 0.0f;
     [JsonPropertyName("bCAGR")]
     public float BenchmarkCAGR { get; set; } = 0.0f;
@@ -247,9 +247,10 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
             p_stat.SharpeRatio = float.NaN; // if value is obviously wrong, indicate that with NaN
         p_stat.StDev = float.Parse(finalStat["Annual Standard Deviation"]);
         // Ulcer - To be added
-        p_stat.TradingDays = int.Parse(finalStat["Total Trades"]);
+        // p_stat.TradingDays = int.Parse(finalStat["Trading Days"]);
+        p_stat.NTrades = int.Parse(finalStat["Total Trades"]);
         p_stat.WinRate = float.Parse(finalStat["Win Rate"].Replace("%", string.Empty));
-        p_stat.LossingRate = float.Parse(finalStat["Loss Rate"].Replace("%", string.Empty));
+        p_stat.LossRate = float.Parse(finalStat["Loss Rate"].Replace("%", string.Empty));
         p_stat.Sortino = float.Parse(finalStat["Sortino Ratio"].Replace("%", string.Empty));
         if (p_stat.Sortino > 100f)
             p_stat.Sortino = float.NaN; // if value is obviously wrong, indicate that with NaN

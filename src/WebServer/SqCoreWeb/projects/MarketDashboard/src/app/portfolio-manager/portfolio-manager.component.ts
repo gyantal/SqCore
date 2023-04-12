@@ -31,9 +31,14 @@ class PortfolioJs extends PortfolioItemJs {
   public portfolioType = 'Trades'; // default type
 }
 
+interface ChartJs { // PfRunResults Chart Data
+  dates: number[];
+  values: number[];
+}
+
 class PrtfRunResultJs { // we can specify the input types more, but whatever.
-  public pstat : any; // all the Stat members from UiPrtfRunResult, we skip creating detailed sub classes
-  public chrtPntVals : any; // Refer UiChartPointValues Class
+  public pstat: any; // all the Stat members from UiPrtfRunResult, we skip creating detailed sub classes
+  public chart!: ChartJs;
 }
 
 // Ui classes
@@ -47,8 +52,9 @@ class UiPrtfRunResult {
   public stDev: number = 0;
   public ulcer: number = 0;
   public tradingDays: number = 0;
+  public nTrades: number = 0;
   public winRate: number = 0;
-  public lossingRate: number = 0;
+  public lossRate: number = 0;
   public sortino: number = 0;
   public turnover: number = 0;
   public longShortRatio: number = 0;
@@ -61,8 +67,8 @@ class UiPrtfRunResult {
 }
 // chart values
 class UiChartPointValues {
-  public date = new Date();
-  public value = NaN;
+  public dates = new Date();
+  public values = NaN;
 }
 
 export class TreeViewItem { // future work. At the moment, it copies PortfolioFldrJs[] and add the children field. With unnecessary field values. When Portfolios are introduced, this should be rethought.
@@ -363,7 +369,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
         _this.endPortfolioValue = value;
         return; // if return undefined, original property will be removed
       }
-      if (key === 'sRatio') {
+      if (key === 'shrp') {
         _this.sharpeRatio = value == 'NaN' ? NaN : parseFloat(value);
         return; // if return undefined, original property will be removed
       }
@@ -379,20 +385,16 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
         _this.lossingRate = value;
         return; // if return undefined, original property will be removed
       }
-      if (key === 's') {
+      if (key === 'srtn') {
         _this.sortino = value == 'NaN' ? NaN : parseFloat(value);
         return; // if return undefined, original property will be removed
       }
-      if (key === 't') {
+      if (key === 'to') {
         _this.turnover = value;
         return; // if return undefined, original property will be removed
       }
       if (key === 'ls') {
         _this.longShortRatio = value;
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'f') {
-        _this.fees = value;
         return; // if return undefined, original property will be removed
       }
       if (key === 'bCAGR') {
@@ -642,8 +644,9 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     uiPrtfRunResult.stDev = parseFloat(prtfRunResult.pstat.stDev);
     // uiPrtfRunResult.ulcer = parseFloat(prtfRunResult.pstat.ulcer); // yet to calcualte
     uiPrtfRunResult.tradingDays = parseInt(prtfRunResult.pstat.tradingDays);
+    uiPrtfRunResult.nTrades = parseInt(prtfRunResult.pstat.nTrades);
     uiPrtfRunResult.winRate = parseFloat(prtfRunResult.pstat.winRate);
-    uiPrtfRunResult.lossingRate = parseFloat(prtfRunResult.pstat.lossingRate);
+    uiPrtfRunResult.lossRate = parseFloat(prtfRunResult.pstat.lossingRate);
     uiPrtfRunResult.sortino = prtfRunResult.pstat.sortino;
     uiPrtfRunResult.turnover = parseFloat(prtfRunResult.pstat.turnover);
     uiPrtfRunResult.longShortRatio = parseFloat(prtfRunResult.pstat.longShortRatio);
@@ -653,11 +656,11 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     // uiPrtfRunResult.correlationWithBenchmark = parseFloat(prtfRunResult.pstat.correlationWithBenchmark); // yet to calcualte
 
     uiPrtfRunResult.chrtValues.length = 0;
-    for (let i = 0; i < prtfRunResult.chrtPntVals.chartDate.length; i++) {
+    for (let i = 0; i < prtfRunResult.chart.dates.length; i++) {
       const chartItem = new UiChartPointValues();
-      const mSecSinceUnixEpoch: number = prtfRunResult.chrtPntVals.chartDate[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
-      chartItem.date = new Date(mSecSinceUnixEpoch);
-      chartItem.value = prtfRunResult.chrtPntVals.value[i];
+      const mSecSinceUnixEpoch: number = prtfRunResult.chart.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
+      chartItem.dates = new Date(mSecSinceUnixEpoch);
+      chartItem.values = prtfRunResult.chart.values[i];
       uiPrtfRunResult.chrtValues.push(chartItem);
     }
 
@@ -666,16 +669,16 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     const margin = {top: 10, right: 30, bottom: 30, left: 60 };
     const inputWidth = 660 - margin.left - margin.right;
     const inputHeight = 440 - margin.top - margin.bottom;
-    const chrtData = uiPrtfRunResult.chrtValues.map((r:{ date: Date; value: any; }) => ({date: new Date(r.date), value: r.value}));
-    const xMin = d3.min(chrtData, (r:{ date: any; }) => r.date);
-    const xMax = d3.max(chrtData, (r:{ date: any; }) => r.date);
-    const yMinAxis = d3.min(chrtData, (r:{ value: any; }) => r.value);
-    const yMaxAxis = d3.max(chrtData, (r:{ value: any; }) => r.value);
+    const chrtData = uiPrtfRunResult.chrtValues.map((r:{ dates: Date; values: number; }) => ({date: new Date(r.dates), value: r.values}));
+    const xMin = d3.min(chrtData, (r:{ date: Date; }) => r.date);
+    const xMax = d3.max(chrtData, (r:{ date: Date; }) => r.date);
+    const yMinAxis = d3.min(chrtData, (r:{ value: number; }) => r.value);
+    const yMaxAxis = d3.max(chrtData, (r:{ value: number; }) => r.value);
 
     PortfolioManagerComponent.processUiWithPrtfRunResultChrt(chrtData, lineChrtDiv, inputWidth, inputHeight, margin, xMin, xMax, yMinAxis, yMaxAxis);
   }
 
-  static processUiWithPrtfRunResultChrt(chrtData: { date: Date; value: any; }[], lineChrtDiv: HTMLElement, inputWidth: number, inputHeight: number, margin: any, xMin: any, xMax: any, yMinAxis: any, yMaxAxis: any) {
+  static processUiWithPrtfRunResultChrt(chrtData: { date: Date; value: number; }[], lineChrtDiv: HTMLElement, inputWidth: number, inputHeight: number, margin: any, xMin: any, xMax: any, yMinAxis: any, yMaxAxis: any) {
     // range of data configuring
     const scaleX = d3.scaleTime().domain([xMin, xMax]).range([0, inputWidth]);
     const scaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([inputHeight, 0]);

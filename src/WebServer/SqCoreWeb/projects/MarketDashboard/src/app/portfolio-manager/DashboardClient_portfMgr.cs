@@ -47,13 +47,13 @@ class PortfolioJs : PortfolioItemJs
 class PrtfRunResultJs
 {
     public PortfolioRunResultStatistics Pstat { get; set; } = new();
-    public ChartPointValues ChrtPntVals { get; set; } = new();
+    public ChartPointValues Chart { get; set; } = new();
 }
 
 class ChartPointValues
 {
-    public List<long> ChartDate { get; set; } = new List<long>();
-    public List<int> Value { get; set; } = new List<int>();
+    public List<long> Dates { get; set; } = new List<long>();
+    public List<int> Values { get; set; } = new List<int>();
 }
 
 public partial class DashboardClient
@@ -368,8 +368,8 @@ public partial class DashboardClient
                 ChartPointValues chartVal = new();
                 foreach (var item in pv)
                 {
-                    chartVal.ChartDate.Add(item.x);
-                    chartVal.Value.Add((int)item.y);
+                    chartVal.Dates.Add(item.x);
+                    chartVal.Values.Add((int)item.y);
                 }
 
                 // Step4: Filling the Stats data
@@ -384,8 +384,9 @@ public partial class DashboardClient
                     StDev = stat.StDev,
                     Ulcer = stat.Ulcer,
                     TradingDays = stat.TradingDays,
+                    NTrades = stat.NTrades,
                     WinRate = stat.WinRate,
-                    LossingRate = stat.LossingRate,
+                    LossRate = stat.LossRate,
                     Sortino = stat.Sortino,
                     Turnover = stat.Turnover,
                     LongShortRatio = stat.LongShortRatio,
@@ -398,7 +399,7 @@ public partial class DashboardClient
                 PrtfRunResultJs pfRunResult = new()
                 {
                     Pstat = pStat,
-                    ChrtPntVals = chartVal
+                    Chart = chartVal
                 };
                 // Step6: Sending the pfRunResults data to client
                 if (pfRunResult != null)

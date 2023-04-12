@@ -141,7 +141,7 @@
             </tr>
             <tr>
               <td>WinRate: {{uiPrtfRunResult.winRate | number:'1.2-2'}}%</td>
-              <td>LossRate: {{uiPrtfRunResult.lossingRate | number:'1.2-2'}}%</td>
+              <td>LossRate: {{uiPrtfRunResult.lossRate | number:'1.2-2'}}%</td>
               <td>Annualized <a href="http://www.redrockcapital.com/Sortino__A__Sharper__Ratio_Red_Rock_Capital.pdf" target="_blank">Sortino</a>: {{uiPrtfRunResult.sortino}}</td>
             </tr>
             <tr>
@@ -153,6 +153,9 @@
               <td>Benchmark CAGR: {{uiPrtfRunResult.benchmarkCAGR}}</td>
               <td>Benchmark Max DrawDown: {{uiPrtfRunResult.benchmarkMaxDD}}</td>
               <td>Correlation with Benchmark: {{uiPrtfRunResult.correlationWithBenchmark}}</td>
+            </tr>
+            <tr>
+              <td>Num of Trades: {{uiPrtfRunResult.nTrades}}</td>
             </tr>
           </table>
         </div>
