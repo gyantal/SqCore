@@ -8,9 +8,14 @@ import { HttpClient } from '@angular/common/http';
 })
 export class AppComponent {
   m_http: HttpClient;
+  m_portfolioId = -1; // -1 is invalid ID
 
   constructor(http: HttpClient) {
     this.m_http = http;
-  }
 
+    const url = new URL(window.location.href); // https://sqcore.net/webapps/PortfolioViewer/?id=1
+    const prtfIdStr = url.searchParams.get('id');
+    if (prtfIdStr != null)
+      this.m_portfolioId = parseInt(prtfIdStr);
+  }
 }
