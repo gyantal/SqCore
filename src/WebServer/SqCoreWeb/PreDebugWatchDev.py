@@ -73,6 +73,7 @@ startThreadForSubprocess("tsc --watch --preserveWatchOutput")
 # startShellCallingThread("ng serve --ssl --ssl-key DevTools/AngularLocalServeHttpsCert/localhost.key  --ssl-cert DevTools/AngularLocalServeHttpsCert/localhost.crt --proxy-config angular.watch.proxy.conf.js HelloAngular --port 4201")
 startThreadForSubprocess("ng serve --ssl --ssl-key DevTools/AngularLocalServeHttpsCert/localhost.key  --ssl-cert DevTools/AngularLocalServeHttpsCert/localhost.crt --proxy-config angular.watch.proxy.conf.js MarketDashboard --host 127.0.0.1 --port 4202")
 # startShellCallingThread("ng serve --ssl --ssl-key DevTools/AngularLocalServeHttpsCert/localhost.key  --ssl-cert DevTools/AngularLocalServeHttpsCert/localhost.crt --proxy-config angular.watch.proxy.conf.js HealthMonitor --host 127.0.0.1 --port 4203")
+# startThreadForSubprocess("ng serve --ssl --ssl-key DevTools/AngularLocalServeHttpsCert/localhost.key  --ssl-cert DevTools/AngularLocalServeHttpsCert/localhost.crt --proxy-config angular.watch.proxy.conf.js PortfolioViewer --host 127.0.0.1 --port 4204")
 
 # 3. Wait for Python message to terminate all threads.
 print("SqBuild: User can break (Control-C, or closing CMD) here manually. Or Wait for socket (TCP port) communication from another Python thread to end this thread.")

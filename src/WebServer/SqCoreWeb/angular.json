@@ -348,6 +348,118 @@
         }
       }
     },
+    "PortfolioViewer": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "projects/PortfolioViewer",
+      "sourceRoot": "projects/PortfolioViewer/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/PortfolioViewer",
+            "index": "projects/PortfolioViewer/src/index.html",
+            "main": "projects/PortfolioViewer/src/main.ts",
+            "polyfills": "projects/PortfolioViewer/src/polyfills.ts",
+            "tsConfig": "projects/PortfolioViewer/tsconfig.app.json",
+            "assets": [
+              "projects/PortfolioViewer/src/assets"
+            ],
+            "styles": [
+              "projects/PortfolioViewer/src/styles.scss"
+            ],
+            "scripts": [],
+            "vendorChunk": true,
+            "extractLicenses": true,
+            "buildOptimizer": false,
+            "sourceMap": true,
+            "optimization": false,
+            "namedChunks": true
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "projects/PortfolioViewer/src/environments/environment.ts",
+                  "with": "projects/PortfolioViewer/src/environments/environment.prod.ts"
+                }
+              ],
+              "optimization": true,
+              "outputHashing": "bundles",   // cache-busting hashing number in filenames is not required for media (images)
+              "sourceMap": false,
+              "namedChunks": false,
+              "extractLicenses": true,  // To keep main.js 40KB smaller, we extract license into a separate 12KB 3rdpartylicenses.txt.
+              "vendorChunk": false,
+              "buildOptimizer": true,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2mb",
+                  "maximumError": "5mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kb",
+                  "maximumError": "10kb"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": ""
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "browserTarget": "PortfolioViewer:build"
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "PortfolioViewer:build:production"
+            }
+          }
+        },
+        "extract-i18n": {
+          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "options": {
+            "browserTarget": "PortfolioViewer:build"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/PortfolioViewer/src/test.ts",
+            "polyfills": "projects/PortfolioViewer/src/polyfills.ts",
+            "tsConfig": "projects/PortfolioViewer/tsconfig.spec.json",
+            "karmaConfig": "projects/PortfolioViewer/karma.conf.js",
+            "assets": [
+              "projects/PortfolioViewer/src/favicon.ico",
+              "projects/PortfolioViewer/src/assets"
+            ],
+            "styles": [
+              "projects/PortfolioViewer/src/styles.scss"
+            ],
+            "scripts": []
+          }
+        },
+        "e2e": {
+          "builder": "@angular-devkit/build-angular:protractor",
+          "options": {
+            "protractorConfig": "projects/PortfolioViewer/e2e/protractor.conf.js",
+            "devServerTarget": "PortfolioViewer:serve"
+          },
+          "configurations": {
+            "production": {
+              "devServerTarget": "PortfolioViewer:serve:production"
+            }
+          }
+        }
+      }
+    },
     "sq-ng-common": {
       "projectType": "library",
       "root": "projects/sq-ng-common",

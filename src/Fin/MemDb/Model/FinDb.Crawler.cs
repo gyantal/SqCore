@@ -10,18 +10,6 @@ using YahooFinanceApi;
 
 namespace Fin.MemDb;
 
-class YfDivSplit
-{
-    public DateTime ReferenceDate;
-    public decimal DividendValue;
-    public decimal SplitFactor;
-    public decimal ReferenceRawPrice;
-}
-class SqSplit
-{
-    public DateTime ReferenceDate;
-    public decimal SplitFactor;
-}
 class SqPrice
 {
     public DateTime ReferenceDate;
@@ -31,7 +19,21 @@ class SqPrice
     public decimal Close;
     public long Volume;
 }
+class SqSplit
+{
+    public DateTime ReferenceDate;
+    public decimal SplitFactor;
+}
+
 class SqDivSplit
+{
+    public DateTime ReferenceDate;
+    public decimal DividendValue;
+    public decimal SplitFactor;
+    public decimal ReferenceRawPrice;
+}
+
+class FactorFileDivSplit
 {
     public DateTime ReferenceDate;
     public decimal DividendFactorCum;
@@ -131,8 +133,7 @@ public partial class FinDb
             Console.WriteLine($"First candle: {history[0]?.DateTime:yyyy-MM-dd}");
 
         // Set the file path of daily price csvs.
-        char finDataDirLastChar = p_finDataDir[^1..][0];
-        string tickerHistFilePath = p_finDataDir + $"daily{finDataDirLastChar}{p_ticker.ToLower()}.csv";
+        string tickerHistFilePath = p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker.ToLower()}.csv";
         TextWriter tw = new StreamWriter(tickerHistFilePath);
 
         // First, collect splits from YF, because daily prices (history data) have to be reverse adjusted with the splits. YF raw prices aren't adjusted with dividends, but are adjusted with splits.
@@ -203,20 +204,17 @@ public partial class FinDb
 
         // Create a zip file from the csv file. But before that, check that if there is already a zip for this ticker, then archive it with the first three characters of today.
         string dayOfWeek = DateTime.Today.DayOfWeek.ToString()[..3].ToLower();
-        string zipFilePath = p_finDataDir + $"daily{finDataDirLastChar}{p_ticker.ToLower()}.zip";
+        string zipFilePath = p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker.ToLower()}.zip";
         if (File.Exists(zipFilePath))
         {
-            string backupFileName = p_finDataDir + $"daily{finDataDirLastChar}{p_ticker.ToLower()}_{dayOfWeek}.zip";
-            if (File.Exists(backupFileName))
-                File.Delete(backupFileName);
-
-            File.Move(zipFilePath, backupFileName);
+            string backupFileName = p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker.ToLower()}_{dayOfWeek}.zip";
+            File.Move(zipFilePath, backupFileName, true);
         }
 
         // Create a new zip file with the same name as the csv file.
-        using (ZipArchive archive = ZipFile.Open(zipFilePath, ZipArchiveMode.Create))
+        using (ZipArchive zipArchive = ZipFile.Open(zipFilePath, ZipArchiveMode.Create))
         {
-            archive.CreateEntryFromFile(tickerHistFilePath, Path.GetFileName(tickerHistFilePath));
+            zipArchive.CreateEntryFromFile(tickerHistFilePath, Path.GetFileName(tickerHistFilePath));
         }
 
         // Delete the CSV file.
@@ -224,77 +222,58 @@ public partial class FinDb
 
         // Download dividend history from YF. After that collect dividends and splits into a dictionary.
         IReadOnlyList<DividendTick?> dividendHistory = await Yahoo.GetDividendsAsync(p_ticker, null, null);
-        Dictionary<DateTime, YfDivSplit> divSplitHistory = new();
+        Dictionary<DateTime, SqDivSplit> divSplitHistory = new();
         foreach (DividendTick? dividendTick in dividendHistory)
         {
-            if (dividendTick != null && rawPrevClosesDict.TryGetValue(dividendTick.DateTime, out SqPrice? refRawClose))
-            {
-                // If the date is present in both the dividend history and the raw closes dictionary, add the extended element to the dictionary.
-                divSplitHistory.Add(dividendTick.DateTime, new YfDivSplit() { ReferenceDate = refRawClose.ReferenceDate, DividendValue = dividendTick.Dividend, SplitFactor = 1m, ReferenceRawPrice = refRawClose.Close });
-            }
+            if (dividendTick != null && rawPrevClosesDict.TryGetValue(dividendTick.DateTime, out SqPrice? refRawClose)) // If the date is present in both the dividend history and the raw closes dictionary, add the extended element to the dictionary.
+                divSplitHistory.Add(dividendTick.DateTime, new SqDivSplit() { ReferenceDate = refRawClose.ReferenceDate, DividendValue = dividendTick.Dividend, SplitFactor = 1m, ReferenceRawPrice = refRawClose.Close });
         }
 
         foreach (SplitTick? splitTick in splitHistory)
         {
-            if (splitTick != null && rawPrevClosesDict.TryGetValue(splitTick.DateTime, out SqPrice? refRawClose))
-            {
-                // Check if the key exists in the dictionary.
-                if (divSplitHistory.TryGetValue(splitTick.DateTime, out YfDivSplit? divSplit))
-                {
-                    // If the key exists, update the splitFactor property of the existing DivSplitYF object.
-                    divSplit.SplitFactor = splitTick.BeforeSplit / splitTick.AfterSplit;
-                }
-                else
-                {
-                    // If the date is present in both the split history and the raw closes dictionary, add the extended element to the dictionary.
-                    divSplitHistory.Add(splitTick.DateTime, new YfDivSplit() { ReferenceDate = refRawClose.ReferenceDate, DividendValue = 0m, SplitFactor = splitTick.BeforeSplit / splitTick.AfterSplit, ReferenceRawPrice = refRawClose.Close });
-                }
-            }
+            if (splitTick == null || !rawPrevClosesDict.TryGetValue(splitTick.DateTime, out SqPrice? refRawClose))
+                continue;
+            // Check if the key exists in the dictionary.
+            if (divSplitHistory.TryGetValue(splitTick.DateTime, out SqDivSplit? divSplit)) // If the key exists, update the splitFactor property of the existing DivSplitYF object.
+                divSplit.SplitFactor = splitTick.BeforeSplit / splitTick.AfterSplit;
+            else // If the date is present in both the split history and the raw closes dictionary, add the extended element to the dictionary.
+                divSplitHistory.Add(splitTick.DateTime, new SqDivSplit() { ReferenceDate = refRawClose.ReferenceDate, DividendValue = 0m, SplitFactor = splitTick.BeforeSplit / splitTick.AfterSplit, ReferenceRawPrice = refRawClose.Close });
         }
 
         // Create a list from the dictionary so that it can be sorted by date.
-        List<YfDivSplit> divSplitHistoryList = new();
-        foreach (var divSplit in divSplitHistory.Values)
+        List<SqDivSplit> divSplitHistoryList = new();
+        foreach (SqDivSplit divSplit in divSplitHistory.Values)
         {
             divSplitHistoryList.Add(divSplit);
         }
 
-        // Helper function for sorting, need to be retought.
-        static int CompareByReferenceDate(object x, object y)
-        {
-            DateTime xRefDate = ((dynamic)x).ReferenceDate;
-            DateTime yRefDate = ((dynamic)y).ReferenceDate;
-
-            return xRefDate.CompareTo(yRefDate);
-        }
-
-        divSplitHistoryList.Sort(CompareByReferenceDate);
+        divSplitHistoryList.Sort((SqDivSplit x, SqDivSplit y) => x.ReferenceDate.CompareTo(y.ReferenceDate));
 
         // Accumulate splits and dividends for factor file. Dividends have to be reverse adjusted with splits!
-        List<SqDivSplit> divSplitHistoryCumList = new();
+        List<FactorFileDivSplit> divSplitHistoryCumList = new();
         decimal cumDivFact = 1m;
         decimal cumSplitFact = 1m;
         for (int ticks = divSplitHistoryList.Count - 1; ticks >= 0; ticks--)
         {
-            YfDivSplit currDivSplit = divSplitHistoryList[ticks];
+            SqDivSplit currDivSplit = divSplitHistoryList[ticks];
             if (currDivSplit.DividendValue > 0)
                 cumDivFact *= 1 - decimal.Divide(currDivSplit.DividendValue / cumSplitFact, currDivSplit.ReferenceRawPrice);
             if (currDivSplit.SplitFactor > 0)
                 cumSplitFact *= currDivSplit.SplitFactor;
-            divSplitHistoryCumList.Add(new SqDivSplit() { ReferenceDate = currDivSplit.ReferenceDate, DividendFactorCum = cumDivFact, SplitFactorCum = cumSplitFact, ReferenceRawPrice = currDivSplit.ReferenceRawPrice });
+            divSplitHistoryCumList.Add(new FactorFileDivSplit() { ReferenceDate = currDivSplit.ReferenceDate, DividendFactorCum = cumDivFact, SplitFactorCum = cumSplitFact, ReferenceRawPrice = currDivSplit.ReferenceRawPrice });
         }
 
-        divSplitHistoryCumList.Sort(CompareByReferenceDate);
+        divSplitHistoryCumList.Sort((FactorFileDivSplit x, FactorFileDivSplit y) => x.ReferenceDate.CompareTo(y.ReferenceDate));
 
         // File path for factor files. Create the factor file.
-        string tickerFactorFilePath = p_finDataDir + $"factor_files{finDataDirLastChar}{p_ticker.ToLower()}.csv";
+        string tickerFactorFilePath = p_finDataDir + $"factor_files{Path.DirectorySeparatorChar}{p_ticker.ToLower()}.csv";
         TextWriter factFileTextWriter = new StreamWriter(tickerFactorFilePath);
 
         string firstLine = (divSplitHistoryCumList.Count > 0) ? $"{p_startDate:yyyyMMdd},{divSplitHistoryCumList[0].DividendFactorCum},{divSplitHistoryCumList[0].SplitFactorCum},1" : $"{rawClosesFromYfList[0].ReferenceDate:yyyyMMdd},1,1,1";
         factFileTextWriter.WriteLine(firstLine);
         for (int ticks = 0; ticks < divSplitHistoryCumList.Count; ticks++)
         {
-            SqDivSplit divSplit = divSplitHistoryCumList[ticks];
+            FactorFileDivSplit divSplit = divSplitHistoryCumList[ticks];
             string line = $"{divSplit.ReferenceDate:yyyyMMdd},{divSplit.DividendFactorCum},{divSplit.SplitFactorCum},{divSplit.ReferenceRawPrice}";
             factFileTextWriter.WriteLine(line);
         }
