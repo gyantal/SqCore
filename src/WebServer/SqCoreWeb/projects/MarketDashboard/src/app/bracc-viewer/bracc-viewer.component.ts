@@ -320,7 +320,7 @@ export class BrAccViewerComponent implements OnInit {
         console.log('BrAccViewer.NavHist:' + msgObjStr);
         this.navHistStrFormatted = SqNgCommonUtilsStr.splitStrToMulLines(msgObjStr);
         this.navHistObj = JSON.parse(msgObjStr);
-        BrAccViewerComponent.updateUiWithHist(this.navHistObj, this.uiHistData);
+        BrAccViewerComponent.updateUiWithHist(this.navHistObj, this.uiHistData, this.lstValObj);
         return true;
       case 'BrAccViewer.MktBrLstCls':
         if (gDiag.wsBrAccVwOnFirstMktBrLstCls === minDate)
@@ -355,6 +355,7 @@ export class BrAccViewerComponent implements OnInit {
     this.lstValObj = lstValObj;
     BrAccViewerComponent.updateMktBarUi(this.handshakeObj, this.mktBrLstClsObj, this.lstValObj, this.lstValLastUiRefreshTimeLoc, this.uiMktBar);
     BrAccViewerComponent.updateSnapshotTableWithRtNav(this.lstValObj, this.uiSnapTable);
+    BrAccViewerComponent.updateUiWithHist(this.navHistObj, this.uiHistData, this.lstValObj);
   }
 
   updateUiSelectableNavs(pSelectableNavAssets: Nullable<AssetJs[]>) { // same in MktHlth and BrAccViewer
@@ -597,7 +598,7 @@ export class BrAccViewerComponent implements OnInit {
     }
   }
 
-  static updateUiWithHist(histObj: Nullable<HistJs[]>, uiHistData: UiHistData[]) {
+  static updateUiWithHist(histObj: Nullable<HistJs[]>, uiHistData: UiHistData[], lstValObj: Nullable<AssetLastJs[]>) {
     if (histObj == null)
       return;
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
@@ -639,8 +640,27 @@ export class BrAccViewerComponent implements OnInit {
       }
       uiHistData.push(uiHistItem);
     }
-    // processing the navChart
 
+    // Just for debugging purpose - yet to develop
+    const chartLastDate = uiHistData[0].navChrtVals[uiHistData[0].navChrtVals.length - 1].date;
+    const lastValue = uiHistData[0].navChrtVals[uiHistData[0].navChrtVals.length - 1].sdaClose;
+    // real time value
+    if ((Array.isArray(lstValObj) && lstValObj.length > 0)) {
+      for (const item of lstValObj) {
+        if (uiHistData[0].assetId != item.assetId)
+          continue;
+
+        // const rtDate = item.lastUtc.Date;
+        // if (rtDate == chartLastDate)  // we have to overwrite the last item
+        //   uiHistData[0].navChrtVals[uiHistData[0].navChrtVals.length - 1].sdaClose = item.last / 1000; // divided by thousand to show data in K (Ex: 20,000 = 20K)
+        // else
+        // uiHistData[0].AddNewRecord.
+      }
+    }
+    // uiHistData[1].navChrtVals[uiHistData[1].navChrtVals.length - 1].sdaClose = this.rtNav / 1000;
+    console.log('The last date of the histStat item is: ', chartLastDate + ' lastvalue is: ', lastValue + ' rtNav is:', );
+
+    // processing the navChart
     d3.selectAll('#navChrt > *').remove();
     const firstEleOfHistDataArr1 = uiHistData[0].navChrtVals[0].sdaClose; // used to convert the data into percentage values
     const firstEleOfHistDataArr2 = uiHistData[1].navChrtVals[0].sdaClose; // used to convert the data into percentage values
@@ -695,7 +715,7 @@ export class BrAccViewerComponent implements OnInit {
     BrAccViewerComponent.processUiWithNavAndStockChrt(stckChrtData, stckChrtData, lineChrtDiv, inputWidth, inputHeight, margin, xMin, xMax, yMinAxis, yMaxAxis, yAxisTickformat, firstEleOfHistDataArr1, isNavChrt);
   }
 
-  onNavSelectedChange(pEvent: any) {
+  onNavSelectedChange() {
     gDiag.wsBrAccVwOnLastNavSelectChangeStart = new Date();
     gDiag.wsBrAccVwSnapshotReceiveReason = 'NavSelectChange';
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN) //  if user already selected a different DateRange or different Benchmark then we tell the server to send that in historical data

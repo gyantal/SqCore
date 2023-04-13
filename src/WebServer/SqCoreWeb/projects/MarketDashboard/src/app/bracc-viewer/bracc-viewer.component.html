@@ -1,6 +1,6 @@
 BrAcc:
 <span>
-  <select class="selectedNavBraccCl" [(ngModel)]="navSelectionSelected" (change)="onNavSelectedChange($event)">
+  <select class="selectedNavBraccCl" [(ngModel)]="navSelectionSelected" (change)="onNavSelectedChange()">
     <option *ngFor="let item of navSelection" [value]="item">{{item}}</option>
   </select>
 </span>
