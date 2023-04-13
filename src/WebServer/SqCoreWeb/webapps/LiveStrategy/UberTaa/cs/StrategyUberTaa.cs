@@ -1121,7 +1121,7 @@ public class StrategyUberTaaController : ControllerBase
                 }
                 else if (pastCodes[iRows, jCols] == 5)
                 {
-                    pastWeightsFinal[iRows, jCols] = Math.Max(1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1 / numAss);
+                    pastWeightsFinal[iRows, jCols] = Math.Max(1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1);
                 }
                 else if (pastCodes[iRows, jCols] == 2)
                 {
@@ -1133,7 +1133,7 @@ public class StrategyUberTaaController : ControllerBase
                 }
                 else if (pastCodes[iRows, jCols] == 6)
                 {
-                    pastWeightsFinal[iRows, jCols] = Math.Max(1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1 / numAss);
+                    pastWeightsFinal[iRows, jCols] = Math.Max(1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1);
                     // pastWeightsFinal[iRows, jCols] = Math.Max(1.25 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1 / numAss); #Mr.C. decided to increase leverage to 50% on bullish days
                 }
                 else if (pastCodes[iRows, jCols] == 4)
