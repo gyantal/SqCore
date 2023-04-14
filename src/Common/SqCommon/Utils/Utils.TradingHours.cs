@@ -108,7 +108,7 @@ public static partial class Utils
     }
 
     // the advantage of using https://www.nyse.com/markets/hours-calendars is that it not only gives back Early Closes, but the Holiday days too
-    public static List<Tuple<DateTime, DateTime?>>? GetHolidaysAndHalfHolidaysWithCloseTimesInET(TimeSpan p_maxAllowedStaleness)
+    public static List<Tuple<DateTime, DateTime?>>? GetHolidaysAndHalfHolidaysOrderedWithCloseTimesInET(TimeSpan p_maxAllowedStaleness)
     {
         if ((g_holidays != null) && (DateTime.UtcNow - g_holidaysDownloadDate) < p_maxAllowedStaleness)
             return g_holidays;
@@ -148,7 +148,7 @@ public static partial class Utils
             // 2018: holiday table appears twice in the HTML. One in the middle, but one at the end is shorter, cleaner, get that.
             // 2019: holiday table appears only once in the HTML.
             // 2022: table class is changed from 'table table-layout-fixed' to 'table-data table-fixed table-border-rows'
-            int iTHead = webPage.IndexOf(@"<table class=""table-data table-fixed table-border-rows"">");
+            int iTHead = webPage.IndexOf(@"<table class=""table-data w-full table-fixed table-border-rows"">");
             int iTBody = webPage.IndexOf(@"</table>", iTHead);
             string holidayTable = webPage[iTHead..iTBody];
 
@@ -202,6 +202,8 @@ public static partial class Utils
         // <td>November 26**</td>
         // < td > December 25(Observed December 26) ***</ td >  this has both Observed and a half-holiday too
 
+        Tuple<DateTime, DateTime?>? halfDayHoliday = null; // sometimes the halfday is before the holiday, sometimes it is after the holiday. We try to keep the order, so just remember halfDayHoliday before adding to the output.
+
         // at first
         p_td = p_td.Trim();
         if (p_td.IndexOf('*') != -1) // read the footnotes; there will be a half-holiday on the next or the previous day
@@ -246,8 +248,7 @@ public static partial class Utils
                 int indSecondComma = explanation.LastIndexOf(',', indFirstComma - 1);
                 string dateStr = explanation.Substring(indSecondComma + 1, (indFirstComma - 1) - indSecondComma);
                 DateTime halfDay = DateTime.Parse(dateStr + ", " + p_year.ToString());
-                // the holidays list is not ordered by date, because sometimes this halfDay comes before/after the holiday day
-                p_holidays.Add(new Tuple<DateTime, DateTime?>(halfDay, new DateTime(halfDay.Year, halfDay.Month, halfDay.Day, earlyCloseHour, earlyCloseMin, 0)));
+                halfDayHoliday = new Tuple<DateTime, DateTime?>(halfDay, new DateTime(halfDay.Year, halfDay.Month, halfDay.Day, earlyCloseHour, earlyCloseMin, 0));
             }
 
             p_td = p_td.Replace('*', ' ').Trim(); // remove ** if it is in the string, because Date.Parse() will fail on that
@@ -280,8 +281,28 @@ public static partial class Utils
                     dateHoliday = DateTime.Parse(p_td + ", " + p_year.ToString());
             }
         }
-        if (dateHoliday != DateTime.MinValue)
-            p_holidays.Add(new Tuple<DateTime, DateTime?>(dateHoliday, null));
+        // we make the holidays list is ordered by date, but we have to handle that sometimes this halfDayHoliday comes before/after the holiday day
+        if (dateHoliday != DateTime.MinValue) // if there is the main holiday
+        {
+            Tuple<DateTime, DateTime?> mainHoliday = new(dateHoliday, null);
+            if (halfDayHoliday != null) // then we have both halfDayHoliday and holiday. We have to check the order.
+            {
+                if (halfDayHoliday.Item1 < mainHoliday.Item1)
+                {
+                    p_holidays.Add(halfDayHoliday);
+                    p_holidays.Add(mainHoliday);
+                }
+                else
+                {
+                    p_holidays.Add(mainHoliday);
+                    p_holidays.Add(halfDayHoliday);
+                }
+            }
+            else // there is no halfDayHoliday, so just add the holiday
+                p_holidays.Add(mainHoliday);
+        }
+        else if (halfDayHoliday != null) // there is no main holiday, so just try to add the halfDayHoliday if it exists
+            p_holidays.Add(halfDayHoliday);
     }
 
     // it is important that p_timeUtc can be a Time and it is in UTC. Convert it to ET to work with it.
@@ -310,7 +331,7 @@ public static partial class Utils
             return true;
         }
 
-        List<Tuple<DateTime, DateTime?>>? holidaysAndHalfHolidays = GetHolidaysAndHalfHolidaysWithCloseTimesInET(p_maxAllowedStaleness);
+        List<Tuple<DateTime, DateTime?>>? holidaysAndHalfHolidays = GetHolidaysAndHalfHolidaysOrderedWithCloseTimesInET(p_maxAllowedStaleness);
         if (holidaysAndHalfHolidays == null || holidaysAndHalfHolidays.Count == 0)
         {
             Logger.Error("holidaysAndHalfHolidays are not recognized");
