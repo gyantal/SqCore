@@ -46,10 +46,6 @@ public partial class FinDb
     public static async Task<StringBuilder> CrawlData(bool p_isLogHtml) // print log to Console or HTML
     {
         // Determining the appropriate data directory where the map_files, price and factor files are located.
-        // Delete later the following 3 lines:
-        // Windows: AppDomain.BaseDir: D:\GitHub\SqCore\src\WebServer\SqCoreWeb\bin\Debug\net7.0\
-        // Linux: AppDomain.BaseDir: /home/sq-vnc-client/SQ/WebServer/SqCoreWeb/published/publish/
-        // FinDataDir directory: Windows: d:\GitHub\SqCore\src\Fin\Data ; Linux: ~/SQ/WebServer/SqCoreWeb/published/FinData
         string finDataDir = OperatingSystem.IsWindows() ?
             AppDomain.CurrentDomain.BaseDirectory + @"..\..\..\..\..\Fin\Data\equity\usa\" :
             AppDomain.CurrentDomain.BaseDirectory + @"../FinData/equity/usa/";
@@ -102,18 +98,6 @@ public partial class FinDb
         return logSb;
     }
 
-    // ToDo, delete later
-    // create the CSV next to the SPY.ZIP - ready
-    // how to create ZIP from CSV - ready
-    // before overwriting the ZIP, file archive handling. Maybe IB "-Fri" renames. - ready
-    // fill the csv with QC price format - ready
-    // unadjust using splits - ready
-    // factor file with dividends, split - ready
-    // not only SPY, but testing others. - ready
-    // List of tickers should come from the map_files folder. - ready
-
-    // next with George: Daily running as service
-
     public static async Task<bool> CrawlData(string p_ticker, bool p_isLogHtml, StringBuilder p_logSb, string p_finDataDir, DateTime p_startDate, DateTime p_endDate)
     {
         Console.WriteLine($"FinDb.CrawlData() START with ticker: {p_ticker}");
@@ -127,14 +111,6 @@ public partial class FinDb
                 p_logSb.AppendLine($"Cannot download YF data (ticker:{p_ticker}) after many tries.");
             return false;
         }
-
-        // Delete later
-        if (history.Count > 0 && history[0] != null)
-            Console.WriteLine($"First candle: {history[0]?.DateTime:yyyy-MM-dd}");
-
-        // Set the file path of daily price csvs.
-        string tickerHistFilePath = p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker.ToLower()}.csv";
-        TextWriter tw = new StreamWriter(tickerHistFilePath);
 
         // First, collect splits from YF, because daily prices (history data) have to be reverse adjusted with the splits. YF raw prices aren't adjusted with dividends, but are adjusted with splits.
         List<SqSplit> splitList = new();
@@ -177,12 +153,26 @@ public partial class FinDb
             }
         }
 
+        // Create a zip file. But before that, check that if there is already a zip for this ticker, then archive it with the first three characters of today.
+        string dayOfWeek = DateTime.Today.DayOfWeek.ToString()[..3].ToLower();
+        string zipFilePath = Path.GetFullPath(p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker.ToLower()}.zip");
+        if (File.Exists(zipFilePath))
+        {
+            string backupFileName = p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker.ToLower()}_{dayOfWeek}.zip";
+            File.Move(zipFilePath, backupFileName, true);
+        }
         // Create a dictionary of SqPrices to find dates faster.
         // Previous days date and closing prices have to be collected for factor file. These will be reference date and reference price.
         // YF vs. required QC price format: 2000-01-01 123.4567 vs. 20200101 00:00 1234567
         Dictionary<DateTime, SqPrice> rawPrevClosesDict = new();
         decimal prevClosePrice = 0m;
         DateTime prevDayDate = DateTime.MinValue;
+
+        using FileStream zipToCreate = new(zipFilePath, FileMode.Create);
+        using ZipArchive archive = new(zipToCreate, ZipArchiveMode.Create);
+        ZipArchiveEntry readmeEntry = archive.CreateEntry($"{p_ticker.ToLower()}.csv");
+        using StreamWriter tw = new(readmeEntry.Open());
+
         for (int days = 0; days < rawClosesFromYfList.Count; days++)
         {
             SqPrice dailyData = rawClosesFromYfList[days];
@@ -201,24 +191,6 @@ public partial class FinDb
             tw.WriteLine(line);
         }
         tw.Close(); // Don't forget to close the file!
-
-        // Create a zip file from the csv file. But before that, check that if there is already a zip for this ticker, then archive it with the first three characters of today.
-        string dayOfWeek = DateTime.Today.DayOfWeek.ToString()[..3].ToLower();
-        string zipFilePath = p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker.ToLower()}.zip";
-        if (File.Exists(zipFilePath))
-        {
-            string backupFileName = p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker.ToLower()}_{dayOfWeek}.zip";
-            File.Move(zipFilePath, backupFileName, true);
-        }
-
-        // Create a new zip file with the same name as the csv file.
-        using (ZipArchive zipArchive = ZipFile.Open(zipFilePath, ZipArchiveMode.Create))
-        {
-            zipArchive.CreateEntryFromFile(tickerHistFilePath, Path.GetFileName(tickerHistFilePath));
-        }
-
-        // Delete the CSV file.
-        File.Delete(tickerHistFilePath);
 
         // Download dividend history from YF. After that collect dividends and splits into a dictionary.
         IReadOnlyList<DividendTick?> dividendHistory = await Yahoo.GetDividendsAsync(p_ticker, null, null);
@@ -260,13 +232,18 @@ public partial class FinDb
                 cumDivFact *= 1 - decimal.Divide(currDivSplit.DividendValue / cumSplitFact, currDivSplit.ReferenceRawPrice);
             if (currDivSplit.SplitFactor > 0)
                 cumSplitFact *= currDivSplit.SplitFactor;
-            divSplitHistoryCumList.Add(new FactorFileDivSplit() { ReferenceDate = currDivSplit.ReferenceDate, DividendFactorCum = cumDivFact, SplitFactorCum = cumSplitFact, ReferenceRawPrice = currDivSplit.ReferenceRawPrice });
+            divSplitHistoryCumList.Add(new FactorFileDivSplit() { ReferenceDate = currDivSplit.ReferenceDate, DividendFactorCum = Math.Round(cumDivFact, 8), SplitFactorCum = Math.Round(cumSplitFact, 8), ReferenceRawPrice = currDivSplit.ReferenceRawPrice });
         }
 
         divSplitHistoryCumList.Sort((FactorFileDivSplit x, FactorFileDivSplit y) => x.ReferenceDate.CompareTo(y.ReferenceDate));
 
-        // File path for factor files. Create the factor file.
+        // File path for factor files. Create the factor file. But before that, check that if there is already a csv for this ticker, then archive it with the first three characters of today.
         string tickerFactorFilePath = p_finDataDir + $"factor_files{Path.DirectorySeparatorChar}{p_ticker.ToLower()}.csv";
+        if (File.Exists(tickerFactorFilePath))
+        {
+            string backupFileName = p_finDataDir + $"factor_files{Path.DirectorySeparatorChar}{p_ticker.ToLower()}_{dayOfWeek}.csv";
+            File.Move(tickerFactorFilePath, backupFileName, true);
+        }
         TextWriter factFileTextWriter = new StreamWriter(tickerFactorFilePath);
 
         string firstLine = (divSplitHistoryCumList.Count > 0) ? $"{p_startDate:yyyyMMdd},{divSplitHistoryCumList[0].DividendFactorCum},{divSplitHistoryCumList[0].SplitFactorCum},1" : $"{rawClosesFromYfList[0].ReferenceDate:yyyyMMdd},1,1,1";
