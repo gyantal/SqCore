@@ -97,6 +97,8 @@ public partial class FinDb : IDisposable
 
             m_isInitialized = true;
             Backtester.Init();
+
+            ScheduleDailyCrawlerTask();
         }
         catch (System.Exception e)
         {

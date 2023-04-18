@@ -41,8 +41,41 @@ class FactorFileDivSplit
     public decimal ReferenceRawPrice;
 }
 
+public class FinDbCrawlerExecution : SqExecution
+{
+    public static SqExecution ExecutionFactoryCreate()
+    {
+        return new FinDbCrawlerExecution();
+    }
+
+    public override void Run() // try/catch is only necessary if there is a non-awaited async that continues later in a different tPool thread. See comment in SqExecution.cs
+    {
+        Utils.Logger.Info($"FinDbCrawlerExecution.Run() BEGIN, Trigger: '{Trigger?.Name ?? string.Empty}'");
+        Console.WriteLine($"FinDbCrawlerExecution.Run() BEGIN, Trigger: '{Trigger?.Name ?? string.Empty}'");
+
+        Console.WriteLine(FinDb.CrawlData(false).TurnAsyncToSyncTask().ToString());
+    }
+}
+
 public partial class FinDb
 {
+    public static void ScheduleDailyCrawlerTask()
+    {
+        var sqTask = new SqTask()
+        {
+            Name = "FinDbDailyCrawler",
+            ExecutionFactory = FinDbCrawlerExecution.ExecutionFactoryCreate,
+        };
+        sqTask.Triggers.Add(new SqTrigger()
+        {
+            Name = "EarlyMorningCrawler",
+            SqTask = sqTask,
+            TriggerType = TriggerType.Daily,
+            Start = new RelativeTime() { Base = RelativeTimeBase.BaseOnAbsoluteTimeMidnightUtc, TimeOffset = TimeSpan.FromMinutes(5 * 60 + 15) },  // Activate every day 5:15 UTC,
+        });
+        SqTaskScheduler.gSqTasks.Add(sqTask);
+    }
+
     public static async Task<StringBuilder> CrawlData(bool p_isLogHtml) // print log to Console or HTML
     {
         // Determining the appropriate data directory where the map_files, price and factor files are located.
@@ -154,7 +187,7 @@ public partial class FinDb
         }
 
         // Create a zip file. But before that, check that if there is already a zip for this ticker, then archive it with the first three characters of today.
-        string dayOfWeek = DateTime.Today.DayOfWeek.ToString()[..3].ToLower();
+        string dayOfWeek = DateTime.UtcNow.AddDays(-1).DayOfWeek.ToString()[..3].ToLower();
         string zipFilePath = Path.GetFullPath(p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker.ToLower()}.zip");
         if (File.Exists(zipFilePath))
         {
@@ -169,9 +202,9 @@ public partial class FinDb
         DateTime prevDayDate = DateTime.MinValue;
 
         using FileStream zipToCreate = new(zipFilePath, FileMode.Create);
-        using ZipArchive archive = new(zipToCreate, ZipArchiveMode.Create);
-        ZipArchiveEntry readmeEntry = archive.CreateEntry($"{p_ticker.ToLower()}.csv");
-        using StreamWriter tw = new(readmeEntry.Open());
+        using ZipArchive zipFile = new(zipToCreate, ZipArchiveMode.Create);
+        ZipArchiveEntry innerCsvFile = zipFile.CreateEntry($"{p_ticker.ToLower()}.csv");
+        using StreamWriter tw = new(innerCsvFile.Open());
 
         for (int days = 0; days < rawClosesFromYfList.Count; days++)
         {

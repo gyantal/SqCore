@@ -301,7 +301,8 @@ public partial class Program
                 Console.WriteLine(MemDb.gMemDb.ReloadDbDataIfChanged(false).TurnAsyncToSyncTask().ToString());
                 break;
             case "3":
-                Console.WriteLine(FinDb.CrawlData(false).TurnAsyncToSyncTask().ToString());
+                SqTaskScheduler.TestElapseTrigger("FinDbDailyCrawler", 0);
+                // Console.WriteLine(FinDb.CrawlData(false).TurnAsyncToSyncTask().ToString());
                 break;
             case "9":
                 return "UserChosenExit";
