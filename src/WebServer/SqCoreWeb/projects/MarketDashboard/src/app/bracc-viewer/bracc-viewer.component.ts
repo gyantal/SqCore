@@ -349,7 +349,6 @@ export class BrAccViewerComponent implements OnInit {
     }
   }
 
-
   public webSocketLstValArrived(lstValObj: Nullable<AssetLastJs[]>) { // real time price data
     this.lstValLastUiRefreshTimeLoc = new Date();
     this.lstValObj = lstValObj;
@@ -464,7 +463,6 @@ export class BrAccViewerComponent implements OnInit {
     uiSnapTable.betaDeltaAdjTotalMarketOrientation = 0;
     const smallMktValThreshold = uiSnapTable.priorCloseNetLiquidation * 0.01; // 1% of NAV. For a 400K NAV, it is 4K. For a 8M NAV it is 80K.
 
-
     for (const possItem of brAccSnap.poss) {
       // 1. Filling uiPosItem fields
       const uiPosItem = new UiAssetSnapPossPos();
@@ -547,7 +545,6 @@ export class BrAccViewerComponent implements OnInit {
         isShowPos = false;
       if (isFilteringBasedonOptions && possItem.sqTicker.startsWith('O'))
         isShowPos = false;
-
 
       if (isShowPos) {
         uiSnapTable.poss.push(uiPosItem);
@@ -650,22 +647,26 @@ export class BrAccViewerComponent implements OnInit {
         if (uiHistData[0].assetId != item.assetId)
           continue;
 
-        // const rtDate = item.lastUtc.Date;
-        // if (rtDate == chartLastDate)  // we have to overwrite the last item
-        //   uiHistData[0].navChrtVals[uiHistData[0].navChrtVals.length - 1].sdaClose = item.last / 1000; // divided by thousand to show data in K (Ex: 20,000 = 20K)
-        // else
-        // uiHistData[0].AddNewRecord.
+        const rtDate = new Date(item.lastUtc);
+        const rtPrice = item.last / 1000; // divided by thousand to show data in K (Ex: 20,000 = 20K)
+        if (rtDate === chartLastDate) // we have to overwrite the last item
+          uiHistData[0].navChrtVals[uiHistData[0].navChrtVals.length - 1].sdaClose = rtPrice;
+        else {
+          const rtItem = new UiChrtval();
+          rtItem.date = rtDate;
+          rtItem.sdaClose = rtPrice;
+          uiHistData[0].navChrtVals.push(rtItem);
+        }
+        console.log('last date is: ', chartLastDate + ' lastvalue is: ', lastValue + ' rtDate is:', rtDate + ' rtPrice val is:', rtPrice);
       }
     }
-    // uiHistData[1].navChrtVals[uiHistData[1].navChrtVals.length - 1].sdaClose = this.rtNav / 1000;
-    console.log('The last date of the histStat item is: ', chartLastDate + ' lastvalue is: ', lastValue + ' rtNav is:', );
 
     // processing the navChart
     d3.selectAll('#navChrt > *').remove();
     const firstEleOfHistDataArr1 = uiHistData[0].navChrtVals[0].sdaClose; // used to convert the data into percentage values
     const firstEleOfHistDataArr2 = uiHistData[1].navChrtVals[0].sdaClose; // used to convert the data into percentage values
     const lineChrtDiv = document.getElementById('navChrt') as HTMLElement;
-    const margin = {top: 10, right: 30, bottom: 30, left: 60 };
+    const margin = {top: 10, right: 50, bottom: 30, left: 60 };
     const inputWidth = 660 - margin.left - margin.right;
     const inputHeight = 400 - margin.top - margin.bottom;
     const yAxisTickformat: string = '%';
@@ -679,7 +680,7 @@ export class BrAccViewerComponent implements OnInit {
     const yMinAxis = Math.min(d3.min(navChrtData1, (r:{ sdaClose: any; }) => r.sdaClose), d3.min(navChrtData2, (r:{ sdaClose: any; }) => r.sdaClose ));
     const yMaxAxis = Math.max(d3.max(navChrtData1, (r:{ sdaClose: any; }) => r.sdaClose), d3.max(navChrtData2, (r:{ sdaClose: any; }) => r.sdaClose ));
     const isNavChrt: boolean = true;
-    // BrAccViewerComponent.processUiWithNavChrt(uiHistData);
+
     BrAccViewerComponent.processUiWithNavAndStockChrt(navChrtData1, navChrtData2, lineChrtDiv, inputWidth, inputHeight, margin, xMin, xMax, yMinAxis, yMaxAxis, yAxisTickformat, firstEleOfHistDataArr1, isNavChrt);
   }
 
@@ -694,7 +695,6 @@ export class BrAccViewerComponent implements OnInit {
       stockVal.sdaClose = stockObj.histSdaCloses[i];
       uiSnapTable.stockChartVals.push(stockVal);
     }
-    // BrAccViewerComponent.processUiWithStockChrt(uiSnapTable);
 
     // processing Ui With StockChrt
     d3.selectAll('#stockChrt > *').remove();
@@ -729,7 +729,6 @@ export class BrAccViewerComponent implements OnInit {
     (document.getElementById('bnchmrkInput') as HTMLInputElement).value = this.bnchmkTickerSelectionSelected;
   }
 
-  // under development - Daya
   onAssetCategorySelectionClicked(uiAssetCategories: any) {
     this.assetCategorySelectionSelected = uiAssetCategories.tag;
     this.assetCategorySelectedSqtickers = uiAssetCategories.sqTickers;
@@ -831,7 +830,6 @@ export class BrAccViewerComponent implements OnInit {
     this.isMouseInTooltip = false;
     this.isShowStockTooltip = this.isMouseInSnapSymbolCell || this.isMouseInTooltip;
   }
-
 
   static shortMonthFormat(date: any) : string {
     const formatMillisec = d3.timeFormat('.%L');
