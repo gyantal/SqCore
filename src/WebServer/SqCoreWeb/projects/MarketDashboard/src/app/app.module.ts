@@ -16,6 +16,7 @@ import { SettingsDialogComponent } from './settings-dialog/settings-dialog.compo
 import { MatTabsModule } from '@angular/material/tabs'; // used for creating multiple tabs
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { SqTreeViewComponent } from './sq-tree-view/sq-tree-view.component';
+import { NanToDashPipe } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_str';
 
 
 @NgModule({
@@ -32,7 +33,8 @@ import { SqTreeViewComponent } from './sq-tree-view/sq-tree-view.component';
     DocsTutorialComponent,
     ClickOutsideDirective,
     SettingsDialogComponent,
-    SqTreeViewComponent
+    SqTreeViewComponent,
+    NanToDashPipe
   ],
   imports: [
     BrowserModule,

@@ -19,7 +19,6 @@ export class SqNgCommonUtils {
   }
 }
 
-
 export function ChangeNaNstringToNaNnumber(elementField: any): number {
   if (elementField.toString() === 'NaN')
     return NaN;

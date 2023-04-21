@@ -132,7 +132,7 @@
             <tr>
               <td><b>CAGR:</b> {{uiPrtfRunResult.cAGR | number:'1.2-2'}}%</td>
               <td>MaxDD: {{uiPrtfRunResult.maxDD | number:'1.2-2'}}%</td>
-              <td><b>SharpeRatio:</b> {{uiPrtfRunResult.sharpeRatio | number:'1.2-2'}}%</td>
+              <td><b>SharpeRatio:</b> {{uiPrtfRunResult.sharpeRatio | number:'1.2-2'}}</td>
             </tr>
             <tr>
               <td>StDev: {{uiPrtfRunResult.stDev | number:'1.2-2'}}</td>
@@ -142,7 +142,7 @@
             <tr>
               <td>WinRate: {{uiPrtfRunResult.winRate | number:'1.2-2'}}%</td>
               <td>LossRate: {{uiPrtfRunResult.lossRate | number:'1.2-2'}}%</td>
-              <td>Annualized <a href="http://www.redrockcapital.com/Sortino__A__Sharper__Ratio_Red_Rock_Capital.pdf" target="_blank">Sortino</a>: {{uiPrtfRunResult.sortino}}</td>
+              <td>Annualized <a href="http://www.redrockcapital.com/Sortino__A__Sharper__Ratio_Red_Rock_Capital.pdf" target="_blank">Sortino</a>: {{uiPrtfRunResult.sortino | nanToDash}}</td>
             </tr>
             <tr>
               <td>Turnover: {{uiPrtfRunResult.turnover}}</td>

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Pipe, PipeTransform } from '@angular/core';
 
 @Component({
   selector: 'lib-sq-ng-common',
@@ -20,5 +20,16 @@ export class SqNgCommonUtilsStr implements OnInit {
   constructor() { }
 
   ngOnInit(): void {
+  }
+}
+
+
+@Pipe({ name: 'nanToDash'}) // In Angular data to UI is transformed via Pipes
+export class NanToDashPipe implements PipeTransform {
+  transform(value: any): any {
+    if (isNaN(value))
+      return '-'; // Dash ('-') is a common convention to indicate a missing or invalid value. Nicer than writing the default 'NaN'.
+
+    return value;
   }
 }
