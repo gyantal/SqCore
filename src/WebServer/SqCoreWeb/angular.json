@@ -460,6 +460,118 @@
         }
       }
     },
+    "ChartGenerator": {
+        "projectType": "application",
+        "schematics": {
+          "@schematics/angular:component": {
+            "style": "scss"
+          }
+        },
+        "root": "projects/ChartGenerator",
+        "sourceRoot": "projects/ChartGenerator/src",
+        "prefix": "app",
+        "architect": {
+          "build": {
+            "builder": "@angular-devkit/build-angular:browser",
+            "options": {
+              "outputPath": "dist/ChartGenerator",
+              "index": "projects/ChartGenerator/src/index.html",
+              "main": "projects/ChartGenerator/src/main.ts",
+              "polyfills": "projects/ChartGenerator/src/polyfills.ts",
+              "tsConfig": "projects/ChartGenerator/tsconfig.app.json",
+              "assets": [
+                "projects/ChartGenerator/src/assets"
+              ],
+              "styles": [
+                "projects/ChartGenerator/src/styles.scss"
+              ],
+              "scripts": [],
+              "vendorChunk": true,
+              "extractLicenses": true,
+              "buildOptimizer": false,
+              "sourceMap": true,
+              "optimization": false,
+              "namedChunks": true
+            },
+            "configurations": {
+              "production": {
+                "fileReplacements": [
+                  {
+                    "replace": "projects/ChartGenerator/src/environments/environment.ts",
+                    "with": "projects/ChartGenerator/src/environments/environment.prod.ts"
+                  }
+                ],
+                "optimization": true,
+                "outputHashing": "bundles",   // cache-busting hashing number in filenames is not required for media (images)
+                "sourceMap": false,
+                "namedChunks": false,
+                "extractLicenses": true,  // To keep main.js 40KB smaller, we extract license into a separate 12KB 3rdpartylicenses.txt.
+                "vendorChunk": false,
+                "buildOptimizer": true,
+                "budgets": [
+                  {
+                    "type": "initial",
+                    "maximumWarning": "2mb",
+                    "maximumError": "5mb"
+                  },
+                  {
+                    "type": "anyComponentStyle",
+                    "maximumWarning": "6kb",
+                    "maximumError": "10kb"
+                  }
+                ]
+              }
+            },
+            "defaultConfiguration": ""
+          },
+          "serve": {
+            "builder": "@angular-devkit/build-angular:dev-server",
+            "options": {
+              "browserTarget": "ChartGenerator:build"
+            },
+            "configurations": {
+              "production": {
+                "browserTarget": "ChartGenerator:build:production"
+              }
+            }
+          },
+          "extract-i18n": {
+            "builder": "@angular-devkit/build-angular:extract-i18n",
+            "options": {
+              "browserTarget": "ChartGenerator:build"
+            }
+          },
+          "test": {
+            "builder": "@angular-devkit/build-angular:karma",
+            "options": {
+              "main": "projects/ChartGenerator/src/test.ts",
+              "polyfills": "projects/ChartGenerator/src/polyfills.ts",
+              "tsConfig": "projects/ChartGenerator/tsconfig.spec.json",
+              "karmaConfig": "projects/ChartGenerator/karma.conf.js",
+              "assets": [
+                "projects/ChartGenerator/src/favicon.ico",
+                "projects/ChartGenerator/src/assets"
+              ],
+              "styles": [
+                "projects/ChartGenerator/src/styles.scss"
+              ],
+              "scripts": []
+            }
+          },
+          "e2e": {
+            "builder": "@angular-devkit/build-angular:protractor",
+            "options": {
+              "protractorConfig": "projects/ChartGenerator/e2e/protractor.conf.js",
+              "devServerTarget": "ChartGenerator:serve"
+            },
+            "configurations": {
+              "production": {
+                "devServerTarget": "ChartGenerator:serve:production"
+              }
+            }
+          }
+        }
+    },
     "sq-ng-common": {
       "projectType": "library",
       "root": "projects/sq-ng-common",

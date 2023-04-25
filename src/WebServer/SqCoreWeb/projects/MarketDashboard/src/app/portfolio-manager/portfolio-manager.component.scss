@@ -15,7 +15,7 @@
 #panelPrtfTree { // Section 1
   float: left;
   padding-left: 1rem;
-  width: 30.25%;
+  width: 20.25%;
   height: 96vh;
 }
 
@@ -37,14 +37,14 @@
 #panelPrtfDetails { // Section 2
   position: relative;
   float: right;
-  width: 69.25%;
+  width: 79.25%;
   height: 96vh;
 }
 
 #panelChart {
   float: left;
   width: 100%;
-  height: 48.5vh;
+  height: 60.5vh;
 }
 
 #resizer2 { // resizing the portfolio panel charts and stats & spec sections
@@ -57,24 +57,28 @@
 
 #panelStatsAndPerfSpec {
   width: 100%;
-  height: 47vh;
+  height: 35vh;
   display: flex;
 }
 
 #panelStats {
   float: left;
   padding-left: 1rem;
-  width: 50%;
-  height: 47vh;
+  width: 60%;
+  height: 35vh;
   overflow: auto;
 }
 
 #panelPrtfSpec {
   float: right;
-  width: 50%;
-  height: 47vh;
+  width: 40%;
+  height: 35vh;
   background-color: lightpink;
   overflow: auto;
+}
+
+#btnPositions { // keeping the both positions and strategy parameters buttons same
+  width: 13rem;
 }
 
 .prtfSpecPreviewButtons {

@@ -13,6 +13,7 @@
     <!-- The user should not be able edit virtual top folders that have negative folder.Id (checked by this condition: treeViewState.lastSelectedItem?.id! >= 0) -->
     <button (click)="showCreateOrEditFolderPopup('edit')" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' && treeViewState.lastSelectedItem?.id! >= 0) ? 'btnEnabled': 'btnDisabled'">Edit Folder</button>&nbsp;<br><br>
     <button id="openPortfolioViewer" (click)="onOpenPortfolioViewerClicked()" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled' : 'btnDisabled'">Open in Portfolio Viewer</button>&nbsp;
+    <button id="openChartGenerator" (click)="onOpenChartGeneratorClicked()" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled' : 'btnDisabled'">Open in Chart Generator</button>&nbsp;
     <button (click)="onDeletePrtfItemClicked()" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' || treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio') ? 'btnEnabled' : 'btnDisabled'">Delete</button><br><br>
     <div class="popup infoPopup" id="createOrEditFolderPopup" [ngStyle]="{'display': isCreateOrEditFolderPopupVisible ? 'block' : 'none'}"><br>
       <div>
@@ -112,15 +113,11 @@
   <div id="resizer" (mouseover)="onMouseOverResizer('resizer')"></div>
   <div id="panelPrtfDetails">
     <div id="panelChart">Panel Chart
-      Width: {{panelPrtfChrtWidth}}
-      Height: {{panelPrtfChrtHeight}}
       <div id="pfRunResultChrt"></div>
     </div>
     <div id="resizer2" (mouseover)="onMouseOverResizer('resizer2')"></div>
     <div id="panelStatsAndPerfSpec">
-      <div id="panelStats">Panel Stats
-        Width: {{panelStatsWidth}}
-        Height: {{panelStatsHeight}}<br><br>
+      <div id="panelStats">Panel Stats<br><br>
         <div>
           Statistics as of ({{todayDate | date : 'yyyy-MM-dd'}})
           <table id="pfStatsTable">
@@ -151,7 +148,7 @@
             </tr>
             <tr>
               <td>Benchmark CAGR: {{uiPrtfRunResult.benchmarkCAGR}}</td>
-              <td>Benchmark Max DrawDown: {{uiPrtfRunResult.benchmarkMaxDD}}</td>
+              <td>Benchmark MaxDD: {{uiPrtfRunResult.benchmarkMaxDD}}</td>
               <td>Correlation with Benchmark: {{uiPrtfRunResult.correlationWithBenchmark}}</td>
             </tr>
             <tr>
@@ -164,11 +161,11 @@
         Width: {{panelPrtfSpecWidth}}
         Height: {{panelPrtfSpecHeight}}
         <div>
-          <div class="prtfSpecPreviewButtons"><button [ngStyle]="{'background-color': tabPrtfSpecVisibleIdx == 1 ? 'aqua' : ''}" (click)="onClickPrtfSpecPreview(1)">Positions</button></div>
+          <div class="prtfSpecPreviewButtons"><button id="btnPositions" [ngStyle]="{'background-color': tabPrtfSpecVisibleIdx == 1 ? 'aqua' : ''}" (click)="onClickPrtfSpecPreview(1)">Positions</button></div>
           <div class="prtfSpecPreviewButtons"><button [ngStyle]="{'background-color': tabPrtfSpecVisibleIdx == 2 ? 'aqua' : ''}" (click)="onClickPrtfSpecPreview(2)">StrategyParameters</button></div>
-        </div>
-        <div [hidden]="tabPrtfSpecVisibleIdx != 1" id="positions">This is always Visible</div>
-        <div [hidden]="tabPrtfSpecVisibleIdx == 1" id="StrategyParameters">Only for backtest</div>
+        </div>&nbsp;
+        <div [hidden]="tabPrtfSpecVisibleIdx != 1">This is always Visible</div>
+        <div [hidden]="tabPrtfSpecVisibleIdx == 1">Only for backtest</div>
       </div>
     </div>
   </div>

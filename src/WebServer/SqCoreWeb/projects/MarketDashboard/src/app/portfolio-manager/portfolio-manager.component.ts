@@ -588,6 +588,15 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     window.open('//sqcore.net/webapps/PortfolioViewer/?id='+ prtfId, '_blank');
   }
 
+  onOpenChartGeneratorClicked() {
+    if (this.treeViewState.lastSelectedItem == null || this.treeViewState.lastSelectedItem?.prtfItemType != 'Portfolio') {
+      console.log('Cannot OpenChartGenerator, because no Portfolio was selected.');
+      return;
+    }
+    const prtfId = this.treeViewState.lastSelectedItem.id - this.gPortfolioIdOffset;
+    window.open('//sqcore.net/webapps/ChartGenerator/?id='+ prtfId, '_blank');
+  }
+
   // Delete portfolio Item(Folder/Portfolio)
   onDeletePrtfItemClicked() { // this logic makes the Delete Confirm Popup visible and displays the selected prtf name
     if (this.treeViewState.lastSelectedItem == null) {
