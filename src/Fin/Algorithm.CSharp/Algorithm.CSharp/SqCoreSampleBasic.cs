@@ -67,12 +67,12 @@ namespace QuantConnect.Algorithm.CSharp
     }
 
 
-    class YfPrice
+    class SqPrice
     {
         public DateTime ReferenceDate;
         public decimal Close;
     }
-    class YfSplit
+    class SqSplit
     {
         public DateTime ReferenceDate;
         public decimal SplitFactor;
@@ -93,14 +93,14 @@ namespace QuantConnect.Algorithm.CSharp
         List<QcSplit> _splits = new List<QcSplit>();
         List<QcPrice> _adjCloses = new List<QcPrice>();
 
-        List<YfPrice> _rawClosesFromYfList = new List<YfPrice>(); // keep both List and Dictionary for YF raw price data. List is used for building and adjustment processing. Also, it can be used later if sequential, timely data marching is needed
+        List<SqPrice> _rawClosesFromYfList = new List<SqPrice>(); // keep both List and Dictionary for YF raw price data. List is used for building and adjustment processing. Also, it can be used later if sequential, timely data marching is needed
         Dictionary<DateTime, decimal> _rawClosesFromYfDict = new Dictionary<DateTime, decimal>(); // Dictionary<DateTime> is about 6x faster to query than List.BinarySearch(). If we know the Key, the DateTime exactly. Which we do know at Rebalancing time.
 
         // Trading on Daily resolution has problems. (2023-03: QC started to fix it, but not fully commited to Master branch, and fixed it only for Limit orders, not for MOC). The problem:
         // Monday, 15:40 trades are not executed on Monday 16:00, which is good (but for wrong reason). It is not executed because data is stale, data is from Saturday:00:00
         // Tuesday-Friday 15:40 trades are executed at 16:00, which is wrong, because daily data only comes at next day 00:00
         // We could fix it in local VsCode execution, but not on QC cloud.
-        bool _isTradeOnMinuteResolution = true; // until QC fixes the Daily resolution trading problem, use per minute for QC Cloud running. But don't use it in local VsCode execution.
+        bool _isTradeOnMinuteResolution = false; // until QC fixes the Daily resolution trading problem, use per minute for QC Cloud running. But don't use it in local VsCode execution.
         DateTime _backtestStartTime;
 
         public override void Initialize()
@@ -170,6 +170,8 @@ namespace QuantConnect.Algorithm.CSharp
                     else
                         Log($"Warning! Date {this.Time.Date} is not found in _rawClosesFromYfDict");
 
+                    // QC raises Warning if order quantity = 0. So, we don't sent these. "Unable to submit order with id -10 that has zero quantity."
+
                     // lastOrderTicket = MarketOnCloseOrder(_symbol, 10);
                     lastOrderTicket = MarketOnCloseOrder(tradedSymbol, Math.Round(Portfolio.Cash / priceToUse)); // Daily Raw: and MOC order uses that day MOC price, Buy: FillDate: 00:00 on next day // Minute Raw: Buy FillDate: 16:00 today
                     // lastOrderTicket = MarketOrder(_symbol, Math.Round(Portfolio.Cash / currentMinutePrice)); // Daily Raw: Buy: FillDate: 15:40 today on previous day close price.
@@ -192,7 +194,7 @@ namespace QuantConnect.Algorithm.CSharp
         private void DownloadAndProcessData(string p_ticker, DateTime p_startDate, TimeSpan p_warmUp, DateTime p_endDate)
         {
             long periodStart = DateTimeUtcToUnixTimeStamp(p_startDate - p_warmUp); // e.g. 1647754466
-            long periodEnd = DateTimeUtcToUnixTimeStamp(p_endDate); // e.g. 1679290466
+            long periodEnd = DateTimeUtcToUnixTimeStamp(p_endDate.AddDays(1)); // if p_endDate is a fixed date (2023-02-28:00:00), then it has to be increased, otherwise YF doesn't give that day data.
 
             // Step 1. Get Split data
             string splitCsvUrl = $"https://query1.finance.yahoo.com/v7/finance/download/{p_ticker}?period1={periodStart}&period2={periodEnd}&interval=1d&events=split&includeAdjustedClose=true";
@@ -207,7 +209,7 @@ namespace QuantConnect.Algorithm.CSharp
                 return;
             }
 
-            List<YfSplit> splits = new List<YfSplit>();
+            List<SqSplit> splits = new List<SqSplit>();
             int rowStartInd = splitCsvData.IndexOf('\n');   // jump over the header Date,Stock Splits
             rowStartInd = (rowStartInd == -1) ? splitCsvData.Length : rowStartInd + 1;
             while (rowStartInd < splitCsvData.Length) // very fast implementation without String.Split() RAM allocation
@@ -225,7 +227,7 @@ namespace QuantConnect.Algorithm.CSharp
                 if (DateTime.TryParseExact(dateStr, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
                 {
                     if (Decimal.TryParse(split1Str, out decimal split1) && Decimal.TryParse(split2Str, out decimal split2))
-                        splits.Add(new YfSplit() { ReferenceDate = date, SplitFactor = decimal.Divide(split1, split2) });
+                        splits.Add(new SqSplit() { ReferenceDate = date, SplitFactor = decimal.Divide(split1, split2) });
                 }
                 rowStartInd = splitEndIndExcl + 1; // jump over the '\n'
             }
@@ -266,6 +268,7 @@ namespace QuantConnect.Algorithm.CSharp
                 return;
             }
 
+            _rawClosesFromYfList = new List<SqPrice>();
             rowStartInd = priceCsvData.IndexOf('\n');   // jump over the header Date,...
             rowStartInd = (rowStartInd == -1) ? priceCsvData.Length : rowStartInd + 1; // jump over the '\n'
             while (rowStartInd < priceCsvData.Length) // very fast implementation without String.Split() RAM allocation
@@ -283,7 +286,7 @@ namespace QuantConnect.Algorithm.CSharp
                 if (DateTime.TryParseExact(dateStr, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
                 {
                     if (Decimal.TryParse(closeStr, out decimal close))
-                        _rawClosesFromYfList.Add(new YfPrice() { ReferenceDate = date, Close = close });
+                        _rawClosesFromYfList.Add(new SqPrice() { ReferenceDate = date, Close = close });
                 }
                 rowStartInd = (closeInd != -1) ? priceCsvData.IndexOf('\n', adjCloseInd + 1) : -1;
                 rowStartInd = (rowStartInd == -1) ? priceCsvData.Length : rowStartInd + 1; // jump over the '\n'

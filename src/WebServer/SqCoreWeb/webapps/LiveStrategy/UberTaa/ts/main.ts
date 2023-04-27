@@ -60,6 +60,7 @@ function onReceiveData(json: any) {
   getNonNullDocElementById('idTimeNow').innerHTML = json.requestTime;
   getNonNullDocElementById('idLiveDataTime').innerHTML = json.lastDataTime;
   getNonNullDocElementById('idCurrentPV').innerHTML = 'Current PV: <span class="pv">$ ' + json.currentPV + '</span> (based on <a href="' + json.gSheetRef + '" target="_blank">these current positions</a> updated for ' + json.currentPVDate + ')';
+  getNonNullDocElementById('idOverallConstLev').innerHTML = 'Used Overall Constant Leverage: <span class="clmt"> ' + json.overallConstLev + '</span>';
   getNonNullDocElementById('idCLMTString').innerHTML = 'Current Combined Leverage Market Timer signal is <span class="clmt">' + json.clmtSign + '</span> (SPX 50/200-day MA: ' + json.spxMASign + ', XLU/VTI: ' + json.xluVtiSign + ').';
   getNonNullDocElementById('idPosLast').innerHTML = 'Position weights in the last 20 days:';
   getNonNullDocElementById('idPosFut').innerHTML = 'Future events:';

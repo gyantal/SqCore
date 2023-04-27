@@ -85,35 +85,32 @@ public partial class FinDb
         finDataDir = Path.GetFullPath(finDataDir); // GetFullPath removes the unnecessary back marching ".."
 
         string mapFilesDir = $"{finDataDir}map_files";
-        // Get an array of file paths in the directory with ".csv" extension.
-        string[] filePaths = Directory.GetFiles(mapFilesDir, "*.csv");
-
         // Collect tickers from file names. Furthermore, collect start and end dates from map_files.
         List<string> tickers = new();
-        List<string> firstRowValues = new();
-        List<string> lastRowValues = new();
-        foreach (string filePath in filePaths)
+        List<string> mapFilesFirstRows = new();
+        List<string> mapFilesLastRows = new();
+        foreach (string mapFilePath in Directory.GetFiles(mapFilesDir, "*.csv")) // Get an array of file paths in the directory with ".csv" extension.
         {
-            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
-            tickers.Add(fileNameWithoutExtension);
-            string[] fileLines = File.ReadAllLines(filePath);
+            if (mapFilePath.EndsWith("-qc.csv")) // Ignore files ending with '-qc.csv'. It is only the spy-qc.csv. We want keep the original QC SPY data.
+                continue;
+
+            tickers.Add(Path.GetFileNameWithoutExtension(mapFilePath));
+            string[] fileLines = File.ReadAllLines(mapFilePath);
 
             if (fileLines.Length > 0)
             {
-                string[] firstRowCols = fileLines[0].Split(',');
-                if (firstRowCols.Length > 0)
-                {
-                    firstRowValues.Add(firstRowCols[0]);
-                }
+                string firstRow = fileLines[0];
+                int firstCommaIndex = firstRow.IndexOf(',');
+                if (firstCommaIndex != -1)
+                    mapFilesFirstRows.Add(firstRow[..firstCommaIndex]);
             }
 
             if (fileLines.Length > 1)
             {
-                string[] lastRowCols = fileLines[^1].Split(',');
-                if (lastRowCols.Length > 0)
-                {
-                    lastRowValues.Add(lastRowCols[0]);
-                }
+                string lastRow = fileLines[^1];
+                int lastCommaIndex = lastRow.IndexOf(',');
+                if (lastCommaIndex != -1)
+                    mapFilesLastRows.Add(lastRow[..lastCommaIndex]);
             }
         }
 
@@ -122,8 +119,8 @@ public partial class FinDb
         for (int i = 0; i < tickers.Count; i++)
         {
             string ticker = tickers[i];
-            DateTime startDate = DateTime.ParseExact(firstRowValues[i], "yyyyMMdd", CultureInfo.InvariantCulture);
-            DateTime endDate = DateTime.ParseExact(lastRowValues[i], "yyyyMMdd", CultureInfo.InvariantCulture);
+            DateTime startDate = DateTime.ParseExact(mapFilesFirstRows[i], "yyyyMMdd", CultureInfo.InvariantCulture);
+            DateTime endDate = DateTime.ParseExact(mapFilesLastRows[i], "yyyyMMdd", CultureInfo.InvariantCulture);
             bool isOK = await CrawlData(ticker, p_isLogHtml, logSb, finDataDir, startDate, endDate);
             if (!isOK)
                 logSb.AppendLine($"Error processing {ticker}");

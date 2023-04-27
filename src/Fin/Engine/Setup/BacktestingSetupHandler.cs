@@ -82,7 +82,11 @@ namespace QuantConnect.Lean.Engine.Setup
             }
 
             // Limit load times to 90 seconds and force the assembly to have exactly one derived type
-            var loader = new Loader(debugging, algorithmNodePacket.Language, BaseSetupHandler.AlgorithmCreationTimeout, names => names.SingleOrAlgorithmTypeName(Config.Get("algorithm-type-name")), WorkerThread);
+            // SqCore Change ORIGINAL:
+            // var loader = new Loader(debugging, algorithmNodePacket.Language, BaseSetupHandler.AlgorithmCreationTimeout, names => names.SingleOrAlgorithmTypeName(Config.Get("algorithm-type-name")), WorkerThread);
+            // SqCore Change NEW:
+            var loader = new Loader(debugging, algorithmNodePacket.Language, BaseSetupHandler.AlgorithmCreationTimeout, names => names.SingleOrAlgorithmTypeName(((BacktestNodePacket)algorithmNodePacket).BacktestId), WorkerThread);
+            // SqCore Change END
             var complete = loader.TryCreateAlgorithmInstanceWithIsolator(assemblyPath, algorithmNodePacket.RamAllocation, out algorithm, out error);
             if (!complete) throw new AlgorithmSetupException($"During the algorithm initialization, the following exception has occurred: {error}");
 

@@ -16,7 +16,7 @@ namespace SqCoreWeb.Controllers;
 [ResponseCache(CacheProfileName = "NoCache")]
 public class StrategyUberTaaController : ControllerBase
 {
-    enum Universe : byte { GameChangers = 1, GlobalAssets = 2 }
+    public enum Universe : byte { GameChangers = 1, GlobalAssets = 2 }
     public class DailyData
     {
         public DateTime Date { get; set; }
@@ -91,9 +91,10 @@ public class StrategyUberTaaController : ControllerBase
         // string? gSheetString = UberTaaGoogleApiGsheet(usedGSheetRef);
         Tuple<double[], int[,], int[], int[], string[], int[], int[]> gSheetResToFinCalc = GSheetConverter(usedGSheetStr, allAssetList);
         Debug.WriteLine("The Data from gSheet is :", gSheetResToFinCalc);
+        string overallConstLevStr = gSheetResToFinCalc.Item6[2].ToString() + '%';
 
         // Calculating final weights - Advanced UberTAA
-        Tuple<double[,], double[,], double[,], string[], string[]> weightsFinal = MultiplFinCalc(clmtRes, gSheetResToFinCalc, allAssetList, lastDataDate, taaWeightResultsTuple);
+        Tuple<double[,], double[,], double[,], string[], string[]> weightsFinal = MultiplFinCalc(p_universe, clmtRes, gSheetResToFinCalc, allAssetList, lastDataDate, taaWeightResultsTuple);
 
         // Request time (UTC)
         DateTime liveDateTime = DateTime.UtcNow;
@@ -480,6 +481,8 @@ public class StrategyUberTaaController : ControllerBase
         sb.Append(@"""," + Environment.NewLine + @"""nextTradingDay"": """ + nextTradingDayString);
         sb.Append(@"""," + Environment.NewLine + @"""currPosDate"": """ + currPosDateString);
 
+        sb.Append(@"""," + Environment.NewLine + @"""overallConstLev"": """ + overallConstLevStr);
+
         sb.Append(@"""," + Environment.NewLine + @"""prevPositionsMtx"": """);
         for (int i = 0; i < prevPosMtx.GetLength(0); i++)
         {
@@ -630,8 +633,9 @@ public class StrategyUberTaaController : ControllerBase
             string[] currPosAP = new string[p_allAssetList.Length - 3];
             Array.Copy(currPos, 2, currPosAP, 0, p_allAssetList.Length - 3);
             int currPosDate = Int32.Parse(currPos[0]);
+            int overallConstantLev = int.Parse($"{currPos[^2].TrimEnd('%')}");
             int currPosCash = Int32.Parse(currPos[^3]);
-            int[] currPosDateCash = new int[] { currPosDate, currPosCash };
+            int[] currPosDateCash = new int[] { currPosDate, currPosCash, overallConstantLev };
             int[] currPosAssets = Array.ConvertAll(currPosAP, int.Parse);
 
             p_gSheetString = p_gSheetString.Replace("\n", string.Empty).Replace("]", string.Empty).Replace("\"", string.Empty).Replace(" ", string.Empty).Replace(",,", ",0,");
@@ -987,7 +991,7 @@ public class StrategyUberTaaController : ControllerBase
         return clmtTotalResu;
     }
 
-    public static Tuple<double[,], double[,], double[,], string[], string[]> MultiplFinCalc(double[][] p_clmtRes, Tuple<double[], int[,], int[], int[], string[], int[], int[]> p_gSheetResToFinCalc, string[] p_allAssetList, double p_lastDataDate, Tuple<double[], double[,]> p_taaWeightResultsTuple)
+    public static Tuple<double[,], double[,], double[,], string[], string[]> MultiplFinCalc(Universe p_universe, double[][] p_clmtRes, Tuple<double[], int[,], int[], int[], string[], int[], int[]> p_gSheetResToFinCalc, string[] p_allAssetList, double p_lastDataDate, Tuple<double[], double[,]> p_taaWeightResultsTuple)
     {
         int pastDataLength = 20;
         int futDataLength = 10;
@@ -999,6 +1003,8 @@ public class StrategyUberTaaController : ControllerBase
         double[,] futCodes = new double[futDataLength, p_allAssetList.Length - 3];
         string[] pastEvents = new string[pastDataLength];
         string[] futEvents = new string[futDataLength];
+
+        double overallConstLev = p_gSheetResToFinCalc.Item6[2] / 100;
 
         for (int iRows = 0; iRows < pastCodes.GetLength(0); iRows++)
         {
@@ -1105,7 +1111,7 @@ public class StrategyUberTaaController : ControllerBase
         }
 
         double[,] pastWeightsFinal = new double[pastCodes.GetLength(0), p_allAssetList.Length - 3];
-        double numAss = Convert.ToDouble(p_allAssetList.Length - 4);
+        // double numAss = Convert.ToDouble(p_allAssetList.Length - 4);
         for (int iRows = 0; iRows < pastWeightsFinal.GetLength(0); iRows++)
         {
             pastWeightsFinal[iRows, 0] = pastCodes[iRows, 0];
@@ -1113,46 +1119,46 @@ public class StrategyUberTaaController : ControllerBase
             {
                 if (pastCodes[iRows, jCols] == 7)
                 {
-                    pastWeightsFinal[iRows, jCols] = 0;
+                    pastWeightsFinal[iRows, jCols] = 0 * overallConstLev;
                 }
                 else if (pastCodes[iRows, jCols] == 1)
                 {
-                    pastWeightsFinal[iRows, jCols] = 1.75 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1];
+                    pastWeightsFinal[iRows, jCols] = 1.75 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1] * overallConstLev;
                 }
                 else if (pastCodes[iRows, jCols] == 5)
                 {
-                    pastWeightsFinal[iRows, jCols] = Math.Max(1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1);
+                    pastWeightsFinal[iRows, jCols] = Math.Max(1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1) * overallConstLev;
                 }
                 else if (pastCodes[iRows, jCols] == 2)
                 {
-                    pastWeightsFinal[iRows, jCols] = 0;
+                    pastWeightsFinal[iRows, jCols] = 0 * overallConstLev;
                 }
                 else if (pastCodes[iRows, jCols] == 3)
                 {
-                    pastWeightsFinal[iRows, jCols] = 1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1];
+                    pastWeightsFinal[iRows, jCols] = 1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1] * overallConstLev;
                 }
                 else if (pastCodes[iRows, jCols] == 6)
                 {
-                    pastWeightsFinal[iRows, jCols] = Math.Max(1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1);
+                    pastWeightsFinal[iRows, jCols] = Math.Max(1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1) * overallConstLev;
                     // pastWeightsFinal[iRows, jCols] = Math.Max(1.25 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1], 1 / numAss); #Mr.C. decided to increase leverage to 50% on bullish days
                 }
                 else if (pastCodes[iRows, jCols] == 4)
                 {
-                    pastWeightsFinal[iRows, jCols] = 0;
+                    pastWeightsFinal[iRows, jCols] = 0 * overallConstLev;
                 }
                 else if (pastCodes[iRows, jCols] == 8)
                 {
-                    pastWeightsFinal[iRows, jCols] = 1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1];
+                    pastWeightsFinal[iRows, jCols] = ((p_universe == Universe.GameChangers) ? 1 : 1.5) * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1] * overallConstLev;
                     // pastWeightsFinal[iRows, jCols] = 1.2 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1]; #Mr.C. decided to increase leverage to 50% on bullish days
                 }
                 else if (pastCodes[iRows, jCols] == 9)
                 {
-                    pastWeightsFinal[iRows, jCols] = 1 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1];
+                    pastWeightsFinal[iRows, jCols] = ((p_universe == Universe.GameChangers) ? 1 : 1) * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1] * overallConstLev;
                     // pastWeightsFinal[iRows, jCols] = 0.8 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1];
                 }
                 else if (pastCodes[iRows, jCols] == 10)
                 {
-                    pastWeightsFinal[iRows, jCols] = 0.6 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1];
+                    pastWeightsFinal[iRows, jCols] = ((p_universe == Universe.GameChangers) ? 1 : 0.6) * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1] * overallConstLev;
                     // pastWeightsFinal[iRows, jCols] = 0.4 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1];
                 }
             }

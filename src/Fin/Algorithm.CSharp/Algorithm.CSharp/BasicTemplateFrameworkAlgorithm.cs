@@ -36,7 +36,11 @@ namespace QuantConnect.Algorithm.CSharp
             // Options Resolution: Minute Only.
 
             // set algorithm framework models
-            SetUniverseSelection(new ManualUniverseSelectionModel(QuantConnect.Symbol.Create("SPY", SecurityType.Equity, Market.USA)));
+            // SqCore Change ORIGINAL:
+            // SetUniverseSelection(new ManualUniverseSelectionModel(QuantConnect.Symbol.Create("SPY", SecurityType.Equity, Market.USA)));
+            // SqCore Change NEW:
+            SetUniverseSelection(new ManualUniverseSelectionModel(QuantConnect.Symbol.Create("SPY-QC", SecurityType.Equity, Market.USA)));
+            // SqCore Change END
             SetAlpha(new ConstantAlphaModel(InsightType.Price, InsightDirection.Up, TimeSpan.FromMinutes(20), 0.025, null));
 
             // We can define who often the EWPCM will rebalance if no new insight is submitted using:

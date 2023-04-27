@@ -48,6 +48,11 @@ dist/
 #**/wwwroot/webapps/MarketDashboard
 **/wwwroot/webapps/*
 
+**/Fin/Data/equity/usa/daily/*
+!**/Fin/Data/equity/usa/daily/spy-qc.zip
+**/Fin/Data/equity/usa/factor_files/*
+!**/Fin/Data/equity/usa/factor_files/spy-qc.csv
+
 # Ignore Python cache folders
 __pycache__/
 
