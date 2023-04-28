@@ -49,6 +49,15 @@ public class PortfolioRunResultStatistics
     public float CorrelationWithBenchmark { get; set; } = 0.0f;
 }
 
+public class PortfolioPosition
+{
+    public string SqTicker { get; set; } = string.Empty;
+    public int Quantity { get; set; } = -1;
+    public float AvgPrice { get; set; } = 0.0f;
+    public float LastPrice { get; set; } = 0.0f;  // the last price of the asset at the end of the backtest (not real-time price)
+    public float Cash { get; set; } = 0.0f;
+}
+
 public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
 {
     [JsonPropertyName("User")]
@@ -164,22 +173,22 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
     // Or number of seconds from Unix epoch: '1641013200' is 10 chars. Resolution can be 1 second.
     // Although it is 2 chars more data, but we chose this, because QC uses it and also it will allow us to go intraday in the future.
     // Also it allows to show the user how up-to-date (real-time) the today value is.
-    public string? GetPortfolioRunResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv)
+    public string? GetPortfolioRunResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss)
     {
         #pragma warning disable IDE0066 // disable the switch suggestion warning only locally
         switch (Type)
         {
             case PortfolioType.Simulation:
-                return GetBacktestResult(out p_stat, out p_pv);
+                return GetBacktestResult(out p_stat, out p_pv, out p_prtfPoss);
             case PortfolioType.Trades:
             case PortfolioType.TradesSqClassic:
             default:
-                return GetPortfolioRunResultDefault(out p_stat, out p_pv);
+                return GetPortfolioRunResultDefault(out p_stat, out p_pv, out p_prtfPoss);
         }
         #pragma warning restore IDE0066
     }
 
-    public string? GetPortfolioRunResultDefault(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv)
+    public string? GetPortfolioRunResultDefault(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss)
     {
         Thread.Sleep(500 + Id);
         // we will run the backtest.
@@ -206,13 +215,20 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
             EndPortfolioValue = 1400.0f,
             SharpeRatio = 0.8f
         }; // output
+        List<PortfolioPosition> prtfPoss = new ()
+        {
+            new PortfolioPosition { SqTicker = "S/Spy", Quantity = 1, AvgPrice = 1.0f, LastPrice = 1.0f, Cash = 1.0f },
+            new PortfolioPosition { SqTicker = "S/TQQQ", Quantity = 1, AvgPrice = 1.0f, LastPrice = 1.0f, Cash = 1.0f }
+        }; // output
+        p_prtfPoss = prtfPoss;
         return null; // No Error
     }
 
-    public string? GetBacktestResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv)
+    public string? GetBacktestResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss)
     {
         p_stat = new PortfolioRunResultStatistics();
         p_pv = new List<ChartPoint>();
+        p_prtfPoss = new List<PortfolioPosition>();
 
         Thread.Sleep(1 + Id);   // temporary here for simulation.
 
@@ -263,6 +279,20 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
 
         // We need these in the Statistic: "Net Profit" => TotalReturn, "Compounding Annual Return" =>CAGR, "Drawdown" => MaxDD,  "Sharpe Ratio" =>Sharpe, "Win Rate" =>WinRate, "Annual Standard Deviation" =>StDev, "Sortino Ratio" => Sortino, "Portfolio Turnover" => Turnover, "Long/Short Ratio" =>LongShortRatio, "Total Fees" => Fees,
 
+        // To be worked upon - Daya
+        var prtfPositions = backtestResults.Algorithm;
+        PortfolioPosition posItem = new()
+        {
+            Cash = (float)prtfPositions.Portfolio.Cash
+        };
+        foreach (var item in prtfPositions.UniverseManager.ActiveSecurities.Values)
+        {
+            posItem.SqTicker = string.Concat("S/", item.Holdings.Symbol);
+            posItem.Quantity = (int)item.Holdings.Quantity;
+            posItem.AvgPrice = (float)item.Holdings.AveragePrice;
+            posItem.LastPrice = (float)item.Holdings.Price;
+        }
+        p_prtfPoss.Add(posItem);
         return null; // No Error
     }
 }

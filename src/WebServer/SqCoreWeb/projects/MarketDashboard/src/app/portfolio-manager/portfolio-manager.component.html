@@ -164,7 +164,30 @@
           <div class="prtfSpecPreviewButtons"><button id="btnPositions" [ngStyle]="{'background-color': tabPrtfSpecVisibleIdx == 1 ? 'aqua' : ''}" (click)="onClickPrtfSpecPreview(1)">Positions</button></div>
           <div class="prtfSpecPreviewButtons"><button [ngStyle]="{'background-color': tabPrtfSpecVisibleIdx == 2 ? 'aqua' : ''}" (click)="onClickPrtfSpecPreview(2)">StrategyParameters</button></div>
         </div>&nbsp;
-        <div [hidden]="tabPrtfSpecVisibleIdx != 1">This is always Visible</div>
+        <div class="prtfPosTbl" [hidden]="tabPrtfSpecVisibleIdx != 1">This is always Visible
+          <table>
+            <thead>
+              <tr>
+                <th>SqTicker</th>
+                <th>Quantity</th>
+                <th>AvgPrice</th>
+                <th>Price</th>
+                <th>HoldingCost</th>
+                <th>HoldingValue</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of uiPrtfRunResult.prtfPosValues">
+                <td>{{item.sqTicker}}</td>
+                <td>{{item.quantity}}</td>
+                <td>{{item.avgPrice | number:'1.2-2'}}</td>
+                <td>{{item.price | number:'1.2-2'}}</td>
+                <td>{{item.holdingCost | number:'1.2-2'}}</td>
+                <td>{{item.holdingValue | number:'1.2-2'}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         <div [hidden]="tabPrtfSpecVisibleIdx == 1">Only for backtest</div>
       </div>
     </div>

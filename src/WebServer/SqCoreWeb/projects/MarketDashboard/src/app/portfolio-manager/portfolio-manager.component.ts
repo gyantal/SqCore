@@ -39,6 +39,7 @@ interface ChartJs { // PfRunResults Chart Data
 class PrtfRunResultJs { // we can specify the input types more, but whatever.
   public pstat: any; // all the Stat members from UiPrtfRunResult, we skip creating detailed sub classes
   public chart!: ChartJs;
+  public prtfPoss: any; // all the position members from UiPrtfPositions, we skip creating detailed sub classes
 }
 
 // Ui classes
@@ -64,11 +65,22 @@ class UiPrtfRunResult {
   public correlationWithBenchmark: number = 0;
 
   public chrtValues: UiChartPointValues[] = [];
+  public prtfPosValues: UiPrtfPositions[] = [];
 }
 // chart values
 class UiChartPointValues {
   public dates = new Date();
   public values = NaN;
+}
+
+class UiPrtfPositions {
+  public sqTicker: string = '';
+  public quantity: number = 0;
+  public avgPrice: number = 0;
+  public price: number = 0;
+  public holdingCost: number = 0;
+  public holdingValue: number = 0;
+  public cash: number = 0;
 }
 
 export class TreeViewItem { // future work. At the moment, it copies PortfolioFldrJs[] and add the children field. With unnecessary field values. When Portfolios are introduced, this should be rethought.
@@ -186,9 +198,6 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.prtfMgrToolHeight = window.innerHeight as number;
       return resizeBy;
     });
-
-    this.prtfMgrToolWidth = this.prtfMgrToolWidth;
-    this.prtfMgrToolHeight = this.prtfMgrToolHeight - this.dashboardHeaderHeight;
   }
 
   public ngAfterViewInit(): void { // @ViewChild variables are undefined in ngOnInit(). Only ready in ngAfterViewInit
@@ -664,6 +673,17 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     // uiPrtfRunResult.benchmarkMaxDD = parseFloat(prtfRunResult.pstat.benchmarkMaxDD); // yet to calcualte
     // uiPrtfRunResult.correlationWithBenchmark = parseFloat(prtfRunResult.pstat.correlationWithBenchmark); // yet to calcualte
 
+    uiPrtfRunResult.prtfPosValues.length = 0;
+    const posItem = new UiPrtfPositions();
+    posItem.sqTicker = prtfRunResult.prtfPoss.sqTicker;
+    posItem.quantity = prtfRunResult.prtfPoss.quantity;
+    posItem.avgPrice = prtfRunResult.prtfPoss.avgPrice;
+    posItem.price = prtfRunResult.prtfPoss.lastPrice;
+    posItem.holdingCost = posItem.avgPrice * posItem.quantity;
+    posItem.holdingValue = posItem.price * posItem.quantity;
+    posItem.cash = prtfRunResult.prtfPoss.cash;
+    uiPrtfRunResult.prtfPosValues.push(posItem);
+
     uiPrtfRunResult.chrtValues.length = 0;
     for (let i = 0; i < prtfRunResult.chart.dates.length; i++) {
       const chartItem = new UiChartPointValues();
@@ -676,14 +696,14 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     d3.selectAll('#pfRunResultChrt > *').remove();
     const lineChrtDiv = document.getElementById('pfRunResultChrt') as HTMLElement;
     const margin = {top: 50, right: 50, bottom: 30, left: 60 };
-    const inputWidth = 660 - margin.left - margin.right;
-    const inputHeight = 440 - margin.top - margin.bottom;
+    const chartWidth = 660 - margin.left - margin.right;
+    const chartHeight = 440 - margin.top - margin.bottom;
     const chrtData = uiPrtfRunResult.chrtValues.map((r:{ dates: Date; values: number; }) => ({date: new Date(r.dates), value: r.values}));
     const xMin = d3.min(chrtData, (r:{ date: Date; }) => r.date);
     const xMax = d3.max(chrtData, (r:{ date: Date; }) => r.date);
     const yMinAxis = d3.min(chrtData, (r:{ value: number; }) => r.value);
     const yMaxAxis = d3.max(chrtData, (r:{ value: number; }) => r.value);
 
-    processUiWithPrtfRunResultChrt(chrtData, lineChrtDiv, inputWidth, inputHeight, margin, xMin, xMax, yMinAxis, yMaxAxis);
+    processUiWithPrtfRunResultChrt(chrtData, lineChrtDiv, chartWidth, chartHeight, margin, xMin, xMax, yMinAxis, yMaxAxis);
   }
 }

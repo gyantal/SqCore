@@ -1,7 +1,15 @@
-body {
+:host { // this is the Shadow DOM root of the big main App component. The :hosts in the sub-components can overwrite this, but this still applies to them as default.
+  font-family: GeorgiaTimesNewRomanForLiningNumbers, "Times New Roman", Times, serif; // see TestFontsVerticalCentering.html
+  font-size: 120%;
+  line-height: 1.1;
+  background: red;
+}
+
+body { // no effect of this, later we can remove
 font-family: GeorgiaTimesNewRomanForLiningNumbers, "Times New Roman", Times, serif; // see TestFontsVerticalCentering.html
 font-size: 120%;
 line-height: 1.1;
+background: red;
 }
 
 @font-face {
@@ -17,4 +25,27 @@ unicode-range: U+0030-0039;
 
 .mainDiv1 {
   background: linear-gradient(to right, #3080c7 5%, #5b9dd7 10%, #d5f5f6 30%, #d5f5f6 70%, #ace16b 90%, #91d73a 95%);
+}
+
+.commonColStyle { // same style for all the div's of Portfolios, StockAndIndexex, TechIndicators and others ( 4 sections similar to sniffeQuant Chart Generator)
+  float:left;
+  width:25%;
+  height:28rem;
+}
+
+#portfolios {
+  background:rgb(255, 238, 0);
+}
+
+#stockAndIndexes {
+  background:rgb(0, 128, 128);
+}
+
+#techIndicators {
+  background:rgb(0, 132, 255);
+}
+
+#others {
+  float:right;
+  background:rgb(166, 255, 0);
 }

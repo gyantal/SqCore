@@ -48,6 +48,7 @@ class PrtfRunResultJs
 {
     public PortfolioRunResultStatistics Pstat { get; set; } = new();
     public ChartPointValues Chart { get; set; } = new();
+    public PortfolioPosition PrtfPoss { get; set; } = new();
 }
 
 class ChartPointValues
@@ -359,7 +360,7 @@ public partial class DashboardClient
 
         if (errMsg == null)
         {
-            errMsg = prtf!.GetPortfolioRunResult(out PortfolioRunResultStatistics stat, out List<ChartPoint> pv);
+            errMsg = prtf!.GetPortfolioRunResult(out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos);
             if (errMsg == null)
             {
                 // Step3: Filling the ChartPoint Dates and Values to a list. A very condensed format. Dates are separated into its ChartDate List.
@@ -395,13 +396,26 @@ public partial class DashboardClient
                     BenchmarkMaxDD = stat.BenchmarkMaxDD,
                     CorrelationWithBenchmark = stat.CorrelationWithBenchmark
                 };
-                // Step5: Filling the Stats and ChartPoint vals in pfRunResults
+
+                // Step5: Filling the PrtfPoss data
+                PortfolioPosition prtfPoss = new();
+                foreach (var item in prtfPos)
+                {
+                    prtfPoss.SqTicker = item.SqTicker;
+                    prtfPoss.Quantity = item.Quantity;
+                    prtfPoss.AvgPrice = item.AvgPrice;
+                    prtfPoss.LastPrice = item.LastPrice;
+                    prtfPoss.Cash = item.Cash;
+                }
+
+                // Step6: Filling the Stats, ChartPoint vals and prtfPoss in pfRunResults
                 PrtfRunResultJs pfRunResult = new()
                 {
                     Pstat = pStat,
-                    Chart = chartVal
+                    Chart = chartVal,
+                    PrtfPoss = prtfPoss
                 };
-                // Step6: Sending the pfRunResults data to client
+                // Step7: Sending the pfRunResults data to client
                 if (pfRunResult != null)
                 {
                     byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.PrtfRunResult:" + Utils.CamelCaseSerialize(pfRunResult));

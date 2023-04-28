@@ -155,7 +155,11 @@ namespace QuantConnect.Lean.Engine.Results
         /// <summary>
         /// The algorithm instance
         /// </summary>
-        protected IAlgorithm Algorithm { get; set; }
+        // SqCore Change ORIGINAL:
+        // protected IAlgorithm Algorithm { get; set; }
+        // SqCore Change NEW:
+        public IAlgorithm Algorithm { get; set; }
+        // SqCore Change END
 
         /// <summary>
         /// Gets or sets the current alpha runtime statistics
