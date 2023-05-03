@@ -214,7 +214,7 @@ export class BrAccViewerComponent implements OnInit {
       'TMF': 3*-0.50/1.18, 'TMV': -1*3*-0.50/1.18, 'TIP': -0.06/1.18,
       'USO': 0.83/1.18, 'SCO': -2.0*0.83/1.18, 'UCO': 1.25/1.18,
       'UNG': 0.23/1.18, // discretionary override from 0.03 to 0.23 (UGAZ too)
-      'UGAZ': 3*0.23/1.18,
+      'UGAZF': 3*0.23/1.18,
       'GLD': (-0.24*1.18)/1.18, // GLD has no Beta on MarketWatch. YF (5Years, monthly): 0.04. But DC's discretionary (logical) override: -0.24
       'TAIL': -1/1.18, // compared TAIL vs. SPY and it moves about the same beta, just opposite
       'UUP': (-0.31)/1.18, // YF Beta calculation; when market panics, the whole world wants to buy safe USA treasuries, therefore USD goes up => negative correlation.

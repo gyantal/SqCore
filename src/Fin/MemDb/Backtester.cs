@@ -72,7 +72,7 @@ public static class Backtester
         // Otherwise at second Engine.Run(), BacktestingTransactionHandler._cancellationTokenSource : 'The CancellationTokenSource has been disposed'
         var setupHandlerTypeName = Config.Get("setup-handler", "ConsoleSetupHandler");
         // var transactionHandlerTypeName = Config.Get("transaction-handler", "BacktestingTransactionHandler");
-        var realTimeHandlerTypeName = Config.Get("real-time-handler", "BacktestingRealTimeHandler");
+        // var realTimeHandlerTypeName = Config.Get("real-time-handler", "BacktestingRealTimeHandler");
         var dataFeedHandlerTypeName = Config.Get("data-feed-handler", "FileSystemDataFeed");
         // var resultHandlerTypeName = Config.Get("result-handler", "BacktestingResultHandler");
         var mapFileProviderTypeName = Config.Get("map-file-provider", "LocalDiskMapFileProvider");
@@ -87,7 +87,10 @@ public static class Backtester
             composer.GetExportedValueByTypeName<ISetupHandler>(setupHandlerTypeName),
             composer.GetExportedValueByTypeName<IDataFeed>(dataFeedHandlerTypeName),
             new BacktestingTransactionHandler(), // Exception otherwise: BacktestingTransactionHandler._cancellationTokenSource : 'The CancellationTokenSource has been disposed'
-            composer.GetExportedValueByTypeName<IRealTimeHandler>(realTimeHandlerTypeName),
+            // AlgorithmHandlers.RealTime handles backtesting realtime time, and Schedule On() events. Should be not a shared instance.
+            // AlgorithmHandlers.RealTime.ScheduledEvents has to be emptied before second runs, otherwise the Triggers are duplicated. But doing so, didn't solve the second run problem yet. There is something else.
+            // And thinking about multithread runs, it is better to always recreate (new) the AlgorithmHandlers.RealTime for the backtest.
+            new BacktestingRealTimeHandler(),
             composer.GetExportedValueByTypeName<IMapFileProvider>(mapFileProviderTypeName),
             composer.GetExportedValueByTypeName<IFactorFileProvider>(factorFileProviderTypeName),
             composer.GetExportedValueByTypeName<IDataProvider>(dataProviderTypeName),
