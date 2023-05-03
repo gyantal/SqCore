@@ -55,7 +55,6 @@ public class PortfolioPosition
     public int Quantity { get; set; } = -1;
     public float AvgPrice { get; set; } = 0.0f;
     public float LastPrice { get; set; } = 0.0f;  // the last price of the asset at the end of the backtest (not real-time price)
-    public float Cash { get; set; } = 0.0f;
 }
 
 public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
@@ -217,8 +216,8 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         }; // output
         List<PortfolioPosition> prtfPoss = new ()
         {
-            new PortfolioPosition { SqTicker = "S/Spy", Quantity = 1, AvgPrice = 1.0f, LastPrice = 1.0f, Cash = 1.0f },
-            new PortfolioPosition { SqTicker = "S/TQQQ", Quantity = 1, AvgPrice = 1.0f, LastPrice = 1.0f, Cash = 1.0f }
+            new PortfolioPosition { SqTicker = "S/Spy", Quantity = 1, AvgPrice = 1.0f, LastPrice = 1.0f },
+            new PortfolioPosition { SqTicker = "S/TQQQ", Quantity = 1, AvgPrice = 1.0f, LastPrice = 1.0f }
         }; // output
         p_prtfPoss = prtfPoss;
         return null; // No Error
@@ -281,18 +280,21 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
 
         // To be worked upon - Daya
         var prtfPositions = backtestResults.Algorithm;
-        PortfolioPosition posItem = new()
-        {
-            Cash = (float)prtfPositions.Portfolio.Cash
-        };
+        PortfolioPosition posStckItem = new(); // Stock Tickers
         foreach (var item in prtfPositions.UniverseManager.ActiveSecurities.Values)
         {
-            posItem.SqTicker = string.Concat("S/", item.Holdings.Symbol);
-            posItem.Quantity = (int)item.Holdings.Quantity;
-            posItem.AvgPrice = (float)item.Holdings.AveragePrice;
-            posItem.LastPrice = (float)item.Holdings.Price;
+            posStckItem.SqTicker = "S/" + item.Holdings.Symbol.ToString();
+            posStckItem.Quantity = (int)item.Holdings.Quantity;
+            posStckItem.AvgPrice = (float)item.Holdings.AveragePrice;
+            posStckItem.LastPrice = (float)item.Holdings.Price;
         }
-        p_prtfPoss.Add(posItem);
+        p_prtfPoss.Add(posStckItem);
+        PortfolioPosition posCashItem = new() // Cash Ticker
+        {
+            SqTicker = "C/" + prtfPositions.Portfolio.CashBook.AccountCurrency.ToString(),
+            LastPrice = (float)prtfPositions.Portfolio.Cash
+        };
+        p_prtfPoss.Add(posCashItem);
         return null; // No Error
     }
 }

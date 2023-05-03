@@ -48,7 +48,7 @@ class PrtfRunResultJs
 {
     public PortfolioRunResultStatistics Pstat { get; set; } = new();
     public ChartPointValues Chart { get; set; } = new();
-    public PortfolioPosition PrtfPoss { get; set; } = new();
+    public List<PortfolioPosition> PrtfPoss { get; set; } = new();
 }
 
 class ChartPointValues
@@ -398,14 +398,10 @@ public partial class DashboardClient
                 };
 
                 // Step5: Filling the PrtfPoss data
-                PortfolioPosition prtfPoss = new();
+                List<PortfolioPosition> prtfPoss = new();
                 foreach (var item in prtfPos)
                 {
-                    prtfPoss.SqTicker = item.SqTicker;
-                    prtfPoss.Quantity = item.Quantity;
-                    prtfPoss.AvgPrice = item.AvgPrice;
-                    prtfPoss.LastPrice = item.LastPrice;
-                    prtfPoss.Cash = item.Cash;
+                    prtfPoss.Add(new PortfolioPosition { SqTicker = item.SqTicker, Quantity = item.Quantity, AvgPrice = item.AvgPrice, LastPrice = item.LastPrice });
                 }
 
                 // Step6: Filling the Stats, ChartPoint vals and prtfPoss in pfRunResults
@@ -415,6 +411,7 @@ public partial class DashboardClient
                     Chart = chartVal,
                     PrtfPoss = prtfPoss
                 };
+
                 // Step7: Sending the pfRunResults data to client
                 if (pfRunResult != null)
                 {

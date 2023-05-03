@@ -80,7 +80,6 @@ class UiPrtfPositions {
   public price: number = 0;
   public holdingCost: number = 0;
   public holdingValue: number = 0;
-  public cash: number = 0;
 }
 
 export class TreeViewItem { // future work. At the moment, it copies PortfolioFldrJs[] and add the children field. With unnecessary field values. When Portfolios are introduced, this should be rethought.
@@ -674,15 +673,16 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     // uiPrtfRunResult.correlationWithBenchmark = parseFloat(prtfRunResult.pstat.correlationWithBenchmark); // yet to calcualte
 
     uiPrtfRunResult.prtfPosValues.length = 0;
-    const posItem = new UiPrtfPositions();
-    posItem.sqTicker = prtfRunResult.prtfPoss.sqTicker;
-    posItem.quantity = prtfRunResult.prtfPoss.quantity;
-    posItem.avgPrice = prtfRunResult.prtfPoss.avgPrice;
-    posItem.price = prtfRunResult.prtfPoss.lastPrice;
-    posItem.holdingCost = posItem.avgPrice * posItem.quantity;
-    posItem.holdingValue = posItem.price * posItem.quantity;
-    posItem.cash = prtfRunResult.prtfPoss.cash;
-    uiPrtfRunResult.prtfPosValues.push(posItem);
+    for (let i = 0; i < prtfRunResult.prtfPoss.length; i++) {
+      const posItem = new UiPrtfPositions();
+      posItem.sqTicker = prtfRunResult.prtfPoss[i].sqTicker;
+      posItem.quantity = prtfRunResult.prtfPoss[i].quantity;
+      posItem.avgPrice = prtfRunResult.prtfPoss[i].avgPrice;
+      posItem.price = prtfRunResult.prtfPoss[i].lastPrice;
+      posItem.holdingCost = posItem.avgPrice * posItem.quantity;
+      posItem.holdingValue = posItem.price * posItem.quantity;
+      uiPrtfRunResult.prtfPosValues.push(posItem);
+    }
 
     uiPrtfRunResult.chrtValues.length = 0;
     for (let i = 0; i < prtfRunResult.chart.dates.length; i++) {
