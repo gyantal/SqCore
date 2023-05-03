@@ -35,6 +35,10 @@ dist/
 **/ts/*/*.js
 **/ts/*/*/*.js
 
+# Rust build result is the Target folder
+target/
+Cargo.lock
+
 #Non-Webpack based static webapps:
 #Typescript compiled JS files. Webapps' Legit JS files should be commited. So put TS files into the 'ts' folder. So, we don't have to gitIgnore every JS files one by one
 **/webapps-no-pack/*/ts/*.js
