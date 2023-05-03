@@ -616,6 +616,13 @@ namespace QuantConnect.Orders.Fills
                 return fill;
             }
 
+            // SqCore Change NEW:
+            // Get the range of prices in the last bar:
+            var tradeHigh = 0m;
+            var tradeLow = 0m;
+            var endTimeUtc = DateTime.MinValue;
+            // SqCore Change END
+
             var subscribedTypes = GetSubscribedTypes(asset);
 
             if (subscribedTypes.Contains(typeof(Tick)))
@@ -662,7 +669,34 @@ namespace QuantConnect.Orders.Fills
                 {
                     fill.FillPrice = tick.Price;
                 }
+
+                // SqCore Change NEW: do not fill on stale data
+                foreach (var trade in trades)
+                {
+                    tradeHigh = Math.Max(tradeHigh, trade.Price);
+                    tradeLow = tradeLow == 0 ? trade.Price : Math.Min(tradeLow, trade.Price);
+                    endTimeUtc = trade.EndTime.ConvertToUtc(asset.Exchange.TimeZone);
+                }
+                // SqCore Change END
             }
+            // SqCore Change NEW: do not fill on stale data
+            else if (subscribedTypes.Contains(typeof(TradeBar)))
+            {
+                var tradeBar = asset.Cache.GetData<TradeBar>();
+
+                if (tradeBar != null)
+                {
+                    tradeHigh = tradeBar.High;
+                    tradeLow = tradeBar.Low;
+                    endTimeUtc = tradeBar.EndTime.ConvertToUtc(asset.Exchange.TimeZone);
+                }
+            }
+
+            // do not fill on stale data
+            if (endTimeUtc <= order.Time)
+                return fill;
+            // SqCore Change END
+
             // make sure the exchange is open/normal market hours before filling
             // It will return true if the last bar opens before the market closes
             else if (!IsExchangeOpen(asset, false))

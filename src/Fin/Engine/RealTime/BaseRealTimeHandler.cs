@@ -53,7 +53,11 @@ namespace QuantConnect.Lean.Engine.RealTime
         /// <remarks>Initialize this immediately since the Initialize method gets
         /// called after IAlgorithm.Initialize, so we want to be ready to accept
         /// events as soon as possible</remarks>
-        protected ConcurrentDictionary<ScheduledEvent, int> ScheduledEvents { get; } = new();
+        // SqCore Change ORIGINAL:
+        // protected ConcurrentDictionary<ScheduledEvent, int> ScheduledEvents { get; } = new();
+        // SqCore Change NEW:
+        protected ConcurrentDictionary<ScheduledEvent, int> ScheduledEvents { get; set; } = new();
+        // SqCore Change END
 
         /// <summary>
         /// The isolator limit result provider instance
@@ -94,6 +98,13 @@ namespace QuantConnect.Lean.Engine.RealTime
         /// </summary>
         /// <param name="time">Current time.</param>
         public abstract void ScanPastEvents(DateTime time);
+
+        // SqCore Change NEW:
+        public void Initialize()
+        {
+            ScheduledEvents = new();
+        }
+        // SqCore Change END
 
         /// <summary>
         /// Initializes the real time handler for the specified algorithm and job.

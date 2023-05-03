@@ -86,7 +86,8 @@ namespace QuantConnect.Algorithm.CSharp
         TimeSpan _warmUp = TimeSpan.Zero;
         string _ticker = "SPY";
         Symbol _symbolDaily, _symbolMinute;
-        OrderTicket lastOrderTicket = null;
+        OrderTicket _lastOrderTicket = null;
+        bool _wasLastOrderTicketLogged = false;
    
         List<QcPrice> _rawCloses = new List<QcPrice>();
         List<QcDividend> _dividends = new List<QcDividend>();
@@ -173,21 +174,31 @@ namespace QuantConnect.Algorithm.CSharp
                     // QC raises Warning if order quantity = 0. So, we don't sent these. "Unable to submit order with id -10 that has zero quantity."
 
                     // lastOrderTicket = MarketOnCloseOrder(_symbol, 10);
-                    lastOrderTicket = MarketOnCloseOrder(tradedSymbol, Math.Round(Portfolio.Cash / priceToUse)); // Daily Raw: and MOC order uses that day MOC price, Buy: FillDate: 00:00 on next day // Minute Raw: Buy FillDate: 16:00 today
+                    _lastOrderTicket = MarketOnCloseOrder(tradedSymbol, Math.Round(Portfolio.Cash / priceToUse)); // Daily Raw: and MOC order uses that day MOC price, Buy: FillDate: 00:00 on next day // Minute Raw: Buy FillDate: 16:00 today
+                    _wasLastOrderTicketLogged = false;
                     // lastOrderTicket = MarketOrder(_symbol, Math.Round(Portfolio.Cash / currentMinutePrice)); // Daily Raw: Buy: FillDate: 15:40 today on previous day close price.
                     // lastOrderTicket = MarketOrder(_symbol, Math.Round(Portfolio.Cash / rawCloses[rawCloses.Count - 1].Close));
                 }
 
                 if (this.Time.DayOfWeek == DayOfWeek.Friday && Portfolio[tradedSymbol].Quantity > 0)
-                    lastOrderTicket = MarketOnCloseOrder(tradedSymbol, -Portfolio[tradedSymbol].Quantity);  // Daily Raw: Sell: FillDate: 16:00 today (why???) (on previous day close price!!)
+                {
+                    _lastOrderTicket = MarketOnCloseOrder(tradedSymbol, -Portfolio[tradedSymbol].Quantity);  // Daily Raw: Sell: FillDate: 16:00 today (why???) (on previous day close price!!)
+                    _wasLastOrderTicketLogged = false;
+                }
                 // lastOrderTicket = MarketOrder(_symbol, -Portfolio[_symbol].Quantity); // Daily Raw: Sell: FillDate: 15:40 today on previous day close price.
             });
 
 
-            Schedule.On(DateRules.EveryDay(_ticker), TimeRules.BeforeMarketClose(_ticker, -1), () =>  // a schedule after close
+            Schedule.On(DateRules.EveryDay(_ticker), TimeRules.At(TimeSpan.FromMinutes(6 * 60)), () =>  // a schedule at 6:00 am every day
             {
-                if (lastOrderTicket != null && lastOrderTicket.Time.Date == this.Time.Date)
-                    Log($"Order filled: {_ticker} {lastOrderTicket.QuantityFilled} shares at {lastOrderTicket.AverageFillPrice} on SubmitTime: {lastOrderTicket.Time:yyyy-MM-dd HH:mm:ss} UTC"); // the order FillTime is in order._order.LastFillTime
+                if (!_wasLastOrderTicketLogged && _lastOrderTicket != null)
+                {
+                    Log($"Order filled: {_ticker} {_lastOrderTicket.QuantityFilled} shares at {_lastOrderTicket.AverageFillPrice} on SubmitTime: {_lastOrderTicket.Time:yyyy-MM-dd HH:mm:ss} UTC"); // the order FillTime is in order._order.LastFillTime
+                    _wasLastOrderTicketLogged = true;
+                }
+
+                // if (_lastOrderTicket != null && _lastOrderTicket.Time.Date == this.Time.Date)
+                //     Log($"Order filled: {_ticker} {_lastOrderTicket.QuantityFilled} shares at {_lastOrderTicket.AverageFillPrice} on SubmitTime: {_lastOrderTicket.Time:yyyy-MM-dd HH:mm:ss} UTC"); // the order FillTime is in order._order.LastFillTime
             });
         }
 
@@ -357,12 +368,12 @@ namespace QuantConnect.Algorithm.CSharp
                 // bool isOrderTimeAsExpected = true;
                 DateTime fillTimeUtc = orderEvent.UtcTime;
                 DateTime fillTimeLoc = fillTimeUtc.ConvertFromUtc(this.TimeZone); // Local time zone of the simulation
-                if (lastOrderTicket.OrderType == OrderType.MarketOnClose && !_isTradeOnMinuteResolution && !(fillTimeLoc.Hour == 0 && fillTimeLoc.Minute == 0 && fillTimeLoc.Second == 0))
+                if (_lastOrderTicket.OrderType == OrderType.MarketOnClose && !_isTradeOnMinuteResolution && !(fillTimeLoc.Hour == 0 && fillTimeLoc.Minute == 0 && fillTimeLoc.Second == 0))
                     // isOrderTimeAsExpected = false;
-                    Debug($"Order has been filled for {orderEvent.Symbol} at wrong time! Details: {lastOrderTicket.QuantityFilled} shares at {lastOrderTicket.AverageFillPrice} on FillTime: {fillTimeLoc:yyyy-MM-dd HH:mm:ss} local(America/New_York) instead of 0:00:00");
-                if (lastOrderTicket.OrderType == OrderType.MarketOnClose && _isTradeOnMinuteResolution && !((fillTimeLoc.Hour == 13 || fillTimeLoc.Hour == 16) && fillTimeLoc.Minute == 0 && fillTimeLoc.Second == 0))
+                    Debug($"Order has been filled for {orderEvent.Symbol} at wrong time! Details: {_lastOrderTicket.QuantityFilled} shares at {_lastOrderTicket.AverageFillPrice} on FillTime: {fillTimeLoc:yyyy-MM-dd HH:mm:ss} local(America/New_York) instead of 0:00:00");
+                if (_lastOrderTicket.OrderType == OrderType.MarketOnClose && _isTradeOnMinuteResolution && !((fillTimeLoc.Hour == 13 || fillTimeLoc.Hour == 16) && fillTimeLoc.Minute == 0 && fillTimeLoc.Second == 0))
                     // isOrderTimeAsExpected = false;
-                    Debug($"Order has been filled for {orderEvent.Symbol} at wrong time! Details: {lastOrderTicket.QuantityFilled} shares at {lastOrderTicket.AverageFillPrice} on FillTime: {fillTimeLoc:yyyy-MM-dd HH:mm:ss} local(America/New_York) instead of 16:00:00");
+                    Debug($"Order has been filled for {orderEvent.Symbol} at wrong time! Details: {_lastOrderTicket.QuantityFilled} shares at {_lastOrderTicket.AverageFillPrice} on FillTime: {fillTimeLoc:yyyy-MM-dd HH:mm:ss} local(America/New_York) instead of 16:00:00");
             }
         }
 

@@ -22,6 +22,10 @@ namespace QuantConnect.Lean.Engine.RealTime
             get;
         }
 
+        // SqCore Change NEW:
+        void Initialize();
+        // SqCore Change END
+        
         /// <summary>
         /// Initializes the real time handler for the specified algorithm and job
         /// </summary>
