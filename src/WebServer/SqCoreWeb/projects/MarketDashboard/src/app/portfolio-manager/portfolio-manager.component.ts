@@ -693,11 +693,12 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       uiPrtfRunResult.chrtValues.push(chartItem);
     }
 
+    const panelChartId = PortfolioManagerComponent.getNonNullDocElementById('panelChart');
     d3.selectAll('#pfRunResultChrt > *').remove();
     const lineChrtDiv = document.getElementById('pfRunResultChrt') as HTMLElement;
     const margin = {top: 50, right: 50, bottom: 30, left: 60 };
-    const chartWidth = 660 - margin.left - margin.right;
-    const chartHeight = 440 - margin.top - margin.bottom;
+    const chartWidth = panelChartId.clientWidth as number * 0.9 - margin.left - margin.right; // 90% of the PanelChart Width
+    const chartHeight = panelChartId.clientHeight as number * 0.9 - margin.top - margin.bottom; // 90% of the PanelChart Height
     const chrtData = uiPrtfRunResult.chrtValues.map((r:{ dates: Date; values: number; }) => ({date: new Date(r.dates), value: r.values}));
     const xMin = d3.min(chrtData, (r:{ date: Date; }) => r.date);
     const xMax = d3.max(chrtData, (r:{ date: Date; }) => r.date);
