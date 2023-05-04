@@ -45,7 +45,7 @@ export class AppComponent implements OnInit {
     // if (paramActiveTool != undefined && paramActiveTool != 'mh') // if it is not missing and not the default active tool: MarketHealth
     //   wsQueryStr = '?t=' + paramActiveTool; // ?t=bav
 
-    this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/dashboard' + wsQueryStr); // "wss://127.0.0.1/ws/dashboard" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection
+    this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/chrtgen' + wsQueryStr); // "wss://127.0.0.1/ws/dashboard" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection
   }
 
   ngOnInit(): void {

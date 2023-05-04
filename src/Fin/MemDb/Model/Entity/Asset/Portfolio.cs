@@ -287,8 +287,9 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
             posStckItem.Quantity = (int)item.Holdings.Quantity;
             posStckItem.AvgPrice = (float)item.Holdings.AveragePrice;
             posStckItem.LastPrice = (float)item.Holdings.Price;
+            p_prtfPoss.Add(posStckItem);
         }
-        p_prtfPoss.Add(posStckItem);
+
         PortfolioPosition posCashItem = new() // Cash Ticker
         {
             SqTicker = "C/" + prtfPositions.Portfolio.CashBook.AccountCurrency.ToString(),

@@ -105,7 +105,7 @@ export class AppComponent implements OnInit {
     gDiag.wsConnectionStartTime = new Date();
     // console.log('sq.d: ' + gDiag.wsConnectionStartTime.toISOString() + ': wsConnectionStartTime()');
 
-    this._socket.onopen = (event) => {
+    this._socket.onopen = (event) => { // we don't use the event param now: (event) =>
       gDiag.wsConnectionReadyTime = new Date();
       // console.log('sq.d: ' + gDiag.wsConnectionReadyTime.toISOString() + ': wsConnectionReadyTime()');
       console.log('ws: Connection started! _socket.send() can be used now.');

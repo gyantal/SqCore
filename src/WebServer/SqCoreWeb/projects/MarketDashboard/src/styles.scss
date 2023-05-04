@@ -1,9 +1,9 @@
-/* You can add global styles to this file, and also import other style files */
+/* You can add global styles (not specific to any Angular component) to this file, and also import other style files */
 
 html {
     font-size: 62.5%;   // revert to root font size of 10px. it allows to set font-size in rem, that corresponds to px
     height: 100vh; // we need to specify height 100vh as this is the whole tool height otherwise we will get scroll bar on the rightside
-  }
+}
 
 body {
     // Default font-size = 16px. Wiki uses 14px. Ft.com uses size 18px fonts. CNBC is using 18 and 14. Bloomberg uses Georgia 18px (for text). But 18px is too big for condensing a lot of info to the page. 16px should be our default too for text and header of tables. For numbers in cells in table we should targer 14px. 20px for section headers. 24px for webpage main title.
@@ -15,7 +15,7 @@ body {
     background-color: var(--bgColor);
     background-image: var(--bgImage);
     min-height: 80vh;
-  }
+}
 
 // Common for all the tooltips 
 .tooltipGeneral {

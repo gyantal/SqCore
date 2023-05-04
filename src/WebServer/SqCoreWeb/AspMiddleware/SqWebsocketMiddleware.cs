@@ -105,6 +105,9 @@ public class SqWebsocketMiddleware
             case "/dashboard":
                 await DashboardWs.OnWsConnectedAsync(context, webSocket);
                 break;
+            case "/chrtgen":
+                await ChrtGenWs.OnWsConnectedAsync(context, webSocket);
+                break;
             case "/example-ws1": // client sets this URL: connectionUrl.value = scheme + "://" + document.location.hostname + port + "/ws/example-ws1" ;
                 await ExampleWs.OnWsConnectedAsync(webSocket);
                 break;
@@ -174,6 +177,9 @@ public class SqWebsocketMiddleware
                                 case "/dashboard":
                                     DashboardWs.OnWsReceiveAsync(/* context, result, */ webSocket, bufferStr);  // no await. There is no need to Wait until all of its async inner methods are completed
                                     break;
+                                case "/chrtgen":
+                                    ChrtGenWs.OnWsReceiveAsync(/* context, result, */ webSocket, bufferStr);  // no await. There is no need to Wait until all of its async inner methods are completed
+                                    break;
                                 case "/example-ws1":
                                     ExampleWs.OnWsReceiveAsync(webSocket, bufferStr);
                                     break;
@@ -216,6 +222,9 @@ public class SqWebsocketMiddleware
         {
             case "/dashboard":
                 DashboardWs.OnWsClose(webSocket);
+                break;
+            case "/chrtgen":
+                ChrtGenWs.OnWsClose(webSocket);
                 break;
             case "/example-ws1":
                 ExampleWs.OnWsClose();

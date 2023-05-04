@@ -1,26 +1,6 @@
 :host { // this is the Shadow DOM root of the big main App component. The :hosts in the sub-components can overwrite this, but this still applies to them as default.
-  font-family: GeorgiaTimesNewRomanForLiningNumbers, "Times New Roman", Times, serif; // see TestFontsVerticalCentering.html
   font-size: 82.5%;
   line-height: 1.1;
-  background: red;
-}
-
-body { // no effect of this, later we can remove
-font-family: GeorgiaTimesNewRomanForLiningNumbers, "Times New Roman", Times, serif; // see TestFontsVerticalCentering.html
-font-size: 120%;
-line-height: 1.1;
-background: red;
-}
-
-@font-face {
-font-family: GeorgiaTimesNewRomanForLiningNumbers;
-src: local("Georgia");
-}
-
-@font-face {
-font-family: GeorgiaTimesNewRomanForLiningNumbers;
-src: local("Times New Roman");
-unicode-range: U+0030-0039;
 }
 
 .mainDiv1 {
