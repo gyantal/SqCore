@@ -105,7 +105,7 @@ export class AppComponent implements OnInit {
     gDiag.wsConnectionStartTime = new Date();
     // console.log('sq.d: ' + gDiag.wsConnectionStartTime.toISOString() + ': wsConnectionStartTime()');
 
-    this._socket.onopen = (event) => { // we don't use the event param now: (event) =>
+    this._socket.onopen = () => { // we don't use the event param now: (event) =>
       gDiag.wsConnectionReadyTime = new Date();
       // console.log('sq.d: ' + gDiag.wsConnectionReadyTime.toISOString() + ': wsConnectionReadyTime()');
       console.log('ws: Connection started! _socket.send() can be used now.');
@@ -195,6 +195,13 @@ export class AppComponent implements OnInit {
           break;
       }
     };
+
+    // resizing the sqLogo dynamically
+    window.addEventListener('resize', () => {
+      const sqLogo = PortfolioManagerComponent.getNonNullDocElementById('toolBarImg1');
+      sqLogo.style.width = window.innerWidth * 0.00225 - 1 + 'rem'; // with the horizontal 5px padding left and right, so subtract with 1rem(10px). 0.00225 => (46/2048) which (sqLogo.clientWidth / window.innerWidth) at normal screen size.
+      sqLogo.style.height = window.innerHeight * 0.0035 + 'rem'; // 0.0035 => (36/1031) which (sqLogo.clientHeight / window.innerHeight) at normal screen size.
+    });
 
     // 'beforeunload' will be fired if the user submits a form, clicks a link, closes the window (or tab), or goes to a new page using the address bar, search box, or a bookmark.
     window.addEventListener('beforeunload', (unloadEvent) => {

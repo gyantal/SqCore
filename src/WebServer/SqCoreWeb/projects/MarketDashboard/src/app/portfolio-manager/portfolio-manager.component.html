@@ -8,13 +8,13 @@
     </span>
     <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState" (click)="showPortfolioStats()" (dblclick)="onOpenPortfolioViewerClicked()"></app-sq-tree-view>
     <button (click)="showCreateOrEditPortfolioPopup('create')" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder') ? 'btnEnabled' : 'btnDisabled'">Create Portfolio</button>&nbsp;
-    <button (click)="showCreateOrEditFolderPopup('create')" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Folder' ? 'btnEnabled': 'btnDisabled'">Create Folder</button>&nbsp;<br><br>
+    <button (click)="showCreateOrEditFolderPopup('create')" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Folder' ? 'btnEnabled': 'btnDisabled'">Create Folder</button>&nbsp;<br>
     <button (click)="showCreateOrEditPortfolioPopup('edit')" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled': 'btnDisabled'">Edit Portfolio</button>&nbsp;
     <!-- The user should not be able edit virtual top folders that have negative folder.Id (checked by this condition: treeViewState.lastSelectedItem?.id! >= 0) -->
-    <button (click)="showCreateOrEditFolderPopup('edit')" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' && treeViewState.lastSelectedItem?.id! >= 0) ? 'btnEnabled': 'btnDisabled'">Edit Folder</button>&nbsp;<br><br>
-    <button id="openPortfolioViewer" (click)="onOpenPortfolioViewerClicked()" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled' : 'btnDisabled'">Open in Portfolio Viewer</button>&nbsp;
+    <button (click)="showCreateOrEditFolderPopup('edit')" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' && treeViewState.lastSelectedItem?.id! >= 0) ? 'btnEnabled': 'btnDisabled'">Edit Folder</button>&nbsp;
+    <button id="btnDelete" (click)="onDeletePrtfItemClicked()" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' || treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio') ? 'btnEnabled' : 'btnDisabled'">Delete</button><br><br>
+    <button id="openPortfolioViewer" (click)="onOpenPortfolioViewerClicked()" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled' : 'btnDisabled'">Open in Portfolio Viewer</button>&nbsp;&nbsp;&nbsp;
     <button id="openChartGenerator" (click)="onOpenChartGeneratorClicked()" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled' : 'btnDisabled'">Open in Chart Generator</button>&nbsp;
-    <button (click)="onDeletePrtfItemClicked()" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' || treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio') ? 'btnEnabled' : 'btnDisabled'">Delete</button><br><br>
     <div class="popup infoPopup" id="createOrEditFolderPopup" [ngStyle]="{'display': isCreateOrEditFolderPopupVisible ? 'block' : 'none'}"><br>
       <div>
         <div class="prtfCommon prtfFields">Name:<span class="requiredAndNotFound" *ngIf="!editedFolder.name">*</span></div>
@@ -134,7 +134,7 @@
             <tr>
               <td>StDev: {{uiPrtfRunResult.stDev | number:'1.2-2'}}</td>
               <td><a href="http://en.wikipedia.org/wiki/Ulcer_index" target="_blank">Ulcer</a>: {{uiPrtfRunResult.ulcer}}</td>
-              <td>Max.TradingDays in DrawDown: {{uiPrtfRunResult.tradingDays}}</td>
+              <td>Max.TradingDays in DD: {{uiPrtfRunResult.tradingDays}}</td>
             </tr>
             <tr>
               <td>WinRate: {{uiPrtfRunResult.winRate | number:'1.2-2'}}%</td>
@@ -149,7 +149,7 @@
             <tr>
               <td>Benchmark CAGR: {{uiPrtfRunResult.benchmarkCAGR}}</td>
               <td>Benchmark MaxDD: {{uiPrtfRunResult.benchmarkMaxDD}}</td>
-              <td>Correlation with Benchmark: {{uiPrtfRunResult.correlationWithBenchmark}}</td>
+              <td>Benchmark Correlation: {{uiPrtfRunResult.correlationWithBenchmark}}</td>
             </tr>
             <tr>
               <td>Num of Trades: {{uiPrtfRunResult.nTrades}}</td>
@@ -182,8 +182,8 @@
                 <td>{{item.quantity}}</td>
                 <td>{{item.avgPrice | number:'1.2-2'}}</td>
                 <td>{{item.price | number:'1.2-2'}}</td>
-                <td>{{item.holdingCost | number:'1.2-2'}}</td>
-                <td>{{item.holdingValue | number:'1.2-2'}}</td>
+                <td>{{item.holdingCost | number:'1.0-0'}}</td>
+                <td>{{item.holdingValue | number:'1.0-0'}}</td>
               </tr>
             </tbody>
           </table>

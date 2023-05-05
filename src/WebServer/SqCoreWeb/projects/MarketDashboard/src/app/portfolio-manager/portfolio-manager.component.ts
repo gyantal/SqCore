@@ -195,6 +195,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.dashboardHeaderHeight = approotToolbar.clientHeight;
       this.prtfMgrToolWidth = window.innerWidth as number;
       this.prtfMgrToolHeight = window.innerHeight as number;
+      PortfolioManagerComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.panelPrtfChrtWidth, this.panelPrtfChrtHeight);
       return resizeBy;
     });
   }
@@ -419,7 +420,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       }
       return value;
     });
-    PortfolioManagerComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult);
+    PortfolioManagerComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.panelPrtfChrtWidth, this.panelPrtfChrtHeight);
   }
 
   static createTreeViewData(pFolders: Nullable<FolderJs[]>, pPortfolios: Nullable<PortfolioJs[]>, pTreeViewState: TreeViewState) : TreeViewItem[] {
@@ -648,7 +649,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this._parentWsConnection.send(`PortfMgr.GetPortfolioRunResult:id:${lastSelectedTreeNode.id - this.gPortfolioIdOffset}`);
   }
 
-  static updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJs>, uiPrtfRunResult: UiPrtfRunResult) {
+  static updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJs>, uiPrtfRunResult: UiPrtfRunResult, inputChrtWidth: number, inputChrtHeight: number) {
     if (prtfRunResult == null)
       return;
 
@@ -693,12 +694,11 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       uiPrtfRunResult.chrtValues.push(chartItem);
     }
 
-    const panelChartId = PortfolioManagerComponent.getNonNullDocElementById('panelChart');
     d3.selectAll('#pfRunResultChrt > *').remove();
     const lineChrtDiv = document.getElementById('pfRunResultChrt') as HTMLElement;
     const margin = {top: 50, right: 50, bottom: 30, left: 60 };
-    const chartWidth = panelChartId.clientWidth as number * 0.9 - margin.left - margin.right; // 90% of the PanelChart Width
-    const chartHeight = panelChartId.clientHeight as number * 0.9 - margin.top - margin.bottom; // 90% of the PanelChart Height
+    const chartWidth = inputChrtWidth * 0.9 - margin.left - margin.right; // 90% of the PanelChart Width
+    const chartHeight = inputChrtHeight * 0.9 - margin.top - margin.bottom; // 90% of the PanelChart Height
     const chrtData = uiPrtfRunResult.chrtValues.map((r:{ dates: Date; values: number; }) => ({date: new Date(r.dates), value: r.values}));
     const xMin = d3.min(chrtData, (r:{ date: Date; }) => r.date);
     const xMax = d3.max(chrtData, (r:{ date: Date; }) => r.date);

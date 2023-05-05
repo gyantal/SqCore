@@ -241,11 +241,28 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
 
         Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} ({(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
 
-        var equityChart = backtestResults.Charts["Strategy Equity"].Series["Equity"].Values;
+        List<ChartPoint> equityChart = backtestResults.Charts["Strategy Equity"].Series["Equity"].Values;
         Console.WriteLine($"#Charts:{backtestResults.Charts.Count}. The Equity (PV) chart: {equityChart[0].y:N0}, {equityChart[1].y:N0} ... {equityChart[^2].y:N0}, {equityChart[^1].y:N0}");
-        foreach (var item in equityChart)
+
+        DateTime currentDate = DateTime.MinValue; // initialize currentDate to the smallest possible value
+        foreach (ChartPoint item in equityChart)
         {
-            p_pv.Add(new ChartPoint { x = item.x, y = item.y });
+             // convert the Unix timestamp (item.x) to a DateTime object and take only the date part
+            DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(item.x).DateTime.Date;
+            if (itemDate != currentDate) // if this is a new date, add a new point to p_pv
+            {
+                p_pv.Add(new ChartPoint { x = item.x, y = item.y });
+                currentDate = itemDate; // set currentDate to the new date
+            }
+            else // if this is the same date as the previous point, update the existing point
+            {
+                ChartPoint lastVal = p_pv[^1]; // get the last point in p_pv
+                if (lastVal.x < item.x) // if the x value of the new point is greater than the x value of the last point, update the last point
+                {
+                    lastVal.y = item.y;
+                    lastVal.x = item.x;
+                }
+            }
         }
 
         Dictionary<string, string> finalStat = backtestResults.FinalStatistics;
@@ -290,12 +307,13 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
             p_prtfPoss.Add(posStckItem);
         }
 
-        PortfolioPosition posCashItem = new() // Cash Ticker
+        PortfolioPosition posCashItem = new(); // Cash Tickers
+        foreach (var item in prtfPositions.Portfolio.CashBook.Values)
         {
-            SqTicker = "C/" + prtfPositions.Portfolio.CashBook.AccountCurrency.ToString(),
-            LastPrice = (float)prtfPositions.Portfolio.Cash
-        };
-        p_prtfPoss.Add(posCashItem);
+            posCashItem.SqTicker = "C/" + item.Symbol.ToString();
+            posCashItem.LastPrice = (float)item.Amount;
+            p_prtfPoss.Add(posCashItem);
+        }
         return null; // No Error
     }
 }
