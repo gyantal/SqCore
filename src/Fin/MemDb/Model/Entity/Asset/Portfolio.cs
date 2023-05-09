@@ -245,8 +245,9 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         Console.WriteLine($"#Charts:{backtestResults.Charts.Count}. The Equity (PV) chart: {equityChart[0].y:N0}, {equityChart[1].y:N0} ... {equityChart[^2].y:N0}, {equityChart[^1].y:N0}");
 
         DateTime currentDate = DateTime.MinValue; // initialize currentDate to the smallest possible value
-        foreach (ChartPoint item in equityChart)
+        for (int i = 0; i < equityChart.Count; i++)
         {
+            ChartPoint item = equityChart[i];
              // convert the Unix timestamp (item.x) to a DateTime object and take only the date part
             DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(item.x).DateTime.Date;
             if (itemDate != currentDate) // if this is a new date, add a new point to p_pv
@@ -257,11 +258,8 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
             else // if this is the same date as the previous point, update the existing point
             {
                 ChartPoint lastVal = p_pv[^1]; // get the last point in p_pv
-                if (lastVal.x < item.x) // if the x value of the new point is greater than the x value of the last point, update the last point
-                {
-                    lastVal.y = item.y;
-                    lastVal.x = item.x;
-                }
+                lastVal.y = item.y;
+                lastVal.x = item.x;
             }
         }
 
