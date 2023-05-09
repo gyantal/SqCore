@@ -366,7 +366,11 @@ namespace QuantConnect.Lean.Engine.DataFeeds
                 var securityBenchmark = _algorithm.Benchmark as SecurityBenchmark;
                 if (securityBenchmark != null)
                 {
-                    var resolution = _algorithm.LiveMode ? Resolution.Minute : Resolution.Hour;
+                    // SqCore Change ORIGINAL:
+                    // var resolution = _algorithm.LiveMode ? Resolution.Minute : Resolution.Hour;
+                    // SqCore Change NEW:
+                    var resolution = _algorithm.LiveMode ? Resolution.Minute : Resolution.Daily; // for Benchmark, QC by default uses per hour resolution in backtest in SubscriptionSynchronizer, but we only work with daily data. It is also faster execution.
+                    // SqCore Change END
 
                     // Check that the tradebar subscription we are using can support this resolution GH #5893
                     var subscriptionType = _algorithm.SubscriptionManager.SubscriptionDataConfigService.LookupSubscriptionConfigDataTypes(securityBenchmark.Security.Type, resolution, securityBenchmark.Security.Symbol.IsCanonical()).First();

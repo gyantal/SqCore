@@ -481,6 +481,10 @@ namespace QuantConnect.Algorithm.CSharp
             TimeSpan span = p_utcDate - dtDateTime;
             return (long)span.TotalSeconds;
         }
+        public override void OnEndOfAlgorithm()
+        {
+            Log($"OnEndOfAlgorithm(): Backtest time: {(DateTime.UtcNow - startTime).TotalMilliseconds}ms");
+        }
 
     }
 }

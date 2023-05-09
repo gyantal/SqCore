@@ -11,7 +11,7 @@ using Flurl;
 using Flurl.Http;
 using SqCommon;
 
-namespace YahooFinanceApi;
+namespace YahooFinanceApi; // based on https://github.com/karlwancl/YahooFinanceApi
 
 public sealed partial class Yahoo
 {

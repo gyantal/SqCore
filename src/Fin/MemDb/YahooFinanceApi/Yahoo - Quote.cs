@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Flurl;
 using Flurl.Http;
 
-namespace YahooFinanceApi;
+namespace YahooFinanceApi; // based on https://github.com/karlwancl/YahooFinanceApi
 
 public sealed partial class Yahoo
 {
