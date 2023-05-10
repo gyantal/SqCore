@@ -30,7 +30,7 @@ internal static class YahooClientFactory
         return (_client, _crumb);
     }
 
-    private static async Task<IFlurlClient> CreateClientAsync(CancellationToken token)
+    internal static async Task<IFlurlClient> CreateClientAsync(CancellationToken token)
     {
         const int MaxRetryCount = 5;
         for (int retryCount = 0; retryCount < MaxRetryCount; retryCount++)
@@ -60,7 +60,8 @@ internal static class YahooClientFactory
         throw new Exception("Failure to create client.");
     }
 
-    private static Task<string> GetCrumbAsync(IFlurlClient client, CancellationToken token) =>
+    // 2023-05-10: YF v7 API changes. without cookie sent, 'getcrumb' returns an empty string. Now, v7 historical doesn't need a crumb, so it is not a problem.
+    internal static Task<string> GetCrumbAsync(IFlurlClient client, CancellationToken token) =>
         "https://query1.finance.yahoo.com/v1/test/getcrumb"
         .WithClient(client)
         .GetAsync(token)

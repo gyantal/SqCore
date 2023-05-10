@@ -53,7 +53,28 @@ public sealed partial class Yahoo
         if (duplicateSymbol != null)
             throw new ArgumentException($"Duplicate symbol: {duplicateSymbol}.");
 
-        var url = "https://query1.finance.yahoo.com/v7/finance/quote"
+        // 2023-05-10: YF realtime stopped working. see https://github.com/joshuaulrich/quantmod/issues/382
+        // Pre 2023-05-10:
+        // - realtime price DID NOT require crumb. https://query1.finance.yahoo.com/v7/finance/quote?symbols=QQQ
+        // - historical price DID require crumb: https://query1.finance.yahoo.com/v7/finance/download/SPY&crumb=utzqhapoGQ9
+        // After 2023-05-10:
+        // - realtime price requires crumb. https://query1.finance.yahoo.com/v7/finance/quote?symbols=QQQ&crumb=utzqhapoGQ9
+        // - historical price does NOT require crumb: https://query1.finance.yahoo.com/v7/finance/download/SPY
+        // Crumb can be obtained
+        // - get a YF cookie with any YF query. In some countries GDPR consent needs to be given in a popup.
+        // - get crumb with https://query2.finance.yahoo.com/v1/test/getcrumb and that crumb can be used in real-time query.
+        // if cookie is not sent, the https://query2.finance.yahoo.com/v1/test/getcrumb returns an empty string.
+        // It is quite a hassle.
+        // As a temporary workaround, the v6 API still works as it was (without crumb). So, use v6 API with realtime quote, and the v7 API for historical.
+
+        // YF v10 API can be another PlanB in the future:
+        // https://query2.finance.yahoo.com/v10/finance/quoteSummary/SPY?modules=price
+        // But it is only single ticker query, not Symbols=list of 500 symbols in 1 query, so not good.
+        // "it's not quite as swift as the comma-separated shares list option that's available via the current v7 API process."
+        // But at least this doesn't use Crumbs. And in general it works.
+
+        // var url = "https://query1.finance.yahoo.com/v7/finance/quote"
+        var url = "https://query1.finance.yahoo.com/v6/finance/quote"
             .SetQueryParam("symbols", string.Join(",", symbols));
 
         if (fields.Any())

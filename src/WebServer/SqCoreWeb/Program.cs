@@ -18,6 +18,7 @@ using QuantConnect.Lean.Engine.Results;
 using QuantConnect.Securities;
 using QuantConnect.Util;
 using SqCommon;
+using YahooFinanceApi;
 
 namespace SqCoreWeb;
 
@@ -97,9 +98,7 @@ public partial class Program
             DashboardClient.PreInit();    // services add handlers to the MemDb.EvMemDbInitialized event.
 
             // 2. Init services
-            var redisConnString = OperatingSystem.IsWindows() ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
-            if (redisConnString == null)
-                throw new SqException("Redis ConnectionStrings is missing from Config");
+            var redisConnString = (OperatingSystem.IsWindows() ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"]) ?? throw new SqException("Redis ConnectionStrings is missing from Config");
             int redisDbIndex = 0;  // DB-0 is ProductionDB. DB-1+ can be used for Development when changing database schema, so the Production system can still work on the ProductionDB
             var db = new Db(redisConnString, redisDbIndex, null);   // mid-level DB wrapper above low-level DB
             BrokersWatcher.gWatcher.Init(); // Returns quickly, because Broker connections happen in a separate ThreadPool threads. FintechCommon's MemDb is built on BrokerCommon's BrokerWatcher. So, it makes sense to initialize Brokers asap. Before MemDb uses it for RtNavTimer_Elapsed.ownloadLastPriceNav() very early
@@ -279,7 +278,9 @@ public partial class Program
         ColorConsole.WriteLine(ConsoleColor.Magenta, "---- MemDbAdmin !!!  ----");
         Console.WriteLine("1. MemDb: Force Reload only HistData And SetNewTimer");
         Console.WriteLine("2. MemDb: Reload All DbData Only If Changed");
-        Console.WriteLine("3. FinDb: Crawl security histories");
+        Console.WriteLine("3. YF: Test getting SPY history");
+        Console.WriteLine("4. YF: Test getting SPY realtime");
+        Console.WriteLine("5. FinDb: Crawl security histories");
         Console.WriteLine("9. Exit to main menu.");
         string userInput;
         try
@@ -301,6 +302,27 @@ public partial class Program
                 Console.WriteLine(MemDb.gMemDb.ReloadDbDataIfChanged(false).TurnAsyncToSyncTask().ToString());
                 break;
             case "3":
+                IReadOnlyList<Candle?> history = Yahoo.GetHistoricalAsync("SPY").TurnAsyncToSyncTask();
+                Candle? lastCandle = history[^1];
+                if (lastCandle != null)
+                    Console.WriteLine($"SPY History length: {history.Count}. LastCandle: {lastCandle.DateTime}: {lastCandle.Close}");
+                else
+                    Console.WriteLine($"SPY History is not received.");
+                break;
+            case "4":
+                try
+                {
+                    IReadOnlyDictionary<string, YahooFinanceApi.Security> quotes = Yahoo.Symbols(new string[] { "SPY" }).Fields(new Field[] { Field.Symbol, Field.RegularMarketPreviousClose, Field.RegularMarketPrice, Field.MarketState, Field.PostMarketPrice, Field.PreMarketPrice, Field.PreMarketChange }).QueryAsync().TurnAsyncToSyncTask(); // takes 45 ms from WinPC (30 tickers)
+                    YahooFinanceApi.Security quote = quotes["SPY"];
+                    Console.WriteLine($"SPY RegularMarketPreviousClose: {quote.RegularMarketPreviousClose}");
+                }
+                catch (System.Exception e)
+                {
+                    Console.WriteLine($"Exception: {e.Message}");
+                }
+
+                break;
+            case "5":
                 SqTaskScheduler.TestElapseTrigger("FinDbDailyCrawler", 0);
                 // Console.WriteLine(FinDb.CrawlData(false).TurnAsyncToSyncTask().ToString());
                 break;

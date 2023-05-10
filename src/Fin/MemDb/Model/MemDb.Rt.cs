@@ -333,7 +333,7 @@ public partial class MemDb
                     throw new SqException($"YfTicker doesn't exist for asset {r.SqTicker}");
             }).ToArray();
             Dictionary<string, bool> yfTickersReceived = yfTickers.ToDictionary(r => r, r => false);
-            var quotes = await Yahoo.Symbols(yfTickers).Fields(new Field[] { Field.Symbol, Field.RegularMarketPreviousClose, Field.RegularMarketPrice, Field.MarketState, Field.PostMarketPrice, Field.PreMarketPrice, Field.PreMarketChange }).QueryAsync();  // takes 45 ms from WinPC (30 tickers)
+            IReadOnlyDictionary<string, Security> quotes = await Yahoo.Symbols(yfTickers).Fields(new Field[] { Field.Symbol, Field.RegularMarketPreviousClose, Field.RegularMarketPrice, Field.MarketState, Field.PostMarketPrice, Field.PreMarketPrice, Field.PreMarketChange }).QueryAsync();  // takes 45 ms from WinPC (30 tickers)
 
             int nReceivedAndRecognized = 0;
             foreach (var quote in quotes)
