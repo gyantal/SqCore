@@ -28,7 +28,10 @@ export function processUiWithPrtfRunResultChrt(chrtData: { date: Date; value: nu
   chrtline.append('path')
       .attr('class', 'line')
       .datum(chrtData) // Binds data to the line
-      .attr('d', line as any);
+      .attr('d', line as any)
+      .attr('fill', 'none')
+      .attr('stroke', 'blue')
+      .attr('stroke-width', 1.5);
 
   // append the x line
   focus.append('line')

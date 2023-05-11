@@ -225,14 +225,15 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
 
     public string? GetBacktestResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss)
     {
+        const int gDateTimeOffset = 300; // used for calculating the isDailChart Data or perminute data
         p_stat = new PortfolioRunResultStatistics();
         p_pv = new List<ChartPoint>();
         p_prtfPoss = new List<PortfolioPosition>();
 
         Thread.Sleep(1 + Id);   // temporary here for simulation.
 
-        string algorithm = String.IsNullOrEmpty(Algorithm) ? "BasicTemplateFrameworkAlgorithm" : Algorithm;
-        BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(algorithm, @"{""ema-fast"":10,""ema-slow"":20}");
+        string algorithmName = String.IsNullOrEmpty(Algorithm) ? "BasicTemplateFrameworkAlgorithm" : Algorithm;
+        BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(algorithmName, @"{""ema-fast"":10,""ema-slow"":20}");
         if (backtestResults == null)
             return "Error in Backtest";
 
@@ -244,22 +245,37 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         List<ChartPoint> equityChart = backtestResults.Charts["Strategy Equity"].Series["Equity"].Values;
         Console.WriteLine($"#Charts:{backtestResults.Charts.Count}. The Equity (PV) chart: {equityChart[0].y:N0}, {equityChart[1].y:N0} ... {equityChart[^2].y:N0}, {equityChart[^1].y:N0}");
 
-        DateTime currentDate = DateTime.MinValue; // initialize currentDate to the smallest possible value
-        for (int i = 0; i < equityChart.Count; i++)
+        bool isDailyChartData = true;
+        if (equityChart.Count > 2)
         {
-            ChartPoint item = equityChart[i];
-             // convert the Unix timestamp (item.x) to a DateTime object and take only the date part
-            DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(item.x).DateTime.Date;
-            if (itemDate != currentDate) // if this is a new date, add a new point to p_pv
+            isDailyChartData = (equityChart[2].x - equityChart[1].x) > gDateTimeOffset;
+        }
+        if (isDailyChartData)
+        {
+            DateTime currentDate = DateTime.MinValue; // initialize currentDate to the smallest possible value
+            for (int i = 0; i < equityChart.Count; i++)
             {
-                p_pv.Add(new ChartPoint { x = item.x, y = item.y });
-                currentDate = itemDate; // set currentDate to the new date
+                ChartPoint item = equityChart[i];
+                // convert the Unix timestamp (item.x) to a DateTime object and take only the date part
+                DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(item.x).DateTime.Date;
+                if (itemDate != currentDate) // if this is a new date, add a new point to p_pv
+                {
+                    p_pv.Add(new ChartPoint { x = item.x, y = item.y });
+                    currentDate = itemDate; // set currentDate to the new date
+                }
+                else // if this is the same date as the previous point, update the existing point
+                {
+                    ChartPoint lastVal = p_pv[^1]; // get the last point in p_pv
+                    lastVal.y = item.y;
+                    lastVal.x = item.x;
+                }
             }
-            else // if this is the same date as the previous point, update the existing point
+        }
+        else // PerMinute Data
+        {
+            for (int i = 0; i < equityChart.Count; i++)
             {
-                ChartPoint lastVal = p_pv[^1]; // get the last point in p_pv
-                lastVal.y = item.y;
-                lastVal.x = item.x;
+                p_pv.Add(new ChartPoint { x = equityChart[i].x, y = equityChart[i].y });
             }
         }
 
@@ -295,13 +311,15 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
 
         // To be worked upon - Daya
         var prtfPositions = backtestResults.Algorithm;
-        PortfolioPosition posStckItem = new(); // Stock Tickers
         foreach (var item in prtfPositions.UniverseManager.ActiveSecurities.Values)
         {
-            posStckItem.SqTicker = "S/" + item.Holdings.Symbol.ToString();
-            posStckItem.Quantity = (int)item.Holdings.Quantity;
-            posStckItem.AvgPrice = (float)item.Holdings.AveragePrice;
-            posStckItem.LastPrice = (float)item.Holdings.Price;
+            PortfolioPosition posStckItem = new()
+            {
+                SqTicker = "S/" + item.Holdings.Symbol.ToString(),
+                Quantity = (int)item.Holdings.Quantity,
+                AvgPrice = (float)item.Holdings.AveragePrice,
+                LastPrice = (float)item.Holdings.Price
+            }; // Stock Tickers
             p_prtfPoss.Add(posStckItem);
         }
 

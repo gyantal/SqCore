@@ -27,8 +27,6 @@
   <!-- Class=commonColStyle name will be changed in future - Daya(28-04-2023) -->
   <div class="commonColStyle" id="portfolios">
     Portfolios
-    <button (click)="onSelectFromTreeClicked()">Select from Tree</button>
-    <!-- <div id="selectTree" *ngIf="isSelectTreevisible"><app-portfolio-manager></app-portfolio-manager></div> -->
     <button (click)="onRunBacktestClicked()">Run Backtest</button>
   </div>
   <div class="commonColStyle" id="stockAndIndexes">
@@ -39,5 +37,9 @@
   </div>
   <div class="commonColStyle" id="others">
     Others
+  </div>
+
+  <div id="backtestResChrt">Panel Chart
+    <div id="pfRunResultChrt"></div>
   </div>
 </div>

@@ -1,6 +1,7 @@
 import { Component, OnInit, AfterViewInit, Input, ViewChild } from '@angular/core';
 import { SqTreeViewComponent } from '../sq-tree-view/sq-tree-view.component';
 import { processUiWithPrtfRunResultChrt } from '../../../../sq-ng-common/src/lib/chart/advanced-chart';
+import { PrtfRunResultJs, UiChartPointValues, UiPrtfPositions, UiPrtfRunResult } from '../../sq-globals';
 import * as d3 from 'd3';
 
 type Nullable<T> = T | null;
@@ -29,57 +30,6 @@ class PortfolioJs extends PortfolioItemJs {
   public sharedUserWithMe = '';
   public baseCurrency = 'USD'; // default currrency
   public portfolioType = 'Trades'; // default type
-}
-
-interface ChartJs { // PfRunResults Chart Data
-  dates: number[];
-  values: number[];
-}
-
-class PrtfRunResultJs { // we can specify the input types more, but whatever.
-  public pstat: any; // all the Stat members from UiPrtfRunResult, we skip creating detailed sub classes
-  public chart!: ChartJs;
-  public prtfPoss: any; // all the position members from UiPrtfPositions, we skip creating detailed sub classes
-}
-
-// Ui classes
-class UiPrtfRunResult {
-  public startPortfolioValue: number = 0;
-  public endPortfolioValue: number = 0;
-  public totalReturn: number = 0;
-  public cAGR: number = 0;
-  public maxDD: number = 0;
-  public sharpeRatio: number = 0;
-  public stDev: number = 0;
-  public ulcer: number = 0;
-  public tradingDays: number = 0;
-  public nTrades: number = 0;
-  public winRate: number = 0;
-  public lossRate: number = 0;
-  public sortino: number = 0;
-  public turnover: number = 0;
-  public longShortRatio: number = 0;
-  public fees: number = 0;
-  public benchmarkCAGR: number = 0;
-  public benchmarkMaxDD: number = 0;
-  public correlationWithBenchmark: number = 0;
-
-  public chrtValues: UiChartPointValues[] = [];
-  public prtfPosValues: UiPrtfPositions[] = [];
-}
-// chart values
-class UiChartPointValues {
-  public dates = new Date();
-  public values = NaN;
-}
-
-class UiPrtfPositions {
-  public sqTicker: string = '';
-  public quantity: number = 0;
-  public avgPrice: number = 0;
-  public price: number = 0;
-  public holdingCost: number = 0;
-  public holdingValue: number = 0;
 }
 
 export class TreeViewItem { // future work. At the moment, it copies PortfolioFldrJs[] and add the children field. With unnecessary field values. When Portfolios are introduced, this should be rethought.

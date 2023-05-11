@@ -25,6 +25,8 @@ public class ChrtGenWs
     {
         Utils.Logger.Debug($"ChrtGenWs.OnConnectedAsync()) BEGIN");
         // context.Request comes as: 'wss://' + document.location.hostname + '/ws/chrtgen?t=bav'
+        string? queryStr = context.Request.QueryString.Value;
+        BacktestResults(queryStr, webSocket);
         var userEmailClaim = context?.User?.Claims?.FirstOrDefault(p => p.Type == @"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
         var email = userEmailClaim?.Value ?? "unknown@gmail.com";
 
@@ -56,15 +58,13 @@ public class ChrtGenWs
     }
 
 // Yet to Develop - Daya
-    public static void BacktestResults(string p_msg, WebSocket webSocket)
+    public static void BacktestResults(string? p_msg, WebSocket webSocket)
     {
         // Step1: Processing the message to extract the Id
-        // int idStartInd = p_msg.IndexOf(":");
-        // if (idStartInd == -1)
-        //     return;
-        // int id = Convert.ToInt32(p_msg[(idStartInd + 1)..]);
-        Utils.Logger.Info("Backtest msg is :", p_msg);
-        int id = 1;
+        int idStartInd = p_msg!.IndexOf(":");
+        if (idStartInd == -1)
+            return;
+        int id = Convert.ToInt32(p_msg[(idStartInd + 1)..]);
 
         // Step2: Getting the BackTestResults
         string? errMsg = null;

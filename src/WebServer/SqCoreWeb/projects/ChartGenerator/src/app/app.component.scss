@@ -4,7 +4,7 @@
 }
 
 .chrtGenDiagnosticsMsg {
-  position: absolute;
+  position: absolute; // replacing the default (static), because we intentionally put it in the top right corner
   top: 0rem;
   right: 0rem;
 }
@@ -34,4 +34,11 @@
 #others {
   float:right;
   background:rgb(166, 255, 0);
+}
+
+#backtestResChrt {
+  width: 100%;
+  height: 42.5vh;
+  overflow: auto;
+  background-color: whitesmoke;
 }
