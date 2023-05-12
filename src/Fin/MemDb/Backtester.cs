@@ -18,6 +18,7 @@ using QuantConnect.Lean.Engine.Server;
 using QuantConnect.Lean.Engine.Setup;
 using QuantConnect.Lean.Engine.TransactionHandlers;
 using QuantConnect.Packets;
+using QuantConnect.Parameters;
 using QuantConnect.Util;
 
 namespace Fin.MemDb;
@@ -118,6 +119,10 @@ public static class Backtester
         Console.WriteLine("QC: Run backtest...<Basic or HarryLong or TAA>...");
         Stopwatch stopwatch = Stopwatch.StartNew();
 
+        // SqCore Change NEW:
+        SqBacktestConfig sqBacktestConfig = new();
+        // SqCore Change END
+
         // Instead of using JobQueue as in QC.Launcher, we implement the gist of it. Better to see what is required, and better to customize. Some parts can go to Backtester Init(). Like Loading Fin.Algorithm.CSharp.dll.
         BaseResultsHandler.gIsSaveResultsFiles = false;   // enable these for Debugging only, but not in Release, because 110KB file creation is slow
         DataMonitor.gIsSaveResultsFiles = false; // enable these for Debugging only
@@ -177,8 +182,11 @@ public static class Backtester
         // 1. WorkerThread is Disposed in Engine.Run(), so next run raises exception: "The collection has been marked as complete with regards to additions."
         // 2. In our WebServer, we want to run Engin.Run() parallel if many users doing backtest at the same time.
         // We don't do a single JobQueue if possible. (maybe in the future, but we have enough CPU cores to run these backtest parallel)
+        // SqCore Change ORIGINAL:
         // engine.Run(job, algorithmManager, algorithmDllRelPath, WorkerThread.Instance);
-        engine.Run(job, algorithmManager, gAlgorithmDllRelPath, new WorkerThread(), false);
+        // SqCore Change NEW:
+        engine.Run(job, algorithmManager, gAlgorithmDllRelPath, new WorkerThread(), sqBacktestConfig);
+        // SqCore Change END
 
         // Console.SetOut(savedConsoleOut);
         // Console.SetError(savedConsoleError);

@@ -858,7 +858,19 @@ public class StrategyUberTaaController : ControllerBase
             p_clmtData[iRows, 0] = clmtMatlabDateVec[iRows];
             for (int jCols = 0; jCols < p_clmtData.GetLength(1) - 1; jCols++)
             {
-                p_clmtData[iRows, jCols + 1] = p_quotesForClmtData[jCols][iRows].AdjClosePrice;
+                try
+                {
+                   p_clmtData[iRows, jCols + 1] = p_quotesForClmtData[jCols][iRows].AdjClosePrice;
+                }
+                catch (System.Exception e)
+                {
+                    StringBuilder sb = new();
+                    foreach (List<DailyData> quotes in p_quotesForClmtData)
+                    {
+                        sb.Append($"{quotes.Count}/");
+                    }
+                    throw new Exception($"Exception in UberTaa.CLMTCalc(). Lengths of the p_quotesForClmtData: {sb}). Original exception: '{e.Message}'");
+                }
             }
         }
 

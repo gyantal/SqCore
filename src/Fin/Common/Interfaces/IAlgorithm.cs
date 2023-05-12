@@ -14,6 +14,7 @@ using QuantConnect.Algorithm.Framework.Alphas;
 using QuantConnect.Securities.Future;
 using QuantConnect.Securities.Option;
 using QuantConnect.Storage;
+using QuantConnect.Parameters;
 
 namespace QuantConnect.Interfaces
 {
@@ -35,6 +36,14 @@ namespace QuantConnect.Interfaces
         /// Event fired when an algorithm generates a insight
         /// </summary>
         event AlgorithmEvent<GeneratedInsightsCollection> InsightsGenerated;
+
+        // SqCore Change NEW:
+        SqBacktestConfig SqBacktestConfig
+        {
+            get;
+            set;
+        }
+        // SqCore Change END
 
         /// <summary>
         /// Gets the time keeper instance

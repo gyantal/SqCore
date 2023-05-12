@@ -191,6 +191,14 @@ namespace QuantConnect.Algorithm
         [DocumentationAttribute(AlgorithmFramework)]
         public event AlgorithmEvent<GeneratedInsightsCollection> InsightsGenerated;
 
+        // SqCore Change NEW:
+        public SqBacktestConfig SqBacktestConfig
+        {
+            get;
+            set;
+        }
+        // SqCore Change END
+
         /// <summary>
         /// Security collection is an array of the security objects such as Equities and FOREX. Securities data
         /// manages the properties of tradeable assets such as price, open and close time and holdings information.

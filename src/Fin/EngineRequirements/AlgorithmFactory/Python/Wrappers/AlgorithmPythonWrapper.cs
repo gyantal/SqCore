@@ -20,6 +20,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using QuantConnect.Storage;
 using SqCommon;
+using QuantConnect.Parameters;
 
 namespace QuantConnect.AlgorithmFactory.Python.Wrappers
 {
@@ -132,6 +133,14 @@ namespace QuantConnect.AlgorithmFactory.Python.Wrappers
                 throw new Exception($"AlgorithmPythonWrapper(): {interpreter.GetExceptionMessageHeader(e)}");
             }
         }
+
+        // SqCore Change NEW:
+        public SqBacktestConfig SqBacktestConfig
+        {
+            get;
+            set;
+        }
+        // SqCore Change END
 
         /// <summary>
         /// AlgorithmId for the backtest

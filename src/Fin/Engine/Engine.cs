@@ -15,6 +15,7 @@ using QuantConnect.Lean.Engine.HistoricalData;
 using QuantConnect.Lean.Engine.Setup;
 using QuantConnect.Orders;
 using QuantConnect.Packets;
+using QuantConnect.Parameters;
 using QuantConnect.Securities;
 using QuantConnect.Util;
 using SqCommon;
@@ -64,7 +65,7 @@ namespace QuantConnect.Lean.Engine
         /// <param name="manager">The algorithm manager instance</param>
         /// <param name="assemblyPath">The path to the algorithm's assembly</param>
         /// <param name="workerThread">The worker thread instance</param>
-        public void Run(AlgorithmNodePacket job, AlgorithmManager manager, string assemblyPath, WorkerThread workerThread, bool p_isUseIbFeeModelForEquities = true)
+        public void Run(AlgorithmNodePacket job, AlgorithmManager manager, string assemblyPath, WorkerThread workerThread, SqBacktestConfig p_sqBacktestConfig)
         {
             var marketHoursDatabaseTask = Task.Run(() => StaticInitializations());
 
@@ -99,12 +100,13 @@ namespace QuantConnect.Lean.Engine
 
                     // Save algorithm to cache, load algorithm instance:
                     algorithm = AlgorithmHandlers.Setup.CreateAlgorithmInstance(job, assemblyPath);
+                    algorithm.SqBacktestConfig = p_sqBacktestConfig;
 
                     // if (algorithm.BrokerageModel as DefaultBrokerageModel != null) // IF works, but longer, and evaluates Cast twice.
                     //     (algorithm.BrokerageModel as DefaultBrokerageModel).m_isUseIbFeeModelForEquities = false;
                     // (algorithm.BrokerageModel as DefaultBrokerageModel)?.m_isUseIbFeeModelForEquities = p_isUseIbFeeModelForEquities; // in 2023, the null conditional (?.) operator on left hand side of assignment is not allowed yet
-                    (algorithm.BrokerageModel as DefaultBrokerageModel)?.SetIsUseIbFeeModelForEquities(p_isUseIbFeeModelForEquities);
-                    ((algorithm.SecurityInitializer as BrokerageModelSecurityInitializer)?.BrokerageModel as DefaultBrokerageModel)?.SetIsUseIbFeeModelForEquities(p_isUseIbFeeModelForEquities);
+                    (algorithm.BrokerageModel as DefaultBrokerageModel)?.SetIsUseIbFeeModelForEquities(p_sqBacktestConfig.DoUseIbFeeModelForEquities);
+                    ((algorithm.SecurityInitializer as BrokerageModelSecurityInitializer)?.BrokerageModel as DefaultBrokerageModel)?.SetIsUseIbFeeModelForEquities(p_sqBacktestConfig.DoUseIbFeeModelForEquities);
 
                     algorithm.ProjectId = job.ProjectId;
 
