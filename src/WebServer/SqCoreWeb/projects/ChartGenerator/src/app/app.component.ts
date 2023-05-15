@@ -2,9 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';
-import { SqNgCommonUtilsTime } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
+import { SqNgCommonUtilsTime, minDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { processUiWithPrtfRunResultChrt } from '../../../sq-ng-common/src/lib/chart/advanced-chart';
-import { gDiag, PrtfRunResultJs, UiChartPointValues, UiPrtfRunResult } from '../../../MarketDashboard/src/sq-globals';
+import { PrtfRunResultJs, UiChartPointValues, UiPrtfRunResult } from '../../../MarketDashboard/src/sq-globals';
 import * as d3 from 'd3';
 
 type Nullable<T> = T | null;
@@ -14,17 +14,19 @@ class HandshakeMessage {
   public param2 = '';
 }
 
-// const minDate = new Date();
+// export const minDate = new Date();
 
-// export class ChrtGenDiagnostics {
-//   public mainTsTime: Date = new Date();
-//   public mainAngComponentConstructorTime: Date = minDate;
-//   public windowOnLoadTime: Date = minDate;
+export class ChrtGenDiagnostics {
+  public mainTsTime: Date = new Date();
+  public mainAngComponentConstructorTime: Date = new Date();
+  public windowOnLoadTime: Date = minDate;
 
-//   public serverBacktestTime: Date = minDate;
-//   public communicationOverheadTime: Date = minDate;
-//   public totalUiResponseTime: Date = minDate;
-// }
+  public serverBacktestTime: Date = minDate;
+  public communicationOverheadTime: string = '';
+  public totalUiResponseTime: Date = minDate;
+}
+
+export const chrtGenDiag: ChrtGenDiagnostics = new ChrtGenDiagnostics();
 
 @Component({
   selector: 'app-root',
@@ -37,9 +39,10 @@ export class AppComponent implements OnInit {
 
   prtfRunResult: Nullable<PrtfRunResultJs> = null;
   uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
-  chrtWidth = 0;
-  chrtHeight = 0;
+  pvChrtWidth = 0;
+  pvChrtHeight = 0;
 
+  prtfIds: string = '';
   isSrvConnectionAlive: boolean = true;
   chrtGenDiagnosticsMsg = 'Benchmarking time, connection speed';
 
@@ -54,7 +57,7 @@ export class AppComponent implements OnInit {
   public _socket: WebSocket; // initialize later in ctor, becuse we have to send back the activeTool from urlQueryParams
 
   constructor(http: HttpClient) {
-    gDiag.mainAngComponentConstructorTime = new Date();
+    chrtGenDiag.mainAngComponentConstructorTime = new Date();
     this.m_http = http;
 
     const url = new URL(window.location.href); // https://sqcore.net/webapps/ChartGenerator/?id=1
@@ -78,7 +81,6 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     // WebSocket connection
-
     this._socket.onopen = () => {
       console.log('ws: Connection started! _socket.send() can be used now.');
     };
@@ -94,27 +96,28 @@ export class AppComponent implements OnInit {
           this.user.email = handshakeMsg.email;
           break;
         case 'PrtfRunResult':
+          chrtGenDiag.serverBacktestTime = new Date();
           console.log('ChrtGen.PrtfRunResult:' + msgObjStr);
           this.processPortfolioRunResult(msgObjStr);
+          chrtGenDiag.totalUiResponseTime = new Date();
+          break;
+        case 'ErrorToUser':
+          console.log('ChrtGen.ErrorToUser:' + msgObjStr);
           break;
         default:
           return false;
       }
     };
 
-    const backtestResChartId = AppComponent.getNonNullDocElementById('backtestResChrt');
-    this.chrtWidth = backtestResChartId.clientWidth as number;
-    this.chrtHeight = backtestResChartId.clientHeight as number;
+    const backtestResChartId = SqNgCommonUtils.getNonNullDocElementById('backtestResChrt');
+    this.pvChrtWidth = backtestResChartId.clientWidth as number;
+    this.pvChrtHeight = backtestResChartId.clientHeight as number;
     // resizing the chart dynamically based on window size
     window.addEventListener('resize', () => {
-      this.chrtWidth = backtestResChartId.clientWidth as number;
-      this.chrtHeight = backtestResChartId.clientHeight as number;
-      AppComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.chrtWidth, this.chrtHeight);
+      this.pvChrtWidth = backtestResChartId.clientWidth as number;
+      this.pvChrtHeight = backtestResChartId.clientHeight as number;
+      AppComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.pvChrtWidth, this.pvChrtHeight);
     });
-  }
-
-  static getNonNullDocElementById(id: string): HTMLElement { // document.getElementById() can return null. This 'forced' type casting fakes that it is not null for the TS compiler. (it can be null during runtime)
-    return document.getElementById(id) as HTMLElement;
   }
 
   processPortfolioRunResult(msgObjStr: string) {
@@ -175,7 +178,7 @@ export class AppComponent implements OnInit {
       }
       return value;
     });
-    AppComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.chrtWidth, this.chrtHeight);
+    AppComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.pvChrtWidth, this.pvChrtHeight);
   }
 
   static updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJs>, uiPrtfRunResult: UiPrtfRunResult, uiChrtWidth: number, uiChrtHeight: number) {
@@ -234,10 +237,12 @@ export class AppComponent implements OnInit {
   mouseEnter(div: string) { // giving some data to display - Daya
     if (div === 'chrtGenDiagnosticsMsg') {
       if (this.isSrvConnectionAlive) {
-        this.chrtGenDiagnosticsMsg = `App constructor: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.mainAngComponentConstructorTime)}\n` +
-        `Server backtest time: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsConnectionStartTime)}\n` +
-        `Communication Overhead: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsOnConnectedMsgArrivedTime)}\n` +
-        `Total UI response: ${SqNgCommonUtilsTime.getTimespanStr(gDiag.mainTsTime, gDiag.wsOnConnectedMsgArrivedTime)}\n`;
+        this.chrtGenDiagnosticsMsg = `App constructor: ${SqNgCommonUtilsTime.getTimespanStr(chrtGenDiag.mainTsTime, chrtGenDiag.mainAngComponentConstructorTime)}\n` +
+        `Window loaded: ${SqNgCommonUtilsTime.getTimespanStr(chrtGenDiag.mainTsTime, chrtGenDiag.windowOnLoadTime)}\n` +
+        '-----\n' +
+        `Server backtest time: ${SqNgCommonUtilsTime.getTimespanStr(chrtGenDiag.mainTsTime, chrtGenDiag.serverBacktestTime)}\n` +
+        `Total UI response: ${SqNgCommonUtilsTime.getTimespanStr(chrtGenDiag.mainTsTime, chrtGenDiag.totalUiResponseTime)}\n`;
+        // `Communication Overhead: ${(chrtGenDiag.mainTsTime.getTime() - chrtGenDiag.totalUiResponseTime.getTime()) - (chrtGenDiag.mainTsTime.getTime() - chrtGenDiag.serverBacktestTime.getTime()) +'ms'}\n`;
       } else
         this.chrtGenDiagnosticsMsg = 'Connection to server is broken.\n Try page reload (F5).';
     }

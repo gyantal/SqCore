@@ -225,12 +225,9 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
 
     public string? GetBacktestResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss)
     {
-        const int gDateTimeOffset = 300; // used for calculating the isDailChart Data or perminute data
         p_stat = new PortfolioRunResultStatistics();
         p_pv = new List<ChartPoint>();
         p_prtfPoss = new List<PortfolioPosition>();
-
-        Thread.Sleep(1 + Id);   // temporary here for simulation.
 
         string algorithmName = String.IsNullOrEmpty(Algorithm) ? "BasicTemplateFrameworkAlgorithm" : Algorithm;
         BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(algorithmName, @"{""ema-fast"":10,""ema-slow"":20}");
@@ -246,9 +243,9 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         Console.WriteLine($"#Charts:{backtestResults.Charts.Count}. The Equity (PV) chart: {equityChart[0].y:N0}, {equityChart[1].y:N0} ... {equityChart[^2].y:N0}, {equityChart[^1].y:N0}");
 
         bool isDailyChartData = true;
-        if (equityChart.Count > 2)
+        if (equityChart.Count > 2) // Eliminate daily chart duplicates. There is 1 point for weekends, but 2 points (morning, marketclose) for the weekdays. We keep only the last Y value for the day.
         {
-            isDailyChartData = (equityChart[2].x - equityChart[1].x) > gDateTimeOffset;
+            isDailyChartData = (equityChart[2].x - equityChart[1].x) > 300; // if the difference between 2 chart points is bigger than 300sec, treat it as daily resolution;
         }
         if (isDailyChartData)
         {

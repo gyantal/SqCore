@@ -2,6 +2,7 @@ import { Component, OnInit, AfterViewInit, Input, ViewChild } from '@angular/cor
 import { SqTreeViewComponent } from '../sq-tree-view/sq-tree-view.component';
 import { processUiWithPrtfRunResultChrt } from '../../../../sq-ng-common/src/lib/chart/advanced-chart';
 import { PrtfRunResultJs, UiChartPointValues, UiPrtfPositions, UiPrtfRunResult } from '../../sq-globals';
+import { SqNgCommonUtils } from '../../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import * as d3 from 'd3';
 
 type Nullable<T> = T | null;
@@ -108,23 +109,23 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   constructor() { }
 
   ngOnInit(): void {
-    const panelPrtfTreeId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfTree');
+    const panelPrtfTreeId = SqNgCommonUtils.getNonNullDocElementById('panelPrtfTree');
     this.panelPrtfTreeWidth = panelPrtfTreeId.clientWidth as number;
     this.panelPrtfTreeHeight = panelPrtfTreeId.clientHeight as number;
 
-    const panelChartId = PortfolioManagerComponent.getNonNullDocElementById('panelChart');
+    const panelChartId = SqNgCommonUtils.getNonNullDocElementById('panelChart');
     this.panelPrtfChrtWidth = panelChartId.clientWidth as number;
     this.panelPrtfChrtHeight = panelChartId.clientHeight as number;
 
-    const panelStatsId = PortfolioManagerComponent.getNonNullDocElementById('panelStats');
+    const panelStatsId = SqNgCommonUtils.getNonNullDocElementById('panelStats');
     this.panelStatsWidth = panelStatsId.clientWidth as number;
     this.panelStatsHeight = panelStatsId.clientHeight as number;
 
-    const panelPrtfSpecId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfSpec');
+    const panelPrtfSpecId = SqNgCommonUtils.getNonNullDocElementById('panelPrtfSpec');
     this.panelPrtfSpecWidth = panelPrtfSpecId.clientWidth as number;
     this.panelPrtfSpecHeight = panelPrtfSpecId.clientHeight as number;
 
-    const approotToolbar = PortfolioManagerComponent.getNonNullDocElementById('toolbarId'); // toolbarId is coming from app component
+    const approotToolbar = SqNgCommonUtils.getNonNullDocElementById('toolbarId'); // toolbarId is coming from app component
     this.dashboardHeaderWidth = approotToolbar.clientWidth;
     this.dashboardHeaderHeight = approotToolbar.clientHeight;
 
@@ -154,10 +155,6 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     this.treeViewState.rootSqTreeViewComponent = this.sqTreeComponent;
   }
 
-  static getNonNullDocElementById(id: string): HTMLElement { // document.getElementById() can return null. This 'forced' type casting fakes that it is not null for the TS compiler. (it can be null during runtime)
-    return document.getElementById(id) as HTMLElement;
-  }
-
   onMouseOverResizer(resizer: string) {
     if (resizer == 'resizer')
       this.makeResizablePrtfTree(resizer);
@@ -166,9 +163,9 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   }
 
   makeResizablePrtfTree(resizer: string) {
-    const panelPrtfTreeId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfTree');
-    const panelPrtfDetailsId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfDetails');
-    const resizerDiv = PortfolioManagerComponent.getNonNullDocElementById(resizer);
+    const panelPrtfTreeId = SqNgCommonUtils.getNonNullDocElementById('panelPrtfTree');
+    const panelPrtfDetailsId = SqNgCommonUtils.getNonNullDocElementById('panelPrtfDetails');
+    const resizerDiv = SqNgCommonUtils.getNonNullDocElementById(resizer);
 
     resizerDiv.addEventListener('mousedown', resizingDiv);
     function resizingDiv(event: any) {
@@ -191,12 +188,12 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   }
 
   makeResizablePrtfDetails(resizer2: string) {
-    const panelChartId = PortfolioManagerComponent.getNonNullDocElementById('panelChart');
-    const panelStatsAndPerfSpecId = PortfolioManagerComponent.getNonNullDocElementById('panelStatsAndPerfSpec');
-    const panelStatsId = PortfolioManagerComponent.getNonNullDocElementById('panelStats');
-    const panelPrtfSpecId = PortfolioManagerComponent.getNonNullDocElementById('panelPrtfSpec');
+    const panelChartId = SqNgCommonUtils.getNonNullDocElementById('panelChart');
+    const panelStatsAndPerfSpecId = SqNgCommonUtils.getNonNullDocElementById('panelStatsAndPerfSpec');
+    const panelStatsId = SqNgCommonUtils.getNonNullDocElementById('panelStats');
+    const panelPrtfSpecId = SqNgCommonUtils.getNonNullDocElementById('panelPrtfSpec');
 
-    const resizerDiv = PortfolioManagerComponent.getNonNullDocElementById(resizer2);
+    const resizerDiv = SqNgCommonUtils.getNonNullDocElementById(resizer2);
 
     resizerDiv.addEventListener('mousedown', resizingDiv);
     function resizingDiv(event: any) {

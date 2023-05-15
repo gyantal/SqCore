@@ -17,6 +17,10 @@ export class SqNgCommonUtils {
     }, {});
     // }, {} as Params);  // if you want a typed object, but for queryStrings we don't know the field names in advance. It can be anything.
   }
+
+  public static getNonNullDocElementById(id: string): HTMLElement { // document.getElementById() can return null. This 'forced' type casting fakes that it is not null for the TS compiler. (it can be null during runtime)
+    return document.getElementById(id) as HTMLElement;
+  }
 }
 
 export function ChangeNaNstringToNaNnumber(elementField: any): number {

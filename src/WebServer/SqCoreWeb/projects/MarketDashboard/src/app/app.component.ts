@@ -198,7 +198,7 @@ export class AppComponent implements OnInit {
 
     // resizing the sqLogo dynamically
     window.addEventListener('resize', () => {
-      const sqLogo = PortfolioManagerComponent.getNonNullDocElementById('toolBarImg1');
+      const sqLogo = SqNgCommonUtils.getNonNullDocElementById('toolBarImg1');
       sqLogo.style.width = window.innerWidth * 0.00225 - 1 + 'rem'; // with the horizontal 5px padding left and right, so subtract with 1rem(10px). 0.00225 => (46/2048) which (sqLogo.clientWidth / window.innerWidth) at normal screen size.
       sqLogo.style.height = window.innerHeight * 0.0035 + 'rem'; // 0.0035 => (36/1031) which (sqLogo.clientHeight / window.innerHeight) at normal screen size.
     });
