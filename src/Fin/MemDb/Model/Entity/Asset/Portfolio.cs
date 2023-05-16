@@ -243,12 +243,14 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         Console.WriteLine($"#Charts:{backtestResults.Charts.Count}. The Equity (PV) chart: {equityChart[0].y:N0}, {equityChart[1].y:N0} ... {equityChart[^2].y:N0}, {equityChart[^1].y:N0}");
 
         bool isDailyChartData = true;
-        if (equityChart.Count > 2) // Eliminate daily chart duplicates. There is 1 point for weekends, but 2 points (morning, marketclose) for the weekdays. We keep only the last Y value for the day.
+        // With Minute resolution simulation, the PV chart is generated at every 5 minutes. But the first point of the day is UTC 4:00, then 13:31, 13:36, 13:41,...
+        if (equityChart.Count >= 3) // because the first is a dummy point, we need at least 3 data points to decide.
         {
-            isDailyChartData = (equityChart[2].x - equityChart[1].x) > 300; // if the difference between 2 chart points is bigger than 300sec, treat it as daily resolution;
+            isDailyChartData = (equityChart[2].x - equityChart[1].x) > 300; // if the difference between 2nd and the 3rd chart points is bigger than 300sec (5min), treat it as daily resolution;
         }
         if (isDailyChartData)
         {
+            // Eliminate daily chart duplicates. There is 1 point for weekends, but 2 points (morning, marketclose) for the weekdays. We keep only the last Y value for the day.
             DateTime currentDate = DateTime.MinValue; // initialize currentDate to the smallest possible value
             for (int i = 0; i < equityChart.Count; i++)
             {

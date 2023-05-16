@@ -14,19 +14,18 @@ class HandshakeMessage {
   public param2 = '';
 }
 
-// export const minDate = new Date();
-
-export class ChrtGenDiagnostics {
+export class ChrtGenDiagnostics { // have to export the class, because .mainTsTime is set from outside of this angular component.
   public mainTsTime: Date = new Date();
   public mainAngComponentConstructorTime: Date = new Date();
   public windowOnLoadTime: Date = minDate;
 
-  public serverBacktestTime: Date = minDate;
+  public serverBacktestStartTime: Date = minDate;
+  public serverBacktestEndTime: Date = minDate;
   public communicationOverheadTime: string = '';
   public totalUiResponseTime: Date = minDate;
 }
 
-export const chrtGenDiag: ChrtGenDiagnostics = new ChrtGenDiagnostics();
+export const gChrtGenDiag: ChrtGenDiagnostics = new ChrtGenDiagnostics();
 
 @Component({
   selector: 'app-root',
@@ -35,7 +34,6 @@ export const chrtGenDiag: ChrtGenDiagnostics = new ChrtGenDiagnostics();
 })
 export class AppComponent implements OnInit {
   m_http: HttpClient;
-  m_portfolioId = -1; // -1 is invalid ID
 
   prtfRunResult: Nullable<PrtfRunResultJs> = null;
   uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
@@ -43,12 +41,10 @@ export class AppComponent implements OnInit {
   pvChrtHeight = 0;
 
   prtfIds: string = '';
+  bmrks: string = ''; // benchmarks
   isSrvConnectionAlive: boolean = true;
   chrtGenDiagnosticsMsg = 'Benchmarking time, connection speed';
 
-  // UrlQueryParams (keep them short): // ?t=bav
-  public urlQueryParamsArr : string[][];
-  public urlQueryParamsObj = {}; // empty object. If queryParamsObj['t'] doesn't exist, it returns 'undefined'
   user = {
     name: 'Anonymous',
     email: '             '
@@ -57,26 +53,13 @@ export class AppComponent implements OnInit {
   public _socket: WebSocket; // initialize later in ctor, becuse we have to send back the activeTool from urlQueryParams
 
   constructor(http: HttpClient) {
-    chrtGenDiag.mainAngComponentConstructorTime = new Date();
+    gChrtGenDiag.mainAngComponentConstructorTime = new Date();
     this.m_http = http;
 
-    const url = new URL(window.location.href); // https://sqcore.net/webapps/ChartGenerator/?id=1
-    // const prtfIdStr = url.searchParams.get('pids=1,13,6&bnchks=SPY,QQQ');
-    const prtfIdStr = url.searchParams.get('id');
-    if (prtfIdStr != null)
-      this.m_portfolioId = parseInt(prtfIdStr);
-
-    this.urlQueryParamsArr = SqNgCommonUtils.getUrlQueryParamsArray();
-    this.urlQueryParamsObj = SqNgCommonUtils.Array2Obj(this.urlQueryParamsArr);
-    console.log('AppComponent.ctor: queryParamsArr.Length: ' + this.urlQueryParamsArr.length);
-    console.log('AppComponent.ctor: Active Tool, queryParamsObj["t"]: ' + this.urlQueryParamsObj['t']);
-
-    let wsQueryStr = '';
-    const paramActiveTool = this.urlQueryParamsObj['id'];
-    if (paramActiveTool != undefined && paramActiveTool != 'mh') // if it is not missing and not the default active tool: MarketHealth
-      wsQueryStr = '?pid:' + paramActiveTool; // ?pid:
-
-    this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/chrtgen' + wsQueryStr); // "wss://127.0.0.1/ws/dashboard" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection
+    const wsQueryStr = window.location.search; // https://sqcore.net/webapps/ChartGenerator/?pids=1  , but another parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
+    console.log(wsQueryStr);
+    gChrtGenDiag.serverBacktestStartTime = new Date();
+    this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/chrtgen' + wsQueryStr); // "wss://127.0.0.1/ws/chrtgen?pids=13,2" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection. ? has to be included to separate the location from the params
   }
 
   ngOnInit(): void {
@@ -96,10 +79,10 @@ export class AppComponent implements OnInit {
           this.user.email = handshakeMsg.email;
           break;
         case 'PrtfRunResult':
-          chrtGenDiag.serverBacktestTime = new Date();
+          gChrtGenDiag.serverBacktestEndTime = new Date();
           console.log('ChrtGen.PrtfRunResult:' + msgObjStr);
           this.processPortfolioRunResult(msgObjStr);
-          chrtGenDiag.totalUiResponseTime = new Date();
+          gChrtGenDiag.totalUiResponseTime = new Date();
           break;
         case 'ErrorToUser':
           console.log('ChrtGen.ErrorToUser:' + msgObjStr);
@@ -108,13 +91,12 @@ export class AppComponent implements OnInit {
           return false;
       }
     };
-
-    const backtestResChartId = SqNgCommonUtils.getNonNullDocElementById('backtestResChrt');
+    const backtestResChartId = SqNgCommonUtils.getNonNullDocElementById('backtestPvChrt');
     this.pvChrtWidth = backtestResChartId.clientWidth as number;
     this.pvChrtHeight = backtestResChartId.clientHeight as number;
-    // resizing the chart dynamically based on window size
+    // resizing the chart dynamically when the window is resized
     window.addEventListener('resize', () => {
-      this.pvChrtWidth = backtestResChartId.clientWidth as number;
+      this.pvChrtWidth = backtestResChartId.clientWidth as number; // we have to remember the width/height every time window is resized, because we give these to the chart
       this.pvChrtHeight = backtestResChartId.clientHeight as number;
       AppComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.pvChrtWidth, this.pvChrtHeight);
     });
@@ -228,20 +210,20 @@ export class AppComponent implements OnInit {
     processUiWithPrtfRunResultChrt(chrtData, lineChrtDiv, chartWidth, chartHeight, margin, xMin, xMax, yMinAxis, yMaxAxis);
   }
 
-  onRunBacktestClicked() {
+  onStartBacktests() {
     if (this._socket != null && this._socket.readyState === this._socket.OPEN)
-      this._socket.send('RunBacktest:');
+      this._socket.send('RunBacktest:' + '?pids='+ this.prtfIds + '&bmrks=' + this.bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
   }
 
   // "Server backtest time: 300ms, Communication overhead: 120ms, Total UI response: 420ms."
   mouseEnter(div: string) { // giving some data to display - Daya
     if (div === 'chrtGenDiagnosticsMsg') {
       if (this.isSrvConnectionAlive) {
-        this.chrtGenDiagnosticsMsg = `App constructor: ${SqNgCommonUtilsTime.getTimespanStr(chrtGenDiag.mainTsTime, chrtGenDiag.mainAngComponentConstructorTime)}\n` +
-        `Window loaded: ${SqNgCommonUtilsTime.getTimespanStr(chrtGenDiag.mainTsTime, chrtGenDiag.windowOnLoadTime)}\n` +
+        this.chrtGenDiagnosticsMsg = `App constructor: ${SqNgCommonUtilsTime.getTimespanStr(gChrtGenDiag.mainTsTime, gChrtGenDiag.mainAngComponentConstructorTime)}\n` +
+        `Window loaded: ${SqNgCommonUtilsTime.getTimespanStr(gChrtGenDiag.mainTsTime, gChrtGenDiag.windowOnLoadTime)}\n` +
         '-----\n' +
-        `Server backtest time: ${SqNgCommonUtilsTime.getTimespanStr(chrtGenDiag.mainTsTime, chrtGenDiag.serverBacktestTime)}\n` +
-        `Total UI response: ${SqNgCommonUtilsTime.getTimespanStr(chrtGenDiag.mainTsTime, chrtGenDiag.totalUiResponseTime)}\n`;
+        `Server backtest time: ${SqNgCommonUtilsTime.getTimespanStr(gChrtGenDiag.serverBacktestStartTime, gChrtGenDiag.serverBacktestEndTime)}\n` +
+        `Total UI response: ${SqNgCommonUtilsTime.getTimespanStr(gChrtGenDiag.serverBacktestStartTime, gChrtGenDiag.totalUiResponseTime)}\n`;
         // `Communication Overhead: ${(chrtGenDiag.mainTsTime.getTime() - chrtGenDiag.totalUiResponseTime.getTime()) - (chrtGenDiag.mainTsTime.getTime() - chrtGenDiag.serverBacktestTime.getTime()) +'ms'}\n`;
       } else
         this.chrtGenDiagnosticsMsg = 'Connection to server is broken.\n Try page reload (F5).';

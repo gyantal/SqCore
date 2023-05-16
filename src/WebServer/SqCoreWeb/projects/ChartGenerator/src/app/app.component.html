@@ -22,12 +22,12 @@
     User Email: {{user.email}}
   </div>
   <br>
-  PortfolioId: {{m_portfolioId}}
   <br>
   <!-- Class=commonColStyle name will be changed in future - Daya(28-04-2023) -->
   <div class="commonColStyle" id="portfolios">
-    Portfolios
-    <button (click)="onRunBacktestClicked()">Run Backtest</button>
+    <label for="">PortfolioIds:</label><input id="pfIds" type="text" [(ngModel)]="prtfIds"><br><br>
+    <label for="">Benchmarks:</label><input id="bmrks" type="text" [(ngModel)]="bmrks"><br><br>
+    <button (click)="onStartBacktests()">Start</button>
   </div>
   <div class="commonColStyle" id="stockAndIndexes">
     StockAndIndexes
@@ -39,7 +39,7 @@
     Others
   </div>
 
-  <div id="backtestResChrt">Panel Chart
+  <div id="backtestPvChrt">Panel Chart
     <div id="pfRunResultChrt"></div>
   </div>
 </div>

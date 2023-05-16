@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web;
 using Fin.MemDb;
 using Microsoft.AspNetCore.Http;
 using QuantConnect;
@@ -57,83 +59,96 @@ public class ChrtGenWs
         }
     }
 
-// Yet to Develop - Daya
-    public static void BacktestResults(string? p_msg, WebSocket webSocket)
+    public static void BacktestResults(string? p_msg, WebSocket webSocket) // msg: ?pids=1,2&bmrks=QQQ,SPY
     {
-        // Step1: Processing the message to extract the Id
-        int idStartInd = p_msg!.IndexOf(":");
-        if (idStartInd == -1)
-            return;
-        int id = Convert.ToInt32(p_msg[(idStartInd + 1)..]);
-
-        // Step2: Getting the BackTestResults
         string? errMsg = null;
-        if (MemDb.gMemDb.Portfolios.TryGetValue(id, out Portfolio? prtf))
-            Console.WriteLine($"Portfolio Name: '{prtf.Name}'");
-        else
-            errMsg = $"Error. Portfolio id {id} not found in DB";
+        if (p_msg == null)
+            errMsg = $"Error. msg from the client is null";
+
+        // Step1: Processing the message to extract the Id
+        NameValueCollection query = HttpUtility.ParseQueryString(p_msg!);
+        string? pidsStr = query.Get("pids");
+        if (pidsStr == null)
+            errMsg = $"Error. pidsStr from the client is null"; // we should send the user an error message
+
+        List<Portfolio> lsPrtf = new();
+        foreach (string pidStr in pidsStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            int pid = Convert.ToInt32(pidStr);
+            if (MemDb.gMemDb.Portfolios.TryGetValue(pid, out Portfolio? prtf))
+            {
+                 Console.WriteLine($"Portfolio Name: '{prtf.Name}'");
+                 lsPrtf.Add(prtf);
+            }
+            else
+                errMsg = $"Error. Portfolio id {pid} not found in DB";
+        }
 
         if (errMsg == null)
         {
-            errMsg = prtf!.GetPortfolioRunResult(out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos);
-            if (errMsg == null)
+            for (int i = 0; i < lsPrtf.Count; i++)
             {
-                // Step3: Filling the ChartPoint Dates and Values to a list. A very condensed format. Dates are separated into its ChartDate List.
-                // Instead of the longer [{"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}]
-                // we send a shorter: { ChartDate: [1641013200, 1641013200, 1641013200], Value: [101665, 101665, 101665] }
-                ChartPointValues chartVal = new();
-                foreach (var item in pv)
+                errMsg = lsPrtf[i].GetPortfolioRunResult(out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos);
+                if (errMsg == null)
                 {
-                    chartVal.Dates.Add(item.x);
-                    chartVal.Values.Add((int)item.y);
+                    // Step3: Filling the ChartPoint Dates and Values to a list. A very condensed format. Dates are separated into its ChartDate List.
+                    // Instead of the longer [{"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}]
+                    // we send a shorter: { ChartDate: [1641013200, 1641013200, 1641013200], Value: [101665, 101665, 101665] }
+                    ChartPointValues chartVal = new();
+                    foreach (var item in pv)
+                    {
+                        chartVal.Dates.Add(item.x);
+                        chartVal.Values.Add((int)item.y);
+                    }
+
+                    // Step4: Filling the Stats data
+                    PortfolioRunResultStatistics pStat = new()
+                    {
+                        StartPortfolioValue = stat.StartPortfolioValue,
+                        EndPortfolioValue = stat.EndPortfolioValue,
+                        TotalReturn = stat.TotalReturn,
+                        CAGR = stat.CAGR,
+                        MaxDD = stat.MaxDD,
+                        SharpeRatio = stat.SharpeRatio,
+                        StDev = stat.StDev,
+                        Ulcer = stat.Ulcer,
+                        TradingDays = stat.TradingDays,
+                        NTrades = stat.NTrades,
+                        WinRate = stat.WinRate,
+                        LossRate = stat.LossRate,
+                        Sortino = stat.Sortino,
+                        Turnover = stat.Turnover,
+                        LongShortRatio = stat.LongShortRatio,
+                        Fees = stat.Fees,
+                        BenchmarkCAGR = stat.BenchmarkCAGR,
+                        BenchmarkMaxDD = stat.BenchmarkMaxDD,
+                        CorrelationWithBenchmark = stat.CorrelationWithBenchmark
+                    };
+
+                    // Step5: Filling the PrtfPoss data
+                    List<PortfolioPosition> prtfPoss = new();
+                    foreach (var item in prtfPos)
+                    {
+                        prtfPoss.Add(new PortfolioPosition { SqTicker = item.SqTicker, Quantity = item.Quantity, AvgPrice = item.AvgPrice, LastPrice = item.LastPrice });
+                    }
+
+                    // Step6: Filling the Stats, ChartPoint vals and prtfPoss in pfRunResults
+                    PrtfRunResultJs pfRunResult = new()
+                    {
+                        Pstat = pStat,
+                        Chart = chartVal,
+                        PrtfPoss = prtfPoss
+                    };
+
+                    // Step7: Sending the pfRunResults data to client
+                    if (pfRunResult != null)
+                    {
+                        byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfRunResult:" + Utils.CamelCaseSerialize(pfRunResult));
+                        if (webSocket!.State == WebSocketState.Open)
+                            webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                    }
                 }
-
-                // Step4: Filling the Stats data
-                PortfolioRunResultStatistics pStat = new()
-                {
-                    StartPortfolioValue = stat.StartPortfolioValue,
-                    EndPortfolioValue = stat.EndPortfolioValue,
-                    TotalReturn = stat.TotalReturn,
-                    CAGR = stat.CAGR,
-                    MaxDD = stat.MaxDD,
-                    SharpeRatio = stat.SharpeRatio,
-                    StDev = stat.StDev,
-                    Ulcer = stat.Ulcer,
-                    TradingDays = stat.TradingDays,
-                    NTrades = stat.NTrades,
-                    WinRate = stat.WinRate,
-                    LossRate = stat.LossRate,
-                    Sortino = stat.Sortino,
-                    Turnover = stat.Turnover,
-                    LongShortRatio = stat.LongShortRatio,
-                    Fees = stat.Fees,
-                    BenchmarkCAGR = stat.BenchmarkCAGR,
-                    BenchmarkMaxDD = stat.BenchmarkMaxDD,
-                    CorrelationWithBenchmark = stat.CorrelationWithBenchmark
-                };
-
-                // Step5: Filling the PrtfPoss data
-                List<PortfolioPosition> prtfPoss = new();
-                foreach (var item in prtfPos)
-                {
-                    prtfPoss.Add(new PortfolioPosition { SqTicker = item.SqTicker, Quantity = item.Quantity, AvgPrice = item.AvgPrice, LastPrice = item.LastPrice });
-                }
-
-                // Step6: Filling the Stats, ChartPoint vals and prtfPoss in pfRunResults
-                PrtfRunResultJs pfRunResult = new()
-                {
-                    Pstat = pStat,
-                    Chart = chartVal,
-                    PrtfPoss = prtfPoss
-                };
-
-                // Step7: Sending the pfRunResults data to client
-                if (pfRunResult != null)
-                {
-                    byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfRunResult:" + Utils.CamelCaseSerialize(pfRunResult));
-                    if (webSocket!.State == WebSocketState.Open)
-                        webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                }
+                break; // TEMP: at the moment, we only backtest the first pid
             }
         }
 
