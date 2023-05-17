@@ -35,8 +35,8 @@ export const gChrtGenDiag: ChrtGenDiagnostics = new ChrtGenDiagnostics();
 export class AppComponent implements OnInit {
   m_http: HttpClient;
 
-  prtfRunResult: Nullable<PrtfRunResultJs> = null;
-  uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
+  prtfRunResults: Nullable<PrtfRunResultJs[]> = [];
+  uiPrtfRunResults: UiPrtfRunResult[] = [];
   pvChrtWidth = 0;
   pvChrtHeight = 0;
 
@@ -98,12 +98,12 @@ export class AppComponent implements OnInit {
     window.addEventListener('resize', () => {
       this.pvChrtWidth = backtestResChartId.clientWidth as number; // we have to remember the width/height every time window is resized, because we give these to the chart
       this.pvChrtHeight = backtestResChartId.clientHeight as number;
-      AppComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.pvChrtWidth, this.pvChrtHeight);
+      AppComponent.updateUiWithPrtfRunResult(this.prtfRunResults, this.uiPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight);
     });
   }
 
   processPortfolioRunResult(msgObjStr: string) {
-    this.prtfRunResult = JSON.parse(msgObjStr, function(this: any, key, value) {
+    this.prtfRunResults = JSON.parse(msgObjStr, function(this: any, key, value) {
       // property names and values are transformed to a shorter ones for decreasing internet traffic.Transform them back to normal for better code reading.
 
       // 'this' is the object containing the property being processed (not the embedding class) as this is a function(), not a '=>', and the property name as a string, the property value as arguments of this function.
@@ -160,40 +160,45 @@ export class AppComponent implements OnInit {
       }
       return value;
     });
-    AppComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.pvChrtWidth, this.pvChrtHeight);
+    AppComponent.updateUiWithPrtfRunResult(this.prtfRunResults, this.uiPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight);
   }
 
-  static updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJs>, uiPrtfRunResult: UiPrtfRunResult, uiChrtWidth: number, uiChrtHeight: number) {
-    if (prtfRunResult == null)
+  static updateUiWithPrtfRunResult(prtfRunResults: Nullable<PrtfRunResultJs[]>, uiPrtfRunResults: UiPrtfRunResult[], uiChrtWidth: number, uiChrtHeight: number) {
+    if (prtfRunResults == null)
       return;
 
-    uiPrtfRunResult.startPortfolioValue = prtfRunResult.pstat.startPortfolioValue;
-    uiPrtfRunResult.endPortfolioValue = prtfRunResult.pstat.endPortfolioValue;
-    uiPrtfRunResult.totalReturn = prtfRunResult.pstat.totalReturn;
-    uiPrtfRunResult.cAGR = parseFloat(prtfRunResult.pstat.cagr);
-    uiPrtfRunResult.maxDD = parseFloat(prtfRunResult.pstat.maxDD);
-    uiPrtfRunResult.sharpeRatio = prtfRunResult.pstat.sharpeRatio;
-    uiPrtfRunResult.stDev = parseFloat(prtfRunResult.pstat.stDev);
-    // uiPrtfRunResult.ulcer = parseFloat(prtfRunResult.pstat.ulcer); // yet to calcualte
-    uiPrtfRunResult.tradingDays = parseInt(prtfRunResult.pstat.tradingDays);
-    uiPrtfRunResult.nTrades = parseInt(prtfRunResult.pstat.nTrades);
-    uiPrtfRunResult.winRate = parseFloat(prtfRunResult.pstat.winRate);
-    uiPrtfRunResult.lossRate = parseFloat(prtfRunResult.pstat.lossingRate);
-    uiPrtfRunResult.sortino = prtfRunResult.pstat.sortino;
-    uiPrtfRunResult.turnover = parseFloat(prtfRunResult.pstat.turnover);
-    uiPrtfRunResult.longShortRatio = parseFloat(prtfRunResult.pstat.longShortRatio);
-    uiPrtfRunResult.fees = parseFloat(prtfRunResult.pstat.fees);
-    // uiPrtfRunResult.benchmarkCAGR = parseFloat(prtfRunResult.pstat.benchmarkCAGR); // yet to calcualte
-    // uiPrtfRunResult.benchmarkMaxDD = parseFloat(prtfRunResult.pstat.benchmarkMaxDD); // yet to calcualte
-    // uiPrtfRunResult.correlationWithBenchmark = parseFloat(prtfRunResult.pstat.correlationWithBenchmark); // yet to calcualte
-
-    uiPrtfRunResult.chrtValues.length = 0;
-    for (let i = 0; i < prtfRunResult.chart.dates.length; i++) {
-      const chartItem = new UiChartPointValues();
-      const mSecSinceUnixEpoch: number = prtfRunResult.chart.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
-      chartItem.dates = new Date(mSecSinceUnixEpoch);
-      chartItem.values = prtfRunResult.chart.values[i];
-      uiPrtfRunResult.chrtValues.push(chartItem);
+    uiPrtfRunResults.length = 0;
+    for (const prtfResItem of prtfRunResults) {
+      if (prtfResItem.pstat == null || prtfResItem.chart == null)
+        continue;
+      const uiPrtfResItem = new UiPrtfRunResult();
+      uiPrtfResItem.startPortfolioValue = prtfResItem.pstat.startPortfolioValue;
+      uiPrtfResItem.endPortfolioValue = prtfResItem.pstat.endPortfolioValue;
+      uiPrtfResItem.totalReturn = prtfResItem.pstat.totalReturn;
+      uiPrtfResItem.cAGR = parseFloat(prtfResItem.pstat.cagr);
+      uiPrtfResItem.maxDD = parseFloat(prtfResItem.pstat.maxDD);
+      uiPrtfResItem.sharpeRatio = prtfResItem.pstat.sharpeRatio;
+      uiPrtfResItem.stDev = parseFloat(prtfResItem.pstat.stDev);
+      // uiPrtfResItem.ulcer = parseFloat(prtfItem.pstat.ulcer); // yet to calcualte
+      uiPrtfResItem.tradingDays = parseInt(prtfResItem.pstat.tradingDays);
+      uiPrtfResItem.nTrades = parseInt(prtfResItem.pstat.nTrades);
+      uiPrtfResItem.winRate = parseFloat(prtfResItem.pstat.winRate);
+      uiPrtfResItem.lossRate = parseFloat(prtfResItem.pstat.lossingRate);
+      uiPrtfResItem.sortino = prtfResItem.pstat.sortino;
+      uiPrtfResItem.turnover = parseFloat(prtfResItem.pstat.turnover);
+      uiPrtfResItem.longShortRatio = parseFloat(prtfResItem.pstat.longShortRatio);
+      uiPrtfResItem.fees = parseFloat(prtfResItem.pstat.fees);
+      // uiPrtfResItem.benchmarkCAGR = parseFloat(prtfItem.pstat.benchmarkCAGR); // yet to calcualte
+      // uiPrtfResItem.benchmarkMaxDD = parseFloat(prtfItem.pstat.benchmarkMaxDD); // yet to calcualte
+      // uiPrtfResItem.correlationWithBenchmark = parseFloat(prtfItem.pstat.correlationWithBenchmark); // yet to calcualte
+      for (let j = 0; j < prtfResItem.chart.dates.length; j++) {
+        const chartItem = new UiChartPointValues();
+        const mSecSinceUnixEpoch: number = prtfResItem.chart.dates[j] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
+        chartItem.dates = new Date(mSecSinceUnixEpoch);
+        chartItem.values = prtfResItem.chart.values[j];
+        uiPrtfResItem.chrtValues.push(chartItem);
+      }
+      uiPrtfRunResults.push(uiPrtfResItem);
     }
 
     d3.selectAll('#pfRunResultChrt > *').remove();
@@ -201,7 +206,7 @@ export class AppComponent implements OnInit {
     const margin = {top: 50, right: 50, bottom: 30, left: 60 };
     const chartWidth = uiChrtWidth * 0.9 - margin.left - margin.right; // 90% of the PanelChart Width
     const chartHeight = uiChrtHeight * 0.9 - margin.top - margin.bottom; // 90% of the PanelChart Height
-    const chrtData = uiPrtfRunResult.chrtValues.map((r:{ dates: Date; values: number; }) => ({date: new Date(r.dates), value: r.values}));
+    const chrtData = uiPrtfRunResults[0].chrtValues.map((r:{ dates: Date; values: number; }) => ({date: new Date(r.dates), value: r.values}));
     const xMin = d3.min(chrtData, (r:{ date: Date; }) => r.date);
     const xMax = d3.max(chrtData, (r:{ date: Date; }) => r.date);
     const yMinAxis = d3.min(chrtData, (r:{ value: number; }) => r.value);
