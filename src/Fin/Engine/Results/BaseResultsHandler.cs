@@ -335,6 +335,12 @@ namespace QuantConnect.Lean.Engine.Results
             ProjectId = job.ProjectId;
             RamAllocation = job.RamAllocation.ToStringInvariant();
             OrderEventJsonConverter = new OrderEventJsonConverter(AlgorithmId);
+
+            // SqCore Change NEW:
+            if (!SqBacktestConfig.DoPeriodicPartialResultsUpdateToCaller) // if we don't update the Caller on partial results, we don't even have to start the new thread
+                return;
+            // SqCore Change END
+
             _updateRunner = new Thread(Run, 0) { IsBackground = true, Name = "Result Thread" };
             _updateRunner.Start();
         }

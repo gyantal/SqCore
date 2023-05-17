@@ -119,9 +119,7 @@ public static class Backtester
         Console.WriteLine("QC: Run backtest...<Basic or HarryLong or TAA>...");
         Stopwatch stopwatch = Stopwatch.StartNew();
 
-        // SqCore Change NEW:
         SqBacktestConfig sqBacktestConfig = new();
-        // SqCore Change END
 
         // Instead of using JobQueue as in QC.Launcher, we implement the gist of it. Better to see what is required, and better to customize. Some parts can go to Backtester Init(). Like Loading Fin.Algorithm.CSharp.dll.
         BaseResultsHandler.gIsSaveResultsFiles = false;   // enable these for Debugging only, but not in Release, because 110KB file creation is slow
@@ -156,7 +154,7 @@ public static class Backtester
         AlgorithmManager algorithmManager = new(liveMode, job);
         var algorithmHandlers = Backtester.CreateAlgorithmHandlers(Composer.Instance, false, liveMode); // BacktestingTransactionHandler() has to be a new instance
         systemHandlers.LeanManager.Initialize(systemHandlers, algorithmHandlers, job, algorithmManager);
-        algorithmHandlers.Results.SqBacktestConfig = sqBacktestConfig;
+        algorithmHandlers.Results.SqBacktestConfig = sqBacktestConfig; // Initialize BacktestingResultHandler with our config very early. SqBacktestConfig might be needed in early Inits()
 
         // 3. OS is needed. Because BasicResultHandler creates a new Thread ("Result Thread"), that collects CPU Usage% periodically for a 'performanceCharts'
         // Also engine Trace: "Isolator.ExecuteWithTimeLimit(): Used: 9, Sample: 79, App: 208, CurrentTimeStepElapsed: 00:00.000. CPU: 1%" (OS.CpuUsage)
