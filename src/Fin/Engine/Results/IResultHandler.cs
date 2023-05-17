@@ -8,6 +8,7 @@ using QuantConnect.Interfaces;
 using QuantConnect.Lean.Engine.TransactionHandlers;
 using QuantConnect.Orders;
 using QuantConnect.Packets;
+using QuantConnect.Parameters;
 
 namespace QuantConnect.Lean.Engine.Results
 {
@@ -18,6 +19,14 @@ namespace QuantConnect.Lean.Engine.Results
     [InheritedExport(typeof(IResultHandler))]
     public interface IResultHandler
     {
+        // SqCore Change NEW:
+        SqBacktestConfig SqBacktestConfig
+        {
+            get;
+            set;
+        }
+        // SqCore Change END
+
         /// <summary>
         /// Put messages to process into the queue so they are processed by this thread.
         /// </summary>

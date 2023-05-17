@@ -72,6 +72,7 @@ namespace QuantConnect.Brokerages
             get { return DefaultMarketMap; }
         }
 
+        // SqCore Change NEW:
         public bool m_isUseIbFeeModelForEquities = true;
         public void SetIsUseIbFeeModelForEquities(bool p_isUseIbFeeModelForEquities)
         {
@@ -79,6 +80,7 @@ namespace QuantConnect.Brokerages
             // Because in 2023, null conditional (?.) operator on left hand side of assignment is not allowed yet. Only allowed for function calls, but not for assignments ('=').
             m_isUseIbFeeModelForEquities = p_isUseIbFeeModelForEquities;
         }
+        // SqCore Change END
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DefaultBrokerageModel"/> class

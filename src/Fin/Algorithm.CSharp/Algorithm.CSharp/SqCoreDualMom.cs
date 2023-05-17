@@ -178,7 +178,7 @@ namespace QuantConnect.Algorithm.CSharp
                     if (positionChange != 0)
                         MarketOnCloseOrder(kvp.Value, positionChange); // QC raises Warning if order quantity = 0. So, we don't sent these. "Unable to submit order with id -10 that has zero quantity."
                     logMessage += ticker + ": " + newPosition + "; ";
-                    logMessage2 += ticker + ": " + ((tickerUsedAdjustedClosePrices.Count != 0) ? tickerUsedAdjustedClosePrices[^1].Close.ToString() : "N/A")  + "; "; // use the last element
+                    logMessage2 += ticker + ": " + ((tickerUsedAdjustedClosePrices.Count != 0) ? tickerUsedAdjustedClosePrices[^1].Close.ToString() : "N/A") + "; "; // use the last element
                 }
                 logMessage = logMessage.Substring(0, logMessage.Length - 2) + ".";
                 logMessage2 = logMessage2.Substring(0, logMessage2.Length - 2) + ".";
@@ -345,7 +345,7 @@ namespace QuantConnect.Algorithm.CSharp
                 }
             }
             _rawClosesFromYfLists[p_ticker] = rawClosesFromYfList;
-            
+
             // Step 4. Convert List to Dictionary, because that is 6x faster to query
             var rawClosesFromYfDict = new Dictionary<DateTime, decimal>(rawClosesFromYfList.Count);
             for (int i = 0; i < rawClosesFromYfList.Count; i++)
@@ -373,7 +373,7 @@ namespace QuantConnect.Algorithm.CSharp
 
                 // add the last lookbackTradingDays items to the new dictionary
                 if (_rawClosesFromYfDicts[ticker].TryGetValue(this.Time.Date, out decimal lastRawClose))
-                    lastLbTdPrices.Add(new SqPrice() { ReferenceDate = this.Time.Date, Close = lastRawClose});
+                    lastLbTdPrices.Add(new SqPrice() { ReferenceDate = this.Time.Date, Close = lastRawClose });
                 else // if lastLbTdPrices is empty, then not finding this date is fine. If lastLbTdPrices has at least 1 items, we expect that we find this date.
                     if (qcAdjCloses.Count > 0)
                         throw new Exception($"Cannot find date {this.Time.Date.ToString()} in the YF.");
@@ -464,7 +464,7 @@ namespace QuantConnect.Algorithm.CSharp
                     {
                         // Get the current position and price for this ticker
                         decimal quantity = position.Quantity;
-                        
+
                         List<SqPrice> usedAdjustedClosePrices = p_usedAdjustedClosePrices[ticker];
                         decimal currentPrice = (usedAdjustedClosePrices.Count != 0) ? usedAdjustedClosePrices[^1].Close : 0;    // get the last element
                         currentPV += quantity * currentPrice;

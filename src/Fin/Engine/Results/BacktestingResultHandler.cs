@@ -13,6 +13,7 @@ using QuantConnect.Util;
 using QuantConnect.Lean.Engine.Alphas;
 using SqCommon;
 using QuantConnect.Logging;
+using QuantConnect.Parameters;
 
 namespace QuantConnect.Lean.Engine.Results
 {
@@ -356,6 +357,11 @@ namespace QuantConnect.Lean.Engine.Results
                 result.ProcessingTime = (utcNow - StartTime).TotalSeconds;
                 result.DateFinished = DateTime.Now;
                 result.Progress = 1;
+
+                // SqCore Change NEW:
+                if (SqBacktestConfig.SqResult != SqResult.QcOriginal) // in SqCore, we don't send the result to the QC cloud.
+                    return;
+                // SqCore Change END
 
                 //Place result into storage.
                 StoreResult(result);

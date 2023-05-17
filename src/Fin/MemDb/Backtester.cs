@@ -156,6 +156,7 @@ public static class Backtester
         AlgorithmManager algorithmManager = new(liveMode, job);
         var algorithmHandlers = Backtester.CreateAlgorithmHandlers(Composer.Instance, false, liveMode); // BacktestingTransactionHandler() has to be a new instance
         systemHandlers.LeanManager.Initialize(systemHandlers, algorithmHandlers, job, algorithmManager);
+        algorithmHandlers.Results.SqBacktestConfig = sqBacktestConfig;
 
         // 3. OS is needed. Because BasicResultHandler creates a new Thread ("Result Thread"), that collects CPU Usage% periodically for a 'performanceCharts'
         // Also engine Trace: "Isolator.ExecuteWithTimeLimit(): Used: 9, Sample: 79, App: 208, CurrentTimeStepElapsed: 00:00.000. CPU: 1%" (OS.CpuUsage)

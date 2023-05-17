@@ -13,6 +13,7 @@ using QuantConnect.Logging;
 using QuantConnect.Orders;
 using QuantConnect.Orders.Serialization;
 using QuantConnect.Packets;
+using QuantConnect.Parameters;
 using QuantConnect.Statistics;
 using SqCommon;
 
@@ -23,7 +24,15 @@ namespace QuantConnect.Lean.Engine.Results
     /// </summary>
     public abstract class BaseResultsHandler
     {
-        public static  bool gIsSaveResultsFiles = true; // responsible for: BasicTemplateFrameworkAlgorithm.json , BasicTemplateFrameworkAlgorithm-order-events.json, BasicTemplateFrameworkAlgorithm-log.txt
+        // SqCore Change NEW:
+        public static bool gIsSaveResultsFiles = true; // responsible for: BasicTemplateFrameworkAlgorithm.json , BasicTemplateFrameworkAlgorithm-order-events.json, BasicTemplateFrameworkAlgorithm-log.txt
+
+        public SqBacktestConfig SqBacktestConfig
+        {
+            get;
+            set;
+        }
+        // SqCore Change END
 
         private bool _packetDroppedWarning;
         // used for resetting out/error upon completion
@@ -463,12 +472,20 @@ namespace QuantConnect.Lean.Engine.Results
 
             // Sample all our default charts
             SampleEquity(time, currentPortfolioValue);
-            SampleBenchmark(time, GetBenchmarkValue(time));
-            SamplePerformance(time, portfolioPerformance);
-            SampleDrawdown(time, currentPortfolioValue);
-            SampleSalesVolume(time);
-            SampleExposure(time, currentPortfolioValue);
-            SampleCapacity(time);
+
+            // SqCore Change NEW:
+            if (SqBacktestConfig.SqResult == SqResult.QcOriginal)
+            {
+                // SqCore Change END
+                SampleBenchmark(time, GetBenchmarkValue(time));
+                SamplePerformance(time, portfolioPerformance);
+                SampleDrawdown(time, currentPortfolioValue);
+                SampleSalesVolume(time);
+                SampleExposure(time, currentPortfolioValue);
+                SampleCapacity(time);
+                // SqCore Change NEW:
+            }
+            // SqCore Change END
 
             // Update daily portfolio value; works because we only call sample once a day
             DailyPortfolioValue = currentPortfolioValue;
@@ -674,6 +691,19 @@ namespace QuantConnect.Lean.Engine.Results
             SortedDictionary<DateTime, decimal> profitLoss = null, CapacityEstimate estimatedStrategyCapacity = null)
         {
             var statisticsResults = new StatisticsResults();
+
+            // SqCore Change NEW:
+            const string strategyEquityKey = "Strategy Equity";
+            const string equityKey = "Equity";
+
+            if (SqBacktestConfig.SqResult != SqResult.QcOriginal)
+            {
+                var totalTransactions = Algorithm.Transactions.GetOrders(x => x.Status.IsFill()).Count();
+                statisticsResults = SqStatisticsBuilder.Generate(SqBacktestConfig.SqResult, Algorithm.TradeBuilder.ClosedTrades, charts[strategyEquityKey].Series[equityKey].Values, StartingPortfolioValue, Algorithm.Portfolio.TotalFees, totalTransactions,  AlgorithmCurrencySymbol);
+                return statisticsResults;
+            }
+            // SqCore Change END
+
             if (profitLoss == null)
             {
                 profitLoss = new SortedDictionary<DateTime, decimal>();
@@ -682,8 +712,10 @@ namespace QuantConnect.Lean.Engine.Results
             try
             {
                 //Generates error when things don't exist (no charting logged, runtime errors in main algo execution)
-                const string strategyEquityKey = "Strategy Equity";
-                const string equityKey = "Equity";
+                // SqCore Change ORIGINAL:
+                // const string strategyEquityKey = "Strategy Equity";
+                // const string equityKey = "Equity";
+                // SqCore Change END
                 const string dailyPerformanceKey = "Daily Performance";
                 const string benchmarkKey = "Benchmark";
 

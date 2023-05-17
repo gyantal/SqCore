@@ -613,7 +613,9 @@ namespace QuantConnect.Algorithm
             // if the benchmark hasn't been set yet, load in the default from the brokerage model
             if (Benchmark == null)
             {
-                Benchmark = BrokerageModel.GetBenchmark(Securities);
+                // SqCore Change ORIGINAL:
+                // Benchmark = BrokerageModel.GetBenchmark(Securities);
+                // SqCore Change END
             }
 
             // Check benchmark timezone against algorithm timezone to warn for misaligned statistics
