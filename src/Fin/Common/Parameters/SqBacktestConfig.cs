@@ -6,8 +6,8 @@ namespace QuantConnect.Parameters
     {
         QcOriginal, // QC original ResultHandler. Too detailed. Creates 6 charts and uses benchmarks for statistics calculation.
         SqPvOnly, // Used in ChartGenerator, where UI Client will calculate everything
-        SqSimple, // Used in PortfolioViewer by default. Most importants and easy to calculate stats, TotalReturn, CAGR, StDev, Sharpe, MaxDD is calculated
-        SqDetailed // Used in PortfolioViewer if User requests it with a parameter. Calculate everything, e.g. 'Max.TradingDays in DD', that QC doesn't calculate.
+        SqSimple, // Used in PortfolioManager. Most importants and quick to calculate stats, TotalReturn, CAGR, StDev, Sharpe, MaxDD is calculated
+        SqDetailed // Used in PortfolioViewer. Calculate everything we find useful, e.g. 'Max.TradingDays in DD', that QC doesn't calculate.
     }
 
     public class SqBacktestConfig
