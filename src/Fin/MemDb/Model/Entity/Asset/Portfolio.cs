@@ -6,7 +6,10 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using QuantConnect;
+using QuantConnect.Data;
+using QuantConnect.Data.Market;
 using QuantConnect.Lean.Engine.Results;
+using QuantConnect.Securities;
 using SqCommon;
 
 namespace Fin.MemDb;
@@ -55,6 +58,17 @@ public class PortfolioPosition
     public int Quantity { get; set; } = -1;
     public float AvgPrice { get; set; } = 0.0f;
     public float LastPrice { get; set; } = 0.0f;  // the last price of the asset at the end of the backtest (not real-time price)
+}
+
+public class HistoricalPrice
+{
+    public string SqTicker { get; set; } = string.Empty;
+    public string Date { get; set; } = string.Empty;
+    public float High { get; set; } = 0.0f;
+    public float Low { get; set; } = 0.0f;
+    public float Open { get; set; } = 0.0f;
+    public float Close { get; set; } = 0.0f;
+    public float Price { get; set; } = 0.0f;
 }
 
 public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
@@ -308,18 +322,20 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
 
         // We need these in the Statistic: "Net Profit" => TotalReturn, "Compounding Annual Return" =>CAGR, "Drawdown" => MaxDD,  "Sharpe Ratio" =>Sharpe, "Win Rate" =>WinRate, "Annual Standard Deviation" =>StDev, "Sortino Ratio" => Sortino, "Portfolio Turnover" => Turnover, "Long/Short Ratio" =>LongShortRatio, "Total Fees" => Fees,
 
-        // To be worked upon - Daya
         var prtfPositions = backtestResults.Algorithm;
         foreach (var item in prtfPositions.UniverseManager.ActiveSecurities.Values)
         {
-            PortfolioPosition posStckItem = new()
+            if((int)item.Holdings.Quantity != 0) // eliminating the positions with holding quantity equals to zero
             {
-                SqTicker = "S/" + item.Holdings.Symbol.ToString(),
-                Quantity = (int)item.Holdings.Quantity,
-                AvgPrice = (float)item.Holdings.AveragePrice,
-                LastPrice = (float)item.Holdings.Price
-            }; // Stock Tickers
-            p_prtfPoss.Add(posStckItem);
+                PortfolioPosition posStckItem = new()
+                {
+                    SqTicker = "S/" + item.Holdings.Symbol.ToString(),
+                    Quantity = (int)item.Holdings.Quantity,
+                    AvgPrice = (float)item.Holdings.AveragePrice,
+                    LastPrice = (float)item.Holdings.Price
+                };
+                p_prtfPoss.Add(posStckItem);
+            } // Stock Tickers
         }
 
         PortfolioPosition posCashItem = new(); // Cash Tickers
@@ -329,6 +345,52 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
             posCashItem.LastPrice = (float)item.Amount;
             p_prtfPoss.Add(posCashItem);
         }
+        return null; // No Error
+    }
+
+    public static string? GetBmrksHistoricalResults(string bmrksStr, out List<HistoricalPrice> histPrices)
+    {
+        List<HistoricalPrice> historicalPrices = new();
+        string tickerAsTradedToday2 = bmrksStr; // if symbol.zip doesn't exist in Data folder, it will not download it (cost money, you have to download in their shop). It raises an exception.
+        Symbol symbol = new(SecurityIdentifier.GenerateEquity(tickerAsTradedToday2, Market.USA, true, FinDb.gFinDb.MapFileProvider), tickerAsTradedToday2);
+
+        DateTime startTimeUtc = new(2008, 01, 01);
+        // If you want to get 20080104 day data too, it has to be specified like this:
+        // class TimeBasedFilter assures that (data.EndTime <= EndTimeLocal)
+        // It is assumed that any TradeBar final values are only released at TradeBar.EndTime (OK for minute, hourly data, but not perfect for daily data which is known at 16:00)
+        // Any TradeBar's EndTime is Time+1day (assuming that ClosePrice is released not at 16:00, but later, at midnight)
+        // So the 20080104's row in CVS is: Time: 20080104:00:00, EndTime:20080105:00:00
+        DateTime endTimeUtc = new(2008, 01, 05, 5, 0, 0); // this will be => 2008-01-05:00:00 endTimeLocal
+
+        // Use TickType.TradeBar. That is in the daily CSV file. TickType.Quote file would contains Ask(Open/High/Low/Close) + Bid(Open/High/Low/Close), like a Quote from a Broker at trading realtime.
+        var historyRequests = new[]
+        {
+            new HistoryRequest(startTimeUtc, endTimeUtc, typeof(TradeBar), symbol, Resolution.Daily, SecurityExchangeHours.AlwaysOpen(TimeZones.NewYork),
+                TimeZones.NewYork, null, false, false, DataNormalizationMode.Adjusted, QuantConnect.TickType.Trade)
+        };
+
+        NodaTime.DateTimeZone sliceTimeZone = TimeZones.NewYork; // "algorithm.TimeZone"
+
+        var result = FinDb.gFinDb.HistoryProvider.GetHistory(historyRequests, sliceTimeZone).ToList();
+        Utils.Logger.Info("length of result bar values:" + result[0].Bars.Values.ToArray().Length);
+        Console.WriteLine($" Test Historical price data. Number of TradeBars: {result.Count}. SPY RAW ClosePrice on {result[0].Bars.Values.ToArray()[0].Time}: {result[0].Bars.Values.ToArray()[0].Close}");
+
+        for (int i = 0; i < result.Count; i++)
+        {
+            var resBarVals = result[i].Bars.Values.ToArray();
+            HistoricalPrice histPrice = new()
+            {
+                SqTicker = "S/" + resBarVals[0].Symbol.Value,
+                Date = resBarVals[0].Time.ToString(),
+                High = (float)resBarVals[0].High,
+                Low = (float)resBarVals[0].Low,
+                Open = (float)resBarVals[0].Open,
+                Close = (float)resBarVals[0].Close,
+                Price = (float)resBarVals[0].Price,
+            };
+            historicalPrices.Add(histPrice);
+        }
+        histPrices = historicalPrices;
         return null; // No Error
     }
 }

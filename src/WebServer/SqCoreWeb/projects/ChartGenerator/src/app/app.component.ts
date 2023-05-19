@@ -60,6 +60,10 @@ export class AppComponent implements OnInit {
     console.log(wsQueryStr);
     gChrtGenDiag.serverBacktestStartTime = new Date();
     this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/chrtgen' + wsQueryStr); // "wss://127.0.0.1/ws/chrtgen?pids=13,2" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection. ? has to be included to separate the location from the params
+
+    setInterval(() => { // checking whether the connection is live or not
+      this.isSrvConnectionAlive = this._socket != null && this._socket.readyState === WebSocket.OPEN;
+    }, 5 * 1000); // refresh at every 5 secs
   }
 
   ngOnInit(): void {
@@ -78,9 +82,9 @@ export class AppComponent implements OnInit {
           const handshakeMsg: HandshakeMessage = Object.assign(new HandshakeMessage(), JSON.parse(msgObjStr));
           this.user.email = handshakeMsg.email;
           break;
-        case 'PrtfRunResult':
+        case 'PrtfRunResults':
           gChrtGenDiag.serverBacktestEndTime = new Date();
-          console.log('ChrtGen.PrtfRunResult:' + msgObjStr);
+          console.log('ChrtGen.PrtfRunResults:' + msgObjStr);
           this.processPortfolioRunResult(msgObjStr);
           gChrtGenDiag.totalUiResponseTime = new Date();
           break;

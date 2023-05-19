@@ -52,6 +52,7 @@ public class ChrtGenWs
             case "RunBacktest":
                 Utils.Logger.Info($"ChrtGen.OnWsReceiveAsync(): RunBacktest: '{msgObjStr}'");
                 BacktestResults(msgObjStr, webSocket);
+                HistoricalBmrksResults(msgObjStr, webSocket);
                 break;
             default:
                 Utils.Logger.Info($"ChrtGen.OnWsReceiveAsync(): Unrecognized message from client, {msgCode},{msgObjStr}");
@@ -86,7 +87,7 @@ public class ChrtGenWs
 
         if (errMsg == null)
         {
-            List<PrtfRunResultJs> pfRunResult = new();
+            List<PrtfRunResultJs> pfRunResults = new();
             for (int i = 0; i < lsPrtf.Count; i++)
             {
                 errMsg = lsPrtf[i].GetPortfolioRunResult(out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos);
@@ -133,13 +134,57 @@ public class ChrtGenWs
                     }
                 }
                 // Step6: Filling the Stats, ChartPoint vals and prtfPoss in pfRunResults
-                pfRunResult.Add(new PrtfRunResultJs { Pstat = pStat, Chart = chartVal, PrtfPoss = prtfPoss });
+                pfRunResults.Add(new PrtfRunResultJs { Pstat = pStat, Chart = chartVal, PrtfPoss = prtfPoss });
             }
 
             // Step7: Sending the pfRunResults data to client
-            if (pfRunResult != null)
+            if (pfRunResults != null)
                 {
-                    byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfRunResult:" + Utils.CamelCaseSerialize(pfRunResult));
+                    byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfRunResults:" + Utils.CamelCaseSerialize(pfRunResults));
+                    if (webSocket!.State == WebSocketState.Open)
+                        webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+                }
+        }
+
+        if (errMsg != null)
+        {
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("ErrorToUser:" + errMsg);
+            if (webSocket!.State == WebSocketState.Open)
+                webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+    }
+
+// temporaryly writing as a separate function, we will integrate once the method is finalized
+    public static void HistoricalBmrksResults(string? p_msg, WebSocket webSocket) // msg: ?pids=1,2&bmrks=QQQ,SPY
+    {
+        string? errMsg = null;
+        if (p_msg == null)
+            errMsg = $"Error. msg from the client is null";
+
+        NameValueCollection query = HttpUtility.ParseQueryString(p_msg!);
+        // Step1: Processing the message to extract the benchmark tickers
+        string? bmrksStr = query.Get("bmrks");
+        if (bmrksStr == null)
+            errMsg = $"Error. bmrksStr from the client is null";
+
+        List<HistoricalPrice> histPrices = new();
+        if(errMsg == null)
+        {
+            foreach (string bmrkStr in bmrksStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
+            {
+                errMsg = Portfolio.GetBmrksHistoricalResults(bmrkStr, out List<HistoricalPrice> histPrcs);
+                if(errMsg == null)
+                {
+                    for (int i = 0; i < histPrcs.Count; i++)
+                        histPrices.Add(new HistoricalPrice { SqTicker = "S" + histPrcs[i].SqTicker, Date = histPrcs[i].Date, High = histPrcs[i].High, Low = histPrcs[i].Low, Open = histPrcs[i].Open, Close = histPrcs[i].Close, Price = histPrcs[i].Price });
+                }
+                else
+                    errMsg = $"Error. Benchmark Tickers {bmrkStr} not found in DB";
+            }
+
+            if (histPrices != null)
+                {
+                    byte[] encodedMsg = Encoding.UTF8.GetBytes("BenchmarkResults:" + Utils.CamelCaseSerialize(histPrices));
                     if (webSocket!.State == WebSocketState.Open)
                         webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
                 }
