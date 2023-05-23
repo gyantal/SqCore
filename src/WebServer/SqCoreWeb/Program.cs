@@ -396,8 +396,8 @@ public partial class Program
             case "3":
                 Console.WriteLine("Backtest: https://github.com/QuantConnect/Lean/blob/master/Algorithm.CSharp/BasicTemplateFrameworkAlgorithm.cs");
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", @"{""ema-fast"":10,""ema-slow"":20}");
-                backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SQ_BuyAndSellSPYAtMOC", @"{""ema-fast"":10,""ema-slow"":20}");
-                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SQ_DualMomentum", @"{""ema-fast"":10,""ema-slow"":20}");
+                backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", @"{""ema-fast"":10,""ema-slow"":20}");
+                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqDualMomentum", @"{""ema-fast"":10,""ema-slow"":20}");
                 break;
             case "4":
                 Console.WriteLine("Not ready yet");
