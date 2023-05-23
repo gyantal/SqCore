@@ -4,7 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { SqNgCommonUtilsTime, minDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { processUiWithPrtfRunResultChrt } from '../../../sq-ng-common/src/lib/chart/advanced-chart';
-import { PrtfRunResultJs, UiChartPointValues, UiPrtfRunResult } from '../../../MarketDashboard/src/sq-globals';
+import { ChrtGenBacktestResult, UiChartPointValues, UiChrtGenPrtfRunResult } from '../../../MarketDashboard/src/sq-globals';
 import * as d3 from 'd3';
 
 type Nullable<T> = T | null;
@@ -19,8 +19,7 @@ export class ChrtGenDiagnostics { // have to export the class, because .mainTsTi
   public mainAngComponentConstructorTime: Date = new Date();
   public windowOnLoadTime: Date = minDate;
 
-  public serverBacktestStartTime: Date = minDate;
-  public serverBacktestEndTime: Date = minDate;
+  public serverBacktestTime: number = 0;
   public communicationOverheadTime: string = '';
   public totalUiResponseTime: Date = minDate;
 }
@@ -35,8 +34,8 @@ export const gChrtGenDiag: ChrtGenDiagnostics = new ChrtGenDiagnostics();
 export class AppComponent implements OnInit {
   m_http: HttpClient;
 
-  prtfRunResults: Nullable<PrtfRunResultJs[]> = [];
-  uiPrtfRunResults: UiPrtfRunResult[] = [];
+  chrtGenBacktestResults: Nullable<ChrtGenBacktestResult> = null;
+  uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[] = [];
   pvChrtWidth = 0;
   pvChrtHeight = 0;
 
@@ -58,7 +57,7 @@ export class AppComponent implements OnInit {
 
     const wsQueryStr = window.location.search; // https://sqcore.net/webapps/ChartGenerator/?pids=1  , but another parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
     console.log(wsQueryStr);
-    gChrtGenDiag.serverBacktestStartTime = new Date();
+    // gChrtGenDiag.communicationStartTime = new Date();
     this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/chrtgen' + wsQueryStr); // "wss://127.0.0.1/ws/chrtgen?pids=13,2" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection. ? has to be included to separate the location from the params
 
     setInterval(() => { // checking whether the connection is live or not
@@ -82,11 +81,10 @@ export class AppComponent implements OnInit {
           const handshakeMsg: HandshakeMessage = Object.assign(new HandshakeMessage(), JSON.parse(msgObjStr));
           this.user.email = handshakeMsg.email;
           break;
-        case 'PrtfRunResults':
-          gChrtGenDiag.serverBacktestEndTime = new Date();
-          console.log('ChrtGen.PrtfRunResults:' + msgObjStr);
-          this.processPortfolioRunResult(msgObjStr);
-          gChrtGenDiag.totalUiResponseTime = new Date();
+        case 'BacktestResults':
+          // gChrtGenDiag.communicationOverheadTime = (new Date().getTime() - gChrtGenDiag.communicationStartTime.getTime()).toString();
+          console.log('ChrtGen.BacktestResults:' + msgObjStr);
+          this.processChrtGenBacktestResults(msgObjStr);
           break;
         case 'ErrorToUser':
           console.log('ChrtGen.ErrorToUser:' + msgObjStr);
@@ -102,12 +100,12 @@ export class AppComponent implements OnInit {
     window.addEventListener('resize', () => {
       this.pvChrtWidth = backtestResChartId.clientWidth as number; // we have to remember the width/height every time window is resized, because we give these to the chart
       this.pvChrtHeight = backtestResChartId.clientHeight as number;
-      AppComponent.updateUiWithPrtfRunResult(this.prtfRunResults, this.uiPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight);
+      AppComponent.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight);
     });
   }
 
-  processPortfolioRunResult(msgObjStr: string) {
-    this.prtfRunResults = JSON.parse(msgObjStr, function(this: any, key, value) {
+  processChrtGenBacktestResults(msgObjStr: string) {
+    this.chrtGenBacktestResults = JSON.parse(msgObjStr, function(this: any, key, value) {
       // property names and values are transformed to a shorter ones for decreasing internet traffic.Transform them back to normal for better code reading.
 
       // 'this' is the object containing the property being processed (not the embedding class) as this is a function(), not a '=>', and the property name as a string, the property value as arguments of this function.
@@ -164,45 +162,48 @@ export class AppComponent implements OnInit {
       }
       return value;
     });
-    AppComponent.updateUiWithPrtfRunResult(this.prtfRunResults, this.uiPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight);
+    AppComponent.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight);
   }
 
-  static updateUiWithPrtfRunResult(prtfRunResults: Nullable<PrtfRunResultJs[]>, uiPrtfRunResults: UiPrtfRunResult[], uiChrtWidth: number, uiChrtHeight: number) {
-    if (prtfRunResults == null)
+  static updateUiWithChrtGenBacktestResults(chrtGenBacktestRes: Nullable<ChrtGenBacktestResult>, uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[], uiChrtWidth: number, uiChrtHeight: number) {
+    if (chrtGenBacktestRes == null || chrtGenBacktestRes.pfRunResults == null)
       return;
 
-    uiPrtfRunResults.length = 0;
-    for (const prtfResItem of prtfRunResults) {
-      if (prtfResItem.pstat == null || prtfResItem.chart == null)
-        continue;
-      const uiPrtfResItem = new UiPrtfRunResult();
-      uiPrtfResItem.startPortfolioValue = prtfResItem.pstat.startPortfolioValue;
-      uiPrtfResItem.endPortfolioValue = prtfResItem.pstat.endPortfolioValue;
-      uiPrtfResItem.totalReturn = prtfResItem.pstat.totalReturn;
-      uiPrtfResItem.cAGR = parseFloat(prtfResItem.pstat.cagr);
-      uiPrtfResItem.maxDD = parseFloat(prtfResItem.pstat.maxDD);
-      uiPrtfResItem.sharpeRatio = prtfResItem.pstat.sharpeRatio;
-      uiPrtfResItem.stDev = parseFloat(prtfResItem.pstat.stDev);
-      // uiPrtfResItem.ulcer = parseFloat(prtfItem.pstat.ulcer); // yet to calcualte
-      uiPrtfResItem.tradingDays = parseInt(prtfResItem.pstat.tradingDays);
-      uiPrtfResItem.nTrades = parseInt(prtfResItem.pstat.nTrades);
-      uiPrtfResItem.winRate = parseFloat(prtfResItem.pstat.winRate);
-      uiPrtfResItem.lossRate = parseFloat(prtfResItem.pstat.lossingRate);
-      uiPrtfResItem.sortino = prtfResItem.pstat.sortino;
-      uiPrtfResItem.turnover = parseFloat(prtfResItem.pstat.turnover);
-      uiPrtfResItem.longShortRatio = parseFloat(prtfResItem.pstat.longShortRatio);
-      uiPrtfResItem.fees = parseFloat(prtfResItem.pstat.fees);
-      // uiPrtfResItem.benchmarkCAGR = parseFloat(prtfItem.pstat.benchmarkCAGR); // yet to calcualte
-      // uiPrtfResItem.benchmarkMaxDD = parseFloat(prtfItem.pstat.benchmarkMaxDD); // yet to calcualte
-      // uiPrtfResItem.correlationWithBenchmark = parseFloat(prtfItem.pstat.correlationWithBenchmark); // yet to calcualte
-      for (let j = 0; j < prtfResItem.chart.dates.length; j++) {
+    uiChrtGenPrtfRunResults.length = 0;
+    gChrtGenDiag.serverBacktestTime = chrtGenBacktestRes.serverBacktestTimeMs;
+    for (const item of chrtGenBacktestRes.pfRunResults) {
+      const uiPrtfResItem = new UiChrtGenPrtfRunResult();
+      uiPrtfResItem.startPortfolioValue = item.pstat.startPortfolioValue;
+      uiPrtfResItem.endPortfolioValue = item.pstat.endPortfolioValue;
+      uiPrtfResItem.totalReturn = item.pstat.totalReturn;
+      uiPrtfResItem.cAGR = parseFloat(item.pstat.cagr);
+      uiPrtfResItem.maxDD = parseFloat(item.pstat.maxDD);
+      uiPrtfResItem.sharpeRatio = item.pstat.sharpeRatio;
+      uiPrtfResItem.stDev = parseFloat(item.pstat.stDev);
+      // uiPrtfResItem.ulcer = parseFloat(item.pstat.ulcer); // yet to calcualte
+      uiPrtfResItem.tradingDays = parseInt(item.pstat.tradingDays);
+      uiPrtfResItem.nTrades = parseInt(item.pstat.nTrades);
+      uiPrtfResItem.winRate = parseFloat(item.pstat.winRate);
+      uiPrtfResItem.lossRate = parseFloat(item.pstat.lossingRate);
+      uiPrtfResItem.sortino = item.pstat.sortino;
+      uiPrtfResItem.turnover = parseFloat(item.pstat.turnover);
+      uiPrtfResItem.longShortRatio = parseFloat(item.pstat.longShortRatio);
+      uiPrtfResItem.fees = parseFloat(item.pstat.fees);
+      // uiPrtfResItem.benchmarkCAGR = parseFloat(item.pstat.benchmarkCAGR); // yet to calcualte
+      // uiPrtfResItem.benchmarkMaxDD = parseFloat(item.pstat.benchmarkMaxDD); // yet to calcualte
+      // uiPrtfResItem.correlationWithBenchmark = parseFloat(item.pstat.correlationWithBenchmark); // yet to calcualte
+
+      uiPrtfResItem.chrtResolution = item.chartResolution;
+
+      for (let i = 0; i < item.chart.dates.length; i++) {
         const chartItem = new UiChartPointValues();
-        const mSecSinceUnixEpoch: number = prtfResItem.chart.dates[j] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
+        const mSecSinceUnixEpoch: number = item.chart.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
         chartItem.dates = new Date(mSecSinceUnixEpoch);
-        chartItem.values = prtfResItem.chart.values[j];
+        chartItem.values = item.chart.values[i];
         uiPrtfResItem.chrtValues.push(chartItem);
       }
-      uiPrtfRunResults.push(uiPrtfResItem);
+
+      uiChrtGenPrtfRunResults.push(uiPrtfResItem);
     }
 
     d3.selectAll('#pfRunResultChrt > *').remove();
@@ -210,7 +211,7 @@ export class AppComponent implements OnInit {
     const margin = {top: 50, right: 50, bottom: 30, left: 60 };
     const chartWidth = uiChrtWidth * 0.9 - margin.left - margin.right; // 90% of the PanelChart Width
     const chartHeight = uiChrtHeight * 0.9 - margin.top - margin.bottom; // 90% of the PanelChart Height
-    const chrtData = uiPrtfRunResults[0].chrtValues.map((r:{ dates: Date; values: number; }) => ({date: new Date(r.dates), value: r.values}));
+    const chrtData = uiChrtGenPrtfRunResults[0].chrtValues.map((r:{ dates: Date; values: number; }) => ({date: new Date(r.dates), value: r.values}));
     const xMin = d3.min(chrtData, (r:{ date: Date; }) => r.date);
     const xMax = d3.max(chrtData, (r:{ date: Date; }) => r.date);
     const yMinAxis = d3.min(chrtData, (r:{ value: number; }) => r.value);
@@ -231,9 +232,9 @@ export class AppComponent implements OnInit {
         this.chrtGenDiagnosticsMsg = `App constructor: ${SqNgCommonUtilsTime.getTimespanStr(gChrtGenDiag.mainTsTime, gChrtGenDiag.mainAngComponentConstructorTime)}\n` +
         `Window loaded: ${SqNgCommonUtilsTime.getTimespanStr(gChrtGenDiag.mainTsTime, gChrtGenDiag.windowOnLoadTime)}\n` +
         '-----\n' +
-        `Server backtest time: ${SqNgCommonUtilsTime.getTimespanStr(gChrtGenDiag.serverBacktestStartTime, gChrtGenDiag.serverBacktestEndTime)}\n` +
-        `Total UI response: ${SqNgCommonUtilsTime.getTimespanStr(gChrtGenDiag.serverBacktestStartTime, gChrtGenDiag.totalUiResponseTime)}\n`;
-        // `Communication Overhead: ${(chrtGenDiag.mainTsTime.getTime() - chrtGenDiag.totalUiResponseTime.getTime()) - (chrtGenDiag.mainTsTime.getTime() - chrtGenDiag.serverBacktestTime.getTime()) +'ms'}\n`;
+        `Server backtest time: ${gChrtGenDiag.serverBacktestTime + 'ms' }\n`;
+        // `Communication Overhead: ${gChrtGenDiag.communicationOverheadTime +'ms'}\n` +
+        // `Total UI response: ${gChrtGenDiag.serverBacktestTime + parseInt(gChrtGenDiag.communicationOverheadTime) +'ms'}\n`;
       } else
         this.chrtGenDiagnosticsMsg = 'Connection to server is broken.\n Try page reload (F5).';
     }

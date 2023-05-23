@@ -113,19 +113,37 @@ export class AssetLastJs {
 // ************************************************ //
 // Classes used for developing charts, stats and positions of PortfolioRunResults
 // The below classes are used in PortfolioManager and ChartGenerator Apps
+
+export enum ChartResolution
+{
+    Second, Minute, Minute5, Hour, Daily, Weekly, Monthly
+}
+
 export interface ChartJs { // PfRunResults Chart Data
   dates: number[];
   values: number[];
 }
 
-export class PrtfRunResultJs { // we can specify the input types more, but whatever.
+export class ChrtGenBacktestResult {
+  public pfRunResults!: ChrtGenPfRunResult[];
+  public bmrkHistories!: any[];
+  public logs!: any[];
+  public serverBacktestTimeMs!: number;
+}
+
+export class ChrtGenPfRunResult {
   public pstat: any; // all the Stat members from UiPrtfRunResult, we skip creating detailed sub classes
   public chart!: ChartJs;
+  public chartResolution!: ChartResolution;
+}
+
+export class PrtfRunResultJs extends ChrtGenPfRunResult { // we can specify the input types more, but whatever.
   public prtfPoss: any; // all the position members from UiPrtfPositions, we skip creating detailed sub classes
 }
 
+
 // Ui classes
-export class UiPrtfRunResult {
+export class UiChrtGenPrtfRunResult {
   public startPortfolioValue: number = 0;
   public endPortfolioValue: number = 0;
   public totalReturn: number = 0;
@@ -147,8 +165,13 @@ export class UiPrtfRunResult {
   public correlationWithBenchmark: number = 0;
 
   public chrtValues: UiChartPointValues[] = [];
+  public chrtResolution: ChartResolution = ChartResolution.Daily;
+}
+
+export class UiPrtfRunResult extends UiChrtGenPrtfRunResult { // PrtfRun Results requires position values to display
   public prtfPosValues: UiPrtfPositions[] = [];
 }
+
 // chart values
 export class UiChartPointValues {
   public dates = new Date();

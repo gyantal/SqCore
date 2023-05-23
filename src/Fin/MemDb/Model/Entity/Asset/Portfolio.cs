@@ -52,6 +52,11 @@ public class PortfolioRunResultStatistics
     public float CorrelationWithBenchmark { get; set; } = 0.0f;
 }
 
+public enum ChartResolution
+{
+    Second, Minute, Minute5, Hour, Daily, Weekly, Monthly
+}
+
 public class PortfolioPosition
 {
     public string SqTicker { get; set; } = string.Empty;
@@ -64,10 +69,6 @@ public class HistoricalPrice
 {
     public string SqTicker { get; set; } = string.Empty;
     public string Date { get; set; } = string.Empty;
-    public float High { get; set; } = 0.0f;
-    public float Low { get; set; } = 0.0f;
-    public float Open { get; set; } = 0.0f;
-    public float Close { get; set; } = 0.0f;
     public float Price { get; set; } = 0.0f;
 }
 
@@ -186,22 +187,22 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
     // Or number of seconds from Unix epoch: '1641013200' is 10 chars. Resolution can be 1 second.
     // Although it is 2 chars more data, but we chose this, because QC uses it and also it will allow us to go intraday in the future.
     // Also it allows to show the user how up-to-date (real-time) the today value is.
-    public string? GetPortfolioRunResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss)
+    public string? GetPortfolioRunResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
         #pragma warning disable IDE0066 // disable the switch suggestion warning only locally
         switch (Type)
         {
             case PortfolioType.Simulation:
-                return GetBacktestResult(out p_stat, out p_pv, out p_prtfPoss);
+                return GetBacktestResult(out p_stat, out p_pv, out p_prtfPoss, out p_chartResolution);
             case PortfolioType.Trades:
             case PortfolioType.TradesSqClassic:
             default:
-                return GetPortfolioRunResultDefault(out p_stat, out p_pv, out p_prtfPoss);
+                return GetPortfolioRunResultDefault(out p_stat, out p_pv, out p_prtfPoss, out p_chartResolution);
         }
         #pragma warning restore IDE0066
     }
 
-    public string? GetPortfolioRunResultDefault(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss)
+    public string? GetPortfolioRunResultDefault(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
         Thread.Sleep(500 + Id);
         // we will run the backtest.
@@ -234,14 +235,16 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
             new PortfolioPosition { SqTicker = "S/TQQQ", Quantity = 1, AvgPrice = 1.0f, LastPrice = 1.0f }
         }; // output
         p_prtfPoss = prtfPoss;
+        p_chartResolution = ChartResolution.Daily;
         return null; // No Error
     }
 
-    public string? GetBacktestResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss)
+    public string? GetBacktestResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
         p_stat = new PortfolioRunResultStatistics();
         p_pv = new List<ChartPoint>();
         p_prtfPoss = new List<PortfolioPosition>();
+        p_chartResolution = ChartResolution.Daily;
 
         string algorithmName = String.IsNullOrEmpty(Algorithm) ? "BasicTemplateFrameworkAlgorithm" : Algorithm;
         BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(algorithmName, @"{""ema-fast"":10,""ema-slow"":20}");
@@ -256,13 +259,13 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         List<ChartPoint> equityChart = backtestResults.Charts["Strategy Equity"].Series["Equity"].Values;
         Console.WriteLine($"#Charts:{backtestResults.Charts.Count}. The Equity (PV) chart: {equityChart[0].y:N0}, {equityChart[1].y:N0} ... {equityChart[^2].y:N0}, {equityChart[^1].y:N0}");
 
-        bool isDailyChartData = true;
         // With Minute resolution simulation, the PV chart is generated at every 5 minutes. But the first point of the day is UTC 4:00, then 13:31, 13:36, 13:41,...
         if (equityChart.Count >= 3) // because the first is a dummy point, we need at least 3 data points to decide.
         {
-            isDailyChartData = (equityChart[2].x - equityChart[1].x) > 300; // if the difference between 2nd and the 3rd chart points is bigger than 300sec (5min), treat it as daily resolution;
+            if ((equityChart[2].x - equityChart[1].x) > 300) // if the difference between 2nd and the 3rd chart points is bigger than 300sec (5min), treat it as daily resolution;
+                p_chartResolution = ChartResolution.Minute5;
         }
-        if (isDailyChartData)
+        if (p_chartResolution == ChartResolution.Minute5) // (5min), treat it as daily resolution;
         {
             // Eliminate daily chart duplicates. There is 1 point for weekends, but 2 points (morning, marketclose) for the weekdays. We keep only the last Y value for the day.
             DateTime currentDate = DateTime.MinValue; // initialize currentDate to the smallest possible value
@@ -325,17 +328,16 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         var prtfPositions = backtestResults.Algorithm;
         foreach (var item in prtfPositions.UniverseManager.ActiveSecurities.Values)
         {
-            if((int)item.Holdings.Quantity != 0) // eliminating the positions with holding quantity equals to zero
+            if ((int)item.Holdings.Quantity == 0) // eliminating the positions with holding quantity equals to zero
+                continue;
+            PortfolioPosition posStckItem = new()
             {
-                PortfolioPosition posStckItem = new()
-                {
-                    SqTicker = "S/" + item.Holdings.Symbol.ToString(),
-                    Quantity = (int)item.Holdings.Quantity,
-                    AvgPrice = (float)item.Holdings.AveragePrice,
-                    LastPrice = (float)item.Holdings.Price
-                };
-                p_prtfPoss.Add(posStckItem);
-            } // Stock Tickers
+                SqTicker = "S/" + item.Holdings.Symbol.ToString(),
+                Quantity = (int)item.Holdings.Quantity,
+                AvgPrice = (float)item.Holdings.AveragePrice,
+                LastPrice = (float)item.Holdings.Price
+            };
+            p_prtfPoss.Add(posStckItem); // Stock Tickers
         }
 
         PortfolioPosition posCashItem = new(); // Cash Tickers
@@ -381,11 +383,7 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
             HistoricalPrice histPrice = new()
             {
                 SqTicker = "S/" + resBarVals[0].Symbol.Value,
-                Date = resBarVals[0].Time.ToString(),
-                High = (float)resBarVals[0].High,
-                Low = (float)resBarVals[0].Low,
-                Open = (float)resBarVals[0].Open,
-                Close = (float)resBarVals[0].Close,
+                Date = resBarVals[0].Time.TohYYYYMMDD(),
                 Price = (float)resBarVals[0].Price,
             };
             historicalPrices.Add(histPrice);

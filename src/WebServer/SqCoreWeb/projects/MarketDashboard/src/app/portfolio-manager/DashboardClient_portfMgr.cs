@@ -360,7 +360,7 @@ public partial class DashboardClient
 
         if (errMsg == null)
         {
-            errMsg = prtf!.GetPortfolioRunResult(out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos);
+            errMsg = prtf!.GetPortfolioRunResult(out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
             if (errMsg == null)
             {
                 // Step3: Filling the ChartPoint Dates and Values to a list. A very condensed format. Dates are separated into its ChartDate List.
@@ -420,6 +420,7 @@ public partial class DashboardClient
                         WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
                 }
             }
+            Utils.Logger.Info($"chartResoultion {chartResolution}");
         }
 
         if (errMsg != null)
