@@ -137,6 +137,8 @@ namespace QuantConnect.Algorithm.CSharp
 
             Schedule.On(DateRules.EveryDay(_ticker), TimeRules.BeforeMarketClose(_ticker, 20), () =>
             {
+                if (IsWarmingUp) // Dont' trade in the warming up period.
+                    return;
                 if (!IsWarmingUp)
                     AtRebalancePreProcess();
                 // this.Time.ToString(): "1/2/2013 3:40:00 PM" // so it is Local time
@@ -161,7 +163,7 @@ namespace QuantConnect.Algorithm.CSharp
 
                 Symbol tradedSymbol = _isTradeOnMinuteResolution ? _symbolMinute : _symbolDaily;
 
-                if (!IsWarmingUp && this.Time.DayOfWeek == DayOfWeek.Monday && Portfolio[tradedSymbol].Quantity == 0)
+                if (this.Time.DayOfWeek == DayOfWeek.Monday && Portfolio[tradedSymbol].Quantity == 0)
                 {
                     decimal currentMinutePrice = Securities[tradedSymbol].Price; // Daily Raw: price is the Close of the previous day
 

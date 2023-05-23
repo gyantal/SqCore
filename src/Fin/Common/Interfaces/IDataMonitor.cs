@@ -1,5 +1,6 @@
 using System.ComponentModel.Composition;
 using System;
+using QuantConnect.Parameters;
 
 namespace QuantConnect.Interfaces
 {
@@ -9,6 +10,14 @@ namespace QuantConnect.Interfaces
     [InheritedExport(typeof(IDataMonitor))]
     public interface IDataMonitor : IDisposable
     {
+        // SqCore Change NEW:
+        SqBacktestConfig SqBacktestConfig
+        {
+            get;
+            set;
+        }
+        // SqCore Change END
+
         /// <summary>
         /// Terminates the data monitor generating a final report
         /// </summary>

@@ -2,6 +2,7 @@
 using QuantConnect.Interfaces;
 using QuantConnect.Lean.Engine.TransactionHandlers;
 using QuantConnect.Packets;
+using QuantConnect.Parameters;
 
 namespace QuantConnect.Lean.Engine.Alpha
 {
@@ -11,6 +12,14 @@ namespace QuantConnect.Lean.Engine.Alpha
     [InheritedExport(typeof(IAlphaHandler))]
     public interface IAlphaHandler
     {
+        // SqCore Change NEW:
+        SqBacktestConfig SqBacktestConfig
+        {
+            get;
+            set;
+        }
+        // SqCore Change END
+
         /// <summary>
         /// Gets a flag indicating if this handler's thread is still running and processing messages
         /// </summary>

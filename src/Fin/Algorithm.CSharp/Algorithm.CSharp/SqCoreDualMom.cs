@@ -152,7 +152,7 @@ namespace QuantConnect.Algorithm.CSharp
 
             Schedule.On(DateRules.MonthEnd("SPY"), TimeRules.BeforeMarketClose("SPY", 30), () =>
             {
-                if (IsWarmingUp)
+                if (IsWarmingUp) // Dont' trade in the warming up period.
                     return;
                 Dictionary<string, List<SqPrice>> usedAdjustedClosePrices = GetUsedAdjustedClosePriceData();
                 Dictionary<string, decimal> nextMonthWeights = HistPerfCalc(usedAdjustedClosePrices);

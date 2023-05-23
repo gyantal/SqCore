@@ -239,7 +239,7 @@ namespace QuantConnect.Statistics
         /// <param name="fromDate">An optional starting date</param>
         /// <param name="toDate">An optional ending date</param>
         /// <returns>SortedDictionary of the equity decimal values ordered in time</returns>
-        private static SortedDictionary<DateTime, decimal> ChartPointToDictionary(IEnumerable<ChartPoint> points, DateTime? fromDate = null, DateTime? toDate = null)
+        public static SortedDictionary<DateTime, decimal> ChartPointToDictionary(IEnumerable<ChartPoint> points, DateTime? fromDate = null, DateTime? toDate = null)
         {
             var dictionary = new SortedDictionary<DateTime, decimal>();
 

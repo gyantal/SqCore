@@ -14,6 +14,7 @@ using QuantConnect.Lean.Engine.Alpha;
 using QuantConnect.Lean.Engine.TransactionHandlers;
 using QuantConnect.Logging;
 using QuantConnect.Packets;
+using QuantConnect.Parameters;
 using QuantConnect.Statistics;
 using QuantConnect.Util;
 using SqCommon;
@@ -25,7 +26,13 @@ namespace QuantConnect.Lean.Engine.Alphas
     /// </summary>
     public class DefaultAlphaHandler : IAlphaHandler
     {
-        public static  bool gIsSaveResultsFiles = true;
+        // SqCore Change NEW:
+        public SqBacktestConfig SqBacktestConfig
+        {
+            get;
+            set;
+        }
+        // SqCore Change END
         private static int _storePeriodMs = Convert.ToInt32(TimeSpan.FromMinutes(10).TotalMilliseconds);
         private DateTime _lastStepTime;
         private List<Insight> _insights;
@@ -209,8 +216,10 @@ namespace QuantConnect.Lean.Engine.Alphas
         /// <remarks>Method called by the storing timer and on exit</remarks>
         protected virtual void StoreInsights()
         {
-            if (!gIsSaveResultsFiles)
+            // SqCore Change NEW:
+            if (!SqBacktestConfig.DoSaveResultsFiles)
                 return;
+            // SqCore Change END
             try
             {
                 // avoid reentrancy

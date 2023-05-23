@@ -16,6 +16,7 @@ namespace QuantConnect.Parameters
         public SqResult SqResult { get; set; } = SqResult.QcOriginal; // Lightweight result calculation, only what SqCore needs, and additional stat numbers that QC doesn't calculate
         public bool DoPeriodicPartialResultsUpdateToCaller { get; set; } = false;
         public bool DoGenerateLog { get; set; } = false;
+        public bool DoSaveResultsFiles { get; set; } = false; // enable these for Debugging only, but not in Release, because 110KB file creation is slow
 
         public float SqInitialDeposit { get; set; }
         public DateTime SqStartDate { get; set; } = DateTime.MinValue;

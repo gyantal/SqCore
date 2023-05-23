@@ -268,8 +268,10 @@ namespace QuantConnect.Lean.Engine.Results
         /// <param name="packet">Packet to store.</param>
         protected override void StoreResult(Packet packet)
         {
-            if (!gIsSaveResultsFiles)
+            // SqCore Change NEW:
+            if (!SqBacktestConfig.DoSaveResultsFiles)
                 return;
+            // SqCore Change END
             try
             {
                 // Make sure this is the right type of packet:

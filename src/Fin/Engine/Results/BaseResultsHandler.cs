@@ -25,8 +25,6 @@ namespace QuantConnect.Lean.Engine.Results
     public abstract class BaseResultsHandler
     {
         // SqCore Change NEW:
-        public static bool gIsSaveResultsFiles = true; // responsible for: BasicTemplateFrameworkAlgorithm.json , BasicTemplateFrameworkAlgorithm-order-events.json, BasicTemplateFrameworkAlgorithm-log.txt
-
         public SqBacktestConfig SqBacktestConfig
         {
             get;
@@ -375,8 +373,10 @@ namespace QuantConnect.Lean.Engine.Results
         /// <returns>The path to the logs</returns>
         public virtual string SaveLogs(string id, List<LogEntry> logs)
         {
-            if (!gIsSaveResultsFiles)
+            // SqCore Change NEW:
+            if (!SqBacktestConfig.DoSaveResultsFiles)
                 return "<not created>";
+            // SqCore Change END
             var filename = $"{id}-log.txt";
             var path = GetResultsPath(filename);
             var logLines = logs.Select(x => x.Message);
@@ -455,7 +455,7 @@ namespace QuantConnect.Lean.Engine.Results
         /// <param name="time">Time to resolve benchmark value at</param>
         protected virtual decimal GetBenchmarkValue(DateTime time)
         {
-            if(Algorithm == null || Algorithm.Benchmark == null)
+            if (Algorithm == null || Algorithm.Benchmark == null)
             {
                 // this could happen if the algorithm exploded mid initialization
                 return 0;
@@ -693,7 +693,7 @@ namespace QuantConnect.Lean.Engine.Results
         /// <summary>
         /// Will generate the statistics results and update the provided runtime statistics
         /// </summary>
-        protected StatisticsResults GenerateStatisticsResults(Dictionary<string, Chart> charts, 
+        protected StatisticsResults GenerateStatisticsResults(Dictionary<string, Chart> charts,
             SortedDictionary<DateTime, decimal> profitLoss = null, CapacityEstimate estimatedStrategyCapacity = null)
         {
             var statisticsResults = new StatisticsResults();
@@ -701,11 +701,12 @@ namespace QuantConnect.Lean.Engine.Results
             // SqCore Change NEW:
             const string strategyEquityKey = "Strategy Equity";
             const string equityKey = "Equity";
+            // SqBacktestConfig.SqResult = SqResult.QcOriginal;
 
             if (SqBacktestConfig.SqResult != SqResult.QcOriginal)
             {
                 var totalTransactions = Algorithm.Transactions.GetOrders(x => x.Status.IsFill()).Count();
-                statisticsResults = SqStatisticsBuilder.Generate(SqBacktestConfig.SqResult, Algorithm.TradeBuilder.ClosedTrades, charts[strategyEquityKey].Series[equityKey].Values, StartingPortfolioValue, Algorithm.Portfolio.TotalFees, totalTransactions,  AlgorithmCurrencySymbol);
+                statisticsResults = SqStatisticsBuilder.Generate(SqBacktestConfig.SqResult, Algorithm.TradeBuilder.ClosedTrades, charts[strategyEquityKey].Series[equityKey].Values, StartingPortfolioValue, Algorithm.Portfolio.TotalFees, totalTransactions, AlgorithmCurrencySymbol);
                 return statisticsResults;
             }
             // SqCore Change END

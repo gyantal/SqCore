@@ -5,6 +5,7 @@ using System.Threading;
 using Newtonsoft.Json;
 using QuantConnect.Configuration;
 using QuantConnect.Interfaces;
+using QuantConnect.Parameters;
 using QuantConnect.Util;
 using SqCommon;
 
@@ -15,7 +16,13 @@ namespace QuantConnect.Data
     /// </summary>
     public class DataMonitor : IDataMonitor
     {
-        public static  bool gIsSaveResultsFiles = true;
+        // SqCore Change NEW:
+        public SqBacktestConfig SqBacktestConfig
+        {
+            get;
+            set;
+        }
+        // SqCore Change END
 
         private bool _exited;
 
@@ -75,7 +82,9 @@ namespace QuantConnect.Data
 
             if (e.Succeded)
             {
-                if (gIsSaveResultsFiles)
+                // SqCore Change NEW:
+                if (SqBacktestConfig.DoSaveResultsFiles)
+                // SqCore Change END
                     WriteLineToFile(_succeededDataRequestsWriter, path, _succeededDataRequestsFileName);
                 Interlocked.Increment(ref _succeededDataRequestsCount);
                 if (isUniverseData)
@@ -85,7 +94,9 @@ namespace QuantConnect.Data
             }
             else
             {
-                if (gIsSaveResultsFiles)
+                // SqCore Change NEW:
+                if (SqBacktestConfig.DoSaveResultsFiles)
+                // SqCore Change END
                     WriteLineToFile(_failedDataRequestsWriter, path, _failedDataRequestsFileName);
                 Interlocked.Increment(ref _failedDataRequestsCount);
                 if (isUniverseData)
@@ -112,16 +123,24 @@ namespace QuantConnect.Data
             _exited = true;
 
             _requestRateCalculationThread.StopSafely(TimeSpan.FromSeconds(5), _cancellationTokenSource);
-            if (gIsSaveResultsFiles)
+            // SqCore Change NEW:
+            if (SqBacktestConfig.DoSaveResultsFiles)
+            // SqCore Change END
                 _succeededDataRequestsWriter?.Close();
-            if (gIsSaveResultsFiles)
+            // SqCore Change NEW:
+            if (SqBacktestConfig.DoSaveResultsFiles)
+            // SqCore Change END
                 _failedDataRequestsWriter?.Close();
 
             StoreDataMonitorReport(GenerateReport());
 
-            if (gIsSaveResultsFiles)
+            // SqCore Change NEW:
+            if (SqBacktestConfig.DoSaveResultsFiles)
+            // SqCore Change END
                 _succeededDataRequestsWriter.DisposeSafely();
-            if (gIsSaveResultsFiles)
+            // SqCore Change NEW:
+            if (SqBacktestConfig.DoSaveResultsFiles)
+            // SqCore Change END
                 _failedDataRequestsWriter.DisposeSafely();
             _cancellationTokenSource.DisposeSafely();
         }
@@ -157,9 +176,13 @@ namespace QuantConnect.Data
                     return;
                 }
                 // we create the files on demand
-                if (gIsSaveResultsFiles)
+                // SqCore Change NEW:
+                if (SqBacktestConfig.DoSaveResultsFiles)
+                // SqCore Change END
                     _succeededDataRequestsWriter = OpenStream(_succeededDataRequestsFileName);
-                if (gIsSaveResultsFiles)
+                // SqCore Change NEW:
+                if (SqBacktestConfig.DoSaveResultsFiles)
+                // SqCore Change END
                     _failedDataRequestsWriter = OpenStream(_failedDataRequestsFileName);
 
                 _cancellationTokenSource = new CancellationTokenSource();
@@ -225,8 +248,10 @@ namespace QuantConnect.Data
         /// <param name="report">The data monitor report to be stored<param>
         private void StoreDataMonitorReport(DataMonitorReport report)
         {
-            if (!gIsSaveResultsFiles)
+            // SqCore Change NEW:
+            if (!SqBacktestConfig.DoSaveResultsFiles)
                 return;
+            // SqCore Change END
 
             if (report == null)
             {
