@@ -79,7 +79,7 @@ namespace QuantConnect.Algorithm.CSharp
     }
 
 
-    public class SQ_BuyAndSellSPYAtMOC : QCAlgorithm
+    public class SqSPYMonFriAtMoc : QCAlgorithm
     {
         DateTime _startDate = DateTime.MinValue;
         DateTime _endDate = DateTime.MaxValue;

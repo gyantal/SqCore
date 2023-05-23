@@ -88,7 +88,7 @@ namespace QuantConnect.Algorithm.CSharp
     //     public DateTime ReferenceDate;
     //     public decimal SplitFactor;
     // }
-    public class SQ_DualMomentum : QCAlgorithm
+    public class SqDualMomentum : QCAlgorithm
     {
         DateTime _startDate = DateTime.MinValue;
         DateTime _endDate = DateTime.MaxValue;
