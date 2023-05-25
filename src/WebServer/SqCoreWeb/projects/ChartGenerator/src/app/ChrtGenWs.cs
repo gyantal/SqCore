@@ -38,7 +38,7 @@ class ChrtGenPrtfRunResultJs // ChartGenerator doesn't need the Portfolio Positi
 class BmrkHistory
 {
     public string SqTicker { get; set; } = string.Empty;
-    public List<HistoricalPrice> HistPrices { get; set; } = new();
+    public HistoricalPrice HistPrices { get; set; } = new();
 }
 
 class ChrtGenBacktestResult
@@ -111,6 +111,7 @@ public class ChrtGenWs
             }
         }
 
+        DateTime minStartDate = DateTime.Today; // initialize currentDate to the Today's Date
         List<ChrtGenPrtfRunResultJs> chrtGenPrtfRunResultJs = new();
         // Step 2: Filling the chrtGenPrtfRunResultJs to a list.
         for (int i = 0; i < lsPrtf.Count; i++)
@@ -124,8 +125,12 @@ public class ChrtGenWs
                 // Step 3: Filling the ChartPoint Dates and Values to a list. A very condensed format. Dates are separated into its ChartDate List.
                 // Instead of the longer [{"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}]
                 // we send a shorter: { ChartDate: [1641013200, 1641013200, 1641013200], Value: [101665, 101665, 101665] }
+
                 foreach (var item in pv)
                 {
+                    DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(item.x).DateTime.Date;
+                    if (itemDate < minStartDate)
+                        minStartDate = itemDate; // MinStart Date of the portfolio's
                     chartVal.Dates.Add(item.x);
                     chartVal.Values.Add((int)item.y);
                 }
@@ -152,6 +157,7 @@ public class ChrtGenWs
                 pStat.CorrelationWithBenchmark = stat.CorrelationWithBenchmark;
             }
             Utils.Logger.Info("The portfolio Positons count: " + prtfPos.Count);
+            Console.WriteLine("The MinDate of the portfolios is: " + minStartDate);
             // Step 5: Filling the data in chrtGenPrtfRunResultJs
             chrtGenPrtfRunResultJs.Add(new ChrtGenPrtfRunResultJs { PrtfId = lsPrtf[i].Id, Pstat = pStat, Chart = chartVal, ChartResolution = chartResolution });
         }
@@ -162,10 +168,30 @@ public class ChrtGenWs
 
         // Step 3: using minStartDate get the history for all benchmarks
 
+        // ******BENCHMARK************
+        // Step1: Processing the message to extract the benchmark tickers
+        string? bmrksStr = query.Get("bmrks");
+        bmrksStr ??= "SPY"; // sending default value as SPY
+        List<BmrkHistory> histPrices = new();
+        if(errMsg == null)
+        {
+            foreach (string bmrkStr in bmrksStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
+            {
+                errMsg = Portfolio.GetBmrksHistoricalResults(bmrkStr, minStartDate, out HistoricalPrice histPrcs);
+                if(errMsg == null)
+                {
+                    histPrices.Add(new BmrkHistory { SqTicker = bmrkStr, HistPrices = histPrcs });
+                }
+                else
+                    errMsg = $"Error. Benchmark Tickers {bmrkStr} not found in DB";
+            }
+        }
+
         // Step 4: send back the result
 
         stopwatch.Stop(); // Stopwatch to capture the end time
         chrtGenBacktestResult.PfRunResults = chrtGenPrtfRunResultJs; // Set the portfolio run results in the backtest result object
+        chrtGenBacktestResult.BmrkHistories = histPrices;
         chrtGenBacktestResult.ServerBacktestTimeMs = (int)stopwatch.ElapsedMilliseconds; // Set the server backtest time in milliseconds
 
         byte[] encodedMsg = Encoding.UTF8.GetBytes("BacktestResults:" + Utils.CamelCaseSerialize(chrtGenBacktestResult));

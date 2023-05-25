@@ -165,6 +165,7 @@ export class UiChrtGenPrtfRunResult {
   public correlationWithBenchmark: number = 0;
 
   public chrtValues: UiChartPointValues[] = [];
+  public bmrkChrtValues: UiChartPointValues[] = [];
   public chrtResolution: ChartResolution = ChartResolution.Daily;
 }
 

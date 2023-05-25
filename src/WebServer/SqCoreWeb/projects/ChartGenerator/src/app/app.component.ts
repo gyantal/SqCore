@@ -170,9 +170,9 @@ export class AppComponent implements OnInit {
       return;
 
     uiChrtGenPrtfRunResults.length = 0;
+    const uiPrtfResItem = new UiChrtGenPrtfRunResult();
     gChrtGenDiag.serverBacktestTime = chrtGenBacktestRes.serverBacktestTimeMs;
     for (const item of chrtGenBacktestRes.pfRunResults) {
-      const uiPrtfResItem = new UiChrtGenPrtfRunResult();
       uiPrtfResItem.startPortfolioValue = item.pstat.startPortfolioValue;
       uiPrtfResItem.endPortfolioValue = item.pstat.endPortfolioValue;
       uiPrtfResItem.totalReturn = item.pstat.totalReturn;
@@ -202,15 +202,24 @@ export class AppComponent implements OnInit {
         chartItem.values = item.chart.values[i];
         uiPrtfResItem.chrtValues.push(chartItem);
       }
-
-      uiChrtGenPrtfRunResults.push(uiPrtfResItem);
     }
+
+    for (const bmrkItem of chrtGenBacktestRes.bmrkHistories) { // processing benchamrk History data
+      for (let i = 0; i < bmrkItem.histPrices.date.length; i++) {
+        const chartItem = new UiChartPointValues();
+        const dateStr: string = bmrkItem.histPrices.date[i];
+        chartItem.dates = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(5, 7) + '-' + dateStr.substring(8, 10));
+        chartItem.values = bmrkItem.histPrices.price[i];
+        uiPrtfResItem.bmrkChrtValues.push(chartItem);
+      }
+    }
+    uiChrtGenPrtfRunResults.push(uiPrtfResItem);
 
     d3.selectAll('#pfRunResultChrt > *').remove();
     const lineChrtDiv = document.getElementById('pfRunResultChrt') as HTMLElement;
     const margin = {top: 50, right: 50, bottom: 30, left: 60 };
-    const chartWidth = uiChrtWidth * 0.9 - margin.left - margin.right; // 90% of the PanelChart Width
-    const chartHeight = uiChrtHeight * 0.9 - margin.top - margin.bottom; // 90% of the PanelChart Height
+    const chartWidth = uiChrtWidth * 0.9 - margin.left - margin.right; // 90% of the PvChart Width
+    const chartHeight = uiChrtHeight * 0.9 - margin.top - margin.bottom; // 90% of the PvChart Height
     const chrtData = uiChrtGenPrtfRunResults[0].chrtValues.map((r:{ dates: Date; values: number; }) => ({date: new Date(r.dates), value: r.values}));
     const xMin = d3.min(chrtData, (r:{ date: Date; }) => r.date);
     const xMax = d3.max(chrtData, (r:{ date: Date; }) => r.date);
@@ -218,6 +227,19 @@ export class AppComponent implements OnInit {
     const yMaxAxis = d3.max(chrtData, (r:{ value: number; }) => r.value);
 
     processUiWithPrtfRunResultChrt(chrtData, lineChrtDiv, chartWidth, chartHeight, margin, xMin, xMax, yMinAxis, yMaxAxis);
+
+    d3.selectAll('#bmrkChrt > *').remove(); // we can modify the method for pfRunResChrt and BmrkChrt into one single method - Daya
+    const bmkrklineChrtDiv = document.getElementById('bmrkChrt') as HTMLElement;
+    const bmrkMargin = {top: 50, right: 50, bottom: 30, left: 60 };
+    const bmrkChartWidth = uiChrtWidth * 0.9 - bmrkMargin.left - bmrkMargin.right; // 90% of the BmrkChart Width
+    const bmrkChartHeight = uiChrtHeight * 0.9 - bmrkMargin.top - bmrkMargin.bottom; // 90% of the Chart Height
+    const bmrkChrtData = uiChrtGenPrtfRunResults[0].bmrkChrtValues.map((r:{ dates: Date; values: number; }) => ({date: new Date(r.dates), value: r.values}));
+    const bmrkXMin = d3.min(bmrkChrtData, (r:{ date: Date; }) => r.date);
+    const bmrkXMax = d3.max(bmrkChrtData, (r:{ date: Date; }) => r.date);
+    const bmrkYMinAxis = d3.min(bmrkChrtData, (r:{ value: number; }) => r.value);
+    const bmrkYMaxAxis = d3.max(bmrkChrtData, (r:{ value: number; }) => r.value);
+
+    processUiWithPrtfRunResultChrt(bmrkChrtData, bmkrklineChrtDiv, bmrkChartWidth, bmrkChartHeight, bmrkMargin, bmrkXMin, bmrkXMax, bmrkYMinAxis, bmrkYMaxAxis);
   }
 
   onStartBacktests() {

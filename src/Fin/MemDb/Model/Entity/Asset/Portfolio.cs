@@ -67,9 +67,8 @@ public class PortfolioPosition
 
 public class HistoricalPrice
 {
-    public string SqTicker { get; set; } = string.Empty;
-    public string Date { get; set; } = string.Empty;
-    public float Price { get; set; } = 0.0f;
+    public List<string> Date { get; set; } = new();
+    public List<float> Price { get; set; } = new();
 }
 
 public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
@@ -350,19 +349,21 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         return null; // No Error
     }
 
-    public static string? GetBmrksHistoricalResults(string bmrksStr, out List<HistoricalPrice> histPrices)
+    public static string? GetBmrksHistoricalResults(string p_bmrksStr, DateTime p_minDate, out HistoricalPrice p_histPrices)
     {
-        List<HistoricalPrice> historicalPrices = new();
-        string tickerAsTradedToday2 = bmrksStr; // if symbol.zip doesn't exist in Data folder, it will not download it (cost money, you have to download in their shop). It raises an exception.
+        HistoricalPrice historicalPrices = new();
+        string tickerAsTradedToday2 = p_bmrksStr; // if symbol.zip doesn't exist in Data folder, it will not download it (cost money, you have to download in their shop). It raises an exception.
         Symbol symbol = new(SecurityIdentifier.GenerateEquity(tickerAsTradedToday2, Market.USA, true, FinDb.gFinDb.MapFileProvider), tickerAsTradedToday2);
 
-        DateTime startTimeUtc = new(2008, 01, 01);
+        DateTime startTimeUtc = new(p_minDate.Year, p_minDate.Month, p_minDate.Day);
+        // DateTime startTimeUtc = new(2008, 01, 01);
         // If you want to get 20080104 day data too, it has to be specified like this:
         // class TimeBasedFilter assures that (data.EndTime <= EndTimeLocal)
         // It is assumed that any TradeBar final values are only released at TradeBar.EndTime (OK for minute, hourly data, but not perfect for daily data which is known at 16:00)
         // Any TradeBar's EndTime is Time+1day (assuming that ClosePrice is released not at 16:00, but later, at midnight)
         // So the 20080104's row in CVS is: Time: 20080104:00:00, EndTime:20080105:00:00
-        DateTime endTimeUtc = new(2008, 01, 05, 5, 0, 0); // this will be => 2008-01-05:00:00 endTimeLocal
+        DateTime today = DateTime.UtcNow.Date;
+        DateTime endTimeUtc = new(today.Year, today.Month, today.Day, 5, 0, 0); // this will be => 2008-01-05:00:00 endTimeLocal
 
         // Use TickType.TradeBar. That is in the daily CSV file. TickType.Quote file would contains Ask(Open/High/Low/Close) + Bid(Open/High/Low/Close), like a Quote from a Broker at trading realtime.
         var historyRequests = new[]
@@ -380,15 +381,13 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         for (int i = 0; i < result.Count; i++)
         {
             var resBarVals = result[i].Bars.Values.ToArray();
-            HistoricalPrice histPrice = new()
-            {
-                SqTicker = "S/" + resBarVals[0].Symbol.Value,
-                Date = resBarVals[0].Time.TohYYYYMMDD(),
-                Price = (float)resBarVals[0].Price,
-            };
-            historicalPrices.Add(histPrice);
+            string date = resBarVals[0].Time.TohYYYYMMDD();
+            float price = (float)resBarVals[0].Price;
+
+            historicalPrices.Date.Add(date); // Add the date to the Date list
+            historicalPrices.Price.Add(price); // Add the price to the Price list
         }
-        histPrices = historicalPrices;
+        p_histPrices = historicalPrices;
         return null; // No Error
     }
 }
