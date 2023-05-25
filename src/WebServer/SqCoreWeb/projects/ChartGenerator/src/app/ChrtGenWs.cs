@@ -38,7 +38,7 @@ class ChrtGenPrtfRunResultJs // ChartGenerator doesn't need the Portfolio Positi
 class BmrkHistory
 {
     public string SqTicker { get; set; } = string.Empty;
-    public HistoricalPrice HistPrices { get; set; } = new();
+    public PriceHistoryJs HistPrices { get; set; } = new();
 }
 
 class ChrtGenBacktestResult
@@ -54,7 +54,7 @@ public class ChrtGenWs
     public static async Task OnWsConnectedAsync(HttpContext context, WebSocket webSocket)
     {
         Utils.Logger.Debug($"ChrtGenWs.OnConnectedAsync()) BEGIN");
-        // context.Request comes as: 'wss://' + document.location.hostname + '/ws/chrtgen?t=bav'
+        // context.Request comes as: 'wss://' + document.location.hostname + '/ws/chrtgen?pids=1,2&bmrks=QQQ,SPY'
         string? queryStr = context.Request.QueryString.Value;
         RunBacktests(queryStr, webSocket);
         var userEmailClaim = context?.User?.Claims?.FirstOrDefault(p => p.Type == @"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
@@ -156,8 +156,7 @@ public class ChrtGenWs
                 pStat.BenchmarkMaxDD = stat.BenchmarkMaxDD;
                 pStat.CorrelationWithBenchmark = stat.CorrelationWithBenchmark;
             }
-            Utils.Logger.Info("The portfolio Positons count: " + prtfPos.Count);
-            Console.WriteLine("The MinDate of the portfolios is: " + minStartDate);
+            _ = prtfPos; // To avoid the compiler Warning "Unnecessary assigment of a value" for unusued variables.
             // Step 5: Filling the data in chrtGenPrtfRunResultJs
             chrtGenPrtfRunResultJs.Add(new ChrtGenPrtfRunResultJs { PrtfId = lsPrtf[i].Id, Pstat = pStat, Chart = chartVal, ChartResolution = chartResolution });
         }
@@ -172,15 +171,15 @@ public class ChrtGenWs
         // Step1: Processing the message to extract the benchmark tickers
         string? bmrksStr = query.Get("bmrks");
         bmrksStr ??= "SPY"; // sending default value as SPY
-        List<BmrkHistory> histPrices = new();
+        List<BmrkHistory> bmrkHistories = new();
         if(errMsg == null)
         {
             foreach (string bmrkStr in bmrksStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
             {
-                errMsg = Portfolio.GetBmrksHistoricalResults(bmrkStr, minStartDate, out HistoricalPrice histPrcs);
+                errMsg = Portfolio.GetBmrksHistoricalResults(bmrkStr, minStartDate, out PriceHistoryJs histPrcs);
                 if(errMsg == null)
                 {
-                    histPrices.Add(new BmrkHistory { SqTicker = bmrkStr, HistPrices = histPrcs });
+                    bmrkHistories.Add(new BmrkHistory { SqTicker = bmrkStr, HistPrices = histPrcs });
                 }
                 else
                     errMsg = $"Error. Benchmark Tickers {bmrkStr} not found in DB";
@@ -191,7 +190,7 @@ public class ChrtGenWs
 
         stopwatch.Stop(); // Stopwatch to capture the end time
         chrtGenBacktestResult.PfRunResults = chrtGenPrtfRunResultJs; // Set the portfolio run results in the backtest result object
-        chrtGenBacktestResult.BmrkHistories = histPrices;
+        chrtGenBacktestResult.BmrkHistories = bmrkHistories;
         chrtGenBacktestResult.ServerBacktestTimeMs = (int)stopwatch.ElapsedMilliseconds; // Set the server backtest time in milliseconds
 
         byte[] encodedMsg = Encoding.UTF8.GetBytes("BacktestResults:" + Utils.CamelCaseSerialize(chrtGenBacktestResult));

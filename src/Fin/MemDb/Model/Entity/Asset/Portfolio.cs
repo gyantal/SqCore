@@ -65,10 +65,10 @@ public class PortfolioPosition
     public float LastPrice { get; set; } = 0.0f;  // the last price of the asset at the end of the backtest (not real-time price)
 }
 
-public class HistoricalPrice
+public class PriceHistoryJs // To save bandwidth, we send Dates, and Prices just as a List, instead of a List of <Date,Price> objects that would add property names thousands of times into JSON
 {
-    public List<string> Date { get; set; } = new();
-    public List<float> Price { get; set; } = new();
+    public List<string> Dates { get; set; } = new();
+    public List<float> Prices { get; set; } = new();
 }
 
 public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
@@ -261,10 +261,16 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         // With Minute resolution simulation, the PV chart is generated at every 5 minutes. But the first point of the day is UTC 4:00, then 13:31, 13:36, 13:41,...
         if (equityChart.Count >= 3) // because the first is a dummy point, we need at least 3 data points to decide.
         {
-            if ((equityChart[2].x - equityChart[1].x) > 300) // if the difference between 2nd and the 3rd chart points is bigger than 300sec (5min), treat it as daily resolution;
+            int diffBetween2points = (int)(equityChart[2].x - equityChart[1].x);
+            if (diffBetween2points <= 60)
+                p_chartResolution = ChartResolution.Minute;
+            else if (diffBetween2points <= 300)
                 p_chartResolution = ChartResolution.Minute5;
+            else
+                p_chartResolution = ChartResolution.Daily;
         }
-        if (p_chartResolution == ChartResolution.Minute5) // (5min), treat it as daily resolution;
+
+        if (p_chartResolution == ChartResolution.Daily)
         {
             // Eliminate daily chart duplicates. There is 1 point for weekends, but 2 points (morning, marketclose) for the weekdays. We keep only the last Y value for the day.
             DateTime currentDate = DateTime.MinValue; // initialize currentDate to the smallest possible value
@@ -349,9 +355,9 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         return null; // No Error
     }
 
-    public static string? GetBmrksHistoricalResults(string p_bmrksStr, DateTime p_minDate, out HistoricalPrice p_histPrices)
+    public static string? GetBmrksHistoricalResults(string p_bmrksStr, DateTime p_minDate, out PriceHistoryJs p_histPrices)
     {
-        HistoricalPrice historicalPrices = new();
+        PriceHistoryJs historicalPrices = new();
         string tickerAsTradedToday2 = p_bmrksStr; // if symbol.zip doesn't exist in Data folder, it will not download it (cost money, you have to download in their shop). It raises an exception.
         Symbol symbol = new(SecurityIdentifier.GenerateEquity(tickerAsTradedToday2, Market.USA, true, FinDb.gFinDb.MapFileProvider), tickerAsTradedToday2);
 
@@ -381,11 +387,11 @@ public class Portfolio : Asset // this inheritance makes it possible that a Port
         for (int i = 0; i < result.Count; i++)
         {
             var resBarVals = result[i].Bars.Values.ToArray();
-            string date = resBarVals[0].Time.TohYYYYMMDD();
+            string dateStr = resBarVals[0].Time.TohYYYYMMDD();
             float price = (float)resBarVals[0].Price;
 
-            historicalPrices.Date.Add(date); // Add the date to the Date list
-            historicalPrices.Price.Add(price); // Add the price to the Price list
+            historicalPrices.Dates.Add(dateStr); // Add the date to the Date list
+            historicalPrices.Prices.Add(price); // Add the price to the Price list
         }
         p_histPrices = historicalPrices;
         return null; // No Error

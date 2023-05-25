@@ -420,7 +420,7 @@ public partial class DashboardClient
                         WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
                 }
             }
-            Utils.Logger.Info($"chartResoultion {chartResolution}");
+            _ = chartResolution; // To avoid the compiler Warning "Unnecessary assigment of a value" for unusued variables.
         }
 
         if (errMsg != null)

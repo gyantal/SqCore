@@ -21,7 +21,6 @@ export class ChrtGenDiagnostics { // have to export the class, because .mainTsTi
 
   public serverBacktestTime: number = 0;
   public communicationOverheadTime: string = '';
-  public totalUiResponseTime: Date = minDate;
 }
 
 export const gChrtGenDiag: ChrtGenDiagnostics = new ChrtGenDiagnostics();
@@ -42,6 +41,7 @@ export class AppComponent implements OnInit {
   prtfIds: string = '';
   bmrks: string = ''; // benchmarks
   isSrvConnectionAlive: boolean = true;
+  communicationStartTime: Date = new Date();
   chrtGenDiagnosticsMsg = 'Benchmarking time, connection speed';
 
   user = {
@@ -57,7 +57,7 @@ export class AppComponent implements OnInit {
 
     const wsQueryStr = window.location.search; // https://sqcore.net/webapps/ChartGenerator/?pids=1  , but another parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
     console.log(wsQueryStr);
-    // gChrtGenDiag.communicationStartTime = new Date();
+    this.communicationStartTime = new Date();
     this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/chrtgen' + wsQueryStr); // "wss://127.0.0.1/ws/chrtgen?pids=13,2" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection. ? has to be included to separate the location from the params
 
     setInterval(() => { // checking whether the connection is live or not
@@ -82,7 +82,7 @@ export class AppComponent implements OnInit {
           this.user.email = handshakeMsg.email;
           break;
         case 'BacktestResults':
-          // gChrtGenDiag.communicationOverheadTime = (new Date().getTime() - gChrtGenDiag.communicationStartTime.getTime()).toString();
+          gChrtGenDiag.communicationOverheadTime = (new Date().getTime() - this.communicationStartTime.getTime()).toString();
           console.log('ChrtGen.BacktestResults:' + msgObjStr);
           this.processChrtGenBacktestResults(msgObjStr);
           break;
@@ -205,11 +205,11 @@ export class AppComponent implements OnInit {
     }
 
     for (const bmrkItem of chrtGenBacktestRes.bmrkHistories) { // processing benchamrk History data
-      for (let i = 0; i < bmrkItem.histPrices.date.length; i++) {
+      for (let i = 0; i < bmrkItem.histPrices.dates.length; i++) {
         const chartItem = new UiChartPointValues();
-        const dateStr: string = bmrkItem.histPrices.date[i];
+        const dateStr: string = bmrkItem.histPrices.dates[i];
         chartItem.dates = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(5, 7) + '-' + dateStr.substring(8, 10));
-        chartItem.values = bmrkItem.histPrices.price[i];
+        chartItem.values = bmrkItem.histPrices.prices[i];
         uiPrtfResItem.bmrkChrtValues.push(chartItem);
       }
     }
@@ -227,19 +227,6 @@ export class AppComponent implements OnInit {
     const yMaxAxis = d3.max(chrtData, (r:{ value: number; }) => r.value);
 
     processUiWithPrtfRunResultChrt(chrtData, lineChrtDiv, chartWidth, chartHeight, margin, xMin, xMax, yMinAxis, yMaxAxis);
-
-    d3.selectAll('#bmrkChrt > *').remove(); // we can modify the method for pfRunResChrt and BmrkChrt into one single method - Daya
-    const bmkrklineChrtDiv = document.getElementById('bmrkChrt') as HTMLElement;
-    const bmrkMargin = {top: 50, right: 50, bottom: 30, left: 60 };
-    const bmrkChartWidth = uiChrtWidth * 0.9 - bmrkMargin.left - bmrkMargin.right; // 90% of the BmrkChart Width
-    const bmrkChartHeight = uiChrtHeight * 0.9 - bmrkMargin.top - bmrkMargin.bottom; // 90% of the Chart Height
-    const bmrkChrtData = uiChrtGenPrtfRunResults[0].bmrkChrtValues.map((r:{ dates: Date; values: number; }) => ({date: new Date(r.dates), value: r.values}));
-    const bmrkXMin = d3.min(bmrkChrtData, (r:{ date: Date; }) => r.date);
-    const bmrkXMax = d3.max(bmrkChrtData, (r:{ date: Date; }) => r.date);
-    const bmrkYMinAxis = d3.min(bmrkChrtData, (r:{ value: number; }) => r.value);
-    const bmrkYMaxAxis = d3.max(bmrkChrtData, (r:{ value: number; }) => r.value);
-
-    processUiWithPrtfRunResultChrt(bmrkChrtData, bmkrklineChrtDiv, bmrkChartWidth, bmrkChartHeight, bmrkMargin, bmrkXMin, bmrkXMax, bmrkYMinAxis, bmrkYMaxAxis);
   }
 
   onStartBacktests() {
@@ -254,9 +241,9 @@ export class AppComponent implements OnInit {
         this.chrtGenDiagnosticsMsg = `App constructor: ${SqNgCommonUtilsTime.getTimespanStr(gChrtGenDiag.mainTsTime, gChrtGenDiag.mainAngComponentConstructorTime)}\n` +
         `Window loaded: ${SqNgCommonUtilsTime.getTimespanStr(gChrtGenDiag.mainTsTime, gChrtGenDiag.windowOnLoadTime)}\n` +
         '-----\n' +
-        `Server backtest time: ${gChrtGenDiag.serverBacktestTime + 'ms' }\n`;
-        // `Communication Overhead: ${gChrtGenDiag.communicationOverheadTime +'ms'}\n` +
-        // `Total UI response: ${gChrtGenDiag.serverBacktestTime + parseInt(gChrtGenDiag.communicationOverheadTime) +'ms'}\n`;
+        `Server backtest time: ${gChrtGenDiag.serverBacktestTime + 'ms' }\n`+
+        `Communication Overhead: ${gChrtGenDiag.communicationOverheadTime +'ms'}\n` +
+        `Total UI response: ${gChrtGenDiag.serverBacktestTime + parseInt(gChrtGenDiag.communicationOverheadTime) +'ms'}\n`;
       } else
         this.chrtGenDiagnosticsMsg = 'Connection to server is broken.\n Try page reload (F5).';
     }
