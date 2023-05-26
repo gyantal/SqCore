@@ -22,11 +22,6 @@ class HandshakeMessageChrtGen
     public int AnyParam { get; set; } = 75;
 }
 
-class SqLog // TODO: move it to somewhere global.
-{
-    public string Message { get; set; } = string.Empty;
-}
-
 class ChrtGenPrtfRunResultJs // ChartGenerator doesn't need the Portfolio Positions data
 {
     public int PrtfId { get; set; } = 1; // need this to identify the data of portfolios
@@ -64,7 +59,7 @@ public class ChrtGenWs
         var msgObj = new HandshakeMessageChrtGen() { Email = email };
         byte[] encodedMsg = Encoding.UTF8.GetBytes("OnConnected:" + Utils.CamelCaseSerialize(msgObj));
         if (webSocket.State == WebSocketState.Open)
-            await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    // takes 0.635ms
+            await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None); // takes 0.635ms
     }
 
     public static void OnWsReceiveAsync(/* HttpContext context, WebSocketReceiveResult? result, */ WebSocket webSocket,  string bufferStr)
@@ -161,14 +156,7 @@ public class ChrtGenWs
             chrtGenPrtfRunResultJs.Add(new ChrtGenPrtfRunResultJs { PrtfId = lsPrtf[i].Id, Pstat = pStat, Chart = chartVal, ChartResolution = chartResolution });
         }
 
-        // Next Steps
-
-        // Step 2: Wait until portfolios complete, and calculate the minimum startDate of the participating portfolios / calculating minStartDate. Somehow, comment it into the code. Or just program that IF early, and write a comment on the line of that IF.
-
-        // Step 3: using minStartDate get the history for all benchmarks
-
-        // ******BENCHMARK************
-        // Step1: Processing the message to extract the benchmark tickers
+        // BENCHMARK: Processing the message to extract the benchmark tickers
         string? bmrksStr = query.Get("bmrks");
         bmrksStr ??= "SPY"; // sending default value as SPY
         List<BmrkHistory> bmrkHistories = new();
@@ -186,8 +174,7 @@ public class ChrtGenWs
             }
         }
 
-        // Step 4: send back the result
-
+        // Step 6: send back the result
         stopwatch.Stop(); // Stopwatch to capture the end time
         chrtGenBacktestResult.PfRunResults = chrtGenPrtfRunResultJs; // Set the portfolio run results in the backtest result object
         chrtGenBacktestResult.BmrkHistories = bmrkHistories;

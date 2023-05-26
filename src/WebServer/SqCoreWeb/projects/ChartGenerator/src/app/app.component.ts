@@ -19,8 +19,9 @@ export class ChrtGenDiagnostics { // have to export the class, because .mainTsTi
   public mainAngComponentConstructorTime: Date = new Date();
   public windowOnLoadTime: Date = minDate;
 
-  public serverBacktestTime: number = 0;
-  public communicationOverheadTime: string = '';
+  public backtestRequestStartTime: Date = new Date();
+  public backtestRequestReturnTime: Date = new Date();
+  public serverBacktestTime: number = 0; // msec
 }
 
 export const gChrtGenDiag: ChrtGenDiagnostics = new ChrtGenDiagnostics();
@@ -41,7 +42,6 @@ export class AppComponent implements OnInit {
   prtfIds: string = '';
   bmrks: string = ''; // benchmarks
   isSrvConnectionAlive: boolean = true;
-  communicationStartTime: Date = new Date();
   chrtGenDiagnosticsMsg = 'Benchmarking time, connection speed';
 
   user = {
@@ -57,7 +57,7 @@ export class AppComponent implements OnInit {
 
     const wsQueryStr = window.location.search; // https://sqcore.net/webapps/ChartGenerator/?pids=1  , but another parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
     console.log(wsQueryStr);
-    this.communicationStartTime = new Date();
+    gChrtGenDiag.backtestRequestStartTime = new Date();
     this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/chrtgen' + wsQueryStr); // "wss://127.0.0.1/ws/chrtgen?pids=13,2" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection. ? has to be included to separate the location from the params
 
     setInterval(() => { // checking whether the connection is live or not
@@ -82,7 +82,7 @@ export class AppComponent implements OnInit {
           this.user.email = handshakeMsg.email;
           break;
         case 'BacktestResults':
-          gChrtGenDiag.communicationOverheadTime = (new Date().getTime() - this.communicationStartTime.getTime()).toString();
+          gChrtGenDiag.backtestRequestReturnTime = new Date();
           console.log('ChrtGen.BacktestResults:' + msgObjStr);
           this.processChrtGenBacktestResults(msgObjStr);
           break;
@@ -230,20 +230,24 @@ export class AppComponent implements OnInit {
   }
 
   onStartBacktests() {
-    if (this._socket != null && this._socket.readyState === this._socket.OPEN)
-      this._socket.send('RunBacktest:' + '?pids='+ this.prtfIds + '&bmrks=' + this.bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
+    if (this._socket != null && this._socket.readyState === this._socket.OPEN) {
+      gChrtGenDiag.backtestRequestStartTime = new Date();
+      this._socket.send('RunBacktest:' + '?pids=' + this.prtfIds + '&bmrks=' + this.bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
+    }
   }
 
   // "Server backtest time: 300ms, Communication overhead: 120ms, Total UI response: 420ms."
-  mouseEnter(div: string) { // giving some data to display - Daya
+  mouseEnter(div: string) {
     if (div === 'chrtGenDiagnosticsMsg') {
+      const totalUiResponseTime = (gChrtGenDiag.backtestRequestReturnTime.getTime() - gChrtGenDiag.backtestRequestStartTime.getTime());
+      const communicationOverheadTime = totalUiResponseTime - gChrtGenDiag.serverBacktestTime;
       if (this.isSrvConnectionAlive) {
         this.chrtGenDiagnosticsMsg = `App constructor: ${SqNgCommonUtilsTime.getTimespanStr(gChrtGenDiag.mainTsTime, gChrtGenDiag.mainAngComponentConstructorTime)}\n` +
         `Window loaded: ${SqNgCommonUtilsTime.getTimespanStr(gChrtGenDiag.mainTsTime, gChrtGenDiag.windowOnLoadTime)}\n` +
         '-----\n' +
         `Server backtest time: ${gChrtGenDiag.serverBacktestTime + 'ms' }\n`+
-        `Communication Overhead: ${gChrtGenDiag.communicationOverheadTime +'ms'}\n` +
-        `Total UI response: ${gChrtGenDiag.serverBacktestTime + parseInt(gChrtGenDiag.communicationOverheadTime) +'ms'}\n`;
+        `Total UI response: ${totalUiResponseTime +'ms'}\n` +
+        `Communication Overhead: ${communicationOverheadTime +'ms'}\n`;
       } else
         this.chrtGenDiagnosticsMsg = 'Connection to server is broken.\n Try page reload (F5).';
     }
