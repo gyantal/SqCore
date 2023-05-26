@@ -120,6 +120,8 @@ public static class Backtester
         Stopwatch stopwatch = Stopwatch.StartNew();
 
         SqBacktestConfig sqBacktestConfig = new();
+        if (p_algorithmTypeName.StartsWith("Sq")) // TODO: quick and dirty solution only. For Daily strategies we should use our Result calculation that don't need benchmark in backtests. For QC strategies, we use QcOriginal result calculation.
+            sqBacktestConfig.SqResult = SqResult.SqSimple;
 
         // Instead of using JobQueue as in QC.Launcher, we implement the gist of it. Better to see what is required, and better to customize. Some parts can go to Backtester Init(). Like Loading Fin.Algorithm.CSharp.dll.
         // 1. Create the job.

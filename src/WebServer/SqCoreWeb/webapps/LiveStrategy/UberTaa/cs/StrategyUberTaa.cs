@@ -869,6 +869,7 @@ public class StrategyUberTaaController : ControllerBase
                     {
                         sb.Append($"{quotes.Count}/");
                     }
+                    Console.WriteLine($"CLMTCalc() exception: {sb}");
                     throw new Exception($"Exception in UberTaa.CLMTCalc(). Lengths of the p_quotesForClmtData: {sb}). Original exception: '{e.Message}'");
                 }
             }
@@ -1016,7 +1017,7 @@ public class StrategyUberTaaController : ControllerBase
         string[] pastEvents = new string[pastDataLength];
         string[] futEvents = new string[futDataLength];
 
-        double overallConstLev = p_gSheetResToFinCalc.Item6[2] / 100;
+        double overallConstLev = (double)p_gSheetResToFinCalc.Item6[2] / 100.0;
 
         for (int iRows = 0; iRows < pastCodes.GetLength(0); iRows++)
         {

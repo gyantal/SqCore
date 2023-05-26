@@ -10,6 +10,7 @@ using QuantConnect.Data;
 using QuantConnect.Data.Market;
 using QuantConnect.Lean.Engine.Results;
 using QuantConnect.Securities;
+using QuantConnect.Statistics;
 using SqCommon;
 
 namespace Fin.MemDb;
@@ -195,24 +196,26 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
 
         p_stat.StartPortfolioValue = (float)backtestResults.StartingPortfolioValue;
         p_stat.EndPortfolioValue = (float)backtestResults.DailyPortfolioValue;
-        p_stat.TotalReturn = float.Parse(finalStat["Net Profit"].Replace("%", string.Empty));
-        p_stat.CAGR = float.Parse(finalStat["Compounding Annual Return"].Replace("%", string.Empty));
-        p_stat.MaxDD = float.Parse(finalStat["Drawdown"].Replace("%", string.Empty));
-        p_stat.SharpeRatio = float.Parse(finalStat["Sharpe Ratio"]);
+        p_stat.TotalReturn = float.Parse(finalStat[PerformanceMetrics.NetProfit].Replace("%", string.Empty));
+        p_stat.CAGR = float.Parse(finalStat[PerformanceMetrics.CompoundingAnnualReturn].Replace("%", string.Empty));
+        p_stat.StDev = float.Parse(finalStat[PerformanceMetrics.AnnualStandardDeviation]);
         if (p_stat.SharpeRatio > 100f)
             p_stat.SharpeRatio = float.NaN; // if value is obviously wrong, indicate that with NaN
-        p_stat.StDev = float.Parse(finalStat["Annual Standard Deviation"]);
-        // Ulcer - To be added
-        // p_stat.TradingDays = int.Parse(finalStat["Trading Days"]);
-        p_stat.NTrades = int.Parse(finalStat["Total Trades"]);
-        p_stat.WinRate = float.Parse(finalStat["Win Rate"].Replace("%", string.Empty));
-        p_stat.LossRate = float.Parse(finalStat["Loss Rate"].Replace("%", string.Empty));
-        p_stat.Sortino = float.Parse(finalStat["Sortino Ratio"].Replace("%", string.Empty));
-        if (p_stat.Sortino > 100f)
-            p_stat.Sortino = float.NaN; // if value is obviously wrong, indicate that with NaN
-        p_stat.Turnover = float.Parse(finalStat["Portfolio Turnover"]);
-        p_stat.LongShortRatio = float.Parse(finalStat["Long/Short Ratio"].Replace("%", string.Empty));
-        p_stat.Fees = float.Parse(finalStat["Total Fees"].Replace("$", string.Empty));
+        p_stat.SharpeRatio = float.Parse(finalStat[PerformanceMetrics.SharpeRatio]);
+        p_stat.MaxDD = float.Parse(finalStat[PerformanceMetrics.Drawdown].Replace("%", string.Empty));
+
+        p_stat.NTrades = int.Parse(finalStat[PerformanceMetrics.TotalTrades]);
+
+        // Ulcer - To be added, but these are not cardinal at the moment.
+        // p_stat.Sortino = float.Parse(finalStat[PerformanceMetrics.SharpeRatio].Replace("%", string.Empty));
+        // if (p_stat.Sortino > 100f)
+        //     p_stat.Sortino = float.NaN; // if value is obviously wrong, indicate that with NaN
+
+        // p_stat.WinRate = float.Parse(finalStat[PerformanceMetrics.WinRate].Replace("%", string.Empty));
+        // p_stat.LossRate = float.Parse(finalStat[PerformanceMetrics.LossRate].Replace("%", string.Empty));
+        // p_stat.Turnover = float.Parse(finalStat["Portfolio Turnover"]);
+        // p_stat.LongShortRatio = float.Parse(finalStat["Long/Short Ratio"].Replace("%", string.Empty));
+        p_stat.Fees = float.Parse(finalStat[PerformanceMetrics.TotalFees].Replace("$", string.Empty));
         // BenchmarkCAGR - To be added
         // BenchmarkMaxDrawDown - To be added
         // CorrelationWithBenchmark - To be added

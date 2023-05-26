@@ -27,5 +27,13 @@ namespace QuantConnect.Statistics
         public const string TreynorRatio = "Treynor Ratio";
         public const string WinRate = "Win Rate";
         public const string LowestCapacityAsset = "Lowest Capacity Asset";
+        // SqCore Change NEW:
+        public const string AnnualizedMeanReturn = "Annualized Mean Return";
+        public const string MarRatio = "MAR Ratio";
+        public const string MaxDdLenInCalDays = "Max Drawdown Lenght in Calendar Days";
+        public const string MaxDdLenInTradDays = "Max Drawdown Lenght in Trading Days";
+        public const string MaxCalendarDaysBetweenPeaks = "Max Calendar Days Between Peaks";
+        public const string MaxTradingDaysBetweenPeaks = "Max Trading Days Between Peaks";
+        // SqCore Change END
     }
 }
