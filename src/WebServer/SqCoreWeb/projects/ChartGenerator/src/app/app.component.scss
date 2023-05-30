@@ -42,3 +42,15 @@
   overflow: auto;
   background-color: whitesmoke;
 }
+
+#tooltipChart {
+  display: none;
+  position: absolute;
+  font-size: 0.8rem;
+  background-color: #F4F6F6;
+  text-align: center;
+  opacity: 0.92;
+  padding: 0.5rem 0;
+  border: 0.05rem solid orange;
+  border-radius: 0.6rem;
+}

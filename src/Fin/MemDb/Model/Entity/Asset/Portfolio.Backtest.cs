@@ -95,7 +95,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         #pragma warning restore IDE0066
     }
 
-    public string? GetPortfolioRunResultDefault(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
+    public static string? GetPortfolioRunResultDefault(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
         List<ChartPoint> pvs = new()
         {

@@ -24,7 +24,7 @@ class HandshakeMessageChrtGen
 
 class ChrtGenPrtfRunResultJs // ChartGenerator doesn't need the Portfolio Positions data
 {
-    public int PrtfId { get; set; } = 1; // need this to identify the data of portfolios
+    public string PrtfName { get; set; } = string.Empty; // need this to identify the data of portfolios
     public PortfolioRunResultStatistics Pstat { get; set; } = new();
     public ChartPointValues Chart { get; set; } = new();
     public ChartResolution ChartResolution { get; set; } = ChartResolution.Daily;
@@ -153,12 +153,14 @@ public class ChrtGenWs
             }
             _ = prtfPos; // To avoid the compiler Warning "Unnecessary assigment of a value" for unusued variables.
             // Step 5: Filling the data in chrtGenPrtfRunResultJs
-            chrtGenPrtfRunResultJs.Add(new ChrtGenPrtfRunResultJs { PrtfId = lsPrtf[i].Id, Pstat = pStat, Chart = chartVal, ChartResolution = chartResolution });
+            chrtGenPrtfRunResultJs.Add(new ChrtGenPrtfRunResultJs { PrtfName = lsPrtf[i].Name, Pstat = pStat, Chart = chartVal, ChartResolution = chartResolution });
         }
 
         // BENCHMARK: Processing the message to extract the benchmark tickers
         string? bmrksStr = query.Get("bmrks");
         bmrksStr ??= "SPY"; // sending default value as SPY
+        if(minStartDate == DateTime.Today) // Defaault date (2020-01-01) if minStartdate == today
+            minStartDate = new DateTime(2020, 01, 01);
         List<BmrkHistory> bmrkHistories = new();
         if(errMsg == null)
         {

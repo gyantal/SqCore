@@ -135,6 +135,7 @@ export class ChrtGenPfRunResult {
   public pstat: any; // all the Stat members from UiPrtfRunResult, we skip creating detailed sub classes
   public chart!: ChartJs;
   public chartResolution!: ChartResolution;
+  public prtfName!: string;
 }
 
 export class PrtfRunResultJs extends ChrtGenPfRunResult { // we can specify the input types more, but whatever.
@@ -163,9 +164,10 @@ export class UiChrtGenPrtfRunResult {
   public benchmarkCAGR: number = 0;
   public benchmarkMaxDD: number = 0;
   public correlationWithBenchmark: number = 0;
+  public chrtValues: UiChartPointValues[] = []; // used in PrtfRunResults in portfolioManager app
 
-  public chrtValues: UiChartPointValues[] = [];
-  public bmrkChrtValues: UiChartPointValues[] = [];
+  public prtfChrtValues: UiChrtGenValues[] = []; // used in backtestResults in chrtGen app
+  public bmrkChrtValues: UiChrtGenValues[] = []; // used in backtestResults in chrtGen app
   public chrtResolution: ChartResolution = ChartResolution.Daily;
 }
 
@@ -177,6 +179,10 @@ export class UiPrtfRunResult extends UiChrtGenPrtfRunResult { // PrtfRun Results
 export class UiChartPointValues {
   public dates = new Date();
   public values = NaN;
+}
+
+export class UiChrtGenValues extends UiChartPointValues {
+  public name: string = '';
 }
 
 export class UiPrtfPositions {

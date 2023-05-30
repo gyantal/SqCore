@@ -3,8 +3,8 @@ import { HttpClient } from '@angular/common/http';
 
 import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { SqNgCommonUtilsTime, minDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
-import { processUiWithPrtfRunResultChrt } from '../../../sq-ng-common/src/lib/chart/advanced-chart';
-import { ChrtGenBacktestResult, UiChartPointValues, UiChrtGenPrtfRunResult } from '../../../MarketDashboard/src/sq-globals';
+import { chrtGenMultiLineBacktestChrt } from '../../../sq-ng-common/src/lib/chart/advanced-chart';
+import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, UiChrtGenValues } from '../../../MarketDashboard/src/sq-globals';
 import * as d3 from 'd3';
 
 type Nullable<T> = T | null;
@@ -196,20 +196,22 @@ export class AppComponent implements OnInit {
       uiPrtfResItem.chrtResolution = item.chartResolution;
 
       for (let i = 0; i < item.chart.dates.length; i++) {
-        const chartItem = new UiChartPointValues();
+        const chartItem = new UiChrtGenValues();
+        chartItem.name = item.prtfName;
         const mSecSinceUnixEpoch: number = item.chart.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
         chartItem.dates = new Date(mSecSinceUnixEpoch);
-        chartItem.values = item.chart.values[i];
-        uiPrtfResItem.chrtValues.push(chartItem);
+        chartItem.values = 100 * item.chart.values[i] / item.chart.values[0]; // used to convert the data into percentage values
+        uiPrtfResItem.prtfChrtValues.push(chartItem);
       }
     }
 
     for (const bmrkItem of chrtGenBacktestRes.bmrkHistories) { // processing benchamrk History data
       for (let i = 0; i < bmrkItem.histPrices.dates.length; i++) {
-        const chartItem = new UiChartPointValues();
+        const chartItem = new UiChrtGenValues();
+        chartItem.name = bmrkItem.sqTicker;
         const dateStr: string = bmrkItem.histPrices.dates[i];
         chartItem.dates = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(5, 7) + '-' + dateStr.substring(8, 10));
-        chartItem.values = bmrkItem.histPrices.prices[i];
+        chartItem.values = 100 * bmrkItem.histPrices.prices[i] / bmrkItem.histPrices.prices[0]; // used to convert the data into percentage values
         uiPrtfResItem.bmrkChrtValues.push(chartItem);
       }
     }
@@ -220,13 +222,14 @@ export class AppComponent implements OnInit {
     const margin = {top: 50, right: 50, bottom: 30, left: 60 };
     const chartWidth = uiChrtWidth * 0.9 - margin.left - margin.right; // 90% of the PvChart Width
     const chartHeight = uiChrtHeight * 0.9 - margin.top - margin.bottom; // 90% of the PvChart Height
-    const chrtData = uiChrtGenPrtfRunResults[0].chrtValues.map((r:{ dates: Date; values: number; }) => ({date: new Date(r.dates), value: r.values}));
-    const xMin = d3.min(chrtData, (r:{ date: Date; }) => r.date);
-    const xMax = d3.max(chrtData, (r:{ date: Date; }) => r.date);
-    const yMinAxis = d3.min(chrtData, (r:{ value: number; }) => r.value);
-    const yMaxAxis = d3.max(chrtData, (r:{ value: number; }) => r.value);
+    const prtfAndBmrkChrtData = uiPrtfResItem.prtfChrtValues.concat(uiPrtfResItem.bmrkChrtValues);
+    const lineChrtTooltip = document.getElementById('tooltipChart') as HTMLElement;
+    const xMin = d3.min(prtfAndBmrkChrtData, (r:{ dates: Date; }) => r.dates);
+    const xMax = d3.max(prtfAndBmrkChrtData, (r:{ dates: Date; }) => r.dates);
+    const yMinAxis = d3.min(prtfAndBmrkChrtData, (r:{ values: number; }) => r.values);
+    const yMaxAxis = d3.max(prtfAndBmrkChrtData, (r:{ values: number; }) => r.values);
 
-    processUiWithPrtfRunResultChrt(chrtData, lineChrtDiv, chartWidth, chartHeight, margin, xMin, xMax, yMinAxis, yMaxAxis);
+    chrtGenMultiLineBacktestChrt(prtfAndBmrkChrtData, lineChrtDiv, chartWidth, chartHeight, margin, xMin, xMax, yMinAxis, yMaxAxis, lineChrtTooltip);
   }
 
   onStartBacktests() {
