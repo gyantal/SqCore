@@ -119,9 +119,19 @@ export enum ChartResolution
     Second, Minute, Minute5, Hour, Daily, Weekly, Monthly
 }
 
+export enum SqLogLevel
+{
+    Off, Trace, Debug, Info, Warn, Error, Fatal
+}
+
 export interface ChartJs { // PfRunResults Chart Data
   dates: number[];
   values: number[];
+}
+
+export class SqLog {
+  public sqLogLevel = '';
+  public message = '';
 }
 
 export class ChrtGenBacktestResult {
@@ -133,7 +143,7 @@ export class ChrtGenBacktestResult {
 
 export class ChrtGenPfRunResult {
   public pstat: any; // all the Stat members from UiPrtfRunResult, we skip creating detailed sub classes
-  public chart!: ChartJs;
+  public chrtData!: ChartJs;
   public chartResolution!: ChartResolution;
   public prtfName!: string;
 }
@@ -169,6 +179,7 @@ export class UiChrtGenPrtfRunResult {
   public prtfChrtValues: UiChrtGenValues[] = []; // used in backtestResults in chrtGen app
   public bmrkChrtValues: UiChrtGenValues[] = []; // used in backtestResults in chrtGen app
   public chrtResolution: ChartResolution = ChartResolution.Daily;
+  public sqLogs: SqLog[] = [];
 }
 
 export class UiPrtfRunResult extends UiChrtGenPrtfRunResult { // PrtfRun Results requires position values to display
@@ -177,8 +188,8 @@ export class UiPrtfRunResult extends UiChrtGenPrtfRunResult { // PrtfRun Results
 
 // chart values
 export class UiChartPointValues {
-  public dates = new Date();
-  public values = NaN;
+  public date = new Date();
+  public value = NaN;
 }
 
 export class UiChrtGenValues extends UiChartPointValues {

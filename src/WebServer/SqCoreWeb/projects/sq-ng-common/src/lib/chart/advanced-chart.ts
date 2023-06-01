@@ -129,21 +129,21 @@ export function processUiWithPrtfRunResultChrt(chrtData: { date: Date; value: nu
   }
 }
 
-export function chrtGenMultiLineBacktestChrt(chrtData:{name:string, dates:any, values:any}[], lineChrtDiv: HTMLElement, inputWidth: number, inputHeight: number, margin: any, xMin: any, xMax: any, yMinAxis: any, yMaxAxis: any, lineChrtTooltip: HTMLElement) {
+export function chrtGenMultiLineBacktestChrt(chrtData:{name:string, date:any, value:any}[], lineChrtDiv: HTMLElement, inputWidth: number, inputHeight: number, margin: any, xMin: any, xMax: any, yMinAxis: any, yMaxAxis: any, lineChrtTooltip: HTMLElement) {
   interface GroupedData {
     name: string;
-    histPrices: { dates: string; values: number }[];
+    histPrices: { date: string; value: number }[];
   }
 
   // Initialize an empty array to store grouped data
   const dataGroups: GroupedData[] = [];
   for (const item of chrtData) { // Iterate over each entry in the chartData array
-    const { name, dates, values } = item;
+    const { name, date, value } = item;
     const existingEntry = dataGroups.find((r) => r.name === name); // Check if there is an existing entry with the same name in groupedData
     if (existingEntry) // If an existing entry is found, push the date and value to its priceData array
-      existingEntry.histPrices.push({ dates, values});
+      existingEntry.histPrices.push({ date, value});
     else // If no existing entry is found, create a new entry with name and initial priceData array
-      dataGroups.push({ name, histPrices: [{ dates, values }] });
+      dataGroups.push({ name, histPrices: [{ date, value }] });
   }
   console.log(dataGroups);
 
@@ -179,8 +179,8 @@ export function chrtGenMultiLineBacktestChrt(chrtData:{name:string, dates:any, v
       .attr('stroke', (d: any) => color(d.name) as any)
       .attr('stroke-width', .8)
       .attr('d', (d:any) => (d3.line()
-          .x((r: any) => scaleX(r.dates))
-          .y((r: any) => scaleY(r.values))
+          .x((r: any) => scaleX(r.date))
+          .y((r: any) => scaleY(r.value))
           .curve(d3.curveCardinal))(d.histPrices) as any);
 
   const legendSpace = inputWidth/dataGroups.length; // spacing for legend
@@ -212,7 +212,7 @@ export function chrtGenMultiLineBacktestChrt(chrtData:{name:string, dates:any, v
   function onMouseMove(event: any) {
     const datesArray: any[] = [];
     chrtData.forEach((element) => {
-      datesArray.push(element.dates);
+      datesArray.push(element.date);
     });
 
     const xCoord = scaleX.invert(d3.pointer(event)[0]).getTime();
@@ -237,8 +237,8 @@ export function chrtGenMultiLineBacktestChrt(chrtData:{name:string, dates:any, v
         .append('div')
         .style('color', (d: any) => color(d.name) as any)
         .html((d: any) => {
-          const closestYCoord = d.histPrices.find((h: any) => h.dates.getTime() === closestXCoord.getTime());
-          return d.name + ': ' + closestYCoord.values.toFixed(2) + '%';
+          const closestYCoord = d.histPrices.find((h: any) => h.date.getTime() === closestXCoord.getTime());
+          return d.name + ': ' + closestYCoord.value.toFixed(2) + '%';
         });
   }
 }

@@ -24,9 +24,10 @@ class HandshakeMessageChrtGen
 
 class ChrtGenPrtfRunResultJs // ChartGenerator doesn't need the Portfolio Positions data
 {
+    public int PrtfId { get; set; } = 1; // need this to identify the data of portfolios
     public string PrtfName { get; set; } = string.Empty; // need this to identify the data of portfolios
     public PortfolioRunResultStatistics Pstat { get; set; } = new();
-    public ChartPointValues Chart { get; set; } = new();
+    public ChartData ChrtData { get; set; } = new();
     public ChartResolution ChartResolution { get; set; } = ChartResolution.Daily;
 }
 
@@ -86,15 +87,15 @@ public class ChrtGenWs
     {
         Stopwatch stopwatch = Stopwatch.StartNew(); // Stopwatch to capture the start time
         ChrtGenBacktestResult chrtGenBacktestResult = new();
-        string? errMsg = null;
-        if (p_msg == null)
-            errMsg = $"Error. msg from the client is null";
+        List<SqLog> sqLogs = new();
+        if (string.IsNullOrEmpty(p_msg))
+            sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Warn, Message = $"Warn. msg from the client is null" });
 
         // Step 1: generate the Portfolios. Can run in a multithreaded way.
         NameValueCollection query = HttpUtility.ParseQueryString(p_msg!); // Parse the query string from the input message
         string? pidsStr = query.Get("pids"); // Get the value of the "pids" parameter from the query string
-        if (pidsStr == null)
-            errMsg = $"Error. pidsStr from the client is null";
+        if (string.IsNullOrEmpty(pidsStr))
+            sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Warn, Message = $"Warn. pidsStr from the client is null" });
 
         List<Portfolio> lsPrtf = new(); // Create a new list to store the portfolios
         foreach (string pidStr in pidsStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
@@ -111,8 +112,9 @@ public class ChrtGenWs
         // Step 2: Filling the chrtGenPrtfRunResultJs to a list.
         for (int i = 0; i < lsPrtf.Count; i++)
         {
-            errMsg = lsPrtf[i].GetPortfolioRunResult(out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
-            ChartPointValues chartVal = new();
+            string? errMsg = lsPrtf[i].GetPortfolioRunResult(out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
+            sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Error, Message = errMsg! });
+            ChartData chartVal = new();
             PortfolioRunResultStatistics pStat = new();
 
             if (errMsg == null)
@@ -153,7 +155,7 @@ public class ChrtGenWs
             }
             _ = prtfPos; // To avoid the compiler Warning "Unnecessary assigment of a value" for unusued variables.
             // Step 5: Filling the data in chrtGenPrtfRunResultJs
-            chrtGenPrtfRunResultJs.Add(new ChrtGenPrtfRunResultJs { PrtfName = lsPrtf[i].Name, Pstat = pStat, Chart = chartVal, ChartResolution = chartResolution });
+            chrtGenPrtfRunResultJs.Add(new ChrtGenPrtfRunResultJs { PrtfId = lsPrtf[i].Id, PrtfName = lsPrtf[i].Name, Pstat = pStat, ChrtData = chartVal, ChartResolution = chartResolution });
         }
 
         // BENCHMARK: Processing the message to extract the benchmark tickers
@@ -162,36 +164,26 @@ public class ChrtGenWs
         if(minStartDate == DateTime.Today) // Defaault date (2020-01-01) if minStartdate == today
             minStartDate = new DateTime(2020, 01, 01);
         List<BmrkHistory> bmrkHistories = new();
-        if(errMsg == null)
-        {
-            foreach (string bmrkStr in bmrksStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        foreach (string bmrkStr in bmrksStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
             {
-                errMsg = Portfolio.GetBmrksHistoricalResults(bmrkStr, minStartDate, out PriceHistoryJs histPrcs);
+                string? errMsg = Portfolio.GetBmrksHistoricalResults(bmrkStr, minStartDate, out PriceHistoryJs histPrcs);
+                sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Error, Message = errMsg! });
                 if(errMsg == null)
-                {
                     bmrkHistories.Add(new BmrkHistory { SqTicker = bmrkStr, HistPrices = histPrcs });
-                }
                 else
-                    errMsg = $"Error. Benchmark Tickers {bmrkStr} not found in DB";
+                    sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Warn, Message = $"Warn. Benchmark Tickers {bmrkStr} not found in DB" });
             }
-        }
 
         // Step 6: send back the result
         stopwatch.Stop(); // Stopwatch to capture the end time
         chrtGenBacktestResult.PfRunResults = chrtGenPrtfRunResultJs; // Set the portfolio run results in the backtest result object
         chrtGenBacktestResult.BmrkHistories = bmrkHistories;
+        chrtGenBacktestResult.Logs = sqLogs;
         chrtGenBacktestResult.ServerBacktestTimeMs = (int)stopwatch.ElapsedMilliseconds; // Set the server backtest time in milliseconds
 
         byte[] encodedMsg = Encoding.UTF8.GetBytes("BacktestResults:" + Utils.CamelCaseSerialize(chrtGenBacktestResult));
         if (webSocket!.State == WebSocketState.Open)
             webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-
-        if (errMsg != null)
-        {
-            byte[] encodedErrMsg = Encoding.UTF8.GetBytes("ErrorToUser:" + errMsg);
-            if (webSocket!.State == WebSocketState.Open)
-                webSocket.SendAsync(new ArraySegment<Byte>(encodedErrMsg, 0, encodedErrMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-        }
     }
 
     public static void OnWsClose(WebSocket webSocket)

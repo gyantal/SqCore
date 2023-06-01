@@ -633,11 +633,11 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     }
 
     uiPrtfRunResult.chrtValues.length = 0;
-    for (let i = 0; i < prtfRunResult.chart.dates.length; i++) {
+    for (let i = 0; i < prtfRunResult.chrtData.dates.length; i++) {
       const chartItem = new UiChartPointValues();
-      const mSecSinceUnixEpoch: number = prtfRunResult.chart.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
-      chartItem.dates = new Date(mSecSinceUnixEpoch);
-      chartItem.values = prtfRunResult.chart.values[i];
+      const mSecSinceUnixEpoch: number = prtfRunResult.chrtData.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
+      chartItem.date = new Date(mSecSinceUnixEpoch);
+      chartItem.value = prtfRunResult.chrtData.values[i];
       uiPrtfRunResult.chrtValues.push(chartItem);
     }
 
@@ -646,7 +646,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     const margin = {top: 50, right: 50, bottom: 30, left: 60 };
     const chartWidth = uiChrtWidth * 0.9 - margin.left - margin.right; // 90% of the PanelChart Width
     const chartHeight = uiChrtHeight * 0.9 - margin.top - margin.bottom; // 90% of the PanelChart Height
-    const chrtData = uiPrtfRunResult.chrtValues.map((r:{ dates: Date; values: number; }) => ({date: new Date(r.dates), value: r.values}));
+    const chrtData = uiPrtfRunResult.chrtValues.map((r:{ date: Date; value: number; }) => ({date: new Date(r.date), value: r.value}));
     const xMin = d3.min(chrtData, (r:{ date: Date; }) => r.date);
     const xMax = d3.max(chrtData, (r:{ date: Date; }) => r.date);
     const yMinAxis = d3.min(chrtData, (r:{ value: number; }) => r.value);

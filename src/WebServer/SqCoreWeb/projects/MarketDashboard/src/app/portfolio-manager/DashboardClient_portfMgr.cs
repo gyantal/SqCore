@@ -47,11 +47,11 @@ class PortfolioJs : PortfolioItemJs
 class PrtfRunResultJs
 {
     public PortfolioRunResultStatistics Pstat { get; set; } = new();
-    public ChartPointValues Chart { get; set; } = new();
+    public ChartData ChrtData { get; set; } = new();
     public List<PortfolioPosition> PrtfPoss { get; set; } = new();
 }
 
-class ChartPointValues
+class ChartData
 {
     public List<long> Dates { get; set; } = new List<long>();
     public List<int> Values { get; set; } = new List<int>();
@@ -366,7 +366,7 @@ public partial class DashboardClient
                 // Step3: Filling the ChartPoint Dates and Values to a list. A very condensed format. Dates are separated into its ChartDate List.
                 // Instead of the longer [{"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}]
                 // we send a shorter: { ChartDate: [1641013200, 1641013200, 1641013200], Value: [101665, 101665, 101665] }
-                ChartPointValues chartVal = new();
+                ChartData chartVal = new();
                 foreach (var item in pv)
                 {
                     chartVal.Dates.Add(item.x);
@@ -408,7 +408,7 @@ public partial class DashboardClient
                 PrtfRunResultJs pfRunResult = new()
                 {
                     Pstat = pStat,
-                    Chart = chartVal,
+                    ChrtData = chartVal,
                     PrtfPoss = prtfPoss
                 };
 

@@ -4,7 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { SqNgCommonUtilsTime, minDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { chrtGenMultiLineBacktestChrt } from '../../../sq-ng-common/src/lib/chart/advanced-chart';
-import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, UiChrtGenValues } from '../../../MarketDashboard/src/sq-globals';
+import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, UiChrtGenValues, SqLog, SqLogLevel } from '../../../MarketDashboard/src/sq-globals';
 import * as d3 from 'd3';
 
 type Nullable<T> = T | null;
@@ -195,12 +195,12 @@ export class AppComponent implements OnInit {
 
       uiPrtfResItem.chrtResolution = item.chartResolution;
 
-      for (let i = 0; i < item.chart.dates.length; i++) {
+      for (let i = 0; i < item.chrtData.dates.length; i++) {
         const chartItem = new UiChrtGenValues();
         chartItem.name = item.prtfName;
-        const mSecSinceUnixEpoch: number = item.chart.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
-        chartItem.dates = new Date(mSecSinceUnixEpoch);
-        chartItem.values = 100 * item.chart.values[i] / item.chart.values[0]; // used to convert the data into percentage values
+        const mSecSinceUnixEpoch: number = item.chrtData.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
+        chartItem.date = new Date(mSecSinceUnixEpoch);
+        chartItem.value = 100 * item.chrtData.values[i] / item.chrtData.values[0]; // used to convert the data into percentage values
         uiPrtfResItem.prtfChrtValues.push(chartItem);
       }
     }
@@ -210,11 +210,19 @@ export class AppComponent implements OnInit {
         const chartItem = new UiChrtGenValues();
         chartItem.name = bmrkItem.sqTicker;
         const dateStr: string = bmrkItem.histPrices.dates[i];
-        chartItem.dates = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(5, 7) + '-' + dateStr.substring(8, 10));
-        chartItem.values = 100 * bmrkItem.histPrices.prices[i] / bmrkItem.histPrices.prices[0]; // used to convert the data into percentage values
+        chartItem.date = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(5, 7) + '-' + dateStr.substring(8, 10));
+        chartItem.value = 100 * bmrkItem.histPrices.prices[i] / bmrkItem.histPrices.prices[0]; // used to convert the data into percentage values
         uiPrtfResItem.bmrkChrtValues.push(chartItem);
       }
     }
+
+    for (const item of chrtGenBacktestRes.logs) {
+      const logItem = new SqLog();
+      logItem.sqLogLevel = SqLogLevel[item.sqLogLevel];
+      logItem.message = item.message;
+      uiPrtfResItem.sqLogs.push(logItem);
+    }
+
     uiChrtGenPrtfRunResults.push(uiPrtfResItem);
 
     d3.selectAll('#pfRunResultChrt > *').remove();
@@ -224,10 +232,10 @@ export class AppComponent implements OnInit {
     const chartHeight = uiChrtHeight * 0.9 - margin.top - margin.bottom; // 90% of the PvChart Height
     const prtfAndBmrkChrtData = uiPrtfResItem.prtfChrtValues.concat(uiPrtfResItem.bmrkChrtValues);
     const lineChrtTooltip = document.getElementById('tooltipChart') as HTMLElement;
-    const xMin = d3.min(prtfAndBmrkChrtData, (r:{ dates: Date; }) => r.dates);
-    const xMax = d3.max(prtfAndBmrkChrtData, (r:{ dates: Date; }) => r.dates);
-    const yMinAxis = d3.min(prtfAndBmrkChrtData, (r:{ values: number; }) => r.values);
-    const yMaxAxis = d3.max(prtfAndBmrkChrtData, (r:{ values: number; }) => r.values);
+    const xMin = d3.min(prtfAndBmrkChrtData, (r:{ date: Date; }) => r.date);
+    const xMax = d3.max(prtfAndBmrkChrtData, (r:{ date: Date; }) => r.date);
+    const yMinAxis = d3.min(prtfAndBmrkChrtData, (r:{ value: number; }) => r.value);
+    const yMaxAxis = d3.max(prtfAndBmrkChrtData, (r:{ value: number; }) => r.value);
 
     chrtGenMultiLineBacktestChrt(prtfAndBmrkChrtData, lineChrtDiv, chartWidth, chartHeight, margin, xMin, xMax, yMinAxis, yMaxAxis, lineChrtTooltip);
   }

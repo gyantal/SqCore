@@ -33,7 +33,11 @@
   <div class="commonColStyle" id="others">
     Others
   </div>
-
+<div *ngFor="let item of uiChrtGenPrtfRunResults">
+  <div *ngFor="let lg of item.sqLogs">
+    <div *ngIf="lg.message != null">{{lg.message}}</div>
+  </div>
+</div>
   <div id="backtestPvChrt">Portfolio Value Chart
     <div id="pfRunResultChrt"></div>
     <div id='tooltipChart'></div>
