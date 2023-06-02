@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 
 import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { SqNgCommonUtilsTime, minDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
-import { chrtGenMultiLineBacktestChrt } from '../../../sq-ng-common/src/lib/chart/advanced-chart';
+import { chrtGenBacktestChrt } from '../../../../TsLib/sq-common/chartUltimate';
 import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, UiChrtGenValue, SqLog, SqLogLevel } from '../../../MarketDashboard/src/sq-globals';
 import * as d3 from 'd3';
 
@@ -237,7 +237,7 @@ export class AppComponent implements OnInit {
     const yMinAxis = d3.min(prtfAndBmrkChrtData, (r:{ value: number; }) => r.value);
     const yMaxAxis = d3.max(prtfAndBmrkChrtData, (r:{ value: number; }) => r.value);
 
-    chrtGenMultiLineBacktestChrt(prtfAndBmrkChrtData, lineChrtDiv, chartWidth, chartHeight, margin, xMin, xMax, yMinAxis, yMaxAxis, lineChrtTooltip);
+    chrtGenBacktestChrt(prtfAndBmrkChrtData, lineChrtDiv, chartWidth, chartHeight, margin, xMin, xMax, yMinAxis, yMaxAxis, lineChrtTooltip);
   }
 
   onStartBacktests() {

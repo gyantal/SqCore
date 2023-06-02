@@ -1,5 +1,5 @@
 import './../css/main.css';
-import { sqLineChartGenerator } from '../../../../TsLib/sq-common/sqlineChrt';
+import { sqLineChartGenerator } from '../../../../TsLib/sq-common/chartSimple';
 import * as d3 from 'd3';
 
 // export {}; // TS convention: To avoid top level duplicate variables, functions. This file should be treated as a module (and have its own scope). A file without any top-level import or export declarations is treated as a script whose contents are available in the global scope.

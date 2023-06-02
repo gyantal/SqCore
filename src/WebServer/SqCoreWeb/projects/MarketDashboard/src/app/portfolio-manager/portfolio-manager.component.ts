@@ -1,6 +1,6 @@
 import { Component, OnInit, AfterViewInit, Input, ViewChild } from '@angular/core';
 import { SqTreeViewComponent } from '../sq-tree-view/sq-tree-view.component';
-import { processUiWithPrtfRunResultChrt } from '../../../../sq-ng-common/src/lib/chart/advanced-chart';
+import { prtfRunResultChrt } from '../../../../../TsLib/sq-common/chartAdvanced';
 import { PrtfRunResultJs, UiChartPointValue, UiPrtfPositions, UiPrtfRunResult } from '../../sq-globals';
 import { SqNgCommonUtils } from '../../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import * as d3 from 'd3';
@@ -652,6 +652,6 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     const yMinAxis = d3.min(chrtData, (r:{ value: number; }) => r.value);
     const yMaxAxis = d3.max(chrtData, (r:{ value: number; }) => r.value);
 
-    processUiWithPrtfRunResultChrt(chrtData, lineChrtDiv, chartWidth, chartHeight, margin, xMin, xMax, yMinAxis, yMaxAxis);
+    prtfRunResultChrt(chrtData, lineChrtDiv, chartWidth, chartHeight, margin, xMin, xMax, yMinAxis, yMaxAxis);
   }
 }
