@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
 
+// used in PortfolioManager
 export function processUiWithPrtfRunResultChrt(chrtData: { date: Date; value: number; }[], lineChrtDiv: HTMLElement, inputWidth: number, inputHeight: number, margin: any, xMin: any, xMax: any, yMinAxis: any, yMaxAxis: any) {
   // range of data configuring
   const scaleX = d3.scaleTime().domain([xMin, xMax]).range([0, inputWidth]);
@@ -129,6 +130,7 @@ export function processUiWithPrtfRunResultChrt(chrtData: { date: Date; value: nu
   }
 }
 
+// used in ChartGenerator
 export function chrtGenMultiLineBacktestChrt(chrtData:{name:string, date:any, value:any}[], lineChrtDiv: HTMLElement, inputWidth: number, inputHeight: number, margin: any, xMin: any, xMax: any, yMinAxis: any, yMaxAxis: any, lineChrtTooltip: HTMLElement) {
   interface GroupedData {
     name: string;
@@ -141,7 +143,7 @@ export function chrtGenMultiLineBacktestChrt(chrtData:{name:string, date:any, va
     const { name, date, value } = item;
     const existingEntry = dataGroups.find((r) => r.name === name); // Check if there is an existing entry with the same name in groupedData
     if (existingEntry) // If an existing entry is found, push the date and value to its priceData array
-      existingEntry.histPrices.push({ date, value});
+      existingEntry.histPrices.push({ date, value });
     else // If no existing entry is found, create a new entry with name and initial priceData array
       dataGroups.push({ name, histPrices: [{ date, value }] });
   }

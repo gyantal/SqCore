@@ -53,6 +53,7 @@ class PrtfRunResultJs
 
 class ChartData
 {
+    // public ChartResolution ChartResolution { get; set; } = ChartResolution.Daily; TODO
     public List<long> Dates { get; set; } = new List<long>();
     public List<int> Values { get; set; } = new List<int>();
 }

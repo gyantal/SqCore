@@ -4,7 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { SqNgCommonUtilsTime, minDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { chrtGenMultiLineBacktestChrt } from '../../../sq-ng-common/src/lib/chart/advanced-chart';
-import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, UiChrtGenValues, SqLog, SqLogLevel } from '../../../MarketDashboard/src/sq-globals';
+import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, UiChrtGenValue, SqLog, SqLogLevel } from '../../../MarketDashboard/src/sq-globals';
 import * as d3 from 'd3';
 
 type Nullable<T> = T | null;
@@ -196,7 +196,7 @@ export class AppComponent implements OnInit {
       uiPrtfResItem.chrtResolution = item.chartResolution;
 
       for (let i = 0; i < item.chrtData.dates.length; i++) {
-        const chartItem = new UiChrtGenValues();
+        const chartItem = new UiChrtGenValue();
         chartItem.name = item.prtfName;
         const mSecSinceUnixEpoch: number = item.chrtData.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
         chartItem.date = new Date(mSecSinceUnixEpoch);
@@ -207,7 +207,7 @@ export class AppComponent implements OnInit {
 
     for (const bmrkItem of chrtGenBacktestRes.bmrkHistories) { // processing benchamrk History data
       for (let i = 0; i < bmrkItem.histPrices.dates.length; i++) {
-        const chartItem = new UiChrtGenValues();
+        const chartItem = new UiChrtGenValue();
         chartItem.name = bmrkItem.sqTicker;
         const dateStr: string = bmrkItem.histPrices.dates[i];
         chartItem.date = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(5, 7) + '-' + dateStr.substring(8, 10));

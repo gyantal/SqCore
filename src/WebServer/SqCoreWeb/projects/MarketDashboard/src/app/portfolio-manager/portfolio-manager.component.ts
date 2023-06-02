@@ -1,7 +1,7 @@
 import { Component, OnInit, AfterViewInit, Input, ViewChild } from '@angular/core';
 import { SqTreeViewComponent } from '../sq-tree-view/sq-tree-view.component';
 import { processUiWithPrtfRunResultChrt } from '../../../../sq-ng-common/src/lib/chart/advanced-chart';
-import { PrtfRunResultJs, UiChartPointValues, UiPrtfPositions, UiPrtfRunResult } from '../../sq-globals';
+import { PrtfRunResultJs, UiChartPointValue, UiPrtfPositions, UiPrtfRunResult } from '../../sq-globals';
 import { SqNgCommonUtils } from '../../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import * as d3 from 'd3';
 
@@ -634,7 +634,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
     uiPrtfRunResult.chrtValues.length = 0;
     for (let i = 0; i < prtfRunResult.chrtData.dates.length; i++) {
-      const chartItem = new UiChartPointValues();
+      const chartItem = new UiChartPointValue();
       const mSecSinceUnixEpoch: number = prtfRunResult.chrtData.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
       chartItem.date = new Date(mSecSinceUnixEpoch);
       chartItem.value = prtfRunResult.chrtData.values[i];

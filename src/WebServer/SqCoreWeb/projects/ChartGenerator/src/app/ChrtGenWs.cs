@@ -89,13 +89,13 @@ public class ChrtGenWs
         ChrtGenBacktestResult chrtGenBacktestResult = new();
         List<SqLog> sqLogs = new();
         if (string.IsNullOrEmpty(p_msg))
-            sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Warn, Message = $"Warn. msg from the client is null" });
+            sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Warn, Message = $"The msg from the client is null" });
 
         // Step 1: generate the Portfolios. Can run in a multithreaded way.
         NameValueCollection query = HttpUtility.ParseQueryString(p_msg!); // Parse the query string from the input message
         string? pidsStr = query.Get("pids"); // Get the value of the "pids" parameter from the query string
         if (string.IsNullOrEmpty(pidsStr))
-            sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Warn, Message = $"Warn. pidsStr from the client is null" });
+            sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Info, Message = $"The pidsStr from the client is null. We process the benchmarks further." });
 
         List<Portfolio> lsPrtf = new(); // Create a new list to store the portfolios
         foreach (string pidStr in pidsStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
@@ -113,7 +113,8 @@ public class ChrtGenWs
         for (int i = 0; i < lsPrtf.Count; i++)
         {
             string? errMsg = lsPrtf[i].GetPortfolioRunResult(out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
-            sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Error, Message = errMsg! });
+            if (errMsg != null)
+                sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Error, Message = errMsg });
             ChartData chartVal = new();
             PortfolioRunResultStatistics pStat = new();
 
@@ -167,11 +168,10 @@ public class ChrtGenWs
         foreach (string bmrkStr in bmrksStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
             {
                 string? errMsg = Portfolio.GetBmrksHistoricalResults(bmrkStr, minStartDate, out PriceHistoryJs histPrcs);
-                sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Error, Message = errMsg! });
                 if(errMsg == null)
                     bmrkHistories.Add(new BmrkHistory { SqTicker = bmrkStr, HistPrices = histPrcs });
                 else
-                    sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Warn, Message = $"Warn. Benchmark Tickers {bmrkStr} not found in DB" });
+                    sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Warn, Message = $"The Benchmark Tickers {bmrkStr} not found in DB. ErrMsg {errMsg}" });
             }
 
         // Step 6: send back the result

@@ -174,10 +174,10 @@ export class UiChrtGenPrtfRunResult {
   public benchmarkCAGR: number = 0;
   public benchmarkMaxDD: number = 0;
   public correlationWithBenchmark: number = 0;
-  public chrtValues: UiChartPointValues[] = []; // used in PrtfRunResults in portfolioManager app
+  public chrtValues: UiChartPointValue[] = []; // used in PrtfRunResults in portfolioManager app
 
-  public prtfChrtValues: UiChrtGenValues[] = []; // used in backtestResults in chrtGen app
-  public bmrkChrtValues: UiChrtGenValues[] = []; // used in backtestResults in chrtGen app
+  public prtfChrtValues: UiChrtGenValue[] = []; // used in backtestResults in chrtGen app
+  public bmrkChrtValues: UiChrtGenValue[] = []; // used in backtestResults in chrtGen app
   public chrtResolution: ChartResolution = ChartResolution.Daily;
   public sqLogs: SqLog[] = [];
 }
@@ -187,12 +187,12 @@ export class UiPrtfRunResult extends UiChrtGenPrtfRunResult { // PrtfRun Results
 }
 
 // chart values
-export class UiChartPointValues {
+export class UiChartPointValue {
   public date = new Date();
   public value = NaN;
 }
 
-export class UiChrtGenValues extends UiChartPointValues {
+export class UiChrtGenValue extends UiChartPointValue {
   public name: string = '';
 }
 
