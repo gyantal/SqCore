@@ -127,6 +127,7 @@ export enum SqLogLevel
 export interface ChartJs { // PfRunResults Chart Data
   dates: number[];
   values: number[];
+  chartResolution: ChartResolution;
 }
 
 export class SqLog {
@@ -144,7 +145,6 @@ export class ChrtGenBacktestResult {
 export class ChrtGenPfRunResult {
   public pstat: any; // all the Stat members from UiPrtfRunResult, we skip creating detailed sub classes
   public chrtData!: ChartJs;
-  public chartResolution!: ChartResolution;
   public prtfName!: string;
 }
 
@@ -178,7 +178,6 @@ export class UiChrtGenPrtfRunResult {
 
   public prtfChrtValues: UiChrtGenValue[] = []; // used in backtestResults in chrtGen app
   public bmrkChrtValues: UiChrtGenValue[] = []; // used in backtestResults in chrtGen app
-  public chrtResolution: ChartResolution = ChartResolution.Daily;
   public sqLogs: SqLog[] = [];
 }
 
@@ -194,6 +193,8 @@ export class UiChartPointValue {
 
 export class UiChrtGenValue extends UiChartPointValue {
   public name: string = '';
+  public chartResolution: string = '';
+  public priceData: UiChartPointValue[] = [];
 }
 
 export class UiPrtfPositions {

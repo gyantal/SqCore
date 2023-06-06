@@ -28,7 +28,6 @@ class ChrtGenPrtfRunResultJs // ChartGenerator doesn't need the Portfolio Positi
     public string PrtfName { get; set; } = string.Empty; // need this to identify the data of portfolios
     public PortfolioRunResultStatistics Pstat { get; set; } = new();
     public ChartData ChrtData { get; set; } = new();
-    public ChartResolution ChartResolution { get; set; } = ChartResolution.Daily;
 }
 
 class BmrkHistory
@@ -123,7 +122,7 @@ public class ChrtGenWs
                 // Step 3: Filling the ChartPoint Dates and Values to a list. A very condensed format. Dates are separated into its ChartDate List.
                 // Instead of the longer [{"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}]
                 // we send a shorter: { ChartDate: [1641013200, 1641013200, 1641013200], Value: [101665, 101665, 101665] }
-
+                chartVal.ChartResolution = chartResolution;
                 foreach (var item in pv)
                 {
                     DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(item.x).DateTime.Date;
@@ -156,7 +155,7 @@ public class ChrtGenWs
             }
             _ = prtfPos; // To avoid the compiler Warning "Unnecessary assigment of a value" for unusued variables.
             // Step 5: Filling the data in chrtGenPrtfRunResultJs
-            chrtGenPrtfRunResultJs.Add(new ChrtGenPrtfRunResultJs { PrtfId = lsPrtf[i].Id, PrtfName = lsPrtf[i].Name, Pstat = pStat, ChrtData = chartVal, ChartResolution = chartResolution });
+            chrtGenPrtfRunResultJs.Add(new ChrtGenPrtfRunResultJs { PrtfId = lsPrtf[i].Id, PrtfName = lsPrtf[i].Name, Pstat = pStat, ChrtData = chartVal });
         }
 
         // BENCHMARK: Processing the message to extract the benchmark tickers

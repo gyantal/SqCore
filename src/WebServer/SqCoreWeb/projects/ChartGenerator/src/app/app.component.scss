@@ -14,27 +14,13 @@
 }
 
 .commonColStyle { // same style for all the div's of Portfolios, StockAndIndexex, TechIndicators and others ( 4 sections similar to sniffeQuant Chart Generator)
-  float:left;
-  width:25%;
-  height:18rem;
+  float: left;
+  width: 24.8%;
+  height: 10rem;
+  margin-bottom: 0.5rem;
+  border:solid #080c0c 0.01rem;
 }
 
-#portfolios {
-  background:rgb(255, 238, 0);
-}
-
-#stockAndIndexes {
-  background:rgb(0, 128, 128);
-}
-
-#techIndicators {
-  background:rgb(0, 132, 255);
-}
-
-#others {
-  float:right;
-  background:rgb(166, 255, 0);
-}
 
 #backtestPvChrt {
   width: 100%;
@@ -55,8 +41,10 @@
   border-radius: 0.6rem;
 }
 
-// #errWarnLog {
-// }
+.errWarnLog {
+  color: #FF0000;
+}
 
-// #infoLog {
-// }
+.infoLog {
+  color: #FFFF00
+}

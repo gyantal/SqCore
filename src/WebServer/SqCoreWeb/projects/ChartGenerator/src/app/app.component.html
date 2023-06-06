@@ -22,6 +22,8 @@
   <div class="commonColStyle" id="portfolios">
     <label>PortfolioIds:<input id="pfIds" type="text" [(ngModel)]="prtfIds"></label><br><br>
     <label>Benchmarks:<input id="bmrks" type="text" [(ngModel)]="bmrks"></label><br><br>
+    <label>StartDate:<input type="Date" [(ngModel)]="startDate"></label><br><br>
+    <label>EndDate:<input type="Date" [(ngModel)]="endDate"></label><br><br>
     <button (click)="onStartBacktests()">Start</button>
   </div>
   <div class="commonColStyle" id="stockAndIndexes">
@@ -39,7 +41,7 @@
   </div>
   <div *ngFor="let item of uiChrtGenPrtfRunResults">
     <div *ngFor="let lg of item.sqLogs">
-      <div *ngIf="lg.message != null">{{lg.message}}</div>
+      <div [ngClass]="lg.sqLogLevel == ('Error' || 'Warn') ? 'errWarnLog' : 'infoLog'" *ngIf="lg.message != null">{{lg.message}}</div>
     </div>
   </div>
 </div>
