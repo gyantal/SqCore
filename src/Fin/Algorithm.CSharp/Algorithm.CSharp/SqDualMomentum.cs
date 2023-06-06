@@ -60,34 +60,7 @@ using QCAlgorithmFrameworkBridge = QuantConnect.Algorithm.QCAlgorithm;
 // See: TheImportance Of RawPrice Based Transaction Simulation Vs Excel AdjustePrice By MichaelHarris.pdf https://www.priceactionlab.com/Blog/2021/05/trend-following-stocks/
 namespace QuantConnect.Algorithm.CSharp
 {
-    // class QcPrice
-    // {
-    //     public DateTime QuoteTime;
-    //     public DateTime ReferenceDate;
-    //     public decimal Close;
-    // }
-    // class QcDividend
-    // {
-    //     public DateTime QuoteTime;
-    //     public DateTime ReferenceDate;
-    //     public Dividend Dividend;
-    // }
-    // class QcSplit
-    // {
-    //     public DateTime QuoteTime;
-    //     public DateTime ReferenceDate;
-    //     public Split Split;
-    // }
-    // class SqPrice
-    // {
-    //     public DateTime ReferenceDate;
-    //     public decimal Close;
-    // }
-    // class SqSplit
-    // {
-    //     public DateTime ReferenceDate;
-    //     public decimal SplitFactor;
-    // }
+
     public class SqDualMomentum : QCAlgorithm
     {
         DateTime _startDate = DateTime.MinValue;
@@ -105,7 +78,7 @@ namespace QuantConnect.Algorithm.CSharp
         private Dictionary<string, List<QcDividend>> _dividends = new Dictionary<string, List<QcDividend>>();
         private Dictionary<string, List<QcSplit>> _splits = new Dictionary<string, List<QcSplit>>();
         bool _isTradeOnMinuteResolution = false; // until QC fixes the Daily resolution trading problem, use per minute for QC Cloud running. But don't use it in local VsCode execution.
-        private Dictionary<string, List<SqPrice>> _rawClosesFromYfLists = new Dictionary<string, List<SqPrice>>();
+        private Dictionary<string, List<QcPrice>> _rawClosesFromYfLists = new Dictionary<string, List<QcPrice>>();
         private Dictionary<string, Dictionary<DateTime, decimal>> _rawClosesFromYfDicts = new Dictionary<string, Dictionary<DateTime, decimal>>();
 
         public override void Initialize()
@@ -143,18 +116,18 @@ namespace QuantConnect.Algorithm.CSharp
             }
 
             // Call the DownloadAndProcessData method to get real life close prices from YF
-            _rawClosesFromYfLists = new Dictionary<string, List<SqPrice>>();
+            _rawClosesFromYfLists = new Dictionary<string, List<QcPrice>>();
             _rawClosesFromYfDicts = new Dictionary<string, Dictionary<DateTime, decimal>>();
             foreach (string ticker in _tickers)
             {
                 DownloadAndProcessData(ticker, _startDate, _warmUp, _endDate);
             }
 
-            Schedule.On(DateRules.MonthEnd("SPY"), TimeRules.BeforeMarketClose("SPY", 30), () =>
+            Schedule.On(DateRules.MonthEnd("SPY"), TimeRules.BeforeMarketClose("SPY", 30), (Action)(() =>
             {
                 if (IsWarmingUp) // Dont' trade in the warming up period.
                     return;
-                Dictionary<string, List<SqPrice>> usedAdjustedClosePrices = GetUsedAdjustedClosePriceData();
+                Dictionary<string, List<QcPrice>> usedAdjustedClosePrices = GetUsedAdjustedClosePriceData();
                 Dictionary<string, decimal> nextMonthWeights = HistPerfCalc(usedAdjustedClosePrices);
                 decimal currentPV = PvCalculation(usedAdjustedClosePrices);
 
@@ -166,26 +139,26 @@ namespace QuantConnect.Algorithm.CSharp
                 foreach (KeyValuePair<string, Symbol> kvp in tradedSymbols)
                 {
                     string ticker = kvp.Key;
-                    List<SqPrice> tickerUsedAdjustedClosePrices = usedAdjustedClosePrices[ticker];
+                    List<QcPrice> tickerUsedAdjustedClosePrices = usedAdjustedClosePrices[ticker];
                     decimal newMarketValue = 0;
                     decimal newPosition = 0;
                     if (nextMonthWeights[ticker] != 0)
                     {
                         newMarketValue = currentPV * nextMonthWeights[ticker];
-                        newPosition = Math.Round(newMarketValue / tickerUsedAdjustedClosePrices[^1].Close); // use the last element
+                        newPosition = Math.Round((decimal)(newMarketValue / tickerUsedAdjustedClosePrices[(Index)(^1)].Close)); // use the last element
                     }
                     decimal positionChange = newPosition - Portfolio[ticker].Quantity;
                     if (positionChange != 0)
                         MarketOnCloseOrder(kvp.Value, positionChange); // QC raises Warning if order quantity = 0. So, we don't sent these. "Unable to submit order with id -10 that has zero quantity."
                     logMessage += ticker + ": " + newPosition + "; ";
-                    logMessage2 += ticker + ": " + ((tickerUsedAdjustedClosePrices.Count != 0) ? tickerUsedAdjustedClosePrices[^1].Close.ToString() : "N/A") + "; "; // use the last element
+                    logMessage2 += ticker + ": " + ((tickerUsedAdjustedClosePrices.Count != 0) ? tickerUsedAdjustedClosePrices[(Index)(^1)].Close.ToString() : "N/A") + "; "; // use the last element
                 }
                 logMessage = logMessage.Substring(0, logMessage.Length - 2) + ".";
                 logMessage2 = logMessage2.Substring(0, logMessage2.Length - 2) + ".";
                 string LogMessageToLog = logMessage + " " + logMessage2 + $" Previous cash: {Portfolio.Cash}. Current PV: {currentPV}.";
 
                 Log(LogMessageToLog);
-            });
+            }));
         }
 
         /// OnData event is the primary entry point for your algorithm. Each new data point will be pumped in here.
@@ -215,13 +188,13 @@ namespace QuantConnect.Algorithm.CSharp
                             rawClose = occuredSplit.ReferencePrice; // ReferencePrice is RAW, not adjusted. Fixing QC bug of giving SplitAdjusted bar on Split day.
                                                                     // clPrice = slice.Splits[_symbol].Price; // Price is an alias to Value. Value is this: For streams of data this is the price now, for OHLC packets this is the closing price.            
 
-                        _rawCloses[ticker].Add(new QcPrice() { QuoteTime = slice.Time, ReferenceDate = slice.Time.Date.AddDays(-1), Close = (decimal)rawClose });
-                        _adjCloses[ticker].Add(new QcPrice() { QuoteTime = slice.Time, ReferenceDate = slice.Time.Date.AddDays(-1), Close = (decimal)rawClose });
+                        _rawCloses[ticker].Add(new QcPrice() { ReferenceDate = slice.Time.Date.AddDays(-1), Close = (decimal)rawClose });
+                        _adjCloses[ticker].Add(new QcPrice() { ReferenceDate = slice.Time.Date.AddDays(-1), Close = (decimal)rawClose });
                     }
                     if (slice.Dividends.ContainsKey(symbol))
                     {
                         var dividend = slice.Dividends[symbol];
-                        _dividends[ticker].Add(new QcDividend() { QuoteTime = slice.Time, ReferenceDate = slice.Time.Date.AddDays(-1), Dividend = dividend });
+                        _dividends[ticker].Add(new QcDividend() { ReferenceDate = slice.Time.Date.AddDays(-1), Dividend = dividend });
                         decimal divAdjMultiplicator = 1 - dividend.Distribution / dividend.ReferencePrice;
                         for (int i = 0; i < _adjCloses[ticker].Count; i++)
                         {
@@ -231,7 +204,7 @@ namespace QuantConnect.Algorithm.CSharp
                     }
                     if (occuredSplit != null)  // Split.SplitOccurred comes on the correct day with slice.Time: 8/25/2022 12:00:00
                     {
-                        _splits[ticker].Add(new QcSplit() { QuoteTime = slice.Time, ReferenceDate = slice.Time.Date.AddDays(-1), Split = occuredSplit });
+                        _splits[ticker].Add(new QcSplit() { ReferenceDate = slice.Time.Date.AddDays(-1), Split = occuredSplit });
                         decimal refPrice = occuredSplit.ReferencePrice;    // Contains RAW price (before Split adjustment). Not used here.
                         decimal splitAdjMultiplicator = occuredSplit.SplitFactor;
                         for (int i = 0; i < _adjCloses[ticker].Count; i++)  // Not-chosen option: if we 'have to' use QC bug 'wrongly-adjusted' rawClose, we can skip the last item. In that case we don't apply the split adjustment to the last item, which is the same day as the day of Split.
@@ -248,8 +221,8 @@ namespace QuantConnect.Algorithm.CSharp
         }
         private void DownloadAndProcessData(string p_ticker, DateTime p_startDate, TimeSpan p_warmUp, DateTime p_endDate)
         {
-            long periodStart = DateTimeUtcToUnixTimeStamp(p_startDate - p_warmUp);
-            long periodEnd = DateTimeUtcToUnixTimeStamp(p_endDate.AddDays(1)); // if p_endDate is a fixed date (2023-02-28:00:00), then it has to be increased, otherwise YF doesn't give that day data.
+            long periodStart = QCAlgorithmUtils.DateTimeUtcToUnixTimeStamp(p_startDate - p_warmUp);
+            long periodEnd =QCAlgorithmUtils. DateTimeUtcToUnixTimeStamp(p_endDate.AddDays(1)); // if p_endDate is a fixed date (2023-02-28:00:00), then it has to be increased, otherwise YF doesn't give that day data.
 
             // Step 1. Get Split data
             string splitCsvUrl = $"https://query1.finance.yahoo.com/v7/finance/download/{p_ticker}?period1={periodStart}&period2={periodEnd}&interval=1d&events=split&includeAdjustedClose=true";
@@ -264,7 +237,7 @@ namespace QuantConnect.Algorithm.CSharp
                 return;
             }
 
-            List<SqSplit> splits = new List<SqSplit>();
+            List<YfSplit> splits = new List<YfSplit>();
             int rowStartInd = splitCsvData.IndexOf('\n');   // jump over the header Date,Stock Splits
             rowStartInd = (rowStartInd == -1) ? splitCsvData.Length : rowStartInd + 1;
             while (rowStartInd < splitCsvData.Length) // very fast implementation without String.Split() RAM allocation
@@ -282,7 +255,7 @@ namespace QuantConnect.Algorithm.CSharp
                 if (DateTime.TryParseExact(dateStr, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
                 {
                     if (Decimal.TryParse(split1Str, out decimal split1) && Decimal.TryParse(split2Str, out decimal split2))
-                        splits.Add(new SqSplit() { ReferenceDate = date, SplitFactor = decimal.Divide(split1, split2) });
+                        splits.Add(new YfSplit() { ReferenceDate = date, SplitFactor = decimal.Divide(split1, split2) });
                 }
                 rowStartInd = splitEndIndExcl + 1; // jump over the '\n'
             }
@@ -300,7 +273,7 @@ namespace QuantConnect.Algorithm.CSharp
                 return;
             }
 
-            List<SqPrice> rawClosesFromYfList = new List<SqPrice>();
+            List<QcPrice> rawClosesFromYfList = new List<QcPrice>();
             rowStartInd = priceCsvData.IndexOf('\n');   // jump over the header Date,...
             rowStartInd = (rowStartInd == -1) ? priceCsvData.Length : rowStartInd + 1; // jump over the '\n'
             while (rowStartInd < priceCsvData.Length) // very fast implementation without String.Split() RAM allocation
@@ -318,7 +291,7 @@ namespace QuantConnect.Algorithm.CSharp
                 if (DateTime.TryParseExact(dateStr, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
                 {
                     if (Decimal.TryParse(closeStr, out decimal close))
-                        rawClosesFromYfList.Add(new SqPrice() { ReferenceDate = date, Close = close });
+                        rawClosesFromYfList.Add(new QcPrice() { ReferenceDate = date, Close = close });
                 }
                 rowStartInd = (closeInd != -1) ? priceCsvData.IndexOf('\n', adjCloseInd + 1) : -1;
                 rowStartInd = (rowStartInd == -1) ? priceCsvData.Length : rowStartInd + 1; // jump over the '\n'
@@ -355,25 +328,25 @@ namespace QuantConnect.Algorithm.CSharp
             }
             _rawClosesFromYfDicts[p_ticker] = rawClosesFromYfDict;
         }
-        private Dictionary<string, List<SqPrice>> GetUsedAdjustedClosePriceData()
+        private Dictionary<string, List<QcPrice>> GetUsedAdjustedClosePriceData()
         {
-            Dictionary<string, List<SqPrice>> usedAdjCloses = new Dictionary<string, List<SqPrice>>();
+            Dictionary<string, List<QcPrice>> usedAdjCloses = new Dictionary<string, List<QcPrice>>();
             // iterate over each key-value pair in the dictionary
             foreach (KeyValuePair<string, List<QcPrice>> kvp in _adjCloses) // loop for each tickers
             {
                 // get the last lookbackTradingDays items for this key + current raw data from YF
                 string ticker = kvp.Key;
                 List<QcPrice> qcAdjCloses = kvp.Value;
-                List<SqPrice> lastLbTdPrices = new List<SqPrice>();
+                List<QcPrice> lastLbTdPrices = new List<QcPrice>();
                 int startIndex = Math.Max(0, qcAdjCloses.Count - _lookbackTradingDays);
                 for (int i = startIndex; i < qcAdjCloses.Count; i++)
                 {
-                    lastLbTdPrices.Add(new SqPrice() { ReferenceDate = qcAdjCloses[i].ReferenceDate, Close = qcAdjCloses[i].Close });
+                    lastLbTdPrices.Add(new QcPrice() { ReferenceDate = qcAdjCloses[i].ReferenceDate, Close = qcAdjCloses[i].Close });
                 }
 
                 // add the last lookbackTradingDays items to the new dictionary
                 if (_rawClosesFromYfDicts[ticker].TryGetValue(this.Time.Date, out decimal lastRawClose))
-                    lastLbTdPrices.Add(new SqPrice() { ReferenceDate = this.Time.Date, Close = lastRawClose });
+                    lastLbTdPrices.Add(new QcPrice() { ReferenceDate = this.Time.Date, Close = lastRawClose });
                 else // if lastLbTdPrices is empty, then not finding this date is fine. If lastLbTdPrices has at least 1 items, we expect that we find this date.
                     if (qcAdjCloses.Count > 0)
                         throw new Exception($"Cannot find date {this.Time.Date.ToString()} in the YF.");
@@ -384,7 +357,7 @@ namespace QuantConnect.Algorithm.CSharp
             return usedAdjCloses;
         }
 
-        private Dictionary<string, decimal> HistPerfCalc(Dictionary<string, List<SqPrice>> p_usedAdjustedClosePrices)
+        private Dictionary<string, decimal> HistPerfCalc(Dictionary<string, List<QcPrice>> p_usedAdjustedClosePrices)
         {
             // tie in ranks!!!
             Dictionary<string, decimal> relativeMomentums = new Dictionary<string, decimal>();
@@ -392,7 +365,7 @@ namespace QuantConnect.Algorithm.CSharp
             foreach (string key in p_usedAdjustedClosePrices.Keys)
             {
                 decimal relMom = -99;
-                List<SqPrice> usedAdjustedClosePrice = p_usedAdjustedClosePrices[key];
+                List<QcPrice> usedAdjustedClosePrice = p_usedAdjustedClosePrices[key];
                 if (usedAdjustedClosePrice.Count == _lookbackTradingDays + 1)
                     relMom = usedAdjustedClosePrice[^1].Close / usedAdjustedClosePrice[0].Close - 1; // last element divided by the first
                 relativeMomentums.Add(key, relMom);
@@ -447,7 +420,7 @@ namespace QuantConnect.Algorithm.CSharp
             }
             return nextMonthWeights;
         }
-        private decimal PvCalculation(Dictionary<string, List<SqPrice>> p_usedAdjustedClosePrices)
+        private decimal PvCalculation(Dictionary<string, List<QcPrice>> p_usedAdjustedClosePrices)
         {
             decimal currentPV = 0m;
 
@@ -465,7 +438,7 @@ namespace QuantConnect.Algorithm.CSharp
                         // Get the current position and price for this ticker
                         decimal quantity = position.Quantity;
 
-                        List<SqPrice> usedAdjustedClosePrices = p_usedAdjustedClosePrices[ticker];
+                        List<QcPrice> usedAdjustedClosePrices = p_usedAdjustedClosePrices[ticker];
                         decimal currentPrice = (usedAdjustedClosePrices.Count != 0) ? usedAdjustedClosePrices[^1].Close : 0;    // get the last element
                         currentPV += quantity * currentPrice;
                     }
@@ -473,13 +446,6 @@ namespace QuantConnect.Algorithm.CSharp
             }
 
             return currentPV;
-        }
-        public static long DateTimeUtcToUnixTimeStamp(DateTime p_utcDate) // Int would roll over to a negative in 2038 (if you are using UNIX timestamp), so long is safer
-        {
-            // Unix timestamp is seconds past epoch
-            System.DateTime dtDateTime = new(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-            TimeSpan span = p_utcDate - dtDateTime;
-            return (long)span.TotalSeconds;
         }
         public override void OnEndOfAlgorithm()
         {

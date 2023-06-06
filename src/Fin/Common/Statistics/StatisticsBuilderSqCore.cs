@@ -33,7 +33,7 @@ namespace QuantConnect.Statistics
             DateTime lastDate = Time.UnixTimeStampToDateTime(pointsEquity[pointsEquity.Count - 1].x);
 
             // Conceptual decision: QC performance statistics uses the weekends as well
-            // We go similar to IB NAV calculation. We skip the weekends, but keep holiday days using the prace of the prior day
+            // We go similar to IB NAV calculation. We skip the weekends, but keep holiday days using the price of the prior day
 
             // Step 1: determine totalTradingDaysNum
             int totalTradingDaysNum = 0;

@@ -790,12 +790,15 @@ namespace QuantConnect.Algorithm
             var price = security.Price;
 
             //Check the exchange is open before sending a market on close orders
-            if (request.OrderType == OrderType.MarketOnClose && !security.Exchange.ExchangeOpen)
-            {
-                return OrderResponse.Error(request, OrderResponseErrorCode.ExchangeNotOpen,
-                    $"{request.OrderType} order and exchange not open."
-                );
-            }
+            // SqCore Change ORIGINAL:
+            // if (request.OrderType == OrderType.MarketOnClose && !security.Exchange.ExchangeOpen)
+            // {
+            //     return OrderResponse.Error(request, OrderResponseErrorCode.ExchangeNotOpen,
+            //         $"{request.OrderType} order and exchange not open."
+            //     );
+            // }
+            // SqCore Change NEW: in SqCore, after daily OnData() processing/trading at 00:00, we let the Orders fill immediately, without any time check
+            // SqCore Change END
 
             //Check the exchange is open before sending a exercise orders
             if (request.OrderType == OrderType.OptionExercise && !security.Exchange.ExchangeOpen)
@@ -921,20 +924,23 @@ namespace QuantConnect.Algorithm
                     throw new InvalidOperationException($"Market never closes for this symbol {security.Symbol}, can no submit a {nameof(OrderType.MarketOnClose)} order.");
                 }
 
-                var nextMarketClose = security.Exchange.Hours.GetNextMarketClose(security.LocalTime, false);
+                // SqCore Change ORIGINAL:
+                // var nextMarketClose = security.Exchange.Hours.GetNextMarketClose(security.LocalTime, false);
 
-                // Enforce MarketOnClose submission buffer
-                var latestSubmissionTime = nextMarketClose.Subtract(Orders.MarketOnCloseOrder.SubmissionTimeBuffer);
-                if (!security.Exchange.ExchangeOpen || Time > latestSubmissionTime)
-                {
-                    // Tell user the required buffer on these orders, also inform them it can be changed for special cases.
-                    // Default buffer is 15.5 minutes because with minute data a user will receive the 3:44->3:45 bar at 3:45,
-                    // if the latest time is 3:45 it is already too late to submit one of these orders
-                    return OrderResponse.Error(request, OrderResponseErrorCode.MarketOnCloseOrderTooLate,
-                        $"MarketOnClose orders must be placed within {Orders.MarketOnCloseOrder.SubmissionTimeBuffer} before market close." +
-                        " Override this TimeSpan buffer by setting Orders.MarketOnCloseOrder.SubmissionTimeBuffer in QCAlgorithm.Initialize()."
-                    );
-                }
+                // // Enforce MarketOnClose submission buffer
+                // var latestSubmissionTime = nextMarketClose.Subtract(Orders.MarketOnCloseOrder.SubmissionTimeBuffer);
+                // if (!security.Exchange.ExchangeOpen || Time > latestSubmissionTime)
+                // {
+                //     // Tell user the required buffer on these orders, also inform them it can be changed for special cases.
+                //     // Default buffer is 15.5 minutes because with minute data a user will receive the 3:44->3:45 bar at 3:45,
+                //     // if the latest time is 3:45 it is already too late to submit one of these orders
+                //     return OrderResponse.Error(request, OrderResponseErrorCode.MarketOnCloseOrderTooLate,
+                //         $"MarketOnClose orders must be placed within {Orders.MarketOnCloseOrder.SubmissionTimeBuffer} before market close." +
+                //         " Override this TimeSpan buffer by setting Orders.MarketOnCloseOrder.SubmissionTimeBuffer in QCAlgorithm.Initialize()."
+                //     );
+                // }
+                // SqCore Change NEW: in SqCore, after daily OnData() processing/trading at 00:00, we let the Orders fill immediately, without any time check
+                // SqCore Change END
             }
 
             // passes all initial order checks

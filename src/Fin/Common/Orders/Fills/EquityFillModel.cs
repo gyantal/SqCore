@@ -611,10 +611,13 @@ namespace QuantConnect.Orders.Fills
             var nextMarketClose = asset.Exchange.Hours.GetNextMarketClose(localOrderTime, false);
 
             // wait until market closes after the order time
-            if (asset.LocalTime < nextMarketClose)
-            {
-                return fill;
-            }
+            // SqCore Change ORIGINAL:
+            // if (asset.LocalTime < nextMarketClose)
+            // {
+            //     return fill;
+            // }
+            // SqCore Change NEW: in SqCore, after daily OnData() processing/trading at 00:00, we let the Orders fill immediately, without any time check
+            // SqCore Change END
 
             // SqCore Change NEW:
             // Get the range of prices in the last bar:
@@ -693,17 +696,20 @@ namespace QuantConnect.Orders.Fills
             }
 
             // do not fill on stale data
-            if (endTimeUtc <= order.Time)
-                return fill;
-            // SqCore Change END
+            // in SqCore, after daily OnData() processing/trading at 00:00, we let the Orders fill immediately, without any time check
+            // if (endTimeUtc <= order.Time)
+            //     return fill;
+            
 
             // make sure the exchange is open/normal market hours before filling
             // It will return true if the last bar opens before the market closes
-            else if (!IsExchangeOpen(asset, false))
-            {
-                return fill;
-            }
-            else if (subscribedTypes.Contains(typeof(TradeBar)))
+            // else if (!IsExchangeOpen(asset, false))
+            // {
+            //     return fill;
+            // }
+            // else 
+            // SqCore Change END
+            if (subscribedTypes.Contains(typeof(TradeBar)))
             {
                 fill.FillPrice = asset.Cache.GetData<TradeBar>()?.Close ?? 0;
             }

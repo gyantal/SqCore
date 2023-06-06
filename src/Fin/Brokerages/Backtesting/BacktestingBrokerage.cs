@@ -259,7 +259,11 @@ namespace QuantConnect.Brokerages.Backtesting
                     }
 
                     // all order fills are processed on the next bar (except for market orders)
-                    if (order.Time == Algorithm.UtcTime && order.Type != OrderType.Market && order.Type != OrderType.OptionExercise)
+                    // SqCore Change ORIGINAL:
+                    // if (order.Time == Algorithm.UtcTime && order.Type != OrderType.Market && order.Type != OrderType.OptionExercise)
+                    // SqCore Change NEW: MarketOnClose orders has to be allowed to fill, stillNeedsScan in not requiered
+                    if (order.Time == Algorithm.UtcTime && order.Type != OrderType.Market && order.Type != OrderType.MarketOnClose && order.Type != OrderType.OptionExercise)
+                    // SqCore Change END
                     {
                         stillNeedsScan = true;
                         continue;
