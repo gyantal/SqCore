@@ -48,7 +48,9 @@ public partial class MemDb
     // ***************************************************
     // IEX specific only
     // https://cloud.iexapis.com/stable/tops?token=pk_281c0e3abdef4f6f9fbf917c6d6e67af&symbols=QQQ,SPY   just a short price data, takes about 150ms, no matter how many tickers are queried, so it is quite fast.
+    // Tops query: max allowed is 1028 tickers in the query. If 1029 are asked => ERR_CONNECTION_CLOSED exception. Sometimes that threshold is 1000, so about 900 is 'safe'
     // https://cloud.iexapis.com/stable/stock/market/batch?symbols=QQQ&types=quote&token=<...>  a bigger data,, takes about 250ms, no matter how many tickers are queried, so it is quite fast.
+    // Market query: if symbols are more than 100, it returns only 100.
     // >08:20: "previousClose":215.37, !!! that is wrong. So IEX, next day at 8:20, it still gives back PreviousClose as 2 days ago. Wrong., ""latestPrice":216.48, "latestSource":"Close","latestUpdate":1582750800386," is the correct one, "iexRealtimePrice":216.44 is the 1 second earlier.
     // >09:32: "previousClose":215.37  (still wrong), ""latestPrice":216.48, "latestSource":"Close","latestUpdate":1582750800386," is the correct one, "iexRealtimePrice":216.44 is the 1 second earlier.
     // >10:12: "previousClose":215.37  (still wrong), "close":216.48,"closeTime":1582750800386  // That 'close' is correct, but previousClose is not.
@@ -86,16 +88,18 @@ public partial class MemDb
             /* StrategySin.cs */ // future when we trade Sin based on SqCore: add these tickers from here https://docs.google.com/spreadsheets/d/1JXMbEMAP5AOqB1FjdM8jpptXfpuOno2VaFVYK8A1eLo/edit#gid=0
     };
 
-    Dictionary<Asset, DateTime> m_lastRtPriceQueryTime = new();
+    readonly uint m_nIexDownload = 0;
+    readonly byte m_lastIexApiTokenInd = 1; // possible values: { 1, 2}. Alternate 2 API tokens to stay bellow the 50K quota. Token1 is the hedgequantserver, Token2 is the UnknownUser.
+    readonly uint m_nYfDownload = 0;
 
-    uint m_nIexDownload = 0;
-    byte m_lastIexApiTokenInd = 1; // possible values: { 1, 2}. Alternate 2 API tokens to stay bellow the 50K quota. Token1 is the hedgequantserver, Token2 is the UnknownUser.
-    uint m_nYfDownload = 0;
+    Dictionary<Asset, DateTime> m_lastRtPriceQueryTime = new();
 
     static void InitAllStockAssetsPriorCloseAndLastPrice(AssetsCache p_newAssetCache) // this is called at Program.Init() and at ReloadDbDataIfChangedImpl()
     {
         Asset[] assetsWithRtValue = p_newAssetCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.FinIndex || (r.AssetId.AssetTypeID == AssetType.Stock && (r as Stock)!.ExpirationDate == string.Empty)).ToArray();
-        DownloadPriorCloseAndLastPriceYF(assetsWithRtValue).TurnAsyncToSyncTask();
+        // DownloadPriorCloseAndLastPriceYF(assetsWithRtValue).TurnAsyncToSyncTask();
+
+        DownloadPriorCloseAndLastPriceIex(assetsWithRtValue).TurnAsyncToSyncTask();
     }
 
     static void InitAllOptionAssetsPriorCloseAndLastPrice(AssetsCache p_newAssetCache) // this is called at Program.Init() and at ReloadDbDataIfChangedImpl()
@@ -164,6 +168,8 @@ public partial class MemDb
     }
     private void UpdateRtAndPriorClose(RtFreqParam p_freqParam)
     {
+        // 2023-05-25: YF: "API-level access to Yahoo Finance quotes data has been disabled." We have to assume, YF RT will never work again. Reason. It is expensive. Pay the licenses. https://stackoverflow.com/questions/76059562/yahoo-finance-api-get-quotes-returns-invalid-cookie
+
         p_freqParam.NTimerPassed++;
         Asset[] downloadAssets = p_freqParam.Assets;
         if (p_freqParam.RtFreq == RtFreq.HighFreq) // if it is highFreq timer, then add the recently asked assets.
@@ -174,33 +180,33 @@ public partial class MemDb
         if (downloadAssets.Length == 0)
             return;
 
-        // IEX is faster (I guess) and we don't risk that YF bans our server for important historical data. Don't query YF too frequently.
-        // Prefer YF, because IEX returns "lastSalePrice":0, while YF returns RT correctly for these 6 stocks: BIB,IDX,MVV,RTH,VXZ,LBTYB
-        // https://cloud.iexapis.com/stable/tops?token=<...>&symbols=BIB,IDX,MVV,RTH,VXZ,LBTYB
-        // https://query1.finance.yahoo.com/v7/finance/quote?symbols=BIB,IDX,MVV,RTH,VXZ,LBTYB
-        // Therefore, use IEX only for High/Mid Freq, and only in RegularTrading.
-        // LowFreq is the all 700 tickers. For that we need those 6 assets as well.
+        // // IEX is faster (I guess) and we don't risk that YF bans our server for important historical data. Don't query YF too frequently.
+        // // Prefer YF, because IEX returns "lastSalePrice":0, while YF returns RT correctly for these 6 stocks: BIB,IDX,MVV,RTH,VXZ,LBTYB
+        // // https://cloud.iexapis.com/stable/tops?token=<...>&symbols=BIB,IDX,MVV,RTH,VXZ,LBTYB
+        // // https://query1.finance.yahoo.com/v7/finance/quote?symbols=BIB,IDX,MVV,RTH,VXZ,LBTYB
+        // // Therefore, use IEX only for High/Mid Freq, and only in RegularTrading.
+        // // LowFreq is the all 700 tickers. For that we need those 6 assets as well.
 
-        var tradingHoursNow = Utils.UsaTradingHoursExNow_withoutHolidays();
-        bool useIexRt = p_freqParam.RtFreq != RtFreq.LowFreq && tradingHoursNow == TradingHoursEx.RegularTrading; // use IEX only for High/Mid Freq, and only in RegularTrading.
+        // var tradingHoursNow = Utils.UsaTradingHoursExNow_withoutHolidays();
+        // bool useIexRt = p_freqParam.RtFreq != RtFreq.LowFreq && tradingHoursNow == TradingHoursEx.RegularTrading; // use IEX only for High/Mid Freq, and only in RegularTrading.
 
-        if (p_freqParam.RtFreq == RtFreq.LowFreq)
-            Utils.Logger.Info($"UpdateRtAndPriorClose(RtFreq.LowFreq): useIexRt:{useIexRt}");  // TEMP
+        // if (p_freqParam.RtFreq == RtFreq.LowFreq)
+        //     Utils.Logger.Info($"UpdateRtAndPriorClose(RtFreq.LowFreq): useIexRt:{useIexRt}");  // TEMP
 
-        if (useIexRt)
-        {
-            m_nIexDownload++;
-            if (m_lastIexApiTokenInd < 2)
-                m_lastIexApiTokenInd++;
-            else
-                m_lastIexApiTokenInd = 1;
-            DownloadLastPriceIex(downloadAssets, m_lastIexApiTokenInd).TurnAsyncToSyncTask();
-        }
-        else
-        {
-            m_nYfDownload++;
-            DownloadPriorCloseAndLastPriceYF(downloadAssets, tradingHoursNow).TurnAsyncToSyncTask();
-        }
+        // if (useIexRt)
+        // {
+        //     m_nIexDownload++;
+        //     if (m_lastIexApiTokenInd < 2)
+        //         m_lastIexApiTokenInd++;
+        //     else
+        //         m_lastIexApiTokenInd = 1;
+        //     DownloadLastPriceIex(downloadAssets, m_lastIexApiTokenInd).TurnAsyncToSyncTask();
+        // }
+        // else
+        // {
+        //     m_nYfDownload++;
+        //     DownloadPriorCloseAndLastPriceYF(downloadAssets, tradingHoursNow).TurnAsyncToSyncTask();
+        // }
 
         if (p_freqParam.RtFreq == RtFreq.LowFreq)
             DownloadLastPriceOptionsIb(MemDb.gMemDb.AssetsCache.Assets.Where(r => r.AssetId.AssetTypeID == AssetType.Option).ToArray());
@@ -282,123 +288,167 @@ public partial class MemDb
         return lastValue;
     }
 
-    public static Task DownloadPriorCloseAndLastPriceYF(Asset[] p_assets) // takes 45 ms from WinPC. Can handle Stock and Index assets as "^VIX"
+    public static Task DownloadPriorCloseAndLastPrice(Asset[] p_assets) // takes 45 ms from WinPC. Can handle Stock and Index assets as "^VIX"
     {
         if (p_assets.Length == 0)
             return Task.CompletedTask;
-        var tradingHoursNow = Utils.UsaTradingHoursExNow_withoutHolidays();
-        return DownloadPriorCloseAndLastPriceYF(p_assets, tradingHoursNow);
+        // var tradingHoursNow = Utils.UsaTradingHoursExNow_withoutHolidays();
+        // return DownloadPriorCloseAndLastPriceYF(p_assets, tradingHoursNow);
+        return DownloadPriorCloseAndLastPriceIex(p_assets);
     }
 
-    static async Task DownloadPriorCloseAndLastPriceYF(Asset[] p_assets, TradingHoursEx p_tradingHoursNow) // takes 45 ms from WinPC. Can handle Stock and Index assets as "^VIX"
+    public static Task DownloadLastPrice(Asset[] p_assets) // takes 45 ms from WinPC. Can handle Stock and Index assets as "^VIX"
     {
-        Utils.Logger.Debug("DownloadPriorCloseAndLastPriceYF() START");
+        if (p_assets.Length == 0)
+            return Task.CompletedTask;
+        return DownloadLastPriceIex(p_assets, MemDb.gMemDb.m_lastIexApiTokenInd);
+    }
+
+    // static async Task DownloadPriorCloseAndLastPriceYF(Asset[] p_assets, TradingHoursEx p_tradingHoursNow) // takes 45 ms from WinPC. Can handle Stock and Index assets as "^VIX"
+    // {
+    //     // 2023-05-25: YF: "API-level access to Yahoo Finance quotes data has been disabled." We have to assume, YF RT will never work again. Reason. It is expensive. Pay the licenses. https://stackoverflow.com/questions/76059562/yahoo-finance-api-get-quotes-returns-invalid-cookie
+    //     Utils.Logger.Debug("DownloadPriorCloseAndLastPriceYF() START");
+    //     try
+    //     {
+    //         string lastValFieldStr = p_tradingHoursNow switch
+    //         {
+    //             TradingHoursEx.PrePreMarketTrading => "PostMarketPrice",    // YF data fields ([R]egularMarketPrice) have to be capitalized in C# even though the JSON data has JS notation, starting with lowercase.
+    //             TradingHoursEx.PreMarketTrading => "PreMarketPrice",
+    //             TradingHoursEx.RegularTrading => "RegularMarketPrice",
+    //             TradingHoursEx.PostMarketTrading => "PostMarketPrice",
+    //             TradingHoursEx.Closed => "PostMarketPrice",
+    //             _ => throw new ArgumentOutOfRangeException(nameof(p_tradingHoursNow), $"Not expected p_tradingHoursNow value: {p_tradingHoursNow}"),
+    //         };
+    //
+    //         // What field to excract for PriorClose from YF?
+    //         // > At the weekend, we would like to see the Friday data, so regularMarketPreviousClose (Thursday) is fine.
+    //         // >PrePreMarket: What about 6:00GMT on Monday? That is 1:00ET. That is not regular trading yet, which starts at 4:00ET. But IB shows Friday closes at that time is PriorClose. We would like to see Friday closes as well. So, in PrePreMarket, use regularMarketPrice
+    //         // >If we are in PreMarket trading (then proper RT prices will come), then use regularMarketPrice
+    //         // >If we are RTH or PostMarket, or Close, use regularMarketPreviousClose. That way, at the weekend, we can observe BrAccViewer table as it was at Friday night.
+    //         string priorCloseFieldStr = p_tradingHoursNow switch
+    //         {
+    //             TradingHoursEx.PrePreMarketTrading => "RegularMarketPrice",
+    //             TradingHoursEx.PreMarketTrading => "RegularMarketPrice",
+    //             TradingHoursEx.RegularTrading => "RegularMarketPreviousClose",
+    //             TradingHoursEx.PostMarketTrading => "RegularMarketPreviousClose",
+    //             TradingHoursEx.Closed => "RegularMarketPreviousClose",
+    //             _ => throw new ArgumentOutOfRangeException(nameof(p_tradingHoursNow), $"Not expected p_tradingHoursNow value: {p_tradingHoursNow}"),
+    //         };
+    //
+    //         // https://query1.finance.yahoo.com/v7/finance/quote?symbols=AAPL,AMZN  returns all the fields.
+    //         // https://query1.finance.yahoo.com/v7/finance/quote?symbols=QQQ%2CSPY%2CGLD%2CTLT%2CVXX%2CUNG%2CUSO&fields=symbol%2CregularMarketPreviousClose%2CregularMarketPrice%2CmarketState%2CpostMarketPrice%2CpreMarketPrice  // returns just the specified fields.
+    //         // "marketState":"PRE" or "marketState":"POST", In PreMarket both "preMarketPrice" and "postMarketPrice" are returned.
+    //         string[] yfTickers = p_assets.Select(r =>
+    //         {
+    //             if (r is Stock stock)
+    //                 return stock.YfTicker;
+    //             else if (r is FinIndex finIndex)
+    //                 return finIndex.YfTicker;
+    //             else
+    //                 throw new SqException($"YfTicker doesn't exist for asset {r.SqTicker}");
+    //         }).ToArray();
+    //         Dictionary<string, bool> yfTickersReceived = yfTickers.ToDictionary(r => r, r => false);
+    //         IReadOnlyDictionary<string, Security> quotes = await Yahoo.Symbols(yfTickers).Fields(new Field[] { Field.Symbol, Field.RegularMarketPreviousClose, Field.RegularMarketPrice, Field.MarketState, Field.PostMarketPrice, Field.PreMarketPrice, Field.PreMarketChange }).QueryAsync();  // takes 45 ms from WinPC (30 tickers)
+    //
+    //         int nReceivedAndRecognized = 0;
+    //         foreach (var quote in quotes)
+    //         {
+    //             string yfTicker = quote.Key;
+    //             Asset? sec = null;
+    //             foreach (var a in p_assets)
+    //             {
+    //                 if (a is Stock stock && stock.YfTicker == yfTicker)
+    //                 {
+    //                     sec = a;
+    //                     break;
+    //                 }
+    //                 else if (a is FinIndex finIndex && finIndex.YfTicker == yfTicker)
+    //                 {
+    //                     sec = a;
+    //                     break;
+    //                 }
+    //             }
+    //
+    //             if (sec != null)
+    //             {
+    //                 nReceivedAndRecognized++;
+    //                 yfTickersReceived[yfTicker] = true;
+    //                 // TLT doesn't have premarket data. https://finance.yahoo.com/quote/TLT  "quoteSourceName":"Delayed Quote", while others: "quoteSourceName":"Nasdaq Real Time Price"
+    //                 dynamic? lastVal = float.NaN;
+    //                 if (!quote.Value.Fields.TryGetValue(lastValFieldStr, out lastVal))
+    //                     lastVal = (float)quote.Value.RegularMarketPrice;  // fallback: the last regular-market Close price both in Post and next Pre-market
+    //                 sec.EstValue = (float)lastVal;
+    //
+    //                 // If there was a VXX split today morning, YF doesn't show it for a while during the day and priorCloseFieldStr is non-adjusted. Bad.
+    //                 // in that case "regularMarketPrice" = "regularMarketPreviousClose" are the old values.
+    //                 // the only way to get it from the data YF gives is that there is a "preMarketChange":0.32999802, which is a $value. We can substract it from the "preMarketPrice" to calculate previous close
+    //                 // for many ETFs (thinly traded), there is no PreMarketPrice or PreMarketChange
+    //                 // Another option would be to not use this YF.PriorClose at all (which is buggy), but use the historical prices (last value), because that properly has the split adjustment for yesterday close
+    //                 dynamic? preMarketChange = null;
+    //                 bool isSplitSurePriorCloseCalculation = p_tradingHoursNow == TradingHoursEx.PreMarketTrading && quote.Value.Fields.TryGetValue("PreMarketChange", out preMarketChange);
+    //                 if (isSplitSurePriorCloseCalculation) // TODO: we might check here that we only do this IF there was a split event today morning.
+    //                 {
+    //                     sec.PriorClose = sec.EstValue - (float)preMarketChange!;
+    //                 }
+    //                 else
+    //                 {
+    //                     if (quote.Value.Fields.TryGetValue(priorCloseFieldStr, out dynamic? priorClose))
+    //                         sec.PriorClose = (float)priorClose;
+    //                 }
+    //
+    //                 // if (sec.SqTicker == "I/VIX")
+    //                 //     Utils.Logger.Info($"VIX priorClose: {sec.PriorClose}, lastVal:{sec.EstValue}");  // TEMP
+    //             }
+    //         }
+    //
+    //         if (p_assets.Length > 100) // only called in LowFreq timer.
+    //             Utils.Logger.Info($"DownloadPriorCloseAndLastPriceYF: #queried:{yfTickers.Length}, #received:{nReceivedAndRecognized}");  // TEMP
+    //
+    //         if (nReceivedAndRecognized != yfTickers.Length)
+    //         {
+    //             string msg = $"DownloadLastPriceYF() problem. #queried:{yfTickers.Length}, #received:{nReceivedAndRecognized}. Missing yfTickers: {String.Join(",", yfTickersReceived.Where(r => !r.Value).Select(r => r.Key))}";
+    //             Console.WriteLine(msg);
+    //             Utils.Logger.Warn(msg);
+    //         }
+    //     }
+    //     catch (Exception e)
+    //     {
+    //         Utils.Logger.Error(e, "DownloadLastPriceYF() crash");
+    //     }
+    // }
+
+    public static async Task DownloadPriorCloseAndLastPriceIex(Asset[] p_assets)
+    {
+        if (p_assets.Length == 0)
+            return;
+
+        Utils.Logger.Debug("DownloadPriorCloseAndLastPriceIex() START");
         try
         {
-            string lastValFieldStr = p_tradingHoursNow switch
+            // TODO: max allowed is 1028 tickers in the query. If 1029 are asked => ERR_CONNECTION_CLOSED exception. So, we have to do it in a second query
+            // TODO: check if IEX can handle Index assets. Only Stock has IexTicker
+            // string[]? iexTickers = p_assets.Where(r => r is Stock).Select(r => (r as Stock)!.IexTicker).Take(800).ToArray(); // treat similarly as DownloadLastPriceYF()
+            var iexApiToken = Utils.Configuration[$"Iex:ApiToken{gMemDb.m_lastIexApiTokenInd}"];
+
+            // split into arrays of no more than 100, because for Market query: if symbols are more than 100, it returns only 100.
+            var assetsChunks = p_assets.Where(r => r is Stock).Chunk(100);
+            foreach (var assetsChunk in assetsChunks)
             {
-                TradingHoursEx.PrePreMarketTrading => "PostMarketPrice",    // YF data fields ([R]egularMarketPrice) have to be capitalized in C# even though the JSON data has JS notation, starting with lowercase.
-                TradingHoursEx.PreMarketTrading => "PreMarketPrice",
-                TradingHoursEx.RegularTrading => "RegularMarketPrice",
-                TradingHoursEx.PostMarketTrading => "PostMarketPrice",
-                TradingHoursEx.Closed => "PostMarketPrice",
-                _ => throw new ArgumentOutOfRangeException(nameof(p_tradingHoursNow), $"Not expected p_tradingHoursNow value: {p_tradingHoursNow}"),
-            };
+                string[]? iexTickers = assetsChunk.Select(r => (r as Stock)!.IexTicker).ToArray();
+                string url = $"https://cloud.iexapis.com/stable/stock/market/batch?types=quote&token={iexApiToken}&symbols={String.Join(",", iexTickers)}";
+                // string url = $"https://cloud.iexapis.com/stable/stock/market/batch?types=quote&token={iexApiToken}&symbols=TQQQ";
+                string? responseStr = await Utils.DownloadStringWithRetryAsync(url);
+                if (responseStr == null)
+                    return;
 
-            // What field to excract for PriorClose from YF?
-            // > At the weekend, we would like to see the Friday data, so regularMarketPreviousClose (Thursday) is fine.
-            // >PrePreMarket: What about 6:00GMT on Monday? That is 1:00ET. That is not regular trading yet, which starts at 4:00ET. But IB shows Friday closes at that time is PriorClose. We would like to see Friday closes as well. So, in PrePreMarket, use regularMarketPrice
-            // >If we are in PreMarket trading (then proper RT prices will come), then use regularMarketPrice
-            // >If we are RTH or PostMarket, or Close, use regularMarketPreviousClose. That way, at the weekend, we can observe BrAccViewer table as it was at Friday night.
-            string priorCloseFieldStr = p_tradingHoursNow switch
-            {
-                TradingHoursEx.PrePreMarketTrading => "RegularMarketPrice",
-                TradingHoursEx.PreMarketTrading => "RegularMarketPrice",
-                TradingHoursEx.RegularTrading => "RegularMarketPreviousClose",
-                TradingHoursEx.PostMarketTrading => "RegularMarketPreviousClose",
-                TradingHoursEx.Closed => "RegularMarketPreviousClose",
-                _ => throw new ArgumentOutOfRangeException(nameof(p_tradingHoursNow), $"Not expected p_tradingHoursNow value: {p_tradingHoursNow}"),
-            };
-
-            // https://query1.finance.yahoo.com/v7/finance/quote?symbols=AAPL,AMZN  returns all the fields.
-            // https://query1.finance.yahoo.com/v7/finance/quote?symbols=QQQ%2CSPY%2CGLD%2CTLT%2CVXX%2CUNG%2CUSO&fields=symbol%2CregularMarketPreviousClose%2CregularMarketPrice%2CmarketState%2CpostMarketPrice%2CpreMarketPrice  // returns just the specified fields.
-            // "marketState":"PRE" or "marketState":"POST", In PreMarket both "preMarketPrice" and "postMarketPrice" are returned.
-            string[] yfTickers = p_assets.Select(r =>
-            {
-                if (r is Stock stock)
-                    return stock.YfTicker;
-                else if (r is FinIndex finIndex)
-                    return finIndex.YfTicker;
-                else
-                    throw new SqException($"YfTicker doesn't exist for asset {r.SqTicker}");
-            }).ToArray();
-            Dictionary<string, bool> yfTickersReceived = yfTickers.ToDictionary(r => r, r => false);
-            IReadOnlyDictionary<string, Security> quotes = await Yahoo.Symbols(yfTickers).Fields(new Field[] { Field.Symbol, Field.RegularMarketPreviousClose, Field.RegularMarketPrice, Field.MarketState, Field.PostMarketPrice, Field.PreMarketPrice, Field.PreMarketChange }).QueryAsync();  // takes 45 ms from WinPC (30 tickers)
-
-            int nReceivedAndRecognized = 0;
-            foreach (var quote in quotes)
-            {
-                string yfTicker = quote.Key;
-                Asset? sec = null;
-                foreach (var a in p_assets)
-                {
-                    if (a is Stock stock && stock.YfTicker == yfTicker)
-                    {
-                        sec = a;
-                        break;
-                    }
-                    else if (a is FinIndex finIndex && finIndex.YfTicker == yfTicker)
-                    {
-                        sec = a;
-                        break;
-                    }
-                }
-
-                if (sec != null)
-                {
-                    nReceivedAndRecognized++;
-                    yfTickersReceived[yfTicker] = true;
-                    // TLT doesn't have premarket data. https://finance.yahoo.com/quote/TLT  "quoteSourceName":"Delayed Quote", while others: "quoteSourceName":"Nasdaq Real Time Price"
-                    dynamic? lastVal = float.NaN;
-                    if (!quote.Value.Fields.TryGetValue(lastValFieldStr, out lastVal))
-                        lastVal = (float)quote.Value.RegularMarketPrice;  // fallback: the last regular-market Close price both in Post and next Pre-market
-                    sec.EstValue = (float)lastVal;
-
-                    // If there was a VXX split today morning, YF doesn't show it for a while during the day and priorCloseFieldStr is non-adjusted. Bad.
-                    // in that case "regularMarketPrice" = "regularMarketPreviousClose" are the old values.
-                    // the only way to get it from the data YF gives is that there is a "preMarketChange":0.32999802, which is a $value. We can substract it from the "preMarketPrice" to calculate previous close
-                    // for many ETFs (thinly traded), there is no PreMarketPrice or PreMarketChange
-                    // Another option would be to not use this YF.PriorClose at all (which is buggy), but use the historical prices (last value), because that properly has the split adjustment for yesterday close
-                    dynamic? preMarketChange = null;
-                    bool isSplitSurePriorCloseCalculation = p_tradingHoursNow == TradingHoursEx.PreMarketTrading && quote.Value.Fields.TryGetValue("PreMarketChange", out preMarketChange);
-                    if (isSplitSurePriorCloseCalculation) // TODO: we might check here that we only do this IF there was a split event today morning.
-                    {
-                        sec.PriorClose = sec.EstValue - (float)preMarketChange!;
-                    }
-                    else
-                    {
-                        if (quote.Value.Fields.TryGetValue(priorCloseFieldStr, out dynamic? priorClose))
-                            sec.PriorClose = (float)priorClose;
-                    }
-
-                    // if (sec.SqTicker == "I/VIX")
-                    //     Utils.Logger.Info($"VIX priorClose: {sec.PriorClose}, lastVal:{sec.EstValue}");  // TEMP
-                }
-            }
-
-            if (p_assets.Length > 100) // only called in LowFreq timer.
-                Utils.Logger.Info($"DownloadPriorCloseAndLastPriceYF: #queried:{yfTickers.Length}, #received:{nReceivedAndRecognized}");  // TEMP
-
-            if (nReceivedAndRecognized != yfTickers.Length)
-            {
-                string msg = $"DownloadLastPriceYF() problem. #queried:{yfTickers.Length}, #received:{nReceivedAndRecognized}. Missing yfTickers: {String.Join(",", yfTickersReceived.Where(r => !r.Value).Select(r => r.Key))}";
-                Console.WriteLine(msg);
-                Utils.Logger.Warn(msg);
+                Utils.Logger.Debug("DownloadPriorCloseAndLastPriceIex() str = '{0}'", responseStr);
+                ExtractAttributeIexFromMarketData(responseStr, "latestPrice", assetsChunk);
+                ExtractAttributeIexFromMarketData(responseStr, "previousClose", assetsChunk);
             }
         }
         catch (Exception e)
         {
-            Utils.Logger.Error(e, "DownloadLastPriceYF() crash");
+            Utils.Logger.Error(e, "DownloadPriorCloseAndLastPriceIex()");
         }
     }
 
@@ -413,7 +463,9 @@ public partial class MemDb
         Utils.Logger.Debug("DownloadLastPriceIex() START");
         try
         {
-            string[]? iexTickers = p_assets.Select(r => (r as Stock)!.IexTicker).ToArray(); // treat similarly as DownloadLastPriceYF()
+            // TODO: max allowed is 1028 tickers in the query. If 1029 are asked => ERR_CONNECTION_CLOSED exception. So, we have to do it in a second query
+            // TODO: check if IEX can handle Index assets. Only Stock has IexTicker
+            string[]? iexTickers = p_assets.Where(r => r is Stock).Select(r => (r as Stock)!.IexTicker).Take(800).ToArray(); // treat similarly as DownloadLastPriceYF()
             var iexApiToken = Utils.Configuration[$"Iex:ApiToken{p_iexApiTokenInd}"];
             string url = $"https://cloud.iexapis.com/stable/tops?token={iexApiToken}&symbols={String.Join(",", iexTickers)}";
             string? responseStr = await Utils.DownloadStringWithRetryAsync(url);
@@ -421,7 +473,7 @@ public partial class MemDb
                 return;
 
             Utils.Logger.Debug("DownloadLastPriceIex() str = '{0}'", responseStr);
-            ExtractAttributeIex(responseStr, "lastSalePrice", p_assets);
+            ExtractAttributeIexFromTops(responseStr, "lastSalePrice", p_assets);
         }
         catch (Exception e)
         {
@@ -429,7 +481,83 @@ public partial class MemDb
         }
     }
 
-    private static void ExtractAttributeIex(string p_responseStr, string p_attribute, Asset[] p_assets)
+    private static void ExtractAttributeIexFromMarketData(string p_responseStr, string p_attribute, Asset[] p_assets) // Tops is different. Order is: latestPrice/previousClose/symbol in a record
+    {
+        List<string> zeroValueSymbols = new();
+        List<string> properlyArrivedSymbols = new();
+        int iStr = 0;   // this is the fastest. With IndexOf(). Not using RegEx, which is slow.
+        while (iStr < p_responseStr.Length)
+        {
+            int bAttribute = p_responseStr.IndexOf(p_attribute + "\":", iStr);
+            if (bAttribute == -1)
+                break;
+            bAttribute += (p_attribute + "\":").Length;
+            int eAttribute = p_responseStr.IndexOf(",\"", bAttribute);
+            if (eAttribute == -1)
+                break;
+            string attributeStr = p_responseStr[bAttribute..eAttribute];
+
+            int bSymbol = p_responseStr.IndexOf("symbol\":\"", eAttribute);
+            if (bSymbol == -1)
+                break;
+            bSymbol += "symbol\":\"".Length;
+            int eSymbol = p_responseStr.IndexOf("\"", bSymbol);
+            if (eSymbol == -1)
+                break;
+            string iexTicker = p_responseStr[bSymbol..eSymbol];
+            if (iexTicker == "UNG")
+                Console.WriteLine($"IEX: {iexTicker}, attributeStr: {attributeStr}");
+
+            // only search ticker among the stocks p_assetIds. Because duplicate tickers are possible in the MemDb.Assets, but not expected in p_assetIds
+            Stock? stock = null;
+            foreach (var sec in p_assets)
+            {
+                if (sec is not Stock iStock)
+                    continue;
+                if (iStock.IexTicker == iexTicker)
+                {
+                    stock = iStock;
+                    break;
+                }
+            }
+
+            if (stock != null)
+            {
+                bool isConvertedOK = float.TryParse(attributeStr, out float attribute);
+
+                if (!isConvertedOK || attribute == 0.0f)
+                    zeroValueSymbols.Add(stock.SqTicker);
+                else // don't overwrite the MemDb data with false 0.0 values.
+                {
+                    properlyArrivedSymbols.Add(stock.SqTicker); // have to use unique SqTicker, coz Symbol = "VOD" for both "S/VOD" and "S/VOD.L"
+                    switch (p_attribute)
+                    {
+                        case "previousClose":
+                            stock.PriorClose = attribute;
+                            break;
+                        case "lastSalePrice": // in https://cloud.iexapis.com/stable/tops queries only
+                        case "latestPrice":
+                            stock.EstValue = attribute;
+                            break;
+                    }
+                }
+            }
+            iStr = eSymbol;
+        }
+
+        if (properlyArrivedSymbols.Count != p_assets.Length)
+        {
+            var missing = p_assets.Where(r => !properlyArrivedSymbols.Contains(r.SqTicker)).ToList();
+            var msg = $"IEX RT price extract for {p_attribute}: Ok({properlyArrivedSymbols.Count})<Queried({p_assets.Length}). Missing:{String.Join(',', missing.Select(r => r.SqTicker))}";
+            SqConsole.WriteLine(msg);
+            Utils.Logger.Warn(msg);
+        }
+
+        if (zeroValueSymbols.Count != 0)
+            Utils.Logger.Warn($"ExtractAttributeIex() zero lastPrice values: {String.Join(',', zeroValueSymbols)}");
+    }
+
+    private static void ExtractAttributeIexFromTops(string p_responseStr, string p_attribute, Asset[] p_assets) // Order is: symbol/lastSalePrice in a record
     {
         List<string> zeroValueSymbols = new();
         List<string> properlyArrivedSymbols = new();
@@ -452,6 +580,9 @@ public partial class MemDb
             if (eAttribute == -1)
                 break;
             string attributeStr = p_responseStr[bAttribute..eAttribute];
+
+            if (iexTicker == "UNG")
+                Console.WriteLine($"IEX: {iexTicker}, attributeStr: {attributeStr}");
             // only search ticker among the stocks p_assetIds. Because duplicate tickers are possible in the MemDb.Assets, but not expected in p_assetIds
             Stock? stock = null;
             foreach (var sec in p_assets)
@@ -460,6 +591,8 @@ public partial class MemDb
                     continue;
                 if (iStock.IexTicker == iexTicker)
                 {
+                    // if (iexTicker == "TQQQ")
+                    //     Console.WriteLine("TQQQ in IEX");
                     stock = iStock;
                     break;
                 }
@@ -469,17 +602,18 @@ public partial class MemDb
             {
                 bool isConvertedOK = float.TryParse(attributeStr, out float attribute);
 
-                if (!isConvertedOK || attribute == 0.0f)
-                    zeroValueSymbols.Add(stock.Symbol);
+                if (!isConvertedOK || attribute == 0.0f) // For even popular stocks (IDX,AFK,ONVO,BIB,VXZ) Tops returns a record but with "lastSalePrice":0. Even during market hours. Consider these invalid and don't update our RT price.
+                    zeroValueSymbols.Add(stock.SqTicker);
                 else // don't overwrite the MemDb data with false 0.0 values.
                 {
-                    properlyArrivedSymbols.Add(stock.Symbol);
+                    properlyArrivedSymbols.Add(stock.SqTicker); // have to use unique SqTicker, coz Symbol = "VOD" for both "S/VOD" and "S/VOD.L"
                     switch (p_attribute)
                     {
                         case "previousClose":
-                            // sec.PreviousCloseIex = attribute;
+                            stock.PriorClose = attribute;
                             break;
-                        case "lastSalePrice":
+                        case "lastSalePrice": // in https://cloud.iexapis.com/stable/tops queries only
+                        case "latestPrice":
                             stock.EstValue = attribute;
                             break;
                     }
@@ -490,8 +624,8 @@ public partial class MemDb
 
         if (properlyArrivedSymbols.Count != p_assets.Length)
         {
-            var missing = p_assets.Where(r => !properlyArrivedSymbols.Contains(r.Symbol)).ToList();
-            var msg = $"IEX RT price: Ok({properlyArrivedSymbols.Count})<Queried({p_assets.Length}). Missing:{String.Join(',', missing.Select(r => r.Symbol))}";
+            var missing = p_assets.Where(r => !properlyArrivedSymbols.Contains(r.SqTicker)).ToList();
+            var msg = $"IEX RT price: Ok({properlyArrivedSymbols.Count})<Queried({p_assets.Length}). Missing:{String.Join(',', missing.Select(r => r.SqTicker))}";
             SqConsole.WriteLine(msg);
             Utils.Logger.Warn(msg);
         }

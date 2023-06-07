@@ -4,10 +4,10 @@ namespace QuantConnect.Parameters
 {
     public enum SqResult
     {
-        QcOriginal, // QC original ResultHandler. Too detailed. Creates 6 charts and uses benchmarks for statistics calculation.
-        SqPvOnly, // Used in ChartGenerator, where UI Client will calculate everything
-        SqSimple, // Used in PortfolioManager. Most importants and quick to calculate stats, TotalReturn, CAGR, StDev, Sharpe, MaxDD is calculated
-        SqDetailed // Used in PortfolioViewer. Calculate everything we find useful, e.g. 'Max.TradingDays in DD', that QC doesn't calculate.
+        QcOriginal, // QC original ResultHandler. Requires a bechmark time series. Too detailed. Creates 6 charts and uses benchmarks for statistics calculation.
+        SqPvOnly, // Used in ParameterOptimizer or at other places, where caller will calculate everything (because usually only TotalReturn is needed)
+        SqSimple, // Used in PortfolioManager, ChartGenerator. Benchmark is not required. Most importants and quick to calculate stats, TotalReturn, CAGR, StDev, Sharpe, MaxDD is calculated
+        SqDetailed // Used in PortfolioViewer. Benchmark is not required. Calculate everything we find useful, e.g. 'Max.TradingDays in DD', that QC doesn't calculate.
     }
 
     public class SqBacktestConfig

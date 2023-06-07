@@ -32,9 +32,7 @@ public class PhoneCall
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task<bool> MakeTheCallAsync()
     {
-        string caller = PhoneNumbers[FromNumber];
-        if (caller == null)
-            throw new ArgumentException(FromNumber.ToString(), "FromNumber");
+        string caller = PhoneNumbers[FromNumber] ?? throw new ArgumentException(FromNumber.ToString(), "FromNumber");
         if (String.IsNullOrEmpty(ToNumber))
             throw new ArgumentException(ToNumber ?? "null", "ToNumber");
         string xml = string.Empty;

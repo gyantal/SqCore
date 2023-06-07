@@ -509,15 +509,15 @@ public struct SqDateOnly : IComparable<SqDateOnly>, IEquatable<SqDateOnly>, IEqu
     // <summary> DateTime.Kind := Unspecified </summary>
     public DateTime Date
     {
-        get { return m_days == 0 ? Utils.NO_DATE : new DateTime((m_days * TimeSpan.TicksPerDay) + g_epoch); }
+        readonly get { return m_days == 0 ? Utils.NO_DATE : new DateTime((m_days * TimeSpan.TicksPerDay) + g_epoch); }
         set { m_days = BinaryValue(value); }
     }
-    public DateTime Time { get { return Date; } } // for convenience
-    public bool IsValid { get { return m_days != 0; } }
+    public readonly DateTime Time { get { return Date; } } // for convenience
+    public readonly bool IsValid { get { return m_days != 0; } }
     public static SqDateOnly NO_DATE { get { return default; } }
     public static SqDateOnly MinValue { get { return new SqDateOnly { m_days = 1 }; } }
     public static SqDateOnly MaxValue { get { return new SqDateOnly { m_days = ushort.MaxValue }; } }
-    public bool IsWeekend { get { return ((m_days + 1) % 7) < 2; } } // Utils.NO_DATE is weekend
+    public readonly bool IsWeekend { get { return ((m_days + 1) % 7) < 2; } } // Utils.NO_DATE is weekend
     // <summary> Increases by 1 every weekday, but not on weekends.
     // Examples:
     // 2009-10-15 Thursday: 28644,
@@ -529,7 +529,7 @@ public struct SqDateOnly : IComparable<SqDateOnly>, IEquatable<SqDateOnly>, IEqu
     // etc.
     // Returns 0 for Utils.NO_DATE, 1 for 1900-01-01 (Monday),
     // 32767 for 2025-Aug-05. </summary>
-    public ushort WeekdayIndex
+    public readonly ushort WeekdayIndex
     {
         get
         {
@@ -541,7 +541,7 @@ public struct SqDateOnly : IComparable<SqDateOnly>, IEquatable<SqDateOnly>, IEqu
     }
     // <summary> WeekdayIndex when Date is at weekend, otherwise WeekdayIndex-1.
     // Returns 0 for Utils.NO_DATE and 1900-01-01. </summary>
-    public ushort PrevWeekdayIndex
+    public readonly ushort PrevWeekdayIndex
     {
         get
         {
@@ -565,7 +565,7 @@ public struct SqDateOnly : IComparable<SqDateOnly>, IEquatable<SqDateOnly>, IEqu
         return result;
     }
 
-    public override bool Equals(object? obj)
+    public override readonly bool Equals(object? obj)
     {
         if (obj is SqDateOnly only)
             return Equals(only);
@@ -573,12 +573,12 @@ public struct SqDateOnly : IComparable<SqDateOnly>, IEquatable<SqDateOnly>, IEqu
             return Equals(new SqDateOnly(time));
         return false;
     }
-    public override int GetHashCode() { return m_days; }
-    public override string ToString() { return Date.ToString("yyyy'-'MM'-'dd"); }
-    public bool Equals(SqDateOnly p_other) { return m_days == p_other.m_days; }
-    public bool Equals(DateTime p_other) { return this.Equals(new SqDateOnly(p_other)); }
-    public int CompareTo(SqDateOnly p_other) { return (int)m_days - (int)p_other.m_days; }
-    public ushort ToBinary() { return m_days; }
+    public override readonly int GetHashCode() { return m_days; }
+    public override readonly string ToString() { return Date.ToString("yyyy'-'MM'-'dd"); }
+    public readonly bool Equals(SqDateOnly p_other) { return m_days == p_other.m_days; }
+    public readonly bool Equals(DateTime p_other) { return this.Equals(new SqDateOnly(p_other)); }
+    public readonly int CompareTo(SqDateOnly p_other) { return (int)m_days - (int)p_other.m_days; }
+    public readonly ushort ToBinary() { return m_days; }
     public static SqDateOnly FromBinary(ushort p_days)
     {
         SqDateOnly d;
@@ -608,9 +608,9 @@ public struct SqDateOnly : IComparable<SqDateOnly>, IEquatable<SqDateOnly>, IEqu
     public static SqDateOnly operator --(SqDateOnly p_d1) { return p_d1 + (-1); }
     public static SqDateOnly operator ++(SqDateOnly p_d1) { return p_d1 + 1; }
     // public static int   operator -(DateOnly p_d1, DateOnly p_d2) { return p_d1.m_days - p_d2.m_days; } -> would cause error on DateTime-DateTime expressions (CS0034: Operator '-' is ambiguous on operands of type 'DateTime' and 'DateOnly')
-    public int Sub(SqDateOnly p_other) => m_days - p_other.m_days;
-    public int? Sub(SqDateOnly? p_other) => p_other.HasValue ? m_days - p_other.Value.m_days : (int?)null;
-    public int SubAbs(SqDateOnly p_other) => Math.Abs(m_days - p_other.m_days);
+    public readonly int Sub(SqDateOnly p_other) => m_days - p_other.m_days;
+    public readonly int? Sub(SqDateOnly? p_other) => p_other.HasValue ? m_days - p_other.Value.m_days : (int?)null;
+    public readonly int SubAbs(SqDateOnly p_other) => Math.Abs(m_days - p_other.m_days);
     public static SqDateOnly operator -(SqDateOnly p_d1, int p_days) { return p_d1 + (-p_days); }
     public static SqDateOnly operator +(SqDateOnly p_d1, int p_days)
     {
@@ -635,7 +635,7 @@ public struct DateTimeAsInt : IComparable<DateTimeAsInt>, IComparable<int>
     // <summary> Number of minutes elapsed since DateTime.MinValue.
     // Negative sign means to subtract 1 tick when converting to DateTime (== end of the previous minute). </summary>
     public readonly int IntValue;
-    public DateTime DateTime
+    public readonly DateTime DateTime
     {
         get
         {
@@ -644,7 +644,7 @@ public struct DateTimeAsInt : IComparable<DateTimeAsInt>, IComparable<int>
             return new DateTime(((IntValue & int.MaxValue) * TimeSpan.TicksPerMinute) + (IntValue >> 31));
         }
     }
-    public DateTime DateTimeAsUtc
+    public readonly DateTime DateTimeAsUtc
     {
         get
         {
@@ -673,13 +673,13 @@ public struct DateTimeAsInt : IComparable<DateTimeAsInt>, IComparable<int>
         }
     }
     public DateTimeAsInt(int p_intValue) { IntValue = p_intValue; }
-    public int CompareTo(DateTimeAsInt other) { return CompareTo(other.IntValue); }
-    public int CompareTo(int p_intValue)
+    public readonly int CompareTo(DateTimeAsInt other) { return CompareTo(other.IntValue); }
+    public readonly int CompareTo(int p_intValue)
     {
         int result = (IntValue & int.MaxValue) - (p_intValue & int.MaxValue);
         return (result == 0) ? (int)(((long)IntValue - (long)p_intValue) >> 31) : result;
     }
-    public DateTimeAsInt AddDays(int p_nDays)
+    public readonly DateTimeAsInt AddDays(int p_nDays)
     {
         return new DateTimeAsInt(IntValue + (p_nDays * 1440));
     }
@@ -713,7 +713,7 @@ public struct DateTimeAsInt : IComparable<DateTimeAsInt>, IComparable<int>
         return (s == (60 * m) - 1) ? p_time.AddTicks((TimeSpan.TicksPerMinute * m) - 1 - t)
                                     : p_time;
     }
-    public override string ToString() { return Utils.UtcDateTime2Str(this.DateTime); }
+    public override readonly string ToString() { return Utils.UtcDateTime2Str(this.DateTime); }
     public static implicit operator int(DateTimeAsInt p_this) { return p_this.IntValue;  }
     public static implicit operator DateTime(DateTimeAsInt p_this) { return p_this.DateTime;  }
     public static implicit operator DateTimeAsInt(DateTime p_datetime)

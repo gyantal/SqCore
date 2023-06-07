@@ -38,6 +38,7 @@
 		"dotnet-test-explorer.runInParallel": true,
 		"omnisharp.enableRoslynAnalyzers": true,
 		"omnisharp.analyzeOpenDocumentsOnly": false,
-		"terminal.integrated.cursorBlinking": true
+		"terminal.integrated.cursorBlinking": true,
+		"csharp.maxProjectFileCountForDiagnosticAnalysis": 2000
 	}
 }

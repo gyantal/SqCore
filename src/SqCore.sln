@@ -57,7 +57,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fin.Engine", "Fin\Engine\Fi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fin.Compression", "Fin\Compression\Fin.Compression.csproj", "{37608077-484F-482E-9085-7AA8F1E53F9D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fin.EngineRequirements", "Fin\EngineRequirements\EngineRequirements.Api.csproj", "{C2FBF698-A3E9-4EA6-A674-77401040CA92}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fin.EngineRequirements", "Fin\EngineRequirements\Fin.EngineRequirements.csproj", "{C2FBF698-A3E9-4EA6-A674-77401040CA92}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fin.Brokerages", "Fin\Brokerages\Fin.Brokerages.csproj", "{EA829287-1F37-4F19-A148-09E3E4718246}"
 EndProject

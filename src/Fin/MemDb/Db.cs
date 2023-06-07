@@ -165,10 +165,8 @@ public partial class Db
     {
         if (p_json == null)
             return;
-        var srvLoadPrHist = JsonSerializer.Deserialize<Dictionary<string, SrvLoadPrHistInDb>>(p_json);
-        if (srvLoadPrHist == null)
-            throw new SqException($"Deserialize failed on '{p_json}'");
-
+        var srvLoadPrHist = JsonSerializer.Deserialize<Dictionary<string, SrvLoadPrHistInDb>>(p_json)
+            ?? throw new SqException($"Deserialize failed on '{p_json}'");
         foreach (var item in srvLoadPrHist)
         {
             string sqTicker = item.Key;
@@ -223,10 +221,8 @@ public partial class Db
     {
         if (p_sqUserDataStr == null)
             return Array.Empty<User>();
-        var usersInDb = JsonSerializer.Deserialize<List<UserInDb>>(p_sqUserDataStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        if (usersInDb == null)
-            throw new SqException($"Deserialize failed on '{p_sqUserDataStr}'");
-
+        var usersInDb = JsonSerializer.Deserialize<List<UserInDb>>(p_sqUserDataStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+            ?? throw new SqException($"Deserialize failed on '{p_sqUserDataStr}'");
         var users = new List<User>(usersInDb.Count);
         foreach (var usrDb in usersInDb)
         {
@@ -263,9 +259,8 @@ public partial class Db
         string? missingYfSplitsJson = m_redisDb.HashGet("memDb", "Hist.Splits.MissingYF");
         if (missingYfSplitsJson == null)
             return new Dictionary<string, List<Split>>();
-        Dictionary<string, List<Split>>? potentialMissingYfSplits = JsonSerializer.Deserialize<Dictionary<string, List<Split>>>(missingYfSplitsJson); // JsonSerializer: Dictionary key <int>,<uint> is not supported
-        if (potentialMissingYfSplits == null)
-            throw new SqException($"Deserialize failed on '{missingYfSplitsJson}'");
+        Dictionary<string, List<Split>>? potentialMissingYfSplits = JsonSerializer.Deserialize<Dictionary<string, List<Split>>>(missingYfSplitsJson) // JsonSerializer: Dictionary key <int>,<uint> is not supported
+            ?? throw new SqException($"Deserialize failed on '{missingYfSplitsJson}'");
         return potentialMissingYfSplits;
     }
 
@@ -316,10 +311,8 @@ public partial class Db
             if (!hashRow.Name.TryParse(out int id) || rowValue == null) // Name is the 'Key' that contains the Id
                 continue;   // Sometimes, there is an extra line 'New field'. But it can be deleted from Redis Manager. It is a kind of expected.
 
-            var prtfFolderInDb = JsonSerializer.Deserialize<PortfolioFolderInDb>(rowValue, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            if (prtfFolderInDb == null)
-                throw new SqException($"Deserialize failed on '{rowValue}'"); // Not expected error. DB has to be fixed
-
+            var prtfFolderInDb = JsonSerializer.Deserialize<PortfolioFolderInDb>(rowValue, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                ?? throw new SqException($"Deserialize failed on '{rowValue}'");
             PortfolioFolder pf = new(id, prtfFolderInDb, users); // PortfolioFolder.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
             result[id] = pf;
         }
@@ -409,10 +402,8 @@ public partial class Db
             if (!hashRow.Name.TryParse(out int id) || rowValue == null) // Name is the 'Key' that contains the Id
                 continue;   // Sometimes, there is an extra line 'New field'. But it can be deleted from Redis Manager. It is a kind of expected.
 
-            var portfInDb = JsonSerializer.Deserialize<PortfolioInDb>(rowValue, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            if (portfInDb == null)
-                throw new SqException($"Deserialize failed on '{rowValue}'"); // Not expected error. DB has to be fixed
-
+            var portfInDb = JsonSerializer.Deserialize<PortfolioInDb>(rowValue, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                ?? throw new SqException($"Deserialize failed on '{rowValue}'");
             Portfolio portfolio = new(id, portfInDb, users); // Portfolio.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
             result[id] = portfolio;
         }

@@ -347,15 +347,8 @@ public partial class MemDb
         // https://finance.yahoo.com/quote/USO/history?p=USO The YF website queries the splits separately when it inserts in-between the rows.
         // Therefore, we have to query the splits separately from YF.
         // The startTime & endTime here defaults to EST timezone
-        IReadOnlyList<Candle?>? history = await Yahoo.GetHistoricalAsync(yfTicker, asset.ExpectedHistoryStartDateLoc, DateTime.Now, Period.Daily); // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
-        if (history == null)
-            throw new SqException($"CreateDailyHist_YF() exception. Cannot download YF data (ticker:{asset.SqTicker}) after many tries.");
-        // 2021-02-26T16:30 Exception: https://finance.yahoo.com/quote/SPY/history?p=SPY returns for yesterday: "Feb 25, 2021" , other days are correct, this is probably temporary
-        // YahooFinanceApi\Yahoo - Historical.cs:line 80 receives: "2021-02-25,null,null,null,null,null,null" and crashes on StringToDecimal conversion
-        // TODO: We don't have a plan for those case when YF historical quote fails. What should we do?
-        // Option 1: crash the whole SqCore app: not good, because other services: website, VBroker, Timers, ContangoVisualizer can run
-        // Option 2: Persist YF data to DB every 2 hours. In case of failed YF reload, fall back to latest from DB. Not a real solution if YF gives bad data for days.
-        // Option 3: (preferred) Use 2 public databases (GF, Nasdaq, Marketwatch, Iex): In case YF fails for a stock for a date, use that other one if that data is believable (within range)
+        IReadOnlyList<Candle?>? history = await Yahoo.GetHistoricalAsync(yfTicker, asset.ExpectedHistoryStartDateLoc, DateTime.Now, Period.Daily) // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
+            ?? throw new SqException($"CreateDailyHist_YF() exception. Cannot download YF data (ticker:{asset.SqTicker}) after many tries.");
 
         dates = history.Select(r => new SqDateOnly(r!.DateTime)).ToArray();
 
@@ -624,9 +617,8 @@ public partial class MemDb
         SqDateOnly[] dates = Array.Empty<SqDateOnly>();  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards
         float[] adjCloses = Array.Empty<float>();
 
-        IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(yfTicker, lookbackStart, lookbackEnd, Period.Daily).Result; // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
-        if (history == null)
-            throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{yfTicker}) after many tries.");
+        IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(yfTicker, lookbackStart, lookbackEnd, Period.Daily).Result // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
+            ?? throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{yfTicker}) after many tries.");
 
         dates = history.Select(r => new SqDateOnly(r!.DateTime)).ToArray();
         adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();

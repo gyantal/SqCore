@@ -35,6 +35,7 @@ public enum HealthMonitorMessageID // ! if this enum is changed by inserting a n
     SqCoreWebWarning, // warning will send only emails, but not Phonecalls
     SqCoreWebCsError,     // C# error on the server side
     SqCoreWebJsError,   // JavaScript error on the client side
+    ProxyServerDownloadUrl // If HealthMonitor is placed in USA, it can download sites that servers in EU cannot. E.g. YF real-time quotes, due to EU GDPR consent (although later YF closed that for even USA downloads, because of cost-cutting)
 }
 
 public enum TcpMessageResponseFormat { None = 0, String, JSON }

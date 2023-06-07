@@ -79,7 +79,10 @@ public class OvermindExecution : SqExecution
         else if (action == OvermindTaskSettingAction.MiddayCheck)
             MiddayCheck();
     }
-    static async void CheckHealthMonitorAlive() // Requires to set up its AWS firewall port filter properly. It is problem because developer PC IP changes all the time.
+
+    // To run it locally and reach HealthMonitor server, it requires to set up its AWS firewall port filter properly. It is problem because developer PC IP changes all the time.
+    // So, we allowed HealthMonitor server to receive messages from everywhere. It is not much of a risk, it is only a MonitoringApp, not a traderApp.
+    public static async void CheckHealthMonitorAlive()
     {
         bool isHealthMonitorAlive = false;
         Task<string?> tcpMsgTask = TcpMessage.Send(string.Empty, (int)HealthMonitorMessageID.Ping, ServerIp.HealthMonitorPublicIp, ServerIp.DefaultHealthMonitorServerPort);

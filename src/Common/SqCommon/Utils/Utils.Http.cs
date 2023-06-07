@@ -196,6 +196,24 @@ public static partial class Utils
         };
     }
 
+    // To run it locally and reach HealthMonitor server, it requires to set up its AWS firewall port filter properly. It is problem because developer PC IP changes all the time.
+    // So, we allowed HealthMonitor server to receive messages from everywhere. It is not much of a risk, it is only a MonitoringApp, not a traderApp.
+    public static async Task<string?> DownloadStringRoutedToUsaProxy(string p_url /*, int p_nRetry, TimeSpan p_sleepBetweenRetries, bool p_throwExceptionIfUnsuccesful = true */)
+    {
+        Task<string?> tcpMsgTask = TcpMessage.Send(p_url, (int)HealthMonitorMessageID.ProxyServerDownloadUrl, ServerIp.HealthMonitorPublicIp, ServerIp.DefaultHealthMonitorServerPort);
+        string? tcpMsgResponse = await tcpMsgTask;
+        // Utils.Logger.Info("CheckHealthMonitorAlive() returned answer: " + tcpMsgResponse ?? string.Empty);
+        Console.WriteLine($"HealthMonitor DownloadStringRoutedToUsaProxy return length: '{(tcpMsgResponse ?? string.Empty).Length}'");
+        if (tcpMsgTask.Exception != null || String.IsNullOrEmpty(tcpMsgResponse))
+        {
+            string errorMsg = $"Error. DownloadStringRoutedToUsaProxy() to {ServerIp.HealthMonitorPublicIp}:{ServerIp.DefaultHealthMonitorServerPort}";
+            Utils.Logger.Error(errorMsg);
+            return string.Empty;
+        }
+        else
+            return tcpMsgResponse;
+    }
+
     public static async void TestDownloadApiNasdaqCom()
     {
         // 1. Case study for api.nasdaq.com

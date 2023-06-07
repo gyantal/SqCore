@@ -615,6 +615,8 @@ namespace QuantConnect.Algorithm
             {
                 // SqCore Change ORIGINAL:
                 // Benchmark = BrokerageModel.GetBenchmark(Securities);
+                // SqCore Change NEW:
+                // If Benchmark is created instead of null, it will be a data source in the StreamSynchronizer and will generate unnecessary timeslice ticks per hour/daily with SPY Adjusted (not Raw) prices. we want lightweight computation.
                 // SqCore Change END
             }
 

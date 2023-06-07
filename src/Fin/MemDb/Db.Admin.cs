@@ -30,9 +30,8 @@ public partial class Db
             throw new ArgumentOutOfRangeException(nameof(sourceDbIdx), "MirrorDb() expects idx from [0..15], and they should be different.");
 
         // 1. Create a new connection. Don't use the MemDb main connection, because we might want to switch to a non-default DB, like DB-1. It is safer this way. Don't tinker with the MemDb main connection
-        string? redisConnString = OperatingSystem.IsWindows() ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
-        if (redisConnString == null)
-            throw new SqException("Redis ConnectionStrings is missing from Config");
+        string? redisConnString = (OperatingSystem.IsWindows() ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"])
+            ?? throw new SqException("Redis ConnectionStrings is missing from Config");
         ConnectionMultiplexer newConn = ConnectionMultiplexer.Connect(redisConnString);
         EndPoint endPoint = newConn.GetEndPoints().First();
         var server = newConn.GetServer(endPoint);
@@ -225,9 +224,8 @@ public partial class Db
         sb.Append(sbCash).Append(sbCpair).Append(sbIndex).Append(sbReEst).Append(sbNav).Append(sbPortf).Append(sbComp).Append(sbStock).Append('}');
 
         // Create a new connection. Don't use the MemDb main connection, because we might want to switch to a non-default DB, like DB-1. It is safer this way. Don't tinker with the MemDb main connection
-        var redisConnString = OperatingSystem.IsWindows() ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"];
-        if (redisConnString == null)
-            throw new SqException("Redis ConnectionStrings is missing from Config");
+        var redisConnString = (OperatingSystem.IsWindows() ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"])
+            ?? throw new SqException("Redis ConnectionStrings is missing from Config");
         ConnectionMultiplexer newConn = ConnectionMultiplexer.Connect(redisConnString);
         var destDb = newConn.GetDatabase(destDbIdx);
 

@@ -37,8 +37,8 @@ public struct AssetId32Bits : IEquatable<AssetId32Bits>
 
         m_value = IntValue((AssetType)byte.Parse(p_typeSubTableStr[..iColon]), uint.Parse(p_typeSubTableStr.Substring(iColon + 1, p_typeSubTableStr.Length - iColon - 1)));
     }
-    public AssetType AssetTypeID { get { return (AssetType)(m_value >> 27); } }
-    public uint SubTableID { get { return (m_value << 5) >> 5; } }
+    public readonly AssetType AssetTypeID { get { return (AssetType)(m_value >> 27); } }
+    public readonly uint SubTableID { get { return (m_value << 5) >> 5; } }
 
     // public IAssetID AssetID
     // {
@@ -68,12 +68,12 @@ public struct AssetId32Bits : IEquatable<AssetId32Bits>
         return ((uint)p_type << 27) | (p_subTableId & 0x07ffffff);
     }
 
-    bool IEquatable<AssetId32Bits>.Equals(AssetId32Bits other)
+    readonly bool IEquatable<AssetId32Bits>.Equals(AssetId32Bits other)
     {
         return m_value == other.m_value;
     }
 
-    public override bool Equals(object? obj)
+    public override readonly bool Equals(object? obj)
     {
         return obj is AssetId32Bits bits && ((IEquatable<AssetId32Bits>)this).Equals(bits);
     }
@@ -88,12 +88,12 @@ public struct AssetId32Bits : IEquatable<AssetId32Bits>
         return !(left == right);
     }
 
-    public override int GetHashCode()
+    public override readonly int GetHashCode()
     {
         return m_value.GetHashCode();
     }
 
-    public override string ToString()
+    public override readonly string ToString()
     {
         return $"{(int)AssetTypeID}:{SubTableID}";
     }

@@ -84,6 +84,9 @@ public partial class HealthMonitor
             case HealthMonitorMessageID.SqCoreWebJsError:
                 ErrorFromWebsite(p_tcpClient, message);
                 break;
+            case HealthMonitorMessageID.ProxyServerDownloadUrl:
+                ProxyServerDownloadUrl(p_tcpClient, message);
+                break;
             default:
                 StrongAssert.Fail(Severity.NoException, $"<Tcp:>ProcessTcpClient: Message ID:'{ message.ID}' is unexpected, unhandled. This probably means a serious error.");
                 break;
@@ -105,6 +108,20 @@ public partial class HealthMonitor
             string responseStr = "Ping. Healthmonitor UtcNow: " + DateTime.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss.fff", CultureInfo.InvariantCulture);
             BinaryWriter bw = new(p_tcpClient.GetStream());
             bw.Write(responseStr);                
+        }
+    }
+
+    internal static void ProxyServerDownloadUrl(TcpClient p_tcpClient, TcpMessage p_message)
+    {
+        if (p_message.ResponseFormat == TcpMessageResponseFormat.String)
+        {
+            string url = p_message.ParamStr;
+            string? webPage = Utils.DownloadStringWithRetryAsync(url, 5, TimeSpan.FromSeconds(2), false).TurnAsyncToSyncTask();
+            webPage ??= string.Empty;
+            Console.WriteLine($"ProxyServerDownloadUrl(). Webpage length: {webPage.Length}");
+
+            BinaryWriter bw = new(p_tcpClient.GetStream());
+            bw.Write(webPage);
         }
     }
 

@@ -30,7 +30,7 @@ struct VixCentralRec2
     public int F7expDays;
     public int F8expDays;
 
-    public override string ToString()
+    public override readonly string ToString()
     {
         return $"{Date:yyyy-MM-dd},{FirstMonth}, {F1:F3}, {F2:F3}, {F3:F3}, {F4:F3}, {F5:F3}, {F6:F3}, {F7:F3}, {F8:F3}, {STCont:P2}, {LTCont:P2}, {NextExpiryDate:yyyy-MM-dd}, {F1expDays}, {F2expDays}, {F3expDays}, {F4expDays}, {F5expDays}, {F6expDays}, {F7expDays}, {F8expDays} ";
     }

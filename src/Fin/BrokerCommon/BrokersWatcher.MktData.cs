@@ -38,9 +38,9 @@ public partial class BrokersWatcher
         internal int NumQueried { get; set; } = 0;
         internal int NumArrived { get; set; } = 0;
         internal int NumError { get; set; } = 0;
-        internal int NumMissing { get { return NumQueried - NumArrived - NumError; } } // nMissing = nQueried - nArrived - nError(arrived)
+        internal readonly int NumMissing { get { return NumQueried - NumArrived - NumError; } } // nMissing = nQueried - nArrived - nError(arrived)
 
-        internal bool IsAllReceived { get { return (NumArrived + NumError) >= NumQueried; } }
+        internal readonly bool IsAllReceived { get { return (NumArrived + NumError) >= NumQueried; } }
 
         internal List<string> NotArrivedTickers;
         internal List<string> ErrorArrivedTickers;
@@ -73,7 +73,7 @@ public partial class BrokersWatcher
             NumError++;
         }
 
-        internal void LogIfMissing()
+        internal readonly void LogIfMissing()
         {
             if (NotArrivedTickers.Count == 0)
                 return;

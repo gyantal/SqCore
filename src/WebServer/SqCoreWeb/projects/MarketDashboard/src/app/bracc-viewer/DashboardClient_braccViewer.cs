@@ -504,7 +504,7 @@ public partial class DashboardClient
 
         // Step 2: update the RT prices of only those 30-120 stocks (150ms) that is in the IbPortfolio. Don't need to update all the 700 (later 2000) stocks in MemDb, that is done automatically by RtTimer in every 30min
         // validBrPossAssets is a mix of stocks, options, futures.
-        MemDb.DownloadPriorCloseAndLastPriceYF(validBrPossAssets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).ToArray()).TurnAsyncToSyncTask();
+        MemDb.DownloadLastPrice(validBrPossAssets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).ToArray()).TurnAsyncToSyncTask();
         BrAccViewerSendSnapshot();  // Report to the user immediately after the YF returned the realtime stock prices. YF doesn't have RT option prices.
 
         // Step 3: update the RT prices of only those options (7-10sec) that is in the IbPortfolio. If there are no options in the portfolio then it takes only 0 sec.

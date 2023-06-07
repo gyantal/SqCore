@@ -28,7 +28,8 @@ public static partial class Utils
 
     public static string[] SplitStringByCommaWithRegex(this string str)
     {
-        return Regex.Split(str, @"(,\s)+");
+        // return Regex.Split(str, @"(,\s)+"); // generate Regex at runtime
+        return SplitStringByCommaRegex().Split(str); // Generate Regex at compile time
     }
 
     public static string ToStringWithShortenedStackTrace(this string s, int p_maxLength)
@@ -85,4 +86,7 @@ public static partial class Utils
             i++;
         }
     }
+
+    [GeneratedRegex("(,\\s)+")]
+    private static partial Regex SplitStringByCommaRegex();
 }
