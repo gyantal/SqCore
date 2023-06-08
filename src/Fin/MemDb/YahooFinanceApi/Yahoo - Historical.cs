@@ -15,6 +15,7 @@ namespace YahooFinanceApi; // based on https://github.com/karlwancl/YahooFinance
 
 public sealed partial class Yahoo
 {
+    public static CultureInfo Culture = CultureInfo.InvariantCulture;
     public static bool IgnoreEmptyRows { set { RowExtension.IgnoreEmptyRows = value; } }
 
     public static async Task<IReadOnlyList<Candle?>> GetHistoricalAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, Period period = Period.Daily, CancellationToken token = default)
@@ -24,8 +25,7 @@ public sealed partial class Yahoo
             endTime,
             period,
             ShowOption.History,
-            // RowExtension.ToCandle,
-            RowExtension.PostprocessCandle,
+            RowExtension.ToCandle,
             token).ConfigureAwait(false);
 
     public static async Task<IReadOnlyList<DividendTick?>> GetDividendsAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, CancellationToken token = default)
@@ -35,8 +35,7 @@ public sealed partial class Yahoo
             endTime,
             Period.Daily,
             ShowOption.Dividend,
-            // RowExtension.ToDividendTick,
-            RowExtension.PostprocessDividendTick,
+            RowExtension.ToDividendTick,
             token).ConfigureAwait(false);
 
     public static async Task<IReadOnlyList<SplitTick?>> GetSplitsAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, CancellationToken token = default)
@@ -46,8 +45,7 @@ public sealed partial class Yahoo
             endTime,
             Period.Daily,
             ShowOption.Split,
-            // RowExtension.ToSplitTick,
-            RowExtension.PostprocessSplitTick,
+            RowExtension.ToSplitTick,
             token).ConfigureAwait(false);
 
     private static async Task<List<TTick>> GetTicksAsync<TTick>(
@@ -56,17 +54,17 @@ public sealed partial class Yahoo
         DateTime? endTime,
         Period period,
         ShowOption showOption,
-        // Func<string[], TTick> instanceFunction,
-        Func<TTick, TTick> postprocessFunction,
+        Func<string[], TTick> instanceFunction,
         CancellationToken token)
     {
-        var csvConfig = new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
-        {
-            NewLine = "\n",     // instead of the default Environment.NewLine
-            Delimiter = ",",
-            Quote = '\'',
-            MissingFieldFound = null // ignore CsvHelper.MissingFieldException, because SplitTick 2 computed fields will be missing.
-        };
+        // It was in pre 2023 code, probably not needed, although the NewLine on Windows is suspicios, and YF servers are Linux compatible
+        // var csvConfig = new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
+        // {
+        //     NewLine = "\n",     // instead of the default Environment.NewLine which is double
+        //     Delimiter = ",",
+        //     Quote = '\'',
+        //     MissingFieldFound = null // ignore CsvHelper.MissingFieldException, because SplitTick 2 computed fields will be missing.
+        // };
         var ticks = new List<TTick>();
 
         const int nMaxTries = 3;    // YF server is unreliable, as all web queries. It is worth repeating the download at least 3 times.
@@ -79,11 +77,10 @@ public sealed partial class Yahoo
 
                 using var stream = await GetResponseStreamAsync(symbol, startTime, endTime, period, showOption.Name(), token).ConfigureAwait(false);
                 using var sr = new StreamReader(stream);
-                using var csvReader = new CsvReader(sr, csvConfig);
-                // string result = sr.ReadToEnd();
-                // https://joshclose.github.io/CsvHelper/getting-started/
+                using var csvReader = new CsvReader(sr, Culture);
+                // using var csvReader = new CsvReader(sr, csvConfig);
                 csvReader.Read(); // skip header
-                csvReader.ReadHeader();
+
                 while (csvReader.Read())
                 {
                     // 2021-06-18T15:00 : exception thrown CsvHelper.TypeConversion.TypeConverterException
@@ -93,10 +90,10 @@ public sealed partial class Yahoo
                     // or IbGateway in cases when YF doesn't give data.
                     // 2021-08-20: YF gives ^VIX history badly for this date for the last 2 weeks. "2021-08-09,null,null,null,null,null,null"
                     // They don't fix it. CBOE, WSJ has proper data for that day.
-                    TTick? record = default;
+                    TTick? tick = default;
                     try
                     {
-                        record = csvReader.GetRecord<TTick>();
+                        tick = instanceFunction(csvReader.Context.Parser.Record!);
                     }
                     catch (Exception e) // "The conversion cannot be performed."  RawRecord:\r\n2021-08-09,null,null,null,null,null,null\n\r\n"
                     {
@@ -110,27 +107,12 @@ public sealed partial class Yahoo
                         // Option 3: We can terminate the price query, and raise an Exception. However, that we we wouldn't give anything to the Caller.
                         // If only 1 record is missing in the 10 years history, it is better to return the 'almost-complete' data to the Caller than returning nothing at all.
                     }
-                    if (record != null)
-                    {
-                        var recordPostprocessed = postprocessFunction(record);
-                        // Do something with the record.
 #pragma warning disable RECS0017 // Possible compare of value type with 'null'
-                        if (recordPostprocessed != null)
+                    if (tick != null)
 #pragma warning restore RECS0017 // Possible compare of value type with 'null'
-                            ticks.Add(recordPostprocessed);
-                    }
+                        ticks.Add(tick);
                 }
-                // while (csvReader.Read())
-                // {
-                //     //var tick = instanceFunction(csvReader.Context.Record);
-                //     var record = csvReader.GetRecord<string>();
-                //     var tick = instanceFunction(new string[0]);
-                //     //var tick = instanceFunction(Enumerable.ToArray(records));
-                // #pragma warning disable RECS0017 // Possible compare of value type with 'null'
-                //     if (tick != null)
-                // #pragma warning restore RECS0017 // Possible compare of value type with 'null'
-                //         ticks.Add(tick);
-                // }
+
                 return ticks;
             }
             catch (Exception e)
@@ -151,8 +133,8 @@ public sealed partial class Yahoo
         {
             try
             {
-                var (client, crumb) = await YahooClientFactory.GetClientAndCrumbAsync(reset, token).ConfigureAwait(false);
-                return await _GetResponseStreamAsync(client, crumb, token).ConfigureAwait(false);
+                await YahooSession.InitAsync(reset, token);
+                return await _GetResponseStreamAsync(token).ConfigureAwait(false);
             }
             catch (FlurlHttpException ex) when (ex.Call.Response?.StatusCode == (int)HttpStatusCode.NotFound)
             {
@@ -168,7 +150,7 @@ public sealed partial class Yahoo
             }
         }
 
-        Task<Stream> _GetResponseStreamAsync(IFlurlClient? p_client, string? p_crumb, CancellationToken p_token)
+        Task<Stream> _GetResponseStreamAsync(CancellationToken token)
         {
             // Yahoo expects dates to be "Eastern Standard Time"
             startTime = startTime?.FromEstToUtc() ?? new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -180,13 +162,13 @@ public sealed partial class Yahoo
                 .SetQueryParam("period2", endTime.Value.ToUnixTimestamp())
                 .SetQueryParam("interval", $"1{period.Name()}")
                 .SetQueryParam("events", events)
-                .SetQueryParam("crumb", p_crumb);
+                .SetQueryParam("crumb", YahooSession.Crumb);
 
             Debug.WriteLine(url);
 
             return url
-                .WithClient(p_client)
-                .GetAsync(p_token)
+                .WithCookie(YahooSession.Cookie!.Name, YahooSession.Cookie.Value)
+                .GetAsync(token)
                 .ReceiveStream();
         }
     }

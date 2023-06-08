@@ -402,6 +402,9 @@ public partial class MemDb
                 if (splitHistoryYF.FirstOrDefault(r => r!.DateTime == missingSplitDb.Date) != null) // if that date exists in YF already, do nothing; assume YF uses it
                     continue;
 
+                // VXX reverse split Before:After: "4:1" (Every 4 before becomes 1 after), multiplier is 4/1 = 4.
+                // so we should increase the YF historical prices if YF missing the split. YF contains VXX prices $10, but in the morning (after the reverse split), prices are $40.
+                // So, we should increase those $10 prices that YF wrongly has.
                 double multiplier = (double)missingSplitDb.Before / (double)missingSplitDb.After;
                 // USO split date from YF: "Apr 29, 2020" Time: 00:00. Means that very early morning, 9:30 hours before market open. That is the inflection point.
                 // Split adjust (multiply) everything before that time, but do NOT split adjust that exact date.

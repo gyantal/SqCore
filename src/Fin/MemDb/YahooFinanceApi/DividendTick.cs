@@ -1,13 +1,9 @@
 ﻿using System;
-using CsvHelper.Configuration.Attributes;
 
 namespace YahooFinanceApi;
-
 public sealed class DividendTick : ITick
 {
-    [Name("Date")]
-    public DateTime DateTime { get; set; }
+    public DateTime DateTime { get; internal set; }
 
-    [Name("Dividends")]
-    public decimal Dividend { get; set; }
+    public decimal Dividend { get; internal set; }
 }

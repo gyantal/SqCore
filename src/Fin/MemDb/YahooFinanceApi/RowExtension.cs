@@ -35,15 +35,15 @@ public static class RowExtension
         return candle;
     }
 
-    internal static Candle? PostprocessCandle(Candle? candle)
-    {
-        if (IgnoreEmptyRows &&
-            candle!.Open == 0 && candle!.High == 0 && candle.Low == 0 && candle.Close == 0 &&
-            candle.AdjustedClose == 0 && candle.Volume == 0)
-            return null;
-
-        return candle;
-    }
+    // internal static Candle? PostprocessCandle(Candle? candle)
+    // {
+    //     if (IgnoreEmptyRows &&
+    //         candle!.Open == 0 && candle!.High == 0 && candle.Low == 0 && candle.Close == 0 &&
+    //         candle.AdjustedClose == 0 && candle.Volume == 0)
+    //         return null;
+    //
+    //     return candle;
+    // }
 
     internal static DividendTick? ToDividendTick(string[] row)
     {
@@ -59,24 +59,27 @@ public static class RowExtension
         return tick;
     }
 
-    internal static DividendTick? PostprocessDividendTick(DividendTick? tick)
-    {
-        if (IgnoreEmptyRows && tick!.Dividend == 0)
-            return null;
-
-        return tick;
-    }
+    // internal static DividendTick? PostprocessDividendTick(DividendTick? tick)
+    // {
+    //     if (IgnoreEmptyRows && tick!.Dividend == 0)
+    //         return null;
+    //
+    //     return tick;
+    // }
 
     internal static SplitTick? ToSplitTick(string[] row)
     {
         var tick = new SplitTick { DateTime = row[0].ToDateTime() };
 
-        // var split = row[1].Split('/');   // original source code fails
-        var split = row[1].Split(':');  // 2020-06-09 fix. It looks like "1:8" instead of "1/8"
+        var split = row[1].Split(':');
         if (split.Length == 2)
         {
-            tick.AfterSplit = split[0].ToDecimal();
+            // ! 100% sure that the YF API is wrong, because everybody uses the YF adjusted prices, so nobody tests this
+            // row[1] is: EEM: "3:1", QQQ: "2:1". Every 1 stock before becomes 2 stocks after. (to decrease the price)
+            // VXX: "1:4". Every 4 stocks before, becomes 1 stock after (to increase the price)
+            // The Before (stock#) is the second one, the After is the first one.
             tick.BeforeSplit = split[1].ToDecimal();
+            tick.AfterSplit = split[2].ToDecimal();
         }
 
         if (IgnoreEmptyRows && tick.AfterSplit == 0 && tick.BeforeSplit == 0)
@@ -85,21 +88,21 @@ public static class RowExtension
         return tick;
     }
 
-    internal static SplitTick? PostprocessSplitTick(SplitTick? tick)
-    {
-        // var split = row[1].Split('/');   // original source code fails
-        var split = tick!.StockSplits.Split(':');  // 2020-06-09 fix. It looks like "1:8" instead of "1/8"
-        if (split.Length == 2)
-        {
-            tick.AfterSplit = split[0].ToDecimal();
-            tick.BeforeSplit = split[1].ToDecimal();
-        }
-
-        if (IgnoreEmptyRows && tick.AfterSplit == 0 && tick.BeforeSplit == 0)
-            return null;
-
-        return tick;
-    }
+    // internal static SplitTick? PostprocessSplitTick(SplitTick? tick)
+    // {
+    //     // var split = row[1].Split('/');   // original source code fails
+    //     var split = tick!.StockSplits.Split(':');  // 2020-06-09 fix. It looks like "1:8" instead of "1/8"
+    //     if (split.Length == 2)
+    //     {
+    //         tick.AfterSplit = split[0].ToDecimal();
+    //         tick.BeforeSplit = split[1].ToDecimal();
+    //     }
+    //
+    //     if (IgnoreEmptyRows && tick.AfterSplit == 0 && tick.BeforeSplit == 0)
+    //         return null;
+    //
+    //     return tick;
+    // }
 
     private static DateTime ToDateTime(this string str)
     {
