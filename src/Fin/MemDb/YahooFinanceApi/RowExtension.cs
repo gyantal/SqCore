@@ -79,7 +79,7 @@ public static class RowExtension
             // VXX: "1:4". Every 4 stocks before, becomes 1 stock after (to increase the price)
             // The Before (stock#) is the second one, the After is the first one.
             tick.BeforeSplit = split[1].ToDecimal();
-            tick.AfterSplit = split[2].ToDecimal();
+            tick.AfterSplit = split[0].ToDecimal();
         }
 
         if (IgnoreEmptyRows && tick.AfterSplit == 0 && tick.BeforeSplit == 0)

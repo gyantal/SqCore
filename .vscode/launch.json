@@ -25,6 +25,7 @@
                 //"pattern": "^\\s*Now listening on:\\s+(https?://\\S+)"
                 "pattern": "^\\s*Now listening on:\\s+(https://\\S+)"  // This pattern maching doesn't work if "console": "externalTerminal"
             },
+            "checkForDevCert": false, // https://github.com/dotnet/vscode-csharp/blob/main/debugger-launchjson.md#check-for-devcert
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development"
             },

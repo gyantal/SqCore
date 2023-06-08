@@ -116,7 +116,7 @@ public partial class DashboardClient
         if (m_mkthSelectedNavAsset != null)
             allAssets.Add(m_mkthSelectedNavAsset);
 
-        DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
+        DateTime todayET = DateTime.UtcNow.FromUtcToEt().Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
         SqDateOnly lookbackStartInc = new(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
         SqDateOnly lookbackEndExcl = todayET;
         if (p_lookbackStr.StartsWith("Date:")) // Browser client never send anything, but "Date:" inputs. Format: "Date:2019-11-11...2020-11-10"

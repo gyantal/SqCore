@@ -65,37 +65,42 @@ public partial class MemDb
 
     async Task ReloadHistDataAndSetNewTimer()
     {
-        MemData memDataLocal = m_memData;   // copy pointer, so if it changes, we will not ruin the new memData
-        var newDailyHist = await CreateDailyHist(memDataLocal, m_Db);  // if whole DbReload is happening at the same time and creates newMemData, then we just change the old memData. Pointless, but fine, it happens once per year
-                                                                        // If reload HistData fails AND if we reloadHist routinely in every 2 hours => we keep the currently good history in MemDb.
-        if (newDailyHist != null)
-        {
-            memDataLocal.DailyHist = newDailyHist;  // swap pointer in atomic operation
-            EvOnlyHistoricalDataReloaded?.Invoke();
-        }
+        await UpdateDailyHist(m_memData, m_Db, true);
         SetNextReloadHistDataTriggerTime();
     }
 
-    internal async Task<CompactFinTimeSeries<SqDateOnly, uint, float, uint>?> CreateDailyHist(MemData p_memData, Db p_db) // Create hist, but don't yet overwrite m_memData.DailyHist
+    // Called in Init_WT(), in ReloadDbDataIfChangedImpl() and in ReloadHistDataAndSetNewTimer() when polling for changes 3x every day
+    internal async Task UpdateDailyHist(MemData p_memData, Db p_db, bool p_invokeHistReloadedEvent = false) // Create hist, but don't yet overwrite m_memData.DailyHist
     {
         DateTime startTime = DateTime.UtcNow;
 
         List<Asset> assetsNeedDailyHist = p_memData.AssetsCache.Assets.Where(r => (r.AssetId.AssetTypeID == AssetType.BrokerNAV) ||
             ((r.AssetId.AssetTypeID == AssetType.Stock || r.AssetId.AssetTypeID == AssetType.FinIndex) && (r.ExpectedHistoryStartDateLoc != DateTime.MaxValue))).ToList();   // out of 800 stocks, we only keep 20 history in MemDb
-        Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits = await GetPotentialMissingYfSplits(p_db, p_memData.AssetsCache);
 
-        var newDailyHist = await CreateDailyHistImpl(assetsNeedDailyHist, p_db, potentialMissingYfSplits);
+        var newDailyHist = await CreateDailyHist(p_memData, p_db, assetsNeedDailyHist);
+        if (newDailyHist != null) // if it fails, keep the previous DailyHist, don't overwrite
+        {
+            p_memData.DailyHist = newDailyHist;  // swap pointer in atomic operation
+
+            // Postprocess
+            // 1. Asset.PriorClose are updated from the DailyHist, because real-time price API (e.g. IEX) usually gets only real-time prices, not PriorClose. Although YF RT query can get PriorClose too, but that is an exception.
+            PushHistSdaPriorClosesToAssets(p_memData, assetsNeedDailyHist);
+
+            if (p_invokeHistReloadedEvent)
+                EvOnlyHistoricalDataReloaded?.Invoke();
+        }
 
         m_lastHistoricalDataReload = DateTime.UtcNow;
         m_lastHistoricalDataReloadTs = m_lastHistoricalDataReload - startTime;
-        Console.WriteLine($"CreateDailyHist() finished (#Assets: {p_memData.AssetsCache.Assets.Count}, #HistoricalAssets: {newDailyHist?.GetDataDirect().Data.Count ?? 0}) in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
-        return newDailyHist;
+        Console.WriteLine($"UpdateDailyHist() finished (#Assets: {p_memData.AssetsCache.Assets.Count}, #HistoricalAssets: {newDailyHist?.GetDataDirect().Data.Count ?? 0}) in {m_lastHistoricalDataReloadTs.TotalSeconds:0.000}sec");
     }
 
-    // Polling for changes 3x every day
-    // historical data can partially come from our Redis-Sql DB or partially from YF
-    static async Task<CompactFinTimeSeries<SqDateOnly, uint, float, uint>?> CreateDailyHistImpl(List<Asset> p_assetsNeedDailyHist, Db p_db, Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits)
+    // Called in Init_WT(), in ReloadDbDataIfChangedImpl() and in ReloadHistDataAndSetNewTimer() when polling for changes 3x every day
+    // Historical data can partially come from our Redis-Sql DB or partially from YF
+    internal static async Task<CompactFinTimeSeries<SqDateOnly, uint, float, uint>?> CreateDailyHist(MemData p_memData, Db p_db, List<Asset> p_assetsNeedDailyHist) // Create hist, but don't yet overwrite m_memData.DailyHist
     {
+        Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits = await GetPotentialMissingYfSplits(p_db, p_memData.AssetsCache);
+
         Utils.Logger.Info("CreateDailyHist() START");
         Console.WriteLine("*MemDb.DailyHist Download from YF starts.");
         try

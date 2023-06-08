@@ -118,10 +118,7 @@ public partial class MemDb : IDisposable
             // Step 3: Assets history in separate thread
             Task histTask = Task.Run(async () => // Task.Run() runs it 'immediately'
             {
-                var newDailyHist = await CreateDailyHist(m_memData, m_Db);
-                if (newDailyHist != null) // if it fails, keep the empty DailyHist that was just created at the start
-                    m_memData.DailyHist = newDailyHist;  // swap pointer in atomic operation
-                // Here don't call EvOnlyHistoricalDataReloaded.Invoke(), because we will call later the EvFullMemDbDataReloaded?.Invoke();
+                await UpdateDailyHist(m_memData, m_Db, false); // Here don't call EvOnlyHistoricalDataReloaded.Invoke(), because we will call later the EvFullMemDbDataReloaded?.Invoke();
             });
 
             // Step 4: PriorClose and Rt prices download in the current thread. This is the quickest.
@@ -268,10 +265,8 @@ public partial class MemDb : IDisposable
         m_lastRedisReload = DateTime.UtcNow;
         m_lastRedisReloadTs = m_lastRedisReload - startTime;
 
-        var newDailyHist = await CreateDailyHist(newMemData, m_Db); // downloads historical prices from YF. Assume it takes 20min
-        // If reload HistData fails AND if it is a forced ReloadRedisDb, because assets changed Assets => we throw away old history, even if download fails.
-        if (newDailyHist != null)
-            newMemData.DailyHist = newDailyHist;
+        await UpdateDailyHist(newMemData, m_Db, false); // Here don't call EvOnlyHistoricalDataReloaded.Invoke(), because we will call later the EvFullMemDbDataReloaded?.Invoke();
+        // If reload HistData fails AND if it is a forced ReloadRedisDb, because assets changed Assets => we throw away old history, even if download fails, because we create a new newMemData. Fine.
 
         InitAllStockAssetsPriorCloseAndLastPrice(newAssetCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
 

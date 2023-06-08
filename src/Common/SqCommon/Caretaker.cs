@@ -88,7 +88,7 @@ public sealed class Caretaker : IDisposable
 
     public void DailyMaintenance()
     {
-        DateTime etNow = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
+        DateTime etNow = DateTime.UtcNow.FromUtcToEt();
         if (etNow.DayOfWeek == DayOfWeek.Sunday)
         {
             CheckFreeDiskSpace(null);

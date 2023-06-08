@@ -130,7 +130,7 @@ public partial class DashboardClient
             BrAccViewerSendMarketBarPriorCloses();
 
             Utils.Logger.Debug($"OnConnectedWsAsync_BrAccViewer.SendSnapshotAndHist() BEGIN, Connection from IP: {this.ClientIP} with email '{this.UserEmail}'");
-            DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
+            DateTime todayET = DateTime.UtcNow.FromUtcToEt().Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
             SqDateOnly lookbackStart = new(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
             SqDateOnly lookbackEndExcl = todayET;
             BrAccViewerSendSnapshotAndHist(lookbackStart, lookbackEndExcl, "S/SPY");
@@ -327,7 +327,7 @@ public partial class DashboardClient
             // Asset navAsset = MemDb.gMemDb.AssetsCache.AssetsBySqTicker[navSqTicker];    // realtime NavAsset.LastValue is more up-to-date then from BrAccount (updated 1h in RTH only)
             result.NetLiquidation = (long)MemDb.gMemDb.GetLastRtValue(m_braccSelectedNavAsset);
 
-            DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;
+            DateTime todayET = DateTime.UtcNow.FromUtcToEt().Date;
             List<AssetPriorClose> navPriorCloses = MemDb.gMemDb.GetSdaPriorClosesFromHist(new List<Asset>() { m_braccSelectedNavAsset }, todayET).ToList();
             result.PriorCloseNetLiquidation = (long)navPriorCloses[0].SdaPriorClose;
         }
@@ -447,7 +447,7 @@ public partial class DashboardClient
             case "BrAccViewer.GetStockChrtData":
                 Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): GetStockChrtData to '{msgObjStr}'");
                 string stockSqTicker = msgObjStr;
-                DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;
+                DateTime todayET = DateTime.UtcNow.FromUtcToEt().Date;
                 SqDateOnly stckChrtLookbackStart = new(todayET.Year - 1, todayET.Month, todayET.Day);  // gets the 1 year data starting from yesterday to back 1 year
                 SqDateOnly stckChrtLookbackEndExcl = todayET;
                 BrAccViewerSendStockHist(stckChrtLookbackStart, stckChrtLookbackEndExcl, stockSqTicker);
@@ -466,7 +466,7 @@ public partial class DashboardClient
         SqDateOnly lookbackStart, lookbackEndExcl;
         if (periodStartIdx == -1)
         {
-            DateTime todayET = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow).Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
+            DateTime todayET = DateTime.UtcNow.FromUtcToEt().Date;  // the default is YTD. Leave it as it is used frequently: by default server sends this to client at Open. Or at EvMemDbHistoricalDataReloaded_mktHealth()
             lookbackStart = new(todayET.Year - 1, 12, 31);  // YTD relative to 31st December, last year
             lookbackEndExcl = todayET;
         }

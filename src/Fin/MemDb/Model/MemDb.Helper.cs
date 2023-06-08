@@ -83,9 +83,10 @@ public partial class MemDb
         }
         Debug.WriteLine($"MemDb.GetSdaPriorClosesFromHist().EndDate: {dates[iEndDay]}");
 
+        var histDataData = histData.Data; // get pointer once, as it will be used many times
         var priorCloses = p_assets.Select(r =>
         {
-            if (!histData.Data.TryGetValue(r.AssetId, out Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>? assetHist))
+            if (!histDataData.TryGetValue(r.AssetId, out Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>? assetHist))
                 return new AssetPriorClose(r, DateTime.MinValue, float.NaN);  // the Asset might be in MemDb, but has no history at all.
 
             float[] sdaCloses = assetHist.Item1[TickType.SplitDivAdjClose];
@@ -106,8 +107,50 @@ public partial class MemDb
         return priorCloses;
     }
 
+    internal static void PushHistSdaPriorClosesToAssets(MemData p_memData, List<Asset> p_assetsNeedDailyHist)
+    {
+        SqDateOnly lookbackEnd = DateTime.UtcNow.FromUtcToEt().Date.AddDays(-1); // if (Now is Monday), -1 days is Sunday, but we have to find Friday before
+
+        TsDateData<SqDateOnly, uint, float, uint> histData = p_memData.DailyHist.GetDataDirect();
+        SqDateOnly[] dates = histData.Dates;
+        // At 16:00, or even intraday: YF gives even the today last-realtime price with a today-date. We have to find any date backwards, which is NOT today. That is the PreviousClose.
+        int iEndDay = 0;
+        for (int i = 0; i < dates.Length; i++)
+        {
+            if (dates[i] <= lookbackEnd)
+            {
+                iEndDay = i;
+                break;
+            }
+        }
+        Debug.WriteLine($"MemDb.PushHistSdaPriorClosesToAssets().EndDate: {dates[iEndDay]}");
+
+        var histDataData = histData.Data; // get pointer once, as it will be used many times
+        foreach (Asset asset in p_assetsNeedDailyHist)
+        {
+            asset.PriorClose = float.NaN;
+            if (!histDataData.TryGetValue(asset.AssetId, out Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>? assetHist))
+                continue;  // the Asset might be in MemDb, but has no history at all.
+
+            float[] sdaCloses = assetHist.Item1[TickType.SplitDivAdjClose];
+            // If there was an EU holiday on Friday, then the EU stock's PriorClose is Thursday, while an USA stock PriorClose is Friday
+            int j = iEndDay;
+            do
+            {
+                float priorClose = sdaCloses[j];
+                if (!float.IsNaN(priorClose))
+                {
+                    asset.PriorClose = priorClose;
+                    break;
+                }
+                j++;
+            }
+            while (j < dates.Length);
+        }
+    }
+
     // Not really necessary function, because PriorClose can be queried directly from Asset
-    public static IEnumerable<AssetPriorClose> GetSdaPriorCloses(IEnumerable<Asset> p_assets)
+    public static IEnumerable<AssetPriorClose> GetSdaPriorClosesFromAssetPriorClose(IEnumerable<Asset> p_assets)
     {
         DateTime mockupPriorDate = DateTime.UtcNow.Date.AddDays(-1); // we get PriorClose from Asset directly. That comes from YF, which don't tell us the date of PriorClose
         var priorCloses = p_assets.Select(r =>

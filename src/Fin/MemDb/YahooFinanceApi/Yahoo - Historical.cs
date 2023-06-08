@@ -97,7 +97,7 @@ public sealed partial class Yahoo
                     }
                     catch (Exception e) // "The conversion cannot be performed."  RawRecord:\r\n2021-08-09,null,null,null,null,null,null\n\r\n"
                     {
-                        Utils.Logger.Warn(e, $"Warning in Yahoo.GetTicksAsync(): Stock:'{symbol}', {e.Message}");
+                        Utils.Logger.Error(e, $"Error in Yahoo.GetTicksAsync(): Stock:'{symbol}', {e.Message}");
                         // There is a business decision what to do when 1 day in the middle is missing from the last 200 days of VIX data.
                         // Option 1. At the moment, we swallow it, and don't give that date-record back to the client (imitating that the source was totally bad, and missed even the date)
                         // Probably that is the best way to handle, so it is the caller's responsibility to check that all Date he expects is given.
