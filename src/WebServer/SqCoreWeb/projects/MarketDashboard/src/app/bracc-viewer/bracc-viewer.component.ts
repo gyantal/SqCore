@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { gDiag, AssetLastJs } from './../../sq-globals';
+import { gDiag, AssetLastJs } from '../../../../../TsLib/sq-common/sq-globals';
 import { SqNgCommonUtilsStr } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_str';
 import { SqNgCommonUtilsTime, minDate } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time'; // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
 import * as d3 from 'd3';

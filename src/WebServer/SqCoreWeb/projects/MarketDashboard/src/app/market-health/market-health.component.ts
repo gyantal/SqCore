@@ -1,7 +1,7 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { ChangeNaNstringToNaNnumber } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { SqNgCommonUtilsTime, minDate } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time'; // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
-import { gDiag, AssetLastJs } from './../../sq-globals';
+import { gDiag, AssetLastJs } from '../../../../../TsLib/sq-common/sq-globals';
 
 // The MarketHealth table frame is shown immediately (without numbers) even at DOMContentLoaded time. And later, it is filled with data as it arrives.
 // This avoid UI blinking at load and later shifting HTML elements under the table downwards.

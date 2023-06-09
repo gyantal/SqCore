@@ -1,7 +1,7 @@
 import { Component, OnInit, AfterViewInit, Input, ViewChild } from '@angular/core';
 import { SqTreeViewComponent } from '../sq-tree-view/sq-tree-view.component';
 import { prtfRunResultChrt } from '../../../../../TsLib/sq-common/chartAdvanced';
-import { PrtfRunResultJs, UiChartPointValue, UiPrtfPositions, UiPrtfRunResult } from '../../sq-globals';
+import { PrtfRunResultJs, UiChartPointValue, UiPrtfPositions, UiPrtfRunResult } from '../../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtils } from '../../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import * as d3 from 'd3';
 

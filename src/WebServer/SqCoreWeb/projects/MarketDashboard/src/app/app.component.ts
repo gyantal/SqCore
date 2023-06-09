@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { SettingsDialogComponent } from './settings-dialog/settings-dialog.component';
-import { gDiag, AssetLastJs } from './../sq-globals';
+import { gDiag, AssetLastJs } from '../../../../TsLib/sq-common/sq-globals';
 import { BrAccViewerComponent } from './bracc-viewer/bracc-viewer.component';
 import { PortfolioManagerComponent } from './portfolio-manager/portfolio-manager.component';
 import { MarketHealthComponent } from './market-health/market-health.component';

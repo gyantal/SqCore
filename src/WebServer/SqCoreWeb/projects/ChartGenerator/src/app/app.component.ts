@@ -4,7 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { SqNgCommonUtilsTime, minDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { chrtGenBacktestChrt } from '../../../../TsLib/sq-common/chartUltimate';
-import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, UiChrtGenValue, SqLog, SqLogLevel, ChartResolution, UiChartPointValue } from '../../../MarketDashboard/src/sq-globals';
+import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, UiChrtGenValue, SqLog, SqLogLevel, ChartResolution, UiChartPointValue } from '../../../../TsLib/sq-common/backtestCommon';
 import * as d3 from 'd3';
 
 type Nullable<T> = T | null;
@@ -45,6 +45,7 @@ export class AppComponent implements OnInit {
   endDate: Date = new Date(); // used to filter the chart Data based on the user input
   isSrvConnectionAlive: boolean = true;
   chrtGenDiagnosticsMsg = 'Benchmarking time, connection speed';
+  // isProgressVisble: boolean = false;
 
   user = {
     name: 'Anonymous',
@@ -71,6 +72,7 @@ export class AppComponent implements OnInit {
     // WebSocket connection
     this._socket.onopen = () => {
       console.log('ws: Connection started! _socket.send() can be used now.');
+      this.onShowProgressBar(gChrtGenDiag.backtestRequestStartTime, gChrtGenDiag.backtestRequestReturnTime);
     };
 
     this._socket.onmessage = (event) => {
@@ -86,6 +88,7 @@ export class AppComponent implements OnInit {
         case 'BacktestResults':
           gChrtGenDiag.backtestRequestReturnTime = new Date();
           console.log('ChrtGen.BacktestResults:' + msgObjStr);
+          this.onShowProgressBar(gChrtGenDiag.backtestRequestStartTime, gChrtGenDiag.backtestRequestReturnTime);
           this.processChrtGenBacktestResults(msgObjStr);
           break;
         case 'ErrorToUser':
@@ -239,10 +242,19 @@ export class AppComponent implements OnInit {
     const margin = {top: 50, right: 50, bottom: 30, left: 60 };
     const chartWidth = uiChrtWidth * 0.9 - margin.left - margin.right; // 90% of the PvChart Width
     const chartHeight = uiChrtHeight * 0.9 - margin.top - margin.bottom; // 90% of the PvChart Height
-    const prtfAndBmrkChrtData = uiPrtfResItem.prtfChrtValues.concat(uiPrtfResItem.bmrkChrtValues);
+    const prtfAndBmrkChrtData: UiChrtGenValue[] = uiPrtfResItem.prtfChrtValues.concat(uiPrtfResItem.bmrkChrtValues);
     const lineChrtTooltip = document.getElementById('tooltipChart') as HTMLElement;
 
-    chrtGenBacktestChrt(prtfAndBmrkChrtData, lineChrtDiv, chartWidth, chartHeight, margin, lineChrtTooltip, startDate, endDate);
+    // Conversion of user input startDate in string format to Date format - Yet to Develop (Daya)
+    let newStartDate: Date; let newEndDate: Date;
+    if (typeof startDate === 'string') {
+      newStartDate = new Date(startDate);
+      newEndDate = new Date(endDate);
+    } else {
+      newStartDate = startDate;
+      newEndDate = endDate;
+    }
+    chrtGenBacktestChrt(prtfAndBmrkChrtData, lineChrtDiv, chartWidth, chartHeight, margin, lineChrtTooltip, newStartDate, newEndDate);
   }
 
   onStartBacktests() {
@@ -250,7 +262,19 @@ export class AppComponent implements OnInit {
       gChrtGenDiag.backtestRequestStartTime = new Date();
       this._socket.send('RunBacktest:' + '?pids=' + this.prtfIds + '&bmrks=' + this.bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
     }
-    AppComponent.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight, this.startDate, this.endDate);
+  }
+  // Yet to Develop (Daya)
+  onShowProgressBar(backtestRequestStartTime: Date, backtestRequestReturnTime: Date) {
+    // this.isProgressVisble = true;
+    const progsBar = document.querySelector('.progressBar') as HTMLElement;
+    console.log('time', (backtestRequestReturnTime.getTime() - backtestRequestStartTime.getTime()) / 1000);
+    const estimatedDurationInSeconds = (backtestRequestReturnTime.getTime() - backtestRequestStartTime.getTime()) / 1000 <= 0 ? 4 : (backtestRequestReturnTime.getTime() - backtestRequestStartTime.getTime()) / 1000; // if estimatedDurationInSeconds cannot be calculated than, assume 4sec
+
+    progsBar.style.animationName = 'progressAnimation';
+    progsBar.style.animationDuration = estimatedDurationInSeconds + 's';
+    progsBar.style.animationTimingFunction = 'linear'; // default would be ‘ease’, which is a slow start, then fast, before it ends slowly. We prefer the linear.
+    progsBar.style.animationIterationCount = '1'; // only once
+    progsBar.style.animationFillMode = 'forwards';
   }
 
   // "Server backtest time: 300ms, Communication overhead: 120ms, Total UI response: 420ms."

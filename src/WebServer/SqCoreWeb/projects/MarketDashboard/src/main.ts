@@ -4,7 +4,7 @@ import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 import { AppModule } from './app/app.module';
 import { environment } from './environments/environment';
 
-import { gDiag } from './sq-globals';
+import { gDiag } from '../../../TsLib/sq-common/sq-globals';
 
 
 console.log('sq.d: ' + gDiag.mainTsTime.toISOString() + ': main.ts');
@@ -28,9 +28,9 @@ window.onload = windowOnLoad;
 
 
 // official Angular code under this
-if (environment.production) {
+if (environment.production)
   enableProdMode();
-}
+
 
 platformBrowserDynamic().bootstrapModule(AppModule)
-  .catch(err => console.error(err));
+    .catch((err) => console.error(err));
