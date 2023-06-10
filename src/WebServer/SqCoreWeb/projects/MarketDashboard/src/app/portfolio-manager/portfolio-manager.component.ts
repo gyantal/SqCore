@@ -550,7 +550,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       return;
     }
     const prtfId = this.treeViewState.lastSelectedItem.id - this.gPortfolioIdOffset;
-    window.open('//sqcore.net/webapps/ChartGenerator/?pids='+ prtfId, '_blank');
+    window.open('//sqcore.net/webapps/ChartGenerator/?pids='+ prtfId + '&bmrks=SPY', '_blank');
   }
 
   // Delete portfolio Item(Folder/Portfolio)

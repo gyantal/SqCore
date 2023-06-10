@@ -254,7 +254,30 @@ export class AppComponent implements OnInit {
       newStartDate = startDate;
       newEndDate = endDate;
     }
-    chrtGenBacktestChrt(prtfAndBmrkChrtData, lineChrtDiv, chartWidth, chartHeight, margin, lineChrtTooltip, newStartDate, newEndDate);
+
+    // Filtering the data based on the startDate and EndDate provided by user
+    let filteredDataset: UiChrtGenValue[] = [];
+    if (newStartDate.getTime() === newEndDate.getTime())
+      filteredDataset = prtfAndBmrkChrtData;
+    else {
+      for (const data of prtfAndBmrkChrtData) {
+        const filteredChrtdata: UiChartPointValue[] = [];
+
+        for (const chrtdata of data.priceData) {
+          const date = new Date(chrtdata.date);
+
+          if (date >= newStartDate && date <= newEndDate)
+            filteredChrtdata.push(chrtdata);
+        }
+
+        if (filteredChrtdata.length > 0) {
+          const dataCopy: UiChrtGenValue = { name: data.name, date: data.date, value: data.value, chartResolution: data.chartResolution, priceData: filteredChrtdata };
+          filteredDataset.push(dataCopy);
+        }
+      }
+    }
+
+    chrtGenBacktestChrt(filteredDataset, lineChrtDiv, chartWidth, chartHeight, margin, lineChrtTooltip, newStartDate, newEndDate);
   }
 
   onStartBacktests() {

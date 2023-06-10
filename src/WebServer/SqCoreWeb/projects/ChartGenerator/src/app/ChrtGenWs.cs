@@ -160,7 +160,9 @@ public class ChrtGenWs
 
         // BENCHMARK: Processing the message to extract the benchmark tickers
         string? bmrksStr = query.Get("bmrks");
-        bmrksStr ??= "SPY"; // sending default value as SPY
+        if (string.IsNullOrEmpty(bmrksStr))
+            sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Info, Message = $"The bmrksStr from the client is null. We process the pidStr further." });
+
         if(minStartDate == DateTime.Today) // Defaault date (2020-01-01) if minStartdate == today
             minStartDate = new DateTime(2020, 01, 01);
         List<BmrkHistory> bmrkHistories = new();
