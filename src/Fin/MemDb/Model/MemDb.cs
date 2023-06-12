@@ -122,7 +122,7 @@ public partial class MemDb : IDisposable
             });
 
             // Step 4: PriorClose and Rt prices download in the current thread. This is the quickest.
-            InitAllStockAssetsPriorCloseAndLastPrice(m_memData.AssetsCache);  // many services need PriorClose and LastPrice immediately. HistPrices can wait, but not this.
+            InitAllStockAssetsPriorCloseAndLastPrice(m_memData.AssetsCache);  // many services need PriorClose and LastPrice immediately. UpdateDailyHist() will do PushHistSdaPriorClosesToAssets(), but only for Historical assets (which is only 10% of the Assets)
             Console.WriteLine($"*MemDb is 2/4-ready! Prior,Rt (#Assets:{AssetsCache.Assets.Count},#Brokers:0,#HistAssets:0) in {(DateTime.UtcNow - startTime).TotalSeconds:0.000}sec");
 
             // Step 5: Wait for threads completion and inform observers via events or WaitHandles (ManualResetEvent)

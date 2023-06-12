@@ -504,7 +504,7 @@ public partial class DashboardClient
 
         // Step 2: update the RT prices of only those 30-120 stocks (150ms) that is in the IbPortfolio. Don't need to update all the 700 (later 2000) stocks in MemDb, that is done automatically by RtTimer in every 30min
         // validBrPossAssets is a mix of stocks, options, futures.
-        MemDb.DownloadLastPrice(validBrPossAssets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).ToArray()).TurnAsyncToSyncTask();
+        MemDb.gMemDb.DownloadLastPrice(validBrPossAssets.Where(r => r.AssetId.AssetTypeID == AssetType.Stock).ToArray()).TurnAsyncToSyncTask();
         BrAccViewerSendSnapshot();  // Report to the user immediately after the YF returned the realtime stock prices. YF doesn't have RT option prices.
 
         // Step 3: update the RT prices of only those options (7-10sec) that is in the IbPortfolio. If there are no options in the portfolio then it takes only 0 sec.
@@ -514,7 +514,7 @@ public partial class DashboardClient
         // Run any long process (1+ sec) in separate than the WebSocket-processing thread. Otherwise any later message the client sends is queued on the server for seconds and not processed immediately. Resulting in UI unresponsiveness at the client.
         _ = Task.Run(() => // Task.Run() runs it immediately in a separate threod on the ThreadPool
         {
-            MemDb.DownloadLastPriceOptionsIb(validBrPossOptions);    // can take 7-20 seconds, don't wait it. Report to the user earlier the stock price data.
+            MemDb.gMemDb.DownloadLastPriceOptions(validBrPossOptions);    // can take 7-20 seconds, don't wait it. Report to the user earlier the stock price data.
             BrAccViewerSendSnapshot();  // Report to the user 6..16 seconds later again. With the updated option prices.
         }).LogUnobservedTaskExceptions("!Error in BrAccViewerUpdateStOptPricesAndSendSnapshotTwice() sub-thread.");
     }

@@ -84,6 +84,9 @@ public partial class MemDb
 
             // Postprocess
             // 1. Asset.PriorClose are updated from the DailyHist, because real-time price API (e.g. IEX) usually gets only real-time prices, not PriorClose. Although YF RT query can get PriorClose too, but that is an exception.
+            // Unfortunately, PriorClose is only filled for Historical assets (which is only 10% of the Assets), the rest of the Assets's PriorClose is not updated by this method.
+            // So, it is questionable whether we need this method, because we have to query the RtDownloaders for PriorCloses anyway. We get PriorCloses in Rt-LowFreq timer for all assets.
+            // Although leave this here, we need it, because Rt price service sometimes fully fail (either YF or Iex)
             PushHistSdaPriorClosesToAssets(p_memData, assetsNeedDailyHist);
 
             if (p_invokeHistReloadedEvent)
