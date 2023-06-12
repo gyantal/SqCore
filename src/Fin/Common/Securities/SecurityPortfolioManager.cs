@@ -665,12 +665,20 @@ namespace QuantConnect.Securities
             if (mode == DataNormalizationMode.Raw || mode == DataNormalizationMode.SplitAdjusted)
             {
                 // longs get benefits, shorts get clubbed on dividends
-                var total = security.Holdings.Quantity*dividend.Distribution;
+                var total = security.Holdings.Quantity * dividend.Distribution;
 
                 // assuming USD, we still need to add Currency to the security object
                 _baseCurrencyCash.AddAmount(total);
             }
         }
+
+        // SqCore Change NEW: In the case of Daily resolution and MOC trading after closing, it is necessary to manage dividends if they fall on the day of the trade (i.e. in the same time slice).
+        public void ApplyDividendMOCAfterClose(Dividend dividend, decimal numberOfShares)
+        {
+            var total = numberOfShares * dividend.Distribution;
+            _baseCurrencyCash.AddAmount(total);
+        }
+        // SqCore Change END
 
         /// <summary>
         /// Applies a split to the portfolio

@@ -63,27 +63,31 @@ namespace QuantConnect.Algorithm.CSharp
 
     public class SqDualMomentum : QCAlgorithm
     {
+        bool _isTradeInSqCore = true; // 2 simulation environments. We backtest in Qc cloud or in SqCore frameworks. QcCloud works on per minute resolution (to be able to send MOC orders 20min before MOC), SqCore works on daily resolution only.
+        public bool IsTradeInSqCore { get { return _isTradeInSqCore; } }
+        public bool IsTradeInQcCloud { get { return !_isTradeInSqCore; } }
+
         DateTime _startDate = DateTime.MinValue;
         DateTime _endDate = DateTime.MaxValue;
         TimeSpan _warmUp = TimeSpan.Zero;
-        // List<string> _tickers = new List<string> { "AMZN", "TSLA", "VXX", "SPY", "TLT", "SHY" };
         List<string> _tickers = new List<string> { "VNQ", "EEM", "DBC", "SPY", "TLT", "SHY" };
-        private Dictionary<string, Symbol> _symbolsDaily = new Dictionary<string, Symbol>();
+        private Dictionary<string, Symbol> _symbolsDaily = new Dictionary<string, Symbol>(); // on QcCloud, we need both perMinute and perDaily. perDaily is needed because we collect the past Daily history for momemtum calculation
         private Dictionary<string, Symbol> _symbolsMinute = new Dictionary<string, Symbol>();
-        DateTime startTime;
         private int _lookbackTradingDays = 63;
         private int _numberOfEtfsSelected = 3;
         private Dictionary<string, List<QcPrice>> _rawCloses = new Dictionary<string, List<QcPrice>>();
         private Dictionary<string, List<QcPrice>> _adjCloses = new Dictionary<string, List<QcPrice>>();
         private Dictionary<string, List<QcDividend>> _dividends = new Dictionary<string, List<QcDividend>>();
         private Dictionary<string, List<QcSplit>> _splits = new Dictionary<string, List<QcSplit>>();
-        bool _isTradeOnMinuteResolution = false; // until QC fixes the Daily resolution trading problem, use per minute for QC Cloud running. But don't use it in local VsCode execution.
         private Dictionary<string, List<QcPrice>> _rawClosesFromYfLists = new Dictionary<string, List<QcPrice>>();
         private Dictionary<string, Dictionary<DateTime, decimal>> _rawClosesFromYfDicts = new Dictionary<string, Dictionary<DateTime, decimal>>();
+        private Dividends _sliceDividends;
+        bool _isEndOfMonth = false; // use Qc Schedule.On() mechanism to calculate the last trading day of the month (because of holidays complications), even using it in SqCore
+        DateTime _backtestStartTime;
 
         public override void Initialize()
         {
-            startTime = DateTime.UtcNow;
+            _backtestStartTime = DateTime.UtcNow;
             _startDate = new DateTime(2006, 01, 01); // means Local time, not UTC
             _warmUp = TimeSpan.FromDays(200); // Wind time back 200 calendar days from start
             _endDate = DateTime.Now;
@@ -96,7 +100,8 @@ namespace QuantConnect.Algorithm.CSharp
 
             Orders.MarketOnCloseOrder.SubmissionTimeBuffer = TimeSpan.FromMinutes(0.5); // change the submission time threshold of MOC orders
 
-
+            _rawClosesFromYfLists = new Dictionary<string, List<QcPrice>>();
+            _rawClosesFromYfDicts = new Dictionary<string, Dictionary<DateTime, decimal>>();
             foreach (string ticker in _tickers)
             {
                 Symbol symbolDaily = AddEquity(ticker, Resolution.Daily, dataNormalizationMode: DataNormalizationMode.Raw).Symbol;
@@ -107,58 +112,71 @@ namespace QuantConnect.Algorithm.CSharp
                 _dividends.Add(ticker, new List<QcDividend>());
                 _splits.Add(ticker, new List<QcSplit>());
 
-                if (_isTradeOnMinuteResolution)
+                if (IsTradeInQcCloud)
                 {
                     Symbol symbolMinute = AddEquity(ticker, Resolution.Minute, dataNormalizationMode: DataNormalizationMode.Raw).Symbol;
                     _symbolsMinute.Add(ticker, symbolMinute);
                     Securities[symbolMinute].FeeModel = new ConstantFeeModel(0);
+                    // Call the DownloadAndProcessData method to get real life close prices from YF
+                    DownloadAndProcessYfData(ticker, _startDate, _warmUp, _endDate);
                 }
             }
 
-            // Call the DownloadAndProcessData method to get real life close prices from YF
-            _rawClosesFromYfLists = new Dictionary<string, List<QcPrice>>();
-            _rawClosesFromYfDicts = new Dictionary<string, Dictionary<DateTime, decimal>>();
-            foreach (string ticker in _tickers)
-            {
-                DownloadAndProcessData(ticker, _startDate, _warmUp, _endDate);
-            }
-
-            Schedule.On(DateRules.MonthEnd("SPY"), TimeRules.BeforeMarketClose("SPY", 30), (Action)(() =>
+            Schedule.On(DateRules.MonthEnd("SPY"), TimeRules.BeforeMarketClose("SPY", 20), () => // The last trading day of each month has to be determined. The rebalance will take place on this day.
             {
                 if (IsWarmingUp) // Dont' trade in the warming up period.
                     return;
-                Dictionary<string, List<QcPrice>> usedAdjustedClosePrices = GetUsedAdjustedClosePriceData();
-                Dictionary<string, decimal> nextMonthWeights = HistPerfCalc(usedAdjustedClosePrices);
-                decimal currentPV = PvCalculation(usedAdjustedClosePrices);
+                _isEndOfMonth = true;
+                if (IsTradeInQcCloud)
+                    TradeLogic();
+            });
+        }
+        private void TradeLogic() // this is called at 15:40 in QC cloud, and 00:00 in SqCore
+        {
+            if (IsWarmingUp) // Dont' trade in the warming up period.
+                return;
 
-                Dictionary<string, Symbol> tradedSymbols = _isTradeOnMinuteResolution ? _symbolsMinute : _symbolsDaily;
+            TradePreProcess();
 
-                string logMessage = $"New positions after close of {this.Time.Date:yyyy-MM-dd}: ";
-                string logMessage2 = "Close prices are: ";
+            Dictionary<string, List<QcPrice>> usedAdjustedClosePrices = GetUsedAdjustedClosePriceData();
+            Dictionary<string, decimal> nextMonthWeights = HistPerfCalc(usedAdjustedClosePrices);
+            decimal currentPV = PvCalculation(usedAdjustedClosePrices);
 
-                foreach (KeyValuePair<string, Symbol> kvp in tradedSymbols)
+            Dictionary<string, Symbol> tradedSymbols = IsTradeInSqCore ? _symbolsDaily : _symbolsMinute;
+
+            string logMessage = $"New positions after close of {this.Time.Date:yyyy-MM-dd}: ";
+            string logMessage2 = "Close prices are: ";
+
+            foreach (KeyValuePair<string, Symbol> kvp in tradedSymbols)
+            {
+                string ticker = kvp.Key;
+                List<QcPrice> tickerUsedAdjustedClosePrices = usedAdjustedClosePrices[ticker];
+                decimal newMarketValue = 0;
+                decimal newPosition = 0;
+                if (nextMonthWeights[ticker] != 0)
                 {
-                    string ticker = kvp.Key;
-                    List<QcPrice> tickerUsedAdjustedClosePrices = usedAdjustedClosePrices[ticker];
-                    decimal newMarketValue = 0;
-                    decimal newPosition = 0;
-                    if (nextMonthWeights[ticker] != 0)
-                    {
-                        newMarketValue = currentPV * nextMonthWeights[ticker];
-                        newPosition = Math.Round((decimal)(newMarketValue / tickerUsedAdjustedClosePrices[(Index)(^1)].Close)); // use the last element
-                    }
-                    decimal positionChange = newPosition - Portfolio[ticker].Quantity;
-                    if (positionChange != 0)
-                        MarketOnCloseOrder(kvp.Value, positionChange); // QC raises Warning if order quantity = 0. So, we don't sent these. "Unable to submit order with id -10 that has zero quantity."
-                    logMessage += ticker + ": " + newPosition + "; ";
-                    logMessage2 += ticker + ": " + ((tickerUsedAdjustedClosePrices.Count != 0) ? tickerUsedAdjustedClosePrices[(Index)(^1)].Close.ToString() : "N/A") + "; "; // use the last element
+                    newMarketValue = currentPV * nextMonthWeights[ticker];
+                    newPosition = Math.Round((decimal)(newMarketValue / tickerUsedAdjustedClosePrices[(Index)(^1)].Close)); // use the last element
                 }
-                logMessage = logMessage.Substring(0, logMessage.Length - 2) + ".";
-                logMessage2 = logMessage2.Substring(0, logMessage2.Length - 2) + ".";
-                string LogMessageToLog = logMessage + " " + logMessage2 + $" Previous cash: {Portfolio.Cash}. Current PV: {currentPV}.";
+                decimal positionChange = newPosition - Portfolio[ticker].Quantity;
+                if (positionChange != 0)
+                {
+                    MarketOnCloseOrder(kvp.Value, positionChange); // QC raises Warning if order quantity = 0. So, we don't sent these. "Unable to submit order with id -10 that has zero quantity."
+                    if (IsTradeInSqCore && _sliceDividends.ContainsKey(ticker)) // If we use our hacked after market close MOC trading, the dividend credit precedes the trade (cash already contains them). This results incorrect PV and therefore incorrect new positions if the same time slice includes the dividend as the prices. For this reason, before trading, these dividends (which are in the given daily slice) have to be written back. Then after the trade has been executed, they have to be credited again based on the new positions that are already correct.
+                        Portfolio.ApplyDividendMOCAfterClose(_sliceDividends[ticker], Portfolio[ticker].Quantity); // secondly, add back the dividens of the new positions to _baseCurrencyCash
+                }
+                logMessage += ticker + ": " + newPosition + "; ";
+                logMessage2 += ticker + ": " + ((tickerUsedAdjustedClosePrices.Count != 0) ? tickerUsedAdjustedClosePrices[(Index)(^1)].Close.ToString() : "N/A") + "; "; // use the last element
+            }
+            logMessage = logMessage.Substring(0, logMessage.Length - 2) + ".";
+            logMessage2 = logMessage2.Substring(0, logMessage2.Length - 2) + ".";
+            string LogMessageToLog = logMessage + " " + logMessage2 + $" Previous cash: {Portfolio.Cash}. Current PV: {currentPV}.";
 
-                Log(LogMessageToLog);
-            }));
+            // Log(LogMessageToLog);
+            _isEndOfMonth = false;
+        }
+        void TradePreProcess()
+        {
         }
 
         /// OnData event is the primary entry point for your algorithm. Each new data point will be pumped in here.
@@ -167,12 +185,15 @@ namespace QuantConnect.Algorithm.CSharp
         {
             try
             {
-                bool isDataPerMinute = !(slice.Time.Hour == 0 && slice.Time.Minute == 0);
-                if (_isTradeOnMinuteResolution && isDataPerMinute)
-                    return;
-
-                string sliceTime = slice.Time.ToString();
-                Log($"Cash in Portfolio on day {sliceTime}: ${Portfolio.Cash}.");
+                if (IsTradeInQcCloud)
+                {
+                    bool isDataPerMinute = !(slice.Time.Hour == 0 && slice.Time.Minute == 0);
+                    if (isDataPerMinute)
+                        return; // if in the SqCloud and we receive perMinute data, return, because we don't need it.
+                }
+                // string sliceTime = slice.Time.ToString();
+                // Log($"Cash in Portfolio on day {sliceTime}: ${Portfolio.Cash}.");
+                // Log($"PV on day {sliceTime}: ${Portfolio.TotalPortfolioValue}.");
                 // Log($"OnData(Slice). Slice.Time: {slice.Time}, this.Time: {sliceTime}");
                 foreach (string ticker in _tickers)
                 {
@@ -191,17 +212,6 @@ namespace QuantConnect.Algorithm.CSharp
                         _rawCloses[ticker].Add(new QcPrice() { ReferenceDate = slice.Time.Date.AddDays(-1), Close = (decimal)rawClose });
                         _adjCloses[ticker].Add(new QcPrice() { ReferenceDate = slice.Time.Date.AddDays(-1), Close = (decimal)rawClose });
                     }
-                    if (slice.Dividends.ContainsKey(symbol))
-                    {
-                        var dividend = slice.Dividends[symbol];
-                        _dividends[ticker].Add(new QcDividend() { ReferenceDate = slice.Time.Date.AddDays(-1), Dividend = dividend });
-                        decimal divAdjMultiplicator = 1 - dividend.Distribution / dividend.ReferencePrice;
-                        for (int i = 0; i < _adjCloses[ticker].Count; i++)
-                        {
-                            _adjCloses[ticker][i].Close *= divAdjMultiplicator;
-                        }
-                        Log($"Dividend on {slice.Time.ToString()}: {ticker} ${dividend.Distribution} when ReferencePrice was {dividend.ReferencePrice}.");
-                    }
                     if (occuredSplit != null)  // Split.SplitOccurred comes on the correct day with slice.Time: 8/25/2022 12:00:00
                     {
                         _splits[ticker].Add(new QcSplit() { ReferenceDate = slice.Time.Date.AddDays(-1), Split = occuredSplit });
@@ -213,16 +223,39 @@ namespace QuantConnect.Algorithm.CSharp
                         }
                     }
                 }
+
+                if (IsTradeInSqCore && _isEndOfMonth)
+                {
+                    _sliceDividends = slice.Dividends;
+                    TradeLogic();
+                }
+
+                foreach (string ticker in _tickers)
+                {
+                    var symbol = _symbolsDaily[ticker];
+                    Split occuredSplit = (slice.Splits.ContainsKey(symbol) && slice.Splits[symbol].Type == SplitType.SplitOccurred) ? slice.Splits[symbol] : null; // split.Type can be Warning and SplitOccured. Ignore 1-day early Split Warnings. Just use the occured
+                    if (slice.Dividends.ContainsKey(symbol))
+                    {
+                        var dividend = slice.Dividends[symbol];
+                        _dividends[ticker].Add(new QcDividend() { ReferenceDate = slice.Time.Date.AddDays(-1), Dividend = dividend });
+                        decimal divAdjMultiplicator = 1 - dividend.Distribution / dividend.ReferencePrice;
+                        for (int i = 0; i < _adjCloses[ticker].Count; i++)
+                        {
+                            _adjCloses[ticker][i].Close *= divAdjMultiplicator;
+                        }
+                        // Log($"Dividend on {slice.Time.ToString()}: {ticker} ${dividend.Distribution} when ReferencePrice was {dividend.ReferencePrice}.");
+                    }
+                }
             }
             catch (System.Exception e)
             {
                 Log($"Error. Exception in OnData(Slice). Slice.Time: {slice.Time}, msg: {e.Message}");
             }
         }
-        private void DownloadAndProcessData(string p_ticker, DateTime p_startDate, TimeSpan p_warmUp, DateTime p_endDate)
+        private void DownloadAndProcessYfData(string p_ticker, DateTime p_startDate, TimeSpan p_warmUp, DateTime p_endDate)
         {
             long periodStart = QCAlgorithmUtils.DateTimeUtcToUnixTimeStamp(p_startDate - p_warmUp);
-            long periodEnd =QCAlgorithmUtils. DateTimeUtcToUnixTimeStamp(p_endDate.AddDays(1)); // if p_endDate is a fixed date (2023-02-28:00:00), then it has to be increased, otherwise YF doesn't give that day data.
+            long periodEnd = QCAlgorithmUtils.DateTimeUtcToUnixTimeStamp(p_endDate.AddDays(1)); // if p_endDate is a fixed date (2023-02-28:00:00), then it has to be increased, otherwise YF doesn't give that day data.
 
             // Step 1. Get Split data
             string splitCsvUrl = $"https://query1.finance.yahoo.com/v7/finance/download/{p_ticker}?period1={periodStart}&period2={periodEnd}&interval=1d&events=split&includeAdjustedClose=true";
@@ -334,32 +367,32 @@ namespace QuantConnect.Algorithm.CSharp
             // iterate over each key-value pair in the dictionary
             foreach (KeyValuePair<string, List<QcPrice>> kvp in _adjCloses) // loop for each tickers
             {
-                // get the last lookbackTradingDays items for this key + current raw data from YF
+                // get the last lookbackTradingDays items for this key + current raw data from YF if QC cloud is used.
                 string ticker = kvp.Key;
                 List<QcPrice> qcAdjCloses = kvp.Value;
                 List<QcPrice> lastLbTdPrices = new List<QcPrice>();
-                int startIndex = Math.Max(0, qcAdjCloses.Count - _lookbackTradingDays);
+                int startIndex = IsTradeInSqCore ? Math.Max(0, qcAdjCloses.Count - _lookbackTradingDays - 1) : Math.Max(0, qcAdjCloses.Count - _lookbackTradingDays);
                 for (int i = startIndex; i < qcAdjCloses.Count; i++)
                 {
                     lastLbTdPrices.Add(new QcPrice() { ReferenceDate = qcAdjCloses[i].ReferenceDate, Close = qcAdjCloses[i].Close });
                 }
-
-                // add the last lookbackTradingDays items to the new dictionary
-                if (_rawClosesFromYfDicts[ticker].TryGetValue(this.Time.Date, out decimal lastRawClose))
-                    lastLbTdPrices.Add(new QcPrice() { ReferenceDate = this.Time.Date, Close = lastRawClose });
-                else // if lastLbTdPrices is empty, then not finding this date is fine. If lastLbTdPrices has at least 1 items, we expect that we find this date.
-                    if (qcAdjCloses.Count > 0)
+                if (IsTradeInQcCloud)
+                {
+                    // add the last lookbackTradingDays items to the new dictionary from YF
+                    if (_rawClosesFromYfDicts[ticker].TryGetValue(this.Time.Date, out decimal lastRawClose))
+                        lastLbTdPrices.Add(new QcPrice() { ReferenceDate = this.Time.Date, Close = lastRawClose });
+                    else // if lastLbTdPrices is empty, then not finding this date is fine. If lastLbTdPrices has at least 1 items, we expect that we find this date.
+                        if (qcAdjCloses.Count > 0)
                         throw new Exception($"Cannot find date {this.Time.Date.ToString()} in the YF.");
+                }
 
                 usedAdjCloses[ticker] = lastLbTdPrices;
             }
 
             return usedAdjCloses;
         }
-
         private Dictionary<string, decimal> HistPerfCalc(Dictionary<string, List<QcPrice>> p_usedAdjustedClosePrices)
         {
-            // tie in ranks!!!
             Dictionary<string, decimal> relativeMomentums = new Dictionary<string, decimal>();
 
             foreach (string key in p_usedAdjustedClosePrices.Keys)
@@ -376,7 +409,7 @@ namespace QuantConnect.Algorithm.CSharp
             // Sort the list based on the values
             list.Sort((x, y) => y.Value.CompareTo(x.Value));
 
-            // Assign a rank to each key and store the result in a new dictionary
+            // Assign a rank to each key and store the result in a new dictionary. It can handle if there is tie in ranks.
             int rank = 1;
             decimal lastValue = 9999;
             int numTies = 0;
@@ -408,6 +441,7 @@ namespace QuantConnect.Algorithm.CSharp
                     resultDict.Add(ticker, false);
                 }
             }
+            // Calculate the appropriate weights for next month. It will be used during trading process.
             Dictionary<string, decimal> nextMonthWeights = new Dictionary<string, decimal>();
             int noPlayedEtf = Math.Max(trueCount, _numberOfEtfsSelected);
             decimal playedWeight = decimal.Divide(1, noPlayedEtf);
@@ -422,10 +456,19 @@ namespace QuantConnect.Algorithm.CSharp
         }
         private decimal PvCalculation(Dictionary<string, List<QcPrice>> p_usedAdjustedClosePrices)
         {
+            if (IsTradeInSqCore) // If we use our hacked after market close MOC trading, the dividend credit precedes the trade (cash already contains them). This results incorrect PV and therefore incorrect new positions if the same time slice includes the dividend as the prices. For this reason, before trading, these dividends (which are in the given daily slice) have to be written back. Then after the trade has been executed, they have to be credited again based on the new positions that are already correct.
+            {
+                foreach (KeyValuePair<string, Symbol> kvp in _symbolsDaily)
+                {
+                    string ticker = kvp.Key;
+                    if (_sliceDividends.ContainsKey(ticker))
+                        Portfolio.ApplyDividendMOCAfterClose(_sliceDividends[ticker], -Portfolio[ticker].Quantity); // first remove the dividens of the old positions (we might sell them) from _baseCurrencyCash
+                }
+                return Portfolio.TotalPortfolioValue;
+            }
+
             decimal currentPV = 0m;
-
             decimal cashValue = Portfolio.Cash;
-
             currentPV = cashValue;
 
             foreach (string ticker in _tickers)
@@ -449,7 +492,7 @@ namespace QuantConnect.Algorithm.CSharp
         }
         public override void OnEndOfAlgorithm()
         {
-            Log($"OnEndOfAlgorithm(): Backtest time: {(DateTime.UtcNow - startTime).TotalMilliseconds}ms");
+            Log($"OnEndOfAlgorithm(): Backtest time: {(DateTime.UtcNow - _backtestStartTime).TotalMilliseconds}ms");
         }
 
     }

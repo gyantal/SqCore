@@ -47,14 +47,17 @@ namespace QuantConnect.Algorithm.CSharp
 {
     public class SqSPYMonFriAtMoc : QCAlgorithm
     {
+        bool _isTradeInSqCore = true; // 2 simulation environments. We backtest in Qc cloud or in SqCore frameworks. QcCloud works on per minute resolution (to be able to send MOC orders 20min before MOC), SqCore works on daily resolution only.
+        public bool IsTradeInSqCore { get { return _isTradeInSqCore; } }
+        public bool IsTradeInQcCloud { get { return !_isTradeInSqCore; } }
+
         DateTime _startDate = DateTime.MinValue;
         DateTime _endDate = DateTime.MaxValue;
         TimeSpan _warmUp = TimeSpan.Zero;
         string _ticker = "SPY";
-        Symbol _symbolDaily, _symbolMinute; // TODO: do we need both?
+        Symbol _symbol;
         OrderTicket _lastOrderTicket = null;
-        // OrderTicket _lastLoggedOrderTicket = null;
-   
+
         List<QcPrice> _rawCloses = new List<QcPrice>(); // comes from OnData() from the framework in SqCore. We use this in SqCore
         List<QcDividend> _dividends = new List<QcDividend>();
         List<QcSplit> _splits = new List<QcSplit>();
@@ -67,7 +70,6 @@ namespace QuantConnect.Algorithm.CSharp
         // QC Cloud: Trading on Daily resolution has problems. (2023-03: QC started to fix it, but not fully commited to Master branch, and fixed it only for Limit orders, not for MOC). The problem:
         // Daily resolution: Monday, 15:40 trades are not executed on Monday 16:00, which is good (but for wrong reason). It is not executed because data is stale, data is from Saturday:00:00
         // Tuesday-Friday 15:40 trades are executed at 16:00, which is wrong, because daily data only comes at next day 00:00
-        bool _isTradeInSqCore = true; // 2 simulation environments. We backtest in Qc cloud or in SqCore frameworks. QcCloud works on per minute resolution (to be able to send MOC orders 20min before MOC), SqCore works on daily resolution only.
         DateTime _backtestStartTime;
 
         public override void Initialize()
@@ -78,23 +80,21 @@ namespace QuantConnect.Algorithm.CSharp
             _warmUp = TimeSpan.FromDays(200); // Wind time back 200 calendar days from start
             _endDate = DateTime.Now;
 
-            SetStartDate(_startDate); 
+            SetStartDate(_startDate);
             // SetEndDate(2021, 02, 26);
             SetEndDate(_endDate); // means Local time, not UTC. That would be DateTime.UtcNow
-            SetWarmUp(_warmUp); 
+            SetWarmUp(_warmUp);
             SetCash(100000);
 
             Orders.MarketOnCloseOrder.SubmissionTimeBuffer = TimeSpan.FromMinutes(0.5); // change the submission time threshold of MOC orders
 
+            Resolution resolutionUsed = IsTradeInSqCore ? Resolution.Daily : Resolution.Minute;
             // if Raw is not specified in AddEquity(), all prices come as Adjusted, and then Dividend is not added to Cash, and nShares are not changed at Split
-            _symbolDaily = AddEquity(_ticker, Resolution.Daily, dataNormalizationMode: DataNormalizationMode.Raw).Symbol;   // backtest completed in 4.24 seconds. Processing total of 20,402 data points.
-            Securities[_symbolDaily].FeeModel = new ConstantFeeModel(0);
+            _symbol = AddEquity(_ticker, resolutionUsed, dataNormalizationMode: DataNormalizationMode.Raw).Symbol;   // backtest completed in 4.24 seconds. Processing total of 20,402 data points.
+            Securities[_symbol].FeeModel = new ConstantFeeModel(0);
 
-            if (!_isTradeInSqCore) // in QC cloud
+            if (IsTradeInQcCloud)
             {
-                _symbolMinute = AddEquity(_ticker, Resolution.Minute, dataNormalizationMode: DataNormalizationMode.Raw).Symbol;
-                Securities[_symbolMinute].FeeModel = new ConstantFeeModel(0);
-
                 DownloadAndProcessYfData(_ticker, _startDate, _warmUp, _endDate); // Call the DownloadAndProcessData method to get real life Raw close prices
 
                 Schedule.On(DateRules.EveryDay(_ticker), TimeRules.BeforeMarketClose(_ticker, 20), () => // only create the Schedule timeslices in QC cloud simulation
@@ -196,7 +196,7 @@ namespace QuantConnect.Algorithm.CSharp
             {
                 decimal splitMultiplier = 1m;
                 int lastSplitIdx = splits.Count - 1;
-                DateTime watchedSplitDate = splits[lastSplitIdx].ReferenceDate;             
+                DateTime watchedSplitDate = splits[lastSplitIdx].ReferenceDate;
 
                 for (int i = _rawClosesFromYfList.Count - 1; i >= 0; i--)
                 {
@@ -205,7 +205,7 @@ namespace QuantConnect.Algorithm.CSharp
                     {
                         splitMultiplier *= splits[lastSplitIdx].SplitFactor;
                         lastSplitIdx--;
-                        watchedSplitDate = (lastSplitIdx == -1) ? DateTime.MinValue : splits[lastSplitIdx].ReferenceDate;  
+                        watchedSplitDate = (lastSplitIdx == -1) ? DateTime.MinValue : splits[lastSplitIdx].ReferenceDate;
                     }
 
                     _rawClosesFromYfList[i].Close *= splitMultiplier;
@@ -225,19 +225,17 @@ namespace QuantConnect.Algorithm.CSharp
         {
             if (IsWarmingUp) // Dont' trade in the warming up period.
                 return;
-            
+
             TradePreProcess();
 
-            Symbol tradedSymbol = _isTradeInSqCore ? _symbolDaily : _symbolMinute;
-
             DateTime simulatedTimeLoc = this.Time;  // Local time,  On Daily resolution: Friday daily tradebar comes at 00:00 on Saturday (next day), On Per minute resolution: "1/2/2013 3:40:00 PM"
-            if (_isTradeInSqCore)
+            if (IsTradeInSqCore)
                 simulatedTimeLoc = simulatedTimeLoc.AddHours(-8); // from 00:00 approximately go back to 16:00 prior day.
 
-            if (simulatedTimeLoc.DayOfWeek == DayOfWeek.Monday && Portfolio[tradedSymbol].Quantity == 0) // Buy it on Monday if we don't have it already
+            if (simulatedTimeLoc.DayOfWeek == DayOfWeek.Monday && Portfolio[_symbol].Quantity == 0) // Buy it on Monday if we don't have it already
             {
                 decimal priceToUse;
-                if (_isTradeInSqCore) // running in SqCore
+                if (IsTradeInSqCore) // running in SqCore
                 {
                     QcPrice qcPrice = _rawCloses[^1];
                     if (qcPrice.ReferenceDate != simulatedTimeLoc.Date)
@@ -251,16 +249,16 @@ namespace QuantConnect.Algorithm.CSharp
                     else
                     {
                         Log($"Warning! Date {simulatedTimeLoc.Date} is not found in _rawClosesFromYfDict. Maybe YF download error. We fallback to using perMinute price.");
-                        priceToUse = Securities[tradedSymbol].Price; // currentMinutePrice in QC cloud simulation
+                        priceToUse = Securities[_symbol].Price; // currentMinutePrice in QC cloud simulation
                     }
                 }
 
                 // QC raises Warning if order quantity = 0. So, we don't sent these. "Unable to submit order with id -10 that has zero quantity."
-                _lastOrderTicket = MarketOnCloseOrder(tradedSymbol, Math.Round(Portfolio.Cash / priceToUse));
+                _lastOrderTicket = MarketOnCloseOrder(_symbol, Math.Round(Portfolio.Cash / priceToUse));
             }
 
-            if (simulatedTimeLoc.DayOfWeek == DayOfWeek.Friday && Portfolio[tradedSymbol].Quantity > 0) // Sell it on Friday if we have a position
-                _lastOrderTicket = MarketOnCloseOrder(tradedSymbol, -Portfolio[tradedSymbol].Quantity);  // Daily Raw: Sell: FillDate: 16:00 today (why???) (on previous day close price!!)
+            if (simulatedTimeLoc.DayOfWeek == DayOfWeek.Friday && Portfolio[_symbol].Quantity > 0) // Sell it on Friday if we have a position
+                _lastOrderTicket = MarketOnCloseOrder(_symbol, -Portfolio[_symbol].Quantity);  // Daily Raw: Sell: FillDate: 16:00 today (why???) (on previous day close price!!)
         }
 
         void TradePreProcess()
@@ -274,9 +272,9 @@ namespace QuantConnect.Algorithm.CSharp
         //         // write a code that checks the filled.Time = what we expect for the MOC order. daily Resolution: 00:00 or per minute resolution : 16:00 the expected
         //         DateTime fillTimeUtc = orderEvent.UtcTime;
         //         DateTime fillTimeLoc = fillTimeUtc.ConvertFromUtc(this.TimeZone); // Local time zone of the simulation
-        //         if (_isTradeInSqCore && !(fillTimeLoc.Hour == 0 && fillTimeLoc.Minute == 0 && fillTimeLoc.Second == 0))
+        //         if (IsTradeInSqCore && !(fillTimeLoc.Hour == 0 && fillTimeLoc.Minute == 0 && fillTimeLoc.Second == 0))
         //             Debug($"Order has been filled for {orderEvent.Symbol} at wrong time! Details: {orderEvent.FillQuantity} shares at {orderEvent.FillPrice} on FillTime: {fillTimeLoc:yyyy-MM-dd HH:mm:ss} local(America/New_York) instead of 0:00:00");
-        //         if (!_isTradeInSqCore && !((fillTimeLoc.Hour == 13 || fillTimeLoc.Hour == 16) && fillTimeLoc.Minute == 0 && fillTimeLoc.Second == 0))
+        //         if (IsTradeInQcCloud && !((fillTimeLoc.Hour == 13 || fillTimeLoc.Hour == 16) && fillTimeLoc.Minute == 0 && fillTimeLoc.Second == 0))
         //             Debug($"Order has been filled for {orderEvent.Symbol} at wrong time! Details: {_lastOrderTicket.QuantityFilled} shares at {_lastOrderTicket.AverageFillPrice} on FillTime: {fillTimeLoc:yyyy-MM-dd HH:mm:ss} local(America/New_York) instead of 16:00:00");
         //     }
         // }
@@ -300,15 +298,15 @@ namespace QuantConnect.Algorithm.CSharp
         {
             try
             {
-                if (!_isTradeInSqCore)
+                if (IsTradeInQcCloud)
                     return; // in QcCloud, we don't process the incoming data. We try to use peekAhead YF data or perMinute data from symbol.Price
 
                 // Collect Raw prices (and Splits and Dividends) for calculating Adjusted prices
                 // Split comes twice. Once: Split.Warning comes 1 day earlier with slice.Time: 8/24/2022 12:00:00, SplitType.SplitOccurred comes on the proper day
-                Split occuredSplit = (slice.Splits.ContainsKey(_symbolDaily) && slice.Splits[_symbolDaily].Type == SplitType.SplitOccurred) ? slice.Splits[_symbolDaily] : null; // split.Type can be Warning and SplitOccured. Ignore 1-day early Split Warnings. Just use the occured
+                Split occuredSplit = (slice.Splits.ContainsKey(_symbol) && slice.Splits[_symbol].Type == SplitType.SplitOccurred) ? slice.Splits[_symbol] : null; // split.Type can be Warning and SplitOccured. Ignore 1-day early Split Warnings. Just use the occured
 
                 decimal? rawClose = null;
-                if (slice.Bars.TryGetValue(_symbolDaily, out TradeBar bar))
+                if (slice.Bars.TryGetValue(_symbol, out TradeBar bar))
                     rawClose = bar.Close; // Probably bug in QC: if there is a Split for the daily bar, then QC SplitAdjust that bar, even though we asked RAW data. QC only does it for the Split day. We can undo it, because the Split.ReferencePrice has the RAW price.
 
                 if (rawClose != null) // we have a split or dividend on Sunday, but there is no bar, so there is no price, which is fine
@@ -324,9 +322,9 @@ namespace QuantConnect.Algorithm.CSharp
                 // string lastRaw2 = string.Join(",", _rawCloses.TakeLast(4).Select(r => r.QuoteTime.ToString() + ":" + r.Close.ToString())); // "8/24/2022 12:00:00 AM:889.3600,8/25/2022 12:00:00 AM:891.29,8/26/2022 12:00:00 AM:296.0700"
                 // string lastAdj2 = string.Join(",", _adjCloses.TakeLast(4).Select(r => r.QuoteTime.ToString() + ":" + r.Close.ToString())); // "8/24/2022 12:00:00 AM:296.45330368800,8/25/2022 12:00:00 AM:297.096636957,8/26/2022 12:00:00 AM:296.0700"
 
-                if (slice.Dividends.ContainsKey(_symbolDaily))
+                if (slice.Dividends.ContainsKey(_symbol))
                 {
-                    var dividend = slice.Dividends[_symbolDaily];
+                    var dividend = slice.Dividends[_symbol];
                     _dividends.Add(new QcDividend() { ReferenceDate = slice.Time.Date.AddDays(-1), Dividend = dividend });
                     decimal divAdjMultiplicator = 1 - dividend.Distribution / dividend.ReferencePrice;
                     for (int i = 0; i < _adjCloses.Count; i++)
@@ -346,7 +344,7 @@ namespace QuantConnect.Algorithm.CSharp
                     }
                 }
 
-                 if (_isTradeInSqCore) // only create the Schedule timeslices in QC cloud simulation
+                if (IsTradeInSqCore) // only create the Schedule timeslices in QC cloud simulation
                     TradeLogic();
             }
             catch (System.Exception e)

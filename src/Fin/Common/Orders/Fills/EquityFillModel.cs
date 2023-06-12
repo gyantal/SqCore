@@ -1,3 +1,4 @@
+// #define DoUseMocAfterClose // if we want to use QcCloud style MOC orders. Only for Development for debugging.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -138,7 +139,7 @@ namespace QuantConnect.Orders.Fills
             if (subscribedTypes.Contains(typeof(Tick)))
             {
                 var trade = asset.Cache.GetAll<Tick>().LastOrDefault(x => x.TickType == TickType.Trade && x.Price > 0);
-                
+
                 if (trade != null)
                 {
                     tradeHigh = trade.Price;
@@ -479,8 +480,8 @@ namespace QuantConnect.Orders.Fills
             if (subscribedTypes.Contains(typeof(Tick)))
             {
                 var primaryExchangeCode = ((Equity)asset).PrimaryExchange.Code;
-                var officialOpen = (uint) (TradeConditionFlags.Regular | TradeConditionFlags.OfficialOpen);
-                var openingPrints = (uint) (TradeConditionFlags.Regular | TradeConditionFlags.OpeningPrints);
+                var officialOpen = (uint)(TradeConditionFlags.Regular | TradeConditionFlags.OfficialOpen);
+                var openingPrints = (uint)(TradeConditionFlags.Regular | TradeConditionFlags.OpeningPrints);
 
                 var trades = asset.Cache.GetAll<Tick>()
                     .Where(x => x.TickType == TickType.Trade && x.Price > 0 && asset.Exchange.DateTimeIsOpen(x.Time))
@@ -617,6 +618,12 @@ namespace QuantConnect.Orders.Fills
             //     return fill;
             // }
             // SqCore Change NEW: in SqCore, after daily OnData() processing/trading at 00:00, we let the Orders fill immediately, without any time check
+// #if !DoUseMocAfterClose
+//             if (asset.LocalTime < nextMarketClose)
+//             {
+//                 return fill;
+//             }
+// #endif
             // SqCore Change END
 
             // SqCore Change NEW:
@@ -699,7 +706,7 @@ namespace QuantConnect.Orders.Fills
             // in SqCore, after daily OnData() processing/trading at 00:00, we let the Orders fill immediately, without any time check
             // if (endTimeUtc <= order.Time)
             //     return fill;
-            
+
 
             // make sure the exchange is open/normal market hours before filling
             // It will return true if the last bar opens before the market closes
