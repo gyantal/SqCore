@@ -12,6 +12,7 @@ namespace QuantConnect.Parameters
 
     public class SqBacktestConfig
     {
+        public static bool SqFastestExecution { get; set; } = true; // global variable is fine. Cannot be changed on per strategy level, but being global it can be accessed anywhere from the code
         public bool DoUseIbFeeModelForEquities { get; set; } = false;
         public SqResult SqResult { get; set; } = SqResult.QcOriginal; // Lightweight result calculation, only what SqCore needs, and additional stat numbers that QC doesn't calculate
         public bool DoPeriodicPartialResultsUpdateToCaller { get; set; } = false;

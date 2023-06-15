@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using QuantConnect;
 using QuantConnect.Configuration;
@@ -336,5 +337,33 @@ public static class Backtester
         // > "nextMarginCallTime = time + marginCallFrequency;"
         // It checks every 5 minutes if there was a Margin call. It might be useful for RealTime, but this slows down backtest a lot.
         // We have to develop our Own Simulator Engine, which is very quick. Don't use these kind of unnecessary overhead.
+    }
+
+    public static void ManyBacktestsParallelInMultipleThreads()
+    {
+        Task basicTempTask = Task.Run(() => // Task.Run() runs it immediately
+        {
+            Console.WriteLine("Backtest: BasicTemplateFrameworkAlgorithm");
+            BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", @"{""ema-fast"":10,""ema-slow"":20}");
+            Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} ({(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
+        });
+
+        Task spyTask = Task.Run(() => // Task.Run() runs it immediately
+        {
+            Console.WriteLine("Backtest: SqSPYMonFriAtMoc");
+            BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", @"{""ema-fast"":10,""ema-slow"":20}");
+            Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} ({(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
+        });
+
+        // Task dualMomTask = Task.Run(() => // Task.Run() runs it immediately
+        // {
+        //     Console.WriteLine("Backtest: SqDualMomentum");
+        //     BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqDualMomentum", @"{""ema-fast"":10,""ema-slow"":20}");
+        //     Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} ({(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
+        // });
+
+        // Task.WaitAll(new Task[] { basicTempTask, spyTask, dualMomTask });
+        Task.WaitAll(new Task[] { basicTempTask, spyTask });
+        Console.WriteLine("Backtest: ManyBacktestsParallelInMultipleThreads(). All threads terminated.");
     }
 }

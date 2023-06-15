@@ -338,7 +338,7 @@ public partial class Program
         Console.WriteLine("1. Test Symbol/SecurityID creations");
         Console.WriteLine("2. Test Historical price data");
         Console.WriteLine("3. Test BacktestInSeparateThreadWithTimeout()");
-        Console.WriteLine("4. Test BacktestInThreadWithNoTimeout()");
+        Console.WriteLine("4. Test ManyBacktestsParallelInMultipleThreads()");
         Console.WriteLine("9. Exit to main menu.");
         string userInput;
         try
@@ -394,14 +394,20 @@ public partial class Program
                 Console.WriteLine($" Test Historical price data. Number of TradeBars: {result.Count}. SPY RAW ClosePrice on {result[0].Bars.Values.ToArray()[0].Time}: {result[0].Bars.Values.ToArray()[0].Close}");
                 break;
             case "3":
-                Console.WriteLine("Backtest: https://github.com/QuantConnect/Lean/blob/master/Algorithm.CSharp/BasicTemplateFrameworkAlgorithm.cs");
+                Console.WriteLine("Backtest: SqSPYMonFriAtMoc");
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", @"{""ema-fast"":10,""ema-slow"":20}");
                 backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", @"{""ema-fast"":10,""ema-slow"":20}");
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqDualMomentum", @"{""ema-fast"":10,""ema-slow"":20}");
                 break;
             case "4":
-                Console.WriteLine("Not ready yet");
-                // backtestResults = Backtester.BacktestInThreadWithNoTimeout("BasicTemplateFrameworkAlgorithm", @"{""ema-fast"":10,""ema-slow"":20}");
+                try
+                {
+                    Backtester.ManyBacktestsParallelInMultipleThreads();
+                }
+                catch (System.Exception e)
+                {
+                    Console.WriteLine($"Exception message: {e.Message}");
+                }
                 break;
             case "9":
                 return "UserChosenExit";

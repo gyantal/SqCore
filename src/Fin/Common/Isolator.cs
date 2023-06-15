@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using QuantConnect.Parameters;
 using QuantConnect.Util;
 using SqCommon;
 using static QuantConnect.StringExtensions;
@@ -60,6 +61,15 @@ namespace QuantConnect
         public bool ExecuteWithTimeLimit(TimeSpan timeSpan, Func<IsolatorLimitResult> withinCustomLimits, Action codeBlock, long memoryCap = 1024, int sleepIntervalMillis = 1000, WorkerThread workerThread = null)
         {
             workerThread?.Add(codeBlock);
+
+            // SqCore Change NEW:
+            if (SqBacktestConfig.SqFastestExecution)
+            {
+                Task taskWt = Task.Factory.StartNew(() => workerThread.FinishedWorkItem.WaitOne(), CancellationTokenSource.Token);
+                taskWt.Wait();
+                return true;
+            }
+            // SqCore Change END
 
             var task = workerThread == null
                 //Launch task

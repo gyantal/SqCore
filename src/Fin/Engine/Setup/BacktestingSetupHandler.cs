@@ -9,6 +9,8 @@ using QuantConnect.AlgorithmFactory;
 using QuantConnect.Lean.Engine.DataFeeds;
 using QuantConnect.Brokerages.Backtesting;
 using SqCommon;
+using QuantConnect.Parameters;
+using QuantConnect.Algorithm.CSharp;
 
 namespace QuantConnect.Lean.Engine.Setup
 {
@@ -70,6 +72,20 @@ namespace QuantConnect.Lean.Engine.Setup
         /// <returns>A new instance of IAlgorithm, or throws an exception if there was an error</returns>
         public virtual IAlgorithm CreateAlgorithmInstance(AlgorithmNodePacket algorithmNodePacket, string assemblyPath)
         {
+            // SqCore Change NEW:
+            if (SqBacktestConfig.SqFastestExecution) // Original QC code reads the whole Algorithm.CSharp DLL as binary and create the Algorithm instance from that. Total waste of time.
+            {
+                string algName = ((BacktestNodePacket)algorithmNodePacket).BacktestId;
+                return algName switch
+                {
+                    "BasicTemplateFrameworkAlgorithm" => new BasicTemplateFrameworkAlgorithm(),
+                    "SqSPYMonFriAtMoc" => new SqSPYMonFriAtMoc(),
+                    "SqDualMomentum" => new SqDualMomentum(),
+                    _ => throw new Exception($"QcAlgorithm name '{algName}' is unrecognized."),
+                };
+            }
+            // SqCore Change END
+
             string error;
             IAlgorithm algorithm;
 
