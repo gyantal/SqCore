@@ -16,7 +16,7 @@
 .commonColStyle { // same style for all the div's of Portfolios, StockAndIndexex, TechIndicators and others ( 4 sections similar to sniffeQuant Chart Generator)
   display: inline-block; // will achieve a side-by-side layout for the elements while still having the ability to control their width, height, and spacing
   width: 24.8%;
-  height: 10rem;
+  height: 6rem;
   margin-bottom: 0.5rem;
   border:solid #080c0c 0.01rem;
   vertical-align: top; //  default is Baseline, baseline alignment may result in slight vertical misalignment. Align elements to the top of the line otherwise it will start at the level of the last element
@@ -46,22 +46,24 @@
 }
 
 .infoLog {
-  color: #FFFF00
+  color: rgb(32, 34, 148);
 }
 
 // Progress Bar section Styles - Start
-.container {
-  height: 2rem;
-  background-color: #ccc;
-  position: relative;
+.progressBarContainer {
+  position: relative; // its positioned relative to normal position, it will be adjusted away from its normal position by setting top, left, right and bottom porperties.
   width: 10%;
+  height: 2rem;
+  left: 48rem;
+  top: -20rem;
+  background-color: #ccc;
+  border: .1rem solid #FF5F1F;
   border-radius: 0.5rem;
 }
 
-.container .progressBar {
-  position: absolute;
+.progressBarContainer .progressBar {
   height: 2rem;
-  background-color: #c230c7;
+  background-color: #3060c7;
   border-radius: 0.5rem;
 }
 

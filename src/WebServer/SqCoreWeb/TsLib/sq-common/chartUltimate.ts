@@ -4,16 +4,47 @@ import { UiChartPointValue, UiChrtGenValue } from './backtestCommon';
 
 // used in ChartGenerator app
 export function chrtGenBacktestChrt(chartData: UiChrtGenValue[], lineChrtDiv: HTMLElement, inputWidth: number, inputHeight: number, margin: any, lineChrtTooltip: HTMLElement, startDate: Date, endDate: Date) {
-  const nameKey: string[] = chartData.map(function(d: UiChrtGenValue) { return d.name; }); // list of group names
+  // Slice the data based on the startDate and EndDate provided by user
+  let slicedChartData: UiChrtGenValue[] = [];
+  if (startDate.getTime() === endDate.getTime()) // if the startdate and enddate are same , it means there is no need of slicing the data
+    slicedChartData = chartData;
+  else {
+    for (const data of chartData) {
+      const slicedData: UiChartPointValue[] = [];
 
-  console.log(startDate, endDate); // need to use these dates and filter the data
+      for (let i = 0; i < data.priceData.length; i++) {
+        const chrtdata = data.priceData[i];
+        const date = new Date(chrtdata.date);
+
+        if (date >= startDate && date <= endDate)
+          slicedData.push(chrtdata);
+      }
+
+      if (slicedData.length > 0) {
+        const dataCopy: UiChrtGenValue = { name: data.name, date: data.date, value: data.value, chartResolution: data.chartResolution, priceData: slicedData };
+        slicedChartData.push(dataCopy);
+      }
+    }
+  }
+
+  const nameKey: string[] = slicedChartData.map(function(d: UiChrtGenValue) { return d.name; }); // list of group names
   // adding colors for keys
   const color = d3.scaleOrdinal()
       .domain(nameKey)
       .range(['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#f781bf', '#808000', '#008000', '#a65628', '#333397', '#800080', '#000000']);
+
   // Extract all values and Dates from the priceData array
-  const dates = chartData.reduce<Date[]>((accumulator, d)=> accumulator.concat(d.priceData.map((p) => p.date)), []);
-  const values = chartData.reduce<number[]>((accumulator, d) => accumulator.concat(d.priceData.map((p) => p.value)), []);
+  const dates: Date[] = [];
+  const values: number[] = [];
+  for (let i = 0; i < slicedChartData.length; i++) {
+    const data = slicedChartData[i];
+    for (let j = 0; j < data.priceData.length; j++) {
+      const point = data.priceData[j];
+      dates.push(new Date(point.date));
+      values.push(point.value);
+    }
+  }
+
   // Calculate the domain for x-axis (dates)
   const xMin: Date = d3.min(dates) as Date;
   const xMax: Date = d3.max(dates) as Date;
@@ -39,7 +70,7 @@ export function chrtGenBacktestChrt(chartData: UiChrtGenValue[], lineChrtDiv: HT
 
   // Draw the line
   backtestChrt.selectAll('.line')
-      .data(chartData)
+      .data(slicedChartData)
       .enter()
       .append('path')
       .attr('fill', 'none')
@@ -50,10 +81,10 @@ export function chrtGenBacktestChrt(chartData: UiChrtGenValue[], lineChrtDiv: HT
           .y((r) => scaleY(r.value))
           .curve(d3.curveCardinal))(d.priceData));
 
-  const legendSpace = inputWidth/chartData.length; // spacing for legend
+  const legendSpace = inputWidth/slicedChartData.length; // spacing for legend
   // Add the Legend
   backtestChrt.selectAll('rect')
-      .data(chartData)
+      .data(slicedChartData)
       .enter().append('text')
       .attr('x', (d: UiChrtGenValue, i: any) => ((legendSpace/2) + i * legendSpace ))
       .attr('y', 35)
@@ -78,7 +109,7 @@ export function chrtGenBacktestChrt(chartData: UiChrtGenValue[], lineChrtDiv: HT
 
   function onMouseMove(event: MouseEvent) {
     const datesArray: Date[] = [];
-    chartData.forEach((element) => {
+    slicedChartData.forEach((element) => {
       element.priceData.forEach((dataPoint) => {
         datesArray.push(new Date(dataPoint.date));
       });
@@ -86,7 +117,22 @@ export function chrtGenBacktestChrt(chartData: UiChrtGenValue[], lineChrtDiv: HT
 
     const xCoord = scaleX.invert(d3.pointer(event)[0]).getTime();
     const yCoord = d3.pointer(event)[1];
-    const mouseClosestXCoord = datesArray.sort((a, b) => Math.abs(xCoord - a.getTime()) - Math.abs(xCoord - b.getTime()))[0];
+    // const mouseClosestXCoord = datesArray.sort((a, b) => Math.abs(xCoord - a.getTime()) - Math.abs(xCoord - b.getTime()))[0];
+    // finding the closest Xcoordinate of mouse event
+    let closestDate = datesArray[0];
+    let closestDiff = Math.abs(xCoord - closestDate.getTime());
+
+    for (let i = 1; i < datesArray.length; i++) {
+      const currentDate = datesArray[i];
+      const currentDiff = Math.abs(xCoord - currentDate.getTime());
+
+      if (currentDiff < closestDiff) {
+        closestDate = currentDate;
+        closestDiff = currentDiff;
+      }
+    }
+
+    const mouseClosestXCoord: Date = closestDate;
 
     tooltipLine
         .attr('stroke', 'black')
@@ -101,7 +147,7 @@ export function chrtGenBacktestChrt(chartData: UiChrtGenValue[], lineChrtDiv: HT
         .style('left', event.pageX + 10 + 'px')
         .style('top', event.pageY - yCoord + 'px')
         .selectAll()
-        .data(chartData)
+        .data(slicedChartData)
         .enter()
         .append('div')
         .style('color', (d: UiChrtGenValue) => color(d.name) as string)

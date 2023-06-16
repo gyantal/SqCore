@@ -1,26 +1,31 @@
 // ************************************************ //
 // Classes used for developing charts, stats and positions of PortfolioRunResults
 // The below classes are used in PortfolioManager and ChartGenerator Apps
+// Input data classes
 
-export enum ChartResolution
-{
-    Second, Minute, Minute5, Hour, Daily, Weekly, Monthly
+export enum SqLogLevel {
+    Off = 'Off',
+    Trace = 'Trace',
+    Debug = 'Debug',
+    Info = 'Info',
+    Warn = 'Warn',
+    Error = 'Error',
+    Fatal = 'Fatal'
 }
 
-export enum SqLogLevel
-{
-    Off, Trace, Debug, Info, Warn, Error, Fatal
+export class SqLog {
+  public sqLogLevel: SqLogLevel = SqLogLevel.Info;
+  public message = '';
+}
+
+export enum ChartResolution {
+    Second, Minute, Minute5, Hour, Daily, Weekly, Monthly
 }
 
 export interface ChartJs { // PfRunResults Chart Data
   dates: number[];
   values: number[];
   chartResolution: ChartResolution;
-}
-
-export class SqLog {
-  public sqLogLevel = '';
-  public message = '';
 }
 
 export class ChrtGenBacktestResult {

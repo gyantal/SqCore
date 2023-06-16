@@ -22,9 +22,11 @@
   <span class="commonColStyle" id="portfolios">
     <label>PortfolioIds:<input id="pfIds" type="text" [(ngModel)]="prtfIds"></label><br><br>
     <label>Benchmarks:<input id="bmrks" type="text" [(ngModel)]="bmrks"></label><br><br>
-    <label>StartDate:<input type="Date" [(ngModel)]="startDate"></label><br><br>
-    <label>EndDate:<input type="Date" [(ngModel)]="endDate"></label><br><br>
-    <button (click)="onStartBacktests()">Start</button>
+    <Span>
+      <label>StartDate:<input type="date" [(ngModel)]="startDate"></label>&nbsp;
+      <label>EndDate:<input type="date" [(ngModel)]="endDate"></label>&nbsp;&nbsp;
+      <button (click)="onStartBacktestsClicked()">Start</button>
+    </Span>
   </span>
   <span class="commonColStyle" id="stockAndIndexes">
     StockAndIndexes
@@ -45,7 +47,7 @@
     </div>
   </div>
   <!-- Progress bar -->
-  <div class="container">
+  <div class="progressBarContainer" [ngStyle]="{'visibility': isProgressBarVisble ? 'visible' : 'hidden'}">
     <div class="progressBar"></div>
   </div>
 </div>

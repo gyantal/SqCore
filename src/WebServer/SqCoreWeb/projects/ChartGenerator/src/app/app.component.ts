@@ -4,7 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { SqNgCommonUtilsTime, minDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { chrtGenBacktestChrt } from '../../../../TsLib/sq-common/chartUltimate';
-import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, UiChrtGenValue, SqLog, SqLogLevel, ChartResolution, UiChartPointValue } from '../../../../TsLib/sq-common/backtestCommon';
+import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, UiChrtGenValue, SqLog, ChartResolution, UiChartPointValue } from '../../../../TsLib/sq-common/backtestCommon';
 import * as d3 from 'd3';
 
 type Nullable<T> = T | null;
@@ -45,7 +45,8 @@ export class AppComponent implements OnInit {
   endDate: Date = new Date(); // used to filter the chart Data based on the user input
   isSrvConnectionAlive: boolean = true;
   chrtGenDiagnosticsMsg = 'Benchmarking time, connection speed';
-  // isProgressVisble: boolean = false;
+  isProgressBarVisble: boolean = false;
+  isBacktestReturned: boolean = false;
 
   user = {
     name: 'Anonymous',
@@ -60,7 +61,7 @@ export class AppComponent implements OnInit {
 
     const wsQueryStr = window.location.search; // https://sqcore.net/webapps/ChartGenerator/?pids=1  , but another parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
     console.log(wsQueryStr);
-    gChrtGenDiag.backtestRequestStartTime = new Date();
+    // this.onStartBacktests();
     this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/chrtgen' + wsQueryStr); // "wss://127.0.0.1/ws/chrtgen?pids=13,2" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection. ? has to be included to separate the location from the params
 
     setInterval(() => { // checking whether the connection is live or not
@@ -72,7 +73,7 @@ export class AppComponent implements OnInit {
     // WebSocket connection
     this._socket.onopen = () => {
       console.log('ws: Connection started! _socket.send() can be used now.');
-      this.onShowProgressBar(gChrtGenDiag.backtestRequestStartTime, gChrtGenDiag.backtestRequestReturnTime);
+      this.onShowProgressBar();
     };
 
     this._socket.onmessage = (event) => {
@@ -86,10 +87,13 @@ export class AppComponent implements OnInit {
           this.user.email = handshakeMsg.email;
           break;
         case 'BacktestResults':
-          gChrtGenDiag.backtestRequestReturnTime = new Date();
+          // Thread.Sleep(3000); // TEMP
+          setTimeout(() => {
+            console.log('Delaying for 3 seconds, Please Wait');
+          }, 3000); // Delay of 3000 milliseconds (3 seconds)
+          this.isBacktestReturned = false;
           console.log('ChrtGen.BacktestResults:' + msgObjStr);
-          this.onShowProgressBar(gChrtGenDiag.backtestRequestStartTime, gChrtGenDiag.backtestRequestReturnTime);
-          this.processChrtGenBacktestResults(msgObjStr);
+          this.onCompleteBacktests(msgObjStr);
           break;
         case 'ErrorToUser':
           console.log('ChrtGen.ErrorToUser:' + msgObjStr);
@@ -171,7 +175,7 @@ export class AppComponent implements OnInit {
   }
 
   // startdate and enddate are not utlized at the moment - Daya yet to develop
-  static updateUiWithChrtGenBacktestResults(chrtGenBacktestRes: Nullable<ChrtGenBacktestResult>, uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[], uiChrtWidth: number, uiChrtHeight: number, startDate, endDate) {
+  static updateUiWithChrtGenBacktestResults(chrtGenBacktestRes: Nullable<ChrtGenBacktestResult>, uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[], uiChrtWidth: number, uiChrtHeight: number, startDate: Date, endDate: Date) {
     if (chrtGenBacktestRes == null || chrtGenBacktestRes.pfRunResults == null)
       return;
 
@@ -230,7 +234,7 @@ export class AppComponent implements OnInit {
 
     for (const item of chrtGenBacktestRes.logs) {
       const logItem = new SqLog();
-      logItem.sqLogLevel = SqLogLevel[item.sqLogLevel];
+      logItem.sqLogLevel = item.sqLogLevel;
       logItem.message = item.message;
       uiPrtfResItem.sqLogs.push(logItem);
     }
@@ -245,56 +249,54 @@ export class AppComponent implements OnInit {
     const prtfAndBmrkChrtData: UiChrtGenValue[] = uiPrtfResItem.prtfChrtValues.concat(uiPrtfResItem.bmrkChrtValues);
     const lineChrtTooltip = document.getElementById('tooltipChart') as HTMLElement;
 
-    // Conversion of user input startDate in string format to Date format - Yet to Develop (Daya)
-    let newStartDate: Date; let newEndDate: Date;
-    if (typeof startDate === 'string') {
-      newStartDate = new Date(startDate);
-      newEndDate = new Date(endDate);
-    } else {
-      newStartDate = startDate;
-      newEndDate = endDate;
-    }
-
-    // Filtering the data based on the startDate and EndDate provided by user
-    let filteredDataset: UiChrtGenValue[] = [];
-    if (newStartDate.getTime() === newEndDate.getTime())
-      filteredDataset = prtfAndBmrkChrtData;
-    else {
-      for (const data of prtfAndBmrkChrtData) {
-        const filteredChrtdata: UiChartPointValue[] = [];
-
-        for (const chrtdata of data.priceData) {
-          const date = new Date(chrtdata.date);
-
-          if (date >= newStartDate && date <= newEndDate)
-            filteredChrtdata.push(chrtdata);
-        }
-
-        if (filteredChrtdata.length > 0) {
-          const dataCopy: UiChrtGenValue = { name: data.name, date: data.date, value: data.value, chartResolution: data.chartResolution, priceData: filteredChrtdata };
-          filteredDataset.push(dataCopy);
-        }
-      }
-    }
-
-    chrtGenBacktestChrt(filteredDataset, lineChrtDiv, chartWidth, chartHeight, margin, lineChrtTooltip, newStartDate, newEndDate);
+    chrtGenBacktestChrt(prtfAndBmrkChrtData, lineChrtDiv, chartWidth, chartHeight, margin, lineChrtTooltip, startDate, endDate);
   }
 
   onStartBacktests() {
+    gChrtGenDiag.backtestRequestStartTime = new Date();
+    // Remember to Show Progress bar in 2 seconds from this time.
+    setTimeout( () => {
+      if (this.isBacktestReturned)/* Check if backtest has returned */
+        return;
+      else
+        this.onShowProgressBar();
+    }, 2000 );
+
+    // setTimeout(this.showProgressBar.bind(this), 1000);
+    // start a time, a function that triggers in 2 seconds.
+    // In that funcion:
+    // Check if backtest returned or not.
+    // if backtest returned then don't do anything.
+    // if backtest is still pending, then:
+    // estimete the BacktestTimespan. (default: 4sec, or the last backtesttime)
+    // Feed that EstimatedBacktestTime to progressbar.
+    // Spin the progressbar.
+  }
+
+  onCompleteBacktests(msgObjStr: string) {
+    gChrtGenDiag.backtestRequestReturnTime = new Date();
+    this.isProgressBarVisble = false; // If progress bar is visible => hide it
+    this.processChrtGenBacktestResults(msgObjStr);
+  }
+
+  onStartBacktestsClicked() {
     if (this._socket != null && this._socket.readyState === this._socket.OPEN) {
-      gChrtGenDiag.backtestRequestStartTime = new Date();
+      this.onStartBacktests();
       this._socket.send('RunBacktest:' + '?pids=' + this.prtfIds + '&bmrks=' + this.bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
+      this.startDate = new Date(this.startDate);
+      this.endDate = new Date(this.endDate);
     }
   }
   // Yet to Develop (Daya)
-  onShowProgressBar(backtestRequestStartTime: Date, backtestRequestReturnTime: Date) {
-    // this.isProgressVisble = true;
+  onShowProgressBar() {
+    this.isProgressBarVisble = true;
+    // serverBacktestTime = gChrtGenDiag.serverBacktestTime;
     const progsBar = document.querySelector('.progressBar') as HTMLElement;
-    console.log('time', (backtestRequestReturnTime.getTime() - backtestRequestStartTime.getTime()) / 1000);
-    const estimatedDurationInSeconds = (backtestRequestReturnTime.getTime() - backtestRequestStartTime.getTime()) / 1000 <= 0 ? 4 : (backtestRequestReturnTime.getTime() - backtestRequestStartTime.getTime()) / 1000; // if estimatedDurationInSeconds cannot be calculated than, assume 4sec
+    const estimatedDurationInSeconds = gChrtGenDiag.serverBacktestTime / 1000;
+    const estimatedDuration = estimatedDurationInSeconds <= 0 ? 4 : estimatedDurationInSeconds; // if estimatedDuration cannot be calculated than, assume 4sec
 
     progsBar.style.animationName = 'progressAnimation';
-    progsBar.style.animationDuration = estimatedDurationInSeconds + 's';
+    progsBar.style.animationDuration = estimatedDuration + 's';
     progsBar.style.animationTimingFunction = 'linear'; // default would be ‘ease’, which is a slow start, then fast, before it ends slowly. We prefer the linear.
     progsBar.style.animationIterationCount = '1'; // only once
     progsBar.style.animationFillMode = 'forwards';
