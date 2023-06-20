@@ -5,6 +5,7 @@ import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.ut
 import { SqNgCommonUtilsTime, minDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { chrtGenBacktestChrt } from '../../../../TsLib/sq-common/chartUltimate';
 import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, UiChrtGenValue, SqLog, ChartResolution, UiChartPointValue } from '../../../../TsLib/sq-common/backtestCommon';
+import { sleep } from '../../../../TsLib/sq-common/utils-sleep';
 import * as d3 from 'd3';
 
 type Nullable<T> = T | null;
@@ -43,6 +44,10 @@ export class AppComponent implements OnInit {
   bmrks: string = ''; // benchmarks
   startDate: Date = new Date(); // used to filter the chart Data based on the user input
   endDate: Date = new Date(); // used to filter the chart Data based on the user input
+  startDateStr: string = '';
+  endDateStr: string = '';
+  rangeSelection = ['YTD', '1M', '1Y', '3Y', '5Y'];
+  histRangeSelected: string = 'YTD';
   isSrvConnectionAlive: boolean = true;
   chrtGenDiagnosticsMsg = 'Benchmarking time, connection speed';
   isProgressBarVisble: boolean = false;
@@ -61,7 +66,7 @@ export class AppComponent implements OnInit {
 
     const wsQueryStr = window.location.search; // https://sqcore.net/webapps/ChartGenerator/?pids=1  , but another parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
     console.log(wsQueryStr);
-    // this.onStartBacktests();
+    this.onStartBacktests();
     this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/chrtgen' + wsQueryStr); // "wss://127.0.0.1/ws/chrtgen?pids=13,2" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection. ? has to be included to separate the location from the params
 
     setInterval(() => { // checking whether the connection is live or not
@@ -76,7 +81,7 @@ export class AppComponent implements OnInit {
       this.onShowProgressBar();
     };
 
-    this._socket.onmessage = (event) => {
+    this._socket.onmessage = async (event) => {
       const semicolonInd = event.data.indexOf(':');
       const msgCode = event.data.slice(0, semicolonInd);
       const msgObjStr = event.data.substring(semicolonInd + 1);
@@ -88,9 +93,9 @@ export class AppComponent implements OnInit {
           break;
         case 'BacktestResults':
           // Thread.Sleep(3000); // TEMP
-          setTimeout(() => {
-            console.log('Delaying for 3 seconds, Please Wait');
-          }, 3000); // Delay of 3000 milliseconds (3 seconds)
+          console.log('sleep() START');
+          await sleep(3000);
+          console.log('sleep() END');
           this.isBacktestReturned = false;
           console.log('ChrtGen.BacktestResults:' + msgObjStr);
           this.onCompleteBacktests(msgObjStr);
@@ -252,16 +257,14 @@ export class AppComponent implements OnInit {
     chrtGenBacktestChrt(prtfAndBmrkChrtData, lineChrtDiv, chartWidth, chartHeight, margin, lineChrtTooltip, startDate, endDate);
   }
 
-  onStartBacktests() {
+  async onStartBacktests() {
     gChrtGenDiag.backtestRequestStartTime = new Date();
     // Remember to Show Progress bar in 2 seconds from this time.
-    setTimeout( () => {
-      if (this.isBacktestReturned)/* Check if backtest has returned */
-        return;
-      else
-        this.onShowProgressBar();
-    }, 2000 );
-
+    await sleep(2000);
+    if (this.isBacktestReturned)/* Check if backtest has returned */
+      return;
+    else
+      this.onShowProgressBar();
     // setTimeout(this.showProgressBar.bind(this), 1000);
     // start a time, a function that triggers in 2 seconds.
     // In that funcion:
@@ -290,7 +293,6 @@ export class AppComponent implements OnInit {
   // Yet to Develop (Daya)
   onShowProgressBar() {
     this.isProgressBarVisble = true;
-    // serverBacktestTime = gChrtGenDiag.serverBacktestTime;
     const progsBar = document.querySelector('.progressBar') as HTMLElement;
     const estimatedDurationInSeconds = gChrtGenDiag.serverBacktestTime / 1000;
     const estimatedDuration = estimatedDurationInSeconds <= 0 ? 4 : estimatedDurationInSeconds; // if estimatedDuration cannot be calculated than, assume 4sec
@@ -317,5 +319,24 @@ export class AppComponent implements OnInit {
       } else
         this.chrtGenDiagnosticsMsg = 'Connection to server is broken.\n Try page reload (F5).';
     }
+  }
+
+  onHistRangeSelectionClicked(histPeriodSelectionSelected: string) {
+    this.histRangeSelected = histPeriodSelectionSelected;
+    console.log('hist period selected is ', this.histRangeSelected);
+    const currDateET: Date = new Date(); // gets today's date
+    if (this.histRangeSelected.toUpperCase() === 'YTD')
+      this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.getFullYear() - 1, 11, 31));
+    else if (this.histRangeSelected.toLowerCase().endsWith('y')) {
+      const lbYears = parseInt(this.histRangeSelected.substr(0, this.histRangeSelected.length - 1), 10);
+      this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.setFullYear(currDateET.getFullYear() - lbYears)));
+    } else if (this.histRangeSelected.toLowerCase().endsWith('m')) {
+      const lbMonths = parseInt(this.histRangeSelected.substr(0, this.histRangeSelected.length - 1), 10);
+      this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.setMonth(currDateET.getMonth() - lbMonths)));
+    }
+    this.endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date());
+    this.startDate = new Date(this.startDateStr);
+    this.endDate = new Date(this.endDateStr);
+    AppComponent.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight, this.startDate, this.endDate);
   }
 }

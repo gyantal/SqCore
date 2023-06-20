@@ -4,7 +4,7 @@ import { UiChartPointValue, UiChrtGenValue } from './backtestCommon';
 
 // used in ChartGenerator app
 export function chrtGenBacktestChrt(chartData: UiChrtGenValue[], lineChrtDiv: HTMLElement, inputWidth: number, inputHeight: number, margin: any, lineChrtTooltip: HTMLElement, startDate: Date, endDate: Date) {
-  // Slice the data based on the startDate and EndDate provided by user
+  // Step1: slice the part of the total input data to the viewed, visualized part.
   let slicedChartData: UiChrtGenValue[] = [];
   if (startDate.getTime() === endDate.getTime()) // if the startdate and enddate are same , it means there is no need of slicing the data
     slicedChartData = chartData;
