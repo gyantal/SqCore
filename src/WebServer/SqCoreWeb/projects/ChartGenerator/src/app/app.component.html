@@ -20,14 +20,14 @@
   </div>
   <!-- Class=commonColStyle name will be changed in future - Daya(28-04-2023) -->
   <span class="commonColStyle" id="portfolios">
-    <label>PortfolioIds:<input id="pfIds" type="text" [(ngModel)]="prtfIds"></label><br><br>
-    <label>Benchmarks:<input id="bmrks" type="text" [(ngModel)]="bmrks"></label><br><br>
+    <span>PortfolioIds:<input id="pfIds" type="text" [(ngModel)]="prtfIds"></span><br>
+    <span>Benchmarks:<input id="bmrks" type="text" [(ngModel)]="bmrks"></span><br>
     <Span>
-      <Label>History Range:</Label><Span class="histRange" *ngFor="let item of rangeSelection" (click)="onHistRangeSelectionClicked(item)">{{item}}</Span><br><br>
-      <label>StartDate:<input type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="startDateStr"></label>&nbsp;
-      <label>EndDate:<input type="date" id="EndDate" name="EndDate" min="01-01-1975" max="01-01-2040" [(ngModel)]="endDateStr"></label>&nbsp;&nbsp;
+      <Label>Range:</Label><Span class="histRange" *ngFor="let item of rangeSelection" (click)="onHistRangeSelectionClicked(item)">{{item}}</Span>&nbsp;<br><br>
+      <label>Start:</label><input type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="startDateStr">&nbsp;
+      <label>End:<input type="date" id="EndDate" name="EndDate" min="01-01-1975" max="01-01-2040" [(ngModel)]="endDateStr"></label>&nbsp;&nbsp;<br>
 
-      <button (click)="onStartBacktestsClicked()">Start</button>
+      <button (click)="onStartBacktestsClicked()">Start Server Backtest</button>
     </Span>
   </span>
   <span class="commonColStyle" id="stockAndIndexes">

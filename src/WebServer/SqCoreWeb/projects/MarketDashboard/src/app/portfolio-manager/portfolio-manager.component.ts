@@ -109,14 +109,16 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   constructor() { }
 
   ngOnInit(): void {
+    const windowWidth = window.innerWidth || document.documentElement.clientWidth || document.documentElement.getElementsByTagName('body')[0].clientWidth; // required for pixels to viewport width conversion.
+    const windowHeight = window.innerHeight || document.documentElement.clientHeight || document.documentElement.getElementsByTagName('body')[0].clientHeight; // required for pixels to viewport height conversion.
+
     const panelPrtfTreeId = SqNgCommonUtils.getNonNullDocElementById('panelPrtfTree');
     this.panelPrtfTreeWidth = panelPrtfTreeId.clientWidth as number;
     this.panelPrtfTreeHeight = panelPrtfTreeId.clientHeight as number;
-
     const panelChartId = SqNgCommonUtils.getNonNullDocElementById('panelChart');
-    this.panelPrtfChrtWidth = panelChartId.clientWidth as number;
-    this.panelPrtfChrtHeight = panelChartId.clientHeight as number;
-
+    this.panelPrtfChrtWidth = panelChartId.clientWidth as number == 0 ? windowWidth * 0.7425 : panelChartId.clientWidth as number; // at first panelChartId.clientWidth == 0, so give a static value (74.25% is panelChart Width). Otherwise we will not be able to see the chart until you resize your window;
+    this.panelPrtfChrtHeight = panelChartId.clientHeight as number == 0 ? windowHeight * 0.605 : panelChartId.clientHeight as number; // at first panelChartId.clientHeight == 0, so give a static value (60.5% is panelChart Height). Otherwise we will not be able to see the chart until you resize your window;
+    console.log('panelChartId: panelPrtfChrtWidth', this.panelPrtfChrtWidth);
     const panelStatsId = SqNgCommonUtils.getNonNullDocElementById('panelStats');
     this.panelStatsWidth = panelStatsId.clientWidth as number;
     this.panelStatsHeight = panelStatsId.clientHeight as number;
@@ -134,10 +136,12 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
     // For displaying the width and height - Dynamic values
     window.addEventListener('resize', (resizeBy) => {
+      const resizeWindowWidth = window.innerWidth || document.documentElement.clientWidth || document.documentElement.getElementsByTagName('body')[0].clientWidth; // required for pixels to viewport width conversion.
+      const resizeWindowHeight = window.innerHeight || document.documentElement.clientHeight || document.documentElement.getElementsByTagName('body')[0].clientHeight; // required for pixels to viewport height conversion.
       this.panelPrtfTreeWidth = panelPrtfTreeId.clientWidth as number;
       this.panelPrtfTreeHeight = panelPrtfTreeId.clientHeight as number;
-      this.panelPrtfChrtWidth = panelChartId.clientWidth as number;
-      this.panelPrtfChrtHeight = panelChartId.clientHeight as number;
+      this.panelPrtfChrtWidth = panelChartId.clientWidth as number == 0 ? resizeWindowWidth * 0.7425 : panelChartId.clientWidth as number; // at first panelChartId.clientWidth == 0, so give a static value (74.25% is panelChart Width). Otherwise we will not be able to see the chart until you resize your window;
+      this.panelPrtfChrtHeight = panelChartId.clientHeight as number == 0 ? resizeWindowHeight * 0.605 : panelChartId.clientHeight as number; // at first panelChartId.clientHeight == 0, so give a static value (60.5% is panelChart Height). Otherwise we will not be able to see the chart until you resize your window;
       this.panelStatsWidth = panelStatsId.clientWidth as number;
       this.panelStatsHeight = panelStatsId.clientHeight as number;
       this.panelPrtfSpecWidth = panelPrtfSpecId.clientWidth as number;
@@ -146,6 +150,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.dashboardHeaderHeight = approotToolbar.clientHeight;
       this.prtfMgrToolWidth = window.innerWidth as number;
       this.prtfMgrToolHeight = window.innerHeight as number;
+      console.log('window.addEventListener resize', this.panelPrtfChrtWidth);
       PortfolioManagerComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.panelPrtfChrtWidth, this.panelPrtfChrtHeight);
       return resizeBy;
     });
@@ -310,6 +315,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   };
 
   processPortfolioRunResult(msgObjStr: string) {
+    console.log('PortfMgr.processPortfolioRunResult() START');
     this.prtfRunResult = JSON.parse(msgObjStr, function(this: any, key, value) {
       // property names and values are transformed to a shorter ones for decreasing internet traffic.Transform them back to normal for better code reading.
 
@@ -367,6 +373,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       }
       return value;
     });
+    console.log('processPortfolioRunResult(), panelPrtfChrtWidth', this.panelPrtfChrtWidth);
     PortfolioManagerComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.panelPrtfChrtWidth, this.panelPrtfChrtHeight);
   }
 

@@ -115,14 +115,15 @@ public static class Backtester
         return result;
     }
 
-    public static BacktestingResultHandler BacktestInSeparateThreadWithTimeout(string p_algorithmTypeName, string p_parameters) // Engine uses a separate thread with ExecuteWithTimeLimit()
+    public static BacktestingResultHandler BacktestInSeparateThreadWithTimeout(string p_algorithmTypeName, string p_parameters, SqResult p_sqResult) // Engine uses a separate thread with ExecuteWithTimeLimit()
     {
         Console.WriteLine("QC: Run backtest...<Basic or HarryLong or TAA>...");
         Stopwatch stopwatch = Stopwatch.StartNew();
 
-        SqBacktestConfig sqBacktestConfig = new();
-        if (p_algorithmTypeName.StartsWith("Sq")) // TODO: quick and dirty solution only. For Daily strategies we should use our Result calculation that don't need benchmark in backtests. For QC strategies, we use QcOriginal result calculation.
-            sqBacktestConfig.SqResult = SqResult.SqSimple;
+        SqBacktestConfig sqBacktestConfig = new()
+        {
+            SqResult = p_sqResult
+        };
 
         // Instead of using JobQueue as in QC.Launcher, we implement the gist of it. Better to see what is required, and better to customize. Some parts can go to Backtester Init(). Like Loading Fin.Algorithm.CSharp.dll.
         // 1. Create the job.
@@ -344,14 +345,14 @@ public static class Backtester
         Task basicTempTask = Task.Run(() => // Task.Run() runs it immediately
         {
             Console.WriteLine("Backtest: BasicTemplateFrameworkAlgorithm");
-            BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", @"{""ema-fast"":10,""ema-slow"":20}");
+            BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.QcOriginal);
             Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} ({(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
         });
 
         Task spyTask = Task.Run(() => // Task.Run() runs it immediately
         {
             Console.WriteLine("Backtest: SqSPYMonFriAtMoc");
-            BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", @"{""ema-fast"":10,""ema-slow"":20}");
+            BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
             Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} ({(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
         });
 

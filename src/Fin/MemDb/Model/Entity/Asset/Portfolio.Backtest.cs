@@ -9,6 +9,7 @@ using QuantConnect;
 using QuantConnect.Data;
 using QuantConnect.Data.Market;
 using QuantConnect.Lean.Engine.Results;
+using QuantConnect.Parameters;
 using QuantConnect.Securities;
 using QuantConnect.Statistics;
 using SqCommon;
@@ -80,13 +81,13 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
     // Or number of seconds from Unix epoch: '1641013200' is 10 chars. Resolution can be 1 second.
     // Although it is 2 chars more data, but we chose this, because QC uses it and also it will allow us to go intraday in the future.
     // Also it allows to show the user how up-to-date (real-time) the today value is.
-    public string? GetPortfolioRunResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
+    public string? GetPortfolioRunResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution, SqResult p_sqResult)
     {
         #pragma warning disable IDE0066 // disable the switch suggestion warning only locally
         switch (Type)
         {
             case PortfolioType.Simulation:
-                return GetBacktestResult(out p_stat, out p_pv, out p_prtfPoss, out p_chartResolution);
+                return GetBacktestResult(out p_stat, out p_pv, out p_prtfPoss, out p_chartResolution, p_sqResult);
             case PortfolioType.Trades:
             case PortfolioType.TradesSqClassic:
             default:
@@ -128,7 +129,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         return null; // No Error
     }
 
-    public string? GetBacktestResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
+    public string? GetBacktestResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution, SqResult p_sqResult)
     {
         p_stat = new PortfolioRunResultStatistics();
         p_pv = new List<ChartPoint>();
@@ -136,7 +137,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         p_chartResolution = ChartResolution.Daily;
 
         string algorithmName = String.IsNullOrEmpty(Algorithm) ? "BasicTemplateFrameworkAlgorithm" : Algorithm;
-        BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(algorithmName, @"{""ema-fast"":10,""ema-slow"":20}");
+        BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(algorithmName, @"{""ema-fast"":10,""ema-slow"":20}", p_sqResult);
         if (backtestResults == null)
             return "Error in Backtest";
 
@@ -190,35 +191,38 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
             }
         }
 
-        Dictionary<string, string> finalStat = backtestResults.FinalStatistics;
-        var statisticsStr = $"{Environment.NewLine}" + $"{string.Join(Environment.NewLine, finalStat.Select(x => $"STATISTICS:: {x.Key} {x.Value}"))}";
-        Console.WriteLine(statisticsStr);
+        if (p_sqResult != SqResult.SqPvOnly)
+        {
+            Dictionary<string, string> finalStat = backtestResults.FinalStatistics;
+            var statisticsStr = $"{Environment.NewLine}" + $"{string.Join(Environment.NewLine, finalStat.Select(x => $"STATISTICS:: {x.Key} {x.Value}"))}";
+            Console.WriteLine(statisticsStr);
 
-        p_stat.StartPortfolioValue = (float)backtestResults.StartingPortfolioValue;
-        p_stat.EndPortfolioValue = (float)backtestResults.DailyPortfolioValue;
-        p_stat.TotalReturn = float.Parse(finalStat[PerformanceMetrics.NetProfit].Replace("%", string.Empty));
-        p_stat.CAGR = float.Parse(finalStat[PerformanceMetrics.CompoundingAnnualReturn].Replace("%", string.Empty));
-        p_stat.StDev = float.Parse(finalStat[PerformanceMetrics.AnnualStandardDeviation]);
-        if (p_stat.SharpeRatio > 100f)
-            p_stat.SharpeRatio = float.NaN; // if value is obviously wrong, indicate that with NaN
-        p_stat.SharpeRatio = float.Parse(finalStat[PerformanceMetrics.SharpeRatio]);
-        p_stat.MaxDD = float.Parse(finalStat[PerformanceMetrics.Drawdown].Replace("%", string.Empty));
+            p_stat.StartPortfolioValue = (float)backtestResults.StartingPortfolioValue;
+            p_stat.EndPortfolioValue = (float)backtestResults.DailyPortfolioValue;
+            p_stat.TotalReturn = float.Parse(finalStat[PerformanceMetrics.NetProfit].Replace("%", string.Empty));
+            p_stat.CAGR = float.Parse(finalStat[PerformanceMetrics.CompoundingAnnualReturn].Replace("%", string.Empty));
+            p_stat.StDev = float.Parse(finalStat[PerformanceMetrics.AnnualStandardDeviation]);
+            if (p_stat.SharpeRatio > 100f)
+                p_stat.SharpeRatio = float.NaN; // if value is obviously wrong, indicate that with NaN
+            p_stat.SharpeRatio = float.Parse(finalStat[PerformanceMetrics.SharpeRatio]);
+            p_stat.MaxDD = float.Parse(finalStat[PerformanceMetrics.Drawdown].Replace("%", string.Empty));
 
-        p_stat.NTrades = int.Parse(finalStat[PerformanceMetrics.TotalTrades]);
+            p_stat.NTrades = int.Parse(finalStat[PerformanceMetrics.TotalTrades]);
 
-        // Ulcer - To be added, but these are not cardinal at the moment.
-        // p_stat.Sortino = float.Parse(finalStat[PerformanceMetrics.SharpeRatio].Replace("%", string.Empty));
-        // if (p_stat.Sortino > 100f)
-        //     p_stat.Sortino = float.NaN; // if value is obviously wrong, indicate that with NaN
+            // Ulcer - To be added, but these are not cardinal at the moment.
+            // p_stat.Sortino = float.Parse(finalStat[PerformanceMetrics.SharpeRatio].Replace("%", string.Empty));
+            // if (p_stat.Sortino > 100f)
+            //     p_stat.Sortino = float.NaN; // if value is obviously wrong, indicate that with NaN
 
-        // p_stat.WinRate = float.Parse(finalStat[PerformanceMetrics.WinRate].Replace("%", string.Empty));
-        // p_stat.LossRate = float.Parse(finalStat[PerformanceMetrics.LossRate].Replace("%", string.Empty));
-        // p_stat.Turnover = float.Parse(finalStat["Portfolio Turnover"]);
-        // p_stat.LongShortRatio = float.Parse(finalStat["Long/Short Ratio"].Replace("%", string.Empty));
-        p_stat.Fees = float.Parse(finalStat[PerformanceMetrics.TotalFees].Replace("$", string.Empty));
-        // BenchmarkCAGR - To be added
-        // BenchmarkMaxDrawDown - To be added
-        // CorrelationWithBenchmark - To be added
+            // p_stat.WinRate = float.Parse(finalStat[PerformanceMetrics.WinRate].Replace("%", string.Empty));
+            // p_stat.LossRate = float.Parse(finalStat[PerformanceMetrics.LossRate].Replace("%", string.Empty));
+            // p_stat.Turnover = float.Parse(finalStat["Portfolio Turnover"]);
+            // p_stat.LongShortRatio = float.Parse(finalStat["Long/Short Ratio"].Replace("%", string.Empty));
+            p_stat.Fees = float.Parse(finalStat[PerformanceMetrics.TotalFees].Replace("$", string.Empty));
+            // BenchmarkCAGR - To be added
+            // BenchmarkMaxDrawDown - To be added
+            // CorrelationWithBenchmark - To be added
+        }
 
         // We need these in the Statistic: "Net Profit" => TotalReturn, "Compounding Annual Return" =>CAGR, "Drawdown" => MaxDD,  "Sharpe Ratio" =>Sharpe, "Win Rate" =>WinRate, "Annual Standard Deviation" =>StDev, "Sortino Ratio" => Sortino, "Portfolio Turnover" => Turnover, "Long/Short Ratio" =>LongShortRatio, "Total Fees" => Fees,
 

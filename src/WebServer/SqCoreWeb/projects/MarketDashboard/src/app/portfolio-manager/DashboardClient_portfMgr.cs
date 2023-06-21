@@ -6,6 +6,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using Fin.MemDb;
 using QuantConnect;
+using QuantConnect.Parameters;
 using SqCommon;
 
 namespace SqCoreWeb;
@@ -361,7 +362,7 @@ public partial class DashboardClient
 
         if (errMsg == null)
         {
-            errMsg = prtf!.GetPortfolioRunResult(out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
+            errMsg = prtf!.GetPortfolioRunResult(out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution, SqResult.SqSimple);
             if (errMsg == null)
             {
                 // Step3: Filling the ChartPoint Dates and Values to a list. A very condensed format. Dates are separated into its ChartDate List.

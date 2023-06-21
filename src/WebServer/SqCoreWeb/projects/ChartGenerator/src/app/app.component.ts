@@ -53,6 +53,8 @@ export class AppComponent implements OnInit {
   isProgressBarVisble: boolean = false;
   isBacktestReturned: boolean = false;
 
+  // totalReturns: number[] = { 60, 45, 15, 45}; // 3 columns
+
   user = {
     name: 'Anonymous',
     email: '             '
@@ -78,7 +80,7 @@ export class AppComponent implements OnInit {
     // WebSocket connection
     this._socket.onopen = () => {
       console.log('ws: Connection started! _socket.send() can be used now.');
-      this.onShowProgressBar();
+      this.showProgressBar();
     };
 
     this._socket.onmessage = async (event) => {
@@ -261,19 +263,8 @@ export class AppComponent implements OnInit {
     gChrtGenDiag.backtestRequestStartTime = new Date();
     // Remember to Show Progress bar in 2 seconds from this time.
     await sleep(2000);
-    if (this.isBacktestReturned)/* Check if backtest has returned */
-      return;
-    else
-      this.onShowProgressBar();
-    // setTimeout(this.showProgressBar.bind(this), 1000);
-    // start a time, a function that triggers in 2 seconds.
-    // In that funcion:
-    // Check if backtest returned or not.
-    // if backtest returned then don't do anything.
-    // if backtest is still pending, then:
-    // estimete the BacktestTimespan. (default: 4sec, or the last backtesttime)
-    // Feed that EstimatedBacktestTime to progressbar.
-    // Spin the progressbar.
+    if (!this.isBacktestReturned) // If the backtest hasn't returned yet (still pending), show Progress bar
+      this.showProgressBar();
   }
 
   onCompleteBacktests(msgObjStr: string) {
@@ -290,12 +281,13 @@ export class AppComponent implements OnInit {
       this.endDate = new Date(this.endDate);
     }
   }
-  // Yet to Develop (Daya)
-  onShowProgressBar() {
+
+  showProgressBar() {
     this.isProgressBarVisble = true;
     const progsBar = document.querySelector('.progressBar') as HTMLElement;
-    const estimatedDurationInSeconds = gChrtGenDiag.serverBacktestTime / 1000;
-    const estimatedDuration = estimatedDurationInSeconds <= 0 ? 4 : estimatedDurationInSeconds; // if estimatedDuration cannot be calculated than, assume 4sec
+    // const estimatedDurationInSeconds = gChrtGenDiag.serverBacktestTime / 1000;
+    // const estimatedDuration = estimatedDurationInSeconds <= 0 ? 4 : 5 * estimatedDurationInSeconds; // if estimatedDuration cannot be calculated than, assume 4sec
+    const estimatedDuration = '4';
 
     progsBar.style.animationName = 'progressAnimation';
     progsBar.style.animationDuration = estimatedDuration + 's';

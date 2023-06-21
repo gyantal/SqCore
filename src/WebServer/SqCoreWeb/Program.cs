@@ -15,6 +15,7 @@ using QuantConnect;
 using QuantConnect.Data;
 using QuantConnect.Data.Market;
 using QuantConnect.Lean.Engine.Results;
+using QuantConnect.Parameters;
 using QuantConnect.Securities;
 using QuantConnect.Util;
 using SqCommon;
@@ -395,9 +396,9 @@ public partial class Program
                 break;
             case "3":
                 Console.WriteLine("Backtest: SqSPYMonFriAtMoc");
-                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", @"{""ema-fast"":10,""ema-slow"":20}");
-                backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", @"{""ema-fast"":10,""ema-slow"":20}");
-                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqDualMomentum", @"{""ema-fast"":10,""ema-slow"":20}");
+                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.QcOriginal); // For QC strategies, we use QcOriginal result calculation.
+                backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
+                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqDualMomentum", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
                 break;
             case "4":
                 try

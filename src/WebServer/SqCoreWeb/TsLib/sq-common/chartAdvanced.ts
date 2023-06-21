@@ -6,6 +6,8 @@ export function prtfRunResultChrt(chrtData: { date: Date; value: number; }[], li
   const scaleX = d3.scaleTime().domain([xMin, xMax]).range([0, inputWidth]);
   const scaleY = d3.scaleLinear().domain([yMinAxis - 500, yMaxAxis + 500]).range([inputHeight, 0]); // as the chart values ranges are high we need a big number to subtract to define the scaleY, otherwise the chart will go below the x-axis
 
+  console.log('prtfRunResultChrt():inputWidth:', inputWidth);
+  console.log('prtfRunResultChrt():width: ', inputWidth + margin.left + margin.right); // TEMP: this is 0 if buggy, and 712 if correct
   const pfChrt = d3.select(lineChrtDiv).append('svg')
       .attr('width', inputWidth + margin.left + margin.right)
       .attr('height', inputHeight + margin.top + margin.bottom)

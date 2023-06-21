@@ -11,6 +11,7 @@ using System.Web;
 using Fin.MemDb;
 using Microsoft.AspNetCore.Http;
 using QuantConnect;
+using QuantConnect.Parameters;
 using SqCommon;
 
 namespace SqCoreWeb;
@@ -111,7 +112,7 @@ public class ChrtGenWs
         // Step 2: Filling the chrtGenPrtfRunResultJs to a list.
         for (int i = 0; i < lsPrtf.Count; i++)
         {
-            string? errMsg = lsPrtf[i].GetPortfolioRunResult(out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
+            string? errMsg = lsPrtf[i].GetPortfolioRunResult(out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution, SqResult.SqPvOnly);
             if (errMsg != null)
                 sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Error, Message = errMsg });
             ChartData chartVal = new();
