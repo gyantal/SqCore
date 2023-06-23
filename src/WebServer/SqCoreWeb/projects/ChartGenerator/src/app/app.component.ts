@@ -40,8 +40,8 @@ export class AppComponent implements OnInit {
   pvChrtWidth = 0;
   pvChrtHeight = 0;
 
-  prtfIds: string = '';
-  bmrks: string = ''; // benchmarks
+  prtfIds: Nullable<string> = null;
+  bmrks: Nullable<string> = null; // benchmarks
   startDate: Date = new Date(); // used to filter the chart Data based on the user input
   endDate: Date = new Date(); // used to filter the chart Data based on the user input
   startDateStr: string = '';
@@ -52,8 +52,16 @@ export class AppComponent implements OnInit {
   chrtGenDiagnosticsMsg = 'Benchmarking time, connection speed';
   isProgressBarVisble: boolean = false;
   isBacktestReturned: boolean = false;
-
-  // totalReturns: number[] = { 60, 45, 15, 45}; // 3 columns
+  prtfOrBenchmark: string[] = ['SPY', 'TLT', 'RootUser', 'DualMomentum', 'VXX'];
+  // Dummy Data - To be Deleted
+  Data = [
+    { name: 'AnnualRatio', values: { 'SPY': '1%', 'TLT': '2%', 'RootUser': '1.5%', 'DualMomentum': '2%', 'VXX': '2%' } },
+    { name: 'Average', values: { 'SPY': '2%', 'TLT': '5%', 'RootUser': '1.7%', 'DualMomentum': '2%', 'VXX': '2%' } },
+    { name: 'SharpeRatio', values: { 'SPY': '1%', 'TLT': '2%', 'RootUser': '1.8%', 'DualMomentum': '4%', 'VXX': '2%' } },
+    { name: 'TotalReturn', values: { 'SPY': '2%', 'TLT': '5%', 'RootUser': '2.8%', 'DualMomentum': '2.5%', 'VXX': '2%' } },
+    { name: 'Beta', values: { 'SPY': '1%', 'TLT': '2%', 'RootUser': '2%', 'DualMomentum': '3%', 'VXX': '2%' } },
+    { name: 'AvgBeta', values: { 'SPY': '2%', 'TLT': '5%', 'RootUser': '1.5%', 'DualMomentum': '1.2%', 'VXX': '2%' } }
+  ];
 
   user = {
     name: 'Anonymous',
@@ -68,6 +76,11 @@ export class AppComponent implements OnInit {
 
     const wsQueryStr = window.location.search; // https://sqcore.net/webapps/ChartGenerator/?pids=1  , but another parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
     console.log(wsQueryStr);
+    // Getting the PrtfIds and Benchmarks from URL
+    const url = new URL(window.location.href);
+    this.prtfIds = url.searchParams.get('pids');
+    this.bmrks = url.searchParams.get('bmrks');
+
     this.onStartBacktests();
     this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/chrtgen' + wsQueryStr); // "wss://127.0.0.1/ws/chrtgen?pids=13,2" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection. ? has to be included to separate the location from the params
 
@@ -210,7 +223,7 @@ export class AppComponent implements OnInit {
       // uiPrtfResItem.benchmarkMaxDD = parseFloat(item.pstat.benchmarkMaxDD); // yet to calcualte
       // uiPrtfResItem.correlationWithBenchmark = parseFloat(item.pstat.correlationWithBenchmark); // yet to calcualte
 
-
+      // uiPrtfResItem.totalReturn = item.chrtData.values[0] / item.chrtData.values[item.chrtData.values.length - 1];
       const chartItem = new UiChrtGenValue();
       chartItem.name = item.prtfName;
       chartItem.chartResolution = ChartResolution[item.chrtData.chartResolution];
@@ -274,6 +287,12 @@ export class AppComponent implements OnInit {
   }
 
   onStartBacktestsClicked() {
+    // to reset the animation back to its original state
+    const progsBar = document.querySelector('.progressBar') as HTMLElement;
+    progsBar.style.animationDuration = 'none'; // Set the animation duration to 'none' to remove the animation
+    progsBar.offsetHeight; // Trigger reflow to cancel the animation
+    progsBar.style.animation = ''; // Reset the animation by setting the animation property to an empty string to return to its original state
+
     if (this._socket != null && this._socket.readyState === this._socket.OPEN) {
       this.onStartBacktests();
       this._socket.send('RunBacktest:' + '?pids=' + this.prtfIds + '&bmrks=' + this.bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
@@ -285,10 +304,9 @@ export class AppComponent implements OnInit {
   showProgressBar() {
     this.isProgressBarVisble = true;
     const progsBar = document.querySelector('.progressBar') as HTMLElement;
-    // const estimatedDurationInSeconds = gChrtGenDiag.serverBacktestTime / 1000;
-    // const estimatedDuration = estimatedDurationInSeconds <= 0 ? 4 : 5 * estimatedDurationInSeconds; // if estimatedDuration cannot be calculated than, assume 4sec
-    const estimatedDuration = '4';
-
+    const estimatedDurationInSeconds = gChrtGenDiag.serverBacktestTime / 1000;
+    const estimatedDuration = estimatedDurationInSeconds <= 0 ? 4 : estimatedDurationInSeconds; // if estimatedDuration cannot be calculated than, assume 4sec
+    console.log('showProgressBar: estimatedDuration', estimatedDuration);
     progsBar.style.animationName = 'progressAnimation';
     progsBar.style.animationDuration = estimatedDuration + 's';
     progsBar.style.animationTimingFunction = 'linear'; // default would be ‘ease’, which is a slow start, then fast, before it ends slowly. We prefer the linear.

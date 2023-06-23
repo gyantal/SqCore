@@ -20,15 +20,12 @@
   </div>
   <!-- Class=commonColStyle name will be changed in future - Daya(28-04-2023) -->
   <span class="commonColStyle" id="portfolios">
-    <span>PortfolioIds:<input id="pfIds" type="text" [(ngModel)]="prtfIds"></span><br>
-    <span>Benchmarks:<input id="bmrks" type="text" [(ngModel)]="bmrks"></span><br>
-    <Span>
-      <Label>Range:</Label><Span class="histRange" *ngFor="let item of rangeSelection" (click)="onHistRangeSelectionClicked(item)">{{item}}</Span>&nbsp;<br><br>
-      <label>Start:</label><input type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="startDateStr">&nbsp;
-      <label>End:<input type="date" id="EndDate" name="EndDate" min="01-01-1975" max="01-01-2040" [(ngModel)]="endDateStr"></label>&nbsp;&nbsp;<br>
-
-      <button (click)="onStartBacktestsClicked()">Start Server Backtest</button>
-    </Span>
+    <span>PortfolioIds:<input class="prtfAndBmrkInputs" id="pfIds" type="text" [(ngModel)]="prtfIds"></span><br>
+    <span>Benchmarks:<input class="prtfAndBmrkInputs" id="bmrks" type="text" [(ngModel)]="bmrks"></span><br><br>
+    <div class="range">Range:<Span class="histRange" *ngFor="let item of rangeSelection" (click)="onHistRangeSelectionClicked(item)">{{item}}</Span></div>&nbsp;<br>
+    <span>Start:<input type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="startDateStr"></span>&nbsp;
+    <span>End:<input type="date" id="EndDate" name="EndDate" min="01-01-1975" max="01-01-2040" [(ngModel)]="endDateStr"></span>&nbsp;&nbsp;<br>
+    <button class="backtestBtn" (click)="onStartBacktestsClicked()">Start Server Backtest</button>
   </span>
   <span class="commonColStyle" id="stockAndIndexes">
     StockAndIndexes
@@ -51,5 +48,22 @@
   <!-- Progress bar -->
   <div class="progressBarContainer" [ngStyle]="{'visibility': isProgressBarVisble ? 'visible' : 'hidden'}">
     <div class="progressBar"></div>
+  </div>
+  <div class="statsTbl">
+      <b>Dummy Data</b>
+    <table>
+      <thead>
+        <tr>
+          <th>Statistics</th>
+          <th *ngFor="let item of prtfOrBenchmark">{{item}}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of Data">
+          <td>{{row.name}}</td>
+          <td *ngFor="let item of prtfOrBenchmark">{{row.values[item]}}</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>

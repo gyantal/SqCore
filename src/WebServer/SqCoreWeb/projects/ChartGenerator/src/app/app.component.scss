@@ -22,6 +22,34 @@
   vertical-align: top; //  default is Baseline, baseline alignment may result in slight vertical misalignment. Align elements to the top of the line otherwise it will start at the level of the last element
 }
 
+.prtfAndBmrkInputs {
+  margin-top: 0.05rem;
+  border: 0 0 0 0; // Removing the default values input tag
+  padding: 0 0 0 0; // Removing the default values input tag
+  border-radius: .5rem;
+  color: blue;
+  height: 1rem;
+  width: 15rem;
+  font-size: 0.8rem;
+}
+
+.backtestBtn {
+  margin-top: 0.5rem;
+}
+
+.range {
+  margin-top: -0.5rem;
+}
+
+.histRange {
+  cursor: pointer;
+  font-size: 0.5rem;
+  background-color: #ccc;
+  border: .1rem solid rgb(43, 255, 0);
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.25rem;
+}
+
 #backtestPvChrt {
   width: 100%;
   height: 42.5vh;
@@ -73,11 +101,31 @@
 }
 // Progress Bar section Styles - End
 
-.histRange {
+.statsTbl {
+  margin: auto;
+  width: 50vh;
+  display: flex;
+  align-items: stretch;
+  white-space: nowrap; // nowrap auto adjust the text with multiple lined to a single line
+}
+
+.statsTbl table, tr, th, td {
+  padding: 0rem;
+  border: 0.1rem solid black;
+  border-collapse: collapse;
+  border-width: 0.02rem;
+  width: 7rem;
+  text-align: center;
+}
+
+thead {
+  font-size: small;
   cursor: pointer;
-  font-size: 0.5rem;
-  background-color: #ccc;
-  border: .1rem solid rgb(43, 255, 0);
-  border-radius: 0.5rem;
-  padding: 0.25rem 0.25rem;
+  color: #0b0e0e;
+  background-image: linear-gradient(90deg, #8dc7fa 3%, #9dcef8 7%, #d5f5f6 25%, #d5f5f6 55%, #ace16b 85%, #91d73a 90%);
+  opacity: 0.8;
+}
+
+tr:nth-child(even) {
+  background-color: #9dcef8;
 }
