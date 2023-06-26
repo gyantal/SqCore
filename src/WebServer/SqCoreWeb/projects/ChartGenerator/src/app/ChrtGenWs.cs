@@ -112,7 +112,7 @@ public class ChrtGenWs
         // Step 2: Filling the chrtGenPrtfRunResultJs to a list.
         for (int i = 0; i < lsPrtf.Count; i++)
         {
-            string? errMsg = lsPrtf[i].GetPortfolioRunResult(out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution, SqResult.SqPvOnly);
+            string? errMsg = lsPrtf[i].GetPortfolioRunResult(SqResult.SqPvOnly, out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
             if (errMsg != null)
                 sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Error, Message = errMsg });
             ChartData chartVal = new();

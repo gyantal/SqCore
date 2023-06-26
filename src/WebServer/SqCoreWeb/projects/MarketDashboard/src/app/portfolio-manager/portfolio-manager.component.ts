@@ -3,6 +3,7 @@ import { SqTreeViewComponent } from '../sq-tree-view/sq-tree-view.component';
 import { prtfRunResultChrt } from '../../../../../TsLib/sq-common/chartAdvanced';
 import { PrtfRunResultJs, UiChartPointValue, UiPrtfPositions, UiPrtfRunResult } from '../../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtils } from '../../../../sq-ng-common/src/lib/sq-ng-common.utils';
+import { onFirstVisibleEventListener } from '../../../../../TsLib/sq-common/utils-common';
 import * as d3 from 'd3';
 
 type Nullable<T> = T | null;
@@ -109,55 +110,36 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   constructor() { }
 
   ngOnInit(): void {
-    const windowWidth = window.innerWidth || document.documentElement.clientWidth || document.documentElement.getElementsByTagName('body')[0].clientWidth; // required for pixels to viewport width conversion.
-    const windowHeight = window.innerHeight || document.documentElement.clientHeight || document.documentElement.getElementsByTagName('body')[0].clientHeight; // required for pixels to viewport height conversion.
+    onFirstVisibleEventListener(document.querySelector('#panelPrtfMgr'), () => { this.visibilityChanged(); }); // window.innerWidth, clientWidth etc is not yet initialized IF this is not the active Tool
 
-    const panelPrtfTreeId = SqNgCommonUtils.getNonNullDocElementById('panelPrtfTree');
-    this.panelPrtfTreeWidth = panelPrtfTreeId.clientWidth as number;
-    this.panelPrtfTreeHeight = panelPrtfTreeId.clientHeight as number;
-    const panelChartId = SqNgCommonUtils.getNonNullDocElementById('panelChart');
-    this.panelPrtfChrtWidth = panelChartId.clientWidth as number == 0 ? windowWidth * 0.7425 : panelChartId.clientWidth as number; // at first panelChartId.clientWidth == 0, so give a static value (74.25% is panelChart Width). Otherwise we will not be able to see the chart until you resize your window;
-    this.panelPrtfChrtHeight = panelChartId.clientHeight as number == 0 ? windowHeight * 0.605 : panelChartId.clientHeight as number; // at first panelChartId.clientHeight == 0, so give a static value (60.5% is panelChart Height). Otherwise we will not be able to see the chart until you resize your window;
-    console.log('panelChartId: panelPrtfChrtWidth', this.panelPrtfChrtWidth);
-    const panelStatsId = SqNgCommonUtils.getNonNullDocElementById('panelStats');
-    this.panelStatsWidth = panelStatsId.clientWidth as number;
-    this.panelStatsHeight = panelStatsId.clientHeight as number;
-
-    const panelPrtfSpecId = SqNgCommonUtils.getNonNullDocElementById('panelPrtfSpec');
-    this.panelPrtfSpecWidth = panelPrtfSpecId.clientWidth as number;
-    this.panelPrtfSpecHeight = panelPrtfSpecId.clientHeight as number;
-
-    const approotToolbar = SqNgCommonUtils.getNonNullDocElementById('toolbarId'); // toolbarId is coming from app component
-    this.dashboardHeaderWidth = approotToolbar.clientWidth;
-    this.dashboardHeaderHeight = approotToolbar.clientHeight;
-
-    this.prtfMgrToolWidth = window.innerWidth as number;
-    this.prtfMgrToolHeight = window.innerHeight as number;
-
-    // For displaying the width and height - Dynamic values
-    window.addEventListener('resize', (resizeBy) => {
-      const resizeWindowWidth = window.innerWidth || document.documentElement.clientWidth || document.documentElement.getElementsByTagName('body')[0].clientWidth; // required for pixels to viewport width conversion.
-      const resizeWindowHeight = window.innerHeight || document.documentElement.clientHeight || document.documentElement.getElementsByTagName('body')[0].clientHeight; // required for pixels to viewport height conversion.
-      this.panelPrtfTreeWidth = panelPrtfTreeId.clientWidth as number;
-      this.panelPrtfTreeHeight = panelPrtfTreeId.clientHeight as number;
-      this.panelPrtfChrtWidth = panelChartId.clientWidth as number == 0 ? resizeWindowWidth * 0.7425 : panelChartId.clientWidth as number; // at first panelChartId.clientWidth == 0, so give a static value (74.25% is panelChart Width). Otherwise we will not be able to see the chart until you resize your window;
-      this.panelPrtfChrtHeight = panelChartId.clientHeight as number == 0 ? resizeWindowHeight * 0.605 : panelChartId.clientHeight as number; // at first panelChartId.clientHeight == 0, so give a static value (60.5% is panelChart Height). Otherwise we will not be able to see the chart until you resize your window;
-      this.panelStatsWidth = panelStatsId.clientWidth as number;
-      this.panelStatsHeight = panelStatsId.clientHeight as number;
-      this.panelPrtfSpecWidth = panelPrtfSpecId.clientWidth as number;
-      this.panelPrtfSpecHeight = panelPrtfSpecId.clientHeight as number;
-      this.dashboardHeaderWidth = approotToolbar.clientWidth;
-      this.dashboardHeaderHeight = approotToolbar.clientHeight;
-      this.prtfMgrToolWidth = window.innerWidth as number;
-      this.prtfMgrToolHeight = window.innerHeight as number;
-      console.log('window.addEventListener resize', this.panelPrtfChrtWidth);
+    window.addEventListener('resize', () => { // called when the user manually resizes the window
+      this.visibilityChanged();
       PortfolioManagerComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.panelPrtfChrtWidth, this.panelPrtfChrtHeight);
-      return resizeBy;
     });
   }
 
-  public ngAfterViewInit(): void { // @ViewChild variables are undefined in ngOnInit(). Only ready in ngAfterViewInit
+  public ngAfterViewInit(): void { // @ViewChild variables (and window.innerWidth, clientWidth etc is not yet initialized) are undefined in ngOnInit(). Only ready in ngAfterViewInit()
     this.treeViewState.rootSqTreeViewComponent = this.sqTreeComponent;
+  }
+
+  visibilityChanged() {
+    this.prtfMgrToolWidth = window.innerWidth as number;
+    this.prtfMgrToolHeight = window.innerHeight as number;
+    const approotToolbarElement = SqNgCommonUtils.getNonNullDocElementById('toolbarId'); // toolbarId is coming from app component
+    this.dashboardHeaderWidth = approotToolbarElement.clientWidth;
+    this.dashboardHeaderHeight = approotToolbarElement.clientHeight;
+    const panelPrtfTreeElement = SqNgCommonUtils.getNonNullDocElementById('panelPrtfTree');
+    this.panelPrtfTreeWidth = panelPrtfTreeElement.clientWidth as number;
+    this.panelPrtfTreeHeight = panelPrtfTreeElement.clientHeight as number;
+    const panelChartElement = SqNgCommonUtils.getNonNullDocElementById('panelChart');
+    this.panelPrtfChrtWidth = panelChartElement.clientWidth as number;
+    this.panelPrtfChrtHeight = panelChartElement.clientHeight as number;
+    const panelStatsElement = SqNgCommonUtils.getNonNullDocElementById('panelStats');
+    this.panelStatsWidth = panelStatsElement.clientWidth as number;
+    this.panelStatsHeight = panelStatsElement.clientHeight as number;
+    const panelPrtfSpecElement = SqNgCommonUtils.getNonNullDocElementById('panelPrtfSpec');
+    this.panelPrtfSpecWidth = panelPrtfSpecElement.clientWidth as number;
+    this.panelPrtfSpecHeight = panelPrtfSpecElement.clientHeight as number;
   }
 
   onMouseOverResizer(resizer: string) {

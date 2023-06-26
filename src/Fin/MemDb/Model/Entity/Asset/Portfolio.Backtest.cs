@@ -81,13 +81,13 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
     // Or number of seconds from Unix epoch: '1641013200' is 10 chars. Resolution can be 1 second.
     // Although it is 2 chars more data, but we chose this, because QC uses it and also it will allow us to go intraday in the future.
     // Also it allows to show the user how up-to-date (real-time) the today value is.
-    public string? GetPortfolioRunResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution, SqResult p_sqResult)
+    public string? GetPortfolioRunResult(SqResult p_sqResult, out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
         #pragma warning disable IDE0066 // disable the switch suggestion warning only locally
         switch (Type)
         {
             case PortfolioType.Simulation:
-                return GetBacktestResult(out p_stat, out p_pv, out p_prtfPoss, out p_chartResolution, p_sqResult);
+                return GetBacktestResult(p_sqResult, out p_stat, out p_pv, out p_prtfPoss, out p_chartResolution);
             case PortfolioType.Trades:
             case PortfolioType.TradesSqClassic:
             default:
@@ -129,7 +129,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         return null; // No Error
     }
 
-    public string? GetBacktestResult(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution, SqResult p_sqResult)
+    public string? GetBacktestResult(SqResult p_sqResult, out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
         p_stat = new PortfolioRunResultStatistics();
         p_pv = new List<ChartPoint>();

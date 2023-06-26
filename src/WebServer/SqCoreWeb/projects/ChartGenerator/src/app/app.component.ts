@@ -5,7 +5,7 @@ import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.ut
 import { SqNgCommonUtilsTime, minDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { chrtGenBacktestChrt } from '../../../../TsLib/sq-common/chartUltimate';
 import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, UiChrtGenValue, SqLog, ChartResolution, UiChartPointValue } from '../../../../TsLib/sq-common/backtestCommon';
-import { sleep } from '../../../../TsLib/sq-common/utils-sleep';
+import { sleep } from '../../../../TsLib/sq-common/utils-common';
 import * as d3 from 'd3';
 
 type Nullable<T> = T | null;
@@ -55,12 +55,11 @@ export class AppComponent implements OnInit {
   prtfOrBenchmark: string[] = ['SPY', 'TLT', 'RootUser', 'DualMomentum', 'VXX'];
   // Dummy Data - To be Deleted
   Data = [
-    { name: 'AnnualRatio', values: { 'SPY': '1%', 'TLT': '2%', 'RootUser': '1.5%', 'DualMomentum': '2%', 'VXX': '2%' } },
-    { name: 'Average', values: { 'SPY': '2%', 'TLT': '5%', 'RootUser': '1.7%', 'DualMomentum': '2%', 'VXX': '2%' } },
-    { name: 'SharpeRatio', values: { 'SPY': '1%', 'TLT': '2%', 'RootUser': '1.8%', 'DualMomentum': '4%', 'VXX': '2%' } },
-    { name: 'TotalReturn', values: { 'SPY': '2%', 'TLT': '5%', 'RootUser': '2.8%', 'DualMomentum': '2.5%', 'VXX': '2%' } },
-    { name: 'Beta', values: { 'SPY': '1%', 'TLT': '2%', 'RootUser': '2%', 'DualMomentum': '3%', 'VXX': '2%' } },
-    { name: 'AvgBeta', values: { 'SPY': '2%', 'TLT': '5%', 'RootUser': '1.5%', 'DualMomentum': '1.2%', 'VXX': '2%' } }
+    { name: 'TotalReturn', values: { 'SPY': '1%', 'TLT': '2%', 'RootUser': '1.5%', 'DualMomentum': '2%', 'VXX': '2%' } },
+    { name: 'CAGR', values: { 'SPY': '2%', 'TLT': '5%', 'RootUser': '1.7%', 'DualMomentum': '2%', 'VXX': '2%' } },
+    { name: 'StDev', values: { 'SPY': '1%', 'TLT': '2%', 'RootUser': '1.8%', 'DualMomentum': '4%', 'VXX': '2%' } },
+    { name: 'Sharpe', values: { 'SPY': '2%', 'TLT': '5%', 'RootUser': '2.8%', 'DualMomentum': '2.5%', 'VXX': '2%' } },
+    { name: 'MaxDD', values: { 'SPY': '1%', 'TLT': '2%', 'RootUser': '2%', 'DualMomentum': '3%', 'VXX': '2%' } }
   ];
 
   user = {
@@ -287,12 +286,6 @@ export class AppComponent implements OnInit {
   }
 
   onStartBacktestsClicked() {
-    // to reset the animation back to its original state
-    const progsBar = document.querySelector('.progressBar') as HTMLElement;
-    progsBar.style.animationDuration = 'none'; // Set the animation duration to 'none' to remove the animation
-    progsBar.offsetHeight; // Trigger reflow to cancel the animation
-    progsBar.style.animation = ''; // Reset the animation by setting the animation property to an empty string to return to its original state
-
     if (this._socket != null && this._socket.readyState === this._socket.OPEN) {
       this.onStartBacktests();
       this._socket.send('RunBacktest:' + '?pids=' + this.prtfIds + '&bmrks=' + this.bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
@@ -304,6 +297,9 @@ export class AppComponent implements OnInit {
   showProgressBar() {
     this.isProgressBarVisble = true;
     const progsBar = document.querySelector('.progressBar') as HTMLElement;
+    // to reset the animation back to its original state
+    progsBar.style.animation = ''; // Reset the animation by setting the animation property to an empty string to return to its original state
+
     const estimatedDurationInSeconds = gChrtGenDiag.serverBacktestTime / 1000;
     const estimatedDuration = estimatedDurationInSeconds <= 0 ? 4 : estimatedDurationInSeconds; // if estimatedDuration cannot be calculated than, assume 4sec
     console.log('showProgressBar: estimatedDuration', estimatedDuration);
@@ -312,6 +308,7 @@ export class AppComponent implements OnInit {
     progsBar.style.animationTimingFunction = 'linear'; // default would be ‘ease’, which is a slow start, then fast, before it ends slowly. We prefer the linear.
     progsBar.style.animationIterationCount = '1'; // only once
     progsBar.style.animationFillMode = 'forwards';
+    console.log('showProgressBar():', this.isProgressBarVisble); // If progress bar is visible => hide it
   }
 
   // "Server backtest time: 300ms, Communication overhead: 120ms, Total UI response: 420ms."

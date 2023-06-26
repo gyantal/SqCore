@@ -117,7 +117,7 @@ export function chrtGenBacktestChrt(chartData: UiChrtGenValue[], lineChrtDiv: HT
 
     const xCoord = scaleX.invert(d3.pointer(event)[0]).getTime();
     const yCoord = d3.pointer(event)[1];
-    // const mouseClosestXCoord = datesArray.sort((a, b) => Math.abs(xCoord - a.getTime()) - Math.abs(xCoord - b.getTime()))[0];
+
     // finding the closest Xcoordinate of mouse event
     let closestDate = datesArray[0];
     let closestDiff = Math.abs(xCoord - closestDate.getTime());
