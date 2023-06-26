@@ -397,8 +397,9 @@ public partial class Program
             case "3":
                 Console.WriteLine("Backtest: SqSPYMonFriAtMoc");
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.QcOriginal); // For QC strategies, we use QcOriginal result calculation.
-                backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
+                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqDualMomentum", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
+                backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqHarryLong", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
                 break;
             case "4":
                 try

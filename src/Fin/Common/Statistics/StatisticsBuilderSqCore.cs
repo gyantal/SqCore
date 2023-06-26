@@ -4,6 +4,7 @@ using System.Linq;
 using QuantConnect.Parameters;
 using QuantConnect.Util;
 using MathNet.Numerics.Statistics;
+using System.IO;
 
 namespace QuantConnect.Statistics
 {
@@ -24,6 +25,17 @@ namespace QuantConnect.Statistics
             int totalTransactions,
             string accountCurrencySymbol)
         {
+            // For Debugging: Log out the PV to CSV
+            // string csvFilePath = "D:\\Temp\\output.csv";
+            // using (StreamWriter writer = new StreamWriter(csvFilePath))
+            // {
+            //     foreach (ChartPoint point in pointsEquity)
+            //     {
+            //         string line = $"{Time.UnixTimeStampToDateTime(point.x)},{point.y}";
+            //         writer.WriteLine(line);
+            //     }
+            // }
+
             StatisticsResults result = new StatisticsResults();
 
             if (sqResult == SqResult.SqPvOnly)
@@ -68,20 +80,20 @@ namespace QuantConnect.Statistics
                 {
                     int daysInDD = (currentDate - ddStart).Days - 1;
                     histMaxCalDaysBwPeaks = daysInDD > histMaxCalDaysBwPeaks ? daysInDD : histMaxCalDaysBwPeaks;
-                    histMaxTradDaysBwPeaks = ddTradLength > histMaxTradDaysBwPeaks ? ddTradLength: histMaxTradDaysBwPeaks;
+                    histMaxTradDaysBwPeaks = ddTradLength > histMaxTradDaysBwPeaks ? ddTradLength : histMaxTradDaysBwPeaks;
                     if (isMaxDD)
-                        {
-                            histMaxDDCalLength = daysInDD;
-                            histMaxDDTradLength = ddTradLength;
-                            isMaxDD = false;
-                        }
+                    {
+                        histMaxDDCalLength = daysInDD;
+                        histMaxDDTradLength = ddTradLength;
+                        isMaxDD = false;
+                    }
                     histMaxValue = dailyPValue;
                     ddStart = currentDate;
                     ddTradLength = -1;
                 }
-                
+
                 ddTradLength++;
-                
+
                 if (tradingDayNum == -1) // first day, dailyChange cannot be calculated
                 {
                     previousValue = dailyPValue;
@@ -118,7 +130,7 @@ namespace QuantConnect.Statistics
             double histSharpe = histSD.IsNaNOrInfinity() ? 0 : histAMean / histSD;
             double histMAR = histMaxDrawDown.IsNaNOrInfinity() ? 0 : histCagr / histMaxDrawDown;
 
-             // Step 5. Writing result dict
+            // Step 5. Writing result dict
             result.Summary[PerformanceMetrics.NetProfit] = (Math.Round(histTotalReturn * 100, 3)).ToStringInvariant() + "%";
             result.Summary[PerformanceMetrics.CompoundingAnnualReturn] = (Math.Round(histCagr * 100, 3)).ToStringInvariant() + "%";
             result.Summary[PerformanceMetrics.AnnualizedMeanReturn] = (Math.Round(histAMean * 100, 3)).ToStringInvariant() + "%";
@@ -132,7 +144,7 @@ namespace QuantConnect.Statistics
             result.Summary[PerformanceMetrics.MaxDdLenInTradDays] = histMaxDDTradLength.ToStringInvariant();
             result.Summary[PerformanceMetrics.MaxCalendarDaysBetweenPeaks] = histMaxCalDaysBwPeaks.ToStringInvariant();
             result.Summary[PerformanceMetrics.MaxTradingDaysBetweenPeaks] = histMaxTradDaysBwPeaks.ToStringInvariant();
-            
+
             return result;
         }
     }

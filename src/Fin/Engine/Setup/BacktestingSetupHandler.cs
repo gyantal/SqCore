@@ -81,6 +81,7 @@ namespace QuantConnect.Lean.Engine.Setup
                     "BasicTemplateFrameworkAlgorithm" => new BasicTemplateFrameworkAlgorithm(),
                     "SqSPYMonFriAtMoc" => new SqSPYMonFriAtMoc(),
                     "SqDualMomentum" => new SqDualMomentum(),
+                    "SqHarryLong" => new SqHarryLong(),
                     _ => throw new Exception($"QcAlgorithm name '{algName}' is unrecognized."),
                 };
             }

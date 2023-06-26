@@ -71,6 +71,8 @@ namespace QuantConnect.Algorithm.CSharp
         // Daily resolution: Monday, 15:40 trades are not executed on Monday 16:00, which is good (but for wrong reason). It is not executed because data is stale, data is from Saturday:00:00
         // Tuesday-Friday 15:40 trades are executed at 16:00, which is wrong, because daily data only comes at next day 00:00
         DateTime _backtestStartTime;
+        // List<string> _tickers = new List<string> { "TSLA", "FB", "AAPL", "NFLX" };
+        // private Dictionary<DateTime, List<string>> _requiredEarningsDataDict = new Dictionary<DateTime, List<string>>();
 
         public override void Initialize()
         {
@@ -92,6 +94,7 @@ namespace QuantConnect.Algorithm.CSharp
             // if Raw is not specified in AddEquity(), all prices come as Adjusted, and then Dividend is not added to Cash, and nShares are not changed at Split
             _symbol = AddEquity(_ticker, resolutionUsed, dataNormalizationMode: DataNormalizationMode.Raw).Symbol;   // backtest completed in 4.24 seconds. Processing total of 20,402 data points.
             Securities[_symbol].FeeModel = new ConstantFeeModel(0);
+           // QCAlgorithmUtils.DownloadAndProcessEarningsData();
 
             if (IsTradeInQcCloud)
             {

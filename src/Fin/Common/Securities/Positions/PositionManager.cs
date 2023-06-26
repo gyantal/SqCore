@@ -3,6 +3,7 @@ using System.Linq;
 using QuantConnect.Orders;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using QuantConnect.Parameters;
 
 namespace QuantConnect.Securities.Positions
 {
@@ -48,8 +49,16 @@ namespace QuantConnect.Securities.Positions
             _securities = securities;
             Groups = PositionGroupCollection.Empty;
             _defaultModel = new SecurityPositionGroupBuyingPowerModel();
-            _resolver = new CompositePositionGroupResolver(new OptionStrategyPositionGroupResolver(securities),
-                new SecurityPositionGroupResolver(_defaultModel));
+            // SqCore Change ORIGINAL:
+            // _resolver = new CompositePositionGroupResolver(new OptionStrategyPositionGroupResolver(securities),
+            //                new SecurityPositionGroupResolver(_defaultModel));
+            // SqCore Change NEW:
+            if (SqBacktestConfig.SqFastestExecution) // Speed up by ignoring any OptionStrategy processing
+                _resolver = new CompositePositionGroupResolver(new SecurityPositionGroupResolver(_defaultModel));
+            else
+                _resolver = new CompositePositionGroupResolver(new OptionStrategyPositionGroupResolver(securities),
+                    new SecurityPositionGroupResolver(_defaultModel));
+            // SqCore Change END
 
             // we must be notified each time our holdings change, so each time a security is added, we
             // want to bind to its SecurityHolding.QuantityChanged event so we can trigger the resolver
