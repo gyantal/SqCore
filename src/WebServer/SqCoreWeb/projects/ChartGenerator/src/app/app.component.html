@@ -44,11 +44,7 @@
     <div *ngFor="let lg of item.sqLogs">
       <div [ngClass]="lg.sqLogLevel == ('Error' || 'Warn') ? 'errWarnLog' : 'infoLog'" *ngIf="lg.message != null">{{lg.message}}</div>
     </div>
-  </div>
-  <!-- Progress bar -->
-  <div class="progressBarContainer" [ngStyle]="{'display': isProgressBarVisble ? 'block' : 'none'}">
-    <div class="progressBar"></div>
-  </div>
+  </div><br>
   <div class="statsTbl">
       <b>Dummy Data</b>
     <table>
@@ -66,4 +62,8 @@
       </tbody>
     </table>
   </div>
+</div>
+<!-- Progress bar -->
+<div class="progressBarContainer" [ngStyle]="{'display': isProgressBarVisble ? 'block' : 'none'}">
+  <div class="progressBar"></div>
 </div>

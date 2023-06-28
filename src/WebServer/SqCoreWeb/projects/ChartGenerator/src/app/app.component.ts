@@ -80,7 +80,7 @@ export class AppComponent implements OnInit {
     this.prtfIds = url.searchParams.get('pids');
     this.bmrks = url.searchParams.get('bmrks');
 
-    this.onStartBacktests();
+    // this.onStartBacktests(); - Testing
     this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/chrtgen' + wsQueryStr); // "wss://127.0.0.1/ws/chrtgen?pids=13,2" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection. ? has to be included to separate the location from the params
 
     setInterval(() => { // checking whether the connection is live or not
@@ -106,11 +106,10 @@ export class AppComponent implements OnInit {
           this.user.email = handshakeMsg.email;
           break;
         case 'BacktestResults':
-          // Thread.Sleep(3000); // TEMP
-          console.log('sleep() START');
-          await sleep(3000);
-          console.log('sleep() END');
-          this.isBacktestReturned = false;
+          if (gChrtGenDiag.serverBacktestTime) // check : serverBacktest Returned or not
+            this.isBacktestReturned = true;
+          else
+            this.isBacktestReturned = false;
           console.log('ChrtGen.BacktestResults:' + msgObjStr);
           this.onCompleteBacktests(msgObjStr);
           break;
@@ -295,11 +294,10 @@ export class AppComponent implements OnInit {
   }
 
   showProgressBar() {
-    this.isProgressBarVisble = true;
     const progsBar = document.querySelector('.progressBar') as HTMLElement;
-    // to reset the animation back to its original state
     progsBar.style.animation = ''; // Reset the animation by setting the animation property to an empty string to return to its original state
 
+    this.isProgressBarVisble = true;
     const estimatedDurationInSeconds = gChrtGenDiag.serverBacktestTime / 1000;
     const estimatedDuration = estimatedDurationInSeconds <= 0 ? 4 : estimatedDurationInSeconds; // if estimatedDuration cannot be calculated than, assume 4sec
     console.log('showProgressBar: estimatedDuration', estimatedDuration);
@@ -308,7 +306,6 @@ export class AppComponent implements OnInit {
     progsBar.style.animationTimingFunction = 'linear'; // default would be ‘ease’, which is a slow start, then fast, before it ends slowly. We prefer the linear.
     progsBar.style.animationIterationCount = '1'; // only once
     progsBar.style.animationFillMode = 'forwards';
-    console.log('showProgressBar():', this.isProgressBarVisble); // If progress bar is visible => hide it
   }
 
   // "Server backtest time: 300ms, Communication overhead: 120ms, Total UI response: 420ms."

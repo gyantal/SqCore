@@ -81,7 +81,7 @@
 
 <settings-dialog (parentChangeThemeEvent)="onSetTheme($event)"></settings-dialog>
 
-<div id="manyDshbrdClientsDialog" [ngStyle]="{'visibility': isDshbrdOpenManyTimesDialogVisible ? 'visible' : 'hidden'}">
+<div id="manyDshbrdClientsDialog" [ngStyle]="{'display': isDshbrdOpenManyTimesDialogVisible ? 'block' : 'none'}">
   <div class="manyDshbrdClientsDialog-content">
     <p>"MarketDashboard is open in more than one tab or browser. This slows down both client and server. <br>
       <span class="manyDshbrdClntDialogSuggestion">Suggestion: Close this browser tabpage and find the other MarketDashboard."</span>

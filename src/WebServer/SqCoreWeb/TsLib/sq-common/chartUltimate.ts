@@ -152,8 +152,19 @@ export function chrtGenBacktestChrt(chartData: UiChrtGenValue[], lineChrtDiv: HT
         .append('div')
         .style('color', (d: UiChrtGenValue) => color(d.name) as string)
         .html((d: UiChrtGenValue) => {
-          const closestPoint = d.priceData.find((h) => (h as UiChartPointValue).date.getTime() === mouseClosestXCoord.getTime()); // TODO: check if we need getTime()
-          return d.name + ': ' + (closestPoint as UiChartPointValue).value.toFixed(2) + '%';
+          // const closestPoint = d.priceData.find((h) => (h as UiChartPointValue).date.getTime() === mouseClosestXCoord.getTime()); // TODO: check if we need getTime()
+          let closestPoint: UiChartPointValue;
+          for (let i = 0; i < d.priceData.length; i++) {
+            const point = d.priceData[i];
+            if (new Date(point.date).getTime() === mouseClosestXCoord.getTime()) {
+              closestPoint = point;
+              break;
+            }
+          }
+          if (closestPoint!)
+            return d.name + ': ' + (closestPoint as UiChartPointValue).value.toFixed(2) + '%';
+          else
+            return d.name + ': No Data';
         });
   }
 }
