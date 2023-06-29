@@ -47,7 +47,7 @@ using QCAlgorithmFrameworkBridge = QuantConnect.Algorithm.QCAlgorithm;
 namespace QuantConnect.Algorithm.CSharp
 {
 
-    public class SqHarryLong : QCAlgorithm
+    public class SqPctAllocation : QCAlgorithm
     {
         bool _isTradeInSqCore = true; // 2 simulation environments. We backtest in Qc cloud or in SqCore frameworks. QcCloud works on per minute resolution (to be able to send MOC orders 20min before MOC), SqCore works on daily resolution only.
         public bool IsTradeInSqCore { get { return _isTradeInSqCore; } }

@@ -14,6 +14,9 @@ namespace Fin.MemDb;
 // So, in pre-market this IEX 'top' cannot be used. Investigated. Even IEX cloud can be used in pre-market. ("lastSalePrice":0)
 // It is important here, because of summer/winter time zones that IB/YF all are relative to ET time zone 4:00AM EST. This is usually 9:00 in London,
 // but in 2020-03-12, when USA set summer time zone 2 weeks early, the 4:00AM cutoff time was 8:00AM in London. And IB/YF measured itself to EST time, not UTC time. Implement this behaviour.
+// >As a last resort, if free batch (wheny many symbols are queried) price queries fails (YF's quote and Iex Top), we can try individual downloads freely for some small number of assets.
+// We have 1000 assets, but only about 80 is really important. The ones traded with UberVxx/UberTaa with webtools, and the MarketDashboard BrokerAccViewer.
+// This Last resort individual (not batch) RT downloads can be used for VOD.L, on which Iex fails. E.g. https://query1.finance.yahoo.com/v8/finance/chart/VOD.L works, individually.
 public class RtPriceDownloader // can use different downloaders (Yf, Iex, Ib) based on which has free data
 {
     readonly RtPriceDownloaderYf m_rtPriceDownloaderYf = new();

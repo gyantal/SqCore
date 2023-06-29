@@ -36,6 +36,8 @@ namespace Fin.MemDb;
 // 2023-06-12: because YF realtime didn't work, we used IEX Market, and somehow we used up the monthly quota in 12 days. Maybe they reduced the 50,000 per month free quota in 2023
 // For RT highFreq: use 30 seconds, but alternade the 2 tokens we use. That will be about 1 query per minute per token = 60*8*30 = 15K queries per token per month. Although Developers also use some of the quota while developing.
 // Is there a need for 2 IEX timers? (High/Mid Freq) MidFreq timer can be deleted. Questionable, but keep this logic! In the future, we might use a 3rd RT service.
+
+// For special cases when Iex fails (VOD.L, ^SPX,^VIX indices), we can fall back to YF (even individually, non-batch way). E.g. https://query1.finance.yahoo.com/v8/finance/chart/VOD.L
 public class RtPriceDownloaderIex
 {
     byte m_lastIexApiTokenInd = 2; // possible values: { 1, 2}. Alternate 2 API tokens to stay bellow the 50K quota. Token1 is the hedgequantserver, Token2 is the UnknownUser.

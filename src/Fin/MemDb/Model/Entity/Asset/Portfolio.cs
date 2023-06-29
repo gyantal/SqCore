@@ -22,6 +22,7 @@ public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the Hash
     public string BaseCurrency { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public string Algorithm { get; set; } = string.Empty;
+    public string AlgorithmParam { get; set; } = string.Empty;
 
     public PortfolioInDb()
     {
@@ -39,6 +40,7 @@ public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the Hash
         BaseCurrency = p_prtf.BaseCurrency.ToString();
         Type = p_prtf.Type.ToString();
         Algorithm = p_prtf.Algorithm.ToString();
+        AlgorithmParam = p_prtf.AlgorithmParam.ToString();
     }
 }
 
@@ -57,6 +59,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
     public CurrencyId BaseCurrency { get; set; } = CurrencyId.USD;
     public PortfolioType Type { get; set; } = PortfolioType.Unknown;
     public string Algorithm { get; set; } = string.Empty;
+    public string AlgorithmParam { get; set; } = string.Empty;
 
     // public List<Asset> Assets { get; set; } = new List<Asset>();    // TEMP. Delete this later when Portfolios are finalized.
 
@@ -94,9 +97,10 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
 
         Type = AssetHelper.gStrToPortfolioType[portfolioInDb.Type];
         Algorithm = portfolioInDb.Algorithm;
+        AlgorithmParam = portfolioInDb.AlgorithmParam;
     }
 
-    public Portfolio(int p_id, User? p_user, string p_name, int p_parentFldId, string p_creationTime, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith)
+    public Portfolio(int p_id, User? p_user, string p_name, int p_parentFldId, string p_creationTime, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith)
     {
         Id = p_id;
         User = p_user;
@@ -107,6 +111,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         BaseCurrency = p_currency;
         Type = p_type;
         Algorithm = p_algorithm;
+        AlgorithmParam = p_algorithmParam;
         SharedAccess = p_sharedAccess;
         SharedUsersWith = p_sharedUsersWith;
     }
