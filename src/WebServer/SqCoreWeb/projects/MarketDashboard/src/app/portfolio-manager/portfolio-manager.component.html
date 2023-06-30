@@ -98,6 +98,18 @@
           </div>
         </div>
         <div>
+          <div class="prtfCommon prtfFields">Algorithm:</div>
+          <div class="prtfCommon prtfUserValues">
+            <input class="pfItemLongInput" type="text" placeholder="Enter Portfolio Algorithm" [(ngModel)]="editedPortfolio.algorithm" [value]="editedPortfolio.algorithm">
+          </div>
+        </div>
+        <div>
+          <div class="prtfCommon prtfFields">AlgorithmParam:</div>
+          <div class="prtfCommon prtfUserValues">
+            <input class="pfItemLongInput" type="text" placeholder="Enter Portfolio AlgorithmParam" [(ngModel)]="editedPortfolio.algorithmParam" [value]="editedPortfolio.algorithmParam">
+          </div>
+        </div>
+        <div>
           <div class="prtfCommon prtfFields">User Note:</div>
           <div class="prtfCommon prtfUserValues">
             <input class="pfItemLongInput" type="text" placeholder="write some notes" [(ngModel)]="editedPortfolio.note" [value]="editedPortfolio.note">
@@ -105,7 +117,7 @@
         </div>
       </div>
       <span>
-        <button id="createPortfolioButton" (click)="onCreateOrEditPortfolioClicked()">{{(editedPortfolio.id == -1) ? 'Create Portfolio' : 'Save Portfolio'}}</button>
+        <button id="createPortfolioButton" (click)="onCreateOrEditPortfolioClicked()" [disabled]="!isViewedPortfolioSaveAllowed">{{(editedPortfolio.id == -1) ? 'Create Portfolio' : 'Save Portfolio'}}</button>
         <button class="closePopup" (click)="closeCreatePortfolioPopup()" [ngStyle]="{'display': isCreateOrEditPortfolioPopupVisible ? 'block' : 'none'}">Cancel</button>
       </span>
     </div><br>

@@ -37,8 +37,8 @@ export class AppComponent implements OnInit {
 
   chrtGenBacktestResults: Nullable<ChrtGenBacktestResult> = null;
   uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[] = [];
-  pvChrtWidth = 0;
-  pvChrtHeight = 0;
+  pvChrtWidth: number = 0;
+  pvChrtHeight: number = 0;
 
   prtfIds: Nullable<string> = null;
   bmrks: Nullable<string> = null; // benchmarks
@@ -46,10 +46,10 @@ export class AppComponent implements OnInit {
   endDate: Date = new Date(); // used to filter the chart Data based on the user input
   startDateStr: string = '';
   endDateStr: string = '';
-  rangeSelection = ['YTD', '1M', '1Y', '3Y', '5Y'];
+  rangeSelection: string[] = ['YTD', '1M', '1Y', '3Y', '5Y', 'ALL'];
   histRangeSelected: string = 'YTD';
   isSrvConnectionAlive: boolean = true;
-  chrtGenDiagnosticsMsg = 'Benchmarking time, connection speed';
+  chrtGenDiagnosticsMsg: string = 'Benchmarking time, connection speed';
   isProgressBarVisble: boolean = false;
   isBacktestReturned: boolean = false;
   prtfOrBenchmark: string[] = ['SPY', 'TLT', 'RootUser', 'DualMomentum', 'VXX'];
@@ -337,7 +337,8 @@ export class AppComponent implements OnInit {
     } else if (this.histRangeSelected.toLowerCase().endsWith('m')) {
       const lbMonths = parseInt(this.histRangeSelected.substr(0, this.histRangeSelected.length - 1), 10);
       this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.setMonth(currDateET.getMonth() - lbMonths)));
-    }
+    } else if (this.histRangeSelected.toUpperCase() === 'ALL')
+      this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date());
     this.endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date());
     this.startDate = new Date(this.startDateStr);
     this.endDate = new Date(this.endDateStr);

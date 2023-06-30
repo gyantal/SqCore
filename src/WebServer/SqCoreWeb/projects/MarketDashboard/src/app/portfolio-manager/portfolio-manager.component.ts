@@ -32,6 +32,9 @@ class PortfolioJs extends PortfolioItemJs {
   public sharedUserWithMe = '';
   public baseCurrency = 'USD'; // default currrency
   public portfolioType = 'Trades'; // default type
+  public algorithm = '';
+  public algorithmParam = '';
+  public isUserAdmin = false;
 }
 
 export class TreeViewItem { // future work. At the moment, it copies PortfolioFldrJs[] and add the children field. With unnecessary field values. When Portfolios are introduced, this should be rethought.
@@ -50,6 +53,9 @@ export class TreeViewItem { // future work. At the moment, it copies PortfolioFl
   public type = ''; // Trades or Simulation
   public sharedAccess = '';
   public sharedUserWithMe = '';
+  public algorithm = '';
+  public algorithmParam = '';
+  public isUserAdmin = false;
 }
 
 export class TreeViewState {
@@ -81,31 +87,33 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   editedFolder: FolderJs = new FolderJs(); // create or edit folder
   parentfolderName: string | undefined = ''; // displaying next to the selected parent folder id on Ui
   editedPortfolio: PortfolioJs = new PortfolioJs(); // create or edit portfolio
+  isViewedPortfolioSaveAllowed: boolean = false;
+  loggedInUser: string = '';
   currencyType: string[] = ['USD', 'EUR', 'GBP', 'GBX', 'HUF', 'JPY', 'CAD', 'CNY', 'CHF'];
   portfolioType: string[] = ['Trades', 'Simulation', 'TradesSqClassic'];
   sharedAccess: string[] = ['Restricted', 'OwnerOnly', 'Anyone'];
   // sharedUsers: number[] = [31, 33, 38]; // ignore the feature for now. Leave this empty
   public gPortfolioIdOffset: number = 10000;
 
-  tabPrtfSpecVisibleIdx = 1; // tab buttons for portfolio specification preview of positions and strategy parameters
+  tabPrtfSpecVisibleIdx: number = 1; // tab buttons for portfolio specification preview of positions and strategy parameters
 
   prtfRunResult: Nullable<PrtfRunResultJs> = null;
   uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
   todayDate: Date = new Date(); // displaying the statistics as of Date on UI
 
   // the below variables are required for resizing the panels according to users
-  dashboardHeaderWidth = 0;
-  dashboardHeaderHeight = 0;
-  prtfMgrToolWidth = 0;
-  prtfMgrToolHeight = 0;
-  panelPrtfTreeWidth = 0;
-  panelPrtfTreeHeight = 0;
-  panelPrtfChrtWidth = 0;
-  panelPrtfChrtHeight = 0;
-  panelStatsWidth = 0;
-  panelStatsHeight = 0;
-  panelPrtfSpecWidth = 0;
-  panelPrtfSpecHeight = 0;
+  dashboardHeaderWidth: number = 0;
+  dashboardHeaderHeight: number = 0;
+  prtfMgrToolWidth: number = 0;
+  prtfMgrToolHeight: number = 0;
+  panelPrtfTreeWidth: number = 0;
+  panelPrtfTreeHeight: number = 0;
+  panelPrtfChrtWidth: number = 0;
+  panelPrtfChrtHeight: number = 0;
+  panelStatsWidth: number = 0;
+  panelStatsHeight: number = 0;
+  panelPrtfSpecWidth: number = 0;
+  panelPrtfSpecHeight: number = 0;
 
   constructor() { }
 
@@ -216,6 +224,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
         return true;
       case 'PortfMgr.Handshake': // The least frequent message should come last.
         console.log('PortfMgr.Handshake:' + msgObjStr);
+        this.loggedInUser = JSON.parse(msgObjStr).userName;
         // this.handshakeObj = JSON.parse(msgObjStr);
         return true;
       case 'PortfMgr.PrtfRunResult': // Receives backtest results when user requests
@@ -260,6 +269,14 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       }
       if (key === 'bCur') {
         _this.baseCurrency = value;
+        return; // if return undefined, original property will be removed
+      }
+      if (key === 'algo') {
+        _this.algorithm = value;
+        return; // if return undefined, original property will be removed
+      }
+      if (key === 'algoP') {
+        _this.algorithmParam = value;
         return; // if return undefined, original property will be removed
       }
       return value;
@@ -502,7 +519,10 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.editedPortfolio.sharedUserWithMe = lastSelectedTreeNode?.sharedUserWithMe!;
       this.editedPortfolio.note = lastSelectedTreeNode?.note!;
       this.parentfolderName = this.folders?.find((r) => r.id == lastSelectedTreeNode.parentFolderId!)?.name;
+      this.editedPortfolio.algorithm = lastSelectedTreeNode?.algorithm;
+      this.editedPortfolio.algorithmParam = lastSelectedTreeNode?.algorithmParam;
     }
+    this.isViewedPortfolioSaveAllowed = lastSelectedTreeNode?.isUserAdmin! || this.loggedInUser == this.parentfolderName; // TEMP: portfolio.user - To be discussed today('30-06-2023')
   }
 
   closeCreatePortfolioPopup() {
