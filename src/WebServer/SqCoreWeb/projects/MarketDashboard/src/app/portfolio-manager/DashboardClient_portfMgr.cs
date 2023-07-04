@@ -28,7 +28,7 @@ class PortfolioItemJs
     [JsonPropertyName("cTime")]
     public string CreationTime { get; set; } = string.Empty;
     public string Note { get; set; } = string.Empty;
-    [JsonPropertyName("oUsr")]
+    [JsonPropertyName("ouNm")]
     public string OwnerUserName { get; set; } = string.Empty;
 }
 
@@ -47,7 +47,6 @@ class PortfolioJs : PortfolioItemJs
     public string Algorithm { get; set; } = string.Empty;
     [JsonPropertyName("algoP")]
     public string AlgorithmParam { get; set; } = string.Empty;
-    public Boolean IsUserAdmin { get; set; } = false;
 }
 
 class PrtfRunResultJs
@@ -252,7 +251,7 @@ public partial class DashboardClient
 
             int virtualParentFldId = GetVirtualParentFldId(pf.User, pf.ParentFolderId);
 
-            PortfolioJs pfJs = new() { Id = pf.Id + gPortfolioIdOffset, Name = pf.Name, ParentFolderId = virtualParentFldId, BaseCurrency = pf.BaseCurrency.ToString(), SharedAccess = pf.SharedAccess.ToString(), SharedUsersWith = pf.SharedUsersWith, Type = pf.Type.ToString(), Algorithm = pf.Algorithm, AlgorithmParam = pf.AlgorithmParam, IsUserAdmin = User.IsAdmin };
+            PortfolioJs pfJs = new() { Id = pf.Id + gPortfolioIdOffset, Name = pf.Name, ParentFolderId = virtualParentFldId, BaseCurrency = pf.BaseCurrency.ToString(), SharedAccess = pf.SharedAccess.ToString(), SharedUsersWith = pf.SharedUsersWith, Type = pf.Type.ToString(), Algorithm = pf.Algorithm, AlgorithmParam = pf.AlgorithmParam };
             prtfToClient.Add(pfJs);
         }
 

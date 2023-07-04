@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { SettingsDialogComponent } from './settings-dialog/settings-dialog.component';
-import { gDiag, AssetLastJs } from '../../../../TsLib/sq-common/sq-globals';
+import { gDiag, AssetLastJs, UserJs } from '../../../../TsLib/sq-common/sq-globals';
 import { BrAccViewerComponent } from './bracc-viewer/bracc-viewer.component';
 import { PortfolioManagerComponent } from './portfolio-manager/portfolio-manager.component';
 import { MarketHealthComponent } from './market-health/market-health.component';
@@ -12,6 +12,8 @@ type Nullable<T> = T | null;
 
 class HandshakeMessage {
   public email = '';
+  public isAdminUser: boolean = false;
+  public userId: number = 0;
   public param2 = '';
 }
 
@@ -34,9 +36,11 @@ export class AppComponent implements OnInit {
   // t (Active (T)ool) = mh (Market Health), bav (Broker Portfolio Viewer)
   public urlQueryParamsArr : string[][];
   public urlQueryParamsObj = {}; // empty object. If queryParamsObj['t'] doesn't exist, it returns 'undefined'
-  user = {
+  public _user: UserJs = { // considered as the user who is using the webapp. This can be accessed by the Tools.
     name: 'Anonymous',
-    email: '             '
+    email: '             ',
+    isAdmin: false,
+    id: 0
   };
   isToolSelectionVisible = false;
   isUserSelectionVisible = false;
@@ -164,7 +168,9 @@ export class AppComponent implements OnInit {
           console.log('ws: OnConnected message arrived:' + event.data);
 
           const handshakeMsg: HandshakeMessage = Object.assign(new HandshakeMessage(), JSON.parse(msgObjStr));
-          this.user.email = handshakeMsg.email;
+          this._user.email = handshakeMsg.email;
+          this._user.isAdmin = handshakeMsg.isAdminUser;
+          this._user.id = handshakeMsg.userId;
           break;
         case 'Dshbrd.IsDshbrdOpenManyTimes':
           console.log('The Dashboard opened many times string:', msgObjStr);

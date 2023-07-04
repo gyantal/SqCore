@@ -109,3 +109,10 @@ export class AssetLastJs {
   public lastUtc = ''; // preferred to be a new Date(), but when it arrives from server it is a string '2010-09-29T00:00:00'.
   public last = NaN;
 }
+
+export class UserJs {
+  public name: string = '';
+  public email: string = '';
+  public isAdmin: boolean = false;
+  public id: number = 0;
+}

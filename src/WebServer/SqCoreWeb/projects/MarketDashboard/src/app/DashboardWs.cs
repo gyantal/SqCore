@@ -14,6 +14,8 @@ namespace SqCoreWeb;
 class HandshakeMessage
 { // General params for the aggregate Dashboard. These params should be not specific to smaller tools, like HealthMonitor, CatalystSniffer, QuickfolioNews
     public string Email { get; set; } = string.Empty;
+    public bool IsAdminUser { get; set; } = false;
+    public int UserId { get; set; } = 0;
     public int AnyParam { get; set; } = 55;
 }
 
@@ -25,6 +27,12 @@ public class DashboardWs
         // context.Request comes as: 'wss://' + document.location.hostname + '/ws/dashboard?t=bav'
         var userEmailClaim = context?.User?.Claims?.FirstOrDefault(p => p.Type == @"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
         var email = userEmailClaim?.Value ?? "unknown@gmail.com";
+        User? user = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == email);
+        if (user == null)
+        {
+            Utils.Logger.Error($"Error. UserEmail is not found among MemDb users '{email}'.");
+            return;
+        }
 
         string? activeToolAtConnectionInit = context!.Request.Query["t"];   // if "t" is not found, the empty StringValues casted to string as null
         activeToolAtConnectionInit ??= "mh";
@@ -32,7 +40,7 @@ public class DashboardWs
             activePage = ActivePage.Unknown;
 
         // https://stackoverflow.com/questions/24450109/how-to-send-receive-messages-through-a-web-socket-on-windows-phone-8-using-the-c
-        var msgObj = new HandshakeMessage() { Email = email };
+        var msgObj = new HandshakeMessage() { Email = email, IsAdminUser = user.IsAdmin, UserId = user.Id };
         byte[] encodedMsg = Encoding.UTF8.GetBytes("OnConnected:" + Utils.CamelCaseSerialize(msgObj));
         if (webSocket.State == WebSocketState.Open)
             await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);    // takes 0.635ms
@@ -40,12 +48,6 @@ public class DashboardWs
         // create a connectionID based on client IP + connectionTime; the userID is the email as each user must be authenticated by an email.
         var clientIP = WsUtils.GetRequestIPv6(context!);    // takes 0.346ms
         Utils.Logger.Info($"DashboardWs.OnConnectedAsync(), Connection from IP: {clientIP} with email '{email}'");  // takes 1.433ms
-        User? user = MemDb.gMemDb.Users.FirstOrDefault(r => r.Email == email);
-        if (user == null)
-        {
-            Utils.Logger.Error($"Error. UserEmail is not found among MemDb users '{email}'.");
-            return;
-        }
 
         DashboardClient client = new(clientIP, email, user, DateTime.UtcNow)
         {

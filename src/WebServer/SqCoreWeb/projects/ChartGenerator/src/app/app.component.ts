@@ -80,7 +80,7 @@ export class AppComponent implements OnInit {
     this.prtfIds = url.searchParams.get('pids');
     this.bmrks = url.searchParams.get('bmrks');
 
-    // this.onStartBacktests(); - Testing
+    this.onStartBacktests();
     this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/chrtgen' + wsQueryStr); // "wss://127.0.0.1/ws/chrtgen?pids=13,2" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection. ? has to be included to separate the location from the params
 
     setInterval(() => { // checking whether the connection is live or not
@@ -106,10 +106,7 @@ export class AppComponent implements OnInit {
           this.user.email = handshakeMsg.email;
           break;
         case 'BacktestResults':
-          if (gChrtGenDiag.serverBacktestTime) // check : serverBacktest Returned or not
-            this.isBacktestReturned = true;
-          else
-            this.isBacktestReturned = false;
+          await sleep(5000); // simulate slow C# server backtest
           console.log('ChrtGen.BacktestResults:' + msgObjStr);
           this.onCompleteBacktests(msgObjStr);
           break;
@@ -271,14 +268,17 @@ export class AppComponent implements OnInit {
   }
 
   async onStartBacktests() {
+    this.isBacktestReturned = false;
     gChrtGenDiag.backtestRequestStartTime = new Date();
     // Remember to Show Progress bar in 2 seconds from this time.
-    await sleep(2000);
-    if (!this.isBacktestReturned) // If the backtest hasn't returned yet (still pending), show Progress bar
-      this.showProgressBar();
+    setTimeout(() => {
+      if (!this.isBacktestReturned) // If the backtest hasn't returned yet (still pending), show Progress bar
+        this.showProgressBar();
+    }, 2 * 1000);
   }
 
   onCompleteBacktests(msgObjStr: string) {
+    this.isBacktestReturned = true;
     gChrtGenDiag.backtestRequestReturnTime = new Date();
     this.isProgressBarVisble = false; // If progress bar is visible => hide it
     this.processChrtGenBacktestResults(msgObjStr);
@@ -329,7 +329,7 @@ export class AppComponent implements OnInit {
     this.histRangeSelected = histPeriodSelectionSelected;
     console.log('hist period selected is ', this.histRangeSelected);
     const currDateET: Date = new Date(); // gets today's date
-    if (this.histRangeSelected.toUpperCase() === 'YTD')
+    if (this.histRangeSelected === 'YTD')
       this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.getFullYear() - 1, 11, 31));
     else if (this.histRangeSelected.toLowerCase().endsWith('y')) {
       const lbYears = parseInt(this.histRangeSelected.substr(0, this.histRangeSelected.length - 1), 10);
@@ -337,7 +337,7 @@ export class AppComponent implements OnInit {
     } else if (this.histRangeSelected.toLowerCase().endsWith('m')) {
       const lbMonths = parseInt(this.histRangeSelected.substr(0, this.histRangeSelected.length - 1), 10);
       this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.setMonth(currDateET.getMonth() - lbMonths)));
-    } else if (this.histRangeSelected.toUpperCase() === 'ALL')
+    } else if (this.histRangeSelected === 'ALL')
       this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date());
     this.endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date());
     this.startDate = new Date(this.startDateStr);

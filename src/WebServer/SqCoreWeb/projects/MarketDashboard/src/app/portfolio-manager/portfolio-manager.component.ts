@@ -5,6 +5,7 @@ import { PrtfRunResultJs, UiChartPointValue, UiPrtfPositions, UiPrtfRunResult } 
 import { SqNgCommonUtils } from '../../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { onFirstVisibleEventListener } from '../../../../../TsLib/sq-common/utils-common';
 import * as d3 from 'd3';
+import { UserJs } from '../../../../../TsLib/sq-common/sq-globals';
 
 type Nullable<T> = T | null;
 
@@ -34,7 +35,6 @@ class PortfolioJs extends PortfolioItemJs {
   public portfolioType = 'Trades'; // default type
   public algorithm = '';
   public algorithmParam = '';
-  public isUserAdmin = false;
 }
 
 export class TreeViewItem { // future work. At the moment, it copies PortfolioFldrJs[] and add the children field. With unnecessary field values. When Portfolios are introduced, this should be rethought.
@@ -55,7 +55,6 @@ export class TreeViewItem { // future work. At the moment, it copies PortfolioFl
   public sharedUserWithMe = '';
   public algorithm = '';
   public algorithmParam = '';
-  public isUserAdmin = false;
 }
 
 export class TreeViewState {
@@ -71,6 +70,8 @@ export class TreeViewState {
 })
 export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   @Input() _parentWsConnection?: WebSocket = undefined; // this property will be input from above parent container
+  @Input() _mainUser?: UserJs = undefined; // this property will be input from above parent container
+
   @ViewChild(SqTreeViewComponent) public sqTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
 
   folders: Nullable<FolderJs[]> = null;
@@ -94,6 +95,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   sharedAccess: string[] = ['Restricted', 'OwnerOnly', 'Anyone'];
   // sharedUsers: number[] = [31, 33, 38]; // ignore the feature for now. Leave this empty
   public gPortfolioIdOffset: number = 10000;
+  public p_numNegToPos = -1; // Converting negative number to positive number
 
   tabPrtfSpecVisibleIdx: number = 1; // tab buttons for portfolio specification preview of positions and strategy parameters
 
@@ -522,7 +524,11 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.editedPortfolio.algorithm = lastSelectedTreeNode?.algorithm;
       this.editedPortfolio.algorithmParam = lastSelectedTreeNode?.algorithmParam;
     }
-    this.isViewedPortfolioSaveAllowed = lastSelectedTreeNode?.isUserAdmin! || this.loggedInUser == this.parentfolderName; // TEMP: portfolio.user - To be discussed today('30-06-2023')
+    // Identifying the OwnerUserId based on lastSelectedNode's ParentFolderId/Id
+    const prntFldrId = this.folders?.find((r) => r.id == lastSelectedTreeNode.parentFolderId!)?.parentFolderId! * this.p_numNegToPos; // prntFldrId == 1 is root user
+    const ownerUserId = isNaN(prntFldrId) ? lastSelectedTreeNode.id! * this.p_numNegToPos : prntFldrId === 1 ? lastSelectedTreeNode.parentFolderId! * this.p_numNegToPos : prntFldrId;
+    this.isViewedPortfolioSaveAllowed = this._mainUser!.isAdmin || this._mainUser!.id == ownerUserId;
+    console.log('showCreateOrEditPortfolioPopup(): isViewedPortfolioSaveAllowed', this.isViewedPortfolioSaveAllowed);
   }
 
   closeCreatePortfolioPopup() {
