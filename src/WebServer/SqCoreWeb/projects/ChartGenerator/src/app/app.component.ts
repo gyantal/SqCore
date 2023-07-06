@@ -124,7 +124,7 @@ export class AppComponent implements OnInit {
     window.addEventListener('resize', () => {
       this.pvChrtWidth = backtestResChartId.clientWidth as number; // we have to remember the width/height every time window is resized, because we give these to the chart
       this.pvChrtHeight = backtestResChartId.clientHeight as number;
-      AppComponent.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight, this.startDate, this.endDate);
+      this.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight);
     });
   }
 
@@ -186,11 +186,11 @@ export class AppComponent implements OnInit {
       }
       return value;
     });
-    AppComponent.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight, this.startDate, this.endDate);
+    this.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight);
   }
 
   // startdate and enddate are not utlized at the moment - Daya yet to develop
-  static updateUiWithChrtGenBacktestResults(chrtGenBacktestRes: Nullable<ChrtGenBacktestResult>, uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[], uiChrtWidth: number, uiChrtHeight: number, startDate: Date, endDate: Date) {
+  updateUiWithChrtGenBacktestResults(chrtGenBacktestRes: Nullable<ChrtGenBacktestResult>, uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[], uiChrtWidth: number, uiChrtHeight: number) {
     if (chrtGenBacktestRes == null || chrtGenBacktestRes.pfRunResults == null)
       return;
 
@@ -227,7 +227,7 @@ export class AppComponent implements OnInit {
         const chrtItem = new UiChartPointValue();
         const mSecSinceUnixEpoch: number = item.chrtData.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
         chrtItem.date = new Date(mSecSinceUnixEpoch);
-        chrtItem.value = 100 * item.chrtData.values[i] / item.chrtData.values[0]; // used to convert the data into percentage values
+        chrtItem.value = item.chrtData.values[i];
         chartItem.priceData.push(chrtItem);
       }
       uiPrtfResItem.prtfChrtValues.push(chartItem);
@@ -241,7 +241,7 @@ export class AppComponent implements OnInit {
         const chrtItem = new UiChartPointValue();
         const dateStr: string = bmrkItem.histPrices.dates[i];
         chrtItem.date = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(5, 7) + '-' + dateStr.substring(8, 10));
-        chrtItem.value = 100 * bmrkItem.histPrices.prices[i] / bmrkItem.histPrices.prices[0]; // used to convert the data into percentage values
+        chrtItem.value = bmrkItem.histPrices.prices[i];
         chartItem.priceData.push(chrtItem);
       }
       uiPrtfResItem.bmrkChrtValues.push(chartItem);
@@ -256,15 +256,84 @@ export class AppComponent implements OnInit {
 
     uiChrtGenPrtfRunResults.push(uiPrtfResItem);
 
+    this.preProcessingChrtData(uiChrtWidth, uiChrtHeight, uiChrtGenPrtfRunResults);
+  }
+
+  preProcessingChrtData(uiChrtWidth: number, uiChrtHeight: number, uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[]) {
     d3.selectAll('#pfRunResultChrt > *').remove();
     const lineChrtDiv = document.getElementById('pfRunResultChrt') as HTMLElement;
-    const margin = {top: 50, right: 50, bottom: 30, left: 60 };
+    const margin = { top: 50, right: 50, bottom: 30, left: 60 };
     const chartWidth = uiChrtWidth * 0.9 - margin.left - margin.right; // 90% of the PvChart Width
     const chartHeight = uiChrtHeight * 0.9 - margin.top - margin.bottom; // 90% of the PvChart Height
-    const prtfAndBmrkChrtData: UiChrtGenValue[] = uiPrtfResItem.prtfChrtValues.concat(uiPrtfResItem.bmrkChrtValues);
+    const prtfAndBmrkChrtData: UiChrtGenValue[] = uiChrtGenPrtfRunResults[0].prtfChrtValues.concat(uiChrtGenPrtfRunResults[0].bmrkChrtValues);
     const lineChrtTooltip = document.getElementById('tooltipChart') as HTMLElement;
 
-    chrtGenBacktestChrt(prtfAndBmrkChrtData, lineChrtDiv, chartWidth, chartHeight, margin, lineChrtTooltip, startDate, endDate);
+    // Extract all Dates from the priceData array
+    const dates: Date[] = [];
+    for (let i = 0; i < prtfAndBmrkChrtData.length; i++) {
+      const data = prtfAndBmrkChrtData[i];
+      for (let j = 0; j < data.priceData.length; j++) {
+        const point = data.priceData[j];
+        dates.push(new Date(point.date));
+      }
+    }
+
+    // Calculate the domain for x-axis (Dates)
+    let xMin: Date;
+    let xMax: Date;
+
+    if (this.startDate.getTime() === this.endDate.getTime()) { // this occurs when user selects All or Default
+      xMin = d3.min(dates) as Date;
+      xMax = d3.max(dates) as Date;
+      this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(xMin);
+      this.endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(xMax);
+      this.startDate = new Date(this.startDateStr);
+      this.endDate = new Date(this.endDateStr);
+    } else {
+      xMin = this.startDate;
+      xMax = this.endDate;
+    }
+
+    // Step1: slice the part of the total input data to the viewed, visualized part.
+    const slicedChartData: UiChrtGenValue[] = [];
+    for (const data of prtfAndBmrkChrtData) {
+      const slicedData: UiChartPointValue[] = [];
+
+      for (let i = 0; i < data.priceData.length; i++) {
+        const chrtdata = data.priceData[i];
+        const date = new Date(chrtdata.date);
+
+        if (date >= this.startDate && date <= this.endDate)
+          slicedData.push(chrtdata);
+      }
+
+      if (slicedData.length > 0) {
+        const newSlicedData: UiChartPointValue[] = [];
+        for (let i = 0; i < slicedData.length; i++) {
+          const chrtPointVal = new UiChartPointValue();
+          chrtPointVal.date = slicedData[i].date;
+          chrtPointVal.value = 100 * slicedData[i].value / slicedData[0].value;
+          newSlicedData.push(chrtPointVal);
+        }
+        const dataCopy: UiChrtGenValue = { name: data.name, date: data.date, value: data.value, chartResolution: data.chartResolution, priceData: newSlicedData };
+        slicedChartData.push(dataCopy);
+      }
+    }
+
+    // Extract all values from the priceData array
+    const values: number[] = [];
+    for (let i = 0; i < slicedChartData.length; i++) {
+      const data = slicedChartData[i];
+      for (let j = 0; j < data.priceData.length; j++) {
+        const point = data.priceData[j];
+        values.push(point.value);
+      }
+    }
+
+    // Calculate the domain for y-axis (values)
+    const yMin: number = d3.min(values) as number;
+    const yMax: number = d3.max(values) as number;
+    chrtGenBacktestChrt(slicedChartData, lineChrtDiv, chartWidth, chartHeight, margin, xMin, xMax, yMin, yMax, lineChrtTooltip);
   }
 
   async onStartBacktests() {
@@ -342,6 +411,6 @@ export class AppComponent implements OnInit {
     this.endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date());
     this.startDate = new Date(this.startDateStr);
     this.endDate = new Date(this.endDateStr);
-    AppComponent.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight, this.startDate, this.endDate);
+    this.preProcessingChrtData(this.pvChrtWidth, this.pvChrtHeight, this.uiChrtGenPrtfRunResults);
   }
 }

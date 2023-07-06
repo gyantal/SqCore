@@ -2,56 +2,16 @@
 import * as d3 from 'd3';
 import { UiChartPointValue, UiChrtGenValue } from './backtestCommon';
 
+type Nullable<T> = T | null;
+
 // used in ChartGenerator app
-export function chrtGenBacktestChrt(chartData: UiChrtGenValue[], lineChrtDiv: HTMLElement, inputWidth: number, inputHeight: number, margin: any, lineChrtTooltip: HTMLElement, startDate: Date, endDate: Date) {
-  // Step1: slice the part of the total input data to the viewed, visualized part.
-  let slicedChartData: UiChrtGenValue[] = [];
-  if (startDate.getTime() === endDate.getTime()) // if the startdate and enddate are same , it means there is no need of slicing the data
-    slicedChartData = chartData;
-  else {
-    for (const data of chartData) {
-      const slicedData: UiChartPointValue[] = [];
-
-      for (let i = 0; i < data.priceData.length; i++) {
-        const chrtdata = data.priceData[i];
-        const date = new Date(chrtdata.date);
-
-        if (date >= startDate && date <= endDate)
-          slicedData.push(chrtdata);
-      }
-
-      if (slicedData.length > 0) {
-        const dataCopy: UiChrtGenValue = { name: data.name, date: data.date, value: data.value, chartResolution: data.chartResolution, priceData: slicedData };
-        slicedChartData.push(dataCopy);
-      }
-    }
-  }
-
-  const nameKey: string[] = slicedChartData.map(function(d: UiChrtGenValue) { return d.name; }); // list of group names
+export function chrtGenBacktestChrt(chartData: UiChrtGenValue[], lineChrtDiv: HTMLElement, inputWidth: number, inputHeight: number, margin: any, xMin: Date, xMax: Date, yMin: number, yMax: number, lineChrtTooltip: HTMLElement) {
+  const nameKey: string[] = chartData.map(function(d: UiChrtGenValue) { return d.name; }); // list of group names
   // adding colors for keys
   const color = d3.scaleOrdinal()
       .domain(nameKey)
       .range(['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#f781bf', '#808000', '#008000', '#a65628', '#333397', '#800080', '#000000']);
 
-  // Extract all values and Dates from the priceData array
-  const dates: Date[] = [];
-  const values: number[] = [];
-  for (let i = 0; i < slicedChartData.length; i++) {
-    const data = slicedChartData[i];
-    for (let j = 0; j < data.priceData.length; j++) {
-      const point = data.priceData[j];
-      dates.push(new Date(point.date));
-      values.push(point.value);
-    }
-  }
-
-  // Calculate the domain for x-axis (dates)
-  const xMin: Date = d3.min(dates) as Date;
-  const xMax: Date = d3.max(dates) as Date;
-
-  // Calculate the domain for y-axis (values)
-  const yMin: number = d3.min(values) as number;
-  const yMax: number = d3.max(values) as number;
   // range of data configuring
   const scaleX = d3.scaleTime().domain([xMin, xMax]).range([0, inputWidth]);
   const scaleY = d3.scaleLinear().domain([yMin - 5, yMax + 5]).range([inputHeight, 0]);
@@ -70,7 +30,7 @@ export function chrtGenBacktestChrt(chartData: UiChrtGenValue[], lineChrtDiv: HT
 
   // Draw the line
   backtestChrt.selectAll('.line')
-      .data(slicedChartData)
+      .data(chartData)
       .enter()
       .append('path')
       .attr('fill', 'none')
@@ -81,10 +41,10 @@ export function chrtGenBacktestChrt(chartData: UiChrtGenValue[], lineChrtDiv: HT
           .y((r) => scaleY(r.value))
           .curve(d3.curveCardinal))(d.priceData));
 
-  const legendSpace = inputWidth/slicedChartData.length; // spacing for legend
+  const legendSpace = inputWidth/chartData.length; // spacing for legend
   // Add the Legend
   backtestChrt.selectAll('rect')
-      .data(slicedChartData)
+      .data(chartData)
       .enter().append('text')
       .attr('x', (d: UiChrtGenValue, i: any) => ((legendSpace/2) + i * legendSpace ))
       .attr('y', 35)
@@ -109,7 +69,7 @@ export function chrtGenBacktestChrt(chartData: UiChrtGenValue[], lineChrtDiv: HT
 
   function onMouseMove(event: MouseEvent) {
     const datesArray: Date[] = [];
-    slicedChartData.forEach((element) => {
+    chartData.forEach((element) => {
       element.priceData.forEach((dataPoint) => {
         datesArray.push(new Date(dataPoint.date));
       });
@@ -147,13 +107,12 @@ export function chrtGenBacktestChrt(chartData: UiChrtGenValue[], lineChrtDiv: HT
         .style('left', event.pageX + 10 + 'px')
         .style('top', event.pageY - yCoord + 'px')
         .selectAll()
-        .data(slicedChartData)
+        .data(chartData)
         .enter()
         .append('div')
         .style('color', (d: UiChrtGenValue) => color(d.name) as string)
         .html((d: UiChrtGenValue) => {
-          // const closestPoint = d.priceData.find((h) => (h as UiChartPointValue).date.getTime() === mouseClosestXCoord.getTime()); // TODO: check if we need getTime()
-          let closestPoint: UiChartPointValue;
+          let closestPoint: Nullable<UiChartPointValue> = null;
           for (let i = 0; i < d.priceData.length; i++) {
             const point = d.priceData[i];
             if (new Date(point.date).getTime() === mouseClosestXCoord.getTime()) {
@@ -161,8 +120,8 @@ export function chrtGenBacktestChrt(chartData: UiChrtGenValue[], lineChrtDiv: HT
               break;
             }
           }
-          if (closestPoint!)
-            return d.name + ': ' + (closestPoint as UiChartPointValue).value.toFixed(2) + '%';
+          if (closestPoint != null || closestPoint != undefined)
+            return d.name + ': ' + closestPoint.value.toFixed(2) + '%';
           else
             return d.name + ': No Data';
         });
