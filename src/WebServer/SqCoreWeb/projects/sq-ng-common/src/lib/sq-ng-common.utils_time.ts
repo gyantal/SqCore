@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 
 export const minDate = new Date(-8640000000000000);
+export const maxDate = new Date(8640000000000000);
 
 @Component({
   selector: 'lib-sq-ng-common',
@@ -38,7 +39,7 @@ export class SqNgCommonUtilsTime implements OnInit {
     return dateEt;
   }
 
-  public static ConvertDateUtcToLoc(utcDate: Date) {
+  public static ConvertDateUtcToLoc() {
     // Maybe this will help.
     // uiSnapTable.snapLastUpateTime = new Date(brAccSnap.lastUpdate);  // if the string contains "Z" time zone postfix, then JS converts the result to Local time
 

@@ -69,8 +69,8 @@ export class UiChrtGenPrtfRunResult {
   public correlationWithBenchmark: number = 0;
   public chrtValues: UiChartPointValue[] = []; // used in PrtfRunResults in portfolioManager app
 
-  public prtfChrtValues: UiChrtGenValue[] = []; // used in backtestResults in chrtGen app
-  public bmrkChrtValues: UiChrtGenValue[] = []; // used in backtestResults in chrtGen app
+  public prtfChrtValues: CgTimeSeries[] = []; // used in backtestResults in chrtGen app
+  public bmrkChrtValues: CgTimeSeries[] = []; // used in backtestResults in chrtGen app
   public sqLogs: SqLog[] = [];
 }
 
@@ -84,7 +84,7 @@ export class UiChartPointValue {
   public value = NaN;
 }
 
-export class UiChrtGenValue extends UiChartPointValue {
+export class CgTimeSeries extends UiChartPointValue {
   public name: string = '';
   public chartResolution: string = '';
   public priceData: UiChartPointValue[] = [];

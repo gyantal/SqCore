@@ -8,6 +8,11 @@ export function sleep(time: number) {
   });
 }
 
+export function dateTimeToDate(date: Date): Date { // getting the Date component, without Time. Equivalent to C# DateTime.Date property.
+  const dateNum: number = date.getTime();
+  return new Date(dateNum - (dateNum % 86400000));
+}
+
 // Event listener for when element becomes visible? https://stackoverflow.com/questions/1462138/event-listener-for-when-element-becomes-visible
 // Use it like this: onVisible(document.querySelector("#myElement"), () => console.log("it's visible"));
 export function onFirstVisibleEventListener(element : Element | null, callback: (element: Element | null) => void) {

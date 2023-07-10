@@ -23,8 +23,8 @@
     <span>PortfolioIds:<input class="prtfAndBmrkInputs" id="pfIds" type="text" [(ngModel)]="prtfIds"></span><br>
     <span>Benchmarks:<input class="prtfAndBmrkInputs" id="bmrks" type="text" [(ngModel)]="bmrks"></span><br><br>
     <div class="range">Range:<Span class="histRange" *ngFor="let item of rangeSelection" (click)="onHistRangeSelectionClicked(item)">{{item}}</Span></div>&nbsp;<br>
-    <span>Start:<input type="date" id="StartDate" name="startDate" min="01-01-1975" [(ngModel)]="startDateStr"></span>&nbsp;
-    <span>End:<input type="date" id="EndDate" name="EndDate" min="01-01-1975" max="01-01-2040" [(ngModel)]="endDateStr"></span>&nbsp;&nbsp;<br>
+    <span>Start:<input type="date" id="StartDate" name="startDate" min="1975-01-01" [(ngModel)]="startDateStr" (change)="onChangeStartOrEndDate()"></span>&nbsp;
+    <span>End:<input type="date" id="EndDate" name="EndDate" min="1975-01-01" max="2040-01-01" [(ngModel)]="endDateStr" (change)="onChangeStartOrEndDate()"></span>&nbsp;&nbsp;<br>
     <button class="backtestBtn" (click)="onStartBacktestsClicked()">Start Server Backtest</button>
   </span>
   <span class="commonColStyle" id="stockAndIndexes">

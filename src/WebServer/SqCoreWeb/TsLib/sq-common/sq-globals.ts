@@ -111,8 +111,8 @@ export class AssetLastJs {
 }
 
 export class UserJs {
+  public id: number = 0;
   public name: string = '';
   public email: string = '';
   public isAdmin: boolean = false;
-  public id: number = 0;
 }

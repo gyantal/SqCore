@@ -28,8 +28,8 @@ class PortfolioItemJs
     [JsonPropertyName("cTime")]
     public string CreationTime { get; set; } = string.Empty;
     public string Note { get; set; } = string.Empty;
-    [JsonPropertyName("ouNm")]
-    public string OwnerUserName { get; set; } = string.Empty;
+    [JsonPropertyName("ouId")]
+    public int OwnerUserId { get; set; } = -1;
 }
 
 class FolderJs : PortfolioItemJs { }
@@ -212,14 +212,15 @@ public partial class DashboardClient
         foreach (var kvp in virtUsrFldsToSend)
         {
             User user = kvp.Value;
-            FolderJs pfAdminUserJs = new() { Id = -1 * user.Id, Name = user.Username };
+            int ownerUserId = user.Id;
+            FolderJs pfAdminUserJs = new() { Id = -1 * user.Id, Name = user.Username, OwnerUserId = ownerUserId };
             prtfFldrsToClient.Add(pfAdminUserJs);
         }
 
-        FolderJs pfSharedWithMeJs = new() { Id = 0, Name = "Shared" };
+        FolderJs pfSharedWithMeJs = new() { Id = 0, Name = "Shared", OwnerUserId = -1 };
         prtfFldrsToClient.Add(pfSharedWithMeJs);
 
-        FolderJs pfAllUsersJs = new() { Id = gNoUserVirtPortfId, Name = "NoUser" };
+        FolderJs pfAllUsersJs = new() { Id = gNoUserVirtPortfId, Name = "NoUser",  OwnerUserId = -1 };
         prtfFldrsToClient.Add(pfAllUsersJs);
 
         foreach (PortfolioFolder pf in prtfFldrs)
@@ -229,8 +230,9 @@ public partial class DashboardClient
                 continue;
 
             int virtualParentFldId = GetVirtualParentFldId(pf.User, pf.ParentFolderId);
+            int ownerUserId = pf.User?.Id ?? -1;
 
-            FolderJs pfJs = new() { Id = pf.Id, Name = pf.Name, ParentFolderId = virtualParentFldId };
+            FolderJs pfJs = new() { Id = pf.Id, Name = pf.Name, OwnerUserId = ownerUserId, ParentFolderId = virtualParentFldId };
             prtfFldrsToClient.Add(pfJs);
         }
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.Folders:" + Utils.CamelCaseSerialize(prtfFldrsToClient));
@@ -250,8 +252,9 @@ public partial class DashboardClient
                 continue;
 
             int virtualParentFldId = GetVirtualParentFldId(pf.User, pf.ParentFolderId);
+            int ownerUserId = pf.User?.Id ?? -1;
 
-            PortfolioJs pfJs = new() { Id = pf.Id + gPortfolioIdOffset, Name = pf.Name, ParentFolderId = virtualParentFldId, BaseCurrency = pf.BaseCurrency.ToString(), SharedAccess = pf.SharedAccess.ToString(), SharedUsersWith = pf.SharedUsersWith, Type = pf.Type.ToString(), Algorithm = pf.Algorithm, AlgorithmParam = pf.AlgorithmParam };
+            PortfolioJs pfJs = new() { Id = pf.Id + gPortfolioIdOffset, Name = pf.Name, OwnerUserId = ownerUserId, ParentFolderId = virtualParentFldId, BaseCurrency = pf.BaseCurrency.ToString(), SharedAccess = pf.SharedAccess.ToString(), SharedUsersWith = pf.SharedUsersWith, Type = pf.Type.ToString(), Algorithm = pf.Algorithm, AlgorithmParam = pf.AlgorithmParam };
             prtfToClient.Add(pfJs);
         }
 

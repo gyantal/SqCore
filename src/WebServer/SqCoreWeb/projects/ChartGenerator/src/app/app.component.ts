@@ -4,7 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { SqNgCommonUtilsTime, minDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { chrtGenBacktestChrt } from '../../../../TsLib/sq-common/chartUltimate';
-import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, UiChrtGenValue, SqLog, ChartResolution, UiChartPointValue } from '../../../../TsLib/sq-common/backtestCommon';
+import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPointValue } from '../../../../TsLib/sq-common/backtestCommon';
 import { sleep } from '../../../../TsLib/sq-common/utils-common';
 import * as d3 from 'd3';
 
@@ -219,7 +219,7 @@ export class AppComponent implements OnInit {
       // uiPrtfResItem.correlationWithBenchmark = parseFloat(item.pstat.correlationWithBenchmark); // yet to calcualte
 
       // uiPrtfResItem.totalReturn = item.chrtData.values[0] / item.chrtData.values[item.chrtData.values.length - 1];
-      const chartItem = new UiChrtGenValue();
+      const chartItem = new CgTimeSeries();
       chartItem.name = item.prtfName;
       chartItem.chartResolution = ChartResolution[item.chrtData.chartResolution];
       chartItem.priceData = [];
@@ -234,7 +234,7 @@ export class AppComponent implements OnInit {
     }
 
     for (const bmrkItem of chrtGenBacktestRes.bmrkHistories) { // processing benchamrk History data
-      const chartItem = new UiChrtGenValue();
+      const chartItem = new CgTimeSeries();
       chartItem.name = bmrkItem.sqTicker;
       chartItem.priceData = [];
       for (let i = 0; i < bmrkItem.histPrices.dates.length; i++) {
@@ -256,16 +256,12 @@ export class AppComponent implements OnInit {
 
     uiChrtGenPrtfRunResults.push(uiPrtfResItem);
 
-    this.preProcessingChrtData(uiChrtWidth, uiChrtHeight, uiChrtGenPrtfRunResults);
-  }
-
-  preProcessingChrtData(uiChrtWidth: number, uiChrtHeight: number, uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[]) {
     d3.selectAll('#pfRunResultChrt > *').remove();
     const lineChrtDiv = document.getElementById('pfRunResultChrt') as HTMLElement;
     const margin = { top: 50, right: 50, bottom: 30, left: 60 };
     const chartWidth = uiChrtWidth * 0.9 - margin.left - margin.right; // 90% of the PvChart Width
     const chartHeight = uiChrtHeight * 0.9 - margin.top - margin.bottom; // 90% of the PvChart Height
-    const prtfAndBmrkChrtData: UiChrtGenValue[] = uiChrtGenPrtfRunResults[0].prtfChrtValues.concat(uiChrtGenPrtfRunResults[0].bmrkChrtValues);
+    const prtfAndBmrkChrtData: CgTimeSeries[] = uiChrtGenPrtfRunResults[0].prtfChrtValues.concat(uiChrtGenPrtfRunResults[0].bmrkChrtValues);
     const lineChrtTooltip = document.getElementById('tooltipChart') as HTMLElement;
 
     // Extract all Dates from the priceData array
@@ -278,62 +274,16 @@ export class AppComponent implements OnInit {
       }
     }
 
-    // Calculate the domain for x-axis (Dates)
-    let xMin: Date;
-    let xMax: Date;
-
     if (this.startDate.getTime() === this.endDate.getTime()) { // this occurs when user selects All or Default
-      xMin = d3.min(dates) as Date;
-      xMax = d3.max(dates) as Date;
-      this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(xMin);
-      this.endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(xMax);
+      const minDate = d3.min(dates) as Date;
+      const maxDate = d3.max(dates) as Date;
+      this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(minDate);
+      this.endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(maxDate);
       this.startDate = new Date(this.startDateStr);
       this.endDate = new Date(this.endDateStr);
-    } else {
-      xMin = this.startDate;
-      xMax = this.endDate;
     }
 
-    // Step1: slice the part of the total input data to the viewed, visualized part.
-    const slicedChartData: UiChrtGenValue[] = [];
-    for (const data of prtfAndBmrkChrtData) {
-      const slicedData: UiChartPointValue[] = [];
-
-      for (let i = 0; i < data.priceData.length; i++) {
-        const chrtdata = data.priceData[i];
-        const date = new Date(chrtdata.date);
-
-        if (date >= this.startDate && date <= this.endDate)
-          slicedData.push(chrtdata);
-      }
-
-      if (slicedData.length > 0) {
-        const newSlicedData: UiChartPointValue[] = [];
-        for (let i = 0; i < slicedData.length; i++) {
-          const chrtPointVal = new UiChartPointValue();
-          chrtPointVal.date = slicedData[i].date;
-          chrtPointVal.value = 100 * slicedData[i].value / slicedData[0].value;
-          newSlicedData.push(chrtPointVal);
-        }
-        const dataCopy: UiChrtGenValue = { name: data.name, date: data.date, value: data.value, chartResolution: data.chartResolution, priceData: newSlicedData };
-        slicedChartData.push(dataCopy);
-      }
-    }
-
-    // Extract all values from the priceData array
-    const values: number[] = [];
-    for (let i = 0; i < slicedChartData.length; i++) {
-      const data = slicedChartData[i];
-      for (let j = 0; j < data.priceData.length; j++) {
-        const point = data.priceData[j];
-        values.push(point.value);
-      }
-    }
-
-    // Calculate the domain for y-axis (values)
-    const yMin: number = d3.min(values) as number;
-    const yMax: number = d3.max(values) as number;
-    chrtGenBacktestChrt(slicedChartData, lineChrtDiv, chartWidth, chartHeight, margin, xMin, xMax, yMin, yMax, lineChrtTooltip);
+    chrtGenBacktestChrt(prtfAndBmrkChrtData, lineChrtDiv, chartWidth, chartHeight, margin, lineChrtTooltip, this.startDate, this.endDate);
   }
 
   async onStartBacktests() {
@@ -394,7 +344,7 @@ export class AppComponent implements OnInit {
     }
   }
 
-  onHistRangeSelectionClicked(histPeriodSelectionSelected: string) {
+  onHistRangeSelectionClicked(histPeriodSelectionSelected: string) { // selection made form the list ['YTD', '1M', '1Y', '3Y', '5Y', 'ALL']
     this.histRangeSelected = histPeriodSelectionSelected;
     console.log('hist period selected is ', this.histRangeSelected);
     const currDateET: Date = new Date(); // gets today's date
@@ -411,6 +361,12 @@ export class AppComponent implements OnInit {
     this.endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date());
     this.startDate = new Date(this.startDateStr);
     this.endDate = new Date(this.endDateStr);
-    this.preProcessingChrtData(this.pvChrtWidth, this.pvChrtHeight, this.uiChrtGenPrtfRunResults);
+    this.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight);
+  }
+
+  onChangeStartOrEndDate() { // User entry in the input field
+    this.startDate = new Date(this.startDateStr);
+    this.endDate = new Date(this.endDateStr);
+    this.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight);
   }
 }

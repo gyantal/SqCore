@@ -18,10 +18,10 @@ enum PrtfItemType { // for differenting the folder and portfolio
 class PortfolioItemJs {
   public id = -1;
   public name = '';
+  public ownerUserId = -1;
   public parentFolderId = -1;
   public creationTime = '';
   public note = '';
-  public ownerUserName = '';
   public prtfItemType: PrtfItemType = PrtfItemType.Folder; // need a default for compilation
 }
 
@@ -38,17 +38,22 @@ class PortfolioJs extends PortfolioItemJs {
 }
 
 export class TreeViewItem { // future work. At the moment, it copies PortfolioFldrJs[] and add the children field. With unnecessary field values. When Portfolios are introduced, this should be rethought.
+  // PortfolioItemJs specific fields
   public id = -1;
   public name = '';
+  public ownerUserId = -1;
   public parentFolderId = -1;
 
   public creationTime = ''; // Folder only. not necessary
   public note = ''; // Folder only. not necessary
+  public prtfItemType: PrtfItemType = PrtfItemType.Folder;
 
+  // TreeViewItem specific fields
   public children: TreeViewItem[] = []; // children are other TreeViewItems
   public isSelected: boolean = false;
   public isExpanded: boolean = false;
-  public prtfItemType: PrtfItemType = PrtfItemType.Folder;
+
+  // Portfolio specific fields
   public baseCurrency = '';
   public type = ''; // Trades or Simulation
   public sharedAccess = '';
@@ -69,8 +74,8 @@ export class TreeViewState {
   styleUrls: ['./portfolio-manager.component.scss']
 })
 export class PortfolioManagerComponent implements OnInit, AfterViewInit {
-  @Input() _parentWsConnection?: WebSocket = undefined; // this property will be input from above parent container
-  @Input() _mainUser?: UserJs = undefined; // this property will be input from above parent container
+  @Input() _parentWsConnection?: WebSocket | null = null; // this property will be input from above parent container
+  @Input() _mainUser?: UserJs | null = null; // this property will be input from above parent container
 
   @ViewChild(SqTreeViewComponent) public sqTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
 
@@ -86,7 +91,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   deletePrtfItemName: string = ''; // portfolio or folder name to be deleted
   treeViewState: TreeViewState = new TreeViewState();
   editedFolder: FolderJs = new FolderJs(); // create or edit folder
-  parentfolderName: string | undefined = ''; // displaying next to the selected parent folder id on Ui
+  parentfolderName: string | null = ''; // displaying next to the selected parent folder id on Ui
   editedPortfolio: PortfolioJs = new PortfolioJs(); // create or edit portfolio
   isViewedPortfolioSaveAllowed: boolean = false;
   loggedInUser: string = '';
@@ -252,6 +257,10 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
         _this.name = value;
         return; // if return undefined, original property will be removed
       }
+      if (key === 'ouId') {
+        _this.ownerUserId = value;
+        return; // if return undefined, original property will be removed
+      }
       if (key === 'p') {
         _this.parentFolderId = value;
         return; // if return undefined, original property will be removed
@@ -298,6 +307,10 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
       if (key === 'n') {
         _this.name = value;
+        return; // if return undefined, original property will be removed
+      }
+      if (key === 'ouId') {
+        _this.ownerUserId = value;
         return; // if return undefined, original property will be removed
       }
       if (key === 'p') {
@@ -450,7 +463,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
         this.editedFolder.id = lastSelectedTreeNode?.id!;
         this.editedFolder.parentFolderId = lastSelectedTreeNode?.parentFolderId!;
         this.editedFolder.note = lastSelectedTreeNode?.note!;
-        this.parentfolderName = this.folders?.find((r) => r.id == lastSelectedTreeNode?.parentFolderId!)?.name;
+        this.parentfolderName = this.folders?.find((r) => r.id == lastSelectedTreeNode?.parentFolderId!)?.name ?? null;
       }
     }
   }
@@ -520,14 +533,12 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.editedPortfolio.sharedAccess = lastSelectedTreeNode?.sharedAccess!;
       this.editedPortfolio.sharedUserWithMe = lastSelectedTreeNode?.sharedUserWithMe!;
       this.editedPortfolio.note = lastSelectedTreeNode?.note!;
-      this.parentfolderName = this.folders?.find((r) => r.id == lastSelectedTreeNode.parentFolderId!)?.name;
+      this.parentfolderName = this.folders?.find((r) => r.id == lastSelectedTreeNode.parentFolderId!)?.name ?? null;
       this.editedPortfolio.algorithm = lastSelectedTreeNode?.algorithm;
       this.editedPortfolio.algorithmParam = lastSelectedTreeNode?.algorithmParam;
     }
-    // Identifying the OwnerUserId based on lastSelectedNode's ParentFolderId/Id
-    const prntFldrId = this.folders?.find((r) => r.id == lastSelectedTreeNode.parentFolderId!)?.parentFolderId! * this.p_numNegToPos; // prntFldrId == 1 is root user
-    const ownerUserId = isNaN(prntFldrId) ? lastSelectedTreeNode.id! * this.p_numNegToPos : prntFldrId === 1 ? lastSelectedTreeNode.parentFolderId! * this.p_numNegToPos : prntFldrId;
-    this.isViewedPortfolioSaveAllowed = this._mainUser!.isAdmin || this._mainUser!.id == ownerUserId;
+
+    this.isViewedPortfolioSaveAllowed = this._mainUser!.isAdmin || this._mainUser!.id == lastSelectedTreeNode!.ownerUserId;
     console.log('showCreateOrEditPortfolioPopup(): isViewedPortfolioSaveAllowed', this.isViewedPortfolioSaveAllowed);
   }
 
