@@ -438,7 +438,7 @@ public partial class Db
         return string.Empty;
     }
 
-    internal string EditPortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, CurrencyId p_currency, PortfolioType p_type, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith)
+    internal string EditPortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith)
     {
         string redisKey = p_id.ToString();
         string? pfInDb = m_redisDb.HashGet("portfolio", redisKey);
@@ -454,6 +454,8 @@ public partial class Db
         pfInDbCandidate.ParentFolderId = p_parentFldId;
         pfInDbCandidate.BaseCurrency = p_currency.ToString();
         pfInDbCandidate.Type = p_type.ToString();
+        pfInDbCandidate.Algorithm = p_algorithm;
+        pfInDbCandidate.AlgorithmParam = p_algorithmParam;
         pfInDbCandidate.SharedAccess = p_sharedAccess.ToString();
         pfInDbCandidate.Note = p_note;
         Utils.Logger.Debug($"shareduserwith{p_sharedUsersWith}"); // need to develop this - Daya

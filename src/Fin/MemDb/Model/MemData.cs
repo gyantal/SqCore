@@ -172,7 +172,7 @@ internal class MemData // don't expose to clients.
         }
     }
 
-    public Portfolio AddNewPortfolio(User? p_user, string p_name, int p_parentFldId, string p_creationTime, CurrencyId p_currency, PortfolioType p_type, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith)
+    public Portfolio AddNewPortfolio(User? p_user, string p_name, int p_parentFldId, string p_creationTime, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith)
     {
          lock (PrtfUpdateLock)
         {
@@ -185,13 +185,13 @@ internal class MemData // don't expose to clients.
                     maxId = id;
             }
             int newId = ++maxId;
-            Portfolio prtf = new (newId, p_user, p_name, p_parentFldId, p_creationTime, p_currency, p_type, string.Empty, string.Empty, p_sharedAccess, p_note, p_sharedUsersWith);
+            Portfolio prtf = new (newId, p_user, p_name, p_parentFldId, p_creationTime, p_currency, p_type, p_algorithm, p_algorithmParam, p_sharedAccess, p_note, p_sharedUsersWith);
             Portfolios[newId] = prtf;
             return prtf;
         }
     }
 
-    public Portfolio? EditPortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, CurrencyId p_currency, PortfolioType p_type, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith) // method to Edit the portfolio based on fld key
+    public Portfolio? EditPortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith) // method to Edit the portfolio based on fld key
     {
         lock (PrFldUpdateLock)
         {
@@ -202,6 +202,8 @@ internal class MemData // don't expose to clients.
                 portfolio.ParentFolderId = p_parentFldId;
                 portfolio.BaseCurrency = p_currency;
                 portfolio.Type = p_type;
+                portfolio.Algorithm = p_algorithm;
+                portfolio.AlgorithmParam = p_algorithmParam;
                 portfolio.SharedAccess = p_sharedAccess;
                 portfolio.Note = p_note;
                 portfolio.SharedUsersWith = p_sharedUsersWith;

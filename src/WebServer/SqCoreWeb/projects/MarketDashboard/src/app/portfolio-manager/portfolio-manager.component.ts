@@ -1,7 +1,7 @@
 import { Component, OnInit, AfterViewInit, Input, ViewChild } from '@angular/core';
 import { SqTreeViewComponent } from '../sq-tree-view/sq-tree-view.component';
 import { prtfRunResultChrt } from '../../../../../TsLib/sq-common/chartAdvanced';
-import { PrtfRunResultJs, UiChartPointValue, UiPrtfPositions, UiPrtfRunResult } from '../../../../../TsLib/sq-common/backtestCommon';
+import { PrtfRunResultJs, UiChartPoint, UiPrtfPositions, UiPfMgrPrtfRunResult } from '../../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtils } from '../../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { onFirstVisibleEventListener } from '../../../../../TsLib/sq-common/utils-common';
 import * as d3 from 'd3';
@@ -105,7 +105,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   tabPrtfSpecVisibleIdx: number = 1; // tab buttons for portfolio specification preview of positions and strategy parameters
 
   prtfRunResult: Nullable<PrtfRunResultJs> = null;
-  uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
+  uiPrtfRunResult: UiPfMgrPrtfRunResult = new UiPfMgrPrtfRunResult();
   todayDate: Date = new Date(); // displaying the statistics as of Date on UI
 
   // the below variables are required for resizing the panels according to users
@@ -556,7 +556,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.isCreateOrEditPortfolioPopupVisible = true;
     else {
       if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-        this._parentWsConnection.send(`PortfMgr.CreateOrEditPortfolio:id:${this.editedPortfolio.id},name:${this.editedPortfolio.name},prntFId:${this.editedPortfolio.parentFolderId},currency:${this.editedPortfolio.baseCurrency},type:${this.editedPortfolio.portfolioType},access:${this.editedPortfolio.sharedAccess},note:${this.editedPortfolio.note}`);
+        this._parentWsConnection.send(`PortfMgr.CreateOrEditPortfolio:id:${this.editedPortfolio.id},name:${this.editedPortfolio.name},prntFId:${this.editedPortfolio.parentFolderId},currency:${this.editedPortfolio.baseCurrency},type:${this.editedPortfolio.portfolioType},algo:${this.editedPortfolio.algorithm},algoP:${this.editedPortfolio.algorithmParam},access:${this.editedPortfolio.sharedAccess},note:${this.editedPortfolio.note}`);
       this.isCreateOrEditPortfolioPopupVisible = false;
     }
   }
@@ -622,7 +622,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this._parentWsConnection.send(`PortfMgr.GetPortfolioRunResult:id:${lastSelectedTreeNode.id - this.gPortfolioIdOffset}`);
   }
 
-  static updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJs>, uiPrtfRunResult: UiPrtfRunResult, uiChrtWidth: number, uiChrtHeight: number) {
+  static updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJs>, uiPrtfRunResult: UiPfMgrPrtfRunResult, uiChrtWidth: number, uiChrtHeight: number) {
     if (prtfRunResult == null)
       return;
 
@@ -660,7 +660,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
     uiPrtfRunResult.chrtValues.length = 0;
     for (let i = 0; i < prtfRunResult.chrtData.dates.length; i++) {
-      const chartItem = new UiChartPointValue();
+      const chartItem = new UiChartPoint();
       const mSecSinceUnixEpoch: number = prtfRunResult.chrtData.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
       chartItem.date = new Date(mSecSinceUnixEpoch);
       chartItem.value = prtfRunResult.chrtData.values[i];

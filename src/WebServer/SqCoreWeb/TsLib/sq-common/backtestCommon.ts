@@ -45,9 +45,8 @@ export class PrtfRunResultJs extends ChrtGenPfRunResult { // we can specify the 
   public prtfPoss: any; // all the position members from UiPrtfPositions, we skip creating detailed sub classes
 }
 
-
 // Ui classes
-export class UiChrtGenPrtfRunResult {
+export class UiPrtfRunResultCommon { // this class is common for portfolioManager and chartGenerator apps
   public startPortfolioValue: number = 0;
   public endPortfolioValue: number = 0;
   public totalReturn: number = 0;
@@ -67,27 +66,29 @@ export class UiChrtGenPrtfRunResult {
   public benchmarkCAGR: number = 0;
   public benchmarkMaxDD: number = 0;
   public correlationWithBenchmark: number = 0;
-  public chrtValues: UiChartPointValue[] = []; // used in PrtfRunResults in portfolioManager app
+}
 
+export class UiChrtGenPrtfRunResult extends UiPrtfRunResultCommon {
   public prtfChrtValues: CgTimeSeries[] = []; // used in backtestResults in chrtGen app
   public bmrkChrtValues: CgTimeSeries[] = []; // used in backtestResults in chrtGen app
   public sqLogs: SqLog[] = [];
 }
 
-export class UiPrtfRunResult extends UiChrtGenPrtfRunResult { // PrtfRun Results requires position values to display
+export class UiPfMgrPrtfRunResult extends UiPrtfRunResultCommon { // PrtfRun Results requires position values to display
+  public chrtValues: UiChartPoint[] = []; // used in PrtfRunResults in portfolioManager app
   public prtfPosValues: UiPrtfPositions[] = [];
 }
 
 // chart values
-export class UiChartPointValue {
+export class UiChartPoint {
   public date = new Date();
   public value = NaN;
 }
 
-export class CgTimeSeries extends UiChartPointValue {
+export class CgTimeSeries {
   public name: string = '';
   public chartResolution: string = '';
-  public priceData: UiChartPointValue[] = [];
+  public priceData: UiChartPoint[] = [];
 }
 
 export class UiPrtfPositions {

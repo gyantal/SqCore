@@ -291,28 +291,32 @@ public partial class DashboardClient
         }
     }
 
-    public void PortfMgrCreateOrEditPortfolio(string p_msg) // "msg - id:-1,name:TestPrtf,prntFId:16,currency:USD,type:Simulation,access:Anyone,note:Testing"
+    public void PortfMgrCreateOrEditPortfolio(string p_msg) // "msg - id:-1,name:TestPrtf,prntFId:16,currency:USD,type:Simulation,algo:SqPctAllocation,algoP:assets=SVXY,VXX,VXZ,TQQQ,TLT,USO,UNG&weights=15,-5, 10, 25, 255,-27,-78&rebFreq=Daily,1d,access:Anyone,note:Testing"
     {
         int idStartIdx = p_msg.IndexOf(":");
         int pfNameIdx = (idStartIdx == -1) ? -1 : p_msg.IndexOf(':', idStartIdx + 1);
         int prntFldrIdx = (pfNameIdx == -1) ? -1 : p_msg.IndexOf(":", pfNameIdx + 1);
         int currencyIdx = prntFldrIdx == -1 ? -1 : p_msg.IndexOf(":", prntFldrIdx + 1);
         int prtfTypeIdx = currencyIdx == -1 ? -1 : p_msg.IndexOf(":", currencyIdx + 1);
-        int userAccessIdx = prtfTypeIdx == -1 ? -1 : p_msg.IndexOf(":", prtfTypeIdx + 1);
+        int algoIdx = prtfTypeIdx == -1 ? -1 : p_msg.IndexOf(":", prtfTypeIdx + 1);
+        int algoParamIdx = algoIdx == -1 ? -1 : p_msg.IndexOf(":", algoIdx + 1);
+        int userAccessIdx = algoParamIdx == -1 ? -1 : p_msg.IndexOf(":", algoParamIdx + 1);
         int userNoteIdx = userAccessIdx == -1 ? -1 : p_msg.IndexOf(":", userAccessIdx + 1);
 
         int id = Convert.ToInt32(p_msg.Substring(idStartIdx + 1, pfNameIdx - idStartIdx - ",name:".Length));
         string pfName = p_msg.Substring(pfNameIdx + 1, prntFldrIdx - pfNameIdx - ",prntFId:".Length);
         int virtualParentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, currencyIdx - prntFldrIdx - ",currency:".Length));
         string currency = p_msg.Substring(currencyIdx + 1, prtfTypeIdx - currencyIdx - ",type:".Length);
-        string prtfType = p_msg.Substring(prtfTypeIdx + 1, userAccessIdx - prtfTypeIdx - ",access:".Length);
+        string prtfType = p_msg.Substring(prtfTypeIdx + 1, algoIdx - prtfTypeIdx - ",algo:".Length);
+        string algorithm = p_msg.Substring(algoIdx + 1, algoParamIdx - algoIdx - ",algoP:".Length);
+        string algorithmParam = p_msg.Substring(algoParamIdx + 1, userAccessIdx - algoParamIdx - ",access:".Length);
         string userAccess = p_msg.Substring(userAccessIdx + 1, userNoteIdx - userAccessIdx - ",note:".Length);
         string userNote = p_msg[(userNoteIdx + 1)..];
 
         string? errMsg = GetRealParentFldId(virtualParentFldId, out User? user, out int realParentFldId);
         if (errMsg == null)
         {
-            errMsg = MemDb.gMemDb.AddOrEditPortfolio(id, user, pfName, realParentFldId, currency, prtfType, userAccess, userNote, out Portfolio? p_newItem);
+            errMsg = MemDb.gMemDb.AddOrEditPortfolio(id, user, pfName, realParentFldId, currency, prtfType, algorithm, algorithmParam, userAccess, userNote, out Portfolio? p_newItem);
             if (errMsg == String.Empty && p_newItem == null)
                 errMsg = "Error. Portfolio change was not done.";
         }

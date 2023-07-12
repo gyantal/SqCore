@@ -3,8 +3,8 @@ import { HttpClient } from '@angular/common/http';
 
 import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { SqNgCommonUtilsTime, minDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
-import { chrtGenBacktestChrt } from '../../../../TsLib/sq-common/chartUltimate';
-import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPointValue } from '../../../../TsLib/sq-common/backtestCommon';
+import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
+import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint } from '../../../../TsLib/sq-common/backtestCommon';
 import { sleep } from '../../../../TsLib/sq-common/utils-common';
 import * as d3 from 'd3';
 
@@ -224,7 +224,7 @@ export class AppComponent implements OnInit {
       chartItem.chartResolution = ChartResolution[item.chrtData.chartResolution];
       chartItem.priceData = [];
       for (let i = 0; i < item.chrtData.dates.length; i++) {
-        const chrtItem = new UiChartPointValue();
+        const chrtItem = new UiChartPoint();
         const mSecSinceUnixEpoch: number = item.chrtData.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
         chrtItem.date = new Date(mSecSinceUnixEpoch);
         chrtItem.value = item.chrtData.values[i];
@@ -238,7 +238,7 @@ export class AppComponent implements OnInit {
       chartItem.name = bmrkItem.sqTicker;
       chartItem.priceData = [];
       for (let i = 0; i < bmrkItem.histPrices.dates.length; i++) {
-        const chrtItem = new UiChartPointValue();
+        const chrtItem = new UiChartPoint();
         const dateStr: string = bmrkItem.histPrices.dates[i];
         chrtItem.date = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(5, 7) + '-' + dateStr.substring(8, 10));
         chrtItem.value = bmrkItem.histPrices.prices[i];
@@ -282,8 +282,10 @@ export class AppComponent implements OnInit {
       this.startDate = new Date(this.startDateStr);
       this.endDate = new Date(this.endDateStr);
     }
-
-    chrtGenBacktestChrt(prtfAndBmrkChrtData, lineChrtDiv, chartWidth, chartHeight, margin, lineChrtTooltip, this.startDate, this.endDate);
+    const htmlElementStr: string = lineChrtDiv.id;
+    const ultimateChrt: UltimateChart = new UltimateChart();
+    ultimateChrt.Init(htmlElementStr, lineChrtDiv, prtfAndBmrkChrtData, chartWidth, chartHeight, margin, lineChrtTooltip);
+    ultimateChrt.Redraw(this.startDate, this.endDate);
   }
 
   async onStartBacktests() {
