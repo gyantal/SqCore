@@ -23,7 +23,7 @@
 }
 
 .prtfAndBmrkInputs {
-  margin-top: 0.05rem;
+  margin: 0.05rem 0 0.1rem 0;
   border: 0 0 0 0; // Removing the default values input tag
   padding: 0 0 0 0; // Removing the default values input tag
   border-radius: .5rem;
@@ -41,13 +41,48 @@
   margin-top: -0.5rem;
 }
 
-.histRange {
+.selectionDropDown {
+  position: relative; // position: relative, will remain in the natural flow of the page. It will also act as anchor point for the absolutely positioned Child (listDropDown) element:
+  display: inline-block;// It combines the characteristics of inline elements, which flow within the content, and block-level elements, which create line breaks and can have specified width and height
+  border-radius: .5rem;
+}
+
+.highlightInputDropDown {
+  margin: 0.05rem 0 0.1rem 0;
+  border: 0 0 0 0; // Removing the default values input tag
+  padding: 0 0 0 0; // Removing the default values input tag
+  border-radius: .5rem;
+  color: blue;
+  height: 1rem;
+  width: 4rem;
+  font-size: 0.8rem;
+}
+
+.listDropDown {
+  display: none;
+  position: absolute; // positioned based on the ancestor(selectionDropDown) element
+  background-color: #f1f1f1;
+  min-width: 4rem;
+  z-index: 1;
+  border-radius: .5rem;
+}
+
+.listDropDown option:hover {
+  background-color: #ddd;
+}
+
+.selectionDropDown:hover .listDropDown {
+  display: block;
+}
+
+.selectionDropDown:hover .highlightInputDropDown {
+  background-color: rgba(255, 255, 128, .5);
+}
+
+.optionDropDown {
+  border: 0.1rem solid lightblue;
   cursor: pointer;
-  font-size: 0.5rem;
-  background-color: #ccc;
-  border: .1rem solid rgb(43, 255, 0);
-  border-radius: 0.5rem;
-  padding: 0.25rem 0.25rem;
+  border-radius: .5rem;
 }
 
 #backtestPvChrt {

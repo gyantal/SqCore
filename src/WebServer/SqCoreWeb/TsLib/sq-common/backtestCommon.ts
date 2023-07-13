@@ -66,12 +66,12 @@ export class UiPrtfRunResultCommon { // this class is common for portfolioManage
   public benchmarkCAGR: number = 0;
   public benchmarkMaxDD: number = 0;
   public correlationWithBenchmark: number = 0;
+  public sqLogs: SqLog[] = [];
 }
 
 export class UiChrtGenPrtfRunResult extends UiPrtfRunResultCommon {
   public prtfChrtValues: CgTimeSeries[] = []; // used in backtestResults in chrtGen app
   public bmrkChrtValues: CgTimeSeries[] = []; // used in backtestResults in chrtGen app
-  public sqLogs: SqLog[] = [];
 }
 
 export class UiPfMgrPrtfRunResult extends UiPrtfRunResultCommon { // PrtfRun Results requires position values to display

@@ -47,7 +47,7 @@ export class AppComponent implements OnInit {
   startDateStr: string = '';
   endDateStr: string = '';
   rangeSelection: string[] = ['YTD', '1M', '1Y', '3Y', '5Y', 'ALL'];
-  histRangeSelected: string = 'YTD';
+  histRangeSelected: string = 'ALL';
   isSrvConnectionAlive: boolean = true;
   chrtGenDiagnosticsMsg: string = 'Benchmarking time, connection speed';
   isProgressBarVisble: boolean = false;
@@ -282,9 +282,9 @@ export class AppComponent implements OnInit {
       this.startDate = new Date(this.startDateStr);
       this.endDate = new Date(this.endDateStr);
     }
-    const htmlElementStr: string = lineChrtDiv.id;
+
     const ultimateChrt: UltimateChart = new UltimateChart();
-    ultimateChrt.Init(htmlElementStr, lineChrtDiv, prtfAndBmrkChrtData, chartWidth, chartHeight, margin, lineChrtTooltip);
+    ultimateChrt.Init(lineChrtDiv, lineChrtTooltip, prtfAndBmrkChrtData, chartWidth, chartHeight, margin);
     ultimateChrt.Redraw(this.startDate, this.endDate);
   }
 
@@ -348,7 +348,6 @@ export class AppComponent implements OnInit {
 
   onHistRangeSelectionClicked(histPeriodSelectionSelected: string) { // selection made form the list ['YTD', '1M', '1Y', '3Y', '5Y', 'ALL']
     this.histRangeSelected = histPeriodSelectionSelected;
-    console.log('hist period selected is ', this.histRangeSelected);
     const currDateET: Date = new Date(); // gets today's date
     if (this.histRangeSelected === 'YTD')
       this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.getFullYear() - 1, 11, 31));

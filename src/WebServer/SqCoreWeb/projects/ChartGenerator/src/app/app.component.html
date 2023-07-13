@@ -21,8 +21,15 @@
   <!-- Class=commonColStyle name will be changed in future - Daya(28-04-2023) -->
   <span class="commonColStyle" id="portfolios">
     <span>PortfolioIds:<input class="prtfAndBmrkInputs" id="pfIds" type="text" [(ngModel)]="prtfIds"></span><br>
-    <span>Benchmarks:<input class="prtfAndBmrkInputs" id="bmrks" type="text" [(ngModel)]="bmrks"></span><br><br>
-    <div class="range">Range:<Span class="histRange" *ngFor="let item of rangeSelection" (click)="onHistRangeSelectionClicked(item)">{{item}}</Span></div>&nbsp;<br>
+    <span>Benchmarks:<input class="prtfAndBmrkInputs" id="bmrks" type="text" [(ngModel)]="bmrks"></span><br>
+    <span class="range">Range:
+      <div class="selectionDropDown">
+        <input class="highlightInputDropDown" type="text" oninput="this.value = this.value.toUpperCase()" [(ngModel)]="histRangeSelected" (change)="onHistRangeSelectionClicked(histRangeSelected)">
+        <div class="listDropDown">
+          <option class="optionDropDown" *ngFor="let item of rangeSelection" [value]="item" (click)="onHistRangeSelectionClicked(item)">{{item}}</option>
+        </div>
+      </div>
+    </span>&nbsp;<br>
     <span>Start:<input type="date" id="StartDate" name="startDate" min="1975-01-01" [(ngModel)]="startDateStr" (change)="onChangeStartOrEndDate()"></span>&nbsp;
     <span>End:<input type="date" id="EndDate" name="EndDate" min="1975-01-01" max="2040-01-01" [(ngModel)]="endDateStr" (change)="onChangeStartOrEndDate()"></span>&nbsp;&nbsp;<br>
     <button class="backtestBtn" (click)="onStartBacktestsClicked()">Start Server Backtest</button>
