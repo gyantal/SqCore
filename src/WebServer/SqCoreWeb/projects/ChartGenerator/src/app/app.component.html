@@ -24,14 +24,14 @@
     <span>Benchmarks:<input class="prtfAndBmrkInputs" id="bmrks" type="text" [(ngModel)]="bmrks"></span><br>
     <span class="range">Range:
       <div class="selectionDropDown">
-        <input class="highlightInputDropDown" type="text" oninput="this.value = this.value.toUpperCase()" [(ngModel)]="histRangeSelected" (change)="onHistRangeSelectionClicked(histRangeSelected)">
+        <input class="highlightInputDropDown" type="text" oninput="this.value = this.value.toUpperCase()" [(ngModel)]="histRangeSelected" (change)="onUserChangedHistDateRange(histRangeSelected)">
         <div class="listDropDown">
-          <option class="optionDropDown" *ngFor="let item of rangeSelection" [value]="item" (click)="onHistRangeSelectionClicked(item)">{{item}}</option>
+          <option class="optionDropDown" *ngFor="let item of rangeSelection" [value]="item" (click)="onUserChangedHistDateRange(item)">{{item}}</option>
         </div>
       </div>
     </span>&nbsp;<br>
-    <span>Start:<input type="date" id="StartDate" name="startDate" min="1975-01-01" [(ngModel)]="startDateStr" (change)="onChangeStartOrEndDate()"></span>&nbsp;
-    <span>End:<input type="date" id="EndDate" name="EndDate" min="1975-01-01" max="2040-01-01" [(ngModel)]="endDateStr" (change)="onChangeStartOrEndDate()"></span>&nbsp;&nbsp;<br>
+    <span>Start:<input type="date" id="StartDate" name="startDate" min="1975-01-01" [(ngModel)]="startDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;
+    <span>End:<input type="date" id="EndDate" name="EndDate" min="1975-01-01" max="2040-01-01" [(ngModel)]="endDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;&nbsp;<br>
     <button class="backtestBtn" (click)="onStartBacktestsClicked()">Start Server Backtest</button>
   </span>
   <span class="commonColStyle" id="stockAndIndexes">
@@ -43,7 +43,8 @@
   <span class="commonColStyle" id="others">
     Others
   </span><br><br>
-  <div id="backtestPvChrt">Portfolio Value Chart
+  <span>Portfolio Value Chart</span>
+  <div id="backtestPvChrt">
     <div id="pfRunResultChrt"></div>
     <div id='tooltipChart'></div>
   </div>

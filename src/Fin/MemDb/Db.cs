@@ -318,7 +318,7 @@ public partial class Db
         }
         return result;
     }
-    internal void AddPortfolioFolder(PortfolioFolder fld)
+    internal void InsertPortfolioFolder(PortfolioFolder fld)
     {
         string redisKey = fld.Id.ToString();
         PortfolioFolderInDb prtfFolderInDb = new(fld);
@@ -410,7 +410,7 @@ public partial class Db
         return result;
     }
 
-    internal void AddPortfolio(Portfolio prtf)
+    internal void InsertPortfolio(Portfolio prtf)
     {
         string redisKey = prtf.Id.ToString();
         PortfolioInDb prtfInDb = new(prtf);
@@ -418,16 +418,16 @@ public partial class Db
         m_redisDb.HashSet("portfolio", redisKey, redisValue);
     }
 
-    internal string EditPortfolioFolder(int p_id, User? p_user, string p_name, int p_parentFldId, string p_note)
+    internal string UpdatePortfolioFolder(int p_id, User? p_user, string p_name, int p_parentFldId, string p_note)
     {
         string redisKey = p_id.ToString();
         string? prtfFolderInDb = m_redisDb.HashGet("portfolioFolder", redisKey);
         if (prtfFolderInDb == null)
-            return $"Error in EditPortfolioFolder(): folder id '{redisKey}' doesnt exists";
+            return $"Error in UpdatePortfolioFolder(): folder id '{redisKey}' doesnt exists";
 
         PortfolioFolderInDb? prtfFolderInDbCandidate = JsonSerializer.Deserialize<PortfolioFolderInDb>(prtfFolderInDb, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         if (prtfFolderInDbCandidate == null)
-            return $"Error in EditPortfolioFolder(): Deserialize failed on '{prtfFolderInDb}'";
+            return $"Error in UpdatePortfolioFolder(): Deserialize failed on '{prtfFolderInDb}'";
 
         prtfFolderInDbCandidate.UserId = p_user?.Id ?? -1;
         prtfFolderInDbCandidate.Name = p_name;
@@ -438,16 +438,16 @@ public partial class Db
         return string.Empty;
     }
 
-    internal string EditPortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith)
+    internal string UpdatePortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith)
     {
         string redisKey = p_id.ToString();
         string? pfInDb = m_redisDb.HashGet("portfolio", redisKey);
         if (pfInDb == null)
-            return $"Error in EditPortfolio(): portfolio id '{redisKey}' doesnt exists";
+            return $"Error in UpdatePortfolio(): portfolio id '{redisKey}' doesnt exists";
 
         PortfolioInDb? pfInDbCandidate = JsonSerializer.Deserialize<PortfolioInDb>(pfInDb, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         if (pfInDbCandidate == null)
-            return $"Error in EditPortfolio(): Deserialize failed on '{pfInDb}'";
+            return $"Error in UpdatePortfolio(): Deserialize failed on '{pfInDb}'";
 
         pfInDbCandidate.UserId = p_user?.Id ?? -1;
         pfInDbCandidate.Name = p_name;

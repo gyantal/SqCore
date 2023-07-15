@@ -28,7 +28,7 @@ public partial class MemDb
                 // insert new item into the persistent database (RedisDb, Sql)
                 try
                 {
-                    m_Db.AddPortfolioFolder(pf); // can raise System.TimeoutException or others if the RedisDb is offline
+                    m_Db.InsertPortfolioFolder(pf); // can raise System.TimeoutException or others if the RedisDb is offline
                 }
                 catch (System.Exception) // if error occured in DB writing, revert the transaction back to original state. Do not add the new Folder into MemDb.
                 {
@@ -40,7 +40,7 @@ public partial class MemDb
         }
         else // if id is valid, edit the Item
         {
-            errMsg = m_Db.EditPortfolioFolder(p_id, p_user, p_name, p_parentFldId, p_note); // gives back an error message or empty string if everything was OK.
+            errMsg = m_Db.UpdatePortfolioFolder(p_id, p_user, p_name, p_parentFldId, p_note); // gives back an error message or empty string if everything was OK.
             if (String.IsNullOrEmpty(errMsg)) // if there is no error in RedisDb operation
                 pf = m_memData.EditPortfolioFolder(p_id, p_user, p_name, p_parentFldId, p_note);
         }
@@ -81,7 +81,7 @@ public partial class MemDb
                 // insert new item into the persistent database (RedisDb, Sql)
                 try
                 {
-                    m_Db.AddPortfolio(prtf); // can raise System.TimeoutException or others if the RedisDb is offline
+                    m_Db.InsertPortfolio(prtf); // can raise System.TimeoutException or others if the RedisDb is offline
                 }
                 catch (System.Exception) // if error occured in DB writing, revert the transaction back to original state. Do not add the new Portfolio into MemDb.
                 {
@@ -93,7 +93,7 @@ public partial class MemDb
         }
         else // if id is valid, edit the Item
         {
-            errMsg = m_Db.EditPortfolio(p_id, p_user, p_name, p_parentFldId, AssetHelper.gStrToCurrency[p_currency], AssetHelper.gStrToPortfolioType[p_prtfType], p_algorithm, p_algorithmParam, AssetHelper.gStrToSharedAccess[p_userAccess], p_note, sharedUsersWith); // gives back an error message or empty string if everything was OK.
+            errMsg = m_Db.UpdatePortfolio(p_id, p_user, p_name, p_parentFldId, AssetHelper.gStrToCurrency[p_currency], AssetHelper.gStrToPortfolioType[p_prtfType], p_algorithm, p_algorithmParam, AssetHelper.gStrToSharedAccess[p_userAccess], p_note, sharedUsersWith); // gives back an error message or empty string if everything was OK.
             if (String.IsNullOrEmpty(errMsg)) // if there is no error in RedisDb operation
                 prtf = m_memData.EditPortfolio(p_id, p_user, p_name, p_parentFldId, AssetHelper.gStrToCurrency[p_currency], AssetHelper.gStrToPortfolioType[p_prtfType], p_algorithm, p_algorithmParam, AssetHelper.gStrToSharedAccess[p_userAccess], p_note, sharedUsersWith);
         }

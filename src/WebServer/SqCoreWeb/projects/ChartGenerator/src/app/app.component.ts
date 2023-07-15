@@ -2,11 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';
-import { SqNgCommonUtilsTime, minDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
+import { SqNgCommonUtilsTime, minDate, maxDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
 import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint } from '../../../../TsLib/sq-common/backtestCommon';
 import { sleep } from '../../../../TsLib/sq-common/utils-common';
-import * as d3 from 'd3';
 
 type Nullable<T> = T | null;
 
@@ -37,6 +36,10 @@ export class AppComponent implements OnInit {
 
   chrtGenBacktestResults: Nullable<ChrtGenBacktestResult> = null;
   uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[] = [];
+  _minStartDate: Date = maxDate; // recalculated based on the BacktestResult received
+  _maxEndDate: Date = minDate;
+
+  _ultimateChrt: UltimateChart = new UltimateChart();
   pvChrtWidth: number = 0;
   pvChrtHeight: number = 0;
 
@@ -124,7 +127,7 @@ export class AppComponent implements OnInit {
     window.addEventListener('resize', () => {
       this.pvChrtWidth = backtestResChartId.clientWidth as number; // we have to remember the width/height every time window is resized, because we give these to the chart
       this.pvChrtHeight = backtestResChartId.clientHeight as number;
-      this.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight);
+      this._ultimateChrt.Redraw(this.startDate, this.endDate, this.pvChrtWidth, this.pvChrtHeight);
     });
   }
 
@@ -186,39 +189,50 @@ export class AppComponent implements OnInit {
       }
       return value;
     });
-    this.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight);
+    this.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults);
   }
 
   // startdate and enddate are not utlized at the moment - Daya yet to develop
-  updateUiWithChrtGenBacktestResults(chrtGenBacktestRes: Nullable<ChrtGenBacktestResult>, uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[], uiChrtWidth: number, uiChrtHeight: number) {
+  updateUiWithChrtGenBacktestResults(chrtGenBacktestRes: Nullable<ChrtGenBacktestResult>, uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[]) {
     if (chrtGenBacktestRes == null || chrtGenBacktestRes.pfRunResults == null)
       return;
 
     uiChrtGenPrtfRunResults.length = 0;
     const uiPrtfResItem = new UiChrtGenPrtfRunResult();
     gChrtGenDiag.serverBacktestTime = chrtGenBacktestRes.serverBacktestTimeMs;
-    for (const item of chrtGenBacktestRes.pfRunResults) {
-      uiPrtfResItem.startPortfolioValue = item.pstat.startPortfolioValue;
-      uiPrtfResItem.endPortfolioValue = item.pstat.endPortfolioValue;
-      uiPrtfResItem.totalReturn = item.pstat.totalReturn;
-      uiPrtfResItem.cAGR = parseFloat(item.pstat.cagr);
-      uiPrtfResItem.maxDD = parseFloat(item.pstat.maxDD);
-      uiPrtfResItem.sharpeRatio = item.pstat.sharpeRatio;
-      uiPrtfResItem.stDev = parseFloat(item.pstat.stDev);
-      // uiPrtfResItem.ulcer = parseFloat(item.pstat.ulcer); // yet to calcualte
-      uiPrtfResItem.tradingDays = parseInt(item.pstat.tradingDays);
-      uiPrtfResItem.nTrades = parseInt(item.pstat.nTrades);
-      uiPrtfResItem.winRate = parseFloat(item.pstat.winRate);
-      uiPrtfResItem.lossRate = parseFloat(item.pstat.lossingRate);
-      uiPrtfResItem.sortino = item.pstat.sortino;
-      uiPrtfResItem.turnover = parseFloat(item.pstat.turnover);
-      uiPrtfResItem.longShortRatio = parseFloat(item.pstat.longShortRatio);
-      uiPrtfResItem.fees = parseFloat(item.pstat.fees);
+
+    for (const item of chrtGenBacktestRes.pfRunResults) { // processing Strategies
+      // uiPrtfResItem.startPortfolioValue = item.pstat.startPortfolioValue;
+      // uiPrtfResItem.endPortfolioValue = item.pstat.endPortfolioValue;
+      // uiPrtfResItem.totalReturn = item.pstat.totalReturn;
+      // uiPrtfResItem.cAGR = parseFloat(item.pstat.cagr);
+      // uiPrtfResItem.maxDD = parseFloat(item.pstat.maxDD);
+      // uiPrtfResItem.sharpeRatio = item.pstat.sharpeRatio;
+      // uiPrtfResItem.stDev = parseFloat(item.pstat.stDev);
+      // // uiPrtfResItem.ulcer = parseFloat(item.pstat.ulcer); // yet to calcualte
+      // uiPrtfResItem.tradingDays = parseInt(item.pstat.tradingDays);
+      // uiPrtfResItem.nTrades = parseInt(item.pstat.nTrades);
+      // uiPrtfResItem.winRate = parseFloat(item.pstat.winRate);
+      // uiPrtfResItem.lossRate = parseFloat(item.pstat.lossingRate);
+      // uiPrtfResItem.sortino = item.pstat.sortino;
+      // uiPrtfResItem.turnover = parseFloat(item.pstat.turnover);
+      // uiPrtfResItem.longShortRatio = parseFloat(item.pstat.longShortRatio);
+      // uiPrtfResItem.fees = parseFloat(item.pstat.fees);
       // uiPrtfResItem.benchmarkCAGR = parseFloat(item.pstat.benchmarkCAGR); // yet to calcualte
       // uiPrtfResItem.benchmarkMaxDD = parseFloat(item.pstat.benchmarkMaxDD); // yet to calcualte
       // uiPrtfResItem.correlationWithBenchmark = parseFloat(item.pstat.correlationWithBenchmark); // yet to calcualte
 
-      // uiPrtfResItem.totalReturn = item.chrtData.values[0] / item.chrtData.values[item.chrtData.values.length - 1];
+      // calculating the minStartDate and maxStartDate
+      const firstValDate: Date = new Date(item.chrtData.dates[0] * 1000);
+      const lastValDate: Date = new Date(item.chrtData.dates[item.chrtData.dates.length - 1] * 1000);
+
+      if (firstValDate < this._minStartDate)
+        this._minStartDate = firstValDate;
+
+      if (lastValDate > this._maxEndDate)
+        this._maxEndDate = lastValDate;
+      console.log(`minstartDt1: ${this._minStartDate} and maxstartDt1: ${this._maxEndDate}`);
+
       const chartItem = new CgTimeSeries();
       chartItem.name = item.prtfName;
       chartItem.chartResolution = ChartResolution[item.chrtData.chartResolution];
@@ -233,7 +247,18 @@ export class AppComponent implements OnInit {
       uiPrtfResItem.prtfChrtValues.push(chartItem);
     }
 
-    for (const bmrkItem of chrtGenBacktestRes.bmrkHistories) { // processing benchamrk History data
+    for (const bmrkItem of chrtGenBacktestRes.bmrkHistories) { // processing benchamrks
+      const firstValDateStr: string = bmrkItem.histPrices.dates[0];
+      const firstValDate: Date = new Date(firstValDateStr.substring(0, 4) + '-' + firstValDateStr.substring(5, 7) + '-' + firstValDateStr.substring(8, 10));
+      const lastValDateStr: String = bmrkItem.histPrices.dates[bmrkItem.histPrices.dates.length - 1];
+      const lastValDate: Date = new Date(lastValDateStr.substring(0, 4) + '-' + lastValDateStr.substring(5, 7) + '-' + lastValDateStr.substring(8, 10));
+
+      if (firstValDate < this._minStartDate)
+        this._minStartDate = firstValDate;
+
+      if (lastValDate > this._maxEndDate)
+        this._maxEndDate = lastValDate;
+      console.log(`minstartDt2: ${this._minStartDate} and maxstartDt2: ${this._maxEndDate}`);
       const chartItem = new CgTimeSeries();
       chartItem.name = bmrkItem.sqTicker;
       chartItem.priceData = [];
@@ -256,36 +281,23 @@ export class AppComponent implements OnInit {
 
     uiChrtGenPrtfRunResults.push(uiPrtfResItem);
 
-    d3.selectAll('#pfRunResultChrt > *').remove();
     const lineChrtDiv = document.getElementById('pfRunResultChrt') as HTMLElement;
-    const margin = { top: 50, right: 50, bottom: 30, left: 60 };
-    const chartWidth = uiChrtWidth * 0.9 - margin.left - margin.right; // 90% of the PvChart Width
-    const chartHeight = uiChrtHeight * 0.9 - margin.top - margin.bottom; // 90% of the PvChart Height
     const prtfAndBmrkChrtData: CgTimeSeries[] = uiChrtGenPrtfRunResults[0].prtfChrtValues.concat(uiChrtGenPrtfRunResults[0].bmrkChrtValues);
     const lineChrtTooltip = document.getElementById('tooltipChart') as HTMLElement;
 
-    // Extract all Dates from the priceData array
-    const dates: Date[] = [];
-    for (let i = 0; i < prtfAndBmrkChrtData.length; i++) {
-      const data = prtfAndBmrkChrtData[i];
-      for (let j = 0; j < data.priceData.length; j++) {
-        const point = data.priceData[j];
-        dates.push(new Date(point.date));
-      }
-    }
+    this.startDate = this._minStartDate;
+    this.endDate = this._maxEndDate;
+    this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.startDate);
+    this.endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.endDate);
+    this._ultimateChrt.Init(lineChrtDiv, lineChrtTooltip, prtfAndBmrkChrtData);
+    this.onStartOrEndDateChanged(); // will recalculate CAGR and redraw chart
+  }
 
-    if (this.startDate.getTime() === this.endDate.getTime()) { // this occurs when user selects All or Default
-      const minDate = d3.min(dates) as Date;
-      const maxDate = d3.max(dates) as Date;
-      this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(minDate);
-      this.endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(maxDate);
-      this.startDate = new Date(this.startDateStr);
-      this.endDate = new Date(this.endDateStr);
-    }
+  onStartOrEndDateChanged() {
+    // Recalculate the totalReturn and CAGR here
 
-    const ultimateChrt: UltimateChart = new UltimateChart();
-    ultimateChrt.Init(lineChrtDiv, lineChrtTooltip, prtfAndBmrkChrtData, chartWidth, chartHeight, margin);
-    ultimateChrt.Redraw(this.startDate, this.endDate);
+    // this.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults);
+    this._ultimateChrt.Redraw(this.startDate, this.endDate, this.pvChrtWidth, this.pvChrtHeight);
   }
 
   async onStartBacktests() {
@@ -346,28 +358,28 @@ export class AppComponent implements OnInit {
     }
   }
 
-  onHistRangeSelectionClicked(histPeriodSelectionSelected: string) { // selection made form the list ['YTD', '1M', '1Y', '3Y', '5Y', 'ALL']
+  onUserChangedHistDateRange(histPeriodSelectionSelected: string) { // selection made form the list ['YTD', '1M', '1Y', '3Y', '5Y', 'ALL']
     this.histRangeSelected = histPeriodSelectionSelected;
     const currDateET: Date = new Date(); // gets today's date
     if (this.histRangeSelected === 'YTD')
-      this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.getFullYear() - 1, 11, 31));
+      this.startDate = new Date(SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.getFullYear() - 1, 11, 31)));
     else if (this.histRangeSelected.toLowerCase().endsWith('y')) {
       const lbYears = parseInt(this.histRangeSelected.substr(0, this.histRangeSelected.length - 1), 10);
-      this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.setFullYear(currDateET.getFullYear() - lbYears)));
+      this.startDate = new Date(SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.setFullYear(currDateET.getFullYear() - lbYears))));
     } else if (this.histRangeSelected.toLowerCase().endsWith('m')) {
       const lbMonths = parseInt(this.histRangeSelected.substr(0, this.histRangeSelected.length - 1), 10);
-      this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.setMonth(currDateET.getMonth() - lbMonths)));
+      this.startDate = new Date(SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.setMonth(currDateET.getMonth() - lbMonths))));
     } else if (this.histRangeSelected === 'ALL')
-      this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date());
-    this.endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date());
-    this.startDate = new Date(this.startDateStr);
-    this.endDate = new Date(this.endDateStr);
-    this.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight);
+      this.startDate = this._minStartDate;
+    this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.startDate);
+    this.endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this._maxEndDate); // Interestingly, when we change this which is bind to the date input html element, then the onChangeStartOrEndDate() is not called.
+    this.endDate = this._maxEndDate;
+    this.onStartOrEndDateChanged();
   }
 
-  onChangeStartOrEndDate() { // User entry in the input field
+  onUserChangedStartOrEndDateWidgets() { // User entry in the input field
     this.startDate = new Date(this.startDateStr);
     this.endDate = new Date(this.endDateStr);
-    this.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults, this.pvChrtWidth, this.pvChrtHeight);
+    this.onStartOrEndDateChanged();
   }
 }
