@@ -192,11 +192,8 @@ namespace QuantConnect.Algorithm
         public event AlgorithmEvent<GeneratedInsightsCollection> InsightsGenerated;
 
         // SqCore Change NEW:
-        public SqBacktestConfig SqBacktestConfig
-        {
-            get;
-            set;
-        }
+        public SqBacktestConfig SqBacktestConfig { get; set; }
+        public string AlgorithmParam { get; set; }
         // SqCore Change END
 
         /// <summary>

@@ -65,7 +65,7 @@ namespace QuantConnect.Lean.Engine
         /// <param name="manager">The algorithm manager instance</param>
         /// <param name="assemblyPath">The path to the algorithm's assembly</param>
         /// <param name="workerThread">The worker thread instance</param>
-        public void Run(AlgorithmNodePacket job, AlgorithmManager manager, string assemblyPath, WorkerThread workerThread, SqBacktestConfig p_sqBacktestConfig)
+        public void Run(AlgorithmNodePacket job, AlgorithmManager manager, string assemblyPath, WorkerThread workerThread, SqBacktestConfig p_sqBacktestConfig, string p_algorithmParam)
         {
             var marketHoursDatabaseTask = Task.Run(() => StaticInitializations());
 
@@ -101,6 +101,7 @@ namespace QuantConnect.Lean.Engine
                     // Save algorithm to cache, load algorithm instance:
                     algorithm = AlgorithmHandlers.Setup.CreateAlgorithmInstance(job, assemblyPath);
                     algorithm.SqBacktestConfig = p_sqBacktestConfig;
+                    algorithm.AlgorithmParam = p_algorithmParam;
 
                     // if (algorithm.BrokerageModel as DefaultBrokerageModel != null) // IF works, but longer, and evaluates Cast twice.
                     //     (algorithm.BrokerageModel as DefaultBrokerageModel).m_isUseIbFeeModelForEquities = false;
@@ -326,35 +327,69 @@ namespace QuantConnect.Lean.Engine
 
                     try
                     {
+                        // SqCore Change NEW:
                         //Create a new engine isolator class
-                        var isolator = new Isolator();
+                        // var isolator = new Isolator();
 
                         // Execute the Algorithm Code:
-                        var complete = isolator.ExecuteWithTimeLimit(AlgorithmHandlers.Setup.MaximumRuntime, algorithmManager.TimeLimit.IsWithinLimit, () =>
+                        // var complete = isolator.ExecuteWithTimeLimit(AlgorithmHandlers.Setup.MaximumRuntime, algorithmManager.TimeLimit.IsWithinLimit, () =>
+                        // {
+                        try
                         {
-                            try
-                            {
-                                //Run Algorithm Job:
-                                // -> Using this Data Feed,
-                                // -> Send Orders to this TransactionHandler,
-                                // -> Send Results to ResultHandler.
-                                algorithmManager.Run(job, algorithm, synchronizer, AlgorithmHandlers.Transactions, AlgorithmHandlers.Results, AlgorithmHandlers.RealTime, SystemHandlers.LeanManager, AlgorithmHandlers.Alphas, isolator.CancellationToken);
-                            }
-                            catch (Exception err)
-                            {
-                                algorithm.SetRuntimeError(err, "AlgorithmManager.Run");
-                                return;
-                            }
-
-                            Utils.Logger.Trace("Engine.Run(): Exiting Algorithm Manager");
-                        }, job.Controls.RamAllocation, workerThread:workerThread, sleepIntervalMillis: algorithm.LiveMode ? 10000 : 1000);
-
-                        if (!complete)
-                        {
-                            Utils.Logger.Error("Engine.Main(): Failed to complete in time: " + AlgorithmHandlers.Setup.MaximumRuntime.ToStringInvariant("F"));
-                            throw new Exception("Failed to complete algorithm within " + AlgorithmHandlers.Setup.MaximumRuntime.ToStringInvariant("F")
-                                + " seconds. Please make it run faster.");
+                            //Run Algorithm Job:
+                            // -> Using this Data Feed,
+                            // -> Send Orders to this TransactionHandler,
+                            // -> Send Results to ResultHandler.
+                            algorithmManager.Run(job, algorithm, synchronizer, AlgorithmHandlers.Transactions, AlgorithmHandlers.Results, AlgorithmHandlers.RealTime, SystemHandlers.LeanManager, AlgorithmHandlers.Alphas, CancellationToken.None);
                         }
+                        catch (Exception err)
+                        {
+                            algorithm.SetRuntimeError(err, "AlgorithmManager.Run");
+                            return;
+                        }
+
+                        Utils.Logger.Trace("Engine.Run(): Exiting Algorithm Manager");
+                        // }, job.Controls.RamAllocation, workerThread:workerThread, sleepIntervalMillis: algorithm.LiveMode ? 10000 : 1000);
+
+                        // if (!complete)
+                        // {
+                        //     Utils.Logger.Error("Engine.Main(): Failed to complete in time: " + AlgorithmHandlers.Setup.MaximumRuntime.ToStringInvariant("F"));
+                        //     throw new Exception("Failed to complete algorithm within " + AlgorithmHandlers.Setup.MaximumRuntime.ToStringInvariant("F")
+                        //         + " seconds. Please make it run faster.");
+                        // }
+
+                        // SqCore Change ORIGINAL:
+                        //Create a new engine isolator class
+                        // var isolator = new Isolator();
+
+                        // // Execute the Algorithm Code:
+                        // var complete = isolator.ExecuteWithTimeLimit(AlgorithmHandlers.Setup.MaximumRuntime, algorithmManager.TimeLimit.IsWithinLimit, () =>
+                        // {
+                        //     try
+                        //     {
+                        //         //Run Algorithm Job:
+                        //         // -> Using this Data Feed,
+                        //         // -> Send Orders to this TransactionHandler,
+                        //         // -> Send Results to ResultHandler.
+                        //         algorithmManager.Run(job, algorithm, synchronizer, AlgorithmHandlers.Transactions, AlgorithmHandlers.Results, AlgorithmHandlers.RealTime, SystemHandlers.LeanManager, AlgorithmHandlers.Alphas, isolator.CancellationToken);
+                        //     }
+                        //     catch (Exception err)
+                        //     {
+                        //         algorithm.SetRuntimeError(err, "AlgorithmManager.Run");
+                        //         return;
+                        //     }
+
+                        //     Utils.Logger.Trace("Engine.Run(): Exiting Algorithm Manager");
+                        // }, job.Controls.RamAllocation, workerThread:workerThread, sleepIntervalMillis: algorithm.LiveMode ? 10000 : 1000);
+
+                        // if (!complete)
+                        // {
+                        //     Utils.Logger.Error("Engine.Main(): Failed to complete in time: " + AlgorithmHandlers.Setup.MaximumRuntime.ToStringInvariant("F"));
+                        //     throw new Exception("Failed to complete algorithm within " + AlgorithmHandlers.Setup.MaximumRuntime.ToStringInvariant("F")
+                        //         + " seconds. Please make it run faster.");
+                        // }
+                        // SqCore Change END
+
                     }
                     catch (Exception err)
                     {

@@ -42,6 +42,8 @@ using QuantConnect.Storage;
 using QuantConnect.Data.Custom.AlphaStreams;
 using QCAlgorithmFramework = QuantConnect.Algorithm.QCAlgorithm;
 using QCAlgorithmFrameworkBridge = QuantConnect.Algorithm.QCAlgorithm;
+using System.Collections.Specialized;
+using System.Web;
 #endregion
 
 namespace QuantConnect.Algorithm.CSharp
@@ -52,6 +54,8 @@ namespace QuantConnect.Algorithm.CSharp
         bool _isTradeInSqCore = true; // 2 simulation environments. We backtest in Qc cloud or in SqCore frameworks. QcCloud works on per minute resolution (to be able to send MOC orders 20min before MOC), SqCore works on daily resolution only.
         public bool IsTradeInSqCore { get { return _isTradeInSqCore; } }
         public bool IsTradeInQcCloud { get { return !_isTradeInSqCore; } }
+
+        // public string AlgorithmParam { get; private set; } // "assets=QQQ,TLT&weights=60,40&rebFreq=Daily,1d"
         DateTime _startDate = DateTime.MinValue;
         DateTime _endDate = DateTime.MaxValue;
         TimeSpan _warmUp = TimeSpan.Zero;
@@ -78,6 +82,8 @@ namespace QuantConnect.Algorithm.CSharp
 
         public override void Initialize()
         {
+            ProcessAlgorithmParam();
+
             _backtestStartTime = DateTime.UtcNow;
             _startDate = new DateTime(2006, 01, 01); // means Local time, not UTC
             _warmUp = TimeSpan.FromDays(30); // Wind time back 200 calendar days from start
@@ -118,6 +124,40 @@ namespace QuantConnect.Algorithm.CSharp
                 }
             }
         }
+
+        private void ProcessAlgorithmParam()
+        {
+            _weights = new();
+            NameValueCollection query = HttpUtility.ParseQueryString(AlgorithmParam); // e.g. "assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d"
+
+            // Step 1: process tickers/weights
+            string[] tickers = query.Get("assets")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+            string[] weights = query.Get("weights")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+            if (tickers.Length != weights.Length)
+                throw new ArgumentException("The number of assets and weights must be the same.");
+
+            for (int i = 0; i < tickers.Length; i++)
+            {
+                string ticker = tickers[i];
+                decimal weight = decimal.Parse(weights[i]) / 100m; // "60" => 0.6
+                _weights[ticker] = weight;
+            }
+
+            // Step 2: process rebFreq
+            string[] rebalanceParams = query.Get("rebFreq")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+            if (rebalanceParams.Length != 2)
+                throw new ArgumentException($"The rebFreq {rebalanceParams} is incorrect.");
+
+            string rebalancePeriodNumStr = rebalanceParams[1]; // second item is "10d"
+             if (rebalancePeriodNumStr.Length == 0)
+                throw new ArgumentException($"The rebFreq's rebalancePeriodNumStr {rebalancePeriodNumStr} is incorrect.");
+            char rebalancePeriodNumStrLastChar = rebalancePeriodNumStr[^1]; // 'd' or 'w' or 'm', but it is not required to be present
+            if (Char.IsLetter(rebalancePeriodNumStrLastChar)) // if 'd/w/m' is given, remove it
+                rebalancePeriodNumStr = rebalancePeriodNumStr[..^1];
+            if (!Int32.TryParse(rebalancePeriodNumStr, out _rebalancePeriodDays))
+                throw new ArgumentException($"The rebFreq's rebalancePeriodNumStr {rebalancePeriodNumStr} cannot be converted to int.");
+        }
+
         private void TradeLogic() // this is called at 15:40 in QC cloud, and 00:00 in SqCore
         {
             if (IsWarmingUp) // Dont' trade in the warming up period.

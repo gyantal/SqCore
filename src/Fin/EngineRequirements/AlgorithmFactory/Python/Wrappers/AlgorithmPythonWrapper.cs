@@ -135,11 +135,8 @@ namespace QuantConnect.AlgorithmFactory.Python.Wrappers
         }
 
         // SqCore Change NEW:
-        public SqBacktestConfig SqBacktestConfig
-        {
-            get;
-            set;
-        }
+        public SqBacktestConfig SqBacktestConfig { get; set; }
+        public string AlgorithmParam { get; set; }
         // SqCore Change END
 
         /// <summary>

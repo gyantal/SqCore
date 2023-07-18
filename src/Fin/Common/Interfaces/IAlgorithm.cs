@@ -38,11 +38,8 @@ namespace QuantConnect.Interfaces
         event AlgorithmEvent<GeneratedInsightsCollection> InsightsGenerated;
 
         // SqCore Change NEW:
-        SqBacktestConfig SqBacktestConfig
-        {
-            get;
-            set;
-        }
+        SqBacktestConfig SqBacktestConfig  { get; set; }
+        public string AlgorithmParam { get; set; }
         // SqCore Change END
 
         /// <summary>

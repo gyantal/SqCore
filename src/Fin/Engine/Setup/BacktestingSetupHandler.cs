@@ -76,7 +76,7 @@ namespace QuantConnect.Lean.Engine.Setup
             if (SqBacktestConfig.SqFastestExecution) // Original QC code reads the whole Algorithm.CSharp DLL as binary and create the Algorithm instance from that. Total waste of time.
             {
                 string algName = ((BacktestNodePacket)algorithmNodePacket).BacktestId;
-                return algName switch
+                QCAlgorithm algoritm = algName switch
                 {
                     "BasicTemplateFrameworkAlgorithm" => new BasicTemplateFrameworkAlgorithm(),
                     "SqSPYMonFriAtMoc" => new SqSPYMonFriAtMoc(),
@@ -84,6 +84,8 @@ namespace QuantConnect.Lean.Engine.Setup
                     "SqPctAllocation" => new SqPctAllocation(),
                     _ => throw new Exception($"QcAlgorithm name '{algName}' is unrecognized."),
                 };
+                // algoritm.AlgorithmParam = "";
+                return algoritm;
             }
             // SqCore Change END
 
@@ -158,60 +160,63 @@ namespace QuantConnect.Lean.Engine.Setup
             }
 
             var controls = job.Controls;
-            var isolator = new Isolator();
-            var initializeComplete = isolator.ExecuteWithTimeLimit(TimeSpan.FromMinutes(5), () =>
+
+// SqCore Change NEW:
+
+            // var isolator = new Isolator();
+            // var initializeComplete = isolator.ExecuteWithTimeLimit(TimeSpan.FromMinutes(5), () =>
+            // {
+            try
             {
-                try
+                parameters.ResultHandler.SendStatusUpdate(AlgorithmStatus.Initializing, "Initializing algorithm...");
+                //Set our parameters
+                algorithm.SetParameters(job.Parameters);
+                algorithm.SetAvailableDataTypes(BaseSetupHandler.GetConfiguredDataFeeds());
+
+                //Algorithm is backtesting, not live:
+                algorithm.SetLiveMode(false);
+
+                //Set the source impl for the event scheduling
+                algorithm.Schedule.SetEventSchedule(parameters.RealTimeHandler);
+
+                // set the option chain provider
+                algorithm.SetOptionChainProvider(new CachingOptionChainProvider(new BacktestingOptionChainProvider(parameters.DataCacheProvider, parameters.MapFileProvider)));
+
+                // set the future chain provider
+                algorithm.SetFutureChainProvider(new CachingFutureChainProvider(new BacktestingFutureChainProvider(parameters.DataCacheProvider)));
+
+                // set the object store
+                algorithm.SetObjectStore(parameters.ObjectStore);
+
+                // before we call initialize
+                BaseSetupHandler.LoadBacktestJobAccountCurrency(algorithm, job);
+
+                //Initialise the algorithm, get the required data:
+                algorithm.Initialize();
+
+                // set start and end date if present in the job
+                if (job.PeriodStart.HasValue)
                 {
-                    parameters.ResultHandler.SendStatusUpdate(AlgorithmStatus.Initializing, "Initializing algorithm...");
-                    //Set our parameters
-                    algorithm.SetParameters(job.Parameters);
-                    algorithm.SetAvailableDataTypes(BaseSetupHandler.GetConfiguredDataFeeds());
-
-                    //Algorithm is backtesting, not live:
-                    algorithm.SetLiveMode(false);
-
-                    //Set the source impl for the event scheduling
-                    algorithm.Schedule.SetEventSchedule(parameters.RealTimeHandler);
-
-                    // set the option chain provider
-                    algorithm.SetOptionChainProvider(new CachingOptionChainProvider(new BacktestingOptionChainProvider(parameters.DataCacheProvider, parameters.MapFileProvider)));
-
-                    // set the future chain provider
-                    algorithm.SetFutureChainProvider(new CachingFutureChainProvider(new BacktestingFutureChainProvider(parameters.DataCacheProvider)));
-
-                    // set the object store
-                    algorithm.SetObjectStore(parameters.ObjectStore);
-
-                    // before we call initialize
-                    BaseSetupHandler.LoadBacktestJobAccountCurrency(algorithm, job);
-
-                    //Initialise the algorithm, get the required data:
-                    algorithm.Initialize();
-
-                    // set start and end date if present in the job
-                    if (job.PeriodStart.HasValue)
-                    {
-                        algorithm.SetStartDate(job.PeriodStart.Value);
-                    }
-                    if (job.PeriodFinish.HasValue)
-                    {
-                        algorithm.SetEndDate(job.PeriodFinish.Value);
-                    }
-
-                    // after we call initialize
-                    BaseSetupHandler.LoadBacktestJobCashAmount(algorithm, job);
-
-                    // finalize initialization
-                    algorithm.PostInitialize();
+                    algorithm.SetStartDate(job.PeriodStart.Value);
                 }
-                catch (Exception err)
+                if (job.PeriodFinish.HasValue)
                 {
-                    Errors.Add(new AlgorithmSetupException("During the algorithm initialization, the following exception has occurred: ", err));
+                    algorithm.SetEndDate(job.PeriodFinish.Value);
                 }
-            }, controls.RamAllocation,
-                sleepIntervalMillis: 100,  // entire system is waiting on this, so be as fast as possible
-                workerThread: WorkerThread);
+
+                // after we call initialize
+                BaseSetupHandler.LoadBacktestJobCashAmount(algorithm, job);
+
+                // finalize initialization
+                algorithm.PostInitialize();
+            }
+            catch (Exception err)
+            {
+                Errors.Add(new AlgorithmSetupException("During the algorithm initialization, the following exception has occurred: ", err));
+            }
+            // }, controls.RamAllocation,
+            //     sleepIntervalMillis: 100,  // entire system is waiting on this, so be as fast as possible
+            //     workerThread: WorkerThread);
 
             if (Errors.Count > 0)
             {
@@ -220,7 +225,74 @@ namespace QuantConnect.Lean.Engine.Setup
             }
 
             //Before continuing, detect if this is ready:
-            if (!initializeComplete) return false;
+            //if (!initializeComplete) return false;
+
+            // SqCore Change ORIGINAL:
+            // var isolator = new Isolator();
+            // var initializeComplete = isolator.ExecuteWithTimeLimit(TimeSpan.FromMinutes(5), () =>
+            // {
+            //     try
+            //     {
+            //         parameters.ResultHandler.SendStatusUpdate(AlgorithmStatus.Initializing, "Initializing algorithm...");
+            //         //Set our parameters
+            //         algorithm.SetParameters(job.Parameters);
+            //         algorithm.SetAvailableDataTypes(BaseSetupHandler.GetConfiguredDataFeeds());
+
+            //         //Algorithm is backtesting, not live:
+            //         algorithm.SetLiveMode(false);
+
+            //         //Set the source impl for the event scheduling
+            //         algorithm.Schedule.SetEventSchedule(parameters.RealTimeHandler);
+
+            //         // set the option chain provider
+            //         algorithm.SetOptionChainProvider(new CachingOptionChainProvider(new BacktestingOptionChainProvider(parameters.DataCacheProvider, parameters.MapFileProvider)));
+
+            //         // set the future chain provider
+            //         algorithm.SetFutureChainProvider(new CachingFutureChainProvider(new BacktestingFutureChainProvider(parameters.DataCacheProvider)));
+
+            //         // set the object store
+            //         algorithm.SetObjectStore(parameters.ObjectStore);
+
+            //         // before we call initialize
+            //         BaseSetupHandler.LoadBacktestJobAccountCurrency(algorithm, job);
+
+            //         //Initialise the algorithm, get the required data:
+            //         algorithm.Initialize();
+
+            //         // set start and end date if present in the job
+            //         if (job.PeriodStart.HasValue)
+            //         {
+            //             algorithm.SetStartDate(job.PeriodStart.Value);
+            //         }
+            //         if (job.PeriodFinish.HasValue)
+            //         {
+            //             algorithm.SetEndDate(job.PeriodFinish.Value);
+            //         }
+
+            //         // after we call initialize
+            //         BaseSetupHandler.LoadBacktestJobCashAmount(algorithm, job);
+
+            //         // finalize initialization
+            //         algorithm.PostInitialize();
+            //     }
+            //     catch (Exception err)
+            //     {
+            //         Errors.Add(new AlgorithmSetupException("During the algorithm initialization, the following exception has occurred: ", err));
+            //     }
+            // }, controls.RamAllocation,
+            //     sleepIntervalMillis: 100,  // entire system is waiting on this, so be as fast as possible
+            //     workerThread: WorkerThread);
+
+            // if (Errors.Count > 0)
+            // {
+            //     // if we already got an error just exit right away
+            //     return false;
+            // }
+
+            // //Before continuing, detect if this is ready:
+            // if (!initializeComplete) return false;
+
+            // SqCore Change END
 
             MaximumRuntime = TimeSpan.FromMinutes(job.Controls.MaximumRuntimeMinutes);
 
@@ -246,7 +318,8 @@ namespace QuantConnect.Lean.Engine.Setup
                       $"MaximumRuntime: {MaximumRuntime} " +
                       $"MaxOrders: {MaxOrders}");
 
-            return initializeComplete;
+            // return initializeComplete;
+            return true;
         }
 
         /// <summary>

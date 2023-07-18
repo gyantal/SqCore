@@ -60,6 +60,10 @@ namespace QuantConnect
         /// <returns>True if algorithm exited successfully, false if cancelled because it exceeded limits.</returns>
         public bool ExecuteWithTimeLimit(TimeSpan timeSpan, Func<IsolatorLimitResult> withinCustomLimits, Action codeBlock, long memoryCap = 1024, int sleepIntervalMillis = 1000, WorkerThread workerThread = null)
         {
+            // SqCore Change NEW:
+            if (SqBacktestConfig.SqFastestExecution)
+                throw new Exception("In SqCore running, for speed, we don't want to run any worker thread tasks. Just run them in the caller thread directly.");
+            // SqCore Change END
             workerThread?.Add(codeBlock);
 
             // SqCore Change NEW:
