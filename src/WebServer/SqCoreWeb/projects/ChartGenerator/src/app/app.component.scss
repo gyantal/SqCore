@@ -16,10 +16,12 @@
 .commonColStyle { // same style for all the div's of Portfolios, StockAndIndexex, TechIndicators and others ( 4 sections similar to sniffeQuant Chart Generator)
   display: inline-block; // will achieve a side-by-side layout for the elements while still having the ability to control their width, height, and spacing
   width: 24.8%;
-  height: 7.5rem;
+  min-height: 7.5rem;
   margin-bottom: 0.5rem;
+  padding-left: 0.5rem;
   border: solid #080c0c 0.01rem;
   vertical-align: top; //  default is Baseline, baseline alignment may result in slight vertical misalignment. Align elements to the top of the line otherwise it will start at the level of the last element
+  box-sizing: border-box; // padding and border are included in the width and height. ref - https://www.w3schools.com/css/css3_box-sizing.asp
 }
 
 .prtfAndBmrkInputs {
@@ -29,7 +31,7 @@
   border-radius: .2rem;
   color: blue;
   height: 1rem;
-  width: 15rem;
+  width: 10rem;
   font-size: 0.8rem;
 }
 

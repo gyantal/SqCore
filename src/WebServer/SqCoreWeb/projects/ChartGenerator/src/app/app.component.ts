@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { SqNgCommonUtilsTime, minDate, maxDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
+import { SqStatisticsBuilder, StatisticsResults } from '../../../../TsLib/sq-common/backtestStatistics';
 import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint } from '../../../../TsLib/sq-common/backtestCommon';
 import { sleep } from '../../../../TsLib/sq-common/utils-common';
 
@@ -55,6 +56,8 @@ export class AppComponent implements OnInit {
   chrtGenDiagnosticsMsg: string = 'Benchmarking time, connection speed';
   isProgressBarVisble: boolean = false;
   isBacktestReturned: boolean = false;
+  _sqStatisticsbuilder: SqStatisticsBuilder = new SqStatisticsBuilder();
+  backtestStatsResults: StatisticsResults[] = [];
   prtfOrBenchmark: string[] = ['SPY', 'TLT', 'RootUser', 'DualMomentum', 'VXX'];
   // Dummy Data - To be Deleted
   Data = [
@@ -290,13 +293,15 @@ export class AppComponent implements OnInit {
     this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.startDate);
     this.endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.endDate);
     this._ultimateChrt.Init(lineChrtDiv, lineChrtTooltip, prtfAndBmrkChrtData);
+    this._sqStatisticsbuilder.Init(prtfAndBmrkChrtData, this.startDate);
     this.onStartOrEndDateChanged(); // will recalculate CAGR and redraw chart
   }
 
   onStartOrEndDateChanged() {
     // Recalculate the totalReturn and CAGR here
-
-    // this.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults);
+    this._sqStatisticsbuilder.isTradingDay(this.startDate);
+    this.backtestStatsResults = this._sqStatisticsbuilder.statsResults(this.startDate, this.endDate);
+    console.log('onStartOrEndDateChanged: this._sqStatisticsbuilder', this.backtestStatsResults.length);
     this._ultimateChrt.Redraw(this.startDate, this.endDate, this.pvChrtWidth, this.pvChrtHeight);
   }
 
