@@ -254,8 +254,8 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
     public static string? GetBmrksHistoricalResults(string p_bmrksStr, DateTime p_minDate, out PriceHistoryJs p_histPrices)
     {
         PriceHistoryJs historicalPrices = new();
-        string tickerAsTradedToday2 = p_bmrksStr; // if symbol.zip doesn't exist in Data folder, it will not download it (cost money, you have to download in their shop). It raises an exception.
-        Symbol symbol = new(SecurityIdentifier.GenerateEquity(tickerAsTradedToday2, Market.USA, true, FinDb.gFinDb.MapFileProvider), tickerAsTradedToday2);
+        string tickerAsTradedToday = p_bmrksStr; // if symbol.zip doesn't exist in Data folder, it will not download it (cost money, you have to download in their shop). It raises an exception.
+        Symbol symbol = new(SecurityIdentifier.GenerateEquity(tickerAsTradedToday, Market.USA, true, FinDb.gFinDb.MapFileProvider), tickerAsTradedToday);
 
         DateTime startTimeUtc = new(p_minDate.Year, p_minDate.Month, p_minDate.Day);
         // DateTime startTimeUtc = new(2008, 01, 01);
@@ -276,20 +276,27 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
 
         NodaTime.DateTimeZone sliceTimeZone = TimeZones.NewYork; // "algorithm.TimeZone"
 
-        var result = FinDb.gFinDb.HistoryProvider.GetHistory(historyRequests, sliceTimeZone).ToList();
+        List<Slice>? result = FinDb.gFinDb.HistoryProvider.GetHistory(historyRequests, sliceTimeZone).ToList();
         Utils.Logger.Info("length of result bar values:" + result[0].Bars.Values.ToArray().Length);
         Console.WriteLine($" Test Historical price data. Number of TradeBars: {result.Count}. SPY RAW ClosePrice on {result[0].Bars.Values.ToArray()[0].Time}: {result[0].Bars.Values.ToArray()[0].Close}");
 
         for (int i = 0; i < result.Count; i++)
         {
-            var resBarVals = result[i].Bars.Values.ToArray();
+            TradeBar[]? resBarVals = result[i].Bars.Values.ToArray();
             string dateStr = resBarVals[0].Time.TohYYYYMMDD();
             float price = (float)resBarVals[0].Price;
+            if (historicalPrices.Prices.Count > 1 && (price / historicalPrices.Prices[^1] > 1.5)) // TEMP for debugging, because QQQ benchmark data has (wrong) doubling 3 times during its history.
+                Console.WriteLine($"Warning on ticker {tickerAsTradedToday}. Potential wrong data on {dateStr}, PrevPrice: {historicalPrices.Prices[^1]}, currPrice: {price}");
 
             historicalPrices.Dates.Add(dateStr); // Add the date to the Date list
             historicalPrices.Prices.Add(price); // Add the price to the Price list
         }
         p_histPrices = historicalPrices;
+
+        // TEMP for debugging, because QQQ benchmark data has (wrong) doubling 3 times during its history.
+        // string datesStr = string.Join(",", historicalPrices.Dates.ToArray());
+        // string pricesStr = string.Join(",", historicalPrices.Prices.Select(r => r.ToString()).ToArray());
+
         return null; // No Error
     }
 }

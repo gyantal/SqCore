@@ -64,6 +64,7 @@ export class TreeViewItem { // future work. At the moment, it copies PortfolioFl
 
 export class TreeViewState {
   public lastSelectedItem : Nullable<TreeViewItem> = null;
+  public lastSelectedItemId: number = -1; // need to remember the lastselectedItemId to highlight the user Selected item even after refresh or after creating/editing an item
   public expandedPrtfFolderIds: number[] = [];
   public rootSqTreeViewComponent: Nullable<SqTreeViewComponent> = null;
 }
@@ -414,6 +415,10 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     for (const id of Object.keys(tempPrtfItemsDict)) {
       const item : TreeViewItem = tempPrtfItemsDict[id];
       item.isSelected = false;
+      if (pTreeViewState.lastSelectedItemId == item.id) {
+        item.isSelected = true;
+        break;
+      }
 
       item.isExpanded = false;
       for (let i = 0; i < pTreeViewState.expandedPrtfFolderIds.length; i++) { // expanded folder Id's check

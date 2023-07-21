@@ -164,17 +164,17 @@ public class ChrtGenWs
         if (string.IsNullOrEmpty(bmrksStr))
             sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Info, Message = $"The bmrksStr from the client is null. We process the pidStr further." });
 
-        if(minStartDate == DateTime.Today) // Defaault date (2020-01-01) if minStartdate == today
+        if(minStartDate == DateTime.Today) // Default date (2020-01-01) if minStartdate == today
             minStartDate = new DateTime(2020, 01, 01);
         List<BmrkHistory> bmrkHistories = new();
-        foreach (string bmrkStr in bmrksStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
-            {
-                string? errMsg = Portfolio.GetBmrksHistoricalResults(bmrkStr, minStartDate, out PriceHistoryJs histPrcs);
-                if(errMsg == null)
-                    bmrkHistories.Add(new BmrkHistory { SqTicker = bmrkStr, HistPrices = histPrcs });
-                else
-                    sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Warn, Message = $"The Benchmark Tickers {bmrkStr} not found in DB. ErrMsg {errMsg}" });
-            }
+        foreach (string bmrkTicker in bmrksStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
+        {
+            string? errMsg = Portfolio.GetBmrksHistoricalResults(bmrkTicker, minStartDate, out PriceHistoryJs histPrcs);
+            if (errMsg == null)
+                bmrkHistories.Add(new BmrkHistory { SqTicker = bmrkTicker, HistPrices = histPrcs });
+            else
+                sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Warn, Message = $"The Benchmark Tickers {bmrkTicker} not found in DB. ErrMsg {errMsg}" });
+        }
 
         // Step 6: send back the result
         stopwatch.Stop(); // Stopwatch to capture the end time

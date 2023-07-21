@@ -14,9 +14,6 @@ export class SqTreeViewComponent implements OnInit {
   @Input() treeViewState!: TreeViewState; // treeview selected data processing
   @ViewChildren(SqTreeViewComponent) public _children!: QueryList<SqTreeViewComponent>;
 
-  isSelected: boolean = false;
-  isExpanded: boolean = false;
-
   constructor() { }
 
   ngOnInit(): void {
@@ -35,6 +32,7 @@ export class SqTreeViewComponent implements OnInit {
     console.log('TreeView.onItemClicked(): ' + this.treeViewState.lastSelectedItem?.name);
     this.treeViewState.rootSqTreeViewComponent!.DeselectThisItemsAndAllChildren();
     item.isSelected = true;
+    this.treeViewState.lastSelectedItemId = item.id;
 
     if (!item.isExpanded && item.children && item.children.length > 0) // set to expanded only if it was not expanded before and has children
       item.isExpanded = true;
