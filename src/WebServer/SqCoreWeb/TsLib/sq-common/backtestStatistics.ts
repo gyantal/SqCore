@@ -20,35 +20,33 @@ export class FinalStatistics {
 }
 
 export class SqStatisticsBuilder {
-  _chartData: CgTimeSeries[] = [];
+  _timeSeriess: CgTimeSeries[] = [];
 
-  public Init(chartData: CgTimeSeries[]): void {
-    this._chartData = chartData;
+  public Init(timeSeriess: CgTimeSeries[]): void {
+    this._timeSeriess = timeSeriess;
   }
 
-  isTradingDay(startDate: Date): boolean {
-    const dayOfWeek = startDate.getDay();
+  isTradingDay(date: Date): boolean {
+    const dayOfWeek = date.getDay();
     return dayOfWeek !== 6 && dayOfWeek !== 0; // not the weekend
   }
 
   public statsResults(startDate: Date, endDate: Date): FinalStatistics[] { // without the dataCopy
     const statsResults: FinalStatistics[] = [];
-    if (this._chartData == null)
+    if (this._timeSeriess == null)
       return statsResults;
     let startingCapital: number = 0;
     let finalCapital: number = 0;
-    for (const data of this._chartData) {
+    for (let i = 0; i < this._timeSeriess.length; i++) {
       const statRes = new FinalStatistics();
-      statRes.name = data.name;
-      for (let i = 0; i < data.priceData.length; i++) {
-        const date = new Date(data.priceData[i].date);
-        if (date >= startDate && date <= endDate) {
-          startingCapital = data.priceData[i].value;
-          finalCapital = data.priceData[data.priceData.length - 1].value;
-          statRes.stats.TotalReturn = finalCapital / startingCapital - 1;
-          break;
-        }
-      }
+      statRes.name = this._timeSeriess[i].name;
+      const strtIdx = this._timeSeriess[i].priceData.findIndex((s) => new Date(s.date).setHours(0, 0, 0, 0) == startDate.setHours(0, 0, 0, 0));
+      const endIdx = this._timeSeriess[i].priceData.findIndex((s) => new Date(s.date).setHours(0, 0, 0, 0) == endDate.setHours(0, 0, 0, 0));
+      const startIndex = strtIdx == -1 ? 0 : strtIdx; // some cases there are chances of not having data of selected prtf/bmrk for the selected dateRange (need to discuss about the solution in such cases)
+      const endIndex = endIdx == -1 ? 0 : endIdx; // some cases there are chances of not having data of selected prtf/bmrk for the selected dateRange
+      startingCapital = this._timeSeriess[i].priceData[startIndex].value;
+      finalCapital = this._timeSeriess[i].priceData[endIndex].value;
+      statRes.stats.TotalReturn = finalCapital / startingCapital - 1;
       const years = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
       if (years !== 0 && startingCapital !== 0) {
         const cagr = Math.pow( statRes.stats.TotalReturn + 1, 1 / years) - 1; // n-th root of the total return

@@ -54,21 +54,22 @@
     </div>
   </div><br>
   <div class="statsTbl">
-      <b>Dummy Data</b>
     <table>
       <thead>
         <tr>
-          <th>Statistics</th>
-          <th *ngFor="let item of prtfOrBenchmark">{{item}}</th>
+            <th>Statistics</th>
+            <th *ngFor="let item of backtestStatsResults">{{item.name}}</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let row of Data">
-          <td>{{row.name}}</td>
-          <td *ngFor="let item of prtfOrBenchmark">{{row.values[item]}}</td>
+        <ng-container *ngFor="let stat of backtestStatsResults[0]?.stats | keyvalue">
+        <tr>
+            <td>{{stat.key}}</td>
+            <td *ngFor="let item of backtestStatsResults">{{item.stats[stat.key] | number:'0.2'}}</td>
         </tr>
+      </ng-container>
       </tbody>
-    </table>
+  </table>
   </div>
 </div>
 <!-- Progress bar -->

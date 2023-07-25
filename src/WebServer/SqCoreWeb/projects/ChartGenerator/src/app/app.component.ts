@@ -58,15 +58,6 @@ export class AppComponent implements OnInit {
   isBacktestReturned: boolean = false;
   _sqStatisticsbuilder: SqStatisticsBuilder = new SqStatisticsBuilder();
   backtestStatsResults: FinalStatistics[] = [];
-  prtfOrBenchmark: string[] = ['SPY', 'TLT', 'RootUser', 'DualMomentum', 'VXX'];
-  // Dummy Data - To be Deleted
-  Data = [
-    { name: 'TotalReturn', values: { 'SPY': '1%', 'TLT': '2%', 'RootUser': '1.5%', 'DualMomentum': '2%', 'VXX': '2%' } },
-    { name: 'CAGR', values: { 'SPY': '2%', 'TLT': '5%', 'RootUser': '1.7%', 'DualMomentum': '2%', 'VXX': '2%' } },
-    { name: 'StDev', values: { 'SPY': '1%', 'TLT': '2%', 'RootUser': '1.8%', 'DualMomentum': '4%', 'VXX': '2%' } },
-    { name: 'Sharpe', values: { 'SPY': '2%', 'TLT': '5%', 'RootUser': '2.8%', 'DualMomentum': '2.5%', 'VXX': '2%' } },
-    { name: 'MaxDD', values: { 'SPY': '1%', 'TLT': '2%', 'RootUser': '2%', 'DualMomentum': '3%', 'VXX': '2%' } }
-  ];
 
   user = {
     name: 'Anonymous',
