@@ -31,19 +31,40 @@ export class SqStatisticsBuilder {
     return dayOfWeek !== 6 && dayOfWeek !== 0; // not the weekend
   }
 
+  // first Check the startDate is a TradingDay or not?
+  // if its a trading day the use the same startdate else substract 1 day from the startdate and check if its trading day or not do this recursively until will get a proper date and update the startdate to the properdate?
+  // same thing applies to endDate
+  findNearestTradingDay(startDate: Date) {
+    if (this.isTradingDay(startDate))
+      return startDate; // If startDate is already a trading day, return it
+    else {
+      const oneDayInMilliseconds = 24 * 60 * 60 * 1000; // Number of milliseconds in a day
+      const previousDate = new Date(startDate.getTime() - oneDayInMilliseconds); // Subtract one day
+      return this.findNearestTradingDay(previousDate); // Recursively find the nearest trading day
+    }
+  }
+
   public statsResults(startDate: Date, endDate: Date): FinalStatistics[] { // without the dataCopy
     const statsResults: FinalStatistics[] = [];
     if (this._timeSeriess == null)
       return statsResults;
     let startingCapital: number = 0;
     let finalCapital: number = 0;
+    const startTradingDay = this.findNearestTradingDay(startDate);
+    const endTradingDay = this.findNearestTradingDay(endDate);
     for (let i = 0; i < this._timeSeriess.length; i++) {
       const statRes = new FinalStatistics();
       statRes.name = this._timeSeriess[i].name;
-      const strtIdx = this._timeSeriess[i].priceData.findIndex((s) => new Date(s.date).setHours(0, 0, 0, 0) == startDate.setHours(0, 0, 0, 0));
-      const endIdx = this._timeSeriess[i].priceData.findIndex((s) => new Date(s.date).setHours(0, 0, 0, 0) == endDate.setHours(0, 0, 0, 0));
-      const startIndex = strtIdx == -1 ? 0 : strtIdx; // some cases there are chances of not having data of selected prtf/bmrk for the selected dateRange (need to discuss about the solution in such cases)
-      const endIndex = endIdx == -1 ? 0 : endIdx; // some cases there are chances of not having data of selected prtf/bmrk for the selected dateRange
+      let startIndex = 0;
+      let endIndex = 0;
+      for (let j = 0; j < this._timeSeriess[i].priceData.length; j++) {
+        const currentDate = new Date(this._timeSeriess[i].priceData[j].date);
+        if (currentDate < startTradingDay)
+          startIndex = j;
+        if (currentDate <= endTradingDay)
+          endIndex = j;
+      }
+      console.log('startIdx:', startIndex, 'endIndex', endIndex);
       startingCapital = this._timeSeriess[i].priceData[startIndex].value;
       finalCapital = this._timeSeriess[i].priceData[endIndex].value;
       statRes.stats.TotalReturn = finalCapital / startingCapital - 1;

@@ -20,8 +20,8 @@
   </div>
   <!-- Class=commonColStyle name will be changed in future - Daya(28-04-2023) -->
   <span class="commonColStyle" id="portfolios">
-    <span>PortfolioIds:<input class="prtfAndBmrkInputs" id="pfIds" type="text" [(ngModel)]="prtfIds"></span><br>
-    <span>Benchmarks:<input class="prtfAndBmrkInputs" id="bmrks" type="text" [(ngModel)]="bmrks"></span><br>
+    <span>PortfolioIds: <input class="prtfAndBmrkInputs" id="pfIds" type="text" [(ngModel)]="prtfIds"></span><br>
+    <span>Benchmarks: <input class="prtfAndBmrkInputs" id="bmrks" type="text" [(ngModel)]="bmrks"></span><br>
     <span class="range">Range:
       <div class="selectionDropDown">
         <input class="highlightInputDropDown" type="text" oninput="this.value = this.value.toUpperCase()" [(ngModel)]="histRangeSelected" (change)="onUserChangedHistDateRange(histRangeSelected)">
@@ -30,8 +30,8 @@
         </div>
       </div>
     </span>&nbsp;<br>
-    <span>Start:<input type="date" id="StartDate" name="startDate" min="1975-01-01" [(ngModel)]="startDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;
-    <span>End:<input type="date" id="EndDate" name="EndDate" min="1975-01-01" max="2040-01-01" [(ngModel)]="endDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;&nbsp;<br>
+    <span>Start: <input type="date" id="StartDate" name="startDate" min="1975-01-01" [(ngModel)]="startDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;
+    <span>End: <input type="date" id="EndDate" name="EndDate" min="1975-01-01" max="2040-01-01" [(ngModel)]="endDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;&nbsp;<br>
     <button class="backtestBtn" (click)="onStartBacktestsClicked()">Start Server Backtest</button>
   </span>
   <span class="commonColStyle" id="stockAndIndexes">
@@ -57,15 +57,15 @@
     <table>
       <thead>
         <tr>
-            <th>Statistics</th>
-            <th *ngFor="let item of backtestStatsResults">{{item.name}}</th>
+          <th>Statistics</th>
+          <th *ngFor="let item of backtestStatsResults">{{item.name}}</th>
         </tr>
       </thead>
       <tbody>
-        <ng-container *ngFor="let stat of backtestStatsResults[0]?.stats | keyvalue">
+        <ng-container *ngFor="let stat of backtestStatsResults[0]?.stats | keyvalue"> <!-- we only use backtestStatsResults[0]?.stats to get the statistics keys (since all items in the array should have the same statistics keys). -->
         <tr>
-            <td>{{stat.key}}</td>
-            <td *ngFor="let item of backtestStatsResults">{{item.stats[stat.key] | number:'0.2'}}</td>
+          <td>{{stat.key}}</td>
+          <td *ngFor="let item of backtestStatsResults">{{item.stats[stat.key] | number:'0.2'}}</td>
         </tr>
       </ng-container>
       </tbody>
