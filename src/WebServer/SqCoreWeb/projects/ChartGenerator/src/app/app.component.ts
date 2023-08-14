@@ -27,6 +27,11 @@ export class ChrtGenDiagnostics { // have to export the class, because .mainTsTi
 
 export const gChrtGenDiag: ChrtGenDiagnostics = new ChrtGenDiagnostics();
 
+class PortfolioJs {
+  public prtfId = -1;
+  public prtfName = '';
+}
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -58,6 +63,10 @@ export class AppComponent implements OnInit {
   isBacktestReturned: boolean = false;
   _sqStatisticsbuilder: SqStatisticsBuilder = new SqStatisticsBuilder();
   backtestStatsResults: FinalStatistics[] = [];
+  portfoliosJs: Nullable<PortfolioJs[]> = null;
+  prtfSelectedName: string = '';
+  prtfSelectedId: number = 0;
+  _backtestedPortfolios : PortfolioJs[] = [];
 
   user = {
     name: 'Anonymous',
@@ -106,6 +115,10 @@ export class AppComponent implements OnInit {
           await sleep(5000); // simulate slow C# server backtest
           console.log('ChrtGen.BacktestResults:' + msgObjStr);
           this.onCompleteBacktests(msgObjStr);
+          break;
+        case 'ChrtGen.Portfolios':
+          console.log('ChrtGen.Portfolios:' + msgObjStr);
+          this.portfoliosJs = JSON.parse(msgObjStr);
           break;
         case 'ErrorToUser':
           console.log('ChrtGen.ErrorToUser:' + msgObjStr);
@@ -376,5 +389,34 @@ export class AppComponent implements OnInit {
     this.startDate = new Date(this.startDateStr);
     this.endDate = new Date(this.endDateStr);
     this.onStartOrEndDateChanged();
+  }
+
+  onClickUserSelectedPortfolio(prtf: PortfolioJs) {
+    this.prtfSelectedName = prtf.prtfName;
+    this.prtfSelectedId = prtf.prtfId;
+  }
+
+  onClickPrtfSelectedForBacktest(prtfSelectedId: number) {
+    if (this.portfoliosJs == null)
+      return;
+
+    let isPrtfIdIncluded = false; // Initialize a flag to track whether the item is Included
+    // Check if the selected item doesn't exist in _backtestedPortfolios
+    for (let i = 0; i < this._backtestedPortfolios.length; i++) {
+      if (this._backtestedPortfolios[i].prtfId === prtfSelectedId) {
+        isPrtfIdIncluded = true; // Set the flag to true if the item is found
+        break;
+      }
+    }
+
+    // If the item is not included, proceed to add it
+    if (!isPrtfIdIncluded) {
+      for (let i = 0; i < this.portfoliosJs.length; i++) {
+        if (this.portfoliosJs[i].prtfId == prtfSelectedId) {
+          this._backtestedPortfolios.push(this.portfoliosJs[i]);
+          break;
+        }
+      }
+    }
   }
 }

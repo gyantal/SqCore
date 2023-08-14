@@ -21,6 +21,15 @@
   <!-- Class=commonColStyle name will be changed in future - Daya(28-04-2023) -->
   <span class="commonColStyle" id="portfolios">
     <span>PortfolioIds: <input class="prtfAndBmrkInputs" id="pfIds" type="text" [(ngModel)]="prtfIds"></span><br>
+    <span>Portfolios:
+      <div class="selectionDropDown">
+        <input class="highlightInputDropDown prtfInputWidth" type="text" [(ngModel)]="prtfSelectedName">
+        <div class="listDropDown">
+          <option class="optionDropDown" *ngFor="let item of portfoliosJs" [value]="item.prtfName" (click)="onClickUserSelectedPortfolio(item)">{{item.prtfId}} : {{item.prtfName}}</option>
+        </div>&nbsp;
+        <button (click)="onClickPrtfSelectedForBacktest(prtfSelectedId)">Insert</button>
+      </div>
+    </span>&nbsp;<br>
     <span>Benchmarks: <input class="prtfAndBmrkInputs" id="bmrks" type="text" [(ngModel)]="bmrks"></span><br>
     <span class="range">Range:
       <div class="selectionDropDown">
