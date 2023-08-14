@@ -46,6 +46,28 @@ https://www.reddit.com/r/javascript/comments/5rjrcy/why_is_twospace_tab_indent_b
 "in recent years there has been a massive switch from four to two spaces as the standard across JavaScript which seems to have crept into other languages like HTML, CSS/Sass, JSON, etc."
 "Two spaces is popular in JS because "callback hell""
 
+5.
+JavaScript: Efficient way to handle the over-use of multiple string concatenation. 
+There is no C# style StringBulider in JS. 
+Therefore decide between "+=" string concatenation vs. Array.join(). 
+Verdict: just use "+="
+A. There is no official StringBuilder in JS in 2023. A fact. Mostly, because it is not required. (because += supports it and Array.join() supports it.) See later.
+B. "+=" speed is implementation dependent (NodeJs vs. Browsers), but Chrome (V8) engine C++ code uses a StringBuilder as an underlying. So, it is already the most efficient. "+=" operators are like StringBuilder.Append() in C#. And it only evaluates the 'string' when it is needed to show the full string. So, succesive "+=" operators will not evaluate the string.
+However, don't use "myStr = myStr + 'a'", because that might not be the same thing as "+="
+Proof: https://github.com/v8/v8/blob/fd334b3216488011b368ec4652819e08c38d0d36/src/string-builder.cc
+https://stackoverflow.com/a/54970240/984471
+C. 
+Actually, Array.join() is faster if you have large strings (1K) or you concatenate "a" about 2M x times.
+D.
+"if small strings (100-1000 chars) in final output: it is better to go with string concat +, as otherwise going with Array will need several Array to String conversions at the end which is performance overload."
+E.
+George conclusion: += vs. Array.join(). 
+Too complicated to decide which is better. For 200x concats, "+=" is faster. For 2Mx concats, Array.join() is faster. You can bechmark at every program code,
+but we don't want to waste too much time on that.
+So, SqCore source code policy is to use "+=" all the time.
+And we should be aware that using "+=" is NOT performance penalty in 2023 (in the browser), because the underlying browser C++ implementation is using a StringBuilder properly. It might be a penalty in NodeJs, as this is implementation dependent.
+
+
 
 
 
