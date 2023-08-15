@@ -34,7 +34,7 @@ def kellerprotmom(ticker_list, rebalance_unit, rebalance_freq, rebalance_shift, 
     adj_close_price_played = adj_close_price.drop(columns = ['IEF'])
 
     df = adj_close_price.copy()
-    df['Year'], df['Month'], df['Week'] = df.index.year, df.index.month, df.index.week
+    df['Year'], df['Month'], df['Week'] = df.index.year, df.index.month, df.index.isocalendar().week
     df['Monthly_Rb'] = df.Month != df.Month.shift(-1)
     df['Weekly_Rb'] = df.Week != df.Week.shift(-1)
     df['Daily_Rb'] = True

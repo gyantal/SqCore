@@ -51,7 +51,7 @@ def taa(ticker_list, perc_ch_lb_list, vol_lb, perc_ch_up_thres, perc_ch_low_thre
     adj_close_price = yf.download(ticker_list,start = pd.to_datetime(start_date) + pd.DateOffset(years= -2),end = pd.to_datetime(end_date) + pd.DateOffset(days= 1) )['Adj Close']
 
     df = adj_close_price.copy()
-    df['Year'], df['Month'], df['Week'] = df.index.year, df.index.month, df.index.week
+    df['Year'], df['Month'], df['Week'] = df.index.year, df.index.month, df.index.isocalendar().week
     df['Monthly_Rb'] = df.Month != df.Month.shift(-1)
     df['Weekly_Rb'] = df.Week != df.Week.shift(-1)
     df['Daily_Rb'] = True

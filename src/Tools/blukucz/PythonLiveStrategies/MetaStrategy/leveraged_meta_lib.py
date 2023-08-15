@@ -103,8 +103,9 @@ def lev_by_monthly_perf(sharpe_rank, leverage_array, year_month_df, min_lb_years
     no_years, no_months = sharpe_rank.shape
     year_month_df_to_fill = year_month_df[['Year', 'Month']]
     lb_days = min_lb_years*252
+    last_day_ny = year_month_df.index[-1].tz_localize('America/New_York') 
 
-    last_day = year_month_df.index[-1].tz_convert('UTC')
+    last_day = last_day_ny.tz_convert('UTC')
     nyse = mcal.get_calendar('NYSE')
     upcom_trading_days = nyse.valid_days(start_date = last_day, end_date= last_day + dt.timedelta(days=10))
     next_trading_day = upcom_trading_days[1]
@@ -160,7 +161,7 @@ def leveraged_meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_pa
     meta_leverage_lookback_days = meta_leverage_lookback_years * 12 * 21
     
     df = adj_close_price.copy()
-    df['Year'], df['Month'], df['Week'] = df.index.year, df.index.month, df.index.week
+    df['Year'], df['Month'], df['Week'] = df.index.year, df.index.month, df.index.isocalendar().week
     df['Monthly_Rb'] = df.Month != df.Month.shift(-1)
     df['Weekly_Rb'] = df.Week != df.Week.shift(-1)
     df['Daily_Rb'] = True

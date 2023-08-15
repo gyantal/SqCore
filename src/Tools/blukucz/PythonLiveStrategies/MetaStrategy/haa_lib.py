@@ -43,7 +43,7 @@ def haa(ticker_list_canary, ticker_list_defensive, ticker_list_offensive,rebalan
     adj_close_price2 = adj_close_price[ticker_list_played]
 
     df = adj_close_price.copy()
-    df['Year'], df['Month'], df['Week'] = df.index.year, df.index.month, df.index.week
+    df['Year'], df['Month'], df['Week'] = df.index.year, df.index.month, df.index.isocalendar().week
     df['Monthly_Rb'] = df.Month != df.Month.shift(-1)
     df['Weekly_Rb'] = df.Week != df.Week.shift(-1)
     df['Daily_Rb'] = True

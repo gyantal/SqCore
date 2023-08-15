@@ -193,7 +193,7 @@ def meta(meta_parameters, taa_parameters, bold_parameters, dual_mom_parameters, 
 
     meta_pvs = pd.concat([dm_pv, baa_pv, baa2_pv, taa_pv, pm_pv, tb_pv, haa_pv], axis = 1, keys = ['DualMom', 'BAA_AggDef', 'BAA_BalDef', 'TAA', 'KellerProtMom', 'NovellTactBond', 'HAA'])
     df = meta_pvs.copy()
-    df['Year'], df['Month'], df['Week'] = df.index.year, df.index.month, df.index.week
+    df['Year'], df['Month'], df['Week'] = df.index.year, df.index.month, df.index.isocalendar().week
     df['Monthly_Rb'] = df.Month != df.Month.shift(-1)
     df['Weekly_Rb'] = df.Week != df.Week.shift(-1)
     df['Daily_Rb'] = True
