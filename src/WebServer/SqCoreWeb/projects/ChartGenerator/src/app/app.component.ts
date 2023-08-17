@@ -10,9 +10,15 @@ import { sleep } from '../../../../TsLib/sq-common/utils-common';
 
 type Nullable<T> = T | null;
 
+class PortfolioJs {
+  public prtfId: number = -1;
+  public prtfName: string = '';
+}
+
 class HandshakeMessage {
   public email = '';
   public param2 = '';
+  public prtfsToClient: Nullable<PortfolioJs[]> = null;
 }
 
 export class ChrtGenDiagnostics { // have to export the class, because .mainTsTime is set from outside of this angular component.
@@ -27,10 +33,6 @@ export class ChrtGenDiagnostics { // have to export the class, because .mainTsTi
 
 export const gChrtGenDiag: ChrtGenDiagnostics = new ChrtGenDiagnostics();
 
-class PortfolioJs {
-  public prtfId = -1;
-  public prtfName = '';
-}
 
 @Component({
   selector: 'app-root',
@@ -63,7 +65,7 @@ export class AppComponent implements OnInit {
   isBacktestReturned: boolean = false;
   _sqStatisticsbuilder: SqStatisticsBuilder = new SqStatisticsBuilder();
   backtestStatsResults: FinalStatistics[] = [];
-  portfoliosJs: Nullable<PortfolioJs[]> = null;
+  _allPortfolios: Nullable<PortfolioJs[]> = null;
   prtfSelectedName: string = '';
   prtfSelectedId: number = 0;
   _backtestedPortfolios : PortfolioJs[] = [];
@@ -110,15 +112,12 @@ export class AppComponent implements OnInit {
           console.log('ws: OnConnected message arrived:' + event.data);
           const handshakeMsg: HandshakeMessage = Object.assign(new HandshakeMessage(), JSON.parse(msgObjStr));
           this.user.email = handshakeMsg.email;
+          this._allPortfolios = handshakeMsg.prtfsToClient;
           break;
         case 'BacktestResults':
           await sleep(5000); // simulate slow C# server backtest
           console.log('ChrtGen.BacktestResults:' + msgObjStr);
           this.onCompleteBacktests(msgObjStr);
-          break;
-        case 'ChrtGen.Portfolios':
-          console.log('ChrtGen.Portfolios:' + msgObjStr);
-          this.portfoliosJs = JSON.parse(msgObjStr);
           break;
         case 'ErrorToUser':
           console.log('ChrtGen.ErrorToUser:' + msgObjStr);
@@ -327,11 +326,17 @@ export class AppComponent implements OnInit {
 
   onStartBacktestsClicked() {
     if (this._socket != null && this._socket.readyState === this._socket.OPEN) {
+      this.prtfIds = ''; // empty the prtfIds
+      for (const item of this._backtestedPortfolios) { // iterate to add the backtested portfolioIds selected by the user
+        const prtfIdArray = item.prtfId + ',';
+        this.prtfIds += prtfIdArray;
+      }
       this.onStartBacktests();
       this._socket.send('RunBacktest:' + '?pids=' + this.prtfIds + '&bmrks=' + this.bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
       this.startDate = new Date(this.startDate);
       this.endDate = new Date(this.endDate);
     }
+    console.log('the prtfIds length is:', this.prtfIds);
   }
 
   showProgressBar() {
@@ -397,7 +402,7 @@ export class AppComponent implements OnInit {
   }
 
   onClickPrtfSelectedForBacktest(prtfSelectedId: number) {
-    if (this.portfoliosJs == null)
+    if (this._allPortfolios == null)
       return;
 
     let isPrtfIdIncluded = false; // Initialize a flag to track whether the item is Included
@@ -411,12 +416,16 @@ export class AppComponent implements OnInit {
 
     // If the item is not included, proceed to add it
     if (!isPrtfIdIncluded) {
-      for (let i = 0; i < this.portfoliosJs.length; i++) {
-        if (this.portfoliosJs[i].prtfId == prtfSelectedId) {
-          this._backtestedPortfolios.push(this.portfoliosJs[i]);
+      for (let i = 0; i < this._allPortfolios.length; i++) {
+        if (this._allPortfolios[i].prtfId == prtfSelectedId) {
+          this._backtestedPortfolios.push(this._allPortfolios[i]);
           break;
         }
       }
     }
+  }
+
+  onClickClearBacktestedPortfolios() { // clear the user selected backtested portfolios
+    this._backtestedPortfolios.length = 0;
   }
 }

@@ -19,7 +19,7 @@ export class UltimateChart {
   // Redraw the chart with updated data and dimensions
   public Redraw(startDate: Date, endDate: Date, chartWidth: number, chartHeight: number): void {
     this._chartWidth = chartWidth - this._margin.left - this._margin.right;
-    this._chartHeight = chartHeight * 0.9 - this._margin.top - this._margin.bottom; // 90% of the PvChart Height
+    this._chartHeight = chartHeight - this._margin.top - this._margin.bottom;
 
     // remove all _chrtDiv children. At the moment, there is only 1 child, the appended <svg>, but in the future it might be more. So, safer to for loop on all the children.
     const chrtDivChildren : HTMLCollection | null = this._chrtDiv?.children ?? null;
@@ -65,11 +65,13 @@ export class UltimateChart {
     const scaleX = d3.scaleTime().domain([startDate, endDate]).range([0, this._chartWidth]);
     const scaleY = d3.scaleLinear().domain([yMin - 5, yMax + 5]).range([this._chartHeight, 0]);
     // Create an SVG container for the chart
+    console.log('backtestChrt this._chrtDiv: before', this._chrtDiv?.clientHeight);
     const backtestChrt = d3.select(this._chrtDiv).append('svg')
         .attr('width', this._chartWidth + this._margin.left + this._margin.right)
         .attr('height', this._chartHeight + this._margin.top + this._margin.bottom)
         .append('g')
         .attr('transform', 'translate(' + this._margin.left + ',' + this._margin.top + ')');
+    console.log('backtestChrt this._chrtDiv: after', this._chrtDiv?.clientHeight);
     // Add X and Y axes to the chart
     backtestChrt.append('g')
         .attr('transform', 'translate(0,' + this._chartHeight + ')')

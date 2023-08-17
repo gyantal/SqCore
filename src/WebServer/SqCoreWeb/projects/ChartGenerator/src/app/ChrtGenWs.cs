@@ -17,16 +17,18 @@ using SqCommon;
 namespace SqCoreWeb;
 
 // these members has to be C# properties, not simple data member tags. Otherwise it will not serialize to client.
+
+public class ChrtGenPrtfs
+{
+    public int PrtfId { get; set; } = 1;
+    public string PrtfName { get; set; } = string.Empty;
+}
+
 class HandshakeMessageChrtGen
 { // General params for the aggregate Dashboard. These params should be not specific to smaller tools, like HealthMonitor, CatalystSniffer, QuickfolioNews
     public string Email { get; set; } = string.Empty;
     public int AnyParam { get; set; } = 75;
-}
-
-class ChrtGenPrtfs
-{
-    public int PrtfId { get; set; } = 1;
-    public string PrtfName { get; set; } = string.Empty;
+    public List<ChrtGenPrtfs> PrtfsToClient { get; set; } = new();
 }
 
 class ChrtGenPrtfRunResultJs : ChrtGenPrtfs // ChartGenerator doesn't need the Portfolio Positions data
@@ -57,12 +59,11 @@ public class ChrtGenWs
         // context.Request comes as: 'wss://' + document.location.hostname + '/ws/chrtgen?pids=1,2&bmrks=QQQ,SPY'
         string? queryStr = context.Request.QueryString.Value;
         RunBacktests(queryStr, webSocket);
-        ChrtGenSendPortfolios(webSocket);
         var userEmailClaim = context?.User?.Claims?.FirstOrDefault(p => p.Type == @"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
         var email = userEmailClaim?.Value ?? "unknown@gmail.com";
 
         // https://stackoverflow.com/questions/24450109/how-to-send-receive-messages-through-a-web-socket-on-windows-phone-8-using-the-c
-        var msgObj = new HandshakeMessageChrtGen() { Email = email };
+        var msgObj = new HandshakeMessageChrtGen() { Email = email, PrtfsToClient = ChrtGenSendPortfolios() };
         byte[] encodedMsg = Encoding.UTF8.GetBytes("OnConnected:" + Utils.CamelCaseSerialize(msgObj));
         if (webSocket.State == WebSocketState.Open)
             await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None); // takes 0.635ms
@@ -198,7 +199,7 @@ public class ChrtGenWs
         _ = webSocket; // StyleCop SA1313 ParameterNamesMustBeginWithLowerCaseLetter. They won't fix. Recommended solution for unused parameters, instead of the discard (_1) parameters
     }
 
-    public static void ChrtGenSendPortfolios(WebSocket webSocket)
+    public static List<ChrtGenPrtfs> ChrtGenSendPortfolios()
     {
         Dictionary<int, Portfolio>.ValueCollection prtfs = MemDb.gMemDb.Portfolios.Values;
         List<ChrtGenPrtfs> prtfToClient = new();
@@ -208,9 +209,6 @@ public class ChrtGenWs
             ChrtGenPrtfs pfJs = new() { PrtfId = pf.Id, PrtfName = pf.Name };
             prtfToClient.Add(pfJs);
         }
-
-        byte[] encodedMsg = Encoding.UTF8.GetBytes("ChrtGen.Portfolios:" + Utils.CamelCaseSerialize(prtfToClient));
-        if (webSocket!.State == WebSocketState.Open)
-            webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        return prtfToClient;
     }
 }

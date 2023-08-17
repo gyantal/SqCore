@@ -91,10 +91,19 @@
   border-radius: .5rem;
 }
 
+#backtestPrtfSelected {
+  background-color: whitesmoke;
+}
+
+#btnClearPrtfsSelected {
+  position: absolute;
+  left: 25rem;
+  top: 9.5rem;
+}
+
 #backtestPvChrt {
   width: 100%;
   height: 42.5vh;
-  overflow: auto;
   background-color: whitesmoke;
 }
 
