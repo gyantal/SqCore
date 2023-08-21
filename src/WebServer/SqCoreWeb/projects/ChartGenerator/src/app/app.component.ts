@@ -68,7 +68,8 @@ export class AppComponent implements OnInit {
   _allPortfolios: Nullable<PortfolioJs[]> = null;
   prtfSelectedName: string = '';
   prtfSelectedId: number = 0;
-  _backtestedPortfolios : PortfolioJs[] = [];
+  _backtestedPortfolios: PortfolioJs[] = [];
+  _backtestedBenchmarks: string[] = [];
 
   user = {
     name: 'Anonymous',
@@ -427,5 +428,14 @@ export class AppComponent implements OnInit {
 
   onClickClearBacktestedPortfolios() { // clear the user selected backtested portfolios
     this._backtestedPortfolios.length = 0;
+  }
+
+  onClickBmrkSelectedForBacktest() {
+    this._backtestedBenchmarks.length = 0;
+    this._backtestedBenchmarks = this.bmrks!.split(',');
+  }
+
+  onClickClearBacktestedBnmrks() { // clear the user selected backtested Benchmarks
+    this._backtestedBenchmarks.length = 0;
   }
 }

@@ -31,7 +31,7 @@
   border-radius: .2rem;
   color: blue;
   height: 1rem;
-  width: 10rem;
+  width: 14rem;
   font-size: 0.8rem;
 }
 
@@ -91,14 +91,21 @@
   border-radius: .5rem;
 }
 
-#backtestPrtfSelected {
+.backtestPrtfOrBmrkSelected {
   background-color: whitesmoke;
 }
 
-#btnClearPrtfsSelected {
+.btnClearCommon { // Common for both Prtf and Benchmarks
   position: absolute;
-  left: 25rem;
   top: 9.5rem;
+}
+
+.prtfsSelected {
+  left: 25rem;
+}
+
+.bmrksSelected {
+  left: 52rem;
 }
 
 #backtestPvChrt {

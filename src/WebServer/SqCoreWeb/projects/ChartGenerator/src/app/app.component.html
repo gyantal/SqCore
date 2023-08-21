@@ -28,15 +28,20 @@
         </div>&nbsp;
         <button (click)="onClickPrtfSelectedForBacktest(prtfSelectedId)">Insert</button>
       </div>
-      <div id="backtestPrtfSelected" *ngFor="let item of _backtestedPortfolios">{{item.prtfName}}</div>
+      <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedPortfolios">{{item.prtfName}}</div>
       <div>
-        <button id="btnClearPrtfsSelected" (click)="onClickClearBacktestedPortfolios()" [disabled]="_backtestedPortfolios.length <= 0">Clear</button>
+        <button class="btnClearCommon prtfsSelected" (click)="onClickClearBacktestedPortfolios()" [disabled]="_backtestedPortfolios.length <= 0">Clear</button>
       </div>
     </span>&nbsp;<br>
   </span>
   <span class="commonColStyle" id="stockAndIndexes">
     StockAndIndexes<br>
-    <span>Benchmarks: <input class="prtfAndBmrkInputs" id="bmrks" type="text" [(ngModel)]="bmrks"></span><br>
+    <span>Benchmarks: <input class="prtfAndBmrkInputs" id="bmrks" type="text" [(ngModel)]="bmrks"></span>&nbsp;
+    <button (click)="onClickBmrkSelectedForBacktest()">Insert</button>
+      <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedBenchmarks">{{item}}</div>
+    <div>
+      <button class="btnClearCommon bmrksSelected" (click)="onClickClearBacktestedBnmrks()" [disabled]="_backtestedBenchmarks.length <= 0">Clear</button>
+    </div>
   </span>
   <span class="commonColStyle" id="techIndicators">
     Tech Indicators
