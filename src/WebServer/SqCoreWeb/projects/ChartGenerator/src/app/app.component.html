@@ -28,20 +28,20 @@
         </div>&nbsp;
         <button (click)="onClickPrtfSelectedForBacktest(prtfSelectedId)">Insert</button>
       </div>
-      <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedPortfolios">{{item.prtfName}}</div>
-      <div>
-        <button class="btnClearCommon prtfsSelected" (click)="onClickClearBacktestedPortfolios()" [disabled]="_backtestedPortfolios.length <= 0">Clear</button>
-      </div>
+      <span class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedPortfolios">{{item.prtfName}}</span>&nbsp;
+      <span>
+        <button (click)="onClickClearBacktestedPortfolios()" [disabled]="_backtestedPortfolios.length <= 0">Clear</button>
+      </span>
     </span>&nbsp;<br>
   </span>
   <span class="commonColStyle" id="stockAndIndexes">
     StockAndIndexes<br>
-    <span>Benchmarks: <input class="prtfAndBmrkInputs" id="bmrks" type="text" [(ngModel)]="bmrks"></span>&nbsp;
+    <span>Benchmarks: <input class="prtfAndBmrkInputs" oninput="this.value = this.value.toUpperCase()" id="bmrks" type="text" [(ngModel)]="bmrks"></span>&nbsp;
     <button (click)="onClickBmrkSelectedForBacktest()">Insert</button>
-      <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedBenchmarks">{{item}}</div>
-    <div>
-      <button class="btnClearCommon bmrksSelected" (click)="onClickClearBacktestedBnmrks()" [disabled]="_backtestedBenchmarks.length <= 0">Clear</button>
-    </div>
+    <span class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedBenchmarks">{{item}}</span>&nbsp;
+    <span>
+      <button (click)="onClickClearBacktestedBnmrks()" [disabled]="_backtestedBenchmarks.length <= 0">Clear</button>
+    </span>
   </span>
   <span class="commonColStyle" id="techIndicators">
     Tech Indicators
@@ -84,7 +84,7 @@
         <ng-container *ngFor="let stat of backtestStatsResults[0]?.stats | keyvalue"> <!-- we only use backtestStatsResults[0]?.stats to get the statistics keys (since all items in the array should have the same statistics keys). -->
           <tr>
             <td>{{stat.key}}</td>
-            <td *ngFor="let item of backtestStatsResults">{{item.stats[stat.key] | number:'0.2'}}</td>
+            <td *ngFor="let item of backtestStatsResults">{{item.stats[stat.key] | percent:'0.2'}}</td>
           </tr>
         </ng-container>
       </tbody>

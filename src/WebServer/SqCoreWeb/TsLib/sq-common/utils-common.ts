@@ -27,3 +27,19 @@ export function onFirstVisibleEventListener(element : Element | null, callback: 
     });
   }).observe(element);
 }
+
+// remove duplicate values from an array? https://stackoverflow.com/questions/9229645/remove-duplicate-values-from-js-array
+export function removeDuplicates(inArr: string[]): string[] {
+  const seenDictObj = {}; // It is a JS object, used as a Dictionary;
+  const outArr: string[] = [];
+  const len: number = inArr.length;
+  let j: number = 0;
+  for (let i = 0; i < len; i++) {
+    const item = inArr[i];
+    if (seenDictObj[item] !== 1) {
+      seenDictObj[item] = 1;
+      outArr[j++] = item;
+    }
+  }
+  return outArr;
+}

@@ -25,7 +25,7 @@ public class ChrtGenPrtfs
 }
 
 class HandshakeMessageChrtGen
-{ // General params for the aggregate Dashboard. These params should be not specific to smaller tools, like HealthMonitor, CatalystSniffer, QuickfolioNews
+{
     public string Email { get; set; } = string.Empty;
     public int AnyParam { get; set; } = 75;
     public List<ChrtGenPrtfs> PrtfsToClient { get; set; } = new();
@@ -63,7 +63,7 @@ public class ChrtGenWs
         var email = userEmailClaim?.Value ?? "unknown@gmail.com";
 
         // https://stackoverflow.com/questions/24450109/how-to-send-receive-messages-through-a-web-socket-on-windows-phone-8-using-the-c
-        var msgObj = new HandshakeMessageChrtGen() { Email = email, PrtfsToClient = ChrtGenSendPortfolios() };
+        var msgObj = new HandshakeMessageChrtGen() { Email = email, PrtfsToClient = ChrtGenGetPortfolios() };
         byte[] encodedMsg = Encoding.UTF8.GetBytes("OnConnected:" + Utils.CamelCaseSerialize(msgObj));
         if (webSocket.State == WebSocketState.Open)
             await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None); // takes 0.635ms
@@ -199,7 +199,7 @@ public class ChrtGenWs
         _ = webSocket; // StyleCop SA1313 ParameterNamesMustBeginWithLowerCaseLetter. They won't fix. Recommended solution for unused parameters, instead of the discard (_1) parameters
     }
 
-    public static List<ChrtGenPrtfs> ChrtGenSendPortfolios()
+    public static List<ChrtGenPrtfs> ChrtGenGetPortfolios()
     {
         Dictionary<int, Portfolio>.ValueCollection prtfs = MemDb.gMemDb.Portfolios.Values;
         List<ChrtGenPrtfs> prtfToClient = new();

@@ -326,12 +326,11 @@ export class AppComponent implements OnInit {
   }
 
   onStartBacktestsClicked() {
-    if (this._socket != null && this._socket.readyState === this._socket.OPEN) {
+    if (this._socket != null && this._socket.readyState == this._socket.OPEN) {
       this.prtfIds = ''; // empty the prtfIds
-      for (const item of this._backtestedPortfolios) { // iterate to add the backtested portfolioIds selected by the user
-        const prtfIdArray = item.prtfId + ',';
-        this.prtfIds += prtfIdArray;
-      }
+      for (const item of this._backtestedPortfolios) // iterate to add the backtested portfolioIds selected by the user
+        this.prtfIds += item.prtfId + ',';
+
       this.onStartBacktests();
       this._socket.send('RunBacktest:' + '?pids=' + this.prtfIds + '&bmrks=' + this.bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
       this.startDate = new Date(this.startDate);
@@ -406,23 +405,19 @@ export class AppComponent implements OnInit {
     if (this._allPortfolios == null)
       return;
 
-    let isPrtfIdIncluded = false; // Initialize a flag to track whether the item is Included
-    // Check if the selected item doesn't exist in _backtestedPortfolios
+    let prtfSelectedInd = -1;
     for (let i = 0; i < this._backtestedPortfolios.length; i++) {
-      if (this._backtestedPortfolios[i].prtfId === prtfSelectedId) {
-        isPrtfIdIncluded = true; // Set the flag to true if the item is found
+      if (this._backtestedPortfolios[i].prtfId == prtfSelectedId) {
+        prtfSelectedInd = i; // get the index, if the item is found
         break;
       }
     }
 
-    // If the item is not included, proceed to add it
-    if (!isPrtfIdIncluded) {
-      for (let i = 0; i < this._allPortfolios.length; i++) {
-        if (this._allPortfolios[i].prtfId == prtfSelectedId) {
-          this._backtestedPortfolios.push(this._allPortfolios[i]);
-          break;
-        }
-      }
+    // If the item is not already included, proceed to add it
+    if (prtfSelectedInd == -1) {
+      const allPortfoliosInd = this._allPortfolios.findIndex((item) => item.prtfId == prtfSelectedId); // Find the index of the selected item in _allPortfolios
+      if (allPortfoliosInd != -1)
+        this._backtestedPortfolios.push(this._allPortfolios[allPortfoliosInd]); // Push the selected item from _allPortfolios into _backtestedPortfolios
     }
   }
 
@@ -431,8 +426,11 @@ export class AppComponent implements OnInit {
   }
 
   onClickBmrkSelectedForBacktest() {
-    this._backtestedBenchmarks.length = 0;
-    this._backtestedBenchmarks = this.bmrks!.split(',');
+    const bmrkArray: string[] = this.bmrks!.trim().split(',');
+    for (const item of bmrkArray) {
+      if (!this._backtestedBenchmarks.includes(item)) // check if the item is included or not
+        this._backtestedBenchmarks.push(item);
+    }
   }
 
   onClickClearBacktestedBnmrks() { // clear the user selected backtested Benchmarks
