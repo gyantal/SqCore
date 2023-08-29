@@ -45,6 +45,14 @@ export class SqStatisticsBuilder {
   }
 
   public statsResults(startDate: Date, endDate: Date): FinalStatistics[] { // without the dataCopy
+    // 2023-08-25: We might use array.findLast(), findLastIndex() in the future, but current TS 5.2 doesn't fully support them.
+    // TODO: Wait until it does support, then upgrade "typescript": "~4.6.4" in pakcage.json and bump angular 13 too.
+    // https://github.com/microsoft/TypeScript/issues/48829
+    // findLast was introduced in EcmaScript 2023. However, es2023 isn't supported in Typescript 5.
+    // Example code to test that it compiles:
+    // const array1 = [5, 12, 50, 130, 44];
+    // console.log(array1.findLastIndex((element) => element > 45));
+
     const statsResults: FinalStatistics[] = [];
     if (this._timeSeriess == null)
       return statsResults;

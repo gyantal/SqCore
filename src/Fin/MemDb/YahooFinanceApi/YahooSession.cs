@@ -60,6 +60,7 @@ namespace YahooFinanceApi
 
                     _crumb = await "https://query1.finance.yahoo.com/v1/test/getcrumb"
                         .WithCookie(_cookie.Name, _cookie.Value)
+                        .WithHeader(userAgentKey, userAgentValue) // Fixed too many requests error caused by missing user agent header, https://github.com/karlwancl/YahooFinanceApi/commit/29431526c9f20e9655f6e4a857fc8798c8d8508d
                         .GetAsync(token)
                         .ReceiveString();
 

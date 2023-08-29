@@ -245,8 +245,14 @@ function creatingTables(json) {
   let minPrice = 100000;
   let maxPrice = 0;
   dataset1.forEach((series) => {
-    const minPriceI = d3.min(series.history, (d) => d.price) ?? 100000;
-    const maxPriceI = d3.max(series.history, (d) => d.price) ?? 0;
+    let minPriceI = d3.min(series.history, (d) => d.price);
+    if (minPriceI == null) // if it is null or undefined
+      minPriceI = 100000;
+
+    let maxPriceI = d3.max(series.history, (d) => d.price);
+    if (maxPriceI == null) // if it is null or undefined
+      maxPriceI = 0;
+
     if (minPriceI < minPrice)
       minPrice = minPriceI;
     if (maxPriceI > maxPrice)

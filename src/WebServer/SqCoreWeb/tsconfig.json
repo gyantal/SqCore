@@ -11,14 +11,14 @@
     "removeComments": false,
     "sourceMap": true,
     "experimentalDecorators": true,
-    "module": "es2020", // import() expressions in JS are understood in esnext, but not in es2015
+    "module": "esnext", // ESNext refers to whatever the highest version TypeScript supports at the time
     "moduleResolution": "node", // Node is the default now
-    "target": "es2015",
+    "target": "esnext", // ESNext refers to whatever the highest version TypeScript supports at the time
     "typeRoots": [
       "node_modules/@types"
     ],
     "lib": [
-      "es2018",
+      "esnext", // ESNext refers to whatever the highest version TypeScript supports at the time
       "dom",
       "dom.iterable"  // otherwise in for-of on HTMLCollectionOf<Element>: error TS2488: Type 'HTMLCollectionOf<Element>' must have a '[Symbol.iterator]()' method
     ],
