@@ -9,7 +9,7 @@ export class UltimateChart {
   _timeSeriess: CgTimeSeries[] | null = null;
   _chartWidth: number = 0;
   _chartHeight: number = 0;
-  _margin: {top: number; right: number; bottom: number; left: number;} = {top: 50, right: 50, bottom: 30, left: 60};
+  _innerMargin: {top: number; right: number; bottom: number; left: number;} = {top: 50, right: 50, bottom: 30, left: 60}; // this is private decision to draw the chart using these 'virtual' inner margins. The chrtDiv coming from the main app has no official CSS margin at all
   // Initialize the chart with the provided elements and time series data
   public Init(chrtDiv: HTMLElement, chrtTooltip: HTMLElement, timeSeriess: CgTimeSeries[]): void {
     this._chrtDiv = chrtDiv;
@@ -18,8 +18,8 @@ export class UltimateChart {
   }
   // Redraw the chart with updated data and dimensions
   public Redraw(startDate: Date, endDate: Date, chartWidth: number, chartHeight: number): void {
-    this._chartWidth = chartWidth - this._margin.left - this._margin.right;
-    this._chartHeight = chartHeight - this._margin.top - this._margin.bottom;
+    this._chartWidth = chartWidth - this._innerMargin.left - this._innerMargin.right;
+    this._chartHeight = chartHeight - this._innerMargin.top - this._innerMargin.bottom;
 
     // remove all _chrtDiv children. At the moment, there is only 1 child, the appended <svg>, but in the future it might be more. So, safer to for loop on all the children.
     const chrtDivChildren : HTMLCollection | null = this._chrtDiv?.children ?? null;
@@ -32,28 +32,31 @@ export class UltimateChart {
       return;
 
     // finding the min and max of y-axis
-    let yMin: number = Number.MAX_VALUE; // Initialize with a large value
-    let yMax: number = Number.MIN_VALUE; // Initialize with a small value
+    let yMinPct: number = 0;
+    let yMaxPct: number = 0;
 
     for (let i = 0; i < this._timeSeriess.length; i++) {
       const timeSeries = this._timeSeriess[i];
       let firstVal: number | null = null; // To store the value of the first valid point
+      let yMin: number = Number.MAX_VALUE; // Initialize with a large value
+      let yMax: number = Number.MIN_VALUE; // Initialize with a small value
 
       for (let j = 0; j < timeSeries.priceData.length; j++) {
         const point = timeSeries.priceData[j];
         if (point.date < startDate || point.date > endDate)
           continue;
 
-        if (firstVal === null)
+        if (firstVal == null)
           firstVal = point.value;
 
-        const val = 100 * point.value / firstVal;
-        if (val < yMin)
-          yMin = val;
+        if (point.value < yMin)
+          yMin = point.value;
 
-        if (val > yMax)
-          yMax = val;
+        if (point.value > yMax)
+          yMax = point.value;
       }
+      yMinPct = 100 * yMin / firstVal!;
+      yMaxPct = 100 * yMax / firstVal!;
     }
 
     const nameKey: string[] = this._timeSeriess.map((d: CgTimeSeries) => d.name ); // Get unique group names for coloring
@@ -63,14 +66,14 @@ export class UltimateChart {
 
     // Configure data scaling
     const scaleX = d3.scaleTime().domain([startDate, endDate]).range([0, this._chartWidth]);
-    const scaleY = d3.scaleLinear().domain([yMin - 5, yMax + 5]).range([this._chartHeight, 0]);
+    const scaleY = d3.scaleLinear().domain([yMinPct - 5, yMaxPct + 5]).range([this._chartHeight, 0]);
     // Create an SVG container for the chart
     console.log('backtestChrt this._chrtDiv: before', this._chrtDiv?.clientHeight);
     const backtestChrt = d3.select(this._chrtDiv).append('svg')
-        .attr('width', this._chartWidth + this._margin.left + this._margin.right)
-        .attr('height', this._chartHeight + this._margin.top + this._margin.bottom)
+        .attr('width', this._chartWidth + this._innerMargin.left + this._innerMargin.right)
+        .attr('height', this._chartHeight + this._innerMargin.top + this._innerMargin.bottom)
         .append('g')
-        .attr('transform', 'translate(' + this._margin.left + ',' + this._margin.top + ')');
+        .attr('transform', 'translate(' + this._innerMargin.left + ',' + this._innerMargin.top + ')');
     console.log('backtestChrt this._chrtDiv: after', this._chrtDiv?.clientHeight);
     // Add X and Y axes to the chart
     backtestChrt.append('g')

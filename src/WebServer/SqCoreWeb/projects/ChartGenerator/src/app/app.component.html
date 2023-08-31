@@ -28,7 +28,7 @@
         </div>&nbsp;
         <button (click)="onClickPrtfSelectedForBacktest(prtfSelectedId)">Insert</button>
       </div>
-      <span class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedPortfolios">{{item.prtfName}}</span>&nbsp;
+      <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedPortfolios">{{item.prtfName}}</div>&nbsp;
       <span>
         <button (click)="onClickClearBacktestedPortfolios()" [disabled]="_backtestedPortfolios.length <= 0">Clear</button>
       </span>
@@ -38,7 +38,7 @@
     StockAndIndexes<br>
     <span>Benchmarks: <input class="prtfAndBmrkInputs" oninput="this.value = this.value.toUpperCase()" id="bmrks" type="text" [(ngModel)]="bmrks"></span>&nbsp;
     <button (click)="onClickBmrkSelectedForBacktest()">Insert</button>
-    <span class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedBenchmarks">{{item}}</span>&nbsp;
+    <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedBenchmarks">{{item}}</div>&nbsp;
     <span>
       <button (click)="onClickClearBacktestedBnmrks()" [disabled]="_backtestedBenchmarks.length <= 0">Clear</button>
     </span>

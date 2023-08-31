@@ -6,7 +6,7 @@ export class StatisticsResults {
   public CAGR: number = 0;
   // public AnnualizedMeanReturn: number = 0;
   // public SharpeRatio: number = 0;
-  // public Drawdown: number = 0;
+  public Drawdown: number = 0;
   // public MarRatio: number = 0;
   // public MaxDdLenInCalDays: number = 0;
   // public MaxDdLenInTradDays: number = 0;
@@ -45,42 +45,61 @@ export class SqStatisticsBuilder {
   }
 
   public statsResults(startDate: Date, endDate: Date): FinalStatistics[] { // without the dataCopy
-    // 2023-08-25: We might use array.findLast(), findLastIndex() in the future, but current TS 5.2 doesn't fully support them.
-    // TODO: Wait until it does support, then upgrade "typescript": "~4.6.4" in pakcage.json and bump angular 13 too.
-    // https://github.com/microsoft/TypeScript/issues/48829
-    // findLast was introduced in EcmaScript 2023. However, es2023 isn't supported in Typescript 5.
-    // Example code to test that it compiles:
-    // const array1 = [5, 12, 50, 130, 44];
-    // console.log(array1.findLastIndex((element) => element > 45));
-
     const statsResults: FinalStatistics[] = [];
     if (this._timeSeriess == null)
       return statsResults;
     let startingCapital: number = 0;
     let finalCapital: number = 0;
+    // Find the nearest trading days to the provided start and end dates
     const startTradingDay = this.findNearestTradingDay(startDate);
     const endTradingDay = this.findNearestTradingDay(endDate);
     for (let i = 0; i < this._timeSeriess.length; i++) {
       const statRes = new FinalStatistics();
       statRes.name = this._timeSeriess[i].name;
+      // Initialize variables to track the indices of start and end dates within the price data
       let startIndex = 0;
       let endIndex = 0;
+      const drawdowns: number[] = [];
       for (let j = 0; j < this._timeSeriess[i].priceData.length; j++) {
         const currentDate = new Date(this._timeSeriess[i].priceData[j].date);
         if (currentDate < startTradingDay)
-          startIndex = j;
+          startIndex = j; // Update the start index
         if (currentDate <= endTradingDay)
-          endIndex = j;
+          endIndex = j; // Update the end index
+
+        // Calculate drawdown for the current price and track it
+        if (currentDate <= startTradingDay || currentDate > endTradingDay)
+          continue; // Skip further processing if the date is not within the desired range
+
+        let high: number = this._timeSeriess[i].priceData[0].value;
+        const price: number = this._timeSeriess[i].priceData[j].value;
+
+        if (price > high)
+          high = price;
+
+        if (high > 0)
+          drawdowns.push(price / high - 1);
       }
-      console.log('startIdx:', startIndex, 'endIndex', endIndex);
+
+      // Calculate the starting and final capital based on the found indices
       startingCapital = this._timeSeriess[i].priceData[startIndex].value;
       finalCapital = this._timeSeriess[i].priceData[endIndex].value;
+      // Calculate the total return and assign it to the result object
       statRes.stats.TotalReturn = finalCapital / startingCapital - 1;
       const years = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+      // Calculate the Compound Annual Growth Rate (CAGR)
       if (years !== 0 && startingCapital !== 0) {
         const cagr = Math.pow( statRes.stats.TotalReturn + 1, 1 / years) - 1; // n-th root of the total return
         statRes.stats.CAGR = isNaN(cagr) || !isFinite(cagr) ? 0 : cagr;
       }
+      // Calculate the maximum drawdown for the current time series
+      let maxDD: number = 0; // Because dd values are negative, 0 is a good maximum, and we do minimum search on the negative values.
+      for (const dd of drawdowns) {
+        if (dd < maxDD)
+          maxDD = dd;
+      }
+      statRes.stats.Drawdown = Math.abs(maxDD);
+
       statsResults.push(statRes);
     }
     return statsResults;
