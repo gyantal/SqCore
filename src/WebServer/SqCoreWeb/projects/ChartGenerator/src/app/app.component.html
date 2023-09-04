@@ -24,11 +24,11 @@
       <div class="selectionDropDown">
         <input class="highlightInputDropDown prtfInputWidth" type="text" [(ngModel)]="prtfSelectedName">
         <div class="listDropDown">
-          <option class="optionDropDown" *ngFor="let item of _allPortfolios" [value]="item.prtfName" (click)="onClickUserSelectedPortfolio(item)">{{item.prtfId}} : {{item.prtfName}}</option>
+          <option class="optionDropDown" *ngFor="let item of _allPortfolios" [value]="item.name" (click)="onClickUserSelectedPortfolio(item)">{{item.id}} : {{item.name}}</option>
         </div>&nbsp;
         <button (click)="onClickPrtfSelectedForBacktest(prtfSelectedId)">Insert</button>
       </div>
-      <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedPortfolios">{{item.prtfName}}</div>&nbsp;
+      <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedPortfolios">{{item.name}}</div>&nbsp;
       <span>
         <button (click)="onClickClearBacktestedPortfolios()" [disabled]="_backtestedPortfolios.length <= 0">Clear</button>
       </span>

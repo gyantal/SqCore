@@ -18,20 +18,20 @@ namespace SqCoreWeb;
 
 // these members has to be C# properties, not simple data member tags. Otherwise it will not serialize to client.
 
-public class ChrtGenPrtfs
+public class ChrtGenPrtfItems // common for both folders and portfolios
 {
-    public int PrtfId { get; set; } = 1;
-    public string PrtfName { get; set; } = string.Empty;
+    public int Id { get; set; } = 1;
+    public string Name { get; set; } = string.Empty;
 }
-
 class HandshakeMessageChrtGen
 {
     public string Email { get; set; } = string.Empty;
     public int AnyParam { get; set; } = 75;
-    public List<ChrtGenPrtfs> PrtfsToClient { get; set; } = new();
+    public List<ChrtGenPrtfItems> PrtfsToClient { get; set; } = new();
+    public List<ChrtGenPrtfItems> FldrsToClient { get; set; } = new();
 }
 
-class ChrtGenPrtfRunResultJs : ChrtGenPrtfs // ChartGenerator doesn't need the Portfolio Positions data
+class ChrtGenPrtfRunResultJs : ChrtGenPrtfItems // ChartGenerator doesn't need the Portfolio Positions data
 {
     public PortfolioRunResultStatistics Pstat { get; set; } = new();
     public ChartData ChrtData { get; set; } = new();
@@ -63,7 +63,7 @@ public class ChrtGenWs
         var email = userEmailClaim?.Value ?? "unknown@gmail.com";
 
         // https://stackoverflow.com/questions/24450109/how-to-send-receive-messages-through-a-web-socket-on-windows-phone-8-using-the-c
-        var msgObj = new HandshakeMessageChrtGen() { Email = email, PrtfsToClient = ChrtGenGetPortfolios() };
+        var msgObj = new HandshakeMessageChrtGen() { Email = email, PrtfsToClient = ChrtGenGetPortfolios(), FldrsToClient = ChrtGenGetFolders() };
         byte[] encodedMsg = Encoding.UTF8.GetBytes("OnConnected:" + Utils.CamelCaseSerialize(msgObj));
         if (webSocket.State == WebSocketState.Open)
             await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None); // takes 0.635ms
@@ -162,7 +162,7 @@ public class ChrtGenWs
             }
             _ = prtfPos; // To avoid the compiler Warning "Unnecessary assigment of a value" for unusued variables.
             // Step 5: Filling the data in chrtGenPrtfRunResultJs
-            chrtGenPrtfRunResultJs.Add(new ChrtGenPrtfRunResultJs { PrtfId = lsPrtf[i].Id, PrtfName = lsPrtf[i].Name, Pstat = pStat, ChrtData = chartVal });
+            chrtGenPrtfRunResultJs.Add(new ChrtGenPrtfRunResultJs { Id = lsPrtf[i].Id, Name = lsPrtf[i].Name, Pstat = pStat, ChrtData = chartVal });
         }
 
         // BENCHMARK: Processing the message to extract the benchmark tickers
@@ -199,16 +199,29 @@ public class ChrtGenWs
         _ = webSocket; // StyleCop SA1313 ParameterNamesMustBeginWithLowerCaseLetter. They won't fix. Recommended solution for unused parameters, instead of the discard (_1) parameters
     }
 
-    public static List<ChrtGenPrtfs> ChrtGenGetPortfolios()
+    public static List<ChrtGenPrtfItems> ChrtGenGetPortfolios()
     {
         Dictionary<int, Portfolio>.ValueCollection prtfs = MemDb.gMemDb.Portfolios.Values;
-        List<ChrtGenPrtfs> prtfToClient = new();
+        List<ChrtGenPrtfItems> prtfToClient = new();
 
         foreach (Portfolio pf in prtfs)
         {
-            ChrtGenPrtfs pfJs = new() { PrtfId = pf.Id, PrtfName = pf.Name };
+            ChrtGenPrtfItems pfJs = new() { Id = pf.Id, Name = pf.Name };
             prtfToClient.Add(pfJs);
         }
         return prtfToClient;
+    }
+
+    public static List<ChrtGenPrtfItems> ChrtGenGetFolders()
+    {
+        Dictionary<int, PortfolioFolder>.ValueCollection prtfFldrs = MemDb.gMemDb.PortfolioFolders.Values;
+        List<ChrtGenPrtfItems> fldrToClient = new();
+
+        foreach (PortfolioFolder fld in prtfFldrs)
+        {
+            ChrtGenPrtfItems fldJs = new() { Id = fld.Id, Name = fld.Name };
+            fldrToClient.Add(fldJs);
+        }
+        return fldrToClient;
     }
 }

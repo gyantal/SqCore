@@ -11,14 +11,15 @@ import { sleep } from '../../../../TsLib/sq-common/utils-common';
 type Nullable<T> = T | null;
 
 class PortfolioJs {
-  public prtfId: number = -1;
-  public prtfName: string = '';
+  public id: number = -1;
+  public name: string = '';
 }
 
 class HandshakeMessage {
   public email = '';
   public param2 = '';
   public prtfsToClient: Nullable<PortfolioJs[]> = null;
+  public fldrsToClient: Nullable<PortfolioJs[]> = null;
 }
 
 export class ChrtGenDiagnostics { // have to export the class, because .mainTsTime is set from outside of this angular component.
@@ -66,7 +67,8 @@ export class AppComponent implements OnInit {
   _sqStatisticsbuilder: SqStatisticsBuilder = new SqStatisticsBuilder();
   backtestStatsResults: FinalStatistics[] = [];
   _allPortfolios: Nullable<PortfolioJs[]> = null;
-  prtfSelectedName: string = '';
+  _allFolders: Nullable<PortfolioJs[]> = null;
+  prtfSelectedName: Nullable<string> = null;
   prtfSelectedId: number = 0;
   _backtestedPortfolios: PortfolioJs[] = [];
   _backtestedBenchmarks: string[] = [];
@@ -86,7 +88,7 @@ export class AppComponent implements OnInit {
     console.log(wsQueryStr);
     // Getting the PrtfIds and Benchmarks from URL
     const url = new URL(window.location.href);
-    this.prtfIds = url.searchParams.get('pids');
+    this.prtfSelectedName = url.searchParams.get('pids');
     this.bmrks = url.searchParams.get('bmrks');
 
     this.onStartBacktests();
@@ -114,6 +116,7 @@ export class AppComponent implements OnInit {
           const handshakeMsg: HandshakeMessage = Object.assign(new HandshakeMessage(), JSON.parse(msgObjStr));
           this.user.email = handshakeMsg.email;
           this._allPortfolios = handshakeMsg.prtfsToClient;
+          this._allFolders = handshakeMsg.fldrsToClient;
           break;
         case 'BacktestResults':
           await sleep(5000); // simulate slow C# server backtest
@@ -329,7 +332,7 @@ export class AppComponent implements OnInit {
     if (this._socket != null && this._socket.readyState == this._socket.OPEN) {
       this.prtfIds = ''; // empty the prtfIds
       for (const item of this._backtestedPortfolios) // iterate to add the backtested portfolioIds selected by the user
-        this.prtfIds += item.prtfId + ',';
+        this.prtfIds += item.id + ',';
 
       this.onStartBacktests();
       this._socket.send('RunBacktest:' + '?pids=' + this.prtfIds + '&bmrks=' + this.bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
@@ -397,8 +400,8 @@ export class AppComponent implements OnInit {
   }
 
   onClickUserSelectedPortfolio(prtf: PortfolioJs) {
-    this.prtfSelectedName = prtf.prtfName;
-    this.prtfSelectedId = prtf.prtfId;
+    this.prtfSelectedName = prtf.name;
+    this.prtfSelectedId = prtf.id;
   }
 
   onClickPrtfSelectedForBacktest(prtfSelectedId: number) {
@@ -407,7 +410,7 @@ export class AppComponent implements OnInit {
 
     let prtfSelectedInd = -1;
     for (let i = 0; i < this._backtestedPortfolios.length; i++) {
-      if (this._backtestedPortfolios[i].prtfId == prtfSelectedId) {
+      if (this._backtestedPortfolios[i].id == prtfSelectedId) {
         prtfSelectedInd = i; // get the index, if the item is found
         break;
       }
@@ -415,7 +418,7 @@ export class AppComponent implements OnInit {
 
     // If the item is not already included, proceed to add it
     if (prtfSelectedInd == -1) {
-      const allPortfoliosInd = this._allPortfolios.findIndex((item) => item.prtfId == prtfSelectedId); // Find the index of the selected item in _allPortfolios
+      const allPortfoliosInd = this._allPortfolios.findIndex((item) => item.id == prtfSelectedId); // Find the index of the selected item in _allPortfolios
       if (allPortfoliosInd != -1)
         this._backtestedPortfolios.push(this._allPortfolios[allPortfoliosInd]); // Push the selected item from _allPortfolios into _backtestedPortfolios
     }

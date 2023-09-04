@@ -396,6 +396,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     if (!(Array.isArray(pFolders) && pFolders.length > 0 ) || !(Array.isArray(pPortfolios) && pPortfolios.length > 0 ))
       return [];
 
+    console.log('pTreeViewState: isSelected', pTreeViewState.lastSelectedItem?.isSelected);
     const treeviewItemsHierarchyResult: TreeViewItem[] = [];
     const tempPrtfItemsDict = {}; // stores the portfolio items temporarly
 
@@ -415,10 +416,8 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     for (const id of Object.keys(tempPrtfItemsDict)) {
       const item : TreeViewItem = tempPrtfItemsDict[id];
       item.isSelected = false;
-      if (pTreeViewState.lastSelectedItemId == item.id) {
+      if (pTreeViewState.lastSelectedItemId == item.id) // it should not break out, because we need to assign item.isSelected = false for all the other items which are not selected. Otherwise the tree is not assinged with the isSelected state and looks weird on the UI
         item.isSelected = true;
-        break;
-      }
 
       item.isExpanded = false;
       for (let i = 0; i < pTreeViewState.expandedPrtfFolderIds.length; i++) { // expanded folder Id's check

@@ -8,7 +8,7 @@ html {
 body {
     // Default font-size = 16px. Wiki uses 14px. Ft.com uses size 18px fonts. CNBC is using 18 and 14. Bloomberg uses Georgia 18px (for text). But 18px is too big for condensing a lot of info to the page. 16px should be our default too for text and header of tables. For numbers in cells in table we should targer 14px. 20px for section headers. 24px for webpage main title.
     font-size: 1.6rem;      // =16px
-    margin: 0.02rem 0 0 0.02rem; /* originally, there is a 8px margin  */
+    margin: 0 0 0 0.02rem; /* originally, there is a 8px margin  */
     overflow-y: scroll; /* enable y scrollbar */
     overflow-x: hidden; /* disable x scrollbar */
     color: var(--textColor);
