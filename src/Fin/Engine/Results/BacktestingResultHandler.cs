@@ -416,8 +416,11 @@ namespace QuantConnect.Lean.Engine.Results
                 if (!types.Contains(security.Type)) types.Add(security.Type);
             }
             SecurityType(types);
-
-            ConfigureConsoleTextWriter(algorithm);
+            // SqCore Change ORIGINAL:
+            // ConfigureConsoleTextWriter(algorithm);
+            // SqCore Change NEW:
+            // ConfigureConsoleTextWriter(algorithm); // We don't want QC to steal the global Console from other threads
+            // SqCore Change END
         }
 
         /// <summary>
@@ -741,20 +744,24 @@ namespace QuantConnect.Lean.Engine.Results
         /// test logs based solely on the ordering of messages. To disable this forwarding, set <code>"forward-console-messages"</code>
         /// to <code>false</code> in the configuration.
         /// </summary>
-        protected virtual void ConfigureConsoleTextWriter(IAlgorithm algorithm)
-        {
-            if (Config.GetBool("forward-console-messages", true))
-            {
-                // we need to forward Console.Write messages to the algorithm's Debug function
-                Console.SetOut(new FuncTextWriter(algorithm.Debug));
-                Console.SetError(new FuncTextWriter(algorithm.Error));
-            }
-            else
-            {
-                // we need to forward Console.Write messages to the standard Log functions
-                Console.SetOut(new FuncTextWriter(msg => Utils.Logger.Trace(msg)));
-                Console.SetError(new FuncTextWriter(msg => Utils.Logger.Error(msg)));
-            }
-        }
+        // SqCore Change ORIGINAL:
+        // protected virtual void ConfigureConsoleTextWriter(IAlgorithm algorithm)
+        // {
+        //     if (Config.GetBool("forward-console-messages", true))
+        //     {
+        //         // we need to forward Console.Write messages to the algorithm's Debug function
+        //         Console.SetOut(new FuncTextWriter(algorithm.Debug));
+        //         Console.SetError(new FuncTextWriter(algorithm.Error));
+        //     }
+        //     else
+        //     {
+        //         // we need to forward Console.Write messages to the standard Log functions
+        //         Console.SetOut(new FuncTextWriter(msg => Utils.Logger.Trace(msg)));
+        //         Console.SetError(new FuncTextWriter(msg => Utils.Logger.Error(msg)));
+        //     }
+        // }
+        // SqCore Change NEW:
+        // We don't want QC to steal the global Console from other threads
+        // SqCore Change END
     }
 }

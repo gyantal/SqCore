@@ -241,8 +241,12 @@ namespace QuantConnect.Lean.Engine.Results
         public virtual void Exit()
         {
             // reset standard out/error
-            Console.SetOut(StandardOut);
-            Console.SetError(StandardError);
+            // SqCore Change ORIGINAL:
+            // Console.SetOut(StandardOut);
+            // Console.SetError(StandardError);
+            // SqCore Change NEW:
+            // We don't want QC to steal the global Console from other threads
+            // SqCore Change END
         }
 
         /// <summary>
