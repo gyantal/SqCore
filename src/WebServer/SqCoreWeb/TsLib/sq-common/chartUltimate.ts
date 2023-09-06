@@ -32,8 +32,8 @@ export class UltimateChart {
       return;
 
     // finding the min and max of y-axis
-    let yMinPct: number = 0;
-    let yMaxPct: number = 0;
+    let yMinPct: number = Number.MAX_VALUE;
+    let yMaxPct: number = Number.MIN_VALUE;
 
     for (let i = 0; i < this._timeSeriess.length; i++) {
       const timeSeries = this._timeSeriess[i];
@@ -55,8 +55,15 @@ export class UltimateChart {
         if (point.value > yMax)
           yMax = point.value;
       }
-      yMinPct = 100 * yMin / firstVal!;
-      yMaxPct = 100 * yMax / firstVal!;
+      if (firstVal == null)
+        continue;
+      const yMinPctNew = 100 * yMin / firstVal;
+      if (yMinPctNew < yMinPct)
+        yMinPct = yMinPctNew;
+
+      const yMaxPctNew = 100 * yMax / firstVal;
+      if (yMaxPctNew > yMaxPct)
+        yMaxPct = yMaxPctNew;
     }
 
     const nameKey: string[] = this._timeSeriess.map((d: CgTimeSeries) => d.name ); // Get unique group names for coloring

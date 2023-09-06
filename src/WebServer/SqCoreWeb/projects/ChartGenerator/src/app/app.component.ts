@@ -89,7 +89,11 @@ export class AppComponent implements OnInit {
     // Getting the PrtfIds and Benchmarks from URL
     const url = new URL(window.location.href);
     this.prtfSelectedName = url.searchParams.get('pids');
-    this.bmrks = url.searchParams.get('bmrks');
+    const bmrksStr: string[] = url.searchParams.get('bmrks')!.trim().split(',');
+    for (const item of bmrksStr) {
+      if (!this._backtestedBenchmarks.includes(item)) // check if the item is included or not
+        this._backtestedBenchmarks.push(item);
+    }
 
     this.onStartBacktests();
     this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/chrtgen' + wsQueryStr); // "wss://127.0.0.1/ws/chrtgen?pids=13,2" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection. ? has to be included to separate the location from the params
@@ -115,8 +119,8 @@ export class AppComponent implements OnInit {
           console.log('ws: OnConnected message arrived:' + event.data);
           const handshakeMsg: HandshakeMessage = Object.assign(new HandshakeMessage(), JSON.parse(msgObjStr));
           this.user.email = handshakeMsg.email;
-          this._allPortfolios = handshakeMsg.prtfsToClient;
-          this._allFolders = handshakeMsg.fldrsToClient;
+          // this._allPortfolios = handshakeMsg.prtfsToClient; To be processed
+          // this._allFolders = handshakeMsg.fldrsToClient; To be processed
           break;
         case 'BacktestResults':
           await sleep(5000); // simulate slow C# server backtest
@@ -244,7 +248,7 @@ export class AppComponent implements OnInit {
       console.log(`minstartDt1: ${this._minStartDate} and maxstartDt1: ${this._maxEndDate}`);
 
       const chartItem = new CgTimeSeries();
-      chartItem.name = item.prtfName;
+      chartItem.name = item.name;
       chartItem.chartResolution = ChartResolution[item.chrtData.chartResolution];
       chartItem.priceData = [];
       for (let i = 0; i < item.chrtData.dates.length; i++) {
@@ -333,7 +337,7 @@ export class AppComponent implements OnInit {
       this.prtfIds = ''; // empty the prtfIds
       for (const item of this._backtestedPortfolios) // iterate to add the backtested portfolioIds selected by the user
         this.prtfIds += item.id + ',';
-
+      this.bmrks = this._backtestedBenchmarks.join(',');
       this.onStartBacktests();
       this._socket.send('RunBacktest:' + '?pids=' + this.prtfIds + '&bmrks=' + this.bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
       this.startDate = new Date(this.startDate);

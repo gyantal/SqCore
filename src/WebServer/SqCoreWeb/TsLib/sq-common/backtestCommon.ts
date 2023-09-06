@@ -38,7 +38,7 @@ export class ChrtGenBacktestResult {
 export class ChrtGenPfRunResult {
   public pstat: any; // all the Stat members from UiPrtfRunResult, we skip creating detailed sub classes
   public chrtData!: ChartJs;
-  public prtfName!: string;
+  public name!: string;
 }
 
 export class PrtfRunResultJs extends ChrtGenPfRunResult { // we can specify the input types more, but whatever.

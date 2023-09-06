@@ -6,7 +6,7 @@ export class StatisticsResults {
   public CAGR: number = 0;
   // public AnnualizedMeanReturn: number = 0;
   // public SharpeRatio: number = 0;
-  public Drawdown: number = 0;
+  public MaxDD: number = 0;
   // public MarRatio: number = 0;
   // public MaxDdLenInCalDays: number = 0;
   // public MaxDdLenInTradDays: number = 0;
@@ -45,6 +45,13 @@ export class SqStatisticsBuilder {
   }
 
   public statsResults(startDate: Date, endDate: Date): FinalStatistics[] { // without the dataCopy
+    // 2023-08-25: We might use array.findLast(), findLastIndex() in the future, but current TS 5.2 doesn't fully support them.
+    // TODO: Wait until it does support, then upgrade "typescript": "~4.6.4" in pakcage.json and bump angular 13 too.
+    // https://github.com/microsoft/TypeScript/issues/48829
+    // findLast was introduced in EcmaScript 2023. However, es2023 isn't supported in Typescript 5.
+    // Example code to test that it compiles:
+    // const array1 = [5, 12, 50, 130, 44];
+    // console.log(array1.findLastIndex((element) => element > 45));
     const statsResults: FinalStatistics[] = [];
     if (this._timeSeriess == null)
       return statsResults;
@@ -57,9 +64,10 @@ export class SqStatisticsBuilder {
       const statRes = new FinalStatistics();
       statRes.name = this._timeSeriess[i].name;
       // Initialize variables to track the indices of start and end dates within the price data
-      let startIndex = 0;
-      let endIndex = 0;
+      let startIndex: number = 0;
+      let endIndex: number = 0;
       const drawdowns: number[] = [];
+      let high: number = Number.MIN_VALUE;
       for (let j = 0; j < this._timeSeriess[i].priceData.length; j++) {
         const currentDate = new Date(this._timeSeriess[i].priceData[j].date);
         if (currentDate < startTradingDay)
@@ -71,9 +79,7 @@ export class SqStatisticsBuilder {
         if (currentDate <= startTradingDay || currentDate > endTradingDay)
           continue; // Skip further processing if the date is not within the desired range
 
-        let high: number = this._timeSeriess[i].priceData[0].value;
         const price: number = this._timeSeriess[i].priceData[j].value;
-
         if (price > high)
           high = price;
 
@@ -98,7 +104,7 @@ export class SqStatisticsBuilder {
         if (dd < maxDD)
           maxDD = dd;
       }
-      statRes.stats.Drawdown = Math.abs(maxDD);
+      statRes.stats.MaxDD = Math.abs(maxDD);
 
       statsResults.push(statRes);
     }
