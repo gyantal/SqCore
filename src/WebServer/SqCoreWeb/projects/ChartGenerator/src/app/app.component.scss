@@ -24,44 +24,26 @@
   box-sizing: border-box; // padding and border are included in the width and height. ref - https://www.w3schools.com/css/css3_box-sizing.asp
 }
 
-.prtfAndBmrkInputs {
+.highlightInputBox {
   margin: 0.05rem 0 0.1rem 0;
   border: 0 0 0 0; // Removing the default values input tag
   padding: 0 0 0 0; // Removing the default values input tag
   border-radius: .2rem;
   color: blue;
   height: 1rem;
-  width: 14rem;
   font-size: 0.8rem;
+  width: 60%;
+  box-sizing: border-box;
 }
 
-.backtestBtn {
-  margin: 0.3rem 0 0 0.3rem;
-}
-
-.range {
-  margin-top: -0.5rem;
+.prtfInputWidth {
+  width: 90%;
 }
 
 .selectionDropDown {
   position: relative; // position: relative, will remain in the natural flow of the page. It will also act as anchor point for the absolutely positioned Child (listDropDown) element:
   display: inline-block;// It combines the characteristics of inline elements, which flow within the content, and block-level elements, which create line breaks and can have specified width and height
   border-radius: .5rem;
-}
-
-.highlightInputDropDown {
-  margin: 0.05rem 0 0.1rem 0;
-  border: 0 0 0 0; // Removing the default values input tag
-  padding: 0 0 0 0; // Removing the default values input tag
-  border-radius: .2rem;
-  color: blue;
-  height: 1rem;
-  width: 4rem;
-  font-size: 0.8rem;
-}
-
-.prtfInputWidth {
-  width: 14rem;
 }
 
 .listDropDown {
@@ -106,6 +88,14 @@
 
 .bmrksSelected {
   left: 52rem;
+}
+
+.backtestBtn {
+  margin: 0.3rem 0 0 0.3rem;
+}
+
+.range {
+  margin-top: -0.5rem;
 }
 
 #backtestPvChrt {

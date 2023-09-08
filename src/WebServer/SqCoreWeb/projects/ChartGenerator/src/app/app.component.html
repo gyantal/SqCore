@@ -21,13 +21,13 @@
   <!-- Class=commonColStyle name will be changed in future - Daya(28-04-2023) -->
   <span class="commonColStyle" id="portfolios">
     <span>Portfolios:
-      <div class="selectionDropDown">
-        <input class="highlightInputDropDown prtfInputWidth" type="text" [(ngModel)]="prtfSelectedName">
+      <span class="selectionDropDown">
+        <input class="highlightInputBox prtfInputWidth" type="text" [(ngModel)]="prtfSelectedName">
         <div class="listDropDown">
           <option class="optionDropDown" *ngFor="let item of _allPortfolios" [value]="item.name" (click)="onClickUserSelectedPortfolio(item)">{{item.id}} : {{item.name}}</option>
         </div>&nbsp;
-        <button (click)="onClickPrtfSelectedForBacktest(prtfSelectedId)">Insert</button>
-      </div>
+      </span>
+      <button (click)="onClickPrtfSelectedForBacktest(prtfSelectedId)">Insert</button>
       <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedPortfolios">{{item.name}}</div>&nbsp;
       <span>
         <button (click)="onClickClearBacktestedPortfolios()" [disabled]="_backtestedPortfolios.length <= 0">Clear</button>
@@ -36,7 +36,7 @@
   </span>
   <span class="commonColStyle" id="stockAndIndexes">
     StockAndIndexes<br>
-    <span>Benchmarks: <input class="prtfAndBmrkInputs" oninput="this.value = this.value.toUpperCase()" id="bmrks" type="text" [(ngModel)]="bmrks"></span>&nbsp;
+    <span>Benchmarks: <input class="highlightInputBox" oninput="this.value = this.value.toUpperCase()" id="bmrks" type="text" [(ngModel)]="bmrks"></span>&nbsp;
     <button (click)="onClickBmrkSelectedForBacktest()">Insert</button>
     <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedBenchmarks">{{item}}</div>&nbsp;
     <span>
@@ -52,7 +52,7 @@
   <span>
     <span class="range">Range:
       <div class="selectionDropDown">
-        <input class="highlightInputDropDown" type="text" oninput="this.value = this.value.toUpperCase()" [(ngModel)]="histRangeSelected" (change)="onUserChangedHistDateRange(histRangeSelected)">
+        <input class="highlightInputbox" type="text" oninput="this.value = this.value.toUpperCase()" [(ngModel)]="histRangeSelected" (change)="onUserChangedHistDateRange(histRangeSelected)">
         <div class="listDropDown">
           <option class="optionDropDown" *ngFor="let item of rangeSelection" [value]="item" (click)="onUserChangedHistDateRange(item)">{{item}}</option>
         </div>

@@ -5,21 +5,16 @@ import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.ut
 import { SqNgCommonUtilsTime, minDate, maxDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
 import { SqStatisticsBuilder, FinalStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
-import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint } from '../../../../TsLib/sq-common/backtestCommon';
+import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, preProcessPrtfs, preProcessFldrs } from '../../../../TsLib/sq-common/backtestCommon';
 import { sleep } from '../../../../TsLib/sq-common/utils-common';
 
 type Nullable<T> = T | null;
-
-class PortfolioJs {
-  public id: number = -1;
-  public name: string = '';
-}
 
 class HandshakeMessage {
   public email = '';
   public param2 = '';
   public prtfsToClient: Nullable<PortfolioJs[]> = null;
-  public fldrsToClient: Nullable<PortfolioJs[]> = null;
+  public fldrsToClient: Nullable<FolderJs[]> = null;
 }
 
 export class ChrtGenDiagnostics { // have to export the class, because .mainTsTime is set from outside of this angular component.
@@ -67,7 +62,7 @@ export class AppComponent implements OnInit {
   _sqStatisticsbuilder: SqStatisticsBuilder = new SqStatisticsBuilder();
   backtestStatsResults: FinalStatistics[] = [];
   _allPortfolios: Nullable<PortfolioJs[]> = null;
-  _allFolders: Nullable<PortfolioJs[]> = null;
+  _allFolders: Nullable<FolderJs[]> = null;
   prtfSelectedName: Nullable<string> = null;
   prtfSelectedId: number = 0;
   _backtestedPortfolios: PortfolioJs[] = [];
@@ -119,8 +114,10 @@ export class AppComponent implements OnInit {
           console.log('ws: OnConnected message arrived:' + event.data);
           const handshakeMsg: HandshakeMessage = Object.assign(new HandshakeMessage(), JSON.parse(msgObjStr));
           this.user.email = handshakeMsg.email;
-          // this._allPortfolios = handshakeMsg.prtfsToClient; To be processed
-          // this._allFolders = handshakeMsg.fldrsToClient; To be processed
+          const prtfsStr = JSON.stringify(handshakeMsg.prtfsToClient);
+          this._allPortfolios = preProcessPrtfs(prtfsStr);
+          const fldrsStr = JSON.stringify(handshakeMsg.fldrsToClient);
+          this._allFolders = preProcessFldrs(fldrsStr);
           break;
         case 'BacktestResults':
           await sleep(5000); // simulate slow C# server backtest
