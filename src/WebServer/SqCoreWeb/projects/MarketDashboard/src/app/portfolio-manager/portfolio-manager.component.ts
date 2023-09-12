@@ -1,7 +1,7 @@
 import { Component, OnInit, AfterViewInit, Input, ViewChild } from '@angular/core';
 import { SqTreeViewComponent } from '../sq-tree-view/sq-tree-view.component';
 import { prtfRunResultChrt } from '../../../../../TsLib/sq-common/chartAdvanced';
-import { PrtfRunResultJs, UiChartPoint, UiPrtfPositions, UiPfMgrPrtfRunResult, PrtfItemType, FolderJs, PortfolioJs, TreeViewItem, createTreeViewData, preProcessPrtfs, preProcessFldrs } from '../../../../../TsLib/sq-common/backtestCommon';
+import { PrtfRunResultJs, UiChartPoint, UiPrtfPositions, UiPfMgrPrtfRunResult, PrtfItemType, FolderJs, PortfolioJs, TreeViewItem, createTreeViewData, prtfsParseHelper, fldrsParseHelper } from '../../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtils } from '../../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { onFirstVisibleEventListener } from '../../../../../TsLib/sq-common/utils-common';
 import * as d3 from 'd3';
@@ -199,14 +199,32 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     }
   }
   processPortfolios(msgObjStr: string) {
-    this.portfolios = preProcessPrtfs(msgObjStr);
+    this.portfolios = JSON.parse(msgObjStr, function(this: any, key: string, value: any) {
+      // eslint-disable-next-line no-invalid-this
+      const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
+
+      const isRemoveOriginal: boolean = prtfsParseHelper(_this, key, value);
+      if (isRemoveOriginal)
+        return; // if return undefined, original property will be removed
+
+      return value; // the original property will not be removed if we return the original value, not undefined
+    });
 
     this.portfolios?.forEach((r) => r.prtfItemType = PrtfItemType.Portfolio);
     this.uiNestedPrtfTreeViewItems = createTreeViewData(this.folders, this.portfolios, this.treeViewState); // process folders and portfolios
   }
 
   processFolders(msgObjStr: string) {
-    this.folders = preProcessFldrs(msgObjStr);
+    this.folders = JSON.parse(msgObjStr, function(this: any, key: string, value: any) {
+      // eslint-disable-next-line no-invalid-this
+      const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
+
+      const isRemoveOriginal: boolean = fldrsParseHelper(_this, key, value);
+      if (isRemoveOriginal)
+        return; // if return undefined, original property will be removed
+
+      return value; // the original property will not be removed if we return the original value, not undefined
+    });
 
     this.folders?.forEach((r) => r.prtfItemType = PrtfItemType.Folder);
     this.uiNestedPrtfTreeViewItems = createTreeViewData(this.folders, this.portfolios, this.treeViewState); // process folders and portfolios

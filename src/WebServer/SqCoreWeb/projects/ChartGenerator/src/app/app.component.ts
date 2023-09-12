@@ -5,7 +5,7 @@ import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.ut
 import { SqNgCommonUtilsTime, minDate, maxDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
 import { SqStatisticsBuilder, FinalStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
-import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, preProcessPrtfs, preProcessFldrs } from '../../../../TsLib/sq-common/backtestCommon';
+import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper } from '../../../../TsLib/sq-common/backtestCommon';
 import { sleep } from '../../../../TsLib/sq-common/utils-common';
 
 type Nullable<T> = T | null;
@@ -65,6 +65,7 @@ export class AppComponent implements OnInit {
   _allFolders: Nullable<FolderJs[]> = null;
   prtfSelectedName: Nullable<string> = null;
   prtfSelectedId: number = 0;
+  public gPortfolioIdOffset: number = 10000;
   _backtestedPortfolios: PortfolioJs[] = [];
   _backtestedBenchmarks: string[] = [];
 
@@ -83,9 +84,8 @@ export class AppComponent implements OnInit {
     console.log(wsQueryStr);
     // Getting the PrtfIds and Benchmarks from URL
     const url = new URL(window.location.href);
-    this.prtfSelectedName = url.searchParams.get('pids');
-    const bmrksStr: string[] = url.searchParams.get('bmrks')!.trim().split(',');
-    for (const item of bmrksStr) {
+    const bmrksTickers: string[] = url.searchParams.get('bmrks')!.trim().split(',');
+    for (const item of bmrksTickers) {
       if (!this._backtestedBenchmarks.includes(item)) // check if the item is included or not
         this._backtestedBenchmarks.push(item);
     }
@@ -112,12 +112,34 @@ export class AppComponent implements OnInit {
       switch (msgCode) {
         case 'OnConnected':
           console.log('ws: OnConnected message arrived:' + event.data);
-          const handshakeMsg: HandshakeMessage = Object.assign(new HandshakeMessage(), JSON.parse(msgObjStr));
+
+          const msgObj = JSON.parse(msgObjStr, function(this: any, key: string, value: any) {
+            // eslint-disable-next-line no-invalid-this
+            const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
+            const isRemoveOriginalPrtfs: boolean = prtfsParseHelper(_this, key, value);
+            if (isRemoveOriginalPrtfs)
+              return; // if return undefined, original property will be removed
+            const isRemoveOriginalFldrs: boolean = fldrsParseHelper(_this, key, value);
+            if (isRemoveOriginalFldrs)
+              return; // if return undefined, original property will be removed
+            return value; // the original property will not be removed if we return the original value, not undefined
+          });
+          const handshakeMsg: HandshakeMessage = Object.assign(new HandshakeMessage(), msgObj);
           this.user.email = handshakeMsg.email;
-          const prtfsStr = JSON.stringify(handshakeMsg.prtfsToClient);
-          this._allPortfolios = preProcessPrtfs(prtfsStr);
-          const fldrsStr = JSON.stringify(handshakeMsg.fldrsToClient);
-          this._allFolders = preProcessFldrs(fldrsStr);
+          this._allPortfolios = handshakeMsg.prtfsToClient;
+          this._allFolders = handshakeMsg.fldrsToClient;
+          // Get the Url param of PrtfIds and fill the backtestedPortfolios
+          const url = new URL(window.location.href);
+          const prtfStrIds: string[] = url.searchParams.get('pids')!.trim().split(',');
+          if (this._allPortfolios == null)
+            return;
+          for (let i = 0; i < this._allPortfolios.length; i++) {
+            for (let j = 0; j < prtfStrIds.length; j++) {
+              const id = this._allPortfolios[i].id - this.gPortfolioIdOffset;
+              if (id == parseInt(prtfStrIds[j]))
+                this._backtestedPortfolios.push(this._allPortfolios[i]);
+            }
+          }
           break;
         case 'BacktestResults':
           await sleep(5000); // simulate slow C# server backtest
@@ -333,7 +355,7 @@ export class AppComponent implements OnInit {
     if (this._socket != null && this._socket.readyState == this._socket.OPEN) {
       this.prtfIds = ''; // empty the prtfIds
       for (const item of this._backtestedPortfolios) // iterate to add the backtested portfolioIds selected by the user
-        this.prtfIds += item.id + ',';
+        this.prtfIds += item.id - this.gPortfolioIdOffset + ',';
       this.bmrks = this._backtestedBenchmarks.join(',');
       this.onStartBacktests();
       this._socket.send('RunBacktest:' + '?pids=' + this.prtfIds + '&bmrks=' + this.bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
@@ -408,10 +430,10 @@ export class AppComponent implements OnInit {
   onClickPrtfSelectedForBacktest(prtfSelectedId: number) {
     if (this._allPortfolios == null)
       return;
-
+    const prtfId = prtfSelectedId - this.gPortfolioIdOffset; // remove the offset from the prtfSelectedId to get the proper Id from Db
     let prtfSelectedInd = -1;
     for (let i = 0; i < this._backtestedPortfolios.length; i++) {
-      if (this._backtestedPortfolios[i].id == prtfSelectedId) {
+      if (this._backtestedPortfolios[i].id == prtfId) {
         prtfSelectedInd = i; // get the index, if the item is found
         break;
       }
@@ -420,7 +442,7 @@ export class AppComponent implements OnInit {
     // If the item is not already included, proceed to add it
     if (prtfSelectedInd == -1) {
       const allPortfoliosInd = this._allPortfolios.findIndex((item) => item.id == prtfSelectedId); // Find the index of the selected item in _allPortfolios
-      if (allPortfoliosInd != -1)
+      if (allPortfoliosInd != -1 && !this._backtestedPortfolios.includes(this._allPortfolios[allPortfoliosInd])) // check if the item is included or not
         this._backtestedPortfolios.push(this._allPortfolios[allPortfoliosInd]); // Push the selected item from _allPortfolios into _backtestedPortfolios
     }
   }

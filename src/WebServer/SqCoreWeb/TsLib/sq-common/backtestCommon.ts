@@ -160,80 +160,67 @@ export class TreeViewState {
   // public rootSqTreeViewComponent: Nullable<SqTreeViewComponent> = null;
 }
 // ************************************************ //
-export function preProcessPrtfs(msgObjStr: string ): Nullable<PortfolioJs[]> {
-  const prtfs = JSON.parse(msgObjStr, function(this: any, key, value) {
-    // eslint-disable-next-line no-invalid-this
-    const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
+export function prtfsParseHelper(_this: any, key: string, value: any): boolean { // return value is isRemoveOriginal
+  // eslint-disable-next-line no-invalid-this
+  // const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
+  if (key === 'n') {
+    _this.name = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'ouId') {
+    _this.ownerUserId = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'p') {
+    _this.parentFolderId = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'cTime') {
+    _this.creationTime = value;
+    return true; // if return undefined, original property will be removed
+  }
 
-    if (key === 'n') {
-      _this.name = value;
-      return; // if return undefined, original property will be removed
-    }
-    if (key === 'ouId') {
-      _this.ownerUserId = value;
-      return; // if return undefined, original property will be removed
-    }
-    if (key === 'p') {
-      _this.parentFolderId = value;
-      return; // if return undefined, original property will be removed
-    }
-    if (key === 'cTime') {
-      _this.creationTime = value;
-      return; // if return undefined, original property will be removed
-    }
-
-    if (key === 'sAcs') {
-      _this.sharedAccess = value;
-      return; // if return undefined, original property will be removed
-    }
-    if (key === 'sUsr') {
-      _this.sharedUserWithMe = value;
-      return; // if return undefined, original property will be removed
-    }
-    if (key === 'bCur') {
-      _this.baseCurrency = value;
-      return; // if return undefined, original property will be removed
-    }
-    if (key === 'algo') {
-      _this.algorithm = value;
-      return; // if return undefined, original property will be removed
-    }
-    if (key === 'algoP') {
-      _this.algorithmParam = value;
-      return; // if return undefined, original property will be removed
-    }
-    return value;
-  });
-  return prtfs;
+  if (key === 'sAcs') {
+    _this.sharedAccess = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'sUsr') {
+    _this.sharedUserWithMe = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'bCur') {
+    _this.baseCurrency = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'algo') {
+    _this.algorithm = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'algoP') {
+    _this.algorithmParam = value;
+    return true; // if return undefined, original property will be removed
+  }
+  return false; // return value is isRemoveOriginal. In general, we don't remove values
 }
 
-export function preProcessFldrs(msgObjStr: string): Nullable<FolderJs[]> {
-  const fldrs = JSON.parse(msgObjStr, function(this: any, key, value) {
-  // property names and values are transformed to a shorter ones for decreasing internet traffic.Transform them back to normal for better code reading.
-
-    // 'this' is the object containing the property being processed (not the embedding class) as this is a function(), not a '=>', and the property name as a string, the property value as arguments of this function.
-    // eslint-disable-next-line no-invalid-this
-    const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
-
-    if (key === 'n') {
-      _this.name = value;
-      return; // if return undefined, original property will be removed
-    }
-    if (key === 'ouId') {
-      _this.ownerUserId = value;
-      return; // if return undefined, original property will be removed
-    }
-    if (key === 'p') {
-      _this.parentFolderId = value;
-      return; // if return undefined, original property will be removed
-    }
-    if (key === 'cTime') {
-      _this.creationTime = value;
-      return; // if return undefined, original property will be removed
-    }
-    return value;
-  });
-  return fldrs;
+export function fldrsParseHelper(_this: any, key: string, value: any): boolean {
+  if (key === 'n') {
+    _this.name = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'ouId') {
+    _this.ownerUserId = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'p') {
+    _this.parentFolderId = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'cTime') {
+    _this.creationTime = value;
+    return true; // if return undefined, original property will be removed
+  }
+  return false;
 }
 
 export function createTreeViewData(pFolders: Nullable<FolderJs[]>, pPortfolios: Nullable<PortfolioJs[]>, pTreeViewState: TreeViewState) : TreeViewItem[] {
