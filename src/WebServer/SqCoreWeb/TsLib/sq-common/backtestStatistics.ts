@@ -1,11 +1,11 @@
 import { CgTimeSeries } from '../sq-common/backtestCommon';
-// import { lbaverage, lbstdDev } from '../sq-common/utils_math';
+import { lbaverage, lbstdDev } from '../sq-common/utils_math';
 
 export class StatisticsResults {
   public TotalReturn: number = 0;
   public CAGR: number = 0;
   // public AnnualizedMeanReturn: number = 0;
-  // public SharpeRatio: number = 0;
+  public SharpeRatio: number = 0;
   public MaxDD: number = 0;
   // public MarRatio: number = 0;
   // public MaxDdLenInCalDays: number = 0;
@@ -57,6 +57,7 @@ export class SqStatisticsBuilder {
       return statsResults;
     let startingCapital: number = 0;
     let finalCapital: number = 0;
+    let totalTradingDaysNum = 0;
     // Find the nearest trading days to the provided start and end dates
     const startTradingDay = this.findNearestTradingDay(startDate);
     const endTradingDay = this.findNearestTradingDay(endDate);
@@ -67,9 +68,12 @@ export class SqStatisticsBuilder {
       let startIndex: number = 0;
       let endIndex: number = 0;
       const drawdowns: number[] = [];
+      const dailyReturns: number[] = [];
       let high: number = Number.MIN_VALUE;
       for (let j = 0; j < this._timeSeriess[i].priceData.length; j++) {
         const currentDate = new Date(this._timeSeriess[i].priceData[j].date);
+        if (this.isTradingDay(currentDate))
+          totalTradingDaysNum += 1;
         if (currentDate < startTradingDay)
           startIndex = j; // Update the start index
         if (currentDate <= endTradingDay)
@@ -85,6 +89,12 @@ export class SqStatisticsBuilder {
 
         if (high > 0)
           drawdowns.push(price / high - 1);
+
+        // Calculate daily returns and store them in the dailyReturns array
+        if (j > 0) {
+          const prevPrice = this._timeSeriess[i].priceData[j - 1].value;
+          dailyReturns.push(this._timeSeriess[i].priceData[j].value / prevPrice - 1);
+        }
       }
 
       // Calculate the starting and final capital based on the found indices
@@ -105,6 +115,10 @@ export class SqStatisticsBuilder {
           maxDD = dd;
       }
       statRes.stats.MaxDD = Math.abs(maxDD);
+      // Calculate the sharpe ratio for the current time series
+      const histAMean = lbaverage(dailyReturns) * totalTradingDaysNum;
+      const histSD = lbstdDev(dailyReturns) * Math.sqrt(totalTradingDaysNum);
+      statRes.stats.SharpeRatio = isNaN(histSD) || !isFinite(histSD) ? 0 : (histAMean / histSD);
 
       statsResults.push(statRes);
     }

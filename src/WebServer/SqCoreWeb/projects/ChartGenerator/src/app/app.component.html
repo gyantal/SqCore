@@ -84,7 +84,7 @@
         <ng-container *ngFor="let stat of backtestStatsResults[0]?.stats | keyvalue"> <!-- we only use backtestStatsResults[0]?.stats to get the statistics keys (since all items in the array should have the same statistics keys). -->
           <tr>
             <td>{{stat.key}}</td>
-            <td *ngFor="let item of backtestStatsResults">{{item.stats[stat.key] | percent:'0.2'}}</td>
+            <td *ngFor="let item of backtestStatsResults">{{(stat.key == 'SharpeRatio') ? (item.stats[stat.key] | number:'0.2') : (item.stats[stat.key] | percent:'0.2')}}</td> <!-- we display the sharpe ratio without % by using number pipe-->
           </tr>
         </ng-container>
       </tbody>
