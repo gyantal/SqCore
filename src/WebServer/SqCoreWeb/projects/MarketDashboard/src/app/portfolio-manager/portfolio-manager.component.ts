@@ -1,7 +1,7 @@
 import { Component, OnInit, AfterViewInit, Input, ViewChild } from '@angular/core';
-import { SqTreeViewComponent } from '../sq-tree-view/sq-tree-view.component';
+import { SqTreeViewComponent } from '../../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
 import { prtfRunResultChrt } from '../../../../../TsLib/sq-common/chartAdvanced';
-import { PrtfRunResultJs, UiChartPoint, UiPrtfPositions, UiPfMgrPrtfRunResult, PrtfItemType, FolderJs, PortfolioJs, TreeViewItem, createTreeViewData, prtfsParseHelper, fldrsParseHelper } from '../../../../../TsLib/sq-common/backtestCommon';
+import { PrtfRunResultJs, UiChartPoint, UiPrtfPositions, UiPfMgrPrtfRunResult, PrtfItemType, FolderJs, PortfolioJs, TreeViewItem, createTreeViewData, prtfsParseHelper, fldrsParseHelper, TreeViewState } from '../../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtils } from '../../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { onFirstVisibleEventListener } from '../../../../../TsLib/sq-common/utils-common';
 import * as d3 from 'd3';
@@ -10,14 +10,6 @@ import { UserJs } from '../../../../../TsLib/sq-common/sq-globals';
 type Nullable<T> = T | null;
 
 // Input data classes
-
-
-export class TreeViewState {
-  public lastSelectedItem : Nullable<TreeViewItem> = null;
-  public lastSelectedItemId: number = -1; // need to remember the lastselectedItemId to highlight the user Selected item even after refresh or after creating/editing an item
-  public expandedPrtfFolderIds: number[] = [];
-  public rootSqTreeViewComponent: Nullable<SqTreeViewComponent> = null;
-}
 
 @Component({
   selector: 'app-portfolio-manager',

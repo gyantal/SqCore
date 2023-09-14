@@ -1,4 +1,4 @@
-export function lbgaussian(mean: number, stdev: number): any {
+export function sqGaussian(mean: number, stdev: number): any {
   // returns a gaussian random function with the given mean and stdev.
   let y2;
   let useLast = false;
@@ -25,7 +25,7 @@ export function lbgaussian(mean: number, stdev: number): any {
   };
 }
 
-export function lbaverage(arrayB: any): number {
+export function sqAverage(arrayB: any): number {
   let total = 0;
   for (let i = 0; i < arrayB.length; i++)
     total += arrayB[i];
@@ -33,7 +33,7 @@ export function lbaverage(arrayB: any): number {
   return avg;
 }
 
-export function lbmedian(arrayB: any): number {
+export function sqMedian(arrayB: any): number {
   arrayB.sort(function(a: number, b: number) {
     return a - b;
   });
@@ -42,8 +42,8 @@ export function lbmedian(arrayB: any): number {
   i % 1 === 0 ? med = (arrayB[Math.floor(i) - 1] + arrayB[Math.floor(i)]) / 2 : med = arrayB[Math.floor(i)];
   return med;
 }
-export function lbstdDev(arrayB: any): number {
-  const avg = lbaverage(arrayB);
+export function sqStdDev(arrayB: any): number {
+  const avg = sqAverage(arrayB);
   let sumdev = 0;
   for (let i = 0; i < arrayB.length; i++)
     sumdev += (arrayB[i]-avg)*(arrayB[i]-avg);

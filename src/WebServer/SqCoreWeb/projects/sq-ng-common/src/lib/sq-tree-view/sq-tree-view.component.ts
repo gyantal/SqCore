@@ -1,7 +1,7 @@
 import { Component, OnInit, Input, ViewChildren, QueryList } from '@angular/core';
-import {TreeViewItem } from '../../../../../TsLib/sq-common/backtestCommon';
-import { TreeViewState } from '../portfolio-manager/portfolio-manager.component';
-import { RemoveItemOnce } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils';
+import {TreeViewItem, TreeViewState } from '../../../../../TsLib/sq-common/backtestCommon';
+// import { TreeViewState } from '../portfolio-manager/portfolio-manager.component';
+import { RemoveItemOnce } from '../sq-ng-common.utils';
 
 @Component({
   selector: 'app-sq-tree-view',

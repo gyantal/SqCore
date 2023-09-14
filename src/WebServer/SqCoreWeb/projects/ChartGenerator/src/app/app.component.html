@@ -95,3 +95,10 @@
 <div class="progressBarContainer" [ngStyle]="{'display': isProgressBarVisble ? 'block' : 'none'}">
   <div class="progressBar"></div>
 </div>
+<!-- Temporarily we placed this at the bottom sep14 2023-->
+<div>
+  <button (click)="onClickSelectFromTree()">selectFromTree</button>
+  <div *ngIf="isSelectFromTreeClicked">
+    <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState"></app-sq-tree-view>
+  </div>
+</div>

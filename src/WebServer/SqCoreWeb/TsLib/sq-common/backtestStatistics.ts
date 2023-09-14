@@ -1,5 +1,5 @@
 import { CgTimeSeries } from '../sq-common/backtestCommon';
-import { lbaverage, lbstdDev } from '../sq-common/utils_math';
+import { sqAverage, sqStdDev } from '../sq-common/utils_math';
 
 export class StatisticsResults {
   public TotalReturn: number = 0;
@@ -116,8 +116,8 @@ export class SqStatisticsBuilder {
       }
       statRes.stats.MaxDD = Math.abs(maxDD);
       // Calculate the sharpe ratio for the current time series
-      const histAMean = lbaverage(dailyReturns) * totalTradingDaysNum;
-      const histSD = lbstdDev(dailyReturns) * Math.sqrt(totalTradingDaysNum);
+      const histAMean = sqAverage(dailyReturns) * totalTradingDaysNum;
+      const histSD = sqStdDev(dailyReturns) * Math.sqrt(totalTradingDaysNum);
       statRes.stats.SharpeRatio = isNaN(histSD) || !isFinite(histSD) ? 0 : (histAMean / histSD);
 
       statsResults.push(statRes);

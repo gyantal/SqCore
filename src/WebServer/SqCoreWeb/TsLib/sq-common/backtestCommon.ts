@@ -1,6 +1,8 @@
 // ************************************************ //
 // Classes used for developing charts, stats and positions of PortfolioRunResults
 // The below classes are used in PortfolioManager and ChartGenerator Apps
+import { SqTreeViewComponent } from '../../projects/sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
+
 // Input data classes
 type Nullable<T> = T | null;
 
@@ -157,7 +159,7 @@ export class TreeViewState {
   public lastSelectedItem : Nullable<TreeViewItem> = null;
   public lastSelectedItemId: number = -1; // need to remember the lastselectedItemId to highlight the user Selected item even after refresh or after creating/editing an item
   public expandedPrtfFolderIds: number[] = [];
-  // public rootSqTreeViewComponent: Nullable<SqTreeViewComponent> = null;
+  public rootSqTreeViewComponent: Nullable<SqTreeViewComponent> = null;
 }
 // ************************************************ //
 export function prtfsParseHelper(_this: any, key: string, value: any): boolean { // return value is isRemoveOriginal

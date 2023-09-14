@@ -1,12 +1,13 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { SqNgCommonUtilsTime, minDate, maxDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
 import { SqStatisticsBuilder, FinalStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
-import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper } from '../../../../TsLib/sq-common/backtestCommon';
+import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType } from '../../../../TsLib/sq-common/backtestCommon';
 import { sleep } from '../../../../TsLib/sq-common/utils-common';
+import { SqTreeViewComponent } from '../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
 
 type Nullable<T> = T | null;
 
@@ -37,6 +38,7 @@ export const gChrtGenDiag: ChrtGenDiagnostics = new ChrtGenDiagnostics();
 })
 export class AppComponent implements OnInit {
   m_http: HttpClient;
+  @ViewChild(SqTreeViewComponent) public sqTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
 
   chrtGenBacktestResults: Nullable<ChrtGenBacktestResult> = null;
   uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[] = [];
@@ -68,6 +70,9 @@ export class AppComponent implements OnInit {
   public gPortfolioIdOffset: number = 10000;
   _backtestedPortfolios: PortfolioJs[] = [];
   _backtestedBenchmarks: string[] = [];
+  treeViewState: TreeViewState = new TreeViewState();
+  uiNestedPrtfTreeViewItems: TreeViewItem[] = [];
+  isSelectFromTreeClicked: boolean = false;
 
   user = {
     name: 'Anonymous',
@@ -127,17 +132,21 @@ export class AppComponent implements OnInit {
           const handshakeMsg: HandshakeMessage = Object.assign(new HandshakeMessage(), msgObj);
           this.user.email = handshakeMsg.email;
           this._allPortfolios = handshakeMsg.prtfsToClient;
+          this._allPortfolios?.forEach((r) => r.prtfItemType = PrtfItemType.Portfolio);
           this._allFolders = handshakeMsg.fldrsToClient;
+          this._allFolders?.forEach((r) => r.prtfItemType = PrtfItemType.Folder);
+          this.uiNestedPrtfTreeViewItems = createTreeViewData(this._allFolders, this._allPortfolios, this.treeViewState); // process folders and portfolios
+          console.log('OnConnected, this.uiNestedPrtfTreeViewItems: ', this.uiNestedPrtfTreeViewItems);
           // Get the Url param of PrtfIds and fill the backtestedPortfolios
+          if (this._allPortfolios == null) // is it possible for it to be null and when there is no connection established or Handshake message is null.
+            return;
           const url = new URL(window.location.href);
           const prtfStrIds: string[] = url.searchParams.get('pids')!.trim().split(',');
-          if (this._allPortfolios == null)
-            return;
-          for (let i = 0; i < this._allPortfolios.length; i++) {
-            for (let j = 0; j < prtfStrIds.length; j++) {
-              const id = this._allPortfolios[i].id - this.gPortfolioIdOffset;
-              if (id == parseInt(prtfStrIds[j]))
-                this._backtestedPortfolios.push(this._allPortfolios[i]);
+          for (let i = 0; i < prtfStrIds.length; i++) {
+            for (let j = 0; j < this._allPortfolios.length; j++) {
+              const id = this._allPortfolios[j].id - this.gPortfolioIdOffset;
+              if (id == parseInt(prtfStrIds[i]))
+                this._backtestedPortfolios.push(this._allPortfolios[j]);
             }
           }
           break;
@@ -461,5 +470,9 @@ export class AppComponent implements OnInit {
 
   onClickClearBacktestedBnmrks() { // clear the user selected backtested Benchmarks
     this._backtestedBenchmarks.length = 0;
+  }
+
+  onClickSelectFromTree() {
+    this.isSelectFromTreeClicked = !this.isSelectFromTreeClicked;
   }
 }
