@@ -4,7 +4,7 @@
       <span class="icon" (click)="onItemClicked(item)">{{(item.prtfItemType == 'Folder') ? (item.isExpanded ? '&#45;' : '&#43;') : ''}}&nbsp;{{item.name}}</span>
     </div>
     <ul *ngIf="item.children && item.isExpanded">
-      <app-sq-tree-view [items]="item.children" [treeViewState]="treeViewState"></app-sq-tree-view>
+      <app-sq-tree-view [items]="item.children" [treeViewState]="treeViewState" [rootTreeViewComponent]="rootTreeViewComponent"></app-sq-tree-view>
     </ul>
   </li>
 </ul>

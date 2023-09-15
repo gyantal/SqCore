@@ -9,8 +9,6 @@ import { UserJs } from '../../../../../TsLib/sq-common/sq-globals';
 
 type Nullable<T> = T | null;
 
-// Input data classes
-
 @Component({
   selector: 'app-portfolio-manager',
   templateUrl: './portfolio-manager.component.html',
@@ -20,7 +18,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   @Input() _parentWsConnection?: WebSocket | null = null; // this property will be input from above parent container
   @Input() _mainUser?: UserJs | null = null; // this property will be input from above parent container
 
-  @ViewChild(SqTreeViewComponent) public sqTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
+  @ViewChild(SqTreeViewComponent) public _rootTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
 
   folders: Nullable<FolderJs[]> = null;
   portfolios: Nullable<PortfolioJs[]> = null;
@@ -77,7 +75,6 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   }
 
   public ngAfterViewInit(): void { // @ViewChild variables (and window.innerWidth, clientWidth etc is not yet initialized) are undefined in ngOnInit(). Only ready in ngAfterViewInit()
-    this.treeViewState.rootSqTreeViewComponent = this.sqTreeComponent;
   }
 
   visibilityChanged() {

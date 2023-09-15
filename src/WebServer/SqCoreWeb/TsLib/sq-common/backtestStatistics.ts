@@ -57,7 +57,7 @@ export class SqStatisticsBuilder {
       return statsResults;
     let startingCapital: number = 0;
     let finalCapital: number = 0;
-    let totalTradingDaysNum = 0;
+    // let totalTradingDaysNum = 0;
     // Find the nearest trading days to the provided start and end dates
     const startTradingDay = this.findNearestTradingDay(startDate);
     const endTradingDay = this.findNearestTradingDay(endDate);
@@ -72,8 +72,8 @@ export class SqStatisticsBuilder {
       let high: number = Number.MIN_VALUE;
       for (let j = 0; j < this._timeSeriess[i].priceData.length; j++) {
         const currentDate = new Date(this._timeSeriess[i].priceData[j].date);
-        if (this.isTradingDay(currentDate))
-          totalTradingDaysNum += 1;
+        // if (this.isTradingDay(currentDate))
+        //   totalTradingDaysNum += 1;
         if (currentDate < startTradingDay)
           startIndex = j; // Update the start index
         if (currentDate <= endTradingDay)
@@ -116,8 +116,8 @@ export class SqStatisticsBuilder {
       }
       statRes.stats.MaxDD = Math.abs(maxDD);
       // Calculate the sharpe ratio for the current time series
-      const histAMean = sqAverage(dailyReturns) * totalTradingDaysNum;
-      const histSD = sqStdDev(dailyReturns) * Math.sqrt(totalTradingDaysNum);
+      const histAMean = sqAverage(dailyReturns) * 252; // annualized daily mean
+      const histSD = sqStdDev(dailyReturns) * Math.sqrt(252); // annualized daily StDev
       statRes.stats.SharpeRatio = isNaN(histSD) || !isFinite(histSD) ? 0 : (histAMean / histSD);
 
       statsResults.push(statRes);

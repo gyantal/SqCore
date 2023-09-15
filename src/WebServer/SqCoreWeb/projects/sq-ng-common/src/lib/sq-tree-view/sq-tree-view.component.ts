@@ -1,6 +1,5 @@
 import { Component, OnInit, Input, ViewChildren, QueryList } from '@angular/core';
 import {TreeViewItem, TreeViewState } from '../../../../../TsLib/sq-common/backtestCommon';
-// import { TreeViewState } from '../portfolio-manager/portfolio-manager.component';
 import { RemoveItemOnce } from '../sq-ng-common.utils';
 
 @Component({
@@ -13,6 +12,7 @@ export class SqTreeViewComponent implements OnInit {
   // use the ! after the variable name 'Definite Assignment Assertion' to tell typescript that this variable will have a value at runtime
   @Input() items!: TreeViewItem[]; // nested tree view data receive from portfolio manager component
   @Input() treeViewState!: TreeViewState; // treeview selected data processing
+  @Input() rootTreeViewComponent!: SqTreeViewComponent;
   @ViewChildren(SqTreeViewComponent) public _children!: QueryList<SqTreeViewComponent>;
 
   constructor() { }
@@ -31,7 +31,7 @@ export class SqTreeViewComponent implements OnInit {
   onItemClicked(item: TreeViewItem) {
     this.treeViewState.lastSelectedItem = item;
     console.log('TreeView.onItemClicked(): ' + this.treeViewState.lastSelectedItem?.name);
-    this.treeViewState.rootSqTreeViewComponent!.DeselectThisItemsAndAllChildren();
+    this.rootTreeViewComponent.DeselectThisItemsAndAllChildren();
     item.isSelected = true;
     this.treeViewState.lastSelectedItemId = item.id;
 

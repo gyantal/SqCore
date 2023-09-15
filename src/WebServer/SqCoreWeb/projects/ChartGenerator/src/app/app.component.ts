@@ -13,7 +13,7 @@ type Nullable<T> = T | null;
 
 class HandshakeMessage {
   public email = '';
-  public param2 = '';
+  public anyParam = -1;
   public prtfsToClient: Nullable<PortfolioJs[]> = null;
   public fldrsToClient: Nullable<FolderJs[]> = null;
 }
@@ -72,7 +72,7 @@ export class AppComponent implements OnInit {
   _backtestedBenchmarks: string[] = [];
   treeViewState: TreeViewState = new TreeViewState();
   uiNestedPrtfTreeViewItems: TreeViewItem[] = [];
-  isSelectFromTreeClicked: boolean = false;
+  isSelectPortfoliosFromTreeClicked: boolean = false;
 
   user = {
     name: 'Anonymous',
@@ -118,7 +118,7 @@ export class AppComponent implements OnInit {
         case 'OnConnected':
           console.log('ws: OnConnected message arrived:' + event.data);
 
-          const msgObj = JSON.parse(msgObjStr, function(this: any, key: string, value: any) {
+          const handshakeMsg: HandshakeMessage = JSON.parse(msgObjStr, function(this: any, key: string, value: any) {
             // eslint-disable-next-line no-invalid-this
             const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
             const isRemoveOriginalPrtfs: boolean = prtfsParseHelper(_this, key, value);
@@ -129,7 +129,6 @@ export class AppComponent implements OnInit {
               return; // if return undefined, original property will be removed
             return value; // the original property will not be removed if we return the original value, not undefined
           });
-          const handshakeMsg: HandshakeMessage = Object.assign(new HandshakeMessage(), msgObj);
           this.user.email = handshakeMsg.email;
           this._allPortfolios = handshakeMsg.prtfsToClient;
           this._allPortfolios?.forEach((r) => r.prtfItemType = PrtfItemType.Portfolio);
@@ -138,7 +137,7 @@ export class AppComponent implements OnInit {
           this.uiNestedPrtfTreeViewItems = createTreeViewData(this._allFolders, this._allPortfolios, this.treeViewState); // process folders and portfolios
           console.log('OnConnected, this.uiNestedPrtfTreeViewItems: ', this.uiNestedPrtfTreeViewItems);
           // Get the Url param of PrtfIds and fill the backtestedPortfolios
-          if (this._allPortfolios == null) // is it possible for it to be null and when there is no connection established or Handshake message is null.
+          if (this._allPortfolios == null) // it can be null if Handshake message is wrong.
             return;
           const url = new URL(window.location.href);
           const prtfStrIds: string[] = url.searchParams.get('pids')!.trim().split(',');
@@ -473,6 +472,6 @@ export class AppComponent implements OnInit {
   }
 
   onClickSelectFromTree() {
-    this.isSelectFromTreeClicked = !this.isSelectFromTreeClicked;
+    this.isSelectPortfoliosFromTreeClicked = !this.isSelectPortfoliosFromTreeClicked;
   }
 }

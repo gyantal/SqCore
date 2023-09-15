@@ -166,8 +166,7 @@ export class AppComponent implements OnInit {
         case 'OnConnected':
           gDiag.wsOnConnectedMsgArrivedTime = new Date();
           console.log('ws: OnConnected message arrived:' + event.data);
-
-          const handshakeMsg: HandshakeMessage = Object.assign(new HandshakeMessage(), JSON.parse(msgObjStr));
+          const handshakeMsg: HandshakeMessage = JSON.parse(msgObjStr);
           this._user.email = handshakeMsg.email;
           this._user.isAdmin = handshakeMsg.isAdminUser;
           this._user.id = handshakeMsg.userId;
