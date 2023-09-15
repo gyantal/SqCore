@@ -126,7 +126,7 @@ public partial class Program
             gLogger.Error(e, $"CreateHostBuilder(args).Build().Run() exception.");
             if (e is System.Net.Sockets.SocketException)
             {
-                gLogger.Error("SocketException! Potential Error on Linux. Kestrel couldn't bind to port number. See 'Allow non-root process to bind to port under 1024.txt'. If Dotnet.exe was updated, it lost privilaged port. Try 'whereis dotnet','sudo setcap 'cap_net_bind_service=+ep' /usr/share/dotnet/dotnet'.");
+                gLogger.Error("SocketException! Potential Error on Linux. Kestrel couldn't bind to port number. See 'Allow non-root process to bind to port under 1024.txt'. If Dotnet.exe was updated, it lost privilaged port. Try 'whereis dotnet','sudo setcap 'cap_net_bind_service=+ep' /usr/lib/dotnet/dotnet'.");
             }
             HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MainThread. Exception: '{e.ToStringWithShortenedStackTrace(1600)}'", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
         }
@@ -399,7 +399,9 @@ public partial class Program
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.QcOriginal); // For QC strategies, we use QcOriginal result calculation.
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqDualMomentum", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
-                backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
+                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
+                backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "assets=SVXY,VXX,VXZ,TQQQ,TLT,USO,UNG&weights=15,-5,10,25,255,-27,-78&rebFreq=Daily,30d", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
+                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "assets=SVXY,TQQQ,TLT,USO,UNG&weights=15,25,255,-27,-78&rebFreq=Daily,30d", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
                 break;
             case "4":
                 try
@@ -456,7 +458,7 @@ public partial class Program
         Console.WriteLine((p_e.Exception as AggregateException)?.InnerException?.Message ?? "cannot get data from InnerException");
         if (p_e.Exception is AggregateException aggrEx && aggrEx.InnerException is System.Net.Sockets.SocketException)
         {
-            string msgConsole = "SocketException! Potential Error on Linux. Kestrel couldn't bind to port number. See 'Allow non-root process to bind to port under 1024.txt'. If Dotnet.exe was updated, it lost privilaged port. Try 'whereis dotnet','sudo setcap 'cap_net_bind_service=+ep' /usr/share/dotnet/dotnet'.";
+            string msgConsole = "SocketException! Potential Error on Linux. Kestrel couldn't bind to port number. See 'Allow non-root process to bind to port under 1024.txt'. If Dotnet.exe was updated, it lost privilaged port. Try 'whereis dotnet','sudo setcap 'cap_net_bind_service=+ep' /usr/lib/dotnet/dotnet'.";
             Console.WriteLine(msgConsole);
             msg = msgConsole + msg;
         }
@@ -479,4 +481,5 @@ public partial class Program
         ThreadPool.GetMinThreads(out int maxWorkerTh, out int maxIoThread);
         p_sb.Append($"ThId-{Environment.CurrentManagedThreadId}, ThreadPool#:{ThreadPool.ThreadCount}, WorkerTh: [{minWorkerTh}...{maxWorkerTh}], IoTh: [{minIoThread}...{maxIoThread}] <br>");
     }
+
 }

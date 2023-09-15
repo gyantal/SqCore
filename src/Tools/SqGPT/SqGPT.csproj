@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Disable warning MSB3270: There was a mismatch between the processor architecture of the project being built "MSIL"(local) vs. LLamaSharp.dll ("AMD64")-->
+    <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LLamaSharp" Version="0.4.0" />
+    <PackageReference Include="LLamaSharp.Backend.Cpu" Version="0.3.1" />
+  </ItemGroup>
+
+</Project>

@@ -148,6 +148,16 @@
             "problemMatcher": "$tsc"
         },
         {
+            "label": "SqGPT build Debug",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/src/Tools/SqGPT/SqGPT.csproj"
+            ],
+            "problemMatcher": "$tsc"
+        },
+        {
             "label": "blukucz-AnalystDbUpgrader build Debug",
             "command": "dotnet",
             "type": "process",
