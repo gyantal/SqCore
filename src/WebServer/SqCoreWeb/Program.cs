@@ -481,5 +481,4 @@ public partial class Program
         ThreadPool.GetMinThreads(out int maxWorkerTh, out int maxIoThread);
         p_sb.Append($"ThId-{Environment.CurrentManagedThreadId}, ThreadPool#:{ThreadPool.ThreadCount}, WorkerTh: [{minWorkerTh}...{maxWorkerTh}], IoTh: [{minIoThread}...{maxIoThread}] <br>");
     }
-
 }

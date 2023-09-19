@@ -138,7 +138,7 @@ public class ChrtGenWs
                     if (itemDate < minStartDate)
                         minStartDate = itemDate; // MinStart Date of the portfolio's
                     chartVal.Dates.Add(item.x);
-                    chartVal.Values.Add((int)item.y);
+                    chartVal.Values.Add(item.y);
                 }
 
                 // Step 4: Filling the Stats data
