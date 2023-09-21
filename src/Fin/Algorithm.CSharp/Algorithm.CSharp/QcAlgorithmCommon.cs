@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using QuantConnect.Data.Market;
+using System.Collections.Specialized;
+using System.Web;
 
 namespace QuantConnect.Algorithm.CSharp
 {
@@ -45,9 +47,12 @@ namespace QuantConnect.Algorithm.CSharp
         public string ConsensusEpsForecast { get; set; }
         public string NumberOfEstimates { get; set; }
     }
+     enum StartDateAutoCalcMode { Unknown, WhenAllTickersAlive /* default if not given in params */ , WhenFirstTickerAlive, CustomGC };
 
     class QCAlgorithmUtils
     {
+        static Dictionary<string, StartDateAutoCalcMode> g_startDateAutoCalcModeDict = new Dictionary<string, StartDateAutoCalcMode> { {"Unknown", StartDateAutoCalcMode.Unknown}, {"WhenAllTickersAlive", StartDateAutoCalcMode.WhenAllTickersAlive}, {"WhenFirstTickerAlive", StartDateAutoCalcMode.WhenFirstTickerAlive},{"CustomGC", StartDateAutoCalcMode.CustomGC} };
+
         public static long DateTimeUtcToUnixTimeStamp(DateTime p_utcDate) // Int would roll over to a negative in 2038 (if you are using UNIX timestamp), so long is safer
         {
             // Unix timestamp is seconds past epoch
@@ -55,6 +60,78 @@ namespace QuantConnect.Algorithm.CSharp
             TimeSpan span = p_utcDate - dtDateTime;
             return (long)span.TotalSeconds;
         }
+
+        public static void ProcessAlgorithmParam(string p_AlgorithmParam,  out DateTime p_forcedStartDate, out DateTime p_forcedEndDate, out StartDateAutoCalcMode p_startDateAutoCalcMode, out List<string> p_tickers, out Dictionary<string, decimal> p_weights, out int p_rebalancePeriodDays)
+        {
+            p_weights = new();
+            NameValueCollection query = HttpUtility.ParseQueryString(p_AlgorithmParam); // e.g. "assets=SPY,TLT&weights=60,40&rebFreq=Daily,10d"
+
+            // Step1: process startDate and endDate
+            string startDateStr = query.Get("startDate");
+            if (string.IsNullOrEmpty(startDateStr))
+                p_forcedStartDate = DateTime.MinValue;
+            else
+            {
+                if (DateTime.TryParse(startDateStr, out DateTime startDate))
+                    p_forcedStartDate = startDate;
+                else
+                    throw new ArgumentException("Invalid date format in startDate.");
+            }
+            string endDateStr = query.Get("endDate");
+            if (string.IsNullOrEmpty(endDateStr))
+                p_forcedEndDate = DateTime.MaxValue;
+            else
+            {
+                if (endDateStr.Equals("Now", StringComparison.OrdinalIgnoreCase))
+                    p_forcedEndDate = DateTime.Now;
+                else if (DateTime.TryParse(endDateStr, out DateTime endDate))
+                    p_forcedEndDate = endDate;
+                else
+                    throw new ArgumentException("Invalid date format in endDate.");
+            }
+            string startDateAutoCalcModeStr = query.Get("startDateAutoCalcMode");
+            if (string.IsNullOrEmpty(startDateAutoCalcModeStr))
+                p_startDateAutoCalcMode = StartDateAutoCalcMode.WhenAllTickersAlive; // default if not given in params
+            else
+                if (!g_startDateAutoCalcModeDict.TryGetValue(startDateAutoCalcModeStr, out p_startDateAutoCalcMode))
+                    throw new ArgumentException("Invalid startDateAutoCalcMode format.");
+
+
+            // Step 2: process tickers/weights
+            p_tickers = new();
+            p_weights = new();
+            p_rebalancePeriodDays = -1;  // invalid value. Come from parameters
+
+            string[] tickers = query.Get("assets")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+            string[] weights = query.Get("weights")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+            if (tickers.Length != weights.Length)
+                throw new ArgumentException("The number of assets and weights must be the same.");
+
+            for (int i = 0; i < tickers.Length; i++)
+            {
+                string ticker = tickers[i];
+                decimal weight = decimal.Parse(weights[i]) / 100m; // "60" => 0.6
+                p_weights[ticker] = weight;
+                // p_tickers.Add(ticker);
+            }
+            p_tickers = new List<string>(p_weights.Keys);
+
+            
+            // Step 3: process rebFreq
+            string[] rebalanceParams = query.Get("rebFreq")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+            if (rebalanceParams.Length != 2)
+                throw new ArgumentException($"The rebFreq {rebalanceParams} is incorrect.");
+
+            string rebalancePeriodNumStr = rebalanceParams[1]; // second item is "10d"
+            if (rebalancePeriodNumStr.Length == 0)
+                p_rebalancePeriodDays = 1; // default
+            char rebalancePeriodNumStrLastChar = rebalancePeriodNumStr[^1]; // 'd' or 'w' or 'm', but it is not required to be present
+            if (Char.IsLetter(rebalancePeriodNumStrLastChar)) // if 'd/w/m' is given, remove it
+                rebalancePeriodNumStr = rebalancePeriodNumStr[..^1];
+            if (!Int32.TryParse(rebalancePeriodNumStr, out p_rebalancePeriodDays))
+                throw new ArgumentException($"The rebFreq's rebalancePeriodNumStr {rebalancePeriodNumStr} cannot be converted to int.");
+        }
+        
         public static void DownloadAndProcessYfData(QCAlgorithm p_algorithm, string p_ticker, DateTime p_startDate, TimeSpan p_warmUp, DateTime p_endDate, ref Dictionary<string, List<QcPrice>> p_rawClosesFromYfLists, ref Dictionary<string, Dictionary<DateTime, decimal>> p_rawClosesFromYfDicts)
         {
             long periodStart = QCAlgorithmUtils.DateTimeUtcToUnixTimeStamp(p_startDate - p_warmUp);

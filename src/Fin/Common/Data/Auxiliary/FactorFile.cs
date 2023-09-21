@@ -34,6 +34,9 @@ namespace QuantConnect.Data.Auxiliary
         /// Known symbols: GBSN, JUNI, NEWL
         /// </remarks>
         public DateTime? FactorFileMinimumDate { get; set; }
+        // SqCore Change NEW:
+        public bool HasInfSplitValuesProblem { get; set; } = false; // introduced to avoid unnecessary 'numerical precision issues in the factor file' warnings. In SqCore, we assume we will Not have Inf precision problem stocks.
+        // SqCore Change END
 
         /// <summary>
         /// Gets the most recent factor change in the factor file

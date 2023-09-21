@@ -191,7 +191,11 @@ namespace QuantConnect.Lean.Engine.DataFeeds
                             _factorFile = factorFile;
 
                             // if factor file has minimum date, update start period if before minimum date
-                            if (_factorFile != null && _factorFile.FactorFileMinimumDate.HasValue)
+                            // SqCore Change ORIGINAL:
+                            // if (_factorFile != null && _factorFile.FactorFileMinimumDate.HasValue)
+                            // SqCore Change NEW:
+                            if (_factorFile != null && _factorFile.HasInfSplitValuesProblem && _factorFile.FactorFileMinimumDate.HasValue) // if no InfSplitValuesProblem, then don't change the _periodStart at all. It will use only the mapFile.FirstDate
+                            // SqCore Change END
                             {
                                 if (_periodStart < _factorFile.FactorFileMinimumDate.Value)
                                 {
