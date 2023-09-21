@@ -38,7 +38,8 @@ export const gChrtGenDiag: ChrtGenDiagnostics = new ChrtGenDiagnostics();
 })
 export class AppComponent implements OnInit {
   m_http: HttpClient;
-  @ViewChild(SqTreeViewComponent) public sqTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
+  @ViewChild(SqTreeViewComponent) public _rootTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
+  @ViewChild(SqTreeViewComponent) public m_useCheckboxes: boolean; // allows accessing the data from SqTreeViewComponent to ChrtGenerator component
 
   chrtGenBacktestResults: Nullable<ChrtGenBacktestResult> = null;
   uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[] = [];
@@ -84,6 +85,7 @@ export class AppComponent implements OnInit {
   constructor(http: HttpClient) {
     gChrtGenDiag.mainAngComponentConstructorTime = new Date();
     this.m_http = http;
+    this.m_useCheckboxes = true;
 
     const wsQueryStr = window.location.search; // https://sqcore.net/webapps/ChartGenerator/?pids=1  , but another parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
     console.log(wsQueryStr);
@@ -473,5 +475,26 @@ export class AppComponent implements OnInit {
 
   onClickSelectFromTree() {
     this.isSelectPortfoliosFromTreeClicked = !this.isSelectPortfoliosFromTreeClicked;
+  }
+
+  onClickPrtfSelectedFromTreeForBacktest() { // This code is similar to the method onClickPrtfSelectedForBacktest(). Once we finalize the SelecFromTree option we can remove onClickPrtfSelectedForBacktest().
+    const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
+    if (lastSelectedTreeNode == null || lastSelectedTreeNode?.prtfItemType != 'Portfolio')
+      return;
+    const prtfId = lastSelectedTreeNode.id - this.gPortfolioIdOffset; // remove the offset from the prtfSelectedId to get the proper Id from Db
+    let prtfSelectedInd = -1;
+    for (let i = 0; i < this._backtestedPortfolios.length; i++) {
+      if (this._backtestedPortfolios[i].id == prtfId) {
+        prtfSelectedInd = i; // get the index, if the item is found
+        break;
+      }
+    }
+
+    // If the item is not already included, proceed to add it
+    if (prtfSelectedInd == -1) {
+      const allPortfoliosInd = this._allPortfolios?.findIndex((item) => item.id == lastSelectedTreeNode.id); // Find the index of the selected item in _allPortfolios
+      if (allPortfoliosInd != -1 && !this._backtestedPortfolios.includes(this._allPortfolios![allPortfoliosInd!])) // check if the item is included or not
+        this._backtestedPortfolios.push(this._allPortfolios![allPortfoliosInd!]); // Push the selected item from _allPortfolios into _backtestedPortfolios
+    }
   }
 }

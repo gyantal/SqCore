@@ -29,7 +29,7 @@ class ChartData
 {
     public ChartResolution ChartResolution { get; set; } = ChartResolution.Daily;
     public List<long> Dates { get; set; } = new List<long>();
-    public List<decimal> Values { get; set; } = new List<decimal>();
+    public List<int> Values { get; set; } = new List<int>();
 }
 
 public partial class DashboardClient

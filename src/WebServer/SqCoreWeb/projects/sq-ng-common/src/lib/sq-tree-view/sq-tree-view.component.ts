@@ -13,6 +13,7 @@ export class SqTreeViewComponent implements OnInit {
   @Input() items!: TreeViewItem[]; // nested tree view data receive from portfolio manager component
   @Input() treeViewState!: TreeViewState; // treeview selected data processing
   @Input() rootTreeViewComponent!: SqTreeViewComponent;
+  @Input() m_useCheckboxes: boolean = false; // renders checkboxes before the TreeViewItems
   @ViewChildren(SqTreeViewComponent) public _children!: QueryList<SqTreeViewComponent>;
 
   constructor() { }

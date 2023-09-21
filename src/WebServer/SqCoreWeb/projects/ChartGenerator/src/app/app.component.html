@@ -99,6 +99,6 @@
 <div>
   <button (click)="onClickSelectFromTree()">selectFromTree</button>
   <div *ngIf="isSelectPortfoliosFromTreeClicked">
-    <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState"></app-sq-tree-view>
+    <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState" [rootTreeViewComponent]="_rootTreeComponent" [m_useCheckboxes]="m_useCheckboxes" (click)="onClickPrtfSelectedFromTreeForBacktest()"></app-sq-tree-view>
   </div>
 </div>

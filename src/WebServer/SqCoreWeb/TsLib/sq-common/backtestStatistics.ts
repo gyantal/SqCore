@@ -92,7 +92,7 @@ export class SqStatisticsBuilder {
           drawdowns.push(price / high - 1);
 
         // Calculate daily returns and store them in the dailyReturns array
-        if (j > 0 && this.isTradingDay(currentDate)) {
+        if (j > 0 && this.isTradingDay(currentDate)) { // for j == 0 (first day), we cannot calculate dailyReturn, because there is no previous day.
           if (previousTradingDayValue > 0)
             dailyReturns.push((price - previousTradingDayValue) / previousTradingDayValue); // Calculate daily return
           previousTradingDayValue = price; // Update previousTradingDayValue for the next iteration
