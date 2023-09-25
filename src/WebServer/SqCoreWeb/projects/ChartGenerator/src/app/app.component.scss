@@ -98,6 +98,11 @@
   margin-top: -0.5rem;
 }
 
+.rangeInputWidth {
+  width: 3.6rem;
+  border-radius: .2rem;
+}
+
 #backtestPvChrt {
   width: 100%;
   height: 42.5vh;
@@ -166,11 +171,9 @@
 }
 
 thead {
-  font-size: small;
   cursor: pointer;
   color: #0b0e0e;
   background-image: linear-gradient(90deg, #8dc7fa 3%, #9dcef8 7%, #d5f5f6 25%, #d5f5f6 55%, #ace16b 85%, #91d73a 90%);
-  opacity: 0.8;
 }
 
 tr:nth-child(even) {

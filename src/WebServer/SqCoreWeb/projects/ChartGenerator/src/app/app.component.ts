@@ -6,7 +6,6 @@ import { SqNgCommonUtilsTime, minDate, maxDate } from './../../../sq-ng-common/s
 import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
 import { SqStatisticsBuilder, FinalStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
 import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType } from '../../../../TsLib/sq-common/backtestCommon';
-import { sleep } from '../../../../TsLib/sq-common/utils-common';
 import { SqTreeViewComponent } from '../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
 
 type Nullable<T> = T | null;
@@ -39,7 +38,6 @@ export const gChrtGenDiag: ChrtGenDiagnostics = new ChrtGenDiagnostics();
 export class AppComponent implements OnInit {
   m_http: HttpClient;
   @ViewChild(SqTreeViewComponent) public _rootTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
-  @ViewChild(SqTreeViewComponent) public m_useCheckboxes: boolean; // allows accessing the data from SqTreeViewComponent to ChrtGenerator component
 
   chrtGenBacktestResults: Nullable<ChrtGenBacktestResult> = null;
   uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[] = [];
@@ -85,7 +83,6 @@ export class AppComponent implements OnInit {
   constructor(http: HttpClient) {
     gChrtGenDiag.mainAngComponentConstructorTime = new Date();
     this.m_http = http;
-    this.m_useCheckboxes = true;
 
     const wsQueryStr = window.location.search; // https://sqcore.net/webapps/ChartGenerator/?pids=1  , but another parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
     console.log(wsQueryStr);
@@ -152,7 +149,6 @@ export class AppComponent implements OnInit {
           }
           break;
         case 'BacktestResults':
-          await sleep(5000); // simulate slow C# server backtest
           console.log('ChrtGen.BacktestResults:' + msgObjStr);
           this.onCompleteBacktests(msgObjStr);
           break;
@@ -332,6 +328,7 @@ export class AppComponent implements OnInit {
     this.endDate = this._maxEndDate;
     this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.startDate);
     this.endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.endDate);
+    this.histRangeSelected = 'ALL';
     this._ultimateChrt.Init(lineChrtDiv, lineChrtTooltip, prtfAndBmrkChrtData);
     this._sqStatisticsbuilder.Init(prtfAndBmrkChrtData);
     this.onStartOrEndDateChanged(); // will recalculate CAGR and redraw chart
@@ -371,6 +368,9 @@ export class AppComponent implements OnInit {
       this._socket.send('RunBacktest:' + '?pids=' + this.prtfIds + '&bmrks=' + this.bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
       this.startDate = new Date(this.startDate);
       this.endDate = new Date(this.endDate);
+      // Whenever server backtest starts - resetting the _minStartDate and _maxEndDate
+      this._minStartDate = maxDate;
+      this._maxEndDate = minDate;
     }
     console.log('the prtfIds length is:', this.prtfIds);
   }

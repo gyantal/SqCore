@@ -15,6 +15,13 @@ export enum SqLogLevel {
     Fatal = 'Fatal'
 }
 
+export enum LineStyle {
+  Solid = 'Solid',
+  Dotted = 'Dotted',
+  Dashed = 'Dashed',
+  DashDot = 'DashDot'
+}
+
 export class SqLog {
   public sqLogLevel: SqLogLevel = SqLogLevel.Info;
   public message = '';
@@ -91,6 +98,8 @@ export class CgTimeSeries {
   public name: string = '';
   public chartResolution: string = '';
   public priceData: UiChartPoint[] = [];
+  public linestyle: LineStyle = LineStyle.Solid;
+  // public strokeWidth: number = ?
 }
 
 export class UiPrtfPositions {

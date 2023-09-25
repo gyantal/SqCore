@@ -52,7 +52,7 @@
   <span>
     <span class="range">Range:
       <div class="selectionDropDown">
-        <input class="highlightInputbox" type="text" oninput="this.value = this.value.toUpperCase()" [(ngModel)]="histRangeSelected" (change)="onUserChangedHistDateRange(histRangeSelected)">
+        <input id="histPeriodInput" class="highlightInputbox rangeInputWidth" type="text" oninput="this.value = this.value.toUpperCase()" [(ngModel)]="histRangeSelected" (change)="onUserChangedHistDateRange(histRangeSelected)">
         <div class="listDropDown">
           <option class="optionDropDown" *ngFor="let item of rangeSelection" [value]="item" (click)="onUserChangedHistDateRange(item)">{{item}}</option>
         </div>
@@ -99,6 +99,6 @@
 <div>
   <button (click)="onClickSelectFromTree()">selectFromTree</button>
   <div *ngIf="isSelectPortfoliosFromTreeClicked">
-    <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState" [rootTreeViewComponent]="_rootTreeComponent" [m_useCheckboxes]="m_useCheckboxes" (click)="onClickPrtfSelectedFromTreeForBacktest()"></app-sq-tree-view>
+    <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState" [rootTreeViewComponent]="_rootTreeComponent" [m_useCheckboxes]=true (click)="onClickPrtfSelectedFromTreeForBacktest()"></app-sq-tree-view>
   </div>
 </div>

@@ -29,6 +29,12 @@ class ChartData
 {
     public ChartResolution ChartResolution { get; set; } = ChartResolution.Daily;
     public List<long> Dates { get; set; } = new List<long>();
+
+    // PV values are usually $100,000, $100,350,..., but PV can be around $1000 too and in that case decimals become important and we cannot use 'int' for storing them.
+    // So we have to use either decimal (16 bytes) or float (4 byte)
+    // We don't like decimal (16 bytes), but some reasons to keep it:
+    // - QC gives decimal values. Converting it to int or float requires some CPU conversion.
+    // - If we use float (4 bytes), then precision rounding would make the JSON text serialization longer, but than can be mitigated with the FloatJsonConverterToNumber4D attribute
     public List<int> Values { get; set; } = new List<int>();
 }
 

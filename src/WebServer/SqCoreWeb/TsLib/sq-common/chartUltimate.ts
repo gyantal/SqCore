@@ -4,6 +4,8 @@ import { UiChartPoint, CgTimeSeries } from './backtestCommon';
 
 type Nullable<T> = T | null;
 export class UltimateChart {
+  // static _primaryColors = ['#377eb8', '#e41a1c', '#4daf4a', '#984ea3', '#ff7f00', '#f781bf', '#808000', '#008000', '#a65628', '#333397', '#800080', '#000000'];
+  // static _secondaryColors = ['#377eb8', '#e41a1c', '#4daf4a', '#984ea3', '#ff7f00', '#f781bf', '#808000', '#008000', '#a65628', '#333397', '#800080', '#000000'];
   _chrtDiv: HTMLElement | null = null;
   _tooltipDiv: HTMLElement | null = null;
   _timeSeriess: CgTimeSeries[] | null = null;
@@ -69,7 +71,7 @@ export class UltimateChart {
     const nameKey: string[] = this._timeSeriess.map((d: CgTimeSeries) => d.name ); // Get unique group names for coloring
     const color = d3.scaleOrdinal() // Add colors for each group using d3 scaleOrdinal
         .domain(nameKey)
-        .range(['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#f781bf', '#808000', '#008000', '#a65628', '#333397', '#800080', '#000000']);
+        .range(['#377eb8', '#e41a1c', '#4daf4a', '#984ea3', '#ff7f00', '#f781bf', '#808000', '#008000', '#a65628', '#333397', '#800080', '#000000']);
 
     // Configure data scaling
     const scaleX = d3.scaleTime().domain([startDate, endDate]).range([0, this._chartWidth]);
@@ -129,13 +131,15 @@ export class UltimateChart {
       return svgPath;
     }
 
-    const legendSpace = this._chartWidth / this._timeSeriess.length; // Calculate spacing for legend
-
+    const legendSpacing = 25; // Adjust this value to control the spacing between legend items
+    const legendX = 10; // Adjust this value to control the starting X position
+    const legendY = 10; // Adjust this value to control the starting Y position
     backtestChrt.selectAll('rect') // Add the Legend to the chart
         .data(this._timeSeriess)
         .enter().append('text')
-        .attr('x', (d: CgTimeSeries, i: any) => ((legendSpace/2) + i * legendSpace ))
-        .attr('y', 35)
+        .attr('x', legendX)
+        .attr('y', (d: CgTimeSeries, i: any) => (legendY + i * legendSpacing ))
+
         .style('fill', (d: CgTimeSeries) => color(d.name) as string)
         .text((d: CgTimeSeries) => (d.name));
 
