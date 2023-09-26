@@ -5,7 +5,7 @@ import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.ut
 import { SqNgCommonUtilsTime, minDate, maxDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
 import { SqStatisticsBuilder, FinalStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
-import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType } from '../../../../TsLib/sq-common/backtestCommon';
+import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle, StrokeWidth } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqTreeViewComponent } from '../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
 
 type Nullable<T> = T | null;
@@ -275,6 +275,9 @@ export class AppComponent implements OnInit {
       const chartItem = new CgTimeSeries();
       chartItem.name = item.name;
       chartItem.chartResolution = ChartResolution[item.chrtData.chartResolution];
+      chartItem.linestyle = LineStyle.Solid;
+      chartItem.isPrimary = true;
+      chartItem.strokeWidth = StrokeWidth.Primary;
       chartItem.priceData = [];
       for (let i = 0; i < item.chrtData.dates.length; i++) {
         const chrtItem = new UiChartPoint();
@@ -300,6 +303,9 @@ export class AppComponent implements OnInit {
       console.log(`minstartDt2: ${this._minStartDate} and maxstartDt2: ${this._maxEndDate}`);
       const chartItem = new CgTimeSeries();
       chartItem.name = bmrkItem.sqTicker;
+      chartItem.linestyle = LineStyle.Dashed;
+      chartItem.isPrimary = false;
+      chartItem.strokeWidth = StrokeWidth.Secondary;
       chartItem.priceData = [];
       for (let i = 0; i < bmrkItem.histPrices.dates.length; i++) {
         const chrtItem = new UiChartPoint();

@@ -1,11 +1,13 @@
 // ***ChartUltimate: VeryAdvanced (handles start/endDates, zoom, drawdown calc) ***
 import * as d3 from 'd3';
-import { UiChartPoint, CgTimeSeries } from './backtestCommon';
+import { UiChartPoint, CgTimeSeries, LineStyle, StrokeWidth } from './backtestCommon';
 
 type Nullable<T> = T | null;
 export class UltimateChart {
-  // static _primaryColors = ['#377eb8', '#e41a1c', '#4daf4a', '#984ea3', '#ff7f00', '#f781bf', '#808000', '#008000', '#a65628', '#333397', '#800080', '#000000'];
-  // static _secondaryColors = ['#377eb8', '#e41a1c', '#4daf4a', '#984ea3', '#ff7f00', '#f781bf', '#808000', '#008000', '#a65628', '#333397', '#800080', '#000000'];
+  static _primaryColors = ['#0000ff', '#e41a1c', '#4daf4a', '#984ea3', '#ff7f00', '#f781bf', '#808000', '#008000', '#a65628', '#333397', '#800080', '#000000'];
+  static _secondaryColors = ['#a6cee3', '#fb9a99', '#b2df8a', '#cab2d6', '#fdbf6f', '#fbb4ae', '#ccebc5', '#ffed6f', '#ffffb3', '#8dd3c7', '#bebada', '#e6beff'];
+  static _primaryStrokeWidth: number = 1.3;
+  static _secondaryStrokeWidth: number = 1;
   _chrtDiv: HTMLElement | null = null;
   _tooltipDiv: HTMLElement | null = null;
   _timeSeriess: CgTimeSeries[] | null = null;
@@ -68,11 +70,6 @@ export class UltimateChart {
         yMaxPct = yMaxPctNew;
     }
 
-    const nameKey: string[] = this._timeSeriess.map((d: CgTimeSeries) => d.name ); // Get unique group names for coloring
-    const color = d3.scaleOrdinal() // Add colors for each group using d3 scaleOrdinal
-        .domain(nameKey)
-        .range(['#377eb8', '#e41a1c', '#4daf4a', '#984ea3', '#ff7f00', '#f781bf', '#808000', '#008000', '#a65628', '#333397', '#800080', '#000000']);
-
     // Configure data scaling
     const scaleX = d3.scaleTime().domain([startDate, endDate]).range([0, this._chartWidth]);
     const scaleY = d3.scaleLinear().domain([yMinPct - 5, yMaxPct + 5]).range([this._chartHeight, 0]);
@@ -97,9 +94,30 @@ export class UltimateChart {
         .enter()
         .append('path')
         .attr('fill', 'none')
-        .attr('stroke', (d: CgTimeSeries) => color(d.name) as string)
-        .attr('stroke-width', .8)
-        .attr('d', (d: CgTimeSeries) => { return generateSvgPath(d.priceData); });
+        .attr('stroke', (d: CgTimeSeries, i: number) => getColors(d, i))
+        .attr('stroke-width', (d: CgTimeSeries) => { return d.strokeWidth == StrokeWidth.Primary ? UltimateChart._primaryStrokeWidth : UltimateChart._secondaryStrokeWidth; })
+        .attr('d', (d: CgTimeSeries) => { return generateSvgPath(d.priceData); })
+        .attr('style', (d: CgTimeSeries) => {
+          switch (d.linestyle) {
+            case LineStyle.Dotted:
+              return 'stroke-dasharray: 2,2'; // Set to a dotted line
+            case LineStyle.Dashed:
+              return 'stroke-dasharray: 5,5'; // Set to a dashed line
+            case LineStyle.DashDot:
+              return 'stroke-dasharray: 5,2,1,2'; // Set to a dash-dot line
+            default:
+              return 'stroke-dasharray: none'; // Default to a solid line
+          }
+        });
+
+    // get colors for primary and secondary items
+    function getColors(d: CgTimeSeries, i: number): string {
+      if (d.isPrimary)
+        return UltimateChart._primaryColors[i % UltimateChart._primaryColors.length];
+      else
+        return UltimateChart._secondaryColors[i % UltimateChart._secondaryColors.length];
+    }
+
     // Generate SVG path for each data series based on the date range and first value
     function generateSvgPath(data: UiChartPoint[]): string {
       let svgPath: string = '';
@@ -139,8 +157,7 @@ export class UltimateChart {
         .enter().append('text')
         .attr('x', legendX)
         .attr('y', (d: CgTimeSeries, i: any) => (legendY + i * legendSpacing ))
-
-        .style('fill', (d: CgTimeSeries) => color(d.name) as string)
+        .style('fill', (d: CgTimeSeries, i: number) =>getColors(d, i))
         .text((d: CgTimeSeries) => (d.name));
 
     // Create tooltip elements and handle mouse events
@@ -205,7 +222,7 @@ export class UltimateChart {
           .data(timeSeriess)
           .enter()
           .append('div')
-          .style('color', (d: CgTimeSeries) => color(d.name) as string)
+          .style('color', (d: CgTimeSeries, i: number) => getColors(d, i))
           .html((d: CgTimeSeries) => {
             let closestPoint: Nullable<UiChartPoint> = null;
             let minDiff = Number.MAX_VALUE;

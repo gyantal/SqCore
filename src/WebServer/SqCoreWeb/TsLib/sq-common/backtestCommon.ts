@@ -22,6 +22,11 @@ export enum LineStyle {
   DashDot = 'DashDot'
 }
 
+export enum StrokeWidth {
+  Primary = 'Primary',
+  Secondary = 'Secondary'
+}
+
 export class SqLog {
   public sqLogLevel: SqLogLevel = SqLogLevel.Info;
   public message = '';
@@ -99,7 +104,8 @@ export class CgTimeSeries {
   public chartResolution: string = '';
   public priceData: UiChartPoint[] = [];
   public linestyle: LineStyle = LineStyle.Solid;
-  // public strokeWidth: number = ?
+  public isPrimary: boolean = false; // to set the brighter colors for primary items(portfolios) and lighter colors for secondary items(benchmarks).
+  public strokeWidth: StrokeWidth = StrokeWidth.Primary;
 }
 
 export class UiPrtfPositions {
