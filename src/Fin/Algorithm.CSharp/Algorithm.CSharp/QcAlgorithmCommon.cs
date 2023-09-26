@@ -1,3 +1,5 @@
+#define TradeInSqCore
+
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -5,6 +7,7 @@ using System.Text.Json.Serialization;
 using QuantConnect.Data.Market;
 using System.Collections.Specialized;
 using System.Web;
+using QuantConnect.Securities;
 
 namespace QuantConnect.Algorithm.CSharp
 {
@@ -63,7 +66,6 @@ namespace QuantConnect.Algorithm.CSharp
 
         public static void ProcessAlgorithmParam(string p_AlgorithmParam,  out DateTime p_forcedStartDate, out DateTime p_forcedEndDate, out StartDateAutoCalcMode p_startDateAutoCalcMode, out List<string> p_tickers, out Dictionary<string, decimal> p_weights, out int p_rebalancePeriodDays)
         {
-            p_weights = new();
             NameValueCollection query = HttpUtility.ParseQueryString(p_AlgorithmParam); // e.g. "assets=SPY,TLT&weights=60,40&rebFreq=Daily,10d"
 
             // Step1: process startDate and endDate
@@ -131,7 +133,18 @@ namespace QuantConnect.Algorithm.CSharp
             if (!Int32.TryParse(rebalancePeriodNumStr, out p_rebalancePeriodDays))
                 throw new ArgumentException($"The rebFreq's rebalancePeriodNumStr {rebalancePeriodNumStr} cannot be converted to int.");
         }
-        
+
+        public static void ApplyDividendMOCAfterClose(SecurityPortfolioManager p_portfolio, Dividends p_sliceDividends, int p_multiplier)
+        {
+#if TradeInSqCore // do nothing in QcCloud
+            // We use 'daily' (not perMinute) TradeBars in SqCore.  When OnData() callback comes with this TradeBar, the dividends of that day is already added to the Cash (by the framework). We remove this before trading, and add back after trading. See comment at ApplyDividendMOCAfterClose()
+            foreach (KeyValuePair<Symbol, Dividend> kvp in p_sliceDividends)
+            {
+                p_portfolio.ApplyDividendMOCAfterClose(kvp.Value, p_multiplier * p_portfolio[kvp.Key].Quantity); // Portfolio[ticker].Quantity is oldPosition before MarketOnCloseOrder(), and newPosition after that (checked!)
+            }
+#endif
+        }
+
         public static void DownloadAndProcessYfData(QCAlgorithm p_algorithm, string p_ticker, DateTime p_startDate, TimeSpan p_warmUp, DateTime p_endDate, ref Dictionary<string, List<QcPrice>> p_rawClosesFromYfLists, ref Dictionary<string, Dictionary<DateTime, decimal>> p_rawClosesFromYfDicts)
         {
             long periodStart = QCAlgorithmUtils.DateTimeUtcToUnixTimeStamp(p_startDate - p_warmUp);

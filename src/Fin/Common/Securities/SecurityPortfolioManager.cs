@@ -673,6 +673,14 @@ namespace QuantConnect.Securities
         }
 
         // SqCore Change NEW: In the case of Daily resolution and MOC trading after closing, it is necessary to manage dividends if they fall on the day of the trade (i.e. in the same time slice).
+        // If we use our hacked after market close MOC trading, the dividend credit precedes the trade (cash already contains them). This results incorrect PV and therefore incorrect new positions if the same time slice includes the dividend as the prices. 
+        // For this reason, before trading, these dividends (which are in the given daily slice) have to be written back. Then after the trade has been executed, they have to be credited again based on the new positions that are already correct.
+        // The problem stems from the following:
+        // We use only 'daily' (not perMinute) TradeBars in SqCore for efficiency. The daily TradeBar has an EndDate, which is '00:00 next day', which is essentially '23:59 current day'.
+        // When OnData() callback comes with this TradeBar, the dividends of that day is already added to the Cash (by the framework).
+        // So, in OnData() when we call TradeLogic() to rebalance, we should start by removing those dividend cash from the cash pool. We calculate the correct PV (before the dividends).
+        // Use that correct PV to redistribute stock positions and calculate stock newPositions.
+        // Then using that newPositions we add back the dividends to the cash pool.
         public void ApplyDividendMOCAfterClose(Dividend dividend, decimal numberOfShares)
         {
             var total = numberOfShares * dividend.Distribution;

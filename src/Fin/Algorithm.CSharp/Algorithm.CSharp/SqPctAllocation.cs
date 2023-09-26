@@ -79,6 +79,7 @@ namespace QuantConnect.Algorithm.CSharp
         private int _lookbackTradingDays = 0;
         private Dictionary<string, Symbol> _symbolsDaily = new Dictionary<string, Symbol>();
         private Dictionary<string, Symbol> _symbolsMinute = new Dictionary<string, Symbol>();
+        private Dictionary<string, Symbol> _tradedSymbols  = new Dictionary<string, Symbol>(); // pointer to _symbolsDaily in SqCore, and _symbolsMinute in QcCloud
         private Dictionary<string, List<QcPrice>> _rawCloses = new Dictionary<string, List<QcPrice>>();
         private Dictionary<string, List<QcPrice>> _adjCloses = new Dictionary<string, List<QcPrice>>();
         private Dictionary<string, List<QcDividend>> _dividends = new Dictionary<string, List<QcDividend>>();
@@ -100,7 +101,6 @@ namespace QuantConnect.Algorithm.CSharp
 
             // *** Step 1: general initializations
             SetCash(10000000);
-            
 
             // AddEquity(_longestHistTicker, Resolution.Daily, dataNormalizationMode: DataNormalizationMode.Raw);
             Orders.MarketOnCloseOrder.SubmissionTimeBuffer = TimeSpan.FromMinutes(0.5); // change the submission time threshold of MOC orders
@@ -155,7 +155,7 @@ namespace QuantConnect.Algorithm.CSharp
             // *** Step 4: Only in QcCloud: YF data download.
             _rawClosesFromYfLists = new Dictionary<string, List<QcPrice>>();
             _rawClosesFromYfDicts = new Dictionary<string, Dictionary<DateTime, decimal>>();
-            if (IsTradeInQcCloud)
+            if (IsTradeInQcCloud) // only in QC cloud: we need not only daily, but perMinute symbols too, because we use perMinute symbols for trading.
             {
                 foreach (string ticker in _tickers)
                 {
@@ -167,6 +167,7 @@ namespace QuantConnect.Algorithm.CSharp
                     QCAlgorithmUtils.DownloadAndProcessYfData(this, ticker, _earliestUsableDataDay, _warmUp, _endDate, ref _rawClosesFromYfLists, ref _rawClosesFromYfDicts);
                 }
             }
+            _tradedSymbols = IsTradeInSqCore ? _symbolsDaily : _symbolsMinute;
 
             // SetBenchmark("SPY"); // the default benchmark is SPY, which is OK in the cloud. In SqCore, we removed the default SPY benchmark, because we don't need it.
         }
@@ -222,12 +223,10 @@ namespace QuantConnect.Algorithm.CSharp
             decimal currentPV = PvCalculation(usedAdjustedClosePrices);
             // Log($"PV on day {this.Time.Date.ToString()}: ${Portfolio.TotalPortfolioValue}.");
 
-            Dictionary<string, Symbol> tradedSymbols = IsTradeInSqCore ? _symbolsDaily : _symbolsMinute;
-
             string logMessage = $"New positions after close of {this.Time.Date:yyyy-MM-dd}: ";
             string logMessage2 = "Close prices are: ";
 
-            foreach (KeyValuePair<string, Symbol> kvp in tradedSymbols)
+            foreach (KeyValuePair<string, Symbol> kvp in _tradedSymbols)
             {
                 string ticker = kvp.Key;
                 // List<QcPrice> tickerUsedAdjustedClosePrices = usedAdjustedClosePrices[ticker];
@@ -242,15 +241,15 @@ namespace QuantConnect.Algorithm.CSharp
                     }
                 }
                 decimal positionChange = newPosition - Portfolio[ticker].Quantity;
-                if (positionChange != 0)
-                {
-                    MarketOnCloseOrder(kvp.Value, positionChange); // QC raises Warning if order quantity = 0. So, we don't sent these. "Unable to submit order with id -10 that has zero quantity."
-                    // if (IsTradeInSqCore && _sliceDividends.ContainsKey(ticker)) // If we use our hacked after market close MOC trading, the dividend credit precedes the trade (cash already contains them). This results incorrect PV and therefore incorrect new positions if the same time slice includes the dividend as the prices. For this reason, before trading, these dividends (which are in the given daily slice) have to be written back. Then after the trade has been executed, they have to be credited again based on the new positions that are already correct.
-                    //     Portfolio.ApplyDividendMOCAfterClose(_sliceDividends[ticker], Portfolio[ticker].Quantity);
-                }
+                if (positionChange != 0) // QC raises Warning if order quantity = 0. So, we don't sent these. "Unable to submit order with id -10 that has zero quantity."
+                    MarketOnCloseOrder(kvp.Value, positionChange); // when Order() function returns Portfolio[ticker].Quantity is already changed to newPosition
+
                 logMessage += ticker + ": " + newPosition + "; ";
                 logMessage2 += ticker + ": " + ((tickerUsedAdjustedClosePrices.Count != 0) ? tickerUsedAdjustedClosePrices[(Index)(^1)].Close.ToString() : "N/A") + "; "; // use the last element
             }
+
+            QCAlgorithmUtils.ApplyDividendMOCAfterClose(Portfolio, _sliceDividends, 1); // We use 'daily' (not perMinute) TradeBars in SqCore.  When OnData() callback comes with this TradeBar, the dividends of that day is already added to the Cash (by the framework). We remove this before trading, and add back after trading. See comment at ApplyDividendMOCAfterClose()
+
             logMessage = logMessage.Substring(0, logMessage.Length - 2) + ".";
             logMessage2 = logMessage2.Substring(0, logMessage2.Length - 2) + ".";
             string LogMessageToLog = logMessage + " " + logMessage2 + $" Previous cash: {Portfolio.Cash}. Current PV: {currentPV}.";
@@ -379,16 +378,9 @@ namespace QuantConnect.Algorithm.CSharp
 
         private decimal PvCalculation(Dictionary<string, List<QcPrice>> p_usedAdjustedClosePrices)
         {
-            // if (IsTradeInSqCore) // If we use our hacked after market close MOC trading, the dividend credit precedes the trade (cash already contains them). This results incorrect PV and therefore incorrect new positions if the same time slice includes the dividend as the prices. For this reason, before trading, these dividends (which are in the given daily slice) have to be written back. Then after the trade has been executed, they have to be credited again based on the new positions that are already correct.
-            // {
-            //     foreach (KeyValuePair<string, Symbol> kvp in _symbolsDaily)
-            //     {
-            //         string ticker = kvp.Key;
-            //         if (_sliceDividends.ContainsKey(ticker))
-            //             Portfolio.ApplyDividendMOCAfterClose(_sliceDividends[ticker], -Portfolio[ticker].Quantity);
-            //     }
-            //     return Portfolio.TotalPortfolioValue;
-            // }
+            QCAlgorithmUtils.ApplyDividendMOCAfterClose(Portfolio, _sliceDividends, -1); // // We use 'daily' (not perMinute) TradeBars in SqCore.  When OnData() callback comes with this TradeBar, the dividends of that day is already added to the Cash (by the framework). We remove this before trading, and add back after trading. See comment at ApplyDividendMOCAfterClose()
+            if (IsTradeInSqCore)
+                return Portfolio.TotalPortfolioValue;
 
             decimal currentPV = 0m;
             decimal cashValue = Portfolio.Cash;

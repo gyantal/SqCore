@@ -398,8 +398,8 @@ public partial class Program
                 Console.WriteLine("Backtest: SqSPYMonFriAtMoc");
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.QcOriginal); // For QC strategies, we use QcOriginal result calculation.
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
-                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqDualMomentum", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
-                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "startDate=2002-07-24&endDate=now&assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
+                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqDualMomentum", "startDate=2006-01-01&endDate=now&assets=VNQ,EEM,DBC,SPY,TLT,SHY&weights=0,0,0,0,0,0&rebFreq=Daily,1d", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
+                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "startDate=2020-01-01&endDate=now&assets=QQQ,TLT&weights=60,40&rebFreq=Daily,1d", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
                 backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "assets=SVXY,VXX,VXZ,TQQQ,TLT,USO,UNG&weights=15,-5,10,25,255,-27,-78&rebFreq=Daily,30d", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "assets=SVXY,TQQQ,TLT,USO,UNG&weights=15,25,255,-27,-78&rebFreq=Daily,30d", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
                 break;
