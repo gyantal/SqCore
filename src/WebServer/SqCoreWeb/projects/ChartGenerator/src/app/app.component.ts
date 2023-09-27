@@ -5,7 +5,7 @@ import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.ut
 import { SqNgCommonUtilsTime, minDate, maxDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
 import { SqStatisticsBuilder, FinalStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
-import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle, StrokeWidth } from '../../../../TsLib/sq-common/backtestCommon';
+import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqTreeViewComponent } from '../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
 
 type Nullable<T> = T | null;
@@ -149,6 +149,7 @@ export class AppComponent implements OnInit {
           }
           break;
         case 'BacktestResults':
+          // "await sleep(5000); // simulate slow C# server backtest" - in case we need to Debug something around this in the future.
           console.log('ChrtGen.BacktestResults:' + msgObjStr);
           this.onCompleteBacktests(msgObjStr);
           break;
@@ -277,7 +278,6 @@ export class AppComponent implements OnInit {
       chartItem.chartResolution = ChartResolution[item.chrtData.chartResolution];
       chartItem.linestyle = LineStyle.Solid;
       chartItem.isPrimary = true;
-      chartItem.strokeWidth = StrokeWidth.Primary;
       chartItem.priceData = [];
       for (let i = 0; i < item.chrtData.dates.length; i++) {
         const chrtItem = new UiChartPoint();
@@ -305,7 +305,6 @@ export class AppComponent implements OnInit {
       chartItem.name = bmrkItem.sqTicker;
       chartItem.linestyle = LineStyle.Dashed;
       chartItem.isPrimary = false;
-      chartItem.strokeWidth = StrokeWidth.Secondary;
       chartItem.priceData = [];
       for (let i = 0; i < bmrkItem.histPrices.dates.length; i++) {
         const chrtItem = new UiChartPoint();
@@ -358,6 +357,11 @@ export class AppComponent implements OnInit {
   }
 
   onCompleteBacktests(msgObjStr: string) {
+    this.startDate = new Date(this.startDate);
+    this.endDate = new Date(this.endDate);
+    // Whenever server backtest starts - resetting the _minStartDate and _maxEndDate
+    this._minStartDate = maxDate;
+    this._maxEndDate = minDate;
     this.isBacktestReturned = true;
     gChrtGenDiag.backtestRequestReturnTime = new Date();
     this.isProgressBarVisble = false; // If progress bar is visible => hide it
@@ -372,11 +376,6 @@ export class AppComponent implements OnInit {
       this.bmrks = this._backtestedBenchmarks.join(',');
       this.onStartBacktests();
       this._socket.send('RunBacktest:' + '?pids=' + this.prtfIds + '&bmrks=' + this.bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
-      this.startDate = new Date(this.startDate);
-      this.endDate = new Date(this.endDate);
-      // Whenever server backtest starts - resetting the _minStartDate and _maxEndDate
-      this._minStartDate = maxDate;
-      this._maxEndDate = minDate;
     }
     console.log('the prtfIds length is:', this.prtfIds);
   }

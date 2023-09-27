@@ -1,6 +1,6 @@
 // ***ChartUltimate: VeryAdvanced (handles start/endDates, zoom, drawdown calc) ***
 import * as d3 from 'd3';
-import { UiChartPoint, CgTimeSeries, LineStyle, StrokeWidth } from './backtestCommon';
+import { UiChartPoint, CgTimeSeries, LineStyle } from './backtestCommon';
 
 type Nullable<T> = T | null;
 export class UltimateChart {
@@ -8,6 +8,9 @@ export class UltimateChart {
   static _secondaryColors = ['#a6cee3', '#fb9a99', '#b2df8a', '#cab2d6', '#fdbf6f', '#fbb4ae', '#ccebc5', '#ffed6f', '#ffffb3', '#8dd3c7', '#bebada', '#e6beff'];
   static _primaryStrokeWidth: number = 1.3;
   static _secondaryStrokeWidth: number = 1;
+  static _legendSpacing = 25; // Adjust this value to control the spacing between legend items
+  static _legendX = 10; // Adjust this value to control the starting X position
+  static _legendY = 10; // Adjust this value to control the starting Y position
   _chrtDiv: HTMLElement | null = null;
   _tooltipDiv: HTMLElement | null = null;
   _timeSeriess: CgTimeSeries[] | null = null;
@@ -95,7 +98,12 @@ export class UltimateChart {
         .append('path')
         .attr('fill', 'none')
         .attr('stroke', (d: CgTimeSeries, i: number) => getColors(d, i))
-        .attr('stroke-width', (d: CgTimeSeries) => { return d.strokeWidth == StrokeWidth.Primary ? UltimateChart._primaryStrokeWidth : UltimateChart._secondaryStrokeWidth; })
+        .attr('stroke-width', (d: CgTimeSeries) => {
+          if (d.isPrimary)
+            return UltimateChart._primaryStrokeWidth;
+          else
+            return UltimateChart._secondaryStrokeWidth;
+        })
         .attr('d', (d: CgTimeSeries) => { return generateSvgPath(d.priceData); })
         .attr('style', (d: CgTimeSeries) => {
           switch (d.linestyle) {
@@ -149,14 +157,11 @@ export class UltimateChart {
       return svgPath;
     }
 
-    const legendSpacing = 25; // Adjust this value to control the spacing between legend items
-    const legendX = 10; // Adjust this value to control the starting X position
-    const legendY = 10; // Adjust this value to control the starting Y position
     backtestChrt.selectAll('rect') // Add the Legend to the chart
         .data(this._timeSeriess)
         .enter().append('text')
-        .attr('x', legendX)
-        .attr('y', (d: CgTimeSeries, i: any) => (legendY + i * legendSpacing ))
+        .attr('x', UltimateChart._legendX)
+        .attr('y', (d: CgTimeSeries, i: any) => ( UltimateChart._legendY + i * UltimateChart._legendSpacing ))
         .style('fill', (d: CgTimeSeries, i: number) =>getColors(d, i))
         .text((d: CgTimeSeries) => (d.name));
 
