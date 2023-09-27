@@ -40,6 +40,8 @@ namespace QuantConnect.Statistics
 
             if (sqResult == SqResult.SqPvOnly)
                 return result;
+            if (pointsEquity.IsNullOrEmpty()) // if no PVs, then return an empty StatisticsResults
+                return result;
 
             DateTime firstDate = Time.UnixTimeStampToDateTime(pointsEquity[0].x);
             DateTime lastDate = Time.UnixTimeStampToDateTime(pointsEquity[pointsEquity.Count - 1].x);

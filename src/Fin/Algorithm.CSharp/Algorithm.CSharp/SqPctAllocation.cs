@@ -95,7 +95,11 @@ namespace QuantConnect.Algorithm.CSharp
         {
             _bnchmarkStartTime = DateTime.UtcNow; // for benchmarking how many msec the backtest takes
 
-            QCAlgorithmUtils.ProcessAlgorithmParam(AlgorithmParam, out _forcedStartDate, out _forcedEndDate, out _startDateAutoCalcMode, out _tickers, out _weights, out _rebalancePeriodDays);
+            NameValueCollection algorithmParamQuery = HttpUtility.ParseQueryString(AlgorithmParam);
+            QCAlgorithmUtils.ProcessAlgorithmParam(algorithmParamQuery, out _forcedStartDate, out _forcedEndDate, out _startDateAutoCalcMode);
+            ProcessAlgorithmParam(algorithmParamQuery, out _tickers, out _weights, out _rebalancePeriodDays);
+            if (_rebalancePeriodDays == -1) // if invalid value (because e.g. AlgorithmParam str is empty)
+                _rebalancePeriodDays = 30; // default value
             // _forcedStartDate = new DateTime(2000, 1, 2);
             // _forcedEndDate = new DateTime(2023, 02, 28); // means Local time, not UTC
 
@@ -172,6 +176,44 @@ namespace QuantConnect.Algorithm.CSharp
             // SetBenchmark("SPY"); // the default benchmark is SPY, which is OK in the cloud. In SqCore, we removed the default SPY benchmark, because we don't need it.
         }
 
+        public static void ProcessAlgorithmParam(NameValueCollection p_AlgorithmParamQuery, out List<string> p_tickers, out Dictionary<string, decimal> p_weights, out int p_rebalancePeriodDays)
+        {
+            // e.g. _AlgorithmParam = "assets=SPY,TLT&weights=60,40&rebFreq=Daily,10d"
+
+            p_tickers = new();
+            p_weights = new();
+            p_rebalancePeriodDays = -1;  // invalid value. Come from parameters
+
+            string[] tickers = p_AlgorithmParamQuery.Get("assets")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+            string[] weights = p_AlgorithmParamQuery.Get("weights")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+            if (tickers.Length != weights.Length)
+                throw new ArgumentException("The number of assets and weights must be the same.");
+
+            for (int i = 0; i < tickers.Length; i++)
+            {
+                string ticker = tickers[i];
+                decimal weight = decimal.Parse(weights[i]) / 100m; // "60" => 0.6
+                p_weights[ticker] = weight;
+                // p_tickers.Add(ticker);
+            }
+            p_tickers = new List<string>(p_weights.Keys);
+
+            
+            // Step 3: process rebFreq
+            string[] rebalanceParams = p_AlgorithmParamQuery.Get("rebFreq")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+            if (rebalanceParams.Length != 2)
+                p_rebalancePeriodDays = -1; // invalid value
+
+            string rebalancePeriodNumStr = rebalanceParams[1]; // second item is "10d"
+            if (rebalancePeriodNumStr.Length == 0)
+                p_rebalancePeriodDays = 1; // default
+            char rebalancePeriodNumStrLastChar = rebalancePeriodNumStr[^1]; // 'd' or 'w' or 'm', but it is not required to be present
+            if (Char.IsLetter(rebalancePeriodNumStrLastChar)) // if 'd/w/m' is given, remove it
+                rebalancePeriodNumStr = rebalancePeriodNumStr[..^1];
+            if (!Int32.TryParse(rebalancePeriodNumStr, out p_rebalancePeriodDays))
+                throw new ArgumentException($"The rebFreq's rebalancePeriodNumStr {rebalancePeriodNumStr} cannot be converted to int.");
+        }
+
         private DateTime StartDateAutoCalculation()
         {
             DateTime earliestUsableDataDay = DateTime.MinValue;
@@ -216,6 +258,8 @@ namespace QuantConnect.Algorithm.CSharp
         {
             if (IsWarmingUp) // Dont' trade in the warming up period.
                 return;
+
+            QCAlgorithmUtils.ApplyDividendMOCAfterClose(Portfolio, _sliceDividends, -1); // We use 'daily' (not perMinute) TradeBars in SqCore.  When OnData() callback comes with this TradeBar, the dividends of that day is already added to the Cash (by the framework). We remove this before trading, and add back after trading. See comment at ApplyDividendMOCAfterClose()
 
             TradePreProcess();
 
@@ -378,7 +422,6 @@ namespace QuantConnect.Algorithm.CSharp
 
         private decimal PvCalculation(Dictionary<string, List<QcPrice>> p_usedAdjustedClosePrices)
         {
-            QCAlgorithmUtils.ApplyDividendMOCAfterClose(Portfolio, _sliceDividends, -1); // // We use 'daily' (not perMinute) TradeBars in SqCore.  When OnData() callback comes with this TradeBar, the dividends of that day is already added to the Cash (by the framework). We remove this before trading, and add back after trading. See comment at ApplyDividendMOCAfterClose()
             if (IsTradeInSqCore)
                 return Portfolio.TotalPortfolioValue;
 

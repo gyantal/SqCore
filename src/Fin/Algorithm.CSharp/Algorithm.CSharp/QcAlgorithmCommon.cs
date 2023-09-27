@@ -1,5 +1,6 @@
 #define TradeInSqCore
 
+#region imports
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
@@ -8,6 +9,7 @@ using QuantConnect.Data.Market;
 using System.Collections.Specialized;
 using System.Web;
 using QuantConnect.Securities;
+#endregion
 
 namespace QuantConnect.Algorithm.CSharp
 {
@@ -64,12 +66,11 @@ namespace QuantConnect.Algorithm.CSharp
             return (long)span.TotalSeconds;
         }
 
-        public static void ProcessAlgorithmParam(string p_AlgorithmParam,  out DateTime p_forcedStartDate, out DateTime p_forcedEndDate, out StartDateAutoCalcMode p_startDateAutoCalcMode, out List<string> p_tickers, out Dictionary<string, decimal> p_weights, out int p_rebalancePeriodDays)
+        public static void ProcessAlgorithmParam(NameValueCollection p_AlgorithmParamQuery,  out DateTime p_forcedStartDate, out DateTime p_forcedEndDate, out StartDateAutoCalcMode p_startDateAutoCalcMode)
         {
-            NameValueCollection query = HttpUtility.ParseQueryString(p_AlgorithmParam); // e.g. "assets=SPY,TLT&weights=60,40&rebFreq=Daily,10d"
+            // e.g. _AlgorithmParam = "assets=SPY,TLT&weights=60,40&rebFreq=Daily,10d"
 
-            // Step1: process startDate and endDate
-            string startDateStr = query.Get("startDate");
+            string startDateStr = p_AlgorithmParamQuery.Get("startDate");
             if (string.IsNullOrEmpty(startDateStr))
                 p_forcedStartDate = DateTime.MinValue;
             else
@@ -79,7 +80,7 @@ namespace QuantConnect.Algorithm.CSharp
                 else
                     throw new ArgumentException("Invalid date format in startDate.");
             }
-            string endDateStr = query.Get("endDate");
+            string endDateStr = p_AlgorithmParamQuery.Get("endDate");
             if (string.IsNullOrEmpty(endDateStr))
                 p_forcedEndDate = DateTime.MaxValue;
             else
@@ -91,47 +92,12 @@ namespace QuantConnect.Algorithm.CSharp
                 else
                     throw new ArgumentException("Invalid date format in endDate.");
             }
-            string startDateAutoCalcModeStr = query.Get("startDateAutoCalcMode");
+            string startDateAutoCalcModeStr = p_AlgorithmParamQuery.Get("startDateAutoCalcMode");
             if (string.IsNullOrEmpty(startDateAutoCalcModeStr))
                 p_startDateAutoCalcMode = StartDateAutoCalcMode.WhenAllTickersAlive; // default if not given in params
             else
                 if (!g_startDateAutoCalcModeDict.TryGetValue(startDateAutoCalcModeStr, out p_startDateAutoCalcMode))
                     throw new ArgumentException("Invalid startDateAutoCalcMode format.");
-
-
-            // Step 2: process tickers/weights
-            p_tickers = new();
-            p_weights = new();
-            p_rebalancePeriodDays = -1;  // invalid value. Come from parameters
-
-            string[] tickers = query.Get("assets")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
-            string[] weights = query.Get("weights")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
-            if (tickers.Length != weights.Length)
-                throw new ArgumentException("The number of assets and weights must be the same.");
-
-            for (int i = 0; i < tickers.Length; i++)
-            {
-                string ticker = tickers[i];
-                decimal weight = decimal.Parse(weights[i]) / 100m; // "60" => 0.6
-                p_weights[ticker] = weight;
-                // p_tickers.Add(ticker);
-            }
-            p_tickers = new List<string>(p_weights.Keys);
-
-            
-            // Step 3: process rebFreq
-            string[] rebalanceParams = query.Get("rebFreq")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
-            if (rebalanceParams.Length != 2)
-                throw new ArgumentException($"The rebFreq {rebalanceParams} is incorrect.");
-
-            string rebalancePeriodNumStr = rebalanceParams[1]; // second item is "10d"
-            if (rebalancePeriodNumStr.Length == 0)
-                p_rebalancePeriodDays = 1; // default
-            char rebalancePeriodNumStrLastChar = rebalancePeriodNumStr[^1]; // 'd' or 'w' or 'm', but it is not required to be present
-            if (Char.IsLetter(rebalancePeriodNumStrLastChar)) // if 'd/w/m' is given, remove it
-                rebalancePeriodNumStr = rebalancePeriodNumStr[..^1];
-            if (!Int32.TryParse(rebalancePeriodNumStr, out p_rebalancePeriodDays))
-                throw new ArgumentException($"The rebFreq's rebalancePeriodNumStr {rebalancePeriodNumStr} cannot be converted to int.");
         }
 
         public static void ApplyDividendMOCAfterClose(SecurityPortfolioManager p_portfolio, Dividends p_sliceDividends, int p_multiplier)
