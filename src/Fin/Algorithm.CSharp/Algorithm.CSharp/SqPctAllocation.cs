@@ -121,14 +121,33 @@ namespace QuantConnect.Algorithm.CSharp
                 _splits.Add(ticker, new List<QcSplit>());
             }
 
+            // *** Only in QcCloud: YF data download.
+            _rawClosesFromYfLists = new Dictionary<string, List<QcPrice>>();
+            _rawClosesFromYfDicts = new Dictionary<string, Dictionary<DateTime, decimal>>();
+            if (IsTradeInQcCloud) // only in QC cloud: we need not only daily, but perMinute symbols too, because we use perMinute symbols for trading.
+            {
+                foreach (string ticker in _tickers)
+                {
+                    Symbol symbolMinute = AddEquity(ticker, Resolution.Minute, dataNormalizationMode: DataNormalizationMode.Raw).Symbol;
+                    _symbolsMinute.Add(ticker, symbolMinute);
+                    Securities[symbolMinute].FeeModel = new ConstantFeeModel(0);
+                    Securities[symbolMinute].SetBuyingPowerModel(new SecurityMarginModel(30m)); // equivalent to security.SetLeverage(). Allows to go 30x leverage of this stock if all 20 GC stock are in position with 50% overleverage
+                    // Call the DownloadAndProcessData method to get real life close prices from YF
+                    QCAlgorithmUtils.DownloadAndProcessYfData(this, ticker, _earliestUsableDataDay, _warmUp, _endDate, ref _rawClosesFromYfLists, ref _rawClosesFromYfDicts);
+                }
+            }
+            _tradedSymbols = IsTradeInSqCore ? _symbolsDaily : _symbolsMinute;
 
             // *** Step 2: startDate and warmup determination
             //_warmUp = TimeSpan.FromDays(30); // Wind time back X calendar days from start Before the _startDate. It is calendar day. E.g. If strategy need %chgPrevDay, it needs 2 trading day data. Probably set warmup to 2+2+1 = 5+ (for 2 weekend, 1 holiday).
             SetWarmUp(_warmUp);
 
+            _earliestUsableDataDay = QCAlgorithmUtils.StartDateAutoCalculation(_tradedSymbols, _startDateAutoCalcMode, out Symbol? symbolWithEarliestUsableDataDay);
             if (_forcedStartDate == DateTime.MinValue) // auto calculate if user didn't give a forced startDate. Otherwise, we are obliged to use that user specified forced date.
             {
-                _earliestUsableDataDay = StartDateAutoCalculation();
+                if (_earliestUsableDataDay < new DateTime(1900, 01, 01))
+                    _earliestUsableDataDay = new DateTime(1900, 01, 01); // SetStartDate() exception: "Please select a start date after January 1st, 1900."
+
                 _startDate = _earliestUsableDataDay.Add(_warmUp).AddDays(1); // startdate auto calculation we have to add the warmup days
             }
             else
@@ -154,25 +173,6 @@ namespace QuantConnect.Algorithm.CSharp
             }
             SetStartDate(_startDate); // by default it is 1998-01-02. If we don't call SetStartDate(), still, the PV value chart will start from 1998
             SetEndDate(_endDate);
-
-
-            // *** Step 4: Only in QcCloud: YF data download.
-            _rawClosesFromYfLists = new Dictionary<string, List<QcPrice>>();
-            _rawClosesFromYfDicts = new Dictionary<string, Dictionary<DateTime, decimal>>();
-            if (IsTradeInQcCloud) // only in QC cloud: we need not only daily, but perMinute symbols too, because we use perMinute symbols for trading.
-            {
-                foreach (string ticker in _tickers)
-                {
-                    Symbol symbolMinute = AddEquity(ticker, Resolution.Minute, dataNormalizationMode: DataNormalizationMode.Raw).Symbol;
-                    _symbolsMinute.Add(ticker, symbolMinute);
-                    Securities[symbolMinute].FeeModel = new ConstantFeeModel(0);
-                    Securities[symbolMinute].SetBuyingPowerModel(new SecurityMarginModel(30m)); // equivalent to security.SetLeverage(). Allows to go 30x leverage of this stock if all 20 GC stock are in position with 50% overleverage
-                    // Call the DownloadAndProcessData method to get real life close prices from YF
-                    QCAlgorithmUtils.DownloadAndProcessYfData(this, ticker, _earliestUsableDataDay, _warmUp, _endDate, ref _rawClosesFromYfLists, ref _rawClosesFromYfDicts);
-                }
-            }
-            _tradedSymbols = IsTradeInSqCore ? _symbolsDaily : _symbolsMinute;
-
             // SetBenchmark("SPY"); // the default benchmark is SPY, which is OK in the cloud. In SqCore, we removed the default SPY benchmark, because we don't need it.
         }
 
@@ -180,6 +180,7 @@ namespace QuantConnect.Algorithm.CSharp
         {
             // e.g. _AlgorithmParam = "assets=SPY,TLT&weights=60,40&rebFreq=Daily,10d"
 
+            // Step 1: process tickers and weights
             p_tickers = new();
             p_weights = new();
             p_rebalancePeriodDays = -1;  // invalid value. Come from parameters
@@ -198,8 +199,8 @@ namespace QuantConnect.Algorithm.CSharp
             }
             p_tickers = new List<string>(p_weights.Keys);
 
-            
-            // Step 3: process rebFreq
+
+            // Step 2: process rebFreq
             string[] rebalanceParams = p_AlgorithmParamQuery.Get("rebFreq")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
             if (rebalanceParams.Length != 2)
                 p_rebalancePeriodDays = -1; // invalid value
@@ -212,46 +213,6 @@ namespace QuantConnect.Algorithm.CSharp
                 rebalancePeriodNumStr = rebalancePeriodNumStr[..^1];
             if (!Int32.TryParse(rebalancePeriodNumStr, out p_rebalancePeriodDays))
                 throw new ArgumentException($"The rebFreq's rebalancePeriodNumStr {rebalancePeriodNumStr} cannot be converted to int.");
-        }
-
-        private DateTime StartDateAutoCalculation()
-        {
-            DateTime earliestUsableDataDay = DateTime.MinValue;
-            DateTime minStartDay = DateTime.MaxValue;
-            DateTime maxStartDay = DateTime.MinValue;
-            // Symbol? _symbolWithMinStartDate = null;
-            // Symbol? _symbolWithMaxStartDate = null;
-            // Symbol? _symbolWithEarliestUsableDataDay = null;
-            foreach (Symbol symbolDaily in _symbolsDaily.Values)
-            {
-                DateTime symbolStartDate = symbolDaily.ID.Date;
-                if (symbolStartDate < minStartDay)
-                {
-                    minStartDay = symbolStartDate;
-                    // _symbolWithMinStartDate = symbolDaily;
-                }
-                if (symbolStartDate > maxStartDay)
-                {
-                    maxStartDay = symbolStartDate;
-                    // _symbolWithMaxStartDate = symbolDaily;
-                }
-            }
-
-            switch (_startDateAutoCalcMode)
-            {
-                case StartDateAutoCalcMode.WhenFirstTickerAlive: // Usually the first day when WhenAllTickersAlive (default). Aletrnatively WhenFirstTickerAlive.
-                    earliestUsableDataDay = minStartDay;
-                    // _symbolWithEarliestUsableDataDay = _symbolWithMinStartDate;
-                    break;
-                case StartDateAutoCalcMode.WhenAllTickersAlive:
-                    earliestUsableDataDay = maxStartDay;
-                    // _symbolWithEarliestUsableDataDay = _symbolWithMaxStartDate;
-                    break;
-                default:
-                    throw new NotImplementedException("Unrecognized _startDateAutoCalcMode.");
-            }
-
-            return earliestUsableDataDay;
         }
 
         private void TradeLogic() // this is called at 15:40 in QC cloud, and 00:00 in SqCore

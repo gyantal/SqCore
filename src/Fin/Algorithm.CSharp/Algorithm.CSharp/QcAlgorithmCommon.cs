@@ -111,6 +111,47 @@ namespace QuantConnect.Algorithm.CSharp
 #endif
         }
 
+        public static DateTime StartDateAutoCalculation(Dictionary<string, Symbol> p_tradedSymbols, StartDateAutoCalcMode p_startDateAutoCalcMode, out Symbol? p_symbolWithEarliestUsableDataDay)
+        {
+            DateTime earliestUsableDataDay = DateTime.MinValue;
+            DateTime minStartDay = DateTime.MaxValue;
+            DateTime maxStartDay = DateTime.MinValue;
+            Symbol? _symbolWithMinStartDate = null;
+            Symbol? _symbolWithMaxStartDate = null;
+            Symbol? _symbolWithEarliestUsableDataDay = null;
+            foreach (Symbol symbol in p_tradedSymbols.Values)
+            {
+                DateTime symbolStartDate = symbol.ID.Date;
+                if (symbolStartDate < minStartDay)
+                {
+                    minStartDay = symbolStartDate;
+                    _symbolWithMinStartDate = symbol;
+                }
+                if (symbolStartDate > maxStartDay)
+                {
+                    maxStartDay = symbolStartDate;
+                    _symbolWithMaxStartDate = symbol;
+                }
+            }
+
+            switch (p_startDateAutoCalcMode)
+            {
+                case StartDateAutoCalcMode.WhenFirstTickerAlive: // Usually the first day when WhenAllTickersAlive (default). Aletrnatively WhenFirstTickerAlive.
+                    earliestUsableDataDay = minStartDay;
+                    _symbolWithEarliestUsableDataDay = _symbolWithMinStartDate;
+                    break;
+                case StartDateAutoCalcMode.WhenAllTickersAlive:
+                    earliestUsableDataDay = maxStartDay;
+                    _symbolWithEarliestUsableDataDay = _symbolWithMaxStartDate;
+                    break;
+                default:
+                    throw new NotImplementedException("Unrecognized _startDateAutoCalcMode.");
+            }
+
+            p_symbolWithEarliestUsableDataDay = _symbolWithEarliestUsableDataDay;
+            return earliestUsableDataDay;
+        }
+
         public static void DownloadAndProcessYfData(QCAlgorithm p_algorithm, string p_ticker, DateTime p_startDate, TimeSpan p_warmUp, DateTime p_endDate, ref Dictionary<string, List<QcPrice>> p_rawClosesFromYfLists, ref Dictionary<string, Dictionary<DateTime, decimal>> p_rawClosesFromYfDicts)
         {
             long periodStart = QCAlgorithmUtils.DateTimeUtcToUnixTimeStamp(p_startDate - p_warmUp);

@@ -72,7 +72,7 @@ namespace QuantConnect.Algorithm.CSharp
         // AlgorithmParam comes from QCAlgorithm.QCAlgorithm in SqCore framework
 #else
         bool _isTradeInSqCore = false;
-        public string AlgorithmParam { get; set; } = "startDate=2006-01-01&endDate=now&assets=VNQ,EEM,DBC,SPY,TLT,SHY"; // in SqCore, this comes from the backtester environment as Portfolio.AlgorithmParam
+        public string AlgorithmParam { get; set; } = "startDate=2006-01-01&endDate=now&assets=VNQ,EEM,DBC,SPY,TLT,SHY&lookback=63&noETFs=3"; // in SqCore, this comes from the backtester environment as Portfolio.AlgorithmParam
 #endif
 
         public bool IsTradeInSqCore { get { return _isTradeInSqCore; } }
@@ -89,8 +89,8 @@ namespace QuantConnect.Algorithm.CSharp
 
         // List<string> _tickers = new List<string> { "VNQ", "EEM", "DBC", "SPY", "TLT", "SHY" };
         List<string> _tickers;
-        private int _lookbackTradingDays = 63;
-        private int _numberOfEtfsSelected = 3;
+        private int _lookbackTradingDays;
+        private int _numberOfEtfsSelected;
         private Dictionary<string, Symbol> _symbolsDaily = new Dictionary<string, Symbol>(); // on QcCloud, we need both perMinute and perDaily. perDaily is needed because we collect the past Daily history for momemtum calculation
         private Dictionary<string, Symbol> _symbolsMinute = new Dictionary<string, Symbol>();
         private Dictionary<string, Symbol> _tradedSymbols = new Dictionary<string, Symbol>(); // pointer to _symbolsDaily in SqCore, and _symbolsMinute in QcCloud
@@ -109,8 +109,9 @@ namespace QuantConnect.Algorithm.CSharp
         {
             _bnchmarkStartTime = DateTime.UtcNow;
 
-            QCAlgorithmUtils.ProcessAlgorithmParam(HttpUtility.ParseQueryString(AlgorithmParam), out _forcedStartDate, out _forcedEndDate, out _startDateAutoCalcMode);
-            ProcessAlgorithmParam(HttpUtility.ParseQueryString(AlgorithmParam), out _tickers);
+            NameValueCollection algorithmParamQuery = HttpUtility.ParseQueryString(AlgorithmParam);
+            QCAlgorithmUtils.ProcessAlgorithmParam(algorithmParamQuery, out _forcedStartDate, out _forcedEndDate, out _startDateAutoCalcMode);
+            ProcessAlgorithmParam(algorithmParamQuery, out _tickers, out _lookbackTradingDays, out _numberOfEtfsSelected);
 
             // *** Step 1: general initializations
             SetCash(10000000);
@@ -149,10 +150,10 @@ namespace QuantConnect.Algorithm.CSharp
             _warmUp = TimeSpan.FromDays(200); // Wind time back X calendar days from start Before the _startDate. It is calendar day. E.g. If strategy need %chgPrevDay, it needs 2 trading day data. Probably set warmup to 2+2+1 = 5+ (for 2 weekend, 1 holiday).
             SetWarmUp(_warmUp);
 
-             _earliestUsableDataDay = StartDateAutoCalculation(out Symbol? symbolWithEarliestUsableDataDay);
+            _earliestUsableDataDay = QCAlgorithmUtils.StartDateAutoCalculation(_tradedSymbols, _startDateAutoCalcMode, out Symbol? symbolWithEarliestUsableDataDay);
             if (_forcedStartDate == DateTime.MinValue) // auto calculate if user didn't give a forced startDate. Otherwise, we are obliged to use that user specified forced date.
             {
-                if (_earliestUsableDataDay <  new DateTime(1900, 01, 01))
+                if (_earliestUsableDataDay < new DateTime(1900, 01, 01))
                     _earliestUsableDataDay = new DateTime(1900, 01, 01); // SetStartDate() exception: "Please select a start date after January 1st, 1900."
 
                 _startDate = _earliestUsableDataDay.Add(_warmUp).AddDays(1); // startdate auto calculation we have to add the warmup days
@@ -184,7 +185,7 @@ namespace QuantConnect.Algorithm.CSharp
 
 
             Symbol tradingScheduleSymbol = symbolWithEarliestUsableDataDay; // "SPY" is the best candidate for trading schedule, but if "SPY" is not in the asset universe, we use the one with the longest history
-            if ( tradingScheduleSymbol != null) // if AlgorithmParam is empty, then there is no symbol at all. It is OK to not schedule trading.
+            if (tradingScheduleSymbol != null) // if AlgorithmParam is empty, then there is no symbol at all. It is OK to not schedule trading.
                 Schedule.On(DateRules.MonthEnd(tradingScheduleSymbol), TimeRules.BeforeMarketClose(tradingScheduleSymbol, 20), () => // The last trading day of each month has to be determined. The rebalance will take place on this day.
                 {
                     if (IsWarmingUp) // Dont' trade in the warming up period.
@@ -195,58 +196,27 @@ namespace QuantConnect.Algorithm.CSharp
                 });
         }
 
-        public static void ProcessAlgorithmParam(NameValueCollection p_AlgorithmParamQuery, out List<string> p_tickers)
+        public static void ProcessAlgorithmParam(NameValueCollection p_AlgorithmParamQuery, out List<string> p_tickers, out int p_lookbackTradingDays, out int p_numberOfEtfsSelected)
         {
-            // e.g. _AlgorithmParam = "assets=SPY,TLT"
+            // e.g. _AlgorithmParam = "assets=VNQ,EEM,DBC,SPY,TLT,SHY&lookback=63&noETFs=3"
             string[] tickers = p_AlgorithmParamQuery.Get("assets")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
             p_tickers = new List<string>(tickers);
-        }
 
-        private DateTime StartDateAutoCalculation(out Symbol? p_symbolWithEarliestUsableDataDay)
-        {
-            DateTime earliestUsableDataDay = DateTime.MinValue;
-            DateTime minStartDay = DateTime.MaxValue;
-            DateTime maxStartDay = DateTime.MinValue;
-            Symbol? _symbolWithMinStartDate = null;
-            Symbol? _symbolWithMaxStartDate = null;
-            Symbol? _symbolWithEarliestUsableDataDay = null;
-            foreach (Symbol symbol in _tradedSymbols.Values)
-            {
-                DateTime symbolStartDate = symbol.ID.Date;
-                if (symbolStartDate < minStartDay)
-                {
-                    minStartDay = symbolStartDate;
-                    _symbolWithMinStartDate = symbol;
-                }
-                if (symbolStartDate > maxStartDay)
-                {
-                    maxStartDay = symbolStartDate;
-                    _symbolWithMaxStartDate = symbol;
-                }
-            }
+            string lookbackTradingDays = p_AlgorithmParamQuery.Get("lookback");
+            if (!int.TryParse(lookbackTradingDays, out p_lookbackTradingDays))
+                p_lookbackTradingDays = 63;
 
-            switch (_startDateAutoCalcMode)
-            {
-                case StartDateAutoCalcMode.WhenFirstTickerAlive: // Usually the first day when WhenAllTickersAlive (default). Aletrnatively WhenFirstTickerAlive.
-                    earliestUsableDataDay = minStartDay;
-                    _symbolWithEarliestUsableDataDay = _symbolWithMinStartDate;
-                    break;
-                case StartDateAutoCalcMode.WhenAllTickersAlive:
-                    earliestUsableDataDay = maxStartDay;
-                    _symbolWithEarliestUsableDataDay = _symbolWithMaxStartDate;
-                    break;
-                default:
-                    throw new NotImplementedException("Unrecognized _startDateAutoCalcMode.");
-            }
-
-            p_symbolWithEarliestUsableDataDay = _symbolWithEarliestUsableDataDay;
-            return earliestUsableDataDay;
+            string numberOfEtfsSelected = p_AlgorithmParamQuery.Get("noETFs");
+            if (!int.TryParse(numberOfEtfsSelected, out p_numberOfEtfsSelected))
+                p_numberOfEtfsSelected = 3;
         }
 
         private void TradeLogic() // this is called at 15:40 in QC cloud, and 00:00 in SqCore
         {
             if (IsWarmingUp) // Dont' trade in the warming up period.
                 return;
+
+            QCAlgorithmUtils.ApplyDividendMOCAfterClose(Portfolio, _sliceDividends, -1); // We use 'daily' (not perMinute) TradeBars in SqCore.  When OnData() callback comes with this TradeBar, the dividends of that day is already added to the Cash (by the framework). We remove this before trading, and add back after trading. See comment at ApplyDividendMOCAfterClose()
 
             TradePreProcess();
 
@@ -466,7 +436,6 @@ namespace QuantConnect.Algorithm.CSharp
 
         private decimal PvCalculation(Dictionary<string, List<QcPrice>> p_usedAdjustedClosePrices)
         {
-            QCAlgorithmUtils.ApplyDividendMOCAfterClose(Portfolio, _sliceDividends, -1); // // We use 'daily' (not perMinute) TradeBars in SqCore.  When OnData() callback comes with this TradeBar, the dividends of that day is already added to the Cash (by the framework). We remove this before trading, and add back after trading. See comment at ApplyDividendMOCAfterClose()
             if (IsTradeInSqCore)
                 return Portfolio.TotalPortfolioValue;
 
