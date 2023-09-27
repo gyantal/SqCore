@@ -153,8 +153,8 @@ namespace QuantConnect.Algorithm.CSharp
             _earliestUsableDataDay = QCAlgorithmUtils.StartDateAutoCalculation(_tradedSymbols, _startDateAutoCalcMode, out Symbol? symbolWithEarliestUsableDataDay);
             if (_forcedStartDate == DateTime.MinValue) // auto calculate if user didn't give a forced startDate. Otherwise, we are obliged to use that user specified forced date.
             {
-                if (_earliestUsableDataDay < new DateTime(1900, 01, 01))
-                    _earliestUsableDataDay = new DateTime(1900, 01, 01); // SetStartDate() exception: "Please select a start date after January 1st, 1900."
+                if (_earliestUsableDataDay < QCAlgorithmUtils.g_earliestQcDay)
+                    _earliestUsableDataDay = QCAlgorithmUtils.g_earliestQcDay; // SetStartDate() exception: "Please select a start date after January 1st, 1900."
 
                 _startDate = _earliestUsableDataDay.Add(_warmUp).AddDays(1); // startdate auto calculation we have to add the warmup days
             }

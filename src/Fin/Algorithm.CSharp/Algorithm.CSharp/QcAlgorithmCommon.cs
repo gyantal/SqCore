@@ -13,7 +13,7 @@ using QuantConnect.Securities;
 
 namespace QuantConnect.Algorithm.CSharp
 {
-    class QcPrice
+    public class QcPrice
     {
         public DateTime ReferenceDate;
         public decimal Close;
@@ -52,10 +52,12 @@ namespace QuantConnect.Algorithm.CSharp
         public string ConsensusEpsForecast { get; set; }
         public string NumberOfEstimates { get; set; }
     }
-     enum StartDateAutoCalcMode { Unknown, WhenAllTickersAlive /* default if not given in params */ , WhenFirstTickerAlive, CustomGC };
 
-    class QCAlgorithmUtils
+     public enum StartDateAutoCalcMode { Unknown, WhenAllTickersAlive /* default if not given in params */ , WhenFirstTickerAlive, CustomGC };
+
+    public class QCAlgorithmUtils
     {
+        public static DateTime g_earliestQcDay = new DateTime(1900, 01, 01); // e.g. SetStartDate() exception: "Please select a start date after January 1st, 1900.". Also DateTime.MinValue cannot be used in QC.HistoryProvider.GetHistory() as it will convert this time to UTC, but taking away 5 hours from MinDate is not possible.
         static Dictionary<string, StartDateAutoCalcMode> g_startDateAutoCalcModeDict = new Dictionary<string, StartDateAutoCalcMode> { {"Unknown", StartDateAutoCalcMode.Unknown}, {"WhenAllTickersAlive", StartDateAutoCalcMode.WhenAllTickersAlive}, {"WhenFirstTickerAlive", StartDateAutoCalcMode.WhenFirstTickerAlive},{"CustomGC", StartDateAutoCalcMode.CustomGC} };
 
         public static long DateTimeUtcToUnixTimeStamp(DateTime p_utcDate) // Int would roll over to a negative in 2038 (if you are using UNIX timestamp), so long is safer

@@ -128,7 +128,7 @@ namespace QuantConnect.Statistics
 
             // Step 4. AMean, SD, Sharpe, MAR
             double histAMean = ArrayStatistics.Mean(histDailyPctChgs) * 252; // annualized daily mean
-            double histSD = ArrayStatistics.StandardDeviation(histDailyPctChgs) * Math.Sqrt(252); // annualized daily StDev
+            double histSD = ArrayStatistics.StandardDeviation(histDailyPctChgs) * Math.Sqrt(252); // annualized daily StDev, if histDailyPctChgs is empty, StDev becomes NaN, which is correct
             double histSharpe = histSD.IsNaNOrInfinity() ? 0 : histAMean / histSD;
             double histMAR = histMaxDrawDown.IsNaNOrInfinity() ? 0 : histCagr / histMaxDrawDown;
 

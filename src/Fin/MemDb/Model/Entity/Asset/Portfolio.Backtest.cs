@@ -148,8 +148,8 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} ({(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
 
         List<ChartPoint> equityChart = backtestResults.Charts["Strategy Equity"].Series["Equity"].Values;
-        if (equityChart.IsNullOrEmpty())
-            Console.WriteLine("Warning! The Equity (PV) Chart is empty.");
+        if (equityChart.Count < 2)
+            Console.WriteLine($"Warning! The Equity (PV) Chart has only {equityChart.Count} items.");
         else
             Console.WriteLine($"#Charts:{backtestResults.Charts.Count}. The Equity (PV) chart: {equityChart[0].y:N0}, {equityChart[1].y:N0} ... {equityChart[^2].y:N0}, {equityChart[^1].y:N0}");
 
@@ -208,6 +208,8 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
                 p_stat.TotalReturn = float.Parse(finalStat[PerformanceMetrics.NetProfit].Replace("%", string.Empty));
                 p_stat.CAGR = float.Parse(finalStat[PerformanceMetrics.CompoundingAnnualReturn].Replace("%", string.Empty));
                 p_stat.StDev = float.Parse(finalStat[PerformanceMetrics.AnnualStandardDeviation]);
+                if (float.IsNaN(p_stat.StDev)) // annualized daily StDev. If histDailyPctChgs is empty, StDev becomes NaN, which is correct , but we don't want to send NaN to clients.
+                    p_stat.StDev = 0;
                 if (p_stat.SharpeRatio > 100f)
                     p_stat.SharpeRatio = float.NaN; // if value is obviously wrong, indicate that with NaN
                 p_stat.SharpeRatio = float.Parse(finalStat[PerformanceMetrics.SharpeRatio]);

@@ -11,6 +11,7 @@ using System.Web;
 using Fin.MemDb;
 using Microsoft.AspNetCore.Http;
 using QuantConnect;
+using QuantConnect.Algorithm.CSharp;
 using QuantConnect.Parameters;
 using SqCommon;
 
@@ -173,7 +174,7 @@ public class ChrtGenWs
             sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Info, Message = $"The bmrksStr from the client is null. We process the pidStr further." });
 
         if(minStartDate == DateTime.Today) // Default date (2020-01-01) if minStartdate == today
-            minStartDate = new DateTime(1900, 01, 01); // we are giving mindate as (1900-01-01) so that it gets all the data available if its only processing the benchmarks
+            minStartDate = QCAlgorithmUtils.g_earliestQcDay; // we are giving mindate as (1900-01-01) so that it gets all the data available if its only processing the benchmarks. DateTime.MinValue cannot be used, because QC.HistoryProvider.GetHistory() will convert this time to UTC, but taking away 5 hours from MinDate is not possible.
         List<BmrkHistory> bmrkHistories = new();
         foreach (string bmrkTicker in bmrksStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
         {

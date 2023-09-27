@@ -145,8 +145,8 @@ namespace QuantConnect.Algorithm.CSharp
             _earliestUsableDataDay = QCAlgorithmUtils.StartDateAutoCalculation(_tradedSymbols, _startDateAutoCalcMode, out Symbol? symbolWithEarliestUsableDataDay);
             if (_forcedStartDate == DateTime.MinValue) // auto calculate if user didn't give a forced startDate. Otherwise, we are obliged to use that user specified forced date.
             {
-                if (_earliestUsableDataDay < new DateTime(1900, 01, 01))
-                    _earliestUsableDataDay = new DateTime(1900, 01, 01); // SetStartDate() exception: "Please select a start date after January 1st, 1900."
+                if (_earliestUsableDataDay < QCAlgorithmUtils.g_earliestQcDay)
+                    _earliestUsableDataDay = QCAlgorithmUtils.g_earliestQcDay; // SetStartDate() exception: "Please select a start date after January 1st, 1900."
 
                 _startDate = _earliestUsableDataDay.Add(_warmUp).AddDays(1); // startdate auto calculation we have to add the warmup days
             }
@@ -202,17 +202,18 @@ namespace QuantConnect.Algorithm.CSharp
 
             // Step 2: process rebFreq
             string[] rebalanceParams = p_AlgorithmParamQuery.Get("rebFreq")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
-            if (rebalanceParams.Length != 2)
-                p_rebalancePeriodDays = -1; // invalid value
-
-            string rebalancePeriodNumStr = rebalanceParams[1]; // second item is "10d"
-            if (rebalancePeriodNumStr.Length == 0)
-                p_rebalancePeriodDays = 1; // default
-            char rebalancePeriodNumStrLastChar = rebalancePeriodNumStr[^1]; // 'd' or 'w' or 'm', but it is not required to be present
-            if (Char.IsLetter(rebalancePeriodNumStrLastChar)) // if 'd/w/m' is given, remove it
-                rebalancePeriodNumStr = rebalancePeriodNumStr[..^1];
-            if (!Int32.TryParse(rebalancePeriodNumStr, out p_rebalancePeriodDays))
-                throw new ArgumentException($"The rebFreq's rebalancePeriodNumStr {rebalancePeriodNumStr} cannot be converted to int.");
+            if (rebalanceParams.Length == 2)
+            {
+                string rebalancePeriodNumStr = rebalanceParams[1]; // second item is "10d"
+                if (rebalancePeriodNumStr.Length != 0)
+                {
+                    char rebalancePeriodNumStrLastChar = rebalancePeriodNumStr[^1]; // 'd' or 'w' or 'm', but it is not required to be present
+                    if (Char.IsLetter(rebalancePeriodNumStrLastChar)) // if 'd/w/m' is given, remove it
+                        rebalancePeriodNumStr = rebalancePeriodNumStr[..^1];
+                    if (!Int32.TryParse(rebalancePeriodNumStr, out p_rebalancePeriodDays))
+                        throw new ArgumentException($"The rebFreq's rebalancePeriodNumStr {rebalancePeriodNumStr} cannot be converted to int.");
+                }
+            }
         }
 
         private void TradeLogic() // this is called at 15:40 in QC cloud, and 00:00 in SqCore
