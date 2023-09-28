@@ -151,7 +151,7 @@ namespace QuantConnect.Algorithm.CSharp
 
                 if (DateTime.TryParseExact(dateStr, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
                 {
-                    if (Decimal.TryParse(split1Str, out decimal split1) && Decimal.TryParse(split2Str, out decimal split2))
+                    if (decimal.TryParse(split1Str, out decimal split1) && decimal.TryParse(split2Str, out decimal split2))
                         splits.Add(new YfSplit() { ReferenceDate = date, SplitFactor = decimal.Divide(split1, split2) });
                 }
                 rowStartInd = splitEndIndExcl + 1; // jump over the '\n'
@@ -187,7 +187,7 @@ namespace QuantConnect.Algorithm.CSharp
 
                 if (DateTime.TryParseExact(dateStr, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
                 {
-                    if (Decimal.TryParse(closeStr, out decimal close))
+                    if (decimal.TryParse(closeStr, out decimal close))
                         _rawClosesFromYfList.Add(new QcPrice() { ReferenceDate = date, Close = close });
                 }
                 rowStartInd = (closeInd != -1) ? priceCsvData.IndexOf('\n', adjCloseInd + 1) : -1;

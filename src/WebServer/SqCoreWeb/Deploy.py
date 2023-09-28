@@ -111,7 +111,7 @@ def rm_onlySubdirectories(sftp, path):
             rm_onlySubdirectories(sftp, filepath)
             sftp.rmdir(filepath)
         else:
-            sftp.remove(filepath)    
+            sftp.remove(filepath)
 
 # script START
 colorama.init()
@@ -122,13 +122,20 @@ if os.path.isfile(zipFileName):
 if os.path.isfile(zipListFileName):
     os.remove(zipListFileName)  #remove old zip file if exists
 
-#quicker to do one remote command then removing files/folders recursively one by one
-#in the future. We can 7-zip locally, upload it by Sftp, unzip it with SSHClient commands. It is about 2 days development, so, later.
-#command = "ls " + rootRemoteDir
+# quicker to do one remote command then removing files/folders recursively one by one
+# in the future. We can 7-zip locally, upload it by Sftp, unzip it with SSHClient commands. It is about 2 days development, so, later.
+# command = "ls " + rootRemoteDir
 command = "rm -rf " + rootRemoteDir
 print("SSHClient. Executing remote command: " + command)
 sshClient = paramiko.SSHClient()
 sshClient.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+# If (e.g. after Ubuntu upgrade), error comes as "paramiko.ssh_exception.AuthenticationException: Authentication failed.", then 
+# 1. Assure SSH works from command line. Try from the command line to SSH into it once manually. 
+# ssh -i h:/.../cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem sq-vnc-client@ec2-34-251-1-119.eu-west-1.compute.amazonaws.com
+# which will add a line to the  C:\Users\gyantal/.ssh/known_hosts file.
+# 2. Also, might upgrade paramiko
+# pip show paramiko // show the version. See which is the latest version: https://www.paramiko.org/changelog.html
+# pip install paramiko --upgrade
 sshClient.connect(serverHost, serverPort, username = serverUser, pkey = paramiko.RSAKey.from_private_key_file(serverRsaKeyFile))
 (stdin, stdout, stderr) = sshClient.exec_command(command)
 for line in stdout.readlines():
@@ -139,7 +146,7 @@ print("SFTPClient is connecting...")
 transport = paramiko.Transport((serverHost, serverPort))
 transport.connect(username = serverUser, pkey = paramiko.RSAKey.from_private_key_file(serverRsaKeyFile))
 sftp = paramiko.SFTPClient.from_transport(transport)
-#rm_onlySubdirectories(sftp, rootRemoteDir)
+# rm_onlySubdirectories(sftp, rootRemoteDir)
 
 fileNamesToDeploy = []
 for root, dirs, files in os.walk(rootLocalDir, topdown=True):

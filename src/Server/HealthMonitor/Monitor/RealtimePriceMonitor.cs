@@ -147,8 +147,8 @@ public partial class HealthMonitor
                 }
             }
             if (String.IsNullOrEmpty(vxxLastPriceStr))  // "Last":21.97
-                return false;   // 3. if it's Last price is empty. 
-            if (!Double.TryParse(vxxLastPriceStr, out double vxxLastPrice))
+                return false;   // 3. if it's Last price is empty.
+            if (!double.TryParse(vxxLastPriceStr, out double vxxLastPrice))
                 return false;   // 4. if it is not a number. For example if it is "N/A", we return error
 
         }

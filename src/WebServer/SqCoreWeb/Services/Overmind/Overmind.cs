@@ -377,7 +377,7 @@ public class OvermindExecution : SqExecution
     //         return null;
     //     }
     //     string priceStr = webpage[(startInd + searchStr.Length + 1)..endInd];
-    //     if (!Double.TryParse(priceStr, out double price))
+    //     if (!double.TryParse(priceStr, out double price))
     //     {
     //         Utils.Logger.Info($"{priceStr} cannot be parsed to Double.");
     //         return null;

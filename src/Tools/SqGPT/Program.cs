@@ -5,8 +5,10 @@ using LlmFromRelease;
 
 Console.WriteLine("Hello, World!");
 
-string modelPath = "g:\\LLM\\llama-2-7b.ggmlv3.q4_0.bin"; // Llama2, base version, (in theory, it is uncensored, you just have to give a good prompt) non-woke sometimes. But training data has input from censored ChatGPT sessions. Some, it is somewhat censored. Prompt engineering should help.  Let's use this until the free-speech ElonMuskAi
-// string modelPath = "g:\\LLM\\llama-2-7b-chat.ggmlv3.q4_0.bin"; // Llama2, chat version, fine tuned for non 'toxicity'. Uber-woke.
+// Chat version is traded more for instructions like 'Summarize this:', 'Make this shorter:', 'Make it brief:'. The Base versions are not trained for this commands, so the Base version fails in summarizing.
+
+// string modelPath = "g:\\LLM\\llama-2-7b.ggmlv3.q4_0.bin"; // Llama2, base version, (in theory, it is uncensored, you just have to give a good prompt) non-woke sometimes. But training data has input from censored ChatGPT sessions. Some, it is somewhat censored. Prompt engineering should help.  Let's use this until the free-speech ElonMuskAi
+string modelPath = "g:\\LLM\\llama-2-7b-chat.ggmlv3.q4_0.bin"; // Llama2, chat version, fine tuned for non 'toxicity'. Uber-woke.
 // string modelPath = "g:\\LLM\\llama2_7b_chat_uncensored.ggmlv3.q4_0.bin"; // Woke. (Even though it is uncensored, maybe I need better prompt)
 // string modelPath = "g:\\LLM\\Wizard-Vicuna-13B-Uncensored.ggmlv3.q4_0.bin"; // too woke.
 // string modelPath = "g:\\LLM\\VicUnlocked-30B-LoRA.ggmlv3.q4_0.bin"; // Woke.

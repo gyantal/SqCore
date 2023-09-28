@@ -1,5 +1,5 @@
 import './../css/main.css';
-import { lbgaussian, lbmedian, lbaverage, lbstdDev } from '../../../TsLib/sq-common/utils_math';
+import { sqGaussian, sqMedian, sqAverage, sqStdDev } from '../../../TsLib/sq-common/utils_math';
 
 // export {}; // TS convention: To avoid top level duplicate variables, functions. This file should be treated as a module (and have its own scope). A file without any top-level import or export declarations is treated as a script whose contents are available in the global scope.
 
@@ -69,7 +69,7 @@ function withdrawalSimulation(simLength, cagr, stdDev, nSimulations, iniDep, add
 
 
   // make a standard gaussian variable.
-  const standard = lbgaussian(cagr / 100 / 252, stdDev / 100 / Math.sqrt(252));
+  const standard = sqGaussian(cagr / 100 / 252, stdDev / 100 / Math.sqrt(252));
 
   const nDays = simLength * 252;
 
@@ -159,8 +159,8 @@ function withdrawalSimulationResult(simLength, nDays, nSimulations, dailyPVs, da
     for (let j = 0; j < subPVAvgWoWith.length; j++)
       subPVAvgWoWith[j] = dailyPVsBH[j][i];
 
-    pvAvgWoWith[i] = lbaverage(subPVAvgWoWith);
-    pvMedWoWith[i] = lbmedian(subPVAvgWoWith);
+    pvAvgWoWith[i] = sqAverage(subPVAvgWoWith);
+    pvMedWoWith[i] = sqMedian(subPVAvgWoWith);
   }
 
   const pvRndWoWith = dailyPVsBH[0];
@@ -171,8 +171,8 @@ function withdrawalSimulationResult(simLength, nDays, nSimulations, dailyPVs, da
     const subPVAvgWith = new Array(nSimulations);
     for (let j = 0; j < subPVAvgWith.length; j++)
       subPVAvgWith[j] = dailyPVs[j][i];
-    pvAvgWith[i] = lbaverage(subPVAvgWith);
-    pvMedWith[i] = lbmedian(subPVAvgWith);
+    pvAvgWith[i] = sqAverage(subPVAvgWith);
+    pvMedWith[i] = sqMedian(subPVAvgWith);
   }
 
   const pvRndWith = dailyPVs[0];
@@ -183,8 +183,8 @@ function withdrawalSimulationResult(simLength, nDays, nSimulations, dailyPVs, da
     const subPVAvgWithDrawed = new Array(nSimulations);
     for (let j = 0; j < subPVAvgWithDrawed.length; j++)
       subPVAvgWithDrawed[j] = dailyWithPVs[j][i];
-    pvAvgWithDrawed[i] = lbaverage(subPVAvgWithDrawed);
-    pvMedWithDrawed[i] = lbmedian(subPVAvgWithDrawed);
+    pvAvgWithDrawed[i] = sqAverage(subPVAvgWithDrawed);
+    pvMedWithDrawed[i] = sqMedian(subPVAvgWithDrawed);
   }
 
   const pvRndWithDrawed = dailyWithPVs[0];
@@ -247,7 +247,7 @@ function withdrawalSimulationResult(simLength, nDays, nSimulations, dailyPVs, da
   const cagrRndTotal = Math.pow((pvRndTotal[nDays - 1] / totalDeposit), 1 / simLength) - 1;
 
   const proba = [1, 1, 1, 1, 1, 1];
-  const averagePVWoWith = lbstdDev(proba);
+  const averagePVWoWith = sqStdDev(proba);
 
   withdrawalSimulatorOutput(totalDeposit, developerInfo, averagePVWoWith, profitDollAvgWoWith, profitPercAvgWoWith, profitDollMedWoWith, profitPercMedWoWith, profitDollRndWoWith, profitPercRndWoWith, cagrAvgWoWith, cagrMedWoWith, cagrRndWoWith, profitDollAvgWith, profitPercAvgWith, profitDollMedWith, profitPercMedWith, profitDollRndWith, profitPercRndWith, cagrAvgWith, cagrMedWith, cagrRndWith, profitDollAvgWithDrawed, profitPercAvgWithDrawed, profitDollMedWithDrawed, profitPercMedWithDrawed, profitDollRndWithDrawed, profitPercRndWithDrawed, cagrAvgWithDrawed, cagrMedWithDrawed, cagrRndWithDrawed, profitDollAvgTotal, profitPercAvgTotal, profitDollMedTotal, profitPercMedTotal, profitDollRndTotal, profitPercRndTotal, cagrAvgTotal, cagrMedTotal, cagrRndTotal);
   console.log('simulateFunction() END');

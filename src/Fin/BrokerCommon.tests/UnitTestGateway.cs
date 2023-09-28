@@ -31,7 +31,7 @@ public class UnitTestGateway
         string navStr = accSums.First(r => r.Tag == AccountSummaryTags.NetLiquidation).Value;
         Assert.False(String.IsNullOrEmpty(navStr));
 
-        Assert.True(Double.TryParse(navStr, out double nav));
+        Assert.True(double.TryParse(navStr, out double nav));
         Assert.False(nav == 0); // if TryParse conversion fails, it returns 0
         Assert.False(double.IsNaN(nav));
 

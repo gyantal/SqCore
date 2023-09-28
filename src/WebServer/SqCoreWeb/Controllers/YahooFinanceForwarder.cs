@@ -248,7 +248,7 @@ public class YahooFinanceForwarder : Microsoft.AspNetCore.Mvc.Controller
             // // Prices in the given CSV as "15.830000" is pointless. Convert it to "15.8" if possible,        "16.059999" should be converted too
             //     for (int j = 1; j < 6; j++)
             //     {
-            //         if (Double.TryParse(cells[j], out double price))
+            //         if (double.TryParse(cells[j], out double price))
             //             cells[j] = price.ToString("0.###");
             //     }
 

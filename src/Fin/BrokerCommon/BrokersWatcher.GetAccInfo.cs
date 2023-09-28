@@ -31,7 +31,7 @@ public static class BrAccSumHelper
     public static double GetValue(this List<BrAccSum> accSums, string tagStr)
     {
         string valStr = accSums.First(r => r.Tag == tagStr).Value;
-        if (!Double.TryParse(valStr, out double valDouble))
+        if (!double.TryParse(valStr, out double valDouble))
             valDouble = Double.NegativeInfinity; // Math.Round() would crash on NaN
         return (int)Math.Round(valDouble, MidpointRounding.AwayFromZero); // 0.5 is rounded to 1, -0.5 is rounded to -1. Good.
     }
