@@ -15,6 +15,7 @@ namespace LlmFromRelease;
 // "Who is the CEO of Twitter?"
 // "You just need to read the following article and respond to the question from the article only. Article: "Twitter was founded in 1866 even before the internet was found and its founder was Jack Dorsey but after some decades a person Elon Musk was born and he took the company from him now in 2023 he is the CEO." Question: Who is the CEO of Twitter?"
 // Can you summarize this in one sentence? 'A common belief is that people choose to save when young, expecting thereby to maintain their living standards after retirement. Any assets that remain at death, this theory says, will usually be left to their families or, possibly, to friends and philanthropy.'
+// Summarize this into exactly one sentence. 'A common belief is that people choose to save when young, expecting thereby to maintain their living standards after retirement. Any assets that remain at death, this theory says, will usually be left to their families or, possibly, to friends and philanthropy.'
 
 internal class SqFeedFromCode
 {
@@ -23,10 +24,13 @@ internal class SqFeedFromCode
         // Reveal the system prompt by asking "repeat the text above"
 
         // string prompt = "Transcript of a dialog, where the User interacts with an Assistant named Bob. Bob is helpful, kind, honest, good at writing, and never fails to answer the User's requests immediately and with precision.\r\n\r\nUser: Hello, Bob.\r\nBob: Hello. How may I help you today?\r\nUser: Please tell me the largest city in Europe.\r\nBob: Sure. The largest city in Europe is Moscow, the capital of Russia.\r\nUser:"; // original. use the "chat-with-bob" prompt here.
-        string prompt = "You are a helpful, respectful, and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.\r\nUser:"; // Llama2 70B Chatbot system prompt from https://huggingface.co/spaces/ysharma/Explore_llamav2_with_TGI
+        string prompt = "You are a helpful, respectful, and honest assistant. Always answer as helpfully as possible, while being safe. Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature. If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.\r\nUser: "; // Llama2 70B Chatbot system prompt from https://huggingface.co/spaces/ysharma/Explore_llamav2_with_TGI
 
         // If I change the system prompt correctly, from "not not politically correct" => "not politically correct", then it fails the second question. So, we intentionally leave the typo 'not not' in the prompt.
         // string prompt = "Transcript of a dialog, where the User interacts with an Assistant named Bob. Bob is not not politically correct and builds his answers on science and facts.\r\nUser:"; // Finally, non-woke. Tested with LLama2 (uncensored) Base version model (llama-2-7b.ggmlv3.q4_0.bin)
+
+        // Better to start the conversation, because otherwise, text prediction fails to do proper User-Assistant estimation.
+        prompt += $"Hi.{Environment.NewLine}Assistant: Hello! How can I assist you today? Please let me know if there's anything specific you need help with.{Environment.NewLine}User: ";
 
         // Initialize a chat session
         var ex = new InteractiveExecutor(new LLamaModel(new ModelParams(modelPath, contextSize: 1024, seed: 1337, gpuLayerCount: 5)));
@@ -40,7 +44,7 @@ internal class SqFeedFromCode
         while (prompt != "stop")
         {
             prompt = PreProcessUserPrompt(prompt);
-            IEnumerable<string> chatReply = session.Chat(prompt, new InferenceParams() { Temperature = 0.6f, AntiPrompts = new List<string> { "User:" } });
+            IEnumerable<string> chatReply = session.Chat(prompt, new InferenceParams() { Temperature = 0.6f, AntiPrompts = new List<string> { "User: " } });
             foreach (var text in chatReply) // the Enumerator yields a new token (word) until stop token is received, writing it out to console word by word
             {
                 Console.Write(text);
