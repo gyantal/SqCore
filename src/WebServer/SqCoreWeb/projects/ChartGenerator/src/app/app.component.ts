@@ -377,6 +377,7 @@ export class AppComponent implements OnInit {
       this.onStartBacktests();
       this._socket.send('RunBacktest:' + '?pids=' + this.prtfIds + '&bmrks=' + this.bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
     }
+    this.bmrks = ''; // we need to immediatley make it empty else there will be a blink of a bmrk value in the input box.
     console.log('the prtfIds length is:', this.prtfIds);
   }
 
@@ -460,6 +461,7 @@ export class AppComponent implements OnInit {
       if (allPortfoliosInd != -1 && !this._backtestedPortfolios.includes(this._allPortfolios[allPortfoliosInd])) // check if the item is included or not
         this._backtestedPortfolios.push(this._allPortfolios[allPortfoliosInd]); // Push the selected item from _allPortfolios into _backtestedPortfolios
     }
+    this.prtfSelectedName = ''; // clearing the textbox after inserting the prtf.
   }
 
   onClickClearBacktestedPortfolios() { // clear the user selected backtested portfolios
@@ -472,6 +474,7 @@ export class AppComponent implements OnInit {
       if (!this._backtestedBenchmarks.includes(item)) // check if the item is included or not
         this._backtestedBenchmarks.push(item);
     }
+    this.bmrks = ''; // clearing the textbox after inserting the bmrks.
   }
 
   onClickClearBacktestedBnmrks() { // clear the user selected backtested Benchmarks

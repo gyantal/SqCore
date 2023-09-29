@@ -5,7 +5,7 @@ import { UiChartPoint, CgTimeSeries, LineStyle } from './backtestCommon';
 type Nullable<T> = T | null;
 export class UltimateChart {
   static _primaryColors = ['#0000ff', '#e41a1c', '#4daf4a', '#984ea3', '#ff7f00', '#f781bf', '#808000', '#008000', '#a65628', '#333397', '#800080', '#000000'];
-  static _secondaryColors = ['#a6cee3', '#fb9a99', '#b2df8a', '#cab2d6', '#fdbf6f', '#fbb4ae', '#ccebc5', '#ffed6f', '#ffffb3', '#8dd3c7', '#bebada', '#e6beff'];
+  static _secondaryColors = ['#44ADE2', '#F94A4A', '#8DDD42', '#9F3FD3', '#FCAC4B', '#F9564A', '#67EA46', '#FFE74C', '#FFFF4C', '#3ED1B6', '#5241D8', '#B74CFF'];
   static _primaryStrokeWidth: number = 1.3;
   static _secondaryStrokeWidth: number = 1;
   static _legendSpacing = 25; // Adjust this value to control the spacing between legend items
@@ -118,51 +118,13 @@ export class UltimateChart {
           }
         });
 
-    // get colors for primary and secondary items
-    function getColors(d: CgTimeSeries, i: number): string {
-      if (d.isPrimary)
-        return UltimateChart._primaryColors[i % UltimateChart._primaryColors.length];
-      else
-        return UltimateChart._secondaryColors[i % UltimateChart._secondaryColors.length];
-    }
-
-    // Generate SVG path for each data series based on the date range and first value
-    function generateSvgPath(data: UiChartPoint[]): string {
-      let svgPath: string = '';
-      let firstVal: number | null = null;
-
-      for (let i = 0; i < data.length; i++) {
-        const point = data[i];
-        if (point.date < startDate || point.date > endDate)
-          continue;
-
-        if (firstVal === null) {
-          firstVal = point.value;
-          svgPath = 'M' + scaleX(point.date) + ',' + scaleY(100 * point.value / firstVal);
-        }
-
-        if (i > 0) {
-          const p1 = data[i - 1];
-          const p2 = data[i];
-          const dx = scaleX(p2.date) - scaleX(p1.date);
-          const dy = scaleY(100 * p2.value / firstVal) - scaleY(100 * p1.value / firstVal);
-          const x1 = scaleX(p1.date) + dx * 0.2;
-          const y1 = scaleY(100 * p1.value / firstVal) + dy * 0.2;
-          const x2 = scaleX(p2.date) - dx * 0.2;
-          const y2 = scaleY(100 * p2.value / firstVal) - dy * 0.2;
-
-          svgPath += `C${x1},${y1},${x2},${y2},${scaleX(p2.date)},${scaleY(100 * p2.value / firstVal)}`;
-        }
-      }
-      return svgPath;
-    }
-
     backtestChrt.selectAll('rect') // Add the Legend to the chart
         .data(this._timeSeriess)
         .enter().append('text')
         .attr('x', UltimateChart._legendX)
         .attr('y', (d: CgTimeSeries, i: any) => ( UltimateChart._legendY + i * UltimateChart._legendSpacing ))
-        .style('fill', (d: CgTimeSeries, i: number) =>getColors(d, i))
+        .attr('style', (d: CgTimeSeries) => getStyle(d))
+        .style('fill', (d: CgTimeSeries, i: number) => getColors(d, i))
         .text((d: CgTimeSeries) => (d.name));
 
     // Create tooltip elements and handle mouse events
@@ -227,6 +189,7 @@ export class UltimateChart {
           .data(timeSeriess)
           .enter()
           .append('div')
+          .attr('style', (d: CgTimeSeries) => getStyle(d))
           .style('color', (d: CgTimeSeries, i: number) => getColors(d, i))
           .html((d: CgTimeSeries) => {
             let closestPoint: Nullable<UiChartPoint> = null;
@@ -250,6 +213,53 @@ export class UltimateChart {
             else
               return d.name + ': No Data';
           });
+    }
+
+    // Generate SVG path for each data series based on the date range and first value
+    function generateSvgPath(data: UiChartPoint[]): string {
+      let svgPath: string = '';
+      let firstVal: number | null = null;
+
+      for (let i = 0; i < data.length; i++) {
+        const point = data[i];
+        if (point.date < startDate || point.date > endDate)
+          continue;
+
+        if (firstVal === null) {
+          firstVal = point.value;
+          svgPath = 'M' + scaleX(point.date) + ',' + scaleY(100 * point.value / firstVal);
+        }
+
+        if (i > 0) {
+          const p1 = data[i - 1];
+          const p2 = data[i];
+          const dx = scaleX(p2.date) - scaleX(p1.date);
+          const dy = scaleY(100 * p2.value / firstVal) - scaleY(100 * p1.value / firstVal);
+          const x1 = scaleX(p1.date) + dx * 0.2;
+          const y1 = scaleY(100 * p1.value / firstVal) + dy * 0.2;
+          const x2 = scaleX(p2.date) - dx * 0.2;
+          const y2 = scaleY(100 * p2.value / firstVal) - dy * 0.2;
+
+          svgPath += `C${x1},${y1},${x2},${y2},${scaleX(p2.date)},${scaleY(100 * p2.value / firstVal)}`;
+        }
+      }
+      return svgPath;
+    }
+
+    // get colors for primary and secondary items
+    function getColors(d: CgTimeSeries, i: number): string {
+      if (d.isPrimary)
+        return UltimateChart._primaryColors[i % UltimateChart._primaryColors.length];
+      else
+        return UltimateChart._secondaryColors[i % UltimateChart._secondaryColors.length];
+    }
+
+    // get Style for primary and secondary items
+    function getStyle(d: CgTimeSeries): string {
+      if (d.isPrimary)
+        return 'font-weight: bold;';
+      else
+        return 'font-style: italic;';
     }
   }
 }

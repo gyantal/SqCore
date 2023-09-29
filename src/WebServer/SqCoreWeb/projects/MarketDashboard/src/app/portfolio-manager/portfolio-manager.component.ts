@@ -385,7 +385,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.editedPortfolio.note = lastSelectedTreeNode?.note!;
       this.parentfolderName = this.folders?.find((r) => r.id == lastSelectedTreeNode.parentFolderId!)?.name ?? null;
       this.editedPortfolio.algorithm = lastSelectedTreeNode?.algorithm;
-      this.editedPortfolio.algorithmParam = lastSelectedTreeNode?.algorithmParam;
+      this.editedPortfolio.algorithmParam = this.portfolios?.find((r) => r.id == lastSelectedTreeNode?.id!)?.algorithmParam!; // even after clicking the saveButton the algorithm param is not updating because it inital takes lastSelected item. So we have updated with current Portfolios AlgorithmParam.
     }
 
     this.isViewedPortfolioSaveAllowed = this._mainUser!.isAdmin || this._mainUser!.id == lastSelectedTreeNode!.ownerUserId;
