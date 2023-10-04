@@ -309,10 +309,11 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       if (lastSelectedTreeNode?.id! <= -1) // The user should not be able edit virtual top folders that have negative folder.Id.
         this.isCreateOrEditFolderPopupVisible = false;
       else {
-        this.editedFolder.name = lastSelectedTreeNode?.name!;
-        this.editedFolder.id = lastSelectedTreeNode?.id!;
-        this.editedFolder.parentFolderId = lastSelectedTreeNode?.parentFolderId!;
-        this.editedFolder.note = lastSelectedTreeNode?.note!;
+        const fldrSelected = this.folders?.find((r) => r.id == lastSelectedTreeNode?.id!);
+        this.editedFolder.name = fldrSelected?.name!;
+        this.editedFolder.id = fldrSelected?.id!;
+        this.editedFolder.parentFolderId = fldrSelected?.parentFolderId!;
+        this.editedFolder.note = fldrSelected?.note!;
         this.parentfolderName = this.folders?.find((r) => r.id == lastSelectedTreeNode?.parentFolderId!)?.name ?? null;
       }
     }
@@ -375,17 +376,18 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.editedPortfolio.parentFolderId = lastSelectedTreeNode?.id!;
       this.parentfolderName = lastSelectedTreeNode?.name!;
     } else {
-      this.editedPortfolio.name = lastSelectedTreeNode?.name!;
-      this.editedPortfolio.id = lastSelectedTreeNode?.id! - this.gPortfolioIdOffset;
-      this.editedPortfolio.parentFolderId = lastSelectedTreeNode?.parentFolderId!;
-      this.editedPortfolio.baseCurrency = lastSelectedTreeNode?.baseCurrency!;
-      this.editedPortfolio.portfolioType = lastSelectedTreeNode?.type!;
-      this.editedPortfolio.sharedAccess = lastSelectedTreeNode?.sharedAccess!;
-      this.editedPortfolio.sharedUserWithMe = lastSelectedTreeNode?.sharedUserWithMe!;
-      this.editedPortfolio.note = lastSelectedTreeNode?.note!;
+      const prtfolioSelected = this.portfolios?.find((r) => r.id == lastSelectedTreeNode?.id!);
+      this.editedPortfolio.name = prtfolioSelected?.name!;
+      this.editedPortfolio.id = prtfolioSelected?.id! - this.gPortfolioIdOffset;
+      this.editedPortfolio.parentFolderId = prtfolioSelected?.parentFolderId!;
+      this.editedPortfolio.baseCurrency = prtfolioSelected?.baseCurrency!;
+      this.editedPortfolio.portfolioType = prtfolioSelected?.portfolioType!;
+      this.editedPortfolio.sharedAccess = prtfolioSelected?.sharedAccess!;
+      this.editedPortfolio.sharedUserWithMe = prtfolioSelected?.sharedUserWithMe!;
+      this.editedPortfolio.note = prtfolioSelected?.note!;
       this.parentfolderName = this.folders?.find((r) => r.id == lastSelectedTreeNode.parentFolderId!)?.name ?? null;
-      this.editedPortfolio.algorithm = lastSelectedTreeNode?.algorithm;
-      this.editedPortfolio.algorithmParam = this.portfolios?.find((r) => r.id == lastSelectedTreeNode?.id!)?.algorithmParam!; // even after clicking the saveButton the algorithm param is not updating because it inital takes lastSelected item. So we have updated with current Portfolios AlgorithmParam.
+      this.editedPortfolio.algorithm = prtfolioSelected?.algorithm!;
+      this.editedPortfolio.algorithmParam = prtfolioSelected?.algorithmParam!; // even after clicking the saveButton the algorithm param is not updating because it inital takes lastSelected item. So we have updated with current Portfolios AlgorithmParam.
     }
 
     this.isViewedPortfolioSaveAllowed = this._mainUser!.isAdmin || this._mainUser!.id == lastSelectedTreeNode!.ownerUserId;

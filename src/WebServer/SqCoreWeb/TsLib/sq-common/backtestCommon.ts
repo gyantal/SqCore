@@ -145,22 +145,12 @@ export class TreeViewItem { // future work. At the moment, it copies PortfolioFl
   public ownerUserId = -1;
   public parentFolderId = -1;
 
-  public creationTime = ''; // Folder only. not necessary
-  public note = ''; // Folder only. not necessary
   public prtfItemType: PrtfItemType = PrtfItemType.Folder;
 
   // TreeViewItem specific fields
   public children: TreeViewItem[] = []; // children are other TreeViewItems
   public isSelected: boolean = false;
   public isExpanded: boolean = false;
-
-  // Portfolio specific fields
-  public baseCurrency = '';
-  public type = ''; // Trades or Simulation
-  public sharedAccess = '';
-  public sharedUserWithMe = '';
-  public algorithm = '';
-  public algorithmParam = '';
 }
 
 export class TreeViewState {

@@ -7,6 +7,8 @@ export class StatisticsResults {
   // public AnnualizedMeanReturn: number = 0;
   public SharpeRatio: number = 0;
   public MaxDD: number = 0;
+  public MaxDDStartDate: Date = new Date();
+  public MaxDDEndDate: Date = new Date();
   // public MarRatio: number = 0;
   // public MaxDdLenInCalDays: number = 0;
   // public MaxDdLenInTradDays: number = 0;
@@ -67,8 +69,11 @@ export class SqStatisticsBuilder {
       // Initialize variables to track the indices of start and end dates within the price data
       let startIndex: number = 0;
       let endIndex: number = 0;
-      const drawdowns: number[] = [];
       const dailyReturns: number[] = [];
+      let maxDD: number = 0; // Because drawdown values are negative, 0 is a good maximum, and we do minimum search on the negative values.
+      let currentDrawdown = 0;
+      let maxDDStartDate: Date = new Date();
+      let maxDDEndDate: Date = new Date();
       let high: number = Number.MIN_VALUE;
       let previousTradingDayValue: number = 0; // variable to store the previous trading day's value
       for (let j = 0; j < this._timeSeriess[i].priceData.length; j++) {
@@ -85,11 +90,23 @@ export class SqStatisticsBuilder {
           continue; // Skip further processing if the date is not within the desired range
 
         const price: number = this._timeSeriess[i].priceData[j].value;
-        if (price > high)
+        const date: Date = this._timeSeriess[i].priceData[j].date;
+        if (price > high) {
           high = price;
+          currentDrawdown = 0; // Since we have a new high, reset the currentDrawdown to zero
+          maxDDStartDate = date; // Update the start and end dates of the maximum drawdown to the current date
+          maxDDEndDate = date;
+        } else {
+          const drawdown = 1 - price / high;
+          if (drawdown > currentDrawdown) {
+            currentDrawdown = drawdown; // Update the current maximum drawdown
+            maxDDEndDate = date; // Update the end date of the maximum drawdown to the current date
+          }
+        }
 
-        if (high > 0)
-          drawdowns.push(price / high - 1);
+        // Check if the current drawdown is higher than the current maximum drawdown
+        if (currentDrawdown > maxDD)
+          maxDD = currentDrawdown; // Update the maximum drawdown with the new higher value
 
         // Calculate daily returns and store them in the dailyReturns array
         if (j > 0 && this.isTradingDay(currentDate)) { // for j == 0 (first day), we cannot calculate dailyReturn, because there is no previous day.
@@ -110,13 +127,10 @@ export class SqStatisticsBuilder {
         const cagr = Math.pow( statRes.stats.TotalReturn + 1, 1 / years) - 1; // n-th root of the total return
         statRes.stats.CAGR = isNaN(cagr) || !isFinite(cagr) ? 0 : cagr;
       }
-      // Calculate the maximum drawdown for the current time series
-      let maxDD: number = 0; // Because dd values are negative, 0 is a good maximum, and we do minimum search on the negative values.
-      for (const dd of drawdowns) {
-        if (dd < maxDD)
-          maxDD = dd;
-      }
+      // maximum drawdown and MaxDD period start and end
       statRes.stats.MaxDD = Math.abs(maxDD);
+      statRes.stats.MaxDDStartDate = maxDDStartDate;
+      statRes.stats.MaxDDEndDate = maxDDEndDate;
       // Calculate the sharpe ratio for the current time series
       const histAMean = sqAverage(dailyReturns) * 252; // annualized daily mean
       const histSD = sqStdDev(dailyReturns) * Math.sqrt(252); // annualized daily StDev
