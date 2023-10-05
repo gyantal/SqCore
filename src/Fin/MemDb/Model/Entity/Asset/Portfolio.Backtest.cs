@@ -70,6 +70,8 @@ public class PortfolioPosition
 public class PriceHistoryJs // To save bandwidth, we send Dates, and Prices just as a List, instead of a List of <Date,Price> objects that would add property names thousands of times into JSON
 {
     public List<string> Dates { get; set; } = new();
+
+    [JsonConverter(typeof(FloatListJsonConverterToNumber4D))]
     public List<float> Prices { get; set; } = new();
 }
 

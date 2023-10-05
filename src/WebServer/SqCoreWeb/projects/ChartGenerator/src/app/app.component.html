@@ -81,10 +81,10 @@
         </tr>
       </thead>
       <tbody>
-        <ng-container *ngFor="let stat of backtestStatsResults[0]?.stats | keyvalue"> <!-- we only use backtestStatsResults[0]?.stats to get the statistics keys (since all items in the array should have the same statistics keys). -->
-          <tr>
-            <td>{{stat.key}}</td>
-            <td *ngFor="let item of backtestStatsResults">{{(stat.key == 'SharpeRatio') ? (item.stats[stat.key] | number:'1.2-2') : ((stat.key == 'MaxDDStartDate' || stat.key == 'MaxDDEndDate') ? (item.stats[stat.key] | date:'YYYY-MM-dd') : (item.stats[stat.key] | percent:'0.2'))}}</td> <!-- we display the sharpe ratio without % by using number pipe and dates with Date pipe-->
+        <ng-container *ngFor="let name of _sqStatisticsbuilder.StatNames">
+          <tr [ngStyle]="{'font-weight': (name == 'CAGR' || name == 'SharpeRatio' || name == 'MaxDD') ? 'bold' : ''}">
+            <td>{{name}}</td>
+            <td *ngFor="let item of backtestStatsResults">{{(name == 'SharpeRatio') ? (item.stats[name] | number:'1.2-2') : ((name == 'MaxDDStartDate' || name == 'MaxDDEndDate') ? (item.stats[name] | date:'YYYY-MM-dd') : (item.stats[name] | percent:'0.2'))}}</td> <!-- we display the sharpe ratio without % by using number pipe and dates with Date pipe-->
           </tr>
         </ng-container>
       </tbody>

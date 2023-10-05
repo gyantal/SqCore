@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
@@ -32,13 +33,9 @@ public class DoubleJsonConverterToNumber4D : JsonConverter<double> // the number
         // Writes ["Infinity","NaN",0.1,1.0002,3.141592653589793]
         // And the following succeeds: JsonConvert.DeserializeObject<double[]>("[\"Infinity\",\"NaN\",0.1,1.0002,3.141592653589793]");
         if (double.IsFinite(p_value))
-        {
             writer.WriteNumberValue(Convert.ToDecimal(Math.Round(p_value, 4))); // use 4 decimals instead of 2, because of penny stocks and MaxDD of "-0.2855" means -28.55%. ToString(): 24.00155 is rounded up to 24.0016
-        }
         else
-        {
             writer.WriteStringValue(p_value.ToString());
-        }
     }
 }
 
@@ -56,16 +53,37 @@ public class FloatJsonConverterToNumber4D : JsonConverter<float> // the number i
         // Writes ["Infinity","NaN",0.1,1.0002,3.141592653589793]
         // And the following succeeds: JsonConvert.DeserializeObject<double[]>("[\"Infinity\",\"NaN\",0.1,1.0002,3.141592653589793]");
         if (float.IsFinite(p_value))
-        {
             writer.WriteNumberValue(Convert.ToDecimal(Math.Round(p_value, 4))); // use 4 decimals instead of 2, because of penny stocks and MaxDD of "-0.2855" means -28.55%. ToString(): 24.00155 is rounded up to 24.0016
-        }
         else
-        {
             writer.WriteStringValue(p_value.ToString());
-        }
     }
 }
 
+public class FloatListJsonConverterToNumber4D : JsonConverter<List<float>> // the number is written as a number, without quotes: ("previousClose":"272.4800109863281") => ("previousClose":272.48)
+{
+    public override List<float> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        throw new NotImplementedException("Deserialization of List<float> is not supported.");
+    }
+
+    public override void Write(Utf8JsonWriter writer, List<float> p_values, JsonSerializerOptions options)
+    {
+        if (p_values != null)
+        {
+            writer.WriteStartArray();
+
+            foreach (var value in p_values)
+            {
+                if (float.IsFinite(value))
+                    writer.WriteNumberValue(Convert.ToDecimal(Math.Round(value, 4)));
+                else
+                    writer.WriteStringValue(value.ToString());
+            }
+
+            writer.WriteEndArray();
+        }
+    }
+}
 public class DateTimeJsonConverterToUnixEpochSeconds : JsonConverter<DateTime> // the DateTime is written as a number, without quotes: ("lastUtc":"2022-09-08T07:15:08.2191122Z")  => ("lastUtc":1662635321)
 {
     public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
@@ -85,6 +103,7 @@ public class DateTimeJsonConverterToUnixEpochSeconds : JsonConverter<DateTime> /
     }
 }
 
+// public class DateTimeJsonConverterToYYYYMMDD : JsonConverter<DateTime> // the DateTime is written as a number, without quotes: ("lastUtc":"2022-09-08T07:15:08.2191122Z")  => ("lastUtc":1662635321)
 public static partial class Utils
 {
     public static JsonSerializerOptions g_camelJsonSerializeOpt = new()

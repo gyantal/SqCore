@@ -31,11 +31,11 @@ class ChartData
     public List<long> Dates { get; set; } = new List<long>();
 
     // PV values are usually $100,000, $100,350,..., but PV can be around $1000 too and in that case decimals become important and we cannot use 'int' for storing them.
-    // So we have to use either decimal (16 bytes) or float (4 byte)
-    // We don't like decimal (16 bytes), but some reasons to keep it:
-    // - QC gives decimal values. Converting it to int or float requires some CPU conversion.
-    // - If we use float (4 bytes), then precision rounding would make the JSON text serialization longer, but than can be mitigated with the FloatJsonConverterToNumber4D attribute
-    public List<int> Values { get; set; } = new List<int>();
+    // So we have to use either decimal (16 bytes) or float (4 byte) or double (8 bytes)
+    // We don't like decimal (16 bytes), but the reason to keep it is that QC gives decimal values. Converting it to int or float requires some CPU conversion. But we should do it. For saving RAM. (20KB float List instead of the 80KB decimal List)
+    // If we use float (4 bytes), we should use the FloatJsonConverterToNumber4D attribute for generating maximum 4 decimals: (100.342222225 decimal => float 100.3422)
+    [JsonConverter(typeof(FloatListJsonConverterToNumber4D))]
+    public List<float> Values { get; set; } = new List<float>(); // if 7 digit mantissa precision is enough then use float, otherwise double. Float:  if PV values of 10M = 10,000,000 we don't have any decimals, which is fine usually
 }
 
 public partial class DashboardClient

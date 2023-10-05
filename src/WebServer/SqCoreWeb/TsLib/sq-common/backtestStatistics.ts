@@ -1,3 +1,4 @@
+import { maxDate, minDate } from '../../projects/sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { CgTimeSeries } from '../sq-common/backtestCommon';
 import { sqAverage, sqStdDev } from '../sq-common/utils_math';
 
@@ -23,6 +24,7 @@ export class FinalStatistics {
 
 export class SqStatisticsBuilder {
   _timeSeriess: CgTimeSeries[] = [];
+  public StatNames: string[] = ['TotalReturn', 'CAGR', 'SharpeRatio', 'MaxDD', 'MaxDDStartDate', 'MaxDDEndDate']; // it defines the order of importance too
 
   public Init(timeSeriess: CgTimeSeries[]): void {
     this._timeSeriess = timeSeriess;
@@ -71,9 +73,11 @@ export class SqStatisticsBuilder {
       let endIndex: number = 0;
       const dailyReturns: number[] = [];
       let maxDD: number = 0; // Because drawdown values are negative, 0 is a good maximum, and we do minimum search on the negative values.
+      let maxDDStartDate: Date = minDate;
+      let maxDDEndDate: Date = maxDate;
       let currentDrawdown = 0;
-      let maxDDStartDate: Date = new Date();
-      let maxDDEndDate: Date = new Date();
+      let currentDDStartDate: Date = new Date();
+      let currentDDEndDate: Date = new Date();
       let high: number = Number.MIN_VALUE;
       let previousTradingDayValue: number = 0; // variable to store the previous trading day's value
       for (let j = 0; j < this._timeSeriess[i].priceData.length; j++) {
@@ -94,19 +98,22 @@ export class SqStatisticsBuilder {
         if (price > high) {
           high = price;
           currentDrawdown = 0; // Since we have a new high, reset the currentDrawdown to zero
-          maxDDStartDate = date; // Update the start and end dates of the maximum drawdown to the current date
-          maxDDEndDate = date;
+          currentDDStartDate = date; // Update the start and end dates of the maximum drawdown to the current date
+          currentDDEndDate = date;
         } else {
           const drawdown = 1 - price / high;
           if (drawdown > currentDrawdown) {
             currentDrawdown = drawdown; // Update the current maximum drawdown
-            maxDDEndDate = date; // Update the end date of the maximum drawdown to the current date
+            currentDDEndDate = date; // Update the end date of the maximum drawdown to the current date
           }
         }
 
         // Check if the current drawdown is higher than the current maximum drawdown
-        if (currentDrawdown > maxDD)
+        if (currentDrawdown > maxDD) {
           maxDD = currentDrawdown; // Update the maximum drawdown with the new higher value
+          maxDDStartDate = currentDDStartDate;
+          maxDDEndDate = currentDDEndDate;
+        }
 
         // Calculate daily returns and store them in the dailyReturns array
         if (j > 0 && this.isTradingDay(currentDate)) { // for j == 0 (first day), we cannot calculate dailyReturn, because there is no previous day.
