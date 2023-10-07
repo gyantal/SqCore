@@ -69,7 +69,7 @@ public class PortfolioPosition
 
 public class PriceHistoryJs // To save bandwidth, we send Dates, and Prices just as a List, instead of a List of <Date,Price> objects that would add property names thousands of times into JSON
 {
-    public List<string> Dates { get; set; } = new();
+    public List<int> Dates { get; set; } = new();
 
     [JsonConverter(typeof(FloatListJsonConverterToNumber4D))]
     public List<float> Prices { get; set; } = new();
@@ -294,12 +294,12 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         for (int i = 0; i < result.Count; i++)
         {
             TradeBar[]? resBarVals = result[i].Bars.Values.ToArray();
-            string dateStr = resBarVals[0].Time.TohYYYYMMDD();
+            int dateInt = int.Parse(resBarVals[0].Time.TohYYYYMMDD().Replace("-", string.Empty)); // converting the date to number format (ex: "20020730" => 20020730) by replacing the hyphens(-) and double quotes(").This way can reduce the memory that stores on the client side.
             float price = (float)resBarVals[0].Price;
             if (historicalPrices.Prices.Count > 1 && (price / historicalPrices.Prices[^1] > 1.5)) // TEMP for debugging, because QQQ benchmark data has (wrong) doubling 3 times during its history.
-                Console.WriteLine($"Warning on ticker {tickerAsTradedToday}. Potential wrong data on {dateStr}, PrevPrice: {historicalPrices.Prices[^1]}, currPrice: {price}");
+                Console.WriteLine($"Warning on ticker {tickerAsTradedToday}. Potential wrong data on {dateInt}, PrevPrice: {historicalPrices.Prices[^1]}, currPrice: {price}");
 
-            historicalPrices.Dates.Add(dateStr); // Add the date to the Date list
+            historicalPrices.Dates.Add(dateInt); // Add the date to the Date list
             historicalPrices.Prices.Add(price); // Add the price to the Price list
         }
         p_histPrices = historicalPrices;

@@ -54,7 +54,7 @@ export class AppComponent implements OnInit {
   endDate: Date = new Date(); // used to filter the chart Data based on the user input
   startDateStr: string = '';
   endDateStr: string = '';
-  rangeSelection: string[] = ['YTD', '1M', '1Y', '3Y', '5Y', 'ALL'];
+  rangeSelection: string[] = ['YTD', '1M', '1Y', '3Y', '5Y', '10Y', 'ALL'];
   histRangeSelected: string = 'ALL';
   isSrvConnectionAlive: boolean = true;
   chrtGenDiagnosticsMsg: string = 'Benchmarking time, connection speed';
@@ -290,10 +290,10 @@ export class AppComponent implements OnInit {
     }
 
     for (const bmrkItem of chrtGenBacktestRes.bmrkHistories) { // processing benchamrks
-      const firstValDateStr: string = bmrkItem.histPrices.dates[0];
-      const firstValDate: Date = new Date(firstValDateStr.substring(0, 4) + '-' + firstValDateStr.substring(5, 7) + '-' + firstValDateStr.substring(8, 10));
-      const lastValDateStr: String = bmrkItem.histPrices.dates[bmrkItem.histPrices.dates.length - 1];
-      const lastValDate: Date = new Date(lastValDateStr.substring(0, 4) + '-' + lastValDateStr.substring(5, 7) + '-' + lastValDateStr.substring(8, 10));
+      const firstValDateStr: string = (bmrkItem.histPrices.dates[0]).toString();
+      const firstValDate: Date = new Date(firstValDateStr.substring(0, 4) + '-' + firstValDateStr.substring(4, 6) + '-' + firstValDateStr.substring(4, 6));
+      const lastValDateStr: string = (bmrkItem.histPrices.dates[bmrkItem.histPrices.dates.length - 1]).toString();
+      const lastValDate: Date = new Date(lastValDateStr.substring(0, 4) + '-' + lastValDateStr.substring(4, 6) + '-' + lastValDateStr.substring(6, 8));
 
       if (firstValDate < this._minStartDate)
         this._minStartDate = firstValDate;
@@ -308,8 +308,8 @@ export class AppComponent implements OnInit {
       chartItem.priceData = [];
       for (let i = 0; i < bmrkItem.histPrices.dates.length; i++) {
         const chrtItem = new UiChartPoint();
-        const dateStr: string = bmrkItem.histPrices.dates[i];
-        chrtItem.date = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(5, 7) + '-' + dateStr.substring(8, 10));
+        const dateStr: string = (bmrkItem.histPrices.dates[i]).toString();
+        chrtItem.date = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(4, 6) + '-' + dateStr.substring(6, 8));
         chrtItem.value = bmrkItem.histPrices.prices[i];
         chartItem.priceData.push(chrtItem);
       }
