@@ -43,3 +43,11 @@ export function removeDuplicates(inArr: string[]): string[] {
   }
   return outArr;
 }
+
+// Conver the numder to a date format (eg: 20020830 => Fri Aug 30 2002 00:00:00 GMT+0530 (India Standard Time))
+export function parseNumberToDate(dateInt: number): Date {
+  const day = Math.floor(dateInt % 100);
+  const month = Math.floor((dateInt / 100) % 100) - 1; // in Javacript the month parameter is zero-based, meaning January is represented by 0, February by 1, and so on, with December being 11. This can sometimes lead to unexpected results when constructing dates. So we have substract the value by 1 (eg: Month - 1)
+  const year = Math.floor(dateInt / 10000);
+  return new Date(year, month, day);
+}

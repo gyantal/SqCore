@@ -7,6 +7,7 @@ import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
 import { SqStatisticsBuilder, FinalStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
 import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqTreeViewComponent } from '../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
+import { parseNumberToDate } from '../../../../TsLib/sq-common/utils-common';
 
 type Nullable<T> = T | null;
 
@@ -290,11 +291,8 @@ export class AppComponent implements OnInit {
     }
 
     for (const bmrkItem of chrtGenBacktestRes.bmrkHistories) { // processing benchamrks
-      const firstValDateStr: string = (bmrkItem.histPrices.dates[0]).toString();
-      const firstValDate: Date = new Date(firstValDateStr.substring(0, 4) + '-' + firstValDateStr.substring(4, 6) + '-' + firstValDateStr.substring(4, 6));
-      const lastValDateStr: string = (bmrkItem.histPrices.dates[bmrkItem.histPrices.dates.length - 1]).toString();
-      const lastValDate: Date = new Date(lastValDateStr.substring(0, 4) + '-' + lastValDateStr.substring(4, 6) + '-' + lastValDateStr.substring(6, 8));
-
+      const firstValDate: Date = parseNumberToDate(bmrkItem.histPrices.dates[0]);
+      const lastValDate: Date = parseNumberToDate(bmrkItem.histPrices.dates[bmrkItem.histPrices.dates.length - 1]);
       if (firstValDate < this._minStartDate)
         this._minStartDate = firstValDate;
 
@@ -308,8 +306,7 @@ export class AppComponent implements OnInit {
       chartItem.priceData = [];
       for (let i = 0; i < bmrkItem.histPrices.dates.length; i++) {
         const chrtItem = new UiChartPoint();
-        const dateStr: string = (bmrkItem.histPrices.dates[i]).toString();
-        chrtItem.date = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(4, 6) + '-' + dateStr.substring(6, 8));
+        chrtItem.date = parseNumberToDate(bmrkItem.histPrices.dates[i]);
         chrtItem.value = bmrkItem.histPrices.prices[i];
         chartItem.priceData.push(chrtItem);
       }
