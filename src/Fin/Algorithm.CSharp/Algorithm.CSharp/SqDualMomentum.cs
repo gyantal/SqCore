@@ -98,8 +98,7 @@ namespace QuantConnect.Algorithm.CSharp
         private Dictionary<string, List<QcPrice>> _adjCloses = new Dictionary<string, List<QcPrice>>();
         private Dictionary<string, List<QcDividend>> _dividends = new Dictionary<string, List<QcDividend>>();
         private Dictionary<string, List<QcSplit>> _splits = new Dictionary<string, List<QcSplit>>();
-        private Dictionary<string, List<QcPrice>> _rawClosesFromYfLists = new Dictionary<string, List<QcPrice>>();
-        private Dictionary<string, Dictionary<DateTime, decimal>> _rawClosesFromYfDicts = new Dictionary<string, Dictionary<DateTime, decimal>>();
+        private Dictionary<string, Dictionary<DateTime, decimal>>? _rawClosesFromYfDicts = null;
         DateTime _bnchmarkStartTime;
         private Dividends _sliceDividends;
         bool _isEndOfMonth = false; // use Qc Schedule.On() mechanism to calculate the last trading day of the month (because of holidays complications), even using it in SqCore
@@ -129,9 +128,7 @@ namespace QuantConnect.Algorithm.CSharp
                 _splits.Add(ticker, new List<QcSplit>());
             }
 
-            // *** Only in QcCloud: YF data download.
-            _rawClosesFromYfLists = new Dictionary<string, List<QcPrice>>();
-            _rawClosesFromYfDicts = new Dictionary<string, Dictionary<DateTime, decimal>>();
+            // *** Only in QcCloud: YF data download. Part 1
             if (IsTradeInQcCloud) // only in QC cloud: we need not only daily, but perMinute symbols too, because we use perMinute symbols for trading.
             {
                 foreach (string ticker in _tickers)
@@ -140,8 +137,6 @@ namespace QuantConnect.Algorithm.CSharp
                     _symbolsMinute.Add(ticker, symbolMinute);
                     Securities[symbolMinute].FeeModel = new ConstantFeeModel(0);
                     Securities[symbolMinute].SetBuyingPowerModel(new SecurityMarginModel(30m)); // equivalent to security.SetLeverage(). Allows to go 30x leverage of this stock if all 20 GC stock are in position with 50% overleverage
-                    // Call the DownloadAndProcessData method to get real life close prices from YF
-                    QCAlgorithmUtils.DownloadAndProcessYfData(this, ticker, _earliestUsableDataDay, _warmUp, _endDate, ref _rawClosesFromYfLists, ref _rawClosesFromYfDicts);
                 }
             }
             _tradedSymbols = IsTradeInSqCore ? _symbolsDaily : _symbolsMinute;
@@ -183,6 +178,15 @@ namespace QuantConnect.Algorithm.CSharp
             SetEndDate(_endDate);
             // SetBenchmark("SPY"); // the default benchmark is SPY, which is OK in the cloud. In SqCore, we removed the default SPY benchmark, because we don't need it.")
 
+            // *** Only in QcCloud: YF data download. Part 2
+            if (IsTradeInQcCloud) // only in QC cloud: we need not only daily, but perMinute symbols too, because we use perMinute symbols for trading.
+            {
+                foreach (string ticker in _tickers)
+                {
+                    // Call the DownloadAndProcessData method to get real life close prices from YF
+                    QCAlgorithmUtils.DownloadAndProcessYfData(this, ticker, _earliestUsableDataDay, _warmUp, _endDate, out _rawClosesFromYfDicts);
+                }
+            }
 
             Symbol tradingScheduleSymbol = symbolWithEarliestUsableDataDay; // "SPY" is the best candidate for trading schedule, but if "SPY" is not in the asset universe, we use the one with the longest history
             if (tradingScheduleSymbol != null) // if AlgorithmParam is empty, then there is no symbol at all. It is OK to not schedule trading.
@@ -232,13 +236,15 @@ namespace QuantConnect.Algorithm.CSharp
                 string ticker = kvp.Key;
                 decimal newMarketValue = 0;
                 decimal newPosition = 0;
+                decimal closePrice = 0;
                 if (usedAdjustedClosePrices.TryGetValue(ticker, out List<QcPrice> tickerUsedAdjustedClosePrices))
+                    closePrice = tickerUsedAdjustedClosePrices[(Index)(^1)].Close;
+
+
+                if (nextMonthWeights[ticker] != 0 && closePrice != 0)
                 {
-                    if (nextMonthWeights[ticker] != 0 && tickerUsedAdjustedClosePrices.Count != 0)
-                    {
-                        newMarketValue = currentPV * nextMonthWeights[ticker];
-                        newPosition = Math.Round((decimal)(newMarketValue / tickerUsedAdjustedClosePrices[(Index)(^1)].Close)); // use the last element
-                    }
+                    newMarketValue = currentPV * nextMonthWeights[ticker];
+                    newPosition = Math.Round((decimal)(newMarketValue / closePrice)); // use the last element
                 }
                 decimal positionChange = newPosition - Portfolio[ticker].Quantity;
                 if (positionChange != 0) // QC raises Warning if order quantity = 0. So, we don't sent these. "Unable to submit order with id -10 that has zero quantity."
@@ -357,7 +363,7 @@ namespace QuantConnect.Algorithm.CSharp
                 if (IsTradeInQcCloud)
                 {
                     // add the last lookbackTradingDays items to the new dictionary from YF
-                    if (_rawClosesFromYfDicts[ticker].TryGetValue(this.Time.Date, out decimal lastRawClose))
+                    if (_rawClosesFromYfDicts != null && _rawClosesFromYfDicts[ticker].TryGetValue(this.Time.Date, out decimal lastRawClose))
                         lastLbTdPrices.Add(new QcPrice() { ReferenceDate = this.Time.Date, Close = lastRawClose });
                     else // if lastLbTdPrices is empty, then not finding this date is fine. If lastLbTdPrices has at least 1 items, we expect that we find this date.
                         if (qcAdjCloses.Count > 0)

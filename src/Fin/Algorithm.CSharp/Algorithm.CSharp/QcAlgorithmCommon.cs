@@ -154,8 +154,11 @@ namespace QuantConnect.Algorithm.CSharp
             return earliestUsableDataDay;
         }
 
-        public static void DownloadAndProcessYfData(QCAlgorithm p_algorithm, string p_ticker, DateTime p_startDate, TimeSpan p_warmUp, DateTime p_endDate, ref Dictionary<string, List<QcPrice>> p_rawClosesFromYfLists, ref Dictionary<string, Dictionary<DateTime, decimal>> p_rawClosesFromYfDicts)
+        public static void DownloadAndProcessYfData(QCAlgorithm p_algorithm, string p_ticker, DateTime p_startDate, TimeSpan p_warmUp, DateTime p_endDate, out Dictionary<string, Dictionary<DateTime, decimal>> p_rawClosesFromYfDicts)
         {
+            p_rawClosesFromYfDicts = new Dictionary<string, Dictionary<DateTime, decimal>>();
+            Dictionary<string, List<QcPrice>> rawClosesFromYfLists = new();
+
             long periodStart = QCAlgorithmUtils.DateTimeUtcToUnixTimeStamp(p_startDate - p_warmUp);
             long periodEnd = QCAlgorithmUtils.DateTimeUtcToUnixTimeStamp(p_endDate.AddDays(1)); // if p_endDate is a fixed date (2023-02-28:00:00), then it has to be increased, otherwise YF doesn't give that day data.
 
@@ -252,7 +255,7 @@ namespace QuantConnect.Algorithm.CSharp
                     rawClosesFromYfList[i].Close *= splitMultiplier;
                 }
             }
-            p_rawClosesFromYfLists[p_ticker] = rawClosesFromYfList;
+            rawClosesFromYfLists[p_ticker] = rawClosesFromYfList;
 
             // Step 4. Convert List to Dictionary, because that is 6x faster to query
             var rawClosesFromYfDict = new Dictionary<DateTime, decimal>(rawClosesFromYfList.Count);

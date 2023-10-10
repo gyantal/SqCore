@@ -87,26 +87,34 @@ public partial class FinDb
         string mapFilesDir = $"{finDataDir}map_files";
         // Collect tickers from file names. Furthermore, collect start and end dates from map_files.
         List<string> tickers = new();
-        List<string> mapFilesFirstRows = new();
+        List<string> virtualTickers = new();
+        List<string> mapFilesLastButOneRows = new();
         List<string> mapFilesLastRows = new();
         foreach (string mapFilePath in Directory.GetFiles(mapFilesDir, "*.csv")) // Get an array of file paths in the directory with ".csv" extension.
         {
             if (mapFilePath.EndsWith("-qc.csv")) // Ignore files ending with '-qc.csv'. It is only the spy-qc.csv. We want keep the original QC SPY data.
                 continue;
 
+            if (mapFilePath.EndsWith("-sq.csv")) // Ignore files ending with '-sq.csv'.
+            {
+                var sqFileName = Path.GetFileNameWithoutExtension(mapFilePath);
+                int hyphenIndex = sqFileName.IndexOf('-');
+                if (hyphenIndex != -1 && hyphenIndex < sqFileName.Length - 1)
+                {
+                    string virtualTicker = sqFileName[..hyphenIndex];
+                    virtualTickers.Add(virtualTicker);
+                }
+                continue;
+            }
             tickers.Add(Path.GetFileNameWithoutExtension(mapFilePath));
             string[] fileLines = File.ReadAllLines(mapFilePath);
 
-            if (fileLines.Length > 0)
-            {
-                string firstRow = fileLines[0];
-                int firstCommaIndex = firstRow.IndexOf(',');
-                if (firstCommaIndex != -1)
-                    mapFilesFirstRows.Add(firstRow[..firstCommaIndex]);
-            }
-
             if (fileLines.Length > 1)
             {
+                string lastButOneRow = fileLines[^2];
+                int lastButOneCommaIndex = lastButOneRow.IndexOf(',');
+                if (lastButOneCommaIndex != -1)
+                    mapFilesLastButOneRows.Add(lastButOneRow[..lastButOneCommaIndex]);
                 string lastRow = fileLines[^1];
                 int lastCommaIndex = lastRow.IndexOf(',');
                 if (lastCommaIndex != -1)
@@ -119,12 +127,20 @@ public partial class FinDb
         for (int i = 0; i < tickers.Count; i++)
         {
             string ticker = tickers[i];
-            DateTime startDate = DateTime.ParseExact(mapFilesFirstRows[i], "yyyyMMdd", CultureInfo.InvariantCulture);
+            DateTime startDate = DateTime.ParseExact(mapFilesLastButOneRows[i], "yyyyMMdd", CultureInfo.InvariantCulture).AddDays(1);
             DateTime endDate = DateTime.ParseExact(mapFilesLastRows[i], "yyyyMMdd", CultureInfo.InvariantCulture);
             bool isOK = await CrawlData(ticker, p_isLogHtml, logSb, finDataDir, startDate, endDate);
             if (!isOK)
                 logSb.AppendLine($"Error processing {ticker}");
         }
+
+        // sdsd
+        foreach (string ticker in virtualTickers)
+        {
+            CreateVirtualTickerDailyPriceFiles(ticker, finDataDir);
+            // CreateVirtualTickerFactorFiles(ticker, finDataDir);
+        }
+
         return logSb;
     }
 
@@ -220,7 +236,7 @@ public partial class FinDb
             string line = $"{date},{open},{high},{low},{close},{volume}";
             tw.WriteLine(line);
         }
-        tw.Close(); // Don't forget to close the file!
+        tw.Close();
 
         // Download dividend history from YF. After that collect dividends and splits into a dictionary.
         IReadOnlyList<DividendTick?> dividendHistory = await Yahoo.GetDividendsAsync(p_ticker, null, null);
@@ -289,5 +305,105 @@ public partial class FinDb
         factFileTextWriter.Close();
 
         return true;
+    }
+    public static void CreateVirtualTickerDailyPriceFiles(string p_ticker, string p_finDataDir) // p_ticker is "VXX" (not "VXX-SQ")
+    {
+        // Read the content of ticker-sq-history.csv
+        string sqHistoryContent = ReadCsvFromZip(Path.GetFullPath(p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker}-sq-history.zip"), $"{p_ticker}-sq-history.csv");
+        int lastHistDate = 0;
+
+        // Find the largest number in the first column of ticker-sq-history.csv
+        using (StringReader sqHistReader = new(sqHistoryContent))
+        {
+            string? lastLine = null;
+            string? currentLine;
+
+            while ((currentLine = sqHistReader.ReadLine()) != null)
+                lastLine = currentLine;
+
+            if (!string.IsNullOrEmpty(lastLine))
+            {
+                int histWhiteSpaceIndex = lastLine.IndexOf(' ');
+                if (histWhiteSpaceIndex != -1)
+                {
+                    if (int.TryParse(lastLine[..histWhiteSpaceIndex], out lastHistDate))
+                    {
+                        // 'lastHistDate' is correctly set based on the last line of ticker-sq-history.csv
+                    }
+                }
+            }
+        }
+
+        // Read the content of ticker.csv
+        string tickerContent = ReadCsvFromZip(p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker}.zip", $"{p_ticker}.csv");
+
+        string filteredTickerContent;
+        // Filter rows from ticker.csv where the number in the first column is greater than lastSqHistoryNumber
+        using (StringReader tickerReader = new(tickerContent))
+        using (StringWriter writer = new())
+        {
+            string? line;
+            bool foundThreshold = false;
+
+            while ((line = tickerReader.ReadLine()) != null)
+            {
+                // Find the first comma in the line
+                int tickerWhiteSpaceIndex = line.IndexOf(' ');
+
+                if (tickerWhiteSpaceIndex >= 0)
+                {
+                    // Try to parse the number
+                    if (int.TryParse(line[..tickerWhiteSpaceIndex], out int number))
+                    {
+                        if (number >= lastHistDate && !foundThreshold)
+                        {
+                            foundThreshold = true;
+                            writer.WriteLine(line);
+                        }
+                        else if (!foundThreshold)
+                            continue; // Skip the row if we are before the threshold
+                    }
+                }
+
+                writer.WriteLine(line); // Non-valid rows are added to the result
+            }
+            filteredTickerContent = writer.ToString();
+        }
+
+        // Merge
+        string mergedCsvContent = sqHistoryContent + filteredTickerContent;
+
+        // Create a zip file. But before that, check that if there is already a zip for this ticker, then archive it with the first three characters of today.
+        string dayOfWeek = DateTime.UtcNow.AddDays(-1).DayOfWeek.ToString()[..3].ToLower();
+        string zipFilePath = Path.GetFullPath(p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker.ToLower()}-sq.zip");
+        if (File.Exists(zipFilePath))
+        {
+            string backupFileName = p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker.ToLower()}-sq_{dayOfWeek}.zip";
+            File.Move(zipFilePath, backupFileName, true);
+        }
+
+        using FileStream zipToCreate = new(zipFilePath, FileMode.Create);
+        using ZipArchive zipFile = new(zipToCreate, ZipArchiveMode.Create);
+        ZipArchiveEntry innerCsvFile = zipFile.CreateEntry($"{p_ticker.ToLower()}-sq.csv");
+        using StreamWriter tw = new(innerCsvFile.Open());
+
+        tw.Write(mergedCsvContent);
+        tw.Close();
+    }
+
+    static string ReadCsvFromZip(string p_zipFilePath, string p_csvFileName)
+    {
+        using FileStream zipFile = File.OpenRead(p_zipFilePath);
+        using ZipArchive archive = new(zipFile, ZipArchiveMode.Read);
+        ZipArchiveEntry? entry = archive.GetEntry(p_csvFileName);
+
+        if (entry != null)
+        {
+            using Stream entryStream = entry.Open();
+            using StreamReader reader = new(entryStream);
+            return reader.ReadToEnd();
+        }
+        else
+            throw new FileNotFoundException($"The '{p_csvFileName}' file is not found in the '{p_zipFilePath}' archive.");
     }
 }

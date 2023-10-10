@@ -79,13 +79,12 @@ namespace QuantConnect.Algorithm.CSharp
         private int _lookbackTradingDays = 0;
         private Dictionary<string, Symbol> _symbolsDaily = new Dictionary<string, Symbol>();
         private Dictionary<string, Symbol> _symbolsMinute = new Dictionary<string, Symbol>();
-        private Dictionary<string, Symbol> _tradedSymbols  = new Dictionary<string, Symbol>(); // pointer to _symbolsDaily in SqCore, and _symbolsMinute in QcCloud
+        private Dictionary<string, Symbol> _tradedSymbols = new Dictionary<string, Symbol>(); // pointer to _symbolsDaily in SqCore, and _symbolsMinute in QcCloud
         private Dictionary<string, List<QcPrice>> _rawCloses = new Dictionary<string, List<QcPrice>>();
         private Dictionary<string, List<QcPrice>> _adjCloses = new Dictionary<string, List<QcPrice>>();
         private Dictionary<string, List<QcDividend>> _dividends = new Dictionary<string, List<QcDividend>>();
         private Dictionary<string, List<QcSplit>> _splits = new Dictionary<string, List<QcSplit>>();
-        private Dictionary<string, List<QcPrice>> _rawClosesFromYfLists = new Dictionary<string, List<QcPrice>>();
-        private Dictionary<string, Dictionary<DateTime, decimal>> _rawClosesFromYfDicts = new Dictionary<string, Dictionary<DateTime, decimal>>();
+        private Dictionary<string, Dictionary<DateTime, decimal>>? _rawClosesFromYfDicts = null;
         DateTime _bnchmarkStartTime;
         private DateTime _lastRebalance = DateTime.MinValue;
         private Dividends _sliceDividends;
@@ -104,7 +103,7 @@ namespace QuantConnect.Algorithm.CSharp
             // _forcedEndDate = new DateTime(2023, 02, 28); // means Local time, not UTC
 
             // *** Step 1: general initializations
-            SetCash(10000000);
+            SetCash(1000000);
 
             // AddEquity(_longestHistTicker, Resolution.Daily, dataNormalizationMode: DataNormalizationMode.Raw);
             Orders.MarketOnCloseOrder.SubmissionTimeBuffer = TimeSpan.FromMinutes(0.5); // change the submission time threshold of MOC orders
@@ -121,9 +120,7 @@ namespace QuantConnect.Algorithm.CSharp
                 _splits.Add(ticker, new List<QcSplit>());
             }
 
-            // *** Only in QcCloud: YF data download.
-            _rawClosesFromYfLists = new Dictionary<string, List<QcPrice>>();
-            _rawClosesFromYfDicts = new Dictionary<string, Dictionary<DateTime, decimal>>();
+            // *** Only in QcCloud: YF data download. Part 1
             if (IsTradeInQcCloud) // only in QC cloud: we need not only daily, but perMinute symbols too, because we use perMinute symbols for trading.
             {
                 foreach (string ticker in _tickers)
@@ -132,8 +129,6 @@ namespace QuantConnect.Algorithm.CSharp
                     _symbolsMinute.Add(ticker, symbolMinute);
                     Securities[symbolMinute].FeeModel = new ConstantFeeModel(0);
                     Securities[symbolMinute].SetBuyingPowerModel(new SecurityMarginModel(30m)); // equivalent to security.SetLeverage(). Allows to go 30x leverage of this stock if all 20 GC stock are in position with 50% overleverage
-                    // Call the DownloadAndProcessData method to get real life close prices from YF
-                    QCAlgorithmUtils.DownloadAndProcessYfData(this, ticker, _earliestUsableDataDay, _warmUp, _endDate, ref _rawClosesFromYfLists, ref _rawClosesFromYfDicts);
                 }
             }
             _tradedSymbols = IsTradeInSqCore ? _symbolsDaily : _symbolsMinute;
@@ -157,8 +152,8 @@ namespace QuantConnect.Algorithm.CSharp
             }
 
             // _startDate = new DateTime(2006, 01, 01); // means Local time, not UTC
-            Log($"EarliestUsableDataDay: { _earliestUsableDataDay: yyyy-MM-dd}, PV startDate: { _startDate: yyyy-MM-dd}");
-            
+            Log($"EarliestUsableDataDay: {_earliestUsableDataDay: yyyy-MM-dd}, PV startDate: {_startDate: yyyy-MM-dd}");
+
             // *** Step 3: endDate determination
             if (_forcedEndDate == DateTime.MaxValue)
                 _endDate = DateTime.Now;
@@ -174,6 +169,16 @@ namespace QuantConnect.Algorithm.CSharp
             SetStartDate(_startDate); // by default it is 1998-01-02. If we don't call SetStartDate(), still, the PV value chart will start from 1998
             SetEndDate(_endDate);
             // SetBenchmark("SPY"); // the default benchmark is SPY, which is OK in the cloud. In SqCore, we removed the default SPY benchmark, because we don't need it.
+
+            // *** Only in QcCloud: YF data download. Part 2
+            if (IsTradeInQcCloud) // only in QC cloud: we need not only daily, but perMinute symbols too, because we use perMinute symbols for trading.
+            {
+                foreach (string ticker in _tickers)
+                {
+                    // Call the DownloadAndProcessData method to get real life close prices from YF
+                    QCAlgorithmUtils.DownloadAndProcessYfData(this, ticker, _earliestUsableDataDay, _warmUp, _endDate, out _rawClosesFromYfDicts);
+                }
+            }
         }
 
         public static void ProcessAlgorithmParam(NameValueCollection p_AlgorithmParamQuery, out List<string> p_tickers, out Dictionary<string, decimal> p_weights, out int p_rebalancePeriodDays)
@@ -221,40 +226,58 @@ namespace QuantConnect.Algorithm.CSharp
             if (IsWarmingUp) // Dont' trade in the warming up period.
                 return;
 
-            QCAlgorithmUtils.ApplyDividendMOCAfterClose(Portfolio, _sliceDividends, -1); // We use 'daily' (not perMinute) TradeBars in SqCore.  When OnData() callback comes with this TradeBar, the dividends of that day is already added to the Cash (by the framework). We remove this before trading, and add back after trading. See comment at ApplyDividendMOCAfterClose()
-
-            TradePreProcess();
-
-            Dictionary<string, List<QcPrice>> usedAdjustedClosePrices = GetUsedAdjustedClosePriceData();
-            decimal currentPV = PvCalculation(usedAdjustedClosePrices);
-            // Log($"PV on day {this.Time.Date.ToString()}: ${Portfolio.TotalPortfolioValue}.");
-
             string logMessage = $"New positions after close of {this.Time.Date:yyyy-MM-dd}: ";
             string logMessage2 = "Close prices are: ";
+
+            decimal currentPV;
+            Dictionary<string, List<QcPrice>>? usedAdjustedClosePrices = null;
+            if (IsTradeInSqCore)
+            {
+                QCAlgorithmUtils.ApplyDividendMOCAfterClose(Portfolio, _sliceDividends, -1); // We use 'daily' (not perMinute) TradeBars in SqCore.  When OnData() callback comes with this TradeBar, the dividends of that day is already added to the Cash (by the framework). We remove this before trading, and add back after trading. See comment at ApplyDividendMOCAfterClose()
+                TradePreProcess();
+                currentPV = Portfolio.TotalPortfolioValue;
+            }
+            else
+            {
+                TradePreProcess();
+                usedAdjustedClosePrices = GetUsedAdjustedClosePriceData();
+                currentPV = PvCalculation(usedAdjustedClosePrices);
+                // Log($"PV on day {this.Time.Date.ToString()}: ${Portfolio.TotalPortfolioValue}.");
+            }
 
             foreach (KeyValuePair<string, Symbol> kvp in _tradedSymbols)
             {
                 string ticker = kvp.Key;
-                // List<QcPrice> tickerUsedAdjustedClosePrices = usedAdjustedClosePrices[ticker];
                 decimal newMarketValue = 0;
                 decimal newPosition = 0;
-                if (usedAdjustedClosePrices.TryGetValue(ticker, out List<QcPrice> tickerUsedAdjustedClosePrices))
+
+                decimal closePrice = 0;
+                if (IsTradeInSqCore)
                 {
-                    if (_weights[ticker] != 0 && tickerUsedAdjustedClosePrices.Count != 0)
-                    {
-                        newMarketValue = currentPV * _weights[ticker];
-                        newPosition = Math.Round((decimal)(newMarketValue / tickerUsedAdjustedClosePrices[(Index)(^1)].Close)); // use the last element
-                    }
+                    if (CurrentSlice.Bars.TryGetValue(kvp.Value, out TradeBar tradeBar))
+                        closePrice = CurrentSlice.Bars[kvp.Value].Close;
+                }
+                else
+                {
+                    if (usedAdjustedClosePrices.TryGetValue(ticker, out List<QcPrice> tickerUsedAdjustedClosePrices))
+                        closePrice = tickerUsedAdjustedClosePrices[(Index)(^1)].Close;
+                }
+
+                if (_weights[ticker] != 0 && closePrice != 0)
+                {
+                    newMarketValue = currentPV * _weights[ticker];
+                    newPosition = Math.Round((decimal)(newMarketValue / closePrice)); // use the last element
                 }
                 decimal positionChange = newPosition - Portfolio[ticker].Quantity;
                 if (positionChange != 0) // QC raises Warning if order quantity = 0. So, we don't sent these. "Unable to submit order with id -10 that has zero quantity."
                     MarketOnCloseOrder(kvp.Value, positionChange); // when Order() function returns Portfolio[ticker].Quantity is already changed to newPosition
 
                 logMessage += ticker + ": " + newPosition + "; ";
-                logMessage2 += ticker + ": " + ((tickerUsedAdjustedClosePrices.Count != 0) ? tickerUsedAdjustedClosePrices[(Index)(^1)].Close.ToString() : "N/A") + "; "; // use the last element
+                logMessage2 += ticker + ": " + ((closePrice != 0) ? closePrice.ToString() : "N/A") + "; "; // use the last element
             }
 
-            QCAlgorithmUtils.ApplyDividendMOCAfterClose(Portfolio, _sliceDividends, 1); // We use 'daily' (not perMinute) TradeBars in SqCore.  When OnData() callback comes with this TradeBar, the dividends of that day is already added to the Cash (by the framework). We remove this before trading, and add back after trading. See comment at ApplyDividendMOCAfterClose()
+            if (IsTradeInSqCore)
+                QCAlgorithmUtils.ApplyDividendMOCAfterClose(Portfolio, _sliceDividends, 1); // We use 'daily' (not perMinute) TradeBars in SqCore.  When OnData() callback comes with this TradeBar, the dividends of that day is already added to the Cash (by the framework). We remove this before trading, and add back after trading. See comment at ApplyDividendMOCAfterClose()
 
             logMessage = logMessage.Substring(0, logMessage.Length - 2) + ".";
             logMessage2 = logMessage2.Substring(0, logMessage2.Length - 2) + ".";
