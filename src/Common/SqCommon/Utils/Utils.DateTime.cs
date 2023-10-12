@@ -17,6 +17,7 @@ public static partial class Utils
 
     public static readonly DateTime NO_DATE = DateTime.MinValue;
     public static readonly TimeSpan g_1day = new(TimeSpan.TicksPerDay);
+    public static DateTime UnixEpochDateTime = new (1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc); // Unix timestamp starts from 1970-01-01 00:00:00 UTC
     public static DateTime EndOfDay(this DateTime p_date)
     {
         return p_date.AddTicks(TimeSpan.TicksPerDay - 1 - p_date.TimeOfDay.Ticks);
@@ -282,6 +283,14 @@ public static partial class Utils
         if ((t ^ p_ticks) < 0) // different signs
             p_ticks = -p_ticks;
         return new TimeSpan(((t + (p_ticks >> 1)) / p_ticks) * p_ticks);
+    }
+
+    // <summary> Returns the date from longTimestamp(1028088000) to YYYYMMDD(20231012) format.
+    public static string LongTimestampToYYYYMMDD(long longTimestamp)
+    {
+        // Add the TimeSpan to the Unix epoch to get the target DateTime
+        // Format the DateTime object to "yyyyMMdd" format.
+        return UnixEpochDateTime.Add(TimeSpan.FromSeconds(longTimestamp)).ToString("yyyyMMdd");
     }
 
 /*

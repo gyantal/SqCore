@@ -58,8 +58,8 @@
         </div>
       </div>
     </span>&nbsp;
-    <span>Start: <input type="date" id="StartDate" name="startDate" min="1975-01-01" [(ngModel)]="startDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;
-    <span>End: <input type="date" id="EndDate" name="EndDate" min="1975-01-01" max="2040-01-01" [(ngModel)]="endDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;&nbsp;
+    <span>Start: <input class="startAndEndDate" type="date" id="StartDate" name="startDate" min="1975-01-01" [(ngModel)]="startDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;
+    <span>End: <input class="startAndEndDate" type="date" id="EndDate" name="EndDate" min="1975-01-01" max="2040-01-01" [(ngModel)]="endDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;&nbsp;
     <button class="backtestBtn" (click)="onStartBacktestsClicked()">Start Server Backtest</button>
   </span><br><br>
   <span>Portfolio Value Chart</span>

@@ -133,12 +133,24 @@ public class ChrtGenWs
                 // Instead of the longer [{"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}]
                 // we send a shorter: { ChartDate: [1641013200, 1641013200, 1641013200], Value: [101665, 101665, 101665] }
                 chartVal.ChartResolution = chartResolution;
+                // Portfolios DateFormat Processing based on ChartResolution
+                chartVal.DateTimeFormat = "SecSince1970";
+                if (chartResolution == ChartResolution.Daily)
+                    chartVal.DateTimeFormat = "YYYYMMDD";
+
                 foreach (var item in pv)
                 {
                     DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(item.x).DateTime.Date;
                     if (itemDate < minStartDate)
                         minStartDate = itemDate; // MinStart Date of the portfolio's
-                    chartVal.Dates.Add(item.x);
+                    long pvDateTime = item.x;
+                    if(chartResolution == ChartResolution.Daily)
+                    {
+                        string dateStr = Utils.LongTimestampToYYYYMMDD(pvDateTime);
+                        chartVal.Dates.Add(int.Parse(dateStr));
+                    }
+                    else
+                        chartVal.Dates.Add(pvDateTime);
                     chartVal.Values.Add((float)item.y);
                 }
 
@@ -192,7 +204,9 @@ public class ChrtGenWs
         chrtGenBacktestResult.Logs = sqLogs;
         chrtGenBacktestResult.ServerBacktestTimeMs = (int)stopwatch.ElapsedMilliseconds; // Set the server backtest time in milliseconds
 
-        byte[] encodedMsg = Encoding.UTF8.GetBytes("BacktestResults:" + Utils.CamelCaseSerialize(chrtGenBacktestResult));
+        string backtestResultStr = Utils.CamelCaseSerialize(chrtGenBacktestResult);
+
+        byte[] encodedMsg = Encoding.UTF8.GetBytes("BacktestResults:" + backtestResultStr);
         if (webSocket!.State == WebSocketState.Open)
             webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }

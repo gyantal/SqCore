@@ -28,6 +28,7 @@ class PrtfRunResultJs
 class ChartData
 {
     public ChartResolution ChartResolution { get; set; } = ChartResolution.Daily;
+    public string DateTimeFormat { get; set; } = "YYYYMMDD";  // "SecSince1970", "YYYYMMDD", "DaysFrom<YYYYDDMM>"
     public List<long> Dates { get; set; } = new List<long>();
 
     // PV values are usually $100,000, $100,350,..., but PV can be around $1000 too and in that case decimals become important and we cannot use 'int' for storing them.

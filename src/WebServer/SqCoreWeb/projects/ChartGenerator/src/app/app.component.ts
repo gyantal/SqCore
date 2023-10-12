@@ -262,10 +262,16 @@ export class AppComponent implements OnInit {
       // uiPrtfResItem.benchmarkCAGR = parseFloat(item.pstat.benchmarkCAGR); // yet to calcualte
       // uiPrtfResItem.benchmarkMaxDD = parseFloat(item.pstat.benchmarkMaxDD); // yet to calcualte
       // uiPrtfResItem.correlationWithBenchmark = parseFloat(item.pstat.correlationWithBenchmark); // yet to calcualte
-
+      let firstValDate: Date = new Date();
+      let lastValDate: Date = new Date();
       // calculating the minStartDate and maxStartDate
-      const firstValDate: Date = new Date(item.chrtData.dates[0] * 1000);
-      const lastValDate: Date = new Date(item.chrtData.dates[item.chrtData.dates.length - 1] * 1000);
+      if (item.chrtData.dateTimeFormat == 'YYYYMMDD') {
+        firstValDate = parseNumberToDate(item.chrtData.dates[0]);
+        lastValDate= parseNumberToDate(item.chrtData.dates[item.chrtData.dates.length - 1]);
+      } else {
+        firstValDate = new Date(item.chrtData.dates[0] * 1000);
+        lastValDate = new Date(item.chrtData.dates[item.chrtData.dates.length - 1] * 1000);
+      }
 
       if (firstValDate < this._minStartDate)
         this._minStartDate = firstValDate;
@@ -282,8 +288,12 @@ export class AppComponent implements OnInit {
       chartItem.priceData = [];
       for (let i = 0; i < item.chrtData.dates.length; i++) {
         const chrtItem = new UiChartPoint();
-        const mSecSinceUnixEpoch: number = item.chrtData.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
-        chrtItem.date = new Date(mSecSinceUnixEpoch);
+        if (item.chrtData.dateTimeFormat == 'YYYYMMDD')
+          chrtItem.date = parseNumberToDate(item.chrtData.dates[i]);
+        else {
+          const mSecSinceUnixEpoch: number = item.chrtData.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
+          chrtItem.date = new Date(mSecSinceUnixEpoch);
+        }
         chrtItem.value = item.chrtData.values[i];
         chartItem.priceData.push(chrtItem);
       }

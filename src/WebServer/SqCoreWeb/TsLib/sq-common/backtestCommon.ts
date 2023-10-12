@@ -35,6 +35,7 @@ export interface ChartJs { // PfRunResults Chart Data
   dates: number[];
   values: number[];
   chartResolution: ChartResolution;
+  dateTimeFormat: string;
 }
 
 export class ChrtGenBacktestResult {
