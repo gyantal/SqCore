@@ -316,7 +316,12 @@ export class AppComponent implements OnInit {
       chartItem.priceData = [];
       for (let i = 0; i < bmrkItem.histPrices.dates.length; i++) {
         const chrtItem = new UiChartPoint();
-        chrtItem.date = parseNumberToDate(bmrkItem.histPrices.dates[i]);
+        if (bmrkItem.dateTimeFormat == 'YYYYMMDD')
+          chrtItem.date = parseNumberToDate(bmrkItem.histPrices.dates[i]);
+        else {
+          const mSecSinceUnixEpoch: number = bmrkItem.histPrices.dates[i] / 10000; // data comes as nanoseconds. JS uses milliseconds since Epoch.
+          chrtItem.date = new Date(mSecSinceUnixEpoch);
+        }
         chrtItem.value = bmrkItem.histPrices.prices[i];
         chartItem.priceData.push(chrtItem);
       }

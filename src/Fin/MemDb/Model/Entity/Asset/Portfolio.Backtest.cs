@@ -69,7 +69,7 @@ public class PortfolioPosition
 
 public class PriceHistoryJs // To save bandwidth, we send Dates, and Prices just as a List, instead of a List of <Date,Price> objects that would add property names thousands of times into JSON
 {
-    public List<int> Dates { get; set; } = new();
+    public List<long> Dates { get; set; } = new();
 
     [JsonConverter(typeof(FloatListJsonConverterToNumber4D))]
     public List<float> Prices { get; set; } = new();
@@ -78,6 +78,7 @@ public class PriceHistoryJs // To save bandwidth, we send Dates, and Prices just
 [DebuggerDisplay("{Id}, Name:{Name}, User:{User?.Username??\"-NoUser-\"}")]
 public partial class Portfolio : Asset // this inheritance makes it possible that a Portfolio can be part of an Uber-portfolio
 {
+    public static int gConvertNanoSecToSec = 10000; // required for converting NanoSecs to MilliSecs
     // PortfolioValue chart data.
     // We have the option to return Date fields in different formats in JSON string:
     // '2021-01-27' is 10 chars, '20210127' is 8 chars. Resolution is only daily.
@@ -262,9 +263,10 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         return null; // No Error
     }
 
-    public static string? GetBmrksHistoricalResults(string p_bmrksStr, DateTime p_minDate, out PriceHistoryJs p_histPrices)
+    public static string? GetBmrksHistoricalResults(string p_bmrksStr, DateTime p_minDate, out PriceHistoryJs p_histPrices, out ChartResolution p_chartResolution)
     {
         PriceHistoryJs historicalPrices = new();
+        p_chartResolution = ChartResolution.Daily;
         string tickerAsTradedToday = p_bmrksStr; // if symbol.zip doesn't exist in Data folder, it will not download it (cost money, you have to download in their shop). It raises an exception.
         Symbol symbol = new(SecurityIdentifier.GenerateEquity(tickerAsTradedToday, Market.USA, true, FinDb.gFinDb.MapFileProvider), tickerAsTradedToday);
 
@@ -290,16 +292,33 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         List<Slice>? result = FinDb.gFinDb.HistoryProvider.GetHistory(historyRequests, sliceTimeZone).ToList();
         Utils.Logger.Info("length of result bar values:" + result[0].Bars.Values.ToArray().Length);
         Console.WriteLine($" Test Historical price data. Number of TradeBars: {result.Count}. SPY RAW ClosePrice on {result[0].Bars.Values.ToArray()[0].Time}: {result[0].Bars.Values.ToArray()[0].Close}");
-
+        // find the ChartResolution
+        TradeBar[]? resBarVals1 = result[1].Bars.Values.ToArray();
+        TradeBar[]? resBarVals2 = result[2].Bars.Values.ToArray();
+        // With Minute resolution simulation, the PV chart is generated at every 5 minutes.
+        if (result.Count >= 3) // because the first is a dummy point, we need at least 3 data points to decide.
+        {
+            int diffBetween2points = (int)(resBarVals2[0].Time - resBarVals1[0].Time).TotalSeconds;
+            if (diffBetween2points <= 60)
+                p_chartResolution = ChartResolution.Minute;
+            else if (diffBetween2points <= 300)
+                p_chartResolution = ChartResolution.Minute5;
+            else
+                p_chartResolution = ChartResolution.Daily;
+        }
         for (int i = 0; i < result.Count; i++)
         {
             TradeBar[]? resBarVals = result[i].Bars.Values.ToArray();
-            int dateInt = int.Parse(resBarVals[0].Time.TohYYYYMMDD().Replace("-", string.Empty)); // converting the date to number format (ex: "20020730" => 20020730) by replacing the hyphens(-) and double quotes(").This way can reduce the memory that stores on the client side.
+            long dateIntOrLong; // int if its daily else long
+            if (p_chartResolution == ChartResolution.Daily)
+                dateIntOrLong = int.Parse(resBarVals[0].Time.TohYYYYMMDD().Replace("-", string.Empty)); // converting the date to number format (ex: "20020730" => 20020730) by replacing the hyphens(-) and double quotes(").This way can reduce the memory that stores on the client side.
+            else
+                dateIntOrLong = resBarVals[0].Time.ToFileTime() / gConvertNanoSecToSec; // ToFileTime() method gives data in nano seconds converting data to milliseconds.
             float price = (float)resBarVals[0].Price;
             if (historicalPrices.Prices.Count > 1 && (price / historicalPrices.Prices[^1] > 1.5)) // TEMP for debugging, because QQQ benchmark data has (wrong) doubling 3 times during its history.
-                Console.WriteLine($"Warning on ticker {tickerAsTradedToday}. Potential wrong data on {dateInt}, PrevPrice: {historicalPrices.Prices[^1]}, currPrice: {price}");
+                Console.WriteLine($"Warning on ticker {tickerAsTradedToday}. Potential wrong data on {dateIntOrLong}, PrevPrice: {historicalPrices.Prices[^1]}, currPrice: {price}");
 
-            historicalPrices.Dates.Add(dateInt); // Add the date to the Date list
+            historicalPrices.Dates.Add(dateIntOrLong); // Add the date to the Date list
             historicalPrices.Prices.Add(price); // Add the price to the Price list
         }
         p_histPrices = historicalPrices;

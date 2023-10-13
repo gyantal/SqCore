@@ -40,6 +40,8 @@ class ChrtGenPrtfRunResultJs : ChrtGenPrtfItems // ChartGenerator doesn't need t
 
 class BmrkHistory
 {
+    public ChartResolution ChartResolution { get; set; } = ChartResolution.Daily;
+    public string DateTimeFormat { get; set; } = "YYYYMMDD";  // "SecSince1970", "YYYYMMDD", "DaysFrom<YYYYDDMM>"
     public string SqTicker { get; set; } = string.Empty;
     public PriceHistoryJs HistPrices { get; set; } = new();
 }
@@ -190,9 +192,14 @@ public class ChrtGenWs
         List<BmrkHistory> bmrkHistories = new();
         foreach (string bmrkTicker in bmrksStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
         {
-            string? errMsg = Portfolio.GetBmrksHistoricalResults(bmrkTicker, minStartDate, out PriceHistoryJs histPrcs);
+            string? errMsg = Portfolio.GetBmrksHistoricalResults(bmrkTicker, minStartDate, out PriceHistoryJs histPrcs, out ChartResolution chartResolution);
             if (errMsg == null)
-                bmrkHistories.Add(new BmrkHistory { SqTicker = bmrkTicker, HistPrices = histPrcs });
+            {
+                if (chartResolution == ChartResolution.Daily)
+                    bmrkHistories.Add(new BmrkHistory { SqTicker = bmrkTicker, HistPrices = histPrcs, ChartResolution = chartResolution, DateTimeFormat = "YYYYMMDD" });
+                else
+                    bmrkHistories.Add(new BmrkHistory { SqTicker = bmrkTicker, HistPrices = histPrcs, ChartResolution = chartResolution, DateTimeFormat = "SecSince1970" });
+            }
             else
                 sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Warn, Message = $"The Benchmark Tickers {bmrkTicker} not found in DB. ErrMsg {errMsg}" });
         }
