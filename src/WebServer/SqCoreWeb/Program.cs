@@ -399,9 +399,8 @@ public partial class Program
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.QcOriginal); // For QC strategies, we use QcOriginal result calculation.
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqDualMomentum", "startDate=2006-01-01&endDate=now&assets=VNQ,EEM,DBC,SPY,TLT,SHY&lookback=63&noETFs=3", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
-                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "startDate=2002-07-29&endDate=now&startDateAutoCalcMode=WhenFirstTickerAlive&assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
-                backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "assets=SVXY,VXX,VXZ,TQQQ,TLT,USO,UNG&weights=15,-5,10,25,255,-27,-78&rebFreq=Daily,30d", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
-                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "assets=SVXY,TQQQ,TLT,USO,UNG&weights=15,25,255,-27,-78&rebFreq=Daily,30d", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
+                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "assets=SVXY-SQ,VXX-SQ,VXZ-SQ,TQQQ-SQ,TLT,USO,UNG&weights=15,-5,10,25,255,-27,-78&rebFreq=Daily,1d", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
+                backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "startDate=2002-07-29&endDate=now&startDateAutoCalcMode=WhenFirstTickerAlive&assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
                 break;
             case "4":
                 try

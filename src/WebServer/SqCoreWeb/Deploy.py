@@ -34,7 +34,7 @@ elif runningEnvironmentComputerName == 'daya-PC':
 elif runningEnvironmentComputerName == 'DAYA-DESKTOP':
     rootLocalDir = "c:/GitHubRepos/SqCore/src/WebServer/SqCoreWeb/bin/Release/net7.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
     serverRsaKeyFile = "g:/.shortcut-targets-by-id/0BzxkV1ug5ZxvVmtic1FsNTM5bHM/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
-elif runningEnvironmentComputerName == 'BalazsWork2-PC':
+elif runningEnvironmentComputerName == 'BalazsWork-PC':
     rootLocalDir = "d:/GitHub/SqCore/src/WebServer/SqCoreWeb/bin/Release/net7.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
     serverRsaKeyFile = "h:/.shortcut-targets-by-id/0BzxkV1ug5ZxvVmtic1FsNTM5bHM/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
 else:   # TODO: Laci, Balazs, you have to add your IF here (based on the 'name' of your PC)

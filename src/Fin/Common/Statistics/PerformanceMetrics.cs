@@ -28,7 +28,8 @@ namespace QuantConnect.Statistics
         public const string WinRate = "Win Rate";
         public const string LowestCapacityAsset = "Lowest Capacity Asset";
         // SqCore Change NEW:
-        public const string AnnualizedMeanReturn = "Annualized Mean Return";
+        public const string AnnualizedDailyMeanReturn = "Annualized Daily Mean Return";
+        public const string SqSharpeRatio = "Sq Sharpe Ratio"; // standard Sharpe ratio uses AnnualizedDailyMeanReturn/StDev. (this is daily returns added together 252x, not sensitive to leverage. TQQQ Sharpe will be similar to QQQ Sharpe) We would like to see CAGR/StDev (CAGR is multiplicative compounding, TQQQ SqSharpe will be lower than QQQ SqSharpe)
         public const string MarRatio = "MAR Ratio";
         public const string MaxDdLenInCalDays = "Max Drawdown Lenght in Calendar Days";
         public const string MaxDdLenInTradDays = "Max Drawdown Lenght in Trading Days";

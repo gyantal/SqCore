@@ -5,7 +5,7 @@ import { sqAverage, sqStdDev } from '../sq-common/utils_math';
 export class StatisticsResults {
   public TotalReturn: number = 0;
   public CAGR: number = 0;
-  // public AnnualizedMeanReturn: number = 0;
+  // public AnnualizedDailyMeanReturn: number = 0;
   public SharpeRatio: number = 0;
   public MaxDD: number = 0;
   public MaxDDStartDate: Date = new Date();
@@ -261,7 +261,7 @@ export class SqStatisticsBuilder {
   //     const histMAR = isNaN(histMaxDrawDown) || !isFinite(histMaxDrawDown) ? 0 : histCagr / histMaxDrawDown;
 
   //     // Step 5. Writing result
-  //     res.AnnualizedMeanReturn = (histAMean * 100 * 1000) / 1000;
+  //     res.AnnualizedDailyMeanReturn = (histAMean * 100 * 1000) / 1000;
   //     res.CAGR = (histCagr * 100 * 1000) / 1000;
   //     res.SharpeRatio = (histSharpe * 1000) / 1000;
   //     res.Drawdown = (histMaxDrawDown * 100 * 1000) / 1000;

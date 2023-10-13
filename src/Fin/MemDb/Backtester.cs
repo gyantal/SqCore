@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using QuantConnect;
@@ -154,7 +155,7 @@ public static class Backtester
         var systemHandlers = Backtester.CreateSystemHandlers(Composer.Instance); // even SystemHandlers cannot be global, because Engine.Run() calls SystemHandlers.LeanManager.SetAlgorithm(algorithm); so, they have a state. There are many users who can run backtests parallel
         systemHandlers.Initialize();
         AlgorithmManager algorithmManager = new(liveMode, job);
-        var algorithmHandlers = Backtester.CreateAlgorithmHandlers(Composer.Instance, false, liveMode); // BacktestingTransactionHandler() has to be a new instance
+        LeanEngineAlgorithmHandlers algorithmHandlers = Backtester.CreateAlgorithmHandlers(Composer.Instance, false, liveMode); // BacktestingTransactionHandler() has to be a new instance
         systemHandlers.LeanManager.Initialize(systemHandlers, algorithmHandlers, job, algorithmManager);
         algorithmHandlers.Results.SqBacktestConfig = sqBacktestConfig; // Initialize BacktestingResultHandler with our config very early. SqBacktestConfig might be needed in early Inits()
         algorithmHandlers.DataMonitor.SqBacktestConfig = sqBacktestConfig;
@@ -346,6 +347,7 @@ public static class Backtester
     {
         Task basicTempTask = Task.Run(() => // Task.Run() runs it immediately
         {
+            Thread.CurrentThread.Name = "SQ: BasicTemplateFrameworkAlgorithm";
             Console.WriteLine("Backtest: BasicTemplateFrameworkAlgorithm");
             BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", string.Empty, @"{""ema-fast"":10,""ema-slow"":20}", SqResult.QcOriginal);
             Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} ({(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
@@ -353,6 +355,7 @@ public static class Backtester
 
         Task spyTask = Task.Run(() => // Task.Run() runs it immediately
         {
+            Thread.CurrentThread.Name = "SQ: SqSPYMonFriAtMoc";
             Console.WriteLine("Backtest: SqSPYMonFriAtMoc");
             BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", string.Empty,  @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
             Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} ({(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");

@@ -135,7 +135,7 @@ namespace QuantConnect.Statistics
             // Step 5. Writing result dict
             result.Summary[PerformanceMetrics.NetProfit] = (Math.Round(histTotalReturn * 100, 3)).ToStringInvariant() + "%";
             result.Summary[PerformanceMetrics.CompoundingAnnualReturn] = (Math.Round(histCagr * 100, 3)).ToStringInvariant() + "%";
-            result.Summary[PerformanceMetrics.AnnualizedMeanReturn] = (Math.Round(histAMean * 100, 3)).ToStringInvariant() + "%";
+            result.Summary[PerformanceMetrics.AnnualizedDailyMeanReturn] = (Math.Round(histAMean * 100, 3)).ToStringInvariant() + "%";
             result.Summary[PerformanceMetrics.AnnualStandardDeviation] = (Math.Round(histSD, 3)).ToStringInvariant();
             result.Summary[PerformanceMetrics.SharpeRatio] = (Math.Round(histSharpe, 3)).ToStringInvariant();
             result.Summary[PerformanceMetrics.Drawdown] = (Math.Round(histMaxDrawDown * 100, 3)).ToStringInvariant() + "%";

@@ -53,7 +53,9 @@ public class FinDbCrawlerExecution : SqExecution
         Utils.Logger.Info($"FinDbCrawlerExecution.Run() BEGIN, Trigger: '{Trigger?.Name ?? string.Empty}'");
         Console.WriteLine($"FinDbCrawlerExecution.Run() BEGIN, Trigger: '{Trigger?.Name ?? string.Empty}'");
 
-        Console.WriteLine(FinDb.CrawlData(false).TurnAsyncToSyncTask().ToString());
+        string logMsg = FinDb.CrawlData(false).TurnAsyncToSyncTask().ToString();
+        Console.WriteLine(logMsg);
+        Utils.Logger.Info(logMsg);
     }
 }
 
@@ -61,7 +63,7 @@ public partial class FinDb
 {
     public static void ScheduleDailyCrawlerTask()
     {
-        var sqTask = new SqTask()
+        SqTask? sqTask = new()
         {
             Name = "FinDbDailyCrawler",
             ExecutionFactory = FinDbCrawlerExecution.ExecutionFactoryCreate,
@@ -97,7 +99,7 @@ public partial class FinDb
 
             if (mapFilePath.EndsWith("-sq.csv")) // Ignore files ending with '-sq.csv'.
             {
-                var sqFileName = Path.GetFileNameWithoutExtension(mapFilePath);
+                string? sqFileName = Path.GetFileNameWithoutExtension(mapFilePath);
                 int hyphenIndex = sqFileName.IndexOf('-');
                 if (hyphenIndex != -1 && hyphenIndex < sqFileName.Length - 1)
                 {
@@ -129,16 +131,25 @@ public partial class FinDb
             string ticker = tickers[i];
             DateTime startDate = DateTime.ParseExact(mapFilesLastButOneRows[i], "yyyyMMdd", CultureInfo.InvariantCulture).AddDays(1);
             DateTime endDate = DateTime.ParseExact(mapFilesLastRows[i], "yyyyMMdd", CultureInfo.InvariantCulture);
+            Console.WriteLine($"FinDb.CrawlData() START with ticker: {ticker}");
             bool isOK = await CrawlData(ticker, p_isLogHtml, logSb, finDataDir, startDate, endDate);
             if (!isOK)
                 logSb.AppendLine($"Error processing {ticker}");
         }
 
-        // sdsd
+        // Process the virtual tickers. E.g. 'VXX-SQ'
         foreach (string ticker in virtualTickers)
         {
-            CreateVirtualTickerDailyPriceFiles(ticker, finDataDir);
-            // CreateVirtualTickerFactorFiles(ticker, finDataDir);
+            Console.WriteLine($"FinDb.CrawlData() START with ticker: {ticker}-sq");
+            try
+            {
+                CreateVirtualTickerDailyPriceFiles(ticker, finDataDir, out int lastHistDateInt);
+                CreateVirtualTickerFactorFiles(ticker, finDataDir, lastHistDateInt);
+            }
+            catch (System.Exception e)
+            {
+                logSb.AppendLine($"Error processing {ticker}. Exception: '{e.Message}'");
+            }
         }
 
         return logSb;
@@ -146,8 +157,6 @@ public partial class FinDb
 
     public static async Task<bool> CrawlData(string p_ticker, bool p_isLogHtml, StringBuilder p_logSb, string p_finDataDir, DateTime p_startDate, DateTime p_endDate)
     {
-        Console.WriteLine($"FinDb.CrawlData() START with ticker: {p_ticker}");
-
         IReadOnlyList<Candle?>? history = await Yahoo.GetHistoricalAsync(p_ticker, p_startDate, p_endDate, Period.Daily);
         if (history == null)
         {
@@ -278,7 +287,7 @@ public partial class FinDb
                 cumDivFact *= 1 - decimal.Divide(currDivSplit.DividendValue / cumSplitFact, currDivSplit.ReferenceRawPrice);
             if (currDivSplit.SplitFactor > 0)
                 cumSplitFact *= currDivSplit.SplitFactor;
-            divSplitHistoryCumList.Add(new FactorFileDivSplit() { ReferenceDate = currDivSplit.ReferenceDate, DividendFactorCum = Math.Round(cumDivFact, 8), SplitFactorCum = Math.Round(cumSplitFact, 8), ReferenceRawPrice = currDivSplit.ReferenceRawPrice });
+            divSplitHistoryCumList.Add(new FactorFileDivSplit() { ReferenceDate = currDivSplit.ReferenceDate, DividendFactorCum = Math.Round(cumDivFact, 8), SplitFactorCum = Math.Round(cumSplitFact, 8), ReferenceRawPrice = Math.Round(currDivSplit.ReferenceRawPrice, 4) });
         }
 
         divSplitHistoryCumList.Sort((FactorFileDivSplit x, FactorFileDivSplit y) => x.ReferenceDate.CompareTo(y.ReferenceDate));
@@ -306,11 +315,11 @@ public partial class FinDb
 
         return true;
     }
-    public static void CreateVirtualTickerDailyPriceFiles(string p_ticker, string p_finDataDir) // p_ticker is "VXX" (not "VXX-SQ")
+    public static void CreateVirtualTickerDailyPriceFiles(string p_ticker, string p_finDataDir, out int p_lastHistDateInt) // p_ticker is "VXX" (not "VXX-SQ")
     {
         // Read the content of ticker-sq-history.csv
         string sqHistoryContent = ReadCsvFromZip(Path.GetFullPath(p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker}-sq-history.zip"), $"{p_ticker}-sq-history.csv");
-        int lastHistDate = 0;
+        p_lastHistDateInt = 0;
 
         // Find the largest number in the first column of ticker-sq-history.csv
         using (StringReader sqHistReader = new(sqHistoryContent))
@@ -321,16 +330,12 @@ public partial class FinDb
             while ((currentLine = sqHistReader.ReadLine()) != null)
                 lastLine = currentLine;
 
+            // set 'lastHistDate' based on the last line of ticker-sq-history.csv
             if (!string.IsNullOrEmpty(lastLine))
             {
                 int histWhiteSpaceIndex = lastLine.IndexOf(' ');
-                if (histWhiteSpaceIndex != -1)
-                {
-                    if (int.TryParse(lastLine[..histWhiteSpaceIndex], out lastHistDate))
-                    {
-                        // 'lastHistDate' is correctly set based on the last line of ticker-sq-history.csv
-                    }
-                }
+                if (!(histWhiteSpaceIndex != -1 && int.TryParse(lastLine[..histWhiteSpaceIndex], out p_lastHistDateInt)))
+                    throw new SqException($"Error. Cannot interpret lastHistDateInt in {p_ticker}.csv.");
             }
         }
 
@@ -355,7 +360,7 @@ public partial class FinDb
                     // Try to parse the number
                     if (int.TryParse(line[..tickerWhiteSpaceIndex], out int number))
                     {
-                        if (number >= lastHistDate && !foundThreshold)
+                        if (number >= p_lastHistDateInt && !foundThreshold)
                         {
                             foundThreshold = true;
                             writer.WriteLine(line);
@@ -389,6 +394,80 @@ public partial class FinDb
 
         tw.Write(mergedCsvContent);
         tw.Close();
+    }
+
+    public static void CreateVirtualTickerFactorFiles(string p_ticker, string p_finDataDir, int p_lastHistDateInt)
+    {
+        // Define the file paths for the two CSV files to merge
+        string histCsvFilePath = Path.Combine(p_finDataDir, $"factor_files{Path.DirectorySeparatorChar}{p_ticker.ToLower()}-sq-history.csv");
+        string actualCsvFilePath = Path.Combine(p_finDataDir, $"factor_files{Path.DirectorySeparatorChar}{p_ticker.ToLower()}.csv");
+
+        // 1. Read splitMultiplier and dividendHist from the Actual CSV (VXX.csv)
+        // List<string>? actualCsvLines = File.ReadLines(actualCsvFilePath).Skip(1).ToList(); // We can skip the first line in VXX.csv, because it only specifies the VXX startdate, but we don't use that data
+        List<string> actualCsvLines = new();
+        foreach (string line in File.ReadLines(actualCsvFilePath))
+        {
+            // Find the first comma in the line
+            int commaIndex = line.IndexOf(',');
+            if (commaIndex >= 0)
+            {
+                // Try to parse the number
+                if (int.TryParse(line[..commaIndex], out int dateInt) && dateInt > p_lastHistDateInt)
+                    actualCsvLines.Add(line);
+            }
+        }
+        if (actualCsvLines.Count == 0)
+            throw new SqException($"Error. Factor file {p_ticker}.csv should have at least 2 lines.");
+
+        // Read the second row of the second CSV to get the dividendHist and splitMultiplier value
+        double dividendHist = 1.0;
+        double splitMultiplier = 1.0;
+
+        string actualCsvSecondRow = actualCsvLines[0]; // we skipped the first row at file reading, so this is the second row
+        int firstCommaIndex = actualCsvSecondRow.IndexOf(',');
+        int secondCommaIndex = actualCsvSecondRow.IndexOf(',', firstCommaIndex + 1);
+        int thirdCommaIndex = actualCsvSecondRow.IndexOf(',', secondCommaIndex + 1);
+        if (thirdCommaIndex != -1)
+        {
+            if (double.TryParse(actualCsvSecondRow[(firstCommaIndex + 1)..secondCommaIndex], out double actualCsvDivValue))
+                dividendHist = actualCsvDivValue;
+            if (double.TryParse(actualCsvSecondRow[(secondCommaIndex + 1)..thirdCommaIndex], out double actualCsvSplitValue))
+                splitMultiplier = actualCsvSplitValue;
+        }
+
+        List<string> allCsvLines = new();
+
+        // 2. Read and modify the lines from the Historical CSV (VXX-sq-history.csv) file using splitMultiplier and dividendHist
+        foreach (string line in File.ReadLines(histCsvFilePath))
+        {
+            string newLine = string.Empty;
+            int histFirstCommaIndex = line.IndexOf(',');
+            int histSecondCommaIndex = line.IndexOf(',', histFirstCommaIndex + 1);
+            int histThirdCommaIndex = line.IndexOf(',', histSecondCommaIndex + 1);
+            if (histThirdCommaIndex != -1)
+            {
+                string lineStart = line[..histFirstCommaIndex];
+                if (double.TryParse(line[(histSecondCommaIndex + 1)..histThirdCommaIndex], out double splitValue))
+                {
+                    splitValue *= splitMultiplier;
+                    newLine = lineStart + "," + dividendHist.ToString() + "," + splitValue.ToString() + line[histThirdCommaIndex..];
+                }
+            }
+            allCsvLines.Add(newLine); // add the historical to the allCsvLines
+        }
+
+        allCsvLines.AddRange(actualCsvLines);  // add the actual to the allCsvLines
+
+        // 3. Write VXX-sq.csv
+        // File path for factor files. Create the factor file. But before that, check that if there is already a csv for this ticker, then archive it with the first three characters of today.
+        string tickerFactorFilePath = p_finDataDir + $"factor_files{Path.DirectorySeparatorChar}{p_ticker.ToLower()}-sq.csv";
+        if (File.Exists(tickerFactorFilePath))
+        {
+            string dayOfWeek = DateTime.UtcNow.AddDays(-1).DayOfWeek.ToString()[..3].ToLower();
+            string backupFileName = p_finDataDir + $"factor_files{Path.DirectorySeparatorChar}{p_ticker.ToLower()}-sq_{dayOfWeek}.csv";
+            File.Move(tickerFactorFilePath, backupFileName, true);
+        }
+        File.WriteAllLines(tickerFactorFilePath, allCsvLines);
     }
 
     static string ReadCsvFromZip(string p_zipFilePath, string p_csvFileName)
