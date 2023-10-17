@@ -5,7 +5,7 @@ import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.ut
 import { SqNgCommonUtilsTime, minDate, maxDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
 import { SqStatisticsBuilder, FinalStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
-import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle } from '../../../../TsLib/sq-common/backtestCommon';
+import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle, ChartJs } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqTreeViewComponent } from '../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
 import { parseNumberToDate } from '../../../../TsLib/sq-common/utils-common';
 
@@ -242,88 +242,17 @@ export class AppComponent implements OnInit {
     const uiPrtfResItem = new UiChrtGenPrtfRunResult();
     gChrtGenDiag.serverBacktestTime = chrtGenBacktestRes.serverBacktestTimeMs;
 
-    for (const item of chrtGenBacktestRes.pfRunResults) { // processing Strategies
-      // uiPrtfResItem.startPortfolioValue = item.pstat.startPortfolioValue;
-      // uiPrtfResItem.endPortfolioValue = item.pstat.endPortfolioValue;
-      // uiPrtfResItem.totalReturn = item.pstat.totalReturn;
-      // uiPrtfResItem.cAGR = parseFloat(item.pstat.cagr);
-      // uiPrtfResItem.maxDD = parseFloat(item.pstat.maxDD);
-      // uiPrtfResItem.sharpeRatio = item.pstat.sharpeRatio;
-      // uiPrtfResItem.stDev = parseFloat(item.pstat.stDev);
-      // // uiPrtfResItem.ulcer = parseFloat(item.pstat.ulcer); // yet to calcualte
-      // uiPrtfResItem.tradingDays = parseInt(item.pstat.tradingDays);
-      // uiPrtfResItem.nTrades = parseInt(item.pstat.nTrades);
-      // uiPrtfResItem.winRate = parseFloat(item.pstat.winRate);
-      // uiPrtfResItem.lossRate = parseFloat(item.pstat.lossingRate);
-      // uiPrtfResItem.sortino = item.pstat.sortino;
-      // uiPrtfResItem.turnover = parseFloat(item.pstat.turnover);
-      // uiPrtfResItem.longShortRatio = parseFloat(item.pstat.longShortRatio);
-      // uiPrtfResItem.fees = parseFloat(item.pstat.fees);
-      // uiPrtfResItem.benchmarkCAGR = parseFloat(item.pstat.benchmarkCAGR); // yet to calcualte
-      // uiPrtfResItem.benchmarkMaxDD = parseFloat(item.pstat.benchmarkMaxDD); // yet to calcualte
-      // uiPrtfResItem.correlationWithBenchmark = parseFloat(item.pstat.correlationWithBenchmark); // yet to calcualte
-      let firstValDate: Date = new Date();
-      let lastValDate: Date = new Date();
-      // calculating the minStartDate and maxStartDate
-      if (item.chrtData.dateTimeFormat == 'YYYYMMDD') {
-        firstValDate = parseNumberToDate(item.chrtData.dates[0]);
-        lastValDate= parseNumberToDate(item.chrtData.dates[item.chrtData.dates.length - 1]);
-      } else {
-        firstValDate = new Date(item.chrtData.dates[0] * 1000);
-        lastValDate = new Date(item.chrtData.dates[item.chrtData.dates.length - 1] * 1000);
-      }
-
-      if (firstValDate < this._minStartDate)
-        this._minStartDate = firstValDate;
-
-      if (lastValDate > this._maxEndDate)
-        this._maxEndDate = lastValDate;
-      console.log(`minstartDt1: ${this._minStartDate} and maxstartDt1: ${this._maxEndDate}`);
-
-      const chartItem = new CgTimeSeries();
-      chartItem.name = item.name;
-      chartItem.chartResolution = ChartResolution[item.chrtData.chartResolution];
-      chartItem.linestyle = LineStyle.Solid;
-      chartItem.isPrimary = true;
-      chartItem.priceData = [];
-      for (let i = 0; i < item.chrtData.dates.length; i++) {
-        const chrtItem = new UiChartPoint();
-        if (item.chrtData.dateTimeFormat == 'YYYYMMDD')
-          chrtItem.date = parseNumberToDate(item.chrtData.dates[i]);
-        else {
-          const mSecSinceUnixEpoch: number = item.chrtData.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
-          chrtItem.date = new Date(mSecSinceUnixEpoch);
-        }
-        chrtItem.value = item.chrtData.values[i];
-        chartItem.priceData.push(chrtItem);
-      }
+    for (const item of chrtGenBacktestRes.pfRunResults) {
+      const { firstVal: firstValDate, lastVal: lastValDate } = this.getDateRangeFromChrtData(item.chrtData);
+      this.updateMinMaxDates(firstValDate, lastValDate);
+      const chartItem = this.createCgTimeSeriesFromChrtData(item.chrtData, item.name, true);
       uiPrtfResItem.prtfChrtValues.push(chartItem);
     }
 
-    for (const bmrkItem of chrtGenBacktestRes.bmrkHistories) { // processing benchamrks
-      const firstValDate: Date = parseNumberToDate(bmrkItem.histPrices.dates[0]);
-      const lastValDate: Date = parseNumberToDate(bmrkItem.histPrices.dates[bmrkItem.histPrices.dates.length - 1]);
-      if (firstValDate < this._minStartDate)
-        this._minStartDate = firstValDate;
-
-      if (lastValDate > this._maxEndDate)
-        this._maxEndDate = lastValDate;
-      console.log(`minstartDt2: ${this._minStartDate} and maxstartDt2: ${this._maxEndDate}`);
-      const chartItem = new CgTimeSeries();
-      chartItem.name = bmrkItem.sqTicker;
-      chartItem.linestyle = LineStyle.Dashed;
-      chartItem.isPrimary = false;
-      chartItem.priceData = [];
-      for (let i = 0; i < bmrkItem.histPrices.dates.length; i++) {
-        const chrtItem = new UiChartPoint();
-        if (bmrkItem.dateTimeFormat == 'YYYYMMDD')
-          chrtItem.date = parseNumberToDate(bmrkItem.histPrices.dates[i]);
-        else
-          chrtItem.date = new Date(bmrkItem.histPrices.dates[i]);
-
-        chrtItem.value = bmrkItem.histPrices.prices[i];
-        chartItem.priceData.push(chrtItem);
-      }
+    for (const bmrkItem of chrtGenBacktestRes.bmrkHistories) {
+      const { firstVal: firstValDate, lastVal: lastValDate } = this.getDateRangeFromChrtData(bmrkItem.chrtData);
+      this.updateMinMaxDates(firstValDate, lastValDate);
+      const chartItem = this.createCgTimeSeriesFromChrtData(bmrkItem.chrtData, bmrkItem.sqTicker, false);
       uiPrtfResItem.bmrkChrtValues.push(chartItem);
     }
 
@@ -348,6 +277,69 @@ export class AppComponent implements OnInit {
     this._ultimateChrt.Init(lineChrtDiv, lineChrtTooltip, prtfAndBmrkChrtData);
     this._sqStatisticsbuilder.Init(prtfAndBmrkChrtData);
     this.onStartOrEndDateChanged(); // will recalculate CAGR and redraw chart
+  }
+
+  // Common function for both portfolios and bmrks to create chartGenerator TimeSeries data
+  createCgTimeSeriesFromChrtData(chrtData: ChartJs, name: string, isPrimary: boolean): CgTimeSeries {
+    const chartItem = new CgTimeSeries();
+    chartItem.name = name;
+    chartItem.chartResolution = ChartResolution[chrtData.chartResolution];
+    chartItem.linestyle = isPrimary ? LineStyle.Solid : LineStyle.Dashed;
+    chartItem.isPrimary = isPrimary;
+    chartItem.priceData = [];
+
+    for (let i = 0; i < chrtData.dates.length; i++) {
+      const chrtItem = this.createUiChartPointFromChrtData(chrtData, i);
+      chartItem.priceData.push(chrtItem);
+    }
+    return chartItem;
+  }
+
+  // Common function for both portfolios and bmrks to create UiChartPiont data from chartdata and index
+  createUiChartPointFromChrtData(chrtData: ChartJs, index: number): UiChartPoint {
+    const chrtItem = new UiChartPoint();
+
+    if (chrtData.dateTimeFormat == 'YYYYMMDD')
+      chrtItem.date = parseNumberToDate(chrtData.dates[index]);
+    else if (chrtData.dateTimeFormat.includes('DaysFrom')) {
+      const semicolonInd = chrtData.dateTimeFormat.indexOf(':');
+      const dateStartsFrom = parseNumberToDate(parseInt(chrtData.dateTimeFormat.substring(semicolonInd + 1)));
+      chrtItem.date = new Date(dateStartsFrom.setDate(dateStartsFrom.getDate() + chrtData.dates[index]));
+    } else {
+      const mSecSinceUnixEpoch: number = chrtData.dates[index] * 1000;
+      chrtItem.date = new Date(mSecSinceUnixEpoch);
+    }
+    chrtItem.value = chrtData.values[index];
+    return chrtItem;
+  }
+
+  // Common function for both portfolios and bmrks to DateRanges from chartData.
+  getDateRangeFromChrtData(chrtData: ChartJs): { firstVal: Date, lastVal: Date } {
+    let firstValDate: Date;
+    let lastValDate: Date;
+
+    if (chrtData.dateTimeFormat == 'YYYYMMDD') {
+      firstValDate = parseNumberToDate(chrtData.dates[0]);
+      lastValDate = parseNumberToDate(chrtData.dates[chrtData.dates.length - 1]);
+    } else if (chrtData.dateTimeFormat.includes('DaysFrom')) {
+      const semicolonInd = chrtData.dateTimeFormat.indexOf(':');
+      const dateStartsFrom = parseNumberToDate(parseInt(chrtData.dateTimeFormat.substring(semicolonInd + 1)));
+      firstValDate = new Date(dateStartsFrom.setDate(dateStartsFrom.getDate() + chrtData.dates[0]));
+      lastValDate = new Date(dateStartsFrom.setDate(dateStartsFrom.getDate() + chrtData.dates[chrtData.dates.length - 1]));
+    } else {
+      firstValDate = new Date(chrtData.dates[0] * 1000);
+      lastValDate = new Date(chrtData.dates[chrtData.dates.length - 1] * 1000);
+    }
+    return { firstVal: firstValDate, lastVal: lastValDate };
+  }
+
+  // Based on the DateRanges both portfolios and bmrks update the min and max dates.
+  updateMinMaxDates(minDate: Date, maxDate: Date) {
+    if (minDate < this._minStartDate)
+      this._minStartDate = minDate;
+
+    if (maxDate > this._maxEndDate)
+      this._maxEndDate = maxDate;
   }
 
   onStartOrEndDateChanged() {

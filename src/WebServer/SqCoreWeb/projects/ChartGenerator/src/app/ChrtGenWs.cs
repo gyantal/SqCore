@@ -40,10 +40,8 @@ class ChrtGenPrtfRunResultJs : ChrtGenPrtfItems // ChartGenerator doesn't need t
 
 class BmrkHistory
 {
-    public ChartResolution ChartResolution { get; set; } = ChartResolution.Daily;
-    public string DateTimeFormat { get; set; } = "YYYYMMDD";  // "SecSince1970", "YYYYMMDD", "DaysFrom<YYYYDDMM>"
     public string SqTicker { get; set; } = string.Empty;
-    public PriceHistoryJs HistPrices { get; set; } = new();
+    public ChartData ChrtData { get; set; } = new();
 }
 
 class ChrtGenBacktestResult
@@ -136,26 +134,27 @@ public class ChrtGenWs
                 // we send a shorter: { ChartDate: [1641013200, 1641013200, 1641013200], Value: [101665, 101665, 101665] }
                 chartVal.ChartResolution = chartResolution;
                 // Portfolios DateFormat Processing based on ChartResolution
+                DateTime startDate = DateTime.MinValue;
                 chartVal.DateTimeFormat = "SecSince1970";
                 if (chartResolution == ChartResolution.Daily)
-                    chartVal.DateTimeFormat = "YYYYMMDD";
-
+                {
+                    startDate = DateTimeOffset.FromUnixTimeSeconds(pv[0].x).DateTime.Date;
+                    chartVal.DateTimeFormat = "DaysFrom:" + startDate.ToYYYYMMDD();
+                }
                 foreach (var item in pv)
                 {
                     DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(item.x).DateTime.Date;
                     if (itemDate < minStartDate)
                         minStartDate = itemDate; // MinStart Date of the portfolio's
-                    long pvDateTime = item.x;
                     if(chartResolution == ChartResolution.Daily)
                     {
-                        string dateStr = Utils.LongTimestampToYYYYMMDD(pvDateTime);
-                        chartVal.Dates.Add(int.Parse(dateStr));
+                        int day = (int)(itemDate - startDate).TotalDays; // number of days since startDate
+                        chartVal.Dates.Add(day);
                     }
                     else
-                        chartVal.Dates.Add(pvDateTime);
+                        chartVal.Dates.Add(item.x);
                     chartVal.Values.Add((float)item.y);
                 }
-
                 // Step 4: Filling the Stats data
                 pStat.StartPortfolioValue = stat.StartPortfolioValue;
                 pStat.EndPortfolioValue = stat.EndPortfolioValue;
@@ -190,15 +189,35 @@ public class ChrtGenWs
         if(minStartDate == DateTime.Today) // Default date (2020-01-01) if minStartdate == today
             minStartDate = QCAlgorithmUtils.g_earliestQcDay; // we are giving mindate as (1900-01-01) so that it gets all the data available if its only processing the benchmarks. DateTime.MinValue cannot be used, because QC.HistoryProvider.GetHistory() will convert this time to UTC, but taking away 5 hours from MinDate is not possible.
         List<BmrkHistory> bmrkHistories = new();
+        ChartData chartValBmrk = new();
         foreach (string bmrkTicker in bmrksStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
         {
             string? errMsg = Portfolio.GetBmrksHistoricalResults(bmrkTicker, minStartDate, out PriceHistoryJs histPrcs, out ChartResolution chartResolution);
             if (errMsg == null)
             {
+                chartValBmrk.ChartResolution = chartResolution;
+                DateTime startDate = DateTime.MinValue;
+                chartValBmrk.DateTimeFormat = "SecSince1970";
                 if (chartResolution == ChartResolution.Daily)
-                    bmrkHistories.Add(new BmrkHistory { SqTicker = bmrkTicker, HistPrices = histPrcs, ChartResolution = chartResolution, DateTimeFormat = "YYYYMMDD" });
-                else
-                    bmrkHistories.Add(new BmrkHistory { SqTicker = bmrkTicker, HistPrices = histPrcs, ChartResolution = chartResolution, DateTimeFormat = "SecSince1970" });
+                {
+                    startDate = new DateTime(histPrcs.Dates[0]);
+                    chartValBmrk.DateTimeFormat = "DaysFrom:" + startDate.ToYYYYMMDD();
+                }
+                for (int i = 0; i < histPrcs.Dates.Count; i++)
+                {
+                    DateTime itemDate = new (histPrcs.Dates[i]);
+                    if (itemDate < minStartDate)
+                        minStartDate = itemDate;
+                    if(chartResolution == ChartResolution.Daily)
+                    {
+                        int day = (int)(itemDate - startDate).TotalDays; // number of days since startDate
+                        chartValBmrk.Dates.Add(day);
+                    }
+                    else
+                        chartValBmrk.Dates.Add(histPrcs.Dates[i]);
+                    chartValBmrk.Values.Add((float)histPrcs.Prices[i]);
+                }
+                bmrkHistories.Add(new BmrkHistory { SqTicker = bmrkTicker, ChrtData = chartValBmrk });
             }
             else
                 sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Warn, Message = $"The Benchmark Tickers {bmrkTicker} not found in DB. ErrMsg {errMsg}" });

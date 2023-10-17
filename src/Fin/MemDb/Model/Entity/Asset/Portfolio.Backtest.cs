@@ -78,7 +78,6 @@ public class PriceHistoryJs // To save bandwidth, we send Dates, and Prices just
 [DebuggerDisplay("{Id}, Name:{Name}, User:{User?.Username??\"-NoUser-\"}")]
 public partial class Portfolio : Asset // this inheritance makes it possible that a Portfolio can be part of an Uber-portfolio
 {
-    public static int gConvertNanoSecToSec = 10000; // required for converting NanoSecs to MilliSecs
     // PortfolioValue chart data.
     // We have the option to return Date fields in different formats in JSON string:
     // '2021-01-27' is 10 chars, '20210127' is 8 chars. Resolution is only daily.
@@ -309,16 +308,12 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         for (int i = 0; i < result.Count; i++)
         {
             TradeBar[]? resBarVals = result[i].Bars.Values.ToArray();
-            long dateIntOrLong; // int if its daily else long
-            if (p_chartResolution == ChartResolution.Daily)
-                dateIntOrLong = int.Parse(resBarVals[0].Time.TohYYYYMMDD().Replace("-", string.Empty)); // converting the date to number format (ex: "20020730" => 20020730) by replacing the hyphens(-) and double quotes(").This way can reduce the memory that stores on the client side.
-            else
-                dateIntOrLong = resBarVals[0].Time.ToFileTime() / gConvertNanoSecToSec; // ToFileTime() method gives data in nano seconds converting data to milliseconds.
+            long dateLong = resBarVals[0].Time.Ticks;
             float price = (float)resBarVals[0].Price;
             if (historicalPrices.Prices.Count > 1 && (price / historicalPrices.Prices[^1] > 1.5)) // TEMP for debugging, because QQQ benchmark data has (wrong) doubling 3 times during its history.
-                Console.WriteLine($"Warning on ticker {tickerAsTradedToday}. Potential wrong data on {dateIntOrLong}, PrevPrice: {historicalPrices.Prices[^1]}, currPrice: {price}");
+                Console.WriteLine($"Warning on ticker {tickerAsTradedToday}. Potential wrong data on {dateLong}, PrevPrice: {historicalPrices.Prices[^1]}, currPrice: {price}");
 
-            historicalPrices.Dates.Add(dateIntOrLong); // Add the date to the Date list
+            historicalPrices.Dates.Add(dateLong); // Add the date to the Date list
             historicalPrices.Prices.Add(price); // Add the price to the Price list
         }
         p_histPrices = historicalPrices;
