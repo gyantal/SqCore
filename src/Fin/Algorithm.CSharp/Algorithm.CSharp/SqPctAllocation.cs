@@ -172,13 +172,7 @@ namespace QuantConnect.Algorithm.CSharp
 
             // *** Only in QcCloud: YF data download. Part 2
             if (IsTradeInQcCloud) // only in QC cloud: we need not only daily, but perMinute symbols too, because we use perMinute symbols for trading.
-            {
-                foreach (string ticker in _tickers)
-                {
-                    // Call the DownloadAndProcessData method to get real life close prices from YF
-                    QCAlgorithmUtils.DownloadAndProcessYfData(this, ticker, _earliestUsableDataDay, _warmUp, _endDate, out _rawClosesFromYfDicts);
-                }
-            }
+                QCAlgorithmUtils.DownloadAndProcessYfData(this, _tickers, _earliestUsableDataDay, _warmUp, _endDate, out _rawClosesFromYfDicts);
         }
 
         public static void ProcessAlgorithmParam(NameValueCollection p_AlgorithmParamQuery, out List<string> p_tickers, out Dictionary<string, decimal> p_weights, out int p_rebalancePeriodDays)

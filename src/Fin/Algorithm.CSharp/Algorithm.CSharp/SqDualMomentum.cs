@@ -180,13 +180,7 @@ namespace QuantConnect.Algorithm.CSharp
 
             // *** Only in QcCloud: YF data download. Part 2
             if (IsTradeInQcCloud) // only in QC cloud: we need not only daily, but perMinute symbols too, because we use perMinute symbols for trading.
-            {
-                foreach (string ticker in _tickers)
-                {
-                    // Call the DownloadAndProcessData method to get real life close prices from YF
-                    QCAlgorithmUtils.DownloadAndProcessYfData(this, ticker, _earliestUsableDataDay, _warmUp, _endDate, out _rawClosesFromYfDicts);
-                }
-            }
+                QCAlgorithmUtils.DownloadAndProcessYfData(this, _tickers, _earliestUsableDataDay, _warmUp, _endDate, out _rawClosesFromYfDicts);
 
             Symbol tradingScheduleSymbol = symbolWithEarliestUsableDataDay; // "SPY" is the best candidate for trading schedule, but if "SPY" is not in the asset universe, we use the one with the longest history
             if (tradingScheduleSymbol != null) // if AlgorithmParam is empty, then there is no symbol at all. It is OK to not schedule trading.

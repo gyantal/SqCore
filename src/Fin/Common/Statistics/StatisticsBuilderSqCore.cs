@@ -130,6 +130,7 @@ namespace QuantConnect.Statistics
             double histAMean = ArrayStatistics.Mean(histDailyPctChgs) * 252; // annualized daily mean
             double histSD = ArrayStatistics.StandardDeviation(histDailyPctChgs) * Math.Sqrt(252); // annualized daily StDev, if histDailyPctChgs is empty, StDev becomes NaN, which is correct
             double histSharpe = histSD.IsNaNOrInfinity() ? 0 : histAMean / histSD;
+            double histCagrSharpe = histSD.IsNaNOrInfinity() ? 0 : histCagr / histSD;
             double histMAR = histMaxDrawDown.IsNaNOrInfinity() ? 0 : histCagr / histMaxDrawDown;
 
             // Step 5. Writing result dict
@@ -138,6 +139,7 @@ namespace QuantConnect.Statistics
             result.Summary[PerformanceMetrics.AnnualizedDailyMeanReturn] = (Math.Round(histAMean * 100, 3)).ToStringInvariant() + "%";
             result.Summary[PerformanceMetrics.AnnualStandardDeviation] = (Math.Round(histSD, 3)).ToStringInvariant();
             result.Summary[PerformanceMetrics.SharpeRatio] = (Math.Round(histSharpe, 3)).ToStringInvariant();
+            result.Summary[PerformanceMetrics.CagrSharpeRatio] = (Math.Round(histCagrSharpe, 3)).ToStringInvariant();
             result.Summary[PerformanceMetrics.Drawdown] = (Math.Round(histMaxDrawDown * 100, 3)).ToStringInvariant() + "%";
             result.Summary[PerformanceMetrics.MarRatio] = (Math.Round(histMAR, 3)).ToStringInvariant();
             result.Summary[PerformanceMetrics.TotalTrades] = totalTransactions.ToStringInvariant();

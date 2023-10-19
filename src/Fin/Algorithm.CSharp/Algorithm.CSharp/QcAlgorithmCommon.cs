@@ -53,12 +53,12 @@ namespace QuantConnect.Algorithm.CSharp
         public string NumberOfEstimates { get; set; }
     }
 
-     public enum StartDateAutoCalcMode { Unknown, WhenAllTickersAlive /* default if not given in params */ , WhenFirstTickerAlive, CustomGC };
+    public enum StartDateAutoCalcMode { Unknown, WhenAllTickersAlive /* default if not given in params */, WhenFirstTickerAlive, CustomGC };
 
     public class QCAlgorithmUtils
     {
         public static DateTime g_earliestQcDay = new DateTime(1900, 01, 01); // e.g. SetStartDate() exception: "Please select a start date after January 1st, 1900.". Also DateTime.MinValue cannot be used in QC.HistoryProvider.GetHistory() as it will convert this time to UTC, but taking away 5 hours from MinDate is not possible.
-        static Dictionary<string, StartDateAutoCalcMode> g_startDateAutoCalcModeDict = new Dictionary<string, StartDateAutoCalcMode> { {"Unknown", StartDateAutoCalcMode.Unknown}, {"WhenAllTickersAlive", StartDateAutoCalcMode.WhenAllTickersAlive}, {"WhenFirstTickerAlive", StartDateAutoCalcMode.WhenFirstTickerAlive},{"CustomGC", StartDateAutoCalcMode.CustomGC} };
+        static Dictionary<string, StartDateAutoCalcMode> g_startDateAutoCalcModeDict = new Dictionary<string, StartDateAutoCalcMode> { { "Unknown", StartDateAutoCalcMode.Unknown }, { "WhenAllTickersAlive", StartDateAutoCalcMode.WhenAllTickersAlive }, { "WhenFirstTickerAlive", StartDateAutoCalcMode.WhenFirstTickerAlive }, { "CustomGC", StartDateAutoCalcMode.CustomGC } };
 
         public static long DateTimeUtcToUnixTimeStamp(DateTime p_utcDate) // Int would roll over to a negative in 2038 (if you are using UNIX timestamp), so long is safer
         {
@@ -68,7 +68,7 @@ namespace QuantConnect.Algorithm.CSharp
             return (long)span.TotalSeconds;
         }
 
-        public static void ProcessAlgorithmParam(NameValueCollection p_AlgorithmParamQuery,  out DateTime p_forcedStartDate, out DateTime p_forcedEndDate, out StartDateAutoCalcMode p_startDateAutoCalcMode)
+        public static void ProcessAlgorithmParam(NameValueCollection p_AlgorithmParamQuery, out DateTime p_forcedStartDate, out DateTime p_forcedEndDate, out StartDateAutoCalcMode p_startDateAutoCalcMode)
         {
             // e.g. _AlgorithmParam = "assets=SPY,TLT&weights=60,40&rebFreq=Daily,10d"
 
@@ -154,117 +154,118 @@ namespace QuantConnect.Algorithm.CSharp
             return earliestUsableDataDay;
         }
 
-        public static void DownloadAndProcessYfData(QCAlgorithm p_algorithm, string p_ticker, DateTime p_startDate, TimeSpan p_warmUp, DateTime p_endDate, out Dictionary<string, Dictionary<DateTime, decimal>> p_rawClosesFromYfDicts)
+        public static void DownloadAndProcessYfData(QCAlgorithm p_algorithm, List<string> p_tickers, DateTime p_startDate, TimeSpan p_warmUp, DateTime p_endDate, out Dictionary<string, Dictionary<DateTime, decimal>> p_rawClosesFromYfDicts)
         {
             p_rawClosesFromYfDicts = new Dictionary<string, Dictionary<DateTime, decimal>>();
-            Dictionary<string, List<QcPrice>> rawClosesFromYfLists = new();
 
             long periodStart = QCAlgorithmUtils.DateTimeUtcToUnixTimeStamp(p_startDate - p_warmUp);
             long periodEnd = QCAlgorithmUtils.DateTimeUtcToUnixTimeStamp(p_endDate.AddDays(1)); // if p_endDate is a fixed date (2023-02-28:00:00), then it has to be increased, otherwise YF doesn't give that day data.
 
-            // Step 1. Get Split data
-            string splitCsvUrl = $"https://query1.finance.yahoo.com/v7/finance/download/{p_ticker}?period1={periodStart}&period2={periodEnd}&interval=1d&events=split&includeAdjustedClose=true";
-            string splitCsvData = string.Empty;
-            try
+            foreach (string ticker in p_tickers)
             {
-                splitCsvData = p_algorithm.Download(splitCsvUrl); // "Date,Stock Splits\n2023-03-07,1:4"
-            }
-            catch (Exception e)
-            {
-                p_algorithm.Log($"Exception: {e.Message}");
-                return;
-            }
-
-            List<YfSplit> splits = new List<YfSplit>();
-            int rowStartInd = splitCsvData.IndexOf('\n');   // jump over the header Date,Stock Splits
-            rowStartInd = (rowStartInd == -1) ? splitCsvData.Length : rowStartInd + 1;
-            while (rowStartInd < splitCsvData.Length) // very fast implementation without String.Split() RAM allocation
-            {
-                int splitStartInd = splitCsvData.IndexOf(',', rowStartInd);
-                int splitMidInd = (splitStartInd != -1) ? splitCsvData.IndexOf(':', splitStartInd + 1) : -1;
-                int splitEndIndExcl = (splitMidInd != -1) ? splitCsvData.IndexOf('\n', splitMidInd + 1) : splitCsvData.Length;
-                if (splitEndIndExcl == -1)
-                    splitEndIndExcl = splitCsvData.Length;
-
-                string dateStr = (splitStartInd != -1) ? splitCsvData.Substring(rowStartInd, splitStartInd - rowStartInd) : string.Empty;
-                string split1Str = (splitStartInd != -1 && splitMidInd != -1) ? splitCsvData.Substring(splitStartInd + 1, splitMidInd - splitStartInd - 1) : string.Empty;
-                string split2Str = (splitMidInd != -1) ? splitCsvData.Substring(splitMidInd + 1, splitEndIndExcl - splitMidInd - 1) : string.Empty;
-
-                if (DateTime.TryParseExact(dateStr, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
+                // Step 1. Get Split data
+                string splitCsvUrl = $"https://query1.finance.yahoo.com/v7/finance/download/{ticker}?period1={periodStart}&period2={periodEnd}&interval=1d&events=split&includeAdjustedClose=true";
+                string splitCsvData = string.Empty;
+                try
                 {
-                    if (Decimal.TryParse(split1Str, out decimal split1) && Decimal.TryParse(split2Str, out decimal split2))
-                        splits.Add(new YfSplit() { ReferenceDate = date, SplitFactor = decimal.Divide(split1, split2) });
+                    splitCsvData = p_algorithm.Download(splitCsvUrl); // "Date,Stock Splits\n2023-03-07,1:4"
                 }
-                rowStartInd = splitEndIndExcl + 1; // jump over the '\n'
-            }
-
-            // Step 2. Get Price history data
-            string priceCsvUrl = $"https://query1.finance.yahoo.com/v7/finance/download/{p_ticker}?period1={periodStart}&period2={periodEnd}&interval=1d&events=history&includeAdjustedClose=true";
-            string priceCsvData = string.Empty;
-            try
-            {
-                priceCsvData = p_algorithm.Download(priceCsvUrl);  // ""Date,Open,High,Low,Close,Adj Close,Volume\n2022-03-21,131.279999,131.669998,129.750000,130.350006,127.057739,26122000\n" 
-            }
-            catch (Exception e)
-            {
-                p_algorithm.Log($"Exception: {e.Message}");
-                return;
-            }
-
-            List<QcPrice> rawClosesFromYfList = new List<QcPrice>();
-            rowStartInd = priceCsvData.IndexOf('\n');   // jump over the header Date,...
-            rowStartInd = (rowStartInd == -1) ? priceCsvData.Length : rowStartInd + 1; // jump over the '\n'
-            while (rowStartInd < priceCsvData.Length) // very fast implementation without String.Split() RAM allocation
-            {   // chronological processing: it goes forward in time. Starting with StartDate
-                // (Raw)Close is non adjusted for dividend, but adjusted for split. Get that and we will reverse Split-adjust later
-                int openInd = priceCsvData.IndexOf(',', rowStartInd);
-                int highInd = (openInd != -1) ? priceCsvData.IndexOf(',', openInd + 1) : -1;
-                int lowInd = (highInd != -1) ? priceCsvData.IndexOf(',', highInd + 1) : -1;
-                int closeInd = (lowInd != -1) ? priceCsvData.IndexOf(',', lowInd + 1) : -1;
-                int adjCloseInd = (closeInd != -1) ? priceCsvData.IndexOf(',', closeInd + 1) : -1;
-
-                string dateStr = (openInd != -1) ? priceCsvData.Substring(rowStartInd, openInd - rowStartInd) : string.Empty;
-                string closeStr = (closeInd != -1 && adjCloseInd != -1) ? priceCsvData.Substring(closeInd + 1, adjCloseInd - closeInd - 1) : string.Empty;
-
-                if (DateTime.TryParseExact(dateStr, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
+                catch (Exception e)
                 {
-                    if (Decimal.TryParse(closeStr, out decimal close))
-                        rawClosesFromYfList.Add(new QcPrice() { ReferenceDate = date, Close = close });
+                    p_algorithm.Log($"Exception: {e.Message}");
+                    return;
                 }
-                rowStartInd = (closeInd != -1) ? priceCsvData.IndexOf('\n', adjCloseInd + 1) : -1;
-                rowStartInd = (rowStartInd == -1) ? priceCsvData.Length : rowStartInd + 1; // jump over the '\n'
-            }
 
-            // Step 3. Reverse Adjust history data with the splits. Going backwards in time, starting from 'today'
-            if (splits.Count != 0)
-            {
-                decimal splitMultiplier = 1m;
-                int lastSplitIdx = splits.Count - 1;
-                DateTime watchedSplitDate = splits[lastSplitIdx].ReferenceDate;
-
-                for (int i = rawClosesFromYfList.Count - 1; i >= 0; i--)
+                List<YfSplit> splits = new List<YfSplit>();
+                int rowStartInd = splitCsvData.IndexOf('\n');   // jump over the header Date,Stock Splits
+                rowStartInd = (rowStartInd == -1) ? splitCsvData.Length : rowStartInd + 1;
+                while (rowStartInd < splitCsvData.Length) // very fast implementation without String.Split() RAM allocation
                 {
-                    DateTime date = rawClosesFromYfList[i].ReferenceDate;
-                    if (date < watchedSplitDate)
+                    int splitStartInd = splitCsvData.IndexOf(',', rowStartInd);
+                    int splitMidInd = (splitStartInd != -1) ? splitCsvData.IndexOf(':', splitStartInd + 1) : -1;
+                    int splitEndIndExcl = (splitMidInd != -1) ? splitCsvData.IndexOf('\n', splitMidInd + 1) : splitCsvData.Length;
+                    if (splitEndIndExcl == -1)
+                        splitEndIndExcl = splitCsvData.Length;
+
+                    string dateStr = (splitStartInd != -1) ? splitCsvData.Substring(rowStartInd, splitStartInd - rowStartInd) : string.Empty;
+                    string split1Str = (splitStartInd != -1 && splitMidInd != -1) ? splitCsvData.Substring(splitStartInd + 1, splitMidInd - splitStartInd - 1) : string.Empty;
+                    string split2Str = (splitMidInd != -1) ? splitCsvData.Substring(splitMidInd + 1, splitEndIndExcl - splitMidInd - 1) : string.Empty;
+
+                    if (DateTime.TryParseExact(dateStr, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
                     {
-                        splitMultiplier *= splits[lastSplitIdx].SplitFactor;
-                        lastSplitIdx--;
-                        watchedSplitDate = (lastSplitIdx == -1) ? DateTime.MinValue : splits[lastSplitIdx].ReferenceDate;
+                        if (Decimal.TryParse(split1Str, out decimal split1) && Decimal.TryParse(split2Str, out decimal split2))
+                            splits.Add(new YfSplit() { ReferenceDate = date, SplitFactor = decimal.Divide(split1, split2) });
                     }
-
-                    rawClosesFromYfList[i].Close *= splitMultiplier;
+                    rowStartInd = splitEndIndExcl + 1; // jump over the '\n'
                 }
-            }
-            rawClosesFromYfLists[p_ticker] = rawClosesFromYfList;
 
-            // Step 4. Convert List to Dictionary, because that is 6x faster to query
-            var rawClosesFromYfDict = new Dictionary<DateTime, decimal>(rawClosesFromYfList.Count);
-            for (int i = 0; i < rawClosesFromYfList.Count; i++)
-            {
-                var yfPrice = rawClosesFromYfList[i];
-                rawClosesFromYfDict[yfPrice.ReferenceDate] = yfPrice.Close;
+                // Step 2. Get Price history data
+                string priceCsvUrl = $"https://query1.finance.yahoo.com/v7/finance/download/{ticker}?period1={periodStart}&period2={periodEnd}&interval=1d&events=history&includeAdjustedClose=true";
+                string priceCsvData = string.Empty;
+                try
+                {
+                    priceCsvData = p_algorithm.Download(priceCsvUrl);  // ""Date,Open,High,Low,Close,Adj Close,Volume\n2022-03-21,131.279999,131.669998,129.750000,130.350006,127.057739,26122000\n" 
+                }
+                catch (Exception e)
+                {
+                    p_algorithm.Log($"Exception: {e.Message}");
+                    return;
+                }
+
+                List<QcPrice> rawClosesFromYfList = new List<QcPrice>();
+                rowStartInd = priceCsvData.IndexOf('\n');   // jump over the header Date,...
+                rowStartInd = (rowStartInd == -1) ? priceCsvData.Length : rowStartInd + 1; // jump over the '\n'
+                while (rowStartInd < priceCsvData.Length) // very fast implementation without String.Split() RAM allocation
+                {   // chronological processing: it goes forward in time. Starting with StartDate
+                    // (Raw)Close is non adjusted for dividend, but adjusted for split. Get that and we will reverse Split-adjust later
+                    int openInd = priceCsvData.IndexOf(',', rowStartInd);
+                    int highInd = (openInd != -1) ? priceCsvData.IndexOf(',', openInd + 1) : -1;
+                    int lowInd = (highInd != -1) ? priceCsvData.IndexOf(',', highInd + 1) : -1;
+                    int closeInd = (lowInd != -1) ? priceCsvData.IndexOf(',', lowInd + 1) : -1;
+                    int adjCloseInd = (closeInd != -1) ? priceCsvData.IndexOf(',', closeInd + 1) : -1;
+
+                    string dateStr = (openInd != -1) ? priceCsvData.Substring(rowStartInd, openInd - rowStartInd) : string.Empty;
+                    string closeStr = (closeInd != -1 && adjCloseInd != -1) ? priceCsvData.Substring(closeInd + 1, adjCloseInd - closeInd - 1) : string.Empty;
+
+                    if (DateTime.TryParseExact(dateStr, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
+                    {
+                        if (Decimal.TryParse(closeStr, out decimal close))
+                            rawClosesFromYfList.Add(new QcPrice() { ReferenceDate = date, Close = close });
+                    }
+                    rowStartInd = (closeInd != -1) ? priceCsvData.IndexOf('\n', adjCloseInd + 1) : -1;
+                    rowStartInd = (rowStartInd == -1) ? priceCsvData.Length : rowStartInd + 1; // jump over the '\n'
+                }
+
+                // Step 3. Reverse Adjust history data with the splits. Going backwards in time, starting from 'today'
+                if (splits.Count != 0)
+                {
+                    decimal splitMultiplier = 1m;
+                    int lastSplitIdx = splits.Count - 1;
+                    DateTime watchedSplitDate = splits[lastSplitIdx].ReferenceDate;
+
+                    for (int i = rawClosesFromYfList.Count - 1; i >= 0; i--)
+                    {
+                        DateTime date = rawClosesFromYfList[i].ReferenceDate;
+                        if (date < watchedSplitDate)
+                        {
+                            splitMultiplier *= splits[lastSplitIdx].SplitFactor;
+                            lastSplitIdx--;
+                            watchedSplitDate = (lastSplitIdx == -1) ? DateTime.MinValue : splits[lastSplitIdx].ReferenceDate;
+                        }
+
+                        rawClosesFromYfList[i].Close *= splitMultiplier;
+                    }
+                }
+
+                // Step 4. Convert List to Dictionary, because that is 6x faster to query
+                var rawClosesFromYfDict = new Dictionary<DateTime, decimal>(rawClosesFromYfList.Count);
+                for (int i = 0; i < rawClosesFromYfList.Count; i++)
+                {
+                    var yfPrice = rawClosesFromYfList[i];
+                    rawClosesFromYfDict[yfPrice.ReferenceDate] = yfPrice.Close;
+                }
+                p_rawClosesFromYfDicts[ticker] = rawClosesFromYfDict;
             }
-            p_rawClosesFromYfDicts[p_ticker] = rawClosesFromYfDict;
         }
 
         public void DownloadAndProcessEarningsData()
