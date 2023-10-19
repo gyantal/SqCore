@@ -18,7 +18,7 @@
             "stopAtEntry": false,
             // Enable launching a web browser when ASP.NET Core starts. For more information: https://aka.ms/VSCode-CS-LaunchJson-WebBrowser
             "serverReadyAction": {
-                "action": "openExternally", // open externally in normal Chrome
+                "action": "openExternally", // open externally in normal Chrome. In VsCode F5 Debug: launching a web browser works by finding a pattern in the DebugConsole (not in the real external console)
                 // "action": "debugWithChrome", // VS Code starts a Chrome debug session for the URI (which requires that the Debugger for Chrome extension is installed).
                 // "webRoot": "${workspaceFolder}/src/WebServer/SqCoreWeb/wwwroot", // debugWithChrome needs this
 
@@ -59,7 +59,7 @@
             "stopAtEntry": false,
             // Enable launching a web browser when ASP.NET Core starts. For more information: https://aka.ms/VSCode-CS-LaunchJson-WebBrowser
             "serverReadyAction": {
-                "action": "openExternally", // open externally in normal Chrome
+                "action": "openExternally", // open externally in normal Chrome. In VsCode F5 Debug: launching a web browser works by finding a pattern in the DebugConsole (not in the real external console)
                 // "action": "debugWithChrome", // VS Code starts a Chrome debug session for the URI (which requires that the Debugger for Chrome extension is installed).
                 // "webRoot": "${workspaceFolder}/src/WebServer/SqCoreWeb/wwwroot", // debugWithChrome needs this
 
@@ -144,7 +144,6 @@
             "console": "externalTerminal",
             "stopAtEntry": false,
             "logging": {
-                "engineLogging": false,
                 "moduleLoad": false,
                 "exceptions": true,
                 "browserStdOut": false,
@@ -168,7 +167,6 @@
             "console": "externalTerminal",
             "stopAtEntry": false,
             "logging": {
-                "engineLogging": false,
                 "moduleLoad": false,
                 "exceptions": true,
                 "browserStdOut": false,

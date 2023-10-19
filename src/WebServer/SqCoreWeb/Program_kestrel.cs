@@ -31,7 +31,7 @@ public static void KestrelWebServer_Run(string[] args)
     {
         IHost host = CreateHostBuilder(args).Build();
         // in VsCode F5 Debug: launching a web browser works by finding a pattern in the DebugConsole (not in the real external console), but EXE is launched in separate "console": "externalTerminal"
-        Debug.WriteLine("Now listening on: https://127.0.0.1:5001");
+        Debug.WriteLine("Now listening on: https://127.0.0.1:5001"); // if you don't want to open the main page in Chrome at every Debug run, comment out this line
         host.RunAsync(gKestrelCancelTs.Token);     // without await, it returns instantly, running in threadpool
     }
     catch (Exception e)
