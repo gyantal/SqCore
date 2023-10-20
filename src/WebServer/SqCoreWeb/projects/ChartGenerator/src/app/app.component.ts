@@ -68,6 +68,7 @@ export class AppComponent implements OnInit {
   prtfSelectedName: Nullable<string> = null;
   prtfSelectedId: number = 0;
   public gPortfolioIdOffset: number = 10000;
+  public static readonly cSecToMSec: number = 1000;
   _backtestedPortfolios: PortfolioJs[] = [];
   _backtestedBenchmarks: string[] = [];
   treeViewState: TreeViewState = new TreeViewState();
@@ -302,13 +303,11 @@ export class AppComponent implements OnInit {
     if (chrtData.dateTimeFormat == 'YYYYMMDD')
       chrtItem.date = parseNumberToDate(chrtData.dates[index]);
     else if (chrtData.dateTimeFormat.includes('DaysFrom')) {
-      const semicolonInd = chrtData.dateTimeFormat.indexOf(':');
-      const dateStartsFrom = parseNumberToDate(parseInt(chrtData.dateTimeFormat.substring(semicolonInd + 1)));
+      const dateStartInd = chrtData.dateTimeFormat.indexOf('m');
+      const dateStartsFrom = parseNumberToDate(parseInt(chrtData.dateTimeFormat.substring(dateStartInd + 1)));
       chrtItem.date = new Date(dateStartsFrom.setDate(dateStartsFrom.getDate() + chrtData.dates[index]));
-    } else {
-      const mSecSinceUnixEpoch: number = chrtData.dates[index] * 1000;
-      chrtItem.date = new Date(mSecSinceUnixEpoch);
-    }
+    } else
+      chrtItem.date = new Date(chrtData.dates[index] * AppComponent.cSecToMSec); // data comes as seconds. JS uses milliseconds since Epoch.
     chrtItem.value = chrtData.values[index];
     return chrtItem;
   }
@@ -322,13 +321,13 @@ export class AppComponent implements OnInit {
       firstValDate = parseNumberToDate(chrtData.dates[0]);
       lastValDate = parseNumberToDate(chrtData.dates[chrtData.dates.length - 1]);
     } else if (chrtData.dateTimeFormat.includes('DaysFrom')) {
-      const semicolonInd = chrtData.dateTimeFormat.indexOf(':');
-      const dateStartsFrom = parseNumberToDate(parseInt(chrtData.dateTimeFormat.substring(semicolonInd + 1)));
+      const dateStartInd = chrtData.dateTimeFormat.indexOf('m');
+      const dateStartsFrom = parseNumberToDate(parseInt(chrtData.dateTimeFormat.substring(dateStartInd + 1)));
       firstValDate = new Date(dateStartsFrom.setDate(dateStartsFrom.getDate() + chrtData.dates[0]));
       lastValDate = new Date(dateStartsFrom.setDate(dateStartsFrom.getDate() + chrtData.dates[chrtData.dates.length - 1]));
     } else {
-      firstValDate = new Date(chrtData.dates[0] * 1000);
-      lastValDate = new Date(chrtData.dates[chrtData.dates.length - 1] * 1000);
+      firstValDate = new Date(chrtData.dates[0] * AppComponent.cSecToMSec); // data comes as seconds. JS uses milliseconds since Epoch.
+      lastValDate = new Date(chrtData.dates[chrtData.dates.length - 1] * AppComponent.cSecToMSec);
     }
     return { firstVal: firstValDate, lastVal: lastValDate };
   }

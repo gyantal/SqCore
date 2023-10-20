@@ -59,6 +59,11 @@ public enum ChartResolution
     Second, Minute, Minute5, Hour, Daily, Weekly, Monthly
 }
 
+public enum DateTimeFormat // "SecSince1970", "YYYYMMDD", "DaysFrom<YYYYDDMM>"
+{
+    Unknown, SecSince1970, YYYYMMDD, DaysFromADate
+}
+
 public class PortfolioPosition
 {
     public string SqTicker { get; set; } = string.Empty;
@@ -69,7 +74,7 @@ public class PortfolioPosition
 
 public class PriceHistoryJs // To save bandwidth, we send Dates, and Prices just as a List, instead of a List of <Date,Price> objects that would add property names thousands of times into JSON
 {
-    public List<long> Dates { get; set; } = new();
+    public List<uint> Dates { get; set; } = new(); // UInt32 is enough if time is represented as seconds since 1970. Would only cover until 2106. (uint32 max. 4,294,967,295 seconds that is 132 years)
 
     [JsonConverter(typeof(FloatListJsonConverterToNumber4D))]
     public List<float> Prices { get; set; } = new();
@@ -308,19 +313,13 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         for (int i = 0; i < result.Count; i++)
         {
             TradeBar[]? resBarVals = result[i].Bars.Values.ToArray();
-            long dateLong = resBarVals[0].Time.Ticks;
+            uint dateInt = (uint)new DateTimeOffset(resBarVals[0].Time, TimeSpan.Zero).ToUnixTimeSeconds();
             float price = (float)resBarVals[0].Price;
-            if (historicalPrices.Prices.Count > 1 && (price / historicalPrices.Prices[^1] > 1.5)) // TEMP for debugging, because QQQ benchmark data has (wrong) doubling 3 times during its history.
-                Console.WriteLine($"Warning on ticker {tickerAsTradedToday}. Potential wrong data on {dateLong}, PrevPrice: {historicalPrices.Prices[^1]}, currPrice: {price}");
 
-            historicalPrices.Dates.Add(dateLong); // Add the date to the Date list
+            historicalPrices.Dates.Add(dateInt); // Add the date to the Date list
             historicalPrices.Prices.Add(price); // Add the price to the Price list
         }
         p_histPrices = historicalPrices;
-
-        // TEMP for debugging, because QQQ benchmark data has (wrong) doubling 3 times during its history.
-        // string datesStr = string.Join(",", historicalPrices.Dates.ToArray());
-        // string pricesStr = string.Join(",", historicalPrices.Prices.Select(r => r.ToString()).ToArray());
 
         return null; // No Error
     }

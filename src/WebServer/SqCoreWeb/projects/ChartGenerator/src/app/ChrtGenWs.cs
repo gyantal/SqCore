@@ -116,7 +116,7 @@ public class ChrtGenWs
             }
         }
 
-        DateTime minStartDate = DateTime.Today; // initialize currentDate to the Today's Date
+        DateTime minPortfoliosStartDate = DateTime.Today; // initialize currentDate to the Today's Date
         List<ChrtGenPrtfRunResultJs> chrtGenPrtfRunResultJs = new();
         // Step 2: Filling the chrtGenPrtfRunResultJs to a list.
         for (int i = 0; i < lsPrtf.Count; i++)
@@ -132,27 +132,45 @@ public class ChrtGenWs
                 // Step 3: Filling the ChartPoint Dates and Values to a list. A very condensed format. Dates are separated into its ChartDate List.
                 // Instead of the longer [{"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}]
                 // we send a shorter: { ChartDate: [1641013200, 1641013200, 1641013200], Value: [101665, 101665, 101665] }
-                chartVal.ChartResolution = chartResolution;
+
                 // Portfolios DateFormat Processing based on ChartResolution
+                chartVal.ChartResolution = chartResolution;
                 DateTime startDate = DateTime.MinValue;
-                chartVal.DateTimeFormat = "SecSince1970";
+                DateTimeFormat dateTimeFormat;
                 if (chartResolution == ChartResolution.Daily)
                 {
+                    dateTimeFormat = DateTimeFormat.DaysFromADate;
                     startDate = DateTimeOffset.FromUnixTimeSeconds(pv[0].x).DateTime.Date;
-                    chartVal.DateTimeFormat = "DaysFrom:" + startDate.ToYYYYMMDD();
+                    chartVal.DateTimeFormat = "DaysFrom" + startDate.ToYYYYMMDD(); // the standard choice in Production. It results the less data to be sent. Date strings will be only numbers such as 0,1,2,3,4,5,8 (skipping weekends)
+
+                    // dateTimeFormat = DateTimeFormat.YYYYMMDD;
+                    // chartVal.DateTimeFormat = "YYYYMMDD"; // YYYYMMDD is a better choice if we debug data sending. (to see it in the TXT message. Or to easily convert it to CSV in Excel)
                 }
+                else
+                {
+                    dateTimeFormat = DateTimeFormat.SecSince1970;
+                    chartVal.DateTimeFormat = "SecSince1970"; // if it is higher resolution than daily, then we use per second resolution for data
+                }
+
                 foreach (var item in pv)
                 {
                     DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(item.x).DateTime.Date;
-                    if (itemDate < minStartDate)
-                        minStartDate = itemDate; // MinStart Date of the portfolio's
-                    if(chartResolution == ChartResolution.Daily)
-                    {
-                        int day = (int)(itemDate - startDate).TotalDays; // number of days since startDate
-                        chartVal.Dates.Add(day);
-                    }
-                    else
+                    if (itemDate < minPortfoliosStartDate)
+                        minPortfoliosStartDate = itemDate; // MinStart Date of the portfolio's
+
+                    if (dateTimeFormat == DateTimeFormat.SecSince1970)
                         chartVal.Dates.Add(item.x);
+                    else if (dateTimeFormat == DateTimeFormat.YYYYMMDD)
+                    {
+                        int dateInt = itemDate.Year * 10000 + itemDate.Month * 100 + itemDate.Day;
+                        chartVal.Dates.Add(dateInt);
+                    }
+                    else // dateTimeFormat ==  DateTimeFormat.DaysFromADate
+                    {
+                        int nDaysFromStartDate = (int)(itemDate - startDate).TotalDays; // number of days since startDate
+                        chartVal.Dates.Add(nDaysFromStartDate);
+                    }
+
                     chartVal.Values.Add((float)item.y);
                 }
                 // Step 4: Filling the Stats data
@@ -186,35 +204,52 @@ public class ChrtGenWs
         if (string.IsNullOrEmpty(bmrksStr))
             sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Info, Message = $"The bmrksStr from the client is null. We process the pidStr further." });
 
-        if(minStartDate == DateTime.Today) // Default date (2020-01-01) if minStartdate == today
-            minStartDate = QCAlgorithmUtils.g_earliestQcDay; // we are giving mindate as (1900-01-01) so that it gets all the data available if its only processing the benchmarks. DateTime.MinValue cannot be used, because QC.HistoryProvider.GetHistory() will convert this time to UTC, but taking away 5 hours from MinDate is not possible.
+        if (minPortfoliosStartDate == DateTime.Today) // Default date (2020-01-01) if minStartdate == today
+            minPortfoliosStartDate = QCAlgorithmUtils.g_earliestQcDay; // we are giving mindate as (1900-01-01) so that it gets all the data available if its only processing the benchmarks. DateTime.MinValue cannot be used, because QC.HistoryProvider.GetHistory() will convert this time to UTC, but taking away 5 hours from MinDate is not possible.
         List<BmrkHistory> bmrkHistories = new();
         ChartData chartValBmrk = new();
         foreach (string bmrkTicker in bmrksStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
         {
-            string? errMsg = Portfolio.GetBmrksHistoricalResults(bmrkTicker, minStartDate, out PriceHistoryJs histPrcs, out ChartResolution chartResolution);
+            string? errMsg = Portfolio.GetBmrksHistoricalResults(bmrkTicker, minPortfoliosStartDate, out PriceHistoryJs histPrcs, out ChartResolution chartResolution);
             if (errMsg == null)
             {
                 chartValBmrk.ChartResolution = chartResolution;
                 DateTime startDate = DateTime.MinValue;
-                chartValBmrk.DateTimeFormat = "SecSince1970";
+                DateTimeFormat dateTimeFormat;
                 if (chartResolution == ChartResolution.Daily)
                 {
-                    startDate = new DateTime(histPrcs.Dates[0]);
-                    chartValBmrk.DateTimeFormat = "DaysFrom:" + startDate.ToYYYYMMDD();
+                    dateTimeFormat = DateTimeFormat.DaysFromADate;
+                    startDate = DateTimeOffset.FromUnixTimeSeconds(histPrcs.Dates[0]).DateTime.Date;
+                    chartValBmrk.DateTimeFormat = "DaysFrom" + startDate.ToYYYYMMDD(); // the standard choice in Production. It results the less data to be sent. Date strings will be only numbers such as 0,1,2,3,4,5,8 (skipping weekends)
+
+                    // dateTimeFormat = DateTimeFormat.YYYYMMDD;
+                    // chartValBmrk.DateTimeFormat = "YYYYMMDD"; // YYYYMMDD is a better choice if we debug data sending. (to see it in the TXT message. Or to easily convert it to CSV in Excel)
                 }
+                else
+                {
+                    dateTimeFormat = DateTimeFormat.SecSince1970;
+                    chartValBmrk.DateTimeFormat = "SecSince1970"; // if it is higher resolution than daily, then we use per second resolution for data
+                }
+
                 for (int i = 0; i < histPrcs.Dates.Count; i++)
                 {
-                    DateTime itemDate = new (histPrcs.Dates[i]);
-                    if (itemDate < minStartDate)
-                        minStartDate = itemDate;
-                    if(chartResolution == ChartResolution.Daily)
-                    {
-                        int day = (int)(itemDate - startDate).TotalDays; // number of days since startDate
-                        chartValBmrk.Dates.Add(day);
-                    }
-                    else
+                    DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(histPrcs.Dates[i]).DateTime;
+                    if (itemDate < minPortfoliosStartDate)
+                        minPortfoliosStartDate = itemDate;
+
+                    if (dateTimeFormat == DateTimeFormat.SecSince1970)
                         chartValBmrk.Dates.Add(histPrcs.Dates[i]);
+                    else if (dateTimeFormat == DateTimeFormat.YYYYMMDD)
+                    {
+                        int dateInt = itemDate.Year * 10000 + itemDate.Month * 100 + itemDate.Day;
+                        chartValBmrk.Dates.Add(dateInt);
+                    }
+                    else // dateTimeFormat ==  DateTimeFormat.DaysFromADate
+                    {
+                        int nDaysFromStartDate = (int)(itemDate - startDate).TotalDays; // number of days since startDate
+                        chartValBmrk.Dates.Add(nDaysFromStartDate);
+                    }
+
                     chartValBmrk.Values.Add((float)histPrcs.Prices[i]);
                 }
                 bmrkHistories.Add(new BmrkHistory { SqTicker = bmrkTicker, ChrtData = chartValBmrk });
