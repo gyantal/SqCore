@@ -97,7 +97,7 @@ public static class Backtester
             composer.GetExportedValueByTypeName<IMapFileProvider>(mapFileProviderTypeName),
             composer.GetExportedValueByTypeName<IFactorFileProvider>(factorFileProviderTypeName),
             composer.GetExportedValueByTypeName<IDataProvider>(dataProviderTypeName),
-            composer.GetExportedValueByTypeName<IAlphaHandler>(alphaHandlerTypeName),
+            new DefaultAlphaHandler(), // DefaultAlphaHandler contains List<Insight>, that contains the symbols for that algorithm. Should be not a shared instance
             composer.GetExportedValueByTypeName<IObjectStore>(objectStoreTypeName),
             composer.GetExportedValueByTypeName<IDataPermissionManager>(dataPermissionManager),
             liveMode,

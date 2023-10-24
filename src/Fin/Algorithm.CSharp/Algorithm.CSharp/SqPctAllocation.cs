@@ -248,13 +248,13 @@ namespace QuantConnect.Algorithm.CSharp
                 decimal closePrice = 0;
                 if (IsTradeInSqCore)
                 {
-                    if (CurrentSlice.Bars.TryGetValue(kvp.Value, out TradeBar tradeBar))
-                        closePrice = CurrentSlice.Bars[kvp.Value].Close;
+                    if (CurrentSlice.Bars.TryGetValue(kvp.Value, out TradeBar tradeBar) && tradeBar != null)
+                        closePrice = tradeBar.Close;
                 }
                 else
                 {
-                    if (usedAdjustedClosePrices.TryGetValue(ticker, out List<QcPrice> tickerUsedAdjustedClosePrices))
-                        closePrice = tickerUsedAdjustedClosePrices[(Index)(^1)].Close;
+                    if (usedAdjustedClosePrices.TryGetValue(ticker, out List<QcPrice> tickerUsedAdjustedClosePrices) && tickerUsedAdjustedClosePrices?.Count > 0)
+                        closePrice = tickerUsedAdjustedClosePrices[^1].Close;
                 }
 
                 if (_weights[ticker] != 0 && closePrice != 0)

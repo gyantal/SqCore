@@ -5,6 +5,11 @@ using SqCommon;
 
 namespace QuantConnect.Util
 {
+    // SqCore Change NEW:
+    // In QcCloud, this WorkerThread is used to run BaseSetupHandler.InitializeDebugging() (which is used for QcCloud debugging) and loader.TryCreateAlgorithmInstanceWithIsolator() (which loads the Algorithm from the DLL)
+    // But we don't need these locally. It justs slows our processing if we create a new thread for doing nothing. We eliminate this code.
+    // SqCore Change END
+
     /// <summary>
     /// This worker tread is required to guarantee all python operations are
     /// executed by the same thread, to enable complete debugging functionality.

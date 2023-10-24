@@ -78,12 +78,16 @@ function pctgToColor(perc, min, max) {
 }
 
 function onReceiveData(json: any) {
-  if (json == 'Error') {
-    const divErrorCont = getDocElementById('idErrorCont');
-    divErrorCont.innerHTML = 'Error during downloading data. Please, try again later!';
-    getDocElementById('errorMessage').style.visibility='visible';
-    getDocElementById('inviCharts').style.visibility = 'hidden';
+  if (json == 'Error' || json.errorMsg != undefined) {
+    let errMsg = '';
+    if (json == 'Error')
+      errMsg = 'Error during downloading data. Please, try again later';
+    else
+      errMsg = json.errorMsg;
 
+    getDocElementById('idErrorCont').innerHTML = errMsg;
+    getDocElementById('errorMessage').style.visibility = 'visible';
+    getDocElementById('inviCharts').style.visibility = 'hidden';
     return;
   }
 

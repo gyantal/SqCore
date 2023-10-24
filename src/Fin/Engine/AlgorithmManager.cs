@@ -159,7 +159,7 @@ namespace QuantConnect.Lean.Engine
                     results.Sample(algorithm.UtcTime);
                 });
 
-            //Loop over the queues: get a data collection, then pass them all into relevent methods in the algorithm.
+            // *** Loop over the queues: get a data collection, then pass them all into relevent methods in the algorithm.
             Utils.Logger.Trace($"AlgorithmManager.Run(): Begin DataStream - Start: {algorithm.StartDate} Stop: {algorithm.EndDate} Time: {algorithm.Time} Warmup: {algorithm.IsWarmingUp}");
             foreach (var timeSlice in Stream(algorithm, synchronizer, results, token)) // timeSlice is UTC, having 5:00 AM in the morning at new daily data point
             {

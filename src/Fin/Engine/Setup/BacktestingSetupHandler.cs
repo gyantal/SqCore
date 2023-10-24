@@ -72,44 +72,45 @@ namespace QuantConnect.Lean.Engine.Setup
         /// <returns>A new instance of IAlgorithm, or throws an exception if there was an error</returns>
         public virtual IAlgorithm CreateAlgorithmInstance(AlgorithmNodePacket algorithmNodePacket, string assemblyPath)
         {
+            // SqCore Change ORIGINAL:
+            // string error;
+            // IAlgorithm algorithm;
+
+            // var debugNode = algorithmNodePacket as BacktestNodePacket;
+            // var debugging = debugNode != null && debugNode.IsDebugging || Config.GetBool("debugging", false);
+
+            // if (debugging && !BaseSetupHandler.InitializeDebugging(algorithmNodePacket, WorkerThread)) // using isolator.ExecuteWithTimeLimit()
+            // {
+            //     throw new AlgorithmSetupException("Failed to initialize debugging");
+            // }
+
+            // // Limit load times to 90 seconds and force the assembly to have exactly one derived type
+            // var loader = new Loader(debugging, algorithmNodePacket.Language, BaseSetupHandler.AlgorithmCreationTimeout, names => names.SingleOrAlgorithmTypeName(Config.Get("algorithm-type-name")), WorkerThread);
+            // var complete = loader.TryCreateAlgorithmInstanceWithIsolator(assemblyPath, algorithmNodePacket.RamAllocation, out algorithm, out error); // using isolator.ExecuteWithTimeLimit()
+            // if (!complete) throw new AlgorithmSetupException($"During the algorithm initialization, the following exception has occurred: {error}");
+
+            // return algorithm;
+
             // SqCore Change NEW:
+            // In QcCloud, the WorkerThread is used to run BaseSetupHandler.InitializeDebugging() (which is used for QcCloud debugging) and loader.TryCreateAlgorithmInstanceWithIsolator() (which loads the Algorithm from the DLL)
+            // But we don't need these locally. It justs slows our processing if we create a new thread for doing nothing. We eliminate this code.
+
             if (SqBacktestConfig.SqFastestExecution) // Original QC code reads the whole Algorithm.CSharp DLL as binary and create the Algorithm instance from that. Total waste of time.
             {
                 string algName = ((BacktestNodePacket)algorithmNodePacket).BacktestId;
-                QCAlgorithm algoritm = algName switch
+                QCAlgorithm algorithm = algName switch
                 {
                     "BasicTemplateFrameworkAlgorithm" => new BasicTemplateFrameworkAlgorithm(),
                     "SqSPYMonFriAtMoc" => new SqSPYMonFriAtMoc(),
                     "SqDualMomentum" => new SqDualMomentum(),
                     "SqPctAllocation" => new SqPctAllocation(),
-                    _ => throw new Exception($"QcAlgorithm name '{algName}' is unrecognized."),
+                    _ => throw new SqException($"QcAlgorithm name '{algName}' is unrecognized."),
                 };
                 // algoritm.AlgorithmParam = "";
-                return algoritm;
+                return algorithm;
             }
+            throw new SqException($"In SqCore we shouldn't be here. Don't want to initialize the algorithm using the QC method.");
             // SqCore Change END
-
-            string error;
-            IAlgorithm algorithm;
-
-            var debugNode = algorithmNodePacket as BacktestNodePacket;
-            var debugging = debugNode != null && debugNode.IsDebugging || Config.GetBool("debugging", false);
-
-            if (debugging && !BaseSetupHandler.InitializeDebugging(algorithmNodePacket, WorkerThread))
-            {
-                throw new AlgorithmSetupException("Failed to initialize debugging");
-            }
-
-            // Limit load times to 90 seconds and force the assembly to have exactly one derived type
-            // SqCore Change ORIGINAL:
-            // var loader = new Loader(debugging, algorithmNodePacket.Language, BaseSetupHandler.AlgorithmCreationTimeout, names => names.SingleOrAlgorithmTypeName(Config.Get("algorithm-type-name")), WorkerThread);
-            // SqCore Change NEW:
-            var loader = new Loader(debugging, algorithmNodePacket.Language, BaseSetupHandler.AlgorithmCreationTimeout, names => names.SingleOrAlgorithmTypeName(((BacktestNodePacket)algorithmNodePacket).BacktestId), WorkerThread);
-            // SqCore Change END
-            var complete = loader.TryCreateAlgorithmInstanceWithIsolator(assemblyPath, algorithmNodePacket.RamAllocation, out algorithm, out error);
-            if (!complete) throw new AlgorithmSetupException($"During the algorithm initialization, the following exception has occurred: {error}");
-
-            return algorithm;
         }
 
         /// <summary>

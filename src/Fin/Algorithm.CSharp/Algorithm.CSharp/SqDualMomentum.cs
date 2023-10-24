@@ -231,9 +231,8 @@ namespace QuantConnect.Algorithm.CSharp
                 decimal newMarketValue = 0;
                 decimal newPosition = 0;
                 decimal closePrice = 0;
-                if (usedAdjustedClosePrices.TryGetValue(ticker, out List<QcPrice> tickerUsedAdjustedClosePrices))
-                    closePrice = tickerUsedAdjustedClosePrices[(Index)(^1)].Close;
-
+                if (usedAdjustedClosePrices.TryGetValue(ticker, out List<QcPrice> tickerUsedAdjustedClosePrices) && tickerUsedAdjustedClosePrices?.Count > 0)
+                    closePrice = tickerUsedAdjustedClosePrices[^1].Close;
 
                 if (nextMonthWeights[ticker] != 0 && closePrice != 0)
                 {

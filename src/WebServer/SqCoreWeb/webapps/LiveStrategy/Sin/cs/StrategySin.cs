@@ -25,6 +25,20 @@ public class StrategySinController : ControllerBase
     [HttpGet] // only 1 HttpGet attribute should be in the Controller (or you have to specify in it how to resolve)
     public string Get()
     {
+        try
+        {
+            return GetImpl();
+        }
+        catch (System.Exception e)
+        {
+            StringBuilder sb = new();
+            sb.Append(@"{""errorMsg"": """ + e.Message + @"""}");
+            return sb.ToString();
+        }
+    }
+
+    public string GetImpl()
+    {
 #pragma warning restore CA1822
         string titleString = "Monthly rebalance, <b>The Charmat Rebalancing Method</b> (Trend following with Percentile Channel weights), Cash to TLT";
         string usedGSheetRef = "https://sheets.googleapis.com/v4/spreadsheets/1JXMbEMAP5AOqB1FjdM8jpptXfpuOno2VaFVYK8A1eLo/values/A1:Z2000?key=";
@@ -52,7 +66,7 @@ public class StrategySinController : ControllerBase
         List<DailyData> cashEquivalentQuotesData = dataListTupleFromSQServer.Item2;
 
         // Calculating basic weights based on percentile channels - base Varadi TAA
-        Tuple<double[], double[,], double[]> taaWeightResultsTuple = TaaWeights(quotesData, lookbackDays, volDays, thresholdLower);
+        Tuple<double[], double[,], double[]> taaWeightResultsTuple = TaaWeights(allAssetList, quotesData, lookbackDays, volDays, thresholdLower);
 
         // Request time (UTC)
         DateTime liveDateTime = DateTime.UtcNow;
@@ -486,9 +500,9 @@ public class StrategySinController : ControllerBase
     }
 
     // Calculating TAA weights - based on George's TAA code
-    public static Tuple<double[], double[,], double[]> TaaWeights(IList<List<DailyData>> p_taaWeightsData, int[] p_pctChannelLookbackDays, int p_histVolLookbackDays, int p_thresholdLower)
+    public static Tuple<double[], double[,], double[]> TaaWeights(string[] p_allAssetList, IList<List<DailyData>> p_taaWeightsData, int[] p_pctChannelLookbackDays, int p_histVolLookbackDays, int p_thresholdLower)
     {
-        var dshd = p_taaWeightsData;
+        // var dshd = p_taaWeightsData;
         int nAssets = p_taaWeightsData.Count;
 
         double[] assetScores = new double[nAssets];
@@ -512,19 +526,27 @@ public class StrategySinController : ControllerBase
         {
             for (int iAsset = 0; iAsset < nAssets; iAsset++)
             {
-                double assetPrice = p_taaWeightsData[iAsset][startNumDay + iDay].AdjClosePrice;
-                for (int iChannel = 0; iChannel < p_pctChannelLookbackDays.Length; iChannel++)
+                try
                 {
-                    // A long position would be initiated if the price exceeds the 75th percentile of prices over the last “n” days.The position would be closed if the price falls below the 25th percentile of prices over the last “n” days.
-                    var usedQuotes = p_taaWeightsData[iAsset].GetRange(startNumDay + iDay - (p_pctChannelLookbackDays[iChannel] - 1), p_pctChannelLookbackDays[iChannel]).Select(r => r.AdjClosePrice);
-                    assetPctChannelsLower[iAsset, iChannel] = Statistics.Quantile(usedQuotes, thresholdLower);
-                    assetPctChannelsUpper[iAsset, iChannel] = Statistics.Quantile(usedQuotes, thresholdUpper);
-                    if (assetPrice < assetPctChannelsLower[iAsset, iChannel])
-                        assetPctChannelsSignal[iAsset, iChannel] = -1;  // fully overwrite the signal for iAsset and for this channel. We don't keep signal values historically, just keep the actual signal as we march forward in the simulated window.
-                    else if (assetPrice > assetPctChannelsUpper[iAsset, iChannel])
-                        assetPctChannelsSignal[iAsset, iChannel] = 1;
-                    else if (iDay == 0)
-                        assetPctChannelsSignal[iAsset, iChannel] = 1;   // initially at the start of the rolling window, we assume it had bullish signal.
+                    double assetPrice = p_taaWeightsData[iAsset][startNumDay + iDay].AdjClosePrice;
+                    for (int iChannel = 0; iChannel < p_pctChannelLookbackDays.Length; iChannel++)
+                    {
+                        // A long position would be initiated if the price exceeds the 75th percentile of prices over the last “n” days.The position would be closed if the price falls below the 25th percentile of prices over the last “n” days.
+                        var usedQuotes = p_taaWeightsData[iAsset].GetRange(startNumDay + iDay - (p_pctChannelLookbackDays[iChannel] - 1), p_pctChannelLookbackDays[iChannel]).Select(r => r.AdjClosePrice);
+                        assetPctChannelsLower[iAsset, iChannel] = Statistics.Quantile(usedQuotes, thresholdLower);
+                        assetPctChannelsUpper[iAsset, iChannel] = Statistics.Quantile(usedQuotes, thresholdUpper);
+                        if (assetPrice < assetPctChannelsLower[iAsset, iChannel])
+                            assetPctChannelsSignal[iAsset, iChannel] = -1;  // fully overwrite the signal for iAsset and for this channel. We don't keep signal values historically, just keep the actual signal as we march forward in the simulated window.
+                        else if (assetPrice > assetPctChannelsUpper[iAsset, iChannel])
+                            assetPctChannelsSignal[iAsset, iChannel] = 1;
+                        else if (iDay == 0)
+                            assetPctChannelsSignal[iAsset, iChannel] = 1;   // initially at the start of the rolling window, we assume it had bullish signal.
+                    }
+                }
+                catch (System.Exception e)
+                {
+                    string ticker = p_allAssetList[iAsset];
+                    throw new SqException($"SqException in ticker {ticker}. Check that YF has price history. A temporary workout is to replace this ticker in the SIN gSheet or delete the ticker row. InnerExceptionMsg:'{e.Message}'", e);
                 }
             }
 
