@@ -187,6 +187,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
         return false;
     }
   }
+
   processPortfolios(msgObjStr: string) {
     this.portfolios = JSON.parse(msgObjStr, function(this: any, key: string, value: any) {
       // eslint-disable-next-line no-invalid-this
@@ -281,7 +282,6 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     console.log('processPortfolioRunResult(), panelPrtfChrtWidth', this.panelPrtfChrtWidth);
     PortfolioManagerComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.panelPrtfChrtWidth, this.panelPrtfChrtHeight);
   }
-
 
   onPortfoliosRefreshClicked() {
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
@@ -381,7 +381,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.editedPortfolio.id = prtfolioSelected?.id! - this.gPortfolioIdOffset;
       this.editedPortfolio.parentFolderId = prtfolioSelected?.parentFolderId!;
       this.editedPortfolio.baseCurrency = prtfolioSelected?.baseCurrency!;
-      this.editedPortfolio.portfolioType = prtfolioSelected?.portfolioType!;
+      this.editedPortfolio.type = prtfolioSelected?.type!;
       this.editedPortfolio.sharedAccess = prtfolioSelected?.sharedAccess!;
       this.editedPortfolio.sharedUserWithMe = prtfolioSelected?.sharedUserWithMe!;
       this.editedPortfolio.note = prtfolioSelected?.note!;
@@ -408,7 +408,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.isCreateOrEditPortfolioPopupVisible = true;
     else {
       if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-        this._parentWsConnection.send(`PortfMgr.CreateOrEditPortfolio:id:${this.editedPortfolio.id},name:${this.editedPortfolio.name},prntFId:${this.editedPortfolio.parentFolderId},currency:${this.editedPortfolio.baseCurrency},type:${this.editedPortfolio.portfolioType},algo:${this.editedPortfolio.algorithm},algoP:${this.editedPortfolio.algorithmParam},access:${this.editedPortfolio.sharedAccess},note:${this.editedPortfolio.note}`);
+        this._parentWsConnection.send(`PortfMgr.CreateOrEditPortfolio:id:${this.editedPortfolio.id},name:${this.editedPortfolio.name},prntFId:${this.editedPortfolio.parentFolderId},currency:${this.editedPortfolio.baseCurrency},type:${this.editedPortfolio.type},algo:${this.editedPortfolio.algorithm},algoP:${this.editedPortfolio.algorithmParam},access:${this.editedPortfolio.sharedAccess},note:${this.editedPortfolio.note}`);
       this.isCreateOrEditPortfolioPopupVisible = false;
     }
   }

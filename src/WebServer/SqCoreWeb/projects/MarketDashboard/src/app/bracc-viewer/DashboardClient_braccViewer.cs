@@ -215,9 +215,11 @@ public partial class DashboardClient
             return;
 
         string yfTicker = stock.YfTicker;
-        byte[]? encodedMsg = null;
 
         (SqDateOnly[] dates, float[] adjCloses) = MemDb.GetSelectedStockTickerHistData(lookbackStart, lookbackEndExcl, yfTicker);
+
+        if (adjCloses.Length == 0)
+            return;
 
         AssetHistValuesJs stockHistValues = new()
         {
@@ -225,18 +227,23 @@ public partial class DashboardClient
             SqTicker = sqTicker,
             PeriodStartDate = lookbackStart.Date,
             PeriodEndDate = lookbackEndExcl.Date.AddDays(-1),
+            HistDates = new(adjCloses.Length),
+            HistSdaCloses = new(adjCloses.Length)
         };
-        if (adjCloses.Length != 0)
+
+        for (int i = 0; i < adjCloses.Length; i++)
         {
-            stockHistValues.HistDates = dates.Select(r => r.Date.ToYYYYMMDD()).ToList();
-            stockHistValues.HistSdaCloses = adjCloses.ToList();
+            float adjClose = adjCloses[i];
+            if (float.IsNaN(adjClose)) // Very rarely YF historical data service doesn't have data for 1-5 days in the middle of the history. In that case, that date has a float.NaN as adjClose price. JSON text cannot handle NaN as numbers, so we skip these days when sending to client.
+                continue;
+
+            stockHistValues.HistDates.Add(dates[i].Date.ToYYYYMMDD());
+            stockHistValues.HistSdaCloses.Add(adjClose);
         }
-        if (stockHistValues != null)
-        {
-            encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.StockHist:" + Utils.CamelCaseSerialize(stockHistValues));
-            if (WsWebSocket!.State == WebSocketState.Open)
-                WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-        }
+
+        byte[]? encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.StockHist:" + Utils.CamelCaseSerialize(stockHistValues));
+        if (WsWebSocket!.State == WebSocketState.Open)
+            WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
     private HandshakeBrAccViewer GetHandshakeBrAccViewer(List<BrokerNav> p_selectableNavs)
     {

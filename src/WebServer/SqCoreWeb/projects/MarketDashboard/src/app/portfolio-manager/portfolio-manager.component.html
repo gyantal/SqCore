@@ -84,7 +84,7 @@
         <div>
           <div class="prtfCommon prtfFields">PortfolioType:</div>
           <div class="prtfCommon prtfUserValues">
-            <select name="portfolioType" [(ngModel)]="editedPortfolio.portfolioType">
+            <select name="portfolioType" [(ngModel)]="editedPortfolio.type">
               <option *ngFor="let type of portfolioType" [ngValue]="type">{{type}}</option>
             </select>
           </div>

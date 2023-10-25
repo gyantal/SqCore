@@ -134,7 +134,7 @@ export class PortfolioJs extends PortfolioItemJs {
   public sharedAccess = 'Restricted'; // default access type
   public sharedUserWithMe = '';
   public baseCurrency = 'USD'; // default currrency
-  public portfolioType = 'Trades'; // default type
+  public type = 'Trades'; // default portfolioType
   public algorithm = '';
   public algorithmParam = '';
 }

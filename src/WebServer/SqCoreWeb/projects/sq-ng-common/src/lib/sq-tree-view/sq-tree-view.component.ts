@@ -1,5 +1,5 @@
 import { Component, OnInit, Input, ViewChildren, QueryList } from '@angular/core';
-import {TreeViewItem, TreeViewState } from '../../../../../TsLib/sq-common/backtestCommon';
+import { TreeViewItem, TreeViewState } from '../../../../../TsLib/sq-common/backtestCommon';
 import { RemoveItemOnce } from '../sq-ng-common.utils';
 
 @Component({
