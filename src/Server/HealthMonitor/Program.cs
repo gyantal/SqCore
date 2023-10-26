@@ -15,7 +15,7 @@ class Program
     const int cHeartbeatTimerFrequencyMinutes = 5;
     static void Main(string[] _)
     {
-        string appName = System.Reflection.MethodBase.GetCurrentMethod()?.ReflectedType?.Namespace ?? "UnknownNamespace";
+        string appName = System.Reflection.MethodBase.GetCurrentMethod()?.ReflectedType?.Namespace ?? "UnknownAppName";
         string systemEnvStr = $"(v1.0.14,{Utils.RuntimeConfig() /* Debug | Release */},CLR:{System.Environment.Version},{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},OS:{System.Environment.OSVersion},usr:{System.Environment.UserName},CPU:{System.Environment.ProcessorCount},ThId-{Environment.CurrentManagedThreadId})";
         Console.WriteLine($"Hi {appName}.{systemEnvStr}");
         gLogger.Info($"********** Main() START {systemEnvStr}");

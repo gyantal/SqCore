@@ -180,6 +180,29 @@
             }
         },
         {
+            "name": "Tools/SqChatGPT (DEBUG)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "SqChatGPT build Debug",
+            "program": "${workspaceFolder}/src/Tools/SqChatGPT/bin/Debug/net7.0/SqChatGPT.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/Tools/SqChatGPT",
+            "console": "externalTerminal",
+            "stopAtEntry": false,
+            "logging": {
+                "moduleLoad": false,
+                "exceptions": true,
+                "browserStdOut": false,
+                "elapsedTiming": false,
+                "programOutput": true
+            },
+            "presentation": {
+                "group": "2_Tools",
+                "order": 2,
+                "hidden": false
+            }
+        },
+        {
             "name": "PerfTestExperiment (DEBUG), RUN WITH Debugger Attached (F5, not Ctrl-F5)",
             "type": "coreclr",
             "request": "launch",
