@@ -241,6 +241,10 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
         _this.sharpeRatio = value == 'NaN' ? NaN : parseFloat(value);
         return; // if return undefined, original property will be removed
       }
+      if (key === 'cagrShrp') {
+        _this.cagrSharpe = parseFloat(value);
+        return; // if return undefined, original property will be removed
+      }
       if (key === 'tr') {
         _this.totalReturn = parseFloat(value);
         return; // if return undefined, original property will be removed
@@ -483,7 +487,8 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
     uiPrtfRunResult.totalReturn = prtfRunResult.pstat.totalReturn;
     uiPrtfRunResult.cAGR = parseFloat(prtfRunResult.pstat.cagr);
     uiPrtfRunResult.maxDD = parseFloat(prtfRunResult.pstat.maxDD);
-    uiPrtfRunResult.sharpeRatio = prtfRunResult.pstat.sharpeRatio;
+    uiPrtfRunResult.sharpe = prtfRunResult.pstat.sharpeRatio;
+    uiPrtfRunResult.cagrSharpe = prtfRunResult.pstat.cagrSharpe;
     uiPrtfRunResult.stDev = parseFloat(prtfRunResult.pstat.stDev);
     // uiPrtfRunResult.ulcer = parseFloat(prtfRunResult.pstat.ulcer); // yet to calcualte
     uiPrtfRunResult.tradingDays = parseInt(prtfRunResult.pstat.tradingDays);

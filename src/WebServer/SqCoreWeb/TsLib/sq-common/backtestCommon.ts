@@ -62,7 +62,8 @@ export class UiPrtfRunResultCommon { // this class is common for portfolioManage
   public totalReturn: number = 0;
   public cAGR: number = 0;
   public maxDD: number = 0;
-  public sharpeRatio: number = 0;
+  public sharpe: number = 0;
+  public cagrSharpe: number = 0;
   public stDev: number = 0;
   public ulcer: number = 0;
   public tradingDays: number = 0;

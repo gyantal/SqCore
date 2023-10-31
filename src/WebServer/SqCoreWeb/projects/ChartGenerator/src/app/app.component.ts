@@ -190,7 +190,11 @@ export class AppComponent implements OnInit {
         return; // if return undefined, original property will be removed
       }
       if (key === 'shrp') {
-        _this.sharpeRatio = value == 'NaN' ? NaN : parseFloat(value);
+        _this.sharpe = value == 'NaN' ? NaN : parseFloat(value);
+        return; // if return undefined, original property will be removed
+      }
+      if (key === 'cagrShrp') {
+        _this.CagrSharpe = value == 'NaN' ? NaN : parseFloat(value);
         return; // if return undefined, original property will be removed
       }
       if (key === 'tr') {

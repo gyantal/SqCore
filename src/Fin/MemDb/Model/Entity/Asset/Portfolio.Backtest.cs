@@ -29,7 +29,10 @@ public class PortfolioRunResultStatistics
     public float MaxDD { get; set; } = 0.0f;
     [JsonPropertyName("shrp")]
     [JsonConverter(typeof(FloatJsonConverterToNumber4D))]
-    public float SharpeRatio { get; set; } = 0.0f;
+    public float Sharpe { get; set; } = 0.0f;
+    [JsonPropertyName("cagrShrp")]
+    [JsonConverter(typeof(FloatJsonConverterToNumber4D))]
+    public float CagrSharpe { get; set; } = 0.0f;
     public float StDev { get; set; } = 0.0f;
     public float Ulcer { get; set; } = 0.0f;
     public int TradingDays { get; set; } = 0;
@@ -125,7 +128,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         {
             StartPortfolioValue = 1000.0f,
             EndPortfolioValue = 1400.0f,
-            SharpeRatio = 0.8f
+            Sharpe = 0.8f
         }; // output
         List<PortfolioPosition> prtfPoss = new ()
         {
@@ -217,9 +220,10 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
                 p_stat.StDev = float.Parse(finalStat[PerformanceMetrics.AnnualStandardDeviation]);
                 if (float.IsNaN(p_stat.StDev)) // annualized daily StDev. If histDailyPctChgs is empty, StDev becomes NaN, which is correct , but we don't want to send NaN to clients.
                     p_stat.StDev = 0;
-                if (p_stat.SharpeRatio > 100f)
-                    p_stat.SharpeRatio = float.NaN; // if value is obviously wrong, indicate that with NaN
-                p_stat.SharpeRatio = float.Parse(finalStat[PerformanceMetrics.SharpeRatio]);
+                if (p_stat.Sharpe > 100f)
+                    p_stat.Sharpe = float.NaN; // if value is obviously wrong, indicate that with NaN
+                p_stat.Sharpe = float.Parse(finalStat[PerformanceMetrics.SharpeRatio]);
+                p_stat.CagrSharpe = float.Parse(finalStat[PerformanceMetrics.CagrSharpeRatio]);
                 p_stat.MaxDD = float.Parse(finalStat[PerformanceMetrics.Drawdown].Replace("%", string.Empty));
 
                 p_stat.NTrades = int.Parse(finalStat[PerformanceMetrics.TotalTrades]);

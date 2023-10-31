@@ -179,7 +179,7 @@ public class ChrtGenWs
                 pStat.TotalReturn = stat.TotalReturn;
                 pStat.CAGR = stat.CAGR;
                 pStat.MaxDD = stat.MaxDD;
-                pStat.SharpeRatio = stat.SharpeRatio;
+                pStat.Sharpe = stat.Sharpe;
                 pStat.StDev = stat.StDev;
                 pStat.Ulcer = stat.Ulcer;
                 pStat.TradingDays = stat.TradingDays;

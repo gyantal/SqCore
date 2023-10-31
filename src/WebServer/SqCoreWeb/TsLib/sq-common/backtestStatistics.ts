@@ -6,7 +6,8 @@ export class StatisticsResults {
   public TotalReturn: number = 0;
   public CAGR: number = 0;
   // public AnnualizedDailyMeanReturn: number = 0;
-  public SharpeRatio: number = 0;
+  public Sharpe: number = 0;
+  public CagrSharpe: number = 0;
   public MaxDD: number = 0;
   public MaxDDStartDate: Date = new Date();
   public MaxDDEndDate: Date = new Date();
@@ -24,7 +25,7 @@ export class FinalStatistics {
 
 export class SqStatisticsBuilder {
   _timeSeriess: CgTimeSeries[] = [];
-  public StatNames: string[] = ['TotalReturn', 'CAGR', 'SharpeRatio', 'MaxDD', 'MaxDDStartDate', 'MaxDDEndDate']; // it defines the order of importance too
+  public StatNames: string[] = ['TotalReturn', 'CAGR', 'Sharpe', 'CagrSharpe', 'MaxDD', 'MaxDDStartDate', 'MaxDDEndDate']; // it defines the order of importance too
 
   public Init(timeSeriess: CgTimeSeries[]): void {
     this._timeSeriess = timeSeriess;
@@ -141,7 +142,8 @@ export class SqStatisticsBuilder {
       // Calculate the sharpe ratio for the current time series
       const histAMean = sqAverage(dailyReturns) * 252; // annualized daily mean
       const histSD = sqStdDev(dailyReturns) * Math.sqrt(252); // annualized daily StDev
-      statRes.stats.SharpeRatio = isNaN(histSD) || !isFinite(histSD) ? 0 : (histAMean / histSD);
+      statRes.stats.Sharpe = isNaN(histSD) || !isFinite(histSD) ? 0 : (histAMean / histSD);
+      statRes.stats.CagrSharpe = isNaN(histSD) || !isFinite(histSD) ? 0 : (statRes.stats.CAGR / histSD);
 
       statsResults.push(statRes);
     }
