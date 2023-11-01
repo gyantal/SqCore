@@ -173,7 +173,7 @@ namespace QuantConnect.Lean.Engine
                         AlgorithmHandlers.MapFileProvider,
                         AlgorithmHandlers.FactorFileProvider,
                         AlgorithmHandlers.DataProvider,
-                        dataManager,
+                        dataManager, // IDataFeedSubscriptionManager subscriptionManager
                         (IDataFeedTimeProvider) synchronizer,
                         AlgorithmHandlers.DataPermissionsManager.DataChannelProvider);
 

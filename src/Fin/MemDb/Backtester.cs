@@ -76,19 +76,19 @@ public static class Backtester
         var setupHandlerTypeName = Config.Get("setup-handler", "ConsoleSetupHandler");
         // var transactionHandlerTypeName = Config.Get("transaction-handler", "BacktestingTransactionHandler");
         // var realTimeHandlerTypeName = Config.Get("real-time-handler", "BacktestingRealTimeHandler");
-        var dataFeedHandlerTypeName = Config.Get("data-feed-handler", "FileSystemDataFeed");
+        // var dataFeedHandlerTypeName = Config.Get("data-feed-handler", "FileSystemDataFeed");
         // var resultHandlerTypeName = Config.Get("result-handler", "BacktestingResultHandler");
         var mapFileProviderTypeName = Config.Get("map-file-provider", "LocalDiskMapFileProvider");
         var factorFileProviderTypeName = Config.Get("factor-file-provider", "LocalDiskFactorFileProvider");
         var dataProviderTypeName = Config.Get("data-provider", "DefaultDataProvider");
-        var alphaHandlerTypeName = Config.Get("alpha-handler", "DefaultAlphaHandler");
+        // var alphaHandlerTypeName = Config.Get("alpha-handler", "DefaultAlphaHandler");
         var objectStoreTypeName = Config.Get("object-store", "LocalObjectStore");
         var dataPermissionManager = Config.Get("data-permission-manager", "DataPermissionManager");
 
         var result = new LeanEngineAlgorithmHandlers(
             new BacktestingResultHandler(), // ResultsHandler.Result is the outcome. Should be not a shared instance
             composer.GetExportedValueByTypeName<ISetupHandler>(setupHandlerTypeName),
-            composer.GetExportedValueByTypeName<IDataFeed>(dataFeedHandlerTypeName),
+            new FileSystemDataFeed(), // FileSystemDataFeed contains _subscriptions collection, that contains the data subscriptions (SPY-Daily, SPY-QC-Minute) for that algorithm. Should be not a shared instance
             new BacktestingTransactionHandler(), // Exception otherwise: BacktestingTransactionHandler._cancellationTokenSource : 'The CancellationTokenSource has been disposed'
             // AlgorithmHandlers.RealTime handles backtesting realtime time, and Schedule On() events. Should be not a shared instance.
             // AlgorithmHandlers.RealTime.ScheduledEvents has to be emptied before second runs, otherwise the Triggers are duplicated. But doing so, didn't solve the second run problem yet. There is something else.
@@ -189,7 +189,7 @@ public static class Backtester
         // SqCore Change ORIGINAL:
         // engine.Run(job, algorithmManager, algorithmDllRelPath, WorkerThread.Instance);
         // SqCore Change NEW:
-        engine.Run(job, algorithmManager, gAlgorithmDllRelPath, new WorkerThread(), sqBacktestConfig, p_algorithmParam);
+        engine.Run(job, algorithmManager, gAlgorithmDllRelPath, null, sqBacktestConfig, p_algorithmParam);
         // SqCore Change END
 
         // Console.SetOut(savedConsoleOut);
