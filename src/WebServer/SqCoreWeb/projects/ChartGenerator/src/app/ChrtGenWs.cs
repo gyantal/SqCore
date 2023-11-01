@@ -32,9 +32,8 @@ class HandshakeMessageChrtGen
     public List<FolderJs> FldrsToClient { get; set; } = new();
 }
 
-class ChrtGenPrtfRunResultJs : ChrtGenPrtfItems // ChartGenerator doesn't need the Portfolio Positions data
+class ChrtGenPrtfRunResultJs : ChrtGenPrtfItems // ChartGenerator doesn't need the Portfolio Positions & Statistics data
 {
-    public PortfolioRunResultStatistics Pstat { get; set; } = new();
     public ChartData ChrtData { get; set; } = new();
 }
 
@@ -125,7 +124,6 @@ public class ChrtGenWs
             if (errMsg != null)
                 sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Error, Message = errMsg });
             ChartData chartVal = new();
-            PortfolioRunResultStatistics pStat = new();
 
             if (errMsg == null)
             {
@@ -173,30 +171,11 @@ public class ChrtGenWs
 
                     chartVal.Values.Add((float)item.y);
                 }
-                // Step 4: Filling the Stats data
-                pStat.StartPortfolioValue = stat.StartPortfolioValue;
-                pStat.EndPortfolioValue = stat.EndPortfolioValue;
-                pStat.TotalReturn = stat.TotalReturn;
-                pStat.CAGR = stat.CAGR;
-                pStat.MaxDD = stat.MaxDD;
-                pStat.Sharpe = stat.Sharpe;
-                pStat.StDev = stat.StDev;
-                pStat.Ulcer = stat.Ulcer;
-                pStat.TradingDays = stat.TradingDays;
-                pStat.NTrades = stat.NTrades;
-                pStat.WinRate = stat.WinRate;
-                pStat.LossRate = stat.LossRate;
-                pStat.Sortino = stat.Sortino;
-                pStat.Turnover = stat.Turnover;
-                pStat.LongShortRatio = stat.LongShortRatio;
-                pStat.Fees = stat.Fees;
-                pStat.BenchmarkCAGR = stat.BenchmarkCAGR;
-                pStat.BenchmarkMaxDD = stat.BenchmarkMaxDD;
-                pStat.CorrelationWithBenchmark = stat.CorrelationWithBenchmark;
             }
             _ = prtfPos; // To avoid the compiler Warning "Unnecessary assigment of a value" for unusued variables.
+            _ = stat; // To avoid the compiler Warning "Unnecessary assigment of a value" for unusued variables.
             // Step 5: Filling the data in chrtGenPrtfRunResultJs
-            chrtGenPrtfRunResultJs.Add(new ChrtGenPrtfRunResultJs { Id = lsPrtf[i].Id, Name = lsPrtf[i].Name, Pstat = pStat, ChrtData = chartVal });
+            chrtGenPrtfRunResultJs.Add(new ChrtGenPrtfRunResultJs { Id = lsPrtf[i].Id, Name = lsPrtf[i].Name, ChrtData = chartVal });
         }
 
         // BENCHMARK: Processing the message to extract the benchmark tickers

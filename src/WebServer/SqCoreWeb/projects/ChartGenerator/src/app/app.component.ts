@@ -173,70 +173,6 @@ export class AppComponent implements OnInit {
     });
   }
 
-  processChrtGenBacktestResults(msgObjStr: string) {
-    this.chrtGenBacktestResults = JSON.parse(msgObjStr, function(this: any, key, value) {
-      // property names and values are transformed to a shorter ones for decreasing internet traffic.Transform them back to normal for better code reading.
-
-      // 'this' is the object containing the property being processed (not the embedding class) as this is a function(), not a '=>', and the property name as a string, the property value as arguments of this function.
-      // eslint-disable-next-line no-invalid-this
-      const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
-
-      if (key === 'startPv') {
-        _this.startPortfolioValue = value;
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'endPv') {
-        _this.endPortfolioValue = value;
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'shrp') {
-        _this.sharpe = value == 'NaN' ? NaN : parseFloat(value);
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'cagrShrp') {
-        _this.CagrSharpe = value == 'NaN' ? NaN : parseFloat(value);
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'tr') {
-        _this.totalReturn = parseFloat(value);
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'wr') {
-        _this.winRate = value;
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'lr') {
-        _this.lossingRate = value;
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'srtn') {
-        _this.sortino = value == 'NaN' ? NaN : parseFloat(value);
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'to') {
-        _this.turnover = value;
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'ls') {
-        _this.longShortRatio = value;
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'bCAGR') {
-        _this.benchmarkCAGR = value;
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'bMax') {
-        _this.benchmarkMaxDD = value;
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'cwb') {
-        _this.correlationWithBenchmark = value;
-        return; // if return undefined, original property will be removed
-      }
-      return value;
-    });
-    this.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults);
-  }
 
   // startdate and enddate are not utlized at the moment - Daya yet to develop
   updateUiWithChrtGenBacktestResults(chrtGenBacktestRes: Nullable<ChrtGenBacktestResult>, uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[]) {
@@ -371,7 +307,8 @@ export class AppComponent implements OnInit {
     this.isBacktestReturned = true;
     gChrtGenDiag.backtestRequestReturnTime = new Date();
     this.isProgressBarVisble = false; // If progress bar is visible => hide it
-    this.processChrtGenBacktestResults(msgObjStr);
+    this.chrtGenBacktestResults = JSON.parse(msgObjStr);
+    this.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults);
   }
 
   onStartBacktestsClicked() {
