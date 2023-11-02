@@ -2,6 +2,7 @@ import { Component, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 interface UserInput {
+  LlmModelName: string;
   Msg: string;
 }
 
@@ -18,12 +19,15 @@ export class ChatGptComponent {
   _baseUrl: string;
   _chatGptUrl: string;
 
+  _selectedLlmModel: string;
   _chatHistory: string[] = [];
 
   constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string) {
     this._httpClient = http;
     this._baseUrl = baseUrl;
     this._chatGptUrl = baseUrl + 'chatgpt/sendUserInput';
+
+    this._selectedLlmModel = 'auto';
   }
 
   sendUserInputToBackEnd(p_userInput: string): void {
@@ -35,7 +39,8 @@ export class ChatGptComponent {
     // }, error => console.error(error));
 
     // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
-    const body : UserInput = { Msg: p_userInput };
+    const body : UserInput = { LlmModelName: this._selectedLlmModel, Msg: p_userInput };
+    console.log(body);
 
     // responseType: 'text' // instead of JSON, because return text can contain NewLines, \n and JSON.Parse() will fail with "SyntaxError: Bad control character in string literal in JSON"
     // this._httpClient.post(this._chatGptUrl, body, { responseType: 'text'}).subscribe(resultText => { // if message comes not as a properly formatted JSON string

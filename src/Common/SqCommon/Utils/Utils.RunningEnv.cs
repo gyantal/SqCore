@@ -64,6 +64,8 @@ public static partial class Utils
                 "vinci" => "g:\\.shortcut-targets-by-id\\0BzxkV1ug5ZxvVmtic1FsNTM5bHM\\GDriveHedgeQuant\\shared\\GitHubRepos\\NonCommitedSensitiveData\\",
                 // Daya-Desktop
                 "Gigabyte" => "g:\\.shortcut-targets-by-id\\0BzxkV1ug5ZxvVmtic1FsNTM5bHM\\GDriveHedgeQuant\\shared\\GitHubRepos\\NonCommitedSensitiveData\\",
+                // Drcharmat-Laptop
+                "drcharmat" => "c:\\Agy\\NonCommitedSensitiveData\\",
                 _ => throw new Exception("Windows user name is not recognized. Add your username and folder here!"),
             }, // find out which user from the team and determine it accordingly. Or just check whether folders exists (but that takes HDD read, which is slow)
             _ => throw new Exception("RunningPlatform() is not recognized"),

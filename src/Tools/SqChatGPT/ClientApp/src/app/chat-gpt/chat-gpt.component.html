@@ -1,5 +1,10 @@
-<h1 id="tableLabel">OpenAI ChatPGT text generation</h1>
-LLMs are text completion engines. Trained on large corpus of documents. They predict the 'likely' next word by imagining a transcript of a chat between User and Assistant.
+<h1 id="tableLabel">OpenAI ChatGPT text generation</h1>
+LLMs are text completion engines. Trained on large corpus of documents. They predict the 'likely' next word by imagining a transcript of a chat between User and Assistant.<br>
+LLM-ModelName: <select name="model" id="model-select" [(ngModel)]="_selectedLlmModel">
+  <option value="auto">auto</option>
+  <option value="gpt-3.5-turbo">gpt-3.5-turbo(4K)</option>
+  <option value="gpt-4">gpt-4(8K)</option>
+</select>
 <p>Type your prompt here and click Generate to send it to C# backend that uses the OpenAi API.</p>
 <textarea #userInputTextarea rows="5" cols="100"></textarea>
 <br>

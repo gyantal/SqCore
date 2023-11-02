@@ -4,10 +4,20 @@ using Azure.AI.OpenAI;
 using System.Text.Json;
 using System.Text;
 
+// >https://openai.com/pricing
+// https://platform.openai.com/docs/models/gpt-4
+// GPT-3.5 Turbo:
+// 	4K context	$0.0015 / 1K tokens, so 1 query that uses 4K tokens = 4*0.0015 = $0.006 (half a cent)
+// 	16K context	$0.003 / 1K tokens, so 1 query that uses 16K tokens = 16*0.003 = $0.048
+// GPT-4: 
+// 	8K context	$0.03 / 1K tokens, so 1 query that uses 8K tokens = 8*0.03 = $0.24 (GPT-4 base (8K) is 50x more expensive than GPT-3.5-turbo(4K))
+// 	32K context	$0.06 / 1K tokens, so 1 query that uses 32K tokens = 32*0.06 = $1.92 (pricewise, it is better to use the 8K model 4times = 4*0.24=0.96). So expensive that don't expose it to UI.
+
 namespace SqChatGPT.Controllers;
 
 public class UserInput
 {
+    public string LlmModelName { get; set; } = string.Empty; // "auto", "gpt-3.5-turbo" (4K), "gpt-3.5-turbo-16k", "gpt-4" (8K), "gpt-4-32k"
     public string Msg { get; set; } = string.Empty;
 }
 
@@ -32,10 +42,12 @@ public class ChatGptController : ControllerBase
     {
         _logger = logger;
         // string? logLevel = configuration["Logging:LogLevel:Default"];
-        
-        string openAIApiKey = configuration["ConnectionStrings:OpenAIApiKey"] ?? "OpenApiKeyIsMissing";
-        g_openAiClient = new(openAIApiKey, new OpenAIClientOptions());
-        g_messages.Add(new ChatMessage(ChatRole.System, "You are a helpful assistant."));
+        if (g_openAiClient == null) // a new ChatGptController() instance is created for every request. Initialize openAiClient only once
+        {
+            string openAIApiKey = configuration["ConnectionStrings:OpenAIApiKey"] ?? "OpenApiKeyIsMissing";
+            g_openAiClient = new(openAIApiKey, new OpenAIClientOptions());
+            g_messages.Add(new ChatMessage(ChatRole.System, "You are a helpful assistant."));
+        }
     }
 
     [HttpGet]
@@ -76,9 +88,22 @@ public class ChatGptController : ControllerBase
     async Task<string> GenerateText(UserInput p_inMsg)
     {
         g_messages.Add(new ChatMessage(ChatRole.User, p_inMsg.Msg));
+
+        string llmModelName = p_inMsg.LlmModelName; // "auto", "gpt-3.5-turbo" (4K), "gpt-3.5-turbo-16k", "gpt-4" (8K), "gpt-4-32k"
+        if (llmModelName == "auto")
+        {
+            // GPT-4 base(8K) is 50x more expensive than GPT-3.5-turbo(4K)
+            // In theory we should estimate the number of tokens based on previous messages in g_messages
+            // Cost efficiently, under 4K: gpt-3.5-turbo, between 4K and 16K: gpt-3.5-turbo-16k, over 16K: gpt-4
+            llmModelName = "gpt-3.5-turbo";
+        }
+
+        if (llmModelName != "gpt-3.5-turbo" && llmModelName != "gpt-3.5-turbo-16k" && llmModelName != "gpt-4" && llmModelName != "gpt-4-32k")
+            throw new System.Exception("Invalid AI model name");
+
         var chatCompletionsOptions = new ChatCompletionsOptions(g_messages);
 
-        Response<StreamingChatCompletions> response = await g_openAiClient!.GetChatCompletionsStreamingAsync(deploymentOrModelName: "gpt-3.5-turbo", chatCompletionsOptions);
+        Response<StreamingChatCompletions> response = await g_openAiClient!.GetChatCompletionsStreamingAsync(deploymentOrModelName: llmModelName, chatCompletionsOptions);
         using StreamingChatCompletions streamingChatCompletions = response.Value;
 
         StringBuilder sb = new();
