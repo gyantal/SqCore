@@ -55,4 +55,15 @@ export class SqTreeViewComponent implements OnInit {
     console.log('TreeView.onItemClicked(): expandedPrtfFolderIds:');
     console.log(this.treeViewState.expandedPrtfFolderIds);
   }
+
+  // Returns the Children count of each folder recursively.
+  childrenCount(item: TreeViewItem): number {
+    if (item.children) {
+      let count = item.children.length;
+      for (const child of item.children)
+        count += this.childrenCount(child);
+      return count;
+    }
+    return 0;
+  }
 }

@@ -18,7 +18,10 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   @Input() _parentWsConnection?: WebSocket | null = null; // this property will be input from above parent container
   @Input() _mainUser?: UserJs | null = null; // this property will be input from above parent container
 
-  @ViewChild(SqTreeViewComponent) public _rootTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
+  // By default (when static: false) the ElementRef pointer is assigned and available to use only in ngAfterViewInit(). That is too late sometimes. And in Development it raises the Warning 'ExpressionChangedAfterItHasBeenCheckedError'
+  // Setting the static flag to true will create the view much earlier in ngOnInit() and be assigned, and ElementRef pointer can be used early in ngOnInit().
+  // See more: https://hackernoon.com/everything-you-need-to-know-about-the-expressionchangedafterithasbeencheckederror-error-e3fd9ce7dbb4
+  @ViewChild(SqTreeViewComponent, { static: true }) public _rootTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
 
   folders: Nullable<FolderJs[]> = null;
   portfolios: Nullable<PortfolioJs[]> = null;
