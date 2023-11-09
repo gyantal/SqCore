@@ -211,3 +211,15 @@ input[type="date"]::-webkit-datetime-edit-year-field {
   border-left: none;
   left: 1px;
 }
+
+#prtfSelectionDialog {
+  position: fixed;
+  z-index: 1;
+  left: 10rem;
+  top: 4rem;
+  overflow: auto;
+  color: rgb(32, 34, 148);
+  background-color: #FFA500;
+  border: .03rem solid #FF5F1F;
+  border-radius: 0.2rem;
+}

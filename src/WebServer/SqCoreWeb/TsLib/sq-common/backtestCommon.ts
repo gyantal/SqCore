@@ -153,12 +153,14 @@ export class TreeViewItem { // future work. At the moment, it copies PortfolioFl
   public children: TreeViewItem[] = []; // children are other TreeViewItems
   public isSelected: boolean = false;
   public isExpanded: boolean = false;
+  public isCheckboxChecked: boolean = false;
 }
 
 export class TreeViewState {
   public lastSelectedItem : Nullable<TreeViewItem> = null;
   public lastSelectedItemId: number = -1; // need to remember the lastselectedItemId to highlight the user Selected item even after refresh or after creating/editing an item
   public expandedPrtfFolderIds: number[] = [];
+  public selectedItems: TreeViewItem[] = []; // Selected Items for backtest
 }
 // ************************************************ //
 export function prtfsParseHelper(_this: any, key: string, value: any): boolean { // return value is isRemoveOriginal

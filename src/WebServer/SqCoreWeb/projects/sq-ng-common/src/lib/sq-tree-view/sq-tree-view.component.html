@@ -1,7 +1,7 @@
 <ul>
   <li *ngFor="let item of items">
     <div class="treeViewRowBase" [ngClass]="{'treeViewRowSelected': item.isSelected, 'treeViewRowPortfolio': item.prtfItemType == 'Portfolio'}">
-      <span class="icon" (click)="onItemClicked(item)">{{(item.prtfItemType == 'Folder') ? (item.isExpanded ? '&#45;' : '&#43;') : ''}}&nbsp;<input *ngIf="m_useCheckboxes && item.prtfItemType == 'Portfolio'" type="checkbox" [checked]="item.isSelected">{{item.name}}
+      <span (click)="onItemClicked(item)">{{(item.prtfItemType == 'Folder') ? (item.isExpanded ? '&#45;' : '&#43;') : ''}}&nbsp;<input *ngIf="m_useCheckboxes && item.prtfItemType == 'Portfolio'" type="checkbox" [checked]="item.isCheckboxChecked" (change)="onChangeCheckbox($event, item)">{{item.name}}
         <span *ngIf="item.prtfItemType == 'Folder'"> ({{childrenCount(item)}})</span><!-- Display the child count for folders only -->
       </span>
     </div>

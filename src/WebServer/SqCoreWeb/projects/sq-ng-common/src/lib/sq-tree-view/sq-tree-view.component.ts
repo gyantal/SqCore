@@ -58,12 +58,43 @@ export class SqTreeViewComponent implements OnInit {
 
   // Returns the Children count of each folder recursively.
   childrenCount(item: TreeViewItem): number {
-    if (item.children) {
+    if (item.children != null) {
       let count = item.children.length;
       for (const child of item.children)
         count += this.childrenCount(child);
       return count;
     }
     return 0;
+  }
+
+  onChangeCheckbox(event: any, item: TreeViewItem): void {
+    item.isCheckboxChecked = event.target.checked;
+    if (item.isCheckboxChecked == true)
+      this.getSelectedItems(item, this.treeViewState.selectedItems); // If the checkbox is checked, add the item to the selectedItems array
+    else
+      this.removeSelectedItems(item, this.treeViewState.selectedItems); // If the checkbox is unchecked, remove the item and its children from the selectedItems array
+  }
+
+  getSelectedItems(item: TreeViewItem, selectedItems: TreeViewItem[]): void {
+    if (item.isCheckboxChecked == true)
+      selectedItems.push(item);
+
+    if (item.children != null) {
+      for (const child of item.children)
+        this.getSelectedItems(child, selectedItems);
+    }
+  }
+
+  removeSelectedItems(item: TreeViewItem, selectedItems: TreeViewItem[]): void {
+    // Remove the item from the selectedItems array
+    const index = selectedItems.indexOf(item);
+    if (index != -1)
+      selectedItems.splice(index, 1);
+
+    // Remove its children from the selectedItems array
+    if (item.children != null) {
+      for (const child of item.children)
+        this.removeSelectedItems(child, selectedItems);
+    }
   }
 }

@@ -21,13 +21,20 @@
   <!-- Class=commonColStyle name will be changed in future - Daya(28-04-2023) -->
   <span class="commonColStyle" id="portfolios">
     <span>Portfolios:
+      <button (click)="onClickSelectFromTree()">Select from tree...</button>
+      <div id="prtfSelectionDialog" [ngStyle]="{'display': isPrtfSelectionDialogVisible ? 'block' : 'none'}">
+        <button (click)="onClickPrtfSelectedFromTreeView()">Insert</button> &nbsp;
+        <button (click)="onClickCloseTreeView()">close</button>
+        <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState" [rootTreeViewComponent]="_rootTreeComponent" [m_useCheckboxes]=true></app-sq-tree-view>
+      </div>
+      <br>
       <span class="selectionDropDown">
         <input class="highlightInputBox prtfInputWidth" type="text" [(ngModel)]="prtfSelectedName">
         <div class="listDropDown">
           <option class="optionDropDown" *ngFor="let item of _allPortfolios" [value]="item.name" (click)="onClickUserSelectedPortfolio(item)">{{item.id}} : {{item.name}}</option>
         </div>&nbsp;
       </span>
-      <button (click)="onClickPrtfSelectedForBacktest(prtfSelectedId)">Insert</button>
+      <button (click)="onClickPrtfSelectedForBacktest(prtfSelectedId)">InsertOld</button>
       <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedPortfolios">{{item.name}}</div>&nbsp;
       <span>
         <button (click)="onClickClearBacktestedPortfolios()" [disabled]="_backtestedPortfolios.length <= 0">Clear</button>
@@ -94,12 +101,4 @@
 <!-- Progress bar -->
 <div class="progressBarContainer" [ngStyle]="{'display': isProgressBarVisble ? 'block' : 'none'}">
   <div class="progressBar"></div>
-</div>
-<!-- Temporarily we placed this at the bottom sep14 2023-->
-<div>
-  <button (click)="onClickSelectFromTree()">selectFromTree</button>
-  <div *ngIf="isSelectPortfoliosFromTreeClicked">
-    <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState" [rootTreeViewComponent]="_rootTreeComponent" [m_useCheckboxes]=true></app-sq-tree-view>
-    <button (click)="onClickPrtfSelectedFromTreeForBacktest()">Insert</button>
-  </div>
 </div>

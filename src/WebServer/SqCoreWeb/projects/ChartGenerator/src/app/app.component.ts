@@ -73,7 +73,7 @@ export class AppComponent implements OnInit {
   _backtestedBenchmarks: string[] = [];
   treeViewState: TreeViewState = new TreeViewState();
   uiNestedPrtfTreeViewItems: TreeViewItem[] = [];
-  isSelectPortfoliosFromTreeClicked: boolean = false;
+  isPrtfSelectionDialogVisible: boolean = false;
 
   user = {
     name: 'Anonymous',
@@ -425,7 +425,7 @@ export class AppComponent implements OnInit {
   }
 
   onClickSelectFromTree() {
-    this.isSelectPortfoliosFromTreeClicked = !this.isSelectPortfoliosFromTreeClicked;
+    this.isPrtfSelectionDialogVisible = !this.isPrtfSelectionDialogVisible;
   }
 
   onClickPrtfSelectedFromTreeForBacktest() { // This code is similar to the method onClickPrtfSelectedForBacktest(). Once we finalize the SelecFromTree option we can remove onClickPrtfSelectedForBacktest().
@@ -447,5 +447,19 @@ export class AppComponent implements OnInit {
       if (allPortfoliosInd != -1 && !this._backtestedPortfolios.includes(this._allPortfolios![allPortfoliosInd!])) // check if the item is included or not
         this._backtestedPortfolios.push(this._allPortfolios![allPortfoliosInd!]); // Push the selected item from _allPortfolios into _backtestedPortfolios
     }
+  }
+
+  onClickPrtfSelectedFromTreeView() {
+    this._backtestedPortfolios.length = 0;
+    for (const selectedItem of this.treeViewState.selectedItems) {
+      const allPortfoliosInd = this._allPortfolios!.findIndex((item) => item.id == selectedItem.id); // Find the index of the selectedItem in _allPortfolios
+
+      if (allPortfoliosInd != -1 && !this._backtestedPortfolios.includes(this._allPortfolios![allPortfoliosInd])) // Check if the item is found and not already in _backtestedPortfolios
+        this._backtestedPortfolios.push(this._allPortfolios![allPortfoliosInd]);
+    }
+  }
+
+  onClickCloseTreeView() {
+    this.isPrtfSelectionDialogVisible = false;
   }
 }

@@ -1,6 +1,6 @@
 ul {
   list-style-type: none;  // it removes the default point (circle) from the begining of the line
-  padding-inline-start: 1.2rem; // keeps the children TreeViews closer to the parent
+  padding-inline-start: 0.6rem; // keeps the children TreeViews closer to the parent
 }
 
 li {
@@ -24,8 +24,4 @@ li {
 
 .treeViewRowSelected {
   background: #90EE90;
-}
-
-.icon {
-  font-size: 1.6rem; // the Plus/Minus icons are too small by default
 }
