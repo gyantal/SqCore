@@ -21,10 +21,10 @@
   <!-- Class=commonColStyle name will be changed in future - Daya(28-04-2023) -->
   <span class="commonColStyle" id="portfolios">
     <span>Portfolios:
-      <button (click)="onClickSelectFromTree()">Select from tree...</button>
+      <button class="btnCommon" (click)="onClickSelectFromTree()">Select from tree...</button>
       <div id="prtfSelectionDialog" [ngStyle]="{'display': isPrtfSelectionDialogVisible ? 'block' : 'none'}">
-        <button (click)="onClickPrtfSelectedFromTreeView()">Insert</button> &nbsp;
-        <button (click)="onClickCloseTreeView()">close</button>
+        <button class="btnCommon" (click)="onClickPrtfSelectedFromTreeView()" [ngClass]="treeViewState.lastSelectedItem?.isCheckboxChecked ? 'btnEnabled': 'btnDisabled'">Insert</button> &nbsp;
+        <button class="btnCommon"  [ngClass]="treeViewState.lastSelectedItem?.isCheckboxChecked ? 'btnEnabled': 'btnDisabled'" (click)="onClickCloseTreeView()">close</button>
         <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState" [rootTreeViewComponent]="_rootTreeComponent" [m_useCheckboxes]=true></app-sq-tree-view>
       </div>
       <br>
@@ -34,20 +34,20 @@
           <option class="optionDropDown" *ngFor="let item of _allPortfolios" [value]="item.name" (click)="onClickUserSelectedPortfolio(item)">{{item.id}} : {{item.name}}</option>
         </div>&nbsp;
       </span>
-      <button (click)="onClickPrtfSelectedForBacktest(prtfSelectedId)">InsertOld</button>
+      <button class="btnCommon" (click)="onClickPrtfSelectedForBacktest(prtfSelectedId)">InsertOld</button>
       <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedPortfolios">{{item.name}}</div>&nbsp;
       <span>
-        <button (click)="onClickClearBacktestedPortfolios()" [disabled]="_backtestedPortfolios.length <= 0">Clear</button>
+        <button class="btnCommon" (click)="onClickClearBacktestedPortfolios()" [disabled]="_backtestedPortfolios.length <= 0">Clear</button>
       </span>
     </span>&nbsp;<br>
   </span>
   <span class="commonColStyle" id="stockAndIndexes">
     StockAndIndexes<br>
     <span>Benchmarks: <input class="highlightInputBox" oninput="this.value = this.value.toUpperCase()" id="bmrks" type="text" [(ngModel)]="bmrks"></span>&nbsp;
-    <button (click)="onClickBmrkSelectedForBacktest()">Insert</button>
+    <button class="btnCommon" (click)="onClickBmrkSelectedForBacktest()">Insert</button>
     <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedBenchmarks">{{item}}</div>&nbsp;
     <span>
-      <button (click)="onClickClearBacktestedBnmrks()" [disabled]="_backtestedBenchmarks.length <= 0">Clear</button>
+      <button class="btnCommon" (click)="onClickClearBacktestedBnmrks()" [disabled]="_backtestedBenchmarks.length <= 0">Clear</button>
     </span>
   </span>
   <span class="commonColStyle" id="techIndicators">
@@ -67,7 +67,7 @@
     </span>&nbsp;
     <span>Start: <input class="startAndEndDate" type="date" id="StartDate" name="startDate" min="1975-01-01" [(ngModel)]="startDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;
     <span>End: <input class="startAndEndDate" type="date" id="EndDate" name="EndDate" min="1975-01-01" max="2040-01-01" [(ngModel)]="endDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;&nbsp;
-    <button class="backtestBtn" (click)="onStartBacktestsClicked()">Start Server Backtest</button>
+    <button class="backtestBtn btnCommon" (click)="onStartBacktestsClicked()">Start Server Backtest</button>
   </span><br><br>
   <span>Portfolio Value Chart</span>
   <div id="backtestPvChrt">

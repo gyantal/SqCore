@@ -223,3 +223,19 @@ input[type="date"]::-webkit-datetime-edit-year-field {
   border: .03rem solid #FF5F1F;
   border-radius: 0.2rem;
 }
+
+.btnCommon {
+  border-radius: 0.5rem;
+}
+
+.btnDisabled { // Insert or close buttons are disabled based on isCheckboxChecked variable
+  background-color: #888;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btnEnabled { // Insert or close buttons are enabled based on isCheckboxChecked variable
+  background-color:#90EE90;
+  opacity: 1;
+  cursor: pointer;
+}

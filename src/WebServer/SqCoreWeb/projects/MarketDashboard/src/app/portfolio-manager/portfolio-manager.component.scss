@@ -165,6 +165,10 @@
   width: 60%;
 }
 
+.btnCommon {
+  border-radius: 0.5rem;
+}
+
 #createPortfolioButton, #createOrEditFolderButton {
   position: relative; // its positioned relative to normal position, it will be adjusted away from its normal position by setting top, left, right and bottom porperties.
   left: 2rem;

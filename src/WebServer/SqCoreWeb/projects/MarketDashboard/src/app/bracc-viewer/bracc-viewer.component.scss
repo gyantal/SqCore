@@ -125,7 +125,7 @@
   backdrop-filter: blur(1rem);
   transform: skewX(-10deg);
   height: 2.1rem;
-  width: 10rem;
+  width: 15%;
   border-radius: 0.75rem .5rem 0.75rem 0;
   position: relative;
   justify-content: center;
@@ -138,7 +138,6 @@
 }
 
 .brAccViewerMoreDetailsAndHistChartButtons {
-  display: inline-block;
   width: 30%;
   height: 2rem;
 }
@@ -222,24 +221,23 @@
 
 #filtering {
   position: relative;
-  left: 42rem;
+  left: 28%; // To make it responsive, it is better to use relative units like percentage(%) instead of fixed position values (ex: left: 42rem)
 }
 
 // Table stylings
 .brAccSnapTbl {
-  width: 100%;
+  overflow: auto;
   display: flex;
   align-items: stretch;
   white-space: nowrap; // nowrap auto adjust the text with multiple lined to a single line
 }
 
-.brAccSnapTbl table td,
-th {
+.brAccSnapTbl table td, th {
   padding: 0rem;
   border-style: ridge;
   border-width: 0.2rem;
   border-color: #4e95f4;
-  width: 7rem;
+  width: 10%;
   text-align: center;
 }
 

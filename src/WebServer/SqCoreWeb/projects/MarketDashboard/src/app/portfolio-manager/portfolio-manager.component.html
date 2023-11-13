@@ -7,14 +7,14 @@
       <span class="refreshPortfolios"><img class="refreshPortfolios" src='../assets/images/refresh64.webp' (click)="onPortfoliosRefreshClicked()"></span>
     </span>
     <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState" [rootTreeViewComponent]="_rootTreeComponent!" (click)="showPortfolioStats()" (dblclick)="onOpenPortfolioViewerClicked()"></app-sq-tree-view>
-    <button (click)="showCreateOrEditPortfolioPopup('create')" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder') ? 'btnEnabled' : 'btnDisabled'">Create Portfolio</button>&nbsp;
-    <button (click)="showCreateOrEditFolderPopup('create')" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Folder' ? 'btnEnabled': 'btnDisabled'">Create Folder</button>&nbsp;<br>
-    <button (click)="showCreateOrEditPortfolioPopup('edit')" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled': 'btnDisabled'">Edit Portfolio</button>&nbsp;
+    <button class="btnCommon" (click)="showCreateOrEditPortfolioPopup('create')" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder') ? 'btnEnabled' : 'btnDisabled'">Create Portfolio</button>&nbsp;
+    <button class="btnCommon" (click)="showCreateOrEditFolderPopup('create')" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Folder' ? 'btnEnabled': 'btnDisabled'">Create Folder</button>&nbsp;<br>
+    <button class="btnCommon" (click)="showCreateOrEditPortfolioPopup('edit')" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled': 'btnDisabled'">Edit Portfolio</button>&nbsp;
     <!-- The user should not be able edit virtual top folders that have negative folder.Id (checked by this condition: treeViewState.lastSelectedItem?.id! >= 0) -->
-    <button (click)="showCreateOrEditFolderPopup('edit')" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' && treeViewState.lastSelectedItem?.id! >= 0) ? 'btnEnabled': 'btnDisabled'">Edit Folder</button>&nbsp;
-    <button id="btnDelete" (click)="onDeletePrtfItemClicked()" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' || treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio') ? 'btnEnabled' : 'btnDisabled'">Delete</button><br><br>
-    <button id="openPortfolioViewer" (click)="onOpenPortfolioViewerClicked()" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled' : 'btnDisabled'">Open in Portfolio Viewer</button>&nbsp;&nbsp;&nbsp;
-    <button id="openChartGenerator" (click)="onOpenChartGeneratorClicked()" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled' : 'btnDisabled'">Open in Chart Generator</button>&nbsp;
+    <button class="btnCommon" (click)="showCreateOrEditFolderPopup('edit')" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' && treeViewState.lastSelectedItem?.id! >= 0) ? 'btnEnabled': 'btnDisabled'">Edit Folder</button>&nbsp;
+    <button class="btnCommon" id="btnDelete" (click)="onDeletePrtfItemClicked()" [ngClass]="(treeViewState.lastSelectedItem?.prtfItemType == 'Folder' || treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio') ? 'btnEnabled' : 'btnDisabled'">Delete</button><br><br>
+    <button class="btnCommon" id="openPortfolioViewer" (click)="onOpenPortfolioViewerClicked()" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled' : 'btnDisabled'">Open in Portfolio Viewer</button>&nbsp;&nbsp;&nbsp;
+    <button class="btnCommon" id="openChartGenerator" (click)="onOpenChartGeneratorClicked()" [ngClass]="treeViewState.lastSelectedItem?.prtfItemType == 'Portfolio' ? 'btnEnabled' : 'btnDisabled'">Open in Chart Generator</button>&nbsp;
     <div class="popup infoPopup" id="createOrEditFolderPopup" [ngStyle]="{'display': isCreateOrEditFolderPopupVisible ? 'block' : 'none'}"><br>
       <div>
         <div class="prtfCommon prtfFields">Name:<span class="requiredAndNotFound" *ngIf="!editedFolder.name">*</span></div>
@@ -144,7 +144,7 @@
               <td><b>Sharpe:</b> {{uiPrtfRunResult.sharpe | number:'1.2-2'}}</td>
             </tr>
             <tr>
-              <td>CagrSharpe: {{uiPrtfRunResult.cagrSharpe | number:'1.2-2'}}</td>
+              <td><b>CagrSharpe:</b> {{uiPrtfRunResult.cagrSharpe | number:'1.2-2'}}</td>
               <td>StDev: {{uiPrtfRunResult.stDev | number:'1.2-2'}}</td>
               <td>Max.TradingDays in DD: {{uiPrtfRunResult.tradingDays}}</td>
             </tr>
