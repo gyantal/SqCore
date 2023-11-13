@@ -7,7 +7,7 @@ const PROXY_CONFIG = [
   {
     context: [
       "/weatherforecast",
-      "/chatgpt",
+      "/gptchat",
       "/gptsum"
    ],
     target: target,

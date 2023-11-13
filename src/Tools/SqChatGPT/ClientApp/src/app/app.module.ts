@@ -9,7 +9,7 @@ import { NavMenuComponent } from './nav-menu/nav-menu.component';
 import { HomeComponent } from './home/home.component';
 import { CounterComponent } from './counter/counter.component';
 import { FetchDataComponent } from './fetch-data/fetch-data.component';
-import { ChatGptComponent } from './chat-gpt/chat-gpt.component';
+import { ChatGptComponent } from './gpt-chat/gpt-chat.component';
 import { GptSumComponent } from './gpt-sum/gpt-sum.component';
 
 @NgModule({
@@ -30,7 +30,7 @@ import { GptSumComponent } from './gpt-sum/gpt-sum.component';
       { path: '', component: HomeComponent, pathMatch: 'full' },
       { path: 'counter', component: CounterComponent },
       { path: 'fetch-data', component: FetchDataComponent },
-      { path: 'chat-gpt', component: ChatGptComponent },
+      { path: 'gpt-chat', component: ChatGptComponent },
       { path: 'gpt-sum', component: GptSumComponent },
     ])
   ],

@@ -68,10 +68,10 @@ public class GptSumController : ControllerBase
     static OpenAIClient? g_openAiClient = null;
     static List<ChatMessage> g_messages = new();
 
-    private readonly ILogger<ChatGptController> _logger;
+    private readonly ILogger<GptChatController> _logger;
     private static readonly HttpClient g_httpClient = new HttpClient();
 
-    public GptSumController(ILogger<ChatGptController> logger, IConfiguration configuration)
+    public GptSumController(ILogger<GptChatController> logger, IConfiguration configuration)
     {
         _logger = logger;
         // string? logLevel = configuration["Logging:LogLevel:Default"];

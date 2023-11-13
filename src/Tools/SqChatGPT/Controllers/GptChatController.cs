@@ -8,7 +8,7 @@ namespace SqChatGPT.Controllers;
 
 [ApiController]
 [Route("[controller]")]
-public class ChatGptController : ControllerBase
+public class GptChatController : ControllerBase
 {
     // by default a new Instance of ApiController is created on every HttpRequest. (probably because they have to handle if there are 100 multiple requests at the same time)
     // REST by design is stateless so instantiating for every request by default enforces this on the developers.
@@ -16,9 +16,9 @@ public class ChatGptController : ControllerBase
     static OpenAIClient? g_openAiClient = null;
     static List<ChatMessage> g_messages = new();
 
-    private readonly ILogger<ChatGptController> _logger;
+    private readonly ILogger<GptChatController> _logger;
 
-    public ChatGptController(ILogger<ChatGptController> logger, IConfiguration configuration)
+    public GptChatController(ILogger<GptChatController> logger, IConfiguration configuration)
     {
         _logger = logger;
         // string? logLevel = configuration["Logging:LogLevel:Default"];
