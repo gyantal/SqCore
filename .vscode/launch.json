@@ -180,7 +180,7 @@
             }
         },
         {
-            "name": "Tools/SqChatGPT (DEBUG)",
+            "name": "Tools/SqChatGPT (DEBUG) C#",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "SqChatGPT build Debug",
@@ -200,6 +200,21 @@
                 "group": "2_Tools",
                 "order": 2,
                 "hidden": false
+            }
+        },
+        {
+            "name": "Tools/SqChatGPT (DEBUG) TS (Chrome)",
+            "type": "chrome",
+            "request": "launch",
+            "url": "https://localhost:44439",
+            "webRoot": "${workspaceFolder}/src/Tools/SqChatGPT/ClientApp",
+            "sourceMaps": true,
+            "sourceMapPathOverrides": {
+                "webpack:/*": "${webRoot}/*", 
+                "/./*": "${webRoot}/*", 
+                "/src/*": "${webRoot}/*", 
+                "/*": "*",
+                "/./~/*": "${webRoot}/node_modules/*"
             }
         },
         {

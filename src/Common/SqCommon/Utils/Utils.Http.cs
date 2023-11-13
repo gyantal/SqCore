@@ -13,7 +13,7 @@ public static partial class Utils
         AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate // otherwise if content is gzipped, we got binary in GetString()
     };
 
-    // HttpWebRequest vs. HttpClient. Never use HttpWebRequest. HttpClient is preferred over HttpWebRequest. https://www.diogonunes.com/blog/webclient-vs-httpclient-vs-httpwebrequest/
+    // HttpWebRequest vs. HttpClient. Never use HttpWebRequest. HttpClient (asynchronous, can be reused) is preferred over HttpWebRequest. https://www.diogonunes.com/blog/webclient-vs-httpclient-vs-httpwebrequest/
     static HttpClient? g_httpClient = null; // Lazy eval is better for Apps that don't use it at all. For efficiency, we can make it global, because it can handle multiple queries in multithread
 
     public static async Task<string?> DownloadStringWithRetryAsync(string p_url)

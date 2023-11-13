@@ -1,14 +1,7 @@
 import { Component, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
-interface UserInput {
-  LlmModelName: string;
-  Msg: string;
-}
-
-interface ServerResponse {
-  Response: string;
-}
+import { UserInput, ServerResponse } from '../lib/gpt-common';
 
 @Component({
   selector: 'app-chat-gpt',
@@ -17,17 +10,15 @@ interface ServerResponse {
 export class ChatGptComponent {
   _httpClient: HttpClient;
   _baseUrl: string;
-  _chatGptUrl: string;
+  _controllerBaseUrl: string;
 
-  _selectedLlmModel: string;
+  _selectedLlmModel: string = 'auto';
   _chatHistory: string[] = [];
 
   constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string) {
     this._httpClient = http;
     this._baseUrl = baseUrl;
-    this._chatGptUrl = baseUrl + 'chatgpt/sendUserInput';
-
-    this._selectedLlmModel = 'auto';
+    this._controllerBaseUrl = baseUrl + 'chatgpt/';
   }
 
   sendUserInputToBackEnd(p_userInput: string): void {
@@ -44,7 +35,7 @@ export class ChatGptComponent {
 
     // responseType: 'text' // instead of JSON, because return text can contain NewLines, \n and JSON.Parse() will fail with "SyntaxError: Bad control character in string literal in JSON"
     // this._httpClient.post(this._chatGptUrl, body, { responseType: 'text'}).subscribe(resultText => { // if message comes not as a properly formatted JSON string
-      this._httpClient.post<ServerResponse>(this._chatGptUrl, body).subscribe(result => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
+      this._httpClient.post<ServerResponse>(this._controllerBaseUrl + 'sendUserInput', body).subscribe(result => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
       // alert(result.Response);
       this._chatHistory.push("- Assistant: " + result.Response.replace("\n", "<br/>"));
     }, error => console.error(error));
