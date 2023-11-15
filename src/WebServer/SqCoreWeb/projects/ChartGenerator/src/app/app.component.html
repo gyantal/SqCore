@@ -23,8 +23,7 @@
     <span>Portfolios:
       <button class="btnCommon" (click)="onClickSelectFromTree()">Select from tree...</button>
       <div id="prtfSelectionDialog" [ngStyle]="{'display': isPrtfSelectionDialogVisible ? 'block' : 'none'}">
-        <button class="btnCommon" (click)="onClickPrtfSelectedFromTreeView()" [ngClass]="treeViewState.lastSelectedItem?.isCheckboxChecked ? 'btnEnabled': 'btnDisabled'">Insert</button> &nbsp;
-        <button class="btnCommon"  [ngClass]="treeViewState.lastSelectedItem?.isCheckboxChecked ? 'btnEnabled': 'btnDisabled'" (click)="onClickCloseTreeView()">close</button>
+        <button class="btnCommon" (click)="onClickPrtfSelectedFromTreeView()" [ngClass]="treeViewState.lastSelectedItem?.isSelected ? 'btnEnabled': 'btnDisabled'">Insert</button> &nbsp;
         <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState" [rootTreeViewComponent]="_rootTreeComponent" [m_useCheckboxes]=true></app-sq-tree-view>
       </div>
       <br>

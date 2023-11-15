@@ -451,15 +451,26 @@ export class AppComponent implements OnInit {
 
   onClickPrtfSelectedFromTreeView() {
     this._backtestedPortfolios.length = 0;
-    for (const selectedItem of this.treeViewState.selectedItems) {
-      const allPortfoliosInd = this._allPortfolios!.findIndex((item) => item.id == selectedItem.id); // Find the index of the selectedItem in _allPortfolios
+    for (const checkedItem of this.treeViewState.checkboxCheckedItems) {
+      const portfolioInd = this._allPortfolios!.findIndex((item) => item.id == checkedItem.id); // Find the index of the selectedItem in _allPortfolios
 
-      if (allPortfoliosInd != -1 && !this._backtestedPortfolios.includes(this._allPortfolios![allPortfoliosInd])) // Check if the item is found and not already in _backtestedPortfolios
-        this._backtestedPortfolios.push(this._allPortfolios![allPortfoliosInd]);
+      if (portfolioInd != -1 && !this._backtestedPortfolios.includes(this._allPortfolios![portfolioInd])) // Check if the item is found and not already in _backtestedPortfolios
+        this._backtestedPortfolios.push(this._allPortfolios![portfolioInd]);
     }
+    this.isPrtfSelectionDialogVisible = false;
+    // Reset PrtfTreeviewItems state
+    for (const item of this.uiNestedPrtfTreeViewItems)
+      this.resetThisItemAndAllChildren(item);
   }
 
-  onClickCloseTreeView() {
-    this.isPrtfSelectionDialogVisible = false;
+  resetThisItemAndAllChildren(item: any) {
+    item.isExpanded = false;
+    item.isCheckboxChecked = false;
+    item.isSelected = false;
+
+    if (item.children == true && item.children.length > 0) {
+      for (const child of item.children)
+        this.resetThisItemAndAllChildren(child);
+    }
   }
 }

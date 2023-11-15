@@ -221,7 +221,7 @@
 
 #filtering {
   position: relative;
-  left: 28%; // To make it responsive, it is better to use relative units like percentage(%) instead of fixed position values (ex: left: 42rem)
+  left: 28%; // To fit it for different screen sizes of mobile devices, it is better to use relative units like percentage(%) instead of fixed position values (ex: left: 42rem)
 }
 
 // Table stylings

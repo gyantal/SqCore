@@ -70,31 +70,31 @@ export class SqTreeViewComponent implements OnInit {
   onChangeCheckbox(event: any, item: TreeViewItem): void {
     item.isCheckboxChecked = event.target.checked;
     if (item.isCheckboxChecked == true)
-      this.getSelectedItems(item, this.treeViewState.selectedItems); // If the checkbox is checked, add the item to the selectedItems array
+      this.collectCheckedItemAndAllChildren(item, this.treeViewState.checkboxCheckedItems); // If the checkbox is checked, add the item to the checkboxCheckedItems array
     else
-      this.removeSelectedItems(item, this.treeViewState.selectedItems); // If the checkbox is unchecked, remove the item and its children from the selectedItems array
+      this.removeUncheckedItemAndAllChildren(item, this.treeViewState.checkboxCheckedItems); // If the checkbox is unchecked, remove the item and its children from the checkboxCheckedItems array
   }
 
-  getSelectedItems(item: TreeViewItem, selectedItems: TreeViewItem[]): void {
+  collectCheckedItemAndAllChildren(item: TreeViewItem, checkedItems: TreeViewItem[]): void {
     if (item.isCheckboxChecked == true)
-      selectedItems.push(item);
+      checkedItems.push(item);
 
     if (item.children != null) {
       for (const child of item.children)
-        this.getSelectedItems(child, selectedItems);
+        this.collectCheckedItemAndAllChildren(child, checkedItems);
     }
   }
 
-  removeSelectedItems(item: TreeViewItem, selectedItems: TreeViewItem[]): void {
+  removeUncheckedItemAndAllChildren(item: TreeViewItem, checkedItems: TreeViewItem[]): void {
     // Remove the item from the selectedItems array
-    const index = selectedItems.indexOf(item);
+    const index = checkedItems.indexOf(item);
     if (index != -1)
-      selectedItems.splice(index, 1);
+      checkedItems.splice(index, 1);
 
     // Remove its children from the selectedItems array
     if (item.children != null) {
       for (const child of item.children)
-        this.removeSelectedItems(child, selectedItems);
+        this.removeUncheckedItemAndAllChildren(child, checkedItems);
     }
   }
 }
