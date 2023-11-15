@@ -52,6 +52,8 @@ export class AppComponent implements OnInit {
   theme = '';
   sqDiagnosticsMsg = 'Benchmarking time, connection speed';
   lastTimeOpSysSleepWakeupChecked = 0;
+  windowWidth: number = 0; // viewport width
+  windowHeight: number = 0; // viewport height
 
   public _socket: WebSocket; // initialize later in ctor, becuse we have to send back the activeTool from urlQueryParams
 
@@ -238,6 +240,11 @@ export class AppComponent implements OnInit {
       if (this._socket != null && this._socket.readyState === WebSocket.OPEN)
         this._socket.send('Dshbrd.IsDshbrdOpenManyTimes:');
     }, 3000);
+
+    window.addEventListener('resize', () => { // called when the user manually resizes the window
+      this.windowWidth = window.innerWidth || document.documentElement.clientWidth || document.documentElement.getElementsByTagName('body')[0].clientWidth;
+      this.windowHeight = window.innerHeight || document.documentElement.clientHeight || document.documentElement.getElementsByTagName('body')[0].clientHeight;
+    });
   }
 
   public onSetTheme($event: string) {
