@@ -169,6 +169,30 @@
   border-right: none;
 }
 
+/* Media queries for responsiveness */
+@media only screen and (min-width: 768px) {
+  /* Styles for tablets and larger screens */
+  .ChartSumm {
+    width: 70%;
+  }
+
+  .moreDetailsPartitionsPrNav, .moreDetailsPartitions {
+    width: 25%;
+  }
+}
+
+@media only screen and (max-width: 767px) {
+  /* Styles for smaller screens */
+  .ChartSumm, .moreDetailsPartitionsPrNav, .moreDetailsPartitions {
+    width: 100%;
+    border-right: none;
+  }
+
+  .moreDetailsPartitionsPrNav, .moreDetailsPartitions {
+    border-bottom: 0.005rem solid #0000ff;
+  }
+}
+
 // tooltip maxRisked ngClass
 .red {
   color: #FF0000;
@@ -221,7 +245,20 @@
 
 #filtering {
   position: relative;
-  left: 28%; // To fit it for different screen sizes of mobile devices, it is better to use relative units like percentage(%) instead of fixed position values (ex: left: 42rem)
+}
+
+/* Apply media query for screens with a minimum width of 768 pixels */
+@media only screen and (min-width: 768px) {
+  #filtering {
+    left: 28.5%; /* Adjust the left position for wider screens */
+  }
+}
+
+/* Apply media query for screens with a maximum width of 767 pixels */
+@media only screen and (max-width: 767px) {
+  #filtering {
+    text-align: center; /* Center the content on smaller screens */
+  }
 }
 
 // Table stylings
