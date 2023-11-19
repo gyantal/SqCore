@@ -1,0 +1,21 @@
+<h1 id="tableLabel">OpenAI ChatGPT SCAN</h1>
+LLMs are text completion engines. Trained on large corpus of documents. They predict the 'likely' next word by imagining a transcript of a chat between User and Assistant.<br>
+They can be used for predicting the likely summarizing text.
+LLM-ModelName:
+<select name="model" id="model-select" [(ngModel)]="_selectedLlmModel">
+  <option value="auto">auto</option>
+  <option value="gpt-3.5-turbo">gpt-3.5-turbo(4K)</option>
+  <option value="gpt-4">gpt-4(8K)</option>
+</select>
+<br><br>
+Type your ticker list here and click to send it to C# backend.
+<br>Tickers:
+<input #tickers list="tickersDataLst" name="tickers" [(ngModel)]="_selectedTickers" />
+<datalist id="tickersDataLst">
+  <option *ngFor="let tickers of _possibleTickers" [value]="tickers">{{tickers}}</option>
+</datalist>
+
+
+<br>
+<button type="button" (click)="sendUserInputToBackEnd(tickers.value)">Get Info on tickers</button>
+

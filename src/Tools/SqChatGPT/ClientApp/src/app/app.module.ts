@@ -11,6 +11,7 @@ import { CounterComponent } from './counter/counter.component';
 import { FetchDataComponent } from './fetch-data/fetch-data.component';
 import { ChatGptComponent } from './gpt-chat/gpt-chat.component';
 import { GptSumComponent } from './gpt-sum/gpt-sum.component';
+import { GptScanComponent } from './gpt-scan/gpt-scan.component';
 
 @NgModule({
   declarations: [
@@ -20,7 +21,8 @@ import { GptSumComponent } from './gpt-sum/gpt-sum.component';
     CounterComponent,
     FetchDataComponent,
     ChatGptComponent,
-    GptSumComponent
+    GptSumComponent,
+    GptScanComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -32,6 +34,7 @@ import { GptSumComponent } from './gpt-sum/gpt-sum.component';
       { path: 'fetch-data', component: FetchDataComponent },
       { path: 'gpt-chat', component: ChatGptComponent },
       { path: 'gpt-sum', component: GptSumComponent },
+      { path: 'gpt-scan', component: GptScanComponent }
     ])
   ],
   providers: [],
