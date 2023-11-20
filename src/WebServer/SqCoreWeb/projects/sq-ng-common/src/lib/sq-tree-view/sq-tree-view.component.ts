@@ -69,32 +69,5 @@ export class SqTreeViewComponent implements OnInit {
 
   onChangeCheckbox(event: any, item: TreeViewItem): void {
     item.isCheckboxChecked = event.target.checked;
-    if (item.isCheckboxChecked == true)
-      this.collectCheckedItemAndAllChildren(item, this.treeViewState.checkboxCheckedItems); // If the checkbox is checked, add the item to the checkboxCheckedItems array
-    else
-      this.removeUncheckedItemAndAllChildren(item, this.treeViewState.checkboxCheckedItems); // If the checkbox is unchecked, remove the item and its children from the checkboxCheckedItems array
-  }
-
-  collectCheckedItemAndAllChildren(item: TreeViewItem, checkedItems: TreeViewItem[]): void {
-    if (item.isCheckboxChecked == true)
-      checkedItems.push(item);
-
-    if (item.children != null) {
-      for (const child of item.children)
-        this.collectCheckedItemAndAllChildren(child, checkedItems);
-    }
-  }
-
-  removeUncheckedItemAndAllChildren(item: TreeViewItem, checkedItems: TreeViewItem[]): void {
-    // Remove the item from the selectedItems array
-    const index = checkedItems.indexOf(item);
-    if (index != -1)
-      checkedItems.splice(index, 1);
-
-    // Remove its children from the selectedItems array
-    if (item.children != null) {
-      for (const child of item.children)
-        this.removeUncheckedItemAndAllChildren(child, checkedItems);
-    }
   }
 }

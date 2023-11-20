@@ -428,47 +428,42 @@ export class AppComponent implements OnInit {
     this.isPrtfSelectionDialogVisible = !this.isPrtfSelectionDialogVisible;
   }
 
-  onClickPrtfSelectedFromTreeForBacktest() { // This code is similar to the method onClickPrtfSelectedForBacktest(). Once we finalize the SelecFromTree option we can remove onClickPrtfSelectedForBacktest().
-    const lastSelectedTreeNode = this.treeViewState.lastSelectedItem;
-    if (lastSelectedTreeNode == null || lastSelectedTreeNode?.prtfItemType != 'Portfolio')
-      return;
-    const prtfId = lastSelectedTreeNode.id - this.gPortfolioIdOffset; // remove the offset from the prtfSelectedId to get the proper Id from Db
-    let prtfSelectedInd = -1;
-    for (let i = 0; i < this._backtestedPortfolios.length; i++) {
-      if (this._backtestedPortfolios[i].id == prtfId) {
-        prtfSelectedInd = i; // get the index, if the item is found
-        break;
-      }
-    }
-
-    // If the item is not already included, proceed to add it
-    if (prtfSelectedInd == -1) {
-      const allPortfoliosInd = this._allPortfolios?.findIndex((item) => item.id == lastSelectedTreeNode.id); // Find the index of the selected item in _allPortfolios
-      if (allPortfoliosInd != -1 && !this._backtestedPortfolios.includes(this._allPortfolios![allPortfoliosInd!])) // check if the item is included or not
-        this._backtestedPortfolios.push(this._allPortfolios![allPortfoliosInd!]); // Push the selected item from _allPortfolios into _backtestedPortfolios
-    }
-  }
-
   onClickPrtfSelectedFromTreeView() {
-    this._backtestedPortfolios.length = 0;
-    for (const checkedItem of this.treeViewState.checkboxCheckedItems) {
-      const portfolioInd = this._allPortfolios!.findIndex((item) => item.id == checkedItem.id); // Find the index of the selectedItem in _allPortfolios
+    // Collect checked items locally
+    const checkedItems: TreeViewItem[] = [];
+    this.collectCheckedItemsAndAllChildren(this.uiNestedPrtfTreeViewItems, checkedItems);
 
-      if (portfolioInd != -1 && !this._backtestedPortfolios.includes(this._allPortfolios![portfolioInd])) // Check if the item is found and not already in _backtestedPortfolios
-        this._backtestedPortfolios.push(this._allPortfolios![portfolioInd]);
+    this._backtestedPortfolios.length = 0;
+    for (const checkedItem of checkedItems) {
+      const portfolioItem = this._allPortfolios!.find((item) => item.id == checkedItem.id);
+      if (portfolioItem != null && !this._backtestedPortfolios.includes(portfolioItem))
+        this._backtestedPortfolios.push(portfolioItem);
     }
-    this.isPrtfSelectionDialogVisible = false;
+
     // Reset PrtfTreeviewItems state
     for (const item of this.uiNestedPrtfTreeViewItems)
       this.resetThisItemAndAllChildren(item);
+
+    this.isPrtfSelectionDialogVisible = false;
   }
 
-  resetThisItemAndAllChildren(item: any) {
+  collectCheckedItemsAndAllChildren(prtfTreeViewItems: TreeViewItem[], checkedItems: TreeViewItem[]) {
+    for (const item of prtfTreeViewItems) {
+      // Check if isCheckboxChecked is truthy, ex: isCheckboxChecked == true.
+      if (item.isCheckboxChecked)
+        checkedItems.push(item);
+
+      if (item.children != null && item.children.length > 0)
+        this.collectCheckedItemsAndAllChildren(item.children, checkedItems);
+    }
+  }
+
+  resetThisItemAndAllChildren(item: TreeViewItem) { // resetting the treeview items back to its original state. Otherwise the treeview state will remain expanded, checked and selected if the user has done any of this.
     item.isExpanded = false;
     item.isCheckboxChecked = false;
     item.isSelected = false;
 
-    if (item.children == true && item.children.length > 0) {
+    if (item.children != null && item.children.length > 0) {
       for (const child of item.children)
         this.resetThisItemAndAllChildren(child);
     }
