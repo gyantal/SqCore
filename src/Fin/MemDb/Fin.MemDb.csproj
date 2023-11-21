@@ -11,9 +11,6 @@
     <ProjectReference Include="..\Common\Fin.Common.csproj" />
     <ProjectReference Include="..\Engine\Fin.Engine.csproj" />
     <ProjectReference Include="..\BrokerCommon\Fin.BrokerCommon.csproj" />
-    <PackageReference Include="CsvHelper" Version="30.0.1" />
-    <PackageReference Include="Flurl" Version="3.0.7" />
-    <PackageReference Include="Flurl.Http" Version="3.2.4" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.435">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

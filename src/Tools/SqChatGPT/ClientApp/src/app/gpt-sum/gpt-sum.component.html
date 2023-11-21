@@ -9,16 +9,14 @@ LLM-ModelName:
 </select>
 <br><br>
 Type your ticker list here and click to send it to C# backend.
-<br>Tickers:
-<input #tickers list="tickersDataLst" name="tickers" [(ngModel)]="_selectedTickers" />
-<datalist id="tickersDataLst">
-  <option *ngFor="let tickers of _possibleTickers" [value]="tickers">{{tickers}}</option>
-</datalist>
-
-
+<br>Get Info on tickers:
+<span class="selectionDropDown">
+  <input class="highlightInputDropDown" #tickers list="tickersDataLst" name="tickers" [(ngModel)]="_selectedTickers" />
+  <span class="listDropDown" id="tickersDataLst">
+    <option class="optionDropDown" *ngFor="let tickers of _possibleTickers" name="tickers" [value]="tickers" (click)="sendUserInputToBackEnd(tickers)">{{tickers}}</option>
+  </span>
+</span>
 <br>
-<button type="button" (click)="sendUserInputToBackEnd(tickers.value)">Get Info on tickers</button>
-
 
 <div *ngIf="_tickerNews.length > 0; else noData">
   <div *ngFor="let ticker of _tickerNews">

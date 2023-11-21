@@ -23,7 +23,8 @@ interface ServerStockNewsResponse {
 
 @Component({
   selector: 'app-gpt-sum',
-  templateUrl: './gpt-sum.component.html'
+  templateUrl: './gpt-sum.component.html',
+  styleUrls: ['./gpt-sum.component.scss']
 })
 export class GptSumComponent {
   _httpClient: HttpClient;
@@ -44,6 +45,7 @@ export class GptSumComponent {
 
   sendUserInputToBackEnd(p_tickers: string): void {
     console.log(p_tickers);
+    this._selectedTickers = p_tickers;
 
     // // HttpGet if input is simple and can be placed in the Url
     // // this._httpClient.get<ServerResponse>(this._baseUrl + 'chatgpt/sendString').subscribe(result => {

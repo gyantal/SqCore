@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
+using SqCommon;
 
 namespace SqChatGPT.Controllers;
 
@@ -130,8 +131,20 @@ public class GptSumController : ControllerBase
                 string url = $"https://feeds.finance.yahoo.com/rss/2.0/headline?s={ticker}";
                 string xmlContent = await g_httpClient.GetStringAsync(url);
                 Rss rss = ParseXMLString(xmlContent);
-                tickerNewss.Add(new TickerNews() { Ticker = ticker, NewsItems = rss?.Channel?.NewsItems ?? new List<NewsItem>() });
 
+                List<NewsItem> newsItems = new(); // local newsItems list
+                if (rss?.Channel?.NewsItems != null)
+                {
+                    // Iterate through NewsItems and add items within one week
+                    foreach (var newsItem in rss.Channel.NewsItems)
+                    {
+                        DateTime pubDate = Utils.Str2DateTimeUtc(newsItem.PubDate);
+                        int nDays = (int)(DateTime.Now - pubDate).TotalDays; // Calculate the number of days
+                        if (nDays <= 7)// Add the news item to the local list if within one week
+                            newsItems.Add(newsItem);
+                    }
+                }
+                tickerNewss.Add(new TickerNews() { Ticker = ticker, NewsItems = newsItems });
                 // Here you would do something with the xmlContent, e.g., save to a file or process it.
                 Console.WriteLine($"Downloaded XML content for {ticker}");
             }
@@ -280,5 +293,4 @@ public class GptSumController : ControllerBase
 
         return rss;
     }
-
 }

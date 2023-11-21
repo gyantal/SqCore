@@ -169,19 +169,8 @@
   border-right: none;
 }
 
-/* Media queries for responsiveness */
-@media only screen and (min-width: 768px) {
-  /* Styles for tablets and larger screens */
-  .ChartSumm {
-    width: 70%;
-  }
 
-  .moreDetailsPartitionsPrNav, .moreDetailsPartitions {
-    width: 25%;
-  }
-}
-
-@media only screen and (max-width: 767px) {
+@media screen and (max-width: 767px) {
   /* Styles for smaller screens */
   .ChartSumm, .moreDetailsPartitionsPrNav, .moreDetailsPartitions {
     width: 100%;
@@ -245,18 +234,13 @@
 
 #filtering {
   position: relative;
-}
-
-/* Apply media query for screens with a minimum width of 768 pixels */
-@media only screen and (min-width: 768px) {
-  #filtering {
-    left: 28.5%; /* Adjust the left position for wider screens */
-  }
+  left: 28.5%; /* Adjust the left position for wider screens */
 }
 
 /* Apply media query for screens with a maximum width of 767 pixels */
-@media only screen and (max-width: 767px) {
+@media screen and (max-width: 767px) {
   #filtering {
+    left: auto;
     text-align: center; /* Center the content on smaller screens */
   }
 }

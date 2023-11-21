@@ -98,6 +98,7 @@ export class AppComponent implements OnInit {
 
       this.isSrvConnectionAlive = this._socket != null && this._socket.readyState === WebSocket.OPEN;
     }, 5 * 1000); // refresh at every 5 secs
+    this.visibilityChanged();
   }
 
   // called after Angular has initialized all data-bound properties before any of the view or content children have been checked. Called after the constructor and called  after the first ngOnChanges()
@@ -242,9 +243,13 @@ export class AppComponent implements OnInit {
     }, 3000);
 
     window.addEventListener('resize', () => { // called when the user manually resizes the window
-      this.windowWidth = window.innerWidth || document.documentElement.clientWidth || document.documentElement.getElementsByTagName('body')[0].clientWidth;
-      this.windowHeight = window.innerHeight || document.documentElement.clientHeight || document.documentElement.getElementsByTagName('body')[0].clientHeight;
+      this.visibilityChanged();
     });
+  }
+
+  visibilityChanged() { // displaying the width and height for testing different screen sizes
+    this.windowWidth = window.innerWidth || document.documentElement.clientWidth || document.documentElement.getElementsByTagName('body')[0].clientWidth;
+    this.windowHeight = window.innerHeight || document.documentElement.clientHeight || document.documentElement.getElementsByTagName('body')[0].clientHeight;
   }
 
   public onSetTheme($event: string) {
