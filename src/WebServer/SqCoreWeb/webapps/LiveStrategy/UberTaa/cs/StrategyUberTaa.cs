@@ -51,7 +51,7 @@ public class StrategyUberTaaController : ControllerBase
                 titleString = "GameChangers";
                 usedGDocUrl = "https://docs.google.com/document/d/1JPyRJY7VrW7hQMagYLtB_ruTzEKEd8POHQy6sZ_Nnyk";
                 usedGSheetUrl = "https://docs.google.com/spreadsheets/d/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE";
-                usedGSheetStr = UberTaaGoogleApiGsheet("https://sheets.googleapis.com/v4/spreadsheets/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/values/A1:AF2000?key=");
+                usedGSheetStr = UberTaaGoogleApiGsheet("https://sheets.googleapis.com/v4/spreadsheets/1AGci_xFhgcC-Q1tEZ5E-HTBWbOU-C9ZXyjLIN1bEZeE/values/A1:AF3000?key=");
                 usedAssetList = GetTickersFromGSheet(usedGSheetStr) ?? Array.Empty<string>();
                 warningGCh = "WARNING! Trading rules have been changed for TaaGC! Let the Winners Run is used. The first table's first and third rows are removed because they are not valid. Trade this based on the second table's Percentage targets.";
                 break;
@@ -59,7 +59,7 @@ public class StrategyUberTaaController : ControllerBase
                 titleString = "Global Assets";
                 usedGDocUrl = "https://docs.google.com/document/d/1-hDoFu1buI1XHvJZyt6Cq813Hw1TQWGl0jE7mwwS3l0";
                 usedGSheetUrl = "https://docs.google.com/spreadsheets/d/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU";
-                usedGSheetStr = UberTaaGoogleApiGsheet("https://sheets.googleapis.com/v4/spreadsheets/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/values/A1:Z2000?key=");
+                usedGSheetStr = UberTaaGoogleApiGsheet("https://sheets.googleapis.com/v4/spreadsheets/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/values/A1:Z3000?key=");
                 usedAssetList = GetTickersFromGSheet(usedGSheetStr) ?? Array.Empty<string>();
                 break;
         }
