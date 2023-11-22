@@ -37,4 +37,6 @@ app.MapControllerRoute(
 
 app.MapFallbackToFile("index.html");
 
+Utils.OpenInBrowser("https://localhost:7160");
+
 app.Run();
