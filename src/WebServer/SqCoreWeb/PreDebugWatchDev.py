@@ -1,11 +1,10 @@
 import os
 import platform
-import subprocess
 from threading import Thread
-import time
+
 import sys
-import random
 import socket
+import psutil
 
 print("SqBuild:PreDebugWatchDev.py Python ver: " + platform.python_version() + " (" + platform.architecture()[0] + "), CWD:'" + os. getcwd() + "'")
 print("In VsCode, this should run in a separate CMD window, not in VsCode.Terminal. If not, manually run once this PY") # That 'magically' fixed the VsCode in 2023-01.
@@ -91,9 +90,35 @@ while True:
         break
 
 
-# 4. Terminate all threads. It not only terminates threads, but 'taskkill current process' will close the CMD window as well, which is perfect.
+# 4. Terminate all sub-threads. It not only terminates threads, but 'taskkill current process' will close the CMD window as well, which is perfect.
 print("SqBuild: Main thread exits now as it kill the the CMD/terminal window")
 # quit(), sys.exit() # they don't kill the started child-threads, even though they are daemons
-uniqueCmdTitle = "PreDebugWatch.py." + str(random.randint(0,99999))
-os.system("title " + uniqueCmdTitle)   # set the title of the CMD
-os.system('taskkill /F /FI "WindowTitle eq ' + uniqueCmdTitle + '" /T')  #kill the task which has the title that was just set.
+# taskkill parameters: /F: Force termination. /T: Terminate the specified process tree with child processes
+
+# Method 1: set the Title of the CMD window, and kill the task which has the WindowTitle that was just set. This stopped working in WT (Windows Terminal) with the message 'No tasks running with the specified criteria.', maybe because of many tabpages in WT. The 'title' command now sets only the title of the tabpage, not the title of the whole WT.exe
+#uniqueCmdTitle = "PreDebugWatch.py." + str(random.randint(0,99999))
+#os.system("title " + uniqueCmdTitle)   # set the title of the CMD
+#os.system('taskkill /F /T /FI "WindowTitle eq ' + uniqueCmdTitle + '"')  #kill the task which has the title that was just set.
+# Or you can do the same in 1 step, with the & operator:
+#os.system('title '+ uniqueCmdTitle + ' & taskkill /F /T /FI "WindowTitle eq ' + uniqueCmdTitle + '"')
+
+# taskkill with WindowTitle stopped working with the message 'No tasks running with the specified criteria.', because there is really no task with that "Window Title:". Maybe because we started to use WT.exe instead of CMD.exe
+
+
+# Method 2: get the pid of the process and kill it.
+# If WT.exe was started from TotalCommander, we have to go back to parent.parent().pid, If it was started from VsCode, we have to go back to parent.pid.
+print('SqBuild: process PID ' + str(os.getpid())) # the embedded Python
+print('SqBuild: process parent PID ' + str(os.getppid())) # the embeded CMD inside Windows Terminal
+parentProcess = psutil.Process(os.getpid()).parent()
+if parentProcess.parent() is None:
+    os.system('taskkill /F /T /pid ' + str(parentProcess.pid)) # If started in VsCode, we kill the parent process
+else:
+    os.system('taskkill /F /T /pid ' + str(parentProcess.parent().pid)) # If started in WT.exe that was started from TotalCommander, we kill the parent of the parent
+
+#Keeping for debugging purposes:
+#print("parent.parent process of our main python is", parent.parent().pid)
+#print("parent.parent.parent (TC.exe) process of our main python is", parent.parent().parent().pid) # Total Commander
+#children = parent.parent().parent().children(recursive=True)
+#print(children)
+#for child in children:
+#    print("Child pid is {}".format(child.pid))
