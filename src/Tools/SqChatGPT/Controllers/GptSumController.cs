@@ -135,11 +135,12 @@ public class GptSumController : ControllerBase
                 List<NewsItem> newsItems = new(); // local newsItems list
                 if (rss?.Channel?.NewsItems != null)
                 {
+                    DateTime utcNow = DateTime.UtcNow;
                     // Iterate through NewsItems and add items within one week
                     foreach (var newsItem in rss.Channel.NewsItems)
                     {
                         DateTime pubDate = Utils.Str2DateTimeUtc(newsItem.PubDate);
-                        int nDays = (int)(DateTime.Now - pubDate).TotalDays; // Calculate the number of days
+                        int nDays = (int)(utcNow - pubDate).TotalDays; // Calculate the number of days
                         if (nDays <= 7)// Add the news item to the local list if within one week
                             newsItems.Add(newsItem);
                     }

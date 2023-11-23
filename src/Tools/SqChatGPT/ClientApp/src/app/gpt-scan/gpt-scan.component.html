@@ -9,13 +9,35 @@ LLM-ModelName:
 </select>
 <br><br>
 Type your ticker list here and click to send it to C# backend.
-<br>Tickers:
-<input #tickers list="tickersDataLst" name="tickers" [(ngModel)]="_selectedTickers" />
-<datalist id="tickersDataLst">
-  <option *ngFor="let tickers of _possibleTickers" [value]="tickers">{{tickers}}</option>
-</datalist>
+<br>Get Price Info on tickers:
+<span class="selectionDropDown">
+  <input class="highlightInputDropDown" #tickers list="tickersDataLst" name="tickers" [(ngModel)]="_selectedTickers" placeholder="select the ticker"/>
+  <span class="listDropDown" id="tickersDataLst">
+    <option class="optionDropDown" *ngFor="let tickers of _possibleTickers" name="tickers" [value]="tickers" (click)="sendUserInputToBackEnd(tickers)">{{tickers}}</option>
+  </span>
+</span>
 
-
-<br>
-<button type="button" (click)="sendUserInputToBackEnd(tickers.value)">Get Info on tickers</button>
+<div class="gptScanPriceData">
+  <table class="stockPriceDataTbl">
+    <thead class="stockPriceDataTbl">
+      <tr>
+        <th>Ticker</th>
+        <th>PriorClose</th>
+        <th>LastPrice</th>
+        <th>Chg%<br>Today</th>
+      </tr>
+    </thead>
+    <tbody class="stockPriceDataTbl">
+      <tr *ngFor="let item of _stockPrices">
+        <td>{{item.Ticker}}</td>
+        <td>{{item.PriorClose | number:'1.2-2'}}</td>
+        <td>{{item.ClosePrice | number:'1.2-2'}}</td>
+        <td [ngClass]="{
+              'positivePerf' : item.PercentChange > 0,
+              'negativePerf' : item.PercentChange < 0
+           }">{{item.PercentChange | number:'1.2-2'}}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
