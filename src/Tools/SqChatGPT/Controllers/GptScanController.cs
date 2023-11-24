@@ -10,7 +10,7 @@ public class StockPriceData // this is returned to browser Client
 {
     public string Ticker { get; set; } = string.Empty;
     public double PriorClose { get; set; } = 0.0f;
-    public double ClosePrice { get; set; } = 0.0f;
+    public double LastPrice { get; set; } = 0.0f;
     public double PercentChange { get; set; } = 0.0f;
 }
 
@@ -53,8 +53,8 @@ public class GptScanController : ControllerBase
     }
 
     [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
-    [HttpPost("sendStockPriceData")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
-    public async Task<IActionResult> SendStockPriceData([FromBody] UserInput p_inMsg)
+    [HttpPost("getstockprice")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
+    public async Task<IActionResult> GetStockPrice([FromBody] UserInput p_inMsg)
     {
         if (p_inMsg == null)
             return BadRequest("Invalid data");
@@ -87,7 +87,7 @@ public class GptScanController : ControllerBase
             IReadOnlyDictionary<string, Security> quotes = await Yahoo.Symbols(tickers).Fields(new Field[] { Field.Symbol, Field.RegularMarketPreviousClose, Field.RegularMarketPrice, Field.RegularMarketChange, Field.RegularMarketChangePercent }).QueryAsync();
             foreach (var val in quotes.Values)
             {
-                tickerPos.Add(new StockPriceData() { Ticker = val.Symbol, PriorClose = val.RegularMarketPreviousClose, ClosePrice = val.RegularMarketPrice, PercentChange = val.RegularMarketChangePercent });
+                tickerPos.Add(new StockPriceData() { Ticker = val.Symbol, PriorClose = val.RegularMarketPreviousClose, LastPrice = val.RegularMarketPrice, PercentChange = val.RegularMarketChangePercent });
             }
         }
         catch (Exception ex)

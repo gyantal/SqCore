@@ -29,9 +29,9 @@ Type your ticker list here and click to send it to C# backend.
     </thead>
     <tbody class="stockPriceDataTbl">
       <tr *ngFor="let item of _stockPrices">
-        <td>{{item.Ticker}}</td>
+        <td><a href="https://finance.yahoo.com/quote/{{item.Ticker}}" target="_blank">{{item.Ticker}}</a></td>
         <td>{{item.PriorClose | number:'1.2-2'}}</td>
-        <td>{{item.ClosePrice | number:'1.2-2'}}</td>
+        <td>{{item.LastPrice | number:'1.2-2'}}</td>
         <td [ngClass]="{
               'positivePerf' : item.PercentChange > 0,
               'negativePerf' : item.PercentChange < 0

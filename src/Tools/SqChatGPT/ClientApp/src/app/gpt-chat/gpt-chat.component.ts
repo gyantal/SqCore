@@ -35,7 +35,7 @@ export class ChatGptComponent {
 
     // responseType: 'text' // instead of JSON, because return text can contain NewLines, \n and JSON.Parse() will fail with "SyntaxError: Bad control character in string literal in JSON"
     // this._httpClient.post(this._chatGptUrl, body, { responseType: 'text'}).subscribe(resultText => { // if message comes not as a properly formatted JSON string
-      this._httpClient.post<ServerResponse>(this._controllerBaseUrl + 'sendUserInput', body).subscribe(result => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
+      this._httpClient.post<ServerResponse>(this._controllerBaseUrl + 'getchatresponse', body).subscribe(result => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
       // alert(result.Response);
       this._chatHistory.push("- Assistant: " + result.Response.replace("\n", "<br/>"));
     }, error => console.error(error));

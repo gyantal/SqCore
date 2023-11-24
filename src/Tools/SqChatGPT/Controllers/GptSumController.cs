@@ -92,8 +92,8 @@ public class GptSumController : ControllerBase
     }
 
     [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
-    [HttpPost("sendTickers")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
-    public IActionResult SendTickers([FromBody] UserInput p_inMsg)
+    [HttpPost("getnews")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
+    public IActionResult GetNews([FromBody] UserInput p_inMsg)
     {
         if (p_inMsg == null)
             return BadRequest("Invalid data");
@@ -105,7 +105,7 @@ public class GptSumController : ControllerBase
         List<string> logs = new();
         try
         {
-            response = GenerateTickersResponse(p_inMsg).Result;
+            response = GetTickersNews(p_inMsg.Msg).Result;
         }
         catch (System.Exception e)
         {
@@ -120,9 +120,9 @@ public class GptSumController : ControllerBase
     // https://github.com/Azure/azure-sdk-for-net/tree/main/sdk/openai/Azure.AI.OpenAI
     // dotnet add package Azure.AI.OpenAI --prerelease
     // Stream Chat Messages with non-Azure OpenAI
-    async Task<List<TickerNews>> GenerateTickersResponse(UserInput p_inMsg)
+    async Task<List<TickerNews>> GetTickersNews(string p_tickerLstStr)
     {
-        string[] tickers = p_inMsg.Msg.Split(',', StringSplitOptions.RemoveEmptyEntries);
+        string[] tickers = p_tickerLstStr.Split(',', StringSplitOptions.RemoveEmptyEntries);
         List<TickerNews> tickerNewss = new(tickers.Length);
         foreach (var ticker in tickers) // we can't do it in a batch mode by asking YF many tickers at the same time. Tested it: YF gives back only the news for the first ticker.
         {

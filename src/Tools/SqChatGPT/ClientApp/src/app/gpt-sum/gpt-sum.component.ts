@@ -56,7 +56,7 @@ export class GptSumComponent {
     const body: UserInput = { LlmModelName: this._selectedLlmModel, Msg: p_tickers };
     console.log(body);
 
-    this._httpClient.post<ServerStockNewsResponse>(this._controllerBaseUrl + 'sendTickers', body).subscribe(result => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
+    this._httpClient.post<ServerStockNewsResponse>(this._controllerBaseUrl + 'getnews', body).subscribe(result => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
       this._tickerNews = result.Response;
       console.log(this._tickerNews);
     }, error => console.error(error));

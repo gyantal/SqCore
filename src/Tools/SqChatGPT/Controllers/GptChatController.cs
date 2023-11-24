@@ -38,8 +38,8 @@ public class GptChatController : ControllerBase
     }
 
     [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
-    [HttpPost("sendUserInput")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
-    public IActionResult SendUserInput([FromBody] UserInput p_inMsg)
+    [HttpPost("getchatresponse")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
+    public IActionResult GetChatResponse([FromBody] UserInput p_inMsg)
     {
         if (p_inMsg == null)
             return BadRequest("Invalid data");
@@ -51,7 +51,7 @@ public class GptChatController : ControllerBase
         List<string> logs = new();
         try
         {
-            responseStr = GenerateResponse(p_inMsg).Result;
+            responseStr = GenerateChatResponse(p_inMsg).Result;
         }
         catch (System.Exception e)
         {
@@ -67,7 +67,7 @@ public class GptChatController : ControllerBase
     // https://github.com/Azure/azure-sdk-for-net/tree/main/sdk/openai/Azure.AI.OpenAI
     // dotnet add package Azure.AI.OpenAI --prerelease
     // Stream Chat Messages with non-Azure OpenAI
-    async Task<string> GenerateResponse(UserInput p_inMsg)
+    async Task<string> GenerateChatResponse(UserInput p_inMsg)
     {
         g_messages.Add(new ChatMessage(ChatRole.User, p_inMsg.Msg));
 
