@@ -43,6 +43,7 @@ code {
 
 .selectionDropDown:hover .listDropDown {
   display: block;
+  z-index: 1; /* using this to stackup the order*/
 }
 
 .selectionDropDown:hover .highlightInputDropDown {

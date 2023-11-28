@@ -21,11 +21,17 @@ interface StockPriceItems
   PriorClose: number;
   LastPrice: number;
   PercentChange: number;
+  [key: string]: string | number; // Adding [key: string]: string | number; to the StockPriceItems interface, this allows us to use any string as an index to access properties.
 }
 
 interface ServerStockPriceDataResponse {
   Logs: string[];
   StocksPriceResponse: StockPriceItems[];
+}
+
+interface ServerNewsResponse {
+  Logs: string[];
+  Response: TickerNews[];
 }
 
 @Component({
@@ -46,9 +52,11 @@ export class GptScanComponent {
   _selectedLlmModel: string  = 'auto';
 
   _selectedTickers: string = '';
-  _possibleTickers: string[] = ['AMZN', 'AMZN,TSLA', 'GameChanger10...', 'GameChanger20...','Nasdaq100...'];
+  _possibleTickers: string[] = ['AMZN', 'AMZN,TSLA', 'GameChanger10...', 'GameChanger20...', 'Nasdaq100...'];
   _tickerNews: TickerNews[] = [];
   _stockPrices: StockPriceItems[] = [];
+  sortColumn: string = 'PercentChange'; // default sortColumn field, pricedata is sorted initial based on the 'PercentChange'.
+  isSortingDirectionAscending: boolean = false;
 
   constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string) {
     this._httpClient = http;
@@ -59,6 +67,8 @@ export class GptScanComponent {
   sendUserInputToBackEnd(p_tickers: string): void {
     console.log(p_tickers);
     this._selectedTickers = p_tickers;
+    this._tickerNews.length = 0; // on every userinput to get the stockPriceData, we have to empty the tickerNews array.
+    this.isSortingDirectionAscending = true;
 
     let tickers = this._gTickerUniverses[p_tickers]; // get the value of the selected Ticker ex: if user selects ticker(key) as 'GameChanger10...' : it returns the value: 'ADBE,AMZN,ANET,CRM,GOOG,LLY,MSFT,NOW,NVDA,TSLA'
     if(tickers == null)
@@ -76,8 +86,27 @@ export class GptScanComponent {
     this._httpClient.post<ServerStockPriceDataResponse>(this._controllerBaseUrl + 'getstockprice', body).subscribe(result => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
       this._stockPrices = result.StocksPriceResponse;
       console.log(this._stockPrices);
+      this.onSortingClicked(this.sortColumn);
     }, error => console.error(error));
+  }
 
+  onSortingClicked(sortColumn: string) { // sort the stockprices data table
+    this._stockPrices = this._stockPrices.sort((n1: StockPriceItems, n2: StockPriceItems) => {
+      if (this.isSortingDirectionAscending)
+        return (n1[sortColumn] > n2[sortColumn]) ? 1 : ((n1[sortColumn] < n2[sortColumn]) ? -1 : 0);
+      else
+        return (n2[sortColumn] > n1[sortColumn]) ? 1 : ((n2[sortColumn] < n1[sortColumn]) ? -1 : 0);
+    });
+    this.isSortingDirectionAscending = !this.isSortingDirectionAscending;
+  }
+
+  onClickGetNews(selectedNewsTicker: string) {
+    // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
+    const body: UserInput = { LlmModelName: this._selectedLlmModel, Msg: selectedNewsTicker };
+    console.log(body);
+    this._httpClient.post<ServerNewsResponse>(this._controllerBaseUrl + 'getnews', body).subscribe(result => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
+      this._tickerNews = result.Response;
+      console.log(this._tickerNews);
+    }, error => console.error(error));
   }
 }
-

@@ -10,7 +10,6 @@ import { HomeComponent } from './home/home.component';
 import { CounterComponent } from './counter/counter.component';
 import { FetchDataComponent } from './fetch-data/fetch-data.component';
 import { ChatGptComponent } from './gpt-chat/gpt-chat.component';
-import { GptSumComponent } from './gpt-sum/gpt-sum.component';
 import { GptScanComponent } from './gpt-scan/gpt-scan.component';
 
 @NgModule({
@@ -21,7 +20,6 @@ import { GptScanComponent } from './gpt-scan/gpt-scan.component';
     CounterComponent,
     FetchDataComponent,
     ChatGptComponent,
-    GptSumComponent,
     GptScanComponent
   ],
   imports: [
@@ -33,7 +31,6 @@ import { GptScanComponent } from './gpt-scan/gpt-scan.component';
       { path: 'counter', component: CounterComponent },
       { path: 'fetch-data', component: FetchDataComponent },
       { path: 'gpt-chat', component: ChatGptComponent },
-      { path: 'gpt-sum', component: GptSumComponent },
       { path: 'gpt-scan', component: GptScanComponent }
     ])
   ],
