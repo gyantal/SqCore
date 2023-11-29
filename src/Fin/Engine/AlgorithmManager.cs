@@ -17,6 +17,7 @@ using QuantConnect.Lean.Engine.Server;
 using QuantConnect.Lean.Engine.TransactionHandlers;
 using QuantConnect.Orders;
 using QuantConnect.Packets;
+using QuantConnect.Parameters;
 using QuantConnect.Securities;
 using QuantConnect.Securities.Option;
 using QuantConnect.Securities.Volatility;
@@ -152,12 +153,26 @@ namespace QuantConnect.Lean.Engine
                 }
             }
 
+            // SqCore Change ORIGINAL:
             // Schedule a daily event for sampling at midnight every night
-            algorithm.Schedule.On("Daily Sampling", algorithm.Schedule.DateRules.EveryDay(),
-                algorithm.Schedule.TimeRules.Midnight, () =>
-                {
-                    results.Sample(algorithm.UtcTime);
-                });
+                // algorithm.Schedule.On("Daily Sampling", algorithm.Schedule.DateRules.EveryDay(),
+                //     algorithm.Schedule.TimeRules.Midnight, () =>
+                //     {
+                //         results.Sample(algorithm.UtcTime);
+                //     });
+            // SqCore Change NEW:
+            // In the main loop realtime.SetTime(timeSlice.Time); and realtime.ScanPastEvents(time); generates evests and this creates sampling days in the Result. For Saturdays, Sundays. But we don't need that in charts.
+            // Also, if SqDailyTradingAtMOC is True, we have an extra problem, that Midnight generates this events at 05:00UTC, then our daily event comes at 16:00 later, but it is not needed to aggregate the PV 2x per day.
+            if (!SqBacktestConfig.SqFastestExecution)
+            {
+                // Schedule a daily event for sampling at midnight every night
+                algorithm.Schedule.On("Daily Sampling", algorithm.Schedule.DateRules.EveryDay(),
+                    algorithm.Schedule.TimeRules.Midnight, () =>
+                    {
+                        results.Sample(algorithm.UtcTime);
+                    });
+            }
+            // SqCore Change END
 
             // *** Loop over the queues: get a data collection, then pass them all into relevent methods in the algorithm.
             Utils.Logger.Trace($"AlgorithmManager.Run(): Begin DataStream - Start: {algorithm.StartDate} Stop: {algorithm.EndDate} Time: {algorithm.Time} Warmup: {algorithm.IsWarmingUp}");

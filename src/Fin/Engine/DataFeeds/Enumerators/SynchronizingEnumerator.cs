@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using QuantConnect.Data;
+// using QuantConnect.Data.Market;
+// using QuantConnect.Parameters;
 
 namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
 {
@@ -149,9 +151,25 @@ namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
                     {
                         if (enumerator.Current != null)
                         {
+                            // if (enumerator.Current != null && ((BaseData)(object)(enumerator.Current)).EndTime > new DateTime(2020, 03, 29) && ((BaseData)(object)(enumerator.Current)).EndTime < new DateTime(2020, 04, 05))
+                            // {
+                            //     BaseData item = ((BaseData)(object)(enumerator.Current));
+                            //     SqBacktestConfig.g_quickDebugLog.Append($">Time: {item.Time}, EndTime: {item.EndTime}, Frontier: {frontier}, ");
+                            //     TradeBar tradeBar = item as TradeBar;
+                            //     if (tradeBar != null)
+                            //         SqBacktestConfig.g_quickDebugLog.Append($"TradeBar, Close: {tradeBar.Close}");
+                            //     Split split = item as Split;
+                            //     if (split != null)
+                            //         SqBacktestConfig.g_quickDebugLog.Append($"Split, Type:{split.Type} SplitFactor: {split.SplitFactor}");
+                            //     Dividend dividend = item as Dividend;
+                            //     if (dividend != null)
+                            //         SqBacktestConfig.g_quickDebugLog.Append($"Dividend, Dividend:{dividend.Distribution}");
+                                
+                            //     SqBacktestConfig.g_quickDebugLog.AppendLine();
+                            // }
                             yield return enumerator.Current;
                         }
-                        if (!enumerator.MoveNext())
+                        if (!enumerator.MoveNext()) // TryGetNextDate() is called inside this, this calls OnNewTradableDate(_tradeableDates.Current;), that creates the NEXT data
                         {
                             toRemove.Add(enumerator);
                             break;
@@ -178,6 +196,14 @@ namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
                 }
 
                 frontier = new DateTime(nextFrontierTicks);
+                // if (frontier > new DateTime(2020, 03, 29) && frontier < new DateTime(2020, 04, 05))
+                // {
+                //     SqBacktestConfig.g_quickDebugLog.AppendLine($"Frontier changed to: {frontier}");
+                //     int asd1 = 0;
+                //     if (frontier == new DateTime(2022, 08, 24, 16, 0, 0))
+                //         asd1 = 2;
+                
+                // }
                 if (frontier == DateTime.MaxValue)
                 {
                     break;

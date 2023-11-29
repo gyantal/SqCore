@@ -364,7 +364,7 @@ public static class Backtester
         // Task dualMomTask = Task.Run(() => // Task.Run() runs it immediately
         // {
         //     Console.WriteLine("Backtest: SqDualMomentum");
-        //     BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqDualMomentum", @"{""ema-fast"":10,""ema-slow"":20}");
+        //     BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqDualMomentum", "startDate=2006-01-01&endDate=now&assets=VNQ,EEM,DBC,SPY,TLT,SHY&lookback=63&noETFs=3", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
         //     Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} ({(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
         // });
 

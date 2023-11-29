@@ -398,7 +398,19 @@ namespace QuantConnect.Lean.Engine.Results
 
             //Get the resample period:
             var totalMinutes = (algorithm.EndDate - algorithm.StartDate).TotalMinutes;
-            var resampleMinutes = totalMinutes < MinimumSamplePeriod * Samples ? MinimumSamplePeriod : totalMinutes / Samples; // Space out the sampling every
+            // SqCore Change ORIGINAL:
+            // var resampleMinutes = totalMinutes < MinimumSamplePeriod * Samples ? MinimumSamplePeriod : totalMinutes / Samples; // Space out the sampling every
+            // SqCore Change NEW:
+            // Every time we sample the PV, we calculate an 'expected' _nextSample(Time), and wait until the main loop Algorithm.TimeSlice is greater than that.
+            // This is to avoid sampling PV-charts too frequently. In case of per-minute backtest, e.g.
+            // By default QC plans to have max 4,000 PV samples (or less).
+            // If we have very long (20 years=5200 trading days), but daily backtests, we need 5200 PV samplings, not 4000. So, we modify the ResamplePeriod to be 1 day - 6 seconds
+            double resampleMinutes;
+            if(SqBacktestConfig.SqFastestExecution)
+                resampleMinutes = 1439.9; // 1 day - 6 seconds in minutes
+            else
+                resampleMinutes = totalMinutes < MinimumSamplePeriod * Samples ? MinimumSamplePeriod : totalMinutes / Samples; // Space out the sampling every
+            // SqCore Change END
             ResamplePeriod = TimeSpan.FromMinutes(resampleMinutes);
             Utils.Logger.Trace("BacktestingResultHandler(): Sample Period Set: " + resampleMinutes.ToStringInvariant("00.00"));
 
@@ -715,6 +727,12 @@ namespace QuantConnect.Lean.Engine.Results
             {
             }
 
+            // SqCore Change NEW:
+            // Every time we sample the PV, we calculate an 'expected' _nextSample(Time), and wait until the main loop Algorithm.TimeSlice is greater than that.
+            // This is to avoid sampling PV-charts too frequently. In case of per-minute backtest, e.g.
+            // By default QC plans to have max 4,000 PV samples (or less).
+            // If we have very long (20 years=5200 trading days), but daily backtests, we need 5200 PV samplings, not 4000. So, we modify the ResamplePeriod to be 1 day - 6 seconds
+            // SqCore Change END
             if (time > _nextSample || forceProcess)
             {
                 //Set next sample time: 4000 samples per backtest

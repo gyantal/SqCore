@@ -5,6 +5,7 @@ using System.Collections;
 using QuantConnect.Interfaces;
 using System.Collections.Generic;
 using QuantConnect.Data.Auxiliary;
+using QuantConnect.Parameters;
 
 namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
 {
@@ -72,6 +73,10 @@ namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
         /// </summary>
         protected void NewTradableDate(object sender, NewTradableDateEventArgs eventArgs)
         {
+            // if (eventArgs.Date > new DateTime(2020, 03, 29) && eventArgs.Date < new DateTime(2020, 04, 05))
+            // {
+            //     SqBacktestConfig.g_quickDebugLog.AppendLine($"NewTradableDate: {eventArgs.Date}");
+            // }
             Initialize();
             for (var i = 0; i < _tradableDateEventProviders.Length; i++)
             {

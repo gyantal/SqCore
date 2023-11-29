@@ -396,6 +396,7 @@ public partial class Program
                 break;
             case "3":
                 Console.WriteLine("Backtest: SqSPYMonFriAtMoc");
+                System.Threading.Thread.CurrentThread.Name = "***QC Backtest (single thread)";
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", string.Empty, @"{""ema-fast"":10,""ema-slow"":20}", SqResult.QcOriginal); // For QC strategies, we use QcOriginal result calculation.
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", string.Empty, @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqDualMomentum", "startDate=2006-01-01&endDate=now&assets=VNQ,EEM,DBC,SPY,TLT,SHY&lookback=63&noETFs=3", @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);

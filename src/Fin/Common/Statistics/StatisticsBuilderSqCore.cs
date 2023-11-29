@@ -13,7 +13,10 @@ namespace QuantConnect.Statistics
         public static bool IsTradingDay(DateTime p_date)
         {
             DayOfWeek dayOfWeek = p_date.DayOfWeek;
-            return dayOfWeek != DayOfWeek.Saturday && dayOfWeek != DayOfWeek.Sunday; // not the weekend
+            if (SqBacktestConfig.SqDailyTradingAtMOC)
+                return dayOfWeek != DayOfWeek.Saturday && dayOfWeek != DayOfWeek.Sunday; // not the weekend. SqDailyTradingAtMOC works by giving PV at 16:00 on that correct day 
+            else
+                return dayOfWeek != DayOfWeek.Sunday && dayOfWeek != DayOfWeek.Monday; // not the weekend. Original QC works by giving PV data on next day 05:00, so we have to check for Sunday/Monday.
         }
 
         public static StatisticsResults Generate(
@@ -114,6 +117,10 @@ namespace QuantConnect.Statistics
                 }
                 previousValue = dailyPValue;
             }
+            histMaxDDCalLength = Math.Max(histMaxDDCalLength, (Time.UnixTimeStampToDateTime(pointsEquity[^1].x) - ddStart).Days - 1);
+            histMaxDDTradLength = Math.Max(histMaxDDTradLength, ddTradLength);
+            histMaxCalDaysBwPeaks = Math.Max(histMaxCalDaysBwPeaks, (Time.UnixTimeStampToDateTime(pointsEquity[^1].x) - ddStart).Days - 1);
+            histMaxTradDaysBwPeaks = Math.Max(histMaxTradDaysBwPeaks, ddTradLength);
 
             // Step 3. Total return and CAGR. Annual compounded returns statistic based on the final-starting capital and years.
             decimal finalCapital = previousValue;

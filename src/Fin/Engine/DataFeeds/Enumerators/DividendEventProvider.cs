@@ -4,6 +4,7 @@ using QuantConnect.Data;
 using QuantConnect.Data.Auxiliary;
 using QuantConnect.Data.Market;
 using QuantConnect.Interfaces;
+using QuantConnect.Parameters;
 
 namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
 {
@@ -66,7 +67,10 @@ namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
                     _config.SumOfDividends += baseData.Distribution;
                     _priceFactorRatio = null;
                     _referencePrice = 0;
-
+                    // if (eventArgs.Date > new DateTime(2020, 03, 29) && eventArgs.Date < new DateTime(2020, 04, 05))
+                    // {
+                    //     SqBacktestConfig.g_quickDebugLog.AppendLine($"DivOcc created. Time: {eventArgs.Date}, EndTime: {eventArgs.Date}, Dividend: {_config.SumOfDividends}, Close: {_referencePrice}");
+                    // }
                     yield return baseData;
                 }
 
@@ -77,6 +81,10 @@ namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
                 {
                     _priceFactorRatio = priceFactorRatio;
                     _referencePrice = referencePrice;
+                    // if (eventArgs.Date > new DateTime(2020, 03, 29) && eventArgs.Date < new DateTime(2020, 04, 05))
+                    // {
+                    //     SqBacktestConfig.g_quickDebugLog.AppendLine($"DivWarning created. Time: {eventArgs.Date}, EndTime: {eventArgs.Date}, FactorValue: {priceFactorRatio}, Close: {referencePrice}");
+                    // }
                 }
             }
         }

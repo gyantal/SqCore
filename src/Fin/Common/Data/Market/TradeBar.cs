@@ -6,6 +6,7 @@ using QuantConnect.Util;
 using System.Globalization;
 using static QuantConnect.StringExtensions;
 using SqCommon;
+using QuantConnect.Parameters;
 
 namespace QuantConnect.Data.Market
 {
@@ -360,7 +361,15 @@ namespace QuantConnect.Data.Market
             if (config.Resolution == Resolution.Daily || config.Resolution == Resolution.Hour)
             {
                 // hourly and daily have different time format, and can use slow, robust c# parser.
-                tradeBar.Time = stream.GetDateTime().ConvertTo(config.DataTimeZone, config.ExchangeTimeZone);
+                // SqCore Change ORIGINAL:
+                // tradeBar.Time = stream.GetDateTime().ConvertTo(config.DataTimeZone, config.ExchangeTimeZone);
+                // SqCore Change NEW:
+                
+                if (SqBacktestConfig.SqDailyTradingAtMOC)
+                    tradeBar.Time = stream.GetDateTime().AddHours(-8); // moving time from next day 00:00 to 16:00 previous day
+                else
+                    tradeBar.Time = stream.GetDateTime().ConvertTo(config.DataTimeZone, config.ExchangeTimeZone);
+                 // SqCore Change END
             }
             else
             {

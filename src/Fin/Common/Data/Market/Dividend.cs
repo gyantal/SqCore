@@ -1,5 +1,6 @@
 ﻿using System;
 using ProtoBuf;
+using QuantConnect.Parameters;
 using static QuantConnect.StringExtensions;
 
 namespace QuantConnect.Data.Market
@@ -50,7 +51,14 @@ namespace QuantConnect.Data.Market
             : this()
         {
             Symbol = symbol;
-            Time = date;
+            // SqCore Change ORIGINAL:
+            // Time = date;
+            // SqCore Change NEW:
+            if (SqBacktestConfig.SqDailyTradingAtMOC)
+                Time = date.AddHours(-8); // moving time from next day 00:00 to 16:00 previous day
+            else
+                Time = date;
+            // SqCore Change END
             Distribution = distribution;
             ReferencePrice = referencePrice;
         }

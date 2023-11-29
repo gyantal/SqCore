@@ -10,6 +10,7 @@ using QuantConnect.Data.Auxiliary;
 using QuantConnect.Data.Custom.Tiingo;
 using QuantConnect.Lean.Engine.DataFeeds.Enumerators;
 using SqCommon;
+using QuantConnect.Parameters;
 
 namespace QuantConnect.Lean.Engine.DataFeeds
 {
@@ -277,7 +278,7 @@ namespace QuantConnect.Lean.Engine.DataFeeds
                     break;
                 }
                 // keep enumerating until we find something that is within our time frame
-                while (_subscriptionFactoryEnumerator.MoveNext())
+                while (_subscriptionFactoryEnumerator.MoveNext()) // get the next TradeBar from mem cache, place it into Current.
                 {
                     var instance = _subscriptionFactoryEnumerator.Current;
                     if (instance == null)
@@ -312,11 +313,21 @@ namespace QuantConnect.Lean.Engine.DataFeeds
                     // if we move past our current 'date' then we need to do daily things, such
                     // as updating factors and symbol mapping
                     var shouldSkip = false;
+                    // SqCore Change ORIGINAL:
+                    // while (instance.Time.ConvertTo(_config.ExchangeTimeZone, _config.DataTimeZone).Date > _tradeableDates.Current)
+                    // {
+                    //     var currentTradeableDate = _tradeableDates.Current;
+                    //     if (UpdateDataEnumerator(false))
+                    // SqCore Change NEW:
+                    DateTime tradeBarFromCacheTimeDate = instance.Time.ConvertTo(_config.ExchangeTimeZone, _config.DataTimeZone).Date;
+                    if (SqBacktestConfig.SqDailyTradingAtMOC) // in QC normal behaviour instance.Time = 2022-08-22 00:00:00. In SqDailyTradingAtMOC  instance.Time = 2022-08-21 16:00:00. That is the StartTime, that is the previous day. We have to increase it by 1 day.
+                        tradeBarFromCacheTimeDate = tradeBarFromCacheTimeDate.AddDays(1);
 
-                    while (instance.Time.ConvertTo(_config.ExchangeTimeZone, _config.DataTimeZone).Date > _tradeableDates.Current)
+                    while (tradeBarFromCacheTimeDate > _tradeableDates.Current) // loop until _tradeableDates.Current is too small. Increase it until it catches up with the current (frontier) instanceTime.
                     {
                         var currentTradeableDate = _tradeableDates.Current;
-                        if (UpdateDataEnumerator(false))
+                        if (UpdateDataEnumerator(false)) //  always advance the date enumerator, the _tradeableDates.Current
+                    // SqCore Change END
                         {
                             shouldSkip = true;
                             if (_subscriptionFactoryEnumerator == null)

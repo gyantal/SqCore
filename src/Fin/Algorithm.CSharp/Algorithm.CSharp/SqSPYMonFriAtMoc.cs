@@ -82,6 +82,8 @@ namespace QuantConnect.Algorithm.CSharp
             _warmUp = TimeSpan.FromDays(200); // Wind time back 200 calendar days from start
             _endDate = DateTime.Now;
 
+            if (!SqBacktestConfig.SqDailyTradingAtMOC)
+                _startDate = _startDate.AddDays(1); // Original QC behaviour: first PV will be StartDate() -1, and it uses previous day Close prices on StartDate:00:00 morning. We don't want that. So, increase the date by 1.
             SetStartDate(_startDate);
             // SetEndDate(2021, 02, 26);
             SetEndDate(_endDate); // means Local time, not UTC. That would be DateTime.UtcNow
@@ -231,9 +233,13 @@ namespace QuantConnect.Algorithm.CSharp
 
             TradePreProcess();
 
+            if (!Securities[_symbol].Exchange.Hours.IsDateOpen(this.Time.Date)) // market holiday can happen on Monday
+                return;
+
             DateTime simulatedTimeLoc = this.Time;  // Local time,  On Daily resolution: Friday daily tradebar comes at 00:00 on Saturday (next day), On Per minute resolution: "1/2/2013 3:40:00 PM"
             if (IsTradeInSqCore)
-                simulatedTimeLoc = simulatedTimeLoc.AddHours(-8); // from 00:00 approximately go back to 16:00 prior day.
+                if (!SqBacktestConfig.SqDailyTradingAtMOC) // SqDailyTradingAtMOC sends price at 16:00, which is right. No need the change. Without it, price comes 00:00 next morning, so we adjust it back.
+                    simulatedTimeLoc = simulatedTimeLoc.AddHours(-8); // from 00:00 approximately go back to 16:00 prior day.
 
             if (simulatedTimeLoc.DayOfWeek == DayOfWeek.Monday && Portfolio[_symbol].Quantity == 0) // Buy it on Monday if we don't have it already
             {
@@ -262,6 +268,8 @@ namespace QuantConnect.Algorithm.CSharp
 
             if (simulatedTimeLoc.DayOfWeek == DayOfWeek.Friday && Portfolio[_symbol].Quantity > 0) // Sell it on Friday if we have a position
                 _lastOrderTicket = MarketOnCloseOrder(_symbol, -Portfolio[_symbol].Quantity);  // Daily Raw: Sell: FillDate: 16:00 today (why???) (on previous day close price!!)
+
+            // Log($"PV on day {simulatedTimeLoc.Date.ToString()}: ${Portfolio.TotalPortfolioValue}.");
         }
 
         void TradePreProcess()
@@ -297,7 +305,7 @@ namespace QuantConnect.Algorithm.CSharp
         // QC imagines that we have the RAW price occuring at 16:00, and Split or Dividend occured after MOC and it is applied ONTO that raw price. So, we have to apply that AdjMultiplier for the today data too. Not only for the previous history.
         // >2021-06-21 Monday (Slice.Time is Monday: 00:00, Dividend is for Sunday, but no price bar): QQQ dividend
         // 2022-06-06 Monday (Slice.Time is Monday: 00:00, Split is for Sunday, but no price bar): AMZN split
-        public override void OnData(Slice slice) // "slice.Time: 8/23/2022 12:00:00 AM" means early morning on that day, == "slice.Time: 8/23/2022 12:00:01 AM". This gives the day-before data.
+        public override void OnData(Slice slice) // "slice.Time(Local): 8/23/2022 12:00:00 AM" means early morning on that day, == "slice.Time: 8/23/2022 12:00:01 AM". This gives the day-before data. slice.UtcTime also exists.
         {
             try
             {
@@ -318,8 +326,16 @@ namespace QuantConnect.Algorithm.CSharp
                         rawClose = occuredSplit.ReferencePrice; // ReferencePrice is RAW, not adjusted. Fixing QC bug of giving SplitAdjusted bar on Split day.
                                                                 // clPrice = slice.Splits[_symbol].Price; // Price is an alias to Value. Value is this: For streams of data this is the price now, for OHLC packets this is the closing price.            
 
-                    _rawCloses.Add(new QcPrice() { ReferenceDate = slice.Time.Date.AddDays(-1), Close = (decimal)rawClose });
-                    _adjCloses.Add(new QcPrice() { ReferenceDate = slice.Time.Date.AddDays(-1), Close = (decimal)rawClose });
+                    if (SqBacktestConfig.SqDailyTradingAtMOC) // SqDailyTradingAtMOC sends price at 16:00, which is right. No need the change. Without it, price comes 00:00 next morning, so we adjust it back.
+                    {
+                        _rawCloses.Add(new QcPrice() { ReferenceDate = slice.Time.Date, Close = (decimal)rawClose });
+                        _adjCloses.Add(new QcPrice() { ReferenceDate = slice.Time.Date, Close = (decimal)rawClose });
+                    }
+                    else
+                    {
+                        _rawCloses.Add(new QcPrice() { ReferenceDate = slice.Time.Date.AddDays(-1), Close = (decimal)rawClose });
+                        _adjCloses.Add(new QcPrice() { ReferenceDate = slice.Time.Date.AddDays(-1), Close = (decimal)rawClose });
+                    }
                 }
 
                 // string lastRaw2 = string.Join(",", _rawCloses.TakeLast(4).Select(r => r.QuoteTime.ToString() + ":" + r.Close.ToString())); // "8/24/2022 12:00:00 AM:889.3600,8/25/2022 12:00:00 AM:891.29,8/26/2022 12:00:00 AM:296.0700"
@@ -328,7 +344,11 @@ namespace QuantConnect.Algorithm.CSharp
                 if (slice.Dividends.ContainsKey(_symbol))
                 {
                     var dividend = slice.Dividends[_symbol];
-                    _dividends.Add(new QcDividend() { ReferenceDate = slice.Time.Date.AddDays(-1), Dividend = dividend });
+                    if (SqBacktestConfig.SqDailyTradingAtMOC) // SqDailyTradingAtMOC sends price at 16:00, which is right. No need the change. Without it, price comes 00:00 next morning, so we adjust it back.
+                        _dividends.Add(new QcDividend() { ReferenceDate = slice.Time.Date, Dividend = dividend });
+                    else
+                        _dividends.Add(new QcDividend() { ReferenceDate = slice.Time.Date.AddDays(-1), Dividend = dividend });
+
                     decimal divAdjMultiplicator = 1 - dividend.Distribution / dividend.ReferencePrice;
                     for (int i = 0; i < _adjCloses.Count; i++)
                     {
@@ -338,7 +358,11 @@ namespace QuantConnect.Algorithm.CSharp
 
                 if (occuredSplit != null)  // Split.SplitOccurred comes on the correct day with slice.Time: 8/25/2022 12:00:00
                 {
-                    _splits.Add(new QcSplit() { ReferenceDate = slice.Time.Date.AddDays(-1), Split = occuredSplit });
+                    if (SqBacktestConfig.SqDailyTradingAtMOC) // SqDailyTradingAtMOC sends price at 16:00, which is right. No need the change. Without it, price comes 00:00 next morning, so we adjust it back.
+                        _splits.Add(new QcSplit() { ReferenceDate = slice.Time.Date, Split = occuredSplit });
+                    else
+                        _splits.Add(new QcSplit() { ReferenceDate = slice.Time.Date.AddDays(-1), Split = occuredSplit });
+
                     decimal refPrice = occuredSplit.ReferencePrice;    // Contains RAW price (before Split adjustment). Not used here.
                     decimal splitAdjMultiplicator = occuredSplit.SplitFactor;
                     for (int i = 0; i < _adjCloses.Count; i++)  // Not-chosen option: if we 'have to' use QC bug 'wrongly-adjusted' rawClose, we can skip the last item. In that case we don't apply the split adjustment to the last item, which is the same day as the day of Split.

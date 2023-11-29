@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 
 namespace QuantConnect.Parameters
 {
@@ -13,6 +14,8 @@ namespace QuantConnect.Parameters
     public class SqBacktestConfig
     {
         public static bool SqFastestExecution { get; set; } = true; // global variable is fine. Cannot be changed on per strategy level, but being global it can be accessed anywhere from the code
+        public static bool SqDailyTradingAtMOC { get; set; } = true; // True: we try to push daily data and trade at 16:00ET. False: QC original: daily data is pushed and trade at 00:00 next day
+        public static StringBuilder g_quickDebugLog { get; set; } = new StringBuilder(); // helper for Debugging hard problems
         public bool DoUseIbFeeModelForEquities { get; set; } = false;
         public SqResult SqResult { get; set; } = SqResult.QcOriginal; // Lightweight result calculation, only what SqCore needs, and additional stat numbers that QC doesn't calculate
         public bool DoPeriodicPartialResultsUpdateToCaller { get; set; } = false;

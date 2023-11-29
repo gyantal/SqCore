@@ -4,6 +4,7 @@ using QuantConnect.Data;
 using QuantConnect.Data.Auxiliary;
 using QuantConnect.Data.Market;
 using QuantConnect.Interfaces;
+using QuantConnect.Parameters;
 
 namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
 {
@@ -49,6 +50,47 @@ namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
                 && _factorFile != null
                 && _mapFile.HasData(eventArgs.Date))
             {
+                // SqCore Change ORIGINAL:
+                // var factor = _splitFactor;
+                // if (factor != null)
+                // {
+                //     var close = _referencePrice;
+                //     if (close == 0)
+                //     {
+                //         throw new InvalidOperationException($"Zero reference price for {_config.Symbol} split at {eventArgs.Date}");
+                //     }
+
+                //     _splitFactor = null;
+                //     _referencePrice = 0;
+                //     yield return new Split(
+                //         eventArgs.Symbol,
+                //         eventArgs.Date,
+                //         close,
+                //         factor.Value,
+                //         SplitType.SplitOccurred);
+                // }
+
+                // decimal splitFactor;
+                // decimal referencePrice;
+                // if (_factorFile.HasSplitEventOnNextTradingDay(eventArgs.Date, out splitFactor, out referencePrice))
+                // {
+                //     _splitFactor = splitFactor;
+                //     _referencePrice = referencePrice;
+                //     yield return new Split(
+                //         eventArgs.Symbol,
+                //         eventArgs.Date,
+                //         eventArgs.LastRawPrice ?? 0,
+                //         splitFactor,
+                //         SplitType.Warning);
+                // }
+                // SqCore Change NEW:
+                // eventArgs.Date comes from ((SubscriptionDataReader)enumerator)._tradeableDates.Current. That is the startTime of that tradeable date. So, we 
+                DateTime splitDate;
+                if (SqBacktestConfig.SqDailyTradingAtMOC)
+                    splitDate = eventArgs.Date.AddHours(-8);
+                else
+                    splitDate = eventArgs.Date;
+
                 var factor = _splitFactor;
                 if (factor != null)
                 {
@@ -60,9 +102,13 @@ namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
 
                     _splitFactor = null;
                     _referencePrice = 0;
+                    // if (eventArgs.Date > new DateTime(2022, 08, 22) && eventArgs.Date < new DateTime(2022, 08, 30))
+                    // {
+                    //     SqBacktestConfig.g_quickDebugLog.AppendLine($"SplitOccured created. Time: {splitDate}, EndTime: {splitDate}, FactorValue: {factor.Value}, Close: {close}");
+                    // }
                     yield return new Split(
                         eventArgs.Symbol,
-                        eventArgs.Date,
+                        splitDate,
                         close,
                         factor.Value,
                         SplitType.SplitOccurred);
@@ -74,13 +120,18 @@ namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
                 {
                     _splitFactor = splitFactor;
                     _referencePrice = referencePrice;
+                    // if (eventArgs.Date > new DateTime(2022, 08, 22) && eventArgs.Date < new DateTime(2022, 08, 30))
+                    // {
+                    //     SqBacktestConfig.g_quickDebugLog.AppendLine($"SplitWarning created. Time: {splitDate}, EndTime: {splitDate}, FactorValue: {splitFactor}, Close: {eventArgs.LastRawPrice}");
+                    // }
                     yield return new Split(
                         eventArgs.Symbol,
-                        eventArgs.Date,
+                        splitDate,
                         eventArgs.LastRawPrice ?? 0,
                         splitFactor,
                         SplitType.Warning);
                 }
+                // SqCore Change END
             }
         }
     }
