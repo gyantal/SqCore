@@ -8,6 +8,7 @@ interface NewsItem {
   Link: string;
   Guid: string;
   PubDate: string;
+  NewsSummary: string;
 }
 
 interface TickerNews {
@@ -15,7 +16,7 @@ interface TickerNews {
   NewsItems: NewsItem[];
 }
 
-interface StockPriceItems
+interface StockPriceItem
 {
   Ticker: string;
   PriorClose: number;
@@ -26,7 +27,7 @@ interface StockPriceItems
 
 interface ServerStockPriceDataResponse {
   Logs: string[];
-  StocksPriceResponse: StockPriceItems[];
+  StocksPriceResponse: StockPriceItem[];
 }
 
 interface ServerNewsResponse {
@@ -54,7 +55,7 @@ export class GptScanComponent {
   _selectedTickers: string = '';
   _possibleTickers: string[] = ['AMZN', 'AMZN,TSLA', 'GameChanger10...', 'GameChanger20...', 'Nasdaq100...'];
   _tickerNews: TickerNews[] = [];
-  _stockPrices: StockPriceItems[] = [];
+  _stockPrices: StockPriceItem[] = [];
   sortColumn: string = 'PercentChange'; // default sortColumn field, pricedata is sorted initial based on the 'PercentChange'.
   isSortingDirectionAscending: boolean = false;
 
@@ -91,7 +92,7 @@ export class GptScanComponent {
   }
 
   onSortingClicked(sortColumn: string) { // sort the stockprices data table
-    this._stockPrices = this._stockPrices.sort((n1: StockPriceItems, n2: StockPriceItems) => {
+    this._stockPrices = this._stockPrices.sort((n1: StockPriceItem, n2: StockPriceItem) => {
       if (this.isSortingDirectionAscending)
         return (n1[sortColumn] > n2[sortColumn]) ? 1 : ((n1[sortColumn] < n2[sortColumn]) ? -1 : 0);
       else
@@ -108,5 +109,23 @@ export class GptScanComponent {
       this._tickerNews = result.Response;
       console.log(this._tickerNews);
     }, error => console.error(error));
+  }
+
+  getNewsAndSummarize(newsItem: NewsItem) {
+    console.log('link for summarizing the news', newsItem.Link);
+    // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
+    const body: UserInput = { LlmModelName: this._selectedLlmModel, Msg: newsItem.Link };
+    console.log(body);
+
+    this._httpClient.post<string>(this._controllerBaseUrl + 'summarizenews', body).subscribe(result => {
+      for (const nwsItem of this._tickerNews) {
+        for (const item of nwsItem.NewsItems) {
+          if (item.Guid == newsItem.Guid) {
+            item.NewsSummary = result;
+            break;
+          }
+        }
+      }
+    }, error => console.error(error))
   }
 }

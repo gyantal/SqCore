@@ -33,7 +33,6 @@ code {
 
 .listDropDown option {
   color: black;
-  padding: 0.25rem 0.25rem;
   display: block;
 }
 
@@ -53,4 +52,5 @@ code {
 .optionDropDown {
   border: 0.1rem solid lightblue;
   cursor: pointer;
+  height: 1.8rem;
 }

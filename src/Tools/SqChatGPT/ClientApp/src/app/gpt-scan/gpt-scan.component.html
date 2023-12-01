@@ -37,7 +37,7 @@ Type your ticker list here and click to send it to C# backend.
               'positivePerf' : item.PercentChange > 0,
               'negativePerf' : item.PercentChange < 0
            }">{{item.PercentChange | number:'1.2-2'}}%</td>
-           <td><button (click)="onClickGetNews(item.Ticker)">GetNews</button></td>
+           <td><button id="getNewsBtn" (click)="onClickGetNews(item.Ticker)">GetNews</button></td>
       </tr>
     </tbody>
   </table>
@@ -52,12 +52,12 @@ Type your ticker list here and click to send it to C# backend.
         <span>{{ item.Description }}</span><br>
         <a href="{{ item.Link }}" target="_blank">Read more...</a>&nbsp;&nbsp;
         <small>Published on: {{ item.PubDate }}</small>&nbsp;
-        <button disabled>Download Full news and summarize</button>
+        <button id="summarizeNewsBtn" (click)="getNewsAndSummarize(item)">Download Full news and summarize</button>
+        <div id="newsSummary" *ngIf="item.NewsSummary != null">GPT-summary: {{item.NewsSummary}}</div>
       </li>
     </ul>
   </div>
 </div>
-
 <ng-template #noData>
-  <p>No news items available.</p>
+  <p>No news items. Click the GetNews button.</p>
 </ng-template>

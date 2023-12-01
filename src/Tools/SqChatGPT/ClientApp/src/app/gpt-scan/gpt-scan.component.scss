@@ -29,8 +29,7 @@ tr:nth-child(even) {
 }
 
 .stockPriceDataTbl {
-  margin-left: auto;
-  margin-right: auto;
+  margin-top: 0.5rem;
 }
 
 .positivePerf {
@@ -46,4 +45,18 @@ tr:nth-child(even) {
 .ActiveSortTableHeader {
   background-color: #FFAE42;
   font-size: 1.7rem;
+}
+
+#getNewsBtn {
+  border-radius: 0.2rem;
+  padding: 0.05rem 0.05rem 0.05rem 0.05rem;
+}
+
+#summarizeNewsBtn {
+  border-radius: 0.2rem;
+}
+
+#newsSummary {
+  background-color: rgb(247, 247, 132);
+  font-style: italic;
 }

@@ -350,4 +350,18 @@ public class GptScanController : ControllerBase
 
         return rss;
     }
+
+    [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
+    [HttpPost("summarizenews")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
+    public IActionResult GetNewsAndSummarize([FromBody] UserInput p_inMsg)
+    {
+        if (p_inMsg == null)
+            return BadRequest("Invalid data");
+
+        Console.WriteLine(p_inMsg.Msg);
+        // Sending the dummy sentence...
+        string newsStr = " Dummy sentence.. Lorem ipsum dolor sit amet consectetur adipisicing elit. Aliquam illum nemo ullam, fugiat odio delectus doloremque temporibus pariatur rem sed a culpa, rerum iure est in molestias dolore aperiam quibusdam. \n  Lorem ipsum, dolor sit amet consectetur adipisicing elit. Tempora saepe itaque optio ipsam, rerum aut a aperiam totam earum quibusdam recusandae, impedit, sed cumque provident modi soluta? Consectetur, vero quod. Lorem ipsum dolor, sit amet consectetur adipisicing elit. Sapiente qui nisi consectetur, aliquid eum consequatur reprehenderit adipisci asperiores expedita molestiae hic animi officiis labore quis ea mollitia praesentium, temporibus quasi!  Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quae aspernatur suscipit eos quasi similique provident temporibus accusamus, laudantium perferendis illum excepturi voluptatibus at, cum repellat quia odit molestiae rerum nihil. Lorem ipsum, dolor sit amet consectetur adipisicing elit. Ut reprehenderit maiores pariatur? Nulla, quibusdam debitis voluptatem a incidunt, reiciendis culpa ex assumenda, nostrum quia quae perspiciatis atque. Nesciunt, quibusdam repudiandae.";
+        string responseJson = JsonSerializer.Serialize(newsStr); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
+        return Ok(responseJson);
+    }
 }
