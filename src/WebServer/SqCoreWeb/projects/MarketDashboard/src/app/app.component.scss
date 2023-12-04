@@ -328,7 +328,7 @@ p {
 }
 
 .toolbar .sqDiagnostics {
- margin-right: 10rem;
+  margin-right: 10rem;
 }
 
 #userEmailSpan {
@@ -412,4 +412,24 @@ svg.material-icons2 path {
 .dshbrdDialogButtons {
   display: inline-block;
   width: 22%;
+}
+
+/* Media query for smaller screens */
+@media screen and (max-width: 767px) {
+  .toolbar {
+    height: auto;
+    background-size: cover;
+  }
+
+  .toolbar .menu_right {
+    margin-right: auto;
+  }
+
+  .toolbar .sqDiagnostics {
+    margin-right: 0;
+  }
+
+  #userEmailSpan { // in our case the emialId is long ex: dayakar.kodirekka@gmail.com is going out of focus and we have white-space on the right side of the screen for smaller screen. so we used word-wrap: break-word;;
+    word-wrap: break-word; // to allow long words to break and wrap onto the next line. The default is word-wrap: normal - "Break words only at allowed break points" whereas word-wrap: break-word - "Allows unbreakable words to be broken".
+  }
 }

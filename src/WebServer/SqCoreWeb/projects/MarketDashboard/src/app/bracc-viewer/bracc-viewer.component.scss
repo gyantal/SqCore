@@ -169,19 +169,6 @@
   border-right: none;
 }
 
-
-@media screen and (max-width: 767px) {
-  /* Styles for smaller screens */
-  .ChartSumm, .moreDetailsPartitionsPrNav, .moreDetailsPartitions {
-    width: 100%;
-    border-right: none;
-  }
-
-  .moreDetailsPartitionsPrNav, .moreDetailsPartitions {
-    border-bottom: 0.005rem solid #0000ff;
-  }
-}
-
 // tooltip maxRisked ngClass
 .red {
   color: #FF0000;
@@ -232,6 +219,19 @@
   width: 10.8rem;
 }
 
+@media screen and (max-width: 767px) {
+  /* Styles for smaller screens */
+  .AccSumm, .ChartSumm, .moreDetailsPartitionsPrNav, .moreDetailsPartitions {
+    width: 100%;
+    border-right: none;
+    min-height: auto ;
+  }
+
+  .moreDetailsPartitionsPrNav, .moreDetailsPartitions {
+    border-bottom: 0.005rem solid #0000ff;
+  }
+}
+
 #filtering {
   position: relative;
   left: 28.5%; /* Adjust the left position for wider screens */
@@ -240,8 +240,7 @@
 /* Apply media query for screens with a maximum width of 767 pixels */
 @media screen and (max-width: 767px) {
   #filtering {
-    left: auto;
-    text-align: center; /* Center the content on smaller screens */
+    position: static; // As we used position relative and left properities for wider screen size we are postioning back to its default value static. An element with position: static; is not positioned in any special way; it is always positioned according to the normal flow of the page
   }
 }
 

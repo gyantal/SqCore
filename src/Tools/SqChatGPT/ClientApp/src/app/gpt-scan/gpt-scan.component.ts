@@ -54,7 +54,7 @@ export class GptScanComponent {
 
   _selectedTickers: string = '';
   _possibleTickers: string[] = ['AMZN', 'AMZN,TSLA', 'GameChanger10...', 'GameChanger20...', 'Nasdaq100...'];
-  _tickerNews: TickerNews[] = [];
+  _tickerNewss: TickerNews[] = [];
   _stockPrices: StockPriceItem[] = [];
   sortColumn: string = 'PercentChange'; // default sortColumn field, pricedata is sorted initial based on the 'PercentChange'.
   isSortingDirectionAscending: boolean = false;
@@ -68,7 +68,7 @@ export class GptScanComponent {
   sendUserInputToBackEnd(p_tickers: string): void {
     console.log(p_tickers);
     this._selectedTickers = p_tickers;
-    this._tickerNews.length = 0; // on every userinput to get the stockPriceData, we have to empty the tickerNews array.
+    this._tickerNewss.length = 0; // on every userinput to get the stockPriceData, we have to empty the tickerNews array.
     this.isSortingDirectionAscending = true;
 
     let tickers = this._gTickerUniverses[p_tickers]; // get the value of the selected Ticker ex: if user selects ticker(key) as 'GameChanger10...' : it returns the value: 'ADBE,AMZN,ANET,CRM,GOOG,LLY,MSFT,NOW,NVDA,TSLA'
@@ -106,8 +106,8 @@ export class GptScanComponent {
     const body: UserInput = { LlmModelName: this._selectedLlmModel, Msg: selectedNewsTicker };
     console.log(body);
     this._httpClient.post<ServerNewsResponse>(this._controllerBaseUrl + 'getnews', body).subscribe(result => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
-      this._tickerNews = result.Response;
-      console.log(this._tickerNews);
+      this._tickerNewss = result.Response;
+      console.log(this._tickerNewss);
     }, error => console.error(error));
   }
 
@@ -118,14 +118,7 @@ export class GptScanComponent {
     console.log(body);
 
     this._httpClient.post<string>(this._controllerBaseUrl + 'summarizenews', body).subscribe(result => {
-      for (const nwsItem of this._tickerNews) {
-        for (const item of nwsItem.NewsItems) {
-          if (item.Guid == newsItem.Guid) {
-            item.NewsSummary = result;
-            break;
-          }
-        }
-      }
+      newsItem.NewsSummary = result;
     }, error => console.error(error))
   }
 }
