@@ -46,6 +46,7 @@ namespace YahooFinanceApi
 
                 var response = await "https://fc.yahoo.com"
                     .AllowHttpStatus("404")
+                    .AllowHttpStatus("502") // 2023-12-05: fc.yahoo.com returns 502, instead 404 (that it returned before). Even though it fails, it gives back the _cookie as "A3", and it can be used to get the crumb. See more: https://stackoverflow.com/questions/76065035/yahoo-finance-v7-api-now-requiring-cookies-python
                     .WithHeader(userAgentKey, userAgentValue)
                     .GetAsync()
                     .ConfigureAwait(false);
