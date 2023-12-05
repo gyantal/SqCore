@@ -22,10 +22,10 @@ namespace QuantConnect.Parameters
         public bool DoGenerateLog { get; set; } = false;
         public bool DoSaveResultsFiles { get; set; } = false; // enable these for Debugging only, but not in Release, because 110KB file creation is slow
 
-        public float SqInitialDeposit { get; set; }
-        public DateTime SqStartDate { get; set; } = DateTime.MinValue;
-        public DateTime SqEndDate { get; set; } = DateTime.MinValue;
+        // public float SqInitialDeposit { get; set; }
+        // public DateTime SqStartDate { get; set; } = DateTime.MinValue;
+        // public DateTime SqEndDate { get; set; } = DateTime.MinValue;
 
-        public string SqStrategyParams { get; set; } = string.Empty;
+        // public string SqStrategyParams { get; set; } = string.Empty;
     }
 }
