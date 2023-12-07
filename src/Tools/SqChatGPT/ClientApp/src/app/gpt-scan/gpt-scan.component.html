@@ -11,7 +11,7 @@ LLM-ModelName:
 Type your ticker list here and click to send it to C# backend.
 <br>Get Price Info on tickers:
 <span class="selectionDropDown">
-  <input class="highlightInputDropDown" #tickers list="tickersDataLst" name="tickers" [(ngModel)]="_selectedTickers" placeholder="select the ticker"/>
+  <input class="highlightInputDropDown" #tickers list="tickersDataLst" name="tickers" [(ngModel)]="_selectedTickers" oninput="this.value = this.value.toUpperCase()" (change)="sendUserInputToBackEnd(_selectedTickers)" placeholder="select the ticker"/>
   <span class="listDropDown" id="tickersDataLst">
     <option class="optionDropDown" *ngFor="let tickers of _possibleTickers" name="tickers" [value]="tickers" (click)="sendUserInputToBackEnd(tickers)">{{tickers}}</option>
   </span>
@@ -53,7 +53,7 @@ Type your ticker list here and click to send it to C# backend.
         <a href="{{ item.Link }}" target="_blank">Read more...</a>&nbsp;&nbsp;
         <small>Published on: {{ item.PubDate }}</small>&nbsp;
         <button id="summarizeNewsBtn" (click)="getNewsAndSummarize(item)">Download Full news and summarize</button>
-        <div id="newsSummary" *ngIf="item.NewsSummary != null">GPT-summary: {{item.NewsSummary}}</div>
+        <div id="newsSummary" *ngIf="item.NewsSummary != null">GPT-summary: <span [innerHTML]="item.NewsSummary"></span></div>
       </li>
     </ul>
   </div>

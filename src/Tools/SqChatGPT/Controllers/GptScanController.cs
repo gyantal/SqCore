@@ -5,6 +5,8 @@ using System.Text.Json;
 using SqCommon;
 using System.Xml;
 using YahooFinanceApi;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace SqChatGPT.Controllers;
 
@@ -214,8 +216,8 @@ public class GptScanController : ControllerBase
         return tickerNewss;
     }
 
-    // XmlReader is the fastest way to walk-forward an XML. A general reader of strings. A walk-forward one-way. 
-    // XmlDocument is the slowest, because it keeps everything in RAM. 
+    // XmlReader is the fastest way to walk-forward an XML. A general reader of strings. A walk-forward one-way.
+    // XmlDocument is the slowest, because it keeps everything in RAM.
     // XmlSerializer<MyClass> suffers from long initial cost (30-70ms), because at first run it creates a virtual DLL with the generated classes for that MyClass
     public Rss ParseXMLString(string xmlString)
     {
@@ -351,17 +353,95 @@ public class GptScanController : ControllerBase
         return rss;
     }
 
+    // [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
+    // [HttpPost("summarizenews")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
+    // public IActionResult GetNewsAndSummarize([FromBody] UserInput p_inMsg)
+    // {
+    //     if (p_inMsg == null)
+    //         return BadRequest("Invalid data");
+
+    //     Console.WriteLine(p_inMsg.Msg);
+    //     // Sending the dummy sentence...
+    //     string newsStr = " Dummy sentence.. Lorem ipsum dolor sit amet consectetur adipisicing elit. Aliquam illum nemo ullam, fugiat odio delectus doloremque temporibus pariatur rem sed a culpa, rerum iure est in molestias dolore aperiam quibusdam. \n  Lorem ipsum, dolor sit amet consectetur adipisicing elit. Tempora saepe itaque optio ipsam, rerum aut a aperiam totam earum quibusdam recusandae, impedit, sed cumque provident modi soluta? Consectetur, vero quod. Lorem ipsum dolor, sit amet consectetur adipisicing elit. Sapiente qui nisi consectetur, aliquid eum consequatur reprehenderit adipisci asperiores expedita molestiae hic animi officiis labore quis ea mollitia praesentium, temporibus quasi!  Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quae aspernatur suscipit eos quasi similique provident temporibus accusamus, laudantium perferendis illum excepturi voluptatibus at, cum repellat quia odit molestiae rerum nihil. Lorem ipsum, dolor sit amet consectetur adipisicing elit. Ut reprehenderit maiores pariatur? Nulla, quibusdam debitis voluptatem a incidunt, reiciendis culpa ex assumenda, nostrum quia quae perspiciatis atque. Nesciunt, quibusdam repudiandae.";
+    //     string responseJson = JsonSerializer.Serialize(newsStr); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
+    //     return Ok(responseJson);
+    // }
+
     [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
     [HttpPost("summarizenews")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
-    public IActionResult GetNewsAndSummarize([FromBody] UserInput p_inMsg)
+    public async Task<IActionResult> GetNewsAndSummarize([FromBody] UserInput p_inMsg)
     {
         if (p_inMsg == null)
             return BadRequest("Invalid data");
 
-        Console.WriteLine(p_inMsg.Msg);
-        // Sending the dummy sentence...
-        string newsStr = " Dummy sentence.. Lorem ipsum dolor sit amet consectetur adipisicing elit. Aliquam illum nemo ullam, fugiat odio delectus doloremque temporibus pariatur rem sed a culpa, rerum iure est in molestias dolore aperiam quibusdam. \n  Lorem ipsum, dolor sit amet consectetur adipisicing elit. Tempora saepe itaque optio ipsam, rerum aut a aperiam totam earum quibusdam recusandae, impedit, sed cumque provident modi soluta? Consectetur, vero quod. Lorem ipsum dolor, sit amet consectetur adipisicing elit. Sapiente qui nisi consectetur, aliquid eum consequatur reprehenderit adipisci asperiores expedita molestiae hic animi officiis labore quis ea mollitia praesentium, temporibus quasi!  Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quae aspernatur suscipit eos quasi similique provident temporibus accusamus, laudantium perferendis illum excepturi voluptatibus at, cum repellat quia odit molestiae rerum nihil. Lorem ipsum, dolor sit amet consectetur adipisicing elit. Ut reprehenderit maiores pariatur? Nulla, quibusdam debitis voluptatem a incidunt, reiciendis culpa ex assumenda, nostrum quia quae perspiciatis atque. Nesciunt, quibusdam repudiandae.";
+        string newsStr = await DownloadCompleteNews(p_inMsg.Msg);
+        Console.WriteLine($"link {newsStr}");
         string responseJson = JsonSerializer.Serialize(newsStr); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
         return Ok(responseJson);
+    }
+
+    public async Task<string> DownloadCompleteNews(string NewsUrlLink)
+    {
+        string responseStr;
+        string xmlContent = await g_httpClient.GetStringAsync(NewsUrlLink);
+        if (xmlContent.Contains("Continue reading"))
+            responseStr = $"The full news isn't accessible on Yahoo Finance. I recommend visiting this <a href={NewsUrlLink}>link</a> to directly retrieve the summary from ChatGPT.";
+        else
+            responseStr = ProcessHtmlContent(xmlContent);
+        return responseStr;
+    }
+
+    static string ProcessHtmlContent(string html)
+    {
+        // Option1: Hard coded method which might not work for all the cases, we need to keep on adding the regular expressions updating for each link.
+        int divWithCaasbodyStartPos = html.IndexOf("caas-body>") + "caas-body>".Length;
+        int divWithCaasbodyEndPos = html.IndexOf("</p></div>");
+        string parasWithTags = html[divWithCaasbodyStartPos..divWithCaasbodyEndPos];
+        string responseStr = Regex.Replace(parasWithTags, "<.*?>|<a[^>]*>(.*?)</a>", string.Empty); // Cleaning the tags
+
+        // // Option2: Using xmlReader
+        // XmlReaderSettings settings = new() // System.Xml.XmlException: For security reasons DTD is prohibited in this XML document. To enable DTD processing set the DtdProcessing property on XmlReaderSettings to Parse and pass the settings into XmlReader.
+        // {
+        //     DtdProcessing = DtdProcessing.Parse,
+        //     IgnoreWhitespace = true
+        // };
+        // using (StringReader stringReader = new StringReader(html))
+        // using (XmlReader reader = XmlReader.Create(stringReader, settings))
+        // {
+        //     while (reader.Read()) // System.Xml.XmlException: 'doctype' is an unexpected token. The expected token is 'DOCTYPE'. Line 1, position 3. please read the following link https://stackoverflow.com/questions/32572928/parsing-an-html-document-using-an-xml-parser
+        //     {
+        //         if (reader.NodeType == XmlNodeType.Element && reader.Name == "div" && reader.GetAttribute("class") == "caas-body")
+        //         {
+        //             responseStr = reader.ReadInnerXml();
+        //             break;
+        //         }
+        //     }
+        // }
+
+        // // Option3: Using XmlDocument
+        // XmlDocument doc = new XmlDocument();
+        // doc.Load(html); // An unhandled exception has occurred while executing the request. System.UriFormatException: Invalid URI: The Uri string is too long.
+        // StringBuilder responseStrBldr = new();
+        // // Access and modify XML nodes
+        // // Define the XPath expression to select the div with class="caas-body"
+        // string xpathExpression = "//div[@class='caas-body']";
+
+        // // Select the matching elements
+        // XmlNodeList? nodes = doc.SelectNodes(xpathExpression);
+
+        // // Check if nodes is null before processing
+        // if (nodes != null)
+        // {
+        //     // Process the selected nodes
+        //     foreach (XmlNode node in nodes)
+        //     {
+        //         responseStrBldr.Append(node.OuterXml);
+        //     }
+        // }
+        // else
+        // {
+        //     Console.WriteLine("No matching nodes found.");
+        // }
+        return responseStr;
     }
 }
