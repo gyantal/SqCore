@@ -233,15 +233,8 @@
 }
 
 #filtering {
-  position: relative;
-  left: 28.5%; /* Adjust the left position for wider screens */
-}
-
-/* Apply media query for screens with a maximum width of 767 pixels */
-@media screen and (max-width: 767px) {
-  #filtering {
-    position: static; // As we used position relative and left properities for wider screen size we are postioning back to its default value static. An element with position: static; is not positioned in any special way; it is always positioned according to the normal flow of the page
-  }
+  display: flex; // This makes the filtering container (ex: The span containting all the AssetCategory, HideSmallMktVal, HideSmallPLt & HideOptions) flexible against the default display value of block.
+  justify-content: center; // This centers the child items of the flex container.
 }
 
 // Table stylings

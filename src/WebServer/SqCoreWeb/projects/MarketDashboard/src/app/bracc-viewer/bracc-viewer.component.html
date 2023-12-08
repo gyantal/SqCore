@@ -218,9 +218,11 @@ MarketBar
       </span>
     </span>
   </span>
-  <input type="checkbox" [checked]="isFilteringBasedonMktVal" (click)="onSnapTableSmallMktValClicked()">HideSmallMktVal
-  <input type="checkbox" [checked]="isFilteringBasedonPlDaily" (click)="onSnapTableSmallPlDailyClicked()">HideSmallPLt
-  <input type="checkbox" [checked]="isFilteringBasedonOptions" (click)="onSnapTableOptionsClicked()">HideOptions
+  <span>
+    <input type="checkbox" [checked]="isFilteringBasedonMktVal" (click)="onSnapTableSmallMktValClicked()">HideSmallMktVal
+    <input type="checkbox" [checked]="isFilteringBasedonPlDaily" (click)="onSnapTableSmallPlDailyClicked()">HideSmallPLt
+    <input type="checkbox" [checked]="isFilteringBasedonOptions" (click)="onSnapTableOptionsClicked()">HideOptions
+  </span>
 </span>
 <div class="brAccSnapTbl">
 <table class="selectedBrcAccSnapShotTbl">
