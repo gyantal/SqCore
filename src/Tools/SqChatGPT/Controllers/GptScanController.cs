@@ -375,8 +375,16 @@ public class GptScanController : ControllerBase
             return BadRequest("Invalid data");
 
         string newsStr = await DownloadCompleteNews(p_inMsg.Msg);
-        Console.WriteLine($"link {newsStr}");
-        string responseJson = JsonSerializer.Serialize(newsStr); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
+        string responseStr;
+        if (!newsStr.Contains("recommend visiting")) // checking for the condition if newsStr has the complete story or it is directing to another link
+        {
+            p_inMsg.Msg = "Please summarize the below news and also remove if there are any html tags and unnecessary punctuation marks \n" + newsStr;
+            responseStr = await GenerateChatResponse(p_inMsg);
+        }
+        else
+            responseStr = newsStr;
+        Console.WriteLine($"link {responseStr}");
+        string responseJson = JsonSerializer.Serialize(responseStr); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
         return Ok(responseJson);
     }
 
@@ -443,5 +451,37 @@ public class GptScanController : ControllerBase
         //     Console.WriteLine("No matching nodes found.");
         // }
         return responseStr;
+    }
+
+    static async Task<string> GenerateChatResponse(UserInput p_inMsg)
+    {
+         g_messages.Add(new ChatMessage(ChatRole.User, p_inMsg.Msg));
+
+        // >To check whether you use GPT 3.5 or 4 use this prompt: "If there are 10 books in a room and I read 2, how many books are still in the room"
+        string llmModelName = p_inMsg.LlmModelName; // "auto", "gpt-3.5-turbo" (4K), "gpt-3.5-turbo-16k", "gpt-4" (8K), "gpt-4-32k"
+        if (llmModelName == "auto")
+        {
+            // GPT-4 base(8K) is 50x more expensive than GPT-3.5-turbo(4K)
+            // In theory we should estimate the number of tokens based on previous messages in g_messages
+            // Cost efficiently, under 4K: gpt-3.5-turbo, between 4K and 16K: gpt-3.5-turbo-16k, over 16K: gpt-4
+            llmModelName = "gpt-3.5-turbo";
+        }
+
+        if (llmModelName != "gpt-3.5-turbo" && llmModelName != "gpt-3.5-turbo-16k" && llmModelName != "gpt-4" && llmModelName != "gpt-4-32k")
+            throw new System.Exception("Invalid AI model name");
+
+        var chatCompletionsOptions = new ChatCompletionsOptions(new List<ChatMessage>
+        {
+            new ChatMessage
+            {
+                Role = "user",
+                Content = p_inMsg.Msg,
+            },
+        });
+
+        Response<ChatCompletions> response = await g_openAiClient!.GetChatCompletionsAsync(deploymentOrModelName: llmModelName, chatCompletionsOptions);
+        ChatCompletions chatCompletion = response.Value;
+
+        return chatCompletion.Choices[0].Message.Content;
     }
 }
