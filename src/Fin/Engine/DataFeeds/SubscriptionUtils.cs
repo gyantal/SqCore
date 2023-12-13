@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using QuantConnect.Data;
 using QuantConnect.Data.Auxiliary;
 using QuantConnect.Data.UniverseSelection;
@@ -65,6 +66,10 @@ namespace QuantConnect.Lean.Engine.DataFeeds
             {
                 try
                 {
+                    // SqCore Change NEW:
+                    Thread.CurrentThread.Name = $"QC.Worker:{config.MappedSymbol},TradeBar-Split-Div,{config.Resolution}";
+                    // SqCore Change END
+
                     var count = 0;
                     while (enumerator.MoveNext())
                     {
