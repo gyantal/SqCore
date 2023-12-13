@@ -39,4 +39,6 @@ app.MapFallbackToFile("index.html");
 
 Utils.OpenInBrowser("https://localhost:7160");
 
+// SqChatGPT.Controllers.GptScanController.TestHtmlParse(); // Testing purpose
+
 app.Run();

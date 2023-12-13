@@ -7,6 +7,7 @@ using System.Xml;
 using YahooFinanceApi;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace SqChatGPT.Controllers;
 
@@ -85,6 +86,24 @@ public class GptScanController : ControllerBase
     private readonly ILogger<GptChatController> _logger;
     private static readonly HttpClient g_httpClient = new HttpClient();
 
+
+//     public static void TestHtmlParse() // Testing purpose
+//     {
+//         const string testHtmlStr = @"<div class=caas-body><p>By Mike Scarcella</p>
+// <p>(Reuters) - Alphabet&#39;s Google on Monday will try to persuade a federal jury in San Francisco to reject antitrust claims by &quot;Fortnite&quot; maker Epic Games in a case that threatens Google&#39;s app store and transaction fees imposed on Android app developers.</p>
+// <p>Lawyers for the two companies are set to make their final arguments after more than a month of trial in Epic&#39;s lawsuit, which accuses Google of unlawfully scheming to make its Play store dominant over rival app stores.</p>
+// <p>The lawsuit, filed in 2020, also challenges the fee of up to 30% that Google imposes on developers for in-app sales.</p>
+// <p>Cary, North Carolina-based Epic, which owns the popular Fortnite multiplayer shooter game, said in the lawsuit that Google &quot;suppresses innovation and choice&quot; through a &quot;web of secretive, anticompetitive agreements.&quot;</p>
+// <p>Google has denied wrongdoing, arguing that it competes &quot;intensely on price, quality, and security&quot; against Apple&#39;s App Store.</p>
+// <p>Epic is seeking a court order to halt Google&#39;s alleged monopoly over Android app distribution and in-app billing. Google has countersued for damages against Epic for allegedly violating the company&#39;s developer agreement.</p>
+// <p>Google settled related claims from dating app maker Match before the trial started. The tech giant also settled related antitrust claims by U.S. states and consumers under terms that have not been made public.</p>
+// <p>Epic lodged a similar antitrust case against Apple in 2020, but a U.S. judge largely ruled in favor of Apple in September 2021.</p>
+// <p>Epic has asked the U.S. Supreme Court to revive key claims in the Apple case, and Apple is fighting part of a ruling for Epic that would require changes to App Store rules.</p>
+// <p>(Reporting by Mike Scarcella; Editing by David Bario and Bernadette Baum)</p></div>";
+//         ProcessHtmlContentFast(testHtmlStr);
+//         ProcessHtmlContent(testHtmlStr);
+//     }
+
     public GptScanController(ILogger<GptChatController> logger, IConfiguration configuration)
     {
         _logger = logger;
@@ -136,6 +155,7 @@ public class GptScanController : ControllerBase
         List<StockPriceData> tickerPos = new(tickers.Length);
         try
         {
+            Console.WriteLine("Calling YF for price... (2023-12: The first time to get the cookie takes 20sec)");
             IReadOnlyDictionary<string, Security> quotes = await Yahoo.Symbols(tickers).Fields(new Field[] { Field.Symbol, Field.RegularMarketPreviousClose, Field.RegularMarketPrice, Field.RegularMarketChange, Field.RegularMarketChangePercent }).QueryAsync();
             foreach (var val in quotes.Values)
             {
@@ -353,20 +373,6 @@ public class GptScanController : ControllerBase
         return rss;
     }
 
-    // [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
-    // [HttpPost("summarizenews")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
-    // public IActionResult GetNewsAndSummarize([FromBody] UserInput p_inMsg)
-    // {
-    //     if (p_inMsg == null)
-    //         return BadRequest("Invalid data");
-
-    //     Console.WriteLine(p_inMsg.Msg);
-    //     // Sending the dummy sentence...
-    //     string newsStr = " Dummy sentence.. Lorem ipsum dolor sit amet consectetur adipisicing elit. Aliquam illum nemo ullam, fugiat odio delectus doloremque temporibus pariatur rem sed a culpa, rerum iure est in molestias dolore aperiam quibusdam. \n  Lorem ipsum, dolor sit amet consectetur adipisicing elit. Tempora saepe itaque optio ipsam, rerum aut a aperiam totam earum quibusdam recusandae, impedit, sed cumque provident modi soluta? Consectetur, vero quod. Lorem ipsum dolor, sit amet consectetur adipisicing elit. Sapiente qui nisi consectetur, aliquid eum consequatur reprehenderit adipisci asperiores expedita molestiae hic animi officiis labore quis ea mollitia praesentium, temporibus quasi!  Lorem ipsum dolor sit amet, consectetur adipisicing elit. Quae aspernatur suscipit eos quasi similique provident temporibus accusamus, laudantium perferendis illum excepturi voluptatibus at, cum repellat quia odit molestiae rerum nihil. Lorem ipsum, dolor sit amet consectetur adipisicing elit. Ut reprehenderit maiores pariatur? Nulla, quibusdam debitis voluptatem a incidunt, reiciendis culpa ex assumenda, nostrum quia quae perspiciatis atque. Nesciunt, quibusdam repudiandae.";
-    //     string responseJson = JsonSerializer.Serialize(newsStr); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
-    //     return Ok(responseJson);
-    // }
-
     [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
     [HttpPost("summarizenews")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
     public async Task<IActionResult> GetNewsAndSummarize([FromBody] UserInput p_inMsg)
@@ -378,85 +384,105 @@ public class GptScanController : ControllerBase
         string responseStr;
         if (!newsStr.Contains("recommend visiting")) // checking for the condition if newsStr has the complete story or it is directing to another link
         {
-            p_inMsg.Msg = "Please summarize the below news and also remove if there are any html tags and unnecessary punctuation marks \n" + newsStr;
+            p_inMsg.Msg = "Please summarize the below text:\n" + newsStr;
             responseStr = await GenerateChatResponse(p_inMsg);
         }
         else
             responseStr = newsStr;
-        Console.WriteLine($"link {responseStr}");
         string responseJson = JsonSerializer.Serialize(responseStr); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
         return Ok(responseJson);
     }
 
-    public async Task<string> DownloadCompleteNews(string NewsUrlLink)
+    public async Task<string> DownloadCompleteNews(string p_newsUrlLink)
     {
         string responseStr;
-        string xmlContent = await g_httpClient.GetStringAsync(NewsUrlLink);
-        if (xmlContent.Contains("Continue reading"))
-            responseStr = $"The full news isn't accessible on Yahoo Finance. I recommend visiting this <a href={NewsUrlLink}>link</a> to directly retrieve the summary from ChatGPT.";
+        string htmlContent = await g_httpClient.GetStringAsync(p_newsUrlLink);
+
+        if ((p_newsUrlLink.StartsWith("https://finance.yahoo.com") || p_newsUrlLink.StartsWith("https://ca.finance.yahoo.com/")) && !htmlContent.Contains("Continue reading")) // if the YF news on YF website has "Continue reading" then a link will lead to another website (Bloomberg, Fools), in that case we don't process it.
+        {
+            responseStr = ProcessHtmlContent(htmlContent); // we will remove, just for comparison.
+            responseStr = ProcessHtmlContentFast(htmlContent);
+        }
         else
-            responseStr = ProcessHtmlContent(xmlContent);
+            responseStr = $"The full news isn't accessible on Yahoo Finance. I recommend visiting this <a href={p_newsUrlLink}>link</a> to directly retrieve the summary from ChatGPT.";
+
         return responseStr;
     }
 
-    static string ProcessHtmlContent(string html)
+    static string ProcessHtmlContentFast(string p_html)
     {
+        Stopwatch sw = new();
+        sw.Start();
+        StringBuilder sb = new();
+        ReadOnlySpan<char> htmlSpan = p_html.AsSpan();
+
+        int divWithCaasbodyStartPos = htmlSpan.IndexOf("caas-body>");
+        if (divWithCaasbodyStartPos == -1)
+        {
+            Console.WriteLine("Cannot find caas-body. Stop processing.");
+            return string.Empty;
+        }
+        divWithCaasbodyStartPos += "caas-body>".Length;
+        ReadOnlySpan<char> htmlBodySpan = htmlSpan.Slice(divWithCaasbodyStartPos);
+        int divWithCaasbodyEndPos = htmlBodySpan.IndexOf("</p></div>");
+        if (divWithCaasbodyEndPos == -1)
+        {
+            Console.WriteLine("Cannot find </p></div>. Stop processing.");
+            return string.Empty;
+        }
+        divWithCaasbodyEndPos -= "</p>".Length; // keeping the end paragraph tag "</p>", so that we can iterate between paragraph opening and ending tags
+        ReadOnlySpan<char> span = htmlBodySpan.Slice(start: 0, length: divWithCaasbodyEndPos);
+
+        while (true)
+        {
+            // Find the next occurrence of <p> and </p> html tags
+            int pTagStartPos = span.IndexOf("<p>");
+            int pTagEndPos = span.IndexOf("</p>");
+
+            if (pTagStartPos == -1 || pTagEndPos == -1) // If no more <p> tags are found, exit the loop
+                break;
+
+            ReadOnlySpan<char> content = span.Slice(pTagStartPos + 3, pTagEndPos - (pTagStartPos + 3)); // Extract the content between <p> and </p> and append to StringBuilder
+            sb.Append(content);
+
+            span = span.Slice(pTagEndPos + 4); // Move the span position to the end of the </p> tag
+        }
+        sw.Stop();
+
+        Console.WriteLine($"Elapsed Time ProcessHtmlContentFast(): {sw.Elapsed.TotalMilliseconds * 1000} microseconds");
+        return sb.ToString();
+    }
+    
+    static string ProcessHtmlContent(string p_html)
+    {
+        Stopwatch sw = new();
+        sw.Start();
         // Option1: Hard coded method which might not work for all the cases, we need to keep on adding the regular expressions updating for each link.
-        int divWithCaasbodyStartPos = html.IndexOf("caas-body>") + "caas-body>".Length;
-        int divWithCaasbodyEndPos = html.IndexOf("</p></div>");
-        string parasWithTags = html[divWithCaasbodyStartPos..divWithCaasbodyEndPos];
+        int divWithCaasbodyStartPos = p_html.IndexOf("caas-body>"); // tetx contains only '<div class=caas-body>', but Chrome DevTools/Elements show with quotes: '<div class="caas-body">'
+        if (divWithCaasbodyStartPos == -1)
+        {
+            Console.WriteLine("Cannot find caas-body. Stop processing.");
+            return string.Empty;
+        }
+        divWithCaasbodyStartPos += "caas-body>".Length;
+        int divWithCaasbodyEndPos = p_html.IndexOf("</p></div>");
+        if (divWithCaasbodyEndPos == -1)
+        {
+            Console.WriteLine("Cannot find </p></div>. Stop processing.");
+            return string.Empty;
+        }
+        divWithCaasbodyEndPos -= "</p>".Length;
+        string parasWithTags = p_html[divWithCaasbodyStartPos..divWithCaasbodyEndPos];
+
         string responseStr = Regex.Replace(parasWithTags, "<.*?>|<a[^>]*>(.*?)</a>", string.Empty); // Cleaning the tags
+        sw.Stop();
 
-        // // Option2: Using xmlReader
-        // XmlReaderSettings settings = new() // System.Xml.XmlException: For security reasons DTD is prohibited in this XML document. To enable DTD processing set the DtdProcessing property on XmlReaderSettings to Parse and pass the settings into XmlReader.
-        // {
-        //     DtdProcessing = DtdProcessing.Parse,
-        //     IgnoreWhitespace = true
-        // };
-        // using (StringReader stringReader = new StringReader(html))
-        // using (XmlReader reader = XmlReader.Create(stringReader, settings))
-        // {
-        //     while (reader.Read()) // System.Xml.XmlException: 'doctype' is an unexpected token. The expected token is 'DOCTYPE'. Line 1, position 3. please read the following link https://stackoverflow.com/questions/32572928/parsing-an-html-document-using-an-xml-parser
-        //     {
-        //         if (reader.NodeType == XmlNodeType.Element && reader.Name == "div" && reader.GetAttribute("class") == "caas-body")
-        //         {
-        //             responseStr = reader.ReadInnerXml();
-        //             break;
-        //         }
-        //     }
-        // }
-
-        // // Option3: Using XmlDocument
-        // XmlDocument doc = new XmlDocument();
-        // doc.Load(html); // An unhandled exception has occurred while executing the request. System.UriFormatException: Invalid URI: The Uri string is too long.
-        // StringBuilder responseStrBldr = new();
-        // // Access and modify XML nodes
-        // // Define the XPath expression to select the div with class="caas-body"
-        // string xpathExpression = "//div[@class='caas-body']";
-
-        // // Select the matching elements
-        // XmlNodeList? nodes = doc.SelectNodes(xpathExpression);
-
-        // // Check if nodes is null before processing
-        // if (nodes != null)
-        // {
-        //     // Process the selected nodes
-        //     foreach (XmlNode node in nodes)
-        //     {
-        //         responseStrBldr.Append(node.OuterXml);
-        //     }
-        // }
-        // else
-        // {
-        //     Console.WriteLine("No matching nodes found.");
-        // }
+        Console.WriteLine($"Elapsed Time ProcessHtmlContent(): {sw.Elapsed.TotalMilliseconds * 1000} microseconds");
         return responseStr;
     }
 
     static async Task<string> GenerateChatResponse(UserInput p_inMsg)
     {
-         g_messages.Add(new ChatMessage(ChatRole.User, p_inMsg.Msg));
-
         // >To check whether you use GPT 3.5 or 4 use this prompt: "If there are 10 books in a room and I read 2, how many books are still in the room"
         string llmModelName = p_inMsg.LlmModelName; // "auto", "gpt-3.5-turbo" (4K), "gpt-3.5-turbo-16k", "gpt-4" (8K), "gpt-4-32k"
         if (llmModelName == "auto")
@@ -474,7 +500,7 @@ public class GptScanController : ControllerBase
         {
             new ChatMessage
             {
-                Role = "user",
+                Role = ChatRole.User,
                 Content = p_inMsg.Msg,
             },
         });
