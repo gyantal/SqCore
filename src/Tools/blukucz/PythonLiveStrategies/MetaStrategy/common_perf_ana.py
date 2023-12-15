@@ -10,7 +10,7 @@ def total_return(pvs_p):
 
 def cagr(pvs_p):
 
-    no_years = (pvs_p.index[-1] - pvs_p.index[0]) / np.timedelta64(1, 'Y')
+    no_years = (pvs_p.index[-1] - pvs_p.index[0]) / np.timedelta64(1, 'D') / 365.25
     
     cagrs = pvs_p.iloc[-1] ** (1/no_years) - 1
 
