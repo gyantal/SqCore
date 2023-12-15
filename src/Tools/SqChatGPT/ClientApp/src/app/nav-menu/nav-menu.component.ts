@@ -7,6 +7,7 @@ import { Component } from '@angular/core';
 })
 export class NavMenuComponent {
   isExpanded = false;
+  activeTab: string = 'Home'; // default
 
   collapse() {
     this.isExpanded = false;
@@ -14,5 +15,9 @@ export class NavMenuComponent {
 
   toggle() {
     this.isExpanded = !this.isExpanded;
+  }
+
+  onNavbarItemCicked(activeTab: string) {
+    this.activeTab = activeTab;
   }
 }

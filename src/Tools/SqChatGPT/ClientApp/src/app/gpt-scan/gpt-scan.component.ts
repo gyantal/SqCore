@@ -58,6 +58,7 @@ export class GptScanComponent {
   _stockPrices: StockPriceItem[] = [];
   sortColumn: string = 'PercentChange'; // default sortColumn field, pricedata is sorted initial based on the 'PercentChange'.
   isSortingDirectionAscending: boolean = false;
+  isSpinnerVisible: boolean = false;
 
   constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string) {
     this._httpClient = http;
@@ -83,11 +84,14 @@ export class GptScanComponent {
     // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
     const body: UserInput = { LlmModelName: this._selectedLlmModel, Msg: tickers };
     console.log(body);
+    this.isSpinnerVisible = true;
 
     this._httpClient.post<ServerStockPriceDataResponse>(this._controllerBaseUrl + 'getstockprice', body).subscribe(result => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
       this._stockPrices = result.StocksPriceResponse;
       console.log(this._stockPrices);
       this.onSortingClicked(this.sortColumn);
+      if (this._stockPrices.length > 0) // making the spinner invisible once we recieve the data.
+        this.isSpinnerVisible = false;
     }, error => console.error(error));
   }
 
