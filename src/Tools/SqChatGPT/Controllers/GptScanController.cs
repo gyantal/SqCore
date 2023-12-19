@@ -384,7 +384,7 @@ public class GptScanController : ControllerBase
         string responseStr;
         if (!newsStr.Contains("recommend visiting")) // checking for the condition if newsStr has the complete story or it is directing to another link
         {
-            p_inMsg.Msg = "Please summarize the below text:\n" + newsStr;
+            p_inMsg.Msg = "Summarize this:\n" + newsStr;
             responseStr = await GenerateChatResponse(p_inMsg);
         }
         else
@@ -400,7 +400,7 @@ public class GptScanController : ControllerBase
 
         if ((p_newsUrlLink.StartsWith("https://finance.yahoo.com") || p_newsUrlLink.StartsWith("https://ca.finance.yahoo.com/")) && !htmlContent.Contains("Continue reading")) // if the YF news on YF website has "Continue reading" then a link will lead to another website (Bloomberg, Fools), in that case we don't process it.
         {
-            responseStr = ProcessHtmlContent(htmlContent); // we will remove, just for comparison.
+            // responseStr = ProcessHtmlContentRegex(htmlContent);
             responseStr = ProcessHtmlContentFast(htmlContent);
         }
         else
@@ -409,7 +409,7 @@ public class GptScanController : ControllerBase
         return responseStr;
     }
 
-    static string ProcessHtmlContentFast(string p_html)
+    static string ProcessHtmlContentFast(string p_html) // Elapsed Time: 91 microseconds
     {
         Stopwatch sw = new();
         sw.Start();
@@ -453,7 +453,7 @@ public class GptScanController : ControllerBase
         return sb.ToString();
     }
     
-    static string ProcessHtmlContent(string p_html)
+    static string ProcessHtmlContentRegex(string p_html) // Elapsed Time for RegEx first run: 28,198 microseconds
     {
         Stopwatch sw = new();
         sw.Start();

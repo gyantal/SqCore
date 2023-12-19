@@ -60,3 +60,11 @@ tr:nth-child(even) {
   background-color: rgb(247, 247, 132);
   font-style: italic;
 }
+
+.spinnerContainer {
+  position: fixed; // It stays in a fixed position even as when we scroll
+  // The top and left combination will centers the container on any screen sizes
+  top: 50%;
+  left: 50%;
+  z-index: 1; // Ensures that the overlay is on top of the background
+}
