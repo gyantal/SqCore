@@ -433,7 +433,6 @@ export class AppComponent implements OnInit {
     const checkedItems: TreeViewItem[] = [];
     this.collectCheckedItemsAndAllChildren(this.uiNestedPrtfTreeViewItems, checkedItems);
 
-    this._backtestedPortfolios.length = 0;
     for (const checkedItem of checkedItems) {
       const portfolioItem = this._allPortfolios!.find((item) => item.id == checkedItem.id);
       if (portfolioItem != null && !this._backtestedPortfolios.includes(portfolioItem))
