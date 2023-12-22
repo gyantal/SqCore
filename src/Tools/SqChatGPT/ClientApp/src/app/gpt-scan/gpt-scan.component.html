@@ -51,7 +51,7 @@ Type your ticker list here and click to send it to C# backend.
         <strong>{{ i + 1 }}. {{ item.Title }}</strong><br>
         <span>{{ item.Description }}</span><br>
         <a href="{{ item.Link }}" target="_blank">Read more...</a>&nbsp;&nbsp;
-        <small>Published on: {{ item.PubDate }}</small>&nbsp;
+        <small>Published on: {{ item.PubDate | date:'short':'UTC'}}</small>&nbsp;
         <button id="summarizeNewsBtn" (click)="getNewsAndSummarize(item)">Download Full news and summarize</button>
         <div id="newsSummary" *ngIf="item.NewsSummary != null">GPT-summary: <span [innerHTML]="item.NewsSummary"></span></div>
       </li>
