@@ -157,9 +157,9 @@ public static partial class Utils
             string footnote = webPage[iFootnoteStart..iFootnoteEnd];
 
             int year1 = -1, year2 = -1;
-            var trs = holidayTable.Split(new string[] { "<tr>\n  ", "<tr>", "<tr style=", "</tr>\n  ", "</tr>" }, StringSplitOptions.RemoveEmptyEntries);
-            var headerRow = trs[1];
-            var tdsHeader = headerRow.Split(new string[] { @"<th>", @"</th>" }, StringSplitOptions.RemoveEmptyEntries);
+            string[] trs = holidayTable.Split(new string[] { "<tr>\n  ", "<tr>", "<tr style=", "</tr>\n  ", "</tr>" }, StringSplitOptions.RemoveEmptyEntries);
+            string? headerRow = trs[1];
+            string[] tdsHeader = headerRow.Split(new string[] { @"<td>", @"</td>" }, StringSplitOptions.RemoveEmptyEntries); // 2023-12-28: a "<th>" => "<td>"
             year1 = Int32.Parse(tdsHeader[1]);
             year2 = Int32.Parse(tdsHeader[2]);
             // year3 = Int32.Parse(tdsHeader[7]);  // there is year3 too, but we don't need it in VBroker or healthmonitor. So, just ignore them
