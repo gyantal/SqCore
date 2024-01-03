@@ -9,6 +9,7 @@ interface NewsItem {
   Guid: string;
   PubDate: string;
   NewsSummary: string;
+  IsGptSummaryLikely: string;
 }
 
 interface TickerNews {
@@ -111,6 +112,15 @@ export class GptScanComponent {
     console.log(body);
     this._httpClient.post<ServerNewsResponse>(this._controllerBaseUrl + 'getnews', body).subscribe(result => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
       this._tickerNewss = result.Response;
+      for (const item of this._tickerNewss) {
+        for (const newsItem of item.NewsItems) {
+          newsItem.IsGptSummaryLikely = 'unknown';
+          const body: UserInput = { LlmModelName: this._selectedLlmModel, Msg: newsItem.Link };
+          this._httpClient.post<string>(this._controllerBaseUrl + 'getisgptsummarylikely', body).subscribe(result => {
+            newsItem.IsGptSummaryLikely = result;
+          }, error => console.error(error))
+        }
+      }
       console.log(this._tickerNewss);
     }, error => console.error(error));
   }
