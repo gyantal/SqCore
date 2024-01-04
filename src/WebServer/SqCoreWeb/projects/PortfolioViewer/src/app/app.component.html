@@ -1,5 +1,18 @@
 <div class="mainDiv1">
-<h4>Portfolio Viewer</h4>
-<br>
-PortfolioId: {{m_portfolioId}}
+  <h4>Portfolio Viewer</h4>
+  PortfolioId: {{m_portfolioId}}
+  <div *ngFor="let item of _backtestedPortfolios">PortfolioName: {{item.name}}</div>
+  <button [ngClass]="{'activeTabItem':activeTab == 'Positions'}" (click)="onActiveTabCicked('Positions')">Positions</button>&nbsp;<button [ngClass]="{'activeTabItem':activeTab == 'Portfolio Report'}" (click)="onActiveTabCicked('Portfolio Report')">Portfolio Report</button>&nbsp;<button [ngClass]="{'activeTabItem':activeTab == 'Trades'}" (click)="onActiveTabCicked('Trades')">Trades*</button>&nbsp;<button (click)="onActiveTabCicked('Portfolio Performance Accumulator')">Portfolio Performance Accumulator</button>
+  <div *ngIf="activeTab == 'Positions'">
+    <p>Positions</p>
+  </div>
+  <div *ngIf="activeTab == 'Portfolio Report'">
+    <p>Portfolio Report</p>
+  </div>
+  <div *ngIf="activeTab == 'Trades'">
+    <p>Trades</p>
+  </div>
+  <div *ngIf="activeTab == 'Portfolio Performance Accumulator'">
+    <p>Portfolio Performance Accumulator</p>
+  </div>
 </div>

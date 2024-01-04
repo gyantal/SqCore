@@ -1,4 +1,9 @@
 .mainDiv1 {
-    background: linear-gradient(to right, #3080c7 5%, #5b9dd7 10%, #d5f5f6 30%, #d5f5f6 70%, #ace16b 90%, #91d73a 95%);
+  background: linear-gradient(to right, #3080c7 5%, #5b9dd7 10%, #d5f5f6 30%, #d5f5f6 70%, #ace16b 90%, #91d73a 95%);
+}
+
+.activeTabItem {
+  background-color: #FFAE42;
+  border-radius: 0.2rem;
 }
 
