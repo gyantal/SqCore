@@ -1,6 +1,7 @@
 import { Component, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { UserInput } from '../lib/gpt-common';
+import { sleep } from '../../../../../../WebServer/SqCoreWeb/TsLib/sq-common/utils-common'
 
 interface NewsItem {
   Title: string;
@@ -110,15 +111,20 @@ export class GptScanComponent {
     // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
     const body: UserInput = { LlmModelName: this._selectedLlmModel, Msg: selectedNewsTicker };
     console.log(body);
-    this._httpClient.post<ServerNewsResponse>(this._controllerBaseUrl + 'getnews', body).subscribe(result => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
+    this._httpClient.post<ServerNewsResponse>(this._controllerBaseUrl + 'getnews', body).subscribe(async result => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
       this._tickerNewss = result.Response;
-      for (const item of this._tickerNewss) {
-        for (const newsItem of item.NewsItems) {
-          newsItem.IsGptSummaryLikely = 'unknown';
+
+      let i = 0;
+      for (const tickerNews of this._tickerNewss) {
+        for (const newsItem of tickerNews.NewsItems) {
           const body: UserInput = { LlmModelName: this._selectedLlmModel, Msg: newsItem.Link };
           this._httpClient.post<string>(this._controllerBaseUrl + 'getisgptsummarylikely', body).subscribe(result => {
             newsItem.IsGptSummaryLikely = result;
           }, error => console.error(error))
+
+          i++;
+          if (i % 5 == 0) // to not overwhelm the C# server, we only ask 5 downloads at once, then wait a little. The top 5 is the most important for the user at first.
+            await sleep(2000);
         }
       }
       console.log(this._tickerNewss);

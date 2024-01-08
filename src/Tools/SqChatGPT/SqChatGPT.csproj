@@ -12,8 +12,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Common\SqCommon\SqCommon.csproj" />
-    <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.8" />
     <PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="7.0.5" />
+    <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.8" />
+    <PackageReference Include="VaderSharp2" Version="3.3.2.1" />
   </ItemGroup>
 
   <ItemGroup>

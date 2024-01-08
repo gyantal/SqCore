@@ -1,7 +1,7 @@
 
 // There is no Thread.Sleep() functionality in Javacscript.
 // We can get the similar behaviour using async/await and setTimeout.
-// Below is the example of Sleep function.
+// Below is the example of Sleep function. This is how to use it: "await sleep(5000);"
 export function sleep(time: number) {
   return new Promise((resolve) => {
     setTimeout(resolve, time);
@@ -30,7 +30,7 @@ export function onFirstVisibleEventListener(element : Element | null, callback: 
 
 // remove duplicate values from an array? https://stackoverflow.com/questions/9229645/remove-duplicate-values-from-js-array
 export function removeDuplicates(inArr: string[]): string[] {
-  const seenDictObj = {}; // It is a JS object, used as a Dictionary;
+  const seenDictObj: { [key: string]: number } = {}; // It is a JS object, used as a Dictionary;
   const outArr: string[] = [];
   const len: number = inArr.length;
   let j: number = 0;

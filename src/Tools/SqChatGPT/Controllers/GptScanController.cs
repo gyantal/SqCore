@@ -8,6 +8,7 @@ using YahooFinanceApi;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
+using VaderSharp2;
 
 namespace SqChatGPT.Controllers;
 
@@ -45,6 +46,7 @@ public class NewsItem
     public string Link { get; set; } = string.Empty;
     public string Guid { get; set; } = string.Empty;
     public string PubDate { get; set; } = string.Empty;
+    public string IsGptSummaryLikely { get; set; } = "unknown";
 }
 
 public class TickerNews // this is returned to browser Client
