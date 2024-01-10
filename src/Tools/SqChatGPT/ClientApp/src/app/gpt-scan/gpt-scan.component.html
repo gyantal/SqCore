@@ -70,7 +70,9 @@ Type your ticker list here and click to send it to C# backend.
           </span>
         </Strong>&nbsp;&nbsp;
         <small>Published on: {{ item.PubDate | date:'short':'UTC'}}</small>&nbsp;
-        <button id="summarizeNewsBtn" (click)="getNewsAndSummarize(item)">Download Full news and summarize</button>
+        <button id="summarizeNewsBtn" (click)="getNewsAndSummarize(item)">Download Full news and summarize</button>&nbsp;
+        <button id="sentimentBtn" (click)="getNewsSentiment(item)" [disabled]="item.IsGptSummaryLikely == 'no'">Sentiment Analysis</button>&nbsp;<!-- Disabling the button if the GptSummary not likely -->
+        <span id="newsSentiment" *ngIf="item.Sentiment != null"><Strong>Sentiment: {{ item.Sentiment | number:'1.2-2'}}</Strong></span>
         <div id="newsSummary" *ngIf="item.NewsSummary != null">GPT-summary: <span [innerHTML]="item.NewsSummary"></span></div>
       </li>
     </ul>

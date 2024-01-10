@@ -11,6 +11,7 @@ interface NewsItem {
   PubDate: string;
   NewsSummary: string;
   IsGptSummaryLikely: string;
+  Sentiment: number;
 }
 
 interface TickerNews {
@@ -140,6 +141,19 @@ export class GptScanComponent {
 
     this._httpClient.post<string>(this._controllerBaseUrl + 'summarizenews', body).subscribe(result => {
       newsItem.NewsSummary = result;
+      this.isSpinnerVisible = false;
+    }, error => console.error(error))
+  }
+
+  getNewsSentiment(newsItem: NewsItem) {
+    console.log('link for finding the sentiment of the news', newsItem.Link);
+    // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
+    const body: UserInput = { LlmModelName: this._selectedLlmModel, Msg: newsItem.Link };
+    console.log(body);
+    this.isSpinnerVisible = true;
+
+    this._httpClient.post<string>(this._controllerBaseUrl + 'newssentiment', body).subscribe(result => {
+      newsItem.Sentiment = parseFloat(result);
       this.isSpinnerVisible = false;
     }, error => console.error(error))
   }

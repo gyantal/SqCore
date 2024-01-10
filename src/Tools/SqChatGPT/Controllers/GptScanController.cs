@@ -412,6 +412,25 @@ public class GptScanController : ControllerBase
         return Ok(responseJson);
     }
 
+    [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
+    [HttpPost("newssentiment")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
+    public async Task<IActionResult> GetNewsSentiment([FromBody] UserInput p_inMsg)
+    {
+        if (p_inMsg == null)
+            return BadRequest("Invalid data");
+
+        string newsStr = await DownloadCompleteNews(p_inMsg.Msg);
+        string responseStr = string.Empty;
+        if (!newsStr.Contains("recommend visiting")) // checking for the condition if newsStr has the complete story or it is directing to another link
+        {
+            var analyzer = new SentimentIntensityAnalyzer();
+            var result = analyzer.PolarityScores(newsStr);
+            responseStr = result.Compound.ToString();
+        }
+        string responseJson = JsonSerializer.Serialize(responseStr); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
+        return Ok(responseJson);
+    }
+
     public async Task<string> DownloadCompleteNews(string p_newsUrlLink)
     {
         string responseStr;
