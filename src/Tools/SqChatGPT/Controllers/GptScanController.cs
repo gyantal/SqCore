@@ -439,7 +439,12 @@ public class GptScanController : ControllerBase
         if ((p_newsUrlLink.StartsWith("https://finance.yahoo.com") || p_newsUrlLink.StartsWith("https://ca.finance.yahoo.com/")) && !htmlContent.Contains("Continue reading")) // if the YF news on YF website has "Continue reading" then a link will lead to another website (Bloomberg, Fools), in that case we don't process it.
         {
             // responseStr = ProcessHtmlContentRegex(htmlContent);
-            responseStr = ProcessHtmlContentFast(htmlContent);
+            string responseHtmlStr = ProcessHtmlContentFast(htmlContent);
+            // Postprocessing HTML for cleaning up the string to get the 'clean' news text
+            responseStr = responseHtmlStr.Replace("&#39;", "'").Replace("&quot;", "\""); // Native HTML formatting converted back to text. "Europe&#39;s" => "Europe's", "&quot;" => "
+            // Future postprocessing maybe. But at the moment, ChatGpt can summarize well even though text contains rubbish parts.
+            // E.g. responseStr still have some rubbish: "Most Read from Bloomberg" text twice, and there are non-relevant 5 <A> tags with random news.
+            // The problem is that any cleaning is a moving target, as YF changes the layout every once in a while
         }
         else
             responseStr = $"The full news isn't accessible on Yahoo Finance. I recommend visiting this <a href={p_newsUrlLink}>link</a> to directly retrieve the summary from ChatGPT.";

@@ -1,4 +1,4 @@
-<!-- To view properly formatted MD (Markdown) file in vs code, install: "Markdown Preview Enhanced" - https://www.youtube.com/watch?v=4QzFVQsD-9I -->
+<!-- To view properly formatted MD (Markdown) file in VS Code, install VS Code extension: "Markdown Preview Enhanced" - https://www.youtube.com/watch?v=4QzFVQsD-9I -->
 <!-- Right click on the markdown file and select option -> "Markdown Preview Enhanced: Open preview to the side"( shortcut-ctrl+KV)  -->
 # TigerVNCViewer Build Steps
 
@@ -51,15 +51,18 @@ mkdir build
 ```
 cd build
 ```
-5. Run CMake with the specified configurations:
+5. CMake is a 2-step process. Run CMake with the specified configurations to configure the project and generate a native build system:
 
   ```
-  cmake -G "MinGW Makefiles" -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_BUILD_TYPE=Debug -DCMAKE_POLICY_DEFAULT_CMP0115=NEW -DJPEG_LIBRARY="C:/libjpeg-turbo-gcc64/lib/libjpeg.a" -DJPEG_INCLUDE_DIR="C:/libjpeg-turbo-gcc64/include/" -DFLTK_DIR="C:/fltk-1.3.8" -DFLTK_LIBRARIES="C:/fltk/lib/fltk.lib" -DFLTK_INCLUDE_DIR="C:/fltk" -DGNUTLS_LIBRARY="C:/GnuTLS_win64-build/lib/libgnutls.dll.a" -DGNUTLS_INCLUDE_DIR="C:/GnuTLS_win64-build/lib/includes" C:/tigervnc
+  cmake -G "MinGW Makefiles" -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_BUILD_TYPE=Debug -DCMAKE_POLICY_DEFAULT_CMP0115=NEW -DJPEG_LIBRARY="C:/libjpeg-turbo-gcc64/lib/libjpeg.a" -DJPEG_INCLUDE_DIR="C:/libjpeg-turbo-gcc64/include/" -DFLTK_DIR="C:/fltk-1.3.8" -DFLTK_LIBRARIES="C:/fltk/lib/fltk.lib" -DFLTK_INCLUDE_DIR="C:/fltk" -DGNUTLS_LIBRARY="C:/GnuTLS_win64-build/lib/libgnutls.dll.a" -DGNUTLS_INCLUDE_DIR="C:/GnuTLS_win64-build/lib/includes" ..
   ```
 
   Note: Ensure all folder locations match the specified paths or adjust accordingly.
 
-6. Build the project.
+6. Then call that build system to actually compile/link the project:
+```
+cmake --build .
+```
 
 7. Navigate to the vncviewer directory.
 
@@ -74,7 +77,7 @@ const char *envPassword = getenv("VNC_PASSWORD");
   // Check if the environment variable is not set or is empty
   if (envPassword == nullptr || strlen(envPassword) == 0) {
       // Set a default password for debugging
-      envPassword = "ra66peto";
+      envPassword = "ra66***o";
   }
 
   // If you need a std::string, you can convert envPassword to one
