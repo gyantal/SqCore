@@ -33,7 +33,7 @@ async function AsyncStartDownloadAndExecuteCbLater(
         });
       })
       .catch((err) => {
-        console.log('SqCore: Download error.');
+        console.log('SqCore: Download error.', err);
       });
 }
 
@@ -417,7 +417,7 @@ function creatingChart(data, titleCont, minPrice, maxPrice, maxDays) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', (event) => {
+document.addEventListener('DOMContentLoaded', () => {
   console.log(
       'DOMContentLoaded(). All JS were downloaded. DOM fully loaded and parsed.'
   );
