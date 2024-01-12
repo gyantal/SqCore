@@ -123,25 +123,27 @@ public static partial class Utils
             // had to copy All headers from Linux Chrome + setting up Http1.1 to make it work with curl (wget is only http1.0, use curl)
             // there is no need for cookies (yet)
             // curl -v --http1.1 -H 'Host: www.cmegroup.com' -H 'Connection: keep-alive' -H 'Cache-Control: max-age=0' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9' -H 'Sec-Fetch-Site: none' -H 'Sec-Fetch-Mode: navigate' -H 'Sec-Fetch-User: ?1' -H 'Sec-Fetch-Dest: document' -H 'Accept-Encoding: gzip, deflate, br' -H 'Accept-Language: en-US,en;q=0.9' --output cme444brotli.br  https://www.cmegroup.com/CmeWS/mvc/Quotes/Future/444/G
+            // 2024-01: on server, it stopped working with message: "This IP address is blocked due to suspected web scraping activity". But that is fake news, because the IP address works in Browser.
+            // Giving the same Request header as Chrome and testing it with CURL in Terminal, this works now:
+            // curl -v --http2 -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7' -H 'Accept-Encoding: gzip, deflate, br' -H 'Accept-Language: en-US,en;q=0.9' -H 'Cache-Control: no-cache' -H 'Pragma: no-cache' -H 'Sec-Fetch-Dest: document' -H 'Sec-Fetch-Mode: navigate' -H 'Sec-Fetch-Site: none' -H 'Sec-Fetch-User: ?1' -H 'Upgrade-Insecure-Requests: 1' -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36' https://www.cmegroup.com/CmeWS/mvc/Quotes/Future/425/G --output cme444brotli.br
             return new HttpRequestMessage
             {
                 RequestUri = new Uri(p_url),
                 Method = HttpMethod.Get,
-                Version = HttpVersion.Version11, // Changed from Version20 to 11, but it didn't help on Linux
-                Headers =
+                Version = HttpVersion.Version20,
+                Headers = // copied from Linux Chrome, worked in curl.
                 {
-                        { "Host", "www.cmegroup.com" }, // copied from Linux Chrome, worked in curl.
-                        { "Connection", "keep-alive" },
-                        { "Cache-Control", "max-age=0" },
-                        { "Upgrade-Insecure-Requests", "1" },
-                        { "User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.96 Safari/537.36" },
-                        { "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0." },
-                        { "Sec-Fetch-Site", "none" },
-                        { "Sec-Fetch-Mode", "navigate" },
-                        { "Sec-Fetch-User", "?1" },
-                        { "Sec-Fetch-Dest", "document" },
-                        { "Accept-Encoding", "gzip, deflate, br" },
-                        { "Accept-Language", "en-US,en;q=0.9" }
+                    { "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7" },
+                    { "Accept-Encoding", "gzip, deflate, br" },
+                    { "Accept-Language", "en-US,en;q=0.9" },
+                    { "Cache-Control", "no-cache" },
+                    { "Pragma", "no-cache" },
+                    { "Sec-Fetch-Dest", "document" },
+                    { "Sec-Fetch-Mode", "navigate" },
+                    { "Sec-Fetch-Site", "none" },
+                    { "Sec-Fetch-User", "?1" },
+                    { "Upgrade-Insecure-Requests", "1" },
+                    { "User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36" }
                 }
             };
         }
