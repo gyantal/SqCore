@@ -426,7 +426,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       return;
     }
     const prtfId = this.treeViewState.lastSelectedItem.id - this.gPortfolioIdOffset;
-    window.open('//sqcore.net/webapps/PortfolioViewer/?id='+ prtfId, '_blank');
+    window.open('//sqcore.net/webapps/PortfolioViewer/?pid='+ prtfId, '_blank');
   }
 
   onOpenChartGeneratorClicked() {

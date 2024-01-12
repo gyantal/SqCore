@@ -19,11 +19,11 @@ class HandshakeMessage {
 export class AppComponent {
   m_http: HttpClient;
   m_portfolioId = -1; // -1 is invalid ID
+  prtfname: string = '';
   activeTab: string = 'Positions';
   _allPortfolios: Nullable<PortfolioJs[]> = null;
   _allFolders: Nullable<FolderJs[]> = null;
   public gPortfolioIdOffset: number = 10000;
-  _backtestedPortfolios: PortfolioJs[] = [];
   public _socket: WebSocket; // initialize later in ctor, becuse we have to send back the activeTool from urlQueryParams
 
   user = {
@@ -35,8 +35,8 @@ export class AppComponent {
     this.m_http = http;
     const wsQueryStr = window.location.search;
 
-    const url = new URL(window.location.href); // https://sqcore.net/webapps/PortfolioViewer/?id=1
-    const prtfIdStr = url.searchParams.get('id');
+    const url = new URL(window.location.href); // https://sqcore.net/webapps/PortfolioViewer/?pid=1
+    const prtfIdStr = url.searchParams.get('pid');
     if (prtfIdStr != null)
       this.m_portfolioId = parseInt(prtfIdStr);
     this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/prtfvwr' + wsQueryStr);
@@ -69,14 +69,8 @@ export class AppComponent {
           if (this._allPortfolios == null) // it can be null if Handshake message is wrong.
             return;
           const url = new URL(window.location.href);
-          const prtfStrIds: string[] = url.searchParams.get('id')!.trim().split(',');
-          for (let i = 0; i < prtfStrIds.length; i++) {
-            for (let j = 0; j < this._allPortfolios.length; j++) {
-              const id = this._allPortfolios[j].id - this.gPortfolioIdOffset;
-              if (id == parseInt(prtfStrIds[i]))
-                this._backtestedPortfolios.push(this._allPortfolios[j]);
-            }
-          }
+          const prtfStrId: string = url.searchParams.get('pid')!;
+          this.prtfname = this._allPortfolios?.find((r) => (r.id - this.gPortfolioIdOffset) == parseInt(prtfStrId))!.name;
           break;
       }
     };
