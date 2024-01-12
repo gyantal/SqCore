@@ -68,3 +68,15 @@ tr:nth-child(even) {
   left: 50%;
   z-index: 1; // Ensures that the overlay is on top of the background
 }
+
+.PositiveSentiment {
+  color: #228B22;
+}
+
+.NeutralSentiment{
+  color: #FFAE42;
+}
+
+.NegativeSentiment {
+  color: #FF0000;
+}
