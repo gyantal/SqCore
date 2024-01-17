@@ -11,7 +11,8 @@ interface NewsItem {
   PubDate: string;
   NewsSummary: string;
   IsGptSummaryLikely: string;
-  Sentiment: number;
+  ShortDescriptionSentiment: number;
+  FullTextSentiment: number;
 }
 
 interface TickerNews {
@@ -153,7 +154,7 @@ export class GptScanComponent {
     this.isSpinnerVisible = true;
 
     this._httpClient.post<string>(this._controllerBaseUrl + 'newssentiment', body).subscribe(result => {
-      newsItem.Sentiment = parseFloat(result);
+      newsItem.FullTextSentiment = parseFloat(result);
       this.isSpinnerVisible = false;
     }, error => console.error(error))
   }

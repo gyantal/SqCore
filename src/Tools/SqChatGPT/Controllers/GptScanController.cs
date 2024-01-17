@@ -47,6 +47,7 @@ public class NewsItem
     public string Guid { get; set; } = string.Empty;
     public string PubDate { get; set; } = string.Empty;
     public string IsGptSummaryLikely { get; set; } = "unknown";
+    public float ShortDescriptionSentiment { get; set; } = 0.0f;
 }
 
 public class TickerNews // this is returned to browser Client
@@ -216,13 +217,18 @@ public class GptScanController : ControllerBase
                 if (rss?.Channel?.NewsItems != null)
                 {
                     DateTime utcNow = DateTime.UtcNow;
+                    var analyzer = new SentimentIntensityAnalyzer(); // Sentiment analysis
                     // Iterate through NewsItems and add items within one week
                     foreach (var newsItem in rss.Channel.NewsItems)
                     {
                         DateTime pubDate = Utils.Str2DateTimeUtc(newsItem.PubDate);
                         int nDays = (int)(utcNow - pubDate).TotalDays; // Calculate the number of days
                         if (nDays <= 7)// Add the news item to the local list if within one week
+                        {
+                            var result = analyzer.PolarityScores(newsItem.Description);
+                            newsItem.ShortDescriptionSentiment = (float)result.Compound;
                             newsItems.Add(newsItem);
+                        }
                     }
                 }
                 tickerNewss.Add(new TickerNews() { Ticker = ticker, NewsItems = newsItems });
