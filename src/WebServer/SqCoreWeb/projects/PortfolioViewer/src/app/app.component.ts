@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { FolderJs, PortfolioJs, fldrsParseHelper, prtfsParseHelper } from '../../../../TsLib/sq-common/backtestCommon';
+import { FolderJs, PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, fldrsParseHelper, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult } from '../../../../TsLib/sq-common/backtestCommon';
 
 type Nullable<T> = T | null;
 
@@ -20,11 +20,15 @@ export class AppComponent {
   m_http: HttpClient;
   m_portfolioId = -1; // -1 is invalid ID
   prtfname: string = '';
+  prtfRunResult: Nullable<PrtfRunResultJs> = null;
+  uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
   activeTab: string = 'Positions';
   _allPortfolios: Nullable<PortfolioJs[]> = null;
   _allFolders: Nullable<FolderJs[]> = null;
   public gPortfolioIdOffset: number = 10000;
   public _socket: WebSocket; // initialize later in ctor, becuse we have to send back the activeTool from urlQueryParams
+  chrtWidth: number = 0; // added only to reuse the updateUiWithPrtfRunResult method as is ( variable has no effect today(16012024) may be useful in future)
+  chrtHeight: number = 0; // added only to reuse the updateUiWithPrtfRunResult method as is ( variable has no effect today(16012024) may be useful in future)
 
   user = {
     name: 'Anonymous',
@@ -72,8 +76,27 @@ export class AppComponent {
           const prtfStrId: string = url.searchParams.get('pid')!;
           this.prtfname = this._allPortfolios?.find((r) => (r.id - this.gPortfolioIdOffset) == parseInt(prtfStrId))!.name;
           break;
+        case 'PrtfVwr.PrtfRunResult':
+          console.log('PrtfVwr.PrtfRunResult:' + msgObjStr);
+          this.processPortfolioRunResult(msgObjStr);
+          break;
       }
     };
+  }
+
+  public processPortfolioRunResult(msgObjStr: string) {
+    console.log('PrtfVwr.processPortfolioRunResult() START');
+    this.prtfRunResult = JSON.parse(msgObjStr, function(this: any, key, value) {
+      // eslint-disable-next-line no-invalid-this
+      const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
+
+      const isRemoveOriginal: boolean = statsParseHelper(_this, key, value);
+      if (isRemoveOriginal)
+        return; // if return undefined, original property will be removed
+
+      return value; // the original property will not be removed if we return the original value, not undefined
+    });
+    updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.chrtWidth, this.chrtHeight);
   }
 
   onActiveTabCicked(activeTab: string) {

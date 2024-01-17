@@ -3,11 +3,52 @@
   PortfolioId: {{m_portfolioId}}
   <div>PortfolioName: {{prtfname}}</div>
   <button [ngClass]="{'activeTabItem':activeTab == 'Positions'}" (click)="onActiveTabCicked('Positions')">Positions</button>&nbsp;<button [ngClass]="{'activeTabItem':activeTab == 'Portfolio Report'}" (click)="onActiveTabCicked('Portfolio Report')">Portfolio Report</button>&nbsp;<button [ngClass]="{'activeTabItem':activeTab == 'Trades'}" (click)="onActiveTabCicked('Trades')">Trades*</button>&nbsp;<button [ngClass]="{'activeTabItem':activeTab == 'Portfolio Performance Accumulator'}" (click)="onActiveTabCicked('Portfolio Performance Accumulator')">Portfolio Performance Accumulator</button>
-  <div *ngIf="activeTab == 'Positions'">
-    <p>Positions</p>
+  <div *ngIf="activeTab == 'Positions'">&nbsp;
+    <header>Historical Positions EndDate: <input type="Date" disabled></header>&nbsp;
+    <table id="pfPossTable">
+      <thead>
+        <tr>
+          <th>SqTicker</th>
+          <th>Quantity</th>
+          <th>AvgPrice</th>
+          <th>Price</th>
+          <th>HoldingCost</th>
+          <th>HoldingValue</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of uiPrtfRunResult.prtfPosValues">
+          <td>{{item.sqTicker}}</td>
+          <td>{{item.quantity}}</td>
+          <td>{{item.avgPrice | number:'1.2-2'}}</td>
+          <td>{{item.price | number:'1.2-2'}}</td>
+          <td>{{item.holdingCost | number:'1.0-0'}}</td>
+          <td>{{item.holdingValue | number:'1.0-0'}}</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
   <div *ngIf="activeTab == 'Portfolio Report'">
     <p>Portfolio Report</p>
+    <div>
+      <table id="pfStatsTable">
+        <tr>
+          <td>PV Start Value:{{uiPrtfRunResult.startPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
+          <td>PV Final Value:{{uiPrtfRunResult.endPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
+          <td>TotalReturn:{{uiPrtfRunResult.totalReturn | number:'1.2-2'}}%</td>
+        </tr>
+        <tr>
+          <td><b>CAGR:</b> {{uiPrtfRunResult.cAGR | number:'1.2-2'}}%</td>
+          <td><b>MaxDD:</b> {{uiPrtfRunResult.maxDD | number:'1.2-2'}}%</td>
+          <td><b>Sharpe:</b> {{uiPrtfRunResult.sharpe | number:'1.2-2'}}</td>
+        </tr>
+        <tr>
+          <td><b>CagrSharpe:</b> {{uiPrtfRunResult.cagrSharpe | number:'1.2-2'}}</td>
+          <td>StDev: {{uiPrtfRunResult.stDev | number:'1.2-2'}}</td>
+          <td>Max.TradingDays in DD: {{uiPrtfRunResult.tradingDays}}</td>
+        </tr>
+      </table>
+    </div>
   </div>
   <div *ngIf="activeTab == 'Trades'">
     <p>Trades</p>

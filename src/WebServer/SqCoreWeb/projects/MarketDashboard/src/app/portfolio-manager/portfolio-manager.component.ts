@@ -1,10 +1,8 @@
 import { Component, OnInit, AfterViewInit, Input, ViewChild } from '@angular/core';
 import { SqTreeViewComponent } from '../../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
-import { prtfRunResultChrt } from '../../../../../TsLib/sq-common/chartAdvanced';
-import { PrtfRunResultJs, UiChartPoint, UiPrtfPositions, UiPfMgrPrtfRunResult, PrtfItemType, FolderJs, PortfolioJs, TreeViewItem, createTreeViewData, prtfsParseHelper, fldrsParseHelper, TreeViewState } from '../../../../../TsLib/sq-common/backtestCommon';
+import { PrtfRunResultJs, UiPrtfRunResult, PrtfItemType, FolderJs, PortfolioJs, TreeViewItem, TreeViewState, createTreeViewData, prtfsParseHelper, fldrsParseHelper, statsParseHelper, updateUiWithPrtfRunResult } from '../../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtils } from '../../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { onFirstVisibleEventListener } from '../../../../../TsLib/sq-common/utils-common';
-import * as d3 from 'd3';
 import { UserJs } from '../../../../../TsLib/sq-common/sq-globals';
 
 type Nullable<T> = T | null;
@@ -49,7 +47,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   tabPrtfSpecVisibleIdx: number = 1; // tab buttons for portfolio specification preview of positions and strategy parameters
 
   prtfRunResult: Nullable<PrtfRunResultJs> = null;
-  uiPrtfRunResult: UiPfMgrPrtfRunResult = new UiPfMgrPrtfRunResult();
+  uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
   todayDate: Date = new Date(); // displaying the statistics as of Date on UI
 
   // the below variables are required for resizing the panels according to users
@@ -73,7 +71,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
     window.addEventListener('resize', () => { // called when the user manually resizes the window
       this.visibilityChanged();
-      PortfolioManagerComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.panelPrtfChrtWidth, this.panelPrtfChrtHeight);
+      updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.panelPrtfChrtWidth, this.panelPrtfChrtHeight);
     });
   }
 
@@ -226,68 +224,18 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
   processPortfolioRunResult(msgObjStr: string) {
     console.log('PortfMgr.processPortfolioRunResult() START');
     this.prtfRunResult = JSON.parse(msgObjStr, function(this: any, key, value) {
-      // property names and values are transformed to a shorter ones for decreasing internet traffic.Transform them back to normal for better code reading.
-
-      // 'this' is the object containing the property being processed (not the embedding class) as this is a function(), not a '=>', and the property name as a string, the property value as arguments of this function.
       // eslint-disable-next-line no-invalid-this
       const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
 
-      if (key === 'startPv') {
-        _this.startPortfolioValue = value;
+      const isRemoveOriginal: boolean = statsParseHelper(_this, key, value);
+      if (isRemoveOriginal)
         return; // if return undefined, original property will be removed
-      }
-      if (key === 'endPv') {
-        _this.endPortfolioValue = value;
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'shrp') {
-        _this.sharpeRatio = value == 'NaN' ? NaN : parseFloat(value);
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'cagrShrp') {
-        _this.cagrSharpe = parseFloat(value);
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'tr') {
-        _this.totalReturn = parseFloat(value);
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'wr') {
-        _this.winRate = value;
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'lr') {
-        _this.lossingRate = value;
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'srtn') {
-        _this.sortino = value == 'NaN' ? NaN : parseFloat(value);
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'to') {
-        _this.turnover = value;
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'ls') {
-        _this.longShortRatio = value;
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'bCAGR') {
-        _this.benchmarkCAGR = value;
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'bMax') {
-        _this.benchmarkMaxDD = value;
-        return; // if return undefined, original property will be removed
-      }
-      if (key === 'cwb') {
-        _this.correlationWithBenchmark = value;
-        return; // if return undefined, original property will be removed
-      }
-      return value;
+
+      return value; // the original property will not be removed if we return the original value, not undefined
     });
+
     console.log('processPortfolioRunResult(), panelPrtfChrtWidth', this.panelPrtfChrtWidth);
-    PortfolioManagerComponent.updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.panelPrtfChrtWidth, this.panelPrtfChrtHeight);
+    updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.panelPrtfChrtWidth, this.panelPrtfChrtHeight);
   }
 
   onPortfoliosRefreshClicked() {
@@ -479,65 +427,5 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
 
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send(`PortfMgr.GetPortfolioRunResult:id:${lastSelectedTreeNode.id - this.gPortfolioIdOffset}`);
-  }
-
-  static updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJs>, uiPrtfRunResult: UiPfMgrPrtfRunResult, uiChrtWidth: number, uiChrtHeight: number) {
-    if (prtfRunResult == null)
-      return;
-
-    uiPrtfRunResult.startPortfolioValue = prtfRunResult.pstat.startPortfolioValue;
-    uiPrtfRunResult.endPortfolioValue = prtfRunResult.pstat.endPortfolioValue;
-    uiPrtfRunResult.totalReturn = prtfRunResult.pstat.totalReturn;
-    uiPrtfRunResult.cAGR = parseFloat(prtfRunResult.pstat.cagr);
-    uiPrtfRunResult.maxDD = parseFloat(prtfRunResult.pstat.maxDD);
-    uiPrtfRunResult.sharpe = prtfRunResult.pstat.sharpeRatio;
-    uiPrtfRunResult.cagrSharpe = prtfRunResult.pstat.cagrSharpe;
-    uiPrtfRunResult.stDev = parseFloat(prtfRunResult.pstat.stDev);
-    // uiPrtfRunResult.ulcer = parseFloat(prtfRunResult.pstat.ulcer); // yet to calcualte
-    uiPrtfRunResult.tradingDays = parseInt(prtfRunResult.pstat.tradingDays);
-    uiPrtfRunResult.nTrades = parseInt(prtfRunResult.pstat.nTrades);
-    uiPrtfRunResult.winRate = parseFloat(prtfRunResult.pstat.winRate);
-    uiPrtfRunResult.lossRate = parseFloat(prtfRunResult.pstat.lossingRate);
-    uiPrtfRunResult.sortino = prtfRunResult.pstat.sortino;
-    uiPrtfRunResult.turnover = parseFloat(prtfRunResult.pstat.turnover);
-    uiPrtfRunResult.longShortRatio = parseFloat(prtfRunResult.pstat.longShortRatio);
-    uiPrtfRunResult.fees = parseFloat(prtfRunResult.pstat.fees);
-    // uiPrtfRunResult.benchmarkCAGR = parseFloat(prtfRunResult.pstat.benchmarkCAGR); // yet to calcualte
-    // uiPrtfRunResult.benchmarkMaxDD = parseFloat(prtfRunResult.pstat.benchmarkMaxDD); // yet to calcualte
-    // uiPrtfRunResult.correlationWithBenchmark = parseFloat(prtfRunResult.pstat.correlationWithBenchmark); // yet to calcualte
-
-    uiPrtfRunResult.prtfPosValues.length = 0;
-    for (let i = 0; i < prtfRunResult.prtfPoss.length; i++) {
-      const posItem = new UiPrtfPositions();
-      posItem.sqTicker = prtfRunResult.prtfPoss[i].sqTicker;
-      posItem.quantity = prtfRunResult.prtfPoss[i].quantity;
-      posItem.avgPrice = prtfRunResult.prtfPoss[i].avgPrice;
-      posItem.price = prtfRunResult.prtfPoss[i].lastPrice;
-      posItem.holdingCost = posItem.avgPrice * posItem.quantity;
-      posItem.holdingValue = posItem.price * posItem.quantity;
-      uiPrtfRunResult.prtfPosValues.push(posItem);
-    }
-
-    uiPrtfRunResult.chrtValues.length = 0;
-    for (let i = 0; i < prtfRunResult.chrtData.dates.length; i++) {
-      const chartItem = new UiChartPoint();
-      const mSecSinceUnixEpoch: number = prtfRunResult.chrtData.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
-      chartItem.date = new Date(mSecSinceUnixEpoch);
-      chartItem.value = prtfRunResult.chrtData.values[i];
-      uiPrtfRunResult.chrtValues.push(chartItem);
-    }
-
-    d3.selectAll('#pfRunResultChrt > *').remove();
-    const lineChrtDiv = document.getElementById('pfRunResultChrt') as HTMLElement;
-    const margin = {top: 50, right: 50, bottom: 30, left: 60 };
-    const chartWidth = uiChrtWidth * 0.9 - margin.left - margin.right; // 90% of the PanelChart Width
-    const chartHeight = uiChrtHeight * 0.9 - margin.top - margin.bottom; // 90% of the PanelChart Height
-    const chrtData = uiPrtfRunResult.chrtValues.map((r:{ date: Date; value: number; }) => ({date: new Date(r.date), value: r.value}));
-    const xMin = d3.min(chrtData, (r:{ date: Date; }) => r.date);
-    const xMax = d3.max(chrtData, (r:{ date: Date; }) => r.date);
-    const yMinAxis = d3.min(chrtData, (r:{ value: number; }) => r.value);
-    const yMaxAxis = d3.max(chrtData, (r:{ value: number; }) => r.value);
-
-    prtfRunResultChrt(chrtData, lineChrtDiv, chartWidth, chartHeight, margin, xMin, xMax, yMinAxis, yMaxAxis);
   }
 }

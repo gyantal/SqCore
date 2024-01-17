@@ -1,3 +1,6 @@
+import * as d3 from 'd3';
+import { prtfRunResultChrt } from '../sq-common/chartAdvanced';
+
 // ************************************************ //
 // Classes used for developing charts, stats and positions of PortfolioRunResults
 // The below classes are used in PortfolioManager and ChartGenerator Apps
@@ -85,7 +88,7 @@ export class UiChrtGenPrtfRunResult extends UiPrtfRunResultCommon {
   public bmrkChrtValues: CgTimeSeries[] = []; // used in backtestResults in chrtGen app
 }
 
-export class UiPfMgrPrtfRunResult extends UiPrtfRunResultCommon { // PrtfRun Results requires position values to display
+export class UiPrtfRunResult extends UiPrtfRunResultCommon { // PrtfRun Results requires position values to display
   public chrtValues: UiChartPoint[] = []; // used in PrtfRunResults in portfolioManager app
   public prtfPosValues: UiPrtfPositions[] = [];
 }
@@ -269,3 +272,119 @@ export function createTreeViewData(pFolders: Nullable<FolderJs[]>, pPortfolios: 
 
   return treeviewItemsHierarchyResult;
 };
+
+export function statsParseHelper(_this: any, key: string, value: any): boolean {
+  if (key === 'startPv') {
+    _this.startPortfolioValue = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'endPv') {
+    _this.endPortfolioValue = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'shrp') {
+    _this.sharpeRatio = value == 'NaN' ? NaN : parseFloat(value);
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'cagrShrp') {
+    _this.cagrSharpe = parseFloat(value);
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'tr') {
+    _this.totalReturn = parseFloat(value);
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'wr') {
+    _this.winRate = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'lr') {
+    _this.lossingRate = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'srtn') {
+    _this.sortino = value == 'NaN' ? NaN : parseFloat(value);
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'to') {
+    _this.turnover = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'ls') {
+    _this.longShortRatio = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'bCAGR') {
+    _this.benchmarkCAGR = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'bMax') {
+    _this.benchmarkMaxDD = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'cwb') {
+    _this.correlationWithBenchmark = value;
+    return true; // if return undefined, original property will be removed
+  }
+  return false;
+}
+
+export function updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJs>, uiPrtfRunResult: UiPrtfRunResult, uiChrtWidth: number, uiChrtHeight: number) {
+  if (prtfRunResult == null)
+    return;
+
+  uiPrtfRunResult.startPortfolioValue = prtfRunResult.pstat.startPortfolioValue;
+  uiPrtfRunResult.endPortfolioValue = prtfRunResult.pstat.endPortfolioValue;
+  uiPrtfRunResult.totalReturn = prtfRunResult.pstat.totalReturn;
+  uiPrtfRunResult.cAGR = parseFloat(prtfRunResult.pstat.cagr);
+  uiPrtfRunResult.maxDD = parseFloat(prtfRunResult.pstat.maxDD);
+  uiPrtfRunResult.sharpe = prtfRunResult.pstat.sharpeRatio;
+  uiPrtfRunResult.cagrSharpe = prtfRunResult.pstat.cagrSharpe;
+  uiPrtfRunResult.stDev = parseFloat(prtfRunResult.pstat.stDev);
+  // uiPrtfRunResult.ulcer = parseFloat(prtfRunResult.pstat.ulcer); // yet to calcualte
+  uiPrtfRunResult.tradingDays = parseInt(prtfRunResult.pstat.tradingDays);
+  uiPrtfRunResult.nTrades = parseInt(prtfRunResult.pstat.nTrades);
+  uiPrtfRunResult.winRate = parseFloat(prtfRunResult.pstat.winRate);
+  uiPrtfRunResult.lossRate = parseFloat(prtfRunResult.pstat.lossingRate);
+  uiPrtfRunResult.sortino = prtfRunResult.pstat.sortino;
+  uiPrtfRunResult.turnover = parseFloat(prtfRunResult.pstat.turnover);
+  uiPrtfRunResult.longShortRatio = parseFloat(prtfRunResult.pstat.longShortRatio);
+  uiPrtfRunResult.fees = parseFloat(prtfRunResult.pstat.fees);
+  // uiPrtfRunResult.benchmarkCAGR = parseFloat(prtfRunResult.pstat.benchmarkCAGR); // yet to calcualte
+  // uiPrtfRunResult.benchmarkMaxDD = parseFloat(prtfRunResult.pstat.benchmarkMaxDD); // yet to calcualte
+  // uiPrtfRunResult.correlationWithBenchmark = parseFloat(prtfRunResult.pstat.correlationWithBenchmark); // yet to calcualte
+
+  uiPrtfRunResult.prtfPosValues.length = 0;
+  for (let i = 0; i < prtfRunResult.prtfPoss.length; i++) {
+    const posItem = new UiPrtfPositions();
+    posItem.sqTicker = prtfRunResult.prtfPoss[i].sqTicker;
+    posItem.quantity = prtfRunResult.prtfPoss[i].quantity;
+    posItem.avgPrice = prtfRunResult.prtfPoss[i].avgPrice;
+    posItem.price = prtfRunResult.prtfPoss[i].lastPrice;
+    posItem.holdingCost = posItem.avgPrice * posItem.quantity;
+    posItem.holdingValue = posItem.price * posItem.quantity;
+    uiPrtfRunResult.prtfPosValues.push(posItem);
+  }
+
+  uiPrtfRunResult.chrtValues.length = 0;
+  for (let i = 0; i < prtfRunResult.chrtData.dates.length; i++) {
+    const chartItem = new UiChartPoint();
+    const mSecSinceUnixEpoch: number = prtfRunResult.chrtData.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
+    chartItem.date = new Date(mSecSinceUnixEpoch);
+    chartItem.value = prtfRunResult.chrtData.values[i];
+    uiPrtfRunResult.chrtValues.push(chartItem);
+  }
+
+  d3.selectAll('#pfRunResultChrt > *').remove();
+  const lineChrtDiv = document.getElementById('pfRunResultChrt') as HTMLElement;
+  const margin = {top: 50, right: 50, bottom: 30, left: 60 };
+  const chartWidth = uiChrtWidth * 0.9 - margin.left - margin.right; // 90% of the PanelChart Width
+  const chartHeight = uiChrtHeight * 0.9 - margin.top - margin.bottom; // 90% of the PanelChart Height
+  const chrtData = uiPrtfRunResult.chrtValues.map((r:{ date: Date; value: number; }) => ({date: new Date(r.date), value: r.value}));
+  const xMin = d3.min(chrtData, (r:{ date: Date; }) => r.date);
+  const xMax = d3.max(chrtData, (r:{ date: Date; }) => r.date);
+  const yMinAxis = d3.min(chrtData, (r:{ value: number; }) => r.value);
+  const yMaxAxis = d3.max(chrtData, (r:{ value: number; }) => r.value);
+
+  prtfRunResultChrt(chrtData, lineChrtDiv, chartWidth, chartHeight, margin, xMin, xMax, yMinAxis, yMaxAxis);
+}
