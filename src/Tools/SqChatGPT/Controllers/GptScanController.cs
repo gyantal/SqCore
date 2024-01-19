@@ -205,6 +205,7 @@ public class GptScanController : ControllerBase
     {
         string[] tickers = p_tickerLstStr.Split(',', StringSplitOptions.RemoveEmptyEntries);
         List<TickerNews> tickerNewss = new(tickers.Length);
+        var analyzer = new SentimentIntensityAnalyzer(); // Sentiment analysis
         foreach (var ticker in tickers) // we can't do it in a batch mode by asking YF many tickers at the same time. Tested it: YF gives back only the news for the first ticker.
         {
             try
@@ -217,7 +218,6 @@ public class GptScanController : ControllerBase
                 if (rss?.Channel?.NewsItems != null)
                 {
                     DateTime utcNow = DateTime.UtcNow;
-                    var analyzer = new SentimentIntensityAnalyzer(); // Sentiment analysis
                     // Iterate through NewsItems and add items within one week
                     foreach (var newsItem in rss.Channel.NewsItems)
                     {

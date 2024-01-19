@@ -4,7 +4,7 @@
 
 Compiling TigerVncViewer is very complicated, mostly because very few professionals compile it on Windows. End users only use the installers. Professional people compile it on Linux mostly. Therefore, the Windows installer make-files are quite abandoned. Not tested too much and not up-to-date..
 
-There are 2 building guides we present here. Daya did a heroic task to make it comile first. So, we saw that it is possible. However, George couldn't reproduce it, because the process was so complicated and taking 2 months that the exact detailed steps of the history is forgotten. So, George produced another approch for compilation, which hopefully will be able to reproduced more easily on any computer in the future.
+There are 2 building guides we present here. Daya did a heroic task to make it compile first. So, we saw that it is possible. However, George couldn't reproduce it, because the process was so complicated and taking 2 months that the exact detailed steps of the history is forgotten. So, George produced another approch for compilation, which hopefully will be able to reproduced more easily on any computer in the future.
 
 
 #<span style="color:blue">Build process, Version 1 (George)</span>
@@ -49,7 +49,10 @@ So, it is not using msbuild (*.LIB) libraries. And instead of MinGW it prefers i
 One of the most common ways to get GCC on Windows is through MinGW (Minimalist GNU for Windows) or MSYS2. 
 Another option is to use Cygwin, which provides a large collection of GNU and Open Source tools for Windows. (ZLib source code is better compiled that way.)
 
-- [MSYS2](https://www.msys2.org/) The Building Platform for Windows. Its package manager is 'PacMan'. Then in it, you can install MinGW, the GCC compiler environment with 
+- [MSYS2](https://www.msys2.org/) The Building Platform for Windows. Its package manager is 'PacMan'. 
+! Important. Make sure the PATH environment variable is set to its BIN folder. (e.g. PATH += 'C:\opt\msys64\usr\bin;')
+Check that from any Terminal, "pacman --version" works.
+Then for the MSYS2 framework you can install MinGW, the GCC compiler environment with 
 "pacman -S mingw-w64-ucrt-x86_64-gcc" or/and
 "pacman -S mingw-w64-x86_64-toolchain"
 Or install MinGW64 in any other way. You can google what is the best way.
@@ -132,6 +135,9 @@ __There are 2 kinds of libraries. Static libraries (e.g. libintl.a) that are lik
 -- WARNING: You are not using libjpeg-turbo. Performance will suffer.  // but we use it. Whatewer.
 -- Could NOT find GnuTLS (missing: GNUTLS_LIBRARY GNUTLS_INCLUDE_DIR)  // still works without it.
 If you want to solve those, inspect the folder "cmake\Modules" folder e.g. for "cmake\Modules\FindNettle.cmake"
+
+If you receive a message "CMake Error: CMake was unable to find a build program corresponding to "MSYS Makefiles".  CMAKE_MAKE_PROGRAM is not set.  You probably need to select a different build tool."
+one way to solve it to replace -G "MSYS Makefiles" to -G "MINGW Makefiles" as the two are very identical and then run 'mingw32-make' instead of 'make'. Or use the general 'cmake --build .' which will figure it out which generator to use.
 
 Then call that build system to actually compile and link the project:
 

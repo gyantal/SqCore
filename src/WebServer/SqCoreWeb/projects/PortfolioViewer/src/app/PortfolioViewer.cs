@@ -17,8 +17,7 @@ class HandshakeMessagePrtfViewer
 {
     public string Email { get; set; } = string.Empty;
     public int AnyParam { get; set; } = 75;
-    public List<PortfolioJs> PrtfsToClient { get; set; } = new();
-    public List<FolderJs> FldrsToClient { get; set; } = new();
+    public PortfolioJs PrtfToClient { get; set; } = new();
 }
 
 public class PrtfVwrWs
@@ -26,20 +25,24 @@ public class PrtfVwrWs
     public static async Task OnWsConnectedAsync(HttpContext context, WebSocket webSocket)
     {
         Utils.Logger.Debug($"PrtfVwrWs.OnConnectedAsync()) BEGIN");
-        // context.Request comes as: 'wss://' + document.location.hostname + '/ws/prtfvwr?id=1,2'
+        // context.Request comes as: 'wss://' + document.location.hostname + '/ws/prtfvwr?id=1'
         string? queryStr = context.Request.QueryString.Value;
-        // RunBacktests(queryStr, webSocket);
         var userEmailClaim = context?.User?.Claims?.FirstOrDefault(p => p.Type == @"http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress");
         var email = userEmailClaim?.Value ?? "unknown@gmail.com";
         User[] users = MemDb.gMemDb.Users; // get the user data
         User? user = Array.Find(users, r => r.Email == email); // find the user
 
+        // Processing the query string to extract the Id
+        int idStartInd = queryStr!.IndexOf("=");
+        if (idStartInd == -1)
+            return;
+        int id = Convert.ToInt32(queryStr[(idStartInd + 1)..]);
         // https://stackoverflow.com/questions/24450109/how-to-send-receive-messages-through-a-web-socket-on-windows-phone-8-using-the-c
-        var msgObj = new HandshakeMessagePrtfViewer() { Email = email, FldrsToClient = UiUtils.GetPortfMgrFolders(user!), PrtfsToClient = UiUtils.GetPortfMgrPortfolios(user!) };
+        var msgObj = new HandshakeMessagePrtfViewer() { Email = email, PrtfToClient = UiUtils.GetPortfolio(id) };
         byte[] encodedMsg = Encoding.UTF8.GetBytes("OnConnected:" + Utils.CamelCaseSerialize(msgObj));
         if (webSocket.State == WebSocketState.Open)
             await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None); // takes 0.635ms
-        if(queryStr != null)
+        if (queryStr != null)
             PrtfVwrSendPortfolioRunResults(queryStr, webSocket);
     }
 

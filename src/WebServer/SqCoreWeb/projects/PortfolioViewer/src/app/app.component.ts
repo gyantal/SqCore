@@ -1,14 +1,11 @@
 import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { FolderJs, PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, fldrsParseHelper, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult } from '../../../../TsLib/sq-common/backtestCommon';
-
-type Nullable<T> = T | null;
+import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult } from '../../../../TsLib/sq-common/backtestCommon';
 
 class HandshakeMessage {
   public email = '';
   public anyParam = -1;
-  public prtfsToClient: Nullable<PortfolioJs[]> = null;
-  public fldrsToClient: Nullable<FolderJs[]> = null;
+  public prtfToClient: PortfolioJs | null = null;
 }
 
 @Component({
@@ -19,16 +16,13 @@ class HandshakeMessage {
 export class AppComponent {
   m_http: HttpClient;
   m_portfolioId = -1; // -1 is invalid ID
-  prtfname: string = '';
-  prtfRunResult: Nullable<PrtfRunResultJs> = null;
-  uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
-  activeTab: string = 'Positions';
-  _allPortfolios: Nullable<PortfolioJs[]> = null;
-  _allFolders: Nullable<FolderJs[]> = null;
-  public gPortfolioIdOffset: number = 10000;
-  public _socket: WebSocket; // initialize later in ctor, becuse we have to send back the activeTool from urlQueryParams
-  chrtWidth: number = 0; // added only to reuse the updateUiWithPrtfRunResult method as is ( variable has no effect today(16012024) may be useful in future)
-  chrtHeight: number = 0; // added only to reuse the updateUiWithPrtfRunResult method as is ( variable has no effect today(16012024) may be useful in future)
+  m_portfolio: PortfolioJs | null = null;
+  m_activeTab: string = 'Positions';
+  m_socket: WebSocket; // initialize later in ctor, becuse we have to send back the activeTool from urlQueryParams
+  m_chrtWidth: number = 0; // added only to reuse the updateUiWithPrtfRunResult method as is ( variable has no effect today(16012024) may be useful in future)
+  m_chrtHeight: number = 0; // added only to reuse the updateUiWithPrtfRunResult method as is ( variable has no effect today(16012024) may be useful in future)
+  m_prtfRunResult: PrtfRunResultJs | null = null;
+  m_uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
 
   user = {
     name: 'Anonymous',
@@ -43,11 +37,11 @@ export class AppComponent {
     const prtfIdStr = url.searchParams.get('pid');
     if (prtfIdStr != null)
       this.m_portfolioId = parseInt(prtfIdStr);
-    this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/prtfvwr' + wsQueryStr);
+    this.m_socket = new WebSocket('wss://' + document.location.hostname + '/ws/prtfvwr' + wsQueryStr);
   }
 
   ngOnInit(): void {
-    this._socket.onmessage = async (event) => {
+    this.m_socket.onmessage = async (event) => {
       const semicolonInd = event.data.indexOf(':');
       const msgCode = event.data.slice(0, semicolonInd);
       const msgObjStr = event.data.substring(semicolonInd + 1);
@@ -61,20 +55,10 @@ export class AppComponent {
             const isRemoveOriginalPrtfs: boolean = prtfsParseHelper(_this, key, value);
             if (isRemoveOriginalPrtfs)
               return; // if return undefined, original property will be removed
-            const isRemoveOriginalFldrs: boolean = fldrsParseHelper(_this, key, value);
-            if (isRemoveOriginalFldrs)
-              return; // if return undefined, original property will be removed
             return value; // the original property will not be removed if we return the original value, not undefined
           });
           this.user.email = handshakeMsg.email;
-          this._allPortfolios = handshakeMsg.prtfsToClient;
-          this._allFolders = handshakeMsg.fldrsToClient;
-          // Get the Url param of PrtfIds and fill the backtestedPortfolios
-          if (this._allPortfolios == null) // it can be null if Handshake message is wrong.
-            return;
-          const url = new URL(window.location.href);
-          const prtfStrId: string = url.searchParams.get('pid')!;
-          this.prtfname = this._allPortfolios?.find((r) => (r.id - this.gPortfolioIdOffset) == parseInt(prtfStrId))!.name;
+          this.m_portfolio = handshakeMsg.prtfToClient;
           break;
         case 'PrtfVwr.PrtfRunResult':
           console.log('PrtfVwr.PrtfRunResult:' + msgObjStr);
@@ -86,7 +70,7 @@ export class AppComponent {
 
   public processPortfolioRunResult(msgObjStr: string) {
     console.log('PrtfVwr.processPortfolioRunResult() START');
-    this.prtfRunResult = JSON.parse(msgObjStr, function(this: any, key, value) {
+    this.m_prtfRunResult = JSON.parse(msgObjStr, function(this: any, key, value) {
       // eslint-disable-next-line no-invalid-this
       const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
 
@@ -96,10 +80,10 @@ export class AppComponent {
 
       return value; // the original property will not be removed if we return the original value, not undefined
     });
-    updateUiWithPrtfRunResult(this.prtfRunResult, this.uiPrtfRunResult, this.chrtWidth, this.chrtHeight);
+    updateUiWithPrtfRunResult(this.m_prtfRunResult, this.m_uiPrtfRunResult, this.m_chrtWidth, this.m_chrtHeight);
   }
 
   onActiveTabCicked(activeTab: string) {
-    this.activeTab = activeTab;
+    this.m_activeTab = activeTab;
   }
 }
