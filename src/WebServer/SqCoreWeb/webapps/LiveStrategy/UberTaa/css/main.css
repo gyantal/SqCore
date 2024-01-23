@@ -102,6 +102,11 @@ table.currData2 {
   background-size: cover;
 }
 
+#alphaPicks {
+  background: url("../assets/images/alpha_pic.webp");
+  background-size: contain;
+}
+
 .chartsContainer {
   box-sizing: border-box;
   width: 52rem;

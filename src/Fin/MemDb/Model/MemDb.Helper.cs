@@ -324,4 +324,14 @@ public partial class MemDb
 
         return assetHistsAndLastEstValue;
     }
+
+    public IEnumerable<Trade> GetPortfolioTradeHistory(int p_tradeHistoryId, DateTime? p_startIncLoc, DateTime? p_endIncLoc)
+    {
+        return m_Db.GetPortfolioTradeHistory(p_tradeHistoryId, p_startIncLoc, p_endIncLoc);
+    }
+
+    public void WritePortfolioTradeHistory(int p_tradeHistoryId, List<Trade> p_tradeList)
+    {
+        m_Db.WritePortfolioTradeHistory(p_tradeHistoryId, p_tradeList);
+    }
 }

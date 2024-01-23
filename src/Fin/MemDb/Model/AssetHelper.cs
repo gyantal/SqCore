@@ -42,8 +42,7 @@ public enum CurrencyId : byte // there are 192 countries in the world, and less 
     JPY = 6,
     CNY = 7,
     CAD = 8,
-    CHF = 9,
-    ILS = 10
+    CHF = 9
     // Some routines use ~GBX == 252 to indicate GBP, e.g. DBUtils.ConvertToUsd(),ConvertFromUsd(),YQCrawler.CurrencyConverter etc.
 }
 
@@ -113,24 +112,19 @@ public enum OptionRight : byte // Put or Call: right to buy or sell
 public enum ExchangeId : sbyte // differs from dbo.StockExchange, which is 'int'
 {
     NASDAQ = 1,
-    NYSE = 2,
-    [Description("NYSE MKT LLC")]
+    NYSE = 2,       // can be default if USA stock (so currency is USD), otherwise for non-USA stocks it is safer is default is 'Unknown'
     AMEX = 3,
-    [Description("Pink OTC Markets")]
-    PINK = 4,
+    PINK = 4,       // Pink OTC Markets
     CDNX = 5,       // Canadian Venture Exchange, postfix: ".V"
     LSE = 6,        // London Stock Exchange, postfix: ".L"
-    [Description("XTRA")]
-    XETRA = 7,      // Exchange Electronic Trading (Germany)
+    XTRA = 7,      // XETRA, Exchange Electronic Trading (Germany)
     CBOE = 8,
-    [Description("NYSE ARCA")]
-    ARCA = 9,
+    ARCA = 9,       // NYSE ARCA
     BATS = 10,
-    [Description("OTC Bulletin Boards")]
-    OTCBB = 11,
+    OTCBB = 11,     // OTC Bulletin Boards
 
     Unknown = -1 // BooleanFilterWith1CacheEntryPerAssetID.CacheRec.StockExchangeID exploits that values fit in an sbyte
-                // TickerProvider.OldStockTickers exploits that values fit in a byte
+                 // TickerProvider.OldStockTickers exploits that values fit in a byte
 }
 
 public enum SharedAccess : byte
@@ -181,6 +175,20 @@ public static class AssetHelper
         { "CHF", CurrencyId.CHF }
     };
 
+    public static readonly Dictionary<CurrencyId, string> gCurrencyToString = new()
+    {
+        { CurrencyId.Unknown, "NaN" },
+        { CurrencyId.USD, "USD" },
+        { CurrencyId.EUR, "EUR" },
+        { CurrencyId.GBP, "GBP" },
+        { CurrencyId.GBX, "GBX" },
+        { CurrencyId.HUF, "HUF" },
+        { CurrencyId.JPY, "JPY" },
+        { CurrencyId.CNY, "CNY" },
+        { CurrencyId.CAD, "CAD" },
+        { CurrencyId.CHF, "CHF" }
+    };
+
     public static readonly Dictionary<string, StockType> gStrToStockType = new()
     {
         { "NaN", StockType.Unknown },
@@ -210,6 +218,25 @@ public static class AssetHelper
         { AssetType.Company, 'A' },
     };
 
+    public static readonly Dictionary<char, AssetType> gChrToAssetType = new()
+    {
+        { '?', AssetType.Unknown },
+        { 'C', AssetType.CurrencyCash },
+        { 'D', AssetType.CurrencyPair },
+        { 'S', AssetType.Stock },
+        { 'B', AssetType.Bond },
+        { 'U', AssetType.Fund },
+        { 'F', AssetType.Futures },
+        { 'O', AssetType.Option },
+        { 'M', AssetType.Commodity },
+        { 'R', AssetType.RealEstate },
+        { 'I', AssetType.FinIndex },
+        { 'N', AssetType.BrokerNAV },
+        { 'P', AssetType.Portfolio },
+        { 'T', AssetType.GeneralTimeSeries },
+        { 'A', AssetType.Company },
+    };
+
     public static readonly Dictionary<string, SharedAccess> gStrToSharedAccess = new()
     {
         { string.Empty, SharedAccess.Restricted },
@@ -224,7 +251,56 @@ public static class AssetHelper
         { "Trades", PortfolioType.Trades },
         { "Simulation", PortfolioType.Simulation }
     };
-
+    public static readonly Dictionary<TradeActionType, string> gTradeActionToStr = new()
+    {
+        { TradeActionType.Unknown, string.Empty },
+        { TradeActionType.Deposit, "DPT" },
+        { TradeActionType.Withdrawal, "WTD" },
+        { TradeActionType.Buy, "BOT" },
+        { TradeActionType.Sell, "SLD" },
+        { TradeActionType.Exercise, "EXC" },
+        { TradeActionType.Expired, "EXP" }
+    };
+    public static readonly Dictionary<string, TradeActionType> gStrToTradeAction = new()
+    {
+        { string.Empty, TradeActionType.Unknown },
+        { "DPT", TradeActionType.Deposit },
+        { "WTD", TradeActionType.Withdrawal },
+        { "BOT", TradeActionType.Buy },
+        { "SLD", TradeActionType.Sell },
+        { "EXC", TradeActionType.Exercise },
+        { "EXP", TradeActionType.Expired }
+    };
+    public static readonly Dictionary<ExchangeId, string> gExchangeToStr = new()
+    {
+        { ExchangeId.Unknown, string.Empty },
+        { ExchangeId.NASDAQ, "NASDAQ" },
+        { ExchangeId.NYSE, "NYSE" },
+        { ExchangeId.AMEX, "AMEX" },
+        { ExchangeId.PINK, "PINK" },
+        { ExchangeId.CDNX, "CDNX" },
+        { ExchangeId.LSE, "LSE" },
+        { ExchangeId.XTRA, "XTRA" },
+        { ExchangeId.CBOE, "CBOE" },
+        { ExchangeId.ARCA, "ARCA" },
+        { ExchangeId.BATS, "BATS" },
+        { ExchangeId.OTCBB, "OTCBB" }
+    };
+    public static readonly Dictionary<string, ExchangeId> gStrToExchange = new()
+    {
+        { string.Empty, ExchangeId.Unknown },
+        { "NASDAQ", ExchangeId.NASDAQ },
+        { "NYSE", ExchangeId.NYSE },
+        { "AMEX", ExchangeId.AMEX },
+        { "PINK", ExchangeId.PINK },
+        { "CDNX", ExchangeId.CDNX },
+        { "LSE", ExchangeId.LSE },
+        { "XTRA", ExchangeId.XTRA },
+        { "CBOE", ExchangeId.CBOE },
+        { "ARCA", ExchangeId.ARCA },
+        { "BATS", ExchangeId.BATS },
+        { "OTCBB", ExchangeId.OTCBB }
+    };
     // This can find both "VOD" (Vodafone) ticker in LSE (in GBP), NYSE (in USD).
     public static List<Stock> GetAllMatchingStocksBySymbol(this List<Asset> p_assets, string p_symbol, ExchangeId p_primExchangeID = ExchangeId.Unknown, DateTime? p_timeUtc = null)
     {

@@ -23,6 +23,8 @@ public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the Hash
     public string Type { get; set; } = string.Empty;
     public string Algorithm { get; set; } = string.Empty;
     public string AlgorithmParam { get; set; } = string.Empty;
+    [JsonPropertyName("TradeHistory")]
+    public int? TradeHistoryId { get; set; } = null; // 'int?' is used instead of 'int' with the -1 default, because if it is the default, we don't want to store it in the RedisDb JSON
 
     public PortfolioInDb()
     {
@@ -41,6 +43,7 @@ public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the Hash
         Type = p_prtf.Type.ToString();
         Algorithm = p_prtf.Algorithm.ToString();
         AlgorithmParam = p_prtf.AlgorithmParam.ToString();
+        TradeHistoryId = p_prtf.TradeHistoryId == -1 ? null : p_prtf.TradeHistoryId;
     }
 }
 
@@ -60,6 +63,8 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
     public PortfolioType Type { get; set; } = PortfolioType.Unknown;
     public string Algorithm { get; set; } = string.Empty;
     public string AlgorithmParam { get; set; } = string.Empty;
+
+    public int TradeHistoryId { get; set; } = -1;
 
     // public List<Asset> Assets { get; set; } = new List<Asset>();    // TEMP. Delete this later when Portfolios are finalized.
 
@@ -98,9 +103,10 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         Type = AssetHelper.gStrToPortfolioType[portfolioInDb.Type];
         Algorithm = portfolioInDb.Algorithm;
         AlgorithmParam = portfolioInDb.AlgorithmParam;
+        TradeHistoryId = portfolioInDb.TradeHistoryId ?? -1;
     }
 
-    public Portfolio(int p_id, User? p_user, string p_name, int p_parentFldId, string p_creationTime, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith)
+    public Portfolio(int p_id, User? p_user, string p_name, int p_parentFldId, string p_creationTime, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith, int p_tradeHistoryId)
     {
         Id = p_id;
         User = p_user;
@@ -114,6 +120,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         AlgorithmParam = p_algorithmParam;
         SharedAccess = p_sharedAccess;
         SharedUsersWith = p_sharedUsersWith;
+        TradeHistoryId = p_tradeHistoryId;
     }
 
     public Portfolio()

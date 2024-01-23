@@ -278,7 +278,7 @@ public partial class Db
     {
         string redisKey = p_assetId.ToString() + ".brotli"; // // key: "9:1.brotli"
         var outputCsvBrotli = Utils.Str2BrotliBin(p_dailyNavStr);
-        m_redisDb.HashSet("assetQuoteRaw", redisKey,  RedisValue.CreateFrom(new System.IO.MemoryStream(outputCsvBrotli)));
+        m_redisDb.HashSet("assetQuoteRaw", redisKey, RedisValue.CreateFrom(new System.IO.MemoryStream(outputCsvBrotli)));
     }
 
     public KeyValuePair<SqDateOnly, double>[] GetAssetBrokerNavDeposit(AssetId32Bits p_assetId)
@@ -311,7 +311,7 @@ public partial class Db
             if (!hashRow.Name.TryParse(out int id) || rowValue == null) // Name is the 'Key' that contains the Id
                 continue;   // Sometimes, there is an extra line 'New field'. But it can be deleted from Redis Manager. It is a kind of expected.
 
-            var prtfFolderInDb = JsonSerializer.Deserialize<PortfolioFolderInDb>(rowValue, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+            PortfolioFolderInDb prtfFolderInDb = JsonSerializer.Deserialize<PortfolioFolderInDb>(rowValue, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
                 ?? throw new SqException($"Deserialize failed on '{rowValue}'");
             PortfolioFolder pf = new(id, prtfFolderInDb, users); // PortfolioFolder.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
             result[id] = pf;
@@ -438,7 +438,7 @@ public partial class Db
         return string.Empty;
     }
 
-    internal string UpdatePortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith)
+    internal string UpdatePortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith, int p_tradeHistoryId)
     {
         string redisKey = p_id.ToString();
         string? pfInDb = m_redisDb.HashGet("portfolio", redisKey);
@@ -460,9 +460,59 @@ public partial class Db
         pfInDbCandidate.Note = p_note;
         Utils.Logger.Debug($"shareduserwith{p_sharedUsersWith}"); // need to develop this - Daya
         // pfInDbCandidate.SharedUsersWith = p_sharedUsersWith.ToString();
+        pfInDbCandidate.TradeHistoryId = p_tradeHistoryId;
         string redisValue = JsonSerializer.Serialize<PortfolioInDb>(pfInDbCandidate);
         m_redisDb.HashSet("portfolio", redisKey, redisValue);
         return string.Empty;
+    }
+
+    public IEnumerable<Trade> GetPortfolioTradeHistory(int p_tradeHistoryId, DateTime? p_startIncLoc, DateTime? p_endIncLoc)
+    {
+        string redisKey = p_tradeHistoryId.ToString();
+        string? portfTradeHistInDbStr = m_redisDb.HashGet("portfolioTradeHistory", redisKey);
+        if (portfTradeHistInDbStr == null)
+        {
+            Utils.Logger.Error($"Error in GetPortfolioTradeHistory(): portfolio id '{p_tradeHistoryId}");
+            return Enumerable.Empty<Trade>();
+        }
+
+        TradeInDb[] tradeInDbs = JsonSerializer.Deserialize<TradeInDb[]>(portfTradeHistInDbStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = false }) // Case sensitive is the fastest.
+                ?? throw new SqException($"Deserialize failed on '{portfTradeHistInDbStr}'");
+        List<Trade> trades = new();
+        foreach (TradeInDb tradeInDb in tradeInDbs)
+        {
+            Trade trade = new(tradeInDb);
+            trades.Add(trade);
+        }
+
+        return trades;
+        // return Enumerable.Empty<Trade>();
+    }
+
+    public void WritePortfolioTradeHistory(int tradeHistoryId, List<Trade> tradeList)
+    {
+        HashEntry[] newTradeInDbs = new HashEntry[] { new(tradeHistoryId, TradeInDb.ToRedisValue(tradeList)) };
+        m_redisDb.HashSet("portfolioTradeHistory", newTradeInDbs);
+    }
+
+    public void AppendPortfolioTradeHistory(int tradeHistoryId, List<Trade> tradeList)
+    {
+        List<Trade>? existingTrades = null;
+
+        try
+        {
+            existingTrades = GetPortfolioTradeHistory(tradeHistoryId, null, null).ToList(); // if tradeHistoryId doesn't exist GetPortfolioTradeHistory() throws an exception. But we should do it without Exception.
+        }
+        catch
+        {
+            existingTrades = new(); // if tradeHistoryId
+        }
+        // Task3: max kereses az existingTrades
+        // use that as an offset. minden tradeList.ID-t eltolnam, es a ConnectedTrades, because we ASSUME that the ConnectedTrades belong only to the New part, and it doesn't refer back to the Existing part.
+        // Task4:  "UndSymbol": "TSLA",
+
+        existingTrades?.AddRange(tradeList);
+        WritePortfolioTradeHistory(tradeHistoryId, existingTrades!);
     }
 
     public static bool UpdateBrotlisIfNeeded()

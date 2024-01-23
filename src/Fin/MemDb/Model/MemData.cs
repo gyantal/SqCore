@@ -172,9 +172,9 @@ internal class MemData // don't expose to clients.
         }
     }
 
-    public Portfolio AddNewPortfolio(User? p_user, string p_name, int p_parentFldId, string p_creationTime, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith)
+    public Portfolio AddNewPortfolio(User? p_user, string p_name, int p_parentFldId, string p_creationTime, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith, int p_tradeHistoryId)
     {
-         lock (PrtfUpdateLock)
+        lock (PrtfUpdateLock)
         {
             // keep the newId calculation logic here, just right before the portfolio creation.
             // Otherwise, we need new locks to prevent that 2 threads creates 2 new portfolios with the same Id.
@@ -185,13 +185,13 @@ internal class MemData // don't expose to clients.
                     maxId = id;
             }
             int newId = ++maxId;
-            Portfolio prtf = new (newId, p_user, p_name, p_parentFldId, p_creationTime, p_currency, p_type, p_algorithm, p_algorithmParam, p_sharedAccess, p_note, p_sharedUsersWith);
+            Portfolio prtf = new (newId, p_user, p_name, p_parentFldId, p_creationTime, p_currency, p_type, p_algorithm, p_algorithmParam, p_sharedAccess, p_note, p_sharedUsersWith, p_tradeHistoryId);
             Portfolios[newId] = prtf;
             return prtf;
         }
     }
 
-    public Portfolio? EditPortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith) // method to Edit the portfolio based on fld key
+    public Portfolio? EditPortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, CurrencyId p_currency, PortfolioType p_type, string p_algorithm, string p_algorithmParam, SharedAccess p_sharedAccess, string p_note, List<User> p_sharedUsersWith, int p_tradeHistoryId) // method to Edit the portfolio based on fld key
     {
         lock (PrFldUpdateLock)
         {
@@ -207,6 +207,7 @@ internal class MemData // don't expose to clients.
                 portfolio.SharedAccess = p_sharedAccess;
                 portfolio.Note = p_note;
                 portfolio.SharedUsersWith = p_sharedUsersWith;
+                portfolio.TradeHistoryId = p_tradeHistoryId;
                 return portfolio;
             }
             else

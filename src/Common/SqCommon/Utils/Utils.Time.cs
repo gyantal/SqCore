@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -144,5 +145,14 @@ public static partial class Utils
         System.DateTime dtDateTime = new(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
         TimeSpan span = p_utcDate - dtDateTime;
         return (long)span.TotalSeconds;
+    }
+
+    public static void BenchmarkElapsedTime(string p_name, Action p_f)
+    {
+        Stopwatch sw = new();
+        sw.Start();
+        p_f();
+        sw.Stop();
+        Console.WriteLine($"Elapsed Time of {p_name}: {sw.Elapsed.TotalMilliseconds * 1000:N2} microsecs"); // N2: value is displayed with a thousand separator and is rounded to two decimal places
     }
 }

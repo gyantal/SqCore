@@ -16,7 +16,7 @@ namespace SqCoreWeb.Controllers;
 [ResponseCache(CacheProfileName = "NoCache")]
 public class StrategyUberTaaController : ControllerBase
 {
-    public enum Universe : byte { GameChangers = 1, GlobalAssets = 2 }
+    public enum Universe : byte { GameChangers = 1, GlobalAssets = 2, AlphaPicks = 3 }
     public class DailyData
     {
         public DateTime Date { get; set; }
@@ -28,8 +28,8 @@ public class StrategyUberTaaController : ControllerBase
     {
         return universe switch
         {
-            // 1: GameChanger, 2: Global Assets
-            1 or 2 => Content(GetResultStr((Universe)universe, winnerRun == 1), "text/html"),
+            // 1: GameChanger, 2: Global Assets, 3: AlphaPicks
+            1 or 2 or 3 => Content(GetResultStr((Universe)universe, winnerRun == 1), "text/html"),
             _ => Content("Error", "text/html"),
         };
     }
@@ -61,6 +61,14 @@ public class StrategyUberTaaController : ControllerBase
                 usedGSheetUrl = "https://docs.google.com/spreadsheets/d/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU";
                 usedGSheetStr = UberTaaGoogleApiGsheet("https://sheets.googleapis.com/v4/spreadsheets/1ugql_-IXXVrU7M2TtU4wPaDELH5M6NQXy82fwZgY2yU/values/A1:Z3000?key=");
                 usedAssetList = GetTickersFromGSheet(usedGSheetStr) ?? Array.Empty<string>();
+                break;
+            case Universe.AlphaPicks:
+                titleString = "AlphaPicks";
+                usedGDocUrl = "https://seekingalpha.com/alpha-picks";
+                usedGSheetUrl = "https://docs.google.com/spreadsheets/d/1s4nzFbiwAgipMebyMKKSNssga0jJ01vTDlYmIadVIwg";
+                usedGSheetStr = UberTaaGoogleApiGsheet("https://sheets.googleapis.com/v4/spreadsheets/1s4nzFbiwAgipMebyMKKSNssga0jJ01vTDlYmIadVIwg/values/A1:BZ3000?key=");
+                usedAssetList = GetTickersFromGSheet(usedGSheetStr) ?? Array.Empty<string>();
+                warningGCh = "WARNING! Let the Winners Run is used. Trade this based on the second table's Percentage targets.";
                 break;
         }
 
@@ -1161,17 +1169,17 @@ public class StrategyUberTaaController : ControllerBase
                 }
                 else if (pastCodes[iRows, jCols] == 8)
                 {
-                    pastWeightsFinal[iRows, jCols] = ((p_universe == Universe.GameChangers) ? 1 : 1.5) * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1] * overallConstLev;
+                    pastWeightsFinal[iRows, jCols] = ((p_universe != Universe.GlobalAssets) ? 1 : 1.5) * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1] * overallConstLev;
                     // pastWeightsFinal[iRows, jCols] = 1.2 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1]; #Mr.C. decided to increase leverage to 50% on bullish days
                 }
                 else if (pastCodes[iRows, jCols] == 9)
                 {
-                    pastWeightsFinal[iRows, jCols] = ((p_universe == Universe.GameChangers) ? 1 : 1) * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1] * overallConstLev;
+                    pastWeightsFinal[iRows, jCols] = ((p_universe != Universe.GlobalAssets) ? 1 : 1) * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1] * overallConstLev;
                     // pastWeightsFinal[iRows, jCols] = 0.8 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1];
                 }
                 else if (pastCodes[iRows, jCols] == 10)
                 {
-                    pastWeightsFinal[iRows, jCols] = ((p_universe == Universe.GameChangers) ? 1 : 0.6) * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1] * overallConstLev;
+                    pastWeightsFinal[iRows, jCols] = ((p_universe != Universe.GlobalAssets) ? 1 : 0.6) * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1] * overallConstLev;
                     // pastWeightsFinal[iRows, jCols] = 0.4 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1];
                 }
             }

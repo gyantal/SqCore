@@ -282,6 +282,8 @@ public partial class Program
         Console.WriteLine("3. YF: Test getting SPY history");
         Console.WriteLine("4. YF: Test getting SPY realtime");
         Console.WriteLine("5. FinDb: Crawl security histories");
+        Console.WriteLine("6. MemDb: Test getting PortfolioTradeHistory from RedisDb");
+        Console.WriteLine("7. MemDb: Test write PortfolioTradeHistory to RedisDb");
         Console.WriteLine("9. Exit to main menu.");
         string userInput;
         try
@@ -321,11 +323,47 @@ public partial class Program
                 {
                     Console.WriteLine($"Exception: {e.Message}");
                 }
-
                 break;
             case "5":
                 SqTaskScheduler.TestElapseTrigger("FinDbDailyCrawler", 0);
                 // Console.WriteLine(FinDb.CrawlData(false).TurnAsyncToSyncTask().ToString());
+                break;
+            case "6":
+                try
+                {
+                    List<Trade> portTradeHist = new();
+                    Utils.BenchmarkElapsedTime("GetPortfolioTradeHistory()", () =>
+                    {
+                        portTradeHist = MemDb.gMemDb.GetPortfolioTradeHistory(1, null, null).ToList();
+                    });
+
+                    Console.WriteLine($"portTradeHist.Count: {portTradeHist.Count}");
+                }
+                catch (System.Exception e)
+                {
+                    Console.WriteLine($"Exception: {e.Message}");
+                }
+                break;
+            case "7":
+                try
+                {
+                    List<Trade> testTrades = new();
+                    Trade trade1 = new Trade(testTrades) { AssetType = AssetType.Stock, Action = TradeActionType.Buy, Symbol = "TSLA", Price = 123, Quantity = 65, Time = DateTime.Now.AddDays(-1) };
+                    testTrades.Add(trade1);
+                    Trade trade2 = new Trade(testTrades) { AssetType = AssetType.Stock, Action = TradeActionType.Buy, Symbol = "AMD", Price = 54, Commission = 1.2f, Quantity = 50, Time = DateTime.Now.AddDays(-0.1) };
+                    testTrades.Add(trade2);
+
+                    Utils.BenchmarkElapsedTime("WritePortfolioTradeHistory()", () =>
+                    {
+                        MemDb.gMemDb.WritePortfolioTradeHistory(44, testTrades);
+                        // MemDb.gMemDb.AppendTradeListToRedis(35, testTrades);
+                    });
+                    Console.WriteLine($"WritePortfolioTradeHistory(): OK.");
+                }
+                catch (System.Exception e)
+                {
+                    Console.WriteLine($"Exception: {e.Message}");
+                }
                 break;
             case "9":
                 return "UserChosenExit";

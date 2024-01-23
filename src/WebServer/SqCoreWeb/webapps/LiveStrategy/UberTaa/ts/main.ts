@@ -44,6 +44,13 @@ function onClickGlobalAssets() {
   });
 }
 
+function onClickAlphaPicks() {
+  lastSelectedUniverse = 3;
+  AsyncStartDownloadAndExecuteCbLater('/StrategyUberTaa?universe=3&winnerRun=1', (json: any) => {
+    onReceiveData(json);
+  });
+}
+
 function onReceiveData(json: any) {
   if (json == 'Error') {
     const divErrorCont = getNonNullDocElementById('idErrorCont');
@@ -61,18 +68,24 @@ function onReceiveData(json: any) {
   getNonNullDocElementById('idLiveDataTime').innerHTML = json.lastDataTime;
   getNonNullDocElementById('idCurrentPV').innerHTML = 'Current PV: <span class="pv">$ ' + json.currentPV + '</span> (based on <a href="' + json.gSheetRef + '" target="_blank">these current positions</a> updated for ' + json.currentPVDate + ')';
   getNonNullDocElementById('idOverallConstLev').innerHTML = 'Used Overall Constant Leverage: <span class="clmt"> ' + json.overallConstLev + '</span>';
-  getNonNullDocElementById('idCLMTString').innerHTML = 'Current Combined Leverage Market Timer signal is <span class="clmt">' + json.clmtSign + '</span> (SPX 50/200-day MA: ' + json.spxMASign + ', XLU/VTI: ' + json.xluVtiSign + ').';
+  getNonNullDocElementById('idCLMTString').innerHTML = (lastSelectedUniverse != 3) ? 'Current Combined Leverage Market Timer signal is <span class="clmt">' + json.clmtSign + '</span> (SPX 50/200-day MA: ' + json.spxMASign + ', XLU/VTI: ' + json.xluVtiSign + ').' : '';
   getNonNullDocElementById('idPosLast').innerHTML = 'Position weights in the last 20 days:';
-  getNonNullDocElementById('idPosFut').innerHTML = 'Future events:';
+  getNonNullDocElementById('idPosFut').innerHTML = (lastSelectedUniverse != 3) ? 'Future events:' : '';
 
   const warnLength = json.warningCont.length;
-  if (warnLength > 0)
+  if (warnLength > 0 && lastSelectedUniverse != 3)
     getNonNullDocElementById('idWarningCont').innerHTML = json.warningCont + '<br> <a href="https://docs.google.com/spreadsheets/d/1fmvGBi2Q6MxnB_8AjUedy1QVTOlWE7Ck1rICjYSSxyY" target="_blank">Google sheet with current positions</a> and <a href="https://docs.google.com/document/d/1_m3MMGag7uBZSdvc4IgXKMvj3d4kzLxwvnW14RkCyco" target="_blank">the latest study in connection with the strategy</a>';
   uberTaaTbls(json);
   // Setting charts visible after getting data.
   getNonNullDocElementById('pctChgCharts').style.visibility = 'visible';
-  getNonNullDocElementById('xluChart').style.visibility = 'visible';
-  getNonNullDocElementById('spyChart').style.visibility = 'visible';
+  if (lastSelectedUniverse != 3){
+    getNonNullDocElementById('xluChart').style.visibility = 'visible';
+    getNonNullDocElementById('spyChart').style.visibility = 'visible';
+  }
+  else{
+    getNonNullDocElementById('xluChart').style.visibility = 'hidden';
+    getNonNullDocElementById('spyChart').style.visibility = 'hidden';
+  }
 }
 
 function uberTaaTbls(json: any) {
@@ -192,9 +205,9 @@ function uberTaaTbls(json: any) {
   const prevPositionsMtx = getNonNullDocElementById('prevPositions');
   prevPositionsMtx.innerHTML = prevPositionsTbl;
   const futPositionsMtx = getNonNullDocElementById('futPositions');
-  futPositionsMtx.innerHTML = futPositionsTbl;
+  futPositionsMtx.innerHTML = (lastSelectedUniverse != 3) ? futPositionsTbl : '';
   const subStrategiesMtx = getNonNullDocElementById('subStrategies');
-  subStrategiesMtx.innerHTML = subStrategiesTbl;
+  subStrategiesMtx.innerHTML = (lastSelectedUniverse != 3) ? subStrategiesTbl : '';
 
 
   // Declaring data sets to charts.
@@ -233,6 +246,7 @@ function uberTaaTbls(json: any) {
 
 getNonNullDocElementById('gameChanger').onclick = onClickGameChanger;
 getNonNullDocElementById('globalAssets').onclick = onClickGlobalAssets;
+getNonNullDocElementById('alphaPicks').onclick = onClickAlphaPicks;
 
 document.addEventListener('DOMContentLoaded', (event) => {
   console.log('DOMContentLoaded(). All JS were downloaded. DOM fully loaded and parsed.');
