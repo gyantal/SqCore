@@ -186,12 +186,12 @@ public class ChrtGenWs
         if (minPortfoliosStartDate == DateTime.Today) // Default date (2020-01-01) if minStartdate == today
             minPortfoliosStartDate = QCAlgorithmUtils.g_earliestQcDay; // we are giving mindate as (1900-01-01) so that it gets all the data available if its only processing the benchmarks. DateTime.MinValue cannot be used, because QC.HistoryProvider.GetHistory() will convert this time to UTC, but taking away 5 hours from MinDate is not possible.
         List<BmrkHistory> bmrkHistories = new();
-        ChartData chartValBmrk = new();
         foreach (string bmrkTicker in bmrksStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
         {
             string? errMsg = Portfolio.GetBmrksHistoricalResults(bmrkTicker, minPortfoliosStartDate, out PriceHistoryJs histPrcs, out ChartResolution chartResolution);
             if (errMsg == null)
             {
+                ChartData chartValBmrk = new();
                 chartValBmrk.ChartResolution = chartResolution;
                 DateTime startDate = DateTime.MinValue;
                 DateTimeFormat dateTimeFormat;
