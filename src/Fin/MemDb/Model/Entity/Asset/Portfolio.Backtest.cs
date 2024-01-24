@@ -92,13 +92,13 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
     // Or number of seconds from Unix epoch: '1641013200' is 10 chars. Resolution can be 1 second.
     // Although it is 2 chars more data, but we chose this, because QC uses it and also it will allow us to go intraday in the future.
     // Also it allows to show the user how up-to-date (real-time) the today value is.
-    public string? GetPortfolioRunResult(SqResult p_sqResult, out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
+    public string? GetPortfolioRunResult(SqResult p_sqResult, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
         #pragma warning disable IDE0066 // disable the switch suggestion warning only locally
         switch (Type)
         {
             case PortfolioType.Simulation:
-                return GetBacktestResult(p_sqResult, out p_stat, out p_pv, out p_prtfPoss, out p_chartResolution);
+                return GetBacktestResult(p_sqResult, p_forcedStartDate, p_forcedEndDate, out p_stat, out p_pv, out p_prtfPoss, out p_chartResolution);
             case PortfolioType.Trades:
             case PortfolioType.TradesSqClassic:
             default:
@@ -140,7 +140,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         return null; // No Error
     }
 
-    public string? GetBacktestResult(SqResult p_sqResult, out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
+    public string? GetBacktestResult(SqResult p_sqResult, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
         p_stat = new PortfolioRunResultStatistics();
         p_pv = new List<ChartPoint>();
@@ -148,7 +148,10 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         p_chartResolution = ChartResolution.Daily;
 
         string algorithmName = String.IsNullOrEmpty(Algorithm) ? "BasicTemplateFrameworkAlgorithm" : Algorithm;
-        BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(algorithmName, AlgorithmParam, @"{""ema-fast"":10,""ema-slow"":20}", p_sqResult);
+        string p_forcedStartDateStr = Utils.TohYYYYMMDD(p_forcedStartDate ?? DateTime.MinValue); // Convert p_forcedStartDate to a formatted string (YYYY-MM-DD, ex: 2001-01-01), assigning DateTime.MinValue if null.
+        string p_forcedEndDateStr = Utils.TohYYYYMMDD(p_forcedEndDate ?? DateTime.Now); // Convert p_forcedEndDate to a formatted string (YYYY-MM-DD, ex: 2001-01-01), assigning DateTime.Now if null.
+        string backtestAlgorithmParam = "startDate=" + p_forcedStartDateStr + "&endDate=" + p_forcedEndDateStr + "&" + AlgorithmParam; // ex: AlgorithmParam = startDate=2006-01-01&endDate=2024-01-23&assets=VNQ,EEM,DBC,SPY,TLT,SHY&lookback=63&noETFs=3
+        BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(algorithmName, backtestAlgorithmParam, @"{""ema-fast"":10,""ema-slow"":20}", p_sqResult);
         if (backtestResults == null)
             return "Error in Backtest";
 

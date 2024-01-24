@@ -4,7 +4,7 @@
   <div>PortfolioName: {{m_portfolio?.name}}</div>
   <button [ngClass]="{'activeTabItem':m_activeTab == 'Positions'}" (click)="onActiveTabCicked('Positions')">Positions</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Report'}" (click)="onActiveTabCicked('Portfolio Report')">Portfolio Report</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Trades'}" (click)="onActiveTabCicked('Trades')">Trades*</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Performance Accumulator'}" (click)="onActiveTabCicked('Portfolio Performance Accumulator')">Portfolio Performance Accumulator</button>
   <div *ngIf="m_activeTab == 'Positions'">&nbsp;
-    <header>Historical Positions EndDate: <input type="Date" disabled></header>&nbsp;
+    <header>Historical Positions EndDate: <input type="Date" [(ngModel)]="m_histPosEndDate" (change)="onHistPeriodChangeClicked()"></header>&nbsp;
     <table id="pfPossTable">
       <thead>
         <tr>

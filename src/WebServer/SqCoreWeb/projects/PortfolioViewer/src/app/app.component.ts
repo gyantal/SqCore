@@ -23,6 +23,7 @@ export class AppComponent {
   m_chrtHeight: number = 0; // added only to reuse the updateUiWithPrtfRunResult method as is ( variable has no effect today(16012024) may be useful in future)
   m_prtfRunResult: PrtfRunResultJs | null = null;
   m_uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
+  m_histPosEndDate: string = '';
 
   user = {
     name: 'Anonymous',
@@ -85,5 +86,10 @@ export class AppComponent {
 
   onActiveTabCicked(activeTab: string) {
     this.m_activeTab = activeTab;
+  }
+
+  onHistPeriodChangeClicked() { // send this when user changes the historicalPosDates
+    if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
+      this.m_socket.send('RunBacktest:' + '?pid=' + this.m_portfolioId + ',Date:' + this.m_histPosEndDate);
   }
 }

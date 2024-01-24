@@ -95,6 +95,9 @@ public class ChrtGenWs
     {
         Stopwatch stopwatch = Stopwatch.StartNew(); // Stopwatch to capture the start time
         ChrtGenBacktestResult chrtGenBacktestResult = new();
+        // forcedStartDate and forcedEndDate are determined by specifed algorithm, if null (ex: please refer SqPctAllocation.cs file)
+        DateTime? p_forcedStartDate = null;
+        DateTime? p_forcedEndDate = null;
         List<SqLog> sqLogs = new();
         if (string.IsNullOrEmpty(p_msg))
             sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Warn, Message = $"The msg from the client is null" });
@@ -120,7 +123,7 @@ public class ChrtGenWs
         // Step 2: Filling the chrtGenPrtfRunResultJs to a list.
         for (int i = 0; i < lsPrtf.Count; i++)
         {
-            string? errMsg = lsPrtf[i].GetPortfolioRunResult(SqResult.SqPvOnly, out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
+            string? errMsg = lsPrtf[i].GetPortfolioRunResult(SqResult.SqPvOnly, p_forcedStartDate, p_forcedEndDate, out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
             if (errMsg != null)
                 sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Error, Message = errMsg });
             ChartData chartVal = new();

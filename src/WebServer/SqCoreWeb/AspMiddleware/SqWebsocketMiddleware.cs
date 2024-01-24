@@ -184,7 +184,7 @@ public class SqWebsocketMiddleware
                                     ChrtGenWs.OnWsReceiveAsync(/* context, result, */ webSocket, bufferStr);  // no await. There is no need to Wait until all of its async inner methods are completed
                                     break;
                                 case "/prtfvwr":
-                                    await PrtfVwrWs.OnWsConnectedAsync(context, webSocket);
+                                    PrtfVwrWs.OnWsReceiveAsync(/* context, result, */ webSocket, bufferStr);
                                     break;
                                 case "/example-ws1":
                                     ExampleWs.OnWsReceiveAsync(webSocket, bufferStr);

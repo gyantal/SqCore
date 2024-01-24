@@ -43,7 +43,7 @@ public class PrtfVwrWs
         if (webSocket.State == WebSocketState.Open)
             await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None); // takes 0.635ms
         if (queryStr != null)
-            PrtfVwrSendPortfolioRunResults(queryStr, webSocket);
+            PortfVwrGetPortfolioRunResults(webSocket, queryStr);
     }
 
     public static void OnWsClose(WebSocket webSocket)
@@ -51,87 +51,63 @@ public class PrtfVwrWs
         _ = webSocket; // StyleCop SA1313 ParameterNamesMustBeginWithLowerCaseLetter. They won't fix. Recommended solution for unused parameters, instead of the discard (_1) parameters
     }
 
-    public static void PrtfVwrSendPortfolioRunResults(string p_msg, WebSocket webSocket) // This method is similar to PortMgrSendPortfolioRunResults() - Need to discuss with George
+    public static void OnWsReceiveAsync(/* HttpContext context, WebSocketReceiveResult? result, */ WebSocket webSocket,  string bufferStr)
     {
-        // Step1: Processing the message to extract the Id
-        int idStartInd = p_msg.IndexOf("=");
-        if (idStartInd == -1)
-            return;
-        int id = Convert.ToInt32(p_msg[(idStartInd + 1)..]);
+        _ = webSocket; // StyleCop SA1313 ParameterNamesMustBeginWithLowerCaseLetter. They won't fix. Recommended solution for unused parameters, instead of the discard (_1) parameters
 
-        // Step2: Getting the BackTestResults
-        string? errMsg = null;
-        if (MemDb.gMemDb.Portfolios.TryGetValue(id, out Portfolio? prtf))
-            Console.WriteLine($"Portfolio Name: '{prtf.Name}'");
-        else
-            errMsg = $"Error. Portfolio id {id} not found in DB";
+        var semicolonInd = bufferStr.IndexOf(':');
+        string msgCode = bufferStr[..semicolonInd];
+        string msgObjStr = bufferStr[(semicolonInd + 1)..];
 
+        switch (msgCode)
+        {
+            case "RunBacktest":
+                Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): RunBacktest: '{msgObjStr}'");
+                PortfVwrGetPortfolioRunResults(webSocket, msgObjStr);
+                break;
+            default:
+                Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): Unrecognized message from client, {msgCode},{msgObjStr}");
+                break;
+        }
+    }
+
+    // Here we get the p_msg in 2 forms
+    // 1. when onConnected it comes as p_msg ="?pid=12".
+    // 2. when user sends Historical Position Dates ?pid=12,Date:2022-01-01
+    public static void PortfVwrGetPortfolioRunResults(WebSocket webSocket, string p_msg) // p_msg ="?pid=12" or ?pid=12,Date:2022-01-01
+    {
+        // forcedStartDate and forcedEndDate are determined by specifed algorithm, if null (ex: please refer SqPctAllocation.cs file)
+        DateTime? p_forcedStartDate = null;
+        DateTime? p_forcedEndDate = null;
+        int id;
+         // Check if p_msg contains "Date" to determine its format
+        if (p_msg.Contains("Date")) // p_msg = "?pid=12,Date:2022-01-01"
+        {
+            int idStartInd = p_msg.IndexOf("=");
+            int dateInd = idStartInd == -1 ? -1 : p_msg.IndexOf(":", idStartInd + 1);
+            if (dateInd == -1)
+                return;
+            id = Convert.ToInt32(p_msg.Substring(idStartInd + 1, dateInd - idStartInd - ",Date:".Length));
+            string endDtStr = p_msg[(dateInd + 1)..];
+            p_forcedStartDate = DateTime.MinValue;
+            p_forcedEndDate = Utils.Str2DateTimeUtc(endDtStr);
+        }
+        else // p_msg = "?pid=12"
+        {
+            int idStartInd = p_msg.IndexOf("=");
+            if (idStartInd == -1)
+                return;
+            id = Convert.ToInt32(p_msg[(idStartInd + 1)..]);
+        }
+        string? errMsg = MemDb.gMemDb.GetPortfolioRunResults(id, p_forcedStartDate, p_forcedEndDate, out PrtfRunResult prtfRunResultJs);
+        // Send portfolio run result if available
         if (errMsg == null)
         {
-            errMsg = prtf!.GetPortfolioRunResult(SqResult.SqSimple, out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
-            if (errMsg == null)
-            {
-                // Step3: Filling the ChartPoint Dates and Values to a list. A very condensed format. Dates are separated into its ChartDate List.
-                // Instead of the longer [{"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}]
-                // we send a shorter: { ChartDate: [1641013200, 1641013200, 1641013200], Value: [101665, 101665, 101665] }
-                ChartData chartVal = new();
-                foreach (var item in pv)
-                {
-                    chartVal.Dates.Add(item.x);
-                    chartVal.Values.Add((int)item.y);
-                }
-
-                // Step4: Filling the Stats data
-                PortfolioRunResultStatistics pStat = new()
-                {
-                    StartPortfolioValue = stat.StartPortfolioValue,
-                    EndPortfolioValue = stat.EndPortfolioValue,
-                    TotalReturn = stat.TotalReturn,
-                    CAGR = stat.CAGR,
-                    MaxDD = stat.MaxDD,
-                    Sharpe = stat.Sharpe,
-                    CagrSharpe = stat.CagrSharpe,
-                    StDev = stat.StDev,
-                    Ulcer = stat.Ulcer,
-                    TradingDays = stat.TradingDays,
-                    NTrades = stat.NTrades,
-                    WinRate = stat.WinRate,
-                    LossRate = stat.LossRate,
-                    Sortino = stat.Sortino,
-                    Turnover = stat.Turnover,
-                    LongShortRatio = stat.LongShortRatio,
-                    Fees = stat.Fees,
-                    BenchmarkCAGR = stat.BenchmarkCAGR,
-                    BenchmarkMaxDD = stat.BenchmarkMaxDD,
-                    CorrelationWithBenchmark = stat.CorrelationWithBenchmark
-                };
-
-                // Step5: Filling the PrtfPoss data
-                List<PortfolioPosition> prtfPoss = new();
-                foreach (var item in prtfPos)
-                {
-                    prtfPoss.Add(new PortfolioPosition { SqTicker = item.SqTicker, Quantity = item.Quantity, AvgPrice = item.AvgPrice, LastPrice = item.LastPrice });
-                }
-
-                // Step6: Filling the Stats, ChartPoint vals and prtfPoss in pfRunResults
-                PrtfRunResultJs pfRunResult = new()
-                {
-                    Pstat = pStat,
-                    ChrtData = chartVal,
-                    PrtfPoss = prtfPoss
-                };
-
-                // Step7: Sending the pfRunResults data to client
-                if (pfRunResult != null)
-                {
-                    byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.PrtfRunResult:" + Utils.CamelCaseSerialize(pfRunResult));
-                    if (webSocket!.State == WebSocketState.Open)
-                        webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
-                }
-            }
-            _ = chartResolution; // To avoid the compiler Warning "Unnecessary assigment of a value" for unusued variables.
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.PrtfRunResult:" + Utils.CamelCaseSerialize(prtfRunResultJs));
+            if (webSocket!.State == WebSocketState.Open)
+                webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
         }
-
+        // Send error message if available
         if (errMsg != null)
         {
             byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.ErrorToUser:" + errMsg);

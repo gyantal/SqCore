@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.Json.Serialization;
+using QuantConnect;
+using QuantConnect.Parameters;
 using SqCommon;
 
 namespace Fin.MemDb;
@@ -53,6 +56,27 @@ public class AssetHistStat // this is sent to clients usually just once per day,
     public double PeriodLow { get; set; } = -100.0;
     public double PeriodMaxDD { get; set; } = -100.0;
     public double PeriodMaxDU { get; set; } = -100.0;
+}
+
+public class PrtfRunResult // this is sent to clients PrtfMgr and PrtfVwr
+{
+    public PortfolioRunResultStatistics Pstat { get; set; } = new();
+    public ChartData ChrtData { get; set; } = new();
+    public List<PortfolioPosition> PrtfPoss { get; set; } = new();
+}
+
+public class ChartData
+{
+    public ChartResolution ChartResolution { get; set; } = ChartResolution.Daily;
+    public string DateTimeFormat { get; set; } = "YYYYMMDD";  // "SecSince1970", "YYYYMMDD", "DaysFrom<YYYYDDMM>"
+    public List<long> Dates { get; set; } = new List<long>();
+
+    // PV values are usually $100,000, $100,350,..., but PV can be around $1000 too and in that case decimals become important and we cannot use 'int' for storing them.
+    // So we have to use either decimal (16 bytes) or float (4 byte) or double (8 bytes)
+    // We don't like decimal (16 bytes), but the reason to keep it is that QC gives decimal values. Converting it to int or float requires some CPU conversion. But we should do it. For saving RAM. (20KB float List instead of the 80KB decimal List)
+    // If we use float (4 bytes), we should use the FloatJsonConverterToNumber4D attribute for generating maximum 4 decimals: (100.342222225 decimal => float 100.3422)
+    [JsonConverter(typeof(FloatListJsonConverterToNumber4D))]
+    public List<float> Values { get; set; } = new List<float>(); // if 7 digit mantissa precision is enough then use float, otherwise double. Float:  if PV values of 10M = 10,000,000 we don't have any decimals, which is fine usually
 }
 
 public partial class MemDb
@@ -333,5 +357,75 @@ public partial class MemDb
     public void WritePortfolioTradeHistory(int p_tradeHistoryId, List<Trade> p_tradeList)
     {
         m_Db.WritePortfolioTradeHistory(p_tradeHistoryId, p_tradeList);
+    }
+
+    public string? GetPortfolioRunResults(int p_portfolioId, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PrtfRunResult prtfRunResult)
+    {
+        prtfRunResult = new PrtfRunResult();
+        // Step1: Getting the BackTestResults
+        string? errMsg = null;
+        if (MemDb.gMemDb.Portfolios.TryGetValue(p_portfolioId, out Portfolio? prtf))
+            Console.WriteLine($"Portfolio Name: '{prtf.Name}'");
+        else
+            errMsg = $"Error. Portfolio id {p_portfolioId} not found in DB";
+
+        if (errMsg == null)
+        {
+            errMsg = prtf!.GetPortfolioRunResult(SqResult.SqSimple, p_forcedStartDate, p_forcedEndDate, out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
+            if (errMsg == null)
+            {
+                // Step2: Filling the ChartPoint Dates and Values to a list. A very condensed format. Dates are separated into its ChartDate List.
+                // Instead of the longer [{"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}]
+                // we send a shorter: { ChartDate: [1641013200, 1641013200, 1641013200], Value: [101665, 101665, 101665] }
+                ChartData chartVal = new();
+                foreach (var item in pv)
+                {
+                    chartVal.Dates.Add(item.x);
+                    chartVal.Values.Add((int)item.y);
+                }
+
+                // Step3: Filling the Stats data
+                PortfolioRunResultStatistics pStat = new()
+                {
+                    StartPortfolioValue = stat.StartPortfolioValue,
+                    EndPortfolioValue = stat.EndPortfolioValue,
+                    TotalReturn = stat.TotalReturn,
+                    CAGR = stat.CAGR,
+                    MaxDD = stat.MaxDD,
+                    Sharpe = stat.Sharpe,
+                    CagrSharpe = stat.CagrSharpe,
+                    StDev = stat.StDev,
+                    Ulcer = stat.Ulcer,
+                    TradingDays = stat.TradingDays,
+                    NTrades = stat.NTrades,
+                    WinRate = stat.WinRate,
+                    LossRate = stat.LossRate,
+                    Sortino = stat.Sortino,
+                    Turnover = stat.Turnover,
+                    LongShortRatio = stat.LongShortRatio,
+                    Fees = stat.Fees,
+                    BenchmarkCAGR = stat.BenchmarkCAGR,
+                    BenchmarkMaxDD = stat.BenchmarkMaxDD,
+                    CorrelationWithBenchmark = stat.CorrelationWithBenchmark
+                };
+
+                // Step4: Filling the PrtfPoss data
+                List<PortfolioPosition> prtfPoss = new();
+                foreach (var item in prtfPos)
+                {
+                    prtfPoss.Add(new PortfolioPosition { SqTicker = item.SqTicker, Quantity = item.Quantity, AvgPrice = item.AvgPrice, LastPrice = item.LastPrice });
+                }
+
+                // Step5: Filling the Stats, ChartPoint vals and prtfPoss in pfRunResults
+                prtfRunResult = new()
+                {
+                    Pstat = pStat,
+                    ChrtData = chartVal,
+                    PrtfPoss = prtfPoss
+                };
+            }
+            _ = chartResolution; // To avoid the compiler Warning "Unnecessary assigment of a value" for unusued variables.
+        }
+        return errMsg;
     }
 }
