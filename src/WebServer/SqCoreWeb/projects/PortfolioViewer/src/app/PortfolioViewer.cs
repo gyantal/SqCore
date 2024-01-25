@@ -38,7 +38,7 @@ public class PrtfVwrWs
             return;
         int id = Convert.ToInt32(queryStr[(idStartInd + 1)..]);
         // https://stackoverflow.com/questions/24450109/how-to-send-receive-messages-through-a-web-socket-on-windows-phone-8-using-the-c
-        var msgObj = new HandshakeMessagePrtfViewer() { Email = email, PrtfToClient = UiUtils.GetPortfolio(id) };
+        var msgObj = new HandshakeMessagePrtfViewer() { Email = email, PrtfToClient = UiUtils.GetPortfolioJs(id) };
         byte[] encodedMsg = Encoding.UTF8.GetBytes("OnConnected:" + Utils.CamelCaseSerialize(msgObj));
         if (webSocket.State == WebSocketState.Open)
             await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None); // takes 0.635ms
@@ -73,31 +73,30 @@ public class PrtfVwrWs
 
     // Here we get the p_msg in 2 forms
     // 1. when onConnected it comes as p_msg ="?pid=12".
-    // 2. when user sends Historical Position Dates ?pid=12,Date:2022-01-01
-    public static void PortfVwrGetPortfolioRunResults(WebSocket webSocket, string p_msg) // p_msg ="?pid=12" or ?pid=12,Date:2022-01-01
+    // 2. when user sends Historical Position Dates ?pid=12&Date:2022-01-01
+    public static void PortfVwrGetPortfolioRunResults(WebSocket webSocket, string p_msg) // p_msg ="?pid=12" or ?pid=12&Date:2022-01-01
     {
         // forcedStartDate and forcedEndDate are determined by specifed algorithm, if null (ex: please refer SqPctAllocation.cs file)
         DateTime? p_forcedStartDate = null;
         DateTime? p_forcedEndDate = null;
-        int id;
+
+        int idStartInd = p_msg.IndexOf("pid=");
+        if (idStartInd == -1)
+            return;
+        idStartInd += "pid=".Length;
+        int idEndInd = p_msg.IndexOf('&', idStartInd);
+        int idLength = idEndInd == -1 ? p_msg.Length - idStartInd : idEndInd - idStartInd;
+        int id = Convert.ToInt32(p_msg.Substring(idStartInd, idLength));
+
          // Check if p_msg contains "Date" to determine its format
-        if (p_msg.Contains("Date")) // p_msg = "?pid=12,Date:2022-01-01"
+        if (p_msg.Contains("Date")) // p_msg = "?pid=12&Date:2022-01-01"
         {
-            int idStartInd = p_msg.IndexOf("=");
-            int dateInd = idStartInd == -1 ? -1 : p_msg.IndexOf(":", idStartInd + 1);
+            int dateInd = p_msg.IndexOf("&Date:");
             if (dateInd == -1)
                 return;
-            id = Convert.ToInt32(p_msg.Substring(idStartInd + 1, dateInd - idStartInd - ",Date:".Length));
-            string endDtStr = p_msg[(dateInd + 1)..];
+            string endDtStr = p_msg[(dateInd + "&Date:".Length)..];
             p_forcedStartDate = DateTime.MinValue;
             p_forcedEndDate = Utils.Str2DateTimeUtc(endDtStr);
-        }
-        else // p_msg = "?pid=12"
-        {
-            int idStartInd = p_msg.IndexOf("=");
-            if (idStartInd == -1)
-                return;
-            id = Convert.ToInt32(p_msg[(idStartInd + 1)..]);
         }
         string? errMsg = MemDb.gMemDb.GetPortfolioRunResults(id, p_forcedStartDate, p_forcedEndDate, out PrtfRunResult prtfRunResultJs);
         // Send portfolio run result if available

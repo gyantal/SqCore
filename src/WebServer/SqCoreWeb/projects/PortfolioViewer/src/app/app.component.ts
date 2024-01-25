@@ -90,6 +90,6 @@ export class AppComponent {
 
   onHistPeriodChangeClicked() { // send this when user changes the historicalPosDates
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-      this.m_socket.send('RunBacktest:' + '?pid=' + this.m_portfolioId + ',Date:' + this.m_histPosEndDate);
+      this.m_socket.send('RunBacktest:' + '?pid=' + this.m_portfolioId + '&Date:' + this.m_histPosEndDate);
   }
 }

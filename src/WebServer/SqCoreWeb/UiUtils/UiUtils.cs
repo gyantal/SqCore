@@ -140,19 +140,12 @@ internal static partial class UiUtils
         throw new NotImplementedException();
     }
 
-    internal static PortfolioJs GetPortfolio(int id) // Method to retrieve a PortfolioJs object based on its ID
+    internal static PortfolioJs GetPortfolioJs(int id) // Method to retrieve a PortfolioJs object based on its ID
     {
-        PortfolioJs prtf = new();
-        Dictionary<int, Portfolio>.ValueCollection prtfs = MemDb.gMemDb.Portfolios.Values;
-        foreach (Portfolio pf in prtfs)
-        {
-            if (pf.Id == id)
-            {
-                prtf = new() { Id = pf.Id, Name = pf.Name, OwnerUserId = pf.User?.Id ?? -1, ParentFolderId = pf.ParentFolderId, BaseCurrency = pf.BaseCurrency.ToString(), SharedAccess = pf.SharedAccess.ToString(), SharedUsersWith = pf.SharedUsersWith, Type = pf.Type.ToString(), Algorithm = pf.Algorithm, AlgorithmParam = pf.AlgorithmParam };
-                break;
-            }
-        }
+        PortfolioJs prtfToClient = new();
+        if (MemDb.gMemDb.Portfolios.TryGetValue(id, out Portfolio? pf))
+            prtfToClient = new() { Id = pf.Id, Name = pf.Name, OwnerUserId = pf.User?.Id ?? -1, ParentFolderId = pf.ParentFolderId, BaseCurrency = pf.BaseCurrency.ToString(), SharedAccess = pf.SharedAccess.ToString(), SharedUsersWith = pf.SharedUsersWith, Type = pf.Type.ToString(), Algorithm = pf.Algorithm, AlgorithmParam = pf.AlgorithmParam };
 
-        return prtf;
+        return prtfToClient;
     }
 }
