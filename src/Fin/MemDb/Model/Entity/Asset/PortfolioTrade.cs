@@ -63,10 +63,10 @@ public class TradeInDb
         Action = AssetHelper.gTradeActionToStr[p_trade.Action];
         AssetType = AssetHelper.gAssetTypeCode[p_trade.AssetType];
         Symbol = p_trade.Symbol;
-        UnderlyingSymbol = p_trade.UnderlyingSymbol;
+        UnderlyingSymbol = (AssetType == 'S') ? null : p_trade.UnderlyingSymbol;
         Quantity = p_trade.Quantity;
         Price = p_trade.Price;
-        Currency = p_trade.Currency == CurrencyId.Unknown ? null : AssetHelper.gCurrencyToString[p_trade.Currency];
+        Currency = (p_trade.Currency == CurrencyId.Unknown || p_trade.Currency == CurrencyId.USD) ? null : AssetHelper.gCurrencyToString[p_trade.Currency];
         Commission = p_trade.Commission == 0f ? null : p_trade.Commission;
         Exchange = p_trade.ExchangeId == ExchangeId.Unknown ? null : AssetHelper.gExchangeToStr[p_trade.ExchangeId];
         ConnectedTrades = p_trade.ConnectedTrades != null ? string.Join(",", p_trade.ConnectedTrades) : null;
@@ -82,12 +82,7 @@ public class TradeInDb
             tradesToDb.Add(tradeInDb);
         }
 
-        var serializeOptions = new JsonSerializerOptions
-        {
-            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-        };
-
-        return JsonSerializer.Serialize(tradesToDb, serializeOptions);
+        return JsonSerializer.Serialize(tradesToDb, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
     }
 }
 

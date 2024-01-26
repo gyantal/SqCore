@@ -466,19 +466,42 @@ public partial class Db
         return string.Empty;
     }
 
-    public IEnumerable<Trade> GetPortfolioTradeHistory(int p_tradeHistoryId, DateTime? p_startIncLoc, DateTime? p_endIncLoc)
+    // Benchmark runs for GetPortfolioTradeHistory(). On Linux server with local Redis-sever. First run: 10ms, consecutive runs: 0.5ms
+    public IEnumerable<Trade> GetPortfolioTradeHistory(int p_tradeHistoryId, DateTime? p_startIncLoc, DateTime? p_endIncLoc) // Slim version of returning 5,000 trades one by one with IEnumerable
     {
         string redisKey = p_tradeHistoryId.ToString();
-        string? portfTradeHistInDbStr = m_redisDb.HashGet("portfolioTradeHistory", redisKey);
+        string? portfTradeHistInDbStr = m_redisDb.HashGet("portfolioTradeHistory", redisKey); // portfTradeHistInDbStr: allocates RAM (e.g. 0.5MB) for all (5,000) trades 1x. We cannot make it slimmer, because RedisDb doesn't support enumeration.
         if (portfTradeHistInDbStr == null)
         {
             Utils.Logger.Error($"Error in GetPortfolioTradeHistory(): portfolio id '{p_tradeHistoryId}");
-            return Enumerable.Empty<Trade>();
+            yield break; // exits the iterator
+        }
+
+        IEnumerable<TradeInDb> tradeInDbs = JsonSerializer.Deserialize<IEnumerable<TradeInDb>>(portfTradeHistInDbStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = false }) // Case sensitive is the fastest.
+                ?? throw new SqException($"Deserialize failed on '{portfTradeHistInDbStr}'");
+        foreach (TradeInDb tradeInDb in tradeInDbs)
+        {
+            Trade trade = new(tradeInDb);
+            yield return trade;
+        }
+        // return Enumerable.Empty<Trade>();
+    }
+
+    // The IEnumerable<> version is faster as it allocates less memory.
+    // However, if you iterate over it many times, or you need the Count, or you search a specific Trade.Date in it with binary search, the user of this will need a List<>. So, use this 90% of the time.
+    public List<Trade> GetPortfolioTradeHistoryToList(int p_tradeHistoryId, DateTime? p_startIncLoc, DateTime? p_endIncLoc) // Fat version of returning 5,000 trades (e.g. 0.5MB) in a List
+    {
+        string redisKey = p_tradeHistoryId.ToString();
+        string? portfTradeHistInDbStr = m_redisDb.HashGet("portfolioTradeHistory", redisKey); // portfTradeHistInDbStr: allocates RAM (e.g. 0.5MB) for all (5,000) trades 1x
+        if (portfTradeHistInDbStr == null)
+        {
+            Utils.Logger.Error($"Error in GetPortfolioTradeHistory(): portfolio id '{p_tradeHistoryId}");
+            return new(); // returns an empty List
         }
 
         TradeInDb[] tradeInDbs = JsonSerializer.Deserialize<TradeInDb[]>(portfTradeHistInDbStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = false }) // Case sensitive is the fastest.
-                ?? throw new SqException($"Deserialize failed on '{portfTradeHistInDbStr}'");
-        List<Trade> trades = new();
+                ?? throw new SqException($"Deserialize failed on '{portfTradeHistInDbStr}'"); // TradeInDb[]: allocates RAM (e.g. 0.5MB) for all (5,000) trades 2x
+        List<Trade> trades = new(tradeInDbs.Length); // List<Trade>: allocates RAM (e.g. 0.5MB) for all (5,000) trades 3x
         foreach (TradeInDb tradeInDb in tradeInDbs)
         {
             Trade trade = new(tradeInDb);
@@ -486,32 +509,38 @@ public partial class Db
         }
 
         return trades;
-        // return Enumerable.Empty<Trade>();
     }
 
+    // Benchmark runs for WritePortfolioTradeHistory(). On Linux server with local Redis-sever. First run: 29ms, consecutive runs: 0.5ms
     public void WritePortfolioTradeHistory(int tradeHistoryId, List<Trade> tradeList)
     {
         HashEntry[] newTradeInDbs = new HashEntry[] { new(tradeHistoryId, TradeInDb.ToRedisValue(tradeList)) };
         m_redisDb.HashSet("portfolioTradeHistory", newTradeInDbs);
     }
 
-    public void AppendPortfolioTradeHistory(int tradeHistoryId, List<Trade> tradeList)
+    public void AppendPortfolioTradeHistory(int tradeHistoryId, List<Trade> p_newTradeList)
     {
-        List<Trade>? existingTrades = null;
-
-        try
+        List<Trade> existingTrades = GetPortfolioTradeHistoryToList(tradeHistoryId, null, null); // if tradeHistoryId doesn't exist GetPortfolioTradeHistory() throws an exception. But we should do it without Exception.
+        if (existingTrades.Count > 0)
         {
-            existingTrades = GetPortfolioTradeHistory(tradeHistoryId, null, null).ToList(); // if tradeHistoryId doesn't exist GetPortfolioTradeHistory() throws an exception. But we should do it without Exception.
+            int maxId = -1; // if empty list, newId will be 0, which is OK
+            foreach (Trade trade in existingTrades)
+            {
+                if (maxId < trade.Id)
+                    maxId = trade.Id;
+            }
+            int idOffset = maxId + 1;
+            foreach (Trade trade in p_newTradeList)
+            {
+                trade.Id += idOffset;
+                if (trade.ConnectedTrades == null)
+                    continue;
+                for (int i = 0; i < trade.ConnectedTrades.Count; i++)
+                    trade.ConnectedTrades[i] += idOffset;
+            }
         }
-        catch
-        {
-            existingTrades = new(); // if tradeHistoryId
-        }
-        // Task3: max kereses az existingTrades
-        // use that as an offset. minden tradeList.ID-t eltolnam, es a ConnectedTrades, because we ASSUME that the ConnectedTrades belong only to the New part, and it doesn't refer back to the Existing part.
-        // Task4:  "UndSymbol": "TSLA",
 
-        existingTrades?.AddRange(tradeList);
+        existingTrades?.AddRange(p_newTradeList);
         WritePortfolioTradeHistory(tradeHistoryId, existingTrades!);
     }
 

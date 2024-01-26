@@ -354,9 +354,19 @@ public partial class MemDb
         return m_Db.GetPortfolioTradeHistory(p_tradeHistoryId, p_startIncLoc, p_endIncLoc);
     }
 
+    public List<Trade> GetPortfolioTradeHistoryToList(int p_tradeHistoryId, DateTime? p_startIncLoc, DateTime? p_endIncLoc)
+    {
+        return m_Db.GetPortfolioTradeHistoryToList(p_tradeHistoryId, p_startIncLoc, p_endIncLoc);
+    }
+
     public void WritePortfolioTradeHistory(int p_tradeHistoryId, List<Trade> p_tradeList)
     {
         m_Db.WritePortfolioTradeHistory(p_tradeHistoryId, p_tradeList);
+    }
+
+    public void AppendPortfolioTradeHistory(int p_tradeHistoryId, List<Trade> p_newTradeList)
+    {
+        m_Db.AppendPortfolioTradeHistory(p_tradeHistoryId, p_newTradeList);
     }
 
     public string? GetPortfolioRunResults(int p_portfolioId, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PrtfRunResult prtfRunResult)

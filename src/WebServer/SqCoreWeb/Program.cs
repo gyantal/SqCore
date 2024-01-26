@@ -283,7 +283,7 @@ public partial class Program
         Console.WriteLine("4. YF: Test getting SPY realtime");
         Console.WriteLine("5. FinDb: Crawl security histories");
         Console.WriteLine("6. MemDb: Test getting PortfolioTradeHistory from RedisDb");
-        Console.WriteLine("7. MemDb: Test write PortfolioTradeHistory to RedisDb");
+        Console.WriteLine("7. MemDb: Test append-writing PortfolioTradeHistory to RedisDb");
         Console.WriteLine("9. Exit to main menu.");
         string userInput;
         try
@@ -334,7 +334,7 @@ public partial class Program
                     List<Trade> portTradeHist = new();
                     Utils.BenchmarkElapsedTime("GetPortfolioTradeHistory()", () =>
                     {
-                        portTradeHist = MemDb.gMemDb.GetPortfolioTradeHistory(1, null, null).ToList();
+                        portTradeHist = MemDb.gMemDb.GetPortfolioTradeHistoryToList(1, null, null);
                     });
 
                     Console.WriteLine($"portTradeHist.Count: {portTradeHist.Count}");
@@ -348,15 +348,17 @@ public partial class Program
                 try
                 {
                     List<Trade> testTrades = new();
-                    Trade trade1 = new Trade(testTrades) { AssetType = AssetType.Stock, Action = TradeActionType.Buy, Symbol = "TSLA", Price = 123, Quantity = 65, Time = DateTime.Now.AddDays(-1) };
+                    Trade trade1 = new Trade(testTrades) { AssetType = AssetType.Stock, Action = TradeActionType.Buy, Symbol = "TSLA", Price = 123, Quantity = 65, Commission = 1.2f, Time = DateTime.Now.AddDays(-1) };
                     testTrades.Add(trade1);
-                    Trade trade2 = new Trade(testTrades) { AssetType = AssetType.Stock, Action = TradeActionType.Buy, Symbol = "AMD", Price = 54, Commission = 1.2f, Quantity = 50, Time = DateTime.Now.AddDays(-0.1) };
+                    Trade trade2 = new Trade(testTrades) { AssetType = AssetType.Option, Action = TradeActionType.Exercise, Symbol = "AMD 1234C0123", UnderlyingSymbol = "AMD", Quantity = 1, Time = DateTime.Now.AddDays(-0.1), ConnectedTrades = new List<int> { 2 } };
                     testTrades.Add(trade2);
+                    Trade trade3 = new Trade(testTrades) { AssetType = AssetType.Stock, Action = TradeActionType.Buy, Symbol = "AMD", Price = 54, Quantity = 100, Time = DateTime.Now.AddDays(-0.1) };
+                    testTrades.Add(trade3);
 
                     Utils.BenchmarkElapsedTime("WritePortfolioTradeHistory()", () =>
                     {
-                        MemDb.gMemDb.WritePortfolioTradeHistory(44, testTrades);
-                        // MemDb.gMemDb.AppendTradeListToRedis(35, testTrades);
+                        // MemDb.gMemDb.WritePortfolioTradeHistory(44, testTrades);
+                        MemDb.gMemDb.AppendPortfolioTradeHistory(35, testTrades);
                     });
                     Console.WriteLine($"WritePortfolioTradeHistory(): OK.");
                 }
