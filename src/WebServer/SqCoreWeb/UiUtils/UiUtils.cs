@@ -33,6 +33,8 @@ internal class PortfolioJs : PortfolioItemJs
     public string Algorithm { get; set; } = string.Empty;
     [JsonPropertyName("algoP")]
     public string AlgorithmParam { get; set; } = string.Empty;
+    [JsonPropertyName("trdHis")]
+    public int TradeHistoryId { get; set; } = -1;
 }
 
 internal static partial class UiUtils
@@ -129,7 +131,7 @@ internal static partial class UiUtils
             int virtualParentFldId = GetVirtualParentFldId(pf.User, pf.ParentFolderId);
             int ownerUserId = pf.User?.Id ?? -1;
 
-            PortfolioJs pfJs = new() { Id = pf.Id + gPortfolioIdOffset, Name = pf.Name, OwnerUserId = ownerUserId, ParentFolderId = virtualParentFldId, BaseCurrency = pf.BaseCurrency.ToString(), SharedAccess = pf.SharedAccess.ToString(), SharedUsersWith = pf.SharedUsersWith, Type = pf.Type.ToString(), Algorithm = pf.Algorithm, AlgorithmParam = pf.AlgorithmParam };
+            PortfolioJs pfJs = new() { Id = pf.Id + gPortfolioIdOffset, Name = pf.Name, OwnerUserId = ownerUserId, ParentFolderId = virtualParentFldId, BaseCurrency = pf.BaseCurrency.ToString(), SharedAccess = pf.SharedAccess.ToString(), SharedUsersWith = pf.SharedUsersWith, Type = pf.Type.ToString(), Algorithm = pf.Algorithm, AlgorithmParam = pf.AlgorithmParam, TradeHistoryId = pf.TradeHistoryId };
             prtfsToClient.Add(pfJs);
         }
         return prtfsToClient;

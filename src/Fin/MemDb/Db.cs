@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using DbCommon;
 using Microsoft.Extensions.Primitives;
 using SqCommon;
@@ -460,8 +461,8 @@ public partial class Db
         pfInDbCandidate.Note = p_note;
         Utils.Logger.Debug($"shareduserwith{p_sharedUsersWith}"); // need to develop this - Daya
         // pfInDbCandidate.SharedUsersWith = p_sharedUsersWith.ToString();
-        pfInDbCandidate.TradeHistoryId = p_tradeHistoryId;
-        string redisValue = JsonSerializer.Serialize<PortfolioInDb>(pfInDbCandidate);
+        pfInDbCandidate.TradeHistoryId = p_tradeHistoryId == -1 ? null : p_tradeHistoryId;
+        string redisValue = JsonSerializer.Serialize<PortfolioInDb>(pfInDbCandidate, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
         m_redisDb.HashSet("portfolio", redisKey, redisValue);
         return string.Empty;
     }

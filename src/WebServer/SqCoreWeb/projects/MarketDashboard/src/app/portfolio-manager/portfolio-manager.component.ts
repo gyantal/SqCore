@@ -343,6 +343,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.parentfolderName = this.folders?.find((r) => r.id == lastSelectedTreeNode.parentFolderId!)?.name ?? null;
       this.editedPortfolio.algorithm = prtfolioSelected?.algorithm!;
       this.editedPortfolio.algorithmParam = prtfolioSelected?.algorithmParam!; // even after clicking the saveButton the algorithm param is not updating because it inital takes lastSelected item. So we have updated with current Portfolios AlgorithmParam.
+      this.editedPortfolio.tradeHistoryId = prtfolioSelected?.tradeHistoryId!;
     }
 
     this.isViewedPortfolioSaveAllowed = this._mainUser!.isAdmin || this._mainUser!.id == lastSelectedTreeNode!.ownerUserId;
@@ -363,7 +364,7 @@ export class PortfolioManagerComponent implements OnInit, AfterViewInit {
       this.isCreateOrEditPortfolioPopupVisible = true;
     else {
       if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-        this._parentWsConnection.send(`PortfMgr.CreateOrEditPortfolio:id:${this.editedPortfolio.id},name:${this.editedPortfolio.name},prntFId:${this.editedPortfolio.parentFolderId},currency:${this.editedPortfolio.baseCurrency},type:${this.editedPortfolio.type},algo:${this.editedPortfolio.algorithm},algoP:${this.editedPortfolio.algorithmParam},access:${this.editedPortfolio.sharedAccess},note:${this.editedPortfolio.note}`);
+        this._parentWsConnection.send(`PortfMgr.CreateOrEditPortfolio:id:${this.editedPortfolio.id},name:${this.editedPortfolio.name},prntFId:${this.editedPortfolio.parentFolderId},currency:${this.editedPortfolio.baseCurrency},type:${this.editedPortfolio.type},algo:${this.editedPortfolio.algorithm},algoP:${this.editedPortfolio.algorithmParam},trdHis:${this.editedPortfolio.tradeHistoryId},access:${this.editedPortfolio.sharedAccess},note:${this.editedPortfolio.note}`);
       this.isCreateOrEditPortfolioPopupVisible = false;
     }
   }
