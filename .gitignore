@@ -52,10 +52,15 @@ Cargo.lock
 #**/wwwroot/webapps/MarketDashboard
 **/wwwroot/webapps/*
 
+# In general, don't commit the Fin/Data/.../daily/ and factor_files/ , because that is crawled YF data. Except for QC's original SPY data 'spy-qc', and our synthetized ticker histories: SVXY.SQ, TQQQ.SQ, UPRO.SQ, UVXY.SQ, VXX.SQ, VXZ.SQ
 **/Fin/Data/equity/usa/daily/*
 !**/Fin/Data/equity/usa/daily/spy-qc.zip
+!**/Fin/Data/equity/usa/daily/*-sq-history.zip
+
 **/Fin/Data/equity/usa/factor_files/*
 !**/Fin/Data/equity/usa/factor_files/spy-qc.csv
+!**/Fin/Data/equity/usa/factor_files/*-sq-history.csv
+
 
 # Ignore Python cache folders
 __pycache__/

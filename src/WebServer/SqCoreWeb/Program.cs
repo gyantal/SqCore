@@ -281,7 +281,7 @@ public partial class Program
         Console.WriteLine("2. MemDb: Reload All DbData Only If Changed");
         Console.WriteLine("3. YF: Test getting SPY history");
         Console.WriteLine("4. YF: Test getting SPY realtime");
-        Console.WriteLine("5. FinDb: Crawl security histories");
+        Console.WriteLine("5. FinDb: Force daily YF PriceHistory Crawler for securities having MAP file");
         Console.WriteLine("6. MemDb: Test getting PortfolioTradeHistory from RedisDb");
         Console.WriteLine("7. MemDb: Test append-writing PortfolioTradeHistory to RedisDb");
         Console.WriteLine("9. Exit to main menu.");
