@@ -39,6 +39,8 @@ export class AppComponent {
     if (prtfIdStr != null)
       this.m_portfolioId = parseInt(prtfIdStr);
     this.m_socket = new WebSocket('wss://' + document.location.hostname + '/ws/prtfvwr' + wsQueryStr);
+    this.m_chrtWidth = window.innerWidth as number;
+    this.m_chrtHeight = window.innerHeight as number * 0.5; // 50% of window height
   }
 
   ngOnInit(): void {
