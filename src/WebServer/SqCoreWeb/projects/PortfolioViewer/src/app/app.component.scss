@@ -17,7 +17,7 @@ thead {
   background-image: linear-gradient(90deg, #8dc7fa 3%, #9dcef8 7%, #d5f5f6 25%, #d5f5f6 55%, #ace16b 85%, #91d73a 90%);
 }
 
-#pfPossTable td, th {
+.tableCommon td, th {
   padding: 0rem;
   border-style: ridge;
   border-width: 0.05rem;
@@ -26,7 +26,7 @@ thead {
   text-align: center;
 }
 
-#pfPossTable tr:nth-child(even) {
+.tableCommon tr:nth-child(even) {
   background-color: #9dcef8;
 }
 

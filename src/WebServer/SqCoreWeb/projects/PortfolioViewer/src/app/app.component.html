@@ -5,7 +5,7 @@
   <button [ngClass]="{'activeTabItem':m_activeTab == 'Positions'}" (click)="onActiveTabCicked('Positions')">Positions</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Report'}" (click)="onActiveTabCicked('Portfolio Report')">Portfolio Report</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Trades'}" (click)="onActiveTabCicked('Trades')">Trades*</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Performance Accumulator'}" (click)="onActiveTabCicked('Portfolio Performance Accumulator')">Portfolio Performance Accumulator</button>
   <div [hidden]="m_activeTab != 'Positions'">&nbsp;
     <header>Historical Positions EndDate: <input type="Date" [(ngModel)]="m_histPosEndDate" (change)="onHistPeriodChangeClicked()"></header>&nbsp;
-    <table id="pfPossTable">
+    <table class="tableCommon">
       <thead>
         <tr>
           <th>SqTicker</th>
@@ -53,6 +53,32 @@
   </div>
   <div [hidden]="m_activeTab != 'Trades'">
     <p>Trades</p>
+    <table class="tableCommon">
+      <thead>
+        <tr>
+          <th>Symbol</th>
+          <th>Quantity</th>
+          <th>Price</th>
+          <th>Currency</th>
+          <th>TradeAction</th>
+          <th>AssetType</th>
+          <th>Date</th>
+          <th>ExchangeId</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of m_trades">
+          <td>{{item.underlyingSymbol}}</td>
+          <td>{{item.quantity}}</td>
+          <td>{{item.price | number:'1.2-2'}}</td>
+          <td>{{item.currency}}</td>
+          <td>{{item.action}}</td>
+          <td>{{item.assetType}}</td>
+          <td>{{item.time | date : 'yyyy-MM-dd'}}</td>
+          <td>{{item.exchangeId}}</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
   <div [hidden]="m_activeTab != 'Portfolio Performance Accumulator'">
     <p>Portfolio Performance Accumulator</p>

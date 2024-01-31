@@ -8,6 +8,77 @@ class HandshakeMessage {
   public prtfToClient: PortfolioJs | null = null;
 }
 
+enum TradeActionType {
+  Unknown = 0,
+  Deposit = 1,
+  Withdrawal = 2,
+  Buy = 3,
+  Sell = 4,
+  Exercise = 5,
+  Expired = 6
+}
+
+enum AssetType {
+  Unknown = 0,
+  CurrencyCash = 1,
+  CurrencyPair = 2,
+  Stock = 3,
+  Bond = 4,
+  Fund = 5,
+  Futures = 6,
+  Option = 7,
+  Commodity = 8,
+  RealEstate = 9,
+  FinIndex = 10,
+  BrokerNAV = 11,
+  Portfolio = 12,
+  GeneralTimeSeries = 13,
+  Company = 14
+}
+
+enum CurrencyId {
+  Unknown = 0,
+  USD = 1,
+  EUR = 2,
+  GBP = 3,
+  GBX = 4,
+  HUF = 5,
+  JPY = 6,
+  CNY = 7,
+  CAD = 8,
+  CHF = 9
+}
+
+enum ExchangeId {
+  Unknown = -1,
+  NASDAQ = 1,
+  NYSE = 2,
+  AMEX = 3,
+  PINK = 4,
+  CDNX = 5,
+  LSE = 6,
+  XTRA = 7,
+  CBOE = 8,
+  ARCA = 9,
+  BATS = 10,
+  OTCBB = 11
+}
+
+class TradeJs {
+  id: number = -1;
+  time: Date = new Date();
+  action: TradeActionType = TradeActionType.Unknown;
+  assetType: AssetType = AssetType.Unknown;
+  symbol: string | null = null;
+  underlyingSymbol: string | null = null;
+  quantity: number = 0;
+  price: number = 0;
+  currency: CurrencyId = CurrencyId.Unknown;
+  commission: number = 0;
+  exchangeId: ExchangeId = ExchangeId.Unknown;
+  connectedTrades: number[] | null = null;
+}
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -24,6 +95,7 @@ export class AppComponent {
   m_prtfRunResult: PrtfRunResultJs | null = null;
   m_uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
   m_histPosEndDate: string = '';
+  m_trades: TradeJs[] | null = null;
 
   user = {
     name: 'Anonymous',
@@ -67,6 +139,10 @@ export class AppComponent {
           console.log('PrtfVwr.PrtfRunResult:' + msgObjStr);
           this.processPortfolioRunResult(msgObjStr);
           break;
+        case 'PrtfVwr.TradesHist':
+          console.log('PrtfVwr.TradesHist:' + msgObjStr);
+          this.m_trades = JSON.parse(msgObjStr);
+          break;
       }
     };
   }
@@ -88,10 +164,18 @@ export class AppComponent {
 
   onActiveTabCicked(activeTab: string) {
     this.m_activeTab = activeTab;
+    if (this.m_activeTab == 'Trades')
+      this.getTradesHistory();
   }
 
   onHistPeriodChangeClicked() { // send this when user changes the historicalPosDates
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-      this.m_socket.send('RunBacktest:' + '?pid=' + this.m_portfolioId + '&Date:' + this.m_histPosEndDate);
+      this.m_socket.send('RunBacktest:' + '?pid=' + this.m_portfolioId + '&Date=' + this.m_histPosEndDate);
+  }
+
+  getTradesHistory() { // send this when user clicks on Trades tab
+    console.log('getTradesHistory');
+    if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
+      this.m_socket.send('GetTradesHist:' + this.m_portfolio?.tradeHistoryId);
   }
 }
