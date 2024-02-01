@@ -122,12 +122,12 @@ public class PrtfVwrWs
     public static void PortfVwrGetPortfolioTradesHistory(WebSocket webSocket, string p_msg)
     {
         int id = Convert.ToInt32(p_msg);
-        // Set forced start and end dates to null initially - TBD
-        DateTime? p_forcedStartDate = null;
-        DateTime? p_forcedEndDate = null;
-        List<Trade> tradesHist = MemDb.gMemDb.GetPortfolioTradeHistoryToList(id, p_forcedStartDate, p_forcedEndDate); // Retrieve trades history
-        byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.TradesHist:" + Utils.CamelCaseSerialize(tradesHist));
-        if (webSocket!.State == WebSocketState.Open)
+        if (MemDb.gMemDb.Portfolios.TryGetValue(id, out Portfolio? pf))
+        {
+            IEnumerable<Trade> tradesHist = MemDb.gMemDb.GetPortfolioTradeHistory(pf.TradeHistoryId, null, null); // Retrieve trades history
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.TradesHist:" + Utils.CamelCaseSerialize(tradesHist));
+            if (webSocket!.State == WebSocketState.Open)
                 webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        }
     }
 }

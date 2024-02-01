@@ -17,7 +17,7 @@ using StackExchange.Redis;
 
 namespace Fin.MemDb;
 
-public enum TradeActionType : byte
+public enum TradeAction : byte
 {
     Unknown = 0,
     Deposit = 1,
@@ -91,7 +91,7 @@ public class Trade
 {
     public int Id { get; set; } = -1;
     public DateTime Time { get; set; } = DateTime.MinValue;
-    public TradeActionType Action { get; set; } = TradeActionType.Unknown;
+    public TradeAction Action { get; set; } = TradeAction.Unknown;
     public AssetType AssetType { get; set; } = AssetType.Unknown;
     public string? Symbol { get; set; } = null;
     public string? UnderlyingSymbol { get; set; } = null;
@@ -143,7 +143,7 @@ public class Trade
         Id = newId;
     }
 
-    public Trade(List<Trade> p_tradesForAutoId, DateTime p_time, TradeActionType p_action, AssetType p_assetType, string? p_symbol, string? p_undSymbol, int p_quantity, float p_price, CurrencyId p_currency, float p_commission, ExchangeId p_exchangeId, string? p_connectedTrades)
+    public Trade(List<Trade> p_tradesForAutoId, DateTime p_time, TradeAction p_action, AssetType p_assetType, string? p_symbol, string? p_undSymbol, int p_quantity, float p_price, CurrencyId p_currency, float p_commission, ExchangeId p_exchangeId, string? p_connectedTrades)
     {
         // keep the newId calculation logic here, just right before the Trade creation.
         int maxId = -1; // if empty list, newId will be 0, which is OK
@@ -167,7 +167,7 @@ public class Trade
         ExchangeId = p_exchangeId;
         ConnectedTrades = p_connectedTrades?.Split(',').Select(int.Parse).ToList();
     }
-    public Trade(int p_id, DateTime p_time, TradeActionType p_action, AssetType p_assetType, string? p_symbol, string? p_undSymbol, int p_quantity, float p_price, CurrencyId p_currency, float p_commission, ExchangeId p_exchangeId, string? p_connectedTrades)
+    public Trade(int p_id, DateTime p_time, TradeAction p_action, AssetType p_assetType, string? p_symbol, string? p_undSymbol, int p_quantity, float p_price, CurrencyId p_currency, float p_commission, ExchangeId p_exchangeId, string? p_connectedTrades)
     {
         Id = p_id;
         Time = p_time;

@@ -251,25 +251,25 @@ public static class AssetHelper
         { "Trades", PortfolioType.Trades },
         { "Simulation", PortfolioType.Simulation }
     };
-    public static readonly Dictionary<TradeActionType, string> gTradeActionToStr = new()
+    public static readonly Dictionary<TradeAction, string> gTradeActionToStr = new()
     {
-        { TradeActionType.Unknown, string.Empty },
-        { TradeActionType.Deposit, "DPT" },
-        { TradeActionType.Withdrawal, "WTD" },
-        { TradeActionType.Buy, "BOT" },
-        { TradeActionType.Sell, "SLD" },
-        { TradeActionType.Exercise, "EXC" },
-        { TradeActionType.Expired, "EXP" }
+        { TradeAction.Unknown, string.Empty },
+        { TradeAction.Deposit, "DPT" },
+        { TradeAction.Withdrawal, "WTD" },
+        { TradeAction.Buy, "BOT" },
+        { TradeAction.Sell, "SLD" },
+        { TradeAction.Exercise, "EXC" },
+        { TradeAction.Expired, "EXP" }
     };
-    public static readonly Dictionary<string, TradeActionType> gStrToTradeAction = new()
+    public static readonly Dictionary<string, TradeAction> gStrToTradeAction = new()
     {
-        { string.Empty, TradeActionType.Unknown },
-        { "DPT", TradeActionType.Deposit },
-        { "WTD", TradeActionType.Withdrawal },
-        { "BOT", TradeActionType.Buy },
-        { "SLD", TradeActionType.Sell },
-        { "EXC", TradeActionType.Exercise },
-        { "EXP", TradeActionType.Expired }
+        { string.Empty, TradeAction.Unknown },
+        { "DPT", TradeAction.Deposit },
+        { "WTD", TradeAction.Withdrawal },
+        { "BOT", TradeAction.Buy },
+        { "SLD", TradeAction.Sell },
+        { "EXC", TradeAction.Exercise },
+        { "EXP", TradeAction.Expired }
     };
     public static readonly Dictionary<ExchangeId, string> gExchangeToStr = new()
     {

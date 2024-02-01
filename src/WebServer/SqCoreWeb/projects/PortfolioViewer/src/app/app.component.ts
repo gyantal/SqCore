@@ -8,7 +8,7 @@ class HandshakeMessage {
   public prtfToClient: PortfolioJs | null = null;
 }
 
-enum TradeActionType {
+enum TradeAction {
   Unknown = 0,
   Deposit = 1,
   Withdrawal = 2,
@@ -67,7 +67,7 @@ enum ExchangeId {
 class TradeJs {
   id: number = -1;
   time: Date = new Date();
-  action: TradeActionType = TradeActionType.Unknown;
+  action: TradeAction = TradeAction.Unknown;
   assetType: AssetType = AssetType.Unknown;
   symbol: string | null = null;
   underlyingSymbol: string | null = null;
@@ -176,6 +176,6 @@ export class AppComponent {
   getTradesHistory() { // send this when user clicks on Trades tab
     console.log('getTradesHistory');
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-      this.m_socket.send('GetTradesHist:' + this.m_portfolio?.tradeHistoryId);
+      this.m_socket.send('GetTradesHist:' + this.m_portfolio?.id);
   }
 }

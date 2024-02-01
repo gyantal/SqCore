@@ -348,11 +348,11 @@ public partial class Program
                 try
                 {
                     List<Trade> testTrades = new();
-                    Trade trade1 = new Trade(testTrades) { AssetType = AssetType.Stock, Action = TradeActionType.Buy, Symbol = "TSLA", Price = 123, Quantity = 65, Commission = 1.2f, Time = DateTime.Now.AddDays(-1) };
+                    Trade trade1 = new Trade(testTrades) { AssetType = AssetType.Stock, Action = TradeAction.Buy, Symbol = "TSLA", Price = 123, Quantity = 65, Commission = 1.2f, Time = DateTime.Now.AddDays(-1) };
                     testTrades.Add(trade1);
-                    Trade trade2 = new Trade(testTrades) { AssetType = AssetType.Option, Action = TradeActionType.Exercise, Symbol = "AMD 1234C0123", UnderlyingSymbol = "AMD", Quantity = 1, Time = DateTime.Now.AddDays(-0.1), ConnectedTrades = new List<int> { 2 } };
+                    Trade trade2 = new Trade(testTrades) { AssetType = AssetType.Option, Action = TradeAction.Exercise, Symbol = "AMD 1234C0123", UnderlyingSymbol = "AMD", Quantity = 1, Time = DateTime.Now.AddDays(-0.1), ConnectedTrades = new List<int> { 2 } };
                     testTrades.Add(trade2);
-                    Trade trade3 = new Trade(testTrades) { AssetType = AssetType.Stock, Action = TradeActionType.Buy, Symbol = "AMD", Price = 54, Quantity = 100, Time = DateTime.Now.AddDays(-0.1) };
+                    Trade trade3 = new Trade(testTrades) { AssetType = AssetType.Stock, Action = TradeAction.Buy, Symbol = "AMD", Price = 54, Quantity = 100, Time = DateTime.Now.AddDays(-0.1) };
                     testTrades.Add(trade3);
 
                     Utils.BenchmarkElapsedTime("WritePortfolioTradeHistory()", () =>
