@@ -513,13 +513,13 @@ public partial class Db
     }
 
     // Benchmark runs for WritePortfolioTradeHistory(). On Linux server with local Redis-sever. First run: 29ms, consecutive runs: 0.5ms
-    public void WritePortfolioTradeHistory(int tradeHistoryId, List<Trade> tradeList)
+    public void WritePortfolioTradeHistory(int tradeHistoryId, List<Trade> trades, bool p_forceChronologicalOrder)
     {
-        HashEntry[] newTradeInDbs = new HashEntry[] { new(tradeHistoryId, TradeInDb.ToRedisValue(tradeList)) };
+        HashEntry[] newTradeInDbs = new HashEntry[] { new(tradeHistoryId, TradeInDb.ToRedisValue(trades, p_forceChronologicalOrder)) };
         m_redisDb.HashSet("portfolioTradeHistory", newTradeInDbs);
     }
 
-    public void AppendPortfolioTradeHistory(int tradeHistoryId, List<Trade> p_newTradeList)
+    public void AppendPortfolioTradeHistory(int tradeHistoryId, List<Trade> p_newTrades, bool p_forceChronologicalOrder)
     {
         List<Trade> existingTrades = GetPortfolioTradeHistoryToList(tradeHistoryId, null, null); // if tradeHistoryId doesn't exist GetPortfolioTradeHistory() throws an exception. But we should do it without Exception.
         if (existingTrades.Count > 0)
@@ -531,7 +531,7 @@ public partial class Db
                     maxId = trade.Id;
             }
             int idOffset = maxId + 1;
-            foreach (Trade trade in p_newTradeList)
+            foreach (Trade trade in p_newTrades)
             {
                 trade.Id += idOffset;
                 if (trade.ConnectedTrades == null)
@@ -541,8 +541,8 @@ public partial class Db
             }
         }
 
-        existingTrades?.AddRange(p_newTradeList);
-        WritePortfolioTradeHistory(tradeHistoryId, existingTrades!);
+        existingTrades?.AddRange(p_newTrades);
+        WritePortfolioTradeHistory(tradeHistoryId, existingTrades!, p_forceChronologicalOrder);
     }
 
     public static bool UpdateBrotlisIfNeeded()

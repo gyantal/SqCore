@@ -352,13 +352,13 @@ public partial class Program
                     testTrades.Add(trade1);
                     Trade trade2 = new Trade(testTrades) { AssetType = AssetType.Option, Action = TradeAction.Exercise, Symbol = "AMD 1234C0123", UnderlyingSymbol = "AMD", Quantity = 1, Time = DateTime.Now.AddDays(-0.1), ConnectedTrades = new List<int> { 2 } };
                     testTrades.Add(trade2);
-                    Trade trade3 = new Trade(testTrades) { AssetType = AssetType.Stock, Action = TradeAction.Buy, Symbol = "AMD", Price = 54, Quantity = 100, Time = DateTime.Now.AddDays(-0.1) };
+                    Trade trade3 = new Trade(testTrades) { AssetType = AssetType.Stock, Action = TradeAction.Buy, Symbol = "AMD", Price = 54, Quantity = 100, Time = DateTime.Now.AddDays(-1.1) };
                     testTrades.Add(trade3);
 
                     Utils.BenchmarkElapsedTime("WritePortfolioTradeHistory()", () =>
                     {
-                        // MemDb.gMemDb.WritePortfolioTradeHistory(44, testTrades);
-                        MemDb.gMemDb.AppendPortfolioTradeHistory(35, testTrades);
+                        // MemDb.gMemDb.WritePortfolioTradeHistory(44, testTrades, true);
+                        MemDb.gMemDb.AppendPortfolioTradeHistory(35, testTrades, true);
                     });
                     Console.WriteLine($"WritePortfolioTradeHistory(): OK.");
                 }

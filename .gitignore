@@ -52,10 +52,17 @@ Cargo.lock
 #**/wwwroot/webapps/MarketDashboard
 **/wwwroot/webapps/*
 
-# In general, don't commit the Fin/Data/.../daily/ and factor_files/ , because that is crawled YF data. Except for QC's original SPY data 'spy-qc', and our synthetized ticker histories: SVXY.SQ, TQQQ.SQ, UPRO.SQ, UVXY.SQ, VXX.SQ, VXZ.SQ
+# In general, don't commit the Fin/Data/.../daily/ and factor_files/ , because that is crawled YF data. 
+# Except for QC's original SPY data 'spy-qc', and our synthetized ticker histories: SVXY.SQ, TQQQ.SQ, UPRO.SQ, UVXY.SQ, VXX.SQ, VXZ.SQ
+# And those live stocks that have price histories with previously different tickers. E.g. FB went to META
 **/Fin/Data/equity/usa/daily/*
 !**/Fin/Data/equity/usa/daily/spy-qc.zip
 !**/Fin/Data/equity/usa/daily/*-sq-history.zip
+!**/Fin/Data/equity/usa/daily/cdn.zip
+!**/Fin/Data/equity/usa/daily/fb.zip
+!**/Fin/Data/equity/usa/daily/oac.zip
+!**/Fin/Data/equity/usa/daily/vxxb.zip
+!**/Fin/Data/equity/usa/daily/vxzb.zip
 
 **/Fin/Data/equity/usa/factor_files/*
 !**/Fin/Data/equity/usa/factor_files/spy-qc.csv

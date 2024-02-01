@@ -72,17 +72,48 @@ public class TradeInDb
         ConnectedTrades = p_trade.ConnectedTrades != null ? string.Join(",", p_trade.ConnectedTrades) : null;
     }
 
-    public static RedisValue ToRedisValue(List<Trade> p_tradeList)
+    public static RedisValue ToRedisValue(List<Trade> p_trades, bool p_forceChronologicalOrder = true)
     {
-        List<TradeInDb> tradesToDb = new ();
-        for (int i = 0; i < p_tradeList.Count; i++)
+        List<Trade> tradesToDb;
+        if (p_forceChronologicalOrder)
         {
-            Trade? trade = p_tradeList[i];
-            TradeInDb tradeInDb = new(trade);
-            tradesToDb.Add(tradeInDb);
-        }
+            // Sort Trade objects by Time
+            // tradesToDb = p_trades.OrderBy(t => t.Time).ToList(); // LINQ slow sort into a new memory location
 
-        return JsonSerializer.Serialize(tradesToDb, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
+            tradesToDb = p_trades;
+            tradesToDb.Sort((a, b) => a.Time.CompareTo(b.Time)); // fast sort it in place
+
+            // Reassign IDs
+            Dictionary<int, int> idMap = new ();
+            for (int newId = 0; newId < tradesToDb.Count; newId++)
+            {
+                int oldId = tradesToDb[newId].Id;
+                idMap[oldId] = newId;
+            }
+
+            // Update IDs in Ids and in ConnectedTrades
+            foreach (Trade trade in tradesToDb)
+            {
+                trade.Id = idMap[trade.Id];
+                if (trade.ConnectedTrades != null && trade.ConnectedTrades.Any())
+                {
+                    List<int> newConnectedTrades = new(trade.ConnectedTrades.Count);
+                    foreach (int id in trade.ConnectedTrades)
+                        newConnectedTrades.Add(idMap[id]);
+                    trade.ConnectedTrades = newConnectedTrades;
+                }
+            }
+        }
+        else
+            tradesToDb = p_trades;
+
+        // Convert Trade objects to TradeInDb objects
+        List<TradeInDb> tradeInDbsToDb = new(tradesToDb.Count);
+        foreach (var trade in tradesToDb)
+            tradeInDbsToDb.Add(new TradeInDb(trade));
+
+        // Serialize the list of TradeInDb objects to JSON
+        return JsonSerializer.Serialize(tradeInDbsToDb, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
     }
 }
 
