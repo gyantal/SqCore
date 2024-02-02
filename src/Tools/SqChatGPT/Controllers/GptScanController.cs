@@ -559,4 +559,68 @@ public class GptScanController : ControllerBase
 
         return chatCompletion.Choices[0].Message.Content;
     }
+
+    [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
+    [HttpPost("earningsDate")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
+    public async Task<string> GetEarningDate([FromBody] UserInput p_inMsg)
+    {
+        if (p_inMsg == null)
+            return "Invalid data";
+
+        string htmlContent = await g_httpClient.GetStringAsync($"https://finance.yahoo.com/quote/{p_inMsg.Msg}"); // p_inMsg.Msg is ticker(AAPL), https://finance.yahoo.com/quote/AAPL.
+        string responseDateStr = ProcessHtmlContentForEarningsDate(htmlContent);
+        return JsonSerializer.Serialize(responseDateStr); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
+    }
+
+    static string ProcessHtmlContentForEarningsDate(string p_html)
+    {
+        StringBuilder sb = new();
+        int earningsDateStartPos = p_html.IndexOf("Earnings Date");
+        if (earningsDateStartPos == -1)
+        {
+            Console.WriteLine("Cannot find Earnings Date. Stop processing.");
+            return string.Empty;
+        }
+
+        // Extract the substring starting from the position of "Earnings Date"
+        var earningsDateSubstring = p_html.Substring(earningsDateStartPos);
+        ReadOnlySpan<char> htmlSpan = earningsDateSubstring.AsSpan();
+
+        int spanEarningsDateStartPos = htmlSpan.IndexOf("<span>");
+        if (spanEarningsDateStartPos == -1)
+        {
+            Console.WriteLine("Cannot find <span>. Stop processing.");
+            return string.Empty;
+        }
+        ReadOnlySpan<char> htmlBodySpan = htmlSpan.Slice(spanEarningsDateStartPos);
+        int spanEarningsDateEndPos = htmlBodySpan.IndexOf("</span></td>");
+        if (spanEarningsDateEndPos == -1)
+        {
+            Console.WriteLine("Cannot find </span></td>. Stop processing.");
+            return string.Empty;
+        }
+        spanEarningsDateEndPos += "</span>".Length; // keeping the end paragraph tag "</span>", so that we can iterate between span opening and ending tags
+        ReadOnlySpan<char> span = htmlBodySpan.Slice(start: 0, length: spanEarningsDateEndPos);
+
+        bool isFirstSpan = true; // Flag to check if it is the first span
+        while (true)
+        {
+            // Find the next occurrence of <span> and </span> html tags
+            int spanTagStartPos = span.IndexOf("<span>");
+            int spanTagEndPos = span.IndexOf("</span>");
+
+            if (spanTagStartPos == -1 || spanTagEndPos == -1) // If no more <span> tags are found, exit the loop
+                break;
+
+            ReadOnlySpan<char> dateStr = span.Slice(spanTagStartPos + 6, spanTagEndPos - (spanTagStartPos + 6)); // Extract the content between <span> and </span> and append to StringBuilder, 6 is span tag length ("<span>").
+
+            if (!isFirstSpan)
+                sb.Append(" - "); // Add a separator only if it's not the first span
+
+            sb.Append(dateStr);
+            isFirstSpan = false;
+            span = span.Slice(spanTagEndPos + 7); // Move the span position to the end of the </span> tag
+        }
+        return sb.ToString();
+    }
 }

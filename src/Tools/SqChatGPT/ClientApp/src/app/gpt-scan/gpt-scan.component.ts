@@ -26,6 +26,7 @@ interface StockPriceItem
   PriorClose: number;
   LastPrice: number;
   PercentChange: number;
+  EarningsDate: string;
   [key: string]: string | number; // Adding [key: string]: string | number; to the StockPriceItems interface, this allows us to use any string as an index to access properties.
 }
 
@@ -96,6 +97,7 @@ export class GptScanComponent {
       this.onSortingClicked(this.sortColumn);
       if (this._stockPrices.length > 0) // making the spinner invisible once we recieve the data.
         this.isSpinnerVisible = false;
+      this.getEarningsDate(tickers) // method to get earnings date.
     }, error => console.error(error));
   }
 
@@ -157,5 +159,22 @@ export class GptScanComponent {
       newsItem.FullTextSentiment = parseFloat(result);
       this.isSpinnerVisible = false;
     }, error => console.error(error))
+  }
+
+  getEarningsDate(tickers: string) {
+    let tickersArray: string[] = tickers.split(',');
+    let i = 0;
+    for (const ticker of tickersArray) {
+      // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
+      const body: UserInput = { LlmModelName: this._selectedLlmModel, Msg: ticker };
+      this._httpClient.post<string>(this._controllerBaseUrl + 'earningsDate', body).subscribe(async result => {
+        const stckPriceItem = this._stockPrices!.find((item) => item.Ticker == ticker);
+        if(stckPriceItem != null)
+          stckPriceItem.EarningsDate = result;
+        i++;
+        if (i % 5 == 0) // to not overwhelm the C# server, we only ask 5 downloads at once, then wait a little.
+          await sleep(2000);
+      }, error => console.error(error));
+    }
   }
 }

@@ -25,6 +25,7 @@ Type your ticker list here and click to send it to C# backend.
         <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='PriorClose'}" (click)="onSortingClicked('PriorClose')">PriorClose</th>
         <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='LastPrice'}" (click)="onSortingClicked('LastPrice')">LastPrice</th>
         <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='PercentChange'}" (click)="onSortingClicked('PercentChange')">Chg%Today</th>
+        <th>EarningsDate</th>
         <th>News</th>
       </tr>
     </thead>
@@ -37,7 +38,8 @@ Type your ticker list here and click to send it to C# backend.
               'positivePerf' : item.PercentChange > 0,
               'negativePerf' : item.PercentChange < 0
            }">{{item.PercentChange | number:'1.2-2'}}%</td>
-           <td><button id="getNewsBtn" (click)="onClickGetNews(item.Ticker)">GetNews</button></td>
+        <td>{{item.EarningsDate}}</td>
+        <td><button id="getNewsBtn" (click)="onClickGetNews(item.Ticker)">GetNews</button></td>
       </tr>
     </tbody>
   </table>
