@@ -27,7 +27,8 @@ interface StockPriceItem
   LastPrice: number;
   PercentChange: number;
   EarningsDate: string;
-  [key: string]: string | number; // Adding [key: string]: string | number; to the StockPriceItems interface, this allows us to use any string as an index to access properties.
+  IsPriceChangeEarningsRelated: boolean;
+  [key: string]: string | number | boolean; // Adding [key: string]: string | number | boolean; to the StockPriceItems interface, this allows us to use any string as an index to access properties.
 }
 
 interface ServerStockPriceDataResponse {
@@ -164,13 +165,25 @@ export class GptScanComponent {
   getEarningsDate(tickers: string) {
     let tickersArray: string[] = tickers.split(',');
     let i = 0;
+    const today: Date = new Date();
     for (const ticker of tickersArray) {
       // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
       const body: UserInput = { LlmModelName: this._selectedLlmModel, Msg: ticker };
-      this._httpClient.post<string>(this._controllerBaseUrl + 'earningsDate', body).subscribe(async result => {
+      this._httpClient.post<string>(this._controllerBaseUrl + 'earningsdate', body).subscribe(async result => {
         const stckPriceItem = this._stockPrices!.find((item) => item.Ticker == ticker);
-        if(stckPriceItem != null)
+        if(stckPriceItem != null) {
           stckPriceItem.EarningsDate = result;
+          // Calculate the number of days to subtract based on the current day of the week
+          // If today is Monday (where getDay() returns 1), subtract 3 days to skip the weekend (Saturday and Sunday)
+          // Otherwise, subtract 1 day to account for the previous trading day
+          // Please be aware that the provided code is effective only when the earningsDate is in the format "Apr 25, 2024". It does not handle formats like "Apr 25, 2024 - Apr 29, 2024".
+          // The Earnings Date of Format "Apr 25, 2024 - Apr 29, 2024" is basically a future date, the actual earning date will fall in between them when the specified month arrives
+          // Testing Date - const earningsdate: Date = new Date('2024-01-30') and const today: Date = new Date('2024-01-30');
+          const earningsdate: Date = new Date(stckPriceItem.EarningsDate);
+          const previousTradingDay: Date = new Date(today);
+          previousTradingDay.setDate(previousTradingDay.getDate() - (previousTradingDay.getDay() == 1 ? 3 : 1))
+          stckPriceItem.IsPriceChangeEarningsRelated = earningsdate.toDateString() == today.toDateString() || earningsdate.toDateString() == previousTradingDay.toDateString(); // today == earningsDate or earingsDate equals to previous day
+        }
         i++;
         if (i % 5 == 0) // to not overwhelm the C# server, we only ask 5 downloads at once, then wait a little.
           await sleep(2000);

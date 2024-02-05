@@ -13,7 +13,7 @@
   // border-style: ridge; // The ridge style simulates a three-dimensional appearance, making the border look as if it is raised from the page.It creates an effect where one side of the border appears lighter, while the opposite side appears darker, giving a sense of depth. Default: none.
   border-width: 0.1rem;
   border-color: #4e95f4;
-  width: 10%;
+  width: 11%;
   text-align: center;
 }
 
@@ -79,4 +79,33 @@ tr:nth-child(even) {
 
 .NegativeSentiment {
   color: #FF0000;
+}
+
+// Common for all the tooltips
+.tooltipGeneral {
+  position: relative;
+  cursor: help;
+}
+
+.tooltipGeneral .tooltipText {
+  padding: 0.3rem;
+  font-size: 0.6rem;
+  font-weight: bold;
+  display: none;
+  background: rgb(210, 252, 176);
+  border: 0.05rem solid rgb(19, 7, 177);
+  color: rgb(6, 8, 153);
+  text-align: left;
+  border-radius: 1rem;
+  position: absolute;
+  z-index: 1;
+  bottom: 100%;
+  left: 50%;
+  margin-left: -9rem;
+  white-space: pre;
+  opacity: 0.87;
+}
+
+.tooltipGeneral:hover .tooltipText {
+  display: inline-block;
 }

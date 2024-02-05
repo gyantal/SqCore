@@ -38,7 +38,19 @@ Type your ticker list here and click to send it to C# backend.
               'positivePerf' : item.PercentChange > 0,
               'negativePerf' : item.PercentChange < 0
            }">{{item.PercentChange | number:'1.2-2'}}%</td>
-        <td>{{item.EarningsDate}}</td>
+        <td>
+          <span>{{item.EarningsDate}}</span>&nbsp;
+          <ng-container *ngIf="item.IsPriceChangeEarningsRelated">
+            <span class="tooltipGeneral">
+              <svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="16" height="16" viewBox="0 0 48 48">
+                <polyline fill="none" stroke="#FFAE42" stroke-miterlimit="10" stroke-width="8" points="6,27.5 17,38.5 42,13.5"></polyline>
+              </svg>
+              <span class="tooltipText">
+                Possible Earnings Related Move
+              </span>
+            </span>
+          </ng-container>
+        </td>
         <td><button id="getNewsBtn" (click)="onClickGetNews(item.Ticker)">GetNews</button></td>
       </tr>
     </tbody>

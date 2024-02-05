@@ -561,7 +561,7 @@ public class GptScanController : ControllerBase
     }
 
     [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
-    [HttpPost("earningsDate")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
+    [HttpPost("earningsdate")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
     public async Task<string> GetEarningDate([FromBody] UserInput p_inMsg)
     {
         if (p_inMsg == null)
