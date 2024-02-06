@@ -190,4 +190,14 @@ export class GptScanComponent {
       }, error => console.error(error));
     }
   }
+
+  // When we encounter invalid data from Yahoo Finance or cannot find the Earnings Date in the link (e.g., https://finance.yahoo.com/quote/AAPL), the EarningsDate is set to null.
+  countInvalidEarningsDates(): number {
+    let count = 0;
+    for (const stckPriceItem of this._stockPrices) {
+      if (stckPriceItem.EarningsDate == null)
+        count++;
+    }
+    return count;
+  }
 }

@@ -114,3 +114,7 @@ Type your ticker list here and click to send it to C# backend.
     </g>
   </svg>
 </div>
+<!-- For testing change *ngIf="countInvalidEarningsDates() >= 5" to *ngIf="countInvalidEarningsDates() >= 0"-->
+<div *ngIf="countInvalidEarningsDates() >= 5">
+  <div id="earningsDateDialog">“Couldn't get EarningsDates from YF. Inform the developers.”</div>
+</div>

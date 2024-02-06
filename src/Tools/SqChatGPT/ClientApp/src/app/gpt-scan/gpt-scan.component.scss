@@ -109,3 +109,15 @@ tr:nth-child(even) {
 .tooltipGeneral:hover .tooltipText {
   display: inline-block;
 }
+
+#earningsDateDialog {
+  font-weight: bold;
+  vertical-align: middle;
+  width: 32rem;
+  white-space: pre;
+  background-color: #FFA500;
+  border: .1rem solid #FF5F1F;
+  border-radius: 0.5rem;
+  margin: auto;
+  padding: 1rem;
+}
