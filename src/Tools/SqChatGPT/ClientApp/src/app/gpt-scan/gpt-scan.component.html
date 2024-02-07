@@ -21,16 +21,16 @@ Type your ticker list here and click to send it to C# backend.
   <table class="stockPriceDataTbl">
     <thead class="stockPriceDataTbl">
       <tr>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='Ticker'}" (click)="onSortingClicked('Ticker')">Ticker</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='PriorClose'}" (click)="onSortingClicked('PriorClose')">PriorClose</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='LastPrice'}" (click)="onSortingClicked('LastPrice')">LastPrice</th>
-        <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='PercentChange'}" (click)="onSortingClicked('PercentChange')">Chg%Today</th>
+        <th [ngClass]="{'ActiveSortTableHeader':_sortColumn ==='Ticker'}" (click)="onSortingClicked('Ticker')">Ticker</th>
+        <th [ngClass]="{'ActiveSortTableHeader':_sortColumn ==='PriorClose'}" (click)="onSortingClicked('PriorClose')">PriorClose</th>
+        <th [ngClass]="{'ActiveSortTableHeader':_sortColumn ==='LastPrice'}" (click)="onSortingClicked('LastPrice')">LastPrice</th>
+        <th [ngClass]="{'ActiveSortTableHeader':_sortColumn ==='PercentChange'}" (click)="onSortingClicked('PercentChange')">Chg%Today</th>
         <th>EarningsDate</th>
         <th>News</th>
       </tr>
     </thead>
     <tbody class="stockPriceDataTbl">
-      <tr *ngFor="let item of _stockPrices">
+      <tr *ngFor="let item of _stocks">
         <td><a href="https://finance.yahoo.com/quote/{{item.Ticker}}" target="_blank">{{item.Ticker}}</a></td>
         <td>{{item.PriorClose | number:'1.2-2'}}</td>
         <td>{{item.LastPrice | number:'1.2-2'}}</td>
@@ -56,6 +56,8 @@ Type your ticker list here and click to send it to C# backend.
     </tbody>
   </table>
 </div>
+<!-- For testing change [hidden]="countInvalidEarningsDates() < 4" to [hidden]="countInvalidEarningsDates() != 0"-->
+<div [hidden]="countInvalidEarningsDates() < 4" id="earningsDateDialog">“Couldn't get EarningsDates from YF. Inform the developers.”</div>
 <!-- Ticker News -->
 <div *ngIf="_tickerNewss.length > 0; else noData">
   <div *ngFor="let ticker of _tickerNewss">
@@ -95,7 +97,7 @@ Type your ticker list here and click to send it to C# backend.
 <ng-template #noData>
   <p>No news items. Click any GetNews button.</p> <!--because there can be many GetNews button on the page.-->
 </ng-template>
-<div class="spinnerContainer" *ngIf="isSpinnerVisible">
+<div class="spinnerContainer" *ngIf="_isSpinnerVisible">
   <svg id="spinnerId" width="100" height="100" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <g fill="blue">
       <circle cx="12" cy="3" r="1"><animate id="spinner_7Z73" begin="0;spinner_tKsu.end-0.5s" attributeName="r" calcMode="spline" dur="0.6s" values="1;2;1" keySplines=".27,.42,.37,.99;.53,0,.61,.73"/></circle>
@@ -113,8 +115,4 @@ Type your ticker list here and click to send it to C# backend.
       <animateTransform attributeName="transform" type="rotate" dur="6s" values="360 12 12;0 12 12" repeatCount="indefinite"/>
     </g>
   </svg>
-</div>
-<!-- For testing change *ngIf="countInvalidEarningsDates() >= 5" to *ngIf="countInvalidEarningsDates() >= 0"-->
-<div *ngIf="countInvalidEarningsDates() >= 5">
-  <div id="earningsDateDialog">“Couldn't get EarningsDates from YF. Inform the developers.”</div>
 </div>

@@ -562,7 +562,7 @@ public class GptScanController : ControllerBase
 
     [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
     [HttpPost("earningsdate")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
-    public async Task<string> GetEarningDate([FromBody] UserInput p_inMsg)
+    public async Task<string> GetEarningsDate([FromBody] UserInput p_inMsg)
     {
         if (p_inMsg == null)
             return "Invalid data";
@@ -582,9 +582,8 @@ public class GptScanController : ControllerBase
             return string.Empty;
         }
 
-        // Extract the substring starting from the position of "Earnings Date"
-        var earningsDateSubstring = p_html.Substring(earningsDateStartPos);
-        ReadOnlySpan<char> htmlSpan = earningsDateSubstring.AsSpan();
+        // Extract the substring starting from the position of "Earnings Date" to htmlSpan
+        ReadOnlySpan<char> htmlSpan = p_html[earningsDateStartPos..].AsSpan();
 
         int spanEarningsDateStartPos = htmlSpan.IndexOf("<span>");
         if (spanEarningsDateStartPos == -1)
@@ -612,14 +611,14 @@ public class GptScanController : ControllerBase
             if (spanTagStartPos == -1 || spanTagEndPos == -1) // If no more <span> tags are found, exit the loop
                 break;
 
-            ReadOnlySpan<char> dateStr = span.Slice(spanTagStartPos + 6, spanTagEndPos - (spanTagStartPos + 6)); // Extract the content between <span> and </span> and append to StringBuilder, 6 is span tag length ("<span>").
+            ReadOnlySpan<char> dateStr = span.Slice(spanTagStartPos + "<span>".Length, spanTagEndPos - (spanTagStartPos + "<span>".Length)); // Extract the content between <span> and </span> and append to StringBuilder.
 
             if (!isFirstSpan)
                 sb.Append(" - "); // Add a separator only if it's not the first span
 
             sb.Append(dateStr);
             isFirstSpan = false;
-            span = span.Slice(spanTagEndPos + 7); // Move the span position to the end of the </span> tag
+            span = span.Slice(spanTagEndPos + "</span>".Length); // Move the span position to the end of the </span> tag
         }
         return sb.ToString();
     }

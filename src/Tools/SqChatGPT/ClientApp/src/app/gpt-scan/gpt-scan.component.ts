@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { UserInput } from '../lib/gpt-common';
 import { sleep } from '../../../../../../WebServer/SqCoreWeb/TsLib/sq-common/utils-common'
@@ -20,7 +20,7 @@ interface TickerNews {
   NewsItems: NewsItem[];
 }
 
-interface StockPriceItem
+interface StockItem
 {
   Ticker: string;
   PriorClose: number;
@@ -28,12 +28,12 @@ interface StockPriceItem
   PercentChange: number;
   EarningsDate: string;
   IsPriceChangeEarningsRelated: boolean;
-  [key: string]: string | number | boolean; // Adding [key: string]: string | number | boolean; to the StockPriceItems interface, this allows us to use any string as an index to access properties.
+  [key: string]: string | number | boolean; // Adding a string based Indexer to the interface. Classes have this Indexer by default. This allows to use the field name as a string to access properties. Very useful for sorting based on columns sort((a, b) => a[sortColumn] > b[sortColumn] ? ...)
 }
 
 interface ServerStockPriceDataResponse {
   Logs: string[];
-  StocksPriceResponse: StockPriceItem[];
+  StocksPriceResponse: StockItem[];
 }
 
 interface ServerNewsResponse {
@@ -46,7 +46,7 @@ interface ServerNewsResponse {
   templateUrl: './gpt-scan.component.html',
   styleUrls: ['./gpt-scan.component.scss']
 })
-export class GptScanComponent {
+export class GptScanComponent implements OnInit {
   _gTickerUniverses: { [key: string]: string } = {
     'GameChanger10...': 'ADBE,AMZN,ANET,CRM,GOOG,LLY,MSFT,NOW,NVDA,TSLA',
     'GameChanger20...': 'AAPL,ADBE,AMZN,ANET,CDNS,CRM,CRWD,DE,ELF,GOOGL,LLY,MELI,META,MSFT,NOW,NVDA,SHOP,TSLA,UBER,V',
@@ -55,16 +55,14 @@ export class GptScanComponent {
   _httpClient: HttpClient;
   _baseUrl: string;
   _controllerBaseUrl: string;
-
   _selectedLlmModel: string  = 'auto';
-
   _selectedTickers: string = '';
   _possibleTickers: string[] = ['AMZN', 'AMZN,TSLA', 'GameChanger10...', 'GameChanger20...', 'Nasdaq100...'];
   _tickerNewss: TickerNews[] = [];
-  _stockPrices: StockPriceItem[] = [];
-  sortColumn: string = 'PercentChange'; // default sortColumn field, pricedata is sorted initial based on the 'PercentChange'.
-  isSortingDirectionAscending: boolean = false;
-  isSpinnerVisible: boolean = false;
+  _stocks: StockItem[] = [];
+  _sortColumn: string = 'PercentChange'; // default sortColumn field, pricedata is sorted initial based on the 'PercentChange'.
+  _isSortingDirectionAscending: boolean = false;
+  _isSpinnerVisible: boolean = false;
 
   constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string) {
     this._httpClient = http;
@@ -72,11 +70,17 @@ export class GptScanComponent {
     this._controllerBaseUrl = baseUrl + 'gptscan/';
   }
 
+  ngOnInit(): void {
+    setTimeout(() => {
+      this.countInvalidEarningsDates();
+    }, 3000);
+  }
+
   sendUserInputToBackEnd(p_tickers: string): void {
     console.log(p_tickers);
     this._selectedTickers = p_tickers;
     this._tickerNewss.length = 0; // on every userinput to get the stockPriceData, we have to empty the tickerNews array.
-    this.isSortingDirectionAscending = true;
+    this._isSortingDirectionAscending = true;
 
     let tickers = this._gTickerUniverses[p_tickers]; // get the value of the selected Ticker ex: if user selects ticker(key) as 'GameChanger10...' : it returns the value: 'ADBE,AMZN,ANET,CRM,GOOG,LLY,MSFT,NOW,NVDA,TSLA'
     if(tickers == null)
@@ -90,26 +94,26 @@ export class GptScanComponent {
     // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
     const body: UserInput = { LlmModelName: this._selectedLlmModel, Msg: tickers };
     console.log(body);
-    this.isSpinnerVisible = true;
+    this._isSpinnerVisible = true;
 
     this._httpClient.post<ServerStockPriceDataResponse>(this._controllerBaseUrl + 'getstockprice', body).subscribe(result => { // if message comes as a properly formatted JSON string ("\n" => "\\n")
-      this._stockPrices = result.StocksPriceResponse;
-      console.log(this._stockPrices);
-      this.onSortingClicked(this.sortColumn);
-      if (this._stockPrices.length > 0) // making the spinner invisible once we recieve the data.
-        this.isSpinnerVisible = false;
+      this._stocks = result.StocksPriceResponse;
+      console.log(this._stocks);
+      this.onSortingClicked(this._sortColumn);
+      if (this._stocks.length > 0) // making the spinner invisible once we recieve the data.
+        this._isSpinnerVisible = false;
       this.getEarningsDate(tickers) // method to get earnings date.
     }, error => console.error(error));
   }
 
   onSortingClicked(sortColumn: string) { // sort the stockprices data table
-    this._stockPrices = this._stockPrices.sort((n1: StockPriceItem, n2: StockPriceItem) => {
-      if (this.isSortingDirectionAscending)
+    this._stocks = this._stocks.sort((n1: StockItem, n2: StockItem) => {
+      if (this._isSortingDirectionAscending)
         return (n1[sortColumn] > n2[sortColumn]) ? 1 : ((n1[sortColumn] < n2[sortColumn]) ? -1 : 0);
       else
         return (n2[sortColumn] > n1[sortColumn]) ? 1 : ((n2[sortColumn] < n1[sortColumn]) ? -1 : 0);
     });
-    this.isSortingDirectionAscending = !this.isSortingDirectionAscending;
+    this._isSortingDirectionAscending = !this._isSortingDirectionAscending;
   }
 
   onClickGetNews(selectedNewsTicker: string) {
@@ -141,11 +145,11 @@ export class GptScanComponent {
     // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
     const body: UserInput = { LlmModelName: this._selectedLlmModel, Msg: newsItem.Link };
     console.log(body);
-    this.isSpinnerVisible = true;
+    this._isSpinnerVisible = true;
 
     this._httpClient.post<string>(this._controllerBaseUrl + 'summarizenews', body).subscribe(result => {
       newsItem.NewsSummary = result;
-      this.isSpinnerVisible = false;
+      this._isSpinnerVisible = false;
     }, error => console.error(error))
   }
 
@@ -154,35 +158,35 @@ export class GptScanComponent {
     // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
     const body: UserInput = { LlmModelName: this._selectedLlmModel, Msg: newsItem.Link };
     console.log(body);
-    this.isSpinnerVisible = true;
+    this._isSpinnerVisible = true;
 
     this._httpClient.post<string>(this._controllerBaseUrl + 'newssentiment', body).subscribe(result => {
       newsItem.FullTextSentiment = parseFloat(result);
-      this.isSpinnerVisible = false;
+      this._isSpinnerVisible = false;
     }, error => console.error(error))
   }
 
-  getEarningsDate(tickers: string) {
-    let tickersArray: string[] = tickers.split(',');
+  getEarningsDate(tickersStr: string) {
+    let tickers: string[] = tickersStr.split(',');
     let i = 0;
     const today: Date = new Date();
-    for (const ticker of tickersArray) {
+    for (const ticker of tickers) {
       // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
       const body: UserInput = { LlmModelName: this._selectedLlmModel, Msg: ticker };
       this._httpClient.post<string>(this._controllerBaseUrl + 'earningsdate', body).subscribe(async result => {
-        const stckPriceItem = this._stockPrices!.find((item) => item.Ticker == ticker);
-        if(stckPriceItem != null) {
-          stckPriceItem.EarningsDate = result;
+        const stckItem = this._stocks!.find((item) => item.Ticker == ticker);
+        if(stckItem != null) {
+          stckItem.EarningsDate = result;
           // Calculate the number of days to subtract based on the current day of the week
           // If today is Monday (where getDay() returns 1), subtract 3 days to skip the weekend (Saturday and Sunday)
           // Otherwise, subtract 1 day to account for the previous trading day
           // Please be aware that the provided code is effective only when the earningsDate is in the format "Apr 25, 2024". It does not handle formats like "Apr 25, 2024 - Apr 29, 2024".
           // The Earnings Date of Format "Apr 25, 2024 - Apr 29, 2024" is basically a future date, the actual earning date will fall in between them when the specified month arrives
           // Testing Date - const earningsdate: Date = new Date('2024-01-30') and const today: Date = new Date('2024-01-30');
-          const earningsdate: Date = new Date(stckPriceItem.EarningsDate);
+          const earningsdate: Date = new Date(stckItem.EarningsDate);
           const previousTradingDay: Date = new Date(today);
           previousTradingDay.setDate(previousTradingDay.getDate() - (previousTradingDay.getDay() == 1 ? 3 : 1))
-          stckPriceItem.IsPriceChangeEarningsRelated = earningsdate.toDateString() == today.toDateString() || earningsdate.toDateString() == previousTradingDay.toDateString(); // today == earningsDate or earingsDate equals to previous day
+          stckItem.IsPriceChangeEarningsRelated = earningsdate.toDateString() == today.toDateString() || earningsdate.toDateString() == previousTradingDay.toDateString(); // today == earningsDate or earingsDate equals to previous day
         }
         i++;
         if (i % 5 == 0) // to not overwhelm the C# server, we only ask 5 downloads at once, then wait a little.
@@ -194,8 +198,8 @@ export class GptScanComponent {
   // When we encounter invalid data from Yahoo Finance or cannot find the Earnings Date in the link (e.g., https://finance.yahoo.com/quote/AAPL), the EarningsDate is set to null.
   countInvalidEarningsDates(): number {
     let count = 0;
-    for (const stckPriceItem of this._stockPrices) {
-      if (stckPriceItem.EarningsDate == null)
+    for (const stckItem of this._stocks) {
+      if (stckItem.EarningsDate == null)
         count++;
     }
     return count;
