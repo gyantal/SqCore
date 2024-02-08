@@ -7,8 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Fin.MemDb;
 using Microsoft.AspNetCore.Http;
-using QuantConnect;
-using QuantConnect.Parameters;
 using SqCommon;
 
 namespace SqCoreWeb;
@@ -99,7 +97,6 @@ public class PrtfVwrWs
             if (dateInd == -1)
                 return;
             string endDtStr = p_msg[(dateInd + "&Date=".Length)..];
-            p_forcedStartDate = DateTime.MinValue;
             p_forcedEndDate = Utils.Str2DateTimeUtc(endDtStr);
         }
         string? errMsg = MemDb.gMemDb.GetPortfolioRunResults(id, p_forcedStartDate, p_forcedEndDate, out PrtfRunResult prtfRunResultJs);

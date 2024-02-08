@@ -130,7 +130,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
             EndPortfolioValue = 1400.0f,
             Sharpe = 0.8f
         }; // output
-        List<PortfolioPosition> prtfPoss = new ()
+        List<PortfolioPosition> prtfPoss = new()
         {
             new PortfolioPosition { SqTicker = "S/Spy", Quantity = 1, AvgPrice = 1.0f, LastPrice = 1.0f },
             new PortfolioPosition { SqTicker = "S/TQQQ", Quantity = 1, AvgPrice = 1.0f, LastPrice = 1.0f }
@@ -148,9 +148,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         p_chartResolution = ChartResolution.Daily;
 
         string algorithmName = String.IsNullOrEmpty(Algorithm) ? "BasicTemplateFrameworkAlgorithm" : Algorithm;
-        string p_forcedStartDateStr = Utils.TohYYYYMMDD(p_forcedStartDate ?? DateTime.MinValue); // Convert p_forcedStartDate to a formatted string (YYYY-MM-DD, ex: 2001-01-01), assigning DateTime.MinValue if null.
-        string p_forcedEndDateStr = Utils.TohYYYYMMDD(p_forcedEndDate ?? DateTime.Now); // Convert p_forcedEndDate to a formatted string (YYYY-MM-DD, ex: 2001-01-01), assigning DateTime.Now if null.
-        string backtestAlgorithmParam = "startDate=" + p_forcedStartDateStr + "&endDate=" + p_forcedEndDateStr + "&" + AlgorithmParam; // ex: AlgorithmParam = startDate=2006-01-01&endDate=2024-01-23&assets=VNQ,EEM,DBC,SPY,TLT,SHY&lookback=63&noETFs=3
+        string backtestAlgorithmParam = GetBacktestAlgorithmParam(p_forcedStartDate, p_forcedEndDate);
         BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(algorithmName, backtestAlgorithmParam, @"{""ema-fast"":10,""ema-slow"":20}", p_sqResult);
         if (backtestResults == null)
             return "Error in Backtest";
@@ -272,6 +270,57 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
             p_prtfPoss.Add(posCashItem);
         }
         return null; // No Error
+    }
+
+    // e.g. AlgortihmParam with Dates : "startDate=2002-07-24&endDate=2024-02-08&assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d";
+    // e.g. AlgorithmParam without Dates : "assets=SPY,TLT&weights=60,40&rebFreq=Daily,10d"
+    public string GetBacktestAlgorithmParam(DateTime? p_forcedStartDate, DateTime? p_forcedEndDate)
+    {
+        // Convert forced start and end dates to formatted strings (YYYY-MM-DD) or set to null if not provided
+        string? p_forcedStartDateStr = p_forcedStartDate.HasValue ? Utils.TohYYYYMMDD(p_forcedStartDate.Value) : null;
+        string? p_forcedEndDateStr = p_forcedEndDate.HasValue ? Utils.TohYYYYMMDD(p_forcedEndDate.Value) : null;
+
+        // Get the original AlgorithmParam value
+        string backtestAlgorithmParam = AlgorithmParam;
+
+        // Update endDate in AlgorithmParam if p_forcedEndDate is not null
+        if (p_forcedEndDateStr != null)
+        {
+            int endDateIndex = backtestAlgorithmParam.IndexOf("endDate=");
+            if (endDateIndex == -1)
+                backtestAlgorithmParam = "endDate=" + p_forcedEndDateStr + "&" + backtestAlgorithmParam; // "endDate=" not found, add to the front
+            else
+            {
+                // "endDate=" found, replace the value
+                int endIndex = backtestAlgorithmParam.IndexOf('&', endDateIndex);
+                if (endIndex == -1)
+                    endIndex = backtestAlgorithmParam.Length;
+
+                // Replace the value associated with "endDate=" with the new value p_forcedEndDateStr
+                backtestAlgorithmParam = backtestAlgorithmParam[..(endDateIndex + "endDate=".Length)] + p_forcedEndDateStr + backtestAlgorithmParam[endIndex..];
+            }
+        }
+
+        // Update startDate in AlgorithmParam if p_forcedStartDate is not null
+        if (p_forcedStartDateStr != null)
+        {
+            int startDateIndex = backtestAlgorithmParam.IndexOf("startDate=");
+            if (startDateIndex == -1)
+                backtestAlgorithmParam = "startDate=" + p_forcedStartDateStr + "&" + backtestAlgorithmParam; // "startDate=" not found, add to the front
+            else
+            {
+                // "startDate=" found, replace the value
+                int endIndex = backtestAlgorithmParam.IndexOf('&', startDateIndex);
+                if (endIndex == -1)
+                    endIndex = backtestAlgorithmParam.Length;
+
+                // Replace the value associated with "startDate=" with the new value p_forcedStartDateStr
+                backtestAlgorithmParam = backtestAlgorithmParam[..(startDateIndex + "startDate=".Length)] + p_forcedStartDateStr + backtestAlgorithmParam[endIndex..];
+            }
+        }
+
+        // Return the updated AlgorithmParam
+        return backtestAlgorithmParam;
     }
 
     public static string? GetBmrksHistoricalResults(string p_bmrksStr, DateTime p_minDate, out PriceHistoryJs p_histPrices, out ChartResolution p_chartResolution)
