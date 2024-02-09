@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult } from '../../../../TsLib/sq-common/backtestCommon';
+import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, gTransactionActionToStr, gAssetTypeToStr, gCurrencyToStr, gExchangeToStr } from '../../../../TsLib/sq-common/backtestCommon';
 
 class HandshakeMessage {
   public email = '';
@@ -8,74 +8,18 @@ class HandshakeMessage {
   public prtfToClient: PortfolioJs | null = null;
 }
 
-enum TradeAction {
-  Unknown = 0,
-  Deposit = 1,
-  Withdrawal = 2,
-  Buy = 3,
-  Sell = 4,
-  Exercise = 5,
-  Expired = 6
-}
-
-enum AssetType {
-  Unknown = 0,
-  CurrencyCash = 1,
-  CurrencyPair = 2,
-  Stock = 3,
-  Bond = 4,
-  Fund = 5,
-  Futures = 6,
-  Option = 7,
-  Commodity = 8,
-  RealEstate = 9,
-  FinIndex = 10,
-  BrokerNAV = 11,
-  Portfolio = 12,
-  GeneralTimeSeries = 13,
-  Company = 14
-}
-
-enum CurrencyId {
-  Unknown = 0,
-  USD = 1,
-  EUR = 2,
-  GBP = 3,
-  GBX = 4,
-  HUF = 5,
-  JPY = 6,
-  CNY = 7,
-  CAD = 8,
-  CHF = 9
-}
-
-enum ExchangeId {
-  Unknown = -1,
-  NASDAQ = 1,
-  NYSE = 2,
-  AMEX = 3,
-  PINK = 4,
-  CDNX = 5,
-  LSE = 6,
-  XTRA = 7,
-  CBOE = 8,
-  ARCA = 9,
-  BATS = 10,
-  OTCBB = 11
-}
-
 class TradeJs {
   id: number = -1;
   time: Date = new Date();
-  action: TradeAction = TradeAction.Unknown;
-  assetType: AssetType = AssetType.Unknown;
+  action: string = 'Unknown';
+  assetType: string = 'Unknown';
   symbol: string | null = null;
   underlyingSymbol: string | null = null;
   quantity: number = 0;
   price: number = 0;
-  currency: CurrencyId = CurrencyId.Unknown;
+  currency: string = 'Unknown';
   commission: number = 0;
-  exchangeId: ExchangeId = ExchangeId.Unknown;
+  exchangeId: string = 'Unknown';
   connectedTrades: number[] | null = null;
 }
 
@@ -141,7 +85,7 @@ export class AppComponent {
           break;
         case 'PrtfVwr.TradesHist':
           console.log('PrtfVwr.TradesHist:' + msgObjStr);
-          this.m_trades = JSON.parse(msgObjStr);
+          this.m_trades = this.tradesParseHelper(msgObjStr);
           break;
       }
     };
@@ -177,5 +121,17 @@ export class AppComponent {
     console.log('getTradesHistory');
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
       this.m_socket.send('GetTradesHist:' + this.m_portfolio?.id);
+  }
+
+  // Helper function to parse JSON string representing an array of trades and convert numeric values to corresponding enum names
+  tradesParseHelper(msgObjStr: string): TradeJs[] {
+    const trades: TradeJs[] = JSON.parse(msgObjStr);
+    trades.forEach((trade) => { // Convert numeric values to enum names
+      trade.action = gTransactionActionToStr[trade.action];
+      trade.assetType = gAssetTypeToStr[trade.assetType];
+      trade.currency = gCurrencyToStr[trade.currency];
+      trade.exchangeId = gExchangeToStr[trade.exchangeId];
+    });
+    return trades;
   }
 }

@@ -583,7 +583,7 @@ public class GptScanController : ControllerBase
         }
 
         // Extract the substring starting from the position of "Earnings Date" to htmlSpan
-        ReadOnlySpan<char> htmlSpan = p_html[earningsDateStartPos..].AsSpan();
+        ReadOnlySpan<char> htmlSpan = p_html.AsSpan(earningsDateStartPos);
 
         int spanEarningsDateStartPos = htmlSpan.IndexOf("<span>");
         if (spanEarningsDateStartPos == -1)

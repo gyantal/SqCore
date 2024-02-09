@@ -148,7 +148,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         p_chartResolution = ChartResolution.Daily;
 
         string algorithmName = String.IsNullOrEmpty(Algorithm) ? "BasicTemplateFrameworkAlgorithm" : Algorithm;
-        string backtestAlgorithmParam = GetBacktestAlgorithmParam(p_forcedStartDate, p_forcedEndDate);
+        string backtestAlgorithmParam = GetBacktestAlgorithmParam(p_forcedStartDate, p_forcedEndDate, AlgorithmParam);
         BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(algorithmName, backtestAlgorithmParam, @"{""ema-fast"":10,""ema-slow"":20}", p_sqResult);
         if (backtestResults == null)
             return "Error in Backtest";
@@ -274,21 +274,17 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
 
     // e.g. AlgortihmParam with Dates : "startDate=2002-07-24&endDate=2024-02-08&assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d";
     // e.g. AlgorithmParam without Dates : "assets=SPY,TLT&weights=60,40&rebFreq=Daily,10d"
-    public string GetBacktestAlgorithmParam(DateTime? p_forcedStartDate, DateTime? p_forcedEndDate)
+    public static string GetBacktestAlgorithmParam(DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, string p_algorithmParam)
     {
-        // Convert forced start and end dates to formatted strings (YYYY-MM-DD) or set to null if not provided
-        string? p_forcedStartDateStr = p_forcedStartDate.HasValue ? Utils.TohYYYYMMDD(p_forcedStartDate.Value) : null;
-        string? p_forcedEndDateStr = p_forcedEndDate.HasValue ? Utils.TohYYYYMMDD(p_forcedEndDate.Value) : null;
-
         // Get the original AlgorithmParam value
-        string backtestAlgorithmParam = AlgorithmParam;
+        string backtestAlgorithmParam = p_algorithmParam;
 
         // Update endDate in AlgorithmParam if p_forcedEndDate is not null
-        if (p_forcedEndDateStr != null)
+        if (p_forcedEndDate != null)
         {
             int endDateIndex = backtestAlgorithmParam.IndexOf("endDate=");
             if (endDateIndex == -1)
-                backtestAlgorithmParam = "endDate=" + p_forcedEndDateStr + "&" + backtestAlgorithmParam; // "endDate=" not found, add to the front
+                backtestAlgorithmParam = "endDate=" + Utils.TohYYYYMMDD(p_forcedEndDate.Value) + "&" + backtestAlgorithmParam; // "endDate=" not found, add to the front
             else
             {
                 // "endDate=" found, replace the value
@@ -296,17 +292,17 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
                 if (endIndex == -1)
                     endIndex = backtestAlgorithmParam.Length;
 
-                // Replace the value associated with "endDate=" with the new value p_forcedEndDateStr
-                backtestAlgorithmParam = backtestAlgorithmParam[..(endDateIndex + "endDate=".Length)] + p_forcedEndDateStr + backtestAlgorithmParam[endIndex..];
+                // Replace the value associated with "endDate=" with the new value p_forcedEndDate
+                backtestAlgorithmParam = backtestAlgorithmParam[..(endDateIndex + "endDate=".Length)] + Utils.TohYYYYMMDD(p_forcedEndDate.Value) + backtestAlgorithmParam[endIndex..];
             }
         }
 
         // Update startDate in AlgorithmParam if p_forcedStartDate is not null
-        if (p_forcedStartDateStr != null)
+        if (p_forcedStartDate != null)
         {
             int startDateIndex = backtestAlgorithmParam.IndexOf("startDate=");
             if (startDateIndex == -1)
-                backtestAlgorithmParam = "startDate=" + p_forcedStartDateStr + "&" + backtestAlgorithmParam; // "startDate=" not found, add to the front
+                backtestAlgorithmParam = "startDate=" + Utils.TohYYYYMMDD(p_forcedStartDate.Value) + "&" + backtestAlgorithmParam; // "startDate=" not found, add to the front
             else
             {
                 // "startDate=" found, replace the value
@@ -314,13 +310,12 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
                 if (endIndex == -1)
                     endIndex = backtestAlgorithmParam.Length;
 
-                // Replace the value associated with "startDate=" with the new value p_forcedStartDateStr
-                backtestAlgorithmParam = backtestAlgorithmParam[..(startDateIndex + "startDate=".Length)] + p_forcedStartDateStr + backtestAlgorithmParam[endIndex..];
+                // Replace the value associated with "startDate=" with the new value p_forcedStartDate
+                backtestAlgorithmParam = backtestAlgorithmParam[..(startDateIndex + "startDate=".Length)] + Utils.TohYYYYMMDD(p_forcedStartDate.Value) + backtestAlgorithmParam[endIndex..];
             }
         }
 
-        // Return the updated AlgorithmParam
-        return backtestAlgorithmParam;
+        return backtestAlgorithmParam; // Return the updated AlgorithmParam
     }
 
     public static string? GetBmrksHistoricalResults(string p_bmrksStr, DateTime p_minDate, out PriceHistoryJs p_histPrices, out ChartResolution p_chartResolution)
