@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, gTransactionActionToStr, gAssetTypeToStr, gCurrencyToStr, gExchangeToStr } from '../../../../TsLib/sq-common/backtestCommon';
+import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId } from '../../../../TsLib/sq-common/backtestCommon';
 
 class HandshakeMessage {
   public email = '';
@@ -11,15 +11,15 @@ class HandshakeMessage {
 class TradeJs {
   id: number = -1;
   time: Date = new Date();
-  action: string = 'Unknown';
-  assetType: string = 'Unknown';
+  action: TradeAction = TradeAction.Unknown;
+  assetType: AssetType = AssetType.Unknown;
   symbol: string | null = null;
   underlyingSymbol: string | null = null;
   quantity: number = 0;
   price: number = 0;
-  currency: string = 'Unknown';
+  currency: CurrencyId = CurrencyId.Unknown;
   commission: number = 0;
-  exchangeId: string = 'Unknown';
+  exchangeId: ExchangeId = ExchangeId.Unknown;
   connectedTrades: number[] | null = null;
 }
 
@@ -85,7 +85,7 @@ export class AppComponent {
           break;
         case 'PrtfVwr.TradesHist':
           console.log('PrtfVwr.TradesHist:' + msgObjStr);
-          this.m_trades = this.tradesParseHelper(msgObjStr);
+          this.processHistoricalTrades(msgObjStr);
           break;
       }
     };
@@ -122,16 +122,22 @@ export class AppComponent {
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
       this.m_socket.send('GetTradesHist:' + this.m_portfolio?.id);
   }
+  processHistoricalTrades(msgObjStr: string) {
+    console.log('PrtfVwr.processHistoricalTrades() START');
+    this.m_trades = JSON.parse(msgObjStr, function(key, value) {
+      switch (key) { // Perform type conversion based on property names
+        case 'action':
+          return TradeAction[value];
+        case 'assetType':
+          return AssetType[value];
+        case 'currency':
+          return CurrencyId[value];
+        case 'exchangeId':
+          return ExchangeId[value];
 
-  // Helper function to parse JSON string representing an array of trades and convert numeric values to corresponding enum names
-  tradesParseHelper(msgObjStr: string): TradeJs[] {
-    const trades: TradeJs[] = JSON.parse(msgObjStr);
-    trades.forEach((trade) => { // Convert numeric values to enum names
-      trade.action = gTransactionActionToStr[trade.action];
-      trade.assetType = gAssetTypeToStr[trade.assetType];
-      trade.currency = gCurrencyToStr[trade.currency];
-      trade.exchangeId = gExchangeToStr[trade.exchangeId];
+        default: // If no type conversion needed, return the original value
+          return value;
+      }
     });
-    return trades;
   }
 }

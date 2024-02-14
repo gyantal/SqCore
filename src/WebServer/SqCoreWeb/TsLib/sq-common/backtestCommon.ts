@@ -176,16 +176,6 @@ export enum TradeAction {
   Expired = 6
 }
 
-export const gTransactionActionToStr: Record<TradeAction, string> = { // It represents a mapping from values of the TradeAction enum to corresponding strings. It's similar to a dictionary where keys are of type TradeAction and values are of type string.
-  [TradeAction.Unknown]: 'Unknown',
-  [TradeAction.Deposit]: 'Deposit',
-  [TradeAction.Withdrawal]: 'Withdrawal',
-  [TradeAction.Buy]: 'Buy',
-  [TradeAction.Sell]: 'Sell',
-  [TradeAction.Exercise]: 'Exercise',
-  [TradeAction.Expired]: 'Expired'
-};
-
 export enum AssetType {
   Unknown = 0,
   CurrencyCash = 1,
@@ -204,24 +194,6 @@ export enum AssetType {
   Company = 14
 }
 
-export const gAssetTypeToStr: Record<AssetType, string> = { // It represents a mapping from values of the AssetType enum to corresponding strings. It's similar to a dictionary where keys are of type AssetType and values are of type string.
-  [AssetType.Unknown]: 'Unknown',
-  [AssetType.CurrencyCash]: 'CurrencyCash',
-  [AssetType.CurrencyPair]: 'CurrencyPair',
-  [AssetType.Stock]: 'Stock',
-  [AssetType.Bond]: 'Bond',
-  [AssetType.Fund]: 'Fund',
-  [AssetType.Futures]: 'Futures',
-  [AssetType.Option]: 'Option',
-  [AssetType.Commodity]: 'Commodity',
-  [AssetType.RealEstate]: 'RealEstate',
-  [AssetType.FinIndex]: 'FinIndex',
-  [AssetType.BrokerNAV]: 'BrokerNAV',
-  [AssetType.Portfolio]: 'Portfolio',
-  [AssetType.GeneralTimeSeries]: 'GeneralTimeSeries',
-  [AssetType.Company]: 'Company',
-};
-
 export enum CurrencyId {
   Unknown = 0,
   USD = 1,
@@ -234,19 +206,6 @@ export enum CurrencyId {
   CAD = 8,
   CHF = 9
 }
-
-export const gCurrencyToStr: Record<CurrencyId, string> = { // It represents a mapping from values of the CurrencyId enum to corresponding strings. It's similar to a dictionary where keys are of type CurrencyId and values are of type string.
-  [CurrencyId.Unknown]: 'Unknown',
-  [CurrencyId.USD]: 'USD',
-  [CurrencyId.EUR]: 'EUR',
-  [CurrencyId.GBP]: 'GBP',
-  [CurrencyId.GBX]: 'GBX',
-  [CurrencyId.HUF]: 'HUF',
-  [CurrencyId.JPY]: 'JPY',
-  [CurrencyId.CNY]: 'CNY',
-  [CurrencyId.CAD]: 'CAD',
-  [CurrencyId.CHF]: 'CHF'
-};
 
 export enum ExchangeId {
   Unknown = -1,
@@ -263,20 +222,6 @@ export enum ExchangeId {
   OTCBB = 11,
 }
 
-export const gExchangeToStr: Record<ExchangeId, string> = { // It represents a mapping from values of the ExchangeId enum to corresponding strings. It's similar to a dictionary where keys are of type ExchangeId and values are of type string.
-  [ExchangeId.Unknown]: 'Unknown',
-  [ExchangeId.NASDAQ]: 'NASDAQ',
-  [ExchangeId.NYSE]: 'NYSE',
-  [ExchangeId.AMEX]: 'AMEX',
-  [ExchangeId.PINK]: 'PINK',
-  [ExchangeId.CDNX]: 'CDNX',
-  [ExchangeId.LSE]: 'LSE',
-  [ExchangeId.XTRA]: 'XTRA',
-  [ExchangeId.CBOE]: 'CBOE',
-  [ExchangeId.ARCA]: 'ARCA',
-  [ExchangeId.BATS]: 'BATS',
-  [ExchangeId.OTCBB]: 'OTCBB',
-};
 // ************************************************ //
 export function prtfsParseHelper(_this: any, key: string, value: any): boolean { // return value is isRemoveOriginal
   // eslint-disable-next-line no-invalid-this
