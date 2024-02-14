@@ -284,6 +284,7 @@ public partial class Program
         Console.WriteLine("5. FinDb: Force daily YF PriceHistory Crawler for securities having MAP file");
         Console.WriteLine("6. MemDb: Test getting PortfolioTradeHistory from RedisDb");
         Console.WriteLine("7. MemDb: Test append-writing PortfolioTradeHistory to RedisDb");
+        Console.WriteLine("8. MemDb: Test delete PortfolioTradeHistory from RedisDb");
         Console.WriteLine("9. Exit to main menu.");
         string userInput;
         try
@@ -331,13 +332,13 @@ public partial class Program
             case "6":
                 try
                 {
-                    List<Trade> portTradeHist = new();
+                    List<Trade>? portTradeHist = new();
                     Utils.BenchmarkElapsedTime("GetPortfolioTradeHistory()", () =>
                     {
                         portTradeHist = MemDb.gMemDb.GetPortfolioTradeHistoryToList(1, null, null);
                     });
 
-                    Console.WriteLine($"portTradeHist.Count: {portTradeHist.Count}");
+                    Console.WriteLine($"portTradeHist.Count: {(portTradeHist == null ? 0 : portTradeHist.Count)}");
                 }
                 catch (System.Exception e)
                 {
@@ -361,6 +362,16 @@ public partial class Program
                         MemDb.gMemDb.AppendPortfolioTradeHistory(35, testTrades, true);
                     });
                     Console.WriteLine($"WritePortfolioTradeHistory(): OK.");
+                }
+                catch (System.Exception e)
+                {
+                    Console.WriteLine($"Exception: {e.Message}");
+                }
+                break;
+            case "8":
+                try
+                {
+                    MemDb.gMemDb.DeletePortfolioTradeHistory(35);
                 }
                 catch (System.Exception e)
                 {

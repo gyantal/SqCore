@@ -349,12 +349,79 @@ public partial class MemDb
         return assetHistsAndLastEstValue;
     }
 
+    public Trade? GetPortfolioTrade(int p_tradeHistoryId, int p_tradeId)
+    {
+        IEnumerable<Trade> tradeHistory = GetPortfolioTradeHistory(p_tradeHistoryId, null, null);
+        foreach (Trade trade in tradeHistory)
+        {
+            if (trade.Id == p_tradeId)
+                return trade;
+        }
+        return null;
+    }
+
+    public int InsertPortfolioTrade(int p_tradeHistoryId, Trade p_newTrade)
+    {
+        List<Trade>? tradeHistory = GetPortfolioTradeHistoryToList(p_tradeHistoryId, null, null);
+        if (tradeHistory == null) // if id didn't exist before, create it and add the first item
+            tradeHistory = new();
+
+        int maxId = -1;
+        foreach (Trade trade in tradeHistory)
+        {
+            if (trade.Id >= maxId)
+                maxId = trade.Id;
+        }
+        int newTradeId = maxId + 1; // if tradeHistory is empty, maxId stays -1, newTradeId becomes 0. OK.
+        p_newTrade.Id = newTradeId;
+        tradeHistory.Add(p_newTrade);
+        WritePortfolioTradeHistory(p_tradeHistoryId, tradeHistory, true);
+        return newTradeId;
+    }
+
+    public bool DeletePortfolioTrade(int p_tradeHistoryId, int p_tradeId)
+    {
+        List<Trade>? tradeHistory = GetPortfolioTradeHistoryToList(p_tradeHistoryId, null, null);
+        if (tradeHistory == null) // if id didn't exist before, that is unexpected. Raise an exception.
+            throw new Exception($"DeletePortfolioTrade(), cannot find tradeHistoryId {p_tradeHistoryId}");
+
+        for (int i = 0; i < tradeHistory.Count; i++)
+        {
+            if (tradeHistory[i].Id == p_tradeId)
+            {
+                tradeHistory.RemoveAt(i);
+                WritePortfolioTradeHistory(p_tradeHistoryId, tradeHistory, true);
+                return true;
+            }
+        }
+        throw new Exception($"DeletePortfolioTrade(), cannot find tradeHistoryId {p_tradeHistoryId}");
+    }
+
+    public bool UpdatePortfolioTrade(int p_tradeHistoryId, int p_tradeId, Trade p_newTrade)
+    {
+        List<Trade>? tradeHistory = GetPortfolioTradeHistoryToList(p_tradeHistoryId, null, null);
+        if (tradeHistory == null) // if id didn't exist before, that is unexpected. Raise an exception.
+            throw new Exception($"UpdatePortfolioTrade(), cannot find tradeHistoryId {p_tradeHistoryId}");
+
+        for (int i = 0; i < tradeHistory.Count; i++)
+        {
+            if (tradeHistory[i].Id == p_tradeId)
+            {
+                tradeHistory[i] = p_newTrade;
+                tradeHistory[i].Id = p_tradeId;
+                WritePortfolioTradeHistory(p_tradeHistoryId, tradeHistory, true);
+                return true;
+            }
+        }
+        throw new Exception($"UpdatePortfolioTrade(), cannot find tradeHistoryId {p_tradeHistoryId}");
+    }
+
     public IEnumerable<Trade> GetPortfolioTradeHistory(int p_tradeHistoryId, DateTime? p_startIncLoc, DateTime? p_endIncLoc)
     {
         return m_Db.GetPortfolioTradeHistory(p_tradeHistoryId, p_startIncLoc, p_endIncLoc);
     }
 
-    public List<Trade> GetPortfolioTradeHistoryToList(int p_tradeHistoryId, DateTime? p_startIncLoc, DateTime? p_endIncLoc)
+    public List<Trade>? GetPortfolioTradeHistoryToList(int p_tradeHistoryId, DateTime? p_startIncLoc, DateTime? p_endIncLoc)
     {
         return m_Db.GetPortfolioTradeHistoryToList(p_tradeHistoryId, p_startIncLoc, p_endIncLoc);
     }
@@ -367,6 +434,11 @@ public partial class MemDb
     public void AppendPortfolioTradeHistory(int p_tradeHistoryId, List<Trade> p_newTrades, bool p_forceChronologicalOrder)
     {
         m_Db.AppendPortfolioTradeHistory(p_tradeHistoryId, p_newTrades, p_forceChronologicalOrder);
+    }
+
+    public void DeletePortfolioTradeHistory(int p_tradeHistoryId)
+    {
+        m_Db.DeletePortfolioTradeHistory(p_tradeHistoryId);
     }
 
     public string? GetPortfolioRunResults(int p_portfolioId, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PrtfRunResult prtfRunResult)

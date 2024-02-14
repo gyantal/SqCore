@@ -473,10 +473,7 @@ public partial class Db
         string redisKey = p_tradeHistoryId.ToString();
         string? portfTradeHistInDbStr = m_redisDb.HashGet("portfolioTradeHistory", redisKey); // portfTradeHistInDbStr: allocates RAM (e.g. 0.5MB) for all (5,000) trades 1x. We cannot make it slimmer, because RedisDb doesn't support enumeration.
         if (portfTradeHistInDbStr == null)
-        {
-            Utils.Logger.Error($"Error in GetPortfolioTradeHistory(): portfolio id '{p_tradeHistoryId}");
             yield break; // exits the iterator
-        }
 
         IEnumerable<TradeInDb> tradeInDbs = JsonSerializer.Deserialize<IEnumerable<TradeInDb>>(portfTradeHistInDbStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = false }) // Case sensitive is the fastest.
                 ?? throw new SqException($"Deserialize failed on '{portfTradeHistInDbStr}'");
@@ -490,15 +487,12 @@ public partial class Db
 
     // The IEnumerable<> version is faster as it allocates less memory.
     // However, if you iterate over it many times, or you need the Count, or you search a specific Trade.Date in it with binary search, the user of this will need a List<>. So, use this 90% of the time.
-    public List<Trade> GetPortfolioTradeHistoryToList(int p_tradeHistoryId, DateTime? p_startIncLoc, DateTime? p_endIncLoc) // Fat version of returning 5,000 trades (e.g. 0.5MB) in a List
+    public List<Trade>? GetPortfolioTradeHistoryToList(int p_tradeHistoryId, DateTime? p_startIncLoc, DateTime? p_endIncLoc) // Fat version of returning 5,000 trades (e.g. 0.5MB) in a List
     {
         string redisKey = p_tradeHistoryId.ToString();
         string? portfTradeHistInDbStr = m_redisDb.HashGet("portfolioTradeHistory", redisKey); // portfTradeHistInDbStr: allocates RAM (e.g. 0.5MB) for all (5,000) trades 1x
         if (portfTradeHistInDbStr == null)
-        {
-            Utils.Logger.Error($"Error in GetPortfolioTradeHistory(): portfolio id '{p_tradeHistoryId}");
-            return new(); // returns an empty List
-        }
+            return null;
 
         TradeInDb[] tradeInDbs = JsonSerializer.Deserialize<TradeInDb[]>(portfTradeHistInDbStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = false }) // Case sensitive is the fastest.
                 ?? throw new SqException($"Deserialize failed on '{portfTradeHistInDbStr}'"); // TradeInDb[]: allocates RAM (e.g. 0.5MB) for all (5,000) trades 2x
@@ -521,7 +515,10 @@ public partial class Db
 
     public void AppendPortfolioTradeHistory(int tradeHistoryId, List<Trade> p_newTrades, bool p_forceChronologicalOrder)
     {
-        List<Trade> existingTrades = GetPortfolioTradeHistoryToList(tradeHistoryId, null, null); // if tradeHistoryId doesn't exist GetPortfolioTradeHistory() throws an exception. But we should do it without Exception.
+        List<Trade>? existingTrades = GetPortfolioTradeHistoryToList(tradeHistoryId, null, null);
+        if (existingTrades == null)
+            existingTrades = new();
+
         if (existingTrades.Count > 0)
         {
             int maxId = -1; // if empty list, newId will be 0, which is OK
@@ -541,8 +538,13 @@ public partial class Db
             }
         }
 
-        existingTrades?.AddRange(p_newTrades);
-        WritePortfolioTradeHistory(tradeHistoryId, existingTrades!, p_forceChronologicalOrder);
+        existingTrades.AddRange(p_newTrades);
+        WritePortfolioTradeHistory(tradeHistoryId, existingTrades, p_forceChronologicalOrder);
+    }
+
+    public void DeletePortfolioTradeHistory(int tradeHistoryId)
+    {
+        m_redisDb.HashDelete("portfolioTradeHistory", tradeHistoryId);
     }
 
     public static bool UpdateBrotlisIfNeeded()
