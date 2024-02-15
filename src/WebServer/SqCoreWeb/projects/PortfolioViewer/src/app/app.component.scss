@@ -26,13 +26,19 @@ thead {
   text-align: center;
 }
 
-.tableCommon tr:nth-child(even) {
-  background-color: #9dcef8;
-}
-
 #pfStatsTable {
   border-collapse: collapse;
   border: solid black;
   border-width: 1px 0px 1px 0;
   width: 98%;
+}
+
+#transactions {
+  padding: 0.05rem 0 0.05rem 0;
+  border: 0.05rem solid black;
+}
+
+.tradedRowSelected {
+  background-color: #D3D3D3;
+  cursor: pointer;
 }

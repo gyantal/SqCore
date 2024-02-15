@@ -17,3 +17,31 @@ html {
   src: local("Times New Roman");
   unicode-range: U+0030-0039;
 }
+
+// The Date format dispalyed on the UI is based on the OS settings. This for the reason to accomadate different regions date formats.
+// But, We want to use a common format to be displayed, so by using the below CSS style with webkit we are showing the fake format, please refer the below stackoverflow link.
+// eg: In India the Date format is dd-mm-yyyy by applying the Css webkit we turn the format to yyyy|mm|dd.
+// https://stackoverflow.com/questions/7372038/is-there-any-way-to-change-input-type-date-format
+input[type="date"]::-webkit-datetime-edit, input[type="date"]::-webkit-inner-spin-button, input[type="date"]::-webkit-clear-button {
+  color: #fff; // This is to hide the orginal format hypens "-".
+  position: relative;
+}
+
+input[type="date"]::-webkit-datetime-edit-day-field, input[type="date"]::-webkit-datetime-edit-month-field, input[type="date"]::-webkit-datetime-edit-year-field {
+  position: absolute !important;
+  border-left: 0.02rem solid #8c8c8c;
+  color: #000;
+}
+
+input[type="date"]::-webkit-datetime-edit-day-field {
+  left: 66px;
+}
+
+input[type="date"]::-webkit-datetime-edit-month-field {
+  left: 40px;
+}
+
+input[type="date"]::-webkit-datetime-edit-year-field {
+  border-left: none;
+  left: 1px;
+}

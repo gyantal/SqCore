@@ -51,7 +51,18 @@
     </div>
     <div id="pfRunResultChrt"></div> <!-- portfolio run result chart  -->
   </div>
-  <div [hidden]="m_activeTab != 'Trades'">
+  <div [hidden]="m_activeTab != 'Trades'"><br>
+    <div id="transactions">Transactions<br>
+      <!-- Add Transaction and clear fields will be enabled once the feature is ready -->
+      <button disabled>Add Transaction</button>&nbsp;
+      <button disabled>Clear Fields</button><br>
+      <input (click)="onAssetTypeChecked(AssetType.CurrencyCash)" name="assetType" type="radio" [checked]="m_assetType == 'CurrencyCash'">Cash &nbsp;
+      <input (click)="onAssetTypeChecked(AssetType.Stock)" name="assetType" type="radio" [checked]="m_assetType == 'Stock'">Stock &nbsp;
+      <input (click)="onAssetTypeChecked(AssetType.Option)" name="assetType" type="radio" [checked]="m_assetType == 'Option'">Option &nbsp;
+      <input (click)="onAssetTypeChecked(AssetType.Futures)" name="assetType" type="radio" [checked]="m_assetType == 'Futures'">Futures <br>
+      Ticker:<input type="text" [value]="m_tradeItem.symbol">&nbsp;
+      TransactionDate:<input type="date" [value]="m_tradeItem.time | date : 'yyyy-MM-dd'">
+    </div>
     <p>Trades</p>
     <table class="tableCommon">
       <thead>
@@ -66,8 +77,8 @@
           <th>ExchangeId</th>
         </tr>
       </thead>
-      <tbody>
-        <tr *ngFor="let item of m_trades">
+      <tbody *ngFor="let item of m_trades">
+        <tr (click)="onClickSelectedTradeItem(item)" [ngClass]="{'tradedRowSelected': item.isSelected}">
           <td>{{item.underlyingSymbol}}</td>
           <td>{{item.quantity}}</td>
           <td>{{item.price | number:'1.2-2'}}</td>

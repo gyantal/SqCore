@@ -21,6 +21,7 @@ class TradeJs {
   commission: number = 0;
   exchangeId: ExchangeId = ExchangeId.Unknown;
   connectedTrades: number[] | null = null;
+  isSelected: boolean = false; // adding new member in TradeJS ( TBD whether we need UiTrades version with George)
 }
 
 @Component({
@@ -40,6 +41,9 @@ export class AppComponent {
   m_uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
   m_histPosEndDate: string = '';
   m_trades: TradeJs[] | null = null;
+  m_assetType: string = '';
+  AssetType = AssetType; // used in UI (e.g, onAssetTypeChecked(AssetType.CurrencyCash))
+  m_tradeItem: TradeJs = new TradeJs();
 
   user = {
     name: 'Anonymous',
@@ -122,6 +126,7 @@ export class AppComponent {
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
       this.m_socket.send('GetTradesHist:' + this.m_portfolio?.id);
   }
+
   processHistoricalTrades(msgObjStr: string) {
     console.log('PrtfVwr.processHistoricalTrades() START');
     this.m_trades = JSON.parse(msgObjStr, function(key, value) {
@@ -139,5 +144,19 @@ export class AppComponent {
           return value;
       }
     });
+  }
+
+  onAssetTypeChecked(assetType: AssetType) { // assetType - The asset type to be checked and processed.
+    if (typeof(assetType) == 'number') // Check if the provided assetType is a number
+      this.m_assetType = AssetType[assetType]; // If it is a number, convert it to the corresponding AssetType string value
+
+    this.m_assetType = assetType.toString(); // Convert the assetType to a string
+  }
+
+  onClickSelectedTradeItem(tradeItem: TradeJs) {
+    this.m_tradeItem.isSelected = false; // Deselect the currently selected trade item, if any
+    this.m_tradeItem = tradeItem; // Update the current selected trade item to the newly clicked trade item
+    this.m_tradeItem.isSelected = true; // Mark the newly selected trade item as selected
+    this.onAssetTypeChecked(tradeItem.assetType); // Trigger the onAssetTypeChecked function to handle the selected trade item's asset type
   }
 }
