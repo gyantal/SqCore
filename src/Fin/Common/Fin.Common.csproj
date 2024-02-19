@@ -9,6 +9,7 @@
     <InternalsVisibleTo Include="Fin.Engine" />
     <InternalsVisibleTo Include="Fin.Brokerages" />
     <ProjectReference Include="..\..\Common\SqCommon\SqCommon.csproj" />
+    <ProjectReference Include="..\Base\Fin.Base.csproj" />
     <ProjectReference Include="..\Configuration\Fin.Configuration.csproj" />
     <ProjectReference Include="..\Compression\Fin.Compression.csproj" />
     <PackageReference Include="System.ComponentModel.Composition" Version="7.0.0" />

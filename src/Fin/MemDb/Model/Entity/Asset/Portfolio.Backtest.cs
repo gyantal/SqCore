@@ -11,6 +11,7 @@ using QuantConnect.Data.Market;
 using QuantConnect.Lean.Engine.Results;
 using QuantConnect.Parameters;
 using QuantConnect.Securities;
+using QuantConnect.Securities.Equity;
 using QuantConnect.Statistics;
 using QuantConnect.Util;
 using SqCommon;
@@ -148,8 +149,9 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         p_chartResolution = ChartResolution.Daily;
 
         string algorithmName = String.IsNullOrEmpty(Algorithm) ? "BasicTemplateFrameworkAlgorithm" : Algorithm;
-        string backtestAlgorithmParam = GetBacktestAlgorithmParam(p_forcedStartDate, p_forcedEndDate, AlgorithmParam);
-        BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(algorithmName, backtestAlgorithmParam, @"{""ema-fast"":10,""ema-slow"":20}", p_sqResult);
+        string backtestAlgorithmParam = GetBacktestAlgorithmParam(p_forcedStartDate, p_forcedEndDate, AlgorithmParam); // AlgorithmParam itself 'can' have StartDate, EndDate. But ChartGenerator can further restricts the period with forcedStartDate/EndDate
+        List<Base.Trade>? portTradeHist = MemDb.gMemDb.GetPortfolioTradeHistoryToList(this.TradeHistoryId, null, null); // Don't filter TradeHist based on StartDate, because to properly backtest we need the initial trades that happende Before StartDate. StartDate refers to the ChartGeneration usually. But we have to simulate previous buying trades, even before StartDate.
+        BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(algorithmName, backtestAlgorithmParam, portTradeHist, @"{""ema-fast"":10,""ema-slow"":20}", p_sqResult);
         if (backtestResults == null)
             return "Error in Backtest";
 
@@ -248,16 +250,27 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         // We need these in the Statistic: "Net Profit" => TotalReturn, "Compounding Annual Return" =>CAGR, "Drawdown" => MaxDD,  "Sharpe Ratio" =>Sharpe, "Win Rate" =>WinRate, "Annual Standard Deviation" =>StDev, "Sortino Ratio" => Sortino, "Portfolio Turnover" => Turnover, "Long/Short Ratio" =>LongShortRatio, "Total Fees" => Fees,
 
         var prtfPositions = backtestResults.Algorithm;
-        foreach (var item in prtfPositions.UniverseManager.ActiveSecurities.Values)
+        foreach (Security? security in prtfPositions.UniverseManager.ActiveSecurities.Values)
         {
-            if ((int)item.Holdings.Quantity == 0) // eliminating the positions with holding quantity equals to zero
+            if ((int)security.Holdings.Quantity == 0) // eliminating the positions with holding quantity equals to zero
                 continue;
+
+            // TEMP: trying to get Company Name from the Fundamental data stream.
+            // Equity equity = (Equity)security;  // not necessary
+            // var fundamentals = security.Fundamentals;
+            // if (fundamentals != null)
+            // {
+            //     string companyShortName = security.Fundamentals.CompanyReference.ShortName;
+            //     // string companyShortName = security.Fundamentals.CompanyReference.ShortName;
+            //     Console.WriteLine(companyShortName);
+            // }
+
             PortfolioPosition posStckItem = new()
             {
-                SqTicker = "S/" + item.Holdings.Symbol.ToString(),
-                Quantity = (int)item.Holdings.Quantity,
-                AvgPrice = (float)item.Holdings.AveragePrice,
-                LastPrice = (float)item.Holdings.Price
+                SqTicker = "S/" + security.Holdings.Symbol.ToString(),
+                Quantity = (int)security.Holdings.Quantity,
+                AvgPrice = (float)security.Holdings.AveragePrice,
+                LastPrice = (float)security.Holdings.Price
             };
             p_prtfPoss.Add(posStckItem); // Stock Tickers
         }

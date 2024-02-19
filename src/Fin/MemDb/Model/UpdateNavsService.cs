@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Fin.Base;
 using Fin.BrokerCommon;
 using IBApi;
 using Microsoft.Extensions.Primitives;

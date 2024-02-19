@@ -40,6 +40,7 @@ namespace QuantConnect.Interfaces
         // SqCore Change NEW:
         SqBacktestConfig SqBacktestConfig  { get; set; }
         public string AlgorithmParam { get; set; }
+        public List<Fin.Base.Trade>? PortTradeHist { get; set; }
         // SqCore Change END
 
         /// <summary>

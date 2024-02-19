@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DbCommon;
+using Fin.Base;
 using Microsoft.Extensions.Primitives;
 using SqCommon;
 using StackExchange.Redis;
@@ -479,7 +480,7 @@ public partial class Db
                 ?? throw new SqException($"Deserialize failed on '{portfTradeHistInDbStr}'");
         foreach (TradeInDb tradeInDb in tradeInDbs)
         {
-            Trade trade = new(tradeInDb);
+            Trade trade = tradeInDb.ToTrade();
             yield return trade;
         }
         // return Enumerable.Empty<Trade>();
@@ -489,6 +490,8 @@ public partial class Db
     // However, if you iterate over it many times, or you need the Count, or you search a specific Trade.Date in it with binary search, the user of this will need a List<>. So, use this 90% of the time.
     public List<Trade>? GetPortfolioTradeHistoryToList(int p_tradeHistoryId, DateTime? p_startIncLoc, DateTime? p_endIncLoc) // Fat version of returning 5,000 trades (e.g. 0.5MB) in a List
     {
+        if (p_tradeHistoryId == -1)
+            return null;
         string redisKey = p_tradeHistoryId.ToString();
         string? portfTradeHistInDbStr = m_redisDb.HashGet("portfolioTradeHistory", redisKey); // portfTradeHistInDbStr: allocates RAM (e.g. 0.5MB) for all (5,000) trades 1x
         if (portfTradeHistInDbStr == null)
@@ -499,7 +502,7 @@ public partial class Db
         List<Trade> trades = new(tradeInDbs.Length); // List<Trade>: allocates RAM (e.g. 0.5MB) for all (5,000) trades 3x
         foreach (TradeInDb tradeInDb in tradeInDbs)
         {
-            Trade trade = new(tradeInDb);
+            Trade trade = tradeInDb.ToTrade();
             trades.Add(trade);
         }
 

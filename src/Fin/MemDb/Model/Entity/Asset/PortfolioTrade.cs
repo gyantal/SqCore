@@ -13,20 +13,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Fin.Base;
 using StackExchange.Redis;
 
 namespace Fin.MemDb;
-
-public enum TradeAction : byte
-{
-    Unknown = 0,
-    Deposit = 1,
-    Withdrawal = 2,
-    Buy = 3,
-    Sell = 4,
-    Exercise = 5,
-    Expired = 6
-}
 
 public class TradeInDb
 {
@@ -72,6 +62,15 @@ public class TradeInDb
         ConnectedTrades = p_trade.ConnectedTrades != null ? string.Join(",", p_trade.ConnectedTrades) : null;
     }
 
+    public Trade ToTrade()
+    {
+        Trade trade = new(Id, DateTime.Parse(Time), AssetHelper.gStrToTradeAction[Action ?? "BOT"], AssetHelper.gChrToAssetType[AssetType ?? 'S'], Symbol, UnderlyingSymbol ?? Symbol, Quantity, Price,
+            Currency == null ? CurrencyId.Unknown : AssetHelper.gStrToCurrency[Currency], Commission ?? 0,
+            Exchange == null ? ExchangeId.Unknown : AssetHelper.gStrToExchange[Exchange], ConnectedTrades);
+
+        return trade;
+    }
+
     public static RedisValue ToRedisValue(List<Trade> p_trades, bool p_forceChronologicalOrder = true)
     {
         List<Trade> tradesToDb;
@@ -114,103 +113,5 @@ public class TradeInDb
 
         // Serialize the list of TradeInDb objects to JSON
         return JsonSerializer.Serialize(tradeInDbsToDb, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
-    }
-}
-
-[DebuggerDisplay("{Id}, Action:{Action}, Symbol:{Symbol}, Quantity:{Quantity}, Price:{Price}, Time:{Time}")]
-public class Trade
-{
-    public int Id { get; set; } = -1;
-    public DateTime Time { get; set; } = DateTime.MinValue;
-    public TradeAction Action { get; set; } = TradeAction.Unknown;
-    public AssetType AssetType { get; set; } = AssetType.Unknown;
-    public string? Symbol { get; set; } = null;
-    public string? UnderlyingSymbol { get; set; } = null;
-    public int Quantity { get; set; } = 0;
-    public float Price { get; set; } = 0;
-    public CurrencyId Currency { get; set; } = CurrencyId.Unknown;
-    public float Commission { get; set; } = 0;
-    public ExchangeId ExchangeId { get; set; } = ExchangeId.Unknown;
-    public List<int>? ConnectedTrades { get; set; } = null;
-
-    public Trade()
-    {
-    }
-
-    public Trade(TradeInDb p_tradeInDb)
-    {
-        Id = p_tradeInDb.Id;
-        Time = DateTime.Parse(p_tradeInDb.Time);
-        Action = AssetHelper.gStrToTradeAction[p_tradeInDb.Action ?? "BOT"];
-        AssetType = AssetHelper.gChrToAssetType[p_tradeInDb.AssetType ?? 'S'];
-        Symbol = p_tradeInDb.Symbol;
-        UnderlyingSymbol = p_tradeInDb.UnderlyingSymbol ?? Symbol;
-        Quantity = p_tradeInDb.Quantity;
-        Price = p_tradeInDb.Price;
-        Currency = p_tradeInDb.Currency == null ? CurrencyId.Unknown : AssetHelper.gStrToCurrency[p_tradeInDb.Currency];
-        Commission = p_tradeInDb.Commission ?? 0;
-        ExchangeId = p_tradeInDb.Exchange == null ? ExchangeId.Unknown : AssetHelper.gStrToExchange[p_tradeInDb.Exchange];
-        if (p_tradeInDb.ConnectedTrades != null)
-        {
-            string[] tradeIdsStr = p_tradeInDb.ConnectedTrades.Split(',');
-            ConnectedTrades = new(tradeIdsStr.Length);
-            foreach (var tradeIdStr in tradeIdsStr)
-            {
-                ConnectedTrades.Add(int.Parse(tradeIdStr));
-            }
-        }
-    }
-    public Trade(List<Trade> p_tradesForAutoId)
-    {
-        // keep the newId calculation logic here, just right before the Trade creation.
-        int maxId = -1; // if empty list, newId will be 0, which is OK
-        foreach (Trade trade in p_tradesForAutoId)
-        {
-            if (maxId < trade.Id)
-                maxId = trade.Id;
-        }
-        int newId = maxId + 1;
-
-        Id = newId;
-    }
-
-    public Trade(List<Trade> p_tradesForAutoId, DateTime p_time, TradeAction p_action, AssetType p_assetType, string? p_symbol, string? p_undSymbol, int p_quantity, float p_price, CurrencyId p_currency, float p_commission, ExchangeId p_exchangeId, string? p_connectedTrades)
-    {
-        // keep the newId calculation logic here, just right before the Trade creation.
-        int maxId = -1; // if empty list, newId will be 0, which is OK
-        foreach (Trade trade in p_tradesForAutoId)
-        {
-            if (maxId < trade.Id)
-                maxId = trade.Id;
-        }
-        int newId = maxId + 1;
-
-        Id = newId;
-        Time = p_time;
-        Action = p_action;
-        AssetType = p_assetType;
-        Symbol = p_symbol;
-        UnderlyingSymbol = p_undSymbol;
-        Quantity = p_quantity;
-        Price = p_price;
-        Currency = p_currency;
-        Commission = p_commission;
-        ExchangeId = p_exchangeId;
-        ConnectedTrades = p_connectedTrades?.Split(',').Select(int.Parse).ToList();
-    }
-    public Trade(int p_id, DateTime p_time, TradeAction p_action, AssetType p_assetType, string? p_symbol, string? p_undSymbol, int p_quantity, float p_price, CurrencyId p_currency, float p_commission, ExchangeId p_exchangeId, string? p_connectedTrades)
-    {
-        Id = p_id;
-        Time = p_time;
-        Action = p_action;
-        AssetType = p_assetType;
-        Symbol = p_symbol;
-        UnderlyingSymbol = p_undSymbol;
-        Quantity = p_quantity;
-        Price = p_price;
-        Currency = p_currency;
-        Commission = p_commission;
-        ExchangeId = p_exchangeId;
-        ConnectedTrades = p_connectedTrades?.Split(',').Select(int.Parse).ToList();
     }
 }

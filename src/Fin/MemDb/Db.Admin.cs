@@ -3,7 +3,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using DbCommon;
+using Fin.Base;
 using SqCommon;
 using StackExchange.Redis;
 

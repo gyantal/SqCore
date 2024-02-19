@@ -46,6 +46,7 @@ using QCAlgorithmFramework = QuantConnect.Algorithm.QCAlgorithm;
 using QCAlgorithmFrameworkBridge = QuantConnect.Algorithm.QCAlgorithm;
 using System.Collections.Specialized;
 using System.Web;
+using Fin.Base;
 #endregion
 
 
@@ -55,7 +56,8 @@ namespace QuantConnect.Algorithm.CSharp
     {
 #if TradeInSqCore // 2 simulation environments. We backtest in Qc cloud or in SqCore frameworks. QcCloud works on per minute resolution (to be able to send MOC orders 20min before MOC), SqCore works on daily resolution only.
         bool _isTradeInSqCore = true;
-        // AlgorithmParam comes from QCAlgorithm.QCAlgorithm in SqCore framework
+        // this.AlgorithmParam comes from QCAlgorithm.QCAlgorithm in SqCore framework
+        // this.PortTradeHist comes from QCAlgorithm.QCAlgorithm in SqCore framework
 #else
         bool _isTradeInSqCore = false;
         public string AlgorithmParam { get; set; } = "startDate=2002-07-24&endDate=now&startDateAutoCalcMode=WhenFirstTickerAlive&assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d"; // in SqCore, this comes from the backtester environment as Portfolio.AlgorithmParam

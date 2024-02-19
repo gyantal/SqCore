@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Fin.Base;
 using QuantConnect.Brokerages;
 using QuantConnect.Configuration;
 using QuantConnect.Data;
@@ -65,7 +67,7 @@ namespace QuantConnect.Lean.Engine
         /// <param name="manager">The algorithm manager instance</param>
         /// <param name="assemblyPath">The path to the algorithm's assembly</param>
         /// <param name="workerThread">The worker thread instance</param>
-        public void Run(AlgorithmNodePacket job, AlgorithmManager manager, string assemblyPath, WorkerThread workerThread, SqBacktestConfig p_sqBacktestConfig, string p_algorithmParam)
+        public void Run(AlgorithmNodePacket job, AlgorithmManager manager, string assemblyPath, WorkerThread workerThread, SqBacktestConfig p_sqBacktestConfig, string p_algorithmParam, List<Trade>? p_portTradeHist)
         {
             var marketHoursDatabaseTask = Task.Run(() => StaticInitializations());
 
@@ -102,6 +104,7 @@ namespace QuantConnect.Lean.Engine
                     algorithm = AlgorithmHandlers.Setup.CreateAlgorithmInstance(job, assemblyPath);
                     algorithm.SqBacktestConfig = p_sqBacktestConfig;
                     algorithm.AlgorithmParam = p_algorithmParam;
+                    algorithm.PortTradeHist = p_portTradeHist;
 
                     // if (algorithm.BrokerageModel as DefaultBrokerageModel != null) // IF works, but longer, and evaluates Cast twice.
                     //     (algorithm.BrokerageModel as DefaultBrokerageModel).m_isUseIbFeeModelForEquities = false;

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Fin.Base;
 using Newtonsoft.Json;
 using QuantConnect;
 using QuantConnect.Configuration;
@@ -118,7 +119,7 @@ public static class Backtester
 
     // p_algorithmParam: SqCore params: e.g. "assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d"
     // p_parameters (QC params from config.json): e.g. "{\"ema-fast\":10,\"ema-slow\":20}"
-    public static BacktestingResultHandler BacktestInSeparateThreadWithTimeout(string p_algorithmTypeName,  string p_algorithmParam, string p_parameters, SqResult p_sqResult) // Engine uses a separate thread with ExecuteWithTimeLimit()
+    public static BacktestingResultHandler BacktestInSeparateThreadWithTimeout(string p_algorithmTypeName,  string p_algorithmParam, List<Trade>? p_portTradeHist, string p_parameters, SqResult p_sqResult) // Engine uses a separate thread with ExecuteWithTimeLimit()
     {
         string? previousThreadName = Thread.CurrentThread.Name;
         Thread.CurrentThread.Name = $"QC.Engine.Run({p_algorithmTypeName})";
@@ -191,7 +192,7 @@ public static class Backtester
         // SqCore Change ORIGINAL:
         // engine.Run(job, algorithmManager, algorithmDllRelPath, WorkerThread.Instance);
         // SqCore Change NEW:
-        engine.Run(job, algorithmManager, gAlgorithmDllRelPath, null, sqBacktestConfig, p_algorithmParam);
+        engine.Run(job, algorithmManager, gAlgorithmDllRelPath, null, sqBacktestConfig, p_algorithmParam, p_portTradeHist);
         // SqCore Change END
 
         // Console.SetOut(savedConsoleOut);
@@ -351,14 +352,14 @@ public static class Backtester
         Task basicTempTask = Task.Run(() => // Task.Run() runs it immediately
         {
             Console.WriteLine("Backtest: BasicTemplateFrameworkAlgorithm");
-            BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", string.Empty, @"{""ema-fast"":10,""ema-slow"":20}", SqResult.QcOriginal);
+            BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", string.Empty, null, @"{""ema-fast"":10,""ema-slow"":20}", SqResult.QcOriginal);
             Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} ({(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
         });
 
         Task spyTask = Task.Run(() => // Task.Run() runs it immediately
         {
             Console.WriteLine("Backtest: SqSPYMonFriAtMoc");
-            BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", string.Empty,  @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
+            BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", string.Empty, null, @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
             Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} ({(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
         });
 

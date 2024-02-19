@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Fin.Base;
 using SqCommon;
 
 namespace Fin.MemDb;

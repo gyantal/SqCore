@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using Fin.Base;
 using Fin.BrokerCommon;
 using Fin.MemDb;
 using Microsoft.Extensions.Primitives;

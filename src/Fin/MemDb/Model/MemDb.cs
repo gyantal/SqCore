@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Fin.Base;
 using Fin.BrokerCommon;
 using IBApi;
 using SqCommon;

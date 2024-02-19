@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using Fin.Base;
 using Fin.BrokerCommon;
 using SqCommon;
 
