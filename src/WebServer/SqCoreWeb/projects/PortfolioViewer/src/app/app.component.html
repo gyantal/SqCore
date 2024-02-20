@@ -52,18 +52,17 @@
     <div id="pfRunResultChrt"></div> <!-- portfolio run result chart  -->
   </div>
   <div [hidden]="m_activeTab != 'Trades'"><br>
-    <div id="transactions">Transactions<br>
+    <div id="tradesSection">Trades<br>
       <!-- Add Transaction and clear fields will be enabled once the feature is ready -->
-      <button disabled>Add Transaction</button>&nbsp;
+      <button disabled>Insert Trade</button>&nbsp;
       <button disabled>Clear Fields</button><br>
-      <input (click)="onAssetTypeChecked(AssetType.CurrencyCash)" name="assetType" type="radio" [checked]="m_assetType == 'CurrencyCash'">Cash &nbsp;
-      <input (click)="onAssetTypeChecked(AssetType.Stock)" name="assetType" type="radio" [checked]="m_assetType == 'Stock'">Stock &nbsp;
-      <input (click)="onAssetTypeChecked(AssetType.Option)" name="assetType" type="radio" [checked]="m_assetType == 'Option'">Option &nbsp;
-      <input (click)="onAssetTypeChecked(AssetType.Futures)" name="assetType" type="radio" [checked]="m_assetType == 'Futures'">Futures <br>
-      Ticker:<input type="text" [value]="m_tradeItem.symbol">&nbsp;
-      TransactionDate:<input type="date" [value]="m_tradeItem.time | date : 'yyyy-MM-dd'">
-    </div>
-    <p>Trades</p>
+      <input name="assetType" type="radio" [checked]="m_editedTrade.assetType == AssetType.CurrencyCash" [(ngModel)]="m_editedTrade.assetType" value=CurrencyCash>Cash &nbsp;
+      <input name="assetType" type="radio" [checked]="m_editedTrade.assetType == AssetType.Stock" [(ngModel)]="m_editedTrade.assetType" value=Stock>Stock &nbsp;
+      <input name="assetType" type="radio" [checked]="m_editedTrade.assetType == AssetType.Option" [(ngModel)]="m_editedTrade.assetType" value=Option>Option &nbsp;
+      <input name="assetType" type="radio" [checked]="m_editedTrade.assetType == AssetType.Futures" [(ngModel)]="m_editedTrade.assetType" value=Futures>Futures <br>
+      Ticker:<input type="text" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.symbol" oninput="this.value = this.value.toUpperCase()">&nbsp;
+      TransactionDate:<input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" (ngModelChange)="m_editedTrade.time=$event" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'">
+    </div>&nbsp;
     <table class="tableCommon">
       <thead>
         <tr>
