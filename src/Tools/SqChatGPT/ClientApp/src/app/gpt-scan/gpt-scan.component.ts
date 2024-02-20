@@ -13,6 +13,7 @@ interface NewsItem {
   IsGptSummaryLikely: string;
   ShortDescriptionSentiment: number;
   FullTextSentiment: number;
+  FutureOrGrowth: string;
 }
 
 interface TickerNews {
@@ -20,8 +21,7 @@ interface TickerNews {
   NewsItems: NewsItem[];
 }
 
-interface StockItem
-{
+interface StockItem {
   Ticker: string;
   PriorClose: number;
   LastPrice: number;
@@ -39,6 +39,12 @@ interface ServerStockPriceDataResponse {
 interface ServerNewsResponse {
   Logs: string[];
   Response: TickerNews[];
+}
+
+interface ChatGptInput {
+  LlmModelName: string;
+  NewsUrl: string;
+  ChatGptQuestion: string;
 }
 
 @Component({
@@ -149,6 +155,19 @@ export class GptScanComponent implements OnInit {
 
     this._httpClient.post<string>(this._controllerBaseUrl + 'summarizenews', body).subscribe(result => {
       newsItem.NewsSummary = result;
+      this._isSpinnerVisible = false;
+    }, error => console.error(error))
+  }
+
+  getFutureOrGrowthInfo(newsItem: NewsItem) {
+    const questionStr = 'Is there future growth or upgrade in the next text:\n';
+    // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
+    const body: ChatGptInput = { LlmModelName: this._selectedLlmModel, NewsUrl: newsItem.Link, ChatGptQuestion: questionStr};
+    console.log(body);
+    this._isSpinnerVisible = true;
+
+    this._httpClient.post<string>(this._controllerBaseUrl + 'getChatGptAnswer', body).subscribe(result => {
+      newsItem.FutureOrGrowth = result;
       this._isSpinnerVisible = false;
     }, error => console.error(error))
   }

@@ -57,7 +57,7 @@ Type your ticker list here and click to send it to C# backend.
   </table>
 </div>
 <!-- For testing change [hidden]="countInvalidEarningsDates() < 4" to [hidden]="countInvalidEarningsDates() != 0"-->
-<div [hidden]="countInvalidEarningsDates() < 4" id="earningsDateDialog">“Couldn't get EarningsDates from YF. Inform the developers.”</div>
+<div id="earningsDateDialog" [hidden]="countInvalidEarningsDates() < 4">“Couldn't get EarningsDates from YF. Inform the developers.”</div>
 <!-- Ticker News -->
 <div *ngIf="_tickerNewss.length > 0; else noData">
   <div *ngFor="let ticker of _tickerNewss">
@@ -86,10 +86,12 @@ Type your ticker list here and click to send it to C# backend.
           </span>
         </Strong>&nbsp;&nbsp;
         <small>Published on: {{ item.PubDate | date:'short':'UTC'}}</small>&nbsp;
-        <button id="summarizeNewsBtn" (click)="getNewsAndSummarize(item)">Download Full news and summarize</button>&nbsp;
-        <button id="sentimentBtn" (click)="getNewsSentiment(item)" [disabled]="item.IsGptSummaryLikely == 'no'">Sentiment Analysis</button>&nbsp;<!-- Disabling the button if the GptSummary not likely -->
+        <button id="sentimentBtn" (click)="getNewsSentiment(item)" [disabled]="item.IsGptSummaryLikely == 'no'">VADER Sentiment</button>&nbsp;<!-- Disabling the button if the GptSummary not likely -->
         <span id="newsSentiment" *ngIf="item.FullTextSentiment != null"><Strong>FullTextSentiment: <span [ngClass]="item.FullTextSentiment > 0.5 ? 'PositiveSentiment' : (item.FullTextSentiment < -0.5 ? 'NegativeSentiment' : 'NeutralSentiment')">{{ item.FullTextSentiment | percent:'1.2-2' }}</span></Strong></span>
+        <button id="summarizeNewsBtn" (click)="getNewsAndSummarize(item)">ChatGpt Summarize</button>&nbsp;
+        <button id="growthInfoBtn" (click)="getFutureOrGrowthInfo(item)">ChatGpt Growth or Upgrade</button>&nbsp;
         <div id="newsSummary" *ngIf="item.NewsSummary != null">GPT-summary: <span [innerHTML]="item.NewsSummary"></span></div>
+        <div id="futureOrGrowth" *ngIf="item.FutureOrGrowth != null">FutureGrowth: <span [innerHTML]="item.FutureOrGrowth"></span></div>
       </li>
     </ul>
   </div>

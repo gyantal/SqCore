@@ -61,6 +61,11 @@ tr:nth-child(even) {
   font-style: italic;
 }
 
+#futureOrGrowth {
+  background-color: #ffffe0;
+  font-style: italic;
+}
+
 .spinnerContainer {
   position: fixed; // It stays in a fixed position even as when we scroll
   // The top and left combination centers the container on any screen sizes

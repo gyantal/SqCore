@@ -76,6 +76,13 @@ public class ServerStockPriceDataResponse
     public List<StockPriceData> StocksPriceResponse { get; set; } = new();
 }
 
+public class ChatGptInput
+{
+    public string LlmModelName { get; set; } = string.Empty; // "auto", "gpt-3.5-turbo" (4K), "gpt-3.5-turbo-16k", "gpt-4" (8K), "gpt-4-32k"
+    public string NewsUrl { get; set; } = string.Empty;
+    public string ChatGptQuestion { get; set; } = string.Empty;
+}
+
 [ApiController]
 [Route("[controller]")]
 public class GptScanController : ControllerBase
@@ -382,6 +389,30 @@ public class GptScanController : ControllerBase
     }
 
     [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
+    [HttpPost("getChatGptAnswer")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
+    public async Task<IActionResult> GetChatGptAnswer([FromBody] ChatGptInput p_inMsg)
+    {
+         if (p_inMsg == null)
+            return BadRequest("Invalid data");
+
+        string newsStr = await DownloadCompleteNews(p_inMsg.NewsUrl);
+        string responseStr;
+        if (!newsStr.Contains("recommend visiting")) // checking for the condition if newsStr has the complete story or it is directing to another link
+        {
+            UserInput p_userInp = new()
+            {
+                LlmModelName = p_inMsg.LlmModelName,
+                Msg = p_inMsg.ChatGptQuestion + newsStr
+            };
+            responseStr = await GenerateChatResponse(p_userInp);
+        }
+        else
+            responseStr = newsStr;
+        string responseJson = JsonSerializer.Serialize(responseStr); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
+        return Ok(responseJson);
+    }
+
+    [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
     [HttpPost("summarizenews")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
     public async Task<IActionResult> GetNewsAndSummarize([FromBody] UserInput p_inMsg)
     {
@@ -437,12 +468,12 @@ public class GptScanController : ControllerBase
         return Ok(responseJson);
     }
 
-    public async Task<string> DownloadCompleteNews(string p_newsUrlLink)
+    public async Task<string> DownloadCompleteNews(string p_newsUrl)
     {
         string responseStr;
-        string htmlContent = await g_httpClient.GetStringAsync(p_newsUrlLink);
+        string htmlContent = await g_httpClient.GetStringAsync(p_newsUrl);
 
-        if ((p_newsUrlLink.StartsWith("https://finance.yahoo.com") || p_newsUrlLink.StartsWith("https://ca.finance.yahoo.com/")) && !htmlContent.Contains("Continue reading")) // if the YF news on YF website has "Continue reading" then a link will lead to another website (Bloomberg, Fools), in that case we don't process it.
+        if ((p_newsUrl.StartsWith("https://finance.yahoo.com") || p_newsUrl.StartsWith("https://ca.finance.yahoo.com/")) && !htmlContent.Contains("Continue reading")) // if the YF news on YF website has "Continue reading" then a link will lead to another website (Bloomberg, Fools), in that case we don't process it.
         {
             // responseStr = ProcessHtmlContentRegex(htmlContent);
             string responseHtmlStr = ProcessHtmlContentFast(htmlContent);
@@ -453,7 +484,7 @@ public class GptScanController : ControllerBase
             // The problem is that any cleaning is a moving target, as YF changes the layout every once in a while
         }
         else
-            responseStr = $"The full news isn't accessible on Yahoo Finance. I recommend visiting this <a href={p_newsUrlLink}>link</a> to directly retrieve the summary from ChatGPT.";
+            responseStr = $"The full news isn't accessible on Yahoo Finance. I recommend visiting this <a href={p_newsUrl}>link</a> to directly retrieve the summary from ChatGPT.";
 
         return responseStr;
     }
