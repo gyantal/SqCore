@@ -153,4 +153,19 @@ export class AppComponent {
     this.m_editedTrade = tradeItem; // Update the current selected trade item to the newly clicked trade item
     this.m_editedTrade.isSelected = true; // Mark the newly selected trade item as selected
   }
+
+  onClickInsertTrade() {
+    const newTrade = new TradeJs();
+    newTrade.assetType = AssetType[this.m_editedTrade.assetType.toString()];
+    newTrade.symbol = this.m_editedTrade.symbol;
+    newTrade.time = this.m_editedTrade.time;
+    const tradeJson = JSON.stringify(newTrade); // Convert the new trade object to JSON format
+    if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
+      this.m_socket.send('InsertTrade:' + this.m_portfolioId + ':' + tradeJson);
+  }
+
+  onClickClearFields() {
+    this.m_editedTrade.isSelected = false; // Deselect the currently selected trade item, if any
+    this.m_editedTrade = new TradeUi();
+  }
 }

@@ -54,14 +54,14 @@
   <div [hidden]="m_activeTab != 'Trades'"><br>
     <div id="tradesSection">Trades<br>
       <!-- Add Transaction and clear fields will be enabled once the feature is ready -->
-      <button disabled>Insert Trade</button>&nbsp;
-      <button disabled>Clear Fields</button><br>
-      <input name="assetType" type="radio" [checked]="m_editedTrade.assetType == AssetType.CurrencyCash" [(ngModel)]="m_editedTrade.assetType" value=CurrencyCash>Cash &nbsp;
-      <input name="assetType" type="radio" [checked]="m_editedTrade.assetType == AssetType.Stock" [(ngModel)]="m_editedTrade.assetType" value=Stock>Stock &nbsp;
-      <input name="assetType" type="radio" [checked]="m_editedTrade.assetType == AssetType.Option" [(ngModel)]="m_editedTrade.assetType" value=Option>Option &nbsp;
-      <input name="assetType" type="radio" [checked]="m_editedTrade.assetType == AssetType.Futures" [(ngModel)]="m_editedTrade.assetType" value=Futures>Futures <br>
+      <button (click)="onClickInsertTrade()">Insert Trade</button>&nbsp;
+      <button (click)="onClickClearFields()">Clear Fields</button><br>
+      <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=CurrencyCash>Cash &nbsp;
+      <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Stock>Stock &nbsp;
+      <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Option>Option &nbsp;
+      <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Futures>Futures <br>
       Ticker:<input type="text" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.symbol" oninput="this.value = this.value.toUpperCase()">&nbsp;
-      TransactionDate:<input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" (ngModelChange)="m_editedTrade.time=$event" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'">
+      TradedDate:<input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" (ngModelChange)="m_editedTrade.time=$event" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'">
     </div>&nbsp;
     <table class="tableCommon">
       <thead>
