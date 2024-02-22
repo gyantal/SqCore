@@ -376,7 +376,7 @@ public partial class MemDb
         int newTradeId = maxId + 1; // if tradeHistory is empty, maxId stays -1, newTradeId becomes 0. OK.
         p_newTrade.Id = newTradeId;
         tradeHistory.Add(p_newTrade);
-        WritePortfolioTradeHistory(p_tradeHistoryId, tradeHistory, true);
+        UpdatePortfolioTradeHistory(p_tradeHistoryId, tradeHistory, true);
         return newTradeId;
     }
 
@@ -391,7 +391,7 @@ public partial class MemDb
             if (tradeHistory[i].Id == p_tradeId)
             {
                 tradeHistory.RemoveAt(i);
-                WritePortfolioTradeHistory(p_tradeHistoryId, tradeHistory, true);
+                UpdatePortfolioTradeHistory(p_tradeHistoryId, tradeHistory, true);
                 return true;
             }
         }
@@ -410,7 +410,7 @@ public partial class MemDb
             {
                 tradeHistory[i] = p_newTrade;
                 tradeHistory[i].Id = p_tradeId;
-                WritePortfolioTradeHistory(p_tradeHistoryId, tradeHistory, true);
+                UpdatePortfolioTradeHistory(p_tradeHistoryId, tradeHistory, true);
                 return true;
             }
         }
@@ -427,19 +427,24 @@ public partial class MemDb
         return m_Db.GetPortfolioTradeHistoryToList(p_tradeHistoryId, p_startIncLoc, p_endIncLoc);
     }
 
-    public void WritePortfolioTradeHistory(int p_tradeHistoryId, List<Trade> p_trades, bool p_forceChronologicalOrder)
+    public int InsertPortfolioTradeHistory(List<Trade> p_trades)
     {
-        m_Db.WritePortfolioTradeHistory(p_tradeHistoryId, p_trades, p_forceChronologicalOrder);
-    }
-
-    public void AppendPortfolioTradeHistory(int p_tradeHistoryId, List<Trade> p_newTrades, bool p_forceChronologicalOrder)
-    {
-        m_Db.AppendPortfolioTradeHistory(p_tradeHistoryId, p_newTrades, p_forceChronologicalOrder);
+        return m_Db.InsertPortfolioTradeHistory(p_trades);
     }
 
     public void DeletePortfolioTradeHistory(int p_tradeHistoryId)
     {
         m_Db.DeletePortfolioTradeHistory(p_tradeHistoryId);
+    }
+
+    public void UpdatePortfolioTradeHistory(int p_tradeHistoryId, List<Trade> p_trades, bool p_forceChronologicalOrder) // Update, OK.
+    {
+        m_Db.UpdatePortfolioTradeHistory(p_tradeHistoryId, p_trades, p_forceChronologicalOrder);
+    }
+
+    public void AppendPortfolioTradeHistory(int p_tradeHistoryId, List<Trade> p_newTrades, bool p_forceChronologicalOrder) // Helper
+    {
+        m_Db.AppendPortfolioTradeHistory(p_tradeHistoryId, p_newTrades, p_forceChronologicalOrder);
     }
 
     public string? GetPortfolioRunResults(int p_portfolioId, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PrtfRunResult prtfRunResult)

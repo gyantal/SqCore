@@ -36,6 +36,7 @@ public partial class Db
     string? m_lastSrvLoadPrHistStr = string.Empty;
     HashEntry[]? m_lastPortfolioFoldersRds = null;
     HashEntry[]? m_lastPortfoliosRds = null;
+    public object PrtfTrHistInsertLock = new();
 
     public Db(IDatabase p_redisDb, IDatabase? p_sqlDb)
     {
@@ -509,11 +510,41 @@ public partial class Db
         return trades;
     }
 
-    // Benchmark runs for WritePortfolioTradeHistory(). On Linux server with local Redis-sever. First run: 29ms, consecutive runs: 0.5ms
-    public void WritePortfolioTradeHistory(int tradeHistoryId, List<Trade> trades, bool p_forceChronologicalOrder)
+    public int InsertPortfolioTradeHistory(List<Trade> p_trades)
     {
-        HashEntry[] newTradeInDbs = new HashEntry[] { new(tradeHistoryId, TradeInDb.ToRedisValue(trades, p_forceChronologicalOrder)) };
-        m_redisDb.HashSet("portfolioTradeHistory", newTradeInDbs);
+        lock (PrtfTrHistInsertLock) // we need new locks to prevent that 2 threads creates 2 new records with the same Id.
+        {
+            RedisValue[] redisValues = m_redisDb.HashKeys("portfolioTradeHistory");
+            int maxId = -1;
+            for (int i = 0; i < redisValues.Length; i++)
+            {
+                string? keyStr = (string?)redisValues[i];
+                if (keyStr == null)
+                    continue;
+                if (!int.TryParse(keyStr, out int id))
+                    continue;
+
+                if (maxId < id)
+                    maxId = id;
+            }
+            int newId = ++maxId;
+
+            HashEntry[] newTradeHistInDb = new HashEntry[] { new(newId, TradeInDb.ToRedisValue(p_trades)) };
+            m_redisDb.HashSet("portfolioTradeHistory", newTradeHistInDb);
+            return newId;
+        }
+    }
+
+    public void DeletePortfolioTradeHistory(int tradeHistoryId)
+    {
+        m_redisDb.HashDelete("portfolioTradeHistory", tradeHistoryId);
+    }
+
+    // Benchmark runs for WritePortfolioTradeHistory(). On Linux server with local Redis-sever. First run: 29ms, consecutive runs: 0.5ms
+    public void UpdatePortfolioTradeHistory(int tradeHistoryId, List<Trade> trades, bool p_forceChronologicalOrder)
+    {
+        HashEntry[] newTradeHistInDb = new HashEntry[] { new(tradeHistoryId, TradeInDb.ToRedisValue(trades, p_forceChronologicalOrder)) };
+        m_redisDb.HashSet("portfolioTradeHistory", newTradeHistInDb);
     }
 
     public void AppendPortfolioTradeHistory(int tradeHistoryId, List<Trade> p_newTrades, bool p_forceChronologicalOrder)
@@ -542,12 +573,7 @@ public partial class Db
         }
 
         existingTrades.AddRange(p_newTrades);
-        WritePortfolioTradeHistory(tradeHistoryId, existingTrades, p_forceChronologicalOrder);
-    }
-
-    public void DeletePortfolioTradeHistory(int tradeHistoryId)
-    {
-        m_redisDb.HashDelete("portfolioTradeHistory", tradeHistoryId);
+        UpdatePortfolioTradeHistory(tradeHistoryId, existingTrades, p_forceChronologicalOrder);
     }
 
     public static bool UpdateBrotlisIfNeeded()

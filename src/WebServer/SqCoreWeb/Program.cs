@@ -373,6 +373,7 @@ public partial class Program
                 try
                 {
                     MemDb.gMemDb.DeletePortfolioTradeHistory(35);
+                    // int id = MemDb.gMemDb.InsertPortfolioTradeHistory(new List<Trade>());
                 }
                 catch (System.Exception e)
                 {
