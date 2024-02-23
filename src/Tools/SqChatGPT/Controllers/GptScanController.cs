@@ -413,26 +413,6 @@ public class GptScanController : ControllerBase
     }
 
     [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
-    [HttpPost("summarizenews")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
-    public async Task<IActionResult> GetNewsAndSummarize([FromBody] UserInput p_inMsg)
-    {
-        if (p_inMsg == null)
-            return BadRequest("Invalid data");
-
-        string newsStr = await DownloadCompleteNews(p_inMsg.Msg);
-        string responseStr;
-        if (!newsStr.Contains("recommend visiting")) // checking for the condition if newsStr has the complete story or it is directing to another link
-        {
-            p_inMsg.Msg = "Summarize this:\n" + newsStr;
-            responseStr = await GenerateChatResponse(p_inMsg);
-        }
-        else
-            responseStr = newsStr;
-        string responseJson = JsonSerializer.Serialize(responseStr); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
-        return Ok(responseJson);
-    }
-
-    [Route("[action]")] // By using the "[action]" string as a parameter here, we state that the URI must contain this action’s name in addition to the controller’s name: http[s]://[domain]/[controller]/[action]
     [HttpPost("getisgptsummarylikely")] // Complex string cannot be in the Url. Use Post instead of Get. Test with Chrome extension 'Talend API Tester'
     public async Task<IActionResult> GetIsGptSummaryLikely([FromBody] UserInput p_inMsg)
     {

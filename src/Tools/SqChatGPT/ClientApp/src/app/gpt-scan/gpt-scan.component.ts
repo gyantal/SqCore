@@ -148,12 +148,13 @@ export class GptScanComponent implements OnInit {
 
   getNewsAndSummarize(newsItem: NewsItem) {
     console.log('link for summarizing the news', newsItem.Link);
+    const questionStr = 'summarize this:\n';
     // HttpPost if input is complex with NewLines and ? characters, so it cannot be placed in the Url, but has to go in the Body
-    const body: UserInput = { LlmModelName: this._selectedLlmModel, Msg: newsItem.Link };
+    const body: ChatGptInput = { LlmModelName: this._selectedLlmModel, NewsUrl: newsItem.Link, ChatGptQuestion: questionStr };
     console.log(body);
     this._isSpinnerVisible = true;
 
-    this._httpClient.post<string>(this._controllerBaseUrl + 'summarizenews', body).subscribe(result => {
+    this._httpClient.post<string>(this._controllerBaseUrl + 'getChatGptAnswer', body).subscribe(result => {
       newsItem.NewsSummary = result;
       this._isSpinnerVisible = false;
     }, error => console.error(error))
