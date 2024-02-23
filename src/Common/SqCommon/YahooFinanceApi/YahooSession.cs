@@ -47,6 +47,7 @@ namespace YahooFinanceApi
 
                 var response = await "https://fc.yahoo.com"
                     .AllowHttpStatus("404") // 404 (Not Found) received instantly, but that is expected behaviour as it gives back 1 cookie neeeded for getting the Crumb
+                    .AllowHttpStatus("500") // 2024-02-22: fc.yahoo.com returns 500.(Internal Server Error), "A generic error message, given when an unexpected condition was encountered and no more specific message is suitable"
                     .AllowHttpStatus("502") // 2023-12-05: fc.yahoo.com returns 502 (Connection timed out) received after 20sec, instead 404 (that it returned before). Even though it fails, it gives back the _cookie as "A3", and it can be used to get the crumb. See more: https://stackoverflow.com/questions/76065035/yahoo-finance-v7-api-now-requiring-cookies-python
                     .WithHeader(userAgentKey, userAgentValue)
                     .GetAsync()
