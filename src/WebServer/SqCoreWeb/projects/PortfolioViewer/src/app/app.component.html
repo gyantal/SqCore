@@ -54,14 +54,18 @@
   <div [hidden]="m_activeTab != 'Trades'"><br>
     <div id="tradesSection">Trades<br>
       <!-- Add Transaction and clear fields will be enabled once the feature is ready -->
-      <button (click)="onClickInsertTrade()">Insert Trade</button>&nbsp;
-      <button (click)="onClickClearFields()">Clear Fields</button><br>
+      <button (click)="onClickInsertOrUpdateTrade()">Insert Trade</button>&nbsp;
+      <button (click)="onClickInsertOrUpdateTrade()">Update Trade</button>&nbsp;
+      <button (click)="onClickClearFields()">Clear Fields</button>&nbsp;<br>
       <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=CurrencyCash>Cash &nbsp;
       <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Stock>Stock &nbsp;
       <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Option>Option &nbsp;
       <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Futures>Futures <br>
       Ticker:<input type="text" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.symbol" oninput="this.value = this.value.toUpperCase()">&nbsp;
       TradedDate:<input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" (ngModelChange)="m_editedTrade.time=$event" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'">
+      TradeAction: <input type="text" placeholder="Enter TradeAction" [(ngModel)]="m_editedTrade.action" [value]="m_editedTrade.action">
+      CurrencyId: <input type="text" placeholder="Enter CurrencyId" [(ngModel)]="m_editedTrade.currency" [value]="m_editedTrade.currency">
+      ExchangeId: <input type="text" placeholder="Enter ExchangeId" [(ngModel)]="m_editedTrade.exchangeId" [value]="m_editedTrade.exchangeId">
     </div>&nbsp;
     <table class="tableCommon">
       <thead>

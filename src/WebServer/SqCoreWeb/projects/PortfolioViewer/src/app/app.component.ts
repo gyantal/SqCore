@@ -21,10 +21,49 @@ class TradeJs {
   commission: number = 0;
   exchangeId: ExchangeId = ExchangeId.Unknown;
   connectedTrades: number[] | null = null;
+
+  Clear(): void {
+    this.id = -1;
+    this.time = new Date();
+    this.action = TradeAction.Unknown;
+    this.assetType = AssetType.Unknown;
+    this.symbol = null;
+    this.underlyingSymbol = null;
+    this.quantity = 0;
+    this.price = 0;
+    this.currency = CurrencyId.Unknown;
+    this.commission = 0;
+    this.exchangeId = ExchangeId.Unknown;
+    this.connectedTrades = null;
+  }
+
+  CopyFrom(tradeFrom: TradeJs): void { // a Clone function would create a new object with new MemAlloc, but we only want to copy the fields without ctor
+    this.id = tradeFrom.id;
+    this.time = tradeFrom.time;
+    this.action = tradeFrom.action;
+    this.assetType = tradeFrom.assetType;
+    this.symbol = tradeFrom.symbol;
+    this.underlyingSymbol = tradeFrom.underlyingSymbol;
+    this.quantity = tradeFrom.quantity;
+    this.price = tradeFrom.price;
+    this.currency = tradeFrom.currency;
+    this.commission = tradeFrom.commission;
+    this.exchangeId = tradeFrom.exchangeId;
+    this.connectedTrades = tradeFrom.connectedTrades;
+  }
 }
 
 class TradeUi extends TradeJs {
   isSelected: boolean = false; // a flag whether that row is selected (with highlighted background) in the Trades-Matrix on the UI. This allows multi-selection if it is needed in the future.
+
+  override CopyFrom(tradeFrom: TradeUi): void { // a Clone function would create a new object with new MemAlloc, but we only want to copy the fields without ctor
+    super.CopyFrom(tradeFrom);
+
+    if (tradeFrom.isSelected == undefined) // tradeFrom parameter is defined as TradeUi. However, its runtime type can be a general JS object, when it comes from JSON.parse(), and then that field is undefined (missing).
+      this.isSelected = false; // In the undefined case we set it as False, the default.
+    else
+      this.isSelected = tradeFrom.isSelected;
+  }
 }
 
 @Component({
@@ -44,8 +83,7 @@ export class AppComponent {
   m_uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
   m_histPosEndDate: string = '';
   m_trades: TradeUi[] | null = null;
-  AssetType = AssetType; // used in UI (e.g, onAssetTypeChecked(AssetType.CurrencyCash))
-  m_editedTrade: TradeUi = new TradeUi();
+  m_editedTrade: TradeJs = new TradeJs();
 
   user = {
     name: 'Anonymous',
@@ -131,7 +169,7 @@ export class AppComponent {
 
   processHistoricalTrades(msgObjStr: string) {
     console.log('PrtfVwr.processHistoricalTrades() START');
-    this.m_trades = JSON.parse(msgObjStr, function(key, value) {
+    const tradeObjects : object[] = JSON.parse(msgObjStr, function(key, value) { // JSON.parse() always returns just a general a JavaScript 'object'. That doesn't have Class specific fields as 'isSelected' (Undefined)
       switch (key) { // Perform type conversion based on property names
         case 'action':
           return TradeAction[value];
@@ -146,26 +184,65 @@ export class AppComponent {
           return value;
       }
     });
+
+    // manually create an instance and then populate its properties with the values from the parsed JSON object.
+    this.m_trades = new Array(tradeObjects.length);
+    for (let i = 0; i < tradeObjects.length; i++) {
+      this.m_trades[i] = new TradeUi();
+      this.m_trades[i].CopyFrom(tradeObjects[i] as TradeUi);
+    }
   }
 
-  onClickSelectedTradeItem(tradeItem: TradeUi) {
-    this.m_editedTrade.isSelected = false; // Deselect the currently selected trade item, if any
-    this.m_editedTrade = tradeItem; // Update the current selected trade item to the newly clicked trade item
-    this.m_editedTrade.isSelected = true; // Mark the newly selected trade item as selected
+  onClickSelectedTradeItem(trade: TradeUi) {
+    // Deselect the isSelected trade
+    for (const item of this.m_trades!) {
+      if (item.isSelected) {
+        item.isSelected = false;
+        break;
+      }
+    }
+
+    // Select the clicked trade
+    for (const item of this.m_trades!) {
+      if (item.id == trade.id) {
+        item.isSelected = true;
+        break;
+      }
+    }
+
+    this.m_editedTrade.CopyFrom(trade);
   }
 
-  onClickInsertTrade() {
-    const newTrade = new TradeJs();
-    newTrade.assetType = AssetType[this.m_editedTrade.assetType.toString()];
-    newTrade.symbol = this.m_editedTrade.symbol;
-    newTrade.time = this.m_editedTrade.time;
-    const tradeJson = JSON.stringify(newTrade); // Convert the new trade object to JSON format
+  onClickInsertOrUpdateTrade() {
+    const tradeJson: string = this.processEditedTradeToEnumJsonStr(this.m_editedTrade);
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-      this.m_socket.send('InsertTrade:' + this.m_portfolioId + ':' + tradeJson);
+      this.m_socket.send('InsertOrUpdateTrade:' + this.m_portfolioId + ':' + tradeJson);
   }
 
   onClickClearFields() {
-    this.m_editedTrade.isSelected = false; // Deselect the currently selected trade item, if any
-    this.m_editedTrade = new TradeUi();
+    this.m_editedTrade.Clear();
+  }
+
+  // processEditedTradeToEnumJsonStr() - Without this conversion we will not be able to insert or update the trade in Db
+  // Exception in C# Json deserialize -  System.Text.Json.JsonException: The JSON value could not be converted to Fin.Base.TradeAction.
+  // when we stringify the tradeJson is - {\"id\":17,\"time\":\"2024-02-26T11:08:21\",\"action\":\"Buy\",\"assetType\":\"Stock\",\"symbol\":\"JD\",\"underlyingSymbol\":\"JD\",\"quantity\":0,\"price\":0,\"currency\":\"JPY\",\"commission\":0,\"exchangeId\":\"Unknown\",\"connectedTrades\":null}
+  // whereas we need enum type for TradeAction, AssetType, Currency and ExchangeId data members.
+  processEditedTradeToEnumJsonStr(editedTrade: TradeJs) {
+    const tradeJson = JSON.stringify(editedTrade, function(key, value) {
+      switch (key) {
+        case 'action':
+          return TradeAction[value.toString()];
+        case 'assetType':
+          return AssetType[value.toString()];
+        case 'currency':
+          return CurrencyId[value.toString()];
+        case 'exchangeId':
+          return ExchangeId[value.toString()];
+
+        default: // If no type conversion needed, return the original value
+          return value;
+      }
+    }); // Convert the new trade object to JSON string
+    return tradeJson;
   }
 }

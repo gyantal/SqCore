@@ -51,7 +51,7 @@ public class PrtfVwrWs
         _ = webSocket; // StyleCop SA1313 ParameterNamesMustBeginWithLowerCaseLetter. They won't fix. Recommended solution for unused parameters, instead of the discard (_1) parameters
     }
 
-    public static void OnWsReceiveAsync(/* HttpContext context, WebSocketReceiveResult? result, */ WebSocket webSocket,  string bufferStr)
+    public static void OnWsReceiveAsync(/* HttpContext context, WebSocketReceiveResult? result, */ WebSocket webSocket, string bufferStr)
     {
         _ = webSocket; // StyleCop SA1313 ParameterNamesMustBeginWithLowerCaseLetter. They won't fix. Recommended solution for unused parameters, instead of the discard (_1) parameters
 
@@ -69,9 +69,9 @@ public class PrtfVwrWs
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): GetTradesHist: '{msgObjStr}'");
                 PortfVwrGetPortfolioTradesHistory(webSocket, msgObjStr);
                 break;
-            case "InsertTrade":
-                Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): InsertTrade: '{msgObjStr}'");
-                PortfVwrInsertTrade(webSocket, msgObjStr);
+            case "InsertOrUpdateTrade":
+                Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): InsertOrUpdateTrade: '{msgObjStr}'");
+                PortfVwrInsertOrUpdateTrade(webSocket, msgObjStr);
                 break;
             default:
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): Unrecognized message from client, {msgCode},{msgObjStr}");
@@ -79,22 +79,57 @@ public class PrtfVwrWs
         }
     }
 
-    private static void PortfVwrInsertTrade(WebSocket webSocket, string p_msg) // p_msg - 21:{"id":-1,"time":"2024-02-22T10:32:20.680Z","action":0,"assetType":7,"symbol":"META","underlyingSymbol":null,"quantity":0,"price":0,"currency":0,"commission":0,"exchangeId":-1,"connectedTrades":null}
+    private static void PortfVwrInsertOrUpdateTrade(WebSocket webSocket, string p_msg) // p_msg - 21:{"id":-1,"time":"2024-02-22T10:32:20.680Z","action":0,"assetType":7,"symbol":"META","underlyingSymbol":null,"quantity":0,"price":0,"currency":0,"commission":0,"exchangeId":-1,"connectedTrades":null}
     {
         int idStartInd = p_msg.IndexOf(":");
         if (idStartInd == -1)
             return;
+
         string idStr = p_msg[..idStartInd];
         // Try to get the Portfolio from the MemDb using the extracted ID
         MemDb.gMemDb.Portfolios.TryGetValue(Convert.ToInt32(idStr), out Portfolio? pf);
         if (pf == null)
             return;
+
         string tradeObjStr = p_msg[(idStartInd + 1)..]; // extract the Trade object string from p_msg
         Trade? trade = JsonSerializer.Deserialize<Trade>(tradeObjStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }); // Deserialize the trade string into a Trade object
         if (trade == null)
             return;
-        MemDb.gMemDb.InsertPortfolioTrade(pf.TradeHistoryId, trade); // Insert the trade into the portfolio's trade history in MemDb
-        PortfVwrGetPortfolioTradesHistory(webSocket, idStr);
+
+        int tradeHistId;
+        if (pf.TradeHistoryId == -1) // non-existing trade
+        {
+            List<Trade> trades = new();
+            tradeHistId = MemDb.gMemDb.InsertPortfolioTradeHistory(trades);
+            pf.TradeHistoryId = tradeHistId;
+        }
+        else // existing trade
+            tradeHistId = pf.TradeHistoryId;
+
+        if (trade.Id == -1)
+            MemDb.gMemDb.InsertPortfolioTrade(tradeHistId, trade); // Insert the trade into the portfolio's trade history in Db
+        else
+            MemDb.gMemDb.UpdatePortfolioTrade(tradeHistId, trade.Id, trade); // update the trade into the portfolio's trade history in Db
+
+        string? errMsg = MemDb.gMemDb.GetPortfolioRunResults(Convert.ToInt32(idStr), null, null, out PrtfRunResult prtfRunResultJs);
+
+        // Send portfolio run result if available
+        if (errMsg == null)
+        {
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.PrtfRunResult:" + Utils.CamelCaseSerialize(prtfRunResultJs));
+            if (webSocket!.State == WebSocketState.Open)
+                webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+
+        // Send error message if available
+        if (errMsg != null)
+        {
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.ErrorToUser:" + errMsg);
+            if (webSocket!.State == WebSocketState.Open)
+                webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+
+        PortfVwrGetPortfolioTradesHistory(webSocket, idStr); // After DB insert, force sending the whole TradeHistory to Client. Client shouldn't assume that DB insert was successful.
     }
 
     // Here we get the p_msg in 2 forms
@@ -114,7 +149,7 @@ public class PrtfVwrWs
         int idLength = idEndInd == -1 ? p_msg.Length - idStartInd : idEndInd - idStartInd;
         int id = Convert.ToInt32(p_msg.Substring(idStartInd, idLength));
 
-         // Check if p_msg contains "Date" to determine its format
+        // Check if p_msg contains "Date" to determine its format
         if (p_msg.Contains("Date")) // p_msg = "?pid=12&Date=2022-01-01"
         {
             int dateInd = p_msg.IndexOf("&Date=");
