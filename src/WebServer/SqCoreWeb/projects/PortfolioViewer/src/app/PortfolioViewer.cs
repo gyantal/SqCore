@@ -81,29 +81,31 @@ public class PrtfVwrWs
 
     private static void PortfVwrInsertOrUpdateTrade(WebSocket webSocket, string p_msg) // p_msg - 21:{"id":-1,"time":"2024-02-22T10:32:20.680Z","action":0,"assetType":7,"symbol":"META","underlyingSymbol":null,"quantity":0,"price":0,"currency":0,"commission":0,"exchangeId":-1,"connectedTrades":null}
     {
-        int idStartInd = p_msg.IndexOf(":");
-        if (idStartInd == -1)
+        int prtfIdStartInd = p_msg.IndexOf(":");
+        if (prtfIdStartInd == -1)
             return;
 
-        string idStr = p_msg[..idStartInd];
+        string prtfIdStr = p_msg[..prtfIdStartInd];
         // Try to get the Portfolio from the MemDb using the extracted ID
-        MemDb.gMemDb.Portfolios.TryGetValue(Convert.ToInt32(idStr), out Portfolio? pf);
+        MemDb.gMemDb.Portfolios.TryGetValue(Convert.ToInt32(prtfIdStr), out Portfolio? pf);
         if (pf == null)
             return;
 
-        string tradeObjStr = p_msg[(idStartInd + 1)..]; // extract the Trade object string from p_msg
+        string tradeObjStr = p_msg[(prtfIdStartInd + 1)..]; // extract the Trade object string from p_msg
         Trade? trade = JsonSerializer.Deserialize<Trade>(tradeObjStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }); // Deserialize the trade string into a Trade object
         if (trade == null)
             return;
 
         int tradeHistId;
-        if (pf.TradeHistoryId == -1) // non-existing trade
+        if (pf.TradeHistoryId == -1) // non-existing tradeHistory
         {
             List<Trade> trades = new();
             tradeHistId = MemDb.gMemDb.InsertPortfolioTradeHistory(trades);
             pf.TradeHistoryId = tradeHistId;
+            // Save this updated pf.TradeHistoryId into the RedisDb.
+            MemDb.gMemDb.AddOrEditPortfolio(pf.Id, pf.User, pf.Name, pf.ParentFolderId, pf.Currency.ToString(), pf.Type.ToString(), pf.Algorithm, pf.AlgorithmParam, pf.SharedAccess.ToString(), pf.Note, pf.TradeHistoryId, out Portfolio? p_newItem);
         }
-        else // existing trade
+        else // existing tradeHistory
             tradeHistId = pf.TradeHistoryId;
 
         if (trade.Id == -1)
@@ -111,7 +113,7 @@ public class PrtfVwrWs
         else
             MemDb.gMemDb.UpdatePortfolioTrade(tradeHistId, trade.Id, trade); // update the trade into the portfolio's trade history in Db
 
-        string? errMsg = MemDb.gMemDb.GetPortfolioRunResults(Convert.ToInt32(idStr), null, null, out PrtfRunResult prtfRunResultJs);
+        string? errMsg = MemDb.gMemDb.GetPortfolioRunResults(Convert.ToInt32(prtfIdStr), null, null, out PrtfRunResult prtfRunResultJs);
 
         // Send portfolio run result if available
         if (errMsg == null)
@@ -129,7 +131,7 @@ public class PrtfVwrWs
                 webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
-        PortfVwrGetPortfolioTradesHistory(webSocket, idStr); // After DB insert, force sending the whole TradeHistory to Client. Client shouldn't assume that DB insert was successful.
+        PortfVwrGetPortfolioTradesHistory(webSocket, prtfIdStr); // After DB insert, force sending the whole TradeHistory to Client. Client shouldn't assume that DB insert was successful.
     }
 
     // Here we get the p_msg in 2 forms

@@ -194,27 +194,19 @@ export class AppComponent {
   }
 
   onClickSelectedTradeItem(trade: TradeUi) {
-    // Deselect the isSelected trade
+    // Deselect all previously selected trades and only allow 1 selection, the one coming from the parameter.
     for (const item of this.m_trades!) {
-      if (item.isSelected) {
-        item.isSelected = false;
-        break;
-      }
-    }
-
-    // Select the clicked trade
-    for (const item of this.m_trades!) {
-      if (item.id == trade.id) {
+      if (item == trade)
         item.isSelected = true;
-        break;
-      }
+      else
+        item.isSelected = false;
     }
 
     this.m_editedTrade.CopyFrom(trade);
   }
 
   onClickInsertOrUpdateTrade() {
-    const tradeJson: string = this.processEditedTradeToEnumJsonStr(this.m_editedTrade);
+    const tradeJson: string = this.Trade2EnumJsonStr(this.m_editedTrade);
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
       this.m_socket.send('InsertOrUpdateTrade:' + this.m_portfolioId + ':' + tradeJson);
   }
@@ -223,11 +215,11 @@ export class AppComponent {
     this.m_editedTrade.Clear();
   }
 
-  // processEditedTradeToEnumJsonStr() - Without this conversion we will not be able to insert or update the trade in Db
+  // Trade2EnumJsonStr() - Without this conversion we will not be able to insert or update the trade in Db
   // Exception in C# Json deserialize -  System.Text.Json.JsonException: The JSON value could not be converted to Fin.Base.TradeAction.
   // when we stringify the tradeJson is - {\"id\":17,\"time\":\"2024-02-26T11:08:21\",\"action\":\"Buy\",\"assetType\":\"Stock\",\"symbol\":\"JD\",\"underlyingSymbol\":\"JD\",\"quantity\":0,\"price\":0,\"currency\":\"JPY\",\"commission\":0,\"exchangeId\":\"Unknown\",\"connectedTrades\":null}
   // whereas we need enum type for TradeAction, AssetType, Currency and ExchangeId data members.
-  processEditedTradeToEnumJsonStr(editedTrade: TradeJs) {
+  Trade2EnumJsonStr(editedTrade: TradeJs): string {
     const tradeJson = JSON.stringify(editedTrade, function(key, value) {
       switch (key) {
         case 'action':
