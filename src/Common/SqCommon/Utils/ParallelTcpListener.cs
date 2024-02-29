@@ -126,6 +126,7 @@ public sealed partial class ParallelTcpListener : IDisposable // listening happe
     public void Dispose()
     {
         m_tcpClientQueue.Dispose();
+        m_tcpListener?.Dispose();
     }
 
     // void ProcessMessage(TcpClient p_tcpClient, T p_message)

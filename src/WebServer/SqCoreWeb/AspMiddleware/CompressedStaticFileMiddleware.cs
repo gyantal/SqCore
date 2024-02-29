@@ -98,7 +98,7 @@ public class CompressedAlternativeFile : IFileAlternative
                 // (for example "application/brotli" instead of "text/html")
                 if (staticFileResponseContext.File.PhysicalPath != null && contentTypeProvider.TryGetContentType(staticFileResponseContext.File.PhysicalPath.Remove(staticFileResponseContext.File.PhysicalPath.Length - fileExtension.Length, fileExtension.Length), out string? contentType))
                     staticFileResponseContext.Context.Response.ContentType = contentType;
-                staticFileResponseContext.Context.Response.Headers.Add("Content-Encoding", new[] { compressionType });
+                staticFileResponseContext.Context.Response.Headers["Content-Encoding"] = new[] { compressionType };
             }
         }
     }

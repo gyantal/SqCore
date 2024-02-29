@@ -18,10 +18,15 @@ namespace QuantConnect.Util
         /// <typeparam name="V">The value type</typeparam>
         /// <param name="enumerable">The IEnumerable of KeyValuePair instances to convert to a dictionary</param>
         /// <returns>A dictionary holding the same data as the enumerable</returns>
-        public static Dictionary<K, V> ToDictionary<K, V>(this IEnumerable<KeyValuePair<K, V>> enumerable)
-        {
-            return enumerable.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-        }
+        // SqCore Change ORIGINAL:
+        // public static Dictionary<K, V> ToDictionary<K, V>(this IEnumerable<KeyValuePair<K, V>> enumerable)
+        // {
+        //     return enumerable.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+        // }
+        // SqCore Change NEW:
+        // 2024-02-28: Warning after .Net 7 => .Net 8 ugprade. "The call is ambiguous between the following methods or properties: 'System.Linq.Enumerable.ToDictionary<TKey, TValue>' vs. QuantConnect.Util.LinqExtensions.ToDictionary<K, V>"
+        // Decision: Eliminate it. This is not required, as .Net 8 now has it, and it is much faster.
+        // SqCore Change END
 
         /// <summary>
         /// Creates a new read-only dictionary from the key value pairs

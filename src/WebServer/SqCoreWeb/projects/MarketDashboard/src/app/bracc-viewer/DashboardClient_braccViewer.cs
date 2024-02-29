@@ -536,7 +536,7 @@ public partial class DashboardClient
         if (valuesFromGSheetStr == null)
              return new List<AssetCategoryJs>();
 
-        Debug.WriteLine("The length of data from gSheet for AssetCategory is ", valuesFromGSheetStr.Length);
+        Debug.WriteLine($"The length of data from gSheet for AssetCategory is {valuesFromGSheetStr.Length}");
 
         string[] rows = valuesFromGSheetStr.Split(new string[] { "],\n" }, StringSplitOptions.RemoveEmptyEntries);
         List<AssetCategoryJs> result = new(rows.Length);

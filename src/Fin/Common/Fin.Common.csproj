@@ -1,10 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <NoWarn>0168,0612,0618,0672,8669,SYSLIB0014</NoWarn>
   </PropertyGroup>
-
   <ItemGroup>
     <InternalsVisibleTo Include="Fin.Engine" />
     <InternalsVisibleTo Include="Fin.Brokerages" />
@@ -12,14 +11,14 @@
     <ProjectReference Include="..\Base\Fin.Base.csproj" />
     <ProjectReference Include="..\Configuration\Fin.Configuration.csproj" />
     <ProjectReference Include="..\Compression\Fin.Compression.csproj" />
-    <PackageReference Include="System.ComponentModel.Composition" Version="7.0.0" />
     <PackageReference Include="NodaTime" Version="3.1.5" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="protobuf-net" Version="3.1.25" />
     <PackageReference Include="CloneExtensions" Version="1.4.2" />
     <PackageReference Include="fasterflect" Version="3.0.0" />
     <PackageReference Include="QuantConnect.pythonnet" Version="2.0.17" />
     <PackageReference Include="QLNet" Version="1.12.0" />
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.ComponentModel.Composition" Version="8.0.0" />
   </ItemGroup>
 </Project>

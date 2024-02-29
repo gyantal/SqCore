@@ -1,71 +1,71 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{C7F145A6-1E13-49AF-8095-8BC426ED381E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqCommon", "Common\SqCommon\SqCommon.csproj", "{83D8D0A4-3223-47D1-A4E2-3A384199B47A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqCommon", "Common\SqCommon\SqCommon.csproj", "{83D8D0A4-3223-47D1-A4E2-3A384199B47A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbCommon", "Common\DbCommon\DbCommon.csproj", "{A10F3632-894C-4245-9CBE-F13DBB030A48}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DbCommon", "Common\DbCommon\DbCommon.csproj", "{A10F3632-894C-4245-9CBE-F13DBB030A48}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MathCommon", "Common\MathCommon\MathCommon.csproj", "{5DBA5B58-FDBB-4040-9EFB-215C40856468}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MathCommon", "Common\MathCommon\MathCommon.csproj", "{5DBA5B58-FDBB-4040-9EFB-215C40856468}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Fin", "Fin", "{AB439120-9A5A-428F-B0D1-A31F518262F4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinCommon", "Fin\Common\Fin.Common.csproj", "{CBAC0EBB-9828-42BE-8964-C74A85CEEA87}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FinCommon", "Fin\Common\Fin.Common.csproj", "{CBAC0EBB-9828-42BE-8964-C74A85CEEA87}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MemDb", "Fin\MemDb\Fin.MemDb.csproj", "{9AAB187D-AAB5-489E-ACF3-62FCE248F33F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MemDb", "Fin\MemDb\Fin.MemDb.csproj", "{9AAB187D-AAB5-489E-ACF3-62FCE248F33F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrokerCommon", "Fin\BrokerCommon\Fin.BrokerCommon.csproj", "{4B490CAD-3ED4-48C5-897C-56BFD5D04835}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrokerCommon", "Fin\BrokerCommon\Fin.BrokerCommon.csproj", "{4B490CAD-3ED4-48C5-897C-56BFD5D04835}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrokerCommon.tests", "Fin\BrokerCommon.tests\Fin.BrokerCommon.tests.csproj", "{EBAA9BD4-46C9-460F-83F7-79ACF2078FB8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrokerCommon.tests", "Fin\BrokerCommon.tests\Fin.BrokerCommon.tests.csproj", "{EBAA9BD4-46C9-460F-83F7-79ACF2078FB8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ThirdParty", "ThirdParty", "{CEB17F0B-99F1-46A6-B9EE-7A0AAF8FA2BB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IbApiSocketClient", "ThirdParty\IbApiSocketClient\IbApiSocketClient.csproj", "{7AE34D75-FFAD-4986-B29E-FE77A874CFA1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IbApiSocketClient", "ThirdParty\IbApiSocketClient\IbApiSocketClient.csproj", "{7AE34D75-FFAD-4986-B29E-FE77A874CFA1}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{E7140204-901B-4AA4-9AB6-BF76948B4709}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "agy", "agy", "{2D4FF76A-E785-4D81-A97E-D9CAB7F6855C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenUrlsAtOnce", "Tools\agy\OpenUrlsAtOnce\OpenUrlsAtOnce.csproj", "{35F013BE-7AB0-4FCD-8B83-6D1FBF3F2B69}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OpenUrlsAtOnce", "Tools\agy\OpenUrlsAtOnce\OpenUrlsAtOnce.csproj", "{35F013BE-7AB0-4FCD-8B83-6D1FBF3F2B69}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BenchmarkDB", "Tools\BenchmarkDB\BenchmarkDB.csproj", "{F5EC76F9-F2CA-4FFF-AB1E-231E9564BB1F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BenchmarkDB", "Tools\BenchmarkDB\BenchmarkDB.csproj", "{F5EC76F9-F2CA-4FFF-AB1E-231E9564BB1F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "blukucz", "blukucz", "{0434761B-06B8-468B-85EF-7A4FEA5F835B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnalystDbUpgrader", "Tools\blukucz\AnalystDbUpgrader\AnalystDbUpgrader.csproj", "{CC50656B-25EE-48A9-BEFD-066AC3264824}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AnalystDbUpgrader", "Tools\blukucz\AnalystDbUpgrader\AnalystDbUpgrader.csproj", "{CC50656B-25EE-48A9-BEFD-066AC3264824}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisManager", "Tools\RedisManager\RedisManager.csproj", "{6679AD16-5AC4-4DE3-8E74-89E46B04A78F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RedisManager", "Tools\RedisManager\RedisManager.csproj", "{6679AD16-5AC4-4DE3-8E74-89E46B04A78F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Server", "Server", "{585921A1-B49D-40D1-9A42-A356E97B73A3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HealthMonitor", "Server\HealthMonitor\HealthMonitor.csproj", "{5E213A07-95B5-40EA-AD3A-9B3610E0A4D7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HealthMonitor", "Server\HealthMonitor\HealthMonitor.csproj", "{5E213A07-95B5-40EA-AD3A-9B3610E0A4D7}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "WebServer", "WebServer", "{7573D93C-485F-4A20-8CE5-0CA1EED247D6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqCoreWeb", "WebServer\SqCoreWeb\SqCoreWeb.csproj", "{3E992B73-374A-40B5-819E-40CD2864DEF5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqCoreWeb", "WebServer\SqCoreWeb\SqCoreWeb.csproj", "{3E992B73-374A-40B5-819E-40CD2864DEF5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqCoreWeb.tests", "WebServer\SqCoreWeb.tests\SqCoreWeb.tests.csproj", "{03F4E214-BC0E-4DD2-8A61-164B2E9169DA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqCoreWeb.tests", "WebServer\SqCoreWeb.tests\SqCoreWeb.tests.csproj", "{03F4E214-BC0E-4DD2-8A61-164B2E9169DA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test.perf", "test.perf", "{270AB351-763E-4E52-BB36-A96BEA2C8B18}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PerfTestExperiment", "test.perf\PerfTestExperiment\PerfTestExperiment.csproj", "{E81FBA9F-E674-4F96-809A-014392FFFE8A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PerfTestExperiment", "test.perf\PerfTestExperiment\PerfTestExperiment.csproj", "{E81FBA9F-E674-4F96-809A-014392FFFE8A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fin.Engine", "Fin\Engine\Fin.Engine.csproj", "{F3F96816-2C2C-48BE-9452-148A0BA6AA50}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fin.Engine", "Fin\Engine\Fin.Engine.csproj", "{F3F96816-2C2C-48BE-9452-148A0BA6AA50}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fin.Compression", "Fin\Compression\Fin.Compression.csproj", "{37608077-484F-482E-9085-7AA8F1E53F9D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fin.Compression", "Fin\Compression\Fin.Compression.csproj", "{37608077-484F-482E-9085-7AA8F1E53F9D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fin.EngineRequirements", "Fin\EngineRequirements\Fin.EngineRequirements.csproj", "{C2FBF698-A3E9-4EA6-A674-77401040CA92}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fin.EngineRequirements", "Fin\EngineRequirements\Fin.EngineRequirements.csproj", "{C2FBF698-A3E9-4EA6-A674-77401040CA92}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fin.Brokerages", "Fin\Brokerages\Fin.Brokerages.csproj", "{EA829287-1F37-4F19-A148-09E3E4718246}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fin.Brokerages", "Fin\Brokerages\Fin.Brokerages.csproj", "{EA829287-1F37-4F19-A148-09E3E4718246}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fin.Algorithm.CSharp", "Fin\Algorithm.CSharp\Fin.Algorithm.CSharp.csproj", "{034BE547-D0AD-4326-A811-E4C2C8705437}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fin.Algorithm.CSharp", "Fin\Algorithm.CSharp\Fin.Algorithm.CSharp.csproj", "{034BE547-D0AD-4326-A811-E4C2C8705437}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SqChatGPT", "Tools\SqChatGPT\SqChatGPT.csproj", "{C107072E-2299-4A13-AF65-8B56738BA7FC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SqChatGPT", "Tools\SqChatGPT\SqChatGPT.csproj", "{C107072E-2299-4A13-AF65-8B56738BA7FC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Fin.Base", "Fin\Base\Fin.Base.csproj", "{1C2A6681-0D49-402D-A990-F8C08EF5067D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Fin.Base", "Fin\Base\Fin.Base.csproj", "{1C2A6681-0D49-402D-A990-F8C08EF5067D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

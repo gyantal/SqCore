@@ -127,7 +127,7 @@ public partial class Program
             gLogger.Error(e, $"CreateHostBuilder(args).Build().Run() exception.");
             if (e is System.Net.Sockets.SocketException)
             {
-                gLogger.Error("SocketException! Potential Error on Linux. Kestrel couldn't bind to port number. See 'Allow non-root process to bind to port under 1024.txt'. If Dotnet.exe was updated, it lost privilaged port. Try 'whereis dotnet','sudo setcap 'cap_net_bind_service=+ep' /usr/lib/dotnet/dotnet'.");
+                gLogger.Error("SocketException (Permission denied)! Potential Error on Linux. Kestrel couldn't bind to port number. See 'Allow non-root process to bind to port under 1024.txt'. If Dotnet.exe was updated, it lost privilaged port. Try 'whereis dotnet','sudo setcap 'cap_net_bind_service=+ep' /usr/lib/dotnet/dotnet'.");
             }
             HealthMonitorMessage.SendAsync($"Exception in SqCoreWebsite.C#.MainThread. Exception: '{e.ToStringWithShortenedStackTrace(1600)}'", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
         }

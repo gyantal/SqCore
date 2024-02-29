@@ -84,11 +84,11 @@ public class StrategyUberTaaController : ControllerBase
         IList<List<DailyData>> quotesForClmtData = dataListTupleFromSQServer.Item2;
         List<DailyData> cashEquivalentQuotesData = dataListTupleFromSQServer.Item3;
 
-        Debug.WriteLine("The Data from gSheet is :", quotesData, quotesForClmtData, cashEquivalentQuotesData);
+        Debug.WriteLine($"The Data from gSheet is: {quotesData}, {quotesForClmtData}, {cashEquivalentQuotesData}");
 
         // Calculating basic weights based on percentile channels - base Varadi TAA
         Tuple<double[], double[,]> taaWeightResultsTuple = TaaWeights(quotesData, lookbackDays, volDays, thresholdLower, p_winnerRun);
-        Debug.WriteLine("The Data from gSheet is :", taaWeightResultsTuple);
+        Debug.WriteLine($"The Data from gSheet is: {taaWeightResultsTuple}");
         // // Calculating CLMT data
         double[][] clmtRes = CLMTCalc(quotesForClmtData);
 
@@ -98,7 +98,7 @@ public class StrategyUberTaaController : ControllerBase
         // Get, split and convert GSheet data
         // string? gSheetString = UberTaaGoogleApiGsheet(usedGSheetRef);
         Tuple<double[], int[,], int[], int[], string[], int[], int[]> gSheetResToFinCalc = GSheetConverter(usedGSheetStr, allAssetList);
-        Debug.WriteLine("The Data from gSheet is :", gSheetResToFinCalc);
+        Debug.WriteLine($"The Data from gSheet is: {gSheetResToFinCalc}");
         string overallConstLevStr = gSheetResToFinCalc.Item6[2].ToString() + '%';
 
         // Calculating final weights - Advanced UberTAA
