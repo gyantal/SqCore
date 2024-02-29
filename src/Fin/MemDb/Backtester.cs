@@ -48,7 +48,7 @@ public static class Backtester
             StoragePermissions = (FileAccess)Config.GetInt("storage-permissions", (int)FileAccess.ReadWrite)
         };
 
-        gAlgorithmDllRelPath = OperatingSystem.IsWindows() ? "bin/Debug/net7.0/Fin.Algorithm.CSharp.dll" : "Fin.Algorithm.CSharp.dll";
+        gAlgorithmDllRelPath = OperatingSystem.IsWindows() ? "bin/Debug/net8.0/Fin.Algorithm.CSharp.dll" : "Fin.Algorithm.CSharp.dll";
         gAlgorithmDllBinary = File.ReadAllBytes(gAlgorithmDllRelPath); // reads the whole DLL as binary. Keep the Fin.Algorithm.CSharp.dll small
 
         gPacketAccessToken = Config.Get("api-access-token");

@@ -54,7 +54,7 @@ namespace QuantConnect.Data.Auxiliary
 
             // running in VsCode:
             // Directory.GetCurrentDirectory();  "C:\\agy\\GitHub\\SqCore\\src\\WebServer\\SqCoreWeb"
-            // AppDomain.CurrentDomain.BaseDirectory: "C:\\agy\\GitHub\\SqCore\\src\\WebServer\\SqCoreWeb\\bin\\Debug\\net7.0\\"
+            // AppDomain.CurrentDomain.BaseDirectory: "C:\\agy\\GitHub\\SqCore\\src\\WebServer\\SqCoreWeb\\bin\\Debug\\net8.0\\"
             if (!Directory.Exists(mapFileDirectory))
             {
                 // only write this message once per application instance

@@ -22,7 +22,7 @@ g++ -g helloworld.cpp maxofthree.obj -o CppLib.dll   // or it can be built to EX
 
 cd ../CS
 dotnet build
-copy ..\CPP\CppLib.dll .\bin\Debug\net7.0
+copy ..\CPP\CppLib.dll .\bin\Debug\net8.0
 dotnet run
 
 ----------------------- Install tools.

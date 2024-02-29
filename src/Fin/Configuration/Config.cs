@@ -71,7 +71,7 @@ namespace QuantConnect.Configuration
         {
             // running in VsCode:
             // Directory.GetCurrentDirectory();  "C:\\agy\\GitHub\\SqCore\\src\\WebServer\\SqCoreWeb"
-            // AppDomain.CurrentDomain.BaseDirectory: "C:\\agy\\GitHub\\SqCore\\src\\WebServer\\SqCoreWeb\\bin\\Debug\\net7.0\\"
+            // AppDomain.CurrentDomain.BaseDirectory: "C:\\agy\\GitHub\\SqCore\\src\\WebServer\\SqCoreWeb\\bin\\Debug\\net8.0\\"
 
             // initialize settings inside a lazy for free thread-safe, one-time initialization
             if (!File.Exists(ConfigurationFileName))

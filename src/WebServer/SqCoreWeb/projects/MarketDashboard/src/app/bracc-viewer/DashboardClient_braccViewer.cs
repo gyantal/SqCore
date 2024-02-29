@@ -456,7 +456,8 @@ public partial class DashboardClient
                 Utils.Logger.Info($"OnReceiveWsAsync_BrAccViewer(): GetStockChrtData to '{msgObjStr}'");
                 string stockSqTicker = msgObjStr;
                 DateTime todayET = DateTime.UtcNow.FromUtcToEt().Date;
-                SqDateOnly stckChrtLookbackStart = new(todayET.Year - 1, todayET.Month, todayET.Day);  // gets the 1 year data starting from yesterday to back 1 year
+                DateTime startDayET = todayET.AddYears(-1); // new(todayET.Year - 1, todayET.Month, todayET.Day); doesn't work in leap years e.g. 2024-02-29, as 2023-02-29 non-existing
+                SqDateOnly stckChrtLookbackStart = new(startDayET);  // gets the 1 year data starting from yesterday to back 1 year
                 SqDateOnly stckChrtLookbackEndExcl = todayET;
                 BrAccViewerSendStockHist(stckChrtLookbackStart, stckChrtLookbackEndExcl, stockSqTicker);
                 return true;

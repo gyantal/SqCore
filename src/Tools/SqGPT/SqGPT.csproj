@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- Disable warning MSB3270: There was a mismatch between the processor architecture of the project being built "MSIL"(local) vs. LLamaSharp.dll ("AMD64")-->
