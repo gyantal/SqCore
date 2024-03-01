@@ -73,6 +73,10 @@ public class PrtfVwrWs
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): InsertOrUpdateTrade: '{msgObjStr}'");
                 PortfVwrInsertOrUpdateTrade(webSocket, msgObjStr);
                 break;
+            case "DeleteTrade":
+                Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): DeleteTrade: '{msgObjStr}'");
+                PortfVwrDeleteTrade(webSocket, msgObjStr);
+                break;
             default:
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): Unrecognized message from client, {msgCode},{msgObjStr}");
                 break;
@@ -132,6 +136,32 @@ public class PrtfVwrWs
         }
 
         PortfVwrGetPortfolioTradesHistory(webSocket, prtfIdStr); // After DB insert, force sending the whole TradeHistory to Client. Client shouldn't assume that DB insert was successful.
+    }
+
+    private static void PortfVwrDeleteTrade(WebSocket webSocket, string p_msg) // p_msg - 21,tradeId:1
+    {
+        int prtfIdStartInd = p_msg.IndexOf(":");
+        if (prtfIdStartInd == -1)
+            return;
+        string prtfIdStr = p_msg[..(prtfIdStartInd - ",tradeId".Length)];
+        int pfId = Convert.ToInt32(prtfIdStr);
+        int tradeId = Convert.ToInt32(p_msg[(prtfIdStartInd + 1)..]);
+        MemDb.gMemDb.Portfolios.TryGetValue(pfId, out Portfolio? pf);
+        if (pf == null)
+            return;
+        bool isDeleteTradeSuccess = MemDb.gMemDb.DeletePortfolioTrade(pf.TradeHistoryId, tradeId);
+        if (isDeleteTradeSuccess)
+        {
+            List<Trade>? tradeHistory = MemDb.gMemDb.GetPortfolioTradeHistoryToList(pf.TradeHistoryId, null, null);
+            if (tradeHistory?.Count == 0) // if trade history count is zero , we have to remove the tradeHistory and edit the portfolio by assinging pf.TradeHistoryId = -1
+            {
+                MemDb.gMemDb.DeletePortfolioTradeHistory(pf.TradeHistoryId); // Delete trade History from portfolio, otherwise it will keep the empty list of tradeHistory
+                MemDb.gMemDb.AddOrEditPortfolio(pf.Id, pf.User, pf.Name, pf.ParentFolderId, pf.Currency.ToString(), pf.Type.ToString(), pf.Algorithm, pf.AlgorithmParam, pf.SharedAccess.ToString(), pf.Note, pf.TradeHistoryId = -1, out Portfolio? p_newItem); // Update portfolio with no trade history
+            }
+        }
+        else
+            throw new Exception($"DeletePortfolioTrade(), cannot find tradeHistoryId {pf.ParentFolderId}");
+        PortfVwrGetPortfolioTradesHistory(webSocket, prtfIdStr); // After DB Delete, force sending the whole TradeHistory to Client. Client shouldn't assume that DB Delete was successful.
     }
 
     // Here we get the p_msg in 2 forms

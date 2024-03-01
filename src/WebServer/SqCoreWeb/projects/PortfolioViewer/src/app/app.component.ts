@@ -211,6 +211,11 @@ export class AppComponent {
       this.m_socket.send('InsertOrUpdateTrade:' + this.m_portfolioId + ':' + tradeJson);
   }
 
+  onClickDeleteTrade() {
+    if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
+      this.m_socket.send('DeleteTrade:' + this.m_portfolioId + ',tradeId:' + this.m_editedTrade.id);
+  }
+
   onClickClearFields() {
     this.m_editedTrade.Clear();
   }

@@ -22,8 +22,8 @@ public class Trade
     public DateTime Time { get; set; } = DateTime.MinValue;
     public TradeAction Action { get; set; } = TradeAction.Unknown;
     public AssetType AssetType { get; set; } = AssetType.Unknown;
-    public string? Symbol { get; set; } = null;
-    public string? UnderlyingSymbol { get; set; } = null;
+    public string? Symbol { get; set; } = null; // "QQQ 20241220C494.78"
+    public string? UnderlyingSymbol { get; set; } = null; // "QQQ"
     public int Quantity { get; set; } = 0;
     public float Price { get; set; } = 0;
     public CurrencyId Currency { get; set; } = CurrencyId.Unknown;
