@@ -259,9 +259,16 @@ public class BrokerWrapperIb : IBrokerWrapper
             if (errorCode == 2103 || errorCode == 2105 || errorCode == 1100 || errorCode == 1102 || errorCode == 2157)
             {
                 // This is Usually not an error if it is received pre-market or after market. IBGateway will try reconnecting, so this is usually temporary. However, log it.
+                // Market Data connections:
+                //     usfarm: USA Market Data.
+                //     ushmds: HMDS = US Historical Market Data Service.
+                //     usfuture: Market Data
+                //     eufarm: Market Data for EU, France.
+                //     afarm: Market Data for Australia
                 // IB Error. ErrId: -1, ErrCode: 2103, Msg: Market data farm connection is broken:usfarm
                 // IB Error. ErrId: -1, ErrCode: 2103, Msg: Market data farm connection is broken:hfarm
                 // IB Error. ErrId: -1, ErrCode: 2103, Msg: Market data farm connection is broken:jfarm
+                // IB Error. ErrId: -1, ErrCode: 2103, Msg: Market data farm connection is broken:afarm
                 // IB Error. ErrId: -1, ErrCode: 2105, Msg: HMDS data farm connection is broken:ushmds
                 // IB Error. ErrId: -1, ErrCode: 1100, Msg: Connectivity between IB and Trader Workstation has been lost.
                 // IB Error. ErrId: -1, ErrCode: 1102, Msg: Connectivity between IB and Trader Workstation has been restored - data maintained.
@@ -285,8 +292,12 @@ public class BrokerWrapperIb : IBrokerWrapper
                 if (BrokersWatcher.IgnoreErrorsBasedOnMarketTradingTime())
                     return; // skip processing the error further. Don't send it to HealthMonitor.
 
-                if (errorCode == 2103 && (errorMsg == "Market data farm connection is broken:jfarm" || errorMsg == "Market data farm connection is broken:hfarm"))
-                    return;
+                // There is a regular daily Australia Server reset around 5:42 AU time = 18:42 LON time that takes around 2 seconds. It is in the important MarketTradingTime.
+                // Ignore 'afarm' (Australia messages as non-important). Only for DeBlanzac account and only when we have an Australian stock position TLX.
+                // 03-04T18:42:18.6596#28|INFO|Sq: ErrCode: 2103, Msg: Market data farm connection is broken:afarm'
+                // 03-04T18:42:20.4983#28|INFO|Sq: ErrCode: 2104, Msg: Market data farm connection is OK:afarm // comes 2 seconds after.
+                if (errorCode == 2103 && (errorMsg == "Market data farm connection is broken:jfarm" || errorMsg == "Market data farm connection is broken:hfarm" || errorMsg == "Market data farm connection is broken:afarm"))
+                    return;  // skip processing the error further. Don't send it to HealthMonitor.
                 // otherwise, during market hours, consider this as an error, => so HealthMonitor will be notified
             }
         }
