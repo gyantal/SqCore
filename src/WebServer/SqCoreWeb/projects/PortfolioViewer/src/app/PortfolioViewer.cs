@@ -107,7 +107,7 @@ public class PrtfVwrWs
             tradeHistId = MemDb.gMemDb.InsertPortfolioTradeHistory(trades);
             pf.TradeHistoryId = tradeHistId;
             // Save this updated pf.TradeHistoryId into the RedisDb.
-            MemDb.gMemDb.AddOrEditPortfolio(pf.Id, pf.User, pf.Name, pf.ParentFolderId, pf.Currency.ToString(), pf.Type.ToString(), pf.Algorithm, pf.AlgorithmParam, pf.SharedAccess.ToString(), pf.Note, pf.TradeHistoryId, out Portfolio? p_newItem);
+            MemDb.gMemDb.AddOrEditPortfolio(pf.Id, pf.User, pf.Name, pf.ParentFolderId, pf.Currency, pf.Type, pf.Algorithm, pf.AlgorithmParam, pf.SharedAccess, pf.Note, pf.TradeHistoryId, out Portfolio? p_newItem);
         }
         else // existing tradeHistory
             tradeHistId = pf.TradeHistoryId;
@@ -156,7 +156,7 @@ public class PrtfVwrWs
             if (tradeHistory?.Count == 0) // if trade history count is zero , we have to remove the tradeHistory and edit the portfolio by assinging pf.TradeHistoryId = -1
             {
                 MemDb.gMemDb.DeletePortfolioTradeHistory(pf.TradeHistoryId); // Delete trade History from portfolio, otherwise it will keep the empty list of tradeHistory
-                MemDb.gMemDb.AddOrEditPortfolio(pf.Id, pf.User, pf.Name, pf.ParentFolderId, pf.Currency.ToString(), pf.Type.ToString(), pf.Algorithm, pf.AlgorithmParam, pf.SharedAccess.ToString(), pf.Note, pf.TradeHistoryId = -1, out Portfolio? p_newItem); // Update portfolio with no trade history
+                MemDb.gMemDb.AddOrEditPortfolio(pf.Id, pf.User, pf.Name, pf.ParentFolderId, pf.Currency, pf.Type, pf.Algorithm, pf.AlgorithmParam, pf.SharedAccess, pf.Note, pf.TradeHistoryId = -1, out Portfolio? p_newItem); // Update portfolio with no trade history
             }
         }
         else

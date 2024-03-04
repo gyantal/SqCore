@@ -41,6 +41,7 @@ public class TradeInDb
     public string? Exchange { get; set; } = null;
     [JsonPropertyName("ConnTds")]
     public string? ConnectedTrades { get; set; } = null;
+    public string? Note { get; set; } = null;
 
     public TradeInDb()
     {
@@ -60,13 +61,14 @@ public class TradeInDb
         Commission = p_trade.Commission == 0f ? null : p_trade.Commission;
         Exchange = p_trade.ExchangeId == ExchangeId.Unknown ? null : AssetHelper.gExchangeToStr[p_trade.ExchangeId];
         ConnectedTrades = p_trade.ConnectedTrades != null ? string.Join(",", p_trade.ConnectedTrades) : null;
+        Note = p_trade.Note;
     }
 
     public Trade ToTrade()
     {
         Trade trade = new(Id, DateTime.Parse(Time), AssetHelper.gStrToTradeAction[Action ?? "BOT"], AssetHelper.gChrToAssetType[AssetType ?? 'S'], Symbol, UnderlyingSymbol ?? Symbol, Quantity, Price,
             Currency == null ? CurrencyId.Unknown : AssetHelper.gStrToCurrency[Currency], Commission ?? 0,
-            Exchange == null ? ExchangeId.Unknown : AssetHelper.gStrToExchange[Exchange], ConnectedTrades);
+            Exchange == null ? ExchangeId.Unknown : AssetHelper.gStrToExchange[Exchange], ConnectedTrades, Note);
 
         return trade;
     }

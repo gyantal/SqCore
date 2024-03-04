@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Fin.Base;
 using SqCommon;
 
 namespace Fin.MemDb;
@@ -65,7 +66,7 @@ public partial class MemDb
         }
     }
 
-    public string AddOrEditPortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, string p_currency, string p_prtfType,  string p_algorithm, string p_algorithmParam, string p_userAccess, string p_note, int p_tradeHistoryId, out Portfolio? p_newItem)
+    public string AddOrEditPortfolio(int p_id, User? p_user, string p_name, int p_parentFldId, CurrencyId p_currency, PortfolioType p_prtfType,  string p_algorithm, string p_algorithmParam, SharedAccess p_userAccess, string p_note, int p_tradeHistoryId, out Portfolio? p_newItem)
     {
         Portfolio? prtf = null;
         string errMsg = String.Empty;
@@ -73,7 +74,7 @@ public partial class MemDb
         if (p_id == -1) // if id == -1, which is an invalid key in the Db, we create a new Item
         {
             string creationTime = DateTime.UtcNow.TohYYYYMMDDHHMMSS(); // DateTime.Now.ToString() => "CTime":"2022-10-13T20:00:00"
-            prtf = m_memData.AddNewPortfolio(p_user, p_name, p_parentFldId, creationTime, AssetHelper.gStrToCurrency[p_currency], AssetHelper.gStrToPortfolioType[p_prtfType], p_algorithm, p_algorithmParam, AssetHelper.gStrToSharedAccess[p_userAccess], p_note, sharedUsersWith, p_tradeHistoryId);
+            prtf = m_memData.AddNewPortfolio(p_user, p_name, p_parentFldId, creationTime, p_currency, p_prtfType, p_algorithm, p_algorithmParam, p_userAccess, p_note, sharedUsersWith, p_tradeHistoryId);
             if (prtf == null)
                 errMsg = "Cannot create new item.";
             else
@@ -93,9 +94,9 @@ public partial class MemDb
         }
         else // if id is valid, edit the Item
         {
-            errMsg = m_Db.UpdatePortfolio(p_id, p_user, p_name, p_parentFldId, AssetHelper.gStrToCurrency[p_currency], AssetHelper.gStrToPortfolioType[p_prtfType], p_algorithm, p_algorithmParam, AssetHelper.gStrToSharedAccess[p_userAccess], p_note, sharedUsersWith, p_tradeHistoryId); // gives back an error message or empty string if everything was OK.
+            errMsg = m_Db.UpdatePortfolio(p_id, p_user, p_name, p_parentFldId, p_currency, p_prtfType, p_algorithm, p_algorithmParam, p_userAccess, p_note, sharedUsersWith, p_tradeHistoryId); // gives back an error message or empty string if everything was OK.
             if (String.IsNullOrEmpty(errMsg)) // if there is no error in RedisDb operation
-                prtf = m_memData.EditPortfolio(p_id, p_user, p_name, p_parentFldId, AssetHelper.gStrToCurrency[p_currency], AssetHelper.gStrToPortfolioType[p_prtfType], p_algorithm, p_algorithmParam, AssetHelper.gStrToSharedAccess[p_userAccess], p_note, sharedUsersWith, p_tradeHistoryId);
+                prtf = m_memData.EditPortfolio(p_id, p_user, p_name, p_parentFldId, p_currency, p_prtfType, p_algorithm, p_algorithmParam, p_userAccess, p_note, sharedUsersWith, p_tradeHistoryId);
         }
         p_newItem = prtf;
         return errMsg;

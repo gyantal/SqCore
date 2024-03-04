@@ -187,7 +187,7 @@ public partial class DashboardClient
         string? errMsg = GetRealParentFldId(virtualParentFldId, out User? user, out int realParentFldId);
         if (errMsg == null)
         {
-            errMsg = MemDb.gMemDb.AddOrEditPortfolio(id, user, pfName, realParentFldId, currency, prtfType, algorithm, algorithmParam, userAccess, userNote, tradeHistoryId, out Portfolio? p_newItem);
+            errMsg = MemDb.gMemDb.AddOrEditPortfolio(id, user, pfName, realParentFldId, AssetHelper.gStrToCurrency[currency], AssetHelper.gStrToPortfolioType[prtfType], algorithm, algorithmParam, AssetHelper.gStrToSharedAccess[userAccess], userNote, tradeHistoryId, out Portfolio? p_newItem);
             if (errMsg == String.Empty && p_newItem == null)
                 errMsg = "Error. Portfolio change was not done.";
         }

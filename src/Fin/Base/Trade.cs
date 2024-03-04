@@ -30,6 +30,7 @@ public class Trade
     public float Commission { get; set; } = 0;
     public ExchangeId ExchangeId { get; set; } = ExchangeId.Unknown;
     public List<int>? ConnectedTrades { get; set; } = null;
+    public string? Note { get; set; } = null;
 
     public Trade()
     {
@@ -49,7 +50,7 @@ public class Trade
         Id = newId;
     }
 
-    public Trade(List<Trade> p_tradesForAutoId, DateTime p_time, TradeAction p_action, AssetType p_assetType, string? p_symbol, string? p_undSymbol, int p_quantity, float p_price, CurrencyId p_currency, float p_commission, ExchangeId p_exchangeId, string? p_connectedTrades)
+    public Trade(List<Trade> p_tradesForAutoId, DateTime p_time, TradeAction p_action, AssetType p_assetType, string? p_symbol, string? p_undSymbol, int p_quantity, float p_price, CurrencyId p_currency, float p_commission, ExchangeId p_exchangeId, string? p_connectedTrades, string? p_note)
     {
         // keep the newId calculation logic here, just right before the Trade creation.
         int maxId = -1; // if empty list, newId will be 0, which is OK
@@ -82,8 +83,10 @@ public class Trade
                     ConnectedTrades.Add(tradeId);
             }
         }
+
+        Note = p_note;
     }
-    public Trade(int p_id, DateTime p_time, TradeAction p_action, AssetType p_assetType, string? p_symbol, string? p_undSymbol, int p_quantity, float p_price, CurrencyId p_currency, float p_commission, ExchangeId p_exchangeId, string? p_connectedTrades)
+    public Trade(int p_id, DateTime p_time, TradeAction p_action, AssetType p_assetType, string? p_symbol, string? p_undSymbol, int p_quantity, float p_price, CurrencyId p_currency, float p_commission, ExchangeId p_exchangeId, string? p_connectedTrades, string? p_note)
     {
         Id = p_id;
         Time = p_time;
@@ -107,5 +110,7 @@ public class Trade
                     ConnectedTrades.Add(tradeId);
             }
         }
+
+        Note = p_note;
     }
 }

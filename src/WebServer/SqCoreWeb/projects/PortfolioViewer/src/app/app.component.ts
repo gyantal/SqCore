@@ -21,6 +21,7 @@ class TradeJs {
   commission: number = 0;
   exchangeId: ExchangeId = ExchangeId.Unknown;
   connectedTrades: number[] | null = null;
+  note: string | null = null;
 
   Clear(): void {
     this.id = -1;
@@ -35,6 +36,7 @@ class TradeJs {
     this.commission = 0;
     this.exchangeId = ExchangeId.Unknown;
     this.connectedTrades = null;
+    this.note = null;
   }
 
   CopyFrom(tradeFrom: TradeJs): void { // a Clone function would create a new object with new MemAlloc, but we only want to copy the fields without ctor
@@ -50,6 +52,7 @@ class TradeJs {
     this.commission = tradeFrom.commission;
     this.exchangeId = tradeFrom.exchangeId;
     this.connectedTrades = tradeFrom.connectedTrades;
+    this.note = tradeFrom.note;
   }
 }
 
