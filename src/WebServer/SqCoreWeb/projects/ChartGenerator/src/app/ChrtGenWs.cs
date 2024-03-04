@@ -111,7 +111,7 @@ public class ChrtGenWs
         List<Portfolio> lsPrtf = new(); // Create a new list to store the portfolios
         foreach (string pidStr in pidsStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
         {
-            if (MemDb.gMemDb.Portfolios.TryGetValue(Convert.ToInt32(pidStr), out Portfolio? prtf))
+            if (MemDb.gMemDb.Portfolios.TryGetValue(int.Parse(pidStr), out Portfolio? prtf))
             {
                  Console.WriteLine($"Portfolio Name: '{prtf.Name}'");
                  lsPrtf.Add(prtf);

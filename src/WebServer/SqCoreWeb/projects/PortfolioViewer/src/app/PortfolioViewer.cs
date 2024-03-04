@@ -36,9 +36,11 @@ public class PrtfVwrWs
         int idStartInd = queryStr!.IndexOf("=");
         if (idStartInd == -1)
             return;
-        int id = Convert.ToInt32(queryStr[(idStartInd + 1)..]);
+        string pfIdStr = queryStr[(idStartInd + 1)..];
+        if (!int.TryParse(pfIdStr, out int pfId))
+            throw new Exception($"OnWsConnectedAsync(), cannot find pfId {pfIdStr}");
         // https://stackoverflow.com/questions/24450109/how-to-send-receive-messages-through-a-web-socket-on-windows-phone-8-using-the-c
-        var msgObj = new HandshakeMessagePrtfViewer() { Email = email, PrtfToClient = UiUtils.GetPortfolioJs(id) };
+        var msgObj = new HandshakeMessagePrtfViewer() { Email = email, PrtfToClient = UiUtils.GetPortfolioJs(pfId) };
         byte[] encodedMsg = Encoding.UTF8.GetBytes("OnConnected:" + Utils.CamelCaseSerialize(msgObj));
         if (webSocket.State == WebSocketState.Open)
             await webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None); // takes 0.635ms
@@ -83,19 +85,25 @@ public class PrtfVwrWs
         }
     }
 
-    private static void PortfVwrInsertOrUpdateTrade(WebSocket webSocket, string p_msg) // p_msg - 21:{"id":-1,"time":"2024-02-22T10:32:20.680Z","action":0,"assetType":7,"symbol":"META","underlyingSymbol":null,"quantity":0,"price":0,"currency":0,"commission":0,"exchangeId":-1,"connectedTrades":null}
+    private static void PortfVwrInsertOrUpdateTrade(WebSocket webSocket, string p_msg) // p_msg - pfId:21:{"id":-1,"time":"2024-02-22T10:32:20.680Z","action":0,"assetType":7,"symbol":"META","underlyingSymbol":null,"quantity":0,"price":0,"currency":0,"commission":0,"exchangeId":-1,"connectedTrades":null}
     {
         int prtfIdStartInd = p_msg.IndexOf(":");
         if (prtfIdStartInd == -1)
             return;
 
-        string prtfIdStr = p_msg[..prtfIdStartInd];
+        int trdObjStartInd = p_msg.IndexOf(":", prtfIdStartInd + 1);
+        if (trdObjStartInd == -1)
+            return;
+
+        string prtfIdStr = p_msg.Substring(prtfIdStartInd + 1, trdObjStartInd - prtfIdStartInd - 1);
+        if (!int.TryParse(prtfIdStr, out int pfId))
+            throw new Exception($"PortfVwrInsertOrUpdateTrade(), cannot find pfId {prtfIdStr}");
         // Try to get the Portfolio from the MemDb using the extracted ID
-        MemDb.gMemDb.Portfolios.TryGetValue(Convert.ToInt32(prtfIdStr), out Portfolio? pf);
+        MemDb.gMemDb.Portfolios.TryGetValue(pfId, out Portfolio? pf);
         if (pf == null)
             return;
 
-        string tradeObjStr = p_msg[(prtfIdStartInd + 1)..]; // extract the Trade object string from p_msg
+        string tradeObjStr = p_msg[(trdObjStartInd + 1)..]; // extract the Trade object string from p_msg
         Trade? trade = JsonSerializer.Deserialize<Trade>(tradeObjStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }); // Deserialize the trade string into a Trade object
         if (trade == null)
             return;
@@ -117,7 +125,7 @@ public class PrtfVwrWs
         else
             MemDb.gMemDb.UpdatePortfolioTrade(tradeHistId, trade.Id, trade); // update the trade into the portfolio's trade history in Db
 
-        string? errMsg = MemDb.gMemDb.GetPortfolioRunResults(Convert.ToInt32(prtfIdStr), null, null, out PrtfRunResult prtfRunResultJs);
+        string? errMsg = MemDb.gMemDb.GetPortfolioRunResults(pfId, null, null, out PrtfRunResult prtfRunResultJs);
 
         // Send portfolio run result if available
         if (errMsg == null)
@@ -138,14 +146,24 @@ public class PrtfVwrWs
         PortfVwrGetPortfolioTradesHistory(webSocket, prtfIdStr); // After DB insert, force sending the whole TradeHistory to Client. Client shouldn't assume that DB insert was successful.
     }
 
-    private static void PortfVwrDeleteTrade(WebSocket webSocket, string p_msg) // p_msg - 21,tradeId:1
+    private static void PortfVwrDeleteTrade(WebSocket webSocket, string p_msg) // p_msg - pfId:21,tradeId:1
     {
         int prtfIdStartInd = p_msg.IndexOf(":");
         if (prtfIdStartInd == -1)
             return;
-        string prtfIdStr = p_msg[..(prtfIdStartInd - ",tradeId".Length)];
-        int pfId = Convert.ToInt32(prtfIdStr);
-        int tradeId = Convert.ToInt32(p_msg[(prtfIdStartInd + 1)..]);
+
+        int trdIdStartInd = p_msg.IndexOf(":", prtfIdStartInd + 1);
+        if (trdIdStartInd == -1)
+            return;
+
+        string prtfIdStr = p_msg.Substring(prtfIdStartInd + 1, trdIdStartInd - prtfIdStartInd - ",tradeId:".Length);
+        if (!int.TryParse(prtfIdStr, out int pfId))
+            throw new Exception($"PortfVwrDeleteTrade(), cannot find pfId {prtfIdStr}");
+
+        string tradeIdStr = p_msg[(trdIdStartInd + 1)..];
+        if (!int.TryParse(tradeIdStr, out int tradeId))
+            throw new Exception($"PortfVwrDeleteTrade(), cannot find tradeId {tradeIdStr}");
+
         MemDb.gMemDb.Portfolios.TryGetValue(pfId, out Portfolio? pf);
         if (pf == null)
             return;
@@ -179,7 +197,10 @@ public class PrtfVwrWs
         idStartInd += "pid=".Length;
         int idEndInd = p_msg.IndexOf('&', idStartInd);
         int idLength = idEndInd == -1 ? p_msg.Length - idStartInd : idEndInd - idStartInd;
-        int id = Convert.ToInt32(p_msg.Substring(idStartInd, idLength));
+
+        string idStr = p_msg.Substring(idStartInd, idLength);
+        if (!int.TryParse(idStr, out int id))
+            throw new Exception($"PortfVwrGetPortfolioRunResults(), cannot find id {idStr}");
 
         // Check if p_msg contains "Date" to determine its format
         if (p_msg.Contains("Date")) // p_msg = "?pid=12&Date=2022-01-01"
@@ -209,7 +230,9 @@ public class PrtfVwrWs
 
     public static void PortfVwrGetPortfolioTradesHistory(WebSocket webSocket, string p_msg)
     {
-        int id = Convert.ToInt32(p_msg);
+        if (!int.TryParse(p_msg, out int id))
+            throw new Exception($"PortfVwrGetPortfolioTradesHistory(), cannot find id {p_msg}");
+
         if (MemDb.gMemDb.Portfolios.TryGetValue(id, out Portfolio? pf))
         {
             IEnumerable<Trade> tradesHist = MemDb.gMemDb.GetPortfolioTradeHistory(pf.TradeHistoryId, null, null); // Retrieve trades history

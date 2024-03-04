@@ -211,12 +211,12 @@ export class AppComponent {
   onClickInsertOrUpdateTrade() {
     const tradeJson: string = this.Trade2EnumJsonStr(this.m_editedTrade);
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-      this.m_socket.send('InsertOrUpdateTrade:' + this.m_portfolioId + ':' + tradeJson);
+      this.m_socket.send('InsertOrUpdateTrade:pfId:' + this.m_portfolioId + ':' + tradeJson);
   }
 
   onClickDeleteTrade() {
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-      this.m_socket.send('DeleteTrade:' + this.m_portfolioId + ',tradeId:' + this.m_editedTrade.id);
+      this.m_socket.send('DeleteTrade:pfId:' + this.m_portfolioId + ',tradeId:' + this.m_editedTrade.id);
   }
 
   onClickClearFields() {

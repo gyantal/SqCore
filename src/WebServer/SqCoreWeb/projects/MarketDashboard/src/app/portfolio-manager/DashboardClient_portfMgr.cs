@@ -139,9 +139,9 @@ public partial class DashboardClient
         int prntFldrIdx = (fldNameIdx == -1) ? -1 : p_msg.IndexOf(":", fldNameIdx + 1);
         int userNoteIdx = prntFldrIdx == -1 ? -1 : p_msg.IndexOf(":", prntFldrIdx + 1);
 
-        int id = Convert.ToInt32(p_msg.Substring(idStartIdx + 1, fldNameIdx - idStartIdx - ",name:".Length));
+        int id = int.Parse(p_msg.Substring(idStartIdx + 1, fldNameIdx - idStartIdx - ",name:".Length));
         string fldName = p_msg.Substring(fldNameIdx + 1, prntFldrIdx - fldNameIdx - ",prntFId:".Length);
-        int virtualParentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, userNoteIdx - prntFldrIdx - ",note:".Length));
+        int virtualParentFldId = int.Parse(p_msg.Substring(prntFldrIdx + 1, userNoteIdx - prntFldrIdx - ",note:".Length));
         string userNote = p_msg[(userNoteIdx + 1)..];
 
         string? errMsg = GetRealParentFldId(virtualParentFldId, out User? user, out int realParentFldId);
@@ -173,14 +173,14 @@ public partial class DashboardClient
         int userAccessIdx = trdHisIdx == -1 ? -1 : p_msg.IndexOf(":", trdHisIdx + 1);
         int userNoteIdx = userAccessIdx == -1 ? -1 : p_msg.IndexOf(":", userAccessIdx + 1);
 
-        int id = Convert.ToInt32(p_msg.Substring(idStartIdx + 1, pfNameIdx - idStartIdx - ",name:".Length));
+        int id = int.Parse(p_msg.Substring(idStartIdx + 1, pfNameIdx - idStartIdx - ",name:".Length));
         string pfName = p_msg.Substring(pfNameIdx + 1, prntFldrIdx - pfNameIdx - ",prntFId:".Length);
-        int virtualParentFldId = Convert.ToInt32(p_msg.Substring(prntFldrIdx + 1, currencyIdx - prntFldrIdx - ",currency:".Length));
+        int virtualParentFldId = int.Parse(p_msg.Substring(prntFldrIdx + 1, currencyIdx - prntFldrIdx - ",currency:".Length));
         string currency = p_msg.Substring(currencyIdx + 1, prtfTypeIdx - currencyIdx - ",type:".Length);
         string prtfType = p_msg.Substring(prtfTypeIdx + 1, algoIdx - prtfTypeIdx - ",algo:".Length);
         string algorithm = p_msg.Substring(algoIdx + 1, algoParamIdx - algoIdx - ",algoP:".Length);
         string algorithmParam = p_msg.Substring(algoParamIdx + 1, trdHisIdx - algoParamIdx - ",trdHis:".Length);
-        int tradeHistoryId = Convert.ToInt32(p_msg.Substring(trdHisIdx + 1, userAccessIdx - trdHisIdx - ",access:".Length)); // AddOrEditPortfolio() expect it to be an 'int' with -1 default, but input p_msg can have it in any way: "-1", or "", or tradeHistoryId field can be missing
+        int tradeHistoryId = int.Parse(p_msg.Substring(trdHisIdx + 1, userAccessIdx - trdHisIdx - ",access:".Length)); // AddOrEditPortfolio() expect it to be an 'int' with -1 default, but input p_msg can have it in any way: "-1", or "", or tradeHistoryId field can be missing
         string userAccess = p_msg.Substring(userAccessIdx + 1, userNoteIdx - userAccessIdx - ",note:".Length);
         string userNote = p_msg[(userNoteIdx + 1)..];
 
@@ -205,14 +205,15 @@ public partial class DashboardClient
         int idStartInd = p_msg.IndexOf(":");
         if (idStartInd == -1)
             return;
-        string idStr = p_msg[(idStartInd + 1)..];
-        int id = Convert.ToInt32(idStr);
-        bool isFolder = id < UiUtils.gPortfolioIdOffset;
+        string prtfIdStr = p_msg[(idStartInd + 1)..];
+        if (!int.TryParse(prtfIdStr, out int pfId))
+            throw new Exception($"PortfMgrDeletePortfolioItem(), cannot find pfId {prtfIdStr}");
+        bool isFolder = pfId < UiUtils.gPortfolioIdOffset;
         string errMsg;
         if (isFolder)
-            errMsg = MemDb.gMemDb.DeletePortfolioFolder(id);
+            errMsg = MemDb.gMemDb.DeletePortfolioFolder(pfId);
         else
-            errMsg = MemDb.gMemDb.DeletePortfolio(id - UiUtils.gPortfolioIdOffset);
+            errMsg = MemDb.gMemDb.DeletePortfolio(pfId - UiUtils.gPortfolioIdOffset);
 
         if (!String.IsNullOrEmpty(errMsg))
         {
@@ -227,16 +228,19 @@ public partial class DashboardClient
             PortfMgrSendPortfolios();
     }
 
-    public void PortfMgrGetPortfolioRunResult(string p_msg)
+    public void PortfMgrGetPortfolioRunResult(string p_msg) // "id:5"
     {
         int idStartInd = p_msg.IndexOf(":");
         if (idStartInd == -1)
             return;
-        int id = Convert.ToInt32(p_msg[(idStartInd + 1)..]);
+
+        string prtfIdStr = p_msg[(idStartInd + 1)..];
+        if (!int.TryParse(prtfIdStr, out int pfId))
+            throw new Exception($"PortfMgrGetPortfolioRunResult(), cannot find pfId {prtfIdStr}");
         // forcedStartDate and forcedEndDate are determined by specifed algorithm, if null (ex: please refer SqPctAllocation.cs file)
         DateTime? p_forcedStartDate = null;
         DateTime? p_forcedEndDate = null;
-        string? errMsg = MemDb.gMemDb.GetPortfolioRunResults(id, p_forcedStartDate, p_forcedEndDate, out PrtfRunResult prtfRunResultJs);
+        string? errMsg = MemDb.gMemDb.GetPortfolioRunResults(pfId, p_forcedStartDate, p_forcedEndDate, out PrtfRunResult prtfRunResultJs);
         if (errMsg == null)
         {
             byte[] encodedMsg = Encoding.UTF8.GetBytes("PortfMgr.PrtfRunResult:" + Utils.CamelCaseSerialize(prtfRunResultJs));
