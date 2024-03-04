@@ -470,7 +470,7 @@ public partial class Db
     }
 
     // Benchmark runs for GetPortfolioTradeHistory(). On Linux server with local Redis-sever. First run: 10ms, consecutive runs: 0.5ms
-    public IEnumerable<Trade> GetPortfolioTradeHistory(int p_tradeHistoryId, DateTime? p_startIncLoc, DateTime? p_endIncLoc) // Slim version of returning 5,000 trades one by one with IEnumerable
+    public IEnumerable<Trade> GetPortfolioTradeHistory(int p_tradeHistoryId, DateTime? p_startIncLoc, DateTime? p_endIncLoc) // Slim version of returning 5,000 trades one by one with IEnumerable. Use this if you have to Serialize it to UI browser client without processing it.
     {
         string redisKey = p_tradeHistoryId.ToString();
         string? portfTradeHistInDbStr = m_redisDb.HashGet("portfolioTradeHistory", redisKey); // portfTradeHistInDbStr: allocates RAM (e.g. 0.5MB) for all (5,000) trades 1x. We cannot make it slimmer, because RedisDb doesn't support enumeration.

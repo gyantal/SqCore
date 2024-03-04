@@ -466,7 +466,7 @@ public partial class DashboardClient
         }
     }
 
-    static (SqDateOnly LookbackStart, SqDateOnly LookbackEndExcl, string BraccSelectedBnchmkSqTicker) ExtractHistDataParams(string p_msg, int startIdx) // msg: "Bnchmrk:SPY,Date:2021-01-02...2021-12-12"
+    static (SqDateOnly LookbackStart, SqDateOnly LookbackEndExcl, string BraccSelectedBnchmkSqTicker) ExtractHistDataParams(string p_msg, int startIdx) // msg: "Bnchmrk:SPY,Date:2021-01-02...2021-12-12", "Bnchmrk:SPY,Date:2020-12-31...", "Bnchmrk:SPY,Date:20202-12-31...2024-03-03"
     {
         int bnchmkStartIdx = p_msg.IndexOf(":", startIdx);
         int periodStartIdx = (bnchmkStartIdx == -1) ? -1 : p_msg.IndexOf(",", bnchmkStartIdx);
@@ -481,10 +481,24 @@ public partial class DashboardClient
         }
         else
         {
-            string periodSelected = p_msg[(periodStartIdx + 1)..];
-            lookbackStart = Utils.FastParseYYYYMMDD(new StringSegment(periodSelected, "Date:".Length, 10));
-            DateTime lookbackEndIncl = Utils.FastParseYYYYMMDD(new StringSegment(periodSelected, "Date:".Length + 13, 10)); // the web UI is written that 'EndDate' is yesterday, which should be included in returned data (if it is not a weekend or holiday, so complicated).
-            lookbackEndExcl = lookbackEndIncl.AddDays(1);   // convert it to excludedEndDate, which converts it to Today. Because that is what MemDb_helper.cs/GetSdaHistCloses() expects
+            // Utils.FastParseYYYYMMDD() input is StringSegment. Work with StringSegment instead of ReadOnlySpan<char>. StringSegment is a class on the heap, Span is a struct on the stack, but cannot be passed as function argument
+            string periodStr = p_msg[(periodStartIdx + ",Date:".Length)..]; // "2021-01-02...2021-12-12" or "2021-01-02..."
+            int ellipsisIdx = periodStr.IndexOf("..."); // ellipsis is the name of "..."
+            StringSegment lookbackStartStr = new StringSegment(periodStr, 0, ellipsisIdx); // everything before the ellipsis "..."
+            if (lookbackStartStr.Length == 10)
+                lookbackStart = Utils.FastParseYYYYMMDD(lookbackStartStr);
+            else // Expect faulty ranges coming from UI "Bnchmrk:SPY,Date:20202-12-31...2024-03-03".
+                lookbackStart = new(DateTime.UtcNow.FromUtcToEt().Date.Year - 1, 12, 31);  // YTD relative to 31st December, last year
+
+            int lookbackEndStrStart = ellipsisIdx + "...".Length;
+            StringSegment lookbackEndStr = new StringSegment(periodStr, lookbackEndStrStart, periodStr.Length - lookbackEndStrStart); // everything after the ellipsis "..."
+            if (lookbackEndStr.Length == 10)
+            {
+                DateTime lookbackEndIncl = Utils.FastParseYYYYMMDD(lookbackEndStr); // the web UI is written that 'EndDate' is yesterday, which should be included in returned data (if it is not a weekend or holiday, so complicated).
+                lookbackEndExcl = lookbackEndIncl.AddDays(1);   // convert it to excludedEndDate, which converts it to Today. Because that is what MemDb_helper.cs/GetSdaHistCloses() expects
+            }
+            else // Expect faulty ranges coming from UI "Bnchmrk:SPY,Date:20202-12-31...2024-03-03".
+                lookbackEndExcl = DateTime.UtcNow.FromUtcToEt().Date; // todayET
         }
 
         return (lookbackStart, lookbackEndExcl, braccSelectedBnchmkSqTicker);
