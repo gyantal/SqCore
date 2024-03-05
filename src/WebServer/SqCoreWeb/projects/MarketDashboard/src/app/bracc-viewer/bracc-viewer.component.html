@@ -203,7 +203,10 @@ MarketBar
             </div>
           </span>
         </div>
-        <div id="navChrt"></div>
+        <div *ngIf="isHistPeriodDateValid; else validDateDialog" id="navChrt"></div>
+        <ng-template #validDateDialog>
+          <div id="validDateDialog">Please input a valid date. Ensure that both the start and end dates are valid to view the graph</div>
+        </ng-template>
       </div>
     </div>
   </span>

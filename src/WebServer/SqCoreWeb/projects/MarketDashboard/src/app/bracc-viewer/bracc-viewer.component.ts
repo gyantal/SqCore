@@ -264,6 +264,7 @@ export class BrAccViewerComponent implements OnInit {
   isMouseInSnapSymbolCell: boolean = false;
   isMouseInTooltip: boolean = false;
   isMouseInHistPeriodCombox: boolean = false; // under development Daya
+  isHistPeriodDateValid: boolean = true;
 
   constructor() {
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
@@ -758,8 +759,19 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   histPeriodChange() {
-    if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
-      this._parentWsConnection.send('BrAccViewer.GetNavChrtData:Bnchmrk:' + this.bnchmkTickerSelectionSelected.toUpperCase() + ',Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
+    // Convert input strings to Date objects
+    const startDate: Date = new Date(this.histPeriodStartETstr);
+    const endDate: Date = new Date(this.histPeriodEndETstr);
+
+    const todayET = new Date(); // Get the current date
+    const minYear = 1900; // Define the minimum valid year - TBD with George on minYear.
+    // Check if either start or end date is valid or not.
+    // Ensure that the start date's year is not before 1900 and the start date is not in the future; similarly, verify that the end date's year is not prior to 1900 and the end date is not in the future.
+    this.isHistPeriodDateValid = startDate.getFullYear() >= minYear && startDate <= todayET && endDate.getFullYear() >= minYear && endDate <= todayET;
+    if (this.isHistPeriodDateValid) { // send the message to server only if the dates are valid
+      if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
+        this._parentWsConnection.send('BrAccViewer.GetNavChrtData:Bnchmrk:' + this.bnchmkTickerSelectionSelected.toUpperCase() + ',Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
+    }
   }
 
   onSortingClicked(sortColumn: string) {

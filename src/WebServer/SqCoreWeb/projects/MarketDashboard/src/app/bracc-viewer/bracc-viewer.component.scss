@@ -420,3 +420,13 @@ tr:nth-child(even) {
 .importantToHighlight .notImpInfo {
   font-size: 1.7rem;
 }
+
+#validDateDialog {
+  font-weight: bold;
+  width: 70rem;
+  background-color: #FFA500;
+  border: .1rem solid #FF5F1F;
+  border-radius: 0.5rem;
+  margin: auto;
+  padding: 1rem;
+}
