@@ -170,37 +170,43 @@ public class StrategyRenewedUberController : ControllerBase
         int[] eventFinalSignal = new int[pastDataResIndexVec.Length];
         for (int iRows = 0; iRows < eventFinalSignal.Length; iRows++)
         {
-            eventFinalSignal[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item7[pastDataResIndexVec[iRows] + 1]);
+            if (!int.TryParse(gSheetResToFinCalc.Item7[pastDataResIndexVec[iRows] + 1], out eventFinalSignal[iRows]))
+                eventFinalSignal[iRows] = 0;
         }
 
         int[] nextEventFinalSignal = new int[nextDataResIndexVec.Length];
         for (int iRows = 0; iRows < nextEventFinalSignal.Length; iRows++)
         {
-            nextEventFinalSignal[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item7[nextDataResIndexVec[iRows] + 1]);
+            if (!int.TryParse(gSheetResToFinCalc.Item7[nextDataResIndexVec[iRows] + 1], out nextEventFinalSignal[iRows]))
+                nextEventFinalSignal[iRows] = 0;
         }
 
         int[] eventCode = new int[pastDataResIndexVec.Length];
         for (int iRows = 0; iRows < eventCode.Length; iRows++)
         {
-            eventCode[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item4[pastDataResIndexVec[iRows] + 1]);
+            eventCode[iRows] = gSheetResToFinCalc.Item4[pastDataResIndexVec[iRows] + 1];
         }
 
         int[] nextEventCode = new int[nextDataResIndexVec.Length];
         for (int iRows = 0; iRows < nextEventCode.Length; iRows++)
         {
-            nextEventCode[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item4[nextDataResIndexVec[iRows] + 1]);
+            nextEventCode[iRows] = gSheetResToFinCalc.Item4[nextDataResIndexVec[iRows] + 1];
         }
 
         double[] eventFinalWeightedSignal = new double[pastDataResIndexVec.Length];
         for (int iRows = 0; iRows < eventFinalWeightedSignal.Length; iRows++)
         {
-            eventFinalWeightedSignal[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item7[pastDataResIndexVec[iRows] + 1]) * eventMultiplicator[eventCode[iRows]];
+            if (!int.TryParse(gSheetResToFinCalc.Item7[pastDataResIndexVec[iRows] + 1], out int signal))
+                signal = 0;
+            eventFinalWeightedSignal[iRows] = signal * eventMultiplicator[eventCode[iRows]];
         }
 
         double[] nextEventFinalWeightedSignal = new double[nextDataResIndexVec.Length];
         for (int iRows = 0; iRows < nextEventFinalWeightedSignal.Length; iRows++)
         {
-            nextEventFinalWeightedSignal[iRows] = Convert.ToInt32(gSheetResToFinCalc.Item7[nextDataResIndexVec[iRows] + 1]) * eventMultiplicator[nextEventCode[iRows]];
+            if (!int.TryParse(gSheetResToFinCalc.Item7[nextDataResIndexVec[iRows] + 1], out int signal))
+                signal = 0;
+            nextEventFinalWeightedSignal[iRows] = signal * eventMultiplicator[nextEventCode[iRows]];
         }
 
         double[] finalWeightMultiplier = new double[pastDataResIndexVec.Length];

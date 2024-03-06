@@ -125,13 +125,11 @@ public class ContangoVisualizerDataController : Microsoft.AspNetCore.Mvc.Control
 
         // DateTime liveDateTime;
         DateTime timeNowETVIX = Utils.ConvertTimeFromUtcToEt(DateTime.UtcNow);
-        int dayOfWeekVIX;
-        dayOfWeekVIX = Convert.ToInt32(timeNowETVIX.DayOfWeek);
-        if (dayOfWeekVIX == 0)
+        if (timeNowETVIX.DayOfWeek == DayOfWeek.Sunday)
         {
             timeNowETVIX = timeNowETVIX.AddDays(-2);
         }
-        else if (dayOfWeekVIX == 6)
+        else if (timeNowETVIX.DayOfWeek == DayOfWeek.Saturday)
         {
             timeNowETVIX = timeNowETVIX.AddDays(-1);
         }

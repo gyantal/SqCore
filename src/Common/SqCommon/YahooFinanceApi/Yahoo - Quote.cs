@@ -82,6 +82,7 @@ public sealed partial class Yahoo
         {
             data = await url
                 .WithCookie(YahooSession.Cookie!.Name, YahooSession.Cookie.Value)
+                .WithHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36") // 2024-03-06: fixing error code 429 (Too Many Requests)
                 .GetAsync(token)
                 .ReceiveJson()
                 .ConfigureAwait(false);
