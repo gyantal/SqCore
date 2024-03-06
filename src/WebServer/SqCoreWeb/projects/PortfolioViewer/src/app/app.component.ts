@@ -87,6 +87,7 @@ export class AppComponent {
   m_histPosEndDate: string = '';
   m_trades: TradeUi[] | null = null;
   m_editedTrade: TradeJs = new TradeJs();
+  m_isEditedTradeDirty: boolean = false;
 
   user = {
     name: 'Anonymous',
@@ -129,6 +130,7 @@ export class AppComponent {
         case 'PrtfVwr.PrtfRunResult':
           console.log('PrtfVwr.PrtfRunResult:' + msgObjStr);
           this.processPortfolioRunResult(msgObjStr);
+          this.m_isEditedTradeDirty = false;
           break;
         case 'PrtfVwr.TradesHist':
           console.log('PrtfVwr.TradesHist:' + msgObjStr);
@@ -244,5 +246,9 @@ export class AppComponent {
       }
     }); // Convert the new trade object to JSON string
     return tradeJson;
+  }
+
+  onKeyupTradeInput() { // Dynamically switch between the save and unsaved icons when a user attempts to create or edit a trade.
+    this.m_isEditedTradeDirty = true;
   }
 }
