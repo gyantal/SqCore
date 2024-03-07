@@ -760,14 +760,14 @@ export class BrAccViewerComponent implements OnInit {
 
   histPeriodChange() {
     // Convert input strings to Date objects
-    const startDate: Date = new Date(this.histPeriodStartETstr);
+    const startDate: Date = new Date(this.histPeriodStartETstr); // "202222-03-01", Max year for C# DateTime 9999 (anything above throws an Exception). In JS, max Date: "September 13, 275760", so in JS that long date is allowed. No Exception thrown.
     const endDate: Date = new Date(this.histPeriodEndETstr);
 
-    const todayET = new Date(); // Get the current date
-    const minYear = 1900; // Define the minimum valid year - TBD with George on minYear.
+    const minAllowedDate = new Date(1900, 1, 1); // Define the minimum valid year.
+    const maxAllowedDate = new Date(); // Get the current date
     // Check if either start or end date is valid or not.
     // Ensure that the start date's year is not before 1900 and the start date is not in the future; similarly, verify that the end date's year is not prior to 1900 and the end date is not in the future.
-    this.isHistPeriodDateValid = startDate.getFullYear() >= minYear && startDate <= todayET && endDate.getFullYear() >= minYear && endDate <= todayET;
+    this.isHistPeriodDateValid = minAllowedDate <= startDate && startDate <= maxAllowedDate && minAllowedDate <= endDate && endDate <= maxAllowedDate;
     if (this.isHistPeriodDateValid) { // send the message to server only if the dates are valid
       if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
         this._parentWsConnection.send('BrAccViewer.GetNavChrtData:Bnchmrk:' + this.bnchmkTickerSelectionSelected.toUpperCase() + ',Date:' + this.histPeriodStartETstr + '...' + this.histPeriodEndETstr);
