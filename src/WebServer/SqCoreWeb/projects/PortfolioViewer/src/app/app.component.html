@@ -53,22 +53,13 @@
   </div>
   <div [hidden]="m_activeTab != 'Trades'"><br>
     <div id="tradesSection">
-      <ng-container *ngIf="!m_isEditedTradeDirty">
-        <svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="64" height="20" viewBox="0 0 64 64" preserveAspectRatio="xMidYMid meet">
-            <g transform="translate(0.0,64) scale(0.1,-0.1)" fill="#0096FF" stroke="none">
+      <ng-container >
+        <svg id="saveIcon" version="1.0" xmlns="http://www.w3.org/2000/svg" width="64" height="18" viewBox="0 0 64 64" preserveAspectRatio="xMidYMid meet">
+            <g transform="translate(0.0,64) scale(0.1,-0.1)" [ngStyle]="{'fill': m_isEditedTradeDirty ? '#EE4B2B' : '#0096FF'}" stroke="none">
                 <path d="M20 620 c-19 -19 -20 -33 -20 -300 0 -267 1 -281 20 -300 19 -19 33 -20 300 -20 267 0 281 1 300 20 19 19 20 33 20 258 l0 238 -63 62 -63 62 -237 0 c-224 0 -238 -1 -257 -20z m100 -107 c0 -136 -5 -133 182 -133 84 0 158 5 169 10 17 10 19 22 19 115 0 58 4 105 8 105 4 0 31 -24 60 -53 l52 -53 -2
                         -235 -3 -234 -27 -3 -28 -3 0 145 0 146 -230 0 -230 0 0 -146 0 -145 -27 3 -28 3 -3 275 c-1 151 0 280 3 287 2 8 21 13 45 13 l40 0 0 -97z m350 10 c0 -49 -4 -93 -8 -100 -12 -19 -301 -20 -313 -2 -5 8 -9 53 -9 102 l0 87 165 0 165 0 0 -87z m60 -363 l0 -130 -210 0 -210 0 0 130 0 130 210 0 210 0 0 -130z"/>
                 <path d="M350 510 l0 -70 40 0 40 0 0 70 0 70 -40 0 -40 0 0 -70z m60 0 c0 -29 -4 -40 -15 -40 -11 0 -15 11 -15 40 0 29 4 40 15 40 11 0 15 -11 15 -40z"/>
             </g>
-        </svg>
-      </ng-container>
-      <ng-container *ngIf="m_isEditedTradeDirty">
-        <svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="64" height="20" viewBox="0 0 64 64" preserveAspectRatio="xMidYMid meet">
-          <g transform="translate(0.0,64) scale(0.1,-0.1)" fill="#EE4B2B" stroke="none">
-              <path d="M20 620 c-19 -19 -20 -33 -20 -300 0 -267 1 -281 20 -300 19 -19 33 -20 300 -20 267 0 281 1 300 20 19 19 20 33 20 258 l0 238 -63 62 -63 62 -237 0 c-224 0 -238 -1 -257 -20z m100 -107 c0 -136 -5 -133 182 -133 84 0 158 5 169 10 17 10 19 22 19 115 0 58 4 105 8 105 4 0 31 -24 60 -53 l52 -53 -2
-                      -235 -3 -234 -27 -3 -28 -3 0 145 0 146 -230 0 -230 0 0 -146 0 -145 -27 3 -28 3 -3 275 c-1 151 0 280 3 287 2 8 21 13 45 13 l40 0 0 -97z m350 10 c0 -49 -4 -93 -8 -100 -12 -19 -301 -20 -313 -2 -5 8 -9 53 -9 102 l0 87 165 0 165 0 0 -87z m60 -363 l0 -130 -210 0 -210 0 0 130 0 130 210 0 210 0 0 -130z"/>
-              <path d="M350 510 l0 -70 40 0 40 0 0 70 0 70 -40 0 -40 0 0 -70z m60 0 c0 -29 -4 -40 -15 -40 -11 0 -15 11 -15 40 0 29 4 40 15 40 11 0 15 -11 15 -40z"/>
-          </g>
         </svg>
       </ng-container>Trades
       <br>
