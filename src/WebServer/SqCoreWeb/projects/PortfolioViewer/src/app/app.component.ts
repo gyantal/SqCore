@@ -88,6 +88,7 @@ export class AppComponent {
   m_trades: TradeUi[] | null = null;
   m_editedTrade: TradeJs = new TradeJs();
   m_isEditedTradeDirty: boolean = false;
+  m_selectedTrade: TradeUi | null = null; // Capturing the item.isSelected property is essential for dynamically controlling the enablement of the update/delete buttons. However, the isSelected member is not present in m_editedTrade.
 
   user = {
     name: 'Anonymous',
@@ -199,6 +200,7 @@ export class AppComponent {
   }
 
   onClickSelectedTradeItem(trade: TradeUi) {
+    this.m_selectedTrade = trade;
     // Deselect all previously selected trades and only allow 1 selection, the one coming from the parameter.
     for (const item of this.m_trades!) {
       if (item == trade)
@@ -248,7 +250,7 @@ export class AppComponent {
     return tradeJson;
   }
 
-  onKeyupTradeInput() { // Dynamically switch between the save and unsaved icons when a user attempts to create or edit a trade.
+  onTradeInputChange() { // Dynamically switch between the save and unsaved icons when a user attempts to create or edit a trade.
     this.m_isEditedTradeDirty = true;
   }
 }
