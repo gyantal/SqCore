@@ -61,24 +61,41 @@
                 <path d="M350 510 l0 -70 40 0 40 0 0 70 0 70 -40 0 -40 0 0 -70z m60 0 c0 -29 -4 -40 -15 -40 -11 0 -15 11 -15 40 0 29 4 40 15 40 11 0 15 -11 15 -40z"/>
             </g>
         </svg>
-      </ng-container>Trades
-      <br>
+      </ng-container>
       <!-- Add Transaction and clear fields will be enabled once the feature is ready -->
       <button (click)="onClickInsertOrUpdateTrade()">Insert Trade</button>&nbsp;
       <button (click)="onClickInsertOrUpdateTrade()" [disabled]="!m_selectedTrade?.isSelected">Update Trade</button>&nbsp;
       <button (click)="onClickDeleteTrade()" [disabled]="!m_selectedTrade?.isSelected">Delete Trade</button>&nbsp;
       <button (click)="onClickClearFields()">Clear Fields</button>&nbsp;<br>
-      <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=CurrencyCash>Cash &nbsp;
-      <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Stock>Stock &nbsp;
-      <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Option>Option &nbsp;
-      <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Futures>Futures <br>
-      <!-- (input) event will be triggered whenever the user types or modifies the input in any of the fields -->
-      Ticker: <input type="text" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.symbol" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()">
-      TradedDate: <input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" (ngModelChange)="m_editedTrade.time=$event" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (input)="onTradeInputChange()">
-      TradeAction: <input type="text" placeholder="Enter TradeAction" [(ngModel)]="m_editedTrade.action" [value]="m_editedTrade.action" (input)="onTradeInputChange()">
-      CurrencyId: <input type="text" placeholder="Enter CurrencyId" [(ngModel)]="m_editedTrade.currency" [value]="m_editedTrade.currency" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()">
-      ExchangeId: <input type="text" placeholder="Enter ExchangeId" [(ngModel)]="m_editedTrade.exchangeId" [value]="m_editedTrade.exchangeId" (input)="onTradeInputChange()">
-      Note: <input type="text" placeholder="Enter Note" [(ngModel)]="m_editedTrade.note" [value]="m_editedTrade.note" (input)="onTradeInputChange()">
+      <div id="tradesContainer">
+        <span class="tradesCommon">
+          TradeId: <input type="number" [(ngModel)]="m_editedTrade.id"><br>
+          <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=CurrencyCash>Cash &nbsp;
+          <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Stock>Stock &nbsp;
+          <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Option>Option &nbsp;
+          <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Futures>Futures<br>
+          <div *ngIf="m_isUserSelectedOption">
+            <input name="optionType" type="radio" value="P" [(ngModel)]="m_optionType">Put
+            <input name="optionType" type="radio" value="C"[(ngModel)]="m_optionType" >Call &nbsp;
+            DateExpiry: <input type="date" [(ngModel)]="m_dateExpiry">
+            StrikePrice: <input type="number" [(ngModel)]="m_strikePrice"><br>
+          </div>
+          UnderlysingSymbol: <input type="text" [(ngModel)]="m_editedTrade.underlyingSymbol" [value]="m_editedTrade.underlyingSymbol" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
+          Symbol: <input type="text" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.underlyingSymbol + ' ' + m_dateExpiry + m_optionType + m_strikePrice" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
+          Date: <input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" (ngModelChange)="m_editedTrade.time=$event" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (input)="onTradeInputChange()"><br>
+          Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
+                <input type="time" [(ngModel)]="m_setOpenOrCloseTime" [value]="m_editedTrade.time | date : 'h:mm a'">&nbsp;
+                <button (click)="onClickSetOpenOrClose('close')">setClose</button>
+        </span>
+        <span class="tradesCommon">
+          TradeAction: <input type="text" placeholder="Enter TradeAction" [(ngModel)]="m_editedTrade.action" [value]="m_editedTrade.action" (input)="onTradeInputChange()"><br>
+          CurrencyId: <input type="text" placeholder="Enter CurrencyId" [(ngModel)]="m_editedTrade.currency" [value]="m_editedTrade.currency" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
+          ExchangeId: <input type="text" placeholder="Enter ExchangeId" [(ngModel)]="m_editedTrade.exchangeId" [value]="m_editedTrade.exchangeId" (input)="onTradeInputChange()"><br>
+          Price: <input type="number" [(ngModel)]="m_editedTrade.price" (input)="onTradeInputChange()"><br>
+          Quantity: <input type="number" [(ngModel)]="m_editedTrade.quantity" (input)="onTradeInputChange()"><br>
+          TotalValue: <input type="number" value="{{m_editedTrade.price * m_editedTrade.quantity}}" (input)="onTradeInputChange()"><br>
+        </span>
+      </div>
     </div>&nbsp;
     <table class="tableCommon">
       <thead>

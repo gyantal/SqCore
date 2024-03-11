@@ -89,6 +89,11 @@ export class AppComponent {
   m_editedTrade: TradeJs = new TradeJs();
   m_isEditedTradeDirty: boolean = false;
   m_selectedTrade: TradeUi | null = null; // Capturing the item.isSelected property is essential for dynamically controlling the enablement of the update/delete buttons. However, the isSelected member is not present in m_editedTrade.
+  m_isUserSelectedOption: boolean = false;
+  m_optionType: string = ''; // options: Put/Call
+  m_strikePrice: number = 0;
+  m_dateExpiry: string = '';
+  m_setOpenOrCloseTime: string | null = null;
 
   user = {
     name: 'Anonymous',
@@ -213,6 +218,8 @@ export class AppComponent {
   }
 
   onClickInsertOrUpdateTrade() {
+    if (this.m_isUserSelectedOption) // When user creates an option the symbol (ex: "QQQ 20241220C494.78")
+      this.m_editedTrade.symbol = this.m_editedTrade.underlyingSymbol + ' ' + this.m_dateExpiry + this.m_optionType + this.m_strikePrice;
     const tradeJson: string = this.Trade2EnumJsonStr(this.m_editedTrade);
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
       this.m_socket.send('InsertOrUpdateTrade:pfId:' + this.m_portfolioId + ':' + tradeJson);
@@ -252,5 +259,16 @@ export class AppComponent {
 
   onTradeInputChange() { // Dynamically switch between the save and unsaved icons when a user attempts to create or edit a trade.
     this.m_isEditedTradeDirty = true;
+  }
+
+  onClickOptions() {
+    this.m_isUserSelectedOption = !this.m_isUserSelectedOption;
+  }
+
+  onClickSetOpenOrClose(setTime: string) {
+    if (setTime == 'open')
+      this.m_setOpenOrCloseTime = '09:30'; // Set NYSE open time
+    else if (setTime == 'close')
+      this.m_setOpenOrCloseTime = '16:00'; // Set NYSE close time
   }
 }

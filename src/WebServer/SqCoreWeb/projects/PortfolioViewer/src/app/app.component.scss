@@ -46,3 +46,11 @@ thead {
 #saveIcon {
   margin-top: 0.15rem;
 }
+
+#tradesContainer {
+  display: flex; // when we have more columns the default block value would consider a wide space, instead if we use flex its automatically establishes a flexible container and fits all the columns.
+}
+
+.tradesCommon {
+  width: 50%;
+}
