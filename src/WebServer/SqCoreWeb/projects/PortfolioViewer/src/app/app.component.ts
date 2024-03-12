@@ -228,6 +228,8 @@ export class AppComponent {
   onClickDeleteTrade() {
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
       this.m_socket.send('DeleteTrade:pfId:' + this.m_portfolioId + ',tradeId:' + this.m_editedTrade.id);
+
+    this.m_selectedTrade = null;
   }
 
   onClickClearFields() {
