@@ -63,24 +63,25 @@
         </svg>
       </ng-container>
       <!-- Add Transaction and clear fields will be enabled once the feature is ready -->
-      <button (click)="onClickInsertOrUpdateTrade()">{{m_editedTrade.id == -1 ? 'Insert Trade' : 'Update Trade'}}</button>&nbsp;
-      <button (click)="onClickDeleteTrade()" [disabled]="m_selectedTrade == null">Delete Trade</button>&nbsp;
+      <button (click)="onClickInsertOrUpdateTrade(true)">Insert (new)</button>&nbsp;
+      <button (click)="onClickInsertOrUpdateTrade(false)" [disabled]="m_editedTrade.id == -1">Update (existing)</button>&nbsp;
+      <button (click)="onClickDeleteTrade()" [disabled]="m_editedTrade.id == -1">Delete Trade</button>&nbsp;
       <button (click)="onClickClearFields()">Clear Fields</button>&nbsp;<br>
       <div id="tradesContainer">
         <span class="tradesCommon">
-          TradeId: <input type="number" [(ngModel)]="m_editedTrade.id"><br>
+          TradeId: <input type="number" [(ngModel)]="m_editedTrade.id" (input)="onTradeInputChange()"><br>
           <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=CurrencyCash>Cash &nbsp;
           <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Stock>Stock &nbsp;
           <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Option (click)="onClickOptions()">Option &nbsp;
           <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Futures>Futures<br>
           UnderlysingSymbol: <input type="text" [(ngModel)]="m_editedTrade.underlyingSymbol" [value]="m_editedTrade.underlyingSymbol" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
           <div *ngIf="m_isUserSelectedOption">
-            <input name="optionType" type="radio" value="P" [(ngModel)]="m_optionType">Put
-            <input name="optionType" type="radio" value="C"[(ngModel)]="m_optionType" >Call &nbsp;
-            DateExpiry: <input type="date" [(ngModel)]="m_dateExpiry">
-            StrikePrice: <input type="number" [(ngModel)]="m_strikePrice"><br>
+            <input name="optionType" type="radio" value="P" [(ngModel)]="m_optionFieldsUi.optionType">Put
+            <input name="optionType" type="radio" value="C"[(ngModel)]="m_optionFieldsUi.optionType" >Call &nbsp;
+            DateExpiry: <input type="date" [(ngModel)]="m_optionFieldsUi.dateExpiry">
+            StrikePrice: <input type="number" [(ngModel)]="m_optionFieldsUi.strikePrice"><br>
           </div>
-          Symbol: <input type="text" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.underlyingSymbol + ' ' + m_dateExpiry + m_optionType + m_strikePrice" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
+          Symbol: <input type="text" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.underlyingSymbol + ' ' + m_optionFieldsUi.dateExpiry + m_optionFieldsUi.optionType + m_optionFieldsUi.strikePrice" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
           Date: <input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" (ngModelChange)="m_editedTrade.time=$event" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (input)="onTradeInputChange()"><br>
           Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
                 <input type="time" [(ngModel)]="m_setOpenOrCloseTime" [value]="m_editedTrade.time | date : 'h:mm a'">&nbsp;

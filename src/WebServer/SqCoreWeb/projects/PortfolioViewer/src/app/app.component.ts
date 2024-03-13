@@ -69,6 +69,12 @@ class TradeUi extends TradeJs {
   }
 }
 
+class OptionFieldsUi {
+  public optionType: string = ''; // option: Put/Call
+  public strikePrice: number = 0;
+  public dateExpiry: string = '';
+}
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -88,11 +94,10 @@ export class AppComponent {
   m_trades: TradeUi[] | null = null;
   m_editedTrade: TradeJs = new TradeJs();
   m_isEditedTradeDirty: boolean = false;
-  m_selectedTrade: TradeUi | null = null; // Capturing the item.isSelected property is essential for dynamically controlling the enablement of the update/delete buttons. However, the isSelected member is not present in m_editedTrade.
-  m_isUserSelectedOption: boolean = false;
-  m_optionType: string = ''; // options: Put/Call
-  m_strikePrice: number = 0;
-  m_dateExpiry: string = '';
+
+  m_isUserSelectedOption: boolean = false; // Todo - m_editedTrade.AssetType == Option
+  m_optionFieldsUi: OptionFieldsUi = new OptionFieldsUi();
+
   m_setOpenOrCloseTime: string | null = null;
 
   user = {
@@ -205,7 +210,6 @@ export class AppComponent {
   }
 
   onClickSelectedTradeItem(trade: TradeUi) {
-    this.m_selectedTrade = trade;
     // Deselect all previously selected trades and only allow 1 selection, the one coming from the parameter.
     for (const item of this.m_trades!) {
       if (item == trade)
@@ -217,9 +221,11 @@ export class AppComponent {
     this.m_editedTrade.CopyFrom(trade);
   }
 
-  onClickInsertOrUpdateTrade() {
+  onClickInsertOrUpdateTrade(isInsertNew : boolean) {
     if (this.m_isUserSelectedOption) // When user creates an option the symbol (ex: "QQQ 20241220C494.78")
-      this.m_editedTrade.symbol = this.m_editedTrade.underlyingSymbol + ' ' + this.m_dateExpiry + this.m_optionType + this.m_strikePrice;
+      this.m_editedTrade.symbol = this.m_editedTrade.underlyingSymbol + ' ' + this.m_optionFieldsUi.dateExpiry + this.m_optionFieldsUi.optionType + this.m_optionFieldsUi.strikePrice;
+    if (isInsertNew)
+      this.m_editedTrade.id = -1;
     const tradeJson: string = this.Trade2EnumJsonStr(this.m_editedTrade);
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
       this.m_socket.send('InsertOrUpdateTrade:pfId:' + this.m_portfolioId + ':' + tradeJson);
@@ -228,8 +234,6 @@ export class AppComponent {
   onClickDeleteTrade() {
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
       this.m_socket.send('DeleteTrade:pfId:' + this.m_portfolioId + ',tradeId:' + this.m_editedTrade.id);
-
-    this.m_selectedTrade = null;
   }
 
   onClickClearFields() {
