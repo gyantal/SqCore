@@ -98,8 +98,6 @@ export class AppComponent {
   m_isUserSelectedOption: boolean = false; // Todo - m_editedTrade.AssetType == Option
   m_optionFieldsUi: OptionFieldsUi = new OptionFieldsUi();
 
-  m_setOpenOrCloseTime: string | null = null;
-
   user = {
     name: 'Anonymous',
     email: '             '
@@ -272,9 +270,29 @@ export class AppComponent {
   }
 
   onClickSetOpenOrClose(setTime: string) {
-    if (setTime == 'open')
-      this.m_setOpenOrCloseTime = '09:30'; // Set NYSE open time
-    else if (setTime == 'close')
-      this.m_setOpenOrCloseTime = '16:00'; // Set NYSE close time
+    const now = new Date(); // Get the current date and time in the user's local time zone
+    if (TradeAction[(this.m_editedTrade.action).toString()] == TradeAction.Buy) { // Buy
+      if (setTime == 'open') // Set the opening time to 9:31 AM local time (NYSE opening time)
+        now.setUTCHours(13, 31, 0);
+      else if (setTime == 'close') // Set the closing time to 4:00 PM local time (NYSE closing time)
+        now.setUTCHours(20, 0, 0);
+    } else if (TradeAction[(this.m_editedTrade.action).toString()] == TradeAction.Sell) { // Sell
+      if (setTime == 'open') // Set the opening time to 9:30 AM local time (NYSE opening time)
+        now.setUTCHours(13, 30, 0);
+      else if (setTime == 'close') // Set the closing time to 3:59 PM local time (NYSE closing time)
+        now.setUTCHours(19, 59, 0);
+    }
+
+    this.m_editedTrade.time = now; // Update m_editedTrade.time with the calculated time in UTC format
+  }
+
+  setTradeTime(dateStr: string) { // display the time part of the editedTrade.time in <input> time element.
+    const datePart = this.m_editedTrade.time ? new Date(this.m_editedTrade.time) : new Date(); // Get the current date part of the time
+
+    const timePart = dateStr.split(':'); // Get the time portion from the input and set it to the date
+    datePart.setHours(parseInt(timePart[0], 10));
+    datePart.setMinutes(parseInt(timePart[1], 10));
+
+    this.m_editedTrade.time = datePart; // Assign the updated date to m_editedTrade.time
   }
 }

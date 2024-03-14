@@ -83,8 +83,9 @@
           </div>
           Symbol: <input type="text" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.underlyingSymbol + ' ' + m_optionFieldsUi.dateExpiry + m_optionFieldsUi.optionType + m_optionFieldsUi.strikePrice" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
           Date: <input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" (ngModelChange)="m_editedTrade.time=$event" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (input)="onTradeInputChange()"><br>
+          <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
           Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
-                <input type="time" [(ngModel)]="m_setOpenOrCloseTime" [value]="m_editedTrade.time | date : 'h:mm a'">&nbsp;
+                <input type="time" [ngModel]="m_editedTrade.time | date : 'HH:mm':'UTC'" (ngModelChange)="setTradeTime($event)" [value]="m_editedTrade.time | date : 'HH:mm':'UTC'">&nbsp;
                 <button (click)="onClickSetOpenOrClose('close')">setClose</button>
         </span>
         <span class="tradesCommon">
