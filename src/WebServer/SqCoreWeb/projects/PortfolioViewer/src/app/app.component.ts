@@ -207,13 +207,14 @@ export class AppComponent {
     }
   }
 
-  onClickSelectedTradeItem(trade: TradeUi) {
-    // Deselect all previously selected trades and only allow 1 selection, the one coming from the parameter.
-    for (const item of this.m_trades!) {
-      if (item == trade)
-        item.isSelected = true;
-      else
+  onClickSelectedTradeItem(trade: TradeUi, event: MouseEvent) {
+    if (event.ctrlKey) // If the Ctrl key is pressed, toggle the selection of the clicked trade
+      trade.isSelected = !trade.isSelected;
+    else { // If Ctrl key is not pressed, deselect all previously selected trades
+      for (const item of this.m_trades!)
         item.isSelected = false;
+
+      trade.isSelected = true; // Select the clicked trade
     }
 
     this.m_editedTrade.CopyFrom(trade);
@@ -294,5 +295,10 @@ export class AppComponent {
     datePart.setMinutes(parseInt(timePart[1], 10));
 
     this.m_editedTrade.time = datePart; // Assign the updated date to m_editedTrade.time
+  }
+
+  onClickSelectAllOrDeselectAll(isSelectAll: boolean) {
+    for (const item of this.m_trades!)
+      item.isSelected = isSelectAll;
   }
 }

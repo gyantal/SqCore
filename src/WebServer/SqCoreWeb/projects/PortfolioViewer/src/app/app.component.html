@@ -66,7 +66,9 @@
       <button (click)="onClickInsertOrUpdateTrade(true)">Insert (new)</button>&nbsp;
       <button (click)="onClickInsertOrUpdateTrade(false)" [disabled]="m_editedTrade.id == -1">Update (existing)</button>&nbsp;
       <button (click)="onClickDeleteTrade()" [disabled]="m_editedTrade.id == -1">Delete Trade</button>&nbsp;
-      <button (click)="onClickClearFields()">Clear Fields</button>&nbsp;<br>
+      <button (click)="onClickClearFields()">Clear Fields</button>&nbsp;
+      <button (click)="onClickSelectAllOrDeselectAll(true)">Select All</button>&nbsp;
+      <button (click)="onClickSelectAllOrDeselectAll(false)">DeSelect All</button>&nbsp;<br>
       <div id="tradesContainer">
         <span class="tradesCommon">
           TradeId: <input type="number" [(ngModel)]="m_editedTrade.id" (input)="onTradeInputChange()"><br>
@@ -112,7 +114,7 @@
         </tr>
       </thead>
       <tbody *ngFor="let item of m_trades">
-        <tr (click)="onClickSelectedTradeItem(item)" [ngClass]="{'tradedRowSelected': item.isSelected}">
+        <tr (click)="onClickSelectedTradeItem(item, $event)" [ngClass]="{'tradedRowSelected': item.isSelected}">
           <td>{{item.underlyingSymbol}}</td>
           <td>{{item.quantity}}</td>
           <td>{{item.price | number:'1.2-2'}}</td>
