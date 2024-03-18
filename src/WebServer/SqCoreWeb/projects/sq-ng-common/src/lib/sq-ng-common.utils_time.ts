@@ -149,4 +149,8 @@ export class SqNgCommonUtilsTime implements OnInit {
     if (!isGoodDate)
       return;
   }
+
+  public static RemoveHyphensFromDateStr(dateStr: string): string { // Date : "2024-03-13"(yyyy-MM-dd) to "20240313"(yyyyMMdd)
+    return dateStr.split('-').join('');
+  }
 }
