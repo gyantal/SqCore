@@ -97,7 +97,7 @@ export class AppComponent {
   m_isEditedTradeDirty: boolean = false;
 
   m_optionFieldsUi: OptionFieldsUi = new OptionFieldsUi();
-  m_enumAssetType = AssetType; // Assigning AssetType to m_enumAssetType is necessary to directly reference the enum in Angular templates. Refer: https://stackoverflow.com/questions/69549927/how-to-pass-enum-value-in-angular-template-as-an-input
+  m_tradeSectonVisibility: boolean = false;
 
   user = {
     name: 'Anonymous',
@@ -222,7 +222,7 @@ export class AppComponent {
   }
 
   onClickInsertOrUpdateTrade(isInsertNew: boolean) {
-    if (AssetType[this.m_editedTrade.assetType.toString()] == AssetType.Option) // When a user selects an option, the symbol comprises the underlying asset, the expiration date, the option type (put/call abbreviated as P/C), and the strike price. For instance, in the example "QQQ 20241220C494.78", "QQQ" represents the underlying symbol, "20241220" indicates the expiration date, "C" denotes a call option, and "494.78" signifies the strike price.
+    if (this.m_editedTrade.assetType.toString() == 'Option') // When a user selects an option, the symbol comprises the underlying asset, the expiration date, the option type (put/call abbreviated as P/C), and the strike price. For instance, in the example "QQQ 20241220C494.78", "QQQ" represents the underlying symbol, "20241220" indicates the expiration date, "C" denotes a call option, and "494.78" signifies the strike price.
       this.m_editedTrade.symbol = this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_optionFieldsUi.dateExpiry) + this.m_optionFieldsUi.optionType + this.m_optionFieldsUi.strikePrice;
 
     if (isInsertNew)
@@ -298,5 +298,9 @@ export class AppComponent {
   onClickSelectAllOrDeselectAll(isSelectAll: boolean) {
     for (const item of this.m_trades!)
       item.isSelected = isSelectAll;
+  }
+
+  toggleTradeSectionVisibility() {
+    this.m_tradeSectonVisibility = !this.m_tradeSectonVisibility;
   }
 }
