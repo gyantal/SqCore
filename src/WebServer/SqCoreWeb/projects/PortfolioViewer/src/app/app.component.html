@@ -92,7 +92,7 @@
         <span class="tradesCommon">
         <button (click)="onClickSelectAllOrDeselectAll(true)">Select All</button>&nbsp;
         <button (click)="onClickSelectAllOrDeselectAll(false)">DeSelect All</button>&nbsp;
-        <button disabled>Copy to Clipboard</button>&nbsp;
+        <button (click)="onClickCopyToClipboard()">Copy to Clipboard</button>&nbsp;
         <button disabled>Create from Clipboard</button>&nbsp;<br>
           TradeAction: <input type="text" placeholder="Enter TradeAction" [(ngModel)]="m_editedTrade.action" [value]="m_editedTrade.action" (input)="onTradeInputChange()"><br>
           CurrencyId: <input type="text" placeholder="Enter CurrencyId" [(ngModel)]="m_editedTrade.currency" [value]="m_editedTrade.currency" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
@@ -132,5 +132,10 @@
   </div>
   <div [hidden]="m_activeTab != 'Portfolio Performance Accumulator'">
     <p>Portfolio Performance Accumulator</p>
+  </div>
+</div>
+<div id="copyToClipboardDialog" *ngIf="m_isCopyToClipboardDialogVisible">All rows copied To Clipboard
+  <div id="copyToClipboardDialogClosetBtn">
+    <button type="button" (click)="onCopyDialogCloseClicked()">Close</button>
   </div>
 </div>

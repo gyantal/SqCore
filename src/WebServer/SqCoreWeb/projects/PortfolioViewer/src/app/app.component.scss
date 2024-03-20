@@ -54,3 +54,24 @@ thead {
 .tradesCommon {
   width: 50%;
 }
+
+#copyToClipboardDialog {
+  display: block;
+  position: fixed;
+  z-index: 1;
+  text-align: center;
+  left: 60%;
+  top: 20%;
+  bottom: 30%;
+  width: 15rem;
+  height: 2.5rem;
+  color: rgb(32, 34, 148);
+  background-color: #FFA500;
+  border: .05rem solid #FF5F1F;
+  border-radius: 0.5rem;
+}
+
+#copyToClipboardDialogClosetBtn {
+  display: inline;
+  width: 2rem;
+}

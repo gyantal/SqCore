@@ -98,6 +98,7 @@ export class AppComponent {
 
   m_optionFieldsUi: OptionFieldsUi = new OptionFieldsUi();
   m_tradeSectonVisibility: boolean = false;
+  m_isCopyToClipboardDialogVisible: boolean = false;
 
   user = {
     name: 'Anonymous',
@@ -302,5 +303,36 @@ export class AppComponent {
 
   toggleTradeSectionVisibility() {
     this.m_tradeSectonVisibility = !this.m_tradeSectonVisibility;
+  }
+
+  onClickCopyToClipboard() {
+    const rows = document.querySelectorAll('.tableCommon tbody tr') as NodeListOf<Element>; // Select all rows in the table body
+    let content = '';
+
+    for (let i = 0; i < rows.length; i++) {
+      const cells = rows[i].querySelectorAll('td') as NodeListOf<HTMLTableCellElement>; // Select all cells (td elements) within the current row
+
+      for (let j = 0; j < cells.length; j++) {
+        content += cells[j].textContent!.trim(); // Append the text content of the cell to the content string
+
+        if (j < cells.length - 1) // Add tab delimiter between cells if it's not the last cell in the row
+          content += '\t';
+      }
+
+      content += '\n'; // Add newline delimiter after each row
+    }
+
+    const textarea = document.createElement('textarea'); // Create a textarea element to hold the content
+    textarea.value = content;
+    document.body.appendChild(textarea); // Append the textarea to the document body
+    textarea.select();
+    document.execCommand('copy'); // Execute the copy command
+    document.body.removeChild(textarea); // Remove the textarea from the document body
+
+    this.m_isCopyToClipboardDialogVisible = true;
+  }
+
+  onCopyDialogCloseClicked() {
+    this.m_isCopyToClipboardDialogVisible = false;
   }
 }
