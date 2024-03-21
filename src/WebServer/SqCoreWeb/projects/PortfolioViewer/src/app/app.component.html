@@ -76,28 +76,38 @@
           <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Option>Option &nbsp;
           <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Futures>Futures<br>
           UnderlysingSymbol: <input type="text" [(ngModel)]="m_editedTrade.underlyingSymbol" [value]="m_editedTrade.underlyingSymbol" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
-          <div *ngIf="(this.m_editedTrade.assetType).toString() == 'Option'">
+          <div [ngClass]="{'assetTypeInActive': (m_editedTrade.assetType).toString() != 'Option'}">
             <input name="optionType" type="radio" value="P" [(ngModel)]="m_optionFieldsUi.optionType">Put
             <input name="optionType" type="radio" value="C"[(ngModel)]="m_optionFieldsUi.optionType" >Call &nbsp;
             DateExpiry: <input type="date" [(ngModel)]="m_optionFieldsUi.dateExpiry">
             StrikePrice: <input type="number" [(ngModel)]="m_optionFieldsUi.strikePrice"><br>
           </div>
           Symbol: <input type="text" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.underlyingSymbol + ' ' + m_optionFieldsUi.dateExpiry + m_optionFieldsUi.optionType + m_optionFieldsUi.strikePrice" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
-          Date: <input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" (ngModelChange)="m_editedTrade.time=$event" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (input)="onTradeInputChange()"><br>
-          <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
-          Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
-                <input type="time" [ngModel]="m_editedTrade.time | date : 'HH:mm':'UTC'" (ngModelChange)="setTradeTime($event)" [value]="m_editedTrade.time | date : 'HH:mm':'UTC'">&nbsp;
-                <button (click)="onClickSetOpenOrClose('close')">setClose</button>
+          TradeAction:
+          <div class="selectionDropDown">
+            <input class="highlightInputDropDown" type="text" [(ngModel)]="m_selectedTradeActionStr" [value]="m_editedTrade.action" (input)="onTradeInputChange()" (change)="onTradeActionSelectionClicked(m_selectedTradeActionStr)">
+            <div class="listDropDown">
+              <option class="optionDropDown" *ngFor="let action of m_tradeAction" [value]="action" (click)="onTradeActionSelectionClicked(action)">{{ action }}</option>
+            </div>
+          </div>
         </span>
         <span class="tradesCommon">
         <button (click)="onClickSelectAllOrDeselectAll(true)">Select All</button>&nbsp;
         <button (click)="onClickSelectAllOrDeselectAll(false)">DeSelect All</button>&nbsp;
         <button (click)="onClickCopyToClipboard()">Copy to Clipboard</button>&nbsp;
         <button disabled>Create from Clipboard</button>&nbsp;<br>
-          TradeAction: <input type="text" placeholder="Enter TradeAction" [(ngModel)]="m_editedTrade.action" [value]="m_editedTrade.action" (input)="onTradeInputChange()"><br>
-          CurrencyId: <input type="text" placeholder="Enter CurrencyId" [(ngModel)]="m_editedTrade.currency" [value]="m_editedTrade.currency" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
-          ExchangeId: <input type="text" placeholder="Enter ExchangeId" [(ngModel)]="m_editedTrade.exchangeId" [value]="m_editedTrade.exchangeId" (input)="onTradeInputChange()"><br>
-          Price: <input type="number" [(ngModel)]="m_editedTrade.price" (input)="onTradeInputChange()"><br>
+          Date: <input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" (ngModelChange)="m_editedTrade.time=$event" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (input)="onTradeInputChange()"><br>
+          <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
+          Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
+                <input type="time" [ngModel]="m_editedTrade.time | date : 'HH:mm':'UTC'" (ngModelChange)="setTradeTime($event)" [value]="m_editedTrade.time | date : 'HH:mm':'UTC'">&nbsp;
+                <button (click)="onClickSetOpenOrClose('close')">setClose</button><br>
+          Price: <input type="number" [(ngModel)]="m_editedTrade.price" (input)="onTradeInputChange()">&nbsp;
+          <div class="selectionDropDown">
+            <input class="highlightInputDropDown"  type="text" placeholder="Enter CurrencyId" [(ngModel)]="m_selectedCurrencyIdStr" [value]="m_editedTrade.currency" (input)="onTradeInputChange()" (change)="onCurrencyTypeSelectionClicked(m_selectedCurrencyIdStr)">
+            <div class="listDropDown">
+              <option class="optionDropDown" *ngFor="let currencyId of m_tradeCurrencyId" [value]="currencyId" (click)="onCurrencyTypeSelectionClicked(currencyId)">{{ currencyId }}</option>
+            </div>
+          </div><br>
           Quantity: <input type="number" [(ngModel)]="m_editedTrade.quantity" (input)="onTradeInputChange()"><br>
           TotalValue: <input type="number" value="{{m_editedTrade.price * m_editedTrade.quantity}}" (input)="onTradeInputChange()"><br>
         </span>

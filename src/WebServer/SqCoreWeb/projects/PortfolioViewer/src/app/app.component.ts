@@ -100,6 +100,11 @@ export class AppComponent {
   m_tradeSectonVisibility: boolean = false;
   m_isCopyToClipboardDialogVisible: boolean = false;
 
+  m_selectedTradeActionStr: string = '';
+  m_tradeAction: string[] = ['Unknown', 'Deposit', 'Withdrawal', 'Buy', 'Sell', 'Exercise', 'Expired'];
+  m_selectedCurrencyIdStr: string = '';
+  m_tradeCurrencyId: string[] = ['Unknown', 'USD', 'EUR', 'GBP', 'GBX', 'HUF', 'CNY', 'JPY', 'CAD', 'CHF'];
+
   user = {
     name: 'Anonymous',
     email: '             '
@@ -250,14 +255,13 @@ export class AppComponent {
     const tradeJson = JSON.stringify(editedTrade, function(key, value) {
       switch (key) {
         case 'action':
-          return TradeAction[value.toString()];
+          return typeof value == 'string' ? TradeAction[value] : value;
         case 'assetType':
-          return AssetType[value.toString()];
+          return typeof value == 'string' ? AssetType[value] : value;
         case 'currency':
-          return CurrencyId[value.toString()];
+          return typeof value == 'string' ? CurrencyId[value] : value;
         case 'exchangeId':
-          return ExchangeId[value.toString()];
-
+          return typeof value == 'string' ? ExchangeId[value] : value;
         default: // If no type conversion needed, return the original value
           return value;
       }
@@ -271,12 +275,12 @@ export class AppComponent {
 
   onClickSetOpenOrClose(setTime: string) {
     const now = new Date(); // Get the current date and time in the user's local time zone
-    if (TradeAction[(this.m_editedTrade.action).toString()] == TradeAction.Buy) { // Buy
+    if (TradeAction[this.m_selectedTradeActionStr] == TradeAction.Buy) { // Buy
       if (setTime == 'open') // Set the opening time to 9:31 AM local time (NYSE opening time)
         now.setUTCHours(13, 31, 0);
       else if (setTime == 'close') // Set the closing time to 4:00 PM local time (NYSE closing time)
         now.setUTCHours(20, 0, 0);
-    } else if (TradeAction[(this.m_editedTrade.action).toString()] == TradeAction.Sell) { // Sell
+    } else if (TradeAction[this.m_selectedTradeActionStr] == TradeAction.Sell) { // Sell
       if (setTime == 'open') // Set the opening time to 9:30 AM local time (NYSE opening time)
         now.setUTCHours(13, 30, 0);
       else if (setTime == 'close') // Set the closing time to 3:59 PM local time (NYSE closing time)
@@ -303,6 +307,18 @@ export class AppComponent {
 
   toggleTradeSectionVisibility() {
     this.m_tradeSectonVisibility = !this.m_tradeSectonVisibility;
+  }
+
+  onTradeActionSelectionClicked(tradeAction: string) {
+    this.m_selectedTradeActionStr = tradeAction;
+    this.m_editedTrade.action = TradeAction[tradeAction];
+    this.onTradeInputChange();
+  }
+
+  onCurrencyTypeSelectionClicked(currencyId: string) {
+    this.m_selectedCurrencyIdStr = currencyId;
+    this.m_editedTrade.currency = CurrencyId[currencyId];
+    this.onTradeInputChange();
   }
 
   onClickCopyToClipboard() {

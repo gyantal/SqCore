@@ -75,3 +75,51 @@ thead {
   display: inline;
   width: 2rem;
 }
+
+.selectionDropDown {
+  position: relative;
+  display: inline-block;
+  height: 0.5rem;
+}
+
+.listDropDown {
+  display: none;
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 6rem;
+  z-index: 1;
+}
+
+.listDropDown option {
+  font-size: medium;
+  color: black;
+  padding: 0rem;
+}
+
+.listDropDown option:hover {
+  background-color: #ddd;
+}
+
+.selectionDropDown:hover .listDropDown {
+  display: block;
+}
+
+.selectionDropDown:hover .highlightInputDropDown {
+  background-color: rgba(255, 255, 128, 0.5);
+}
+
+.highlightInputDropDown {
+  width: 8rem;
+  height: 0.8rem;
+  border: 0.02rem solid black;
+}
+
+.optionDropDown {
+  border: 0.01rem solid lightblue;
+  cursor: pointer;
+}
+
+.assetTypeInActive { // AssetType != option
+  opacity: 0.5; /* Adjust the opacity to make it visually grayed out */
+  pointer-events: none; /* Disable pointer events so inputs are not clickable */
+}
