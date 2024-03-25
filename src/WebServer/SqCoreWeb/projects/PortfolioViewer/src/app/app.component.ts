@@ -1,5 +1,4 @@
 import { Component } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 
@@ -82,7 +81,7 @@ class OptionFieldsUi {
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-  m_http: HttpClient;
+  // General fields
   m_portfolioId = -1; // -1 is invalid ID
   m_portfolio: PortfolioJs | null = null;
   m_activeTab: string = 'Positions';
@@ -91,27 +90,32 @@ export class AppComponent {
   m_chrtHeight: number = 0; // added only to reuse the updateUiWithPrtfRunResult method as is ( variable has no effect today(16012024) may be useful in future)
   m_prtfRunResult: PrtfRunResultJs | null = null;
   m_uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
+
+  // Positions tabpage:
   m_histPosEndDate: string = '';
+
+  // Trades tabpage: internal data
   m_trades: TradeUi[] | null = null;
   m_editedTrade: TradeJs = new TradeJs();
   m_isEditedTradeDirty: boolean = false;
 
-  m_optionFieldsUi: OptionFieldsUi = new OptionFieldsUi();
-  m_tradeSectonVisibility: boolean = false;
+  // Trades tabpage: UI handling
+  m_optionFields: OptionFieldsUi = new OptionFieldsUi();
+  m_tradeSectionVisibility: boolean = false; // toggle the m_editedTrade widgets on the UI
   m_isCopyToClipboardDialogVisible: boolean = false;
 
+  // Trades tabpage: UI handling with list dropdown for TradeAction and CurrencyId's
   m_selectedTradeActionStr: string = '';
-  m_tradeAction: string[] = ['Unknown', 'Deposit', 'Withdrawal', 'Buy', 'Sell', 'Exercise', 'Expired'];
+  m_tradeActions: string[] = ['Unknown', 'Deposit', 'Withdrawal', 'Buy', 'Sell', 'Exercise', 'Expired'];
   m_selectedCurrencyIdStr: string = '';
-  m_tradeCurrencyId: string[] = ['Unknown', 'USD', 'EUR', 'GBP', 'GBX', 'HUF', 'CNY', 'JPY', 'CAD', 'CHF'];
+  m_CurrencyIds: string[] = ['Unknown', 'USD', 'EUR', 'GBP', 'GBX', 'HUF', 'CNY', 'JPY', 'CAD', 'CHF'];
 
   user = {
     name: 'Anonymous',
     email: '             '
   };
 
-  constructor(http: HttpClient) {
-    this.m_http = http;
+  constructor() {
     const wsQueryStr = window.location.search;
 
     const url = new URL(window.location.href); // https://sqcore.net/webapps/PortfolioViewer/?pid=1
@@ -228,8 +232,8 @@ export class AppComponent {
   }
 
   onClickInsertOrUpdateTrade(isInsertNew: boolean) {
-    if (this.m_editedTrade.assetType.toString() == 'Option') // When a user selects an option, the symbol comprises the underlying asset, the expiration date, the option type (put/call abbreviated as P/C), and the strike price. For instance, in the example "QQQ 20241220C494.78", "QQQ" represents the underlying symbol, "20241220" indicates the expiration date, "C" denotes a call option, and "494.78" signifies the strike price.
-      this.m_editedTrade.symbol = this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_optionFieldsUi.dateExpiry) + this.m_optionFieldsUi.optionType + this.m_optionFieldsUi.strikePrice;
+    if (this.m_editedTrade.assetType == AssetType.Option) // When a user selects an option, the symbol comprises the underlying asset, the expiration date, the option type (put/call abbreviated as P/C), and the strike price. For instance, in the example "QQQ 20241220C494.78", "QQQ" represents the underlying symbol, "20241220" indicates the expiration date, "C" denotes a call option, and "494.78" signifies the strike price.
+      this.m_editedTrade.symbol = this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_optionFields.dateExpiry) + this.m_optionFields.optionType + this.m_optionFields.strikePrice;
 
     if (isInsertNew)
       this.m_editedTrade.id = -1;
@@ -306,18 +310,18 @@ export class AppComponent {
   }
 
   toggleTradeSectionVisibility() {
-    this.m_tradeSectonVisibility = !this.m_tradeSectonVisibility;
+    this.m_tradeSectionVisibility = !this.m_tradeSectionVisibility;
   }
 
-  onTradeActionSelectionClicked(tradeAction: string) {
-    this.m_selectedTradeActionStr = tradeAction;
-    this.m_editedTrade.action = TradeAction[tradeAction];
+  onTradeActionSelectionClicked(tradeActionStr: string) {
+    this.m_selectedTradeActionStr = tradeActionStr;
+    this.m_editedTrade.action = TradeAction[tradeActionStr];
     this.onTradeInputChange();
   }
 
-  onCurrencyTypeSelectionClicked(currencyId: string) {
-    this.m_selectedCurrencyIdStr = currencyId;
-    this.m_editedTrade.currency = CurrencyId[currencyId];
+  onCurrencyTypeSelectionClicked(currencyIdStr: string) {
+    this.m_selectedCurrencyIdStr = currencyIdStr;
+    this.m_editedTrade.currency = CurrencyId[currencyIdStr];
     this.onTradeInputChange();
   }
 

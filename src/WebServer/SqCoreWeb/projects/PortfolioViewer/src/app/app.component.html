@@ -52,8 +52,8 @@
     <div id="pfRunResultChrt"></div> <!-- portfolio run result chart  -->
   </div>
   <div [hidden]="m_activeTab != 'Trades'"><br>
-    <div (click)="toggleTradeSectionVisibility()">{{m_tradeSectonVisibility ? '&#5169;' : '&#5167;'}} create/edit trades</div>
-    <div id="tradesSection" *ngIf="m_tradeSectonVisibility">
+    <div (click)="toggleTradeSectionVisibility()">{{m_tradeSectionVisibility ? '&#5169;' : '&#5167;'}} create/edit trades</div>
+    <div id="tradesSection" *ngIf="m_tradeSectionVisibility">
       <div id="tradesContainer">
         <span class="tradesCommon">
           <ng-container >
@@ -77,17 +77,17 @@
           <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Futures>Futures<br>
           UnderlysingSymbol: <input type="text" [(ngModel)]="m_editedTrade.underlyingSymbol" [value]="m_editedTrade.underlyingSymbol" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
           <div [ngClass]="{'assetTypeInActive': (m_editedTrade.assetType).toString() != 'Option'}">
-            <input name="optionType" type="radio" value="P" [(ngModel)]="m_optionFieldsUi.optionType">Put
-            <input name="optionType" type="radio" value="C"[(ngModel)]="m_optionFieldsUi.optionType" >Call &nbsp;
-            DateExpiry: <input type="date" [(ngModel)]="m_optionFieldsUi.dateExpiry">
-            StrikePrice: <input type="number" [(ngModel)]="m_optionFieldsUi.strikePrice"><br>
+            <input name="optionType" type="radio" value="P" [(ngModel)]="m_optionFields.optionType">Put
+            <input name="optionType" type="radio" value="C"[(ngModel)]="m_optionFields.optionType" >Call &nbsp;
+            DateExpiry: <input type="date" [(ngModel)]="m_optionFields.dateExpiry">
+            StrikePrice: <input type="number" [(ngModel)]="m_optionFields.strikePrice"><br>
           </div>
-          Symbol: <input type="text" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.underlyingSymbol + ' ' + m_optionFieldsUi.dateExpiry + m_optionFieldsUi.optionType + m_optionFieldsUi.strikePrice" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
+          Symbol: <input type="text" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.underlyingSymbol + ' ' + m_optionFields.dateExpiry + m_optionFields.optionType + m_optionFields.strikePrice" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
           TradeAction:
           <div class="selectionDropDown">
             <input class="highlightInputDropDown" type="text" [(ngModel)]="m_selectedTradeActionStr" [value]="m_editedTrade.action" (input)="onTradeInputChange()" (change)="onTradeActionSelectionClicked(m_selectedTradeActionStr)">
             <div class="listDropDown">
-              <option class="optionDropDown" *ngFor="let action of m_tradeAction" [value]="action" (click)="onTradeActionSelectionClicked(action)">{{ action }}</option>
+              <option class="optionDropDown" *ngFor="let action of m_tradeActions" [value]="action" (click)="onTradeActionSelectionClicked(action)">{{ action }}</option>
             </div>
           </div>
         </span>
@@ -105,7 +105,7 @@
           <div class="selectionDropDown">
             <input class="highlightInputDropDown"  type="text" placeholder="Enter CurrencyId" [(ngModel)]="m_selectedCurrencyIdStr" [value]="m_editedTrade.currency" (input)="onTradeInputChange()" (change)="onCurrencyTypeSelectionClicked(m_selectedCurrencyIdStr)">
             <div class="listDropDown">
-              <option class="optionDropDown" *ngFor="let currencyId of m_tradeCurrencyId" [value]="currencyId" (click)="onCurrencyTypeSelectionClicked(currencyId)">{{ currencyId }}</option>
+              <option class="optionDropDown" *ngFor="let currencyId of m_CurrencyIds" [value]="currencyId" (click)="onCurrencyTypeSelectionClicked(currencyId)">{{ currencyId }}</option>
             </div>
           </div><br>
           Quantity: <input type="number" [(ngModel)]="m_editedTrade.quantity" (input)="onTradeInputChange()"><br>
