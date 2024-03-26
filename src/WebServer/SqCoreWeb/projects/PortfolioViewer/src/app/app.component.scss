@@ -49,6 +49,7 @@ thead {
 
 #tradesContainer {
   display: flex; // when we have more columns the default block value would consider a wide space, instead if we use flex its automatically establishes a flexible container and fits all the columns.
+  padding-bottom: 0.1rem;
 }
 
 .tradesCommon {
@@ -119,7 +120,6 @@ thead {
   cursor: pointer;
 }
 
-.assetTypeInActive { // AssetType != option
-  opacity: 0.5; /* Adjust the opacity to make it visually grayed out */
-  pointer-events: none; /* Disable pointer events so inputs are not clickable */
+.assetTypeActive {
+  height: 1.2rem;
 }

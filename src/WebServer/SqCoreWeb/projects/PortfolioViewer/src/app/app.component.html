@@ -76,12 +76,23 @@
           <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Option>Option &nbsp;
           <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Futures>Futures<br>
           UnderlysingSymbol: <input type="text" [(ngModel)]="m_editedTrade.underlyingSymbol" [value]="m_editedTrade.underlyingSymbol" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
-          <div [ngClass]="{'assetTypeInActive': (m_editedTrade.assetType).toString() != 'Option'}">
-            <input name="optionType" type="radio" value="P" [(ngModel)]="m_optionFields.optionType">Put
-            <input name="optionType" type="radio" value="C"[(ngModel)]="m_optionFields.optionType" >Call &nbsp;
-            DateExpiry: <input type="date" [(ngModel)]="m_optionFields.dateExpiry">
-            StrikePrice: <input type="number" [(ngModel)]="m_optionFields.strikePrice"><br>
-          </div>
+          <ng-container *ngIf="m_editedTrade.assetType.toString() != 'Option' && m_editedTrade.assetType.toString() != 'Futures'">
+            <div class="assetTypeActive"></div><!-- An empty div with a fixed height aids in stabilizing the UI layout, preventing it from shifting vertically -->
+          </ng-container>
+          <ng-container *ngIf="m_editedTrade.assetType.toString() == 'Option'">
+            <div class="assetTypeInActive">
+              <input name="optionType" type="radio" value="P" [(ngModel)]="m_optionFields.optionType">Put
+              <input name="optionType" type="radio" value="C" [(ngModel)]="m_optionFields.optionType">Call &nbsp;
+              DateExpiry: <input type="date" [(ngModel)]="m_optionFields.dateExpiry">
+              StrikePrice: <input type="number" [(ngModel)]="m_optionFields.strikePrice"><br>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="m_editedTrade.assetType.toString() == 'Futures'">
+            <div class="assetTypeInActive">
+              DateExpiry: <input type="date" [(ngModel)]="m_futuresFields.dateExpiry">
+              Multiplier: <input type="number" [(ngModel)]="m_futuresFields.multiplier"><br>
+            </div>
+          </ng-container>
           Symbol: <input type="text" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.underlyingSymbol + ' ' + m_optionFields.dateExpiry + m_optionFields.optionType + m_optionFields.strikePrice" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
           TradeAction:
           <div class="selectionDropDown">

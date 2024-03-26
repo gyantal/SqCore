@@ -75,6 +75,11 @@ class OptionFieldsUi {
   public dateExpiry: string = '';
 }
 
+class FuturesFieldsUi {
+  public dateExpiry: string = '';
+  public multiplier: number = 0;
+}
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -103,6 +108,7 @@ export class AppComponent {
   m_optionFields: OptionFieldsUi = new OptionFieldsUi();
   m_tradeSectionVisibility: boolean = false; // toggle the m_editedTrade widgets on the UI
   m_isCopyToClipboardDialogVisible: boolean = false;
+  m_futuresFields: FuturesFieldsUi = new FuturesFieldsUi();
 
   // Trades tabpage: UI handling with list dropdown for TradeAction and CurrencyId's
   m_selectedTradeActionStr: string = '';
