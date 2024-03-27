@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
+import { RemoveItemOnce } from '../../../sq-ng-common/src/lib/sq-ng-common.utils';
 
 class HandshakeMessage {
   public email = '';
@@ -109,6 +110,7 @@ export class AppComponent {
   m_tradeSectionVisibility: boolean = false; // toggle the m_editedTrade widgets on the UI
   m_isCopyToClipboardDialogVisible: boolean = false;
   m_futuresFields: FuturesFieldsUi = new FuturesFieldsUi();
+  m_selectedTradeIds: number[] = []; // Stores the trade IDs selected by the user for copying to the clipboard.
 
   // Trades tabpage: UI handling with list dropdown for TradeAction and CurrencyId's
   m_selectedTradeActionStr: string = '';
@@ -234,6 +236,7 @@ export class AppComponent {
       trade.isSelected = true; // Select the clicked trade
     }
 
+    this.updateSelectedTradeIds(trade);
     this.m_editedTrade.CopyFrom(trade);
   }
 
@@ -311,8 +314,10 @@ export class AppComponent {
   }
 
   onClickSelectAllOrDeselectAll(isSelectAll: boolean) {
-    for (const item of this.m_trades!)
+    for (const item of this.m_trades!) {
       item.isSelected = isSelectAll;
+      this.updateSelectedTradeIds(item); // Update the selectedTradeIds based on whether the item is selected or deselected.
+    }
   }
 
   toggleTradeSectionVisibility() {
@@ -332,33 +337,35 @@ export class AppComponent {
   }
 
   onClickCopyToClipboard() {
-    const rows = document.querySelectorAll('.tableCommon tbody tr') as NodeListOf<Element>; // Select all rows in the table body
+    if (this.m_trades == null) // Check if m_trades is null or undefined
+      return;
+
     let content = '';
+    const tradeFieldNames = Object.keys(this.m_trades[0]); // Extract keys(fieldName) from the first trade object
+    content += tradeFieldNames.join('\t') + '\n'; // Append keys(fieldName) as the top row in the content string, separated by tabs
 
-    for (let i = 0; i < rows.length; i++) {
-      const cells = rows[i].querySelectorAll('td') as NodeListOf<HTMLTableCellElement>; // Select all cells (td elements) within the current row
-
-      for (let j = 0; j < cells.length; j++) {
-        content += cells[j].textContent!.trim(); // Append the text content of the cell to the content string
-
-        if (j < cells.length - 1) // Add tab delimiter between cells if it's not the last cell in the row
-          content += '\t';
+    for (const trade of this.m_trades) {
+      if (this.m_selectedTradeIds.length == 0 || this.m_selectedTradeIds.includes(trade.id)) { // Check if m_selectedTradeIds array is empty or if the trade's id is included in it
+        for (const fieldName of tradeFieldNames)
+          content += trade[fieldName] + '\t'; // Append the value of the current fieldName from the trade object to the content string, separated by tabs
+        content += '\n'; // Append a new line character after appending all fieldName values for the current trade
       }
-
-      content += '\n'; // Add newline delimiter after each row
     }
 
-    const textarea = document.createElement('textarea'); // Create a textarea element to hold the content
-    textarea.value = content;
-    document.body.appendChild(textarea); // Append the textarea to the document body
-    textarea.select();
-    document.execCommand('copy'); // Execute the copy command
-    document.body.removeChild(textarea); // Remove the textarea from the document body
-
-    this.m_isCopyToClipboardDialogVisible = true;
+    navigator.clipboard.writeText(content) // Write the content string to the clipboard using the navigator.clipboard
+        .then(() => { this.m_isCopyToClipboardDialogVisible = true; }) // If successful, set the flag to show the copy to clipboard dialog
+        .catch((error) => { console.error('Failed to copy: ', error); }); // If an error occurs, log the error to the console
   }
 
   onCopyDialogCloseClicked() {
     this.m_isCopyToClipboardDialogVisible = false;
+  }
+
+  updateSelectedTradeIds(trade: TradeUi) {
+    if (trade.isSelected) {
+      if (!this.m_selectedTradeIds.includes(trade.id))
+        this.m_selectedTradeIds.push(trade.id);
+    } else
+      RemoveItemOnce(this.m_selectedTradeIds, trade.id);
   }
 }
