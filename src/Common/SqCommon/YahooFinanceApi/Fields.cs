@@ -69,5 +69,6 @@ public enum Field
     TwoHundredDayAverageChange,
     TwoHundredDayAverageChangePercent,
     PreMarketPrice,
-    PreMarketChange
+    PreMarketChange,
+    NetAssets
 }

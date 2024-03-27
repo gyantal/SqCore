@@ -68,6 +68,15 @@ Cargo.lock
 !**/Fin/Data/equity/usa/factor_files/spy-qc.csv
 !**/Fin/Data/equity/usa/factor_files/*-sq-history.csv
 
+**/Fin/Data/equity/usa/fundamental/fine/**
+
+!**/Fin/Data/equity/usa/fundamental/fine/meta/
+!**/Fin/Data/equity/usa/fundamental/fine/meta/20120518.zip
+!**/Fin/Data/equity/usa/fundamental/fine/meta/20220610.zip
+
+!**/Fin/Data/equity/usa/fundamental/fine/googl/
+!**/Fin/Data/equity/usa/fundamental/fine/googl/20040819.zip
+!**/Fin/Data/equity/usa/fundamental/fine/googl/20151002.zip
 
 # Ignore Python cache folders
 __pycache__/

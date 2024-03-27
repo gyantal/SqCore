@@ -51,11 +51,7 @@ public class FinDbCrawlerExecution : SqExecution
     public override void Run() // try/catch is only necessary if there is a non-awaited async that continues later in a different tPool thread. See comment in SqExecution.cs
     {
         Utils.Logger.Info($"FinDbCrawlerExecution.Run() BEGIN, Trigger: '{Trigger?.Name ?? string.Empty}'");
-        Console.WriteLine($"FinDbCrawlerExecution.Run() BEGIN, Trigger: '{Trigger?.Name ?? string.Empty}'");
-
-        string logMsg = FinDb.CrawlData(false).TurnAsyncToSyncTask().ToString();
-        Console.WriteLine(logMsg);
-        Utils.Logger.Info(logMsg);
+        FinDb.CrawlData().TurnAsyncToSyncTask();
     }
 }
 
@@ -78,7 +74,7 @@ public partial class FinDb
         SqTaskScheduler.gSqTasks.Add(sqTask);
     }
 
-    public static async Task<StringBuilder> CrawlData(bool p_isLogHtml) // print log to Console or HTML
+    public static async Task<bool> CrawlData() // print log to Console or HTML
     {
         // Determining the appropriate data directory where the map_files, price and factor files are located.
         string finDataDir = OperatingSystem.IsWindows() ?
@@ -90,6 +86,7 @@ public partial class FinDb
         // Collect tickers from file names. Furthermore, collect start and end dates from map_files.
         List<string> tickers = new();
         List<string> virtualTickers = new();
+        List<string> mapFilesFirstRows = new();
         List<string> mapFilesLastButOneRows = new();
         List<string> mapFilesLastRows = new();
         foreach (string mapFilePath in Directory.GetFiles(mapFilesDir, "*.csv")) // Get an array of file paths in the directory with ".csv" extension.
@@ -104,15 +101,19 @@ public partial class FinDb
                 if (hyphenIndex != -1 && hyphenIndex < sqFileName.Length - 1)
                 {
                     string virtualTicker = sqFileName[..hyphenIndex];
-                    virtualTickers.Add(virtualTicker);
+                    virtualTickers.Add(virtualTicker.ToUpper());
                 }
                 continue;
             }
-            tickers.Add(Path.GetFileNameWithoutExtension(mapFilePath));
+            tickers.Add(Path.GetFileNameWithoutExtension(mapFilePath).ToUpper());
             string[] fileLines = File.ReadAllLines(mapFilePath);
 
             if (fileLines.Length > 1)
             {
+                string firstRow = fileLines[0];
+                int firstCommaIndex = firstRow.IndexOf(',');
+                if (firstCommaIndex != -1)
+                    mapFilesFirstRows.Add(firstRow[..firstCommaIndex]);
                 string lastButOneRow = fileLines[^2];
                 int lastButOneCommaIndex = lastButOneRow.IndexOf(',');
                 if (lastButOneCommaIndex != -1)
@@ -125,22 +126,32 @@ public partial class FinDb
         }
 
         // Calling the CrawlData function that generates files per ticker.
-        StringBuilder logSb = new();
         for (int i = 0; i < tickers.Count; i++)
         {
             string ticker = tickers[i];
-            DateTime startDate = DateTime.ParseExact(mapFilesLastButOneRows[i], "yyyyMMdd", CultureInfo.InvariantCulture).AddDays(1);
+            DateTime startDate = DateTime.ParseExact(mapFilesFirstRows[i], "yyyyMMdd", CultureInfo.InvariantCulture);
+            DateTime startDateCurrTicker = DateTime.ParseExact(mapFilesLastButOneRows[i], "yyyyMMdd", CultureInfo.InvariantCulture).AddDays(1);
             DateTime endDate = DateTime.ParseExact(mapFilesLastRows[i], "yyyyMMdd", CultureInfo.InvariantCulture);
+            Utils.Logger.Info($"FinDb.CrawlData() START with ticker: {ticker}");
+#if DEBUG
             Console.WriteLine($"FinDb.CrawlData() START with ticker: {ticker}");
-            bool isOK = await CrawlData(ticker, p_isLogHtml, logSb, finDataDir, startDate, endDate);
-            if (!isOK)
-                logSb.AppendLine($"Error processing {ticker}");
+#endif
+            bool isPriceOK = await CrawlPriceData(ticker, finDataDir, startDateCurrTicker, endDate);
+            if (!isPriceOK)
+                Utils.Logger.Error($"Error processing price for {ticker}");
+
+            bool isFundamentalOK = await CrawlFundamentalData(ticker, finDataDir, startDate);
+            if (!isFundamentalOK)
+                Utils.Logger.Error($"Error processing fundamental for {ticker}");
         }
 
         // Process the virtual tickers. E.g. 'VXX-SQ'
         foreach (string ticker in virtualTickers)
         {
+            Utils.Logger.Info($"FinDb.CrawlData() START with ticker: {ticker}-sq");
+#if DEBUG
             Console.WriteLine($"FinDb.CrawlData() START with ticker: {ticker}-sq");
+#endif
             try
             {
                 CreateVirtualTickerDailyPriceFiles(ticker, finDataDir, out int lastHistDateInt);
@@ -148,22 +159,19 @@ public partial class FinDb
             }
             catch (System.Exception e)
             {
-                logSb.AppendLine($"Error processing {ticker}. Exception: '{e.Message}'");
+                Utils.Logger.Error($"Error processing {ticker}. Exception: '{e.Message}'");
             }
         }
 
-        return logSb;
+        return true;
     }
 
-    public static async Task<bool> CrawlData(string p_ticker, bool p_isLogHtml, StringBuilder p_logSb, string p_finDataDir, DateTime p_startDate, DateTime p_endDate)
+    public static async Task<bool> CrawlPriceData(string p_ticker, string p_finDataDir, DateTime p_startDate, DateTime p_endDate)
     {
         IReadOnlyList<Candle?>? history = await Yahoo.GetHistoricalAsync(p_ticker, p_startDate, p_endDate, Period.Daily);
         if (history == null)
         {
-            if (p_isLogHtml)
-                p_logSb.AppendLine($"Cannot download YF data (ticker:{p_ticker}) after many tries.</br>");
-            else
-                p_logSb.AppendLine($"Cannot download YF data (ticker:{p_ticker}) after many tries.");
+            Utils.Logger.Error($"Cannot download YF data (ticker:{p_ticker}) after many tries.");
             return false;
         }
 
@@ -318,7 +326,7 @@ public partial class FinDb
     public static void CreateVirtualTickerDailyPriceFiles(string p_ticker, string p_finDataDir, out int p_lastHistDateInt) // p_ticker is "VXX" (not "VXX-SQ")
     {
         // Read the content of ticker-sq-history.csv
-        string sqHistoryContent = ReadCsvFromZip(Path.GetFullPath(p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker}-sq-history.zip"), $"{p_ticker}-sq-history.csv");
+        string sqHistoryContent = ReadCsvFromZip(Path.GetFullPath(p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker.ToLower()}-sq-history.zip"), $"{p_ticker.ToLower()}-sq-history.csv");
         p_lastHistDateInt = 0;
 
         // Find the largest number in the first column of ticker-sq-history.csv
@@ -335,12 +343,12 @@ public partial class FinDb
             {
                 int histWhiteSpaceIndex = lastLine.IndexOf(' ');
                 if (!(histWhiteSpaceIndex != -1 && int.TryParse(lastLine[..histWhiteSpaceIndex], out p_lastHistDateInt)))
-                    throw new SqException($"Error. Cannot interpret lastHistDateInt in {p_ticker}.csv.");
+                    throw new SqException($"Error. Cannot interpret lastHistDateInt in {p_ticker.ToLower()}.csv.");
             }
         }
 
         // Read the content of ticker.csv
-        string tickerContent = ReadCsvFromZip(p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker}.zip", $"{p_ticker}.csv");
+        string tickerContent = ReadCsvFromZip(p_finDataDir + $"daily{Path.DirectorySeparatorChar}{p_ticker.ToLower()}.zip", $"{p_ticker.ToLower()}.csv");
 
         string filteredTickerContent;
         // Filter rows from ticker.csv where the number in the first column is greater than lastSqHistoryNumber
@@ -417,7 +425,7 @@ public partial class FinDb
             }
         }
         if (actualCsvLines.Count == 0)
-            throw new SqException($"Error. Factor file {p_ticker}.csv should have at least 2 lines.");
+            throw new SqException($"Error. Factor file {p_ticker.ToLower()}.csv should have at least 2 lines.");
 
         // Read the second row of the second CSV to get the dividendHist and splitMultiplier value
         double dividendHist = 1.0;

@@ -48,7 +48,7 @@ public class Security
     public String Language => this["Language"];
     public String LongName => this["LongName"];
     public String Market => this["Market"];
-    public Int64 MarketCap => this["MarketCap"];
+    public Int64 MarketCap => this["MarketCap"]; // AAPL MarketCap arrives in this format: "marketCap":2620644917248
     public String MarketState => this["MarketState"];
     public String MessageBoardId => this["MessageBoardId"];
     public Int64 PriceHint => this["PriceHint"];
@@ -81,4 +81,5 @@ public class Security
     public Double TwoHundredDayAverageChangePercent => this["TwoHundredDayAverageChangePercent"];
     public Double PreMarketPrice => this["PreMarketPrice"];
     public Double PreMarketChange => this["PreMarketChange"];
+    public Double NetAssets => this["NetAssets"]; // SVXY NetAssets arrives in this format: "netAssets": 3.29468832E8
 }
