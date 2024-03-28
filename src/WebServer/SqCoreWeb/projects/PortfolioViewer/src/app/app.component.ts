@@ -106,11 +106,11 @@ export class AppComponent {
   m_isEditedTradeDirty: boolean = false;
 
   // Trades tabpage: UI handling
-  m_optionFields: OptionFieldsUi = new OptionFieldsUi();
   m_tradeSectionVisibility: boolean = false; // toggle the m_editedTrade widgets on the UI
-  m_isCopyToClipboardDialogVisible: boolean = false;
+  m_optionFields: OptionFieldsUi = new OptionFieldsUi();
   m_futuresFields: FuturesFieldsUi = new FuturesFieldsUi();
   m_selectedTradeIds: number[] = []; // Stores the trade IDs selected by the user for copying to the clipboard.
+  m_isCopyToClipboardDialogVisible: boolean = false;
 
   // Trades tabpage: UI handling with list dropdown for TradeAction and CurrencyId's
   m_selectedTradeActionStr: string = '';
@@ -238,11 +238,15 @@ export class AppComponent {
 
     this.updateSelectedTradeIds(trade);
     this.m_editedTrade.CopyFrom(trade);
+    this.m_isEditedTradeDirty = false; // Reset the dirty flag, when the user selects a new item from the trades.
+    this.onCurrencyValueChanged();
   }
 
   onClickInsertOrUpdateTrade(isInsertNew: boolean) {
     if (this.m_editedTrade.assetType == AssetType.Option) // When a user selects an option, the symbol comprises the underlying asset, the expiration date, the option type (put/call abbreviated as P/C), and the strike price. For instance, in the example "QQQ 20241220C494.78", "QQQ" represents the underlying symbol, "20241220" indicates the expiration date, "C" denotes a call option, and "494.78" signifies the strike price.
       this.m_editedTrade.symbol = this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_optionFields.dateExpiry) + this.m_optionFields.optionType + this.m_optionFields.strikePrice;
+    else
+      this.m_editedTrade.symbol = this.m_editedTrade.underlyingSymbol; // When the user attempts to edit (update) the trade, we need to ensure that the symbol is updated to match the underlying symbol. Otherwise, the item gets updated with the existing symbol from the editedTrade object.
 
     if (isInsertNew)
       this.m_editedTrade.id = -1;
@@ -367,5 +371,12 @@ export class AppComponent {
         this.m_selectedTradeIds.push(trade.id);
     } else
       RemoveItemOnce(this.m_selectedTradeIds, trade.id);
+  }
+
+  onCurrencyValueChanged() {
+    if (CurrencyId[this.m_editedTrade.currency.toString()] == CurrencyId.Unknown)
+      this.m_selectedCurrencyIdStr = 'USD';
+    else
+      this.m_selectedCurrencyIdStr = this.m_editedTrade.currency.toString();
   }
 }

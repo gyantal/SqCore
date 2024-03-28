@@ -52,7 +52,13 @@
     <div id="pfRunResultChrt"></div> <!-- portfolio run result chart  -->
   </div>
   <div [hidden]="m_activeTab != 'Trades'"><br>
-    <div (click)="toggleTradeSectionVisibility()">{{m_tradeSectionVisibility ? '&#5169;' : '&#5167;'}} create/edit trades</div>
+    <span>
+      <span (click)="toggleTradeSectionVisibility()" class="toggleTradesSection"><span id="toggleSign">{{m_tradeSectionVisibility ? '&#45;' : '&#43;'}}</span> Edit trades...</span>&nbsp;
+      <button (click)="onClickSelectAllOrDeselectAll(true)" class="btnCommon">Select All</button>&nbsp;
+      <button (click)="onClickSelectAllOrDeselectAll(false)" class="btnCommon">DeSelect All</button>&nbsp;
+      <button (click)="onClickCopyToClipboard()" class="btnCommon">Copy to Clipboard</button>&nbsp;
+      <button disabled class="btnCommon">Create from Clipboard</button>&nbsp;
+    </span><br>
     <div id="tradesSection" *ngIf="m_tradeSectionVisibility">
       <div id="tradesContainer">
         <span class="tradesCommon">
@@ -75,7 +81,15 @@
           <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Stock>Stock &nbsp;
           <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Option>Option &nbsp;
           <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Futures>Futures<br>
-          UnderlysingSymbol: <input type="text" [(ngModel)]="m_editedTrade.underlyingSymbol" [value]="m_editedTrade.underlyingSymbol" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
+          TradeAction:
+          <div class="selectionDropDown">
+            <input class="highlightInputDropDown" type="text" [(ngModel)]="m_selectedTradeActionStr" [value]="m_editedTrade.action" (input)="onTradeInputChange()" (change)="onTradeActionSelectionClicked(m_selectedTradeActionStr)">
+            <div class="listDropDown">
+              <option class="optionDropDown" *ngFor="let action of m_tradeActions" [value]="action" (click)="onTradeActionSelectionClicked(action)">{{ action }}</option>
+            </div>
+          </div><br>
+          Symbol: <input type="text" [hidden]="m_editedTrade.assetType.toString() != 'Option'" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.underlyingSymbol + ' ' + m_optionFields.dateExpiry + m_optionFields.optionType + m_optionFields.strikePrice" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()" disabled><br>
+          UnderlyingSymbol: <input type="text" [(ngModel)]="m_editedTrade.underlyingSymbol" [value]="m_editedTrade.underlyingSymbol" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
           <ng-container *ngIf="m_editedTrade.assetType.toString() != 'Option' && m_editedTrade.assetType.toString() != 'Futures'">
             <div class="assetTypeActive"></div><!-- An empty div with a fixed height aids in stabilizing the UI layout, preventing it from shifting vertically -->
           </ng-container>
@@ -93,20 +107,8 @@
               Multiplier: <input type="number" [(ngModel)]="m_futuresFields.multiplier"><br>
             </div>
           </ng-container>
-          Symbol: <input type="text" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.underlyingSymbol + ' ' + m_optionFields.dateExpiry + m_optionFields.optionType + m_optionFields.strikePrice" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
-          TradeAction:
-          <div class="selectionDropDown">
-            <input class="highlightInputDropDown" type="text" [(ngModel)]="m_selectedTradeActionStr" [value]="m_editedTrade.action" (input)="onTradeInputChange()" (change)="onTradeActionSelectionClicked(m_selectedTradeActionStr)">
-            <div class="listDropDown">
-              <option class="optionDropDown" *ngFor="let action of m_tradeActions" [value]="action" (click)="onTradeActionSelectionClicked(action)">{{ action }}</option>
-            </div>
-          </div>
         </span>
         <span class="tradesCommon">
-        <button (click)="onClickSelectAllOrDeselectAll(true)">Select All</button>&nbsp;
-        <button (click)="onClickSelectAllOrDeselectAll(false)">DeSelect All</button>&nbsp;
-        <button (click)="onClickCopyToClipboard()">Copy to Clipboard</button>&nbsp;
-        <button disabled>Create from Clipboard</button>&nbsp;<br>
           Date: <input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" (ngModelChange)="m_editedTrade.time=$event" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (input)="onTradeInputChange()"><br>
           <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
           Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
@@ -114,7 +116,7 @@
                 <button (click)="onClickSetOpenOrClose('close')">setClose</button><br>
           Price: <input type="number" [(ngModel)]="m_editedTrade.price" (input)="onTradeInputChange()">&nbsp;
           <div class="selectionDropDown">
-            <input class="highlightInputDropDown"  type="text" placeholder="Enter CurrencyId" [(ngModel)]="m_selectedCurrencyIdStr" [value]="m_editedTrade.currency" (input)="onTradeInputChange()" (change)="onCurrencyTypeSelectionClicked(m_selectedCurrencyIdStr)">
+            <input class="highlightInputDropDown"  type="text" placeholder="Enter CurrencyId" [(ngModel)]="m_selectedCurrencyIdStr" (input)="onTradeInputChange()" (change)="onCurrencyTypeSelectionClicked(m_selectedCurrencyIdStr)">
             <div class="listDropDown">
               <option class="optionDropDown" *ngFor="let currencyId of m_CurrencyIds" [value]="currencyId" (click)="onCurrencyTypeSelectionClicked(currencyId)">{{ currencyId }}</option>
             </div>
