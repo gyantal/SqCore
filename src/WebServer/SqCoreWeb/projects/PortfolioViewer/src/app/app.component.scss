@@ -61,7 +61,7 @@ thead {
   position: fixed;
   z-index: 1;
   text-align: center;
-  left: 60%;
+  left: 20%;
   top: 20%;
   bottom: 30%;
   width: 15rem;
@@ -70,6 +70,7 @@ thead {
   background-color: #FFA500;
   border: .05rem solid #FF5F1F;
   border-radius: 0.5rem;
+  padding-top: 0.3rem;
 }
 
 #copyToClipboardDialogClosetBtn {
@@ -136,4 +137,5 @@ thead {
   width: 8rem;
   height: 2rem;
   border-radius: 0.5rem;
+  cursor: pointer;
 }

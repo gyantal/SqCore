@@ -53,7 +53,7 @@
   </div>
   <div [hidden]="m_activeTab != 'Trades'"><br>
     <span>
-      <span (click)="toggleTradeSectionVisibility()" class="toggleTradesSection"><span id="toggleSign">{{m_tradeSectionVisibility ? '&#45;' : '&#43;'}}</span> Edit trades...</span>&nbsp;
+      <span (click)="toggleTradeSectionVisibility()" class="toggleTradesSection"><span id="toggleSign" [ngStyle]="{'color': m_tradeSectionVisibility ? 'green' : 'red'}">{{m_tradeSectionVisibility ? '&#45;' : '&#43;'}}</span> Edit trades...</span>&nbsp;
       <button (click)="onClickSelectAllOrDeselectAll(true)" class="btnCommon">Select All</button>&nbsp;
       <button (click)="onClickSelectAllOrDeselectAll(false)" class="btnCommon">DeSelect All</button>&nbsp;
       <button (click)="onClickCopyToClipboard()" class="btnCommon">Copy to Clipboard</button>&nbsp;
@@ -77,23 +77,23 @@
         <button (click)="onClickDeleteTrade()" [disabled]="m_editedTrade.id == -1">Delete Trade</button>&nbsp;
         <button (click)="onClickClearFields()">Clear Fields</button>&nbsp;<br>
           TradeId: <input type="number" [(ngModel)]="m_editedTrade.id" (input)="onTradeInputChange()"><br>
-          <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=CurrencyCash>Cash &nbsp;
-          <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Stock>Stock &nbsp;
-          <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Option>Option &nbsp;
-          <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" value=Futures>Futures<br>
+          <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" [value]="m_enumAssetType.CurrencyCash">Cash &nbsp;
+          <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" [value]="m_enumAssetType.Stock">Stock &nbsp;
+          <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" [value]="m_enumAssetType.Option">Option &nbsp;
+          <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" [value]="m_enumAssetType.Futures">Futures<br>
           TradeAction:
           <div class="selectionDropDown">
-            <input class="highlightInputDropDown" type="text" [(ngModel)]="m_selectedTradeActionStr" [value]="m_editedTrade.action" (input)="onTradeInputChange()" (change)="onTradeActionSelectionClicked(m_selectedTradeActionStr)">
+            <input class="highlightInputDropDown" type="text" [(ngModel)]="m_selectedTradeActionStr" [value]="m_enumTradeAction[m_editedTrade.action]" (input)="onTradeInputChange()" (change)="onTradeActionSelectionClicked(m_selectedTradeActionStr)">
             <div class="listDropDown">
               <option class="optionDropDown" *ngFor="let action of m_tradeActions" [value]="action" (click)="onTradeActionSelectionClicked(action)">{{ action }}</option>
             </div>
           </div><br>
-          Symbol: <input type="text" [hidden]="m_editedTrade.assetType.toString() != 'Option'" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.underlyingSymbol + ' ' + m_optionFields.dateExpiry + m_optionFields.optionType + m_optionFields.strikePrice" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()" disabled><br>
+          Symbol: <input type="text" [hidden]="m_editedTrade.assetType != m_enumAssetType.Option" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.underlyingSymbol + ' ' + m_optionFields.dateExpiry + m_optionFields.optionType + m_optionFields.strikePrice" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()" disabled><br>
           UnderlyingSymbol: <input type="text" [(ngModel)]="m_editedTrade.underlyingSymbol" [value]="m_editedTrade.underlyingSymbol" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
-          <ng-container *ngIf="m_editedTrade.assetType.toString() != 'Option' && m_editedTrade.assetType.toString() != 'Futures'">
+          <ng-container *ngIf="m_editedTrade.assetType != m_enumAssetType.Option && m_editedTrade.assetType != m_enumAssetType.Futures">
             <div class="assetTypeActive"></div><!-- An empty div with a fixed height aids in stabilizing the UI layout, preventing it from shifting vertically -->
           </ng-container>
-          <ng-container *ngIf="m_editedTrade.assetType.toString() == 'Option'">
+          <ng-container *ngIf="m_editedTrade.assetType == m_enumAssetType.Option">
             <div class="assetTypeInActive">
               <input name="optionType" type="radio" value="P" [(ngModel)]="m_optionFields.optionType">Put
               <input name="optionType" type="radio" value="C" [(ngModel)]="m_optionFields.optionType">Call &nbsp;
@@ -101,7 +101,7 @@
               StrikePrice: <input type="number" [(ngModel)]="m_optionFields.strikePrice"><br>
             </div>
           </ng-container>
-          <ng-container *ngIf="m_editedTrade.assetType.toString() == 'Futures'">
+          <ng-container *ngIf="m_editedTrade.assetType == m_enumAssetType.Futures">
             <div class="assetTypeInActive">
               DateExpiry: <input type="date" [(ngModel)]="m_futuresFields.dateExpiry">
               Multiplier: <input type="number" [(ngModel)]="m_futuresFields.multiplier"><br>
@@ -144,9 +144,9 @@
           <td>{{item.underlyingSymbol}}</td>
           <td>{{item.quantity}}</td>
           <td>{{item.price | number:'1.2-2'}}</td>
-          <td>{{item.currency}}</td>
-          <td>{{item.action}}</td>
-          <td>{{item.assetType}}</td>
+          <td>{{m_enumCurrencyId[item.currency]}}</td>
+          <td>{{m_enumTradeAction[item.action]}}</td>
+          <td>{{m_enumAssetType[item.assetType]}}</td>
           <td>{{item.time | date : 'yyyy-MM-dd'}}</td>
           <td>{{item.exchangeId}}</td>
         </tr>

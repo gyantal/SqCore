@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
-import { RemoveItemOnce } from '../../../sq-ng-common/src/lib/sq-ng-common.utils';
 
 class HandshakeMessage {
   public email = '';
@@ -13,12 +12,12 @@ class TradeJs {
   id: number = -1;
   time: Date = new Date();
   action: TradeAction = TradeAction.Unknown;
-  assetType: AssetType = AssetType.Unknown;
+  assetType: AssetType = AssetType.Stock;
   symbol: string | null = null;
   underlyingSymbol: string | null = null;
   quantity: number = 0;
   price: number = 0;
-  currency: CurrencyId = CurrencyId.Unknown;
+  currency: CurrencyId = CurrencyId.USD;
   commission: number = 0;
   exchangeId: ExchangeId = ExchangeId.Unknown;
   connectedTrades: number[] | null = null;
@@ -28,12 +27,12 @@ class TradeJs {
     this.id = -1;
     this.time = new Date();
     this.action = TradeAction.Unknown;
-    this.assetType = AssetType.Unknown;
+    this.assetType = AssetType.Stock;
     this.symbol = null;
     this.underlyingSymbol = null;
     this.quantity = 0;
     this.price = 0;
-    this.currency = CurrencyId.Unknown;
+    this.currency = CurrencyId.USD;
     this.commission = 0;
     this.exchangeId = ExchangeId.Unknown;
     this.connectedTrades = null;
@@ -101,7 +100,7 @@ export class AppComponent {
   m_histPosEndDate: string = '';
 
   // Trades tabpage: internal data
-  m_trades: TradeUi[] | null = null;
+  m_trades: TradeUi[] = [];
   m_editedTrade: TradeJs = new TradeJs();
   m_isEditedTradeDirty: boolean = false;
 
@@ -109,13 +108,18 @@ export class AppComponent {
   m_tradeSectionVisibility: boolean = false; // toggle the m_editedTrade widgets on the UI
   m_optionFields: OptionFieldsUi = new OptionFieldsUi();
   m_futuresFields: FuturesFieldsUi = new FuturesFieldsUi();
-  m_selectedTradeIds: number[] = []; // Stores the trade IDs selected by the user for copying to the clipboard.
   m_isCopyToClipboardDialogVisible: boolean = false;
 
+  // Trades tabpage: UI handling enums
+  // Assigning the enums to the class facilitates the binding of their values and enables direct referencing within the template file. Refer: https://stackoverflow.com/questions/69549927/how-to-pass-enum-value-in-angular-template-as-an-input
+  m_enumTradeAction = TradeAction;
+  m_enumAssetType = AssetType;
+  m_enumCurrencyId = CurrencyId;
+
   // Trades tabpage: UI handling with list dropdown for TradeAction and CurrencyId's
-  m_selectedTradeActionStr: string = '';
+  m_selectedTradeActionStr: string = 'Buy'; // default set to "Buy"
   m_tradeActions: string[] = ['Unknown', 'Deposit', 'Withdrawal', 'Buy', 'Sell', 'Exercise', 'Expired'];
-  m_selectedCurrencyIdStr: string = '';
+  m_selectedCurrencyIdStr: string = 'USD'; // default set to "USD"
   m_CurrencyIds: string[] = ['Unknown', 'USD', 'EUR', 'GBP', 'GBX', 'HUF', 'CNY', 'JPY', 'CAD', 'CHF'];
 
   user = {
@@ -202,22 +206,7 @@ export class AppComponent {
 
   processHistoricalTrades(msgObjStr: string) {
     console.log('PrtfVwr.processHistoricalTrades() START');
-    const tradeObjects : object[] = JSON.parse(msgObjStr, function(key, value) { // JSON.parse() always returns just a general a JavaScript 'object'. That doesn't have Class specific fields as 'isSelected' (Undefined)
-      switch (key) { // Perform type conversion based on property names
-        case 'action':
-          return TradeAction[value];
-        case 'assetType':
-          return AssetType[value];
-        case 'currency':
-          return CurrencyId[value];
-        case 'exchangeId':
-          return ExchangeId[value];
-
-        default: // If no type conversion needed, return the original value
-          return value;
-      }
-    });
-
+    const tradeObjects : object[] = JSON.parse(msgObjStr); // The Json string contains enums as numbers, which is how we store it in RAM in JS. So, e.g. 'actionNumber as Action' type cast would be correct, but not necessary as both the input data and the output enum are 'numbers'
     // manually create an instance and then populate its properties with the values from the parsed JSON object.
     this.m_trades = new Array(tradeObjects.length);
     for (let i = 0; i < tradeObjects.length; i++) {
@@ -230,13 +219,12 @@ export class AppComponent {
     if (event.ctrlKey) // If the Ctrl key is pressed, toggle the selection of the clicked trade
       trade.isSelected = !trade.isSelected;
     else { // If Ctrl key is not pressed, deselect all previously selected trades
-      for (const item of this.m_trades!)
+      for (const item of this.m_trades)
         item.isSelected = false;
 
       trade.isSelected = true; // Select the clicked trade
     }
 
-    this.updateSelectedTradeIds(trade);
     this.m_editedTrade.CopyFrom(trade);
     this.m_isEditedTradeDirty = false; // Reset the dirty flag, when the user selects a new item from the trades.
     this.onCurrencyValueChanged();
@@ -250,7 +238,7 @@ export class AppComponent {
 
     if (isInsertNew)
       this.m_editedTrade.id = -1;
-    const tradeJson: string = this.Trade2EnumJsonStr(this.m_editedTrade);
+    const tradeJson: string = JSON.stringify(this.m_editedTrade);
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
       this.m_socket.send('InsertOrUpdateTrade:pfId:' + this.m_portfolioId + ':' + tradeJson);
   }
@@ -262,28 +250,6 @@ export class AppComponent {
 
   onClickClearFields() {
     this.m_editedTrade.Clear();
-  }
-
-  // Trade2EnumJsonStr() - Without this conversion we will not be able to insert or update the trade in Db
-  // Exception in C# Json deserialize -  System.Text.Json.JsonException: The JSON value could not be converted to Fin.Base.TradeAction.
-  // when we stringify the tradeJson is - {\"id\":17,\"time\":\"2024-02-26T11:08:21\",\"action\":\"Buy\",\"assetType\":\"Stock\",\"symbol\":\"JD\",\"underlyingSymbol\":\"JD\",\"quantity\":0,\"price\":0,\"currency\":\"JPY\",\"commission\":0,\"exchangeId\":\"Unknown\",\"connectedTrades\":null}
-  // whereas we need enum type for TradeAction, AssetType, Currency and ExchangeId data members.
-  Trade2EnumJsonStr(editedTrade: TradeJs): string {
-    const tradeJson = JSON.stringify(editedTrade, function(key, value) {
-      switch (key) {
-        case 'action':
-          return typeof value == 'string' ? TradeAction[value] : value;
-        case 'assetType':
-          return typeof value == 'string' ? AssetType[value] : value;
-        case 'currency':
-          return typeof value == 'string' ? CurrencyId[value] : value;
-        case 'exchangeId':
-          return typeof value == 'string' ? ExchangeId[value] : value;
-        default: // If no type conversion needed, return the original value
-          return value;
-      }
-    }); // Convert the new trade object to JSON string
-    return tradeJson;
   }
 
   onTradeInputChange() { // Dynamically switch between the save and unsaved icons when a user attempts to create or edit a trade.
@@ -318,10 +284,8 @@ export class AppComponent {
   }
 
   onClickSelectAllOrDeselectAll(isSelectAll: boolean) {
-    for (const item of this.m_trades!) {
+    for (const item of this.m_trades)
       item.isSelected = isSelectAll;
-      this.updateSelectedTradeIds(item); // Update the selectedTradeIds based on whether the item is selected or deselected.
-    }
   }
 
   toggleTradeSectionVisibility() {
@@ -348,15 +312,23 @@ export class AppComponent {
     const tradeFieldNames = Object.keys(this.m_trades[0]); // Extract keys(fieldName) from the first trade object
     content += tradeFieldNames.join('\t') + '\n'; // Append keys(fieldName) as the top row in the content string, separated by tabs
 
+    let isAnyTradeSelected = false; // The variable isAnyTradeSelected is beneficial for scenarios where the user hasn't selected any trades but wishes to copy data to the clipboard.
     for (const trade of this.m_trades) {
-      if (this.m_selectedTradeIds.length == 0 || this.m_selectedTradeIds.includes(trade.id)) { // Check if m_selectedTradeIds array is empty or if the trade's id is included in it
+      if (trade.isSelected) {
+        isAnyTradeSelected = true;
+        break;
+      }
+    }
+
+    for (const trade of this.m_trades) {
+      if (trade.isSelected || !isAnyTradeSelected) {
         for (const fieldName of tradeFieldNames)
           content += trade[fieldName] + '\t'; // Append the value of the current fieldName from the trade object to the content string, separated by tabs
         content += '\n'; // Append a new line character after appending all fieldName values for the current trade
       }
     }
 
-    navigator.clipboard.writeText(content) // Write the content string to the clipboard using the navigator.clipboard
+    window.navigator.clipboard.writeText(content) // Write the content string to the clipboard using the navigator.clipboard
         .then(() => { this.m_isCopyToClipboardDialogVisible = true; }) // If successful, set the flag to show the copy to clipboard dialog
         .catch((error) => { console.error('Failed to copy: ', error); }); // If an error occurs, log the error to the console
   }
@@ -365,18 +337,10 @@ export class AppComponent {
     this.m_isCopyToClipboardDialogVisible = false;
   }
 
-  updateSelectedTradeIds(trade: TradeUi) {
-    if (trade.isSelected) {
-      if (!this.m_selectedTradeIds.includes(trade.id))
-        this.m_selectedTradeIds.push(trade.id);
-    } else
-      RemoveItemOnce(this.m_selectedTradeIds, trade.id);
-  }
-
   onCurrencyValueChanged() {
-    if (CurrencyId[this.m_editedTrade.currency.toString()] == CurrencyId.Unknown)
+    if (this.m_editedTrade.currency == CurrencyId.Unknown)
       this.m_selectedCurrencyIdStr = 'USD';
     else
-      this.m_selectedCurrencyIdStr = this.m_editedTrade.currency.toString();
+      this.m_selectedCurrencyIdStr = CurrencyId[this.m_editedTrade.currency];
   }
 }
