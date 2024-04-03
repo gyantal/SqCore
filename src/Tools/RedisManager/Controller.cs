@@ -30,8 +30,19 @@ class Controller
 
     public static void TestPing()
     {
-        string address = Program.gConfiguration.GetConnectionString("PingDefault");
-        int nTries = Utils.InvariantConvert<int>(Program.gConfiguration["AppSettings:TestPingNTries"]);
+        string? address = Program.gConfiguration.GetConnectionString("PingDefault");
+        if (address == null)
+        {
+            Console.WriteLine("PingDefault is not found in Configuration");
+            return;
+        }
+        string? nTriesStr = Program.gConfiguration["AppSettings:TestPingNTries"];
+        if (nTriesStr == null)
+        {
+            Console.WriteLine("TestPingNTries is not found in Configuration");
+            return;
+        }
+        int nTries = Utils.InvariantConvert<int>(nTriesStr);
         long sumPingTimes = 0;
         for (int i = 0; i < nTries; i++)
         {
@@ -105,6 +116,11 @@ class Controller
     public static void TestRedisCache()
     {
         var redisConnString = Program.gConfiguration.GetConnectionString("RedisDefault");   // read from file
+        if (redisConnString == null)
+        {
+            Console.WriteLine($"Error getting redisConnString");
+            return;
+        }
     
         Stopwatch watch0 = Stopwatch.StartNew();
         IDatabase db = DbCommon.RedisManager.GetDb(redisConnString, 0);
@@ -153,7 +169,12 @@ class Controller
         using var conn = new NpgsqlConnection(pSqlConnString);
         conn.Open();
 
-        var redisConnString = Program.gConfiguration.GetConnectionString("RedisDefault");   // read from file
+        string? redisConnString = Program.gConfiguration.GetConnectionString("RedisDefault");   // read from file
+        if (redisConnString == null)
+        {
+            Console.WriteLine($"Error getting redisConnString");
+            return;
+        }
         IDatabase redisDb = DbCommon.RedisManager.GetDb(redisConnString, 0);
 
         foreach (var tableName in p_tables)
@@ -191,6 +212,8 @@ class Controller
     // IB: PortfolioAnalyst/Reports/CreateCustomReport (SinceInception, Daily, Detailed + AccountOverview/Allocation by Financial Instrument/Deposits). Create in PDF + CSV.
     // 2021-09-09: both IbMain, IbDbl worked without timeout. If it timeouts, run a Custom date for the last 2-5 years. It can be merged together manually as a last resort.
     // >DC-IB-MAIN, it seems: 2011-02-02 is the inception date. 2011-02-02, 2011-03-01: didn't work. Timeout. But 2014-12-31 worked. Try at another time.
+    //
+    // >For Redis backup run C:\agy\GitHub\SqCore\admin\Db\BackupRedisDbToWin.py and check that new dump is created in g:\work\_archive\SqCoreWeb_RedisDb\
     public static void InsertNavAssetFromCsvFile(string p_redisKeyPrefix, string p_csvFullpath)
     {
         List<DailyNavData> dailyNavData = new();
@@ -295,7 +318,12 @@ class Controller
         var depositCsvBrotli = Utils.Str2BrotliBin(depositCsv); // 479 bytes compressed to 179 bytes. For very long term, we can save 1KB per user if compressing. Do it.
 
 
-        var redisConnString = Program.gConfiguration.GetConnectionString("RedisDefault");
+        string? redisConnString = Program.gConfiguration.GetConnectionString("RedisDefault");
+        if (redisConnString == null)
+        {
+            Console.WriteLine($"Error getting redisConnString");
+            return;
+        }
         IDatabase db = DbCommon.RedisManager.GetDb(redisConnString, 0);
         string redisKey = p_redisKeyPrefix + ".brotli";
         db.HashSet("assetQuoteRaw", redisKey,  RedisValue.CreateFrom(new System.IO.MemoryStream(outputCsvBrotli)));
@@ -306,11 +334,18 @@ class Controller
 
     public static void ExportNavAssetToTxt(string p_redisKeyPrefix, string p_filename)
     {
-        IDatabase db = DbCommon.RedisManager.GetDb(Program.gConfiguration.GetConnectionString("RedisDefault"), 0);
+        string? redisConnString = Program.gConfiguration.GetConnectionString("RedisDefault");
+        if (redisConnString == null)
+        {
+            Console.WriteLine($"Error getting redisConnString");
+            return;
+        }
+        IDatabase db = DbCommon.RedisManager.GetDb(redisConnString, 0);
 
         string redisKey = p_redisKeyPrefix + ".brotli"; // key: "9:1.brotli"
         byte[] dailyNavBrotli = db.HashGet("assetQuoteRaw", redisKey);
-        if (dailyNavBrotli == null) {
+        if (dailyNavBrotli == null) 
+        {
             Console.WriteLine($"Error getting redisKey {redisKey}");
             return;
         }
@@ -322,7 +357,13 @@ class Controller
 
     public static void ImportNavAssetFromTxt(string p_redisKeyPrefix, string p_filename)
     {
-        IDatabase db = DbCommon.RedisManager.GetDb(Program.gConfiguration.GetConnectionString("RedisDefault"), 0);
+        string? redisConnString = Program.gConfiguration.GetConnectionString("RedisDefault");
+        if (redisConnString == null)
+        {
+            Console.WriteLine($"Error getting redisConnString");
+            return;
+        }
+        IDatabase db = DbCommon.RedisManager.GetDb(redisConnString, 0);
 
         string fullPath = Directory.GetCurrentDirectory() + "/" + p_filename;
         var dailyNavStr = System.IO.File.ReadAllText(fullPath);

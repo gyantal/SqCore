@@ -7,7 +7,7 @@
           <span *ngIf="!item.isNavColumn"><a href="{{item.referenceUrl}}" target="_blank">{{item.ticker}} </a></span>
           <span *ngIf="item.isNavColumn">
             <span>
-              <select class="selectedNavMktHlthCl" [(ngModel)]="navSelectionSelected" (change)="onNavSelectedChange($event)">
+              <select class="selectedNavMktHlthCl" [(ngModel)]="navSelectionSelected" (change)="onNavSelectedChange()">
                 <option *ngFor="let item of navSelection" [value]="item">{{item}}</option>
               </select>
             </span>

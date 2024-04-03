@@ -483,7 +483,7 @@ export class MarketHealthComponent implements OnInit {
     }
   }
 
-  onNavSelectedChange(pEvent: any) {
+  onNavSelectedChange() {
     if (this._parentWsConnection != null && this._parentWsConnection.readyState === WebSocket.OPEN)
       this._parentWsConnection.send('MktHlth.ChangeNav:' + this.navSelectionSelected);
   }

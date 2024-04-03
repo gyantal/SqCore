@@ -174,8 +174,11 @@ public partial class Db
         {
             string sqTicker = item.Key;
             DateTime startDate = GetExpectedHistoryStartDate(item.Value.LoadPrHist, sqTicker);
-            Asset asset = assets.Find(r => r.SqTicker == sqTicker)!;
-            asset.ExpectedHistoryStartDateLoc = startDate;
+            Asset? asset = assets.Find(r => r.SqTicker == sqTicker);
+            if (asset == null) // it is a big unexpected problem. Fail the program. The admins should fix this. Don't run silently with this error, because this has to be fixed. Otherwise, it will cause hard to be detecde problems later.
+                StrongAssert.Fail(Severity.ThrowException, $"Error: {sqTicker} is in Redis.LoadPrHist, but not in Redis.Assets");
+            else
+                asset.ExpectedHistoryStartDateLoc = startDate;
         }
     }
 

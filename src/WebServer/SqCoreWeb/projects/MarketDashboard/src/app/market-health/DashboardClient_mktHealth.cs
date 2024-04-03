@@ -122,7 +122,8 @@ public partial class DashboardClient
         if (p_lookbackStr.StartsWith("Date:")) // Browser client never send anything, but "Date:" inputs. Format: "Date:2019-11-11...2020-11-10"
         {
             lookbackStartInc = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length, 10));
-            lookbackEndExcl = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length + 13, 10));
+            DateTime lookbackEndIncl = Utils.FastParseYYYYMMDD(new StringSegment(p_lookbackStr, "Date:".Length + 13, 10)); // the HTML UI inteprets period-end date as it should be Included in the range.
+            lookbackEndExcl = lookbackEndIncl.AddDays(1); // But GetSdaHistCloses() expects it to be Excluded (as that is usual query). So, we add 1 day to calculate EndExcludedDate.
         }
         // else if (p_lookbackStr.EndsWith("y"))
         // {

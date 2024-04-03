@@ -7,7 +7,8 @@ using System.Threading.Tasks;
 using Flurl;
 using Flurl.Http;
 
-namespace YahooFinanceApi; // based on https://github.com/karlwancl/YahooFinanceApi
+namespace YahooFinanceApi; // based on https://github.com/karlwancl/YahooFinanceApi // used by 240 projects
+// Also worth monitoring the source code Python YF API: https://github.com/ranaroussi/yfinance/blob/f08fe83290136d103d46d67524f5b6e7b6b827ff/yfinance/data.py // used by 34K projects
 
 public sealed partial class Yahoo
 {
@@ -82,7 +83,7 @@ public sealed partial class Yahoo
         {
             data = await url
                 .WithCookie(YahooSession.Cookie!.Name, YahooSession.Cookie.Value)
-                .WithHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36") // 2024-03-06: fixing error code 429 (Too Many Requests)
+                .WithHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36") // 2024-03-06: fixing error code 429 (Too Many Requests). 1 day later it worked with/without the Header
                 .GetAsync(token)
                 .ReceiveJson()
                 .ConfigureAwait(false);
