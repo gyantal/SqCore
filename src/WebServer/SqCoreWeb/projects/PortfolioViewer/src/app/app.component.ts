@@ -11,7 +11,7 @@ class HandshakeMessage {
 class TradeJs {
   id: number = -1;
   time: Date = new Date();
-  action: TradeAction = TradeAction.Unknown;
+  action: TradeAction = TradeAction.Buy;
   assetType: AssetType = AssetType.Stock;
   symbol: string | null = null;
   underlyingSymbol: string | null = null;
@@ -26,7 +26,7 @@ class TradeJs {
   Clear(): void {
     this.id = -1;
     this.time = new Date();
-    this.action = TradeAction.Unknown;
+    this.action = TradeAction.Buy;
     this.assetType = AssetType.Stock;
     this.symbol = null;
     this.underlyingSymbol = null;
@@ -102,19 +102,20 @@ export class AppComponent {
   // Trades tabpage: internal data
   m_trades: TradeUi[] = [];
   m_editedTrade: TradeJs = new TradeJs();
+  m_optionFields: OptionFieldsUi = new OptionFieldsUi(); // parts of the m_editedTrade.Symbol in case of Options
+  m_futuresFields: FuturesFieldsUi = new FuturesFieldsUi(); // parts of the m_editedTrade.Symbol in case of Futures
   m_isEditedTradeDirty: boolean = false;
 
   // Trades tabpage: UI handling
-  m_tradeSectionVisibility: boolean = false; // toggle the m_editedTrade widgets on the UI
-  m_optionFields: OptionFieldsUi = new OptionFieldsUi();
-  m_futuresFields: FuturesFieldsUi = new FuturesFieldsUi();
+  m_isEditedTradeSectionVisible: boolean = false; // toggle the m_editedTrade widgets on the UI
   m_isCopyToClipboardDialogVisible: boolean = false;
 
   // Trades tabpage: UI handling enums
-  // Assigning the enums to the class facilitates the binding of their values and enables direct referencing within the template file. Refer: https://stackoverflow.com/questions/69549927/how-to-pass-enum-value-in-angular-template-as-an-input
+  // How to pass enum value into Angular HTML? Answer: assign the Enum Type to a member variable. See. https://stackoverflow.com/questions/69549927/how-to-pass-enum-value-in-angular-template-as-an-input
   m_enumTradeAction = TradeAction;
   m_enumAssetType = AssetType;
   m_enumCurrencyId = CurrencyId;
+  m_enumExchangeId = ExchangeId;
 
   // Trades tabpage: UI handling with list dropdown for TradeAction and CurrencyId's
   m_selectedTradeActionStr: string = 'Buy'; // default set to "Buy"
@@ -233,12 +234,13 @@ export class AppComponent {
   onClickInsertOrUpdateTrade(isInsertNew: boolean) {
     if (this.m_editedTrade.assetType == AssetType.Option) // When a user selects an option, the symbol comprises the underlying asset, the expiration date, the option type (put/call abbreviated as P/C), and the strike price. For instance, in the example "QQQ 20241220C494.78", "QQQ" represents the underlying symbol, "20241220" indicates the expiration date, "C" denotes a call option, and "494.78" signifies the strike price.
       this.m_editedTrade.symbol = this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_optionFields.dateExpiry) + this.m_optionFields.optionType + this.m_optionFields.strikePrice;
-    else
-      this.m_editedTrade.symbol = this.m_editedTrade.underlyingSymbol; // When the user attempts to edit (update) the trade, we need to ensure that the symbol is updated to match the underlying symbol. Otherwise, the item gets updated with the existing symbol from the editedTrade object.
+
+    if (this.m_editedTrade.assetType == AssetType.Futures) // TBD with George.
+      this.m_editedTrade.symbol = this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_futuresFields.dateExpiry) + this.m_futuresFields.multiplier;
 
     if (isInsertNew)
       this.m_editedTrade.id = -1;
-    const tradeJson: string = JSON.stringify(this.m_editedTrade);
+    const tradeJson: string = JSON.stringify(this.m_editedTrade, (key, value) => { return (value != null) ? value : undefined; }); // Omitting null values from the this.m_editedTrade(TradeJs) using the replacer parameter in stringify method, see: https://stackoverflow.com/questions/26540706/preserving-undefined-that-json-stringify-otherwise-removes
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
       this.m_socket.send('InsertOrUpdateTrade:pfId:' + this.m_portfolioId + ':' + tradeJson);
   }
@@ -289,7 +291,7 @@ export class AppComponent {
   }
 
   toggleTradeSectionVisibility() {
-    this.m_tradeSectionVisibility = !this.m_tradeSectionVisibility;
+    this.m_isEditedTradeSectionVisible = !this.m_isEditedTradeSectionVisible;
   }
 
   onTradeActionSelectionClicked(tradeActionStr: string) {
@@ -321,7 +323,7 @@ export class AppComponent {
     }
 
     for (const trade of this.m_trades) {
-      if (trade.isSelected || !isAnyTradeSelected) {
+      if (trade.isSelected || !isAnyTradeSelected) { // Overwrite the user behaviour. If no row is selected, then we copy All rows to clipboard.
         for (const fieldName of tradeFieldNames)
           content += trade[fieldName] + '\t'; // Append the value of the current fieldName from the trade object to the content string, separated by tabs
         content += '\n'; // Append a new line character after appending all fieldName values for the current trade

@@ -53,13 +53,13 @@
   </div>
   <div [hidden]="m_activeTab != 'Trades'"><br>
     <span>
-      <span (click)="toggleTradeSectionVisibility()" class="toggleTradesSection"><span id="toggleSign" [ngStyle]="{'color': m_tradeSectionVisibility ? 'green' : 'red'}">{{m_tradeSectionVisibility ? '&#45;' : '&#43;'}}</span> Edit trades...</span>&nbsp;
+      <span (click)="toggleTradeSectionVisibility()" class="toggleTradesSection"><span id="toggleSign" [ngStyle]="{'color': m_isEditedTradeSectionVisible ? 'green' : 'red'}">{{m_isEditedTradeSectionVisible ? '&#45;' : '&#43;'}}</span> Edit trades...</span>&nbsp;
       <button (click)="onClickSelectAllOrDeselectAll(true)" class="btnCommon">Select All</button>&nbsp;
       <button (click)="onClickSelectAllOrDeselectAll(false)" class="btnCommon">DeSelect All</button>&nbsp;
-      <button (click)="onClickCopyToClipboard()" class="btnCommon">Copy to Clipboard</button>&nbsp;
+      <button (click)="onClickCopyToClipboard()" class="btnCommon">Copy to Clipboard (all/selected)</button>&nbsp;
       <button disabled class="btnCommon">Create from Clipboard</button>&nbsp;
     </span><br>
-    <div id="tradesSection" *ngIf="m_tradeSectionVisibility">
+    <div id="tradesSection" *ngIf="m_isEditedTradeSectionVisible">
       <div id="tradesContainer">
         <span class="tradesCommon">
           <ng-container >
@@ -74,7 +74,7 @@
         <!-- Add Transaction and clear fields will be enabled once the feature is ready -->
         <button (click)="onClickInsertOrUpdateTrade(true)">Insert (new)</button>&nbsp;
         <button (click)="onClickInsertOrUpdateTrade(false)" [disabled]="m_editedTrade.id == -1">Update (existing)</button>&nbsp;
-        <button (click)="onClickDeleteTrade()" [disabled]="m_editedTrade.id == -1">Delete Trade</button>&nbsp;
+        <button (click)="onClickDeleteTrade()" [disabled]="m_editedTrade.id == -1">Delete</button>&nbsp;
         <button (click)="onClickClearFields()">Clear Fields</button>&nbsp;<br>
           TradeId: <input type="number" [(ngModel)]="m_editedTrade.id" (input)="onTradeInputChange()"><br>
           <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" [value]="m_enumAssetType.CurrencyCash">Cash &nbsp;
@@ -88,8 +88,8 @@
               <option class="optionDropDown" *ngFor="let action of m_tradeActions" [value]="action" (click)="onTradeActionSelectionClicked(action)">{{ action }}</option>
             </div>
           </div><br>
-          Symbol: <input type="text" [hidden]="m_editedTrade.assetType != m_enumAssetType.Option" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.underlyingSymbol + ' ' + m_optionFields.dateExpiry + m_optionFields.optionType + m_optionFields.strikePrice" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()" disabled><br>
-          UnderlyingSymbol: <input type="text" [(ngModel)]="m_editedTrade.underlyingSymbol" [value]="m_editedTrade.underlyingSymbol" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
+          Symbol: <input type="text" [(ngModel)]="m_editedTrade.symbol" [value]="m_editedTrade.symbol" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"><br>
+          <div [hidden]="(m_editedTrade.assetType != m_enumAssetType.Option) && (m_editedTrade.assetType != m_enumAssetType.Futures)">UnderlyingSymbol: <input type="text" [(ngModel)]="m_editedTrade.underlyingSymbol" [value]="m_editedTrade.underlyingSymbol" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()"></div>
           <ng-container *ngIf="m_editedTrade.assetType != m_enumAssetType.Option && m_editedTrade.assetType != m_enumAssetType.Futures">
             <div class="assetTypeActive"></div><!-- An empty div with a fixed height aids in stabilizing the UI layout, preventing it from shifting vertically -->
           </ng-container>
@@ -111,7 +111,7 @@
         <span class="tradesCommon">
           Date: <input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" (ngModelChange)="m_editedTrade.time=$event" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (input)="onTradeInputChange()"><br>
           <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
-          Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
+          UTC Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
                 <input type="time" [ngModel]="m_editedTrade.time | date : 'HH:mm':'UTC'" (ngModelChange)="setTradeTime($event)" [value]="m_editedTrade.time | date : 'HH:mm':'UTC'">&nbsp;
                 <button (click)="onClickSetOpenOrClose('close')">setClose</button><br>
           Price: <input type="number" [(ngModel)]="m_editedTrade.price" (input)="onTradeInputChange()">&nbsp;
@@ -148,7 +148,7 @@
           <td>{{m_enumTradeAction[item.action]}}</td>
           <td>{{m_enumAssetType[item.assetType]}}</td>
           <td>{{item.time | date : 'yyyy-MM-dd'}}</td>
-          <td>{{item.exchangeId}}</td>
+          <td>{{m_enumExchangeId[item.exchangeId]}}</td>
         </tr>
       </tbody>
     </table>
@@ -157,7 +157,7 @@
     <p>Portfolio Performance Accumulator</p>
   </div>
 </div>
-<div id="copyToClipboardDialog" *ngIf="m_isCopyToClipboardDialogVisible">All rows copied To Clipboard
+<div id="copyToClipboardDialog" *ngIf="m_isCopyToClipboardDialogVisible">All/Selected rows copied To Clipboard
   <div id="copyToClipboardDialogClosetBtn">
     <button type="button" (click)="onCopyDialogCloseClicked()">Close</button>
   </div>
