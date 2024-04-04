@@ -118,10 +118,8 @@ export class AppComponent {
   m_enumExchangeId = ExchangeId;
 
   // Trades tabpage: UI handling with list dropdown for TradeAction and CurrencyId's
-  m_selectedTradeActionStr: string = 'Buy'; // default set to "Buy"
-  m_tradeActions: string[] = ['Unknown', 'Deposit', 'Withdrawal', 'Buy', 'Sell', 'Exercise', 'Expired'];
-  m_selectedCurrencyIdStr: string = 'USD'; // default set to "USD"
-  m_CurrencyIds: string[] = ['Unknown', 'USD', 'EUR', 'GBP', 'GBX', 'HUF', 'CNY', 'JPY', 'CAD', 'CHF'];
+  m_tradeActions: string[] = Object.values(TradeAction).filter((value) => typeof value === 'string') as string[]; // Explicitly casting to string[] to resolve TypeScript error where the type is inferred as (string | TradeAction)[]
+  m_CurrencyIds: string[] = Object.values(CurrencyId).filter((value) => typeof value === 'string') as string[]; // Explicitly casting to string[] to resolve TypeScript error where the type is inferred as (string | CurrencyId)[]
 
   user = {
     name: 'Anonymous',
@@ -228,19 +226,23 @@ export class AppComponent {
 
     this.m_editedTrade.CopyFrom(trade);
     this.m_isEditedTradeDirty = false; // Reset the dirty flag, when the user selects a new item from the trades.
-    this.onCurrencyValueChanged();
   }
 
   onClickInsertOrUpdateTrade(isInsertNew: boolean) {
     if (this.m_editedTrade.assetType == AssetType.Option) // When a user selects an option, the symbol comprises the underlying asset, the expiration date, the option type (put/call abbreviated as P/C), and the strike price. For instance, in the example "QQQ 20241220C494.78", "QQQ" represents the underlying symbol, "20241220" indicates the expiration date, "C" denotes a call option, and "494.78" signifies the strike price.
       this.m_editedTrade.symbol = this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_optionFields.dateExpiry) + this.m_optionFields.optionType + this.m_optionFields.strikePrice;
 
-    if (this.m_editedTrade.assetType == AssetType.Futures) // TBD with George.
-      this.m_editedTrade.symbol = this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_futuresFields.dateExpiry) + this.m_futuresFields.multiplier;
+    if (this.m_editedTrade.assetType == AssetType.Futures) // ex: symbol: VIX 20240423M1000 => VIX(underlyingSymbol) 20240423(Date) M(Mulitplier)1000.
+      this.m_editedTrade.symbol = this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_futuresFields.dateExpiry) + 'M' + this.m_futuresFields.multiplier;
 
     if (isInsertNew)
       this.m_editedTrade.id = -1;
-    const tradeJson: string = JSON.stringify(this.m_editedTrade, (key, value) => { return (value != null) ? value : undefined; }); // Omitting null values from the this.m_editedTrade(TradeJs) using the replacer parameter in stringify method, see: https://stackoverflow.com/questions/26540706/preserving-undefined-that-json-stringify-otherwise-removes
+
+    const tradeJson: string = JSON.stringify(this.m_editedTrade, (key, value) => { // Omitting null values from the this.m_editedTrade(TradeJs) using the replacer parameter in stringify method, see: https://stackoverflow.com/questions/26540706/preserving-undefined-that-json-stringify-otherwise-removes
+      if (key == 'currency' && (value == CurrencyId.Unknown || value == CurrencyId.USD)) // also omitting the value of currency , if its 'USD' or 'Unknown'.
+        return undefined;
+      return (value != null) ? value : undefined;
+    });
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
       this.m_socket.send('InsertOrUpdateTrade:pfId:' + this.m_portfolioId + ':' + tradeJson);
   }
@@ -260,12 +262,12 @@ export class AppComponent {
 
   onClickSetOpenOrClose(setTime: string) {
     const now = new Date(); // Get the current date and time in the user's local time zone
-    if (TradeAction[this.m_selectedTradeActionStr] == TradeAction.Buy) { // Buy
+    if (this.m_editedTrade.action == TradeAction.Buy) { // Buy
       if (setTime == 'open') // Set the opening time to 9:31 AM local time (NYSE opening time)
         now.setUTCHours(13, 31, 0);
       else if (setTime == 'close') // Set the closing time to 4:00 PM local time (NYSE closing time)
         now.setUTCHours(20, 0, 0);
-    } else if (TradeAction[this.m_selectedTradeActionStr] == TradeAction.Sell) { // Sell
+    } else if (this.m_editedTrade.action == TradeAction.Sell) { // Sell
       if (setTime == 'open') // Set the opening time to 9:30 AM local time (NYSE opening time)
         now.setUTCHours(13, 30, 0);
       else if (setTime == 'close') // Set the closing time to 3:59 PM local time (NYSE closing time)
@@ -294,14 +296,22 @@ export class AppComponent {
     this.m_isEditedTradeSectionVisible = !this.m_isEditedTradeSectionVisible;
   }
 
+  onChangeTradeActionInput(pEvent: Event) { // Handles the situation where the user enters a value manually into the input box instead of selecting from the dropdown.
+    const tradeActionStr: string = (pEvent.target as HTMLInputElement).value;
+    this.onTradeActionSelectionClicked(tradeActionStr);
+  }
+
+  onChangeCurrencyIdInput(pEvent: Event) { // Handles the situation where the user enters a value manually into the input box instead of selecting from the dropdown.
+    const currencyIdStr: string = (pEvent.target as HTMLInputElement).value;
+    this.onCurrencyTypeSelectionClicked(currencyIdStr);
+  }
+
   onTradeActionSelectionClicked(tradeActionStr: string) {
-    this.m_selectedTradeActionStr = tradeActionStr;
     this.m_editedTrade.action = TradeAction[tradeActionStr];
     this.onTradeInputChange();
   }
 
   onCurrencyTypeSelectionClicked(currencyIdStr: string) {
-    this.m_selectedCurrencyIdStr = currencyIdStr;
     this.m_editedTrade.currency = CurrencyId[currencyIdStr];
     this.onTradeInputChange();
   }
@@ -337,12 +347,5 @@ export class AppComponent {
 
   onCopyDialogCloseClicked() {
     this.m_isCopyToClipboardDialogVisible = false;
-  }
-
-  onCurrencyValueChanged() {
-    if (this.m_editedTrade.currency == CurrencyId.Unknown)
-      this.m_selectedCurrencyIdStr = 'USD';
-    else
-      this.m_selectedCurrencyIdStr = CurrencyId[this.m_editedTrade.currency];
   }
 }
