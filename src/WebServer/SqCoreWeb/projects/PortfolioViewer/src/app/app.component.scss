@@ -36,6 +36,7 @@ thead {
 #tradesSection {
   padding: 0.05rem 0 0.05rem 0;
   border: 0.05rem solid black;
+  margin-top: 0.3rem;
 }
 
 .tradedRowSelected {
@@ -88,7 +89,7 @@ thead {
   display: none;
   position: absolute;
   background-color: #f1f1f1;
-  min-width: 6rem;
+  min-width: 5rem;
   z-index: 1;
 }
 
@@ -111,7 +112,7 @@ thead {
 }
 
 .highlightInputDropDown {
-  width: 8rem;
+  width: 5rem;
   height: 0.8rem;
   border: 0.02rem solid black;
 }
@@ -122,20 +123,24 @@ thead {
 }
 
 .fixedHeightDiv {
-  height: 1.2rem;
+  height: 1.3rem;
 }
 
 #toggleSign {
   color: #32CD32;
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: bolder;
 }
 
 .toggleTradesSection {
   display: inline-block; // Renders the element as an inline-level block container, allowing it to have width, height, and horizontal layout control
   background-color: #D3D3D3;
-  width: 8rem;
-  height: 2rem;
+  width: 7.5rem;
+  height: 1.5rem;
   border-radius: 0.5rem;
   cursor: pointer;
+}
+
+.inputTextboxWidth {
+  width: 5rem;
 }

@@ -239,7 +239,7 @@ export class AppComponent {
       this.m_editedTrade.id = -1;
 
     const tradeJson: string = JSON.stringify(this.m_editedTrade, (key, value) => { // Omitting null values from the this.m_editedTrade(TradeJs) using the replacer parameter in stringify method, see: https://stackoverflow.com/questions/26540706/preserving-undefined-that-json-stringify-otherwise-removes
-      if (key == 'currency' && (value == CurrencyId.Unknown || value == CurrencyId.USD)) // also omitting the value of currency , if its 'USD' or 'Unknown'.
+      if (key == 'currency' && value == CurrencyId.USD) // also omitting the value of currency , if its 'USD' or 'Unknown'.
         return undefined;
       return (value != null) ? value : undefined;
     });
