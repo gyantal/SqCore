@@ -126,23 +126,32 @@ public partial class FinDb
         }
 
         // Calling the CrawlData function that generates files per ticker.
+        int nErrors = 0;
         for (int i = 0; i < tickers.Count; i++)
         {
             string ticker = tickers[i];
-            DateTime startDate = DateTime.ParseExact(mapFilesFirstRows[i], "yyyyMMdd", CultureInfo.InvariantCulture);
-            DateTime startDateCurrTicker = DateTime.ParseExact(mapFilesLastButOneRows[i], "yyyyMMdd", CultureInfo.InvariantCulture).AddDays(1);
-            DateTime endDate = DateTime.ParseExact(mapFilesLastRows[i], "yyyyMMdd", CultureInfo.InvariantCulture);
-            Utils.Logger.Info($"FinDb.CrawlData() START with ticker: {ticker}");
+            try
+            {
+                DateTime startDate = DateTime.ParseExact(mapFilesFirstRows[i], "yyyyMMdd", CultureInfo.InvariantCulture);
+                DateTime startDateCurrTicker = DateTime.ParseExact(mapFilesLastButOneRows[i], "yyyyMMdd", CultureInfo.InvariantCulture).AddDays(1);
+                DateTime endDate = DateTime.ParseExact(mapFilesLastRows[i], "yyyyMMdd", CultureInfo.InvariantCulture);
+                Utils.Logger.Info($"FinDb.CrawlData() START with ticker: {ticker}");
 #if DEBUG
-            Console.WriteLine($"FinDb.CrawlData() START with ticker: {ticker}");
+                Console.WriteLine($"FinDb.CrawlData() START with ticker: {ticker}");
 #endif
-            bool isPriceOK = await CrawlPriceData(ticker, finDataDir, startDateCurrTicker, endDate);
-            if (!isPriceOK)
-                Utils.Logger.Error($"Error processing price for {ticker}");
+                bool isPriceOK = await CrawlPriceData(ticker, finDataDir, startDateCurrTicker, endDate);
+                if (!isPriceOK)
+                    Utils.Logger.Error($"Error processing price for {ticker}");
 
-            bool isFundamentalOK = await CrawlFundamentalData(ticker, finDataDir, startDate);
-            if (!isFundamentalOK)
-                Utils.Logger.Error($"Error processing fundamental for {ticker}");
+                bool isFundamentalOK = await CrawlFundamentalData(ticker, finDataDir, startDate);
+                if (!isFundamentalOK)
+                    Utils.Logger.Error($"Error processing fundamental for {ticker}");
+            }
+            catch (System.Exception e)
+            {
+                nErrors++;
+                Utils.Logger.Error($"ERROR in CrawlData(). Ticker: {ticker}. Exception: '{e.Message}'");
+            }
         }
 
         // Process the virtual tickers. E.g. 'VXX-SQ'
@@ -159,9 +168,13 @@ public partial class FinDb
             }
             catch (System.Exception e)
             {
+                nErrors++;
                 Utils.Logger.Error($"Error processing {ticker}. Exception: '{e.Message}'");
             }
         }
+
+        if (nErrors > 0)
+            HealthMonitorMessage.SendAsync($"FinDb.CrawlData() #{nErrors} errors", HealthMonitorMessageID.SqCoreWebCsError).TurnAsyncToSyncTask();
 
         return true;
     }

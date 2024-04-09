@@ -75,6 +75,9 @@ function onReceiveData(json: any) {
   const warnLength = json.warningCont.length;
   if (warnLength > 0 && lastSelectedUniverse != 3)
     getNonNullDocElementById('idWarningCont').innerHTML = json.warningCont + '<br> <a href="https://docs.google.com/spreadsheets/d/1fmvGBi2Q6MxnB_8AjUedy1QVTOlWE7Ck1rICjYSSxyY" target="_blank">Google sheet with current positions</a> and <a href="https://docs.google.com/document/d/1_m3MMGag7uBZSdvc4IgXKMvj3d4kzLxwvnW14RkCyco" target="_blank">the latest study in connection with the strategy</a>';
+  else if (warnLength > 0 && lastSelectedUniverse == 3)
+    getNonNullDocElementById('idWarningCont').innerHTML = json.warningCont + '<br> <a href="https://docs.google.com/spreadsheets/d/1nPuUi8RpY4h7AOepuv-TPa1vemiasOA9Ajqid8azq50" target="_blank">Google sheet with current positions</a>';
+
   uberTaaTbls(json);
   // Setting charts visible after getting data.
   getNonNullDocElementById('pctChgCharts').style.visibility = 'visible';
