@@ -108,7 +108,7 @@
           Date: <input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" (ngModelChange)="m_editedTrade.time=$event" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (input)="onTradeInputChange()"><br>
           <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
           UTC Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
-                <input type="time" [ngModel]="m_editedTrade.time | date : 'HH:mm':'UTC'" (ngModelChange)="setTradeTime($event)" [value]="m_editedTrade.time | date : 'HH:mm':'UTC'">&nbsp;
+                <input type="time" [ngModel]="m_editedTrade.time | date : 'HH:mm'" (ngModelChange)="setTradeTime($event)" [value]="m_editedTrade.time | date : 'HH:mm'">&nbsp;
                 <button (click)="onClickSetOpenOrClose('close')">setClose</button><br>
           Price: <input class="inputTextboxWidth" type="number" [ngModel]="m_editedTrade.price | nanToDash" (ngModelChange)="m_editedTrade.price=$event" (input)="onTradeInputChange()">&nbsp;
           <div class="selectionDropDown">

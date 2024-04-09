@@ -39,6 +39,25 @@ export class SqNgCommonUtilsTime implements OnInit {
     return dateEt;
   }
 
+  public static ConvertDateEtToUtc(etSetDate: Date): Date {
+    // Get the offset hours between ET and UTC (offsetUtcToEt = 4hrs)
+    const utcTime: string = new Date().toLocaleString('en-US', { timeZone: 'UTC' });
+    const etTime: string = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
+    const etDate: Date = new Date(etTime);
+    const utcDate: Date = new Date(utcTime);
+    // Calculate offset from ET to UTC
+    const offsetEtToUtc: number = Math.abs(Math.floor((etDate.getTime() - utcDate.getTime()) / (1000 * 60 * 60)));
+    // ET hours
+    const etHours: number = etSetDate.getHours();
+    const etMinutes: number = etSetDate.getMinutes();
+    // Calculate new hours in UTC
+    const newHours: number = etHours + offsetEtToUtc;
+    const newMinutes: number = etMinutes;
+
+    utcDate.setHours(newHours, newMinutes);
+    return utcDate;
+  }
+
   public static ConvertDateUtcToLoc() {
     // Maybe this will help.
     // uiSnapTable.snapLastUpateTime = new Date(brAccSnap.lastUpdate);  // if the string contains "Z" time zone postfix, then JS converts the result to Local time
