@@ -13,10 +13,10 @@ class TradeJs {
   time: Date = new Date();
   action: TradeAction = TradeAction.Buy;
   assetType: AssetType = AssetType.Stock;
-  symbol: string | null = null;
-  underlyingSymbol: string | null = null;
-  quantity: number = 0;
-  price: number = 0;
+  symbol: string = '';
+  underlyingSymbol: string = '';
+  quantity: number = NaN;
+  price: number = NaN;
   currency: CurrencyId = CurrencyId.USD;
   commission: number = 0;
   exchangeId: ExchangeId = ExchangeId.Unknown;
@@ -28,10 +28,10 @@ class TradeJs {
     this.time = new Date();
     this.action = TradeAction.Buy;
     this.assetType = AssetType.Stock;
-    this.symbol = null;
-    this.underlyingSymbol = null;
-    this.quantity = 0;
-    this.price = 0;
+    this.symbol = '';
+    this.underlyingSymbol = '';
+    this.quantity = NaN;
+    this.price = NaN;
     this.currency = CurrencyId.USD;
     this.commission = 0;
     this.exchangeId = ExchangeId.Unknown;
@@ -71,13 +71,13 @@ class TradeUi extends TradeJs {
 
 class OptionFieldsUi {
   public optionType: string = ''; // option: Put/Call
-  public strikePrice: number = 0;
+  public strikePrice: number = NaN;
   public dateExpiry: string = '';
 }
 
 class FuturesFieldsUi {
   public dateExpiry: string = '';
-  public multiplier: number = 0;
+  public multiplier: number = NaN;
 }
 
 @Component({
@@ -102,8 +102,8 @@ export class AppComponent {
   // Trades tabpage: internal data
   m_trades: TradeUi[] = [];
   m_editedTrade: TradeJs = new TradeJs();
-  m_optionFields: OptionFieldsUi = new OptionFieldsUi(); // parts of the m_editedTrade.Symbol in case of Options
-  m_futuresFields: FuturesFieldsUi = new FuturesFieldsUi(); // parts of the m_editedTrade.Symbol in case of Futures
+  m_editedTradeOptionFields: OptionFieldsUi = new OptionFieldsUi(); // parts of the m_editedTrade.Symbol in case of Options
+  m_editedTradeFutureFields: FuturesFieldsUi = new FuturesFieldsUi(); // parts of the m_editedTrade.Symbol in case of Futures
   m_isEditedTradeDirty: boolean = false;
 
   // Trades tabpage: UI handling
@@ -229,11 +229,7 @@ export class AppComponent {
   }
 
   onClickInsertOrUpdateTrade(isInsertNew: boolean) {
-    if (this.m_editedTrade.assetType == AssetType.Option) // When a user selects an option, the symbol comprises the underlying asset, the expiration date, the option type (put/call abbreviated as P/C), and the strike price. For instance, in the example "QQQ 20241220C494.78", "QQQ" represents the underlying symbol, "20241220" indicates the expiration date, "C" denotes a call option, and "494.78" signifies the strike price.
-      this.m_editedTrade.symbol = this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_optionFields.dateExpiry) + this.m_optionFields.optionType + this.m_optionFields.strikePrice;
-
-    if (this.m_editedTrade.assetType == AssetType.Futures) // ex: symbol: VIX 20240423M1000 => VIX(underlyingSymbol) 20240423(Date) M(Mulitplier)1000.
-      this.m_editedTrade.symbol = this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_futuresFields.dateExpiry) + 'M' + this.m_futuresFields.multiplier;
+    this.m_editedTrade.symbol = this.getEditedTradeSymbol();
 
     if (isInsertNew)
       this.m_editedTrade.id = -1;
@@ -347,5 +343,14 @@ export class AppComponent {
 
   onCopyDialogCloseClicked() {
     this.m_isCopyToClipboardDialogVisible = false;
+  }
+
+  getEditedTradeSymbol(): string {
+    if (this.m_editedTrade.assetType === AssetType.Option) // When a user selects an option, the symbol comprises the underlying asset, the expiration date, the option type (put/call abbreviated as P/C), and the strike price. For instance, in the example "QQQ 20241220C494.78", "QQQ" represents the underlying symbol, "20241220" indicates the expiration date, "C" denotes a call option, and "494.78" signifies the strike price.
+      return this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_editedTradeOptionFields.dateExpiry) + this.m_editedTradeOptionFields.optionType + (isNaN(this.m_editedTradeOptionFields.strikePrice) ? '-' : this.m_editedTradeOptionFields.strikePrice);
+    else if (this.m_editedTrade.assetType === AssetType.Futures) // ex: symbol: VIX 20240423M1000 => VIX(underlyingSymbol) 20240423(Date) M(Mulitplier)1000.
+      return this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_editedTradeFutureFields.dateExpiry) + 'M' + (isNaN(this.m_editedTradeFutureFields.multiplier) ? '-' : this.m_editedTradeFutureFields.multiplier);
+    else
+      return this.m_editedTrade.symbol;
   }
 }
