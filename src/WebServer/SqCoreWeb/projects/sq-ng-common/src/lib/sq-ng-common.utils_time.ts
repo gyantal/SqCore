@@ -39,7 +39,7 @@ export class SqNgCommonUtilsTime implements OnInit {
     return dateEt;
   }
 
-  public static ConvertDateEtToUtc(etSetDate: Date): Date {
+  public static ConvertDateEtToUtc(inputEtDate: Date): Date {
     // Get the offset hours between ET and UTC (offsetUtcToEt = 4hrs)
     const utcTime: string = new Date().toLocaleString('en-US', { timeZone: 'UTC' });
     const etTime: string = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
@@ -48,8 +48,8 @@ export class SqNgCommonUtilsTime implements OnInit {
     // Calculate offset from ET to UTC
     const offsetEtToUtc: number = Math.abs(Math.floor((etDate.getTime() - utcDate.getTime()) / (1000 * 60 * 60)));
     // ET hours
-    const etHours: number = etSetDate.getHours();
-    const etMinutes: number = etSetDate.getMinutes();
+    const etHours: number = inputEtDate.getHours();
+    const etMinutes: number = inputEtDate.getMinutes();
     // Calculate new hours in UTC
     const newHours: number = etHours + offsetEtToUtc;
     const newMinutes: number = etMinutes;

@@ -117,10 +117,6 @@ export class AppComponent {
   m_enumCurrencyId = CurrencyId;
   m_enumExchangeId = ExchangeId;
 
-  // Trades tabpage: UI handling with list dropdown for TradeAction and CurrencyId's
-  m_tradeActions: string[] = Object.values(TradeAction).filter((value) => typeof value === 'string') as string[]; // Explicitly casting to string[] to resolve TypeScript error where the type is inferred as (string | TradeAction)[]
-  m_CurrencyIds: string[] = Object.values(CurrencyId).filter((value) => typeof value === 'string') as string[]; // Explicitly casting to string[] to resolve TypeScript error where the type is inferred as (string | CurrencyId)[]
-
   user = {
     name: 'Anonymous',
     email: '             '
@@ -261,22 +257,17 @@ export class AppComponent {
     const etDate: Date = new Date(etTime);
     let utcDate: Date = new Date();
     if (this.m_editedTrade.action == TradeAction.Buy) { // Buy
-      if (setTime == 'open') { // Set the opening time to 9:31 AM local time (NYSE opening time)
+      if (setTime == 'open') // Set the opening time to 9:31 AM local time (NYSE opening time)
         etDate.setHours(9, 31, 0);
-        utcDate = SqNgCommonUtilsTime.ConvertDateEtToUtc(etDate);
-      } else if (setTime == 'close') { // Set the closing time to 4:00 PM local time (NYSE closing time)
+      else if (setTime == 'close') // Set the closing time to 4:00 PM local time (NYSE closing time)
         etDate.setHours(16, 0, 0);
-        utcDate = SqNgCommonUtilsTime.ConvertDateEtToUtc(etDate);
-      }
     } else if (this.m_editedTrade.action == TradeAction.Sell) { // Sell
-      if (setTime == 'open') { // Set the opening time to 9:30 AM local time (NYSE opening time)
+      if (setTime == 'open') // Set the opening time to 9:30 AM local time (NYSE opening time)
         etDate.setHours(9, 30, 0);
-        utcDate = SqNgCommonUtilsTime.ConvertDateEtToUtc(etDate);
-      } else if (setTime == 'close') { // Set the closing time to 3:59 PM local time (NYSE closing time)
+      else if (setTime == 'close') // Set the closing time to 3:59 PM local time (NYSE closing time)
         etDate.setHours(15, 59, 0);
-        utcDate = SqNgCommonUtilsTime.ConvertDateEtToUtc(etDate);
-      }
     }
+    utcDate = SqNgCommonUtilsTime.ConvertDateEtToUtc(etDate);
     this.m_editedTrade.time = utcDate; // Update m_editedTrade.time with the calculated time in UTC format
   }
 
@@ -299,23 +290,13 @@ export class AppComponent {
     this.m_isEditedTradeSectionVisible = !this.m_isEditedTradeSectionVisible;
   }
 
-  onChangeTradeActionInput(pEvent: Event) { // Handles the situation where the user enters a value manually into the input box instead of selecting from the dropdown.
-    const tradeActionStr: string = (pEvent.target as HTMLInputElement).value;
-    this.onTradeActionSelectionClicked(tradeActionStr);
-  }
-
-  onChangeCurrencyIdInput(pEvent: Event) { // Handles the situation where the user enters a value manually into the input box instead of selecting from the dropdown.
-    const currencyIdStr: string = (pEvent.target as HTMLInputElement).value;
-    this.onCurrencyTypeSelectionClicked(currencyIdStr);
-  }
-
-  onTradeActionSelectionClicked(tradeActionStr: string) {
-    this.m_editedTrade.action = TradeAction[tradeActionStr];
+  onTradeActionSelectionClicked(enumTradeActionStr: TradeAction) { // ex: enumTradeActionStr = "Buy", represents the string version of the TradeAction enum.
+    this.m_editedTrade.action = TradeAction[enumTradeActionStr.toString()];
     this.onTradeInputChange();
   }
 
-  onCurrencyTypeSelectionClicked(currencyIdStr: string) {
-    this.m_editedTrade.currency = CurrencyId[currencyIdStr];
+  onCurrencyTypeSelectionClicked(enumCurrencyIdStr: CurrencyId) { // ex: enumCurrencyIdStr = "USD", represents the string version of the CurrencyId enum.
+    this.m_editedTrade.currency = CurrencyId[enumCurrencyIdStr.toString()];
     this.onTradeInputChange();
   }
 
@@ -353,8 +334,6 @@ export class AppComponent {
   }
 
   getEditedTradeSymbol(): string {
-    // if (this.m_editedTrade.underlyingSymbol == null)
-    //   this.m_editedTrade.underlyingSymbol = '';
     if (this.m_editedTrade.assetType === AssetType.Option) // When a user selects an option, the symbol comprises the underlying asset, the expiration date, the option type (put/call abbreviated as P/C), and the strike price. For instance, in the example "QQQ 20241220C494.78", "QQQ" represents the underlying symbol, "20241220" indicates the expiration date, "C" denotes a call option, and "494.78" signifies the strike price.
       return this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_editedTradeOptionFields.dateExpiry) + this.m_editedTradeOptionFields.optionType + (isNaN(this.m_editedTradeOptionFields.strikePrice) ? '-' : this.m_editedTradeOptionFields.strikePrice);
     else if (this.m_editedTrade.assetType === AssetType.Futures) // ex: symbol: VIX 20240423M1000 => VIX(underlyingSymbol) 20240423(Date) M(Mulitplier)1000.

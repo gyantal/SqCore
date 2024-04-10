@@ -85,21 +85,25 @@
             <div class="selectionDropDown">
               <input class="highlightInputDropDown" type="text" [value]="m_enumTradeAction[m_editedTrade.action]" (input)="onTradeInputChange()" disabled>
               <div class="listDropDown">
-                <option class="optionDropDown" *ngFor="let action of m_tradeActions" [value]="action" (click)="onTradeActionSelectionClicked(action)">{{ action }}</option>
+                <ng-container *ngFor="let action of m_enumTradeAction | keyvalue">
+                  <ng-container *ngIf="(action.value | typeof) === 'string'">
+                    <option class="optionDropDown" [value]="action.value" (click)="onTradeActionSelectionClicked(action.value)">{{ action.value }}</option>
+                  </ng-container>
+                </ng-container>
             </div>
           </div>&nbsp;
           <!-- The user input for options and futures selection has been disabled because the value is determined through concatenation using the underlying symbol, expiration date, put/call designation, and strike price for options, while for futures, it relies on the underlying symbol, expiration date with the addition of "+M," and the multiplier -->
           Symbol: <input type="text" [(ngModel)]="m_editedTrade.symbol" [value]="getEditedTradeSymbol()" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()" [disabled]="(m_editedTrade.assetType == m_enumAssetType.Option || m_editedTrade.assetType == m_enumAssetType.Futures)"><br>
           <div class="fixedHeightDiv" [hidden]="(m_editedTrade.assetType != m_enumAssetType.Option) && (m_editedTrade.assetType != m_enumAssetType.Futures)">
-            UnderlyingSymbol: <input class="inputTextboxWidth" type="text" [(ngModel)]="m_editedTrade.underlyingSymbol" [value]="m_editedTrade.underlyingSymbol" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()">
+            UnderlyingSym: <input class="inputTextboxWidth" type="text" [(ngModel)]="m_editedTrade.underlyingSymbol" [value]="m_editedTrade.underlyingSymbol" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()">
             <ng-container *ngIf="m_editedTrade.assetType == m_enumAssetType.Option">
               <input name="optionType" type="radio" value="P" [(ngModel)]="m_editedTradeOptionFields.optionType">Put
               <input name="optionType" type="radio" value="C" [(ngModel)]="m_editedTradeOptionFields.optionType">Call &nbsp;
-              DateExpiry: <input type="date" [(ngModel)]="m_editedTradeOptionFields.dateExpiry">
-              StrikePrice: <input class="inputTextboxWidth" type="number" [(ngModel)]="m_editedTradeOptionFields.strikePrice"><br>
+              Expiry: <input type="date" [(ngModel)]="m_editedTradeOptionFields.dateExpiry">
+              Strike: <input class="inputTextboxWidth" type="number" [(ngModel)]="m_editedTradeOptionFields.strikePrice"><br>
             </ng-container>
             <ng-container *ngIf="m_editedTrade.assetType == m_enumAssetType.Futures">
-              DateExpiry: <input class="inputTextboxWidth" type="date" [(ngModel)]="m_editedTradeFutureFields.dateExpiry">
+              Expiry: <input class="inputTextboxWidth" type="date" [(ngModel)]="m_editedTradeFutureFields.dateExpiry">
               Multiplier: <input class="inputTextboxWidth" type="number" [(ngModel)]="m_editedTradeFutureFields.multiplier"><br>
             </ng-container>
           </div>
@@ -114,7 +118,11 @@
           <div class="selectionDropDown">
             <input class="highlightInputDropDown" type="text" placeholder="Enter CurrencyId" [value]="m_enumCurrencyId[m_editedTrade.currency]" (input)="onTradeInputChange()" disabled>
             <div class="listDropDown">
-              <option class="optionDropDown" *ngFor="let currencyId of m_CurrencyIds" [value]="currencyId" (click)="onCurrencyTypeSelectionClicked(currencyId)">{{ currencyId }}</option>
+              <ng-container *ngFor="let action of m_enumCurrencyId | keyvalue">
+                <ng-container *ngIf="(action.value | typeof) === 'string'">
+                  <option class="optionDropDown" [value]="action.value" (click)="onCurrencyTypeSelectionClicked(action.value)">{{ action.value }}</option>
+                </ng-container>
+              </ng-container>
             </div>
           </div><br>
           Quantity: <input class="inputTextboxWidth" type="number" [ngModel]="m_editedTrade.quantity | nanToDash" (ngModelChange)="m_editedTrade.quantity=$event" (input)="onTradeInputChange()">&nbsp;
