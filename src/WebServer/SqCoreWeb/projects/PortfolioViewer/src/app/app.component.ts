@@ -253,9 +253,8 @@ export class AppComponent {
   }
 
   onClickSetOpenOrClose(setTime: string) {
-    const etTime: string = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
-    const etDate: Date = new Date(etTime);
-    let utcDate: Date = new Date();
+    const etTimeStr: string = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
+    const etDate: Date = new Date(etTimeStr);
     if (this.m_editedTrade.action == TradeAction.Buy) { // Buy
       if (setTime == 'open') // Set the opening time to 9:31 AM local time (NYSE opening time)
         etDate.setHours(9, 31, 0);
@@ -267,7 +266,7 @@ export class AppComponent {
       else if (setTime == 'close') // Set the closing time to 3:59 PM local time (NYSE closing time)
         etDate.setHours(15, 59, 0);
     }
-    utcDate = SqNgCommonUtilsTime.ConvertDateEtToUtc(etDate);
+    const utcDate: Date = SqNgCommonUtilsTime.ConvertDateEtToUtc(etDate);
     this.m_editedTrade.time = utcDate; // Update m_editedTrade.time with the calculated time in UTC format
   }
 
@@ -290,13 +289,13 @@ export class AppComponent {
     this.m_isEditedTradeSectionVisible = !this.m_isEditedTradeSectionVisible;
   }
 
-  onTradeActionSelectionClicked(enumTradeActionStr: TradeAction) { // ex: enumTradeActionStr = "Buy", represents the string version of the TradeAction enum.
-    this.m_editedTrade.action = TradeAction[enumTradeActionStr.toString()];
+  onTradeActionSelectionClicked(enumTradeActionStr: any) { // e.g.: enumTradeActionStr = "Buy" as string. The ":string" type would be more accurate instead of ":any", but 'as' is not allowed in Angular HTML. AngularHtml thinks (correctly) that the enum TradeAction is a JS object = general dictionary where keys and values can be any types.
+    this.m_editedTrade.action = TradeAction[enumTradeActionStr as keyof TradeAction];
     this.onTradeInputChange();
   }
 
-  onCurrencyTypeSelectionClicked(enumCurrencyIdStr: CurrencyId) { // ex: enumCurrencyIdStr = "USD", represents the string version of the CurrencyId enum.
-    this.m_editedTrade.currency = CurrencyId[enumCurrencyIdStr.toString()];
+  onCurrencyTypeSelectionClicked(enumCurrencyIdStr: any) { // ex: enumCurrencyIdStr = "USD"as string. The ":string" type would be more accurate instead of ":any", but 'as' is not allowed in Angular HTML. AngularHtml thinks (correctly) that the enum CurrencyId is a JS object = general dictionary where keys and values can be any types.
+    this.m_editedTrade.currency = CurrencyId[enumCurrencyIdStr as keyof CurrencyId];
     this.onTradeInputChange();
   }
 

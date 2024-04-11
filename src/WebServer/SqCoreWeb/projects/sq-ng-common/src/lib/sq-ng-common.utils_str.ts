@@ -34,7 +34,11 @@ export class NanToDashPipe implements PipeTransform {
   }
 }
 
-@Pipe({ name: 'typeof'}) // How to use typeof in Angular HTML? Answer: create a pipe instead of function call to get the typeof a variable. see : https://stackoverflow.com/questions/37511055/how-to-check-type-of-variable-in-ngif-in-angular2
+// How to use typeof in Angular HTML? Answer: create a pipe instead of function call to get the typeof a variable.
+// see : https://stackoverflow.com/questions/37511055/how-to-check-type-of-variable-in-ngif-in-angular2
+// We prefer the Pipe version solution. The version of the 'a helper method in the component' is less reusable.
+// Because we have to write that helper function in every component we use. Instead, a pipe version once it is written can be used anywhere without bloating the component itself.
+@Pipe({ name: 'typeof'})
 export class TypeOfPipe implements PipeTransform {
   transform(value: any): any {
     return typeof value;
