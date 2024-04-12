@@ -60,9 +60,18 @@ Cargo.lock
 !**/Fin/Data/equity/usa/daily/*-sq-history.zip
 !**/Fin/Data/equity/usa/daily/cdn.zip
 !**/Fin/Data/equity/usa/daily/fb.zip
+!**/Fin/Data/equity/usa/daily/goog.zip
 !**/Fin/Data/equity/usa/daily/oac.zip
 !**/Fin/Data/equity/usa/daily/vxxb.zip
 !**/Fin/Data/equity/usa/daily/vxzb.zip
+
+# SIN stocks:
+!**/Fin/Data/equity/usa/daily/ald.zip
+!**/Fin/Data/equity/usa/daily/cbrna.zip
+!**/Fin/Data/equity/usa/daily/cdb.zip
+!**/Fin/Data/equity/usa/daily/erts.zip
+!**/Fin/Data/equity/usa/daily/hrs.zip
+!**/Fin/Data/equity/usa/daily/utx.zip
 
 **/Fin/Data/equity/usa/factor_files/*
 !**/Fin/Data/equity/usa/factor_files/spy-qc.csv

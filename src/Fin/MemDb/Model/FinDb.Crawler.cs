@@ -190,7 +190,7 @@ public partial class FinDb
 
         // First, collect splits from YF, because daily prices (history data) have to be reverse adjusted with the splits. YF raw prices aren't adjusted with dividends, but are adjusted with splits.
         List<SqSplit> splitList = new();
-        IReadOnlyList<SplitTick?> splitHistory = await Yahoo.GetSplitsAsync(p_ticker, null, null);
+        IReadOnlyList<SplitTick?> splitHistory = await Yahoo.GetSplitsAsync(p_ticker, p_startDate.AddDays(1), null);
         foreach (SplitTick? splitTick in splitHistory)
         {
             splitList.Add(new SqSplit() { ReferenceDate = splitTick!.DateTime, SplitFactor = splitTick.AfterSplit / splitTick.BeforeSplit });
@@ -269,7 +269,7 @@ public partial class FinDb
         tw.Close();
 
         // Download dividend history from YF. After that collect dividends and splits into a dictionary.
-        IReadOnlyList<DividendTick?> dividendHistory = await Yahoo.GetDividendsAsync(p_ticker, null, null);
+        IReadOnlyList<DividendTick?> dividendHistory = await Yahoo.GetDividendsAsync(p_ticker, p_startDate.AddDays(1), null);
         Dictionary<DateTime, SqDivSplit> divSplitHistory = new();
         foreach (DividendTick? dividendTick in dividendHistory)
         {
