@@ -253,8 +253,7 @@ export class AppComponent {
   }
 
   onClickSetOpenOrClose(setTime: string) {
-    const etTimeStr: string = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
-    const etDate: Date = new Date(etTimeStr);
+    const etDate: Date = new Date(this.m_editedTrade.time);
     if (this.m_editedTrade.action == TradeAction.Buy) { // Buy
       if (setTime == 'open') // Set the opening time to 9:31 AM local time (NYSE opening time)
         etDate.setHours(9, 31, 0);

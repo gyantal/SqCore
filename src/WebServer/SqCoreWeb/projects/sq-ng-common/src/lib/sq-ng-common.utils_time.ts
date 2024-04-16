@@ -18,7 +18,7 @@ export class SqNgCommonUtilsTime implements OnInit {
   ngOnInit(): void {
   }
 
-  // Javascript doesn't support timezones, so either use moment.js or hack it here.
+  // 2020: Javascript didn't support timezones, so either use moment.js or hack it here.
   // https://stackoverflow.com/questions/36206260/how-to-set-date-always-to-eastern-time-regardless-of-users-time-zone/36206597
   public static ConvertDateUtcToEt(utcDate: Date) {
     const monthOriUTC = utcDate.getMonth() + 1;
@@ -39,24 +39,49 @@ export class SqNgCommonUtilsTime implements OnInit {
     return dateEt;
   }
 
+  public static TestDateToLocaleString() { // e.g. call SqNgCommonUtilsTime.TestDateToLocaleString(); in ngOnInit() to test it
+    const nowImplicitUtc = new Date(); // Date object internal representation: always in UTC, with no timezone offset. The number of milliseconds that have elapsed since 1970-01-01 00:00:00 UTC
+
+    // "en-US": US English uses month-day-year order and 12-hour time with AM/PM: e.g. "12/19/2012, 7:00:00 PM"
+    // "en-GB": British English uses day-month-year order and 24-hour time without AM/PM: e.g. "20/12/2012 03:00:00"
+
+    // Date object is always in UTC. (msec since UTC epoch). There is no TimeZone data in the Date object, and it is impossible to put any timeZone data into it.
+    // !!! You cannot 'Set' the timezone, But you can produce a string with that UTC time expressed in that timeZone. The date stays the same.
+    // toString() will always return a date and time string based on the runtime’s Local time zone
+    // toUTCString() will always return a date and time string based on UTC
+    // toLocaleString() with the timeZone specified converts that implicit UtcDate to the Locale of 'THAT' timezone (not the timezone of the Local computer)
+    // Trick: if "timeZoneName: 'short'" is not given, it doesn't add the timezone postfix string to the end.
+    const date1Str = nowImplicitUtc.toLocaleString(); // The default is the runtime’s default time zone. Uses "en-GB", => "16/04/2024, 22:40:49"
+    const date2Str = nowImplicitUtc.toLocaleString('en-US', { timeZone: 'Europe/London', timeZoneName: 'short' }); // => "4/16/2024, 10:40:49 PM GMT+1"
+    const date3Str = nowImplicitUtc.toLocaleString('en-US', { timeZone: 'UTC', timeZoneName: 'short' }); // => "4/16/2024, 9:40:49 PM UTC"
+    const date4Str = nowImplicitUtc.toLocaleString('en-US', { timeZone: 'America/New_York', timeZoneName: 'short' }); // => "4/16/2024, 5:40:49 PM EDT"
+    const date5Str = nowImplicitUtc.toLocaleString('en-US', { timeZone: 'Asia/Kolkata', timeZoneName: 'short' }); // => "4/17/2024, 3:10:49 AM GMT+5:30"
+    console.log('date1Str: ' + date1Str);
+    console.log('date2Str: ' + date2Str);
+    console.log('date3Str: ' + date3Str);
+    console.log('date4Str: ' + date4Str);
+    console.log('date5Str: ' + date5Str);
+  }
+
   // What is the behavior of JavaScript's Date object regarding time zones?
   // Answer: JavaScript's Date object tracks time internally in UTC but typically displays and accepts input based on the local time of the computer it's running on. While you can set it to a different timezone, methods like toLocaleString() will still show the time in the local timezone.
   // See: https://stackoverflow.com/questions/15141762/how-to-initialize-a-javascript-date-to-a-particular-time-zone , https://stackoverflow.com/questions/439630/create-a-date-with-a-set-timezone-without-using-a-string-representation/439871#439871
-  public static ConvertDateEtToUtc(inputEtDate: Date): Date {
-    const inputEtDateInLocalToUtc: Date = new Date(inputEtDate.toLocaleString('en-US', { timeZone: 'UTC' }));
-    const inputEtDateInLocalToEt: Date = new Date(inputEtDate.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  public static ConvertDateEtToUtc(inputDateImplicitUtc: Date): Date {
+    // Based on the input p_date the timezone difference can be 4 or 5 hours depending on daylight saving. E.g. ET to UTC difference: 2024-05-16 (summer-time): 5h, 2024-01-02 (winter-time): 4h
+    // Trick: if "timeZoneName: 'short'" is not given, it doesn't add the timezone postfix string to the end. We will use this trick to omit the TimeZoneInfo from the string. See TestDateToLocaleString() function implementation.
+    const inputDateToUtcWithoutTimeZoneStr: string = inputDateImplicitUtc.toLocaleString('en-US', { timeZone: 'UTC' }); // "4/16/2024, 9:40:49 PM UTC", postfix omitted => "4/16/2024, 9:40:49 PM"
+    const inputDateToEtWithoutTimeZoneStr: string = inputDateImplicitUtc.toLocaleString('en-US', { timeZone: 'America/New_York' }); // "4/16/2024, 5:40:49 PM EDT", postfix omitted => "4/16/2024, 5:40:49 PM"
+    // Then we interpret these broken strings (not containing the TimeZoneInfo postfix string) as fake LocalDate strings. With the new Date("<MyLocalDateString>") constructor.
+    const brokenUtcStrAsLocalDate = new Date(inputDateToUtcWithoutTimeZoneStr);
+    const brokenEtStrAsLocalDate = new Date(inputDateToEtWithoutTimeZoneStr);
     // Calculate offset from ET to UTC
-    const offsetEtToUtc: number = Math.abs(Math.floor((inputEtDateInLocalToEt.getTime() - inputEtDateInLocalToUtc.getTime()) / (1000 * 60 * 60)));
-    console.log('offsetEtToUtc', offsetEtToUtc);
-    // ET hours
-    const etHours: number = inputEtDate.getHours();
-    const etMinutes: number = inputEtDate.getMinutes();
-    // Calculate new hours in UTC
-    const newHours: number = etHours + offsetEtToUtc;
-    const newMinutes: number = etMinutes;
+    const offsetEtToUtc: number = Math.abs(Math.floor((brokenEtStrAsLocalDate.getTime() - brokenUtcStrAsLocalDate.getTime()) / (1000 * 60 * 60))); // divide my msec (1000), sec (60), min (60) to get the difference in hours
+    // console.log('offsetEtToUtc: ', offsetEtToUtc);
 
-    inputEtDateInLocalToUtc.setHours(newHours, newMinutes);
-    return inputEtDateInLocalToUtc;
+    const etHours: number = inputDateImplicitUtc.getHours();
+    const newHours: number = etHours + offsetEtToUtc; // Calculate new hours in UTC
+    inputDateImplicitUtc.setHours(newHours);
+    return inputDateImplicitUtc;
   }
 
   public static ConvertDateUtcToLoc() {
