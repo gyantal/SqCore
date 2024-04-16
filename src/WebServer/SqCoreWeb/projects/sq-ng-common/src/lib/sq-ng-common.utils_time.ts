@@ -39,14 +39,15 @@ export class SqNgCommonUtilsTime implements OnInit {
     return dateEt;
   }
 
+  // What is the behavior of JavaScript's Date object regarding time zones?
+  // Answer: JavaScript's Date object tracks time internally in UTC but typically displays and accepts input based on the local time of the computer it's running on. While you can set it to a different timezone, methods like toLocaleString() will still show the time in the local timezone.
+  // See: https://stackoverflow.com/questions/15141762/how-to-initialize-a-javascript-date-to-a-particular-time-zone , https://stackoverflow.com/questions/439630/create-a-date-with-a-set-timezone-without-using-a-string-representation/439871#439871
   public static ConvertDateEtToUtc(inputEtDate: Date): Date {
-    // Get the offset hours between ET and UTC (offsetUtcToEt = 4hrs)
-    const utcTime: string = new Date().toLocaleString('en-US', { timeZone: 'UTC' });
-    const etTime: string = new Date().toLocaleString('en-US', { timeZone: 'America/New_York' });
-    const etDate: Date = new Date(etTime);
-    const utcDate: Date = new Date(utcTime);
+    const inputEtDateInLocalToUtc: Date = new Date(inputEtDate.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const inputEtDateInLocalToEt: Date = new Date(inputEtDate.toLocaleString('en-US', { timeZone: 'America/New_York' }));
     // Calculate offset from ET to UTC
-    const offsetEtToUtc: number = Math.abs(Math.floor((etDate.getTime() - utcDate.getTime()) / (1000 * 60 * 60)));
+    const offsetEtToUtc: number = Math.abs(Math.floor((inputEtDateInLocalToEt.getTime() - inputEtDateInLocalToUtc.getTime()) / (1000 * 60 * 60)));
+    console.log('offsetEtToUtc', offsetEtToUtc);
     // ET hours
     const etHours: number = inputEtDate.getHours();
     const etMinutes: number = inputEtDate.getMinutes();
@@ -54,8 +55,8 @@ export class SqNgCommonUtilsTime implements OnInit {
     const newHours: number = etHours + offsetEtToUtc;
     const newMinutes: number = etMinutes;
 
-    utcDate.setHours(newHours, newMinutes);
-    return utcDate;
+    inputEtDateInLocalToUtc.setHours(newHours, newMinutes);
+    return inputEtDateInLocalToUtc;
   }
 
   public static ConvertDateUtcToLoc() {

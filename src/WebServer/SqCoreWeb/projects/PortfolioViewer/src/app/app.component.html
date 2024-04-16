@@ -86,7 +86,7 @@
               <input class="highlightInputDropDown" type="text" [value]="m_enumTradeAction[m_editedTrade.action]" (input)="onTradeInputChange()" disabled>
               <div class="listDropDown">
                 <ng-container *ngFor="let action of m_enumTradeAction | keyvalue">
-                  <option class="optionDropDown" *ngIf="(action.value | typeof) === 'string'" (click)="onTradeActionSelectionClicked(action.value)">{{ action.value }}</option>
+                  <option class="optionDropDown" *ngIf="(action.value | sqTypeOf) === 'string'" (click)="onTradeActionSelectionClicked(action.value)">{{ action.value }}</option>
                 </ng-container>
             </div>
           </div>&nbsp;
@@ -118,7 +118,7 @@
             <input class="highlightInputDropDown" type="text" placeholder="Enter CurrencyId" [value]="m_enumCurrencyId[m_editedTrade.currency]" (input)="onTradeInputChange()" disabled>
             <div class="listDropDown">
               <ng-container *ngFor="let action of m_enumCurrencyId | keyvalue">
-                <option class="optionDropDown" *ngIf="(action.value | typeof) === 'string'" (click)="onCurrencyTypeSelectionClicked(action.value)">{{ action.value }}</option>
+                <option class="optionDropDown" *ngIf="(action.value | sqTypeOf) === 'string'" (click)="onCurrencyTypeSelectionClicked(action.value)">{{ action.value }}</option>
               </ng-container>
             </div>
           </div><br>
