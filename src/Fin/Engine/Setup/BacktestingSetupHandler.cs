@@ -104,6 +104,7 @@ namespace QuantConnect.Lean.Engine.Setup
                     "SqSPYMonFriAtMoc" => new SqSPYMonFriAtMoc(),
                     "SqDualMomentum" => new SqDualMomentum(),
                     "SqPctAllocation" => new SqPctAllocation(),
+                    "SqFundamentalDataFiltered" => new SqFundamentalDataFilteredUniv(),
                     _ => throw new SqException($"QcAlgorithm name '{algName}' is unrecognized."),
                 };
                 // algoritm.AlgorithmParam = "";

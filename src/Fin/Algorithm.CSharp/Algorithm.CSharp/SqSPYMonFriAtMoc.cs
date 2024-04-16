@@ -58,7 +58,7 @@ namespace QuantConnect.Algorithm.CSharp
         Symbol _symbol;
         OrderTicket _lastOrderTicket = null;
 
-        List<QcPrice> _rawCloses = new List<QcPrice>(); // comes from OnData() from the framework in SqCore. We use this in SqCore
+        List<QcPrice> _rawCloses = new List<QcPrice>(); // comes from QC.OnData(). We use this in SqCore.
         List<QcDividend> _dividends = new List<QcDividend>();
         List<QcSplit> _splits = new List<QcSplit>();
         List<QcPrice> _adjCloses = new List<QcPrice>();
@@ -226,7 +226,7 @@ namespace QuantConnect.Algorithm.CSharp
             }
         }
 
-        private void TradeLogic() // this is called at 15:40 in QC cloud, and 00:00 in SqCore
+        private void TradeLogic() // Buy&Hold From Monday to Friday. This is called at 15:40 in QC cloud, and 00:00 in SqCore
         {
             if (IsWarmingUp) // Dont' trade in the warming up period.
                 return;
