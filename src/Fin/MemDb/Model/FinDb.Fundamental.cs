@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Text.Json;
@@ -85,8 +86,10 @@ public partial class FinDb
         Dictionary<string, Dictionary<string, object>>? lastData = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, object>>>(content);
 
         // Convert and compare the ShortName, LongName and SharesOutstandings values
-        bool isShortNameNeedsChange = lastData != null && security.ShortName != string.Empty && lastData["CompanyReference"][gFundamentalPropertyToStr[FundamentalProperty.CompanyReference_ShortName]].ToString() != security.ShortName;
-        bool isLongNameNeedsChange = lastData != null && security.LongName != string.Empty && lastData["CompanyReference"][gFundamentalPropertyToStr[FundamentalProperty.CompanyReference_StandardName]].ToString() != security.LongName;
+        string shortName = security.ShortName;
+        string longName = security.LongName;
+        bool isShortNameNeedsChange = lastData != null && shortName != string.Empty && lastData["CompanyReference"][gFundamentalPropertyToStr[FundamentalProperty.CompanyReference_ShortName]].ToString() != shortName;
+        bool isLongNameNeedsChange = lastData != null && longName != string.Empty && lastData["CompanyReference"][gFundamentalPropertyToStr[FundamentalProperty.CompanyReference_StandardName]].ToString() != longName;
         bool isSharesOutstandingSignificantlyChanged = false;
         if (lastData != null && lastData["CompanyProfile"].TryGetValue(gFundamentalPropertyToStr[FundamentalProperty.CompanyProfile_SharesOutstanding], out object? sharesOutstandingFromFile))
         {
@@ -130,8 +133,9 @@ public partial class FinDb
                 [gFundamentalPropertyToStr[FundamentalProperty.CompanyProfile_MarketCap]] = p_isStartDateFile ? 0L : marketCap
             }
         };
-        // Serialize the data to a JSON string without indentation
-        string jsonString = JsonSerializer.Serialize(jsonData, new JsonSerializerOptions { WriteIndented = false });
+
+        // Serialize the data to a JSON string without indentation and escaping
+        string jsonString = JsonSerializer.Serialize(jsonData, Utils.g_noEscapesJsonSerializeOpt);
 
         // Create and write the JSON data to a file within a zip archive
         using (FileStream fileStream = new(p_zipFilePath, FileMode.Create))
@@ -145,12 +149,98 @@ public partial class FinDb
         Utils.Logger.Info($"JSON for {p_ticker} has been successfully created and zipped.");
     }
 
-    // T Get<T>(DateTime time, SecurityIdentifier securityIdentifier, FundamentalProperty name);
-    // How to call it:
-    // public string ShortName => FundamentalService.Get<string>(_timeProvider.GetUtcNow(), _securityIdentifier, FundamentalProperty.CompanyReference_ShortName);
-    // FundamentalService.Get<long>(_timeProvider.GetUtcNow(), _securityIdentifier, FundamentalProperty.CompanyProfile_MarketCap);
-    // public static T Get<T> GetFundamentalData(string p_ticker, DateTime p_date, FundamentalProperty p_propertyName)
-    // {
+    public static string GetFundamentalDataStr(List<string> p_tickers, DateTime p_date, List<FundamentalProperty> p_propertyNames)
+    {
+        // Retrieve fundamental data for multiple tickers and serialize it to JSON
+        Dictionary<string, Dictionary<FundamentalProperty, object>>? allData = GetFundamentalData(p_tickers, p_date, p_propertyNames);
+        return JsonSerializer.Serialize(allData, Utils.g_camelJsonSerializeOpt);
+    }
 
-    // }
+    // Parallel.ForEach implementation of GetFundamentalData().
+    // Surprisingly, Parallel.ForEach in C# is slower than sequential when using magnetic HDD.
+    // Using SSD, there is no speed difference, but we should then prefer the 1-threaded implementation for less complexity
+    // First runs bencmmarks.
+    // Single Thread version: 14,136.00 microsecs
+    // Parallel with 10 threads, HDD: 28,189.60 microsecs. Explanation: Disks have mechanical limitations. Moving disk head to and back for 10 different files is less efficient then reading them sequentially.
+    // Parallel with 10 threads, SSD: 14,830.00 microsecs. No mechanical moving head. Better than HDD. But it is not faster than single thread, because this is the max bandwidth data transfer rate of the SSD that is already used. It doesn't matter if that bandwith is used parallel or not.
+    // Conclusion: Here the diskread takes 99% of the processing (that cannot be parallelized), and the CPU processing is only 1%. In these cases, Parallel.Foreach() doesn't improve, as we are bound by the hardware. There is simple not too much CPU work that can be done, that would be boosted by CPU parallelism.
+    public static Dictionary<string, Dictionary<FundamentalProperty, object>> GetFundamentalDataParallel(string p_directoryPath, List<string> p_tickers, DateTime p_date, List<FundamentalProperty> p_propertyNames)
+    {
+        // Retrieve and aggregate fundamental data for a list of tickers using parallel processing
+        Dictionary<string, Dictionary<FundamentalProperty, object>> results = new();
+        Parallel.ForEach(p_tickers, new ParallelOptions { MaxDegreeOfParallelism = 10 }, ticker =>
+        {
+            Dictionary<FundamentalProperty, object> dataForTicker = GetFundamentalData(ticker, p_date, p_propertyNames); // Retrieve data for individual ticker
+            lock (results) // Thread Safely add the data to the results dictionary
+            {
+                results[ticker] = dataForTicker;
+            }
+        });
+
+        return results;
+    }
+
+    // Sequential, 1 thread implementation of GetFundamentalData(). Processing is hardware I/O bound. CPU parallelism doesn't improve overall speed. See GetFundamentalDataParallel() comments.
+    public static Dictionary<string, Dictionary<FundamentalProperty, object>> GetFundamentalData(List<string> p_tickers, DateTime p_date, List<FundamentalProperty> p_propertyNames)
+    {
+        Dictionary<string, Dictionary<FundamentalProperty, object>> results = new();
+        foreach (var ticker in p_tickers)
+        {
+            Dictionary<FundamentalProperty, object> dataForTicker = GetFundamentalData(ticker, p_date, p_propertyNames);
+            results[ticker] = dataForTicker;
+        }
+        return results;
+    }
+
+    public static Dictionary<FundamentalProperty, object> GetFundamentalData(string p_ticker, DateTime p_date, List<FundamentalProperty> p_propertyNames)
+    {
+        // Find the closest zip file for the given date and ticker, and throw if not found
+        string? zipFilePath = FindClosestDateZipFile(Utils.FinDataFolderPath + @"equity/usa/fundamental/fine/", p_ticker, p_date) ?? throw new FileNotFoundException($"No zip file found for ticker {p_ticker}.");
+        using ZipArchive archive = ZipFile.OpenRead(zipFilePath);
+        ZipArchiveEntry entry = archive.Entries[0] ?? throw new FileNotFoundException($"JSON file not found in the zip file for ticker {p_ticker}.");
+        using Stream stream = entry.Open();
+        using StreamReader reader = new(stream);
+        string jsonDataStr = reader.ReadToEnd();
+        // Deserialize JSON string into a nested dictionary structure and throw if it fails
+        Dictionary<string, Dictionary<string, object>> jsonData = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, object>>>(jsonDataStr) ?? throw new JsonException("Failed to deserialize JSON data.");
+
+        Dictionary<FundamentalProperty, object> results = new();
+        foreach (FundamentalProperty property in p_propertyNames)
+        {
+            // e.g. extract the category 'CompanyReference' from the FundamentalProperty enum 'CompanyReference_ShortName' by splitting its name string at the '_' underscore
+            string key = gFundamentalPropertyToStr[property]; // Convert enum to its corresponding string key
+            string propertyName = property.ToString();
+            int underscoreIndex = propertyName.IndexOf('_');
+            string category = underscoreIndex > -1 ? propertyName[..underscoreIndex] : propertyName; // Determine the category by substring before the underscore
+
+            // Attempt to retrieve the value from the nested dictionary and add to results if found
+            if (jsonData.TryGetValue(category, out Dictionary<string, object>? catValues) && catValues.TryGetValue(key, out object? value))
+                results[property] = value;
+        }
+
+        return results;
+    }
+    private static string? FindClosestDateZipFile(string p_directoryPath, string p_ticker, DateTime p_targetDate)
+    {
+        string tickerDirectoryPath = Path.Combine(p_directoryPath, p_ticker.ToLower());
+
+        if (!Directory.Exists(tickerDirectoryPath))
+            return null;
+
+        // Find all zip files in the directory and identify the closest file date before (or equal) the target date
+        DateTime maxDate = DateTime.MinValue; // maxDate limited by p_targetDate
+        foreach (string fileName in Directory.EnumerateFiles(tickerDirectoryPath, "*.zip"))
+        {
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+
+            // Parse the file name to date and check if it's the closest one before the target date
+            if (DateTime.TryParseExact(fileNameWithoutExtension, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime fileDate))
+            {
+                if (fileDate > maxDate && fileDate <= p_targetDate) // '=' is allowed for p_targetDate checking. The daily morning crawler creates fundamental files with the date of that morning. That file should be used on that day.
+                    maxDate = fileDate;
+            }
+        }
+
+        return tickerDirectoryPath + @"\" + maxDate.ToYYYYMMDD() + ".zip";
+    }
 }

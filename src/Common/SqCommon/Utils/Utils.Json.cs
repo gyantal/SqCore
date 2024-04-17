@@ -106,13 +106,19 @@ public class DateTimeJsonConverterToUnixEpochSeconds : JsonConverter<DateTime> /
 // public class DateTimeJsonConverterToYYYYMMDD : JsonConverter<DateTime> // the DateTime is written as a number, without quotes: ("lastUtc":"2022-09-08T07:15:08.2191122Z")  => ("lastUtc":1662635321)
 public static partial class Utils
 {
-    public static JsonSerializerOptions g_camelJsonSerializeOpt = new()
+    public static JsonSerializerOptions g_camelJsonSerializeOpt = new() // use this if JSON string is sent to a JavaScript frontend
     {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // without this "S&P" is serialized as "S\u0026P", which is ugly. Our results will not be URL data, or HTML data. We send our data in Websocket. We don't want these Escapings.
+        WriteIndented = false, // exclude line breaks and indentations for smaller byte size
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase, // default Null means that property names in the output JSON are the same as the property names in the source .NET objects. But in Javascript, class field members should use CamelCase: https://www.robinwieruch.de/javascript-naming-conventions  "AnyParam" (PascalCase) should be turned to "anyParam" (CamelCase)
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // without this "S&P" is serialized as "S\u0026P", which is ugly. Our results will not be URL data, or HTML data. We send our data in Websocket. We don't want these Escapings e.g. <, >, &, +
     };
 
-    // in Javascript, class field members should use CamelCase: https://www.robinwieruch.de/javascript-naming-conventions  "AnyParam" turns to "anyParam"
+    public static JsonSerializerOptions g_noEscapesJsonSerializeOpt = new() // without indentation and escaping
+    {
+        WriteIndented = false, // exclude line breaks and indentations for smaller byte size
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping // without this "S&P" is serialized as "S\u0026P", which is ugly. Our results will not be URL data, or HTML data. We send our data in Websocket. We don't want these Escapings e.g. <, >, &, +
+    };
+
     public static string CamelCaseSerialize<TValue>(TValue obj)
     {
         return JsonSerializer.Serialize(obj, g_camelJsonSerializeOpt);

@@ -1144,7 +1144,7 @@ public class StrategyUberTaaController : ControllerBase
                 }
                 else if (pastCodes[iRows, jCols] == 1)
                 {
-                    pastWeightsFinal[iRows, jCols] = 1.5 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1] * overallConstLev;
+                    pastWeightsFinal[iRows, jCols] = 1.6 * p_taaWeightResultsTuple.Item2[indWeightsRes - pastDataLength + iRows + 1, jCols - 1] * overallConstLev;
                 }
                 else if (pastCodes[iRows, jCols] == 5)
                 {

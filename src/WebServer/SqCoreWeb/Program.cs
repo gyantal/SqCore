@@ -282,7 +282,8 @@ public partial class Program
         Console.WriteLine("2. MemDb: Reload All DbData Only If Changed");
         Console.WriteLine("3. YF: Test getting SPY history");
         Console.WriteLine("4. YF: Test getting SPY realtime");
-        Console.WriteLine("5. FinDb: Force daily YF PriceHistory Crawler for securities having MAP file");
+        Console.WriteLine("50. FinDb: Force daily YF PriceHistory Crawler for securities having MAP file");
+        Console.WriteLine("51. FinDb: Test getting FundamentalData from Fundamental files");
         Console.WriteLine("6. MemDb: Test getting PortfolioTradeHistory from RedisDb");
         Console.WriteLine("7. MemDb: Test append-writing PortfolioTradeHistory to RedisDb");
         Console.WriteLine("8. MemDb: Test delete PortfolioTradeHistory from RedisDb");
@@ -326,9 +327,28 @@ public partial class Program
                     Console.WriteLine($"Exception: {e.Message}");
                 }
                 break;
-            case "5":
+            case "50":
                 SqTaskScheduler.TestElapseTrigger("FinDbDailyCrawler", 0);
                 // Console.WriteLine(FinDb.CrawlData(false).TurnAsyncToSyncTask().ToString());
+                break;
+            case "51":
+                try
+                {
+                    List<string> tickers = new() { "AAPL", "AMZN", "MSFT", "TSLA", "GOOGL", "DE", "SPY", "SVXY", "META", "HIMS" };
+                    DateTime date = DateTime.Now;
+                    List<FundamentalProperty> propertyNames = new() { FundamentalProperty.CompanyReference_ShortName, FundamentalProperty.CompanyReference_StandardName, FundamentalProperty.CompanyProfile_SharesOutstanding, FundamentalProperty.CompanyProfile_MarketCap };
+
+                    Dictionary<string, Dictionary<FundamentalProperty, object>> fundamentals = new();
+                    Utils.BenchmarkElapsedTime("GetFundamentalData()", () =>
+                    {
+                        fundamentals = FinDb.GetFundamentalData(tickers, date, propertyNames);
+                    });
+                    Console.WriteLine($"Ready. Example data. Meta companyName: '{fundamentals["META"][FundamentalProperty.CompanyReference_ShortName].ToString()}'");
+                }
+                catch (System.Exception e)
+                {
+                    Console.WriteLine($"Exception: {e.Message}");
+                }
                 break;
             case "6":
                 try
@@ -532,7 +552,7 @@ public partial class Program
         var timeSinceAppStart = DateTime.UtcNow - WebAppGlobals.WebAppStartTime;
         p_sb.Append($"WebAppStartTimeUtc: {WebAppGlobals.WebAppStartTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}({timeSinceAppStart:dd} days {timeSinceAppStart:hh\\:mm} hours ago)<br>");
         ThreadPool.GetMinThreads(out int minWorkerTh, out int minIoThread);
-        ThreadPool.GetMinThreads(out int maxWorkerTh, out int maxIoThread);
+        ThreadPool.GetMaxThreads(out int maxWorkerTh, out int maxIoThread);
         p_sb.Append($"ThId-{Environment.CurrentManagedThreadId}, ThreadPool#:{ThreadPool.ThreadCount}, WorkerTh: [{minWorkerTh}...{maxWorkerTh}], IoTh: [{minIoThread}...{maxIoThread}] <br>");
     }
 }

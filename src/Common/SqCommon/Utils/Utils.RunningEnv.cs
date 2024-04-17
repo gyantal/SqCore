@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -73,6 +74,17 @@ public static partial class Utils
             }, // find out which user from the team and determine it accordingly. Or just check whether folders exists (but that takes HDD read, which is slow)
             _ => throw new Exception("RunningPlatform() is not recognized"),
         };
+    }
+
+    public static string FinDataFolderPath
+    {
+        get
+        {
+            if (OperatingSystem.IsWindows()) // GetFullPath() removes the unnecessary back marching ".."
+                return Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory + @"..\..\..\..\..\Fin\Data\");
+            else
+                return Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory + @"../FinData/");
+        }
     }
 
     public static string TaskScheduler_UnobservedTaskExceptionMsg(object? p_sender, UnobservedTaskExceptionEventArgs p_e)
