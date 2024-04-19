@@ -241,6 +241,6 @@ public partial class FinDb
             }
         }
 
-        return tickerDirectoryPath + @"\" + maxDate.ToYYYYMMDD() + ".zip";
+        return tickerDirectoryPath + @"/" + maxDate.ToYYYYMMDD() + ".zip";
     }
 }

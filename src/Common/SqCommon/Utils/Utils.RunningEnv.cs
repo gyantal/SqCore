@@ -64,24 +64,26 @@ public static partial class Utils
                 "Balazs" => "h:/.shortcut-targets-by-id/0BzxkV1ug5ZxvVmtic1FsNTM5bHM/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/",
                 // Balazs laptop
                 "Lukucz Balázs" => "g:/.shortcut-targets-by-id/0BzxkV1ug5ZxvVmtic1FsNTM5bHM/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/",
-                "Laci" => "d:\\ArchiData\\GoogleDrive\\GDriveHedgeQuant\\shared\\GitHubRepos\\NonCommitedSensitiveData\\",
-                "vinci" => "g:\\.shortcut-targets-by-id\\0BzxkV1ug5ZxvVmtic1FsNTM5bHM\\GDriveHedgeQuant\\shared\\GitHubRepos\\NonCommitedSensitiveData\\",
+                "Laci" => "d:/ArchiData/GoogleDrive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/",
+                "vinci" => "g:/.shortcut-targets-by-id/0BzxkV1ug5ZxvVmtic1FsNTM5bHM/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/",
                 // Daya-Desktop
-                "Gigabyte" => "g:\\.shortcut-targets-by-id\\0BzxkV1ug5ZxvVmtic1FsNTM5bHM\\GDriveHedgeQuant\\shared\\GitHubRepos\\NonCommitedSensitiveData\\",
+                "Gigabyte" => "g:/.shortcut-targets-by-id/0BzxkV1ug5ZxvVmtic1FsNTM5bHM/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/",
                 // Drcharmat-Laptop
-                "drcharmat" => "c:\\Agy\\NonCommitedSensitiveData\\",
+                "drcharmat" => "c:/Agy/NonCommitedSensitiveData/",
                 _ => throw new Exception("Windows user name is not recognized. Add your username and folder here!"),
             }, // find out which user from the team and determine it accordingly. Or just check whether folders exists (but that takes HDD read, which is slow)
             _ => throw new Exception("RunningPlatform() is not recognized"),
         };
     }
 
+    // As Folder separator, try to use the Linux version '/' on both platforms. Even on Windows.
+    // Windows has Path.DirectorySeparatorChar = '\\' and Path.AltDirectorySeparatorChar= '/'. So, '/' will work on Windows too.
     public static string FinDataFolderPath
     {
         get
         {
             if (OperatingSystem.IsWindows()) // GetFullPath() removes the unnecessary back marching ".."
-                return Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory + @"..\..\..\..\..\Fin\Data\");
+                return Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory + @"../../../../../Fin/Data/");
             else
                 return Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory + @"../FinData/");
         }
