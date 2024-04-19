@@ -230,10 +230,26 @@ export class AppComponent {
     if (isInsertNew)
       this.m_editedTrade.id = -1;
 
-    const tradeJson: string = JSON.stringify(this.m_editedTrade, (key, value) => { // Omitting null values from the this.m_editedTrade(TradeJs) using the replacer parameter in stringify method, see: https://stackoverflow.com/questions/26540706/preserving-undefined-that-json-stringify-otherwise-removes
-      if (key == 'currency' && value == CurrencyId.USD) // also omitting the value of currency , if its 'USD'.
-        return undefined;
-      return (value != null && value.length != 0) ? value : undefined; // checking null and empty string
+    const tradeJson: string = JSON.stringify(this.m_editedTrade, (key, value) => {
+      switch (key) {
+        case 'currency':
+          if (value == CurrencyId.USD) // also omitting the value of currency , if its 'USD'.
+            return undefined;
+          break;
+        case 'commission':
+          if (value == 0) // also omitting the value of commission , if its '0'.
+            return undefined;
+          break;
+        case 'exchangeId':
+          if (value == ExchangeId.Unknown) // also omitting the value of ExchangeId , if its 'Unknown'.
+            return undefined;
+          break;
+        default:
+          if (value == null || value === '') // Omit null and empty strings
+            return undefined;
+          break;
+      }
+      return value;
     });
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
       this.m_socket.send('InsertOrUpdateTrade:pfId:' + this.m_portfolioId + ':' + tradeJson);
@@ -253,7 +269,7 @@ export class AppComponent {
   }
 
   onClickSetOpenOrClose(setTime: string) {
-    const etDate: Date = new Date(this.m_editedTrade.time);
+    const etDate: Date = new Date(this.m_editedTrade.time); // The m_editedTrade.time is originally a Date object. However, when displaying it on the UI, we utilize a pipe to format it as a string with the format 'yyyy-MM-dd'. This results in it being represented as a string. To revert it back to a Date object, we use new Date(m_editedTrade.time) to convert it.
     if (this.m_editedTrade.action == TradeAction.Buy) { // Buy
       if (setTime == 'open') // Set the opening time to 9:31 AM local time (NYSE opening time)
         etDate.setHours(9, 31, 0);
@@ -269,14 +285,14 @@ export class AppComponent {
     this.m_editedTrade.time = utcDate; // Update m_editedTrade.time with the calculated time in UTC format
   }
 
-  setTradeTime(dateStr: string) { // display the time part of the editedTrade.time in <input> time element.
-    const datePart = this.m_editedTrade.time ? new Date(this.m_editedTrade.time) : new Date(); // Get the current date part of the time
+  onDateChange(dateStr: string) {
+    const timePart = this.m_editedTrade.time.toTimeString().split(' ')[0]; // we extract the time from the current m_editedTrade.time and combine it with the new date to create a new Date object.
+    this.m_editedTrade.time = new Date(dateStr + ' ' + timePart);
+  }
 
-    const timePart = dateStr.split(':'); // Get the time portion from the input and set it to the date
-    datePart.setHours(parseInt(timePart[0], 10));
-    datePart.setMinutes(parseInt(timePart[1], 10));
-
-    this.m_editedTrade.time = datePart; // Assign the updated date to m_editedTrade.time
+  onTimeChange(timeStr: string) {
+    const datePart = this.m_editedTrade.time.toISOString().split('T')[0]; // we extract the date from the current m_editedTrade.time and combine it with the new time to create a new Date object.
+    this.m_editedTrade.time = new Date(datePart + 'T' + timeStr + 'Z');
   }
 
   onClickSelectAllOrDeselectAll(isSelectAll: boolean) {

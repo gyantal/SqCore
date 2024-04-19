@@ -19,7 +19,7 @@
       <tbody>
         <tr *ngFor="let item of m_uiPrtfRunResult.prtfPosValues">
           <td>{{item.sqTicker}}</td>
-          <td>{{item.quantity}}</td>
+          <td>{{item.quantity | number:'1.0-0'}}</td>
           <td>{{item.avgPrice | number:'1.2-2'}}</td>
           <td>{{item.price | number:'1.2-2'}}</td>
           <td>{{item.holdingCost | number:'1.0-0'}}</td>
@@ -108,10 +108,11 @@
         </span>
         <span class="tradesCommon">
           <!-- How to pass Pipe in [(ngModel)] ? Answer: split the binding into a one-way binding "[]" and an event binding "()", see: https://stackoverflow.com/questions/39642882/using-pipes-within-ngmodel-on-input-elements-in-angular-->
-          Date: <input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" (ngModelChange)="m_editedTrade.time=$event" (input)="onTradeInputChange()"><br>
+          <!-- Here, we're using the "[ngModelOptions]={updateOn}" approach to manage the binding. This means we're instructing the binding to only occur after the user finishes entering the date. Otherwise, if we use the default "[ngModelOptions]={updateOn: 'change'}", the onDateChange method will trigger with every input change made by the user.-->
+          Date: <input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" [ngModelOptions]="{updateOn: 'blur'}" (ngModelChange)="onDateChange($event)" (input)="onTradeInputChange()"><br>
           <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
           UTC Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
-                <input type="time" [ngModel]="m_editedTrade.time | date : 'HH:mm'" (ngModelChange)="setTradeTime($event)">&nbsp;
+                <input type="time" [ngModel]="m_editedTrade.time | date : 'HH:mm'" (ngModelChange)="onTimeChange($event)">&nbsp;
                 <button (click)="onClickSetOpenOrClose('close')">setClose</button><br>
           Price: <input class="inputTextboxWidth" type="number" [ngModel]="m_editedTrade.price | nanToDash" (ngModelChange)="m_editedTrade.price=$event" (input)="onTradeInputChange()">&nbsp;
           <div class="selectionDropDown">
