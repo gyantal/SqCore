@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Fin.Base;
@@ -18,6 +19,12 @@ class HandshakeMessagePrtfViewer
     public string Email { get; set; } = string.Empty;
     public int AnyParam { get; set; } = 75;
     public PortfolioJs PrtfToClient { get; set; } = new();
+}
+
+class FundamentalData
+{
+    public string? CompanyReference_ShortName { get; set; }
+    public int CompanyProfile_SharesOutstanding { get; set; }
 }
 
 public class PrtfVwrWs
@@ -67,6 +74,10 @@ public class PrtfVwrWs
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): RunBacktest: '{msgObjStr}'");
                 PortfVwrGetPortfolioRunResults(webSocket, msgObjStr);
                 break;
+            case "GetFundamentalData":
+                Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): GetFundamentalData: '{msgObjStr}'");
+                PortfVwrGetFundamentalData(webSocket, msgObjStr);
+                break;
             case "GetTradesHist":
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): GetTradesHist: '{msgObjStr}'");
                 PortfVwrGetPortfolioTradesHistory(webSocket, msgObjStr);
@@ -83,6 +94,36 @@ public class PrtfVwrWs
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): Unrecognized message from client, {msgCode},{msgObjStr}");
                 break;
         }
+    }
+
+    private static void PortfVwrGetFundamentalData(WebSocket webSocket, string p_msg) // p_msg - "?tickers=SPY,VNQ,USD&Date=" or "?tickers=SPY,VNQ,USD&Date=2022-01-01"
+    {
+        int tickersStartInd = p_msg.IndexOf("=");
+        if (tickersStartInd == -1)
+            return;
+
+        int dateStartInd = p_msg.IndexOf("=", tickersStartInd + 1);
+        if (dateStartInd == -1)
+            return;
+
+        string dateStr = p_msg[(dateStartInd + 1)..]; // Extract the date string from the message(p_msg)
+        DateTime date = DateTime.Now;
+        if (dateStr.Length > 0)
+            date = Utils.Str2DateTimeUtc(dateStr);
+        string tickersStr = p_msg.Substring(tickersStartInd + 1, dateStartInd - tickersStartInd - "&Date=".Length);
+        List<string> tickers = new (); // tickers list to get fundamentalData
+        foreach (var ticker in tickersStr.Split(','))
+        {
+            if(ticker.Trim() != "USD") // Filter out "USD" ticker as it's a currency and won't have fundamental data
+                tickers.Add(ticker);
+        }
+        List<FundamentalProperty> propertyNames = new() { FundamentalProperty.CompanyReference_ShortName, FundamentalProperty.CompanyProfile_SharesOutstanding }; // Define the fundamental properties to fetch
+        string fundamentalDataStr = FinDb.GetFundamentalDataStr(tickers, date, propertyNames); // Fetch fundamental data from the database
+        // Deserialize the JSON data into a Dictionary<string, FundamentalData>
+        Dictionary<string, FundamentalData>? fundamentalData = JsonSerializer.Deserialize<Dictionary<string, FundamentalData>>(fundamentalDataStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.PrtfTickersFundamentalData:" + Utils.CamelCaseSerialize(fundamentalData));
+        if (webSocket!.State == WebSocketState.Open)
+            webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
     private static void PortfVwrInsertOrUpdateTrade(WebSocket webSocket, string p_msg) // p_msg - pfId:21:{"id":-1,"time":"2024-02-22T10:32:20.680Z","action":0,"assetType":7,"symbol":"META","underlyingSymbol":null,"quantity":0,"price":0,"currency":0,"commission":0,"exchangeId":-1,"connectedTrades":null}

@@ -9,21 +9,27 @@
       <thead>
         <tr>
           <th>SqTicker</th>
+          <th>Name</th>
           <th>Quantity</th>
           <th>AvgPrice</th>
           <th>Price</th>
           <th>HoldingCost</th>
           <th>HoldingValue</th>
+          <th>SharesOutstanding</th>
+          <th>MarketCap</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let item of m_uiPrtfRunResult.prtfPosValues">
           <td>{{item.sqTicker}}</td>
+          <td>{{item.name}}</td>
           <td>{{item.quantity | number:'1.0-0'}}</td>
           <td>{{item.avgPrice | number:'1.2-2'}}</td>
           <td>{{item.price | number:'1.2-2'}}</td>
           <td>{{item.holdingCost | number:'1.0-0'}}</td>
           <td>{{item.holdingValue | number:'1.0-0'}}</td>
+          <td>{{item.sharesOutstanding | number:'1.0-0'}}</td>
+          <td>{{item.marketCap}}</td>
         </tr>
       </tbody>
     </table>

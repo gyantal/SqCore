@@ -109,11 +109,14 @@ export class CgTimeSeries {
 
 export class UiPrtfPositions {
   public sqTicker: string = '';
+  public name: string = '';
   public quantity: number = 0;
   public avgPrice: number = 0;
   public price: number = 0;
   public holdingCost: number = 0;
   public holdingValue: number = 0;
+  public sharesOutstanding: number = 0;
+  public marketCap: number = 0;
 }
 
 export enum PrtfItemType { // for differenting the folder and portfolio

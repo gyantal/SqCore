@@ -80,6 +80,15 @@ class FuturesFieldsUi {
   public multiplier: number = NaN;
 }
 
+class FundamentalData {
+  companyReference_ShortName: string = '';
+  companyProfile_SharesOutstanding: number = 0;
+}
+
+class FundamentalDataByTicker {
+  [key: string]: FundamentalData;
+}
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -163,6 +172,10 @@ export class AppComponent {
           console.log('PrtfVwr.TradesHist:' + msgObjStr);
           this.processHistoricalTrades(msgObjStr);
           break;
+        case 'PrtfVwr.PrtfTickersFundamentalData':
+          console.log('PrtfVwr.PrtfTickersFundamentalData:' + msgObjStr);
+          this.processFundamentalData(msgObjStr);
+          break;
       }
     };
   }
@@ -180,6 +193,31 @@ export class AppComponent {
       return value; // the original property will not be removed if we return the original value, not undefined
     });
     updateUiWithPrtfRunResult(this.m_prtfRunResult, this.m_uiPrtfRunResult, this.m_chrtWidth, this.m_chrtHeight);
+    this.getFundamentalData();
+  }
+
+  getFundamentalData() {
+    const tickers: string[] = [];
+    for (const item of this.m_prtfRunResult?.prtfPoss) // Extract tickers from portfolio positions
+      tickers.push(item.sqTicker.split('/')[1]);
+
+    if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
+      this.m_socket.send('GetFundamentalData:' + '?tickers=' + tickers + '&Date=' + this.m_histPosEndDate);
+  }
+
+  public processFundamentalData(msgObjStr: string) {
+    console.log('PrtfVwr.processFundamentalData() START', msgObjStr);
+
+    const fundamentalData: FundamentalDataByTicker = JSON.parse(msgObjStr);
+    for (const prtfPosItem of this.m_uiPrtfRunResult.prtfPosValues) {
+      const ticker = prtfPosItem.sqTicker.split('/')[1]; // Extract ticker from prtfPosItem sqTicker, e.g. S/TLT => TLT
+
+      if (ticker in fundamentalData) { // using 'in' operator to check if the property exists in fundamentalData object
+        const tickerData = fundamentalData[ticker];
+        prtfPosItem.name = tickerData.companyReference_ShortName;
+        prtfPosItem.sharesOutstanding = tickerData.companyProfile_SharesOutstanding;
+      }
+    }
   }
 
   onActiveTabCicked(activeTab: string) {

@@ -64,7 +64,7 @@ export class SqNgCommonUtilsTime implements OnInit {
   }
 
   // What is the behavior of JavaScript's Date object regarding time zones?
-  // Answer: JavaScript's Date object tracks time internally in UTC but typically displays and accepts input based on the local time of the computer it's running on. While you can set it to a different timezone, methods like toLocaleString() will still show the time in the local timezone.
+  // Answer: JavaScript's Date object tracks time internally in UTC but typically displays (even in Debug Watch!) and accepts input based on the local time of the computer it's running on. While you can set it to a different timezone, methods like toLocaleString() will still show the time in the local timezone.
   // See: https://stackoverflow.com/questions/15141762/how-to-initialize-a-javascript-date-to-a-particular-time-zone , https://stackoverflow.com/questions/439630/create-a-date-with-a-set-timezone-without-using-a-string-representation/439871#439871
   public static ConvertDateEtToUtc(inputDateImplicitUtc: Date): Date {
     // Based on the input p_date the timezone difference can be 4 or 5 hours depending on daylight saving. E.g. ET to UTC difference: 2024-05-16 (summer-time): 5h, 2024-01-02 (winter-time): 4h
