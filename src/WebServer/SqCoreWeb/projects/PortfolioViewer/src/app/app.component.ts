@@ -216,6 +216,7 @@ export class AppComponent {
         const tickerData = fundamentalData[ticker];
         prtfPosItem.name = tickerData.companyReference_ShortName;
         prtfPosItem.sharesOutstanding = tickerData.companyProfile_SharesOutstanding;
+        prtfPosItem.marketCap = prtfPosItem.price * prtfPosItem.sharesOutstanding;
       }
     }
   }

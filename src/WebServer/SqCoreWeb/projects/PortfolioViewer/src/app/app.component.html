@@ -29,7 +29,7 @@
           <td>{{item.holdingCost | number:'1.0-0'}}</td>
           <td>{{item.holdingValue | number:'1.0-0'}}</td>
           <td>{{item.sharesOutstanding | number:'1.0-0'}}</td>
-          <td>{{item.marketCap}}</td>
+          <td>{{item.marketCap | number:'1.0-0'}}</td>
         </tr>
       </tbody>
     </table>
@@ -60,9 +60,9 @@
   <div [hidden]="m_activeTab != 'Trades'"><br>
     <span>
       <span (click)="toggleTradeSectionVisibility()" class="toggleTradesSection"><span id="toggleSign" [ngStyle]="{'color': m_isEditedTradeSectionVisible ? 'green' : 'red'}">{{m_isEditedTradeSectionVisible ? '&#45;' : '&#43;'}}</span> Edit trades...</span>&nbsp;
-      <button (click)="onClickSelectAllOrDeselectAll(true)" class="btnCommon">Select All</button>&nbsp;
-      <button (click)="onClickSelectAllOrDeselectAll(false)" class="btnCommon">DeSelect All</button>&nbsp;
-      <button (click)="onClickCopyToClipboard()" class="btnCommon">Copy to Clipboard (all/selected)</button>&nbsp;
+      <button (click)="onClickSelectAllOrDeselectAll(true)" class="btnCommon" [disabled]="m_trades.length == 0">Select All</button>&nbsp;
+      <button (click)="onClickSelectAllOrDeselectAll(false)" class="btnCommon" [disabled]="m_trades.length == 0">DeSelect All</button>&nbsp;
+      <button (click)="onClickCopyToClipboard()" class="btnCommon" [disabled]="m_trades.length == 0">Copy to Clipboard (all/selected)</button>&nbsp;
       <button disabled class="btnCommon">Create from Clipboard</button>&nbsp;
     </span><br>
     <div id="tradesSection" *ngIf="m_isEditedTradeSectionVisible">
