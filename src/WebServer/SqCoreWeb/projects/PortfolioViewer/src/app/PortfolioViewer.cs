@@ -23,8 +23,11 @@ class HandshakeMessagePrtfViewer
 
 class FundamentalData
 {
-    public string? CompanyReference_ShortName { get; set; }
-    public int CompanyProfile_SharesOutstanding { get; set; }
+    public string? Ticker { get; set; }
+    [JsonPropertyName("sn")]
+    public string? ShortName { get; set; }
+    [JsonPropertyName("sOut")]
+    public long SharesOutstanding { get; set; }
 }
 
 public class PrtfVwrWs
@@ -117,11 +120,23 @@ public class PrtfVwrWs
             if(ticker.Trim() != "USD") // Filter out "USD" ticker as it's a currency and won't have fundamental data
                 tickers.Add(ticker);
         }
+
         List<FundamentalProperty> propertyNames = new() { FundamentalProperty.CompanyReference_ShortName, FundamentalProperty.CompanyProfile_SharesOutstanding }; // Define the fundamental properties to fetch
-        string fundamentalDataStr = FinDb.GetFundamentalDataStr(tickers, date, propertyNames); // Fetch fundamental data from the database
-        // Deserialize the JSON data into a Dictionary<string, FundamentalData>
-        Dictionary<string, FundamentalData>? fundamentalData = JsonSerializer.Deserialize<Dictionary<string, FundamentalData>>(fundamentalDataStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.PrtfTickersFundamentalData:" + Utils.CamelCaseSerialize(fundamentalData));
+        Dictionary<string, Dictionary<FundamentalProperty, object>> fundamentalData = FinDb.GetFundamentalData(tickers, date, propertyNames);
+        List<FundamentalData>? fundamentalDataList = new();
+
+        foreach (KeyValuePair<string, Dictionary<FundamentalProperty, object>> kvp in fundamentalData)
+        {
+            FundamentalData? newfundamentalData = new FundamentalData
+            {
+                Ticker = kvp.Key,
+                ShortName = kvp.Value.TryGetValue(FundamentalProperty.CompanyReference_ShortName, out object? sName) ? sName.ToString() : null, // Try to retrieve the ShortName value from the inner dictionary. If successful, convert the value to string; otherwise, set to null
+                SharesOutstanding = kvp.Value.TryGetValue(FundamentalProperty.CompanyProfile_SharesOutstanding, out object? sOut) ? Convert.ToInt64(sOut.ToString()) : 0, // Try to retrieve the SharesOutstanding value from the inner dictionary. If successful, convert the value to long; otherwise, set to 0
+            };
+
+            fundamentalDataList.Add(newfundamentalData);
+        }
+        byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.PrtfTickersFundamentalData:" + Utils.CamelCaseSerialize(fundamentalDataList));
         if (webSocket!.State == WebSocketState.Open)
             webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }

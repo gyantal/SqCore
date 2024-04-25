@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId } from '../../../../TsLib/sq-common/backtestCommon';
+import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 
 class HandshakeMessage {
@@ -81,12 +81,9 @@ class FuturesFieldsUi {
 }
 
 class FundamentalData {
-  companyReference_ShortName: string = '';
-  companyProfile_SharesOutstanding: number = 0;
-}
-
-class FundamentalDataByTicker {
-  [key: string]: FundamentalData;
+  ticker: string = '';
+  name: string = ''; // shortname
+  sharesOutstanding: number = 0;
 }
 
 @Component({
@@ -207,15 +204,24 @@ export class AppComponent {
 
   public processFundamentalData(msgObjStr: string) {
     console.log('PrtfVwr.processFundamentalData() START', msgObjStr);
+    const fundamentalData: FundamentalData[] = JSON.parse(msgObjStr, function(this: any, key, value) {
+      // eslint-disable-next-line no-invalid-this
+      const _this: any = this; // use 'this' only once, so we don't have to write 'eslint-disable-next-line' before all lines when 'this' is used
 
-    const fundamentalData: FundamentalDataByTicker = JSON.parse(msgObjStr);
+      const isRemoveOriginal: boolean = fundamentalDataParseHelper(_this, key, value);
+      if (isRemoveOriginal)
+        return; // if return undefined, original property will be removed
+
+      return value; // the original property will not be removed if we return the original value, not undefined
+    });
+
     for (const prtfPosItem of this.m_uiPrtfRunResult.prtfPosValues) {
       const ticker = prtfPosItem.sqTicker.split('/')[1]; // Extract ticker from prtfPosItem sqTicker, e.g. S/TLT => TLT
+      const fundamentalDataItem = fundamentalData.find((item) => item.ticker == ticker);
 
-      if (ticker in fundamentalData) { // using 'in' operator to check if the property exists in fundamentalData object
-        const tickerData = fundamentalData[ticker];
-        prtfPosItem.name = tickerData.companyReference_ShortName;
-        prtfPosItem.sharesOutstanding = tickerData.companyProfile_SharesOutstanding;
+      if (fundamentalDataItem != null) {
+        prtfPosItem.name = fundamentalDataItem.name;
+        prtfPosItem.sharesOutstanding = fundamentalDataItem.sharesOutstanding;
         prtfPosItem.marketCap = prtfPosItem.price * prtfPosItem.sharesOutstanding;
       }
     }
@@ -308,7 +314,7 @@ export class AppComponent {
   }
 
   onClickSetOpenOrClose(setTime: string) {
-    const etDate: Date = new Date(this.m_editedTrade.time); // The m_editedTrade.time is originally a Date object. However, when displaying it on the UI, we utilize a pipe to format it as a string with the format 'yyyy-MM-dd'. This results in it being represented as a string. To revert it back to a Date object, we use new Date(m_editedTrade.time) to convert it.
+    const etDate: Date = this.m_editedTrade.time; // The m_editedTrade.time is originally a Date object. However, when displaying it on the UI, we utilize a pipe to format it as a string with the format 'yyyy-MM-dd'. This results in it being represented as a string. To revert it back to a Date object, we use new Date(m_editedTrade.time) to convert it.
     if (this.m_editedTrade.action == TradeAction.Buy) { // Buy
       if (setTime == 'open') // Set the opening time to 9:31 AM local time (NYSE opening time)
         etDate.setHours(9, 31, 0);

@@ -114,7 +114,7 @@
         </span>
         <span class="tradesCommon">
           <!-- How to pass Pipe in [(ngModel)] ? Answer: split the binding into a one-way binding "[]" and an event binding "()", see: https://stackoverflow.com/questions/39642882/using-pipes-within-ngmodel-on-input-elements-in-angular-->
-          <!-- Here, we're using the "[ngModelOptions]={updateOn}" approach to manage the binding. This means we're instructing the binding to only occur after the user finishes entering the date. Otherwise, if we use the default "[ngModelOptions]={updateOn: 'change'}", the onDateChange method will trigger with every input change made by the user.-->
+          <!-- Here, we're using the "[ngModelOptions]={updateOn}" approach to manage the binding. This means we're instructing the binding to only occur after the user finishes entering the date. The "blur" event is a metaphor for the loss of focus in cameras. When the focus is lost, that element becomes "blurred", triggering the "blur" = "FocusLost" event. Otherwise, if we use the default "[ngModelOptions]={updateOn: 'change'}", the onDateChange method will trigger with every input change made by the user.-->
           Date: <input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" [ngModelOptions]="{updateOn: 'blur'}" (ngModelChange)="onDateChange($event)" (input)="onTradeInputChange()"><br>
           <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
           UTC Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
