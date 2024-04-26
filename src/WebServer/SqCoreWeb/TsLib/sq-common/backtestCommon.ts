@@ -9,13 +9,13 @@ import { prtfRunResultChrt } from '../sq-common/chartAdvanced';
 type Nullable<T> = T | null;
 
 export enum SqLogLevel {
-    Off = 'Off',
-    Trace = 'Trace',
-    Debug = 'Debug',
-    Info = 'Info',
-    Warn = 'Warn',
-    Error = 'Error',
-    Fatal = 'Fatal'
+  Off = 'Off',
+  Trace = 'Trace',
+  Debug = 'Debug',
+  Info = 'Info',
+  Warn = 'Warn',
+  Error = 'Error',
+  Fatal = 'Fatal'
 }
 
 export enum LineStyle {
@@ -109,7 +109,7 @@ export class CgTimeSeries {
 
 export class UiPrtfPositions {
   public sqTicker: string = '';
-  public name: string = '';
+  public name: string = ''; // shortName
   public quantity: number = 0;
   public avgPrice: number = 0;
   public price: number = 0;
@@ -288,6 +288,18 @@ export function fldrsParseHelper(_this: any, key: string, value: any): boolean {
   }
   if (key === 'cTime') {
     _this.creationTime = value;
+    return true; // if return undefined, original property will be removed
+  }
+  return false;
+}
+
+export function fundamentalDataParseHelper(_this: any, key: string, value: any): boolean {
+  if (key === 'sn') {
+    _this.name = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'sOut') {
+    _this.sharesOutstanding = value;
     return true; // if return undefined, original property will be removed
   }
   return false;

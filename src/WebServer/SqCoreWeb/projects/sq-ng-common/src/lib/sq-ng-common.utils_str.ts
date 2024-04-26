@@ -44,3 +44,30 @@ export class TypeOfPipe implements PipeTransform {
     return typeof value;
   }
 }
+
+@Pipe({ name: 'numberToTBMK' }) // Transform a number into a formatted string based on its magnitude
+export class NumberToTBMKPipe implements PipeTransform {
+  // @param input - The number to be formatted.
+  // @param args - Optional argument to specify the number of decimal places for formatting.
+  // For example, if you use the pipe like this: {{ numberValue | numberToTBMK: 2 }}, it means that the number should be formatted with 2 decimal places. The args in this case will be 2, and input.toFixed(args) will format the number accordingly.
+  transform(input: any, args?: any): any {
+    if (Number.isNaN(input))
+      return input;
+
+    // Format the number based on its magnitude
+    if (input > 1e12)
+      return (input / 1e12).toFixed(3) + 'T'; // Format for Trillion
+    else if (input > 1e11)
+      return (input / 1e9).toFixed(0) + 'B'; // Format for Billion without decimals
+    else if (input > 1e10)
+      return (input / 1e9).toFixed(1) + 'B'; // Format for Billion with one decimal place
+    else if (input > 1e9)
+      return (input / 1e9).toFixed(2) + 'B'; // Format for Billion with two decimal places
+    else if (input > 1e6)
+      return (input / 1e6).toFixed(0) + 'M'; // Format for Million
+    else if (input > 1e3)
+      return (input / 1e3).toFixed(0) + 'K'; // Format for Thousand
+    else
+      return input.toFixed(args); // Format with the specified number of decimal places
+  }
+}
