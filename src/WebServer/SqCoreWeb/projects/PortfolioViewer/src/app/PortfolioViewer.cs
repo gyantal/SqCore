@@ -122,19 +122,19 @@ public class PrtfVwrWs
         }
 
         List<FundamentalProperty> propertyNames = new() { FundamentalProperty.CompanyReference_ShortName, FundamentalProperty.CompanyProfile_SharesOutstanding }; // Define the fundamental properties to fetch
-        Dictionary<string, Dictionary<FundamentalProperty, object>> fundamentalData = FinDb.GetFundamentalData(tickers, date, propertyNames);
-        List<FundamentalData>? fundamentalDataList = new();
+        Dictionary<string, Dictionary<FundamentalProperty, object>> fundamentalDataDict = FinDb.GetFundamentalData(tickers, date, propertyNames);
+        List<FundamentalData> fundamentalDataList = new();
 
-        foreach (KeyValuePair<string, Dictionary<FundamentalProperty, object>> kvp in fundamentalData)
+        foreach (KeyValuePair<string, Dictionary<FundamentalProperty, object>> kvp in fundamentalDataDict)
         {
-            FundamentalData? newfundamentalData = new FundamentalData
+            FundamentalData fundamentalData = new FundamentalData
             {
                 Ticker = kvp.Key,
                 ShortName = kvp.Value.TryGetValue(FundamentalProperty.CompanyReference_ShortName, out object? sName) ? sName.ToString() : null, // Try to retrieve the ShortName value from the inner dictionary. If successful, convert the value to string; otherwise, set to null
                 SharesOutstanding = kvp.Value.TryGetValue(FundamentalProperty.CompanyProfile_SharesOutstanding, out object? sOut) ? Convert.ToInt64(sOut.ToString()) : 0, // Try to retrieve the SharesOutstanding value from the inner dictionary. If successful, convert the value to long; otherwise, set to 0
             };
 
-            fundamentalDataList.Add(newfundamentalData);
+            fundamentalDataList.Add(fundamentalData);
         }
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.PrtfTickersFundamentalData:" + Utils.CamelCaseSerialize(fundamentalDataList));
         if (webSocket!.State == WebSocketState.Open)

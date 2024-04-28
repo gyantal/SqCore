@@ -58,15 +58,23 @@ export class NumberToTBMKPipe implements PipeTransform {
     if (input > 1e12)
       return (input / 1e12).toFixed(3) + 'T'; // Format for Trillion
     else if (input > 1e11)
-      return (input / 1e9).toFixed(0) + 'B'; // Format for Billion without decimals
+      return (input / 1e9).toFixed(0) + 'B'; // Format for Billion without decimals. Numbers between 100B..999B => e.g. "613B"
     else if (input > 1e10)
-      return (input / 1e9).toFixed(1) + 'B'; // Format for Billion with one decimal place
+      return (input / 1e9).toFixed(1) + 'B'; // Format for Billion with one decimal place. Numbers between 10B..99B => e.g. "61.3B
     else if (input > 1e9)
-      return (input / 1e9).toFixed(2) + 'B'; // Format for Billion with two decimal places
+      return (input / 1e9).toFixed(2) + 'B'; // Format for Billion with two decimal places. Numbers between 1B..9.99B => e.g. "6.13B"
+    else if (input > 1e8)
+      return (input / 1e6).toFixed(0) + 'M'; // Format for Million without decimals. Numbers between 100M..999M => e.g. "613M"
+    else if (input > 1e7)
+      return (input / 1e6).toFixed(1) + 'M'; // Format for Million with one decimal place. Numbers between 10M..99M => e.g. "61.3M"
     else if (input > 1e6)
-      return (input / 1e6).toFixed(0) + 'M'; // Format for Million
+      return (input / 1e6).toFixed(2) + 'M'; // Format for Million with two decimal places. Numbers between 1M..9.99M => e.g. "6.13M"
+    else if (input > 1e5)
+      return (input / 1e3).toFixed(0) + 'K'; // Format for Thousand without decimal. Numbers between 100K..999K => e.g. "613K"
+    else if (input > 1e4)
+      return (input / 1e3).toFixed(1) + 'K'; // Format for Thousand with one decimal place. Numbers between 10K..99K => e.g. "61.3K"
     else if (input > 1e3)
-      return (input / 1e3).toFixed(0) + 'K'; // Format for Thousand
+      return (input / 1e3).toFixed(2) + 'K'; // Format for Thousand with two decimal places. Numbers between 1K..9.99K => e.g. "6.13K"
     else
       return input.toFixed(args); // Format with the specified number of decimal places
   }
