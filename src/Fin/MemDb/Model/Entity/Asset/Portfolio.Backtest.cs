@@ -133,7 +133,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         }; // output
         List<PortfolioPosition> prtfPoss = new()
         {
-            new PortfolioPosition { SqTicker = "S/Spy", Quantity = 1, AvgPrice = 1.0f, LastPrice = 1.0f },
+            new PortfolioPosition { SqTicker = "S/SPY", Quantity = 1, AvgPrice = 1.0f, LastPrice = 1.0f },
             new PortfolioPosition { SqTicker = "S/TQQQ", Quantity = 1, AvgPrice = 1.0f, LastPrice = 1.0f }
         }; // output
         p_prtfPoss = prtfPoss;

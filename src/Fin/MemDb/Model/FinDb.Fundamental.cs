@@ -184,7 +184,7 @@ public partial class FinDb
     public static Dictionary<string, Dictionary<FundamentalProperty, object>> GetFundamentalData(List<string> p_tickers, DateTime p_date, List<FundamentalProperty> p_propertyNames)
     {
         Dictionary<string, Dictionary<FundamentalProperty, object>> results = new();
-        foreach (var ticker in p_tickers)
+        foreach (string ticker in p_tickers)
         {
             Dictionary<FundamentalProperty, object> dataForTicker = GetFundamentalData(ticker, p_date, p_propertyNames);
             results[ticker] = dataForTicker;
@@ -192,6 +192,9 @@ public partial class FinDb
         return results;
     }
 
+    // if a property is missing from the data file or there is a problem converting to the proper type, then we don't put that property as a Key into the dictionary at all.
+    // If a property is missing from data file => don't raise exception, don't log Warning
+    // If data conversion fails (for example we expect a long, and there is a double in it), we log a Warning.
     public static Dictionary<FundamentalProperty, object> GetFundamentalData(string p_ticker, DateTime p_date, List<FundamentalProperty> p_propertyNames)
     {
         // Find the closest zip file for the given date and ticker, and throw if not found
@@ -202,7 +205,7 @@ public partial class FinDb
         using StreamReader reader = new(stream);
         string jsonDataStr = reader.ReadToEnd();
         // Deserialize JSON string into a nested dictionary structure and throw if it fails
-        Dictionary<string, Dictionary<string, object>> jsonData = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, object>>>(jsonDataStr) ?? throw new JsonException("Failed to deserialize JSON data.");
+        Dictionary<string, Dictionary<string, JsonElement>> jsonData = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, JsonElement>>>(jsonDataStr) ?? throw new JsonException("Failed to deserialize JSON data."); // JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, object>>>() version gives back JsonElements in place of those objects
 
         Dictionary<FundamentalProperty, object> results = new();
         foreach (FundamentalProperty property in p_propertyNames)
@@ -214,8 +217,22 @@ public partial class FinDb
             string category = underscoreIndex > -1 ? propertyName[..underscoreIndex] : propertyName; // Determine the category by substring before the underscore
 
             // Attempt to retrieve the value from the nested dictionary and add to results if found
-            if (jsonData.TryGetValue(category, out Dictionary<string, object>? catValues) && catValues.TryGetValue(key, out object? value))
-                results[property] = value;
+            if (jsonData.TryGetValue(category, out Dictionary<string, JsonElement>? catValues) && catValues.TryGetValue(key, out JsonElement jsonElement))
+            {
+                object? valueObj = null;
+                if (property == FundamentalProperty.CompanyProfile_SharesOutstanding || property == FundamentalProperty.CompanyProfile_MarketCap)
+                {
+                    if (jsonElement.TryGetInt64(out long valueLong))
+                        valueObj = valueLong;
+                }
+                else
+                    valueObj = jsonElement.GetString();
+
+                if (valueObj != null)
+                    results[property] = valueObj;
+                else
+                    Utils.Logger.Warn($"Failed to convert JSON value for {p_ticker}:{property}");
+            }
         }
 
         return results;

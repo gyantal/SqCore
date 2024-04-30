@@ -77,10 +77,7 @@ public partial class FinDb
     public static async Task<bool> CrawlData() // print log to Console or HTML
     {
         // Determining the appropriate data directory where the map_files, price and factor files are located.
-        string finDataDir = OperatingSystem.IsWindows() ?
-            AppDomain.CurrentDomain.BaseDirectory + @"..\..\..\..\..\Fin\Data\equity\usa\" :
-            AppDomain.CurrentDomain.BaseDirectory + @"../FinData/equity/usa/";
-        finDataDir = Path.GetFullPath(finDataDir); // GetFullPath removes the unnecessary back marching ".."
+        string finDataDir = Utils.FinDataFolderPath + @"equity/usa/";
 
         string mapFilesDir = $"{finDataDir}map_files";
         // Collect tickers from file names. Furthermore, collect start and end dates from map_files.

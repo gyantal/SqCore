@@ -130,8 +130,8 @@ public class PrtfVwrWs
             FundamentalData fundamentalData = new FundamentalData
             {
                 Ticker = kvp.Key,
-                ShortName = kvp.Value.TryGetValue(FundamentalProperty.CompanyReference_ShortName, out object? sName) ? sName.ToString() : null, // Try to retrieve the ShortName value from the inner dictionary. If successful, convert the value to string; otherwise, set to null
-                SharesOutstanding = kvp.Value.TryGetValue(FundamentalProperty.CompanyProfile_SharesOutstanding, out object? sOut) ? Convert.ToInt64(sOut.ToString()) : 0, // Try to retrieve the SharesOutstanding value from the inner dictionary. If successful, convert the value to long; otherwise, set to 0
+                ShortName = kvp.Value.TryGetValue(FundamentalProperty.CompanyReference_ShortName, out object? myValue) ? (string)myValue : null, // Try to retrieve the ShortName value from the inner dictionary. If successful, convert the value to string; otherwise, set to null
+                SharesOutstanding = kvp.Value.TryGetValue(FundamentalProperty.CompanyProfile_SharesOutstanding, out object? sOut) ? (long)sOut : 0, // Try to retrieve the SharesOutstanding value from the inner dictionary. If successful, convert the value to long; otherwise, set to 0
             };
 
             fundamentalDataList.Add(fundamentalData);
