@@ -81,6 +81,13 @@ namespace QuantConnect.Orders
             get; private set;
         }
 
+        // SqCore Change NEW:
+        public decimal FixPrice
+        {
+            get; private set;
+        } = decimal.MinValue;
+        // SqCore Change END
+
         /// <summary>
         /// Initializes a new instance of the <see cref="SubmitOrderRequest"/> class.
         /// The <see cref="OrderRequest.OrderId"/> will default to <see cref="OrderResponseErrorCode.UnableToFindOrder"/>
@@ -103,6 +110,9 @@ namespace QuantConnect.Orders
             decimal stopPrice,
             decimal limitPrice,
             decimal triggerPrice,
+            // SqCore Change NEW:
+            decimal fixPrice, // We use  Decimal.MinValue for Invalid price. 0 can be a valid fix trade price for Options e.g.
+            // SqCore Change END
             DateTime time,
             string tag,
             IOrderProperties properties = null
@@ -117,6 +127,9 @@ namespace QuantConnect.Orders
             StopPrice = stopPrice;
             TriggerPrice = triggerPrice;
             OrderProperties = properties;
+            // SqCore Change NEW:
+            FixPrice = fixPrice;
+            // SqCore Change END
         }
 
         /// <summary>
@@ -139,11 +152,18 @@ namespace QuantConnect.Orders
             decimal quantity,
             decimal stopPrice,
             decimal limitPrice,
+            // SqCore Change NEW:
+            decimal fixPrice, // We use  Decimal.MinValue for Invalid price. 0 can be a valid fix trade price for Options e.g.
+            // SqCore Change END
             DateTime time,
             string tag,
             IOrderProperties properties = null
             )
-            : this(orderType, securityType, symbol, quantity, stopPrice, limitPrice, 0, time, tag, properties)
+            // SqCore Change ORIGINAL:
+            // : this(orderType, securityType, symbol, quantity, stopPrice, limitPrice, 0, time, tag, properties)
+            // SqCore Change NEW:
+            : this(orderType, securityType, symbol, quantity, stopPrice, limitPrice, 0, fixPrice, time, tag, properties)
+            // SqCore Change END
         {
         }
 
@@ -166,7 +186,7 @@ namespace QuantConnect.Orders
         public override string ToString()
         {
             // create a proxy order object to steal his to string method
-            var proxy = Order.CreateOrder(this);
+            Order proxy = Order.CreateOrder(this);
             return Invariant($"{Time} UTC: Submit Order: ({OrderId}) - {proxy} {Tag} Status: {Status}");
         }
     }

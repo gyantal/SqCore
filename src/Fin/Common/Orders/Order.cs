@@ -385,15 +385,27 @@ namespace QuantConnect.Orders
         /// </summary>
         /// <param name="request">The <see cref="SubmitOrderRequest"/> to create an order for</param>
         /// <returns>The <see cref="Order"/> that matches the request</returns>
+        // SqCore Change ORIGINAL:
+        // public static Order CreateOrder(SubmitOrderRequest request)
+        // {
+        //     return CreateOrder(request.OrderId, request.OrderType, request.Symbol, request.Quantity, request.Time,
+        //         request.Tag, request.OrderProperties, request.LimitPrice, request.StopPrice, request.TriggerPrice);
+        // }
+
+        // private static Order CreateOrder(int orderId, OrderType type, Symbol symbol, decimal quantity, DateTime time,
+        //     string tag, IOrderProperties properties, decimal limitPrice, decimal stopPrice, decimal triggerPrice)
+        // {
+        // SqCore Change NEW:
         public static Order CreateOrder(SubmitOrderRequest request)
         {
             return CreateOrder(request.OrderId, request.OrderType, request.Symbol, request.Quantity, request.Time,
-                request.Tag, request.OrderProperties, request.LimitPrice, request.StopPrice, request.TriggerPrice);
+                request.Tag, request.OrderProperties, request.LimitPrice, request.StopPrice, request.TriggerPrice, request.FixPrice);
         }
 
         private static Order CreateOrder(int orderId, OrderType type, Symbol symbol, decimal quantity, DateTime time,
-            string tag, IOrderProperties properties, decimal limitPrice, decimal stopPrice, decimal triggerPrice)
+            string tag, IOrderProperties properties, decimal limitPrice, decimal stopPrice, decimal triggerPrice, decimal fixPrice = decimal.MinValue)
         {
+        // SqCore Change END
             Order order;
             switch (type)
             {
@@ -424,6 +436,12 @@ namespace QuantConnect.Orders
                 case OrderType.MarketOnClose:
                     order = new MarketOnCloseOrder(symbol, quantity, time, tag, properties);
                     break;
+
+                // SqCore Change NEW:
+                case OrderType.FixPrice:
+                    order = new FixPriceOrder(symbol, quantity, time, tag, properties, fixPrice);
+                    break;
+                // SqCore Change END
 
                 case OrderType.OptionExercise:
                     order = new OptionExerciseOrder(symbol, quantity, time, tag, properties);

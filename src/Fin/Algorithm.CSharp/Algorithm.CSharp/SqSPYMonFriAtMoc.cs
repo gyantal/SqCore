@@ -250,6 +250,7 @@ namespace QuantConnect.Algorithm.CSharp
                     if (qcPrice.ReferenceDate != simulatedTimeLoc.Date)
                         throw new Exception("Historical price for the date is not found.");
                     priceToUse = qcPrice.Close;
+                    // priceToUse = 500;
                 }
                 else // running in QC cloud simulation
                 {
@@ -264,10 +265,12 @@ namespace QuantConnect.Algorithm.CSharp
 
                 // QC raises Warning if order quantity = 0. So, we don't sent these. "Unable to submit order with id -10 that has zero quantity."
                 _lastOrderTicket = MarketOnCloseOrder(_symbol, Math.Round(Portfolio.Cash / priceToUse));
+                // _lastOrderTicket = FixPriceOrder(_symbol, Math.Round(Portfolio.Cash / priceToUse), priceToUse);
             }
 
             if (simulatedTimeLoc.DayOfWeek == DayOfWeek.Friday && Portfolio[_symbol].Quantity > 0) // Sell it on Friday if we have a position
                 _lastOrderTicket = MarketOnCloseOrder(_symbol, -Portfolio[_symbol].Quantity);  // Daily Raw: Sell: FillDate: 16:00 today (why???) (on previous day close price!!)
+                // _lastOrderTicket = FixPriceOrder(_symbol, -Portfolio[_symbol].Quantity, 550);  // Daily Raw: Sell: FillDate: 16:00 today (why???) (on previous day close price!!)
 
             // Log($"PV on day {simulatedTimeLoc.Date.ToString()}: ${Portfolio.TotalPortfolioValue}.");
         }
@@ -276,7 +279,7 @@ namespace QuantConnect.Algorithm.CSharp
         {
         }
 
-        // public override void OnOrderEvent(OrderEvent orderEvent)
+        // public override void OnOrderEvent(OrderEvent orderEvent) // called back twice. Once with orderEvent.Status = Sumbitted, later = Filled
         // {
         //     if (orderEvent.Status.IsFill())
         //     {

@@ -88,6 +88,13 @@ namespace QuantConnect.Orders.Fills
                         ? PythonWrapper.MarketOnCloseFill(parameters.Security, parameters.Order as MarketOnCloseOrder)
                         : MarketOnCloseFill(parameters.Security, parameters.Order as MarketOnCloseOrder);
                     break;
+                // SqCore Change NEW:
+                case OrderType.FixPrice:
+                    orderEvent = PythonWrapper != null
+                        ? PythonWrapper.FixPriceFill(parameters.Security, parameters.Order as FixPriceOrder)
+                        : FixPriceFill(parameters.Security, parameters.Order as FixPriceOrder);
+                    break;
+                // SqCore Change END
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -628,9 +635,9 @@ namespace QuantConnect.Orders.Fills
 
             // SqCore Change NEW:
             // Get the range of prices in the last bar:
-            var tradeHigh = 0m;
-            var tradeLow = 0m;
-            var endTimeUtc = DateTime.MinValue;
+            // var tradeHigh = 0m;
+            // var tradeLow = 0m;
+            // var endTimeUtc = DateTime.MinValue;
             // SqCore Change END
 
             var subscribedTypes = GetSubscribedTypes(asset);
@@ -681,31 +688,33 @@ namespace QuantConnect.Orders.Fills
                 }
 
                 // SqCore Change NEW: do not fill on stale data
-                foreach (var trade in trades)
-                {
-                    tradeHigh = Math.Max(tradeHigh, trade.Price);
-                    tradeLow = tradeLow == 0 ? trade.Price : Math.Min(tradeLow, trade.Price);
-                    endTimeUtc = trade.EndTime.ConvertToUtc(asset.Exchange.TimeZone);
-                }
+                // We needed endTimeUtc for processing/trading at 00:00 (Approach 2), but now we trade at 16:00, so this is not needed
+                // foreach (var trade in trades) // Warning! Not the best code. We would need a maximum search of trade.EndTime for the trades. Here we assume that all trades has the same time.
+                // {
+                //     tradeHigh = Math.Max(tradeHigh, trade.Price);
+                //     tradeLow = tradeLow == 0 ? trade.Price : Math.Min(tradeLow, trade.Price);
+                //     endTimeUtc = trade.EndTime.ConvertToUtc(asset.Exchange.TimeZone);
+                // }
                 // SqCore Change END
             }
             // SqCore Change NEW: do not fill on stale data
-            else if (subscribedTypes.Contains(typeof(TradeBar)))
-            {
-                var tradeBar = asset.Cache.GetData<TradeBar>();
+            // We needed endTimeUtc for processing/trading at 00:00 (Approach 2), but now we trade at 16:00, so this is not needed
+            // else if (subscribedTypes.Contains(typeof(TradeBar)))
+            // {
+            //     var tradeBar = asset.Cache.GetData<TradeBar>();
 
-                if (tradeBar != null)
-                {
-                    tradeHigh = tradeBar.High;
-                    tradeLow = tradeBar.Low;
-                    endTimeUtc = tradeBar.EndTime.ConvertToUtc(asset.Exchange.TimeZone);
-                }
-            }
+            //     if (tradeBar != null)
+            //     {
+            //         tradeHigh = tradeBar.High;
+            //         tradeLow = tradeBar.Low;
+            //         endTimeUtc = tradeBar.EndTime.ConvertToUtc(asset.Exchange.TimeZone);
+            //     }
+            // }
 
             // do not fill on stale data
             // in SqCore, after daily OnData() processing/trading at 00:00, we let the Orders fill immediately, without any time check
             // if (endTimeUtc <= order.Time)
-            //     return fill;
+            //     return fill; // return without filling the fill.FillPrice
 
 
             // make sure the exchange is open/normal market hours before filling
@@ -759,6 +768,39 @@ namespace QuantConnect.Orders.Fills
 
             return fill;
         }
+
+        // SqCore Change NEW:
+        public virtual OrderEvent FixPriceFill(Security asset, FixPriceOrder order)
+        {
+            var utcTime = asset.LocalTime.ConvertToUtc(asset.Exchange.TimeZone);
+            var fill = new OrderEvent(order, utcTime, OrderFee.Zero);
+
+            if (order.Status == OrderStatus.Canceled) 
+                return fill;
+
+            var localOrderTime = order.Time.ConvertFromUtc(asset.Exchange.TimeZone);
+            var nextMarketClose = asset.Exchange.Hours.GetNextMarketClose(localOrderTime, false);
+
+            var subscribedTypes = GetSubscribedTypes(asset);
+            if (subscribedTypes.Contains(typeof(TradeBar)))
+            {
+                if (order.FixPrice != decimal.MinValue)
+                    fill.FillPrice = order.FixPrice;
+                else
+                    fill.FillPrice = asset.Cache.GetData<TradeBar>()?.Close ?? 0;
+            }
+            else
+            {
+                fill.Message = $"Warning: No trade information available at {asset.LocalTime.ToStringInvariant()} {asset.Exchange.TimeZone}, order filled using Quote data";
+            }
+
+            // assume the order completely filled
+            fill.FillQuantity = order.Quantity;
+            fill.Status = OrderStatus.Filled;
+
+            return fill;
+        }
+        // SqCore Change END
 
         /// <summary>
         /// Get data types the Security is subscribed to

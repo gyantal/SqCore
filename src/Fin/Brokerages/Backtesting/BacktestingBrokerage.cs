@@ -262,7 +262,7 @@ namespace QuantConnect.Brokerages.Backtesting
                     // SqCore Change ORIGINAL:
                     // if (order.Time == Algorithm.UtcTime && order.Type != OrderType.Market && order.Type != OrderType.OptionExercise)
                     // SqCore Change NEW: MarketOnClose orders has to be allowed to fill, stillNeedsScan in not requiered
-                    if (order.Time == Algorithm.UtcTime && order.Type != OrderType.Market && order.Type != OrderType.MarketOnClose && order.Type != OrderType.OptionExercise)
+                    if (order.Time == Algorithm.UtcTime && order.Type != OrderType.Market && order.Type != OrderType.MarketOnClose && order.Type != OrderType.FixPrice && order.Type != OrderType.OptionExercise)
                     // SqCore Change END
                     {
                         stillNeedsScan = true;

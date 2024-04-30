@@ -85,6 +85,13 @@ namespace QuantConnect.Orders.Fills
                         ? PythonWrapper.MarketOnCloseFill(parameters.Security, parameters.Order as MarketOnCloseOrder)
                         : MarketOnCloseFill(parameters.Security, parameters.Order as MarketOnCloseOrder);
                     break;
+                // SqCore Change NEW:
+                case OrderType.FixPrice:
+                    orderEvent = PythonWrapper != null
+                        ? PythonWrapper.FixPriceFill(parameters.Security, parameters.Order as FixPriceOrder)
+                        : FixPriceFill(parameters.Security, parameters.Order as FixPriceOrder);
+                    break;
+                // SqCore Change END
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -557,6 +564,54 @@ namespace QuantConnect.Orders.Fills
 
             return fill;
         }
+
+        // SqCore Change NEW:
+        public virtual OrderEvent FixPriceFill(Security asset, FixPriceOrder order)
+        {
+            if (asset.Exchange.Hours.IsMarketAlwaysOpen)
+            {
+                throw new InvalidOperationException($"Market never closes for this symbol {asset.Symbol}, can no submit a {nameof(OrderType.FixPrice)} order.");
+            }
+
+            var utcTime = asset.LocalTime.ConvertToUtc(asset.Exchange.TimeZone);
+            var fill = new OrderEvent(order, utcTime, OrderFee.Zero);
+
+            if (order.Status == OrderStatus.Canceled) return fill;
+
+            var localOrderTime = order.Time.ConvertFromUtc(asset.Exchange.TimeZone);
+            var nextMarketClose = asset.Exchange.Hours.GetNextMarketClose(localOrderTime, false);
+
+            // wait until market closes after the order time
+            if (asset.LocalTime < nextMarketClose)
+            {
+                return fill;
+            }
+            // make sure the exchange is open/normal market hours before filling
+            if (!IsExchangeOpen(asset, false)) return fill;
+
+            fill.FillPrice = GetPricesCheckingPythonWrapper(asset, order.Direction).Close;
+            fill.Status = OrderStatus.Filled;
+            //Calculate the model slippage: e.g. 0.01c
+            var slip = asset.SlippageModel.GetSlippageApproximation(asset, order);
+
+            //Apply slippage
+            switch (order.Direction)
+            {
+                case OrderDirection.Buy:
+                    fill.FillPrice += slip;
+                    // assume the order completely filled
+                    fill.FillQuantity = order.Quantity;
+                    break;
+                case OrderDirection.Sell:
+                    fill.FillPrice -= slip;
+                    // assume the order completely filled
+                    fill.FillQuantity = order.Quantity;
+                    break;
+            }
+
+            return fill;
+        }
+        // SqCore Change END
 
         /// <summary>
         /// Get current ask price for subscribed data

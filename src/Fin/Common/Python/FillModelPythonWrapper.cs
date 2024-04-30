@@ -95,6 +95,16 @@ namespace QuantConnect.Python
             }
         }
 
+        // SqCore Change NEW:
+        public override OrderEvent FixPriceFill(Security asset, FixPriceOrder order)
+        {
+            using (Py.GIL())
+            {
+                return (_model.FixPriceFill(asset, order) as PyObject).GetAndDispose<OrderEvent>();
+            }
+        }
+        // SqCore Change END
+
         /// <summary>
         /// Market on Open Fill Model. Return an order event with the fill details
         /// </summary>

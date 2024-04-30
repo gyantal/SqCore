@@ -509,7 +509,11 @@ namespace QuantConnect.Orders
         /// </summary>
         public static OrderTicket InvalidCancelOrderId(SecurityTransactionManager transactionManager, CancelOrderRequest request)
         {
-            var submit = new SubmitOrderRequest(OrderType.Market, SecurityType.Base, Symbol.Empty, 0, 0, 0, DateTime.MaxValue, request.Tag);
+            // SqCore Change ORIGINAL:
+            // var submit = new SubmitOrderRequest(OrderType.Market, SecurityType.Base, Symbol.Empty, 0, 0, 0, DateTime.MaxValue, request.Tag);
+            // SqCore Change NEW:
+            var submit = new SubmitOrderRequest(OrderType.Market, SecurityType.Base, Symbol.Empty, 0, 0, 0, 0, DateTime.MaxValue, request.Tag);
+            // SqCore Change END
             submit.SetResponse(OrderResponse.UnableToFindOrder(request));
             submit.SetOrderId(request.OrderId);
             var ticket = new OrderTicket(transactionManager, submit);
@@ -524,7 +528,11 @@ namespace QuantConnect.Orders
         /// </summary>
         public static OrderTicket InvalidUpdateOrderId(SecurityTransactionManager transactionManager, UpdateOrderRequest request)
         {
-            var submit = new SubmitOrderRequest(OrderType.Market, SecurityType.Base, Symbol.Empty, 0, 0, 0, DateTime.MaxValue, request.Tag);
+            // SqCore Change ORIGINAL:
+            // var submit = new SubmitOrderRequest(OrderType.Market, SecurityType.Base, Symbol.Empty, 0, 0, 0, DateTime.MaxValue, request.Tag);
+            // SqCore Change NEW:
+            var submit = new SubmitOrderRequest(OrderType.Market, SecurityType.Base, Symbol.Empty, 0, 0, 0, 0, DateTime.MaxValue, request.Tag);
+            // SqCore Change END
             submit.SetResponse(OrderResponse.UnableToFindOrder(request));
             submit.SetOrderId(request.OrderId);
             var ticket = new OrderTicket(transactionManager, submit);

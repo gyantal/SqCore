@@ -356,6 +356,29 @@ namespace QuantConnect.Algorithm
             return SubmitOrderRequest(request);
         }
 
+        // SqCore Change NEW:
+        [DocumentationAttribute(TradingAndOrders)]
+        public OrderTicket FixPriceOrder(Symbol symbol, int quantity, decimal fixPrice, string tag = "", IOrderProperties orderProperties = null)
+        {
+            return FixPriceOrder(symbol, (decimal)quantity, fixPrice, tag, orderProperties);
+        }
+
+        [DocumentationAttribute(TradingAndOrders)]
+        public OrderTicket FixPriceOrder(Symbol symbol, double quantity, decimal fixPrice, string tag = "", IOrderProperties orderProperties = null)
+        {
+            return FixPriceOrder(symbol, quantity.SafeDecimalCast(), fixPrice, tag, orderProperties);
+        }
+
+        [DocumentationAttribute(TradingAndOrders)]
+        public OrderTicket FixPriceOrder(Symbol symbol, decimal quantity, decimal fixPrice, string tag = "", IOrderProperties orderProperties = null)
+        {
+            var security = Securities[symbol];
+            SubmitOrderRequest request = CreateSubmitOrderRequest(OrderType.FixPrice, security, quantity, tag, orderProperties ?? DefaultOrderProperties?.Clone(), fixPrice: fixPrice);
+
+            return SubmitOrderRequest(request);
+        }
+        // SqCore Change END
+
         /// <summary>
         /// Send a limit order to the transaction handler:
         /// </summary>
@@ -1265,10 +1288,16 @@ namespace QuantConnect.Algorithm
             }
             return symbol.IsMarketOpen(UtcTime, false);
         }
-
-        private SubmitOrderRequest CreateSubmitOrderRequest(OrderType orderType, Security security, decimal quantity, string tag, IOrderProperties properties, decimal stopPrice = 0m, decimal limitPrice = 0m,  decimal triggerPrice = 0m)
+        // SqCore Change ORIGINAL:
+        // private SubmitOrderRequest CreateSubmitOrderRequest(OrderType orderType, Security security, decimal quantity, string tag, IOrderProperties properties, decimal stopPrice = 0m, decimal limitPrice = 0m,  decimal triggerPrice = 0m)
+        // {
+        //     return new SubmitOrderRequest(orderType, security.Type, security.Symbol, quantity, stopPrice, limitPrice, triggerPrice, UtcTime, tag, properties);
+        // }
+        // SqCore Change NEW:
+        private SubmitOrderRequest CreateSubmitOrderRequest(OrderType orderType, Security security, decimal quantity, string tag, IOrderProperties properties, decimal stopPrice = 0m, decimal limitPrice = 0m,  decimal triggerPrice = 0m, decimal fixPrice = 0m)
         {
-            return new SubmitOrderRequest(orderType, security.Type, security.Symbol, quantity, stopPrice, limitPrice, triggerPrice, UtcTime, tag, properties);
+            return new SubmitOrderRequest(orderType, security.Type, security.Symbol, quantity, stopPrice, limitPrice, triggerPrice, fixPrice, UtcTime, tag, properties);
         }
+        // SqCore Change END
     }
 }

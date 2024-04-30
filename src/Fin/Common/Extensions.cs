@@ -2418,6 +2418,9 @@ namespace QuantConnect
                 case OrderType.Market:
                 case OrderType.MarketOnOpen:
                 case OrderType.MarketOnClose:
+                // SqCore Change NEW:
+                case OrderType.FixPrice:
+                // SqCore Change END
                     limitPrice = order.Price;
                     stopPrice = order.Price;
                     break;

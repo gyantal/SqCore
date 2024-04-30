@@ -949,7 +949,11 @@ namespace QuantConnect.Lean.Engine
                     algorithm.Transactions.CancelOpenOrders(optionContractSymbol, "Canceled due to impending split. Separate MarketOnClose order submitted to liquidate position.");
 
                     var request = new SubmitOrderRequest(OrderType.MarketOnClose, optionContractSecurity.Type, optionContractSymbol,
-                        -optionContractSecurity.Holdings.Quantity, 0, 0, algorithm.UtcTime,
+                        // SqCore Change ORIGINAL:
+                        // -optionContractSecurity.Holdings.Quantity, 0, 0, algorithm.UtcTime,
+                        // SqCore Change NEW:
+                        -optionContractSecurity.Holdings.Quantity, 0, 0, 0, algorithm.UtcTime,
+                        // SqCore Change END
                         "Liquidated due to impending split. Option splits are not currently supported."
                     );
 

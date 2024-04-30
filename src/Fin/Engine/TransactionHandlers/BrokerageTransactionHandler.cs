@@ -1374,7 +1374,10 @@ namespace QuantConnect.Lean.Engine.TransactionHandlers
             // Do not need to round market orders
             if (order.Type == OrderType.Market ||
                 order.Type == OrderType.MarketOnOpen ||
-                order.Type == OrderType.MarketOnClose)
+                order.Type == OrderType.MarketOnClose ||
+                // SqCore Change NEW:
+                order.Type == OrderType.FixPrice)
+                // SqCore Change END
             {
                 return;
             }

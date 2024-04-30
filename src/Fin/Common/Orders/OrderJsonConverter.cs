@@ -255,6 +255,12 @@ namespace QuantConnect.Orders
                     order = new MarketOnCloseOrder();
                     break;
 
+                // SqCore Change NEW:
+                case OrderType.FixPrice:
+                    order = new FixPriceOrder();
+                    break;
+                // SqCore Change END
+
                 case OrderType.OptionExercise:
                     order = new OptionExerciseOrder();
                     break;
