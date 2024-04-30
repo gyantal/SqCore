@@ -314,7 +314,8 @@ export class AppComponent {
   }
 
   onClickSetOpenOrClose(setTime: string) {
-    const etDate: Date = this.m_editedTrade.time; // The m_editedTrade.time is originally a Date object. However, when displaying it on the UI, we utilize a pipe to format it as a string with the format 'yyyy-MM-dd'. This results in it being represented as a string. To revert it back to a Date object, we use new Date(m_editedTrade.time) to convert it.
+    this.m_isEditedTradeDirty = true;
+    const etDate: Date = this.m_editedTrade.time;
     if (this.m_editedTrade.action == TradeAction.Buy) { // Buy
       if (setTime == 'open') // Set the opening time to 9:31 AM local time (NYSE opening time)
         etDate.setHours(9, 31, 0);
@@ -327,17 +328,22 @@ export class AppComponent {
         etDate.setHours(15, 59, 0);
     }
     const utcDate: Date = SqNgCommonUtilsTime.ConvertDateEtToUtc(etDate);
-    this.m_editedTrade.time = utcDate; // Update m_editedTrade.time with the calculated time in UTC format
+    // this.m_editedTrade.time = utcDate; // Warning! Angular change detection doesn't notice the change without creating new object, if we just update the date's UTC milliseconds number inside the Date object
+    this.m_editedTrade.time = new Date(utcDate); // Angular change detection detects only the 'pointer change'. It only notice the change if we create a new object, with a new allocated memory and new pointer.
   }
 
-  onDateChange(dateStr: string) {
-    const timePart = this.m_editedTrade.time.toTimeString().split(' ')[0]; // we extract the time from the current m_editedTrade.time and combine it with the new date to create a new Date object.
-    this.m_editedTrade.time = new Date(dateStr + ' ' + timePart);
+  onDateChange(event: Event) {
+    this.m_isEditedTradeDirty = true;
+    const dateStr: string = (event.target as HTMLInputElement).value;
+    const timeStr: string = this.m_editedTrade.time.toTimeString().split(' ')[0]; // we extract the time from the current m_editedTrade.time and combine it with the new date to create a new Date object.
+    this.m_editedTrade.time = new Date(dateStr + 'T' + timeStr);
   }
 
-  onTimeChange(timeStr: string) {
-    const datePart = this.m_editedTrade.time.toISOString().split('T')[0]; // we extract the date from the current m_editedTrade.time and combine it with the new time to create a new Date object.
-    this.m_editedTrade.time = new Date(datePart + 'T' + timeStr + 'Z');
+  onTimeChange(event: Event) {
+    this.m_isEditedTradeDirty = true;
+    const timeStr: string = (event.target as HTMLInputElement).value;
+    const dateStr: string = this.m_editedTrade.time.toISOString().split('T')[0]; // we extract the date from the current m_editedTrade.time and combine it with the new time to create a new Date object.
+    this.m_editedTrade.time = new Date(dateStr + 'T' + timeStr);
   }
 
   onClickSelectAllOrDeselectAll(isSelectAll: boolean) {

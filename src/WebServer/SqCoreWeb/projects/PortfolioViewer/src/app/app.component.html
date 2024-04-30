@@ -115,10 +115,15 @@
         <span class="tradesCommon">
           <!-- How to pass Pipe in [(ngModel)] ? Answer: split the binding into a one-way binding "[]" and an event binding "()", see: https://stackoverflow.com/questions/39642882/using-pipes-within-ngmodel-on-input-elements-in-angular-->
           <!-- Here, we're using the "[ngModelOptions]={updateOn}" approach to manage the binding. This means we're instructing the binding to only occur after the user finishes entering the date. The "blur" event is a metaphor for the loss of focus in cameras. When the focus is lost, that element becomes "blurred", triggering the "blur" = "FocusLost" event. Otherwise, if we use the default "[ngModelOptions]={updateOn: 'change'}", the onDateChange method will trigger with every input change made by the user.-->
-          Date: <input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" [ngModelOptions]="{updateOn: 'blur'}" (ngModelChange)="onDateChange($event)" (input)="onTradeInputChange()"><br>
+          <!-- Date: <input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" [ngModelOptions]="{updateOn: 'blur'}" (ngModelChange)="onDateChange($event)" (input)="onTradeInputChange()"><br> -->
+          <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
+          <!-- UTC Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
+                <input type="time" [ngModel]="m_editedTrade.time | date : 'HH:mm'" [ngModelOptions]="{updateOn: 'blur'}" (ngModelChange)="onTimeChange($event)">&nbsp;
+                <button (click)="onClickSetOpenOrClose('close')">setClose</button><br> -->
+          Date: <input type="date" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (input)="onDateChange($event)"><br>
           <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
           UTC Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
-                <input type="time" [ngModel]="m_editedTrade.time | date : 'HH:mm'" (ngModelChange)="onTimeChange($event)">&nbsp;
+                <input type="time" [value]="m_editedTrade.time | date : 'HH:mm'" (input)="onTimeChange($event)">&nbsp;
                 <button (click)="onClickSetOpenOrClose('close')">setClose</button><br>
           Price: <input class="inputTextboxWidth" type="number" [ngModel]="m_editedTrade.price | nanToDash" (ngModelChange)="m_editedTrade.price=$event" (input)="onTradeInputChange()">&nbsp;
           <div class="selectionDropDown">
