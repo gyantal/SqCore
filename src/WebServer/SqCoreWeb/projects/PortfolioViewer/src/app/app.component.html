@@ -82,11 +82,11 @@
         <button (click)="onClickInsertOrUpdateTrade(false)" [disabled]="m_editedTrade.id == -1">Update (existing)</button>&nbsp;
         <button (click)="onClickDeleteTrade()" [disabled]="m_editedTrade.id == -1">Delete</button>&nbsp;
         <button (click)="onClickClearFields()">Clear Fields</button>&nbsp;<br>
-          <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" [value]="m_enumAssetType.CurrencyCash">Cash &nbsp;
-          <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" [value]="m_enumAssetType.Stock">Stock &nbsp;
-          <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" [value]="m_enumAssetType.Option">Option &nbsp;
-          <input name="assetType" type="radio" [(ngModel)]="m_editedTrade.assetType" [value]="m_enumAssetType.Futures">Futures&nbsp;
-          TradeId: <input class="inputTextboxWidth" type="number" [(ngModel)]="m_editedTrade.id" (input)="onTradeInputChange()"><br>
+          <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.CurrencyCash)" [checked]="m_editedTrade.assetType == m_enumAssetType.CurrencyCash">Cash &nbsp;
+          <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.Stock)" [checked]="m_editedTrade.assetType == m_enumAssetType.Stock">Stock &nbsp;
+          <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.Option)" [checked]="m_editedTrade.assetType == m_enumAssetType.Option">Option &nbsp;
+          <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.Futures)" [checked]="m_editedTrade.assetType == m_enumAssetType.Futures">Futures &nbsp;
+          TradeId: <input class="inputTextboxWidth" type="number" [value]="m_editedTrade.id" (input)="onInputTradeId($event)"><br>
           TradeAction:
             <div class="selectionDropDown">
               <input class="highlightInputDropDown" type="text" [value]="m_enumTradeAction[m_editedTrade.action]" (input)="onTradeInputChange()" disabled>
@@ -97,35 +97,28 @@
             </div>
           </div>&nbsp;
           <!-- The user input for options and futures selection has been disabled because the value is determined through concatenation using the underlying symbol, expiration date, put/call designation, and strike price for options, while for futures, it relies on the underlying symbol, expiration date with the addition of "+M," and the multiplier -->
-          Symbol: <input type="text" [(ngModel)]="m_editedTrade.symbol" [value]="getEditedTradeSymbol()" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()" [disabled]="(m_editedTrade.assetType == m_enumAssetType.Option || m_editedTrade.assetType == m_enumAssetType.Futures)"><br>
+          Symbol: <input type="text" [value]="m_editedTrade.symbol" (input)="onInputSymbol($event)" [disabled]="(m_editedTrade.assetType == m_enumAssetType.Option || m_editedTrade.assetType == m_enumAssetType.Futures)"><br>
           <div class="fixedHeightDiv" [hidden]="(m_editedTrade.assetType != m_enumAssetType.Option) && (m_editedTrade.assetType != m_enumAssetType.Futures)">
-            UnderlyingSym: <input class="inputTextboxWidth" type="text" [(ngModel)]="m_editedTrade.underlyingSymbol" oninput="this.value = this.value.toUpperCase()" (input)="onTradeInputChange()">
+            UnderlyingSym: <input class="inputTextboxWidth" type="text" [value]="m_editedTrade.underlyingSymbol" (input)="onInputUnderlyingSymbol($event)">
             <ng-container *ngIf="m_editedTrade.assetType == m_enumAssetType.Option">
-              <input name="optionType" type="radio" value="P" [(ngModel)]="m_editedTradeOptionFields.optionType">Put
-              <input name="optionType" type="radio" value="C" [(ngModel)]="m_editedTradeOptionFields.optionType">Call &nbsp;
-              Expiry: <input type="date" [(ngModel)]="m_editedTradeOptionFields.dateExpiry">
-              Strike: <input class="inputTextboxWidth" type="number" [(ngModel)]="m_editedTradeOptionFields.strikePrice"><br>
+              <input name="optionType" type="radio" (input)="onInputOptionType('P')">Put
+              <input name="optionType" type="radio" (input)="onInputOptionType('C')">Call &nbsp;
+              Expiry: <input type="date" [value]="m_editedTradeOptionFields.dateExpiry" (input)="onInputOptionExpiry($event)">
+              Strike: <input class="inputTextboxWidth" type="number" [value]="m_editedTradeOptionFields.strikePrice" (input)="onInputOptionStrikePrice($event)"><br>
             </ng-container>
             <ng-container *ngIf="m_editedTrade.assetType == m_enumAssetType.Futures">
-              Expiry: <input class="inputTextboxWidth" type="date" [(ngModel)]="m_editedTradeFutureFields.dateExpiry">
-              Multiplier: <input class="inputTextboxWidth" type="number" [(ngModel)]="m_editedTradeFutureFields.multiplier"><br>
+              Expiry: <input class="inputTextboxWidth" type="date" [value]="m_editedTradeFutureFields.dateExpiry" (input)="onInputFutureExpiry($event)">
+              Multiplier: <input class="inputTextboxWidth" type="number" [value]="m_editedTradeFutureFields.multiplier" (input)="onInputFutureMultiplier($event)"><br>
             </ng-container>
           </div>
         </span>
         <span class="tradesCommon">
-          <!-- How to pass Pipe in [(ngModel)] ? Answer: split the binding into a one-way binding "[]" and an event binding "()", see: https://stackoverflow.com/questions/39642882/using-pipes-within-ngmodel-on-input-elements-in-angular-->
-          <!-- Here, we're using the "[ngModelOptions]={updateOn}" approach to manage the binding. This means we're instructing the binding to only occur after the user finishes entering the date. The "blur" event is a metaphor for the loss of focus in cameras. When the focus is lost, that element becomes "blurred", triggering the "blur" = "FocusLost" event. Otherwise, if we use the default "[ngModelOptions]={updateOn: 'change'}", the onDateChange method will trigger with every input change made by the user.-->
-          <!-- Date: <input type="date" [ngModel]="m_editedTrade.time | date : 'yyyy-MM-dd'" [ngModelOptions]="{updateOn: 'blur'}" (ngModelChange)="onDateChange($event)" (input)="onTradeInputChange()"><br> -->
-          <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
-          <!-- UTC Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
-                <input type="time" [ngModel]="m_editedTrade.time | date : 'HH:mm'" [ngModelOptions]="{updateOn: 'blur'}" (ngModelChange)="onTimeChange($event)">&nbsp;
-                <button (click)="onClickSetOpenOrClose('close')">setClose</button><br> -->
           Date: <input type="date" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (input)="onDateChange($event)"><br>
           <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
           UTC Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
                 <input type="time" [value]="m_editedTrade.time | date : 'HH:mm'" (input)="onTimeChange($event)">&nbsp;
                 <button (click)="onClickSetOpenOrClose('close')">setClose</button><br>
-          Price: <input class="inputTextboxWidth" type="number" [ngModel]="m_editedTrade.price | nanToDash" (ngModelChange)="m_editedTrade.price=$event" (input)="onTradeInputChange()">&nbsp;
+          Price: <input class="inputTextboxWidth" type="number" [value]="m_editedTrade.price | nanToDash" (input)="onInputPrice($event)">&nbsp;
           <div class="selectionDropDown">
             <input class="highlightInputDropDown" type="text" placeholder="Enter CurrencyId" [value]="m_enumCurrencyId[m_editedTrade.currency]" (input)="onTradeInputChange()" disabled>
             <div class="listDropDown">
@@ -134,7 +127,7 @@
               </ng-container>
             </div>
           </div><br>
-          Quantity: <input class="inputTextboxWidth" type="number" [ngModel]="m_editedTrade.quantity | nanToDash" (ngModelChange)="m_editedTrade.quantity=$event" (input)="onTradeInputChange()">&nbsp;
+          Quantity: <input class="inputTextboxWidth" type="number" [value]="m_editedTrade.quantity | nanToDash" (input)="onInputQuantity($event)">&nbsp;
           TotalValue: <input class="inputTextboxWidth" type="number" value="{{m_editedTrade.price * m_editedTrade.quantity}}" (input)="onTradeInputChange()"><br>
         </span>
       </div>

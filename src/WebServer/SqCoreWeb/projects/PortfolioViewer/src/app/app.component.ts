@@ -305,45 +305,21 @@ export class AppComponent {
       this.m_socket.send('DeleteTrade:pfId:' + this.m_portfolioId + ',tradeId:' + this.m_editedTrade.id);
   }
 
+  getEditedTradeSymbol(): string {
+    if (this.m_editedTrade.assetType === AssetType.Option) // When a user selects an option, the symbol comprises the underlying asset, the expiration date, the option type (put/call abbreviated as P/C), and the strike price. For instance, in the example "QQQ 20241220C494.78", "QQQ" represents the underlying symbol, "20241220" indicates the expiration date, "C" denotes a call option, and "494.78" signifies the strike price.
+      return this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_editedTradeOptionFields.dateExpiry) + this.m_editedTradeOptionFields.optionType + (isNaN(this.m_editedTradeOptionFields.strikePrice) ? '-' : this.m_editedTradeOptionFields.strikePrice);
+    else if (this.m_editedTrade.assetType === AssetType.Futures) // ex: symbol: VIX 20240423M1000 => VIX(underlyingSymbol) 20240423(Date) M(Mulitplier)1000.
+      return this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_editedTradeFutureFields.dateExpiry) + 'M' + (isNaN(this.m_editedTradeFutureFields.multiplier) ? '-' : this.m_editedTradeFutureFields.multiplier);
+    else
+      return this.m_editedTrade.symbol;
+  }
+
   onClickClearFields() {
     this.m_editedTrade.Clear();
   }
 
   onTradeInputChange() { // Dynamically switch between the save and unsaved icons when a user attempts to create or edit a trade.
     this.m_isEditedTradeDirty = true;
-  }
-
-  onClickSetOpenOrClose(setTime: string) {
-    this.m_isEditedTradeDirty = true;
-    const etDate: Date = this.m_editedTrade.time;
-    if (this.m_editedTrade.action == TradeAction.Buy) { // Buy
-      if (setTime == 'open') // Set the opening time to 9:31 AM local time (NYSE opening time)
-        etDate.setHours(9, 31, 0);
-      else if (setTime == 'close') // Set the closing time to 4:00 PM local time (NYSE closing time)
-        etDate.setHours(16, 0, 0);
-    } else if (this.m_editedTrade.action == TradeAction.Sell) { // Sell
-      if (setTime == 'open') // Set the opening time to 9:30 AM local time (NYSE opening time)
-        etDate.setHours(9, 30, 0);
-      else if (setTime == 'close') // Set the closing time to 3:59 PM local time (NYSE closing time)
-        etDate.setHours(15, 59, 0);
-    }
-    const utcDate: Date = SqNgCommonUtilsTime.ConvertDateEtToUtc(etDate);
-    // this.m_editedTrade.time = utcDate; // Warning! Angular change detection doesn't notice the change without creating new object, if we just update the date's UTC milliseconds number inside the Date object
-    this.m_editedTrade.time = new Date(utcDate); // Angular change detection detects only the 'pointer change'. It only notice the change if we create a new object, with a new allocated memory and new pointer.
-  }
-
-  onDateChange(event: Event) {
-    this.m_isEditedTradeDirty = true;
-    const dateStr: string = (event.target as HTMLInputElement).value;
-    const timeStr: string = this.m_editedTrade.time.toTimeString().split(' ')[0]; // we extract the time from the current m_editedTrade.time and combine it with the new date to create a new Date object.
-    this.m_editedTrade.time = new Date(dateStr + 'T' + timeStr);
-  }
-
-  onTimeChange(event: Event) {
-    this.m_isEditedTradeDirty = true;
-    const timeStr: string = (event.target as HTMLInputElement).value;
-    const dateStr: string = this.m_editedTrade.time.toISOString().split('T')[0]; // we extract the date from the current m_editedTrade.time and combine it with the new time to create a new Date object.
-    this.m_editedTrade.time = new Date(dateStr + 'T' + timeStr);
   }
 
   onClickSelectAllOrDeselectAll(isSelectAll: boolean) {
@@ -353,16 +329,6 @@ export class AppComponent {
 
   toggleTradeSectionVisibility() {
     this.m_isEditedTradeSectionVisible = !this.m_isEditedTradeSectionVisible;
-  }
-
-  onTradeActionSelectionClicked(enumTradeActionStr: any) { // e.g.: enumTradeActionStr = "Buy" as string. The ":string" type would be more accurate instead of ":any", but 'as' is not allowed in Angular HTML. AngularHtml thinks (correctly) that the enum TradeAction is a JS object = general dictionary where keys and values can be any types.
-    this.m_editedTrade.action = TradeAction[enumTradeActionStr as keyof TradeAction];
-    this.onTradeInputChange();
-  }
-
-  onCurrencyTypeSelectionClicked(enumCurrencyIdStr: any) { // ex: enumCurrencyIdStr = "USD"as string. The ":string" type would be more accurate instead of ":any", but 'as' is not allowed in Angular HTML. AngularHtml thinks (correctly) that the enum CurrencyId is a JS object = general dictionary where keys and values can be any types.
-    this.m_editedTrade.currency = CurrencyId[enumCurrencyIdStr as keyof CurrencyId];
-    this.onTradeInputChange();
   }
 
   onClickCopyToClipboard() {
@@ -398,12 +364,115 @@ export class AppComponent {
     this.m_isCopyToClipboardDialogVisible = false;
   }
 
-  getEditedTradeSymbol(): string {
-    if (this.m_editedTrade.assetType === AssetType.Option) // When a user selects an option, the symbol comprises the underlying asset, the expiration date, the option type (put/call abbreviated as P/C), and the strike price. For instance, in the example "QQQ 20241220C494.78", "QQQ" represents the underlying symbol, "20241220" indicates the expiration date, "C" denotes a call option, and "494.78" signifies the strike price.
-      return this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_editedTradeOptionFields.dateExpiry) + this.m_editedTradeOptionFields.optionType + (isNaN(this.m_editedTradeOptionFields.strikePrice) ? '-' : this.m_editedTradeOptionFields.strikePrice);
-    else if (this.m_editedTrade.assetType === AssetType.Futures) // ex: symbol: VIX 20240423M1000 => VIX(underlyingSymbol) 20240423(Date) M(Mulitplier)1000.
-      return this.m_editedTrade.underlyingSymbol + ' ' + SqNgCommonUtilsTime.RemoveHyphensFromDateStr(this.m_editedTradeFutureFields.dateExpiry) + 'M' + (isNaN(this.m_editedTradeFutureFields.multiplier) ? '-' : this.m_editedTradeFutureFields.multiplier);
-    else
-      return this.m_editedTrade.symbol;
+  onInputAssetType(assetType: AssetType) {
+    this.m_isEditedTradeDirty = true;
+    this.m_editedTrade.assetType = assetType;
+  }
+
+  onInputTradeId(event: Event) {
+    this.updateEditedTrade(event, 'id');
+  }
+
+  onTradeActionSelectionClicked(enumTradeActionStr: any) { // e.g.: enumTradeActionStr = "Buy" as string. The ":string" type would be more accurate instead of ":any", but 'as' is not allowed in Angular HTML. AngularHtml thinks (correctly) that the enum TradeAction is a JS object = general dictionary where keys and values can be any types.
+    this.m_editedTrade.action = TradeAction[enumTradeActionStr as keyof TradeAction];
+    this.onTradeInputChange();
+  }
+
+  onInputSymbol(event: Event) {
+    this.updateEditedTrade(event, 'symbol', true);
+  }
+
+  onInputUnderlyingSymbol(event: Event) {
+    this.updateEditedTrade(event, 'underlyingSymbol', true);
+  }
+
+  onInputOptionType(option: string) {
+    this.m_isEditedTradeDirty = true;
+    this.m_editedTradeOptionFields.optionType = option;
+  }
+
+  onInputOptionExpiry(event: Event) {
+    this.updateEditedTrade(event, 'dateExpiry');
+  }
+
+  onInputOptionStrikePrice(event: Event) {
+    this.updateEditedTrade(event, 'strikePrice');
+  }
+
+  onInputFutureExpiry(event: Event) {
+    this.updateEditedTrade(event, 'dateExpiry');
+  }
+
+  onInputFutureMultiplier(event: Event) {
+    this.updateEditedTrade(event, 'multiplier');
+  }
+
+  onClickSetOpenOrClose(setTime: string) {
+    this.m_isEditedTradeDirty = true;
+    const etDate: Date = this.m_editedTrade.time;
+    if (this.m_editedTrade.action == TradeAction.Buy) { // Buy
+      if (setTime == 'open') // Set the opening time to 9:31 AM local time (NYSE opening time)
+        etDate.setHours(9, 31, 0);
+      else if (setTime == 'close') // Set the closing time to 4:00 PM local time (NYSE closing time)
+        etDate.setHours(16, 0, 0);
+    } else if (this.m_editedTrade.action == TradeAction.Sell) { // Sell
+      if (setTime == 'open') // Set the opening time to 9:30 AM local time (NYSE opening time)
+        etDate.setHours(9, 30, 0);
+      else if (setTime == 'close') // Set the closing time to 3:59 PM local time (NYSE closing time)
+        etDate.setHours(15, 59, 0);
+    }
+    const utcDate: Date = SqNgCommonUtilsTime.ConvertDateEtToUtc(etDate);
+    // this.m_editedTrade.time = utcDate; // Warning! Angular change detection doesn't notice the change without creating new object, if we just update the date's UTC milliseconds number inside the Date object
+    this.m_editedTrade.time = new Date(utcDate); // Angular change detection detects only the 'pointer change'. It only notice the change if we create a new object, with a new allocated memory and new pointer.
+  }
+
+  onDateChange(event: Event) {
+    this.m_isEditedTradeDirty = true;
+    const dateStr: string = (event.target as HTMLInputElement).value;
+    const timeStr: string = this.m_editedTrade.time.toTimeString().split(' ')[0]; // we extract the time from the current m_editedTrade.time and combine it with the new date to create a new Date object.
+    this.m_editedTrade.time = new Date(dateStr + 'T' + timeStr);
+  }
+
+  onTimeChange(event: Event) {
+    this.m_isEditedTradeDirty = true;
+    const timeStr: string = (event.target as HTMLInputElement).value;
+    const dateStr: string = this.m_editedTrade.time.toISOString().split('T')[0]; // we extract the date from the current m_editedTrade.time and combine it with the new time to create a new Date object.
+    this.m_editedTrade.time = new Date(dateStr + 'T' + timeStr);
+  }
+
+  onInputPrice(event: Event) {
+    this.updateEditedTrade(event, 'price', false, true);
+  }
+
+  onCurrencyTypeSelectionClicked(enumCurrencyIdStr: any) { // ex: enumCurrencyIdStr = "USD"as string. The ":string" type would be more accurate instead of ":any", but 'as' is not allowed in Angular HTML. AngularHtml thinks (correctly) that the enum CurrencyId is a JS object = general dictionary where keys and values can be any types.
+    this.m_editedTrade.currency = CurrencyId[enumCurrencyIdStr as keyof CurrencyId];
+    this.onTradeInputChange();
+  }
+
+  onInputQuantity(event: Event) {
+    this.updateEditedTrade(event, 'quantity', false, true);
+  }
+
+  //  Handles input events and updates corresponding fields in the edited trade object.
+  //  @param event The input event triggered by user interaction.
+  //  @param field The field to be updated in the edited trade object.
+  //  @param toUpperCase Whether to convert the input value to uppercase.
+  //  @param parseFloatValue Whether to parse the input value to a float.
+  updateEditedTrade(event: Event, field: string, toUpperCase: boolean = false, parseFloatValue: boolean = false) {
+    this.m_isEditedTradeDirty = true;
+    let inputValue: any = (event.target as HTMLInputElement).value.trim();
+
+    if (toUpperCase) // Convert input value to uppercase if specified
+      inputValue = inputValue.toUpperCase();
+
+    if (parseFloatValue)
+      inputValue = parseFloat(inputValue);
+
+    if (field in this.m_editedTradeOptionFields) // Check if the field is directly under m_editedTradeOptionFields
+      this.m_editedTradeOptionFields[field] = inputValue;
+    else if (field in this.m_editedTradeFutureFields) // Check if the field is directly under m_editedTradeFutureFields
+      this.m_editedTradeFutureFields[field] = inputValue;
+    else // If not, assume it's a top-level field of m_editedTrade
+      this.m_editedTrade[field] = inputValue;
   }
 }
