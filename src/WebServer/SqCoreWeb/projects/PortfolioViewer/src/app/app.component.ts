@@ -370,7 +370,8 @@ export class AppComponent {
   }
 
   onInputTradeId(event: Event) {
-    this.updateEditedTrade(event, 'id');
+    this.m_isEditedTradeDirty = true;
+    this.m_editedTrade.id = parseInt((event.target as HTMLInputElement).value.trim());
   }
 
   onTradeActionSelectionClicked(enumTradeActionStr: any) { // e.g.: enumTradeActionStr = "Buy" as string. The ":string" type would be more accurate instead of ":any", but 'as' is not allowed in Angular HTML. AngularHtml thinks (correctly) that the enum TradeAction is a JS object = general dictionary where keys and values can be any types.
@@ -379,11 +380,13 @@ export class AppComponent {
   }
 
   onInputSymbol(event: Event) {
-    this.updateEditedTrade(event, 'symbol', true);
+    this.m_isEditedTradeDirty = true;
+    this.m_editedTrade.symbol = (event.target as HTMLInputElement).value.trim().toUpperCase();
   }
 
   onInputUnderlyingSymbol(event: Event) {
-    this.updateEditedTrade(event, 'underlyingSymbol', true);
+    this.m_isEditedTradeDirty = true;
+    this.m_editedTrade.underlyingSymbol = (event.target as HTMLInputElement).value.trim().toUpperCase();
   }
 
   onInputOptionType(option: string) {
@@ -392,19 +395,23 @@ export class AppComponent {
   }
 
   onInputOptionExpiry(event: Event) {
-    this.updateEditedTrade(event, 'dateExpiry');
+    this.m_isEditedTradeDirty = true;
+    this.m_editedTradeOptionFields.dateExpiry = (event.target as HTMLInputElement).value.trim();
   }
 
   onInputOptionStrikePrice(event: Event) {
-    this.updateEditedTrade(event, 'strikePrice');
+    this.m_isEditedTradeDirty = true;
+    this.m_editedTradeOptionFields.strikePrice = parseFloat((event.target as HTMLInputElement).value.trim());
   }
 
   onInputFutureExpiry(event: Event) {
-    this.updateEditedTrade(event, 'dateExpiry');
+    this.m_isEditedTradeDirty = true;
+    this.m_editedTradeFutureFields.dateExpiry = (event.target as HTMLInputElement).value.trim();
   }
 
   onInputFutureMultiplier(event: Event) {
-    this.updateEditedTrade(event, 'multiplier');
+    this.m_isEditedTradeDirty = true;
+    this.m_editedTradeFutureFields.multiplier = parseFloat((event.target as HTMLInputElement).value.trim());
   }
 
   onClickSetOpenOrClose(setTime: string) {
@@ -441,7 +448,8 @@ export class AppComponent {
   }
 
   onInputPrice(event: Event) {
-    this.updateEditedTrade(event, 'price', false, true);
+    this.m_isEditedTradeDirty = true;
+    this.m_editedTrade.price = parseFloat((event.target as HTMLInputElement).value.trim());
   }
 
   onCurrencyTypeSelectionClicked(enumCurrencyIdStr: any) { // ex: enumCurrencyIdStr = "USD"as string. The ":string" type would be more accurate instead of ":any", but 'as' is not allowed in Angular HTML. AngularHtml thinks (correctly) that the enum CurrencyId is a JS object = general dictionary where keys and values can be any types.
@@ -450,29 +458,7 @@ export class AppComponent {
   }
 
   onInputQuantity(event: Event) {
-    this.updateEditedTrade(event, 'quantity', false, true);
-  }
-
-  //  Handles input events and updates corresponding fields in the edited trade object.
-  //  @param event The input event triggered by user interaction.
-  //  @param field The field to be updated in the edited trade object.
-  //  @param toUpperCase Whether to convert the input value to uppercase.
-  //  @param parseFloatValue Whether to parse the input value to a float.
-  updateEditedTrade(event: Event, field: string, toUpperCase: boolean = false, parseFloatValue: boolean = false) {
     this.m_isEditedTradeDirty = true;
-    let inputValue: any = (event.target as HTMLInputElement).value.trim();
-
-    if (toUpperCase) // Convert input value to uppercase if specified
-      inputValue = inputValue.toUpperCase();
-
-    if (parseFloatValue)
-      inputValue = parseFloat(inputValue);
-
-    if (field in this.m_editedTradeOptionFields) // Check if the field is directly under m_editedTradeOptionFields
-      this.m_editedTradeOptionFields[field] = inputValue;
-    else if (field in this.m_editedTradeFutureFields) // Check if the field is directly under m_editedTradeFutureFields
-      this.m_editedTradeFutureFields[field] = inputValue;
-    else // If not, assume it's a top-level field of m_editedTrade
-      this.m_editedTrade[field] = inputValue;
+    this.m_editedTrade.quantity = parseInt((event.target as HTMLInputElement).value.trim());
   }
 }
