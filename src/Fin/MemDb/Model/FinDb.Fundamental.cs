@@ -31,7 +31,7 @@ public partial class FinDb
     public static async Task<bool> CrawlFundamentalData(string p_ticker, string p_finDataDir, DateTime p_mapfileFirstDate, double p_shrsOutstSignifChgThresholdPct = 10.0) // p_shrsOutstSignifChgThresholdPct is a parameter, because it can be ticker dependent
     {
         // Query Yahoo Finance API for information about the given ticker
-        // Companies have MarketCap, but ETFs have NetAssets.
+        // Companies have MarketCap, but ETFs have NetAssets (but YF doesn't update the NetAssets every day).
         // https://query1.finance.yahoo.com/v7/finance/quote?symbols=vxx&fields=symbol%2CshortName%2ClongName%2CmarketCap%2CsharesOutstanding%2CnetAssets&crumb=rd9ezFeBgc7
         IReadOnlyDictionary<string, YahooFinanceApi.Security> quotes = await Yahoo.Symbols([p_ticker])
             .Fields(new Field[] { Field.Symbol, Field.ShortName, Field.LongName, Field.RegularMarketPreviousClose, Field.SharesOutstanding, Field.MarketCap, Field.NetAssets, Field.RegularMarketPrice })
@@ -44,7 +44,7 @@ public partial class FinDb
             return false;
         }
 
-        long estimatedMarketCap = security.Fields.ContainsKey("MarketCap") ? security.MarketCap : (security.Fields.ContainsKey("NetAssets") ? (long)security.NetAssets : 0L);
+        long estimatedMarketCap = security.Fields.ContainsKey("MarketCap") ? security.MarketCap : (security.Fields.ContainsKey("NetAssets") ? (long)security.NetAssets : 0L); // Companies have MarketCap, but ETFs have NetAssets
         long estimatedSharesOutstanding = (long)(security.Fields.ContainsKey("SharesOutstanding") ? security.SharesOutstanding : estimatedMarketCap / security.RegularMarketPrice);
 
         // Check and create the necessary directory structure
@@ -91,7 +91,13 @@ public partial class FinDb
         bool isShortNameNeedsChange = lastData != null && shortName != string.Empty && lastData["CompanyReference"][gFundamentalPropertyToStr[FundamentalProperty.CompanyReference_ShortName]].ToString() != shortName;
         bool isLongNameNeedsChange = lastData != null && longName != string.Empty && lastData["CompanyReference"][gFundamentalPropertyToStr[FundamentalProperty.CompanyReference_StandardName]].ToString() != longName;
         bool isSharesOutstandingSignificantlyChanged = false;
-        if (lastData != null && lastData["CompanyProfile"].TryGetValue(gFundamentalPropertyToStr[FundamentalProperty.CompanyProfile_SharesOutstanding], out object? sharesOutstandingFromFile))
+        bool isEtf = false;
+        if (isEtf) // ETFs don't have MarketCap, but NetAssets, but YF doesn't update the NetAssets based on the daily price. Even if VXX price changes -10%, on the next day the "NetAssets" that YF gives is the same. So, we cannot calculate sharesOutstanding based on that. So, if NetAsset didn't change since the last data, we don't have to update the file
+        {
+            // isSharesOutstandingSignificantlyChanged = true;
+        }
+        // Usual companies have MarketCap that YF refreshed daily, because they calculate that based on the lastPrice
+        else if (lastData != null && lastData["CompanyProfile"].TryGetValue(gFundamentalPropertyToStr[FundamentalProperty.CompanyProfile_SharesOutstanding], out object? sharesOutstandingFromFile))
         {
             long lastSharesOutstanding = 0L;
             if (sharesOutstandingFromFile != null && long.TryParse(sharesOutstandingFromFile.ToString(), out long result))
