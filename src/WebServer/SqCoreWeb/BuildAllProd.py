@@ -56,6 +56,7 @@ os.system("ng build MarketDashboard --configuration production --output-path=www
 os.system("ng build HealthMonitor --configuration production --output-path=wwwroot/webapps/HealthMonitor --base-href ./")
 os.system("ng build PortfolioViewer --configuration production --output-path=wwwroot/webapps/PortfolioViewer --base-href ./")
 os.system("ng build ChartGenerator --configuration production --output-path=wwwroot/webapps/ChartGenerator --base-href ./")
+os.system("ng build TechnicalAnalyzer --configuration production --output-path=wwwroot/webapps/TechnicalAnalyzer --base-href ./")
 
 # 3. Brotli-ing text (HTML, JS, CSS) files in wwwroot.
 print ("\nSqBuild: !!!!!!!!!!!! Brotli-ing text files... (brotli(x64).exe runs only in Python x64) !!!!!!!!!!")

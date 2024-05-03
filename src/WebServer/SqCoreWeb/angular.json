@@ -572,6 +572,118 @@
           }
         }
     },
+    "TechnicalAnalyzer": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "projects/TechnicalAnalyzer",
+      "sourceRoot": "projects/TechnicalAnalyzer/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:browser",
+          "options": {
+            "outputPath": "dist/TechnicalAnalyzer",
+            "index": "projects/TechnicalAnalyzer/src/index.html",
+            "main": "projects/TechnicalAnalyzer/src/main.ts",
+            "polyfills": "projects/TechnicalAnalyzer/src/polyfills.ts",
+            "tsConfig": "projects/TechnicalAnalyzer/tsconfig.app.json",
+            "assets": [
+              "projects/TechnicalAnalyzer/src/assets"
+            ],
+            "styles": [
+              "projects/TechnicalAnalyzer/src/styles.scss"
+            ],
+            "scripts": [],
+            "vendorChunk": true,
+            "extractLicenses": true,
+            "buildOptimizer": false,
+            "sourceMap": true,
+            "optimization": false,
+            "namedChunks": true
+          },
+          "configurations": {
+            "production": {
+              "fileReplacements": [
+                {
+                  "replace": "projects/TechnicalAnalyzer/src/environments/environment.ts",
+                  "with": "projects/TechnicalAnalyzer/src/environments/environment.prod.ts"
+                }
+              ],
+              "optimization": true,
+              "outputHashing": "bundles",   // cache-busting hashing number in filenames is not required for media (images)
+              "sourceMap": false,
+              "namedChunks": false,
+              "extractLicenses": true,  // To keep main.js 40KB smaller, we extract license into a separate 12KB 3rdpartylicenses.txt.
+              "vendorChunk": false,
+              "buildOptimizer": true,
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "2mb",
+                  "maximumError": "5mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "6kb",
+                  "maximumError": "10kb"
+                }
+              ]
+            }
+          },
+          "defaultConfiguration": ""
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "browserTarget": "TechnicalAnalyzer:build"
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "TechnicalAnalyzer:build:production"
+            }
+          }
+        },
+        "extract-i18n": {
+          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "options": {
+            "browserTarget": "TechnicalAnalyzer:build"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/TechnicalAnalyzer/src/test.ts",
+            "polyfills": "projects/TechnicalAnalyzer/src/polyfills.ts",
+            "tsConfig": "projects/TechnicalAnalyzer/tsconfig.spec.json",
+            "karmaConfig": "projects/TechnicalAnalyzer/karma.conf.js",
+            "assets": [
+              "projects/TechnicalAnalyzer/src/favicon.ico",
+              "projects/TechnicalAnalyzer/src/assets"
+            ],
+            "styles": [
+              "projects/TechnicalAnalyzer/src/styles.scss"
+            ],
+            "scripts": []
+          }
+        },
+        "e2e": {
+          "builder": "@angular-devkit/build-angular:protractor",
+          "options": {
+            "protractorConfig": "projects/TechnicalAnalyzer/e2e/protractor.conf.js",
+            "devServerTarget": "TechnicalAnalyzer:serve"
+          },
+          "configurations": {
+            "production": {
+              "devServerTarget": "TechnicalAnalyzer:serve:production"
+            }
+          }
+        }
+      }
+    },
     "sq-ng-common": {
       "projectType": "library",
       "root": "projects/sq-ng-common",
