@@ -420,7 +420,7 @@ public partial class Db
     {
         string redisKey = prtf.Id.ToString();
         PortfolioInDb prtfInDb = new(prtf);
-        string redisValue = JsonSerializer.Serialize<PortfolioInDb>(prtfInDb);
+        string redisValue = JsonSerializer.Serialize<PortfolioInDb>(prtfInDb, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull });
         m_redisDb.HashSet("portfolio", redisKey, redisValue);
     }
 

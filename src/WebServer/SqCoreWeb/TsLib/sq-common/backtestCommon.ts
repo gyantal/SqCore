@@ -144,7 +144,7 @@ export class PortfolioJs extends PortfolioItemJs {
   public type = 'Trades'; // default portfolioType
   public algorithm = '';
   public algorithmParam = '';
-  public tradeHistoryId: number | null = null;
+  public tradeHistoryId: number = -1; // default value
 }
 
 export class TreeViewItem { // future work. At the moment, it copies PortfolioFldrJs[] and add the children field. With unnecessary field values. When Portfolios are introduced, this should be rethought.
