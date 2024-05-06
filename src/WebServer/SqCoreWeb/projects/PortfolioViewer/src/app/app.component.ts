@@ -387,31 +387,37 @@ export class AppComponent {
   onInputUnderlyingSymbol(event: Event) {
     this.m_isEditedTradeDirty = true;
     this.m_editedTrade.underlyingSymbol = (event.target as HTMLInputElement).value.trim().toUpperCase();
+    this.m_editedTrade.symbol = this.getEditedTradeSymbol();
   }
 
   onInputOptionType(option: string) {
     this.m_isEditedTradeDirty = true;
     this.m_editedTradeOptionFields.optionType = option;
+    this.m_editedTrade.symbol = this.getEditedTradeSymbol();
   }
 
   onInputOptionExpiry(event: Event) {
     this.m_isEditedTradeDirty = true;
     this.m_editedTradeOptionFields.dateExpiry = (event.target as HTMLInputElement).value.trim();
+    this.m_editedTrade.symbol = this.getEditedTradeSymbol();
   }
 
   onInputOptionStrikePrice(event: Event) {
     this.m_isEditedTradeDirty = true;
     this.m_editedTradeOptionFields.strikePrice = parseFloat((event.target as HTMLInputElement).value.trim());
+    this.m_editedTrade.symbol = this.getEditedTradeSymbol();
   }
 
   onInputFutureExpiry(event: Event) {
     this.m_isEditedTradeDirty = true;
     this.m_editedTradeFutureFields.dateExpiry = (event.target as HTMLInputElement).value.trim();
+    this.m_editedTrade.symbol = this.getEditedTradeSymbol();
   }
 
   onInputFutureMultiplier(event: Event) {
     this.m_isEditedTradeDirty = true;
     this.m_editedTradeFutureFields.multiplier = parseFloat((event.target as HTMLInputElement).value.trim());
+    this.m_editedTrade.symbol = this.getEditedTradeSymbol();
   }
 
   onClickSetOpenOrClose(setTime: string) {
