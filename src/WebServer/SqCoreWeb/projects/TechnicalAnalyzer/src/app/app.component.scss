@@ -1,3 +1,24 @@
 .mainDiv1 {
   background: linear-gradient(to right, #3080c7 5%, #5b9dd7 10%, #d5f5f6 30%, #d5f5f6 70%, #ace16b 90%, #91d73a 95%);
 }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  align-items: stretch;
+  white-space: nowrap; // nowrap auto adjust the text with multiple lined to a single line
+  border-collapse: collapse;
+  border: 0.05rem solid black;
+  text-align: center
+}
+
+thead {
+  font-weight: bold;
+  cursor: pointer;
+  background-image: linear-gradient(90deg, #8dc7fa 3%, #9dcef8 7%, #d5f5f6 25%, #d5f5f6 55%, #ace16b 85%, #91d73a 90%);
+}
+
+table td, tr, th {
+  width: 5%;
+  border: 0.05rem solid black;
+}
