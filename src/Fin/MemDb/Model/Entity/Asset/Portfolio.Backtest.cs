@@ -71,7 +71,7 @@ public enum DateTimeFormat // "SecSince1970", "YYYYMMDD", "DaysFrom<YYYYDDMM>"
 public class PortfolioPosition
 {
     public string SqTicker { get; set; } = string.Empty;
-    public int Quantity { get; set; } = -1;
+    public int Quantity { get; set; } = -1; // int quantity is not good because fractional Crypto tokens or fractional AAPL shares can be traded
     public float AvgPrice { get; set; } = 0.0f;
     public float LastPrice { get; set; } = 0.0f;  // the last price of the asset at the end of the backtest (not real-time price)
 }
@@ -280,6 +280,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         {
             posCashItem.SqTicker = "C/" + item.Symbol.ToString();
             posCashItem.LastPrice = (float)item.Amount;
+            posCashItem.Quantity = 1; // overwrite the default invalid value -1
             p_prtfPoss.Add(posCashItem);
         }
         return null; // No Error

@@ -1017,7 +1017,7 @@ public class StrategyUberTaaController : ControllerBase
         int pastDataLength = 20;
         int futDataLength = 10;
         int indClmtRes = Array.IndexOf(p_clmtRes[0], p_lastDataDate);
-        int indGSheetRes = Array.IndexOf(p_gSheetResToFinCalc.Item1, p_lastDataDate);
+        int indGSheetRes = Array.FindLastIndex(p_gSheetResToFinCalc.Item1, x => x <= p_lastDataDate); // On weekend, p_lastDataDate is higher than the last element in p_gSheetResToFinCalc.Item1, thus index becomes -1.
         int indWeightsRes = Array.IndexOf(p_taaWeightResultsTuple.Item1, p_lastDataDate);
 
         double[,] pastCodes = new double[pastDataLength, p_allAssetList.Length - 3];

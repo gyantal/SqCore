@@ -83,7 +83,7 @@ public partial class FinDb
         ZipArchiveEntry entry = archive.Entries[0]; // Directly access the first entry
         using StreamReader reader = new(entry.Open());
         string content = await reader.ReadToEndAsync();
-        Dictionary<string, Dictionary<string, object>>? lastData = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, object>>>(content);
+        Dictionary<string, Dictionary<string, JsonElement>>? lastData = JsonSerializer.Deserialize<Dictionary<string, Dictionary<string, JsonElement>>>(content);
 
         // Convert and compare the ShortName, LongName and SharesOutstandings values
         string shortName = security.ShortName;
@@ -91,27 +91,45 @@ public partial class FinDb
         bool isShortNameNeedsChange = lastData != null && shortName != string.Empty && lastData["CompanyReference"][gFundamentalPropertyToStr[FundamentalProperty.CompanyReference_ShortName]].ToString() != shortName;
         bool isLongNameNeedsChange = lastData != null && longName != string.Empty && lastData["CompanyReference"][gFundamentalPropertyToStr[FundamentalProperty.CompanyReference_StandardName]].ToString() != longName;
         bool isSharesOutstandingSignificantlyChanged = false;
-        bool isEtf = false;
+        bool isMarketCapSignificantlyChanged = false;
+        bool isEtf = !security.Fields.ContainsKey("MarketCap");
+
         if (isEtf) // ETFs don't have MarketCap, but NetAssets, but YF doesn't update the NetAssets based on the daily price. Even if VXX price changes -10%, on the next day the "NetAssets" that YF gives is the same. So, we cannot calculate sharesOutstanding based on that. So, if NetAsset didn't change since the last data, we don't have to update the file
         {
-            // isSharesOutstandingSignificantlyChanged = true;
+            // estimatedMarketCap = NetAssets in this case
+            if (lastData != null && lastData["CompanyProfile"].TryGetValue(gFundamentalPropertyToStr[FundamentalProperty.CompanyProfile_MarketCap], out JsonElement marketCapFromFileJsonObj))
+            {
+                long marketCapFromFile = 0L;
+                if (marketCapFromFileJsonObj.TryGetInt64(out long valueLong))
+                    marketCapFromFile = valueLong;
+
+                // Check if lastMarketCap is not zero to avoid division by zero
+                if (marketCapFromFile != 0)
+                {
+                    double changePercent = 100.0 * Math.Abs(estimatedMarketCap - marketCapFromFile) / marketCapFromFile;
+                    isMarketCapSignificantlyChanged = changePercent >= p_shrsOutstSignifChgThresholdPct;
+                }
+                else if (estimatedMarketCap != 0) // Consider any non-zero current value as valid if the last value was zero
+                    isMarketCapSignificantlyChanged = true;
+            }
         }
         // Usual companies have MarketCap that YF refreshed daily, because they calculate that based on the lastPrice
-        else if (lastData != null && lastData["CompanyProfile"].TryGetValue(gFundamentalPropertyToStr[FundamentalProperty.CompanyProfile_SharesOutstanding], out object? sharesOutstandingFromFile))
+        else if (lastData != null && lastData["CompanyProfile"].TryGetValue(gFundamentalPropertyToStr[FundamentalProperty.CompanyProfile_SharesOutstanding], out JsonElement sharesOutstandingFromFileJsonObj))
         {
-            long lastSharesOutstanding = 0L;
-            if (sharesOutstandingFromFile != null && long.TryParse(sharesOutstandingFromFile.ToString(), out long result))
-                lastSharesOutstanding = result;
+            long sharesOutstandingFromFile = 0L;
+            if (sharesOutstandingFromFileJsonObj.TryGetInt64(out long valueLong))
+                    sharesOutstandingFromFile = valueLong;
+
             // Check if lastSharesOutstanding is not zero to avoid division by zero
-            if (lastSharesOutstanding != 0)
+            if (sharesOutstandingFromFile != 0)
             {
-                double changePercent = 100.0 * Math.Abs(estimatedSharesOutstanding - lastSharesOutstanding) / lastSharesOutstanding;
+                double changePercent = 100.0 * Math.Abs(estimatedSharesOutstanding - sharesOutstandingFromFile) / sharesOutstandingFromFile;
                 isSharesOutstandingSignificantlyChanged = changePercent >= p_shrsOutstSignifChgThresholdPct;
             }
             else if (estimatedSharesOutstanding != 0) // Consider any non-zero current value as valid if the last value was zero
                 isSharesOutstandingSignificantlyChanged = true;
         }
-        if (lastData == null || isShortNameNeedsChange || isLongNameNeedsChange || isSharesOutstandingSignificantlyChanged)
+        if (lastData == null || isShortNameNeedsChange || isLongNameNeedsChange || isSharesOutstandingSignificantlyChanged || isMarketCapSignificantlyChanged)
             await CreateNewFundamentalDataZipFile(p_ticker, security, newZipFilePath, false);
 
         return true;
