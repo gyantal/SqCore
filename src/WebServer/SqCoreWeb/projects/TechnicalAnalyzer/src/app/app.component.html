@@ -5,14 +5,13 @@
     <thead>
       <tr>
         <th></th>
-        <th *ngFor="let asset of m_assets">{{ asset.symbol }}</th> <!-- displaying the dummy data -->
-        <!-- <th *ngFor="let ticker of m_tickers">{{ ticker }}</th> --> <!--we can use this in future for displaying the tickers either from the url or user input -->
+        <th *ngFor="let asset of m_histDatas[0].Assets">{{ asset.symbol }}</th> <!-- Displaying the symbol property of each asset object. -->
       </tr>
     </thead>
-    <tbody *ngFor="let kv of m_assets[0] | keyvalue"> <!-- Iterating through key-value pairs of the first object in m_assets -->
-      <tr *ngIf="kv.key !== 'symbol'"> <!-- don't display 'symbol' -->
-        <td>{{ kv.key }}</td>
-        <td *ngFor="let asset of m_assets">{{ asset[kv.key] | percent:'1.2'}}</td> <!-- Displaying the value corresponding to the key -->
+    <tbody>
+      <tr *ngFor="let item of m_histDatas">
+        <td>{{ item.Date }}</td>
+        <td *ngFor="let asset of item.Assets" [title]="'pctChn1: ' + (asset.pctChnValue1 | percent:'1.2') + ', pctChn2: ' + (asset.pctChnValue2 | percent:'1.2') + ', pctChn3: ' + (asset.pctChnValue3 | percent:'1.2') + ', pctChn4: ' + (asset.pctChnValue4 | percent:'1.2')">{{ asset.pctChnValueAggregate | percent:'1.2' }}</td>
       </tr>
     </tbody>
   </table>

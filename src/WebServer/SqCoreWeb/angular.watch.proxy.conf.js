@@ -3,7 +3,8 @@ const PROXY_CONFIG = [
         context: [
             "/hub/",
             "/UserAccount/",
-            "/WebServer/"
+            "/WebServer/",
+            "/TechnicalAnalyzer/"
         ],
         target: "https://127.0.0.1:5001",
         secure: false, // A backend server running on HTTPS with an invalid certificate will not be accepted by default. If you want to, you need to set secure: false.
