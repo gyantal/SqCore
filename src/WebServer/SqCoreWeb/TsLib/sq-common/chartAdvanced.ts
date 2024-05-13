@@ -20,8 +20,7 @@ export function prtfRunResultChrt(chrtData: { date: Date; value: number; }[], li
   // Define the line
   const line = d3.line()
       .x((r: any) => scaleX(r.date))
-      .y((r: any) => scaleY(r.value))
-      .curve(d3.curveCardinal);
+      .y((r: any) => scaleY(r.value));
 
   const chrtline = pfChrt.append('g');
   const focus = pfChrt.append('g').style('display', 'none');
