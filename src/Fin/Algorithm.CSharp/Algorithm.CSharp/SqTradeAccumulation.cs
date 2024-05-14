@@ -30,8 +30,12 @@ namespace QuantConnect.Algorithm.CSharp
             _cashTransactionsByDate = new Dictionary<DateTime, List<Trade>>();
 
             // Populate the _tradesByDate, _cashTransactionsByDate dictionaries based on the type of transaction
-            foreach (var trade in this.PortTradeHist)
+            DateTime prevDate = DateTime.MinValue; // For checking if the trades are sorted by date
+            foreach (Fin.Base.Trade? trade in this.PortTradeHist)
             {
+                if (trade.Time < prevDate) // We Assume that trades are sotred by date. Hard requirement. If not, we don't process further, forcing the user to change the trades. This is for the purpose of fast execution.
+                    throw new Exception("Tradelist (PortfolioTradeHistory) is not sorted by date.");
+                prevDate = trade.Time;
                 DateTime tradeDate = trade.Time.Date;
                 switch (trade.Action)
                 {
@@ -53,9 +57,7 @@ namespace QuantConnect.Algorithm.CSharp
             }
 
             _tradeDates = new List<DateTime>(_tradesByDate.Keys);
-            _tradeDates.Sort();
             _cashDates = new List<DateTime>(_cashTransactionsByDate.Keys);
-            _cashDates.Sort();
 
             // Set initial cash and start date based on the earliest cash transaction date
             if (_cashDates.Count > 0)

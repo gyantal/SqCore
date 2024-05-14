@@ -755,6 +755,90 @@ public class StrategyUberTaaController : ControllerBase
         return (quotesData, quotesForClmtData, cashEquivalentQuotesData);
     }
 
+    // Returns a List that has result for the last p_resultLengthDays number of days
+    // Each item in the list contains a float, the aggregated PchChannel Weight. And a List of Bool Signals.
+    // The Bool Signal is True if the current price percentile is bigger than the p_topPctThreshold. False if it is lower than p_bottomPctThreshold. If it is between, then it inherits the previous day Bool Signal value.
+    // Warning! p_resultLengthDays: the suggested minimum value is at least 20. Because the channel Signal is Not defined on the first days until it crosses either the Lower or Upper thresholds. We try to mitigate this by checking how far are the tresholds on these 'invalid' days.
+    public static List<Tuple<float, List<bool>>> PctChnWeights(List<float> p_prices, int[] p_pctChnLookbackDays, int p_resultLengthDays, int p_bottomPctThreshold, int p_topPctThreshold) // p_prices must be Adjusted, and ordered
+    {
+        int dataLength = p_prices.Count;
+        int noChannels = p_pctChnLookbackDays.Length;
+        List<Tuple<float, List<bool>>> results = new(p_resultLengthDays); // List to store results
+        List<List<bool>> signals = new(p_resultLengthDays); // List to store signals
+
+        // Initialize the outer list with p_lookback elements
+        for (int i = 0; i < p_resultLengthDays; i++)
+            signals.Add(new(noChannels));
+
+        // Iterate over each lookback day
+        for (int lb = 0; lb < noChannels; lb++)
+        {
+            int lookbackDay = p_pctChnLookbackDays[lb];
+            List<double> usedPrices = new(lookbackDay); // List to store prices for the current lookback period. In the later steps, we will replace the values one by one: replacing the most distant value with a new one. This way, we do not create a new list each time.
+            bool lastSignal = true; // Track the last signal
+
+            // Populate usedPrices with the relevant subset of p_prices
+            for (int i = dataLength - lookbackDay - p_resultLengthDays + 1; i < dataLength - p_resultLengthDays + 1; i++)
+                usedPrices.Add((double)p_prices[i]);
+
+            int indexTracker = 0;
+            double currentPrice = usedPrices[^1];
+            for (int lbDay = 0; lbDay < p_resultLengthDays; lbDay++)
+            {
+                // Calculate lower and upper threshold prices
+                double bottomThresholdPrice = Statistics.Quantile(usedPrices, p_bottomPctThreshold / 100.0);
+                double topThresholdPrice = Statistics.Quantile(usedPrices, p_topPctThreshold / 100.0);
+
+                // Determine the signal based on current price relative to thresholds
+                if (currentPrice > topThresholdPrice)
+                {
+                    signals[lbDay].Add(true);
+                    lastSignal = true;
+                }
+                else if (currentPrice < bottomThresholdPrice)
+                {
+                    signals[lbDay].Add(false);
+                    lastSignal = false;
+                }
+                else if (lbDay > 0)
+                {
+                    signals[lbDay].Add(lastSignal);
+                }
+                else
+                {
+                    // Determine the first signal based on past price comparison, if first price is between thresholds. Previously, we used "True" as default value. This modification attempts to determine the current trend direction based on two past prices.
+                    bool firstSignal = p_prices[dataLength - p_resultLengthDays - 1] > p_prices[dataLength - p_resultLengthDays - 11];
+                    signals[0].Add(firstSignal);
+                    lastSignal = firstSignal;
+                }
+
+                // Update currentPrice, usedPrices and indexTracker for the next iteration
+                // Instead of removing the first item and adding a last item, because for Quantile() calculation we don't need the array to be ordered, we can swap the item represented by the indexTracker. We swap it in-place. No need to costly memalloc.
+                if (indexTracker < p_resultLengthDays - 1)
+                {
+                    currentPrice = p_prices[dataLength - p_resultLengthDays + indexTracker + 1];
+                    usedPrices[indexTracker] = currentPrice;
+                    indexTracker++;
+                }
+            }
+        }
+
+        // Calculate the ratio of true signals and store results
+        for (int i = 0; i < p_resultLengthDays; i++)
+        {
+            int trueCount = 0;
+            foreach (bool signal in signals[i])
+            {
+                if (signal)
+                    trueCount++;
+            }
+            float trueRatio = (float)trueCount / noChannels; // Calculate the percentile channel weight for the given date
+            results.Add(new Tuple<float, List<bool>>(trueRatio, signals[i])); // Store the result as a tuple
+        }
+
+        return results;
+    }
+
     public static Tuple<double[], double[,]> TaaWeights(IList<List<DailyData>> p_taaWeightsData, int[] p_pctChannelLookbackDays, int p_histVolLookbackDays, int p_thresholdLower, bool p_winnerRun)
     {
         var dshd = p_taaWeightsData;
@@ -789,11 +873,11 @@ public class StrategyUberTaaController : ControllerBase
                     assetPctChannelsLower[iAsset, iChannel] = Statistics.Quantile(usedQuotes, thresholdLower);
                     assetPctChannelsUpper[iAsset, iChannel] = Statistics.Quantile(usedQuotes, thresholdUpper);
                     if (assetPrice < assetPctChannelsLower[iAsset, iChannel])
-                    assetPctChannelsSignal[iAsset, iChannel] = -1;
+                        assetPctChannelsSignal[iAsset, iChannel] = -1;
                     else if (assetPrice > assetPctChannelsUpper[iAsset, iChannel])
-                    assetPctChannelsSignal[iAsset, iChannel] = 1;
+                        assetPctChannelsSignal[iAsset, iChannel] = 1;
                     else if (iDay == 0)
-                    assetPctChannelsSignal[iAsset, iChannel] = 1;
+                        assetPctChannelsSignal[iAsset, iChannel] = 1;
                 }
             }
 
@@ -868,7 +952,7 @@ public class StrategyUberTaaController : ControllerBase
             {
                 try
                 {
-                   p_clmtData[iRows, jCols + 1] = p_quotesForClmtData[jCols][iRows].AdjClosePrice;
+                    p_clmtData[iRows, jCols + 1] = p_quotesForClmtData[jCols][iRows].AdjClosePrice;
                 }
                 catch (System.Exception e)
                 {
@@ -997,17 +1081,17 @@ public class StrategyUberTaaController : ControllerBase
         clmtTotalResu[7] = clmtIndi;
         clmtTotalResu[8] = spxPrice;
 
-    // StringBuilder stringBuilder=new StringBuilder();
-    //     foreach (var item in clmtTotalResu)
-    //     {
-    //         foreach (var item2 in item)
-    //         {
-    //             stringBuilder.Append(item2 + ",");
-    //         }
-    //         stringBuilder.AppendLine("ß" + Environment.NewLine + Environment.NewLine);
-    //     }
+        // StringBuilder stringBuilder=new StringBuilder();
+        //     foreach (var item in clmtTotalResu)
+        //     {
+        //         foreach (var item2 in item)
+        //         {
+        //             stringBuilder.Append(item2 + ",");
+        //         }
+        //         stringBuilder.AppendLine("ß" + Environment.NewLine + Environment.NewLine);
+        //     }
 
-    // System.IO.File.WriteAllText(@"D:\xxx.csv", stringBuilder.ToString());
+        // System.IO.File.WriteAllText(@"D:\xxx.csv", stringBuilder.ToString());
 
         return clmtTotalResu;
     }

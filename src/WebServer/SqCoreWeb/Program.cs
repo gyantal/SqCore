@@ -413,6 +413,7 @@ public partial class Program
         Console.WriteLine("2. Test Historical price data");
         Console.WriteLine("3. Test BacktestInSeparateThreadWithTimeout()");
         Console.WriteLine("4. Test ManyBacktestsParallelInMultipleThreads()");
+        Console.WriteLine("5. PercentileChannel calculation");
         Console.WriteLine("9. Exit to main menu.");
         string userInput;
         try
@@ -483,6 +484,32 @@ public partial class Program
                 try
                 {
                     Backtester.ManyBacktestsParallelInMultipleThreads();
+                }
+                catch (System.Exception e)
+                {
+                    Console.WriteLine($"Exception message: {e.Message}");
+                }
+                break;
+            case "5":
+                try
+                {
+                    string ticker = "AAPL";
+                    DateTime endDate = DateTime.UtcNow;
+                    DateTime startDate = endDate.AddDays(-500);
+
+                    IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(ticker, startDate, endDate, YahooFinanceApi.Period.Daily).Result;
+                    List<float> adjustedClosePrices = new();
+                    foreach (var candle in history)
+                    {
+                        adjustedClosePrices.Add((float)candle!.AdjustedClose);
+                    }
+
+                    int bottomPctThreshold = 25;
+                    int topPctThreshold = 75;
+                    int[] pctChnLookbackDays = new int[] { 60, 120, 180, 252 };
+                    int resultLengthDays = 20;
+                    List<Tuple<float, List<bool>>> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeights(adjustedClosePrices, pctChnLookbackDays, resultLengthDays, bottomPctThreshold, topPctThreshold);
+                    Console.WriteLine($"Current weight of {ticker}: {pctChannelRes[^1].Item1}");
                 }
                 catch (System.Exception e)
                 {
