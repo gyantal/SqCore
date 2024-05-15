@@ -27,7 +27,7 @@
     <PackageReference Include="System.ServiceModel.Syndication" Version="8.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="8.0.2" />
     <PackageReference Include="NLog.Web.AspNetCore" Version="5.0.0" />
-    <PackageReference Include="Npgsql" Version="7.0.0" />
+    <PackageReference Include="Npgsql" Version="8.0.3" />
     <PackageReference Include="StackExchange.Redis" Version="2.6.80" />
   </ItemGroup>
   <ItemGroup>

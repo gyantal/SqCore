@@ -14,7 +14,7 @@ using System.Text;
 namespace QuantConnect.Algorithm.CSharp
 {
     // This class is not polished. Only for illustration purposes. To show the ONLY possible way to use historical Fundamental data (e.g. CompanyReference.ShortName) in the pre 2024 QC code base.
-    // See our QC document 'QuantConnect framework knowledge base', FundamentalData chapter: https://docs.google.com/document/d/1W8CefIRZ-MCwsn_RI2Xb0KdLgGKzjsJKikJ1yuWrnjY/edit#heading=h.83e1r2dxcjlt
+    // See our gDoc document 'QuantConnect framework knowledge base', FundamentalData chapter: https://docs.google.com/document/d/1W8CefIRZ-MCwsn_RI2Xb0KdLgGKzjsJKikJ1yuWrnjY/edit#heading=h.83e1r2dxcjlt
     public class SqFundamentalDataFilteredUniv : QCAlgorithm
     {
         bool _isTradeInSqCore = true; // 2 simulation environments. We backtest in Qc cloud or in SqCore frameworks. QcCloud works on per minute resolution (to be able to send MOC orders 20min before MOC), SqCore works on daily resolution only.

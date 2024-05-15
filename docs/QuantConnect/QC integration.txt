@@ -1,4 +1,6 @@
 
+See our gDoc document 'QuantConnect framework knowledge base': https://docs.google.com/document/d/1W8CefIRZ-MCwsn_RI2Xb0KdLgGKzjsJKikJ1yuWrnjY
+
 **************** QC integration history (useful for regular QC updates, bugfixes, features) ************
 
 2022-11-22 QC code base: It was used for initial integration.

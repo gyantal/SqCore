@@ -8,7 +8,7 @@
     <ProjectReference Include="..\..\Common\DbCommon\DbCommon.csproj" />
     <ProjectReference Include="..\..\Common\SqCommon\SqCommon.csproj" />
     <None Update="NLog.config" CopyToOutputDirectory="PreserveNewest" />
-    <PackageReference Include="Npgsql" Version="7.0.0" />
+    <PackageReference Include="Npgsql" Version="8.0.3" />
     <PackageReference Include="StackExchange.Redis" Version="2.6.80" />
   </ItemGroup>
 </Project>

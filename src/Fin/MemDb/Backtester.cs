@@ -24,7 +24,7 @@ using QuantConnect.Packets;
 using QuantConnect.Parameters;
 using QuantConnect.Util;
 
-namespace Fin.MemDb; // See our QC document 'QuantConnect framework knowledge base': https://docs.google.com/document/d/1W8CefIRZ-MCwsn_RI2Xb0KdLgGKzjsJKikJ1yuWrnjY
+namespace Fin.MemDb; // See our gDoc document 'QuantConnect framework knowledge base': https://docs.google.com/document/d/1W8CefIRZ-MCwsn_RI2Xb0KdLgGKzjsJKikJ1yuWrnjY
 
 public static class Backtester
 {

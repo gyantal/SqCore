@@ -6,7 +6,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SqCommon\SqCommon.csproj" />
     <PackageReference Include="NLog" Version="5.0.0" />
-    <PackageReference Include="Npgsql" Version="7.0.0" />
+    <PackageReference Include="Npgsql" Version="8.0.3" />
     <PackageReference Include="StackExchange.Redis" Version="2.6.80" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.435">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

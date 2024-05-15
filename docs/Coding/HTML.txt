@@ -3,6 +3,9 @@
 https://stackoverflow.com/questions/1946426/html-5-is-it-br-br-or-br
 Agreed. the shortest "<br>" is the preferred one. Less bytes to send, faster download of HTML.
 
+- Angular data bindings: interpolation, property, event, ngModel
+See our gDoc document  'Angular data bindings: interpolation, property, event, ngModel' : https://docs.google.com/document/d/14X1rRkSsa3H79b6kjPPrnRBVWYqPZxsj9zC3R6cF8xk
+
 ******* SVG coordinates understanding *******
 SVG Path - <path>
 The <path> element is used to define a path.
