@@ -115,6 +115,8 @@ export class AppComponent {
   // Trades tabpage: UI handling
   m_isEditedTradeSectionVisible: boolean = false; // toggle the m_editedTrade widgets on the UI
   m_isCopyToClipboardDialogVisible: boolean = false;
+  m_sortColumn: string = 'time';
+  m_isSortingDirectionAscending: boolean = true;
 
   // Trades tabpage: UI handling enums
   // How to pass enum value into Angular HTML? Answer: assign the Enum Type to a member variable. See. https://stackoverflow.com/questions/69549927/how-to-pass-enum-value-in-angular-template-as-an-input
@@ -253,6 +255,9 @@ export class AppComponent {
       this.m_trades[i] = new TradeUi();
       this.m_trades[i].CopyFrom(tradeObjects[i] as TradeUi);
     }
+
+    this.m_isSortingDirectionAscending = true; // resetting to 'true' to sort the data in ascending order based on m_editedTrade.Time
+    this.onSortingClicked('time');
   }
 
   onClickSelectedTradeItem(trade: TradeUi, event: MouseEvent) {
@@ -466,5 +471,16 @@ export class AppComponent {
   onInputQuantity(event: Event) {
     this.m_isEditedTradeDirty = true;
     this.m_editedTrade.quantity = parseInt((event.target as HTMLInputElement).value.trim());
+  }
+
+  onSortingClicked(sortColumn: string) { // sort the trades data table
+    this.m_sortColumn = sortColumn;
+    this.m_trades = this.m_trades.sort((n1, n2) => {
+      if (this.m_isSortingDirectionAscending)
+        return (n1[sortColumn] > n2[sortColumn]) ? 1 : ((n1[sortColumn] < n2[sortColumn]) ? -1 : 0);
+      else
+        return (n2[sortColumn] > n1[sortColumn]) ? 1 : ((n2[sortColumn] < n1[sortColumn]) ? -1 : 0);
+    });
+    this.m_isSortingDirectionAscending = !this.m_isSortingDirectionAscending;
   }
 }

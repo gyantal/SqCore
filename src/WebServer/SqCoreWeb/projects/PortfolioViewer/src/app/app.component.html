@@ -113,10 +113,10 @@
           </div>
         </span>
         <span class="tradesCommon">
-          Date: <input type="date" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (input)="onDateChange($event)"><br>
+          Date: <input type="date" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (change)="onDateChange($event)"><br> <!-- The (change) event is triggered once the input has completed changing, while the (input) event triggers each time the value is modified. see: https://javascript.info/events-change-input -->
           <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
           UTC Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
-                <input type="time" [value]="m_editedTrade.time | date : 'HH:mm'" (input)="onTimeChange($event)">&nbsp;
+                <input type="time" [value]="m_editedTrade.time | date : 'HH:mm'" (change)="onTimeChange($event)">&nbsp;
                 <button (click)="onClickSetOpenOrClose('close')">setClose</button><br>
           Price: <input class="inputTextboxWidth" type="number" [value]="m_editedTrade.price | nanToDash" (input)="onInputPrice($event)">&nbsp;
           <div class="selectionDropDown">
@@ -135,14 +135,14 @@
     <table class="tableCommon">
       <thead>
         <tr>
-          <th>Symbol</th>
-          <th>Quantity</th>
-          <th>Price</th>
-          <th>Currency</th>
-          <th>TradeAction</th>
-          <th>AssetType</th>
-          <th>Date</th>
-          <th>ExchangeId</th>
+          <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'underlyingSymbol'}" (click)="onSortingClicked('underlyingSymbol')">Symbol</th>
+          <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'quantity'}" (click)="onSortingClicked('quantity')">Quantity</th>
+          <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'price'}" (click)="onSortingClicked('price')">Price</th>
+          <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'currency'}" (click)="onSortingClicked('currency')">Currency</th>
+          <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'action'}" (click)="onSortingClicked('action')">TradeAction</th>
+          <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'assetType'}" (click)="onSortingClicked('assetType')">AssetType</th>
+          <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'time'}" (click)="onSortingClicked('time')">Date</th>
+          <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'exchangeId'}" (click)="onSortingClicked('exchangeId')">ExchangeId</th>
         </tr>
       </thead>
       <tbody *ngFor="let item of m_trades">
@@ -153,7 +153,7 @@
           <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
           <td>{{m_enumTradeAction[item.action]}}</td>
           <td>{{m_enumAssetType[item.assetType]}}</td>
-          <td>{{item.time | date : 'yyyy-MM-dd'}}</td>
+          <td>{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
           <td>{{m_enumExchangeId[item.exchangeId]}}</td>
         </tr>
       </tbody>
