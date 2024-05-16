@@ -153,8 +153,8 @@ public class OrderSubscription
 
     public DateTime DateTime { get; set; }
     public OrderStatus OrderStatus { get; set; } = OrderStatus.None;
-    public double Filled { get; set; }
-    public double Remaining { get; set; }
+    public decimal Filled { get; set; }
+    public decimal Remaining { get; set; }
     public double AvgFillPrice { get; set; }
     public int PermId { get; set; }
     public int ParentId { get; set; }
@@ -189,7 +189,7 @@ public interface IBrokerWrapper : EWrapper
 
     bool ReqHistoricalData(DateTime p_endDateTime, int p_lookbackWindowSize, string p_whatToShow, Contract p_contract, out List<QuoteData>? p_quotes);
 
-    int PlaceOrder(Contract p_contract, TransactionType p_transactionType, double p_volume, OrderExecution p_orderExecution, OrderTimeInForce p_orderTif, double? p_limitPrice, double? p_stopPrice, double p_estimatedPrice, bool p_isSimulatedTrades);
+    int PlaceOrder(Contract p_contract, TransactionType p_transactionType, decimal p_volume, OrderExecution p_orderExecution, OrderTimeInForce p_orderTif, double? p_limitPrice, double? p_stopPrice, double p_estimatedPrice, bool p_isSimulatedTrades);
     bool WaitOrder(int p_realOrderId, bool p_isSimulatedTrades);
-    bool GetRealOrderExecutionInfo(int p_realOrderId, ref OrderStatus p_realOrderStatus, ref double p_realExecutedVolume, ref double p_realExecutedAvgPrice, ref DateTime p_execptionTime, bool p_isSimulatedTrades);
+    bool GetRealOrderExecutionInfo(int p_realOrderId, ref OrderStatus p_realOrderStatus, ref decimal p_realExecutedVolume, ref double p_realExecutedAvgPrice, ref DateTime p_execptionTime, bool p_isSimulatedTrades);
 }

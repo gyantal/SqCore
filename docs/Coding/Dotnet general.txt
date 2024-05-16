@@ -57,11 +57,16 @@ Later, in one experiment, as the Timer class used ThreadPool.QueueUserWorkItem()
 Even though on Agy PC, the minWorkerTh is 24, still, the current number of ThreadPool threads went back from 8 to 4. 
 Probably to save system resources. Windows kernel has to handle All threads of the process to schedule CPU execution. So, the less threads are the better.
 
-Example run. SqCoreWeb web server, 2024-05-16, Windows.
+Example run. SqCoreWeb web server, 2024-05-16, Windows, 12 core (24 HT core)
 At program start in Main(): ProcThreads#:33, ThreadPoolTh#:0
 10 sec later:               ProcThreads#:89, ThreadPoolTh#:22
 20 sec later:               ProcThreads#:72, ThreadPoolTh#:5
 30 sec later:               ProcThreads#:74, ThreadPoolTh#:7
+
+Example run. SqCoreWeb web server, 2024-05-16, Linux, 2 core.
+At program start in Main(): ProcThreads#:13, ThreadPoolTh#:0
+10 sec later:               ProcThreads#:53, ThreadPoolTh#:10
+20 sec later:               ProcThreads#:47, ThreadPoolTh#:4
 
 
 -------------- NodaTime for replacing C# DateTime? Good, but 2-3x more data. Don't use it for big data. You can use it for sure way of converting between time-zones.

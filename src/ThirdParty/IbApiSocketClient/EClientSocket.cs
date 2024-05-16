@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -39,7 +38,7 @@ namespace IBApi
             }
             else if (serverVersion < Constants.MinVersion || serverVersion > Constants.MaxVersion)
             {
-                wrapper.error(clientId, EClientErrors.UNSUPPORTED_VERSION.Code, EClientErrors.UNSUPPORTED_VERSION.Message);
+                wrapper.error(clientId, EClientErrors.UNSUPPORTED_VERSION.Code, EClientErrors.UNSUPPORTED_VERSION.Message, "");
                 return;
             }
 
@@ -49,7 +48,7 @@ namespace IBApi
                 {
                     List<byte> buf = new List<byte>();
 
-                    buf.AddRange(UTF8Encoding.UTF8.GetBytes(clientId.ToString()));
+                    buf.AddRange(Encoding.UTF8.GetBytes(clientId.ToString()));
                     buf.Add(Constants.EOL);
                     socketTransport.Send(new EMessage(buf.ToArray()));
                 }
@@ -58,7 +57,7 @@ namespace IBApi
             ServerTime = time;
             isConnected = true;
 
-            if (!this.AsyncEConnect)
+            if (!AsyncEConnect)
                 startApi();
         }
 
@@ -82,7 +81,7 @@ namespace IBApi
         {
             if (isConnected)
             {
-                wrapper.error(IncomingMessage.NotValid, EClientErrors.AlreadyConnected.Code, EClientErrors.AlreadyConnected.Message);
+                wrapper.error(IncomingMessage.NotValid, EClientErrors.AlreadyConnected.Code, EClientErrors.AlreadyConnected.Message, "");
                 return;
             }
             try
@@ -119,7 +118,7 @@ namespace IBApi
             {
                 var cmp = (e as EClientException).Err;
 
-                wrapper.error(-1, cmp.Code, cmp.Message);
+                wrapper.error(-1, cmp.Code, cmp.Message, "");
             }
             catch (Exception e)
             {
@@ -134,8 +133,8 @@ namespace IBApi
         {
             var rval = (uint)paramsList.BaseStream.Position;
 
-            if (this.useV100Plus)
-                paramsList.Write((int)0);
+            if (useV100Plus)
+                paramsList.Write(0);
 
             return rval;
         }
@@ -163,7 +162,7 @@ namespace IBApi
         {
             if (!allowRedirect)
             {
-                wrapper.error(clientId, EClientErrors.CONNECT_FAIL.Code, EClientErrors.CONNECT_FAIL.Message);
+                wrapper.error(clientId, EClientErrors.CONNECT_FAIL.Code, EClientErrors.CONNECT_FAIL.Message, "");
                 return;
             }
 
@@ -179,7 +178,7 @@ namespace IBApi
             if (redirectCount > Constants.REDIRECT_COUNT_MAX)
             {
                 eDisconnect();
-                wrapper.error(clientId, EClientErrors.CONNECT_FAIL.Code, "Redirect count exceeded");
+                wrapper.error(clientId, EClientErrors.CONNECT_FAIL.Code, "Redirect count exceeded", "");
                 return;
             }
 

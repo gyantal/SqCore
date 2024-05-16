@@ -129,7 +129,7 @@ public class BrokerWrapperYF : IBrokerWrapper
         throw new NotImplementedException();
     }
 
-    public void error(int id, int errorCode, string errorMsg)
+    public void error(int id, int errorCode, string errorMsg, string advancedOrderRejectJson)
     {
         throw new NotImplementedException();
     }
@@ -159,7 +159,7 @@ public class BrokerWrapperYF : IBrokerWrapper
         throw new NotImplementedException();
     }
 
-    public bool GetRealOrderExecutionInfo(int p_realOrderId, ref OrderStatus p_realOrderStatus, ref double p_realExecutedVolume, ref double p_realExecutedAvgPrice, ref DateTime p_execptionTime, bool p_isSimulatedTrades)
+    public bool GetRealOrderExecutionInfo(int p_realOrderId, ref OrderStatus p_realOrderStatus, ref decimal p_realExecutedVolume, ref double p_realExecutedAvgPrice, ref DateTime p_execptionTime, bool p_isSimulatedTrades)
     {
         throw new NotImplementedException();
     }
@@ -269,12 +269,12 @@ public class BrokerWrapperYF : IBrokerWrapper
         throw new NotImplementedException();
     }
 
-    public void orderStatus(int orderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice)
+    public void orderStatus(int orderId, string status, decimal filled, decimal remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice)
     {
         throw new NotImplementedException();
     }
 
-    public int PlaceOrder(Contract p_contract, TransactionType p_transactionType, double p_volume, OrderExecution p_orderExecution, OrderTimeInForce p_orderTif, double? p_limitPrice, double? p_stopPrice, double p_estimatedPrice, bool p_isSimulatedTrades)
+    public int PlaceOrder(Contract p_contract, TransactionType p_transactionType, decimal p_volume, OrderExecution p_orderExecution, OrderTimeInForce p_orderTif, double? p_limitPrice, double? p_stopPrice, double p_estimatedPrice, bool p_isSimulatedTrades)
     {
         throw new NotImplementedException();
     }
@@ -284,12 +284,12 @@ public class BrokerWrapperYF : IBrokerWrapper
         throw new NotImplementedException();
     }
 
-    public void pnlSingle(int reqId, int pos, double dailyPnL, double unrealizedPnL, double realizedPnL, double value)
+    public void pnlSingle(int reqId, decimal pos, double dailyPnL, double unrealizedPnL, double realizedPnL, double value)
     {
         throw new NotImplementedException();
     }
 
-    public void position(string account, Contract contract, double pos, double avgCost)
+    public void position(string account, Contract contract, decimal pos, double avgCost)
     {
         throw new NotImplementedException();
     }
@@ -299,7 +299,7 @@ public class BrokerWrapperYF : IBrokerWrapper
         throw new NotImplementedException();
     }
 
-    public void positionMulti(int requestId, string account, string modelCode, Contract contract, double pos, double avgCost)
+    public void positionMulti(int requestId, string account, string modelCode, Contract contract, decimal pos, double avgCost)
     {
         throw new NotImplementedException();
     }
@@ -309,7 +309,7 @@ public class BrokerWrapperYF : IBrokerWrapper
         throw new NotImplementedException();
     }
 
-    public void realtimeBar(int reqId, long date, double open, double high, double low, double close, long volume, double wap, int count)
+    public void realtimeBar(int reqId, long date, double open, double high, double low, double close, decimal volume, decimal wap, int count)
     {
         throw new NotImplementedException();
     }
@@ -389,12 +389,12 @@ public class BrokerWrapperYF : IBrokerWrapper
         throw new NotImplementedException();
     }
 
-    public void tickByTickAllLast(int reqId, int tickType, long time, double price, int size, TickAttribLast tickAttriblast, string exchange, string specialConditions)
+    public void tickByTickAllLast(int reqId, int tickType, long time, double price, decimal size, TickAttribLast tickAttriblast, string exchange, string specialConditions)
     {
         throw new NotImplementedException();
     }
 
-    public void tickByTickBidAsk(int reqId, long time, double bidPrice, double askPrice, int bidSize, int askSize, TickAttribBidAsk tickAttribBidAsk)
+    public void tickByTickBidAsk(int reqId, long time, double bidPrice, double askPrice, decimal bidSize, decimal askSize, TickAttribBidAsk tickAttribBidAsk)
     {
         throw new NotImplementedException();
     }
@@ -419,7 +419,7 @@ public class BrokerWrapperYF : IBrokerWrapper
         throw new NotImplementedException();
     }
 
-    public void tickOptionComputation(int tickerId, int field, double impliedVolatility, double delta, double optPrice, double pvDividend, double gamma, double vega, double theta, double undPrice)
+    public void tickOptionComputation(int tickerId, int field, int tickAttrib, double impliedVolatility, double delta, double optPrice, double pvDividend, double gamma, double vega, double theta, double undPrice)
     {
         throw new NotImplementedException();
     }
@@ -434,7 +434,7 @@ public class BrokerWrapperYF : IBrokerWrapper
         throw new NotImplementedException();
     }
 
-    public void tickSize(int tickerId, int field, int size)
+    public void tickSize(int tickerId, int field, decimal size)
     {
         throw new NotImplementedException();
     }
@@ -459,12 +459,12 @@ public class BrokerWrapperYF : IBrokerWrapper
         throw new NotImplementedException();
     }
 
-    public void updateMktDepth(int tickerId, int position, int operation, int side, double price, int size)
+    public void updateMktDepth(int tickerId, int position, int operation, int side, double price, decimal size)
     {
         throw new NotImplementedException();
     }
 
-    public void updateMktDepthL2(int tickerId, int position, string marketMaker, int operation, int side, double price, int size, bool isSmartDepth)
+    public void updateMktDepthL2(int tickerId, int position, string marketMaker, int operation, int side, double price, decimal size, bool isSmartDepth)
     {
         throw new NotImplementedException();
     }
@@ -474,7 +474,7 @@ public class BrokerWrapperYF : IBrokerWrapper
         throw new NotImplementedException();
     }
 
-    public void updatePortfolio(Contract contract, double position, double marketPrice, double marketValue, double averageCost, double unrealizedPNL, double realizedPNL, string accountName)
+    public void updatePortfolio(Contract contract, decimal position, double marketPrice, double marketValue, double averageCost, double unrealizedPNL, double realizedPNL, string accountName)
     {
         throw new NotImplementedException();
     }
@@ -500,6 +500,31 @@ public class BrokerWrapperYF : IBrokerWrapper
     }
 
     public bool WaitOrder(int p_realOrderId, bool p_isSimulatedTrades)
+    {
+        throw new NotImplementedException();
+    }
+
+    public virtual void replaceFAEnd(int reqId, string text)
+    {
+        throw new NotImplementedException();
+    }
+
+    public virtual void wshMetaData(int reqId, string dataJson)
+    {
+        throw new NotImplementedException();
+    }
+
+    public virtual void wshEventData(int reqId, string dataJson)
+    {
+        throw new NotImplementedException();
+    }
+
+    public virtual void historicalSchedule(int reqId, string startDateTime, string endDateTime, string timeZone, HistoricalSession[] sessions)
+    {
+        throw new NotImplementedException();
+    }
+
+    public virtual void userInfo(int reqId, string whiteBrandingId)
     {
         throw new NotImplementedException();
     }

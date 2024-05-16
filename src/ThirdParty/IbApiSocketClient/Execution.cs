@@ -1,12 +1,7 @@
 ﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
-using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 
 namespace IBApi
 {
@@ -52,7 +47,6 @@ namespace IBApi
      * @brief Class describing an order's execution.
      * @sa ExecutionFilter, CommissionReport
      */
-     #pragma warning disable CS0659 // overrides Object.Equals(object o) but does not override Object.GetHashCode()
     public class Execution
     {
         /**
@@ -96,7 +90,7 @@ namespace IBApi
         /**
          * @brief The number of shares filled.
          */
-        public double Shares { get; set; }
+        public decimal Shares { get; set; }
 
         /**
          * @brief The order's execution price excluding commissions.
@@ -117,7 +111,7 @@ namespace IBApi
          * @brief Cumulative quantity. 
          * Used in regular trades, combo trades and legs of the combo.
          */
-        public double CumQty { get; set; }
+        public decimal CumQty { get; set; }
 
         /**
          * @brief Average price. 
@@ -166,11 +160,11 @@ namespace IBApi
             LastLiquidity = new Liquidity(0);
         }
 
-        public Execution(int orderId, int clientId, String execId, String time,
-                          String acctNumber, String exchange, String side, double shares,
-                          double price, int permId, int liquidation, double cumQty,
-                          double avgPrice, String orderRef, String evRule, double evMultiplier,
-                          String modelCode, Liquidity lastLiquidity)
+        public Execution(int orderId, int clientId, string execId, string time,
+                          string acctNumber, string exchange, string side, decimal shares,
+                          double price, int permId, int liquidation, decimal cumQty,
+                          double avgPrice, string orderRef, string evRule, double evMultiplier,
+                          string modelCode, Liquidity lastLiquidity)
         {
             OrderId = orderId;
             ClientId = clientId;
@@ -192,12 +186,13 @@ namespace IBApi
             LastLiquidity = lastLiquidity;
         }
 
-        public override bool Equals(Object p_other)
+        public override bool Equals(object p_other)
         {
             bool l_bRetVal = false;
+            Execution l_theOther = p_other as Execution;
 
-            if (p_other == null)
-            {
+            if (l_theOther == null)
+            { 
                 l_bRetVal = false;
             }
             else if (this == p_other)
@@ -206,10 +201,33 @@ namespace IBApi
             }
             else
             {
-                Execution l_theOther = (Execution)p_other;
-                l_bRetVal = String.Compare(ExecId, l_theOther.ExecId, true) == 0;
+                l_bRetVal = string.Compare(ExecId, l_theOther.ExecId, true) == 0;
             }
             return l_bRetVal;
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = 926796717;
+            hashCode = hashCode * -1521134295 + OrderId.GetHashCode();
+            hashCode = hashCode * -1521134295 + ClientId.GetHashCode();
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(ExecId);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Time);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(AcctNumber);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Exchange);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Side);
+            hashCode = hashCode * -1521134295 + Shares.GetHashCode();
+            hashCode = hashCode * -1521134295 + Price.GetHashCode();
+            hashCode = hashCode * -1521134295 + PermId.GetHashCode();
+            hashCode = hashCode * -1521134295 + Liquidation.GetHashCode();
+            hashCode = hashCode * -1521134295 + CumQty.GetHashCode();
+            hashCode = hashCode * -1521134295 + AvgPrice.GetHashCode();
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(OrderRef);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(EvRule);
+            hashCode = hashCode * -1521134295 + EvMultiplier.GetHashCode();
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(ModelCode);
+            hashCode = hashCode * -1521134295 + EqualityComparer<Liquidity>.Default.GetHashCode(LastLiquidity);
+            return hashCode;
         }
     }
 }

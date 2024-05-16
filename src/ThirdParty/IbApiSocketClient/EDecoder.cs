@@ -3,12 +3,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Net.Sockets;
 using System.IO;
-using System.Net;
 using System.Text.RegularExpressions;
 
 namespace IBApi
@@ -24,8 +20,8 @@ namespace IBApi
         public EDecoder(int serverVersion, EWrapper callback, EClientMsgSink sink = null)
         {
             this.serverVersion = serverVersion;
-            this.eWrapper = callback;
-            this.eClientMsgSink = sink;
+            eWrapper = callback;
+            eClientMsgSink = sink;
         }
 
         public int ParseAndProcessMsg(byte[] buf)
@@ -390,9 +386,28 @@ namespace IBApi
                     CompletedOrdersEndEvent();
                     break;
 
+                case IncomingMessage.ReplaceFAEnd:
+                    ReplaceFAEndEvent();
+                    break;
+
+                case IncomingMessage.WshMetaData:
+                    ProcessWshMetaData();
+                    break;
+
+                case IncomingMessage.WshEventData:
+                    ProcessWshEventData();
+                    break;
+
+                case IncomingMessage.HistoricalSchedule:
+                    ProcessHistoricalScheduleEvent();
+                    break;
+
+                case IncomingMessage.UserInfo:
+                    ProcessUserInfoEvent();
+                    break;
 
                 default:
-                    eWrapper.error(IncomingMessage.NotValid, EClientErrors.UNKNOWN_ID.Code, EClientErrors.UNKNOWN_ID.Message);
+                    eWrapper.error(IncomingMessage.NotValid, EClientErrors.UNKNOWN_ID.Code, EClientErrors.UNKNOWN_ID.Message, "");
                     return false;
             }
 
@@ -404,7 +419,7 @@ namespace IBApi
             Contract contract = new Contract();
             Order order = new Order();
             OrderState orderState = new OrderState();
-            EOrderDecoder eOrderDecoder = new EOrderDecoder(this, contract, order, orderState, Int32.MaxValue, serverVersion);
+            EOrderDecoder eOrderDecoder = new EOrderDecoder(this, contract, order, orderState, int.MaxValue, serverVersion);
 
             // read contract fields
             eOrderDecoder.readContractFields();
@@ -470,6 +485,7 @@ namespace IBApi
             eOrderDecoder.readParentPermId();
             eOrderDecoder.readCompletedTime();
             eOrderDecoder.readCompletedStatus();
+            eOrderDecoder.readPegBestPegMidOrderAttributes();
 
             eWrapper.completedOrder(contract, order, orderState);
         }
@@ -502,20 +518,20 @@ namespace IBApi
                 case 1: // Last
                 case 2: // AllLast
                     double price = ReadDouble();
-                    int size = ReadInt();
+                    decimal size = ReadDecimal();
                     mask = new BitMask(ReadInt());
                     TickAttribLast tickAttribLast = new TickAttribLast();
                     tickAttribLast.PastLimit = mask[0];
                     tickAttribLast.Unreported = mask[1];
-                    String exchange = ReadString();
-                    String specialConditions = ReadString();
+                    string exchange = ReadString();
+                    string specialConditions = ReadString();
                     eWrapper.tickByTickAllLast(reqId, tickType, time, price, size, tickAttribLast, exchange, specialConditions);
                     break;
                 case 3: // BidAsk
                     double bidPrice = ReadDouble();
                     double askPrice = ReadDouble();
-                    int bidSize = ReadInt();
-                    int askSize = ReadInt();
+                    decimal bidSize = ReadDecimal();
+                    decimal askSize = ReadDecimal();
                     mask = new BitMask(ReadInt());
                     TickAttribBidAsk tickAttribBidAsk = new TickAttribBidAsk();
                     tickAttribBidAsk.BidPastLow = mask[0];
@@ -543,7 +559,7 @@ namespace IBApi
                 tickAttribLast.PastLimit = mask[0];
                 tickAttribLast.Unreported = mask[1];
                 var price = ReadDouble();
-                var size = ReadLong();
+                var size = ReadDecimal();
                 var exchange = ReadString();
                 var specialConditions = ReadString();
 
@@ -570,8 +586,8 @@ namespace IBApi
                 tickAttribBidAsk.BidPastLow = mask[1];
                 var priceBid = ReadDouble();
                 var priceAsk = ReadDouble();
-                var sizeBid = ReadLong();
-                var sizeAsk = ReadLong();
+                var sizeBid = ReadDecimal();
+                var sizeAsk = ReadDecimal();
 
                 ticks[i] = new HistoricalTickBidAsk(time, tickAttribBidAsk, priceBid, priceAsk, sizeBid, sizeAsk);
             }
@@ -592,7 +608,7 @@ namespace IBApi
                 var time = ReadLong();
                 ReadInt();// for consistency
                 var price = ReadDouble();
-                var size = ReadLong();
+                var size = ReadDecimal();
 
                 ticks[i] = new HistoricalTick(time, price, size);
             }
@@ -648,8 +664,8 @@ namespace IBApi
             double close = ReadDouble();
             double high = ReadDouble();
             double low = ReadDouble();
-            double WAP = ReadDouble();
-            long volume = ReadLong();
+            decimal WAP = ReadDecimal();
+            decimal volume = ReadDecimal();
 
             eWrapper.historicalDataUpdate(requestId, new Bar(date, open, high, low,
                                     close, volume, barCount, WAP));
@@ -659,7 +675,7 @@ namespace IBApi
         private void PnLSingleEvent()
         {
             int reqId = ReadInt();
-            int pos = ReadInt();
+            decimal pos = ReadDecimal();
             double dailyPnL = ReadDouble();
             double unrealizedPnL = double.MaxValue;
             double realizedPnL = double.MaxValue;
@@ -708,7 +724,7 @@ namespace IBApi
             for (int i = 0; i < n; i++)
             {
                 data[i].Price = ReadDouble();
-                data[i].Size = ReadLong();
+                data[i].Size = ReadDecimal();
             }
 
             eWrapper.histogramData(reqId, data);
@@ -777,7 +793,7 @@ namespace IBApi
             for (int i = 0; i < n; i++)
             {
                 int bitNumber = ReadInt();
-                String exchange = ReadString();
+                string exchange = ReadString();
                 char exchangeLetter = ReadChar();
 
                 theMap.Add(bitNumber, new KeyValuePair<string, char>(exchange, exchangeLetter));
@@ -790,7 +806,7 @@ namespace IBApi
         {
             int tickerId = ReadInt();
             double minTick = ReadDouble();
-            String bboExchange = ReadString();
+            string bboExchange = ReadString();
             int snapshotPermissions = ReadInt();
 
             eWrapper.tickReqParams(tickerId, minTick, bboExchange, snapshotPermissions);
@@ -839,6 +855,11 @@ namespace IBApi
                             derivativeSecTypes[j] = ReadString();
                         }
                     }
+                    if (serverVersion >= MinServerVer.MIN_SERVER_VER_BOND_ISSUERID)
+                    {
+                        contract.Description = ReadString();
+                        contract.IssuerId = ReadString();
+                    }
 
                     ContractDescription contractDescription = new ContractDescription(contract, derivativeSecTypes);
                     contractDescriptions[i] = contractDescription;
@@ -883,7 +904,7 @@ namespace IBApi
                     }
                     else
                     {
-                        depthMktDataDescriptions[i] = new DepthMktDataDescription(ReadString(), ReadString(), "", ReadBoolFromInt() ? "Deep2" : "Deep", Int32.MaxValue);
+                        depthMktDataDescriptions[i] = new DepthMktDataDescription(ReadString(), ReadString(), "", ReadBoolFromInt() ? "Deep2" : "Deep", int.MaxValue);
                     }
                 }
             }
@@ -959,7 +980,7 @@ namespace IBApi
         private void VerifyCompletedEvent()
         {
             int msgVersion = ReadInt();
-            bool isSuccessful = String.Compare(ReadString(), "true", true) == 0;
+            bool isSuccessful = string.Compare(ReadString(), "true", true) == 0;
             string errorText = ReadString();
 
             eWrapper.verifyCompleted(isSuccessful, errorText);
@@ -976,7 +997,7 @@ namespace IBApi
         private void VerifyAndAuthCompletedEvent()
         {
             int msgVersion = ReadInt();
-            bool isSuccessful = String.Compare(ReadString(), "true", true) == 0;
+            bool isSuccessful = string.Compare(ReadString(), "true", true) == 0;
             string errorText = ReadString();
 
             eWrapper.verifyAndAuthCompleted(isSuccessful, errorText);
@@ -997,10 +1018,10 @@ namespace IBApi
             int requestId = ReadInt();
             int tickType = ReadInt();
             double price = ReadDouble();
-            int size = 0;
-            
+            decimal size = 0;
+
             if (msgVersion >= 2)
-                size = ReadInt();
+                size = ReadDecimal();
 
             TickAttrib attr = new TickAttrib();
 
@@ -1063,7 +1084,7 @@ namespace IBApi
             int msgVersion = ReadInt();
             int requestId = ReadInt();
             int tickType = ReadInt();
-            int size = ReadInt();
+            decimal size = ReadDecimal();
             eWrapper.tickSize(requestId, tickType, size);
         }
 
@@ -1119,8 +1140,17 @@ namespace IBApi
             {
                 int id = ReadInt();
                 int errorCode = ReadInt();
-                string errorMsg = ReadString();
-                eWrapper.error(id, errorCode, errorMsg);
+                string errorMsg = serverVersion >= MinServerVer.ENCODE_MSG_ASCII7 ? Regex.Unescape(ReadString()) : ReadString();
+                string advancedOrderRejectJson = "";
+                if (serverVersion >= MinServerVer.ADVANCED_ORDER_REJECT)
+                {
+                    string tempStr = ReadString();
+                    if (!Util.StringIsEmpty(tempStr))
+                    {
+                        advancedOrderRejectJson = Regex.Unescape(tempStr);
+                    }
+                }
+                eWrapper.error(id, errorCode, errorMsg, advancedOrderRejectJson);
             }
         }
 
@@ -1158,36 +1188,42 @@ namespace IBApi
 
         private void TickOptionComputationEvent()
         {
-            int msgVersion = ReadInt();
+            int msgVersion = serverVersion >= MinServerVer.PRICE_BASED_VOLATILITY ? int.MaxValue : ReadInt();
+
             int requestId = ReadInt();
             int tickType = ReadInt();
+            int tickAttrib = int.MaxValue;
+            if (serverVersion >= MinServerVer.PRICE_BASED_VOLATILITY)
+            {
+                tickAttrib = ReadInt();
+            }
             double impliedVolatility = ReadDouble();
             if (impliedVolatility.Equals(-1))
             { // -1 is the "not yet computed" indicator
-                impliedVolatility = Double.MaxValue;
+                impliedVolatility = double.MaxValue;
             }
             double delta = ReadDouble();
             if (delta.Equals(-2))
             { // -2 is the "not yet computed" indicator
-                delta = Double.MaxValue;
+                delta = double.MaxValue;
             }
-            double optPrice = Double.MaxValue;
-            double pvDividend = Double.MaxValue;
-            double gamma = Double.MaxValue;
-            double vega = Double.MaxValue;
-            double theta = Double.MaxValue;
-            double undPrice = Double.MaxValue;
+            double optPrice = double.MaxValue;
+            double pvDividend = double.MaxValue;
+            double gamma = double.MaxValue;
+            double vega = double.MaxValue;
+            double theta = double.MaxValue;
+            double undPrice = double.MaxValue;
             if (msgVersion >= 6 || tickType == TickType.MODEL_OPTION || tickType == TickType.DELAYED_MODEL_OPTION)
             {
                 optPrice = ReadDouble();
                 if (optPrice.Equals(-1))
                 { // -1 is the "not yet computed" indicator
-                    optPrice = Double.MaxValue;
+                    optPrice = double.MaxValue;
                 }
                 pvDividend = ReadDouble();
                 if (pvDividend.Equals(-1))
                 { // -1 is the "not yet computed" indicator
-                    pvDividend = Double.MaxValue;
+                    pvDividend = double.MaxValue;
                 }
             }
             if (msgVersion >= 6)
@@ -1195,26 +1231,26 @@ namespace IBApi
                 gamma = ReadDouble();
                 if (gamma.Equals(-2))
                 { // -2 is the "not yet computed" indicator
-                    gamma = Double.MaxValue;
+                    gamma = double.MaxValue;
                 }
                 vega = ReadDouble();
                 if (vega.Equals(-2))
                 { // -2 is the "not yet computed" indicator
-                    vega = Double.MaxValue;
+                    vega = double.MaxValue;
                 }
                 theta = ReadDouble();
                 if (theta.Equals(-2))
                 { // -2 is the "not yet computed" indicator
-                    theta = Double.MaxValue;
+                    theta = double.MaxValue;
                 }
                 undPrice = ReadDouble();
                 if (undPrice.Equals(-1))
                 { // -1 is the "not yet computed" indicator
-                    undPrice = Double.MaxValue;
+                    undPrice = double.MaxValue;
                 }
             }
 
-            eWrapper.tickOptionComputation(requestId, tickType, impliedVolatility, delta, optPrice, pvDividend, gamma, vega, theta, undPrice);
+            eWrapper.tickOptionComputation(requestId, tickType, tickAttrib, impliedVolatility, delta, optPrice, pvDividend, gamma, vega, theta, undPrice);
         }
 
         private void AccountSummaryEvent()
@@ -1249,7 +1285,11 @@ namespace IBApi
 
         private void BondContractDetailsEvent()
         {
-            int msgVersion = ReadInt();
+            int msgVersion = 6;
+            if (serverVersion < MinServerVer.SIZE_RULES) 
+            {
+                msgVersion = ReadInt();
+            }
             int requestId = -1;
             if (msgVersion >= 3)
             {
@@ -1277,9 +1317,9 @@ namespace IBApi
             contract.Contract.TradingClass = ReadString();
             contract.Contract.ConId = ReadInt();
             contract.MinTick = ReadDouble();
-            if (serverVersion >= MinServerVer.MD_SIZE_MULTIPLIER)
+            if (serverVersion >= MinServerVer.MD_SIZE_MULTIPLIER && serverVersion < MinServerVer.SIZE_RULES)
             {
-                contract.MdSizeMultiplier = ReadInt();
+                ReadInt(); // MdSizeMultiplier - not used anymore
             }
             contract.OrderTypes = ReadString();
             contract.ValidExchanges = ReadString();
@@ -1322,6 +1362,12 @@ namespace IBApi
             {
                 contract.MarketRuleIds = ReadString();
             }
+            if (serverVersion >= MinServerVer.SIZE_RULES)
+            {
+                contract.MinSize = ReadDecimal();
+                contract.SizeIncrement = ReadDecimal();
+                contract.SuggestedSizeIncrement = ReadDecimal();
+            }
 
             eWrapper.bondContractDetails(requestId, contract);
         }
@@ -1352,7 +1398,7 @@ namespace IBApi
                 contract.TradingClass = ReadString();
             }
 
-            var position = serverVersion >= MinServerVer.FRACTIONAL_POSITIONS ? ReadDouble() : (double)ReadInt();
+            decimal position = ReadDecimal();
             double marketPrice = ReadDouble();
             double marketValue = ReadDouble();
             double averageCost = 0.0;
@@ -1399,8 +1445,8 @@ namespace IBApi
             int msgVersion = serverVersion >= MinServerVer.MARKET_CAP_PRICE ? int.MaxValue : ReadInt();
             int id = ReadInt();
             string status = ReadString();
-            double filled = serverVersion >= MinServerVer.FRACTIONAL_POSITIONS ? ReadDouble() : (double)ReadInt();
-            double remaining = serverVersion >= MinServerVer.FRACTIONAL_POSITIONS ? ReadDouble() : (double)ReadInt();
+            decimal filled = ReadDecimal();
+            decimal remaining = ReadDecimal();
             double avgFillPrice = ReadDouble();
 
             int permId = 0;
@@ -1494,9 +1540,9 @@ namespace IBApi
             eOrderDecoder.readAllOrNone();
             eOrderDecoder.readMinQty();
             eOrderDecoder.readOcaType();
-            eOrderDecoder.readETradeOnly();
-            eOrderDecoder.readFirmQuoteOnly();
-            eOrderDecoder.readNbboPriceCap();
+            eOrderDecoder.skipETradeOnly();
+            eOrderDecoder.skipFirmQuoteOnly();
+            eOrderDecoder.skipNbboPriceCap();
             eOrderDecoder.readParentId();
             eOrderDecoder.readTriggerMethod();
             eOrderDecoder.readVolOrderParams(true);
@@ -1523,6 +1569,10 @@ namespace IBApi
             eOrderDecoder.readIsOmsContainer();
             eOrderDecoder.readDiscretionaryUpToLimitPrice();
             eOrderDecoder.readUsePriceMgmtAlgo();
+            eOrderDecoder.readDuration();
+            eOrderDecoder.readPostToAts();
+            eOrderDecoder.readAutoCancelParent(MinServerVer.AUTO_CANCEL_PARENT);
+            eOrderDecoder.readPegBestPegMidOrderAttributes();
 
             eWrapper.openOrder(order.OrderId, contract, order, orderState);
         }
@@ -1535,7 +1585,11 @@ namespace IBApi
 
         private void ContractDataEvent()
         {
-            int msgVersion = ReadInt();
+            int msgVersion = 8;
+            if (serverVersion < MinServerVer.SIZE_RULES)
+            {
+                msgVersion = ReadInt();
+            }
             int requestId = -1;
             if (msgVersion >= 3)
                 requestId = ReadInt();
@@ -1552,9 +1606,9 @@ namespace IBApi
             contract.Contract.TradingClass = ReadString();
             contract.Contract.ConId = ReadInt();
             contract.MinTick = ReadDouble();
-            if (serverVersion >= MinServerVer.MD_SIZE_MULTIPLIER)
+            if (serverVersion >= MinServerVer.MD_SIZE_MULTIPLIER && serverVersion < MinServerVer.SIZE_RULES)
             {
-                contract.MdSizeMultiplier = ReadInt();
+                ReadInt(); // MdSizeMultiplier - not used anymore
             }
             contract.Contract.Multiplier = ReadString();
             contract.OrderTypes = ReadString();
@@ -1569,7 +1623,7 @@ namespace IBApi
             }
             if (msgVersion >= 5)
             {
-                contract.LongName = ReadString();
+                contract.LongName = serverVersion >= MinServerVer.ENCODE_MSG_ASCII7 ? Regex.Unescape(ReadString()) : ReadString();
                 contract.Contract.PrimaryExch = ReadString();
             }
             if (msgVersion >= 6)
@@ -1618,6 +1672,20 @@ namespace IBApi
             if (serverVersion >= MinServerVer.REAL_EXPIRATION_DATE)
             {
                 contract.RealExpirationDate = ReadString();
+            }
+            if (serverVersion >= MinServerVer.STOCK_TYPE)
+            {
+                contract.StockType = ReadString();
+            }
+            if (serverVersion >= MinServerVer.FRACTIONAL_SIZE_SUPPORT && serverVersion < MinServerVer.SIZE_RULES)
+            {
+                ReadDecimal(); // SizeMinTick - not used anymore
+            }
+            if (serverVersion >= MinServerVer.SIZE_RULES)
+            {
+                contract.MinSize = ReadDecimal();
+                contract.SizeIncrement = ReadDecimal();
+                contract.SuggestedSizeIncrement = ReadDecimal();
             }
 
             eWrapper.contractDetails(requestId, contract);
@@ -1673,7 +1741,7 @@ namespace IBApi
             exec.AcctNumber = ReadString();
             exec.Exchange = ReadString();
             exec.Side = ReadString();
-            exec.Shares = serverVersion >= MinServerVer.FRACTIONAL_POSITIONS ? ReadDouble() : (double)ReadInt();
+            exec.Shares = ReadDecimal();
             exec.Price = ReadDouble();
             if (msgVersion >= 2)
             {
@@ -1689,7 +1757,7 @@ namespace IBApi
             }
             if (msgVersion >= 6)
             {
-                exec.CumQty = ReadDouble();
+                exec.CumQty = ReadDecimal();
                 exec.AvgPrice = ReadDouble();
             }
             if (msgVersion >= 8)
@@ -1762,7 +1830,7 @@ namespace IBApi
             }
 
             int itemCount = ReadInt();
-            
+
             for (int ctr = 0; ctr < itemCount; ctr++)
             {
                 string date = ReadString();
@@ -1770,16 +1838,17 @@ namespace IBApi
                 double high = ReadDouble();
                 double low = ReadDouble();
                 double close = ReadDouble();
-                long volume = serverVersion < MinServerVer.SYNT_REALTIME_BARS ? ReadInt() : ReadLong();
-                double WAP = ReadDouble();
+                decimal volume = ReadDecimal();
+                decimal WAP = ReadDecimal();
 
                 if (serverVersion < MinServerVer.SYNT_REALTIME_BARS)
                 {
-                    /*string hasGaps = */ReadString();
+                    /*string hasGaps = */
+                    ReadString();
                 }
 
                 int barCount = -1;
-                
+
                 if (msgVersion >= 3)
                 {
                     barCount = ReadInt();
@@ -1809,7 +1878,7 @@ namespace IBApi
             int operation = ReadInt();
             int side = ReadInt();
             double price = ReadDouble();
-            int size = ReadInt();
+            decimal size = ReadDecimal();
             eWrapper.updateMktDepth(requestId, position, operation, side, price, size);
         }
 
@@ -1822,7 +1891,7 @@ namespace IBApi
             int operation = ReadInt();
             int side = ReadInt();
             double price = ReadDouble();
-            int size = ReadInt();
+            decimal size = ReadDecimal();
 
             bool isSmartDepth = false;
             if (serverVersion >= MinServerVer.SMART_DEPTH)
@@ -1863,7 +1932,7 @@ namespace IBApi
                 contract.TradingClass = ReadString();
             }
 
-            var pos = serverVersion >= MinServerVer.FRACTIONAL_POSITIONS ? ReadDouble() : (double)ReadInt();
+            decimal pos = ReadDecimal();
             double avgCost = 0;
             if (msgVersion >= 3)
                 avgCost = ReadDouble();
@@ -1885,8 +1954,8 @@ namespace IBApi
             double high = ReadDouble();
             double low = ReadDouble();
             double close = ReadDouble();
-            long volume = ReadLong();
-            double wap = ReadDouble();
+            decimal volume = ReadDecimal();
+            decimal wap = ReadDecimal();
             int count = ReadInt();
             eWrapper.realtimeBar(requestId, time, open, high, low, close, volume, wap, count);
         }
@@ -1958,7 +2027,7 @@ namespace IBApi
             contract.Currency = ReadString();
             contract.LocalSymbol = ReadString();
             contract.TradingClass = ReadString();
-            var pos = ReadDouble();
+            decimal pos = ReadDecimal();
             double avgCost = ReadDouble();
             string modelCode = ReadString();
             eWrapper.positionMulti(requestId, account, modelCode, contract, pos, avgCost);
@@ -1990,6 +2059,58 @@ namespace IBApi
             eWrapper.accountUpdateMultiEnd(requestId);
         }
 
+        private void ReplaceFAEndEvent()
+        {
+            int reqId = ReadInt();
+            string text = ReadString();
+            eWrapper.replaceFAEnd(reqId, text);
+        }
+
+        private void ProcessWshMetaData()
+        {
+            int reqId = ReadInt();
+            string dataJson = ReadString();
+
+            eWrapper.wshMetaData(reqId, dataJson);
+        }
+
+        private void ProcessWshEventData()
+        {
+            int reqId = ReadInt();
+            string dataJson = ReadString();
+            eWrapper.wshEventData(reqId, dataJson);
+        }
+
+        private void ProcessHistoricalScheduleEvent()
+        {
+            int reqId = ReadInt();
+            string startDateTime = ReadString();
+            string endDateTime = ReadString();
+            string timeZone = ReadString();
+
+            int sessionsCount = ReadInt();
+            HistoricalSession[] sessions = new HistoricalSession[sessionsCount];
+
+            for (int i = 0; i < sessionsCount; i++)
+            {
+                var sessionStartDateTime = ReadString();
+                var sessionEndDateTime = ReadString();
+                var sessionRefDate = ReadString();
+
+                sessions[i] = new HistoricalSession(sessionStartDateTime, sessionEndDateTime, sessionRefDate);
+            }
+
+            eWrapper.historicalSchedule(reqId, startDateTime, endDateTime, timeZone, sessions);
+        }
+
+        private void ProcessUserInfoEvent()
+        {
+            int reqId = ReadInt();
+            string whiteBrandingId = ReadString();
+
+            eWrapper.userInfo(reqId, whiteBrandingId);
+        }
+
         public double ReadDouble()
         {
             string doubleAsstring = ReadString();
@@ -1998,13 +2119,19 @@ namespace IBApi
             {
                 return 0;
             }
-            else return Double.Parse(doubleAsstring, System.Globalization.NumberFormatInfo.InvariantInfo);
+            else return double.Parse(doubleAsstring, System.Globalization.NumberFormatInfo.InvariantInfo);
         }
 
         public double ReadDoubleMax()
         {
             string str = ReadString();
-            return (str == null || str.Length == 0) ? Double.MaxValue : Double.Parse(str, System.Globalization.NumberFormatInfo.InvariantInfo);
+            return string.IsNullOrEmpty(str) ? double.MaxValue : str == Constants.INFINITY_STR ? double.PositiveInfinity : double.Parse(str, System.Globalization.NumberFormatInfo.InvariantInfo);
+        }
+
+        public decimal ReadDecimal()
+        {
+            string str = ReadString();
+            return Util.StringToDecimal(str);
         }
 
         public long ReadLong()
@@ -2015,7 +2142,7 @@ namespace IBApi
             {
                 return 0;
             }
-            else return Int64.Parse(longAsstring);
+            else return long.Parse(longAsstring);
         }
 
         public int ReadInt()
@@ -2026,19 +2153,19 @@ namespace IBApi
             {
                 return 0;
             }
-            else return Int32.Parse(intAsstring);
+            else return int.Parse(intAsstring);
         }
 
         public int ReadIntMax()
         {
             string str = ReadString();
-            return (str == null || str.Length == 0) ? Int32.MaxValue : Int32.Parse(str);
+            return string.IsNullOrEmpty(str) ? int.MaxValue : int.Parse(str);
         }
 
         public bool ReadBoolFromInt()
         {
             string str = ReadString();
-            return str == null ? false : (Int32.Parse(str) != 0);
+            return str == null ? false : (int.Parse(str) != 0);
         }
 
         public char ReadChar()
@@ -2085,7 +2212,7 @@ namespace IBApi
             string lastTradeDateOrContractMonth = ReadString();
             if (lastTradeDateOrContractMonth != null)
             {
-                string[] splitted = Regex.Split(lastTradeDateOrContractMonth, "\\s+");
+                string[] splitted = lastTradeDateOrContractMonth.Contains("-") ? Regex.Split(lastTradeDateOrContractMonth, "-") : Regex.Split(lastTradeDateOrContractMonth, "\\s+");
                 if (splitted.Length > 0)
                 {
                     if (isBond)

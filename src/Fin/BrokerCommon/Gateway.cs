@@ -491,7 +491,7 @@ public partial class Gateway : IDisposable
                 return virtualOrderID;
             }
 
-            int ibRealOrderID = BrokerWrapper.PlaceOrder(p_contract, p_transactionType, p_volume, p_orderExecution, p_orderTif, p_limitPrice, p_stopPrice, p_estimatedPrice, p_isSimulatedTrades);
+            int ibRealOrderID = BrokerWrapper.PlaceOrder(p_contract, p_transactionType, (decimal)p_volume, p_orderExecution, p_orderTif, p_limitPrice, p_stopPrice, p_estimatedPrice, p_isSimulatedTrades);
             lock (VirtualOrders)
                 VirtualOrders.Add(new VirtualOrder() { OrderId = virtualOrderID, SubmitTime = DateTime.UtcNow, EstimatedUsdSize = estimatedTransactionValue, RealOrderIds = new List<int>() { ibRealOrderID }, OrderExecution = p_orderExecution, OrderStatus = OrderStatus.Submitted, });
             lock (RealOrders)
@@ -518,7 +518,7 @@ public partial class Gateway : IDisposable
                 return virtualOrderID;
             }
 
-            int ibRealOrderID = BrokerWrapper.PlaceOrder(p_contract, p_transactionType, p_volume, p_orderExecution, p_orderTif, p_limitPrice, p_stopPrice, p_estimatedPrice, p_isSimulatedTrades);
+            int ibRealOrderID = BrokerWrapper.PlaceOrder(p_contract, p_transactionType, (decimal)p_volume, p_orderExecution, p_orderTif, p_limitPrice, p_stopPrice, p_estimatedPrice, p_isSimulatedTrades);
             lock (VirtualOrders)
                 VirtualOrders.Add(new VirtualOrder() { OrderId = virtualOrderID, SubmitTime = DateTime.UtcNow, EstimatedUsdSize = estimatedTransactionValue, RealOrderIds = new List<int>() { ibRealOrderID }, OrderExecution = p_orderExecution, OrderStatus = OrderStatus.Submitted, });
             lock (RealOrders)
@@ -591,8 +591,8 @@ public partial class Gateway : IDisposable
 
             // the real order may or maybe Not finished yet. If it is not filled, we will set it as Error order
             OrderStatus realOrderStatus = OrderStatus.None;
-            double realExecutedVolume = Double.NaN;
-            double realAvgPrice = Double.NaN;
+            decimal realExecutedVolume = 0m;
+            double realAvgPrice = double.NaN;
             DateTime realExecutionTime = DateTime.MinValue;
             if (!BrokerWrapper.GetRealOrderExecutionInfo(realOrderId, ref realOrderStatus, ref realExecutedVolume, ref realAvgPrice, ref realExecutionTime, p_isSimulatedTrades))
                 return false;
@@ -600,7 +600,7 @@ public partial class Gateway : IDisposable
             if (realOrderStatus == OrderStatus.Filled)
             {
                 orderStatus = realOrderStatus;
-                executedVolume = realExecutedVolume;
+                executedVolume = (double)realExecutedVolume;
                 executedAvgPrice = realAvgPrice;
             }
             else
@@ -629,7 +629,7 @@ public partial class Gateway : IDisposable
 
             // the real order may or maybe Not finished yet. If it is not filled, we will set it as Error order
             OrderStatus realOrderStatus = OrderStatus.None;
-            double realExecutedVolume = Double.NaN;
+            decimal realExecutedVolume = 0m;
             double realAvgPrice = Double.NaN;
             DateTime realExecutionTime = DateTime.MinValue;
             if (!BrokerWrapper.GetRealOrderExecutionInfo(realOrderId, ref realOrderStatus, ref realExecutedVolume, ref realAvgPrice, ref realExecutionTime, p_isSimulatedTrades))
@@ -638,7 +638,7 @@ public partial class Gateway : IDisposable
             if (realOrderStatus == OrderStatus.Filled)
             {
                 orderStatus = realOrderStatus;
-                executedVolume = realExecutedVolume;
+                executedVolume = (double)realExecutedVolume;
                 executedAvgPrice = realAvgPrice;
             }
             else

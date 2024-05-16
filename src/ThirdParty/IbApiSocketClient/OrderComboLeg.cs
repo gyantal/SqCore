@@ -1,12 +1,6 @@
 ﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-
 namespace IBApi
 {
     /**
@@ -14,50 +8,42 @@ namespace IBApi
      * @brief Allows to specify a price on an order's leg
      * @sa Order, ComboLeg
      */
-     #pragma warning disable CS0659 // overrides Object.Equals(object o) but does not override Object.GetHashCode()
     public class OrderComboLeg
     {
-        
-        double price;
-
         /**
          * @brief The order's leg's price
          */
-        public double Price
-        {
-            get { return price; }
-            set { price = value; }
-        }
+        public double Price { get; set; }
 
         public OrderComboLeg()
         {
-            price = Double.MaxValue;
+            Price = double.MaxValue;
         }
 
         public OrderComboLeg(double p_price)
         {
-            price = p_price;
+            Price = p_price;
         }
 
-        public override bool Equals(Object other)
+        public override bool Equals(object other)
         {
+            OrderComboLeg theOther = other as OrderComboLeg;
+            if (theOther == null)
+            {
+                return false;
+            }
+            
             if (this == other)
             {
                 return true;
             }
-            else if (other == null)
-            {
-                return false;
-            }
 
-            OrderComboLeg theOther = (OrderComboLeg)other;
+            return Price == theOther.Price;
+        }
 
-            if (price != theOther.Price)
-            {
-                return false;
-            }
-
-            return true;
+        public override int GetHashCode()
+        {
+            return -814345894 + Price.GetHashCode();
         }
     }
 }

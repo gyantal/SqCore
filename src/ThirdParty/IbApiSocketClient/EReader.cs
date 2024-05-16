@@ -2,9 +2,7 @@
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
-using System.Linq;
 using System.IO;
 
 namespace IBApi
@@ -45,19 +43,19 @@ namespace IBApi
                 try
                 {
                     while (eClientSocket.IsConnected())
+                    {
+                        if (!eClientSocket.IsDataAvailable())
+                        {
+                            Thread.Sleep(1);
+                            continue;
+                        }
+
                         if (!putMessageToQueue())
                             break;
+                    }
                 }
                 catch (Exception ex)
                 {
-                    // 1. System.IO.IOException is expected when main thread exits and after it calls ClientSocket.eDisconnect();
-                    // in the msg processing loop this throws the exception: IbApiSocketClient.dll!IBApi.EClient.ReadInt()
-                    // Fine. It seems we cannot prevent it. We cannot cancel this putMessageToQueue() loop. 
-                    // It is written that once it is started, it always listen. No way to cancel it.
-
-                    // 2. System.IO.EndOfStreamException happens when a previous disconnection went wrong and IbGateway still hangs-on the connection, not realizing it was disconnected.
-                    // Succesive connections have problems. Solution: restart the IbGateway/TWS that is stuck on that open connection.
-
                     eClientSocket.Wrapper.error(ex);
                     eClientSocket.eDisconnect();
                 }
@@ -99,8 +97,7 @@ namespace IBApi
             catch (Exception ex)
             {
                 if (eClientSocket.IsConnected())
-                    // eClientSocket.Wrapper.error(ex.Message); in 2019 API version it calls error(string) version. That is bad!! It is for errors from IbGateway.
-                    eClientSocket.Wrapper.error(ex); // in 2015 API version, it called error(Exception) that is the good one. It is for C# client runtime exceptions.
+                    eClientSocket.Wrapper.error(ex);
 
                 return false;
             }
@@ -130,7 +127,7 @@ namespace IBApi
             while (true)
                 try
                 {
-                    msgSize = new EDecoder(this.eClientSocket.ServerVersion, defaultWrapper).ParseAndProcessMsg(inBuf.ToArray());
+                    msgSize = new EDecoder(eClientSocket.ServerVersion, defaultWrapper).ParseAndProcessMsg(inBuf.ToArray());
                     break;
                 }
                 catch (EndOfStreamException)
@@ -140,12 +137,12 @@ namespace IBApi
 
                     AppendInBuf();
                 }
-            
+
             var msgBuf = new byte[msgSize];
 
             inBuf.CopyTo(0, msgBuf, 0, msgSize);
             inBuf.RemoveRange(0, msgSize);
-          
+
             if (inBuf.Count < defaultInBufSize && inBuf.Capacity > defaultInBufSize)
                 inBuf.Capacity = defaultInBufSize;
 

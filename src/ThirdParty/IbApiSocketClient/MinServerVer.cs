@@ -1,11 +1,6 @@
 /* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
 namespace IBApi
 {
     public class MinServerVer
@@ -110,5 +105,30 @@ namespace IBApi
         public const int MKT_DEPTH_PRIM_EXCHANGE = 149;
         public const int COMPLETED_ORDERS = 150;
         public const int PRICE_MGMT_ALGO = 151;
+        public const int STOCK_TYPE = 152;
+        public const int ENCODE_MSG_ASCII7 = 153;
+        public const int SEND_ALL_FAMILY_CODES = 154;
+        public const int NO_DEFAULT_OPEN_CLOSE = 155;
+        public const int PRICE_BASED_VOLATILITY = 156;
+        public const int REPLACE_FA_END = 157;
+        public const int DURATION = 158;
+        public const int MARKET_DATA_IN_SHARES = 159;
+        public const int POST_TO_ATS = 160;
+        public const int WSHE_CALENDAR = 161;
+        public const int AUTO_CANCEL_PARENT = 162;
+        public const int FRACTIONAL_SIZE_SUPPORT = 163;
+        public const int SIZE_RULES = 164;
+        public const int HISTORICAL_SCHEDULE = 165;
+        public const int ADVANCED_ORDER_REJECT = 166;
+        public const int USER_INFO = 167;
+        public const int CRYPTO_AGGREGATED_TRADES = 168;
+        public const int MANUAL_ORDER_TIME = 169;
+        public const int PEGBEST_PEGMID_OFFSETS = 170;
+        public const int MIN_SERVER_VER_WSH_EVENT_DATA_FILTERS = 171;
+        public const int MIN_SERVER_VER_IPO_PRICES = 172;
+        public const int MIN_SERVER_VER_WSH_EVENT_DATA_FILTERS_DATE = 173;
+        public const int MIN_SERVER_VER_INSTRUMENT_TIMEZONE = 174;
+        public const int MIN_SERVER_VER_HMDS_MARKET_DATA_IN_SHARES = 175;
+        public const int MIN_SERVER_VER_BOND_ISSUERID = 176;
     }
 }

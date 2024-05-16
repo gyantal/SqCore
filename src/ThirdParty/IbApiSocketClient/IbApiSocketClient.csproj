@@ -2,11 +2,12 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <!-- <Nullable>enable</Nullable> -->
-    <AssemblyVersion>9.76.1.0</AssemblyVersion>
-    <FileVersion>9.76.1.0</FileVersion>
-    <Copyright>2019-05-08 Interactive Brokers LLC. https://interactivebrokers.github.io/tws-api/initial_setup.html</Copyright>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
+    <AssemblyVersion>10.19.04.0</AssemblyVersion>
+    <FileVersion>10.19.04.0</FileVersion>
+    <Copyright>2024-05-17 Interactive Brokers LLC. https://interactivebrokers.github.io/tws-api/initial_setup.html</Copyright>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Common\SqCommon\SqCommon.csproj" />
+    <!-- <ProjectReference Include="..\..\Common\SqCommon\SqCommon.csproj" /> -->
   </ItemGroup>
 </Project>

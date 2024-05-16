@@ -1,11 +1,7 @@
 ﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace IBApi
 {
@@ -21,7 +17,7 @@ namespace IBApi
         {
         }
 
-        public HistoricalTickLast(long time, TickAttribLast tickAttribLast, double price, long size, string exchange, string specialConditions)
+        public HistoricalTickLast(long time, TickAttribLast tickAttribLast, double price, decimal size, string exchange, string specialConditions)
         {
             Time = time;
             TickAttribLast = tickAttribLast;
@@ -55,7 +51,7 @@ namespace IBApi
 		/**
          * @brief The last size of the historical tick 
          */
-        public long Size
+        public decimal Size
         {
             [return: MarshalAs(UnmanagedType.I8)]
             get;

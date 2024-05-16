@@ -1,11 +1,6 @@
 ﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
 namespace IBApi
 {
 	/**
@@ -15,7 +10,7 @@ namespace IBApi
      */
     public class Bar
     {
-        public Bar(string time, double open, double high, double low, double close, long volume, int count, double wap)
+        public Bar(string time, double open, double high, double low, double close, decimal volume, int count, decimal wap)
         {
             Time = time;
             Open = open;
@@ -55,12 +50,12 @@ namespace IBApi
 		/**
          * @brief The bar's traded volume if available (only available for TRADES) 
          */
-        public long Volume { get; private set; }
+        public decimal Volume { get; private set; }
 		
 		/**
          * @brief The bar's Weighted Average Price (only available for TRADES) 
          */
-        public double WAP { get; private set; }
+        public decimal WAP { get; private set; }
 		
 		/**
          * @brief The number of trades during the bar's timespan (only available for TRADES) 

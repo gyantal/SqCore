@@ -1,11 +1,6 @@
 ﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
 namespace IBApi
 {
     /**
@@ -21,7 +16,7 @@ namespace IBApi
         public const string AccruedCash = "AccruedCash";
         public const string BuyingPower = "BuyingPower";
         public const string EquityWithLoanValue = "EquityWithLoanValue";
-        public const string PreviousEquityWithLoanValue = "PreviousEquityWithLoanValue";
+        public const string PreviousDayEquityWithLoanValue = "PreviousDayEquityWithLoanValue";
         public const string GrossPositionValue = "GrossPositionValue";
         public const string ReqTEquity = "ReqTEquity";
         public const string ReqTMargin = "ReqTMargin";
@@ -46,7 +41,7 @@ namespace IBApi
 
         public static string GetAllTags()
         {
-            return AccountType + "," + NetLiquidation + "," + TotalCashValue + "," + SettledCash + "," + AccruedCash + "," + BuyingPower + "," + EquityWithLoanValue + "," + PreviousEquityWithLoanValue + "," + GrossPositionValue + "," + ReqTEquity
+            return AccountType + "," + NetLiquidation + "," + TotalCashValue + "," + SettledCash + "," + AccruedCash + "," + BuyingPower + "," + EquityWithLoanValue + "," + PreviousDayEquityWithLoanValue + "," + GrossPositionValue + "," + ReqTEquity
                 + "," + ReqTMargin + "," + SMA + "," + InitMarginReq + "," + MaintMarginReq + "," + AvailableFunds + "," + ExcessLiquidity + "," + Cushion + "," + FullInitMarginReq + "," + FullMaintMarginReq + "," + FullAvailableFunds + "," + FullExcessLiquidity
                 + "," + LookAheadNextChange + "," + LookAheadInitMarginReq + "," + LookAheadMaintMarginReq + "," + LookAheadAvailableFunds + "," + LookAheadExcessLiquidity + "," + HighestSeverity + "," + DayTradesRemaining + "," + Leverage;
         }

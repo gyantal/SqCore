@@ -1,11 +1,7 @@
 ﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 
 namespace IBApi
 {
@@ -13,24 +9,12 @@ namespace IBApi
     * @class TagValue
     * @brief Convenience class to define key-value pairs
     */
-    #pragma warning disable CS0659 // overrides Object.Equals(object o) but does not override Object.GetHashCode()
     public class TagValue
     {
-        private string tag;
-        private string value;
+        public string Tag { get; set; }
 
-        public string Tag
-        {
-            get { return tag; }
-            set { tag = value; }
-        }
-        
 
-        public string Value
-        {
-            get { return this.value; }
-            set { this.value = value; }
-        }
+        public string Value { get; set; }
 
         public TagValue()
         {
@@ -38,20 +22,19 @@ namespace IBApi
 
         public TagValue(string p_tag, string p_value)
         {
-            tag = p_tag;
-            value = p_value;
+            Tag = p_tag;
+            Value = p_value;
         }
 
-        public override bool Equals(Object other)
+        public override bool Equals(object other)
         {
-
             if (this == other)
                 return true;
 
-            if (other == null)
-                return false;
+            TagValue l_theOther = other as TagValue;
 
-            TagValue l_theOther = (TagValue)other;
+            if (l_theOther == null)
+                return false;  
 
             if (Util.StringCompare(Tag, l_theOther.Tag) != 0 ||
                 Util.StringCompare(Value, l_theOther.Value) != 0)
@@ -60,6 +43,14 @@ namespace IBApi
             }
 
             return true;
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = 221537429;
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Tag);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Value);
+            return hashCode;
         }
     }
 }

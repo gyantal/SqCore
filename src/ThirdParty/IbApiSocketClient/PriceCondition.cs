@@ -2,11 +2,9 @@
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace IBApi
 {
@@ -41,7 +39,7 @@ namespace IBApi
         {
             get
             {
-                return Price.ToString();
+                return Price.ToString(NumberFormatInfo.InvariantInfo);
             }
             set
             {
@@ -62,7 +60,7 @@ namespace IBApi
                 return false;
 
             return base.Equals(obj)
-                && this.TriggerMethod == other.TriggerMethod;
+                && TriggerMethod == other.TriggerMethod;
         }
 
         public override int GetHashCode()
@@ -104,8 +102,6 @@ namespace IBApi
             {
                 return false;
             }
-
-            // return true;
         }
     }
 }

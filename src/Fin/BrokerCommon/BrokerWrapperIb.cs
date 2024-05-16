@@ -223,9 +223,9 @@ public class BrokerWrapperIb : IBrokerWrapper
         }
     }
 
-    public virtual void error(int id, int errorCode, string errorMsg)
+    public virtual void error(int id, int errorCode, string errorMsg, string advancedOrderRejectJson)
     {
-        string errMsg = $"BrokerWrapper.error(id, code, msg). IbGateway({m_gatewayId}) sent error with msgVersion >= 2. Id: {id}, ErrCode: {errorCode}, Msg: {errorMsg}";
+        string errMsg = $"BrokerWrapper.error(id, code, msg). IbGateway({m_gatewayId}) sent error with msgVersion >= 2. Id: {id}, ErrCode: {errorCode}, Msg: {errorMsg}, AdvOrdRej: {advancedOrderRejectJson}";
         // Utils.Logger.Debug(errMsg); // even if we return and continue, Log it, so it is conserved in the log file.
         Utils.Logger.Info(errMsg);
         bool isAddOrderInfoToErrMsg = false;
@@ -809,7 +809,7 @@ public class BrokerWrapperIb : IBrokerWrapper
         mktDataSubscription.MarketDataArrived?.Invoke(tickId, mktDataSubscription, field, price);
     }
 
-    public virtual void tickSize(int tickerId, int field, int size)
+    public virtual void tickSize(int tickerId, int field, decimal size)
     {
         // we don't need the AskSize, BidSize, LastSize values, so we don't process them unnecessarily.
         // Console.WriteLine("Tick Size. Tick Id:" + tickerId + ", Field: " + TickType.getField(field)  + ", Size: " + size);
@@ -915,9 +915,9 @@ public class BrokerWrapperIb : IBrokerWrapper
     // TickOptionComputation.TickerId: 1062, field: 13, ImpliedVolatility: 0.158388264566503, Delta: 0.00752481853860245, OptionPrice: 0.0610202906226993, pvDividend: 1.25896178502438, Gamma: 0.00081107874803257, Vega: 0.0427398500810083, Theta: -0.000858885577012274, UnderlyingPrice: 167.779998779297
     // >IB shows 0.008, none of them is that, but I can use the last one(field = 13) ,nd round it, then you round it up, so that is the used value.
     // So, just use the last Delta value.
-    public virtual void tickOptionComputation(int tickerId, int field, double impliedVolatility, double delta, double optPrice, double pvDividend, double gamma, double vega, double theta, double undPrice)
+    public virtual void tickOptionComputation(int tickerId, int field, int tickAttrib, double impliedVolatility, double delta, double optPrice, double pvDividend, double gamma, double vega, double theta, double undPrice)
     {
-        string logStr = "TickOptionComputation. TickerId: " + tickerId + ", field: " + field + ", ImpliedVolatility: " + impliedVolatility + ", Delta: " + delta
+        string logStr = "TickOptionComputation. TickerId: " + tickerId + ", field: " + field + ", tickAttrib: " + tickAttrib + ", ImpliedVolatility: " + impliedVolatility + ", Delta: " + delta
             + ", OptionPrice: " + optPrice + ", pvDividend: " + pvDividend + ", Gamma: " + gamma + ", Vega: " + vega + ", Theta: " + theta + ", UnderlyingPrice: " + undPrice;
 
         Utils.Logger.Trace(logStr);
@@ -948,7 +948,7 @@ public class BrokerWrapperIb : IBrokerWrapper
         Console.WriteLine("UpdateAccountValue. Key: " + key + ", Value: " + value + ", Currency: " + currency + ", AccountName: " + accountName);
     }
 
-    public virtual void updatePortfolio(Contract contract, double position, double marketPrice, double marketValue, double averageCost, double unrealisedPNL, double realisedPNL, string accountName)
+    public virtual void updatePortfolio(Contract contract, decimal position, double marketPrice, double marketValue, double averageCost, double unrealisedPNL, double realisedPNL, string accountName)
     {
         Console.WriteLine("UpdatePortfolio. " + contract.Symbol + ", " + contract.SecType + " @ " + contract.Exchange
             + ": Position: " + position + ", MarketPrice: " + marketPrice + ", MarketValue: " + marketValue + ", AverageCost: " + averageCost
@@ -965,7 +965,7 @@ public class BrokerWrapperIb : IBrokerWrapper
         Console.WriteLine("Account download finished: " + account);
     }
 
-    public virtual void orderStatus(int p_realOrderId, string status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice)
+    public virtual void orderStatus(int p_realOrderId, string status, decimal filled, decimal remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, string whyHeld, double mktCapPrice)
     {
         Utils.Logger.Info("OrderStatus. Id: " + p_realOrderId + ", Status: " + status + ", Filled: " + filled + ", Remaining: " + remaining
             + ", AvgFillPrice: " + avgFillPrice + ", PermId: " + permId + ", ParentId: " + parentId + ", LastFillPrice: " + lastFillPrice + ", ClientId: " + clientId + ", WhyHeld: " + whyHeld + ", mktCapPrice: " + mktCapPrice);
@@ -1007,7 +1007,7 @@ public class BrokerWrapperIb : IBrokerWrapper
         Utils.Logger.Info("OpenOrderEnd");
     }
 
-    public int PlaceOrder(Contract p_contract, TransactionType p_transactionType, double p_volume, OrderExecution p_orderExecution, OrderTimeInForce p_orderTif, double? p_limitPrice, double? p_stopPrice, double p_estimatedPrice, bool p_isSimulatedTrades)
+    public int PlaceOrder(Contract p_contract, TransactionType p_transactionType, decimal p_volume, OrderExecution p_orderExecution, OrderTimeInForce p_orderTif, double? p_limitPrice, double? p_stopPrice, double p_estimatedPrice, bool p_isSimulatedTrades)
     {
         Order order = new()
         {
@@ -1112,7 +1112,7 @@ public class BrokerWrapperIb : IBrokerWrapper
         return true;
     }
 
-    public bool GetRealOrderExecutionInfo(int p_realOrderId, ref OrderStatus p_realOrderStatus, ref double p_realExecutedVolume, ref double p_realExecutedAvgPrice, ref DateTime p_execptionTime, bool p_isSimulatedTrades)
+    public bool GetRealOrderExecutionInfo(int p_realOrderId, ref OrderStatus p_realOrderStatus, ref decimal p_realExecutedVolume, ref double p_realExecutedAvgPrice, ref DateTime p_execptionTime, bool p_isSimulatedTrades)
     {
         if (!OrderSubscriptions.TryGetValue(p_realOrderId, out OrderSubscription? orderSubscription))
         {
@@ -1185,12 +1185,12 @@ public class BrokerWrapperIb : IBrokerWrapper
         mktDataSubscription.PreviousMktDataType = marketDataType;
     }
 
-    public virtual void updateMktDepth(int tickerId, int position, int operation, int side, double price, int size)
+    public virtual void updateMktDepth(int tickerId, int position, int operation, int side, double price, decimal size)
     {
         Console.WriteLine("UpdateMarketDepth. " + tickerId + " - Position: " + position + ", Operation: " + operation + ", Side: " + side + ", Price: " + price + ", Size" + size);
     }
 
-    public virtual void updateMktDepthL2(int tickerId, int position, string marketMaker, int operation, int side, double price, int size, bool isSmartDepth)
+    public virtual void updateMktDepthL2(int tickerId, int position, string marketMaker, int operation, int side, double price, decimal size, bool isSmartDepth)
     {
         Console.WriteLine("UpdateMarketDepthL2. " + tickerId + " - Position: " + position + ", Operation: " + operation + ", Side: " + side + ", Price: " + price + ", Size" + size + ", isSmartDepth" + size);
     }
@@ -1201,12 +1201,12 @@ public class BrokerWrapperIb : IBrokerWrapper
         Utils.Logger.Info("News Bulletins. " + msgId + " - Type: " + msgType + ", Message: " + message + ", Exchange of Origin: " + origExchange);
     }
 
-    public virtual void position(string account, Contract contract, double pos, double avgCost)
+    public virtual void position(string account, Contract contract, decimal pos, double avgCost)
     {
         Utils.Logger.Trace("Position. " + account + " - Symbol: " + contract.Symbol + ", SecType: " + contract.SecType + ", Currency: " + contract.Currency + ", Exchange: " + contract.Exchange + ", ConId: " + contract.ConId + ", Position: " + pos + ", Avg cost: " + avgCost);
         if (contract.SecType == "OPT" || contract.SecType == "WAR")
             Utils.Logger.Trace($"  Option or Warrant. LastTradeDate: {contract.LastTradeDateOrContractMonth}, Right: {contract.Right}, Strike: {contract.Strike}, Multiplier: {contract.Multiplier}, LocalSymbol:'{contract.LocalSymbol}'");
-        m_accPosArrCb?.Invoke(account, contract, pos, avgCost);
+        m_accPosArrCb?.Invoke(account, contract, (double)pos, avgCost);
     }
 
     public virtual void positionEnd()
@@ -1215,7 +1215,7 @@ public class BrokerWrapperIb : IBrokerWrapper
         m_accPosEndCb?.Invoke();
     }
 
-    public virtual void realtimeBar(int reqId, long time, double open, double high, double low, double close, long volume, double wap, int count)
+    public virtual void realtimeBar(int reqId, long time, double open, double high, double low, double close, decimal volume, decimal wap, int count)
     {
         Console.WriteLine("RealTimeBars. " + reqId + " - Time: " + time + ", Open: " + open + ", High: " + high + ", Low: " + low + ", Close: " + close + ", Volume: " + volume + ", Count: " + count + ", WAP: " + wap);
     }
@@ -1370,7 +1370,7 @@ public class BrokerWrapperIb : IBrokerWrapper
     {
         Console.WriteLine("displayGroupUpdated. Request: " + reqId + ", ContractInfo: " + contractInfo);
     }
-    public virtual void positionMulti(int reqId, string account, string modelCode, Contract contract, double pos, double avgCost)
+    public virtual void positionMulti(int reqId, string account, string modelCode, Contract contract, decimal pos, double avgCost)
     {
         Console.WriteLine("Position Multi. Request: " + reqId + ", Account: " + account + ", ModelCode: " + modelCode + ", Symbol: " + contract.Symbol + ", SecType: " + contract.SecType + ", Currency: " + contract.Currency + ", Position: " + pos + ", Avg cost: " + avgCost + "\n");
     }
@@ -1482,7 +1482,7 @@ public class BrokerWrapperIb : IBrokerWrapper
         Console.WriteLine("pnl: " + reqId + "\n");
     }
 
-    public virtual void pnlSingle(int reqId, int pos, double dailyPnL, double unrealizedPnL, double realizedPnL, double value)
+    public virtual void pnlSingle(int reqId, decimal pos, double dailyPnL, double unrealizedPnL, double realizedPnL, double value)
     {
         Console.WriteLine("pnlSingle: " + reqId + "\n");
     }
@@ -1502,12 +1502,12 @@ public class BrokerWrapperIb : IBrokerWrapper
         Console.WriteLine("historicalTicksLast: " + reqId + "\n");
     }
 
-    public virtual void tickByTickAllLast(int reqId, int tickType, long time, double price, int size, TickAttribLast tickAttriblast, string exchange, string specialConditions)
+    public virtual void tickByTickAllLast(int reqId, int tickType, long time, double price, decimal size, TickAttribLast tickAttriblast, string exchange, string specialConditions)
     {
         Console.WriteLine("tickByTickAllLast: " + reqId + "\n");
     }
 
-    public virtual void tickByTickBidAsk(int reqId, long time, double bidPrice, double askPrice, int bidSize, int askSize, TickAttribBidAsk tickAttribBidAsk)
+    public virtual void tickByTickBidAsk(int reqId, long time, double bidPrice, double askPrice, decimal bidSize, decimal askSize, TickAttribBidAsk tickAttribBidAsk)
     {
         Console.WriteLine("tickByTickBidAsk: " + reqId + "\n");
     }
@@ -1530,6 +1530,31 @@ public class BrokerWrapperIb : IBrokerWrapper
     public virtual void completedOrdersEnd()
     {
         Console.WriteLine("completedOrdersEnd: " + "\n");
+    }
+
+    public virtual void replaceFAEnd(int reqId, string text)
+    {
+        Console.WriteLine("replaceFAEnd: " + "\n");
+    }
+
+    public virtual void wshMetaData(int reqId, string dataJson)
+    {
+        Console.WriteLine("wshMetaData: " + "\n");
+    }
+
+    public virtual void wshEventData(int reqId, string dataJson)
+    {
+        Console.WriteLine("wshEventData: " + "\n");
+    }
+
+    public virtual void historicalSchedule(int reqId, string startDateTime, string endDateTime, string timeZone, HistoricalSession[] sessions)
+    {
+        Console.WriteLine("historicalSchedule: " + "\n");
+    }
+
+    public virtual void userInfo(int reqId, string whiteBrandingId)
+    {
+        Console.WriteLine("userInfo: " + "\n");
     }
 
     public void connectAck()

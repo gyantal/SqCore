@@ -1,11 +1,7 @@
 ﻿/* Copyright (C) 2019 Interactive Brokers LLC. All rights reserved. This code is subject to the terms
  * and conditions of the IB API Non-Commercial License or the IB API Commercial License, as applicable. */
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 
 namespace IBApi
 {
@@ -16,58 +12,17 @@ namespace IBApi
      */
     public class ContractDetails
     {
-        private Contract contract;
-        private string marketName;
-        private double minTick;
-        private int priceMagnifier;
-        private string orderTypes;
-        private string validExchanges;
-        private int underConId;
-        private string longName;
-        private string contractMonth;
-        private string industry;
-        private string category;
-        private string subcategory;
-        private string timeZoneId;
-        private string tradingHours;
-        private string liquidHours;
-        private string evRule;
-        private double evMultiplier;
-        private int mdSizeMultiplier;
-        private int aggGroup;
-        private List<TagValue> secIdList;
-        private string underSymbol;
-        private string underSecType;
-        private string marketRuleIds;
-        private string realExpirationDate;
-        private string lastTradeTime;
-       
         // BOND values
-        private string cusip;
-        private string ratings;
-        private string descAppend;
-        private string bondType;
-        private string couponType;
-        private bool callable = false;
-        private bool putable = false;
-        private double coupon = 0;
-        private bool convertible = false;
-        private string maturity;
-        private string issueDate;
-        private string nextOptionDate;
-        private string nextOptionType;
-        private bool nextOptionPartial = false;
-        private string notes;
 
         /**
          * @brief A fully-defined Contract object.
          */
         public Contract Contract
-        { 
-			//! @cond
-            get { return contract; }
-            set { contract = value; }
-			//! @endcond
+        {
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -75,10 +30,10 @@ namespace IBApi
         */
         public string MarketName
         {
-			//! @cond
-            get { return marketName; }
-            set { marketName = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -86,11 +41,11 @@ namespace IBApi
          * Note that many securities vary their minimum tick size according to their price. This value will only show the smallest of the different minimum tick sizes regardless of the product's price. Full information about the minimum increment price structure can be obtained with the reqMarketRule function or the IB Contract and Security Search site. 
         */
         public double MinTick
-        { 
+        {
             //! @cond
-			get { return minTick; }
-            set { minTick = value; }
-			//! @endcond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -100,10 +55,10 @@ namespace IBApi
         */
         public int PriceMagnifier
         {
-			//! @cond
-            get { return priceMagnifier; }
-            set { priceMagnifier = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -111,10 +66,10 @@ namespace IBApi
         */
         public string OrderTypes
         {
-			//! @cond
-            get { return orderTypes; }
-            set { orderTypes = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -123,10 +78,10 @@ namespace IBApi
         */
         public string ValidExchanges
         {
-			//! @cond
-            get { return validExchanges; }
-            set { validExchanges = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -134,10 +89,10 @@ namespace IBApi
         */
         public int UnderConId
         {
-			//! @cond
-            get { return underConId; }
-            set { underConId = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -145,10 +100,10 @@ namespace IBApi
         */
         public string LongName
         {
-			//! @cond
-            get { return longName; }
-            set { longName = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -156,10 +111,10 @@ namespace IBApi
         */
         public string ContractMonth
         {
-			//! @cond
-            get { return contractMonth; }
-            set { contractMonth = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -167,10 +122,10 @@ namespace IBApi
         */
         public string Industry
         {
-			//! @cond
-            get { return industry; }
-            set { industry = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -178,10 +133,10 @@ namespace IBApi
         */
         public string Category
         {
-			//! @cond
-            get { return category; }
-            set { category = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -189,10 +144,10 @@ namespace IBApi
         */
         public string Subcategory
         {
-			//! @cond
-            get { return subcategory; }
-            set { subcategory = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -200,10 +155,10 @@ namespace IBApi
         */
         public string TimeZoneId
         {
-			//! @cond
-            get { return timeZoneId; }
-            set { timeZoneId = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -215,10 +170,10 @@ namespace IBApi
         */
         public string TradingHours
         {
-			//! @cond
-            get { return tradingHours; }
-            set { tradingHours = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -229,10 +184,10 @@ namespace IBApi
 		*/
         public string LiquidHours
         {
-			//! @cond
-            get { return liquidHours; }
-            set { liquidHours = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -241,10 +196,10 @@ namespace IBApi
         */
         public string EvRule
         {
-			//! @cond
-            get { return evRule; }
-            set { evRule = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -253,21 +208,10 @@ namespace IBApi
         */
         public double EvMultiplier
         {
-			//! @cond
-            get { return evMultiplier; }
-            set { evMultiplier = value; }
-			//! @endcond
-        }
-
-        /**
-        * @brief MD Size Multiplier. Returns the size multiplier for values returned to tickSize from a market data request. Generally 100 for US stocks and 1 for other instruments. 
-        */
-        public int MdSizeMultiplier
-        {
-			//! @cond
-            get { return mdSizeMultiplier; }
-            set { mdSizeMultiplier = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -277,10 +221,10 @@ namespace IBApi
         */
         public int AggGroup
         {
-			//! @cond
-            get { return aggGroup; }
-            set { aggGroup = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -290,10 +234,10 @@ namespace IBApi
         */
         public List<TagValue> SecIdList
         {
-			//! @cond
-            get { return secIdList; }
-            set { secIdList = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -301,22 +245,22 @@ namespace IBApi
         */
         public string UnderSymbol
         {
-			//! @cond
-            get { return underSymbol; }
-            set { underSymbol = value; }
-			//! @endcond
-		}
+            //! @cond
+            get;
+            set;
+            //! @endcond
+        }
 
         /**
         * @brief For derivatives, returns the underlying security type. 
         */
         public string UnderSecType
         {
-			//! @cond
-            get { return underSecType; }
-            set { underSecType = value; }
-			//! @endcond
-		}
+            //! @cond
+            get;
+            set;
+            //! @endcond
+        }
 
         /**
         * @brief The list of market rule IDs separated by comma
@@ -324,10 +268,10 @@ namespace IBApi
         */
         public string MarketRuleIds
         {
-			//! @cond
-            get { return marketRuleIds; }
-            set { marketRuleIds = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -336,8 +280,8 @@ namespace IBApi
         public string RealExpirationDate
         {
             //! @cond
-            get { return realExpirationDate; }
-            set { realExpirationDate = value; }
+            get;
+            set;
             //! @endcond
         }
 
@@ -347,8 +291,19 @@ namespace IBApi
         public string LastTradeTime
         {
             //! @cond
-            get { return lastTradeTime; }
-            set { lastTradeTime = value; }
+            get;
+            set;
+            //! @endcond
+        }
+
+        /**
+        * @brief Stock type
+        */
+        public string StockType
+        {
+            //! @cond
+            get;
+            set;
             //! @endcond
         }
 
@@ -358,10 +313,10 @@ namespace IBApi
         */
         public string Cusip
         {
-			//! @cond
-            get { return cusip; }
-            set { cusip = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -371,10 +326,10 @@ namespace IBApi
         */
         public string Ratings
         {
-			//! @cond
-            get { return ratings; }
-            set { ratings = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -383,10 +338,10 @@ namespace IBApi
         */
         public string DescAppend
         {
-			//! @cond
-            get { return descAppend; }
-            set { descAppend = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -394,10 +349,10 @@ namespace IBApi
         */
         public string BondType
         {
-			//! @cond
-            get { return bondType; }
-            set { bondType = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -407,10 +362,10 @@ namespace IBApi
         */
         public string CouponType
         {
-			//! @cond
-            get { return couponType; }
-            set { couponType = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -420,11 +375,11 @@ namespace IBApi
         */
         public bool Callable
         {
-			//! @cond
-            get { return callable; }
-            set { callable = value; }
-			//! @endcond
-        }
+            //! @cond
+            get;
+            set;
+            //! @endcond
+        } = false;
 
         /**
         * @brief Values are True or False. If true, the bond can be sold back to the issuer under certain conditions.
@@ -433,11 +388,11 @@ namespace IBApi
         */
         public bool Putable
         {
-			//! @cond
-            get { return putable; }
-            set { putable = value; }
-			//! @endcond
-        }
+            //! @cond
+            get;
+            set;
+            //! @endcond
+        } = false;
 
         /**
         * @brief The interest rate used to calculate the amount you will receive in interest payments over the course of the year.
@@ -446,11 +401,11 @@ namespace IBApi
         */
         public double Coupon
         {
-			//! @cond
-            get { return coupon; }
-            set { coupon = value; }
-			//! @endcond
-        }
+            //! @cond
+            get;
+            set;
+            //! @endcond
+        } = 0;
 
         /**
         * @brief Values are True or False. If true, the bond can be converted to stock under certain conditions.
@@ -459,11 +414,11 @@ namespace IBApi
         */
         public bool Convertible
         {
-			//! @cond
-            get { return convertible; }
-            set { convertible = value; }
-			//! @endcond
-        }
+            //! @cond
+            get;
+            set;
+            //! @endcond
+        } = false;
 
         /**
         * @brief he date on which the issuer must repay the face value of the bond.
@@ -472,10 +427,10 @@ namespace IBApi
         */
         public string Maturity
         {
-			//! @cond
-            get { return maturity; }
-            set { maturity = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /** 
@@ -485,10 +440,10 @@ namespace IBApi
         */
         public string IssueDate
         {
-			//! @cond
-            get { return issueDate; }
-            set { issueDate = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -498,10 +453,10 @@ namespace IBApi
         */
         public string NextOptionDate
         {
-			//! @cond
-            get { return nextOptionDate; }
-            set { nextOptionDate = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -511,10 +466,10 @@ namespace IBApi
         */
         public string NextOptionType
         {
-			//! @cond
-            get { return nextOptionType; }
-            set { nextOptionType = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         /**
@@ -524,11 +479,11 @@ namespace IBApi
        */
         public bool NextOptionPartial
         {
-			//! @cond
-            get { return nextOptionPartial; }
-            set { nextOptionPartial = value; }
-			//! @endcond
-        }
+            //! @cond
+            get;
+            set;
+            //! @endcond
+        } = false;
 
         /**
         * @brief If populated for the bond in IB's database.
@@ -536,25 +491,61 @@ namespace IBApi
         */
         public string Notes
         {
-			//! @cond
-            get { return notes; }
-            set { notes = value; }
-			//! @endcond
+            //! @cond
+            get;
+            set;
+            //! @endcond
+        }
+
+        /**
+        * @brief Order's minimal size
+        */
+        public decimal MinSize
+        {
+            //! @cond
+            get;
+            set;
+            //! @endcond
+        }
+
+        /**
+        * @brief Order's size increment
+        */
+        public decimal SizeIncrement
+        {
+            //! @cond
+            get;
+            set;
+            //! @endcond
+        }
+
+        /**
+        * @brief Order's suggested size increment
+        */
+        public decimal SuggestedSizeIncrement
+        {
+            //! @cond
+            get;
+            set;
+            //! @endcond
         }
 
         public ContractDetails()
         {
-            contract = new Contract();
-            minTick = 0;
-            underConId = 0;
-            evMultiplier = 0;
+            Contract = new Contract();
+            MinTick = 0;
+            UnderConId = 0;
+            EvMultiplier = 0;
+            MinSize = decimal.MaxValue;
+            SizeIncrement = decimal.MaxValue;
+            SuggestedSizeIncrement = decimal.MaxValue;
         }
 
-        public ContractDetails(Contract summary, String marketName,
-                double minTick, String orderTypes, String validExchanges, int underConId, String longName,
-                String contractMonth, String industry, String category, String subcategory,
-                String timeZoneId, String tradingHours, String liquidHours,
-                String evRule, double evMultiplier, int aggGroup)
+        public ContractDetails(Contract summary, string marketName,
+                double minTick, string orderTypes, string validExchanges, int underConId, string longName,
+                string contractMonth, string industry, string category, string subcategory,
+                string timeZoneId, string tradingHours, string liquidHours,
+                string evRule, double evMultiplier, int aggGroup)
         {
             Contract = summary;
             MarketName = marketName;
