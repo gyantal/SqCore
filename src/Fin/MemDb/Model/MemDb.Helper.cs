@@ -376,6 +376,7 @@ public partial class MemDb
         int newTradeId = maxId + 1; // if tradeHistory is empty, maxId stays -1, newTradeId becomes 0. OK.
         p_newTrade.Id = newTradeId;
         tradeHistory.Add(p_newTrade);
+        tradeHistory = InsertChronologically(tradeHistory);
         UpdatePortfolioTradeHistory(p_tradeHistoryId, tradeHistory, true);
         return newTradeId;
     }
@@ -410,6 +411,7 @@ public partial class MemDb
             {
                 tradeHistory[i] = p_newTrade;
                 tradeHistory[i].Id = p_tradeId;
+                tradeHistory = InsertChronologically(tradeHistory);
                 UpdatePortfolioTradeHistory(p_tradeHistoryId, tradeHistory, true);
                 return true;
             }
@@ -445,6 +447,16 @@ public partial class MemDb
     public void AppendPortfolioTradeHistory(int p_tradeHistoryId, List<Trade> p_newTrades, bool p_forceChronologicalOrder) // Helper
     {
         m_Db.AppendPortfolioTradeHistory(p_tradeHistoryId, p_newTrades, p_forceChronologicalOrder);
+    }
+
+    public static List<Trade> InsertChronologically(List<Trade> trades)
+    {
+        trades.Sort((a, b) => a.Time.CompareTo(b.Time)); // sorting based on Time
+
+        for (int i = 0; i < trades.Count; i++) // Update IDs based on sorted order
+            trades[i].Id = i;
+
+        return trades;
     }
 
     public string? GetPortfolioRunResults(int p_portfolioId, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PrtfRunResult prtfRunResult)
