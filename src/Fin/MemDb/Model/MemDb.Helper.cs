@@ -363,7 +363,7 @@ public partial class MemDb
 
     public int InsertPortfolioTrade(int p_tradeHistoryId, Trade p_newTrade)
     {
-        List<Trade>? tradeHistory = GetPortfolioTradeHistoryToList(p_tradeHistoryId, null, null);
+        List<Trade>? tradeHistory = GetPortfolioTradeHistoryToList(p_tradeHistoryId, null, null); // assume tradeHistory is ordered by Trade.Time
         if (tradeHistory == null) // if id didn't exist before, create it and add the first item
             tradeHistory = new();
 
@@ -375,15 +375,24 @@ public partial class MemDb
         }
         int newTradeId = maxId + 1; // if tradeHistory is empty, maxId stays -1, newTradeId becomes 0. OK.
         p_newTrade.Id = newTradeId;
-        tradeHistory.Add(p_newTrade);
-        tradeHistory = InsertChronologically(tradeHistory);
-        UpdatePortfolioTradeHistory(p_tradeHistoryId, tradeHistory, true);
+
+        // Slow approach: Add newTrade to the end of the list, then resort the whole list. If there are 5,000 trades, sorting takes a lot of time. For a list of 1000 items, sort takes 1000*1000= 1M steps.
+        // tradeHistory.Add(p_newTrade);
+        // tradeHistory = ReSortTradeHistoryByTime(tradeHistory);
+
+        // Fast approach: Assume that the list is already sorted. We don't resort it. Find the index of insertion with BinarySearch(). For a list of 1000 items, BinarySearch takes log2(1000)= 8 steps. Then insert it at that index.
+        int index = tradeHistory.BinarySearch(p_newTrade, new TradeComparer()); // return the index of an item if that p_newTrade.Time already in the list, or a negative number that is the bitwise complement of the index of the first element that is larger than p_newTrade.Time
+        if (index < 0) // If it is negative, we have to do the bitwise complement to get the positive index.
+            index = ~index; // This will give the correct index for insertion. This will be the index of the first element that is larger than p_newTrade.Time
+        tradeHistory.Insert(index, p_newTrade);
+
+        UpdatePortfolioTradeHistory(p_tradeHistoryId, tradeHistory, false); // no need to p_forceChronologicalOrder = true since we kept the previous order
         return newTradeId;
     }
 
     public bool DeletePortfolioTrade(int p_tradeHistoryId, int p_tradeId)
     {
-        List<Trade>? tradeHistory = GetPortfolioTradeHistoryToList(p_tradeHistoryId, null, null);
+        List<Trade>? tradeHistory = GetPortfolioTradeHistoryToList(p_tradeHistoryId, null, null); // assume tradeHistory is ordered by Trade.Time
         if (tradeHistory == null) // if id didn't exist before, that is unexpected. Raise an exception.
             throw new Exception($"DeletePortfolioTrade(), cannot find tradeHistoryId {p_tradeHistoryId}");
 
@@ -392,7 +401,7 @@ public partial class MemDb
             if (tradeHistory[i].Id == p_tradeId)
             {
                 tradeHistory.RemoveAt(i);
-                UpdatePortfolioTradeHistory(p_tradeHistoryId, tradeHistory, true);
+                UpdatePortfolioTradeHistory(p_tradeHistoryId, tradeHistory, false); // no need to p_forceChronologicalOrder = true since we kept the previous order
                 return true;
             }
         }
@@ -401,7 +410,7 @@ public partial class MemDb
 
     public bool UpdatePortfolioTrade(int p_tradeHistoryId, int p_tradeId, Trade p_newTrade)
     {
-        List<Trade>? tradeHistory = GetPortfolioTradeHistoryToList(p_tradeHistoryId, null, null);
+        List<Trade>? tradeHistory = GetPortfolioTradeHistoryToList(p_tradeHistoryId, null, null); // assume tradeHistory is ordered by Trade.Time
         if (tradeHistory == null) // if id didn't exist before, that is unexpected. Raise an exception.
             throw new Exception($"UpdatePortfolioTrade(), cannot find tradeHistoryId {p_tradeHistoryId}");
 
@@ -409,10 +418,12 @@ public partial class MemDb
         {
             if (tradeHistory[i].Id == p_tradeId)
             {
+                bool isResortByTimeNeeded = tradeHistory[i].Time != p_newTrade.Time; // if only e.g. the Price changed, but the Time didn't change, then we don't need the costly sort. O(N^2)
                 tradeHistory[i] = p_newTrade;
                 tradeHistory[i].Id = p_tradeId;
-                tradeHistory = InsertChronologically(tradeHistory);
-                UpdatePortfolioTradeHistory(p_tradeHistoryId, tradeHistory, true);
+                if (isResortByTimeNeeded)
+                    tradeHistory.Sort((a, b) => a.Time.CompareTo(b.Time));
+                UpdatePortfolioTradeHistory(p_tradeHistoryId, tradeHistory, false); // no need to p_forceChronologicalOrder = true since we kept the previous order
                 return true;
             }
         }
@@ -426,7 +437,7 @@ public partial class MemDb
 
     public List<Trade>? GetPortfolioTradeHistoryToList(int p_tradeHistoryId, DateTime? p_startIncLoc, DateTime? p_endIncLoc)
     {
-        return m_Db.GetPortfolioTradeHistoryToList(p_tradeHistoryId, p_startIncLoc, p_endIncLoc);
+        return m_Db.GetPortfolioTradeHistoryToList(p_tradeHistoryId, p_startIncLoc, p_endIncLoc); // assume tradeHistory is ordered by Trade.Time
     }
 
     public int InsertPortfolioTradeHistory(List<Trade> p_trades)
@@ -449,14 +460,12 @@ public partial class MemDb
         m_Db.AppendPortfolioTradeHistory(p_tradeHistoryId, p_newTrades, p_forceChronologicalOrder);
     }
 
-    public static List<Trade> InsertChronologically(List<Trade> trades)
+    public void ReSortByTimePortfolioTradeHistory(int p_tradeHistoryId) // Helper: if we notice that a trade history is not ordered by time, we can call this function to fix it in RedisDb
     {
-        trades.Sort((a, b) => a.Time.CompareTo(b.Time)); // sorting based on Time
-
-        for (int i = 0; i < trades.Count; i++) // Update IDs based on sorted order
-            trades[i].Id = i;
-
-        return trades;
+        List<Trade>? trades = m_Db.GetPortfolioTradeHistoryToList(p_tradeHistoryId, null, null);
+        if (trades == null)
+            return;
+        m_Db.AppendPortfolioTradeHistory(p_tradeHistoryId, trades, true); // p_forceChronologicalOrder = true
     }
 
     public string? GetPortfolioRunResults(int p_portfolioId, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PrtfRunResult prtfRunResult)

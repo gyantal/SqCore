@@ -114,3 +114,16 @@ public class Trade
         Note = p_note;
     }
 }
+
+public class TradeComparer : IComparer<Trade> // used in List.BinarySeach()
+{
+    public int Compare(Trade? x, Trade? y)
+    {
+        if (x!.Time > y!.Time)
+            return 1;
+        else if (x!.Time < y!.Time)
+            return -1;
+        else
+            return 0;
+    }
+}
