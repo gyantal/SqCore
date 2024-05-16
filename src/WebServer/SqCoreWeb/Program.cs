@@ -53,8 +53,13 @@ public partial class Program
     {
         string appName = System.Reflection.MethodBase.GetCurrentMethod()?.ReflectedType?.Namespace ?? "UnknownAppName";
         string systemEnvStr = $"(v1.0.15,{Utils.RuntimeConfig() /* Debug | Release */},CLR:{System.Environment.Version},{System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription},OS:{System.Environment.OSVersion},usr:{System.Environment.UserName},CPU:{System.Environment.ProcessorCount},ThId-{Environment.CurrentManagedThreadId})";
-        Console.WriteLine($"Hi {appName}.{systemEnvStr}");
-        gLogger.Info($"********** Main() START {systemEnvStr}");
+
+        ThreadPool.GetMinThreads(out int minWorkerTh, out int minIoThread);
+        ThreadPool.GetMaxThreads(out int maxWorkerTh, out int maxIoThread);
+        string threadEnvStr = $"ProcThreads#:{Process.GetCurrentProcess().Threads.Count}, ThreadPoolTh#:{ThreadPool.ThreadCount}, WorkerTh: [{minWorkerTh}...{maxWorkerTh}], IoTh: [{minIoThread}...{maxIoThread}]";
+
+        Console.WriteLine($"Hi {appName}.{systemEnvStr}.{threadEnvStr}");
+        gLogger.Info($"********** Main() START {systemEnvStr}.{threadEnvStr}");
         // Setting Console.Title
         // on Linux use it only in GUI mode. It works with graphical Xterm in VNC, but with 'screen' or with Putty it is buggy and after this, the next 200 characters are not written to console.
         // Future work if needed: bring a flag to use it in string[] args, but by default, don't set Title on Linux
@@ -582,6 +587,6 @@ public partial class Program
         p_sb.Append($"WebAppStartTimeUtc: {WebAppGlobals.WebAppStartTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)}({timeSinceAppStart:dd} days {timeSinceAppStart:hh\\:mm} hours ago)<br>");
         ThreadPool.GetMinThreads(out int minWorkerTh, out int minIoThread);
         ThreadPool.GetMaxThreads(out int maxWorkerTh, out int maxIoThread);
-        p_sb.Append($"ThId-{Environment.CurrentManagedThreadId}, ThreadPool#:{ThreadPool.ThreadCount}, WorkerTh: [{minWorkerTh}...{maxWorkerTh}], IoTh: [{minIoThread}...{maxIoThread}] <br>");
+        p_sb.Append($"ThId-{Environment.CurrentManagedThreadId}, ProcThreads#:{Process.GetCurrentProcess().Threads.Count}, ThreadPoolTh#:{ThreadPool.ThreadCount}, WorkerTh: [{minWorkerTh}...{maxWorkerTh}], IoTh: [{minIoThread}...{maxIoThread}] <br>");
     }
 }

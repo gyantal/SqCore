@@ -8,6 +8,62 @@ For example:
     https://github.com/dotnet/runtime/blob/7fc8fb56327e9696ce9baa80f997e3f50675af1f/src/libraries/System.Private.CoreLib/src/System/Collections/Generic/List.cs
 ----------------------------
 
+-------------- grokking C# ThreadPool
+
+https://learn.microsoft.com/en-us/dotnet/standard/threading/the-managed-thread-pool
+What uses ThreadPool threads:
+- directly call of ThreadPool.QueueUserWorkItem()
+- Timer callbacks
+- Task.Run() uses the ThreadPool to execute the given action.
+- Task Parallel Library (TPL). Task.Parallel() runs.
+- Async-await:
+By default, if you use 'await', in a console application or a web server environment like ASP.NET Core, the 'continuation' runs on the ThreadPool.
+e.g. await reader.ReadToEndAsync();
+Then the ReadToEndAsync() inner instructions are executed on the current thread. Then that thread saves its state context and terminates.
+And then when the fileread is completed, the instruction After the await are executed on a ThreadPool thread.
+In ConsoleApp. With WindowsApp, it is more complicated, because execution has to filtered back to the mainUI thread.
+
+
+    ThreadPool.ThreadCount : The number of thread pool threads that currently exist.
+
+    ThreadPool.GetMinThreads(out int minWorkerTh, out int minIoThread); 
+The minimum number of threads the thread pool immediately creates before switching to a sophisticated algorithm (that might not create a new thread even it is needed now) based on system resources.
+The MinWorker is usually the Logical Processors: 2*2 = 4 on Linux Server, and 2*12=24 on Agy PC.
+So, if minWorkerTh = 24, and Timers or Task Parallel Library (TPL) needs new workerthreads, then until 24 is reached, these threads are immediately created if needed. And that working task is instantly executed.
+Once, 24 active threads are reached, when more is needed, a new thread might be not created (imagine a slow CPU). In that case, WorkItem is queued, and that task will be executed once a threadPool thread is free.
+
+    ThreadPool.GetMaxThreads(out int maxWorkerTh, out int maxIoThread); // The maximum number of worker threads ever possible to be created.
+
+There is a separate pool for CPU working and IO, but we don't have to worry about it.
+
+In general this [minWorkerTh..maxWorkerTh] range is not important for us.
+Examples: 
+Linux: WorkerTh: [4...32767], IoTh: [1...1000]
+Windows: WorkerTh: [24...32767], IoTh: [1...1000]
+
+This is how to log out the ThreadPool info:
+    string threadEnvStr = $"ProcThreads#:{Process.GetCurrentProcess().Threads.Count}, ThreadPoolTh#:{ThreadPool.ThreadCount}, WorkerTh: [{minWorkerTh}...{maxWorkerTh}], IoTh: [{minIoThread}...{maxIoThread}]";
+
+>The ".NET runtime" manages the details of thread lifetime and idle reclamation. Similar to how the GC Garbage Collector runs periodically.
+So, ThreadPool runs in a separate thread, and periodically checks if workerThreads idle and what timeout, and reclaim them if necessary.
+"The ThreadPool in .NET checks for idle threads to reclaim at regular intervals. According to the official Microsoft documentation and other reliable sources, this interval is typically every 10 seconds."
+"Idle Timeout Interval: The ThreadPool checks for idle threads every 10 seconds. If a thread has been idle for a specified timeout period (which is 10 seconds by default), it is eligible for reclamation."
+"Idle Thread Reclamation: When the ThreadPool detects an idle thread that has not been active for the idle timeout period, it reclaims (terminates) the thread to reduce resource usage"
+
+At program start, a typical log shows that there are 0 ThreadPool threads: "ProcThreads#:33, ThreadPoolTh#:0, WorkerTh: [24...32767], IoTh: [1...1000]"
+Good. Expected. Because some simply C# console apps will never use Timers or Task Parallel Library (TPL) to run tasks in parallel, so in these apps ThreadPool keeps having 0 threads and do nothing extra burden.
+
+Later, in one experiment, as the Timer class used ThreadPool.QueueUserWorkItem(), so ThreadPoolTh went to 8. But 10 seconds later, it decreased to 4 threads only. 
+Even though on Agy PC, the minWorkerTh is 24, still, the current number of ThreadPool threads went back from 8 to 4. 
+Probably to save system resources. Windows kernel has to handle All threads of the process to schedule CPU execution. So, the less threads are the better.
+
+Example run. SqCoreWeb web server, 2024-05-16, Windows.
+At program start in Main(): ProcThreads#:33, ThreadPoolTh#:0
+10 sec later:               ProcThreads#:89, ThreadPoolTh#:22
+20 sec later:               ProcThreads#:72, ThreadPoolTh#:5
+30 sec later:               ProcThreads#:74, ThreadPoolTh#:7
+
+
 -------------- NodaTime for replacing C# DateTime? Good, but 2-3x more data. Don't use it for big data. You can use it for sure way of converting between time-zones.
 
 "Since version 4.0 Npgsql (PostgreSql) supports and suggests it as recommended way of working with Date and Time."
