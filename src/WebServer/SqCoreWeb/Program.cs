@@ -498,9 +498,11 @@ public partial class Program
             case "5":
                 try
                 {
+                    // var x = SortedArrayStatistics.QuantileRank(new double[] {1.1, 1.2 }, 1.0, RankDefinition.EmpiricalCDF);
+
                     string ticker = "AAPL";
                     DateTime endDate = DateTime.UtcNow;
-                    DateTime startDate = endDate.AddDays(-500);
+                    DateTime startDate = endDate.AddDays(-600);
 
                     IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(ticker, startDate, endDate, YahooFinanceApi.Period.Daily).Result;
                     List<float> adjustedClosePrices = new();
@@ -512,8 +514,9 @@ public partial class Program
                     int bottomPctThreshold = 25;
                     int topPctThreshold = 75;
                     int[] pctChnLookbackDays = new int[] { 60, 120, 180, 252 };
+                    int calculationLookbackDays = 50;
                     int resultLengthDays = 20;
-                    List<Tuple<float, List<bool>>> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeights(adjustedClosePrices, pctChnLookbackDays, resultLengthDays, bottomPctThreshold, topPctThreshold);
+                    List<Tuple<float, List<float>>> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeights(adjustedClosePrices, pctChnLookbackDays, calculationLookbackDays, resultLengthDays, bottomPctThreshold, topPctThreshold);
                     Console.WriteLine($"Current weight of {ticker}: {pctChannelRes[^1].Item1}");
                 }
                 catch (System.Exception e)
