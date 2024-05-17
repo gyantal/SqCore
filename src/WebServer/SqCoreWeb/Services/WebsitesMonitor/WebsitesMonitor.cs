@@ -63,7 +63,7 @@ public class WebsitesMonitorExecution : SqExecution
 
     private static void CheckSpIndexChanges()
     {
-        string url = "https://www.spglobal.com/spdji/en/indices/equity/sp-500/#news-research";
+        string url = "https://www.spglobal.com/spdji/en/indices/equity/sp-500/";
         string? webpage = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
 
         StrongAssert.True(!String.IsNullOrEmpty(webpage), Severity.ThrowException, "Error in Overmind.CheckSpIndexChanges(). DownloadStringWithRetry()");

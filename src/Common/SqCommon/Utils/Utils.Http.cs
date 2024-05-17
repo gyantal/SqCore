@@ -177,6 +177,21 @@ public static partial class Utils
                 }
             };
         }
+        else if (p_url.StartsWith("https://www.spglobal.com"))
+        {
+            // curl -v --insecure --http2  -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7" -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" https://www.spglobal.com/spdji/en/indices/equity/sp-500/ -o sp500.html
+            return new HttpRequestMessage
+            {
+                RequestUri = new Uri(p_url),
+                Method = HttpMethod.Get,
+                Version = HttpVersion.Version20,
+                Headers = // copied from Linux Chrome, worked in curl.
+                {
+                    { "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7" },
+                    { "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" }
+                }
+            };
+        }
 
         // 2022-07. .Net 6, Trying HTTP/3 protocol.
         // 1. Using HTTP3 in HttpClient

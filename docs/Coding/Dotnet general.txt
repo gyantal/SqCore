@@ -67,6 +67,7 @@ Example run. SqCoreWeb web server, 2024-05-16, Linux, 2 core.
 At program start in Main(): ProcThreads#:13, ThreadPoolTh#:0
 10 sec later:               ProcThreads#:53, ThreadPoolTh#:10
 20 sec later:               ProcThreads#:47, ThreadPoolTh#:4
+30 sec later:               ProcThreads#:46, ThreadPoolTh#:3
 
 
 -------------- NodaTime for replacing C# DateTime? Good, but 2-3x more data. Don't use it for big data. You can use it for sure way of converting between time-zones.
