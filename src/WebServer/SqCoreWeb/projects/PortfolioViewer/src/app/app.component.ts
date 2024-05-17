@@ -115,8 +115,9 @@ export class AppComponent {
   // Trades tabpage: UI handling
   m_isEditedTradeSectionVisible: boolean = false; // toggle the m_editedTrade widgets on the UI
   m_isCopyToClipboardDialogVisible: boolean = false;
-  m_sortColumn: string = 'time';
-  m_isSortingDirectionAscending: boolean = true;
+  m_tradesSortColumn: string = 'time';
+  m_isTradesSortDirAscend: boolean = true;
+  m_totalValue: number = 0; // displaying the totalValue on UI
 
   // Trades tabpage: UI handling enums
   // How to pass enum value into Angular HTML? Answer: assign the Enum Type to a member variable. See. https://stackoverflow.com/questions/69549927/how-to-pass-enum-value-in-angular-template-as-an-input
@@ -248,7 +249,12 @@ export class AppComponent {
 
   processHistoricalTrades(msgObjStr: string) {
     console.log('PrtfVwr.processHistoricalTrades() START');
-    const tradeObjects : object[] = JSON.parse(msgObjStr); // The Json string contains enums as numbers, which is how we store it in RAM in JS. So, e.g. 'actionNumber as Action' type cast would be correct, but not necessary as both the input data and the output enum are 'numbers'
+    const tradeObjects : object[] = JSON.parse(msgObjStr, function(key, value) {
+      if (key == 'time')
+        return new Date(value); // converting time value of string type to Date object, e.g. ("2023-01-04T02:31:00" -> "Wed Jan 04 2023 02:31:00").
+      else
+        return value;
+    }); // The Json string contains enums as numbers, which is how we store it in RAM in JS. So, e.g. 'actionNumber as Action' type cast would be correct, but not necessary as both the input data and the output enum are 'numbers'
     // manually create an instance and then populate its properties with the values from the parsed JSON object.
     this.m_trades = new Array(tradeObjects.length);
     for (let i = 0; i < tradeObjects.length; i++) {
@@ -256,7 +262,7 @@ export class AppComponent {
       this.m_trades[i].CopyFrom(tradeObjects[i] as TradeUi);
     }
 
-    this.m_isSortingDirectionAscending = true; // resetting to 'true' to sort the data in ascending order based on m_editedTrade.Time
+    this.m_isTradesSortDirAscend = true; // resetting to 'true' to sort the data in ascending order based on m_editedTrade.Time
     this.onSortingClicked('time');
   }
 
@@ -271,6 +277,7 @@ export class AppComponent {
     }
 
     this.m_editedTrade.CopyFrom(trade);
+    this.m_totalValue = parseFloat((this.m_editedTrade.price * this.m_editedTrade.quantity).toFixed(2)); // calculate the totalValue for the user selected item
     this.m_isEditedTradeDirty = false; // Reset the dirty flag, when the user selects a new item from the trades.
   }
 
@@ -461,6 +468,7 @@ export class AppComponent {
   onInputPrice(event: Event) {
     this.m_isEditedTradeDirty = true;
     this.m_editedTrade.price = parseFloat((event.target as HTMLInputElement).value.trim());
+    this.m_editedTrade.quantity = Math.round(this.m_totalValue / this.m_editedTrade.price); // scenario where the user inputs the total value first, followed by the price, and the quantity is automatically calculated in real-time based on these values
   }
 
   onCurrencyTypeSelectionClicked(enumCurrencyIdStr: any) { // ex: enumCurrencyIdStr = "USD"as string. The ":string" type would be more accurate instead of ":any", but 'as' is not allowed in Angular HTML. AngularHtml thinks (correctly) that the enum CurrencyId is a JS object = general dictionary where keys and values can be any types.
@@ -471,16 +479,23 @@ export class AppComponent {
   onInputQuantity(event: Event) {
     this.m_isEditedTradeDirty = true;
     this.m_editedTrade.quantity = parseInt((event.target as HTMLInputElement).value.trim());
+    this.m_totalValue = parseFloat((this.m_editedTrade.price * this.m_editedTrade.quantity).toFixed(2)); // calculate the totalValue when use enter the quantity
+  }
+
+  onTradeInputTotalValue(event: Event) {
+    this.m_isEditedTradeDirty = true;
+    this.m_totalValue = parseInt((event.target as HTMLInputElement).value);
+    this.m_editedTrade.quantity = Math.round( this.m_totalValue / this.m_editedTrade.price);
   }
 
   onSortingClicked(sortColumn: string) { // sort the trades data table
-    this.m_sortColumn = sortColumn;
+    this.m_tradesSortColumn = sortColumn;
     this.m_trades = this.m_trades.sort((n1, n2) => {
-      if (this.m_isSortingDirectionAscending)
+      if (this.m_isTradesSortDirAscend)
         return (n1[sortColumn] > n2[sortColumn]) ? 1 : ((n1[sortColumn] < n2[sortColumn]) ? -1 : 0);
       else
         return (n2[sortColumn] > n1[sortColumn]) ? 1 : ((n2[sortColumn] < n1[sortColumn]) ? -1 : 0);
     });
-    this.m_isSortingDirectionAscending = !this.m_isSortingDirectionAscending;
+    this.m_isTradesSortDirAscend = !this.m_isTradesSortDirAscend;
   }
 }

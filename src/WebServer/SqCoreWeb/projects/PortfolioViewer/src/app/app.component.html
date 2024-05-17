@@ -128,21 +128,21 @@
             </div>
           </div><br>
           Quantity: <input class="inputTextboxWidth" type="number" [value]="m_editedTrade.quantity | nanToDash" (input)="onInputQuantity($event)">&nbsp;
-          TotalValue: <input class="inputTextboxWidth" type="number" value="{{m_editedTrade.price * m_editedTrade.quantity}}" (input)="onTradeInputChange()"><br>
+          TotalValue: <input class="inputTextboxWidth" type="number" [value]="m_totalValue" (input)="onTradeInputTotalValue($event)"><br>
         </span>
       </div>
     </div>&nbsp;
     <table class="tableCommon">
       <thead>
         <tr>
-          <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'underlyingSymbol'}" (click)="onSortingClicked('underlyingSymbol')">Symbol</th>
-          <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'quantity'}" (click)="onSortingClicked('quantity')">Quantity</th>
-          <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'price'}" (click)="onSortingClicked('price')">Price</th>
-          <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'currency'}" (click)="onSortingClicked('currency')">Currency</th>
-          <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'action'}" (click)="onSortingClicked('action')">TradeAction</th>
-          <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'assetType'}" (click)="onSortingClicked('assetType')">AssetType</th>
-          <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'time'}" (click)="onSortingClicked('time')">Date</th>
-          <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'exchangeId'}" (click)="onSortingClicked('exchangeId')">ExchangeId</th>
+          <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'underlyingSymbol'}" (click)="onSortingClicked('underlyingSymbol')">Symbol</th>
+          <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'quantity'}" (click)="onSortingClicked('quantity')">Quantity</th>
+          <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'price'}" (click)="onSortingClicked('price')">Price</th>
+          <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'currency'}" (click)="onSortingClicked('currency')">Currency</th>
+          <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'action'}" (click)="onSortingClicked('action')">TradeAction</th>
+          <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'assetType'}" (click)="onSortingClicked('assetType')">AssetType</th>
+          <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'time'}" (click)="onSortingClicked('time')">Date</th>
+          <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'exchangeId'}" (click)="onSortingClicked('exchangeId')">ExchangeId</th>
         </tr>
       </thead>
       <tbody *ngFor="let item of m_trades">
