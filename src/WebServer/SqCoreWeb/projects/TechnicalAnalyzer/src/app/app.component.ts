@@ -4,15 +4,15 @@ import { HttpClient } from '@angular/common/http';
 class Asset {
   // public sqTicker = ''; // “S/TSLA” // sqTicker identifies the asset uniquely in C#, but we don’t need that at the moment. Here we use only the Symbol.
   public symbol = ''; // “TSLA”
-  public pctChnValue1: number = 0; // 0% or 100%
-  public pctChnValue2: number = 0;
-  public pctChnValue3: number = 0;
-  public pctChnValue4: number = 0;
-  public pctChnValueAggregate: number = 0; // 0% or 25% 50% 75% 100%
+  public pctChnSignal1: number = 0; // 0% or 100%
+  public pctChnSignal2: number = 0;
+  public pctChnSignal3: number = 0;
+  public pctChnSignal4: number = 0;
+  public pctChnWeightAggregate: number = 0; // 0% or 25% 50% 75% 100%
 }
 
 class HistData {
-  Date: String = '';
+  Date: Date = new Date();
   Assets: Asset[] = [];
 }
 
@@ -30,21 +30,21 @@ export class AppComponent {
   m_tickersStr: string | null = null;
   m_histDatas: HistData[] = [
     {
-      'Date': '2024-05-10',
+      'Date': new Date('2024-05-10'),
       'Assets': [
-        {'symbol': 'TSLA', 'pctChnValue1': 0, 'pctChnValue2': 0.25, 'pctChnValue3': 0.55, 'pctChnValue4': 0.11, 'pctChnValueAggregate': 0.91 },
-        {'symbol': 'MSFT', 'pctChnValue1': 0.1, 'pctChnValue2': 0.22, 'pctChnValue3': 0.45, 'pctChnValue4': 0.65, 'pctChnValueAggregate': 1.42 },
-        {'symbol': 'TLT', 'pctChnValue1': 0, 'pctChnValue2': 0.25, 'pctChnValue3': 0.55, 'pctChnValue4': 0.11, 'pctChnValueAggregate': 0.91 },
-        {'symbol': 'SPY', 'pctChnValue1': 0, 'pctChnValue2': 0.25, 'pctChnValue3': 0.55, 'pctChnValue4': 0.1, 'pctChnValueAggregate': 0.81 }
+        {'symbol': 'TSLA', 'pctChnSignal1': 0, 'pctChnSignal2': 0.25, 'pctChnSignal3': 0.55, 'pctChnSignal4': 0.11, 'pctChnWeightAggregate': 0.91 },
+        {'symbol': 'MSFT', 'pctChnSignal1': 0.1, 'pctChnSignal2': 0.22, 'pctChnSignal3': 0.45, 'pctChnSignal4': 0.65, 'pctChnWeightAggregate': 1.42 },
+        {'symbol': 'TLT', 'pctChnSignal1': 0, 'pctChnSignal2': 0.25, 'pctChnSignal3': 0.55, 'pctChnSignal4': 0.11, 'pctChnWeightAggregate': 0.91 },
+        {'symbol': 'SPY', 'pctChnSignal1': 0, 'pctChnSignal2': 0.25, 'pctChnSignal3': 0.55, 'pctChnSignal4': 0.1, 'pctChnWeightAggregate': 0.81 }
       ]
     },
     {
-      'Date': '2024-05-09',
+      'Date': new Date('2024-05-9'),
       'Assets': [
-        {'symbol': 'TSLA', 'pctChnValue1': 0.05, 'pctChnValue2': 0.28, 'pctChnValue3': 0.52, 'pctChnValue4': 0.09, 'pctChnValueAggregate': 0.94 },
-        {'symbol': 'MSFT', 'pctChnValue1': 0.12, 'pctChnValue2': 0.21, 'pctChnValue3': 0.41, 'pctChnValue4': 0.68, 'pctChnValueAggregate': 1.42 },
-        {'symbol': 'TLT', 'pctChnValue1': 0.03, 'pctChnValue2': 0.22, 'pctChnValue3': 0.58, 'pctChnValue4': 0.1, 'pctChnValueAggregate': 0.93 },
-        {'symbol': 'SPY', 'pctChnValue1': 0.01, 'pctChnValue2': 0.24, 'pctChnValue3': 0.57, 'pctChnValue4': 0.12, 'pctChnValueAggregate': 0.94 }
+        {'symbol': 'TSLA', 'pctChnSignal1': 0.05, 'pctChnSignal2': 0.28, 'pctChnSignal3': 0.52, 'pctChnSignal4': 0.09, 'pctChnWeightAggregate': 0.94 },
+        {'symbol': 'MSFT', 'pctChnSignal1': 0.12, 'pctChnSignal2': 0.21, 'pctChnSignal3': 0.41, 'pctChnSignal4': 0.68, 'pctChnWeightAggregate': 1.42 },
+        {'symbol': 'TLT', 'pctChnSignal1': 0.03, 'pctChnSignal2': 0.22, 'pctChnSignal3': 0.58, 'pctChnSignal4': 0.1, 'pctChnWeightAggregate': 0.93 },
+        {'symbol': 'SPY', 'pctChnSignal1': 0.01, 'pctChnSignal2': 0.24, 'pctChnSignal3': 0.57, 'pctChnSignal4': 0.12, 'pctChnWeightAggregate': 0.94 }
       ]
     }]; // dummy data
 
@@ -62,9 +62,9 @@ export class AppComponent {
   }
 
   onInputTickers(event: Event) {
-    const tickersStr = (event.target as HTMLInputElement).value.trim().toUpperCase();
+    this.m_tickersStr = (event.target as HTMLInputElement).value.trim().toUpperCase();
     const url = this.m_controllerBaseUrl + 'GetPctChnData';
-    this.m_httpClient.post<string>(url, tickersStr).subscribe((response) => {
+    this.m_httpClient.post<string>(url, this.m_tickersStr).subscribe((response) => {
       console.log('percentage channel data:', response);
     }, (error) => console.error(error));
   }
