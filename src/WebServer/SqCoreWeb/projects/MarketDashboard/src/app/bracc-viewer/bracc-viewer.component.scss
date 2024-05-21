@@ -120,12 +120,11 @@
 }
 
 /* Change background color of buttons on hover */
-.brAccViewerMoreDetailsAndHistChartButtons :hover {
+.detailsAndHistChartButtons :hover {
   border: .1rem solid #228B22;
   backdrop-filter: blur(1rem);
   transform: skewX(-10deg);
-  height: 2.1rem;
-  width: 15%;
+  height: 2rem;
   border-radius: 0.75rem .5rem 0.75rem 0;
   position: relative;
   justify-content: center;
@@ -137,9 +136,12 @@
   cursor: pointer;
 }
 
-.brAccViewerMoreDetailsAndHistChartButtons {
-  width: 30%;
-  height: 2rem;
+.detailsBtn :hover {
+  width: 10%;
+}
+
+.histChartBtn :hover {
+  width: 20%;
 }
 
 .moreDetailsPartitionsPrNav {
