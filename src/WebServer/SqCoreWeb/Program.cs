@@ -498,8 +498,6 @@ public partial class Program
             case "5":
                 try
                 {
-                    // var x = SortedArrayStatistics.QuantileRank(new double[] {1.1, 1.2 }, 1.0, RankDefinition.EmpiricalCDF);
-
                     string ticker = "AAPL";
                     DateTime endDate = DateTime.UtcNow;
                     DateTime startDate = endDate.AddDays(-600);
@@ -516,7 +514,7 @@ public partial class Program
                     int[] pctChnLookbackDays = new int[] { 60, 120, 180, 252 };
                     int calculationLookbackDays = 50;
                     int resultLengthDays = 20;
-                    List<Tuple<float, List<float>>> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeights(adjustedClosePrices, pctChnLookbackDays, calculationLookbackDays, resultLengthDays, bottomPctThreshold, topPctThreshold);
+                    List<Tuple<float, List<Tuple<float, Controllers.PctChnSignal>>>> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeights(adjustedClosePrices, pctChnLookbackDays, calculationLookbackDays, resultLengthDays, bottomPctThreshold, topPctThreshold);
                     Console.WriteLine($"Current weight of {ticker}: {pctChannelRes[^1].Item1}");
                 }
                 catch (System.Exception e)

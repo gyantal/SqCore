@@ -11,6 +11,8 @@ using SqCommon;
 
 namespace SqCoreWeb.Controllers;
 
+public enum PctChnSignal : byte { Unknown = 0, NonValidBull = 1, NonValidBear = 2, ValidBull = 3, ValidBear = 4 }
+
 [ApiController]
 [Route("[controller]")]
 [ResponseCache(CacheProfileName = "NoCache")]
@@ -759,16 +761,14 @@ public class StrategyUberTaaController : ControllerBase
     // Each item in the list contains a float, the aggregated PchChannel Weight. And a List of Bool Signals.
     // The Bool Signal is True if the current price percentile is bigger than the p_topPctThreshold. False if it is lower than p_bottomPctThreshold. If it is between, then it inherits the previous day Bool Signal value.
     // Warning! p_resultLengthDays: the suggested minimum value is at least 20. Because the channel Signal is Not defined on the first days until it crosses either the Lower or Upper thresholds. We try to mitigate this by checking how far are the tresholds on these 'invalid' days.
-
-    // public static List<Tuple<float, List<Tuple<float, bool>>>> PctChnWeights(List<float> p_prices, int[] p_pctChnLookbackDays, int p_calculationLookbackDays, int p_resultLengthDays, int p_bottomPctThreshold, int p_topPctThreshold) // p_prices must be Adjusted, and ordered
-    public static List<Tuple<float, List<float>>> PctChnWeights(List<float> p_prices, int[] p_pctChnLookbackDays, int p_calculationLookbackDays, int p_resultLengthDays, int p_bottomPctThreshold, int p_topPctThreshold) // p_prices must be Adjusted, and ordered
+    public static List<Tuple<float, List<Tuple<float, PctChnSignal>>>> PctChnWeights(List<float> p_prices, int[] p_pctChnLookbackDays, int p_calculationLookbackDays, int p_resultLengthDays, int p_bottomPctThreshold, int p_topPctThreshold) // p_prices must be Adjusted, and ordered
     {
         int dataLength = p_prices.Count;
         int noChannels = p_pctChnLookbackDays.Length;
         int signalCalculationLengthDays = p_calculationLookbackDays + p_resultLengthDays;
-        List<Tuple<float, List<float>>> results = new(p_resultLengthDays); // List to store results
+        List<Tuple<float, List<Tuple<float, PctChnSignal>>>> results = new(p_resultLengthDays); // List to store results
         List<List<bool>> signals = new(signalCalculationLengthDays); // List to store signals
-        List<List<float>> signalPcts = new(signalCalculationLengthDays); // List to store signalPcts
+        List<List<Tuple<float, PctChnSignal>>> signalPcts = new(signalCalculationLengthDays); // List to store signalPcts
 
         // Initialize the outer list with p_lookback elements
         for (int i = 0; i < signalCalculationLengthDays; i++)
@@ -783,6 +783,7 @@ public class StrategyUberTaaController : ControllerBase
             int lookbackDay = p_pctChnLookbackDays[lb];
             double[] usedPrices = new double[lookbackDay]; // Array to store prices for the current lookback period. In the later steps, we will replace the values one by one: replacing the most distant value with a new one. This way, we do not create a new array each time.
             bool lastSignal = true; // Track the last signal
+            PctChnSignal pctChnSignal = PctChnSignal.Unknown;
 
             // Populate usedPrices with the relevant subset of p_prices
             for (int i = dataLength - lookbackDay - signalCalculationLengthDays + 1; i < dataLength - signalCalculationLengthDays + 1; i++)
@@ -793,39 +794,41 @@ public class StrategyUberTaaController : ControllerBase
             double currentPrice = usedPrices[^1];
             for (int lbDay = 0; lbDay < signalCalculationLengthDays; lbDay++)
             {
-                // Calculate lower and upper threshold prices
+                // Calculate the percentileRank od the current price
                 double[] usedPricesCopy = (double[])usedPrices.Clone(); // QuantileInplace() reorganizes the array 'in-place'. So, we make a copy only once, because we don't want the order to be changed when we swap the new item into the list later (for the next day)
-                double bottomThresholdPrice = ArrayStatistics.QuantileInplace(usedPricesCopy, p_bottomPctThreshold / 100.0);
-                double topThresholdPrice = ArrayStatistics.QuantileInplace(usedPricesCopy, p_topPctThreshold / 100.0);
+                Array.Sort(usedPricesCopy);
+                float percentileRank = (float)SortedArrayStatistics.QuantileRank(usedPricesCopy, currentPrice, RankDefinition.EmpiricalCDF);
 
                 // Determine the signal based on current price relative to thresholds
-                if (currentPrice > topThresholdPrice)
+                if (percentileRank * 100 > p_topPctThreshold)
                 {
                     signals[lbDay].Add(true);
                     lastSignal = true;
                     isSignalValid = true;
-                    signalPcts[lbDay].Add(1.0f);
+                    pctChnSignal = PctChnSignal.ValidBull;
+                    signalPcts[lbDay].Add(new Tuple<float, PctChnSignal>(percentileRank, pctChnSignal));
                 }
-                else if (currentPrice < bottomThresholdPrice)
+                else if (percentileRank * 100 < p_bottomPctThreshold)
                 {
                     signals[lbDay].Add(false);
                     lastSignal = false;
                     isSignalValid = true;
-                    signalPcts[lbDay].Add(-1.0f);
+                    pctChnSignal = PctChnSignal.ValidBear;
+                    signalPcts[lbDay].Add(new Tuple<float, PctChnSignal>(percentileRank, pctChnSignal));
                 }
                 else if (isSignalValid) // isSignalValid cannot be true on first day
                 {
                     signals[lbDay].Add(lastSignal);
-                    float signalPct = (float)(((currentPrice - bottomThresholdPrice) / (topThresholdPrice - bottomThresholdPrice) - 0.5) * 2);
-                    signalPcts[lbDay].Add(signalPct);
+                    pctChnSignal = lastSignal ? PctChnSignal.ValidBull : PctChnSignal.ValidBear;
+                    signalPcts[lbDay].Add(new Tuple<float, PctChnSignal>(percentileRank, pctChnSignal));
                 }
                 else
                 {
                     // As long as the current price falls between the thresholds, the signal should correspond to which threshold it is closer to. Previously, we used "True" as default value. Once a valid signal is received, we will use the previous signal from that point onward.
-                    float signalPct = (float)(((currentPrice - bottomThresholdPrice) / (topThresholdPrice - bottomThresholdPrice) - 0.5) * 2);
-                    bool estimatedSignal = signalPct > 0;
+                    bool estimatedSignal = percentileRank > 0.5;
                     signals[lbDay].Add(estimatedSignal);
-                    signalPcts[lbDay].Add(signalPct);
+                    pctChnSignal = estimatedSignal ? PctChnSignal.NonValidBull : PctChnSignal.NonValidBear;
+                    signalPcts[lbDay].Add(new Tuple<float, PctChnSignal>(percentileRank, pctChnSignal));
                 }
 
                 // Update currentPrice, usedPrices and indexTracker for the next iteration
@@ -849,7 +852,7 @@ public class StrategyUberTaaController : ControllerBase
                     trueCount++;
             }
             float trueRatio = (float)trueCount / noChannels; // Calculate the percentile channel weight for the given date
-            results.Add(new Tuple<float, List<float>>(trueRatio, signalPcts[i])); // Store the result as a tuple
+            results.Add(new Tuple<float, List<Tuple<float, PctChnSignal>>>(trueRatio, signalPcts[i])); // Store the result as a tuple
         }
 
         return results;
