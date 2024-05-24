@@ -114,10 +114,10 @@ export class AppComponent {
 
   // Trades tabpage: UI handling
   m_isEditedTradeSectionVisible: boolean = false; // toggle the m_editedTrade widgets on the UI
+  m_editedTradeTotalValue: number = 0; // UI helper variable, which is not part of the TradeJs data. Used for displaying/editing the total$Value on UI
   m_isCopyToClipboardDialogVisible: boolean = false;
   m_tradesSortColumn: string = 'time';
   m_isTradesSortDirAscend: boolean = true;
-  m_totalValue: number = 0; // displaying the totalValue on UI
 
   // Trades tabpage: UI handling enums
   // How to pass enum value into Angular HTML? Answer: assign the Enum Type to a member variable. See. https://stackoverflow.com/questions/69549927/how-to-pass-enum-value-in-angular-template-as-an-input
@@ -277,7 +277,7 @@ export class AppComponent {
     }
 
     this.m_editedTrade.CopyFrom(trade);
-    this.m_totalValue = parseFloat((this.m_editedTrade.price * this.m_editedTrade.quantity).toFixed(2)); // calculate the totalValue for the user selected item
+    this.m_editedTradeTotalValue = parseFloat((this.m_editedTrade.price * this.m_editedTrade.quantity).toFixed(2)); // calculate the totalValue for the user selected item
     this.m_isEditedTradeDirty = false; // Reset the dirty flag, when the user selects a new item from the trades.
   }
 
@@ -287,7 +287,20 @@ export class AppComponent {
     if (isInsertNew)
       this.m_editedTrade.id = -1;
 
-    const tradeJson: string = JSON.stringify(this.m_editedTrade, (key, value) => {
+    // Date in JSON problem: The JSON.stringify() uses Date.toISOString(), which from a Local date (2024-01-18T18:30:00.000), creates a string as "2024-01-18T13:00:00.000Z", but we don't want this format with the Server communication
+    // Furthermore, it converts the time from Local time to UTC, and we don't want that it changes the time in any way.
+    // Potential fixes that we tried:
+    // 1. JSON.stringify() doesn't have a Bool parameter or a Config parameter that controls this behaviour.
+    // 2. Overwriting Date.prototype.toJSON = function(){} is possible, but we don't like overwriting Global functions (that could be used somewhere else in the code)
+    // 3. The JSON.stringify() (key, value) => callback function receives key='time', value='2024-01-18T13:00:00.000Z', that is already a converted string. The Date object doesn't arrive here unfortunatelly.
+    // 4. We chose to create a temporary local variable, and to this Date => string custom conversion ourselves, before calling JSON.stringify() with the cloned object.
+    const editedTradeToServer = new TradeJs();
+    editedTradeToServer.CopyFrom(this.m_editedTrade);
+    // Sorry TypeScript!: instead of introducing a new class TradeJsToServer just for changing the type from Date to string, we push the string object into that '.time' field, which is supposed to be Date.
+    // but it is only temporary (before sending to the Server), and only for this local variable.
+    editedTradeToServer.time = SqNgCommonUtilsTime.DateTime2PaddedIsoStr(editedTradeToServer.time) as any; // putting the 'string' into the 'Date' field. Violation of TS rules, but fine. Target format is: "2023-12-10T21:00:00"
+
+    const tradeJson: string = JSON.stringify(editedTradeToServer, (key, value) => {
       switch (key) {
         case 'currency':
           if (value == CurrencyId.USD) // also omitting the value of currency , if its 'USD'.
@@ -468,7 +481,7 @@ export class AppComponent {
   onInputPrice(event: Event) {
     this.m_isEditedTradeDirty = true;
     this.m_editedTrade.price = parseFloat((event.target as HTMLInputElement).value.trim());
-    this.m_editedTrade.quantity = Math.round(this.m_totalValue / this.m_editedTrade.price); // scenario where the user inputs the total value first, followed by the price, and the quantity is automatically calculated in real-time based on these values
+    this.m_editedTradeTotalValue = parseFloat((this.m_editedTrade.price * this.m_editedTrade.quantity).toFixed(2)); // calculate the totalValue when use enter the price
   }
 
   onCurrencyTypeSelectionClicked(enumCurrencyIdStr: any) { // ex: enumCurrencyIdStr = "USD"as string. The ":string" type would be more accurate instead of ":any", but 'as' is not allowed in Angular HTML. AngularHtml thinks (correctly) that the enum CurrencyId is a JS object = general dictionary where keys and values can be any types.
@@ -479,13 +492,13 @@ export class AppComponent {
   onInputQuantity(event: Event) {
     this.m_isEditedTradeDirty = true;
     this.m_editedTrade.quantity = parseInt((event.target as HTMLInputElement).value.trim());
-    this.m_totalValue = parseFloat((this.m_editedTrade.price * this.m_editedTrade.quantity).toFixed(2)); // calculate the totalValue when use enter the quantity
+    this.m_editedTradeTotalValue = parseFloat((this.m_editedTrade.price * this.m_editedTrade.quantity).toFixed(2)); // calculate the totalValue when use enter the quantity
   }
 
   onTradeInputTotalValue(event: Event) {
     this.m_isEditedTradeDirty = true;
-    this.m_totalValue = parseInt((event.target as HTMLInputElement).value);
-    this.m_editedTrade.quantity = Math.round( this.m_totalValue / this.m_editedTrade.price);
+    this.m_editedTradeTotalValue = parseInt((event.target as HTMLInputElement).value);
+    this.m_editedTrade.quantity = Math.round( this.m_editedTradeTotalValue / this.m_editedTrade.price);
   }
 
   onSortingClicked(sortColumn: string) { // sort the trades data table

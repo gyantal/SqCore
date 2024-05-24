@@ -134,6 +134,11 @@ export class SqNgCommonUtilsTime implements OnInit {
     return this.zeroPad(date.getFullYear(), 4) + '-' + this.zeroPad(date.getMonth() + 1, 2) + '-' + this.zeroPad(date.getDate(), 2);
   }
 
+  public static DateTime2PaddedIsoStr(date: Date): string { // converting a Date : "Thu Jan 18 2024 18:30:00 GMT+0530 (India Standard Time)" => "2024-01-18T18:30:00"
+    // The JavaScript date.toISOString() method creates a date string in the format "2024-01-18T18:30:00.000Z". However, we need a customized date format without timezone information for storing the date on the server, like "2024-01-18T18:30:00"
+    return this.zeroPad(date.getFullYear(), 4) + '-' + this.zeroPad(date.getMonth() + 1, 2) + '-' + this.zeroPad(date.getDate(), 2)+ 'T' + this.zeroPad(date.getHours(), 2) + ':' + this.zeroPad(date.getMinutes(), 2) + ':' + this.zeroPad(date.getSeconds(), 2);
+  }
+
   public static PaddedIsoStr3Date(dateStr: string): Date {
     const parts = dateStr.split('-');
     const year = parseInt(parts[0], 10);
