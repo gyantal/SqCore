@@ -1,7 +1,13 @@
-<h1>Counter</h1>
-
+<h1>Sandbox</h1>
+<strong>Counter</strong>
 <p>This is a simple example of an Angular component.</p>
 
 <p aria-live="polite">Current count: <strong>{{ currentCount }}</strong></p>
 
 <button class="btn btn-primary" (click)="incrementCounter()">Increment</button>
+<hr>
+<p>Angular Data Bindings: interpolation, property, event, ngModel</p>
+
+<input type="text" [value]="m_ngTest1" oninput="oninputCb(event)" onchange="onchangeCb(event)" (input)="inputCb($event)" (change)="changeCb($event)">
+
+<input type="text" [ngModel]="m_ngTest2" oninput="oninputCb(event)" onchange="onchangeCb(event)" (input)="inputCb($event)" (change)="changeCb($event)" (ngModelChange)="ngModelChangeCb($event)">
