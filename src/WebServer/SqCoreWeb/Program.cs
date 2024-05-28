@@ -419,6 +419,7 @@ public partial class Program
         Console.WriteLine("3. Test BacktestInSeparateThreadWithTimeout()");
         Console.WriteLine("4. Test ManyBacktestsParallelInMultipleThreads()");
         Console.WriteLine("5. PercentileChannel calculation");
+        Console.WriteLine("6. PercentileChannel calculation with dates");
         Console.WriteLine("9. Exit to main menu.");
         string userInput;
         try
@@ -516,6 +517,24 @@ public partial class Program
                     int resultLengthDays = 20;
                     List<Tuple<float, List<Tuple<float, Controllers.PctChnSignal>>>> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeights(adjustedClosePrices, pctChnLookbackDays, calculationLookbackDays, resultLengthDays, bottomPctThreshold, topPctThreshold);
                     Console.WriteLine($"Current weight of {ticker}: {pctChannelRes[^1].Item1}");
+                }
+                catch (System.Exception e)
+                {
+                    Console.WriteLine($"Exception message: {e.Message}");
+                }
+                break;
+            case "6":
+                try
+                {
+                    string ticker = "AAPL";
+                    DateTime endDate = DateTime.UtcNow;
+                    int bottomPctThreshold = 25;
+                    int topPctThreshold = 75;
+                    int[] pctChnLookbackDays = new int[] { 60, 120, 180, 252 };
+                    int calculationLookbackDays = 50;
+                    int resultLengthDays = 20;
+                    List<Tuple<DateTime, float, List<Tuple<float, Controllers.PctChnSignal>>>> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeightsWithDates(ticker, endDate, pctChnLookbackDays, calculationLookbackDays, resultLengthDays, bottomPctThreshold, topPctThreshold);
+                    Console.WriteLine($"Current weight of {ticker}: {pctChannelRes[^1].Item1: yyyy-MM-dd}: {pctChannelRes[^1].Item2}");
                 }
                 catch (System.Exception e)
                 {

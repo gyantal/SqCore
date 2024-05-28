@@ -8,6 +8,7 @@ using Fin.MemDb;
 using MathCommon.MathNet;
 using Microsoft.AspNetCore.Mvc;
 using SqCommon;
+using YahooFinanceApi;
 
 namespace SqCoreWeb.Controllers;
 
@@ -755,6 +756,32 @@ public class StrategyUberTaaController : ControllerBase
             cashEquivalentQuotesData.Add(new DailyData() { Date = cashVals[j].Date, AdjClosePrice = cashVals[j].SdaValue });
 
         return (quotesData, quotesForClmtData, cashEquivalentQuotesData);
+    }
+
+    public static List<Tuple<DateTime, float, List<Tuple<float, PctChnSignal>>>> PctChnWeightsWithDates(string p_ticker, DateTime p_endDate, int[] p_pctChnLookbackDays, int p_calculationLookbackDays, int p_resultLengthDays, int p_bottomPctThreshold, int p_topPctThreshold) // p_prices must be Adjusted, and ordered
+    {
+         // Note that YF uses calendar days, while lookbackDays comes as trading days.
+        DateTime startDate = p_endDate.AddDays(-600);
+
+        IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(p_ticker, startDate, p_endDate, YahooFinanceApi.Period.Daily).Result;
+        if (history == null)
+            throw new SqException($"PctChnWeights() Cannot download YF price for ticker {p_ticker}");
+        List<float> adjustedClosePrices = new();
+        foreach (var candle in history)
+        {
+            adjustedClosePrices.Add((float)candle!.AdjustedClose);
+        }
+
+        List<Tuple<float, List<Tuple<float, Controllers.PctChnSignal>>>> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeights(adjustedClosePrices, p_pctChnLookbackDays, p_calculationLookbackDays, p_resultLengthDays, p_bottomPctThreshold, p_topPctThreshold);
+
+        List<Tuple<DateTime, float, List<Tuple<float, PctChnSignal>>>> result = new(pctChannelRes.Count);
+        for (int i = 0; i < pctChannelRes.Count; i++)
+        {
+            Tuple<float, List<Tuple<float, PctChnSignal>>> pctChnItem = pctChannelRes[i];
+            DateTime date = history[history.Count - pctChannelRes.Count + i]!.DateTime;
+            result.Add(new Tuple<DateTime, float, List<Tuple<float, PctChnSignal>>>(date, pctChnItem.Item1, pctChnItem.Item2));
+        }
+        return result;
     }
 
     // Returns a List that has result for the last p_resultLengthDays number of days
