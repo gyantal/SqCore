@@ -55,6 +55,8 @@ export class AppComponent {
 
     const url = new URL(window.location.href); // https://sqcore.net/webapps/TechnicalAnalyzer/?tickers=TSLA,MSFT
     this.m_tickersStr = url.searchParams.get('tickers');
+    if (this.m_tickersStr != null) // If there are no tickers in the URL, do not process the request to obtain getPctChnData.
+      this.getPctChnData(this.m_tickersStr);
   }
 
   ngOnInit(): void {
@@ -63,8 +65,13 @@ export class AppComponent {
 
   onInputTickers(event: Event) {
     this.m_tickersStr = (event.target as HTMLInputElement).value.trim().toUpperCase();
-    const url = this.m_controllerBaseUrl + 'GetPctChnData';
-    this.m_httpClient.post<string>(url, this.m_tickersStr).subscribe((response) => {
+    this.getPctChnData(this.m_tickersStr);
+  }
+
+  getPctChnData(tickersStr: string) {
+    const body: object = { Tickers: tickersStr };
+    const url: string = this.m_controllerBaseUrl + 'GetPctChnData';
+    this.m_httpClient.post<string>(url, body).subscribe((response) => {
       console.log('percentage channel data:', response);
     }, (error) => console.error(error));
   }
