@@ -1,19 +1,29 @@
 import { Component } from '@angular/core';
 
 // The following functions are created to illustrate the event binding mechanism in an Angular project. see: https://docs.google.com/document/d/14X1rRkSsa3H79b6kjPPrnRBVWYqPZxsj9zC3R6cF8xk/edit#heading=h.b806rr4bw9md
-// When the oninputCb and onchangeCb callback functions are defined inside the angular component, they are not accessible.
+// A. Test run of 'Event binding (without ngModel)': (from JS console.log)
+// Event: NativeJsOnInputCb()
+// Event: AngularInputCb()
+//
+// B. Test run of 'Event binding (with ngModel)': (from JS console.log)
+// Event: NativeJsOnInputCb()
+// Event: AngularNgModelChangeCb()
+// Event: AngularInputCb()
+// Conclusion: NativeJs is called first, then ngModelChange, followed by the standard Angular event binding
+// -----------------------
+// Implementation issue: When the oninputCb and onchangeCb callback functions are defined inside the angular component, they are not accessible.
 // Therefore, we need to make these functions globally available.
-function oninputCb(event: Event) {
-  console.log("Event: oninputCb. $event.value: " + (event.target as HTMLInputElement).value + ". m_ngTest2: NA");
+function nativeJsOnInputCb() {
+  console.log("Event: NativeJsOnInputCb()");
 }
 
-function onchangeCb(event: Event) {
-  console.log("Event: onchangeCb. $event.value: "+ (event.target as HTMLInputElement).value + ". m_ngTest2: NA");
+function nativeJsOnChangeCb() {
+  console.log("Event: NativeJsOnChangeCb()");
 }
 
 // Make the function accessible globally
-(window as any).oninputCb = oninputCb;
-(window as any).onchangeCb = onchangeCb;
+(window as any).nativeJsOnInputCb = nativeJsOnInputCb;
+(window as any).onchangeCb = nativeJsOnChangeCb;
 
 @Component({
   selector: 'app-counter-component',
@@ -32,15 +42,15 @@ export class CounterComponent {
     console.log('m_ngTest2', this.m_ngTest2);
   }
 
-  inputCb(event: Event) {
-    console.log("Event: inputCb. $event.value: " + (event.target as HTMLInputElement).value + ". m_ngTest2: " + this.m_ngTest1);
+  angularInputCb() {
+    console.log("Event: AngularInputCb()");
   }
 
-  changeCb(event: Event) {
-    console.log("Event: changeCb. $event.value: " + (event.target as HTMLInputElement).value + ". m_ngTest2: " + this.m_ngTest1);
+  angularChangeCb() {
+    console.log("Event: AngularChangeCb()");
   }
 
-  ngModelChangeCb(event: Event) {
-    console.log("Event: ngModelChangeCb. $event.value: " + event + ". m_ngTest2: " + this.m_ngTest2);
+  angularNgModelChangeCb() {
+    console.log("Event: AngularNgModelChangeCb()");
   }
 }

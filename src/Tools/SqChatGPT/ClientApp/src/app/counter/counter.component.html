@@ -8,6 +8,15 @@
 <hr>
 <p>Angular Data Bindings: interpolation, property, event, ngModel</p>
 
-<input type="text" [value]="m_ngTest1" oninput="oninputCb(event)" onchange="onchangeCb(event)" (input)="inputCb($event)" (change)="changeCb($event)">
-
-<input type="text" [ngModel]="m_ngTest2" oninput="oninputCb(event)" onchange="onchangeCb(event)" (input)="inputCb($event)" (change)="changeCb($event)" (ngModelChange)="ngModelChangeCb($event)">
+<p>1.Only <b>OnInput</b> event (fires at every keystroke):<br>&nbsp;
+  A. Event binding (without ngModel):
+  <input class="inputCommon" type="text" [value]="m_ngTest1" oninput="nativeJsOnInputCb()" (input)="angularInputCb()"><br>&nbsp;
+  B. Event binding (with ngModel):
+  <input class="inputCommon" type="text" [ngModel]="m_ngTest2" oninput="nativeJsOnInputCb()" (input)="angularInputCb()" (ngModelChange)="angularNgModelChangeCb()">
+</p>
+<p>2. With <b>OnChange</b> event (fires at lost focus):<br>&nbsp;
+  A. Event binding (without ngModel):
+  <input class="inputCommon" type="text" [value]="m_ngTest1" oninput="nativeJsOnInputCb()" onchange="nativeJsOnChangeCb()" (input)="angularInputCb()" (change)="angularChangeCb()"><br>&nbsp;
+  B. Event binding (with ngModel):
+  <input class="inputCommon" type="text" [ngModel]="m_ngTest2" oninput="nativeJsOnInputCb()" onchange="nativeJsOnChangeCb()" (input)="angularInputCb()" (change)="angularChangeCb()" (ngModelChange)="angularNgModelChangeCb()">
+</p>

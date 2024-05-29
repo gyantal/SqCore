@@ -54,3 +54,7 @@ code {
   cursor: pointer;
   height: 1.8rem;
 }
+
+.inputCommon { /* Counter-component */
+  margin-bottom: 0.2rem;
+}
