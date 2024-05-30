@@ -292,16 +292,22 @@ export class AppComponent {
     // Potential fixes that we tried:
     // 1. JSON.stringify() doesn't have a Bool parameter or a Config parameter that controls this behaviour.
     // 2. Overwriting Date.prototype.toJSON = function(){} is possible, but we don't like overwriting Global functions (that could be used somewhere else in the code)
-    // 3. The JSON.stringify() (key, value) => callback function receives key='time', value='2024-01-18T13:00:00.000Z', that is already a converted string. The Date object doesn't arrive here unfortunatelly.
-    // 4. We chose to create a temporary local variable, and to this Date => string custom conversion ourselves, before calling JSON.stringify() with the cloned object.
-    const editedTradeToServer = new TradeJs();
-    editedTradeToServer.CopyFrom(this.m_editedTrade);
+    // 3. We can create a temporary local variable editedTradeToServer, and do this Date => string custom conversion ourselves, before calling JSON.stringify() with the cloned object.
+    // E.g. const editedTradeToServer = new TradeJs();
+    // editedTradeToServer.CopyFrom(this.m_editedTrade);
     // Sorry TypeScript!: instead of introducing a new class TradeJsToServer just for changing the type from Date to string, we push the string object into that '.time' field, which is supposed to be Date.
     // but it is only temporary (before sending to the Server), and only for this local variable.
-    editedTradeToServer.time = SqNgCommonUtilsTime.DateTime2PaddedIsoStr(editedTradeToServer.time) as any; // putting the 'string' into the 'Date' field. Violation of TS rules, but fine. Target format is: "2023-12-10T21:00:00"
-
-    const tradeJson: string = JSON.stringify(editedTradeToServer, (key, value) => {
+    // editedTradeToServer.time = SqNgCommonUtilsTime.DateTime2PaddedIsoStr(editedTradeToServer.time) as any; // putting the 'string' into the 'Date' field. Violation of TS rules, but fine. Target format is: "2023-12-10T21:00:00"
+    // Disadvantages: 1. need to MemCopy Clone the whole this.m_editedTrade big oject. 2. We have to use "as any" to convince TS to fill the Date field with a String
+    // 4. The JSON.stringify() (key, value) => callback function receives key='time', value='2024-01-18T13:00:00.000Z' as String, that is already a converted string. The Date object doesn't arrive here unfortunatelly.
+    // But we can remedy it to do the inverse of Date.toISOString(), which is the ctor 'new Date(ISO-Utc-string), that will give us back the original Date (in local timezone)
+    // And we can use our utility function DateTime2PaddedIsoStr() to get the string representation of that local Date.
+    const tradeJson: string = JSON.stringify(this.m_editedTrade, (key:string, value: any) => {
       switch (key) {
+        case 'time':
+          const tradeTime: Date = new Date(value); // JSON.stringify() already used Date.toISOString() to convert it to a string. We do the inverse to get back the original Date.
+          const newValue = SqNgCommonUtilsTime.DateTime2PaddedIsoStr(tradeTime); // get the string representation without converting to Utc and without the "Z" postfix
+          return newValue;
         case 'currency':
           if (value == CurrencyId.USD) // also omitting the value of currency , if its 'USD'.
             return undefined;
