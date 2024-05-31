@@ -1,17 +1,17 @@
 <div class="mainDiv1">
   <h4>Technical Analyzer</h4>
   <div>Tickers:<input type="text" [value]="m_tickersStr" (change)="onInputTickers($event)"></div><br>
-  <table>
+  <table *ngIf="m_assetHistDatas.length > 0"> <!-- Verify if m_assetHistDatas contains data; otherwise, change detection will trigger an error. -->
     <thead>
       <tr>
         <th></th>
-        <th *ngFor="let asset of m_histDatas[0].Assets">{{ asset.symbol }}</th> <!-- Displaying the symbol property of each asset object. -->
+        <th *ngFor="let asset of m_assetHistDatas">{{ asset.symbol }}</th>
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let item of m_histDatas">
-        <td>{{ item.Date | date : 'yyyy-MM-dd'}}</td>
-        <td *ngFor="let asset of item.Assets" [title]="'pctChn1: ' + (asset.pctChnSignal1 | percent:'1.2') + ', pctChn2: ' + (asset.pctChnSignal2 | percent:'1.2') + ', pctChn3: ' + (asset.pctChnSignal3 | percent:'1.2') + ', pctChn4: ' + (asset.pctChnSignal4 | percent:'1.2')">{{ asset.pctChnWeightAggregate | percent:'1.2' }}</td>
+      <tr *ngFor="let dateIndex of m_assetHistDatas[0].pctChnDatas; let i = index"> <!-- To iterate through dates using the first asset's pctChnDatas array -->
+        <td>{{ m_assetHistDatas[0].pctChnDatas[i].Date | date : 'yyyy-MM-dd' }}</td>  <!-- Display the date in the first column -->
+        <td *ngFor="let asset of m_assetHistDatas" [title]="'pctChn1: ' + (asset.pctChnDatas[i].pctChnSignal1 | percent:'1.2') + ', pctChn2: ' + (asset.pctChnDatas[i].pctChnSignal2 | percent:'1.2') + ', pctChn3: ' + (asset.pctChnDatas[i].pctChnSignal3 | percent:'1.2') + ', pctChn4: ' + (asset.pctChnDatas[i].pctChnSignal4 | percent:'1.2')">{{ asset.pctChnDatas[i].pctChnWeightAggregate | percent:'1.2' }}</td>
       </tr>
     </tbody>
   </table>
