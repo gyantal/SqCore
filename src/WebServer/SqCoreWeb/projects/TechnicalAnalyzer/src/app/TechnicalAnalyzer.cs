@@ -18,6 +18,13 @@ public class TechnicalAnalyzerController : Microsoft.AspNetCore.Mvc.Controller
         return msg;
     }
 
+    [HttpGet]
+    public string Ping() // localhost:5001/TechnicalAnalyzer/Ping or https://sqcore.net/TechnicalAnalyzer/Ping
+    {
+        string msg = @"{ ""Response"": ""Pong""}";
+        return msg;
+    }
+
     [HttpPost]
     public string GetPctChnData([FromBody] UserInput p_inMsg) // e.g. p_inMsg.Tickers: TSLA,AAPL
     {

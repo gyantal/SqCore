@@ -411,7 +411,7 @@ public class BrokerWrapperIb : IBrokerWrapper
             if (!BrokersWatcher.IsCriticalTradingTime(m_gatewayId, DateTime.UtcNow))
                 return; // skip processing the error further. Don't send it to HealthMonitor.
 
-            Utils.Logger.Info("TEMP text: errorCode == 504, IsCriticalTradingTime() = true. We signal error to HealthMonitor.");
+            Utils.Logger.Error("TEMP text: errorCode == 504, IsCriticalTradingTime() = true. We signal error to HealthMonitor.");
             // ReconnectToGatewaysTimer_Elapsed() runs in every 15 minutes in general.
             // TODO: Future work: write a service that runs at every CriticalTradingTime starts, and checks that the TradeableGatewayIds are connected
         }
@@ -423,6 +423,28 @@ public class BrokerWrapperIb : IBrokerWrapper
             // ErrId: 42=the ClientID, ErrCode: 506, Msg: Unsupported version
             // id == 41, or 42, which is the BrokerConnectionClientID
             return; // skip processing the error further. Don't send it to HealthMonitor.
+        }
+
+        if (errorCode == 510)
+        {
+            // Id: 1057, ErrCode: 510, Msg: Request Market Data Sending Error -
+            // It seems that there was a data request from us, identified by the ID, and our IBGateway couldn't send that to IB servers. Maybe because it is 2:00am USA-ET time and they restart servers.
+            // 2024-05-18: After upgrading IbApi to the latest version, it started to come every day at 7:00-7:00 UK time. Seems harmless, so we can swallow it.
+            if (!BrokersWatcher.IsCriticalTradingTime(m_gatewayId, DateTime.UtcNow))
+                return; // skip processing the error further. Don't send it to HealthMonitor.
+
+            Utils.Logger.Error("TEMP text: errorCode == 510, IsCriticalTradingTime() = true. We signal error to HealthMonitor.");
+        }
+
+        if (errorCode == 543)
+        {
+            // Id: 1004, ErrCode: 543, Msg: Cancel Account Data Sending Error -
+            // It seems that there was a data request from us, identified by the ID, and our IBGateway couldn't send that to IB servers. Maybe because it is 3:00am USA-ET time and they restart servers.
+            // 2024-05-18: After upgrading IbApi to the latest version, it started to come sometimes at 8:00-8:00 UK time. Seems harmless, so we can swallow it.
+            if (!BrokersWatcher.IsCriticalTradingTime(m_gatewayId, DateTime.UtcNow))
+                return; // skip processing the error further. Don't send it to HealthMonitor.
+
+            Utils.Logger.Error("TEMP text: errorCode == 543, IsCriticalTradingTime() = true. We signal error to HealthMonitor.");
         }
 
         if (errorCode == 2129)

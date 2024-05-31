@@ -1,4 +1,4 @@
-import { Component, Inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
 class PctChnData {
@@ -30,10 +30,13 @@ export class AppComponent {
   m_tickersStr: string | null = null;
   m_assetHistDatas: AssetHistData[] = [];
 
-  constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string) {
+  constructor(http: HttpClient) {
     this.m_httpClient = http;
-    this.m_controllerBaseUrl = baseUrl + 'TechnicalAnalyzer/';
-    console.log('BaseURl', baseUrl);
+
+    // Angular ctor @Inject('BASE_URL') contains the full path: 'https://sqcore.net/webapps/TechnicalAnalyzer', but we have to call our API as 'https://sqcore.net/TechnicalAnalyzer/GetPctChnData', so we need the URL without the '/webapps/TechnicalAnalyzer' Path.
+    // And anyway, better to go non-Angular for less complexity. And 'window.location' is the fastest, native JS option for getting the URL.
+    this.m_controllerBaseUrl = window.location.origin + '/TechnicalAnalyzer/'; // window.location.origin (URL without the path) = Local: "https://127.0.0.1:4206", Server: https://sqcore.net"
+    console.log('window.location.origin', window.location.origin);
 
     const url = new URL(window.location.href); // https://sqcore.net/webapps/TechnicalAnalyzer/?tickers=TSLA,MSFT
     this.m_tickersStr = url.searchParams.get('tickers');
@@ -52,7 +55,7 @@ export class AppComponent {
 
   getPctChnData(tickersStr: string) {
     const body: object = { Tickers: tickersStr };
-    const url: string = this.m_controllerBaseUrl + 'GetPctChnData';
+    const url: string = this.m_controllerBaseUrl + 'GetPctChnData'; // Server: it needs to be https://sqcore.net/webapps/TechnicalAnalyzer/GetPctChnData
     this.m_httpClient.post<string>(url, body).subscribe((response) => {
       console.log('percentage channel data:', response);
       this.processAssetHistPctChnData(response);
