@@ -22,3 +22,30 @@ table td, tr, th {
   width: 5%;
   border: 0.05rem solid black;
 }
+
+.pctChnTooltip {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.pctChnTooltip .pctChnTooltipText {
+  visibility: hidden;
+  width: 200px;
+  background: rgb(210, 252, 176);
+  border: 0.1rem solid rgb(19, 7, 177);
+  color: blue;
+  text-align: center;
+  border-radius: 0.5rem;
+  position: absolute;
+  z-index: 1;
+  bottom: 100%;
+  left: 50%;
+  margin-left: -9rem;
+  white-space: pre;
+}
+
+.pctChnTooltip:hover .pctChnTooltipText {
+  visibility: visible;
+  opacity: 0.85;
+}

@@ -1,13 +1,15 @@
 import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
+enum PctChnSignal { Unknown = 0, NonValidBull = 1, NonValidBear = 2, ValidBull = 3, ValidBear = 4 }
+
 class PctChnData {
   public Date: Date = new Date();
-  public pctChnSignal1: number = 0; // 0% or 100%
-  public pctChnSignal2: number = 0;
-  public pctChnSignal3: number = 0;
-  public pctChnSignal4: number = 0;
-  public pctChnWeightAggregate: number = 0; // 0% or 25% 50% 75% 100%
+  public pctChnSignal1: PctChnSignal = PctChnSignal.Unknown;
+  public pctChnSignal2: PctChnSignal = PctChnSignal.Unknown;
+  public pctChnSignal3: PctChnSignal = PctChnSignal.Unknown;
+  public pctChnSignal4: PctChnSignal = PctChnSignal.Unknown;
+  public pctChnWeightAggregate: number = 0;
 }
 
 class AssetHistData {
@@ -29,6 +31,7 @@ export class AppComponent {
   m_controllerBaseUrl: string;
   m_tickersStr: string | null = null;
   m_assetHistDatas: AssetHistData[] = [];
+  m_enumPctChnSignal = PctChnSignal;
 
   constructor(http: HttpClient) {
     this.m_httpClient = http;
@@ -73,7 +76,7 @@ export class AppComponent {
         pctChnData.Date = new Date(pctChn.Item1);
         pctChnData.pctChnWeightAggregate = pctChn.Item2;
         for (let j = 0; j < 4; j++)
-          pctChnData[`pctChnSignal${j + 1}`] = pctChn.Item3[j].Item1;
+          pctChnData[`pctChnSignal${j + 1}`] = pctChn.Item3[j].Item2;
         assetHistData.pctChnDatas.push(pctChnData);
       }
       this.m_assetHistDatas.push(assetHistData);
