@@ -119,9 +119,15 @@ namespace QuantConnect.Algorithm.CSharp
                     foreach (Trade cashTrade in cashTransactions)
                     {
                         if (cashTrade.Action == TradeAction.Deposit)
-                            Portfolio.CashBook["USD"].AddAmount((decimal)cashTrade.Price); // Increase cash for deposits
+                        {
+                            Portfolio.CashBook[cashTrade.Symbol].AddAmount((decimal)cashTrade.Price); // Increase cash for deposits
+                            Portfolio.AllRollingDeposit[cashTrade.Symbol].AddAmount((decimal)cashTrade.Price);
+                        }
                         else if (cashTrade.Action == TradeAction.Withdrawal)
-                            Portfolio.CashBook["USD"].AddAmount(-(decimal)cashTrade.Price); // Decrease cash for withdrawals
+                        {
+                            Portfolio.CashBook[cashTrade.Symbol].AddAmount(-(decimal)cashTrade.Price); // Decrease cash for withdrawals
+                            Portfolio.AllRollingDeposit[cashTrade.Symbol].AddAmount(-(decimal)cashTrade.Price);
+                        }
                     }
                     _cashDates.RemoveAt(0);
                     _cashTransactionsByDate.Remove(cashTradeDate);

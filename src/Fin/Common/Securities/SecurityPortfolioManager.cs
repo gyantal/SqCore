@@ -55,6 +55,9 @@ namespace QuantConnect.Securities
         /// Gets the cash book that keeps track of all currency holdings (only unsettled cash)
         /// </summary>
         public CashBook UnsettledCashBook { get; }
+        // SqCore Change NEW:
+        public CashBook AllRollingDeposit {get; }  // For TwrPV SqSampling calculation, we need to accumulate the daily deposits. Instead of storing the daily deposits, we store All the accumulated deposits until this time.
+        // SqCore Change END
 
         /// <summary>
         /// The list of pending funds waiting for settlement time
@@ -76,6 +79,9 @@ namespace QuantConnect.Securities
             _unsettledCashAmounts = new List<UnsettledCashAmount>();
 
             _baseCurrencyCash = CashBook[CashBook.AccountCurrency];
+            // SqCore Change NEW:
+            AllRollingDeposit = new CashBook();
+            // SqCore Change END
 
             // default to $100,000.00
             _baseCurrencyCash.SetAmount(100000);

@@ -760,8 +760,16 @@ public class StrategyUberTaaController : ControllerBase
 
     public static List<Tuple<DateTime, float, List<Tuple<float, PctChnSignal>>>> PctChnWeightsWithDates(string p_ticker, DateTime p_endDate, int[] p_pctChnLookbackDays, int p_calculationLookbackDays, int p_resultLengthDays, int p_bottomPctThreshold, int p_topPctThreshold) // p_prices must be Adjusted, and ordered
     {
-         // Note that YF uses calendar days, while lookbackDays comes as trading days.
-        DateTime startDate = p_endDate.AddDays(-600);
+        // Note that YF uses calendar days, while lookbackDays comes as trading days.
+        int maxLookbackDay = 0;
+        foreach (int lookback in p_pctChnLookbackDays)
+        {
+            if (lookback > maxLookbackDay)
+                maxLookbackDay = lookback;
+        }
+        int nTradingDaysNeeded = maxLookbackDay + p_calculationLookbackDays + p_resultLengthDays;
+        int nCalendarDaysNeeded = nTradingDaysNeeded * 7 / 4; // To convert trading days to calendar days, multiply with 7/4 instead of 7/5, to account for surprising holidays. Better to overshoot.
+        DateTime startDate = p_endDate.AddDays(-nCalendarDaysNeeded);
 
         IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(p_ticker, startDate, p_endDate, YahooFinanceApi.Period.Daily).Result;
         if (history == null)
