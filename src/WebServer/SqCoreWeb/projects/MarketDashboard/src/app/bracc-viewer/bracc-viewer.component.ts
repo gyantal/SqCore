@@ -266,6 +266,8 @@ export class BrAccViewerComponent implements OnInit {
   isMouseInHistPeriodCombox: boolean = false; // under development Daya
   isHistPeriodDateValid: boolean = true;
 
+  visibleList: string[] = []; // The visibleList is utilized when the user wants to view percentage channel details using Technical analysis.
+
   constructor() {
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
     todayET.setHours(0, 0, 0, 0); // get rid of the hours, minutes, seconds and milliseconds
@@ -315,7 +317,7 @@ export class BrAccViewerComponent implements OnInit {
               pos.estPrice = NaN;
           }
         }
-        BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
+        BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable, this.visibleList);
         return true;
       case 'BrAccViewer.NavHist':
         console.log('BrAccViewer.NavHist:' + msgObjStr);
@@ -428,9 +430,12 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   static updateSnapshotTable(brAccSnap: Nullable<BrAccSnapshotJs>, isSortingDirectionAscending: boolean, sortColumn: string,
-      assetCategorySelectionSelectedSqtickers : string[], isFilteringBasedonMktVal: boolean, isFilteringBasedonPlDaily: boolean, isFilteringBasedonOptions: boolean, uiSnapTable: UiSnapTable) {
+      assetCategorySelectionSelectedSqtickers : string[], isFilteringBasedonMktVal: boolean, isFilteringBasedonPlDaily: boolean, isFilteringBasedonOptions: boolean, uiSnapTable: UiSnapTable, visibleList: string[]) {
     if (brAccSnap === null || brAccSnap.poss === null)
       return;
+
+    visibleList.length = 0; // emptying the visible lsit on every filter selection
+
     uiSnapTable.navAssetId = brAccSnap.assetId;
     uiSnapTable.navSymbol = brAccSnap.symbol;
     uiSnapTable.snapLastUpateTimeLoc = new Date(brAccSnap.lastUpdate);
@@ -549,6 +554,7 @@ export class BrAccViewerComponent implements OnInit {
 
       if (isShowPos) {
         uiSnapTable.poss.push(uiPosItem);
+        visibleList.push(uiPosItem.symbol);
         // Long and Short stock values for all the visible tickers
         if (possItem.sqTicker.startsWith('S')) {
           if (uiPosItem.mktVal > 0)
@@ -733,7 +739,7 @@ export class BrAccViewerComponent implements OnInit {
   onAssetCategorySelectionClicked(uiAssetCategories: any) {
     this.assetCategorySelectionSelected = uiAssetCategories.tag;
     this.assetCategorySelectedSqtickers = uiAssetCategories.sqTickers;
-    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable, this.visibleList);
   }
 
   onHistPeriodSelectionClicked(histPeriodSelectionSelected: string) {
@@ -777,7 +783,7 @@ export class BrAccViewerComponent implements OnInit {
   onSortingClicked(sortColumn: string) {
     this.isSortingDirectionAscending = !this.isSortingDirectionAscending;
     this.sortColumn = sortColumn;
-    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable, this.visibleList);
   }
 
   onTabHeaderClicked(tabIdx: number) {
@@ -797,17 +803,17 @@ export class BrAccViewerComponent implements OnInit {
 
   onSnapTableSmallMktValClicked() {
     this.isFilteringBasedonMktVal = !this.isFilteringBasedonMktVal;
-    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable, this.visibleList);
   }
 
   onSnapTableSmallPlDailyClicked() {
     this.isFilteringBasedonPlDaily = !this.isFilteringBasedonPlDaily;
-    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable, this.visibleList);
   }
 
   onSnapTableOptionsClicked() {
     this.isFilteringBasedonOptions = !this.isFilteringBasedonOptions;
-    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable, this.visibleList);
   }
 
   onMouseEnterSnapTableSymbol(event: any, snapPos: UiAssetSnapPossPos) {
@@ -841,6 +847,15 @@ export class BrAccViewerComponent implements OnInit {
   onMouseLeaveStockTooltip() {
     this.isMouseInTooltip = false;
     this.isShowStockTooltip = this.isMouseInSnapSymbolCell || this.isMouseInTooltip;
+  }
+
+  onOpenTechicalAnalyzerClicked() {
+    const technicalAnalyzerStr: string[] = [];
+    for (const ticker of this.visibleList) {
+      if (!technicalAnalyzerStr.includes(ticker)) // Ensure the ticker is not already in technicalAnalyzerStr before adding it.
+        technicalAnalyzerStr.push(ticker);
+    }
+    window.open('//sqcore.net/webapps/TechnicalAnalyzer/?tickers=' + technicalAnalyzerStr.toString());
   }
 
   static shortMonthFormat(date: any) : string {
