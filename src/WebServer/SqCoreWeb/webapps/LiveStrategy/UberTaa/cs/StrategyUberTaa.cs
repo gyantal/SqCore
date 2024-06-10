@@ -758,6 +758,8 @@ public class StrategyUberTaaController : ControllerBase
         return (quotesData, quotesForClmtData, cashEquivalentQuotesData);
     }
 
+    // p_calculationLookbackDays = 50 seems to be a safe choice for the parameter. In 30 minutes, it was impossible to find any tickers that gave an Invalid (either Bull/Bear) signal
+    // with p_calculationLookbackDays = 10, it was possible to find sideways tickers (e.g. 2024-06-05: AMD) that gave Invalid-Bull/Bear signals, but even that was not frequent.
     public static List<Tuple<DateTime, float, List<Tuple<float, PctChnSignal>>>> PctChnWeightsWithDates(string p_ticker, DateTime p_endDate, int[] p_pctChnLookbackDays, int p_calculationLookbackDays, int p_resultLengthDays, int p_bottomPctThreshold, int p_topPctThreshold) // p_prices must be Adjusted, and ordered
     {
         // Note that YF uses calendar days, while lookbackDays comes as trading days.

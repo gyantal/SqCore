@@ -1,11 +1,13 @@
 import { Component } from '@angular/core';
 
 // The following functions are created to illustrate the event binding mechanism in an Angular project. see: https://docs.google.com/document/d/14X1rRkSsa3H79b6kjPPrnRBVWYqPZxsj9zC3R6cF8xk/edit#heading=h.b806rr4bw9md
-// A. Test run of 'Event binding (without ngModel)': (from JS console.log)
+// A. Test run of 'Event binding (without ngModel)': <input type="text" [value]="m_ngTest1" oninput="nativeJsOnInputCb()" (input)="angularInputCb()">
+// From JS console.log:
 // Event: NativeJsOnInputCb()
 // Event: AngularInputCb()
-//
-// B. Test run of 'Event binding (with ngModel)': (from JS console.log)
+// -----------------------
+// B. Test run of 'Event binding (with ngModel)': <input type="text" [ngModel]="m_ngTest2" oninput="nativeJsOnInputCb()" (input)="angularInputCb()" (ngModelChange)="angularNgModelChangeCb()">
+// From JS console.log:
 // Event: NativeJsOnInputCb()
 // Event: AngularNgModelChangeCb()
 // Event: AngularInputCb()

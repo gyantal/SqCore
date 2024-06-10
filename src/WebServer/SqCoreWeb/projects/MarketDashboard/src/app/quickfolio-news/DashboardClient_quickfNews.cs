@@ -131,6 +131,13 @@ public partial class DashboardClient
                 Console.WriteLine($"QuickfolioNewsDownloader.ReadRSS() url download failed.");
                 return new List<NewsItem>();
             }
+            if (rssFeedAsString == "Too Many Requests\r\n")
+            {
+                // 2024-06-03: "https://feeds.finance.yahoo.com/rss/2.0/headline?s=AAPL&region=US&lang=en-US" returns proper RSS in Browser, but (even on local Windows) it returns "Too Many Requests" using the program.
+                // It can be fixed in the future by giving a faked Browser header in the query, but this service is not important now, so we don't spend hours on it now.
+                // Console.WriteLine($"QuickfolioNewsDownloader.ReadRSS() url download failed.");
+                return new List<NewsItem>();
+            }
 
             // convert feed to XML using LINQ to XML and finally create new XmlReader object
             var feed = System.ServiceModel.Syndication.SyndicationFeed.Load(XDocument.Parse(rssFeedAsString).CreateReader());
