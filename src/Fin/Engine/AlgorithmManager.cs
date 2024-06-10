@@ -604,7 +604,9 @@ namespace QuantConnect.Lean.Engine
             SetStatus(AlgorithmStatus.Completed);
 
             //Take final samples:
-            results.Sample(time);
+            // SqCore Change NEW:
+            // results.Sample(time); // TODO
+            // SqCore Change END
 
         } // End of Run();
 

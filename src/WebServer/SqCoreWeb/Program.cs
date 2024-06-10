@@ -432,6 +432,7 @@ public partial class Program
             return "ConsoleIsForcedToShutDown";
         }
 
+        SqBacktestConfig? backtestConfig = null;
         BacktestingResultHandler? backtestResults = null;
         switch (userInput)
         {
@@ -476,15 +477,19 @@ public partial class Program
                 break;
             case "3":
                 Console.WriteLine("Backtest: SqSPYMonFriAtMoc");
-                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", string.Empty, null, @"{""ema-fast"":10,""ema-slow"":20}", SqResult.QcOriginal); // For QC strategies, we use QcOriginal result calculation.
-                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", string.Empty, null, @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
-                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqDualMomentum", "startDate=2006-01-01&endDate=now&assets=VNQ,EEM,DBC,SPY,TLT,SHY&lookback=63&noETFs=3", null, @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
-                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqFundamentalDataFiltered", string.Empty, null, @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
-                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "assets=SVXY-SQ,VXX-SQ,VXZ-SQ,TQQQ-SQ,TLT,USO,UNG&weights=15,-5,10,25,255,-27,-78&rebFreq=Daily,1d", null, @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
-                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "startDate=2002-07-29&endDate=now&startDateAutoCalcMode=WhenFirstTickerAlive&assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d",  MemDb.gMemDb.GetPortfolioTradeHistoryToList(1, null, null), @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple); // testing sending TradeHist input
+                // backtestConfig = new SqBacktestConfig() { SqResult = SqResult.QcOriginal };
+                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", string.Empty, null, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig); // ! For QC strategies, use the SqResult.QcOriginal backtestConfig
+
+                backtestConfig = new SqBacktestConfig() { SqResultStat = SqResultStat.SqSimpleStat };
+                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", string.Empty, null, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig);
+                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqDualMomentum", "startDate=2006-01-01&endDate=now&assets=VNQ,EEM,DBC,SPY,TLT,SHY&lookback=63&noETFs=3", null, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig);
+                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqFundamentalDataFiltered", string.Empty, null, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig);
+                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "assets=SVXY-SQ,VXX-SQ,VXZ-SQ,TQQQ-SQ,TLT,USO,UNG&weights=15,-5,10,25,255,-27,-78&rebFreq=Daily,1d", null, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig);
+                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "startDate=2002-07-29&endDate=now&startDateAutoCalcMode=WhenFirstTickerAlive&assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d",  MemDb.gMemDb.GetPortfolioTradeHistoryToList(1, null, null), @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig); // testing sending TradeHist input
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqTradeAccumulation", string.Empty,
-                //    [new Trade() { Id = 0, Action = TradeAction.Deposit, Symbol = "USD", Price = 100000, Quantity = 1, Time = new DateTime(2022, 09, 01) }, new Trade() { Id = 1, AssetType = AssetType.Stock, Action = TradeAction.Buy, Symbol = "TSLA", Price = 100, Quantity = 87, Time = new DateTime(2022, 09, 01) }, new Trade() { Id = 2, AssetType = AssetType.Stock, Action = TradeAction.Sell, Symbol = "TSLA", Price = 200, Quantity = 87, Time = new DateTime(2023, 08, 31) }], @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple); // testing sending TradeHist input
-                backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "startDate=2002-07-29&endDate=now&startDateAutoCalcMode=WhenFirstTickerAlive&assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d", null, @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
+                //    [new Trade() { Id = 0, Action = TradeAction.Deposit, Symbol = "USD", Price = 100000, Quantity = 1, Time = new DateTime(2022, 09, 01) }, new Trade() { Id = 1, AssetType = AssetType.Stock, Action = TradeAction.Buy, Symbol = "TSLA", Price = 100, Quantity = 87, Time = new DateTime(2022, 09, 01) }, new Trade() { Id = 2, AssetType = AssetType.Stock, Action = TradeAction.Sell, Symbol = "TSLA", Price = 200, Quantity = 87, Time = new DateTime(2023, 08, 31) }], @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig); // testing sending TradeHist input
+                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqTradeAccumulation", string.Empty, MemDb.gMemDb.GetPortfolioTradeHistoryToList(2, null, null), @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig); // testing sending TradeHist input
+                backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "startDate=2002-07-29&endDate=now&startDateAutoCalcMode=WhenFirstTickerAlive&assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d", null, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig);
                 break;
             case "4":
                 try
@@ -549,10 +554,19 @@ public partial class Program
             Console.WriteLine("BacktestResults.LogStore (from Algorithm)"); // we can force the Trade Logs into a text file. ("SaveListOfTrades(AlgorithmHandlers.Transactions, csvTransactionsFileName);"). But our Algo also can put it into the LogStore
             backtestResults.LogStore.ForEach(r => Console.WriteLine(r.Message)); // Trade Logs. "Time: 10/07/2013 13:31:00 OrderID: 1 EventID: 2 Symbol: SPY Status: Filled Quantity: 688 FillQuantity: 688 FillPrice: 144.7817 USD OrderFee: 3.44 USD"
 
-            Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} ({(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
+            Console.WriteLine($"BacktestResults. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0}");
 
-            var equityChart = backtestResults.Charts["Strategy Equity"].Series["Equity"].Values;
-            Console.WriteLine($"#Charts:{backtestResults.Charts.Count}. The Equity (PV) chart: {equityChart[0].y:N0}, {equityChart[1].y:N0} ... {equityChart[^2].y:N0}, {equityChart[^1].y:N0}");
+            if (backtestConfig!.SamplingQcOriginal)
+            {
+                var equityChart = backtestResults.Charts["Strategy Equity"].Series["Equity"].Values;
+                Console.WriteLine($"#QcEqu:{backtestResults.Charts["Strategy Equity"].Series.Count}. The QC Equity (Raw PV) chart: {equityChart[0].y:N0}, {equityChart[1].y:N0} ... {equityChart[^2].y:N0}, {equityChart[^1].y:N0}");
+            }
+
+            if (backtestConfig!.SamplingSqRawPv)
+                Console.WriteLine($"#RawPv:{backtestResults.SqSampledLists["rawPV"].Count}. Raw PV: {backtestResults.SqSampledLists["rawPV"][0].Item2:N0}, {backtestResults.SqSampledLists["rawPV"][1].Item2:N0} ... {backtestResults.SqSampledLists["rawPV"][^2].Item2:N0}, {backtestResults.SqSampledLists["rawPV"][^1].Item2:N0}");
+
+            if (backtestConfig!.SamplingSqTwrPv)
+                Console.WriteLine($"#TwrPv:{backtestResults.SqSampledLists["twrPV"].Count}. TWR PV: {backtestResults.SqSampledLists["twrPV"][0].Item2:N2}, {backtestResults.SqSampledLists["twrPV"][1].Item2:N2} ... {backtestResults.SqSampledLists["twrPV"][^2].Item2:N2}, {backtestResults.SqSampledLists["twrPV"][^1].Item2:N2}");
 
             Dictionary<string, string> finalStat = backtestResults.FinalStatistics;
             var statisticsStr = $"{Environment.NewLine}" + $"{string.Join(Environment.NewLine, finalStat.Select(x => $"STATISTICS:: {x.Key} {x.Value}"))}";

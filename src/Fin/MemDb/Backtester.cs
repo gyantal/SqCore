@@ -119,17 +119,12 @@ public static class Backtester
 
     // p_algorithmParam: SqCore params: e.g. "assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d"
     // p_parameters (QC params from config.json): e.g. "{\"ema-fast\":10,\"ema-slow\":20}"
-    public static BacktestingResultHandler BacktestInSeparateThreadWithTimeout(string p_algorithmTypeName,  string p_algorithmParam, List<Trade>? p_portTradeHist, string p_parameters, SqResult p_sqResult) // Engine uses a separate thread with ExecuteWithTimeLimit()
+    public static BacktestingResultHandler BacktestInSeparateThreadWithTimeout(string p_algorithmTypeName,  string p_algorithmParam, List<Trade>? p_portTradeHist, string p_parameters, SqBacktestConfig p_sqBacktestConfig) // Engine uses a separate thread with ExecuteWithTimeLimit()
     {
         string? previousThreadName = Thread.CurrentThread.Name;
         Thread.CurrentThread.Name = $"QC.Engine.Run({p_algorithmTypeName})";
         Console.WriteLine($"QC: Engine.Run backtest...{p_algorithmTypeName}...");
         Stopwatch stopwatch = Stopwatch.StartNew();
-
-        SqBacktestConfig sqBacktestConfig = new()
-        {
-            SqResult = p_sqResult
-        };
 
         // Instead of using JobQueue as in QC.Launcher, we implement the gist of it. Better to see what is required, and better to customize. Some parts can go to Backtester Init(). Like Loading Fin.Algorithm.CSharp.dll.
         // 1. Create the job.
@@ -160,9 +155,9 @@ public static class Backtester
         AlgorithmManager algorithmManager = new(liveMode, job);
         LeanEngineAlgorithmHandlers algorithmHandlers = Backtester.CreateAlgorithmHandlers(Composer.Instance, false, liveMode); // BacktestingTransactionHandler() has to be a new instance
         systemHandlers.LeanManager.Initialize(systemHandlers, algorithmHandlers, job, algorithmManager);
-        algorithmHandlers.Results.SqBacktestConfig = sqBacktestConfig; // Initialize BacktestingResultHandler with our config very early. SqBacktestConfig might be needed in early Inits()
-        algorithmHandlers.DataMonitor.SqBacktestConfig = sqBacktestConfig;
-        algorithmHandlers.Alphas.SqBacktestConfig = sqBacktestConfig;
+        algorithmHandlers.Results.SqBacktestConfig = p_sqBacktestConfig; // Initialize BacktestingResultHandler with our config very early. SqBacktestConfig might be needed in early Inits()
+        algorithmHandlers.DataMonitor.SqBacktestConfig = p_sqBacktestConfig;
+        algorithmHandlers.Alphas.SqBacktestConfig = p_sqBacktestConfig;
 
         // 3. OS is needed. Because BasicResultHandler creates a new Thread ("Result Thread"), that collects CPU Usage% periodically for a 'performanceCharts'
         // Also engine Trace: "Isolator.ExecuteWithTimeLimit(): Used: 9, Sample: 79, App: 208, CurrentTimeStepElapsed: 00:00.000. CPU: 1%" (OS.CpuUsage)
@@ -192,7 +187,7 @@ public static class Backtester
         // SqCore Change ORIGINAL:
         // engine.Run(job, algorithmManager, algorithmDllRelPath, WorkerThread.Instance);
         // SqCore Change NEW:
-        engine.Run(job, algorithmManager, gAlgorithmDllRelPath, null, sqBacktestConfig, p_algorithmParam, p_portTradeHist);
+        engine.Run(job, algorithmManager, gAlgorithmDllRelPath, null, p_sqBacktestConfig, p_algorithmParam, p_portTradeHist);
         // SqCore Change END
 
         // Console.SetOut(savedConsoleOut);
@@ -352,14 +347,14 @@ public static class Backtester
         Task basicTempTask = Task.Run(() => // Task.Run() runs it immediately
         {
             Console.WriteLine("Backtest: BasicTemplateFrameworkAlgorithm");
-            BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", string.Empty, null, @"{""ema-fast"":10,""ema-slow"":20}", SqResult.QcOriginal);
+            BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", string.Empty, null, @"{""ema-fast"":10,""ema-slow"":20}", new SqBacktestConfig() { SqResultStat = SqResultStat.QcOriginalStat });
             Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} ({(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
         });
 
         Task spyTask = Task.Run(() => // Task.Run() runs it immediately
         {
             Console.WriteLine("Backtest: SqSPYMonFriAtMoc");
-            BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", string.Empty, null, @"{""ema-fast"":10,""ema-slow"":20}", SqResult.SqSimple);
+            BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqSPYMonFriAtMoc", string.Empty, null, @"{""ema-fast"":10,""ema-slow"":20}", new SqBacktestConfig() { SqResultStat = SqResultStat.SqSimpleStat });
             Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} ({(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
         });
 

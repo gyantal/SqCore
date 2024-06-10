@@ -20,9 +20,9 @@ namespace QuantConnect.Statistics
         }
 
         public static StatisticsResults Generate(
-            SqResult sqResult,
+            SqResultStat sqResult,
             List<Trade> trades,
-            List<ChartPoint> pointsEquity,
+            List<Tuple<DateTime, float>> sqTwrPv,
             decimal startingCapital,
             decimal totalFees,
             int totalTransactions,
@@ -32,39 +32,39 @@ namespace QuantConnect.Statistics
             // string csvFilePath = "D:\\Temp\\output.csv";
             // using (StreamWriter writer = new StreamWriter(csvFilePath))
             // {
-            //     foreach (ChartPoint point in pointsEquity)
+            //     foreach (Tuple<DateTime, float> point in sqTwrPv)
             //     {
-            //         string line = $"{Time.UnixTimeStampToDateTime(point.x)},{point.y}";
+            //         string line = $"{Time.UnixTimeStampToDateTime(point.Item1)},{point.Item2}";
             //         writer.WriteLine(line);
             //     }
             // }
 
             StatisticsResults result = new StatisticsResults();
 
-            if (sqResult == SqResult.SqPvOnly)
+            if (sqResult == SqResultStat.NoStat)
                 return result;
-            if (pointsEquity.IsNullOrEmpty()) // if no PVs, then return an empty StatisticsResults
+            if (sqTwrPv.IsNullOrEmpty()) // if no PVs, then return an empty StatisticsResults
                 return result;
 
-            DateTime firstDate = Time.UnixTimeStampToDateTime(pointsEquity[0].x);
-            DateTime lastDate = Time.UnixTimeStampToDateTime(pointsEquity[pointsEquity.Count - 1].x);
+            DateTime firstDate = sqTwrPv[0].Item1;
+            DateTime lastDate = sqTwrPv[sqTwrPv.Count - 1].Item1;
 
             // Conceptual decision: QC performance statistics uses the weekends as well
             // We go similar to IB NAV calculation. We skip the weekends, but keep holiday days using the price of the prior day
 
             // Step 1: determine totalTradingDaysNum
             int totalTradingDaysNum = 0;
-            foreach (ChartPoint dailyPV in pointsEquity)
+            foreach (Tuple<DateTime, float>? dailyTwrPv in sqTwrPv)
             {
-                if (IsTradingDay(Time.UnixTimeStampToDateTime(dailyPV.x)))
+                if (IsTradingDay(dailyTwrPv.Item1))
                     totalTradingDaysNum += 1;
             }
 
             // Step 2: calculate histDailyPerf and rolling drawDowns indicators
             DateTime ddStart = firstDate;
             bool isMaxDD = false;
-            decimal previousValue = 0m;
-            decimal histMaxValue = 0m;
+            float previousValue = 0f;
+            float histMaxValue = 0f;
             double histMaxDrawDown = 0;
             int histMaxDDCalLength = 0;
             int ddTradLength = 0;
@@ -73,15 +73,15 @@ namespace QuantConnect.Statistics
             int histMaxTradDaysBwPeaks = 0;
             int tradingDayNum = -1;
             double[] histDailyPctChgs = new double[totalTradingDaysNum - 1]; // now we know the size of the array, create it. There are 1 day less daily%change values than the number of days.
-            foreach (ChartPoint dailyPV in pointsEquity)
+            foreach (Tuple<DateTime, float>? dailyTwrPv in sqTwrPv)
             {
-                DateTime currentDate = Time.UnixTimeStampToDateTime(dailyPV.x);
+                DateTime currentDate = dailyTwrPv.Item1;
                 if (!IsTradingDay(currentDate))
                     continue;
 
-                decimal dailyPValue = dailyPV.y;
+                float dailyTwrPValue = dailyTwrPv.Item2;
 
-                if (dailyPValue >= histMaxValue)
+                if (dailyTwrPValue >= histMaxValue)
                 {
                     int daysInDD = (currentDate - ddStart).Days - 1;
                     histMaxCalDaysBwPeaks = daysInDD > histMaxCalDaysBwPeaks ? daysInDD : histMaxCalDaysBwPeaks;
@@ -92,7 +92,7 @@ namespace QuantConnect.Statistics
                         histMaxDDTradLength = ddTradLength;
                         isMaxDD = false;
                     }
-                    histMaxValue = dailyPValue;
+                    histMaxValue = dailyTwrPValue;
                     ddStart = currentDate;
                     ddTradLength = -1;
                 }
@@ -101,33 +101,33 @@ namespace QuantConnect.Statistics
 
                 if (tradingDayNum == -1) // first day, dailyChange cannot be calculated
                 {
-                    previousValue = dailyPValue;
+                    previousValue = dailyTwrPValue;
                     tradingDayNum++;
                     continue;
                 }
 
-                histDailyPctChgs[tradingDayNum] = previousValue > 0 ? (double)((dailyPValue - previousValue) / previousValue) : 0;
+                histDailyPctChgs[tradingDayNum] = previousValue > 0 ? (double)((dailyTwrPValue - previousValue) / previousValue) : 0;
                 tradingDayNum++;
 
-                double dailyDrawDown = 1 - (double)(dailyPValue / histMaxValue);
+                double dailyDrawDown = 1 - (double)(dailyTwrPValue / histMaxValue);
                 if (dailyDrawDown > histMaxDrawDown)
                 {
                     histMaxDrawDown = dailyDrawDown;
                     isMaxDD = true;
                 }
-                previousValue = dailyPValue;
+                previousValue = dailyTwrPValue;
             }
-            histMaxDDCalLength = Math.Max(histMaxDDCalLength, (Time.UnixTimeStampToDateTime(pointsEquity[^1].x) - ddStart).Days - 1);
+            histMaxDDCalLength = Math.Max(histMaxDDCalLength, (lastDate - ddStart).Days - 1);
             histMaxDDTradLength = Math.Max(histMaxDDTradLength, ddTradLength);
-            histMaxCalDaysBwPeaks = Math.Max(histMaxCalDaysBwPeaks, (Time.UnixTimeStampToDateTime(pointsEquity[^1].x) - ddStart).Days - 1);
+            histMaxCalDaysBwPeaks = Math.Max(histMaxCalDaysBwPeaks, (lastDate - ddStart).Days - 1);
             histMaxTradDaysBwPeaks = Math.Max(histMaxTradDaysBwPeaks, ddTradLength);
 
             // Step 3. Total return and CAGR. Annual compounded returns statistic based on the final-starting capital and years.
-            decimal finalCapital = previousValue;
-            double histTotalReturn = (double)finalCapital / (double)startingCapital - 1;
+            float finalCapital = previousValue;
+            double histTotalReturn = (double)finalCapital / (double)sqTwrPv[0].Item2 - 1;
             double histCagr = 0;
             double years = (lastDate - firstDate).Days / 365.25;
-            if (years != 0 && startingCapital != 0)
+            if (years != 0 && sqTwrPv[0].Item2 != 0)
             {
                 double cagr = Math.Pow(histTotalReturn + 1, 1 / years) - 1; // n-th root of the total return
                 histCagr = cagr.IsNaNOrInfinity() ? 0 : cagr;

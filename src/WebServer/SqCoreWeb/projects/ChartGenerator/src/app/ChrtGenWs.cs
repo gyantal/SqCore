@@ -123,7 +123,7 @@ public class ChrtGenWs
         // Step 2: Filling the chrtGenPrtfRunResultJs to a list.
         for (int i = 0; i < lsPrtf.Count; i++)
         {
-            string? errMsg = lsPrtf[i].GetPortfolioRunResult(SqResult.SqPvOnly, p_forcedStartDate, p_forcedEndDate, out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
+            string? errMsg = lsPrtf[i].GetPortfolioRunResult(true, SqResultStat.NoStat, p_forcedStartDate, p_forcedEndDate, out PortfolioRunResultStatistics stat, out List<Tuple<long, float>> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
             if (errMsg != null)
                 sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Error, Message = errMsg });
             ChartData chartVal = new();
@@ -141,7 +141,7 @@ public class ChrtGenWs
                 if (chartResolution == ChartResolution.Daily)
                 {
                     dateTimeFormat = DateTimeFormat.DaysFromADate;
-                    startDate = DateTimeOffset.FromUnixTimeSeconds(pv[0].x).DateTime.Date;
+                    startDate = DateTimeOffset.FromUnixTimeSeconds(pv[0].Item1).DateTime.Date;
                     chartVal.DateTimeFormat = "DaysFrom" + startDate.ToYYYYMMDD(); // the standard choice in Production. It results the less data to be sent. Date strings will be only numbers such as 0,1,2,3,4,5,8 (skipping weekends)
 
                     // dateTimeFormat = DateTimeFormat.YYYYMMDD;
@@ -155,12 +155,12 @@ public class ChrtGenWs
 
                 foreach (var item in pv)
                 {
-                    DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(item.x).DateTime.Date;
+                    DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(item.Item1).DateTime.Date;
                     if (itemDate < minPortfoliosStartDate)
                         minPortfoliosStartDate = itemDate; // MinStart Date of the portfolio's
 
                     if (dateTimeFormat == DateTimeFormat.SecSince1970)
-                        chartVal.Dates.Add(item.x);
+                        chartVal.Dates.Add(item.Item1);
                     else if (dateTimeFormat == DateTimeFormat.YYYYMMDD)
                     {
                         int dateInt = itemDate.Year * 10000 + itemDate.Month * 100 + itemDate.Day;
@@ -172,7 +172,7 @@ public class ChrtGenWs
                         chartVal.Dates.Add(nDaysFromStartDate);
                     }
 
-                    chartVal.Values.Add((float)item.y);
+                    chartVal.Values.Add(item.Item2);
                 }
             }
             _ = prtfPos; // To avoid the compiler Warning "Unnecessary assigment of a value" for unusued variables.

@@ -361,7 +361,7 @@ namespace QuantConnect.Lean.Engine.Results
                 result.Progress = 1;
 
                 // SqCore Change NEW:
-                if (SqBacktestConfig.SqResult != SqResult.QcOriginal) // in SqCore, we don't send the result to the QC cloud.
+                if (SqBacktestConfig.SqResultStat != SqResultStat.QcOriginalStat) // in SqCore, we don't send the result to the QC cloud.
                     return;
                 // SqCore Change END
 
@@ -739,7 +739,28 @@ namespace QuantConnect.Lean.Engine.Results
                 _nextSample = time.Add(ResamplePeriod);
 
                 //Sample the portfolio value over time for chart.
-                SampleEquity(time, Math.Round(Algorithm.Portfolio.TotalPortfolioValue, 4));
+                // SqCore Change ORIGINAL:
+                // SampleEquity(time, Math.Round(Algorithm.Portfolio.TotalPortfolioValue, 4));
+                // SqCore Change NEW:
+                if (SqBacktestConfig.SamplingQcOriginal)
+                    SampleEquity(time, Math.Round(Algorithm.Portfolio.TotalPortfolioValue, 4));
+                if (SqBacktestConfig.SamplingSqRawPv)
+                    SqSample("rawPV", time, (float)Math.Round(Algorithm.Portfolio.TotalPortfolioValue, 4));
+                if (SqBacktestConfig.SamplingSqTwrPv)
+                {
+                    decimal currentPortfolioValue = Algorithm.Portfolio.TotalPortfolioValue;
+                    decimal allRollingDeposits = Algorithm.Portfolio.AllRollingDeposits["USD"].ValueInAccountCurrency;
+                    decimal dailyNetDeposit = allRollingDeposits - FormerAllRollingDeposits;
+
+                    // "this.DailyPortfolioValue" contains the previous day PV
+                    float dailyReturn = (float) (DailyPortfolioValue == 0 ? 0 : Math.Round((currentPortfolioValue - dailyNetDeposit - DailyPortfolioValue) / DailyPortfolioValue, 10));
+                    SqSample("twrPV", time, dailyReturn);
+
+                    // Update daily portfolio value; works because we only call sample once a day
+                    DailyPortfolioValue = currentPortfolioValue; // prepare "this.DailyPortfolioValue" to contain the previous day PV on the next day
+                    FormerAllRollingDeposits = allRollingDeposits;
+                }
+                // SqCore Change END
 
                 //Also add the user samples / plots to the result handler tracking:
                 SampleRange(Algorithm.GetChartUpdates());

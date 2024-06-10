@@ -480,7 +480,8 @@ public partial class MemDb
 
         if (errMsg == null)
         {
-            errMsg = prtf!.GetPortfolioRunResult(SqResult.SqSimple, p_forcedStartDate, p_forcedEndDate, out PortfolioRunResultStatistics stat, out List<ChartPoint> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
+            bool returnOnlyTwrPv = true;
+            errMsg = prtf!.GetPortfolioRunResult(returnOnlyTwrPv, SqResultStat.SqSimpleStat, p_forcedStartDate, p_forcedEndDate, out PortfolioRunResultStatistics stat, out List<Tuple<long, float>> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
             if (errMsg == null)
             {
                 // Step2: Filling the ChartPoint Dates and Values to a list. A very condensed format. Dates are separated into its ChartDate List.
@@ -489,8 +490,11 @@ public partial class MemDb
                 ChartData chartVal = new();
                 foreach (var item in pv)
                 {
-                    chartVal.Dates.Add(item.x);
-                    chartVal.Values.Add((int)item.y);
+                    chartVal.Dates.Add(item.Item1);
+                    if (returnOnlyTwrPv)
+                        chartVal.Values.Add((float)Math.Round(item.Item2, 2)); // if we create a TWR chart starting from 100.0, then reduce float to 2 decimals to reduce JSON file size.
+                    else
+                        chartVal.Values.Add((int)item.Item2); // To reduce JSON data size, if PV is RawPV, it is in USD, and usually they are big values like 100,000. Ignore decimal digits.
                 }
 
                 // Step3: Filling the Stats data

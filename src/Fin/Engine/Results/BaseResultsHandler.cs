@@ -86,6 +86,10 @@ namespace QuantConnect.Lean.Engine.Results
         /// </summary>
         public ConcurrentDictionary<string, Chart> Charts { get; set; }
 
+        // SqCore Change NEW:
+        public ConcurrentDictionary<string, List<Tuple<DateTime, float>>> SqSampledLists { get; set; }
+        // SqCore Change END
+
         /// <summary>
         /// True if the exit has been triggered
         /// </summary>
@@ -183,6 +187,10 @@ namespace QuantConnect.Lean.Engine.Results
         /// </summary>
         public decimal DailyPortfolioValue;
 
+        // SqCore Change NEW:
+        public decimal FormerAllRollingDeposits;
+        // SqCore Change END
+
         /// <summary>
         /// Cumulative max portfolio value. Used to calculate drawdown underwater.
         /// </summary>
@@ -217,6 +225,13 @@ namespace QuantConnect.Lean.Engine.Results
         {
             ExitEvent = new ManualResetEvent(false);
             Charts = new ConcurrentDictionary<string, Chart>();
+
+            // SqCore Change NEW:
+            SqSampledLists = new();
+            SqSampledLists["rawPV"] = new List<Tuple<DateTime, float>>();
+            SqSampledLists["twrPV"] = new List<Tuple<DateTime, float>>();
+            // SqCore Change END
+
             Messages = new ConcurrentQueue<Packet>();
             RuntimeStatistics = new Dictionary<string, string>();
             StartTime = DateTime.UtcNow;
@@ -484,7 +499,7 @@ namespace QuantConnect.Lean.Engine.Results
             SampleEquity(time, currentPortfolioValue);
 
             // SqCore Change NEW:
-            if (SqBacktestConfig.SqResult == SqResult.QcOriginal)
+            if (SqBacktestConfig.SqResultStat == SqResultStat.QcOriginalStat)
             {
                 // SqCore Change END
                 SampleBenchmark(time, GetBenchmarkValue(time));
@@ -656,6 +671,26 @@ namespace QuantConnect.Lean.Engine.Results
             decimal value,
             string unit = "$");
 
+        // SqCore Change NEW:
+        protected virtual void SqSample(string p_name, DateTime p_time, float p_value)
+        {
+            // This function is called in 2 different ways:
+            // For RawPV: SqSample("rawPV",time, Math.Round(currentPortfolioValue, 4));
+            // For TwrPV: SqSample("twrPV",time, dailyReturn);
+            var sampleList = SqSampledLists[p_name];
+
+            if (p_name == "twrPV") // p_value arrives as the daily return.
+            {
+                if (sampleList.Count == 0)
+                    sampleList.Add(new Tuple<DateTime, float>(p_time, 100.0f)); // the first time twrPV is sampled on the first day, there is no dailyReturn (it arrives as 0)
+                else
+                    sampleList.Add(new Tuple<DateTime, float>(p_time, sampleList[^1].Item2 * (1.0f + (float)p_value))); // twrPV is calculated by multiplying the dailyReturn to the previous twrPV value
+            }
+            else
+                 sampleList.Add(new Tuple<DateTime, float>(p_time, (float)p_value));
+        }
+        // SqCore Change END
+
         /// <summary>
         /// Gets the algorithm runtime statistics
         /// </summary>
@@ -707,10 +742,10 @@ namespace QuantConnect.Lean.Engine.Results
             const string equityKey = "Equity";
             // SqBacktestConfig.SqResult = SqResult.QcOriginal;
 
-            if (SqBacktestConfig.SqResult != SqResult.QcOriginal)
+            if (SqBacktestConfig.SqResultStat != SqResultStat.QcOriginalStat)
             {
                 var totalTransactions = Algorithm.Transactions.GetOrders(x => x.Status.IsFill()).Count();
-                statisticsResults = SqStatisticsBuilder.Generate(SqBacktestConfig.SqResult, Algorithm.TradeBuilder.ClosedTrades, charts[strategyEquityKey].Series[equityKey].Values, StartingPortfolioValue, Algorithm.Portfolio.TotalFees, totalTransactions, AlgorithmCurrencySymbol);
+                statisticsResults = SqStatisticsBuilder.Generate(SqBacktestConfig.SqResultStat, Algorithm.TradeBuilder.ClosedTrades, SqSampledLists["twrPV"], StartingPortfolioValue, Algorithm.Portfolio.TotalFees, totalTransactions, AlgorithmCurrencySymbol);
                 return statisticsResults;
             }
             // SqCore Change END

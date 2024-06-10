@@ -93,13 +93,13 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
     // Or number of seconds from Unix epoch: '1641013200' is 10 chars. Resolution can be 1 second.
     // Although it is 2 chars more data, but we chose this, because QC uses it and also it will allow us to go intraday in the future.
     // Also it allows to show the user how up-to-date (real-time) the today value is.
-    public string? GetPortfolioRunResult(SqResult p_sqResult, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
+    public string? GetPortfolioRunResult(bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PortfolioRunResultStatistics p_stat, out List<Tuple<long, float>> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
         #pragma warning disable IDE0066 // disable the switch suggestion warning only locally
         switch (Type)
         {
             case PortfolioType.Simulation:
-                return GetBacktestResult(p_sqResult, p_forcedStartDate, p_forcedEndDate, out p_stat, out p_pv, out p_prtfPoss, out p_chartResolution);
+                return GetBacktestResult(p_returnOnlyTwrPv, p_sqResultStat, p_forcedStartDate, p_forcedEndDate, out p_pv,  out p_stat, out p_prtfPoss, out p_chartResolution);
             case PortfolioType.Trades:
             case PortfolioType.TradesSqClassic:
             default:
@@ -108,20 +108,20 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         #pragma warning restore IDE0066
     }
 
-    public static string? GetPortfolioRunResultDefault(out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
+    public static string? GetPortfolioRunResultDefault(out PortfolioRunResultStatistics p_stat, out List<Tuple<long, float>> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
-        List<ChartPoint> pvs = new()
+        List<Tuple<long, float>> pvs = new()
         {
-            new ChartPoint(1641013200, 101665),
-            new ChartPoint(1641099600, 101487),
-            new ChartPoint(1641186000, 101380),
-            new ChartPoint(1641272400, 101451),
-            new ChartPoint(1641358800, 101469),
-            new ChartPoint(1641445200, 101481),
-            new ChartPoint(1641531600, 101535),
-            new ChartPoint(1641618000, 101416),
-            new ChartPoint(1641704400, 101392),
-            new ChartPoint(1641790800, 101386)
+            new Tuple<long, float>(1641013200, 101665f),
+            new Tuple<long, float>(1641099600, 101487f),
+            new Tuple<long, float>(1641186000, 101380f),
+            new Tuple<long, float>(1641272400, 101451f),
+            new Tuple<long, float>(1641358800, 101469f),
+            new Tuple<long, float>(1641445200, 101481f),
+            new Tuple<long, float>(1641531600, 101535f),
+            new Tuple<long, float>(1641618000, 101416f),
+            new Tuple<long, float>(1641704400, 101392f),
+            new Tuple<long, float>(1641790800, 101386f)
         }; // 5 or 10 real values.
 
         p_pv = pvs; // output
@@ -141,74 +141,108 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         return null; // No Error
     }
 
-    public string? GetBacktestResult(SqResult p_sqResult, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PortfolioRunResultStatistics p_stat, out List<ChartPoint> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
+    public string? GetBacktestResult(bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out List<Tuple<long, float>> p_pv, out PortfolioRunResultStatistics p_stat, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
+        SqBacktestConfig backtestConfig = new SqBacktestConfig() { SqResultStat = p_sqResultStat, SamplingQcOriginal = false, SamplingSqRawPv = false, SamplingSqTwrPv = false };
+        if (p_returnOnlyTwrPv) // target is TwrPv
+            backtestConfig.SamplingSqTwrPv = true;
+        else // target is RawPV
+        {
+            backtestConfig.SamplingSqRawPv = true;
+            if (p_sqResultStat == SqResultStat.SqSimpleStat || p_sqResultStat == SqResultStat.SqDetailedStat) // return Raw PV, but we also also have to generate TwrPV, because of SqSimple and SqDetailed calculations use TWR
+                backtestConfig.SamplingSqTwrPv = true;
+        }
+
+        p_pv = new List<Tuple<long, float>>();
         p_stat = new PortfolioRunResultStatistics();
-        p_pv = new List<ChartPoint>();
         p_prtfPoss = new List<PortfolioPosition>();
         p_chartResolution = ChartResolution.Daily;
 
         string algorithmName = String.IsNullOrEmpty(Algorithm) ? "BasicTemplateFrameworkAlgorithm" : Algorithm;
+        if (algorithmName == "BasicTemplateFrameworkAlgorithm") // If Original QC algorithms, usually per minute.
+        {
+            backtestConfig.SamplingQcOriginal = true; // supports per minute resolution
+            backtestConfig.SamplingSqRawPv = false; // our Sampling can do only Daily resolution
+            backtestConfig.SamplingSqTwrPv = false;
+            backtestConfig.SqResultStat = SqResultStat.QcOriginalStat; // our QcSimple, QcDetailed can only work with Daily resolution TwrPV
+        }
+
         string backtestAlgorithmParam = GetBacktestAlgorithmParam(p_forcedStartDate, p_forcedEndDate, AlgorithmParam); // AlgorithmParam itself 'can' have StartDate, EndDate. But ChartGenerator can further restricts the period with forcedStartDate/EndDate
         List<Base.Trade>? portTradeHist = MemDb.gMemDb.GetPortfolioTradeHistoryToList(this.TradeHistoryId, null, null); // Don't filter TradeHist based on StartDate, because to properly backtest we need the initial trades that happende Before StartDate. StartDate refers to the ChartGeneration usually. But we have to simulate previous buying trades, even before StartDate.
-        BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(algorithmName, backtestAlgorithmParam, portTradeHist, @"{""ema-fast"":10,""ema-slow"":20}", p_sqResult);
+        BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(algorithmName, backtestAlgorithmParam, portTradeHist, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig);
         if (backtestResults == null)
             return "Error in Backtest";
 
-        Console.WriteLine("BacktestResults.LogStore (from Algorithm)"); // we can force the Trade Logs into a text file. ("SaveListOfTrades(AlgorithmHandlers.Transactions, csvTransactionsFileName);"). But our Algo also can put it into the LogStore
         backtestResults.LogStore.ForEach(r => Console.WriteLine(r.Message)); // Trade Logs. "Time: 10/07/2013 13:31:00 OrderID: 1 EventID: 2 Symbol: SPY Status: Filled Quantity: 688 FillQuantity: 688 FillPrice: 144.7817 USD OrderFee: 3.44 USD"
+        Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} (If noDeposit: {(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
 
-        Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} ({(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
-
-        List<ChartPoint> equityChart = backtestResults.Charts["Strategy Equity"].Series["Equity"].Values;
-        if (equityChart.Count < 2)
-            Console.WriteLine($"Warning! The Equity (PV) Chart has only {equityChart.Count} items.");
-        else
-            Console.WriteLine($"#Charts:{backtestResults.Charts.Count}. The Equity (PV) chart: {equityChart[0].y:N0}, {equityChart[1].y:N0} ... {equityChart[^2].y:N0}, {equityChart[^1].y:N0}");
-
-        // With Minute resolution simulation, the PV chart is generated at every 5 minutes. But the first point of the day is UTC 4:00, then 13:31, 13:36, 13:41,...
-        if (equityChart.Count >= 3) // because the first is a dummy point, we need at least 3 data points to decide.
+        // Step 1: create the p_pv of the result.
+        if (backtestConfig.SamplingSqRawPv || backtestConfig.SamplingSqTwrPv) // ChartResolution.Daily, backtestResults.SqSampledLists["*PV"] (List<Tuple<DateTime, float>>) => new List<Tuple<long, float>>
         {
-            int diffBetween2points = (int)(equityChart[2].x - equityChart[1].x);
-            if (diffBetween2points <= 60)
-                p_chartResolution = ChartResolution.Minute;
-            else if (diffBetween2points <= 300)
-                p_chartResolution = ChartResolution.Minute5;
-            else
-                p_chartResolution = ChartResolution.Daily;
-        }
-
-        if (p_chartResolution == ChartResolution.Daily)
-        {
-            // Eliminate daily chart duplicates. There is 1 point for weekends, but 2 points (morning, marketclose) for the weekdays. We keep only the last Y value for the day.
+            List<Tuple<DateTime, float>> pvs = backtestConfig.SamplingSqTwrPv ? backtestResults.SqSampledLists["twrPV"] : backtestResults.SqSampledLists["rawPV"];
+            p_pv = new List<Tuple<long, float>>(pvs.Count); // create the List with the final Capacity
             DateTime currentDate = DateTime.MinValue; // initialize currentDate to the smallest possible value
-            for (int i = 0; i < equityChart.Count; i++)
+            for (int i = 0; i < pvs.Count; i++) // Convert the DateTime to long
             {
-                ChartPoint item = equityChart[i];
-                // convert the Unix timestamp (item.x) to a DateTime object and take only the date part
-                DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(item.x).DateTime.Date;
-                if (itemDate != currentDate) // if this is a new date, add a new point to p_pv
+                Tuple<DateTime, float> item = pvs[i];
+                if (item.Item1.Date != currentDate) // if this is a new date, add a new point to p_pv
                 {
-                    p_pv.Add(new ChartPoint { x = item.x, y = item.y });
-                    currentDate = itemDate; // set currentDate to the new date
+                    long unixTime = new DateTimeOffset(item.Item1).ToUnixTimeSeconds();
+                    p_pv.Add(new Tuple<long, float>(unixTime, item.Item2));
+                    currentDate = item.Item1.Date;
                 }
-                else // if this is the same date as the previous point, update the existing point
-                {
-                    ChartPoint lastVal = p_pv[^1]; // get the last point in p_pv
-                    lastVal.y = item.y;
-                    lastVal.x = item.x;
-                }
+                else // if this is the same date as the previous point, update the y value
+                    p_pv[^1] = new Tuple<long, float>(p_pv[^1].Item1, item.Item2); // update the last point
             }
         }
-        else // PerMinute Data
+        else // If SamplingQcOriginal, then ChartPoints => p_pv = new List<Tuple<long, float>>
         {
-            for (int i = 0; i < equityChart.Count; i++)
+            List<ChartPoint> equityChart = backtestResults.Charts["Strategy Equity"].Series["Equity"].Values;
+
+            if (equityChart.Count < 2)
+                Console.WriteLine($"Warning! The Equity (PV) Chart has only {equityChart.Count} items.");
+            else
+                Console.WriteLine($"#Charts:{backtestResults.Charts.Count}. The Equity (PV) chart: {equityChart[0].y:N0}, {equityChart[1].y:N0} ... {equityChart[^2].y:N0}, {equityChart[^1].y:N0}");
+
+            // With Minute resolution simulation, the PV chart is generated at every 5 minutes. But the first point of the day is UTC 4:00, then 13:31, 13:36, 13:41,...
+            if (equityChart.Count >= 3) // because the first is a dummy point, we need at least 3 data points to decide.
             {
-                p_pv.Add(new ChartPoint { x = equityChart[i].x, y = equityChart[i].y });
+                int diffBetween2points = (int)(equityChart[2].x - equityChart[1].x);
+                if (diffBetween2points <= 60)
+                    p_chartResolution = ChartResolution.Minute;
+                else if (diffBetween2points <= 300)
+                    p_chartResolution = ChartResolution.Minute5;
+                else
+                    p_chartResolution = ChartResolution.Daily;
+            }
+
+            if (p_chartResolution == ChartResolution.Daily)
+            {
+                // Eliminate daily chart duplicates. There is 1 point for weekends, but 2 points (morning, marketclose) for the weekdays. We keep only the last Y value for the day.
+                DateTime currentDate = DateTime.MinValue; // initialize currentDate to the smallest possible value
+                for (int i = 0; i < equityChart.Count; i++)
+                {
+                    ChartPoint item = equityChart[i];
+                    // convert the Unix timestamp (item.x) to a DateTime object and take only the date part
+                    DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(item.x).DateTime.Date;
+                    if (itemDate != currentDate) // if this is a new date, add a new point to p_pv
+                    {
+                        p_pv.Add(new Tuple<long, float>(item.x, (float)item.y));
+                        currentDate = itemDate; // set currentDate to the new date
+                    }
+                    else // if this is the same date as the previous point, update the existing point
+                        p_pv[^1] = new Tuple<long, float>(item.x, (float)item.y);
+                }
+            }
+            else // PerMinute Data
+            {
+                for (int i = 0; i < equityChart.Count; i++)
+                    p_pv.Add(new Tuple<long, float>(equityChart[i].x, (float)equityChart[i].y));
             }
         }
 
-        if (p_sqResult != SqResult.SqPvOnly)
+        // Step 2: create the p_stat of the result.
+        if (p_sqResultStat != SqResultStat.NoStat)
         {
             Dictionary<string, string> finalStat = backtestResults.FinalStatistics;
             var statisticsStr = $"{Environment.NewLine}" + $"{string.Join(Environment.NewLine, finalStat.Select(x => $"STATISTICS:: {x.Key} {x.Value}"))}";
@@ -249,6 +283,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
 
         // We need these in the Statistic: "Net Profit" => TotalReturn, "Compounding Annual Return" =>CAGR, "Drawdown" => MaxDD,  "Sharpe Ratio" =>Sharpe, "Win Rate" =>WinRate, "Annual Standard Deviation" =>StDev, "Sortino Ratio" => Sortino, "Portfolio Turnover" => Turnover, "Long/Short Ratio" =>LongShortRatio, "Total Fees" => Fees,
 
+        // Step 3: create the p_prtfPoss of the result.
         var prtfPositions = backtestResults.Algorithm;
         foreach (Security? security in prtfPositions.UniverseManager.ActiveSecurities.Values)
         {

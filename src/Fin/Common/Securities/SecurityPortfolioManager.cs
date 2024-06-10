@@ -56,7 +56,7 @@ namespace QuantConnect.Securities
         /// </summary>
         public CashBook UnsettledCashBook { get; }
         // SqCore Change NEW:
-        public CashBook AllRollingDeposit {get; }  // For TwrPV SqSampling calculation, we need to accumulate the daily deposits. Instead of storing the daily deposits, we store All the accumulated deposits until this time.
+        public CashBook AllRollingDeposits {get; }  // For TwrPV SqSampling calculation, we need to accumulate the daily deposits. Instead of storing the daily deposits, we store All the accumulated deposits until this time.
         // SqCore Change END
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace QuantConnect.Securities
 
             _baseCurrencyCash = CashBook[CashBook.AccountCurrency];
             // SqCore Change NEW:
-            AllRollingDeposit = new CashBook();
+            AllRollingDeposits = new CashBook();
             // SqCore Change END
 
             // default to $100,000.00

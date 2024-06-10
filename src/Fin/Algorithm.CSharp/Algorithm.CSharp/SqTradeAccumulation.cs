@@ -6,6 +6,7 @@ using QuantConnect.Data;
 using QuantConnect.Orders;
 using QuantConnect.Orders.Fees;
 using Fin.Base;
+using SqCommon;
 #endregion
 namespace QuantConnect.Algorithm.CSharp
 {
@@ -98,6 +99,15 @@ namespace QuantConnect.Algorithm.CSharp
             _tickers = new HashSet<string>();
             foreach (Trade trade in this.PortTradeHist)
             {
+                if (trade.Action == TradeAction.Unknown)
+                    throw new SqException("Error. Unknown TradeAction.");
+                if (trade.Action == TradeAction.Deposit || trade.Action == TradeAction.Withdrawal)
+                    continue;
+
+                if (trade.Action == TradeAction.Exercise || trade.Action == TradeAction.Expired)
+                    throw new NotImplementedException("Implement option trades later.");
+
+                // if we are here, trade.Action == TradeAction.Buy or Sell (Stock or Option)
                 string? symbol = trade.Symbol;
                 if (!_tickers.Contains(symbol))
                 {
@@ -121,12 +131,12 @@ namespace QuantConnect.Algorithm.CSharp
                         if (cashTrade.Action == TradeAction.Deposit)
                         {
                             Portfolio.CashBook[cashTrade.Symbol].AddAmount((decimal)cashTrade.Price); // Increase cash for deposits
-                            Portfolio.AllRollingDeposit[cashTrade.Symbol].AddAmount((decimal)cashTrade.Price);
+                            Portfolio.AllRollingDeposits[cashTrade.Symbol].AddAmount((decimal)cashTrade.Price);
                         }
                         else if (cashTrade.Action == TradeAction.Withdrawal)
                         {
                             Portfolio.CashBook[cashTrade.Symbol].AddAmount(-(decimal)cashTrade.Price); // Decrease cash for withdrawals
-                            Portfolio.AllRollingDeposit[cashTrade.Symbol].AddAmount(-(decimal)cashTrade.Price);
+                            Portfolio.AllRollingDeposits[cashTrade.Symbol].AddAmount(-(decimal)cashTrade.Price);
                         }
                     }
                     _cashDates.RemoveAt(0);
