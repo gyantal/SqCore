@@ -266,7 +266,6 @@ export class BrAccViewerComponent implements OnInit {
   isMouseInHistPeriodCombox: boolean = false; // under development Daya
   isHistPeriodDateValid: boolean = true;
 
-  visibleList: string[] = []; // The visibleList is utilized when the user wants to view percentage channel details using Technical analysis.
 
   constructor() {
     const todayET = SqNgCommonUtilsTime.ConvertDateLocToEt(new Date());
@@ -317,7 +316,7 @@ export class BrAccViewerComponent implements OnInit {
               pos.estPrice = NaN;
           }
         }
-        BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable, this.visibleList);
+        BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
         return true;
       case 'BrAccViewer.NavHist':
         console.log('BrAccViewer.NavHist:' + msgObjStr);
@@ -430,11 +429,9 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   static updateSnapshotTable(brAccSnap: Nullable<BrAccSnapshotJs>, isSortingDirectionAscending: boolean, sortColumn: string,
-      assetCategorySelectionSelectedSqtickers : string[], isFilteringBasedonMktVal: boolean, isFilteringBasedonPlDaily: boolean, isFilteringBasedonOptions: boolean, uiSnapTable: UiSnapTable, visibleList: string[]) {
+      assetCategorySelectionSelectedSqtickers : string[], isFilteringBasedonMktVal: boolean, isFilteringBasedonPlDaily: boolean, isFilteringBasedonOptions: boolean, uiSnapTable: UiSnapTable) {
     if (brAccSnap === null || brAccSnap.poss === null)
       return;
-
-    visibleList.length = 0; // emptying the visible lsit on every filter selection
 
     uiSnapTable.navAssetId = brAccSnap.assetId;
     uiSnapTable.navSymbol = brAccSnap.symbol;
@@ -554,7 +551,6 @@ export class BrAccViewerComponent implements OnInit {
 
       if (isShowPos) {
         uiSnapTable.poss.push(uiPosItem);
-        visibleList.push(uiPosItem.symbol);
         // Long and Short stock values for all the visible tickers
         if (possItem.sqTicker.startsWith('S')) {
           if (uiPosItem.mktVal > 0)
@@ -739,7 +735,7 @@ export class BrAccViewerComponent implements OnInit {
   onAssetCategorySelectionClicked(uiAssetCategories: any) {
     this.assetCategorySelectionSelected = uiAssetCategories.tag;
     this.assetCategorySelectedSqtickers = uiAssetCategories.sqTickers;
-    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable, this.visibleList);
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
   onHistPeriodSelectionClicked(histPeriodSelectionSelected: string) {
@@ -783,7 +779,7 @@ export class BrAccViewerComponent implements OnInit {
   onSortingClicked(sortColumn: string) {
     this.isSortingDirectionAscending = !this.isSortingDirectionAscending;
     this.sortColumn = sortColumn;
-    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable, this.visibleList);
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
   onTabHeaderClicked(tabIdx: number) {
@@ -803,17 +799,17 @@ export class BrAccViewerComponent implements OnInit {
 
   onSnapTableSmallMktValClicked() {
     this.isFilteringBasedonMktVal = !this.isFilteringBasedonMktVal;
-    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable, this.visibleList);
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
   onSnapTableSmallPlDailyClicked() {
     this.isFilteringBasedonPlDaily = !this.isFilteringBasedonPlDaily;
-    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable, this.visibleList);
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
   onSnapTableOptionsClicked() {
     this.isFilteringBasedonOptions = !this.isFilteringBasedonOptions;
-    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable, this.visibleList);
+    BrAccViewerComponent.updateSnapshotTable(this.brAccountSnapshotObj, this.isSortingDirectionAscending, this.sortColumn, this.assetCategorySelectedSqtickers, this.isFilteringBasedonMktVal, this.isFilteringBasedonPlDaily, this.isFilteringBasedonOptions, this.uiSnapTable);
   }
 
   onMouseEnterSnapTableSymbol(event: any, snapPos: UiAssetSnapPossPos) {
@@ -850,12 +846,26 @@ export class BrAccViewerComponent implements OnInit {
   }
 
   onOpenTechicalAnalyzerClicked() {
-    const technicalAnalyzerStr: string[] = [];
-    for (const ticker of this.visibleList) {
-      if (!technicalAnalyzerStr.includes(ticker)) // Ensure the ticker is not already in technicalAnalyzerStr before adding it.
-        technicalAnalyzerStr.push(ticker);
+    const technicalAnalyzerTickers: string[] = [];
+    for (const item of this.uiSnapTable.poss) {
+      // IntBrokers use the style of "BRK A", and "BRK B", but YF uses "BRK-A", "BRK-B", so we convert it before sending it in the URL
+      // Potential fixes that we tried:
+      // By using a for loop on ticker, we can identify the whitespace and replace it with a hyphen ('-'). However, since strings in JavaScript are immutable, meaning you cannot directly change an individual character of a string, we need to create a new string with the desired changes.
+      // e.g: let ticker = item.symbol;
+      // let newTicker = '';
+      // for (let i = 0; i < ticker.length; i++) {
+      //   if (ticker[i] === ' ') {
+      //     newTicker += '-';
+      //   } else {
+      //     newTicker += ticker[i];
+      //   }
+      // }
+      // ticker = newTicker;
+      const ticker: string = item.symbol.replace(/ /g, '-'); // replace method removes all the whitespaces with hyphens. Easy to understand
+      if (!technicalAnalyzerTickers.includes(ticker)) // Ensure the ticker is not already in technicalAnalyzerStr before adding it.
+        technicalAnalyzerTickers.push(ticker);
     }
-    window.open('//sqcore.net/webapps/TechnicalAnalyzer/?tickers=' + technicalAnalyzerStr.toString());
+    window.open('//sqcore.net/webapps/TechnicalAnalyzer/?tickers=' + technicalAnalyzerTickers.toString());
   }
 
   static shortMonthFormat(date: any) : string {
