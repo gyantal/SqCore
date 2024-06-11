@@ -861,7 +861,7 @@ export class BrAccViewerComponent implements OnInit {
       //   }
       // }
       // ticker = newTicker;
-      const ticker: string = item.symbol.replace(/ /g, '-'); // replace method removes all the whitespaces with hyphens. Easy to understand
+      const ticker: string = item.symbol.replace(/ /g, '-'); // replace method changes all the whitespaces to hyphens. Easy to understand
       if (!technicalAnalyzerTickers.includes(ticker)) // Ensure the ticker is not already in technicalAnalyzerStr before adding it.
         technicalAnalyzerTickers.push(ticker);
     }
