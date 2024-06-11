@@ -1,4 +1,4 @@
-<div class="mainDiv1">
+<div>
   <h4>Portfolio Viewer</h4>
   PortfolioId: {{m_portfolioId}}
   <div>PortfolioName: {{m_portfolio?.name}}</div>
@@ -128,7 +128,9 @@
             </div>
           </div><br>
           Quantity: <input class="inputTextboxWidth" type="number" [value]="m_editedTrade.quantity | nanToDash" (input)="onInputQuantity($event)">&nbsp;
-          TotalValue: <input class="inputTextboxWidth" type="number" [value]="m_editedTradeTotalValue" (input)="onTradeInputTotalValue($event)"><br>
+          <!-- This is a special case where we need both the input and blur events. We must correctly calculate the Quantity and Total Value.
+           For example, if the stock price is 9.9 and the user has $989, the Quantity he can buy is 99. In this case, it must recalculate the Total Value (i.e., price(9.9) * quantity(99) = 980.1). -->
+          TotalValue: <input class="inputTextboxWidth" type="number" [value]="m_editedTradeTotalValue" (input)="onTradeInputTotalValue($event)" (blur)="recalculateTotalValue()"><br> <!-- the blur event gets fired when the focus is lost-->
         </span>
       </div>
     </div>&nbsp;

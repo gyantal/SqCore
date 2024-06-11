@@ -117,7 +117,7 @@ export class AppComponent {
   m_editedTradeTotalValue: number = 0; // UI helper variable, which is not part of the TradeJs data. Used for displaying/editing the total$Value on UI
   m_isCopyToClipboardDialogVisible: boolean = false;
   m_tradesSortColumn: string = 'time';
-  m_isTradesSortDirAscend: boolean = true;
+  m_isTradesSortDirAscend: boolean = false;
 
   // Trades tabpage: UI handling enums
   // How to pass enum value into Angular HTML? Answer: assign the Enum Type to a member variable. See. https://stackoverflow.com/questions/69549927/how-to-pass-enum-value-in-angular-template-as-an-input
@@ -262,7 +262,6 @@ export class AppComponent {
       this.m_trades[i].CopyFrom(tradeObjects[i] as TradeUi);
     }
 
-    this.m_isTradesSortDirAscend = true; // resetting to 'true' to sort the data in ascending order based on m_editedTrade.Time
     this.onSortingClicked('time');
   }
 
@@ -504,7 +503,18 @@ export class AppComponent {
   onTradeInputTotalValue(event: Event) {
     this.m_isEditedTradeDirty = true;
     this.m_editedTradeTotalValue = parseInt((event.target as HTMLInputElement).value);
-    this.m_editedTrade.quantity = Math.round( this.m_editedTradeTotalValue / this.m_editedTrade.price);
+    this.m_editedTrade.quantity = this.calculateQuantity(this.m_editedTrade.price, this.m_editedTradeTotalValue);
+  }
+
+  calculateQuantity(price: number, totalVal: number): number {
+    let quantity = Math.floor(totalVal / price); // Calculate the maximum quantity the user can afford
+    if (quantity * price > totalVal) // Check if the calculated quantity is correct by recalculating the total cost
+      quantity -= 1;
+    return quantity;
+  }
+
+  recalculateTotalValue() { // This ensures the recalculated (adjusted) totalValue is based on the price and quantity.
+    this.m_editedTradeTotalValue = Math.floor(this.m_editedTrade.price * this.m_editedTrade.quantity);
   }
 
   onSortingClicked(sortColumn: string) { // sort the trades data table
