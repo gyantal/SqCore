@@ -118,7 +118,7 @@
           UTC Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
                 <input type="time" [value]="m_editedTrade.time | date : 'HH:mm'" (change)="onTimeChange($event)">&nbsp;
                 <button (click)="onClickSetOpenOrClose('close')">setClose</button><br>
-          Price: <input class="inputTextboxWidth" type="number" [value]="m_editedTrade.price | nanToDash" (input)="onInputPrice($event)">&nbsp;
+          Price: <input id="upAndDownArrowsInput" class="inputTextboxWidth" type="number" [value]="m_editedTrade.price | nanToDash" (input)="onInputPrice($event)">&nbsp;
           <div class="selectionDropDown">
             <input class="highlightInputDropDown" type="text" placeholder="Enter CurrencyId" [value]="m_enumCurrencyId[m_editedTrade.currency]" (input)="onTradeInputChange()" disabled>
             <div class="listDropDown">
