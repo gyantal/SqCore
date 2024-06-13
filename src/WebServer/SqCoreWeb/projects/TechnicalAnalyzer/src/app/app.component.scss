@@ -2,6 +2,11 @@
   background: linear-gradient(to right, #3080c7 5%, #5b9dd7 10%, #d5f5f6 30%, #d5f5f6 70%, #ace16b 90%, #91d73a 95%);
 }
 
+.pctChnTableContainer {
+  overflow-x: auto; /* Enable horizontal scrolling */
+  width: 100%;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -9,7 +14,7 @@ table {
   white-space: nowrap; // nowrap auto adjust the text with multiple lined to a single line
   border-collapse: collapse;
   border: 0.05rem solid black;
-  text-align: center
+  text-align: center;
 }
 
 thead {
@@ -29,23 +34,15 @@ table td, tr, th {
   cursor: pointer;
 }
 
-.pctChnTooltip .pctChnTooltipText {
-  visibility: hidden;
-  width: 200px;
+#pctChnTooltipText {
+  position: fixed;
+  right: 10rem;
+  font-size: 0.8rem;
   background: rgb(210, 252, 176);
   border: 0.1rem solid rgb(19, 7, 177);
-  color: blue;
+  color: rgb(6, 8, 153);
+  border-radius: 1rem;
+  cursor: pointer;
+  width: 10rem;
   text-align: center;
-  border-radius: 0.5rem;
-  position: absolute;
-  z-index: 1;
-  bottom: 100%;
-  left: 50%;
-  margin-left: -9rem;
-  white-space: pre;
-}
-
-.pctChnTooltip:hover .pctChnTooltipText {
-  visibility: visible;
-  opacity: 0.85;
 }

@@ -5,11 +5,15 @@ enum PctChnSignal { Unknown = 0, NonValidBull = 1, NonValidBear = 2, ValidBull =
 
 class PctChnData {
   public Date: Date = new Date();
+  public pctChnWeightAggregate: number = 0;
+  public pctChnVal1: number = 0;
+  public pctChnVal2: number = 0;
+  public pctChnVal3: number = 0;
+  public pctChnVal4: number = 0;
   public pctChnSignal1: PctChnSignal = PctChnSignal.Unknown;
   public pctChnSignal2: PctChnSignal = PctChnSignal.Unknown;
   public pctChnSignal3: PctChnSignal = PctChnSignal.Unknown;
   public pctChnSignal4: PctChnSignal = PctChnSignal.Unknown;
-  public pctChnWeightAggregate: number = 0;
 }
 
 class AssetHistData {
@@ -32,6 +36,8 @@ export class AppComponent {
   m_tickersStr: string | null = null;
   m_assetHistDatas: AssetHistData[] = [];
   m_enumPctChnSignal = PctChnSignal;
+  m_pctChnDataForTooltip: PctChnData = new PctChnData();
+  m_isShowPctChnTooltip: boolean = false;
 
   constructor(http: HttpClient) {
     this.m_httpClient = http;
@@ -56,6 +62,26 @@ export class AppComponent {
     this.getPctChnData(this.m_tickersStr);
   }
 
+  onMouseoverPctChnWtAggCell() {
+    console.log('onMouseoverPctChnWtAggCell:1');
+    this.m_isShowPctChnTooltip = true;
+  }
+
+  onMouseenterPctChnWtAggCell(event: MouseEvent, pctChnData: PctChnData) {
+    console.log('onMouseenterPctChnWtAggCell:2');
+    this.m_isShowPctChnTooltip = true;
+    this.m_pctChnDataForTooltip = (pctChnData);
+    const pctChnTooltipCoords = (document.getElementById('pctChnTooltipText') as HTMLElement);
+    const scrollLeft = (window.pageXOffset !== undefined) ? window.pageXOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollLeft;
+    const scrollTop = (window.pageYOffset !== undefined) ? window.pageYOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollTop;
+    pctChnTooltipCoords.style.left = 10 + event.pageX - scrollLeft + 'px';
+    pctChnTooltipCoords.style.top = event.pageY - scrollTop + 'px';
+  }
+
+  onMouseleavePctChnWtAggCell() {
+    this.m_isShowPctChnTooltip = false;
+  }
+
   getPctChnData(tickersStr: string) {
     const body: object = { Tickers: tickersStr };
     const url: string = this.m_controllerBaseUrl + 'GetPctChnData'; // Server: it needs to be https://sqcore.net/webapps/TechnicalAnalyzer/GetPctChnData
@@ -75,8 +101,10 @@ export class AppComponent {
         const pctChnData = new PctChnData();
         pctChnData.Date = new Date(pctChn.Item1);
         pctChnData.pctChnWeightAggregate = pctChn.Item2;
-        for (let j = 0; j < 4; j++)
+        for (let j = 0; j < 4; j++) {
+          pctChnData[`pctChnVal${j + 1}`] = pctChn.Item3[j].Item1;
           pctChnData[`pctChnSignal${j + 1}`] = pctChn.Item3[j].Item2;
+        }
         assetHistData.pctChnDatas.push(pctChnData);
       }
       this.m_assetHistDatas.push(assetHistData);
