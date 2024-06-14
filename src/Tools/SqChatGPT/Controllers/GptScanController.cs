@@ -94,8 +94,6 @@ public class GptScanController : ControllerBase
     static List<ChatMessage> g_messages = new();
 
     private readonly ILogger<GptChatController> _logger;
-    private static readonly HttpClient g_httpClient = new HttpClient();
-
 
 //     public static void TestHtmlParse() // Testing purpose
 //     {
@@ -218,7 +216,9 @@ public class GptScanController : ControllerBase
             try
             {
                 string url = $"https://feeds.finance.yahoo.com/rss/2.0/headline?s={ticker}";
-                string xmlContent = await g_httpClient.GetStringAsync(url);
+                string? xmlContent = await Utils.DownloadStringWithRetryAsync(url);
+                if (xmlContent == null)
+                    throw new SqException($"DownloadStringWithRetryAsync failed for ticker {ticker}");
                 Rss rss = ParseXMLString(xmlContent);
 
                 List<NewsItem> newsItems = new(); // local newsItems list
@@ -451,7 +451,9 @@ public class GptScanController : ControllerBase
     public async Task<string> DownloadCompleteNews(string p_newsUrl)
     {
         string responseStr;
-        string htmlContent = await g_httpClient.GetStringAsync(p_newsUrl);
+        string? htmlContent = await Utils.DownloadStringWithRetryAsync(p_newsUrl);
+        if (htmlContent == null)
+            throw new SqException($"DownloadStringWithRetryAsync failed for Url {p_newsUrl}");
 
         if ((p_newsUrl.StartsWith("https://finance.yahoo.com") || p_newsUrl.StartsWith("https://ca.finance.yahoo.com/")) && !htmlContent.Contains("Continue reading")) // if the YF news on YF website has "Continue reading" then a link will lead to another website (Bloomberg, Fools), in that case we don't process it.
         {
@@ -578,12 +580,18 @@ public class GptScanController : ControllerBase
         if (p_inMsg == null)
             return "Invalid data";
 
-        string htmlContent = await g_httpClient.GetStringAsync($"https://finance.yahoo.com/quote/{p_inMsg.Msg}"); // p_inMsg.Msg is ticker(AAPL), https://finance.yahoo.com/quote/AAPL.
+        string url = $"https://finance.yahoo.com/quote/{p_inMsg.Msg}"; // p_inMsg.Msg is ticker(AAPL), https://finance.yahoo.com/quote/AAPL.
+        string? htmlContent = await Utils.DownloadStringWithRetryAsync(url);
+        if (htmlContent == null)
+            throw new SqException($"DownloadStringWithRetryAsync failed for ticker {p_inMsg.Msg}");
         string responseDateStr = ProcessHtmlContentForEarningsDate(htmlContent);
         return JsonSerializer.Serialize(responseDateStr); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
     }
 
-    static string ProcessHtmlContentForEarningsDate(string p_html)
+    // As of 2024-06-2024, it was observed that the Earnings Date was not displayed on the UI.
+    // The HTML structure for finding the Earnings Date, previously using <span> and <td> elements, has changed to using <span> with class and <li> tags.
+    // Refer to the method ProcessHtmlContentForEarningsDate() for further details.
+    static string ProcessHtmlContentForEarningsDate_old(string p_html)
     {
         StringBuilder sb = new();
         int earningsDateStartPos = p_html.IndexOf("Earnings Date");
@@ -632,5 +640,38 @@ public class GptScanController : ControllerBase
             span = span.Slice(spanTagEndPos + "</span>".Length); // Move the span position to the end of the </span> tag
         }
         return sb.ToString();
+    }
+
+    static string ProcessHtmlContentForEarningsDate(string p_html)
+    {
+        string earningsDate = string.Empty;
+        int earningsDateStartPos = p_html.IndexOf(">Earnings Date<"); // Find the position of ">Earnings Date<"
+        if (earningsDateStartPos == -1)
+        {
+            Console.WriteLine("Cannot find Earnings Date. Stop processing.");
+            return earningsDate;
+        }
+
+        ReadOnlySpan<char> htmlSpan = p_html.AsSpan(earningsDateStartPos); // Extract the substring starting from the position of "Earnings Date"
+        int spanEarningsDateStartPos = htmlSpan.IndexOf("<span class=\"value svelte-tx3nkj\">"); // Find the start position of the value span after "Earnings Date"
+        if (spanEarningsDateStartPos == -1)
+        {
+            Console.WriteLine("Cannot find value <span class=\"value svelte-tx3nkj\"> after Earnings Date. Stop processing.");
+            return earningsDate;
+        }
+
+        spanEarningsDateStartPos += "<span class=\"value svelte-tx3nkj\">".Length; // Calculate the start position of the actual earnings date text
+        ReadOnlySpan<char> htmlBodySpan = htmlSpan.Slice(spanEarningsDateStartPos);
+        int spanEarningsDateEndPos = htmlBodySpan.IndexOf("</span> </li>"); // Find the end position of the earnings date text
+        if (spanEarningsDateEndPos == -1)
+        {
+            Console.WriteLine("Cannot find end of value </span> </li>. Stop processing.");
+            return earningsDate;
+        }
+
+        ReadOnlySpan<char> earningsDateSpan = htmlBodySpan.Slice(0, spanEarningsDateEndPos); // Extract the earnings date text
+        earningsDate = earningsDateSpan.ToString();
+
+        return earningsDate;
     }
 }

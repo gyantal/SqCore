@@ -33,14 +33,14 @@ public static partial class Utils
 
         string webpage = string.Empty;
         int nDownload = 0;
-        var request = CreateRequest(p_url);
+        HttpRequestMessage request = CreateRequest(p_url);
 
         do
         {
             try
             {
                 nDownload++;
-                var response = await g_httpClient.SendAsync(request);
+                HttpResponseMessage response = await g_httpClient.SendAsync(request);
                 using (HttpContent content = response.Content)
                 {
                     webpage = await content.ReadAsStringAsync();
@@ -189,6 +189,27 @@ public static partial class Utils
                 {
                     { "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7" },
                     { "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" }
+                }
+            };
+        }
+        else if (p_url.StartsWith("https://feeds.finance.yahoo.com/rss/2.0/headline")) // https://feeds.finance.yahoo.com/rss/2.0/headline?s=TSLA,AAPL
+        {
+            // In the browser (with default browser headers), it works: https://feeds.finance.yahoo.com/rss/2.0/headline?s=TSLA
+            // curl -v https://feeds.finance.yahoo.com/rss/2.0/headline?s=TSLA // surprisingly it works, because cURL sends default User-Agent and Accept headers, even though it is not specified (always inspect with the "-v" verbose parameter what is happening)
+            // curl -v https://feeds.finance.yahoo.com/rss/2.0/headline?s=TSLA -H "User-Agent: curl/8.7.1" -H "Accept: */*"   // with default cUrl headers, it works
+            // curl -v https://feeds.finance.yahoo.com/rss/2.0/headline?s=TSLA -H "User-Agent: " -H "Accept: "   // with empty headers, it returns "429 Too Many Requests"
+            //
+            // curl -v https://feeds.finance.yahoo.com/rss/2.0/headline?s=TSLA -H "User-Agent: curl/8.7.1" -H "Accept: " // it works. So, if the User-Agent is empty, then it fails. Otherwise, it is OK.
+            //
+            // curl -v https://feeds.finance.yahoo.com/rss/2.0/headline?s=TSLA -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36" -H "Accept: " // implement this version in this C# code.
+            return new HttpRequestMessage
+            {
+                RequestUri = new Uri(p_url),
+                Method = HttpMethod.Get,
+                Version = HttpVersion.Version20,
+                Headers =
+                {
+                    { "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36" }
                 }
             };
         }
