@@ -2,7 +2,11 @@
   background: linear-gradient(to right, #3080c7 5%, #5b9dd7 10%, #d5f5f6 30%, #d5f5f6 70%, #ace16b 90%, #91d73a 95%);
 }
 
-.pctChnTableContainer {
+#wideInputWidth {
+  width: 50%;
+}
+
+#pctChnTableContainer {
   overflow-x: auto; /* Enable horizontal scrolling */
   width: 100%;
 }

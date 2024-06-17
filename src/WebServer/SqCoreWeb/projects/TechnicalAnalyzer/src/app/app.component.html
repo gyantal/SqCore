@@ -1,6 +1,6 @@
 <div class="mainDiv1">
   <h4>Technical Analyzer</h4>
-  <div>Tickers:<input type="text" [value]="m_tickersStr" (change)="onInputTickers($event)"></div><br>
+  <div>Tickers:<input id="wideInputWidth" type="text" [value]="m_tickersStr" (change)="onInputTickers($event)"></div><br>
   <div id="pctChnTableContainer">
     <table *ngIf="m_assetHistDatas.length > 0">  <!-- Verify if m_assetHistDatas contains data; otherwise, (the second) *ngFor indexes into the [0] item forDates, and that will fail. -->
       <thead>
@@ -16,7 +16,7 @@
             <!-- To ensure the tooltip text is positioned correctly when the mouse hovers over the parent element "pctChnTooltip", the mouseover event is used to activate the child element "pctChnTooltipText". Once the child element is activated, the mouseenter event positions the tooltip text to the right side. 
              see. https://www.quora.com/Should-I-use-Mouseover-or-Mouseenter#:~:text=Most%20times%20mouseover%20will%20be,element%20that's%20not%20a%20child.-->
               <div id="pctChnTooltip" (mouseover)="onMouseoverPctChnWtAggCell()" (mouseenter)="onMouseenterPctChnWtAggCell($event, asset.pctChnDatas[i])" (mouseleave)="onMouseleavePctChnWtAggCell()">
-              {{ asset.pctChnDatas[i].pctChnWeightAggregate | percent:'1.2' }}
+              {{ asset.pctChnDatas[i].pctChnWeightAggregate | percent:'1.0' }}
             </div>
           </td>
         </tr>

@@ -63,17 +63,17 @@ export class AppComponent {
   }
 
   onMouseoverPctChnWtAggCell() {
-    console.log('onMouseoverPctChnWtAggCell:1');
     this.m_isShowPctChnTooltip = true;
   }
 
   onMouseenterPctChnWtAggCell(event: MouseEvent, pctChnData: PctChnData) {
-    console.log('onMouseenterPctChnWtAggCell:2');
-    this.m_isShowPctChnTooltip = true;
-    this.m_pctChnDataForTooltip = (pctChnData);
-    const pctChnTooltipCoords = (document.getElementById('pctChnTooltipText') as HTMLElement);
-    const scrollLeft = (window.pageXOffset !== undefined) ? window.pageXOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollLeft;
-    const scrollTop = (window.pageYOffset !== undefined) ? window.pageYOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollTop;
+    this.m_pctChnDataForTooltip = pctChnData; // Assign the passed in percentage change data to a property used for displaying the tooltip.
+
+    const pctChnTooltipCoords = (document.getElementById('pctChnTooltipText') as HTMLElement); // Get the tooltip element from the DOM where the tooltip text will be displayed.
+    const scrollLeft = (window.pageXOffset !== undefined) ? window.pageXOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollLeft; // Get the horizontal scroll position of the window.
+    const scrollTop = (window.pageYOffset !== undefined) ? window.pageYOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollTop; // Get the vertical scroll position of the window.
+    // Set the position of the tooltip element relative to the mouse cursor position.
+    // The tooltip will be positioned 10 pixels to the right of the cursor's X position and aligned with the cursor's Y position.
     pctChnTooltipCoords.style.left = 10 + event.pageX - scrollLeft + 'px';
     pctChnTooltipCoords.style.top = event.pageY - scrollTop + 'px';
   }
