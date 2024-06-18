@@ -226,27 +226,25 @@ MarketBar
     <input type="checkbox" [checked]="isFilteringBasedonPlDaily" (click)="onSnapTableSmallPlDailyClicked()">HideSmallPLt
     <input type="checkbox" [checked]="isFilteringBasedonOptions" (click)="onSnapTableOptionsClicked()">HideOptions
   </span>&nbsp;
-  <span id="technicalSvgIcon" title="Show the Visible tickers in Technical Analyzer">
-    <svg width="40" height="30" viewBox="0 0 40 50" xmlns="http://www.w3.org/2000/svg" (click)="onOpenTechicalAnalyzerClicked()">
+  <span id="bullishPennantContainer" title="Show the Visible tickers in Technical Analyzer">
+    <svg width="38" height="25" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg" (click)="onOpenTechicalAnalyzerClicked()">
+      <defs>
+        <marker id="arrow" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><!-- using marker element to draw arrowheads. see, https://developer.mozilla.org/en-US/docs/Web/SVG/Element/marker -->
+          <path d="M 0 0 L 6 3 L 0 6 z" fill="green" />
+        </marker>
+      </defs>
       <g stroke="blue" stroke-width="2">
-        <line x1="0" y1="50" x2="14" y2="10"/>
+        <line x1="0" y1="40" x2="14" y2="10"/>
         <line x1="22" y1="30" x2="14" y2="10"/>
         <line x1="22" y1="30" x2="30" y2="14"/>
         <line x1="36" y1="30" x2="30" y2="14"/>
         <line x1="36" y1="30" x2="40" y2="18"/>
         <line x1="44" y1="30" x2="40" y2="18"/>
       </g>
-      <line x1="44" y1="30" x2="50" y2="2" stroke="green" stroke-width="2"/>
+      <line x1="44" y1="30" x2="50" y2="5" stroke="green" stroke-width="2" marker-end="url(#arrow)"/>
       <line x1="16" y1="12" x2="50" y2="18" stroke="black" stroke-width="2"/> <!-- Slanting line touching all y2 points -->
-      <line x1="10" y1="30" x2="48" y2="30" stroke="black" stroke-width="2"/> <!-- Slanting line touching all x1 points -->
+      <line x1="5" y1="30" x2="48" y2="30" stroke="black" stroke-width="2"/> <!-- Slanting line touching all x1 points -->
     </svg>
-    <!-- <svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="30" height="25" viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet" (click)="onOpenTechicalAnalyzerClicked()">
-      <g transform="translate(0, 512) scale(0.1, -0.1)">
-          <path d="M1360 4640 l0 -319 -75 -3 -76 -3 192 -230 c105 -126 195 -230 199 -230 4 0 94 104 199 230 l192 230 -76 3 -75 3 0 319 0 320 -240 0 -240 0 0 -320z" fill="red"/>
-          <path d="M4780 4473 c-23 -9 -464 -214 -469 -218 -5 -5 57 -135 64 -135 3 0 60 25 127 56 66 30 122 54 124 51 2 -2 -87 -190 -198 -418 -110 -228 -348 -718 -529 -1089 l-327 -675 -61 -7 c-33 -4 -80 -15 -104 -26 l-44 -20 -744 620 c-409 341 -748 623 -752 628 -5 4 -3 32 3 62 24 107 -26 230 -116 288 -170 107 -384 17 -425 -178 -15 -73 1 -145 45 -210 l32 -49 -306 -594 c-715 -1389 -920 -1789 -920 -1796 0 -5 29 -23 65 -41 l64 -31 54 102 c30 56 256 494 503 972 246 479 500 970 563 1093 l116 224 60 2 c34 1 80 11 106 23 l46 21 744 -620 c409 -341 748 -623 752 -628 5 -4 3 -32 -3 -62 -24 -107 26 -230 116 -288 169 -106 384 -16 425 178 15 74 -1 145 -47 213 l-35 52 369 761 c203 418 440 908 527 1089 87 180 162 327 165 327 4 0 19 -59 35 -131 l28 -131 36 7 c67 12 111 26 111 35 0 5 -25 120 -55 256 -37 171 -60 253 -72 265 -21 20 -52 29 -73 22z" fill="#4772BC"/>
-          <path d="M3322 1037 l-193 -232 76 -3 75 -3 0 -319 0 -320 240 0 240 0 0 320 0 319 75 3 76 3 -192 230 c-105 127 -194 231 -198 232 -3 1 -93 -102 -199 230z" fill="Green"/>
-      </g>
-   </svg> -->
   </span>
 </span>
 <div class="brAccSnapTbl">

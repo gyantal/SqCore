@@ -433,6 +433,16 @@ tr:nth-child(even) {
   padding: 1rem;
 }
 
-#technicalSvgIcon {
+#bullishPennantContainer {
+  width: 4rem;
+  height: 2.5rem;
+  background-color: lightblue;
+  border: .2rem solid #228B22;
+  border-radius: 0.5rem;
   cursor: pointer;
+}
+
+#bullishPennantContainer:hover {
+  background-color: #ede8e6;
+  transform: scale(1.05); /* increasing the container size by 5% on hover */
 }
