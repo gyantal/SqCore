@@ -118,7 +118,7 @@
           UTC Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
                 <input type="time" [value]="m_editedTrade.time | date : 'HH:mm'" (change)="onTimeChange($event)">&nbsp;
                 <button (click)="onClickSetOpenOrClose('close')">setClose</button><br>
-          Price: <input id="upAndDownArrowsInput" class="inputTextboxWidth" type="number" [value]="m_editedTrade.price | nanToDash" (input)="onInputPrice($event)">&nbsp;
+          Price: <input class="nonUpAndDownArrowsInput inputTextboxWidth" type="number" [value]="m_editedTrade.price | nanToDash" (input)="onInputPrice($event)">&nbsp;
           <div class="selectionDropDown">
             <input class="highlightInputDropDown" type="text" placeholder="Enter CurrencyId" [value]="m_enumCurrencyId[m_editedTrade.currency]" (input)="onTradeInputChange()" disabled>
             <div class="listDropDown">
@@ -128,9 +128,10 @@
             </div>
           </div><br>
           Quantity: <input class="inputTextboxWidth" type="number" [value]="m_editedTrade.quantity | nanToDash" (input)="onInputQuantity($event)">&nbsp;
-          <!-- This is a special case where we need both the input and blur events. We must correctly calculate the Quantity and Total Value.
-           For example, if the stock price is 9.9 and the user has $989, the Quantity he can buy is 99. In this case, it must recalculate the Total Value (i.e., price(9.9) * quantity(99) = 980.1). -->
-          TotalValue: <input class="inputTextboxWidth" type="number" [value]="m_editedTradeTotalValue" (input)="onTradeInputTotalValue($event)" (blur)="recalculateTotalValue()"><br> <!-- the blur event gets fired when the focus is lost-->
+          <!-- This is a special case where we need both the input and blur events.
+          Step 1: in OnInput event, we have to calculate only the Quantity as a whole number. E.g. Price is 9.9, and user types 1000.0 as TotalValue, we have to update Quantity to 101.
+          Step 2: in OnBlur event, we have to recalculate this TotalValue itself, based on the last Quantity. So, 9.9 * 101 = 999.9. So, user typed "1000.0", but when the control loses the focus, its value will be recalculated as "999.9". -->
+          TotalValue: <input class="nonUpAndDownArrowsInput inputTextboxWidth" type="number" [value]="m_editedTradeTotalValue" (input)="onInputTotalValue($event)" (blur)="onBlurTotalValue()"><br> <!-- the blur event gets fired when the focus is lost-->
         </span>
       </div>
     </div>&nbsp;

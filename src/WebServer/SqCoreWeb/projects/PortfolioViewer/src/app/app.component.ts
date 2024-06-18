@@ -500,20 +500,21 @@ export class AppComponent {
     this.m_editedTradeTotalValue = parseFloat((this.m_editedTrade.price * this.m_editedTrade.quantity).toFixed(2)); // calculate the totalValue when use enter the quantity
   }
 
-  onTradeInputTotalValue(event: Event) {
+  onInputTotalValue(event: Event) {
     this.m_isEditedTradeDirty = true;
     this.m_editedTradeTotalValue = parseInt((event.target as HTMLInputElement).value);
     this.m_editedTrade.quantity = this.calculateQuantity(this.m_editedTrade.price, this.m_editedTradeTotalValue);
   }
 
   calculateQuantity(price: number, totalVal: number): number {
+    // For example, if the stock price is 9.9 and the user has $989, the Quantity he can buy is 99. We have to round it to the lower integer."
     let quantity = Math.floor(totalVal / price); // Calculate the maximum quantity the user can afford
     if (quantity * price > totalVal) // Check if the calculated quantity is correct by recalculating the total cost
       quantity -= 1;
     return quantity;
   }
 
-  recalculateTotalValue() { // This ensures the recalculated (adjusted) totalValue is based on the price and quantity.
+  onBlurTotalValue() { // This ensures the recalculated (adjusted) totalValue is based on the price and quantity.
     this.m_editedTradeTotalValue = Math.floor(this.m_editedTrade.price * this.m_editedTrade.quantity);
   }
 

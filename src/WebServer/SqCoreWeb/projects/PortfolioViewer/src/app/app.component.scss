@@ -151,7 +151,7 @@ thead {
 }
 
 /* remove the up/down arrows from input tag */
-#upAndDownArrowsInput::-webkit-outer-spin-button, #upAndDownArrowsInput::-webkit-inner-spin-button {
+.nonUpAndDownArrowsInput::-webkit-outer-spin-button, .nonUpAndDownArrowsInput::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
