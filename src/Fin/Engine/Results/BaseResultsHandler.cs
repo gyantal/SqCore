@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using Fin.Base;
 using Newtonsoft.Json;
 using QuantConnect.Configuration;
 using QuantConnect.Data.UniverseSelection;
@@ -87,7 +88,7 @@ namespace QuantConnect.Lean.Engine.Results
         public ConcurrentDictionary<string, Chart> Charts { get; set; }
 
         // SqCore Change NEW:
-        public ConcurrentDictionary<string, List<Tuple<DateTime, float>>> SqSampledLists { get; set; }
+        public ConcurrentDictionary<string, List<DateValue>> SqSampledLists { get; set; }
         // SqCore Change END
 
         /// <summary>
@@ -228,8 +229,8 @@ namespace QuantConnect.Lean.Engine.Results
 
             // SqCore Change NEW:
             SqSampledLists = new();
-            SqSampledLists["rawPV"] = new List<Tuple<DateTime, float>>();
-            SqSampledLists["twrPV"] = new List<Tuple<DateTime, float>>();
+            SqSampledLists["rawPV"] = new List<DateValue>();
+            SqSampledLists["twrPV"] = new List<DateValue>();
             // SqCore Change END
 
             Messages = new ConcurrentQueue<Packet>();
@@ -677,17 +678,17 @@ namespace QuantConnect.Lean.Engine.Results
             // This function is called in 2 different ways:
             // For RawPV: SqSample("rawPV",time, Math.Round(currentPortfolioValue, 4));
             // For TwrPV: SqSample("twrPV",time, dailyReturn);
-            var sampleList = SqSampledLists[p_name];
 
+            var sampleList = SqSampledLists[p_name];
             if (p_name == "twrPV") // p_value arrives as the daily return.
             {
                 if (sampleList.Count == 0)
-                    sampleList.Add(new Tuple<DateTime, float>(p_time, 100.0f)); // the first time twrPV is sampled on the first day, there is no dailyReturn (it arrives as 0)
+                    sampleList.Add(new DateValue { Date = p_time, Value = 100.0f }); // the first time twrPV is sampled on the first day, there is no dailyReturn (it arrives as 0). We start TwrPV from 100.0 (not 1.0 and not 0.0). See comment at SqBacktestConfig.SamplingSqTwrPv
                 else
-                    sampleList.Add(new Tuple<DateTime, float>(p_time, sampleList[^1].Item2 * (1.0f + (float)p_value))); // twrPV is calculated by multiplying the dailyReturn to the previous twrPV value
+                    sampleList.Add(new DateValue { Date = p_time, Value = sampleList[^1].Value * (1.0f + p_value) }); // twrPV is calculated by multiplying the dailyReturn to the previous twrPV value
             }
-            else
-                 sampleList.Add(new Tuple<DateTime, float>(p_time, (float)p_value));
+            else // p_name == "rawPV"
+                sampleList.Add(new DateValue { Date = p_time, Value = p_value });
         }
         // SqCore Change END
 

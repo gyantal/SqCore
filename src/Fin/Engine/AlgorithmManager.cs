@@ -174,7 +174,7 @@ namespace QuantConnect.Lean.Engine
             }
             // SqCore Change END
 
-            // *** Loop over the queues: get a data collection, then pass them all into relevent methods in the algorithm.
+            // *** Main Loop. Loop over the queues: get a data collection, then pass them all into relevant methods in the algorithm.
             Utils.Logger.Trace($"AlgorithmManager.Run(): Begin DataStream - Start: {algorithm.StartDate} Stop: {algorithm.EndDate} Time: {algorithm.Time} Warmup: {algorithm.IsWarmingUp}");
             foreach (var timeSlice in Stream(algorithm, synchronizer, results, token)) // timeSlice is UTC, having 5:00 AM in the morning at new daily data point
             {
@@ -548,7 +548,7 @@ namespace QuantConnect.Lean.Engine
                 // poke the algorithm at the end of each time step
                 algorithm.OnEndOfTimeStep();
 
-            } // End of ForEach feed.Bridge.GetConsumingEnumerable
+            } // *** Main Loop END. End of ForEach feed.Bridge.GetConsumingEnumerable
 
             // stop timing the loops
             TimeLimit.StopEnforcingTimeLimit();
@@ -605,7 +605,8 @@ namespace QuantConnect.Lean.Engine
 
             //Take final samples:
             // SqCore Change NEW:
-            // results.Sample(time); // TODO
+            if (results.SqBacktestConfig.SamplingQcOriginal) // Using SamplingSq*PV method we don't want an extra sample at the end of the algorithm, because we create the same sample during the last OnData slice.
+                results.Sample(time);
             // SqCore Change END
 
         } // End of Run();

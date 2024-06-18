@@ -477,7 +477,7 @@ public partial class Program
                 break;
             case "3":
                 Console.WriteLine("Backtest: SqSPYMonFriAtMoc");
-                // backtestConfig = new SqBacktestConfig() { SqResult = SqResult.QcOriginal };
+                // backtestConfig = new SqBacktestConfig() { SqResultStat = SqResultStat.QcOriginalStat };
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("BasicTemplateFrameworkAlgorithm", string.Empty, null, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig); // ! For QC strategies, use the SqResult.QcOriginal backtestConfig
 
                 backtestConfig = new SqBacktestConfig() { SqResultStat = SqResultStat.SqSimpleStat };
@@ -563,10 +563,10 @@ public partial class Program
             }
 
             if (backtestConfig!.SamplingSqRawPv)
-                Console.WriteLine($"#RawPv:{backtestResults.SqSampledLists["rawPV"].Count}. Raw PV: {backtestResults.SqSampledLists["rawPV"][0].Item2:N0}, {backtestResults.SqSampledLists["rawPV"][1].Item2:N0} ... {backtestResults.SqSampledLists["rawPV"][^2].Item2:N0}, {backtestResults.SqSampledLists["rawPV"][^1].Item2:N0}");
+                Console.WriteLine($"#RawPv:{backtestResults.SqSampledLists["rawPV"].Count}. Raw PV: {backtestResults.SqSampledLists["rawPV"][0].Value:N0}, {backtestResults.SqSampledLists["rawPV"][1].Value:N0} ... {backtestResults.SqSampledLists["rawPV"][^2].Value:N0}, {backtestResults.SqSampledLists["rawPV"][^1].Value:N0}");
 
             if (backtestConfig!.SamplingSqTwrPv)
-                Console.WriteLine($"#TwrPv:{backtestResults.SqSampledLists["twrPV"].Count}. TWR PV: {backtestResults.SqSampledLists["twrPV"][0].Item2:N2}, {backtestResults.SqSampledLists["twrPV"][1].Item2:N2} ... {backtestResults.SqSampledLists["twrPV"][^2].Item2:N2}, {backtestResults.SqSampledLists["twrPV"][^1].Item2:N2}");
+                Console.WriteLine($"#TwrPv:{backtestResults.SqSampledLists["twrPV"].Count}. TWR PV: {backtestResults.SqSampledLists["twrPV"][0].Value:N2}, {backtestResults.SqSampledLists["twrPV"][1].Value:N2} ... {backtestResults.SqSampledLists["twrPV"][^2].Value:N2}, {backtestResults.SqSampledLists["twrPV"][^1].Value:N2}");
 
             Dictionary<string, string> finalStat = backtestResults.FinalStatistics;
             var statisticsStr = $"{Environment.NewLine}" + $"{string.Join(Environment.NewLine, finalStat.Select(x => $"STATISTICS:: {x.Key} {x.Value}"))}";

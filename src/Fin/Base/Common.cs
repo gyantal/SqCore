@@ -1,3 +1,5 @@
+using System;
+
 namespace Fin.Base;
 
 // IB uses ContractType, not AssetType, because it handles contracts that produces assets. E.g. 1 CurrencyPair Forex contract can change 2 assets: both UsdAsset and EurAsset.
@@ -58,4 +60,10 @@ public enum ExchangeId : sbyte // differs from dbo.StockExchange, which is 'int'
 
     Unknown = -1 // BooleanFilterWith1CacheEntryPerAssetID.CacheRec.StockExchangeID exploits that values fit in an sbyte
                  // TickerProvider.OldStockTickers exploits that values fit in a byte
+}
+
+public struct DateValue
+{
+    public DateTime Date;
+    public float Value;
 }

@@ -481,20 +481,21 @@ public partial class MemDb
         if (errMsg == null)
         {
             bool returnOnlyTwrPv = true;
-            errMsg = prtf!.GetPortfolioRunResult(returnOnlyTwrPv, SqResultStat.SqSimpleStat, p_forcedStartDate, p_forcedEndDate, out PortfolioRunResultStatistics stat, out List<Tuple<long, float>> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
+            errMsg = prtf!.GetPortfolioRunResult(returnOnlyTwrPv, SqResultStat.SqSimpleStat, p_forcedStartDate, p_forcedEndDate, out PortfolioRunResultStatistics stat, out List<DateValue> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
             if (errMsg == null)
             {
                 // Step2: Filling the ChartPoint Dates and Values to a list. A very condensed format. Dates are separated into its ChartDate List.
                 // Instead of the longer [{"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}]
                 // we send a shorter: { ChartDate: [1641013200, 1641013200, 1641013200], Value: [101665, 101665, 101665] }
                 ChartData chartVal = new();
-                foreach (var item in pv)
+                foreach (DateValue item in pv)
                 {
-                    chartVal.Dates.Add(item.Item1);
+                    long unixTimeInSec = new DateTimeOffset(item.Date).ToUnixTimeSeconds();
+                    chartVal.Dates.Add(unixTimeInSec);
                     if (returnOnlyTwrPv)
-                        chartVal.Values.Add((float)Math.Round(item.Item2, 2)); // if we create a TWR chart starting from 100.0, then reduce float to 2 decimals to reduce JSON file size.
+                        chartVal.Values.Add((float)Math.Round(item.Value, 2)); // if we create a TWR chart starting from 100.0, then reduce float to 2 decimals to reduce JSON file size.
                     else
-                        chartVal.Values.Add((int)item.Item2); // To reduce JSON data size, if PV is RawPV, it is in USD, and usually they are big values like 100,000. Ignore decimal digits.
+                        chartVal.Values.Add((int)item.Value); // To reduce JSON data size, if PV is RawPV, it is in USD, and usually they are big values like 100,000. Ignore decimal digits.
                 }
 
                 // Step3: Filling the Stats data

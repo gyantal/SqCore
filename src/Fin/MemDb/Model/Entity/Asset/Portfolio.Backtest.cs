@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
+using Fin.Base;
 using QuantConnect;
 using QuantConnect.Data;
 using QuantConnect.Data.Market;
@@ -93,7 +94,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
     // Or number of seconds from Unix epoch: '1641013200' is 10 chars. Resolution can be 1 second.
     // Although it is 2 chars more data, but we chose this, because QC uses it and also it will allow us to go intraday in the future.
     // Also it allows to show the user how up-to-date (real-time) the today value is.
-    public string? GetPortfolioRunResult(bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PortfolioRunResultStatistics p_stat, out List<Tuple<long, float>> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
+    public string? GetPortfolioRunResult(bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out PortfolioRunResultStatistics p_stat, out List<DateValue> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
         #pragma warning disable IDE0066 // disable the switch suggestion warning only locally
         switch (Type)
@@ -108,20 +109,20 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         #pragma warning restore IDE0066
     }
 
-    public static string? GetPortfolioRunResultDefault(out PortfolioRunResultStatistics p_stat, out List<Tuple<long, float>> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
+    public static string? GetPortfolioRunResultDefault(out PortfolioRunResultStatistics p_stat, out List<DateValue> p_pv, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
-        List<Tuple<long, float>> pvs = new()
+        List<DateValue> pvs = new()
         {
-            new Tuple<long, float>(1641013200, 101665f),
-            new Tuple<long, float>(1641099600, 101487f),
-            new Tuple<long, float>(1641186000, 101380f),
-            new Tuple<long, float>(1641272400, 101451f),
-            new Tuple<long, float>(1641358800, 101469f),
-            new Tuple<long, float>(1641445200, 101481f),
-            new Tuple<long, float>(1641531600, 101535f),
-            new Tuple<long, float>(1641618000, 101416f),
-            new Tuple<long, float>(1641704400, 101392f),
-            new Tuple<long, float>(1641790800, 101386f)
+            new DateValue { Date = DateTimeOffset.FromUnixTimeSeconds(1641013200).DateTime, Value = 101665f }, // DateTimeOffset.FromUnixTimeSeconds(pv[0].DateInLong).DateTime.Date;
+            new DateValue { Date = DateTimeOffset.FromUnixTimeSeconds(1641099600).DateTime, Value = 101487f },
+            new DateValue { Date = DateTimeOffset.FromUnixTimeSeconds(1641186000).DateTime, Value = 101380f },
+            new DateValue { Date = DateTimeOffset.FromUnixTimeSeconds(1641272400).DateTime, Value = 101451f },
+            new DateValue { Date = DateTimeOffset.FromUnixTimeSeconds(1641358800).DateTime, Value = 101469f },
+            new DateValue { Date = DateTimeOffset.FromUnixTimeSeconds(1641445200).DateTime, Value = 101481f },
+            new DateValue { Date = DateTimeOffset.FromUnixTimeSeconds(1641531600).DateTime, Value = 101535f },
+            new DateValue { Date = DateTimeOffset.FromUnixTimeSeconds(1641618000).DateTime, Value = 101416f },
+            new DateValue { Date = DateTimeOffset.FromUnixTimeSeconds(1641704400).DateTime, Value = 101392f },
+            new DateValue { Date = DateTimeOffset.FromUnixTimeSeconds(1641790800).DateTime, Value = 101386f }
         }; // 5 or 10 real values.
 
         p_pv = pvs; // output
@@ -141,7 +142,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         return null; // No Error
     }
 
-    public string? GetBacktestResult(bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out List<Tuple<long, float>> p_pv, out PortfolioRunResultStatistics p_stat, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
+    public string? GetBacktestResult(bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out List<DateValue> p_pv, out PortfolioRunResultStatistics p_stat, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
         SqBacktestConfig backtestConfig = new SqBacktestConfig() { SqResultStat = p_sqResultStat, SamplingQcOriginal = false, SamplingSqRawPv = false, SamplingSqTwrPv = false };
         if (p_returnOnlyTwrPv) // target is TwrPv
@@ -153,11 +154,6 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
                 backtestConfig.SamplingSqTwrPv = true;
         }
 
-        p_pv = new List<Tuple<long, float>>();
-        p_stat = new PortfolioRunResultStatistics();
-        p_prtfPoss = new List<PortfolioPosition>();
-        p_chartResolution = ChartResolution.Daily;
-
         string algorithmName = String.IsNullOrEmpty(Algorithm) ? "BasicTemplateFrameworkAlgorithm" : Algorithm;
         if (algorithmName == "BasicTemplateFrameworkAlgorithm") // If Original QC algorithms, usually per minute.
         {
@@ -166,6 +162,11 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
             backtestConfig.SamplingSqTwrPv = false;
             backtestConfig.SqResultStat = SqResultStat.QcOriginalStat; // our QcSimple, QcDetailed can only work with Daily resolution TwrPV
         }
+
+        p_pv = new List<DateValue>();
+        p_stat = new PortfolioRunResultStatistics();
+        p_prtfPoss = new List<PortfolioPosition>();
+        p_chartResolution = ChartResolution.Daily;
 
         string backtestAlgorithmParam = GetBacktestAlgorithmParam(p_forcedStartDate, p_forcedEndDate, AlgorithmParam); // AlgorithmParam itself 'can' have StartDate, EndDate. But ChartGenerator can further restricts the period with forcedStartDate/EndDate
         List<Base.Trade>? portTradeHist = MemDb.gMemDb.GetPortfolioTradeHistoryToList(this.TradeHistoryId, null, null); // Don't filter TradeHist based on StartDate, because to properly backtest we need the initial trades that happende Before StartDate. StartDate refers to the ChartGeneration usually. But we have to simulate previous buying trades, even before StartDate.
@@ -177,25 +178,9 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} (If noDeposit: {(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
 
         // Step 1: create the p_pv of the result.
-        if (backtestConfig.SamplingSqRawPv || backtestConfig.SamplingSqTwrPv) // ChartResolution.Daily, backtestResults.SqSampledLists["*PV"] (List<Tuple<DateTime, float>>) => new List<Tuple<long, float>>
-        {
-            List<Tuple<DateTime, float>> pvs = backtestConfig.SamplingSqTwrPv ? backtestResults.SqSampledLists["twrPV"] : backtestResults.SqSampledLists["rawPV"];
-            p_pv = new List<Tuple<long, float>>(pvs.Count); // create the List with the final Capacity
-            DateTime currentDate = DateTime.MinValue; // initialize currentDate to the smallest possible value
-            for (int i = 0; i < pvs.Count; i++) // Convert the DateTime to long
-            {
-                Tuple<DateTime, float> item = pvs[i];
-                if (item.Item1.Date != currentDate) // if this is a new date, add a new point to p_pv
-                {
-                    long unixTime = new DateTimeOffset(item.Item1).ToUnixTimeSeconds();
-                    p_pv.Add(new Tuple<long, float>(unixTime, item.Item2));
-                    currentDate = item.Item1.Date;
-                }
-                else // if this is the same date as the previous point, update the y value
-                    p_pv[^1] = new Tuple<long, float>(p_pv[^1].Item1, item.Item2); // update the last point
-            }
-        }
-        else // If SamplingQcOriginal, then ChartPoints => p_pv = new List<Tuple<long, float>>
+        if (backtestConfig.SamplingSqRawPv || backtestConfig.SamplingSqTwrPv) // ChartResolution.Daily
+            p_pv = backtestConfig.SamplingSqTwrPv ? backtestResults.SqSampledLists["twrPV"] : backtestResults.SqSampledLists["rawPV"];
+        else // If SamplingQcOriginal, then ChartPoints => p_pv = new List<DateValue>
         {
             List<ChartPoint> equityChart = backtestResults.Charts["Strategy Equity"].Series["Equity"].Values;
 
@@ -218,7 +203,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
 
             if (p_chartResolution == ChartResolution.Daily)
             {
-                // Eliminate daily chart duplicates. There is 1 point for weekends, but 2 points (morning, marketclose) for the weekdays. We keep only the last Y value for the day.
+                // Eliminate daily chart duplicates. There is 1 point for weekends, but 2 points (morning, market close) for the weekdays. We keep only the last Y value for the day.
                 DateTime currentDate = DateTime.MinValue; // initialize currentDate to the smallest possible value
                 for (int i = 0; i < equityChart.Count; i++)
                 {
@@ -227,20 +212,22 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
                     DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(item.x).DateTime.Date;
                     if (itemDate != currentDate) // if this is a new date, add a new point to p_pv
                     {
-                        p_pv.Add(new Tuple<long, float>(item.x, (float)item.y));
+                        p_pv.Add(new DateValue { Date = itemDate, Value = (float)item.y });
                         currentDate = itemDate; // set currentDate to the new date
                     }
                     else // if this is the same date as the previous point, update the existing point
-                        p_pv[^1] = new Tuple<long, float>(item.x, (float)item.y);
+                        p_pv[^1] = new DateValue { Date = itemDate, Value = (float)item.y };
                 }
             }
             else // PerMinute Data
             {
                 for (int i = 0; i < equityChart.Count; i++)
-                    p_pv.Add(new Tuple<long, float>(equityChart[i].x, (float)equityChart[i].y));
+                {
+                    DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(equityChart[i].x).DateTime;
+                    p_pv.Add(new DateValue { Date = itemDate, Value = (float)equityChart[i].y });
+                }
             }
         }
-
         // Step 2: create the p_stat of the result.
         if (p_sqResultStat != SqResultStat.NoStat)
         {

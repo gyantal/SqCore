@@ -7,6 +7,7 @@ using QuantConnect.Algorithm.Framework.Risk;
 using QuantConnect.Algorithm.Framework.Selection;
 using QuantConnect.Orders;
 using QuantConnect.Interfaces;
+using QuantConnect.Data;
 
 namespace QuantConnect.Algorithm.CSharp
 {
@@ -23,6 +24,10 @@ namespace QuantConnect.Algorithm.CSharp
         /// </summary>
         public override void Initialize()
         {
+            // SqCore Change NEW:
+            // TEMP: for per minute algorithms, we have to switch off the daily data tweak, but the prolem is that it is global static, and if we overwrite this, this will affect all other backtests on all other threads
+            // Parameters.SqBacktestConfig.SqDailyTradingAtMOC = false;
+            // SqCore Change END
             // Set requested data resolution
             UniverseSettings.Resolution = Resolution.Minute;
 
@@ -64,6 +69,13 @@ namespace QuantConnect.Algorithm.CSharp
                 Debug($"BasicTemplateFrameworkAlgorithm.OnOrderEvent(). Purchased Stock: {orderEvent.Symbol}"); // goes into LogStore
             }
         }
+
+        // SqCore Change NEW:
+        public override void OnData(Slice slice)
+        {
+            return;
+        }
+        // SqCore Change END
 
         /// <summary>
         /// This is used by the regression test system to indicate if the open source Lean repository has the required data to run this algorithm.

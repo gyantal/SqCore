@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using Fin.Base;
 using Fin.MemDb;
 using Microsoft.AspNetCore.Http;
 using QuantConnect;
@@ -123,7 +124,7 @@ public class ChrtGenWs
         // Step 2: Filling the chrtGenPrtfRunResultJs to a list.
         for (int i = 0; i < lsPrtf.Count; i++)
         {
-            string? errMsg = lsPrtf[i].GetPortfolioRunResult(true, SqResultStat.NoStat, p_forcedStartDate, p_forcedEndDate, out PortfolioRunResultStatistics stat, out List<Tuple<long, float>> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
+            string? errMsg = lsPrtf[i].GetPortfolioRunResult(true, SqResultStat.NoStat, p_forcedStartDate, p_forcedEndDate, out PortfolioRunResultStatistics stat, out List<DateValue> pv, out List<PortfolioPosition> prtfPos, out ChartResolution chartResolution);
             if (errMsg != null)
                 sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Error, Message = errMsg });
             ChartData chartVal = new();
@@ -141,8 +142,8 @@ public class ChrtGenWs
                 if (chartResolution == ChartResolution.Daily)
                 {
                     dateTimeFormat = DateTimeFormat.DaysFromADate;
-                    startDate = DateTimeOffset.FromUnixTimeSeconds(pv[0].Item1).DateTime.Date;
-                    chartVal.DateTimeFormat = "DaysFrom" + startDate.ToYYYYMMDD(); // the standard choice in Production. It results the less data to be sent. Date strings will be only numbers such as 0,1,2,3,4,5,8 (skipping weekends)
+                    startDate = pv[0].Date.Date;
+                    chartVal.DateTimeFormat = "DaysFrom" + startDate.ToYYYYMMDD(); // the standard choice in Production. It results in less data to be sent. Date strings will be only numbers such as 0,1,2,3,4,5,8 (skipping weekends)
 
                     // dateTimeFormat = DateTimeFormat.YYYYMMDD;
                     // chartVal.DateTimeFormat = "YYYYMMDD"; // YYYYMMDD is a better choice if we debug data sending. (to see it in the TXT message. Or to easily convert it to CSV in Excel)
@@ -153,26 +154,29 @@ public class ChrtGenWs
                     chartVal.DateTimeFormat = "SecSince1970"; // if it is higher resolution than daily, then we use per second resolution for data
                 }
 
-                foreach (var item in pv)
+                foreach (DateValue item in pv)
                 {
-                    DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(item.Item1).DateTime.Date;
+                    DateTime itemDate = item.Date.Date;
                     if (itemDate < minPortfoliosStartDate)
                         minPortfoliosStartDate = itemDate; // MinStart Date of the portfolio's
 
                     if (dateTimeFormat == DateTimeFormat.SecSince1970)
-                        chartVal.Dates.Add(item.Item1);
+                    {
+                        long unixTimeInSec = new DateTimeOffset(item.Date).ToUnixTimeSeconds();
+                        chartVal.Dates.Add(unixTimeInSec);
+                    }
                     else if (dateTimeFormat == DateTimeFormat.YYYYMMDD)
                     {
                         int dateInt = itemDate.Year * 10000 + itemDate.Month * 100 + itemDate.Day;
                         chartVal.Dates.Add(dateInt);
                     }
-                    else // dateTimeFormat ==  DateTimeFormat.DaysFromADate
+                    else // dateTimeFormat == DateTimeFormat.DaysFromADate
                     {
                         int nDaysFromStartDate = (int)(itemDate - startDate).TotalDays; // number of days since startDate
                         chartVal.Dates.Add(nDaysFromStartDate);
                     }
 
-                    chartVal.Values.Add(item.Item2);
+                    chartVal.Values.Add(item.Value);
                 }
             }
             _ = prtfPos; // To avoid the compiler Warning "Unnecessary assigment of a value" for unusued variables.
