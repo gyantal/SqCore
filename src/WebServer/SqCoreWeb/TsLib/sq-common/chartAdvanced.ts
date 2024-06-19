@@ -4,7 +4,8 @@ import * as d3 from 'd3';
 export function prtfRunResultChrt(chrtData: { date: Date; value: number; }[], lineChrtDiv: HTMLElement, inputWidth: number, inputHeight: number, margin: any, xMin: any, xMax: any, yMinAxis: any, yMaxAxis: any) {
   // range of data configuring
   const scaleX = d3.scaleTime().domain([xMin, xMax]).range([0, inputWidth]);
-  const scaleY = d3.scaleLinear().domain([yMinAxis - 500, yMaxAxis + 500]).range([inputHeight, 0]); // as the chart values ranges are high we need a big number to subtract to define the scaleY, otherwise the chart will go below the x-axis
+  const yAxisRangeBuffer = (yMaxAxis - yMinAxis) * 0.1; // A buffer(10%) added to the y-axis scale to ensure there's some padding around the highest(yMaxAxis) and lowest(yMinAxis) data points, making the graph look better.
+  const scaleY = d3.scaleLinear().domain([yMinAxis - yAxisRangeBuffer, yMaxAxis + yAxisRangeBuffer]).range([inputHeight, 0]); // as the chart values ranges are high we need a big number to subtract to define the scaleY, otherwise the chart will go below the x-axis
 
   const pfChrt = d3.select(lineChrtDiv).append('svg')
       .attr('width', inputWidth + margin.left + margin.right)

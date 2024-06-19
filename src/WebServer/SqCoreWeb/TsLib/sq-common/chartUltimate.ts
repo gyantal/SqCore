@@ -88,7 +88,7 @@ export class UltimateChart {
     backtestChrt.append('g')
         .attr('transform', 'translate(0,' + this._chartHeight + ')')
         .call(d3.axisBottom(scaleX));
-    const chrtScaleYAxis = d3.axisLeft(scaleY).tickFormat((r: any) => Math.round(r) + '%');
+    const chrtScaleYAxis = d3.axisLeft(scaleY);
     backtestChrt.append('g').call(chrtScaleYAxis);
 
     // Draw the lines for each data series
