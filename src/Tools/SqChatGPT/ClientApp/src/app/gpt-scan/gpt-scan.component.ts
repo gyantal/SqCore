@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { UserInput } from '../lib/gpt-common';
 import { sleep } from '../../../../../../WebServer/SqCoreWeb/TsLib/sq-common/utils-common'
@@ -59,7 +59,6 @@ export class GptScanComponent implements OnInit {
     'Nasdaq100...': 'ADBE,ADP,ABNB,ALGN,GOOG,AMZN,AMD,AEP,AMGN,ADI,ANSS,AAPL,AMAT,ASML,AZN,TEAM,ADSK,BKR,BIIB,BKNG,AVGO,CDNS,CHTR,CTAS,CSCO,CTSH,CMCSA,CEG,CPRT,CSGP,COST,CRWD,CSX,DDOG,DXCM,FANG,DLTR,EBAY,EA,ENPH,EXC,FAST,FTNT,GEHC,GILD,GFS,HON,IDXX,ILMN,INTC,INTU,ISRG,JD,KDP,KLAC,KHC,LRCX,LCID,LULU,MAR,MRVL,MELI,META,MCHP,MU,MSFT,MRNA,MDLZ,MNST,NFLX,NVDA,NXPI,ORLY,ODFL,ON,PCAR,PANW,PAYX,PYPL,PDD,PEP,QCOM,REGN,ROST,SGEN,SIRI,SBUX,SNPS,TMUS,TSLA,TXN,TTD,VRSK,VRTX,WBA,WBD,WDAY,XEL,ZM,ZS',
   }; // Nasdaq100 list from Wikipedia. 100 stocks. GOOGL is removed, because YF news result for GOOG is exactly the same
   _httpClient: HttpClient;
-  _baseUrl: string;
   _controllerBaseUrl: string;
   _selectedLlmModel: string  = 'auto';
   _selectedTickers: string = '';
@@ -70,10 +69,10 @@ export class GptScanComponent implements OnInit {
   _isSortingDirectionAscending: boolean = false;
   _isSpinnerVisible: boolean = false;
 
-  constructor(http: HttpClient, @Inject('BASE_URL') baseUrl: string) {
+  constructor(http: HttpClient) {
     this._httpClient = http;
-    this._baseUrl = baseUrl;
-    this._controllerBaseUrl = baseUrl + 'gptscan/';
+    this._controllerBaseUrl = window.location.origin + '/gptscan/';
+    console.log('window.location.origin', window.location.origin);
   }
 
   ngOnInit(): void {

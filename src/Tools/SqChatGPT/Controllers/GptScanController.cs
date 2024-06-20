@@ -397,8 +397,11 @@ public class GptScanController : ControllerBase
 
         string newsStr = await DownloadCompleteNews(p_inMsg.NewsUrl);
         string responseStr;
-        if (!newsStr.Contains("recommend visiting")) // checking for the condition if newsStr has the complete story or it is directing to another link
-        {
+        if (String.IsNullOrEmpty(newsStr))
+            responseStr = "News cannot be downloaded.";
+        else if (newsStr.Contains("recommend visiting") || newsStr.Contains("Premium"))
+            responseStr = newsStr; // In some cases, the full news article is not accessible. We provide users with a direct link, but some articles require premium access.
+        else {
             UserInput p_userInp = new()
             {
                 LlmModelName = p_inMsg.LlmModelName,
@@ -406,8 +409,6 @@ public class GptScanController : ControllerBase
             };
             responseStr = await GenerateChatResponse(p_userInp);
         }
-        else
-            responseStr = newsStr;
         string responseJson = JsonSerializer.Serialize(responseStr); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
         return Ok(responseJson);
     }
@@ -486,13 +487,19 @@ public class GptScanController : ControllerBase
         }
         divWithCaasbodyStartPos += "caas-body>".Length;
         ReadOnlySpan<char> htmlBodySpan = htmlSpan.Slice(divWithCaasbodyStartPos);
-        int divWithCaasbodyEndPos = htmlBodySpan.IndexOf("</p></div>");
+        // As of 2024-06-10, the method to find the index was based on "</p><div>", but it stopped working because the HTML format changed to "</p><div id="view-cmts-cta-d9f6eab7-b4bb-3acb-b8d4-6b234d1fc821" class="view-cmts-cta-wrapper">". Interestingly, the id is unique for each news article so using "class=view-cmts-cta-wrapper>" to find the index.
+        int divWithCaasbodyEndPos = htmlBodySpan.IndexOf("class=view-cmts-cta-wrapper>");
         if (divWithCaasbodyEndPos == -1)
         {
-            Console.WriteLine("Cannot find </p></div>. Stop processing.");
-            return string.Empty;
+            if(p_html.Contains("caas-premium-paywall"))
+                return "Premium news";
+            else
+            {
+                Console.WriteLine("Cannot find class=view-cmts-cta-wrapper>. Stop processing.");
+                return string.Empty;
+            }
         }
-        divWithCaasbodyEndPos -= "</p>".Length; // keeping the end paragraph tag "</p>", so that we can iterate between paragraph opening and ending tags
+        // divWithCaasbodyEndPos -= "</p>".Length; // keeping the end paragraph tag "</p>", so that we can iterate between paragraph opening and ending tags
         ReadOnlySpan<char> span = htmlBodySpan.Slice(start: 0, length: divWithCaasbodyEndPos);
 
         while (true)
@@ -588,7 +595,7 @@ public class GptScanController : ControllerBase
         return JsonSerializer.Serialize(responseDateStr); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
     }
 
-    // As of 2024-06-2024, it was observed that the Earnings Date was not displayed on the UI.
+    // As of 2024-06-10, it was observed that the Earnings Date was not displayed on the UI.
     // The HTML structure for finding the Earnings Date, previously using <span> and <td> elements, has changed to using <span> with class and <li> tags.
     // Refer to the method ProcessHtmlContentForEarningsDate() for further details.
     static string ProcessHtmlContentForEarningsDate_old(string p_html)
