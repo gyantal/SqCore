@@ -436,13 +436,13 @@ tr:nth-child(even) {
 #bullishPennantContainer {
   width: 4rem;
   height: 2.5rem;
-  background-color: lightblue;
-  border: .2rem solid #228B22;
+  background-color: #d4f7aa;
+  border: .2rem solid #4e95f4;
   border-radius: 0.5rem;
   cursor: pointer;
 }
 
 #bullishPennantContainer:hover {
-  background-color: #ede8e6;
+  background-color: lightblue;
   transform: scale(1.05); /* increasing the container size by 5% on hover */
 }

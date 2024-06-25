@@ -1,28 +1,26 @@
-<div class="mainDiv1">
-  <h4>Technical Analyzer</h4>
-  <div>Tickers:<input id="wideInputWidth" type="text" [value]="m_tickersStr" (change)="onInputTickers($event)"></div><br>
-  <div id="pctChnTableContainer">
-    <table *ngIf="m_assetHistDatas.length > 0">  <!-- Verify if m_assetHistDatas contains data; otherwise, (the second) *ngFor indexes into the [0] item forDates, and that will fail. -->
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th *ngFor="let asset of m_assetHistDatas">{{ asset.symbol }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let dateIndex of m_assetHistDatas[0].pctChnDatas; let i = index"> <!-- To iterate through dates using the first asset's pctChnDatas array -->
-          <td>{{ m_assetHistDatas[0].pctChnDatas[i].Date | date : 'yyyy-MM-dd' }}</td>  <!-- Display the date in the first column -->
-          <td *ngFor="let asset of m_assetHistDatas">
-            <!-- To ensure the tooltip text is positioned correctly when the mouse hovers over the parent element "pctChnTooltip", the mouseover event is used to activate the child element "pctChnTooltipText". Once the child element is activated, the mouseenter event positions the tooltip text to the right side. 
-             see. https://www.quora.com/Should-I-use-Mouseover-or-Mouseenter#:~:text=Most%20times%20mouseover%20will%20be,element%20that's%20not%20a%20child.-->
-              <div id="pctChnTooltip" (mouseover)="onMouseoverPctChnWtAggCell()" (mouseenter)="onMouseenterPctChnWtAggCell($event, asset.pctChnDatas[i])" (mouseleave)="onMouseleavePctChnWtAggCell()">
-              {{ asset.pctChnDatas[i].pctChnWeightAggregate | percent:'1.0' }}
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+<h4>Technical Analyzer</h4>
+<div>Tickers:<input id="wideInputWidth" type="text" [value]="m_tickersStr" (change)="onInputTickers($event)"></div><br>
+<div id="pctChnTableContainer">
+  <table *ngIf="m_assetHistDatas.length > 0">  <!-- Verify if m_assetHistDatas contains data; otherwise, (the second) *ngFor indexes into the [0] item forDates, and that will fail. -->
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th *ngFor="let asset of m_assetHistDatas">{{ asset.symbol }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let dateIndex of m_assetHistDatas[0].pctChnDatas; let i = index"> <!-- To iterate through dates using the first asset's pctChnDatas array -->
+        <td>{{ m_assetHistDatas[0].pctChnDatas[i].Date | date : 'yyyy-MM-dd' }}</td>  <!-- Display the date in the first column -->
+        <td *ngFor="let asset of m_assetHistDatas">
+          <!-- To ensure the tooltip text is positioned correctly when the mouse hovers over the parent element "pctChnTooltip", the mouseover event is used to activate the child element "pctChnTooltipText". Once the child element is activated, the mouseenter event positions the tooltip text to the right side. 
+            see. https://www.quora.com/Should-I-use-Mouseover-or-Mouseenter#:~:text=Most%20times%20mouseover%20will%20be,element%20that's%20not%20a%20child.-->
+            <div id="pctChnTooltip" (mouseover)="onMouseoverPctChnWtAggCell()" (mouseenter)="onMouseenterPctChnWtAggCell($event, asset.pctChnDatas[i])" (mouseleave)="onMouseleavePctChnWtAggCell()">
+            {{ asset.pctChnDatas[i].pctChnWeightAggregate | percent:'1.0' }}
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 <div id="pctChnTooltipText" *ngIf="m_isShowPctChnTooltip">
   <span *ngFor="let item of [{period: 60, signal: 1}, {period: 120, signal: 2}, {period: 180, signal: 3}, {period: 252, signal: 4}]">
