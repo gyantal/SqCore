@@ -395,12 +395,15 @@ public class GptScanController : ControllerBase
          if (p_inMsg == null)
             return BadRequest("Invalid data");
 
-        string newsStr = await DownloadCompleteNews(p_inMsg.NewsUrl);
+        (string newsStr, string userMsg) = await DownloadCompleteNews(p_inMsg.NewsUrl);
         string responseStr;
         if (String.IsNullOrEmpty(newsStr))
-            responseStr = "News cannot be downloaded.";
-        else if (newsStr.Contains("recommend visiting") || newsStr.Contains("Premium"))
-            responseStr = newsStr; // In some cases, the full news article is not accessible. We provide users with a direct link, but some articles require premium access.
+        {
+            if (String.IsNullOrEmpty(userMsg))
+                responseStr = "News cannot be downloaded.";
+            else
+                responseStr = userMsg;
+        }
         else {
             UserInput p_userInp = new()
             {
@@ -420,12 +423,12 @@ public class GptScanController : ControllerBase
         if (p_inMsg == null)
             return BadRequest("Invalid data");
 
-        string newsStr = await DownloadCompleteNews(p_inMsg.Msg);
+        (string newsStr, string userMsg) = await DownloadCompleteNews(p_inMsg.Msg);
         string responseStr;
-        if (!newsStr.Contains("recommend visiting")) // checking for the condition if newsStr has the complete story or it is directing to another link
-            responseStr = "yes";
-        else
+        if (String.IsNullOrEmpty(newsStr) || !String.IsNullOrEmpty(userMsg))
             responseStr = "no";
+        else
+            responseStr = "yes";
         string responseJson = JsonSerializer.Serialize(responseStr); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
         return Ok(responseJson);
     }
@@ -437,9 +440,11 @@ public class GptScanController : ControllerBase
         if (p_inMsg == null)
             return BadRequest("Invalid data");
 
-        string newsStr = await DownloadCompleteNews(p_inMsg.Msg);
-        string responseStr = string.Empty;
-        if (!newsStr.Contains("recommend visiting")) // checking for the condition if newsStr has the complete story or it is directing to another link
+        string responseStr;
+        (string newsStr, string userMsg) = await DownloadCompleteNews(p_inMsg.Msg);
+        if (String.IsNullOrEmpty(newsStr) || !String.IsNullOrEmpty(userMsg))
+            responseStr = string.Empty;
+        else
         {
             var analyzer = new SentimentIntensityAnalyzer();
             var result = analyzer.PolarityScores(newsStr);
@@ -449,7 +454,7 @@ public class GptScanController : ControllerBase
         return Ok(responseJson);
     }
 
-    public async Task<string> DownloadCompleteNews(string p_newsUrl)
+    public async Task<(string, string)> DownloadCompleteNews(string p_newsUrl) // returns newsStr , UserMsg
     {
         string responseStr;
         string? htmlContent = await Utils.DownloadStringWithRetryAsync(p_newsUrl);
@@ -467,9 +472,9 @@ public class GptScanController : ControllerBase
             // The problem is that any cleaning is a moving target, as YF changes the layout every once in a while
         }
         else
-            responseStr = $"The full news isn't accessible on Yahoo Finance. I recommend visiting this <a href={p_newsUrl}>link</a> to directly retrieve the summary from ChatGPT.";
+            return (string.Empty, $"The full news isn't accessible on Yahoo Finance. I recommend visiting this <a href={p_newsUrl}>link</a> to directly retrieve the summary from ChatGPT.");
 
-        return responseStr;
+        return (responseStr, string.Empty);
     }
 
     static string ProcessHtmlContentFast(string p_html) // Elapsed Time: 91 microseconds
@@ -491,13 +496,8 @@ public class GptScanController : ControllerBase
         int divWithCaasbodyEndPos = htmlBodySpan.IndexOf("class=view-cmts-cta-wrapper>");
         if (divWithCaasbodyEndPos == -1)
         {
-            if(p_html.Contains("caas-premium-paywall"))
-                return "Premium news";
-            else
-            {
-                Console.WriteLine("Cannot find class=view-cmts-cta-wrapper>. Stop processing.");
-                return string.Empty;
-            }
+            Console.WriteLine("Cannot find class=view-cmts-cta-wrapper>. Stop processing.");
+            return string.Empty;
         }
         // divWithCaasbodyEndPos -= "</p>".Length; // keeping the end paragraph tag "</p>", so that we can iterate between paragraph opening and ending tags
         ReadOnlySpan<char> span = htmlBodySpan.Slice(start: 0, length: divWithCaasbodyEndPos);
