@@ -29,9 +29,9 @@ namespace BenchmarkDB
 
         public static void TestPing()
         {
-            string address = Program.gConfiguration.GetConnectionString("PingDefault");
+            string address = Program.gConfiguration.GetConnectionString("PingDefault") ?? throw new SqException("Error. 'PingDefault' is not found in Configuration");
             Console.WriteLine($"Program.gConfiguration.GetConnectionString(PingDefault): '{address}'");
-            int nTries = Utils.InvariantConvert<int>(Program.gConfiguration["AppSettings:TestPingNTries"]);   
+            int nTries = Utils.InvariantConvert<int>(Program.gConfiguration["AppSettings:TestPingNTries"] ?? throw new SqException("Error. 'AppSettings:TestPingNTries' is not found in Configuration"));   
             long sumPingTimes = 0;
             for (int i = 0; i < nTries; i++)
             {

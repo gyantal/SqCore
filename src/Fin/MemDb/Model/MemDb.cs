@@ -18,6 +18,7 @@ public partial class MemDb : IDisposable
     public static readonly MemDb gMemDb = new();   // Singleton pattern. The C# base class Lazy<T> is unnecessary overhead each time Instance => LazyComposer.Value; is accessed.
     // public object gMemDbUpdateLock = new object();  // the rare clients who care about inter-table consintency (VBroker) should obtain the lock before getting pointers to subtables
     Db m_Db = null!; // ignore warning CS8618 Non-nullable property X must contain a non-null value when exiting constructor.; // Persistent database store, like Redis or Sql
+    LegacyDb m_legacyDb = null!;
 
     MemData m_memData = new();  // strictly private. Don't allow clients to store separate MemData pointers. Clients should use GetAssuredConsistentTables() in general.
 
@@ -57,9 +58,14 @@ public partial class MemDb : IDisposable
     {
     }
 
-    public void Init(Db p_db)
+    public void Init(int p_redisDbIndex)
     {
-        m_Db = p_db;
+        string redisConnString = (OperatingSystem.IsWindows() ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"]) ?? throw new SqException("Redis ConnectionStrings is missing from Config");
+        m_Db = new Db(redisConnString, p_redisDbIndex, null);   // mid-level DB wrapper above low-level DB
+
+        m_legacyDb = new LegacyDb();
+        Utils.RunInNewThread(ignored => m_legacyDb.Init_WT()); // Init Legacy SQL DB in a separate thread. The main MemDb.Init_WT() doesn't require its existence. We only need it for backtesting legacy portfolios much later.
+
         Utils.RunInNewThread(ignored => Init_WT()); // Better to do long consuming data preprocess in working thread than in the main thread, so other services can start to initialize in parallel
     }
 
@@ -447,6 +453,7 @@ public partial class MemDb : IDisposable
                 m_dbReloadTimer = null;
                 m_historicalDataReloadTimer?.Dispose();
                 m_historicalDataReloadTimer = null;
+                m_legacyDb?.Dispose(); // Dispose the LegacyDb instance
             }
 
             // TODO: free unmanaged resources (unmanaged objects) and override finalizer

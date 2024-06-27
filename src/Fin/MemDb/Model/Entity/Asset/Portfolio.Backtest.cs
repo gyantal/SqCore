@@ -88,6 +88,11 @@ public class PriceHistoryJs // To save bandwidth, we send Dates, and Prices just
 [DebuggerDisplay("{Id}, Name:{Name}, User:{User?.Username??\"-NoUser-\"}")]
 public partial class Portfolio : Asset // this inheritance makes it possible that a Portfolio can be part of an Uber-portfolio
 {
+    public virtual List<Base.Trade>? GetTradeHistory()
+    {
+        return MemDb.gMemDb.GetPortfolioTradeHistoryToList(this.TradeHistoryId, null, null); // Don't filter TradeHist based on StartDate, because to properly backtest we need the initial trades that happende Before StartDate. StartDate refers to the ChartGeneration usually. But we have to simulate previous buying trades, even before StartDate.
+    }
+
     // PortfolioValue chart data.
     // We have the option to return Date fields in different formats in JSON string:
     // '2021-01-27' is 10 chars, '20210127' is 8 chars. Resolution is only daily.
@@ -169,7 +174,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         p_chartResolution = ChartResolution.Daily;
 
         string backtestAlgorithmParam = GetBacktestAlgorithmParam(p_forcedStartDate, p_forcedEndDate, AlgorithmParam); // AlgorithmParam itself 'can' have StartDate, EndDate. But ChartGenerator can further restricts the period with forcedStartDate/EndDate
-        List<Base.Trade>? portTradeHist = MemDb.gMemDb.GetPortfolioTradeHistoryToList(this.TradeHistoryId, null, null); // Don't filter TradeHist based on StartDate, because to properly backtest we need the initial trades that happende Before StartDate. StartDate refers to the ChartGeneration usually. But we have to simulate previous buying trades, even before StartDate.
+        List<Base.Trade>? portTradeHist = this.GetTradeHistory(); // Don't filter TradeHist based on StartDate, because to properly backtest we need the initial trades that happende Before StartDate. StartDate refers to the ChartGeneration usually. But we have to simulate previous buying trades, even before StartDate.
         BacktestingResultHandler backtestResults = Backtester.BacktestInSeparateThreadWithTimeout(algorithmName, backtestAlgorithmParam, portTradeHist, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig);
         if (backtestResults == null)
             return "Error in Backtest";

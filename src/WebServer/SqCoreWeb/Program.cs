@@ -105,11 +105,9 @@ public partial class Program
             DashboardClient.PreInit();    // services add handlers to the MemDb.EvMemDbInitialized event.
 
             // 2. Init services
-            var redisConnString = (OperatingSystem.IsWindows() ? Utils.Configuration["ConnectionStrings:RedisDefault"] : Utils.Configuration["ConnectionStrings:RedisLinuxLocalhost"]) ?? throw new SqException("Redis ConnectionStrings is missing from Config");
-            int redisDbIndex = 0;  // DB-0 is ProductionDB. DB-1+ can be used for Development when changing database schema, so the Production system can still work on the ProductionDB
-            var db = new Db(redisConnString, redisDbIndex, null);   // mid-level DB wrapper above low-level DB
             BrokersWatcher.gWatcher.Init(); // Returns quickly, because Broker connections happen in a separate ThreadPool threads. FintechCommon's MemDb is built on BrokerCommon's BrokerWatcher. So, it makes sense to initialize Brokers asap. Before MemDb uses it for RtNavTimer_Elapsed.ownloadLastPriceNav() very early
-            MemDb.gMemDb.Init(db); // high level DB used by functionalities
+            int redisDbIndex = 0;  // DB-0 is ProductionDB. DB-1+ can be used for Development when changing database schema, so the Production system can still work on the ProductionDB
+            MemDb.gMemDb.Init(redisDbIndex); // high level DB used by functionalities
             FinDb.gFinDb.Init();
             SqTaskScheduler.gTaskScheduler.Init();
 
@@ -245,6 +243,8 @@ public partial class Program
         Console.WriteLine("3. RedisDb: Mirror DB-i to DB-j");
         Console.WriteLine("4. RedisDb: Upsert gSheet Assets to DB-?.(!!! See steps as comments in Controller.cs))");
         Console.WriteLine("5. MemDb: Reload data from RedisDb (DB-ActiveIndex) to MemDb");
+        Console.WriteLine("6. LegacyDb: Test connection");
+        Console.WriteLine("7. LegacyDb: Get example trades");
         Console.WriteLine("9. Exit to main menu.");
         string userInput;
         try
@@ -273,6 +273,13 @@ public partial class Program
                 break;
             case "5":
                 MemDb.gMemDb.ReloadDbDataIfChangedImpl().TurnAsyncToSyncTask();
+                break;
+            case "6":
+                MemDb.gMemDb.TestLegacyDbConnection();
+                break;
+            case "7":
+                List<Trade>? trades = MemDb.gMemDb.GetLegacyPortfolioTradeHistoryToList("! CXO Combined Value-Momentum 2021 Live");
+                Console.WriteLine($"Number of trades in the '! CXO Combined Value-Momentum 2021 Live' portfolio: {trades?.Count.ToString() ?? "N/A"}");
                 break;
             case "9":
                 return "UserChosenExit";
@@ -489,6 +496,7 @@ public partial class Program
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqTradeAccumulation", string.Empty,
                 //    [new Trade() { Id = 0, Action = TradeAction.Deposit, Symbol = "USD", Price = 100000, Quantity = 1, Time = new DateTime(2022, 09, 01) }, new Trade() { Id = 1, AssetType = AssetType.Stock, Action = TradeAction.Buy, Symbol = "TSLA", Price = 100, Quantity = 87, Time = new DateTime(2022, 09, 01) }, new Trade() { Id = 2, AssetType = AssetType.Stock, Action = TradeAction.Sell, Symbol = "TSLA", Price = 200, Quantity = 87, Time = new DateTime(2023, 08, 31) }], @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig); // testing sending TradeHist input
                 // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqTradeAccumulation", string.Empty, MemDb.gMemDb.GetPortfolioTradeHistoryToList(2, null, null), @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig); // testing sending TradeHist input
+                // backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqTradeAccumulation", string.Empty, new LegacyPortfolio { LegacyDbPortfName = "! CXO Combined Value-Momentum 2021 Live" }.GetTradeHistory(), @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig); // testing sending TradeHist input
                 backtestResults = Backtester.BacktestInSeparateThreadWithTimeout("SqPctAllocation", "startDate=2002-07-29&endDate=now&startDateAutoCalcMode=WhenFirstTickerAlive&assets=SPY,TLT&weights=60,40&rebFreq=Daily,30d", null, @"{""ema-fast"":10,""ema-slow"":20}", backtestConfig);
                 break;
             case "4":
