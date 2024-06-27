@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using Fin.MemDb;
 using MathCommon.MathNet;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +13,31 @@ using YahooFinanceApi;
 
 namespace SqCoreWeb.Controllers;
 
-public enum PctChnSignal : byte { Unknown = 0, NonValidBull = 1, NonValidBear = 2, ValidBull = 3, ValidBear = 4 }
+public enum PctlChnSignal : byte { Unknown = 0, NonValidBull = 1, NonValidBear = 2, ValidBull = 3, ValidBear = 4 }
+
+public struct PctlChannel
+{
+    [JsonPropertyName("v")]
+    public float PctlValue { get; set; }
+    [JsonPropertyName("s")]
+    public PctlChnSignal PctlChnSignal { get; set; }
+}
+public struct AggregatePctlChannel
+{
+    [JsonPropertyName("a")]
+    public float Aggregate { get; set; } // e.g. 0%, 25%, 50%, 75%, 100%
+    [JsonPropertyName("c")]
+    public List<PctlChannel> PctlChannels { get; set; }
+}
+public struct AggregateDatePctlChannel
+{
+    [JsonPropertyName("d")]
+    public DateTime Date { get; set; }
+    [JsonPropertyName("a")]
+    public float Aggregate { get; set; } // e.g. 0%, 25%, 50%, 75%, 100%
+    [JsonPropertyName("c")]
+    public List<PctlChannel> PctlChannels { get; set; }
+}
 
 [ApiController]
 [Route("[controller]")]
@@ -760,7 +785,7 @@ public class StrategyUberTaaController : ControllerBase
 
     // p_calculationLookbackDays = 50 seems to be a safe choice for the parameter. In 30 minutes, it was impossible to find any tickers that gave an Invalid (either Bull/Bear) signal
     // with p_calculationLookbackDays = 10, it was possible to find sideways tickers (e.g. 2024-06-05: AMD) that gave Invalid-Bull/Bear signals, but even that was not frequent.
-    public static List<Tuple<DateTime, float, List<Tuple<float, PctChnSignal>>>> PctChnWeightsWithDates(string p_ticker, DateTime p_endDate, int[] p_pctChnLookbackDays, int p_calculationLookbackDays, int p_resultLengthDays, int p_bottomPctThreshold, int p_topPctThreshold) // p_prices must be Adjusted, and ordered
+    public static List<Tuple<DateTime, float, List<Tuple<float, PctlChnSignal>>>> PctChnWeightsWithDates(string p_ticker, DateTime p_endDate, int[] p_pctChnLookbackDays, int p_calculationLookbackDays, int p_resultLengthDays, int p_bottomPctThreshold, int p_topPctThreshold) // p_prices must be Adjusted, and ordered
     {
         // Note that YF uses calendar days, while lookbackDays comes as trading days.
         int maxLookbackDay = 0;
@@ -782,14 +807,14 @@ public class StrategyUberTaaController : ControllerBase
             adjustedClosePrices.Add((float)candle!.AdjustedClose);
         }
 
-        List<Tuple<float, List<Tuple<float, Controllers.PctChnSignal>>>> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeights(adjustedClosePrices, p_pctChnLookbackDays, p_calculationLookbackDays, p_resultLengthDays, p_bottomPctThreshold, p_topPctThreshold);
+        List<Tuple<float, List<Tuple<float, Controllers.PctlChnSignal>>>> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeights(adjustedClosePrices, p_pctChnLookbackDays, p_calculationLookbackDays, p_resultLengthDays, p_bottomPctThreshold, p_topPctThreshold);
 
-        List<Tuple<DateTime, float, List<Tuple<float, PctChnSignal>>>> result = new(pctChannelRes.Count);
+        List<Tuple<DateTime, float, List<Tuple<float, PctlChnSignal>>>> result = new(pctChannelRes.Count);
         for (int i = 0; i < pctChannelRes.Count; i++)
         {
-            Tuple<float, List<Tuple<float, PctChnSignal>>> pctChnItem = pctChannelRes[i];
+            Tuple<float, List<Tuple<float, PctlChnSignal>>> pctChnItem = pctChannelRes[i];
             DateTime date = history[history.Count - pctChannelRes.Count + i]!.DateTime;
-            result.Add(new Tuple<DateTime, float, List<Tuple<float, PctChnSignal>>>(date, pctChnItem.Item1, pctChnItem.Item2));
+            result.Add(new Tuple<DateTime, float, List<Tuple<float, PctlChnSignal>>>(date, pctChnItem.Item1, pctChnItem.Item2));
         }
         return result;
     }
@@ -798,14 +823,14 @@ public class StrategyUberTaaController : ControllerBase
     // Each item in the list contains a float, the aggregated PchChannel Weight. And a List of Bool Signals.
     // The Bool Signal is True if the current price percentile is bigger than the p_topPctThreshold. False if it is lower than p_bottomPctThreshold. If it is between, then it inherits the previous day Bool Signal value.
     // Warning! p_resultLengthDays: the suggested minimum value is at least 20. Because the channel Signal is Not defined on the first days until it crosses either the Lower or Upper thresholds. We try to mitigate this by checking how far are the tresholds on these 'invalid' days.
-    public static List<Tuple<float, List<Tuple<float, PctChnSignal>>>> PctChnWeights(List<float> p_prices, int[] p_pctChnLookbackDays, int p_calculationLookbackDays, int p_resultLengthDays, int p_bottomPctThreshold, int p_topPctThreshold) // p_prices must be Adjusted, and ordered
+    public static List<Tuple<float, List<Tuple<float, PctlChnSignal>>>> PctChnWeights(List<float> p_prices, int[] p_pctChnLookbackDays, int p_calculationLookbackDays, int p_resultLengthDays, int p_bottomPctThreshold, int p_topPctThreshold) // p_prices must be Adjusted, and ordered
     {
         int dataLength = p_prices.Count;
         int noChannels = p_pctChnLookbackDays.Length;
         int signalCalculationLengthDays = p_calculationLookbackDays + p_resultLengthDays;
-        List<Tuple<float, List<Tuple<float, PctChnSignal>>>> results = new(p_resultLengthDays); // List to store results
+        List<Tuple<float, List<Tuple<float, PctlChnSignal>>>> results = new(p_resultLengthDays); // List to store results
         List<List<bool>> signals = new(signalCalculationLengthDays); // List to store signals
-        List<List<Tuple<float, PctChnSignal>>> signalPcts = new(signalCalculationLengthDays); // List to store signalPcts
+        List<List<Tuple<float, PctlChnSignal>>> signalPcts = new(signalCalculationLengthDays); // List to store signalPcts
 
         // Initialize the outer list with p_lookback elements
         for (int i = 0; i < signalCalculationLengthDays; i++)
@@ -820,7 +845,7 @@ public class StrategyUberTaaController : ControllerBase
             int lookbackDay = p_pctChnLookbackDays[lb];
             double[] usedPrices = new double[lookbackDay]; // Array to store prices for the current lookback period. In the later steps, we will replace the values one by one: replacing the most distant value with a new one. This way, we do not create a new array each time.
             bool lastSignal = true; // Track the last signal
-            PctChnSignal pctChnSignal = PctChnSignal.Unknown;
+            PctlChnSignal pctChnSignal = PctlChnSignal.Unknown;
 
             // Populate usedPrices with the relevant subset of p_prices
             for (int i = dataLength - lookbackDay - signalCalculationLengthDays + 1; i < dataLength - signalCalculationLengthDays + 1; i++)
@@ -842,30 +867,30 @@ public class StrategyUberTaaController : ControllerBase
                     signals[lbDay].Add(true);
                     lastSignal = true;
                     isSignalValid = true;
-                    pctChnSignal = PctChnSignal.ValidBull;
-                    signalPcts[lbDay].Add(new Tuple<float, PctChnSignal>(percentileRank, pctChnSignal));
+                    pctChnSignal = PctlChnSignal.ValidBull;
+                    signalPcts[lbDay].Add(new Tuple<float, PctlChnSignal>(percentileRank, pctChnSignal));
                 }
                 else if (percentileRank * 100 < p_bottomPctThreshold)
                 {
                     signals[lbDay].Add(false);
                     lastSignal = false;
                     isSignalValid = true;
-                    pctChnSignal = PctChnSignal.ValidBear;
-                    signalPcts[lbDay].Add(new Tuple<float, PctChnSignal>(percentileRank, pctChnSignal));
+                    pctChnSignal = PctlChnSignal.ValidBear;
+                    signalPcts[lbDay].Add(new Tuple<float, PctlChnSignal>(percentileRank, pctChnSignal));
                 }
                 else if (isSignalValid) // isSignalValid cannot be true on first day
                 {
                     signals[lbDay].Add(lastSignal);
-                    pctChnSignal = lastSignal ? PctChnSignal.ValidBull : PctChnSignal.ValidBear;
-                    signalPcts[lbDay].Add(new Tuple<float, PctChnSignal>(percentileRank, pctChnSignal));
+                    pctChnSignal = lastSignal ? PctlChnSignal.ValidBull : PctlChnSignal.ValidBear;
+                    signalPcts[lbDay].Add(new Tuple<float, PctlChnSignal>(percentileRank, pctChnSignal));
                 }
                 else
                 {
                     // As long as the current price falls between the thresholds, the signal should correspond to which threshold it is closer to. Previously, we used "True" as default value. Once a valid signal is received, we will use the previous signal from that point onward.
                     bool estimatedSignal = percentileRank > 0.5;
                     signals[lbDay].Add(estimatedSignal);
-                    pctChnSignal = estimatedSignal ? PctChnSignal.NonValidBull : PctChnSignal.NonValidBear;
-                    signalPcts[lbDay].Add(new Tuple<float, PctChnSignal>(percentileRank, pctChnSignal));
+                    pctChnSignal = estimatedSignal ? PctlChnSignal.NonValidBull : PctlChnSignal.NonValidBear;
+                    signalPcts[lbDay].Add(new Tuple<float, PctlChnSignal>(percentileRank, pctChnSignal));
                 }
 
                 // Update currentPrice, usedPrices and indexTracker for the next iteration
@@ -889,9 +914,132 @@ public class StrategyUberTaaController : ControllerBase
                     trueCount++;
             }
             float trueRatio = (float)trueCount / noChannels; // Calculate the percentile channel weight for the given date
-            results.Add(new Tuple<float, List<Tuple<float, PctChnSignal>>>(trueRatio, signalPcts[i])); // Store the result as a tuple
+            results.Add(new Tuple<float, List<Tuple<float, PctlChnSignal>>>(trueRatio, signalPcts[i])); // Store the result as a tuple
         }
 
+        return results;
+    }
+
+    public static List<AggregateDatePctlChannel> PctChnWeightsWithDates_New(string p_ticker, DateTime p_endDate, int[] p_pctChnLookbackDays, int p_calculationLookbackDays, int p_resultLengthDays, int p_bottomPctThreshold, int p_topPctThreshold)
+    {
+        // Note that YF uses calendar days, while lookbackDays comes as trading days.
+        int maxLookbackDay = 0;
+        foreach (int lookback in p_pctChnLookbackDays)
+        {
+            if (lookback > maxLookbackDay)
+                maxLookbackDay = lookback;
+        }
+        int nTradingDaysNeeded = maxLookbackDay + p_calculationLookbackDays + p_resultLengthDays;
+        int nCalendarDaysNeeded = nTradingDaysNeeded * 7 / 4; // To convert trading days to calendar days, multiply with 7/4 instead of 7/5, to account for surprising holidays. Better to overshoot.
+        DateTime startDate = p_endDate.AddDays(-nCalendarDaysNeeded);
+
+        IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(p_ticker, startDate, p_endDate, YahooFinanceApi.Period.Daily).Result;
+        if (history == null)
+            throw new SqException($"PctChnWeights() Cannot download YF price for ticker {p_ticker}");
+
+        List<float> adjustedClosePrices = new();
+        foreach (var candle in history)
+            adjustedClosePrices.Add((float)candle!.AdjustedClose);
+
+        List<AggregatePctlChannel> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeights_New(adjustedClosePrices, p_pctChnLookbackDays, p_calculationLookbackDays, p_resultLengthDays, p_bottomPctThreshold, p_topPctThreshold);
+
+        List<AggregateDatePctlChannel> result = new(pctChannelRes.Count);
+        for (int i = 0; i < pctChannelRes.Count; i++)
+        {
+            AggregatePctlChannel pctChnItem = pctChannelRes[i];
+            DateTime date = history[history.Count - pctChannelRes.Count + i]!.DateTime;
+            result.Add(new AggregateDatePctlChannel { Date = date, Aggregate = pctChnItem.Aggregate, PctlChannels = pctChnItem.PctlChannels });
+        }
+        return result;
+    }
+
+    public static List<AggregatePctlChannel> PctChnWeights_New(List<float> p_prices, int[] p_pctChnLookbackDays, int p_calculationLookbackDays, int p_resultLengthDays, int p_bottomPctThreshold, int p_topPctThreshold)
+    {
+        int dataLength = p_prices.Count;
+        int noChannels = p_pctChnLookbackDays.Length;
+        int signalCalculationLengthDays = p_calculationLookbackDays + p_resultLengthDays;
+        List<AggregatePctlChannel> results = new(p_resultLengthDays);
+        List<List<bool>> signals = new(signalCalculationLengthDays);
+        List<List<PctlChannel>> signalPcts = new(signalCalculationLengthDays);
+
+        // Initialize the outer lists
+        for (int i = 0; i < signalCalculationLengthDays; i++)
+        {
+            signals.Add(new List<bool>(noChannels));
+            signalPcts.Add(new List<PctlChannel>(noChannels));
+        }
+
+        // Iterate over each lookback day
+        for (int lb = 0; lb < noChannels; lb++)
+        {
+            int lookbackDay = p_pctChnLookbackDays[lb];
+            double[] usedPrices = new double[lookbackDay]; // Array to store prices for the current lookback period. In the later steps, we will replace the values one by one: replacing the most distant value with a new one. This way, we do not create a new array each time.
+            bool lastSignal = true; // Track the last signal
+            PctlChnSignal pctChnSignal = PctlChnSignal.Unknown;
+
+            // Populate usedPrices with the relevant subset of p_prices
+            for (int i = dataLength - lookbackDay - signalCalculationLengthDays + 1; i < dataLength - signalCalculationLengthDays + 1; i++)
+                usedPrices[i - (dataLength - lookbackDay - signalCalculationLengthDays + 1)] = p_prices[i];
+
+            int indexTracker = 0;
+            bool isSignalValid = false;
+            double currentPrice = usedPrices[^1];
+            for (int lbDay = 0; lbDay < signalCalculationLengthDays; lbDay++)
+            {
+                // Calculate the percentileRank od the current price
+                double[] usedPricesCopy = (double[])usedPrices.Clone(); // QuantileInplace() reorganizes the array 'in-place'. So, we make a copy only once, because we don't want the order to be changed when we swap the new item into the list later (for the next day)
+                Array.Sort(usedPricesCopy);
+                float percentileRank = (float)SortedArrayStatistics.QuantileRank(usedPricesCopy, currentPrice, RankDefinition.EmpiricalCDF);
+
+                // Determine the signal based on current price relative to thresholds
+                if (percentileRank * 100 > p_topPctThreshold)
+                {
+                    signals[lbDay].Add(true);
+                    lastSignal = true;
+                    isSignalValid = true;
+                    pctChnSignal = PctlChnSignal.ValidBull;
+                }
+                else if (percentileRank * 100 < p_bottomPctThreshold)
+                {
+                    signals[lbDay].Add(false);
+                    lastSignal = false;
+                    isSignalValid = true;
+                    pctChnSignal = PctlChnSignal.ValidBear;
+                }
+                else if (isSignalValid) // isSignalValid cannot be true on first day
+                {
+                    signals[lbDay].Add(lastSignal);
+                    pctChnSignal = lastSignal ? PctlChnSignal.ValidBull : PctlChnSignal.ValidBear;
+                }
+                else
+                {
+                    // As long as the current price falls between the thresholds, the signal should correspond to which threshold it is closer to. Previously, we used "True" as default value. Once a valid signal is received, we will use the previous signal from that point onward.
+                    bool estimatedSignal = percentileRank > 0.5;
+                    signals[lbDay].Add(estimatedSignal);
+                    pctChnSignal = estimatedSignal ? PctlChnSignal.NonValidBull : PctlChnSignal.NonValidBear;
+                }
+
+                signalPcts[lbDay].Add(new PctlChannel { PctlValue = percentileRank, PctlChnSignal = pctChnSignal });
+
+                // Update currentPrice, usedPrices and indexTracker for the next iteration
+                // Instead of removing the first item and adding a last item, because for Quantile() calculation we don't need the array to be ordered, we can swap the item represented by the indexTracker. We swap it in-place. No need to costly memalloc.
+                if (indexTracker < signalCalculationLengthDays - 1)
+                {
+                    currentPrice = p_prices[dataLength - signalCalculationLengthDays + indexTracker + 1];
+                    usedPrices[indexTracker % lookbackDay] = currentPrice;
+                    indexTracker++;
+                }
+            }
+        }
+
+        // Calculate the ratio of true signals and store results
+        for (int i = signalCalculationLengthDays - p_resultLengthDays; i < signalCalculationLengthDays; i++)
+        {
+            int trueCount = signals[i].Count(signal => signal);
+            float trueRatio = (float)trueCount / noChannels; // Calculate the percentile channel weight for the given date
+
+            results.Add(new AggregatePctlChannel { Aggregate = trueRatio, PctlChannels = signalPcts[i] });
+        }
         return results;
     }
 

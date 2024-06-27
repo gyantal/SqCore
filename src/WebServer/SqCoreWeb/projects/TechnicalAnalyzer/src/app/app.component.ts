@@ -95,15 +95,15 @@ export class AppComponent {
     this.m_assetHistDatas.length = 0; // empty the m_assetHistDatas
     for (const assetData of assetPctChnData) {
       const assetHistData = new AssetHistData();
-      assetHistData.symbol = assetData.Item1;
-      for (let i = assetData.Item2.length - 1; i >= 0; i--) { // The data is currently sorted in ascending order by date, but for display on the UI, we need the latest date at the top followed by earlier dates.
-        const pctChn = assetData.Item2[i];
+      assetHistData.symbol = assetData.t; // 't' is Ticker
+      for (let i = assetData.ad.length - 1; i >= 0; i--) { // The data is currently sorted in ascending order by date, but for display on the UI, we need the latest date at the top followed by earlier dates.
+        const pctChn = assetData.ad[i]; // 'ad' is AggregateDatePctlChannel
         const pctChnData = new PctChnData();
-        pctChnData.Date = new Date(pctChn.Item1);
-        pctChnData.pctChnWeightAggregate = pctChn.Item2;
+        pctChnData.Date = pctChn.d; // 'd' is Date
+        pctChnData.pctChnWeightAggregate = pctChn.a; // 'a' is aggregate value
         for (let j = 0; j < 4; j++) {
-          pctChnData[`pctChnVal${j + 1}`] = pctChn.Item3[j].Item1;
-          pctChnData[`pctChnSignal${j + 1}`] = pctChn.Item3[j].Item2;
+          pctChnData[`pctChnVal${j + 1}`] = pctChn.c[j].v; // 'v' is pctChnvalue
+          pctChnData[`pctChnSignal${j + 1}`] = pctChn.c[j].s; // 's' is pctChnSig
         }
         assetHistData.pctChnDatas.push(pctChnData);
       }
