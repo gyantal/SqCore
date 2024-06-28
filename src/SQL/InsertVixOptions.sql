@@ -1,5 +1,6 @@
 
 -- ********  Microsoft SQL server. Inserting VIX futures options into MsSql
+-- At expiration, VRO data is needed: CBOE Index Settlement Values: https://www.cboe.com/index_settlement_values/
 
 >1. Check that the previous month VIX options exists or not.
 SELECT * FROM [dbo].[Option] WHERE UnderlyingSubTableID = 2 AND UnderlyingAssetType = 8  AND
