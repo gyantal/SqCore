@@ -172,6 +172,24 @@ export class UltimateChart {
       }
 
       const mouseClosestXCoord: Date = closestDate;
+      // Determine if the mouse is in the left or right half of the chart
+      const tooltipNode = tooltipPctChg.node();
+      const tooltipWidth = tooltipNode ? tooltipNode.offsetWidth : 0;
+      const tooltipHeight = tooltipNode ? tooltipNode.offsetHeight : 0;
+      const tooltipXOffset = event.pageX < (chartWidth / 2) ? 10 : -10 - tooltipWidth; // '10' is the offset in pixels used to position the tooltip
+      const bufferZone = 20; // Buffer zone to prevent blinking (there is blinking of screen if we touch the edges of viewport)
+      // The tooltipMousePosX and tooltipMousePosY calculations ensure the tooltip does not go outside the screen, thus reducing or eliminating the blinking effect.
+      let tooltipMousePosX = event.pageX + tooltipXOffset; // Calculate the X position of the tooltip based on the mouse position
+      if (tooltipMousePosX + tooltipWidth + bufferZone > window.innerWidth) // Check if the tooltip would go off the right edge of the window
+        tooltipMousePosX = window.innerWidth - tooltipWidth - bufferZone; // Adjust the X position to prevent overflow
+      else if (tooltipMousePosX < bufferZone)
+        tooltipMousePosX = bufferZone; // Adjust the X position if it's too close to the left edge
+
+      let tooltipMousePosY = event.pageY - yCoord; // Calculate the Y position of the tooltip based on the mouse position
+      if (tooltipMousePosY + tooltipHeight + bufferZone > window.innerHeight) // Check if the tooltip would go off the bottom edge of the window
+        tooltipMousePosY = window.innerHeight - tooltipHeight - bufferZone; // Adjust the Y position to prevent overflow
+      else if (tooltipMousePosY < bufferZone)
+        tooltipMousePosY = bufferZone; // Adjust the Y position if it's too close to the top edge
 
       tooltipLine
           .attr('stroke', 'black')
@@ -183,8 +201,8 @@ export class UltimateChart {
       tooltipPctChg
           .html('percent values :' + '<br>')
           .style('display', 'block')
-          .style('left', event.pageX + 10 + 'px')
-          .style('top', event.pageY - yCoord + 'px')
+          .style('left', tooltipMousePosX + 'px')
+          .style('top', tooltipMousePosY + 'px')
           .selectAll()
           .data(timeSeriess)
           .enter()
