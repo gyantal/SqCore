@@ -20,6 +20,7 @@ using QuantConnect.Parameters;
 using QuantConnect.Securities;
 using QuantConnect.Util;
 using SqCommon;
+using SqCoreWeb.Controllers;
 using YahooFinanceApi;
 
 namespace SqCoreWeb;
@@ -528,8 +529,8 @@ public partial class Program
                     int[] pctChnLookbackDays = new int[] { 60, 120, 180, 252 };
                     int calculationLookbackDays = 50;
                     int resultLengthDays = 20;
-                    List<Tuple<float, List<Tuple<float, Controllers.PctlChnSignal>>>> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeights(adjustedClosePrices, pctChnLookbackDays, calculationLookbackDays, resultLengthDays, bottomPctThreshold, topPctThreshold);
-                    Console.WriteLine($"Current weight of {ticker}: {pctChannelRes[^1].Item1}");
+                    List<AggregatePctlChannel> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeights(adjustedClosePrices, pctChnLookbackDays, calculationLookbackDays, resultLengthDays, bottomPctThreshold, topPctThreshold);
+                    Console.WriteLine($"Current weight of {ticker}: {pctChannelRes[^1].Aggregate}");
                 }
                 catch (System.Exception e)
                 {
@@ -546,8 +547,8 @@ public partial class Program
                     int[] pctChnLookbackDays = new int[] { 60, 120, 180, 252 };
                     int calculationLookbackDays = 50;
                     int resultLengthDays = 20;
-                    List<Tuple<DateTime, float, List<Tuple<float, Controllers.PctlChnSignal>>>> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeightsWithDates(ticker, endDate, pctChnLookbackDays, calculationLookbackDays, resultLengthDays, bottomPctThreshold, topPctThreshold);
-                    Console.WriteLine($"Current weight of {ticker}: {pctChannelRes[^1].Item1: yyyy-MM-dd}: {pctChannelRes[^1].Item2}");
+                    List<AggregateDatePctlChannel> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeightsWithDates(ticker, endDate, pctChnLookbackDays, calculationLookbackDays, resultLengthDays, bottomPctThreshold, topPctThreshold);
+                    Console.WriteLine($"Current weight of {ticker}: {pctChannelRes[^1].Date: yyyy-MM-dd}: {pctChannelRes[^1].Aggregate}");
                 }
                 catch (System.Exception e)
                 {
