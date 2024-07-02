@@ -425,10 +425,10 @@ public class GptScanController : ControllerBase
 
         (string newsStr, string userMsg) = await DownloadCompleteNews(p_inMsg.Msg);
         string responseStr;
-        if (String.IsNullOrEmpty(newsStr) || !String.IsNullOrEmpty(userMsg))
-            responseStr = "no";
-        else
+        if (!String.IsNullOrEmpty(newsStr) && String.IsNullOrEmpty(userMsg)) // when newsStr is given correctly, we expect there is no userMsg with warnings.
             responseStr = "yes";
+        else
+            responseStr = "no";
         string responseJson = JsonSerializer.Serialize(responseStr); // JsonSerializer handles that a proper JSON cannot contain "\n" Control characters inside the string. We need double escaping ("\n" => "\\n"). Otherwise, the JS:JSON.parse() will fail.
         return Ok(responseJson);
     }
@@ -454,7 +454,7 @@ public class GptScanController : ControllerBase
         return Ok(responseJson);
     }
 
-    public async Task<(string, string)> DownloadCompleteNews(string p_newsUrl) // returns newsStr , UserMsg
+    public async Task<(string, string)> DownloadCompleteNews(string p_newsUrl) // returns newsStr , UserMsg. When newsStr is given correctly, we expect there is no userMsg with warnings.
     {
         string responseStr;
         string? htmlContent = await Utils.DownloadStringWithRetryAsync(p_newsUrl);
