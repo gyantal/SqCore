@@ -14,9 +14,50 @@ public class LegacyDb : IDisposable
 
     public void Init_WT() // Init Legacy SQL DB in a separate thread. The main MemDb.Init_WT() doesn't require its existence. We only need it for backtesting legacy portfolios much later.
     {
-        string legacyDbConnString = Utils.Configuration["ConnectionStrings:LegacyMsSqlDefault"] ?? throw new SqException("Redis ConnectionStrings is missing from Config");
-        m_connection = new SqlConnection(legacyDbConnString);
-        m_connection.Open();
+        // TODO: 2024-07-02: there is no Fix yet. Hoping Microsoft.Data.SqlClient 5.2.2 fix Linux deployment problem in 1-2 months
+        // TODO: clean this section After it is fixed.
+        // TODO: at the moment, SQL m_connection only works on Windows, not on Linux.
+        // >#22|ERROR|Sq: LegacyDb Error. Init_WT() exception: Could not load file or assembly 'Microsoft.Data.SqlClient, Version=5.0.0.0, Culture=neutral, PublicKeyToken=23ec7fc2d6eaa4a5'. The system cannot find the file specified.
+        // https://github.com/dotnet/SqlClient/issues/1945
+        // " 2 weeks ago" "I'm using .net 8 and the 5.2.1 package and the problem persists:"
+        // https://github.com/dotnet/SqlClient/pull/2093 Fix was merged on "Jul 21, 2023" SqlClient: 5.2.0-preview4
+        // https://github.com/dotnet/SqlClient/issues/2146 
+        // "3 weeks ago: I have the same issue. .NET Core 6 with EFCore 7, deployed on a linux docker image."
+        // >https://www.nuget.org/packages/Microsoft.Data.SqlClient/5.2.1
+        // we use <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.1" />
+        // "[Stable release 5.2.1] - 2024-05-31"
+        // >Hope next version in 1-2 months will fix this.
+        // ><Didn't work> After doing 'dotnet purge' to eliminate bin, obj folders.
+        // ><Didn't work> after changing In
+        // c:\agy\GitHub\SqCore\src\WebServer\SqCoreWeb\bin\Release\net8.0\publish\SqCoreWeb.deps.json
+        // Change Microsoft.Data.SqlClient.dll "assemblyVersion" to FileVersion.
+        // >But that didn't work.
+        Utils.Logger.Info("LegacyDb.Init_WT() START");
+        try
+        {
+            Init_WT_With_Microsoft_Data_SqlClient_dll_Dependency();
+        }
+        catch (System.Exception e)
+        {
+            Utils.Logger.Error($"LegacyDb Error. Init_WT() exception: {e.Message}");
+        }
+    }
+
+    public void Init_WT_With_Microsoft_Data_SqlClient_dll_Dependency() // Init Legacy SQL DB in a separate thread. The main MemDb.Init_WT() doesn't require its existence. We only need it for backtesting legacy portfolios much later.
+    {
+        Utils.Logger.Info("LegacyDb.Init_WT_With_Microsoft_Data_SqlClient_dll_Dependency() START");
+        try
+        {
+            string legacyDbConnString = Utils.Configuration["ConnectionStrings:LegacyMsSqlDefault"] ?? throw new SqException("Redis ConnectionStrings is missing from Config");
+            Utils.Logger.Info($"LegacyDb.Init_WT(). ConnStr:{legacyDbConnString}");
+            m_connection = new SqlConnection(legacyDbConnString);
+            m_connection.Open();
+        }
+        catch (System.Exception e)
+        {
+            Utils.Logger.Error($"LegacyDb Error. Init_WT() exception: {e.Message}");
+            throw;
+        }
     }
 
     public void Exit()
