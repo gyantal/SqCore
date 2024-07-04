@@ -1,170 +1,168 @@
-<div>
-  <h4>Portfolio Viewer</h4>
-  PortfolioId: {{m_portfolioId}}
-  <div>PortfolioName: {{m_portfolio?.name}}</div>
-  <button [ngClass]="{'activeTabItem':m_activeTab == 'Positions'}" (click)="onActiveTabCicked('Positions')">Positions</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Report'}" (click)="onActiveTabCicked('Portfolio Report')">Portfolio Report</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Trades'}" (click)="onActiveTabCicked('Trades')">Trades*</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Performance Accumulator'}" (click)="onActiveTabCicked('Portfolio Performance Accumulator')">Portfolio Performance Accumulator</button>
-  <div [hidden]="m_activeTab != 'Positions'">&nbsp;
-    <header>Historical Positions EndDate: <input type="Date" [(ngModel)]="m_histPosEndDate" (change)="onHistPeriodChangeClicked()"></header>&nbsp;
-    <table class="tableCommon">
-      <thead>
-        <tr>
-          <th>SqTicker</th>
-          <th>Name</th>
-          <th>Quantity</th>
-          <th>AvgPrice</th>
-          <th>Price</th>
-          <th>HoldingCost</th>
-          <th>HoldingValue</th>
-          <th>SharesOutstanding</th>
-          <th>MarketCap</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let item of m_uiPrtfRunResult.prtfPosValues">
-          <td>{{item.sqTicker}}</td>
-          <td>{{item.name}}</td>
-          <td>{{item.quantity | number:'1.0-0'}}</td>
-          <td>{{item.avgPrice | number:'1.2-2'}}</td>
-          <td>{{item.price | number:'1.2-2'}}</td>
-          <td>{{item.holdingCost | number:'1.0-0'}}</td>
-          <td>{{item.holdingValue | number:'1.0-0'}}</td>
-          <td>{{item.sharesOutstanding | numberToTBMK}}</td>
-          <td>{{item.marketCap | numberToTBMK}}</td>
-        </tr>
-      </tbody>
+<h4>Portfolio Viewer</h4>
+PortfolioId: {{m_portfolioId}}
+<div>PortfolioName: {{m_portfolio?.name}}</div>
+<button [ngClass]="{'activeTabItem':m_activeTab == 'Positions'}" (click)="onActiveTabCicked('Positions')">Positions</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Report'}" (click)="onActiveTabCicked('Portfolio Report')">Portfolio Report</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Trades'}" (click)="onActiveTabCicked('Trades')">Trades*</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Performance Accumulator'}" (click)="onActiveTabCicked('Portfolio Performance Accumulator')">Portfolio Performance Accumulator</button>
+<div [hidden]="m_activeTab != 'Positions'">&nbsp;
+  <header>Historical Positions EndDate: <input type="Date" [(ngModel)]="m_histPosEndDate" (change)="onHistPeriodChangeClicked()"></header>&nbsp;
+  <table class="tableCommon">
+    <thead>
+      <tr>
+        <th>SqTicker</th>
+        <th>Name</th>
+        <th>Quantity</th>
+        <th>AvgPrice</th>
+        <th>Price</th>
+        <th>HoldingCost</th>
+        <th>HoldingValue</th>
+        <th>SharesOutstanding</th>
+        <th>MarketCap</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of m_uiPrtfRunResult.prtfPosValues">
+        <td>{{item.sqTicker}}</td>
+        <td>{{item.name}}</td>
+        <td>{{item.quantity | number:'1.0-0'}}</td>
+        <td>{{item.avgPrice | number:'1.2-2'}}</td>
+        <td>{{item.price | number:'1.2-2'}}</td>
+        <td>{{item.holdingCost | number:'1.0-0'}}</td>
+        <td>{{item.holdingValue | number:'1.0-0'}}</td>
+        <td>{{item.sharesOutstanding | numberToTBMK}}</td>
+        <td>{{item.marketCap | numberToTBMK}}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<div [hidden]="m_activeTab != 'Portfolio Report'">
+  <p>Portfolio Report</p>
+  <div>
+    <table id="pfStatsTable">
+      <tr>
+        <td>PV Start Value:{{m_uiPrtfRunResult.startPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
+        <td>PV Final Value:{{m_uiPrtfRunResult.endPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
+        <td>TotalReturn:{{m_uiPrtfRunResult.totalReturn | number:'1.2-2'}}%</td>
+      </tr>
+      <tr>
+        <td><b>CAGR:</b> {{m_uiPrtfRunResult.cAGR | number:'1.2-2'}}%</td>
+        <td><b>MaxDD:</b> {{m_uiPrtfRunResult.maxDD | number:'1.2-2'}}%</td>
+        <td><b>Sharpe:</b> {{m_uiPrtfRunResult.sharpe | number:'1.2-2'}}</td>
+      </tr>
+      <tr>
+        <td><b>CagrSharpe:</b> {{m_uiPrtfRunResult.cagrSharpe | number:'1.2-2'}}</td>
+        <td>StDev: {{m_uiPrtfRunResult.stDev | number:'1.2-2'}}</td>
+        <td>Max.TradingDays in DD: {{m_uiPrtfRunResult.tradingDays}}</td>
+      </tr>
     </table>
   </div>
-  <div [hidden]="m_activeTab != 'Portfolio Report'">
-    <p>Portfolio Report</p>
-    <div>
-      <table id="pfStatsTable">
-        <tr>
-          <td>PV Start Value:{{m_uiPrtfRunResult.startPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
-          <td>PV Final Value:{{m_uiPrtfRunResult.endPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
-          <td>TotalReturn:{{m_uiPrtfRunResult.totalReturn | number:'1.2-2'}}%</td>
-        </tr>
-        <tr>
-          <td><b>CAGR:</b> {{m_uiPrtfRunResult.cAGR | number:'1.2-2'}}%</td>
-          <td><b>MaxDD:</b> {{m_uiPrtfRunResult.maxDD | number:'1.2-2'}}%</td>
-          <td><b>Sharpe:</b> {{m_uiPrtfRunResult.sharpe | number:'1.2-2'}}</td>
-        </tr>
-        <tr>
-          <td><b>CagrSharpe:</b> {{m_uiPrtfRunResult.cagrSharpe | number:'1.2-2'}}</td>
-          <td>StDev: {{m_uiPrtfRunResult.stDev | number:'1.2-2'}}</td>
-          <td>Max.TradingDays in DD: {{m_uiPrtfRunResult.tradingDays}}</td>
-        </tr>
-      </table>
-    </div>
-    <div id="pfRunResultChrt"></div> <!-- portfolio run result chart  -->
-  </div>
-  <div [hidden]="m_activeTab != 'Trades'"><br>
-    <span>
-      <span (click)="toggleTradeSectionVisibility()" class="toggleTradesSection"><span id="toggleSign" [ngStyle]="{'color': m_isEditedTradeSectionVisible ? 'green' : 'red'}">{{m_isEditedTradeSectionVisible ? '&#45;' : '&#43;'}}</span> Edit trades...</span>&nbsp;
-      <button (click)="onClickSelectAllOrDeselectAll(true)" class="btnCommon" [disabled]="m_trades.length == 0">Select All</button>&nbsp;
-      <button (click)="onClickSelectAllOrDeselectAll(false)" class="btnCommon" [disabled]="m_trades.length == 0">DeSelect All</button>&nbsp;
-      <button (click)="onClickCopyToClipboard()" class="btnCommon" [disabled]="m_trades.length == 0">Copy to Clipboard (all/selected)</button>&nbsp;
-      <button disabled class="btnCommon">Create from Clipboard</button>&nbsp;
-    </span><br>
-    <div id="tradesSection" *ngIf="m_isEditedTradeSectionVisible">
-      <div id="tradesContainer">
-        <span class="tradesCommon">
-          <ng-container >
-            <svg id="saveIcon" version="1.0" xmlns="http://www.w3.org/2000/svg" width="64" height="18" viewBox="0 0 64 64" preserveAspectRatio="xMidYMid meet">
-                <g transform="translate(0.0,64) scale(0.1,-0.1)" [ngStyle]="{'fill': m_isEditedTradeDirty ? '#EE4B2B' : '#0096FF'}" stroke="none">
-                    <path d="M20 620 c-19 -19 -20 -33 -20 -300 0 -267 1 -281 20 -300 19 -19 33 -20 300 -20 267 0 281 1 300 20 19 19 20 33 20 258 l0 238 -63 62 -63 62 -237 0 c-224 0 -238 -1 -257 -20z m100 -107 c0 -136 -5 -133 182 -133 84 0 158 5 169 10 17 10 19 22 19 115 0 58 4 105 8 105 4 0 31 -24 60 -53 l52 -53 -2
-                            -235 -3 -234 -27 -3 -28 -3 0 145 0 146 -230 0 -230 0 0 -146 0 -145 -27 3 -28 3 -3 275 c-1 151 0 280 3 287 2 8 21 13 45 13 l40 0 0 -97z m350 10 c0 -49 -4 -93 -8 -100 -12 -19 -301 -20 -313 -2 -5 8 -9 53 -9 102 l0 87 165 0 165 0 0 -87z m60 -363 l0 -130 -210 0 -210 0 0 130 0 130 210 0 210 0 0 -130z"/>
-                    <path d="M350 510 l0 -70 40 0 40 0 0 70 0 70 -40 0 -40 0 0 -70z m60 0 c0 -29 -4 -40 -15 -40 -11 0 -15 11 -15 40 0 29 4 40 15 40 11 0 15 -11 15 -40z"/>
-                </g>
-            </svg>
+  <div id="pfRunResultChrt"></div> <!-- portfolio run result chart  -->
+</div>
+<div [hidden]="m_activeTab != 'Trades'"><br>
+  <span>
+    <span (click)="toggleTradeSectionVisibility()" class="toggleTradesSection"><span id="toggleSign" [ngStyle]="{'color': m_isEditedTradeSectionVisible ? 'green' : 'red'}">{{m_isEditedTradeSectionVisible ? '&#45;' : '&#43;'}}</span> Edit trades...</span>&nbsp;
+    <button (click)="onClickSelectAllOrDeselectAll(true)" class="btnCommon" [disabled]="m_trades.length == 0">Select All</button>&nbsp;
+    <button (click)="onClickSelectAllOrDeselectAll(false)" class="btnCommon" [disabled]="m_trades.length == 0">DeSelect All</button>&nbsp;
+    <button (click)="onClickCopyToClipboard()" class="btnCommon" [disabled]="m_trades.length == 0">Copy to Clipboard (all/selected)</button>&nbsp;
+    <button disabled class="btnCommon">Create from Clipboard</button>&nbsp;
+  </span><br>
+  <div id="tradesSection" *ngIf="m_isEditedTradeSectionVisible">
+    <div id="tradesContainer">
+      <span class="tradesCommon">
+        <ng-container >
+          <svg id="saveIcon" version="1.0" xmlns="http://www.w3.org/2000/svg" width="64" height="18" viewBox="0 0 64 64" preserveAspectRatio="xMidYMid meet">
+              <g transform="translate(0.0,64) scale(0.1,-0.1)" [ngStyle]="{'fill': m_isEditedTradeDirty ? '#EE4B2B' : '#0096FF'}" stroke="none">
+                  <path d="M20 620 c-19 -19 -20 -33 -20 -300 0 -267 1 -281 20 -300 19 -19 33 -20 300 -20 267 0 281 1 300 20 19 19 20 33 20 258 l0 238 -63 62 -63 62 -237 0 c-224 0 -238 -1 -257 -20z m100 -107 c0 -136 -5 -133 182 -133 84 0 158 5 169 10 17 10 19 22 19 115 0 58 4 105 8 105 4 0 31 -24 60 -53 l52 -53 -2
+                          -235 -3 -234 -27 -3 -28 -3 0 145 0 146 -230 0 -230 0 0 -146 0 -145 -27 3 -28 3 -3 275 c-1 151 0 280 3 287 2 8 21 13 45 13 l40 0 0 -97z m350 10 c0 -49 -4 -93 -8 -100 -12 -19 -301 -20 -313 -2 -5 8 -9 53 -9 102 l0 87 165 0 165 0 0 -87z m60 -363 l0 -130 -210 0 -210 0 0 130 0 130 210 0 210 0 0 -130z"/>
+                  <path d="M350 510 l0 -70 40 0 40 0 0 70 0 70 -40 0 -40 0 0 -70z m60 0 c0 -29 -4 -40 -15 -40 -11 0 -15 11 -15 40 0 29 4 40 15 40 11 0 15 -11 15 -40z"/>
+              </g>
+          </svg>
+        </ng-container>
+      <!-- Add Transaction and clear fields will be enabled once the feature is ready -->
+      <button (click)="onClickInsertOrUpdateTrade(true)">Insert (new)</button>&nbsp;
+      <button (click)="onClickInsertOrUpdateTrade(false)" [disabled]="m_editedTrade.id == -1">Update (existing)</button>&nbsp;
+      <button (click)="onClickDeleteTrade()" [disabled]="m_editedTrade.id == -1">Delete</button>&nbsp;
+      <button (click)="onClickClearFields()">Clear Fields</button>&nbsp;<br>
+        <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.CurrencyCash)" [checked]="m_editedTrade.assetType == m_enumAssetType.CurrencyCash">Cash &nbsp;
+        <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.Stock)" [checked]="m_editedTrade.assetType == m_enumAssetType.Stock">Stock &nbsp;
+        <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.Option)" [checked]="m_editedTrade.assetType == m_enumAssetType.Option">Option &nbsp;
+        <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.Futures)" [checked]="m_editedTrade.assetType == m_enumAssetType.Futures">Futures &nbsp;
+        TradeId: <input class="inputTextboxWidth" type="number" [value]="m_editedTrade.id" (input)="onInputTradeId($event)"><br>
+        TradeAction:
+          <div class="selectionDropDown">
+            <input class="highlightInputDropDown" type="text" [value]="m_enumTradeAction[m_editedTrade.action]" (input)="onTradeInputChange()" disabled>
+            <div class="listDropDown">
+              <ng-container *ngFor="let action of m_enumTradeAction | keyvalue">
+                <option class="optionDropDown" *ngIf="(action.value | sqTypeOf) === 'string'" (click)="onTradeActionSelectionClicked(action.value)">{{ action.value }}</option>
+              </ng-container>
+          </div>
+        </div>&nbsp;
+        <!-- The user input for options and futures selection has been disabled because the value is determined through concatenation using the underlying symbol, expiration date, put/call designation, and strike price for options, while for futures, it relies on the underlying symbol, expiration date with the addition of "+M," and the multiplier -->
+        Symbol: <input type="text" [value]="m_editedTrade.symbol" (input)="onInputSymbol($event)" [disabled]="(m_editedTrade.assetType == m_enumAssetType.Option || m_editedTrade.assetType == m_enumAssetType.Futures)"><br>
+        <div class="fixedHeightDiv" [hidden]="(m_editedTrade.assetType != m_enumAssetType.Option) && (m_editedTrade.assetType != m_enumAssetType.Futures)">
+          UnderlyingSym: <input class="inputTextboxWidth" type="text" [value]="m_editedTrade.underlyingSymbol" (input)="onInputUnderlyingSymbol($event)">
+          <ng-container *ngIf="m_editedTrade.assetType == m_enumAssetType.Option">
+            <input name="optionType" type="radio" (input)="onInputOptionType('P')">Put
+            <input name="optionType" type="radio" (input)="onInputOptionType('C')">Call &nbsp;
+            Expiry: <input type="date" [value]="m_editedTradeOptionFields.dateExpiry" (input)="onInputOptionExpiry($event)">
+            Strike: <input class="inputTextboxWidth" type="number" [value]="m_editedTradeOptionFields.strikePrice" (input)="onInputOptionStrikePrice($event)"><br>
           </ng-container>
-        <!-- Add Transaction and clear fields will be enabled once the feature is ready -->
-        <button (click)="onClickInsertOrUpdateTrade(true)">Insert (new)</button>&nbsp;
-        <button (click)="onClickInsertOrUpdateTrade(false)" [disabled]="m_editedTrade.id == -1">Update (existing)</button>&nbsp;
-        <button (click)="onClickDeleteTrade()" [disabled]="m_editedTrade.id == -1">Delete</button>&nbsp;
-        <button (click)="onClickClearFields()">Clear Fields</button>&nbsp;<br>
-          <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.CurrencyCash)" [checked]="m_editedTrade.assetType == m_enumAssetType.CurrencyCash">Cash &nbsp;
-          <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.Stock)" [checked]="m_editedTrade.assetType == m_enumAssetType.Stock">Stock &nbsp;
-          <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.Option)" [checked]="m_editedTrade.assetType == m_enumAssetType.Option">Option &nbsp;
-          <input name="assetType" type="radio" (input)="onInputAssetType(m_enumAssetType.Futures)" [checked]="m_editedTrade.assetType == m_enumAssetType.Futures">Futures &nbsp;
-          TradeId: <input class="inputTextboxWidth" type="number" [value]="m_editedTrade.id" (input)="onInputTradeId($event)"><br>
-          TradeAction:
-            <div class="selectionDropDown">
-              <input class="highlightInputDropDown" type="text" [value]="m_enumTradeAction[m_editedTrade.action]" (input)="onTradeInputChange()" disabled>
-              <div class="listDropDown">
-                <ng-container *ngFor="let action of m_enumTradeAction | keyvalue">
-                  <option class="optionDropDown" *ngIf="(action.value | sqTypeOf) === 'string'" (click)="onTradeActionSelectionClicked(action.value)">{{ action.value }}</option>
-                </ng-container>
-            </div>
-          </div>&nbsp;
-          <!-- The user input for options and futures selection has been disabled because the value is determined through concatenation using the underlying symbol, expiration date, put/call designation, and strike price for options, while for futures, it relies on the underlying symbol, expiration date with the addition of "+M," and the multiplier -->
-          Symbol: <input type="text" [value]="m_editedTrade.symbol" (input)="onInputSymbol($event)" [disabled]="(m_editedTrade.assetType == m_enumAssetType.Option || m_editedTrade.assetType == m_enumAssetType.Futures)"><br>
-          <div class="fixedHeightDiv" [hidden]="(m_editedTrade.assetType != m_enumAssetType.Option) && (m_editedTrade.assetType != m_enumAssetType.Futures)">
-            UnderlyingSym: <input class="inputTextboxWidth" type="text" [value]="m_editedTrade.underlyingSymbol" (input)="onInputUnderlyingSymbol($event)">
-            <ng-container *ngIf="m_editedTrade.assetType == m_enumAssetType.Option">
-              <input name="optionType" type="radio" (input)="onInputOptionType('P')">Put
-              <input name="optionType" type="radio" (input)="onInputOptionType('C')">Call &nbsp;
-              Expiry: <input type="date" [value]="m_editedTradeOptionFields.dateExpiry" (input)="onInputOptionExpiry($event)">
-              Strike: <input class="inputTextboxWidth" type="number" [value]="m_editedTradeOptionFields.strikePrice" (input)="onInputOptionStrikePrice($event)"><br>
-            </ng-container>
-            <ng-container *ngIf="m_editedTrade.assetType == m_enumAssetType.Futures">
-              Expiry: <input class="inputTextboxWidth" type="date" [value]="m_editedTradeFutureFields.dateExpiry" (input)="onInputFutureExpiry($event)">
-              Multiplier: <input class="inputTextboxWidth" type="number" [value]="m_editedTradeFutureFields.multiplier" (input)="onInputFutureMultiplier($event)"><br>
+          <ng-container *ngIf="m_editedTrade.assetType == m_enumAssetType.Futures">
+            Expiry: <input class="inputTextboxWidth" type="date" [value]="m_editedTradeFutureFields.dateExpiry" (input)="onInputFutureExpiry($event)">
+            Multiplier: <input class="inputTextboxWidth" type="number" [value]="m_editedTradeFutureFields.multiplier" (input)="onInputFutureMultiplier($event)"><br>
+          </ng-container>
+        </div>
+      </span>
+      <span class="tradesCommon">
+        Date: <input type="date" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (change)="onDateChange($event)"><br> <!-- The (change) event is triggered once the input has completed changing, while the (input) event triggers each time the value is modified. see: https://javascript.info/events-change-input -->
+        <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
+        UTC Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
+              <input type="time" [value]="m_editedTrade.time | date : 'HH:mm'" (change)="onTimeChange($event)">&nbsp;
+              <button (click)="onClickSetOpenOrClose('close')">setClose</button><br>
+        Price: <input class="nonUpAndDownArrowsInput inputTextboxWidth" type="number" [value]="m_editedTrade.price | nanToDash" (input)="onInputPrice($event)">&nbsp;
+        <div class="selectionDropDown">
+          <input class="highlightInputDropDown" type="text" placeholder="Enter CurrencyId" [value]="m_enumCurrencyId[m_editedTrade.currency]" (input)="onTradeInputChange()" disabled>
+          <div class="listDropDown">
+            <ng-container *ngFor="let action of m_enumCurrencyId | keyvalue">
+              <option class="optionDropDown" *ngIf="(action.value | sqTypeOf) === 'string'" (click)="onCurrencyTypeSelectionClicked(action.value)">{{ action.value }}</option>
             </ng-container>
           </div>
-        </span>
-        <span class="tradesCommon">
-          Date: <input type="date" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (change)="onDateChange($event)"><br> <!-- The (change) event is triggered once the input has completed changing, while the (input) event triggers each time the value is modified. see: https://javascript.info/events-change-input -->
-          <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
-          UTC Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
-                <input type="time" [value]="m_editedTrade.time | date : 'HH:mm'" (change)="onTimeChange($event)">&nbsp;
-                <button (click)="onClickSetOpenOrClose('close')">setClose</button><br>
-          Price: <input class="nonUpAndDownArrowsInput inputTextboxWidth" type="number" [value]="m_editedTrade.price | nanToDash" (input)="onInputPrice($event)">&nbsp;
-          <div class="selectionDropDown">
-            <input class="highlightInputDropDown" type="text" placeholder="Enter CurrencyId" [value]="m_enumCurrencyId[m_editedTrade.currency]" (input)="onTradeInputChange()" disabled>
-            <div class="listDropDown">
-              <ng-container *ngFor="let action of m_enumCurrencyId | keyvalue">
-                <option class="optionDropDown" *ngIf="(action.value | sqTypeOf) === 'string'" (click)="onCurrencyTypeSelectionClicked(action.value)">{{ action.value }}</option>
-              </ng-container>
-            </div>
-          </div><br>
-          Quantity: <input class="inputTextboxWidth" type="number" [value]="m_editedTrade.quantity | nanToDash" (input)="onInputQuantity($event)">&nbsp;
-          <!-- This is a special case where we need both the input and blur events.
-          Step 1: in OnInput event, we have to calculate only the Quantity as a whole number. E.g. Price is 9.9, and user types 1000.0 as TotalValue, we have to update Quantity to 101.
-          Step 2: in OnBlur event, we have to recalculate this TotalValue itself, based on the last Quantity. So, 9.9 * 101 = 999.9. So, user typed "1000.0", but when the control loses the focus, its value will be recalculated as "999.9". -->
-          TotalValue: <input class="nonUpAndDownArrowsInput inputTextboxWidth" type="number" [value]="m_editedTradeTotalValue" (input)="onInputTotalValue($event)" (blur)="onBlurTotalValue()"><br> <!-- the blur event gets fired when the focus is lost-->
-        </span>
-      </div>
-    </div>&nbsp;
-    <table class="tableCommon">
-      <thead>
-        <tr>
-          <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'underlyingSymbol'}" (click)="onSortingClicked('underlyingSymbol')">Symbol</th>
-          <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'quantity'}" (click)="onSortingClicked('quantity')">Quantity</th>
-          <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'price'}" (click)="onSortingClicked('price')">Price</th>
-          <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'currency'}" (click)="onSortingClicked('currency')">Currency</th>
-          <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'action'}" (click)="onSortingClicked('action')">TradeAction</th>
-          <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'assetType'}" (click)="onSortingClicked('assetType')">AssetType</th>
-          <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'time'}" (click)="onSortingClicked('time')">Date</th>
-          <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'exchangeId'}" (click)="onSortingClicked('exchangeId')">ExchangeId</th>
-        </tr>
-      </thead>
-      <tbody *ngFor="let item of m_trades">
-        <tr (click)="onClickSelectedTradeItem(item, $event)" [ngClass]="{'tradedRowSelected': item.isSelected}">
-          <td>{{item.underlyingSymbol}}</td>
-          <td>{{item.quantity}}</td>
-          <td>{{item.price | number:'1.2-2'}}</td>
-          <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
-          <td>{{m_enumTradeAction[item.action]}}</td>
-          <td>{{m_enumAssetType[item.assetType]}}</td>
-          <td>{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
-          <td>{{m_enumExchangeId[item.exchangeId]}}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-  <div [hidden]="m_activeTab != 'Portfolio Performance Accumulator'">
-    <p>Portfolio Performance Accumulator</p>
-  </div>
+        </div><br>
+        Quantity: <input class="inputTextboxWidth" type="number" [value]="m_editedTrade.quantity | nanToDash" (input)="onInputQuantity($event)">&nbsp;
+        <!-- This is a special case where we need both the input and blur events.
+        Step 1: in OnInput event, we have to calculate only the Quantity as a whole number. E.g. Price is 9.9, and user types 1000.0 as TotalValue, we have to update Quantity to 101.
+        Step 2: in OnBlur event, we have to recalculate this TotalValue itself, based on the last Quantity. So, 9.9 * 101 = 999.9. So, user typed "1000.0", but when the control loses the focus, its value will be recalculated as "999.9". -->
+        TotalValue: <input class="nonUpAndDownArrowsInput inputTextboxWidth" type="number" [value]="m_editedTradeTotalValue" (input)="onInputTotalValue($event)" (blur)="onBlurTotalValue()"><br> <!-- the blur event gets fired when the focus is lost-->
+      </span>
+    </div>
+  </div>&nbsp;
+  <table class="tableCommon">
+    <thead>
+      <tr>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'underlyingSymbol'}" (click)="onSortingClicked('underlyingSymbol')">Symbol</th>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'quantity'}" (click)="onSortingClicked('quantity')">Quantity</th>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'price'}" (click)="onSortingClicked('price')">Price</th>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'currency'}" (click)="onSortingClicked('currency')">Currency</th>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'action'}" (click)="onSortingClicked('action')">TradeAction</th>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'assetType'}" (click)="onSortingClicked('assetType')">AssetType</th>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'time'}" (click)="onSortingClicked('time')">Date</th>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'exchangeId'}" (click)="onSortingClicked('exchangeId')">ExchangeId</th>
+      </tr>
+    </thead>
+    <tbody *ngFor="let item of m_trades">
+      <tr (click)="onClickSelectedTradeItem(item, $event)" [ngClass]="{'tradedRowSelected': item.isSelected}">
+        <td>{{item.underlyingSymbol}}</td>
+        <td>{{item.quantity}}</td>
+        <td>{{item.price | number:'1.2-2'}}</td>
+        <td>{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}</td> <!-- Displaying the currencyId as 'USD' in the UI, while 'USD' is stored as 'unknown' in the database. -->
+        <td>{{m_enumTradeAction[item.action]}}</td>
+        <td>{{m_enumAssetType[item.assetType]}}</td>
+        <td>{{item.time | date : 'yyyy-MM-dd HH:mm'}}</td>
+        <td>{{m_enumExchangeId[item.exchangeId]}}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<div [hidden]="m_activeTab != 'Portfolio Performance Accumulator'">
+  <p>Portfolio Performance Accumulator</p>
 </div>
 <div id="copyToClipboardDialog" *ngIf="m_isCopyToClipboardDialogVisible">All/Selected rows copied To Clipboard
   <div id="copyToClipboardDialogClosetBtn">
