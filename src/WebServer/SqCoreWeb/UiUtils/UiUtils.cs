@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Fin.MemDb;
+using SqCommon;
 
 namespace SqCoreWeb;
 internal class PortfolioItemJs
@@ -149,5 +150,47 @@ internal static partial class UiUtils
             prtfToClient = new() { Id = pf.Id, Name = pf.Name, OwnerUserId = pf.User?.Id ?? -1, ParentFolderId = pf.ParentFolderId, BaseCurrency = pf.BaseCurrency.ToString(), SharedAccess = pf.SharedAccess.ToString(), SharedUsersWith = pf.SharedUsersWith, Type = pf.Type.ToString(), Algorithm = pf.Algorithm, AlgorithmParam = pf.AlgorithmParam, TradeHistoryId = pf.TradeHistoryId };
 
         return prtfToClient;
+    }
+
+    // used in 2 places: MarketDashboard/BrAccViewer and TechnicalAnalyzer
+    public static AssetHistValuesJs GetStockTickerHistData(SqDateOnly stckChrtLookbackStart, SqDateOnly stckChrtLookbackEndExcl, string stockSqTicker)
+    {
+        Asset? asset = MemDb.gMemDb.AssetsCache.TryGetAsset(stockSqTicker);
+        if (asset == null)
+            return new AssetHistValuesJs();
+        Stock? stock = asset as Stock;
+        if (stock == null)
+        {
+            if (asset is Option option)
+                stock = option.UnderlyingAsset as Stock;
+        }
+        if (stock == null)
+            return new AssetHistValuesJs();
+
+        string yfTicker = stock.YfTicker;
+        (SqDateOnly[] dates, float[] adjCloses) = MemDb.GetSelectedStockTickerHistData(stckChrtLookbackStart, stckChrtLookbackEndExcl, yfTicker);
+        if (adjCloses.Length == 0)
+            return new AssetHistValuesJs();
+
+        AssetHistValuesJs assetHistValues = new()
+        {
+            AssetId = AssetId32Bits.Invalid,
+            SqTicker = stockSqTicker,
+            PeriodStartDate = stckChrtLookbackStart.Date,
+            PeriodEndDate = stckChrtLookbackEndExcl.Date.AddDays(-1),
+            HistDates = new(adjCloses.Length),
+            HistSdaCloses = new(adjCloses.Length)
+        };
+
+        for (int i = 0; i < adjCloses.Length; i++)
+        {
+            float adjClose = adjCloses[i];
+            if (float.IsNaN(adjClose)) // Very rarely YF historical data service doesn't have data for 1-5 days in the middle of the history. In that case, that date has a float.NaN as adjClose price. JSON text cannot handle NaN as numbers, so we skip these days when sending to client.
+                continue;
+
+            assetHistValues.HistDates.Add(dates[i].Date.ToYYYYMMDD());
+            assetHistValues.HistSdaCloses.Add(adjClose);
+        }
+        return assetHistValues;
     }
 }

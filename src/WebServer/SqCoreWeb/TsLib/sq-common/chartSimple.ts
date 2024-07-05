@@ -222,3 +222,166 @@ export function sqLineChartGenerator(noAssets: number, nCurrData: number, assetN
           .html((d: any) => d.ticker + ': '+ (isXvalueDate ? ((d.priceData.find((h: any) => h.date.getTime() as any === closestXCoord.getTime() as any).price) + yScaleTickFormat) : (yScaleTickFormat + (d.priceData.find((h: any) =>h.date as any === closestXCoord as any)).price)));
     }
 }
+
+// Returns the abbreviated month name (e.g., Jan-Dec) for date ranges within a single year. We want to display the abbreviated month format on the x-axis.
+export function date2MMM(date: any) : string {
+  const formatMillisec = d3.timeFormat('.%L');
+  const formatShortMonth = d3.timeFormat('%b');
+  const formatYear = d3.timeFormat('%Y');
+  // Check conditions to determine which format to use
+  // If the date includes milliseconds, format with milliseconds
+  // If the date is within the specific range, format with the specified format
+  // Otherwise, format with the year
+  return (d3.timeSecond(date) < date ? formatMillisec : d3.timeYear(date) < date ? formatShortMonth : formatYear)(date);
+}
+
+// used in 2 places: MarketDashboard/BrAccViewer and TechnicalAnalyzer
+export function processUiWithNavAndStockChrt(chrtData1: any, chrtData2: any, lineChrtDiv: HTMLElement, inputWidth: number, inputHeight: number, margin: any, xMin: number, xMax: number, yMinAxis: number, yMaxAxis: number, yAxisTickformat: string, firstEleOfHistDataArr1: any, isNavChrt: boolean) {
+  // range of data configuring
+  const chrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, inputWidth]);
+  const chrtScaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([inputHeight, 0]);
+
+  const chrt = d3.select(lineChrtDiv).append('svg')
+      .attr('width', inputWidth + margin.left + margin.right)
+      .attr('height', inputHeight + margin.top + margin.bottom)
+      .append('g')
+      .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+  const chrtScaleYAxis = d3.axisLeft(chrtScaleY).tickFormat((r: any) => Math.round(r) + yAxisTickformat);
+
+  chrt.append('g')
+      .attr('transform', 'translate(0,' + inputHeight + ')')
+      .call(d3.axisBottom(chrtScaleX).tickFormat(date2MMM));
+  chrt.append('g').call(chrtScaleYAxis);
+
+  // Define the line
+  const line = d3.line()
+      .x((r: any) => chrtScaleX(r.date))
+      .y((r: any) => chrtScaleY(r.sdaClose))
+      .curve(d3.curveCardinal);
+  const line2 = d3.line()
+      .x((r: any) => chrtScaleX(r.date))
+      .y((r: any) => chrtScaleY(r.sdaClose))
+      .curve(d3.curveCardinal);
+
+  const chrtline = chrt.append('g');
+  const focus = chrt.append('g').style('display', 'none');
+  // Add the valueline path.
+  chrtline.append('path')
+      .attr('class', 'line')
+      .style('fill', 'none')
+      .style('stroke', 'blue')
+      .datum(chrtData1) // Binds data to the line
+      .attr('d', line as any);
+
+  chrtline.append('path')
+      .attr('class', 'line2')
+      .style('fill', 'none')
+      .style('stroke-dasharray', ('3, 3'))
+      .datum(chrtData2) // Binds data to the line
+      .attr('d', line2 as any);
+
+  // append the x line
+  focus.append('line')
+      .attr('class', 'x')
+      .style('stroke', 'blue')
+      .style('stroke-dasharray', '3,3')
+      .style('opacity', 0.5)
+      .attr('y1', 0)
+      .attr('y2', inputHeight);
+
+  // append the y line
+  focus.append('line')
+      .attr('class', 'y')
+      .style('stroke', 'blue')
+      .style('stroke-dasharray', '3,3')
+      .style('opacity', 0.5)
+      .attr('x1', inputWidth)
+      .attr('x2', inputWidth);
+  focus.append('line2')
+      .attr('class', 'y')
+      .style('stroke', 'blue')
+      .style('stroke-dasharray', '3,3')
+      .style('opacity', 0.5)
+      .attr('x1', inputWidth)
+      .attr('x2', inputWidth);
+
+  // append the circle at the intersection
+  focus.append('circle')
+      .attr('class', 'y')
+      .style('fill', 'none')
+      .style('stroke', 'blue')
+      .attr('r', 4);
+
+  // place the value at the intersection
+  focus.append('text')
+      .attr('class', 'y1')
+      .style('stroke', 'white')
+      .style('stroke-width', '3.5px')
+      .style('opacity', 0.8)
+      .attr('dx', -10)
+      .attr('dy', '-2em');
+  focus.append('text')
+      .attr('class', 'y2')
+      .attr('dx', -10)
+      .attr('dy', '-2em');
+
+  // place the date at the intersection
+  focus.append('text')
+      .attr('class', 'y3')
+      .style('stroke', 'white')
+      .style('stroke-width', '3.5px')
+      .style('opacity', 0.8)
+      .attr('dx', -30)
+      .attr('dy', '-1em');
+  focus.append('text')
+      .attr('class', 'y4')
+      .attr('dx', -30)
+      .attr('dy', '-1em');
+
+  // append the rectangle to capture mouse
+  chrt.append('rect')
+      .attr('width', inputWidth)
+      .attr('height', inputHeight)
+      .style('fill', 'none')
+      .style('pointer-events', 'all')
+      .on('mouseover', function() { focus.style('display', null); })
+      .on('mouseout', function() { focus.style('display', 'none'); })
+      .on('mousemove', mousemove);
+
+  const formatMonth = d3.timeFormat('%Y%m%d');
+  const bisectDate = d3.bisector((r: any) => r.date).left;
+
+  function mousemove(event: any) {
+    const x0 = chrtScaleX.invert(d3.pointer(event)[0]);
+    const i = bisectDate(chrtData1, x0, 1);
+    const d0 = chrtData1[i - 1];
+    const d1 = chrtData1[i];
+    const r = (x0.getTime() - d0.date.getTime()) > (d1.date.getTime() - x0.getTime()) ? d1 : d0;
+    focus.select('circle.y')
+        .attr('transform', 'translate(' + chrtScaleX(r.date) + ',' + chrtScaleY(r.sdaClose) + ')');
+    focus.select('text.y1')
+        .attr('transform', 'translate(' + chrtScaleX(r.date) + ',' + chrtScaleY(r.sdaClose) + ')')
+        .text(Math.round(r.sdaClose * firstEleOfHistDataArr1 / 100));
+    if (isNavChrt) {
+      focus.select('text.y2')
+          .attr('transform', 'translate(' + chrtScaleX(r.date) + ',' + chrtScaleY(r.sdaClose) + ')')
+          .text(d3.format(',')(Math.round(r.sdaClose * firstEleOfHistDataArr1 / 100)) + 'K');
+    } else {
+      focus.select('text.y2')
+          .attr('transform', 'translate(' + chrtScaleX(r.date) + ',' + chrtScaleY(r.sdaClose) + ')')
+          .text(d3.format(',')(Math.round(r.sdaClose * firstEleOfHistDataArr1 / 100)));
+    }
+    focus.select('text.y3')
+        .attr('transform', 'translate(' + chrtScaleX(r.date) + ',' + chrtScaleY(r.sdaClose) + ')')
+        .text(formatMonth(r.date));
+    focus.select('text.y4')
+        .attr('transform', 'translate(' + chrtScaleX(r.date) + ',' + chrtScaleY(r.sdaClose) + ')')
+        .text(formatMonth(r.date));
+    focus.select('.x')
+        .attr('transform', 'translate(' + chrtScaleX(r.date) + ',' + chrtScaleY(r.sdaClose) + ')')
+        .attr('y2', inputHeight - chrtScaleY(r.sdaClose));
+    focus.select('.y')
+        .attr('transform', 'translate(' + inputWidth * -1 + ',' + chrtScaleY(r.sdaClose) + ')')
+        .attr('x2', inputWidth + inputWidth);
+  }
+}

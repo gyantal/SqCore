@@ -1,5 +1,8 @@
 import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { processUiWithNavAndStockChrt } from '../../../../TsLib/sq-common/chartSimple';
+import * as d3 from 'd3';
+
 
 enum PctChnSignal { Unknown = 0, NonValidBull = 1, NonValidBear = 2, ValidBull = 3, ValidBear = 4 }
 
@@ -22,6 +25,21 @@ class AssetHistData {
   public pctChnDatas: PctChnData[] = [];
 }
 
+class AssetHistValues {
+  public AssetId: number = 0;
+  public SqTicker: string = '';
+  public PeriodStartDate: Date = new Date();
+  public PeriodEndDate: Date = new Date;
+  public HistDates: string[] = [];
+  public HistSdaCloses: number[] = [];
+}
+
+// Hist chart values
+class UiChrtval {
+  public date = new Date('2021-01-01');
+  public sdaClose = NaN;
+}
+
 // SnapshotData; contain only the latest values of that Technical factor. E.g. SMA50, SMA200.  m_snapDatas;
 // HistoricalData (having data for different dates); m_histDatas;
 
@@ -38,6 +56,10 @@ export class AppComponent {
   m_enumPctChnSignal = PctChnSignal;
   m_pctChnDataForTooltip: PctChnData = new PctChnData();
   m_isShowPctChnTooltip: boolean = false;
+  m_isMouseInStckSymbolCell: boolean = false;
+  m_stockSymbol: string = ''; // used in stckChrt
+  m_isShowStckChrtTooltip: boolean = false;
+  m_isMouseInTooltip: boolean = false;
 
   constructor(http: HttpClient) {
     this.m_httpClient = http;
@@ -68,14 +90,8 @@ export class AppComponent {
 
   onMouseenterPctChnWtAggCell(event: MouseEvent, pctChnData: PctChnData) {
     this.m_pctChnDataForTooltip = pctChnData; // Assign the passed in percentage change data to a property used for displaying the tooltip.
-
-    const pctChnTooltipCoords = (document.getElementById('pctChnTooltipText') as HTMLElement); // Get the tooltip element from the DOM where the tooltip text will be displayed.
-    const scrollLeft = (window.pageXOffset !== undefined) ? window.pageXOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollLeft; // Get the horizontal scroll position of the window.
-    const scrollTop = (window.pageYOffset !== undefined) ? window.pageYOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollTop; // Get the vertical scroll position of the window.
-    // Set the position of the tooltip element relative to the mouse cursor position.
-    // The tooltip will be positioned 10 pixels to the right of the cursor's X position and aligned with the cursor's Y position.
-    pctChnTooltipCoords.style.left = 10 + event.pageX - scrollLeft + 'px';
-    pctChnTooltipCoords.style.top = event.pageY - scrollTop + 'px';
+    const tooltipId: HTMLElement = (document.getElementById('pctChnTooltipText') as HTMLElement); // Get the tooltip element from the DOM where the tooltip text will be displayed.
+    this.tooltipPositioning(event, tooltipId);
   }
 
   onMouseleavePctChnWtAggCell() {
@@ -109,5 +125,81 @@ export class AppComponent {
       }
       this.m_assetHistDatas.push(assetHistData);
     }
+  }
+
+  onMouseoverStckSymbol() {
+    this.m_isMouseInStckSymbolCell = true;
+    this.m_isShowStckChrtTooltip = this.m_isMouseInStckSymbolCell || this.m_isMouseInTooltip;
+  }
+
+  onMouseenterStckSymbol(event: any, symbol:string) {
+    console.log('onMouseenterStockSymbol', event, symbol);
+    this.m_stockSymbol = symbol;
+    this.getStckChrtData(symbol);
+    const tooltipId: HTMLElement = (document.getElementById('stockChrtTooltip') as HTMLElement); // Get the tooltip element from the DOM where the tooltip text will be displayed.
+    this.tooltipPositioning(event, tooltipId);
+  }
+
+  onMouseleaveStckSymbol() {
+    this.m_isMouseInStckSymbolCell = false;
+    setTimeout(() => { this.m_isShowStckChrtTooltip = this.m_isMouseInStckSymbolCell || this.m_isMouseInTooltip; }, 200); // don't remove tooltip immediately, because onMouseEnterStockTooltip() will only be called later if Tooltip doesn't disappear
+  }
+
+  onMouseenterStckChrtTooltip() {
+    this.m_isMouseInStckSymbolCell = true;
+    this.m_isShowStckChrtTooltip = this.m_isMouseInStckSymbolCell || this.m_isMouseInTooltip;
+  }
+
+  onMouseleaveStckChrtTooltip() {
+    this.m_isMouseInTooltip = false;
+    this.m_isShowStckChrtTooltip = this.m_isMouseInTooltip;
+  }
+
+  getStckChrtData(symbol: string) {
+    const body: object = { Tickers: symbol };
+    const url: string = this.m_controllerBaseUrl + 'GetStckChrtData'; // Server: it needs to be https://sqcore.net/webapps/TechnicalAnalyzer/GetStckChrtData
+    this.m_httpClient.post<AssetHistValues>(url, body).subscribe((response) => {
+      this.updateStockHistData(response);
+      console.log('getStckChrtData: AssetHistValues ', response);
+    }, (error) => console.error(error));
+  }
+
+  updateStockHistData(assetHistValues: AssetHistValues) {
+    if (assetHistValues == null)
+      return;
+    const stockChartVals: UiChrtval[] = [];
+    for (let i = 0; i < assetHistValues.HistDates.length; i++) {
+      const stockVal = new UiChrtval();
+      const dateStr: string = assetHistValues.HistDates[i];
+      stockVal.date = new Date(dateStr.substring(0, 4) + '-' + dateStr.substring(4, 6) + '-' + dateStr.substring(6, 8));
+      stockVal.sdaClose = assetHistValues.HistSdaCloses[i];
+      stockChartVals.push(stockVal);
+    }
+
+    // processing Ui With StockChrt
+    d3.selectAll('#stockChrt > *').remove();
+    const firstEleOfHistDataArr1 = 100; // used to convert the data into percentage values
+    const lineChrtDiv = document.getElementById('stockChrt') as HTMLElement;
+    const yAxisTickformat: string = '';
+    const margin = {top: 10, right: 30, bottom: 30, left: 40 };
+    const inputWidth = 460 - margin.left - margin.right;
+    const inputHeight = 200 - margin.top - margin.bottom;
+    const stckChrtData = stockChartVals.map((r:{ date: Date; sdaClose: number; }) => ({date: new Date(r.date), sdaClose: (r.sdaClose)}));
+    // find data range
+    const xMin = d3.min(stckChrtData, (r:{ date: any; }) => r.date);
+    const xMax = d3.max(stckChrtData, (r:{ date: any; }) => r.date);
+    const yMinAxis = d3.min(stckChrtData, (r:{ sdaClose: any; }) => r.sdaClose);
+    const yMaxAxis = d3.max(stckChrtData, (r:{ sdaClose: any; }) => r.sdaClose);
+    const isNavChrt: boolean = false;
+    processUiWithNavAndStockChrt(stckChrtData, stckChrtData, lineChrtDiv, inputWidth, inputHeight, margin, xMin, xMax, yMinAxis, yMaxAxis, yAxisTickformat, firstEleOfHistDataArr1, isNavChrt);
+  }
+
+  tooltipPositioning(event: MouseEvent, tooltipId: HTMLElement) { // tooltip positioning based on the mouseevent and tooltip element Id.
+    const scrollLeft = (window.pageXOffset !== undefined) ? window.pageXOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollLeft; // Get the horizontal scroll position of the window.
+    const scrollTop = (window.pageYOffset !== undefined) ? window.pageYOffset : ((document.documentElement || document.body.parentNode || document.body) as HTMLElement).scrollTop; // Get the vertical scroll position of the window.
+    // Set the position of the tooltip element relative to the mouse cursor position.
+    // The tooltip will be positioned 10 pixels to the right of the cursor's X position and aligned with the cursor's Y position.
+    tooltipId.style.left = 10 + event.pageX - scrollLeft + 'px';
+    tooltipId.style.top = event.pageY - scrollTop + 'px';
   }
 }

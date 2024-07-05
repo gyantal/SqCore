@@ -203,49 +203,13 @@ public partial class DashboardClient
 
     private void BrAccViewerSendStockHist(SqDateOnly lookbackStart, SqDateOnly lookbackEndExcl, string sqTicker)
     {
-        Asset? asset = MemDb.gMemDb.AssetsCache.TryGetAsset(sqTicker);
-        if (asset == null)
-            return;
-        Stock? stock = asset as Stock;
-        if (stock == null)
-        {
-            if (asset is Option option)
-                stock = option.UnderlyingAsset as Stock;
-        }
-        if (stock == null)
-            return;
+        AssetHistValuesJs assetHistValues = UiUtils.GetStockTickerHistData(lookbackStart, lookbackEndExcl, sqTicker);
 
-        string yfTicker = stock.YfTicker;
-
-        (SqDateOnly[] dates, float[] adjCloses) = MemDb.GetSelectedStockTickerHistData(lookbackStart, lookbackEndExcl, yfTicker);
-
-        if (adjCloses.Length == 0)
-            return;
-
-        AssetHistValuesJs stockHistValues = new()
-        {
-            AssetId = AssetId32Bits.Invalid,
-            SqTicker = sqTicker,
-            PeriodStartDate = lookbackStart.Date,
-            PeriodEndDate = lookbackEndExcl.Date.AddDays(-1),
-            HistDates = new(adjCloses.Length),
-            HistSdaCloses = new(adjCloses.Length)
-        };
-
-        for (int i = 0; i < adjCloses.Length; i++)
-        {
-            float adjClose = adjCloses[i];
-            if (float.IsNaN(adjClose)) // Very rarely YF historical data service doesn't have data for 1-5 days in the middle of the history. In that case, that date has a float.NaN as adjClose price. JSON text cannot handle NaN as numbers, so we skip these days when sending to client.
-                continue;
-
-            stockHistValues.HistDates.Add(dates[i].Date.ToYYYYMMDD());
-            stockHistValues.HistSdaCloses.Add(adjClose);
-        }
-
-        byte[]? encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.StockHist:" + Utils.CamelCaseSerialize(stockHistValues));
+        byte[]? encodedMsg = Encoding.UTF8.GetBytes("BrAccViewer.StockHist:" + Utils.CamelCaseSerialize(assetHistValues));
         if (WsWebSocket!.State == WebSocketState.Open)
             WsWebSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
+
     private HandshakeBrAccViewer GetHandshakeBrAccViewer(List<BrokerNav> p_selectableNavs)
     {
         List<AssetJs> marketBarAssets = m_brAccMktBrAssets.Select(r => new AssetJs() { AssetId = r.AssetId, SqTicker = r.SqTicker, Symbol = r.Symbol, Name = r.Name }).ToList();

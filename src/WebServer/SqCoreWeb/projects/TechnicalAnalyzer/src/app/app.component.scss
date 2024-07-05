@@ -34,7 +34,7 @@ table td, tr, th {
   cursor: pointer;
 }
 
-#pctChnTooltipText {
+.tooltipCommon {
   position: fixed;
   right: 10rem;
   font-size: 0.8rem;
@@ -43,6 +43,14 @@ table td, tr, th {
   color: rgb(6, 8, 153);
   border-radius: 1rem;
   cursor: pointer;
+}
+
+#pctChnTooltipText {
   width: 10rem;
   text-align: center;
+}
+
+#stockChrtTooltip {
+  width: 23rem;
+  height: 12rem;
 }

@@ -5,7 +5,7 @@
     <thead>
       <tr>
         <th>Date</th>
-        <th *ngFor="let asset of m_assetHistDatas">{{ asset.symbol }}</th>
+        <th *ngFor="let asset of m_assetHistDatas" (mouseover)="onMouseoverStckSymbol()" (mouseenter)="onMouseenterStckSymbol($event, asset.symbol)" (mouseleave)="onMouseleaveStckSymbol()">{{ asset.symbol }}</th>
       </tr>
     </thead>
     <tbody>
@@ -22,7 +22,7 @@
     </tbody>
   </table>
 </div>
-<div id="pctChnTooltipText" *ngIf="m_isShowPctChnTooltip">
+<div class="tooltipCommon" id="pctChnTooltipText" *ngIf="m_isShowPctChnTooltip">
   <span *ngFor="let item of [{period: 60, signal: 1}, {period: 120, signal: 2}, {period: 180, signal: 3}, {period: 252, signal: 4}]">
     PctChn-{{ item.period }}:<span [ngStyle]="{'color': (m_enumPctChnSignal[m_pctChnDataForTooltip['pctChnSignal' + item.signal]] === 'ValidBull' || m_enumPctChnSignal[m_pctChnDataForTooltip['pctChnSignal' + item.signal]] === 'NonValidBull') ? 'Green' : 'Red'}">
     {{ 
@@ -34,4 +34,21 @@
     }} ({{m_pctChnDataForTooltip['pctChnVal' + item.signal] | percent:'1.0' }})
     </span><br>
   </span>
+</div>
+<div class="tooltipCommon" id="stockChrtTooltip" (mouseenter)="onMouseenterStckChrtTooltip()" (mouseleave)="onMouseleaveStckChrtTooltip()" *ngIf="m_isShowStckChrtTooltip">&nbsp;
+  <a href="https://uk.tradingview.com/chart/?symbol={{m_stockSymbol}}" target="_blank">
+    <svg width="28" height="22" viewBox="0 0 28 22" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 12 20 H 7 V 11 H 0 V 4 h 12 v 16 z 
+                        M 24 20 h-8 l 7.5-18 h 8 L 22 20 z" fill="currentColor">
+      </path>
+      <circle cx="16.5" cy="7" r="4" fill="currentColor" />
+    </svg>
+  </a>,
+  <a href="https://finance.yahoo.com/quote/{{m_stockSymbol}}" target="_blank"><img alt='YF' src='../assets/images/YF.webp' width='20' height='20'></a>,
+  <a href="https://www.zacks.com/stock/quote/{{m_stockSymbol}}" target="_blank"><img alt='Zacks' src='../assets/images/Zacks.webp' width='20' height='20'></a>,
+  <a href="https://www.earningswhispers.com/tradeview/{{m_stockSymbol}}" target="_blank"><img alt='earningswhispers-BeforeEarnings' src='../assets/images/EW-BE.webp' width='20' height='20'></a>,
+  <a href="https://www.earningswhispers.com/epsdetails/{{m_stockSymbol}}" target="_blank"><img alt='earningswhispers-AfterEarnings' src='../assets/images/EW-AE.webp' width='20' height='20'></a>,
+  <a href="https://www.tipranks.com/stocks/{{m_stockSymbol}}/forecast" target="_blank"><img alt='TipRanks' src='../assets/images/TR.webp' width='20' height='20'></a>,
+  <a href="https://stockcharts.com/h-sc/ui?s={{m_stockSymbol}}" target="_blank"><img alt='stocksCharts' src='../assets/images/SC.webp' width='20' height='20'></a> <br>
+  <span id="stockChrt"></span>
 </div>

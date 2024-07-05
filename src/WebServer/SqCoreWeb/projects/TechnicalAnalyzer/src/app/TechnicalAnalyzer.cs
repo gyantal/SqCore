@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
+using SqCommon;
 using SqCoreWeb.Controllers;
 
 namespace SqCoreWeb;
@@ -50,12 +51,27 @@ public class TechnicalAnalyzerController : Microsoft.AspNetCore.Mvc.Controller
         List<TickerAggregatePctlChnlData> pctChnData = new();
         foreach (string ticker in tickers)
         {
-            List<Controllers.AggregateDatePctlChannel> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeightsWithDates_New(ticker, endDate, pctChnLookbackDays, calculationLookbackDays, resultLengthDays, bottomPctThreshold, topPctThreshold);
+            List<Controllers.AggregateDatePctlChannel> pctChannelRes = Controllers.StrategyUberTaaController.PctChnWeightsWithDates(ticker, endDate, pctChnLookbackDays, calculationLookbackDays, resultLengthDays, bottomPctThreshold, topPctThreshold);
 
             TickerAggregatePctlChnlData tickerAggregatePctlChnlData = new TickerAggregatePctlChnlData { Ticker = ticker, AggregateDatePctlChannel = pctChannelRes };
             pctChnData.Add(tickerAggregatePctlChnlData);
         }
         string pctChnDataStr = JsonSerializer.Serialize<List<TickerAggregatePctlChnlData>>(pctChnData);
         return pctChnDataStr;
+    }
+
+    [HttpPost]
+    public string GetStckChrtData([FromBody] UserInput p_inMsg) // e.g. p_inMsg.Tickers: TSLA,AAPL
+    {
+        if (string.IsNullOrEmpty(p_inMsg.Tickers))
+            return JsonSerializer.Serialize(new { error = "GetPctChnData: p_inMsg is null or empty." });
+        string stockSqTicker = "S/" + p_inMsg.Tickers;
+        DateTime todayET = DateTime.UtcNow.FromUtcToEt().Date;
+        DateTime startDayET = todayET.AddYears(-1); // new(todayET.Year - 1, todayET.Month, todayET.Day); doesn't work in leap years e.g. 2024-02-29, as 2023-02-29 non-existing
+        SqDateOnly stckChrtLookbackStart = new(startDayET);  // gets the 1 year data starting from yesterday to back 1 year
+        SqDateOnly stckChrtLookbackEndExcl = todayET;
+        AssetHistValuesJs assetHistValues = UiUtils.GetStockTickerHistData(stckChrtLookbackStart, stckChrtLookbackEndExcl, stockSqTicker);
+        string responseStr = JsonSerializer.Serialize(assetHistValues);
+        return responseStr;
     }
 }
