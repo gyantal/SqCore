@@ -27,6 +27,8 @@ public class PortfolioInDb // Portfolio.Id is not in the JSON, which is the Hash
     [JsonPropertyName("TradeHistory")]
     public int? TradeHistoryId { get; set; } = null; // 'int?' is used instead of 'int' with the -1 default, because if it is the default, we don't want to store it in the RedisDb JSON
 
+    public string LegacyDbPortfName { get; set; } = string.Empty;
+
     public PortfolioInDb()
     {
     }

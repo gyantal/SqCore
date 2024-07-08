@@ -408,9 +408,15 @@ public partial class Db
             if (!hashRow.Name.TryParse(out int id) || rowValue == null) // Name is the 'Key' that contains the Id
                 continue;   // Sometimes, there is an extra line 'New field'. But it can be deleted from Redis Manager. It is a kind of expected.
 
-            var portfInDb = JsonSerializer.Deserialize<PortfolioInDb>(rowValue, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+            PortfolioInDb? portfInDb = JsonSerializer.Deserialize<PortfolioInDb>(rowValue, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
                 ?? throw new SqException($"Deserialize failed on '{rowValue}'");
-            Portfolio portfolio = new(id, portfInDb, users); // Portfolio.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
+
+            Portfolio portfolio;
+            if (String.IsNullOrEmpty(portfInDb.LegacyDbPortfName))
+                portfolio = new Portfolio(id, portfInDb, users); // Portfolio.Id is not in the JSON, which is the HashEntry.Value. It comes separately from the HashEntry.Key
+            else
+                portfolio = new LegacyPortfolio(id, portfInDb, users);
+
             result[id] = portfolio;
         }
         return result;
