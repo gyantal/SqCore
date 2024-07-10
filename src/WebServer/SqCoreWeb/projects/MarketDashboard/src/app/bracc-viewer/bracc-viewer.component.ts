@@ -1,8 +1,8 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { gDiag, AssetLastJs } from '../../../../../TsLib/sq-common/sq-globals';
+import { gDiag, AssetLastJs, UiChrtval } from '../../../../../TsLib/sq-common/sq-globals';
 import { SqNgCommonUtilsStr } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_str';
 import { SqNgCommonUtilsTime, minDate } from './../../../../sq-ng-common/src/lib/sq-ng-common.utils_time'; // direct reference, instead of via 'public-api.ts' as an Angular library. No need for 'ng build sq-ng-common'. see https://angular.io/guide/creating-libraries
-import { processUiWithNavAndStockChrt } from '../../../../../TsLib/sq-common/chartSimple';
+import { drawHistChartFromData } from '../../../../../TsLib/sq-common/chartSimple';
 import * as d3 from 'd3';
 
 type Nullable<T> = T | null;
@@ -191,12 +191,6 @@ class UiHistData {
   public maxDrawDown = NaN;
   public maxDrawUp = NaN;
   public navChrtVals: UiChrtval[] = [];
-}
-
-// Hist chart values
-class UiChrtval {
-  public date = new Date('2021-01-01');
-  public sdaClose = NaN;
 }
 
 @Component({
@@ -667,25 +661,25 @@ export class BrAccViewerComponent implements OnInit {
 
     // processing the navChart
     d3.selectAll('#navChrt > *').remove();
-    const firstEleOfHistDataArr1 = uiHistData[0].navChrtVals[0].sdaClose; // used to convert the data into percentage values
-    const firstEleOfHistDataArr2 = uiHistData[1].navChrtVals[0].sdaClose; // used to convert the data into percentage values
-    const lineChrtDiv = document.getElementById('navChrt') as HTMLElement;
-    const margin = {top: 10, right: 50, bottom: 30, left: 60 };
-    const inputWidth = 660 - margin.left - margin.right;
-    const inputHeight = 400 - margin.top - margin.bottom;
+    const firstEleOfHistDataArr1: number = uiHistData[0].navChrtVals[0].sdaClose; // used to convert the data into percentage values
+    const firstEleOfHistDataArr2: number = uiHistData[1].navChrtVals[0].sdaClose; // used to convert the data into percentage values
+    const lineChrtDiv: HTMLElement = document.getElementById('navChrt') as HTMLElement;
+    const margin: { top: number; right: number; bottom: number; left: number; } = {top: 10, right: 50, bottom: 30, left: 60 };
+    const inputWidth: number = 660 - margin.left - margin.right;
+    const inputHeight: number = 400 - margin.top - margin.bottom;
     const yAxisTickformat: string = '%';
-    const navChrtData1 = uiHistData[0].navChrtVals.map((r:{ date: Date; sdaClose: number; }) =>
+    const navChrtData: UiChrtval[] = uiHistData[0].navChrtVals.map((r:{ date: Date; sdaClose: number; }) =>
       ({date: new Date(r.date), sdaClose: (100 * r.sdaClose / firstEleOfHistDataArr1)}));
-    const navChrtData2 = uiHistData[1].navChrtVals.map((r:{ date: Date; sdaClose: number; }) =>
+    const bnchmkChrtData: UiChrtval[] = uiHistData[1].navChrtVals.map((r:{ date: Date; sdaClose: number; }) =>
       ({date: new Date(r.date), sdaClose: (100 * r.sdaClose / firstEleOfHistDataArr2)}));
     // find data range
-    const xMin = d3.min(navChrtData1, (r:{ date: any; }) => r.date);
-    const xMax = d3.max(navChrtData1, (r:{ date: any; }) => r.date);
-    const yMinAxis = Math.min(d3.min(navChrtData1, (r:{ sdaClose: any; }) => r.sdaClose), d3.min(navChrtData2, (r:{ sdaClose: any; }) => r.sdaClose ));
-    const yMaxAxis = Math.max(d3.max(navChrtData1, (r:{ sdaClose: any; }) => r.sdaClose), d3.max(navChrtData2, (r:{ sdaClose: any; }) => r.sdaClose ));
+    const xMin: number = d3.min(navChrtData, (r:{ date: any; }) => r.date);
+    const xMax: number = d3.max(navChrtData, (r:{ date: any; }) => r.date);
+    const yMinAxis: number = Math.min(d3.min(navChrtData, (r:{ sdaClose: any; }) => r.sdaClose), d3.min(bnchmkChrtData, (r:{ sdaClose: any; }) => r.sdaClose ));
+    const yMaxAxis: number = Math.max(d3.max(navChrtData, (r:{ sdaClose: any; }) => r.sdaClose), d3.max(bnchmkChrtData, (r:{ sdaClose: any; }) => r.sdaClose ));
     const isNavChrt: boolean = true;
 
-    processUiWithNavAndStockChrt(navChrtData1, navChrtData2, lineChrtDiv, inputWidth, inputHeight, margin, xMin, xMax, yMinAxis, yMaxAxis, yAxisTickformat, firstEleOfHistDataArr1, isNavChrt);
+    drawHistChartFromData(navChrtData, bnchmkChrtData, lineChrtDiv, inputWidth, inputHeight, margin, xMin, xMax, yMinAxis, yMaxAxis, yAxisTickformat, firstEleOfHistDataArr1, isNavChrt);
   }
 
   static updateStockHistData(stockObj: Nullable<BrAccHistValuesJs>, uiSnapTable: UiSnapTable) {
@@ -702,21 +696,21 @@ export class BrAccViewerComponent implements OnInit {
 
     // processing Ui With StockChrt
     d3.selectAll('#stockChrt > *').remove();
-    const firstEleOfHistDataArr1 = 100; // used to convert the data into percentage values
-    const lineChrtDiv = document.getElementById('stockChrt') as HTMLElement;
+    const firstEleOfHistDataArr1: number = 100; // used to convert the data into percentage values
+    const lineChrtDiv: HTMLElement = document.getElementById('stockChrt') as HTMLElement;
     const yAxisTickformat: string = '';
-    const margin = {top: 10, right: 30, bottom: 30, left: 40 };
-    const inputWidth = 460 - margin.left - margin.right;
-    const inputHeight = 200 - margin.top - margin.bottom;
-    const stckChrtData = uiSnapTable.stockChartVals.map((r:{ date: Date; sdaClose: number; }) =>
+    const margin: { top: number; right: number; bottom: number; left: number; } = {top: 10, right: 30, bottom: 30, left: 40 };
+    const inputWidth: number = 460 - margin.left - margin.right;
+    const inputHeight: number = 200 - margin.top - margin.bottom;
+    const stckChrtData: UiChrtval[] = uiSnapTable.stockChartVals.map((r:{ date: Date; sdaClose: number; }) =>
       ({date: new Date(r.date), sdaClose: (r.sdaClose)}));
     // find data range
-    const xMin = d3.min(stckChrtData, (r:{ date: any; }) => r.date);
-    const xMax = d3.max(stckChrtData, (r:{ date: any; }) => r.date);
-    const yMinAxis = d3.min(stckChrtData, (r:{ sdaClose: any; }) => r.sdaClose);
-    const yMaxAxis = d3.max(stckChrtData, (r:{ sdaClose: any; }) => r.sdaClose);
+    const xMin: number = d3.min(stckChrtData, (r:{ date: any; }) => r.date);
+    const xMax: number = d3.max(stckChrtData, (r:{ date: any; }) => r.date);
+    const yMinAxis: number = d3.min(stckChrtData, (r:{ sdaClose: any; }) => r.sdaClose);
+    const yMaxAxis: number = d3.max(stckChrtData, (r:{ sdaClose: any; }) => r.sdaClose);
     const isNavChrt: boolean = false;
-    processUiWithNavAndStockChrt(stckChrtData, stckChrtData, lineChrtDiv, inputWidth, inputHeight, margin, xMin, xMax, yMinAxis, yMaxAxis, yAxisTickformat, firstEleOfHistDataArr1, isNavChrt);
+    drawHistChartFromData(stckChrtData, null, lineChrtDiv, inputWidth, inputHeight, margin, xMin, xMax, yMinAxis, yMaxAxis, yAxisTickformat, firstEleOfHistDataArr1, isNavChrt);
   }
 
   onNavSelectedChange() {

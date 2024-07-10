@@ -116,3 +116,18 @@ export class UserJs {
   public email: string = '';
   public isAdmin: boolean = false;
 }
+
+// Hist chart values : used in 2 places: MarketDashboard/BrAccViewer and TechnicalAnalyzer
+export class UiChrtval {
+  public date = new Date('2021-01-01');
+  public sdaClose = NaN;
+}
+
+export class AssetHistValues { // Used in TechincalAnalyzer
+  public AssetId: number = 0;
+  public SqTicker: string = '';
+  public PeriodStartDate: Date = new Date();
+  public PeriodEndDate: Date = new Date;
+  public HistDates: string[] = [];
+  public HistSdaCloses: number[] = [];
+}

@@ -1,5 +1,6 @@
 // **** Used in LiveStrategies and Volatality visualizer ****
 import * as d3 from 'd3';
+import { UiChrtval } from './sq-globals';
 
 export function shortMonthFormat(date: any) : string {
   const formatMillisec = d3.timeFormat('.%L');
@@ -236,52 +237,56 @@ export function date2MMM(date: any) : string {
 }
 
 // used in 2 places: MarketDashboard/BrAccViewer and TechnicalAnalyzer
-export function processUiWithNavAndStockChrt(chrtData1: any, chrtData2: any, lineChrtDiv: HTMLElement, inputWidth: number, inputHeight: number, margin: any, xMin: number, xMax: number, yMinAxis: number, yMaxAxis: number, yAxisTickformat: string, firstEleOfHistDataArr1: any, isNavChrt: boolean) {
-  // range of data configuring
-  const chrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, inputWidth]);
-  const chrtScaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([inputHeight, 0]);
+export function drawHistChartFromData(chrtData1: UiChrtval[], chrtData2: UiChrtval[] | null, lineChrtDiv: HTMLElement, inputWidth: number, inputHeight: number, margin: any, xMin: number, xMax: number, yMinAxis: number, yMaxAxis: number, yAxisTickformat: string, firstEleOfHistDataArr1: any, isNavChrt: boolean) {
+  let isShowSecondaryChart: boolean = false;
+  if (chrtData2 != null)
+    isShowSecondaryChart = true;
 
   const chrt = d3.select(lineChrtDiv).append('svg')
       .attr('width', inputWidth + margin.left + margin.right)
       .attr('height', inputHeight + margin.top + margin.bottom)
       .append('g')
       .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-  const chrtScaleYAxis = d3.axisLeft(chrtScaleY).tickFormat((r: any) => Math.round(r) + yAxisTickformat);
+
+  // range of data configuring
+  const chrtScaleX = d3.scaleTime().domain([xMin, xMax]).range([0, inputWidth]);
+  const chrtScaleY = d3.scaleLinear().domain([yMinAxis - 5, yMaxAxis + 5]).range([inputHeight, 0]);
 
   chrt.append('g')
       .attr('transform', 'translate(0,' + inputHeight + ')')
       .call(d3.axisBottom(chrtScaleX).tickFormat(date2MMM));
+
+  const chrtScaleYAxis = d3.axisLeft(chrtScaleY).tickFormat((r: any) => Math.round(r) + yAxisTickformat);
   chrt.append('g').call(chrtScaleYAxis);
 
   // Define the line
   const line = d3.line()
       .x((r: any) => chrtScaleX(r.date))
-      .y((r: any) => chrtScaleY(r.sdaClose))
-      .curve(d3.curveCardinal);
+      .y((r: any) => chrtScaleY(r.sdaClose));
+
   const line2 = d3.line()
       .x((r: any) => chrtScaleX(r.date))
-      .y((r: any) => chrtScaleY(r.sdaClose))
-      .curve(d3.curveCardinal);
+      .y((r: any) => chrtScaleY(r.sdaClose));
 
   const chrtline = chrt.append('g');
-  const focus = chrt.append('g').style('display', 'none');
-  // Add the valueline path.
-  chrtline.append('path')
+  chrtline.append('path') // Add the chrtdata to form a path.
       .attr('class', 'line')
       .style('fill', 'none')
       .style('stroke', 'blue')
       .datum(chrtData1) // Binds data to the line
       .attr('d', line as any);
 
-  chrtline.append('path')
-      .attr('class', 'line2')
-      .style('fill', 'none')
-      .style('stroke-dasharray', ('3, 3'))
-      .datum(chrtData2) // Binds data to the line
-      .attr('d', line2 as any);
+  if (isShowSecondaryChart) {
+    chrtline.append('path')
+        .attr('class', 'line2')
+        .style('fill', 'none')
+        .style('stroke-dasharray', ('3, 3'))
+        .datum(chrtData2) // Binds data to the line
+        .attr('d', line2 as any);
+  }
 
-  // append the x line
-  focus.append('line')
+  const focus = chrt.append('g').style('display', 'none');
+  focus.append('line') // append the x line
       .attr('class', 'x')
       .style('stroke', 'blue')
       .style('stroke-dasharray', '3,3')
@@ -289,8 +294,7 @@ export function processUiWithNavAndStockChrt(chrtData1: any, chrtData2: any, lin
       .attr('y1', 0)
       .attr('y2', inputHeight);
 
-  // append the y line
-  focus.append('line')
+  focus.append('line') // append the y line
       .attr('class', 'y')
       .style('stroke', 'blue')
       .style('stroke-dasharray', '3,3')
@@ -352,11 +356,11 @@ export function processUiWithNavAndStockChrt(chrtData1: any, chrtData2: any, lin
   const bisectDate = d3.bisector((r: any) => r.date).left;
 
   function mousemove(event: any) {
-    const x0 = chrtScaleX.invert(d3.pointer(event)[0]);
-    const i = bisectDate(chrtData1, x0, 1);
-    const d0 = chrtData1[i - 1];
-    const d1 = chrtData1[i];
-    const r = (x0.getTime() - d0.date.getTime()) > (d1.date.getTime() - x0.getTime()) ? d1 : d0;
+    const x0: Date = chrtScaleX.invert(d3.pointer(event)[0]);
+    const i: number = bisectDate(chrtData1, x0, 1);
+    const d0: UiChrtval = chrtData1[i - 1];
+    const d1: UiChrtval = chrtData1[i];
+    const r: UiChrtval = (x0.getTime() - d0.date.getTime()) > (d1.date.getTime() - x0.getTime()) ? d1 : d0;
     focus.select('circle.y')
         .attr('transform', 'translate(' + chrtScaleX(r.date) + ',' + chrtScaleY(r.sdaClose) + ')');
     focus.select('text.y1')
