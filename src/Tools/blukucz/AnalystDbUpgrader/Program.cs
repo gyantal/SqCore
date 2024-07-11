@@ -2,7 +2,7 @@
 using CsvHelper.Configuration.Attributes;
 using SqCommon;
 
-namespace YahooCrawler
+namespace YahooPriceCrawler
 {
 
     class Program
@@ -21,10 +21,9 @@ namespace YahooCrawler
 
             ColorConsole.WriteLine(ConsoleColor.Magenta, "----  (type and press Enter)  ----");
             Console.WriteLine("1. Say Hello. Don't do anything. Check responsivenes.");
-            Console.WriteLine("2. Download YF data into CSVs.");
-            Console.WriteLine("3. Read recommendations from CSV.");
-            Console.WriteLine("4. Transform recommendations.");
-            Console.WriteLine("5. Exit gracefully (Avoid Ctrl-^C).");
+            Console.WriteLine("2. Download YF price data into CSVs.");
+            Console.WriteLine("3. SA Top Analysts: create performance file.");
+            Console.WriteLine("4. Exit gracefully (Avoid Ctrl-^C).");
             string userInput;
             try
             {
@@ -41,18 +40,16 @@ namespace YahooCrawler
                     Utils.Logger.Info("Hello. I am not crashed yet! :)");
                     break;
                 case "2":
-                    Controller.g_controller.DownloadYFtoCsv();
+                    string tickerFileName = "D:/Temp/YFHist/Tickers.csv";
+                    DateTime expectedHistoryStartDateET = new(2023, 7, 1);
+                    Controller.DownloadYFtoCsv(tickerFileName, expectedHistoryStartDateET, "D:/Temp/YFHist/");
                     Console.WriteLine("Writing YF adjusted priced into CVSs is done.");
                     break;
                 case "3":
-                    Controller.g_controller.ReadRecommendationsCsv();
-                    Console.WriteLine("Recommendations CSV is read into the memory.");
+                    Controller.RecommendationPerformanceAnalyser();
+                    Console.WriteLine("SA TopAnalysts Recommendation results are written into CSV.");
                     break;
                 case "4":
-                    Controller.g_controller.TransformRecommendationsCsv();
-                    Console.WriteLine("Recommendations CSV is read into the memory.");
-                    break;
-                case "5":
                     return "UserChosenExit";
             }
             return string.Empty;

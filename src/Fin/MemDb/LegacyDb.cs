@@ -21,7 +21,7 @@ public class LegacyDb : IDisposable
         // https://github.com/dotnet/SqlClient/issues/1945
         // " 2 weeks ago" "I'm using .net 8 and the 5.2.1 package and the problem persists:"
         // https://github.com/dotnet/SqlClient/pull/2093 Fix was merged on "Jul 21, 2023" SqlClient: 5.2.0-preview4
-        // https://github.com/dotnet/SqlClient/issues/2146 
+        // https://github.com/dotnet/SqlClient/issues/2146
         // "3 weeks ago: I have the same issue. .NET Core 6 with EFCore 7, deployed on a linux docker image."
         // >https://www.nuget.org/packages/Microsoft.Data.SqlClient/5.2.1
         // we use <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.1" />

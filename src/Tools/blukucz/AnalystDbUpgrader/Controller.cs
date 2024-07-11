@@ -8,7 +8,7 @@ using CsvHelper.Configuration.Attributes;
 using SqCommon;
 using YahooFinanceApi;
 
-namespace YahooCrawler
+namespace YahooPriceCrawler
 {
     public class YFRecord
     {
@@ -17,222 +17,229 @@ namespace YahooCrawler
         public float Close { get; set; }
     }
 
-    public enum Universe : byte
-    {
-        Unknown = 0,
-        SP500,
-        Nasdaq100,
-        GC1,
-        GC2,
-        GC3,
-        ARK
-    }
-
     public class TickerMembers
     {
         public string Ticker { get; set; } = string.Empty;
-        public Universe Universe { get; set; } = Universe.Unknown;
+        // public string UniverseOrFlag { get; set; } = string.Empty; // for future use
     }
 
-    public class OrigRecomm
+    public class Recommendation
     {
-        [Name("date")]
-        public string Date { get; set; } = string.Empty;
+        [Name("id")]
+        public int Id { get; set; } = int.MinValue;
         [Name("ticker")]
         public string Ticker { get; set; } = string.Empty;
-        [Name("companyName")]
-        public string CompanyName { get; set; } = string.Empty;
-        [Name("action")]
-        public string Action { get; set; } = string.Empty;
-        [Name("initiater")]
-        public string Initiater { get; set; } = string.Empty;
-        [Name("priceTarget")]
-        public string PriceTarget { get; set; } = string.Empty;
-        [Name("priceTargetFrom")]
-        public string PriceTargetFrom { get; set; } = string.Empty;
-        [Name("currency")]
-        public string Currency { get; set; } = string.Empty;
-        [Name("rating")]
-        public string Rating { get; set; } = string.Empty;
-        [Name("ratingFrom")]
-        public string RatingFrom { get; set; } = string.Empty;
-        [Name("ratingNumber")]
-        public string RatingNumber { get; set; } = string.Empty;
-        [Name("impactNumber")]
-        public string ImpactNumber { get; set; } = string.Empty;
+        [Name("date")]
+        public string Date { get; set; } = string.Empty;
     }
 
-    public class OutputRecomm : OrigRecomm
+    public class RecommendationsFromCsv
     {
-        public float AdjClose126db { get; set; }
-        public float AdjClose63db { get; set; }
-        public float AdjClose21db { get; set; }
-        public float AdjClose10db { get; set; }
-        public float AdjClose5db { get; set; }
-        public float AdjClose3db { get; set; }
-        public float AdjClose1db { get; set; }
-        public float AdjClose0db { get; set; } //Day T-1
-        public float AdjClose0da { get; set; }
-        public float AdjClose1da { get; set; }
-        public float AdjClose2da { get; set; }
-        public float AdjClose3da { get; set; }
-        public float AdjClose4da { get; set; }
-        public float AdjClose5da { get; set; }
-        public float AdjClose10da { get; set; }
-        public float AdjClose15da { get; set; }
-        public float AdjClose21da { get; set; }
-        public float AdjClose63da { get; set; }
-        public float AdjClose126da { get; set; }
-        public float AdjClose252da { get; set; }
-        public float Close {get; set;}
-
-        public OutputRecomm(OrigRecomm parentToCopy)
-        {
-            this.Date = parentToCopy.Date;
-            this.Ticker = parentToCopy.Ticker;
-            this.CompanyName = parentToCopy.CompanyName;
-            this.Action = parentToCopy.Action;
-            this.Initiater = parentToCopy.Initiater;
-            this.PriceTarget = parentToCopy.PriceTarget;
-            this.PriceTargetFrom = parentToCopy.PriceTargetFrom;
-            this.Currency = parentToCopy.Currency;
-            this.Rating = parentToCopy.Rating;
-            this.RatingFrom = parentToCopy.RatingFrom;
-            this.RatingNumber = parentToCopy.RatingNumber;
-            this.ImpactNumber = parentToCopy.ImpactNumber;
-        }
+        public required Recommendation[] Recommendations { get; set; }
+        public required string[] UniqueTickers { get; set; }
     }
+
+    public class PerformanceResult
+    {
+        public int Id { get; set; }
+        public required string Ticker { get; set; }
+        public required string Date { get; set; }
+        public Dictionary<int, float> FuturePerformances { get; set; } = [];
+    }
+
     class Controller
     {
-        static public Controller g_controller = new();
+        // static public Controller g_controller = new(); use this if you need to store persistent data in m_data fields between function calls
 
-        string[] m_universeTickers = Array.Empty<string>();
-        OrigRecomm[] m_recommRecords = Array.Empty<OrigRecomm>();
-
-        OrigRecomm[] m_slimmedRecommRecords = Array.Empty<OrigRecomm>();
-        List<OutputRecomm> m_outputRec = new();
-        readonly IDictionary<string, List<YFRecord>> m_yfDataFromCsv = new Dictionary<string, List<YFRecord>>();
-
-        internal static void Init()
+        // Reads the ticker universe from a CSV file
+        public static string[] ReadUniverseTickers(string p_tickerFileName /*, int p_universeId = 2 */)
         {
-        }
-
-        internal static void Exit()
-        {
-        }
-
-
-        public void ReadTickerUniverse()
-        {
-            using var reader = new StreamReader("D:\\Temp\\YFHist\\Tickers.csv");
-            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+            using StreamReader reader = new(p_tickerFileName);
+            using CsvReader csv = new(reader, CultureInfo.InvariantCulture);
             List<TickerMembers> tickerMembers = csv.GetRecords<TickerMembers>().ToList();
-            m_universeTickers = tickerMembers.Select(r => r.Ticker).ToArray();
+            string[] universeTickers = tickerMembers.Select(r => r.Ticker).ToArray();
+
+            return universeTickers;
         }
 
-        public async void DownloadYFtoCsv()
+        // Downloads Yahoo Finance data to CSV files for the given tickers
+        public static async void DownloadYFtoCsv(string p_tickerFileName, DateTime p_expectedHistoryStartDateET, string p_targetFolder)
         {
-            ReadTickerUniverse();
-            foreach (var ticker in m_universeTickers)
+            string[] universeTickers = ReadUniverseTickers(p_tickerFileName);
+            Console.WriteLine($"Number of tickers: {universeTickers.Length}");
+            foreach (string ticker in universeTickers)
             {
-                DateTime expectedHistoryStartDateET = new(2010, 1, 1);
-                IReadOnlyList<Candle?>? history = await Yahoo.GetHistoricalAsync(ticker, expectedHistoryStartDateET, DateTime.Now, Period.Daily);
-
-                YFRecord[] yfRecords = history.Select(r => new YFRecord() { Date = Utils.Date2hYYYYMMDD(r!.DateTime), AdjClose = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4), Close = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.Close, 4) }).ToArray();
-
-                using var writer = new StreamWriter("D:\\Temp\\YFHist\\" + ticker + ".csv");
-                using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
-                csv.WriteRecords(yfRecords);
-            }
-        }
-
-        public void ReadRecommendationsCsv()
-        {
-            using var reader = new StreamReader("D:\\Temp\\All_20210330.csv");
-            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
-            m_recommRecords = csv.GetRecords<OrigRecomm>().ToList().ToArray();
-        }
-
-        public void TransformRecommendationsCsv()
-        {
-            ReadTickerUniverse();
-            ReadRecommendationsCsv();
-            ReadYahooCsvFiles();
-
-            m_slimmedRecommRecords = m_recommRecords.Where(r => (r.Currency == "$" || String.IsNullOrEmpty(r.Currency)) && (m_universeTickers.Contains(r.Ticker))).ToArray();
-            // m_outputRec = m_slimmedRecommRecords.Select(parent => new OutputRecomm(parent)).ToArray();
-            m_outputRec = new List<OutputRecomm> (m_slimmedRecommRecords.Length);
-
-            foreach (var item in m_slimmedRecommRecords)
-            {
-                List<YFRecord> yfPrices = m_yfDataFromCsv[item.Ticker];
-                int iDay = yfPrices.FindIndex(x => string.Compare(x.Date, item.Date) > -1);
-                int iDay126b = Math.Max(iDay - 127, 0);
-                int iDay63b = Math.Max(iDay - 64, 0);
-                int iDay21b = Math.Max(iDay - 22, 0);
-                int iDay10b = Math.Max(iDay - 11, 0);
-                int iDay5b = Math.Max(iDay - 6, 0);
-                int iDay3b = Math.Max(iDay - 4, 0);
-                int iDay1b = Math.Max(iDay - 2, 0);
-                int iDay0b = Math.Max(iDay - 1, 0);
-                int iDay0a = iDay;
-                int iDay1a = iDay + 1 >= yfPrices.Count ? yfPrices.Count - 1 : iDay + 1;
-                int iDay2a = iDay + 2 >= yfPrices.Count ? yfPrices.Count - 1 : iDay + 2;
-                int iDay3a = iDay + 3 >= yfPrices.Count ? yfPrices.Count - 1 : iDay + 3;
-                int iDay4a = iDay + 4 >= yfPrices.Count ? yfPrices.Count - 1 : iDay + 4;
-                int iDay5a = iDay + 5 >= yfPrices.Count ? yfPrices.Count - 1 : iDay + 5;
-                int iDay10a = iDay + 10 >= yfPrices.Count ? yfPrices.Count - 1 : iDay + 10;
-                int iDay15a = iDay + 15 >= yfPrices.Count ? yfPrices.Count - 1 : iDay + 15;
-                int iDay21a = iDay + 21 >= yfPrices.Count ? yfPrices.Count - 1 : iDay + 21;
-                int iDay63a = iDay + 63 >= yfPrices.Count ? yfPrices.Count - 1 : iDay + 63;
-                int iDay126a = iDay + 126 >= yfPrices.Count ? yfPrices.Count - 1 : iDay + 126;
-                int iDay252a = iDay + 252 >= yfPrices.Count ? yfPrices.Count - 1 : iDay + 252;
-
-                OutputRecomm newRec = new(item)
+                // Fetch historical data from Yahoo Finance: YF Open/Close/High/Low prices are correctly split adjusted (except ATER on 2024-07-11), and the AdjClose is also dividend adjusted.
+                 IReadOnlyList<Candle?>? history;
+                try
                 {
-                    AdjClose126db = yfPrices[iDay126b].AdjClose,
-                    AdjClose63db = yfPrices[iDay63b].AdjClose,
-                    AdjClose21db = yfPrices[iDay21b].AdjClose,
-                    AdjClose10db = yfPrices[iDay10b].AdjClose,
-                    AdjClose5db = yfPrices[iDay5b].AdjClose,
-                    AdjClose3db = yfPrices[iDay3b].AdjClose,
-                    AdjClose1db = yfPrices[iDay1b].AdjClose,
-                    AdjClose0db = yfPrices[iDay0b].AdjClose,
-                    AdjClose0da = yfPrices[iDay0a].AdjClose,
-                    AdjClose1da = yfPrices[iDay1a].AdjClose,
-                    AdjClose2da = yfPrices[iDay2a].AdjClose,
-                    AdjClose3da = yfPrices[iDay3a].AdjClose,
-                    AdjClose4da = yfPrices[iDay4a].AdjClose,
-                    AdjClose5da = yfPrices[iDay5a].AdjClose,
-                    AdjClose10da = yfPrices[iDay10a].AdjClose,
-                    AdjClose15da = yfPrices[iDay15a].AdjClose,
-                    AdjClose21da = yfPrices[iDay21a].AdjClose,
-                    AdjClose63da = yfPrices[iDay63a].AdjClose,
-                    AdjClose126da = yfPrices[iDay126a].AdjClose,
-                    AdjClose252da = yfPrices[iDay252a].AdjClose,
-                    Close = yfPrices[iDay0b].Close
-                };
+                    history = await Yahoo.GetHistoricalAsync(ticker, p_expectedHistoryStartDateET, DateTime.Now, Period.Daily);
+                }
+                catch (System.Exception e)
+                {
+                    Console.WriteLine($"Skipping ticker '{ticker}' because of Exception, Msg: {e.Message}. Remove it from tickerFile and recommendationFile.");
+                    continue;
+                }
 
-                m_outputRec.Add(newRec);
+                // Map the historical data to YFRecord objects
+                YFRecord[] yfRecords = history.Select(r => new YFRecord()
+                {
+                    Date = Utils.Date2hYYYYMMDD(r!.DateTime),
+                    AdjClose = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4),
+                    Close = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.Close, 4)
+                }).ToArray();
+
+                // Write the records to a CSV file
+                using StreamWriter writer = new($"{p_targetFolder}{ticker}.csv");
+                using CsvWriter csv = new(writer, CultureInfo.InvariantCulture);
+                csv.WriteRecords(yfRecords);
+                Console.WriteLine($"{ticker} OK");
             }
-
-            WriteOutputRecommToCsv();
         }
-        private void ReadYahooCsvFiles()
+
+        // Reads recommendations from a CSV file
+        public static RecommendationsFromCsv ReadRecommendationsCsv(string p_recommFileName)
         {
-            foreach (var ticker in m_universeTickers)
+            using StreamReader reader = new(p_recommFileName);
+            using CsvReader csv = new(reader, CultureInfo.InvariantCulture);
+            Recommendation[] recommRecords = csv.GetRecords<Recommendation>().ToList().ToArray();
+
+            // Extract unique tickers from the recommendations
+            string[] uniqueTickers = recommRecords.Select(r => r.Ticker).Distinct().ToArray();
+
+            return new RecommendationsFromCsv
             {
-                using var reader = new StreamReader("D:\\Temp\\YFHist\\" + ticker + ".csv");
-                using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
-                var records = csv.GetRecords<YFRecord>().ToList();
-                m_yfDataFromCsv.Add(ticker, records);
+                Recommendations = recommRecords,
+                UniqueTickers = uniqueTickers
+            };
+        }
+
+        // Reads Yahoo Finance data from CSV files for the given tickers
+        private static Dictionary<string, List<YFRecord>> ReadYahooCsvFiles(string[] p_recommendedTickers, string p_targetFolder)
+        {
+            Dictionary<string, List<YFRecord>> yfDataFromCsv = [];
+            foreach (string ticker in p_recommendedTickers)
+            {
+                using StreamReader reader = new($"{p_targetFolder}{ticker}.csv");
+                using CsvReader csv = new(reader, CultureInfo.InvariantCulture);
+                List<YFRecord> records = csv.GetRecords<YFRecord>().ToList();
+                yfDataFromCsv.Add(ticker, records);
+            }
+
+            return yfDataFromCsv;
+        }
+
+        // Calculates the performance of a recommendation over various future periods
+        private static PerformanceResult CalculatePerformance(List<YFRecord> p_priceRecords, Recommendation p_recommendation, int[] p_nDayinFuture)
+        {
+            PerformanceResult performanceResult = new()
+            {
+                Id = p_recommendation.Id,
+                Ticker = p_recommendation.Ticker,
+                Date = p_recommendation.Date
+            };
+
+            // Find the record corresponding to the recommendation date
+            YFRecord? startRecord = p_priceRecords.FirstOrDefault(r => string.Compare(r.Date, p_recommendation.Date) >= 0);
+
+            if (startRecord == null)
+                return performanceResult;
+
+            int startRecordIndex = p_priceRecords.IndexOf(startRecord);
+            float startPrice = p_priceRecords[startRecordIndex].AdjClose;
+
+            // Calculate performance for each period in the future
+            for (int i = 0; i < p_nDayinFuture.Length; i++)
+            {
+                int nDay = p_nDayinFuture[i];
+                if (startRecordIndex + nDay >= p_priceRecords.Count)
+                    performanceResult.FuturePerformances[nDay] = float.NaN;
+                else
+                {
+                    float endPrice = p_priceRecords[startRecordIndex + nDay].AdjClose;
+                    float nDayPerformance = (endPrice - startPrice) / startPrice;
+                    performanceResult.FuturePerformances[nDay] = nDayPerformance;
+                }
+            }
+
+            return performanceResult;
+        }
+
+        // Calculates performances for all recommendations
+        public static List<PerformanceResult> CalculatePerformances(RecommendationsFromCsv p_recommendations, Dictionary<string, List<YFRecord>> p_yfData, int[] p_nDayinFuture)
+        {
+            List<PerformanceResult> results = [];
+
+            foreach (Recommendation recommendation in p_recommendations.Recommendations)
+            {
+                List<YFRecord>? tickerRecords = p_yfData.TryGetValue(recommendation.Ticker, out List<YFRecord>? value) ? value : null;
+
+                if (tickerRecords != null)
+                {
+                    PerformanceResult performanceResult = CalculatePerformance(tickerRecords, recommendation, p_nDayinFuture);
+                    results.Add(performanceResult);
+                }
+                else
+                {
+                    PerformanceResult performanceResult = new()
+                    {
+                        Id = recommendation.Id,
+                        Ticker = recommendation.Ticker,
+                        Date = recommendation.Date,
+                        FuturePerformances = p_nDayinFuture.ToDictionary(period => period, period => float.NaN)
+                    };
+                    results.Add(performanceResult);
+                }
+            }
+
+            return results;
+        }
+
+        // Writes performance results to a CSV file
+        private static void WritePerformanceResultsToCsv(string p_filePath, List<PerformanceResult> p_performanceResults, int[] p_periods)
+        {
+            using StreamWriter writer = new(p_filePath);
+            using CsvWriter csv = new(writer, CultureInfo.InvariantCulture);
+
+            // Write CSV header
+            csv.WriteField("Id");
+            csv.WriteField("Ticker");
+            csv.WriteField("Date");
+            foreach (int period in p_periods)
+                csv.WriteField($"Perf_{period}d");
+            csv.NextRecord();
+
+            // Write performance results
+            foreach (PerformanceResult result in p_performanceResults)
+            {
+                csv.WriteField(result.Id);
+                csv.WriteField(result.Ticker);
+                csv.WriteField(result.Date);
+                foreach (int period in p_periods)
+                {
+                    if (result.FuturePerformances.TryGetValue(period, out float value))
+                        csv.WriteField(value);
+                    else
+                        csv.WriteField(float.NaN);
+                }
+                csv.NextRecord();
             }
         }
-        private void WriteOutputRecommToCsv()
+
+        // Main analysis function to process recommendations and calculate performances
+        public static void RecommendationPerformanceAnalyser()
         {
-            using var writer = new StreamWriter("D:\\Temp\\YFHist\\outputRecommendations.csv");
-            using var csv = new CsvWriter(writer, CultureInfo.InvariantCulture);
-            csv.WriteRecords(m_outputRec);
+            string recommendationFile = "D:/Temp/SATopAnalystsData.csv";
+            RecommendationsFromCsv recommendationsFromCsv = ReadRecommendationsCsv(recommendationFile);
+
+            string[] tickers = recommendationsFromCsv.UniqueTickers;
+            Dictionary<string, List<YFRecord>> yfData = ReadYahooCsvFiles(tickers, "D:/Temp/YFHist/");
+
+            int[] p_nDayinFuture = [3, 5, 10, 21, 42, 63, 84, 105, 126, 189];
+            List<PerformanceResult> performances = CalculatePerformances(recommendationsFromCsv, yfData, p_nDayinFuture);
+
+            string outputCsvFile = "D:/Temp/recommendationResult.csv";
+            WritePerformanceResultsToCsv(outputCsvFile, performances, p_nDayinFuture);
         }
     }
 }
