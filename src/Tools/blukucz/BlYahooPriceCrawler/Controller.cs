@@ -8,7 +8,7 @@ using CsvHelper.Configuration.Attributes;
 using SqCommon;
 using YahooFinanceApi;
 
-namespace YahooPriceCrawler
+namespace BlYahooPriceCrawler
 {
     public class YFRecord
     {

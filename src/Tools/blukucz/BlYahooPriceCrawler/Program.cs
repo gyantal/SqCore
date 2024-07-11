@@ -2,7 +2,7 @@
 using CsvHelper.Configuration.Attributes;
 using SqCommon;
 
-namespace YahooPriceCrawler
+namespace BlYahooPriceCrawler
 {
 
     class Program

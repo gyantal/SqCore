@@ -168,12 +168,12 @@
             "problemMatcher": "$tsc"
         },
         {
-            "label": "blukucz-AnalystDbUpgrader build Debug",
+            "label": "blukucz-BlYahooPriceCrawler build Debug",
             "command": "dotnet",
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/src/Tools/blukucz/AnalystDbUpgrader/AnalystDbUpgrader.csproj"
+                "${workspaceFolder}/src/Tools/blukucz/BlYahooPriceCrawler/BlYahooPriceCrawler.csproj"
             ],
             "problemMatcher": "$tsc"
         },

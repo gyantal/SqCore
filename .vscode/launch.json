@@ -242,13 +242,13 @@
             "stopAtEntry": false
         },
         {
-            "name": "Tools/blukucz/AnalystDbUpgrader (DEBUG)",
+            "name": "Tools/blukucz/BlYahooPriceCrawler (DEBUG)",
             "type": "coreclr",
             "request": "launch",
-            "preLaunchTask": "blukucz-AnalystDbUpgrader build Debug",
-            "program": "${workspaceFolder}/src/Tools/blukucz/AnalystDbUpgrader/bin/Debug/net8.0/AnalystDbUpgrader.dll",
+            "preLaunchTask": "blukucz-BlYahooPriceCrawler build Debug",
+            "program": "${workspaceFolder}/src/Tools/blukucz/BlYahooPriceCrawler/bin/Debug/net8.0/BlYahooPriceCrawler.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/src/Tools/blukucz/AnalystDbUpgrader",
+            "cwd": "${workspaceFolder}/src/Tools/blukucz/BlYahooPriceCrawler",
             "console": "externalTerminal",
             "stopAtEntry": false,
             "presentation": {
