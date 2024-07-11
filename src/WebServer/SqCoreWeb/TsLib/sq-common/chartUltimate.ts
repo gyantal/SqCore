@@ -127,26 +127,26 @@ export class UltimateChart {
         .style('fill', (d: CgTimeSeries, i: number) => getColors(d, i))
         .text((d: CgTimeSeries) => (d.name));
 
-    // Create tooltip elements and handle mouse events
-    const tooltipPctChg = d3.select(this._tooltipDiv);
-    const tooltipLine = backtestChrt.append('line');
     backtestChrt.append('rect')
         .attr('width', this._chartWidth as number)
         .attr('height', this._chartHeight as number)
         .attr('opacity', 0)
-        .on('mousemove', onMouseMove)
-        .on('mouseout', onMouseOut);
+        .on('mouseover', onMouseover)
+        .on('mousemove', onMousemove)
+        .on('mouseout', onMouseout);
 
-    function onMouseOut() {
-      if (tooltipPctChg)
-        tooltipPctChg.style('display', 'none');
-      if (tooltipLine)
-        tooltipLine.attr('stroke', 'none');
-    }
-
+    // Create tooltip elements and handle mouse events
+    const tooltipPctChg = d3.select(this._tooltipDiv);
+    const tooltipLine = backtestChrt.append('line');
     const timeSeriess = this._timeSeriess;
     const chrtHeight = this._chartHeight;
-    function onMouseMove(event: MouseEvent) {
+
+    function onMouseover() { // This function is necessary because, if the mouse is inside the chart area but not moving, the tooltip will not be visible. To address this, we need to use the mouseover event.
+      tooltipPctChg.style('visibility', 'visible');
+      tooltipLine.attr('stroke', 'black');
+    }
+
+    function onMousemove(event: MouseEvent) {
       const datesArray: Date[] = [];
       timeSeriess.forEach((element) => {
         element.priceData.forEach((dataPoint) => {
@@ -172,19 +172,6 @@ export class UltimateChart {
       }
 
       const mouseClosestXCoord: Date = closestDate;
-      const isMouseOnLeftSide: boolean = event.pageX < (chartWidth / 2); // Determine if the mouse is in the left or right half of the chart
-      let tooltipPosX: number;
-      if (!isMouseOnLeftSide) {
-        const tooltipElement: HTMLElement | null = tooltipPctChg.node(); // Get the tooltip element
-        if (tooltipElement != null) { // Ensure the tooltip is visible/rendered before calculating its width
-          tooltipElement.style.display = 'block';
-          tooltipPosX = event.pageX - 10 - tooltipElement.offsetWidth; // offsetWidth => width of the tooltip element
-        } else
-          tooltipPosX = 0; // defaulting to 0, if tooltipElement is null
-      } else
-        tooltipPosX = event.pageX + 10;
-
-      const tooltipPosY: number = event.pageY - yCoord; // Calculate the Y position of the tooltip based on the mouse position
       tooltipLine
           .attr('stroke', 'black')
           .attr('x1', scaleX(mouseClosestXCoord))
@@ -192,11 +179,24 @@ export class UltimateChart {
           .attr('y1', 0 + 10)
           .attr('y2', chrtHeight as number);
 
+      const isMouseOnLeftSide: boolean = event.pageX < (chartWidth / 2); // Determine if the mouse is in the left or right half of the chart
+      let tooltipPosX: number;
+      if (isMouseOnLeftSide)
+        tooltipPosX = event.pageX + 10;
+      else {
+        const tooltipElement: HTMLElement | null = tooltipPctChg.node(); // Get the tooltip element
+        if (tooltipElement != null) // Ensure the tooltip is visible/rendered before calculating its width
+          tooltipPosX = event.pageX - 10 - tooltipElement.offsetWidth; // offsetWidth => width of the tooltip element
+        else
+          tooltipPosX = 0; // defaulting to 0, if tooltipElement is null
+      }
+
+      const tooltipPosY: number = event.pageY - yCoord; // Calculate the Y position of the tooltip based on the mouse position
       tooltipPctChg
-          .html('percent values :' + '<br>')
-          .style('display', 'block')
+          .style('visibility', 'visible')
           .style('left', `${tooltipPosX}px`)
           .style('top', `${tooltipPosY}px`)
+          .html('percent values :' + '<br>')
           .selectAll()
           .data(timeSeriess)
           .enter()
@@ -225,6 +225,11 @@ export class UltimateChart {
             else
               return d.name + ': No Data';
           });
+    }
+
+    function onMouseout() {
+      tooltipPctChg.style('visibility', 'hidden');
+      tooltipLine.attr('stroke', 'none');
     }
 
     // Generate SVG path for each data series based on the date range and first value
