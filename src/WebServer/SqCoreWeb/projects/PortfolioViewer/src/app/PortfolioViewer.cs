@@ -93,6 +93,10 @@ public class PrtfVwrWs
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): DeleteTrade: '{msgObjStr}'");
                 PortfVwrDeleteTrade(webSocket, msgObjStr);
                 break;
+            case "GetClosePrice":
+                Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): GetClosePrice: '{msgObjStr}'");
+                PortfVwrGetClosePrice(webSocket, msgObjStr);
+                break;
             default:
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): Unrecognized message from client, {msgCode},{msgObjStr}");
                 break;
@@ -296,5 +300,24 @@ public class PrtfVwrWs
             if (webSocket!.State == WebSocketState.Open)
                 webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
         }
+    }
+
+    public static void PortfVwrGetClosePrice(WebSocket webSocket, string p_msg) // p_msg: Symb:MSFT,Date:2024-07-12
+    {
+        int tickerStartInd = p_msg.IndexOf(":"); // Find the starting index of the ticker symbol in the message
+        if (tickerStartInd == -1)
+            return;
+
+        int dateStartInd = p_msg.IndexOf(":", tickerStartInd + 1); // Find the starting index of the date in the message, after the ticker symbol
+        if (dateStartInd == -1)
+            return;
+
+        string ticker = p_msg.Substring(tickerStartInd + 1, dateStartInd - tickerStartInd - ",Date:".Length); // Extract the ticker symbol from the message
+        DateTime lookbackEnd = Utils.FastParseYYYYMMDD(p_msg[(dateStartInd + 1)..]); // Parse the date string into a DateTime object
+        TickerClosePrice tickerClosePrice = UiUtils.GetStockTickerLastKnownClosePriceAtDate(lookbackEnd, ticker);
+
+        byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.TickerClosePrice:" + Utils.CamelCaseSerialize(tickerClosePrice));
+        if (webSocket!.State == WebSocketState.Open)
+            webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 }

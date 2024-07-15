@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper } from '../../../../TsLib/sq-common/backtestCommon';
+import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 
 class HandshakeMessage {
@@ -175,6 +175,16 @@ export class AppComponent {
         case 'PrtfVwr.PrtfTickersFundamentalData':
           console.log('PrtfVwr.PrtfTickersFundamentalData:' + msgObjStr);
           this.processFundamentalData(msgObjStr);
+          break;
+        case 'PrtfVwr.TickerClosePrice':
+          console.log('PrtfVwr.TickerClosePrice:' + msgObjStr);
+          const closePriceObj: TickerClosePrice = JSON.parse(msgObjStr);
+          this.m_editedTrade.price = closePriceObj.closePrice;
+          // The received date string is in the format "2024-07-12T00:00:00", which does not include the local time.
+          // We extract the current local time and append it to the date string to ensure m_editedTrade.time displays in the correct format.
+          const timeStr: string = new Date().toTimeString().split(' ')[0];
+          const dateStr: string = closePriceObj.date.toString().split('T')[0];
+          this.m_editedTrade.time = new Date(dateStr + 'T' + timeStr);
           break;
       }
     };
@@ -474,6 +484,7 @@ export class AppComponent {
     const dateStr: string = (event.target as HTMLInputElement).value;
     const timeStr: string = this.m_editedTrade.time.toTimeString().split(' ')[0]; // we extract the time from the current m_editedTrade.time and combine it with the new date to create a new Date object.
     this.m_editedTrade.time = new Date(dateStr + 'T' + timeStr);
+    this.updateEditedTradePriceFromPrHist();
   }
 
   onTimeChange(event: Event) {
@@ -516,6 +527,11 @@ export class AppComponent {
 
   onBlurTotalValue() { // This ensures the recalculated (adjusted) totalValue is based on the price and quantity.
     this.m_editedTradeTotalValue = Math.floor(this.m_editedTrade.price * this.m_editedTrade.quantity);
+  }
+
+  updateEditedTradePriceFromPrHist() { // fetch the historical Close Price on that date from YF
+    if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
+      this.m_socket.send('GetClosePrice:Symb:' + this.m_editedTrade.symbol + ',Date:' + SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_editedTrade.time));
   }
 
   onSortingClicked(sortColumn: string) { // sort the trades data table

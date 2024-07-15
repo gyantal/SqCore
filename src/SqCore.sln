@@ -35,7 +35,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BenchmarkDB", "Tools\Benchm
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "blukucz", "blukucz", "{0434761B-06B8-468B-85EF-7A4FEA5F835B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AnalystDbUpgrader", "Tools\blukucz\AnalystDbUpgrader\AnalystDbUpgrader.csproj", "{CC50656B-25EE-48A9-BEFD-066AC3264824}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlYahooPriceCrawler", "Tools\blukucz\BlYahooPriceCrawler\BlYahooPriceCrawler.csproj", "{CC50656B-25EE-48A9-BEFD-066AC3264824}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RedisManager", "Tools\RedisManager\RedisManager.csproj", "{6679AD16-5AC4-4DE3-8E74-89E46B04A78F}"
 EndProject

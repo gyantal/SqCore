@@ -169,6 +169,12 @@ export class TreeViewState {
   public expandedPrtfFolderIds: number[] = [];
 }
 
+// used in PrtfVwr to process the update the HistPrice from YF
+export class TickerClosePrice {
+  public date: Date = new Date();
+  public closePrice: number = 0;
+}
+
 export enum TradeAction {
   Unknown = 0,
   Deposit = 1,

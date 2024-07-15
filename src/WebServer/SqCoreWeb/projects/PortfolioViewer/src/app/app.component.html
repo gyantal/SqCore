@@ -96,7 +96,7 @@ PortfolioId: {{m_portfolioId}}
           </div>
         </div>&nbsp;
         <!-- The user input for options and futures selection has been disabled because the value is determined through concatenation using the underlying symbol, expiration date, put/call designation, and strike price for options, while for futures, it relies on the underlying symbol, expiration date with the addition of "+M," and the multiplier -->
-        Symbol: <input type="text" [value]="m_editedTrade.symbol" (input)="onInputSymbol($event)" [disabled]="(m_editedTrade.assetType == m_enumAssetType.Option || m_editedTrade.assetType == m_enumAssetType.Futures)"><br>
+        Symbol: <input type="text" [value]="m_editedTrade.symbol" (input)="onInputSymbol($event)" (blur)="updateEditedTradePriceFromPrHist()" [disabled]="(m_editedTrade.assetType == m_enumAssetType.Option || m_editedTrade.assetType == m_enumAssetType.Futures)"><br>
         <div class="fixedHeightDiv" [hidden]="(m_editedTrade.assetType != m_enumAssetType.Option) && (m_editedTrade.assetType != m_enumAssetType.Futures)">
           UnderlyingSym: <input class="inputTextboxWidth" type="text" [value]="m_editedTrade.underlyingSymbol" (input)="onInputUnderlyingSymbol($event)">
           <ng-container *ngIf="m_editedTrade.assetType == m_enumAssetType.Option">
