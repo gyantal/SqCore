@@ -106,6 +106,7 @@ namespace QuantConnect.Lean.Engine.Setup
                     "SqPctAllocation" => new SqPctAllocation(),
                     "SqFundamentalDataFiltered" => new SqFundamentalDataFilteredUniv(),
                     "SqTradeAccumulation" => new SqTradeAccumulation(),
+                    "SqCxoMomentum" => new SqCxoMomentum(),
                     _ => throw new SqException($"QcAlgorithm name '{algName}' is unrecognized."),
                 };
                 // algoritm.AlgorithmParam = "";
