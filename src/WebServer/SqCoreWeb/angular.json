@@ -256,7 +256,12 @@
             "tsConfig": "projects/MarketDashboard/tsconfig.app.json",
             "assets": [
               "projects/MarketDashboard/src/favicon.ico",
-              "projects/MarketDashboard/src/assets"
+              "projects/MarketDashboard/src/assets", // Creating common assets, see: https://stackoverflow.com/questions/61343113/angular-shared-assets-within-multiple-applications
+              {
+                "glob": "**/*",
+                "input": "assets",
+                "output": "/assets"
+              }
             ],
             "styles": [
               "projects/MarketDashboard/src/styles.scss"
@@ -592,7 +597,12 @@
             "polyfills": "projects/TechnicalAnalyzer/src/polyfills.ts",
             "tsConfig": "projects/TechnicalAnalyzer/tsconfig.app.json",
             "assets": [
-              "projects/TechnicalAnalyzer/src/assets"
+              "projects/TechnicalAnalyzer/src/assets", // Creating common assets, see: https://stackoverflow.com/questions/61343113/angular-shared-assets-within-multiple-applications
+              {
+                "glob": "**/*",
+                "input": "assets",
+                "output": "/assets"
+              }
             ],
             "styles": [
               "projects/TechnicalAnalyzer/src/styles.scss"
