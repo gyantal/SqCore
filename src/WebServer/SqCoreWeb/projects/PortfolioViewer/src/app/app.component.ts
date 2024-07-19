@@ -180,11 +180,6 @@ export class AppComponent {
           console.log('PrtfVwr.TickerClosePrice:' + msgObjStr);
           const closePriceObj: TickerClosePrice = JSON.parse(msgObjStr);
           this.m_editedTrade.price = closePriceObj.closePrice;
-          // The received date string is in the format "2024-07-12T00:00:00", which does not include the local time.
-          // We extract the current local time and append it to the date string to ensure m_editedTrade.time displays in the correct format.
-          const timeStr: string = new Date().toTimeString().split(' ')[0];
-          const dateStr: string = closePriceObj.date.toString().split('T')[0];
-          this.m_editedTrade.time = new Date(dateStr + 'T' + timeStr);
           break;
       }
     };
@@ -530,6 +525,8 @@ export class AppComponent {
   }
 
   updateEditedTradePriceFromPrHist() { // fetch the historical Close Price on that date from YF
+    if (this.m_editedTrade.symbol == '')// If the symbol is empty, it means the user either forgot to enter a symbol or did not select an existing one. In this scenario, we should not send the request to the server when the user tries to change the date.
+      return;
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
       this.m_socket.send('GetClosePrice:Symb:' + this.m_editedTrade.symbol + ',Date:' + SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_editedTrade.time));
   }
@@ -543,5 +540,24 @@ export class AppComponent {
         return (n2[sortColumn] > n1[sortColumn]) ? 1 : ((n2[sortColumn] < n1[sortColumn]) ? -1 : 0);
     });
     this.m_isTradesSortDirAscend = !this.m_isTradesSortDirAscend;
+  }
+
+  onClickNextOrPrevDate(nextOrPrev: string) {
+    if (nextOrPrev == 'next') {
+      this.m_editedTrade.time = new Date(this.m_editedTrade.time.setDate(this.m_editedTrade.time.getDate() + 1));
+      const newDayOfWeek = this.m_editedTrade.time.getDay();// Check if the new date is a weekend, if so, move to the next working day
+      if (newDayOfWeek == 6) // Saturday
+        this.m_editedTrade.time = new Date(this.m_editedTrade.time.setDate(this.m_editedTrade.time.getDate() + 2));
+      else if (newDayOfWeek == 0) // Sunday
+        this.m_editedTrade.time = new Date(this.m_editedTrade.time.setDate(this.m_editedTrade.time.getDate() + 1));
+    } else {
+      this.m_editedTrade.time = new Date(this.m_editedTrade.time.setDate(this.m_editedTrade.time.getDate() - 1));
+      const newDayOfWeek = this.m_editedTrade.time.getDay(); // Check if the new date is a weekend, if so, move to the previous working day
+      if (newDayOfWeek == 6) // Saturday
+        this.m_editedTrade.time = new Date(this.m_editedTrade.time.setDate(this.m_editedTrade.time.getDate() - 1));
+      else if (newDayOfWeek == 0) // Sunday
+        this.m_editedTrade.time = new Date(this.m_editedTrade.time.setDate(this.m_editedTrade.time.getDate() - 2));
+    }
+    this.updateEditedTradePriceFromPrHist();
   }
 }

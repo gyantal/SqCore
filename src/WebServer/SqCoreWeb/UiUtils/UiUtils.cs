@@ -223,7 +223,7 @@ internal static partial class UiUtils
                 if (histCandle != null && histCandle.DateTime <= p_date) // Check if the current candle is not null and its date is less than or equal to p_date
                 {
                     tickerClosePrice.Date = histCandle.DateTime;
-                    tickerClosePrice.ClosePrice = (float)histCandle.Close!;
+                    tickerClosePrice.ClosePrice = (float)histCandle.Close;
                     break;
                 }
             }

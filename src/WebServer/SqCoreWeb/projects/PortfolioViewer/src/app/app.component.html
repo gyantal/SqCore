@@ -112,7 +112,14 @@ PortfolioId: {{m_portfolioId}}
         </div>
       </span>
       <span class="tradesCommon">
-        Date: <input type="date" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (change)="onDateChange($event)"><br> <!-- The (change) event is triggered once the input has completed changing, while the (input) event triggers each time the value is modified. see: https://javascript.info/events-change-input -->
+        <!-- The (change) event is triggered once the input has completed changing, while the (input) event triggers each time the value is modified. see: https://javascript.info/events-change-input -->
+        <div id="dateInputContainer">Date:&nbsp;
+          <input type="date" [value]="m_editedTrade.time | date : 'yyyy-MM-dd'" (change)="onDateChange($event)">
+          <div id="nextOrPrevDateButtonContainer">
+              <button class="nextOrPrevDateBtn" (click)="onClickNextOrPrevDate('next')">&#43;</button>
+              <button class="nextOrPrevDateBtn" (click)="onClickNextOrPrevDate('prev')">&#45;</button>
+          </div>
+        </div>
         <!-- SetOpen and SetClose are directly linked with TradeAction(Buy/Sell), To get proper setOpen and setClose timings please select tradeAction first -->
         UTC Time: <button (click)="onClickSetOpenOrClose('open')">setOpen</button>&nbsp;
               <input type="time" [value]="m_editedTrade.time | date : 'HH:mm'" (change)="onTimeChange($event)">&nbsp;

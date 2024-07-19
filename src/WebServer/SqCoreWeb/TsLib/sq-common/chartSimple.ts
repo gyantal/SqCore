@@ -238,9 +238,7 @@ export function date2MMM(date: any) : string {
 
 // used in 2 places: MarketDashboard/BrAccViewer and TechnicalAnalyzer
 export function drawHistChartFromData(chrtData1: UiChrtval[], chrtData2: UiChrtval[] | null, lineChrtDiv: HTMLElement, inputWidth: number, inputHeight: number, margin: any, xMin: number, xMax: number, yMinAxis: number, yMaxAxis: number, yAxisTickformat: string, firstEleOfHistDataArr1: any, isNavChrt: boolean) {
-  let isShowSecondaryChart: boolean = false;
-  if (chrtData2 != null)
-    isShowSecondaryChart = true;
+  const isShowSecondaryChart: boolean = chrtData2 != null;
 
   const chrt = d3.select(lineChrtDiv).append('svg')
       .attr('width', inputWidth + margin.left + margin.right)
