@@ -86,6 +86,11 @@ class FundamentalData {
   sharesOutstanding: number = 0;
 }
 
+class MonthlySeasonality {
+  year: number = 0;
+  returns: number[] = [];
+}
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -104,6 +109,13 @@ export class AppComponent {
 
   // Positions tabpage:
   m_histPosEndDate: string = '';
+
+  // PortfolioReport tabpage:
+  m_seasonalityData: MonthlySeasonality[] = [ // dummy data
+    { year: 2020, returns: [0.61, 0.60, 0.40, 0.20, 0.40, 0.80, 1.50, 0.50, 0.25, 0.20, 0.80, 0.75] },
+    { year: 2021, returns: [0.60, 0.65, 0.40, 0.20, 0.44, 0.80, 2.50, 0.50, 0.25, 0.20, 0.80, 0.75] },
+    { year: 2022, returns: [0.60, 0.60, 3.40, 0.20, 2.40, 3.80, 0.50, 0.50, 0.25, 0.20, 0.80, 0.75] }
+  ];
 
   // Trades tabpage: internal data
   m_trades: TradeUi[] = [];

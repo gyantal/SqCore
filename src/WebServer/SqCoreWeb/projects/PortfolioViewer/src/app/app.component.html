@@ -55,6 +55,32 @@ PortfolioId: {{m_portfolioId}}
     </table>
   </div>
   <div id="pfRunResultChrt"></div> <!-- portfolio run result chart  -->
+  <p>(Dummy Data) <b>Seasonality: </b> Displays mean and median monthly returns in order to identify seasonal patterns.</p>
+  <table class="tableCommon">
+    <thead>
+      <tr>
+        <th>Year</th>
+        <th>Jan</th>
+        <th>Feb</th>
+        <th>Mar</th>
+        <th>Apr</th>
+        <th>May</th>
+        <th>Jun</th>
+        <th>Jul</th>
+        <th>Aug</th>
+        <th>Sep</th>
+        <th>Oct</th>
+        <th>Nov</th>
+        <th>Dec</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of m_seasonalityData">
+        <td>{{item.year}}</td>
+        <td *ngFor="let retVal of item.returns">{{retVal | percent:'1.2' }}</td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 <div [hidden]="m_activeTab != 'Trades'"><br>
   <span>
