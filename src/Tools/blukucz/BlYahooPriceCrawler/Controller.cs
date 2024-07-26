@@ -15,12 +15,27 @@ namespace BlYahooPriceCrawler
         public string Date { get; set; } = string.Empty;
         public float AdjClose { get; set; }
         public float Close { get; set; }
+        public float Open { get; set; }
+        public float High { get; set; }
+        public float Low { get; set; }
     }
 
     public class TickerMembers
     {
         public string Ticker { get; set; } = string.Empty;
         // public string UniverseOrFlag { get; set; } = string.Empty; // for future use
+    }
+
+    public enum RecommendationType
+    {
+        [Name("STRONG BUY")]
+        StrongBuy,
+        [Name("BUY")]
+        Buy,
+        [Name("SELL")]
+        Sell,
+        [Name("STRONG SELL")]
+        StrongSell
     }
 
     public class Recommendation
@@ -31,6 +46,8 @@ namespace BlYahooPriceCrawler
         public string Ticker { get; set; } = string.Empty;
         [Name("date")]
         public string Date { get; set; } = string.Empty;
+        [Name("type")]
+        public RecommendationType Type { get; set; }
     }
 
     public class RecommendationsFromCsv
@@ -45,6 +62,8 @@ namespace BlYahooPriceCrawler
         public required string Ticker { get; set; }
         public required string Date { get; set; }
         public Dictionary<int, float> FuturePerformances { get; set; } = [];
+        public RecommendationType Type { get; set; }
+        public int StopLossDay { get; set; } = 0;
     }
 
     class Controller
@@ -63,7 +82,7 @@ namespace BlYahooPriceCrawler
         }
 
         // Downloads Yahoo Finance data to CSV files for the given tickers
-        public static async void DownloadYFtoCsv(string p_tickerFileName, DateTime p_expectedHistoryStartDateET, string p_targetFolder)
+        public static async void DownloadYFtoCsv(string p_tickerFileName, DateTime p_expectedHistoryStartDateET, string p_targetFolder, bool p_unsafeFlag = false)
         {
             string[] universeTickers = ReadUniverseTickers(p_tickerFileName);
             Console.WriteLine($"Number of tickers: {universeTickers.Length}");
@@ -86,8 +105,34 @@ namespace BlYahooPriceCrawler
                 {
                     Date = Utils.Date2hYYYYMMDD(r!.DateTime),
                     AdjClose = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4),
-                    Close = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.Close, 4)
+                    Close = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.Close, 4),
+                    Open = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.Open, 4),
+                    High = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.High, 4),
+                    Low = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.Low, 4)
                 }).ToArray();
+
+                if (!p_unsafeFlag && ticker != "ARVLF" && ticker != "CANOQ" && ticker != "FFIE" && ticker != "FSRNQ" && ticker != "FTCHQ" && ticker != "HMFAF" && ticker != "MTC" && ticker != "NVTAQ" && ticker != "RADCQ" && ticker != "STIXF" && ticker != "WEWKQ") // Check if the prices are continuous. If there is a discontinuity (e.g., missing split), then stop and do not write the file. Except if we are in unsafe mode.
+                {
+                    bool hasSignificantChange = false;
+                    string problematicDate = string.Empty;
+                    for (int i = 1; i < yfRecords.Length; i++)
+                    {
+                        float prevAdjClose = yfRecords[i - 1].AdjClose;
+                        float currAdjClose = yfRecords[i].AdjClose;
+                        if ((currAdjClose - prevAdjClose) / prevAdjClose >= 2 || (currAdjClose - prevAdjClose) / prevAdjClose <= - 2.0 / 3.0)
+                        {
+                            hasSignificantChange = true;
+                            problematicDate = yfRecords[i].Date;
+                            break;
+                        }
+                    }
+
+                    if (hasSignificantChange)
+                    {
+                        Console.WriteLine($"Warning: Skipping ticker '{ticker}' due to significant daily change on {problematicDate}.");
+                        continue;
+                    }
+                }
 
                 // Write the records to a CSV file
                 using StreamWriter writer = new($"{p_targetFolder}{ticker}.csv");
@@ -120,23 +165,32 @@ namespace BlYahooPriceCrawler
             Dictionary<string, List<YFRecord>> yfDataFromCsv = [];
             foreach (string ticker in p_recommendedTickers)
             {
-                using StreamReader reader = new($"{p_targetFolder}{ticker}.csv");
-                using CsvReader csv = new(reader, CultureInfo.InvariantCulture);
-                List<YFRecord> records = csv.GetRecords<YFRecord>().ToList();
-                yfDataFromCsv.Add(ticker, records);
+                try
+                {
+                    using StreamReader reader = new($"{p_targetFolder}{ticker}.csv");
+                    using CsvReader csv = new(reader, CultureInfo.InvariantCulture);
+                    List<YFRecord> records = csv.GetRecords<YFRecord>().ToList();
+                    yfDataFromCsv.Add(ticker, records);
+                }
+                catch (FileNotFoundException)
+                {
+                    Console.WriteLine($"File not found: {ticker}.csv. Skipping to the next ticker.");
+                    continue;
+                }
             }
 
             return yfDataFromCsv;
         }
 
         // Calculates the performance of a recommendation over various future periods
-        private static PerformanceResult CalculatePerformance(List<YFRecord> p_priceRecords, Recommendation p_recommendation, int[] p_nDayinFuture)
+        private static PerformanceResult CalculatePerformance(List<YFRecord> p_priceRecords, Recommendation p_recommendation, int[] p_nDayinFuture, float p_stopLossPercentage)
         {
             PerformanceResult performanceResult = new()
             {
                 Id = p_recommendation.Id,
                 Ticker = p_recommendation.Ticker,
-                Date = p_recommendation.Date
+                Date = p_recommendation.Date,
+                Type = p_recommendation.Type
             };
 
             // Find the record corresponding to the recommendation date
@@ -157,6 +211,41 @@ namespace BlYahooPriceCrawler
                 else
                 {
                     float endPrice = p_priceRecords[startRecordIndex + nDay].AdjClose;
+
+                    for (int j = startRecordIndex + 1; j <= startRecordIndex + nDay; j++)
+                    {
+                        YFRecord record = p_priceRecords[j];
+                        if (p_recommendation.Type == RecommendationType.Buy || p_recommendation.Type == RecommendationType.StrongBuy)
+                        {
+                            if (record.Open <= startPrice * (1 - p_stopLossPercentage))
+                            {
+                                endPrice = record.Open;
+                                performanceResult.StopLossDay = j - startRecordIndex;
+                                break;
+                            }
+                            else if (record.Low <= startPrice * (1 - p_stopLossPercentage))
+                            {
+                                endPrice = startPrice * (1 - p_stopLossPercentage);
+                                performanceResult.StopLossDay = j - startRecordIndex;
+                                break;
+                            }
+                        }
+                        else if (p_recommendation.Type == RecommendationType.Sell || p_recommendation.Type == RecommendationType.StrongSell)
+                        {
+                            if (record.Open >= startPrice * (1 + p_stopLossPercentage))
+                            {
+                                endPrice = record.Open;
+                                performanceResult.StopLossDay = j - startRecordIndex;
+                                break;
+                            }
+                            else if (record.High >= startPrice * (1 + p_stopLossPercentage))
+                            {
+                                endPrice = startPrice * (1 + p_stopLossPercentage);
+                                performanceResult.StopLossDay = j - startRecordIndex;
+                                break;
+                            }
+                        }
+                    }
                     float nDayPerformance = (endPrice - startPrice) / startPrice;
                     performanceResult.FuturePerformances[nDay] = nDayPerformance;
                 }
@@ -166,7 +255,7 @@ namespace BlYahooPriceCrawler
         }
 
         // Calculates performances for all recommendations
-        public static List<PerformanceResult> CalculatePerformances(RecommendationsFromCsv p_recommendations, Dictionary<string, List<YFRecord>> p_yfData, int[] p_nDayinFuture)
+        public static List<PerformanceResult> CalculatePerformances(RecommendationsFromCsv p_recommendations, Dictionary<string, List<YFRecord>> p_yfData, int[] p_nDayinFuture, float p_stopLossPercentage)
         {
             List<PerformanceResult> results = [];
 
@@ -176,7 +265,7 @@ namespace BlYahooPriceCrawler
 
                 if (tickerRecords != null)
                 {
-                    PerformanceResult performanceResult = CalculatePerformance(tickerRecords, recommendation, p_nDayinFuture);
+                    PerformanceResult performanceResult = CalculatePerformance(tickerRecords, recommendation, p_nDayinFuture, p_stopLossPercentage);
                     results.Add(performanceResult);
                 }
                 else
@@ -186,7 +275,9 @@ namespace BlYahooPriceCrawler
                         Id = recommendation.Id,
                         Ticker = recommendation.Ticker,
                         Date = recommendation.Date,
-                        FuturePerformances = p_nDayinFuture.ToDictionary(period => period, period => float.NaN)
+                        Type = recommendation.Type,
+                        FuturePerformances = p_nDayinFuture.ToDictionary(period => period, period => float.NaN),
+                        StopLossDay = 0
                     };
                     results.Add(performanceResult);
                 }
@@ -205,6 +296,8 @@ namespace BlYahooPriceCrawler
             csv.WriteField("Id");
             csv.WriteField("Ticker");
             csv.WriteField("Date");
+            csv.WriteField("Type");
+            csv.WriteField("StopLossDay");
             foreach (int period in p_periods)
                 csv.WriteField($"Perf_{period}d");
             csv.NextRecord();
@@ -215,6 +308,8 @@ namespace BlYahooPriceCrawler
                 csv.WriteField(result.Id);
                 csv.WriteField(result.Ticker);
                 csv.WriteField(result.Date);
+                csv.WriteField(result.Type.ToString());
+                csv.WriteField(result.StopLossDay);
                 foreach (int period in p_periods)
                 {
                     if (result.FuturePerformances.TryGetValue(period, out float value))
@@ -236,7 +331,8 @@ namespace BlYahooPriceCrawler
             Dictionary<string, List<YFRecord>> yfData = ReadYahooCsvFiles(tickers, "D:/Temp/YFHist/");
 
             int[] p_nDayinFuture = [3, 5, 10, 21, 42, 63, 84, 105, 126, 189];
-            List<PerformanceResult> performances = CalculatePerformances(recommendationsFromCsv, yfData, p_nDayinFuture);
+            float stopLossPercentage = 0.2f; // Use a big number (e.g. 9999) to avoid stop-loss.
+            List<PerformanceResult> performances = CalculatePerformances(recommendationsFromCsv, yfData, p_nDayinFuture, stopLossPercentage);
 
             string outputCsvFile = "D:/Temp/recommendationResult.csv";
             WritePerformanceResultsToCsv(outputCsvFile, performances, p_nDayinFuture);

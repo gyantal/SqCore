@@ -2,52 +2,18 @@
 
 #region imports
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Globalization;
-using System.Drawing;
-using QuantConnect;
-using QuantConnect.Algorithm.Framework;
-using QuantConnect.Algorithm.Framework.Selection;
-using QuantConnect.Algorithm.Framework.Alphas;
-using QuantConnect.Algorithm.Framework.Portfolio;
-using QuantConnect.Algorithm.Framework.Execution;
-using QuantConnect.Algorithm.Framework.Risk;
 using QuantConnect.Parameters;
-using QuantConnect.Benchmarks;
-using QuantConnect.Brokerages;
-using QuantConnect.Util;
-using QuantConnect.Interfaces;
-using QuantConnect.Algorithm;
-using QuantConnect.Indicators;
 using QuantConnect.Data;
-using QuantConnect.Data.Consolidators;
-using QuantConnect.Data.Custom;
-using QuantConnect.Data.Fundamental;
 using QuantConnect.Data.Market;
-using QuantConnect.Data.UniverseSelection;
-using QuantConnect.Notifications;
-using QuantConnect.Orders;
 using QuantConnect.Orders.Fees;
-using QuantConnect.Orders.Fills;
-using QuantConnect.Orders.Slippage;
 using QuantConnect.Scheduling;
 using QuantConnect.Securities;
-using QuantConnect.Securities.Equity;
-using QuantConnect.Securities.Future;
-using QuantConnect.Securities.Option;
-using QuantConnect.Securities.Forex;
-using QuantConnect.Securities.Crypto;
-using QuantConnect.Securities.Interfaces;
-using QuantConnect.Storage;
-using QuantConnect.Data.Custom.AlphaStreams;
-using QCAlgorithmFramework = QuantConnect.Algorithm.QCAlgorithm;
-using QCAlgorithmFrameworkBridge = QuantConnect.Algorithm.QCAlgorithm;
 using System.Web;
 using System.Collections.Specialized;
 #endregion
 
+// This is a backtesting algorithm of CXO's Momentum sub-strategy: https://www.cxoadvisory.com/momentum-strategy/.
 namespace QuantConnect.Algorithm.CSharp
 {
 
@@ -58,7 +24,7 @@ namespace QuantConnect.Algorithm.CSharp
         // AlgorithmParam comes from QCAlgorithm.QCAlgorithm in SqCore framework
 #else
         bool _isTradeInSqCore = false;
-        public string AlgorithmParam { get; set; } = "startDate=2009-01-05&endDate=now&assets=SPY,DBC,EMB,EFA,GLD,IWM,TLT,VNQ&lookback=84&noETFs=3"; // in SqCore, this comes from the backtester environment as Portfolio.AlgorithmParam
+        public string AlgorithmParam { get; set; } = "startDate=2009-01-05&endDate=now&assets=SPY,DBC,EMB,EFA,GLD,IWM,TLT,VNQ&lookbackMonth=4&noETFs=2"; // in SqCore, this comes from the backtester environment as Portfolio.AlgorithmParam
 #endif
 
         public bool IsTradeInSqCore { get { return _isTradeInSqCore; } }
@@ -73,7 +39,6 @@ namespace QuantConnect.Algorithm.CSharp
         DateTime _forcedEndDate;
         DateTime _endDate = DateTime.MaxValue;
 
-        // List<string> _tickers = new List<string> { "VNQ", "EEM", "DBC", "SPY", "TLT", "SHY" };
         List<string> _tickers;
         private int _lookbackTradingDays;
         private int _numberOfEtfsSelected;
@@ -85,7 +50,7 @@ namespace QuantConnect.Algorithm.CSharp
         private Dictionary<string, List<QcDividend>> _dividends = new Dictionary<string, List<QcDividend>>();
         private Dictionary<string, List<QcSplit>> _splits = new Dictionary<string, List<QcSplit>>();
         private Dictionary<string, Dictionary<DateTime, decimal>>? _rawClosesFromYfDicts = null;
-        private int _lookbackMonths = 4; // COMMENT!
+        private int _lookbackMonths;
         DateTime _bnchmarkStartTime;
         private Dividends _sliceDividends;
         bool _isEndOfMonth = false; // use Qc Schedule.On() mechanism to calculate the last trading day of the month (because of holidays complications), even using it in SqCore
@@ -97,7 +62,7 @@ namespace QuantConnect.Algorithm.CSharp
 
             NameValueCollection algorithmParamQuery = HttpUtility.ParseQueryString(AlgorithmParam);
             QCAlgorithmUtils.ProcessAlgorithmParam(algorithmParamQuery, out _forcedStartDate, out _forcedEndDate, out _startDateAutoCalcMode);
-            ProcessAlgorithmParam(algorithmParamQuery, out _tickers, out _lookbackTradingDays, out _numberOfEtfsSelected);
+            ProcessAlgorithmParam(algorithmParamQuery, out _tickers, out _lookbackMonths, out _numberOfEtfsSelected);
             _lookbackTradingDays = _lookbackMonths * 23;
 
             // *** Step 1: general initializations
@@ -109,7 +74,7 @@ namespace QuantConnect.Algorithm.CSharp
                 Symbol symbolDaily = AddEquity(ticker, Resolution.Daily, dataNormalizationMode: DataNormalizationMode.Raw).Symbol;
                 _symbolsDaily.Add(ticker, symbolDaily);
                 Securities[symbolDaily].FeeModel = new ConstantFeeModel(0);
-                Securities[symbolDaily].SetBuyingPowerModel(new SecurityMarginModel(30m)); // equivalent to security.SetLeverage(). Allows to go 30x leverage of this stock if all 20 GC stock are in position with 50% overleverage
+                Securities[symbolDaily].SetBuyingPowerModel(new SecurityMarginModel(30m)); // equivalent to security.SetLeverage().
                 _rawCloses.Add(ticker, new List<QcPrice>());
                 _adjCloses.Add(ticker, new List<QcPrice>());
                 _dividends.Add(ticker, new List<QcDividend>());
@@ -124,13 +89,13 @@ namespace QuantConnect.Algorithm.CSharp
                     Symbol symbolMinute = AddEquity(ticker, Resolution.Minute, dataNormalizationMode: DataNormalizationMode.Raw).Symbol;
                     _symbolsMinute.Add(ticker, symbolMinute);
                     Securities[symbolMinute].FeeModel = new ConstantFeeModel(0);
-                    Securities[symbolMinute].SetBuyingPowerModel(new SecurityMarginModel(30m)); // equivalent to security.SetLeverage(). Allows to go 30x leverage of this stock if all 20 GC stock are in position with 50% overleverage
+                    Securities[symbolMinute].SetBuyingPowerModel(new SecurityMarginModel(30m)); // equivalent to security.SetLeverage().
                 }
             }
             _tradedSymbols = IsTradeInSqCore ? _symbolsDaily : _symbolsMinute;
 
             // *** Step 2: startDate and warmup determination
-            _warmUp = TimeSpan.FromDays(200); // Wind time back X calendar days from start Before the _startDate. It is calendar day. E.g. If strategy need %chgPrevDay, it needs 2 trading day data. Probably set warmup to 2+2+1 = 5+ (for 2 weekend, 1 holiday).
+            _warmUp = TimeSpan.FromDays(150); // Wind time back X calendar days from start Before the _startDate. It is calendar day. E.g. If strategy need %chgPrevDay, it needs 2 trading day data. Probably set warmup to 2+2+1 = 5+ (for 2 weekend, 1 holiday).
             SetWarmUp(_warmUp);
 
             _earliestUsableDataDay = QCAlgorithmUtils.StartDateAutoCalculation(_tradedSymbols, _startDateAutoCalcMode, out Symbol? symbolWithEarliestUsableDataDay);
@@ -147,7 +112,6 @@ namespace QuantConnect.Algorithm.CSharp
                 _startDate = _forcedStartDate;
             }
 
-            // _startDate = new DateTime(2006, 01, 01); // means Local time, not UTC
             Log($"EarliestUsableDataDay: {_earliestUsableDataDay: yyyy-MM-dd}, PV startDate: {_startDate: yyyy-MM-dd}");
 
             // *** Step 3: endDate determination
@@ -166,10 +130,9 @@ namespace QuantConnect.Algorithm.CSharp
                 _startDate = _startDate.AddDays(1); // Original QC behaviour: first PV will be StartDate() -1, and it uses previous day Close prices on StartDate:00:00 morning. We don't want that. So, increase the date by 1.
             SetStartDate(_startDate); // by default it is 1998-01-02. If we don't call SetStartDate(), still, the PV value chart will start from 1998
             SetEndDate(_endDate);
-            // SetBenchmark("SPY"); // the default benchmark is SPY, which is OK in the cloud. In SqCore, we removed the default SPY benchmark, because we don't need it.")
 
             // *** Only in QcCloud: YF data download. Part 2
-            if (IsTradeInQcCloud) // only in QC cloud: we need not only daily, but perMinute symbols too, because we use perMinute symbols for trading.
+            if (IsTradeInQcCloud)
                 QCAlgorithmUtils.DownloadAndProcessYfData(this, _tickers, _earliestUsableDataDay, _warmUp, _endDate, out _rawClosesFromYfDicts);
 
             Symbol tradingScheduleSymbol = symbolWithEarliestUsableDataDay; // "SPY" is the best candidate for trading schedule, but if "SPY" is not in the asset universe, we use the one with the longest history
@@ -184,19 +147,19 @@ namespace QuantConnect.Algorithm.CSharp
                 });
         }
 
-        public static void ProcessAlgorithmParam(NameValueCollection p_AlgorithmParamQuery, out List<string> p_tickers, out int p_lookbackTradingDays, out int p_numberOfEtfsSelected)
+        public static void ProcessAlgorithmParam(NameValueCollection p_AlgorithmParamQuery, out List<string> p_tickers, out int p_lookbackMonths, out int p_numberOfEtfsSelected)
         {
-            // e.g. _AlgorithmParam = "assets=VNQ,EEM,DBC,SPY,TLT,SHY&lookback=63&noETFs=3"
+            // e.g. _AlgorithmParam = "startDate=2009-01-05&endDate=now&assets=SPY,DBC,EMB,EFA,GLD,IWM,TLT,VNQ&lookbackMonth=4&noETFs=2"
             string[] tickers = p_AlgorithmParamQuery.Get("assets")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
             p_tickers = new List<string>(tickers);
 
-            string lookbackTradingDays = p_AlgorithmParamQuery.Get("lookback");
-            if (!int.TryParse(lookbackTradingDays, out p_lookbackTradingDays))
-                p_lookbackTradingDays = 63;
+            string lookbackTradingDays = p_AlgorithmParamQuery.Get("lookbackMonth");
+            if (!int.TryParse(lookbackTradingDays, out p_lookbackMonths))
+                p_lookbackMonths = 4;
 
             string numberOfEtfsSelected = p_AlgorithmParamQuery.Get("noETFs");
             if (!int.TryParse(numberOfEtfsSelected, out p_numberOfEtfsSelected))
-                p_numberOfEtfsSelected = 3;
+                p_numberOfEtfsSelected = 2;
         }
 
         private void TradeLogic() // this is called at 15:40 in QC cloud, and 00:00 in SqCore
@@ -245,7 +208,7 @@ namespace QuantConnect.Algorithm.CSharp
             logMessage2 = logMessage2.Substring(0, logMessage2.Length - 2) + ".";
             string LogMessageToLog = logMessage + " " + logMessage2 + $" Previous cash: {Portfolio.Cash}. Current PV: {currentPV}.";
 
-            Log(LogMessageToLog);
+            // Log(LogMessageToLog);
             _isEndOfMonth = false;
         }
 
@@ -274,7 +237,7 @@ namespace QuantConnect.Algorithm.CSharp
                 // Log($"OnData(Slice). Slice.Time: {slice.Time}, this.Time: {sliceTime}");
                 foreach (string ticker in _tickers)
                 {
-                    var symbol = _symbolsDaily[ticker];
+                    Symbol symbol = _symbolsDaily[ticker];
                     Split occuredSplit = (slice.Splits.ContainsKey(symbol) && slice.Splits[symbol].Type == SplitType.SplitOccurred) ? slice.Splits[symbol] : null; // split.Type can be Warning and SplitOccured. Ignore 1-day early Split Warnings. Just use the occured
 
                     decimal? rawClose = null;
@@ -305,9 +268,7 @@ namespace QuantConnect.Algorithm.CSharp
                         decimal refPrice = occuredSplit.ReferencePrice;    // Contains RAW price (before Split adjustment). Not used here.
                         decimal splitAdjMultiplicator = occuredSplit.SplitFactor;
                         for (int i = 0; i < _adjCloses[ticker].Count; i++)  // Not-chosen option: if we 'have to' use QC bug 'wrongly-adjusted' rawClose, we can skip the last item. In that case we don't apply the split adjustment to the last item, which is the same day as the day of Split.
-                        {
                             _adjCloses[ticker][i].Close *= splitAdjMultiplicator;
-                        }
                     }
                 }
 
@@ -319,20 +280,19 @@ namespace QuantConnect.Algorithm.CSharp
 
                 foreach (string ticker in _tickers)
                 {
-                    var symbol = _symbolsDaily[ticker];
+                    Symbol symbol = _symbolsDaily[ticker];
                     Split occuredSplit = (slice.Splits.ContainsKey(symbol) && slice.Splits[symbol].Type == SplitType.SplitOccurred) ? slice.Splits[symbol] : null; // split.Type can be Warning and SplitOccured. Ignore 1-day early Split Warnings. Just use the occured
                     if (slice.Dividends.ContainsKey(symbol))
                     {
-                        var dividend = slice.Dividends[symbol];
+                        Dividend dividend = slice.Dividends[symbol];
                         if (SqBacktestConfig.SqDailyTradingAtMOC) // SqDailyTradingAtMOC sends price at 16:00, which is right. No need the change. Without it, price comes 00:00 next morning, so we adjust it back.
                             _dividends[ticker].Add(new QcDividend() { ReferenceDate = slice.Time.Date, Dividend = dividend });
                         else
                             _dividends[ticker].Add(new QcDividend() { ReferenceDate = slice.Time.Date.AddDays(-1), Dividend = dividend });
                         decimal divAdjMultiplicator = 1 - dividend.Distribution / dividend.ReferencePrice;
                         for (int i = 0; i < _adjCloses[ticker].Count; i++)
-                        {
                             _adjCloses[ticker][i].Close *= divAdjMultiplicator;
-                        }
+
                         // Log($"Dividend on {slice.Time.ToString()}: {ticker} ${dividend.Distribution} when ReferencePrice was {dividend.ReferencePrice}.");
                     }
                 }
@@ -355,9 +315,7 @@ namespace QuantConnect.Algorithm.CSharp
                 List<QcPrice> lastLbTdPrices = new List<QcPrice>();
                 int startIndex = IsTradeInSqCore ? Math.Max(0, qcAdjCloses.Count - _lookbackTradingDays - 1) : Math.Max(0, qcAdjCloses.Count - _lookbackTradingDays);
                 for (int i = startIndex; i < qcAdjCloses.Count; i++)
-                {
                     lastLbTdPrices.Add(new QcPrice() { ReferenceDate = qcAdjCloses[i].ReferenceDate, Close = qcAdjCloses[i].Close });
-                }
                 if (IsTradeInQcCloud)
                 {
                     // add the last lookbackTradingDays items to the new dictionary from YF
@@ -378,65 +336,80 @@ namespace QuantConnect.Algorithm.CSharp
         {
             Dictionary<string, decimal> relativeMomentums = new Dictionary<string, decimal>();
 
-            foreach (var key in p_usedAdjustedClosePrices.Keys)
+            foreach (KeyValuePair<string, List<QcPrice>> kvp in p_usedAdjustedClosePrices)
             {
+                string key = kvp.Key;
+                List<QcPrice> usedAdjustedClosePrice = kvp.Value;
                 decimal relMom = -99;
-                var usedAdjustedClosePrice = p_usedAdjustedClosePrices[key];
 
                 if (usedAdjustedClosePrice.Count > 0)
                 {
-                    // Get the date 4 months ago
-                    DateTime fourMonthsAgo = Time.Date.AddMonths(-_lookbackMonths);
+                    // Get the date "lookback" months ago
+                    DateTime lookbackMonthsAgo = Time.Date.AddMonths(-_lookbackMonths);
                     // Adjust to the last day of that month
-                    fourMonthsAgo = new DateTime(fourMonthsAgo.Year, fourMonthsAgo.Month, DateTime.DaysInMonth(fourMonthsAgo.Year, fourMonthsAgo.Month));
-                    
-                    // Find the closest date in the list to four months ago
-                    var closestPrice = usedAdjustedClosePrice
-                        .Where(p => p.ReferenceDate <= fourMonthsAgo)
-                        .OrderByDescending(p => p.ReferenceDate)
-                        .FirstOrDefault();
+                    lookbackMonthsAgo = new DateTime(lookbackMonthsAgo.Year, lookbackMonthsAgo.Month, DateTime.DaysInMonth(lookbackMonthsAgo.Year, lookbackMonthsAgo.Month));
 
-                    // Fastest: keep an ordered list and use Binary search on that list.
+                    // Find the closest date in the list to four months ago
+                    QcPrice closestPrice = BinarySearchClosestDate(usedAdjustedClosePrice, lookbackMonthsAgo);
 
                     if (closestPrice != null)
-                    {
-                        // Calculate the relative momentum
-                        relMom = usedAdjustedClosePrice[^1].Close / closestPrice.Close - 1;
-                    }
+                        relMom = usedAdjustedClosePrice[usedAdjustedClosePrice.Count - 1].Close / closestPrice.Close - 1; // Calculate the relative momentum
                 }
 
                 relativeMomentums.Add(key, relMom);
             }
 
             // Sorting and ranking logic
-            var sortedMomentums = relativeMomentums.OrderByDescending(kv => kv.Value).ToList();
-            var rankDict = new Dictionary<string, int>();
+            List<KeyValuePair<string, decimal>> sortedMomentums = new List<KeyValuePair<string, decimal>>(relativeMomentums);
+            sortedMomentums.Sort((x, y) => y.Value.CompareTo(x.Value));
+            Dictionary<string, int> rankDict = new Dictionary<string, int>();
 
             for (int i = 0; i < sortedMomentums.Count; i++)
-            {
                 rankDict[sortedMomentums[i].Key] = i + 1;
-            }
 
             // Determine ETF selection
             Dictionary<string, bool> resultDict = new Dictionary<string, bool>();
-            int posRelMomNum = relativeMomentums.Values.Count(v => v > 0);
+            int posRelMomNum = 0;
+            foreach (decimal v in relativeMomentums.Values)
+            {
+                if (v > 0)
+                    posRelMomNum++;
+            }
             int cashSelector = (posRelMomNum < _numberOfEtfsSelected) ? 1 : 0;
 
-            foreach (var kvp in rankDict)
-            {
+            foreach (KeyValuePair<string, int> kvp in rankDict)
                 resultDict[kvp.Key] = kvp.Value <= _numberOfEtfsSelected - cashSelector;
-            }
 
             // Calculate weights for next month
             Dictionary<string, decimal> nextMonthWeights = new Dictionary<string, decimal>();
             decimal playedWeight = 1m / _numberOfEtfsSelected;
 
-            foreach (var key in p_usedAdjustedClosePrices.Keys)
-            {
+            foreach (string key in p_usedAdjustedClosePrices.Keys)
                 nextMonthWeights[key] = resultDict[key] ? playedWeight : 0;
-            }
 
             return nextMonthWeights;
+        }
+
+        private QcPrice BinarySearchClosestDate(List<QcPrice> p_prices, DateTime p_targetDate)
+        {
+            int left = 0;
+            int right = p_prices.Count - 1;
+
+            while (left <= right)
+            {
+                int mid = left + (right - left) / 2;
+
+                if (p_prices[mid].ReferenceDate == p_targetDate)
+                    return p_prices[mid];
+
+                if (p_prices[mid].ReferenceDate < p_targetDate)
+                    left = mid + 1;
+                else
+                    right = mid - 1;
+            }
+
+            // If not found exactly, return the closest price before the target date
+            return right >= 0 ? p_prices[right] : null;
         }
 
         private decimal PvCalculation(Dictionary<string, List<QcPrice>> p_usedAdjustedClosePrices)

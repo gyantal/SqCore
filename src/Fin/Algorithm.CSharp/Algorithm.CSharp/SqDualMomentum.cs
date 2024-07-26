@@ -2,48 +2,13 @@
 
 #region imports
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Globalization;
-using System.Drawing;
-using QuantConnect;
-using QuantConnect.Algorithm.Framework;
-using QuantConnect.Algorithm.Framework.Selection;
-using QuantConnect.Algorithm.Framework.Alphas;
-using QuantConnect.Algorithm.Framework.Portfolio;
-using QuantConnect.Algorithm.Framework.Execution;
-using QuantConnect.Algorithm.Framework.Risk;
 using QuantConnect.Parameters;
-using QuantConnect.Benchmarks;
-using QuantConnect.Brokerages;
-using QuantConnect.Util;
-using QuantConnect.Interfaces;
-using QuantConnect.Algorithm;
-using QuantConnect.Indicators;
 using QuantConnect.Data;
-using QuantConnect.Data.Consolidators;
-using QuantConnect.Data.Custom;
-using QuantConnect.Data.Fundamental;
 using QuantConnect.Data.Market;
-using QuantConnect.Data.UniverseSelection;
-using QuantConnect.Notifications;
-using QuantConnect.Orders;
 using QuantConnect.Orders.Fees;
-using QuantConnect.Orders.Fills;
-using QuantConnect.Orders.Slippage;
 using QuantConnect.Scheduling;
 using QuantConnect.Securities;
-using QuantConnect.Securities.Equity;
-using QuantConnect.Securities.Future;
-using QuantConnect.Securities.Option;
-using QuantConnect.Securities.Forex;
-using QuantConnect.Securities.Crypto;
-using QuantConnect.Securities.Interfaces;
-using QuantConnect.Storage;
-using QuantConnect.Data.Custom.AlphaStreams;
-using QCAlgorithmFramework = QuantConnect.Algorithm.QCAlgorithm;
-using QCAlgorithmFrameworkBridge = QuantConnect.Algorithm.QCAlgorithm;
 using System.Web;
 using System.Collections.Specialized;
 #endregion
@@ -286,7 +251,7 @@ namespace QuantConnect.Algorithm.CSharp
                 // Log($"OnData(Slice). Slice.Time: {slice.Time}, this.Time: {sliceTime}");
                 foreach (string ticker in _tickers)
                 {
-                    var symbol = _symbolsDaily[ticker];
+                    Symbol symbol = _symbolsDaily[ticker];
                     Split occuredSplit = (slice.Splits.ContainsKey(symbol) && slice.Splits[symbol].Type == SplitType.SplitOccurred) ? slice.Splits[symbol] : null; // split.Type can be Warning and SplitOccured. Ignore 1-day early Split Warnings. Just use the occured
 
                     decimal? rawClose = null;
@@ -317,9 +282,7 @@ namespace QuantConnect.Algorithm.CSharp
                         decimal refPrice = occuredSplit.ReferencePrice;    // Contains RAW price (before Split adjustment). Not used here.
                         decimal splitAdjMultiplicator = occuredSplit.SplitFactor;
                         for (int i = 0; i < _adjCloses[ticker].Count; i++)  // Not-chosen option: if we 'have to' use QC bug 'wrongly-adjusted' rawClose, we can skip the last item. In that case we don't apply the split adjustment to the last item, which is the same day as the day of Split.
-                        {
                             _adjCloses[ticker][i].Close *= splitAdjMultiplicator;
-                        }
                     }
                 }
 
@@ -331,20 +294,18 @@ namespace QuantConnect.Algorithm.CSharp
 
                 foreach (string ticker in _tickers)
                 {
-                    var symbol = _symbolsDaily[ticker];
+                    Symbol symbol = _symbolsDaily[ticker];
                     Split occuredSplit = (slice.Splits.ContainsKey(symbol) && slice.Splits[symbol].Type == SplitType.SplitOccurred) ? slice.Splits[symbol] : null; // split.Type can be Warning and SplitOccured. Ignore 1-day early Split Warnings. Just use the occured
                     if (slice.Dividends.ContainsKey(symbol))
                     {
-                        var dividend = slice.Dividends[symbol];
+                        Dividend dividend = slice.Dividends[symbol];
                         if (SqBacktestConfig.SqDailyTradingAtMOC) // SqDailyTradingAtMOC sends price at 16:00, which is right. No need the change. Without it, price comes 00:00 next morning, so we adjust it back.
                             _dividends[ticker].Add(new QcDividend() { ReferenceDate = slice.Time.Date, Dividend = dividend });
                         else
                             _dividends[ticker].Add(new QcDividend() { ReferenceDate = slice.Time.Date.AddDays(-1), Dividend = dividend });
                         decimal divAdjMultiplicator = 1 - dividend.Distribution / dividend.ReferencePrice;
                         for (int i = 0; i < _adjCloses[ticker].Count; i++)
-                        {
                             _adjCloses[ticker][i].Close *= divAdjMultiplicator;
-                        }
                         // Log($"Dividend on {slice.Time.ToString()}: {ticker} ${dividend.Distribution} when ReferencePrice was {dividend.ReferencePrice}.");
                     }
                 }
@@ -367,9 +328,7 @@ namespace QuantConnect.Algorithm.CSharp
                 List<QcPrice> lastLbTdPrices = new List<QcPrice>();
                 int startIndex = IsTradeInSqCore ? Math.Max(0, qcAdjCloses.Count - _lookbackTradingDays - 1) : Math.Max(0, qcAdjCloses.Count - _lookbackTradingDays);
                 for (int i = startIndex; i < qcAdjCloses.Count; i++)
-                {
                     lastLbTdPrices.Add(new QcPrice() { ReferenceDate = qcAdjCloses[i].ReferenceDate, Close = qcAdjCloses[i].Close });
-                }
                 if (IsTradeInQcCloud)
                 {
                     // add the last lookbackTradingDays items to the new dictionary from YF
@@ -390,16 +349,18 @@ namespace QuantConnect.Algorithm.CSharp
         {
             Dictionary<string, decimal> relativeMomentums = new Dictionary<string, decimal>();
 
-            foreach (string key in p_usedAdjustedClosePrices.Keys)
+            foreach (KeyValuePair<string, List<QcPrice>> kvp in p_usedAdjustedClosePrices)
             {
+                string key = kvp.Key;
+                List<QcPrice> usedAdjustedClosePrice = kvp.Value;
                 decimal relMom = -99;
-                List<QcPrice> usedAdjustedClosePrice = p_usedAdjustedClosePrices[key];
+
                 if (usedAdjustedClosePrice.Count == _lookbackTradingDays + 1)
                     relMom = usedAdjustedClosePrice[^1].Close / usedAdjustedClosePrice[0].Close - 1; // last element divided by the first
                 relativeMomentums.Add(key, relMom);
             }
             // Convert the relativeMomentum dictionary to a list of key-value pairs
-            List<KeyValuePair<string, decimal>> list = relativeMomentums.ToList();
+            List<KeyValuePair<string, decimal>> list = new List<KeyValuePair<string, decimal>>(relativeMomentums);
 
             // Sort the list based on the values
             list.Sort((x, y) => y.Value.CompareTo(x.Value));
@@ -432,9 +393,7 @@ namespace QuantConnect.Algorithm.CSharp
                     trueCount++;
                 }
                 else
-                {
                     resultDict.Add(ticker, false);
-                }
             }
             // Calculate the appropriate weights for next month. It will be used during trading process.
             Dictionary<string, decimal> nextMonthWeights = new Dictionary<string, decimal>();
@@ -442,7 +401,7 @@ namespace QuantConnect.Algorithm.CSharp
             decimal playedWeight = decimal.Divide(1, noPlayedEtf);
             foreach (string key in p_usedAdjustedClosePrices.Keys)
             {
-                if (resultDict[key] == true)
+                if (resultDict[key])
                     nextMonthWeights.Add(key, playedWeight);
                 else
                     nextMonthWeights.Add(key, 0);
