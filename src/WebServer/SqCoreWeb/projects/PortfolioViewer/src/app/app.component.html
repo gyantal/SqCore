@@ -75,9 +75,9 @@ PortfolioId: {{m_portfolioId}}
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let item of m_seasonalityData">
+      <tr *ngFor="let item of this.m_seasonalityData.monthlySeasonality">
         <td>{{item.year}}</td>
-        <td *ngFor="let retVal of item.returns">{{retVal | percent:'1.2' }}</td>
+        <td *ngFor="let retVal of item.returns">{{retVal | percent:'1.2'}}</td>
       </tr>
     </tbody>
   </table>
