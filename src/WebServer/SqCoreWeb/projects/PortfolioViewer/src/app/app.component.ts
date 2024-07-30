@@ -624,7 +624,7 @@ export class AppComponent {
     // Step3: Group the data by year wise
     const monthlySeasonality: MonthlySeasonality[] = [];
     // Iterate over each key-value pair in monthlyPercentageReturn to populate the monthly seasonality data
-    for (const [yearMonth, value] of Object.entries(monthlyPercentageReturn)) {
+    for (const [yearMonth, value] of Object.entries(monthlyPercentageReturn).reverse()) { // reverse() - is used to show the latest data on top in the matrix on UI
       const [year, month] = yearMonth.split('-'); // Extract year and month
       const monthIndex: number = parseInt(month, 10) - 1; // Convert month to zero-based index (0 for January, 11 for December)
 
@@ -648,5 +648,22 @@ export class AppComponent {
       existingSeasonality.returns[monthIndex] = value;
     }
     this.m_seasonalityData.monthlySeasonality = monthlySeasonality;
+
+    // Winrate Calculation
+    const positiveMonthlyReturnsCount: number[] = new Array(12).fill(0);
+    const negativeMonthlyReturnsCount: number[] = new Array(12).fill(0);
+
+    // Iterate over the monthly seasonality data
+    for (const mnthSeasonlity of this.m_seasonalityData.monthlySeasonality) {
+      for (let i = 0; i < mnthSeasonlity.returns.length; i++) {
+        if (mnthSeasonlity.returns[i] > 0) // If the return is greater than zero, increment the count of positive monthly returns.
+          positiveMonthlyReturnsCount[i]++;
+        else if (mnthSeasonlity.returns[i] < 0) // If the return is less than zero, increment the count of negative monthly returns.
+          negativeMonthlyReturnsCount[i]++;
+      }
+    }
+
+    for (let i = 0; i < 12; i++) // Calculate the win rate for each month
+      this.m_seasonalityData.monthlySeasonalityWinrate[i] = positiveMonthlyReturnsCount[i] / (positiveMonthlyReturnsCount[i] + negativeMonthlyReturnsCount[i]);
   }
 }
