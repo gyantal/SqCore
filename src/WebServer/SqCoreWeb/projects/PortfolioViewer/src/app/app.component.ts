@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, ChartJs } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
+import { sqMedian } from '../../../../TsLib/sq-common/utils_math';
 
 class HandshakeMessage {
   public email = '';
@@ -99,13 +100,13 @@ class WeeklySeasonality {
 
 class SeasonalityData { // Container Class of every data about seasonality.
   monthlySeasonality: MonthlySeasonality[] = [];
-
-  monthlySeasonalityWinrate: number[] = [];
-  monthlySeasonality3yAvg: number[] = [];
-  monthlySeasonality5yAvg: number[] = [];
-  monthlySeasonality10yAvg: number[] = [];
-  monthlySeasonalityAvg: number[] = []; // Mean: average of all years
-  monthlySeasonalityMedian: number[] = [];
+  // Initialize the arrays with pre-allocated memory for 12 elements, one for each month, filled with NaN.This avoids dynamic resizing compared to an empty array.
+  monthlySeasonalityWinrate: number[] = new Array(12).fill(NaN);
+  monthlySeasonality3yAvg: number[] = new Array(12).fill(NaN);
+  monthlySeasonality5yAvg: number[] = new Array(12).fill(NaN);
+  monthlySeasonality10yAvg: number[] = new Array(12).fill(NaN);
+  monthlySeasonalityAvg: number[] = new Array(12).fill(NaN);
+  monthlySeasonalityMedian: number[] = new Array(12).fill(NaN);
 
   weeklySeasonality: WeeklySeasonality[] = [];
 }
@@ -665,5 +666,48 @@ export class AppComponent {
 
     for (let i = 0; i < 12; i++) // Calculate the win rate for each month
       this.m_seasonalityData.monthlySeasonalityWinrate[i] = positiveMonthlyReturnsCount[i] / (positiveMonthlyReturnsCount[i] + negativeMonthlyReturnsCount[i]);
+
+    // Calculate 3-year average
+    this.m_seasonalityData.monthlySeasonality3yAvg = this.calculateAverageForSeasonalityData(monthlySeasonality, 3);
+    console.log('extractMonthlySeasonality: threeYrAvg', this.m_seasonalityData.monthlySeasonality3yAvg);
+
+    // Calculate 5-year average
+    this.m_seasonalityData.monthlySeasonality5yAvg = this.calculateAverageForSeasonalityData(monthlySeasonality, 5);
+    console.log('extractMonthlySeasonality: fiveYrAvg', this.m_seasonalityData.monthlySeasonality5yAvg);
+
+    // Calculate 10-year average
+    this.m_seasonalityData.monthlySeasonality10yAvg = this.calculateAverageForSeasonalityData(monthlySeasonality, 10);
+    console.log('extractMonthlySeasonality: tenYrAvg', this.m_seasonalityData.monthlySeasonality10yAvg);
+
+    // Calculate overall average (mean) for all available data
+    this.m_seasonalityData.monthlySeasonalityAvg = this.calculateAverageForSeasonalityData(monthlySeasonality, monthlySeasonality.length);
+    console.log('extractMonthlySeasonality: overallAvg', this.m_seasonalityData.monthlySeasonalityAvg);
+
+    // Median calculation
+    for (let i = 0; i < 12; i++) {
+      const returns: number[] = [];
+      for (let j = 0; j < monthlySeasonality.length; j++) {
+        if (monthlySeasonality[j].returns[i] != undefined && !Number.isNaN(monthlySeasonality[j].returns[i]))
+          returns.push(monthlySeasonality[j].returns[i]);
+      }
+      this.m_seasonalityData.monthlySeasonalityMedian[i] = sqMedian(returns);
+    }
+    console.log('extractMonthlySeasonality: median', this.m_seasonalityData.monthlySeasonalityMedian);
+  }
+
+  // Function to calculate average for a given number of years
+  calculateAverageForSeasonalityData(monthlySeasonality: MonthlySeasonality[], years: number): number[] {
+    const avgArray: number[] = new Array(12).fill(NaN);
+
+    for (let i = 0; i < 12; i++) {
+      let returnsSum: number = 0;
+
+      for (let j = 0; j < years; j++) { // Selecting only the data from the last 'years' years
+        if (monthlySeasonality[j].returns[i] != undefined && !Number.isNaN(monthlySeasonality[j].returns[i]))
+          returnsSum += monthlySeasonality[j].returns[i];
+      }
+      avgArray[i] = returnsSum / years;
+    }
+    return avgArray;
   }
 }
