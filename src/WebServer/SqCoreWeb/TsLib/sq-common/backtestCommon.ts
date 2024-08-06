@@ -231,6 +231,30 @@ export enum ExchangeId {
   OTCBB = 11,
 }
 
+// used in PrtfVwr and ChrtGen to process seasonality matrix
+export class MonthlySeasonality {
+  year: number | string = 0;
+  returns: number[] = [];
+}
+
+export class WeeklySeasonality {
+  year: number = 0;
+  returns: number[] = [];
+}
+
+export class SeasonalityData { // Container Class of every data about seasonality.
+  monthlySeasonality: MonthlySeasonality[] = [];
+  // Initialize the arrays with pre-allocated memory for 12 elements, one for each month, filled with NaN.This avoids dynamic resizing compared to an empty array.
+  monthlySeasonalityWinrate: number[] = new Array(12).fill(NaN);
+  monthlySeasonality3yAvg: number[] = new Array(12).fill(NaN);
+  monthlySeasonality5yAvg: number[] = new Array(12).fill(NaN);
+  monthlySeasonality10yAvg: number[] = new Array(12).fill(NaN);
+  monthlySeasonalityAvg: number[] = new Array(12).fill(NaN);
+  monthlySeasonalityMedian: number[] = new Array(12).fill(NaN);
+
+  weeklySeasonality: WeeklySeasonality[] = [];
+}
+
 // ************************************************ //
 export function prtfsParseHelper(_this: any, key: string, value: any): boolean { // return value is isRemoveOriginal
   // eslint-disable-next-line no-invalid-this

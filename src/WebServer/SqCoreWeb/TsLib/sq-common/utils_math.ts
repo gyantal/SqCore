@@ -1,3 +1,5 @@
+import { MonthlySeasonality } from './backtestCommon';
+
 export function sqGaussian(mean: number, stdev: number): any {
   // returns a gaussian random function with the given mean and stdev.
   let y2;
@@ -42,6 +44,7 @@ export function sqMedian(arrayB: any): number {
   i % 1 === 0 ? med = (arrayB[Math.floor(i) - 1] + arrayB[Math.floor(i)]) / 2 : med = arrayB[Math.floor(i)];
   return med;
 }
+
 export function sqStdDev(arrayB: any): number {
   const avg = sqAverage(arrayB);
   let sumdev = 0;
@@ -49,4 +52,20 @@ export function sqStdDev(arrayB: any): number {
     sumdev += (arrayB[i]-avg)*(arrayB[i]-avg);
   const stdDev = Math.sqrt(sumdev/(arrayB.length-1));
   return stdDev;
+}
+
+// Function to calculate average for a given number of years
+export function sqAverageOfSeasonalityData(monthlySeasonality: MonthlySeasonality[], years: number): number[] {
+  const avgArray: number[] = new Array(12).fill(NaN);
+
+  for (let i = 0; i < 12; i++) {
+    let returnsSum: number = 0;
+
+    for (let j = 0; j < years; j++) { // Selecting only the data from the last 'years' years
+      if (monthlySeasonality[j].returns[i] != undefined && !Number.isNaN(monthlySeasonality[j].returns[i]))
+        returnsSum += monthlySeasonality[j].returns[i];
+    }
+    avgArray[i] = returnsSum / years;
+  }
+  return avgArray;
 }
