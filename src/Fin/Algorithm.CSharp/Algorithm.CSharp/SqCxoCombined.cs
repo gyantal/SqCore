@@ -43,6 +43,7 @@ namespace QuantConnect.Algorithm.CSharp
         List<string> _tickersValue = new List<string>{"TLT", "LQD", "SPY"};
         List<string> _tickersCombined;
         Dictionary<DateTime, Dictionary<string, decimal>> _allocationSchedule;
+        Dictionary<string, decimal> _lastValidValueWeights;
         private int _lookbackTradingDays;
         private int _numberOfEtfsSelected;
         private double[] _subStratWeights;
@@ -54,7 +55,7 @@ namespace QuantConnect.Algorithm.CSharp
         private Dictionary<string, List<QcDividend>> _dividends = new Dictionary<string, List<QcDividend>>();
         private Dictionary<string, List<QcSplit>> _splits = new Dictionary<string, List<QcSplit>>();
         private Dictionary<string, Dictionary<DateTime, decimal>>? _rawClosesFromYfDicts = null;
-        private int _lookbackMonths;
+        private int _lookbackMonths = 4; // It will be overwritten in ProcessAlgorithmParam function
         DateTime _bnchmarkStartTime;
         private Dividends _sliceDividends;
         bool _isEndOfMonth = false; // use Qc Schedule.On() mechanism to calculate the last trading day of the month (because of holidays complications), even using it in SqCore
@@ -163,8 +164,8 @@ namespace QuantConnect.Algorithm.CSharp
             string[] tickersMom = p_AlgorithmParamQuery.Get("assets")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
             p_tickersMom = new List<string>(tickersMom);
 
-            string lookbackTradingDays = p_AlgorithmParamQuery.Get("lookbackMonth");
-            if (!int.TryParse(lookbackTradingDays, out p_lookbackMonths))
+            string lookbackMonthStr = p_AlgorithmParamQuery.Get("lookbackMonth");
+            if (!int.TryParse(lookbackMonthStr, out p_lookbackMonths))
                 p_lookbackMonths = 4;
 
             string numberOfEtfsSelected = p_AlgorithmParamQuery.Get("noETFs");
@@ -406,7 +407,16 @@ namespace QuantConnect.Algorithm.CSharp
                     lookbackMonthsAgo = new DateTime(lookbackMonthsAgo.Year, lookbackMonthsAgo.Month, DateTime.DaysInMonth(lookbackMonthsAgo.Year, lookbackMonthsAgo.Month));
 
                     // Find the closest date in the list to four months ago
-                    QcPrice closestPrice = BinarySearchClosestDate(usedAdjustedClosePrice, lookbackMonthsAgo);
+                    int index = usedAdjustedClosePrice.BinarySearch(new QcPrice { ReferenceDate = lookbackMonthsAgo }, new SqCxoCommon.QcPriceComparer());
+
+                    QcPrice closestPrice;
+                    if (index < 0)
+                    {
+                        index = ~index;
+                        closestPrice = index > 0 ? usedAdjustedClosePrice[index - 1] : null;
+                    }
+                    else
+                        closestPrice = usedAdjustedClosePrice[index];
 
                     if (closestPrice != null)
                         relMom = usedAdjustedClosePrice[usedAdjustedClosePrice.Count - 1].Close / closestPrice.Close - 1; // Calculate the relative momentum
@@ -449,7 +459,7 @@ namespace QuantConnect.Algorithm.CSharp
 
         private Dictionary<string, decimal> HistPerfCalcValue()
         {
-            AllocationByMonth();
+            _allocationSchedule = SqCxoCommon.AllocationByMonth();
 
             // Get the last trading day
             DateTime lastTradingDay = this.Time.Date;
@@ -463,12 +473,13 @@ namespace QuantConnect.Algorithm.CSharp
                 if (allocation.Key.Month == lastTradingDay.Month && allocation.Key.Year == lastTradingDay.Year)
                 {
                     matchedAllocation = allocation.Value;
+                    _lastValidValueWeights = matchedAllocation;
                     break;
                 }
             }
 
             // Initialize the dictionary to store next month's weights without "CASH"
-            Dictionary<string, decimal> nextMonthWeightsValue = new Dictionary<string, decimal>();
+            Dictionary<string, decimal> nextMonthWeights = new Dictionary<string, decimal>();
 
             // If a matching allocation was found, remove the "CASH" key and populate nextMonthWeights
             if (matchedAllocation != null)
@@ -476,33 +487,13 @@ namespace QuantConnect.Algorithm.CSharp
                 foreach (KeyValuePair<string, decimal> kvp in matchedAllocation)
                 {
                     if (kvp.Key != "CASH")
-                        nextMonthWeightsValue.Add(kvp.Key, kvp.Value);
+                        nextMonthWeights.Add(kvp.Key, kvp.Value);
                 }
             }
+            else
+                nextMonthWeights = _lastValidValueWeights;
 
-            return nextMonthWeightsValue;
-        }
-
-        private QcPrice BinarySearchClosestDate(List<QcPrice> p_prices, DateTime p_targetDate)
-        {
-            int left = 0;
-            int right = p_prices.Count - 1;
-
-            while (left <= right)
-            {
-                int mid = left + (right - left) / 2;
-
-                if (p_prices[mid].ReferenceDate == p_targetDate)
-                    return p_prices[mid];
-
-                if (p_prices[mid].ReferenceDate < p_targetDate)
-                    left = mid + 1;
-                else
-                    right = mid - 1;
-            }
-
-            // If not found exactly, return the closest price before the target date
-            return right >= 0 ? p_prices[right] : null;
+            return nextMonthWeights;
         }
 
         private decimal PvCalculation(Dictionary<string, List<QcPrice>> p_usedAdjustedClosePrices)
@@ -532,279 +523,7 @@ namespace QuantConnect.Algorithm.CSharp
             }
             return currentPV;
         }
-        private void AllocationByMonth()
-        {
-            // Set up the allocation schedule
-            _allocationSchedule = new Dictionary<DateTime, Dictionary<string, decimal>>
-            {
-                { new DateTime(2024, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },
-                { new DateTime(2024, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },
-                { new DateTime(2024, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },
-                { new DateTime(2024, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },
-                { new DateTime(2024, 2, 29 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },
-                { new DateTime(2024, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },
-                { new DateTime(2023, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },
-                { new DateTime(2023, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },
-                { new DateTime(2023, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },
-                { new DateTime(2023, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },
-                { new DateTime(2023, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },
-                { new DateTime(2023, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },
-                { new DateTime(2023, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },
-                { new DateTime(2023, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2023, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2023, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2023, 2, 28 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2023, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2022, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2022, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2022, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2022, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2022, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2022, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.15m }, { "SPY", 0.85m }, { "CASH", 0.0m } } },
-                { new DateTime(2022, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.03m }, { "SPY", 0.97m }, { "CASH", 0.0m } } },
-                { new DateTime(2022, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.09m }, { "LQD", 0.0m }, { "SPY", 0.91m }, { "CASH", 0.0m } } },
-                { new DateTime(2022, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.4m }, { "LQD", 0.0m }, { "SPY", 0.6m }, { "CASH", 0.0m } } },
-                { new DateTime(2022, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.2m }, { "LQD", 0.0m }, { "SPY", 0.8m }, { "CASH", 0.0m } } },
-                { new DateTime(2022, 2, 28 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2022, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2021, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2021, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2021, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2021, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2021, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2021, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2021, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2021, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2021, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.03m }, { "LQD", 0.0m }, { "SPY", 0.97m }, { "CASH", 0.0m } } },
-                { new DateTime(2021, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.25m }, { "LQD", 0.0m }, { "SPY", 0.75m }, { "CASH", 0.0m } } },
-                { new DateTime(2021, 2, 28 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2021, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2020, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2020, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2020, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.24m }, { "SPY", 0.76m }, { "CASH", 0.0m } } },
-                { new DateTime(2020, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.33m }, { "SPY", 0.67m }, { "CASH", 0.0m } } },
-                { new DateTime(2020, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.32m }, { "SPY", 0.68m }, { "CASH", 0.0m } } },
-                { new DateTime(2020, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.21m }, { "SPY", 0.79m }, { "CASH", 0.0m } } },
-                { new DateTime(2020, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.36m }, { "SPY", 0.64m }, { "CASH", 0.0m } } },
-                { new DateTime(2020, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.39m }, { "SPY", 0.61m }, { "CASH", 0.0m } } },
-                { new DateTime(2020, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.4m }, { "SPY", 0.6m }, { "CASH", 0.0m } } },
-                { new DateTime(2020, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.5m }, { "SPY", 0.5m }, { "CASH", 0.0m } } },
-                { new DateTime(2020, 2, 29 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.08m }, { "SPY", 0.92m }, { "CASH", 0.0m } } },
-                { new DateTime(2020, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2019, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2019, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2019, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2019, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2019, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2019, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2019, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2019, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2019, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2019, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2019, 2, 28 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2019, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.1m }, { "SPY", 0.9m }, { "CASH", 0.0m } } },
-                { new DateTime(2018, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.12m }, { "SPY", 0.88m }, { "CASH", 0.0m } } },
-                { new DateTime(2018, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2018, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2018, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2018, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2018, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2018, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2018, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2018, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2018, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2018, 2, 28 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2018, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2017, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2017, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2017, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2017, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2017, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2017, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2017, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2017, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2017, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2017, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2017, 2, 28 ), new Dictionary<string, decimal> { { "TLT", 0.08m }, { "LQD", 0.0m }, { "SPY", 0.92m }, { "CASH", 0.0m } } },
-                { new DateTime(2017, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.18m }, { "LQD", 0.0m }, { "SPY", 0.82m }, { "CASH", 0.0m } } },
-                { new DateTime(2016, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.18m }, { "LQD", 0.0m }, { "SPY", 0.82m }, { "CASH", 0.0m } } },
-                { new DateTime(2016, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.13m }, { "LQD", 0.02m }, { "SPY", 0.84m }, { "CASH", 0.0m } } },
-                { new DateTime(2016, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.25m }, { "SPY", 0.75m }, { "CASH", 0.0m } } },
-                { new DateTime(2016, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.24m }, { "SPY", 0.76m }, { "CASH", 0.0m } } },
-                { new DateTime(2016, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.22m }, { "SPY", 0.78m }, { "CASH", 0.0m } } },
-                { new DateTime(2016, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.3m }, { "SPY", 0.7m }, { "CASH", 0.0m } } },
-                { new DateTime(2016, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.37m }, { "SPY", 0.63m }, { "CASH", 0.0m } } },
-                { new DateTime(2016, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.37m }, { "SPY", 0.63m }, { "CASH", 0.0m } } },
-                { new DateTime(2016, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.39m }, { "SPY", 0.61m }, { "CASH", 0.0m } } },
-                { new DateTime(2016, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.47m }, { "SPY", 0.53m }, { "CASH", 0.0m } } },
-                { new DateTime(2016, 2, 29 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.53m }, { "SPY", 0.47m }, { "CASH", 0.0m } } },
-                { new DateTime(2016, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.54m }, { "SPY", 0.46m }, { "CASH", 0.0m } } },
-                { new DateTime(2015, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.11m }, { "LQD", 0.48m }, { "SPY", 0.41m }, { "CASH", 0.0m } } },
-                { new DateTime(2015, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.07m }, { "LQD", 0.47m }, { "SPY", 0.46m }, { "CASH", 0.0m } } },
-                { new DateTime(2015, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.1m }, { "LQD", 0.45m }, { "SPY", 0.45m }, { "CASH", 0.0m } } },
-                { new DateTime(2015, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.09m }, { "LQD", 0.42m }, { "SPY", 0.49m }, { "CASH", 0.0m } } },
-                { new DateTime(2015, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.11m }, { "LQD", 0.38m }, { "SPY", 0.51m }, { "CASH", 0.0m } } },
-                { new DateTime(2015, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.13m }, { "LQD", 0.35m }, { "SPY", 0.52m }, { "CASH", 0.0m } } },
-                { new DateTime(2015, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.21m }, { "LQD", 0.27m }, { "SPY", 0.51m }, { "CASH", 0.0m } } },
-                { new DateTime(2015, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.14m }, { "LQD", 0.26m }, { "SPY", 0.6m }, { "CASH", 0.0m } } },
-                { new DateTime(2015, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.12m }, { "LQD", 0.17m }, { "SPY", 0.7m }, { "CASH", 0.0m } } },
-                { new DateTime(2015, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.07m }, { "LQD", 0.17m }, { "SPY", 0.77m }, { "CASH", 0.0m } } },
-                { new DateTime(2015, 2, 28 ), new Dictionary<string, decimal> { { "TLT", 0.1m }, { "LQD", 0.1m }, { "SPY", 0.8m }, { "CASH", 0.0m } } },
-                { new DateTime(2015, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.21m }, { "SPY", 0.79m }, { "CASH", 0.0m } } },
-                { new DateTime(2014, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.16m }, { "LQD", 0.12m }, { "SPY", 0.71m }, { "CASH", 0.0m } } },
-                { new DateTime(2014, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.18m }, { "LQD", 0.13m }, { "SPY", 0.69m }, { "CASH", 0.0m } } },
-                { new DateTime(2014, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.27m }, { "LQD", 0.02m }, { "SPY", 0.71m }, { "CASH", 0.0m } } },
-                { new DateTime(2014, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.33m }, { "LQD", 0.0m }, { "SPY", 0.67m }, { "CASH", 0.0m } } },
-                { new DateTime(2014, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.28m }, { "LQD", 0.0m }, { "SPY", 0.72m }, { "CASH", 0.0m } } },
-                { new DateTime(2014, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.35m }, { "LQD", 0.0m }, { "SPY", 0.65m }, { "CASH", 0.0m } } },
-                { new DateTime(2014, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.34m }, { "LQD", 0.0m }, { "SPY", 0.66m }, { "CASH", 0.0m } } },
-                { new DateTime(2014, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.31m }, { "LQD", 0.0m }, { "SPY", 0.69m }, { "CASH", 0.0m } } },
-                { new DateTime(2014, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.38m }, { "LQD", 0.0m }, { "SPY", 0.62m }, { "CASH", 0.0m } } },
-                { new DateTime(2014, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.39m }, { "LQD", 0.0m }, { "SPY", 0.61m }, { "CASH", 0.0m } } },
-                { new DateTime(2014, 2, 28 ), new Dictionary<string, decimal> { { "TLT", 0.38m }, { "LQD", 0.01m }, { "SPY", 0.61m }, { "CASH", 0.0m } } },
-                { new DateTime(2014, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.36m }, { "LQD", 0.04m }, { "SPY", 0.6m }, { "CASH", 0.0m } } },
-                { new DateTime(2013, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.51m }, { "LQD", 0.0m }, { "SPY", 0.49m }, { "CASH", 0.0m } } },
-                { new DateTime(2013, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.35m }, { "LQD", 0.16m }, { "SPY", 0.49m }, { "CASH", 0.0m } } },
-                { new DateTime(2013, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.28m }, { "LQD", 0.17m }, { "SPY", 0.54m }, { "CASH", 0.0m } } },
-                { new DateTime(2013, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.28m }, { "LQD", 0.19m }, { "SPY", 0.53m }, { "CASH", 0.0m } } },
-                { new DateTime(2013, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.34m }, { "LQD", 0.13m }, { "SPY", 0.54m }, { "CASH", 0.0m } } },
-                { new DateTime(2013, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.27m }, { "LQD", 0.19m }, { "SPY", 0.54m }, { "CASH", 0.0m } } },
-                { new DateTime(2013, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.22m }, { "LQD", 0.24m }, { "SPY", 0.54m }, { "CASH", 0.0m } } },
-                { new DateTime(2013, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.13m }, { "LQD", 0.21m }, { "SPY", 0.66m }, { "CASH", 0.0m } } },
-                { new DateTime(2013, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.24m }, { "SPY", 0.76m }, { "CASH", 0.0m } } },
-                { new DateTime(2013, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.02m }, { "LQD", 0.28m }, { "SPY", 0.7m }, { "CASH", 0.0m } } },
-                { new DateTime(2013, 2, 28 ), new Dictionary<string, decimal> { { "TLT", 0.02m }, { "LQD", 0.26m }, { "SPY", 0.72m }, { "CASH", 0.0m } } },
-                { new DateTime(2013, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.07m }, { "LQD", 0.23m }, { "SPY", 0.7m }, { "CASH", 0.0m } } },
-                { new DateTime(2012, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.2m }, { "SPY", 0.79m }, { "CASH", 0.0m } } },
-                { new DateTime(2012, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.24m }, { "SPY", 0.76m }, { "CASH", 0.0m } } },
-                { new DateTime(2012, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.18m }, { "SPY", 0.82m }, { "CASH", 0.0m } } },
-                { new DateTime(2012, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.27m }, { "SPY", 0.73m }, { "CASH", 0.0m } } },
-                { new DateTime(2012, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.31m }, { "SPY", 0.69m }, { "CASH", 0.0m } } },
-                { new DateTime(2012, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.31m }, { "SPY", 0.69m }, { "CASH", 0.0m } } },
-                { new DateTime(2012, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.31m }, { "SPY", 0.69m }, { "CASH", 0.0m } } },
-                { new DateTime(2012, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.33m }, { "SPY", 0.67m }, { "CASH", 0.0m } } },
-                { new DateTime(2012, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.03m }, { "LQD", 0.3m }, { "SPY", 0.67m }, { "CASH", 0.0m } } },
-                { new DateTime(2012, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.1m }, { "LQD", 0.24m }, { "SPY", 0.66m }, { "CASH", 0.0m } } },
-                { new DateTime(2012, 2, 29 ), new Dictionary<string, decimal> { { "TLT", 0.04m }, { "LQD", 0.26m }, { "SPY", 0.7m }, { "CASH", 0.0m } } },
-                { new DateTime(2012, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.01m }, { "LQD", 0.3m }, { "SPY", 0.69m }, { "CASH", 0.0m } } },
-                { new DateTime(2011, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.03m }, { "LQD", 0.28m }, { "SPY", 0.69m }, { "CASH", 0.0m } } },
-                { new DateTime(2011, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.07m }, { "LQD", 0.25m }, { "SPY", 0.68m }, { "CASH", 0.0m } } },
-                { new DateTime(2011, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.08m }, { "LQD", 0.25m }, { "SPY", 0.66m }, { "CASH", 0.0m } } },
-                { new DateTime(2011, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.03m }, { "LQD", 0.27m }, { "SPY", 0.7m }, { "CASH", 0.0m } } },
-                { new DateTime(2011, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.09m }, { "LQD", 0.26m }, { "SPY", 0.65m }, { "CASH", 0.0m } } },
-                { new DateTime(2011, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.2m }, { "LQD", 0.2m }, { "SPY", 0.6m }, { "CASH", 0.0m } } },
-                { new DateTime(2011, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.3m }, { "LQD", 0.15m }, { "SPY", 0.55m }, { "CASH", 0.0m } } },
-                { new DateTime(2011, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.29m }, { "LQD", 0.14m }, { "SPY", 0.56m }, { "CASH", 0.0m } } },
-                { new DateTime(2011, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.36m }, { "LQD", 0.12m }, { "SPY", 0.51m }, { "CASH", 0.0m } } },
-                { new DateTime(2011, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.38m }, { "LQD", 0.11m }, { "SPY", 0.51m }, { "CASH", 0.0m } } },
-                { new DateTime(2011, 2, 28 ), new Dictionary<string, decimal> { { "TLT", 0.38m }, { "LQD", 0.13m }, { "SPY", 0.49m }, { "CASH", 0.0m } } },
-                { new DateTime(2011, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.36m }, { "LQD", 0.14m }, { "SPY", 0.5m }, { "CASH", 0.0m } } },
-                { new DateTime(2010, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.32m }, { "LQD", 0.17m }, { "SPY", 0.51m }, { "CASH", 0.0m } } },
-                { new DateTime(2010, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.2m }, { "LQD", 0.25m }, { "SPY", 0.55m }, { "CASH", 0.0m } } },
-                { new DateTime(2010, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.16m }, { "LQD", 0.29m }, { "SPY", 0.55m }, { "CASH", 0.0m } } },
-                { new DateTime(2010, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.14m }, { "LQD", 0.24m }, { "SPY", 0.62m }, { "CASH", 0.0m } } },
-                { new DateTime(2010, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.13m }, { "LQD", 0.25m }, { "SPY", 0.62m }, { "CASH", 0.0m } } },
-                { new DateTime(2010, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.23m }, { "LQD", 0.24m }, { "SPY", 0.53m }, { "CASH", 0.0m } } },
-                { new DateTime(2010, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.21m }, { "LQD", 0.25m }, { "SPY", 0.54m }, { "CASH", 0.0m } } },
-                { new DateTime(2010, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.35m }, { "LQD", 0.24m }, { "SPY", 0.41m }, { "CASH", 0.0m } } },
-                { new DateTime(2010, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.57m }, { "LQD", 0.1m }, { "SPY", 0.34m }, { "CASH", 0.0m } } },
-                { new DateTime(2010, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.58m }, { "LQD", 0.12m }, { "SPY", 0.3m }, { "CASH", 0.0m } } },
-                { new DateTime(2010, 2, 28 ), new Dictionary<string, decimal> { { "TLT", 0.67m }, { "LQD", 0.24m }, { "SPY", 0.09m }, { "CASH", 0.0m } } },
-                { new DateTime(2010, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.68m }, { "LQD", 0.21m }, { "SPY", 0.11m }, { "CASH", 0.0m } } },
-                { new DateTime(2009, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.82m }, { "LQD", 0.16m }, { "SPY", 0.02m }, { "CASH", 0.0m } } },
-                { new DateTime(2009, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.47m }, { "LQD", 0.35m }, { "SPY", 0.18m }, { "CASH", 0.0m } } },
-                { new DateTime(2009, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.5m }, { "LQD", 0.33m }, { "SPY", 0.17m }, { "CASH", 0.0m } } },
-                { new DateTime(2009, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.51m }, { "LQD", 0.29m }, { "SPY", 0.2m }, { "CASH", 0.0m } } },
-                { new DateTime(2009, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.44m }, { "LQD", 0.32m }, { "SPY", 0.24m }, { "CASH", 0.0m } } },
-                { new DateTime(2009, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.41m }, { "LQD", 0.37m }, { "SPY", 0.21m }, { "CASH", 0.0m } } },
-                { new DateTime(2009, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.35m }, { "LQD", 0.43m }, { "SPY", 0.22m }, { "CASH", 0.0m } } },
-                { new DateTime(2009, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.25m }, { "LQD", 0.51m }, { "SPY", 0.24m }, { "CASH", 0.0m } } },
-                { new DateTime(2009, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.18m }, { "LQD", 0.56m }, { "SPY", 0.27m }, { "CASH", 0.0m } } },
-                { new DateTime(2009, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.1m }, { "LQD", 0.6m }, { "SPY", 0.3m }, { "CASH", 0.0m } } },
-                { new DateTime(2009, 2, 28 ), new Dictionary<string, decimal> { { "TLT", 0.11m }, { "LQD", 0.46m }, { "SPY", 0.44m }, { "CASH", 0.0m } } },
-                { new DateTime(2009, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.1m }, { "LQD", 0.51m }, { "SPY", 0.39m }, { "CASH", 0.0m } } },
-                { new DateTime(2008, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.05m }, { "LQD", 0.57m }, { "SPY", 0.38m }, { "CASH", 0.0m } } },
-                { new DateTime(2008, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.1m }, { "LQD", 0.58m }, { "SPY", 0.32m }, { "CASH", 0.0m } } },
-                { new DateTime(2008, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.16m }, { "LQD", 0.59m }, { "SPY", 0.25m }, { "CASH", 0.0m } } },
-                { new DateTime(2008, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.19m }, { "LQD", 0.5m }, { "SPY", 0.31m }, { "CASH", 0.0m } } },
-                { new DateTime(2008, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.11m }, { "LQD", 0.47m }, { "SPY", 0.42m }, { "CASH", 0.0m } } },
-                { new DateTime(2008, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.14m }, { "LQD", 0.46m }, { "SPY", 0.4m }, { "CASH", 0.0m } } },
-                { new DateTime(2008, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.12m }, { "LQD", 0.43m }, { "SPY", 0.45m }, { "CASH", 0.0m } } },
-                { new DateTime(2008, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.13m }, { "LQD", 0.44m }, { "SPY", 0.42m }, { "CASH", 0.0m } } },
-                { new DateTime(2008, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.14m }, { "LQD", 0.44m }, { "SPY", 0.42m }, { "CASH", 0.0m } } },
-                { new DateTime(2008, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.08m }, { "LQD", 0.48m }, { "SPY", 0.44m }, { "CASH", 0.0m } } },
-                { new DateTime(2008, 2, 29 ), new Dictionary<string, decimal> { { "TLT", 0.03m }, { "LQD", 0.45m }, { "SPY", 0.52m }, { "CASH", 0.0m } } },
-                { new DateTime(2008, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.04m }, { "LQD", 0.41m }, { "SPY", 0.55m }, { "CASH", 0.0m } } },
-                { new DateTime(2007, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.33m }, { "SPY", 0.67m }, { "CASH", 0.0m } } },
-                { new DateTime(2007, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.25m }, { "SPY", 0.75m }, { "CASH", 0.0m } } },
-                { new DateTime(2007, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2007, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2007, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2007, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2007, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2007, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2007, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2007, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2007, 2, 28 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2007, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2006, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2006, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2006, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2006, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2006, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2006, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2006, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2006, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2006, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2006, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2006, 2, 28 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2006, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2005, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2005, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2005, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2005, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2005, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2005, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2005, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2005, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2005, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2005, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2005, 2, 28 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2005, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 1.0m }, { "CASH", 0.0m } } },
-                { new DateTime(2004, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.11m }, { "LQD", 0.0m }, { "SPY", 0.89m }, { "CASH", 0.0m } } },
-                { new DateTime(2004, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.16m }, { "LQD", 0.0m }, { "SPY", 0.84m }, { "CASH", 0.0m } } },
-                { new DateTime(2004, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.13m }, { "LQD", 0.03m }, { "SPY", 0.85m }, { "CASH", 0.0m } } },
-                { new DateTime(2004, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.2m }, { "LQD", 0.0m }, { "SPY", 0.8m }, { "CASH", 0.0m } } },
-                { new DateTime(2004, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.22m }, { "LQD", 0.09m }, { "SPY", 0.69m }, { "CASH", 0.0m } } },
-                { new DateTime(2004, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.36m }, { "LQD", 0.05m }, { "SPY", 0.59m }, { "CASH", 0.0m } } },
-                { new DateTime(2004, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.45m }, { "LQD", 0.03m }, { "SPY", 0.53m }, { "CASH", 0.0m } } },
-                { new DateTime(2004, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.54m }, { "LQD", 0.0m }, { "SPY", 0.46m }, { "CASH", 0.0m } } },
-                { new DateTime(2004, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.51m }, { "LQD", 0.0m }, { "SPY", 0.49m }, { "CASH", 0.0m } } },
-                { new DateTime(2004, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.29m }, { "LQD", 0.12m }, { "SPY", 0.59m }, { "CASH", 0.0m } } },
-                { new DateTime(2004, 2, 29 ), new Dictionary<string, decimal> { { "TLT", 0.37m }, { "LQD", 0.09m }, { "SPY", 0.54m }, { "CASH", 0.0m } } },
-                { new DateTime(2004, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.42m }, { "LQD", 0.09m }, { "SPY", 0.5m }, { "CASH", 0.0m } } },
-                { new DateTime(2003, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.41m }, { "LQD", 0.13m }, { "SPY", 0.46m }, { "CASH", 0.0m } } },
-                { new DateTime(2003, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.46m }, { "LQD", 0.09m }, { "SPY", 0.45m }, { "CASH", 0.0m } } },
-                { new DateTime(2003, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.42m }, { "LQD", 0.15m }, { "SPY", 0.43m }, { "CASH", 0.0m } } },
-                { new DateTime(2003, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.27m }, { "LQD", 0.24m }, { "SPY", 0.5m }, { "CASH", 0.0m } } },
-                { new DateTime(2003, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.42m }, { "LQD", 0.17m }, { "SPY", 0.41m }, { "CASH", 0.0m } } },
-                { new DateTime(2003, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.43m }, { "LQD", 0.15m }, { "SPY", 0.42m }, { "CASH", 0.0m } } },
-                { new DateTime(2003, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.18m }, { "LQD", 0.27m }, { "SPY", 0.55m }, { "CASH", 0.0m } } },
-                { new DateTime(2003, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.12m }, { "LQD", 0.28m }, { "SPY", 0.6m }, { "CASH", 0.0m } } },
-                { new DateTime(2003, 4, 30 ), new Dictionary<string, decimal> { { "TLT", 0.2m }, { "LQD", 0.27m }, { "SPY", 0.53m }, { "CASH", 0.0m } } },
-                { new DateTime(2003, 3, 31 ), new Dictionary<string, decimal> { { "TLT", 0.16m }, { "LQD", 0.3m }, { "SPY", 0.54m }, { "CASH", 0.0m } } },
-                { new DateTime(2003, 2, 28 ), new Dictionary<string, decimal> { { "TLT", 0.13m }, { "LQD", 0.34m }, { "SPY", 0.53m }, { "CASH", 0.0m } } },
-                { new DateTime(2003, 1, 31 ), new Dictionary<string, decimal> { { "TLT", 0.18m }, { "LQD", 0.34m }, { "SPY", 0.48m }, { "CASH", 0.0m } } },
-                { new DateTime(2002, 12, 31 ), new Dictionary<string, decimal> { { "TLT", 0.14m }, { "LQD", 0.4m }, { "SPY", 0.46m }, { "CASH", 0.0m } } },
-                { new DateTime(2002, 11, 30 ), new Dictionary<string, decimal> { { "TLT", 0.22m }, { "LQD", 0.46m }, { "SPY", 0.33m }, { "CASH", 0.0m } } },
-                { new DateTime(2002, 10, 31 ), new Dictionary<string, decimal> { { "TLT", 0.12m }, { "LQD", 0.51m }, { "SPY", 0.37m }, { "CASH", 0.0m } } },
-                { new DateTime(2002, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.06m }, { "LQD", 0.46m }, { "SPY", 0.48m }, { "CASH", 0.0m } } },
-                { new DateTime(2002, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.14m }, { "LQD", 0.51m }, { "SPY", 0.35m }, { "CASH", 0.0m } } },
-                { new DateTime(2002, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.2m }, { "LQD", 0.53m }, { "SPY", 0.27m }, { "CASH", 0.0m } } },
-            };
 
-            return;
-        }
         public override void OnEndOfAlgorithm()
         {
             Log($"OnEndOfAlgorithm(): Backtest time: {(DateTime.UtcNow - _bnchmarkStartTime).TotalMilliseconds}ms");

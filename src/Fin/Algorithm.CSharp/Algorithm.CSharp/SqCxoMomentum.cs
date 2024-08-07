@@ -50,7 +50,7 @@ namespace QuantConnect.Algorithm.CSharp
         private Dictionary<string, List<QcDividend>> _dividends = new Dictionary<string, List<QcDividend>>();
         private Dictionary<string, List<QcSplit>> _splits = new Dictionary<string, List<QcSplit>>();
         private Dictionary<string, Dictionary<DateTime, decimal>>? _rawClosesFromYfDicts = null;
-        private int _lookbackMonths;
+        private int _lookbackMonths = 4; // It will be overwritten in ProcessAlgorithmParam function
         DateTime _bnchmarkStartTime;
         private Dividends _sliceDividends;
         bool _isEndOfMonth = false; // use Qc Schedule.On() mechanism to calculate the last trading day of the month (because of holidays complications), even using it in SqCore
@@ -153,8 +153,8 @@ namespace QuantConnect.Algorithm.CSharp
             string[] tickers = p_AlgorithmParamQuery.Get("assets")?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
             p_tickers = new List<string>(tickers);
 
-            string lookbackTradingDays = p_AlgorithmParamQuery.Get("lookbackMonth");
-            if (!int.TryParse(lookbackTradingDays, out p_lookbackMonths))
+            string lookbackMonthStr = p_AlgorithmParamQuery.Get("lookbackMonth");
+            if (!int.TryParse(lookbackMonthStr, out p_lookbackMonths))
                 p_lookbackMonths = 4;
 
             string numberOfEtfsSelected = p_AlgorithmParamQuery.Get("noETFs");
@@ -350,7 +350,16 @@ namespace QuantConnect.Algorithm.CSharp
                     lookbackMonthsAgo = new DateTime(lookbackMonthsAgo.Year, lookbackMonthsAgo.Month, DateTime.DaysInMonth(lookbackMonthsAgo.Year, lookbackMonthsAgo.Month));
 
                     // Find the closest date in the list to four months ago
-                    QcPrice closestPrice = BinarySearchClosestDate(usedAdjustedClosePrice, lookbackMonthsAgo);
+                    int index = usedAdjustedClosePrice.BinarySearch(new QcPrice { ReferenceDate = lookbackMonthsAgo }, new SqCxoCommon.QcPriceComparer());
+
+                    QcPrice closestPrice;
+                    if (index < 0)
+                    {
+                        index = ~index;
+                        closestPrice = index > 0 ? usedAdjustedClosePrice[index - 1] : null;
+                    }
+                    else
+                        closestPrice = usedAdjustedClosePrice[index];
 
                     if (closestPrice != null)
                         relMom = usedAdjustedClosePrice[usedAdjustedClosePrice.Count - 1].Close / closestPrice.Close - 1; // Calculate the relative momentum
@@ -388,28 +397,6 @@ namespace QuantConnect.Algorithm.CSharp
                 nextMonthWeights[key] = resultDict[key] ? playedWeight : 0;
 
             return nextMonthWeights;
-        }
-
-        private QcPrice BinarySearchClosestDate(List<QcPrice> p_prices, DateTime p_targetDate)
-        {
-            int left = 0;
-            int right = p_prices.Count - 1;
-
-            while (left <= right)
-            {
-                int mid = left + (right - left) / 2;
-
-                if (p_prices[mid].ReferenceDate == p_targetDate)
-                    return p_prices[mid];
-
-                if (p_prices[mid].ReferenceDate < p_targetDate)
-                    left = mid + 1;
-                else
-                    right = mid - 1;
-            }
-
-            // If not found exactly, return the closest price before the target date
-            return right >= 0 ? p_prices[right] : null;
         }
 
         private decimal PvCalculation(Dictionary<string, List<QcPrice>> p_usedAdjustedClosePrices)

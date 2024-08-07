@@ -62,6 +62,7 @@ namespace BlYahooPriceCrawler
         public required string Ticker { get; set; }
         public required string Date { get; set; }
         public Dictionary<int, float> FuturePerformances { get; set; } = [];
+        public Dictionary<int, float> FutureSpyPerformances { get; set; } = [];
         public RecommendationType Type { get; set; }
         public int StopLossDay { get; set; } = 0;
     }
@@ -84,7 +85,7 @@ namespace BlYahooPriceCrawler
         // Downloads Yahoo Finance data to CSV files for the given tickers
         public static async void DownloadYFtoCsv(string p_tickerFileName, DateTime p_expectedHistoryStartDateET, string p_targetFolder, bool p_unsafeFlag = false)
         {
-            string[] universeTickers = ReadUniverseTickers(p_tickerFileName);
+            string[] universeTickers = [.. ReadUniverseTickers(p_tickerFileName), "SPY"];
             Console.WriteLine($"Number of tickers: {universeTickers.Length}");
             foreach (string ticker in universeTickers)
             {
@@ -111,7 +112,8 @@ namespace BlYahooPriceCrawler
                     Low = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.Low, 4)
                 }).ToArray();
 
-                if (!p_unsafeFlag && ticker != "ARVLF" && ticker != "CANOQ" && ticker != "FFIE" && ticker != "FSRNQ" && ticker != "FTCHQ" && ticker != "HMFAF" && ticker != "MTC" && ticker != "NVTAQ" && ticker != "RADCQ" && ticker != "STIXF" && ticker != "WEWKQ") // Check if the prices are continuous. If there is a discontinuity (e.g., missing split), then stop and do not write the file. Except if we are in unsafe mode.
+                // Checking for significant price changes that could be YF bug
+                if (!p_unsafeFlag && ticker != "ARVLF" && ticker != "CANOQ" && ticker != "FFIE" && ticker != "FSRNQ" && ticker != "FTCHQ" && ticker != "HMFAF" && ticker != "MTC" && ticker != "NVTAQ" && ticker != "RADCQ" && ticker != "STIXF" && ticker != "VFS" && ticker != "WEWKQ") // Check if the prices are continuous. If there is a discontinuity (e.g., missing split), then stop and do not write the file. Except if we are in unsafe mode.
                 {
                     bool hasSignificantChange = false;
                     string problematicDate = string.Empty;
@@ -119,7 +121,8 @@ namespace BlYahooPriceCrawler
                     {
                         float prevAdjClose = yfRecords[i - 1].AdjClose;
                         float currAdjClose = yfRecords[i].AdjClose;
-                        if ((currAdjClose - prevAdjClose) / prevAdjClose >= 2 || (currAdjClose - prevAdjClose) / prevAdjClose <= - 2.0 / 3.0)
+                        float dailyPctChg = (currAdjClose - prevAdjClose) / prevAdjClose;
+                        if (dailyPctChg >= 2 || dailyPctChg <= - 2.0 / 3.0)
                         {
                             hasSignificantChange = true;
                             problematicDate = yfRecords[i].Date;
@@ -183,7 +186,7 @@ namespace BlYahooPriceCrawler
         }
 
         // Calculates the performance of a recommendation over various future periods
-        private static PerformanceResult CalculatePerformance(List<YFRecord> p_priceRecords, Recommendation p_recommendation, int[] p_nDayinFuture, float p_stopLossPercentage)
+        private static PerformanceResult CalculatePerformance(List<YFRecord> p_priceRecords, List<YFRecord>? p_spyRecords, Recommendation p_recommendation, int[] p_nDayinFuture, float p_stopLossPercentage)
         {
             PerformanceResult performanceResult = new()
             {
@@ -202,12 +205,28 @@ namespace BlYahooPriceCrawler
             int startRecordIndex = p_priceRecords.IndexOf(startRecord);
             float startPrice = p_priceRecords[startRecordIndex].AdjClose;
 
+            // Find the corresponding SPY record for the recommendation date
+            YFRecord? spyStartRecord = null;
+            int spyStartRecordIndex = -1;
+            float spyStartPrice = float.NaN;
+            if (p_spyRecords != null)
+            {
+                spyStartRecord = p_spyRecords.FirstOrDefault(r => string.Compare(r.Date, p_recommendation.Date) >= 0);
+                if (spyStartRecord != null)
+                {
+                    spyStartRecordIndex = p_spyRecords.IndexOf(spyStartRecord);
+                    spyStartPrice = spyStartRecord.AdjClose;
+                }
+            }
+
             // Calculate performance for each period in the future
             for (int i = 0; i < p_nDayinFuture.Length; i++)
             {
                 int nDay = p_nDayinFuture[i];
                 if (startRecordIndex + nDay >= p_priceRecords.Count)
+                {
                     performanceResult.FuturePerformances[nDay] = float.NaN;
+                }
                 else
                 {
                     float endPrice = p_priceRecords[startRecordIndex + nDay].AdjClose;
@@ -248,6 +267,20 @@ namespace BlYahooPriceCrawler
                     }
                     float nDayPerformance = (endPrice - startPrice) / startPrice;
                     performanceResult.FuturePerformances[nDay] = nDayPerformance;
+
+                    if (p_spyRecords == null || spyStartRecord == null)
+                        performanceResult.FutureSpyPerformances[nDay] = float.NaN;
+                    else
+                    {
+                        if (spyStartRecordIndex + nDay >= p_spyRecords.Count)
+                            performanceResult.FutureSpyPerformances[nDay] = float.NaN;
+                        else
+                        {
+                            float spyEndPrice = p_spyRecords[spyStartRecordIndex + nDay].AdjClose;
+                            float spyNDayPerformance = (spyEndPrice - spyStartPrice) / spyStartPrice;
+                            performanceResult.FutureSpyPerformances[nDay] = spyNDayPerformance;
+                        }
+                    }
                 }
             }
 
@@ -259,13 +292,16 @@ namespace BlYahooPriceCrawler
         {
             List<PerformanceResult> results = [];
 
+            // Load SPY data
+            List<YFRecord>? spyRecords = p_yfData.TryGetValue("SPY", out List<YFRecord>? valueSpy) ? valueSpy : null;
+
             foreach (Recommendation recommendation in p_recommendations.Recommendations)
             {
                 List<YFRecord>? tickerRecords = p_yfData.TryGetValue(recommendation.Ticker, out List<YFRecord>? value) ? value : null;
 
                 if (tickerRecords != null)
                 {
-                    PerformanceResult performanceResult = CalculatePerformance(tickerRecords, recommendation, p_nDayinFuture, p_stopLossPercentage);
+                    PerformanceResult performanceResult = CalculatePerformance(tickerRecords, spyRecords, recommendation, p_nDayinFuture, p_stopLossPercentage);
                     results.Add(performanceResult);
                 }
                 else
@@ -277,6 +313,7 @@ namespace BlYahooPriceCrawler
                         Date = recommendation.Date,
                         Type = recommendation.Type,
                         FuturePerformances = p_nDayinFuture.ToDictionary(period => period, period => float.NaN),
+                        FutureSpyPerformances = p_nDayinFuture.ToDictionary(period => period, period => float.NaN),
                         StopLossDay = 0
                     };
                     results.Add(performanceResult);
@@ -300,6 +337,8 @@ namespace BlYahooPriceCrawler
             csv.WriteField("StopLossDay");
             foreach (int period in p_periods)
                 csv.WriteField($"Perf_{period}d");
+            foreach (int period in p_periods)
+                csv.WriteField($"SpyPerf_{period}d");
             csv.NextRecord();
 
             // Write performance results
@@ -317,6 +356,13 @@ namespace BlYahooPriceCrawler
                     else
                         csv.WriteField(float.NaN);
                 }
+                foreach (int period in p_periods)
+                {
+                    if (result.FutureSpyPerformances.TryGetValue(period, out float spyValue))
+                        csv.WriteField(spyValue);
+                    else
+                        csv.WriteField(float.NaN);
+                }
                 csv.NextRecord();
             }
         }
@@ -327,7 +373,7 @@ namespace BlYahooPriceCrawler
             string recommendationFile = "D:/Temp/SATopAnalystsData.csv";
             RecommendationsFromCsv recommendationsFromCsv = ReadRecommendationsCsv(recommendationFile);
 
-            string[] tickers = recommendationsFromCsv.UniqueTickers;
+            string[] tickers = [.. recommendationsFromCsv.UniqueTickers, "SPY"];
             Dictionary<string, List<YFRecord>> yfData = ReadYahooCsvFiles(tickers, "D:/Temp/YFHist/");
 
             int[] p_nDayinFuture = [3, 5, 10, 21, 42, 63, 84, 105, 126, 189];
