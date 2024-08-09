@@ -101,3 +101,55 @@
 <div class="progressBarContainer" [ngStyle]="{'display': isProgressBarVisble ? 'block' : 'none'}">
   <div class="progressBar"></div>
 </div>
+<div *ngFor="let item of backtestStatsResults; let i = index"><br>
+  <p><b>Seasonality: </b> Displays mean and median monthly returns in order to identify seasonal patterns of <b>{{item.name}}</b>.</p>
+  <table class="tableCommon">
+    <thead>
+      <tr>
+        <th>Year</th>
+        <th>Jan</th>
+        <th>Feb</th>
+        <th>Mar</th>
+        <th>Apr</th>
+        <th>May</th>
+        <th>Jun</th>
+        <th>Jul</th>
+        <th>Aug</th>
+        <th>Sep</th>
+        <th>Oct</th>
+        <th>Nov</th>
+        <th>Dec</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>WinRate</td>
+        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonalityWinrate" [ngClass]="item > 0 ? 'positiveReturns' : 'negativeReturns'">{{item | percent:'1.2'}}</td>
+      </tr>
+      <tr>
+        <td>Medain</td>
+        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonalityMedian" [ngClass]="item > 0 ? 'positiveReturns' : 'negativeReturns'">{{item | percent:'1.2'}}</td>
+      </tr>
+      <tr>
+        <td>Mean</td>
+        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonalityAvg" [ngClass]="item > 0 ? 'positiveReturns' : 'negativeReturns'">{{item | percent:'1.2'}}</td>
+      </tr>
+      <tr>
+        <td>10yAvg</td>
+        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonality10yAvg" [ngClass]="item > 0 ? 'positiveReturns' : 'negativeReturns'">{{item | percent:'1.2'}}</td>
+      </tr>
+      <tr>
+        <td>5yAvg</td>
+        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonality5yAvg"  [ngClass]="item > 0 ? 'positiveReturns' : 'negativeReturns'">{{item | percent:'1.2'}}</td>
+      </tr>
+      <tr>
+        <td>3yAvg</td>
+        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonality3yAvg"  [ngClass]="item > 0 ? 'positiveReturns' : 'negativeReturns'">{{item | percent:'1.2'}}</td>
+      </tr>
+      <tr *ngFor="let item of m_seasonalityData[i].monthlySeasonality">
+        <td>{{item.year}}</td>
+        <td *ngFor="let retVal of item.returns" [ngClass]="retVal > 0 ? 'positiveReturns' : 'negativeReturns'">{{retVal | percent:'1.2'}}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

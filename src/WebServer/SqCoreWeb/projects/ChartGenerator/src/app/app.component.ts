@@ -5,9 +5,10 @@ import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.ut
 import { SqNgCommonUtilsTime, minDate, maxDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
 import { SqStatisticsBuilder, FinalStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
-import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle, ChartJs } from '../../../../TsLib/sq-common/backtestCommon';
+import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle, ChartJs, MonthlySeasonality, SeasonalityData } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqTreeViewComponent } from '../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
 import { parseNumberToDate } from '../../../../TsLib/sq-common/utils-common';
+import { sqAverageOfSeasonalityData, sqMedian } from '../../../../TsLib/sq-common/utils_math';
 
 type Nullable<T> = T | null;
 
@@ -29,7 +30,6 @@ export class ChrtGenDiagnostics { // have to export the class, because .mainTsTi
 }
 
 export const gChrtGenDiag: ChrtGenDiagnostics = new ChrtGenDiagnostics();
-
 
 @Component({
   selector: 'app-root',
@@ -74,6 +74,7 @@ export class AppComponent implements OnInit {
   treeViewState: TreeViewState = new TreeViewState();
   uiNestedPrtfTreeViewItems: TreeViewItem[] = [];
   isPrtfSelectionDialogVisible: boolean = false;
+  m_seasonalityData: SeasonalityData[] = [];
 
   user = {
     name: 'Anonymous',
@@ -187,6 +188,7 @@ export class AppComponent implements OnInit {
       const { firstVal: firstValDate, lastVal: lastValDate } = this.getDateRangeFromChrtData(item.chrtData);
       this.updateMinMaxDates(firstValDate, lastValDate);
       const chartItem = this.createCgTimeSeriesFromChrtData(item.chrtData, item.name, true);
+      this.m_seasonalityData.push(this.getSeasonalityData(item.chrtData));
       uiPrtfResItem.prtfChrtValues.push(chartItem);
     }
 
@@ -194,6 +196,7 @@ export class AppComponent implements OnInit {
       const { firstVal: firstValDate, lastVal: lastValDate } = this.getDateRangeFromChrtData(bmrkItem.chrtData);
       this.updateMinMaxDates(firstValDate, lastValDate);
       const chartItem = this.createCgTimeSeriesFromChrtData(bmrkItem.chrtData, bmrkItem.sqTicker, false);
+      this.m_seasonalityData.push(this.getSeasonalityData(bmrkItem.chrtData));
       uiPrtfResItem.bmrkChrtValues.push(chartItem);
     }
 
@@ -466,5 +469,114 @@ export class AppComponent implements OnInit {
       for (const child of item.children)
         this.resetThisItemAndAllChildren(child);
     }
+  }
+
+  getSeasonalityData(chartData: ChartJs): SeasonalityData {
+    const histData: ChartJs = chartData;
+    const seasonalityData = new SeasonalityData();
+    if (histData == null)
+      return seasonalityData;
+    // step1: group the data by year and month and get the last value of each month
+    // step2: calculate the monthly percentage return
+    // step2.1: example: yearMonth: 201012, value: 8.58, yearMonth: 201101, value: 13.04
+    // step2.2: return: 201101: 13.04/8.58 = 0.519
+    // step3: now store the year and return value in MonthlySeasonality: Object
+    // ex: seasonality: monthlySeasonality = [ { year:2011, returns:[0.519, 0.62, 0.75, ......] },]
+
+    // Step1: Group the data into respective months and assign the last value of each month directly
+    const groupedMonthlyReturn: { [key: string]: number } = {};
+    let date: string = '';
+    for (let i = 0; i < histData.dates.length; i++) {
+      if (histData.dateTimeFormat == 'YYYYMMDD')
+        date = SqNgCommonUtilsTime.Date2PaddedIsoStr(parseNumberToDate(histData.dates[i]));
+      else if (histData.dateTimeFormat.includes('DaysFrom')) {
+        const dateStartInd = histData.dateTimeFormat.indexOf('m');
+        const dateStartsFrom = parseNumberToDate(parseInt(histData.dateTimeFormat.substring(dateStartInd + 1)));
+        date = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(dateStartsFrom.setDate(dateStartsFrom.getDate() + histData.dates[i])));
+      } else
+        date = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(histData.dates[i] * AppComponent.cSecToMSec)); // data comes as seconds. JS uses milliseconds since Epoch.
+      const value = histData.values[i]; // Get the corresponding value
+      const [year, month] = date.split('-'); // Extract year and month from the ISO string
+      const yearMonth: string = `${year}-${month}`; // Create the 'year-month' key
+
+      groupedMonthlyReturn[yearMonth] = value; // Assign the last value encountered for this month
+    }
+
+    const isGroupedMonthlyReturnHasAtleast2DataPoints: boolean = Object.keys(groupedMonthlyReturn).length >= 2; // Ensure there are at least 2 months of data to avoid crashes when only 1 month of data is available. Example: PortfolioId: 1, Name: Test-NoUserRootPortfolio
+    if (isGroupedMonthlyReturnHasAtleast2DataPoints) {
+    // Step2: Monthly percentage return calculation
+      const monthlyPercentageReturn: { [key: string]: number } = {};
+      const yearMonthKeys: string[] = Object.keys(groupedMonthlyReturn); // e.g. keys: [2024-01, 2024-02 ...]
+      for (let i = 0; i < yearMonthKeys.length; i++) {
+        const currentMonth: string = yearMonthKeys[i];
+        const previousMonth: string = yearMonthKeys[i - 1];
+        monthlyPercentageReturn[currentMonth] = (groupedMonthlyReturn[currentMonth] - groupedMonthlyReturn[previousMonth]) / groupedMonthlyReturn[previousMonth]; // Calculate Percentage Change: For each new month, calculate the percentage change using the last stored value from the previous month.
+      }
+
+      // Step3: Group the data by year wise
+      const monthlySeasonality: MonthlySeasonality[] = [];
+      // Iterate over each key-value pair in monthlyPercentageReturn to populate the monthly seasonality data
+      for (const [yearMonth, value] of Object.entries(monthlyPercentageReturn).reverse()) { // reverse() - is used to show the latest data on top in the matrix on UI
+        const [year, month] = yearMonth.split('-'); // Extract year and month
+        const monthIndex: number = parseInt(month, 10) - 1; // Convert month to zero-based index (0 for January, 11 for December)
+
+        // Check if the seasonality data for the current year already exists
+        let existingSeasonality: MonthlySeasonality | undefined;
+        for (let i = 0; i < monthlySeasonality.length; i++) {
+          if (monthlySeasonality[i].year == year) {
+            existingSeasonality = monthlySeasonality[i];
+            break;
+          }
+        }
+
+        // If no existing seasonality data is found for the current year, create a new one
+        if (existingSeasonality == undefined) {
+          existingSeasonality = new MonthlySeasonality();
+          existingSeasonality.year = year;
+          existingSeasonality.returns = new Array(12); // Initialize an empty array with 12 elements for each month of the year
+          monthlySeasonality.push(existingSeasonality);
+        }
+
+        existingSeasonality.returns[monthIndex] = value;
+      }
+
+      seasonalityData.monthlySeasonality = monthlySeasonality;
+      // this.m_seasonalityData.push(seasonality);
+      console.log('extractMonthlySeasonality: monthlySeasonality', this.m_seasonalityData.length);
+
+      // Winrate Calculation
+      const positiveMonthlyReturnsCount: number[] = new Array(12).fill(0);
+      const negativeMonthlyReturnsCount: number[] = new Array(12).fill(0);
+
+      // Iterate over the monthly seasonality data
+      for (const mnthSeasonlity of monthlySeasonality) {
+        for (let i = 0; i < mnthSeasonlity.returns.length; i++) {
+          if (mnthSeasonlity.returns[i] > 0) // If the return is greater than zero, increment the count of positive monthly returns.
+            positiveMonthlyReturnsCount[i]++;
+          else if (mnthSeasonlity.returns[i] < 0) // If the return is less than zero, increment the count of negative monthly returns.
+            negativeMonthlyReturnsCount[i]++;
+        }
+      }
+
+      for (let i = 0; i < 12; i++) // Calculate the win rate for each month
+        seasonalityData.monthlySeasonalityWinrate[i] = positiveMonthlyReturnsCount[i] / (positiveMonthlyReturnsCount[i] + negativeMonthlyReturnsCount[i]);
+
+      const numOfYears: number = monthlySeasonality.length; // Represents the number of years of data available, used to ensure sufficient data for calculating 3, 5, and 10-year averages, preventing potential crashes.
+      seasonalityData.monthlySeasonality3yAvg = numOfYears >= 3 ? sqAverageOfSeasonalityData(monthlySeasonality, 3) : seasonalityData.monthlySeasonality3yAvg; // Calculate 3-year average
+      seasonalityData.monthlySeasonality5yAvg = numOfYears >= 5 ? sqAverageOfSeasonalityData(monthlySeasonality, 5) : seasonalityData.monthlySeasonality5yAvg; // Calculate 5-year average
+      seasonalityData.monthlySeasonality10yAvg = numOfYears >= 10 ? sqAverageOfSeasonalityData(monthlySeasonality, 10) : seasonalityData.monthlySeasonality10yAvg; // Calculate 10-year average
+      seasonalityData.monthlySeasonalityAvg = sqAverageOfSeasonalityData(monthlySeasonality, numOfYears); // Calculate overall average (mean) for all available data
+
+      // Median calculation
+      for (let i = 0; i < 12; i++) {
+        const returns: number[] = [];
+        for (let j = 0; j < monthlySeasonality.length; j++) {
+          if (monthlySeasonality[j].returns[i] != undefined && !Number.isNaN(monthlySeasonality[j].returns[i]))
+            returns.push(monthlySeasonality[j].returns[i]);
+        }
+        seasonalityData.monthlySeasonalityMedian[i] = sqMedian(returns);
+      }
+    }
+    return seasonalityData;
   }
 }

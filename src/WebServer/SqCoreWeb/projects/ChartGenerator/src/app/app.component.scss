@@ -239,3 +239,32 @@ input[type="date"]::-webkit-datetime-edit-year-field {
   opacity: 1;
   cursor: pointer;
 }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  align-items: stretch;
+  white-space: nowrap; // nowrap auto adjust the text with multiple lined to a single line
+}
+
+thead {
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.tableCommon td, th {
+  padding: 0rem;
+  border-style: ridge;
+  border-width: 0.05rem;
+  border-color: black;
+  width: 7rem;
+  text-align: center;
+}
+
+.positiveReturns {
+  color: #228B22;
+}
+
+.negativeReturns {
+  color: #FF0000;
+}
