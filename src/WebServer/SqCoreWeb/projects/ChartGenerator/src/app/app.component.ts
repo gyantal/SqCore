@@ -40,41 +40,48 @@ export class AppComponent implements OnInit {
   m_http: HttpClient;
   @ViewChild(SqTreeViewComponent) public _rootTreeComponent!: SqTreeViewComponent; // allows accessing the data from child to parent
 
-  chrtGenBacktestResults: Nullable<ChrtGenBacktestResult> = null;
-  uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[] = [];
-  _minStartDate: Date = maxDate; // recalculated based on the BacktestResult received
-  _maxEndDate: Date = minDate;
+  // Portfolios & BenchMark Sections
+  m_prtfIds: Nullable<string> = null;
+  m_treeViewState: TreeViewState = new TreeViewState();
+  m_uiNestedPrtfTreeViewItems: TreeViewItem[] = [];
+  m_allPortfolios: Nullable<PortfolioJs[]> = null;
+  m_allFolders: Nullable<FolderJs[]> = null;
+  m_prtfSelectedName: Nullable<string> = null;
+  m_prtfSelectedId: number = 0;
+  m_bmrks: Nullable<string> = null; // benchmarks
+  m_sqStatisticsbuilder: SqStatisticsBuilder = new SqStatisticsBuilder();
+  m_backtestStatsResults: FinalStatistics[] = [];
+  m_backtestedPortfolios: PortfolioJs[] = [];
+  m_backtestedBenchmarks: string[] = [];
 
-  _ultimateChrt: UltimateChart = new UltimateChart();
-  pvChrtWidth: number = 0;
-  pvChrtHeight: number = 0;
+  // BacktestResults and charts sections
+  m_chrtGenBacktestResults: Nullable<ChrtGenBacktestResult> = null;
+  m_uiChrtGenPrtfRunResults: UiChrtGenPrtfRunResult[] = [];
+  m_minStartDate: Date = maxDate; // recalculated based on the BacktestResult received
+  m_maxEndDate: Date = minDate;
+  m_ultimateChrt: UltimateChart = new UltimateChart();
+  m_pvChrtWidth: number = 0;
+  m_pvChrtHeight: number = 0;
 
-  prtfIds: Nullable<string> = null;
-  bmrks: Nullable<string> = null; // benchmarks
-  startDate: Date = new Date(); // used to filter the chart Data based on the user input
-  endDate: Date = new Date(); // used to filter the chart Data based on the user input
-  startDateStr: string = '';
-  endDateStr: string = '';
-  rangeSelection: string[] = ['YTD', '1M', '1Y', '3Y', '5Y', '10Y', 'ALL'];
-  histRangeSelected: string = 'ALL';
-  isSrvConnectionAlive: boolean = true;
-  chrtGenDiagnosticsMsg: string = 'Benchmarking time, connection speed';
-  isProgressBarVisble: boolean = false;
-  isBacktestReturned: boolean = false;
-  _sqStatisticsbuilder: SqStatisticsBuilder = new SqStatisticsBuilder();
-  backtestStatsResults: FinalStatistics[] = [];
-  _allPortfolios: Nullable<PortfolioJs[]> = null;
-  _allFolders: Nullable<FolderJs[]> = null;
-  prtfSelectedName: Nullable<string> = null;
-  prtfSelectedId: number = 0;
+  // Historical range selection
+  m_startDate: Date = new Date(); // used to filter the chart Data based on the user input
+  m_endDate: Date = new Date(); // used to filter the chart Data based on the user input
+  m_startDateStr: string = '';
+  m_endDateStr: string = '';
+  m_rangeSelection: string[] = ['YTD', '1M', '1Y', '3Y', '5Y', '10Y', 'ALL'];
+  m_histRangeSelected: string = 'ALL';
+
+  m_isSrvConnectionAlive: boolean = true;
+  m_chrtGenDiagnosticsMsg: string = 'Benchmarking time, connection speed';
+  m_isProgressBarVisble: boolean = false;
+  m_isBacktestReturned: boolean = false;
+  m_isPrtfSelectionDialogVisible: boolean = false;
+
+  m_seasonalityData: SeasonalityData[] = []; // Seasonality
+
+  // Constants
   public gPortfolioIdOffset: number = 10000;
   public static readonly cSecToMSec: number = 1000;
-  _backtestedPortfolios: PortfolioJs[] = [];
-  _backtestedBenchmarks: string[] = [];
-  treeViewState: TreeViewState = new TreeViewState();
-  uiNestedPrtfTreeViewItems: TreeViewItem[] = [];
-  isPrtfSelectionDialogVisible: boolean = false;
-  m_seasonalityData: SeasonalityData[] = [];
 
   user = {
     name: 'Anonymous',
@@ -93,15 +100,15 @@ export class AppComponent implements OnInit {
     const url = new URL(window.location.href);
     const bmrksTickers: string[] = url.searchParams.get('bmrks')!.trim().split(',');
     for (const item of bmrksTickers) {
-      if (!this._backtestedBenchmarks.includes(item)) // check if the item is included or not
-        this._backtestedBenchmarks.push(item);
+      if (!this.m_backtestedBenchmarks.includes(item)) // check if the item is included or not
+        this.m_backtestedBenchmarks.push(item);
     }
 
     this.onStartBacktests();
     this._socket = new WebSocket('wss://' + document.location.hostname + '/ws/chrtgen' + wsQueryStr); // "wss://127.0.0.1/ws/chrtgen?pids=13,2" without port number, so it goes directly to port 443, avoiding Angular Proxy redirection. ? has to be included to separate the location from the params
 
     setInterval(() => { // checking whether the connection is live or not
-      this.isSrvConnectionAlive = this._socket != null && this._socket.readyState === WebSocket.OPEN;
+      this.m_isSrvConnectionAlive = this._socket != null && this._socket.readyState === WebSocket.OPEN;
     }, 5 * 1000); // refresh at every 5 secs
   }
 
@@ -132,22 +139,22 @@ export class AppComponent implements OnInit {
             return value; // the original property will not be removed if we return the original value, not undefined
           });
           this.user.email = handshakeMsg.email;
-          this._allPortfolios = handshakeMsg.prtfsToClient;
-          this._allPortfolios?.forEach((r) => r.prtfItemType = PrtfItemType.Portfolio);
-          this._allFolders = handshakeMsg.fldrsToClient;
-          this._allFolders?.forEach((r) => r.prtfItemType = PrtfItemType.Folder);
-          this.uiNestedPrtfTreeViewItems = createTreeViewData(this._allFolders, this._allPortfolios, this.treeViewState); // process folders and portfolios
-          console.log('OnConnected, this.uiNestedPrtfTreeViewItems: ', this.uiNestedPrtfTreeViewItems);
+          this.m_allPortfolios = handshakeMsg.prtfsToClient;
+          this.m_allPortfolios?.forEach((r) => r.prtfItemType = PrtfItemType.Portfolio);
+          this.m_allFolders = handshakeMsg.fldrsToClient;
+          this.m_allFolders?.forEach((r) => r.prtfItemType = PrtfItemType.Folder);
+          this.m_uiNestedPrtfTreeViewItems = createTreeViewData(this.m_allFolders, this.m_allPortfolios, this.m_treeViewState); // process folders and portfolios
+          console.log('OnConnected, this.uiNestedPrtfTreeViewItems: ', this.m_uiNestedPrtfTreeViewItems);
           // Get the Url param of PrtfIds and fill the backtestedPortfolios
-          if (this._allPortfolios == null) // it can be null if Handshake message is wrong.
+          if (this.m_allPortfolios == null) // it can be null if Handshake message is wrong.
             return;
           const url = new URL(window.location.href);
           const prtfStrIds: string[] = url.searchParams.get('pids')!.trim().split(',');
           for (let i = 0; i < prtfStrIds.length; i++) {
-            for (let j = 0; j < this._allPortfolios.length; j++) {
-              const id = this._allPortfolios[j].id - this.gPortfolioIdOffset;
+            for (let j = 0; j < this.m_allPortfolios.length; j++) {
+              const id = this.m_allPortfolios[j].id - this.gPortfolioIdOffset;
               if (id == parseInt(prtfStrIds[i]))
-                this._backtestedPortfolios.push(this._allPortfolios[j]);
+                this.m_backtestedPortfolios.push(this.m_allPortfolios[j]);
             }
           }
           break;
@@ -164,13 +171,13 @@ export class AppComponent implements OnInit {
       }
     };
     const backtestResChartId = SqNgCommonUtils.getNonNullDocElementById('backtestPvChrt');
-    this.pvChrtWidth = backtestResChartId.clientWidth as number;
-    this.pvChrtHeight = backtestResChartId.clientHeight as number;
+    this.m_pvChrtWidth = backtestResChartId.clientWidth as number;
+    this.m_pvChrtHeight = backtestResChartId.clientHeight as number;
     // resizing the chart dynamically when the window is resized
     window.addEventListener('resize', () => {
-      this.pvChrtWidth = backtestResChartId.clientWidth as number; // we have to remember the width/height every time window is resized, because we give these to the chart
-      this.pvChrtHeight = backtestResChartId.clientHeight as number;
-      this._ultimateChrt.Redraw(this.startDate, this.endDate, this.pvChrtWidth, this.pvChrtHeight);
+      this.m_pvChrtWidth = backtestResChartId.clientWidth as number; // we have to remember the width/height every time window is resized, because we give these to the chart
+      this.m_pvChrtHeight = backtestResChartId.clientHeight as number;
+      this.m_ultimateChrt.Redraw(this.m_startDate, this.m_endDate, this.m_pvChrtWidth, this.m_pvChrtHeight);
     });
   }
 
@@ -213,13 +220,13 @@ export class AppComponent implements OnInit {
     const prtfAndBmrkChrtData: CgTimeSeries[] = uiChrtGenPrtfRunResults[0].prtfChrtValues.concat(uiChrtGenPrtfRunResults[0].bmrkChrtValues);
     const lineChrtTooltip = document.getElementById('tooltipChart') as HTMLElement;
 
-    this.startDate = this._minStartDate;
-    this.endDate = this._maxEndDate;
-    this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.startDate);
-    this.endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.endDate);
-    this.histRangeSelected = 'ALL';
-    this._ultimateChrt.Init(lineChrtDiv, lineChrtTooltip, prtfAndBmrkChrtData);
-    this._sqStatisticsbuilder.Init(prtfAndBmrkChrtData);
+    this.m_startDate = this.m_minStartDate;
+    this.m_endDate = this.m_maxEndDate;
+    this.m_startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_startDate);
+    this.m_endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_endDate);
+    this.m_histRangeSelected = 'ALL';
+    this.m_ultimateChrt.Init(lineChrtDiv, lineChrtTooltip, prtfAndBmrkChrtData);
+    this.m_sqStatisticsbuilder.Init(prtfAndBmrkChrtData);
     this.onStartOrEndDateChanged(); // will recalculate CAGR and redraw chart
   }
 
@@ -277,61 +284,61 @@ export class AppComponent implements OnInit {
 
   // Based on the DateRanges both portfolios and bmrks update the min and max dates.
   updateMinMaxDates(minDate: Date, maxDate: Date) {
-    if (minDate < this._minStartDate)
-      this._minStartDate = minDate;
+    if (minDate < this.m_minStartDate)
+      this.m_minStartDate = minDate;
 
-    if (maxDate > this._maxEndDate)
-      this._maxEndDate = maxDate;
+    if (maxDate > this.m_maxEndDate)
+      this.m_maxEndDate = maxDate;
   }
 
   onStartOrEndDateChanged() {
     // Recalculate the totalReturn and CAGR here
-    this.backtestStatsResults = this._sqStatisticsbuilder.statsResults(this.startDate, this.endDate);
-    console.log('onStartOrEndDateChanged: this._sqStatisticsbuilder', this.backtestStatsResults.length);
-    this._ultimateChrt.Redraw(this.startDate, this.endDate, this.pvChrtWidth, this.pvChrtHeight);
+    this.m_backtestStatsResults = this.m_sqStatisticsbuilder.statsResults(this.m_startDate, this.m_endDate);
+    console.log('onStartOrEndDateChanged: this._sqStatisticsbuilder', this.m_backtestStatsResults.length);
+    this.m_ultimateChrt.Redraw(this.m_startDate, this.m_endDate, this.m_pvChrtWidth, this.m_pvChrtHeight);
   }
 
   async onStartBacktests() {
-    this.isBacktestReturned = false;
+    this.m_isBacktestReturned = false;
     gChrtGenDiag.backtestRequestStartTime = new Date();
     // Remember to Show Progress bar in 2 seconds from this time.
     setTimeout(() => {
-      if (!this.isBacktestReturned) // If the backtest hasn't returned yet (still pending), show Progress bar
+      if (!this.m_isBacktestReturned) // If the backtest hasn't returned yet (still pending), show Progress bar
         this.showProgressBar();
     }, 2 * 1000);
   }
 
   onCompleteBacktests(msgObjStr: string) {
-    this.startDate = new Date(this.startDate);
-    this.endDate = new Date(this.endDate);
+    this.m_startDate = new Date(this.m_startDate);
+    this.m_endDate = new Date(this.m_endDate);
     // Whenever server backtest starts - resetting the _minStartDate and _maxEndDate
-    this._minStartDate = maxDate;
-    this._maxEndDate = minDate;
-    this.isBacktestReturned = true;
+    this.m_minStartDate = maxDate;
+    this.m_maxEndDate = minDate;
+    this.m_isBacktestReturned = true;
     gChrtGenDiag.backtestRequestReturnTime = new Date();
-    this.isProgressBarVisble = false; // If progress bar is visible => hide it
-    this.chrtGenBacktestResults = JSON.parse(msgObjStr);
-    this.updateUiWithChrtGenBacktestResults(this.chrtGenBacktestResults, this.uiChrtGenPrtfRunResults);
+    this.m_isProgressBarVisble = false; // If progress bar is visible => hide it
+    this.m_chrtGenBacktestResults = JSON.parse(msgObjStr);
+    this.updateUiWithChrtGenBacktestResults(this.m_chrtGenBacktestResults, this.m_uiChrtGenPrtfRunResults);
   }
 
   onStartBacktestsClicked() {
     if (this._socket != null && this._socket.readyState == this._socket.OPEN) {
-      this.prtfIds = ''; // empty the prtfIds
-      for (const item of this._backtestedPortfolios) // iterate to add the backtested portfolioIds selected by the user
-        this.prtfIds += item.id - this.gPortfolioIdOffset + ',';
-      this.bmrks = this._backtestedBenchmarks.join(',');
+      this.m_prtfIds = ''; // empty the prtfIds
+      for (const item of this.m_backtestedPortfolios) // iterate to add the backtested portfolioIds selected by the user
+        this.m_prtfIds += item.id - this.gPortfolioIdOffset + ',';
+      this.m_bmrks = this.m_backtestedBenchmarks.join(',');
       this.onStartBacktests();
-      this._socket.send('RunBacktest:' + '?pids=' + this.prtfIds + '&bmrks=' + this.bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
+      this._socket.send('RunBacktest:' + '?pids=' + this.m_prtfIds + '&bmrks=' + this.m_bmrks); // parameter example can be pids=1,13,6&bmrks=SPY,QQQ&start=20210101&end=20220305
     }
-    this.bmrks = ''; // we need to immediatley make it empty else there will be a blink of a bmrk value in the input box.
-    console.log('the prtfIds length is:', this.prtfIds);
+    this.m_bmrks = ''; // we need to immediatley make it empty else there will be a blink of a bmrk value in the input box.
+    console.log('the prtfIds length is:', this.m_prtfIds);
   }
 
   showProgressBar() {
     const progsBar = document.querySelector('.progressBar') as HTMLElement;
     progsBar.style.animation = ''; // Reset the animation by setting the animation property to an empty string to return to its original state
 
-    this.isProgressBarVisble = true;
+    this.m_isProgressBarVisble = true;
     const estimatedDurationInSeconds = gChrtGenDiag.serverBacktestTime / 1000;
     const estimatedDuration = estimatedDurationInSeconds <= 0 ? 4 : estimatedDurationInSeconds; // if estimatedDuration cannot be calculated than, assume 4sec
     console.log('showProgressBar: estimatedDuration', estimatedDuration);
@@ -347,55 +354,55 @@ export class AppComponent implements OnInit {
     if (div === 'chrtGenDiagnosticsMsg') {
       const totalUiResponseTime = (gChrtGenDiag.backtestRequestReturnTime.getTime() - gChrtGenDiag.backtestRequestStartTime.getTime());
       const communicationOverheadTime = totalUiResponseTime - gChrtGenDiag.serverBacktestTime;
-      if (this.isSrvConnectionAlive) {
-        this.chrtGenDiagnosticsMsg = `App constructor: ${SqNgCommonUtilsTime.getTimespanStr(gChrtGenDiag.mainTsTime, gChrtGenDiag.mainAngComponentConstructorTime)}\n` +
+      if (this.m_isSrvConnectionAlive) {
+        this.m_chrtGenDiagnosticsMsg = `App constructor: ${SqNgCommonUtilsTime.getTimespanStr(gChrtGenDiag.mainTsTime, gChrtGenDiag.mainAngComponentConstructorTime)}\n` +
         `Window loaded: ${SqNgCommonUtilsTime.getTimespanStr(gChrtGenDiag.mainTsTime, gChrtGenDiag.windowOnLoadTime)}\n` +
         '-----\n' +
         `Server backtest time: ${gChrtGenDiag.serverBacktestTime + 'ms' }\n`+
         `Total UI response: ${totalUiResponseTime +'ms'}\n` +
         `Communication Overhead: ${communicationOverheadTime +'ms'}\n`;
       } else
-        this.chrtGenDiagnosticsMsg = 'Connection to server is broken.\n Try page reload (F5).';
+        this.m_chrtGenDiagnosticsMsg = 'Connection to server is broken.\n Try page reload (F5).';
     }
   }
 
   onUserChangedHistDateRange(histPeriodSelectionSelected: string) { // selection made form the list ['YTD', '1M', '1Y', '3Y', '5Y', 'ALL']
-    this.histRangeSelected = histPeriodSelectionSelected;
+    this.m_histRangeSelected = histPeriodSelectionSelected;
     const currDateET: Date = new Date(); // gets today's date
-    if (this.histRangeSelected === 'YTD')
-      this.startDate = new Date(SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.getFullYear() - 1, 11, 31)));
-    else if (this.histRangeSelected.toLowerCase().endsWith('y')) {
-      const lbYears = parseInt(this.histRangeSelected.substr(0, this.histRangeSelected.length - 1), 10);
-      this.startDate = new Date(SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.setFullYear(currDateET.getFullYear() - lbYears))));
-    } else if (this.histRangeSelected.toLowerCase().endsWith('m')) {
-      const lbMonths = parseInt(this.histRangeSelected.substr(0, this.histRangeSelected.length - 1), 10);
-      this.startDate = new Date(SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.setMonth(currDateET.getMonth() - lbMonths))));
-    } else if (this.histRangeSelected === 'ALL')
-      this.startDate = this._minStartDate;
-    this.startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.startDate);
-    this.endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this._maxEndDate); // Interestingly, when we change this which is bind to the date input html element, then the onChangeStartOrEndDate() is not called.
-    this.endDate = this._maxEndDate;
+    if (this.m_histRangeSelected === 'YTD')
+      this.m_startDate = new Date(SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.getFullYear() - 1, 11, 31)));
+    else if (this.m_histRangeSelected.toLowerCase().endsWith('y')) {
+      const lbYears = parseInt(this.m_histRangeSelected.substr(0, this.m_histRangeSelected.length - 1), 10);
+      this.m_startDate = new Date(SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.setFullYear(currDateET.getFullYear() - lbYears))));
+    } else if (this.m_histRangeSelected.toLowerCase().endsWith('m')) {
+      const lbMonths = parseInt(this.m_histRangeSelected.substr(0, this.m_histRangeSelected.length - 1), 10);
+      this.m_startDate = new Date(SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(currDateET.setMonth(currDateET.getMonth() - lbMonths))));
+    } else if (this.m_histRangeSelected === 'ALL')
+      this.m_startDate = this.m_minStartDate;
+    this.m_startDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_startDate);
+    this.m_endDateStr = SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_maxEndDate); // Interestingly, when we change this which is bind to the date input html element, then the onChangeStartOrEndDate() is not called.
+    this.m_endDate = this.m_maxEndDate;
     this.onStartOrEndDateChanged();
   }
 
   onUserChangedStartOrEndDateWidgets() { // User entry in the input field
-    this.startDate = new Date(this.startDateStr);
-    this.endDate = new Date(this.endDateStr);
+    this.m_startDate = new Date(this.m_startDateStr);
+    this.m_endDate = new Date(this.m_endDateStr);
     this.onStartOrEndDateChanged();
   }
 
   onClickUserSelectedPortfolio(prtf: PortfolioJs) {
-    this.prtfSelectedName = prtf.name;
-    this.prtfSelectedId = prtf.id;
+    this.m_prtfSelectedName = prtf.name;
+    this.m_prtfSelectedId = prtf.id;
   }
 
   onClickPrtfSelectedForBacktest(prtfSelectedId: number) {
-    if (this._allPortfolios == null)
+    if (this.m_allPortfolios == null)
       return;
     const prtfId = prtfSelectedId - this.gPortfolioIdOffset; // remove the offset from the prtfSelectedId to get the proper Id from Db
     let prtfSelectedInd = -1;
-    for (let i = 0; i < this._backtestedPortfolios.length; i++) {
-      if (this._backtestedPortfolios[i].id == prtfId) {
+    for (let i = 0; i < this.m_backtestedPortfolios.length; i++) {
+      if (this.m_backtestedPortfolios[i].id == prtfId) {
         prtfSelectedInd = i; // get the index, if the item is found
         break;
       }
@@ -403,50 +410,50 @@ export class AppComponent implements OnInit {
 
     // If the item is not already included, proceed to add it
     if (prtfSelectedInd == -1) {
-      const allPortfoliosInd = this._allPortfolios.findIndex((item) => item.id == prtfSelectedId); // Find the index of the selected item in _allPortfolios
-      if (allPortfoliosInd != -1 && !this._backtestedPortfolios.includes(this._allPortfolios[allPortfoliosInd])) // check if the item is included or not
-        this._backtestedPortfolios.push(this._allPortfolios[allPortfoliosInd]); // Push the selected item from _allPortfolios into _backtestedPortfolios
+      const allPortfoliosInd = this.m_allPortfolios.findIndex((item) => item.id == prtfSelectedId); // Find the index of the selected item in _allPortfolios
+      if (allPortfoliosInd != -1 && !this.m_backtestedPortfolios.includes(this.m_allPortfolios[allPortfoliosInd])) // check if the item is included or not
+        this.m_backtestedPortfolios.push(this.m_allPortfolios[allPortfoliosInd]); // Push the selected item from _allPortfolios into _backtestedPortfolios
     }
-    this.prtfSelectedName = ''; // clearing the textbox after inserting the prtf.
+    this.m_prtfSelectedName = ''; // clearing the textbox after inserting the prtf.
   }
 
   onClickClearBacktestedPortfolios() { // clear the user selected backtested portfolios
-    this._backtestedPortfolios.length = 0;
+    this.m_backtestedPortfolios.length = 0;
   }
 
   onClickBmrkSelectedForBacktest() {
-    const bmrkArray: string[] = this.bmrks!.trim().split(',');
+    const bmrkArray: string[] = this.m_bmrks!.trim().split(',');
     for (const item of bmrkArray) {
-      if (!this._backtestedBenchmarks.includes(item)) // check if the item is included or not
-        this._backtestedBenchmarks.push(item);
+      if (!this.m_backtestedBenchmarks.includes(item)) // check if the item is included or not
+        this.m_backtestedBenchmarks.push(item);
     }
-    this.bmrks = ''; // clearing the textbox after inserting the bmrks.
+    this.m_bmrks = ''; // clearing the textbox after inserting the bmrks.
   }
 
   onClickClearBacktestedBnmrks() { // clear the user selected backtested Benchmarks
-    this._backtestedBenchmarks.length = 0;
+    this.m_backtestedBenchmarks.length = 0;
   }
 
   onClickSelectFromTree() {
-    this.isPrtfSelectionDialogVisible = !this.isPrtfSelectionDialogVisible;
+    this.m_isPrtfSelectionDialogVisible = !this.m_isPrtfSelectionDialogVisible;
   }
 
   onClickPrtfSelectedFromTreeView() {
     // Collect checked items locally
     const checkedItems: TreeViewItem[] = [];
-    this.collectCheckedItemsAndAllChildren(this.uiNestedPrtfTreeViewItems, checkedItems);
+    this.collectCheckedItemsAndAllChildren(this.m_uiNestedPrtfTreeViewItems, checkedItems);
 
     for (const checkedItem of checkedItems) {
-      const portfolioItem = this._allPortfolios!.find((item) => item.id == checkedItem.id);
-      if (portfolioItem != null && !this._backtestedPortfolios.includes(portfolioItem))
-        this._backtestedPortfolios.push(portfolioItem);
+      const portfolioItem = this.m_allPortfolios!.find((item) => item.id == checkedItem.id);
+      if (portfolioItem != null && !this.m_backtestedPortfolios.includes(portfolioItem))
+        this.m_backtestedPortfolios.push(portfolioItem);
     }
 
     // Reset PrtfTreeviewItems state
-    for (const item of this.uiNestedPrtfTreeViewItems)
+    for (const item of this.m_uiNestedPrtfTreeViewItems)
       this.resetThisItemAndAllChildren(item);
 
-    this.isPrtfSelectionDialogVisible = false;
+    this.m_isPrtfSelectionDialogVisible = false;
   }
 
   collectCheckedItemsAndAllChildren(prtfTreeViewItems: TreeViewItem[], checkedItems: TreeViewItem[]) {

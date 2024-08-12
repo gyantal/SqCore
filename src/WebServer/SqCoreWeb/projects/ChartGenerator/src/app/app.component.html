@@ -1,8 +1,8 @@
 <div class="mainDiv1">
   <h4>Chart Generator</h4>
-  <div class="chrtGenDiagnosticsMsg" (mouseenter)="mouseEnter('chrtGenDiagnosticsMsg')" title="{{chrtGenDiagnosticsMsg}}">
+  <div class="chrtGenDiagnosticsMsg" (mouseenter)="mouseEnter('m_chrtGenDiagnosticsMsg')" title="{{m_chrtGenDiagnosticsMsg}}">
       <svg version="1.0" xmlns="http://www.w3.org/2000/svg" width="4rem" height="1.5rem" viewBox="0 0 159 153" preserveAspectRatio="xMidYMid meet">
-          <g [ngStyle]="{'fill': isSrvConnectionAlive ? 'green' : 'red'}" transform="translate(0.0,153.0) scale(0.10,-0.10)">
+          <g [ngStyle]="{'fill': m_isSrvConnectionAlive ? 'green' : 'red'}" transform="translate(0.0,153.0) scale(0.10,-0.10)">
             <path d="M491 1484 c-84 -23 -150 -63 -227 -139 -111 -111 -161 -239 -151
                   -390 25 -366 391 -587 730 -442 l49 20 221 -220 c122 -121 230 -223 239 -226
                   24 -8 76 11 88 33 6 10 10 34 10 52 0 30 -22 55 -216 249 l-217 217 26 34 c80
@@ -22,31 +22,31 @@
   <span class="commonColStyle" id="portfolios">
     <span>Portfolios:
       <button class="btnCommon" (click)="onClickSelectFromTree()">Select from tree...</button>
-      <div id="prtfSelectionDialog" [ngStyle]="{'display': isPrtfSelectionDialogVisible ? 'block' : 'none'}">
-        <button class="btnCommon" (click)="onClickPrtfSelectedFromTreeView()" [ngClass]="treeViewState.lastSelectedItem?.isSelected ? 'btnEnabled': 'btnDisabled'">Insert</button> &nbsp;
-        <app-sq-tree-view [items]="uiNestedPrtfTreeViewItems" [treeViewState]="treeViewState" [rootTreeViewComponent]="_rootTreeComponent" [m_useCheckboxes]=true></app-sq-tree-view>
+      <div id="prtfSelectionDialog" [ngStyle]="{'display': m_isPrtfSelectionDialogVisible ? 'block' : 'none'}">
+        <button class="btnCommon" (click)="onClickPrtfSelectedFromTreeView()" [ngClass]="m_treeViewState.lastSelectedItem?.isSelected ? 'btnEnabled': 'btnDisabled'">Insert</button> &nbsp;
+        <app-sq-tree-view [items]="m_uiNestedPrtfTreeViewItems" [treeViewState]="m_treeViewState" [rootTreeViewComponent]="_rootTreeComponent" [m_useCheckboxes]=true></app-sq-tree-view>
       </div>
       <br>
       <span class="selectionDropDown">
-        <input class="highlightInputBox prtfInputWidth" type="text" [(ngModel)]="prtfSelectedName">
+        <input class="highlightInputBox prtfInputWidth" type="text" [(ngModel)]="m_prtfSelectedName">
         <div class="listDropDown">
-          <option class="optionDropDown" *ngFor="let item of _allPortfolios" [value]="item.name" (click)="onClickUserSelectedPortfolio(item)">{{item.id}} : {{item.name}}</option>
+          <option class="optionDropDown" *ngFor="let item of m_allPortfolios" [value]="item.name" (click)="onClickUserSelectedPortfolio(item)">{{item.id}} : {{item.name}}</option>
         </div>&nbsp;
       </span>
-      <button class="btnCommon" (click)="onClickPrtfSelectedForBacktest(prtfSelectedId)">InsertOld</button>
-      <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedPortfolios">{{item.name}}</div>&nbsp;
+      <button class="btnCommon" (click)="onClickPrtfSelectedForBacktest(m_prtfSelectedId)">InsertOld</button>
+      <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of m_backtestedPortfolios">{{item.name}}</div>&nbsp;
       <span>
-        <button class="btnCommon" (click)="onClickClearBacktestedPortfolios()" [disabled]="_backtestedPortfolios.length <= 0">Clear</button>
+        <button class="btnCommon" (click)="onClickClearBacktestedPortfolios()" [disabled]="m_backtestedPortfolios.length <= 0">Clear</button>
       </span>
     </span>&nbsp;<br>
   </span>
   <span class="commonColStyle" id="stockAndIndexes">
     StockAndIndexes<br>
-    <span>Benchmarks: <input class="highlightInputBox" oninput="this.value = this.value.toUpperCase()" id="bmrks" type="text" [(ngModel)]="bmrks"></span>&nbsp;
+    <span>Benchmarks: <input class="highlightInputBox" oninput="this.value = this.value.toUpperCase()" id="bmrks" type="text" [(ngModel)]="m_bmrks"></span>&nbsp;
     <button class="btnCommon" (click)="onClickBmrkSelectedForBacktest()">Insert</button>
-    <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of _backtestedBenchmarks">{{item}}</div>&nbsp;
+    <div class="backtestPrtfOrBmrkSelected" *ngFor="let item of m_backtestedBenchmarks">{{item}}</div>&nbsp;
     <span>
-      <button class="btnCommon" (click)="onClickClearBacktestedBnmrks()" [disabled]="_backtestedBenchmarks.length <= 0">Clear</button>
+      <button class="btnCommon" (click)="onClickClearBacktestedBnmrks()" [disabled]="m_backtestedBenchmarks.length <= 0">Clear</button>
     </span>
   </span>
   <span class="commonColStyle" id="techIndicators">
@@ -58,14 +58,14 @@
   <span>
     <span class="range">Range:
       <div class="selectionDropDown">
-        <input id="histPeriodInput" class="highlightInputbox rangeInputWidth" type="text" oninput="this.value = this.value.toUpperCase()" [(ngModel)]="histRangeSelected" (change)="onUserChangedHistDateRange(histRangeSelected)">
+        <input id="histPeriodInput" class="highlightInputbox rangeInputWidth" type="text" oninput="this.value = this.value.toUpperCase()" [(ngModel)]="m_histRangeSelected" (change)="onUserChangedHistDateRange(m_histRangeSelected)">
         <div class="listDropDown">
-          <option class="optionDropDown" *ngFor="let item of rangeSelection" [value]="item" (click)="onUserChangedHistDateRange(item)">{{item}}</option>
+          <option class="optionDropDown" *ngFor="let item of m_rangeSelection" [value]="item" (click)="onUserChangedHistDateRange(item)">{{item}}</option>
         </div>
       </div>
     </span>&nbsp;
-    <span>Start: <input class="startAndEndDate" type="date" id="StartDate" name="startDate" min="1975-01-01" [(ngModel)]="startDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;
-    <span>End: <input class="startAndEndDate" type="date" id="EndDate" name="EndDate" min="1975-01-01" max="2040-01-01" [(ngModel)]="endDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;&nbsp;
+    <span>Start: <input class="startAndEndDate" type="date" id="StartDate" name="startDate" min="1975-01-01" [(ngModel)]="m_startDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;
+    <span>End: <input class="startAndEndDate" type="date" id="EndDate" name="EndDate" min="1975-01-01" max="2040-01-01" [(ngModel)]="m_endDateStr" (change)="onUserChangedStartOrEndDateWidgets()"></span>&nbsp;&nbsp;
     <button class="backtestBtn btnCommon" (click)="onStartBacktestsClicked()">Start Server Backtest</button>
   </span><br><br>
   <span>Portfolio Value Chart</span>
@@ -73,7 +73,7 @@
     <div id="pfRunResultChrt"></div>
     <div id='tooltipChart'></div>
   </div>
-  <div *ngFor="let item of uiChrtGenPrtfRunResults">
+  <div *ngFor="let item of m_uiChrtGenPrtfRunResults">
     <div *ngFor="let lg of item.sqLogs">
       <div [ngClass]="lg.sqLogLevel == ('Error' || 'Warn') ? 'errWarnLog' : 'infoLog'" *ngIf="lg.message != null">{{lg.message}}</div>
     </div>
@@ -83,14 +83,14 @@
       <thead>
         <tr>
           <th>Statistics</th>
-          <th *ngFor="let item of backtestStatsResults">{{item.name}}</th>
+          <th *ngFor="let item of m_backtestStatsResults">{{item.name}}</th>
         </tr>
       </thead>
       <tbody>
-        <ng-container *ngFor="let name of _sqStatisticsbuilder.StatNames">
+        <ng-container *ngFor="let name of m_sqStatisticsbuilder.StatNames">
           <tr [ngStyle]="{'font-weight': (name == 'CAGR' || name == 'Sharpe' || name == 'MaxDD') ? 'bold' : ''}">
             <td>{{name}}</td>
-            <td *ngFor="let item of backtestStatsResults">{{(name == 'Sharpe' || (name == 'CagrSharpe')) ? (item.stats[name] | number:'1.2-2') : ((name == 'MaxDDStartDate' || name == 'MaxDDEndDate') ? (item.stats[name] | date:'YYYY-MM-dd') : (item.stats[name] | percent:'0.2'))}}</td> <!-- we display the sharpe/CagrSharpe ratio without % by using number pipe and dates with Date pipe-->
+            <td *ngFor="let item of m_backtestStatsResults">{{(name == 'Sharpe' || (name == 'CagrSharpe')) ? (item.stats[name] | number:'1.2-2') : ((name == 'MaxDDStartDate' || name == 'MaxDDEndDate') ? (item.stats[name] | date:'YYYY-MM-dd') : (item.stats[name] | percent:'0.2'))}}</td> <!-- we display the sharpe/CagrSharpe ratio without % by using number pipe and dates with Date pipe-->
           </tr>
         </ng-container>
       </tbody>
@@ -98,10 +98,10 @@
   </div>
 </div>
 <!-- Progress bar -->
-<div class="progressBarContainer" [ngStyle]="{'display': isProgressBarVisble ? 'block' : 'none'}">
+<div class="progressBarContainer" [ngStyle]="{'display': m_isProgressBarVisble ? 'block' : 'none'}">
   <div class="progressBar"></div>
 </div>
-<div *ngFor="let item of backtestStatsResults; let i = index"><br>
+<div *ngFor="let item of m_backtestStatsResults; let i = index"><br>
   <p><b>Seasonality: </b> Displays mean and median monthly returns in order to identify seasonal patterns of <b>{{item.name}}</b>.</p>
   <table class="tableCommon">
     <thead>
