@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
-import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, ChartJs, MonthlySeasonality, SeasonalityData } from '../../../../TsLib/sq-common/backtestCommon';
+import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, updateUiWithSeasonalityMatrix } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
-import { sqAverageOfSeasonalityData, sqMedian } from '../../../../TsLib/sq-common/utils_math';
 
 class HandshakeMessage {
   public email = '';
@@ -203,7 +202,8 @@ export class AppComponent {
     });
     updateUiWithPrtfRunResult(this.m_prtfRunResult, this.m_uiPrtfRunResult, this.m_chrtWidth, this.m_chrtHeight);
     this.getFundamentalData();
-    this.getSeasonalityData();
+    this.m_prtfRunResult!.chrtData.dateTimeFormat = 'SecSince1970'; // TBD - We receive the default dateTimeFormat as 'YYYYMMDD' from the server, but since the actual dateTimeFormat is in seconds, we should change it to 'secSince1970'.
+    this.m_seasonalityData = updateUiWithSeasonalityMatrix(this.m_prtfRunResult!.chrtData);
   }
 
   getFundamentalData() {
@@ -564,97 +564,5 @@ export class AppComponent {
         this.m_editedTrade.time = new Date(this.m_editedTrade.time.setDate(this.m_editedTrade.time.getDate() - 2));
     }
     this.updateEditedTradePriceFromPrHist();
-  }
-
-  getSeasonalityData() {
-    const histData: ChartJs | undefined = this.m_prtfRunResult?.chrtData;
-    if (histData == null)
-      return;
-    // step1: group the data by year and month and get the last value of each month
-    // step2: calculate the monthly percentage return
-    // step2.1: example: yearMonth: 201012, value: 8.58, yearMonth: 201101, value: 13.04
-    // step2.2: return: 201101: 13.04/8.58 = 0.519
-    // step3: now store the year and return value in MonthlySeasonality: Object
-    // ex: seasonality: monthlySeasonality = [ { year:2011, returns:[0.519, 0.62, 0.75, ......] },]
-
-    // Step1: Group the data into respective months and assign the last value of each month directly
-    const groupedMonthlyReturn: { [key: string]: number } = {};
-    for (let i = 0; i < histData.dates.length; i++) {
-      const date = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(histData.dates[i] * 1000)); // Convert timestamp to ISO string
-      const value = histData.values[i]; // Get the corresponding value
-      const [year, month] = date.split('-'); // Extract year and month from the ISO string
-      const yearMonth: string = `${year}-${month}`; // Create the 'year-month' key
-
-      groupedMonthlyReturn[yearMonth] = value; // Assign the last value encountered for this month
-    }
-
-    // Step2: Monthly percentage return calculation
-    const monthlyPercentageReturn: { [key: string]: number } = {};
-    const yearMonthKeys: string[] = Object.keys(groupedMonthlyReturn); // e.g. keys: [2024-01, 2024-02 ...]
-    for (let i = 0; i < yearMonthKeys.length; i++) {
-      const currentMonth: string = yearMonthKeys[i];
-      const previousMonth: string = yearMonthKeys[i - 1];
-      monthlyPercentageReturn[currentMonth] = (groupedMonthlyReturn[currentMonth] - groupedMonthlyReturn[previousMonth]) / groupedMonthlyReturn[previousMonth]; // Calculate Percentage Change: For each new month, calculate the percentage change using the last stored value from the previous month.
-    }
-
-    // Step3: Group the data by year wise
-    const monthlySeasonality: MonthlySeasonality[] = [];
-    // Iterate over each key-value pair in monthlyPercentageReturn to populate the monthly seasonality data
-    for (const [yearMonth, value] of Object.entries(monthlyPercentageReturn).reverse()) { // reverse() - is used to show the latest data on top in the matrix on UI
-      const [year, month] = yearMonth.split('-'); // Extract year and month
-      const monthIndex: number = parseInt(month, 10) - 1; // Convert month to zero-based index (0 for January, 11 for December)
-
-      // Check if the seasonality data for the current year already exists
-      let existingSeasonality: MonthlySeasonality | undefined;
-      for (let i = 0; i < monthlySeasonality.length; i++) {
-        if (monthlySeasonality[i].year == year) {
-          existingSeasonality = monthlySeasonality[i];
-          break;
-        }
-      }
-
-      // If no existing seasonality data is found for the current year, create a new one
-      if (existingSeasonality == undefined) {
-        existingSeasonality = new MonthlySeasonality();
-        existingSeasonality.year = year;
-        existingSeasonality.returns = new Array(12); // Initialize an empty array with 12 elements for each month of the year
-        monthlySeasonality.push(existingSeasonality);
-      }
-
-      existingSeasonality.returns[monthIndex] = value;
-    }
-    this.m_seasonalityData.monthlySeasonality = monthlySeasonality;
-
-    // Winrate Calculation
-    const positiveMonthlyReturnsCount: number[] = new Array(12).fill(0);
-    const negativeMonthlyReturnsCount: number[] = new Array(12).fill(0);
-
-    // Iterate over the monthly seasonality data
-    for (const mnthSeasonlity of this.m_seasonalityData.monthlySeasonality) {
-      for (let i = 0; i < mnthSeasonlity.returns.length; i++) {
-        if (mnthSeasonlity.returns[i] > 0) // If the return is greater than zero, increment the count of positive monthly returns.
-          positiveMonthlyReturnsCount[i]++;
-        else if (mnthSeasonlity.returns[i] < 0) // If the return is less than zero, increment the count of negative monthly returns.
-          negativeMonthlyReturnsCount[i]++;
-      }
-    }
-
-    for (let i = 0; i < 12; i++) // Calculate the win rate for each month
-      this.m_seasonalityData.monthlySeasonalityWinrate[i] = positiveMonthlyReturnsCount[i] / (positiveMonthlyReturnsCount[i] + negativeMonthlyReturnsCount[i]);
-
-    this.m_seasonalityData.monthlySeasonality3yAvg = sqAverageOfSeasonalityData(monthlySeasonality, 3); // Calculate 3-year average
-    this.m_seasonalityData.monthlySeasonality5yAvg = sqAverageOfSeasonalityData(monthlySeasonality, 5); // Calculate 5-year average
-    this.m_seasonalityData.monthlySeasonality10yAvg = sqAverageOfSeasonalityData(monthlySeasonality, 10); // Calculate 10-year average
-    this.m_seasonalityData.monthlySeasonalityAvg = sqAverageOfSeasonalityData(monthlySeasonality, monthlySeasonality.length); // Calculate overall average (mean) for all available data
-
-    // Median calculation
-    for (let i = 0; i < 12; i++) {
-      const returns: number[] = [];
-      for (let j = 0; j < monthlySeasonality.length; j++) {
-        if (monthlySeasonality[j].returns[i] != undefined && !Number.isNaN(monthlySeasonality[j].returns[i]))
-          returns.push(monthlySeasonality[j].returns[i]);
-      }
-      this.m_seasonalityData.monthlySeasonalityMedian[i] = sqMedian(returns);
-    }
   }
 }
