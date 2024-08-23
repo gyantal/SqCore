@@ -1,6 +1,7 @@
 // **** Used in LiveStrategies and Volatality visualizer ****
 import * as d3 from 'd3';
 import { UiChrtval } from './sq-globals';
+import { UiSeasonalityChartPoint } from './backtestCommon';
 
 export function shortMonthFormat(date: any) : string {
   const formatMillisec = d3.timeFormat('.%L');
@@ -386,4 +387,65 @@ export function drawHistChartFromData(chrtData1: UiChrtval[], chrtData2: UiChrtv
         .attr('transform', 'translate(' + inputWidth * -1 + ',' + chrtScaleY(r.sdaClose) + ')')
         .attr('x2', inputWidth + inputWidth);
   }
+}
+
+export function drawBarChartFromSeasonalityData(meanAndMedianSeasonalityData: UiSeasonalityChartPoint[], barChrtDiv: HTMLElement, chartWidth: number, chartHeight: number, margin: any) {
+  const colorRange = d3.scaleOrdinal().range(['#36454F', '#FF7518']);
+  const subGroupKeys = Object.keys(meanAndMedianSeasonalityData[0]).filter((key) => key !== 'month'); // Dynamically find subgroup keys(ex: mean and median are the subgroups)
+
+  const yMinAxis: number = Math.min(d3.min(meanAndMedianSeasonalityData, (r:{ mean: number; }) => r.mean) ?? 0, d3.min(meanAndMedianSeasonalityData, (r:{ median: number; }) => r.median) ?? 0); // find the min from both mean and median
+  const yMaxAxis: number = Math.max(d3.max(meanAndMedianSeasonalityData, (r:{ mean: number; }) => r.mean) ?? 0, d3.max(meanAndMedianSeasonalityData, (r:{ median: number; }) => r.median) ?? 0); // find the max from both mean and median
+  const yAxisRangeBuffer = (yMaxAxis - yMinAxis) * 0.1; // A buffer(10%) added to the y-axis scale to ensure there's some padding around the highest(yMaxAxis) and lowest(yMinAxis) data points, making the graph look better.
+
+  // The scale for spacing the groups (months)
+  const monthGroupScaleX = d3.scaleBand() // positions the groups (each month) across the width of the chart
+      .domain(meanAndMedianSeasonalityData.map((d) => d.month))
+      .rangeRound([0, chartWidth])
+      .paddingInner(0.1);
+
+  // The scale for spacing each group's bar (mean, median)
+  const subgroupBarScaleX = d3.scaleBand() // positions the individual bars (for mean and median) within each group's space allocated by monthGroupScaleX
+      .domain(subGroupKeys)
+      .rangeRound([0, monthGroupScaleX.bandwidth()])
+      .padding(0.05);
+
+  // Adjust yScale to fit negative and positive values
+  const yScale = d3.scaleLinear()
+      .domain([yMinAxis - yAxisRangeBuffer, yMaxAxis + yAxisRangeBuffer])
+      .rangeRound([chartHeight, 0]);
+
+  const svgContainer = d3.select(barChrtDiv)
+      .append('svg')
+      .attr('width', chartWidth + margin.left + margin.right)
+      .attr('height', chartHeight + margin.top + margin.bottom)
+      .append('g').attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+  // Append x-axis
+  svgContainer.append('g')
+      .attr('class', 'axis')
+      .attr('transform', 'translate(0,' + chartHeight + ')')
+      .call(d3.axisBottom(monthGroupScaleX));
+
+  // Append y-axis
+  svgContainer.append('g')
+      .attr('class', 'y axis')
+      .call(d3.axisLeft(yScale).tickFormat((r:any) => r + '%'));
+
+  // Append a group element for each data point (e.g., each month)
+  // This creates a container (group) that will hold the bars (mean and median) for each data point
+  const monthGroup = svgContainer.append('g') // Create a group element in the SVG
+      .selectAll('g') // Select all existing groups (none initially)
+      .data(meanAndMedianSeasonalityData) // Bind data to the groups
+      .join('g') // Join the data and create a new group for each data point
+      .attr('transform', (d: UiSeasonalityChartPoint) => 'translate(' + monthGroupScaleX(d.month) + ',0)'); // Position each group horizontally based on the monthGroupScaleX scale
+
+  // Append rectangles (bars) within each group for each subgroup (mean, median)
+  monthGroup.selectAll('rect') // Select all rectangles (bars) within the group
+      .data((d: any) => subGroupKeys.map((key) => ({ key, value: d[key], groupKey: d.month }))) // Bind subgroup data (mean, median) to the bars
+      .join('rect') // Join the data and create a rectangle for each subgroup (mean, median)
+      .attr('fill', (d) => colorRange(d.key) as string) // Set the fill color based on the subgroup (mean or median)
+      .attr('x', (d) => subgroupBarScaleX(d.key) as number) // Position the bar horizontally within the group based on the subgroupBarScaleX
+      .attr('width', subgroupBarScaleX.bandwidth()) // Set the width of the bar based on the bandwidth of the subgroupBarScaleX
+      .attr('y', (d) => yScale(Math.max(0, d.value))) // Set the y-position based on the value, adjusting for positive/negative values
+      .attr('height', (d) => Math.abs(yScale(0) - yScale(d.value))); // Set the height of the bar based on the value
 }

@@ -259,6 +259,12 @@ export class SeasonalityData { // Container Class of every data about seasonalit
   weeklySeasonality: WeeklySeasonality[] = [];
 }
 
+export class UiSeasonalityChartPoint {
+  month: string = '';
+  mean: number = 0;
+  median: number = 0;
+}
+
 // ************************************************ //
 export function prtfsParseHelper(_this: any, key: string, value: any): boolean { // return value is isRemoveOriginal
   // eslint-disable-next-line no-invalid-this

@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
-import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, updateUiWithSeasonalityMatrix } from '../../../../TsLib/sq-common/backtestCommon';
+import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, updateUiWithSeasonalityMatrix, UiSeasonalityChartPoint } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
+import { drawBarChartFromSeasonalityData } from '../../../../TsLib/sq-common/chartSimple';
+import * as d3 from 'd3';
 
 class HandshakeMessage {
   public email = '';
@@ -204,6 +206,7 @@ export class AppComponent {
     this.getFundamentalData();
     this.m_prtfRunResult!.chrtData.dateTimeFormat = 'SecSince1970'; // TBD - We receive the default dateTimeFormat as 'YYYYMMDD' from the server, but since the actual dateTimeFormat is in seconds, we should change it to 'secSince1970'.
     this.m_seasonalityData = updateUiWithSeasonalityMatrix(this.m_prtfRunResult!.chrtData);
+    this.processUiWithSeasonalityChart(this.m_seasonalityData);
   }
 
   getFundamentalData() {
@@ -564,5 +567,25 @@ export class AppComponent {
         this.m_editedTrade.time = new Date(this.m_editedTrade.time.setDate(this.m_editedTrade.time.getDate() - 2));
     }
     this.updateEditedTradePriceFromPrHist();
+  }
+
+  processUiWithSeasonalityChart(seasonalityData: SeasonalityData) {
+    d3.selectAll('#seasonalityChrt > *').remove();
+    const barChrtDiv = document.getElementById('seasonalityChrt') as HTMLElement;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const meanAndMedianSeasonalityData: UiSeasonalityChartPoint[] = [];
+
+    for (let i = 0; i < seasonalityData.monthlySeasonalityAvg.length; i++) { // Iterate through monthly seasonality data to create chart points
+      const chartItem: UiSeasonalityChartPoint = {
+        month: months[i],
+        mean: seasonalityData.monthlySeasonalityAvg[i] * 100, // multiplying mean and median values by 100 to convert to percentages
+        median: seasonalityData.monthlySeasonalityMedian[i] * 100
+      };
+      meanAndMedianSeasonalityData.push(chartItem);
+    }
+    const margin = { top: 50, right: 100, bottom: 30, left: 60 };
+    const chartWidth = this.m_chrtWidth * 0.95 - margin.left - margin.right; // 95% of the PanelChart Width
+    const chartHeight = this.m_chrtHeight * 0.95 - margin.top - margin.bottom; // 95% of the PanelChart Height
+    drawBarChartFromSeasonalityData(meanAndMedianSeasonalityData, barChrtDiv, chartWidth, chartHeight, margin);
   }
 }
