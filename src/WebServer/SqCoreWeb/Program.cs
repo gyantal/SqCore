@@ -146,7 +146,7 @@ public partial class Program
         Console.WriteLine($"Exiting in {timeBeforeExitingSec}sec...");
         Thread.Sleep(TimeSpan.FromSeconds(timeBeforeExitingSec)); // give some seconds for long running background threads to quit
 
-            // 5. Dispose service resources
+        // 5. Dispose service resources
         KestrelWebServer_Exit();
         Services_Exit();
 
@@ -297,6 +297,7 @@ public partial class Program
         Console.WriteLine("4. YF: Test getting SPY realtime");
         Console.WriteLine("50. FinDb: Force daily YF PriceHistory Crawler for securities having MAP file");
         Console.WriteLine("51. FinDb: Test getting FundamentalData from Fundamental files");
+        Console.WriteLine("52. FinDb: Creating MAP files semi-automatically");
         Console.WriteLine("6. MemDb: Test getting PortfolioTradeHistory from RedisDb");
         Console.WriteLine("7. MemDb: Test append-writing PortfolioTradeHistory to RedisDb");
         Console.WriteLine("8. MemDb: Test delete PortfolioTradeHistory from RedisDb");
@@ -357,6 +358,19 @@ public partial class Program
                         fundamentals = FinDb.GetFundamentalData(tickers, date, propertyNames);
                     });
                     Console.WriteLine($"Ready. Example data. Meta companyName: '{fundamentals["META"][FundamentalProperty.CompanyReference_ShortName].ToString()}'");
+                }
+                catch (System.Exception e)
+                {
+                    Console.WriteLine($"Exception: {e.Message}");
+                }
+                break;
+            case "52":
+                try
+                {
+                    string[] qcOutput = { "AAPL, 19980102, Q", "TSLA, 20100629, Q", "SPY, 19980102, P", "STZ, 19980102, STZ:19980102, CBRNA:19991012, CDB:20000920, N", "HON, 19980102, HON:19980102, ALD:19991202, N" };
+                    FinDb.CreateTickers(qcOutput);
+
+                    Console.WriteLine($"Ready. Map files were successfully created.");
                 }
                 catch (System.Exception e)
                 {

@@ -142,6 +142,8 @@ namespace QuantConnect.Algorithm.CSharp
             SetStartDate(_startDate); // by default it is 1998-01-02. If we don't call SetStartDate(), still, the PV value chart will start from 1998
             SetEndDate(_endDate);
 
+            _allocationSchedule = SqCxoCommon.AllocationByMonth();
+
             // *** Only in QcCloud: YF data download. Part 2
             if (IsTradeInQcCloud)
                 QCAlgorithmUtils.DownloadAndProcessYfData(this, _tickersCombined, _earliestUsableDataDay, _warmUp, _endDate, out _rawClosesFromYfDicts);
@@ -459,8 +461,6 @@ namespace QuantConnect.Algorithm.CSharp
 
         private Dictionary<string, decimal> HistPerfCalcValue()
         {
-            _allocationSchedule = SqCxoCommon.AllocationByMonth();
-
             // Get the last trading day
             DateTime lastTradingDay = this.Time.Date;
 
