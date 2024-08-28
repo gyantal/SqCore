@@ -440,12 +440,60 @@ export function drawBarChartFromSeasonalityData(meanAndMedianSeasonalityData: Ui
       .attr('transform', (d: UiSeasonalityChartPoint) => 'translate(' + monthGroupScaleX(d.month) + ',0)'); // Position each group horizontally based on the monthGroupScaleX scale
 
   // Append rectangles (bars) within each group for each subgroup (mean, median)
-  monthGroup.selectAll('rect') // Select all rectangles (bars) within the group
+  // Each bar is placed inside its corresponding group (month) and represents either the mean or median value
+  const seasonalityBars = monthGroup.selectAll('rect') // Select all rectangles (bars) within the group
       .data((d: any) => subGroupKeys.map((key) => ({ key, value: d[key], groupKey: d.month }))) // Bind subgroup data (mean, median) to the bars
       .join('rect') // Join the data and create a rectangle for each subgroup (mean, median)
       .attr('fill', (d) => colorRange(d.key) as string) // Set the fill color based on the subgroup (mean or median)
       .attr('x', (d) => subgroupBarScaleX(d.key) as number) // Position the bar horizontally within the group based on the subgroupBarScaleX
       .attr('width', subgroupBarScaleX.bandwidth()) // Set the width of the bar based on the bandwidth of the subgroupBarScaleX
       .attr('y', (d) => yScale(Math.max(0, d.value))) // Set the y-position based on the value, adjusting for positive/negative values
-      .attr('height', (d) => Math.abs(yScale(0) - yScale(d.value))); // Set the height of the bar based on the value
+      .attr('height', (d) => Math.abs(yScale(0) - yScale(d.value))) // Set the height of the bar based on the value
+      .on('mouseover', mouseover) // Attach mouseover event for interaction (highlight and tooltip)
+      .on('mouseout', mouseout); // Attach mouseout event to reset interactions
+
+  function mouseover(event: MouseEvent, d: any) {
+    seasonalityBars.attr('opacity', (barData) => barData.key === d.key ? 1 : 0.3); // Gray out other bars and highlight hovered bar
+    d3.select(barChrtDiv).append('div') // Show tooltip with value
+        .attr('class', 'tooltip')
+        .style('position', 'absolute')
+        .style('background-color', 'white')
+        .style('border', '1px solid black')
+        .style('border-radius', '10px')
+        .style('padding', '5px')
+        .style('left', (event.pageX + 5) + 'px')
+        .style('top', (event.pageY - 28) + 'px')
+        .html(d.value.toFixed(2) + '%');
+  }
+
+  function mouseout() {
+    seasonalityBars.attr('opacity', 1); // Reset opacity
+    d3.select('.tooltip').remove(); // Remove tooltip
+  }
+
+  // Add legend
+  const legendX = 150; // Adjust the legend's initial x position
+  const legendY = 10; // Adjust the legend's y position
+  const legendSpacing = 80; // Adjust the horizontal spacing between legend items
+
+  // Select all legend groups, bind data (subGroupKeys), and append a group for each legend item
+  const legend = svgContainer.selectAll('.legend') // Create legend groups within the main SVG container
+      .data(subGroupKeys) // Bind the subgroup keys to legend items
+      .enter().append('g') // Create a group for each legend item
+      .attr('class', 'legend') // Set the class for the legend groups
+      .attr('transform', (d, i) => `translate(${legendX + i * legendSpacing}, ${legendY})`); // Position each legend item horizontally
+
+  // Add bullet points
+  legend.append('rect')
+      .attr('x', -60) // Adjust bullet point x position relative to the text
+      .attr('width', 10) // Width of the bullet point
+      .attr('height', 10) // Height of the bullet point
+      .style('fill', (d) => colorRange(d) as string);
+
+  // Add text labels
+  legend.append('text')
+      .attr('x', -45) // Adjust text x position relative to the bullet point
+      .attr('y', 10) // Adjust text y position relative to the bullet point
+      .style('fill', (d) => colorRange(d) as string)
+      .text((d) => d);
 }
