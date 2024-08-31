@@ -393,8 +393,8 @@ export function drawBarChartFromSeasonalityData(meanAndMedianSeasonalityData: Ui
   const colorRange = d3.scaleOrdinal().range(['#36454F', '#FF7518']);
   const subGroupKeys = Object.keys(meanAndMedianSeasonalityData[0]).filter((key) => key !== 'month'); // Dynamically find subgroup keys(ex: mean and median are the subgroups)
 
-  const yMinAxis: number = Math.min(d3.min(meanAndMedianSeasonalityData, (r:{ mean: number; }) => r.mean) ?? 0, d3.min(meanAndMedianSeasonalityData, (r:{ median: number; }) => r.median) ?? 0); // find the min from both mean and median
-  const yMaxAxis: number = Math.max(d3.max(meanAndMedianSeasonalityData, (r:{ mean: number; }) => r.mean) ?? 0, d3.max(meanAndMedianSeasonalityData, (r:{ median: number; }) => r.median) ?? 0); // find the max from both mean and median
+  const yMinAxis: number = Math.min(d3.min(meanAndMedianSeasonalityData, (r:{ mean: number; }) => r.mean) || 0, d3.min(meanAndMedianSeasonalityData, (r:{ median: number; }) => r.median) || 0); // find the min from both mean and median. Error: You might need an additional loader to handle the result of these loaders. This issue is caused by the Nullish Coalescing Operator (??) during build or deployment. To resolve it, I've replaced the Nullish Coalescing Operator with the OR (||) operator. see: https://github.com/TypeStrong/ts-loader/issues/1061
+  const yMaxAxis: number = Math.max(d3.max(meanAndMedianSeasonalityData, (r:{ mean: number; }) => r.mean) || 0, d3.max(meanAndMedianSeasonalityData, (r:{ median: number; }) => r.median) || 0); // find the max from both mean and median
   const yAxisRangeBuffer = (yMaxAxis - yMinAxis) * 0.1; // A buffer(10%) added to the y-axis scale to ensure there's some padding around the highest(yMaxAxis) and lowest(yMinAxis) data points, making the graph look better.
 
   // The scale for spacing the groups (months)

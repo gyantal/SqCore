@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, updateUiWithSeasonalityMatrix, UiSeasonalityChartPoint } from '../../../../TsLib/sq-common/backtestCommon';
+import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, getSeasonalityData, UiSeasonalityChartPoint } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { drawBarChartFromSeasonalityData } from '../../../../TsLib/sq-common/chartSimple';
 import * as d3 from 'd3';
@@ -205,7 +205,7 @@ export class AppComponent {
     updateUiWithPrtfRunResult(this.m_prtfRunResult, this.m_uiPrtfRunResult, this.m_chrtWidth, this.m_chrtHeight);
     this.getFundamentalData();
     this.m_prtfRunResult!.chrtData.dateTimeFormat = 'SecSince1970'; // TBD - We receive the default dateTimeFormat as 'YYYYMMDD' from the server, but since the actual dateTimeFormat is in seconds, we should change it to 'secSince1970'.
-    this.m_seasonalityData = updateUiWithSeasonalityMatrix(this.m_prtfRunResult!.chrtData);
+    this.m_seasonalityData = getSeasonalityData(this.m_prtfRunResult!.chrtData);
     this.processUiWithSeasonalityChart(this.m_seasonalityData);
   }
 

@@ -5,7 +5,7 @@ import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.ut
 import { SqNgCommonUtilsTime, minDate, maxDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
 import { SqStatisticsBuilder, FinalStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
-import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle, ChartJs, SeasonalityData, updateUiWithSeasonalityMatrix } from '../../../../TsLib/sq-common/backtestCommon';
+import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle, ChartJs, SeasonalityData, getSeasonalityData } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqTreeViewComponent } from '../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
 import { parseNumberToDate } from '../../../../TsLib/sq-common/utils-common';
 
@@ -194,7 +194,7 @@ export class AppComponent implements OnInit {
       const { firstVal: firstValDate, lastVal: lastValDate } = this.getDateRangeFromChrtData(item.chrtData);
       this.updateMinMaxDates(firstValDate, lastValDate);
       const chartItem = this.createCgTimeSeriesFromChrtData(item.chrtData, item.name, true);
-      this.m_seasonalityData.push(updateUiWithSeasonalityMatrix(item.chrtData));
+      this.m_seasonalityData.push(getSeasonalityData(item.chrtData));
       uiPrtfResItem.prtfChrtValues.push(chartItem);
     }
 
@@ -202,7 +202,7 @@ export class AppComponent implements OnInit {
       const { firstVal: firstValDate, lastVal: lastValDate } = this.getDateRangeFromChrtData(bmrkItem.chrtData);
       this.updateMinMaxDates(firstValDate, lastValDate);
       const chartItem = this.createCgTimeSeriesFromChrtData(bmrkItem.chrtData, bmrkItem.sqTicker, false);
-      this.m_seasonalityData.push(updateUiWithSeasonalityMatrix(bmrkItem.chrtData));
+      this.m_seasonalityData.push(getSeasonalityData(bmrkItem.chrtData));
       uiPrtfResItem.bmrkChrtValues.push(chartItem);
     }
 

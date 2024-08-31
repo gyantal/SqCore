@@ -81,7 +81,7 @@ PortfolioId: {{m_portfolioId}}
         <td *ngFor="let item of this.m_seasonalityData.monthlySeasonalityWinrate" [ngClass]="item > 0 ? 'positiveReturns' : 'negativeReturns'">{{item | percent:'1.2'}}</td>
       </tr>
       <tr>
-        <td>Medain</td>
+        <td>Median</td>
         <td *ngFor="let item of this.m_seasonalityData.monthlySeasonalityMedian" [ngClass]="item > 0 ? 'positiveReturns' : 'negativeReturns'">{{item | percent:'1.2'}}</td>
       </tr>
       <tr>

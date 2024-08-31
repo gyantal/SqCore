@@ -238,7 +238,7 @@ export enum ExchangeId {
 // used in PrtfVwr and ChrtGen to process seasonality matrix
 export class MonthlySeasonality {
   year: number | string = 0;
-  returns: number[] = [];
+  returns: number[] = []; // 12 elements for January..December returns in the given year.
 }
 
 export class WeeklySeasonality {
@@ -247,7 +247,7 @@ export class WeeklySeasonality {
 }
 
 export class SeasonalityData { // Container Class of every data about seasonality.
-  monthlySeasonality: MonthlySeasonality[] = [];
+  monthlySeasonality: MonthlySeasonality[] = []; // E.g. if data is from 2023 to 2024, then this array has 2 MonthlySeasonality items for those years. Inside them, there are 12 items for the 12 months.
   // Initialize the arrays with pre-allocated memory for 12 elements, one for each month, filled with NaN.This avoids dynamic resizing compared to an empty array.
   monthlySeasonalityWinrate: number[] = new Array(12).fill(NaN);
   monthlySeasonality3yAvg: number[] = new Array(12).fill(NaN);
@@ -517,7 +517,7 @@ export function updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJ
 // Step5: Average Calculation
 // Step6: Median Calculation
 // *****************************************************
-export function updateUiWithSeasonalityMatrix(chartData: ChartJs): SeasonalityData {
+export function getSeasonalityData(chartData: ChartJs): SeasonalityData {
   const histData: ChartJs = chartData;
   const seasonalityData = new SeasonalityData();
   if (histData == null)

@@ -127,7 +127,7 @@
         <td *ngFor="let item of m_seasonalityData[i].monthlySeasonalityWinrate" [ngClass]="item > 0 ? 'positiveReturns' : 'negativeReturns'">{{item | percent:'1.2'}}</td>
       </tr>
       <tr>
-        <td>Medain</td>
+        <td>Median</td>
         <td *ngFor="let item of m_seasonalityData[i].monthlySeasonalityMedian" [ngClass]="item > 0 ? 'positiveReturns' : 'negativeReturns'">{{item | percent:'1.2'}}</td>
       </tr>
       <tr>
