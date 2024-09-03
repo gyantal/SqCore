@@ -184,3 +184,7 @@ thead {
 .negativeReturns {
   color: #FF0000;
 }
+
+.noReturns { // Applied when the seasonality returns value is NaN
+  color: #070707;
+}

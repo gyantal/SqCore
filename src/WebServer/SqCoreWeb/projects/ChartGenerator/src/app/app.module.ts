@@ -4,11 +4,13 @@ import { HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms'; // ngModel model is defined in angular/forms
 import { AppComponent } from './app.component';
 import { SqTreeViewComponent } from '../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
+import { NanToDashPctPipe } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_str';
 
 @NgModule({
   declarations: [
     AppComponent,
-    SqTreeViewComponent
+    SqTreeViewComponent,
+    NanToDashPctPipe,
   ],
   imports: [
     BrowserModule,

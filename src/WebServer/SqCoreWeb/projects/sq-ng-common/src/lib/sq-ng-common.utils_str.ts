@@ -23,7 +23,6 @@ export class SqNgCommonUtilsStr implements OnInit {
   }
 }
 
-
 @Pipe({ name: 'nanToDash'}) // In Angular data to UI is transformed via Pipes
 export class NanToDashPipe implements PipeTransform {
   transform(value: any): any {
@@ -31,6 +30,16 @@ export class NanToDashPipe implements PipeTransform {
       return '-'; // Dash ('-') is a common convention to indicate a missing or invalid value. Nicer than writing the default 'NaN'.
 
     return value;
+  }
+}
+
+@Pipe({ name: 'nanToDashPct'}) // In Angular data to UI is transformed via Pipes, special case for Seasonality data
+export class NanToDashPctPipe implements PipeTransform {
+  transform(value: any): any {
+    if (isNaN(value))
+      return '-'; // Dash ('-') is a common convention to indicate a missing or invalid value. Nicer than writing the default 'NaN'.
+
+    return (value * 100).toFixed(2) + '%'; // Convert the value to a percentage and format it with two decimal places
   }
 }
 

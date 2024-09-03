@@ -124,31 +124,31 @@
     <tbody>
       <tr>
         <td>WinRate</td>
-        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonalityWinrate" [ngClass]="item > 0 ? 'positiveReturns' : 'negativeReturns'">{{item | percent:'1.2'}}</td>
+        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonalityWinrate" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
       </tr>
       <tr>
         <td>Median</td>
-        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonalityMedian" [ngClass]="item > 0 ? 'positiveReturns' : 'negativeReturns'">{{item | percent:'1.2'}}</td>
+        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonalityMedian" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
       </tr>
       <tr>
         <td>Mean</td>
-        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonalityAvg" [ngClass]="item > 0 ? 'positiveReturns' : 'negativeReturns'">{{item | percent:'1.2'}}</td>
+        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonalityAvg" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
       </tr>
       <tr>
         <td>10yAvg</td>
-        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonality10yAvg" [ngClass]="item > 0 ? 'positiveReturns' : 'negativeReturns'">{{item | percent:'1.2'}}</td>
+        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonality10yAvg" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
       </tr>
       <tr>
         <td>5yAvg</td>
-        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonality5yAvg"  [ngClass]="item > 0 ? 'positiveReturns' : 'negativeReturns'">{{item | percent:'1.2'}}</td>
+        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonality5yAvg" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
       </tr>
       <tr>
         <td>3yAvg</td>
-        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonality3yAvg"  [ngClass]="item > 0 ? 'positiveReturns' : 'negativeReturns'">{{item | percent:'1.2'}}</td>
+        <td *ngFor="let item of m_seasonalityData[i].monthlySeasonality3yAvg" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
       </tr>
       <tr *ngFor="let item of m_seasonalityData[i].monthlySeasonality">
         <td>{{item.year}}</td>
-        <td *ngFor="let retVal of item.returns" [ngClass]="retVal > 0 ? 'positiveReturns' : 'negativeReturns'">{{retVal | percent:'1.2'}}</td>
+        <td *ngFor="let retVal of item.returns" [ngClass]="retVal > 0 ? 'positiveReturns' : (retVal < 0 ? 'negativeReturns' : 'noReturns')">{{retVal | nanToDashPct}}</td>
       </tr>
     </tbody>
   </table>
