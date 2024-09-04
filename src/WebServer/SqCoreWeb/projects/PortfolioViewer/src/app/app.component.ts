@@ -204,7 +204,6 @@ export class AppComponent {
     });
     updateUiWithPrtfRunResult(this.m_prtfRunResult, this.m_uiPrtfRunResult, this.m_chrtWidth, this.m_chrtHeight);
     this.getFundamentalData();
-    this.m_prtfRunResult!.chrtData.dateTimeFormat = 'SecSince1970'; // TBD - We receive the default dateTimeFormat as 'YYYYMMDD' from the server, but since the actual dateTimeFormat is in seconds, we should change it to 'secSince1970'.
     this.m_seasonalityData = getSeasonalityData(this.m_prtfRunResult!.chrtData);
     this.processUiWithSeasonalityChart(this.m_seasonalityData);
   }

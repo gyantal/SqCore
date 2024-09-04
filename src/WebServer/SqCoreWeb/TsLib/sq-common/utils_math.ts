@@ -60,12 +60,15 @@ export function sqAverageOfSeasonalityData(monthlySeasonality: MonthlySeasonalit
 
   for (let i = 0; i < 12; i++) {
     let returnsSum: number = 0;
+    let returnsNum: number = 0; // number of items summed
 
     for (let j = 0; j < years; j++) { // Selecting only the data from the last 'years' years
-      if (monthlySeasonality[j].returns[i] != undefined && !Number.isNaN(monthlySeasonality[j].returns[i]))
+      if (monthlySeasonality[j].returns[i] != undefined && !Number.isNaN(monthlySeasonality[j].returns[i])) {
         returnsSum += monthlySeasonality[j].returns[i];
+        returnsNum++;
+      }
     }
-    avgArray[i] = returnsSum / years;
+    avgArray[i] = returnsSum / returnsNum;
   }
   return avgArray;
 }

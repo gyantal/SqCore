@@ -490,6 +490,7 @@ public partial class MemDb
                 ChartData chartVal = new();
                 foreach (DateValue item in pv)
                 {
+                    chartVal.DateTimeFormat = "SecSince1970";
                     long unixTimeInSec = new DateTimeOffset(item.Date).ToUnixTimeSeconds();
                     chartVal.Dates.Add(unixTimeInSec);
                     if (returnOnlyTwrPv)
