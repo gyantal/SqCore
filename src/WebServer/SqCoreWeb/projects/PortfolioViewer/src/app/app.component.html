@@ -34,28 +34,25 @@ PortfolioId: {{m_portfolioId}}
   </table>
 </div>
 <div [hidden]="m_activeTab != 'Portfolio Report'">
-  <p>Portfolio Report</p>
-  <div>
-    <table id="pfStatsTable">
-      <tr>
-        <td>PV Start Value:{{m_uiPrtfRunResult.startPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
-        <td>PV Final Value:{{m_uiPrtfRunResult.endPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
-        <td>TotalReturn:{{m_uiPrtfRunResult.totalReturn | number:'1.2-2'}}%</td>
-      </tr>
-      <tr>
-        <td><b>CAGR:</b> {{m_uiPrtfRunResult.cAGR | number:'1.2-2'}}%</td>
-        <td><b>MaxDD:</b> {{m_uiPrtfRunResult.maxDD | number:'1.2-2'}}%</td>
-        <td><b>Sharpe:</b> {{m_uiPrtfRunResult.sharpe | number:'1.2-2'}}</td>
-      </tr>
-      <tr>
-        <td><b>CagrSharpe:</b> {{m_uiPrtfRunResult.cagrSharpe | number:'1.2-2'}}</td>
-        <td>StDev: {{m_uiPrtfRunResult.stDev | number:'1.2-2'}}</td>
-        <td>Max.TradingDays in DD: {{m_uiPrtfRunResult.tradingDays}}</td>
-      </tr>
-    </table>
-  </div>
+  <table id="pfStatsTable">
+    <tr>
+      <td>PV Start Value:{{m_uiPrtfRunResult.startPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
+      <td>PV Final Value:{{m_uiPrtfRunResult.endPortfolioValue | currency:'USD':'symbol':'1.0'}}</td>
+      <td>TotalReturn:{{m_uiPrtfRunResult.totalReturn | number:'1.2-2'}}%</td>
+    </tr>
+    <tr>
+      <td><b>CAGR:</b> {{m_uiPrtfRunResult.cAGR | number:'1.2-2'}}%</td>
+      <td><b>MaxDD:</b> {{m_uiPrtfRunResult.maxDD | number:'1.2-2'}}%</td>
+      <td><b>Sharpe:</b> {{m_uiPrtfRunResult.sharpe | number:'1.2-2'}}</td>
+    </tr>
+    <tr>
+      <td><b>CagrSharpe:</b> {{m_uiPrtfRunResult.cagrSharpe | number:'1.2-2'}}</td>
+      <td>StDev: {{m_uiPrtfRunResult.stDev | number:'1.2-2'}}</td>
+      <td>Max.TradingDays in DD: {{m_uiPrtfRunResult.tradingDays}}</td>
+    </tr>
+  </table>
   <div id="pfRunResultChrt"></div> <!-- portfolio run result chart  -->
-  <p><b>Seasonality: </b> Displays mean and median monthly returns in order to identify seasonal patterns.</p>
+  <p id="seasonalityText"><b>Seasonality: </b> Displays mean and median monthly returns in order to identify seasonal patterns.</p>
   <div id="seasonalityChrt"></div>
   <table class="tableCommon">
     <thead>

@@ -453,8 +453,14 @@ export function drawBarChartFromSeasonalityData(meanAndMedianSeasonalityData: Ui
       .on('mouseout', mouseout); // Attach mouseout event to reset interactions
 
   function mouseover(event: MouseEvent, d: any) {
-    seasonalityBars.attr('opacity', (barData) => barData.key === d.key ? 1 : 0.3); // Gray out other bars and highlight hovered bar
-    d3.select(barChrtDiv).append('div') // Show tooltip with value
+    // Gray out other bars and highlight hovered bar with a transition delay
+    seasonalityBars.transition()
+        .delay((barData, i) => i * 100) // delay controls when each bar's transition starts after hovering over it.
+        .duration(500) // duration controls how long the transition takes once it starts.
+        .attr('opacity', (barData) => barData.key === d.key ? 1 : 0.3); // Set full opacity for the hovered bar, reduce opacity for others.
+
+    // Show tooltip with value
+    d3.select(barChrtDiv).append('div')
         .attr('class', 'tooltip')
         .style('position', 'absolute')
         .style('background-color', 'white')
@@ -467,12 +473,14 @@ export function drawBarChartFromSeasonalityData(meanAndMedianSeasonalityData: Ui
   }
 
   function mouseout() {
-    seasonalityBars.attr('opacity', 1); // Reset opacity
+    seasonalityBars.transition()
+        .duration(100) // Short transition to smoothly restore full opacity without sudden changes
+        .attr('opacity', 1);
     d3.select('.tooltip').remove(); // Remove tooltip
   }
 
   // Add legend
-  const legendX = 150; // Adjust the legend's initial x position
+  const legendX = 80; // Adjust the legend's initial x position
   const legendY = 10; // Adjust the legend's y position
   const legendSpacing = 80; // Adjust the horizontal spacing between legend items
 

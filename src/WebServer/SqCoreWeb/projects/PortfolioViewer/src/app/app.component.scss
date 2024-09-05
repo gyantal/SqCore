@@ -31,6 +31,11 @@ thead {
   border: solid black;
   border-width: 1px 0px 1px 0;
   width: 98%;
+  margin-top: 0.3rem;
+}
+
+#pfRunResultChrt {
+  margin-top: 0.1rem;
 }
 
 #tradesSection {
@@ -175,6 +180,10 @@ thead {
   align-items: center; /* Vertically center */
   justify-content: center; /* Horizontally center */
   font-size: 0.625rem;
+}
+
+#seasonalityText {
+  margin: 0 0 0 0;
 }
 
 .positiveReturns {

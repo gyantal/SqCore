@@ -582,9 +582,9 @@ export class AppComponent {
       };
       meanAndMedianSeasonalityData.push(chartItem);
     }
-    const margin = { top: 50, right: 100, bottom: 30, left: 60 };
+    const margin = { top: 30, right: 60, bottom: 30, left: 60 };
     const chartWidth = this.m_chrtWidth * 0.95 - margin.left - margin.right; // 95% of the PanelChart Width
-    const chartHeight = this.m_chrtHeight * 0.95 - margin.top - margin.bottom; // 95% of the PanelChart Height
+    const chartHeight = this.m_chrtHeight * 0.4 - margin.top - margin.bottom; // 40% of the PanelChart Height
     drawBarChartFromSeasonalityData(meanAndMedianSeasonalityData, barChrtDiv, chartWidth, chartHeight, margin);
   }
 }
