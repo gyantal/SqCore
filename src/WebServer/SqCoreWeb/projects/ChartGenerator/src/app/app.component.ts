@@ -4,7 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { SqNgCommonUtilsTime, minDate, maxDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
-import { SqStatisticsBuilder, FinalStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
+import { SqStatisticsBuilder, StatisticsResults, DetailedStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
 import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle, ChartJs, SeasonalityData, getSeasonalityData } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqTreeViewComponent } from '../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
 import { parseNumberToDate } from '../../../../TsLib/sq-common/utils-common';
@@ -49,7 +49,8 @@ export class AppComponent implements OnInit {
   m_prtfSelectedId: number = 0;
   m_bmrks: Nullable<string> = null; // benchmarks
   m_sqStatisticsbuilder: SqStatisticsBuilder = new SqStatisticsBuilder();
-  m_backtestStatsResults: FinalStatistics[] = [];
+  m_backtestStatsResults: StatisticsResults[] = [];
+  m_detailedStatistics: DetailedStatistics[] = [];
   m_backtestedPortfolios: PortfolioJs[] = [];
   m_backtestedBenchmarks: string[] = [];
 

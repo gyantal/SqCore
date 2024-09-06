@@ -3,6 +3,7 @@ import { CgTimeSeries } from '../sq-common/backtestCommon';
 import { sqAverage, sqStdDev } from '../sq-common/utils_math';
 
 export class StatisticsResults {
+  public name: string = '';
   public TotalReturn: number = 0;
   public CAGR: number = 0;
   // public AnnualizedDailyMeanReturn: number = 0;
@@ -18,9 +19,19 @@ export class StatisticsResults {
   // public TotalFees: number = 0;
 }
 
-export class FinalStatistics {
-  public name: string = '';
-  public stats: StatisticsResults = new StatisticsResults();
+export class AnnualReturn {
+  year: number = 0;
+  return: number = 0; // 12 elements for January..December returns in the given year.
+}
+
+export class DetailedStatistics {
+  public strategyName: string = '';
+  annualReturns: AnnualReturn[] = [];
+  // public MarRatio: number = 0;
+  // public MaxDdLenInCalDays: number = 0;
+  // public MaxDdLenInTradDays: number = 0;
+  // public TotalTrades: number = 0;
+  // public TotalFees: number = 0;
 }
 
 export class SqStatisticsBuilder {
@@ -49,7 +60,7 @@ export class SqStatisticsBuilder {
     }
   }
 
-  public statsResults(startDate: Date, endDate: Date): FinalStatistics[] { // without the dataCopy
+  public statsResults(startDate: Date, endDate: Date): StatisticsResults[] { // without the dataCopy
     // 2023-08-25: We might use array.findLast(), findLastIndex() in the future, but current TS 5.2 doesn't fully support them.
     // TODO: Wait until it does support, then upgrade "typescript": "~4.6.4" in pakcage.json and bump angular 13 too.
     // https://github.com/microsoft/TypeScript/issues/48829
@@ -57,7 +68,7 @@ export class SqStatisticsBuilder {
     // Example code to test that it compiles:
     // const array1 = [5, 12, 50, 130, 44];
     // console.log(array1.findLastIndex((element) => element > 45));
-    const statsResults: FinalStatistics[] = [];
+    const statsResults: StatisticsResults[] = [];
     if (this._timeSeriess == null)
       return statsResults;
     let startingCapital: number = 0;
@@ -67,7 +78,7 @@ export class SqStatisticsBuilder {
     const startTradingDay = this.findNearestTradingDay(startDate);
     const endTradingDay = this.findNearestTradingDay(endDate);
     for (let i = 0; i < this._timeSeriess.length; i++) {
-      const statRes = new FinalStatistics();
+      const statRes = new StatisticsResults();
       statRes.name = this._timeSeriess[i].name;
       // Initialize variables to track the indices of start and end dates within the price data
       let startIndex: number = 0;
@@ -128,22 +139,22 @@ export class SqStatisticsBuilder {
       startingCapital = this._timeSeriess[i].priceData[startIndex].value;
       finalCapital = this._timeSeriess[i].priceData[endIndex].value;
       // Calculate the total return and assign it to the result object
-      statRes.stats.TotalReturn = finalCapital / startingCapital - 1;
+      statRes.TotalReturn = finalCapital / startingCapital - 1;
       const years = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
       // Calculate the Compound Annual Growth Rate (CAGR)
       if (years !== 0 && startingCapital !== 0) {
-        const cagr = Math.pow( statRes.stats.TotalReturn + 1, 1 / years) - 1; // n-th root of the total return
-        statRes.stats.CAGR = isNaN(cagr) || !isFinite(cagr) ? 0 : cagr;
+        const cagr = Math.pow( statRes.TotalReturn + 1, 1 / years) - 1; // n-th root of the total return
+        statRes.CAGR = isNaN(cagr) || !isFinite(cagr) ? 0 : cagr;
       }
       // maximum drawdown and MaxDD period start and end
-      statRes.stats.MaxDD = Math.abs(maxDD);
-      statRes.stats.MaxDDStartDate = maxDDStartDate;
-      statRes.stats.MaxDDEndDate = maxDDEndDate;
+      statRes.MaxDD = Math.abs(maxDD);
+      statRes.MaxDDStartDate = maxDDStartDate;
+      statRes.MaxDDEndDate = maxDDEndDate;
       // Calculate the sharpe ratio for the current time series
       const histAMean = sqAverage(dailyReturns) * 252; // annualized daily mean
       const histSD = sqStdDev(dailyReturns) * Math.sqrt(252); // annualized daily StDev
-      statRes.stats.Sharpe = isNaN(histSD) || !isFinite(histSD) ? 0 : (histAMean / histSD);
-      statRes.stats.CagrSharpe = isNaN(histSD) || !isFinite(histSD) ? 0 : (statRes.stats.CAGR / histSD);
+      statRes.Sharpe = isNaN(histSD) || !isFinite(histSD) ? 0 : (histAMean / histSD);
+      statRes.CagrSharpe = isNaN(histSD) || !isFinite(histSD) ? 0 : (statRes.CAGR / histSD);
 
       statsResults.push(statRes);
     }
