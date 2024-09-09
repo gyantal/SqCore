@@ -50,7 +50,12 @@ export class AppComponent implements OnInit {
   m_bmrks: Nullable<string> = null; // benchmarks
   m_sqStatisticsbuilder: SqStatisticsBuilder = new SqStatisticsBuilder();
   m_backtestStatsResults: StatisticsResults[] = [];
-  m_detailedStatistics: DetailedStatistics[] = [];
+  m_detailedStatistics: DetailedStatistics[] = [{'strategyName': 'DayaTest', 'annualReturns': [{ 'year': 2024, 'return': 0.1797841412173439 }, {'year': 2023, 'return': 0.432947473600209 }, {'year': 2022, 'return': -0.3791110378190726 },],
+    'last3YearsAnnualized': 0.081120685899949345,
+    'last5YearsAnnualized': 0.9839512641877816 },
+  {'strategyName': 'DayaTest2', 'annualReturns': [{ 'year': 2024, 'return': 0.11797841412173439 }, {'year': 2023, 'return': 0.4132947473600209 }, {'year': 2022, 'return': -0.34791110378190726 },],
+    'last3YearsAnnualized': 0.061120685899949345,
+    'last5YearsAnnualized': 0.19839512641877816 }];
   m_backtestedPortfolios: PortfolioJs[] = [];
   m_backtestedBenchmarks: string[] = [];
 

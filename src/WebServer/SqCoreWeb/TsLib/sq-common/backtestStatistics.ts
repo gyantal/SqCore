@@ -26,7 +26,10 @@ export class AnnualReturn {
 
 export class DetailedStatistics {
   public strategyName: string = '';
-  annualReturns: AnnualReturn[] = [];
+  public annualReturns: AnnualReturn[] = [];
+  public last3YearsAnnualized: number = 0;
+  public last5YearsAnnualized: number = 0;
+
   // public MarRatio: number = 0;
   // public MaxDdLenInCalDays: number = 0;
   // public MaxDdLenInTradDays: number = 0;
