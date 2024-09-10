@@ -8,7 +8,7 @@ using Flurl;
 using Flurl.Http;
 
 namespace YahooFinanceApi; // based on https://github.com/karlwancl/YahooFinanceApi // used by 240 projects
-// Also worth monitoring the source code Python YF API: https://github.com/ranaroussi/yfinance/blob/f08fe83290136d103d46d67524f5b6e7b6b827ff/yfinance/data.py // used by 34K projects
+// Also worth monitoring the source code Python YF API: https://github.com/ranaroussi/yfinance , https://github.com/ranaroussi/yfinance/blob/f08fe83290136d103d46d67524f5b6e7b6b827ff/yfinance/data.py // used by 34K projects
 
 public sealed partial class Yahoo
 {

@@ -111,9 +111,16 @@ public partial class MemDb
         {
             var assetsDates = new Dictionary<uint, SqDateOnly[]>();
             var assetsAdjustedCloses = new Dictionary<uint, float[]>();
+            int nFails = 0;
             foreach (var asset in p_assetsNeedDailyHist.Where(r => r.AssetId.AssetTypeID == AssetType.Stock || r.AssetId.AssetTypeID == AssetType.FinIndex))
             {
-                (SqDateOnly[] dates, float[] adjCloses) = await CreateDailyHist_YF(asset, potentialMissingYfSplits);
+                (SqDateOnly[] dates, float[] adjCloses, bool isSuccess) = await CreateDailyHist_YF(asset, potentialMissingYfSplits);
+                if (!isSuccess)
+                {
+                    nFails++;
+                    if (nFails > 5) // When YF doesn't work for 5+ stocks, it will not work at all. It is useless to continue. Move over to NAV histories.
+                        break;
+                }
                 if (adjCloses.Length != 0)
                 {
                     assetsDates[asset.AssetId] = dates;
@@ -334,13 +341,13 @@ public partial class MemDb
         return potentialMissingYfSplits;
     }
 
-    private static async Task<(SqDateOnly[] Dates, float[] AdjCloses)> CreateDailyHist_YF(Asset asset, Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits)
+    private static async Task<(SqDateOnly[] Dates, float[] AdjCloses, bool IsSuccess)> CreateDailyHist_YF(Asset asset, Dictionary<AssetId32Bits, List<Split>> potentialMissingYfSplits)
     {
         SqDateOnly[] dates = Array.Empty<SqDateOnly>();  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards
         float[] adjCloses = Array.Empty<float>();
 
         if (asset.ExpectedHistoryStartDateLoc == DateTime.MaxValue) // if Initial value was not overwritten. For Dead stocks, like "S/VXX*20190130"
-            return (dates, adjCloses);
+            return (dates, adjCloses, false);
 
         string yfTicker = string.Empty;
         if (asset is Stock stock)
@@ -348,7 +355,11 @@ public partial class MemDb
         else if (asset is FinIndex finIndex)
             yfTicker = finIndex.YfTicker;
         if (String.IsNullOrEmpty(yfTicker))
-            throw new SqException($"CreateDailyHist_YF() exception. Cannot download YF data (ticker:{asset.SqTicker}) has no yfTicker.");
+        {
+            Utils.Logger.Error($"CreateDailyHist_YF() error. Cannot download YF data (ticker:{asset.SqTicker}) has no yfTicker.");
+            return (dates, adjCloses, false);
+        }
+
         // https://github.com/lppkarl/YahooFinanceApi
         // YF: all the Open/High/Low/Close are always already adjusted for Splits (so, we don't have to adjust it manually);  In addition: AdjClose also adjusted for Divididends.
         // YF gives back both the onlySplit(butNotDividend)-adjusted row.Close, and SplitAndDividendAdjusted row.AdjustedClose (checked with MO dividend and USO split).
@@ -356,8 +367,19 @@ public partial class MemDb
         // https://finance.yahoo.com/quote/USO/history?p=USO The YF website queries the splits separately when it inserts in-between the rows.
         // Therefore, we have to query the splits separately from YF.
         // The startTime & endTime here defaults to EST timezone
-        IReadOnlyList<Candle?>? history = await Yahoo.GetHistoricalAsync(yfTicker, asset.ExpectedHistoryStartDateLoc, DateTime.Now, Period.Daily) // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
-            ?? throw new SqException($"CreateDailyHist_YF() exception. Cannot download YF data (ticker:{asset.SqTicker}) after many tries.");
+        IReadOnlyList<Candle?>? history = null;
+        try
+        {
+            history = await Yahoo.GetHistoricalAsync(yfTicker, asset.ExpectedHistoryStartDateLoc, DateTime.Now, Period.Daily); // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
+        }
+        catch (Exception)
+        {
+        }
+        if (history == null)
+        {
+            Utils.Logger.Error($"CreateDailyHist_YF() error. Cannot get YF data ({asset.SqTicker}) after many tries.");
+            return (dates, adjCloses, false);
+        }
 
         dates = history.Select(r => new SqDateOnly(r!.DateTime)).ToArray();
 
@@ -427,7 +449,7 @@ public partial class MemDb
                 }
             }
         }
-        return (dates, adjCloses);
+        return (dates, adjCloses, true);
     }
 
     private static void CreateDailyHist_UserNavs(IGrouping<User?, BrokerNav> navAssetsOfUser, BrokerNav? aggNavAsset, Db p_db, Dictionary<uint, SqDateOnly[]> assetsDates, Dictionary<uint, float[]> assetsAdjustedCloses)

@@ -123,7 +123,8 @@ public sealed partial class Yahoo
         }
         while (nTries <= nMaxTries);
 
-        throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{symbol}) after {nMaxTries} tries.");
+        Utils.Logger.Error($"GetTicksAsync() exception. Cannot download YF data (ticker:{symbol}) after {nMaxTries} tries.");
+        throw new Exception($"GetTicksAsync() exception. Cannot download YF data (ticker:{symbol}) after {nMaxTries} tries.");
     }
 
     private static async Task<Stream> GetResponseStreamAsync(string symbol, DateTime? startTime, DateTime? endTime, Period period, string events, CancellationToken token)
