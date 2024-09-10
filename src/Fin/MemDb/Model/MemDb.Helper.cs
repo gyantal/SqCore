@@ -488,9 +488,9 @@ public partial class MemDb
                 // Instead of the longer [{"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}]
                 // we send a shorter: { ChartDate: [1641013200, 1641013200, 1641013200], Value: [101665, 101665, 101665] }
                 ChartData chartVal = new();
+                chartVal.DateTimeFormat = "SecSince1970";
                 foreach (DateValue item in pv)
                 {
-                    chartVal.DateTimeFormat = "SecSince1970";
                     long unixTimeInSec = new DateTimeOffset(item.Date).ToUnixTimeSeconds();
                     chartVal.Dates.Add(unixTimeInSec);
                     if (returnOnlyTwrPv)
