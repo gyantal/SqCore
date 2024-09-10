@@ -218,9 +218,14 @@ public partial class MemDb
         if (dates.Length != 0)
             Debug.WriteLine($"MemDb.GetSdaHistCloses().StartDate: {dates[iStartDay]}");
 
-        IEnumerable<AssetHist> assetHists = p_assets.Select(r =>
+        foreach (Asset asset in p_assets)
         {
-            float[] sdaCloses = histData.Data[r.AssetId].Item1[TickType.SplitDivAdjClose];
+            if (!histData.Data.TryGetValue(asset.AssetId, out Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>? assetHistData))
+            {
+                Utils.Logger.Error($"MemDb.GetSdaHistCloses().Asset is missing from histData: {asset.SqTicker}");
+                continue;   // the Asset might be in MemDb, but has no history at all.
+            }
+            float[] sdaCloses = assetHistData.Item1[TickType.SplitDivAdjClose];
             // if startDate is not found, because e.g. we want to go back 3 years, while stock has only 2 years history
             int iiStartDay = (iStartDay < sdaCloses.Length) ? iStartDay : sdaCloses.Length - 1;
             if (Single.IsNaN(sdaCloses[iiStartDay]) // if that date in the global MemDb was an USA stock market holiday (e.g. President days is on monday), price is NaN for stocks, but valid value for NAV
@@ -273,11 +278,9 @@ public partial class MemDb
 
             var periodStartDateInc = (iStockFirstDay >= 0) ? (DateTime)dates[iStockFirstDay] : DateTime.MaxValue;    // it may be not the 'asked' start date if asset has less price history
             var periodEndDateInc = (iStockEndDay >= 0) ? (DateTime)dates[iStockEndDay] : DateTime.MaxValue;        // by default it is the date of yesterday, but the user can change it
-            AssetHist hist = new(r, periodStartDateInc, periodEndDateInc, stat, values);
-            return hist;
-        });
-
-        return assetHists;
+            AssetHist hist = new(asset, periodStartDateInc, periodEndDateInc, stat, values);
+            yield return hist;
+        }
     }
 
     // Called by Strategies (UberTaa,RenewedUber,Sin, VolDragVisualizer) for latest, best prices. It has to assure that the real-time prices are not too old.
@@ -307,9 +310,15 @@ public partial class MemDb
         }
         Debug.WriteLine($"MemDb.GetSdaHistCloses().StartDate: {dates[iStartDay]}");
 
-        IEnumerable<(Asset Asset, List<AssetHistValue> Values)> assetHistsAndLastEstValue = p_assets.Select(r =>
+        foreach (Asset asset in p_assets)
         {
-            float[] sdaCloses = histData.Data[r.AssetId].Item1[TickType.SplitDivAdjClose];
+            if (!histData.Data.TryGetValue(asset.AssetId, out Tuple<Dictionary<TickType, float[]>, Dictionary<TickType, uint[]>>? assetHistData))
+            {
+                Utils.Logger.Error($"MemDb.GetSdaHistCloses().Asset is missing from histData: {asset.SqTicker}");
+                continue;   // the Asset might be in MemDb, but has no history at all.
+            }
+            float[] sdaCloses = assetHistData.Item1[TickType.SplitDivAdjClose];
+
             // if startDate is not found, because e.g. we want to go back 3 years, while stock has only 2 years history
             int iiStartDay = (iStartDay < sdaCloses.Length) ? iStartDay : sdaCloses.Length - 1;
             if (Single.IsNaN(sdaCloses[iiStartDay]) // if that date in the global MemDb was an USA stock market holiday (e.g. President days is on monday), price is NaN for stocks, but valid value for NAV
@@ -332,22 +341,20 @@ public partial class MemDb
                 result.Add(new AssetHistValue() { Date = dates[i], SdaValue = val });
             }
 
-            DateTime estValueTimeLoc = r.EstValueTimeLoc;   // the priceHistory is in Local time zone. We have to convert real time DateTime UTC to local too
-            if (r.EstValueTimeLoc != DateTime.MinValue) // DateTime.MinValue indicates that it never had real-time price
+            DateTime estValueTimeLoc = asset.EstValueTimeLoc;   // the priceHistory is in Local time zone. We have to convert real time DateTime UTC to local too
+            if (asset.EstValueTimeLoc != DateTime.MinValue) // DateTime.MinValue indicates that it never had real-time price
             {
                 SqDateOnly estValueDateLoc = new(estValueTimeLoc.Date);
                 // Premarket and regular market hours: adds a new date into the result list
                 // After-market hours: avoid duplication. Don't add a new record, but overwrite the last one in history (if date matches). (check this whether the last Date in the list is the same as the realtime date)
                 bool isOverwriteLastValue = (result.Count > 0) && (result[^1].Date == estValueDateLoc);
                 if (isOverwriteLastValue)
-                    result[^1].SdaValue = r.EstValue;
+                    result[^1].SdaValue = asset.EstValue;
                 else
-                    result.Add(new AssetHistValue() { Date = estValueDateLoc, SdaValue = r.EstValue });
+                    result.Add(new AssetHistValue() { Date = estValueDateLoc, SdaValue = asset.EstValue });
             }
-            return (r, result);
-        });
-
-        return assetHistsAndLastEstValue;
+            yield return (asset, result);
+        }
     }
 
     public Trade? GetPortfolioTrade(int p_tradeHistoryId, int p_tradeId)
