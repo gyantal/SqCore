@@ -2,7 +2,8 @@ import * as d3 from 'd3';
 import { prtfRunResultChrt } from '../sq-common/chartAdvanced';
 import { parseNumberToDate } from './utils-common';
 import { SqNgCommonUtilsTime } from '../../projects/sq-ng-common/src/lib/sq-ng-common.utils_time';
-import { sqAverageOfSeasonalityData, sqMedian } from './utils_math';
+import { sqAverageOfAunnalReturns, sqAverageOfSeasonalityData, sqMedian } from './utils_math';
+import { AnnualReturn, DetailedStatistics } from './backtestStatistics';
 
 // ************************************************ //
 // Classes used for developing charts, stats and positions of PortfolioRunResults
@@ -237,7 +238,7 @@ export enum ExchangeId {
 
 // used in PrtfVwr and ChrtGen to process seasonality matrix
 export class MonthlySeasonality {
-  year: number | string = 0;
+  year: number = 0;
   returns: number[] = []; // 12 elements for January..December returns in the given year.
 }
 
@@ -563,7 +564,7 @@ export function getSeasonalityData(chartData: ChartJs): SeasonalityData {
       // Check if the seasonality data for the current year already exists
       let existingSeasonality: MonthlySeasonality | undefined;
       for (let i = 0; i < monthlySeasonality.length; i++) {
-        if (monthlySeasonality[i].year == year) {
+        if (monthlySeasonality[i].year == parseInt(year)) {
           existingSeasonality = monthlySeasonality[i];
           break;
         }
@@ -572,7 +573,7 @@ export function getSeasonalityData(chartData: ChartJs): SeasonalityData {
       // If no existing seasonality data is found for the current year, create a new one
       if (existingSeasonality == undefined) {
         existingSeasonality = new MonthlySeasonality();
-        existingSeasonality.year = year;
+        existingSeasonality.year = parseInt(year);
         existingSeasonality.returns = new Array(12); // Initialize an empty array with 12 elements for each month of the year
         monthlySeasonality.push(existingSeasonality);
       }
@@ -617,4 +618,55 @@ export function getSeasonalityData(chartData: ChartJs): SeasonalityData {
     }
   }
   return seasonalityData;
+}
+
+export function getDetailedStats(chartData: ChartJs): DetailedStatistics {
+  const histData: ChartJs = chartData;
+  const detailedStats: DetailedStatistics = new DetailedStatistics();
+  if (histData == null)
+    return detailedStats;
+
+  // Step1: Group the data into respective months and assign the last value of each month directly
+  const groupedMonthlyReturn: { [key: string]: number } = {};
+  let date: string = '';
+  for (let i = 0; i < histData.dates.length; i++) {
+    if (histData.dateTimeFormat == 'YYYYMMDD')
+      date = SqNgCommonUtilsTime.Date2PaddedIsoStr(parseNumberToDate(histData.dates[i]));
+    else if (histData.dateTimeFormat.includes('DaysFrom')) {
+      const dateStartInd = histData.dateTimeFormat.indexOf('m');
+      const dateStartsFrom = parseNumberToDate(parseInt(histData.dateTimeFormat.substring(dateStartInd + 1)));
+      date = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(dateStartsFrom.setDate(dateStartsFrom.getDate() + histData.dates[i])));
+    } else
+      date = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(histData.dates[i] * cSecToMSec)); // data comes as seconds. JS uses milliseconds since Epoch.
+    const value = histData.values[i]; // Get the corresponding value
+    const [year, month] = date.split('-'); // Extract year and month from the ISO string
+    const yearMonth: string = `${year}-${month}`; // Create the 'year-month' key
+
+    groupedMonthlyReturn[yearMonth] = value; // Assign the last value encountered for this month
+  }
+
+  // Step 2: Group the monthly returns into respective years
+  const groupedYearlyReturn: { [key: string]: number[] } = {};
+  for (const [yearMonth, value] of Object.entries(groupedMonthlyReturn)) {
+    const year = yearMonth.split('-')[0]; // Extract the year from the date string
+    if (groupedYearlyReturn[year] == undefined)
+      groupedYearlyReturn[year] = []; // Initialize an array for the year if it doesn't exist
+
+    groupedYearlyReturn[year].push(value); // Add the monthly return to the corresponding year
+  }
+
+  // Step 3: Calculate the annual returns based on the monthly data
+  const annualReturns: AnnualReturn[] = [];
+  for (const [yr, value] of Object.entries(groupedYearlyReturn).reverse()) {
+    const annualReturn = (value[value.length - 1] - value[0]) / value[0]; // Calculate the annual return: (last value - first value) / first value
+    const year = parseInt(yr);
+    annualReturns.push({ year, return: annualReturn }); // Store the year and its corresponding annual return
+  }
+  detailedStats.annualReturns = annualReturns;
+
+  // Step 4: Calculate the annualized returns for the last 3 and 5 years
+  const numOfYears: number = annualReturns.length;
+  detailedStats.last3YearsAnnualized = numOfYears >= 3 ? sqAverageOfAunnalReturns(annualReturns, 3) : detailedStats.last3YearsAnnualized; // Calculate last 3 years annualized return, if there are at least 3 years of data
+  detailedStats.last5YearsAnnualized = numOfYears >= 5 ? sqAverageOfAunnalReturns(annualReturns, 5) : detailedStats.last5YearsAnnualized; // Calculate last 5 years annualized return, if there are at least 5 years of data
+  return detailedStats;
 }

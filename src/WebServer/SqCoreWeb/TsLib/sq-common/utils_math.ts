@@ -1,4 +1,5 @@
 import { MonthlySeasonality } from './backtestCommon';
+import { AnnualReturn } from './backtestStatistics';
 
 export function sqGaussian(mean: number, stdev: number): any {
   // returns a gaussian random function with the given mean and stdev.
@@ -71,4 +72,19 @@ export function sqAverageOfSeasonalityData(monthlySeasonality: MonthlySeasonalit
     avgArray[i] = returnsSum / returnsNum;
   }
   return avgArray;
+}
+
+export function sqAverageOfAunnalReturns(annualReturns: AnnualReturn[], years: number): number {
+  let avgRet = 0;
+  let returnsSum: number = 0;
+  let returnsNum: number = 0; // number of items summed
+
+  for (let j = 0; j < years; j++) { // Selecting only the data from the last 'years' years
+    if (annualReturns[j].return != undefined && !Number.isNaN(annualReturns[j].return)) {
+      returnsSum += annualReturns[j].return;
+      returnsNum++;
+    }
+  }
+  avgRet = returnsSum/returnsNum;
+  return avgRet;
 }
