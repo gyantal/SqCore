@@ -77,8 +77,8 @@ MarketBar
       </span>
       <span class="notImpInfo">{{uiSnapTable.snapLastUpateTimeLoc | date:'H:mm'}} ({{uiSnapTable.snapLastUpdateTimeAgoStr}})</span>
       <span><br>
-        <span class="detailsAndHistChartButtons detailsBtn"><button [ngStyle]="{'background-color':tabPageVisibleIdx == 1 ? 'aqua':''}" (click)="onTabHeaderClicked(1)"> Details </button></span>&nbsp;&nbsp;
-        <span class="detailsAndHistChartButtons histChartBtn"><button [ngStyle]="{'background-color':tabPageVisibleIdx == 2 ? 'aqua':''}" (click)="onTabHeaderClicked(2)"> HistoricalChart </button></span>
+        <button class="detailsAndHistChartButtons" [ngStyle]="{'background-color':tabPageVisibleIdx == 1 ? 'aqua':''}" (click)="onTabHeaderClicked(1)"> Details </button>&nbsp;&nbsp;
+        <button class="detailsAndHistChartButtons" [ngStyle]="{'background-color':tabPageVisibleIdx == 2 ? 'aqua':''}" (click)="onTabHeaderClicked(2)"> HistoricalChart </button>
       </span>
     </div>
     <div class="ChartSumm">
