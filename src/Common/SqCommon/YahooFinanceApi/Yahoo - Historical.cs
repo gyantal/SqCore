@@ -1,141 +1,93 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Dynamic;
 using System.Globalization;
-using System.IO;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using CsvHelper;
-using Flurl;
 using Flurl.Http;
-using SqCommon;
 
 namespace YahooFinanceApi; // based on https://github.com/karlwancl/YahooFinanceApi
+
+// There is a business decision what to do when 1 day in the middle is missing from the last 200 days of VIX data.
+// Option 1. At the moment, we swallow it, and don't give that date-record back to the client (imitating that the source was totally bad, and missed even the date)
+// Probably that is the best way to handle, so it is the caller's responsibility to check that all Date he expects is given.
+// Because there is no point for us giving back the user the "2021-08-09,null,null,null,null,null,null" VIX records if it is possible that YF skips a whole day record, omitting that day.
+// Checking that kind of data-error has to be done on the Caller side anyway. So we just pass the data-checking problem to the caller.
+// Option 2: We can give back the Caller a "2021-08-09,null,null,null,null,null,null" record. But the caller has to check missing days anyway. So, we just increase its load.
+// Option 3: We can terminate the price query, and raise an Exception. However, that we we wouldn't give anything to the Caller.
+// If only 1 record is missing in the 10 years history, it is better to return the 'almost-complete' data to the Caller than returning nothing at all.
 
 public sealed partial class Yahoo
 {
     public static CultureInfo Culture = CultureInfo.InvariantCulture;
-    public static bool IgnoreEmptyRows { set { RowExtension.IgnoreEmptyRows = value; } }
+    public static bool IgnoreEmptyRows { set { DataConvertors.IgnoreEmptyRows = value; } }
 
-    public static async Task<IReadOnlyList<Candle?>> GetHistoricalAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, Period period = Period.Daily, CancellationToken token = default)
-        => await GetTicksAsync<Candle?>(
+    public static async Task<IReadOnlyList<Candle>> GetHistoricalAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, Period period = Period.Daily, CancellationToken token = default)
+        => await GetTicksAsync(
             symbol,
             startTime,
             endTime,
             period,
             ShowOption.History,
-            RowExtension.ToCandle,
+            DataConvertors.ToCandle,
             token).ConfigureAwait(false);
 
-    public static async Task<IReadOnlyList<DividendTick?>> GetDividendsAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, CancellationToken token = default)
-        => await GetTicksAsync<DividendTick?>(
+    public static async Task<IReadOnlyList<DividendTick>> GetDividendsAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, CancellationToken token = default)
+        => await GetTicksAsync(
             symbol,
             startTime,
             endTime,
             Period.Daily,
             ShowOption.Dividend,
-            RowExtension.ToDividendTick,
+            DataConvertors.ToDividendTick,
             token).ConfigureAwait(false);
 
-    public static async Task<IReadOnlyList<SplitTick?>> GetSplitsAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, CancellationToken token = default)
-        => await GetTicksAsync<SplitTick?>(
+    public static async Task<IReadOnlyList<SplitTick>> GetSplitsAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, CancellationToken token = default)
+        => await GetTicksAsync(
             symbol,
             startTime,
             endTime,
             Period.Daily,
             ShowOption.Split,
-            RowExtension.ToSplitTick,
+            DataConvertors.ToSplitTick,
             token).ConfigureAwait(false);
 
-    private static async Task<List<TTick>> GetTicksAsync<TTick>(
+    private static async Task<List<T>> GetTicksAsync<T>(
         string symbol,
         DateTime? startTime,
         DateTime? endTime,
         Period period,
         ShowOption showOption,
-        Func<string[], TTick> instanceFunction,
+        Func<ExpandoObject, TimeZoneInfo, List<T>> converter,
         CancellationToken token)
+        where T : ITick
     {
-        // It was in pre 2023 code, probably not needed, although the NewLine on Windows is suspicios, and YF servers are Linux compatible
-        // var csvConfig = new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture)
-        // {
-        //     NewLine = "\n",     // instead of the default Environment.NewLine which is double
-        //     Delimiter = ",",
-        //     Quote = '\'',
-        //     MissingFieldFound = null // ignore CsvHelper.MissingFieldException, because SplitTick 2 computed fields will be missing.
-        // };
-        var ticks = new List<TTick>();
+        await YahooSession.InitAsync(token);
+        TimeZoneInfo symbolTimeZone = await Cache.GetTimeZone(symbol);
 
-        const int nMaxTries = 3;    // YF server is unreliable, as all web queries. It is worth repeating the download at least 3 times.
-        int nTries = 0;
-        do
-        {
-            try
-            {
-                nTries++;
+        startTime ??= Helper.Epoch;
+        endTime ??= DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+        DateTime start = startTime.Value.ToUtcFrom(symbolTimeZone);
+        DateTime end = endTime.Value.AddDays(2).ToUtcFrom(symbolTimeZone);
 
-                using var stream = await GetResponseStreamAsync(symbol, startTime, endTime, period, showOption.Name(), token).ConfigureAwait(false);
-                using var sr = new StreamReader(stream);
-                using var csvReader = new CsvReader(sr, Culture);
-                // using var csvReader = new CsvReader(sr, csvConfig);
-                csvReader.Read(); // skip header
+        dynamic json = await GetResponseStreamAsync(symbol, start, end, period, showOption.Name(), token).ConfigureAwait(false);
+        dynamic data = json.chart.result[0];
 
-                while (csvReader.Read())
-                {
-                    // 2021-06-18T15:00 : exception thrown CsvHelper.TypeConversion.TypeConverterException
-                    // because https://finance.yahoo.com/quote/SPY/history returns RawRecord: "2021-06-17,null,null,null,null,null,null"
-                    // YF has intermittent data problems for yesterday.
-                    // TODO: future work. We need a backup data source, like https://www.nasdaq.com/market-activity/funds-and-etfs/spy/historical
-                    // or IbGateway in cases when YF doesn't give data.
-                    // 2021-08-20: YF gives ^VIX history badly for this date for the last 2 weeks. "2021-08-09,null,null,null,null,null,null"
-                    // They don't fix it. CBOE, WSJ has proper data for that day.
-                    TTick? tick = default;
-                    try
-                    {
-                        tick = instanceFunction(csvReader.Context.Parser.Record!);
-                    }
-                    catch (Exception e) // "The conversion cannot be performed."  RawRecord:\r\n2021-08-09,null,null,null,null,null,null\n\r\n"
-                    {
-                        Utils.Logger.Error(e, $"Error in Yahoo.GetTicksAsync(): Stock:'{symbol}', {e.Message}");
-                        // There is a business decision what to do when 1 day in the middle is missing from the last 200 days of VIX data.
-                        // Option 1. At the moment, we swallow it, and don't give that date-record back to the client (imitating that the source was totally bad, and missed even the date)
-                        // Probably that is the best way to handle, so it is the caller's responsibility to check that all Date he expects is given.
-                        // Because there is no point for us giving back the user the "2021-08-09,null,null,null,null,null,null" VIX records if it is possible that YF skips a whole day record, omitting that day.
-                        // Checking that kind of data-error has to be done on the Caller side anyway. So we just pass the data-checking problem to the caller.
-                        // Option 2: We can give back the Caller a "2021-08-09,null,null,null,null,null,null" record. But the caller has to check missing days anyway. So, we just increase its load.
-                        // Option 3: We can terminate the price query, and raise an Exception. However, that we we wouldn't give anything to the Caller.
-                        // If only 1 record is missing in the 10 years history, it is better to return the 'almost-complete' data to the Caller than returning nothing at all.
-                    }
-#pragma warning disable RECS0017 // Possible compare of value type with 'null'
-                    if (tick != null)
-#pragma warning restore RECS0017 // Possible compare of value type with 'null'
-                        ticks.Add(tick);
-                }
-
-                return ticks;
-            }
-            catch (Exception e)
-            {
-                Utils.Logger.Info(e, $"Exception in Yahoo.GetTicksAsync(): Stock:'{symbol}', {e.Message}");
-                Thread.Sleep(3000); // sleep for 3 seconds before trying again.
-            }
-        }
-        while (nTries <= nMaxTries);
-
-        Utils.Logger.Error($"GetTicksAsync() exception. Cannot download YF data (ticker:{symbol}) after {nMaxTries} tries.");
-        throw new Exception($"GetTicksAsync() exception. Cannot download YF data (ticker:{symbol}) after {nMaxTries} tries.");
+        List<T> allData = converter(data, symbolTimeZone);
+        return allData.Where(x => x != null).Where(x => x.DateTime <= endTime.Value).ToList();
     }
 
-    private static async Task<Stream> GetResponseStreamAsync(string symbol, DateTime? startTime, DateTime? endTime, Period period, string events, CancellationToken token)
+    private static async Task<dynamic> GetResponseStreamAsync(string symbol, DateTime startTime, DateTime endTime, Period period, string events, CancellationToken token)
     {
         bool reset = false;
         while (true)
         {
             try
             {
-                await YahooSession.InitAsync(reset, token);
-                return await _GetResponseStreamAsync(token).ConfigureAwait(false);
+                return await ChartDataLoader.GetResponseStreamAsync(symbol, startTime, endTime, period, events, token).ConfigureAwait(false);
             }
             catch (FlurlHttpException ex) when (ex.Call.Response?.StatusCode == (int)HttpStatusCode.NotFound)
             {
@@ -149,29 +101,6 @@ public sealed partial class Yahoo
                     throw;
                 reset = true; // try again with a new client
             }
-        }
-
-        Task<Stream> _GetResponseStreamAsync(CancellationToken token)
-        {
-            // Yahoo expects dates to be "Eastern Standard Time"
-            startTime = startTime?.FromEstToUtc() ?? new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            endTime = endTime?.FromEstToUtc() ?? DateTime.UtcNow;
-
-            var url = "https://query1.finance.yahoo.com/v7/finance/download"
-                .AppendPathSegment(symbol)
-                .SetQueryParam("period1", startTime.Value.ToUnixTimestamp())
-                .SetQueryParam("period2", endTime.Value.ToUnixTimestamp())
-                .SetQueryParam("interval", $"1{period.Name()}")
-                .SetQueryParam("events", events)
-                .SetQueryParam("crumb", YahooSession.Crumb);
-
-            Debug.WriteLine(url);
-
-            return url
-                .WithCookie(YahooSession.Cookie!.Name, YahooSession.Cookie.Value)
-                .WithHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36") // 2024-03-06: fixing error code 429 (Too Many Requests). 1 day later it worked with/without the Header
-                .GetAsync(token)
-                .ReceiveStream();
         }
     }
 }

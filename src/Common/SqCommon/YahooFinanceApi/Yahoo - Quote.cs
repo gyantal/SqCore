@@ -67,7 +67,7 @@ public sealed partial class Yahoo
             url = url.SetQueryParam("fields", string.Join(",", _fields.Select(s => s.ToLowerCamel())));
         }
 
-        await YahooSession.InitAsync(false, token);
+        await YahooSession.InitAsync(token);
 
         url.SetQueryParam("crumb", YahooSession.Crumb);
 
@@ -83,7 +83,7 @@ public sealed partial class Yahoo
         {
             data = await url
                 .WithCookie(YahooSession.Cookie!.Name, YahooSession.Cookie.Value)
-                .WithHeader("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36") // 2024-03-06: fixing error code 429 (Too Many Requests). 1 day later it worked with/without the Header
+                .WithHeader(YahooSession.UserAgentKey, YahooSession.UserAgentValue)
                 .GetAsync(token)
                 .ReceiveJson()
                 .ConfigureAwait(false);
