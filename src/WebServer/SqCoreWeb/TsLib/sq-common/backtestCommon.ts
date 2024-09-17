@@ -626,47 +626,47 @@ export function getDetailedStats(chartData: ChartJs): DetailedStatistics {
   if (histData == null)
     return detailedStats;
 
-  // Step1: Group the data into respective months and assign the last value of each month directly
-  const groupedMonthlyReturn: { [key: string]: number } = {};
-  let date: string = '';
-  for (let i = 0; i < histData.dates.length; i++) {
-    if (histData.dateTimeFormat == 'YYYYMMDD')
-      date = SqNgCommonUtilsTime.Date2PaddedIsoStr(parseNumberToDate(histData.dates[i]));
-    else if (histData.dateTimeFormat.includes('DaysFrom')) {
-      const dateStartInd = histData.dateTimeFormat.indexOf('m');
-      const dateStartsFrom = parseNumberToDate(parseInt(histData.dateTimeFormat.substring(dateStartInd + 1)));
-      date = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(dateStartsFrom.setDate(dateStartsFrom.getDate() + histData.dates[i])));
-    } else
-      date = SqNgCommonUtilsTime.Date2PaddedIsoStr(new Date(histData.dates[i] * cSecToMSec)); // data comes as seconds. JS uses milliseconds since Epoch.
-    const value = histData.values[i]; // Get the corresponding value
-    const [year, month] = date.split('-'); // Extract year and month from the ISO string
-    const yearMonth: string = `${year}-${month}`; // Create the 'year-month' key
-
-    groupedMonthlyReturn[yearMonth] = value; // Assign the last value encountered for this month
-  }
-
-  // Step 2: Group the monthly returns into respective years
-  const groupedYearlyReturn: { [key: string]: number[] } = {};
-  for (const [yearMonth, value] of Object.entries(groupedMonthlyReturn)) {
-    const year = yearMonth.split('-')[0]; // Extract the year from the date string
-    if (groupedYearlyReturn[year] == undefined)
-      groupedYearlyReturn[year] = []; // Initialize an array for the year if it doesn't exist
-
-    groupedYearlyReturn[year].push(value); // Add the monthly return to the corresponding year
-  }
-
-  // Step 3: Calculate the annual returns based on the monthly data
+  let iStart: number = 0;
+  let previousYearLastValue: number | null = null; // Initial previous year's last value (null for the first year)
   const annualReturns: AnnualReturn[] = [];
-  for (const [yr, value] of Object.entries(groupedYearlyReturn).reverse()) {
-    const annualReturn = (value[value.length - 1] - value[0]) / value[0]; // Calculate the annual return: (last value - first value) / first value
-    const year = parseInt(yr);
-    annualReturns.push({ year, return: annualReturn }); // Store the year and its corresponding annual return
+  while (iStart < histData.dates.length - 1) { // if iStart == n - 1 (the last item), we can stop the outer loop, as there will be no new years.
+    const dateStart: Date = convertToDateBasedOnDateFormat(histData.dates[iStart], histData.dateTimeFormat);
+    let dateNext: Date;
+    let iLast: number = iStart;
+    do {
+      iLast++;
+      dateNext = convertToDateBasedOnDateFormat(histData.dates[iLast], histData.dateTimeFormat);
+    } while (dateStart.getFullYear() == dateNext.getFullYear() && iLast < histData.dates.length); // This loops until the Year matches, and exits at the first place when the Years differ. Or it exits at the end.
+
+    iLast = iLast - 1; // we want the Last PV of the current year, so we move 1 step back. If we overwent the lenght (iLast == n), then we also come back 1 step.
+    // Determine if it's a complete or incomplete year
+    const isCompleteYear: boolean = previousYearLastValue != null; // Complete year if we have the last value from the previous year
+
+    let annualReturn: number;
+    if (isCompleteYear && previousYearLastValue != null)
+      annualReturn = histData.values[iLast] / previousYearLastValue - 1; // For complete years, calculate returns from the previous year's last value to this year's last value
+    else
+      annualReturn = histData.values[iLast] / histData.values[iStart] - 1;// For incomplete years, calculate returns from the start to the end of the year
+
+    annualReturns.push({year: dateStart.getFullYear(), return: annualReturn});
+    previousYearLastValue = histData.values[iLast]; // Update previousYearLastValue to the last value of the current year
+    iStart = iLast + 1; // now, for the inner while loop to work again, we have to swap the indices.
   }
   detailedStats.annualReturns = annualReturns;
-
   // Step 4: Calculate the annualized returns for the last 3 and 5 years
   const numOfYears: number = annualReturns.length;
   detailedStats.last3YearsAnnualized = numOfYears >= 3 ? sqAverageOfAunnalReturns(annualReturns, 3) : detailedStats.last3YearsAnnualized; // Calculate last 3 years annualized return, if there are at least 3 years of data
   detailedStats.last5YearsAnnualized = numOfYears >= 5 ? sqAverageOfAunnalReturns(annualReturns, 5) : detailedStats.last5YearsAnnualized; // Calculate last 5 years annualized return, if there are at least 5 years of data
   return detailedStats;
+}
+
+function convertToDateBasedOnDateFormat(date: number, dateFormat: string): Date {
+  if (dateFormat == 'YYYYMMDD')
+    return parseNumberToDate(date);
+  else if (dateFormat.includes('DaysFrom')) {
+    const dateStartInd = dateFormat.indexOf('m');
+    const dateStartsFrom = parseNumberToDate(parseInt(dateFormat.substring(dateStartInd + 1)));
+    return new Date(dateStartsFrom.setDate(dateStartsFrom.getDate() + date));
+  } else
+    return new Date(date * cSecToMSec);
 }
