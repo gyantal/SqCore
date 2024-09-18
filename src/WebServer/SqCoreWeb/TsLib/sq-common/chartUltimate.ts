@@ -192,6 +192,7 @@ export class UltimateChart {
       }
 
       const tooltipPosY: number = event.pageY - yCoord; // Calculate the Y position of the tooltip based on the mouse position
+      let closestPoint: Nullable<UiChartPoint> = null;
       tooltipPctChg
           .style('visibility', 'visible')
           .style('left', `${tooltipPosX}px`)
@@ -204,7 +205,6 @@ export class UltimateChart {
           .attr('style', (d: CgTimeSeries) => getStyle(d))
           .style('color', (d: CgTimeSeries, i: number) => getColors(d, i))
           .html((d: CgTimeSeries) => {
-            let closestPoint: Nullable<UiChartPoint> = null;
             let minDiff = Number.MAX_VALUE;
             let firstVal: number | null = null; // To store the value of the first valid point
             for (let i = 0; i < d.priceData.length; i++) {
@@ -225,6 +225,8 @@ export class UltimateChart {
             else
               return d.name + ': No Data';
           });
+
+      tooltipPctChg.append('text').text('Date: ' + closestPoint!.date.toLocaleDateString());
     }
 
     function onMouseout() {

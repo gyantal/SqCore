@@ -146,7 +146,7 @@ export class SqStatisticsBuilder {
       const years = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
       // Calculate the Compound Annual Growth Rate (CAGR)
       if (years !== 0 && startingCapital !== 0) {
-        const cagr = Math.pow( statRes.TotalReturn + 1, 1 / years) - 1; // n-th root of the total return
+        const cagr = Math.pow(statRes.TotalReturn + 1, 1 / years) - 1; // n-th root of the total return
         statRes.CAGR = isNaN(cagr) || !isFinite(cagr) ? 0 : cagr;
       }
       // maximum drawdown and MaxDD period start and end
