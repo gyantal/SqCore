@@ -23,22 +23,22 @@ start_time = time.time()
 # 1. LocalPC params
 runningEnvironmentComputerName = platform.node()    # 'gyantal-PC' or Balazs
 if runningEnvironmentComputerName == 'gyantal-PC':
-    rootLocalDir = "c:/agy/GitHub/SqCore/src/WebServer/SqCoreWeb/bin/Release/net8.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
+    rootLocalDir = "c:/agy/GitHub/SqCore/src/WebServer/SqCoreWeb/bin/Release/net8.0/linux-x64/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
     serverRsaKeyFile = "h:/.shortcut-targets-by-id/0BzxkV1ug5ZxvVmtic1FsNTM5bHM/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
 elif runningEnvironmentComputerName == 'gyantal-SfBook3':
-    rootLocalDir = "c:/GitHubRepos/SqCore/src/WebServer/SqCoreWeb/bin/Release/net8.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
+    rootLocalDir = "c:/GitHubRepos/SqCore/src/WebServer/SqCoreWeb/bin/Release/net8.0/linux-x64/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
     serverRsaKeyFile = "h:/.shortcut-targets-by-id/0BzxkV1ug5ZxvVmtic1FsNTM5bHM/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
 elif runningEnvironmentComputerName == 'daya-PC':
-    rootLocalDir = "c:/GitHubRepos/SqCore/src/WebServer/SqCoreWeb/bin/Release/net8.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
+    rootLocalDir = "c:/GitHubRepos/SqCore/src/WebServer/SqCoreWeb/bin/Release/net8.0/linux-x64/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
     serverRsaKeyFile = "g:/.shortcut-targets-by-id/0BzxkV1ug5ZxvVmtic1FsNTM5bHM/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
 elif runningEnvironmentComputerName == 'DAYA-DESKTOP':
-    rootLocalDir = "c:/GitHubRepos/SqCore/src/WebServer/SqCoreWeb/bin/Release/net8.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
+    rootLocalDir = "c:/GitHubRepos/SqCore/src/WebServer/SqCoreWeb/bin/Release/net8.0/linux-x64/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
     serverRsaKeyFile = "g:/.shortcut-targets-by-id/0BzxkV1ug5ZxvVmtic1FsNTM5bHM/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
 elif runningEnvironmentComputerName == 'BalazsWork-PC':
-    rootLocalDir = "d:/GitHub/SqCore/src/WebServer/SqCoreWeb/bin/Release/net8.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
+    rootLocalDir = "d:/GitHub/SqCore/src/WebServer/SqCoreWeb/bin/Release/net8.0/linux-x64/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
     serverRsaKeyFile = "h:/.shortcut-targets-by-id/0BzxkV1ug5ZxvVmtic1FsNTM5bHM/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
 else:   # TODO: Laci, Balazs, you have to add your IF here (based on the 'name' of your PC)
-    rootLocalDir = "d:/GitHub/SqCore/src/WebServer/SqCoreWeb/bin/Release/net8.0/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
+    rootLocalDir = "d:/GitHub/SqCore/src/WebServer/SqCoreWeb/bin/Release/net8.0/linux-x64/publish"       #os.walk() gives back in a way that the last character is not slash, so do that way
     serverRsaKeyFile = "d:/<fill it to user>/Google Drive/GDriveHedgeQuant/shared/GitHubRepos/NonCommitedSensitiveData/cert/AwsSqCore/AwsSqCore,sq-vnc-client.pem"
 acceptedSubTreeRoots = ["wwwroot"]        # everything under these relPaths is traversed: files or folders too
 zipExeWithPath = "c:/Program Files/7-Zip/7z.exe"

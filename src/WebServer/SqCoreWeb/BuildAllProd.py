@@ -72,15 +72,35 @@ for dir in os.walk("wwwroot"):
 
 # 4. DotNet (C#) build RELEASE and Publish
 print("\nSqBuild: Executing 'dotnet publish...'")
-if os.path.exists("bin/Release/net8.0/publish"):
-    shutil.rmtree("bin/Release/net8.0/publish")    # platform independent way of deleting a folder recursively
-os.system("dotnet publish --configuration Release SqCoreWeb.csproj /property:GenerateFullPaths=true")
+
+# 2024-09-19: We have to use the "-r" flag, because there is a strange bug in .Net 8 Linux, that disappears if we target Linux with the -r runtime flag.
+# !22|ERROR|Sq: LegacyDb Error. Init_WT() exception: Could not load file or assembly 'Microsoft.Data.SqlClient, Version=5.0.0.0, Culture=neutral, PublicKeyToken=23ec7fc2d6eaa4a5'. The system cannot find the file specified." 
+# https://github.com/dotnet/SqlClient/issues/2146
+# https://github.com/dotnet/SqlClient/issues/1945
+publishRuntimeTarget = "linux-x64"  # use empty string ("") for not specifying target runtime. In that case App will only run on target machine if the .Net8 runtime is installed before.
+if (publishRuntimeTarget == ""):
+    publishTargetFolder = "bin/Release/net8.0/publish"
+    nLogConfigPath = "bin/Release/net8.0/publish/NLog.config"
+else:
+    publishTargetFolder = "bin/Release/net8.0/" + publishRuntimeTarget
+    nLogConfigPath = "bin/Release/net8.0/" + publishRuntimeTarget + "/publish/NLog.config"
+
+if os.path.exists(publishTargetFolder):
+    shutil.rmtree(publishTargetFolder)    # platform independent way of deleting a folder recursively
+
+# dotnet publish has an "-r" flag, to specify the target runtime
+# A. If you don't specify the -r flag when using dotnet publish, it publishes a framework-dependent application, meaning it relies on the .NET runtime being installed on the target machine. (2024: 114MB deployment)
+# B. using the -r flag creates a self-contained deployment, bundling the .NET runtime with the app, so it can run independently on the target platform. (2024: 108MB deployment, Linux specific)
+if (publishRuntimeTarget == ""):
+    os.system("dotnet publish --configuration Release SqCoreWeb.csproj /property:GenerateFullPaths=true") # target folder: '/bin/Release/netX.0/publish/'
+else:
+    os.system("dotnet publish --configuration Release SqCoreWeb.csproj /property:GenerateFullPaths=true -r " + publishRuntimeTarget) # target folder: '/bin/Release/netX.0/linux-x64/publish/'
 
 # 5. Postprocess the published folder. (before deploying to Linux)
 # NLog.config: fileName="${basedir}/../../../../../../logs/SqCoreWeb.${date:format=yyyy-MM-dd}.sqlog" should be changed to fileName="${basedir}/../logs/SqCoreWeb.${date:format=yyyy-MM-dd}.sqlog"
 # This should not be done in the local Debug or Release folders, only the Publish folder.
 print("\nSqBuild: Modifying NLog.config for Linux logs folder.")
-with fileinput.FileInput("bin/Release/net8.0/publish/NLog.config", inplace=True, backup='.bak') as file:
+with fileinput.FileInput(nLogConfigPath, inplace=True, backup='.bak') as file:
     for line in file:
         print(line.replace("{basedir}/../../../../../../logs", "{basedir}/../logs"), end='')
 
