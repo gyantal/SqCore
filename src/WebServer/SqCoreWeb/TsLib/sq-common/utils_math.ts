@@ -74,7 +74,7 @@ export function sqAverageOfSeasonalityData(monthlySeasonality: MonthlySeasonalit
   return avgArray;
 }
 
-export function sqAverageOfAunnalReturns(annualReturns: AnnualReturn[], years: number): number {
+export function sqAverageOfAnnualReturns(annualReturns: AnnualReturn[], years: number): number {
   let avgRet = 0;
   let returnsSum: number = 0;
   let returnsNum: number = 0; // number of items summed

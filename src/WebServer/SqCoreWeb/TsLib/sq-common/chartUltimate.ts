@@ -1,6 +1,7 @@
 // ***ChartUltimate: VeryAdvanced (handles start/endDates, zoom, drawdown calc) ***
 import * as d3 from 'd3';
 import { UiChartPoint, CgTimeSeries, LineStyle } from './backtestCommon';
+import { SqNgCommonUtilsTime } from '../../projects/sq-ng-common/src/lib/sq-ng-common.utils_time';
 
 type Nullable<T> = T | null;
 export class UltimateChart {
@@ -226,7 +227,7 @@ export class UltimateChart {
               return d.name + ': No Data';
           });
 
-      tooltipPctChg.append('text').text('Date: ' + closestPoint!.date.toLocaleDateString());
+      tooltipPctChg.append('text').text('Date: ' + SqNgCommonUtilsTime.Date2PaddedIsoStr(closestPoint!.date));
     }
 
     function onMouseout() {

@@ -2,7 +2,7 @@ import * as d3 from 'd3';
 import { prtfRunResultChrt } from '../sq-common/chartAdvanced';
 import { parseNumberToDate } from './utils-common';
 import { SqNgCommonUtilsTime } from '../../projects/sq-ng-common/src/lib/sq-ng-common.utils_time';
-import { sqAverageOfAunnalReturns, sqAverageOfSeasonalityData, sqMedian } from './utils_math';
+import { sqAverageOfAnnualReturns, sqAverageOfSeasonalityData, sqMedian } from './utils_math';
 import { AnnualReturn, DetailedStatistics } from './backtestStatistics';
 
 // ************************************************ //
@@ -627,36 +627,31 @@ export function getDetailedStats(chartData: ChartJs): DetailedStatistics {
     return detailedStats;
 
   let iStart: number = 0;
-  let previousYearLastValue: number | null = null; // Initial previous year's last value (null for the first year)
   const annualReturns: AnnualReturn[] = [];
   while (iStart < histData.dates.length - 1) { // if iStart == n - 1 (the last item), we can stop the outer loop, as there will be no new years.
-    const dateStart: Date = convertToDateBasedOnDateFormat(histData.dates[iStart], histData.dateTimeFormat);
+    // Usually (except the first cycle), dates[iStart] points to 31st December. In that usual case the yearToSeek is obtained by the next date (2nd January).
+    const yearToSeek: number = iStart == 0 ? convertToDateBasedOnDateFormat(histData.dates[0], histData.dateTimeFormat).getFullYear() : convertToDateBasedOnDateFormat(histData.dates[iStart + 1], histData.dateTimeFormat).getFullYear();
     let dateNext: Date;
     let iLast: number = iStart;
     do {
       iLast++;
       dateNext = convertToDateBasedOnDateFormat(histData.dates[iLast], histData.dateTimeFormat);
-    } while (dateStart.getFullYear() == dateNext.getFullYear() && iLast < histData.dates.length); // This loops until the Year matches, and exits at the first place when the Years differ. Or it exits at the end.
+    } while (dateNext.getFullYear() == yearToSeek && iLast < histData.dates.length); // This loops until the Year matches, and exits at the first place when the Years differ. Or it exits at the end.
 
-    iLast = iLast - 1; // we want the Last PV of the current year, so we move 1 step back. If we overwent the lenght (iLast == n), then we also come back 1 step.
-    // Determine if it's a complete or incomplete year
-    const isCompleteYear: boolean = previousYearLastValue != null; // Complete year if we have the last value from the previous year
+    iLast = iLast - 1; // we want the Last PV of the current year, so we move 1 step back. If we overwent the length (iLast == n), then we also come back 1 step to n - 1.
 
-    let annualReturn: number;
-    if (isCompleteYear && previousYearLastValue != null)
-      annualReturn = histData.values[iLast] / previousYearLastValue - 1; // For complete years, calculate returns from the previous year's last value to this year's last value
-    else
-      annualReturn = histData.values[iLast] / histData.values[iStart] - 1;// For incomplete years, calculate returns from the start to the end of the year
+    // Usually (except the first and the last 'partial year' cycles), both iStart and iLast points to 31st December.
+    const annualReturn : number = histData.values[iLast] / histData.values[iStart] - 1;// For complete years, calculate returns from the end of the prior year to the end of the current year. For 'partial years', iStart = 0, or iLast = n - 1
 
-    annualReturns.push({year: dateStart.getFullYear(), return: annualReturn});
-    previousYearLastValue = histData.values[iLast]; // Update previousYearLastValue to the last value of the current year
-    iStart = iLast + 1; // now, for the inner while loop to work again, we have to swap the indices.
+    annualReturns.push({year: yearToSeek, return: annualReturn});
+    iStart = iLast; // now, for the inner while loop to work again, we have to swap the indices.
   }
+
   detailedStats.annualReturns = annualReturns;
   // Step 4: Calculate the annualized returns for the last 3 and 5 years
   const numOfYears: number = annualReturns.length;
-  detailedStats.last3YearsAnnualized = numOfYears >= 3 ? sqAverageOfAunnalReturns(annualReturns, 3) : detailedStats.last3YearsAnnualized; // Calculate last 3 years annualized return, if there are at least 3 years of data
-  detailedStats.last5YearsAnnualized = numOfYears >= 5 ? sqAverageOfAunnalReturns(annualReturns, 5) : detailedStats.last5YearsAnnualized; // Calculate last 5 years annualized return, if there are at least 5 years of data
+  detailedStats.last3YearsAnnualized = numOfYears >= 3 ? sqAverageOfAnnualReturns(annualReturns, 3) : NaN; // Calculate last 3 years annualized return, if there are at least 3 years of data
+  detailedStats.last5YearsAnnualized = numOfYears >= 5 ? sqAverageOfAnnualReturns(annualReturns, 5) : NaN; // Calculate last 5 years annualized return, if there are at least 5 years of data
   return detailedStats;
 }
 
