@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Text;
 using System.Threading.Tasks;
+using NLog;
 using SqCommon;
 using YahooFinanceApi;
 
@@ -178,6 +179,7 @@ public partial class FinDb
 
     public static async Task<bool> CrawlPriceData(string p_ticker, string p_finDataDir, DateTime p_startDate, DateTime p_endDate)
     {
+        int nPotentialProblems = 0;
         IReadOnlyList<Candle?>? history = await Yahoo.GetHistoricalAsync(p_ticker, p_startDate, p_endDate, Period.Daily);
         if (history == null)
         {
@@ -270,19 +272,33 @@ public partial class FinDb
         Dictionary<DateTime, SqDivSplit> divSplitHistory = new();
         foreach (DividendTick? dividendTick in dividendHistory)
         {
-            if (dividendTick != null && rawPrevClosesDict.TryGetValue(dividendTick.DateTime, out SqPrice? refRawClose)) // If the date is present in both the dividend history and the raw closes dictionary, add the extended element to the dictionary.
-                divSplitHistory.Add(dividendTick.DateTime, new SqDivSplit() { ReferenceDate = refRawClose.ReferenceDate, DividendValue = dividendTick.Dividend, SplitFactor = 1m, ReferenceRawPrice = refRawClose.Close });
+            if (dividendTick == null)
+                continue;
+            DateTime date = dividendTick.DateTime.Date; // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30"
+            if (!rawPrevClosesDict.TryGetValue(date, out SqPrice? refRawClose)) // If the date is present in both the dividend history and the raw closes dictionary, add the extended element to the dictionary.
+            {
+                nPotentialProblems++;
+                continue;
+            }
+
+            divSplitHistory.Add(date, new SqDivSplit() { ReferenceDate = refRawClose.ReferenceDate, DividendValue = dividendTick.Dividend, SplitFactor = 1m, ReferenceRawPrice = refRawClose.Close });
         }
 
         foreach (SplitTick? splitTick in splitHistory)
         {
-            if (splitTick == null || !rawPrevClosesDict.TryGetValue(splitTick.DateTime, out SqPrice? refRawClose))
+            if (splitTick == null)
                 continue;
+            DateTime date = splitTick.DateTime.Date; // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30"
+            if (!rawPrevClosesDict.TryGetValue(date, out SqPrice? refRawClose))
+            {
+                nPotentialProblems++;
+                continue;
+            }
             // Check if the key exists in the dictionary.
-            if (divSplitHistory.TryGetValue(splitTick.DateTime, out SqDivSplit? divSplit)) // If the key exists, update the splitFactor property of the existing DivSplitYF object.
+            if (divSplitHistory.TryGetValue(date, out SqDivSplit? divSplit)) // If the key exists, update the splitFactor property of the existing DivSplitYF object.
                 divSplit.SplitFactor = splitTick.BeforeSplit / splitTick.AfterSplit;
             else // If the date is present in both the split history and the raw closes dictionary, add the extended element to the dictionary.
-                divSplitHistory.Add(splitTick.DateTime, new SqDivSplit() { ReferenceDate = refRawClose.ReferenceDate, DividendValue = 0m, SplitFactor = splitTick.BeforeSplit / splitTick.AfterSplit, ReferenceRawPrice = refRawClose.Close });
+                divSplitHistory.Add(date, new SqDivSplit() { ReferenceDate = refRawClose.ReferenceDate, DividendValue = 0m, SplitFactor = splitTick.BeforeSplit / splitTick.AfterSplit, ReferenceRawPrice = refRawClose.Close });
         }
 
         // Create a list from the dictionary so that it can be sorted by date.
@@ -330,6 +346,8 @@ public partial class FinDb
         string lastLine = $"{p_endDate:yyyyMMdd},1,1,0";
         factFileTextWriter.WriteLine(lastLine);
         factFileTextWriter.Close();
+        if (nPotentialProblems > 0)
+            Utils.Logger.Error($"CrawlPriceData() #{nPotentialProblems} potential problems for {p_ticker}. Investigate!");
 
         return true;
     }
