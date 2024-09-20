@@ -260,6 +260,7 @@ MarketBar
       <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='pctChgTod'}" (click)="onSortingClicked('pctChgTod')">Chg%<br>Today</th>
       <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='plTod'}" (click)="onSortingClicked('plTod')">P&L<br>Today</th>
       <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='pl'}" (click)="onSortingClicked('pl')">P&L</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='plPct'}" (click)="onSortingClicked('plPct')">P&L%</th>
       <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='mktVal'}" (click)="onSortingClicked('mktVal')">MktVal</th>
       <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='estUndPrice'}" (click)="onSortingClicked('estUndPrice')">Est<br>UndPr</th>
       <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='delivValue'}" (click)="onSortingClicked('delivValue')">Deliv<br>Value</th>
@@ -288,6 +289,7 @@ MarketBar
          }">{{item.pctChgTod | percent:'1.2'}}</td>
       <td>{{item.plTod | number}}</td>
       <td>{{item.pl | number}}</td>
+      <td [ngClass]="item.plPct > 0 ? 'mktBarPositivePerf' : 'mktbarNegativePerf'">{{item.plPct | percent:'1.2'}}</td>
       <td>{{item.mktVal | number}}</td>
       <td>{{item.estUndPrice | number}}</td>
       <td>{{item.delivValue | number}}</td>
