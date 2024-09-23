@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
-import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, getSeasonalityData, UiSeasonalityChartPoint } from '../../../../TsLib/sq-common/backtestCommon';
+import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, getSeasonalityData, UiSeasonalityChartPoint, getDetailedStats } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { drawBarChartFromSeasonalityData } from '../../../../TsLib/sq-common/chartSimple';
+import { DetailedStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
 import * as d3 from 'd3';
 
 class HandshakeMessage {
@@ -109,6 +110,7 @@ export class AppComponent {
 
   // PortfolioReport tabpage:
   m_seasonalityData: SeasonalityData = new SeasonalityData();
+  m_detailedStatistics: DetailedStatistics = new DetailedStatistics();
 
   // Trades tabpage: internal data
   m_trades: TradeUi[] = [];
@@ -206,6 +208,7 @@ export class AppComponent {
     this.getFundamentalData();
     this.m_seasonalityData = getSeasonalityData(this.m_prtfRunResult!.chrtData);
     this.processUiWithSeasonalityChart(this.m_seasonalityData);
+    this.m_detailedStatistics = getDetailedStats(this.m_prtfRunResult!.chrtData);
   }
 
   getFundamentalData() {

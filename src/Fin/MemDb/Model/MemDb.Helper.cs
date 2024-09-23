@@ -495,11 +495,12 @@ public partial class MemDb
                 // Instead of the longer [{"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}]
                 // we send a shorter: { ChartDate: [1641013200, 1641013200, 1641013200], Value: [101665, 101665, 101665] }
                 ChartData chartVal = new();
-                chartVal.DateTimeFormat = "SecSince1970";
+                DateTime startDate = pv[0].Date.Date;
+                chartVal.DateTimeFormat = "DaysFrom" + startDate.ToYYYYMMDD();
                 foreach (DateValue item in pv)
                 {
-                    long unixTimeInSec = new DateTimeOffset(item.Date).ToUnixTimeSeconds();
-                    chartVal.Dates.Add(unixTimeInSec);
+                    int nDaysFromStartDate = (int)(item.Date - startDate).TotalDays; // number of days since startDate
+                    chartVal.Dates.Add(nDaysFromStartDate);
                     if (returnOnlyTwrPv)
                         chartVal.Values.Add((float)Math.Round(item.Value, 2)); // if we create a TWR chart starting from 100.0, then reduce float to 2 decimals to reduce JSON file size.
                     else

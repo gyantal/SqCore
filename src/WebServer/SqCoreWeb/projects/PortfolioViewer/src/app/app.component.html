@@ -1,6 +1,4 @@
-<h4>Portfolio Viewer</h4>
-PortfolioId: {{m_portfolioId}}
-<div>PortfolioName: {{m_portfolio?.name}}</div>
+<b>Portfolio Viewer</b> &nbsp;PortfolioName: {{m_portfolio?.name}}<br>
 <button [ngClass]="{'activeTabItem':m_activeTab == 'Positions'}" (click)="onActiveTabCicked('Positions')">Positions</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Report'}" (click)="onActiveTabCicked('Portfolio Report')">Portfolio Report</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Trades'}" (click)="onActiveTabCicked('Trades')">Trades*</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Performance Accumulator'}" (click)="onActiveTabCicked('Portfolio Performance Accumulator')">Portfolio Performance Accumulator</button>
 <div [hidden]="m_activeTab != 'Positions'">&nbsp;
   <header>Historical Positions EndDate: <input type="Date" [(ngModel)]="m_histPosEndDate" (change)="onHistPeriodChangeClicked()"></header>&nbsp;
@@ -52,6 +50,28 @@ PortfolioId: {{m_portfolioId}}
     </tr>
   </table>
   <div id="pfRunResultChrt"></div> <!-- portfolio run result chart  -->
+  <table class="tableCommon">
+    <thead>
+      <tr>
+        <th>DetailedStatistics</th>
+        <th>{{m_portfolio?.name}}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>last3YearsAnnualized</td>
+        <td [ngClass]="m_detailedStatistics.last3YearsAnnualized > 0 ? 'positiveReturns' : (m_detailedStatistics.last3YearsAnnualized < 0 ? 'negativeReturns' : 'noReturns')">{{m_detailedStatistics.last3YearsAnnualized | nanToDashPct}}</td>
+      </tr>
+      <tr>
+        <td>last5YearsAnnualized</td>
+        <td [ngClass]="m_detailedStatistics.last5YearsAnnualized > 0 ? 'positiveReturns' : (m_detailedStatistics.last5YearsAnnualized < 0 ? 'negativeReturns' : 'noReturns')">{{m_detailedStatistics.last5YearsAnnualized | nanToDashPct}}</td>
+      </tr>
+      <tr *ngFor="let item of m_detailedStatistics.annualReturns">
+        <td>{{item.year}}</td>
+        <td [ngClass]="item.return > 0 ? 'positiveReturns' : (item.return < 0 ? 'negativeReturns' : 'noReturns')">{{item.return | nanToDashPct}}</td>
+      </tr>
+    </tbody>
+  </table>
   <p id="seasonalityText"><b>Seasonality: </b> Displays mean and median monthly returns in order to identify seasonal patterns.</p>
   <div id="seasonalityChrt"></div>
   <table class="tableCommon">
