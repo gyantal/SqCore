@@ -117,7 +117,12 @@ export class UiPrtfPositions {
   public name: string = ''; // shortName
   public quantity: number = 0;
   public avgPrice: number = 0;
-  public price: number = 0;
+  public priorClose: number = NaN;
+  public estPrice: number = NaN;
+  public pctChgTod: number = NaN;
+  public plTod: number = NaN;
+  public pl: number = NaN;
+  public plPct: number = NaN;
   public holdingCost: number = 0;
   public holdingValue: number = 0;
   public sharesOutstanding: number = 0;
@@ -478,9 +483,16 @@ export function updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJ
     posItem.sqTicker = prtfRunResult.prtfPoss[i].sqTicker;
     posItem.quantity = prtfRunResult.prtfPoss[i].quantity;
     posItem.avgPrice = prtfRunResult.prtfPoss[i].avgPrice;
-    posItem.price = prtfRunResult.prtfPoss[i].lastPrice;
+    posItem.priorClose = prtfRunResult.prtfPoss[i].lastPrice;
+    if (!posItem.sqTicker.startsWith('C')) { // excluding the Cash Tickers
+      posItem.estPrice = prtfRunResult.prtfPoss[i].estPrice;
+      posItem.pctChgTod = (posItem.estPrice - posItem.priorClose) / posItem.priorClose;
+      posItem.plTod = Math.round(posItem.quantity * (posItem.estPrice - posItem.priorClose));
+      posItem.pl = Math.round(posItem.quantity * (posItem.estPrice - posItem.avgPrice));
+      posItem.plPct = (posItem.quantity * posItem.estPrice) / (posItem.quantity * posItem.avgPrice) - 1;
+    }
     posItem.holdingCost = posItem.avgPrice * posItem.quantity;
-    posItem.holdingValue = posItem.price * posItem.quantity;
+    posItem.holdingValue = posItem.priorClose * posItem.quantity;
     uiPrtfRunResult.prtfPosValues.push(posItem);
   }
 

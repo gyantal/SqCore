@@ -240,7 +240,7 @@ export class AppComponent {
       if (fundamentalDataItem != null) {
         prtfPosItem.name = fundamentalDataItem.name;
         prtfPosItem.sharesOutstanding = fundamentalDataItem.sharesOutstanding;
-        prtfPosItem.marketCap = prtfPosItem.price * prtfPosItem.sharesOutstanding;
+        prtfPosItem.marketCap = prtfPosItem.priorClose * prtfPosItem.sharesOutstanding;
       }
     }
   }

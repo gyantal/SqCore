@@ -9,7 +9,12 @@
         <th>Name</th>
         <th>Quantity</th>
         <th>AvgPrice</th>
-        <th>Price</th>
+        <th>PriorClose</th>
+        <th>EstPrice</th>
+        <th>Chg%<br>Today</th>
+        <th>P&L<br>Today</th>
+        <th>P&L</th>
+        <th>P&L%</th>
         <th>HoldingCost</th>
         <th>HoldingValue</th>
         <th>SharesOutstanding</th>
@@ -22,7 +27,12 @@
         <td>{{item.name}}</td>
         <td>{{item.quantity | number:'1.0-0'}}</td>
         <td>{{item.avgPrice | number:'1.2-2'}}</td>
-        <td>{{item.price | number:'1.2-2'}}</td>
+        <td>{{item.priorClose | number:'1.2-2'}}</td>
+        <td>{{item.estPrice | number:'1.2-2'}}</td>
+        <td>{{item.pctChgTod | percent:'1.2'}}</td>
+        <td>{{item.plTod | number}}</td>
+        <td>{{item.pl | number}}</td>
+        <td>{{item.plPct | percent:'1.2'}}</td>
         <td>{{item.holdingCost | number:'1.0-0'}}</td>
         <td>{{item.holdingValue | number:'1.0-0'}}</td>
         <td>{{item.sharesOutstanding | numberToTBMK}}</td>

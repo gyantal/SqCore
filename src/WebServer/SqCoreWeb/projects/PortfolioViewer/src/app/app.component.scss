@@ -26,6 +26,10 @@ thead {
   text-align: center;
 }
 
+.tableCommon tr:nth-child(even) {
+  background-color: #9dcef8;
+}
+
 #pfStatsTable {
   border-collapse: collapse;
   border: solid black;

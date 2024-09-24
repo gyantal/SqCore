@@ -190,7 +190,7 @@
                 <th>SqTicker</th>
                 <th>Quantity</th>
                 <th>AvgPrice</th>
-                <th>Price</th>
+                <th>PriorClose</th>
                 <th>HoldingCost</th>
                 <th>HoldingValue</th>
               </tr>
@@ -200,7 +200,7 @@
                 <td>{{item.sqTicker}}</td>
                 <td>{{item.quantity}}</td>
                 <td>{{item.avgPrice | number:'1.2-2'}}</td>
-                <td>{{item.price | number:'1.2-2'}}</td>
+                <td>{{item.priorClose | number:'1.2-2'}}</td>
                 <td>{{item.holdingCost | number:'1.0-0'}}</td>
                 <td>{{item.holdingValue | number:'1.0-0'}}</td>
               </tr>

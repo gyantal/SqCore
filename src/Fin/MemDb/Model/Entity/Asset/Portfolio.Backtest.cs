@@ -75,6 +75,7 @@ public class PortfolioPosition
     public float Quantity { get; set; } = float.NaN; // int quantity is not good because fractional Crypto tokens or fractional AAPL shares can be traded
     public float AvgPrice { get; set; } = 0.0f;
     public float LastPrice { get; set; } = 0.0f;  // the last price of the asset at the end of the backtest (not real-time price)
+    public float EstPrice { get; set; } = 0.0f;  // MktValue can be calculated (real-time price)
 }
 
 public class PriceHistoryJs // To save bandwidth, we send Dates, and Prices just as a List, instead of a List of <Date,Price> objects that would add property names thousands of times into JSON
@@ -299,6 +300,8 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
                 AvgPrice = (float)security.Holdings.AveragePrice,
                 LastPrice = (float)security.Holdings.Price
             };
+            Asset asset = MemDb.gMemDb.AssetsCache.GetAsset(posStckItem.SqTicker);
+            posStckItem.EstPrice = MemDb.gMemDb.GetLastRtValue(asset);
             p_prtfPoss.Add(posStckItem); // Stock Tickers
         }
 
