@@ -158,8 +158,8 @@ class UiAssetSnapPossPos {
   public estPrice = NaN;
   public pctChgTod = NaN;
   public plTod = NaN;
-  public pl = NaN;
   public plPct = NaN;
+  public pl = NaN;
   public mktVal = NaN;
   public estUndPrice = NaN;
   public ibCompDelta = NaN;
@@ -481,8 +481,8 @@ export class BrAccViewerComponent implements OnInit {
       else
         uiPosItem.pctChgTod = (possItem.estPrice - possItem.priorClose) / possItem.priorClose;
       uiPosItem.plTod = Math.round(possItem.pos * (possItem.estPrice - possItem.priorClose));
-      uiPosItem.pl = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost));
       uiPosItem.plPct = (possItem.pos * possItem.estPrice) / (possItem.pos * possItem.avgCost) - 1;
+      uiPosItem.pl = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost));
       uiPosItem.mktVal = Math.round(possItem.pos * possItem.estPrice);
       uiPosItem.gBeta = (uiPosItem.symbol in BrAccViewerComponent.betaArr ) ? BrAccViewerComponent.betaArr [uiPosItem.symbol] : 1.0;
 
