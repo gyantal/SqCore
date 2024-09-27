@@ -495,12 +495,47 @@ public partial class MemDb
                 // Instead of the longer [{"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}, {"ChartDate": 1641013200, "Value": 101665}]
                 // we send a shorter: { ChartDate: [1641013200, 1641013200, 1641013200], Value: [101665, 101665, 101665] }
                 ChartData chartVal = new();
-                DateTime startDate = pv[0].Date.Date;
-                chartVal.DateTimeFormat = "DaysFrom" + startDate.ToYYYYMMDD();
+                chartVal.ChartResolution = chartResolution;
+                DateTime startDate = DateTime.MinValue;
+                DateTimeFormat dateTimeFormat;
+                if (chartResolution == ChartResolution.Daily)
+                {
+                    dateTimeFormat = DateTimeFormat.DaysFromADate;
+                    startDate = pv[0].Date.Date;
+                    chartVal.DateTimeFormat = "DaysFrom" + startDate.ToYYYYMMDD(); // the standard choice in Production. It results in less data to be sent. Date strings will be only numbers such as 0,1,2,3,4,5,8 (skipping weekends)
+
+                    // dateTimeFormat = DateTimeFormat.YYYYMMDD;
+                    // chartVal.DateTimeFormat = "YYYYMMDD"; // YYYYMMDD is a better choice if we debug data sending. (to see it in the TXT message. Or to easily convert it to CSV in Excel)
+                }
+                else
+                {
+                    dateTimeFormat = DateTimeFormat.SecSince1970;
+                    chartVal.DateTimeFormat = "SecSince1970"; // if it is higher resolution than daily, then we use per second resolution for data
+                }
+
+                DateTime minPortfoliosStartDate = DateTime.Today; // initialize currentDate to the Today's Date
                 foreach (DateValue item in pv)
                 {
-                    int nDaysFromStartDate = (int)(item.Date - startDate).TotalDays; // number of days since startDate
-                    chartVal.Dates.Add(nDaysFromStartDate);
+                    DateTime itemDate = item.Date.Date;
+                    if (itemDate < minPortfoliosStartDate)
+                        minPortfoliosStartDate = itemDate; // MinStart Date of the portfolio's
+
+                    if (dateTimeFormat == DateTimeFormat.SecSince1970)
+                    {
+                        long unixTimeInSec = new DateTimeOffset(item.Date).ToUnixTimeSeconds();
+                        chartVal.Dates.Add(unixTimeInSec);
+                    }
+                    else if (dateTimeFormat == DateTimeFormat.YYYYMMDD)
+                    {
+                        int dateInt = itemDate.Year * 10000 + itemDate.Month * 100 + itemDate.Day;
+                        chartVal.Dates.Add(dateInt);
+                    }
+                    else // dateTimeFormat == DateTimeFormat.DaysFromADate
+                    {
+                        int nDaysFromStartDate = (int)(itemDate - startDate).TotalDays; // number of days since startDate
+                        chartVal.Dates.Add(nDaysFromStartDate);
+                    }
+
                     if (returnOnlyTwrPv)
                         chartVal.Values.Add((float)Math.Round(item.Value, 2)); // if we create a TWR chart starting from 100.0, then reduce float to 2 decimals to reduce JSON file size.
                     else

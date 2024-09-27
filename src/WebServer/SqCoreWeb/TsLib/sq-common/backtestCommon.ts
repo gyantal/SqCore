@@ -499,8 +499,7 @@ export function updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJ
   uiPrtfRunResult.chrtValues.length = 0;
   for (let i = 0; i < prtfRunResult.chrtData.dates.length; i++) {
     const chartItem = new UiChartPoint();
-    const mSecSinceUnixEpoch: number = prtfRunResult.chrtData.dates[i] * 1000; // data comes as seconds. JS uses milliseconds since Epoch.
-    chartItem.date = new Date(mSecSinceUnixEpoch);
+    chartItem.date = convertToDateBasedOnDateFormat(prtfRunResult.chrtData.dates[i], prtfRunResult.chrtData.dateTimeFormat);
     chartItem.value = prtfRunResult.chrtData.values[i];
     uiPrtfRunResult.chrtValues.push(chartItem);
   }
