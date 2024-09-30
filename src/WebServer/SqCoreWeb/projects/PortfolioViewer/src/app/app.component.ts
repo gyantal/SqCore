@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, getSeasonalityData, UiSeasonalityChartPoint, getDetailedStats } from '../../../../TsLib/sq-common/backtestCommon';
+import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, UiPrtfPositions, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, getSeasonalityData, UiSeasonalityChartPoint, getDetailedStats } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { drawBarChartFromSeasonalityData } from '../../../../TsLib/sq-common/chartSimple';
 import { DetailedStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
@@ -104,6 +104,8 @@ export class AppComponent {
   m_chrtHeight: number = 0; // added only to reuse the updateUiWithPrtfRunResult method as is ( variable has no effect today(16012024) may be useful in future)
   m_prtfRunResult: PrtfRunResultJs | null = null;
   m_uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
+  m_isSortDirAscend: boolean = false; // Used in both Positions and Trades tab pages
+  m_sortColumn: string = ''; // Used in both Positions and Trades tab pages
 
   // Positions tabpage:
   m_histPosEndDate: string = '';
@@ -123,8 +125,6 @@ export class AppComponent {
   m_isEditedTradeSectionVisible: boolean = false; // toggle the m_editedTrade widgets on the UI
   m_editedTradeTotalValue: number = 0; // UI helper variable, which is not part of the TradeJs data. Used for displaying/editing the total$Value on UI
   m_isCopyToClipboardDialogVisible: boolean = false;
-  m_tradesSortColumn: string = 'time';
-  m_isTradesSortDirAscend: boolean = false;
 
   // Trades tabpage: UI handling enums
   // How to pass enum value into Angular HTML? Answer: assign the Enum Type to a member variable. See. https://stackoverflow.com/questions/69549927/how-to-pass-enum-value-in-angular-template-as-an-input
@@ -205,6 +205,7 @@ export class AppComponent {
       return value; // the original property will not be removed if we return the original value, not undefined
     });
     updateUiWithPrtfRunResult(this.m_prtfRunResult, this.m_uiPrtfRunResult, this.m_chrtWidth, this.m_chrtHeight);
+    this.sortTradesOrPositions(this.m_uiPrtfRunResult.prtfPosValues, this.m_isSortDirAscend, this.m_sortColumn = 'plPct');
     this.getFundamentalData();
     this.m_seasonalityData = getSeasonalityData(this.m_prtfRunResult!.chrtData);
     this.processUiWithSeasonalityChart(this.m_seasonalityData);
@@ -277,7 +278,7 @@ export class AppComponent {
       this.m_trades[i].CopyFrom(tradeObjects[i] as TradeUi);
     }
 
-    this.onSortingClicked('time');
+    this.sortTradesOrPositions(this.m_trades, this.m_isSortDirAscend, this.m_sortColumn = 'time');
   }
 
   onClickSelectedTradeItem(trade: TradeUi, event: MouseEvent) {
@@ -541,15 +542,9 @@ export class AppComponent {
       this.m_socket.send('GetClosePrice:Symb:' + this.m_editedTrade.symbol + ',Date:' + SqNgCommonUtilsTime.Date2PaddedIsoStr(this.m_editedTrade.time));
   }
 
-  onSortingClicked(sortColumn: string) { // sort the trades data table
-    this.m_tradesSortColumn = sortColumn;
-    this.m_trades = this.m_trades.sort((n1, n2) => {
-      if (this.m_isTradesSortDirAscend)
-        return (n1[sortColumn] > n2[sortColumn]) ? 1 : ((n1[sortColumn] < n2[sortColumn]) ? -1 : 0);
-      else
-        return (n2[sortColumn] > n1[sortColumn]) ? 1 : ((n2[sortColumn] < n1[sortColumn]) ? -1 : 0);
-    });
-    this.m_isTradesSortDirAscend = !this.m_isTradesSortDirAscend;
+  onSortingTradesClicked(sortColumn: string) { // sort the trades data table
+    this.m_sortColumn = sortColumn;
+    this.sortTradesOrPositions(this.m_trades, this.m_isSortDirAscend, this.m_sortColumn);
   }
 
   onClickNextOrPrevDate(nextOrPrev: string) {
@@ -589,5 +584,20 @@ export class AppComponent {
     const chartWidth = this.m_chrtWidth * 0.95 - margin.left - margin.right; // 95% of the PanelChart Width
     const chartHeight = this.m_chrtHeight * 0.4 - margin.top - margin.bottom; // 40% of the PanelChart Height
     drawBarChartFromSeasonalityData(meanAndMedianSeasonalityData, barChrtDiv, chartWidth, chartHeight, margin);
+  }
+
+  onSortingPositionsClicked(sortColumn: string) { // sort the postions data table
+    this.m_sortColumn = sortColumn;
+    this.sortTradesOrPositions(this.m_uiPrtfRunResult.prtfPosValues, this.m_isSortDirAscend, this.m_sortColumn);
+  }
+
+  sortTradesOrPositions(data: TradeUi[] | UiPrtfPositions[], isSortDirAscend: boolean, sortColumn: string) {
+    data = data.sort((n1, n2) => {
+      if (isSortDirAscend)
+        return (n1[sortColumn] > n2[sortColumn]) ? 1 : ((n1[sortColumn] < n2[sortColumn]) ? -1 : 0);
+      else
+        return (n2[sortColumn] > n1[sortColumn]) ? 1 : ((n2[sortColumn] < n1[sortColumn]) ? -1 : 0);
+    });
+    this.m_isSortDirAscend = !this.m_isSortDirAscend;
   }
 }

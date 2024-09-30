@@ -5,20 +5,20 @@
   <table class="tableCommon">
     <thead>
       <tr>
-        <th>SqTicker</th>
-        <th>Name</th>
-        <th>Quantity</th>
-        <th>AvgPrice</th>
-        <th>PriorClose</th>
-        <th>EstPrice</th>
-        <th>Chg%<br>Today</th>
-        <th>P&L<br>Today</th>
-        <th>P&L</th>
-        <th>P&L%</th>
-        <th>HoldingCost</th>
-        <th>HoldingValue</th>
-        <th>SharesOutstanding</th>
-        <th>MarketCap</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='sqTicker'}" (click)="onSortingPositionsClicked('sqTicker')">SqTicker</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='name'}" (click)="onSortingPositionsClicked('name')">Name</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='quantity'}" (click)="onSortingPositionsClicked('quantity')">Quantity</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='avgPrice'}" (click)="onSortingPositionsClicked('avgPrice')">AvgPrice</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='priorClose'}" (click)="onSortingPositionsClicked('priorClose')">PriorClose</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='estPrice'}" (click)="onSortingPositionsClicked('estPrice')">EstPrice</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='pctChgTod'}" (click)="onSortingPositionsClicked('pctChgTod')">Chg%<br>Today</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='plTod'}" (click)="onSortingPositionsClicked('plTod')">P&L<br>Today</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='plPct'}" (click)="onSortingPositionsClicked('plPct')">P&L%</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='pl'}" (click)="onSortingPositionsClicked('pl')">P&L</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='holdingCost'}" (click)="onSortingPositionsClicked('holdingCost')">HoldingCost</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='holdingValue'}" (click)="onSortingPositionsClicked('holdingValue')">HoldingValue</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='sharesOutstanding'}" (click)="onSortingPositionsClicked('sharesOutstanding')">SharesOutstanding</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='marketCap'}" (click)="onSortingPositionsClicked('marketCap')">MarketCap</th>
       </tr>
     </thead>
     <tbody>
@@ -29,10 +29,10 @@
         <td>{{item.avgPrice | number:'1.2-2'}}</td>
         <td>{{item.priorClose | number:'1.2-2'}}</td>
         <td>{{item.estPrice | number:'1.2-2'}}</td>
-        <td>{{item.pctChgTod | percent:'1.2'}}</td>
+        <td [ngClass]="item.plPct > 0 ? 'positiveVal' : 'negativeVal'">{{item.pctChgTod | percent:'1.2'}}</td>
         <td>{{item.plTod | number}}</td>
         <td>{{item.pl | number}}</td>
-        <td>{{item.plPct | percent:'1.2'}}</td>
+        <td [ngClass]="item.plPct > 0 ? 'positiveVal' : 'negativeVal'">{{item.plPct | percent:'1.2'}}</td>
         <td>{{item.holdingCost | number:'1.0-0'}}</td>
         <td>{{item.holdingValue | number:'1.0-0'}}</td>
         <td>{{item.sharesOutstanding | numberToTBMK}}</td>
@@ -70,15 +70,15 @@
     <tbody>
       <tr>
         <td>last3YearsAnnualized</td>
-        <td [ngClass]="m_detailedStatistics.last3YearsAnnualized > 0 ? 'positiveReturns' : (m_detailedStatistics.last3YearsAnnualized < 0 ? 'negativeReturns' : 'noReturns')">{{m_detailedStatistics.last3YearsAnnualized | nanToDashPct}}</td>
+        <td [ngClass]="m_detailedStatistics.last3YearsAnnualized > 0 ? 'positiveVal' : (m_detailedStatistics.last3YearsAnnualized < 0 ? 'negativeVal' : 'noReturns')">{{m_detailedStatistics.last3YearsAnnualized | nanToDashPct}}</td>
       </tr>
       <tr>
         <td>last5YearsAnnualized</td>
-        <td [ngClass]="m_detailedStatistics.last5YearsAnnualized > 0 ? 'positiveReturns' : (m_detailedStatistics.last5YearsAnnualized < 0 ? 'negativeReturns' : 'noReturns')">{{m_detailedStatistics.last5YearsAnnualized | nanToDashPct}}</td>
+        <td [ngClass]="m_detailedStatistics.last5YearsAnnualized > 0 ? 'positiveVal' : (m_detailedStatistics.last5YearsAnnualized < 0 ? 'negativeVal' : 'noReturns')">{{m_detailedStatistics.last5YearsAnnualized | nanToDashPct}}</td>
       </tr>
       <tr *ngFor="let item of m_detailedStatistics.annualReturns">
         <td>{{item.year}}</td>
-        <td [ngClass]="item.return > 0 ? 'positiveReturns' : (item.return < 0 ? 'negativeReturns' : 'noReturns')">{{item.return | nanToDashPct}}</td>
+        <td [ngClass]="item.return > 0 ? 'positiveVal' : (item.return < 0 ? 'negativeVal' : 'noReturns')">{{item.return | nanToDashPct}}</td>
       </tr>
     </tbody>
   </table>
@@ -105,31 +105,31 @@
     <tbody>
       <tr>
         <td>WinRate</td>
-        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonalityWinrate" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
+        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonalityWinrate" [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
       </tr>
       <tr>
         <td>Median</td>
-        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonalityMedian" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
+        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonalityMedian" [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
       </tr>
       <tr>
         <td>Mean</td>
-        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonalityAvg" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
+        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonalityAvg" [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
       </tr>
       <tr>
         <td>10yAvg</td>
-        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonality10yAvg" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
+        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonality10yAvg" [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
       </tr>
       <tr>
         <td>5yAvg</td>
-        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonality5yAvg" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
+        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonality5yAvg" [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
       </tr>
       <tr>
         <td>3yAvg</td>
-        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonality3yAvg" [ngClass]="item > 0 ? 'positiveReturns' : (item < 0 ? 'negativeReturns' : 'noReturns')">{{item | nanToDashPct}}</td>
+        <td *ngFor="let item of this.m_seasonalityData.monthlySeasonality3yAvg" [ngClass]="item > 0 ? 'positiveVal' : (item < 0 ? 'negativeVal' : 'noReturns')">{{item | nanToDashPct}}</td>
       </tr>
       <tr *ngFor="let item of this.m_seasonalityData.monthlySeasonality">
         <td>{{item.year}}</td>
-        <td *ngFor="let retVal of item.returns" [ngClass]="retVal > 0 ? 'positiveReturns' : (retVal < 0 ? 'negativeReturns' : 'noReturns')">{{retVal | nanToDashPct}}</td>
+        <td *ngFor="let retVal of item.returns" [ngClass]="retVal > 0 ? 'positiveVal' : (retVal < 0 ? 'negativeVal' : 'noReturns')">{{retVal | nanToDashPct}}</td>
       </tr>
     </tbody>
   </table>
@@ -222,14 +222,14 @@
   <table class="tableCommon">
     <thead>
       <tr>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'underlyingSymbol'}" (click)="onSortingClicked('underlyingSymbol')">Symbol</th>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'quantity'}" (click)="onSortingClicked('quantity')">Quantity</th>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'price'}" (click)="onSortingClicked('price')">Price</th>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'currency'}" (click)="onSortingClicked('currency')">Currency</th>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'action'}" (click)="onSortingClicked('action')">TradeAction</th>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'assetType'}" (click)="onSortingClicked('assetType')">AssetType</th>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'time'}" (click)="onSortingClicked('time')">Date</th>
-        <th [ngClass]="{'activeSortTableHeader':m_tradesSortColumn == 'exchangeId'}" (click)="onSortingClicked('exchangeId')">ExchangeId</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'underlyingSymbol'}" (click)="onSortingTradesClicked('underlyingSymbol')">Symbol</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'quantity'}" (click)="onSortingTradesClicked('quantity')">Quantity</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'price'}" (click)="onSortingTradesClicked('price')">Price</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'currency'}" (click)="onSortingTradesClicked('currency')">Currency</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'action'}" (click)="onSortingTradesClicked('action')">TradeAction</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'assetType'}" (click)="onSortingTradesClicked('assetType')">AssetType</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'time'}" (click)="onSortingTradesClicked('time')">Date</th>
+        <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'exchangeId'}" (click)="onSortingTradesClicked('exchangeId')">ExchangeId</th>
       </tr>
     </thead>
     <tbody *ngFor="let item of m_trades">
