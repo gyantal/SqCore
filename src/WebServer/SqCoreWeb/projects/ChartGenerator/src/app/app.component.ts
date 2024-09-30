@@ -188,6 +188,8 @@ export class AppComponent implements OnInit {
       return;
 
     uiChrtGenPrtfRunResults.length = 0;
+    this.m_seasonalityData.length = 0; // Resetting m_seasonalityData to an empty array
+    this.m_detailedStatistics.length = 0; // Resetting m_detailedStatistics to an empty array
     const uiPrtfResItem = new UiChrtGenPrtfRunResult();
     gChrtGenDiag.serverBacktestTime = chrtGenBacktestRes.serverBacktestTimeMs;
 
@@ -478,5 +480,14 @@ export class AppComponent implements OnInit {
       for (const child of item.children)
         this.resetThisItemAndAllChildren(child);
     }
+  }
+
+  getStrategyWithMaxHistoricalData(detailedStats: DetailedStatistics[]): DetailedStatistics {
+    let maxYearsStrategy: DetailedStatistics = detailedStats[0]; // Start with the first strategy
+    for (let i = 1; i < detailedStats.length; i++) {
+      if (detailedStats[i].annualReturns.length > maxYearsStrategy.annualReturns.length)
+        maxYearsStrategy = detailedStats[i]; // Update if the current strategy has more years
+    }
+    return maxYearsStrategy;
   }
 }

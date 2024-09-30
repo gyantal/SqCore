@@ -114,7 +114,7 @@
           <td *ngFor="let stat of m_detailedStatistics" [ngClass]="stat.last5YearsAnnualized > 0 ? 'positiveReturns' : (stat.last5YearsAnnualized < 0 ? 'negativeReturns' : 'noReturns')">{{stat.last5YearsAnnualized | nanToDashPct}}</td>
         </tr>
           <!-- Loop through each unique year -->
-      <tr *ngFor="let item of m_detailedStatistics[0].annualReturns"> <!-- Loop through the annual returns of the first item in m_detailedStatistics array -->
+      <tr *ngFor="let item of getStrategyWithMaxHistoricalData(m_detailedStatistics).annualReturns"> <!-- Iterating through annual returns of the strategy with the most years of data -->
         <td>{{item.year}}</td>
         <td *ngFor="let stat of m_detailedStatistics">
           <ng-container *ngFor="let annualreturn of stat.annualReturns">
