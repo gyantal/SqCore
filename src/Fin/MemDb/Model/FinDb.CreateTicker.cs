@@ -13,8 +13,8 @@ namespace Fin.MemDb;
 
 public partial class FinDb
 {
-    // private static string[] _qcOutput = { "AAPL, Q", "SPY, P", "STZ, CBRNA:19991012, CDB:20000920, N" };
-    // https://www.quantconnect.com/project/18836389
+    // private static string[] _qcOutput = { "AAPL, 19980102, Q", "TSLA, 20100629, Q", "SPY, 19980102, P", "STZ, 19980102, STZ:19980102, CBRNA:19991012, CDB:20000920, N", "HON, 19980102, HON:19980102, ALD:19991202, N" };
+    // https://www.quantconnect.com/project/18836389 use the QC project SqMapFileHelper to get the tickerlist helper string from Log
 
     public static async void CreateTickers(string[] p_qcOutput)
     {

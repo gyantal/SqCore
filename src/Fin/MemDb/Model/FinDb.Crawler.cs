@@ -275,7 +275,13 @@ public partial class FinDb
             if (dividendTick == null)
                 continue;
             DateTime date = dividendTick.DateTime.Date; // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30"
-            if (!rawPrevClosesDict.TryGetValue(date, out SqPrice? refRawClose)) // If the date is present in both the dividend history and the raw closes dictionary, add the extended element to the dictionary.
+
+            // Markets were closed for a week after 9/11, but e.g. NVDA had a split on 2001-09-12. We need to use last known price on 2001-09-10. https://finance.yahoo.com/quote/NVDA/history/?period1=999302400&period2=1001376000
+            // An alternative idea is to always use the Date of the last known price. But then we would not use the dividendSplit.Date at all. And what if YF has a Date data error. Then we prefer a warning of that.
+            // Also, if YF has data error for prices (e.g. mistakenly doesn't have price data for the previous 3 months, then we wouldn't notice, and we would use the last price 3 months earlier. )
+            // Decision: it is safer to regard only this 9/11 period as an exception. And having warning of faulty data.
+            DateTime referencePriceDate = (date >= new DateTime(2001, 9, 11) && date <= new DateTime(2001, 9, 14)) ? new DateTime(2001, 9, 10) : date;
+            if (!rawPrevClosesDict.TryGetValue(referencePriceDate, out SqPrice? refRawClose)) // If the date is present in both the dividend history and the raw closes dictionary, add the extended element to the dictionary.
             {
                 nPotentialProblems++;
                 continue;
@@ -288,12 +294,15 @@ public partial class FinDb
         {
             if (splitTick == null)
                 continue;
+
             DateTime date = splitTick.DateTime.Date; // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30"
-            if (!rawPrevClosesDict.TryGetValue(date, out SqPrice? refRawClose))
+            DateTime referencePriceDate = (date >= new DateTime(2001, 9, 11) && date <= new DateTime(2001, 9, 14)) ? new DateTime(2001, 9, 10) : date; // see notes "Markets were closed for a week after 9/11" above
+            if (!rawPrevClosesDict.TryGetValue(referencePriceDate, out SqPrice? refRawClose))
             {
                 nPotentialProblems++;
                 continue;
             }
+
             // Check if the key exists in the dictionary.
             if (divSplitHistory.TryGetValue(date, out SqDivSplit? divSplit)) // If the key exists, update the splitFactor property of the existing DivSplitYF object.
                 divSplit.SplitFactor = splitTick.BeforeSplit / splitTick.AfterSplit;

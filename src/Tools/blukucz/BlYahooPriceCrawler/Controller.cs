@@ -112,8 +112,9 @@ namespace BlYahooPriceCrawler
                     Low = RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.Low, 4)
                 }).ToArray();
 
-                // Checking for significant price changes that could be YF bug
-                if (!p_unsafeFlag && ticker != "ARVLF" && ticker != "CANOQ" && ticker != "FFIE" && ticker != "FSRNQ" && ticker != "FTCHQ" && ticker != "HMFAF" && ticker != "MTC" && ticker != "NVTAQ" && ticker != "RADCQ" && ticker != "STIXF" && ticker != "VFS" && ticker != "WEWKQ") // Check if the prices are continuous. If there is a discontinuity (e.g., missing split), then stop and do not write the file. Except if we are in unsafe mode.
+                // Checking for significant price changes that could be YF bug. By default singinificant changes are NOT allowed. Except for a very few tickers mentioned here.
+                string[] allowedSignificantChangeTickers = ["ARVLF", "CANOQ", "EXPRQ", "FFIE", "FSRNQ", "FTCHQ", "GTII", "HMFAF", "MTC", "NVTAQ", "OM", "RADCQ", "STIXF", "VFS", "WEWKQ"]; // Significant changes are checked manually.
+                if (!p_unsafeFlag && !allowedSignificantChangeTickers.Contains(ticker)) // Check if the prices are continuous. If there is a discontinuity (e.g., missing split), then stop and do not write the file. Except if we are in unsafe mode.
                 {
                     bool hasSignificantChange = false;
                     string problematicDate = string.Empty;
@@ -186,7 +187,7 @@ namespace BlYahooPriceCrawler
         }
 
         // Calculates the performance of a recommendation over various future periods
-        private static PerformanceResult CalculatePerformance(List<YFRecord> p_priceRecords, List<YFRecord>? p_spyRecords, Recommendation p_recommendation, int[] p_nDayinFuture, float p_stopLossPercentage)
+        private static PerformanceResult CalculatePerformance(List<YFRecord> p_priceRecords, List<YFRecord>? p_spyRecords, Recommendation p_recommendation, int[] p_nDayinFuture, float p_stopLossPercentage, bool p_useMOC)
         {
             PerformanceResult performanceResult = new()
             {
@@ -234,34 +235,60 @@ namespace BlYahooPriceCrawler
                     for (int j = startRecordIndex + 1; j <= startRecordIndex + nDay; j++)
                     {
                         YFRecord record = p_priceRecords[j];
-                        if (p_recommendation.Type == RecommendationType.Buy || p_recommendation.Type == RecommendationType.StrongBuy)
+
+                        if (p_useMOC)
                         {
-                            if (record.Open <= startPrice * (1 - p_stopLossPercentage))
+                            // Using MOC (Close price)
+                            if (p_recommendation.Type == RecommendationType.Buy || p_recommendation.Type == RecommendationType.StrongBuy)
                             {
-                                endPrice = record.Open;
-                                performanceResult.StopLossDay = j - startRecordIndex;
-                                break;
+                                if (record.Close <= startPrice * (1 - p_stopLossPercentage))
+                                {
+                                    endPrice = record.Close;
+                                    performanceResult.StopLossDay = j - startRecordIndex;
+                                    break;
+                                }
                             }
-                            else if (record.Low <= startPrice * (1 - p_stopLossPercentage))
+                            else if (p_recommendation.Type == RecommendationType.Sell || p_recommendation.Type == RecommendationType.StrongSell)
                             {
-                                endPrice = startPrice * (1 - p_stopLossPercentage);
-                                performanceResult.StopLossDay = j - startRecordIndex;
-                                break;
+                                if (record.Close >= startPrice * (1 + p_stopLossPercentage))
+                                {
+                                    endPrice = record.Close;
+                                    performanceResult.StopLossDay = j - startRecordIndex;
+                                    break;
+                                }
                             }
                         }
-                        else if (p_recommendation.Type == RecommendationType.Sell || p_recommendation.Type == RecommendationType.StrongSell)
+                        else
                         {
-                            if (record.Open >= startPrice * (1 + p_stopLossPercentage))
+                            if (p_recommendation.Type == RecommendationType.Buy || p_recommendation.Type == RecommendationType.StrongBuy)
                             {
-                                endPrice = record.Open;
-                                performanceResult.StopLossDay = j - startRecordIndex;
-                                break;
+                                if (record.Open <= startPrice * (1 - p_stopLossPercentage))
+                                {
+                                    endPrice = record.Open;
+                                    performanceResult.StopLossDay = j - startRecordIndex;
+                                    break;
+                                }
+                                else if (record.Low <= startPrice * (1 - p_stopLossPercentage))
+                                {
+                                    endPrice = startPrice * (1 - p_stopLossPercentage);
+                                    performanceResult.StopLossDay = j - startRecordIndex;
+                                    break;
+                                }
                             }
-                            else if (record.High >= startPrice * (1 + p_stopLossPercentage))
+                            else if (p_recommendation.Type == RecommendationType.Sell || p_recommendation.Type == RecommendationType.StrongSell)
                             {
-                                endPrice = startPrice * (1 + p_stopLossPercentage);
-                                performanceResult.StopLossDay = j - startRecordIndex;
-                                break;
+                                if (record.Open >= startPrice * (1 + p_stopLossPercentage))
+                                {
+                                    endPrice = record.Open;
+                                    performanceResult.StopLossDay = j - startRecordIndex;
+                                    break;
+                                }
+                                else if (record.High >= startPrice * (1 + p_stopLossPercentage))
+                                {
+                                    endPrice = startPrice * (1 + p_stopLossPercentage);
+                                    performanceResult.StopLossDay = j - startRecordIndex;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -288,7 +315,7 @@ namespace BlYahooPriceCrawler
         }
 
         // Calculates performances for all recommendations
-        public static List<PerformanceResult> CalculatePerformances(RecommendationsFromCsv p_recommendations, Dictionary<string, List<YFRecord>> p_yfData, int[] p_nDayinFuture, float p_stopLossPercentage)
+        public static List<PerformanceResult> CalculatePerformances(RecommendationsFromCsv p_recommendations, Dictionary<string, List<YFRecord>> p_yfData, int[] p_nDayinFuture, float p_stopLossPercentage, bool p_useMOC)
         {
             List<PerformanceResult> results = [];
 
@@ -301,7 +328,7 @@ namespace BlYahooPriceCrawler
 
                 if (tickerRecords != null)
                 {
-                    PerformanceResult performanceResult = CalculatePerformance(tickerRecords, spyRecords, recommendation, p_nDayinFuture, p_stopLossPercentage);
+                    PerformanceResult performanceResult = CalculatePerformance(tickerRecords, spyRecords, recommendation, p_nDayinFuture, p_stopLossPercentage, p_useMOC);
                     results.Add(performanceResult);
                 }
                 else
@@ -377,8 +404,9 @@ namespace BlYahooPriceCrawler
             Dictionary<string, List<YFRecord>> yfData = ReadYahooCsvFiles(tickers, "D:/Temp/YFHist/");
 
             int[] p_nDayinFuture = [3, 5, 10, 21, 42, 63, 84, 105, 126, 189];
-            float stopLossPercentage = 0.2f; // Use a big number (e.g. 9999) to avoid stop-loss.
-            List<PerformanceResult> performances = CalculatePerformances(recommendationsFromCsv, yfData, p_nDayinFuture, stopLossPercentage);
+            float stopLossPercentage = 0.5f; // Use a big number (e.g. 9999) to avoid stop-loss.
+            bool useMOC = true;
+            List<PerformanceResult> performances = CalculatePerformances(recommendationsFromCsv, yfData, p_nDayinFuture, stopLossPercentage, useMOC);
 
             string outputCsvFile = "D:/Temp/recommendationResult.csv";
             WritePerformanceResultsToCsv(outputCsvFile, performances, p_nDayinFuture);
