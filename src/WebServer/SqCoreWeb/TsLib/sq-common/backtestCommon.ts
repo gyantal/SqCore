@@ -155,6 +155,7 @@ export class PortfolioJs extends PortfolioItemJs {
   public algorithm = '';
   public algorithmParam = '';
   public tradeHistoryId: number = -1; // default value
+  public legacyDbPortfName = '';
 }
 
 export class TreeViewItem { // future work. At the moment, it copies PortfolioFldrJs[] and add the children field. With unnecessary field values. When Portfolios are introduced, this should be rethought.
@@ -314,6 +315,10 @@ export function prtfsParseHelper(_this: any, key: string, value: any): boolean {
   }
   if (key === 'trdHis') {
     _this.tradeHistoryId = value;
+    return true; // if return undefined, original property will be removed
+  }
+  if (key === 'lgcyDbPf') {
+    _this.legacyDbPortfName = value;
     return true; // if return undefined, original property will be removed
   }
   return false; // return value is isRemoveOriginal. In general, we don't remove values
