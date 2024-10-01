@@ -571,7 +571,7 @@ public partial class MemDb
                 List<PortfolioPosition> prtfPoss = new();
                 foreach (var item in prtfPos)
                 {
-                    prtfPoss.Add(new PortfolioPosition { SqTicker = item.SqTicker, Quantity = item.Quantity, AvgPrice = item.AvgPrice, LastPrice = item.LastPrice, EstPrice = item.EstPrice });
+                    prtfPoss.Add(new PortfolioPosition { SqTicker = item.SqTicker, Quantity = item.Quantity, AvgPrice = item.AvgPrice, BacktestLastPrice = item.BacktestLastPrice, EstPrice = item.EstPrice });
                 }
 
                 // Step5: Filling the Stats, ChartPoint vals and prtfPoss in pfRunResults

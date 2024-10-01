@@ -74,7 +74,7 @@ public class PortfolioPosition
     public string SqTicker { get; set; } = string.Empty;
     public float Quantity { get; set; } = float.NaN; // int quantity is not good because fractional Crypto tokens or fractional AAPL shares can be traded
     public float AvgPrice { get; set; } = 0.0f;
-    public float LastPrice { get; set; } = 0.0f;  // the last price of the asset at the end of the backtest (not real-time price)
+    public float BacktestLastPrice { get; set; } = 0.0f;  // the last price of the asset at the end of the backtest (not real-time price)
     public float EstPrice { get; set; } = 0.0f;  // MktValue can be calculated (real-time price)
 }
 
@@ -140,8 +140,8 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         }; // output
         List<PortfolioPosition> prtfPoss = new()
         {
-            new PortfolioPosition { SqTicker = "S/SPY", Quantity = 1.0f, AvgPrice = 1.0f, LastPrice = 1.0f },
-            new PortfolioPosition { SqTicker = "S/TQQQ", Quantity = 1.0f, AvgPrice = 1.0f, LastPrice = 1.0f }
+            new PortfolioPosition { SqTicker = "S/SPY", Quantity = 1.0f, AvgPrice = 1.0f, BacktestLastPrice = 1.0f },
+            new PortfolioPosition { SqTicker = "S/TQQQ", Quantity = 1.0f, AvgPrice = 1.0f, BacktestLastPrice = 1.0f }
         }; // output
         p_prtfPoss = prtfPoss;
         p_chartResolution = ChartResolution.Daily;
@@ -298,7 +298,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
                 SqTicker = "S/" + security.Holdings.Symbol.ToString(),
                 Quantity = (float)security.Holdings.Quantity,
                 AvgPrice = (float)security.Holdings.AveragePrice,
-                LastPrice = (float)security.Holdings.Price
+                BacktestLastPrice = (float)security.Holdings.Price
             };
             Asset asset = MemDb.gMemDb.AssetsCache.GetAsset(posStckItem.SqTicker);
             posStckItem.EstPrice = MemDb.gMemDb.GetLastRtValue(asset);
@@ -309,7 +309,7 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         foreach (var item in prtfPositions.Portfolio.CashBook.Values)
         {
             posCashItem.SqTicker = "C/" + item.Symbol.ToString();
-            posCashItem.LastPrice = (float)item.Amount;
+            posCashItem.BacktestLastPrice = (float)item.Amount;
             posCashItem.Quantity = 1.0f; // overwrite the default invalid value float.NaN
             p_prtfPoss.Add(posCashItem);
         }

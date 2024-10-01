@@ -488,7 +488,7 @@ export function updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJ
     posItem.sqTicker = prtfRunResult.prtfPoss[i].sqTicker;
     posItem.quantity = prtfRunResult.prtfPoss[i].quantity;
     posItem.avgPrice = prtfRunResult.prtfPoss[i].avgPrice;
-    posItem.priorClose = prtfRunResult.prtfPoss[i].lastPrice;
+    posItem.priorClose = prtfRunResult.prtfPoss[i].backtestLastPrice;
     if (!posItem.sqTicker.startsWith('C')) { // excluding the Cash Tickers
       posItem.estPrice = prtfRunResult.prtfPoss[i].estPrice;
       posItem.pctChgTod = (posItem.estPrice - posItem.priorClose) / posItem.priorClose;
