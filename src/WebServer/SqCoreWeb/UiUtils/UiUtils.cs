@@ -37,6 +37,8 @@ internal class PortfolioJs : PortfolioItemJs
     public string AlgorithmParam { get; set; } = string.Empty;
     [JsonPropertyName("trdHis")]
     public int TradeHistoryId { get; set; } = -1;
+    [JsonPropertyName("lgcyDbPf")]
+    public string LegacyDbPortfName { get; set; } = string.Empty;
 }
 
 internal struct TickerClosePrice
@@ -154,7 +156,7 @@ internal static partial class UiUtils
     {
         PortfolioJs prtfToClient = new();
         if (MemDb.gMemDb.Portfolios.TryGetValue(id, out Portfolio? pf))
-            prtfToClient = new() { Id = pf.Id, Name = pf.Name, OwnerUserId = pf.User?.Id ?? -1, ParentFolderId = pf.ParentFolderId, BaseCurrency = pf.BaseCurrency.ToString(), SharedAccess = pf.SharedAccess.ToString(), SharedUsersWith = pf.SharedUsersWith, Type = pf.Type.ToString(), Algorithm = pf.Algorithm, AlgorithmParam = pf.AlgorithmParam, TradeHistoryId = pf.TradeHistoryId };
+            prtfToClient = new() { Id = pf.Id, Name = pf.Name, OwnerUserId = pf.User?.Id ?? -1, ParentFolderId = pf.ParentFolderId, BaseCurrency = pf.BaseCurrency.ToString(), SharedAccess = pf.SharedAccess.ToString(), SharedUsersWith = pf.SharedUsersWith, Type = pf.Type.ToString(), Algorithm = pf.Algorithm, AlgorithmParam = pf.AlgorithmParam, TradeHistoryId = pf.TradeHistoryId, LegacyDbPortfName = pf.LegacyDbPortfName };
 
         return prtfToClient;
     }
