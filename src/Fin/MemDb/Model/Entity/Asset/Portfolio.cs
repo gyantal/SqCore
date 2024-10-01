@@ -68,7 +68,6 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
     public string AlgorithmParam { get; set; } = string.Empty;
 
     public int TradeHistoryId { get; set; } = -1;
-    public string LegacyDbPortfName { get; set; } = string.Empty;
 
     // public List<Asset> Assets { get; set; } = new List<Asset>();    // TEMP. Delete this later when Portfolios are finalized.
 

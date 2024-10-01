@@ -156,7 +156,16 @@ internal static partial class UiUtils
     {
         PortfolioJs prtfToClient = new();
         if (MemDb.gMemDb.Portfolios.TryGetValue(id, out Portfolio? pf))
-            prtfToClient = new() { Id = pf.Id, Name = pf.Name, OwnerUserId = pf.User?.Id ?? -1, ParentFolderId = pf.ParentFolderId, BaseCurrency = pf.BaseCurrency.ToString(), SharedAccess = pf.SharedAccess.ToString(), SharedUsersWith = pf.SharedUsersWith, Type = pf.Type.ToString(), Algorithm = pf.Algorithm, AlgorithmParam = pf.AlgorithmParam, TradeHistoryId = pf.TradeHistoryId, LegacyDbPortfName = pf.LegacyDbPortfName };
+        {
+            LegacyPortfolio legacyPf = (LegacyPortfolio)pf;
+            prtfToClient = new()
+            {
+                Id = pf.Id, Name = pf.Name, OwnerUserId = pf.User?.Id ?? -1, ParentFolderId = pf.ParentFolderId,
+                BaseCurrency = pf.BaseCurrency.ToString(), SharedAccess = pf.SharedAccess.ToString(), SharedUsersWith = pf.SharedUsersWith,
+                Type = pf.Type.ToString(), Algorithm = pf.Algorithm, AlgorithmParam = pf.AlgorithmParam, TradeHistoryId = pf.TradeHistoryId,
+                LegacyDbPortfName = legacyPf == null ? string.Empty : legacyPf.LegacyDbPortfName
+            };
+        }
 
         return prtfToClient;
     }
