@@ -403,10 +403,10 @@ public partial class MemDb
             // 2020-04-29: USO split: Split-adjustment was not done in YF. For these exceptional cases, so we need an additional data-source for double check
             // First just add the manual data source from Redis/Sql database, and let’s see how unreliable YF is in the future.
             // If it fails frequently, then we can implement query-ing another website, like https://www.nasdaq.com/market-activity/stock-splits
-            var splitHistoryYF = await Yahoo.GetSplitsAsync(yfTicker, asset.ExpectedHistoryStartDateLoc, DateTime.Now);
+            IReadOnlyList<SplitTick> splitHistoryYF = await Yahoo.GetSplitsAsync(yfTicker, asset.ExpectedHistoryStartDateLoc, DateTime.Now);
 
             DateTime etNow = DateTime.UtcNow.FromUtcToEt();  // refresh etNow
-                                                                // var missingYfSplitDb = new SplitTick[1] { new SplitTick() { DateTime = new DateTime(2020, 06, 08), BeforeSplit = 8, AfterSplit = 1 }};
+            // var missingYfSplitDb = new SplitTick[1] { new SplitTick() { DateTime = new DateTime(2020, 06, 08), BeforeSplit = 8, AfterSplit = 1 }};
             potentialMissingYfSplits!.TryGetValue(asset.AssetId, out List<Split>? missingYfSplitDb);
 
             // if any missingYfSplitDb record is not found in splitHistoryYF, we assume YF is wrong (and our DB is right (probably custom made)),
@@ -430,7 +430,8 @@ public partial class MemDb
                 // ignore future data of https://api.nasdaq.com/api/calendar/splits?date=2021-04-14
                 if (missingSplitDb.Date > etNow) // interpret missingSplitDb.Date in in ET time zone.
                     continue;
-                if (splitHistoryYF.FirstOrDefault(r => r!.DateTime == missingSplitDb.Date) != null) // if that date exists in YF already, do nothing; assume YF uses it
+                // Be Warned! YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30". Convert to dates, if this is confusing.
+                if (splitHistoryYF.FirstOrDefault(r => r!.DateTime.Date == missingSplitDb.Date) != null) // if that date exists in YF already, do nothing; assume YF uses it
                     continue;
 
                 // VXX reverse split Before:After: "4:1" (Every 4 before becomes 1 after), multiplier is 4/1 = 4.

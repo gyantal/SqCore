@@ -35,6 +35,7 @@ public sealed partial class Yahoo
             DataConvertors.ToCandle,
             token).ConfigureAwait(false);
 
+    // Be Warned! YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30". Convert to dates, if this is confusing.
     public static async Task<IReadOnlyList<DividendTick>> GetDividendsAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, CancellationToken token = default)
         => await GetTicksAsync(
             symbol,
@@ -45,6 +46,7 @@ public sealed partial class Yahoo
             DataConvertors.ToDividendTick,
             token).ConfigureAwait(false);
 
+    // Be Warned! YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30". Convert to dates, if this is confusing.
     public static async Task<IReadOnlyList<SplitTick>> GetSplitsAsync(string symbol, DateTime? startTime = null, DateTime? endTime = null, CancellationToken token = default)
         => await GetTicksAsync(
             symbol,
