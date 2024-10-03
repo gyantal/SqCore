@@ -5,20 +5,20 @@
   <table class="tableCommon">
     <thead>
       <tr>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='sqTicker'}" (click)="onSortingPositionsClicked('sqTicker')">SqTicker</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='name'}" (click)="onSortingPositionsClicked('name')">Name</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='quantity'}" (click)="onSortingPositionsClicked('quantity')">Quantity</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='avgPrice'}" (click)="onSortingPositionsClicked('avgPrice')">AvgPrice</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='priorClose'}" (click)="onSortingPositionsClicked('priorClose')">PriorClose</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='estPrice'}" (click)="onSortingPositionsClicked('estPrice')">EstPrice</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='pctChgTod'}" (click)="onSortingPositionsClicked('pctChgTod')">Chg%<br>Today</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='plTod'}" (click)="onSortingPositionsClicked('plTod')">P&L<br>Today</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='plPct'}" (click)="onSortingPositionsClicked('plPct')">P&L%</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='pl'}" (click)="onSortingPositionsClicked('pl')">P&L</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='holdingCost'}" (click)="onSortingPositionsClicked('holdingCost')">HoldingCost</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='holdingValue'}" (click)="onSortingPositionsClicked('holdingValue')">HoldingValue</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='sharesOutstanding'}" (click)="onSortingPositionsClicked('sharesOutstanding')">SharesOutstanding</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn ==='marketCap'}" (click)="onSortingPositionsClicked('marketCap')">MarketCap</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'sqTicker'}" (click)="onSortingPositionsClicked('sqTicker')">SqTicker</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'name'}" (click)="onSortingPositionsClicked('name')">Name</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'quantity'}" (click)="onSortingPositionsClicked('quantity')">Quantity</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'avgPrice'}" (click)="onSortingPositionsClicked('avgPrice')">AvgPrice</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'priorClose'}" (click)="onSortingPositionsClicked('priorClose')">PriorClose</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'estPrice'}" (click)="onSortingPositionsClicked('estPrice')">EstPrice</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'pctChgTod'}" (click)="onSortingPositionsClicked('pctChgTod')">Chg%<br>Today</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plTod'}" (click)="onSortingPositionsClicked('plTod')">P&L<br>Today</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plPct'}" (click)="onSortingPositionsClicked('plPct')">P&L%</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'pl'}" (click)="onSortingPositionsClicked('pl')">P&L</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'holdingCost'}" (click)="onSortingPositionsClicked('holdingCost')">HoldingCost</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'holdingValue'}" (click)="onSortingPositionsClicked('holdingValue')">HoldingValue</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'sharesOutstanding'}" (click)="onSortingPositionsClicked('sharesOutstanding')">SharesOutstanding</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'marketCap'}" (click)="onSortingPositionsClicked('marketCap')">MarketCap</th>
       </tr>
     </thead>
     <tbody>
@@ -31,8 +31,8 @@
         <td>{{item.estPrice | number:'1.2-2'}}</td>
         <td [ngClass]="item.plPct > 0 ? 'positiveVal' : 'negativeVal'">{{item.pctChgTod | percent:'1.2'}}</td>
         <td>{{item.plTod | number}}</td>
-        <td>{{item.pl | number}}</td>
         <td [ngClass]="item.plPct > 0 ? 'positiveVal' : 'negativeVal'">{{item.plPct | percent:'1.2'}}</td>
+        <td>{{item.pl | number}}</td>
         <td>{{item.holdingCost | number:'1.0-0'}}</td>
         <td>{{item.holdingValue | number:'1.0-0'}}</td>
         <td>{{item.sharesOutstanding | numberToTBMK}}</td>
@@ -222,14 +222,14 @@
   <table class="tableCommon">
     <thead>
       <tr>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'underlyingSymbol'}" (click)="onSortingTradesClicked('underlyingSymbol')">Symbol</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'quantity'}" (click)="onSortingTradesClicked('quantity')">Quantity</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'price'}" (click)="onSortingTradesClicked('price')">Price</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'currency'}" (click)="onSortingTradesClicked('currency')">Currency</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'action'}" (click)="onSortingTradesClicked('action')">TradeAction</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'assetType'}" (click)="onSortingTradesClicked('assetType')">AssetType</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'time'}" (click)="onSortingTradesClicked('time')">Date</th>
-        <th [ngClass]="{'activeSortTableHeader':m_sortColumn == 'exchangeId'}" (click)="onSortingTradesClicked('exchangeId')">ExchangeId</th>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'underlyingSymbol'}" (click)="onSortingTradesClicked('underlyingSymbol')">Symbol</th>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'quantity'}" (click)="onSortingTradesClicked('quantity')">Quantity</th>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'price'}" (click)="onSortingTradesClicked('price')">Price</th>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'currency'}" (click)="onSortingTradesClicked('currency')">Currency</th>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'action'}" (click)="onSortingTradesClicked('action')">TradeAction</th>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'assetType'}" (click)="onSortingTradesClicked('assetType')">AssetType</th>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'time'}" (click)="onSortingTradesClicked('time')">Date</th>
+        <th [ngClass]="{'activeSortTableHeader':m_tradesTabSortColumn == 'exchangeId'}" (click)="onSortingTradesClicked('exchangeId')">ExchangeId</th>
       </tr>
     </thead>
     <tbody *ngFor="let item of m_trades">

@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, UiPrtfPositions, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, getSeasonalityData, UiSeasonalityChartPoint, getDetailedStats } from '../../../../TsLib/sq-common/backtestCommon';
+import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, getSeasonalityData, UiSeasonalityChartPoint, getDetailedStats } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { drawBarChartFromSeasonalityData } from '../../../../TsLib/sq-common/chartSimple';
 import { DetailedStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
@@ -104,11 +104,11 @@ export class AppComponent {
   m_chrtHeight: number = 0; // added only to reuse the updateUiWithPrtfRunResult method as is ( variable has no effect today(16012024) may be useful in future)
   m_prtfRunResult: PrtfRunResultJs | null = null;
   m_uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
-  m_isSortDirAscend: boolean = false; // Used in both Positions and Trades tab pages
-  m_sortColumn: string = ''; // Used in both Positions and Trades tab pages
 
   // Positions tabpage:
   m_histPosEndDate: string = '';
+  m_positionsTabSortColumn: string = 'plPct';
+  m_isPositionsTabSortDirAscend: boolean = false;
 
   // PortfolioReport tabpage:
   m_seasonalityData: SeasonalityData = new SeasonalityData();
@@ -120,6 +120,8 @@ export class AppComponent {
   m_editedTradeOptionFields: OptionFieldsUi = new OptionFieldsUi(); // parts of the m_editedTrade.Symbol in case of Options
   m_editedTradeFutureFields: FuturesFieldsUi = new FuturesFieldsUi(); // parts of the m_editedTrade.Symbol in case of Futures
   m_isEditedTradeDirty: boolean = false;
+  m_tradesTabSortColumn: string = 'time';
+  m_isTradesTabSortDirAscend: boolean = false;
 
   // Trades tabpage: UI handling
   m_isEditedTradeSectionVisible: boolean = false; // toggle the m_editedTrade widgets on the UI
@@ -205,7 +207,7 @@ export class AppComponent {
       return value; // the original property will not be removed if we return the original value, not undefined
     });
     updateUiWithPrtfRunResult(this.m_prtfRunResult, this.m_uiPrtfRunResult, this.m_chrtWidth, this.m_chrtHeight);
-    this.sortTradesOrPositions(this.m_uiPrtfRunResult.prtfPosValues, this.m_isSortDirAscend, this.m_sortColumn = 'plPct');
+    this.onSortingPositionsClicked(this.m_positionsTabSortColumn);
     this.getFundamentalData();
     this.m_seasonalityData = getSeasonalityData(this.m_prtfRunResult!.chrtData);
     this.processUiWithSeasonalityChart(this.m_seasonalityData);
@@ -250,6 +252,9 @@ export class AppComponent {
     this.m_activeTab = activeTab;
     if (this.m_activeTab == 'Trades')
       this.getTradesHistory();
+
+    if (this.m_activeTab == 'Positions')
+      this.onSortingPositionsClicked(this.m_positionsTabSortColumn);
   }
 
   onHistPeriodChangeClicked() { // send this when user changes the historicalPosDates
@@ -278,7 +283,7 @@ export class AppComponent {
       this.m_trades[i].CopyFrom(tradeObjects[i] as TradeUi);
     }
 
-    this.sortTradesOrPositions(this.m_trades, this.m_isSortDirAscend, this.m_sortColumn = 'time');
+    this.onSortingTradesClicked(this.m_tradesTabSortColumn);
   }
 
   onClickSelectedTradeItem(trade: TradeUi, event: MouseEvent) {
@@ -543,8 +548,14 @@ export class AppComponent {
   }
 
   onSortingTradesClicked(sortColumn: string) { // sort the trades data table
-    this.m_sortColumn = sortColumn;
-    this.sortTradesOrPositions(this.m_trades, this.m_isSortDirAscend, this.m_sortColumn);
+    this.m_tradesTabSortColumn = sortColumn;
+    this.m_trades = this.m_trades.sort((n1, n2) => {
+      if (this.m_isTradesTabSortDirAscend)
+        return (n1[sortColumn] > n2[sortColumn]) ? 1 : ((n1[sortColumn] < n2[sortColumn]) ? -1 : 0);
+      else
+        return (n2[sortColumn] > n1[sortColumn]) ? 1 : ((n2[sortColumn] < n1[sortColumn]) ? -1 : 0);
+    });
+    this.m_isTradesTabSortDirAscend = !this.m_isTradesTabSortDirAscend;
   }
 
   onClickNextOrPrevDate(nextOrPrev: string) {
@@ -587,17 +598,13 @@ export class AppComponent {
   }
 
   onSortingPositionsClicked(sortColumn: string) { // sort the postions data table
-    this.m_sortColumn = sortColumn;
-    this.sortTradesOrPositions(this.m_uiPrtfRunResult.prtfPosValues, this.m_isSortDirAscend, this.m_sortColumn);
-  }
-
-  sortTradesOrPositions(data: TradeUi[] | UiPrtfPositions[], isSortDirAscend: boolean, sortColumn: string) {
-    data = data.sort((n1, n2) => {
-      if (isSortDirAscend)
+    this.m_positionsTabSortColumn = sortColumn;
+    this.m_uiPrtfRunResult.prtfPosValues = this.m_uiPrtfRunResult.prtfPosValues.sort((n1, n2) => {
+      if (this.m_isPositionsTabSortDirAscend)
         return (n1[sortColumn] > n2[sortColumn]) ? 1 : ((n1[sortColumn] < n2[sortColumn]) ? -1 : 0);
       else
         return (n2[sortColumn] > n1[sortColumn]) ? 1 : ((n2[sortColumn] < n1[sortColumn]) ? -1 : 0);
     });
-    this.m_isSortDirAscend = !this.m_isSortDirAscend;
+    this.m_isPositionsTabSortDirAscend = !this.m_isPositionsTabSortDirAscend;
   }
 }
