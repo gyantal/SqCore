@@ -127,6 +127,17 @@ public class LegacyDb : IDisposable
             {
                 while (reader.Read())
                 {
+                    string? xmlNote = reader.IsDBNull(reader.GetOrdinal("Note")) ? null : reader.GetString(reader.GetOrdinal("Note"));
+                    string? note = null;
+                    if (!string.IsNullOrEmpty(xmlNote))
+                    {
+                        // Extract the value between 'Text="' and the next '"'
+                        int startIndex = xmlNote.IndexOf("Text=\"") + "Text=\"".Length;
+                        int endIndex = xmlNote.IndexOf("\"", startIndex);
+
+                        if (startIndex >= "Text=\"".Length && endIndex > startIndex)
+                            note = xmlNote.Substring(startIndex, endIndex - startIndex);
+                    }
                     Trade trade = new() // GetOrdinal() get the column index of the field identified by the name
                     {
                         Id = reader.GetInt32(reader.GetOrdinal("ID")),
@@ -135,7 +146,7 @@ public class LegacyDb : IDisposable
                         Symbol = reader.GetString(reader.GetOrdinal("ticker")),
                         Quantity = reader.GetInt32(reader.GetOrdinal("Volume")),
                         Price = reader.GetFloat(reader.GetOrdinal("Price")),
-                        Note = reader.IsDBNull(reader.GetOrdinal("Note")) ? null : reader.GetString(reader.GetOrdinal("Note"))
+                        Note = note
                     };
                     trades.Add(trade);
                 }
@@ -149,6 +160,78 @@ public class LegacyDb : IDisposable
             return null;
         }
         return trades;
+    }
+
+    public bool InsertTrade(string p_legacyDbPortfName, Trade p_newTrade)
+    {
+        if (m_connection?.State != System.Data.ConnectionState.Open)
+        {
+            Utils.Logger.Error("LegacyDb Error. Connection to SQL Server has not established successfully.");
+            return false;
+        }
+
+        // Step 1: Get the portfolio ID from FileSystemItem table
+        int portfolioId = GetPortfolioId(p_legacyDbPortfName);
+        if (portfolioId == -1)
+        {
+            Utils.Logger.Error($"LegacyDb Error. Could not find portfolio ID for portfolio '{p_legacyDbPortfName}'.");
+            return false;
+        }
+
+        // Step 2: Insert the new trade into portfolioitem table
+        string queryStr = @"
+        INSERT INTO portfolioitem (PortfolioID, TransactionType, AssetTypeID, AssetSubTableID, Volume, Price, Date, Note)
+        VALUES (@PortfolioID, @TransactionType, @AssetTypeID, @AssetSubTableID, @Volume, @Price, @Date, @Note)";
+
+        SqlCommand command = new(queryStr, m_connection);
+        command.Parameters.AddWithValue("@PortfolioID", portfolioId);
+        command.Parameters.AddWithValue("@TransactionType", MapTradeActionToLegacyDbTransactionType(p_newTrade.Action));
+        command.Parameters.AddWithValue("@AssetTypeID", 2);
+        command.Parameters.AddWithValue("@AssetSubTableID", GetStockId(p_newTrade.Symbol!));
+        command.Parameters.AddWithValue("@Volume", p_newTrade.Quantity);
+        command.Parameters.AddWithValue("@Price", p_newTrade.Price);
+        command.Parameters.AddWithValue("@Date", p_newTrade.Time);
+        command.Parameters.AddWithValue("@Note", string.IsNullOrEmpty(p_newTrade.Note) ? DBNull.Value : $@"<Note><UserNote Text=""{p_newTrade.Note}"" /></Note>");
+
+        try
+        {
+            int rowsAffected = command.ExecuteNonQuery();
+            if (rowsAffected > 0)
+            {
+                Utils.Logger.Info($"Trade successfully inserted for portfolio '{p_legacyDbPortfName}'.");
+                return true;
+            }
+            else
+            {
+                Utils.Logger.Error($"LegacyDb Error. Failed to insert trade for portfolio '{p_legacyDbPortfName}'.");
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Utils.Logger.Error($"LegacyDb Error. An error occurred while inserting the trade: {ex.Message}");
+            return false;
+        }
+    }
+
+    int GetStockId(string p_ticker)
+    {
+        string queryStr = $"SELECT Id FROM Stock WHERE Ticker = @Ticker";
+        SqlCommand command = new(queryStr, m_connection);
+        command.Parameters.AddWithValue("@Ticker", p_ticker);
+
+        try
+        {
+            using SqlDataReader reader = command.ExecuteReader();
+            if (reader.HasRows && reader.Read())
+                return reader.GetInt32(reader.GetOrdinal("Id"));
+        }
+        catch (Exception ex)
+        {
+            Utils.Logger.Error($"LegacyDb Error. An error occurred while fetching stock ID: {ex.Message}");
+        }
+
+        return -1;
     }
 
     int GetPortfolioId(string p_legacyDbPortfName)
@@ -186,6 +269,19 @@ public class LegacyDb : IDisposable
             9 => TradeAction.Buy, // BuybackWrittenOption
             10 => TradeAction.Exercise, // ExerciseOption
             _ => TradeAction.Unknown
+        };
+    }
+
+    static byte MapTradeActionToLegacyDbTransactionType(TradeAction p_tradeAction)
+    {
+        return p_tradeAction switch
+        {
+            TradeAction.Deposit => 1,
+            TradeAction.Withdrawal => 2,
+            TradeAction.Buy => 4,
+            TradeAction.Sell => 5,
+            TradeAction.Exercise => 10,
+            _ => 0 // Unknown or unhandled cases
         };
     }
 

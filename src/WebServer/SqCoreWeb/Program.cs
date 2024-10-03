@@ -246,6 +246,7 @@ public partial class Program
         Console.WriteLine("5. MemDb: Reload data from RedisDb (DB-ActiveIndex) to MemDb");
         Console.WriteLine("6. LegacyDb: Test connection");
         Console.WriteLine("7. LegacyDb: Get example trades");
+        Console.WriteLine("8. LegacyDb: Insert example trades");
         Console.WriteLine("9. Exit to main menu.");
         string userInput;
         try
@@ -281,6 +282,37 @@ public partial class Program
             case "7":
                 List<Trade>? trades = MemDb.gMemDb.GetLegacyPortfolioTradeHistoryToList("! CXO Combined Value-Momentum 2021 Live");
                 Console.WriteLine($"Number of trades in the '! CXO Combined Value-Momentum 2021 Live' portfolio: {trades?.Count.ToString() ?? "N/A"}");
+                break;
+            case "8":
+                // Create new trade objects with example data
+                Trade newTrade1 = new()
+                {
+                    Time = DateTime.Now.AddDays(-2),
+                    Action = TradeAction.Buy,
+                    Symbol = "TSLA",
+                    Quantity = 10,
+                    Price = 420.0f,
+                    Note = "Test trade insert"
+                };
+
+                Trade newTrade2 = new()
+                {
+                    Time = DateTime.Now.AddDays(-1),
+                    Action = TradeAction.Buy,
+                    Symbol = "NVDA",
+                    Quantity = 20,
+                    Price = 123.0f,
+                };
+
+                List<Trade> newTrades = new() { newTrade1, newTrade2 };
+
+                // Call the InsertTrade method to insert the new trades
+                foreach (Trade trade in newTrades)
+                {
+                    bool isInserted = MemDb.gMemDb.InsertLegacyPortfolioTrade("Balazs Earnings Live", trade);
+                    Console.WriteLine(isInserted ? $"{trade.Symbol} trade inserted successfully." : $"Failed to insert {trade.Symbol} trade.");
+                }
+
                 break;
             case "9":
                 return "UserChosenExit";

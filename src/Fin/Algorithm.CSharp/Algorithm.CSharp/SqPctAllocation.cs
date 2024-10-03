@@ -306,7 +306,7 @@ namespace QuantConnect.Algorithm.CSharp
                     return;
                 }
 
-                bool qcCloudDailyDataTime = !(slice.Time.Hour == 0 && slice.Time.Minute == 0);
+                bool qcCloudDailyDataTime = !(slice.Time.Hour == 16 && slice.Time.Minute == 0);
                 if (IsTradeInQcCloud && qcCloudDailyDataTime)
                     return;
 

@@ -82,9 +82,9 @@ internal static class DataConvertors
 
         // ! 100% sure that the YF API is wrong, because everybody uses the YF adjusted prices, so nobody tests this
         // row[1] is: EEM: "3:1", QQQ: "2:1". Every 1 stock before becomes 2 stocks after. (to decrease the price)
-        // VXX: "1:4". Every 4 stocks before, becomes 1 stock after (to increase the price)
+        // e.g VXX: "1:4" = (numerator:denominator). Every 4 stocks before, becomes 1 stock after (to increase the price). So, with the YF 'chart' API, the Denominator is the Before, and the Numerator is the After number.
         // The Before (stock#) is the second one, the After is the first one.
-        var splits = splitsObj.Values.Select(x => new SplitTick(ToDateTime(x.date, timeZone), ToDecimal(x.numerator), ToDecimal(x.denominator))).ToList();
+        var splits = splitsObj.Values.Select(x => new SplitTick(ToDateTime(x.date, timeZone), ToDecimal(x.denominator), ToDecimal(x.numerator))).ToList();
 
         if (IgnoreEmptyRows)
             splits = splits.Where(x => x.BeforeSplit > 0 && x.AfterSplit > 0).ToList();

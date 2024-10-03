@@ -22,6 +22,8 @@ namespace QuantConnect.Algorithm.CSharp
             // Set up the allocation schedule
             Dictionary<DateTime, Dictionary<string, decimal>> allocationSchedule = new Dictionary<DateTime, Dictionary<string, decimal>>
             {
+                { new DateTime(2024, 9, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },
+                { new DateTime(2024, 8, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },
                 { new DateTime(2024, 7, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },
                 { new DateTime(2024, 6, 30 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },
                 { new DateTime(2024, 5, 31 ), new Dictionary<string, decimal> { { "TLT", 0.0m }, { "LQD", 0.0m }, { "SPY", 0.0m }, { "CASH", 1.0m } } },

@@ -211,7 +211,7 @@ namespace QuantConnect.Algorithm.CSharp
 
                 if (IsTradeInQcCloud)
                 {
-                    bool isDataPerMinute = !(slice.Time.Hour == 0 && slice.Time.Minute == 0);
+                    bool isDataPerMinute = !(slice.Time.Hour == 16 && slice.Time.Minute == 0);
                     if (isDataPerMinute)
                         return; // if in the SqCloud and we receive perMinute data, return, because we don't need it.
                 }

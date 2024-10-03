@@ -14,4 +14,9 @@ public partial class MemDb
     {
         return m_legacyDb.GetTradeHistory(p_legacyDbPortfName); // assume tradeHistory is ordered by Trade.Time
     }
+
+    public bool InsertLegacyPortfolioTrade(string p_legacyDbPortfName, Trade p_newTrade)
+    {
+        return m_legacyDb.InsertTrade(p_legacyDbPortfName, p_newTrade); // assume tradeHistory is ordered by Trade.Time
+    }
 }
