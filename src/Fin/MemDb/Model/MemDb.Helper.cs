@@ -513,12 +513,9 @@ public partial class MemDb
                     chartVal.DateTimeFormat = "SecSince1970"; // if it is higher resolution than daily, then we use per second resolution for data
                 }
 
-                DateTime minPortfoliosStartDate = DateTime.Today; // initialize currentDate to the Today's Date
                 foreach (DateValue item in pv)
                 {
                     DateTime itemDate = item.Date.Date;
-                    if (itemDate < minPortfoliosStartDate)
-                        minPortfoliosStartDate = itemDate; // MinStart Date of the portfolio's
 
                     if (dateTimeFormat == DateTimeFormat.SecSince1970)
                     {
@@ -582,7 +579,6 @@ public partial class MemDb
                     PrtfPoss = prtfPoss
                 };
             }
-            _ = chartResolution; // To avoid the compiler Warning "Unnecessary assigment of a value" for unusued variables.
         }
         return errMsg;
     }

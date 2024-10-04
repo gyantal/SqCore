@@ -4,7 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { SqNgCommonUtils } from './../../../sq-ng-common/src/lib/sq-ng-common.utils';
 import { SqNgCommonUtilsTime, minDate, maxDate } from './../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { UltimateChart } from '../../../../TsLib/sq-common/chartUltimate';
-import { SqStatisticsBuilder, StatisticsResults, DetailedStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
+import { SqStatisticsBuilder, StatisticsResults, DetailedStatistics, BacktestDetailedStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
 import { ChrtGenBacktestResult, UiChrtGenPrtfRunResult, CgTimeSeries, SqLog, ChartResolution, UiChartPoint, FolderJs, PortfolioJs, prtfsParseHelper, fldrsParseHelper, TreeViewState, TreeViewItem, createTreeViewData, PrtfItemType, LineStyle, ChartJs, SeasonalityData, getSeasonalityData, getDetailedStats } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqTreeViewComponent } from '../../../sq-ng-common/src/lib/sq-tree-view/sq-tree-view.component';
 import { parseNumberToDate } from '../../../../TsLib/sq-common/utils-common';
@@ -50,7 +50,7 @@ export class AppComponent implements OnInit {
   m_bmrks: Nullable<string> = null; // benchmarks
   m_sqStatisticsbuilder: SqStatisticsBuilder = new SqStatisticsBuilder();
   m_backtestStatsResults: StatisticsResults[] = [];
-  m_detailedStatistics: DetailedStatistics[] = [];
+  m_detailedStatistics: DetailedStatistics = new DetailedStatistics();
   m_backtestedPortfolios: PortfolioJs[] = [];
   m_backtestedBenchmarks: string[] = [];
 
@@ -189,7 +189,7 @@ export class AppComponent implements OnInit {
 
     uiChrtGenPrtfRunResults.length = 0;
     this.m_seasonalityData.length = 0; // Resetting m_seasonalityData to an empty array
-    this.m_detailedStatistics.length = 0; // Resetting m_detailedStatistics to an empty array
+    this.m_detailedStatistics.backtestDetailedStatistics.length = 0; // Resetting backtestDetailedStatistics to an empty array
     const uiPrtfResItem = new UiChrtGenPrtfRunResult();
     gChrtGenDiag.serverBacktestTime = chrtGenBacktestRes.serverBacktestTimeMs;
 
@@ -198,7 +198,7 @@ export class AppComponent implements OnInit {
       this.updateMinMaxDates(firstValDate, lastValDate);
       const chartItem = this.createCgTimeSeriesFromChrtData(item.chrtData, item.name, true);
       this.m_seasonalityData.push(getSeasonalityData(item.chrtData));
-      this.m_detailedStatistics.push(getDetailedStats(item.chrtData));
+      this.m_detailedStatistics.backtestDetailedStatistics.push(getDetailedStats(item.chrtData));
       uiPrtfResItem.prtfChrtValues.push(chartItem);
     }
 
@@ -207,9 +207,11 @@ export class AppComponent implements OnInit {
       this.updateMinMaxDates(firstValDate, lastValDate);
       const chartItem = this.createCgTimeSeriesFromChrtData(bmrkItem.chrtData, bmrkItem.sqTicker, false);
       this.m_seasonalityData.push(getSeasonalityData(bmrkItem.chrtData));
-      this.m_detailedStatistics.push(getDetailedStats(bmrkItem.chrtData));
+      this.m_detailedStatistics.backtestDetailedStatistics.push(getDetailedStats(bmrkItem.chrtData));
       uiPrtfResItem.bmrkChrtValues.push(chartItem);
     }
+
+    this.getAnnualReturnYears(this.m_detailedStatistics.backtestDetailedStatistics, this.m_detailedStatistics.annualReturnYears); // Populate the annualReturnYears after the backtestDetailedStatistics for all portfolios and benchmarks have been received.
 
     for (const item of chrtGenBacktestRes.logs) {
       const logItem = new SqLog();
@@ -482,12 +484,15 @@ export class AppComponent implements OnInit {
     }
   }
 
-  getStrategyWithMaxHistoricalData(detailedStats: DetailedStatistics[]): DetailedStatistics {
-    let maxYearsStrategy: DetailedStatistics = detailedStats[0]; // Start with the first strategy
-    for (let i = 1; i < detailedStats.length; i++) {
-      if (detailedStats[i].annualReturns.length > maxYearsStrategy.annualReturns.length)
-        maxYearsStrategy = detailedStats[i]; // Update if the current strategy has more years
+  getAnnualReturnYears(backtestDetailedStatistics: BacktestDetailedStatistics[], annualReturnYears: number[]) {
+    annualReturnYears.length = 0; // Reset the annualReturnYears array by clearing its contents
+    for (const detailedStat of backtestDetailedStatistics) { // Loop through each backtestDetailedStatistics item
+      for (const annualReturn of detailedStat.annualReturns) { // Loop through each item's annualReturns array
+        const year: number = annualReturn.year;
+        if (!annualReturnYears.includes(year)) // Check if the year is not already in the annualReturnYears array
+          annualReturnYears.push(year); // If the year is unique, add it to the array
+      }
     }
-    return maxYearsStrategy;
+    annualReturnYears.sort((year1: number, year2: number) => year2 - year1); // Sort the annualReturnYears array in descending order. This ensures the latest year data appears first in the list
   }
 }

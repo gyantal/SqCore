@@ -107,21 +107,20 @@
       <tbody>
         <tr>
           <td>last3YearsAnnualized</td>
-          <td *ngFor="let stat of m_detailedStatistics" [ngClass]="stat.last3YearsAnnualized > 0 ? 'positiveReturns' : (stat.last3YearsAnnualized < 0 ? 'negativeReturns' : 'noReturns')">{{stat.last3YearsAnnualized | nanToDashPct}}</td>
+          <td *ngFor="let stat of m_detailedStatistics.backtestDetailedStatistics" [ngClass]="stat.last3YearsAnnualized > 0 ? 'positiveReturns' : (stat.last3YearsAnnualized < 0 ? 'negativeReturns' : 'noReturns')">{{stat.last3YearsAnnualized | nanToDashPct}}</td>
         </tr>
         <tr>
           <td>last5YearsAnnualized</td>
-          <td *ngFor="let stat of m_detailedStatistics" [ngClass]="stat.last5YearsAnnualized > 0 ? 'positiveReturns' : (stat.last5YearsAnnualized < 0 ? 'negativeReturns' : 'noReturns')">{{stat.last5YearsAnnualized | nanToDashPct}}</td>
+          <td *ngFor="let stat of m_detailedStatistics.backtestDetailedStatistics" [ngClass]="stat.last5YearsAnnualized > 0 ? 'positiveReturns' : (stat.last5YearsAnnualized < 0 ? 'negativeReturns' : 'noReturns')">{{stat.last5YearsAnnualized | nanToDashPct}}</td>
         </tr>
-          <!-- Loop through each unique year -->
-      <tr *ngFor="let item of getStrategyWithMaxHistoricalData(m_detailedStatistics).annualReturns"> <!-- Iterating through annual returns of the strategy with the most years of data -->
-        <td>{{item.year}}</td>
-        <td *ngFor="let stat of m_detailedStatistics">
-          <ng-container *ngFor="let annualreturn of stat.annualReturns">
-            <span *ngIf="annualreturn.year == item.year" [ngClass]="annualreturn.return > 0 ? 'positiveReturns' : (annualreturn.return < 0 ? 'negativeReturns' : 'noReturns')"> {{annualreturn.return | nanToDashPct}}</span>
-          </ng-container>
-        </td>
-      </tr>
+        <tr *ngFor="let year of m_detailedStatistics.annualReturnYears">
+          <td>{{year}}</td>
+          <td *ngFor="let stat of m_detailedStatistics.backtestDetailedStatistics">
+            <ng-container *ngFor="let annualreturn of stat.annualReturns">
+              <span *ngIf="annualreturn.year == year" [ngClass]="annualreturn.return > 0 ? 'positiveReturns' : (annualreturn.return < 0 ? 'negativeReturns' : 'noReturns')"> {{annualreturn.return | nanToDashPct}}</span>
+            </ng-container>
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>

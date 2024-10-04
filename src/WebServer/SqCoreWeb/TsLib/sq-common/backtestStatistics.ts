@@ -25,6 +25,11 @@ export class AnnualReturn {
 }
 
 export class DetailedStatistics {
+  public annualReturnYears: number[] = [];
+  public backtestDetailedStatistics: BacktestDetailedStatistics[] = [];
+}
+
+export class BacktestDetailedStatistics {
   public strategyName: string = '';
   public annualReturns: AnnualReturn[] = [];
   public last3YearsAnnualized: number = 0;

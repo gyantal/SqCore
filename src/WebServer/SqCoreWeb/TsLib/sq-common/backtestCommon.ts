@@ -3,7 +3,7 @@ import { prtfRunResultChrt } from '../sq-common/chartAdvanced';
 import { parseNumberToDate } from './utils-common';
 import { SqNgCommonUtilsTime } from '../../projects/sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { sqAverageOfAnnualReturns, sqAverageOfSeasonalityData, sqMedian } from './utils_math';
-import { AnnualReturn, DetailedStatistics } from './backtestStatistics';
+import { AnnualReturn, BacktestDetailedStatistics } from './backtestStatistics';
 
 // ************************************************ //
 // Classes used for developing charts, stats and positions of PortfolioRunResults
@@ -636,9 +636,9 @@ export function getSeasonalityData(chartData: ChartJs): SeasonalityData {
   return seasonalityData;
 }
 
-export function getDetailedStats(chartData: ChartJs): DetailedStatistics {
+export function getDetailedStats(chartData: ChartJs): BacktestDetailedStatistics {
   const histData: ChartJs = chartData;
-  const detailedStats: DetailedStatistics = new DetailedStatistics();
+  const detailedStats: BacktestDetailedStatistics = new BacktestDetailedStatistics();
   if (histData == null)
     return detailedStats;
 
