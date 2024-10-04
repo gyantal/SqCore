@@ -35,6 +35,11 @@ public static class ChartDataLoader
             // .AllowHttpStatus("500")
             .GetAsync(token);
 
+        // The 'dynamic' works nicely in Flurl, because flurlResponse._serializer = {Flurl.Http.Configuration.NewtonsoftJsonSerializer}
+        // So, it uses Newtonsoft. And that is doing recursively all is dynamic = ExpandoObject or Dictionaries (when needed)
+        // See example here: https://code-maze.com/csharp-deserialize-json-into-dynamic-object/
+        // But in System.Text.Json JsonSerializer.Deserialize<ExpandoObject>(text) or <dynamic> is not SupportedJoinOperators recursively.
+        // Under the hood, this returns a boxed JsonElement. So, we don’t have the convenience to use it in a truly dynamic way.
         var json = await response.GetJsonAsync();
 
         var error = json.chart?.error?.description;

@@ -1,0 +1,76 @@
+---------------------- Conclusion. 4 Options with System.Text.Json do deserialize string to RAM:
+
+1. JsonSerializer.Deserialize<Person>()
+If you are willing to write the POCO code for the class. Which is rare. Because YF json text data has too many fields.
+And it loads the whole DOM tree into RAM.
+Don't use these:
+JsonSerializer.Deserialize<ExpandoObject>()
+JsonSerializer.Deserialize<dynamic>()
+It would be convenient in code later to use: "jsonDynamicObject.chart?.error?.description", but we cannot use them. 2 reasons:
+- in System.Text.Json, it is not implemented (intentionally as they want to get rid of the dynamic). So, if you use it, it will return a JsonElement under the hood. Newtonsoft implemented it, but Newtonsoft is slow, and obsolate now.
+- The Newtonsoft benchmark showed that ExpandoObject is 10x slower than anything. Don't use them.
+
+2. JsonDocument.Parse()
+A 'lazy, forward-only memory view' of the JSON string.
+Read only. Optimized to be fast. You don't have to write POCO class code.
+More importantly!
+`JsonDocument.Parse()` **does not create a full object graph in memory** in the same way that `JsonSerializer.Deserialize()` does. Instead, it provides a lightweight, read-only representation of the JSON structure by creating a **lazy, forward-only memory view** of the JSON data.
+- **Efficient Memory Usage**: `JsonDocument` doesn't fully deserialize the JSON into strongly-typed objects. Instead, it keeps the String data in its original UTF-8 encoded form and allows you to navigate it through `JsonElement`. This minimizes memory overhead, especially when working with large JSON files.
+- **On-Demand Parsing**: As you access specific parts of the JSON (e.g., using `GetProperty()` or navigating the elements), it parses those portions without loading or converting the entire document into an object graph in memory.
+
+It still holds the entire original JSON string in memory. 
+
+https://learn.microsoft.com/en-us/dotnet/api/system.text.json.jsondocument?view=net-8.0#definition
+Def: "Provides a mechanism for examining the structural content of a JSON value without automatically instantiating data values."
+JsonDocument.Parse(): it reads the whole json string at once. To determine if it is a valid/invalid JSON. And creates the root JsonElement.
+From the root JsonElement objects, you start to call GetProperty()
+var imdb = jsonElement.GetProperty("Rating").GetProperty("Imdb").GetDouble();
+In general, each GetProperty() returns another JsonElement. So, when you do this, you start to partially parse the original JSON string on-demand.
+So, if you do a lot of these, you will parse the string many times.
+But the good part is that it doesn't duplicate the RAM, by creating a DOM tree in RAM.
+
+If you download a 10MB text from the internet, you can use JsonDocument only if you throw away the JsonDocument very quickly.
+If that JsonDocument data needs to be resident as static in RAM, then JsonDocument is not a good choice. Get the inner data from it to RAM separately, then dispose the JsonDocument.
+The best practice to use JsonDocument is with the 'using'.
+"using var jsonDocument = JsonDocument.Parse(jsonString);"
+
+3. JsonNode.Parse()
+This returns a full DOM tree into RAM. And you can even do Write/Edit operations on it. So, it is more heavy than JsonDocument.
+
+4. Utf8JsonReader
+Low level sequential reader. Pain to implement. Just a reader going on the nodes sequentially. This is the fastest reading. And also the least RAM. If you need only 5% of the DOM tree, you will create POCO objects only for those in RAM.
+
+Utf8JsonReader is extremely fast and memory-efficient because it doesn't load the entire document into memory. Instead, it reads through the JSON as a stream, token by token.
+Complexity: More difficult to use because you need to handle the JSON structure manually. You have to manage state (e.g., determining when you're inside an array or object) and process each token explicitly.
+One-Pass, Forward-Only: You cannot navigate back or randomly access different parts of the JSON. Once you’ve processed a token, you can’t return to it.
+
+You are guaranteed to parse the JSON string only once. While with JsonDocument you parse the string at JsonDocument.Parse(),
+then you partially re-parse it again and again whenever doing jsonElement.GetProperty();
+
+You can use Utf8JsonReader as a stream. In case, it will not even store the original json string in RAM.
+If you already have the json string in RAM.
+And you only use 1% of that data, maybe it is better to use JsonDocument 'lazy, memory view' window onto the string.
+
+
+---------- Final Conclusion: 
+	- usually choose between JsonDocument.Parse() or Utf8JsonReader. Both small RAM footprint. (if you don't want to code POCO and you don't want to duplicate DOM tree in RAM)
+	- use JsonDocument.Parse():
+		If speed is not important, as you will reparse the whole text at Parse() and partially at every GetProperty().
+		If you use only 5% part of a big JSON. Typical case if you have a 10MB text, and you want to access only 1 or 2 fields from it.
+		If you really don't want to bother with complex coding.
+	- Utf8JsonReader:
+		It is guaranteed to read the text only once. 
+		With almost 0 RAM footprint. 
+		My estimate is that about 2-5x faster than JsonDocument.
+
+>Preference when to use: 
+- JsonDocument (second fastest option out of the 4: 5ms ): 
+	- in QuantConnect cloud running it is fine as that is slow enough.
+	- if we inherit a 3rd party library (e.g. YahooFinanceApi) and that uses this. Fine. It would take too much time, and error prone to rewrite it. So, we will keep whatever it is now in the YF API code.
+	- if code runs only once per day (e.g. download historical prices once per day crawler). Fine. But be careful, if that crawler function is available for the user as 'Show chart of NVDA for last 1 year', then we want fastest response time.
+	- if there is other time limitting problem anyway. Sleeping 300ms between YF downloads. Then it is not a problem if this parse takes 5ms, instead of 1ms.
+- Utf8JsonReader (fastest: 1ms):
+	- in C# code that is attached to a user click response. User presses the button 'Backtest strategy' and wait for the PV chart to draw. We want fastest response time.
+	- in C# code that runs frequently. Real-time price crawling runs every 4 seconds. For 100 tickers. We need fastest execution to not throttle CPU.
+
+>See more info in "System.Text.Json 4 ways to read JSON string.txt"
