@@ -29,7 +29,7 @@
         <td>{{item.avgPrice | number:'1.2-2'}}</td>
         <td>{{item.priorClose | number:'1.2-2'}}</td>
         <td>{{item.estPrice | number:'1.2-2'}}</td>
-        <td [ngClass]="item.plPct > 0 ? 'positiveVal' : 'negativeVal'">{{item.pctChgTod | percent:'1.2'}}</td>
+        <td [ngClass]="item.pctChgTod > 0 ? 'positiveVal' : 'negativeVal'">{{item.pctChgTod | percent:'1.2'}}</td>
         <td>{{item.plTod | number}}</td>
         <td [ngClass]="item.plPct > 0 ? 'positiveVal' : 'negativeVal'">{{item.plPct | percent:'1.2'}}</td>
         <td>{{item.pl | number}}</td>
