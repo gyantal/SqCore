@@ -1,5 +1,5 @@
 <b>Portfolio Viewer</b> &nbsp;PortfolioName: {{m_portfolio?.name}}<br>
-<button [ngClass]="{'activeTabItem':m_activeTab == 'Positions'}" (click)="onActiveTabCicked('Positions')">Positions</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Report'}" (click)="onActiveTabCicked('Portfolio Report')">Portfolio Report</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Trades'}" (click)="onActiveTabCicked('Trades')">Trades*</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Performance Accumulator'}" (click)="onActiveTabCicked('Portfolio Performance Accumulator')">Portfolio Performance Accumulator</button>&nbsp;<button *ngIf="m_portfolio?.legacyDbPortfName">LegacyDbTrades</button>
+<button [ngClass]="{'activeTabItem':m_activeTab == 'Positions'}" (click)="onActiveTabCicked('Positions')">Positions</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Report'}" (click)="onActiveTabCicked('Portfolio Report')">Portfolio Report</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Trades'}" (click)="onActiveTabCicked('Trades')">Trades*</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'Portfolio Performance Accumulator'}" (click)="onActiveTabCicked('Portfolio Performance Accumulator')">Portfolio Performance Accumulator</button>&nbsp;<button [ngClass]="{'activeTabItem':m_activeTab == 'LegacyDbTrades'}" (click)="onActiveTabCicked('LegacyDbTrades')" *ngIf="m_portfolio?.legacyDbPortfName">LegacyDbTrades</button>
 <div [hidden]="m_activeTab != 'Positions'">&nbsp;
   <header>Historical Positions EndDate: <input type="Date" [(ngModel)]="m_histPosEndDate" (change)="onHistPeriodChangeClicked()"></header>&nbsp;
   <table class="tableCommon">
@@ -248,6 +248,10 @@
 </div>
 <div [hidden]="m_activeTab != 'Portfolio Performance Accumulator'">
   <p>Portfolio Performance Accumulator</p>
+</div>
+<div [hidden]="m_activeTab != 'LegacyDbTrades'"><br>
+  <textarea id="inputTradesStr"></textarea><br>
+  <button (click)="onClickConvertTradesStrToTradesJs()">Convert</button>
 </div>
 <div id="copyToClipboardDialog" *ngIf="m_isCopyToClipboardDialogVisible">All/Selected rows copied To Clipboard
   <div id="copyToClipboardDialogClosetBtn">

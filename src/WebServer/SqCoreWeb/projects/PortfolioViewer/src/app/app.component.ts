@@ -252,9 +252,6 @@ export class AppComponent {
     this.m_activeTab = activeTab;
     if (this.m_activeTab == 'Trades')
       this.getTradesHistory();
-
-    if (this.m_activeTab == 'Positions')
-      this.onSortingPositionsClicked(this.m_positionsTabSortColumn);
   }
 
   onHistPeriodChangeClicked() { // send this when user changes the historicalPosDates
@@ -606,5 +603,31 @@ export class AppComponent {
         return (n2[sortColumn] > n1[sortColumn]) ? 1 : ((n2[sortColumn] < n1[sortColumn]) ? -1 : 0);
     });
     this.m_isPositionsTabSortDirAscend = !this.m_isPositionsTabSortDirAscend;
+  }
+
+  onClickConvertTradesStrToTradesJs() {
+    const tradesStrInputElement = document.getElementById('inputTradesStr') as HTMLTextAreaElement;
+    const tradesStr: string = tradesStrInputElement.value;
+    const tradeRows: string[] = tradesStr.trim().split('\n'); // Split the data by newline to get each row
+    const trades: TradeJs[] = []; // Initialize an array to store TradeJs objects
+
+    for (let i = 0; i < tradeRows.length; i++) {
+      let tradeRecord = tradeRows[i];
+      if (tradeRecord.startsWith('\t')) // Remove the leading tab, if it exists
+        tradeRecord = tradeRecord.substring(1); // Remove the leading tab
+
+      const trade = tradeRecord.split('\t'); // Split each row by tab character (preserve empty values)
+      const tradeObj: TradeJs = new TradeJs();
+      tradeObj.symbol = trade[1];
+      tradeObj.quantity = parseInt(trade[2]);
+      tradeObj.price = parseInt(trade[3]);
+      tradeObj.currency = CurrencyId[trade[4]];
+      tradeObj.action = trade[0] === 'BOT' ? TradeAction.Buy : TradeAction.Sell; // TBD - Here we need add more conditions, but for testing i added only one.
+      tradeObj.time = new Date(trade[5]);
+
+      trades.push(tradeObj); // Add TradeJs object to the result array
+    }
+
+    console.log('onClickConvertTradesStrToTradesJs:', trades);
   }
 }
