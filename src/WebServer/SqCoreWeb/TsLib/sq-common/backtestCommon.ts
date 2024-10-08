@@ -121,9 +121,10 @@ export class UiPrtfPositions {
   public estPrice: number = NaN;
   public pctChgTod: number = NaN;
   public plTod: number = NaN;
-  public pl: number = NaN;
-  public plPct: number = NaN;
-  public holdingCost: number = 0;
+  public costBasis: number = 0; // the holding cost
+  public mktVal: number = 0;
+  public plPctTotal: number = NaN;
+  public plTotal: number = NaN;
   public holdingValue: number = 0;
   public sharesOutstanding: number = 0;
   public marketCap: number = 0;
@@ -493,10 +494,11 @@ export function updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJ
       posItem.estPrice = prtfRunResult.prtfPoss[i].estPrice;
       posItem.pctChgTod = (posItem.estPrice - posItem.priorClose) / posItem.priorClose;
       posItem.plTod = Math.round(posItem.quantity * (posItem.estPrice - posItem.priorClose));
-      posItem.pl = Math.round(posItem.quantity * (posItem.estPrice - posItem.avgPrice));
-      posItem.plPct = (posItem.quantity * posItem.estPrice) / (posItem.quantity * posItem.avgPrice) - 1;
+      posItem.plPctTotal = (posItem.quantity * posItem.estPrice) / (posItem.quantity * posItem.avgPrice) - 1;
+      posItem.plTotal = Math.round(posItem.quantity * (posItem.estPrice - posItem.avgPrice));
     }
-    posItem.holdingCost = posItem.avgPrice * posItem.quantity;
+    posItem.costBasis = Math.round(posItem.avgPrice * posItem.quantity);
+    posItem.mktVal = Math.round(posItem.estPrice * posItem.quantity);
     posItem.holdingValue = posItem.priorClose * posItem.quantity;
     uiPrtfRunResult.prtfPosValues.push(posItem);
   }

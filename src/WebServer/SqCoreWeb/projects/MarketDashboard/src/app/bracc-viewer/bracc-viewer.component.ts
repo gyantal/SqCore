@@ -152,15 +152,16 @@ class UiAssetSnapPossPos {
   public symbol = '';
   public symbolEx = '';
   public name = '';
-  public pos = NaN;
-  public avgCost = NaN;
+  public qty = NaN;
+  public avgPrice = NaN; // the cost per share
   public priorClose = NaN;
-  public estPrice = NaN;
+  public estPrice = NaN; // current RT price
   public pctChgTod = NaN;
   public plTod = NaN;
-  public plPct = NaN;
-  public pl = NaN;
+  public costBasis = NaN; // the holding cost
   public mktVal = NaN;
+  public plPctTotal = NaN;
+  public plTotal = NaN;
   public estUndPrice = NaN;
   public ibCompDelta = NaN;
   public delivValue = NaN;
@@ -472,8 +473,8 @@ export class BrAccViewerComponent implements OnInit {
       uiPosItem.name = possItem.name;
       uiPosItem.accIdStr = possItem.accId;
       // BrAccViewerComponent.betaArr
-      uiPosItem.pos = possItem.pos;
-      uiPosItem.avgCost = possItem.avgCost;
+      uiPosItem.qty = possItem.pos;
+      uiPosItem.avgPrice = possItem.avgCost;
       uiPosItem.priorClose = possItem.priorClose;
       uiPosItem.estPrice = possItem.estPrice;
       if (possItem.priorClose === 0)
@@ -481,9 +482,10 @@ export class BrAccViewerComponent implements OnInit {
       else
         uiPosItem.pctChgTod = (possItem.estPrice - possItem.priorClose) / possItem.priorClose;
       uiPosItem.plTod = Math.round(possItem.pos * (possItem.estPrice - possItem.priorClose));
-      uiPosItem.plPct = (possItem.pos * possItem.estPrice) / (possItem.pos * possItem.avgCost) - 1;
-      uiPosItem.pl = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost));
+      uiPosItem.costBasis = Math.round(possItem.pos * possItem.avgCost);
       uiPosItem.mktVal = Math.round(possItem.pos * possItem.estPrice);
+      uiPosItem.plPctTotal = (possItem.pos * possItem.estPrice) / (possItem.pos * possItem.avgCost) - 1;
+      uiPosItem.plTotal = Math.round(possItem.pos * (possItem.estPrice - possItem.avgCost));
       uiPosItem.gBeta = (uiPosItem.symbol in BrAccViewerComponent.betaArr ) ? BrAccViewerComponent.betaArr [uiPosItem.symbol] : 1.0;
 
       if (possItem.sqTicker.startsWith('O') && !isNaN(possItem.ibCompDelta) && possItem.ibCompDelta != 0.0) {

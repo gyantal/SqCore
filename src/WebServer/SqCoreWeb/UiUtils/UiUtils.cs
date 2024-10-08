@@ -157,7 +157,6 @@ internal static partial class UiUtils
         PortfolioJs prtfToClient = new();
         if (MemDb.gMemDb.Portfolios.TryGetValue(id, out Portfolio? pf))
         {
-            // LegacyPortfolio legacyPf = (LegacyPortfolio)pf; // Directly casting pf to LegacyPortfolio will throw an InvalidCastException at runtime if pf is not an instance of LegacyPortfolio. e.g. System.InvalidCastException: Unable to cast object of type 'Fin.MemDb.Portfolio' to type 'Fin.MemDb.LegacyPortfolio'.
             prtfToClient = new()
             {
                 Id = pf.Id, Name = pf.Name, OwnerUserId = pf.User?.Id ?? -1, ParentFolderId = pf.ParentFolderId,

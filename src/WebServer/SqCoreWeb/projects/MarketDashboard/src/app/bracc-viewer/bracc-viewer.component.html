@@ -253,15 +253,16 @@ MarketBar
     <tr class="tableHeader">
       <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='symbol'}" (click)="onSortingClicked('symbol')">Symbol</th>
       <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='symbolEx'}" (click)="onSortingClicked('symbolEx')">SymbolEx</th>
-      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='pos'}" (click)="onSortingClicked('pos')">Pos</th>
-      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='avgCost'}" (click)="onSortingClicked('avgCost')">Cost</th>
-      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='priorClose'}" (click)="onSortingClicked('priorClose')">Prior<br>Close</th>
-      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='estPrice'}" (click)="onSortingClicked('estPrice')">Est<br>Price</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='qty'}" (click)="onSortingClicked('qty')">Qty</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='avgPrice'}" (click)="onSortingClicked('avgPrice')">AvgPrice</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='priorClose'}" (click)="onSortingClicked('priorClose')">PriorClose</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='estPrice'}" (click)="onSortingClicked('estPrice')">EstPrice</th>
       <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='pctChgTod'}" (click)="onSortingClicked('pctChgTod')">Chg%<br>Today</th>
       <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='plTod'}" (click)="onSortingClicked('plTod')">P&L<br>Today</th>
-      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='plPct'}" (click)="onSortingClicked('plPct')">P&L%</th>
-      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='pl'}" (click)="onSortingClicked('pl')">P&L</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='costBasis'}" (click)="onSortingClicked('costBasis')">Cost<br>Basis</th>
       <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='mktVal'}" (click)="onSortingClicked('mktVal')">MktVal</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='plPctTotal'}" (click)="onSortingClicked('plPctTotal')">P&L%<br>Total</th>
+      <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='plTotal'}" (click)="onSortingClicked('plTotal')">P&L<br>Total</th>
       <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='estUndPrice'}" (click)="onSortingClicked('estUndPrice')">Est<br>UndPr</th>
       <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='delivValue'}" (click)="onSortingClicked('delivValue')">Deliv<br>Value</th>
       <th [ngClass]="{'ActiveSortTableHeader':sortColumn ==='ibCompDelta'}" (click)="onSortingClicked('ibCompDelta')">IbComp<br>Delta</th>
@@ -279,15 +280,16 @@ MarketBar
         </a>
       </td>
       <td>{{item.symbolEx}}</td>
-      <td>{{item.pos | number}}</td>
-      <td>{{item.avgCost | number:'1.2-2'}}</td>
+      <td>{{item.qty | number}}</td>
+      <td>{{item.avgPrice | number:'1.2-2'}}</td>
       <td>{{item.priorClose | number:'1.2-2'}}</td>
       <td>{{item.estPrice | number:'1.2-2'}}</td>
       <td [ngClass]="item.pctChgTod > 0 ? 'positiveVal' : 'negativeVal'">{{item.pctChgTod | percent:'1.2'}}</td>
       <td>{{item.plTod | number}}</td>
-      <td [ngClass]="item.plPct > 0 ? 'positiveVal' : 'negativeVal'">{{item.plPct | percent:'1.2'}}</td>
-      <td>{{item.pl | number}}</td>
+      <td>{{item.costBasis | number}}</td>
       <td>{{item.mktVal | number}}</td>
+      <td [ngClass]="item.plPctTotal > 0 ? 'positiveVal' : 'negativeVal'">{{item.plPctTotal | percent:'1.2'}}</td>
+      <td>{{item.plTotal | number}}</td>
       <td>{{item.estUndPrice | number}}</td>
       <td>{{item.delivValue | number}}</td>
       <td>{{item.ibCompDelta | number}}</td>
