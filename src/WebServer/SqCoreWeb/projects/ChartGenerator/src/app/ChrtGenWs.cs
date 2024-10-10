@@ -119,7 +119,7 @@ public class ChrtGenWs
             }
         }
 
-        DateTime minPortfoliosStartDate = DateTime.Today; // initialize currentDate to the Today's Date
+        // DateTime minPortfoliosStartDate = DateTime.Today; // initialize currentDate to the Today's Date
         List<ChrtGenPrtfRunResultJs> chrtGenPrtfRunResultJs = new();
         // Step 2: Filling the chrtGenPrtfRunResultJs to a list.
         for (int i = 0; i < lsPrtf.Count; i++)
@@ -157,8 +157,8 @@ public class ChrtGenWs
                 foreach (DateValue item in pv)
                 {
                     DateTime itemDate = item.Date.Date;
-                    if (itemDate < minPortfoliosStartDate)
-                        minPortfoliosStartDate = itemDate; // MinStart Date of the portfolio's
+                    // if (itemDate < minPortfoliosStartDate)
+                    //     minPortfoliosStartDate = itemDate; // MinStart Date of the portfolio's
 
                     if (dateTimeFormat == DateTimeFormat.SecSince1970)
                     {
@@ -190,12 +190,17 @@ public class ChrtGenWs
         if (string.IsNullOrEmpty(bmrksStr))
             sqLogs.Add(new SqLog { SqLogLevel = SqLogLevel.Info, Message = $"The bmrksStr from the client is null. We process the pidStr further." });
 
-        if (minPortfoliosStartDate == DateTime.Today) // Default date (2020-01-01) if minStartdate == today
-            minPortfoliosStartDate = QCAlgorithmUtils.g_earliestQcDay; // we are giving mindate as (1900-01-01) so that it gets all the data available if its only processing the benchmarks. DateTime.MinValue cannot be used, because QC.HistoryProvider.GetHistory() will convert this time to UTC, but taking away 5 hours from MinDate is not possible.
+        // if (minPortfoliosStartDate == DateTime.Today) // Default date (2020-01-01) if minStartdate == today
+        //    minPortfoliosStartDate = QCAlgorithmUtils.g_earliestQcDay; // we are giving mindate as (1900-01-01) so that it gets all the data available if its only processing the benchmarks. DateTime.MinValue cannot be used, because QC.HistoryProvider.GetHistory() will convert this time to UTC, but taking away 5 hours from MinDate is not possible.
+        // Although we have historical data for benchmarks(SPY) starting from 1998, the minPortfoliosStartDate is calculated based on the portfolios, and this minimum date is used to retrieve historical data for the benchmark. For instance, if for prtfId: 12, the minPortfoliosStartDate is 20211021, this date is then used to obtain the benchmark history (BmrkHist). It would be better to use a separate variable specifically for retrieving BmrkHist.
+        // Maybe our earlier decision was to calculate the minPortfoliosStartDate based on the portfolios and use that to retrieve the bmrkHist. TBD
+        DateTime minBmrkHistStartDate = DateTime.Today; // initialize currentDate to the Today's Date.
+        if (minBmrkHistStartDate == DateTime.Today) // Default date (2020-01-01) if minStartdate == today
+            minBmrkHistStartDate = QCAlgorithmUtils.g_earliestQcDay; // we are giving mindate as (1900-01-01) so that it gets all the data available if its only processing the benchmarks. DateTime.MinValue cannot be used, because QC.HistoryProvider.GetHistory() will convert this time to UTC, but taking away 5 hours from MinDate is not possible.
         List<BmrkHistory> bmrkHistories = new();
         foreach (string bmrkTicker in bmrksStr!.Split(',', StringSplitOptions.RemoveEmptyEntries))
         {
-            string? errMsg = Portfolio.GetBmrksHistoricalResults(bmrkTicker, minPortfoliosStartDate, out PriceHistoryJs histPrcs, out ChartResolution chartResolution);
+            string? errMsg = Portfolio.GetBmrksHistoricalResults(bmrkTicker, minBmrkHistStartDate, out PriceHistoryJs histPrcs, out ChartResolution chartResolution);
             if (errMsg == null)
             {
                 ChartData chartValBmrk = new();
@@ -220,8 +225,8 @@ public class ChrtGenWs
                 for (int i = 0; i < histPrcs.Dates.Count; i++)
                 {
                     DateTime itemDate = DateTimeOffset.FromUnixTimeSeconds(histPrcs.Dates[i]).DateTime;
-                    if (itemDate < minPortfoliosStartDate)
-                        minPortfoliosStartDate = itemDate;
+                    if (itemDate < minBmrkHistStartDate)
+                        minBmrkHistStartDate = itemDate;
 
                     if (dateTimeFormat == DateTimeFormat.SecSince1970)
                         chartValBmrk.Dates.Add(histPrcs.Dates[i]);

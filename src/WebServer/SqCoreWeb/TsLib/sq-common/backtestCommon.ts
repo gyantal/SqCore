@@ -663,8 +663,8 @@ export function getDetailedStats(chartData: ChartJs): BacktestDetailedStatistics
     iStart = iLast; // now, for the inner while loop to work again, we have to swap the indices.
   }
 
-  detailedStats.annualReturns = annualReturns;
-  // Step 4: Calculate the annualized returns for the last 3 and 5 years
+  detailedStats.annualReturns = annualReturns.sort((annualReturn1: AnnualReturn, annualReturn2: AnnualReturn) => annualReturn2.year - annualReturn1.year); // Sort the annualReturns array in descending order. This ensures the latest year data appears first in the list;
+  // Calculate the annualized returns for the last 3 and 5 years
   const numOfYears: number = annualReturns.length;
   detailedStats.last3YearsAnnualized = numOfYears >= 3 ? sqAverageOfAnnualReturns(annualReturns, 3) : NaN; // Calculate last 3 years annualized return, if there are at least 3 years of data
   detailedStats.last5YearsAnnualized = numOfYears >= 5 ? sqAverageOfAnnualReturns(annualReturns, 5) : NaN; // Calculate last 5 years annualized return, if there are at least 5 years of data
