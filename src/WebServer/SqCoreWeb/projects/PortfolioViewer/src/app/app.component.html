@@ -9,7 +9,7 @@
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'name'}" (click)="onSortingPositionsClicked('name')">Name</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'quantity'}" (click)="onSortingPositionsClicked('quantity')">Qty</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'avgPrice'}" (click)="onSortingPositionsClicked('avgPrice')">AvgPrice</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'priorClose'}" (click)="onSortingPositionsClicked('priorClose')">PriorClose</th>
+        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'priorClose'}" (click)="onSortingPositionsClicked('priorClose')">Prior<br>Close</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'estPrice'}" (click)="onSortingPositionsClicked('estPrice')">EstPrice</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'pctChgTod'}" (click)="onSortingPositionsClicked('pctChgTod')">Chg%<br>Today</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plTod'}" (click)="onSortingPositionsClicked('plTod')">P&L<br>Today</th>
@@ -17,7 +17,6 @@
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'mktVal'}" (click)="onSortingPositionsClicked('mktVal')">MktVal</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plPctTotal'}" (click)="onSortingPositionsClicked('plPctTotal')">P&L%<br>Total</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'plTotal'}" (click)="onSortingPositionsClicked('plTotal')">P&L<br>Total</th>
-        <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'holdingValue'}" (click)="onSortingPositionsClicked('holdingValue')">HoldingValue</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'sharesOutstanding'}" (click)="onSortingPositionsClicked('sharesOutstanding')">SharesOutstanding</th>
         <th [ngClass]="{'activeSortTableHeader':m_positionsTabSortColumn == 'marketCap'}" (click)="onSortingPositionsClicked('marketCap')">MarketCap</th>
       </tr>
@@ -36,7 +35,6 @@
         <td>{{item.mktVal | number:'1.0-0'}}</td>
         <td [ngClass]="item.plPctTotal > 0 ? 'positiveVal' : 'negativeVal'">{{item.plPctTotal | percent:'1.2'}}</td>
         <td>{{item.plTotal | number}}</td>
-        <td>{{item.holdingValue | number:'1.0-0'}}</td>
         <td>{{item.sharesOutstanding | numberToTBMK}}</td>
         <td>{{item.marketCap | numberToTBMK}}</td>
       </tr>

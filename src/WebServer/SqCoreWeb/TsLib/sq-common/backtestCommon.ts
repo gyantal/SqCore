@@ -125,7 +125,6 @@ export class UiPrtfPositions {
   public mktVal: number = 0;
   public plPctTotal: number = NaN;
   public plTotal: number = NaN;
-  public holdingValue: number = 0;
   public sharesOutstanding: number = 0;
   public marketCap: number = 0;
 }
@@ -490,16 +489,15 @@ export function updateUiWithPrtfRunResult(prtfRunResult: Nullable<PrtfRunResultJ
     posItem.quantity = prtfRunResult.prtfPoss[i].quantity;
     posItem.avgPrice = prtfRunResult.prtfPoss[i].avgPrice;
     posItem.priorClose = prtfRunResult.prtfPoss[i].backtestLastPrice;
+    posItem.costBasis = Math.round(posItem.avgPrice * posItem.quantity);
+    posItem.mktVal = Math.round(prtfRunResult.prtfPoss[i].estPrice * posItem.quantity); // mktVal - uses the RT price
     if (!posItem.sqTicker.startsWith('C')) { // excluding the Cash Tickers
       posItem.estPrice = prtfRunResult.prtfPoss[i].estPrice;
       posItem.pctChgTod = (posItem.estPrice - posItem.priorClose) / posItem.priorClose;
       posItem.plTod = Math.round(posItem.quantity * (posItem.estPrice - posItem.priorClose));
-      posItem.plPctTotal = (posItem.quantity * posItem.estPrice) / (posItem.quantity * posItem.avgPrice) - 1;
       posItem.plTotal = Math.round(posItem.quantity * (posItem.estPrice - posItem.avgPrice));
+      posItem.plPctTotal = posItem.plTotal / Math.abs(posItem.costBasis);
     }
-    posItem.costBasis = Math.round(posItem.avgPrice * posItem.quantity);
-    posItem.mktVal = Math.round(posItem.estPrice * posItem.quantity);
-    posItem.holdingValue = posItem.priorClose * posItem.quantity;
     uiPrtfRunResult.prtfPosValues.push(posItem);
   }
 
