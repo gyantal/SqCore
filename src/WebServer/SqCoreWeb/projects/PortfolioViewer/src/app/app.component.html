@@ -251,7 +251,11 @@
 </div>
 <div [hidden]="m_activeTab != 'LegacyDbTrades'"><br>
   <textarea id="inputTradesStr"></textarea><br>
+  LegacyDbInsertionYear: <input type="number" [value]="m_legacyDbInsertionYear" (input)="onInputLegacyDbInsertionYear($event)">&nbsp;
   <button (click)="onClickConvertTradesStrToTradesJs()">Convert</button>
+  <div *ngIf="m_errorMsgToUser != null">
+    <p [innerHtml]="m_errorMsgToUser"></p>
+  </div>
 </div>
 <div id="copyToClipboardDialog" *ngIf="m_isCopyToClipboardDialogVisible">All/Selected rows copied To Clipboard
   <div id="copyToClipboardDialogClosetBtn">

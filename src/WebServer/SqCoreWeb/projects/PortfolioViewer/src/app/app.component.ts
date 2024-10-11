@@ -135,6 +135,10 @@ export class AppComponent {
   m_enumCurrencyId = CurrencyId;
   m_enumExchangeId = ExchangeId;
 
+  // LegacyDbTrades tabpage
+  m_legacyDbInsertionYear: number = new Date().getFullYear(); // using the current year as default value
+  m_errorMsgToUser: string = '';
+
   user = {
     name: 'Anonymous',
     email: '             '
@@ -605,29 +609,74 @@ export class AppComponent {
     this.m_isPositionsTabSortDirAscend = !this.m_isPositionsTabSortDirAscend;
   }
 
+  onInputLegacyDbInsertionYear(event: Event) {
+    this.m_legacyDbInsertionYear = parseInt((event.target as HTMLInputElement).value.trim());
+  }
+
   onClickConvertTradesStrToTradesJs() {
     const tradesStrInputElement = document.getElementById('inputTradesStr') as HTMLTextAreaElement;
     const tradesStr: string = tradesStrInputElement.value;
-    const tradeRows: string[] = tradesStr.trim().split('\n'); // Split the data by newline to get each row
-    const trades: TradeJs[] = []; // Initialize an array to store TradeJs objects
-
-    for (let i = 0; i < tradeRows.length; i++) {
-      let tradeRecord = tradeRows[i];
-      if (tradeRecord.startsWith('\t')) // Remove the leading tab, if it exists
-        tradeRecord = tradeRecord.substring(1); // Remove the leading tab
-
-      const trade = tradeRecord.split('\t'); // Split each row by tab character (preserve empty values)
-      const tradeObj: TradeJs = new TradeJs();
-      tradeObj.symbol = trade[1];
-      tradeObj.quantity = parseInt(trade[2]);
-      tradeObj.price = parseInt(trade[3]);
-      tradeObj.currency = CurrencyId[trade[4]];
-      tradeObj.action = trade[0] === 'BOT' ? TradeAction.Buy : TradeAction.Sell; // TBD - Here we need add more conditions, but for testing i added only one.
-      tradeObj.time = new Date(trade[5]);
-
-      trades.push(tradeObj); // Add TradeJs object to the result array
+    if (tradesStr.includes('-')) { // Check for partial trades
+      this.m_errorMsgToUser = 'Error. Processing stopped. "-" was found which indicates partial trades are present. Remove partial trades.';
+      return;
     }
 
-    console.log('onClickConvertTradesStrToTradesJs:', trades);
+    const trades: TradeJs[] = []; // Initialize an array to store TradeJs objects
+    const tradeRows: string[] = tradesStr.trim().split('\n'); // Split the data by newline to get each row
+    for (let i = 0; i < tradeRows.length; i++) {
+      let tradeRecord = tradeRows[i];
+      tradeRecord = tradeRecord.startsWith('+') ? tradeRecord.substring(2) : tradeRecord.startsWith('\t') ? tradeRecord.substring(1) : tradeRecord; // removing the '+' and '\t' from the tradeRecord
+      const trade = tradeRecord.split('\t'); // Split each row by tab character (preserve empty values)
+      const tradeObj: TradeJs = new TradeJs();
+      try {
+        this.validateTradeData(trade);
+        this.processTradeData(trade, tradeObj);
+        trades.push(tradeObj); // Add TradeJs object to the result array
+      } catch (error) {
+        this.m_errorMsgToUser = `Error in record ${i + 1}: ${(error as Error).message}<br>`; // Add error message to m_errorMsgToUser
+        return;
+      }
+    }
+
+    if (this.m_errorMsgToUser == '') // Only for Testing
+      console.log('onClickConvertTradesStrToTradesJs:', trades);
+  }
+
+  validateTradeData(trade: string[]) { // Function to validate trade data. TBD for other data validation
+    if (isNaN(parseInt(trade[2])))
+      throw new Error('Quantity is not a valid number.');
+    if (isNaN(parseInt(trade[3])))
+      throw new Error('Price is not a valid number.');
+
+    if (CurrencyId[trade[4]] == undefined)
+      throw new Error(`CurrencyId: '${trade[4]}' is invalid.`);
+
+    const validTradeAction = ['BOT', 'SLD', 'DEPOSIT']; // we can add more
+    if (!validTradeAction.includes(trade[0]))
+      throw new Error(`TradeAction: '${trade[0]}' is invalid.`);
+  }
+
+  processTradeData(trade: string[], tradeObj: TradeJs) {
+    tradeObj.symbol = trade[1];
+    tradeObj.quantity = parseInt(trade[2]);
+    tradeObj.price = parseInt(trade[3]);
+    tradeObj.currency = CurrencyId[trade[4]];
+
+    switch (trade[0]) { // Check for TradeAction
+      case 'BOT':
+        tradeObj.action = TradeAction.Buy;
+        break;
+      case 'SLD':
+        tradeObj.action = TradeAction.Sell;
+        break;
+      case 'DEPOSIT':
+        tradeObj.action = TradeAction.Deposit;
+        break;
+    }
+
+    // Convert date to a proper date format
+    const tradeDt = new Date(trade[5]);
+    tradeDt.setFullYear(this.m_legacyDbInsertionYear); // Since the year is not included in the trades text, we set it using m_legacyDbInsertionYear to avoid the default year of 1900.
+    tradeObj.time = tradeDt;
   }
 }
