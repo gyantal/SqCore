@@ -49,6 +49,7 @@ os.system("npx webpack --config webapps/LiveStrategy/Sin/webpack.config.js --mod
 os.system("npx webpack --config webapps/LiveStrategy/RenewedUber/webpack.config.js --mode=production")
 os.system("npx webpack --config webapps/LiveStrategy/UberTaa/webpack.config.js --mode=production")
 os.system("npx webpack --config webapps/VolatilityVisualizer/webpack.config.js --mode=production")
+os.system("npx webpack --config webapps/SeekingAlphaHelper/webpack.config.js --mode=production")
 
 # 2.3. Angular webapps in  ./Angular should be built
 print("\nSqBuild: Executing Angular 'ng build...'")

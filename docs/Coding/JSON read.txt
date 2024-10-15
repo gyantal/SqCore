@@ -52,18 +52,25 @@ If you already have the json string in RAM.
 And you only use 1% of that data, maybe it is better to use JsonDocument 'lazy, memory view' window onto the string.
 
 
----------- Final Conclusion: 
-	- usually choose between JsonDocument.Parse() or Utf8JsonReader. Both small RAM footprint. (if you don't want to code POCO and you don't want to duplicate DOM tree in RAM)
-	- use JsonDocument.Parse():
-		If speed is not important, as you will reparse the whole text at Parse() and partially at every GetProperty().
-		If you use only 5% part of a big JSON. Typical case if you have a 10MB text, and you want to access only 1 or 2 fields from it.
-		If you really don't want to bother with complex coding.
-	- Utf8JsonReader:
-		It is guaranteed to read the text only once. 
-		With almost 0 RAM footprint. 
-		My estimate is that about 2-5x faster than JsonDocument.
+---------- Final Conclusion:
+- use JsonSerializer.Deserialize<PortfolioInDb>:
+	If class is small, and you 'want to' write the POCO class.
+	If code runs only rarely (at program start, 1-4x times per day)
+	If you need 100% of the JSON data into RAM, as memory resident data.
+- otherwise (if POCO class is not needed in RAM) choose between JsonDocument.Parse() or Utf8JsonReader. Both small RAM footprint. (if you don't want to code POCO and you don't want to duplicate DOM tree in RAM)
+- use JsonDocument.Parse():
+	If speed is not important, as you will reparse the whole text at Parse() and partially at every GetProperty().
+	If you use only 5% part of a big JSON. Typical case if you have a 10MB text, and you want to access only 1 or 2 fields from it.
+	If you really don't want to bother with complex coding.
+- Utf8JsonReader:
+	It is guaranteed to read the text only once. 
+	With almost 0 RAM footprint. 
+	The estimate is that about 2-5x faster than JsonDocument.
 
->Preference when to use: 
+>Preference when to use:
+- JsonSerializer.Deserialize<PortfolioInDb> (third fastest option out of the 4: 8ms, because it does many small RAM allocations for creating the data):
+	- reading from RedisDb at program start, or in every 2 hours.
+	- shortest code (just 1 line) at execution, but you also have to code the POCO class.
 - JsonDocument (second fastest option out of the 4: 5ms ): 
 	- in QuantConnect cloud running it is fine as that is slow enough.
 	- if we inherit a 3rd party library (e.g. YahooFinanceApi) and that uses this. Fine. It would take too much time, and error prone to rewrite it. So, we will keep whatever it is now in the YF API code.

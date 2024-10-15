@@ -59,13 +59,20 @@ internal static class DataConvertors
 
     internal static List<DividendTick> ToDividendTick(dynamic data, TimeZoneInfo timeZone)
     {
-        IDictionary<string, object> expandoObject = data;
+        // If there are no splits or dividends at all, then the result's 'events' field is missing in the returned json file. Trying to access it (by data.events) results a runtime RuntimeBinderException exception.
+        IDictionary<string, object> dataDict = (IDictionary<string, object>)data; // most dynamic data is an ExpandoObject.  Casting ExpandoObject to IDictionary<string, object> is CPU easy, because dynamic uses IDictionary<string, object> internally
+        if (!dataDict.TryGetValue("events", out object? eventsObj))
+            return new List<DividendTick>(); // return empty list
 
-        if (!expandoObject.ContainsKey("events"))
-            return new List<DividendTick>();
+        // 2024-10: The current YF API only asks 1 item: split or dividend or history as separate queries. (&events=split or &events=div)
+        // So, if there is no Split, the parent Event object doesn't exist in the Split query.
+        // But if all 3 is asked in 1 URL query, then it is possible that the Event object is valid, but only Split or Dividend is in it. This has to be checked.
+        IDictionary<string, object> eventsDict = (IDictionary<string, object>)eventsObj;
+        if (!eventsDict.TryGetValue("dividends", out object? dividendsObj))
+            return new List<DividendTick>(); // return empty list
+        IDictionary<string, dynamic> dividendsDict = (IDictionary<string, object>)dividendsObj;
 
-        IDictionary<string, dynamic> dvdObj = data.events.dividends;
-        var dividends = dvdObj.Values.Select(x => new DividendTick(ToDateTime(x.date, timeZone), ToDecimal(x.amount))).ToList();
+        var dividends = dividendsDict.Values.Select(x => new DividendTick(ToDateTime(x.date, timeZone), ToDecimal(x.amount))).ToList();
 
         if (IgnoreEmptyRows)
             dividends = dividends.Where(x => x.Dividend > 0).ToList();
@@ -75,16 +82,24 @@ internal static class DataConvertors
 
     internal static List<SplitTick> ToSplitTick(dynamic data, TimeZoneInfo timeZone)
     {
-        // If there are no splits or dividends sent, then the result's 'events' field is missing in the returned json file. Trying to access it (by data.events) results a runtime RuntimeBinderException exception.
-        if (!((IDictionary<string, object>)data).TryGetValue("events", out dynamic? eventsObj)) // casting dynamic to IDictionary<string, object> is CPU easy, because dynamic uses IDictionary<string, object> internally
+        // If there are no splits or dividends at all, then the result's 'events' field is missing in the returned json file. Trying to access it (by data.events) results a runtime RuntimeBinderException exception.
+        IDictionary<string, object> dataDict = (IDictionary<string, object>)data; // most dynamic data is an ExpandoObject.  Casting ExpandoObject to IDictionary<string, object> is CPU easy, because dynamic uses IDictionary<string, object> internally
+        if (!dataDict.TryGetValue("events", out object? eventsObj))
             return new List<SplitTick>(); // return empty list
-        IDictionary<string, dynamic> splitsObj = eventsObj.splits;
+
+        // 2024-10: The current YF API only asks 1 item: split or dividend or history as separate queries. (&events=split or &events=div)
+        // So, if there is no Split, the parent Event object doesn't exist in the Split query.
+        // But if all 3 is asked in 1 URL query, then it is possible that the Event object is valid, but only Split or Dividend is in it. This has to be checked.
+        IDictionary<string, object> eventsDict = (IDictionary<string, object>)eventsObj;
+        if (!eventsDict.TryGetValue("splits", out object? splitsObj))
+            return new List<SplitTick>(); // return empty list
+        IDictionary<string, dynamic> splitsDict = (IDictionary<string, object>)splitsObj;
 
         // ! 100% sure that the YF API is wrong, because everybody uses the YF adjusted prices, so nobody tests this
         // row[1] is: EEM: "3:1", QQQ: "2:1". Every 1 stock before becomes 2 stocks after. (to decrease the price)
         // e.g VXX: "1:4" = (numerator:denominator). Every 4 stocks before, becomes 1 stock after (to increase the price). So, with the YF 'chart' API, the Denominator is the Before, and the Numerator is the After number.
         // The Before (stock#) is the second one, the After is the first one.
-        var splits = splitsObj.Values.Select(x => new SplitTick(ToDateTime(x.date, timeZone), ToDecimal(x.denominator), ToDecimal(x.numerator))).ToList();
+        var splits = splitsDict.Values.Select(x => new SplitTick(ToDateTime(x.date, timeZone), ToDecimal(x.denominator), ToDecimal(x.numerator))).ToList();
 
         if (IgnoreEmptyRows)
             splits = splits.Where(x => x.BeforeSplit > 0 && x.AfterSplit > 0).ToList();

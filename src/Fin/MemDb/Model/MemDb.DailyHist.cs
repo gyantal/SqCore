@@ -372,8 +372,9 @@ public partial class MemDb
         {
             history = await Yahoo.GetHistoricalAsync(yfTicker, asset.ExpectedHistoryStartDateLoc, DateTime.Now, Period.Daily); // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
         }
-        catch (Exception)
+        catch (Exception e)
         {
+            Utils.Logger.Error(e, $"CreateDailyHist_YF() error. Cannot get YF data ({asset.SqTicker}) after many tries. Exception: {e.Message}");
         }
         if (history == null)
         {
