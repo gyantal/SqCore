@@ -620,10 +620,10 @@ public partial class Program
                 Console.WriteLine($"#QcEqu:{backtestResults.Charts["Strategy Equity"].Series.Count}. The QC Equity (Raw PV) chart: {equityChart[0].y:N0}, {equityChart[1].y:N0} ... {equityChart[^2].y:N0}, {equityChart[^1].y:N0}");
             }
 
-            if (backtestConfig!.SamplingSqRawPv)
+            if (backtestConfig!.SamplingSqDailyRawPv)
                 Console.WriteLine($"#RawPv:{backtestResults.SqSampledLists["rawPV"].Count}. Raw PV: {backtestResults.SqSampledLists["rawPV"][0].Value:N0}, {backtestResults.SqSampledLists["rawPV"][1].Value:N0} ... {backtestResults.SqSampledLists["rawPV"][^2].Value:N0}, {backtestResults.SqSampledLists["rawPV"][^1].Value:N0}");
 
-            if (backtestConfig!.SamplingSqTwrPv)
+            if (backtestConfig!.SamplingSqDailyTwrPv)
                 Console.WriteLine($"#TwrPv:{backtestResults.SqSampledLists["twrPV"].Count}. TWR PV: {backtestResults.SqSampledLists["twrPV"][0].Value:N2}, {backtestResults.SqSampledLists["twrPV"][1].Value:N2} ... {backtestResults.SqSampledLists["twrPV"][^2].Value:N2}, {backtestResults.SqSampledLists["twrPV"][^1].Value:N2}");
 
             Dictionary<string, string> finalStat = backtestResults.FinalStatistics;

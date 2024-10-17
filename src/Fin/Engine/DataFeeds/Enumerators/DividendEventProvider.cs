@@ -63,6 +63,12 @@ namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
                         _referencePrice,
                         _priceFactorRatio.Value
                     );
+
+                    // SqCore Change NEW:
+                    if (_config.Resolution == Resolution.Daily && SqBacktestConfig.SqDailyTradingAtMOC)
+                        baseData.Time = baseData.Time.AddHours(-8);
+                    // SqCore Change END
+
                     // let the config know about it for normalization
                     _config.SumOfDividends += baseData.Distribution;
                     _priceFactorRatio = null;

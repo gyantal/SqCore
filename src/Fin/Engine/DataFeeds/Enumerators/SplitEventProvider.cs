@@ -86,7 +86,7 @@ namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
                 // SqCore Change NEW:
                 // eventArgs.Date comes from ((SubscriptionDataReader)enumerator)._tradeableDates.Current. That is the startTime of that tradeable date. So, we 
                 DateTime splitDate;
-                if (SqBacktestConfig.SqDailyTradingAtMOC)
+                if (_config.Resolution == Resolution.Daily && SqBacktestConfig.SqDailyTradingAtMOC) // don't change the original QC method if it is per Minute resolution
                     splitDate = eventArgs.Date.AddHours(-8);
                 else
                     splitDate = eventArgs.Date;

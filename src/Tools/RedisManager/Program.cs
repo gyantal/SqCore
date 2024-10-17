@@ -148,9 +148,9 @@ class Program
                 Console.WriteLine("Warning! Commented lines. Doing nothing at the moment. Be very careful! Create a RedisDb backup (see RedisBackup.txt), before uncommenting lines, because it will overwrite RedisDb and the daily NAV updates will be lost.");
 
                 // >For Redis backup run C:\agy\GitHub\SqCore\admin\Db\BackupRedisDbToWin.py and check that new dump is created in g:\work\_archive\SqCoreWeb_RedisDb\
-                // Controller.InsertNavAssetFromCsvFile("11:1", @"g:\agy\money\Investment\IB\Reports\PortfolioAnalyst\2024-04-03\Gyorgy_Antal_Inception_April_02_2024.csv");
-                // Controller.InsertNavAssetFromCsvFile("11:2", @"g:\work\Projects\IB-PortfolioAnalyst\2024-04-03\Didier_Charmat_and_Jean-Marc_Charmat_Inception_April_02_2024.csv");
-                // Controller.InsertNavAssetFromCsvFile("11:3", @"g:\work\Projects\IB-PortfolioAnalyst\2024-04-03\DE_BLANZAC_LTD_Inception_April_02_2024.csv");
+                // Controller.InsertNavAssetFromCsvFile("11:1", @"g:\agy\money\Investment\IB\Reports\PortfolioAnalyst\2024-10-16\Gyorgy_Antal_U407941_January_02_2009_October_15_2024.csv");
+                // Controller.InsertNavAssetFromCsvFile("11:2", @"g:\work\Projects\IB-PortfolioAnalyst\2024-10-16\Didier_Charmat_and_Jean-Marc_Charmat_Inception_October_15_2024.csv");
+                // Controller.InsertNavAssetFromCsvFile("11:3", @"g:\work\Projects\IB-PortfolioAnalyst\2024-10-16\DE_BLANZAC_LTD_Inception_October_15_2024.csv");
                 break;
             case "2":
                 Controller.ExportNavAssetToTxt("11:1", @"assetQuoteRaw-unbrotlied-11-1.txt");

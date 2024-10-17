@@ -365,7 +365,7 @@ namespace QuantConnect.Data.Market
                 // tradeBar.Time = stream.GetDateTime().ConvertTo(config.DataTimeZone, config.ExchangeTimeZone);
                 // SqCore Change NEW:
                 
-                if (SqBacktestConfig.SqDailyTradingAtMOC)
+                if (config.Resolution == Resolution.Daily && SqBacktestConfig.SqDailyTradingAtMOC) // don't change the original QC method if it is per Minute resolution
                     tradeBar.Time = stream.GetDateTime().AddHours(-8); // moving time from next day 00:00 to 16:00 previous day
                 else
                     tradeBar.Time = stream.GetDateTime().ConvertTo(config.DataTimeZone, config.ExchangeTimeZone);

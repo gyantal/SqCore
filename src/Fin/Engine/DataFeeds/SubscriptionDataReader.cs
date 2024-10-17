@@ -320,7 +320,7 @@ namespace QuantConnect.Lean.Engine.DataFeeds
                     //     if (UpdateDataEnumerator(false))
                     // SqCore Change NEW:
                     DateTime tradeBarFromCacheTimeDate = instance.Time.ConvertTo(_config.ExchangeTimeZone, _config.DataTimeZone).Date;
-                    if (SqBacktestConfig.SqDailyTradingAtMOC) // in QC normal behaviour instance.Time = 2022-08-22 00:00:00. In SqDailyTradingAtMOC  instance.Time = 2022-08-21 16:00:00. That is the StartTime, that is the previous day. We have to increase it by 1 day.
+                    if (_config.Resolution == Resolution.Daily && SqBacktestConfig.SqDailyTradingAtMOC) // in QC normal behaviour instance.Time = 2022-08-22 00:00:00. In SqDailyTradingAtMOC  instance.Time = 2022-08-21 16:00:00. That is the StartTime, that is the previous day. We have to increase it by 1 day.
                         tradeBarFromCacheTimeDate = tradeBarFromCacheTimeDate.AddDays(1);
 
                     while (tradeBarFromCacheTimeDate > _tradeableDates.Current) // loop until _tradeableDates.Current is too small. Increase it until it catches up with the current (frontier) instanceTime.

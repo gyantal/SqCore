@@ -4,6 +4,7 @@ using QuantConnect.Data;
 using QuantConnect.Data.Auxiliary;
 using QuantConnect.Data.Market;
 using QuantConnect.Interfaces;
+using QuantConnect.Parameters;
 using QuantConnect.Util;
 
 namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
@@ -60,22 +61,45 @@ namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
                 {
                     _delistedWarning = true;
                     var price = eventArgs.LastBaseData?.Price ?? 0;
-                    yield return new Delisting(
+                    // SqCore Change ORIGINAL:
+
+                    // yield return new Delisting(
+                    //     eventArgs.Symbol,
+                    //     DelistingDate.Value.Date,
+                    //     price,
+                    //     DelistingType.Warning);
+                    // SqCore Change NEW:
+                    Delisting delisting = new Delisting(
                         eventArgs.Symbol,
                         DelistingDate.Value.Date,
                         price,
                         DelistingType.Warning);
+                    if (_config.Resolution == Resolution.Daily && SqBacktestConfig.SqDailyTradingAtMOC)
+                        delisting.Time = delisting.Time.AddHours(-8);
+                    yield return delisting;
+                    // SqCore Change END
                 }
                 if (!_delisted && eventArgs.Date > DelistingDate.Value)
                 {
                     _delisted = true;
                     var price = eventArgs.LastBaseData?.Price ?? 0;
                     // delisted at EOD
-                    yield return new Delisting(
+                    // SqCore Change ORIGINAL:
+                    // yield return new Delisting(
+                    //     eventArgs.Symbol,
+                    //     DelistingDate.Value.AddDays(1),
+                    //     price,
+                    //     DelistingType.Delisted);
+                    // SqCore Change NEW:
+                    Delisting delisting = new Delisting(
                         eventArgs.Symbol,
                         DelistingDate.Value.AddDays(1),
                         price,
                         DelistingType.Delisted);
+                    if (_config.Resolution == Resolution.Daily && SqBacktestConfig.SqDailyTradingAtMOC)
+                        delisting.Time = delisting.Time.AddHours(-8);
+                    yield return delisting;
+                    // SqCore Change END
                 }
             }
         }

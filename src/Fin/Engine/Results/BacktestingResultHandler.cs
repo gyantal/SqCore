@@ -406,10 +406,11 @@ namespace QuantConnect.Lean.Engine.Results
             // By default QC plans to have max 4,000 PV samples (or less).
             // If we have very long (20 years=5200 trading days), but daily backtests, we need 5200 PV samplings, not 4000. So, we modify the ResamplePeriod to be 1 day - 6 seconds
             double resampleMinutes;
-            if(SqBacktestConfig.SqFastestExecution)
-                resampleMinutes = 1439.9; // 1 day - 6 seconds in minutes
-            else
+            if (SqBacktestConfig.SamplingQcOriginal)
                 resampleMinutes = totalMinutes < MinimumSamplePeriod * Samples ? MinimumSamplePeriod : totalMinutes / Samples; // Space out the sampling every
+            else // SqBacktestConfig.SamplingSqDailyTwrPv or SamplingSqDailyRawPv only need Daily sampling
+                resampleMinutes = 1439.9; // 1 day - 6 seconds in minutes;
+                
             // SqCore Change END
             ResamplePeriod = TimeSpan.FromMinutes(resampleMinutes);
             Utils.Logger.Trace("BacktestingResultHandler(): Sample Period Set: " + resampleMinutes.ToStringInvariant("00.00"));
@@ -744,9 +745,9 @@ namespace QuantConnect.Lean.Engine.Results
                 // SqCore Change NEW:
                 if (SqBacktestConfig.SamplingQcOriginal)
                     SampleEquity(time, Math.Round(Algorithm.Portfolio.TotalPortfolioValue, 4));
-                if (SqBacktestConfig.SamplingSqRawPv)
+                if (SqBacktestConfig.SamplingSqDailyRawPv)
                     SqSample("rawPV", time, (float)Math.Round(Algorithm.Portfolio.TotalPortfolioValue, 4));
-                if (SqBacktestConfig.SamplingSqTwrPv)
+                if (SqBacktestConfig.SamplingSqDailyTwrPv)
                 {
                     decimal currentPortfolioValue = Algorithm.Portfolio.TotalPortfolioValue;
                     decimal allRollingDeposits = Algorithm.Portfolio.AllRollingDeposits["USD"].ValueInAccountCurrency;

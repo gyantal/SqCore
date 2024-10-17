@@ -150,22 +150,22 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
 
     public string? GetBacktestResult(bool p_returnOnlyTwrPv, SqResultStat p_sqResultStat, DateTime? p_forcedStartDate, DateTime? p_forcedEndDate, out List<DateValue> p_pv, out PortfolioRunResultStatistics p_stat, out List<PortfolioPosition> p_prtfPoss, out ChartResolution p_chartResolution)
     {
-        SqBacktestConfig backtestConfig = new SqBacktestConfig() { SqResultStat = p_sqResultStat, SamplingQcOriginal = false, SamplingSqRawPv = false, SamplingSqTwrPv = false };
+        SqBacktestConfig backtestConfig = new SqBacktestConfig() { SqResultStat = p_sqResultStat, SamplingQcOriginal = false, SamplingSqDailyRawPv = false, SamplingSqDailyTwrPv = false };
         if (p_returnOnlyTwrPv) // target is TwrPv
-            backtestConfig.SamplingSqTwrPv = true;
+            backtestConfig.SamplingSqDailyTwrPv = true;
         else // target is RawPV
         {
-            backtestConfig.SamplingSqRawPv = true;
+            backtestConfig.SamplingSqDailyRawPv = true;
             if (p_sqResultStat == SqResultStat.SqSimpleStat || p_sqResultStat == SqResultStat.SqDetailedStat) // return Raw PV, but we also also have to generate TwrPV, because of SqSimple and SqDetailed calculations use TWR
-                backtestConfig.SamplingSqTwrPv = true;
+                backtestConfig.SamplingSqDailyTwrPv = true;
         }
 
         string algorithmName = String.IsNullOrEmpty(Algorithm) ? "BasicTemplateFrameworkAlgorithm" : Algorithm;
         if (algorithmName == "BasicTemplateFrameworkAlgorithm") // If Original QC algorithms, usually per minute.
         {
-            backtestConfig.SamplingQcOriginal = true; // supports per minute resolution
-            backtestConfig.SamplingSqRawPv = false; // our Sampling can do only Daily resolution
-            backtestConfig.SamplingSqTwrPv = false;
+            backtestConfig.SamplingQcOriginal = true; // QC supports per minute resolution
+            backtestConfig.SamplingSqDailyRawPv = false; // our Sampling can do only Daily resolution
+            backtestConfig.SamplingSqDailyTwrPv = false;
             backtestConfig.SqResultStat = SqResultStat.QcOriginalStat; // our QcSimple, QcDetailed can only work with Daily resolution TwrPV
         }
 
@@ -184,8 +184,8 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         Console.WriteLine($"BacktestResults.PV. startPV:{backtestResults.StartingPortfolioValue:N0}, endPV:{backtestResults.DailyPortfolioValue:N0} (If noDeposit: {(backtestResults.DailyPortfolioValue / backtestResults.StartingPortfolioValue - 1) * 100:N2}%)");
 
         // Step 1: create the p_pv of the result.
-        if (backtestConfig.SamplingSqRawPv || backtestConfig.SamplingSqTwrPv) // ChartResolution.Daily
-            p_pv = backtestConfig.SamplingSqTwrPv ? backtestResults.SqSampledLists["twrPV"] : backtestResults.SqSampledLists["rawPV"];
+        if (backtestConfig.SamplingSqDailyRawPv || backtestConfig.SamplingSqDailyTwrPv) // ChartResolution.Daily
+            p_pv = backtestConfig.SamplingSqDailyTwrPv ? backtestResults.SqSampledLists["twrPV"] : backtestResults.SqSampledLists["rawPV"];
         else // If SamplingQcOriginal, then ChartPoints => p_pv = new List<DateValue>
         {
             List<ChartPoint> equityChart = backtestResults.Charts["Strategy Equity"].Series["Equity"].Values;
@@ -253,7 +253,8 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
                 if (p_stat.Sharpe > 100f)
                     p_stat.Sharpe = float.NaN; // if value is obviously wrong, indicate that with NaN
                 p_stat.Sharpe = float.Parse(finalStat[PerformanceMetrics.SharpeRatio]);
-                p_stat.CagrSharpe = float.Parse(finalStat[PerformanceMetrics.CagrSharpeRatio]);
+                if (finalStat.TryGetValue(PerformanceMetrics.CagrSharpeRatio, out string? cagrSharpeStr)) // CagrSharpeRatio is calculated in SqCore, but not in original QC code
+                    p_stat.CagrSharpe = float.Parse(cagrSharpeStr);
                 p_stat.MaxDD = float.Parse(finalStat[PerformanceMetrics.Drawdown].Replace("%", string.Empty));
 
                 p_stat.NTrades = int.Parse(finalStat[PerformanceMetrics.TotalTrades]);
@@ -300,8 +301,9 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
                 AvgPrice = (float)security.Holdings.AveragePrice,
                 BacktestLastPrice = (float)security.Holdings.Price
             };
-            Asset asset = MemDb.gMemDb.AssetsCache.GetAsset(posStckItem.SqTicker);
-            posStckItem.EstPrice = MemDb.gMemDb.GetLastRtValue(asset);
+            Asset? asset = MemDb.gMemDb.AssetsCache.TryGetAsset(posStckItem.SqTicker);
+            if (asset != null)
+                posStckItem.EstPrice = MemDb.gMemDb.GetLastRtValue(asset);
             p_prtfPoss.Add(posStckItem); // Stock Tickers
         }
 

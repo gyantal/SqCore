@@ -42,14 +42,7 @@ namespace QuantConnect.Data.Market
             : this()
         {
             Symbol = symbol;
-            // SqCore Change ORIGINAL:
-            // Time = date;
-            // SqCore Change NEW:
-            if (SqBacktestConfig.SqDailyTradingAtMOC)
-                Time = date.AddHours(-8); // moving time from next day 00:00 to 16:00 previous day
-            else
-                Time = date;
-            // SqCore Change END
+            Time = date;
             Value = price;
             Type = type;
         }

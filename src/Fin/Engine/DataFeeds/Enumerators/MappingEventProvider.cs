@@ -4,6 +4,7 @@ using QuantConnect.Interfaces;
 using QuantConnect.Data.Market;
 using System.Collections.Generic;
 using QuantConnect.Data.Auxiliary;
+using QuantConnect.Parameters;
 
 namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
 {
@@ -70,6 +71,10 @@ namespace QuantConnect.Lean.Engine.DataFeeds.Enumerators
                         eventArgs.Date,
                         old,
                         Config.MappedSymbol);
+                    // SqCore Change NEW:
+                    if (Config.Resolution == Resolution.Daily && SqBacktestConfig.SqDailyTradingAtMOC) // don't change the original QC method if it is per Minute resolution
+                        changed.Time = changed.Time.AddHours(-8);
+                    // SqCore Change END
                     yield return changed;
                 }
             }

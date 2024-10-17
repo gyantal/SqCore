@@ -136,7 +136,12 @@ class Controller
 
         // Retrieve
         Stopwatch watch2 = Stopwatch.StartNew();
-        string value2 = db.StringGet("SqCoreRedisManagerKey");
+        string? value2 = db.StringGet("SqCoreRedisManagerKey");
+        if (value2 == null) 
+        {
+            Console.WriteLine($"Error getting redisKey: SqCoreRedisManagerKey");
+            return;
+        }
         watch2.Stop();
         Console.WriteLine(value2);
         Console.WriteLine($"SELECT takes {watch2.Elapsed.TotalMilliseconds :0.00}ms");    // "SELECT takes 30(first)/20/23/20/20/24 ms"
@@ -343,7 +348,7 @@ class Controller
         IDatabase db = DbCommon.RedisManager.GetDb(redisConnString, 0);
 
         string redisKey = p_redisKeyPrefix + ".brotli"; // key: "9:1.brotli"
-        byte[] dailyNavBrotli = db.HashGet("assetQuoteRaw", redisKey);
+        byte[]? dailyNavBrotli = db.HashGet("assetQuoteRaw", redisKey);
         if (dailyNavBrotli == null) 
         {
             Console.WriteLine($"Error getting redisKey {redisKey}");

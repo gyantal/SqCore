@@ -95,26 +95,22 @@ namespace QuantConnect.Lean.Engine.Setup
             // In QcCloud, the WorkerThread is used to run BaseSetupHandler.InitializeDebugging() (which is used for QcCloud debugging) and loader.TryCreateAlgorithmInstanceWithIsolator() (which loads the Algorithm from the DLL)
             // But we don't need these locally. It justs slows our processing if we create a new thread for doing nothing. We eliminate this code.
 
-            if (SqBacktestConfig.SqFastestExecution) // Original QC code reads the whole Algorithm.CSharp DLL as binary and create the Algorithm instance from that. Total waste of time.
+            // Original QC code reads the whole Algorithm.CSharp DLL as binary and create the Algorithm instance from that. Total waste of time.
+            string algName = ((BacktestNodePacket)algorithmNodePacket).BacktestId;
+            QCAlgorithm algorithm = algName switch
             {
-                string algName = ((BacktestNodePacket)algorithmNodePacket).BacktestId;
-                QCAlgorithm algorithm = algName switch
-                {
-                    "BasicTemplateFrameworkAlgorithm" => new BasicTemplateFrameworkAlgorithm(),
-                    "SqSPYMonFriAtMoc" => new SqSPYMonFriAtMoc(),
-                    "SqDualMomentum" => new SqDualMomentum(),
-                    "SqPctAllocation" => new SqPctAllocation(),
-                    "SqFundamentalDataFiltered" => new SqFundamentalDataFilteredUniv(),
-                    "SqTradeAccumulation" => new SqTradeAccumulation(),
-                    "SqCxoMomentum" => new SqCxoMomentum(),
-                    "SqCxoValue" => new SqCxoValue(),
-                    "SqCxoCombined" => new SqCxoCombined(),
-                    _ => throw new SqException($"QcAlgorithm name '{algName}' is unrecognized."),
-                };
-                // algoritm.AlgorithmParam = "";
-                return algorithm;
-            }
-            throw new SqException($"In SqCore we shouldn't be here. Don't want to initialize the algorithm using the QC method.");
+                "BasicTemplateFrameworkAlgorithm" => new BasicTemplateFrameworkAlgorithm(),
+                "SqSPYMonFriAtMoc" => new SqSPYMonFriAtMoc(),
+                "SqDualMomentum" => new SqDualMomentum(),
+                "SqPctAllocation" => new SqPctAllocation(),
+                "SqFundamentalDataFiltered" => new SqFundamentalDataFilteredUniv(),
+                "SqTradeAccumulation" => new SqTradeAccumulation(),
+                "SqCxoMomentum" => new SqCxoMomentum(),
+                "SqCxoValue" => new SqCxoValue(),
+                "SqCxoCombined" => new SqCxoCombined(),
+                _ => throw new SqException($"QcAlgorithm name '{algName}' is unrecognized."),
+            };
+            return algorithm;
             // SqCore Change END
         }
 
