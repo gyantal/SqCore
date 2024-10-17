@@ -18,10 +18,6 @@ function onButtonClick(saDataSelector: string) { // 'TopStocks'/'TopAnalysts'
   console.log('OnClick received.' + saDataSelector);
   asyncFetchAndExecuteCallback(
       '/SeekingAlphaHelper?dataSelector=' + saDataSelector,
-      // (json: any) => {
-      //   // onDataReceived(json);
-      //   console.log('asyncFetchAndExecuteCallback', json);
-      // }
   );
 }
 
@@ -33,6 +29,8 @@ async function asyncFetchAndExecuteCallback( url: string) { // callback: (json: 
         return response.json();
       })
       .then((data) => {
+        const topStocksOrTopAnalystTextAreaElement = getNonNullDocElementById('topStocksOrTopAnalyst') as HTMLTextAreaElement;
+        topStocksOrTopAnalystTextAreaElement.value = data;
         console.log('SqCore.asyncFetchAndExecuteCallback - Data received:', data);
       })
       .catch((error) => {

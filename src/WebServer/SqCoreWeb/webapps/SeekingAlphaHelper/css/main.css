@@ -23,3 +23,9 @@ body {
     #91d73a 95%
   ); /* new light */
 }
+
+#topStocksOrTopAnalyst {
+  width: 150rem;
+  height: 80rem;
+  overflow: scroll;
+}
