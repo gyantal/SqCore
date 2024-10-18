@@ -21,12 +21,12 @@ function onButtonClick(saDataSelector: string) { // 'TopStocks'/'TopAnalysts'
   );
 }
 
-async function asyncFetchAndExecuteCallback( url: string) { // callback: (json: any) => any (callback is not implemented)
+async function asyncFetchAndExecuteCallback(url: string) {
   fetch(url)
       .then((response) => {
         if (!response.ok)
           console.log('SqCore.asyncFetchAndExecuteCallback : Invalid response');
-        return response.json();
+        return response.text();
       })
       .then((data) => {
         const topStocksOrTopAnalystTextAreaElement = getNonNullDocElementById('topStocksOrTopAnalyst') as HTMLTextAreaElement;

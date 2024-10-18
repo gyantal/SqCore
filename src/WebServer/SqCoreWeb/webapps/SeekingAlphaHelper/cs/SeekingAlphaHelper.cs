@@ -35,9 +35,9 @@ public class SeekingAlphaHelperController : ControllerBase
             return stockHistDict;
         }
         else if (p_dataSelector == "topAnalysts")
-            return "{\"result\": \"Top Analysts Data\"}"; // return data for top analysts
+            return "Top Analysts Data"; // return data for top analysts
         else
-            return "{\"errorMsg\": \"Unknown dataSelector value.\"}";
+            return "Unknown dataSelector value.";
     }
 
     private string ExtractStocksRawHistData2Dict()
@@ -45,10 +45,10 @@ public class SeekingAlphaHelperController : ControllerBase
         string url = "https://drive.google.com/uc?export=download&id=1-1HZBrjO4HihpJvk47vxtgBylGeZ0At-";
         string? rawTopStocksData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
         if (string.IsNullOrEmpty(rawTopStocksData) || rawTopStocksData.Contains("Error"))
-            return JsonSerializer.Serialize<String>("Error in DownloadStringWithRetry()");
+            return "Error in DownloadStringWithRetry()";
         Dictionary<DateTime, List<StockData>> topStocksDict = TopStocksRawHistData2Dict(rawTopStocksData);
         string topStocksStr = TopStocksDict2Str(topStocksDict);
-        return JsonSerializer.Serialize<String>(topStocksStr);
+        return topStocksStr;
     }
 
     public Dictionary<DateTime, List<StockData>> TopStocksRawHistData2Dict(string p_topStocksHistData)
