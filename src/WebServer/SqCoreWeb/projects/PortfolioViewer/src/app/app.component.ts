@@ -137,7 +137,10 @@ export class AppComponent {
 
   // LegacyDbTrades tabpage
   m_legacyDbInsertionYear: number = new Date().getFullYear(); // using the current year as default value
-  m_errorMsgToUser: string = '';
+  m_legacyDbInsTradesSyntaxCheckResult: string = '';
+  m_legacyDbTestInsTradesResult: string = '';
+  m_legacyDbRealInsTradesResult: string = '';
+
 
   user = {
     name: 'Anonymous',
@@ -323,31 +326,7 @@ export class AppComponent {
     // 4. The JSON.stringify() (key, value) => callback function receives key='time', value='2024-01-18T13:00:00.000Z' as String, that is already a converted string. The Date object doesn't arrive here unfortunatelly.
     // But we can remedy it to do the inverse of Date.toISOString(), which is the ctor 'new Date(ISO-Utc-string), that will give us back the original Date (in local timezone)
     // And we can use our utility function DateTime2PaddedIsoStr() to get the string representation of that local Date.
-    const tradeJson: string = JSON.stringify(this.m_editedTrade, (key:string, value: any) => {
-      switch (key) {
-        case 'time':
-          const tradeTime: Date = new Date(value); // JSON.stringify() already used Date.toISOString() to convert it to a string. We do the inverse to get back the original Date.
-          const newValue = SqNgCommonUtilsTime.DateTime2PaddedIsoStr(tradeTime); // get the string representation without converting to Utc and without the "Z" postfix
-          return newValue;
-        case 'currency':
-          if (value == CurrencyId.USD) // also omitting the value of currency , if its 'USD'.
-            return undefined;
-          break;
-        case 'commission':
-          if (value == 0) // also omitting the value of commission , if its '0'.
-            return undefined;
-          break;
-        case 'exchangeId':
-          if (value == ExchangeId.Unknown) // also omitting the value of ExchangeId , if its 'Unknown'.
-            return undefined;
-          break;
-        default:
-          if (value == null || value === '') // Omit null and empty strings
-            return undefined;
-          break;
-      }
-      return value;
-    });
+    const tradeJson: string = this.tradeStringifyHelper(this.m_editedTrade);
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
       this.m_socket.send('InsertOrUpdateTrade:pfId:' + this.m_portfolioId + ':' + tradeJson);
   }
@@ -614,55 +593,59 @@ export class AppComponent {
   }
 
   onClickConvertTradesStrToTradesJs() {
+    this.m_legacyDbInsTradesSyntaxCheckResult = '';
     const tradesStrInputElement = document.getElementById('inputTradesStr') as HTMLTextAreaElement;
     const tradesStr: string = tradesStrInputElement.value;
-    if (tradesStr.includes('-')) { // Check for partial trades
-      this.m_errorMsgToUser = 'Error. Processing stopped. "-" was found which indicates partial trades are present. Remove partial trades.';
-      return;
-    }
 
     const trades: TradeJs[] = []; // Initialize an array to store TradeJs objects
     const tradeRows: string[] = tradesStr.trim().split('\n'); // Split the data by newline to get each row
     for (let i = 0; i < tradeRows.length; i++) {
       let tradeRecord = tradeRows[i];
-      tradeRecord = tradeRecord.startsWith('+') ? tradeRecord.substring(2) : tradeRecord.startsWith('\t') ? tradeRecord.substring(1) : tradeRecord; // removing the '+' and '\t' from the tradeRecord
-      const trade = tradeRecord.split('\t'); // Split each row by tab character (preserve empty values)
-      const tradeObj: TradeJs = new TradeJs();
-      try {
-        this.validateTradeData(trade);
-        this.processTradeData(trade, tradeObj);
-        trades.push(tradeObj); // Add TradeJs object to the result array
-      } catch (error) {
-        this.m_errorMsgToUser = `Error in record ${i + 1}: ${(error as Error).message}<br>`; // Add error message to m_errorMsgToUser
+      if (tradeRecord.startsWith('-')) { // Check for partial trades
+        this.m_legacyDbInsTradesSyntaxCheckResult = `Error. Processing stopped. "-" was found at row ${i + 1} which indicates partial trades are present. Remove partial trades.`;
         return;
+      } else {
+        tradeRecord = tradeRecord.startsWith('+') ? tradeRecord.substring(2) : tradeRecord.startsWith('\t') ? tradeRecord.substring(1) : tradeRecord; // removing the '+' and '\t' from the tradeRecord
+        const trade = tradeRecord.split('\t'); // Split each row by tab character (preserve empty values)
+        const tradeObj: TradeJs = new TradeJs();
+        try {
+          this.m_legacyDbInsTradesSyntaxCheckResult = this.validateAndProcessTradeData(trade, tradeObj);
+          trades.push(tradeObj); // Add TradeJs object to the result array
+        } catch (error) {
+          this.m_legacyDbInsTradesSyntaxCheckResult = `Error in record ${i + 1}: ${(error as Error).message}<br>`; // Add error message to m_errorMsgToUser
+          return;
+        }
       }
     }
 
-    if (this.m_errorMsgToUser == '') // Only for Testing
-      console.log('onClickConvertTradesStrToTradesJs:', trades);
+    if (this.m_legacyDbInsTradesSyntaxCheckResult.startsWith('OK')) { // Only for Testing - preparing the json srting to send to server
+      let tradeJson: string = '[';
+      for (let i =0; i < trades.length; i++) {
+        const tradeJs: string = this.tradeStringifyHelper(trades[i]);
+        tradeJson += tradeJs;
+
+        if (i < trades.length - 1) // Only add comma if it's not the last element
+          tradeJson += ',';
+      }
+      tradeJson += ']';
+      console.log('onClickConvertTradesStrToTradesJs', tradeJson);
+    }
   }
 
-  validateTradeData(trade: string[]) { // Function to validate trade data. TBD for other data validation
-    if (isNaN(parseInt(trade[2])))
-      throw new Error('Quantity is not a valid number.');
-    if (isNaN(parseInt(trade[3])))
-      throw new Error('Price is not a valid number.');
-
-    if (CurrencyId[trade[4]] == undefined)
-      throw new Error(`CurrencyId: '${trade[4]}' is invalid.`);
-
-    const validTradeAction = ['BOT', 'SLD', 'DEPOSIT']; // we can add more
-    if (!validTradeAction.includes(trade[0]))
-      throw new Error(`TradeAction: '${trade[0]}' is invalid.`);
-  }
-
-  processTradeData(trade: string[], tradeObj: TradeJs) {
-    tradeObj.symbol = trade[1];
+  validateAndProcessTradeData(trade: string[], tradeObj: TradeJs): string { // Function to validate trade data. TBD for other data validation
+    if (isNaN(parseInt(trade[2]))) // Validate Quantity
+      return (`Quantity is ${trade[2]} not a valid number.`);
     tradeObj.quantity = parseInt(trade[2]);
+
+    if (isNaN(parseInt(trade[3]))) // Validate Price
+      return (`Price is ${trade[3]} not a valid number.`);
     tradeObj.price = parseInt(trade[3]);
+
+    if (CurrencyId[trade[4]] == undefined) // Validate CurrencyId
+      return (`CurrencyId: '${trade[4]}' is invalid.`);
     tradeObj.currency = CurrencyId[trade[4]];
 
-    switch (trade[0]) { // Check for TradeAction
+    switch (trade[0]) { // Validate and process TradeAction
       case 'BOT':
         tradeObj.action = TradeAction.Buy;
         break;
@@ -672,11 +655,44 @@ export class AppComponent {
       case 'DEPOSIT':
         tradeObj.action = TradeAction.Deposit;
         break;
+      default:
+        return `TradeAction: '${trade[0]}' is invalid.`;
     }
 
+    tradeObj.symbol = trade[1];
     // Convert date to a proper date format
     const tradeDt = new Date(trade[5]);
     tradeDt.setFullYear(this.m_legacyDbInsertionYear); // Since the year is not included in the trades text, we set it using m_legacyDbInsertionYear to avoid the default year of 1900.
     tradeObj.time = tradeDt;
+    return 'Ok'; // All validations and processing succeeded
+  }
+
+  tradeStringifyHelper(trade: TradeJs): string {
+    const tradeStr = JSON.stringify(trade, (key:string, value: any) => {
+      switch (key) {
+        case 'time':
+          const tradeTime: Date = new Date(value); // JSON.stringify() already used Date.toISOString() to convert it to a string. We do the inverse to get back the original Date.
+          const newValue = SqNgCommonUtilsTime.DateTime2PaddedIsoStr(tradeTime); // get the string representation without converting to Utc and without the "Z" postfix
+          return newValue;
+        case 'currency':
+          if (value == CurrencyId.USD) // also omitting the value of currency , if its 'USD'.
+            return undefined;
+          break;
+        case 'commission':
+          if (value == 0) // also omitting the value of commission , if its '0'.
+            return undefined;
+          break;
+        case 'exchangeId':
+          if (value == ExchangeId.Unknown) // also omitting the value of ExchangeId , if its 'Unknown'.
+            return undefined;
+          break;
+        default:
+          if (value == null || value === '') // Omit null and empty strings
+            return undefined;
+          break;
+      }
+      return value;
+    });
+    return tradeStr;
   }
 }
