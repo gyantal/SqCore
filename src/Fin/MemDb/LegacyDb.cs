@@ -9,7 +9,7 @@ using SqCommon;
 
 public class LegacyDb : IDisposable
 {
-    Dictionary<string, string> c_legacyDb2QcTickerMap = new() { { "VXX-20190130", "VXX" }, { "ZIVZF", "ZIV" }, { "UGAZF", "UGAZ" } };
+    Dictionary<string, string> c_legacyDb2QcTickerMap = new() { { "VXX-20190130", "VXX" }, { "VXZ-20190130", "VXZ" }, { "ZIVZF", "ZIV" }, { "UGAZF", "UGAZ" } };
     private SqlConnection? m_connection = null;
     private bool m_disposed = false;
 
