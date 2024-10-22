@@ -42,12 +42,26 @@ public class SeekingAlphaHelperController : ControllerBase
 
     private string ExtractStocksRawHistData2Dict()
     {
-        string url = "https://drive.google.com/uc?export=download&id=1-1HZBrjO4HihpJvk47vxtgBylGeZ0At-";
-        string? rawTopStocksData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
+        // string url = "https://drive.google.com/uc?export=download&id=1-1HZBrjO4HihpJvk47vxtgBylGeZ0At-";
+        // string? rawTopStocksData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
+        string url = string.Empty;
+        Utils.BenchmarkElapsedTime("ExtractStocksRawHistData2Dict(): for initializing the URL", () =>
+        {
+            url = "https://drive.google.com/uc?export=download&id=1-1HZBrjO4HihpJvk47vxtgBylGeZ0At-";
+        });
+        string? rawTopStocksData = null;
+        Utils.BenchmarkElapsedTime("ExtractStocksRawHistData2Dict(): for downloading the raw stocks data", () =>
+        {
+            rawTopStocksData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
+        });
         if (string.IsNullOrEmpty(rawTopStocksData) || rawTopStocksData.Contains("Error"))
             return "Error in DownloadStringWithRetry()";
-        Dictionary<DateTime, List<StockData>> topStocksDict = TopStocksRawHistData2Dict(rawTopStocksData);
-        string topStocksStr = TopStocksDict2Str(topStocksDict);
+        string topStocksStr = string.Empty;
+        Utils.BenchmarkElapsedTime("ExtractStocksRawHistData2Dict(): converting raw srocks to required string format", () =>
+        {
+            Dictionary<DateTime, List<StockData>> topStocksDict = TopStocksRawHistData2Dict(rawTopStocksData);
+            topStocksStr = TopStocksDict2Str(topStocksDict);
+        });
         return topStocksStr;
     }
 
@@ -120,25 +134,48 @@ public class SeekingAlphaHelperController : ControllerBase
     public string TopStocksDict2Str(Dictionary<DateTime, List<StockData>> p_topStocksDict)
     {
         StringBuilder sbTopStocksDict = new();
-        sbTopStocksDict.Append("Dictionary<DateTime, List<StockData>> = new() { {");
-        foreach (KeyValuePair<DateTime, List<StockData>> topStocks in p_topStocksDict.OrderByDescending(r => r.Key)) // reverse ordering to get the latest data on the top
+
+        // creating the dictionary string with proper formatting for readability.
+        // Using tabs (\t) and newlines (\n) for better formatting when copying into QuantConnect's QCStrategy.
+        sbTopStocksDict.Append("Dictionary<DateTime, List<StockData>> recommendations = new() \n\t\t{\n");
+
+        // Initialize counters to keep track of the current entry position
+        int topStocksDictCount = p_topStocksDict.Count;
+        int currentStockCount = 0;
+
+        foreach (KeyValuePair<DateTime, List<StockData>> topStocks in p_topStocksDict.OrderByDescending(r => r.Key)) // Iterate through the dictionary, ordered by the date key in descending order (latest date first)
         {
-            DateTime date = topStocks.Key;
-            List<StockData> stocks = topStocks.Value;
+            DateTime date = topStocks.Key; // Get the current date (key)
+            List<StockData> stocks = topStocks.Value; // Get the list of stocks (value)
 
-            sbTopStocksDict.Append($"new DateTime({date.Year}, {date.Month}, {date.Day}, {date.Hour}, {date.Minute}, {date.Second}), "); // Format the date as a DateTime constructor
-            sbTopStocksDict.Append("new List<StockData> { "); // Format the list of StockData objects
-            foreach (StockData stock in stocks)
-                sbTopStocksDict.Append($"new StockData(\"{stock.Ticker}\", {stock.SaQuantRating}), ");
+            // Append the dictionary entry for DateTime with the exact year, month, day, and time.
+            sbTopStocksDict.Append("\t\t\t{ ");
+            sbTopStocksDict.Append($"new DateTime({date.Year}, {date.Month}, {date.Day}, {date.Hour}, {date.Minute}, {date.Second}), ");
+            sbTopStocksDict.Append("new List<StockData> {\n\t\t\t\t"); // Start the list of StockData entries.
 
-            // Remove the last comma and space
-            if (stocks.Count > 0)
-                sbTopStocksDict.Length -= ", ".Length; // Remove trailing ", "
-            sbTopStocksDict.Append(" } }, { ");
+            // Iterate through the stocks for the current date.
+            for (int i = 0; i < stocks.Count; i++)
+            {
+                StockData stock = stocks[i]; // Current stock data
+                sbTopStocksDict.Append($"new StockData(\"{stock.Ticker}\", {stock.SaQuantRating})"); // Append StockData entry with ticker and rating.
+
+                if (i < stocks.Count - 1) // Append a comma and space after the stock, but not for the last stock in the list.
+                    sbTopStocksDict.Append(", ");
+
+                // Adjust the index to a 1-based, since the loop index starts from 0
+                if ((i + 1) % 3 == 0) // Add a newline and tab after every 3 stocks for better visual formatting.
+                    sbTopStocksDict.Append("\n\t\t\t\t");
+            }
+
+            currentStockCount++; // Increment the current stock count after processing all stocks for the current date.
+            // Close the current dictionary entry, adding a comma if there are more entries left.
+            if (currentStockCount < topStocksDictCount)
+                sbTopStocksDict.Append("}\n\t\t\t},\n"); // Closing the List<StockData> and DateTime entry, add comma
+            else
+                sbTopStocksDict.Append("}\n\t\t\t}\n"); // For the last entry, close without a comma
         }
-        sbTopStocksDict.Length -= " { ".Length; // Removes the trailing characters, including the extra spaces and opening brace " { "
 
-        sbTopStocksDict.Append("};");
+        sbTopStocksDict.Append("\t\t};"); // Append the closing bracket for the dictionary
         return sbTopStocksDict.ToString();
     }
 }
