@@ -71,6 +71,8 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
 
     // public List<Asset> Assets { get; set; } = new List<Asset>();    // TEMP. Delete this later when Portfolios are finalized.
 
+    public Portfolio() { }
+
     public Portfolio(int id, PortfolioInDb portfolioInDb, User[] users)
     {
         Id = id;
@@ -124,9 +126,5 @@ public partial class Portfolio : Asset // this inheritance makes it possible tha
         SharedAccess = p_sharedAccess;
         SharedUsersWith = p_sharedUsersWith;
         TradeHistoryId = p_tradeHistoryId;
-    }
-
-    public Portfolio()
-    {
     }
 }

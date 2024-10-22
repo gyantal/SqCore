@@ -9,6 +9,7 @@ using SqCommon;
 
 public class LegacyDb : IDisposable
 {
+    Dictionary<string, string> c_legacyDb2QcTickerMap = new() { { "VXX-20190130", "VXX" }, { "ZIVZF", "ZIV" }, { "UGAZF", "UGAZ" } };
     private SqlConnection? m_connection = null;
     private bool m_disposed = false;
 
@@ -138,12 +139,16 @@ public class LegacyDb : IDisposable
                         if (startIndex >= "Text=\"".Length && endIndex > startIndex)
                             note = xmlNote.Substring(startIndex, endIndex - startIndex);
                     }
+
+                    string ticker = reader.GetString(reader.GetOrdinal("ticker"));
+                    if (c_legacyDb2QcTickerMap.TryGetValue(ticker, out string? newTicker))
+                        ticker = newTicker;
                     Trade trade = new() // GetOrdinal() get the column index of the field identified by the name
                     {
                         Id = reader.GetInt32(reader.GetOrdinal("ID")),
                         Time = reader.GetDateTime(reader.GetOrdinal("Date")),
                         Action = MapLegacyDbTransactionTypeToTradeAction(reader.GetByte(reader.GetOrdinal("TransactionType"))),
-                        Symbol = reader.GetString(reader.GetOrdinal("ticker")),
+                        Symbol = ticker,
                         Quantity = reader.GetInt32(reader.GetOrdinal("Volume")),
                         Price = reader.GetFloat(reader.GetOrdinal("Price")),
                         Note = note

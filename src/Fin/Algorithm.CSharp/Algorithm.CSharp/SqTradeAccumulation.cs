@@ -1,12 +1,16 @@
 #region imports
 using System;
 using System.Collections.Generic;
-using QuantConnect.Util;
 using QuantConnect.Data;
 using QuantConnect.Orders;
 using QuantConnect.Orders.Fees;
 using Fin.Base;
 using SqCommon;
+using QuantConnect.Securities;
+using QuantConnect.Data.Market;
+using System.Text;
+using System.Globalization;
+using System.IO;
 #endregion
 namespace QuantConnect.Algorithm.CSharp
 {
@@ -21,7 +25,10 @@ namespace QuantConnect.Algorithm.CSharp
         private HashSet<string> _tickers; // Set of unique symbols traded
         private List<DateTime> _tradeDates; // Sorted list of trade dates
         private List<DateTime> _cashDates; // Sorted list of cash transaction dates
+        // private List<Trade> _executedTrades;
         private decimal _initialCash;
+        private decimal _yestPV;
+        private List<(DateTime date, decimal pvBefore, decimal pvAfter)> _portfolioValues;
 
         public override void Initialize()
         {
@@ -29,6 +36,8 @@ namespace QuantConnect.Algorithm.CSharp
 
             _tradesByDate = new Dictionary<DateTime, List<Trade>>();
             _cashTransactionsByDate = new Dictionary<DateTime, List<Trade>>();
+            // _executedTrades = new List<Trade>();
+            _portfolioValues = new List<(DateTime date, decimal pvBefore, decimal pvAfter)>();
 
             // Populate the _tradesByDate, _cashTransactionsByDate dictionaries based on the type of transaction
             DateTime prevDate = DateTime.MinValue; // For checking if the trades are sorted by date
@@ -94,6 +103,7 @@ namespace QuantConnect.Algorithm.CSharp
             SetEndDate(_endDate);
             SetWarmUp(_warmUp);
             SetCash(_initialCash);
+            Portfolio.MarginCallModel = MarginCallModel.Null;
 
             // Add securities and set fees
             _tickers = new HashSet<string>();
@@ -114,12 +124,16 @@ namespace QuantConnect.Algorithm.CSharp
                     AddEquity(symbol, Resolution.Daily, dataNormalizationMode: DataNormalizationMode.Raw);
                     _tickers.Add(symbol);
                     Securities[symbol].FeeModel = new ConstantFeeModel(0);
+                    Securities[symbol].SetBuyingPowerModel(new SecurityMarginModel(100m));
                 }
             }
         }
 
         public override void OnData(Slice slice)
         {
+            decimal pvBefore = Portfolio.TotalPortfolioValue;
+            // if(_yestPV / pvBefore < 0.9m || _yestPV / pvBefore > 1.1m)
+            //     Log($"Significant overnight PV change: {slice.Time.Date}. PrevClosePV: {_yestPV}, PV now: {pvBefore}.");
             // Adjust cash based on cash transactions
             while (_cashDates.Count > 0 && _cashDates[0] <= slice.Time.Date)
             {
@@ -151,12 +165,119 @@ namespace QuantConnect.Algorithm.CSharp
                 List<Trade> trades = _tradesByDate[tradeDate];
                 foreach (Trade trade in trades)
                 {
-                    int adjustedQuantity = trade.Action == TradeAction.Sell ? - trade.Quantity : trade.Quantity; // In the database, we only store positive quantities, even for Sell transactions. Here we need to convert them to their negative equivalent. 
-                    _lastOrderTicket = FixPriceOrder(trade.Symbol, adjustedQuantity, (decimal)trade.Price);
+                    string ticker = trade.Symbol;
+                    int adjustedQuantity = trade.Action == TradeAction.Sell ? -trade.Quantity : trade.Quantity; // In the database, we only store positive quantities, even for Sell transactions. Here we need to convert them to their negative equivalent. 
+                    decimal tradePrice = (decimal)trade.Price;
+                    decimal splitFactor = 1m;
+                    if (slice.Splits.ContainsKey(ticker))
+                    {
+                        Split split = slice.Splits[ticker];
+                        if (split.Type == SplitType.SplitOccurred)
+                        {
+                            splitFactor = split.SplitFactor;
+                            adjustedQuantity = (int)(adjustedQuantity / splitFactor);
+                            tradePrice *= splitFactor;
+                        }
+                    }
+                    // if (slice.Dividends.ContainsKey(ticker)) // In the QC system, dividend handling occurs before the slice arrives. Since the FixPrice trade comes later, the dividends need to be applied retroactively to it as well.
+                    // {
+                    //     Dividend dividend = slice.Dividends[ticker];
+                    //     decimal adjustedDividend = dividend.Distribution * splitFactor;
+                    //     decimal totalDividendCorrection = adjustedQuantity * dividend.Distribution;
+                    //     Portfolio.CashBook["USD"].AddAmount(totalDividendCorrection);
+                    // }
+                    _lastOrderTicket = FixPriceOrder(ticker, adjustedQuantity, tradePrice);
+
+                    // // TradeBar tradeBar = slice.Bars[ticker];
+                    // TradeBar tradeBar;
+                    // decimal closePrice;
+                    // if (!slice.Bars.TryGetValue(ticker, out tradeBar))
+                    // {
+                    //     Console.WriteLine($"No tradebar for {ticker} on {tradeDate}.");
+                    //     // throw new Exception($"No tradebar for {ticker} on {tradeDate}.");
+                    //     closePrice = 100m;
+                    // }
+                    // else 
+                    //     closePrice = tradeBar.Close;
+                    
+                    // if ((closePrice / tradePrice > 1.1m) || (closePrice / tradePrice < 0.9m))
+                    //     Log($"Significant price difference: {ticker}. ClosePrice: {closePrice}, FixPrice: {tradePrice}.");
                 }
                 _tradeDates.RemoveAt(0);
                 _tradesByDate.Remove(tradeDate);
             }
+            decimal pvAfter = Portfolio.TotalPortfolioValue;
+            // if(pvAfter / pvBefore < 0.9m || pvAfter / pvBefore > 1.1m)
+            //     Log($"Significant intraday PV change: {slice.Time.Date}. ClosePV: {pvAfter}, PV open: {pvBefore}.");
+
+            _portfolioValues.Add((slice.Time.Date, pvBefore, pvAfter));
+            _yestPV = pvAfter;
+        }
+        public override void OnOrderEvent(OrderEvent orderEvent)
+        {
+            if (orderEvent.Status == OrderStatus.Filled)
+            {
+                Order order = Transactions.GetOrderById(orderEvent.OrderId);
+                Trade trade = new Trade
+                {
+                    Id = orderEvent.OrderId,
+                    Time = Time,
+                    Action = order.Quantity > 0 ? TradeAction.Buy : TradeAction.Sell,
+                    Symbol = order.Symbol.Value,
+                    Quantity = (int)order.Quantity,
+                    Price = (float)orderEvent.FillPrice
+                };
+
+                // _executedTrades.Add(trade);
+            }
+        }
+
+        public override void OnEndOfAlgorithm()
+        {
+            // WriteTradesToCsv(_tradesByDate, "D:\\Temp\\all_trades.csv");
+            // WriteExecutedTradesToCsv(_executedTrades, "D:\\Temp\\executed_trades.csv");
+            WritePortfolioValuesToCsv(_portfolioValues, "D:\\Temp\\portfolio_values.csv");
+        }
+
+        // private void WriteTradesToCsv(Dictionary<DateTime, List<Trade>> tradesByDate, string fileName)
+        // {
+        //     StringBuilder csv = new StringBuilder();
+        //     csv.AppendLine("Date,Symbol,Action,Quantity,Price");
+
+        //     foreach (KeyValuePair<DateTime, List<Trade>> entry in tradesByDate)
+        //     {
+        //         DateTime date = entry.Key;
+        //         List<Trade> trades = entry.Value;
+
+        //         foreach (Trade trade in trades)
+        //             csv.AppendLine($"{date},{trade.Symbol},{trade.Action},{trade.Quantity},{trade.Price}");
+        //     }
+
+        //     File.WriteAllText(fileName, csv.ToString());
+        // }
+
+        // private void WriteExecutedTradesToCsv(List<Trade> executedTrades, string fileName)
+        // {
+        //     StringBuilder csv = new StringBuilder();
+        //     csv.AppendLine("Id,Time,Action,Symbol,Quantity,Price");
+
+        //     foreach (Trade trade in executedTrades)
+        //         csv.AppendLine($"{trade.Id},{trade.Time},{trade.Action},{trade.Symbol},{trade.Quantity},{trade.Price}");
+
+        //     File.WriteAllText(fileName, csv.ToString());
+        // }
+        private void WritePortfolioValuesToCsv(List<(DateTime date, decimal pvBefore, decimal pvAfter)> portfolioValues, string fileName)
+        {
+            StringBuilder csv = new StringBuilder();
+            csv.AppendLine("Date,pvBefore,pvAfter");
+
+            foreach ((DateTime date, decimal pvBefore, decimal pvAfter) entry in portfolioValues)
+            {
+                string date = entry.date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                csv.AppendLine($"{date},{entry.pvBefore},{entry.pvAfter}");
+            }
+
+            File.WriteAllText(fileName, csv.ToString());
         }
     }
 }

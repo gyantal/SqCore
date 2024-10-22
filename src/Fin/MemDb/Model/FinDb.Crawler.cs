@@ -133,6 +133,8 @@ public partial class FinDb
                 DateTime startDate = DateTime.ParseExact(mapFilesFirstRows[i], "yyyyMMdd", CultureInfo.InvariantCulture);
                 DateTime startDateCurrTicker = DateTime.ParseExact(mapFilesLastButOneRows[i], "yyyyMMdd", CultureInfo.InvariantCulture).AddDays(1);
                 DateTime endDate = DateTime.ParseExact(mapFilesLastRows[i], "yyyyMMdd", CultureInfo.InvariantCulture);
+                if (endDate < DateTime.Today) // If not alive, don't create new factor file
+                    continue;
                 Utils.Logger.Info($"FinDb.CrawlData() START with ticker: {ticker}");
 #if DEBUG
                 Console.WriteLine($"FinDb.CrawlData() START with ticker: {ticker}");
@@ -189,10 +191,10 @@ public partial class FinDb
 
         // First, collect splits from YF, because daily prices (history data) have to be reverse adjusted with the splits. YF raw prices aren't adjusted with dividends, but are adjusted with splits.
         List<SqSplit> splitList = new();
-        IReadOnlyList<SplitTick?> splitHistory = await Yahoo.GetSplitsAsync(p_ticker, p_startDate.AddDays(1), null);
+        IReadOnlyList<SplitTick?> splitHistory = await Yahoo.GetSplitsAsync(p_ticker, p_startDate.AddDays(1), null); // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30".
         foreach (SplitTick? splitTick in splitHistory)
         {
-            splitList.Add(new SqSplit() { ReferenceDate = splitTick!.DateTime, SplitFactor = splitTick.AfterSplit / splitTick.BeforeSplit });
+            splitList.Add(new SqSplit() { ReferenceDate = splitTick!.DateTime.Date, SplitFactor = splitTick.AfterSplit / splitTick.BeforeSplit });  // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30". We need only the .Date part
         }
 
         // Collect YF daily price data (OHLC and Volume) - split adjusted!
@@ -274,7 +276,7 @@ public partial class FinDb
         {
             if (dividendTick == null)
                 continue;
-            DateTime date = dividendTick.DateTime.Date; // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30"
+            DateTime date = dividendTick.DateTime.Date; // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30". We need only the .Date part
 
             // Markets were closed for a week after 9/11, but e.g. NVDA had a split on 2001-09-12. We need to use last known price on 2001-09-10. https://finance.yahoo.com/quote/NVDA/history/?period1=999302400&period2=1001376000
             // An alternative idea is to always use the Date of the last known price. But then we would not use the dividendSplit.Date at all. And what if YF has a Date data error. Then we prefer a warning of that.
@@ -295,7 +297,7 @@ public partial class FinDb
             if (splitTick == null)
                 continue;
 
-            DateTime date = splitTick.DateTime.Date; // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30"
+            DateTime date = splitTick.DateTime.Date; // YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30". We need only the .Date part
             DateTime referencePriceDate = (date >= new DateTime(2001, 9, 11) && date <= new DateTime(2001, 9, 14)) ? new DateTime(2001, 9, 10) : date; // see notes "Markets were closed for a week after 9/11" above
             if (!rawPrevClosesDict.TryGetValue(referencePriceDate, out SqPrice? refRawClose))
             {

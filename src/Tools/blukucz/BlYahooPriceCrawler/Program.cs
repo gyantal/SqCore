@@ -41,7 +41,7 @@ namespace BlYahooPriceCrawler
                     break;
                 case "2":
                     string tickerFileName = "D:/Temp/YFHist/Tickers.csv";
-                    DateTime expectedHistoryStartDateET = new(2023, 7, 1);
+                    DateTime expectedHistoryStartDateET = new(2022, 1, 1);
                     Controller.DownloadYFtoCsv(tickerFileName, expectedHistoryStartDateET, "D:/Temp/YFHist/");
                     Console.WriteLine("Writing YF adjusted priced into CVSs is done.");
                     break;

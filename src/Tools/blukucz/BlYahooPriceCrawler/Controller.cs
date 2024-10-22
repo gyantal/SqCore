@@ -113,7 +113,7 @@ namespace BlYahooPriceCrawler
                 }).ToArray();
 
                 // Checking for significant price changes that could be YF bug. By default singinificant changes are NOT allowed. Except for a very few tickers mentioned here.
-                string[] allowedSignificantChangeTickers = ["ARVLF", "CANOQ", "EXPRQ", "FFIE", "FSRNQ", "FTCHQ", "GTII", "HMFAF", "MTC", "NVTAQ", "OM", "RADCQ", "STIXF", "VFS", "WEWKQ"]; // Significant changes are checked manually.
+                string[] allowedSignificantChangeTickers = ["ARVLF", "CANOQ", "EXPRQ", "FFIE", "FSRNQ", "FTCHQ", "GCT", "GTII", "HMFAF", "MTC", "NVTAQ", "OM", "RADCQ", "STIXF", "VFS", "WEWKQ"]; // Significant changes are checked manually.
                 if (!p_unsafeFlag && !allowedSignificantChangeTickers.Contains(ticker)) // Check if the prices are continuous. If there is a discontinuity (e.g., missing split), then stop and do not write the file. Except if we are in unsafe mode.
                 {
                     bool hasSignificantChange = false;
@@ -224,7 +224,7 @@ namespace BlYahooPriceCrawler
             for (int i = 0; i < p_nDayinFuture.Length; i++)
             {
                 int nDay = p_nDayinFuture[i];
-                if (startRecordIndex + nDay >= p_priceRecords.Count)
+                if (startRecordIndex + nDay >= p_priceRecords.Count || startRecordIndex + nDay < 0)
                 {
                     performanceResult.FuturePerformances[nDay] = float.NaN;
                 }
@@ -292,7 +292,11 @@ namespace BlYahooPriceCrawler
                             }
                         }
                     }
-                    float nDayPerformance = (endPrice - startPrice) / startPrice;
+                    float nDayPerformance = 0f;
+                    if (nDay > 0)
+                        nDayPerformance = (endPrice - startPrice) / startPrice;
+                    else
+                        nDayPerformance = (startPrice - endPrice) / endPrice;
                     performanceResult.FuturePerformances[nDay] = nDayPerformance;
 
                     if (p_spyRecords == null || spyStartRecord == null)
@@ -304,7 +308,11 @@ namespace BlYahooPriceCrawler
                         else
                         {
                             float spyEndPrice = p_spyRecords[spyStartRecordIndex + nDay].AdjClose;
-                            float spyNDayPerformance = (spyEndPrice - spyStartPrice) / spyStartPrice;
+                            float spyNDayPerformance = 0f;
+                            if (nDay > 0)
+                                spyNDayPerformance = (spyEndPrice - spyStartPrice) / spyStartPrice;
+                            else
+                                spyNDayPerformance = (spyStartPrice - spyEndPrice) / spyEndPrice;
                             performanceResult.FutureSpyPerformances[nDay] = spyNDayPerformance;
                         }
                     }
@@ -403,8 +411,8 @@ namespace BlYahooPriceCrawler
             string[] tickers = [.. recommendationsFromCsv.UniqueTickers, "SPY"];
             Dictionary<string, List<YFRecord>> yfData = ReadYahooCsvFiles(tickers, "D:/Temp/YFHist/");
 
-            int[] p_nDayinFuture = [3, 5, 10, 21, 42, 63, 84, 105, 126, 189];
-            float stopLossPercentage = 0.5f; // Use a big number (e.g. 9999) to avoid stop-loss.
+            int[] p_nDayinFuture = [-252, -189, -126, -63, -21, 3, 5, 10, 21, 42, 63, 84, 105, 126, 189];
+            float stopLossPercentage = 99999f; // Use a big number (e.g. 9999) to avoid stop-loss.
             bool useMOC = true;
             List<PerformanceResult> performances = CalculatePerformances(recommendationsFromCsv, yfData, p_nDayinFuture, stopLossPercentage, useMOC);
 

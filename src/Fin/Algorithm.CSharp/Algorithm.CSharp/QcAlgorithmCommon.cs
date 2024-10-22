@@ -37,6 +37,17 @@ namespace QuantConnect.Algorithm.CSharp
         public decimal SplitFactor;
     }
 
+    public sealed class Candle
+    {
+        public DateTime DateTime { get; internal set; }
+        public decimal Open { get; internal set; }
+        public decimal High { get; internal set; }
+        public decimal Low { get; internal set; }
+        public decimal Close { get; internal set; }
+        public long Volume { get; internal set; }
+        public decimal AdjustedClose { get; internal set; }
+    }
+
     public class DailyEarningsData
     {
         [JsonPropertyName("date")]
@@ -159,6 +170,166 @@ namespace QuantConnect.Algorithm.CSharp
             p_rawClosesFromYfDicts = new Dictionary<string, Dictionary<DateTime, decimal>>();
 
             long periodStart = QCAlgorithmUtils.DateTimeUtcToUnixTimeStamp(p_startDate - p_warmUp);
+            long periodEnd = QCAlgorithmUtils.DateTimeUtcToUnixTimeStamp(p_endDate.AddDays(1)); // if p_endDate is a fixed date, it has to be increased
+
+            foreach (string ticker in p_tickers)
+            {
+                try
+                {
+                    // Step 1: Fetch all data (prices, splits, dividends) in one request
+                    string url = $"https://query2.finance.yahoo.com/v8/finance/chart/{ticker}?period1={periodStart}&period2={periodEnd}&interval=1d&events=div%2Csplit&includeAdjustedClose=true";
+                    string dataStr = p_algorithm.Download(url);
+
+                    // Parse the JSON data using JsonDocument
+                    using (JsonDocument jsonDoc = JsonDocument.Parse(dataStr))
+                    {
+                        JsonElement root = jsonDoc.RootElement;
+
+                        // Check if the "chart" and "result" elements exist
+                        if (!root.TryGetProperty("chart", out JsonElement chartElement) || !chartElement.TryGetProperty("result", out JsonElement resultArray) || resultArray.GetArrayLength() == 0)
+                        {
+                            p_algorithm.Log($"No data found for ticker {ticker}");
+                            continue;
+                        }
+
+                        JsonElement chartResult = resultArray[0];
+
+                        // Extract timestamps, OHLCV data
+                        List<long> timestamps = new List<long>();
+                        foreach (JsonElement t in chartResult.GetProperty("timestamp").EnumerateArray())
+                            timestamps.Add(t.GetInt64());
+
+                        JsonElement ohlcvData = chartResult.GetProperty("indicators").GetProperty("quote")[0];
+
+                        List<decimal> openPrices = new List<decimal>();
+                        List<decimal> highPrices = new List<decimal>();
+                        List<decimal> lowPrices = new List<decimal>();
+                        List<decimal> closePrices = new List<decimal>();
+                        List<long> volumes = new List<long>();
+                        List<decimal> adjustedClosePrices = new List<decimal>();
+
+                        foreach (JsonElement o in ohlcvData.GetProperty("open").EnumerateArray())
+                            openPrices.Add(o.GetDecimal());
+
+                        foreach (JsonElement h in ohlcvData.GetProperty("high").EnumerateArray())
+                            highPrices.Add(h.GetDecimal());
+
+                        foreach (JsonElement l in ohlcvData.GetProperty("low").EnumerateArray())
+                            lowPrices.Add(l.GetDecimal());
+
+                        foreach (JsonElement c in ohlcvData.GetProperty("close").EnumerateArray())
+                            closePrices.Add(c.GetDecimal());
+
+                        foreach (JsonElement v in ohlcvData.GetProperty("volume").EnumerateArray())
+                            volumes.Add(v.GetInt64());
+
+                        if (chartResult.TryGetProperty("indicators", out JsonElement indicators) && indicators.TryGetProperty("adjclose", out JsonElement adjCloseElement))
+                            foreach (JsonElement a in adjCloseElement[0].GetProperty("adjclose").EnumerateArray())
+                                adjustedClosePrices.Add(a.GetDecimal());
+
+                        // Process splits from the events section
+                        List<YfSplit> splits = new List<YfSplit>();
+                        if (chartResult.TryGetProperty("events", out JsonElement events) && events.TryGetProperty("splits", out JsonElement splitEvents))
+                            foreach (JsonProperty split in splitEvents.EnumerateObject())
+                            {
+                                JsonElement splitEvent = split.Value;
+                                long splitDateUnix = splitEvent.GetProperty("date").GetInt64();
+                                DateTime splitDate = DateTimeOffset.FromUnixTimeSeconds(splitDateUnix).UtcDateTime.Date;
+                                decimal numerator = splitEvent.GetProperty("numerator").GetDecimal();
+                                decimal denominator = splitEvent.GetProperty("denominator").GetDecimal();
+                                decimal splitFactor = numerator / denominator;
+                                splits.Add(new YfSplit() { ReferenceDate = splitDate, SplitFactor = splitFactor });
+                            }
+
+                        // Step 3: Create a list of Candle objects to hold the OHLCV and adjusted close data
+                        List<Candle> candleList = new List<Candle>();
+                        List<QcPrice> rawClosesFromYfList = new List<QcPrice>();
+
+                        for (int i = 0; i < timestamps.Count; i++)
+                        {
+                            long unixTime = timestamps[i];
+                            DateTime date = DateTimeOffset.FromUnixTimeSeconds(unixTime).UtcDateTime.Date;
+
+                            // Get the OHLCV data and adjusted close price
+                            decimal openPrice = openPrices[i];
+                            decimal highPrice = highPrices[i];
+                            decimal lowPrice = lowPrices[i];
+                            decimal closePrice = closePrices[i];
+                            long volume = volumes[i];
+                            decimal adjustedClose = adjustedClosePrices.Count > i ? adjustedClosePrices[i] : closePrice;
+
+                            // Create Candle object (not used in the final output but kept for future use)
+                            Candle candle = new Candle()
+                            {
+                                DateTime = date,
+                                Open = openPrice,
+                                High = highPrice,
+                                Low = lowPrice,
+                                Close = closePrice,
+                                Volume = volume,
+                                AdjustedClose = adjustedClose
+                            };
+
+                            rawClosesFromYfList.Add(new QcPrice(){ ReferenceDate = date, Close = closePrice }); // Store only the Close price in the rawClosesFromYfDict
+
+                            candleList.Add(candle); // Optionally, if you want to keep the Candle data for future use
+                        }
+
+                        // Step 4: Adjust prices for splits (if any) and update the Close prices dictionary
+                        if (splits.Count > 0)
+                            rawClosesFromYfList = AdjustPricesForSplits(rawClosesFromYfList, splits);
+
+                        // Step 5: Convert the list of QcPrice to Dictionary for final output, because that is 6x faster to query
+                        Dictionary<DateTime, decimal> rawClosesFromYfDict = new Dictionary<DateTime, decimal>();
+                        foreach (QcPrice yfPrice in rawClosesFromYfList)
+                            rawClosesFromYfDict[yfPrice.ReferenceDate] = yfPrice.Close;
+
+                        // Store the Close prices for the current ticker
+                        p_rawClosesFromYfDicts[ticker] = rawClosesFromYfDict;
+                    }
+                }
+                catch (Exception e)
+                {
+                    p_algorithm.Log($"Exception: {e.Message}");
+                    continue;
+                }
+            }
+        }
+
+        private static List<QcPrice> AdjustPricesForSplits(List<QcPrice> rawClosesFromYfList, List<YfSplit> splits)
+        {
+            // Sort splits by ReferenceDate in descending order using List<T>.Sort
+            splits.Sort((x, y) => y.ReferenceDate.CompareTo(x.ReferenceDate));
+
+            decimal splitMultiplier = 1m;
+            int lastSplitIndex = 0;
+            DateTime nextSplitDate = splits[lastSplitIndex].ReferenceDate;
+
+            // Iterate backwards through raw closes to adjust them for splits
+            for (int i = rawClosesFromYfList.Count - 1; i >= 0; i--)
+            {
+                DateTime date = rawClosesFromYfList[i].ReferenceDate;
+                if (date < nextSplitDate)
+                {
+                    splitMultiplier *= splits[lastSplitIndex].SplitFactor;
+                    lastSplitIndex++;
+                    if (lastSplitIndex <= splits.Count - 1)
+                        nextSplitDate = splits[lastSplitIndex].ReferenceDate;
+                    else
+                        nextSplitDate = DateTime.MinValue;
+                }
+
+                rawClosesFromYfList[i].Close *= splitMultiplier;
+            }
+
+            return rawClosesFromYfList;
+        }
+
+        public static void DownloadAndProcessYfDataOld(QCAlgorithm p_algorithm, List<string> p_tickers, DateTime p_startDate, TimeSpan p_warmUp, DateTime p_endDate, out Dictionary<string, Dictionary<DateTime, decimal>> p_rawClosesFromYfDicts)
+        {
+            p_rawClosesFromYfDicts = new Dictionary<string, Dictionary<DateTime, decimal>>();
+
+            long periodStart = QCAlgorithmUtils.DateTimeUtcToUnixTimeStamp(p_startDate - p_warmUp);
             long periodEnd = QCAlgorithmUtils.DateTimeUtcToUnixTimeStamp(p_endDate.AddDays(1)); // if p_endDate is a fixed date (2023-02-28:00:00), then it has to be increased, otherwise YF doesn't give that day data.
 
             foreach (string ticker in p_tickers)
@@ -266,40 +437,6 @@ namespace QuantConnect.Algorithm.CSharp
                 }
                 p_rawClosesFromYfDicts[ticker] = rawClosesFromYfDict;
             }
-        }
-
-        public void DownloadAndProcessEarningsData()
-        {
-            // string earningsDataJson = this.Download("https://data.quantpedia.com/backtesting_data/economic/earnings_dates_eps.json");
-
-            string earningsDataJson = "[{\"date\": \"2010-01-04\"},{\"date\": \"2010-01-05\"}]";
-            // List<DailyEarningsData> stockDataList = JsonSerializer.Deserialize<List<DailyEarningsData>>(earningsDataJson, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
-            List<DailyEarningsData> stockDataList = JsonSerializer.Deserialize<List<DailyEarningsData>>(earningsDataJson);
-            var adas = stockDataList[0];
-            // DateTime dateee = DateTime.ParseExact(adas.Date, "yyyy-MM-dd", CultureInfo.InvariantCulture);
-            // Log(dateee.ToString());
-
-            // string propName = propName.ToLower();
-
-            // foreach (var stockData in stockDataList)
-            // {
-            //     DateTime date = DateTime.ParseExact(stockData.Date, "yyyy-MM-dd", CultureInfo.InvariantCulture);
-            //     List<string> tickers = new List<string>();
-
-            //     foreach (var stock in stockData.Stocks)
-            //     {
-            //         if (_tickers.Contains(stock.Ticker))
-            //         {
-            //             tickers.Add(stock.Ticker);
-            //         }
-            //     }
-
-            //     if (tickers.Count > 0)
-            //     {
-            //         _requiredEarningsDataDict[date] = tickers;
-            //     }
-            // }
-
         }
     }
 }

@@ -9,6 +9,9 @@ namespace Fin.MemDb;
 public partial class LegacyPortfolio : Portfolio
 {
     public string LegacyDbPortfName { get; set; } = string.Empty;
+
+    public LegacyPortfolio() { }
+
     public LegacyPortfolio(int id, PortfolioInDb portfolioInDb, User[] users)
     : base(id, portfolioInDb, users)
     {

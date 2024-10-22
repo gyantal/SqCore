@@ -73,9 +73,25 @@ Cargo.lock
 !**/Fin/Data/equity/usa/daily/hrs.zip
 !**/Fin/Data/equity/usa/daily/utx.zip
 
+# Harry Long portfolio dead stocks from the past:
+!**/Fin/Data/equity/usa/daily/ugaz.zip
+!**/Fin/Data/equity/usa/daily/dwt.zip
+!**/Fin/Data/equity/usa/daily/gaz.zip
+!**/Fin/Data/equity/usa/daily/oil.zip
+!**/Fin/Data/equity/usa/daily/uwt.zip
+!**/Fin/Data/equity/usa/daily/ziv.zip
+
 **/Fin/Data/equity/usa/factor_files/*
 !**/Fin/Data/equity/usa/factor_files/spy-qc.csv
 !**/Fin/Data/equity/usa/factor_files/*-sq-history.csv
+
+# Harry Long portfolio dead stocks from the past:
+!**/Fin/Data/equity/usa/factor_files/ugaz.csv
+!**/Fin/Data/equity/usa/factor_files/dwt.csv
+!**/Fin/Data/equity/usa/factor_files/gaz.csv
+!**/Fin/Data/equity/usa/factor_files/oil.csv
+!**/Fin/Data/equity/usa/factor_files/uwt.csv
+!**/Fin/Data/equity/usa/factor_files/ziv.csv
 
 **/Fin/Data/equity/usa/fundamental/fine/**
 
