@@ -236,7 +236,7 @@ namespace QuantConnect.Algorithm.CSharp
         {
             // WriteTradesToCsv(_tradesByDate, "D:\\Temp\\all_trades.csv");
             // WriteExecutedTradesToCsv(_executedTrades, "D:\\Temp\\executed_trades.csv");
-            WritePortfolioValuesToCsv(_portfolioValues, "D:\\Temp\\portfolio_values.csv");
+            // WritePortfolioValuesToCsv(_portfolioValues, "D:\\Temp\\portfolio_values.csv");
         }
 
         // private void WriteTradesToCsv(Dictionary<DateTime, List<Trade>> tradesByDate, string fileName)
