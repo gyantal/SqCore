@@ -78,6 +78,7 @@ export class AppComponent implements OnInit {
   m_isPrtfSelectionDialogVisible: boolean = false;
 
   m_seasonalityData: SeasonalityData[] = []; // Seasonality
+  m_userWarning: string | null = null;
 
   // Constants
   public gPortfolioIdOffset: number = 10000;
@@ -196,6 +197,8 @@ export class AppComponent implements OnInit {
     for (const item of chrtGenBacktestRes.pfRunResults) {
       const { firstVal: firstValDate, lastVal: lastValDate } = this.getDateRangeFromChrtData(item.chrtData);
       this.updateMinMaxDates(firstValDate, lastValDate);
+      if (item.chrtData.chartResolution == ChartResolution.Minute || item.chrtData.chartResolution == ChartResolution.Minute5) // Check if the portfolio is of per minute resolution
+        this.m_userWarning = 'PerMinute strategies not fully supported';
       const chartItem = this.createCgTimeSeriesFromChrtData(item.chrtData, item.name, true);
       this.m_seasonalityData.push(getSeasonalityData(item.chrtData));
       this.m_detailedStatistics.backtestDetailedStatistics.push(getDetailedStats(item.chrtData));

@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, getSeasonalityData, UiSeasonalityChartPoint, getDetailedStats } from '../../../../TsLib/sq-common/backtestCommon';
+import { PortfolioJs, PrtfRunResultJs, UiPrtfRunResult, prtfsParseHelper, statsParseHelper, updateUiWithPrtfRunResult, TradeAction, AssetType, CurrencyId, ExchangeId, fundamentalDataParseHelper, TickerClosePrice, SeasonalityData, getSeasonalityData, UiSeasonalityChartPoint, getDetailedStats, ChartResolution } from '../../../../TsLib/sq-common/backtestCommon';
 import { SqNgCommonUtilsTime } from '../../../sq-ng-common/src/lib/sq-ng-common.utils_time';
 import { drawBarChartFromSeasonalityData } from '../../../../TsLib/sq-common/chartSimple';
 import { BacktestDetailedStatistics } from '../../../../TsLib/sq-common/backtestStatistics';
@@ -104,6 +104,7 @@ export class AppComponent {
   m_chrtHeight: number = 0; // added only to reuse the updateUiWithPrtfRunResult method as is ( variable has no effect today(16012024) may be useful in future)
   m_prtfRunResult: PrtfRunResultJs | null = null;
   m_uiPrtfRunResult: UiPrtfRunResult = new UiPrtfRunResult();
+  m_userWarning: string | null = null;
 
   // Positions tabpage:
   m_histPosEndDate: string = '';
@@ -213,6 +214,8 @@ export class AppComponent {
 
       return value; // the original property will not be removed if we return the original value, not undefined
     });
+    if (this.m_prtfRunResult?.chrtData.chartResolution == ChartResolution.Minute || this.m_prtfRunResult?.chrtData.chartResolution == ChartResolution.Minute5) // Check if the portfolio is of per minute resolution
+      this.m_userWarning = 'PerMinute strategies not fully supported';
     updateUiWithPrtfRunResult(this.m_prtfRunResult, this.m_uiPrtfRunResult, this.m_chrtWidth, this.m_chrtHeight);
     this.onSortingPositionsClicked(this.m_positionsTabSortColumn);
     this.getFundamentalData();
