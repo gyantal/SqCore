@@ -42,26 +42,12 @@ public class SeekingAlphaHelperController : ControllerBase
 
     private string ExtractStocksRawHistData2Dict()
     {
-        // string url = "https://drive.google.com/uc?export=download&id=1-1HZBrjO4HihpJvk47vxtgBylGeZ0At-";
-        // string? rawTopStocksData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
-        string url = string.Empty;
-        Utils.BenchmarkElapsedTime("ExtractStocksRawHistData2Dict(): for initializing the URL", () =>
-        {
-            url = "https://drive.google.com/uc?export=download&id=1-1HZBrjO4HihpJvk47vxtgBylGeZ0At-";
-        });
-        string? rawTopStocksData = null;
-        Utils.BenchmarkElapsedTime("ExtractStocksRawHistData2Dict(): for downloading the raw stocks data", () =>
-        {
-            rawTopStocksData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
-        });
+        string url = "https://drive.google.com/uc?export=download&id=1-1HZBrjO4HihpJvk47vxtgBylGeZ0At-";
+        string? rawTopStocksData = Utils.DownloadStringWithRetryAsync(url).TurnAsyncToSyncTask();
         if (string.IsNullOrEmpty(rawTopStocksData) || rawTopStocksData.Contains("Error"))
             return "Error in DownloadStringWithRetry()";
-        string topStocksStr = string.Empty;
-        Utils.BenchmarkElapsedTime("ExtractStocksRawHistData2Dict(): converting raw srocks to required string format", () =>
-        {
-            Dictionary<DateTime, List<StockData>> topStocksDict = TopStocksRawHistData2Dict(rawTopStocksData);
-            topStocksStr = TopStocksDict2Str(topStocksDict);
-        });
+        Dictionary<DateTime, List<StockData>> topStocksDict = TopStocksRawHistData2Dict(rawTopStocksData);
+        string topStocksStr = TopStocksDict2Str(topStocksDict);
         return topStocksStr;
     }
 
@@ -137,7 +123,7 @@ public class SeekingAlphaHelperController : ControllerBase
 
         // creating the dictionary string with proper formatting for readability.
         // Using tabs (\t) and newlines (\n) for better formatting when copying into QuantConnect's QCStrategy.
-        sbTopStocksDict.Append("Dictionary<DateTime, List<StockData>> recommendations = new() \n\t\t{\n");
+        sbTopStocksDict.Append("Dictionary<DateTime, List<StockData>> _recommendations = new() \n\t\t{\n");
 
         // Initialize counters to keep track of the current entry position
         int topStocksDictCount = p_topStocksDict.Count;
