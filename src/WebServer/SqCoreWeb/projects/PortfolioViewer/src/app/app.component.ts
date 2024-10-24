@@ -139,9 +139,8 @@ export class AppComponent {
   // LegacyDbTrades tabpage
   m_legacyDbInsertionYear: number = new Date().getFullYear(); // using the current year as default value
   m_legacyDbInsTradesSyntaxCheckResult: string = '';
-  m_legacyDbTestInsTradesResult: string = '';
-  m_legacyDbRealInsTradesResult: string = '';
-
+  m_legacyDbInsTradesTestResult: string = '';
+  m_legacyDbInsTradesRealResult: string = '';
 
   user = {
     name: 'Anonymous',
@@ -220,7 +219,15 @@ export class AppComponent {
     this.onSortingPositionsClicked(this.m_positionsTabSortColumn);
     this.getFundamentalData();
     this.m_seasonalityData = getSeasonalityData(this.m_prtfRunResult!.chrtData);
-    this.processUiWithSeasonalityChart(this.m_seasonalityData);
+    let isMonthlySeasonalityAvgArrayAllNaN: boolean = true; // This is added to resolve console errors when plotting the bar chart for mean and median. The seasonality data array contains only NaN values, e.g., for portfolioId = 7, which has data for only 5 days.
+    for (let i = 0; i < this.m_seasonalityData.monthlySeasonalityAvg.length; i++) {
+      if (!isNaN(this.m_seasonalityData.monthlySeasonalityAvg[i])) {
+        isMonthlySeasonalityAvgArrayAllNaN = false;
+        break;
+      }
+    }
+    if (!isMonthlySeasonalityAvgArrayAllNaN)
+      this.processUiWithSeasonalityChart(this.m_seasonalityData);
     this.m_detailedStatistics = getDetailedStats(this.m_prtfRunResult!.chrtData);
   }
 
@@ -671,6 +678,21 @@ export class AppComponent {
   }
 
   tradeStringifyHelper(trade: TradeJs): string {
+    // Date in JSON problem: The JSON.stringify() uses Date.toISOString(), which from a Local date (2024-01-18T18:30:00.000), creates a string as "2024-01-18T13:00:00.000Z", but we don't want this format with the Server communication
+    // Furthermore, it converts the time from Local time to UTC, and we don't want that it changes the time in any way.
+    // Potential fixes that we tried:
+    // 1. JSON.stringify() doesn't have a Bool parameter or a Config parameter that controls this behaviour.
+    // 2. Overwriting Date.prototype.toJSON = function(){} is possible, but we don't like overwriting Global functions (that could be used somewhere else in the code)
+    // 3. We can create a temporary local variable editedTradeToServer, and do this Date => string custom conversion ourselves, before calling JSON.stringify() with the cloned object.
+    // E.g. const editedTradeToServer = new TradeJs();
+    // editedTradeToServer.CopyFrom(this.m_editedTrade);
+    // Sorry TypeScript!: instead of introducing a new class TradeJsToServer just for changing the type from Date to string, we push the string object into that '.time' field, which is supposed to be Date.
+    // but it is only temporary (before sending to the Server), and only for this local variable.
+    // editedTradeToServer.time = SqNgCommonUtilsTime.DateTime2PaddedIsoStr(editedTradeToServer.time) as any; // putting the 'string' into the 'Date' field. Violation of TS rules, but fine. Target format is: "2023-12-10T21:00:00"
+    // Disadvantages: 1. need to MemCopy Clone the whole this.m_editedTrade big oject. 2. We have to use "as any" to convince TS to fill the Date field with a String
+    // 4. The JSON.stringify() (key, value) => callback function receives key='time', value='2024-01-18T13:00:00.000Z' as String, that is already a converted string. The Date object doesn't arrive here unfortunatelly.
+    // But we can remedy it to do the inverse of Date.toISOString(), which is the ctor 'new Date(ISO-Utc-string), that will give us back the original Date (in local timezone)
+    // And we can use our utility function DateTime2PaddedIsoStr() to get the string representation of that local Date.
     const tradeStr = JSON.stringify(trade, (key:string, value: any) => {
       switch (key) {
         case 'time':
