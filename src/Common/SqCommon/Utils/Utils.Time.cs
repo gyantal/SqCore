@@ -12,6 +12,7 @@ public enum TimeZoneId : byte { UTC = 0, EST = 1, London = 2, CET = 3, Unknown =
 
 public static partial class Utils
 {
+    public static readonly DateTime UnixEpoch = new(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
     private static readonly ConcurrentDictionary<TimeZoneId, TimeZoneInfo> g_tzi = new();
 
     // http://www.mcnearney.net/blog/windows-timezoneinfo-olson-mapping/
@@ -129,8 +130,7 @@ public static partial class Utils
     public static DateTime UnixTimeStampToDateTimeUtc(long p_unixTimeStamp) // Int would roll over to a negative in 2038 (if you are using UNIX timestamp), so long is safer
     {
         // Unix timestamp is seconds past epoch
-        System.DateTime dtDateTime = new(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-        dtDateTime = dtDateTime.AddSeconds(p_unixTimeStamp);
+        System.DateTime dtDateTime = UnixEpoch.AddSeconds(p_unixTimeStamp);
         return dtDateTime;
     }
 
@@ -139,12 +139,20 @@ public static partial class Utils
 //    return UnixTimeStampToDateTimeUtc(p_unixTimeStamp).ToLocalTime();
 // }
 
-    public static long DateTimeUtcToUnixTimeStamp(DateTime p_utcDate) // Int would roll over to a negative in 2038 (if you are using UNIX timestamp), so long is safer
+    public static long DateTimeUtcToUnixTimeStamp(this DateTime p_utcDate) // Int would roll over to a negative in 2038 (if you are using UNIX timestamp), so long is safer
     {
         // Unix timestamp is seconds past epoch
-        System.DateTime dtDateTime = new(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-        TimeSpan span = p_utcDate - dtDateTime;
+        TimeSpan span = p_utcDate - UnixEpoch;
         return (long)span.TotalSeconds;
+    }
+
+    public static string DateTimeUtcToUnixTimeStampStr(this DateTime p_date)
+    {
+        // Unix timestamp is seconds past epoch
+        return DateTime.SpecifyKind(p_date, DateTimeKind.Utc)
+            .Subtract(UnixEpoch)
+            .TotalSeconds
+            .ToString("F0");
     }
 
     public static void BenchmarkElapsedTime(string p_name, Action p_f)

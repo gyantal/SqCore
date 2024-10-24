@@ -312,10 +312,15 @@ public class OvermindExecution : SqExecution
 
         List<string> tickers = new() { "^VIX" };
 
-        IReadOnlyList<Candle?> history = Yahoo.GetHistoricalAsync("^VIX", startDateET, endDateET, Period.Daily).TurnAsyncToSyncTask(); // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
-        SqDateOnly[] dates = history.Select(r => new SqDateOnly(r!.DateTime)).ToArray();
-        // for penny stocks, IB and YF considers them for max. 4 digits. UWT price (both in IB ask-bid, YF history) 2020-03-19: 0.3160, 2020-03-23: 2302
-        float[] adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
+        var histResult = HistPrice.g_HistPrice.GetHistAsync("^VIX", HpDataNeed.AdjClose, startDateET, endDateET).TurnAsyncToSyncTask(); // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
+        if (histResult.ErrorStr != null)
+        {
+            Utils.Logger.Error($"g_HistPrice.GetHistorical() error. Cannot get YF data (^VIX)");
+            return;
+        }
+
+        SqDateOnly[] dates = histResult!.Dates!;
+        float[] adjCloses = histResult!.AdjCloses!;
 
         // Check that 1.2*SMA(VIX, 50) < VIX_last_close:  (this is used by the VIX spikes document)
         // this is used in the Balazs's VIX spikes gDoc: https://docs.google.com/document/d/1YA8uBscP1WbxEFIHXDaqR50KIxLw9FBnD7qqCW1z794

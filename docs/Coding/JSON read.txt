@@ -1,4 +1,4 @@
----------------------- Conclusion. 4 Options with System.Text.Json do deserialize string to RAM:
+---------------------- Conclusion. There are 4 Options with System.Text.Json do deserialize string to RAM:
 
 1. JsonSerializer.Deserialize<Person>()
 If you are willing to write the POCO code for the class. Which is rare. Because YF json text data has too many fields.
@@ -52,6 +52,45 @@ If you already have the json string in RAM.
 And you only use 1% of that data, maybe it is better to use JsonDocument 'lazy, memory view' window onto the string.
 
 
+-------- Benchmarking experience: Newtonsoft vs. JsonDocument.Parse(dataStr) vs. UTF8 bytes Utf8JsonReader from YF ChartAPI JSON streaming in SqCore
+It looks that there is YF server side caching.
+>>>>>> Benchmarking surprises. Running it 3x in the same second, result is that 2nd and 3rd time is too fast
+	Yahoo.GetHistoricalAsync: 677,352.00 microsec , with 500msec sleep, so it is 177msec
+	HistPriceYf.ParseHistoricalDataAsync(QQQ) YF download: 144,436 microsec
+	HistPriceYf.ParseHistoricalDataAsync(QQQ) YF download: 15,363.00 microsec
+	HistPriceYf.ParseHistoricalDataAsync(QQQ) YF download: 16,405.00 microsec
+>15msec is extremely fast. Essentially, the 15msec cannot be improved as that is the minimal.
+We reduced the processing overhead essentially to 0 (2-4msec). Because Utf8JsonReader only goes through the input text once. Touching every single byte only once in a read forward way.
+
+>C# class HttpClient doesn't do caching data. (to not store data in RAM).
+>HttpClient reuses TCP connections through connection pooling. And that can be about 35msec faster. As when I created a NEW HttpClient, then JSON processing run in 50msec instead of 15msec.
+So, the g_HttpClient TCP connection pooling doesn't explain the big (144-15msec) difference.
+>The only explanation is the YF server side caching. The same request url, so YF server sends it instantly. (somehow, it only works for 1 sec).
+>I have a 2ms ping connection. So, if a YF UK server is in the UK, and the data is already ready, it is possible it can be sent in 10-12msec.
+And local JSON processing time is then about 3-4 msec.
+>So, 3 use-cases:
+A. If YF server doesn't have the url => data translation in their server cache:
+- YF server packs together the Utf8 string data from its internal DB and gzip it: 144-15 = 130msec. Stores it in the server-side cache
+- data travels: 10msec
+- we process with Utf8JsonReader: 4 msec.
+Altogether: 130 + 10 + 4 = 144msec
+B. If YF server has it in the cache:
+- data travels: 10msec
+- we process with Utf8JsonReader: 4 msec.
+Altogether: 10 + 4 = 14msec
+C. When we process it with old YF API. Newtonsoft. Yahoo.GetHistoricalAsync: takes about 170msec.
+- YF server packs together the info: 144-15 = 130msec.
+- data travels: 10msec
+- Newtonsoft JSON deserialization process: 170-140 = 30 msec.
+Altogether: 130 + 10 + 30 = 170msec
+>So, our code change from C# string Newtonsoft serialization to Utf8JsonReader is something like 30msec => 4msec. Good. 8x improvement.
+But this is not what is dominating. We saved 30-4 = 26msec per query, but the internet download time is 130+10=140msec. And we cannot improve that.
+>Estimate that JsonDocument.Parse(dataStr) processing would be halfway between Utf8JsonReader and NewtonsoftJsonWriter. So, a whole history QQQ (700K) JSON processing use-cases:
+- NewtonsoftJsonReader: 26msec
+- JsonDocument.Parse(dataStr): 15msec
+- Utf8JsonReader: 4msec
+But most of the time, the internet download time is the dominating (130msec packaging, 10msec sending)
+
 ---------- Final Conclusion:
 - use JsonSerializer.Deserialize<PortfolioInDb>:
 	If class is small, and you 'want to' write the POCO class.
@@ -68,10 +107,10 @@ And you only use 1% of that data, maybe it is better to use JsonDocument 'lazy, 
 	The estimate is that about 2-5x faster than JsonDocument.
 
 >Preference when to use:
-- JsonSerializer.Deserialize<PortfolioInDb> (third fastest option out of the 4: 8ms, because it does many small RAM allocations for creating the data):
+- JsonSerializer.Deserialize<PortfolioInDb> (third fastest option out of the 4: 16ms, because it does many small RAM allocations for creating the data):
 	- reading from RedisDb at program start, or in every 2 hours.
 	- shortest code (just 1 line) at execution, but you also have to code the POCO class.
-- JsonDocument (second fastest option out of the 4: 5ms ): 
+- JsonDocument.Parse() (second fastest option out of the 4: 10ms ): 
 	- in QuantConnect cloud running it is fine as that is slow enough.
 	- if we inherit a 3rd party library (e.g. YahooFinanceApi) and that uses this. Fine. It would take too much time, and error prone to rewrite it. So, we will keep whatever it is now in the YF API code.
 	- if code runs only once per day (e.g. download historical prices once per day crawler). Fine. But be careful, if that crawler function is available for the user as 'Show chart of NVDA for last 1 year', then we want fastest response time.

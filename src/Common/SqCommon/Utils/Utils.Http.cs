@@ -1,6 +1,8 @@
 using System;
+using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,7 +16,28 @@ public static partial class Utils
     };
 
     // HttpWebRequest vs. HttpClient. Never use HttpWebRequest. HttpClient (asynchronous, can be reused) is preferred over HttpWebRequest. https://www.diogonunes.com/blog/webclient-vs-httpclient-vs-httpwebrequest/
-    static HttpClient? g_httpClient = null; // Lazy eval is better for Apps that don't use it at all. For efficiency, we can make it global, because it can handle multiple queries in multithread
+    // Use 1 global HttpClient per App. Because every new ctor and initialization cost about 70msec as base cost. Just use this 1 global one everywhere in the code.
+    // HttpClient can handle multiple queries in multithread.
+    static HttpClient? g_httpClient = null; // Lazy eval is better for Apps that don't use it at all.
+
+    private static void AssureHttpClientIsAlive()
+    {
+        if (g_httpClient == null)
+        {
+            g_httpClient = new(g_httpHandler)
+            {
+                DefaultRequestVersion = HttpVersion.Version30,
+                // DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact // Defult is 3.0, but not explicitly require HTTP/3 only.
+            };
+        }
+    }
+
+    // Semi-hiding g_httpClient from users for better control. Use the inner g_httpClient only if it is very necessary! E.g. HistPriceApi: when YF API gives UTF8 bytes, and we don't want to convert it to 2-byte strings.
+    public static HttpClient GetHttpClientDirect()
+    {
+        AssureHttpClientIsAlive();
+        return g_httpClient!;
+    }
 
     public static async Task<string?> DownloadStringWithRetryAsync(string p_url)
     {
@@ -23,13 +46,7 @@ public static partial class Utils
 
     public static async Task<string?> DownloadStringWithRetryAsync(string p_url, int p_nRetry, TimeSpan p_sleepBetweenRetries, bool p_throwExceptionIfUnsuccesful = true)
     {
-        if (g_httpClient == null)
-        {
-            // TODO: this can be removed in .NET 7, when Http3 will be no longer Preview feature
-            // This has to be called before any HttpClient creation.
-            System.AppContext.SetSwitch("System.Net.SocketsHttpHandler.Http3Support", true);    // enable HTTP/3 support for HttpClient: which is only an experimental feature in .NET 6
-            g_httpClient = new(g_httpHandler);
-        }
+        AssureHttpClientIsAlive();
 
         string webpage = string.Empty;
         int nDownload = 0;
@@ -40,7 +57,7 @@ public static partial class Utils
             try
             {
                 nDownload++;
-                HttpResponseMessage response = await g_httpClient.SendAsync(request);
+                HttpResponseMessage response = await g_httpClient!.SendAsync(request);
                 using (HttpContent content = response.Content)
                 {
                     webpage = await content.ReadAsStringAsync();
@@ -197,11 +214,27 @@ public static partial class Utils
             // In the browser (with default browser headers), it works: https://feeds.finance.yahoo.com/rss/2.0/headline?s=TSLA
             // curl -v https://feeds.finance.yahoo.com/rss/2.0/headline?s=TSLA // surprisingly it works, because cURL sends default User-Agent and Accept headers, even though it is not specified (always inspect with the "-v" verbose parameter what is happening)
             // curl -v https://feeds.finance.yahoo.com/rss/2.0/headline?s=TSLA -H "User-Agent: curl/8.7.1" -H "Accept: */*"   // with default cUrl headers, it works
-            // curl -v https://feeds.finance.yahoo.com/rss/2.0/headline?s=TSLA -H "User-Agent: " -H "Accept: "   // with empty headers, it returns "429 Too Many Requests"
-            //
-            // curl -v https://feeds.finance.yahoo.com/rss/2.0/headline?s=TSLA -H "User-Agent: curl/8.7.1" -H "Accept: " // it works. So, if the User-Agent is empty, then it fails. Otherwise, it is OK.
+            // curl -v https://feeds.finance.yahoo.com/rss/2.0/headline?s=TSLA -H "User-Agent: " -H "Accept: "   // with empty headers, it returns "429 Too Many Requests". So, if the User-Agent is empty, then it fails. Otherwise, it is OK.
             //
             // curl -v https://feeds.finance.yahoo.com/rss/2.0/headline?s=TSLA -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36" -H "Accept: " // implement this version in this C# code.
+            return new HttpRequestMessage
+            {
+                RequestUri = new Uri(p_url),
+                Method = HttpMethod.Get,
+                Version = HttpVersion.Version20,
+                Headers =
+                {
+                    { "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36" }
+                }
+            };
+        }
+        else if (p_url.StartsWith("https://query2.finance.yahoo.com/v8/finance/chart")) // https://query2.finance.yahoo.com/v8/finance/chart/AAPL?period1=0&period2=1729692470&interval=1d&events=history,split
+        {
+            // curl -v --insecure "https://query2.finance.yahoo.com/v8/finance/chart/AAPL?period1=0&period2=1729692470&interval=1d&events=history,split" // surprisingly it works, because cURL sends default User-Agent and Accept headers, even though it is not specified (always inspect with the "-v" verbose parameter what is happening)
+            // curl -v --insecure "https://query2.finance.yahoo.com/v8/finance/chart/AAPL?period1=0&period2=1729692470&interval=1d&events=history,split" -H "User-Agent: curl/8.7.1" -H "Accept: */*"   // with default cUrl headers, it works
+            // curl -v --insecure "https://query2.finance.yahoo.com/v8/finance/chart/AAPL?period1=0&period2=1729692470&interval=1d&events=history,split" -H "User-Agent: " -H "Accept: "   // with empty headers, it returns "429 Too Many Requests". So, if the User-Agent is empty, then it fails. Otherwise, it is OK.
+            //
+            // curl -v --insecure "https://query2.finance.yahoo.com/v8/finance/chart/AAPL?period1=0&period2=1729692470&interval=1d&events=history,split" -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36" -H "Accept: " // implement this version in this C# code.
             return new HttpRequestMessage
             {
                 RequestUri = new Uri(p_url),

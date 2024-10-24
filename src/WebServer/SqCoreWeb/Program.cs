@@ -354,12 +354,23 @@ public partial class Program
                 Console.WriteLine(MemDb.gMemDb.ReloadDbDataIfChanged(false).TurnAsyncToSyncTask().ToString());
                 break;
             case "3":
-                IReadOnlyList<Candle?> history = Yahoo.GetHistoricalAsync("SPY").TurnAsyncToSyncTask();
-                Candle? lastCandle = history[^1];
-                if (lastCandle != null)
-                    Console.WriteLine($"SPY History length: {history.Count}. LastCandle: {lastCandle.DateTime}: {lastCandle.Close}");
+                // Stopwatch stopwatch = Stopwatch.StartNew();
+                // IReadOnlyList<Candle?> history = Yahoo.GetHistoricalAsync("QQQ").TurnAsyncToSyncTask();
+                // stopwatch.Stop();
+                // Console.WriteLine($"Yahoo.GetHistoricalAsync: {(long)((stopwatch.ElapsedTicks * 1_000_000) / Stopwatch.Frequency):N2} microsec");
+                // Candle? lastCandle = history[^1];
+                // if (lastCandle != null)
+                //     Console.WriteLine($"QQQ History length: {history.Count}. LastCandle: {lastCandle.DateTime}: {lastCandle.Close}");
+                // else
+                //     Console.WriteLine($"QQQ History is not received.");
+
+                var histResult = HistPrice.g_HistPrice.GetHistAsync("QQQ", HpDataNeed.AdjClose | HpDataNeed.Split | HpDataNeed.Dividend | HpDataNeed.OHLCV).TurnAsyncToSyncTask();
+                // var histResult = HistPrice.g_HistPrice.GetHistAsync("QQQ", DataNeed.AdjClose).TurnAsyncToSyncTask(); // returns all 9 output arrays
+                // var histResult = HistPrice.g_HistPrice.GetHistAdjCloseAsync("QQQ").TurnAsyncToSyncTask(); // returns only the required 2 output arrays: Dates, AdjCloses
+                if (histResult.ErrorStr != null)
+                    Utils.Logger.Error($"HistPrice Error: {histResult.ErrorStr}");
                 else
-                    Console.WriteLine($"SPY History is not received.");
+                    Console.WriteLine($"QQQ History length: {histResult.AdjCloses!.Length}. Last: {histResult.Dates![^1]}: {histResult.AdjCloses![^1]}");
                 break;
             case "4":
                 try

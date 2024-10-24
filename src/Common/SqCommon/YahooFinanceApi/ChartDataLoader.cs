@@ -28,7 +28,7 @@ public static class ChartDataLoader
         // "Make sure calling history to get price data has not introduced more calls to yahoo than absolutely necessary.
         // As doing other type of scraping calls than "query2.finance.yahoo.com/v8/finance/chart" to yahoo website
         // will quickly trigger spam-block when doing bulk download of history data."
-        Console.WriteLine("YF API: Sleeping for 500ms to avoid throttling");
+        Console.WriteLine($"YF API:{symbol}, Sleeping for 500ms to avoid throttling");
         Thread.Sleep(500); // TEMP: to avoid "The remote server returned an error: (429) Too Many Requests."
 
         var response = await url

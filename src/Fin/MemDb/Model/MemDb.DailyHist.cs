@@ -360,51 +360,26 @@ public partial class MemDb
             return (dates, adjCloses, false);
         }
 
-        // https://github.com/lppkarl/YahooFinanceApi
         // YF: all the Open/High/Low/Close are always already adjusted for Splits (so, we don't have to adjust it manually);  In addition: AdjClose also adjusted for Divididends.
         // YF gives back both the onlySplit(butNotDividend)-adjusted row.Close, and SplitAndDividendAdjusted row.AdjustedClose (checked with MO dividend and USO split).
-        // checked the YF returned data by stream.ReadToEnd(): it is a CSV structure, with columns. The line "Apr 29, 2020  1:8 Stock Split" is Not in the data.
-        // https://finance.yahoo.com/quote/USO/history?p=USO The YF website queries the splits separately when it inserts in-between the rows.
-        // Therefore, we have to query the splits separately from YF.
         // The startTime & endTime here defaults to EST timezone
-        IReadOnlyList<Candle?>? history = null;
-        try
+        // We have to round values of 102.610001 to 2-4 decimals (in normal stocks), but some stocks price is 0.00452, then that should be left without conversion.
+
+        var histResult = await HistPrice.g_HistPrice.GetHistAsync(yfTicker, HpDataNeed.AdjClose | HpDataNeed.Split, asset.ExpectedHistoryStartDateLoc);
+        if (histResult.ErrorStr != null)
         {
-            history = await Yahoo.GetHistoricalAsync(yfTicker, asset.ExpectedHistoryStartDateLoc, DateTime.Now, Period.Daily); // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
-        }
-        catch (Exception e)
-        {
-            Utils.Logger.Error(e, $"CreateDailyHist_YF() error. Cannot get YF data ({asset.SqTicker}) after many tries. Exception: {e.Message}");
-        }
-        if (history == null)
-        {
-            Utils.Logger.Error($"CreateDailyHist_YF() error. Cannot get YF data ({asset.SqTicker}) after many tries.");
+            Utils.Logger.Error($"g_HistPrice.GetHistorical() error. Cannot get YF data ({asset.SqTicker})");
             return (dates, adjCloses, false);
         }
 
-        dates = history.Select(r => new SqDateOnly(r!.DateTime)).ToArray();
-
-        // YF sends this weird Texts, which are converted to Decimals, so we don't lose TEXT conversion info.
-        // AAPL:    DateTime: 2016-01-04 00:00:00, Open: 102.610001, High: 105.370003, Low: 102.000000, Close: 105.349998, Volume: 67649400, AdjustedClose: 98.213585  (original)
-        //          DateTime: 2016-01-04 00:00:00, Open: 102.61, High: 105.37, Low: 102, Close: 105.35, Volume: 67649400, AdjustedClose: 98.2136
-        // we have to round values of 102.610001 to 2 decimals (in normal stocks), but some stocks price is 0.00452, then that should be left without conversion.
-        // AdjustedClose 98.213585 is exactly how YF sends it, which is correct. Just in YF HTML UI, it is converted to 98.21. However, for calculations, we may need better precision.
-        // In general, round these price data Decimals to 4 decimal precision.
-
-        // for penny stocks, IB and YF considers them for max. 4 digits. UWT price (both in IB ask-bid, YF history) 2020-03-19: 0.3160, 2020-03-23: 2302
-        // sec.AdjCloseHistory = history.Select(r => (double)Math.Round(r.AdjustedClose, 4)).ToList();
-        // YF API gives 6 digits precision. ATVI 2021-06-29: 95.045044
-        // YF CSV download gives 5 digits precision.  ATVI 2021-06-29: 95.04504
-        // YF HTML UI gives only 2 digits precision.  ATVI 2021-06-29: 95.05
-        // We don't want to lose valuable precision data, so keep the best precision, which is 6 digits. Especiall with penny stocks, where prices can be 0.0003, 0.0004.
-        adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 6)).ToArray();
+        dates = histResult!.Dates!;
+        adjCloses = histResult!.AdjCloses!;
 
         if (asset.AssetId.AssetTypeID == AssetType.Stock) // FinIndex like VIX, FTSE, SP500 don't have splits, so no costly YF download is necessary
         {
             // 2020-04-29: USO split: Split-adjustment was not done in YF. For these exceptional cases, so we need an additional data-source for double check
             // First just add the manual data source from Redis/Sql database, and let’s see how unreliable YF is in the future.
             // If it fails frequently, then we can implement query-ing another website, like https://www.nasdaq.com/market-activity/stock-splits
-            IReadOnlyList<SplitTick> splitHistoryYF = await Yahoo.GetSplitsAsync(yfTicker, asset.ExpectedHistoryStartDateLoc, DateTime.Now);
 
             DateTime etNow = DateTime.UtcNow.FromUtcToEt();  // refresh etNow
             // var missingYfSplitDb = new SplitTick[1] { new SplitTick() { DateTime = new DateTime(2020, 06, 08), BeforeSplit = 8, AfterSplit = 1 }};
@@ -432,7 +407,7 @@ public partial class MemDb
                 if (missingSplitDb.Date > etNow) // interpret missingSplitDb.Date in in ET time zone.
                     continue;
                 // Be Warned! YF 'chart' API gives the Time part too for dividends, splits. E.g. "2020-10-02 9:30". Convert to dates, if this is confusing.
-                if (splitHistoryYF.FirstOrDefault(r => r!.DateTime.Date == missingSplitDb.Date) != null) // if that date exists in YF already, do nothing; assume YF uses it
+                if (histResult!.Splits!.FirstOrDefault(r => r!.DateTime.Date == missingSplitDb.Date) != null) // if that date exists in YF already, do nothing; assume YF uses it
                     continue;
 
                 // VXX reverse split Before:After: "4:1" (Every 4 before becomes 1 after), multiplier is 4/1 = 4.
@@ -650,14 +625,13 @@ public partial class MemDb
     }
     public static (SqDateOnly[] Dates, float[] AdjCloses) GetSelectedStockTickerHistData(SqDateOnly lookbackStart, SqDateOnly lookbackEnd, string yfTicker) // send startdate and end date
     {
-        SqDateOnly[] dates = Array.Empty<SqDateOnly>();  // to avoid "Possible multiple enumeration of IEnumerable" warning, we have to use Arrays, instead of Enumerable, because we will walk this lists multiple times, as we read it backwards
-        float[] adjCloses = Array.Empty<float>();
+        // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
+        var histResult = HistPrice.g_HistPrice.GetHistAdjCloseAsync(yfTicker, lookbackStart, lookbackEnd).TurnAsyncToSyncTask();
+        if (histResult.ErrorStr != null)
+            throw new Exception($"g_HistPrice.GetHistorical() error. Cannot get YF data ({yfTicker})");
 
-        IReadOnlyList<Candle?>? history = Yahoo.GetHistoricalAsync(yfTicker, lookbackStart, lookbackEnd, Period.Daily).Result // if asked 2010-01-01 (Friday), the first data returned is 2010-01-04, which is next Monday. So, ask YF 1 day before the intended
-            ?? throw new Exception($"ReloadHistoricalDataAndSetTimer() exception. Cannot download YF data (ticker:{yfTicker}) after many tries.");
-
-        dates = history.Select(r => new SqDateOnly(r!.DateTime)).ToArray();
-        adjCloses = history.Select(r => RowExtension.IsEmptyRow(r!) ? float.NaN : (float)Math.Round(r!.AdjustedClose, 4)).ToArray();
+        SqDateOnly[] dates = histResult!.Dates!;
+        float[] adjCloses = histResult!.AdjCloses!;
         return (dates, adjCloses);
     }
 }
