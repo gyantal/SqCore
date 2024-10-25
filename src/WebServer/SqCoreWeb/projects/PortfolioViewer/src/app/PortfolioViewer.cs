@@ -97,6 +97,10 @@ public class PrtfVwrWs
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): GetClosePrice: '{msgObjStr}'");
                 PortfVwrGetClosePrice(webSocket, msgObjStr);
                 break;
+            case "LegacyDbInsTradesTest":
+                Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): LegacyDbInsTradesTest: '{msgObjStr}'");
+                LegacyDbInsertTradesTest(webSocket, msgObjStr);
+                break;
             default:
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): Unrecognized message from client, {msgCode},{msgObjStr}");
                 break;
@@ -319,5 +323,26 @@ public class PrtfVwrWs
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.TickerClosePrice:" + Utils.CamelCaseSerialize(tickerClosePrice));
         if (webSocket!.State == WebSocketState.Open)
             webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+    }
+
+    public static void LegacyDbInsertTradesTest(WebSocket webSocket, string p_msg) // p_msg : JSON string representation of tradesObj
+    {
+        List<Trade>? trades = JsonSerializer.Deserialize<List<Trade>>(p_msg, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }); // Deserialize the trade string into a Trade object
+        if (trades != null)
+        {
+            string testInsertTradeResult = "TestInsertTrade : OK";
+            List<string> assetSymbols = MemDb.gMemDb.AssetsCache.Assets.Select(asset => asset.Symbol).ToList(); // Get the list of asset symbols from the AssetsCache in memory (MemDb).
+            foreach (Trade trade in trades)
+            {
+                if (trade.Symbol != null && !assetSymbols.Contains(trade.Symbol)) // Check if the trade has a valid symbol and if that symbol exists in the assets cache.
+                {
+                    testInsertTradeResult = $"TestInsertTrade failed : symbol '{trade.Symbol}' doesn't exists"; // If the symbol does not exist in the assetsList, update the result message with an error message.
+                    break;
+                }
+            }
+            byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbInsTradesTest:" + Utils.CamelCaseSerialize(testInsertTradeResult));
+            if (webSocket!.State == WebSocketState.Open)
+                webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+        }
     }
 }

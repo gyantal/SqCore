@@ -197,6 +197,10 @@ export class AppComponent {
           const closePriceObj: TickerClosePrice = JSON.parse(msgObjStr);
           this.m_editedTrade.price = closePriceObj.closePrice;
           break;
+        case 'PrtfVwr.LegacyDbInsTradesTest':
+          console.log('PrtfVwr.LegacyDbInsTradesTest:' + msgObjStr);
+          this.m_legacyDbInsTradesTestResult = msgObjStr;
+          break;
       }
     };
   }
@@ -321,21 +325,6 @@ export class AppComponent {
     if (isInsertNew)
       this.m_editedTrade.id = -1;
 
-    // Date in JSON problem: The JSON.stringify() uses Date.toISOString(), which from a Local date (2024-01-18T18:30:00.000), creates a string as "2024-01-18T13:00:00.000Z", but we don't want this format with the Server communication
-    // Furthermore, it converts the time from Local time to UTC, and we don't want that it changes the time in any way.
-    // Potential fixes that we tried:
-    // 1. JSON.stringify() doesn't have a Bool parameter or a Config parameter that controls this behaviour.
-    // 2. Overwriting Date.prototype.toJSON = function(){} is possible, but we don't like overwriting Global functions (that could be used somewhere else in the code)
-    // 3. We can create a temporary local variable editedTradeToServer, and do this Date => string custom conversion ourselves, before calling JSON.stringify() with the cloned object.
-    // E.g. const editedTradeToServer = new TradeJs();
-    // editedTradeToServer.CopyFrom(this.m_editedTrade);
-    // Sorry TypeScript!: instead of introducing a new class TradeJsToServer just for changing the type from Date to string, we push the string object into that '.time' field, which is supposed to be Date.
-    // but it is only temporary (before sending to the Server), and only for this local variable.
-    // editedTradeToServer.time = SqNgCommonUtilsTime.DateTime2PaddedIsoStr(editedTradeToServer.time) as any; // putting the 'string' into the 'Date' field. Violation of TS rules, but fine. Target format is: "2023-12-10T21:00:00"
-    // Disadvantages: 1. need to MemCopy Clone the whole this.m_editedTrade big oject. 2. We have to use "as any" to convince TS to fill the Date field with a String
-    // 4. The JSON.stringify() (key, value) => callback function receives key='time', value='2024-01-18T13:00:00.000Z' as String, that is already a converted string. The Date object doesn't arrive here unfortunatelly.
-    // But we can remedy it to do the inverse of Date.toISOString(), which is the ctor 'new Date(ISO-Utc-string), that will give us back the original Date (in local timezone)
-    // And we can use our utility function DateTime2PaddedIsoStr() to get the string representation of that local Date.
     const tradeJson: string = this.tradeStringifyHelper(this.m_editedTrade);
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
       this.m_socket.send('InsertOrUpdateTrade:pfId:' + this.m_portfolioId + ':' + tradeJson);
@@ -604,31 +593,23 @@ export class AppComponent {
 
   onClickConvertTradesStrToTradesJs() {
     this.m_legacyDbInsTradesSyntaxCheckResult = '';
+    this.m_legacyDbInsTradesTestResult = '';
     const tradesStrInputElement = document.getElementById('inputTradesStr') as HTMLTextAreaElement;
     const tradesStr: string = tradesStrInputElement.value;
 
     const trades: TradeJs[] = []; // Initialize an array to store TradeJs objects
     const tradeRows: string[] = tradesStr.trim().split('\n'); // Split the data by newline to get each row
     for (let i = 0; i < tradeRows.length; i++) {
-      let tradeRecord = tradeRows[i];
-      if (tradeRecord.startsWith('-')) { // Check for partial trades
-        this.m_legacyDbInsTradesSyntaxCheckResult = `Error. Processing stopped. "-" was found at row ${i + 1} which indicates partial trades are present. Remove partial trades.`;
+      const tradeRowStr = tradeRows[i];
+      const tradeObj: TradeJs = new TradeJs();
+      this.m_legacyDbInsTradesSyntaxCheckResult = this.validateAndProcessTradeData(tradeRowStr, i, tradeObj);
+      if (this.m_legacyDbInsTradesSyntaxCheckResult.startsWith('OK'))
+        trades.push(tradeObj); // Add TradeJs object to the result array
+      else
         return;
-      } else {
-        tradeRecord = tradeRecord.startsWith('+') ? tradeRecord.substring(2) : tradeRecord.startsWith('\t') ? tradeRecord.substring(1) : tradeRecord; // removing the '+' and '\t' from the tradeRecord
-        const trade = tradeRecord.split('\t'); // Split each row by tab character (preserve empty values)
-        const tradeObj: TradeJs = new TradeJs();
-        try {
-          this.m_legacyDbInsTradesSyntaxCheckResult = this.validateAndProcessTradeData(trade, tradeObj);
-          trades.push(tradeObj); // Add TradeJs object to the result array
-        } catch (error) {
-          this.m_legacyDbInsTradesSyntaxCheckResult = `Error in record ${i + 1}: ${(error as Error).message}<br>`; // Add error message to m_errorMsgToUser
-          return;
-        }
-      }
     }
 
-    if (this.m_legacyDbInsTradesSyntaxCheckResult.startsWith('OK')) { // Only for Testing - preparing the json srting to send to server
+    if (this.m_legacyDbInsTradesSyntaxCheckResult.startsWith('OK')) {
       let tradeJson: string = '[';
       for (let i =0; i < trades.length; i++) {
         const tradeJs: string = this.tradeStringifyHelper(trades[i]);
@@ -638,43 +619,53 @@ export class AppComponent {
           tradeJson += ',';
       }
       tradeJson += ']';
-      console.log('onClickConvertTradesStrToTradesJs', tradeJson);
+
+      if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
+        this.m_socket.send('LegacyDbInsTradesTest:' + tradeJson);
     }
   }
 
-  validateAndProcessTradeData(trade: string[], tradeObj: TradeJs): string { // Function to validate trade data. TBD for other data validation
-    if (isNaN(parseInt(trade[2]))) // Validate Quantity
-      return (`Quantity is ${trade[2]} not a valid number.`);
-    tradeObj.quantity = parseInt(trade[2]);
+  validateAndProcessTradeData(tradeRowStr: string, rowInd:number, tradeObj: TradeJs): string { // Function to validate trade data. TBD for other data validation
+    if (tradeRowStr.startsWith('-')) // Check for partial trades
+      return `Error. Processing stopped. "-" was found at row ${rowInd + 1} which indicates partial trades are present. Remove partial trades.`;
+    else {
+      tradeRowStr = tradeRowStr.startsWith('+') ? tradeRowStr.substring(2) : tradeRowStr.startsWith('\t') ? tradeRowStr.substring(1) : tradeRowStr; // removing the '+' and '\t' from the tradeRecord
+      const trade: string[] = tradeRowStr.split('\t');
+      const quantity = Number(trade[2]);
+      if (isNaN(quantity) || !isFinite(quantity)) // Check if quantity is a valid number (including floats) and is finite
+        return (`Quantity ${trade[2]} at row ${rowInd + 1} is  not a valid number.`);
+      tradeObj.quantity = quantity; // Assign the valid quantity to tradeObj
 
-    if (isNaN(parseInt(trade[3]))) // Validate Price
-      return (`Price is ${trade[3]} not a valid number.`);
-    tradeObj.price = parseInt(trade[3]);
+      const price = Number(trade[3]);
+      if (isNaN(price) || !isFinite(price)) // Check if price is a valid number (including floats) and is finite
+        return (`Price ${trade[3]} at row ${rowInd + 1} is  not a valid number.`);
+      tradeObj.price = price;
 
-    if (CurrencyId[trade[4]] == undefined) // Validate CurrencyId
-      return (`CurrencyId: '${trade[4]}' is invalid.`);
-    tradeObj.currency = CurrencyId[trade[4]];
+      if (CurrencyId[trade[4]] == undefined) // Validate CurrencyId
+        return (`CurrencyId: '${trade[4]}' at row ${rowInd + 1} is invalid.`);
+      tradeObj.currency = CurrencyId[trade[4]];
 
-    switch (trade[0]) { // Validate and process TradeAction
-      case 'BOT':
-        tradeObj.action = TradeAction.Buy;
-        break;
-      case 'SLD':
-        tradeObj.action = TradeAction.Sell;
-        break;
-      case 'DEPOSIT':
-        tradeObj.action = TradeAction.Deposit;
-        break;
-      default:
-        return `TradeAction: '${trade[0]}' is invalid.`;
+      switch (trade[0]) { // Validate and process TradeAction
+        case 'BOT':
+          tradeObj.action = TradeAction.Buy;
+          break;
+        case 'SLD':
+          tradeObj.action = TradeAction.Sell;
+          break;
+        case 'DEPOSIT':
+          tradeObj.action = TradeAction.Deposit;
+          break;
+        default:
+          return `TradeAction: '${trade[0]}' at row ${rowInd + 1} is invalid.`;
+      }
+
+      tradeObj.symbol = trade[1];
+      // Convert date to a proper date format
+      const tradeDt = new Date(trade[5]);
+      tradeDt.setFullYear(this.m_legacyDbInsertionYear); // Since the year is not included in the trades text, we set it using m_legacyDbInsertionYear to avoid the default year of 1900.
+      tradeObj.time = tradeDt;
+      return 'OK'; // All validations and processing succeeded
     }
-
-    tradeObj.symbol = trade[1];
-    // Convert date to a proper date format
-    const tradeDt = new Date(trade[5]);
-    tradeDt.setFullYear(this.m_legacyDbInsertionYear); // Since the year is not included in the trades text, we set it using m_legacyDbInsertionYear to avoid the default year of 1900.
-    tradeObj.time = tradeDt;
-    return 'Ok'; // All validations and processing succeeded
   }
 
   tradeStringifyHelper(trade: TradeJs): string {
