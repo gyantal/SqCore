@@ -219,7 +219,7 @@ public class LegacyDb : IDisposable
         }
     }
 
-    int GetStockId(string p_ticker)
+    public int GetStockId(string p_ticker)
     {
         string queryStr = $"SELECT Id FROM Stock WHERE Ticker = @Ticker";
         SqlCommand command = new(queryStr, m_connection);
