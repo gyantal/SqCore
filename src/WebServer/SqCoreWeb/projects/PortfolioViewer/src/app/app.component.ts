@@ -141,6 +141,7 @@ export class AppComponent {
   m_legacyDbInsTradesSyntaxCheckResult: string = '';
   m_legacyDbInsTradesTestResult: string = '';
   m_legacyDbInsTradesRealResult: string = '';
+  m_legacyDbTradesJsonStr: string = ''; // Trades are sent to legacyDb as a JSON-formatted string
 
   user = {
     name: 'Anonymous',
@@ -200,7 +201,14 @@ export class AppComponent {
         case 'PrtfVwr.LegacyDbInsTradesTest':
           console.log('PrtfVwr.LegacyDbInsTradesTest:' + msgObjStr);
           this.m_legacyDbInsTradesTestResult = msgObjStr;
+          if (this.m_legacyDbInsTradesTestResult.startsWith('OK')) {
+            if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
+              this.m_socket.send('LegacyDbInsTradesReal:pfName:' + this.m_portfolio?.name + '&trades' + this.m_legacyDbTradesJsonStr);
+          }
           break;
+        case 'PrtfVwr.LegacyDbInsTradesReal':
+          console.log('PrtfVwr.LegacyDbInsTradesReal:' + msgObjStr);
+          this.m_legacyDbInsTradesRealResult = msgObjStr;
       }
     };
   }
@@ -610,18 +618,18 @@ export class AppComponent {
     }
 
     if (this.m_legacyDbInsTradesSyntaxCheckResult.startsWith('OK')) {
-      let tradeJson: string = '[';
+      this.m_legacyDbTradesJsonStr = '[';
       for (let i =0; i < trades.length; i++) {
         const tradeJs: string = this.tradeStringifyHelper(trades[i]);
-        tradeJson += tradeJs;
+        this.m_legacyDbTradesJsonStr += tradeJs;
 
         if (i < trades.length - 1) // Only add comma if it's not the last element
-          tradeJson += ',';
+          this.m_legacyDbTradesJsonStr += ',';
       }
-      tradeJson += ']';
+      this.m_legacyDbTradesJsonStr += ']';
 
       if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-        this.m_socket.send('LegacyDbInsTradesTest:' + tradeJson);
+        this.m_socket.send('LegacyDbInsTradesTest:' + this.m_legacyDbTradesJsonStr);
     }
   }
 

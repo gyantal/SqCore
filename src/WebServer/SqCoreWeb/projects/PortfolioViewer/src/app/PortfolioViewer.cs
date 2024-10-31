@@ -101,6 +101,10 @@ public class PrtfVwrWs
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): LegacyDbInsTradesTest: '{msgObjStr}'");
                 LegacyDbInsertTradesTest(webSocket, msgObjStr);
                 break;
+            case "LegacyDbInsTradesReal":
+                Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): LegacyDbInsTradesReal: '{msgObjStr}'");
+                LegacyDbInsertTradesReal(webSocket, msgObjStr);
+                break;
             default:
                 Utils.Logger.Info($"PrtfVwrWs.OnWsReceiveAsync(): Unrecognized message from client, {msgCode},{msgObjStr}");
                 break;
@@ -346,6 +350,41 @@ public class PrtfVwrWs
             }
         }
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbInsTradesTest:" + Utils.CamelCaseSerialize(testInsertTradeResult));
+        if (webSocket!.State == WebSocketState.Open)
+            webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
+    }
+
+    public static void LegacyDbInsertTradesReal(WebSocket webSocket, string p_msg)
+    {
+        int prtfNameStartInd = p_msg.IndexOf(":");
+        if (prtfNameStartInd == -1)
+            return;
+
+        int trdObjStartInd = p_msg.IndexOf("&", prtfNameStartInd + 1);
+        if (trdObjStartInd == -1)
+            return;
+
+        string prtfName = p_msg.Substring(prtfNameStartInd + 1, trdObjStartInd - prtfNameStartInd - 1);
+        string tradeObjStr = p_msg[(trdObjStartInd + "&trades".Length)..]; // extract the Trade object string from p_msg
+        List<Trade>? trades = JsonSerializer.Deserialize<List<Trade>>(tradeObjStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }); // Deserialize the trade string into a Trade object
+        string realInsertTradeResult = string.Empty;
+        if (trades == null) // Check if 'trades' is null, which means there are no trades to process
+            realInsertTradeResult = "Trades are Null";
+        else
+        {
+            LegacyDb legacyDb = new(); // Create an instance of LegacyDb to access stock data
+            foreach (Trade trade in trades)
+            {
+                realInsertTradeResult = "Trades were successfully inserted";
+                bool isInsertTradeSuccess = legacyDb.InsertTrade(prtfName, trade);
+                if(!isInsertTradeSuccess) // Check if the stock ID is -1, indicating the symbol does not exist in LegacyDb
+                {
+                    realInsertTradeResult = $"RealInsertTrade failed : symbol '{trade.Symbol}' doesn't exists"; // If the symbol does not exist in the LegacyDb, update the result message with an error message.
+                    break;
+                }
+            }
+        }
+        byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbInsTradesReal:" + Utils.CamelCaseSerialize(realInsertTradeResult));
         if (webSocket!.State == WebSocketState.Open)
             webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
