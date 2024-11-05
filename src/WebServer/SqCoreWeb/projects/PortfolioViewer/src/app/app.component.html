@@ -256,6 +256,10 @@
   <div *ngIf="m_legacyDbInsTradesSyntaxCheckResult != null">
     <p [innerHtml]="m_legacyDbInsTradesSyntaxCheckResult"></p>
   </div>
+  <div *ngFor="let item of this.m_legacyDbTrades let i = index">
+    {{i + 1}}.&nbsp;&nbsp;{{item.symbol}}&nbsp;&nbsp;{{item.quantity}}&nbsp;&nbsp;{{item.price | number:'1.2-2'}}&nbsp;&nbsp;{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}&nbsp;&nbsp;{{m_enumTradeAction[item.action]}}&nbsp;&nbsp;{{item.time | date : 'yyyy-MM-dd HH:mm'}}&nbsp;&nbsp;{{m_enumExchangeId[item.exchangeId]}}
+  </div><br>
+  <button *ngIf="m_legacyDbInsTradesSyntaxCheckResult == 'Syntax OK'" (click)="onClickTestAndInsertLegacyDbTrades()">TestAndInsertLegacyDbTrades</button>
   <div *ngIf="m_legacyDbInsTradesTestResult != null">
     <p [innerHtml]="m_legacyDbInsTradesTestResult"></p>
   </div>

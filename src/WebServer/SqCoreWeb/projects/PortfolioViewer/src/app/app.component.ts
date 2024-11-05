@@ -141,6 +141,7 @@ export class AppComponent {
   m_legacyDbInsTradesSyntaxCheckResult: string = '';
   m_legacyDbInsTradesTestResult: string = '';
   m_legacyDbInsTradesRealResult: string = '';
+  m_legacyDbTrades: TradeJs[] = [];
   m_legacyDbTradesJsonStr: string = ''; // Trades are sent to legacyDb as a JSON-formatted string
 
   user = {
@@ -602,34 +603,19 @@ export class AppComponent {
   onClickConvertTradesStrToTradesJs() {
     this.m_legacyDbInsTradesSyntaxCheckResult = '';
     this.m_legacyDbInsTradesTestResult = '';
+    this.m_legacyDbTrades.length = 0;
     const tradesStrInputElement = document.getElementById('inputTradesStr') as HTMLTextAreaElement;
     const tradesStr: string = tradesStrInputElement.value;
 
-    const trades: TradeJs[] = []; // Initialize an array to store TradeJs objects
     const tradeRows: string[] = tradesStr.trim().split('\n'); // Split the data by newline to get each row
     for (let i = 0; i < tradeRows.length; i++) {
       const tradeRowStr = tradeRows[i];
       const tradeObj: TradeJs = new TradeJs();
       this.m_legacyDbInsTradesSyntaxCheckResult = this.validateAndProcessTradeData(tradeRowStr, i, tradeObj);
-      if (this.m_legacyDbInsTradesSyntaxCheckResult.startsWith('OK'))
-        trades.push(tradeObj); // Add TradeJs object to the result array
+      if (this.m_legacyDbInsTradesSyntaxCheckResult.startsWith('Syntax OK'))
+        this.m_legacyDbTrades.push(tradeObj); // Add TradeJs object to the result array
       else
-        return;
-    }
-
-    if (this.m_legacyDbInsTradesSyntaxCheckResult.startsWith('OK')) {
-      this.m_legacyDbTradesJsonStr = '[';
-      for (let i =0; i < trades.length; i++) {
-        const tradeJs: string = this.tradeStringifyHelper(trades[i]);
-        this.m_legacyDbTradesJsonStr += tradeJs;
-
-        if (i < trades.length - 1) // Only add comma if it's not the last element
-          this.m_legacyDbTradesJsonStr += ',';
-      }
-      this.m_legacyDbTradesJsonStr += ']';
-
-      if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-        this.m_socket.send('LegacyDbInsTradesTest:' + this.m_legacyDbTradesJsonStr);
+        return; // if any of the rows fail at syntax check, we terminate any further execution.
     }
   }
 
@@ -669,10 +655,19 @@ export class AppComponent {
 
       tradeObj.symbol = trade[1];
       // Convert date to a proper date format
-      const tradeDt = new Date(trade[5]);
-      tradeDt.setFullYear(this.m_legacyDbInsertionYear); // Since the year is not included in the trades text, we set it using m_legacyDbInsertionYear to avoid the default year of 1900.
+      let tradeDt: Date = new Date(trade[5]);
+      if (!isNaN(tradeDt.getTime())) // If tradeDt is a valid date, set the trade year.
+        tradeDt.setFullYear(this.m_legacyDbInsertionYear);
+      else { // If tradeDt is invalid, assume it only contains the time part.
+        const timeStr = trade[5];
+        tradeDt = new Date(); // Use today's date as the default
+        tradeDt.setHours(0, 0, 0, 0); // Reset time to start of the day
+        const timeParts = timeStr.split(':'); // Split the timeStr and manually parse each part
+        tradeDt.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), parseInt(timeParts[2], 10)); // Set the time on tradeDt to the parsed hours, minutes, and seconds
+      }
+
       tradeObj.time = tradeDt;
-      return 'OK'; // All validations and processing succeeded
+      return 'Syntax OK'; // All validations and processing succeeded
     }
   }
 
@@ -718,5 +713,21 @@ export class AppComponent {
       return value;
     });
     return tradeStr;
+  }
+
+  onClickTestAndInsertLegacyDbTrades() {
+    // Trades are sent to legacyDb as a JSON-formatted string
+    this.m_legacyDbTradesJsonStr = '[';
+    for (let i =0; i < this.m_legacyDbTrades.length; i++) {
+      const tradeJs: string = this.tradeStringifyHelper(this.m_legacyDbTrades[i]);
+      this.m_legacyDbTradesJsonStr += tradeJs;
+
+      if (i < this.m_legacyDbTrades.length - 1) // Only add comma if it's not the last element
+        this.m_legacyDbTradesJsonStr += ',';
+    }
+    this.m_legacyDbTradesJsonStr += ']';
+
+    if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
+      this.m_socket.send('LegacyDbInsTradesTest:' + this.m_legacyDbTradesJsonStr);
   }
 }
