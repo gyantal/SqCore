@@ -259,13 +259,9 @@
   <div *ngFor="let item of this.m_legacyDbTrades let i = index">
     {{i + 1}}.&nbsp;&nbsp;{{item.symbol}}&nbsp;&nbsp;{{item.quantity}}&nbsp;&nbsp;{{item.price | number:'1.2-2'}}&nbsp;&nbsp;{{m_enumCurrencyId[item.currency] == 'Unknown' ? 'USD' : m_enumCurrencyId[item.currency]}}&nbsp;&nbsp;{{m_enumTradeAction[item.action]}}&nbsp;&nbsp;{{item.time | date : 'yyyy-MM-dd HH:mm'}}&nbsp;&nbsp;{{m_enumExchangeId[item.exchangeId]}}
   </div><br>
-  <button *ngIf="m_legacyDbInsTradesSyntaxCheckResult == 'Syntax OK'" (click)="onClickTestAndInsertLegacyDbTrades()">TestAndInsertLegacyDbTrades</button>
-  <div *ngIf="m_legacyDbInsTradesTestResult != null">
-    <p [innerHtml]="m_legacyDbInsTradesTestResult"></p>
-  </div>
-  <div *ngIf="m_legacyDbInsTradesRealResult != null">
-    <p [innerHtml]="m_legacyDbInsTradesRealResult"></p>
-  </div>
+  <button *ngIf="m_legacyDbInsTradesSyntaxCheckResult == 'Syntax OK'" (click)="onClickTestAndInsertLegacyDbTrades()">TestAndInsertLegacyDbTrades</button><br><br>
+  <div *ngIf="m_legacyDbInsTradesTestResult">LegacyDbTrades Test: {{m_legacyDbInsTradesTestResult}}</div><br>
+  <div *ngIf="m_legacyDbInsTradesRealResult">LegacyDbTrades Real: {{m_legacyDbInsTradesRealResult}}</div>
 </div>
 <div id="copyToClipboardDialog" *ngIf="m_isCopyToClipboardDialogVisible">All/Selected rows copied To Clipboard
   <div id="copyToClipboardDialogClosetBtn">

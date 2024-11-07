@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using Fin.Base;
 using Microsoft.Data.SqlClient;
 using SqCommon;
@@ -218,7 +219,6 @@ public class LegacyDb : IDisposable
             return false;
         }
     }
-
     public int GetStockId(string p_ticker)
     {
         string queryStr = $"SELECT Id FROM Stock WHERE Ticker = @Ticker";
@@ -237,6 +237,54 @@ public class LegacyDb : IDisposable
         }
 
         return -1;
+    }
+
+    public List<(string Ticker, int Id)> GetStockIds(List<string> p_tickers)
+    {
+        List<(string Ticker, int Id)> sqlStockIdsResult = new List<(string Ticker, int Id)>();
+        // Establish the SQL Server connection. This connection logic was added to resolve an error: (WebSocketLoopKeptAlive() Exception System.InvalidOperationException: ExecuteReader: Connection property has not been initialized.)
+        string legacyDbConnString = Utils.Configuration["ConnectionStrings:LegacyMsSqlDefault"] ?? throw new SqException("Redis ConnectionStrings is missing from Config");
+        Utils.Logger.Info($"LegacyDb.Init_WT(). ConnStr:{legacyDbConnString}");
+        m_connection = new SqlConnection(legacyDbConnString);
+        m_connection.Open();
+        if (m_connection?.State != System.Data.ConnectionState.Open)
+        {
+            Utils.Logger.Error("LegacyDb Error. Connection to SQL Server has not established successfully.");
+            return sqlStockIdsResult;
+        }
+        else
+            Console.WriteLine("Connection to SQL Server established successfully.");
+
+        StringBuilder sbTickers = new(); // Build a comma-separated string of tickers to use in the SQL query
+        for (int i = 0; i < p_tickers.Count; i++)
+        {
+            sbTickers.Append($"'{p_tickers[i]}'"); // Append each ticker in single quotes, for use in the SQL IN clause
+            if (i < p_tickers.Count - 1) // Add a comma separator between tickers, except after the last ticker
+                sbTickers.Append(", ");
+        }
+        string queryStr = $"SELECT Ticker, Id FROM Stock WHERE Ticker IN ({sbTickers})"; // Construct the SQL query to retrieve the ID for each specified ticker
+        SqlCommand command = new(queryStr, m_connection); // Initialize the SQL command with the query and the open connection
+        using SqlDataReader reader = command.ExecuteReader(); // Execute the query and retrieve the results using a data reader
+        if (reader.HasRows)
+        {
+            while (reader.Read())
+            {
+                string ticker = reader.GetString(reader.GetOrdinal("ticker"));
+                int id = reader.GetInt32(reader.GetOrdinal("Id"));
+                sqlStockIdsResult.Add((ticker, id)); // Add the ticker and ID pair to the results list
+            }
+        }
+        else
+            Console.WriteLine("No rows found.");
+
+        m_connection.Close(); // close the connection
+
+        foreach (string ticker in p_tickers) // Post-process: Add missing tickers to the result list with an ID of -1
+        {
+            if (!sqlStockIdsResult.Exists(item => item.Ticker == ticker)) // Check if the ticker exists in the results; if not, add it with a default ID of -1
+                sqlStockIdsResult.Add((ticker, -1));
+        }
+        return sqlStockIdsResult;
     }
 
     int GetPortfolioId(string p_legacyDbPortfName)

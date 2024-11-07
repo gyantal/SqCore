@@ -338,18 +338,24 @@ public class PrtfVwrWs
         else
         {
             testInsertTradeResult = "OK";
-            LegacyDb legacyDb = new(); // Create an instance of LegacyDb to access stock data
-            foreach (Trade trade in trades)
+            List<string> uniqueTickers = new List<string>();
+            foreach (Trade trade in trades) // Extract unique tickers from trades (since p_msg may contain duplicates)
             {
-                int stockId = legacyDb.GetStockId(trade.Symbol!);
-                if(stockId == -1) // Check if the stock ID is -1, indicating the symbol does not exist in LegacyDb
+                if (!uniqueTickers.Contains(trade.Symbol!))
+                    uniqueTickers.Add(trade.Symbol!);
+            }
+            LegacyDb legacyDb = new(); // Create an instance of LegacyDb to access stock data
+            List<(string Ticker, int Id)> stockIdsResult = legacyDb.GetStockIds(uniqueTickers);
+            foreach ((string Ticker, int Id) stock in stockIdsResult) // Check if any ticker from trades doesn't exist in the stock data
+            {
+                if (stock.Id == -1) // Check if the stock ID is -1, indicating the symbol does not exist in LegacyDb
                 {
-                    testInsertTradeResult = $"TestInsertTrade failed : symbol '{trade.Symbol}' doesn't exists"; // If the symbol does not exist in the LegacyDb, update the result message with an error message.
+                    testInsertTradeResult = $"TestInsertTrade failed : Ticker '{stock.Ticker}' doesn't exists"; // If the Ticker does not exist in the LegacyDb, update the result message with an error message.
                     break;
                 }
             }
         }
-        byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbInsTradesTest:" + Utils.CamelCaseSerialize(testInsertTradeResult));
+        byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbInsTradesTest:" + testInsertTradeResult);
         if (webSocket!.State == WebSocketState.Open)
             webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
