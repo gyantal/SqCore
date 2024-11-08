@@ -139,8 +139,7 @@ export class AppComponent {
   // LegacyDbTrades tabpage
   m_legacyDbInsertionYear: number = new Date().getFullYear(); // using the current year as default value
   m_legacyDbInsTradesSyntaxCheckResult: string = '';
-  m_legacyDbInsTradesTestResult: string = '';
-  m_legacyDbInsTradesRealResult: string = '';
+  m_legacyDbTradesTestAndInsertResult: string = '';
   m_legacyDbTrades: TradeJs[] = [];
   m_legacyDbTradesJsonStr: string = ''; // Trades are sent to legacyDb as a JSON-formatted string
 
@@ -199,17 +198,9 @@ export class AppComponent {
           const closePriceObj: TickerClosePrice = JSON.parse(msgObjStr);
           this.m_editedTrade.price = closePriceObj.closePrice;
           break;
-        case 'PrtfVwr.LegacyDbInsTradesTest':
-          console.log('PrtfVwr.LegacyDbInsTradesTest:' + msgObjStr);
-          this.m_legacyDbInsTradesTestResult = msgObjStr;
-          if (this.m_legacyDbInsTradesTestResult.startsWith('OK')) {
-            if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-              this.m_socket.send('LegacyDbInsTradesReal:pfName:' + this.m_portfolio?.name + '&trades' + this.m_legacyDbTradesJsonStr);
-          }
-          break;
-        case 'PrtfVwr.LegacyDbInsTradesReal':
-          console.log('PrtfVwr.LegacyDbInsTradesReal:' + msgObjStr);
-          this.m_legacyDbInsTradesRealResult = msgObjStr;
+        case 'PrtfVwr.LegacyDbTradesTestAndInsert':
+          console.log('PrtfVwr.LegacyDbTradesTestAndInsert:' + msgObjStr);
+          this.m_legacyDbTradesTestAndInsertResult = msgObjStr;
       }
     };
   }
@@ -602,7 +593,7 @@ export class AppComponent {
 
   onClickConvertTradesStrToTradesJs() {
     this.m_legacyDbInsTradesSyntaxCheckResult = '';
-    this.m_legacyDbInsTradesTestResult = '';
+    this.m_legacyDbTradesTestAndInsertResult = '';
     this.m_legacyDbTrades.length = 0;
     const tradesStrInputElement = document.getElementById('inputTradesStr') as HTMLTextAreaElement;
     const tradesStr: string = tradesStrInputElement.value;
@@ -656,15 +647,14 @@ export class AppComponent {
       tradeObj.symbol = trade[1];
       // Convert date to a proper date format
       let tradeDt: Date = new Date(trade[5]);
-      if (!isNaN(tradeDt.getTime())) // If tradeDt is a valid date, set the trade year.
-        tradeDt.setFullYear(this.m_legacyDbInsertionYear);
-      else { // If tradeDt is invalid, assume it only contains the time part.
+      if (isNaN(tradeDt.getTime())) { // If tradeDt is invalid, assume it only contains the time part.
         const timeStr = trade[5];
         tradeDt = new Date(); // Use today's date as the default
         tradeDt.setHours(0, 0, 0, 0); // Reset time to start of the day
         const timeParts = timeStr.split(':'); // Split the timeStr and manually parse each part
         tradeDt.setHours(parseInt(timeParts[0], 10), parseInt(timeParts[1], 10), parseInt(timeParts[2], 10)); // Set the time on tradeDt to the parsed hours, minutes, and seconds
       }
+      tradeDt.setFullYear(this.m_legacyDbInsertionYear);
 
       tradeObj.time = tradeDt;
       return 'Syntax OK'; // All validations and processing succeeded
@@ -728,6 +718,6 @@ export class AppComponent {
     this.m_legacyDbTradesJsonStr += ']';
 
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-      this.m_socket.send('LegacyDbInsTradesTest:' + this.m_legacyDbTradesJsonStr);
+      this.m_socket.send('LegacyDbTradesTestAndInsert:pfName:' + this.m_portfolio?.name + '&trades' + this.m_legacyDbTradesJsonStr);
   }
 }
