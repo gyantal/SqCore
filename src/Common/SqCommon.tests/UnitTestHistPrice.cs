@@ -41,5 +41,12 @@ namespace SqCommon.tests   // create test project name with '*.test' of the main
             Assert.Equal(4, histResult!.Splits![0].BeforeSplit);
             Assert.Equal(1, histResult!.Splits![0].AfterSplit); // 4 joined together to 1
         }
+
+        [Fact]
+        public async Task NonExistingTickerTest()
+        {
+            var histResult = await HistPrice.g_HistPrice.GetHistAsync("BLABLA", HpDataNeed.Split, new DateTime(2014, 6, 1), new DateTime(2014, 6, 15));
+            Assert.Equal("Error. HttpResponse StatusCode: NotFound. Non-existing ticker?", histResult!.ErrorStr);
+        }
     }
 }

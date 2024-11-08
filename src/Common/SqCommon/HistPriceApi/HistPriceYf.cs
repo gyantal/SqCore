@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace SqCommon;
-enum ProcessedToken { Unknown, Date, AdjClose, Split, SplitDate, SplitNumerator, SplitDenominator, Dividend, DividendAmount, DividendDate, Open, Close, High, Low, Volume }
+enum ProcessedToken { Unknown, Error, Date, AdjClose, Split, SplitDate, SplitNumerator, SplitDenominator, Dividend, DividendAmount, DividendDate, Open, Close, High, Low, Volume }
 public class HistPriceYf : IHistPrice
 {
     static readonly int c_throttleDelayMs = 50; // Throttle to ensure at least X ms between downloads; to avoid YF spam filter and the error "The remote server returned an error: (429) Too Many Requests."
@@ -84,6 +84,7 @@ public class HistPriceYf : IHistPrice
     public static (string? ErrorStr, SqDateOnly[]? Dates, float[]? AdjCloses, HpSplit[]? Splits, HpDividend[]? Dividends,
         float[]? Opens, float[]? Closes, float[]? Highs, float[]? Lows, long[]? Volumes) ParseHistoricalData(string p_url, HpDataNeed p_dataNeed) // not async, because of Utf8JsonReader
     {
+        string? errorStr = null;
         HttpRequestMessage request = new() // with empty headers, it returns "429 Too Many Requests". So, if the User-Agent is empty, then it fails. Otherwise, it is OK.
         {
             RequestUri = new Uri(p_url), // e.g. https://query2.finance.yahoo.com/v8/finance/chart/QQQ?period1=0&period2=1729707659&interval=1d&events=history,split,dividend
@@ -92,7 +93,8 @@ public class HistPriceYf : IHistPrice
             Headers = { { "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36" } }
         };
         HttpResponseMessage response = Utils.GetHttpClientDirect().SendAsync(request).Result; // Make the synchronous HTTP request with ".Result"
-        response.EnsureSuccessStatusCode();
+        if (response.StatusCode != HttpStatusCode.OK) // catch here when response returns as "404 (Not Found)", with data text: {"chart":{"result":null,"error":{"code":"Not Found","description":"No data found, symbol may be delisted"}}}
+            return ($"Error. HttpResponse StatusCode: {response.StatusCode}. Non-existing ticker?", null, null, null, null, null, null, null, null, null);
 
         using Stream stream = response.Content.ReadAsStream();
 
@@ -158,7 +160,9 @@ public class HistPriceYf : IHistPrice
                     case JsonTokenType.PropertyName:
                         string? propertyName = reader.GetString();
 
-                        if (propertyName == "timestamp" && (p_dataNeed & (HpDataNeed.AdjClose | HpDataNeed.OHLCV)) != 0)
+                        if (propertyName == "error") // good data: '"error":null' , Bad data example: '"error":{"code":"Not Found","description":"No data found, symbol may be delisted"}'
+                            processedToken = ProcessedToken.Error;
+                        else if (propertyName == "timestamp" && (p_dataNeed & (HpDataNeed.AdjClose | HpDataNeed.OHLCV)) != 0)
                             processedToken = ProcessedToken.Date;
                         else if (propertyName == "adjclose" && (p_dataNeed & HpDataNeed.AdjClose) == HpDataNeed.AdjClose)
                             processedToken = ProcessedToken.AdjClose;
@@ -234,8 +238,10 @@ public class HistPriceYf : IHistPrice
                         else if (processedToken == ProcessedToken.Volume)
                             volumes!.Add(reader.GetInt64());
                         break;
-                    case JsonTokenType.Null: // e.g. ^VIX data contains nulls in adjCloses: "...19.4699993133545, null, 18.3500003814697..."
-                        if (processedToken == ProcessedToken.AdjClose)
+                    case JsonTokenType.Null:
+                        if (processedToken == ProcessedToken.Error) // good data: '"error":null' , Bad data example: '"error":{"code":"Not Found","description":"No data found, symbol may be delisted"}'
+                            processedToken = ProcessedToken.Unknown;
+                        else if (processedToken == ProcessedToken.AdjClose) // e.g. ^VIX data contains nulls in adjCloses: "...19.4699993133545, null, 18.3500003814697..."
                             adjcloses!.Add(float.NaN);
                         break;
                     case JsonTokenType.EndArray:
@@ -314,6 +320,6 @@ public class HistPriceYf : IHistPrice
             return (" Potential Error. dates.Count != adjcloses.Count", null, null, null, null, null, null, null, null, null);
         }
 
-        return (null, dates?.ToArray(), adjcloses?.ToArray(), splits?.ToArray(), dividends?.ToArray(), opens?.ToArray(), closes?.ToArray(), highs?.ToArray(), lows?.ToArray(), volumes?.ToArray());
+        return (errorStr, dates?.ToArray(), adjcloses?.ToArray(), splits?.ToArray(), dividends?.ToArray(), opens?.ToArray(), closes?.ToArray(), highs?.ToArray(), lows?.ToArray(), volumes?.ToArray());
     }
 }
