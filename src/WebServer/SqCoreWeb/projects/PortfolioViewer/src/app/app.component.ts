@@ -718,6 +718,6 @@ export class AppComponent {
     this.m_legacyDbTradesJsonStr += ']';
 
     if (this.m_socket != null && this.m_socket.readyState == this.m_socket.OPEN)
-      this.m_socket.send('LegacyDbTradesTestAndInsert:pfName:' + this.m_portfolio?.name + '&trades' + this.m_legacyDbTradesJsonStr);
+      this.m_socket.send('LegacyDbTradesTestAndInsert:legacyPfName:' + this.m_portfolio?.legacyDbPortfName + '&trades' + this.m_legacyDbTradesJsonStr);
   }
 }

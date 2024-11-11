@@ -325,7 +325,7 @@ public class PrtfVwrWs
             webSocket.SendAsync(new ArraySegment<Byte>(encodedMsg, 0, encodedMsg.Length), WebSocketMessageType.Text, true, CancellationToken.None);
     }
 
-    public static void LegacyDbTestAndInsertTrades(WebSocket webSocket, string p_msg) // p_msg : pfName and JSON string representation of tradesObj
+    public static void LegacyDbTestAndInsertTrades(WebSocket webSocket, string p_msg) // p_msg : legacyPfName and JSON string representation of tradesObj
     {
         int prtfNameStartInd = p_msg.IndexOf(":");
         if (prtfNameStartInd == -1)
@@ -338,7 +338,6 @@ public class PrtfVwrWs
         string prtfName = p_msg.Substring(prtfNameStartInd + 1, trdObjStartInd - prtfNameStartInd - 1);
         string tradeObjStr = p_msg[(trdObjStartInd + "&trades".Length)..]; // extract the Trade object string from p_msg
         List<Trade>? trades = JsonSerializer.Deserialize<List<Trade>>(tradeObjStr, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }); // Deserialize the trade string into a Trade object
-        LegacyDb legacyDb = new();
         string testAndInsertTradeResult;
         if (trades == null) // Check if 'trades' is null, which means there are no trades to process
             testAndInsertTradeResult = "Trades are Null";
@@ -351,12 +350,12 @@ public class PrtfVwrWs
                 if (!uniqueTickers.Contains(trade.Symbol!))
                     uniqueTickers.Add(trade.Symbol!);
             }
-            List<(string Ticker, int Id)> stockIdsResult = legacyDb.GetStockIds(uniqueTickers);
-            foreach ((string Ticker, int Id) stock in stockIdsResult) // Check if any ticker from trades doesn't exist in the stock data
+            List<(string Ticker, int Id)> stockIdsResult = MemDb.gMemDb.GetLegacyDbStockIds(uniqueTickers);
+            foreach ((string Ticker, int Id) stock in stockIdsResult)
             {
                 if (stock.Id == -1) // Check if the stock ID is -1, indicating the symbol does not exist in LegacyDb
                 {
-                    testAndInsertTradeResult = $"TestInsertTrade failed : Ticker '{stock.Ticker}' doesn't exists"; // If the Ticker does not exist in the LegacyDb, update the result message with an error message.
+                    testAndInsertTradeResult = $"TestInsertTrade failed : Ticker '{stock.Ticker}' doesn't exists";
                     break;
                 }
             }
@@ -364,16 +363,10 @@ public class PrtfVwrWs
 
         if (testAndInsertTradeResult == "OK") // insert the trades only if the test is "OK"
         {
-            foreach (Trade trade in trades!)
-            {
-                testAndInsertTradeResult = "Trades were successfully inserted";
-                bool isInsertTradeSuccess = legacyDb.InsertTrade(prtfName, trade);
-                if(!isInsertTradeSuccess)
-                {
-                    testAndInsertTradeResult = $"RealInsertTrade failed : symbol '{trade.Symbol}' doesn't exists"; // If the symbol does not exist in the LegacyDb, update the result message with an error message.
-                    break;
-                }
-            }
+            testAndInsertTradeResult = "Trades were successfully inserted";
+            bool isTradesInsertSuccessful = MemDb.gMemDb.InsertLegacyPortfolioTrades(prtfName, trades!);
+            if(!isTradesInsertSuccessful)
+                testAndInsertTradeResult = $"InsertTrade failed";
         }
         byte[] encodedMsg = Encoding.UTF8.GetBytes("PrtfVwr.LegacyDbTradesTestAndInsert:" + Utils.CamelCaseSerialize(testAndInsertTradeResult));
         if (webSocket!.State == WebSocketState.Open)
